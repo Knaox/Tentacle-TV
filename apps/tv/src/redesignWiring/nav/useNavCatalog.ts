@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
-import { applyRailOrder, sameRailOrder, type RailPinning } from "@tentacle-tv/tv-core";
+import { RAIL_MOVABLE_FIXED, applyRailOrder, libraryRailKey, sameRailOrder, type RailPinning } from "@tentacle-tv/tv-core";
 import type { IconName } from "../../redesign/icons/Icon";
 import type { NavEntry } from "../../redesign/nav/NavRail";
 import { useRailPinning } from "../../components/nav/railPinning";
@@ -16,13 +16,6 @@ import { useRailPinning } from "../../components/nav/railPinning";
  * ils ne se masquent ni ne se déplacent — la navigation ne doit jamais
  * devenir une impasse.
  */
-
-const MOVABLE_FIXED = new Set(["Recommendations", "Watchlist", "Favorites"]);
-
-/** Une entrée qu'on peut masquer et déplacer. */
-export function isMovableEntry(key: string): boolean {
-  return MOVABLE_FIXED.has(key) || key.startsWith("Library_");
-}
 
 export interface NavCatalogEntry extends NavEntry {
   hidden: boolean;
@@ -54,12 +47,14 @@ export function useNavCatalog(): NavCatalog {
   const { data: libraries } = useLibraries();
   const pinning = useRailPinning();
   return useMemo(() => {
+    // Les entrées fixes organisables, dans leur ordre par défaut (tv-core), puis chaque bibliothèque.
+    const [forYou, myList, favorites] = RAIL_MOVABLE_FIXED;
     const defaults: NavEntry[] = [
-      { key: "Recommendations", label: t("forYou"), icon: "sparkles" },
-      { key: "Watchlist", label: t("myList"), icon: "bookmark" },
-      { key: "Favorites", label: t("common:myFavorites"), icon: "heart" },
+      { key: forYou, label: t("forYou"), icon: "sparkles" },
+      { key: myList, label: t("myList"), icon: "bookmark" },
+      { key: favorites, label: t("common:myFavorites"), icon: "heart" },
       ...(libraries ?? []).map((library): NavEntry => ({
-        key: `Library_${library.Id}`,
+        key: libraryRailKey(library.Id),
         label: library.Name,
         icon: libraryIcon(library.CollectionType),
       })),

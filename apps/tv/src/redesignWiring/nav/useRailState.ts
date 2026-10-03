@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLibraries } from "@tentacle-tv/api-client";
-import { navKeyOf, railBlurDelay, railCollapseAfterBlur, railFocusedAfterFocus } from "@tentacle-tv/tv-core";
+import { railBlurDelay, railCollapseAfterBlur, railFocusedAfterFocus, railSelect, type RailSelect } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../focus/focusStore";
 import { useRailPinning } from "../../components/nav/railPinning";
 import { returnToSearchBar } from "../../components/search/searchBarReturn";
-import { railNavigate } from "../../navigation/railNavigate";
+import { goToRailPage, railRouteOf } from "../../platform/tvos/back/railNavigate";
 import type { RailArrange } from "./useRailArrange";
-import { SHOW_ALL_KEY } from "./useNavEntries";
 
 /**
  * L'état de la navigation refondue d'un écran : ouverte quand l'une de ses
@@ -56,28 +55,9 @@ export function useRailFocused(focus: FocusStore): boolean {
 
 type Library = { Id: string; Name: string };
 
-/** À la manière d'onglets : la pile ne grossit pas d'un passage à l'autre (`railNavigate`). */
-function navigateTo(key: string, libraries: readonly Library[] | undefined): void {
-  switch (key) {
-    case "Home":
-    case "Search":
-    case "Recommendations":
-    case "Watchlist":
-    case "Favorites":
-    case "Settings":
-      railNavigate(key);
-      return;
-  }
-  if (key.startsWith("Library_")) {
-    const libraryId = key.slice("Library_".length);
-    const libraryName = libraries?.find((library) => library.Id === libraryId)?.Name ?? "";
-    railNavigate("Library", { libraryId, libraryName });
-  }
-}
-
 /** « Réglages de la navigation » (menu d'une entrée) : l'onglet Navigation des réglages. */
 export function openNavigationSettings(): void {
-  railNavigate("Settings", { tab: "navigation" });
+  goToRailPage({ name: "Settings", params: { tab: "navigation" } });
 }
 
 export interface RailActions {
@@ -88,22 +68,23 @@ export interface RailActions {
 export interface RailActionHooks {
   /** Choisir l'entrée de la page où l'on est ; défaut : `focusContent`. */
   onReselect?: () => void;
-  /** Juste avant de naviguer vers une autre page, dans le même geste. */
-  beforeLeave?: () => void;
+  /** Rendre le focus au contenu TOUT DE SUITE, dans le même geste, avant de quitter la page. */
+  refocusContent?: () => void;
 }
 
 /**
- * `focusContent` rend le focus au contenu (choisir l'entrée de la page où
- * l'on est) ; `onReselect` le remplace quand l'écran veut autre chose.
- * Pendant un déplacement, OK pose l'entrée (`arrange`). Choisir une autre
- * page y mène ; la page d'arrivée prend le focus dans son contenu, rail
- * replié (`useEntryFocus`).
+ * OK et appui long sur une entrée du rail. La décision est dans tv-core
+ * (`nav/railSelect`) ; on l'applique : poser l'entrée qu'on déplace, tout
+ * afficher, revenir à la barre de recherche (`returnToSearchBar`, partagé avec
+ * Android TV), rendre la page à son contenu (`onReselect`, sinon
+ * `focusContent`), ou aller à une autre page (`goToRailPage`) — la page
+ * d'arrivée prend son entrée, rail replié (`useEntryFocus`).
  */
 export function useRailActions(
   railKey: string,
   focus: FocusStore,
   focusContent: () => void,
-  arrange: Pick<RailArrange, "openMenu" | "dropIfMoving">,
+  arrange: Pick<RailArrange, "openMenu" | "dropIfMoving" | "isMoving">,
   hooks: RailActionHooks = {},
 ): RailActions {
   const { data: libraries } = useLibraries();
@@ -112,26 +93,35 @@ export function useRailActions(
   librariesRef.current = libraries;
   const hooksRef = useRef(hooks);
   hooksRef.current = hooks;
-  const { openMenu, dropIfMoving } = arrange;
+  const { openMenu, dropIfMoving, isMoving } = arrange;
 
   const onSelect = useCallback(
     (key: string) => {
-      if (dropIfMoving()) return;
-      if (key === SHOW_ALL_KEY) {
-        // L'entrée choisie disparaît avec ce qu'elle rend : le focus va à l'entrée active.
-        pinning.showAll();
-        focus.claim(navKeyOf(railKey));
-        return;
-      }
-      if (key === "Search" && returnToSearchBar()) return;
-      if (key === railKey) {
-        (hooksRef.current.onReselect ?? focusContent)();
-        return;
-      }
-      hooksRef.current.beforeLeave?.();
-      navigateTo(key, librariesRef.current);
+      const libraryName = (libraryId: string) => librariesRef.current?.find((library: Library) => library.Id === libraryId)?.Name ?? "";
+      const apply = (decision: RailSelect): void => {
+        switch (decision.kind) {
+          case "drop":
+            dropIfMoving();
+            return;
+          case "showAll":
+            pinning.showAll();
+            focus.claim(decision.focus);
+            return;
+          case "searchBar":
+            if (!returnToSearchBar()) apply(decision.otherwise);
+            return;
+          case "reselect":
+            (hooksRef.current.onReselect ?? focusContent)();
+            return;
+          case "navigate":
+            if (decision.refocusContentFirst) hooksRef.current.refocusContent?.();
+            if (decision.to) goToRailPage(railRouteOf(decision.to, libraryName));
+            return;
+        }
+      };
+      apply(railSelect({ key, activeKey: railKey, moving: isMoving() }));
     },
-    [focus, focusContent, pinning, railKey, dropIfMoving],
+    [focus, focusContent, pinning, railKey, dropIfMoving, isMoving],
   );
 
   return { onSelect, onLongPress: openMenu };

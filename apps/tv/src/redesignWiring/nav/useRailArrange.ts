@@ -1,47 +1,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { moveRailKey, moveRailKeyTo } from "@tentacle-tv/tv-core";
+import {
+  RAIL_LOCKED_WHILE_MOVING, arrangeOnFocus, canOpenRailMenu, navKeyOf, railArrangeReading, railMenuEffect, railMenuModel,
+  railMenuReturnOnClose, railMenuReturnOnFocus, startArrange, type ArrangeMove, type RailMenuAction, type RailMenuModel,
+  type RailMenuReturn,
+} from "@tentacle-tv/tv-core";
 import { claimAfterRestore } from "../focus/claimAfterRestore";
 import { setFocusLocked } from "../focus/focusLocks";
 import type { FocusStore } from "../focus/focusStore";
-import { isMovableEntry, useNavCatalog } from "./useNavCatalog";
-import { SHOW_ALL_KEY } from "./useNavEntries";
+import { useNavCatalog } from "./useNavCatalog";
 
 /**
- * ORGANISER la navigation à la télécommande : l'appui long sur une entrée
- * ouvre son menu (`NavMenuModal`) — Déplacer, Monter, Descendre, Masquer,
- * Tout afficher, Réglages de la navigation.
+ * ORGANISER la navigation à la télécommande — le câblage : les règles sont
+ * dans tv-core (`nav/railMenu` pour le menu d'une entrée, `nav/arrange` pour
+ * le déplacement), on les applique au magasin d'épinglage et au focus.
  *
- * - Monter / Descendre enregistrent tout de suite et LAISSENT le menu ouvert :
- *   OK, OK, OK fait monter l'entrée de trois crans, qu'on voit bouger derrière.
- *   À la fermeture, tvOS rend le focus à la CASE qui l'avait — elle montre
- *   désormais une autre entrée : dès qu'il est rendu, on le réclame pour
- *   l'entrée dont parlait le menu. Sauf après « Masquer » : la suivante prend
- *   sa case et le focus, on enchaîne.
- * - Déplacer referme le menu et SOULÈVE l'entrée : HAUT / BAS la déplacent, OK
- *   la pose, Retour annule. La liste de la vue est rendue par position : le
- *   focus natif passe à la case voisine, et l'ordre en cours y amène
- *   l'entrée soulevée — elle suit le focus sans qu'on le réclame. Rechercher,
- *   Accueil, « Tout afficher » et le profil sont verrouillés le temps du
- *   déplacement : le pavé ne sort pas de la liste. Quitter le rail pose
- *   l'entrée là où elle est.
+ * - L'appui long sur une entrée organisable ouvre son menu (`NavMenuModal`) —
+ *   Déplacer, Monter, Descendre, Masquer, Tout afficher, Réglages de la
+ *   navigation. Monter / Descendre enregistrent et laissent le menu ouvert ;
+ *   à la fermeture, tvOS rend le focus à la CASE qui l'avait, et le premier
+ *   focus rendu au rail est redirigé vers l'entrée du menu.
+ * - Déplacer SOULÈVE l'entrée : HAUT / BAS la déplacent (la liste est rendue
+ *   par position, l'ordre en cours suit le focus), OK la pose, Retour annule,
+ *   quitter le rail la pose là où elle est. Rechercher, Accueil, « Tout
+ *   afficher » et le profil sont infocalisables le temps du déplacement.
  *
  * L'ordre en cours d'un déplacement n'est enregistré qu'à la pose : les rails
  * des écrans du dessous ne bougent pas à chaque appui, et Retour n'a rien à
  * défaire.
  */
 
-export type NavMenuAction = "move" | "up" | "down" | "hide" | "showAll" | "settings";
-
-export interface NavMenuModel {
-  key: string;
-  label: string;
-  /** Sa place parmi les entrées organisables visibles (1 = la première). */
-  position: number;
-  count: number;
-  canUp: boolean;
-  canDown: boolean;
-  canShowAll: boolean;
-}
+export type NavMenuAction = RailMenuAction;
+export type NavMenuModel = RailMenuModel;
 
 export interface RailArrange {
   heldKey: string | null;
@@ -56,17 +45,8 @@ export interface RailArrange {
   dropIfMoving: () => boolean;
   /** Retour pendant un déplacement : annule, l'entrée revient. Vrai s'il a été pris. */
   cancelIfMoving: () => boolean;
-}
-
-const NAV_PREFIX = "nav:";
-/** Le focus rendu au rail après la fermeture du menu arrive dans ce délai. */
-const RETURN_WITHIN_MS = 1500;
-/** Ce qui ne bouge jamais : verrouillé pendant un déplacement. */
-const FIXED_KEYS = ["Search", "Home", SHOW_ALL_KEY, "Settings"].map((key) => `${NAV_PREFIX}${key}`);
-
-interface Moving {
-  key: string;
-  order: string[];
+  /** Une entrée se déplace, relu à l'appel. */
+  isMoving: () => boolean;
 }
 
 export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): RailArrange {
@@ -76,51 +56,36 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
   const [heldKey, setHeldKey] = useState<string | null>(null);
   const heldRef = useRef(heldKey);
   heldRef.current = heldKey;
-  const [moving, setMovingState] = useState<Moving | null>(null);
+  const [moving, setMovingState] = useState<ArrangeMove | null>(null);
   const movingRef = useRef(moving);
-  const setMoving = useCallback((next: Moving | null) => {
+  const setMoving = useCallback((next: ArrangeMove | null) => {
     movingRef.current = next;
     setMovingState(next);
   }, []);
   const settingsRef = useRef(onOpenSettings);
   settingsRef.current = onOpenSettings;
   /** L'entrée que le focus doit retrouver quand tvOS le rend au rail, menu fermé. */
-  const returnTo = useRef<{ key: string; at: number } | null>(null);
+  const returnTo = useRef<RailMenuReturn | null>(null);
 
-  const menu = useMemo<NavMenuModel | null>(() => {
-    if (!heldKey) return null;
-    const visible = catalog.entries.filter((entry) => !entry.hidden);
-    const index = visible.findIndex((entry) => entry.key === heldKey);
-    if (index < 0) return null;
-    return {
-      key: heldKey,
-      label: visible[index].label,
-      position: index + 1,
-      count: visible.length,
-      canUp: index > 0,
-      canDown: index < visible.length - 1,
-      canShowAll: catalog.entries.some((entry) => entry.hidden),
-    };
-  }, [heldKey, catalog]);
+  const menu = useMemo(() => railMenuModel(catalog.entries, heldKey), [heldKey, catalog]);
 
   const openMenu = useCallback((key: string) => {
-    if (isMovableEntry(key) && !movingRef.current) setHeldKey(key);
+    if (canOpenRailMenu(key, movingRef.current !== null)) setHeldKey(key);
   }, []);
   const closeMenu = useCallback(() => {
-    const key = heldRef.current;
-    returnTo.current = key ? { key, at: Date.now() } : null;
+    returnTo.current = railMenuReturnOnClose(heldRef.current, Date.now());
     setHeldKey(null);
   }, []);
 
   const lockFixed = useCallback(
     (locked: boolean) => {
-      for (const key of FIXED_KEYS) setFocusLocked(focus, key, locked);
+      for (const key of RAIL_LOCKED_WHILE_MOVING) setFocusLocked(focus, navKeyOf(key), locked);
     },
     [focus],
   );
 
   const endMove = useCallback(
-    (commit: boolean): Moving | null => {
+    (commit: boolean): ArrangeMove | null => {
       const current = movingRef.current;
       if (!current) return null;
       lockFixed(false);
@@ -136,21 +101,21 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
       const key = heldRef.current;
       if (!key) return;
       const { keys, pinning } = catalogRef.current;
-      switch (action) {
-        case "up":
-        case "down":
-          pinning.setOrder(moveRailKey(keys, key, action === "up" ? -1 : 1, (other) => !pinning.isHidden(other)));
+      const effect = railMenuEffect(action, key, keys, pinning.isHidden);
+      switch (effect.kind) {
+        case "reorder":
+          pinning.setOrder(effect.order);
           return;
         case "hide":
-          pinning.toggle(key);
+          pinning.toggle(effect.key);
           break;
         case "showAll":
           pinning.showAll();
-          returnTo.current = { key, at: Date.now() };
+          returnTo.current = { key: effect.returnTo, at: Date.now() };
           break;
         case "move":
           lockFixed(true);
-          setMoving({ key, order: keys });
+          setMoving(startArrange(effect.key, keys, keys.indexOf(effect.key)));
           break;
         case "settings":
           settingsRef.current();
@@ -165,33 +130,27 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
   useEffect(
     () =>
       focus.subscribe((key, focused) => {
-        const target = returnTo.current;
-        if (!focused || !target || !key.startsWith(NAV_PREFIX) || key.startsWith(`${NAV_PREFIX}menu:`)) return;
+        if (!focused) return;
+        const outcome = railMenuReturnOnFocus(returnTo.current, key, Date.now());
+        if (!outcome.consume) return;
         returnTo.current = null;
-        // Rendu tard (le focus était parti ailleurs) : plus rien à retrouver.
-        if (Date.now() - target.at > RETURN_WITHIN_MS) return;
-        if (key !== `${NAV_PREFIX}${target.key}`) focus.claim(`${NAV_PREFIX}${target.key}`);
+        if (outcome.claim) focus.claim(outcome.claim);
       }),
     [focus],
   );
 
   // Le déplacement : la case voisine prend le focus, l'entrée soulevée y va.
-  const isMoving = moving !== null;
+  const moveActive = moving !== null;
   useEffect(() => {
-    if (!isMoving) return undefined;
+    if (!moveActive) return undefined;
     return focus.subscribe((key, focused) => {
       const current = movingRef.current;
       if (!focused || !current) return;
-      // Sortie du rail (vers le contenu) : l'entrée est posée là où elle est.
-      if (!key.startsWith(NAV_PREFIX)) {
-        endMove(true);
-        return;
-      }
-      const target = key.slice(NAV_PREFIX.length);
-      if (target === current.key || !isMovableEntry(target)) return;
-      setMoving({ key: current.key, order: moveRailKeyTo(current.order, current.key, target) });
+      const outcome = arrangeOnFocus(current, railArrangeReading(key));
+      if (outcome.kind === "drop") endMove(true);
+      else if (outcome.kind === "reorder") setMoving(outcome.move);
     });
-  }, [focus, isMoving, endMove, setMoving]);
+  }, [focus, moveActive, endMove, setMoving]);
 
   // Démonté en plein déplacement (l'écran s'en va) : rien ne reste verrouillé.
   useEffect(() => () => void endMove(false), [endMove]);
@@ -201,9 +160,11 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
   const cancelIfMoving = useCallback(() => {
     const cancelled = endMove(false);
     // L'entrée revient à sa place : le focus la suit.
-    if (cancelled) claimAfterRestore(focus, `${NAV_PREFIX}${cancelled.key}`);
+    if (cancelled) claimAfterRestore(focus, navKeyOf(cancelled.key));
     return cancelled !== null;
   }, [endMove, focus]);
+
+  const isMoving = useCallback(() => movingRef.current !== null, []);
 
   return {
     heldKey,
@@ -215,5 +176,6 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
     runMenuAction,
     dropIfMoving,
     cancelIfMoving,
+    isMoving,
   };
 }

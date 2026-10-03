@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { applyRailOrder } from "@tentacle-tv/tv-core";
+import { RAIL_HOME_KEY, RAIL_PROFILE_KEY, RAIL_SEARCH_KEY, RAIL_SHOW_ALL_KEY, applyRailOrder } from "@tentacle-tv/tv-core";
 import type { NavEntry, NavHint, NavRailProps } from "../../redesign/nav/NavRail";
 import { usePairedAccount } from "../../hooks/usePairedAccount";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
@@ -18,7 +18,8 @@ import { useNavCatalog } from "./useNavCatalog";
  * encore enregistré ; la légende dit alors les touches du déplacement.
  */
 
-export const SHOW_ALL_KEY = "RailShowAll";
+/** « Tout afficher » : tv-core (`nav/railKeys`). */
+export const SHOW_ALL_KEY = RAIL_SHOW_ALL_KEY;
 
 /** Le diamètre du portrait dans la navigation (`NavItem`), en points. */
 const AVATAR = 46;
@@ -57,14 +58,14 @@ export function useNavEntries({ previewOrder = null, moving = false }: NavEntrie
 
   return useMemo(() => {
     const movable = previewOrder ? applyRailOrder(catalog.entries, previewOrder, (entry) => entry.key) : catalog.entries;
-    const entries: NavEntry[] = [{ key: "Home", label: t("home"), icon: "home" }];
+    const entries: NavEntry[] = [{ key: RAIL_HOME_KEY, label: t("home"), icon: "home" }];
     for (const entry of movable) if (!entry.hidden) entries.push({ key: entry.key, label: entry.label, icon: entry.icon });
     if (catalog.entries.some((entry) => entry.hidden)) entries.push({ key: SHOW_ALL_KEY, label: t("railShowAll"), icon: "eye" });
     return {
-      search: { key: "Search", label: t("search"), icon: "search" },
+      search: { key: RAIL_SEARCH_KEY, label: t("search"), icon: "search" },
       entries,
       account: {
-        key: "Settings",
+        key: RAIL_PROFILE_KEY,
         // Le nom du compte, et ce qu'on trouve derrière ; sans nom, les réglages.
         label: userName || t("preferences"),
         caption: userName ? t("railProfile") : undefined,
