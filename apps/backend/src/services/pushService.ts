@@ -99,7 +99,16 @@ export async function sendToUsers(
       title: payload.title,
       body: payload.body,
       data: payload.data ?? {},
-      channelId: "default",
+      // Android : AUCUN canal nommé. Le canal « default » des apps est en
+      // importance DEFAULT — la notification n'arrivait que dans la liste,
+      // jamais en bandeau — et une app ne relève pas l'importance d'un canal
+      // existant. Sans `channelId`, expo-notifications pose la notification sur
+      // son canal de repli, créé en HIGH (bandeau), sur toute version de l'app.
+      // Un canal nommé mais absent de l'appareil, lui, ne s'afficherait pas
+      // selon la doc Expo : les anciennes versions ne l'ont pas.
+      // Priorité haute : une notification visible part tout de suite, même
+      // appareil en veille (Android vaut « normal » par défaut ; iOS, déjà haut).
+      priority: "high",
     }));
 
   let sent = 0;

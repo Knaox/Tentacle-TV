@@ -80,6 +80,17 @@ describe("coupure des push hors production", () => {
     expect(res).toEqual({ sent: 2, invalid: 0 });
   });
 
+  it("aucun canal Android nommé, priorité haute : le bandeau sur toute version de l'app", async () => {
+    // Le canal de repli d'expo-notifications est en importance HIGH ; un canal
+    // nommé est celui que l'app a créé (« default » : DEFAULT, liste seule).
+    vi.stubEnv("NODE_ENV", "production");
+    await sendToUser("u1", payload);
+    for (const message of sendPushNotificationsAsync.mock.calls[0][0] as Record<string, unknown>[]) {
+      expect(message).not.toHaveProperty("channelId");
+      expect(message).toMatchObject({ priority: "high", title: "Dune", body: "est sorti sur Tentacle TV" });
+    }
+  });
+
   it("le bouton de test d'un admin passe la coupure", async () => {
     vi.stubEnv("NODE_ENV", "development");
     const res = await sendToUser("u1", payload, { allowInDev: true });
