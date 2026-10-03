@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
@@ -73,11 +73,19 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   // ne prend la main que pendant le fondu (opacité + échelle).
   const [presence] = useState(() => new Animated.Value(1));
   const scale = useMemo(() => presence.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }), [presence]);
+  // Au montage, RIEN à poser : la valeur vaut déjà 1. La reposer passait par
+  // `setNativeProps` (la valeur n'est pas encore native), une validation
+  // synchrone par carte sous Fabric : ~37 ms chacune sur Android, 3,7 s de fil
+  // JS pour la page « Pour vous ». Seule une sortie ANNULÉE (la carte reste)
+  // rend la carte pleine.
+  const wasLeaving = useRef(false);
   useEffect(() => {
     if (!leaving) {
-      presence.setValue(1);
-      return;
+      if (wasLeaving.current) presence.setValue(1);
+      wasLeaving.current = false;
+      return undefined;
     }
+    wasLeaving.current = true;
     const fade = Animated.timing(presence, {
       toValue: 0,
       duration: motion.respectReducedMotion(RECO_LEAVE_MS),
