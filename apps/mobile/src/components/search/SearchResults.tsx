@@ -13,13 +13,13 @@ import {
   type SearchProvider,
   type SearchResponse,
 } from "@tentacle-tv/shared";
-import { MobileMediaCard } from "@/components/MobileMediaCard";
-import { FONT_FAMILY, RADIUS, spacing, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { EpisodeList } from "./SearchEpisodes";
 import { ExternalSections } from "./SearchExternal";
 import type { SearchFilter } from "./SearchFilters";
 import { FacetChips, PeopleRail } from "./SearchPeople";
 import { PosterRail, Section, asMediaItem } from "./SearchSection";
+import { ProgressiveCardGrid } from "./ProgressiveCardGrid";
 import { TopResultCard } from "./TopResultCard";
 
 export interface SearchActions {
@@ -57,7 +57,6 @@ export const SearchResults = memo(function SearchResults({ query, response, epis
   const { t } = useTranslation("search");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const { itemWidth, gutter, padding } = useGrid({ phoneColumns: 3, gutter: 12 });
   const { openItem } = actions;
   const openCard = useCallback((item: MediaItem) => openItem(item.Id), [openItem]);
 
@@ -68,13 +67,7 @@ export const SearchResults = memo(function SearchResults({ query, response, epis
   const correction = r?.correction && foldForSearch(r.correction) !== foldForSearch(query) ? r.correction : null;
 
   const grid = (hits: SearchItemHit[]) => (
-    <View style={[st.grid, { paddingHorizontal: padding, gap: gutter }]}>
-      {hits.map((hit) => (
-        <View key={hit.item.Id} style={{ width: itemWidth }}>
-          <MobileMediaCard item={asMediaItem(hit.item)} width={itemWidth} onPress={openCard} />
-        </View>
-      ))}
-    </View>
+    <ProgressiveCardGrid items={hits.map((hit) => asMediaItem(hit.item))} onPress={openCard} resetKey={`${filter}:${query}`} />
   );
 
   return (
@@ -169,7 +162,6 @@ function Notice({ icon, text }: { icon: "loader" | "edit-3" | "info" | "globe"; 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     root: { paddingBottom: spacing.xl },
-    grid: { flexDirection: "row" as const, flexWrap: "wrap" as const },
     notice: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, paddingHorizontal: spacing.screenPadding, marginTop: spacing.md },
     noticeTxt: { flex: 1, fontSize: 13, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
     empty: { paddingHorizontal: spacing.screenPadding, paddingTop: spacing.xl, alignItems: "flex-start" as const, gap: 6 },

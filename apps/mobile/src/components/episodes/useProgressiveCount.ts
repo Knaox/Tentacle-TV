@@ -18,10 +18,11 @@ const NEXT_BATCH = 24;
  *
  * `mustInclude` : un index qui doit faire partie du premier lot (l'épisode
  * courant, vers lequel la page défile). `resetKey` : repartir du premier lot
- * (une autre saison).
+ * (une autre saison). `firstBatch` : la taille du premier lot, quand un écran
+ * en tient davantage (une grille de tablette).
  */
-export function useProgressiveCount(total: number, resetKey: string, mustInclude = -1): number {
-  const first = Math.min(total, Math.max(FIRST_BATCH, mustInclude + 1));
+export function useProgressiveCount(total: number, resetKey: string, mustInclude = -1, firstBatch = FIRST_BATCH): number {
+  const first = Math.min(total, Math.max(firstBatch, mustInclude + 1));
   const [state, setState] = useState({ key: resetKey, count: first });
   // Nouvelle saison : on repart du premier lot DANS le même rendu (pas d'image
   // intermédiaire avec les lignes de la saison précédente).

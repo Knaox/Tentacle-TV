@@ -10,12 +10,12 @@ import {
   type SearchPersonHit,
   type SearchProvider,
 } from "@tentacle-tv/shared";
-import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { BrandSpinner } from "@/components/ui";
 import { FONT_FAMILY, RADIUS, spacing, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { ExternalSections } from "./SearchExternal";
 import { PersonAvatar } from "./SearchPeople";
 import { asMediaItem } from "./SearchSection";
+import { ProgressiveCardGrid } from "./ProgressiveCardGrid";
 import { useMobileExternalFilmography } from "./useMobileExternalSearch";
 
 /** Ce que l'on parcourt : une personne (sa filmographie), un genre, un studio. */
@@ -48,9 +48,11 @@ export const SearchBrowse = memo(function SearchBrowse({ target, onBack, onOpen,
   const { t: tc } = useTranslation("common");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const { itemWidth, gutter, padding } = useGrid({ phoneColumns: 3, gutter: 12 });
+  const { padding } = useGrid({ phoneColumns: 3, gutter: 12 });
   const openCard = useCallback((item: MediaItem) => onOpen(item.Id), [onOpen]);
   const { data, isPending } = useSearchBrowse(query(target));
+  const browseItems = useMemo(() => (data?.items ?? []).map((hit) => asMediaItem(hit.item)), [data]);
+  const browseKey = target.kind === "person" ? `person:${target.id}` : `${target.kind}:${target.name}`;
   const title = target.kind === "person" ? target.person.name : target.name;
   const kicker = target.kind === "person" ? t("filmographyTitle") : t(target.kind);
 
@@ -86,13 +88,7 @@ export const SearchBrowse = memo(function SearchBrowse({ target, onBack, onOpen,
       {data && (
         <>
           <Text style={[st.sort, { paddingHorizontal: padding }]}>{t("sortedByYear")}</Text>
-          <View style={[st.grid, { paddingHorizontal: padding, gap: gutter }]}>
-            {data.items.map((hit) => (
-              <View key={hit.item.Id} style={{ width: itemWidth }}>
-                <MobileMediaCard item={asMediaItem(hit.item)} width={itemWidth} onPress={openCard} />
-              </View>
-            ))}
-          </View>
+          <ProgressiveCardGrid items={browseItems} onPress={openCard} resetKey={browseKey} style={st.gridEnd} />
         </>
       )}
 
@@ -136,7 +132,7 @@ const makeStyles = (t: AppTheme) =>
     count: { fontSize: 13, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
     loading: { paddingVertical: spacing.xxl, alignItems: "center" as const },
     sort: { fontSize: 12, fontFamily: FONT_FAMILY.medium, color: t.colors.text.quaternary, marginBottom: spacing.sm },
-    grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, paddingBottom: spacing.xl },
+    gridEnd: { paddingBottom: spacing.xl },
     searching: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm, paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xl },
     searchingTxt: { fontSize: 13, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
   });

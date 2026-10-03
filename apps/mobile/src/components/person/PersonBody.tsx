@@ -1,13 +1,13 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   biographyParagraphs, creditRoleKey, type CreditRole, type FilmographyEntry, type FilmographyFacets,
   type FilmographyKind, type MediaItem, type SearchMediaItem,
 } from "@tentacle-tv/shared";
-import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { BrandSpinner } from "@/components/ui";
 import { asMediaItem } from "@/components/search/SearchSection";
+import { ProgressiveCardGrid } from "@/components/search/ProgressiveCardGrid";
 import { FONT_FAMILY, RADIUS, spacing, useGrid, useThemedStyles, type AppTheme } from "@/theme";
 
 /** La biographie, repliée sur six lignes ; « Voir plus » seulement si elle a été coupée. */
@@ -57,9 +57,10 @@ interface FilmographyProps {
 export const PersonFilmography = memo(function PersonFilmography(props: FilmographyProps) {
   const { pending, entries, shown, facets, kind, role, onKind, onRole, onOpen } = props;
   const openCard = useCallback((item: MediaItem) => onOpen(item.Id), [onOpen]);
+  const shownItems = useMemo(() => shown.map(({ item }) => asMediaItem(item)), [shown]);
   const { t } = useTranslation("media");
   const st = useThemedStyles(makeStyles);
-  const { itemWidth, gutter, padding } = useGrid({ phoneColumns: 3, gutter: 12 });
+  const { padding } = useGrid({ phoneColumns: 3, gutter: 12 });
   const showKinds = facets.movies > 0 && facets.series > 0;
   const showRoles = facets.roles.length > 1;
 
@@ -91,13 +92,7 @@ export const PersonFilmography = memo(function PersonFilmography(props: Filmogra
       {!pending && entries.length === 0 && <Text style={st.empty}>{t("personLibraryEmpty")}</Text>}
       {!pending && entries.length > 0 && shown.length === 0 && <Text style={st.empty}>{t("personFilterEmpty")}</Text>}
       {shown.length > 0 && (
-        <View style={[st.grid, { paddingHorizontal: padding - spacing.screenPadding, gap: gutter }]}>
-          {shown.map(({ item }) => (
-            <View key={item.Id} style={{ width: itemWidth }}>
-              <MobileMediaCard item={asMediaItem(item)} width={itemWidth} onPress={openCard} />
-            </View>
-          ))}
-        </View>
+        <ProgressiveCardGrid items={shownItems} onPress={openCard} resetKey={`${kind}:${role ?? ""}`} padding={padding - spacing.screenPadding} />
       )}
     </View>
   );
@@ -144,5 +139,4 @@ const makeStyles = (t: AppTheme) =>
     chipCount: { fontSize: 12, fontFamily: FONT_FAMILY.medium, color: t.colors.text.quaternary },
     loading: { paddingVertical: spacing.xxl, alignItems: "center" },
     empty: { paddingVertical: spacing.lg, fontSize: 14, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
-    grid: { flexDirection: "row", flexWrap: "wrap" },
   });
