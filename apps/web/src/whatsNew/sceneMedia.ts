@@ -20,6 +20,9 @@ export interface ScenePoster {
   progress: number | null;
   /** Le décor du titre, à la recette des vignettes « Reprendre » de Ma liste ; `null` sans décor. */
   backdropUrl: string | null;
+  /** La série du titre — la sienne, ou celle de l'épisode ; `null` pour un film : une scène
+   *  qui dit « nouveaux épisodes » ne le pose jamais sur l'affiche d'un film. */
+  series?: string | null;
 }
 
 export interface SceneBackdrop {
@@ -86,6 +89,7 @@ export function useSceneMediaSource(): SceneMedia {
         backdropUrl: item.BackdropImageTags?.length
           ? client.getImageUrl(item.Id, "Backdrop", { width: 640, quality: 80 })
           : null,
+        series: item.Type === "Series" ? item.Name : item.Type === "Episode" ? item.SeriesName ?? null : null,
       });
     }
     const hero = featured?.[0];

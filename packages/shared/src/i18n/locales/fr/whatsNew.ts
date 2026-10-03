@@ -46,6 +46,8 @@ export default {
   sceneGenreThriller: "Thriller",
 
   // 1.25.0
+  v1_25_4_latest_title: "Derniers ajouts, une carte par série",
+  v1_25_4_latest_body: "Les épisodes et les saisons d'une même série arrivés ensemble ne remplissent plus la rangée : une seule carte, celle de la série, dit « 4 nouveaux épisodes », « Nouvelle saison » ou « Nouvelle série », et s'ouvre sur la saison du dernier ajout. La rangée va jusqu'à 20 cartes.",
   v1_25_0_stats_title: "Vos statistiques",
   v1_25_0_stats_body: "Votre temps devant l'écran, vos genres, vos films et acteurs préférés, vos records, ce que vous écoutez vraiment (« VF ou VO ? ») et l'origine des titres. Un lien public les partage, sans compte ni lecture possible, et se révoque à tout moment.",
   v1_25_0_affinity_title: "Watch Together : l'Affinité",

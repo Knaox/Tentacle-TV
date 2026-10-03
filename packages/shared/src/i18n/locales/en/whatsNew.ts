@@ -42,6 +42,8 @@ export default {
   sceneGenreThriller: "Thriller",
 
   // 1.25.0
+  v1_25_4_latest_title: "Latest additions, one card per series",
+  v1_25_4_latest_body: "Episodes and seasons of the same series that arrived together no longer fill the row: a single card, the series', says \"4 new episodes\", \"New season\" or \"New series\", and opens on the season of the latest addition. The row goes up to 20 cards.",
   v1_25_0_stats_title: "Your stats",
   v1_25_0_stats_body: "Your screen time, your genres, your favorite movies and actors, your records, what you really listen to (\"Dubbed or original?\") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time.",
   v1_25_0_affinity_title: "Watch Together: Affinity",
