@@ -1,13 +1,15 @@
 import {
-  mpvFailure, nativeVideoFailure, rawFromError,
-  type EngineFailure, type FailureMarker, type FailureTarget, type ProblemFacts, type RawProblem,
+  collectPlaybackFailure, mpvFailure, nativeVideoFailure,
+  type CollectedFailure, type EngineFailure, type FailureMarker, type FailureTarget, type PlaybackFailure,
 } from "@tentacle-tv/shared";
 
+export { nextVersionId, transcodeAllowedOf, type CollectedFailure } from "@tentacle-tv/shared";
+
 /**
- * Ce que le lecteur mobile sait d'un échec, mis dans la forme du modèle
- * commun : l'échec brut (`RawProblem`, que le classifieur tranche) et les
- * faits techniques (« Détails »). Module PUR — ni React Native ni Expo —,
- * testé sous vitest.
+ * Ce que le lecteur mobile sait d'un échec, dans la forme de la chaîne
+ * commune (`problems/playbackDiagnosis.ts`, shared) : ses deux moteurs se
+ * traduisent en `EngineFailure`, le reste passe tel quel. Module PUR — ni
+ * React Native ni Expo —, testé sous vitest.
  */
 
 export type PlaybackEngineKind = "mpv" | "native";
@@ -19,11 +21,6 @@ export type PlaybackFailureReport =
   | { from: "marker"; marker: FailureMarker; jellyfinErrorCode?: string }
   /** Le fichier gardé sur l'appareil n'y est plus. */
   | { from: "missingFile" };
-
-export interface CollectedFailure {
-  raw: RawProblem;
-  facts: ProblemFacts;
-}
 
 function messageOf(error: unknown): string | undefined {
   if (typeof error === "string") return error;
@@ -39,45 +36,12 @@ function engineFailureOf(engine: PlaybackEngineKind, error: unknown): EngineFail
   return nativeVideoFailure(error);
 }
 
+/** Le signalement du mobile, dans la forme commune. */
+export function toPlaybackFailure(report: PlaybackFailureReport): PlaybackFailure {
+  return report.from === "engine" ? { from: "engine", failure: engineFailureOf(report.engine, report.error) } : report;
+}
+
 /** L'échec brut d'un signalement, et ses faits. Le contexte de lecture s'ajoute ensuite. */
 export function collectFailure(report: PlaybackFailureReport): CollectedFailure {
-  switch (report.from) {
-    case "engine": {
-      const failure = engineFailureOf(report.engine, report.error);
-      return {
-        raw: { status: failure.status, kind: failure.kind, message: failure.message, target: "stream" },
-        facts: { status: failure.status, engine: failure.engine, code: failure.code, message: failure.message },
-      };
-    }
-    case "request": {
-      const raw = rawFromError(report.error, report.target);
-      return { raw, facts: { status: raw.status, request: report.request, message: raw.message } };
-    }
-    case "marker":
-      return {
-        raw: { marker: report.jellyfinErrorCode ? undefined : report.marker, jellyfinErrorCode: report.jellyfinErrorCode },
-        facts: { jellyfinErrorCode: report.jellyfinErrorCode },
-      };
-    case "missingFile":
-      return { raw: { kind: "notFound", target: "stream" }, facts: {} };
-  }
-}
-
-/** Le compte peut-il faire convertir ? `undefined` si le profil gardé ne le dit pas. */
-export function transcodeAllowedOf(storedUser: string | null): boolean | undefined {
-  if (!storedUser) return undefined;
-  try {
-    const value = JSON.parse(storedUser)?.Policy?.EnableVideoPlaybackTranscoding;
-    return typeof value === "boolean" ? value : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** La version suivante du titre, pour « Autre version » — `null` s'il n'y en a qu'une. */
-export function nextVersionId(sources: readonly { Id?: string }[] | undefined, currentId: string | undefined): string | null {
-  const ids = (sources ?? []).map((source) => source.Id).filter((id): id is string => !!id);
-  if (ids.length < 2) return null;
-  const index = currentId ? ids.indexOf(currentId) : -1;
-  return ids[(index + 1) % ids.length] ?? null;
+  return collectPlaybackFailure(toPlaybackFailure(report));
 }

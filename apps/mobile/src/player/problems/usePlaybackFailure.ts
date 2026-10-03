@@ -3,34 +3,15 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import {
-  classifyProblem, describeProblem, problemDetails, probeStream, shouldProbeSource, shouldProbeStream, withProbes,
-  type ProblemAvailability, type ProblemCause, type ProblemContext, type ProblemDetail, type ProblemModel,
-  type Reachability,
+  describeProblem, diagnosePlaybackFailure, transcodeAllowedOf,
+  type DiagnosedFailure, type PlaybackFailureContext, type ProblemAvailability, type ProblemModel, type Reachability,
 } from "@tentacle-tv/shared";
 import { runProbe } from "@/offline/connectivityProbe";
 import { getConnectivitySnapshot } from "@/offline/connectivityStore";
 import { useServerUrl } from "@/providers/ServerUrlContext";
-import { collectFailure, transcodeAllowedOf, type PlaybackFailureReport } from "./playbackFailure";
+import { toPlaybackFailure, type PlaybackFailureReport } from "./playbackFailure";
 
-/** Ce que l'écran sait de sa lecture au moment de l'échec. */
-export interface PlaybackFailureContext {
-  streamUrl: string | null;
-  headers: Record<string, string>;
-  /** La première image est passée : « La lecture s'est arrêtée ». */
-  started: boolean;
-  transcoding: boolean;
-  burningSubtitles: boolean;
-  /** Un fichier gardé sur l'appareil : rien à sonder sur le réseau. */
-  local?: boolean;
-  /** Le fichier source (flux statique) : seul lui dit qu'il manque sur le disque du serveur. */
-  sourceUrl?: string | null;
-}
-
-export interface DiagnosedFailure {
-  cause: ProblemCause;
-  context: ProblemContext;
-  details: ProblemDetail[];
-}
+export type { DiagnosedFailure, PlaybackFailureContext } from "@tentacle-tv/shared";
 
 /** « Tentacle 1.10.3 · iOS 26.3 » — pour les détails transmis à l'administrateur. */
 function appLabel(): string {
@@ -66,37 +47,15 @@ export function usePlaybackFailure(context: PlaybackFailureContext) {
 
   const report = useCallback((failure: PlaybackFailureReport) => {
     const id = ++seq.current;
-    const ctx = contextRef.current;
-    const { raw, facts } = collectFailure(failure);
-    const full = {
-      ...raw,
-      started: ctx.started,
-      transcoding: ctx.transcoding,
-      burningSubtitles: ctx.burningSubtitles,
-      local: ctx.local,
+    setDiagnosing(true);
+    void diagnosePlaybackFailure(toPlaybackFailure(failure), contextRef.current, {
+      probeServers: () => probeServers(serverUrl),
       transcodeAllowed: transcodeAllowedOf(storage.getItem("tentacle_user")),
       deviceOffline: getConnectivitySnapshot().networkType === "none",
-    };
-    setDiagnosing(true);
-    const servers = ctx.local ? Promise.resolve(null) : probeServers(serverUrl);
-    const stream = !ctx.local && ctx.streamUrl && shouldProbeStream(full)
-      ? probeStream(ctx.streamUrl, ctx.headers)
-      : Promise.resolve(null);
-    const source = ctx.sourceUrl && shouldProbeSource(full) ? probeStream(ctx.sourceUrl, ctx.headers) : Promise.resolve(null);
-    void Promise.all([servers, stream, source]).then(([reachability, streamProbe, sourceProbe]) => {
+      app: appLabel(),
+    }).then((next) => {
       if (seq.current !== id) return;
-      const probed = withProbes(full, reachability, streamProbe, sourceProbe);
-      setDiagnosed({
-        cause: classifyProblem(probed),
-        context: ctx.local ? "offlinePlayback" : ctx.started ? "playbackStopped" : "playbackStart",
-        details: problemDetails({
-          ...facts,
-          status: probed.status ?? facts.status,
-          sourceStatus: sourceProbe?.status,
-          stream: ctx.local ? "local" : !ctx.streamUrl ? undefined : ctx.transcoding ? "transcode" : "direct",
-          app: appLabel(),
-        }),
-      });
+      setDiagnosed(next);
       setDiagnosing(false);
     });
   }, [serverUrl, storage]);
