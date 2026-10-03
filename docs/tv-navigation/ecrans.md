@@ -631,7 +631,9 @@ chemin partagé reste tel quel tant qu'Android TV n'est pas porté.
    commentaire de `PairingRedesign.tsx` et `docs/TV-REFONTE.md` (« recule
    d'une page quand le jumelage a été ouvert depuis les réglages ») décrivent
    un cas qui n'existe pas — Menu sur l'accueil du jumelage quitte toujours.
-   Comportement gardé ; seul le commentaire sera corrigé en phase B.
+   Comportement gardé ; le commentaire de `PairingRedesign.tsx` est corrigé
+   (phase B) ; la ligne du carnet (`docs/TV-REFONTE.md`, « Le Retour ») est
+   l'écart B1 tenu par T4 (`retour-rail.md`).
 
 (La liste s'allonge à l'enregistrement des scénarios.)
 
