@@ -113,7 +113,7 @@ qui le migre vers les intentions :
 | Activation du panneau de panne | `redesignWiring/player/usePlaybackTrouble.ts` | `useTVEventHandler` direct : appuis et `longSelect` | T5 |
 | Défilement au pavé | `hooks/useScrubGestures.ios.ts` | `useTVEventHandler` direct : `pan` | T5 |
 | Commandes du lecteur | `components/focus/useTVRemote.ts` via `useTVPlayerControls`, `useTVPlayerBack`… | `useTVEventHandler` : tout | T5 — partagé avec Android TV, qui n'est pas touché |
-| Reprise du focus du lecteur | `hooks/useFocusRecovery.ts` via `useTVPanelControls` | `TVEventHandler` (classe) : `focus`, `blur` | T5 — idem |
+| Reprise du focus du lecteur | `hooks/useFocusRecovery.ts` via `useTVPanelControls` | `TVEventHandler` (classe) : `focus`, `blur` | hors lot : INERTE sur tvOS — il sort dès sa première ligne hors Android (`Platform.OS !== "android"`), sans s'abonner |
 | « Une touche annule le saut vers les résultats » | `components/search/useSearchSubmit.ts` (via `redesignWiring/search/useSystemKeyboard.ts`) | `useTVRemote({ onAnyPress })` : flèches et OK | T7 (adaptateur neuf ; le fichier, partagé avec Android TV, n'est pas touché) |
 | Capture du focus après le rail | `hooks/useContentFocusCapture.ts` (`TVNavChrome`) | flèches | hors lot : ancienne UI (Android TV). `TVNavChrome` est monté sur Apple TV aussi (il rend `null` APRÈS ses crochets) : l'abonnement est permanent mais inerte, rien ne l'y arme |
 | Retour de react-native-tvos | `node_modules/react-native/Libraries/Utilities/BackHandler.ios.js` | `menu` | hors lot : abonné dès l'import, inerte (`enableTVMenuKey` coupé, `menu` jamais émis) |
