@@ -1,9 +1,11 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Pause, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { onSessionMessage, type SessionMessage } from "@tentacle-tv/api-client";
 import { useMessageCountdown, type MessageCountdown } from "./useMessageCountdown";
+import { useFullscreenPortalTarget } from "../../hooks/useFullscreenPortalTarget";
 
 /**
  * Les messages que l'administrateur envoie à cette session — depuis le tableau
@@ -51,7 +53,10 @@ export function SessionMessageHost() {
     setMessages((current) => [...current, { ...message, id, durationMs }].slice(-MAX_VISIBLE));
   }), []);
 
-  return (
+  // En plein écran, seul l'élément plein écran est rendu : le bandeau s'y monte.
+  const target = useFullscreenPortalTarget();
+
+  return createPortal(
     <div
       role="status"
       aria-live="polite"
@@ -62,7 +67,8 @@ export function SessionMessageHost() {
           <MessageBanner key={message.id} message={message} onDismiss={dismiss} />
         ))}
       </AnimatePresence>
-    </div>
+    </div>,
+    target,
   );
 }
 

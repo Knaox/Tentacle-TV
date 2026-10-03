@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMotionValue } from "framer-motion";
 import { useWtChat } from "./useWtChat";
 import { ChatOverlay } from "./ChatOverlay";
 import { ReactionLayer } from "./ReactionLayer";
 import { MessageToastLayer } from "./MessageToastLayer";
+import { useFullscreenPortalTarget } from "../../hooks/useFullscreenPortalTarget";
 
 /**
  * Watch Together — racine du chat de groupe, montée dans le Provider tant
@@ -20,15 +20,7 @@ import { MessageToastLayer } from "./MessageToastLayer";
 export function ChatRoot() {
   const chat = useWtChat();
 
-  const [target, setTarget] = useState<HTMLElement>(() => document.body);
-  useEffect(() => {
-    const onFullscreenChange = () => {
-      setTarget((document.fullscreenElement as HTMLElement | null) ?? document.body);
-    };
-    onFullscreenChange();
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
-  }, []);
+  const target = useFullscreenPortalTarget();
 
   // Position de drag persistante (offset depuis l'ancrage bottom-right).
   const dragX = useMotionValue(0);
