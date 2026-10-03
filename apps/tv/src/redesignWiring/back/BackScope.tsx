@@ -1,96 +1,26 @@
-import {
-  createContext, useCallback, useContext, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode,
-} from "react";
-import { StyleSheet } from "react-native";
-import { createBackLayers, type BackLayerKind, type BackLayers } from "@tentacle-tv/tv-core";
-import { MenuPressInterceptor } from "../../components/focus/MenuPressInterceptor";
-import { RAIL_ROUTES } from "../../navigation/railNavigate";
+import { TvosBackScope, type BackScopeProps } from "../../platform/tvos/back/BackScope";
 import { REDESIGN_ACTIVE } from "../redesignGate";
 
+export { useBackLayer, useBackLayers } from "../../platform/tvos/back/useBackLayers";
+
 /**
- * Le RETOUR d'un écran, sur Apple TV — un seul chemin pour la touche Menu.
+ * Le RETOUR d'un écran : la portée que le navigateur pose autour de chaque
+ * écran (`screenLayout`, `navigation/AppNavigator.tsx`).
  *
- * Le navigateur pose une portée autour de chaque écran (`screenLayout`). Tout
- * ce qui a quelque chose à faire au Retour s'y inscrit comme une COUCHE
- * (`useBackLayer`) : un menu, la surimpression du lecteur, la page, le rail.
- * La pile (`createBackLayers`, tv-core) les consulte dans l'ordre
- * menu > surimpression > page > rail ; aucune couche active : l'appui revient
- * à UIKit, qui quitte l'application — la règle d'Apple.
- *
- * D'AVANCE : sur tvOS, un appui est pris ou laissé à UIKit dès qu'il
- * commence. La portée est donc un `MenuPressInterceptor` dont `enabled` dit
- * « une couche est active » ; il prend l'appui parti de n'importe quel
- * élément focalisé de l'écran et le rend à la pile.
- *
- * Menu ne dépile JAMAIS un écran de lui-même (`gestureEnabled: false` sur
- * Apple TV, patch de react-native-screens). Avant, le geste Retour d'UIKit
- * dépilait avant qu'on ait pu le retenir, `usePreventRemove` réempilait
- * l'écran après coup, et celui du dessous paraissait quelques images.
- * Aucune couche active, la portée fait ce que ferait la plateforme : une
- * page POUSSÉE (fiche, personne, bande-annonce…) recule (`goBack`) ; une
- * page du RAIL ou la racine laisse l'appui à UIKit, qui quitte. Une page du
- * rail inscrit ses couches (`RedesignScreen` : ouvrir le rail, aller sur
- * Réglages) ; un écran qui recule autrement inscrit sa couche « page »
- * (le lecteur : la sortie de la lecture).
- *
- * Une `Modal` vit dans son propre contrôleur : son Menu va droit à son
- * `onRequestClose`, sans passer par ici. Elle s'inscrit quand même (couche
- * « menu », active tant qu'elle est ouverte) et `onRequestClose` ferme ce que
- * sa couche fermerait : elle est forcément la couche du dessus.
+ * Apple TV : l'applicateur tvOS (`platform/tvos/back/`), sur la pile et les
+ * règles de tv-core (`nav/backLayers`, `nav/backResolve`) — ce qu'il fait,
+ * contexte par contexte : `docs/tv-navigation/retour-rail.md`.
  *
  * Android TV : la portée ne fait rien — le Retour y arrive au JS par
- * BackHandler, écran par écran.
+ * BackHandler, écran par écran — et `useBackLayer` n'inscrit rien.
+ *
+ * Ce module ne garde que l'aiguillage : les écrans, le lecteur et les
+ * panneaux importent `useBackLayer` / `useBackLayers` d'ici ou de
+ * `platform/tvos/back/useBackLayers`.
  */
-
-interface BackScopeProps {
-  route: { name: string };
-  navigation: { canGoBack(): boolean; goBack(): void };
-  children: ReactNode;
-}
-
-const BackContext = createContext<BackLayers | null>(null);
-
-function AppleTvBackScope({ route, navigation, children }: BackScopeProps) {
-  const [layers] = useState(createBackLayers);
-  const layered = useSyncExternalStore(layers.subscribe, () => layers.target() !== null);
-  const pushed = !RAIL_ROUTES.has(route.name) && navigation.canGoBack();
-  const latest = useRef({ navigation, pushed });
-  latest.current = { navigation, pushed };
-  const onMenuPress = useCallback(() => {
-    if (layers.back()) return;
-    if (latest.current.pushed) latest.current.navigation.goBack();
-  }, [layers]);
-  return (
-    <BackContext.Provider value={layers}>
-      <MenuPressInterceptor enabled={layered || pushed} onMenuPress={onMenuPress} style={styles.fill}>
-        {children}
-      </MenuPressInterceptor>
-    </BackContext.Provider>
-  );
-}
 
 function PassThrough({ children }: BackScopeProps) {
   return <>{children}</>;
 }
 
-export const BackScope = REDESIGN_ACTIVE ? AppleTvBackScope : PassThrough;
-
-/**
- * Inscrit une couche du Retour dans l'écran : tant qu'elle est `active`, le
- * prochain Retour lui revient, dans l'ordre menu > surimpression > page >
- * rail. `onBack` est relu à chaque appui. Sans portée (Android TV), rien.
- */
-export function useBackLayer(kind: BackLayerKind, active: boolean, onBack: () => void): void {
-  const layers = useContext(BackContext);
-  const id = useId();
-  const handler = useRef(onBack);
-  handler.current = onBack;
-  useLayoutEffect(() => {
-    layers?.set(id, { kind, active, onBack: () => handler.current() });
-  }, [layers, id, kind, active]);
-  useLayoutEffect(() => (layers ? () => layers.remove(id) : undefined), [layers, id]);
-}
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-});
+export const BackScope = REDESIGN_ACTIVE ? TvosBackScope : PassThrough;
