@@ -361,6 +361,11 @@ changent ni de nom ni de comportement.
 - **B3** (théorique) Un appui pris par la portée dont la seule couche se
   désactive avant le relâchement, sur une page non poussée : l'appui est
   avalé, ni action ni sortie (R1.4).
+- **B5** (constat de T2 au banc, CONFORME à la règle — gardé tel quel)
+  Films ouvert depuis le rail, Retour → le rail sur « Films », 2e Retour → le
+  profil, la pile `[Home, Library]` inchangée : c'est R2.1 / R2.2 (sur une
+  page du rail, Retour ne dépile jamais — décidé le 2026-10-01) ; le 3e
+  Retour quitte. Épinglé par `retour-pages#bibliotheque-retour-x3`.
 - **B4** Commentaires périmés, sans effet : `AppNavigator` (Player : « le Menu
   qu'un panneau ouvert doit consommer (usePreventRemove) »), `claimAfterRestore`
   (« la pile le réempile (usePreventRemove) »), en-tête de
@@ -484,6 +489,33 @@ et rendre le focus à l'entrée (rail : `nav:<move.key>`) ou à sa case de dépa
 rail (`navKeyOf`, `isNavKey`, `navEntryOf`, `isMovableRailKey`,
 `RAIL_LOCKED_WHILE_MOVING`, `libraryRailKey`…) : `nav/railKeys.ts`.
 
+## 16 ter. Le rail — où vit chaque règle (après l'extraction)
+
+Tout ce qui DÉCIDE est dans tv-core `nav/` (pur, testé par vitest) ;
+`redesignWiring/` branche (données, composition) ; `platform/tvos/back/`
+applique au natif.
+
+| Règle (relevé) | tv-core `nav/` | Appliquée par |
+|---|---|---|
+| Couches et résolution du Retour (R1, R2) | `backLayers`, `backResolve`, `railPages` | `platform/tvos/back/BackScope`, `useBackLayers` |
+| Couches d'un écran à rail (R2.1-R2.6) | `railBack` (`railScreenBackLayers`, `railEntryTarget`) | `redesignWiring/screen/useRailBackLayers` |
+| Rail ouvert ou replié (F1-F4) | `railFocus` | `redesignWiring/nav/useRailState` (`useRailFocused`), `useRedesignScreen` |
+| OK sur une entrée (N2.1) | `railSelect` (`railSelect`, `railDestinationOf`) | `useRailActions` |
+| Pile en onglets (N1.2) | `railStack` | `platform/tvos/back/railNavigate` (`goToRailPage`) |
+| Menu d'une entrée (O1, O2) | `railMenu` | `useRailArrange`, `NavMenuModal` |
+| Déplacer (O3, O4) | `arrange` | `useRailArrange` (rail) ; Réglages › Navigation : T7 |
+| Clés du rail | `railKeys` | partout |
+| Raccourcis et ponts (S1-S6) | `railShortcuts` | `platform/tvos/back/RailShortcuts`, `RailBridges` |
+| Croix Retour (K1-K5) | `backCross` | `platform/tvos/back/backFocus` |
+| Demandes (Q1-Q3) | `railRequests` | `redesignWiring/vigie/RequestsEntry`, `RequestsPanel` |
+| Colonne, défilement (C1-C6) | `railColumn`, `railScroll` (déjà là) | `redesign/nav/*` (vues) |
+| Suite de fiches (D1) | `detailChain` (déjà là) | `useOpenDetail` (T7) |
+
+Les vues du rail (`redesign/nav/`) ne décident aucun focus : `NavList` ne fait
+que montrer l'entrée de la page, du menu ou du déplacement
+(`railRevealOffset`), et garder 450 ms la mémoire d'une demande de défilement
+en vol — un état de la vue (inventaire : VUE).
+
 ## 17. Scénarios de référence
 
 `apps/tv/harness/nav-golden/scenarios/retour-rail/*.json`, au format figé du
@@ -507,15 +539,27 @@ de référence et repassent à l'identique après l'extraction.
 Hors banc : R1.2 et R1.4 (rang d'activation, appui avalé) et O3.6 (démontage
 en plein déplacement) se prouvent par vitest et par le banc de traces ; F5 et
 N1.3 (mouvements) par les captures ; R2.13 et R2.14 (erreur d'un écran : une
-erreur de rendu ne se provoque pas au pavé) par le banc de traces — même
-portée, même cadre (`RedesignScreen`) ; R2.15 (chargement) ne se laisse pas
-viser ; R2.17 : scénarios de T6.
+erreur de rendu ne se provoque pas au pavé) par construction — l'erreur d'une
+page du rail monte le même cadre (`RedesignScreen`, ses couches :
+`railScreenBackLayers`, testé), celle d'une page poussée recule par la portée
+(banc de traces) ; R2.15 (chargement) ne se laisse pas viser ; R2.17 :
+scénarios de T6.
 
 ## 18. À retirer au portage Android TV
 
 Ce que le chemin Apple TV n'utilise plus, ou n'utilise qu'à vide, gardé parce
 que le fichier sert aussi Android TV (règle du lot : un fichier partagé ne
 s'amincit qu'avec une preuve d'équivalence Android) :
+
+- **`navigation/railNavigate.ts`** — `railNavigate` recopie la règle de
+  tv-core `nav/railStack` et `RAIL_ROUTES` celle de `nav/railPages`. Le rail
+  refondu passe par `platform/tvos/back/railNavigate` (`goToRailPage`) et
+  `isRailPage` ; `railNavigate` sert encore l'ancien rail (`TVNavChrome`) et
+  « Retour à l'accueil » de la bibliothèque et des collections (T7). Au
+  portage : appliquer `railStack`, retirer la copie.
+- **`components/search/searchBarReturn.ts`** — appelé tel quel par
+  `useRailActions` (la décision « Rechercher → la barre » est dans
+  `railSelect`, l'application reste ce module partagé).
 
 - **`components/nav/TVNavChrome.tsx` et `hooks/useContentFocusCapture.ts`**
   (inventaire, annexe A) — DÉCISION : ils RESTENT, documentés comme inertes
