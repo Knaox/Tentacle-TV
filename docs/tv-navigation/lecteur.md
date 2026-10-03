@@ -590,7 +590,14 @@ rejoindront tv-core avec un banc qui monte ces crochets (nœuds factices).
   milliseconde, à chaque commit de l'extraction.
 - **Banc du simulateur** (`apps/tv/harness/nav-golden/scenarios/lecteur`,
   README) : neuf parcours dans l'app réelle (une vraie vidéo servie par le jeu
-  `flux-mp4`), enregistrés sur `84f3cedd0`, vérifiés sur la branche.
-- **Apple TV « Chambre »** : appuis et maintiens réels par l'agent, pans
-  injectés par CDP dans le JS de l'appareil. Le vrai glisser du doigt reste un
-  essai de l'utilisateur.
+  `flux-mp4`), enregistrés sur `84f3cedd0` (chacun joué deux fois à
+  l'identique), vérifiés sur la branche : 9/9 identiques (simulateur
+  Apple TV 4K, tvOS 26.2, 2026-10-03).
+- **Apple TV « Chambre »** (AppleTV14,1, tvOS 26.6) : appuis et maintiens
+  réels par l'agent, pans injectés par CDP dans le JS de l'appareil. Le code
+  de la branche y rejoue les neuf parcours à l'identique des références du
+  simulateur : 9/9 (2026-10-03), maintien réel (`holdright:2`) et pan compris.
+  Un premier passage n'avait rien prouvé : la sonde suivait l'app du
+  simulateur de la place, branchée sur le même Metro — le banc ne suit plus,
+  depuis, que l'app de test. Le vrai glisser du doigt reste un essai de
+  l'utilisateur.
