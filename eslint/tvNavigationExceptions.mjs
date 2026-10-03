@@ -19,10 +19,10 @@ export const TV_NAV_EXCEPTIONS = [
   // T1 — le socle : fait (756ed8bc7), l'entrée unique vit dans platform/tvos/input/.
   { file: "redesignWiring/redesignGate.ts", rules: ["no-platform-branch"], owner: null, why: "l'aiguillage de la refonte : le seul choix de plateforme du chemin refondu" },
 
-  // T3 — focus, sections, rangées : les applicateurs sont dans platform/tvos/focus/ (f56e83f30).
-  { file: "redesign/focus/FocusTarget.tsx", rules: ["no-native-press"], owner: "T3", why: "la porte des vues vers le focus natif : le seul Pressable de la refonte (OK, appui long, focus)" },
-  { file: "redesign/focus/FocusSection.tsx", rules: ["no-native-focus-calls"], owner: "T3", why: "la porte des vues vers la section native (TentacleFocusSection)" },
-  { file: "redesign/focus/nativeFocusSection.ts", rules: ["no-native-focus-calls", "no-platform-branch"], owner: "T3", why: "détection et requireNativeComponent de la section native" },
+  // T3 — fait (cbe686f9f). Restent, PERMANENTES, les portes des vues : une vue de redesign/ ne touche au focus natif que par elles.
+  { file: "redesign/focus/FocusTarget.tsx", rules: ["no-native-press"], owner: null, why: "la porte des vues vers le focus natif : le seul Pressable de la refonte (OK, appui long, focus, flou) ; ce qu'on y pose vient du port" },
+  { file: "redesign/focus/FocusSection.tsx", rules: ["no-native-focus-calls"], owner: null, why: "la porte des vues vers la section native (TentacleFocusSection) ; la règle de voisinage vient du port" },
+  { file: "redesign/focus/nativeFocusSection.ts", rules: ["no-native-focus-calls", "no-platform-branch"], owner: null, why: "détection de la section native, lue par FocusSection seul" },
 
   // T4 — Retour, rail, menus.
   { file: "components/focus/MenuPressInterceptor.ios.tsx", rules: ["no-native-focus-calls"], owner: "T4", why: "la vue native qui prend Menu (TVMenuPressInterceptor)" },
