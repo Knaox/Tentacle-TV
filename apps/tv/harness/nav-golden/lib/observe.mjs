@@ -54,7 +54,7 @@ const signature = (obs) => JSON.stringify([obs.focus, obs.label, obs.frame, obs.
  * Attend l'app stable et rend le relevé. `since` : numéro du journal avant le
  * geste ; `texts` : les textes d'`expect.text` à chercher à l'écran.
  */
-export async function settle(ctx, { since, minMs = 0, quietMs = 500, timeoutMs = 8000, texts = [], storage = [] }) {
+export async function settle(ctx, { since, minMs = 0, quietMs = 500, timeoutMs = 8000, texts = [], storage = [], nullQuietMs = NULL_FOCUS_QUIET_MS }) {
   const start = Date.now();
   const query = `globalThis.__navGolden ? globalThis.__navGolden.observe(${JSON.stringify({ texts, storage })}) : null`;
   let last = null;
@@ -77,7 +77,7 @@ export async function settle(ctx, { since, minMs = 0, quietMs = 500, timeoutMs =
     const now = Date.now();
     if (sig !== null && sig === lastSig) {
       // Aucun focus (écran qui charge encore) : on le confirme plus longtemps avant d'y croire.
-      const quiet = obs.focus === null ? Math.max(quietMs, NULL_FOCUS_QUIET_MS) : quietMs;
+      const quiet = obs.focus === null && obs.app !== "background" ? Math.max(quietMs, nullQuietMs) : quietMs;
       if (now - stableSince >= quiet && now - start >= minMs) return { ...obs, settleMs: now - start };
     } else {
       lastSig = sig;

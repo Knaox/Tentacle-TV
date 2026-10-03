@@ -102,7 +102,7 @@ export async function coldStart(ctx, session, start = {}) {
   const ready = await waitFor(async () => (await tryEvaluate(ctx, "globalThis.__navGolden.observe().route")) ?? null, { timeoutMs: 90_000, everyMs: 400 });
   if (!ready) throw new BenchError("la navigation de l'app n'est jamais prête");
   await sleep(300);
-  let entry = await settle(ctx, { since: 0, minMs: 1500, quietMs: 1500, timeoutMs: 60_000 });
+  let entry = await settle(ctx, { since: 0, minMs: 1500, quietMs: 1500, timeoutMs: 60_000, nullQuietMs: 10_000 });
   // Repassée derrière l'accueil de tvOS au démarrage (une autre session qui rouvre
   // Simulator.app) : on la ramène, deux fois au plus — ce n'est pas l'app qui a décidé.
   for (let i = 0; i < 2 && entry.app === "background"; i++) {

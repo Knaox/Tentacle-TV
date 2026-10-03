@@ -9,6 +9,9 @@ import { coldStart } from "./session.mjs";
 
 const BETWEEN_GESTURES_MS = 150;
 const DEFAULT_TIMEOUT_MS = 8000;
+// L'entrée d'un écran atteint par l'approche : un écran paresseux qui charge ses
+// données peut rester sans focus plus de 4 s sous charge — on attend jusqu'à 10 s.
+const ENTRY_NULL_QUIET_MS = 10_000;
 
 /** Les textes et clés de stockage qu'un pas demande de relever. */
 const textsOf = (step) => (step?.expect?.text === undefined ? [] : [].concat(step.expect.text));
@@ -47,7 +50,7 @@ export async function runScenario(ctx, session, suite, scenario) {
   const startObs = start.route || start.keys?.length
     // Une page poussée ou atteinte par l'approche charge encore ses données : son focus
     // d'entrée peut se poser tard — on le veut immobile 1,5 s avant d'y croire.
-    ? await settle(ctx, { since: seq0, minMs: 800 + approachExtra, quietMs: 1500, timeoutMs: 30_000 })
+    ? await settle(ctx, { since: seq0, minMs: 800 + approachExtra, quietMs: 1500, timeoutMs: 30_000, nullQuietMs: ENTRY_NULL_QUIET_MS })
     : await settle(ctx, { since: seq0, quietMs: 600, timeoutMs: 15_000 });
   if (start.focus && startObs.focus !== start.focus) preconditions.push({ field: "start.focus", want: start.focus, got: startObs.focus });
   if (start.screen && startObs.route !== start.screen) preconditions.push({ field: "start.screen", want: start.screen, got: startObs.route });
