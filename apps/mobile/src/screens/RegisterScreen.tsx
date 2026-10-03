@@ -6,6 +6,10 @@ import { useTranslation } from "react-i18next";
 import { AuthScreenFrame } from "../components/auth/AuthScreenFrame";
 import { AuthTextField } from "../components/auth/AuthTextField";
 import { AuthLink, AuthNotice, AuthPrimaryButton } from "../components/auth/AuthControls";
+import { problemFromError } from "@tentacle-tv/shared";
+
+/** Un refus que l'utilisateur peut corriger (invitation, nom pris) : il se dit tel quel. */
+class RegisterRefusal extends Error {}
 
 export function RegisterScreen() {
   const { t } = useTranslation("auth");
@@ -45,13 +49,19 @@ export function RegisterScreen() {
       });
 
       if (!res.ok) {
+        // Un refus (invitation, nom pris) se dit tel quel ; une panne, par sa cause.
+        if (res.status >= 500) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
         const data = await res.json().catch(() => null);
-        throw new Error(data?.message || t("registrationFailed"));
+        throw new RegisterRefusal(data?.message || t("registrationFailed"));
       }
 
       router.replace("/(auth)/login");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("registrationFailed"));
+      if (err instanceof RegisterRefusal) setError(err.message);
+      else {
+        const model = problemFromError(err, { target: "relayed", context: "signIn" });
+        setError([t(model.reasonKey), model.hintKey ? t(model.hintKey) : null].filter(Boolean).join(" "));
+      }
     } finally {
       setLoading(false);
     }

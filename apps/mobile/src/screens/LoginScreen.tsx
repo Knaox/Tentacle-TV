@@ -11,7 +11,11 @@ import { SubtleBackground } from "../components/auth/authStyles";
 import { AuthScreenFrame } from "../components/auth/AuthScreenFrame";
 import { AuthTextField } from "../components/auth/AuthTextField";
 import { AuthLink, AuthNotice, AuthPrimaryButton } from "../components/auth/AuthControls";
+import { problemFromError } from "@tentacle-tv/shared";
 import { FONT_FAMILY, useTheme } from "@/theme";
+
+/** Un refus que l'utilisateur peut corriger lui-même : il se dit tel quel. */
+class LoginRefusal extends Error {}
 
 export function LoginScreen() {
   const { t } = useTranslation("auth");
@@ -22,6 +26,8 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Arrivé ici parce que la session a expiré : le dire, plutôt qu'un formulaire muet.
+  const [expired] = useState(() => isSessionExpired());
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
   const router = useRouter();
@@ -97,8 +103,9 @@ export function LoginScreen() {
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.message || t("invalidCredentials"));
+        if (response.status === 401 || response.status === 400) throw new LoginRefusal(t("invalidCredentials"));
+        if (response.status === 429) throw new LoginRefusal(t("errors:loginRateLimited"));
+        throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
       }
 
       const data = await response.json();
@@ -113,7 +120,12 @@ export function LoginScreen() {
 
       router.replace("/(tabs)");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("loginFailed"));
+      if (err instanceof LoginRefusal) setError(err.message);
+      else {
+        // Jamais « Network request failed » : la cause, en mots de spectateur.
+        const model = problemFromError(err, { target: "relayed", context: "signIn" });
+        setError([t(model.reasonKey), model.hintKey ? t(model.hintKey) : null].filter(Boolean).join(" "));
+      }
     } finally {
       setLoading(false);
     }
@@ -189,6 +201,7 @@ export function LoginScreen() {
       </View>
 
       {error && <AuthNotice tone="error" style={{ marginTop: 8 }}>{error}</AuthNotice>}
+      {!error && expired && <AuthNotice tone="info" style={{ marginTop: 8 }}>{t("sessionExpired")}</AuthNotice>}
 
       <AuthPrimaryButton
         label={t("signIn")}

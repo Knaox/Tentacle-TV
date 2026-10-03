@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { verifyServer } from "@tentacle-tv/shared";
+import { describeProblem, verifyServer } from "@tentacle-tv/shared";
 import { AuthScreenFrame } from "../components/auth/AuthScreenFrame";
 import { AuthTextField } from "../components/auth/AuthTextField";
 import { AuthNotice, AuthPrimaryButton } from "../components/auth/AuthControls";
@@ -29,6 +29,11 @@ export function ServerSetupScreen({ onServerValidated }: ServerSetupScreenProps)
       const result = await verifyServer(url);
       if (result.success) {
         onServerValidated(result.url);
+      } else if (result.cause) {
+        // La cause en mots de spectateur (certificat refusé, HTTP bloqué, pas un
+        // serveur Tentacle…) et quoi faire — l'adresse se corrige juste au-dessus.
+        const model = describeProblem({ cause: result.cause, context: "connect" });
+        setError([t(model.reasonKey), model.hintKey ? t(model.hintKey) : null].filter(Boolean).join(" "));
       } else {
         const key = result.errorKey ?? "serverNotFoundRetry";
         setError(t(key, result.errorParams));
