@@ -212,6 +212,26 @@ toujours ni `TVEventHandler` ni `useTVEventHandler`, ni `BackHandler`, ni
 natif. Android TV (l'ancienne UI, aiguillée par `redesignGate.ts`) et webOS
 (`apps/tv-webos`) ne sont pas touchés par ce lot.
 
+## Porter une autre télécommande (Android TV, plus tard)
+
+Rien à recoder dans les comportements. Deux pièces, et c'est tout :
+
+1. **La table** `packages/tv-core/src/remote/bindings/androidtv.ts`, au format
+   `RemoteBindings` : chaque signal natif → son intention. Une plateforme qui
+   annonce l'enfoncement ET le relâchement choisit sa phase (`on: ["down"]`),
+   sans quoi l'appui compterait deux fois ; la répétition d'une touche tenue
+   passe par `RemoteSignal.repeat`. Ses `traits` disent ce qui diffère de tvOS
+   (`pressOnRelease: false`, `announcedHolds: false`, pas de surface tactile…),
+   et ses tests vérifient qu'aucun signal n'est oublié.
+2. **L'adaptateur** `apps/tv/src/platform/androidtv/input/` : un abonnement
+   aux événements natifs, une lecture en `RemoteSignal`, et
+   `createRemoteInput(ANDROIDTV_BINDINGS)` — le pendant de
+   `platform/tvos/input/remoteInput.ts` ; puis les applicateurs de chaque
+   domaine avec les outils natifs d'Android (`requestFocus`, `nextFocus*`).
+
+Les comportements, eux, lisent déjà des intentions et des `traits` : ils
+servent tels quels.
+
 ## Les documents par domaine
 
 | Document | Domaine | Tâche |
