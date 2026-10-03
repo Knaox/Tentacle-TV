@@ -7,7 +7,8 @@ comportement ; les bizarreries sont listées à la fin (§ 6), jamais corrigées
 
 Le contrat commun (intentions, traduction tvOS, adaptateur) est celui de
 `docs/TV-NAVIGATION.md` (T1). Ce document dit, pour les panneaux et les cartes,
-QUELLE décision vit OÙ aujourd'hui, et où elle va.
+QUELLE décision vivait OÙ (§ 1-3, le relevé au SHA de référence) et où elle
+vit désormais (§ 4).
 
 ## 1. Le périmètre
 
@@ -331,27 +332,115 @@ dans le compte des réglages (T7, `AccountPanel`) :
 - **`StatusPanel`** : chargement / erreur / vide ; `status:primary`,
   `status:secondary` ; l'entrée sur `status:primary` est décidée par l'écran.
 
-## 4. Ce qui part dans tv-core, ce qui reste à l'adaptateur
+## 4. Ce qui est dans tv-core, ce qui reste à l'adaptateur
 
-À caler sur le contrat de T1 (noms et forme des intentions). Proposition :
+### Le rangement
 
-| Règle (tv-core, pure, testée) | Remplace | L'adaptateur tvOS garde |
-|---|---|---|
-| `panels/sheetKeys` : clés (`sheet:close`, `sheet:scale:<n|remove>`, `sheet:action:<kind>`), `RATING_SCORES`, `RATING_ENTRY`, `scaleAimOf`, prédicat des clés gardées | `ratingScaleKeys.ts`, `GUARDED` | — |
-| `panels/sheetEntry` : `sheetEntryOf`, `firstPictoOf`, cible de chaque guide (`sheetGuideTarget`) | `sheetFocus.ts` | les `TVFocusGuideView` (`createEntryGuide`) |
-| `panels/choiceEntry` : machine du verrou d'entrée (verrouiller tout sauf l'entrée, libérer au premier focus ou à 800 ms, reverrouiller à une nouvelle entrée) | `useChoiceEntry` | `isTVSelectable` (`setFocusLocked`), l'abonnement au magasin |
-| `panels/pressGuard` : la garde anti-clic fantôme | la logique de `FocusTarget` | le `Pressable` |
-| `panels/sheetLifecycle` : ouverture, attente (filets 1 200 / 900 / 1 500 ms), présentation, fermeture, focus rendu à l'origine, écart entre deux `Modal` (320 ms) | `ActionSheetRedesign`, `AbsentSheetRedesign`, `SeasonsSheetRedesign` | la `Modal` (restauration native du focus) |
-| `panels/sheetActions` : l'ordre des pictos (modèle partagé + « Plus d'infos » avant « Ne plus me proposer » + « Toutes les plateformes ») et ce que chaque picto fait au panneau (reste / ferme) | `sheetRows.ts`, `useCardActions.onAction` | la navigation, les mutations |
-| `panels/ratingRuler` : visée, centre, retrait qui reste, grande valeur, ligne ; pas GAUCHE / DROITE attendus (butées) | `RatingPanel`, `RatingRuler` | la géométrie native, l'animation |
-| `panels/cardHold` : l'appui maintenu d'une carte → quel panneau (tableau § 3.1), « Noter » → quelle cible | l'aiguillage des écrans, `MediaDetailRedesign` | `onLongPress` du `Pressable` (550 ms) |
-| `titles/seasonsSheet` : entrée, clés, lecture de la clé focalisée (`sheetFocusOf`), Lecture/Pause simple seulement | `SeasonsSheetRedesign` | `useRemoteEvents`, la `FadingModal` |
-| `panels/confirmPress` : armer / exécuter / désarmer | `OfflineOverlay` (et `AccountPanel`, T7) | — |
-| `panels/overlayFocus` : voile hors ligne (entrée, piège, reprise après 50 ms, Menu jamais pris) | `OfflineRedesign`, `useKeepFocusWithin` | le guide piège, `claim` |
+- **`cards/`** (domaine existant, T6) — l'appui maintenu, le grand panneau,
+  son échelle et la garde anti-clic fantôme.
+- **`titles/`** (domaine existant) — la feuille des saisons de Vigie, à côté
+  de son raccourci (`seasonsShortcut`).
+- **`panels/`** (dossier NEUF) — ce qui ne relève d'aucun domaine seul : le
+  verrou d'entrée d'une `Modal` sert au grand panneau (`cards/`), à la
+  feuille des saisons (`titles/`) ET aux listes de choix et de filtres des
+  écrans (T7) ; le cycle et le Retour d'un panneau en `Modal` valent pour les
+  trois panneaux ; la confirmation à double appui sert au voile hors ligne et
+  aux réglages ; le focus des surimpressions (voile, erreur d'écran) n'est ni
+  une carte ni une navigation.
+- **`platform/tvos/panels/`** — les applicateurs : `useChoiceEntry`
+  (`isTVSelectable` avant le rendu, libération au premier focus ou au filet),
+  `useSheetFocus` (les `TVFocusGuideView` des trois groupes, la garde posée
+  sur les clés que désigne tv-core).
 
-Les vues de `redesign/` restent des vues : elles reçoivent ce qui est décidé.
-Android TV n'aura qu'à fournir sa traduction (l'appui long, Lecture/Pause) et
-son adaptateur (verrous, restauration du focus).
+### L'API (figée)
+
+Tout s'importe de `@tentacle-tv/tv-core`.
+
+**L'appui maintenu d'une carte** — `cards/cardHold.ts`, à appliquer par T3
+(accueil, héros, « Pour vous ») et T7 (fiche, recherche, grilles) :
+
+```ts
+type HoldPanel =
+  | { kind: "media"; variant: "poster" | "landscape" }
+  | { kind: "reco" }
+  | { kind: "absent" };
+
+type HomeRowKind = "resume" | "nextUp" | "watched" | "watchlist" | "favorites" | "library" | "reco";
+type DetailCardKind = "episode" | "sagaPresent" | "sagaAbsent" | "similar" | "collection";
+type SearchCardKind = "episode" | "title" | "librarySeries" | "absentTitle";
+
+type HoldSource =
+  | { surface: "homeRow"; row: HomeRowKind }
+  | { surface: "hero"; fromResume: boolean }
+  | { surface: "forYou" }
+  | { surface: "search"; card: SearchCardKind }
+  | { surface: "detail"; card: DetailCardKind; requestable?: boolean }
+  | { surface: "grid" };
+
+function holdPanelOf(source: HoldSource): HoldPanel | null;   // null : pas d'appui maintenu
+function rateTargetVariant(itemType: string): "poster" | "landscape"; // « Noter » de la fiche
+type SheetMode = "actions" | "rate";
+function sheetShowsActions(mode: SheetMode): boolean;
+function ratingClosesSheet(mode: SheetMode): boolean;
+```
+
+Branchement attendu dans un écran : `holdPanelOf(...)` choisit l'ouverture de
+`useTVCardActions` — `media` → `openPoster(item)` / `openLandscape(item)`,
+`reco` → `openReco(reco)`, `absent` → `requests.hold(title)`, `null` → pas
+d'`onLongPress` (donc pas d'indication « Maintenir OK »). `useTVCardActions`
+(partagé avec Android TV) ne change pas.
+
+**Le grand panneau** — `cards/sheetKeys.ts`, `cards/sheetEntry.ts`,
+`cards/sheetActions.ts`, `cards/ratingRuler.ts`, `cards/pressGuard.ts` :
+
+| Export | Ce qu'il décide |
+|---|---|
+| `RATING_SCORES`, `RATING_ENTRY`, `SHEET_CLOSE_KEY`, `SHEET_HEADER_GROUP`, `SHEET_SCALE_GROUP`, `SHEET_ACTIONS_GROUP`, `scaleFocusKey`, `SCALE_FOCUS_KEYS`, `sheetActionKey`, `isScaleKey`, `isActionKey`, `scaleAimOf` | les clés et les valeurs de l'échelle |
+| `isSheetGuardedKey(key)` | les cibles sous la garde anti-clic fantôme |
+| `sheetRatingOf(facts)` | la note du panneau : posée, en attente, ou rien à noter |
+| `sheetEntryOf`, `sheetEntryNow(rating, actions, waited)`, `firstPictoOf`, `SHEET_ENTRY_WAIT_MS` | l'entrée et son filet |
+| `absentSheetEntry(actions, known, waited)`, `ABSENT_SHEET_ENTRY_WAIT_MS` | l'entrée du panneau d'un titre absent |
+| `sheetLockKeys(actions)` | les cibles verrouillées jusqu'au premier focus |
+| `sheetHeaderTarget(entered)`, `sheetScaleTarget(rating)`, `sheetActionsTarget(actions)`, `SHEET_GUIDE_MEMORY` | la cible et la mémoire de chaque guide |
+| `sheetActionEntries(input)`, `SheetActionKind` | l'ordre des pictos et leurs libellés (clés i18n) |
+| `rulerAimAfter`, `rulerCenterIndex`, `RULER_REMOVE_INDEX`, `rulerRemovable`, `rulerReading`, `rulerStep` | la visée, le centre, le retrait, ce que dit le panneau, GAUCHE / DROITE |
+| `createPressGuard()` | la garde d'un élément (`pressIn`, `blur`, `press(guarded)`) |
+
+**Les panneaux en `Modal`** — `panels/` :
+
+| Export | Ce qu'il décide |
+|---|---|
+| `createChoiceEntry()`, `CHOICE_ENTRY_RELEASE_MS` | le verrou d'entrée (`enter`, `focused`, `timedOut`) |
+| `panelBackLayers(panel, closing)` (`BackLayerSpec<"close">[]`), `panelPresented(entry)`, `closesAtOnce(panel, presented)`, `MODAL_GAP_MS` | le cycle et le Retour d'un panneau |
+| `confirmPress(armed, action)`, `confirmBlur(armed, action)` | la confirmation à double appui (T7 l'applique dans `AccountPanel`) |
+| `OFFLINE_VEIL`, `OFFLINE_VEIL_KEYS`, `OFFLINE_VEIL_FOCUS`, `SCREEN_ERROR_FOCUS` | le focus du voile hors ligne et de l'erreur d'un écran |
+
+**La feuille des saisons** — `titles/seasonsSheet.ts` : `SEASONS_ALL_KEY`,
+`seasonFocusKey`, `SEASONS_APPLY_KEY`, `SEASONS_FOOTER_GROUP`,
+`SEASONS_SHEET_ENTRY_WAIT_MS`, `seasonsSheetKeys`, `seasonsSheetEntry`,
+`seasonsSheetReady`, `seasonsSheetFocusOf`, `isSeasonsFooterKey`,
+`toggleSeason`, `checkedSeasons`, `canSubmitSeasons`, et
+`seasonsSheetIntent(intent, …)` — la décision du contexte « panel » de
+l'entrée unique, qui PREND Lecture/Pause (l'appui simple seulement).
+
+### Ce que l'adaptateur tvOS garde
+
+- la `Modal` (Menu par `withMenuIntent`, puis la fermeture ; la restauration
+  native du focus à l'origine) ;
+- `useChoiceEntry`, `useSheetFocus` (`platform/tvos/panels/`) ;
+- `FocusTarget` : le `Pressable` (`delayLongPress` = `LONG_PRESS_THRESHOLD_MS`
+  de `input/longPress`, T1) et la machine de garde par `usePressGuard` ;
+- les minuteries des filets (les durées viennent de tv-core) ;
+- les effets des pictos (`useCardActions` : lire, basculer, la fiche, le
+  refus, le filtre) — des appels à l'api-client, pas des décisions de
+  navigation.
+
+### À retirer au portage Android TV
+
+Aucune copie temporaire : `useTVCardActions.tsx` et `cardSheetTarget.ts`
+(partagés avec Android TV) ne sont pas touchés ; `TVCardActionSheet` et
+`CardActionSheetTv` (webOS) gardent leur logique. Au portage, Android TV lira
+les mêmes règles (`cards/`, `panels/`) et n'écrira que son applicateur.
 
 ## 5. Les scénarios de référence
 
