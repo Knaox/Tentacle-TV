@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
-import { useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
+import { applyTranscodeTarget, useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
 import { directPlayUrl } from "../lib/directPlayUrl";
-import type { MediaSource } from "@tentacle-tv/shared";
+import { transcodeTarget, type MediaSource } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
   buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
@@ -211,11 +211,17 @@ export function usePlaybackInfo(nativePlayer = false) {
         // direct.
         const hlsWithoutCors = !nativePlayer && desktopKind() === "electron";
         const baseUrl = ds && !hlsWithoutCors ? ds.mediaBaseUrl : client.getBaseUrl();
+        // Un palier de qualité impose son débit, sa définition et son audio :
+        // Jellyfin n'écrit aucune définition dans l'URL et la recalculait seul
+        // (cf. `applyTranscodeTarget`). « Originale » garde l'URL telle quelle.
+        const transcodingPath = opts.maxStreamingBitrate != null
+          ? applyTranscodeTarget(ms.TranscodingUrl, transcodeTarget(opts.maxStreamingBitrate, opts.maxHeight))
+          : ms.TranscodingUrl;
         // TranscodingUrl from proxy contains the admin API key (from token swap).
         // Replace it with the user's own Jellyfin token for direct streaming.
         url = ds && !hlsWithoutCors
-          ? withDirectApiKey(`${baseUrl}${ms.TranscodingUrl}`, ds.jellyfinToken)
-          : `${baseUrl}${ms.TranscodingUrl}`;
+          ? withDirectApiKey(`${baseUrl}${transcodingPath}`, ds.jellyfinToken)
+          : `${baseUrl}${transcodingPath}`;
       } else {
         console.warn(DBG, "no TranscodingUrl and not direct play");
         setState((prev) => ({ ...prev, isLoading: false }));
