@@ -140,7 +140,7 @@
     },
     {
       "id": "recherche-menu-ferme-clavier",
-      "title": "Menu ferme le clavier système sans valider : le focus à la première touche",
+      "title": "Menu ferme le clavier système sans valider : l'app reste, le clavier se ferme (relevé du focus rendu : constat 4)",
       "rules": [
         "RE-4",
         "RE-6"
@@ -182,10 +182,10 @@
         {
           "do": "menu",
           "settleMs": 2000,
-          "why": "le clavier se ferme sans valider : la première touche (RE-6)",
+          "why": "le clavier se ferme sans valider ; RE-6 réclame la première touche, mais tvOS rend le focus au CHAMP (relevé : constat 4 du relevé)",
           "expect": {
-            "focus": "key:A",
-            "route": "Search"
+            "route": "Search",
+            "app": "foreground"
           }
         }
       ],

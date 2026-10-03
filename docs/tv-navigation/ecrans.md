@@ -639,13 +639,16 @@ chemin partagé reste tel quel tant qu'Android TV n'est pas porté.
    (phase B) ; la ligne du carnet (`docs/TV-REFONTE.md`, « Le Retour ») est
    l'écart B1 tenu par T4 (`retour-rail.md`).
 
-4. **Menu sur le clavier système de la recherche quitte l'application**, au
-   simulateur, à la référence, aux deux passages (`recherche-menu-ferme-clavier`,
-   `app: background`) — RE-6 dit : le clavier se ferme, le focus va à la
-   première touche. Le même Menu sur le clavier d'un champ du jumelage le
-   ferme bien. Gardé tel quel (scénario en relevé) ; passage sur l'appareil
-   pour départager le simulateur et l'app.
-
+4. **Menu sur le clavier système de la recherche rend le focus au CHAMP**
+   (`search:field`), pas à la première touche que RE-6 réclame — à la
+   référence, au simulateur, aux deux passages
+   (`recherche-menu-ferme-clavier`). Vraisemblablement : la réclamation de
+   `key:A` part à `onEndEditing`, pendant que le clavier se retire, et tvOS
+   rend ensuite le focus à ce qui l'avait présenté — le piège que la
+   validation contourne en attendant le départ du clavier, pas Menu. Un premier relevé disait « l'app passe en
+   arrière-plan » : c'était la recherche plantée par le faux backend de base
+   (aucun champ `match` hors de la requête capturée — constat de T6), pas
+   l'app. Gardé tel quel ; à confirmer sur l'appareil.
 5. **Le Retour du clavier SÉCURISÉ (mot de passe du jumelage) ne valide
    pas**, au simulateur, à la référence : « \n » tapé par l'agent XCUITest
    n'envoie rien et ne ferme pas le clavier, quand il valide les champs
