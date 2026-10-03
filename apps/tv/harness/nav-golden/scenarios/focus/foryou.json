@@ -6,9 +6,9 @@
     {
       "id": "foryou-entry-shelves",
       "title": "« Pour vous » : entrée sur la tête, héros fixe sans bord, étagères au plus proche",
-      "why": "A6 : une tête → hero:primary ; H6 : ni rotation ni bord ; R : les étagères comme les rangées de l'accueil ; W2 : la pastille du filtre (posé par le jeu focus/foryou) sur la 1re étagère",
+      "why": "A6 : une tête → hero:primary ; H6 : ni rotation ni bord ; R : les étagères comme les rangées de l'accueil ; W2 : la pastille du filtre (posé par le jeu focus/foryou) sur la 1re étagère. Ouverte par le rail, comme l'utilisateur (une navigation programmée par-dessus l'accueil arrive parfois sans focus).",
       "rules": ["A1", "A3", "A6", "H6", "R1", "R2", "R6", "W1", "W2", "V2", "V4"],
-      "start": { "fixtures": ["focus/foryou"], "route": { "name": "Recommendations" }, "focus": "hero:primary" },
+      "start": { "fixtures": ["focus/foryou"], "keys": ["left", "wait:0.8", "down", "wait:0.6", "select", "wait:2"], "focus": "hero:primary" },
       "steps": [
         { "do": ["right", "wait:0.4", "right"], "settleMs": 500, "expect": { "focus": "hero:list" } },
         { "do": ["wait:0.6", "right"], "settleMs": 1200, "expect": { "focus": "hero:list" }, "why": "H6 : rien au-delà du bord (le titre ne change pas : relevé)" },
