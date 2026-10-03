@@ -1,5 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { View, Text, StyleSheet } from "react-native";
 import { Sparkles, Star } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
@@ -9,6 +8,7 @@ import { HeroEyebrow } from "@/components/hero/HeroEyebrow";
 import { makeHeroCtaStyles } from "@/components/hero/heroCtaStyles";
 import { firstReasonText } from "@/components/reco/RecoReasonList";
 import { typography, FONT_FAMILY, useResponsive, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { HeroPlayButton } from "../../hero/HeroPlayButton";
 
 interface Props {
   item: RecoRowItem;
@@ -70,15 +70,14 @@ export function RecoHeroContent({ item, active, canOpen, onOpen }: Props) {
       <CascadeGroup order={2} active={active}>
         {canOpen && (
           <View style={cta.btns}>
-            <Pressable
-              style={({ pressed }) => [cta.playBtn, isTablet && cta.playBtnTablet, pressed && cta.pressed]}
-              onPress={() => onOpen(item)}
-              accessibilityRole="button"
+            <HeroPlayButton
+              icon={onDemand ? "compass" : "info"}
+              iconSize={18}
+              label={ctaLabel}
               accessibilityLabel={`${ctaLabel} ${item.title}`}
-            >
-              <Feather name={onDemand ? "compass" : "info"} size={18} color={theme.colors.cta.primaryFg} />
-              <Text style={cta.playTxt}>{ctaLabel}</Text>
-            </Pressable>
+              isTablet={isTablet}
+              onPress={() => onOpen(item)}
+            />
           </View>
         )}
       </CascadeGroup>

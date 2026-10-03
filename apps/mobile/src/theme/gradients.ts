@@ -58,3 +58,18 @@ export function seasonTabGradient(brand: BrandSlice): GradientSpec {
     end: { x: 1, y: 1 },
   };
 }
+
+/**
+ * `--cta-brand-gradient` : le bouton de LECTURE (héros, fiche, feuille des
+ * cartes) — le dégradé de marque de l'Apple TV, un cran plus profond
+ * (`dark` → `accentDark`), ~120°. Le vif (`violet` → `accent`) tombe à 3,5:1
+ * sous un libellé blanc de 16 pt ; celui-ci tient 4,6:1 d'un bout à l'autre,
+ * dans les deux schémas (test `gradients.test.ts`).
+ */
+export function ctaGradient(brand: BrandSlice): GradientSpec {
+  return {
+    colors: [brand.dark, brand.accentDark],
+    start: { x: 0, y: 0.2 },
+    end: { x: 1, y: 0.8 },
+  };
+}

@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
 import { useTranslation } from "react-i18next";
 import { splitMinutes } from "@tentacle-tv/shared";
-import { FONT_FAMILY, RADIUS, useTheme } from "@/theme";
+import { ctaGradient, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
 import type { DetailPlayCta as Cta } from "./computeBadges";
 
 const RING_R = 14;
@@ -28,6 +28,7 @@ export const DetailPlayCta = memo(function DetailPlayCta({ cta, title, onPress }
   const theme = useTheme();
   if (!cta.targetId) return null;
   const fg = theme.colors.cta.brandFg;
+  const gradient = ctaGradient(theme.colors.brand);
   const remaining = cta.remainingMinutes != null ? remainingLabel(cta.remainingMinutes, t) : null;
 
   return (
@@ -35,17 +36,18 @@ export const DetailPlayCta = memo(function DetailPlayCta({ cta, title, onPress }
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${cta.label} ${title}${remaining ? `, ${remaining}` : ""}`}
-      style={({ pressed }) => [
-        st.wrap,
-        { shadowColor: theme.colors.brand.violet, opacity: pressed ? 0.86 : 1 },
-      ]}
+      style={[st.wrap, { shadowColor: theme.colors.brand.violet }]}
     >
+      {({ pressed }) => (
+      // Le dégradé de marque profond (`ctaGradient`, libellé ≥ 4,5:1) ; à
+      // l'appui, un voile noir plutôt qu'une opacité qui laisserait voir dessous.
       <LinearGradient
-        colors={[theme.colors.brand.violet, theme.colors.brand.accent]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
+        colors={gradient.colors}
+        start={gradient.start}
+        end={gradient.end}
         style={[st.pill, { borderColor: "rgba(255, 255, 255, 0.2)" }]}
       >
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "#000", opacity: pressed ? 0.18 : 0 }]} />
         <View style={st.icon}>
           {cta.progress !== null && (
             <Svg width={32} height={32} viewBox="0 0 32 32" style={StyleSheet.absoluteFill}>
@@ -66,6 +68,7 @@ export const DetailPlayCta = memo(function DetailPlayCta({ cta, title, onPress }
           {remaining && <Text style={[st.sub, { color: fg }]} numberOfLines={1}>{remaining}</Text>}
         </View>
       </LinearGradient>
+      )}
     </Pressable>
   );
 });
@@ -90,6 +93,7 @@ const st = StyleSheet.create({
   pill: {
     height: 56,
     borderRadius: RADIUS.pill,
+    overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     alignItems: "center",
@@ -100,5 +104,5 @@ const st = StyleSheet.create({
   icon: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
   texts: { flexShrink: 1 },
   label: { fontSize: 16, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.2 },
-  sub: { fontSize: 12, fontFamily: FONT_FAMILY.medium, opacity: 0.85, marginTop: 1 },
+  sub: { fontSize: 12, fontFamily: FONT_FAMILY.medium, marginTop: 1 },
 });

@@ -44,7 +44,7 @@ export {
 } from "./themeMode";
 export { PLAYER } from "./playerColors";
 export { darken, hexToRgb, withAlpha, type Rgb } from "./colorUtils";
-export { ctlGradient, progressGradient, seasonTabGradient, type GradientSpec } from "./gradients";
+export { ctaGradient, ctlGradient, progressGradient, seasonTabGradient, type GradientSpec } from "./gradients";
 export {
   LIQUID_GLASS_STORAGE_KEY,
   getLiquidGlassModule,

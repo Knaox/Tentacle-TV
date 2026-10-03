@@ -2,7 +2,7 @@ import { memo } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import { FONT_FAMILY, spacing, useTheme } from "@/theme";
+import { ctaGradient, FONT_FAMILY, spacing, useTheme } from "@/theme";
 
 interface Props {
   /** « Lire » ou « Reprendre » — le libellé du modèle (`overlay.play.labelKey`). */
@@ -25,20 +25,19 @@ interface Props {
 export const SheetPlayButton = memo(function SheetPlayButton({ label, episodeCode, title, pending, onPress }: Props) {
   const theme = useTheme();
   const fg = theme.colors.cta.brandFg;
+  const gradient = ctaGradient(theme.colors.brand);
   const spoken = episodeCode ? `${label} ${episodeCode}` : label;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${spoken} — ${title}`}
-      style={({ pressed }) => [st.wrap, { shadowColor: theme.colors.brand.violet, opacity: pressed ? 0.86 : 1 }]}
+      style={[st.wrap, { shadowColor: theme.colors.brand.violet }]}
     >
-      <LinearGradient
-        colors={[theme.colors.brand.violet, theme.colors.brand.accent]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={st.pill}
-      >
+      {({ pressed }) => (
+      // Le dégradé du bouton de lecture de la fiche (`ctaGradient`, AA).
+      <LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={st.pill}>
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "#000", opacity: pressed ? 0.18 : 0 }]} />
         <View style={st.icon}>
           {pending ? (
             <ActivityIndicator size="small" color={fg} />
@@ -51,6 +50,7 @@ export const SheetPlayButton = memo(function SheetPlayButton({ label, episodeCod
         <Text style={[st.label, { color: fg }]} numberOfLines={1}>{label}</Text>
         {episodeCode && <Text style={[st.code, { color: fg }]} numberOfLines={1}>{episodeCode}</Text>}
       </LinearGradient>
+      )}
     </Pressable>
   );
 });
@@ -68,6 +68,7 @@ const st = StyleSheet.create({
   pill: {
     height: 52,
     borderRadius: 26,
+    overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -78,5 +79,5 @@ const st = StyleSheet.create({
   },
   icon: { width: 20, height: 20, alignItems: "center", justifyContent: "center" },
   label: { fontSize: 16, fontFamily: FONT_FAMILY.bold, letterSpacing: -0.1 },
-  code: { fontSize: 14, fontFamily: FONT_FAMILY.medium, opacity: 0.85, fontVariant: ["tabular-nums"] },
+  code: { fontSize: 14, fontFamily: FONT_FAMILY.medium, fontVariant: ["tabular-nums"] },
 });

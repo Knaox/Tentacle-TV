@@ -13,6 +13,7 @@ import { CascadeGroup } from "./hero/CascadeGroup";
 import { makeHeroCtaStyles } from "./hero/heroCtaStyles";
 import { heroLogoUrl } from "./hero/heroImages";
 import { makeHeroTextStyles } from "./hero/heroTextStyles";
+import { HeroPlayButton } from "./hero/HeroPlayButton";
 
 function formatRuntime(ticks: number): string {
   const mins = Math.round(ticks / 600_000_000);
@@ -121,15 +122,14 @@ export function HeroContent({ item, active = true, onPlay, onInfo }: HeroContent
 
       <CascadeGroup order={2} active={active}>
       <View style={cta.btns}>
-        <Pressable
-          style={({ pressed }) => [cta.playBtn, isTablet && cta.playBtnTablet, pressed && cta.pressed]}
-          onPress={() => onPlay(item)}
-          accessibilityRole="button"
+        <HeroPlayButton
+          icon="play"
+          filled
+          label={hasProgress ? t("resume") : t("play")}
           accessibilityLabel={`${hasProgress ? t("resume") : t("play")} ${item.Name}`}
-        >
-          <Feather name="play" size={20} color={theme.colors.cta.primaryFg} fill={theme.colors.cta.primaryFg} />
-          <Text style={cta.playTxt}>{hasProgress ? t("resume") : t("play")}</Text>
-        </Pressable>
+          isTablet={isTablet}
+          onPress={() => onPlay(item)}
+        />
         <Pressable
           style={({ pressed }) => [cta.infoBtn, isTablet && cta.infoBtnTablet, pressed && cta.pressed]}
           onPress={() => onInfo(item)}

@@ -14,6 +14,7 @@ import { useLocalArtworkUri, useLocalSnapshotJson } from "@/hooks/offline/useLoc
 import type { OfflineEntry } from "@/offline/engineApi";
 import { variantLabel } from "@/offline/manage/OfflineEntryRow";
 import { useResponsive, useTheme, useThemedStyles } from "@/theme";
+import { HeroPlayButton } from "@/components/hero/HeroPlayButton";
 
 interface Props {
   entry: OfflineEntry;
@@ -130,15 +131,14 @@ export function OfflineHeroContent({ entry, active, onPlay, onInfo }: Props) {
 
       <CascadeGroup order={2} active={active}>
         <View style={cta.btns}>
-          <Pressable
-            style={({ pressed }) => [cta.playBtn, isTablet && cta.playBtnTablet, pressed && cta.pressed]}
-            onPress={() => onPlay(entry)}
-            accessibilityRole="button"
+          <HeroPlayButton
+            icon="play"
+            filled
+            label={hasProgress ? t("common:resume") : t("common:play")}
             accessibilityLabel={`${hasProgress ? t("common:resume") : t("common:play")} ${displayName}`}
-          >
-            <Feather name="play" size={20} color={theme.colors.cta.primaryFg} fill={theme.colors.cta.primaryFg} />
-            <Text style={cta.playTxt}>{hasProgress ? t("common:resume") : t("common:play")}</Text>
-          </Pressable>
+            isTablet={isTablet}
+            onPress={() => onPlay(entry)}
+          />
           <Pressable
             style={({ pressed }) => [cta.infoBtn, isTablet && cta.infoBtnTablet, pressed && cta.pressed]}
             onPress={() => onInfo(entry)}
