@@ -13,6 +13,7 @@
  *   node eslint/tvNavigationAudit.mjs            # le bilan
  *   node eslint/tvNavigationAudit.mjs --json     # le relevé complet, ligne à ligne
  */
+import { globSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
@@ -22,6 +23,8 @@ import { TV_NAV_ALLOWED, TV_NAV_RULES, TV_NAV_SCOPE, tvNavigationPlugin } from "
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = "apps/tv/src/";
+/** Une constante numérique EN CAPITALES, ou une minuterie à délai littéral. */
+const ADAPTER_TIMING = /\bconst\s+[A-Z][A-Z0-9_]*\s*=\s*-?\d|\b(setTimeout|setInterval)\([^;]*,\s*\d+\s*\)/;
 
 const eslint = new ESLint({
   cwd: ROOT,
@@ -70,4 +73,15 @@ if (unknown.length) console.log(`\nFamilles inconnues :\n  ${unknown.join("\n  "
 if (stale.length) console.log(`\nExceptions PÉRIMÉES (plus rien à couvrir — retirer la ligne) :\n  ${stale.join("\n  ")}`);
 if (fresh.length) console.log(`\nUsages NOUVEAUX (hors exceptions) :\n  ${fresh.map((h) => `${h.file}:${h.line} · ${h.rule}`).join("\n  ")}`);
 if (!stale.length && !fresh.length && !unknown.length) console.log("\nListe à jour : chaque exception couvre encore un usage, aucun usage n'en sort.");
+
+// L'adaptateur APPLIQUE : il n'a pas le droit de contenir un seuil ni une
+// durée (docs/TV-NAVIGATION.md). Signalé à part, sans faire échouer l'audit :
+// un délai imposé par UIKit (un contournement natif) peut s'y justifier.
+const adapterFiles = globSync(`${SRC}platform/**/*.{ts,tsx}`, { cwd: ROOT }).filter((f) => !/\.test\.tsx?$/.test(f)).sort();
+const timings = adapterFiles.flatMap((file) =>
+  readFileSync(path.join(ROOT, file), "utf8").split("\n").flatMap((line, i) =>
+    /^\s*(\/\/|\*)/.test(line) || !ADAPTER_TIMING.test(line) ? [] : [`${file.replace(SRC, "")}:${i + 1} — ${line.trim().slice(0, 90)}`],
+  ),
+);
+if (timings.length) console.log(`\nSeuils et durées DANS l'adaptateur (à justifier, ou à prendre dans tv-core) :\n  ${timings.join("\n  ")}`);
 process.exit(stale.length || fresh.length || unknown.length ? 1 : 0);
