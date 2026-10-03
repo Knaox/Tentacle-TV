@@ -6,7 +6,7 @@ la garde : [`garde.md`](garde.md).
 Pour CHAQUE usage d'une API native de télécommande ou de focus sur le chemin
 Apple TV refondu : où il est (fichier:ligne), qui le traite (T1 à T7) et ce
 qu'il devient. Relevé sur 84f3cedd0 (avant toute extraction), recalé sur
-`713478a92`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
+`8ab4c73f2`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
 qu'une tâche vient de toucher sont celles de main au moment du recalage.
 
 ## Comment il est fait
@@ -828,11 +828,13 @@ ne couvrent pas :
 - `redesignWiring/settings/SettingsRedesign.tsx` (`useBackLayer`) → T7 ; les couches : T4.
 - `redesignWiring/remote/parallax.ts` → rendu, il reste (remote.md) : exception permanente de la garde.
 
-## Annexe I — écarts avec `remote.md` (relevé des points d'entrée de T1)
+## Annexe I — accord avec `remote.md` (relevé des points d'entrée de T1)
 
-- `hooks/useFocusRecovery.ts` y figure comme point d'entrée tvOS (T5) : il sort dès la première ligne quand la plateforme n'est pas Android — INERTE sur tvOS.
-- `hooks/useContentFocusCapture.ts` y est « hors lot » : son abonnement natif est pourtant VIVANT sur tvOS, à vide, toute la session (annexe A).
-- `components/search/useSearchSubmit.ts` (`useTVRemote({ onAnyPress })`) manque au tableau : un point d'entrée de la recherche refondue (T7).
+Le tableau des points d'entrée de `remote.md` et cet inventaire disent la
+même chose : `useSearchSubmit` y est (depuis 54b02445d), `useContentFocusCapture`
+y est dit monté sur Apple TV avec un abonnement permanent et inerte (depuis
+c7aca069b), `useFocusRecovery` y est dit inerte sur tvOS (8ab4c73f2). Les deux
+tableaux se recalent l'un sur l'autre à chaque fusion.
 
 ## Annexe J — seuils et durées encore dans l'adaptateur
 
