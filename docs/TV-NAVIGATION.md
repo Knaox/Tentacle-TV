@@ -175,10 +175,19 @@ Il a le droit de contenir :
   `MenuPressInterceptor` et des `Modal`, rendus en signal `menu`), la prise du
   pan (`TVEventControl.enableTVPanGesture`), et les crochets React qui
   observent les intentions ou inscrivent un contexte ;
-- **les applicateurs** de chaque domaine (`focus/`, `back/`, `player/`,
-  `panels/`… — T3 à T6) : le code qui traduit une décision en outil natif —
-  `TVFocusGuideView`, `nextFocus*`, `hasTVPreferredFocus` et réclamations,
-  `isTVSelectable`, `MenuPressInterceptor.enabled`, sections natives.
+- **les applicateurs** de chaque domaine : le code qui traduit une décision en
+  outil natif — `TVFocusGuideView`, `nextFocus*`, `hasTVPreferredFocus` et
+  réclamations, `isTVSelectable`, `MenuPressInterceptor.enabled`, sections
+  natives. Un dossier par domaine :
+
+  | Dossier | Tâche |
+  |---|---|
+  | `platform/tvos/input/` | T1 — l'entrée unique (ci-dessus) |
+  | `platform/tvos/focus/` | T3 — focus et rangées |
+  | `platform/tvos/back/` | T4 — Retour et rail |
+  | `platform/tvos/player/` | T5 — lecteur |
+  | `platform/tvos/panels/` | T6 — panneaux et cartes |
+  | `platform/tvos/screens/` | T7 — un fichier par écran |
 
 Il n'a PAS le droit de contenir : un seuil, une durée, un « si le focus est sur
 telle clé, alors aller là », ni rien dont Android TV aurait aussi besoin. Ce qui
@@ -196,10 +205,10 @@ natif. Android TV (l'ancienne UI, aiguillée par `redesignGate.ts`) et webOS
 | Document | Domaine | Tâche |
 |---|---|---|
 | [`tv-navigation/remote.md`](tv-navigation/remote.md) | la télécommande : intentions, table tvOS, entrée unique, relevé des points d'entrée | T1 |
-| `tv-navigation/banc.md` | le banc de référence (scénarios dorés `apps/tv/harness/nav-golden`) | T2 |
-| `tv-navigation/focus.md` | focus et rangées | T3 |
-| `tv-navigation/nav.md` | Retour et rail | T4 |
-| `tv-navigation/player.md` | lecteur | T5 |
-| `tv-navigation/cards.md` | panneaux et cartes | T6 |
-| `tv-navigation/screens.md` | écrans | T7 |
-| `tv-navigation/garde.md` | la garde (lint) et l'audit | T8 |
+| [`tv-navigation/banc.md`](tv-navigation/banc.md) | le banc de référence (scénarios dorés `apps/tv/harness/nav-golden`) | T2 |
+| [`tv-navigation/focus.md`](tv-navigation/focus.md) | focus et rangées | T3 |
+| [`tv-navigation/retour-rail.md`](tv-navigation/retour-rail.md) | Retour et rail | T4 |
+| [`tv-navigation/lecteur.md`](tv-navigation/lecteur.md) | lecteur | T5 |
+| [`tv-navigation/panneaux-cartes.md`](tv-navigation/panneaux-cartes.md) | panneaux et cartes | T6 |
+| [`tv-navigation/ecrans.md`](tv-navigation/ecrans.md) | écrans | T7 |
+| [`tv-navigation/inventaire.md`](tv-navigation/inventaire.md) | l'inventaire, la garde (lint) et l'audit | T8 |
