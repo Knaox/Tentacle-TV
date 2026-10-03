@@ -373,7 +373,13 @@ Source : `TentacleRevealScroller.m`, `TentacleRevealMotion.m`,
 3. **C1 contrarie un geste rapide** : un déplacement de l'utilisateur dans
    les 900 ms qui suivent est repris une fois.
 4. **A3 compte depuis le premier rendu** de l'écran, pas depuis le dernier
-   changement d'entrée.
+   changement d'entrée. Conséquence mesurée par T4 sur la référence, sous
+   charge : l'accueil n'a pas d'entrée tant qu'il charge, et tvOS donne le
+   focus au rail. Si ce focus arrive plus de 600 ms après le premier rendu,
+   la règle le prend pour un geste de l'utilisateur et clôt l'arrivée : le
+   héros ne reprend pas le focus quand le contenu arrive. Le banc focus ne
+   l'a pas vu en trois passages (charge ordinaire) ; ses scénarios d'accueil
+   s'en gardent quand même (« Scénarios de référence »).
 5. **« Pour vous » poussée par-dessus l'accueil arrive parfois sans focus**
    (banc de référence, deux passages différents) : ouverte par une
    navigation programmée (`navigate`, pile `[Home, Recommendations]`), elle
@@ -511,6 +517,12 @@ Dans `apps/tv/harness/nav-golden/scenarios/focus/*.json` (format figé par T2),
 enregistrés sur `84f3cedd0`. Chacun liste les comportements qu'il couvre ;
 ce qu'un pavé ne sait pas montrer (glisser, pan) se lit au natif ou se joue
 sur l'Apple TV « Chambre ».
+
+Sous charge, l'accueil perd parfois son entrée au démarrage, référence
+comprise (constat 4) : les scénarios d'accueil qui ne testent pas l'entrée
+partent d'un aller-retour au rail (`wait:1`, GAUCHE, DROITE), qui ramène à
+`hero:primary` que le focus soit parti du héros ou du rail. `home-entry` garde
+la course, puisque c'est elle qu'il relève.
 
 | Fichier · scénario | Couvre |
 |---|---|
