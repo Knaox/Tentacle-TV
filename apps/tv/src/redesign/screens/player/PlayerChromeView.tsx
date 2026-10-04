@@ -5,6 +5,7 @@ import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { Presented } from "../../motion/Presented";
+import { useMountedWhileVisible } from "../../motion/useMountedWhileVisible";
 import { useExit, useMotion } from "../../motion/useMotion";
 import { SWAP_FLOOR } from "../../motion/useSwap";
 import { scrim } from "../../theme/tokens";
@@ -115,6 +116,9 @@ export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport
   /** Son panneau, activé, tient le focus : l'habillage recule devant lui. */
   troubleCovers?: boolean;
   onTroubleAction?: (key: TroubleActionKey) => void;
+  /** L'habillage effacé se DÉMONTE (Android TV : une vue transparente y reste
+   *  focalisable, et coûte) ; sinon il reste monté, transparent (tvOS). */
+  unmountHiddenChrome?: boolean;
 }
 
 const SAFE = TV_STAGE.safe;
@@ -156,6 +160,7 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
   // le chercherait ailleurs avant que l'intégration ne le rende (`SWAP_FLOOR`).
   const exitStyle = useAnimatedStyle(() => ({ opacity: Math.max(SWAP_FLOOR, exit.progress.value) }));
   const dimStyle = useAnimatedStyle(() => ({ opacity: dim.value }));
+  const chromeMounted = useMountedWhileVisible(chrome, shown, !!props.unmountHiddenChrome);
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {props.reloadFrame ? (
@@ -165,35 +170,37 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
       ) : null}
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.pauseDim, dimStyle]} />
       {props.subtitle && playing && !scrub && !endScreen ? <SubtitleLayer cue={props.subtitle} raised={chrome} /> : null}
-      <Animated.View style={[StyleSheet.absoluteFill, chromeStyle]} pointerEvents={chrome ? "box-none" : "none"}>
-        <FocusGroup focusKey="player:osd" style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <SoftGradient width={STAGE_SIZE.width} height={BOTTOM_SCRIM} colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
-          <Animated.View style={[StyleSheet.absoluteFill, topStyle]} pointerEvents="box-none">
-            <OsdTopBar media={media} onBack={props.onBack} />
-          </Animated.View>
-          <Animated.View style={[StyleSheet.absoluteFill, bottomStyle]} pointerEvents="box-none">
-            <FocusGroup focusKey="player:timeline" style={styles.timeline} pointerEvents="none">
-              <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} segments={timeline.segments} />
-            </FocusGroup>
-            <View style={styles.controls} pointerEvents="box-none">
-              <OsdControls
-                transport={props.transport}
-                paused={paused}
-                labels={labels}
-                onPlayPause={props.onPlayPause}
-                onSeekBack={props.onSeekBack}
-                onSeekForward={props.onSeekForward}
-                onScrub={props.onScrub}
-                onPrevious={props.onPrevious}
-                onNext={props.onNext}
-                onOpenEpisodes={props.onOpenEpisodes}
-                onOpenTracks={props.onOpenTracks}
-                onOpenSettings={props.onOpenSettings}
-              />
-            </View>
-          </Animated.View>
-        </FocusGroup>
-      </Animated.View>
+      {chromeMounted ? (
+        <Animated.View style={[StyleSheet.absoluteFill, chromeStyle]} pointerEvents={chrome ? "box-none" : "none"}>
+          <FocusGroup focusKey="player:osd" style={StyleSheet.absoluteFill} pointerEvents="box-none">
+            <SoftGradient width={STAGE_SIZE.width} height={BOTTOM_SCRIM} colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
+            <Animated.View style={[StyleSheet.absoluteFill, topStyle]} pointerEvents="box-none">
+              <OsdTopBar media={media} onBack={props.onBack} />
+            </Animated.View>
+            <Animated.View style={[StyleSheet.absoluteFill, bottomStyle]} pointerEvents="box-none">
+              <FocusGroup focusKey="player:timeline" style={styles.timeline} pointerEvents="none">
+                <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} segments={timeline.segments} />
+              </FocusGroup>
+              <View style={styles.controls} pointerEvents="box-none">
+                <OsdControls
+                  transport={props.transport}
+                  paused={paused}
+                  labels={labels}
+                  onPlayPause={props.onPlayPause}
+                  onSeekBack={props.onSeekBack}
+                  onSeekForward={props.onSeekForward}
+                  onScrub={props.onScrub}
+                  onPrevious={props.onPrevious}
+                  onNext={props.onNext}
+                  onOpenEpisodes={props.onOpenEpisodes}
+                  onOpenTracks={props.onOpenTracks}
+                  onOpenSettings={props.onOpenSettings}
+                />
+              </View>
+            </Animated.View>
+          </FocusGroup>
+        </Animated.View>
+      ) : null}
       {(props.buffering || props.reloadFrame) && !troublePanel ? <BufferingBadge hint={props.bufferingHint} /> : null}
       <PlaybackTrouble model={trouble} onAction={props.onTroubleAction} />
       <Presented value={props.seekFlash && !scrub ? props.seekFlash : null} motion="reveal">
