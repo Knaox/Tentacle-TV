@@ -383,7 +383,11 @@ coche et Lecture/Pause demande (tv-core `seasonsShortcut`), dit au pied de
 la feuille.
 Toute fonction de Vigie sur la TV passe par `useVigieGate` : serveur ou Vigie
 trop anciens, Vigie éteint, compte bloqué dans Vigie (le compte de
-démonstration de la revue Apple) → aucune trace.
+démonstration de la revue Apple), profil INVITÉ de la Famille sans le droit
+« Peut demander des films » (`guestRights.requestTitles`, réglé par le
+propriétaire, proposé seulement si `features.family.guestRequests`) → aucune
+trace. Un invité qui a le droit demande à SON PROPRE NOM (`profileMayRequest`,
+tv-core) ; un membre garde son propre Vigie.
 
 ## Recommandations — le goût, et le retrait jamais sous le curseur
 
