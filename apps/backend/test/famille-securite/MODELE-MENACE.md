@@ -363,3 +363,114 @@ les tests d'attaque et le parcours serveur ci-dessus.
   producteurs de listes (`usersCache` de Watch Together, `adminUsers`,
   `leaderboard`, `reco/fanout`) — un seul endroit à filtrer, sinon l'invité
   réapparaît quelque part.
+
+---
+
+## 9. Delta v2 — Famille partagée (essai de Damien, 2026-10-04)
+
+L'essai de Damien change le modèle. Ce qui suit **remplace** les points v1
+correspondants ; le reste (PIN serveur, invités cachés/sans droit/mdp jeté,
+jeton de jumelage échangé, session de profil qui regarde sans administrer,
+proxy à écriture bornée, parité HTTP/HTTPS, démo, journaux/push/socket sans
+secret) **reste valable**.
+
+### Les sept décisions
+
+1. **Famille PARTAGÉE** : la TV de N'IMPORTE QUEL membre montre TOUTE la famille
+   (propriétaire, membres, invités) — plus seulement la TV du propriétaire.
+2. **UNE seule famille par personne** (qu'on la possède OU en soit membre),
+   unicité imposée en base.
+3. **Seul le propriétaire** invite, annule, retire, dissout.
+4. **Un membre crée des invités SI le propriétaire lui en donne le droit**
+   (droit par membre, COUPÉ par défaut ; 3 invités au total dans la famille) ;
+   il ne supprime QUE SES invités.
+5. **Candidats = TOUS les comptes du serveur**, comptes cachés COMPRIS, avec
+   recherche ; jamais un invité ni un compte désactivé ; les comptes déjà dans
+   une famille sont marqués non invitables.
+6. **« Gérer les profils » sur la TV d'un membre** = SES seuls droits, derrière
+   SON PIN (pas ceux ni le PIN du propriétaire).
+7. **Révocations étendues** : un membre qui part perd les AUTRES profils sur SES
+   TV, et les autres membres perdent LE SIEN sur leurs TV.
+
+### Ce qui est INVERSÉ ou RETIRÉ de v1
+
+- **SEC-F-22 (comptes cachés non énumérables) est ABANDONNÉ** : l'énumération
+  devient VOULUE (décision 5). Le test `familleCandidatsFuites` sur le secret
+  des cachés doit être réécrit en SEC-F-42 (énumération bornée).
+- **SEC-F-33 (membre de plusieurs familles) est INVERSÉ** : une seule famille
+  par personne → SEC-F-36.
+- **SEC-F-07 reste** (gestes du propriétaire gardés) mais le contexte change :
+  qui VOIT la famille (tous les membres, sur leurs TV) ≠ qui la GÈRE (le
+  propriétaire, et un membre pour ses seuls invités s'il en a le droit).
+- **SEC-F-18 (PIN du propriétaire pour « Gérer »)** devient par-membre → SEC-F-44.
+
+### Nouveaux acteurs / cas d'abus (v2)
+
+- **CA-v2-1** — un membre **se donne** le droit de créer des invités (modifie
+  son propre droit). → SEC-F-38.
+- **CA-v2-2** — un membre **supprime l'invité d'un autre** (ou du propriétaire).
+  → SEC-F-39.
+- **CA-v2-3** — **élévation membre → propriétaire** (transfert/octroi de la
+  propriété, édition du champ owner). → SEC-F-41.
+- **CA-v2-4** — **double appartenance par course** : accepter deux invitations
+  en même temps, ou créer une famille tout en acceptant. → SEC-F-36.
+- **CA-v2-5** — une **TV de membre garde des profils après son départ**. →
+  SEC-F-43.
+- **CA-v2-6** — l'**énumération des comptes est désormais voulue** : ce qui
+  RESTE à protéger — jamais un invité ni un désactivé, rien de plus que le nom
+  et l'avatar (pas de politique Jellyfin, pas d'e-mail), authentification
+  requise, et le marquage « déjà en famille » sans révéler DANS QUELLE famille.
+  → SEC-F-42.
+
+### Exigences testables v2 (`SEC-F-xx`)
+
+- **SEC-F-35** — Famille PARTAGÉE : la TV jumelée par un MEMBRE liste toute la
+  famille (propriétaire + membres + invités), pas seulement le membre. Mais un
+  membre ne reçoit que SES droits de gestion (cf. SEC-F-37/38/44).
+- **SEC-F-36** — UNE famille par personne : contrainte d'unicité SERVEUR.
+  Accepter une invitation quand on possède déjà / est déjà membre d'une famille
+  → refus (`family.already_member` ou équivalent). Créer une famille alors qu'on
+  est membre → refus. **Sûr sous course** : deux acceptations simultanées (ou
+  accept + createGuest/fonder) → une seule réussit, jamais deux appartenances.
+- **SEC-F-37** — Seul le PROPRIÉTAIRE invite / annule / retire / dissout. Un
+  membre → 403 `family.not_owner` ; un non-membre → 404. (SEC-F-07 étendu v2.)
+- **SEC-F-38** — Droit de création d'invités PAR MEMBRE : **coupé par défaut** ;
+  SEUL le propriétaire l'accorde ou le retire. Un membre qui modifie SON PROPRE
+  droit (ou celui d'un autre) → 403. Un membre SANS le droit qui crée un invité
+  → 403. Le droit accordé puis retiré referme l'accès (re-test après retrait).
+- **SEC-F-39** — Un membre avec le droit crée un invité mais ne supprime QUE
+  CEUX QU'IL A CRÉÉS (`createdBy`) : supprimer l'invité d'un autre membre ou du
+  propriétaire → 403/404. Le propriétaire supprime N'IMPORTE QUEL invité.
+- **SEC-F-40** — Plafond de **3 invités au total par famille**, imposé serveur,
+  quel que soit le créateur, **sûr sous course** (créations concurrentes).
+- **SEC-F-41** — **Aucune élévation membre → propriétaire** : aucune route ne
+  transfère ni n'octroie la propriété ; le propriétaire d'une famille est
+  immuable ; un membre ne peut pas, par aucun corps/paramètre, devenir
+  propriétaire ni s'attribuer des droits de propriétaire.
+- **SEC-F-42** — Candidats v2 (énumération VOULUE mais BORNÉE) : la recherche de
+  candidats rend TOUS les comptes du serveur (cachés compris) filtrés par la
+  requête ; JAMAIS un invité, JAMAIS un compte désactivé ; chaque candidat ne
+  porte QUE `userId`, nom, avatar (jamais la politique Jellyfin, l'e-mail, ni la
+  famille exacte d'un compte déjà pris) ; un compte déjà en famille est marqué
+  non invitable ; route AUTHENTIFIÉE (jamais anonyme) et inviter un compte
+  non-candidat (invité, désactivé, déjà en famille, soi-même) → refus serveur.
+- **SEC-F-43** — Révocations ÉTENDUES, effet immédiat (REST + socket, jetons
+  Jellyfin révoqués) : quand un membre part (départ volontaire OU retrait par le
+  propriétaire), (a) sur SES TV, TOUS les profils de la famille — pas seulement
+  le sien — sont coupés ; (b) sur les TV des AUTRES, le profil du partant
+  disparaît. Son compte Jellyfin reste intact ; ses invités suivent la règle de
+  la dissolution/retrait décidée par T2 (à confirmer dans le contrat).
+- **SEC-F-44** — « Gérer les profils » sur la TV d'un MEMBRE ouvre SES SEULS
+  droits (créer un invité s'il a le droit, supprimer SES invités), derrière SON
+  PIN — jamais les gestes réservés au propriétaire, jamais sous le PIN du
+  propriétaire.
+
+### Ce qui reste de v1 (toujours exigé)
+
+SEC-F-01/02/03/05/06 (autorité, IDOR, expiration, ids non devinables),
+SEC-F-08/09 (jeton de profil pour la famille de la TV seulement),
+SEC-F-10..15/20 (révocation immédiate — ÉLARGIE par SEC-F-43), SEC-F-16/17/30
+(PIN serveur, verrou, jamais rendu), SEC-F-19 (jeton de jumelage au périmètre
+minimal), SEC-F-21/29/31 (invité invisible des listes, mdp jeté, sans droit),
+SEC-F-25/26/27 (push/socket/journaux sans secret), SEC-F-28 (démo),
+SEC-F-32 (parité HTTP/HTTPS), SEC-F-34 (proxy à écriture bornée).
