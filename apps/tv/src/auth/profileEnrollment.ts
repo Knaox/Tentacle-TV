@@ -7,7 +7,7 @@ import {
   planProfileLaunch,
   tvSessionMode,
 } from "@tentacle-tv/tv-core";
-import { IS_TVOS } from "../storage/RNStorageAdapter";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import { loadProfiles, openProfile, refusalOfError } from "./profileOpening";
 import { showProfiles } from "./profileSession";
 import { notifySessionChanged } from "./sessionEvents";
@@ -17,7 +17,8 @@ import { unpairDevice, type UnpairContext } from "./unpair";
  * L'ÉCHANGE — une Apple TV jumelée avant les profils passe aux profils, une
  * fois, quand son serveur annonce la Famille (`/api/config` ›
  * `features.family`). Serveur sans Famille : rien ne change, l'app est celle
- * d'avant. Android TV ne passe jamais aux profils. Séquence : docs/FAMILLE.md,
+ * d'avant. Les profils sont ceux de la refonte : l'ancienne UI d'Android TV n'y
+ * passe jamais. Séquence : docs/FAMILLE.md,
  * « L'échange ».
  *
  * L'ancien jeton ne vaut plus rien dès que le serveur a répondu : il quitte le
@@ -28,8 +29,12 @@ import { unpairDevice, type UnpairContext } from "./unpair";
  * croire un « révoqué » (`sessionFlow.ts`).
  */
 
-/** Seule l'Apple TV passe aux profils. */
-export const PROFILES_ENABLED = IS_TVOS;
+/**
+ * Les profils vivent dans la refonte (« Qui regarde ? », le pavé du PIN,
+ * « Gérer les profils ») : l'Apple TV, et Android TV dès que la refonte y est
+ * active — le serveur ne distingue pas les plateformes (`/api/family/tv/*`).
+ */
+export const PROFILES_ENABLED = REDESIGN_ACTIVE;
 
 const CONFIG_TIMEOUT_MS = 4_000;
 

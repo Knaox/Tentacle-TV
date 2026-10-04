@@ -64,7 +64,9 @@ montrent.
 
 ## L'Apple TV : jumelage, profils, sessions
 
-Seule l'Apple TV passe aux profils ; Android TV et webOS gardent leur jumelage.
+Les profils sont ceux de la refonte TV : l'Apple TV, et Android TV quand la refonte
+y est active (`PROFILES_ENABLED`, `auth/profileEnrollment.ts`) ; l'ancienne UI
+d'Android TV et webOS gardent leur jumelage.
 
 ### 1. Une TV d'avant les profils
 

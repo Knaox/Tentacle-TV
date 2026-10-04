@@ -5,11 +5,11 @@ import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { PROFILES_ENABLED, enrollIfAnnounced, openOnLaunch } from "../auth/profileEnrollment";
 
 /**
- * Le passage aux PROFILS d'une Apple TV jumelée avant la Famille : au
+ * Le passage aux PROFILS d'une TV (refonte) jumelée avant la Famille : au
  * démarrage et à chaque retour au premier plan, si le serveur l'annonce
  * désormais, l'échange (`profileEnrollment.ts`), puis le profil qui s'ouvre
  * seul — le propriétaire seul et sans PIN ne voit rien changer ; sinon « Qui
- * regarde ? ». Serveur sans Famille, Android TV : rien.
+ * regarde ? ». Serveur sans Famille, ancienne UI d'Android TV : rien.
  */
 export function TVProfilesBridge() {
   const { storage } = useTentacleConfig();
