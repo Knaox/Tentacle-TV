@@ -112,6 +112,8 @@ describe("« Gérer les profils » dans la famille partagée (v2)", () => {
     const rights: FamilyRights = { manageMembers: false, createGuests: true, manageGuests: "own" };
     const rows = manageRows(shared("member", rights), { userId: "marc", name: "Marc", color: "teal" });
     expect(rows.map((row) => [row.id, row.action])).toEqual([["anne", null], ["marc", null], ["zoe", "delete"], ["lea", null]]);
+    // Zoé, sur la TV de Marc qui l'a créée : « ajouté par vous ».
+    expect(rows[2]).toMatchObject({ createdByName: "Marc", createdByYou: true });
     expect(rows.every((row) => row.memberRights === null)).toBe(true);
     expect(manageCapacity(shared("member", rights))).toMatchObject({ canCreateGuest: true, canInvite: false, inviteBlock: null });
   });

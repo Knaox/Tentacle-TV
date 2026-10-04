@@ -78,6 +78,8 @@ export interface ManageRowModel {
   expiresAt: string | null;
   /** Un invité créé par un MEMBRE : « ajouté par … » (v2) ; null pour ceux du propriétaire (rien à en dire). */
   createdByName: string | null;
+  /** …créé par la session elle-même : « ajouté par vous ». */
+  createdByYou: boolean;
   /** Un membre, vu par le propriétaire : ses droits, réglables (« Peut créer des invités ») ; null sinon. */
   memberRights: FamilyMemberRights | null;
   /** Un invité, vu par le propriétaire, sur un serveur qui annonce le droit :
@@ -120,7 +122,7 @@ export function manageRows(
   if (!family) {
     return [{
       id: actor.userId, kind: "owner", name: actor.name, userId: actor.userId, color: actor.color, imageTag: null,
-      hasPin: overview.account.hasPin, action: null, expiresAt: null, createdByName: null, memberRights: null, guestRights: null,
+      hasPin: overview.account.hasPin, action: null, expiresAt: null, createdByName: null, createdByYou: false, memberRights: null, guestRights: null,
     }];
   }
   const { rights } = family;
@@ -137,6 +139,7 @@ export function manageRows(
     action: actionOf(profile, rights, actor.userId),
     expiresAt: null,
     createdByName: addedByOf(profile, family.ownerId),
+    createdByYou: addedByOf(profile, family.ownerId) !== null && sameUserId(profile.createdBy ?? "", actor.userId),
     memberRights: profile.kind === "member" && rights.manageMembers ? (profile.rights ?? { createGuests: false }) : null,
     guestRights: profile.kind === "guest" && guestRightsOpen ? (profile.guestRights ?? { requestTitles: false }) : null,
   }));
@@ -152,6 +155,7 @@ export function manageRows(
     action: "cancel",
     expiresAt: invitation.expiresAt,
     createdByName: null,
+    createdByYou: false,
     memberRights: null,
     guestRights: null,
   }));

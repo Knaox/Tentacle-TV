@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { findProfile, manageEntryProfile, pickerEntryIndex, profilesBackAction, profilesEntryKey } from "@tentacle-tv/tv-core";
+import { findProfile, manageEntryProfile, pairedAccountOf, pickerEntryIndex, profilesBackAction, profilesEntryKey } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { useProfilesFocus, useProfilesGroups } from "../../platform/tvos/screens/profiles";
@@ -85,8 +85,9 @@ export function ProfilesRedesign({ navigation, route }: Props) {
 
   const store = useFocusStore();
   useProfilesGroups(store);
-  // Le profil qui avait ouvert le pavé, sinon celui qu'on vient de quitter.
-  const tileIndex = listing ? pickerEntryIndex(listing, flow.lastPicked ?? lastLeftProfileId()) : 0;
+  // Le profil qui avait ouvert le pavé, sinon celui qu'on vient de quitter, sinon le compte de la TV
+  // (v2 : sur la TV d'un membre, le propriétaire est en tête, mais c'est le membre qui regarde d'ordinaire).
+  const tileIndex = listing ? pickerEntryIndex(listing, flow.lastPicked ?? lastLeftProfileId() ?? pairedAccountOf(listing).userId) : 0;
   const entryKey = profilesEntryKey({ phase: phase.kind, tileIndex, pinLocked: entry.phase === "locked" });
   useProfilesFocus(store, { entryKey, arrival: phase.kind });
 

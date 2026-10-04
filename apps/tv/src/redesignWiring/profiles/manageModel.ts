@@ -34,7 +34,9 @@ function rowView(row: ManageRowModel, serverUrl: string | null, language: string
   const detail =
     row.kind === "invitation"
       ? t("familyTv:manage.pending", { date: row.expiresAt ? formatDay(row.expiresAt, language) : "—" })
-      : row.kind === "guest" && row.createdByName
+      : row.kind === "guest" && row.createdByYou
+        ? t("familyTv:manage.addedByYou")
+        : row.kind === "guest" && row.createdByName
         ? t("familyTv:manage.addedBy", { name: row.createdByName })
         : t(row.kind === "owner" ? "family:kindOwner" : row.kind === "member" ? "family:kindMember" : "family:kindGuest");
   // La case de la ligne : « Peut créer des invités » (un membre), « Peut demander des films » (un invité).
