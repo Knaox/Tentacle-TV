@@ -9,6 +9,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../../../..");
 const WT = process.env.TRACE_WT ?? REPO;
 const android = process.env.TRACE_PLATFORM === "android";
+// Android TV refondu : les fichiers `.android` (l'entrée unique d'Android,
+// `platform/input/index.android.ts`) et l'aiguillage de la refonte allumé.
+const androidtv = process.env.TRACE_PLATFORM === "androidtv";
+if (androidtv) process.env.TENTACLE_TV_REDESIGN = "1";
 const ext = [".ts", ".tsx", ".mjs", ".js", ".json"];
 process.env.TRACE_GOLDEN ??= path.join(REPO, "apps/tv/harness/nav-golden/scenarios/lecteur/traces");
 
@@ -26,12 +30,12 @@ export default defineConfig({
       { find: /^react\/(.*)$/, replacement: `${WT}/node_modules/react/$1` },
       { find: /^react-dom\/client$/, replacement: `${WT}/node_modules/react-dom/client.js` },
     ],
-    extensions: android ? ext : [".ios.ts", ".ios.tsx", ...ext],
+    extensions: android ? ext : androidtv ? [".android.ts", ".android.tsx", ...ext] : [".ios.ts", ".ios.tsx", ...ext],
   },
   define: { __DEV__: "false" },
   server: { fs: { allow: [HERE, WT, REPO] } },
   test: {
-    include: ["trace.test.ts"],
+    include: ["trace.test.ts", "androidtv.test.ts"],
     setupFiles: ["./setup.ts"],
     environment: "node",
     testTimeout: 120_000,

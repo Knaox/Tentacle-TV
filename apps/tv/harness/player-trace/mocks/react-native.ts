@@ -9,7 +9,9 @@ import { useEffect } from "react";
 type Listener = (evt: unknown) => void;
 
 export const __rig = {
-  platform: (process.env.TRACE_PLATFORM === "android" ? "android" : "ios") as "ios" | "android",
+  platform: (process.env.TRACE_PLATFORM?.startsWith("android") ? "android" : "ios") as "ios" | "android",
+  /** Android TV refondu (`TRACE_PLATFORM=androidtv`) : l'entrée unique d'Android, la refonte aiguillée. */
+  androidtv: process.env.TRACE_PLATFORM === "androidtv",
   listeners: new Set<Listener>(),
   panHolders: 0,
   backHandlers: [] as Array<() => boolean>,
@@ -28,6 +30,7 @@ export const __rig = {
 
 export const Platform = {
   get OS() { return __rig.platform; },
+  isTV: true,
   select<T>(options: Record<string, T>): T | undefined { return options[__rig.platform] ?? options.default; },
 };
 

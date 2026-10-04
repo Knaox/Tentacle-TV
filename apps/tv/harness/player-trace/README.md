@@ -24,6 +24,22 @@ node node_modules/vitest/vitest.mjs run --config apps/tv/harness/player-trace/vi
 TRACE_PLATFORM=android node node_modules/vitest/vitest.mjs run --config apps/tv/harness/player-trace/vitest.config.mjs
 ```
 
+Android TV refondu (lot « Android TV = Apple TV ») : les scénarios de
+l'Apple TV sans pavé, rejoués avec les événements tels qu'Android TV les émet
+(enfoncement puis relâchement, `longX` tiré de la répétition) sur l'entrée
+unique d'Android et l'aiguillage de la refonte allumé, comparés aux traces
+de RÉFÉRENCE de l'Apple TV — effets et états, sans les entrées brutes
+(`androidtv.ts`) ; plus les touches d'Avance et de Retour rapides, que la
+Siri Remote n'a pas, par assertions (`androidtv.test.ts`) :
+
+```bash
+TRACE_PLATFORM=androidtv node node_modules/vitest/vitest.mjs run --config apps/tv/harness/player-trace/vitest.config.mjs
+```
+
+Ce mode ne s'enregistre jamais : sa référence est celle de l'Apple TV. Le
+Retour y reste la pile de couches simulée (`menu`) ; son arrivée par
+`BackHandler` est éprouvée par le banc de la portée du Retour.
+
 Ajouter un scénario : l'écrire dans `scenarios.ts`, puis l'ENREGISTRER sur la
 référence — jamais sur le code en cours d'extraction :
 

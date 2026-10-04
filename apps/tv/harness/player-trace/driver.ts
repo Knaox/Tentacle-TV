@@ -110,6 +110,17 @@ async function play(step: Step): Promise<void> {
     const twin = step.twin ?? "after";
     trace.log("in:button", step.button);
     const press = () => (rigApi.actions?.[step.button] as (() => void) | undefined)?.();
+    if (__rig.androidtv) {
+      // Android : l'activité donne la touche au JS (enfoncement, puis
+      // relâchement) AVANT de la donner à la vue, dont le clic part au
+      // relâchement — le jumeau précède toujours l'appui du bouton.
+      if (twin !== "none") {
+        await flush(() => __rig.dispatch({ eventType: "select", eventKeyAction: 0 }));
+        await flush(() => __rig.dispatch({ eventType: "select", eventKeyAction: 1 }));
+      }
+      await flush(() => (rigApi.actions?.[step.button] as (() => void) | undefined)?.());
+      return;
+    }
     const select = () => __rig.dispatch({ eventType: "select", eventKeyAction: __rig.platform === "android" ? 0 : 1 });
     if (twin === "before") await flush(select);
     await flush(press);

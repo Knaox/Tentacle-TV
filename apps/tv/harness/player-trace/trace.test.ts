@@ -2,15 +2,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { ANDROIDTV, effectsOf } from "./androidtv";
 import { run } from "./driver";
 import { ANDROID, IOS } from "./scenarios";
 
-const platform = process.env.TRACE_PLATFORM === "android" ? "android" : "ios";
+const mode = process.env.TRACE_PLATFORM === "android" ? "android" : process.env.TRACE_PLATFORM === "androidtv" ? "androidtv" : "ios";
+// Android TV refondu se compare aux traces de l'Apple TV, jamais enregistré à part.
+const platform = mode === "android" ? "android" : "ios";
 const GOLDEN = path.join(process.env.TRACE_GOLDEN ?? path.join(__dirname, "golden"), platform);
-const record = process.env.TRACE_MODE === "record";
-const list = platform === "android" ? ANDROID : IOS;
+const record = process.env.TRACE_MODE === "record" && mode !== "androidtv";
+const list = mode === "android" ? ANDROID : mode === "androidtv" ? ANDROIDTV : IOS;
 
-describe(`traces du lecteur (${platform})`, () => {
+describe(`traces du lecteur (${mode})`, () => {
   for (const scenario of list) {
     it(`${scenario.id} — ${scenario.title}`, async () => {
       const entries = await run(scenario);
@@ -22,7 +25,8 @@ describe(`traces du lecteur (${platform})`, () => {
         return;
       }
       const golden = JSON.parse(fs.readFileSync(file, "utf8"));
-      expect(entries).toEqual(golden.trace);
+      if (mode === "androidtv") expect(effectsOf(entries)).toEqual(effectsOf(golden.trace));
+      else expect(entries).toEqual(golden.trace);
     });
   }
 });
