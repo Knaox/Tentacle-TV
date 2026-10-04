@@ -30,7 +30,6 @@ export const TV_NAV_EXCEPTIONS = [
   // Hors navigation.
   { file: "components/player/AVPlayerSurface.tsx", rules: ["no-focus-props"], owner: null, why: "rendu : surface de rendu, jamais focalisable ; inerte sur tvOS, gardé tel quel (arbitrage du lot)" },
   { file: "redesign/glass/nativeGlass.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : détection du verre natif de tvOS 26" },
-  { file: "redesign/cards/nativeDesaturate.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : détection de la vue native de désaturation" },
   { file: "redesignWiring/remote/parallax.ts", rules: ["no-focus-props", "no-platform-branch"], owner: null, why: "rendu : l'inclinaison au pouce par forme (tvParallaxProperties), coupée au mouvement réduit — docs/tv-navigation/remote.md" },
   { file: "redesignWiring/vigie/useVigieGate.ts", rules: ["no-platform-branch"], owner: null, why: "libellé : la plateforme déclarée à Vigie (appletv / androidtv)" },
   { file: "redesignWiring/settings/useSettingsModel.ts", rules: ["no-platform-branch"], owner: null, why: "réglages d'appareil d'Android TV, gardés pour le jour où la refonte y tournera" },

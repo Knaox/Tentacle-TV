@@ -15,6 +15,7 @@ import com.tentacletv.exoplayer.ExoPackage
 import com.tentacletv.focus.TentacleFocusPackage
 import com.tentacletv.mpv.MpvPackage
 import com.tentacletv.probe.PlayerProbePackage
+import com.tentacletv.render.RenderPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -30,7 +31,7 @@ class MainApplication : Application(), ReactApplication {
   override val reactNativeHost: ReactNativeHost =
       object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
-            PackageList(this).packages + listOf(VoiceRecognitionPackage(), MpvPackage(), ExoPackage(), TentacleFocusPackage(), PlayerProbePackage())
+            PackageList(this).packages + listOf(VoiceRecognitionPackage(), MpvPackage(), ExoPackage(), TentacleFocusPackage(), PlayerProbePackage(), RenderPackage())
 
         override fun getJSMainModuleName(): String = "index"
 

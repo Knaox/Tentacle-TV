@@ -518,7 +518,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | `hooks/useTVTextTracks.ts` ⇄ | 47 | `Platform.OS` | HORS | format VTT ou natif |
 | `lib/hdrCapabilities.ios.ts` | 1, 31 | `NativeModules.HDRCapabilities` | HORS | capacités de décodage HDR |
 | `lib/platformLabel.ts` | 8 | Platform.OS | HORS | libellé « Apple TV » / « Android TV » |
-| `redesign/cards/nativeDesaturate.ts` | 1, 17, 18, 21 | `requireNativeComponent`, `UIManager`, `Platform.OS`/`isTV` | HORS | vue native de RENDU (gris GPU d'un titre absent) ; ni focus ni télécommande |
+| `redesign/cards/nativeDesaturate.ts` | 1, 21, 26 | `requireNativeComponent`, `UIManager` | HORS | vue native de RENDU (gris GPU d'un titre absent, Apple TV et Android TV) ; ni focus ni télécommande |
 | `redesign/glass/nativeGlass.ts` | 1, 25, 26, 35 | requireNativeComponent, UIManager, Platform | HORS | le verre natif (rendu) |
 | `redesign/motion/Reveal.tsx` | 32 | setTimeout | HORS | apparition différée (rendu) |
 | `redesign/motion/useRowRecede.ts` | 31, 54 | setTimeout | HORS | recul des voisines au focus (rendu) |
