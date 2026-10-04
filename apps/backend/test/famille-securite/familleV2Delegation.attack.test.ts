@@ -1,15 +1,26 @@
 /**
- * Tests d'attaque T8 — Famille v2, la DÉLÉGATION « agit pour » (droit d'invité
- * « peut demander », `requestTitles`). Un invité autorisé se présente aux
- * routes d'EXTENSION sous l'identité du propriétaire, et à elles seules.
+ * Tests d'attaque T8 — Famille v2, le droit d'invité « peut demander »
+ * (`requestTitles`). Un invité autorisé atteint les routes d'EXTENSION
+ * (`/api/plugins`), et à elles seules, À SON PROPRE NOM — jamais sous
+ * l'identité du propriétaire, jamais administrateur. Le droit se relit à chaque
+ * requête : le retirer coupe aussitôt.
  *
- * Le point dur (consigne T2) : un invité délégué ne doit JAMAIS atteindre une
- * route hors /api/plugins avec l'identité du propriétaire, ni une route d'admin
- * d'extension. Le droit se relit à chaque requête : le retirer coupe aussitôt.
+ * ISOLATION : `TENTACLE_DATA_DIR` pointe vers un dossier temporaire (posé avant
+ * tout import, comme `pluginRequests.test.ts`), pour que la capacité
+ * `guestRequests` ne dépende PAS du vrai dossier `data/plugins` (Vigie installé
+ * ou non) — le test doit passer partout.
  */
 
+import { mkdirSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+const dataRoot = vi.hoisted(() => {
+  const dir = `${process.env.TMPDIR ?? "/tmp"}/tentacle-t8-deleg-${process.pid}-${Date.now()}`;
+  process.env.TENTACLE_DATA_DIR = dir;
+  return dir;
+});
 
 const h = vi.hoisted(() => ({
   state: null as null | import("../familyMocks").HarnessState,
@@ -133,12 +144,32 @@ describe("délégation : cantonnée, révocable, réservée au propriétaire", (
 });
 
 describe("SEC-F-45 : le droit « peut demander » n'est proposé qu'avec une extension de demandes", () => {
+  afterAll(() => rmSync(dataRoot, { recursive: true, force: true }));
+
   it("sans extension active déclarant titles.request, la capacité guestRequests est fausse", () => {
+    // Dossier de données CONTRÔLÉ (temporaire), sans aucune extension installée :
+    // la capacité ne dépend pas de l'environnement (Vigie installé ou non).
+    const pluginsDir = join(dataRoot, "plugins");
+    rmSync(pluginsDir, { recursive: true, force: true });
+    mkdirSync(pluginsDir, { recursive: true });
+    writeFileSync(join(pluginsDir, "installed.json"), "[]");
     forgetRequestExtension();
-    // Le harnais n'a aucune extension installée : la capacité est fausse, donc
-    // le client ne PROPOSE pas le droit (même si la Famille et les invités sont allumés).
     const cap = familyCapability();
     expect(cap.guests).toBe(true);
-    expect(cap.guestRequests).toBe(false);
+    expect(cap.guestRequests).toBe(false); // aucune extension → le droit n'est pas proposé
+  });
+
+  it("avec une extension active et configurée qui déclare titles.request, la capacité devient vraie", () => {
+    // Prouve que le test CONTRÔLE le dossier (il ne lit pas le vrai data) : les
+    // deux sens sont couverts, indépendamment de l'environnement.
+    const pluginsDir = join(dataRoot, "plugins");
+    rmSync(pluginsDir, { recursive: true, force: true });
+    mkdirSync(join(pluginsDir, "demandes-banc"), { recursive: true });
+    writeFileSync(join(pluginsDir, "installed.json"), JSON.stringify([
+      { id: "id-demandes", pluginId: "demandes-banc", sourceId: "banc", name: "demandes-banc", version: "1.0.0", enabled: true, config: { enabled: true }, installedAt: "2026-10-04T00:00:00Z" },
+    ]));
+    writeFileSync(join(pluginsDir, "demandes-banc", "plugin.json"), JSON.stringify({ titles: { state: "/titles/state", request: "/titles/request" } }));
+    forgetRequestExtension();
+    expect(familyCapability().guestRequests).toBe(true);
   });
 });
