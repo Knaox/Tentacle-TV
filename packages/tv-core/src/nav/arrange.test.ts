@@ -111,6 +111,6 @@ describe("railKeys — les clés du rail", () => {
   });
 
   it("verrouillés pendant un déplacement", () => {
-    expect([...RAIL_LOCKED_WHILE_MOVING]).toEqual(["Search", "Home", "RailShowAll", "Settings"]);
+    expect([...RAIL_LOCKED_WHILE_MOVING]).toEqual(["Search", "Home", "RailShowAll", "SwitchProfile", "Settings"]);
   });
 });

@@ -1,11 +1,12 @@
-import { RAIL_HOME_KEY, RAIL_SEARCH_KEY, RAIL_SHOW_ALL_KEY, libraryIdOf, navKeyOf } from "./railKeys";
+import { RAIL_HOME_KEY, RAIL_SEARCH_KEY, RAIL_SHOW_ALL_KEY, RAIL_SWITCH_PROFILE_KEY, libraryIdOf, navKeyOf } from "./railKeys";
 
 /**
  * OK sur une entrée du RAIL — module pur. Dans cet ordre :
  *
  * 1. une entrée se déplace : OK la POSE, rien d'autre ;
  * 2. « Tout afficher » : tout réapparaît, et le focus va à l'entrée de la page
- *    (l'entrée choisie disparaît avec ce qu'elle rend) ;
+ *    (l'entrée choisie disparaît avec ce qu'elle rend) ; « Changer de profil »
+ *    (Famille) : « Qui regarde ? », aussitôt ;
  * 3. Rechercher : revenir à la barre de recherche — sur l'étagère d'une
  *    personne ou d'un genre, la page recule vers la recherche ; sur la
  *    recherche, sa barre reprend le focus. Si ni l'une ni l'autre n'est à
@@ -36,6 +37,7 @@ export function railDestinationOf(entryKey: string): RailDestination | null {
 export type RailSelect =
   | { kind: "drop" }
   | { kind: "showAll"; focus: string }
+  | { kind: "switchProfile" }
   | { kind: "searchBar"; otherwise: RailSelect }
   | { kind: "reselect" }
   /** `to` : null pour une clé sans page — rien ne s'ouvre, mais l'accueil a déjà rendu son focus au contenu. */
@@ -45,6 +47,7 @@ export function railSelect(state: { key: string; activeKey: string; moving: bool
   const { key, activeKey } = state;
   if (state.moving) return { kind: "drop" };
   if (key === RAIL_SHOW_ALL_KEY) return { kind: "showAll", focus: navKeyOf(activeKey) };
+  if (key === RAIL_SWITCH_PROFILE_KEY) return { kind: "switchProfile" };
   const page: RailSelect = key === activeKey
     ? { kind: "reselect" }
     : { kind: "navigate", to: railDestinationOf(key), refocusContentFirst: activeKey === RAIL_HOME_KEY };

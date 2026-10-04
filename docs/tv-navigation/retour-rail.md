@@ -19,7 +19,7 @@ référence (`apps/tv/harness/nav-golden/scenarios/retour-rail/`).
 | Pile du Retour | `packages/tv-core/src/nav/backLayers.ts`, `apps/tv/src/redesignWiring/back/BackScope.tsx` |
 | Couches d'un écran à rail | `redesignWiring/screen/useRailBackLayers.ts`, `RedesignScreen.tsx`, `useRedesignScreen.ts` |
 | Croix Retour | `redesignWiring/focus/backFocus.tsx` (`useBackFocus`) |
-| Rail : vue | `apps/tv/src/redesign/nav/*` (`NavRail`, `NavCapsule`, `NavList`, `NavItem`, `NavEntryMenu`, `NavLegend`, `NavScrollIndicator`, `NavTextMeasure`, `navFrame`, `navGeometry`, `navText`) |
+| Rail : vue | `apps/tv/src/redesign/nav/*` (`NavRail`, `NavCapsule`, `NavList`, `NavItem`, `NavEntryMenu`, `NavLegend`, `NavOrganizeHint`, `NavSwitcherItem`, `ProfileStack`, `NavScrollIndicator`, `NavTextMeasure`, `navFrame`, `navGeometry`, `navText`) |
 | Rail : câblage | `redesignWiring/nav/*` (`useRailState`, `useRailArrange`, `useNavCatalog`, `useNavEntries`, `NavMenuModal`), `screen/RailBridges.tsx`, `screen/RailShortcuts.tsx` |
 | Politique du rail (pure) | tv-core `nav/railPinning`, `railOrder`, `railColumn`, `railScroll`, `railSpec` |
 | Demandes dans le rail | `redesignWiring/vigie/RequestsEntry.tsx`, `RequestsPanel.tsx`, `redesign/requests/RequestsPanelView.tsx` |
@@ -176,10 +176,21 @@ changent ni de nom ni de comportement.
 - **F5** [code] Le dépliage : ressort `unfold` (réponse 0,36 s,
   amortissement 0,88), voile (préréglage `veil`) monté seulement rail ouvert ;
   libellés et bulle de légende gardés le temps du repli.
-- **F6** [code] Légende (rail ouvert) : « ◀ Profil et réglages », « ⊙ Maintenir
-  OK : organiser » ; pendant un déplacement : « ↕ Haut, bas : déplacer »,
-  « ⊙ OK pose, Retour annule » (`nav:railProfile`, `railHintOrganize`,
-  `railHintMove`, `railHintDrop`).
+- **F6** [code] Légende : plus de bulle permanente (choix de l'utilisateur,
+  2026-10-04 : trop de raccourcis autour du profil). Pendant un déplacement
+  seulement : « ↕ Haut, bas : déplacer », « ⊙ OK pose, Retour annule »
+  (`railHintMove`, `railHintDrop`). « ⊙ Maintenir OK : organiser » devient une
+  ligne CONTEXTUELLE à droite du rail, à hauteur de l'entrée organisable
+  focalisée (`NavOrganizeHint`) : après 1,2 s de focus sur elle, les trois
+  premiers passages dans le rail seulement (tv-core `nav/railHint`, compte
+  sur l'appareil `tentacle_rail_organize_hint`).
+- **F7** [code] « Changer de profil » (Apple TV passée aux profils, Famille) :
+  une entrée `nav:SwitchProfile` juste au-dessus du profil, dans son bloc ;
+  pictogramme = l'empilement des profils de la famille (`ProfileStack` : trois
+  ronds au plus, sinon deux et « +N »), lus par le jeton de jumelage. OK →
+  « Qui regarde ? » aussitôt (`railSelect` → `switchProfile`) ; verrouillée
+  pendant un déplacement. Le profil n'a plus d'appui maintenu (l'ancien
+  « Maintenir OK sur le profil : changer de profil » est retiré).
 
 ## 6. La colonne et son défilement
 

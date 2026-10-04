@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useLibraries, useTentacleConfig } from "@tentacle-tv/api-client";
 import {
-  railBlurDelay, railCollapseAfterBlur, railFocusedAfterFocus, railHold, railSelect, tvSessionMode, type RailSelect,
+  canOpenRailMenu, railBlurDelay, railCollapseAfterBlur, railFocusedAfterFocus, railSelect, type RailSelect,
 } from "@tentacle-tv/tv-core";
 import { switchProfile } from "../../auth/profileSession";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
@@ -82,9 +82,9 @@ export interface RailActionHooks {
  * afficher, revenir à la barre de recherche (`returnToSearchBar`, partagé avec
  * Android TV), rendre la page à son contenu (`onReselect`, sinon
  * `focusContent`), ou aller à une autre page (`goToRailPage`) — la page
- * d'arrivée prend son entrée, rail replié (`useEntryFocus`). L'appui long
- * (`nav/railProfile`) : le menu d'une entrée organisable ; sur le profil d'une
- * Apple TV passée aux profils (Famille), « Changer de profil ».
+ * d'arrivée prend son entrée, rail replié (`useEntryFocus`) ; ou, sur
+ * « Changer de profil » (Famille), « Qui regarde ? » aussitôt. L'appui long :
+ * le menu d'une entrée organisable (`nav/railMenu`), rien ailleurs.
  */
 export function useRailActions(
   railKey: string,
@@ -116,6 +116,9 @@ export function useRailActions(
             pinning.showAll();
             focus.claim(decision.focus);
             return;
+          case "switchProfile":
+            void switchProfile({ jfClient, storage, queryClient });
+            return;
           case "searchBar":
             if (!returnToSearchBar()) apply(decision.otherwise);
             return;
@@ -130,16 +133,14 @@ export function useRailActions(
       };
       apply(railSelect({ key, activeKey: railKey, moving: isMoving() }));
     },
-    [focus, focusContent, pinning, railKey, dropIfMoving, isMoving],
+    [focus, focusContent, pinning, railKey, dropIfMoving, isMoving, jfClient, storage, queryClient],
   );
 
   const onLongPress = useCallback(
     (key: string) => {
-      const hold = railHold(key, { moving: isMoving(), profiles: tvSessionMode(storage) === "profile" });
-      if (hold === "menu") openMenu(key);
-      else if (hold === "switchProfile") void switchProfile({ jfClient, storage, queryClient });
+      if (canOpenRailMenu(key, isMoving())) openMenu(key);
     },
-    [openMenu, isMoving, storage, jfClient, queryClient],
+    [openMenu, isMoving],
   );
 
   return { onSelect, onLongPress };

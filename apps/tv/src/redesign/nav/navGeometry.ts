@@ -12,7 +12,8 @@ import { railColumn, railContentHeight, type RailScrollGeometry } from "@tentacl
  *   d'avant (`MAX_PANEL`) : sa liste défile.
  * - Le bloc du profil reste ancré en bas, jamais caché ni poussé hors de
  *   l'écran : c'est le bloc des pages qui lui cède la place (il remonte, puis
- *   défile) — `railColumn`, tv-core.
+ *   défile) — `railColumn`, tv-core. Sur une Apple TV passée aux profils
+ *   (Famille), « Changer de profil » s'y pose, juste au-dessus du profil.
  * - Replié : une bande d'icônes (`COLLAPSED_WIDTH`). Ouvert : la largeur de
  *   l'intitulé le plus long (mesurée, `navExpandedWidth`), bornée.
  *
@@ -97,6 +98,8 @@ export interface NavLayoutInput {
   count: number;
   /** La hauteur de l'élément posé au-dessus du profil ; 0 sans lui. */
   accessoryHeight?: number;
+  /** « Changer de profil » (Famille), une entrée juste au-dessus du profil. */
+  switcher?: boolean;
 }
 
 export interface NavLayout {
@@ -108,6 +111,8 @@ export interface NavLayout {
   bottom: { top: number; height: number };
   /** L'élément au-dessus du profil (repère du bloc du profil), et le profil. */
   accessory: { top: number; height: number } | null;
+  /** « Changer de profil », s'il existe (repère du bloc du profil). */
+  switcherTop: number | null;
   profileTop: number;
 }
 
@@ -117,10 +122,11 @@ export interface NavLayout {
  * sinon remonté, et au besoin réduit (sa liste défile). Jamais plus haut que
  * le rail d'avant.
  */
-export function navLayout({ count, accessoryHeight = 0 }: NavLayoutInput): NavLayout {
+export function navLayout({ count, accessoryHeight = 0, switcher = false }: NavLayoutInput): NavLayout {
   const accessory = clamp(accessoryHeight, 0, ACCESSORY_MAX);
   const above = accessory > 0 ? accessory + ACCESSORY_GAP : 0;
-  const bottomHeight = BOTTOM_PAD * 2 + above + ITEM;
+  const switcherRow = switcher ? PITCH : 0;
+  const bottomHeight = BOTTOM_PAD * 2 + above + switcherRow + ITEM;
   const { top, height, bottomTop } = railColumn({
     screen: SCREEN_HEIGHT,
     marginTop: MARGIN_TOP,
@@ -135,8 +141,14 @@ export function navLayout({ count, accessoryHeight = 0 }: NavLayoutInput): NavLa
     viewport: height - STRIP_CHROME,
     bottom: { top: bottomTop, height: bottomHeight },
     accessory: accessory > 0 ? { top: BOTTOM_PAD, height: accessory } : null,
-    profileTop: BOTTOM_PAD + above,
+    switcherTop: switcher ? BOTTOM_PAD + above : null,
+    profileTop: BOTTOM_PAD + above + switcherRow,
   };
+}
+
+/** Le centre vertical (écran) de l'entrée `index` de la liste, liste en haut : ôter son défilement. */
+export function listEntryCenter(layout: NavLayout, index: number): number {
+  return layout.strip.top + LIST_TOP + LIST_PAD + index * PITCH + ITEM / 2;
 }
 
 /** Les largeurs naturelles des textes du rail, mesurées (points). */

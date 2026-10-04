@@ -19,6 +19,8 @@ export const RAIL_SHOW_ALL_KEY = "RailShowAll";
 export const RAIL_PROFILE_KEY = "Settings";
 /** L'aperçu des demandes en cours (Vigie), au-dessus du profil. */
 export const RAIL_REQUESTS_KEY = "Requests";
+/** « Changer de profil » (Famille, Apple TV), juste au-dessus du profil : « Qui regarde ? ». */
+export const RAIL_SWITCH_PROFILE_KEY = "SwitchProfile";
 
 /** Les entrées fixes qu'on peut quand même masquer et déplacer. */
 export const RAIL_MOVABLE_FIXED: readonly string[] = ["Recommendations", "Watchlist", "Favorites"];
@@ -30,7 +32,7 @@ const LIBRARY_PREFIX = "Library_";
  * HAUT / BAS ne sortent pas de la liste. (L'aperçu des demandes l'est aussi,
  * par son propre câblage.)
  */
-export const RAIL_LOCKED_WHILE_MOVING: readonly string[] = [RAIL_SEARCH_KEY, RAIL_HOME_KEY, RAIL_SHOW_ALL_KEY, RAIL_PROFILE_KEY];
+export const RAIL_LOCKED_WHILE_MOVING: readonly string[] = [RAIL_SEARCH_KEY, RAIL_HOME_KEY, RAIL_SHOW_ALL_KEY, RAIL_SWITCH_PROFILE_KEY, RAIL_PROFILE_KEY];
 
 export const navKeyOf = (entryKey: string): string => `${NAV_PREFIX}${entryKey}`;
 

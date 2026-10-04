@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { RAIL_HOME_KEY, RAIL_PROFILE_KEY, RAIL_SEARCH_KEY, RAIL_SHOW_ALL_KEY, applyRailOrder, tvSessionMode } from "@tentacle-tv/tv-core";
+import { RAIL_HOME_KEY, RAIL_PROFILE_KEY, RAIL_SEARCH_KEY, RAIL_SHOW_ALL_KEY, applyRailOrder } from "@tentacle-tv/tv-core";
 import type { NavEntry, NavHint, NavRailProps } from "../../redesign/nav/NavRail";
 import { usePairedAccount } from "../../hooks/usePairedAccount";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { useNavCatalog } from "./useNavCatalog";
+import { useProfileSwitcher } from "./useProfileSwitcher";
 
 /**
  * Ce que la navigation refondue propose, dans l'ordre où on la parcourt, sur
@@ -13,11 +13,13 @@ import { useNavCatalog } from "./useNavCatalog";
  * Accueil ; puis les entrées ORGANISABLES dans l'ordre choisi, masquées
  * retirées (`useNavCatalog`) ; « Tout afficher » dès qu'une entrée est
  * masquée ; et la capsule du profil — le nom du compte, « Profil et
- * réglages » dessous. Sur une Apple TV passée aux profils (Famille), la
- * légende dit aussi l'appui maintenu sur le profil : changer de profil.
+ * réglages » dessous ; au-dessus, sur une Apple TV passée aux profils
+ * (Famille), « Changer de profil » (`useProfileSwitcher`).
  *
- * Pendant un déplacement, `previewOrder` est l'ordre en cours, que rien n'a
- * encore enregistré ; la légende dit alors les touches du déplacement.
+ * Aucune légende permanente : pendant un déplacement seulement, ses touches
+ * (`previewOrder` est alors l'ordre en cours, que rien n'a encore
+ * enregistré). « Maintenir OK : organiser » se dit à côté d'une entrée, le
+ * moment venu (`useRailOrganizeHint`).
  */
 
 /** « Tout afficher » : tv-core (`nav/railKeys`). */
@@ -26,7 +28,7 @@ export const SHOW_ALL_KEY = RAIL_SHOW_ALL_KEY;
 /** Le diamètre du portrait dans la navigation (`NavItem`), en points. */
 const AVATAR = 46;
 
-export type NavEntries = Pick<NavRailProps, "search" | "entries" | "account" | "hints">;
+export type NavEntries = Pick<NavRailProps, "search" | "entries" | "account" | "switcher" | "hints">;
 
 export interface NavEntriesOptions {
   previewOrder?: readonly string[] | null;
@@ -34,10 +36,9 @@ export interface NavEntriesOptions {
 }
 
 export function useNavEntries({ previewOrder = null, moving = false }: NavEntriesOptions = {}): NavEntries {
-  const { t } = useTranslation(["nav", "familyTv"]);
-  const { storage } = useTentacleConfig();
-  const profiles = tvSessionMode(storage) === "profile";
+  const { t } = useTranslation(["nav"]);
   const catalog = useNavCatalog();
+  const switcher = useProfileSwitcher();
   // Le portrait des réglages, par la même adresse : `Users/{id}/Images/Primary`
   // passe le proxy du serveur, `GET /Users/{id}` non (hors de sa liste
   // blanche : la navigation retombait toujours sur l'initiale). Montré
@@ -53,12 +54,8 @@ export function useNavEntries({ previewOrder = null, moving = false }: NavEntrie
             { icon: "moveVertical", label: t("railHintMove") },
             { icon: "circleDot", label: t("railHintDrop") },
           ]
-        : [
-            { icon: "chevronLeft", label: t("railProfile") },
-            { icon: "circleDot", label: t("railHintOrganize") },
-            ...(profiles ? [{ icon: "user" as const, label: t("familyTv:railSwitchHint") }] : []),
-          ],
-    [t, moving, profiles],
+        : [],
+    [t, moving],
   );
 
   return useMemo(() => {
@@ -77,7 +74,8 @@ export function useNavEntries({ previewOrder = null, moving = false }: NavEntrie
         avatarUri,
         initial: userName ? userName.charAt(0).toUpperCase() : undefined,
       },
+      switcher,
       hints,
     };
-  }, [t, catalog, previewOrder, avatarUri, userName, hints]);
+  }, [t, catalog, previewOrder, avatarUri, userName, switcher, hints]);
 }

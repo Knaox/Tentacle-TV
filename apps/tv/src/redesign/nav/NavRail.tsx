@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { railMaxOffset } from "@tentacle-tv/tv-core";
 import { usePresence } from "../motion/useMotion";
 import type { IconName } from "../icons/Icon";
@@ -19,6 +19,7 @@ import {
   SEARCH_TOP,
   SEPARATOR_TOP,
   expandedItemWidth,
+  listEntryCenter,
   listGeometry,
   navExpandedWidth,
   navLayout,
@@ -29,9 +30,13 @@ import {
 import { NavItem } from "./NavItem";
 import { NavLegend, type NavHint } from "./NavLegend";
 import { NavList } from "./NavList";
+import { NavOrganizeHint } from "./NavOrganizeHint";
+import { NavSwitcherItem } from "./NavSwitcherItem";
+import type { StackProfile } from "./ProfileStack";
 import { NavTextMeasure } from "./NavTextMeasure";
 
 export type { NavHint } from "./NavLegend";
+export type { StackProfile } from "./ProfileStack";
 export type { NavRailGeometry } from "./navGeometry";
 
 /**
@@ -44,21 +49,24 @@ export type { NavRailGeometry } from "./navGeometry";
  *   avec beaucoup de bibliothèques, jamais plus haut que le rail d'avant, et
  *   sa liste défile en suivant le focus (`NavList`), avec un fondu du côté où
  *   il y a plus et un indicateur de position ;
- * - le bloc du PROFIL, ancré en bas : le compte et ses réglages et, au-dessus,
- *   l'élément des demandes en cours quand il existe (`accessory`). Jamais
- *   caché ni poussé hors de l'écran : c'est le bloc des pages qui cède.
+ * - le bloc du PROFIL, ancré en bas : le compte et ses réglages ; au-dessus,
+ *   « Changer de profil » sur une Apple TV passée aux profils (`switcher`,
+ *   l'empilement des profils de la famille) et, plus haut, l'élément des
+ *   demandes en cours quand il existe (`accessory`). Jamais caché ni poussé
+ *   hors de l'écran : c'est le bloc des pages qui cède.
  *
  * Repliées, une bande d'icônes en pilule ; ouvertes (le focus y est), elles
  * s'élargissent PAR-DESSUS le contenu, sous un voile, avec leurs libellés —
  * à la largeur de leur intitulé le plus long, mesurée (`NavTextMeasure`) et
- * bornée — et, à droite du profil, la bulle qui dit leurs touches
- * (`NavLegend`).
+ * bornée. Pendant un déplacement, à droite du profil, la bulle qui en dit les
+ * touches (`NavLegend`) ; sinon, au plus, « Maintenir OK : organiser » à côté
+ * de l'entrée focalisée (`NavOrganizeHint`), quand l'intégration le dit.
  *
  * L'organisation se voit ici, se décide à l'intégration : `heldKey` (le menu
  * d'appui long de cette entrée est ouvert), `movingKey` (on la déplace).
  *
  * Clés de focus : `nav:<entrée>` — `nav:Search`, `nav:Home`,
- * `nav:Library_<id>`, `nav:RailShowAll`, `nav:Settings` (le profil)…
+ * `nav:Library_<id>`, `nav:RailShowAll`, `nav:SwitchProfile`, `nav:Settings` (le profil)…
  * Les ponts de focus de l'intégration se posent sur la géométrie que la vue
  * publie (`onGeometry`).
  *
@@ -85,6 +93,13 @@ export interface NavAccount {
   initial?: string;
 }
 
+/** « Changer de profil » (Famille) : juste au-dessus du profil, l'empilement des profils de la famille. */
+export interface NavSwitcher {
+  key: string;
+  label: string;
+  profiles: StackProfile[];
+}
+
 /**
  * Ce qui se pose au-dessus du profil, dans sa capsule — l'élément des
  * demandes en cours (Vigie). Sa hauteur est réservée par la géométrie (64 :
@@ -107,8 +122,12 @@ export interface NavRailProps {
   accessory?: NavAccessory | null;
   activeKey: string;
   expanded: boolean;
-  /** La légende du rail ouvert : deux lignes courtes. */
+  /** « Changer de profil », au-dessus du profil ; absent hors Famille. */
+  switcher?: NavSwitcher | null;
+  /** La légende du rail ouvert — seulement pendant un déplacement, ses touches. */
   hints?: NavHint[];
+  /** « Maintenir OK : organiser », à côté de l'entrée qu'elle concerne — quand l'intégration le dit. */
+  organizeHint?: { entryKey: string; label: string } | null;
   heldKey?: string | null;
   movingKey?: string | null;
   onSelect?: (key: string) => void;
@@ -127,14 +146,19 @@ const SEPARATOR_INSET = 24;
 const sameWidths = (a: NavTextWidths | null, b: NavTextWidths) => !!a && a.label === b.label && a.caption === b.caption;
 
 export const NavRail = memo(function NavRail(props: NavRailProps) {
-  const { search, entries, account, accessory, activeKey, expanded, hints, heldKey, movingKey, onGeometry } = props;
+  const { search, entries, account, accessory, switcher, activeKey, expanded, hints, organizeHint, heldKey, movingKey, onGeometry } = props;
   const { onSelect, onLongPress, onFocusChange } = props;
   const { openness, moving } = useUnfold(expanded);
   const veil = usePresence(expanded, "veil");
   const veilFade = useAnimatedStyle(() => ({ opacity: veil.progress.value }));
 
   const accessoryHeight = accessory?.height ?? 0;
-  const layout = useMemo(() => navLayout({ count: entries.length, accessoryHeight }), [entries.length, accessoryHeight]);
+  const hasSwitcher = !!switcher;
+  const layout = useMemo(
+    () => navLayout({ count: entries.length, accessoryHeight, switcher: hasSwitcher }),
+    [entries.length, accessoryHeight, hasSwitcher],
+  );
+  const listScroll = useSharedValue(0);
   const scrolls = railMaxOffset(entries.length, listGeometry(layout.viewport)) > 0;
   const [widths, setWidths] = useState<NavTextWidths | null>(null);
   const onMeasure = useCallback((next: NavTextWidths) => setWidths((previous) => (sameWidths(previous, next) ? previous : next)), []);
@@ -158,7 +182,12 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
     onGeometry?.(railGeometryOf(layout, expandedWidth));
   }, [onGeometry, layout, expandedWidth]);
 
-  const texts = useMemo(() => [search.label, ...entries.map((entry) => entry.label), account.label], [search.label, entries, account.label]);
+  const switcherLabel = switcher?.label;
+  const texts = useMemo(
+    () => [search.label, ...entries.map((entry) => entry.label), ...(switcherLabel ? [switcherLabel] : []), account.label],
+    [search.label, entries, switcherLabel, account.label],
+  );
+  const hintIndex = organizeHint ? entries.findIndex((entry) => entry.key === organizeHint.entryKey) : -1;
   const captions = useMemo(() => (account.caption ? [account.caption] : []), [account.caption]);
 
   const item = { onSelect, onLongPress, onFocusChange };
@@ -200,6 +229,7 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
               activeKey={activeKey}
               heldKey={heldKey}
               movingKey={movingKey}
+              scrollY={listScroll}
               {...item}
             />
           </View>
@@ -215,6 +245,11 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
           {accessory && layout.accessory ? (
             <View style={[styles.accessory, { top: layout.accessory.top, height: layout.accessory.height, width: frame.itemWidth }]}>
               {accessory.node}
+            </View>
+          ) : null}
+          {switcher && layout.switcherTop !== null ? (
+            <View style={[styles.profile, { top: layout.switcherTop }]}>
+              <NavSwitcherItem switcher={switcher} {...item} />
             </View>
           ) : null}
           <View style={[styles.profile, { top: layout.profileTop }]}>
@@ -234,6 +269,15 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
           elle passe sur le contenu, jamais pendant que le focus y navigue. */}
       {hints?.length && labels ? (
         <NavLegend hints={hints} openness={openness} left={RAIL_LEFT + expandedWidth + LEGEND_GAP} bottom={MARGIN_BOTTOM} />
+      ) : null}
+      {organizeHint && hintIndex >= 0 && expanded ? (
+        <NavOrganizeHint
+          key={organizeHint.entryKey}
+          label={organizeHint.label}
+          center={listEntryCenter(layout, hintIndex)}
+          left={RAIL_LEFT + expandedWidth + LEGEND_GAP}
+          scrollY={listScroll}
+        />
       ) : null}
       <NavTextMeasure labels={texts} captions={captions} onMeasure={onMeasure} />
     </NavFrameContext.Provider>

@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
   runOnJS,
@@ -59,6 +59,8 @@ export interface NavListProps {
   onSelect?: (key: string) => void;
   onLongPress?: (key: string) => void;
   onFocusChange?: (key: string, focused: boolean) => void;
+  /** Le défilement, partagé avec le rail (l'indication posée à côté d'une entrée le suit). */
+  scrollY?: SharedValue<number>;
 }
 
 /** Le côté du fondu ne s'allume qu'une fois la liste décollée de ce bord. */
@@ -84,7 +86,13 @@ export const NavList = memo(function NavList(props: NavListProps) {
     // Au montage seulement : la suite passe par `reveal`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const scrollY = useSharedValue(initial);
+  const own = useSharedValue(initial);
+  const scrollY = props.scrollY ?? own;
+  useLayoutEffect(() => {
+    scrollY.value = initial;
+    // Au montage seulement : la suite vient du défilement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   /** La position RÉELLE, suivie sur le fil de l'interface. */
   const offset = useRef(initial);
   /** La dernière destination demandée, et quand : tant qu'elle est en route, on raisonne depuis elle. */

@@ -525,8 +525,9 @@ Apple TV passée aux profils (docs/FAMILLE.md). Règles : tv-core
   « Qui regarde ? », la session du propriétaire se referme et la rangée
   revient. La rangée de « Créer le profil » est pleine largeur (BAS depuis
   toute couleur).
-- **PR-6** Rail : MAINTENIR OK sur le profil (`railHold`) change de profil ;
-  OK y ouvre toujours les réglages.
+- **PR-6** Rail : l'entrée « Changer de profil » (`nav:SwitchProfile`, juste
+  au-dessus du profil) mène à « Qui regarde ? » ; le profil n'a plus d'appui
+  maintenu, OK y ouvre les réglages (retour-rail.md, F7).
 - **PR-7** Lancement (`planProfileLaunch`) : « Qui regarde ? » TOUJOURS, même
   pour un profil seul, sauf le profil retenu par la case « Ne plus proposer à
   l'ouverture » (`profiles:stay`, discrète : pastille blanche au focus

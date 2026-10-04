@@ -74,4 +74,9 @@ describe("railStack — la pile en onglets", () => {
     });
     expect(railStack(undefined, { name: "Home" })).toEqual({ index: 0, routes: [{ name: "Home" }] });
   });
+
+  it("« Changer de profil » mène à « Qui regarde ? », sauf pendant un déplacement", () => {
+    expect(railSelect({ key: "SwitchProfile", activeKey: "Home", moving: false })).toEqual({ kind: "switchProfile" });
+    expect(railSelect({ key: "SwitchProfile", activeKey: "Home", moving: true })).toEqual({ kind: "drop" });
+  });
 });

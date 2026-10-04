@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
@@ -41,6 +41,9 @@ export interface NavItemProps {
   /** Portrait du compte (capsule du profil). */
   avatarUri?: string;
   initial?: string;
+  /** Un pictogramme dessiné, à la place de `icon` (l'empilement des profils de « Changer de profil »).
+   *  Reçoit la couleur du texte : celle du repos, ou le noir de la pilule focalisée. */
+  glyph?: (color: string) => ReactNode;
   active: boolean;
   mode?: NavItemMode | null;
   fade?: StyleProp<ViewStyle>;
@@ -70,7 +73,8 @@ export const NavItem = memo(function NavItem(props: NavItemProps) {
   );
 });
 
-function Glyph({ icon, avatarUri, initial, color }: { icon?: IconName; avatarUri?: string; initial?: string; color: string }) {
+function Glyph({ icon, avatarUri, initial, glyph, color }: { icon?: IconName; avatarUri?: string; initial?: string; glyph?: (color: string) => ReactNode; color: string }) {
+  if (glyph) return <>{glyph(color)}</>;
   if (avatarUri) return <Image source={{ uri: avatarUri }} style={styles.avatar} />;
   if (initial) {
     return (
@@ -93,13 +97,13 @@ interface RowProps {
 }
 
 function Row({ props, width, labels, labelWidth, dark, labelIn }: RowProps) {
-  const { label, caption, icon, avatarUri, initial, active, mode } = props;
+  const { label, caption, icon, avatarUri, initial, glyph, active, mode } = props;
   const color = dark ? colors.ctaFg : active || mode ? colors.text : colors.textSecondary;
   const bold = dark || active || !!mode;
   return (
     <View style={[styles.row, { width }]}>
       <View style={styles.glyph}>
-        <Glyph icon={mode === "moving" ? "moveVertical" : icon} avatarUri={avatarUri} initial={initial} color={color} />
+        <Glyph icon={mode === "moving" ? "moveVertical" : icon} avatarUri={avatarUri} initial={initial} glyph={glyph} color={color} />
       </View>
       {labels ? (
         <Animated.View style={[styles.texts, { width: labelWidth }, labelIn]}>
