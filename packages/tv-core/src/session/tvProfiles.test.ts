@@ -28,12 +28,13 @@ function fakeStorage(initial: Record<string, string> = {}) {
 const NOW = Date.parse("2026-10-04T22:00:00Z");
 
 const profile = (userId: string, patch: Partial<TvProfileDto> = {}): TvProfileDto => ({
-  userId, kind: "member", name: userId, color: "violet", hasPin: false, imageTag: null, lockedUntil: null, ...patch,
+  userId, kind: "member", name: userId, color: "violet", hasPin: false, imageTag: null, lockedUntil: null, createdBy: null, manage: null, ...patch,
 });
 
 const listing = (profiles: TvProfileDto[], patch: Partial<TvProfilesDto> = {}): TvProfilesDto => ({
   v: 1,
   switches: { families: true, guests: true },
+  pairedBy: { userId: profiles[0].userId, name: profiles[0].name },
   owner: { userId: profiles[0].userId, name: profiles[0].name },
   profiles,
   stickyProfileId: null,

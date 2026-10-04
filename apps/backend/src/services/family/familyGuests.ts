@@ -59,7 +59,15 @@ export async function createGuest(owner: Actor, body: { name: unknown; color: Fa
     try {
       const family = existing ?? (await ensureOwnedFamily({ userId: owner.userId, name: owner.username }));
       const row = await getPrisma().familyMember.create({
-        data: { familyId: family.id, userId: account.userId, kind: "guest", displayName: name, color: body.color, jellyfinName: account.jellyfinName },
+        data: {
+          familyId: family.id,
+          userId: account.userId,
+          kind: "guest",
+          displayName: name,
+          color: body.color,
+          jellyfinName: account.jellyfinName,
+          createdBy: owner.userId,
+        },
       });
       recentCreations.set(key, [...remembered, now]);
       console.log(`[family] Invité créé (compte Jellyfin « ${account.jellyfinName} »)`);
@@ -79,6 +87,9 @@ export async function createGuest(owner: Actor, body: { name: unknown; color: Fa
     hasPin: false,
     imageTag: null,
     since: created.createdAt.toISOString(),
+    createdBy: owner.userId,
+    createdByName: owner.username,
+    rights: null,
   };
 }
 

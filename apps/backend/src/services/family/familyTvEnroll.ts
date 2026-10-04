@@ -6,7 +6,7 @@ import { cleanupJellyfinDevice } from "../jellyfinDeviceCleanup";
 import { hashToken, signTvPairingToken, verifyDeviceToken, verifyTvPairingToken } from "../jwt";
 import { markDeviceRevoked } from "../pairedDeviceStatus";
 import { closeDeviceSockets } from "../wsManager";
-import type { TvEnrollResponse } from "../../family/familyContract";
+import type { TvEnrollResponse } from "../../family/familyTvContract";
 import { FamilyFailure } from "./familyErrors";
 
 /**

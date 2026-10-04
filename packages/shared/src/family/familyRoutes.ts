@@ -11,8 +11,11 @@
  * - `personal` : une session PERSONNELLE — le jeton Jellyfin du web, du
  *   bureau, du mobile (cookie ou `Bearer`). Jamais un jeton d'appareil jumelé,
  *   jamais une session « voir en tant que ».
- * - `ownerTv` : la session de profil du PROPRIÉTAIRE sur SA TV, « Gérer les
- *   profils » ouvert (`tvManageUnlock` ; sans PIN, ouvert d'office).
+ * - `ownerTv` : la session de profil du PROPRIÉTAIRE de la famille, sur une
+ *   TV de la famille, « Gérer les profils » ouvert par SON PIN
+ *   (`tvManageUnlock` ; sans PIN, ouvert d'office).
+ * - `memberTv` (v2) : la même chose pour un MEMBRE — ses droits seulement :
+ *   voir la famille, créer et supprimer SES invités s'il en a le droit.
  * - `tvProfile` : une session de profil d'une TV, quel qu'en soit le profil.
  * - `tvPairing` : le jeton de jumelage d'une TV passée aux profils — il ne
  *   sert QU'À lister les profils et à en ouvrir un (et à se déjumeler).
@@ -21,8 +24,14 @@
  * - `admin` : un administrateur, en session personnelle.
  *
  * L'acteur se déduit TOUJOURS du jeton, jamais d'un identifiant du corps ou
- * de la query. Les routes du propriétaire ne prennent aucun identifiant de
- * famille : elles agissent sur LA famille que possède le porteur.
+ * de la query. Aucune route ne prend d'identifiant de famille pour AGIR :
+ * elles visent LA famille du porteur (il n'en a qu'une, propriétaire ou
+ * membre). Le rôle se juge dans le service : un membre sur un geste de
+ * propriétaire reçoit `family.not_owner`.
+ *
+ * v2, à l'implémentation : `overview`, `createGuest` et `deleteGuest`
+ * s'ouvrent à `memberTv` (un membre gère SES invités depuis sa TV) ; la table
+ * le dira avec le serveur qui le fait.
  *
  * Deux routes existantes changent de sens pour la TV (docs/FAMILLE.md) :
  * `POST /api/pair/self/revoke` porté par le jeton de jumelage DÉJUMELLE la TV
@@ -30,7 +39,7 @@
  * ne ferme QUE cette session (« Changer de profil »).
  */
 
-export type FamilyCaller = "personal" | "ownerTv" | "tvProfile" | "tvPairing" | "tvLegacy" | "admin";
+export type FamilyCaller = "personal" | "ownerTv" | "memberTv" | "tvProfile" | "tvPairing" | "tvLegacy" | "admin";
 
 export type FamilyHttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
@@ -49,20 +58,27 @@ const HOUR = 3_600_000;
 export const FAMILY_ROUTES = {
   /** → `FamilyOverviewDto`. */
   overview: { method: "GET", path: "/api/family", callers: ["personal", "ownerTv"] },
-  /** `DissolveBody` → `{ dissolved: true }`. Membres sortis, invités supprimés de Jellyfin. */
+  /** `DissolveBody` → `{ dissolved: true }`. Le propriétaire seul : membres
+   *  sortis, invités supprimés de Jellyfin (tous, quel que soit leur créateur). */
   dissolve: { method: "DELETE", path: "/api/family", callers: ["personal"], rateLimit: { max: 5, windowMs: HOUR } },
   /** `SetPinBody` → `{ hasPin }`. Le PIN de CE compte, pour lui-même. */
   setOwnPin: { method: "PUT", path: "/api/family/pin", callers: ["personal"], rateLimit: { max: 10, windowMs: MINUTE } },
-  /** `CreateGuestBody` → `FamilyProfileDto`. Crée la famille au besoin. */
+  /** `CreateGuestBody` → `FamilyProfileDto`. Le propriétaire, ou un membre qui
+   *  en a le droit (`family.guest_right_required` sinon) : l'invité entre dans
+   *  la famille PARTAGÉE, `createdBy` = son créateur. Un compte sans famille
+   *  crée la sienne au passage ; un membre, jamais. */
   createGuest: {
     method: "POST",
     path: "/api/family/guests",
     callers: ["personal", "ownerTv"],
     rateLimit: { max: 10, windowMs: HOUR },
   },
-  /** → `{ deleted: true }`. Son compte Jellyfin est supprimé (sa lecture est perdue). */
+  /** → `{ deleted: true }`. Le propriétaire : tout invité ; un membre : ceux
+   *  qu'il a créés (`family.not_owner` sinon). Son compte Jellyfin est
+   *  supprimé (sa lecture est perdue). */
   deleteGuest: { method: "DELETE", path: "/api/family/guests/:userId", callers: ["personal", "ownerTv"] },
-  /** `SetPinBody` → `{ hasPin }`. Le PIN d'un invité, posé par le propriétaire. */
+  /** `SetPinBody` → `{ hasPin }`. Le PIN d'un invité : le propriétaire, ou le
+   *  membre qui l'a créé. */
   setGuestPin: {
     method: "PUT",
     path: "/api/family/guests/:userId/pin",
@@ -71,15 +87,28 @@ export const FAMILY_ROUTES = {
   },
   /** → `{ removed: true }`. Le membre sort ; son compte Jellyfin n'est jamais touché. */
   removeMember: { method: "DELETE", path: "/api/family/members/:userId", callers: ["personal", "ownerTv"] },
-  /** `?q=` → `FamilyCandidateDto[]`. Les comptes visibles à l'écran de connexion
-   *  de Jellyfin ; un compte caché, par son nom EXACT seulement. */
+  /** `SetMemberRightsBody` → `FamilyMemberRights`. Le propriétaire règle les
+   *  droits d'un membre (v2). Retirer un droit ne supprime rien. */
+  setMemberRights: {
+    method: "PUT",
+    path: "/api/family/members/:userId/rights",
+    callers: ["personal", "ownerTv"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
+  /** `?q=` → `FamilyCandidateDto[]`. v2 : TOUS les comptes du serveur, cachés
+   *  de l'écran de connexion compris, affinés par la saisie ; jamais un invité,
+   *  un compte désactivé ni soi-même. Déjà dans une famille : `in_family`,
+   *  pas invitable. Le propriétaire (ou un compte sans famille) seulement. */
   candidates: {
     method: "GET",
     path: "/api/family/candidates",
     callers: ["personal", "ownerTv"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
-  /** `InviteBody` → `OutgoingInvitationDto`. Crée la famille au besoin. */
+  /** `InviteBody` → `OutgoingInvitationDto`. Le propriétaire seul — un compte
+   *  sans famille crée la sienne au passage, un membre jamais
+   *  (`family.not_owner`). La cible n'est dans aucune famille
+   *  (`family.already_in_family`). */
   invite: {
     method: "POST",
     path: "/api/family/invitations",
@@ -90,13 +119,16 @@ export const FAMILY_ROUTES = {
   // (`InvitationActionBody`) : le serveur journalise ses URL.
   /** → `{ cancelled: true }`. Le propriétaire retire une invitation en attente. */
   cancelInvite: { method: "POST", path: "/api/family/invitations/cancel", callers: ["personal", "ownerTv"] },
-  /** → `FamilyMembershipDto`. Le destinataire, en session personnelle. */
+  /** → `FamilyMembershipDto`. Le destinataire, en session personnelle, s'il
+   *  n'est dans aucune famille (`family.already_in_family`) ; ses autres
+   *  invitations en attente sont closes. */
   acceptInvite: { method: "POST", path: "/api/family/invitations/accept", callers: ["personal"] },
   /** → `{ declined: true }`. */
   declineInvite: { method: "POST", path: "/api/family/invitations/decline", callers: ["personal"] },
   /** → `IncomingInvitationDto`. « Plus tard » : l'affiche se tait, la cloche garde. */
   snoozeInvite: { method: "POST", path: "/api/family/invitations/snooze", callers: ["personal"] },
-  /** → `{ left: true }`. Un membre quitte une famille. */
+  /** → `{ left: true }`. Un membre quitte SA famille ; le propriétaire ne la
+   *  quitte pas, il la dissout (`family.owner_must_dissolve`). */
   leave: { method: "POST", path: "/api/family/memberships/:familyId/leave", callers: ["personal"] },
   /** → `TvEnrollResponse`. L'échange, une fois : la TV passe aux profils. */
   tvEnroll: {
@@ -114,7 +146,8 @@ export const FAMILY_ROUTES = {
     callers: ["tvPairing"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
-  /** `ManageUnlockBody` → `ManageUnlockResponse`. Le profil du propriétaire seulement. */
+  /** `ManageUnlockBody` → `ManageUnlockResponse`. Le profil du propriétaire ou
+   *  d'un membre, derrière SON PIN : la session gère avec SES droits. */
   tvManageUnlock: {
     method: "POST",
     path: "/api/family/tv/manage/unlock",

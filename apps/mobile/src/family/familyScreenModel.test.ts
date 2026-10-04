@@ -10,9 +10,15 @@ function owned(guests = 0, members = 0): OwnedFamilyDto {
     createdAt: NOW,
     pendingInvitations: [],
     profiles: [
-      { userId: "o", kind: "owner", name: "Damien", color: "violet", hasPin: false, imageTag: null, since: null },
-      ...Array.from({ length: members }, (_, i) => ({ userId: `m${i}`, kind: "member" as const, name: `M${i}`, color: "blue" as const, hasPin: false, imageTag: null, since: NOW })),
-      ...Array.from({ length: guests }, (_, i) => ({ userId: `g${i}`, kind: "guest" as const, name: `G${i}`, color: "teal" as const, hasPin: false, imageTag: null, since: NOW })),
+      { userId: "o", kind: "owner", name: "Damien", color: "violet", hasPin: false, imageTag: null, since: null, createdBy: null, createdByName: null, rights: null },
+      ...Array.from({ length: members }, (_, i) => ({
+        userId: `m${i}`, kind: "member" as const, name: `M${i}`, color: "blue" as const, hasPin: false, imageTag: null, since: NOW,
+        createdBy: null, createdByName: null, rights: { createGuests: false },
+      })),
+      ...Array.from({ length: guests }, (_, i) => ({
+        userId: `g${i}`, kind: "guest" as const, name: `G${i}`, color: "teal" as const, hasPin: false, imageTag: null, since: NOW,
+        createdBy: "o", createdByName: "Damien", rights: null,
+      })),
     ],
   };
 }
@@ -22,6 +28,7 @@ function overview(patch: Partial<FamilyOverviewDto> = {}, account: Partial<Famil
     v: 1,
     switches: { families: true, guests: true },
     account: { canOwn: true, canJoin: true, reviewAccount: false, hasPin: false, personalSession: true, ...account },
+    family: null,
     owned: null,
     memberships: [],
     incoming: [],

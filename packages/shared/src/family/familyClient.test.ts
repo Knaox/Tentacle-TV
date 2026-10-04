@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { FAMILY_PROFILE_COLORS, type FamilyOverviewDto, type FamilyProfileDto, type IncomingInvitationDto, type OwnedFamilyDto } from "./familyContract";
 import {
+  FAMILY_PROFILE_COLORS,
+  type FamilyDto,
+  type FamilyOverviewDto,
+  type FamilyProfileDto,
+  type IncomingInvitationDto,
+  type OwnedFamilyDto,
+} from "./familyContract";
+import {
+  familyActions,
+  familyCounts,
   familyPosterRequestOf,
   FAMILY_PROFILE_COLOR_STOPS,
   isFamilyAvailable,
@@ -15,7 +24,11 @@ const HOUR = 3_600_000;
 const iso = (ms: number) => new Date(ms).toISOString();
 
 function profile(kind: FamilyProfileDto["kind"], userId: string): FamilyProfileDto {
-  return { userId, kind, name: userId, color: "violet", hasPin: false, imageTag: null, since: kind === "owner" ? null : iso(NOW) };
+  return {
+    userId, kind, name: userId, color: "violet", hasPin: false, imageTag: null, since: kind === "owner" ? null : iso(NOW),
+    createdBy: kind === "guest" ? "owner" : null, createdByName: kind === "guest" ? "owner" : null,
+    rights: kind === "member" ? { createGuests: false } : null,
+  };
 }
 
 function owned(members: number, guests: number, pending: number): OwnedFamilyDto {
@@ -33,11 +46,26 @@ function owned(members: number, guests: number, pending: number): OwnedFamilyDto
   };
 }
 
+/** La famille v2 vue par CE compte : propriétaire, ou membre (avec ou sans le droit de créer). */
+function family(role: FamilyDto["role"], counts: { members: number; guests: number; pending: number }, createGuests = false): FamilyDto {
+  const base = owned(counts.members, counts.guests, role === "owner" ? counts.pending : 0);
+  return {
+    ...base,
+    role,
+    owner: { userId: "owner", name: "owner" },
+    rights: role === "owner"
+      ? { manageMembers: true, createGuests: true, manageGuests: "all" }
+      : { manageMembers: false, createGuests, manageGuests: "own" },
+    since: role === "owner" ? null : iso(NOW),
+  };
+}
+
 function overview(patch: Partial<FamilyOverviewDto> = {}, account: Partial<FamilyOverviewDto["account"]> = {}): FamilyOverviewDto {
   return {
-    v: 1,
+    v: 2,
     switches: { families: true, guests: true },
     account: { canOwn: true, canJoin: true, reviewAccount: false, hasPin: false, personalSession: true, ...account },
+    family: null,
     owned: null,
     memberships: [],
     incoming: [],
@@ -99,6 +127,43 @@ describe("ownerActions", () => {
     expect(ownerActions(overview({}, { reviewAccount: true })).invite).toBe("family.review_account");
     expect(ownerActions(overview({}, { canOwn: false })).addGuest).toBe("family.guest_account");
     expect(ownerActions(overview({}, { personalSession: false })).invite).toBe("family.personal_session_required");
+  });
+});
+
+describe("familyActions (v2)", () => {
+  it("un compte sans famille crée la sienne en invitant ou en ajoutant un invité", () => {
+    expect(familyActions(overview())).toEqual({ invite: null, addGuest: null });
+    expect(familyCounts(null)).toEqual({ profiles: 1, guests: 0, members: 0, pending: 0 });
+  });
+
+  it("le propriétaire : complet à six profils, invitations en attente comprises ; trois invités au plus", () => {
+    expect(familyActions(overview({ family: family("owner", { members: 3, guests: 1, pending: 1 }) }))).toEqual({
+      invite: "family.full",
+      addGuest: "family.full",
+    });
+    expect(familyActions(overview({ family: family("owner", { members: 0, guests: 3, pending: 0 }) }))).toEqual({
+      invite: null,
+      addGuest: "family.guests_full",
+    });
+  });
+
+  it("un membre n'invite jamais ; il crée un invité seulement si le propriétaire le lui permet", () => {
+    const counts = { members: 1, guests: 0, pending: 0 };
+    expect(familyActions(overview({ family: family("member", counts) }, { canOwn: false, canJoin: false }))).toEqual({
+      invite: "family.not_owner",
+      addGuest: "family.guest_right_required",
+    });
+    expect(familyActions(overview({ family: family("member", counts, true) }, { canOwn: false, canJoin: false })).addGuest).toBeNull();
+  });
+
+  it("vaut aussi hors session personnelle (gestion des profils de la TV) ; démonstration et invité n'ajoutent rien", () => {
+    expect(familyActions(overview({ family: family("owner", { members: 0, guests: 0, pending: 0 }) }, { personalSession: false }))).toEqual({
+      invite: null,
+      addGuest: null,
+    });
+    expect(familyActions(overview({}, { reviewAccount: true })).addGuest).toBe("family.review_account");
+    expect(familyActions(overview({}, { canOwn: false })).invite).toBe("family.guest_account");
+    expect(familyActions(overview({ switches: { families: true, guests: false } })).addGuest).toBe("family.guests_disabled");
   });
 });
 

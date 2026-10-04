@@ -13,7 +13,14 @@
  *  `family.not_found` répond À L'IDENTIQUE à « n'existe pas » et « pas à
  *  vous » : rien ne confirme l'existence d'une invitation, d'un membre ou d'un
  *  invité d'autrui. Un membre qui tente un geste de propriétaire sur SA
- *  famille reçoit `family.not_owner` (403). */
+ *  famille — ou vise un invité qu'il n'a pas créé — reçoit `family.not_owner`
+ *  (403).
+ *
+ *  v2 : `family.already_in_family` (une famille par compte : la cible d'une
+ *  invitation, ou le compte qui accepte, en a déjà une) ;
+ *  `family.guest_right_required` (un membre sans le droit de créer des
+ *  invités) ; `family.owner_must_dissolve` (le propriétaire ne quitte pas sa
+ *  famille : il la dissout). */
 export const FAMILY_ERROR_STATUS = {
   "family.invalid_input": 400,
   "family.pin_format": 400,
@@ -26,12 +33,15 @@ export const FAMILY_ERROR_STATUS = {
   "family.manage_locked": 403,
   "family.guest_account": 403,
   "family.review_account": 403,
+  "family.guest_right_required": 403,
+  "family.owner_must_dissolve": 403,
   "family.pin_required": 403,
   "family.pin_invalid": 403,
   "family.not_found": 404,
   "family.full": 409,
   "family.guests_full": 409,
   "family.already_member": 409,
+  "family.already_in_family": 409,
   "family.invite_pending": 409,
   "family.invite_closed": 409,
   "family.enroll_required": 409,
@@ -66,9 +76,11 @@ export type FamilyInvitationStatus = "pending" | "accepted" | "declined" | "canc
 
 // ── Temps réel ──────────────────────────────────────────────────────────────
 
-/** `owned` : la famille possédée ; `memberships` : celles dont on est membre ;
- *  `invitations` : les invitations reçues (l'affiche se montre en direct). */
-export type FamilyUpdateScope = "owned" | "memberships" | "invitations";
+/** `family` : la famille de ce compte (v2 — partagée : propriétaire et membres
+ *  relisent ensemble) ; `invitations` : les invitations reçues (l'affiche se
+ *  montre en direct). `owned` et `memberships` : v1, encore émis tant que des
+ *  clients les attendent. Tout client relit la Famille, quelle que soit la portée. */
+export type FamilyUpdateScope = "family" | "owned" | "memberships" | "invitations";
 
 /** Pourquoi une session de profil a cessé (poussé sur ses sockets, puis fermeture 4010). */
 export type FamilyProfileEndReason =
@@ -82,7 +94,10 @@ export type FamilyProfileEndReason =
   | "families_disabled"
   | "guests_disabled"
   | "unpaired"
-  | "account_deleted";
+  | "account_deleted"
+  /** La famille a changé sous la session (fusion à la migration v2, profil
+   *  qui n'appartient plus à la famille de la TV). */
+  | "family_changed";
 
 export type FamilyWsMessage =
   | { type: "family:update"; scope: FamilyUpdateScope }

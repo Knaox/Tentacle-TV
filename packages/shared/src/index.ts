@@ -120,9 +120,11 @@ export * from "./adminAttention/attentionModel";
 // pures (PIN, capacité, invitations, candidats) — miroirs backend — et la
 // lecture d'un refus par les clients.
 export * from "./family/familyContract";
+export * from "./family/familyTvContract";
 export * from "./family/familyProtocol";
 export * from "./family/familyRoutes";
 export * from "./family/familyRules";
+export * from "./family/familyRights";
 export * from "./family/familyLabels";
 export * from "./family/familyClient";
 export * from "./types/websocket";

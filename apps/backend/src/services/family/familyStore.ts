@@ -26,6 +26,10 @@ export interface MemberRow {
   displayName: string;
   color: string | null;
   jellyfinName: string | null;
+  /** Invité : son créateur (null avant la v2 : le propriétaire). */
+  createdBy: string | null;
+  /** Membre : le droit de créer des invités. */
+  canCreateGuests: boolean;
   createdAt: Date;
 }
 

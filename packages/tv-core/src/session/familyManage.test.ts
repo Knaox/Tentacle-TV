@@ -5,6 +5,7 @@ import { manageActionRows, manageCapacity, manageRows } from "./familyManage";
 
 const profile = (userId: string, kind: FamilyProfileDto["kind"]): FamilyProfileDto => ({
   userId, kind, name: userId, color: "teal", hasPin: false, imageTag: null, since: kind === "owner" ? null : "2026-10-04T20:00:00Z",
+  createdBy: null, createdByName: null, rights: kind === "member" ? { createGuests: false } : null,
 });
 
 function overview(profiles: FamilyProfileDto[], patch: Partial<FamilyOverviewDto> = {}, pending = 0): FamilyOverviewDto {
@@ -12,6 +13,7 @@ function overview(profiles: FamilyProfileDto[], patch: Partial<FamilyOverviewDto
     v: 1,
     switches: { families: true, guests: true },
     account: { canOwn: true, canJoin: true, reviewAccount: false, hasPin: false, personalSession: false },
+    family: null,
     owned: {
       id: "famille",
       profiles,

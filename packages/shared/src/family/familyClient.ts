@@ -2,6 +2,7 @@ import {
   FAMILY_MAX_GUESTS,
   FAMILY_MAX_PROFILES,
   type FamilyCapability,
+  type FamilyDto,
   type FamilyOverviewDto,
   type IncomingInvitationDto,
   type OwnedFamilyDto,
@@ -31,8 +32,17 @@ export interface OwnedCounts {
   pending: number;
 }
 
-/** Les places prises : le propriétaire, ses membres, ses invités, et les
- *  invitations en attente (elles réservent leur place). */
+/** Les places prises dans la famille : le propriétaire, les membres, les
+ *  invités, et les invitations en attente (elles réservent leur place — un
+ *  membre ne les voit pas : le serveur tranche). */
+export function familyCounts(family: FamilyDto | null): OwnedCounts {
+  const members = family?.profiles.filter((p) => p.kind === "member").length ?? 0;
+  const guests = family?.profiles.filter((p) => p.kind === "guest").length ?? 0;
+  const pending = family?.pendingInvitations.length ?? 0;
+  return { profiles: 1 + members + guests + pending, guests, members, pending };
+}
+
+/** @deprecated v1 — `familyCounts(overview.family)`. */
 export function ownedCounts(owned: OwnedFamilyDto | null): OwnedCounts {
   const members = owned?.profiles.filter((p) => p.kind === "member").length ?? 0;
   const guests = owned?.profiles.filter((p) => p.kind === "guest").length ?? 0;
@@ -47,7 +57,37 @@ export interface OwnerActions {
   addGuest: FamilyErrorCode | null;
 }
 
-/** Ce que le propriétaire (ou futur propriétaire) peut ajouter maintenant. */
+/**
+ * Ce que CE compte peut ajouter maintenant (v2) : le propriétaire invite et
+ * crée des invités ; un membre crée des invités si le propriétaire le lui
+ * permet, n'invite jamais ; un compte sans famille crée la sienne en invitant
+ * ou en ajoutant un invité. Vaut aussi pour la gestion des profils de la TV.
+ */
+export function familyActions(overview: FamilyOverviewDto): OwnerActions {
+  const { account, switches, family } = overview;
+  const base: FamilyErrorCode | null = account.reviewAccount
+    ? "family.review_account"
+    : !family && !account.canOwn
+      ? "family.guest_account"
+      : !switches.families
+        ? "family.disabled"
+        : null;
+  const counts = familyCounts(family);
+  const tally = { members: counts.members, guests: counts.guests, pendingInvitations: counts.pending };
+  return {
+    invite: base ?? (family?.role === "member" ? "family.not_owner" : capacityError("member", tally)),
+    addGuest:
+      base ??
+      (!switches.guests
+        ? "family.guests_disabled"
+        : family?.role === "member" && !family.rights.createGuests
+          ? "family.guest_right_required"
+          : capacityError("guest", tally)),
+  };
+}
+
+/** @deprecated v1 — `familyActions` : ce que le propriétaire (ou futur
+ *  propriétaire) peut ajouter, en session personnelle. */
 export function ownerActions(overview: FamilyOverviewDto): OwnerActions {
   const { account, switches } = overview;
   const base: FamilyErrorCode | null = !account.personalSession

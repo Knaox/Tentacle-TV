@@ -356,6 +356,11 @@ model FamilyMember {
   color        String?  @db.VarChar(16)
   /// Invité : le nom de son compte Jellyfin (« Lea - invite de Damien »).
   jellyfinName String?  @db.VarChar(255)
+  /// Invité (v2) : le compte qui l'a créé — le propriétaire, ou un membre
+  /// autorisé. Null pour une ligne d'avant la v2 (créée par le propriétaire).
+  createdBy       String?  @db.VarChar(255)
+  /// Membre (v2) : le propriétaire lui permet de créer des invités. Coupé par défaut.
+  canCreateGuests Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   @@unique([familyId, userId])

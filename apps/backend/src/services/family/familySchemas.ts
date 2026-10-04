@@ -31,6 +31,9 @@ export const createGuestBodySchema = z.object({
 
 export const inviteBodySchema = z.object({ userId: userIdSchema });
 
+/** Les droits d'un membre : seuls les champs présents changent. */
+export const setMemberRightsBodySchema = z.object({ createGuests: z.boolean().optional() });
+
 export const dissolveBodySchema = z.object({ confirm: z.literal("dissolve") });
 
 export const candidatesQuerySchema = z.object({ q: z.string().max(100).optional() });

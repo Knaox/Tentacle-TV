@@ -699,6 +699,17 @@ PREPARE np_family_stmt FROM @np_family_sql;
 EXECUTE np_family_stmt;
 DEALLOCATE PREPARE np_family_stmt;
 
+-- La Famille v2 : le créateur d'un invité (un membre peut en créer, si le
+-- propriétaire le lui permet) et ce droit, par membre — coupé par défaut.
+SET @fm_v2_cols := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'family_members' AND COLUMN_NAME = 'canCreateGuests');
+SET @fm_v2_sql := IF(@fm_v2_cols = 0,
+  'ALTER TABLE `family_members` ADD COLUMN `createdBy` varchar(255) NULL AFTER `jellyfinName`, ADD COLUMN `canCreateGuests` tinyint(1) NOT NULL DEFAULT 0 AFTER `createdBy`',
+  'DO 0');
+PREPARE fm_v2_stmt FROM @fm_v2_sql;
+EXECUTE fm_v2_stmt;
+DEALLOCATE PREPARE fm_v2_stmt;
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Purge de `server_config` : clés abandonnées par une évolution.
 -- La table n'est pas créée ici — c'est le `prisma db push` du setup qui la

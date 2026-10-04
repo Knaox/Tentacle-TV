@@ -219,6 +219,9 @@ export interface CandidateSource {
 }
 
 /**
+ * @deprecated v1 — `familyCandidates` (`familyRights.ts`) : la v2 rend TOUS les
+ * comptes, cachés compris, et marque ceux qui ne s'invitent pas.
+ *
  * Les comptes qu'un propriétaire peut inviter : ceux de l'écran de connexion
  * de Jellyfin (filtrés par `query`), un compte CACHÉ seulement si `query` est
  * son nom exact (casse indifférente). Jamais un compte désactivé, ni un
@@ -242,7 +245,7 @@ export function selectCandidates(
     )
     .sort((a, b) => a.name.localeCompare(b.name))
     .slice(0, options.limit)
-    .map((user) => ({ userId: user.id, name: user.name, imageTag: user.imageTag }));
+    .map((user) => ({ userId: user.id, name: user.name, imageTag: user.imageTag, status: "available" as const }));
 }
 
 // ── La TV ───────────────────────────────────────────────────────────────────

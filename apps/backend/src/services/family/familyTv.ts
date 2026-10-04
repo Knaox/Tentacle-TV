@@ -2,15 +2,9 @@ import { getPrisma } from "../db";
 import { provisionOwnJellyfinToken } from "../deviceJellyfinToken";
 import { revokePairedDevice } from "../deviceRevocation";
 import { hashToken, signProfileSessionToken } from "../jwt";
-import {
-  FAMILY_CONTRACT_VERSION,
-  FAMILY_MANAGE_UNLOCK_MS,
-  type ManageUnlockResponse,
-  type OpenTvSessionBody,
-  type TvProfileDto,
-  type TvProfilesDto,
-  type TvSessionDto,
-} from "../../family/familyContract";
+import { FAMILY_CONTRACT_VERSION, FAMILY_MANAGE_UNLOCK_MS, type FamilyRights } from "../../family/familyContract";
+import type { ManageUnlockResponse, OpenTvSessionBody, TvProfileDto, TvProfilesDto, TvSessionDto } from "../../family/familyTvContract";
+import { familyRightsOf } from "../../family/familyRights";
 import { isPickerRequired, isProfileKindAllowed, sameUserId } from "../../family/familyRules";
 import { getFamilySwitches, isReviewAccount } from "./familyConfig";
 import { FamilyFailure, iso } from "./familyErrors";
@@ -40,31 +34,52 @@ export async function listTvProfiles(pairing: PairingRow, now: number): Promise<
     return users === null || (account !== undefined && !account.isDisabled);
   });
   const ids = [ownerId, ...rows.map((row) => row.userId)];
-  const [pins, locks] = await Promise.all([profilesWithPin(ids), lockedProfiles(ids, now)]);
+  const [pins, locks, review] = await Promise.all([profilesWithPin(ids), lockedProfiles(ids, now), isReviewAccount(ownerId)]);
   const ownerName = users?.get(fold(ownerId))?.name ?? family?.ownerName ?? pairing.username;
-  const dto = (userId: string, kind: TvProfileDto["kind"], name: string, color: string | null, imageTag: string | null): TvProfileDto => {
+  // Seul le compte de la TV gère, et jamais le compte de démonstration.
+  const ownerManage: FamilyRights | null = review ? null : familyRightsOf("owner", null, switches);
+  const dto = (
+    userId: string,
+    kind: TvProfileDto["kind"],
+    name: string,
+    color: string | null,
+    imageTag: string | null,
+    createdBy: string | null,
+  ): TvProfileDto => {
     const until = locks.get(userId);
-    return { userId, kind, name, color: profileColor(color, userId), hasPin: pins.has(userId), imageTag, lockedUntil: until ? iso(until) : null };
+    return {
+      userId,
+      kind,
+      name,
+      color: profileColor(color, userId),
+      hasPin: pins.has(userId),
+      imageTag,
+      lockedUntil: until ? iso(until) : null,
+      createdBy,
+      manage: kind === "owner" ? ownerManage : null,
+    };
   };
   const profiles = [
-    dto(ownerId, "owner", ownerName, family?.ownerColor ?? null, users?.get(fold(ownerId))?.imageTag ?? null),
+    dto(ownerId, "owner", ownerName, family?.ownerColor ?? null, users?.get(fold(ownerId))?.imageTag ?? null, null),
     ...rows
       .sort((a, b) => Number(a.kind === "guest") - Number(b.kind === "guest"))
       .map((row) => {
         const guest = row.kind === "guest";
         const name = guest ? row.displayName : users?.get(fold(row.userId))?.name ?? row.displayName;
-        return dto(row.userId, memberKind(row), name, row.color, guest ? null : users?.get(fold(row.userId))?.imageTag ?? null);
+        const image = guest ? null : users?.get(fold(row.userId))?.imageTag ?? null;
+        return dto(row.userId, memberKind(row), name, row.color, image, guest ? row.createdBy ?? ownerId : null);
       }),
   ];
   const sticky = profiles.find((profile) => pairing.stickyProfileId && sameUserId(profile.userId, pairing.stickyProfileId));
   return {
     v: FAMILY_CONTRACT_VERSION,
     switches,
+    pairedBy: { userId: ownerId, name: ownerName },
     owner: { userId: ownerId, name: ownerName },
     profiles,
     stickyProfileId: sticky?.userId ?? null,
     pickerRequired: isPickerRequired(profiles.length),
-    canManage: !(await isReviewAccount(ownerId)),
+    canManage: ownerManage !== null,
   };
 }
 
@@ -81,7 +96,7 @@ async function unavailable(pairing: PairingRow, profileId: string): Promise<Fami
 export async function openTvSession(pairing: PairingRow, body: OpenTvSessionBody, now: number): Promise<TvSessionDto> {
   return withFamilyLock(`tv:${pairing.id}`, async () => {
     const listing = await listTvProfiles(pairing, now);
-    const profile = listing.profiles.find((entry) => sameUserId(entry.userId, body.profileId));
+    const profile = listing.profiles.find((entry: TvProfileDto) => sameUserId(entry.userId, body.profileId));
     if (!profile) throw await unavailable(pairing, body.profileId);
     if (profile.lockedUntil) {
       throw new FamilyFailure("family.pin_locked", "Profil bloqué : trop d'essais", { lockedUntil: profile.lockedUntil });
@@ -130,5 +145,5 @@ export async function unlockManage(sessionTokenHash: string, pin: string | undef
   await checkProfilePin({ pairingId: pairing.id, userId: pairing.jellyfinUserId, pin, now });
   const until = now + FAMILY_MANAGE_UNLOCK_MS;
   await prisma.pairedDevice.update({ where: { id: session.id }, data: { manageUntil: new Date(until) } });
-  return { unlockedUntil: iso(until) };
+  return { unlockedUntil: iso(until), rights: familyRightsOf("owner", null, getFamilySwitches()) };
 }

@@ -25,7 +25,10 @@ const { ProfileRow } = await import("./page/ProfileRow");
 const TRAP = "<b>Léa</b><img src=x onerror=alert(1)>";
 
 function profile(kind: FamilyProfileDto["kind"], patch: Partial<FamilyProfileDto> = {}): FamilyProfileDto {
-  return { userId: `${kind}-id`, kind, name: kind, color: "teal", hasPin: false, imageTag: null, since: "2026-10-04T00:00:00Z", ...patch };
+  return {
+    userId: `${kind}-id`, kind, name: kind, color: "teal", hasPin: false, imageTag: null, since: "2026-10-04T00:00:00Z",
+    createdBy: null, createdByName: null, rights: null, ...patch,
+  };
 }
 
 function row(p: FamilyProfileDto, canManage = true): string {

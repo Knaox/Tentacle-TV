@@ -1,4 +1,5 @@
 import { getPrisma } from "../db";
+import type { FamilyMemberRights, SetMemberRightsBody } from "../../family/familyContract";
 import { refuseReviewAccount } from "./familyConfig";
 import { FamilyFailure } from "./familyErrors";
 import { forgetFamilyGuests } from "./familyGuestMarkers";
@@ -32,6 +33,25 @@ export async function removeMember(owner: Actor, memberUserId: string): Promise<
   familyUpdate([owner.userId], "owned");
   console.log(`[family] Membre retiré de la famille ${family.id}`);
   return { removed: true };
+}
+
+/** Le propriétaire règle les droits d'un membre (v2). Retirer un droit ne
+ *  supprime rien : le membre ne peut plus, c'est tout. */
+export async function setMemberRights(owner: Actor, memberUserId: string, patch: SetMemberRightsBody): Promise<FamilyMemberRights> {
+  await refuseReviewAccount(owner.userId);
+  const family = await findOwnedFamily(owner.userId);
+  const row = family ? await findProfile(family.id, memberUserId) : null;
+  if (!family || !row || row.kind !== "member") throw await ownerRefusal(owner.userId, memberUserId);
+  const updated = await withFamilyLock(owner.userId, async () => {
+    const current = await findProfile(family.id, memberUserId);
+    if (!current || current.kind !== "member") throw new FamilyFailure("family.not_found", "Introuvable");
+    if (patch.createGuests === undefined) return current;
+    return getPrisma().familyMember.update({ where: { id: current.id }, data: { canCreateGuests: patch.createGuests } });
+  });
+  familyUpdate([owner.userId], "owned");
+  familyUpdate([row.userId], "memberships");
+  console.log(`[family] Droits d'un membre réglés dans la famille ${family.id}`);
+  return { createGuests: updated.canCreateGuests === true };
 }
 
 export async function leaveFamily(caller: Actor, familyId: string): Promise<{ left: true }> {
