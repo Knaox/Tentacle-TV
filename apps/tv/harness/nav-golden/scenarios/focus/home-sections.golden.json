@@ -3,8 +3,8 @@
   "domain": "focus",
   "suite": "home-sections",
   "reference": {
-    "sha": "d6f78c5a238a8e75fa78d6baea8f89328efcc924",
-    "label": "référence d6f78c5a2"
+    "sha": "aec99c33270dcb88d393ac4ff4700a75c1089943",
+    "label": "référence aec99c332"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T14:31:34.673Z",
+  "recordedAt": "2026-10-04T15:08:54.122Z",
   "scenarios": {
     "home-entry": {
       "hash": "6f4a6ccd45a5",
-      "durationMs": 17466,
+      "durationMs": 15340,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -181,7 +181,7 @@
     },
     "home-rows": {
       "hash": "c516a85d235a",
-      "durationMs": 50374,
+      "durationMs": 49320,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -727,7 +727,7 @@
     },
     "home-row-end": {
       "hash": "797aadb9667e",
-      "durationMs": 49873,
+      "durationMs": 48182,
       "start": {
         "app": "foreground",
         "focus": "watched:0",
@@ -923,7 +923,7 @@
     },
     "home-filter-chip": {
       "hash": "122ed3dd2baa",
-      "durationMs": 36276,
+      "durationMs": 35752,
       "start": {
         "app": "foreground",
         "focus": "filter:remove",
@@ -1170,7 +1170,7 @@
     },
     "home-return": {
       "hash": "61fc3108d7f7",
-      "durationMs": 28748,
+      "durationMs": 28958,
       "start": {
         "app": "foreground",
         "focus": "reco:forYou:2",
@@ -1247,7 +1247,7 @@
     },
     "home-burst": {
       "hash": "322272b81db6",
-      "durationMs": 29467,
+      "durationMs": 28729,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",

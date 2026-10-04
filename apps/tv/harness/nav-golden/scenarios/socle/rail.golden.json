@@ -3,8 +3,8 @@
   "domain": "socle",
   "suite": "rail",
   "reference": {
-    "sha": "94b18d325358483a4a886ed5a02823ab83116263",
-    "label": "référence 94b18d325"
+    "sha": "a353b2c24d54e6bd65163f37de3271e16cd5f1d8",
+    "label": "référence a353b2c24"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T14:47:13.114Z",
+  "recordedAt": "2026-10-04T15:11:55.489Z",
   "scenarios": {
     "rail-01": {
       "hash": "80243e7bbffe",
-      "durationMs": 21359,
+      "durationMs": 21457,
       "start": {
         "app": "foreground",
         "focus": "nav:Home",
@@ -297,7 +297,7 @@
     },
     "rail-02": {
       "hash": "f1ee73e612d3",
-      "durationMs": 10305,
+      "durationMs": 10151,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -369,7 +369,7 @@
     },
     "rail-03": {
       "hash": "7fee0e53b13f",
-      "durationMs": 15444,
+      "durationMs": 15840,
       "start": {
         "app": "foreground",
         "focus": "resume:0",
@@ -508,7 +508,7 @@
     },
     "rail-04": {
       "hash": "b7c48469abda",
-      "durationMs": 19424,
+      "durationMs": 19659,
       "start": {
         "app": "foreground",
         "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
@@ -667,7 +667,7 @@
     },
     "rail-05": {
       "hash": "13b01017eeaa",
-      "durationMs": 20129,
+      "durationMs": 19694,
       "start": {
         "app": "foreground",
         "focus": "grid:0",

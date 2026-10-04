@@ -3017,12 +3017,12 @@ début sous la page choisie.
 sur Rechercher n'y fait plus rien, BAS sur le profil non plus — la navigation
 bouclait de l'un à l'autre. Les guides des raccourcis visent désormais l'entrée
 du bord elle-même (tv-core `RAIL_SHORTCUT_TARGETS`) : sans eux, tvOS chercherait
-une cible plus loin, dans le contenu. Références réenregistrées sur 94b18d325 :
+une cible plus loin, dans le contenu. Références réenregistrées sur a353b2c24 :
 `raccourcis#rail-butees` (ex-`rail-boucle`), `defilement#rail-24-bibliotheques`
 (BAS maintenu s'arrête sur le profil — B6 corrigé), `socle/rail#rail-01`.
 
 **Preuves** : tests tv-core (`rowRewind.test.ts`, `railBack.test.ts`) ; banc
-nav-golden `focus/rangees-debut` (sept scénarios, enregistrés sur d6f78c5a2) —
+nav-golden `focus/rangees-debut` (sept scénarios, enregistrés sur aec99c332) —
 la rangée sortie revient au début (`resume:3` relevé à x = 1424, sa place sans
 défilement, contre 1460 et `resume:4` avant), Accueil → « Pour vous » →
 Accueil la rend au début, le retour de fiche rend l'affiche ouverte,

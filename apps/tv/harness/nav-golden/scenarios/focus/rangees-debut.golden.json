@@ -3,8 +3,8 @@
   "domain": "focus",
   "suite": "rangees-debut",
   "reference": {
-    "sha": "d6f78c5a238a8e75fa78d6baea8f89328efcc924",
-    "label": "référence d6f78c5a2"
+    "sha": "aec99c33270dcb88d393ac4ff4700a75c1089943",
+    "label": "référence aec99c332"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T14:24:30.207Z",
+  "recordedAt": "2026-10-04T15:01:58.502Z",
   "scenarios": {
     "rangee-a-l-ecran": {
       "hash": "18658417a555",
-      "durationMs": 22191,
+      "durationMs": 21135,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -147,7 +147,7 @@
     },
     "rangee-sortie": {
       "hash": "dd8c4e83578d",
-      "durationMs": 33550,
+      "durationMs": 30690,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -413,7 +413,7 @@
     },
     "rangee-changement-de-page": {
       "hash": "3b9be831e2c2",
-      "durationMs": 32450,
+      "durationMs": 32307,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -666,7 +666,7 @@
     },
     "rangee-retour-de-fiche": {
       "hash": "8970b32bb73e",
-      "durationMs": 25733,
+      "durationMs": 25683,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -803,7 +803,7 @@
     },
     "rangee-retour-premiere-carte": {
       "hash": "9d67cd34f38e",
-      "durationMs": 25759,
+      "durationMs": 26083,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -958,7 +958,7 @@
     },
     "etagere-retour-premiere-carte": {
       "hash": "ac2c237a336b",
-      "durationMs": 25897,
+      "durationMs": 26741,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -1093,7 +1093,7 @@
     },
     "rangee-page-couverte": {
       "hash": "28ab381d8187",
-      "durationMs": 36292,
+      "durationMs": 36563,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
