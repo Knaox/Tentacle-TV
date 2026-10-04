@@ -2995,7 +2995,13 @@ image de plus. La page lit son défilement (l'accueil le lisait déjà pour le
 héros ; « Pour vous » s'y abonne, un événement toutes les 32 ms au plus pendant
 qu'elle défile) et ne parcourt que les rangées déplacées. L'état du Retour
 change quand le focus passe de la première carte à une autre (ou revient) :
-un rendu du cadre de l'écran (`RedesignScreen`), pas de sa vue.
+un rendu du cadre de l'écran (`RedesignScreen`), pas de sa vue. **Mesuré**
+(commits React comptés par le crochet des outils de React, geste par geste,
+même parcours sur la base c9881a7d5 et sur la branche : Reprendre défilée de
+quatre cartes, quatre rangées plus bas — elle sort de l'écran —, puis
+remontée) : 7-9 commits par geste, IDENTIQUES aux deux, geste par geste ; seule
+l'arrivée finale diffère (`resume:3` à x = 1424, au début, contre `resume:4` à
+x = 1460).
 
 **Le cas qui a demandé du soin** — l'accueil quitté par le rail ALORS QU'UNE
 FICHE LE COUVRAIT (fiche ouverte depuis une carte, puis une page du rail
@@ -3007,14 +3013,24 @@ instant. Quitté À L'ÉCRAN, l'accueil rend d'abord son focus au début de la
 rangée (`refocusContent` → `startOf`), et toutes les rangées reviennent au
 début sous la page choisie.
 
+**Le rail s'arrête à ses bouts** (même jour, demande de l'utilisateur) : HAUT
+sur Rechercher n'y fait plus rien, BAS sur le profil non plus — la navigation
+bouclait de l'un à l'autre. Les guides des raccourcis visent désormais l'entrée
+du bord elle-même (tv-core `RAIL_SHORTCUT_TARGETS`) : sans eux, tvOS chercherait
+une cible plus loin, dans le contenu. Références réenregistrées sur 94b18d325 :
+`raccourcis#rail-butees` (ex-`rail-boucle`), `defilement#rail-24-bibliotheques`
+(BAS maintenu s'arrête sur le profil — B6 corrigé), `socle/rail#rail-01`.
+
 **Preuves** : tests tv-core (`rowRewind.test.ts`, `railBack.test.ts`) ; banc
-nav-golden `focus/rangees-debut` (six scénarios, enregistrés sur 23bf658b7) —
+nav-golden `focus/rangees-debut` (sept scénarios, enregistrés sur d6f78c5a2) —
 la rangée sortie revient au début (`resume:3` relevé à x = 1424, sa place sans
 défilement, contre 1460 et `resume:4` avant), Accueil → « Pour vous » →
-Accueil la rend au début, le retour de fiche rend l'affiche ouverte, Retour
-mène à la première carte puis au rail ; contre-épreuve sur la base c9881a7d5 :
-quatre écarts sur six, exactement là où le comportement change. Une seule
-référence existante bouge : `focus/home-sections#home-rows`, pas 21 (« À
+Accueil la rend au début, le retour de fiche rend l'affiche ouverte,
+l'accueil couvert (fiche → personne → rail → Accueil) rend la première carte
+— UIKit restaure l'affiche à 528 ms, la première carte la remplace à 653 ms —,
+Retour mène à la première carte puis au rail ; contre-épreuve sur la base c9881a7d5 :
+quatre écarts sur six, exactement là où le comportement change. Sur les 137
+scénarios existants rejoués, une seule référence bouge pour les rangées : `focus/home-sections#home-rows`, pas 21 (« À
 suivre », défilée puis sortie de l'écran, revient au début : HAUT y entre sur
 `nextUp:3` au lieu de `nextUp:5`).
 
@@ -3022,7 +3038,8 @@ suivre », défilée puis sortie de l'écran, revient au début : HAUT y entre s
 d'un cran puis HAUT — elle n'a pas bougé ; BAS jusqu'à Déjà vus puis
 remontée — elle est au début, sans qu'on l'ait vue bouger ; Accueil → Films →
 Accueil ; une affiche ouverte puis Retour — la même affiche ; Retour sur une
-carte défilée, deux fois. Le glisser du pavé dans une rangée n'est pas
+carte défilée, deux fois ; dans le rail, HAUT sur Rechercher et BAS sur le
+profil — rien ne bouge. Le glisser du pavé dans une rangée n'est pas
 simulable : à éprouver aussi.
 
 ## Inventaire — les écrans
