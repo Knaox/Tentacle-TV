@@ -85,6 +85,27 @@ export default {
     dissolveCheck: "Je comprends que les profils invités et leur lecture seront perdus.",
     dissolveAction: "Dissoudre",
   },
+  rights: {
+    createGuests: "Peut créer des invités",
+    createGuestsHint: "Crée ses propres invités et ne supprime que ceux-là, dans la limite de trois invités pour toute la famille.",
+    requests: "Peut demander des films",
+    requestsHint: "Ses demandes partent à votre nom.",
+    saved: "Droit enregistré.",
+  },
+  shared: {
+    titleOwner: "Ma famille",
+    titleMember: "Famille de {{owner}}",
+    memberNotice: "Seul {{owner}} invite, retire et dissout la famille.",
+    addedBy: "Ajouté par {{name}}",
+    yourGuest: "Votre invité",
+    leave: "Quitter la famille",
+    leaveHint: "Votre profil disparaît des TV de la famille, et ses profils des vôtres.",
+    alreadyInFamily: "Vous faites déjà partie d'une famille : quittez-la pour accepter une autre invitation.",
+  },
+  candidates: {
+    hint: "Tous les comptes du serveur. Ceux qui sont déjà dans une famille ne peuvent pas être invités.",
+    inFamily: "Déjà dans une famille",
+  },
   invite: {
     title: "Inviter un compte",
     searchLabel: "Rechercher un compte",

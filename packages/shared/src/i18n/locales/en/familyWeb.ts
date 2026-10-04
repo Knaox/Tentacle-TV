@@ -84,6 +84,27 @@ export default {
     dissolveCheck: "I understand that guest profiles and their watch history will be lost.",
     dissolveAction: "Dissolve",
   },
+  rights: {
+    createGuests: "Can create guests",
+    createGuestsHint: "Creates their own guests and can only delete those, within three guests for the whole family.",
+    requests: "Can request movies",
+    requestsHint: "Their requests are made in your name.",
+    saved: "Permission saved.",
+  },
+  shared: {
+    titleOwner: "My family",
+    titleMember: "{{owner}}'s family",
+    memberNotice: "Only {{owner}} invites, removes and dissolves the family.",
+    addedBy: "Added by {{name}}",
+    yourGuest: "Your guest",
+    leave: "Leave the family",
+    leaveHint: "Your profile disappears from the family's TVs, and its profiles from yours.",
+    alreadyInFamily: "You are already in a family: leave it to accept another invitation.",
+  },
+  candidates: {
+    hint: "Every account on the server. Accounts already in a family cannot be invited.",
+    inFamily: "Already in a family",
+  },
   invite: {
     title: "Invite an account",
     searchLabel: "Search for an account",
