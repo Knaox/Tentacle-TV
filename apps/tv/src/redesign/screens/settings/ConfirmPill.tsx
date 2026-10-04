@@ -7,6 +7,7 @@ import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts } from "../../theme/tokens";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * La pilule d'une action qui fait sortir du compte — « Changer de serveur »,
@@ -66,7 +67,9 @@ function Body({ label, icon, tone = "default", armed = false, focused }: Confirm
   const focusColor = armedDanger ? colors.text : danger ? colors.error : colors.ctaFg;
   return (
     <Animated.View style={lift}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, onLayer]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, onLayer]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, offLayer]}>
         <GlassSurface radius={RADIUS} tone="clear" style={StyleSheet.absoluteFill} />
       </Animated.View>

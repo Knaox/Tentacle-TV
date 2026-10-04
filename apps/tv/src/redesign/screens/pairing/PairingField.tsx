@@ -7,6 +7,7 @@ import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim } from "../../theme/tokens";
 import { useKeyboardEntry } from "./keyboardOpener";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Un champ du jumelage — l'adresse du serveur, l'identifiant, le mot de passe :
@@ -102,7 +103,9 @@ function Face({ focused, icon, shown, placeholder, busy }: { focused: boolean; i
   const empty = shown.length === 0;
   return (
     <Animated.View style={[styles.field, lift]}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.fieldShadow, onLayer]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.fieldShadow, onLayer]}>
+        <DropShadow of={styles.fieldShadow} />
+      </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, offLayer]}>
         <GlassSurface radius={FIELD.radius} tone="clear" style={StyleSheet.absoluteFill} />
       </Animated.View>

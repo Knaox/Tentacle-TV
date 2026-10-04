@@ -10,6 +10,7 @@ import { Icon } from "../../icons/Icon";
 import { colors, fonts, text, white } from "../../theme/tokens";
 import { ProfileAvatar } from "./ProfileAvatar";
 import type { ProfileTileModel } from "./profilesTypes";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Un profil de « Qui regarde ? » : son rond (portrait ou initiale sur sa
@@ -104,7 +105,9 @@ function Body({ model, focused, guestLabel }: { model: ProfileTileModel; focused
   return (
     <View style={styles.tile}>
       <Animated.View style={lift}>
-        <Animated.View style={[styles.glow, glow]} />
+        <Animated.View style={[styles.glow, glow]}>
+          <DropShadow of={styles.glow} />
+        </Animated.View>
         <View style={locked ? styles.dimmed : null}>
           <ProfileAvatar name={model.name} color={model.color} uri={model.avatarUri} size={TILE_AVATAR} />
         </View>

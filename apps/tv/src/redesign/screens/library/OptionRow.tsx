@@ -5,6 +5,7 @@ import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Une ligne d'une liste en surimpression : une CASE (choix multiple) ou un
@@ -81,7 +82,9 @@ function Body({ label, detail, selected, mode, focused }: OptionRowProps & { foc
   const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   return (
     <Animated.View style={lift}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, whiteLayer]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, whiteLayer]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       {selected ? <View style={[StyleSheet.absoluteFill, styles.selectedFill]} /> : null}
       <Line label={label} detail={detail} selected={selected} mode={mode} inverted={false} />
       <Animated.View style={[StyleSheet.absoluteFill, styles.focusFill, whiteLayer]}>

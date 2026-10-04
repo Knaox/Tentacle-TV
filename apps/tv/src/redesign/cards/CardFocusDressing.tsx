@@ -3,6 +3,7 @@ import { StyleSheet } from "react-native";
 import Animated, { runOnJS, useAnimatedReaction, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_LIGHT } from "@tentacle-tv/theme";
 import { SoftGradient } from "../background/SoftGradient";
+import { DropShadow } from "../render/DropShadow";
 import { white } from "../theme/tokens";
 
 /**
@@ -65,15 +66,11 @@ export const FocusRaised = memo(function FocusRaised({
     },
     [focused, onSettled],
   );
+  const lift = glow ? [dressingStyles.glowRaised, { shadowColor: glow.color, shadowOpacity: glow.opacity }] : dressingStyles.shadowRaised;
   return (
-    <Animated.View
-      style={[
-        StyleSheet.absoluteFill,
-        glow ? [dressingStyles.glowRaised, { shadowColor: glow.color, shadowOpacity: glow.opacity }] : dressingStyles.shadowRaised,
-        { borderRadius: radius },
-        raised,
-      ]}
-    />
+    <Animated.View style={[StyleSheet.absoluteFill, lift, { borderRadius: radius }, raised]}>
+      <DropShadow of={[lift, { borderRadius: radius }]} />
+    </Animated.View>
   );
 });
 
@@ -97,7 +94,11 @@ export const FocusSheen = memo(function FocusSheen({ progress, width, height }: 
 /** L'ombre de repos d'une carte SANS lueur, qui s'efface quand elle se soulève. */
 export const FadingRestShadow = memo(function FadingRestShadow({ progress, radius }: { progress: SharedValue<number>; radius: number }) {
   const rest = useAnimatedStyle(() => ({ opacity: 1 - progress.value }));
-  return <Animated.View style={[StyleSheet.absoluteFill, dressingStyles.shadowRest, { borderRadius: radius }, rest]} />;
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, dressingStyles.shadowRest, { borderRadius: radius }, rest]}>
+      <DropShadow of={[dressingStyles.shadowRest, { borderRadius: radius }]} />
+    </Animated.View>
+  );
 });
 
 export const dressingStyles = StyleSheet.create({

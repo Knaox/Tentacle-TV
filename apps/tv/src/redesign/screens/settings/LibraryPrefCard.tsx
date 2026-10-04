@@ -9,6 +9,7 @@ import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import type { LibraryPrefModel, LibrarySettingKey } from "./settingsTypes";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Les pistes par défaut d'UNE bibliothèque : trois tuiles qui disent ce
@@ -100,7 +101,9 @@ function TileBody({ label, value, focused }: { label: string; value: string; foc
   const offLayer = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   return (
     <Animated.View style={lift}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, onLayer]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, onLayer]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, offLayer]}>
         <GlassSurface radius={TILE_RADIUS} tone="clear" style={StyleSheet.absoluteFill} />
       </Animated.View>

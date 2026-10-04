@@ -13,6 +13,7 @@ import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, scrim, text, white } from "../../theme/tokens";
 import { PersonPortrait } from "./PersonPortrait";
 import type { SearchTopModel, SearchTopPersonModel, SearchTopTitleModel } from "./searchViewModel";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Le meilleur résultat, en tête des résultats : une bannière qu'un seul appui
@@ -100,7 +101,9 @@ function Body({ top, label, width, tall, focused }: { top: SearchTopModel; label
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, halo]}>
         <ArtworkHalo width={width} height={height} radius={RADIUS} palette={palette} spread={8} blur={22} opacity={0.4} />
       </Animated.View>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, raised]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, raised]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       <View style={[styles.frame, { width, height }]}>
         {top.kind === "title" ? <TitleFace top={top} label={label} tall={tall} /> : <PersonFace top={top} label={label} tall={tall} />}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, sheen]}>

@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, white } from "../../theme/tokens";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Les petites pièces des réglages : les styles de texte du panneau, le titre
@@ -49,6 +50,7 @@ export const Avatar = memo(function Avatar({ uri, name, size }: { uri?: string; 
   const round = { width: size, height: size, borderRadius: size / 2 };
   return (
     <View style={[round, styles.avatarRing]}>
+      <DropShadow of={[round, styles.avatarRing]} />
       {uri ? (
         <Image source={{ uri }} style={round} fadeDuration={0} />
       ) : (

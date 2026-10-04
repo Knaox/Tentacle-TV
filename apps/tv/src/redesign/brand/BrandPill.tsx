@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { colors, scrim, white } from "../theme/tokens";
 import { BrandGradient } from "./BrandGradient";
+import { DropShadow } from "../render/DropShadow";
 
 /**
  * La matière de la pilule de LECTURE : le dégradé de marque du bouton Lire du
@@ -33,7 +34,9 @@ export const BrandPill = memo(function BrandPill({ progress, radius, children }:
   const round = { borderRadius: radius };
   return (
     <>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.glow, round, glow]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.glow, round, glow]}>
+        <DropShadow of={[styles.glow, round]} />
+      </Animated.View>
       <View style={[styles.body, round]}>
         <BrandGradient diagonal />
         <Animated.View style={[StyleSheet.absoluteFill, styles.veil, veil]} />

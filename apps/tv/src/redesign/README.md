@@ -62,6 +62,8 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `motion/pressProgress` | L'appui (OK enfoncé) tenu par `FocusTarget` : `usePressProgress()`, `pressScale()` |
 | `motion/Reveal` | Ce qui paraît après un temps d'arrêt du focus (`delayMs`), en fondu, et s'en va en fondu plus bref |
 | `motion/useStagedMount` | Ce qui ne se voit pas encore, monté APRÈS l'entrée de la page, un rang par image (sections de la fiche : `SectionStage`) |
+| `render/renderProfile` | `RENDER` : le profil de rendu de l'appareil (tv-core `render/`), choisi par suffixe (`.ios.ts` Apple TV, `.ts` Android TV) — mouvement, verre natif, ombres, échelle des halos ; le SEUL aiguillage de plateforme du rendu |
+| `render/DropShadow` | L'ombre des styles iOS (`shadow*`) là où la plateforme ne la dessine pas : premier enfant de la vue qui projette, `of` = ses styles. Rien sur Apple TV ; sur Android, un masque flouté une fois (`TentacleShadowView.kt`) |
 | `glass/GlassSurface` | Le verre (`radius`, `tone` regular/strong/clear, `elevated`) ; suit l'interrupteur Liquid Glass — natif (`UIGlassEffect`) sur tvOS 26, simulé ailleurs |
 | `glass/glassBacking` | Le fond sous un verre qui flotte : `useNativeGlassBacking(tone)` remplace, sous le verre natif seulement, le fond qu'une vue dessine (strong : aucun, regular 0,1, clear 0,55) |
 | `background/AmbientBackdrop` | Le fond vivant (`palette`) : l'encre de la scène et trois lumières de l'œuvre, à la clarté bornée (`boundedLight`) |

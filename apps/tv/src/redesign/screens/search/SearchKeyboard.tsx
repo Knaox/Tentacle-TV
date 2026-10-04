@@ -6,6 +6,7 @@ import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, white } from "../../theme/tokens";
 import { KEYBOARD_WIDTH, KEY_GAP, KEY_SIZE, type SearchInputLabels } from "./searchViewModel";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Le clavier en grille : A–Z puis 0–9, six touches par rangée, grandes
@@ -55,6 +56,7 @@ function KeyFace({ focused, width, label, icon, active }: {
       <View style={[StyleSheet.absoluteFill, styles.base, active && styles.active]} />
       {content(active ? colors.accentLight : colors.text)}
       <Animated.View style={[StyleSheet.absoluteFill, styles.focusFill, whiteLayer]}>
+        <DropShadow of={styles.focusFill} />
         {content(colors.ctaFg)}
       </Animated.View>
     </Animated.View>

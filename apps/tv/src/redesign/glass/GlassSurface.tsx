@@ -1,6 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
+import { DropShadow } from "../render/DropShadow";
 import { colors, white } from "../theme/tokens";
 import { useGlassRendering } from "./liquidGlassMode";
 import { NativeGlassView } from "./nativeGlass";
@@ -59,6 +60,11 @@ export const GlassSurface = memo(function GlassSurface({
   const rendering = useGlassRendering();
   return (
     <View style={[{ borderRadius: radius }, elevated && styles.elevated, style]}>
+      {/* L'ombre d'une plateforme qui ne dessine pas celle du style (rien sur
+          Apple TV) : projetée, comme celle de CALayer, à l'alpha du voile. */}
+      {elevated && rendering !== "native" ? (
+        <DropShadow of={[styles.elevated, { borderRadius: radius, backgroundColor: (rendering === "simulated" ? LIQUID_FILL : ENRICHED_FILL)[tone] }]} />
+      ) : null}
       {rendering === "native" && NativeGlassView ? (
         <NativeGlassView radius={radius} tone={tone} style={StyleSheet.absoluteFill} />
       ) : (

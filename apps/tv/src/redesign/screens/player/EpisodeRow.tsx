@@ -8,6 +8,7 @@ import { useFocusProgress } from "../../focus/useFocusProgress";
 import { colors, fonts, white } from "../../theme/tokens";
 import { DualTone, TONES } from "./DualTone";
 import type { EpisodeRowModel } from "./playerTypes";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Une grande ligne d'épisode : la vignette (jauge de la marque s'il est entamé,
@@ -49,7 +50,9 @@ function Body({ episode, nowPlayingLabel, focused }: { episode: EpisodeRowModel;
   const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   return (
     <Animated.View style={[styles.row, lift]}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, whiteLayer]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, whiteLayer]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       <View style={[StyleSheet.absoluteFill, styles.rest, episode.current && styles.current]} />
       <Animated.View style={[StyleSheet.absoluteFill, styles.white, whiteLayer]} />
       <View style={styles.thumb}>

@@ -9,6 +9,7 @@ import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts } from "../../theme/tokens";
 import { SOFT_BASE } from "./surfaces";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Le bouton rond du lecteur : verre au repos, BLANC au focus (pictogramme
@@ -77,7 +78,9 @@ function Body({ label, icon, seconds, size = 80, primary = false, caption = true
   return (
     <View style={{ width: size, height: size }}>
       <Animated.View style={[StyleSheet.absoluteFill, lift]}>
-        <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, { borderRadius: radius }, shadow]} />
+        <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, { borderRadius: radius }, shadow]}>
+          <DropShadow of={[styles.shadow, { borderRadius: radius }]} />
+        </Animated.View>
         {primary ? null : (
           <>
             <GlassSurface radius={radius} tone="clear" style={[StyleSheet.absoluteFill, styles.base, backing]} />

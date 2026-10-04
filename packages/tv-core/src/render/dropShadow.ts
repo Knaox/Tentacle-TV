@@ -10,11 +10,13 @@
  * Android le prend tel quel.
  */
 
+/** Les styles tels que React Native les type : une valeur non numérique (un
+ *  nœud animé) vaut le défaut. */
 export interface ShadowStyleInput {
   shadowColor?: unknown;
-  shadowOpacity?: number | null;
-  shadowRadius?: number | null;
-  shadowOffset?: { width?: number | null; height?: number | null } | null;
+  shadowOpacity?: unknown;
+  shadowRadius?: unknown;
+  shadowOffset?: { width?: unknown; height?: unknown } | null;
 }
 
 export interface DropShadowSpec {
@@ -30,7 +32,7 @@ export interface DropShadowSpec {
 
 const LAYER_DEFAULTS = { color: "#000", radius: 3, offsetX: 0, offsetY: -3 } as const;
 
-const finite = (value: number | null | undefined, fallback: number) =>
+const finite = (value: unknown, fallback: number): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
 /**

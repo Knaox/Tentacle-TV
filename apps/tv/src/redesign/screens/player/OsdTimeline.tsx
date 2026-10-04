@@ -5,6 +5,7 @@ import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, white } from "../../theme/tokens";
 import { formatClock, formatRemaining, fractionOf } from "./formatClock";
 import type { TimelineSegment } from "./playerTypes";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * La frise : le temps écoulé, la barre (chargé, lu, la tête de lecture) et le
@@ -122,8 +123,14 @@ export const OsdTimeline = memo(function OsdTimeline({
         {bounds.slice(1).map((to, index) => (
           <Piece key={index} from={bounds[index]} to={to} loaded={loaded} played={played} span={span} />
         ))}
-        <View style={[styles.head, { transform: [{ translateX: Math.max(0, played * TRACK_WIDTH - HEAD_WIDTH) }] }]} />
-        {aim !== null ? <View style={[styles.aim, { transform: [{ translateX: aim * TRACK_WIDTH - HEAD_WIDTH / 2 }] }]} /> : null}
+        <View style={[styles.head, { transform: [{ translateX: Math.max(0, played * TRACK_WIDTH - HEAD_WIDTH) }] }]}>
+          <DropShadow of={styles.head} />
+        </View>
+        {aim !== null ? (
+          <View style={[styles.aim, { transform: [{ translateX: aim * TRACK_WIDTH - HEAD_WIDTH / 2 }] }]}>
+            <DropShadow of={styles.aim} />
+          </View>
+        ) : null}
       </View>
       {/* Le restant, qui décompte ; en défilement, celui de la cible visée. */}
       <Text style={[styles.time, styles.total]}>{formatRemaining(ghost ?? position, duration)}</Text>

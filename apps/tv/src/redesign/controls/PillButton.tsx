@@ -9,6 +9,7 @@ import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { GlassSurface } from "../glass/GlassSurface";
 import { Icon, type IconName } from "../icons/Icon";
 import { colors, fonts, scrim, white } from "../theme/tokens";
+import { DropShadow } from "../render/DropShadow";
 
 /**
  * Le bouton pilule du bureau, à l'échelle du salon.
@@ -117,7 +118,9 @@ function Body({ focused, variant, s, label, icon, progress }: {
   }
   return (
     <Animated.View style={lift}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, { borderRadius: radius }, shadow]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, { borderRadius: radius }, shadow]}>
+        <DropShadow of={[styles.shadow, { borderRadius: radius }]} />
+      </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, glassLayer]}>
         <GlassSurface radius={radius} tone="clear" style={StyleSheet.absoluteFill} />
         <Content label={label} icon={icon} color={colors.text} size={s} progress={progress} track={white(0.3)} fill={colors.text} />

@@ -7,6 +7,7 @@ import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, white } from "../../theme/tokens";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Un avis bref, en haut à droite, qui ne prend JAMAIS le focus : ce qu'un
@@ -51,6 +52,7 @@ function NoticeCard({ notice }: { notice: NoticeModel }) {
   const glyph = GLYPH[notice.kind];
   return (
     <View style={[styles.shadow, backing]}>
+      <DropShadow of={[styles.shadow, backing]} />
       <View style={styles.card}>
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} />
         <View style={styles.body}>

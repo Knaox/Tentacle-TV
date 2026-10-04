@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, text } from "../../theme/tokens";
 import { Glow } from "./Glow";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Le jumelage a réussi : la coche verte (elle entre en s'agrandissant, sur
@@ -20,6 +21,7 @@ export const SuccessStep = memo(function SuccessStep({ userName, avatarUri }: { 
       <Animated.View entering={ZoomIn.springify().damping(14).stiffness(170)} style={styles.badgeWrap}>
         <Glow size={BADGE * 3} color={colors.success} opacity={0.42} style={styles.halo} />
         <View style={styles.badge}>
+          <DropShadow of={styles.badge} />
           <Icon name="check" size={84} color={colors.text} strokeWidth={3} />
         </View>
       </Animated.View>

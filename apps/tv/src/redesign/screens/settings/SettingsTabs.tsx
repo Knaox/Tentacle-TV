@@ -6,6 +6,7 @@ import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import type { SettingsTab } from "./settingsTypes";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Les onglets des réglages, en colonne : un pictogramme, le nom de l'onglet
@@ -72,7 +73,9 @@ function TabBody({ item, active, focused }: { item: SettingsTabItem; active: boo
   const layer = useAnimatedStyle(() => ({ opacity: p.value }));
   return (
     <Animated.View style={[styles.item, lift]}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, layer]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, layer]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       {active ? <View style={[StyleSheet.absoluteFill, styles.activeGlass]} /> : null}
       <Content item={item} active={active} dark={false} />
       <Animated.View style={[StyleSheet.absoluteFill, styles.focusFill, layer]}>

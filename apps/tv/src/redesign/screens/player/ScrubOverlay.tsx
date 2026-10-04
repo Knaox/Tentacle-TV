@@ -14,6 +14,7 @@ import { AIM_HEIGHT, OsdTimeline, TIMELINE_ROW, TIMELINE_TOP, TRACK_LEFT, TRACK_
 import type { PlayerTimeline, ScrubModel } from "./playerTypes";
 import { ScrubCountdown } from "./ScrubCountdown";
 import { SOFT_BASE } from "./surfaces";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Le DÉFILEMENT, comme le lecteur d'Apple (et Netflix sur Apple TV) : la
@@ -98,6 +99,7 @@ export const ScrubOverlay = memo(function ScrubOverlay({
         <Animated.View style={[styles.bubbleInner, rise]}>
           {scrub.frame ? (
             <View style={styles.thumbShadow}>
+              <DropShadow of={styles.thumbShadow} />
               <View style={styles.thumb}>
                 <FrameView frame={scrub.frame} width={THUMB_W} height={THUMB_H} />
                 {scrub.speed ? (

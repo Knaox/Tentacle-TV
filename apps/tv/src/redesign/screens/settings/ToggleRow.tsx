@@ -6,6 +6,7 @@ import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Un réglage oui/non : toute la ligne est le bouton — OK bascule. Le titre
@@ -53,7 +54,9 @@ function SwitchTrack({ value, dark }: { value: boolean; dark: boolean }) {
   const track = value ? colors.accent : dark ? scrim(0.16) : white(0.22);
   return (
     <View style={[styles.track, { backgroundColor: track }]}>
-      <Animated.View style={[styles.knob, knob]} />
+      <Animated.View style={[styles.knob, knob]}>
+        <DropShadow of={styles.knob} />
+      </Animated.View>
     </View>
   );
 }
@@ -85,7 +88,9 @@ function Body(props: ToggleRowProps & { focused: boolean }) {
   const offLayer = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   return (
     <Animated.View style={lift}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, onLayer]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, onLayer]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, offLayer]}>
         <GlassSurface radius={RADIUS} tone="clear" style={StyleSheet.absoluteFill} />
       </Animated.View>

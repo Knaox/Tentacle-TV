@@ -8,6 +8,7 @@ import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, text, white } from "../../theme/tokens";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Les messages que l'administrateur envoie à ce téléviseur (tableau de bord
@@ -63,6 +64,7 @@ function MessageCard({ message, label }: { message: SessionMessageModel; label: 
   const backing = useNativeGlassBacking("strong");
   return (
     <View style={[styles.shadow, backing]}>
+      <DropShadow of={[styles.shadow, backing]} />
       <View style={styles.card}>
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} />
         <View style={styles.body}>

@@ -7,6 +7,7 @@ import { Icon } from "../../icons/Icon";
 import { colors, fonts, white } from "../../theme/tokens";
 import { FilterSheet } from "./FilterSheet";
 import type { FilterSheetHandlers, RatingSheetModel, RatingStop } from "./libraryTypes";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * La note minimum : une échelle de PALIERS (0 à 10, par demi-point), la
@@ -47,6 +48,7 @@ function StopBody({ stop, focused, whole }: { stop: RatingStop; focused: boolean
           <View style={[styles.dot, whole && styles.dotWhole, { backgroundColor: stop.kept ? white(0.92) : white(0.3) }]} />
         )}
         <Animated.View style={[styles.bubble, bubble]}>
+          <DropShadow of={styles.bubble} />
           <Text style={styles.bubbleText} numberOfLines={1}>{stop.label}</Text>
         </Animated.View>
       </View>

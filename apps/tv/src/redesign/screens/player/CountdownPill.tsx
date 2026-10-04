@@ -11,6 +11,7 @@ import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import type { Countdown } from "./playerTypes";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * La pilule d'une action qui peut partir toute seule : « Passer l'intro dans
@@ -124,7 +125,9 @@ function Body({ focused, label, icon, variant, countdown, base }: {
   }
   return (
     <Animated.View style={lift}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, shadow]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, shadow]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, glassLayer]}>
         <GlassSurface radius={HEIGHT / 2} tone="clear" style={[StyleSheet.absoluteFill, base ? { backgroundColor: base } : null, base ? nativeBacking : null]} />
         <Content label={label} icon={icon} countdown={countdown} dark={false} />

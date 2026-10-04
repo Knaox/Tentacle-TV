@@ -11,6 +11,7 @@ import { useRecede, useRowFocus, type RowPlace } from "../../motion/useRowRecede
 import { colors, fonts, text } from "../../theme/tokens";
 import { PersonPortrait } from "./PersonPortrait";
 import type { SearchPersonModel } from "./searchViewModel";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * La rangée « Personnes » : des portraits ronds, le nom dessous et ce que la
@@ -36,7 +37,9 @@ function Portrait({ person, focused, place }: { person: SearchPersonModel; focus
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   return (
     <Animated.View style={[styles.portrait, lift]}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, shadow]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, shadow]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       <PersonPortrait uri={person.imageUri} initials={person.initials} size={SIZE} />
     </Animated.View>
   );

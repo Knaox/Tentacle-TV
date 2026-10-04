@@ -7,6 +7,7 @@ import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import type { FilterPillModel } from "./libraryTypes";
+import { DropShadow } from "../../render/DropShadow";
 
 /**
  * Une pastille de la barre de filtres : le NOM du critère en petit, sa VALEUR
@@ -70,7 +71,9 @@ function Body({ pill, focused }: { pill: FilterPillModel; focused: boolean }) {
   const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   return (
     <Animated.View style={lift}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, whiteLayer]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, whiteLayer]}>
+        <DropShadow of={styles.shadow} />
+      </Animated.View>
       {pill.active ? (
         <View style={[StyleSheet.absoluteFill, styles.activeFill]} />
       ) : (
