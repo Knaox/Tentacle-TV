@@ -4,7 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../background/ArtworkHalo";
 import { SoftGradient } from "../background/SoftGradient";
-import { CardHoldHint, HOLD_HINT_DWELL_MS } from "../cards/CardHoldHint";
+import { CardHoldHint } from "../cards/CardHoldHint";
 import type { ArtworkPalette } from "../color/artworkPalette";
 import { PillButton } from "../controls/PillButton";
 import { RoundButton } from "../controls/RoundButton";
@@ -180,7 +180,7 @@ export const HeroBanner = memo(function HeroBanner({
               />
             ) : null}
             {onLongPress ? (
-              <Reveal shown={actionFocused} delayMs={HOLD_HINT_DWELL_MS} style={styles.holdHint}>
+              <Reveal shown={actionFocused} style={styles.holdHint}>
                 <CardHoldHint />
               </Reveal>
             ) : null}

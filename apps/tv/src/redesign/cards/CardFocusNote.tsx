@@ -12,13 +12,9 @@ import { colors, fonts } from "../theme/tokens";
  * de l'appui maintenu dessous : elle n'agrandit rien, la rangée ne bouge pas —
  * c'est elle qui garde la place dessous (`CARD_NOTE_SPACE`). Plus large que
  * l'affiche, alignée sur sa légende : deux lignes y disent une raison entière.
- * Le contenu seul : `CardFocusFooter` la montre au focus, un temps APRÈS lui
- * (`FOCUS_NOTE_DWELL_MS`) — parcourir une rangée ne fait pas clignoter une
- * phrase sous chaque carte.
+ * Le contenu seul : `CardFocusFooter` la montre au focus, tout de suite
+ * (tv-core `focus/focusReveal`).
  */
-
-/** Le temps que le focus reste avant que la phrase paraisse. */
-export const FOCUS_NOTE_DWELL_MS = 250;
 
 /** La place qu'une rangée garde en plus, dessous, quand ses cartes ont une
  *  phrase de focus (deux lignes sous la légende). */

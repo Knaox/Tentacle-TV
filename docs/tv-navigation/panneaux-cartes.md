@@ -109,10 +109,10 @@ l'adaptateur tvOS doit continuer d'appliquer tel quel.
 | Grilles : bibliothèque, collection, Ma liste, Favoris, Parcourir | affiche | média, `poster` |
 
 - **L'indication** « Maintenir OK : plus d'options » (`CardHoldHint`) paraît
-  sous la légende de toute carte focalisée qui a un `onLongPress`, 350 ms après
-  le focus (`HOLD_HINT_DWELL_MS`), sous la raison d'une reco (250 ms,
-  `FOCUS_NOTE_DWELL_MS`) ; sous les boutons du héros, de même. Démontée au
-  repos.
+  sous la légende de toute carte focalisée qui a un `onLongPress`, AU FOCUS,
+  sans attendre (tv-core `focus/focusReveal`, 2026-10-04 — 350 ms avant),
+  sous la raison d'une reco (de même — 250 ms avant) ; sous les boutons du
+  héros, de même. Un fondu de 140 ms (`TV_MOTION.reveal`). Démontée au repos.
 - **Monté DANS l'écran**, jamais à la racine : la `Modal` se présente depuis
   le contrôleur de l'écran, et le focus revient à la carte (§ 2).
 - **Carte tenue** : tant que le panneau est ouvert, la carte visée est tenue

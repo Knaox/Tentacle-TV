@@ -11,14 +11,10 @@ import { colors, fonts } from "../theme/tokens";
  * existe (noter, Ma liste, j'aime, vu, les infos). Le pictogramme de la
  * télécommande, la voix basse des légendes.
  *
- * Le contenu seul : c'est `CardFocusFooter` qui le montre, au focus, un temps
- * APRÈS lui (`HOLD_HINT_DWELL_MS`) — parcourir une rangée ne fait pas
- * clignoter une ligne sous chaque carte —, sous la phrase de focus quand la
- * carte en a une.
+ * Le contenu seul : c'est `CardFocusFooter` qui le montre, au focus, TOUT DE
+ * SUITE (tv-core `focus/focusReveal`), sous la phrase de focus quand la carte
+ * en a une.
  */
-
-/** Le temps que le focus reste avant que l'indication paraisse. */
-export const HOLD_HINT_DWELL_MS = 350;
 
 export const CardHoldHint = memo(function CardHoldHint() {
   const { t } = useTranslation("cards");

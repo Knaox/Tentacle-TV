@@ -16,6 +16,8 @@
  * - `restoreClaim.ts`, `keepWithin.ts` : la reprise après une restauration de
  *   la plateforme, la garde d'une surface plein écran ;
  * - `beyondEdge.ts` : un geste au-delà du bord ;
+ * - `focusReveal.ts` : ce qui paraît au focus — tout de suite ; le focus qui
+ *   tient ne règle plus que ce qui coûte (lecture de la qualité, halo) ;
  * - `rowRewind.ts` : les rangées d'une page du rail qui reviennent au début
  *   (sorties de l'écran, changement de page, Retour vers la première carte) ;
  * - les écrans (T7) : `detailFocus.ts` (la fiche), `gridFocus.ts` (les grilles,
@@ -35,6 +37,7 @@ export * from "./restoreClaim";
 export * from "./keepWithin";
 export * from "./beyondEdge";
 export * from "./rowRewind";
+export * from "./focusReveal";
 export * from "./detailFocus";
 export * from "./gridFocus";
 export * from "./libraryFocus";

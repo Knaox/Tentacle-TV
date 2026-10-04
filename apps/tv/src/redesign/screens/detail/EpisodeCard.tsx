@@ -3,11 +3,11 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import type { CardMarkers } from "@tentacle-tv/shared";
-import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
+import { TV_STAGE } from "@tentacle-tv/theme";
+import { FOCUS_HOLD_MS } from "@tentacle-tv/tv-core";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import { CardFrame } from "../../cards/CardFrame";
 import { CardFocusFooter } from "../../cards/CardFocusFooter";
-import { HOLD_HINT_DWELL_MS } from "../../cards/CardHoldHint";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { CardQualityBadges } from "../../cards/CardQualityBadges";
 import { CardShell } from "../../cards/CardShell";
@@ -28,21 +28,21 @@ import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
  * d'options » (`CardFocusFooter`, comme toute carte qui s'ouvre par l'appui
  * maintenu) ; dans l'image, en bas à droite, la qualité de l'épisode
  * (`CardQualityBadges`). Quand le focus s'y POSE, sa lumière déborde (halo monté à la
- * demande, jamais gardé caché — `HALO_DWELL_MS`). L'image et son halo
+ * demande quand le focus a tenu, jamais gardé caché — `HALO_DWELL_MS`). L'image et son halo
  * suivent le pouce, la légende reste droite (`CardShell`).
  */
 
 export const EPISODE_CARD = { width: 460, height: 259, radius: TV_STAGE.card.landscape.radius } as const;
 
 /**
- * Le temps que le focus doit tenir avant que le halo ne se monte : après
- * l'apparition de « Maintenir OK » (attente, puis fondu). Son flou se calcule
+ * Le halo attend que le focus ait TENU (tv-core `FOCUS_HOLD_MS`) — la seule
+ * apparition au focus qui attend encore, pour son coût : son flou se calcule
  * sur le fil principal (Core Image, relu de façon synchrone : ~40 ms au
- * simulateur, deux à trois images) ; monté à chaque pas, il en coûtait autant
- * à chaque pas d'un focus qui parcourt la rangée. Dessiné quand plus rien ne
- * bouge, il ne se voit pas — et un focus qui balaie n'en dessine aucun.
+ * simulateur, deux à trois images) ; monté à chaque pas, il en coûterait
+ * autant à chaque pas d'un focus qui parcourt la rangée. Un focus qui balaie
+ * n'en dessine aucun ; posé, il paraît en un fondu bref.
  */
-const HALO_DWELL_MS = HOLD_HINT_DWELL_MS + TV_MOTION.reveal.inMs + 50;
+const HALO_DWELL_MS = FOCUS_HOLD_MS;
 
 const WATCHED: CardMarkers = { communityRating: null, userScore: null, statuses: ["watched"], device: null };
 const NONE: CardMarkers = { communityRating: null, userScore: null, statuses: [], device: null };

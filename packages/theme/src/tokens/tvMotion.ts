@@ -63,9 +63,11 @@ export const TV_MOTION = {
     inMs: 90,
   },
   reveal: {
-    /** Ce qui paraît au focus (légende, indication, raison) et se retire. */
-    inMs: 220,
-    outMs: 140,
+    /** Ce qui paraît au focus (légende, indication, raison) et se retire —
+     *  tout de suite, en un fondu bref : 150 ms au plus (tv-core
+     *  `focus/focusReveal`, décision du 2026-10-04 ; 220 / 140 avant). */
+    inMs: 140,
+    outMs: 100,
   },
   overlay: {
     /** Le voile d'une surimpression, à l'ouverture et à la fermeture. */

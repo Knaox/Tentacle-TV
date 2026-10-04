@@ -1,6 +1,7 @@
 import { Fragment, memo, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { fitQualityBadges, NO_QUALITY_BADGES, type CardMarkers, type QualityBadge } from "@tentacle-tv/shared";
+import { FOCUS_HOLD_MS, qualityBadgesShown } from "@tentacle-tv/tv-core";
 import { useDwell, Reveal } from "../motion/Reveal";
 import { interTextWidth } from "../theme/interMetrics";
 import { brandTint, colors, fonts, scrim, white } from "../theme/tokens";
@@ -21,13 +22,12 @@ import { useQualityBadges } from "./qualityBadgeSource";
  * teintée de la marque. Le reste, texte secondaire monochrome.
  *
  * Montés avec l'habit du focus (`CardFrame.focusLayer`) : rien au repos. Ils
- * paraissent quand le focus a TENU (`QUALITY_DWELL_MS`), en fondu d'opacité ;
- * c'est aussi le moment où un titre à lire est demandé (`useQualityBadges`) :
- * un focus qui balaie une rangée ne demande rien, ne montre rien.
+ * paraissent AU FOCUS, sans attendre, dès qu'ils sont connus — dans le modèle
+ * de la carte, ou déjà lus —, en un fondu bref (tv-core `focus/focusReveal`).
+ * Seule la LECTURE d'un titre à lire attend que le focus ait tenu
+ * (`FOCUS_HOLD_MS`, `useQualityBadges`) : un focus qui balaie une rangée, ou
+ * le défilement rapide, ne demande rien au serveur. Lus, ils paraissent aussitôt.
  */
-
-/** Le temps que le focus doit tenir avant que la qualité ne se lise ou ne paraisse. */
-export const QUALITY_DWELL_MS = 300;
 
 interface PillSize {
   height: number;
@@ -80,7 +80,8 @@ export interface CardQualityBadgesProps {
 }
 
 export const CardQualityBadges = memo(function CardQualityBadges({ quality, focused, width, markers, progress, compact, logo }: CardQualityBadgesProps) {
-  const held = useDwell(focused, QUALITY_DWELL_MS);
+  // Le focus a tenu : de quoi LIRE un titre que la liste ne porte pas — jamais de quoi attendre pour montrer.
+  const held = useDwell(focused, FOCUS_HOLD_MS);
   const badges = useQualityBadges(quality, held);
   const size = compact ? SIZES.compact : SIZES.regular;
   const slot = useMemo(() => qualitySlot(width, markers, progress, compact, logo), [width, markers, progress, compact, logo]);
@@ -89,7 +90,7 @@ export const CardQualityBadges = memo(function CardQualityBadges({ quality, focu
     [badges, slot.maxWidth, size],
   );
   return (
-    <Reveal shown={held && fitted.length > 0} style={[styles.anchor, { bottom: slot.bottom }]}>
+    <Reveal shown={qualityBadgesShown({ focused, known: fitted.length > 0 })} style={[styles.anchor, { bottom: slot.bottom }]}>
       <QualityPill badges={fitted} size={size} />
     </Reveal>
   );

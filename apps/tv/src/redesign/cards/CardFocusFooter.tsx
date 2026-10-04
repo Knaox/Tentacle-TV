@@ -1,8 +1,8 @@
 import { memo, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { Reveal } from "../motion/Reveal";
-import { CardFocusNote, FOCUS_NOTE_DWELL_MS } from "./CardFocusNote";
-import { CardHoldHint, HOLD_HINT_DWELL_MS } from "./CardHoldHint";
+import { CardFocusNote } from "./CardFocusNote";
+import { CardHoldHint } from "./CardHoldHint";
 
 /**
  * Ce qui paraît SOUS la légende d'une carte focalisée : la phrase de focus
@@ -13,9 +13,9 @@ import { CardHoldHint, HOLD_HINT_DWELL_MS } from "./CardHoldHint";
  * carte grandit : il n'agrandit rien, la rangée ne bouge pas. Plus large que
  * la carte (`width`) : la raison y tient en deux lignes, l'indication en une.
  *
- * Chaque ligne paraît en fondu, un temps APRÈS le focus, et s'en va en fondu
- * plus bref (`motion/Reveal`) : rien n'est monté au repos, ni pendant qu'un
- * focus balaie la rangée sans s'arrêter.
+ * Chaque ligne paraît AU FOCUS, sans attendre, en un fondu bref, et s'en va
+ * en fondu plus bref encore (`motion/Reveal`, tv-core `focus/focusReveal`) :
+ * rien n'est monté au repos ; seule la carte focalisée porte ses lignes.
  */
 export const CardFocusFooter = memo(function CardFocusFooter({
   note,
@@ -32,10 +32,10 @@ export const CardFocusFooter = memo(function CardFocusFooter({
   if (note) lastNote.current = note;
   return (
     <View pointerEvents="none" style={[styles.footer, { width }]}>
-      <Reveal shown={note !== undefined} delayMs={FOCUS_NOTE_DWELL_MS}>
+      <Reveal shown={note !== undefined}>
         {lastNote.current ? <CardFocusNote text={lastNote.current} /> : null}
       </Reveal>
-      <Reveal shown={hold} delayMs={HOLD_HINT_DWELL_MS}>
+      <Reveal shown={hold}>
         <CardHoldHint />
       </Reveal>
     </View>

@@ -566,7 +566,7 @@ politique partagée dans `packages/tv-core/src/nav/`.
 
 - **Deux capsules** de verre, même largeur : le bloc des pages (Rechercher
   fixe en tête, puis la liste) et, en bas, le bloc du PROFIL (nom du compte,
-  « Profil et réglages »). Toute la géométrie que lit le moteur de focus est
+  « Réglages »). Toute la géométrie que lit le moteur de focus est
   la même repliée comme dépliée (`navGeometry.ts`). Depuis le 2026-10-02, les
   deux capsules ÉPOUSENT leur contenu : « Le rail compact », plus bas.
 - **La liste défile** (`NavList`, une ScrollView native). Au pavé, c'est tvOS
@@ -1884,7 +1884,7 @@ l'application (la règle d'Apple).
 |---|---|
 | Un menu ouvert : grand panneau, listes de filtres, liste de choix, menu d'une entrée du rail, déplacement, panneaux du lecteur | le ferme, rien d'autre |
 | Page du rail, focus dans la page | le rail s'ouvre, sur l'entrée de la page |
-| Page du rail, rail ouvert | le focus va sur « Profil et réglages » |
+| Page du rail, rail ouvert | le focus va sur le profil (« Réglages ») |
 | … déjà sur Réglages | l'application quitte (écran d'accueil de tvOS) |
 | Page poussée : fiche, personne, genre, bande-annonce, jumelage ouvert depuis les réglages | la page précédente, rail ouvert ou non |
 | Une suite de fiches : similaires, saga, personne du casting, « Plus d'infos », filmographie | là où l'on était avant la PREMIÈRE fiche, focus sur la carte d'origine (chaque fiche ouverte depuis une fiche a remplacé la précédente) |
@@ -2784,8 +2784,10 @@ lors du focus sur la card. Attention, ça doit être discret et bien intégré,
 style Apple TV. »
 
 - **Ce qui paraît** : au focus d'une affiche, d'une vignette 16:9 ou d'une
-  vignette d'épisode de la fiche, quand le focus a tenu 300 ms, la qualité du
-  titre — « 4K · VISION · ATMOS » — DANS l'image, en bas à droite : une
+  vignette d'épisode de la fiche, la qualité du titre — AU FOCUS dès qu'elle
+  est connue (depuis le 2026-10-04 ; un titre à LIRE se lit quand le focus a
+  tenu 300 ms, et paraît dès la réponse) — « 4K · VISION · ATMOS » — DANS
+  l'image, en bas à droite : une
   pastille du verre de la note (voile 0,72), sur la rangée de la note
   (au-dessus de la barre de progression), sans la croiser, ni les épingles
   (en haut), ni le logo d'une vignette quand il descend jusqu'à cette rangée.
