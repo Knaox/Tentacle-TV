@@ -75,7 +75,9 @@ describe("SEC-F-02 : seul le destinataire accepte", () => {
     expect((await post("/api/family/invitations/accept", tokens.hugo, { id, userId: IDS.lea })).statusCode).toBe(404);
     // L'émetteur non plus n'accepte pas sa propre invitation.
     expect((await accept(tokens.damien, id)).statusCode).toBe(404);
-    expect(h.state!.db.data.familyMember).toHaveLength(0);
+    // Léa n'est entrée dans aucune famille (le propriétaire, lui, est sa propre
+    // ligne depuis la v2 — c'est l'unicité en base, pas une adhésion de Léa).
+    expect(h.state!.db.data.familyMember.some((m) => m.userId === IDS.lea)).toBe(false);
     // Le vrai destinataire, lui, passe.
     expect((await accept(tokens.lea, id)).statusCode).toBe(200);
   });
@@ -104,7 +106,8 @@ describe("SEC-F-05 : une invitation expirée ne s'accepte plus", () => {
     const res = await accept(tokens.lea, id);
     expect(res.statusCode).toBe(410);
     expect(res.json().code).toBe("family.invite_expired");
-    expect(h.state!.db.data.familyMember).toHaveLength(0);
+    // Léa n'a pas adhéré (le propriétaire reste sa propre ligne).
+    expect(h.state!.db.data.familyMember.some((m) => m.userId === IDS.lea)).toBe(false);
   });
 });
 
@@ -160,7 +163,8 @@ describe("SEC-F-33 : capacité imposée côté serveur, sûre sous course", () =
     const full = await addGuest(tokens.damien, "Max"); // le 7e profil
     expect(full.statusCode).toBe(409);
     expect(full.json().code).toBe("family.full");
-    // Jamais plus de six profils (propriétaire + membres + invités).
-    expect(1 + h.state!.db.data.familyMember.length).toBeLessThanOrEqual(6);
+    // Jamais plus de six profils : en v2 le propriétaire EST une ligne
+    // family_members (owner), donc le décompte l'inclut déjà.
+    expect(h.state!.db.data.familyMember).toHaveLength(6);
   });
 });

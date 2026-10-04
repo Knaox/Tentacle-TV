@@ -90,8 +90,10 @@ describe("SEC-F-19 : le jeton de jumelage « profils seuls » a un périmètre m
     }
   });
 
-  it("ne donne jamais accès à l'état complet de la Famille (overview réservé à personal/ownerTv)", () => {
-    expect(callersOf("overview")).toEqual(["personal", "ownerTv"]);
+  it("l'overview est PARTAGÉ (membre compris, v2) mais jamais ouvert au jeton de jumelage", () => {
+    // v2 : la TV d'un membre montre toute la famille → memberTv est admis.
+    // Le jeton de jumelage « profils seuls » (tvPairing), lui, ne voit JAMAIS l'overview.
+    expect(callersOf("overview")).toEqual(["personal", "ownerTv", "memberTv"]);
     expect(callersOf("overview")).not.toContain("tvPairing");
   });
 
@@ -111,13 +113,18 @@ describe("SEC-F-18 : le déverrouillage de gestion passe par une session de prof
 
 // ── SEC-F-10/11 + SEC-F-12 : retrait et suppression gardés par le propriétaire ─
 
-describe("rôles : retrait de membre et suppression d'invité réservés au propriétaire", () => {
-  it("removeMember / deleteGuest : propriétaire (session personnelle ou sa TV), jamais un membre ou un invité", () => {
-    for (const name of ["removeMember", "deleteGuest"] as const) {
-      expect(callersOf(name)).toEqual(["personal", "ownerTv"]);
-      expect(callersOf(name)).not.toContain("tvProfile");
-      expect(callersOf(name)).not.toContain("tvPairing");
-    }
+describe("rôles v2 : retirer un membre reste au propriétaire, supprimer un invité s'ouvre au membre", () => {
+  it("removeMember : le propriétaire SEUL (personnel ou sa TV) — jamais un membre, un profil quelconque ou le jumelage", () => {
+    expect(callersOf("removeMember")).toEqual(["personal", "ownerTv"]);
+    expect(callersOf("removeMember")).not.toContain("memberTv"); // un membre ne retire personne
+    expect(callersOf("removeMember")).not.toContain("tvProfile");
+    expect(callersOf("removeMember")).not.toContain("tvPairing");
+  });
+
+  it("deleteGuest : propriétaire OU membre depuis sa TV (memberTv) — la garde « ses seuls invités » est au runtime (SEC-F-39) ; jamais le jumelage", () => {
+    expect(callersOf("deleteGuest")).toEqual(["personal", "ownerTv", "memberTv"]);
+    expect(callersOf("deleteGuest")).not.toContain("tvProfile"); // pas un profil d'invité
+    expect(callersOf("deleteGuest")).not.toContain("tvPairing");
   });
 });
 
