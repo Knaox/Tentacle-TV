@@ -68,6 +68,9 @@ export default {
     rightOn: "{{name}} peut désormais créer des invités.",
     rightOff: "{{name}} ne peut plus créer d'invités ; les invités déjà créés restent.",
     addedBy: "Invité · ajouté par {{name}}",
+    canRequestTitles: "Peut demander des films",
+    requestOn: "{{name}} peut désormais demander des films ; ses demandes partent à votre nom.",
+    requestOff: "{{name}} ne peut plus demander de films.",
   },
   guest: {
     title: "Nouveau profil invité",

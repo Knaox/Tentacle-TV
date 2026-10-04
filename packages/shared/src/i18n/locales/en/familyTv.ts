@@ -68,6 +68,9 @@ export default {
     rightOn: "{{name}} can now create guests.",
     rightOff: "{{name}} can no longer create guests; the ones they created stay.",
     addedBy: "Guest · added by {{name}}",
+    canRequestTitles: "Can request films",
+    requestOn: "{{name}} can now request films; their requests go out in your name.",
+    requestOff: "{{name}} can no longer request films.",
   },
   guest: {
     title: "New guest profile",

@@ -29,6 +29,7 @@ import { useBackLayer } from "../back/BackScope";
 import { buildManageModel } from "./manageScreenModel";
 import { SHOWN_CANDIDATES, candidateViews, freeColor, manageListModel } from "./manageModel";
 import { useManageActions } from "./useManageActions";
+import { useFamilyCapability } from "./useFamilyCapability";
 import { useManageUnlock } from "./useManageUnlock";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ManageProfiles">;
@@ -84,7 +85,10 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
     },
   });
   // Le droit d'un membre en cours d'envoi : sa case montre déjà le nouvel état.
-  const list = overview.data ? manageListModel(overview.data, owner, serverUrl, i18n.language, t, actions.pendingRight) : null;
+  const capability = useFamilyCapability(ready);
+  const list = overview.data
+    ? manageListModel(overview.data, owner, serverUrl, i18n.language, t, actions.pendingRight, { guestRequests: capability?.guestRequests })
+    : null;
   listRef.current = list;
   const entryInput = entryInputOf(list);
   const candidates = useFamilyCandidates(actions.invite.search, { enabled: ready && actions.view === "invite" });

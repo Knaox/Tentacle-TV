@@ -18,9 +18,10 @@ import { StayToggle } from "./StayToggle";
  * avec le geste qui RETIRE, à double appui (« Confirmer — … », une phrase dit
  * ce qui va se passer ; quitter le bouton désarme). Une ligne n'a que les
  * gestes que la session y a (v2 : un membre, ses invités seulement) ; le
- * propriétaire ne se retire pas de sa propre famille depuis une TV. Sur la
- * ligne d'un membre, le propriétaire a aussi la case « Peut créer des
- * invités », avant le geste qui retire.
+ * propriétaire ne se retire pas de sa propre famille depuis une TV. Le
+ * propriétaire a aussi une case avant le geste qui retire : « Peut créer des
+ * invités » sur la ligne d'un membre, « Peut demander des films » sur celle
+ * d'un invité.
  *
  * Clés : `manage:createGuest`, `manage:invite`, `manage:right:<i>`,
  * `manage:row:<i>` ; groupes `manage:actions`, `manage:rows`.

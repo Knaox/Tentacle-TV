@@ -20,7 +20,7 @@ export interface ManageRowView {
   invitation: boolean;
   /** Le geste de la ligne, à double appui ; null quand la session n'en a aucun. */
   action: { kind: ManageAction; hint: string } | null;
-  /** Un membre, vu par le propriétaire : « Peut créer des invités », coché ou non. */
+  /** Vue par le propriétaire : « Peut créer des invités » (un membre), « Peut demander des films » (un invité). */
   right: { label: string; on: boolean; accessibilityLabel: string } | null;
 }
 

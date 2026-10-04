@@ -1,6 +1,7 @@
 import {
   isProfileColor,
   sameUserId,
+  type FamilyGuestRights,
   type FamilyProfileColor,
   type FamilyProfileKind,
   type TvProfileDto,
@@ -48,6 +49,9 @@ export interface TvProfileRecord {
   familyOwnerName?: string;
   /** CE profil gère quelque chose sur cette TV (`manage` du serveur, v2). Absent d'un enregistrement d'avant. */
   manages?: boolean;
+  /** Un invité : ses droits à l'ouverture (« peut demander », v2) ; la garde
+   *  de Vigie préfère la liste relue (`profileMayRequest`). Absent : aucun. */
+  guestRights?: FamilyGuestRights | null;
 }
 
 const KINDS: readonly FamilyProfileKind[] = ["owner", "member", "guest"];
@@ -88,6 +92,7 @@ export function profileRecordOf(profile: TvProfileDto, listing: ProfilesListingR
     canManage: listing.canManage,
     familyOwnerName: familyOwner?.name ?? paired.name,
     manages: profileManages(profile, listing),
+    guestRights: profile.guestRights ?? null,
   };
 }
 
@@ -115,7 +120,8 @@ function isRecord(value: unknown): value is TvProfileRecord {
     && typeof r.ownerName === "string"
     && typeof r.canManage === "boolean"
     && (r.familyOwnerName === undefined || typeof r.familyOwnerName === "string")
-    && (r.manages === undefined || typeof r.manages === "boolean");
+    && (r.manages === undefined || typeof r.manages === "boolean")
+    && (r.guestRights === undefined || r.guestRights === null || typeof (r.guestRights as { requestTitles?: unknown }).requestTitles === "boolean");
 }
 
 /** Le profil retenu ; illisible ou incomplet : aucun (la session ne se reprend pas). */

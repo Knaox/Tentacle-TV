@@ -3,7 +3,8 @@ import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig, useTitlesAccess } from "@tentacle-tv/api-client";
 import { titleProvider, uiLanguage, type TitlePlatform } from "@tentacle-tv/shared";
-import { MY_TITLES_REFRESH, profileMayRequest, readProfileRecord, tvTitlesGate, type TvTitlesGate } from "@tentacle-tv/tv-core";
+import { MY_TITLES_REFRESH, findProfile, profileMayRequest, readProfileRecord, tvTitlesGate, type TvTitlesGate } from "@tentacle-tv/tv-core";
+import { useTvFamilyListing } from "../profiles/useTvFamilyListing";
 import { useActivePlugins } from "./useActivePlugins";
 
 /**
@@ -23,7 +24,10 @@ import { useActivePlugins } from "./useActivePlugins";
  * « Mes demandes » ne montre que les demandes faites depuis une TV.
  *
  * Famille (Apple TV) : un profil INVITÉ la trouve fermée, sauf si son
- * propriétaire lui a permis de demander (`profileMayRequest`, tv-core).
+ * propriétaire lui a permis de demander (`profileMayRequest`, tv-core) — lu
+ * dans la famille relue (`useTvFamilyListing`), à défaut dans le profil
+ * retenu à l'ouverture. Le serveur reste juge : un invité sans le droit reçoit
+ * 403 sur les extensions, qui vaut « aucune » (`useActivePlugins`).
  */
 
 /** L'extension, la langue de l'interface (celle des titres que Vigie renvoie), l'origine des demandes. */
@@ -35,7 +39,10 @@ const TV_PLATFORM: TitlePlatform = Platform.OS === "ios" ? "appletv" : "androidt
 export function useVigieGate(): VigieGate | null {
   const { i18n } = useTranslation();
   const { storage } = useTentacleConfig();
-  const mayRequest = profileMayRequest(readProfileRecord(storage));
+  const record = readProfileRecord(storage);
+  const listing = useTvFamilyListing();
+  const live = listing && record ? findProfile(listing, record.profileId) : null;
+  const mayRequest = profileMayRequest(live ?? record);
   const lang = uiLanguage(i18n.language);
   const plugins = useActivePlugins();
   // Un invité sans droit : pas même la question du droit au serveur.

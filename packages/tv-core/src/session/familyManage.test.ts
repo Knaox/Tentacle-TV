@@ -94,6 +94,20 @@ describe("« Gérer les profils » dans la famille partagée (v2)", () => {
     expect(rows[3].createdByName).toBeNull();
   });
 
+  it("le propriétaire règle « Peut demander des films » d'un invité, si le serveur annonce le droit", () => {
+    const owner: FamilyRights = { manageMembers: true, createGuests: true, manageGuests: "all" };
+    const actor = { userId: "anne", name: "Anne", color: "violet" as const };
+    const withRight = { ...shared("owner", owner) };
+    withRight.family = { ...withRight.family!, profiles: [ANNE, MARC, { ...ZOE, guestRights: { requestTitles: true } }, LEA] };
+    const rows = manageRows(withRight, actor, { guestRequests: true });
+    expect(rows.map((row) => row.guestRights)).toEqual([null, null, { requestTitles: true }, { requestTitles: false }]);
+    // Un serveur qui ne l'annonce pas : aucune case.
+    expect(manageRows(withRight, actor).every((row) => row.guestRights === null)).toBe(true);
+    // Un membre ne la règle jamais.
+    const member: FamilyRights = { manageMembers: false, createGuests: true, manageGuests: "own" };
+    expect(manageRows(shared("member", member), { userId: "marc", name: "Marc", color: "teal" }, { guestRequests: true }).every((row) => row.guestRights === null)).toBe(true);
+  });
+
   it("un membre ne gère que SES invités : ni retrait, ni droits, ni invitations", () => {
     const rights: FamilyRights = { manageMembers: false, createGuests: true, manageGuests: "own" };
     const rows = manageRows(shared("member", rights), { userId: "marc", name: "Marc", color: "teal" });

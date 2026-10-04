@@ -1,4 +1,4 @@
-import type { FamilyProfileKind, TitleOrigin, TitlePlatform, TitleProvider, TitleRequestOrigin, TitlesAccess } from "@tentacle-tv/shared";
+import type { FamilyGuestRights, FamilyProfileKind, TitleOrigin, TitlePlatform, TitleProvider, TitleRequestOrigin, TitlesAccess } from "@tentacle-tv/shared";
 import { titlesFeaturesOpen } from "./titlesGate";
 
 /**
@@ -35,13 +35,14 @@ export interface TvTitlesGate {
 /**
  * Le profil de la Famille ouvert sur la TV (Apple TV), pour la garde : un
  * INVITÉ ne voit AUCUNE trace de l'extension — comme si le serveur n'en avait
- * pas —, sauf si son propriétaire lui a permis de demander (`canRequest`,
- * contrat Famille v2 ; ses demandes partent alors au nom du propriétaire,
- * c'est le serveur qui s'en charge). Un membre, le propriétaire, une TV
- * d'avant les profils (`null`) gardent la leur.
+ * pas —, sauf si son propriétaire lui a permis de demander
+ * (`guestRights.requestTitles`, contrat Famille v2 ; ses demandes partent
+ * alors au nom du propriétaire, c'est le serveur qui s'en charge — et qui
+ * refuse, 403, à un invité sans le droit). Un droit absent vaut non. Un
+ * membre, le propriétaire, une TV d'avant les profils (`null`) gardent la leur.
  */
-export function profileMayRequest(profile: { kind: FamilyProfileKind; canRequest?: boolean } | null): boolean {
-  return profile?.kind !== "guest" || profile.canRequest === true;
+export function profileMayRequest(profile: { kind: FamilyProfileKind; guestRights?: FamilyGuestRights | null } | null): boolean {
+  return profile?.kind !== "guest" || profile.guestRights?.requestTitles === true;
 }
 
 /**

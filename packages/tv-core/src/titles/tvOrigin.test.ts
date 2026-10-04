@@ -41,8 +41,9 @@ describe("la garde des téléviseurs", () => {
 describe("Vigie et les profils de la Famille", () => {
   it("un invité n'en voit aucune trace, sauf permis par son propriétaire", () => {
     expect(profileMayRequest({ kind: "guest" })).toBe(false);
-    expect(profileMayRequest({ kind: "guest", canRequest: false })).toBe(false);
-    expect(profileMayRequest({ kind: "guest", canRequest: true })).toBe(true);
+    expect(profileMayRequest({ kind: "guest", guestRights: null })).toBe(false);
+    expect(profileMayRequest({ kind: "guest", guestRights: { requestTitles: false } })).toBe(false);
+    expect(profileMayRequest({ kind: "guest", guestRights: { requestTitles: true } })).toBe(true);
     expect(tvTitlesGate(provider, { request: true }, "fr", "appletv", false)).toBeNull();
   });
 

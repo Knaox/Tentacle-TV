@@ -6,6 +6,7 @@ import {
   useDeleteFamilyGuest,
   useRemoveFamilyMember,
   useSendFamilyInvitation,
+  useSetFamilyGuestRights,
   useSetFamilyMemberRights,
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
@@ -21,7 +22,8 @@ const SEARCH_SETTLE_MS = 700;
 /**
  * Les GESTES de « Gérer les profils » : retirer, supprimer, annuler (à double
  * appui — tv-core `confirmPress`), créer un invité, inviter, permettre à un
- * membre de créer des invités (le propriétaire, v2). Chaque geste part
+ * membre de créer des invités et à un invité de demander des films (le
+ * propriétaire, v2). Chaque geste part
  * au serveur, qui juge ; un refus se dit dans la page. La gestion refermée en
  * route (`family.manage_locked`) se rouvre par `onLocked`.
  */
@@ -49,6 +51,7 @@ export function useManageActions({ onLocked, onRemoved }: { onLocked: () => void
   const cancelInvite = useCancelFamilyInvitation();
   const invite = useSendFamilyInvitation();
   const setRights = useSetFamilyMemberRights();
+  const setGuestRights = useSetFamilyGuestRights();
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query.trim()), SEARCH_SETTLE_MS);
@@ -108,13 +111,17 @@ export function useManageActions({ onLocked, onRemoved }: { onLocked: () => void
     },
     rowBlur: (id: string) => setArmedId((current) => confirmBlur(current, id)),
     pendingRight,
+    /** La case d'une ligne : « peut créer des invités » (un membre) ou « peut demander des films » (un invité). */
     toggleRight: async (row: ManageRowModel) => {
-      if (!row.memberRights || pendingRight) return;
-      const on = !row.memberRights.createGuests;
+      if ((!row.memberRights && !row.guestRights) || pendingRight) return;
+      const guest = !row.memberRights;
+      const on = guest ? !row.guestRights?.requestTitles : !row.memberRights?.createGuests;
       setPendingRight({ id: row.id, on });
       try {
-        await setRights.mutateAsync({ userId: row.userId, rights: { createGuests: on } });
-        setNotice({ text: t(on ? "familyTv:manage.rightOn" : "familyTv:manage.rightOff", { name: row.name }), tone: "success" });
+        if (guest) await setGuestRights.mutateAsync({ userId: row.userId, rights: { requestTitles: on } });
+        else await setRights.mutateAsync({ userId: row.userId, rights: { createGuests: on } });
+        const key = guest ? (on ? "familyTv:manage.requestOn" : "familyTv:manage.requestOff") : on ? "familyTv:manage.rightOn" : "familyTv:manage.rightOff";
+        setNotice({ text: t(key, { name: row.name }), tone: "success" });
       } catch (error) {
         setNotice({ text: refusalMessage(refused(error), t), tone: "error" });
       } finally {

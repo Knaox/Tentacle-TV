@@ -4,6 +4,7 @@ import {
   capacityError,
   familyRightsOf,
   sameUserId,
+  type FamilyGuestRights,
   type FamilyMemberRights,
   type FamilyOverviewDto,
   type FamilyProfileColor,
@@ -79,6 +80,15 @@ export interface ManageRowModel {
   createdByName: string | null;
   /** Un membre, vu par le propriétaire : ses droits, réglables (« Peut créer des invités ») ; null sinon. */
   memberRights: FamilyMemberRights | null;
+  /** Un invité, vu par le propriétaire, sur un serveur qui annonce le droit :
+   *  « Peut demander des films » (ses demandes partent au nom du propriétaire) ; null sinon. */
+  guestRights: FamilyGuestRights | null;
+}
+
+/** Ce que `/api/config` › `features.family` annonce et que la vue d'ensemble ne porte pas. */
+export interface ManageCapability {
+  /** Le droit d'invité « peut demander » existe sur ce serveur ; absent : non. */
+  guestRequests?: boolean;
 }
 
 /** Le geste qui RETIRE une ligne, s'il est permis à la session (`actorId`). */
@@ -101,15 +111,21 @@ function addedByOf(profile: FamilyProfileDto, ownerId: string | null): string | 
  * encore (elle naît à son premier invité ou à sa première invitation) : la
  * session seule.
  */
-export function manageRows(overview: FamilyOverviewDto, actor: { userId: string; name: string; color: FamilyProfileColor }): ManageRowModel[] {
+export function manageRows(
+  overview: FamilyOverviewDto,
+  actor: { userId: string; name: string; color: FamilyProfileColor },
+  capability: ManageCapability = {},
+): ManageRowModel[] {
   const family = managedFamilyOf(overview);
   if (!family) {
     return [{
       id: actor.userId, kind: "owner", name: actor.name, userId: actor.userId, color: actor.color, imageTag: null,
-      hasPin: overview.account.hasPin, action: null, expiresAt: null, createdByName: null, memberRights: null,
+      hasPin: overview.account.hasPin, action: null, expiresAt: null, createdByName: null, memberRights: null, guestRights: null,
     }];
   }
   const { rights } = family;
+  // « Peut demander » : le propriétaire seul, la Famille et les invités allumés, le droit annoncé.
+  const guestRightsOpen = rights.manageMembers && capability.guestRequests === true && overview.switches.families && overview.switches.guests;
   const profiles: ManageRowModel[] = family.profiles.map((profile) => ({
     id: profile.userId,
     kind: profile.kind,
@@ -122,6 +138,7 @@ export function manageRows(overview: FamilyOverviewDto, actor: { userId: string;
     expiresAt: null,
     createdByName: addedByOf(profile, family.ownerId),
     memberRights: profile.kind === "member" && rights.manageMembers ? (profile.rights ?? { createGuests: false }) : null,
+    guestRights: profile.kind === "guest" && guestRightsOpen ? (profile.guestRights ?? { requestTitles: false }) : null,
   }));
   const pending = rights.manageMembers ? family.pendingInvitations : [];
   const invitations: ManageRowModel[] = pending.map((invitation) => ({
@@ -136,6 +153,7 @@ export function manageRows(overview: FamilyOverviewDto, actor: { userId: string;
     expiresAt: invitation.expiresAt,
     createdByName: null,
     memberRights: null,
+    guestRights: null,
   }));
   return [...profiles, ...invitations];
 }
