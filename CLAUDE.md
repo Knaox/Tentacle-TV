@@ -336,8 +336,11 @@ focalisée), la légende ne s'incline jamais. État et gestes : `useCardToggles`
 `useCardRatingTarget`, `useCardFace` (api-client). Une feuille qui garde un
 instantané de sa carte lit la fiche `["item", id]`, que les mutations patchent.
 
-**Qualité au focus (Apple TV).** Quand le focus d'une carte a tenu 300 ms, la
-qualité du titre se pose DANS l'image, en bas à droite, sur la rangée de la note
+**Qualité au focus (Apple TV).** Au focus d'une carte, la qualité du titre se
+pose aussitôt si elle est CONNUE ; sinon, le titre se LIT après 300 ms de focus
+(aucune requête pendant un défilement) et la qualité paraît dès la réponse. Rien
+de ce qui se révèle au focus n'attend (tv-core `focus/focusReveal`). Elle se pose
+DANS l'image, en bas à droite, sur la rangée de la note
 (`CardQualityBadges`, monté avec l'habit du focus — rien au repos) : « 4K ·
 VISION · ATMOS », ce qui tient à côté de la note, le 4K d'abord. Dans le
 sous-arbre de la cible, comme la note : jamais par-dessus. La règle est partagée
