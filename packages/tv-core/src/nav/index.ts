@@ -10,6 +10,7 @@ export * from "./railKeys";
 export * from "./arrange";
 export * from "./railFocus";
 export * from "./railMenu";
+export * from "./railProfile";
 export * from "./railSelect";
 export * from "./railStack";
 export * from "./railBack";
