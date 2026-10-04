@@ -301,24 +301,48 @@ Chaque cas d'abus est relié à l'exigence testable qui le ferme (section 6).
 
 ---
 
-## 7. État des tests d'attaque (phase 2, 2026-10-04)
+## 7. État des tests d'attaque (phase 4, 2026-10-04 — T2…T5 fusionnés)
 
-Fichiers dans `test/famille-securite/` :
+Tests ACTIFS dans `test/famille-securite/` (tous verts) :
 
-- `familleReglesPures.attack.test.ts` — **27 actifs verts** (règles pures déjà
-  fusionnées) : SEC-F-05, 14, 17, 22, 23, 24, 33.
-- `familleContratRoutes.attack.test.ts` — **38 actifs verts** (invariants du
-  contrat de routes) : SEC-F-04, 07, 18, 19, 27, et présence/statut des codes de
-  refus (SEC-F-03, 05, 08, 16, 17, 23, 28, 33).
-- `proxyMutationAppareil.attack.test.ts` — **SEC-F-34, `describe.skip`** : prouvé
-  rouge aujourd'hui, attend la correction proxy de T2.
-- `familleServeur.attente.test.ts` — **36 `it.todo`** : scénarios qui exigent le
-  serveur en marche (socle d'auth T2 `d3093b90c` non fusionné). SEC-F-01, 02, 03,
-  06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27,
-  28, 29, 30, 31, 32, 33.
+- `familleReglesPures.attack.test.ts` — règles pures : SEC-F-05, 14, 17, 22, 23, 24, 33.
+- `familleContratRoutes.attack.test.ts` — invariants du contrat de routes :
+  SEC-F-04, 07, 18, 19, 27, codes de refus.
+- `proxyMutationAppareil.attack.test.ts` — SEC-F-34 (faille proxy), **corrigée par
+  T2** et le test dé-skippé : vert.
+- `familleAutorite.attack.test.ts` — SEC-F-01, 02, 03, 05, 06, 07, 33 (vraies routes).
+- `familleProfilsTv.attack.test.ts` — SEC-F-08, 09, 16, 17, 18, 19, 30.
+- `familleRevocation.attack.test.ts` — SEC-F-10, 11, 12, 13, 14, 15, 20.
+- `familleInvites.attack.test.ts` — SEC-F-21, 29, 31.
+- `familleCandidatsFuites.attack.test.ts` — SEC-F-22, 25, 26, 27, 28.
+- `familleParite.attack.test.ts` — SEC-F-32 (versant statique : la Famille ne lit
+  jamais le transport).
 
-Total : 65 actifs verts, 3 en attente (proxy), 36 todo. Garde verte. Les tests
-en attente **ne sont plus modifiés** une fois activés : T2 les fait passer.
+Tous les `SEC-F-xx` sont désormais des tests actifs (plus aucun `todo`/`skip`).
+
+### Recette de bout en bout (phase 4) — preuves de banc
+
+Contre le **vrai Jellyfin jetable** (10.11.11, suite de compat `--keep`, conteneurs
+`lot-f8-`), backend réel, faux Expo :
+
+- `suites/family.compat.ts` — **6/6 en HTTP** ET **6/6 en HTTPS** (proxy
+  `localtest.me`, TLS réel, `X-Forwarded-Proto: https`) : invité réel caché/sans
+  droit/mot de passe inconnu, jeton de profil par Quick Connect, déjumelage qui
+  coupe chez Jellyfin.
+- Push (faux Expo) : une invitation ne pousse qu'au destinataire, charge
+  `{type:"family_invite", refId}` — aucun jeton, PIN ni mot de passe (SEC-F-25).
+- Parcours complet (`scratchpad/recette.mjs`, outil de banc) — **18/18 en HTTP**
+  ET **18/18 en HTTPS** : invitation web → acceptation (mobile) → TV « Qui
+  regarde ? » (propriétaire + membre, sélecteur) → invité + PIN jugé par le
+  serveur (mauvais PIN 403) → le membre ouvre son profil (lecture) → **quitte la
+  famille → session coupée AUSSITÔT côté Tentacle (401 profileEnded) ET appareil
+  supprimé côté Jellyfin (DELETE /Devices)** ; compte Jellyfin de l'ex-membre
+  intact, invité non touché.
+
+Reste à la recette du MATIN (validation visuelle, pas de sécurité nouvelle) : le
+rendu sur simulateurs réels (affiche d'invitation sur le mobile, « Qui regarde ? »
+et saisie du PIN sur l'Apple TV). La logique de ces écrans est déjà couverte par
+les tests d'attaque et le parcours serveur ci-dessus.
 
 ## 8. Notes pour T2 (conception serveur, en parallèle)
 
