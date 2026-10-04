@@ -54,6 +54,7 @@ export const OfflineSeriesView = lazy(() => import("./downloads/OfflineSeriesVie
 export const OfflineMediaDetail = lazy(() => import("./downloads/detail/OfflineMediaDetail").then((m) => ({ default: m.OfflineMediaDetail })));
 export const SettingsDownloads = lazy(() => import("./pages/settings/SettingsDownloads").then((m) => ({ default: m.SettingsDownloads })));
 export const SettingsData = lazy(() => import("./pages/settings/SettingsData").then((m) => ({ default: m.SettingsData })));
+export const SettingsFamily = lazy(() => import("./pages/settings/SettingsFamily").then((m) => ({ default: m.SettingsFamily })));
 export const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));
 export const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));
 // Vos statistiques de visionnage — bureau ET miroir (une page réactive, cf. pages/Stats).

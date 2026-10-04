@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Gauge, HardDriveDownload, Palette, Play, ShieldCheck, Sparkles } from "lucide-react";
+import { Gauge, HardDriveDownload, Palette, Play, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useDownloadsVisibility } from "../../downloads/useDownloadState";
 import { useOfflineMode } from "../../offline/useOfflineMode";
+import { useFamilyAvailability } from "../../family/useFamilyAvailability";
 
 /**
  * Coquille des réglages utilisateur.
@@ -37,6 +38,7 @@ export function SettingsIndex() {
 
 export function SettingsLayout() {
   const { t } = useTranslation("preferences");
+  const { t: tf } = useTranslation("familyWeb");
   const navigate = useNavigate();
   const { pathname } = useLocation();
   // Desktop uniquement, et seulement avec le droit Jellyfin OU du contenu
@@ -45,6 +47,9 @@ export function SettingsLayout() {
   // Hors ligne : la section Sécurité (mot de passe, appareils, serveur)
   // n'a aucun sens sans serveur — non rendue.
   const offline = useOfflineMode();
+  // La Famille : seulement si le serveur l'annonce (`features.family`) —
+  // un serveur d'avant n'en montre rien, hors ligne non plus.
+  const { available: familyAvailable } = useFamilyAvailability();
 
   const sections = useMemo<SettingsShellSection[]>(
     () => [
@@ -54,6 +59,9 @@ export function SettingsLayout() {
       ...(offline
         ? []
         : [{ id: "personalization", label: t("sectionPersonalization"), icon: <Sparkles size={ICON} /> }]),
+      ...(familyAvailable
+        ? [{ id: "family", label: tf("nav"), icon: <Users size={ICON} /> }]
+        : []),
       ...(offline
         ? []
         : [{ id: "security", label: t("sectionSecurity"), icon: <ShieldCheck size={ICON} /> }]),
@@ -65,7 +73,7 @@ export function SettingsLayout() {
       // ligne (le réglage vaut pour le retour en ligne).
       { id: "data", label: t("sectionData"), icon: <Gauge size={ICON} /> },
     ],
-    [t, downloadsVisible, offline],
+    [t, tf, downloadsVisible, offline, familyAvailable],
   );
 
   const activeId = useMemo(() => {

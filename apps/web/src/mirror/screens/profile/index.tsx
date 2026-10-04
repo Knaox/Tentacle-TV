@@ -5,6 +5,7 @@ import { isDesktopApp } from "../../../desktop/bridge";
 import { getUserInfo } from "../../../components/userMenu/menuItems";
 import { useDesktopVersion } from "../../../hooks/useDesktopVersion";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
+import { useFamilyAvailability } from "../../../family/useFamilyAvailability";
 import { BACKEND } from "../../../pages/adminUtils";
 import { RAIL_WIDTH } from "../../responsive";
 import { HEADER_TOTAL } from "../../shell/metrics";
@@ -41,7 +42,8 @@ export function MirrorProfile() {
   const { t } = useTranslation("profile");
   const { name, initial, isAdmin } = getUserInfo();
   const offline = useOfflineMode();
-  const ctx: PaneContext = useMemo(() => ({ offline, isAdmin }), [offline, isAdmin]);
+  const { available: family } = useFamilyAvailability();
+  const ctx: PaneContext = useMemo(() => ({ offline, isAdmin, family }), [offline, isAdmin, family]);
   const actions = useProfileActions(isAdmin);
   const desktopVersion = useDesktopVersion();
   const version = isDesktopApp() ? desktopVersion : __APP_VERSION_WEB__;

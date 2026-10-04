@@ -1,6 +1,7 @@
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
+import { useFamilyAvailability } from "../../../family/useFamilyAvailability";
 import { getUserInfo } from "../../../components/userMenu/menuItems";
 import { PANE_REGISTRY } from "./paneRegistry";
 import { isPaneAvailable, parsePaneParam, profilePaneRoute } from "./panes";
@@ -26,9 +27,10 @@ export function MirrorSettingsPane() {
   const split = useProfileSplit();
   const offline = useOfflineMode();
   const { isAdmin } = getUserInfo();
+  const { available: family } = useFamilyAvailability();
   const pane = parsePaneParam(raw);
 
-  if (!pane || !isPaneAvailable(pane, { offline, isAdmin })) return <Navigate to="/profile" replace />;
+  if (!pane || !isPaneAvailable(pane, { offline, isAdmin, family })) return <Navigate to="/profile" replace />;
   if (split) return <Navigate to={profilePaneRoute(pane)} replace />;
 
   const { Component, title, maxWidth } = PANE_REGISTRY[pane];

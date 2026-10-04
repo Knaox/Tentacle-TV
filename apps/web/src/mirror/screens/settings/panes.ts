@@ -7,6 +7,7 @@
  *   1. Préférences    — Personnalisation▸ · Lecture▸ · Données▸
  *   2. Apparence      — Thème [Clair|Sombre|Auto] · Langue [Français|Anglais]
  *   3. Appareils      — Jumeler TV (écran) · Appareils appairés▸
+ *   3 bis. Famille    — Famille▸ (si le serveur l'annonce)
  *   4. Administration — Sessions (écran) · Invitations▸
  *   5. Aide           — Support · À propos · Politique de confidentialité ↗
  *   6. Connexion      — Changer de serveur (application de bureau seulement)
@@ -18,7 +19,7 @@
  * (iOS 26).
  */
 
-export type MirrorPaneId = "personalization" | "playback" | "data" | "devices" | "invites" | "password";
+export type MirrorPaneId = "personalization" | "playback" | "data" | "devices" | "family" | "invites" | "password";
 
 /** L'ordre des volets : celui de la liste, donc celui du choix par défaut. */
 export const MIRROR_PANES: readonly MirrorPaneId[] = [
@@ -26,6 +27,7 @@ export const MIRROR_PANES: readonly MirrorPaneId[] = [
   "playback",
   "data",
   "devices",
+  "family",
   "invites",
   "password",
 ];
@@ -44,6 +46,8 @@ export interface PaneContext {
   /** Hors ligne : ce qui parle au serveur disparaît au lieu d'échouer. */
   offline: boolean;
   isAdmin: boolean;
+  /** Le serveur annonce la Famille (`features.family`) ; absent : non. */
+  family?: boolean;
 }
 
 /** Un volet existe-t-il dans ce contexte ? Les lignes du profil suivent la même règle. */
@@ -54,6 +58,8 @@ export function isPaneAvailable(id: MirrorPaneId, ctx: PaneContext): boolean {
       return true;
     case "invites":
       return ctx.isAdmin && !ctx.offline;
+    case "family":
+      return !ctx.offline && ctx.family === true;
     default:
       return !ctx.offline;
   }

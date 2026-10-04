@@ -21,7 +21,7 @@ import { isDesktopApp } from "./desktop/bridge";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharePage, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, OfflineMediaDetail, AdminDownloads, AdminHome
+  Home, Login, Register, SharePage, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsFamily, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, OfflineMediaDetail, AdminDownloads, AdminHome
 } from "./lazyPages";
 import { Stats, TrailerGuide } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
@@ -190,6 +190,11 @@ export function App() {
                 path="security"
                 element={offlineMode ? <Navigate to="/settings/appearance" replace /> : <SettingsSecurity />}
               />
+              {/* La Famille : sans objet hors ligne ni face à un serveur d'avant (la page se retire d'elle-même). */}
+              <Route
+                path="family"
+                element={offlineMode ? <Navigate to="/settings/appearance" replace /> : <SettingsFamily />}
+              />
               <Route path="playback" element={<Preferences />} />
               <Route path="downloads" element={<SettingsDownloads />} />
             <Route path="data" element={<SettingsData />} />
@@ -198,6 +203,8 @@ export function App() {
               <Route path="devices" element={<Navigate to="/settings/security" replace />} />
               <Route path="invites" element={<Navigate to="/admin/invites" replace />} />
             </Route>
+            {/* Le chemin de la Famille commun aux clients (cloche, liens) : sa section des réglages. */}
+            <Route path="family" element={<Navigate to="/settings/family" replace />} />
             <Route path="profile" element={onlineOnly(<ByFormFactor desktop={<MobileProfile />} mirror={<MirrorProfile />} />)} />
             <Route path="pair-device" element={onlineOnly(<ByFormFactor desktop={<PairDevice />} mirror={<MirrorPairDevice />} />)} />
             {/* Admin en maitre-detail : route PARENTE avec rail de sections.

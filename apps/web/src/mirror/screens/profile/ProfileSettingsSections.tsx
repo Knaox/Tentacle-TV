@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { BarChart3, Cast, ChartNoAxesColumn, CirclePlay, Mail, SlidersHorizontal, Smartphone } from "lucide-react";
+import { BarChart3, Cast, ChartNoAxesColumn, CirclePlay, Mail, SlidersHorizontal, Smartphone, Users } from "lucide-react";
 import { useDataSaverSetting } from "../../../offline/useDataSaver";
 import { DATA_SAVER_LABEL_KEYS } from "../settings/panes/DataPane";
 import { SettingsRow } from "../settings/ui/SettingsRow";
@@ -20,9 +20,10 @@ export function ProfileSettingsSections({ ctx }: { ctx: PaneContext }) {
   const { t } = useTranslation("profile");
   const { t: tp } = useTranslation("preferences");
   const { t: td } = useTranslation("downloads");
+  const { t: tf } = useTranslation("familyWeb");
   const navigate = useNavigate();
   const { setting: saver } = useDataSaverSetting();
-  const { offline, isAdmin } = ctx;
+  const { offline, isAdmin, family } = ctx;
 
   return (
     <>
@@ -50,6 +51,13 @@ export function ProfileSettingsSections({ ctx }: { ctx: PaneContext }) {
         <SettingsSection title={t("sectionDevices")}>
           <SettingsRow icon={Cast} label={t("pairTV")} chevron onPress={() => navigate("/pair-device")} />
           <ProfilePaneRow pane="devices" icon={Smartphone} label={t("pairedDevices")} last />
+        </SettingsSection>
+      )}
+
+      {/* La Famille : seulement si le serveur l'annonce (même règle que le volet). */}
+      {family && !offline && (
+        <SettingsSection title={tf("nav")}>
+          <ProfilePaneRow pane="family" icon={Users} label={tf("nav")} description={tf("description")} last />
         </SettingsSection>
       )}
 

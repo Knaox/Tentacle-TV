@@ -12,6 +12,13 @@ describe("volets du profil miroir", () => {
     expect(isPaneAvailable("invites", offline)).toBe(false);
   });
 
+  it("la Famille ne se montre que si le serveur l'annonce, et en ligne", () => {
+    expect(isPaneAvailable("family", online)).toBe(false);
+    expect(isPaneAvailable("family", { ...online, family: true })).toBe(true);
+    expect(isPaneAvailable("family", { ...offline, family: true })).toBe(false);
+    expect(parsePaneParam("family")).toBe("family");
+  });
+
   it("hors ligne, seuls Lecture et Données restent", () => {
     expect(isPaneAvailable("playback", offline)).toBe(true);
     expect(isPaneAvailable("data", offline)).toBe(true);

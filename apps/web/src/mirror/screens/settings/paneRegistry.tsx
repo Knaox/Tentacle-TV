@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { DataPane } from "./panes/DataPane";
 import { DevicesPane } from "./panes/DevicesPane";
+import { SettingsFamily } from "../../../pages/settings/SettingsFamily";
 import { InvitesPane } from "./panes/InvitesPane";
 import { PasswordPane } from "./panes/PasswordPane";
 import { PersonalizationPane } from "./panes/PersonalizationPane";
@@ -21,6 +22,8 @@ export const PANE_REGISTRY: Record<MirrorPaneId, PaneEntry> = {
   playback: { Component: PlaybackPane, title: { ns: "profile", key: "playback" } },
   data: { Component: DataPane, title: { ns: "offline", key: "dataTitle" } },
   devices: { Component: DevicesPane, title: { ns: "profile", key: "pairedDevices" } },
+  // La page Famille du bureau, telle quelle : mêmes sections, même affiche.
+  family: { Component: SettingsFamily, title: { ns: "familyWeb", key: "nav" } },
   invites: { Component: InvitesPane, title: { ns: "profile", key: "invitations" } },
   password: { Component: PasswordPane, title: { ns: "preferences", key: "changePasswordTitle" }, maxWidth: 560 },
 };
