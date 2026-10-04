@@ -2,3 +2,4 @@
 export * from "./keys";
 export * from "./longPress";
 export * from "./keyLock";
+export * from "./repeatPacing";

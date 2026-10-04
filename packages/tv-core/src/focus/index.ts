@@ -9,7 +9,8 @@
  *   proche centre à centre), que l'Apple TV traduit nativement ; `sectionEntry`
  *   son exception (l'entrée « première visite ») ;
  * - `reveal.ts`, `revealMotion.ts` : la page qui suit le focus (cible, rafale,
- *   ressort) — la spécification de la vue native d'Apple TV ;
+ *   ressort) — la spécification de la vue native d'Apple TV ; `burstFollow.ts`
+ *   la rafale d'une plateforme qui défile elle-même (Android TV) et la rangée ;
  * - `focusTrack.ts` : le suivi de la clé focalisée ;
  * - `screenEntry.ts`, `homeEntry.ts` : l'entrée d'un écran et le retour ;
  * - `groupEntry.ts` : l'entrée d'un groupe (le dernier visité, sinon le défaut) ;
@@ -29,6 +30,7 @@ export * from "./sections";
 export * from "./sectionEntry";
 export * from "./reveal";
 export * from "./revealMotion";
+export * from "./burstFollow";
 export * from "./focusTrack";
 export * from "./screenEntry";
 export * from "./homeEntry";
