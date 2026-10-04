@@ -17,7 +17,7 @@ export default {
     createGuests: "Peut créer des invités",
     createGuestsHint: "Crée ses propres invités et ne supprime que ceux-là, dans la limite de trois pour toute la famille.",
     requestTitles: "Peut demander des films",
-    requestTitlesHint: "Ses demandes partent au nom de {{owner}}.",
+    requestTitlesHint: "Ses demandes partent à son nom.",
   },
   /** v2 : un compte de la liste qu'on ne peut pas inviter, et pourquoi. */
   candidates: {

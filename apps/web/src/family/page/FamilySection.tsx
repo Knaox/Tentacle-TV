@@ -140,7 +140,6 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
                 isSelf={isOwnProfile(profile, viewerId)}
                 actions={profileActions(overview, profile, viewerId, capability)}
                 showCreator={!!profile.createdBy && !sameUserId(profile.createdBy, family.owner.userId)}
-                ownerName={family.owner.name}
                 rightPending={setRights.isPending || setGuestRights.isPending}
                 onRemove={onRemove}
                 onGuestPin={setPinGuest}

@@ -16,7 +16,7 @@ export default {
     createGuests: "Can create guests",
     createGuestsHint: "Creates their own guests and can only delete those, within three guests for the whole family.",
     requestTitles: "Can request movies",
-    requestTitlesHint: "Their requests are made in {{owner}}'s name.",
+    requestTitlesHint: "Their requests are made in their own name.",
   },
   /** v2: an account in the list that cannot be invited, and why. */
   candidates: {

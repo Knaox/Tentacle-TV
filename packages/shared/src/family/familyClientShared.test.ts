@@ -155,7 +155,9 @@ describe("candidateView", () => {
   it("les mots v2 partagés ne disent jamais « téléchargement » (le mobile les lit)", () => {
     const text = JSON.stringify([fr.rights, fr.candidates, fr.addedBy, en.rights, en.candidates, en.addedBy]);
     expect(text).not.toMatch(/t[ée]l[ée]charg|download/i);
-    expect(fr.rights.requestTitlesHint).toContain("{{owner}}");
-    expect(en.rights.requestTitlesHint).toContain("{{owner}}");
+    // Un invité autorisé demande à SON nom (décision de Damien) : la phrase ne
+    // nomme ni le propriétaire ni l'extension.
+    expect(fr.rights.requestTitlesHint).not.toContain("{{");
+    expect(en.rights.requestTitlesHint).not.toContain("{{");
   });
 });

@@ -123,8 +123,7 @@ export function familyViewerRole(overview: FamilyOverviewDto): FamilyViewerRole 
   return overview.family?.role ?? "none";
 }
 
-/** Le propriétaire de la famille de ce compte (« Famille de X », « ses
- *  demandes partent au nom de X ») ; null sans famille. */
+/** Le propriétaire de la famille de ce compte (« Famille de X ») ; null sans famille. */
 export function familyOwnerName(overview: FamilyOverviewDto): string | null {
   return overview.family?.owner.name ?? null;
 }
@@ -135,8 +134,8 @@ export function isOwnProfile(profile: Pick<FamilyProfileDto, "userId">, viewerUs
 }
 
 /** Un droit réglable sur un profil : « peut créer des invités » (un membre),
- *  « peut demander des films » (un invité — ses demandes partent au nom du
- *  propriétaire). Le propriétaire seul les règle. */
+ *  « peut demander des films » (un invité — il demande à son propre nom).
+ *  Le propriétaire seul les règle. */
 export type FamilyProfileRight = "createGuests" | "requestTitles";
 
 export interface ProfileActions {

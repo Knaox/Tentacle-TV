@@ -38,7 +38,7 @@ function row(p: FamilyProfileDto, actions: ProfileActions = NONE, opts: { isSelf
   return renderToStaticMarkup(
     <ul>
       <ProfileRow
-        profile={p} last isSelf={opts.isSelf ?? false} actions={actions} showCreator={opts.showCreator ?? false} ownerName="Damien"
+        profile={p} last isSelf={opts.isSelf ?? false} actions={actions} showCreator={opts.showCreator ?? false}
         rightPending={false} onRemove={noop} onGuestPin={noop} onRightChange={noop}
       />
     </ul>,
@@ -88,10 +88,11 @@ describe("ProfileRow — la famille partagée", () => {
     expect(html).not.toContain("<img");
   });
 
-  it("le propriétaire règle « peut demander » d'un invité, en disant au nom de qui", () => {
+  it("le propriétaire règle « peut demander » d'un invité, qui demande à son nom", () => {
     const html = row(profile("guest", { guestRights: { requestTitles: false } }), { pin: true, remove: true, right: "requestTitles" });
     expect(html).toContain("family:rights.requestTitles");
-    expect(html).toContain("family:rights.requestTitlesHint{&quot;owner&quot;:&quot;Damien&quot;}");
+    expect(html).toContain("family:rights.requestTitlesHint");
+    expect(html).not.toContain("Damien");
     expect(html).toContain('role="switch"');
   });
 
