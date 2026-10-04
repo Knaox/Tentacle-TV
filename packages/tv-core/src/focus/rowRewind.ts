@@ -81,10 +81,20 @@ export function rowBackTarget(focusKey: string | null, rows: Iterable<string>): 
   return card && card.index > 0 ? rowStartKey(card.row) : null;
 }
 
-/** Le retour sur la page après un changement de page : les rangées à remettre au début, la clé à réclamer. */
+/**
+ * Le retour sur la page après un changement de page : les rangées à remettre
+ * au début, la clé à réclamer, et QUAND. `afterRestore` : la page revient
+ * d'avoir été couverte, et la plateforme lui rend d'elle-même la carte
+ * retenue — APRÈS toute réclamation (tvOS, mesuré : ~450 ms sans focus, puis
+ * la carte). On la laisse faire, puis on remet au début et on réclame : la
+ * rangée ne bouge qu'une fois, d'un coup, au lieu de défiler jusqu'à la carte
+ * puis jusqu'au début. La plateforme attend le premier focus posé, au plus
+ * `RESTORE_WITHIN_MS` (`restoreClaim.ts`).
+ */
 export interface RowResume {
   rewind: string[];
   claim: string | null;
+  afterRestore: boolean;
 }
 
 export interface RowRewind {
@@ -175,7 +185,8 @@ export function createRowRewind(): RowRewind {
     resume(remembered) {
       if (!left) return null;
       left = false;
-      return { rewind: take([...pending]), claim: remembered === null ? null : startOf(remembered) };
+      const rewind = take([...pending]);
+      return { rewind, claim: remembered === null ? null : startOf(remembered), afterRestore: rewind.length > 0 };
     },
     startOf,
     backTarget: (focusKey) => rowBackTarget(focusKey, rows),

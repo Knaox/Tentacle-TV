@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { createRowRewind } from "@tentacle-tv/tv-core";
+import { RESTORE_WITHIN_MS, createRowRewind } from "@tentacle-tv/tv-core";
 import type { RowRewindPort } from "../../../redesign/rows/rowRewindPort";
 import { onRailPageChange } from "../back/railNavigate";
 import type { FocusStore } from "./focusStore";
@@ -71,12 +71,23 @@ export function useRowRewind(focus: FocusStore, { enabled, remembered }: RowRewi
       resume(key) {
         const resumed = model.resume(key);
         if (!resumed) return key;
-        rewind(resumed.rewind);
-        return resumed.claim;
+        if (!resumed.afterRestore) {
+          rewind(resumed.rewind);
+          return resumed.claim;
+        }
+        // Revenue d'être couverte : UIKit lui rend la carte retenue, APRÈS toute
+        // réclamation. On le laisse faire (la carte, réclamée aussi), puis au
+        // premier focus posé — au plus tard au bout du délai d'une restauration —
+        // la rangée revient au début, le focus sur sa première carte.
+        afterRestore(focus, () => {
+          rewind(resumed.rewind);
+          if (resumed.claim) focus.claim(resumed.claim);
+        });
+        return key;
       },
       backTarget: model.backTarget,
     }),
-    [model, rewind],
+    [model, rewind, focus],
   );
 
   // Le focus de l'écran : une carte autre que la première déplace sa rangée.
@@ -100,6 +111,22 @@ export function useRowRewind(focus: FocusStore, { enabled, remembered }: RowRewi
   }, [enabled, navigation, routeName, model, rewind]);
 
   return enabled ? handle : null;
+}
+
+/** `run` une fois : au premier focus posé dans l'écran, sinon au bout de `RESTORE_WITHIN_MS`. */
+function afterRestore(focus: FocusStore, run: () => void): void {
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    unsubscribe();
+    clearTimeout(timer);
+    run();
+  };
+  const unsubscribe = focus.subscribe((_key, focused) => {
+    if (focused) finish();
+  });
+  const timer = setTimeout(finish, RESTORE_WITHIN_MS);
 }
 
 /** Vrai tant que le focus est sur une carte d'une rangée qui n'est pas sa première — un état, pour le Retour. */

@@ -128,16 +128,16 @@ describe("createRowRewind — changer de page par le rail, revenir d'une fiche",
     expect(rewind.startOf("nextUp:4")).toBe("nextUp:0");
     expect(rewind.startOf("hero:primary")).toBe("hero:primary");
     expect(rewind.leave({ visible: true, remembered: "nextUp:4" }).sort()).toEqual(["nextUp", "resume"]);
-    expect(rewind.resume("nextUp:0")).toEqual({ rewind: [], claim: "nextUp:0" });
+    expect(rewind.resume("nextUp:0")).toEqual({ rewind: [], claim: "nextUp:0", afterRestore: false });
   });
 
-  it("quitter la page COUVERTE (fiche ouverte depuis elle) : la rangée de la carte retenue attend le retour", () => {
+  it("quitter la page COUVERTE (fiche ouverte depuis elle) : la rangée de la carte retenue attend le retour, et la restauration de la plateforme", () => {
     const rewind = page();
     rewind.focus("resume:5");
     rewind.focus("nextUp:4");
     expect(rewind.leave({ visible: false, remembered: "nextUp:4" })).toEqual(["resume"]);
     expect(rewind.moved()).toEqual(["nextUp"]);
-    expect(rewind.resume("nextUp:4")).toEqual({ rewind: ["nextUp"], claim: "nextUp:0" });
+    expect(rewind.resume("nextUp:4")).toEqual({ rewind: ["nextUp"], claim: "nextUp:0", afterRestore: true });
     expect(rewind.moved()).toEqual([]);
   });
 
@@ -152,7 +152,7 @@ describe("createRowRewind — changer de page par le rail, revenir d'une fiche",
     const rewind = page();
     rewind.focus("hero:primary");
     rewind.leave({ visible: true, remembered: "hero:primary" });
-    expect(rewind.resume("hero:primary")).toEqual({ rewind: [], claim: "hero:primary" });
+    expect(rewind.resume("hero:primary")).toEqual({ rewind: [], claim: "hero:primary", afterRestore: false });
     rewind.focus("resume:3");
     expect(rewind.resume("resume:3")).toBeNull();
   });
@@ -161,7 +161,7 @@ describe("createRowRewind — changer de page par le rail, revenir d'une fiche",
     const rewind = page();
     rewind.focus("resume:0");
     expect(rewind.leave({ visible: false, remembered: "resume:0" })).toEqual([]);
-    expect(rewind.resume("resume:0")).toEqual({ rewind: [], claim: "resume:0" });
+    expect(rewind.resume("resume:0")).toEqual({ rewind: [], claim: "resume:0", afterRestore: false });
   });
 });
 
