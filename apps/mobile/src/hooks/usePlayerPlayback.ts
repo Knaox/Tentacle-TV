@@ -280,7 +280,7 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
     // Clé EFFECTIVE au menu (palier servi, cap compris) — comme le web.
     qualityKey: quality.qualityKeyEffective,
     qualityPresets: quality.qualityPresets,
-    autoCapActive: quality.autoCapActive,
+    autoCapActive: quality.autoCapActive, autoCap: quality.autoCap,
     autoModeArmed: quality.autoModeArmed,
     audioTrackSelectedIndex, subtitleVttUrl,
     episodeNav, segments, reporting,

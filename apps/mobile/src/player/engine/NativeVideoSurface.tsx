@@ -19,7 +19,7 @@ export function NativeVideoSurface({
   engineRef, streamUrl, headers, startPositionMs, isDirectPlay, textTracks, title, artist,
   paused, audioTrackSelectedIndex, videoReady, currentTime, subtitleVttUrl, isAirPlaying, showLoading,
   overlayVisible, onLoad, onProgress, onEnd, onError, onBuffering, onExternalPlaybackChange,
-  onSeek, onToggleOverlay, onSwipeDown, children,
+  onSeek, onSkip, onToggleOverlay, onSwipeDown, children,
 }: EngineSurfaceProps) {
   const videoRef = useRef<VideoRef>(null);
   useImperativeHandle(engineRef, () => ({
@@ -119,6 +119,7 @@ export function NativeVideoSurface({
         currentTime={currentTime}
         overlayVisible={overlayVisible}
         onSeek={onSeek}
+        onSkip={onSkip}
         onToggleOverlay={onToggleOverlay}
         onSwipeDown={onSwipeDown}
       />

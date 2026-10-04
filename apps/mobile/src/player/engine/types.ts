@@ -111,6 +111,8 @@ export interface EngineSurfaceProps {
   /** L'image dans l'image s'est ouverte ou fermée. */
   onPipChange?: (active: boolean) => void;
   onSeek: (seconds: number) => void;
+  /** Un écart depuis la cible en cours (double toucher) : des appuis rapides font un seul saut. */
+  onSkip?: (delta: number) => void;
   onToggleOverlay: () => void;
   onSwipeDown: () => void;
   /** L'habillage (contrôles, cartes de fin) et les badges, par-dessus. */

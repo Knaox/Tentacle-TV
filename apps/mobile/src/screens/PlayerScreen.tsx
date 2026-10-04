@@ -18,7 +18,9 @@ import { usePlayerEngine } from "../player/engine/usePlayerEngine";
 import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import type { PlayerEngineHandle } from "../player/engine/types";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
-import { AutoCapBadge } from "../components/player/AutoCapBadge";
+import { PlayerQualityNotice, useMobileQualityDrop } from "../components/player/PlayerQualityNotice";
+import { SeekWaitIndicator } from "../components/player/SeekWaitIndicator";
+import { usePlayerSeekGate } from "../hooks/usePlayerSeekGate";
 import { PlayerStallNotice } from "../components/player/PlayerStallNotice";
 import { PlayerLoadingScreen } from "../components/player/loading/PlayerLoadingScreen";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
@@ -57,10 +59,7 @@ export function PlayerScreen({ itemId, version }: Props) {
   /** Un scrub est en cours — l'arbitre suspend décomptes et surcouches. */
   const [scrubbing, setScrubbing] = useState(false);
 
-  // Orientation : déclarée au niveau du Stack.Screen (`app/_layout.tsx`, `watch/[itemId]`
-  // en "all") — react-native-screens l'applique au UIViewController, plus sûr qu'un lockAsync.
-
-  // StatusBar: hide/show
+  // Orientation : sur le Stack.Screen (`app/_layout.tsx`, "all"), plus sûr qu'un lockAsync.
   useEffect(() => {
     StatusBar.setHidden(true);
     return () => { StatusBar.setHidden(false); };
@@ -86,15 +85,13 @@ export function PlayerScreen({ itemId, version }: Props) {
     });
   }, [itemId, pb.item?.Id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Nouveau flux (ou même URL relancée, `fetchNonce`) : gardes réarmées, sinon le
-  // lecteur tournait en spinner pour toujours (et selectedTextTrack plantait).
+  // Nouveau flux (ou même URL relancée) : gardes réarmées, sinon spinner sans fin.
   useEffect(() => {
     setVideoReady(false);
     retryingRef.current = false;
   }, [pb.streamUrl, pb.fetchNonce]);
 
-  // La relance transcodée vise le lecteur système (un HLS h264/aac se lit partout ; c'est
-  // souvent le lecteur avancé qui vient d'échouer) — la façade le retient pour la suite.
+  // La relance transcodée vise le lecteur système (un HLS h264/aac se lit partout).
   const retryTranscoded = useCallback(() => {
     if (eng.engine === "mpv") eng.forceEngine("native", "fallback");
     pb.retry({ engine: "native" });
@@ -113,8 +110,7 @@ export function PlayerScreen({ itemId, version }: Props) {
   // automatique ci-dessus ne compte pas comme un choix.
   const { handleSelectAudio, handleSelectSubtitle, audioTracks, subtitleTracks } = usePlayerTracks(itemId, pb);
 
-  // Une lecture directe a échoué : l'autre moteur, s'il est plausible, avec le
-  // profil de CE moteur et la position courante — sans transcodage.
+  // Une lecture directe a échoué : l'autre moteur, s'il est plausible, sans transcodage.
   const onDirectPlayFailed = useCallback((): boolean => {
     const next = eng.fallbackEngine();
     if (next === null) return false;
@@ -156,6 +152,10 @@ export function PlayerScreen({ itemId, version }: Props) {
     resetGuards: () => { retryCount.current = 0; retryingRef.current = false; },
   });
   reportRef.current = failure.report;
+  // Le saut pendant un transcodage : appuis regroupés en un seul redémarrage, attente dite.
+  const seek = usePlayerSeekGate({ transcoding: !pb.isDirectPlay, duration: pb.jellyfinDuration || 0, positionRef: pb.positionRef,
+    currentTime, buffering: isBuffering, seek: handleSeek, report: failure.report });
+  const qualityDrop = useMobileQualityDrop(pb);
 
   // Rien de chargé en 20 s : relance transcodée, puis le message.
   usePlayerLoadingWatchdog({
@@ -170,7 +170,7 @@ export function PlayerScreen({ itemId, version }: Props) {
     itemId, pb, currentTime, ended, hasStarted: videoReady,
     controlsVisible: overlayVisible,
     scrubbing,
-    onSeek: handleSeek,
+    onSeek: seek.seekTo,
     onNextEpisode: handleNextEpisode,
     onEndOfPlayback: leavePlayer,
   });
@@ -183,7 +183,7 @@ export function PlayerScreen({ itemId, version }: Props) {
   usePlayerRemote({
     stop: leavePlayer, next: handleNextEpisode, previous: handlePrevEpisode,
     pause: () => setPaused(true), play: () => setPaused(false), isPaused: () => paused,
-    seekTo: handleSeek, positionSeconds: () => pb.positionRef.current,
+    seekTo: seek.seekTo, positionSeconds: () => pb.positionRef.current,
     audio: handleSelectAudio, subtitle: (index) => handleSelectSubtitle(index ?? -1),
   });
 
@@ -250,13 +250,13 @@ export function PlayerScreen({ itemId, version }: Props) {
       onPausedChange={setPaused}
       onAirPlayRoute={onAirPlayRoute}
       onPipChange={onPipChange}
-      onSeek={handleSeek}
+      onSeek={seek.seekTo} onSkip={seek.seekBy}
       onToggleOverlay={toggleOverlay}
       onSwipeDown={leavePlayer}
     >
       <MobilePlayerOverlay
         title={pb.item?.Name ?? ""}
-        currentTime={currentTime}
+        currentTime={seek.target ?? currentTime}
         duration={pb.jellyfinDuration || 0}
         bufferedTime={bufferedTime}
         paused={paused}
@@ -266,14 +266,14 @@ export function PlayerScreen({ itemId, version }: Props) {
         selectedSubtitle={pb.subtitleIndex}
         qualityKey={pb.qualityKey}
         qualityPresets={pb.qualityPresets}
-        autoQualityActive={pb.autoModeArmed}
+        autoQualityActive={pb.autoModeArmed} qualityDrop={qualityDrop}
         playback={playback}
         nextEpisode={pb.episodeNav.nextEpisode}
         previousEpisode={pb.episodeNav.previousEpisode}
         item={pb.item}
         mediaSourceId={pb.mediaSourceId}
         onPlayPause={() => setPaused((p) => !p)}
-        onSeek={handleSeek}
+        onSeek={seek.seekTo} onSkip={seek.seekBy}
         onBack={leavePlayer}
         onSelectAudio={handleSelectAudio}
         onSelectSubtitle={handleSelectSubtitle}
@@ -285,9 +285,9 @@ export function PlayerScreen({ itemId, version }: Props) {
         onToggle={toggleOverlay}
       />
 
-      {/* Badge éphémère « Qualité réduite » — le message temporaire du cap. */}
-      <AutoCapBadge active={pb.autoCapActive} />
-      <PlayerStallNotice buffering={isBuffering} started={started} paused={paused} transcoding={!pb.isDirectPlay}
+      <PlayerQualityNotice drop={qualityDrop} started={started} itemId={itemId} />
+      <SeekWaitIndicator phase={seek.phase} />
+      <PlayerStallNotice buffering={isBuffering && seek.phase === "idle"} started={started} paused={paused} transcoding={!pb.isDirectPlay}
         canLowerQuality={failure.canLowerQuality} onLowerQuality={pb.lowerQuality} />
 
       {/* Jusqu'à ce que la lecture AVANCE : l'écran de chargement, au-dessus

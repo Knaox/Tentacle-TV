@@ -21,8 +21,10 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
   qualityPresets: QualityPreset[];
   /** Clé affichée au menu : palier servi, cap compris. */
   qualityKeyEffective: QualityKey;
-  /** Un cap est appliqué au flux courant (badge éphémère + toast maison). */
+  /** Un cap est appliqué au flux courant (le message « Qualité réduite »). */
   autoCapActive: boolean;
+  /** Le palier du cap et la mesure qui l'a décidé — ce que le message dit. */
+  autoCap: { bitrate: number | null; measuredBps: number | null } | null;
   /** Aucun choix manuel pour cet item : le mode « Auto » est armé. */
   autoModeArmed: boolean;
   /** Palier à servir à la PROCHAINE résolution de flux — photographie le cap
@@ -40,6 +42,7 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
   /** Cap réellement appliqué au DERNIER flux résolu — pour l'UI seulement. */
   const [appliedCap, setAppliedCap] = useState<QualityPreset | null>(null);
+  const [capMeasured, setCapMeasured] = useState<number | null>(null);
   const disarmedRef = useRef<string | undefined>(undefined);
 
   // Filet du montage lecteur (le préchauffage vit aussi au lancement de
@@ -74,8 +77,10 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
       setAppliedCap(null);
       return manual;
     }
-    const cap = capForBitrate(mediaSource, cachedBitrate(client, MOBILE_BITRATE_MEASURE));
+    const measured = cachedBitrate(client, MOBILE_BITRATE_MEASURE);
+    const cap = capForBitrate(mediaSource, measured);
     setAppliedCap(cap);
+    setCapMeasured(measured);
     return cap ?? manual;
   }, [qualityKey, qualityPresets, itemId, mediaSource, client]);
 
@@ -106,6 +111,7 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
     qualityPresets,
     qualityKeyEffective: autoCapActive && appliedCap ? appliedCap.key : qualityKey,
     autoCapActive,
+    autoCap: autoCapActive && appliedCap ? { bitrate: appliedCap.bitrate, measuredBps: capMeasured } : null,
     autoModeArmed,
     presetForFetch,
     selectQualityManual,

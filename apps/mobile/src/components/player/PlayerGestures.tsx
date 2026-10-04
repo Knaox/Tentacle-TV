@@ -10,11 +10,13 @@ interface Props {
   currentTime: number;
   overlayVisible: boolean;
   onSeek: (seconds: number) => void;
+  /** Un écart depuis la cible en cours : des doubles touchers rapides se cumulent en un saut. */
+  onSkip?: (delta: number) => void;
   onToggleOverlay: () => void;
   onSwipeDown: () => void;
 }
 
-export function PlayerGestures({ currentTime, overlayVisible, onSeek, onToggleOverlay, onSwipeDown }: Props) {
+export function PlayerGestures({ currentTime, overlayVisible, onSeek, onSkip, onToggleOverlay, onSwipeDown }: Props) {
   const { width: SCREEN_W } = useWindowDimensions();
   const [doubleTapSide, setDoubleTapSide] = useState<"left" | "right" | null>(null);
   const lastTapRef = useRef<{ time: number; side: "left" | "right" | "center" }>({ time: 0, side: "center" });
@@ -37,7 +39,9 @@ export function PlayerGestures({ currentTime, overlayVisible, onSeek, onToggleOv
 
     if (elapsed < DOUBLE_TAP_MS && sameSide && side !== "center") {
       if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
-      onSeek(side === "left" ? currentTime - 10 : currentTime + 30);
+      const delta = side === "left" ? -10 : 30;
+      if (onSkip) onSkip(delta);
+      else onSeek(currentTime + delta);
       setDoubleTapSide(side);
       if (doubleTapFadeTimer.current) clearTimeout(doubleTapFadeTimer.current);
       doubleTapFadeTimer.current = setTimeout(() => setDoubleTapSide(null), DOUBLE_TAP_INDICATOR_MS);
@@ -47,7 +51,7 @@ export function PlayerGestures({ currentTime, overlayVisible, onSeek, onToggleOv
       if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
       singleTapTimer.current = setTimeout(onToggleOverlay, DOUBLE_TAP_MS);
     }
-  }, [currentTime, onSeek, onToggleOverlay]);
+  }, [currentTime, onSeek, onSkip, onToggleOverlay]);
 
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => false,

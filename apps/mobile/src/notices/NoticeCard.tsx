@@ -4,7 +4,7 @@ import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, wi
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { NoticeSeverity } from "@tentacle-tv/shared";
-import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, PLAYER, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import type { MessageCountdown } from "@/session/useMessageCountdown";
 
 export interface NoticeCardAction {
@@ -12,7 +12,7 @@ export interface NoticeCardAction {
   onPress: () => void;
 }
 
-export type NoticeIcon = "server" | "key" | "check" | "alert-triangle";
+export type NoticeIcon = "server" | "key" | "check" | "alert-triangle" | "activity";
 
 interface Props {
   severity: NoticeSeverity;
@@ -25,6 +25,11 @@ interface Props {
   /** Le compte à rebours d'un avertissement qui s'efface seul ; `null` : il reste. */
   countdown: MessageCountdown | null;
   durationMs: number | null;
+  /**
+   * `player` : posée sur la vidéo — sombre EN DUR dans les deux thèmes, comme
+   * tout ce que dessine le lecteur (une carte claire sur un film éblouirait).
+   */
+  surface?: "app" | "player";
 }
 
 /**
@@ -35,8 +40,9 @@ interface Props {
  * haut ou sur le côté ferme aussi.
  */
 export const NoticeCard = memo(function NoticeCard({
-  severity, icon, title, lines, primary, secondary, onClose, countdown, durationMs,
+  severity, icon, title, lines, primary, secondary, onClose, countdown, durationMs, surface = "app",
 }: Props) {
+  const onVideo = surface === "player";
   const { t } = useTranslation("notices");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -61,7 +67,7 @@ export const NoticeCard = memo(function NoticeCard({
   const barStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.value }] }));
 
   return (
-    <View style={st.card}>
+    <View style={[st.card, onVideo && onVideoStyles.card]}>
       <View style={[st.accent, { backgroundColor: accent }]} />
       <View style={st.body}>
         <View
@@ -74,8 +80,8 @@ export const NoticeCard = memo(function NoticeCard({
             <Feather name={icon} size={16} color={pair.fg} />
           </View>
           <View style={st.texts}>
-            {title ? <Text style={st.title}>{title}</Text> : null}
-            {lines.map((line, index) => <Text key={index} style={st.text}>{line}</Text>)}
+            {title ? <Text style={[st.title, onVideo && onVideoStyles.title]}>{title}</Text> : null}
+            {lines.map((line, index) => <Text key={index} style={[st.text, onVideo && onVideoStyles.text]}>{line}</Text>)}
           </View>
         </View>
         {primary || secondary ? (
@@ -86,8 +92,8 @@ export const NoticeCard = memo(function NoticeCard({
               </Pressable>
             ) : null}
             {secondary ? (
-              <Pressable onPress={secondary.onPress} accessibilityRole="button" accessibilityLabel={secondary.label} style={({ pressed }) => [st.action, pressed && st.pressed]}>
-                <Text style={st.actionTxt}>{secondary.label}</Text>
+              <Pressable onPress={secondary.onPress} accessibilityRole="button" accessibilityLabel={secondary.label} style={({ pressed }) => [st.action, onVideo && onVideoStyles.action, pressed && st.pressed]}>
+                <Text style={[st.actionTxt, onVideo && onVideoStyles.title]}>{secondary.label}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -99,10 +105,10 @@ export const NoticeCard = memo(function NoticeCard({
         accessibilityLabel={t("close")}
         style={({ pressed }) => [st.close, pressed && st.pressed]}
       >
-        <Feather name="x" size={18} color={theme.colors.text.secondary} />
+        <Feather name="x" size={18} color={onVideo ? PLAYER.textSecondary : theme.colors.text.secondary} />
       </Pressable>
       {countdown ? (
-        <View style={st.track} pointerEvents="none">
+        <View style={[st.track, onVideo && onVideoStyles.track]} pointerEvents="none">
           <Animated.View style={[st.bar, { backgroundColor: accent }, barStyle]} />
         </View>
       ) : null}
@@ -151,3 +157,12 @@ const makeStyles = (t: AppTheme) =>
     track: { position: "absolute", left: 0, right: 0, bottom: 0, height: 3, backgroundColor: t.colors.fill.subtle },
     bar: { height: 3, transformOrigin: "left" },
   });
+
+/** La surface posée sur la vidéo : les couleurs du lecteur, identiques dans les deux thèmes. */
+const onVideoStyles = StyleSheet.create({
+  card: { backgroundColor: "rgba(12, 10, 20, 0.92)", borderColor: PLAYER.border },
+  title: { color: PLAYER.text },
+  text: { color: PLAYER.textSecondary },
+  action: { borderColor: PLAYER.border },
+  track: { backgroundColor: PLAYER.fillSoft },
+});

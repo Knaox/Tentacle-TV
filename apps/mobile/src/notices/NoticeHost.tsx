@@ -143,10 +143,12 @@ interface BannerProps {
   secondary?: NoticeCardAction;
   durationMs: number | null;
   onDone: () => void;
+  /** `player` : posée sur la vidéo (cf. `NoticeCard`). */
+  surface?: "app" | "player";
 }
 
 /** Une carte et son temps : le compte à rebours, la main qui le suspend, le geste qui la chasse. */
-const Banner = memo(function Banner({ severity, icon, title, lines, primary, secondary, durationMs, onDone }: BannerProps) {
+export const Banner = memo(function Banner({ severity, icon, title, lines, primary, secondary, durationMs, onDone, surface }: BannerProps) {
   const [held, setHeld] = useState(false);
   const countdown = useMessageCountdown(durationMs, held, onDone);
   const swipe = useSwipeDismiss(onDone);
@@ -173,6 +175,7 @@ const Banner = memo(function Banner({ severity, icon, title, lines, primary, sec
         secondary={secondary}
         countdown={countdown}
         durationMs={durationMs}
+        surface={surface}
         onClose={() => {
           haptic("tap");
           onDone();

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { formatBitrateMbps, type SourceQuality } from "@tentacle-tv/shared";
+import { formatBitrateMbps, qualityDropText, type QualityDrop, type SourceQuality } from "@tentacle-tv/shared";
 import type { QualityKey, QualityPreset } from "../../hooks/usePlayerPlayback";
 import { PlayerPopupMenu } from "./PlayerPopupMenu";
 
@@ -17,6 +17,8 @@ interface Props {
   qualityPresets: readonly QualityPreset[];
   /** Badge « Auto » sur le palier actif (mode auto armé, aucun choix manuel). */
   autoQualityActive?: boolean;
+  /** Pourquoi la qualité baisse en Auto : relisible sous les paliers. */
+  qualityDrop?: QualityDrop | null;
   sourceQuality: SourceQuality;
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
@@ -29,11 +31,12 @@ interface Props {
  *  pour garder MobilePlayerOverlay sous 300 lignes. */
 export function PlayerSettingsMenus({
   showSettings, showSubtitles, audioTracks, subtitleTracks,
-  selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive, sourceQuality,
+  selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive, qualityDrop, sourceQuality,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onCloseSettings, onCloseSubtitles,
 }: Props) {
-  const { t } = useTranslation("player");
+  const { t, i18n } = useTranslation("player");
+  const dropText = qualityDrop ? qualityDropText(qualityDrop, i18n.language) : null;
 
   return (
     <>
@@ -69,6 +72,7 @@ export function PlayerSettingsMenus({
               };
             }),
             onSelect: (k: string | number) => { onSelectQuality(k as QualityKey); onCloseSettings(); },
+            note: dropText ? `${t("qualityAutoBadge")} · ${t(dropText.menuKey, dropText.values)}` : undefined,
           }]),
         ]}
         onClose={onCloseSettings}

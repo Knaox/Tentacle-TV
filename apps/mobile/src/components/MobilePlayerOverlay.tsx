@@ -3,7 +3,7 @@ import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import { ArrowLeft, Captions, Settings, List } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem, QualityDrop } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
 import { type QualityKey, type QualityPreset } from "../hooks/usePlayerPlayback";
 import type { PlaybackOverlayResult } from "@tentacle-tv/api-client";
@@ -37,6 +37,8 @@ interface Props {
   qualityKey: QualityKey;
   /** Badge « Auto » sur le palier actif du menu qualité. */
   autoQualityActive?: boolean;
+  /** Pourquoi la qualité baisse en Auto : relisible sous les paliers. */
+  qualityDrop?: QualityDrop | null;
   /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets: readonly QualityPreset[];
   /** L'arbitre partagé : ce qu'il faut afficher, et de quoi y répondre. */
@@ -57,6 +59,8 @@ interface Props {
   localSession?: boolean;
   onPlayPause: () => void;
   onSeek: (seconds: number) => void;
+  /** Un écart depuis la cible en cours (±10/30 s) : des appuis rapides font un seul saut. */
+  onSkip?: (delta: number) => void;
   onBack: () => void;
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
@@ -71,10 +75,10 @@ interface Props {
 
 export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
-  audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive,
+  audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive, qualityDrop,
   playback, nextEpisode, previousEpisode,
   item, mediaSourceId, localTrickplay, nextArtwork, localSession = false,
-  onPlayPause, onSeek, onBack,
+  onPlayPause, onSeek, onSkip, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onNextEpisode, onPreviousEpisode, onScrubStateChange,
   visible, onToggle,
@@ -161,8 +165,8 @@ export function MobilePlayerOverlay({
             onPrevious={onPreviousEpisode}
             onNext={onNextEpisode}
             onPlayPause={() => { onPlayPause(); resetHideTimer(); }}
-            onRewind={() => { onSeek(currentTime - 10); flashSkip("left"); resetHideTimer(); }}
-            onForward={() => { onSeek(currentTime + 30); flashSkip("right"); resetHideTimer(); }}
+            onRewind={() => { if (onSkip) onSkip(-10); else onSeek(currentTime - 10); flashSkip("left"); resetHideTimer(); }}
+            onForward={() => { if (onSkip) onSkip(30); else onSeek(currentTime + 30); flashSkip("right"); resetHideTimer(); }}
           />
 
           {/* Indicateur de saut ±10/30 (boutons) */}
@@ -253,6 +257,7 @@ export function MobilePlayerOverlay({
         qualityKey={qualityKey}
         qualityPresets={qualityPresets}
         autoQualityActive={autoQualityActive}
+        qualityDrop={qualityDrop}
         sourceQuality={sourceQuality}
         onSelectAudio={onSelectAudio}
         onSelectSubtitle={onSelectSubtitle}

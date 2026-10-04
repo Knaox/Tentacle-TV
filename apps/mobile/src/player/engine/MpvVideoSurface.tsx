@@ -26,7 +26,7 @@ export function MpvVideoSurface({
   externalSubtitles, title, artist, paused, currentTime, isAirPlaying, showLoading, overlayVisible,
   reloadToken, subtitleScale, subtitlePosition, subtitleDelay, audioDelay,
   onLoad, onProgress, onEnd, onError, onBuffering, onPausedChange, onAirPlayRoute, onPipChange,
-  onSeek, onToggleOverlay, onSwipeDown, children,
+  onSeek, onSkip, onToggleOverlay, onSwipeDown, children,
 }: EngineSurfaceProps) {
   const viewRef = useRef<MpvPlayerViewHandle>(null);
   const [tracks, setTracks] = useState<readonly MpvTrack[]>([]);
@@ -144,6 +144,7 @@ export function MpvVideoSurface({
         currentTime={currentTime}
         overlayVisible={overlayVisible}
         onSeek={onSeek}
+        onSkip={onSkip}
         onToggleOverlay={onToggleOverlay}
         onSwipeDown={onSwipeDown}
       />

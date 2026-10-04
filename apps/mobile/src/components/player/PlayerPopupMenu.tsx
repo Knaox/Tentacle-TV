@@ -26,6 +26,8 @@ export interface PopupSection {
   options: PopupOption[];
   onSelect: (key: string | number) => void;
   showDisabled?: { label: string; active: boolean; onSelect: () => void };
+  /** Une ligne d'explication sous les choix (pourquoi la qualité baisse en Auto). */
+  note?: string;
 }
 
 interface Props {
@@ -105,6 +107,11 @@ export function PlayerPopupMenu({ visible, title, sections, onClose }: Props) {
                   onPress={() => section.onSelect(opt.key)}
                 />
               ))}
+              {section.note ? (
+                <Text style={{ fontSize: 12, lineHeight: 17, color: PLAYER.textSecondary, paddingHorizontal: 10, marginTop: 6 }}>
+                  {section.note}
+                </Text>
+              ) : null}
             </View>
           ))}
         </ScrollView>
