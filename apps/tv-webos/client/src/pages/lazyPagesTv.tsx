@@ -139,6 +139,10 @@ export const TrailerGuide = Unavailable;
 // Écrans pensés pour un téléphone.
 export const MobileProfile = Unavailable;
 
+// La Famille (invitations, invités, codes PIN) se gère depuis le web, le
+// bureau ou le mobile ; la TV LG n'a pas de profils de Famille.
+export const SettingsFamily = Unavailable;
+
 // Statistiques de visionnage : des graphiques qu'on parcourt au pointeur ou
 // au doigt, pas à la télécommande — le téléviseur n'en a pas l'usage.
 export const Stats = Unavailable;
