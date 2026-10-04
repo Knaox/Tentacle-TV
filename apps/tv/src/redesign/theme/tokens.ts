@@ -73,13 +73,18 @@ export const brandTint = (alpha: number) => `rgba(${C.brand.rgb}, ${alpha})`;
 
 /** Inter, comme le bureau — embarquée dans l'app tvOS (`UIAppFonts`) comme
  *  sur Android. La graisse posée à côté garde le bon poids en police système
- *  sur une build qui ne l'aurait pas. */
+ *  sur une build qui ne l'aurait pas. `includeFontPadding` (Android seul,
+ *  ignoré sur tvOS) : sans lui, Android ajoute au-dessus et au-dessous de
+ *  chaque texte la marge de la police — les libellés descendaient de
+ *  quelques points par rapport à l'Apple TV. */
+const PAD = { includeFontPadding: false } as const;
+
 export const fonts = {
-  regular: { fontFamily: "Inter-Regular", fontWeight: "400" },
-  medium: { fontFamily: "Inter-Medium", fontWeight: "500" },
-  semibold: { fontFamily: "Inter-SemiBold", fontWeight: "600" },
-  bold: { fontFamily: "Inter-Bold", fontWeight: "700" },
-  extrabold: { fontFamily: "Inter-ExtraBold", fontWeight: "800" },
+  regular: { fontFamily: "Inter-Regular", fontWeight: "400", ...PAD },
+  medium: { fontFamily: "Inter-Medium", fontWeight: "500", ...PAD },
+  semibold: { fontFamily: "Inter-SemiBold", fontWeight: "600", ...PAD },
+  bold: { fontFamily: "Inter-Bold", fontWeight: "700", ...PAD },
+  extrabold: { fontFamily: "Inter-ExtraBold", fontWeight: "800", ...PAD },
 } as const satisfies Record<string, TextStyle>;
 
 export const type = TV_TYPE;
