@@ -608,3 +608,73 @@ rejoindront tv-core avec un banc qui monte ces crochets (nœuds factices).
   simulateur de la place, branchée sur le même Metro — le banc ne suit plus,
   depuis, que l'app de test. Le vrai glisser du doigt reste un essai de
   l'utilisateur.
+
+## 13. Android TV — le lecteur refondu (lot « Android TV = Apple TV », A4)
+
+Le lecteur d'Android TV rend désormais l'habillage de l'Apple TV refondue
+(`PlayerRedesignStage` → `PlayerChromeView`), sur le MÊME cerveau
+(`useTVPlayerControls` → tv-core `playerControls`) et sur le moteur d'Android,
+repris tel quel : mpv (`com.tentacletv.mpv`) ou ExoPlayer
+(`com.tentacletv.exoplayer`, bascule de fréquence d'affichage, rendu DV de
+compatibilité), choisis comme avant par `useTVPlayerRouting`. Les §§ 1 à 12
+valent pour Android TV ; ce qui suit ne dit que ce qui diffère, et pourquoi.
+
+### 13.1 Ce qui change de place
+
+| Rôle | Apple TV | Android TV |
+|---|---|---|
+| Applicateurs du lecteur | `platform/tvos/player` | `platform/androidtv/player` — fond et guides repris (react-native-tvos sert `autoFocus`, `destinations`, `trapFocus*` sur Android, `ReactViewGroup`), croix verrouillée par `focusable` |
+| Point d'entrée neutre | `platform/player/index.ts` | `platform/player/index.android.ts` |
+| Télécommande du lecteur | `usePlayerRemoteBinding` : `useRemoteIntents` → `playerRemoteSteps` | le même, sur l'entrée d'Android TV (`platform/input`, table `ANDROIDTV_BINDINGS`) |
+| Profil des flèches | `scrubInputProfileOf(traits)` | le même : maintien annoncé (`longLeft` 0 puis 1) → profil de l'Apple TV |
+| Habillage effacé | monté, transparent | DÉMONTÉ à la fin de son fondu (`CHROME_UNMOUNTS_WHEN_HIDDEN`) |
+| Bande-annonce | flux HLS relayé (`/api/trailers/resolve`), react-native-video | le même composant (`TrailerWebView.tsx`) : ExoPlayer media3 dans react-native-video |
+
+### 13.2 La télécommande dans le lecteur
+
+Ce que livre react-native-tvos sur Android (relevé dans
+`ReactAndroidHWInputDeviceHelper.java`, table `ANDROIDTV_BINDINGS`) : un appui
+au relâchement ; un maintien de la croix ou d'OK ANNONCÉ (`longLeft` à 0 vers
+500 ms — la première répétition d'Android 11 —, puis à 1 au relâchement, rien
+entre) ; Retour par `BackHandler`. C'est le modèle de la Siri Remote : les
+gestes du lecteur sont donc ceux des §§ 4.3 à 4.7, aux mêmes durées.
+
+| Geste | Effet (identique à l'Apple TV, sauf mention) |
+|---|---|
+| ← / → (appui), habillage masqué | saut −10 / +30 s + badge |
+| ← / → maintenus | défilement : tic 250 ms, paliers ×1 → ×8, décompte 5 s au relâcher |
+| ⏩ / ⏪ (touches média, Shield) | ouvrent le défilement ; tenues, il accélère au rythme de leurs répétitions (`mediaPulse`, chien de garde 700 ms) ; défilement ouvert, un appui pousse la cible |
+| ↑ / ↓ | rallument l'habillage (ce que les consignes d'Android appellent « jeter un œil aux commandes ») |
+| OK, habillage masqué | rallume l'habillage, focus sur **Lecture/Pause** (ci-dessous) |
+| OK, habillage affiché | l'action du bouton focalisé (Lecture/Pause : la pause) |
+| Lecture/Pause (Shield, téléviseurs) | bascule + rallume |
+| Retour | ferme le panneau ouvert, sinon masque l'habillage (en pause : le désépingle), sinon quitte — la pile de couches du § 6, par `BackHandler` |
+| Menu ≡, piste suivante/précédente, OK maintenu | rien (Apple TV n'a pas de geste équivalent dans le lecteur) |
+
+**Sans touche Lecture/Pause** (télécommande Google TV ; trait `playPauseKey:
+"sometimes"`) : le comportement de l'Apple TV est gardé, OK prend le relais —
+un premier OK montre l'habillage, un second met en pause. Pour que le second OK
+soit TOUJOURS la pause, l'habillage qui réapparaît se pose sur Lecture/Pause
+(tv-core `osdRevealTarget` → `overlayFocusCore`, restauration implicite) au
+lieu du dernier bouton utilisé ; la pilule de saut qui tient le focus le garde.
+C'est la règle de YouTube et de Netflix sur Android TV et des consignes
+d'Android (« le bouton central met en pause et montre les commandes ») ; le
+défaut inverse — l'habillage revenu sur « +30 », et OK qui saute au lieu de
+mettre en pause — est celui qu'on reproche au lecteur de Plex.
+
+### 13.3 Performance
+
+- **Surface vidéo : `SurfaceView`**, pour mpv comme pour ExoPlayer (et
+  react-native-video, la bande-annonce). Composée par le matériel (HWC), elle
+  seule transmet le HDR et le Dolby Vision à l'affichage et permet le
+  tunneling d'ExoPlayer ; une `TextureView` passe par le GPU, en SDR, et coûte
+  jusqu'à 30 % d'énergie de plus selon la documentation de media3. Rien ne
+  l'anime : le style du lecteur (`useTVPlayerStyle`) est figé par le format de
+  la vidéo, et tout ce qui bouge (habillage, voile de pause, badge) se compose
+  AU-DESSUS, sans retracer la surface.
+- **L'habillage effacé se démonte** (`useMountedWhileVisible`) : sur Android,
+  une vue à opacité 0 n'est pas dessinée (HWUI saute un nœud transparent) mais
+  elle coûte encore ses rendus — la frise suit la lecture chaque seconde — et
+  surtout elle reste FOCALISABLE : le moteur de focus d'Android ignore la
+  transparence. Le fondu de sortie se joue en entier, puis l'habillage part ;
+  il revient avec le même fondu d'entrée.
