@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPlayerControls, type ScrubCountdownState, type SkipFlashState } from "@tentacle-tv/tv-core";
+import {
+  createPlayerControls, RESUME_COUNTDOWN_POLICY,
+  type ScrubCountdownPolicy, type ScrubCountdownState, type SkipFlashState,
+} from "@tentacle-tv/tv-core";
 import { backgroundHoldsFocus } from "../components/player/focus/osdFocusBus";
 import { PLAYER_TIMERS } from "./playerTimers";
 import { SCRUB_INPUT } from "./scrubInput";
@@ -22,6 +25,11 @@ interface TVPlayerControlsOptions {
    *  les commits de seek la synchronisent directement — un +30 enchaîné part toujours
    *  de la dernière cible, jamais d'un progress périmé. Défaut : ref interne. */
   currentTimeRef?: React.MutableRefObject<number>;
+  /** Ce que fait le décompte du défilement, et quand — le réglage « Avance
+   *  rapide » (Apple TV, `useScrubCountdownPolicy`). Absent : la politique
+   *  d'avant (`RESUME_COUNTDOWN_POLICY`), que garde Android TV. Lue à chaque
+   *  ouverture du défilement. */
+  countdownPolicy?: ScrubCountdownPolicy;
 }
 
 /**
@@ -36,7 +44,7 @@ interface TVPlayerControlsOptions {
  */
 export function useTVPlayerControls({
   paused, jellyfinDuration, onSeek, onBack, onPlayPause, onScrubPause,
-  panelOpen = false, currentTimeRef: externalTimeRef,
+  panelOpen = false, currentTimeRef: externalTimeRef, countdownPolicy,
 }: TVPlayerControlsOptions) {
   const internalTimeRef = useRef(0);
   const currentTimeRef = externalTimeRef ?? internalTimeRef;
@@ -47,6 +55,8 @@ export function useTVPlayerControls({
   durationRef.current = jellyfinDuration;
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const policyRef = useRef(countdownPolicy);
+  policyRef.current = countdownPolicy;
   const latest = useRef({ onSeek, onBack, onPlayPause, onScrubPause });
   latest.current = { onSeek, onBack, onPlayPause, onScrubPause };
 
@@ -78,7 +88,10 @@ export function useTVPlayerControls({
     onSpeedLabel: setSpeedLabel,
     onCountdown: setScrubCountdown,
     debug: __DEV__ ? (message) => console.log(message) : undefined,
-  }, { profile: SCRUB_INPUT, timers: PLAYER_TIMERS, initialPanelOpen: panelOpen }));
+  }, {
+    profile: SCRUB_INPUT, timers: PLAYER_TIMERS, initialPanelOpen: panelOpen,
+    readCountdownPolicy: () => policyRef.current ?? RESUME_COUNTDOWN_POLICY,
+  }));
   useEffect(() => () => core.destroy(), [core]);
 
   // Change d'identité avec le panneau, comme avant (des effets en dépendent).

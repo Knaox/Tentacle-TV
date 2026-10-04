@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
+import { useScrubCountdownPolicy } from "../hooks/scrubCountdownPolicy";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
 import { usePlayerMediaState } from "../hooks/usePlayerMediaState";
 import { usePlayerStreamPipeline } from "../hooks/usePlayerStreamPipeline";
@@ -149,6 +150,8 @@ export function PlayerScreen({ route, navigation }: Props) {
     // Écran de fin plein écran (eof) = panneau : neutralise pan/scrub/play-pause du
     // lecteur ET son Back JS — le Retour est routé par useTVPlayerBack (preventRemove).
     panelOpen: showSettings || showEpisodes || autoPlay.source === "eof",
+    // Le réglage « Avance rapide » du compte (Apple TV ; Android TV : aucun).
+    countdownPolicy: useScrubCountdownPolicy(),
   });
   // Télécommande : tableau de bord de Jellyfin, « Sessions en direct » de Tentacle.
   useTVSessionRemote({
