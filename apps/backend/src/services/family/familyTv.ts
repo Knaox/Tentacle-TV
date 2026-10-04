@@ -70,6 +70,7 @@ export async function listTvProfiles(pairing: PairingRow, now: number): Promise<
       imageTag: guest ? null : users?.get(fold(entry.userId))?.imageTag ?? null,
       lockedUntil: until ? iso(until) : null,
       createdBy: guest ? entry.row?.createdBy ?? familyOwner : null,
+      guestRights: guest ? { requestTitles: entry.row?.canRequestTitles === true } : null,
       // Ce que ce profil gérerait ici, derrière SON PIN ; jamais un invité, jamais le compte de démonstration.
       manage:
         review || guest

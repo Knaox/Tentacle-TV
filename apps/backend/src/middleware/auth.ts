@@ -3,7 +3,7 @@ import { getJellyfinUrl } from "../services/configStore";
 import { verifyImpersonationToken } from "../services/jwt";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders } from "../services/jellyfinAuth";
 import { pairedDeviceStatus, PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../services/pairedDeviceStatus";
-import { profileSessionRefusal } from "../services/family/profileSessionLimits";
+import { profileSessionScope } from "../services/family/profileSessionLimits";
 
 /**
  * D'où vient la session d'une requête — la Famille en tire ses droits
@@ -21,6 +21,10 @@ export interface JellyfinUser {
   session?: SessionKind;
   /** `tvProfile` : le jumelage de la TV dont la session dépend. */
   pairingId?: string;
+  /** Famille v2 — sur une route d'extension, un invité autorisé agit pour le
+   *  propriétaire : l'utilisateur EST alors le propriétaire (jamais admin), et
+   *  ceci dit l'invité (`services/family/familyDelegation.ts`). */
+  delegatedBy?: { userId: string; username: string };
 }
 
 type ValidationResult =
@@ -152,16 +156,25 @@ export function getTokenFromRequest(request: FastifyRequest): string | null {
   return tokenFromAuthHeaders(request.headers) ?? null;
 }
 
-/** Une session de profil de TV hors de son périmètre (la Famille) : 403. */
-async function outOfProfileScope(request: FastifyRequest, reply: FastifyReply, user: JellyfinUser): Promise<boolean> {
+/** Le périmètre d'une session de profil de TV (la Famille) : 403 hors de lui
+ *  et, sur une route d'extension, l'identité « agit pour » d'un invité
+ *  autorisé. Rend l'utilisateur que la route doit voir — ou null : la réponse
+ *  est partie (refus, ou base muette : on ferme). */
+async function profileScoped(request: FastifyRequest, reply: FastifyReply, user: JellyfinUser): Promise<JellyfinUser | null> {
   try {
-    const refusal = await profileSessionRefusal(request.url, user);
-    if (!refusal) return false;
-    reply.status(403).send(refusal);
+    const scope = await profileSessionScope(request.url, user);
+    if (scope.kind === "refuse") {
+      reply.status(403).send(scope.body);
+      return null;
+    }
+    if (scope.kind === "actFor") {
+      return { ...scope.identity, session: user.session, pairingId: user.pairingId, delegatedBy: { userId: user.userId, username: user.username } };
+    }
+    return user;
   } catch {
     reply.status(503).send({ message: "Base de données indisponible" });
+    return null;
   }
-  return true;
 }
 
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
@@ -175,9 +188,10 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
     const { status, body } = rejection(result);
     return reply.status(status).send(body);
   }
-  if (await outOfProfileScope(request, reply, result.user)) return reply;
+  const user = await profileScoped(request, reply, result.user);
+  if (!user) return reply;
 
-  (request as any).user = result.user;
+  (request as any).user = user;
 }
 
 export async function requireAdmin(request: FastifyRequest, reply: FastifyReply) {
@@ -195,7 +209,10 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
   if (!result.user.isAdmin) {
     return reply.status(403).send({ message: "Forbidden" });
   }
-  if (await outOfProfileScope(request, reply, result.user)) return reply;
+  const user = await profileScoped(request, reply, result.user);
+  if (!user) return reply;
+  // Une identité déléguée n'est jamais administratrice.
+  if (!user.isAdmin) return reply.status(403).send({ message: "Forbidden" });
 
-  (request as any).user = result.user;
+  (request as any).user = user;
 }

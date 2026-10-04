@@ -624,6 +624,7 @@ CREATE TABLE IF NOT EXISTS `family_members` (
   `jellyfinName` varchar(255) NULL,
   `createdBy` varchar(255) NULL,
   `canCreateGuests` tinyint(1) NOT NULL DEFAULT 0,
+  `canRequestTitles` tinyint(1) NOT NULL DEFAULT 0,
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `family_members_familyId_userId_key` (`familyId`, `userId`),
@@ -711,6 +712,18 @@ SET @fm_v2_sql := IF(@fm_v2_cols = 0,
 PREPARE fm_v2_stmt FROM @fm_v2_sql;
 EXECUTE fm_v2_stmt;
 DEALLOCATE PREPARE fm_v2_stmt;
+
+-- Le droit d'un invité « peut demander » (ses extensions, au nom du
+-- propriétaire) — coupé par défaut. Posé à part : une base qui a déjà les
+-- colonnes ci-dessus le reçoit aussi.
+SET @fm_req_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'family_members' AND COLUMN_NAME = 'canRequestTitles');
+SET @fm_req_sql := IF(@fm_req_col = 0,
+  'ALTER TABLE `family_members` ADD COLUMN `canRequestTitles` tinyint(1) NOT NULL DEFAULT 0 AFTER `canCreateGuests`',
+  'DO 0');
+PREPARE fm_req_stmt FROM @fm_req_sql;
+EXECUTE fm_req_stmt;
+DEALLOCATE PREPARE fm_req_stmt;
 
 -- La Famille v2 : UNE famille par compte. Une base de la v1 (un compte
 -- propriétaire ET membre, ou membre de plusieurs familles) y passe SANS RIEN

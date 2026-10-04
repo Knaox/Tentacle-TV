@@ -35,6 +35,8 @@ export interface MemberRow {
   createdBy: string | null;
   /** Membre : le droit de créer des invités. */
   canCreateGuests: boolean;
+  /** Invité : « peut demander » — ses extensions, au nom du propriétaire. */
+  canRequestTitles: boolean;
   createdAt: Date;
 }
 

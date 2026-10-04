@@ -361,6 +361,8 @@ model FamilyMember {
   createdBy       String?  @db.VarChar(255)
   /// Membre (v2) : le propriétaire lui permet de créer des invités. Coupé par défaut.
   canCreateGuests Boolean  @default(false)
+  /// Invité (v2) : « peut demander » — ses extensions, au nom du propriétaire. Coupé par défaut.
+  canRequestTitles Boolean @default(false)
   createdAt    DateTime @default(now())
 
   @@unique([familyId, userId])

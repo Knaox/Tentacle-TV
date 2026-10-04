@@ -23,7 +23,8 @@ export function getFamilySwitches(): FamilySwitches {
 /** `/api/config` › `features.family` : ce que le serveur sait faire, et permet. */
 export function familyCapability(): FamilyCapability {
   const switches = getFamilySwitches();
-  return { v: FAMILY_CONTRACT_VERSION, enabled: switches.families, guests: switches.families && switches.guests };
+  const guests = switches.families && switches.guests;
+  return { v: FAMILY_CONTRACT_VERSION, enabled: switches.families, guests, guestRequests: guests };
 }
 
 export async function setFamilySwitches(patch: Partial<FamilySwitches>): Promise<FamilySwitches> {

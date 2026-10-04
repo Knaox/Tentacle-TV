@@ -1,6 +1,6 @@
 import { getPrisma } from "../db";
 import { loadPushLangs } from "../pushLang";
-import type { FamilyProfileColor, FamilyProfileDto } from "../../family/familyContract";
+import type { FamilyGuestRights, FamilyProfileColor, FamilyProfileDto, SetGuestRightsBody } from "../../family/familyContract";
 import { canManageGuest, familyRightsOf } from "../../family/familyRights";
 import { capacityError, guestQuotaBlock, normalizeGuestName } from "../../family/familyRules";
 import { getFamilySwitches, isReviewAccount, refuseReviewAccount, requireGuests } from "./familyConfig";
@@ -13,7 +13,17 @@ import { familyUpdate, notifyFamily } from "./familyNotify";
 import { writePin } from "./familyPins";
 import { endProfileEverywhere } from "./familySessions";
 import { createGuestAccount, deleteGuestAccount } from "./guestAccounts";
-import { ensureOwnedFamily, familyCounts, familyOf, familyProfiles, findProfile, fold, type FamilyRow, type MemberRow } from "./familyStore";
+import {
+  ensureOwnedFamily,
+  familyCounts,
+  familyOf,
+  familyProfiles,
+  findProfile,
+  fold,
+  ownerRefusal,
+  type FamilyRow,
+  type MemberRow,
+} from "./familyStore";
 
 /**
  * Les invités d'une famille et les PIN (docs/FAMILLE.md). Créer un invité,
@@ -121,7 +131,27 @@ export async function createGuest(actor: Actor, body: { name: unknown; color: Fa
     createdBy: actor.userId,
     createdByName: actor.username,
     rights: null,
+    guestRights: { requestTitles: false },
   };
+}
+
+/** Le propriétaire — lui SEUL — règle les droits d'un invité (v2). « Peut
+ *  demander » : la session de l'invité utilise les extensions à son nom
+ *  (`familyDelegation.ts`). Lu à chaque requête : le retirer coupe à l'appel
+ *  suivant ; l'invité l'apprend aussi par son socket. */
+export async function setGuestRights(owner: Actor, guestUserId: string, patch: SetGuestRightsBody): Promise<FamilyGuestRights> {
+  await refuseReviewAccount(owner.userId);
+  const mine = await familyOf(owner.userId);
+  if (mine?.role !== "owner") throw await ownerRefusal(owner.userId, guestUserId);
+  const updated = await withFamilyLock(owner.userId, async () => {
+    const row = await findProfile(mine.family.id, guestUserId);
+    if (!row || row.kind !== "guest") throw await ownerRefusal(owner.userId, guestUserId);
+    if (patch.requestTitles === undefined) return row;
+    return getPrisma().familyMember.update({ where: { id: row.id }, data: { canRequestTitles: patch.requestTitles } });
+  });
+  await notifyFamily(mine.family.id, [updated.userId]);
+  console.log(`[family] Droits d'un invité réglés dans la famille ${mine.family.id}`);
+  return { requestTitles: updated.canRequestTitles === true };
 }
 
 /** Sessions coupées sur toutes les TV, puis compte Jellyfin supprimé (sa lecture est perdue). */

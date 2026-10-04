@@ -3,7 +3,7 @@ import { buildOverview } from "../../services/family/familyOverview";
 import { listCandidates } from "../../services/family/familyCandidates";
 import { cancelInvitation, inviteMember } from "../../services/family/familyInvitations";
 import { acceptInvitation, declineInvitation, snoozeInvitation } from "../../services/family/familyInvitationAnswers";
-import { createGuest, deleteGuest, setGuestPin, setOwnPin } from "../../services/family/familyGuests";
+import { createGuest, deleteGuest, setGuestPin, setGuestRights, setOwnPin } from "../../services/family/familyGuests";
 import { dissolveFamily, leaveFamily, removeMember, setMemberRights } from "../../services/family/familyMembers";
 import {
   candidatesQuerySchema,
@@ -12,6 +12,7 @@ import {
   familyIdSchema,
   invitationActionBodySchema,
   inviteBodySchema,
+  setGuestRightsBodySchema,
   setMemberRightsBodySchema,
   setPinBodySchema,
   userIdSchema,
@@ -70,6 +71,14 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
 
   registerFamilyRoute(app, "deleteGuest", async (request, actor) =>
     deleteGuest(actorOf(actor), userIdSchema.parse(param(request.params, "userId"))),
+  );
+
+  registerFamilyRoute(app, "setGuestRights", async (request, actor) =>
+    setGuestRights(
+      actorOf(actor),
+      userIdSchema.parse(param(request.params, "userId")),
+      setGuestRightsBodySchema.parse(request.body ?? {}),
+    ),
   );
 
   registerFamilyRoute(app, "setGuestPin", async (request, actor) => {

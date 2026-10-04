@@ -77,6 +77,7 @@ export function profileDtos(family: FamilyRow, rows: MemberRow[], users: UserMap
     createdBy: null,
     createdByName: null,
     rights: null,
+    guestRights: null,
   };
   const others = rows
     .filter((row) => row.kind !== "owner")
@@ -94,6 +95,7 @@ export function profileDtos(family: FamilyRow, rows: MemberRow[], users: UserMap
         createdBy: creator?.createdBy ?? null,
         createdByName: creator ? users?.get(fold(creator.createdBy))?.name ?? creator.fallbackName : null,
         rights: guest ? null : { createGuests: row.canCreateGuests === true },
+        guestRights: guest ? { requestTitles: row.canRequestTitles === true } : null,
       };
     })
     .sort((a, b) => Number(a.kind === "guest") - Number(b.kind === "guest"));
