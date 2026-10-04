@@ -31,13 +31,14 @@ export function ProfilesRedesign({ navigation, route }: Props) {
   const { storage } = useTentacleConfig();
   const go = useMemo(
     () => ({
-      home: () => navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+      // L'accueil fond par-dessus « Qui regarde ? » (`entrance`, AppNavigator) : il charge pendant le fondu.
+      home: () => navigation.reset({ index: 0, routes: [{ name: "Home", params: { entrance: true } }] }),
       manage: () => navigation.reset({ index: 0, routes: [{ name: "ManageProfiles", params: { origin: "profiles" } }] }),
     }),
     [navigation],
   );
   const flow = useProfilesFlow(route.params?.intent ?? "launch", go);
-  const { listing, phase, remember, notice, entry, unpairArmed } = flow;
+  const { listing, phase, remember, notice, entry, unpairArmed, entering } = flow;
 
   const now = Date.now();
   const serverUrl = storage.getItem("tentacle_server_url");
@@ -69,16 +70,18 @@ export function ProfilesRedesign({ navigation, route }: Props) {
         },
       };
     }
+    const enteringIndex = entering ? profiles.findIndex((candidate) => candidate.id === entering) : -1;
     return {
       kind: "picker",
       profiles,
       remember,
       canManage: listing?.canManage === true,
       notice: notice ? refusalMessage(notice, t) : null,
+      entering: enteringIndex >= 0 ? { index: enteringIndex, label: t("familyTv:opening", { name: profiles[enteringIndex].name }) } : null,
     };
     // `now` relu à chaque rendu : un blocage se dit à jour.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, listing, remember, notice, entry, unpairArmed, serverUrl, i18n.language, t]);
+  }, [phase, listing, remember, notice, entry, unpairArmed, entering, serverUrl, i18n.language, t]);
 
   const store = useFocusStore();
   useProfilesGroups(store);

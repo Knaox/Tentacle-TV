@@ -36,6 +36,8 @@ export interface PillButtonProps {
   /** L'appui maintenu (le grand panneau du titre, sur le héros). */
   onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
+  /** Hors d'atteinte du focus (une page qui s'efface). */
+  disabled?: boolean;
 }
 
 const SIZES = {
@@ -75,10 +77,11 @@ export const PillButton = memo(function PillButton({
   onPress,
   onLongPress,
   onFocusChange,
+  disabled,
 }: PillButtonProps) {
   const s = SIZES[size];
   return (
-    <FocusTarget focusKey={focusKey} onPress={onPress} onLongPress={onLongPress} onFocusChange={onFocusChange} accessibilityLabel={label}>
+    <FocusTarget focusKey={focusKey} onPress={onPress} onLongPress={onLongPress} onFocusChange={onFocusChange} accessibilityLabel={label} disabled={disabled}>
       {(focused) => (
         <Body focused={focused} variant={variant} s={s} label={label} icon={icon} progress={progress} />
       )}

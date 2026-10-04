@@ -527,6 +527,20 @@ Apple TV passée aux profils (docs/FAMILLE.md). Règles : tv-core
   toute couleur).
 - **PR-6** Rail : MAINTENIR OK sur le profil (`railHold`) change de profil ;
   OK y ouvre toujours les réglages.
+- **PR-7** Lancement (`planProfileLaunch`) : « Qui regarde ? » TOUJOURS, même
+  pour un profil seul, sauf le profil retenu par la case « Ne plus proposer à
+  l'ouverture » (`profiles:stay`, discrète : pastille blanche au focus
+  seulement). La case arrive cochée pour un profil retenu, ou qu'on vient de
+  quitter (`pickerRemembers`) ; décochée puis un profil choisi, la TV
+  redemande à chaque ouverture.
+- **PR-8** L'ENTRÉE (OK sur un profil sans code, `ProfilesPicker`) : le
+  profil s'avance au centre et grandit, le reste s'efface (`TV_MOTION.profile`,
+  `transform` et `opacity` seuls) pendant que la session s'ouvre ; puis la
+  pile native fond vers l'accueil (`Home` + `entrance`), qui charge pendant le
+  fondu. Pendant l'entrée, le choisi est la SEULE cible (les autres tuiles et
+  les actions `disabled`) : le focus ne fuit pas vers ce qui s'efface. Refusée,
+  tout revient, le focus toujours sur le profil. Animations réduites : rien ne
+  bouge, le fondu seul.
 
 ---
 

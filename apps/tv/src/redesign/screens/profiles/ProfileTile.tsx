@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import { TV_MOTION } from "@tentacle-tv/theme";
 import { useTranslation } from "react-i18next";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -15,16 +16,42 @@ import type { ProfileTileModel } from "./profilesTypes";
  * couleur), son nom dessous, et ce qu'il faut savoir avant d'y entrer — le
  * cadenas d'un code PIN, « Invité », un blocage et son heure de fin. Au
  * focus : le rond grandit et s'élève, le nom s'allume — jamais d'anneau.
+ *
+ * L'ENTRÉE dans un profil (`entrance`) : le choisi glisse au centre de la
+ * rangée et grandit, les autres reculent et s'effacent — `transform` et
+ * `opacity` seuls, sur le fil d'interface. Animations réduites : rien ne
+ * bouge, les autres s'effacent seulement.
  */
 
 export const TILE_AVATAR = 200;
 /** La place d'une tuile : le rond agrandi, et un nom un peu plus large que lui. */
 export const TILE_WIDTH = 248;
+/** L'écart entre deux tuiles de la rangée. */
+export const TILE_GAP = 40;
 const FOCUS_SCALE = 1.12;
 
-export const ProfileTile = memo(function ProfileTile({ model, focusKey, onPress, onFocusChange }: {
+/**
+ * L'entrée dans un profil, partagée par la rangée : sa progression (0 → 1, et
+ * retour à 0 si le serveur refuse), et l'index du choisi — posé au choix, il
+ * n'est jamais remis à zéro : le retour se joue avec les mêmes rôles.
+ */
+export interface TileEntrance {
+  progress: SharedValue<number>;
+  chosen: SharedValue<number>;
+  count: number;
+  /** Animations réduites : aucun déplacement, aucun agrandissement. */
+  still: boolean;
+}
+
+export const ProfileTile = memo(function ProfileTile({ model, index, focusKey, entrance, front, disabled, onPress, onFocusChange }: {
   model: ProfileTileModel;
+  index: number;
   focusKey: string;
+  entrance: TileEntrance;
+  /** Le choisi (de la dernière entrée) passe devant ses voisines, qu'il survole en gagnant le centre. */
+  front?: boolean;
+  /** Pendant l'entrée, seul le choisi reste une cible : le focus ne fuit pas vers une tuile effacée. */
+  disabled?: boolean;
   onPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
 }) {
@@ -32,11 +59,30 @@ export const ProfileTile = memo(function ProfileTile({ model, focusKey, onPress,
   const details = [model.guest ? t("family:kindGuest") : null, model.hasPin ? t("familyTv:hasPin") : null, model.lockedLabel];
   const label = [model.name, ...details.filter(Boolean)].join(", ");
   return (
-    <FocusTarget focusKey={focusKey} onPress={onPress} onFocusChange={onFocusChange} accessibilityLabel={label}>
-      {(focused) => <Body model={model} focused={focused} guestLabel={t("family:kindGuest")} />}
-    </FocusTarget>
+    <Entering entrance={entrance} index={index} front={front}>
+      <FocusTarget focusKey={focusKey} onPress={onPress} onFocusChange={onFocusChange} accessibilityLabel={label} disabled={disabled}>
+        {(focused) => <Body model={model} focused={focused} guestLabel={t("family:kindGuest")} />}
+      </FocusTarget>
+    </Entering>
   );
 });
+
+const { advanceScale, recedeScale } = TV_MOTION.profile;
+
+/** Toujours monté (une tuile qui changerait d'enveloppe se remonterait, et perdrait le focus). */
+function Entering({ entrance, index, front, children }: { entrance: TileEntrance; index: number; front?: boolean; children: ReactNode }) {
+  const { progress, chosen, count, still } = entrance;
+  const style = useAnimatedStyle(() => {
+    const p = progress.value;
+    if (chosen.value === index) {
+      // Le centre de la rangée : elle est centrée, ses tuiles ont toutes la même place.
+      const shiftX = ((count - 1) / 2 - index) * (TILE_WIDTH + TILE_GAP);
+      return { opacity: 1, transform: still ? [] : [{ translateX: shiftX * p }, { scale: 1 + (advanceScale - 1) * p }] };
+    }
+    return { opacity: 1 - p, transform: still ? [] : [{ scale: 1 - (1 - recedeScale) * p }] };
+  });
+  return <Animated.View style={[front ? styles.front : null, style]}>{children}</Animated.View>;
+}
 
 function Body({ model, focused, guestLabel }: { model: ProfileTileModel; focused: boolean; guestLabel: string }) {
   const p = useFocusProgress(focused);
@@ -80,6 +126,7 @@ const LOCK = 52;
 
 const styles = StyleSheet.create({
   tile: { width: TILE_WIDTH, alignItems: "center" },
+  front: { zIndex: 1 },
   glow: {
     position: "absolute",
     top: 0,

@@ -8,7 +8,8 @@ export type RootStackParamList = {
    *  vient ; depuis « Qui regarde ? », Retour y ramène (la session du
    *  propriétaire, ouverte pour gérer, se referme). */
   ManageProfiles: { origin: "profiles" | "settings" };
-  Home: undefined;
+  /** `entrance` : l'arrivée depuis « Qui regarde ? » — l'accueil fond par-dessus. */
+  Home: { entrance?: boolean } | undefined;
   /** « Pour vous » : recommandations de la bibliothèque seule. */
   Recommendations: undefined;
   Library: { libraryId: string; libraryName: string };

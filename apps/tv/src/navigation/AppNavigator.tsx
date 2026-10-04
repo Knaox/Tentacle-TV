@@ -122,7 +122,14 @@ export function AppNavigator() {
       {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
           onglets) → nav snappy ET pas de course animation/focus qui empêchait
           l'auto-collapse du rail au retour sur l'Accueil (pop). */}
-      <Stack.Screen name="Home" component={HomeScreen} options={{ animation: "none" }} />
+      {/* Sauf l'arrivée depuis « Qui regarde ? » (`entrance`) : l'accueil fond
+          par-dessus la rangée, où le profil choisi s'est avancé — il charge
+          pendant le fondu (TV_MOTION.profile). */}
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={({ route }) => (route.params?.entrance ? { animation: "fade", animationDuration: TV_MOTION.profile.homeFadeMs } : { animation: "none" })}
+      />
       <Stack.Screen name="Library" component={LibraryScreen} options={{ animation: "none" }} />
       <Stack.Screen name="Recommendations" component={RecommendationsScreen} options={{ animation: "none" }} />
       <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />

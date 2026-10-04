@@ -35,7 +35,15 @@ export interface PinPadModel {
 export type ProfilesViewModel =
   | { kind: "loading"; label: string }
   | { kind: "error"; message: string; secondary: { label: string; armed: boolean } | null }
-  | { kind: "picker"; profiles: ProfileTileModel[]; remember: boolean; canManage: boolean; notice: string | null }
+  | {
+      kind: "picker";
+      profiles: ProfileTileModel[];
+      remember: boolean;
+      canManage: boolean;
+      notice: string | null;
+      /** L'entrée dans un profil choisi (sa session s'ouvre) : son index, et « Ouverture de Léa… ». */
+      entering: { index: number; label: string } | null;
+    }
   | { kind: "pin"; pad: PinPadModel };
 
 export interface ProfilesViewProps {

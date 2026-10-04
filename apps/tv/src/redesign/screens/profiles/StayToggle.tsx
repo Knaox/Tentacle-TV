@@ -18,15 +18,16 @@ import { colors, fonts, white } from "../../theme/tokens";
 const HEIGHT = 52;
 const BOX = 30;
 
-export const StayToggle = memo(function StayToggle({ label, checked, focusKey, accessibilityLabel, onPress }: {
+export const StayToggle = memo(function StayToggle({ label, checked, focusKey, accessibilityLabel, disabled, onPress }: {
   label: string;
   checked: boolean;
   focusKey: string;
   accessibilityLabel: string;
+  disabled?: boolean;
   onPress?: () => void;
 }) {
   return (
-    <FocusTarget focusKey={focusKey} onPress={onPress} accessibilityLabel={accessibilityLabel}>
+    <FocusTarget focusKey={focusKey} onPress={onPress} accessibilityLabel={accessibilityLabel} disabled={disabled}>
       {(focused) => <Body label={label} checked={checked} focused={focused} />}
     </FocusTarget>
   );

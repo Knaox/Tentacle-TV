@@ -22,6 +22,7 @@ import { useAmbientPalette } from "../screen/useAmbientPalette";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { useHomeHero } from "./useHomeHero";
 import { useHomeRowModels } from "./useHomeRowModels";
+import { useArrivalQuiet } from "./useArrivalQuiet";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -36,7 +37,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
  * vu), fiche ailleurs. Appui long : la feuille d'actions, dans la variante de
  * la carte.
  */
-export function HomeRedesign({ navigation }: Props) {
+export function HomeRedesign({ navigation, route }: Props) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const unpair = useUnpairDevice();
@@ -90,6 +91,7 @@ export function HomeRedesign({ navigation }: Props) {
   // Rejumeler : le déjumelage commun, puis l'écran de jumelage.
   const reconnect = useCallback(() => unpair("home"), [unpair]);
 
+  const quiet = useArrivalQuiet(route.params?.entrance === true);
   const status = useMemo<StatusPanelProps | null>(() => {
     if (failed) {
       return {
@@ -100,10 +102,10 @@ export function HomeRedesign({ navigation }: Props) {
         secondary: { label: t("common:reconnect"), icon: "logout", onPress: reconnect },
       };
     }
-    if (loading) return { kind: "loading", title: t("common:loading") };
+    if (loading) return quiet ? null : { kind: "loading", title: t("common:loading") };
     if (empty) return { kind: "empty", title: t("common:emptyLibrary"), message: t("common:emptyHomeHint") };
     return null;
-  }, [failed, loading, empty, t, retry, reconnect]);
+  }, [failed, loading, empty, quiet, t, retry, reconnect]);
 
   const { targetOf } = home;
   const onPressCard = useCallback(

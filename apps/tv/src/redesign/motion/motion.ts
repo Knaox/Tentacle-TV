@@ -84,6 +84,8 @@ const PRESETS = {
    *  assombrissait le haut au-delà de l'arrivée (−30 % sous les épisodes,
    *  mesuré). Symétrique, il n'a fini qu'une fois le panneau parti. */
   handoffTop: { enter: timing(TV_MOTION.player.handoffMs, EASE.inOut), exit: timing(TV_MOTION.player.handoffMs, EASE.inOut) },
+  /** Le profil choisi qui s'avance ; s'il est refusé, tout revient à sa place. */
+  advance: { enter: timing(TV_MOTION.profile.advanceMs, EASE.out), exit: timing(TV_MOTION.focus.recedeMs, EASE.inOut) },
   /** Une image chargée qui entre en fondu. */
   imageIn: { enter: timing(TV_MOTION.image.fadeInMs, EASE.out), exit: timing(TV_MOTION.reveal.outMs, EASE.in) },
 } as const;

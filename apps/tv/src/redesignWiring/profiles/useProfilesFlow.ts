@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useReducedMotion } from "react-native-reanimated";
+import { TV_MOTION } from "@tentacle-tv/theme";
 import { unlockTvManage, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { TvProfilesDto } from "@tentacle-tv/shared";
 import {
@@ -26,6 +28,7 @@ import {
 import { loadProfiles, openProfile } from "../../auth/profileOpening";
 import { lastLeftRemembered, leaveProfile } from "../../auth/profileSession";
 import { unpairDevice } from "../../auth/unpair";
+import { MOTION_ENABLED } from "../../redesign/motion/motion";
 
 /**
  * L'AUTOMATE de « Qui regarde ? » (Apple TV, Famille) : lire les profils,
@@ -62,6 +65,9 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
   const [unpairArmed, setUnpairArmed] = useState(false);
   // Le profil qui a ouvert le pavé : la rangée y rend le focus en revenant.
   const [lastPicked, setLastPicked] = useState<string | null>(null);
+  // L'entrée dans le profil choisi (`ProfilesPicker`) : il s'avance pendant que sa session s'ouvre.
+  const [entering, setEntering] = useState<string | null>(null);
+  const reduced = useReducedMotion();
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
@@ -117,6 +123,25 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     if (alive.current) leaveProfile(context, "switch");
   }
 
+  /**
+   * OK sur un profil qui s'ouvre sans code : l'ENTRÉE. La session s'ouvre
+   * PENDANT que le profil s'avance ; l'accueil vient quand les deux ont fini
+   * (sa pile native fond alors vers lui, qui charge déjà). Refusée, le profil
+   * revient à sa place et le refus se dit comme ailleurs.
+   */
+  async function enter(list: TvProfilesDto, profileId: string, request: OpenRequest): Promise<void> {
+    setEntering(profileId);
+    const advanceMs = reduced || !MOTION_ENABLED ? 0 : TV_MOTION.profile.advanceMs;
+    const [result] = await Promise.all([
+      openProfile(context, list, { profileId, ...request }),
+      new Promise((resolve) => setTimeout(resolve, advanceMs)),
+    ]);
+    if (!alive.current) return;
+    if (result.ok) return go.home();
+    setEntering(null);
+    refused(result.refusal, list, profileId, "open", request);
+  }
+
   function refused(refusal: ProfileRefusal, list: TvProfilesDto, profileId: string, purpose: "open" | "manage", request: OpenRequest): void {
     if (refusal.kind === "unpaired") return unpairDevice(context, "revoked");
     if (refusal.kind === "pinInvalid" || refusal.kind === "locked") {
@@ -147,7 +172,7 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const busy = phase.kind === "loading" || entry.phase === "checking";
+  const busy = phase.kind === "loading" || entry.phase === "checking" || entering !== null;
 
   return {
     listing,
@@ -157,6 +182,7 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     entry,
     unpairArmed,
     lastPicked,
+    entering,
     retry: () => void load(intent),
     pick: (index: number) => {
       const profile = listing?.profiles[index];
@@ -166,7 +192,7 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
       const plan = planProfilePick(profile, listing, remember, Date.now());
       if (plan.kind === "locked") return setNotice({ kind: "locked", until: plan.until });
       if (plan.kind === "pin") return showPin(listing, profile.userId, "open", plan.remember, plan.launch);
-      void open(listing, profile.userId, { remember: plan.remember, launch: plan.launch }, "open");
+      void enter(listing, profile.userId, { remember: plan.remember, launch: plan.launch });
     },
     manage: () => {
       const owner = listing?.profiles.find((profile) => profile.kind === "owner");

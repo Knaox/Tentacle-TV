@@ -1,27 +1,16 @@
-import { memo, useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { memo, useCallback, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import {
-  PROFILES_ACTIONS_GROUP,
-  PROFILES_BACK_BAR_KEY,
-  PROFILES_BACK_KEY,
-  PROFILES_MANAGE_KEY,
-  PROFILES_STAY_KEY,
-  PROFILES_TILES_GROUP,
-  profileTileKey,
-} from "@tentacle-tv/tv-core";
+import { PROFILES_BACK_BAR_KEY, PROFILES_BACK_KEY } from "@tentacle-tv/tv-core";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
-import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
-import { colors, text } from "../../theme/tokens";
 import { StatusPanel } from "../shared/StatusPanel";
 import { PinPad } from "./PinPad";
 import { PROFILES_PALETTE, profilePalette } from "./profileColors";
-import { ProfileTile } from "./ProfileTile";
-import { StayToggle } from "./StayToggle";
+import { ProfilesPicker } from "./ProfilesPicker";
 import type { ProfilesViewProps } from "./profilesTypes";
 
 export type { PinPadModel, ProfileTileModel, ProfilesViewModel, ProfilesViewProps } from "./profilesTypes";
@@ -50,6 +39,13 @@ export const ProfilesView = memo(function ProfilesView(props: ProfilesViewProps)
   const pinColor = model.kind === "pin" ? model.pad.profile.color : null;
   const color = focusedColor ?? pinColor;
   const palette = useMemo(() => (color ? profilePalette(color) : PROFILES_PALETTE), [color]);
+  const { onFocusProfile } = props;
+  const onTileFocus = useCallback((index: number, focused: boolean) => {
+    if (focused) {
+      setFocusedIndex(index);
+      onFocusProfile?.(index);
+    } else setFocusedIndex((current) => (current === index ? null : current));
+  }, [onFocusProfile]);
 
   return (
     <View style={styles.root}>
@@ -67,41 +63,13 @@ export const ProfilesView = memo(function ProfilesView(props: ProfilesViewProps)
           />
         ) : null}
         {model.kind === "picker" ? (
-          <View style={styles.center}>
-            <Text style={styles.title}>{t("familyTv:whoIsWatching")}</Text>
-            <FocusGroup focusKey={PROFILES_TILES_GROUP} style={styles.tiles}>
-              {model.profiles.map((profile, index) => (
-                <ProfileTile
-                  key={profile.id}
-                  model={profile}
-                  focusKey={profileTileKey(index)}
-                  onPress={props.onPick ? () => props.onPick?.(index) : undefined}
-                  onFocusChange={(focused) => {
-                    if (focused) {
-                      setFocusedIndex(index);
-                      props.onFocusProfile?.(index);
-                    } else setFocusedIndex((current) => (current === index ? null : current));
-                  }}
-                />
-              ))}
-            </FocusGroup>
-            <View style={styles.notice}>
-              {model.notice ? <Text style={styles.noticeText}>{model.notice}</Text> : null}
-            </View>
-            <FocusGroup focusKey={PROFILES_ACTIONS_GROUP} style={styles.actions}>
-              <StayToggle
-                label={t("familyTv:stayOnProfile")}
-                checked={model.remember}
-                focusKey={PROFILES_STAY_KEY}
-                accessibilityLabel={`${t("familyTv:stayOnProfile")} : ${t(model.remember ? "preferences:reglageActive" : "preferences:reglageDesactive")}`}
-                onPress={props.onToggleRemember}
-              />
-              {model.canManage ? (
-                <PillButton label={t("familyTv:manageProfiles")} icon="settings" size="md" focusKey={PROFILES_MANAGE_KEY} onPress={props.onManage} />
-              ) : null}
-            </FocusGroup>
-            <Text style={styles.hint}>{model.remember ? t("familyTv:stayOnProfileHint") : " "}</Text>
-          </View>
+          <ProfilesPicker
+            model={model}
+            onPick={props.onPick}
+            onTileFocus={onTileFocus}
+            onToggleRemember={props.onToggleRemember}
+            onManage={props.onManage}
+          />
         ) : null}
         {model.kind === "pin" ? (
           <>
@@ -122,13 +90,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: TV_STAGE.safe.x },
-  title: { ...text.display, textAlign: "center", marginBottom: 72 },
-  tiles: { flexDirection: "row", gap: 40, justifyContent: "center" },
-  notice: { height: 70, justifyContent: "center" },
-  noticeText: { ...text.body, color: colors.warningFg, textAlign: "center" },
-  // Pleine largeur : BAS depuis le profil le plus à droite (ou à gauche) y trouve une cible.
-  actions: { flexDirection: "row", gap: 28, alignItems: "center", justifyContent: "center", alignSelf: "stretch" },
-  hint: { ...text.caption, marginTop: 22, textAlign: "center" },
   // En haut à gauche, sur toute la largeur : HAUT depuis le pavé y monte.
   backBar: {
     position: "absolute",

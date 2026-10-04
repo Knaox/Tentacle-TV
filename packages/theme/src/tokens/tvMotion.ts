@@ -117,6 +117,27 @@ export const TV_MOTION = {
     ambientMs: 600,
   },
   /**
+   * L'ENTRÉE dans un profil (« Qui regarde ? », Apple TV) : le profil choisi
+   * s'avance au centre et grandit, les autres reculent et s'effacent, puis la
+   * pile native fond vers l'accueil, qui charge déjà. Les deux temps tiennent
+   * en 600 ms ; la session s'ouvre pendant le premier.
+   */
+  profile: {
+    /** Le profil choisi qui s'avance (sortie douce) ; le reste s'efface dans le même temps. */
+    advanceMs: 340,
+    /** Ce qu'il grandit en plus de son focus. */
+    advanceScale: 1.32,
+    /** Ce que les autres reculent en s'effaçant. */
+    recedeScale: 0.9,
+    /** Le fondu de la pile native vers l'accueil. */
+    homeFadeMs: 260,
+    /** Ce qu'attend « Ouverture de… » : rien ne se dit si le serveur répond vite. */
+    openingHintDelayMs: 500,
+    /** L'accueil arrivé par le fondu ne dit « Chargement… » qu'après ce délai :
+     *  le fondu en tient lieu, sans panneau en surimpression du profil. */
+    homeQuietMs: 900,
+  },
+  /**
    * La parallaxe au pouce : ce que le doigt posé sur le pavé tactile fait à
    * l'élément focalisé — un décalage (`shift`, en points, de chaque côté) et
    * une inclinaison (`tilt`, en radians), au plus fort quand le doigt est au
