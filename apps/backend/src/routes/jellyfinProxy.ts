@@ -70,10 +70,10 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
 
     nameDeviceFromHeader(incomingToken, incoming.identityHeader);
 
-    // Un appareil ne parle que pour SON compte (cf. deviceGuard) : la clé
-    // admin lui est prêtée en aval.
+    // Un appareil ne parle que pour SON compte et n'écrit que SES données
+    // (cf. deviceGuard) : la clé admin lui est prêtée en aval.
     if (device?.status === "paired") {
-      const refusal = deviceRefusal(wildcardPath, device.payload.userId, q);
+      const refusal = deviceRefusal(request.method, wildcardPath, device.payload.userId, q);
       if (refusal) {
         request.log.warn({ path: wildcardPath, method: request.method }, refusal);
         return reply.status(403).send({ error: "Forbidden" });

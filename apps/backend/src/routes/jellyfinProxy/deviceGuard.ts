@@ -1,3 +1,4 @@
+import { isDeviceWriteAllowed } from "./deviceWrites";
 import { isOutOfScope, userIdFromPath, userIdFromQuery } from "./userScope";
 
 /**
@@ -9,7 +10,9 @@ import { isOutOfScope, userIdFromPath, userIdFromQuery } from "./userScope";
  *   les pleins pouvoirs derrière : la liste blanche autorise `Users/{id}/Items`,
  *   `/Views`, `/FavoriteItems/…`, `/PlayedItems/…` — la lecture ET la
  *   modification. Il porte sur toutes les méthodes et toutes les routes qui
- *   nomment un utilisateur.
+ *   nomment un utilisateur ;
+ * - écrire hors de SES données (`deviceWrites.ts`) : jamais un titre, ses
+ *   images ou ses métadonnées supprimés ou modifiés.
  *
  * Un jeton Jellyfin natif n'est pas concerné (Jellyfin décide lui-même), ni un
  * jeton d'usurpation, dont c'est justement la raison d'être.
@@ -17,6 +20,7 @@ import { isOutOfScope, userIdFromPath, userIdFromQuery } from "./userScope";
  * `null` : la requête passe ; sinon, la raison à journaliser (403).
  */
 export function deviceRefusal(
+  method: string,
   path: string,
   userId: string,
   query: Record<string, unknown> | undefined,
@@ -24,5 +28,6 @@ export function deviceRefusal(
   if ((userIdFromPath(path) !== null || userIdFromQuery(query) !== null) && isOutOfScope(path, userId, query)) {
     return "acces refuse : appareil hors de son perimetre utilisateur";
   }
+  if (!isDeviceWriteAllowed(method, path)) return "ecriture refusee : hors de ce qu'un appareil ecrit";
   return null;
 }
