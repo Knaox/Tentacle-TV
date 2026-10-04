@@ -10,6 +10,7 @@ export default {
   stayOnProfile: "Rester sur ce profil",
   stayOnProfileHint: "L'app s'ouvrira directement sur le profil choisi.",
   manageProfiles: "Gérer les profils",
+  railSwitchHint: "Maintenir OK sur le profil : changer de profil",
   lockedUntil: "Bloqué jusqu'à {{time}}",
   hasPin: "Protégé par un code PIN",
   loadFailed: "Impossible de lire les profils de cette TV.",

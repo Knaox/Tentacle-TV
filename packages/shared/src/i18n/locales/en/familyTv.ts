@@ -10,6 +10,7 @@ export default {
   stayOnProfile: "Stay on this profile",
   stayOnProfileHint: "The app will open straight to the chosen profile.",
   manageProfiles: "Manage profiles",
+  railSwitchHint: "Hold OK on the profile: switch profile",
   lockedUntil: "Locked until {{time}}",
   hasPin: "Protected by a PIN code",
   loadFailed: "Couldn't read this TV's profiles.",

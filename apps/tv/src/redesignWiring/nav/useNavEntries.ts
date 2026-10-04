@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { RAIL_HOME_KEY, RAIL_PROFILE_KEY, RAIL_SEARCH_KEY, RAIL_SHOW_ALL_KEY, applyRailOrder } from "@tentacle-tv/tv-core";
+import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { RAIL_HOME_KEY, RAIL_PROFILE_KEY, RAIL_SEARCH_KEY, RAIL_SHOW_ALL_KEY, applyRailOrder, tvSessionMode } from "@tentacle-tv/tv-core";
 import type { NavEntry, NavHint, NavRailProps } from "../../redesign/nav/NavRail";
 import { usePairedAccount } from "../../hooks/usePairedAccount";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
@@ -12,7 +13,8 @@ import { useNavCatalog } from "./useNavCatalog";
  * Accueil ; puis les entrées ORGANISABLES dans l'ordre choisi, masquées
  * retirées (`useNavCatalog`) ; « Tout afficher » dès qu'une entrée est
  * masquée ; et la capsule du profil — le nom du compte, « Profil et
- * réglages » dessous.
+ * réglages » dessous. Sur une Apple TV passée aux profils (Famille), la
+ * légende dit aussi l'appui maintenu sur le profil : changer de profil.
  *
  * Pendant un déplacement, `previewOrder` est l'ordre en cours, que rien n'a
  * encore enregistré ; la légende dit alors les touches du déplacement.
@@ -32,7 +34,9 @@ export interface NavEntriesOptions {
 }
 
 export function useNavEntries({ previewOrder = null, moving = false }: NavEntriesOptions = {}): NavEntries {
-  const { t } = useTranslation("nav");
+  const { t } = useTranslation(["nav", "familyTv"]);
+  const { storage } = useTentacleConfig();
+  const profiles = tvSessionMode(storage) === "profile";
   const catalog = useNavCatalog();
   // Le portrait des réglages, par la même adresse : `Users/{id}/Images/Primary`
   // passe le proxy du serveur, `GET /Users/{id}` non (hors de sa liste
@@ -52,8 +56,9 @@ export function useNavEntries({ previewOrder = null, moving = false }: NavEntrie
         : [
             { icon: "chevronLeft", label: t("railProfile") },
             { icon: "circleDot", label: t("railHintOrganize") },
+            ...(profiles ? [{ icon: "user" as const, label: t("familyTv:railSwitchHint") }] : []),
           ],
-    [t, moving],
+    [t, moving, profiles],
   );
 
   return useMemo(() => {

@@ -25,7 +25,7 @@ import type { AccountAction, SettingsAccount } from "./settingsTypes";
  * plus l'adresse.
  *
  * Apple TV passée aux profils (Famille, `account.profile`) : le profil ouvert
- * et son rôle, « Changer de profil » et « Gérer les profils »
+ * et son rôle, puis EN TÊTE « Changer de profil » et « Gérer les profils »
  * (`ProfileSection`) ; « Changer de serveur » s'efface — il passe par un
  * déjumelage — et « Déjumeler » n'appartient qu'au profil du propriétaire.
  */
@@ -73,14 +73,15 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
         </View>
       </View>
 
+      {/* En tête : changer de profil est le geste le plus fréquent d'une TV de famille. */}
+      {profile ? (
+        <ProfileSection canManage={profile.canManage} onSwitchProfile={props.onSwitchProfile} onManageProfiles={props.onManageProfiles} />
+      ) : null}
+
       <View style={styles.infos}>
         <InfoRow icon="server" label={t("pairing:tvServeur")} value={account.serverUrl} />
         <InfoRow icon="tv" label={t("pairing:tvPlateforme")} value={account.deviceLabel} />
       </View>
-
-      {profile ? (
-        <ProfileSection canManage={profile.canManage} onSwitchProfile={props.onSwitchProfile} onManageProfiles={props.onManageProfiles} />
-      ) : null}
 
       <View style={styles.forget}>
         <SectionTitle title={t("pairing:tvOublierTitre")} caption={profile?.unpairCaption ?? t("pairing:tvUnpairCaption")} />
