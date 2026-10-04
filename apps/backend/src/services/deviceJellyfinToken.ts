@@ -22,18 +22,18 @@ import { getJellyfinUrl } from "./configStore";
  *   l'appareil frappé est aussitôt supprimé de Jellyfin.
  * - Quick Connect coupé : on ne le redemande pas avant dix minutes ; la TV
  *   passe par le proxy, sans jeton Jellyfin. Rallumé entre-temps, il se voit
- *   à la minute : `GET /QuickConnect/Enabled` (anonyme), une fois par minute
- *   au plus pendant l'attente.
+ *   vite : `GET /QuickConnect/Enabled` (anonyme), une fois toutes les vingt
+ *   secondes au plus pendant l'attente.
  */
 
 const DISABLED_BACKOFF_MS = 10 * 60_000;
-const REPROBE_EVERY_MS = 60_000;
+const REPROBE_EVERY_MS = 20_000;
 
 let disabledUntil = 0;
 let lastProbe = 0;
 const inflight = new Map<string, Promise<string | null>>();
 
-/** Quick Connect est-il revenu ? Une question par minute au plus. */
+/** Quick Connect est-il revenu ? Une question toutes les vingt secondes au plus. */
 async function quickConnectBack(now: number): Promise<boolean> {
   if (now - lastProbe < REPROBE_EVERY_MS) return false;
   lastProbe = now;

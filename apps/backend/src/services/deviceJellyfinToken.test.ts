@@ -78,7 +78,7 @@ describe("la frappe d'un jeton propre", () => {
     expect(jf.calls.filter((c) => c === "GET /QuickConnect/Enabled")).toHaveLength(1);
   });
 
-  it("ne repose la question qu'une fois par minute pendant l'attente", async () => {
+  it("ne repose pas la question à chaque demande pendant l'attente", async () => {
     pair("h:salon");
     jf.quickConnect = false;
     for (let i = 0; i < 4; i++) expect(await ensureOwnJellyfinToken("h:salon", OWNER)).toBeNull();
