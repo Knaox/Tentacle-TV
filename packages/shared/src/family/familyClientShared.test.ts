@@ -70,16 +70,23 @@ describe("profileActions — le propriétaire", () => {
     expect(profileActions(o, find(ANA), OWNER)).toEqual({ pin: false, remove: true, right: "createGuests" });
   });
 
+  const CAN = { guestRequests: true };
+
   it("gère TOUS les invités, même ceux d'un membre, et règle leur « peut demander »", () => {
-    expect(profileActions(o, find("lea"), OWNER)).toEqual({ pin: true, remove: true, right: "requestTitles" });
-    expect(profileActions(o, find("tom"), OWNER)).toEqual({ pin: true, remove: true, right: "requestTitles" });
+    expect(profileActions(o, find("lea"), OWNER, CAN)).toEqual({ pin: true, remove: true, right: "requestTitles" });
+    expect(profileActions(o, find("tom"), OWNER, CAN)).toEqual({ pin: true, remove: true, right: "requestTitles" });
   });
 
-  it("ne règle « peut demander » ni invités coupés, ni face à un serveur qui ne le connaît pas", () => {
+  it("sans la capacité guestRequests (serveur plus ancien, valeur absente), pas de « peut demander »", () => {
+    expect(profileActions(o, find("lea"), OWNER).right).toBeNull();
+    expect(profileActions(o, find("lea"), OWNER, {}).right).toBeNull();
+    expect(profileActions(o, find("lea"), OWNER, { guestRequests: false }).right).toBeNull();
+    expect(profileActions(o, find("lea"), OWNER).remove).toBe(true);
+  });
+
+  it("ne règle pas « peut demander » quand l'administration coupe les invités", () => {
     const off = { ...o, switches: { families: true, guests: false } };
-    expect(profileActions(off, find("lea"), OWNER).right).toBeNull();
-    const older = { ...find("lea"), guestRights: undefined };
-    expect(profileActions(o, older, OWNER).right).toBeNull();
+    expect(profileActions(off, find("lea"), OWNER, CAN).right).toBeNull();
   });
 
   it("ne fait rien sur lui-même", () => {
@@ -91,7 +98,7 @@ describe("profileActions — un membre", () => {
   const m = overview("member");
 
   it("ne règle jamais « peut demander », même sur ses invités", () => {
-    expect(profileActions(m, find("tom"), ANA).right).toBeNull();
+    expect(profileActions(m, find("tom"), ANA, { guestRequests: true }).right).toBeNull();
   });
 
   it("ne gère que les invités qu'il a créés", () => {

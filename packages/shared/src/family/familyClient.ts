@@ -163,6 +163,7 @@ export function profileActions(
   overview: FamilyOverviewDto,
   profile: FamilyProfileDto,
   viewerUserId: string | null | undefined,
+  capability: ProfileActionsCapability = {},
 ): ProfileActions {
   const family = overview.family;
   if (!family || !overview.account.personalSession || !viewerUserId) return NO_ACTIONS;
@@ -172,15 +173,21 @@ export function profileActions(
     return { pin: false, remove: owner, right: owner ? "createGuests" : null };
   }
   const manage = canManageGuest(family.rights, profile.createdBy, viewerUserId);
-  return { pin: manage, remove: manage, right: guestRightOf(overview, profile) };
+  return { pin: manage, remove: manage, right: guestRightOf(overview, capability) };
+}
+
+/** Ce que `/api/config` › `features.family` annonce et que la vue d'ensemble
+ *  ne porte pas. */
+export interface ProfileActionsCapability {
+  /** Le droit d'invité « peut demander » existe sur ce serveur ; absent : non. */
+  guestRequests?: boolean;
 }
 
 /** « Peut demander des films » se règle par le propriétaire, la Famille et les
- *  invités allumés, sur un serveur qui le connaît : il rend toujours
- *  `guestRights` sur un invité (absent : serveur d'avant le droit). */
-function guestRightOf(overview: FamilyOverviewDto, profile: FamilyProfileDto): FamilyProfileRight | null {
+ *  invités allumés, sur un serveur qui annonce le droit (`guestRequests`). */
+function guestRightOf(overview: FamilyOverviewDto, capability: ProfileActionsCapability): FamilyProfileRight | null {
   const { switches, family } = overview;
-  if (!family?.rights.manageMembers || profile.guestRights === undefined) return null;
+  if (!family?.rights.manageMembers || capability.guestRequests !== true) return null;
   return switches.families && switches.guests ? "requestTitles" : null;
 }
 
