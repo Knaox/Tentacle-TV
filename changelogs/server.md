@@ -12,8 +12,8 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 
 ## [1.23.0]
 ### FR
-- **Famille** : jusqu'à six profils par famille sur l'Apple TV, dont trois invités créés par le serveur ; des invitations entre comptes du serveur (push, cloche et affiche au lancement) et un code PIN facultatif par profil — tout se décide sur le serveur, en HTTP comme en HTTPS
-- **La Famille sur le web** : créez votre famille, invitez des comptes du serveur ou ajoutez des profils invités, chacun avec son code PIN ; une invitation s'affiche à l'ouverture et en direct, et se garde dans la cloche. Interrupteurs « Familles » et « Profils invités » dans Administration › Utilisateurs
+- **Famille** : une famille partagée par tous ses membres — jusqu'à six profils, dont trois invités créés par le serveur, sur l'Apple TV de chacun ; des invitations entre comptes du serveur (push, cloche et affiche au lancement), un code PIN facultatif par profil. Le propriétaire invite et retire, et décide qui peut ajouter des invités ; un invité peut, s'il y est autorisé, demander des films au nom du propriétaire — tout se décide sur le serveur, en HTTP comme en HTTPS
+- **La Famille sur le web** : créez votre famille, invitez des comptes du serveur, tous listés, ou ajoutez des profils invités, chacun avec son code PIN ; une invitation s'affiche à l'ouverture et en direct, et se garde dans la cloche. Interrupteurs « Familles » et « Profils invités » dans Administration › Utilisateurs
 - **Les profils invités n'apparaissent dans aucune liste** — seulement dans les sessions en cours, étiquetés « Invité · famille de … »
 - **Sécurité** : les téléviseurs jumelés ne peuvent plus modifier la bibliothèque, seulement leurs propres données de lecture
 - **Qualité réduite** : le lecteur web dit pourquoi (réseau mesuré, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur), et la raison se relit dans le menu Qualité
@@ -21,8 +21,8 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - Quick Connect réactivé sur Jellyfin est reconnu en une vingtaine de secondes, au lieu de dix minutes
 
 ### EN
-- **Family**: up to six profiles per family on Apple TV, including three server-created guests; invitations between server accounts (push, notification bell and a card at launch) and an optional PIN per profile — all enforced by the server, over HTTP as over HTTPS
-- **Family on the web**: create your family, invite server accounts or add guest profiles, each with its own PIN; an invitation shows up at launch and in real time, and stays in the notification bell. "Families" and "Guest profiles" switches in Administration › Users
+- **Family**: one family shared by all its members — up to six profiles, including three server-created guests, on everyone's Apple TV; invitations between server accounts (push, notification bell and a card at launch), an optional PIN per profile. The owner invites and removes, and decides who may add guests; a guest can, if allowed, request titles on the owner's behalf — all enforced by the server, over HTTP as over HTTPS
+- **Family on the web**: create your family, invite server accounts, all listed, or add guest profiles, each with its own PIN; an invitation shows up at launch and in real time, and stays in the notification bell. "Families" and "Guest profiles" switches in Administration › Users
 - **Guest profiles never appear in any list** — only in active sessions, labeled "Guest · …'s family"
 - **Security**: paired TVs can no longer change the library, only their own playback data
 - **Quality lowered**: the web player now says why (measured network, an Internet limit set on Jellyfin, or video converted by the server), and the reason stays in the Quality menu

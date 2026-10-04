@@ -8,7 +8,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 ## [atv-1.10.0]
 <!-- Bloc Apple TV (TestFlight et App Store Connect, 4000 caractères). Pas de bloc nu : Android TV ne part pas en 1.10.0, et le pré-vol ne lui demande ses notes que s'il est livré. Réécrit pour le second TestFlight 1.10.0 (retours d'essai), sans les fonctions des extensions. -->
 ### FR
-- **Les profils de la famille** (serveur Tentacle 1.23.0) : « Qui regarde ? » au lancement, un code PIN par profil, « Rester sur ce profil », et les invités et membres gérés depuis la TV. Chaque profil garde sa lecture et ses réglages ; maintenir OK sur son avatar change de profil
+- **Les profils de la famille** (serveur Tentacle 1.23.0) : « Qui regarde ? » à l'ouverture, un code PIN par profil, et la famille entière sur la TV de chaque membre. Chaque profil garde sa lecture et ses réglages ; « Changer de profil » est dans la navigation
 - **Avance rapide réglable** : à la fin du décompte, revenir où vous étiez (par défaut) ou reprendre à la cible, après 3 à 15 s, pour chaque profil
 - **Les rangées se rangent** : une rangée défilée revient au début une fois sortie de l'écran, et Retour ramène à sa première carte ; la navigation ne boucle plus
 - **Une Apple TV entièrement redessinée** : une navigation de verre qui flotte à gauche, un grand bandeau qui fait défiler les titres à la une, de grandes affiches, un fond d'encre éclairé par l'œuvre, et des cartes qui grandissent dans leur propre lumière en suivant le pouce sur le pavé tactile. Sur tvOS 26, le verre est le Liquid Glass du système (Réglages › Apparence pour revenir au verre classique)
@@ -29,7 +29,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **4K, Dolby Vision, Atmos** : en s'arrêtant sur une carte, une discrète pastille dit ce que le titre offre ; le défilement rapide ne ralentit plus
 
 ### EN
-- **Family profiles** (with Tentacle server 1.23.0): "Who's watching?" at launch, a PIN per profile, "Stay on this profile", and profile management right from the TV — create or delete a guest, invite or remove a member. Each profile keeps its own playback, lists and settings; switch profiles from Settings or by holding OK on your avatar
+- **Family profiles** (with Tentacle server 1.23.0): "Who's watching?" at launch, a PIN per profile, and the whole family on every member's TV. Each profile keeps its own playback, lists and settings; "Switch profile" sits in the navigation bar
 - **Adjustable fast-forward**: when the countdown ends, go back to where you were (default) or resume at the new position, after 3, 5, 10 or 15 seconds — set per profile
 - **Tidy rows**: a scrolled row keeps its place while it's on screen and returns to the start once it scrolls off; Back takes you to the first card. The navigation bar now stops at its ends instead of wrapping around
 - **A fully redesigned Apple TV app**: a glass navigation floating on the left, a large banner cycling through featured titles, large posters, an ink backdrop lit by the artwork, and cards that grow in their own light while following your thumb on the touch surface. On tvOS 26, the glass is the system's Liquid Glass (Settings › Appearance to go back to classic glass)
