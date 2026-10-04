@@ -28,7 +28,7 @@ const SWATCH = 44;
  * l'aperçu dise ce qui sera gardé.
  */
 export function GuestSheet({ onClose }: { onClose: () => void }) {
-  const { t } = useTranslation("familyWeb");
+  const { t } = useTranslation(["familyWeb", "familyMobile"]);
   const theme = useTheme();
   const form = useThemedStyles(makeFamilyFormStyles);
   const st = useThemedStyles(makeStyles);
@@ -47,7 +47,7 @@ export function GuestSheet({ onClose }: { onClose: () => void }) {
       {
         onSuccess: (profile) => {
           haptic("success");
-          showToast({ title: t("guest.created", { name: profile.name }) });
+          showToast({ title: t("familyWeb:guest.created", { name: profile.name }) });
           onClose();
         },
         onError: (failure) => setError(errorText(failure)),
@@ -57,21 +57,21 @@ export function GuestSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <FamilySheet
-      title={t("guest.title")}
-      closeLabel={t("cancel")}
+      title={t("familyWeb:guest.title")}
+      closeLabel={t("familyWeb:cancel")}
       onClose={onClose}
-      action={{ label: t("guest.create"), onPress: submit, disabled: !cleaned, pending: create.isPending }}
+      action={{ label: t("familyMobile:create"), onPress: submit, disabled: !cleaned, pending: create.isPending }}
     >
-      <Text style={form.lead}>{t("guest.explain")}</Text>
+      <Text style={form.lead}>{t("familyWeb:guest.explain")}</Text>
 
       <View style={st.identity}>
         <ProfileInitial name={cleaned ?? "?"} color={color} size={64} />
         <View style={st.nameColumn}>
-          <Text style={form.label}>{t("guest.nameLabel")}</Text>
+          <Text style={form.label}>{t("familyWeb:guest.nameLabel")}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder={t("guest.namePlaceholder")}
+            placeholder={t("familyWeb:guest.namePlaceholder")}
             placeholderTextColor={theme.colors.text.quaternary}
             maxLength={FAMILY_GUEST_NAME_MAX * 2}
             autoComplete="off"
@@ -81,16 +81,16 @@ export function GuestSheet({ onClose }: { onClose: () => void }) {
             editable={!create.isPending}
             returnKeyType="done"
             onSubmitEditing={submit}
-            accessibilityLabel={t("guest.nameLabel")}
-            accessibilityHint={t("guest.nameHint")}
+            accessibilityLabel={t("familyWeb:guest.nameLabel")}
+            accessibilityHint={t("familyWeb:guest.nameHint")}
             style={form.field}
           />
-          <Text style={form.hint}>{t("guest.nameHint")}</Text>
+          <Text style={form.hint}>{t("familyWeb:guest.nameHint")}</Text>
         </View>
       </View>
 
-      <Text style={[form.label, st.colorLabel]}>{t("guest.colorLabel")}</Text>
-      <View style={st.swatches} accessibilityRole="radiogroup" accessibilityLabel={t("guest.colorLabel")}>
+      <Text style={[form.label, st.colorLabel]}>{t("familyWeb:guest.colorLabel")}</Text>
+      <View style={st.swatches} accessibilityRole="radiogroup" accessibilityLabel={t("familyWeb:guest.colorLabel")}>
         {FAMILY_PROFILE_COLORS.map((option) => {
           const selected = option === color;
           const [from, to] = profileColorStops(option);
@@ -101,7 +101,7 @@ export function GuestSheet({ onClose }: { onClose: () => void }) {
               disabled={create.isPending}
               accessibilityRole="radio"
               accessibilityState={{ checked: selected, disabled: create.isPending }}
-              accessibilityLabel={t(`guest.colors.${option}`)}
+              accessibilityLabel={t(`familyWeb:guest.colors.${option}`)}
               style={[st.swatchRing, selected && { borderColor: theme.colors.text.primary }]}
             >
               <LinearGradient colors={[from, to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.swatch}>

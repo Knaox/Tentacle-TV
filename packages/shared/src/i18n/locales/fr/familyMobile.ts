@@ -7,6 +7,8 @@
 export default {
   inviteHint: "Un compte de ce serveur : il répond depuis son application.",
   addGuestHint: "Un profil sans mot de passe, qui ne s'ouvre que sur vos TV.",
+  /** La validation de la feuille « invité », à côté de son titre : un mot. */
+  create: "Créer",
   manage: "Gérer",
   manageTitle: "Profil invité « {{name}} »",
   sent: "Envoyée",
