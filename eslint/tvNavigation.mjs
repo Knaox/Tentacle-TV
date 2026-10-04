@@ -15,9 +15,10 @@ import { TV_NAV_EXCEPTIONS } from "./tvNavigationExceptions.mjs";
  * fichier, jamais le fichier entier (`tvNavigationExceptions.mjs`).
  *
  * Portée : la refonte (`redesign/`, `redesignWiring/`) et ce qui ne tourne que
- * sur tvOS (`*.ios.ts(x)`). L'ancienne UI et le code d'Android TV ne sont pas
- * concernés ; les hooks partagés avec Android TV non plus (l'inventaire les
- * suit : docs/tv-navigation/inventaire.md). Les minuteries de navigation ne se
+ * sur une plateforme (`*.ios.ts(x)`, `*.android.ts(x)`). Les adaptateurs
+ * (`platform/tvos/`, `platform/androidtv/`) sont la place de ces API.
+ * L'ancienne UI n'est pas concernée ; les hooks qu'elle partage avec la
+ * refonte non plus (l'inventaire les suit : docs/tv-navigation/inventaire.md). Les minuteries de navigation ne se
  * lisent pas au lint : l'inventaire les suit aussi.
  *
  * Les sélecteurs sont ceux d'esquery, comme `no-restricted-syntax` : pas
@@ -26,7 +27,7 @@ import { TV_NAV_EXCEPTIONS } from "./tvNavigationExceptions.mjs";
  */
 
 const RN = "ImportDeclaration[source.value='react-native'] > ImportSpecifier";
-const ADAPTER = "l'adaptateur tvOS (apps/tv/src/platform/tvos/)";
+const ADAPTER = "l'adaptateur de la plateforme (apps/tv/src/platform/tvos/, platform/androidtv/)";
 
 const FAMILIES = {
   "no-remote-events": {
@@ -96,8 +97,8 @@ export const tvNavigationPlugin = {
 const SRC = "apps/tv/src/";
 
 /**
- * Le chemin refondu : la refonte, et ce qui ne tourne que sur tvOS — les
- * fichiers `.ios`, et ceux qui n'ont que du code tvOS pour importateurs, sans
+ * Le chemin refondu : la refonte, et ce qui ne tourne que sur une plateforme —
+ * les fichiers `.ios` et `.android`, et ceux qui n'ont que du code tvOS pour importateurs, sans
  * le suffixe (relevé de l'inventaire : seul celui-ci porte encore une API
  * native de focus ; `lib/tvPanGesture.ts` est parti avec le code de transition).
  */
@@ -105,11 +106,13 @@ export const TV_NAV_SCOPE = [
   `${SRC}redesign/**/*.{ts,tsx}`,
   `${SRC}redesignWiring/**/*.{ts,tsx}`,
   `${SRC}**/*.ios.{ts,tsx}`,
+  `${SRC}**/*.android.{ts,tsx}`,
   `${SRC}components/player/AVPlayerSurface.tsx`,
 ];
 
-/** Là où ces API ont leur place, et les tests (qui simulent l'adaptateur). */
-export const TV_NAV_ALLOWED = [`${SRC}platform/tvos/**`, "**/*.test.{ts,tsx}"];
+/** Là où ces API ont leur place — un adaptateur par plateforme —, et les
+ *  tests (qui simulent l'adaptateur). */
+export const TV_NAV_ALLOWED = [`${SRC}platform/tvos/**`, `${SRC}platform/androidtv/**`, "**/*.test.{ts,tsx}"];
 
 /** Les fichiers encore exemptés d'une famille, relatifs à la racine du dépôt. */
 export function exceptionsOf(rule) {

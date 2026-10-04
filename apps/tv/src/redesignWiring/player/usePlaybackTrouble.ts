@@ -3,7 +3,7 @@ import { AccessibilityInfo } from "react-native";
 import type { QualityPreset } from "@tentacle-tv/shared";
 import { activatesTroublePanel, focusInTrouble, TROUBLE_REFOCUS_MS, troubleLeaveReturnsToOsd } from "@tentacle-tv/tv-core";
 import { noteSkipFocusClaim, returnFocusToOsd } from "../../components/player/focus/osdFocusBus";
-import { useRemoteIntents } from "../../platform/tvos/input";
+import { useRemoteIntents } from "../../platform/input";
 import { retryPlaybackNow, usePlaybackTroubleState, useServerFallbackAt } from "../../hooks/playbackTroubleStore";
 import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlaybackTroubleModel, TroubleActionKey } from "../../redesign/screens/player/playbackTroubleTypes";

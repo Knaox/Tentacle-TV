@@ -9,7 +9,7 @@ import {
   heroRotationRearms,
 } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
-import { useRemoteIntents } from "../../platform/tvos/input";
+import { useRemoteIntents } from "../../platform/input";
 
 /**
  * La rotation du héros de l'accueil, façon app TV d'Apple : il avance SEUL,

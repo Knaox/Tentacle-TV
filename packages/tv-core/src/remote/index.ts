@@ -19,3 +19,4 @@ export * from "./bindings/androidtv";
 export * from "./translate";
 export * from "./contexts";
 export * from "./input";
+export * from "./backTakers";

@@ -22,7 +22,7 @@ import {
   toggleSeason,
   type SeasonsSheetDecision,
 } from "@tentacle-tv/tv-core";
-import { useRemoteContext, withMenuIntent } from "../../platform/tvos/input";
+import { useRemoteContext, withMenuIntent } from "../../platform/input";
 import { useChoiceEntry } from "../../platform/tvos/panels/useChoiceEntry";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { FadingModal } from "../../redesign/motion/FadingModal";

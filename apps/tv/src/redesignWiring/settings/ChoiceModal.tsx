@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { settingsChoiceEntryIndex, settingsChoiceKey } from "@tentacle-tv/tv-core";
-import { withMenuIntent } from "../../platform/tvos/input";
+import { withMenuIntent } from "../../platform/input";
 import { useChoiceEntry } from "../../platform/tvos/panels/useChoiceEntry";
 import { FadingModal } from "../../redesign/motion/FadingModal";
 import { ChoiceSheet } from "../../redesign/screens/settings/ChoiceSheet";

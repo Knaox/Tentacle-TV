@@ -6,7 +6,7 @@ import { REQUESTS_CLOSE_GUARDED, requestsPanelBackLayers, requestsRowsFocusable 
 import { FocusBindingProvider, type FocusBinder } from "../../redesign/focus/focusBinding";
 import { requestRowKey } from "../../redesign/requests/RequestRow";
 import { REQUESTS_CLOSE_KEY, RequestsPanelView } from "../../redesign/requests/RequestsPanelView";
-import { withMenuIntent } from "../../platform/tvos/input";
+import { withMenuIntent } from "../../platform/input";
 import { useBackLayers } from "../back/BackScope";
 import { setFocusLocked } from "../../platform/tvos/focus/focusLocks";
 import { useFocusStore, type FocusStore } from "../../platform/tvos/focus/focusStore";

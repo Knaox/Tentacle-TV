@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { loadTitleState, tentacleApiFetch, titleStateQueryKey, useMyTitles } from "@tentacle-tv/api-client";
 import type { TitleState } from "@tentacle-tv/shared";
 import { ABSENT_SHEET_ENTRY_WAIT_MS, absentSheetEntry, isAdvancing, panelBackLayers, panelPresented } from "@tentacle-tv/tv-core";
-import { withMenuIntent } from "../../platform/tvos/input";
+import { withMenuIntent } from "../../platform/input";
 import { useSheetFocus } from "../../platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView, type SheetActionKind, type SheetActionModel } from "../../redesign/screens/sheet/ActionSheetView";

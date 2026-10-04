@@ -3,7 +3,7 @@ import { Modal } from "react-native";
 import { useRecoSettings } from "@tentacle-tv/api-client";
 import { SHEET_ENTRY_WAIT_MS, panelBackLayers, panelPresented, ratingClosesSheet, sheetEntryNow, type SheetMode } from "@tentacle-tv/tv-core";
 import type { CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
-import { withMenuIntent } from "../../platform/tvos/input";
+import { withMenuIntent } from "../../platform/input";
 import { useSheetFocus } from "../../platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView } from "../../redesign/screens/sheet/ActionSheetView";
