@@ -5,6 +5,7 @@ import { TV_LIGHT } from "@tentacle-tv/theme";
 import { boundedLight, type ArtworkPalette } from "../color/artworkPalette";
 import { PoolLayerView, useLayerPool } from "../motion/LayerStack";
 import { colors } from "../theme/tokens";
+import { RadialLight } from "./RadialLight";
 import { SoftGradient, STAGE_SIZE } from "./SoftGradient";
 
 /**
@@ -65,8 +66,21 @@ const FALLOFF = [
   [1, 0],
 ] as const;
 
-/** Une lumière : le disque, agrandi en ellipse autour de son centre. */
+/** Une lumière : le disque, agrandi en ellipse autour de son centre. Là où
+ *  la plateforme peint le dégradé radial elle-même (`RadialLight`, Android),
+ *  l'ellipse est dessinée à sa taille, sans disque ni agrandissement. */
 function Glow({ blob, color, intensity }: { blob: (typeof BLOBS)[number]; color: string; intensity: number }) {
+  if (RadialLight) {
+    const ellipse = {
+      position: "absolute" as const,
+      left: blob.cx - blob.rx,
+      top: blob.cy - blob.ry,
+      width: 2 * blob.rx,
+      height: 2 * blob.ry,
+      opacity: blob.alpha * intensity,
+    };
+    return <RadialLight color={color} stops={FALLOFF} style={ellipse} />;
+  }
   const place = {
     left: blob.cx - DISC / 2,
     top: blob.cy - DISC / 2,

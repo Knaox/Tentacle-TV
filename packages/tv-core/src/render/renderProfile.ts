@@ -36,6 +36,14 @@ export type HaloRendering =
    *  teinte par un dégradé au dessin : rien ne se floute quand l'œuvre change. */
   | "mask";
 
+/** Comment se dessinent les lumières rondes (fond vivant, lueur d'un motif). */
+export type LightRendering =
+  /** Un disque SVG au dégradé radial, rastérisé petit puis agrandi. */
+  | "svg"
+  /** Un dégradé radial évalué par le GPU (vue native `TentacleGlowView`) :
+   *  ni bitmap, ni rastérisation quand la couleur change. */
+  | "shader";
+
 export interface RenderProfile {
   /** Le mouvement de la refonte (ressorts, fondus) sur le fil d'interface.
    *  Faux : chaque animation se pose aussitôt. */
@@ -50,6 +58,8 @@ export interface RenderProfile {
   haloDrawScale: number;
   /** Le rendu des halos d'œuvre. */
   halos: HaloRendering;
+  /** Le rendu des lumières rondes. */
+  lights: LightRendering;
   /** Le flou SVG de la plateforme (voir `haloDrawing`). */
   svgBlur: SvgBlurRendering;
 }
@@ -61,6 +71,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     shadows: "layer",
     haloDrawScale: 0.25,
     halos: "svg",
+    lights: "svg",
     svgBlur: "points",
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
@@ -72,6 +83,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     shadows: "mask",
     haloDrawScale: 0.25,
     halos: "mask",
+    lights: "shader",
     svgBlur: "renderscript",
   },
 };

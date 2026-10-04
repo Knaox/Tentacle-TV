@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
+import { RadialLight } from "../../background/RadialLight";
 
 /**
  * Une lumière ronde posée derrière un motif (la mascotte de l'accueil, la
@@ -13,6 +14,10 @@ export const Glow = memo(function Glow({ size, color, opacity = 0.4, style }: {
   style?: StyleProp<ViewStyle>;
 }) {
   const r = size / 2;
+  if (RadialLight) {
+    const stops = [[0, opacity], [0.45, opacity * 0.45], [1, 0]] as const;
+    return <RadialLight color={color} stops={stops} style={[{ width: size, height: size }, style]} />;
+  }
   return (
     <Svg width={size} height={size} style={style} pointerEvents="none">
       <Defs>
