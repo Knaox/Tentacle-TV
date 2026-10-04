@@ -17,14 +17,14 @@ et Linux reçoivent l'ensemble.
 <!-- Bloc nu : Windows (Microsoft Store, 1500 caractères) et Linux partent de la 1.25.5. Le Mac App Store, où la 1.25.5 n'a pas été validée, a son bloc mac-. -->
 ### FR
 - **Famille** : depuis les réglages, créez votre famille, invitez des comptes du serveur ou ajoutez des profils invités pour vos Apple TV, chacun avec son code PIN facultatif
-- **Famille partagée** : chaque membre voit toute la famille ; le propriétaire décide qui peut créer des invités, et quels invités peuvent demander des films en son nom
+- **Famille partagée** : chaque membre voit toute la famille ; le propriétaire décide qui peut créer des invités, et quels invités peuvent demander des films, à leur propre nom
 - **Les invitations à rejoindre une famille** s'affichent à l'ouverture de l'app et en direct ; acceptez, refusez, ou répondez plus tard depuis la cloche
 - **Qualité réduite : le lecteur dit pourquoi** (réseau, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur), et la raison se relit dans le menu Qualité
 - **Sauter pendant une vidéo convertie** : un chargement visible dès l'appui, et plusieurs sauts rapides ne relancent la conversion qu'une fois
 
 ### EN
 - **Family**: from Settings, create your family, invite server accounts or add guest profiles for your Apple TVs, each with an optional PIN
-- **Shared family**: every member sees the whole family; the owner decides who can create guests, and which guests can request movies in their name
+- **Shared family**: every member sees the whole family; the owner decides who can create guests, and which guests can request movies, in their own name
 - **Family invitations** appear when the app opens and in real time; accept, decline, or answer later from the notification bell
 - **Quality lowered: the player now says why** (network, an Internet limit set on Jellyfin, or video converted by the server), and the reason stays in the Quality menu
 - **Skipping in converted video**: loading shows right away, and several quick skips restart the conversion only once
@@ -33,7 +33,7 @@ et Linux reçoivent l'ensemble.
 <!-- App Store Connect (4000 caractères) : la 1.25.5 n'a pas été validée par Apple — on reprend ses notes (tout depuis la 1.25.0), et les nouveautés de la 1.26.0 en tête. -->
 ### FR
 - **Famille** : depuis les réglages, créez votre famille, invitez des comptes du serveur ou ajoutez des profils invités pour vos Apple TV, chacun avec son code PIN facultatif
-- **Famille partagée** : chaque membre voit toute la famille ; le propriétaire décide qui peut créer des invités, et quels invités peuvent demander des films en son nom
+- **Famille partagée** : chaque membre voit toute la famille ; le propriétaire décide qui peut créer des invités, et quels invités peuvent demander des films, à leur propre nom
 - **Les invitations à rejoindre une famille** s'affichent à l'ouverture de l'app et en direct ; acceptez, refusez, ou répondez plus tard depuis la cloche
 - **Qualité réduite : le lecteur dit pourquoi** (réseau, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur), et la raison se relit dans le menu Qualité
 - **Sauter pendant une vidéo convertie** : un chargement visible dès l'appui, et plusieurs sauts rapides ne relancent la conversion qu'une fois
@@ -50,7 +50,7 @@ et Linux reçoivent l'ensemble.
 
 ### EN
 - **Family**: from Settings, create your family, invite server accounts or add guest profiles for your Apple TVs, each with an optional PIN
-- **Shared family**: every member sees the whole family; the owner decides who can create guests, and which guests can request movies in their name
+- **Shared family**: every member sees the whole family; the owner decides who can create guests, and which guests can request movies, in their own name
 - **Family invitations** appear when the app opens and in real time; accept, decline, or answer later from the notification bell
 - **Quality lowered: the player now says why** (network, an Internet limit set on Jellyfin, or video converted by the server), and the reason stays in the Quality menu
 - **Skipping in converted video**: loading shows right away, and several quick skips restart the conversion only once
