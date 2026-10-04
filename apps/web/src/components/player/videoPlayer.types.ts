@@ -1,4 +1,4 @@
-import type { MediaItem, PlaybackFailure, ResolvedSegment, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, PlaybackFailure, ResolvedSegment, QualityDrop, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 
@@ -51,6 +51,8 @@ export interface VideoPlayerProps {
   qualityPresets?: readonly QualityPreset[];
   /** Badge « Auto » sur le palier actif du sélecteur (cap de débit armé). */
   autoQualityActive?: boolean;
+  /** Pourquoi la qualité baisse en Auto — la ligne du menu Qualité (`player/qualityDrop.ts`). */
+  qualityDrop?: QualityDrop | null;
   isDirectPlay?: boolean;
   streamOffset?: number;
   /** Force native HLS via WKWebView/AVFoundation (skip hls.js). */

@@ -30,7 +30,7 @@ export function MirrorPlayerOverlay({ controls, playback, bridge, media }: Mirro
   const {
     playing, currentTime, duration, buffered, item, mediaSourceId, title,
     audioTracks, subtitleTracks, currentAudio, currentSubtitle, currentQuality, sourceQuality,
-    qualityPresets, autoQualityActive, hasNextEpisode, hasPreviousEpisode,
+    qualityPresets, autoQualityActive, qualityDrop, hasNextEpisode, hasPreviousEpisode,
     onTogglePlay, onSeek, onSkip, onBack, onAudioChange, onSubtitleChange, onQualityChange,
     onNextEpisode, onPreviousEpisode,
   } = controls;
@@ -124,7 +124,7 @@ export function MirrorPlayerOverlay({ controls, playback, bridge, media }: Mirro
         selectedSubtitle={currentSubtitle ?? -1}
         qualityKey={currentQuality}
         qualityPresets={qualityPresets ?? []}
-        autoQualityActive={autoQualityActive}
+        autoQualityActive={autoQualityActive} qualityDrop={qualityDrop}
         sourceQuality={sourceQuality}
         onSelectAudio={onAudioChange}
         onSelectSubtitle={selectSubtitle}

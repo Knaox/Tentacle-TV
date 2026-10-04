@@ -78,6 +78,8 @@ export interface PlaybackInfoState {
   verdict: Verdict | null;
   /** La négociation a échoué (statut gardé) : l'écran le dit au lieu d'attendre. */
   error: PlaybackFailure | null;
+  /** Le débit demandé à Jellyfin (palier, sinon plafond du profil) : sa limite Internet s'y lit. */
+  requestedBps?: number | null;
 }
 
 /**
@@ -264,6 +266,7 @@ export function usePlaybackInfo(nativePlayer = false) {
         isLoading: false,
         verdict,
         error: null,
+        requestedBps: opts.maxStreamingBitrate ?? profile.MaxStreamingBitrate ?? null,
       });
 
       // Relevé synthétique pour l'inspecteur d'une dalle (cf. playbackLog).

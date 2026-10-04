@@ -23,6 +23,8 @@ export interface PopupSection {
   options: PopupOption[];
   onSelect: (key: string | number) => void;
   showDisabled?: { label: string; active: boolean; onSelect: () => void };
+  /** Une ligne d'explication sous les choix (pourquoi la qualité baisse en Auto). */
+  note?: string;
 }
 
 interface Props {
@@ -99,6 +101,9 @@ export function PopupMenu({ visible, title, sections, onClose }: Props) {
                   onPress={() => section.onSelect(opt.key)}
                 />
               ))}
+              {section.note && (
+                <p style={{ fontSize: 12, lineHeight: 1.45, color: PLAYER.textSecondary, paddingInline: 10, marginTop: 6 }}>{section.note}</p>
+              )}
             </div>
           ))}
         </div>

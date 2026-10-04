@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { formatBitrateMbps, type QualityKey, type QualityPreset, type SourceQuality } from "@tentacle-tv/shared";
+import {
+  formatBitrateMbps, qualityDropText, type QualityDrop, type QualityKey, type QualityPreset, type SourceQuality,
+} from "@tentacle-tv/shared";
 import type { TrackOption } from "../types";
 import { PopupMenu, type PopupBadge, type PopupSection } from "./PopupMenu";
 
@@ -14,6 +16,8 @@ interface Props {
   qualityKey: QualityKey;
   qualityPresets: readonly QualityPreset[];
   autoQualityActive?: boolean;
+  /** Pourquoi la qualité baisse en Auto : relisible sous les paliers. */
+  qualityDrop?: QualityDrop | null;
   sourceQuality?: SourceQuality;
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
@@ -31,10 +35,11 @@ interface Props {
  */
 export function SettingsMenus({
   showSettings, showSubtitles, audioTracks, subtitleTracks,
-  selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive, sourceQuality,
+  selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive, qualityDrop, sourceQuality,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings, onCloseSubtitles,
 }: Props) {
-  const { t } = useTranslation("player");
+  const { t, i18n } = useTranslation("player");
+  const dropText = qualityDrop ? qualityDropText(qualityDrop, i18n.language) : null;
 
   const settingsSections: PopupSection[] = [];
   if (audioTracks.length > 0) {
@@ -65,6 +70,7 @@ export function SettingsMenus({
         };
       }),
       onSelect: (k) => { onSelectQuality(k as QualityKey); onCloseSettings(); },
+      note: dropText ? `${t("qualityAutoBadge")} · ${t(dropText.menuKey, dropText.values)}` : undefined,
     });
   }
 

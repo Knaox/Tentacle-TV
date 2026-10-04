@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
-import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, QualityDrop, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
 import { TrackSelector } from "./TrackSelector";
 import { EpisodeSelectorPanel } from "./player/EpisodeSelectorPanel";
@@ -35,6 +35,8 @@ export interface PlayerControlsProps {
   qualityPresets?: readonly QualityPreset[];
   /** Badge « Auto » sur le palier actif du sélecteur. */
   autoQualityActive?: boolean;
+  /** Pourquoi la qualité baisse en Auto — la ligne du menu Qualité (`player/qualityDrop.ts`). */
+  qualityDrop?: QualityDrop | null;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
   onTogglePlay: () => void;
@@ -66,7 +68,7 @@ export function PlayerControls({
   playing, currentTime, duration, buffered, volume, fullscreen,
   item, itemId, mediaSourceId,
   title, subtitle, audioTracks, subtitleTracks,
-  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive, qualityDrop,
   hasNextEpisode, hasPreviousEpisode,
   onTogglePlay, onSeek, onSkip, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
   onAudioChange, onSubtitleChange, onQualityChange,
@@ -118,7 +120,7 @@ export function PlayerControls({
               audioTracks={audioTracks} subtitleTracks={subtitleTracks}
               currentAudio={currentAudio} currentSubtitle={currentSubtitle}
               currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
-              autoQualityActive={autoQualityActive}
+              autoQualityActive={autoQualityActive} qualityDrop={qualityDrop}
               onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={onQualityChange}
               applyToSeries={applyToSeries}
               onClose={() => setShowSettings(false)}

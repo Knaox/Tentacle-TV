@@ -13,7 +13,7 @@ import {
 } from "../PlayerIcons";
 import type { AudioTrack, SubtitleTrack } from "./videoPlayer.types";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
-import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, QualityDrop, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { MpvState } from "../../hooks/useDesktopPlayer";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
 import { rangeFill } from "../../lib/rangeFill";
@@ -42,6 +42,8 @@ interface DesktopPlayerControlsProps {
   qualityPresets?: readonly QualityPreset[];
   /** Badge « Auto » sur le palier actif du sélecteur. */
   autoQualityActive?: boolean;
+  /** Pourquoi la qualité baisse en Auto — la ligne du menu Qualité (`player/qualityDrop.ts`). */
+  qualityDrop?: QualityDrop | null;
   hasSettings: boolean;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
@@ -92,7 +94,7 @@ const WITHOUT_ALPHA = !surfaceHasAlpha();
  */
 export function DesktopPlayerControls({
   visible, state, title, subtitle, isDirectPlay, isEpisode, useLocalEpisodes, item, itemId,
-  displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality, qualityPresets, autoQualityActive,
+  displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality, qualityPresets, autoQualityActive, qualityDrop,
   hasSettings, hasNextEpisode, hasPreviousEpisode,
   dur, actualPos, displayProgress, bufProg, seekbar,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
@@ -165,7 +167,7 @@ export function DesktopPlayerControls({
                 audioTracks={displayAudio} subtitleTracks={displaySubs}
                 currentAudio={curAudio} currentSubtitle={curSub}
                 currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
-                autoQualityActive={autoQualityActive}
+                autoQualityActive={autoQualityActive} qualityDrop={qualityDrop}
                 onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
                 onQualityChange={onQualityChange}
                 applyToSeries={applyToSeries}

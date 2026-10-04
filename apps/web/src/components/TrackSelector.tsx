@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
-  QUALITY_PRESETS, formatBitrateMbps,
-  type QualityKey, type QualityPreset, type SourceQuality,
+  QUALITY_PRESETS, formatBitrateMbps, qualityDropText,
+  type QualityDrop, type QualityKey, type QualityPreset, type SourceQuality,
 } from "@tentacle-tv/shared";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
 
@@ -30,6 +30,8 @@ interface TrackSelectorProps {
   /** Le mode « Auto » est armé : badge sur le palier ACTIF (la clé affichée
    *  est déjà le palier servi, cap compris) — un choix manuel l'éteint. */
   autoQualityActive?: boolean;
+  /** Pourquoi la qualité baisse en Auto : relisible ici, sous les paliers. */
+  qualityDrop?: QualityDrop | null;
 }
 
 export function TrackSelector({
@@ -37,9 +39,10 @@ export function TrackSelector({
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
   qualityPresets = QUALITY_PRESETS,
   onAudioChange, onSubtitleChange, onQualityChange, onClose, applyToSeries,
-  autoQualityActive = false,
+  autoQualityActive = false, qualityDrop = null,
 }: TrackSelectorProps) {
-  const { t } = useTranslation("player");
+  const { t, i18n } = useTranslation("player");
+  const dropText = qualityDrop ? qualityDropText(qualityDrop, i18n.language) : null;
   // Panneau de réglages DÉTACHÉ (fond quasi-opaque `surface-dropdown`, pas la
   // vidéo en transparence) : contrairement aux contrôles du lecteur, il suit
   // le thème clair/sombre — d'où la tokenisation du texte/bordures ici.
@@ -102,6 +105,12 @@ export function TrackSelector({
                 t={t}
               />
             ))}
+            {dropText && (
+              <p className="mt-1 flex items-start gap-1.5 px-3 text-xs leading-relaxed text-content-tertiary">
+                <span className="font-semibold text-tentacle-accent">{t("player:qualityAutoBadge")}</span>
+                <span>{t(dropText.menuKey, dropText.values)}</span>
+              </p>
+            )}
           </Section>
         )}
       </div>

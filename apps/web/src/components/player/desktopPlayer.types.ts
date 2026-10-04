@@ -4,7 +4,7 @@
  * logique, le contrat vit ici.
  */
 
-import type { MediaItem, ResolvedSegment, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, ResolvedSegment, QualityDrop, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../VideoPlayer";
 import type { LocalSubtitleFile } from "../../downloads/playbackApi";
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
@@ -23,6 +23,8 @@ export interface DesktopPlayerProps {
   qualityPresets?: readonly QualityPreset[];
   /** Badge « Auto » sur le palier actif du sélecteur (cap de débit armé). */
   autoQualityActive?: boolean;
+  /** Pourquoi la qualité baisse en Auto — la ligne du menu Qualité (`player/qualityDrop.ts`). */
+  qualityDrop?: QualityDrop | null;
   onAudioChange: (index: number) => void; onSubtitleChange: (index: number | null) => void;
   /** Absent en lecture locale : le sélecteur de qualité est alors masqué. */
   onQualityChange?: (key: QualityKey) => void;

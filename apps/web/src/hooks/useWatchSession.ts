@@ -94,12 +94,18 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // cap compris) et un setter qui désarme le cap — jamais le state brut, qui
   // mentirait au menu. `startTicks` : re-photographie à chaque relance de
   // session. Local/hors ligne : ni mesure ni cap — rien à adapter.
+  // Web: server-driven stream selection via PlaybackInfo
+  // `isDesktop` vaut ici « c'est mpv qui lira » : WatchDesktop n'est monté que
+  // derrière `supportsMpv()`, et le repli web repasse par WatchWeb (isDesktop
+  // faux) — le profil suit donc toujours le lecteur réellement à l'œuvre.
+  const pbInfo = usePlaybackInfo(isDesktop);
   const {
     qualityPresets, quality, qualityMaxHeight, qualityKeyEffective, setQualityKeyManual,
-    autoCapActive, autoModeArmed,
+    autoCapActive, autoModeArmed, qualityDrop,
   } = useEffectiveQuality({
     mediaSource, itemId, qualityKey, setQualityKey, startTicks,
     enabled: !offlineMode && !isLocalPlayback,
+    served: isDesktop ? null : pbInfo.mediaSource, requestedBps: isDesktop ? null : pbInfo.requestedBps,
   });
   const [prefsReady, setPrefsReady] = useState(false);
   const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
@@ -109,11 +115,6 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const subtitleOverrideRef = useRef(false);
   const resumeApplied = useRef(false);
 
-  // Web: server-driven stream selection via PlaybackInfo
-  // `isDesktop` vaut ici « c'est mpv qui lira » : WatchDesktop n'est monté que
-  // derrière `supportsMpv()`, et le repli web repasse par WatchWeb (isDesktop
-  // faux) — le profil suit donc toujours le lecteur réellement à l'œuvre.
-  const pbInfo = usePlaybackInfo(isDesktop);
   // mpv lit les sous-titres image nativement ; le rendu canvas (libpgs) ne
   // concerne que le lecteur web, et s'efface dès qu'il a échoué une fois.
   const pgsClientOk = !isDesktop && !pbInfo.pgsClientUnavailable;
@@ -280,7 +281,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
     qualityKey: qualityKeyEffective, setQualityKey: setQualityKeyManual, sourceQuality, qualityPresets,
-    autoCapActive, autoModeArmed,
+    autoCapActive, autoModeArmed, qualityDrop,
     startTicks, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,

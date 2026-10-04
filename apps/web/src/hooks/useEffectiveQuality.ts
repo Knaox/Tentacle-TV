@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useTranslation } from "react-i18next";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { buildQualityLadder, isPresetOffered, findPreset } from "@tentacle-tv/shared";
-import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
+import { cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
+import { buildQualityLadder, isPresetOffered, findPreset, qualityDrop as explainDrop } from "@tentacle-tv/shared";
+import type { MediaSource, QualityDrop, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import { startBitrateMeasurement, automaticCap } from "../lib/bitratePolicy";
-import { useToast } from "../contexts/ToastContext";
 
 /**
  * Échelle + preset + CAP AUTOMATIQUE de qualité — extrait de `useWatchSession`
@@ -26,8 +24,12 @@ export function useEffectiveQuality(args: {
   /** Position de relance de session : change quand le flux est reconstruit —
    *  le cap se re-photographie à ce moment-là (jamais en lecture continue). */
   startTicks?: number;
-  /** false : lecture locale/hors ligne — ni mesure, ni cap, ni toast. */
+  /** false : lecture locale/hors ligne — ni mesure, ni cap, ni message. */
   enabled?: boolean;
+  /** Le `MediaSource` servi par PlaybackInfo (lecteur web ; `null` sous mpv, qui n'en négocie pas). */
+  served?: MediaSource | null;
+  /** Le débit demandé à Jellyfin pour ce flux. */
+  requestedBps?: number | null;
 }): {
   qualityPresets: QualityPreset[];
   qualityPreset: QualityPreset;
@@ -43,11 +45,11 @@ export function useEffectiveQuality(args: {
   /** Sélection MANUELLE du menu : désarme d'abord le cap (re-choisir
    *  « Originale » redevient possible et définitif pour cet item). */
   setQualityKeyManual: (k: QualityKey) => void;
+  /** Pourquoi la qualité baisse en Auto (`player/qualityDrop.ts`) — le message, et la ligne du menu. */
+  qualityDrop: QualityDrop | null;
 } {
-  const { mediaSource, itemId, qualityKey, setQualityKey, startTicks = 0, enabled = true } = args;
+  const { mediaSource, itemId, qualityKey, setQualityKey, startTicks = 0, enabled = true, served, requestedBps } = args;
   const client = useJellyfinClient();
-  const { show } = useToast();
-  const { t } = useTranslation("player");
 
   // Mesure amorcée dès le montage du lecteur (fire-and-forget, cache 10 min) :
   // sur un réseau local elle aboutit avant la première décision de flux.
@@ -76,8 +78,11 @@ export function useEffectiveQuality(args: {
   const sessionKey = `${itemId}|${startTicks}`;
   const evaluatedRef = useRef<string | undefined>(undefined);
   const capRef = useRef<QualityPreset | null>(null);
+  // La mesure qui a décidé le cap : c'est elle que le message dit.
+  const measuredRef = useRef<number | null>(null);
   if (sessionKey !== evaluatedRef.current && mediaSource) {
     evaluatedRef.current = sessionKey;
+    measuredRef.current = enabled ? cachedBitrate() : null;
     capRef.current = enabled ? automaticCap(mediaSource) : null;
   }
   const capAuto = sessionKey === evaluatedRef.current ? capRef.current : null;
@@ -95,14 +100,16 @@ export function useEffectiveQuality(args: {
   const autoCapActive = autoModeArmed && capAuto != null;
   const effectivePreset = autoCapActive && capAuto ? capAuto : qualityPreset;
 
-  // Le dire UNE fois par item — le toast s'efface seul (4 s).
-  const notifiedRef = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    if (autoCapActive && notifiedRef.current !== itemId) {
-      notifiedRef.current = itemId;
-      show("info", t("qualityReduced"));
-    }
-  }, [autoCapActive, itemId, show, t]);
+  // Pourquoi la qualité baisse — dit par le lecteur (`useQualityDropNotice`),
+  // relisible au menu. Le palier servi pendant un cap, c'est le débit demandé.
+  const capMeasured = autoCapActive ? measuredRef.current : null;
+  const qualityDrop = useMemo(() => explainDrop({
+    auto: autoModeArmed,
+    requestedBps: autoCapActive && capAuto ? capAuto.bitrate : requestedBps ?? null,
+    cap: autoCapActive ? { measuredBps: capMeasured } : null,
+    source: mediaSource,
+    served,
+  }), [autoModeArmed, autoCapActive, capAuto, capMeasured, requestedBps, mediaSource, served]);
 
   return {
     qualityPresets,
@@ -113,5 +120,6 @@ export function useEffectiveQuality(args: {
     autoModeArmed,
     qualityKeyEffective: autoCapActive && capAuto ? capAuto.key : qualityKey,
     setQualityKeyManual,
+    qualityDrop,
   };
 }

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import { useNavigate } from "react-router-dom";
 import { SkipBadge } from "./SkipBadge";
@@ -17,6 +17,7 @@ import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
 import { useSessionRemote } from "../hooks/useSessionRemote";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
+import { QualityDropNotice } from "./player/QualityDropNotice";
 import { VideoPlayerControlsLayer } from "./player/VideoPlayerControlsLayer";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import { useVideoClock } from "../hooks/useVideoClock";
@@ -24,6 +25,7 @@ import { useVideoCommands } from "../hooks/useVideoCommands";
 import { useGatedPlay } from "../hooks/useGatedPlay";
 import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
 import { usePlayerVolume } from "../hooks/usePlayerVolume";
+import { useElementFullscreen } from "../hooks/useElementFullscreen";
 import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
 import { useSanitizedSubtitles } from "../hooks/useSanitizedSubtitles";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
@@ -34,7 +36,7 @@ export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
 export function VideoPlayer({
   src, itemId, item, mediaSourceId, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
-  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive, qualityDrop,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable, onTrackNotFound,
@@ -72,7 +74,6 @@ export function VideoPlayer({
   const { mirror, showControls, scrubbing, bridge } = useMirrorPlayerBridge(autoHide.showControls, autoHide.scrubbing);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
-  const [fullscreen, setFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
   // Fin réelle du média (onEnded) — l'arbitre en fait l'écran de fin, ou la
   // sortie quand aucune suite n'est possible.
@@ -154,16 +155,7 @@ export function VideoPlayer({
     handleSeek, cancelAutoNextLocal: playback.signalRemoteNextDismiss,
   });
 
-  const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) { document.exitFullscreen(); return; }
-    const el = containerRef.current;
-    if (!el) return;
-    if (el.requestFullscreen) { el.requestFullscreen(); return; }
-    // iOS Safari fallback: requestFullscreen not available on container div,
-    // use webkitEnterFullscreen on the video element directly.
-    const v = videoRef.current as HTMLVideoElement & { webkitEnterFullscreen?: () => void } | null;
-    if (v?.webkitEnterFullscreen) v.webkitEnterFullscreen();
-  }, []);
+  const { fullscreen, toggleFullscreen } = useElementFullscreen(containerRef, videoRef);
 
   const swipe = usePlayerSwipe(skipBy, userInteractedRef);
 
@@ -178,12 +170,6 @@ export function VideoPlayer({
   // VTT de la piste active, débarrassé du balisage ASS que Jellyfin laisse
   // fuiter dans le texte des cues (« {\an8} » affiché tel quel).
   const sanitizedSubtitleUrl = useSanitizedSubtitles({ tracks: textTracks, selection: currentSubtitle, src });
-
-  useEffect(() => {
-    const onFs = () => setFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", onFs);
-    return () => document.removeEventListener("fullscreenchange", onFs);
-  }, []);
 
   currentTimeRef.current = currentTime;
 
@@ -216,7 +202,7 @@ export function VideoPlayer({
     playing, currentTime, duration, buffered, volume, fullscreen,
     item, itemId, mediaSourceId, title, subtitle,
     audioTracks, subtitleTracks, qualityPresets,
-    currentAudio, currentSubtitle, currentQuality, sourceQuality, autoQualityActive,
+    currentAudio, currentSubtitle, currentQuality, sourceQuality, autoQualityActive, qualityDrop,
     hasNextEpisode, hasPreviousEpisode,
     onTogglePlay: togglePlay, onSeek: handleSeek, onSkip: skipBy,
     onVolumeChange: handleVolumeChange, onToggleMute: handleToggleMute,
@@ -267,6 +253,9 @@ export function VideoPlayer({
           timeOffsetRef={effectiveOffsetRef} onFailure={onPgsFailure}
         />
       )}
+
+      {/* Pourquoi la qualité baisse en Auto — sur la vidéo, loin de la barre. */}
+      <QualityDropNotice drop={qualityDrop ?? null} started={hasStarted} itemId={itemId} />
 
       {mirror ? (
         <MirrorPlayerOverlay controls={controls} playback={playback} bridge={bridge}
