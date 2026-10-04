@@ -8,8 +8,13 @@ import type { FocusExtras } from "../../tvos/focus/focusStore";
  * (`preferredFocusOf`) et la croix verrouillée (`exitLocked`).
  */
 
-/** La croix verrouillée : Android n'a pas `isTVSelectable`, c'est `focusable` qui décide. */
-export const END_EXIT_LOCK: FocusExtras = { native: { focusable: false } };
+/**
+ * La croix verrouillée : Android n'a pas `isTVSelectable`, et `focusable`
+ * faux n'y retire que le clic (`ReactViewManager.setFocusable`) — c'est
+ * `tvFocusable` qui rend la vue infocalisable (et bloque ses descendants). La
+ * même valeur que le verrou du focus d'Android (`androidtv/focus/focusLocks`).
+ */
+export const END_EXIT_LOCK: FocusExtras = { native: { tvFocusable: false } };
 
 /** La liaison avec sa préférence d'origine ; `undefined` : celle de toujours.
  *  `hasTVPreferredFocus` existe aussi sur Android (react-native-tvos) : il ne

@@ -8,7 +8,7 @@
  * l'identique sur Android : le FOND (`TouchableOpacity` focalisable, préféré),
  * et les GUIDES de l'habillage (`TVFocusGuideView` : `autoFocus`,
  * `destinations`, `trapFocus*` sont implémentés par `ReactViewGroup`).
- * Propres à Android : la croix verrouillée (`focusable`, pas
+ * Propres à Android : la croix verrouillée (`tvFocusable`, pas
  * `isTVSelectable`) et l'habillage effacé qui se démonte.
  */
 export { PlayerBackground } from "../../tvos/player/PlayerBackground";
