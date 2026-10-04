@@ -9,6 +9,7 @@ import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
 import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
 import { usePluginOverlay } from "@/plugins/usePluginOverlay";
+import { useWebViewRevival } from "@/plugins/useWebViewRevival";
 import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
 import { ExtensionProblem } from "./problems/ExtensionProblem";
 import { typography, useTheme, useResponsive } from "@/theme";
@@ -64,6 +65,9 @@ export function PluginWebView({
   // Un panneau de la page est ouvert : la barre s'efface (voile du chrome), il
   // ne reste à écarter que l'indicateur d'accueil.
   const overlay = usePluginOverlay(webRef, controlsChrome);
+  // Le processus de rendu repris (iOS, Android) : la page renaît à son retour
+  // à l'écran au lieu de rester noire (cf. webViewRevival).
+  const { generation, lost, crashed, onReady: markReady, onLost, retry: reviveNow } = useWebViewRevival(controlsChrome);
   const bottomBar = overlay.veiled
     ? Math.max(insets.bottom, 10)
     : (isTablet && isLandscape ? 0 : tabBarH);
@@ -106,7 +110,7 @@ export function PluginWebView({
   const [showOverlay, setShowOverlay] = useState(true);
   const [webViewError, setWebViewError] = useState<string | null>(null);
 
-  // Remise à zéro quand la page adressée change (retry implicite)
+  // Remise à zéro quand la page adressée change (retry implicite) ou renaît.
   const navKey = `${pluginId}:${path}`;
   const { resetOverlay } = overlay;
   useEffect(() => {
@@ -114,7 +118,7 @@ export function PluginWebView({
     setShowOverlay(true);
     setWebViewError(null);
     resetOverlay();
-  }, [navKey, resetOverlay]);
+  }, [navKey, generation, resetOverlay]);
 
   // `theme` en dépendance : au switch clair/sombre la source HTML change et la
   // WebView recharge sa page re-thémée (événement rare, rechargement assumé).
@@ -152,11 +156,12 @@ export function PluginWebView({
       setWebViewReady(true);
     }, 15_000);
     return () => clearTimeout(timer);
-  }, [webViewReady, htmlContent, navKey]);
+  }, [webViewReady, htmlContent, navKey, generation]);
 
   const onReady = useCallback(() => {
     setWebViewReady(true);
-  }, []);
+    markReady();
+  }, [markReady]);
 
   // Un plugin qui plante garde sa place (onglet, section) : le cadre montre
   // l'erreur et « Réessayer » — le retirer de la navigation démonterait ce
@@ -172,22 +177,27 @@ export function PluginWebView({
     [router, onReady, onBridgeError, onScrollChrome, onOverlay],
   );
 
-  /* Android peut tuer le processus de rendu des WebViews (mémoire) : sans ce
-   * crochet, chaque cadre resterait blanc en silence. On le traite comme un
-   * plantage du plugin — message + Réessayer. */
-  const onRenderGone = useCallback(() => {
-    onBridgeError("render process gone");
-  }, [onBridgeError]);
+  /* iOS (mémoire d'une WebView cachée, app en arrière-plan) et Android tuent
+   * le processus de rendu : la page devenait noire pour toujours. Ses
+   * panneaux sont morts avec elle — le voile du chrome tombe tout de suite
+   * (sinon plus de barre d'onglets, et un voile qui parle à une page morte). */
+  const onProcessGone = useCallback(() => {
+    resetOverlay();
+    onLost();
+  }, [resetOverlay, onLost]);
 
   const handleRetry = useCallback(() => {
     setWebViewError(null);
     setWebViewReady(false);
     setShowOverlay(true);
     resetOverlay();
-  }, [resetOverlay]);
+    reviveNow();
+  }, [resetOverlay, reviveNow]);
 
   // Plantage, extension désactivée, code introuvable : le modèle commun le dit.
-  if (webViewError) return <ExtensionProblem kind="crashed" detail={webViewError} onRetry={handleRetry} />;
+  if (webViewError || crashed) {
+    return <ExtensionProblem kind="crashed" detail={webViewError ?? "render process gone"} onRetry={handleRetry} />;
+  }
   // Plugin absent de la liste active (désactivé, désinstallé)
   if (!plugin && !pluginsLoading) return <ExtensionProblem kind="missing" />;
   if (bundleError || depsError) {
@@ -207,13 +217,14 @@ export function PluginWebView({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface.s0, paddingTop: padTop ? headerH : 0 }}>
-      {htmlContent ? (
+      {htmlContent && !lost ? (
         <WebViewComponent
-          key={navKey}
+          key={`${navKey}:${generation}`}
           ref={webRef as never}
           source={{ html: htmlContent, baseUrl: serverUrl }}
           onMessage={handleMessage}
-          onRenderProcessGone={onRenderGone}
+          onContentProcessDidTerminate={onProcessGone}
+          onRenderProcessGone={onProcessGone}
           style={{ flex: 1, backgroundColor: colors.surface.s0 }}
           javaScriptEnabled
           domStorageEnabled

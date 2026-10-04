@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -11,6 +11,7 @@ import { shortPluginName } from "../hooks/useExtensionSections";
 import { usePluginBundle, useSharedDeps } from "../plugins/usePluginBundle";
 import { buildPluginHtml } from "../plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "../plugins/pluginBridge";
+import { useWebViewRevival } from "../plugins/useWebViewRevival";
 import { spacing, typography, useTheme } from "../theme";
 import { IconButton } from "../components/ui";
 
@@ -75,14 +76,15 @@ export function PluginWebViewScreen() {
     });
   }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, pluginQuery, theme, insets.bottom]);
 
-  const handleMessage = useCallback(
-    createBridgeHandler(router),
-    [router],
-  );
+  // Le processus de rendu repris (iOS en arrière-plan, Android) : la page
+  // renaît à son retour à l'écran au lieu de rester noire (cf. webViewRevival).
+  const { generation, lost, crashed, onReady, onLost, retry } = useWebViewRevival();
+  const handleMessage = useMemo(() => createBridgeHandler(router, onReady), [router, onReady]);
 
   // Extension absente de la liste active : le dire, plutôt qu'un chargement sans fin.
   const back = () => backOrHome(router);
   if (!plugin && !pluginsLoading) return <ExtensionProblem kind="missing" canGoBack onAction={back} />;
+  if (crashed) return <ExtensionProblem kind="crashed" detail="render process gone" canGoBack onAction={back} onRetry={retry} />;
   if (bundleError || depsError) {
     return (
       <ExtensionProblem kind="load" error={bundleError ?? depsError} canGoBack onAction={back}
@@ -126,21 +128,26 @@ export function PluginWebViewScreen() {
           {shortPluginName(plugin.name)}
         </Text>
       </View>
-      <WebViewComponent
-        source={{ html: htmlContent, baseUrl: serverUrl }}
-        onMessage={handleMessage}
-        style={{ flex: 1, backgroundColor: colors.surface.s0 }}
-        javaScriptEnabled
-        domStorageEnabled
-        allowsInlineMediaPlayback
-        originWhitelist={["*"]}
-        startInLoadingState
-        renderLoading={() => (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.surface.s0 }}>
-            <ActivityIndicator color={colors.brand.violet} />
-          </View>
-        )}
-      />
+      {lost ? <View style={{ flex: 1 }} /> : (
+        <WebViewComponent
+          key={generation}
+          source={{ html: htmlContent, baseUrl: serverUrl }}
+          onMessage={handleMessage}
+          onContentProcessDidTerminate={onLost}
+          onRenderProcessGone={onLost}
+          style={{ flex: 1, backgroundColor: colors.surface.s0 }}
+          javaScriptEnabled
+          domStorageEnabled
+          allowsInlineMediaPlayback
+          originWhitelist={["*"]}
+          startInLoadingState
+          renderLoading={() => (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.surface.s0 }}>
+              <ActivityIndicator color={colors.brand.violet} />
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 }
