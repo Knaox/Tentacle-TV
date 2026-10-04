@@ -8,6 +8,7 @@ import { useUnpairDevice } from "../../hooks/useUnpairDevice";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { TrapFocusGuide } from "../../platform/tvos/focus/focusGuides";
 import { useKeepFocusWithin } from "../../platform/tvos/focus/useKeepFocusWithin";
+import { useExitOnBack } from "../../platform/backScope";
 
 /**
  * Le voile hors ligne de la refonte (Apple TV), monté par `OfflineBanner`
@@ -17,7 +18,8 @@ import { useKeepFocusWithin } from "../../platform/tvos/focus/useKeepFocusWithin
  * reprise de ce qu'un écran d'en dessous réclamerait). Menu n'y est jamais
  * intercepté : monté hors des écrans, le panneau n'est sur le chemin d'aucun,
  * l'appui remonte jusqu'à l'application et renvoie à l'accueil de tvOS —
- * la règle qu'App Review vérifie. Ces décisions sont celles de tv-core
+ * la règle qu'App Review vérifie ; sur Android TV, Retour y quitte de même
+ * (`useExitOnBack`), au lieu d'agir sur l'écran caché. Ces décisions sont celles de tv-core
  * (`panels/overlayFocus`) ; ce câblage les applique.
  *
  * « Déjumeler cet appareil » (double appui, tenu par la vue) est le
@@ -42,6 +44,7 @@ function OfflineSurface({ onRetry }: { onRetry: () => void | Promise<unknown> })
   // Le piège naît avec le panneau : un groupe se lie dès son premier rendu.
   useState(() => store.bind(OFFLINE_VEIL.group, OFFLINE_VEIL_FOCUS.trapped ? { container: TrapFocusGuide } : null));
   useKeepFocusWithin(store, OFFLINE_VEIL_KEYS, OFFLINE_VEIL_FOCUS.entry);
+  useExitOnBack(true);
 
   const retry = useCallback(() => {
     setRetrying(true);
