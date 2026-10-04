@@ -243,6 +243,13 @@ couvre les fichiers `.android` et autorise `platform/androidtv/` comme
 Les comportements, eux, lisent déjà des intentions et des `traits` : ils
 servent tels quels. Détail Android : `tv-navigation/remote.md`.
 
+Le focus d'Android TV (lot « Android TV = Apple TV », A1) : la section native
+`com.tentacletv.focus.TentacleFocusSection` (mêmes props que tvOS), les
+variantes `.android.ts` de `platform/tvos/focus/` vers
+`platform/androidtv/focus/`, et la croix MAINTENUE à la place du glisser —
+`input/repeatPacing.ts`, `focus/burstFollow.ts` :
+[`tv-navigation/android-focus.md`](tv-navigation/android-focus.md).
+
 ## Les documents par domaine
 
 | Document | Domaine | Tâche |
@@ -255,3 +262,4 @@ servent tels quels. Détail Android : `tv-navigation/remote.md`.
 | [`tv-navigation/panneaux-cartes.md`](tv-navigation/panneaux-cartes.md) | panneaux et cartes | T6 |
 | [`tv-navigation/ecrans.md`](tv-navigation/ecrans.md) | écrans | T7 |
 | [`tv-navigation/inventaire.md`](tv-navigation/inventaire.md) | l'inventaire, la garde (lint) et l'audit | T8 |
+| [`tv-navigation/android-focus.md`](tv-navigation/android-focus.md) | focus et défilement rapide sur Android TV | A1 |
