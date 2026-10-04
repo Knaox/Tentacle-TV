@@ -8,15 +8,17 @@ import { PageTransition } from "../../components/PageTransition";
 import { useFamilyAvailability } from "../../family/useFamilyAvailability";
 import { useFamilyText } from "../../family/useFamilyText";
 import { DissolveSection, MyPinSection } from "../../family/page/AccountSections";
-import { IncomingInvitationsSection, MembershipsSection } from "../../family/page/MembershipSections";
-import { OwnedFamilySection } from "../../family/page/OwnedFamilySection";
+import { FamilySection } from "../../family/page/FamilySection";
+import { IncomingInvitationsSection } from "../../family/page/IncomingInvitations";
+import { LeaveSection } from "../../family/page/LeaveSection";
 import { SECONDARY_BUTTON } from "../../family/page/familyUi";
 
 /**
  * Réglages › Famille — le même écran au bureau (section de la coquille) et
  * dans le miroir (volet du profil). Dans l'ordre : ce qui attend une réponse
- * (invitations reçues), ma famille, celles dont je suis membre, mon code
- * PIN, puis la dissolution, à part.
+ * (invitations reçues, tant qu'on n'a pas de famille), LA famille — la même
+ * pour son propriétaire et ses membres —, mon code PIN, puis, à part, la
+ * dissolution (propriétaire) ou « Quitter la famille » (membre).
  *
  * Tout vient de `GET /api/family`, relu en direct par `family:update` (monté
  * par l'hôte de l'affiche) : une réponse arrivée d'un autre appareil remplit
@@ -50,7 +52,7 @@ export function SettingsFamily() {
 
 function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
   const { t } = useTranslation("familyWeb");
-  const { account, switches } = overview;
+  const { account, switches, family } = overview;
   const personal = account.personalSession;
   const notices = [
     !personal && t("notice.personalOnly"),
@@ -64,11 +66,11 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
       {notices.map((notice) => (
         <Notice key={notice} text={notice} />
       ))}
-      {personal && <IncomingInvitationsSection incoming={overview.incoming} />}
-      <OwnedFamilySection overview={overview} />
-      <MembershipsSection memberships={overview.memberships} canLeave={personal} />
-      {personal && (account.canJoin || overview.owned !== null) && <MyPinSection hasPin={account.hasPin} />}
-      {personal && overview.owned && <DissolveSection />}
+      {personal && !family && <IncomingInvitationsSection incoming={overview.incoming} />}
+      <FamilySection overview={overview} />
+      {personal && (account.canJoin || family !== null) && <MyPinSection hasPin={account.hasPin} />}
+      {personal && family?.role === "owner" && <DissolveSection />}
+      {personal && family?.role === "member" && <LeaveSection familyId={family.id} ownerName={family.owner.name} />}
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { FamilyProfileDto } from "@tentacle-tv/shared";
+import type { FamilyProfileDto, ProfileActions } from "@tentacle-tv/shared";
 
 /**
  * Les vues de la Famille rendues à plat, comme les autres bancs de
@@ -31,11 +31,16 @@ function profile(kind: FamilyProfileDto["kind"], patch: Partial<FamilyProfileDto
   };
 }
 
-function row(p: FamilyProfileDto, canManage = true): string {
+const NONE: ProfileActions = { pin: false, remove: false, right: null };
+
+function row(p: FamilyProfileDto, actions: ProfileActions = NONE, opts: { isSelf?: boolean; showCreator?: boolean } = {}): string {
   const noop = () => {};
   return renderToStaticMarkup(
     <ul>
-      <ProfileRow profile={p} last canManage={canManage} onRemove={noop} onDeleteGuest={noop} onGuestPin={noop} />
+      <ProfileRow
+        profile={p} last isSelf={opts.isSelf ?? false} actions={actions} showCreator={opts.showCreator ?? false}
+        rightPending={false} onRemove={noop} onGuestPin={noop} onRightChange={noop}
+      />
     </ul>,
   );
 }
@@ -55,27 +60,38 @@ describe("FamilyGuestTag — l'invité dans les sessions en cours", () => {
   });
 });
 
-describe("ProfileRow — les gestes du propriétaire", () => {
-  it("un membre se retire, sans rien d'autre", () => {
-    const html = row(profile("member"));
+describe("ProfileRow — la famille partagée", () => {
+  it("le propriétaire retire un membre et règle son droit par un interrupteur", () => {
+    const html = row(profile("member", { rights: { createGuests: false } }), { pin: false, remove: true, right: "createGuests" });
     expect(html).toContain("familyWeb:owned.remove");
-    expect(html).not.toContain("familyWeb:owned.delete");
+    expect(html).toContain('role="switch"');
+    expect(html).toContain("family:rights.createGuests");
     expect(html).not.toContain("familyWeb:owned.setPin");
   });
 
-  it("un invité offre son code PIN et sa suppression ; son nom reste du texte", () => {
-    const html = row(profile("guest", { name: TRAP, hasPin: true }));
+  it("un membre ne voit aucun bouton chez un autre membre, seulement le droit accordé", () => {
+    const granted = row(profile("member", { rights: { createGuests: true } }));
+    expect(granted).not.toContain("<button");
+    expect(granted).toContain("family:rights.createGuests");
+    expect(row(profile("member", { rights: { createGuests: false } }))).not.toContain("family:rights.createGuests");
+  });
+
+  it("un invité géré offre son PIN et sa suppression, dit qui l'a créé ; son nom reste du texte", () => {
+    const html = row(
+      profile("guest", { name: TRAP, hasPin: true, createdBy: "ana", createdByName: "Ana" }),
+      { pin: true, remove: true, right: null },
+      { showCreator: true },
+    );
     expect(html).toContain("familyWeb:owned.setPin");
     expect(html).toContain("familyWeb:owned.delete");
-    expect(html).toContain("familyWeb:owned.pinOn");
+    expect(html).toContain("family:addedBy");
     expect(html).not.toContain("<img");
   });
 
-  it("le propriétaire est « Vous », sans geste ; sans session personnelle, aucun geste", () => {
-    const owner = row(profile("owner", { since: null }));
-    expect(owner).toContain("familyWeb:owned.you");
-    expect(owner).not.toContain("<button");
-    expect(row(profile("guest"), false)).not.toContain("<button");
-    expect(row(profile("member"), false)).not.toContain("<button");
+  it("l'invité d'un autre n'offre rien ; « Vous » ne s'offre aucun geste", () => {
+    expect(row(profile("guest", { createdBy: "bob", createdByName: "Bob" }))).not.toContain("<button");
+    const self = row(profile("member"), NONE, { isSelf: true });
+    expect(self).toContain("familyWeb:owned.you");
+    expect(self).not.toContain("<button");
   });
 });

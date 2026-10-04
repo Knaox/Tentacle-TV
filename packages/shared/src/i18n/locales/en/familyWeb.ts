@@ -44,13 +44,6 @@ export default {
     pendingRow: "Sent {{sent}} · expires {{expires}}",
     cancelInvite: "Cancel",
   },
-  memberships: {
-    title: "My families",
-    row: "{{owner}}'s family",
-    since: "Member since {{date}}",
-    leave: "Leave",
-    hint: "Your profile opens on these families' TVs. A PIN protects it.",
-  },
   myPin: {
     title: "My PIN",
     on: "PIN enabled",
@@ -85,17 +78,12 @@ export default {
     dissolveAction: "Dissolve",
   },
   rights: {
-    createGuests: "Can create guests",
-    createGuestsHint: "Creates their own guests and can only delete those, within three guests for the whole family.",
-    requests: "Can request movies",
-    requestsHint: "Their requests are made in your name.",
     saved: "Permission saved.",
   },
   shared: {
     titleOwner: "My family",
     titleMember: "{{owner}}'s family",
     memberNotice: "Only {{owner}} invites, removes and dissolves the family.",
-    addedBy: "Added by {{name}}",
     yourGuest: "Your guest",
     leave: "Leave the family",
     leaveHint: "Your profile disappears from the family's TVs, and its profiles from yours.",
@@ -103,13 +91,11 @@ export default {
   },
   candidates: {
     hint: "Every account on the server. Accounts already in a family cannot be invited.",
-    inFamily: "Already in a family",
   },
   invite: {
     title: "Invite an account",
     searchLabel: "Search for an account",
     searchPlaceholder: "Account name",
-    hint: "Accounts shown on Jellyfin's sign-in screen. A hidden account is found by its exact name.",
     empty: "No account to invite right now.",
     noMatch: "No account matches “{{query}}”.",
     send: "Invite",

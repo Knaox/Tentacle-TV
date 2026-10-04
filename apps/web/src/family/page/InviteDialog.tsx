@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Search } from "lucide-react";
 import { useFamilyCandidates, useSendFamilyInvitation } from "@tentacle-tv/api-client";
-import type { FamilyCandidateDto } from "@tentacle-tv/shared";
+import { candidateView, type FamilyCandidateDto } from "@tentacle-tv/shared";
 import { Modal } from "../../components/ui/Modal";
 import { UserAvatar } from "../../components/ui/UserAvatar";
 import { useToast } from "../../contexts/ToastContext";
@@ -22,11 +22,11 @@ function useSettledValue(value: string, delay: number): string {
 }
 
 /**
- * Inviter un compte du serveur. Les candidats viennent du SERVEUR : les
- * comptes de l'écran de connexion de Jellyfin filtrés par la saisie, un
- * compte caché seulement par son nom exact — jamais un invité, soi-même, un
- * membre, une invitation en attente ni un compte désactivé. Rien ne
- * distingue ici un compte caché d'un nom qui n'existe pas.
+ * Inviter un compte du serveur (le propriétaire seul). Les candidats viennent
+ * du SERVEUR (v2) : TOUS les comptes, affichés d'emblée, la saisie affine —
+ * jamais un invité, soi-même ni un compte désactivé. Un compte déjà dans une
+ * famille (sans dire laquelle) ou qu'une invitation attend est grisé, avec
+ * sa raison, et ne s'invite pas (`candidateView`, shared).
  */
 export function InviteDialog({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("familyWeb");
@@ -74,7 +74,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
             className={`${FIELD} pl-9`}
           />
         </div>
-        <p id={hintId} className="mt-2 text-xs leading-relaxed text-content-tertiary">{t("invite.hint")}</p>
+        <p id={hintId} className="mt-2 text-xs leading-relaxed text-content-tertiary">{t("candidates.hint")}</p>
 
         <div className="mt-4 min-h-[120px] flex-1 overflow-y-auto rounded-xl border border-line-subtle bg-surface-1" aria-busy={searching}>
           {candidates.isError ? (
@@ -87,23 +87,33 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
             <ul>
               {list.map((candidate, index) => {
                 const done = sent.has(candidate.userId);
+                const view = candidateView(candidate);
                 return (
                   <li
                     key={candidate.userId}
                     className={`flex items-center gap-3 px-4 py-2.5 ${index === list.length - 1 ? "" : "border-b border-line-subtle"}`}
                   >
-                    <UserAvatar userId={candidate.userId} name={candidate.name} hasAvatar={candidate.imageTag !== null} imageTag={candidate.imageTag} size={32} />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-content-primary">{candidate.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => send(candidate)}
-                      disabled={done || invite.isPending}
-                      aria-label={`${t("invite.send")} — ${candidate.name}`}
-                      className={SMALL_BUTTON}
-                    >
-                      {done ? <Check size={14} aria-hidden="true" /> : null}
-                      {t("invite.send")}
-                    </button>
+                    <span className={`flex-shrink-0 ${view.invitable ? "" : "opacity-50"}`}>
+                      <UserAvatar userId={candidate.userId} name={candidate.name} hasAvatar={candidate.imageTag !== null} imageTag={candidate.imageTag} size={32} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className={`block truncate text-sm font-medium ${view.invitable ? "text-content-primary" : "text-content-tertiary"}`}>
+                        {candidate.name}
+                      </span>
+                      {view.noteKey && <span className="block text-xs text-content-quaternary">{t(view.noteKey)}</span>}
+                    </span>
+                    {view.invitable && (
+                      <button
+                        type="button"
+                        onClick={() => send(candidate)}
+                        disabled={done || invite.isPending}
+                        aria-label={`${t("invite.send")} — ${candidate.name}`}
+                        className={SMALL_BUTTON}
+                      >
+                        {done ? <Check size={14} aria-hidden="true" /> : null}
+                        {t("invite.send")}
+                      </button>
+                    )}
                   </li>
                 );
               })}

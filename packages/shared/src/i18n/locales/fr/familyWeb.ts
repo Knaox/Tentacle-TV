@@ -45,13 +45,6 @@ export default {
     pendingRow: "Envoyée le {{sent}} · expire le {{expires}}",
     cancelInvite: "Annuler",
   },
-  memberships: {
-    title: "Mes familles",
-    row: "Famille de {{owner}}",
-    since: "Membre depuis le {{date}}",
-    leave: "Quitter",
-    hint: "Votre profil s'ouvre sur les TV de ces familles. Un code PIN le protège.",
-  },
   myPin: {
     title: "Mon code PIN",
     on: "Code PIN actif",
@@ -86,17 +79,12 @@ export default {
     dissolveAction: "Dissoudre",
   },
   rights: {
-    createGuests: "Peut créer des invités",
-    createGuestsHint: "Crée ses propres invités et ne supprime que ceux-là, dans la limite de trois invités pour toute la famille.",
-    requests: "Peut demander des films",
-    requestsHint: "Ses demandes partent à votre nom.",
     saved: "Droit enregistré.",
   },
   shared: {
     titleOwner: "Ma famille",
     titleMember: "Famille de {{owner}}",
     memberNotice: "Seul {{owner}} invite, retire et dissout la famille.",
-    addedBy: "Ajouté par {{name}}",
     yourGuest: "Votre invité",
     leave: "Quitter la famille",
     leaveHint: "Votre profil disparaît des TV de la famille, et ses profils des vôtres.",
@@ -104,13 +92,11 @@ export default {
   },
   candidates: {
     hint: "Tous les comptes du serveur. Ceux qui sont déjà dans une famille ne peuvent pas être invités.",
-    inFamily: "Déjà dans une famille",
   },
   invite: {
     title: "Inviter un compte",
     searchLabel: "Rechercher un compte",
     searchPlaceholder: "Nom du compte",
-    hint: "Les comptes de l'écran de connexion de Jellyfin. Un compte caché se trouve par son nom exact.",
     empty: "Aucun compte à inviter pour le moment.",
     noMatch: "Aucun compte ne correspond à « {{query}} ».",
     send: "Inviter",
