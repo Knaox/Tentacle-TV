@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { uiLanguage } from "@tentacle-tv/shared";
 import { LiquidGlassProvider } from "../../../src/redesign/glass/liquidGlassMode";
 import { SettingsView, type SettingsViewProps } from "../../../src/redesign/screens/settings/SettingsView";
+import { SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
 import type { BenchData } from "../data/benchData";
 import { choiceListOf, playbackOf, settingsImages, settingsPropsOf } from "../data/settingsModels";
 import type { BenchScene } from "./types";
@@ -19,6 +20,8 @@ type Variant =
   | "armed"
   | "playback"
   | "custom"
+  | "fastForward"
+  | "fastForwardResume"
   | "libraries"
   | "choices"
   | "android"
@@ -27,7 +30,9 @@ type Variant =
   | "about";
 
 /** Le défilement qui amène les préférences de bibliothèque à l'écran. */
-const LIBRARIES_SCROLL = 560;
+const LIBRARIES_SCROLL = 1060;
+/** Celui qui amène la section « Avance rapide » à l'écran. */
+const FAST_FORWARD_SCROLL = 300;
 
 function propsFor(data: BenchData, variant: Variant, language: string): SettingsViewProps {
   const base = settingsPropsOf(data);
@@ -40,12 +45,19 @@ function propsFor(data: BenchData, variant: Variant, language: string): Settings
       return { ...base, tab: "playback", playback: playback() };
     case "custom":
       return { ...base, tab: "playback", playback: playback({ preset: "custom" }) };
+    case "fastForward":
+      return { ...base, tab: "playback", playback: playback(), panelScrollY: FAST_FORWARD_SCROLL };
+    case "fastForwardResume":
+      return {
+        ...base, tab: "playback", panelScrollY: FAST_FORWARD_SCROLL,
+        playback: playback({ scrubCountdown: { outcome: "resume", delaySeconds: 10, delays: SCRUB_COUNTDOWN_DELAYS } }),
+      };
     case "libraries":
       return { ...base, tab: "playback", playback: playback(), panelScrollY: LIBRARIES_SCROLL };
     case "choices":
       return { ...base, tab: "playback", playback: playback(), panelScrollY: LIBRARIES_SCROLL, choiceList: choiceListOf(data, 0, "audio") };
     case "android":
-      return { ...base, tab: "playback", panelScrollY: 372, playback: playback({ device: { tunneling: true, matchFrameRate: false } }) };
+      return { ...base, tab: "playback", panelScrollY: 372, playback: playback({ device: { tunneling: true, matchFrameRate: false }, scrubCountdown: null }) };
     case "appearance":
     case "glassOff":
       return { ...base, tab: "appearance" };
@@ -81,6 +93,8 @@ export const SETTINGS_SCENES: BenchScene[] = [
   scene("deconnexion-armee", "Déjumeler armé", "armed", ["settings:logout"]),
   scene("lecture", "Lecture", "playback", ["settings:tab:playback", "settings:preset:default", "settings:preset:automatic", "settings:lang:en"]),
   scene("lecture-personnalise", "Lecture — mode personnalisé", "custom", ["settings:preset:custom", "settings:preset:manual"]),
+  scene("lecture-avance-rapide", "Lecture — avance rapide (défaut : revenir, 5 s)", "fastForward", ["settings:scrubOutcome:return", "settings:scrubOutcome:resume", "settings:scrubDelay:15"]),
+  scene("lecture-avance-rapide-reprendre", "Lecture — avance rapide : reprendre, 10 s", "fastForwardResume", ["settings:scrubOutcome:resume", "settings:scrubDelay:10"]),
   scene("lecture-bibliotheques", "Lecture — bibliothèques", "libraries", ["settings:lib:0:audio", "settings:lib:0:reset", "settings:lib:1:subtitles"]),
   scene("liste-de-choix", "Liste de choix ouverte", "choices", ["settings:choice:6", "settings:choice:0"], 1300),
   scene("lecture-android", "Lecture — Android TV", "android", ["settings:tunneling", "settings:matchFrameRate"]),

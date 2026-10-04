@@ -38,6 +38,15 @@ export interface LibraryPrefModel {
   customized: boolean;
 }
 
+/** Le réglage « Avance rapide » du profil (Apple TV) : ce que fait le
+ *  décompte du défilement à son terme, et au bout de combien. */
+export interface SettingsScrubCountdown {
+  outcome: "return" | "resume";
+  delaySeconds: number;
+  /** Les délais offerts, en secondes. */
+  delays: readonly number[];
+}
+
 export interface SettingsPlayback {
   /** Le mode lu sur les réglages du compte (`detectPreset`). */
   preset: PlaybackPreset;
@@ -46,6 +55,9 @@ export interface SettingsPlayback {
   /** Android TV seulement : les réglages d'APPAREIL du décodeur. Absent sur
    *  tvOS — la section ne s'affiche pas. */
   device?: { tunneling: boolean; matchFrameRate: boolean } | null;
+  /** Apple TV seulement : le réglage « Avance rapide ». Absent ailleurs — la
+   *  section ne s'affiche pas. */
+  scrubCountdown?: SettingsScrubCountdown | null;
 }
 
 export interface SettingsChoice {

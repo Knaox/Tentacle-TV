@@ -4,21 +4,25 @@ import { useTranslation } from "react-i18next";
 import { PRESET_HINT_KEYS, PRESET_LABEL_KEYS, SELECTABLE_PRESETS, type PlaybackPreset } from "@tentacle-tv/shared";
 import { Chip } from "../../controls/Chip";
 import { LibraryPrefCard } from "./LibraryPrefCard";
+import { ScrubCountdownSection } from "./ScrubCountdownSection";
 import { SectionTitle, settingsText } from "./settingsParts";
 import { ToggleRow } from "./ToggleRow";
-import type { InterfaceLanguage, LibrarySettingKey, SettingsPlayback } from "./settingsTypes";
+import type { InterfaceLanguage, LibrarySettingKey, SettingsPlayback, SettingsScrubCountdown } from "./settingsTypes";
 
 /**
  * L'onglet Lecture, de haut en bas :
  * 1. « Ce que fait le lecteur » — UN choix parmi les modes du compte
  *    (`SELECTABLE_PRESETS`) ; « Personnalisé » se LIT (réglé sur ordinateur),
  *    il ne se choisit pas ;
- * 2. Android TV seulement : le décodeur de CE téléviseur (tunnel, fréquence) ;
- * 3. la langue de l'interface ;
- * 4. les pistes par défaut de chaque bibliothèque.
+ * 2. Apple TV seulement : l'avance rapide — ce que fait son décompte, et
+ *    quand (`ScrubCountdownSection`, réglage du profil) ;
+ * 3. Android TV seulement : le décodeur de CE téléviseur (tunnel, fréquence) ;
+ * 4. la langue de l'interface ;
+ * 5. les pistes par défaut de chaque bibliothèque.
  * Branchement : `useOwnPlaybackSettings` + `detectPreset` / `setPlaybackSettings`
  * (`presetSettings`), `useExoTunneling` / `useExoMatchFrameRate`,
- * `useSetInterfaceLanguage` (+ `i18n.changeLanguage`, `tentacle_language`).
+ * `useSetInterfaceLanguage` (+ `i18n.changeLanguage`, `tentacle_language`),
+ * `useScrubCountdownSettings`.
  */
 
 export interface PlaybackPanelProps {
@@ -29,6 +33,8 @@ export interface PlaybackPanelProps {
   onResetLibrary?: (libraryId: string) => void;
   onToggleTunneling?: (next: boolean) => void;
   onToggleMatchFrameRate?: (next: boolean) => void;
+  onSelectScrubOutcome?: (outcome: SettingsScrubCountdown["outcome"]) => void;
+  onSelectScrubDelay?: (seconds: number) => void;
 }
 
 const LANGUAGES: Array<{ code: InterfaceLanguage; label: string }> = [
@@ -44,6 +50,8 @@ export const PlaybackPanel = memo(function PlaybackPanel({
   onResetLibrary,
   onToggleTunneling,
   onToggleMatchFrameRate,
+  onSelectScrubOutcome,
+  onSelectScrubDelay,
 }: PlaybackPanelProps) {
   const { t } = useTranslation("preferences");
   const { preset, device } = playback;
@@ -69,6 +77,14 @@ export const PlaybackPanel = memo(function PlaybackPanel({
         <Text style={[settingsText.hint, styles.hint]}>{t(PRESET_HINT_KEYS[preset])}</Text>
         <Text style={[settingsText.small, styles.note]}>{t("playbackAdvancedOnDesktop")}</Text>
       </View>
+
+      {playback.scrubCountdown ? (
+        <ScrubCountdownSection
+          model={playback.scrubCountdown}
+          onSelectOutcome={onSelectScrubOutcome}
+          onSelectDelay={onSelectScrubDelay}
+        />
+      ) : null}
 
       {device ? (
         <View>

@@ -74,6 +74,8 @@ export function SettingsRedesign({ route }: Props) {
           onResetLibrary={model.onResetLibrary}
           onToggleTunneling={model.onToggleTunneling}
           onToggleMatchFrameRate={model.onToggleMatchFrameRate}
+          onSelectScrubOutcome={model.onSelectScrubOutcome}
+          onSelectScrubDelay={model.onSelectScrubDelay}
           onToggleLiquidGlass={model.onToggleLiquidGlass}
           onMoveNavEntry={nav.onMoveNavEntry}
           onToggleNavEntry={nav.onToggleNavEntry}

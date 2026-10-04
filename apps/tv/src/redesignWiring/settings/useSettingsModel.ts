@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Platform } from "react-native";
 import { setPlaybackSettings, useOwnPlaybackSettings } from "@tentacle-tv/api-client";
 import { detectPreset, presetSettings, uiLanguage, type PlaybackPreset } from "@tentacle-tv/shared";
+import { SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
 import type {
   ChoiceListModel,
   InterfaceLanguage,
@@ -23,6 +24,7 @@ import {
   useExoTunneling,
 } from "../../lib/exoSettings";
 import { liquidGlassStore } from "../../lib/liquidGlass";
+import { useScrubCountdownSettings } from "../../lib/scrubCountdownSettings";
 import { TV_PLATFORM_LABEL } from "../../lib/platformLabel";
 
 // Source unique des versions : versions.json à la racine du monorepo (champ tv).
@@ -45,6 +47,9 @@ export function useSettingsModel() {
   const preset = detectPreset(useOwnPlaybackSettings());
   const tunneling = useExoTunneling();
   const matchFrameRate = useExoMatchFrameRate();
+  const scrub = useScrubCountdownSettings();
+  const scrubSettings = scrub.settings;
+  const updateScrub = scrub.update;
 
   const name = paired.name ?? "—";
   const account = useMemo<SettingsAccount>(
@@ -70,8 +75,12 @@ export function useSettingsModel() {
       libraries: libraryModels,
       // Réglages d'APPAREIL du décodeur : ExoPlayer n'existe que sur Android TV.
       device: Platform.OS === "android" ? { tunneling, matchFrameRate } : null,
+      // L'avance rapide réglable n'existe que sur le lecteur d'Apple TV.
+      scrubCountdown: Platform.OS === "ios"
+        ? { outcome: scrubSettings.outcome, delaySeconds: scrubSettings.delaySeconds, delays: SCRUB_COUNTDOWN_DELAYS }
+        : null,
     }),
-    [preset, interfaceLanguage, libraryModels, tunneling, matchFrameRate],
+    [preset, interfaceLanguage, libraryModels, tunneling, matchFrameRate, scrubSettings],
   );
 
   const about = useMemo<SettingsAbout>(
@@ -96,6 +105,12 @@ export function useSettingsModel() {
     setOpen(null);
   }, [open, choose]);
 
+  const selectScrubOutcome = useCallback((outcome: "return" | "resume") => updateScrub({ outcome }), [updateScrub]);
+  const selectScrubDelay = useCallback((seconds: number) => {
+    const delay = SCRUB_COUNTDOWN_DELAYS.find((offered) => offered === seconds);
+    if (delay !== undefined) updateScrub({ delaySeconds: delay });
+  }, [updateScrub]);
+
   const selectPreset = useCallback((next: Exclude<PlaybackPreset, "custom">) => {
     setPlaybackSettings(presetSettings(next));
   }, []);
@@ -113,6 +128,8 @@ export function useSettingsModel() {
     onResetLibrary: reset,
     onToggleTunneling: exoTunnelingStore.set,
     onToggleMatchFrameRate: exoMatchFrameRateStore.set,
+    onSelectScrubOutcome: selectScrubOutcome,
+    onSelectScrubDelay: selectScrubDelay,
     onToggleLiquidGlass: liquidGlassStore.set,
     onChoose: chooseValue,
     closeChoices,

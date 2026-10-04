@@ -94,6 +94,8 @@ export interface SettingsViewProps {
   onResetLibrary?: (libraryId: string) => void;
   onToggleTunneling?: (next: boolean) => void;
   onToggleMatchFrameRate?: (next: boolean) => void;
+  onSelectScrubOutcome?: (outcome: "return" | "resume") => void;
+  onSelectScrubDelay?: (seconds: number) => void;
   onToggleLiquidGlass?: (next: boolean) => void;
   onMoveNavEntry?: (key: string) => void;
   onToggleNavEntry?: (key: string) => void;
@@ -174,6 +176,8 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onResetLibrary={props.onResetLibrary}
                   onToggleTunneling={props.onToggleTunneling}
                   onToggleMatchFrameRate={props.onToggleMatchFrameRate}
+                  onSelectScrubOutcome={props.onSelectScrubOutcome}
+                  onSelectScrubDelay={props.onSelectScrubDelay}
                 />
               ) : null}
               {tab === "appearance" ? (

@@ -368,4 +368,17 @@ export default {
   navigationResetOrder: "Ordre par défaut",
   navigationCount: "{{shown}} sur {{total}} affichées",
   navigationAllShown: "Tout est affiché",
+
+  // Le réglage « Avance rapide » (Apple TV, onglet Lecture) : ce que fait le
+  // décompte lancé quand on lâche la télécommande pendant une avance rapide.
+  // Réglage du profil, rangé sur le téléviseur.
+  scrubCountdownTitle: "Avance rapide",
+  scrubCountdownCaption: "Pendant une avance rapide, un décompte part dès que vous lâchez la télécommande. Ce réglage est propre à votre profil sur ce téléviseur.",
+  scrubCountdownEndLabel: "À la fin du décompte",
+  scrubCountdownReturn: "Revenir où j'étais",
+  scrubCountdownResume: "Reprendre à la nouvelle position",
+  scrubCountdownDelayLabel: "Délai",
+  scrubCountdownDelay: "{{seconds}} s",
+  scrubCountdownReturnHint: "Sans geste pendant {{seconds}} s, la lecture revient où vous étiez. OK lit aussitôt à la nouvelle position ; en pause, rien ne part seul.",
+  scrubCountdownResumeHint: "Sans geste pendant {{seconds}} s, la lecture reprend à la nouvelle position. Retour revient où vous étiez ; en pause, rien ne part seul.",
 } as const;

@@ -1,4 +1,5 @@
 import { i18n, uiLanguage, type SubtitleMode } from "@tentacle-tv/shared";
+import { SCRUB_COUNTDOWN_DEFAULTS, SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
 import type {
   ChoiceListModel,
   LibraryPrefModel,
@@ -110,6 +111,8 @@ export function playbackOf(data: BenchData, overrides: Partial<SettingsPlayback>
     interfaceLanguage: uiLanguage(i18n.language),
     libraries: librariesOf(data),
     device: null,
+    // L'Apple TV : l'avance rapide réglable, à son défaut.
+    scrubCountdown: { ...SCRUB_COUNTDOWN_DEFAULTS, delays: SCRUB_COUNTDOWN_DELAYS },
     ...overrides,
   };
 }

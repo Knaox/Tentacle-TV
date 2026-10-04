@@ -366,4 +366,17 @@ export default {
   navigationResetOrder: "Default order",
   navigationCount: "{{shown}} of {{total}} shown",
   navigationAllShown: "Everything is shown",
+
+  // Le réglage « Avance rapide » (Apple TV, onglet Lecture) : ce que fait le
+  // décompte lancé quand on lâche la télécommande pendant une avance rapide.
+  // Réglage du profil, rangé sur le téléviseur.
+  scrubCountdownTitle: "Fast-forward",
+  scrubCountdownCaption: "During fast-forward, a countdown starts as soon as you let go of the remote. This setting belongs to your profile on this TV.",
+  scrubCountdownEndLabel: "When the countdown ends",
+  scrubCountdownReturn: "Go back to where I was",
+  scrubCountdownResume: "Resume at the new position",
+  scrubCountdownDelayLabel: "Delay",
+  scrubCountdownDelay: "{{seconds}}s",
+  scrubCountdownReturnHint: "With no input for {{seconds}}s, playback goes back to where you were. OK plays at the new position right away; while paused, nothing happens on its own.",
+  scrubCountdownResumeHint: "With no input for {{seconds}}s, playback resumes at the new position. Back returns to where you were; while paused, nothing happens on its own.",
 } as const;
