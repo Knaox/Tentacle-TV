@@ -1,20 +1,19 @@
+import { scrubInputProfileOf } from "@tentacle-tv/tv-core";
+import { REMOTE_BINDINGS } from "../platform/input";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import type { ScrubInputProfile } from "./scrubGestureTypes";
 
 /**
- * Les flèches du lecteur sur ANDROID TV (la variante Apple TV :
- * `scrubInput.ios.ts`).
+ * Les flèches du lecteur, telles que la télécommande les émet — lues dans les
+ * traits de sa table (tv-core `scrubInputProfileOf`), jamais dans un nom de
+ * plateforme. Apple TV et Android TV refondu reçoivent un maintien ANNONCÉ
+ * (`longLeft` au seuil, puis au relâchement) : un appui saute, un maintien
+ * défile dès son début et s'arrête à sa fin — les mêmes pas, la même
+ * accélération.
  *
- * Chaque flèche émet son key-down, ses répétitions de maintien, puis son
- * key-up (`enableKeyDownEvents`). Un appui simple ne se tranche donc qu'au
- * key-up — le down peut encore ouvrir un maintien —, et le maintien se
- * reconnaît au key-down resté sans key-up : le signal d'appui long natif
- * (`longLeft`) n'arrive pas partout (l'émulateur, clavier hôte, ne l'émet
- * jamais). La fin du maintien, elle, se déduit du silence des répétitions.
+ * L'ancienne UI d'Android TV (tant que l'aiguillage la garde) lit encore les
+ * key-down bruts de `useTVRemote` : son profil d'avant, à retirer avec elle.
  */
-export const SCRUB_INPUT: ScrubInputProfile = {
-  tapOnRelease: true,
-  holdFromKeyDown: true,
-  // ~550-600 ms de maintien au total : assez pour ignorer un appui nerveux.
-  holdArmMs: 250,
-  holdEndAnnounced: false,
-};
+export const SCRUB_INPUT: ScrubInputProfile = scrubInputProfileOf(
+  REDESIGN_ACTIVE ? REMOTE_BINDINGS.traits : { announcedHolds: false },
+);
