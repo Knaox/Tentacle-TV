@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { INVITE_RESULTS_GROUP, INVITE_SEARCH_KEY, inviteCandidateKey } from "@tentacle-tv/tv-core";
+import { INVITE_RESULTS_GROUP, INVITE_SEARCH_BAR, INVITE_SEARCH_KEY, inviteCandidateFocusable, inviteCandidateKey } from "@tentacle-tv/tv-core";
+import { Icon } from "../../icons/Icon";
 import { Chip } from "../../controls/Chip";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { colors, fonts, text, white } from "../../theme/tokens";
@@ -31,17 +32,20 @@ export const InviteMember = memo(function InviteMember({ query, candidates, more
   return (
     <View>
       <Text style={styles.explain}>{t("invite.explain")}</Text>
-      <PairingField
-        focusKey={INVITE_SEARCH_KEY}
-        icon="search"
-        label={t("invite.searchLabel")}
-        caption
-        value={query}
-        placeholder={t("invite.searchPlaceholder")}
-        keyboard={{ returnKeyType: "search", textContentType: "username", autoComplete: "off" }}
-        onChangeText={onQuery}
-        onSubmitEditing={onSearch}
-      />
+      {/* Pleine largeur : HAUT depuis n'importe quel résultat y remonte (tv-core `INVITE_SEARCH_BAR`). */}
+      <FocusGroup focusKey={INVITE_SEARCH_BAR} style={styles.searchBar}>
+        <PairingField
+          focusKey={INVITE_SEARCH_KEY}
+          icon="search"
+          label={t("invite.searchLabel")}
+          caption
+          value={query}
+          placeholder={t("invite.searchPlaceholder")}
+          keyboard={{ returnKeyType: "search", textContentType: "username", autoComplete: "off" }}
+          onChangeText={onQuery}
+          onSubmitEditing={onSearch}
+        />
+      </FocusGroup>
       <Text style={styles.hidden}>{t("invite.hiddenHint")}</Text>
       {candidates === null ? (
         <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
@@ -64,18 +68,30 @@ export const InviteMember = memo(function InviteMember({ query, candidates, more
   );
 });
 
-/** Inviter, ou ce qui l'empêche : déjà dans une famille, invitation en attente, invitation partie. */
+/**
+ * Inviter, ou ce qui l'empêche. Seul un compte invitable prend le focus — et
+ * l'invitation qu'on vient d'envoyer, qui le garde (tv-core
+ * `inviteCandidateFocusable`) ; « Déjà dans une famille » et « Invitation en
+ * attente » se lisent, sans cible.
+ */
 function CandidateChip({ candidate, focusKey, onInvite }: { candidate: InviteCandidateView; focusKey: string; onInvite?: (id: string) => void }) {
   const { t } = useTranslation("familyTv");
-  if (candidate.sent || candidate.status === "invited") {
-    const label = candidate.sent ? t("invite.sent", { name: candidate.name }) : t("invite.pendingInvite");
-    return <Chip label={label} icon="check" selected size="md" focusKey={focusKey} />;
+  if (candidate.sent) return <Chip label={t("invite.sent", { name: candidate.name })} icon="check" selected size="md" focusKey={focusKey} />;
+  if (!inviteCandidateFocusable(candidate)) {
+    return (
+      <View style={styles.status}>
+        <Icon name={candidate.status === "invited" ? "clock" : "user"} size={22} color={colors.textTertiary} />
+        <Text style={styles.statusText} numberOfLines={1}>{t(candidate.status === "invited" ? "invite.pendingInvite" : "invite.inFamily")}</Text>
+      </View>
+    );
   }
-  if (candidate.status === "in_family") return <Chip label={t("invite.inFamily")} absent size="md" focusKey={focusKey} />;
   return <Chip label={t("invite.invite")} icon="plus" size="md" focusKey={focusKey} onPress={onInvite ? () => onInvite(candidate.id) : undefined} />;
 }
 
 const styles = StyleSheet.create({
+  searchBar: { alignSelf: "stretch" },
+  status: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, height: 52 },
+  statusText: { ...fonts.medium, fontSize: 24, color: colors.textTertiary },
   explain: { ...text.body, maxWidth: 1100, marginBottom: 34 },
   hidden: { ...text.caption, marginTop: 14, marginLeft: 8 },
   spinner: { marginTop: 48, alignSelf: "flex-start" },

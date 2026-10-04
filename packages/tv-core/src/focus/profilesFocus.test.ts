@@ -8,6 +8,9 @@ import {
   MANAGE_CREATE_KEY,
   MANAGE_INVITE_KEY,
   PROFILES_BACK_KEY,
+  inviteCandidateFocusable,
+  inviteCandidateKey,
+  inviteCandidateOrder,
   manageEntryKey,
   manageFocusAfterRemoval,
   manageGuardedKeys,
@@ -87,3 +90,31 @@ describe("le clic fantôme", () => {
   });
 });
 
+describe("la recherche d'invitation (retours d'essai)", () => {
+  const found = [
+    { id: "a", status: "in_family" as const },
+    { id: "b", status: "available" as const },
+    { id: "c", status: "invited" as const },
+    { id: "d", status: "available" as const },
+    { id: "e" },
+  ];
+
+  it("range les invitables d'abord, l'ordre du serveur dans chaque groupe", () => {
+    expect(inviteCandidateOrder(found).map((candidate) => candidate.id)).toEqual(["b", "d", "e", "c", "a"]);
+  });
+
+  it("ne donne le focus qu'aux invitables, et à l'invitation qu'on vient d'envoyer", () => {
+    expect(inviteCandidateFocusable({ status: "available", sent: false })).toBe(true);
+    expect(inviteCandidateFocusable({ sent: false })).toBe(true);
+    expect(inviteCandidateFocusable({ status: "in_family", sent: false })).toBe(false);
+    expect(inviteCandidateFocusable({ status: "invited", sent: false })).toBe(false);
+    expect(inviteCandidateFocusable({ status: "available", sent: true })).toBe(true);
+  });
+
+  it("Retour depuis un résultat remonte à la recherche, depuis la recherche à la liste", () => {
+    expect(manageBackAction("invite", "settings", inviteCandidateKey(2))).toBe("toSearch");
+    expect(manageBackAction("invite", "settings", INVITE_SEARCH_KEY)).toBe("toList");
+    expect(manageBackAction("invite", "profiles", null)).toBe("toList");
+    expect(manageBackAction("list", "profiles", inviteCandidateKey(0))).toBe("toProfiles");
+  });
+});

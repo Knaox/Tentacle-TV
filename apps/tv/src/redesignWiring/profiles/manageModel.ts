@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import type { FamilyCandidateDto, FamilyOverviewDto, FamilyProfileColor } from "@tentacle-tv/shared";
 import {
   INVITE_SHOWN_CANDIDATES,
+  inviteCandidateOrder,
   manageCapacity,
   managedFamilyOf,
   manageRows,
@@ -94,7 +95,8 @@ export function manageListModel(
 }
 
 export function candidateViews(candidates: FamilyCandidateDto[], sent: ReadonlySet<string>, serverUrl: string | null): InviteCandidateView[] {
-  return candidates.slice(0, SHOWN_CANDIDATES).map((candidate) => ({
+  // Les invitables d'abord (tv-core `inviteCandidateOrder`) : BAS depuis la recherche mène au premier.
+  return inviteCandidateOrder(candidates).slice(0, SHOWN_CANDIDATES).map((candidate) => ({
     id: candidate.userId,
     name: candidate.name,
     avatarUri: profileAvatarUri(serverUrl, candidate.userId, candidate.imageTag, 160),

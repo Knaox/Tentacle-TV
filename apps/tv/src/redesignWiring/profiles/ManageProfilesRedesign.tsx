@@ -6,6 +6,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFamilyCandidates, useFamilyLive, useFamilyOverview, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { FAMILY_PROFILE_COLORS } from "@tentacle-tv/shared";
 import {
+  INVITE_SEARCH_KEY,
   MANAGE_BACK_KEY,
   STATUS_PRIMARY_KEY,
   manageActionRows,
@@ -122,8 +123,11 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
 
   const exit = () => (origin === "profiles" ? leaveProfile(context, "switch") : navigation.goBack());
   const back = () => {
-    if (!ready || manageBackAction(actions.view, origin) !== "toList") exit();
-    else actions.toList();
+    const action = ready ? manageBackAction(actions.view, origin, store.focusedKey()) : null;
+    // Depuis un résultat de la recherche : la recherche d'abord (tv-core `manageBackAction`).
+    if (action === "toSearch") store.claim(INVITE_SEARCH_KEY);
+    else if (action === "toList") actions.toList();
+    else exit();
   };
   useBackLayer("page", true, back);
 

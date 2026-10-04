@@ -1,4 +1,4 @@
-import { FAMILY_MAX_PROFILES, FAMILY_PROFILE_COLORS } from "@tentacle-tv/shared";
+import { FAMILY_MAX_PROFILES, FAMILY_PROFILE_COLORS, type FamilyCandidateStatus } from "@tentacle-tv/shared";
 import { STATUS_PRIMARY_KEY } from "./homeEntry";
 
 /**
@@ -73,8 +73,42 @@ export const GUEST_CREATE_KEY = "guest:create";
 export const GUEST_ACTIONS_GROUP = "guest:actions";
 
 export const INVITE_SEARCH_KEY = "invite:search";
+/** La bande de la recherche, PLEINE LARGEUR : HAUT depuis n'importe quel résultat (leurs boutons sont à droite) y remonte. */
+export const INVITE_SEARCH_BAR = "invite:searchBar";
 export const INVITE_RESULTS_GROUP = "invite:results";
 export const inviteCandidateKey = (index: number): string => `invite:candidate:${index}`;
+const INVITE_CANDIDATE_PREFIX = "invite:candidate:";
+
+/** Une clé de résultat de la recherche d'invitation. */
+export function isInviteCandidateKey(key: string | null | undefined): boolean {
+  return !!key?.startsWith(INVITE_CANDIDATE_PREFIX);
+}
+
+const CANDIDATE_RANK: Record<FamilyCandidateStatus, number> = { available: 0, invited: 1, in_family: 2 };
+
+/**
+ * L'ORDRE des résultats d'une recherche d'invitation : les comptes
+ * invitables d'abord, puis ceux qu'une invitation attend, puis ceux déjà dans
+ * une famille ; l'ordre du serveur dans chaque groupe. Un statut absent
+ * (serveur v1) vaut invitable. BAS depuis la recherche mène ainsi au premier
+ * invitable.
+ */
+export function inviteCandidateOrder<T extends { status?: FamilyCandidateStatus }>(candidates: readonly T[]): T[] {
+  return candidates
+    .map((candidate, index) => ({ candidate, index }))
+    .sort((a, b) => CANDIDATE_RANK[a.candidate.status ?? "available"] - CANDIDATE_RANK[b.candidate.status ?? "available"] || a.index - b.index)
+    .map(({ candidate }) => candidate);
+}
+
+/**
+ * Un résultat prend-il le focus ? Seulement s'il s'invite — ou s'il vient
+ * d'être invité d'ici (`sent` : il a le focus, il le garde). Les autres
+ * (« Déjà dans une famille », « Invitation en attente ») se lisent sans
+ * jamais le prendre.
+ */
+export function inviteCandidateFocusable(candidate: { status?: FamilyCandidateStatus; sent: boolean }): boolean {
+  return candidate.sent || (candidate.status ?? "available") === "available";
+}
 
 export type ManageView = "list" | "guest" | "invite";
 

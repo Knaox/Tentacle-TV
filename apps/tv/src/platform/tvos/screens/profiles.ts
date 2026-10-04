@@ -3,6 +3,7 @@ import {
   GUEST_ACTIONS_GROUP,
   GUEST_COLORS_GROUP,
   INVITE_RESULTS_GROUP,
+  INVITE_SEARCH_BAR,
   MANAGE_ACTIONS_GROUP,
   MANAGE_BACK_BAR_KEY,
   MANAGE_BACK_KEY,
@@ -56,6 +57,8 @@ export function useManageGroups(store: FocusStore): void {
     // aligné sous aucune — la rangée pleine largeur le rend au bouton.
     store.bind(GUEST_ACTIONS_GROUP, { container: AutoFocusGuide });
     store.bind(INVITE_RESULTS_GROUP, { container: AutoFocusGuide });
+    // HAUT depuis un résultat (son bouton est à droite, sous rien) : la bande pleine largeur rend la recherche.
+    store.bind(INVITE_SEARCH_BAR, { container: AutoFocusGuide });
     for (const key of manageGuardedKeys()) store.bind(key, { phantomPressGuard: true });
   });
 }
