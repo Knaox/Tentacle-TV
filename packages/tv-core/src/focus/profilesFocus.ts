@@ -60,6 +60,8 @@ export const MANAGE_CREATE_KEY = "manage:createGuest";
 export const MANAGE_INVITE_KEY = "manage:invite";
 export const MANAGE_ROWS_GROUP = "manage:rows";
 export const manageRowKey = (index: number): string => `manage:row:${index}`;
+/** L'interrupteur des droits d'un membre (« Peut créer des invités »), à côté de son geste. */
+export const manageRightKey = (index: number): string => `manage:right:${index}`;
 export const MANAGE_BACK_KEY = "manage:back";
 export const MANAGE_BACK_BAR_KEY = "manage:top";
 
@@ -151,6 +153,7 @@ export function manageGuardedKeys(): string[] {
     MANAGE_CREATE_KEY,
     MANAGE_INVITE_KEY,
     ...range(FAMILY_MAX_PROFILES).map(manageRowKey),
+    ...range(FAMILY_MAX_PROFILES).map(manageRightKey),
     GUEST_NAME_KEY,
     ...FAMILY_PROFILE_COLORS.map(guestColorKey),
     GUEST_CREATE_KEY,

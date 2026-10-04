@@ -1,8 +1,9 @@
-import type { FamilyProfileColor } from "@tentacle-tv/shared";
+import type { FamilyCandidateStatus, FamilyProfileColor } from "@tentacle-tv/shared";
 import type { PinPadModel } from "./profilesTypes";
 
 /**
- * Le contrat de « Gérer les profils » (Apple TV, profil du propriétaire) :
+ * Le contrat de « Gérer les profils » (Apple TV, profil de qui gère — le
+ * propriétaire, ou un membre avec SES droits) :
  * l'intégration résout tout ce qui dépend de la famille ; la vue traduit ses
  * libellés fixes et rend les gestes.
  */
@@ -17,8 +18,10 @@ export interface ManageRowView {
   /** « Propriétaire », « Membre », « Invité », « Invitation envoyée · expire le … ». */
   detail: string;
   invitation: boolean;
-  /** Le geste de la ligne, à double appui ; null pour le propriétaire. */
+  /** Le geste de la ligne, à double appui ; null quand la session n'en a aucun. */
   action: { kind: ManageAction; hint: string } | null;
+  /** Un membre, vu par le propriétaire : « Peut créer des invités », coché ou non. */
+  right: { label: string; on: boolean; accessibilityLabel: string } | null;
 }
 
 export interface ManageNotice {
@@ -32,6 +35,8 @@ export interface InviteCandidateView {
   avatarUri?: string;
   /** L'invitation vient de partir. */
   sent: boolean;
+  /** v2 : seul `available` s'invite ; les autres disent pourquoi. */
+  status: FamilyCandidateStatus;
 }
 
 export type ManageViewModel =
@@ -70,6 +75,8 @@ export interface ManageProfilesViewProps {
   onInvite?: () => void;
   onRowAction?: (id: string) => void;
   onRowBlur?: (id: string) => void;
+  /** L'interrupteur des droits d'un membre. */
+  onRowRight?: (id: string) => void;
   onGuestName?: (name: string) => void;
   onGuestColor?: (color: FamilyProfileColor) => void;
   onGuestSubmit?: () => void;

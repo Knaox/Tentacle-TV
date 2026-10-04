@@ -33,12 +33,22 @@ import { useManageUnlock } from "./useManageUnlock";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ManageProfiles">;
 
+/** Ce que l'entrée du focus lit de la liste : les deux gestes qui ajoutent, et les lignes qui portent un geste. */
+function entryInputOf(list: ReturnType<typeof manageListModel> | null) {
+  return {
+    canCreateGuest: list?.capacity.canCreateGuest ?? false,
+    canInvite: list?.capacity.canInvite ?? false,
+    actionRows: list ? manageActionRows(list.rows) : [],
+  };
+}
+
 /**
- * « Gérer les profils » de la refonte (Apple TV) — la session du
- * PROPRIÉTAIRE, gestion ouverte par le serveur (`useManageUnlock`) : la
+ * « Gérer les profils » de la refonte (Apple TV) — la session de qui gère
+ * (le propriétaire, ou un membre avec SES droits — v2), gestion ouverte par le
+ * serveur derrière SON PIN (`useManageUnlock`) : la
  * famille (`useFamilyOverview`, relue en direct par `useFamilyLive`), ses
  * gestes (`useManageActions`), ses deux pages. Venue de « Qui regarde ? »,
- * la sortie referme la session du propriétaire et y ramène ; venue des
+ * la sortie referme la session ouverte pour gérer et y ramène ; venue des
  * réglages, elle y revient (`manageBackAction`, tv-core).
  */
 export function ManageProfilesRedesign({ navigation, route }: Props) {
@@ -63,20 +73,20 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   const store = useFocusStore();
   useManageGroups(store);
   const pendingClaim = useRef<string | null>(null);
-  const list = overview.data ? manageListModel(overview.data, owner, serverUrl, i18n.language, t) : null;
-  const actionRows = list ? manageActionRows(list.rows) : [];
-  const entryInput = {
-    canCreateGuest: list?.capacity.canCreateGuest ?? false,
-    canInvite: list?.capacity.canInvite ?? false,
-    actionRows,
-  };
+  // La liste de CE rendu, lue par le geste qui retire (il part après lui).
+  const listRef = useRef<ReturnType<typeof manageListModel> | null>(null);
   const actions = useManageActions({
     onLocked: unlock.relock,
     onRemoved: (row: ManageRowModel) => {
-      const index = list?.rows.findIndex((candidate) => candidate.id === row.id) ?? -1;
-      pendingClaim.current = index >= 0 ? manageFocusAfterRemoval({ view: "list", ...entryInput }, index) : null;
+      const current = listRef.current;
+      const index = current?.rows.findIndex((candidate) => candidate.id === row.id) ?? -1;
+      pendingClaim.current = current && index >= 0 ? manageFocusAfterRemoval({ view: "list", ...entryInputOf(current) }, index) : null;
     },
   });
+  // Le droit d'un membre en cours d'envoi : sa case montre déjà le nouvel état.
+  const list = overview.data ? manageListModel(overview.data, owner, serverUrl, i18n.language, t, actions.pendingRight) : null;
+  listRef.current = list;
+  const entryInput = entryInputOf(list);
   const candidates = useFamilyCandidates(actions.invite.search, { enabled: ready && actions.view === "invite" });
 
   // La gestion refermée pendant qu'on lisait la famille : elle se rouvre.
@@ -128,6 +138,10 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
               if (row) actions.rowPress(row);
             }}
             onRowBlur={actions.rowBlur}
+            onRowRight={(id) => {
+              const row = list?.rows.find((candidate) => candidate.id === id);
+              if (row) void actions.toggleRight(row);
+            }}
             onGuestName={actions.setGuestName}
             onGuestColor={actions.setGuestColor}
             onGuestSubmit={() => void actions.submitGuest()}

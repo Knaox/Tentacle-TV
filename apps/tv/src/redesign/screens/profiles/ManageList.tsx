@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { MANAGE_ACTIONS_GROUP, MANAGE_CREATE_KEY, MANAGE_INVITE_KEY, MANAGE_ROWS_GROUP, manageRowKey } from "@tentacle-tv/tv-core";
+import { MANAGE_ACTIONS_GROUP, MANAGE_CREATE_KEY, MANAGE_INVITE_KEY, MANAGE_ROWS_GROUP, manageRightKey, manageRowKey } from "@tentacle-tv/tv-core";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { Icon } from "../../icons/Icon";
@@ -9,19 +9,23 @@ import { colors, fonts, text, white } from "../../theme/tokens";
 import { ConfirmPill } from "../settings/ConfirmPill";
 import type { ManageAction, ManageNotice, ManageRowView } from "./manageTypes";
 import { ProfileAvatar } from "./ProfileAvatar";
+import { StayToggle } from "./StayToggle";
 
 /**
  * La liste de « Gérer les profils » : les deux gestes qui AJOUTENT (créer un
  * invité, inviter un membre — absents quand la famille ne le permet plus, et
  * la ligne dit pourquoi), puis chaque profil et chaque invitation en attente,
  * avec le geste qui RETIRE, à double appui (« Confirmer — … », une phrase dit
- * ce qui va se passer ; quitter le bouton désarme). Le propriétaire n'en a
- * pas : on ne se retire pas de sa propre famille depuis une TV.
+ * ce qui va se passer ; quitter le bouton désarme). Une ligne n'a que les
+ * gestes que la session y a (v2 : un membre, ses invités seulement) ; le
+ * propriétaire ne se retire pas de sa propre famille depuis une TV. Sur la
+ * ligne d'un membre, le propriétaire a aussi la case « Peut créer des
+ * invités », avant le geste qui retire.
  *
- * Clés : `manage:createGuest`, `manage:invite`, `manage:row:<i>` ; groupes
- * `manage:actions`, `manage:rows`.
+ * Clés : `manage:createGuest`, `manage:invite`, `manage:right:<i>`,
+ * `manage:row:<i>` ; groupes `manage:actions`, `manage:rows`.
  */
-export const ManageList = memo(function ManageList({ rows, canCreateGuest, canInvite, blocked, armedId, notice, onCreateGuest, onInvite, onRowAction, onRowBlur }: {
+export const ManageList = memo(function ManageList({ rows, canCreateGuest, canInvite, blocked, armedId, notice, onCreateGuest, onInvite, onRowAction, onRowBlur, onRowRight }: {
   rows: ManageRowView[];
   canCreateGuest: boolean;
   canInvite: boolean;
@@ -32,6 +36,7 @@ export const ManageList = memo(function ManageList({ rows, canCreateGuest, canIn
   onInvite?: () => void;
   onRowAction?: (id: string) => void;
   onRowBlur?: (id: string) => void;
+  onRowRight?: (id: string) => void;
 }) {
   const { t } = useTranslation("familyTv");
   const armed = rows.find((row) => row.id === armedId)?.action ?? null;
@@ -46,7 +51,7 @@ export const ManageList = memo(function ManageList({ rows, canCreateGuest, canIn
       {blocked ? <Text style={styles.blocked}>{blocked}</Text> : null}
       <FocusGroup focusKey={MANAGE_ROWS_GROUP} style={styles.rows}>
         {rows.map((row, index) => (
-          <Row key={row.id} row={row} index={index} armed={row.id === armedId} onAction={onRowAction} onBlur={onRowBlur} />
+          <Row key={row.id} row={row} index={index} armed={row.id === armedId} onAction={onRowAction} onBlur={onRowBlur} onRight={onRowRight} />
         ))}
       </FocusGroup>
       <View style={styles.footer}>
@@ -69,12 +74,13 @@ const LABELS: Record<ManageAction, { label: string; armed: string; icon: "logout
   cancel: { label: "manage.cancelInvite", armed: "manage.cancelConfirm", icon: "close" },
 };
 
-const Row = memo(function Row({ row, index, armed, onAction, onBlur }: {
+const Row = memo(function Row({ row, index, armed, onAction, onBlur, onRight }: {
   row: ManageRowView;
   index: number;
   armed: boolean;
   onAction?: (id: string) => void;
   onBlur?: (id: string) => void;
+  onRight?: (id: string) => void;
 }) {
   const { t } = useTranslation("familyTv");
   const labels = row.action ? LABELS[row.action.kind] : null;
@@ -87,6 +93,15 @@ const Row = memo(function Row({ row, index, armed, onAction, onBlur }: {
         <Text style={styles.name} numberOfLines={1}>{row.name}</Text>
         <Text style={styles.detail} numberOfLines={1}>{row.detail}</Text>
       </View>
+      {row.right ? (
+        <StayToggle
+          label={row.right.label}
+          checked={row.right.on}
+          focusKey={manageRightKey(index)}
+          accessibilityLabel={row.right.accessibilityLabel}
+          onPress={onRight ? () => onRight(row.id) : undefined}
+        />
+      ) : null}
       {row.action && labels ? (
         <ConfirmPill
           label={t(labels.label)}

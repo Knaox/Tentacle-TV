@@ -1,5 +1,5 @@
 import { sameUserId, type TvProfileDto, type TvProfilesDto } from "@tentacle-tv/shared";
-import type { ProfileLaunch } from "./tvProfileSession";
+import { pairedAccountOf, profileManages, type ProfileLaunch } from "./tvProfileSession";
 
 /**
  * QUEL PROFIL OUVRIR, une fois « Qui regarde ? » lu (`GET /api/family/tv/profiles`)
@@ -82,4 +82,17 @@ export function planProfilePick(
 export function pickerEntryIndex(listing: Pick<TvProfilesDto, "profiles">, previousId: string | null): number {
   if (!previousId) return 0;
   return Math.max(0, listing.profiles.findIndex((profile) => sameUserId(profile.userId, previousId)));
+}
+
+/**
+ * « Gérer les profils » depuis « Qui regarde ? » : QUI gère (derrière SON
+ * PIN, avec SES droits — v2) — le profil du compte qui a jumelé la TV s'il a
+ * quelque chose à gérer, sinon le premier profil qui gère (le propriétaire de
+ * la famille). Rien à gérer sur cette TV : null, l'entrée n'existe pas.
+ */
+export function manageEntryProfile(listing: TvProfilesDto): TvProfileDto | null {
+  if (!listing.canManage) return null;
+  const managers = listing.profiles.filter((profile) => profileManages(profile, listing));
+  const paired = pairedAccountOf(listing);
+  return managers.find((profile) => sameUserId(profile.userId, paired.userId)) ?? managers[0] ?? null;
 }

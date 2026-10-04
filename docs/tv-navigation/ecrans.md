@@ -522,9 +522,16 @@ Apple TV passée aux profils (docs/FAMILLE.md). Règles : tv-core
   « Créer » ; l'invitation par la recherche. Après un retrait, la ligne qui
   prend la place (`manageFocusAfterRemoval`), une fois la famille relue.
   Retour : une page → la liste ; la liste → les réglages, ou, ouverte depuis
-  « Qui regarde ? », la session du propriétaire se referme et la rangée
+  « Qui regarde ? », la session ouverte pour gérer se referme et la rangée
   revient. La rangée de « Créer le profil » est pleine largeur (BAS depuis
-  toute couleur).
+  toute couleur). Famille PARTAGÉE (v2) : qui gère depuis « Qui regarde ? »
+  = le profil du compte de la TV s'il gère, sinon le propriétaire
+  (`manageEntryProfile`), derrière SON PIN ; chaque ligne n'a que les gestes
+  de ses droits (`manageRows` : un membre, ses invités) ; sur la ligne d'un
+  membre, le propriétaire a la case « Peut créer des invités »
+  (`manage:right:<i>`, avant `manage:row:<i>` : GAUCHE / DROITE de l'une à
+  l'autre). Un candidat déjà dans une famille ou déjà invité se montre sans
+  s'inviter.
 - **PR-6** Rail : l'entrée « Changer de profil » (`nav:SwitchProfile`, juste
   au-dessus du profil) mène à « Qui regarde ? » ; le profil n'a plus d'appui
   maintenu, OK y ouvre les réglages (retour-rail.md, F7).

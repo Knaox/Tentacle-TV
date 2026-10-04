@@ -69,6 +69,7 @@ export const ManageProfilesView = memo(function ManageProfilesView(props: Manage
                   onInvite={props.onInvite}
                   onRowAction={props.onRowAction}
                   onRowBlur={props.onRowBlur}
+                  onRowRight={props.onRowRight}
                 />
               ) : null}
               {model.kind === "guest" ? (

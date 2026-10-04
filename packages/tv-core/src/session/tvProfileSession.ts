@@ -1,5 +1,6 @@
 import {
   isProfileColor,
+  sameUserId,
   type FamilyProfileColor,
   type FamilyProfileKind,
   type TvProfileDto,
@@ -36,22 +37,44 @@ export interface TvProfileRecord {
   imageTag: string | null;
   hasPin: boolean;
   launch: ProfileLaunch;
-  /** Le propriétaire de la TV (« Invité · famille de X »). */
+  /** Le compte qui a JUMELÉ la TV (`pairedBy` ; v1 : son propriétaire) — seul
+   *  son profil la déjumelle. ⚠️ Noms rangés sur le disque : ne pas renommer. */
   ownerId: string;
   ownerName: string;
-  /** « Gérer les profils » existe sur cette TV (faux pour le compte de démonstration). */
+  /** v1 : « Gérer les profils » existe sur cette TV. Relu par `recordManages` pour un enregistrement d'avant. */
   canManage: boolean;
+  /** Le propriétaire de la FAMILLE (« Membre · famille de X ») — v2 : pas
+   *  forcément celui de la TV. Absent d'un enregistrement d'avant : `ownerName`. */
+  familyOwnerName?: string;
+  /** CE profil gère quelque chose sur cette TV (`manage` du serveur, v2). Absent d'un enregistrement d'avant. */
+  manages?: boolean;
 }
 
 const KINDS: readonly FamilyProfileKind[] = ["owner", "member", "guest"];
 const LAUNCHES: readonly ProfileLaunch[] = ["sticky", "picked"];
 
+/** Ce que `profileRecordOf` lit de « Qui regarde ? » (v1 : `owner` seul, ni `pairedBy` ni `manage`). */
+export type ProfilesListingRef = Pick<TvProfilesDto, "owner" | "canManage"> & Partial<Pick<TvProfilesDto, "pairedBy" | "profiles">>;
+
+/** Le compte qui a jumelé la TV : `pairedBy` (v2), sinon `owner` (v1, même valeur). */
+export function pairedAccountOf(listing: Pick<TvProfilesDto, "owner"> & Partial<Pick<TvProfilesDto, "pairedBy">>): { userId: string; name: string } {
+  return listing.pairedBy ?? listing.owner;
+}
+
+/**
+ * CE profil a-t-il quelque chose à gérer sur cette TV (« Gérer les profils »,
+ * derrière SON PIN) ? v2 : son `manage` (nul pour un invité, le compte de
+ * démonstration) ; v1 (sans `manage`) : le propriétaire seul.
+ */
+export function profileManages(profile: TvProfileDto, listing: Pick<TvProfilesDto, "canManage">): boolean {
+  if ("manage" in profile && profile.manage !== undefined) return profile.manage !== null;
+  return profile.kind === "owner" && listing.canManage;
+}
+
 /** Le profil ouvert, tel que la TV le retient. */
-export function profileRecordOf(
-  profile: TvProfileDto,
-  listing: Pick<TvProfilesDto, "owner" | "canManage">,
-  launch: ProfileLaunch,
-): TvProfileRecord {
+export function profileRecordOf(profile: TvProfileDto, listing: ProfilesListingRef, launch: ProfileLaunch): TvProfileRecord {
+  const paired = pairedAccountOf(listing);
+  const familyOwner = listing.profiles?.find((candidate) => candidate.kind === "owner");
   return {
     profileId: profile.userId,
     name: profile.name,
@@ -60,10 +83,22 @@ export function profileRecordOf(
     imageTag: profile.imageTag,
     hasPin: profile.hasPin,
     launch,
-    ownerId: listing.owner.userId,
-    ownerName: listing.owner.name,
+    ownerId: paired.userId,
+    ownerName: paired.name,
     canManage: listing.canManage,
+    familyOwnerName: familyOwner?.name ?? paired.name,
+    manages: profileManages(profile, listing),
   };
+}
+
+/** « Gérer les profils » dans les réglages du profil ouvert. Un enregistrement d'avant : le propriétaire, si la TV le permettait. */
+export function recordManages(record: TvProfileRecord): boolean {
+  return record.manages ?? (record.kind === "owner" && record.canManage);
+}
+
+/** Le profil ouvert est celui du compte qui a jumelé la TV : lui seul la déjumelle. */
+export function recordPairedTheTv(record: TvProfileRecord): boolean {
+  return sameUserId(record.profileId, record.ownerId);
 }
 
 function isRecord(value: unknown): value is TvProfileRecord {
@@ -78,7 +113,9 @@ function isRecord(value: unknown): value is TvProfileRecord {
     && LAUNCHES.includes(r.launch as ProfileLaunch)
     && typeof r.ownerId === "string"
     && typeof r.ownerName === "string"
-    && typeof r.canManage === "boolean";
+    && typeof r.canManage === "boolean"
+    && (r.familyOwnerName === undefined || typeof r.familyOwnerName === "string")
+    && (r.manages === undefined || typeof r.manages === "boolean");
 }
 
 /** Le profil retenu ; illisible ou incomplet : aucun (la session ne se reprend pas). */

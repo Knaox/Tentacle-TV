@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FamilyOverviewDto, FamilyProfileDto } from "@tentacle-tv/shared";
+import type { FamilyOverviewDto, FamilyProfileDto, FamilyRights } from "@tentacle-tv/shared";
 
 import { manageActionRows, manageCapacity, manageRows } from "./familyManage";
 
@@ -61,5 +61,51 @@ describe("« Gérer les profils »", () => {
     expect(manageCapacity(overview(base, { switches: { families: false, guests: true } }))).toMatchObject({ guestBlock: "familiesOff", inviteBlock: "familiesOff" });
     const review = overview(base, { account: { canOwn: true, canJoin: false, reviewAccount: true, hasPin: false, personalSession: false } });
     expect(manageCapacity(review)).toMatchObject({ canCreateGuest: false, canInvite: false });
+  });
+});
+
+describe("« Gérer les profils » dans la famille partagée (v2)", () => {
+  const ANNE = profile("anne", "owner");
+  const MARC = { ...profile("marc", "member"), rights: { createGuests: true } };
+  const ZOE = { ...profile("zoe", "guest"), createdBy: "marc", createdByName: "Marc" };
+  const LEA = { ...profile("lea", "guest"), createdBy: "anne", createdByName: "Anne" };
+
+  function shared(role: "owner" | "member", rights: FamilyRights, pending = 0): FamilyOverviewDto {
+    const base = overview([], { owned: null }, 0);
+    return {
+      ...base,
+      v: 2,
+      family: {
+        id: "famille", role, owner: { userId: "anne", name: "Anne" }, profiles: [ANNE, MARC, ZOE, LEA],
+        pendingInvitations: Array.from({ length: pending }, (_, i) => ({
+          id: `inv-${i}`, inviteeUserId: `invite-${i}`, inviteeName: `Invité ${i}`, createdAt: "2026-10-04T20:00:00Z", expiresAt: "2026-10-11T20:00:00Z",
+        })),
+        rights, createdAt: "2026-10-04T20:00:00Z", since: role === "owner" ? null : "2026-10-04T20:00:00Z",
+      },
+    };
+  }
+
+  it("le propriétaire gère tout, et règle les droits de chaque membre", () => {
+    const rows = manageRows(shared("owner", { manageMembers: true, createGuests: true, manageGuests: "all" }, 1), { userId: "anne", name: "Anne", color: "violet" });
+    expect(rows.map((row) => [row.id, row.action])).toEqual([["anne", null], ["marc", "remove"], ["zoe", "delete"], ["lea", "delete"], ["inv-0", "cancel"]]);
+    expect(rows[1].memberRights).toEqual({ createGuests: true });
+    expect(rows[2].createdByName).toBe("Marc");
+    // Un invité du propriétaire : rien à dire de son créateur.
+    expect(rows[3].createdByName).toBeNull();
+  });
+
+  it("un membre ne gère que SES invités : ni retrait, ni droits, ni invitations", () => {
+    const rights: FamilyRights = { manageMembers: false, createGuests: true, manageGuests: "own" };
+    const rows = manageRows(shared("member", rights), { userId: "marc", name: "Marc", color: "teal" });
+    expect(rows.map((row) => [row.id, row.action])).toEqual([["anne", null], ["marc", null], ["zoe", "delete"], ["lea", null]]);
+    expect(rows.every((row) => row.memberRights === null)).toBe(true);
+    expect(manageCapacity(shared("member", rights))).toMatchObject({ canCreateGuest: true, canInvite: false, inviteBlock: null });
+  });
+
+  it("un membre sans le droit de créer des invités : la page dit pourquoi", () => {
+    const rights: FamilyRights = { manageMembers: false, createGuests: false, manageGuests: "own" };
+    expect(manageCapacity(shared("member", rights))).toMatchObject({ canCreateGuest: false, guestBlock: "noGuestRight", canInvite: false });
+    // Il garde la main sur ceux qu'il a créés.
+    expect(manageRows(shared("member", rights), { userId: "marc", name: "Marc", color: "teal" })[2].action).toBe("delete");
   });
 });

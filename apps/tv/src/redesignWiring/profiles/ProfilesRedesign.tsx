@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { findProfile, pickerEntryIndex, profilesBackAction, profilesEntryKey } from "@tentacle-tv/tv-core";
+import { findProfile, manageEntryProfile, pickerEntryIndex, profilesBackAction, profilesEntryKey } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { useProfilesFocus, useProfilesGroups } from "../../platform/tvos/screens/profiles";
@@ -75,7 +75,7 @@ export function ProfilesRedesign({ navigation, route }: Props) {
       kind: "picker",
       profiles,
       remember,
-      canManage: listing?.canManage === true,
+      canManage: listing ? manageEntryProfile(listing) !== null : false,
       notice: notice ? refusalMessage(notice, t) : null,
       entering: enteringIndex >= 0 ? { index: enteringIndex, label: t("familyTv:opening", { name: profiles[enteringIndex].name }) } : null,
     };

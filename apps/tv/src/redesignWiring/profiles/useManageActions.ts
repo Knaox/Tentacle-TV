@@ -6,6 +6,7 @@ import {
   useDeleteFamilyGuest,
   useRemoveFamilyMember,
   useSendFamilyInvitation,
+  useSetFamilyMemberRights,
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import { FAMILY_PROFILE_COLORS, normalizeGuestName, type FamilyProfileColor } from "@tentacle-tv/shared";
@@ -19,7 +20,8 @@ const SEARCH_SETTLE_MS = 700;
 
 /**
  * Les GESTES de « Gérer les profils » : retirer, supprimer, annuler (à double
- * appui — tv-core `confirmPress`), créer un invité, inviter. Chaque geste part
+ * appui — tv-core `confirmPress`), créer un invité, inviter, permettre à un
+ * membre de créer des invités (le propriétaire, v2). Chaque geste part
  * au serveur, qui juge ; un refus se dit dans la page. La gestion refermée en
  * route (`family.manage_locked`) se rouvre par `onLocked`.
  */
@@ -38,12 +40,15 @@ export function useManageActions({ onLocked, onRemoved }: { onLocked: () => void
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [sent, setSent] = useState<ReadonlySet<string>>(new Set());
+  // Le droit d'un membre en cours d'envoi : la case montre déjà le nouvel état.
+  const [pendingRight, setPendingRight] = useState<{ id: string; on: boolean } | null>(null);
 
   const createGuest = useCreateFamilyGuest();
   const deleteGuest = useDeleteFamilyGuest();
   const removeMember = useRemoveFamilyMember();
   const cancelInvite = useCancelFamilyInvitation();
   const invite = useSendFamilyInvitation();
+  const setRights = useSetFamilyMemberRights();
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query.trim()), SEARCH_SETTLE_MS);
@@ -102,6 +107,20 @@ export function useManageActions({ onLocked, onRemoved }: { onLocked: () => void
       if (step.run) void runRow(row);
     },
     rowBlur: (id: string) => setArmedId((current) => confirmBlur(current, id)),
+    pendingRight,
+    toggleRight: async (row: ManageRowModel) => {
+      if (!row.memberRights || pendingRight) return;
+      const on = !row.memberRights.createGuests;
+      setPendingRight({ id: row.id, on });
+      try {
+        await setRights.mutateAsync({ userId: row.userId, rights: { createGuests: on } });
+        setNotice({ text: t(on ? "familyTv:manage.rightOn" : "familyTv:manage.rightOff", { name: row.name }), tone: "success" });
+      } catch (error) {
+        setNotice({ text: refusalMessage(refused(error), t), tone: "error" });
+      } finally {
+        setPendingRight(null);
+      }
+    },
     setGuestName: (name: string) => {
       setGuestName(name);
       setGuestError(null);

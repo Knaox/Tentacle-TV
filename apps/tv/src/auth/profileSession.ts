@@ -1,5 +1,5 @@
 import { i18n } from "@tentacle-tv/shared";
-import type { TvProfilesDto, TvSessionDto } from "@tentacle-tv/shared";
+import type { TvSessionDto } from "@tentacle-tv/shared";
 import {
   fetchInterfaceLanguage,
   flushPlaybackOutboxFor,
@@ -19,6 +19,7 @@ import {
   writeProfileRecord,
   type ProfileIntent,
   type ProfileLaunch,
+  type ProfilesListingRef,
 } from "@tentacle-tv/tv-core";
 import { navigationRef } from "../navigation/navigationRef";
 import { scheduleRevocationDrain } from "./revocationQueue";
@@ -68,7 +69,7 @@ export type ProfilesRouteIntent = ProfileIntent;
 export function adoptProfileSession(
   { jfClient, storage }: Pick<UnpairContext, "jfClient" | "storage">,
   session: TvSessionDto,
-  listing: Pick<TvProfilesDto, "owner" | "canManage">,
+  listing: ProfilesListingRef,
   launch: ProfileLaunch,
 ): void {
   storage.removeItem("tentacle_jellyfin_token");

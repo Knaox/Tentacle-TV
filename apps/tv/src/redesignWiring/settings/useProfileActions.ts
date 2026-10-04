@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { readProfileRecord, tvSessionMode } from "@tentacle-tv/tv-core";
+import { readProfileRecord, recordManages, recordPairedTheTv, tvSessionMode } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { SettingsProfile } from "../../redesign/screens/settings/settingsTypes";
 import { switchProfile } from "../../auth/profileSession";
@@ -11,9 +11,10 @@ import { switchProfile } from "../../auth/profileSession";
 /**
  * Le profil ouvert, tel que Réglages › Compte le montre (Famille, Apple TV),
  * et ses deux gestes : « Changer de profil » (la file des rapports part avec
- * le jeton du profil, puis « Qui regarde ? ») et « Gérer les profils » (le
- * profil du propriétaire). TV d'avant les profils : `profile` est nul, rien
- * ne change.
+ * le jeton du profil, puis « Qui regarde ? ») et « Gérer les profils » (un
+ * profil qui a quelque chose à gérer — v2 : le propriétaire ou un membre, avec
+ * SES droits). Seul le profil du compte qui a jumelé la TV la déjumelle. TV
+ * d'avant les profils : `profile` est nul, rien ne change.
  */
 export function useProfileActions() {
   const { t } = useTranslation(["familyTv", "family"]);
@@ -23,27 +24,30 @@ export function useProfileActions() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const record = tvSessionMode(storage) === "profile" ? readProfileRecord(storage) : null;
   const kind = record?.kind ?? null;
-  const ownerName = record?.ownerName ?? "";
+  // Le compte de la TV (seul à la déjumeler) et le propriétaire de la famille : deux comptes en v2.
+  const tvAccountName = record?.ownerName ?? "";
+  const familyOwnerName = record?.familyOwnerName ?? tvAccountName;
   const color = record?.color ?? null;
-  const canManage = record?.canManage === true;
+  const manages = record ? recordManages(record) : false;
+  const pairedTheTv = record ? recordPairedTheTv(record) : false;
 
   const profile = useMemo<SettingsProfile | null>(() => {
     if (!kind || !color) return null;
-    const owner = { owner: ownerName };
+    const family = { owner: familyOwnerName };
     const role =
       kind === "owner"
         ? t("familyTv:settings.owner")
         : kind === "member"
-          ? t("familyTv:settings.memberOf", owner)
-          : t("family:guestOf", owner);
+          ? t("familyTv:settings.memberOf", family)
+          : t("family:guestOf", family);
     return {
       role,
       color,
-      canManage: kind === "owner" && canManage,
-      canUnpair: kind === "owner",
-      unpairCaption: kind === "owner" ? t("familyTv:settings.unpairCaption") : t("familyTv:settings.unpairOwnerOnly", owner),
+      canManage: manages,
+      canUnpair: pairedTheTv,
+      unpairCaption: pairedTheTv ? t("familyTv:settings.unpairCaption") : t("familyTv:settings.unpairOwnerOnly", { owner: tvAccountName }),
     };
-  }, [kind, ownerName, color, canManage, t]);
+  }, [kind, familyOwnerName, tvAccountName, color, manages, pairedTheTv, t]);
 
   const onSwitchProfile = useCallback(() => {
     void switchProfile({ jfClient, storage, queryClient });

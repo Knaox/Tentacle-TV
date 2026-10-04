@@ -10,10 +10,11 @@ import type { InviteCandidateView, ManageNotice } from "./manageTypes";
 import { ProfileAvatar } from "./ProfileAvatar";
 
 /**
- * Inviter un membre : les comptes que l'écran de connexion de Jellyfin montre,
- * filtrés par la recherche (OK sur le champ : le clavier de l'Apple TV) ; un
- * compte masqué ne paraît que par son nom EXACT — le serveur seul en décide.
- * « Inviter » envoie ; la personne accepte sur son propre appareil, jamais ici.
+ * Inviter un membre : TOUS les comptes du serveur (v2), masqués compris,
+ * affinés par la recherche (OK sur le champ : le clavier de l'Apple TV) — le
+ * serveur seul en décide. « Inviter » envoie ; la personne accepte sur son
+ * propre appareil, jamais ici. Un compte déjà dans une famille, ou qu'une
+ * invitation attend, est montré mais ne s'invite pas : sa pastille le dit.
  *
  * Clés : `invite:search`, `invite:candidate:<i>` ; groupe `invite:results`.
  */
@@ -52,14 +53,7 @@ export const InviteMember = memo(function InviteMember({ query, candidates, more
             <View key={candidate.id} style={styles.row}>
               <ProfileAvatar name={candidate.name} color={null} uri={candidate.avatarUri} size={68} />
               <Text style={styles.name} numberOfLines={1}>{candidate.name}</Text>
-              <Chip
-                label={candidate.sent ? t("invite.sent", { name: candidate.name }) : t("invite.invite")}
-                icon={candidate.sent ? "check" : "plus"}
-                selected={candidate.sent}
-                size="md"
-                focusKey={inviteCandidateKey(index)}
-                onPress={candidate.sent || !onInvite ? undefined : () => onInvite(candidate.id)}
-              />
+              <CandidateChip candidate={candidate} focusKey={inviteCandidateKey(index)} onInvite={onInvite} />
             </View>
           ))}
         </FocusGroup>
@@ -69,6 +63,17 @@ export const InviteMember = memo(function InviteMember({ query, candidates, more
     </View>
   );
 });
+
+/** Inviter, ou ce qui l'empêche : déjà dans une famille, invitation en attente, invitation partie. */
+function CandidateChip({ candidate, focusKey, onInvite }: { candidate: InviteCandidateView; focusKey: string; onInvite?: (id: string) => void }) {
+  const { t } = useTranslation("familyTv");
+  if (candidate.sent || candidate.status === "invited") {
+    const label = candidate.sent ? t("invite.sent", { name: candidate.name }) : t("invite.pendingInvite");
+    return <Chip label={label} icon="check" selected size="md" focusKey={focusKey} />;
+  }
+  if (candidate.status === "in_family") return <Chip label={t("invite.inFamily")} absent size="md" focusKey={focusKey} />;
+  return <Chip label={t("invite.invite")} icon="plus" size="md" focusKey={focusKey} onPress={onInvite ? () => onInvite(candidate.id) : undefined} />;
+}
 
 const styles = StyleSheet.create({
   explain: { ...text.body, maxWidth: 1100, marginBottom: 34 },

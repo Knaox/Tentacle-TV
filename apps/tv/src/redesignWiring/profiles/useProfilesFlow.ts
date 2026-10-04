@@ -10,6 +10,7 @@ import {
   erasePinDigit,
   findProfile,
   isProfileLocked,
+  manageEntryProfile,
   pinEntryFor,
   pinLockLapsed,
   pinLockRemainingMs,
@@ -34,7 +35,7 @@ import { MOTION_ENABLED } from "../../redesign/motion/motion";
  * L'AUTOMATE de « Qui regarde ? » (Apple TV, Famille) : lire les profils,
  * ouvrir le profil retenu (« Ne plus proposer à l'ouverture »), sinon montrer
  * la rangée ; le pavé du PIN d'un profil protégé ; « Gérer les profils » par la
- * session du propriétaire. Les décisions sont celles de tv-core
+ * session de qui gère. Les décisions sont celles de tv-core
  * (`session/profileLaunch`, `session/profileRefusal`, `session/pinEntry`) ;
  * le serveur juge tout — PIN compris, que la TV ne fait que transmettre.
  */
@@ -194,14 +195,15 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
       if (plan.kind === "pin") return showPin(listing, profile.userId, "open", plan.remember, plan.launch);
       void enter(listing, profile.userId, { remember: plan.remember, launch: plan.launch });
     },
+    /** « Gérer les profils » : qui gère (tv-core `manageEntryProfile` — v2 : le compte de la TV s'il gère, sinon le propriétaire), derrière SON PIN. */
     manage: () => {
-      const owner = listing?.profiles.find((profile) => profile.kind === "owner");
-      if (!listing || !owner || busy || !listing.canManage) return;
+      const manager = listing ? manageEntryProfile(listing) : null;
+      if (!listing || !manager || busy) return;
       setNotice(null);
-      setLastPicked(owner.userId);
-      if (isProfileLocked(owner, Date.now())) return setNotice({ kind: "locked", until: owner.lockedUntil });
-      if (owner.hasPin) return showPin(listing, owner.userId, "manage", false, "picked");
-      void open(listing, owner.userId, { remember: false, launch: "picked" }, "manage");
+      setLastPicked(manager.userId);
+      if (isProfileLocked(manager, Date.now())) return setNotice({ kind: "locked", until: manager.lockedUntil });
+      if (manager.hasPin) return showPin(listing, manager.userId, "manage", false, "picked");
+      void open(listing, manager.userId, { remember: false, launch: "picked" }, "manage");
     },
     toggleRemember: () => setRemember((current) => !current),
     digit: (digit: string) => {
