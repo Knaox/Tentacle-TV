@@ -155,12 +155,14 @@ export async function switchProfile(context: UnpairContext): Promise<void> {
 
 /**
  * La session de profil a cessé côté serveur (`family:profile-ended`, ou un 401
- * `profileEnded` à une porte) : retour à « Qui regarde ? », jamais au
- * jumelage. Sans session de profil ouverte, rien à faire.
+ * `profileEnded` à une porte) : retour à « Qui regarde ? » — la rangée,
+ * même pour un profil seul : aucun profil ne s'ouvre à la place de celui
+ * qu'on vient de couper —, jamais au jumelage. Sans session de profil
+ * ouverte, rien à faire.
  */
 export function endedProfile(context: UnpairContext): void {
   if (tvSessionMode(context.storage) !== "profile") return;
-  leaveProfile(context, "launch", { serverEnded: true });
+  leaveProfile(context, "switch", { serverEnded: true });
 }
 
 /**

@@ -58,7 +58,9 @@ export function refusalMessage(refusal: ProfileRefusal, t: TFunction): string {
     case "failed":
       return refusal.code ? t(familyErrorKey(refusal.code)) : t("familyTv:loadFailed");
     case "locked":
+      return t("family:errors.pin_locked");
     case "pinInvalid":
+      return t("family:errors.pin_invalid");
     case "pinRequired":
       return t("family:errors.pin_required");
     default:
