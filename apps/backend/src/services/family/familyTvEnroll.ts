@@ -1,5 +1,6 @@
 import { forgetValidatedToken } from "../../middleware/auth";
 import { getPrisma } from "../db";
+import { retryOnWriteConflict } from "../dbRetry";
 import { endPairedDeviceSessions } from "../deviceSessions/gateway";
 import { forgetJellyfinTokenOwner } from "../deviceTokenHealth";
 import { cleanupJellyfinDevice } from "../jellyfinDeviceCleanup";
@@ -43,16 +44,10 @@ export function pairingRequired(revoked: boolean): FamilyFailure {
   return new FamilyFailure("family.pairing_required", "Jeton de jumelage de TV requis", revoked ? { revoked: true } : {});
 }
 
-export async function enrollTv(token: string): Promise<TvEnrollResponse> {
+/** L'échange lui-même : relire la ligne du jumelage, puis — en une transaction —
+ *  vouer son appareil Jellyfin au journal et poser le jeton « profils seuls ». */
+async function exchange(presented: string): Promise<{ row: PairingRow; pairingToken: string }> {
   const prisma = getPrisma();
-  if (await verifyTvPairingToken(token)) {
-    const row = await prisma.pairedDevice.findUnique({ where: { tokenHash: hashToken(token) } });
-    if (!row || row.parentId || !row.profilesSince) throw pairingRequired(true);
-    return { pairingToken: token };
-  }
-  const device = await verifyDeviceToken(token);
-  if (!device || device.scope === "profile") throw pairingRequired(false);
-  const presented = hashToken(token);
   const direct = await prisma.pairedDevice.findUnique({ where: { tokenHash: presented } });
   const row: PairingRow | null =
     direct ?? (await prisma.pairedDevice.findFirst({ where: { legacyTokenHash: presented, parentId: null } }));
@@ -79,6 +74,24 @@ export async function enrollTv(token: string): Promise<TvEnrollResponse> {
       },
     });
   });
+
+  return { row, pairingToken };
+}
+
+export async function enrollTv(token: string): Promise<TvEnrollResponse> {
+  const prisma = getPrisma();
+  if (await verifyTvPairingToken(token)) {
+    const row = await prisma.pairedDevice.findUnique({ where: { tokenHash: hashToken(token) } });
+    if (!row || row.parentId || !row.profilesSince) throw pairingRequired(true);
+    return { pairingToken: token };
+  }
+  const device = await verifyDeviceToken(token);
+  if (!device || device.scope === "profile") throw pairingRequired(false);
+  const presented = hashToken(token);
+  // Juste après un jumelage, le serveur écrit de lui-même le jeton Jellyfin de
+  // la TV sur CETTE ligne : MariaDB 11 refuse alors la transaction (1020). On
+  // relit et on rejoue — l'appareil qu'il vient de poser part au journal.
+  const { row, pairingToken } = await retryOnWriteConflict(() => exchange(presented));
 
   // Le jeton d'avant (ou le jeton de jumelage d'un échange perdu) ne vaut plus rien.
   markDeviceRevoked(row.tokenHash);
