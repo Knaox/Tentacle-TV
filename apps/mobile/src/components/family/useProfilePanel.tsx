@@ -22,7 +22,6 @@ import { GuestPinSheet } from "./PinSheet";
 export function useProfilePanel(
   profiles: readonly FamilyProfileDto[],
   actionsOf: (profile: FamilyProfileDto) => ProfileActions,
-  ownerName: string,
 ) {
   const { t } = useTranslation("familyWeb");
   const { errorText } = useFamilyText();
@@ -79,7 +78,7 @@ export function useProfilePanel(
           onClose={close}
         >
           {rights.right === "createGuests" ? <MemberRightsSection member={open} /> : null}
-          {rights.right === "requestTitles" ? <GuestRightsSection guest={open} ownerName={ownerName} /> : null}
+          {rights.right === "requestTitles" ? <GuestRightsSection guest={open} /> : null}
         </FamilyProfileSheet>
       ) : null}
       {pinGuest ? <GuestPinSheet guest={pinGuest} onClose={() => setPinGuestId(null)} /> : null}

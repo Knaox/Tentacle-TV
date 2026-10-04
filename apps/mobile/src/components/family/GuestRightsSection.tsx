@@ -7,10 +7,10 @@ import { showToast } from "@/notices/toastStore";
 
 /**
  * Le droit d'un INVITÉ, réglé par le propriétaire seul : « Peut demander des
- * films », coupé par défaut. Ses demandes partent au nom du propriétaire — la
- * légende le dit, avec son nom. La valeur vient de la famille relue.
+ * films », coupé par défaut. Ses demandes partent à son propre nom — la
+ * légende le dit. La valeur vient de la famille relue.
  */
-export function GuestRightsSection({ guest, ownerName }: { guest: FamilyProfileDto; ownerName: string }) {
+export function GuestRightsSection({ guest }: { guest: FamilyProfileDto }) {
   const { t } = useTranslation(["family", "familyWeb"]);
   const { errorText } = useFamilyText();
   const setRights = useSetFamilyGuestRights();
@@ -27,7 +27,7 @@ export function GuestRightsSection({ guest, ownerName }: { guest: FamilyProfileD
   };
 
   return (
-    <SettingsSection caption={t("family:rights.requestTitlesHint", { owner: ownerName })}>
+    <SettingsSection caption={t("family:rights.requestTitlesHint")}>
       <SettingsRow
         icon="film"
         label={t("family:rights.requestTitles")}

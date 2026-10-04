@@ -57,7 +57,7 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
     (profile: FamilyProfileDto) => profileActions(overview, profile, me, { guestRequests }),
     [overview, me, guestRequests],
   );
-  const panel = useProfilePanel(family?.profiles ?? NO_PROFILES, actionsOf, family?.owner.name ?? "");
+  const panel = useProfilePanel(family?.profiles ?? NO_PROFILES, actionsOf);
 
   const confirmCancel = useCallback((invitation: OutgoingInvitationDto) => {
     const name = invitation.inviteeName;
