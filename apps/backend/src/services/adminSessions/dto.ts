@@ -75,6 +75,10 @@ export interface AdminSessionDto {
   userId: string;
   userName: string;
   userImageTag: string | null;
+  /** Un invité de la Famille : le nom de son propriétaire — la session se dit
+   *  « Invité · famille de X » (`family:guestOf`), la seule place où un invité
+   *  paraît. null pour tout autre compte ; absent d'un serveur d'avant la Famille. */
+  familyGuestOf?: string | null;
   client: string;
   deviceName: string;
   deviceId: string;

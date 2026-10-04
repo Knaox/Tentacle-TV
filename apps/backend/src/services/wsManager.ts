@@ -1,6 +1,7 @@
 import type { WebSocket } from "@fastify/websocket";
 import { invalidateByCarousel } from "./jellyfinCache";
 import type { WtServerMessage } from "./watchTogether/protocol";
+import type { FamilyWsMessage } from "../family/familyProtocol";
 
 /** Carousel identifiers for home:update events. */
 export type CarouselId = string;
@@ -22,6 +23,9 @@ export type WsServerMessage =
   /** Un autre appareil du compte a enregistré ses préférences (doublon du
    *  membre de packages/shared, les deux vivent côte à côte). */
   | { type: "preferences:update"; scope: "home-layout" | "reco-settings" | "hints" }
+  /** La Famille : relire (`family:update`), ou la fin d'une session de profil
+   *  de TV (`family:profile-ended`, puis fermeture 4010). */
+  | FamilyWsMessage
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */

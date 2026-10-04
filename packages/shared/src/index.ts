@@ -107,6 +107,15 @@ export * from "./serverUpdate/updateCommands";
 // Le tableau de bord d'administration : ce qui est À RÉGLER (bloquant, jamais
 // masquable) et les RECOMMANDATIONS (masquables par compte), en logique pure.
 export * from "./adminAttention/attentionModel";
+// La Famille : le contrat (réponses, corps, codes d'erreur, temps réel,
+// notifications), la table des routes et de leurs appelants, les règles
+// pures (PIN, capacité, invitations, candidats) — miroirs backend — et la
+// lecture d'un refus par les clients.
+export * from "./family/familyContract";
+export * from "./family/familyProtocol";
+export * from "./family/familyRoutes";
+export * from "./family/familyRules";
+export * from "./family/familyLabels";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";

@@ -14,6 +14,7 @@ export type CarouselId =
 
 import type { WtClientMessage, WtServerMessage } from "./watchTogether";
 import type { SessionClientMessage, SessionServerMessage } from "./sessionChannelMessages";
+import type { FamilyWsMessage } from "../family/familyProtocol";
 
 /** Messages sent from the server to clients.
  *  `pong` porte optionnellement `t` (echo du ping client) et `serverTime`
@@ -35,6 +36,11 @@ export type WsServerMessage =
    *  page de l'accueil ou réglages de recommandation) : relire ce bloc. L'auteur
    *  de l'écriture n'est jamais destinataire. */
   | { type: "preferences:update"; scope: PreferencesScope }
+  /** La Famille : `family:update` (relire la famille, les adhésions ou les
+   *  invitations reçues — l'affiche se montre en direct) ; et, sur le socket
+   *  d'une session de profil de TV, `family:profile-ended` avant sa fermeture
+   *  (4010) : la TV revient à « Qui regarde ? ». */
+  | FamilyWsMessage
   | SessionServerMessage
   | WtServerMessage;
 

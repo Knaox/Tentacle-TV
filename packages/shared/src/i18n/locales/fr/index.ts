@@ -41,6 +41,7 @@ import serverLinks from "./serverLinks";
 import requests from "./requests";
 import adminOverview from "./adminOverview";
 import notices from "./notices";
+import family from "./family";
 
 export default {
   common, auth, setup, player, admin,
@@ -57,4 +58,5 @@ export default {
   requests,
   adminOverview,
   notices,
+  family,
 };
