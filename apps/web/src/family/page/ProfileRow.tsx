@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Lock } from "lucide-react";
-import type { FamilyProfileDto, ProfileActions } from "@tentacle-tv/shared";
+import { guestCanRequest, type FamilyProfileDto, type ProfileActions } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../FamilyAvatar";
 import { useFamilyText } from "../useFamilyText";
 import { RightToggle } from "./RightToggle";
@@ -16,6 +16,8 @@ interface ProfileRowProps {
   actions: ProfileActions;
   /** Dire qui a créé cet invité : faux quand c'est le propriétaire (il va de soi). */
   showCreator: boolean;
+  /** Le propriétaire : les demandes d'un invité autorisé partent à son nom. */
+  ownerName: string;
   rightPending: boolean;
   onRemove: (profile: FamilyProfileDto) => void;
   onGuestPin: (profile: FamilyProfileDto) => void;
@@ -27,13 +29,14 @@ const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest
 /**
  * Un profil de LA famille, la même pour le propriétaire et pour ses membres :
  * avatar à sa couleur, nom, rôle, ancienneté, code PIN, créateur d'un invité,
- * et le droit d'un membre (« Peut créer des invités ») — que le propriétaire
- * règle et que les autres LISENT. Les boutons ne paraissent que pour les
+ * et les droits — « Peut créer des invités » d'un membre, « Peut demander des
+ * films » d'un invité (ses demandes partent au nom du propriétaire) — que le
+ * propriétaire règle et que les autres LISENT. Les boutons ne paraissent que pour les
  * gestes permis à celui qui regarde : retirer un membre, supprimer un invité
  * ou poser son PIN (le propriétaire, ou le membre qui l'a créé).
  */
 export const ProfileRow = memo(function ProfileRow({
-  profile, last, isSelf, actions, showCreator, rightPending, onRemove, onGuestPin, onRightChange,
+  profile, last, isSelf, actions, showCreator, ownerName, rightPending, onRemove, onGuestPin, onRightChange,
 }: ProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family"]);
   const { formatDate } = useFamilyText();
@@ -72,6 +75,16 @@ export const ProfileRow = memo(function ProfileRow({
             hint={t("family:rights.createGuestsHint")}
             checked={profile.rights?.createGuests === true}
             editable={actions.right === "createGuests"}
+            pending={rightPending}
+            onChange={(next) => onRightChange(profile, next)}
+          />
+        )}
+        {isGuest && profile.guestRights !== undefined && (
+          <RightToggle
+            label={t("family:rights.requestTitles")}
+            hint={t("family:rights.requestTitlesHint", { owner: ownerName })}
+            checked={guestCanRequest(profile)}
+            editable={actions.right === "requestTitles"}
             pending={rightPending}
             onChange={(next) => onRightChange(profile, next)}
           />

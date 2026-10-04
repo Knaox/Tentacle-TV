@@ -38,7 +38,7 @@ function row(p: FamilyProfileDto, actions: ProfileActions = NONE, opts: { isSelf
   return renderToStaticMarkup(
     <ul>
       <ProfileRow
-        profile={p} last isSelf={opts.isSelf ?? false} actions={actions} showCreator={opts.showCreator ?? false}
+        profile={p} last isSelf={opts.isSelf ?? false} actions={actions} showCreator={opts.showCreator ?? false} ownerName="Damien"
         rightPending={false} onRemove={noop} onGuestPin={noop} onRightChange={noop}
       />
     </ul>,
@@ -86,6 +86,21 @@ describe("ProfileRow — la famille partagée", () => {
     expect(html).toContain("familyWeb:owned.delete");
     expect(html).toContain("family:addedBy");
     expect(html).not.toContain("<img");
+  });
+
+  it("le propriétaire règle « peut demander » d'un invité, en disant au nom de qui", () => {
+    const html = row(profile("guest", { guestRights: { requestTitles: false } }), { pin: true, remove: true, right: "requestTitles" });
+    expect(html).toContain("family:rights.requestTitles");
+    expect(html).toContain("family:rights.requestTitlesHint{&quot;owner&quot;:&quot;Damien&quot;}");
+    expect(html).toContain('role="switch"');
+  });
+
+  it("« peut demander » se lit sans interrupteur ailleurs, et se tait face à un serveur d'avant", () => {
+    const granted = row(profile("guest", { guestRights: { requestTitles: true } }));
+    expect(granted).toContain("family:rights.requestTitles");
+    expect(granted).not.toContain('role="switch"');
+    expect(row(profile("guest", { guestRights: { requestTitles: false } }))).not.toContain("family:rights.requestTitles");
+    expect(row(profile("guest"))).not.toContain("family:rights.requestTitles");
   });
 
   it("l'invité d'un autre n'offre rien ; « Vous » ne s'offre aucun geste", () => {

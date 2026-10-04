@@ -6,6 +6,7 @@ import {
   useCancelFamilyInvitation,
   useDeleteFamilyGuest,
   useRemoveFamilyMember,
+  useSetFamilyGuestRights,
   useSetFamilyMemberRights,
   useUserId,
 } from "@tentacle-tv/api-client";
@@ -56,6 +57,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const deleteGuest = useDeleteFamilyGuest();
   const cancelInvite = useCancelFamilyInvitation();
   const setRights = useSetFamilyMemberRights();
+  const setGuestRights = useSetFamilyGuestRights();
   const [confirming, setConfirming] = useState<FamilyPending | null>(null);
   const [dialog, setDialog] = useState<"invite" | "guest" | null>(null);
   const [pinGuest, setPinGuest] = useState<FamilyProfileDto | null>(null);
@@ -70,13 +72,15 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const onCancelInvite = useCallback((invitation: OutgoingInvitationDto) => setConfirming({ kind: "cancelInvite", invitation }), []);
   const fail = useCallback((error: unknown) => toast.show("error", errorText(error)), [toast, errorText]);
   const { mutate: mutateRights } = setRights;
+  const { mutate: mutateGuestRights } = setGuestRights;
+  // Un membre : « peut créer des invités » ; un invité : « peut demander ».
   const onRightChange = useCallback(
-    (profile: FamilyProfileDto, next: boolean) =>
-      mutateRights({ userId: profile.userId, rights: { createGuests: next } }, {
-        onSuccess: () => toast.show("success", t("familyWeb:rights.saved")),
-        onError: fail,
-      }),
-    [mutateRights, toast, t, fail],
+    (profile: FamilyProfileDto, next: boolean) => {
+      const done = { onSuccess: () => toast.show("success", t("familyWeb:rights.saved")), onError: fail };
+      if (profile.kind === "guest") mutateGuestRights({ userId: profile.userId, rights: { requestTitles: next } }, done);
+      else mutateRights({ userId: profile.userId, rights: { createGuests: next } }, done);
+    },
+    [mutateRights, mutateGuestRights, toast, t, fail],
   );
 
   const confirm = () => {
@@ -132,7 +136,8 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
                 isSelf={isOwnProfile(profile, viewerId)}
                 actions={profileActions(overview, profile, viewerId)}
                 showCreator={!!profile.createdBy && !sameUserId(profile.createdBy, family.owner.userId)}
-                rightPending={setRights.isPending}
+                ownerName={family.owner.name}
+                rightPending={setRights.isPending || setGuestRights.isPending}
                 onRemove={onRemove}
                 onGuestPin={setPinGuest}
                 onRightChange={onRightChange}
