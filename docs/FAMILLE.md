@@ -261,9 +261,14 @@ Le PIN du propriétaire protège aussi « Gérer les profils ».
 - **Réglages › Famille** (`/settings/family` ; `/family`, la route de la
   cloche, y mène ; le miroir la sert en volet du profil) : seulement si
   `/api/config` annonce la Famille — on attend sa réponse avant de conclure.
-  Invitations reçues, ma famille (inviter, créer un invité, retirer,
-  supprimer, PIN d'un invité), invitations en attente, mes familles, mon
-  PIN, dissolution derrière une case à cocher. Code : `apps/web/src/family/`.
+  v2 : LA famille, la même pour le propriétaire et ses membres
+  (`FamilySection`) — le propriétaire invite, annule, retire, règle « peut
+  créer des invités » et dissout ; un membre voit tout, crée des invités s'il
+  en a le droit, ne gère que les siens, et « Quitte la famille ». Les gestes
+  viennent de `familyActions` / `profileActions` (shared) ; les candidats :
+  tous les comptes d'emblée, les non invitables grisés (`candidateView`).
+  Invitations reçues seulement sans famille ; mon PIN. Code :
+  `apps/web/src/family/`.
 - **L'affiche** est montée une fois par `AppLayout` (bureau comme miroir,
   jamais sur le lecteur), avec `useFamilyLive` ; « Plus tard » et la
   fermeture la taisent, la cloche rouvre l'invitation qu'on clique. Règles
