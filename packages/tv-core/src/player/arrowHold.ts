@@ -1,5 +1,6 @@
 import { createHoldMotor } from "./holdMotor";
 import { holdStillTicking } from "./pressGuards";
+import type { RemoteTraits } from "../remote/bindings/types";
 import type { PlayerTimers } from "./playerTimers";
 
 /** Le sens d'un déplacement dans la vidéo. */
@@ -29,6 +30,21 @@ export interface ScrubInputProfile {
 export const HOLD_FROM_DOWN_SCRUB_MS = 400;
 /** Idem depuis la lecture (habillage caché) : délai avant d'ENGAGER. */
 export const HOLD_FROM_DOWN_ENGAGE_MS = 550;
+
+/**
+ * Le profil des flèches, lu dans les faits de la télécommande (`traits`) au
+ * lieu d'un nom de plateforme. Un maintien ANNONCÉ (début puis fin, rien
+ * entre : tvOS, et Android TV par react-native-tvos, qui tire `longLeft` de la
+ * répétition et avale le reste) : l'événement reçu EST le geste, le
+ * défilement part dès le début du maintien et s'arrête à sa fin annoncée —
+ * les mêmes pas et la même accélération partout. Sinon (key-down et
+ * répétitions bruts) : le profil d'avant d'Android TV, qui tranche l'appui
+ * au key-up et déduit le maintien du key-down resté sans relâchement.
+ */
+export function scrubInputProfileOf(traits: Pick<RemoteTraits, "announcedHolds">): ScrubInputProfile {
+  if (traits.announcedHolds) return { tapOnRelease: false, holdFromKeyDown: false, holdArmMs: 0, holdEndAnnounced: true };
+  return { tapOnRelease: true, holdFromKeyDown: true, holdArmMs: 250, holdEndAnnounced: false };
+}
 
 /** Codes internes du moteur — il ne s'en sert que pour l'égalité. Les touches
  *  média ont les leurs : un maintien de flèche et un maintien d'avance ne
