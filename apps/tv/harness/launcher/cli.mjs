@@ -1,11 +1,26 @@
 #!/usr/bin/env node
 // Provisoire — à retirer quand la refonte remplace l'UI TV (fusion dans main).
 //
-// Le lanceur de la refonte de l'UI Apple TV, pour l'utilisateur, en une
-// commande (depuis la racine du dépôt) :
-//   pnpm tv:refonte [--rebuild]   l'app réelle, refondue, au simulateur
+// Le lanceur de la refonte de l'UI TV, pour l'utilisateur, en une commande
+// (depuis la racine du dépôt) :
+//   pnpm tv:refonte [--rebuild]   l'app réelle, refondue, au simulateur Apple TV
+//   pnpm tv:refonte:android [--rebuild] [--journal]
+//                                 la même, sur l'émulateur Android TV : backend
+//                                 de dev, Metro dédié (port 8091 et suivants)
+//                                 avec TENTACLE_TV_REDESIGN=1, émulateur
+//                                 « TentacleTV_Shield_API31 » (créé au besoin,
+//                                 Android TV 12 arm64, 1080p, 3 Go) démarré SOUS
+//                                 VERROU (<Projet - local>/.claude/locks/
+//                                 android-emulator : un seul émulateur sur la
+//                                 machine), build debug installée, adb reverse
+//                                 (8081 → Metro, 3001 → backend), app ouverte
+//                                 (am start -n com.tentacletv.mobile/
+//                                 com.tentacletv.MainActivity). --journal : chaque
+//                                 touche et son intention dans le journal de
+//                                 Metro (lignes « [remote] »).
 //   pnpm tv:banc [commande…]      le banc UI ; avec une commande, la lui passe
-//   pnpm tv:stop                  éteint ce que les deux ont lancé
+//   pnpm tv:stop                  éteint ce que les trois ont lancé (émulateur
+//                                 compris, par son PID, et rend son verrou)
 // Mode d'emploi et retrait : docs/TV-REFONTE.md, « Tester la refonte ».
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -21,6 +36,7 @@ import {
   BANC_SIM, REFONTE_SIM, boot, bringToFront, ensureDevice, launchOnMetro, pointAppAt, quitSimulatorIfIdle, shutdownDedicated,
 } from "./simulator.mjs";
 import { ensureApp } from "./nativeBuild.mjs";
+import { refonteAndroid, stopAndroid } from "./androidCommand.mjs";
 
 const BENCH_SCRIPT = path.join(APP_DIR, "harness/ui-bench/bench.mjs");
 
@@ -125,7 +141,10 @@ async function stop() {
   header("Arrêt du lanceur");
   const state = loadState();
   let nothing = true;
-  for (const [key, label] of [["banc", "Banc UI (Metro + relais)"], ["metro", "Metro de la refonte"], ["backend", "Backend de dev"]]) {
+  if (await stopAndroid()) nothing = false;
+  for (const [key, label] of [
+    ["banc", "Banc UI (Metro + relais)"], ["metro", "Metro de la refonte"], ["metroAndroid", "Metro de la refonte Android"], ["backend", "Backend de dev"],
+  ]) {
     const record = state[key];
     if (!record) continue;
     const stopped = await stopProcess(record);
@@ -147,14 +166,15 @@ async function stop() {
 function help() {
   say("Lanceur provisoire de la refonte de l'UI Apple TV (depuis la racine du dépôt) :");
   say("  pnpm tv:refonte [--rebuild]   backend de dev, Metro, app refondue au simulateur « Tentacle TV — refonte »");
+  say("  pnpm tv:refonte:android [--rebuild] [--journal]   la même, à l'émulateur Android TV (sous verrou)");
   say("  pnpm tv:banc                  banc UI (bench:ui up en arrière-plan + bench:ui sim) au simulateur « Tentacle TV — banc UI »");
   say("  pnpm tv:banc <commande…>      une commande du banc (planche, scene, shot…) sur ce banc-là");
-  say("  pnpm tv:stop                  éteint ce que les deux ont lancé");
+  say("  pnpm tv:stop                  éteint ce que les trois ont lancé, émulateur compris");
   say(`Journaux et état : ${shortPath(STATE_DIR)}. Mode d'emploi : docs/TV-REFONTE.md, « Tester la refonte ».`);
 }
 
 const [command = "help", ...args] = process.argv.slice(2);
-const commands = { refonte, banc, stop, help };
+const commands = { refonte, "refonte-android": (args) => refonteAndroid(args, header), banc, stop, help };
 const run = commands[command] ?? (() => {
   help();
   throw new LauncherError(`commande inconnue : ${command}`);

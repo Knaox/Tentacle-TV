@@ -10,6 +10,7 @@
     "dev:mobile": "pnpm --filter @tentacle-tv/mobile start",
     "dev:tv": "pnpm --filter @tentacle-tv/tv start",
     "tv:refonte": ": provisoire, le temps de la refonte TV; node apps/tv/harness/launcher/cli.mjs refonte",
+    "tv:refonte:android": ": provisoire, le temps de la refonte TV; node apps/tv/harness/launcher/cli.mjs refonte-android",
     "tv:banc": ": provisoire, le temps de la refonte TV; node apps/tv/harness/launcher/cli.mjs banc",
     "tv:stop": ": provisoire, le temps de la refonte TV; node apps/tv/harness/launcher/cli.mjs stop",
     "dev:webos": "pnpm --filter @tentacle-tv/tv-webos dev",

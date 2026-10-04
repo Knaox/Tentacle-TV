@@ -37,7 +37,7 @@ function installedVersion(name) {
 }
 
 /** Les versions INSTALLÉES des dépendances de l'app (hors paquets du dépôt). */
-function dependencyVersions() {
+export function dependencyVersions() {
   const { dependencies = {} } = JSON.parse(fs.readFileSync(path.join(APP_DIR, "package.json"), "utf8"));
   return Object.keys(dependencies).sort()
     .filter((name) => !String(dependencies[name]).startsWith("workspace:"))
@@ -45,7 +45,7 @@ function dependencyVersions() {
 }
 
 /** Empreinte des fichiers suivis (ou nouveaux) sous `inputs`, plus `extras`. */
-function fingerprintOf(inputs, extras) {
+export function fingerprintOf(inputs, extras) {
   const hash = crypto.createHash("sha256");
   const listed = capture("git", ["-C", REPO, "ls-files", "-z", "-co", "--exclude-standard", "--", ...inputs]) ?? "";
   for (const file of listed.split("\0").filter(Boolean).sort()) {

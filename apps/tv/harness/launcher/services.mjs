@@ -92,33 +92,41 @@ const servesThisApp = async (port) => sameDir(await metroRoot(port), APP_DIR);
 
 /** Un Metro pour CE dossier : celui du lanceur s'il tourne, celui de
  *  `pnpm dev:tv` sur 8081 s'il sert ce dossier, sinon un nouveau sur un port
- *  libre. Rend `{ port, record }` (`record` : le nôtre, pour lire son journal). */
-export async function ensureMetro() {
-  const mine = loadState().metro;
+ *  libre. Rend `{ port, record }` (`record` : le nôtre, pour lire son journal).
+ *  Android (`key` « metroAndroid ») : un Metro À PART, lancé avec son
+ *  environnement (`env` : l'aiguillage de la refonte, inliné au bundle) —
+ *  jamais celui de `pnpm dev:tv`, qui ne l'a pas. */
+export async function ensureMetro({ key = "metro", basePort = METRO_DEFAULT_PORT, env = {}, label = "Metro" } = {}) {
+  const shared = key === "metro";
+  const mine = loadState()[key];
   if (isAlive(mine) && !sameDir(mine.cwd, APP_DIR)) {
     // Le simulateur de la refonte change de dossier : l'ancien Metro ne servirait plus personne.
     await stopProcess(mine);
     note(`Metro du lanceur pour ${mine.cwd} arrêté (on lance depuis ce dossier-ci)`);
+  } else if (isAlive(mine) && JSON.stringify(mine.env ?? {}) !== JSON.stringify(env)) {
+    // Ses drapeaux sont inlinés au bundle : un autre environnement veut un autre Metro.
+    await stopProcess(mine);
+    note(`${label} du lanceur lancé avec d'autres drapeaux : arrêté, on en relance un`);
   } else if (isAlive(mine)) {
     if (await waitFor(() => servesThisApp(mine.port), { timeoutMs: 60_000 })) {
-      step("Metro", `déjà en marche sur le port ${mine.port} (lancé par le lanceur) — réutilisé`);
+      step(label, `déjà en marche sur le port ${mine.port} (lancé par le lanceur) — réutilisé`);
       return { port: mine.port, record: mine };
     }
     await stopProcess(mine);
     note(`Metro du lanceur muet sur ${mine.port} : arrêté, on en relance un`);
   }
-  if (await servesThisApp(METRO_DEFAULT_PORT)) {
+  if (shared && await servesThisApp(METRO_DEFAULT_PORT)) {
     step("Metro", `déjà en marche sur le port ${METRO_DEFAULT_PORT} pour ce dossier — réutilisé`);
     return { port: METRO_DEFAULT_PORT, record: null };
   }
-  const port = await freePort(METRO_DEFAULT_PORT);
-  const record = { ...spawnDetached("metro", "npx", ["react-native", "start", "--port", String(port)], { cwd: APP_DIR }), port };
-  updateState((state) => { state.metro = record; });
+  const port = await freePort(basePort);
+  const record = { ...spawnDetached(key, "npx", ["react-native", "start", "--port", String(port)], { cwd: APP_DIR, env }), port, env };
+  updateState((state) => { state[key] = record; });
   if (!(await waitFor(() => servesThisApp(port), { timeoutMs: 120_000 }))) {
     throw new LauncherError(`Metro ne répond pas sur le port ${port} — journal : ${shortPath(record.log)}`);
   }
-  const why = port === METRO_DEFAULT_PORT ? "" : ` (${METRO_DEFAULT_PORT} est occupé)`;
-  step("Metro", `lancé sur le port ${port}${why} — journal : ${shortPath(record.log)}`);
+  const why = port === basePort ? "" : ` (${basePort} est occupé)`;
+  step(label, `lancé sur le port ${port}${why} — journal : ${shortPath(record.log)}`);
   return { port, record };
 }
 

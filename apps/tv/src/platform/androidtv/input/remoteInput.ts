@@ -7,6 +7,7 @@ import {
   readAndroidTvEvent,
   type IntentEvent,
 } from "@tentacle-tv/tv-core";
+import { attachRemoteLog } from "./remoteLog";
 
 /**
  * L'ENTRÉE UNIQUE de la télécommande d'Android TV — le pendant de
@@ -88,6 +89,7 @@ function sync(needed: boolean): void {
 }
 
 androidTvInput.onDemand(sync);
+attachRemoteLog(androidTvInput);
 backTakers.onDemand((needed) => {
   if (needed) installBack();
 });
