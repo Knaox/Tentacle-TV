@@ -3,8 +3,8 @@
   "domain": "retour-rail",
   "suite": "demandes",
   "reference": {
-    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
-    "label": "référence 17dde80e0"
+    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
+    "label": "référence 562ae44a5"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:13:21.331Z",
+  "recordedAt": "2026-10-04T19:53:29.216Z",
   "scenarios": {
     "fenetre-des-demandes": {
       "hash": "39eac48ed4f4",
-      "durationMs": 20430,
+      "durationMs": 19792,
       "start": {
         "app": "foreground",
         "focus": "grid:0",

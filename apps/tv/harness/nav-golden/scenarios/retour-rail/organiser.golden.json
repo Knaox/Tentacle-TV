@@ -3,8 +3,8 @@
   "domain": "retour-rail",
   "suite": "organiser",
   "reference": {
-    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
-    "label": "référence 17dde80e0"
+    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
+    "label": "référence 562ae44a5"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:23:53.302Z",
+  "recordedAt": "2026-10-04T20:03:57.023Z",
   "scenarios": {
     "menu-entree-retour": {
       "hash": "59eaa18d4ac1",
-      "durationMs": 28635,
+      "durationMs": 22326,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -249,7 +249,7 @@
     },
     "monter-x2-puis-retour": {
       "hash": "98f78143207d",
-      "durationMs": 24237,
+      "durationMs": 24058,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -506,7 +506,7 @@
     },
     "monter-puis-double-retour": {
       "hash": "3f405ab37c59",
-      "durationMs": 20801,
+      "durationMs": 21148,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -682,7 +682,7 @@
     },
     "masquer-puis-tout-afficher": {
       "hash": "be66f4e3223e",
-      "durationMs": 22212,
+      "durationMs": 23758,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -888,7 +888,7 @@
     },
     "tout-afficher-du-menu": {
       "hash": "797d4c6a4be9",
-      "durationMs": 27087,
+      "durationMs": 26651,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1126,7 +1126,7 @@
     },
     "deplacer-puis-poser": {
       "hash": "e2ef2a92c14e",
-      "durationMs": 22214,
+      "durationMs": 23358,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1349,7 +1349,7 @@
     },
     "deplacer-puis-annuler": {
       "hash": "51bb6191c676",
-      "durationMs": 22148,
+      "durationMs": 22498,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1541,7 +1541,7 @@
     },
     "deplacer-puis-sortir": {
       "hash": "9ce169e37e2f",
-      "durationMs": 21216,
+      "durationMs": 21463,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1710,7 +1710,7 @@
     },
     "deplacer-butee-en-tete": {
       "hash": "771dd68a283a",
-      "durationMs": 23549,
+      "durationMs": 22673,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1908,7 +1908,7 @@
     },
     "appui-long-accueil": {
       "hash": "2b6eea423e90",
-      "durationMs": 19616,
+      "durationMs": 18685,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1997,7 +1997,7 @@
     },
     "appui-long-rechercher": {
       "hash": "8d53c414068e",
-      "durationMs": 19273,
+      "durationMs": 17935,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2087,7 +2087,7 @@
     },
     "appui-long-profil": {
       "hash": "a70ae37bcecb",
-      "durationMs": 18011,
+      "durationMs": 18493,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2173,7 +2173,7 @@
     },
     "menu-vers-reglages-navigation": {
       "hash": "3e1b62d065b6",
-      "durationMs": 21006,
+      "durationMs": 20697,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2322,7 +2322,7 @@
     },
     "reglages-navigation-deplacer": {
       "hash": "7a408fbd606d",
-      "durationMs": 28408,
+      "durationMs": 28723,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:navigation",

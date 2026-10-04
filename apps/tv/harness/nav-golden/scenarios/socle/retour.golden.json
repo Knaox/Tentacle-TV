@@ -3,8 +3,8 @@
   "domain": "socle",
   "suite": "retour",
   "reference": {
-    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
-    "label": "référence 17dde80e0"
+    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
+    "label": "référence 562ae44a5"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T18:55:21.199Z",
+  "recordedAt": "2026-10-04T19:35:36.158Z",
   "scenarios": {
     "retour-accueil": {
       "hash": "ab039fb4ebaf",
-      "durationMs": 32734,
+      "durationMs": 39694,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -103,7 +103,7 @@
     },
     "retour-pour-vous": {
       "hash": "78f78c543981",
-      "durationMs": 27540,
+      "durationMs": 29766,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -190,7 +190,7 @@
     },
     "retour-ma-liste": {
       "hash": "2bdbba5a67f8",
-      "durationMs": 25720,
+      "durationMs": 29375,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -277,7 +277,7 @@
     },
     "retour-favoris": {
       "hash": "8d1fdc23be98",
-      "durationMs": 31075,
+      "durationMs": 33658,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -364,7 +364,7 @@
     },
     "retour-animes": {
       "hash": "fd5d2555f9d5",
-      "durationMs": 30851,
+      "durationMs": 34000,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -460,7 +460,7 @@
     },
     "retour-series": {
       "hash": "8a8ee6d37174",
-      "durationMs": 31888,
+      "durationMs": 37369,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -583,7 +583,7 @@
     },
     "retour-recherche": {
       "hash": "ff846e3cedc3",
-      "durationMs": 26829,
+      "durationMs": 28026,
       "start": {
         "app": "foreground",
         "focus": "key:A",
@@ -670,7 +670,7 @@
     },
     "retour-reglages": {
       "hash": "70d07834eb36",
-      "durationMs": 42268,
+      "durationMs": 44358,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -749,7 +749,7 @@
     },
     "retour-fiche": {
       "hash": "1b241a1569c7",
-      "durationMs": 18111,
+      "durationMs": 12377,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
@@ -824,7 +824,7 @@
     },
     "retour-lecteur": {
       "hash": "fb7b4a4e077f",
-      "durationMs": 24436,
+      "durationMs": 16567,
       "start": {
         "app": "foreground",
         "focus": "resume:0",

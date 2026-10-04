@@ -3,8 +3,8 @@
   "domain": "retour-rail",
   "suite": "retour-pages",
   "reference": {
-    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
-    "label": "référence 17dde80e0"
+    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
+    "label": "référence 562ae44a5"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:10:07.337Z",
+  "recordedAt": "2026-10-04T19:50:25.511Z",
   "scenarios": {
     "accueil-retour-x3": {
       "hash": "5b8382e3de8f",
-      "durationMs": 30707,
+      "durationMs": 28466,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -124,7 +124,7 @@
     },
     "bibliotheque-retour-x3": {
       "hash": "1499391cbb31",
-      "durationMs": 28065,
+      "durationMs": 28331,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -245,7 +245,7 @@
     },
     "reglages-retour-x2": {
       "hash": "a288dc37d9f8",
-      "durationMs": 31539,
+      "durationMs": 31004,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -332,7 +332,7 @@
     },
     "rail-entree-vers-profil": {
       "hash": "c0a06744b641",
-      "durationMs": 16651,
+      "durationMs": 16567,
       "start": {
         "app": "foreground",
         "focus": "grid:0",

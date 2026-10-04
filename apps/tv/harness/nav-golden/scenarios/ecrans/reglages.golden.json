@@ -3,8 +3,8 @@
   "domain": "ecrans",
   "suite": "reglages",
   "reference": {
-    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
-    "label": "référence 17dde80e0"
+    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
+    "label": "référence 562ae44a5"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:05:31.867Z",
+  "recordedAt": "2026-10-04T19:45:59.342Z",
   "scenarios": {
     "reglages-onglets": {
       "hash": "1f952d09cb16",
-      "durationMs": 42791,
+      "durationMs": 50887,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -388,7 +388,7 @@
     },
     "reglages-double-appui": {
       "hash": "564d8ce9e8e2",
-      "durationMs": 33339,
+      "durationMs": 33807,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -591,7 +591,7 @@
     },
     "reglages-liste-de-choix": {
       "hash": "dbcdcc94382c",
-      "durationMs": 40745,
+      "durationMs": 38091,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:playback",
@@ -776,7 +776,7 @@
     },
     "reglages-navigation-deplacer": {
       "hash": "fbcd8f3e8baa",
-      "durationMs": 46556,
+      "durationMs": 46008,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:navigation",

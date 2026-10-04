@@ -3,8 +3,8 @@
   "domain": "retour-rail",
   "suite": "defilement",
   "reference": {
-    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
-    "label": "référence 17dde80e0"
+    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
+    "label": "référence 562ae44a5"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:06:31.349Z",
+  "recordedAt": "2026-10-04T19:46:57.710Z",
   "scenarios": {
     "rail-24-bibliotheques": {
       "hash": "b63f7199e5fe",
-      "durationMs": 29441,
+      "durationMs": 28721,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
