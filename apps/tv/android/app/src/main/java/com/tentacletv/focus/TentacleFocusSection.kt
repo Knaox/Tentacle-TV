@@ -26,7 +26,8 @@ import java.util.WeakHashMap
  *   par le moteur géométrique d'Android, borné à la rangée (ce que fait
  *   `HorizontalScrollView`), mais sans son saut : la rangée suit en un
  *   mouvement (`RevealScroller`). Rien dans la rangée : le moteur cherche
- *   au-delà (le rail), sans le « saut de page » de `HorizontalScrollView` ;
+ *   au-delà (le rail), sans le « saut de page » de `HorizontalScrollView` —
+ *   ni, en HAUT / BAS sans section au-delà, celui de `ScrollView` ;
  * - le SUIVI de la page (`reveal*`) : `RevealScroller`, au focus ;
  * - la CADENCE d'une flèche maintenue (`tvPacing`) : `RepeatPacer`.
  *
@@ -90,11 +91,23 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
     }
   }
 
-  /** HAUT / BAS : la règle des sections ; null — rien au-delà, Android garde la main. */
+  /** HAUT / BAS : la règle des sections ; rien au-delà : le moteur d'Android (R8). */
   private fun moveVertically(focused: View, direction: Int): Boolean? {
     val from = FocusGeometry.innermostNeighborSection(focused) ?: return null
-    val target = FocusNeighbors.target(from, focused, direction == View.FOCUS_UP) ?: return null
+    val target = FocusNeighbors.target(from, focused, direction == View.FOCUS_UP) ?: return platformMove(focused, direction)
     return if (target.requestFocus(direction)) true else null
+  }
+
+  /**
+   * Le moteur d'Android — `focusSearch` du focalisé, par le chemin de ses
+   * ancêtres (pièges, guides, `nextFocus*`), comme ViewRootImpl — mais SANS le
+   * « saut de page » d'une ScrollView qui ne trouve rien (`arrowScroll` défile
+   * d'une demi-page) : sur Apple TV, rien au-delà, rien ne bouge. La touche est
+   * prise dans tous les cas.
+   */
+  private fun platformMove(focused: View, direction: Int): Boolean {
+    focused.focusSearch(direction)?.requestFocus(direction)
+    return true
   }
 
   /** GAUCHE / DROITE dans une rangée défilante ; null hors d'une rangée. */
@@ -102,8 +115,8 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
     val row = FocusGeometry.ancestor<ReactHorizontalScrollView>(focused, stop = this) ?: return null
     val next = FocusFinder.getInstance().findNextFocus(row, focused, direction)
     if (next != null) return if (next.requestFocus(direction)) true else null
-    // Rien dans la rangée : pas de saut de page, le moteur d'Android cherche au-delà.
-    return false
+    // Rien dans la rangée : le moteur d'Android cherche au-delà (le rail), sans saut de page.
+    return platformMove(focused, direction)
   }
 
   override fun requestChildFocus(child: View, focused: View) {
