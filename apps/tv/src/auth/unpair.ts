@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { rehydratePlaybackSettings, setPreferencesToken } from "@tentacle-tv/api-client";
 import type { JellyfinClient, StorageAdapter } from "@tentacle-tv/api-client";
-import { ACCOUNT_STORAGE_KEYS, beginUnpair, endWipe, wipeAccount } from "@tentacle-tv/tv-core";
+import { ACCOUNT_STORAGE_KEYS, TV_PAIRING_TOKEN_KEY, beginUnpair, endWipe, wipeAccount } from "@tentacle-tv/tv-core";
 import { navigationRef } from "../navigation/navigationRef";
 import { scheduleRevocationDrain } from "./revocationQueue";
 import { notifySessionChanged } from "./sessionEvents";
@@ -22,6 +22,10 @@ import { notifySessionChanged } from "./sessionEvents";
  * 4. le retour au jumelage ;
  * 5. la révocation, en tâche de fond, rejouée jusqu'à confirmation
  *    (`revocationQueue.ts`).
+ *
+ * Une Apple TV passée aux profils (Famille) se déjumelle par son jeton de
+ * JUMELAGE : le serveur ferme avec lui toutes ses sessions de profil. Ses
+ * invités, eux, restent (seul le propriétaire les supprime).
  */
 
 /** D'où vient le déjumelage :
@@ -39,7 +43,10 @@ export interface UnpairContext {
 export function unpairDevice({ jfClient, storage, queryClient }: UnpairContext, origin: UnpairOrigin): void {
   const leaving = origin === "revoked"
     ? null
-    : { serverUrl: storage.getItem("tentacle_server_url"), token: storage.getItem("tentacle_token") };
+    : {
+        serverUrl: storage.getItem("tentacle_server_url"),
+        token: storage.getItem(TV_PAIRING_TOKEN_KEY) ?? storage.getItem("tentacle_token"),
+      };
   beginUnpair(storage, leaving, Date.now());
 
   jfClient.setAccessToken(null);

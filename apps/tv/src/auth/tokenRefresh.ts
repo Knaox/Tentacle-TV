@@ -23,8 +23,11 @@ export type RefreshResult =
   | { ok: true; accessToken: string }
   /** `revoked` : le 401 portait `revoked:true` (ligne paired_devices supprimée —
    *  verdict de DB). C'est le SEUL cas où l'appelant a le droit de déjumeler ;
-   *  un 401 nu (Jellyfin qui refuse, secret en avarie) conserve la session. */
-  | { ok: false; reason: "expired" | "network" | "server"; revoked?: boolean };
+   *  un 401 nu (Jellyfin qui refuse, secret en avarie) conserve la session.
+   *  `profileEnded` : c'était une session de profil (Famille, Apple TV) que le
+   *  serveur a fermée — la TV revient à « Qui regarde ? », elle ne se
+   *  déjumelle PAS. */
+  | { ok: false; reason: "expired" | "network" | "server"; revoked?: boolean; profileEnded?: boolean };
 
 /** AbortSignal.timeout polyfill compatible React Native. */
 function timeoutSignal(ms: number, parent?: AbortSignal): AbortSignal {
@@ -103,8 +106,12 @@ export async function refreshWithRetry(opts: RefreshAttempt): Promise<RefreshRes
       // DB : l'appareil a été révoqué) est immédiatement cru. Pas besoin de
       // re-tentative de confirmation dans ce cas : ce n'est pas un aléa Jellyfin.
       if (res.status === 401) {
-        const body = await res.json().catch(() => null) as { revoked?: boolean } | null;
-        if (body?.revoked === true) return { ok: false, reason: "expired", revoked: true };
+        const body = await res.json().catch(() => null) as { revoked?: boolean; profileEnded?: boolean } | null;
+        if (body?.revoked === true) {
+          return body.profileEnded === true
+            ? { ok: false, reason: "expired", revoked: true, profileEnded: true }
+            : { ok: false, reason: "expired", revoked: true };
+        }
         // 401 nu : Jellyfin redémarre peut-être. On retente une fois pour confirmer.
         if (i === 0 && attempts > 1) {
           lastReason = "server";

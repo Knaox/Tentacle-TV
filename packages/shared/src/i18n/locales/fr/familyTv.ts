@@ -81,6 +81,7 @@ export default {
     none: "Aucun compte à inviter.",
     noMatch: "Aucun compte ne porte ce nom.",
     invite: "Inviter",
+    more: "Précisez la recherche pour voir les autres comptes.",
     sent: "Invitation envoyée à {{name}}.",
   },
   colors: {

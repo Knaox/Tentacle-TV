@@ -6,6 +6,8 @@ import {
 import type { StorageAdapter } from "@tentacle-tv/api-client";
 import { refreshWithRetry, attemptReAuth as attemptReAuthHelper } from "./tokenRefresh";
 import { readCredentials } from "./credentialManager";
+import { replayPendingEnrollment } from "./profileEnrollment";
+import { endedProfile } from "./profileSession";
 import { unpairDevice } from "./unpair";
 
 /** Un seul rafraîchissement à la fois : l'expiration signalée par le client
@@ -80,8 +82,17 @@ async function refreshFlow(
     // base) : le seul 401 qui déjumelle — même en lecture, même en tâche de
     // fond. Un 401 nu (Jellyfin qui refuse, secret en avarie, backend à moitié
     // démarré) CONSERVE la session : les bannières d'état informent.
+    // La Famille (Apple TV) : une session de PROFIL fermée par le serveur
+    // ramène à « Qui regarde ? » ; un « révoqué » sur le jeton d'avant alors
+    // qu'un échange attend sa réponse rejoue l'échange avant d'y croire.
     if (refresh.revoked === true) {
-      unpairDevice({ jfClient, storage, queryClient }, "revoked");
+      const context = { jfClient, storage, queryClient };
+      if (refresh.profileEnded === true) {
+        endedProfile(context);
+        return;
+      }
+      const replay = await replayPendingEnrollment(context);
+      if (replay === "none" || replay === "failed") unpairDevice(context, "revoked");
       return;
     }
 

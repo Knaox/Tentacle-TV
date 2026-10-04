@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { tvSessionMode } from "@tentacle-tv/tv-core";
 import { TV_MOTION } from "@tentacle-tv/theme";
 import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
@@ -14,6 +15,7 @@ import { DisclaimerScreen } from "../screens/DisclaimerScreen";
 import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { PlayerSettingsScreen } from "../screens/player/PlayerSettingsScreen";
+import { ProfilesScreen } from "../screens/ProfilesScreen";
 
 // Lazy-loaded screens
 const MediaDetailScreen = React.lazy(() => import("../screens/MediaDetailScreen").then(m => ({ default: m.MediaDetailScreen })));
@@ -26,6 +28,7 @@ const LibraryScreen = React.lazy(() => import("../screens/LibraryScreen").then(m
 const TrailerScreen = React.lazy(() => import("../screens/TrailerScreen").then(m => ({ default: m.TrailerScreen })));
 const WatchlistScreen = React.lazy(() => import("../screens/WatchlistScreen").then(m => ({ default: m.WatchlistScreen })));
 const FavoritesScreen = React.lazy(() => import("../screens/FavoritesScreen").then(m => ({ default: m.FavoritesScreen })));
+const ManageProfilesScreen = React.lazy(() => import("../screens/ManageProfilesScreen").then(m => ({ default: m.ManageProfilesScreen })));
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -64,6 +67,8 @@ export function AppNavigator() {
   const disclaimerAccepted = storage.getItem("disclaimer_accepted") === "true";
   const hasServerUrl = !!storage.getItem("tentacle_server_url");
   const hasToken = !!storage.getItem("tentacle_token");
+  // Apple TV passée aux profils (Famille), aucun profil ouvert : « Qui regarde ? ».
+  const choosing = tvSessionMode(storage) === "choosing";
 
   // Les conditions d'utilisation, au premier lancement seulement (aucun serveur
   // ni acceptation) — Android TV seulement : la refonte (Apple TV) les a
@@ -73,9 +78,11 @@ export function AppNavigator() {
   const showDisclaimer = !REDESIGN_ACTIVE && !hasServerUrl && !disclaimerAccepted;
   const initialRouteName = showDisclaimer
     ? "Disclaimer"
-    : hasToken
-      ? "Home"
-      : "PairCode";
+    : choosing
+      ? "Profiles"
+      : hasToken
+        ? "Home"
+        : "PairCode";
 
   return (
     <Stack.Navigator
@@ -109,6 +116,9 @@ export function AppNavigator() {
     >
       {REDESIGN_ACTIVE ? null : <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />}
       <Stack.Screen name="PairCode" component={PairCodeScreen} />
+      {/* La Famille (Apple TV) : « Qui regarde ? » et « Gérer les profils ». */}
+      <Stack.Screen name="Profiles" component={ProfilesScreen} initialParams={{ intent: "launch" }} options={{ animation: "none" }} />
+      <Stack.Screen name="ManageProfiles" component={ManageProfilesScreen} />
       {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
           onglets) → nav snappy ET pas de course animation/focus qui empêchait
           l'auto-collapse du rail au retour sur l'Accueil (pop). */}

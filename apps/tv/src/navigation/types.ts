@@ -1,6 +1,13 @@
 export type RootStackParamList = {
   Disclaimer: undefined;
   PairCode: undefined;
+  /** « Qui regarde ? » (Apple TV, Famille) : `launch` — démarrage, session
+   *  fermée par le serveur ; `switch` — « Changer de profil ». */
+  Profiles: { intent: "launch" | "switch" };
+  /** « Gérer les profils » (le profil du propriétaire) : `origin` — d'où l'on
+   *  vient ; depuis « Qui regarde ? », Retour y ramène (la session du
+   *  propriétaire, ouverte pour gérer, se referme). */
+  ManageProfiles: { origin: "profiles" | "settings" };
   Home: undefined;
   /** « Pour vous » : recommandations de la bibliothèque seule. */
   Recommendations: undefined;

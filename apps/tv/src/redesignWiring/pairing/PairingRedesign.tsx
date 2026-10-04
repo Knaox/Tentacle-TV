@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { pairingBackAction, pairingEntryKey, type PairingBackAction } from "@tentacle-tv/tv-core";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -13,6 +14,7 @@ import { usePairingFlow, type PairingFlow, type PairingFlowOptions } from "../..
 import { useRelayPairingCode, useServerPairingCode } from "../../hooks/usePairingCode";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { useBackLayer } from "../back/BackScope";
+import { enrollIfAnnounced, openOnLaunch } from "../../auth/profileEnrollment";
 import { toPairingStep } from "./pairingModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
@@ -55,17 +57,29 @@ function exitOf(flow: PairingFlow): (() => void) | null {
  * l'application — le jumelage n'est jamais une page poussée : tout chemin qui
  * y mène remet la pile à lui seul (`auth/unpair.ts`).
  *
+ * Jumelée sur un serveur qui annonce la Famille, la TV passe aussitôt aux
+ * profils (l'échange, `auth/profileEnrollment.ts`) : le propriétaire seul et
+ * sans PIN entre dans l'app, sinon « Qui regarde ? ».
+ *
  * Décidé par tv-core (`focus/pairingFocus.ts`, `session/loginForm.ts`,
  * `nav/screenBack.ts`), posé par l'applicateur `platform/tvos/screens/pairing.ts`
  * — qui fournit aussi aux champs le geste natif d'ouverture du clavier.
  */
 export function PairingRedesign({ navigation }: Props) {
-  const onPaired = useCallback(() => navigation.replace("Home"), [navigation]);
+  const { storage } = useTentacleConfig();
+  const client = useJellyfinClient();
+  const queryClient = useQueryClient();
+  const onPaired = useCallback(() => {
+    void (async () => {
+      const context = { jfClient: client, storage, queryClient };
+      // Une session de profil ouverte d'emblée : l'accueil ; sinon « Qui regarde ? » s'est déjà ouvert.
+      if ((await enrollIfAnnounced(context)) === "enrolled" && !(await openOnLaunch(context))) return;
+      navigation.replace("Home");
+    })();
+  }, [navigation, client, storage, queryClient]);
   const flow = usePairingFlow(onPaired, FLOW_OPTIONS);
   const relay = useRelayPairingCode(flow.step === "relayCode", flow.onRelayConfirmed);
   const server = useServerPairingCode(flow.step === "manualCode", flow.onServerConfirmed);
-  const { storage } = useTentacleConfig();
-  const client = useJellyfinClient();
 
   // Le serveur retenu par la vérification (les identifiants et l'écran du code l'affichent).
   const serverUrl = flow.step === "manualCode" || flow.step === "manualLogin"

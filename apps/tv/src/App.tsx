@@ -28,11 +28,13 @@ import { useServerReachable } from "./hooks/useServerReachable";
 import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow } from "./auth/sessionFlow";
 import { wakeRevocationDrain } from "./auth/revocationQueue";
+import { leaveProfileAtBoot } from "./auth/profileSession";
 import { ForegroundSessionValidator } from "./components/ForegroundSessionValidator";
 import { TVSessionGuard } from "./components/TVSessionGuard";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
 import { TVSessionChannel } from "./components/TVSessionChannel";
 import { TVPlaybackOutbox } from "./components/TVPlaybackOutbox";
+import { TVProfilesBridge } from "./components/TVProfilesBridge";
 import { TVColdStartLanding } from "./components/TVColdStartLanding";
 import { TVSessionMessageHost } from "./components/TVSessionMessageHost";
 import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
@@ -192,6 +194,7 @@ function AppContent() {
       <DirectStreamingSync storage={storage} />
       <TVSessionChannel storage={storage} />
       <TVPlaybackOutbox storage={storage} />
+      <TVProfilesBridge />
       <TVColdStartLanding storage={storage} />
       {/* La qualité des titres, lue au focus des cartes de la refonte : une source pour toute l'app. */}
       <QualityBadgeHost>
@@ -228,6 +231,9 @@ export function App() {
       // Un déjumelage interrompu (app tuée en pleine purge) se termine AVANT
       // que quoi que ce soit lise la session : jamais un état à moitié jumelé.
       resumeUnpair(storage);
+      // Apple TV (Famille) : la session d'un profil qui ne se reprend pas au
+      // lancement est quittée avant que rien ne la lise — « Qui regarde ? ».
+      leaveProfileAtBoot(storage);
       // Sans session, le cache persisté n'est à personne : ni en mémoire, ni
       // sur le disque.
       await cacheHydrated;

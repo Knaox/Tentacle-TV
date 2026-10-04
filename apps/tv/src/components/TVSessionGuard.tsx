@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { subscribeSocket, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { endedProfile } from "../auth/profileSession";
 import { runAuthRefreshFlow } from "../auth/sessionFlow";
 import { useUnpairDevice } from "../hooks/useUnpairDevice";
 
@@ -18,6 +19,12 @@ import { useUnpairDevice } from "../hooks/useUnpairDevice";
  *   n'existe plus — typiquement une TV éteinte pendant qu'on la déjumelait.
  *   Le refus ne dit pas quel jeton il visait : le verdict est redemandé pour
  *   le jeton courant (`/api/auth/refresh`), qui seul déjumelle.
+ * - `family:profile-ended` (Apple TV, Famille) : la session de PROFIL de cette
+ *   socket vient d'être fermée par le serveur (retrait, PIN changé, coupure
+ *   par l'admin, déjumelage…) — retour à « Qui regarde ? », jamais au
+ *   jumelage. Cru s'il vise le jeton courant ; sinon (la TV a déjà changé de
+ *   profil), rien. `auth_error` « profile_ended » (la socket se rouvrait avec
+ *   une session déjà fermée) : le verdict est redemandé, comme ci-dessus.
  */
 export function TVSessionGuard() {
   const { storage } = useTentacleConfig();
@@ -35,7 +42,10 @@ export function TVSessionGuard() {
         const current = storage.getItem("tentacle_token");
         if (current && current === boundToken) unpair("revoked");
         else if (current) verify();
-      } else if (msg.type === "auth_error" && msg.reason === "revoked") {
+      } else if (msg.type === "family:profile-ended") {
+        const current = storage.getItem("tentacle_token");
+        if (current && current === boundToken) endedProfile({ jfClient, storage, queryClient });
+      } else if (msg.type === "auth_error" && (msg.reason === "revoked" || msg.reason === "profile_ended")) {
         verify();
       }
     });
