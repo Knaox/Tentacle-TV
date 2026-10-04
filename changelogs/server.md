@@ -19,6 +19,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Qualité réduite** : le lecteur web dit pourquoi (réseau mesuré, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur), et la raison se relit dans le menu Qualité
 - **Sauter pendant une vidéo convertie** : un chargement visible dès l'appui, et plusieurs sauts rapides ne relancent la conversion qu'une fois
 - Quick Connect réactivé sur Jellyfin est reconnu en une vingtaine de secondes, au lieu de dix minutes
+- La version minimale exigée des clients passe à 1.23.0
 
 ### EN
 - **Family**: one family shared by all its members — up to six profiles, including three server-created guests, on everyone's Apple TV; invitations between server accounts (push, notification bell and a card at launch), an optional PIN per profile. The owner invites and removes, and decides who may add guests; a guest can, if allowed, request titles in their own name — all enforced by the server, over HTTP as over HTTPS
@@ -28,6 +29,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Quality lowered**: the web player now says why (measured network, an Internet limit set on Jellyfin, or video converted by the server), and the reason stays in the Quality menu
 - **Skipping in converted video**: loading shows right away, and several quick skips restart the conversion only once
 - Quick Connect turned back on in Jellyfin is now noticed within about twenty seconds, instead of ten minutes
+- The minimum server version required by clients is now 1.23.0
 
 ## [1.22.3]
 ### FR
