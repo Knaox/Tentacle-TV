@@ -1,4 +1,4 @@
-import type { TitleOrigin, TitlePlatform, TitleProvider, TitleRequestOrigin, TitlesAccess } from "@tentacle-tv/shared";
+import type { FamilyProfileKind, TitleOrigin, TitlePlatform, TitleProvider, TitleRequestOrigin, TitlesAccess } from "@tentacle-tv/shared";
 import { titlesFeaturesOpen } from "./titlesGate";
 
 /**
@@ -33,15 +33,30 @@ export interface TvTitlesGate {
 }
 
 /**
- * La garde des téléviseurs (`titlesFeaturesOpen`), et ce qu'il faut à leurs
- * fonctions — l'origine comprise : une TV qui passe par elle marque ses
- * demandes d'office. Fermée : `null`.
+ * Le profil de la Famille ouvert sur la TV (Apple TV), pour la garde : un
+ * INVITÉ ne voit AUCUNE trace de l'extension — comme si le serveur n'en avait
+ * pas —, sauf si son propriétaire lui a permis de demander (`canRequest`,
+ * contrat Famille v2 ; ses demandes partent alors au nom du propriétaire,
+ * c'est le serveur qui s'en charge). Un membre, le propriétaire, une TV
+ * d'avant les profils (`null`) gardent la leur.
+ */
+export function profileMayRequest(profile: { kind: FamilyProfileKind; canRequest?: boolean } | null): boolean {
+  return profile?.kind !== "guest" || profile.canRequest === true;
+}
+
+/**
+ * La garde des téléviseurs (`titlesFeaturesOpen`, et le profil ouvert —
+ * `profileMayRequest`), et ce qu'il faut à leurs fonctions — l'origine
+ * comprise : une TV qui passe par elle marque ses demandes d'office.
+ * Fermée : `null`.
  */
 export function tvTitlesGate(
   provider: TitleProvider | null,
   access: TitlesAccess | null | undefined,
   lang: "fr" | "en",
   platform: TitlePlatform,
+  mayRequest = true,
 ): TvTitlesGate | null {
+  if (!mayRequest) return null;
   return provider && titlesFeaturesOpen(provider, access) ? { provider, lang, origin: tvRequestOrigin(platform) } : null;
 }

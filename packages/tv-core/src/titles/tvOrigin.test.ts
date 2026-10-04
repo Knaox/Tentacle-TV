@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TitleProvider } from "@tentacle-tv/shared";
-import { TV_TITLE_ORIGIN, tvRequestOrigin, tvTitlesGate } from "./tvOrigin";
+import { TV_TITLE_ORIGIN, profileMayRequest, tvRequestOrigin, tvTitlesGate } from "./tvOrigin";
 
 const provider: TitleProvider = {
   pluginId: "seer",
@@ -35,5 +35,21 @@ describe("la garde des téléviseurs", () => {
     expect(tvTitlesGate({ ...provider, accessPath: null }, { request: true }, "fr", "appletv")).toBeNull();
     expect(tvTitlesGate(provider, { request: false }, "fr", "appletv")).toBeNull();
     expect(tvTitlesGate(provider, null, "en", "androidtv")).toBeNull();
+  });
+});
+
+describe("Vigie et les profils de la Famille", () => {
+  it("un invité n'en voit aucune trace, sauf permis par son propriétaire", () => {
+    expect(profileMayRequest({ kind: "guest" })).toBe(false);
+    expect(profileMayRequest({ kind: "guest", canRequest: false })).toBe(false);
+    expect(profileMayRequest({ kind: "guest", canRequest: true })).toBe(true);
+    expect(tvTitlesGate(provider, { request: true }, "fr", "appletv", false)).toBeNull();
+  });
+
+  it("un membre, le propriétaire et une TV d'avant les profils gardent leur Vigie", () => {
+    expect(profileMayRequest({ kind: "member" })).toBe(true);
+    expect(profileMayRequest({ kind: "owner" })).toBe(true);
+    expect(profileMayRequest(null)).toBe(true);
+    expect(tvTitlesGate(provider, { request: true }, "fr", "appletv", true)).not.toBeNull();
   });
 });
