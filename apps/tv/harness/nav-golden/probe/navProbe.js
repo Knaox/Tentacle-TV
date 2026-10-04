@@ -62,17 +62,31 @@ function resetForBench() {
 }
 resetForBench();
 
+/**
+ * La CHRONOLOGIE du focus et des touches (diagnostic, `timeline()`) : chaque
+ * prise et perte du focus natif avec sa clé, chaque touche avec sa phase et sa
+ * répétition — de quoi voir qui a déplacé le focus, et quand.
+ */
+const timeline = [];
+function mark(entry) {
+  timeline.push({ t: Date.now(), ...entry });
+  if (timeline.length > 400) timeline.shift();
+}
+
 TVEventHandler.addListener((event) => {
   if (!event) return;
   if (event.eventType === "focus") {
     state.tag = event.tag;
     state.seq += 1;
     state.at = Date.now();
+    mark({ focus: event.tag });
   } else if (event.eventType === "blur") {
     if (state.tag === event.tag) state.tag = null;
+    mark({ blur: event.tag });
   } else {
     state.keys.push({ t: Date.now(), type: event.eventType, action: event.eventKeyAction });
     if (state.keys.length > 100) state.keys.shift();
+    mark({ press: event.eventType, action: event.eventKeyAction });
   }
 });
 
@@ -303,4 +317,12 @@ function androidReset(keys) {
 /** Change à chaque chargement du JS : le banc voit un rechargement. */
 const boot = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-globalThis.__navGolden = { state, observe, navigate, emitRemote, androidReset, boot, version: 1 };
+/** La chronologie depuis `since` (ms), les tags rendus en clés de focus. */
+function timelineSince(since = 0) {
+  return timeline.filter((e) => e.t >= since).map((e) => {
+    const tag = e.focus ?? e.blur;
+    return tag == null ? e : { ...e, key: focusOf(tag).key };
+  });
+}
+
+globalThis.__navGolden = { state, observe, navigate, emitRemote, androidReset, boot, timeline: timelineSince, version: 1 };
