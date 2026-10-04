@@ -346,7 +346,7 @@ model Family {
 /// Les profils d'une famille autres que le propriétaire : `member` (compte du
 /// serveur qui a accepté une invitation ; le retirer ne touche JAMAIS son
 /// compte) ou `guest` (compte Jellyfin créé par Tentacle, caché, mot de passe
-/// jeté ; `isVirtual` : invité du compte de démonstration, sans compte Jellyfin).
+/// jeté).
 model FamilyMember {
   id           String   @id @default(cuid())
   familyId     String   @db.VarChar(191)
@@ -356,7 +356,6 @@ model FamilyMember {
   color        String?  @db.VarChar(16)
   /// Invité : le nom de son compte Jellyfin (« Lea - invite de Damien »).
   jellyfinName String?  @db.VarChar(255)
-  isVirtual    Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   @@unique([familyId, userId])
@@ -396,17 +395,16 @@ model ProfilePin {
   @@map("profile_pins")
 }
 
-/// Les essais de PIN ratés, par TV (jumelage) et par profil : cinq, puis un
-/// blocage de plus en plus long (`family/familyRules.ts`). Une réussite efface.
+/// Les essais de PIN ratés d'un profil, toutes TV confondues (changer de TV
+/// ne remet pas le compteur à zéro) : cinq, puis un blocage de plus en plus
+/// long (`family/familyRules.ts`). Une réussite efface.
 model ProfilePinAttempt {
-  pairingId   String    @db.VarChar(191)
-  userId      String    @db.VarChar(255)
+  userId      String    @id @db.VarChar(255)
   failures    Int       @default(0)
   lockCount   Int       @default(0)
   lockedUntil DateTime?
   updatedAt   DateTime  @updatedAt
 
-  @@id([pairingId, userId])
   @@map("profile_pin_attempts")
 }
 

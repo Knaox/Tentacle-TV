@@ -9,7 +9,11 @@
 // ── Erreurs ─────────────────────────────────────────────────────────────────
 
 /** Chaque refus porte un code (et un message français, pour les journaux) :
- *  le client traduit le CODE (`family:errors.<code sans préfixe>`). */
+ *  le client traduit le CODE (`family:errors.<code sans préfixe>`).
+ *  `family.not_found` répond À L'IDENTIQUE à « n'existe pas » et « pas à
+ *  vous » : rien ne confirme l'existence d'une invitation, d'un membre ou d'un
+ *  invité d'autrui. Un membre qui tente un geste de propriétaire sur SA
+ *  famille reçoit `family.not_owner` (403). */
 export const FAMILY_ERROR_STATUS = {
   "family.invalid_input": 400,
   "family.pin_format": 400,
@@ -31,10 +35,12 @@ export const FAMILY_ERROR_STATUS = {
   "family.invite_pending": 409,
   "family.invite_closed": 409,
   "family.enroll_required": 409,
-  "family.profile_unavailable": 409,
+  "family.profile_unavailable": 403,
+  "family.invite_expired": 410,
   "family.pin_locked": 423,
   "family.invite_cooldown": 429,
   "family.invite_quota": 429,
+  "family.guest_quota": 429,
   "family.jellyfin_refused": 502,
   "family.jellyfin_unavailable": 503,
 } as const;
@@ -48,7 +54,7 @@ export interface FamilyErrorBody {
   attemptsLeft?: number;
   /** `family.pin_locked` : fin du blocage (ISO). */
   lockedUntil?: string;
-  /** `family.invite_cooldown`, `family.invite_quota` : nouvel essai possible (ISO). */
+  /** `family.invite_cooldown`, `family.invite_quota`, `family.guest_quota` : nouvel essai possible (ISO). */
   retryAt?: string;
   /** `family.invite_closed` : l'état de l'invitation. */
   status?: FamilyInvitationStatus;

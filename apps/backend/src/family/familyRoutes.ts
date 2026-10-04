@@ -20,6 +20,10 @@
  *   pour l'échange (`tvEnroll`).
  * - `admin` : un administrateur, en session personnelle.
  *
+ * L'acteur se déduit TOUJOURS du jeton, jamais d'un identifiant du corps ou
+ * de la query. Les routes du propriétaire ne prennent aucun identifiant de
+ * famille : elles agissent sur LA famille que possède le porteur.
+ *
  * Deux routes existantes changent de sens pour la TV (docs/FAMILLE.md) :
  * `POST /api/pair/self/revoke` porté par le jeton de jumelage DÉJUMELLE la TV
  * (ses sessions de profil avec) ; porté par un jeton de session de profil, il
@@ -82,14 +86,16 @@ export const FAMILY_ROUTES = {
     callers: ["personal", "ownerTv"],
     rateLimit: { max: 20, windowMs: HOUR },
   },
+  // Les gestes sur une invitation portent son identifiant dans le CORPS
+  // (`InvitationActionBody`) : le serveur journalise ses URL.
   /** → `{ cancelled: true }`. Le propriétaire retire une invitation en attente. */
-  cancelInvite: { method: "DELETE", path: "/api/family/invitations/:id", callers: ["personal", "ownerTv"] },
+  cancelInvite: { method: "POST", path: "/api/family/invitations/cancel", callers: ["personal", "ownerTv"] },
   /** → `FamilyMembershipDto`. Le destinataire, en session personnelle. */
-  acceptInvite: { method: "POST", path: "/api/family/invitations/:id/accept", callers: ["personal"] },
+  acceptInvite: { method: "POST", path: "/api/family/invitations/accept", callers: ["personal"] },
   /** → `{ declined: true }`. */
-  declineInvite: { method: "POST", path: "/api/family/invitations/:id/decline", callers: ["personal"] },
+  declineInvite: { method: "POST", path: "/api/family/invitations/decline", callers: ["personal"] },
   /** → `IncomingInvitationDto`. « Plus tard » : l'affiche se tait, la cloche garde. */
-  snoozeInvite: { method: "POST", path: "/api/family/invitations/:id/snooze", callers: ["personal"] },
+  snoozeInvite: { method: "POST", path: "/api/family/invitations/snooze", callers: ["personal"] },
   /** → `{ left: true }`. Un membre quitte une famille. */
   leave: { method: "POST", path: "/api/family/memberships/:familyId/leave", callers: ["personal"] },
   /** → `TvEnrollResponse`. L'échange, une fois : la TV passe aux profils. */

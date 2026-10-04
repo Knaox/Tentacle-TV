@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   FAMILY_DECLINE_COOLDOWN_MS,
+  FAMILY_GUESTS_PER_DAY,
   FAMILY_INVITES_PER_DAY,
   FAMILY_MAX_PENDING_PER_INVITEE,
   FAMILY_PIN_LOCK_STEPS_MS,
@@ -13,6 +14,7 @@ import {
   defaultProfileColor,
   effectiveInvitationStatus,
   guestAccountName,
+  guestQuotaBlock,
   inviteBlock,
   isPickerRequired,
   isProfileColor,
@@ -112,6 +114,15 @@ describe("invitations", () => {
     expect(inviteBlock({ ...empty, inviteePendingTotal: FAMILY_MAX_PENDING_PER_INVITEE }, NOW)?.code).toBe(
       "family.invite_quota",
     );
+  });
+});
+
+describe("création d'invités", () => {
+  it("borne les créations sur 24 heures glissantes", () => {
+    const created = Array.from({ length: FAMILY_GUESTS_PER_DAY }, (_, i) => NOW - (i + 1) * 60_000);
+    expect(guestQuotaBlock(created.slice(1), NOW)).toBeNull();
+    expect(guestQuotaBlock(created, NOW)).toEqual({ code: "family.guest_quota", retryAt: Math.min(...created) + 24 * 3_600_000 });
+    expect(guestQuotaBlock(created.map((at) => at - 24 * 3_600_000), NOW)).toBeNull();
   });
 });
 

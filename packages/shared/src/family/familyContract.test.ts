@@ -34,9 +34,16 @@ describe("table des routes", () => {
   });
 
   it("remplit et encode les paramètres, refuse un paramètre manquant", () => {
-    expect(familyPath("acceptInvite", { id: "a/b" })).toBe("/api/family/invitations/a%2Fb/accept");
+    expect(familyPath("deleteGuest", { userId: "a/b" })).toBe("/api/family/guests/a%2Fb");
     expect(familyPath("overview")).toBe("/api/family");
     expect(() => familyPath("deleteGuest")).toThrow(/userId/);
+  });
+
+  it("ne met jamais l'identifiant d'une invitation dans une URL", () => {
+    for (const name of ["acceptInvite", "declineInvite", "snoozeInvite", "cancelInvite"] as const) {
+      expect(FAMILY_ROUTES[name].path).not.toContain(":");
+      expect(FAMILY_ROUTES[name].method).toBe("POST");
+    }
   });
 
   it("range chaque route sous son préfixe", () => {

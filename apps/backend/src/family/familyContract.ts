@@ -33,11 +33,14 @@ export const FAMILY_DECLINE_COOLDOWN_MS = 7 * 24 * 3_600_000;
 export const FAMILY_INVITES_PER_DAY = 10;
 /** Invitations en attente pour un même destinataire, toutes familles confondues. */
 export const FAMILY_MAX_PENDING_PER_INVITEE = 10;
+/** Invités créés par un propriétaire sur 24 heures glissantes (chacun est un
+ *  compte Jellyfin : pas de création en rafale). */
+export const FAMILY_GUESTS_PER_DAY = 6;
 /** « Plus tard » : l'affiche ne revient pas avant ce délai (la cloche la garde). */
 export const FAMILY_SNOOZE_MS = 24 * 3_600_000;
 /** Le code PIN : exactement quatre chiffres. */
 export const FAMILY_PIN_LENGTH = 4;
-/** Essais ratés avant blocage, par TV et par profil. */
+/** Essais ratés avant blocage, par profil — toutes TV confondues. */
 export const FAMILY_PIN_MAX_FAILURES = 5;
 /** Durées des blocages successifs (le dernier se répète) ; une réussite remet à zéro. */
 export const FAMILY_PIN_LOCK_STEPS_MS = [15 * 60_000, 3_600_000, 4 * 3_600_000, 24 * 3_600_000] as const;
@@ -71,8 +74,7 @@ export interface FamilyCapability {
 
 /** Un profil de la famille, tel que le web, le bureau et le mobile le montrent. */
 export interface FamilyProfileDto {
-  /** L'identifiant du profil : le compte Jellyfin (« virtual-… » pour un
-   *  invité du compte de démonstration, qui n'a pas de compte). */
+  /** L'identifiant du profil : son compte Jellyfin. */
   userId: string;
   kind: FamilyProfileKind;
   name: string;
@@ -125,8 +127,8 @@ export interface FamilyAccountDto {
   canOwn: boolean;
   /** Ce compte peut être invité et accepter (ni un invité, ni le compte de démonstration). */
   canJoin: boolean;
-  /** Compte de démonstration de la revue Apple : ses invités n'ont pas de
-   *  compte Jellyfin (ils regardent sous le sien), aucune invitation. */
+  /** Compte de démonstration de la revue Apple : il ne crée RIEN — ni
+   *  famille, ni invité, ni invitation (`family.review_account`). */
   reviewAccount: boolean;
   /** Ce compte a posé un PIN pour lui-même. */
   hasPin: boolean;
@@ -174,6 +176,12 @@ export interface DissolveBody {
   confirm: "dissolve";
 }
 
+/** Un geste sur une invitation : son identifiant voyage dans le CORPS, jamais
+ *  dans l'URL (le serveur journalise ses URL). */
+export interface InvitationActionBody {
+  id: string;
+}
+
 // ── La TV (Apple TV seulement) ──────────────────────────────────────────────
 
 /** `POST /api/family/tv/enroll` : le jeton de jumelage « profils seuls » qui
@@ -189,7 +197,7 @@ export interface TvProfileDto {
   color: FamilyProfileColor;
   hasPin: boolean;
   imageTag: string | null;
-  /** Trop d'essais ratés sur CETTE TV : bloqué jusqu'à (ISO). */
+  /** Trop d'essais ratés (toutes TV confondues) : bloqué jusqu'à (ISO). */
   lockedUntil: string | null;
 }
 
@@ -204,6 +212,9 @@ export interface TvProfilesDto {
   stickyProfileId: string | null;
   /** Vrai dès deux profils : sinon la TV ouvre directement le seul. */
   pickerRequired: boolean;
+  /** « Gérer les profils » existe sur cette TV (faux pour le compte de
+   *  démonstration, qui ne crée rien : la TV n'en montre pas l'entrée). */
+  canManage: boolean;
 }
 
 export interface OpenTvSessionBody {

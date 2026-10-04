@@ -75,20 +75,22 @@ par le serveur (PIN compris), la TV ne lit rien.
 
 Le propriétaire de la TV (le compte qui l'a jumelée) en tête, puis sa famille
 — les membres si la Famille est active, les invités si les deux interrupteurs
-le sont (`isProfileKindAllowed`). Chaque profil dit `hasPin` et, sur CETTE TV,
-`lockedUntil`. `pickerRequired` dès deux profils ; sinon la TV ouvre le seul.
-`stickyProfileId` : le profil « Rester sur ce profil ». Les avatars se lisent
+le sont (`isProfileKindAllowed`). Chaque profil dit `hasPin` et, s'il est
+bloqué par trop d'essais ratés, `lockedUntil`. `pickerRequired` dès deux profils ; sinon la TV ouvre le seul.
+`stickyProfileId` : le profil « Rester sur ce profil ». `canManage` : « Gérer
+les profils » existe (faux pour le compte de démonstration). Les avatars se lisent
 sans jeton (`/api/jellyfin/Users/{id}/Images/Primary?tag=…`).
 
 ### 4. La session de profil — `POST /api/family/tv/sessions`
 
 `{ profileId, pin?, remember? }` → `{ token, user, profile, remembered }`.
 
-- Le serveur vérifie que le profil appartient à la famille de CETTE TV, que
-  les interrupteurs le permettent, et le PIN (scrypt, jamais envoyé ni comparé
-  sur la TV). Erreurs : `family.pin_required`, `family.pin_invalid`
-  (`attemptsLeft`), `family.pin_locked` (`lockedUntil`),
-  `family.profile_unavailable`, `family.disabled`, `family.guests_disabled`.
+- Le serveur vérifie que le profil appartient à la famille de CETTE TV
+  (sinon 403 `family.profile_unavailable` : une TV n'ouvre jamais le profil
+  d'une autre famille), que les interrupteurs le permettent, et le PIN
+  (scrypt, jamais envoyé ni comparé sur la TV). Erreurs : `family.pin_required`,
+  `family.pin_invalid` (`attemptsLeft`), `family.pin_locked` (`lockedUntil`),
+  `family.disabled`, `family.guests_disabled`.
 - Le jeton rendu est un **jeton d'appareil comme ceux du jumelage**, au nom du
   profil (`isAdmin` toujours faux), porté par une ligne ENFANT de
   `paired_devices` (`parentId` = le jumelage de la TV). Il passe toutes les
@@ -107,11 +109,12 @@ sans jeton (`/api/jellyfin/Users/{id}/Images/Primary?tag=…`).
 
 ### 5. Fin d'une session, déjumelage
 
-- Ce qui coupe une session de profil, IMMÉDIATEMENT : départ ou retrait du
-  membre, suppression de l'invité, changement de PIN, dissolution, coupure
-  par l'admin, compte supprimé, déjumelage. Jeton refusé chez Tentacle ET chez
-  Jellyfin (`DELETE /Devices`), socket prévenue (`family:profile-ended`
-  + `reason`, puis fermeture 4010), et aux portes REST un 401
+- Ce qui coupe une session de profil, IMMÉDIATEMENT et AVANT la réponse du
+  geste qui la coupe : départ ou retrait du membre, suppression de l'invité,
+  changement de PIN, dissolution, coupure par l'admin, compte supprimé,
+  déjumelage. Jeton refusé chez Tentacle ET chez Jellyfin (`DELETE /Devices`),
+  socket prévenue (`family:profile-ended` + `reason`, puis fermeture 4010),
+  et aux portes REST un 401
   `{ revoked: true, profileEnded: true }` — la TV revient à « Qui regarde ? »
   (elle ne se déjumelle PAS sur ce 401-là).
 - « Changer de profil » : `POST /api/pair/self/revoke` porté par le jeton de
@@ -131,6 +134,25 @@ l'exige (mêmes essais, même blocage) et ouvre la gestion dix minutes
 `FAMILY_ROUTES` (lister, créer ou supprimer un invité, inviter, retirer un
 membre, annuler une invitation) ne passent qu'ainsi. JAMAIS depuis une TV :
 accepter, refuser, quitter, poser son propre PIN, dissoudre.
+
+## Qui agit : toujours le porteur du jeton
+
+L'acteur se déduit du jeton, JAMAIS d'un identifiant du corps ou de la query
+(un `ownerUserId` ou un `fromUserId` glissé dans un corps est ignoré). Les
+routes du propriétaire ne prennent aucun identifiant de famille : elles
+agissent sur LA famille que possède le porteur. D'où les réponses :
+
+- un membre qui tente un geste de propriétaire (retirer, supprimer un invité,
+  dissoudre) → 403 `family.not_owner` ;
+- tout autre compte → 404 `family.not_found` : la cible n'est pas dans SA
+  famille ;
+- une invitation dont on n'est ni l'émetteur ni le destinataire → 404, la même
+  réponse qu'une invitation qui n'existe pas (rien ne confirme son existence).
+
+Les limites (6 profils, 3 invités, une famille par propriétaire) tiennent sous
+des gestes CONCURRENTS : chaque geste qui change la composition d'une famille
+s'y exécute seul (verrou par famille), et l'unicité du propriétaire est une
+contrainte de la base.
 
 ## Sessions personnelles, sessions de TV
 
@@ -154,10 +176,14 @@ jumelée depuis son profil.
   (`selectCandidates`). Un refus ne distingue jamais un compte caché d'un nom
   qui n'existe pas (`family.candidate_invalid`).
 - Identifiant d'invitation : 128 bits aléatoires (base64url) — jamais un
-  cuid. Et chaque geste vérifie le destinataire.
-- Expire en 7 jours. Anti-abus (`inviteBlock`) : une seule en attente par
+  cuid —, porté dans le CORPS des gestes (`InvitationActionBody`), jamais dans
+  une URL : le serveur journalise ses URL. Les journaux n'en montrent que le
+  début. Et chaque geste vérifie le destinataire.
+- Expire en 7 jours : accepter une invitation expirée → 410
+  `family.invite_expired`. Anti-abus (`inviteBlock`) : une seule en attente par
   (famille, compte) ; 7 jours après un refus du même compte ; 10 envois par
-  24 h et par propriétaire ; 10 en attente par destinataire.
+  24 h et par propriétaire ; 10 en attente par destinataire. Créer un invité
+  (un compte Jellyfin) : 6 par 24 h et par propriétaire (`guestQuotaBlock`).
 - Le destinataire est prévenu par la cloche (`family_invite`), un push
   (préférence `family`, activée par défaut) et l'AFFICHE au lancement du web,
   du bureau et du mobile (`incoming`, en direct par `family:update`
@@ -169,9 +195,11 @@ jumelée depuis son profil.
 
 Quatre chiffres par profil, facultatif. Chacun le pose pour lui-même
 (`PUT /api/family/pin`) ; le propriétaire pour ses invités. Haché par scrypt
-(sel propre), jamais rendu. Les essais se comptent par TV et par profil
-(`profile_pin_attempts`) : cinq, puis 15 min, 1 h, 4 h, 24 h de blocage
-(`FAMILY_PIN_LOCK_STEPS_MS`) ; une réussite efface. Poser, changer ou
+(sel propre), jamais rendu. Les essais se comptent PAR PROFIL, toutes TV
+confondues (`profile_pin_attempts`) : changer de TV ne remet pas le compteur à
+zéro. Cinq, puis 15 min, 1 h, 4 h, 24 h de blocage
+(`FAMILY_PIN_LOCK_STEPS_MS`) ; pendant un blocage, même le bon PIN échoue ;
+une réussite efface. Poser, changer ou
 retirer un PIN coupe le profil sur les TV et ôte « Rester sur ce profil ».
 Le PIN du propriétaire protège aussi « Gérer les profils ».
 
@@ -190,10 +218,12 @@ Le PIN du propriétaire protège aussi « Gérer les profils ».
 ## Le compte de démonstration (revue Apple)
 
 Reconnu par le serveur : le compte de provisionnement désigné dans
-l'administration (`provisioning_codes.jellyfinUserId`). Il ne crée RIEN chez
-Jellyfin : ses invités sont VIRTUELS (`isVirtual`, identifiant
-`virtual-…`) — ils regardent sous son propre compte — ; il n'invite personne,
-n'est jamais candidat, ne rejoint aucune famille (`account.reviewAccount`).
+l'administration (`provisioning_codes.jellyfinUserId`), et celui du mode
+démonstration. Il ne crée RIEN — ni famille, ni invité, ni invitation, rien
+chez Jellyfin : 403 `family.review_account`. Il n'est jamais candidat et ne
+rejoint aucune famille (`account.reviewAccount`). Sa TV ne montre pas « Gérer
+les profils » (`canManage: false`) : les relecteurs ne voient jamais un geste
+refusé.
 
 ## Administration
 

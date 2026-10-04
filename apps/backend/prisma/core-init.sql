@@ -622,7 +622,6 @@ CREATE TABLE IF NOT EXISTS `family_members` (
   `displayName` varchar(100) NOT NULL,
   `color` varchar(16) NULL,
   `jellyfinName` varchar(255) NULL,
-  `isVirtual` tinyint(1) NOT NULL DEFAULT 0,
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `family_members_familyId_userId_key` (`familyId`, `userId`),
@@ -654,13 +653,12 @@ CREATE TABLE IF NOT EXISTS `profile_pins` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `profile_pin_attempts` (
-  `pairingId` varchar(191) NOT NULL,
   `userId` varchar(255) NOT NULL,
   `failures` int(11) NOT NULL DEFAULT 0,
   `lockCount` int(11) NOT NULL DEFAULT 0,
   `lockedUntil` datetime(3) NULL,
   `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
-  PRIMARY KEY (`pairingId`, `userId`)
+  PRIMARY KEY (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Les sessions de profil des TV : six colonnes et deux index sur `paired_devices`.

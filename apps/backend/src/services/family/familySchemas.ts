@@ -9,11 +9,14 @@ import { FAMILY_PROFILE_COLORS } from "../../family/familyContract";
  * ignorées (un client plus récent ne casse pas un serveur plus ancien).
  */
 
-/** Un identifiant de compte Jellyfin (avec ou sans tirets) ou d'invité virtuel. */
+/** Un identifiant de compte Jellyfin (avec ou sans tirets). */
 export const userIdSchema = z.string().min(1).max(80).regex(/^[A-Za-z0-9-]+$/);
 
-/** Un identifiant d'invitation : 128 bits en base64url. */
+/** Un identifiant d'invitation : 128 bits en base64url — dans le CORPS, jamais
+ *  dans l'URL (le serveur journalise ses URL). */
 export const invitationIdSchema = z.string().min(16).max(64).regex(/^[A-Za-z0-9_-]+$/);
+
+export const invitationActionBodySchema = z.object({ id: invitationIdSchema });
 
 /** Une famille (cuid). */
 export const familyIdSchema = z.string().min(1).max(191).regex(/^[A-Za-z0-9_-]+$/);

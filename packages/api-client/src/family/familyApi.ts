@@ -69,20 +69,21 @@ export function sendFamilyInvitation(userId: string): Promise<OutgoingInvitation
   return send(familyPath("invite"), "POST", { userId });
 }
 
+// L'identifiant d'une invitation voyage dans le corps, jamais dans l'URL.
 export function cancelFamilyInvitation(id: string): Promise<{ cancelled: true }> {
-  return send(familyPath("cancelInvite", { id }), "DELETE");
+  return send(familyPath("cancelInvite"), "POST", { id });
 }
 
 export function acceptFamilyInvitation(id: string): Promise<FamilyMembershipDto> {
-  return send(familyPath("acceptInvite", { id }), "POST");
+  return send(familyPath("acceptInvite"), "POST", { id });
 }
 
 export function declineFamilyInvitation(id: string): Promise<{ declined: true }> {
-  return send(familyPath("declineInvite", { id }), "POST");
+  return send(familyPath("declineInvite"), "POST", { id });
 }
 
 export function snoozeFamilyInvitation(id: string): Promise<IncomingInvitationDto> {
-  return send(familyPath("snoozeInvite", { id }), "POST");
+  return send(familyPath("snoozeInvite"), "POST", { id });
 }
 
 export function leaveFamily(familyId: string): Promise<{ left: true }> {

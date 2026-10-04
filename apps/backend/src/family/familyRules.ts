@@ -1,6 +1,7 @@
 import {
   FAMILY_DECLINE_COOLDOWN_MS,
   FAMILY_GUEST_NAME_MAX,
+  FAMILY_GUESTS_PER_DAY,
   FAMILY_INVITES_PER_DAY,
   FAMILY_MAX_GUESTS,
   FAMILY_MAX_PENDING_PER_INVITEE,
@@ -137,6 +138,14 @@ export function inviteBlock(history: InviteHistory, now: number): InviteBlock {
   if (recent.length >= FAMILY_INVITES_PER_DAY) return { code: "family.invite_quota", retryAt: recent[0] + 24 * 3_600_000 };
   if (history.inviteePendingTotal >= FAMILY_MAX_PENDING_PER_INVITEE) return { code: "family.invite_quota" };
   return null;
+}
+
+/** Créer un invité, c'est créer un compte Jellyfin : pas plus de
+ *  `FAMILY_GUESTS_PER_DAY` par propriétaire sur 24 heures glissantes. */
+export function guestQuotaBlock(createdInLastDay: number[], now: number): InviteBlock {
+  const recent = createdInLastDay.filter((at) => now - at < 24 * 3_600_000).sort((a, b) => a - b);
+  if (recent.length < FAMILY_GUESTS_PER_DAY) return null;
+  return { code: "family.guest_quota", retryAt: recent[0] + 24 * 3_600_000 };
 }
 
 // ── Noms et couleurs ────────────────────────────────────────────────────────
