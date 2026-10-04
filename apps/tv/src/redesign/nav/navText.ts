@@ -11,7 +11,7 @@ export const navText = StyleSheet.create({
   label: { ...fonts.semibold, fontSize: 26 },
   /** Le libellé de l'entrée active, focalisée ou organisée — le plus large : c'est lui qu'on mesure. */
   labelBold: { ...fonts.bold, fontSize: 26 },
-  /** La seconde ligne du profil (« Profil et réglages »). */
+  /** La seconde ligne du profil (« Réglages »). */
   caption: { ...fonts.medium, fontSize: 22, lineHeight: 26, marginTop: -1 },
   /** Une ligne de la légende du rail ouvert. */
   hint: { ...fonts.medium, fontSize: 22, lineHeight: 30 },

@@ -35,7 +35,7 @@ export type NavItemMode = "held" | "moving";
 export interface NavItemProps {
   itemKey: string;
   label: string;
-  /** Seconde ligne, barre ouverte (le profil : « Profil et réglages »). */
+  /** Seconde ligne, barre ouverte (le profil : « Réglages »). */
   caption?: string;
   icon?: IconName;
   /** Portrait du compte (capsule du profil). */

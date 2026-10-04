@@ -114,7 +114,7 @@ export async function relaunch() {
   }
   await sleep(2000);
   await agent(["left", "wait:0.8"]);
-  const below = new Set(["Séries", "Profil et réglages", "Banc"]);
+  const below = new Set(["Séries", "Réglages", "Banc"]);
   for (let i = 0; i < 8; i++) {
     const label = await focusedLabel();
     if (label === CONFIG.library) return true;

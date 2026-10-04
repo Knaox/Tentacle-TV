@@ -40,7 +40,7 @@ export default {
   railHint: "Hold OK to hide an entry",
   railShowAll: "Show all",
   // Apple TV navigation: profile capsule, legend, arranging.
-  railProfile: "Profile and settings",
+  railProfile: "Settings",
   railHintOrganize: "Hold OK: organize",
   railHintMove: "Up, down: move",
   railHintDrop: "OK drops, Back cancels",
