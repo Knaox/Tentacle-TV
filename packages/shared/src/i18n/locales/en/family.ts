@@ -9,6 +9,20 @@ export default {
   kindMember: "Member",
   kindGuest: "Guest",
   guestOf: "Guest · {{owner}}'s family",
+  /** v2: a guest, and who created it. */
+  addedBy: "Added by {{name}}",
+  /** v2: rights the owner sets, per profile. */
+  rights: {
+    createGuests: "Can create guests",
+    createGuestsHint: "Creates their own guests and can only delete those, within three guests for the whole family.",
+    requestTitles: "Can request movies",
+    requestTitlesHint: "Their requests are made in {{owner}}'s name.",
+  },
+  /** v2: an account in the list that cannot be invited, and why. */
+  candidates: {
+    inFamily: "Already in a family",
+    invited: "Invitation pending",
+  },
   poster: {
     title: "{{owner}} invites you to join their family",
     profile: "Your profile will open on {{owner}}'s TVs without a password, unless you set a PIN code.",

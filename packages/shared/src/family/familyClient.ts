@@ -1,14 +1,18 @@
 import {
   FAMILY_MAX_GUESTS,
   FAMILY_MAX_PROFILES,
+  type FamilyCandidateDto,
   type FamilyCapability,
   type FamilyDto,
   type FamilyOverviewDto,
+  type FamilyProfileDto,
+  type FamilyRole,
   type IncomingInvitationDto,
   type OwnedFamilyDto,
   type FamilyProfileColor,
 } from "./familyContract";
-import { capacityError } from "./familyRules";
+import { canManageGuest } from "./familyRights";
+import { capacityError, sameUserId } from "./familyRules";
 import type { FamilyErrorCode } from "./familyProtocol";
 
 /**
@@ -108,6 +112,89 @@ export function ownerActions(overview: FamilyOverviewDto): OwnerActions {
 }
 
 export const FAMILY_LIMITS = { profiles: FAMILY_MAX_PROFILES, guests: FAMILY_MAX_GUESTS } as const;
+
+// ── v2 : la famille partagée, vue par celui qui la regarde ─────────────────
+
+/** Le rôle de ce compte dans SA famille ; `none` : il n'en a pas (l'écran
+ *  « Créez votre famille », et les invitations reçues). */
+export type FamilyViewerRole = FamilyRole | "none";
+
+export function familyViewerRole(overview: FamilyOverviewDto): FamilyViewerRole {
+  return overview.family?.role ?? "none";
+}
+
+/** Le propriétaire de la famille de ce compte (« Famille de X », « ses
+ *  demandes partent au nom de X ») ; null sans famille. */
+export function familyOwnerName(overview: FamilyOverviewDto): string | null {
+  return overview.family?.owner.name ?? null;
+}
+
+/** Ce profil est-il celui de ce compte ? (« Vous », et jamais un geste sur soi.) */
+export function isOwnProfile(profile: Pick<FamilyProfileDto, "userId">, viewerUserId: string | null | undefined): boolean {
+  return !!viewerUserId && sameUserId(profile.userId, viewerUserId);
+}
+
+/** Un droit réglable sur un profil : « peut créer des invités » (un membre).
+ *  « Peut demander des films » (un invité) attend la décision du lot. */
+export type FamilyProfileRight = "createGuests";
+
+export interface ProfileActions {
+  /** Poser, changer ou retirer le code PIN de ce profil (un invité). */
+  pin: boolean;
+  /** Retirer ce membre, ou supprimer cet invité (et son compte Jellyfin). */
+  remove: boolean;
+  /** Le droit que ce compte règle sur ce profil, ou null. */
+  right: FamilyProfileRight | null;
+}
+
+const NO_ACTIONS: ProfileActions = { pin: false, remove: false, right: null };
+
+/**
+ * Ce que CE compte peut faire sur UN profil de sa famille, depuis le web, le
+ * bureau ou le mobile (session personnelle) : le propriétaire retire un
+ * membre et règle ses droits ; supprimer un invité et poser son PIN reviennent
+ * au propriétaire, ou au membre qui l'a créé (`canManageGuest`). Jamais un
+ * geste sur soi-même ni sur le propriétaire — son propre PIN et « Quitter »
+ * ont leur place à part. Le serveur revérifie tout.
+ */
+export function profileActions(
+  overview: FamilyOverviewDto,
+  profile: FamilyProfileDto,
+  viewerUserId: string | null | undefined,
+): ProfileActions {
+  const family = overview.family;
+  if (!family || !overview.account.personalSession || !viewerUserId) return NO_ACTIONS;
+  if (profile.kind === "owner" || isOwnProfile(profile, viewerUserId)) return NO_ACTIONS;
+  if (profile.kind === "member") {
+    const owner = family.rights.manageMembers;
+    return { pin: false, remove: owner, right: owner ? "createGuests" : null };
+  }
+  const manage = canManageGuest(family.rights, profile.createdBy, viewerUserId);
+  return { pin: manage, remove: manage, right: null };
+}
+
+export interface CandidateView {
+  /** Seul un compte `available` s'invite. */
+  invitable: boolean;
+  /** La clé i18n qui dit pourquoi il est grisé ; null s'il s'invite. */
+  noteKey: string | null;
+}
+
+/** Un candidat dans la liste : invitable, ou grisé avec sa raison (« déjà dans
+ *  une famille », sans jamais dire laquelle ; « invitation en attente »). Un
+ *  statut inconnu (serveur plus récent) se grise sans raison. */
+export function candidateView(candidate: Pick<FamilyCandidateDto, "status">): CandidateView {
+  switch (candidate.status) {
+    case "available":
+      return { invitable: true, noteKey: null };
+    case "in_family":
+      return { invitable: false, noteKey: "family:candidates.inFamily" };
+    case "invited":
+      return { invitable: false, noteKey: "family:candidates.invited" };
+    default:
+      return { invitable: false, noteKey: null };
+  }
+}
 
 /** Une invitation que l'affiche peut montrer d'elle-même : pas tue par
  *  « Plus tard », pas écartée pendant cette session, pas échue. */

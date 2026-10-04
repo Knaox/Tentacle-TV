@@ -10,6 +10,20 @@ export default {
   kindGuest: "Invité",
   /** Les sessions en cours : un invité y est étiqueté, jamais listé ailleurs. */
   guestOf: "Invité · famille de {{owner}}",
+  /** v2 : un invité, et qui l'a créé. */
+  addedBy: "Ajouté par {{name}}",
+  /** v2 : les droits que le propriétaire règle, par profil. */
+  rights: {
+    createGuests: "Peut créer des invités",
+    createGuestsHint: "Crée ses propres invités et ne supprime que ceux-là, dans la limite de trois pour toute la famille.",
+    requestTitles: "Peut demander des films",
+    requestTitlesHint: "Ses demandes partent au nom de {{owner}}.",
+  },
+  /** v2 : un compte de la liste qu'on ne peut pas inviter, et pourquoi. */
+  candidates: {
+    inFamily: "Déjà dans une famille",
+    invited: "Invitation en attente",
+  },
   poster: {
     title: "{{owner}} vous invite à rejoindre sa famille",
     profile: "Votre profil s'ouvrira sur les TV de {{owner}} sans mot de passe, sauf si vous posez un code PIN.",
