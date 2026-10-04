@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useJellyfinClient, useResumeItems } from "@tentacle-tv/api-client";
 import { SETTINGS_DEFAULT_TAB, settingsEntryKey } from "@tentacle-tv/tv-core";
@@ -14,6 +14,7 @@ import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { ChoiceModal } from "./ChoiceModal";
 import { useNavigationSettings } from "./useNavigationSettings";
+import { useProfileActions } from "./useProfileActions";
 import { useSettingsModel } from "./useSettingsModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
@@ -34,6 +35,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
  */
 export function SettingsRedesign({ route }: Props) {
   const model = useSettingsModel();
+  // Famille (Apple TV) : le profil ouvert et ses gestes ; nul sur une TV d'avant les profils.
+  const profiles = useProfileActions();
+  const account = useMemo(() => ({ ...model.account, profile: profiles.profile }), [model.account, profiles.profile]);
   const [tab, setTab] = useState<SettingsTab>(route.params?.tab ?? SETTINGS_DEFAULT_TAB);
   const focus = useFocusStore();
   const nav = useNavigationSettings(focus);
@@ -58,7 +62,7 @@ export function SettingsRedesign({ route }: Props) {
         <SettingsView
           nav={screen.nav}
           tab={tab}
-          account={model.account}
+          account={account}
           playback={model.playback}
           about={model.about}
           navigation={nav.navigation}
@@ -68,6 +72,8 @@ export function SettingsRedesign({ route }: Props) {
           onSelectTab={setTab}
           onChangeServer={model.onChangeServer}
           onLogout={model.onLogout}
+          onSwitchProfile={profiles.onSwitchProfile}
+          onManageProfiles={profiles.onManageProfiles}
           onSelectPreset={model.onSelectPreset}
           onSelectLanguage={model.onSelectLanguage}
           onOpenLibrarySetting={model.onOpenLibrarySetting}

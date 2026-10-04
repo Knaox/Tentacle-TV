@@ -59,7 +59,7 @@ import type {
  * - `about` : `versions.json` (`tv`), serveur, compte, appareil, année.
  *
  * Clés de focus : `settings:tab:<onglet>`, `settings:changeServer`,
- * `settings:logout`, `settings:preset:<mode>`, `settings:lang:<fr|en>`,
+ * `settings:logout`, `settings:switchProfile`, `settings:manageProfiles`, `settings:preset:<mode>`, `settings:lang:<fr|en>`,
  * `settings:lib:<i>:<réglage|reset>`, `settings:tunneling`,
  * `settings:matchFrameRate`, `settings:liquidGlass`,
  * `settings:nav:<i>[:visibility]`, `settings:nav:showAll|resetOrder`,
@@ -88,6 +88,9 @@ export interface SettingsViewProps {
   onSelectTab?: (tab: SettingsTab) => void;
   onChangeServer?: () => void;
   onLogout?: () => void;
+  /** Famille (Apple TV) : « Changer de profil », « Gérer les profils ». */
+  onSwitchProfile?: () => void;
+  onManageProfiles?: () => void;
   onSelectPreset?: (preset: Exclude<PlaybackPreset, "custom">) => void;
   onSelectLanguage?: (language: InterfaceLanguage) => void;
   onOpenLibrarySetting?: (libraryId: string, key: LibrarySettingKey) => void;
@@ -165,6 +168,8 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   initialArmed={props.armedAction}
                   onChangeServer={props.onChangeServer}
                   onLogout={props.onLogout}
+                  onSwitchProfile={props.onSwitchProfile}
+                  onManageProfiles={props.onManageProfiles}
                 />
               ) : null}
               {tab === "playback" ? (

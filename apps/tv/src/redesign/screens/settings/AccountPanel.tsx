@@ -5,6 +5,7 @@ import { confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
 import { Icon } from "../../icons/Icon";
 import { colors, text, white } from "../../theme/tokens";
 import { ConfirmPill } from "./ConfirmPill";
+import { ProfileSection } from "./ProfileSection";
 import { Avatar, InfoRow, SectionTitle, settingsText } from "./settingsParts";
 import type { AccountAction, SettingsAccount } from "./settingsTypes";
 
@@ -21,6 +22,11 @@ import type { AccountAction, SettingsAccount } from "./settingsTypes";
  * pose à l'ouverture (banc). Branchement : `useAccountActions`, deux
  * déjumelages complets (`unpairDevice`) — le changement de serveur oublie en
  * plus l'adresse.
+ *
+ * Apple TV passée aux profils (Famille, `account.profile`) : le profil ouvert
+ * et son rôle, « Changer de profil » et « Gérer les profils »
+ * (`ProfileSection`) ; « Changer de serveur » s'efface — il passe par un
+ * déjumelage — et « Déjumeler » n'appartient qu'au profil du propriétaire.
  */
 
 export interface AccountPanelProps {
@@ -28,10 +34,14 @@ export interface AccountPanelProps {
   initialArmed?: AccountAction | null;
   onChangeServer?: () => void;
   onLogout?: () => void;
+  onSwitchProfile?: () => void;
+  onManageProfiles?: () => void;
 }
 
-export const AccountPanel = memo(function AccountPanel({ account, initialArmed = null, onChangeServer, onLogout }: AccountPanelProps) {
-  const { t } = useTranslation(["pairing", "nav", "common", "preferences"]);
+export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps) {
+  const { account, initialArmed = null, onChangeServer, onLogout } = props;
+  const { t } = useTranslation(["pairing", "nav", "common", "preferences", "familyTv"]);
+  const profile = account.profile ?? null;
   const [armed, setArmed] = useState<AccountAction | null>(initialArmed);
 
   // Le double appui : la règle de tv-core (`panels/confirmPress`).
@@ -52,8 +62,9 @@ export const AccountPanel = memo(function AccountPanel({ account, initialArmed =
       <View style={styles.profile}>
         <Avatar uri={account.avatarUri} name={account.name} size={168} />
         <View style={styles.identity}>
-          <Text style={text.kicker}>{t("pairing:tvCompteJumele")}</Text>
+          <Text style={text.kicker}>{profile ? t("familyTv:settings.kicker") : t("pairing:tvCompteJumele")}</Text>
           <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
+          {profile ? <Text style={settingsText.hint}>{profile.role}</Text> : null}
         </View>
       </View>
 
@@ -62,29 +73,37 @@ export const AccountPanel = memo(function AccountPanel({ account, initialArmed =
         <InfoRow icon="tv" label={t("pairing:tvPlateforme")} value={account.deviceLabel} />
       </View>
 
+      {profile ? (
+        <ProfileSection canManage={profile.canManage} onSwitchProfile={props.onSwitchProfile} onManageProfiles={props.onManageProfiles} />
+      ) : null}
+
       <View style={styles.forget}>
-        <SectionTitle title={t("pairing:tvOublierTitre")} caption={t("pairing:tvUnpairCaption")} />
-        <View style={styles.actions}>
-          <ConfirmPill
-            label={t("nav:changeServer")}
-            icon="server"
-            armed={armed === "changeServer"}
-            armedLabel={confirm(t("nav:changeServer"))}
-            focusKey="settings:changeServer"
-            onPress={() => press("changeServer")}
-            onFocusChange={leave("changeServer")}
-          />
-          <ConfirmPill
-            label={t("pairing:tvUnpairDevice")}
-            icon="logout"
-            tone="danger"
-            armed={armed === "logout"}
-            armedLabel={t("pairing:tvUnpairConfirm")}
-            focusKey="settings:logout"
-            onPress={() => press("logout")}
-            onFocusChange={leave("logout")}
-          />
-        </View>
+        <SectionTitle title={t("pairing:tvOublierTitre")} caption={profile?.unpairNote ?? t("pairing:tvUnpairCaption")} />
+        {profile?.unpairNote ? null : (
+          <View style={styles.actions}>
+            {profile ? null : (
+              <ConfirmPill
+                label={t("nav:changeServer")}
+                icon="server"
+                armed={armed === "changeServer"}
+                armedLabel={confirm(t("nav:changeServer"))}
+                focusKey="settings:changeServer"
+                onPress={() => press("changeServer")}
+                onFocusChange={leave("changeServer")}
+              />
+            )}
+            <ConfirmPill
+              label={t("pairing:tvUnpairDevice")}
+              icon="logout"
+              tone="danger"
+              armed={armed === "logout"}
+              armedLabel={t("pairing:tvUnpairConfirm")}
+              focusKey="settings:logout"
+              onPress={() => press("logout")}
+              onFocusChange={leave("logout")}
+            />
+          </View>
+        )}
         <View style={[styles.armedHint, { opacity: armed ? 1 : 0 }]}>
           <Icon name="alert" size={26} color={colors.accent} strokeWidth={2.4} />
           <Text style={[settingsText.hint, styles.armedText]}>

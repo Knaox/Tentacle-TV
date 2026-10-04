@@ -1,4 +1,4 @@
-import type { PlaybackPreset } from "@tentacle-tv/shared";
+import type { FamilyProfileColor, PlaybackPreset } from "@tentacle-tv/shared";
 import type { IconName } from "../../icons/Icon";
 
 /**
@@ -23,6 +23,20 @@ export interface SettingsAccount {
   serverUrl: string;
   /** « Apple TV » ou « Android TV » (`TV_PLATFORM_LABEL`). */
   deviceLabel: string;
+  /** Apple TV passée aux profils (Famille) : le profil ouvert. Absent : la
+   *  TV d'avant les profils — le compte jumelé, « Changer de serveur » et
+   *  « Déjumeler », comme toujours. */
+  profile?: SettingsProfile | null;
+}
+
+export interface SettingsProfile {
+  /** « Propriétaire de cette TV », « Membre · famille de Damien », « Invité · famille de Damien ». */
+  role: string;
+  color: FamilyProfileColor;
+  /** « Gérer les profils » : le profil du propriétaire, sur une TV qui le permet. */
+  canManage: boolean;
+  /** Seul le profil du propriétaire déjumelle la TV ; ailleurs, la phrase qui le dit. */
+  unpairNote: string | null;
 }
 
 /** Les trois réglages de piste d'une bibliothèque. */
