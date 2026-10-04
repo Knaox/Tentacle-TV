@@ -89,6 +89,7 @@ export function NotificationsPane() {
     libraryAdded: t("libraryAddedTitle"),
     seerAvailable: t("seerAvailableTitle"),
     tickets: t("ticketsTitle"),
+    family: t("familyTitle"),
   };
   const renderSwitch = (key: keyof PushPreferences) => (
     <BrandSwitch

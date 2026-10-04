@@ -9,7 +9,7 @@ import { PUSH_PREF_DEFAULTS, isPushPrefEnabled, toPushPrefs } from "./pushPrefer
 
 describe("préférences push", () => {
   it("sans ligne : tickets et demandes oui, tous les ajouts non", () => {
-    expect(toPushPrefs(null)).toEqual({ libraryAdded: false, seerAvailable: true, tickets: true });
+    expect(toPushPrefs(null)).toEqual({ libraryAdded: false, seerAvailable: true, tickets: true, family: true });
     expect(PUSH_PREF_DEFAULTS.seerAvailable).toBe(true);
   });
 

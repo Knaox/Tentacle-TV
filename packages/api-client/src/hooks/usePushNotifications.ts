@@ -53,19 +53,22 @@ export interface PushPreferences {
   libraryAdded: boolean;
   seerAvailable: boolean;
   tickets: boolean;
+  /** La Famille : les invitations reçues (absente d'un serveur d'avant : vaut le défaut). */
+  family: boolean;
 }
 
 /**
  * Défauts des préférences push — la même table que le serveur
  * (apps/backend/src/services/pushPreferences.ts). Sert de repli au client
  * le temps du chargement, ou face à un serveur qui ne renvoie pas une clé :
- * `tickets` et `seerAvailable` sont ACTIVÉES par défaut, `libraryAdded` est
- * opt-in.
+ * `tickets`, `seerAvailable` et `family` sont ACTIVÉES par défaut,
+ * `libraryAdded` est opt-in.
  */
 export const PUSH_PREF_DEFAULTS: PushPreferences = {
   libraryAdded: false,
   seerAvailable: true,
   tickets: true,
+  family: true,
 };
 
 export interface TestPushResult {

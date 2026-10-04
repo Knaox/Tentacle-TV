@@ -14,6 +14,7 @@ const prefsSchema = z.object({
   libraryAdded: z.boolean().optional(),
   seerAvailable: z.boolean().optional(),
   tickets: z.boolean().optional(),
+  family: z.boolean().optional(),
 });
 
 export const pushRoutes: FastifyPluginAsync = async (app) => {
@@ -53,7 +54,7 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
   app.put("/preferences", async (request, reply) => {
     const parsed = prefsSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ message: "libraryAdded / seerAvailable / tickets booléens" });
+      return reply.status(400).send({ message: "libraryAdded / seerAvailable / tickets / family booléens" });
     }
     const user = (request as any).user as JellyfinUser;
     const prisma = getPrisma();

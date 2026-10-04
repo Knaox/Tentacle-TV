@@ -62,6 +62,8 @@ export default {
   seerAvailableDesc: "Quand une de vos demandes devient disponible",
   ticketsTitle: "Tickets de support",
   ticketsDesc: "Réponses et changements de statut de vos tickets — et les nouveaux tickets si vous êtes administrateur",
+  familyTitle: "Famille",
+  familyDesc: "Quand quelqu'un vous invite à rejoindre sa famille",
   testButton: "Envoyer une notification de test",
   testHint: "Vérifiez que les notifications arrivent bien sur cet appareil.",
   testSent: "Notification envoyée ✓",
