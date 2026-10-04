@@ -13,6 +13,54 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.26.0]
+<!-- Bloc nu : Windows (Microsoft Store, 1500 caractères) et Linux partent de la 1.25.5. Le Mac App Store, où la 1.25.5 n'a pas été validée, a son bloc mac-. -->
+### FR
+- **Famille** : depuis les réglages, créez votre famille, invitez des comptes du serveur ou ajoutez des profils invités pour vos Apple TV, chacun avec son code PIN facultatif
+- **Les invitations à rejoindre une famille** s'affichent à l'ouverture de l'app et en direct ; acceptez, refusez, ou répondez plus tard depuis la cloche
+- **Qualité réduite : le lecteur dit pourquoi** (réseau, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur), et la raison se relit dans le menu Qualité
+- **Sauter pendant une vidéo convertie** : un chargement visible dès l'appui, et plusieurs sauts rapides ne relancent la conversion qu'une fois
+
+### EN
+- **Family**: from Settings, create your family, invite server accounts or add guest profiles for your Apple TVs, each with an optional PIN
+- **Family invitations** appear when the app opens and in real time; accept, decline, or answer later from the notification bell
+- **Quality lowered: the player now says why** (network, an Internet limit set on Jellyfin, or video converted by the server), and the reason stays in the Quality menu
+- **Skipping in converted video**: loading shows right away, and several quick skips restart the conversion only once
+
+## [mac-1.26.0]
+<!-- App Store Connect (4000 caractères) : la 1.25.5 n'a pas été validée par Apple — on reprend ses notes (tout depuis la 1.25.0), et les nouveautés de la 1.26.0 en tête. -->
+### FR
+- **Famille** : depuis les réglages, créez votre famille, invitez des comptes du serveur ou ajoutez des profils invités pour vos Apple TV, chacun avec son code PIN facultatif
+- **Les invitations à rejoindre une famille** s'affichent à l'ouverture de l'app et en direct ; acceptez, refusez, ou répondez plus tard depuis la cloche
+- **Qualité réduite : le lecteur dit pourquoi** (réseau, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur), et la raison se relit dans le menu Qualité
+- **Sauter pendant une vidéo convertie** : un chargement visible dès l'appui, et plusieurs sauts rapides ne relancent la conversion qu'une fois
+- **Quand une lecture ou une page échoue, l'application dit pourquoi** et propose quoi faire : Réessayer, Qualité réduite, Autre version, les détails techniques repliés. Un fichier manquant ne bascule plus vers un lecteur de secours, et une lecture qui échoue dès le départ ne reste plus en chargement sans fin
+- **L'image ne vibre plus en plein écran** sur les écrans sans encoche — MacBook Air, MacBook Pro 13 pouces, Mac mini, iMac et écrans externes
+- **Plus d'image en blocs dans les scènes d'action quand la qualité baisse** : une qualité réduite garde une définition que son débit peut tenir — 1080p, 720p, 540p ou 360p —, et la qualité automatique adapte le débit à la connexion au lieu de tomber d'un cran entier
+- **Un titre que le serveur n'a jamais lu démarre presque aussi vite qu'un autre** : 0,25 à 0,38 s du clic à l'image, au lieu de 0,55 à 1 s
+- **La reprise au bon endroit** : la fiche montre la position quittée dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard ; un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture »
+- **La lecture directe tient pendant une panne** du serveur Tentacle ou de Jellyfin, au lieu de se couper jusqu'au redémarrage
+- **« Derniers ajouts », une carte par série** : « 4 nouveaux épisodes », « Nouvelle saison · 8 épisodes », « Nouvelle série », ouverte sur la saison du dernier ajout
+- **La bannière d'accueil montre le logo des films et des séries**, et son bouton principal prend les couleurs de Tentacle
+- **Administration** : un tableau de bord qui dit l'essentiel, des avertissements qui s'effacent seuls et se masquent pour de bon, la commande de mise à jour du serveur à copier, et la raison du transcodage en clair dans les sessions (« S1 E1 » pour un épisode)
+- Les messages de l'administrateur restent visibles en plein écran ; plus de mention légale au premier lancement ; « 1 saison », et non plus « 1 saisons »
+
+### EN
+- **Family**: from Settings, create your family, invite server accounts or add guest profiles for your Apple TVs, each with an optional PIN
+- **Family invitations** appear when the app opens and in real time; accept, decline, or answer later from the notification bell
+- **Quality lowered: the player now says why** (network, an Internet limit set on Jellyfin, or video converted by the server), and the reason stays in the Quality menu
+- **Skipping in converted video**: loading shows right away, and several quick skips restart the conversion only once
+- **When playback or a page fails, the app says why** and what to do: Retry, Lower quality, Other version, with technical details folded away. A missing file no longer falls back to a backup player, and playback that fails right away no longer loads forever
+- **The picture no longer shakes in full screen** on displays without a notch — MacBook Air, 13-inch MacBook Pro, Mac mini, iMac and external displays
+- **No more blocky picture in action scenes when quality drops**: a reduced quality keeps a resolution its bitrate can hold — 1080p, 720p, 540p or 360p — and automatic quality fits the bitrate to the connection instead of dropping a whole step
+- **A title the server has never read starts almost as fast as any other**: 0.25 to 0.38 s from the click to the picture, instead of 0.55 to 1 s
+- **Resume at the right spot**: the title page shows the position you left as soon as you leave the player, even when Jellyfin 12.1 writes it late; a title already watched, played again then left partway, comes back in "Continue watching"
+- **Direct streaming holds through an outage** of the Tentacle server or Jellyfin, instead of turning off until a restart
+- **"Latest additions", one card per series**: "4 new episodes", "New season · 8 episodes", "New series", opening on the season of the latest addition
+- **The home banner shows the logo of movies and series**, and its main button takes Tentacle's colors
+- **Administration**: a dashboard that says what matters, warnings that fade on their own and can be hidden for good, the server update command to copy, and transcoding reasons in plain words in sessions ("S1 E1" for an episode)
+- Admin messages stay visible in full screen; no more legal notice at first launch; "1 season", no longer "1 seasons"
+
 ## [1.25.5]
 <!-- Bloc nu : Windows (Microsoft Store, 1500 caractères) et Linux partent de la 1.25.4. Le Mac App Store, resté à la 1.25.0, a son bloc mac-. -->
 ### FR

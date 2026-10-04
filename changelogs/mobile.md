@@ -8,24 +8,28 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 ## [1.10.3]
 <!-- Bloc nu : Google Play (500 caractères), qui a déjà la 1.10.2. L'App Store, resté à la 1.8.2, a son bloc ios-. -->
 ### FR
-- **Des erreurs claires** : pourquoi la lecture échoue, et quoi faire
-- **Plus d'image en blocs** dans l'action quand la qualité baisse
-- **Barre d'onglets plus lisible**, bouton des bannières aux couleurs Tentacle
-- **Avertissements discrets**, à masquer pour de bon
-- Réinstaller l'app rouvre bien la connexion
-- Navigation plus fluide, plus de vibration en défilant
+- **Famille** : invitations, profils invités et PIN pour vos Apple TV
+- **Profil rangé en six rubriques**
+- **Des erreurs claires**, et pourquoi la qualité baisse
+- **Plus d'image en blocs** dans l'action
+- L'accueil et les extensions ne se bloquent plus au retour
+- Barre d'onglets lisible, navigation plus fluide
 
 ### EN
-- **Clear errors**: why playback fails, and what to do
-- **No more blocky picture** in action scenes when quality drops
-- **Clearer tab bar**, banner button in Tentacle colors
-- **Discreet warnings**, hideable for good
-- Reinstalling the app now shows the sign-in screen
-- Smoother navigation, no more vibration while scrolling
+- **Family**: invitations, guest profiles and PIN for your Apple TVs
+- **Profile organized in six sections**
+- **Clear errors**, and why quality drops
+- **No more blocky picture** in action scenes
+- Home and extensions no longer get stuck when you come back
+- Clearer tab bar, smoother navigation
 
 ## [ios-1.10.3]
 <!-- Bloc iOS (App Store Connect, 4000 caractères) : l'App Store en est resté à la 1.8.2 (les 1.10.x n'y ont pas été publiées) — tout depuis. -->
 ### FR
+- **Famille** : créez votre famille, invitez des comptes du serveur ou ajoutez des profils invités pour vos Apple TV, avec un code PIN facultatif ; une invitation s'affiche à l'ouverture de l'app, en direct, ou depuis sa notification
+- **Le profil se range en six rubriques claires** (Compte, Lecture, Apparence, Notifications, Serveur, Aide), avec deux colonnes sur iPad ; le thème se choisit sur des aperçus et la langue en un geste
+- **Qualité réduite : le lecteur dit pourquoi** (réseau, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur) ; sauter pendant une vidéo convertie montre un chargement, et plusieurs sauts rapides ne relancent la conversion qu'une fois
+- **La grande carte de l'accueil reste à sa place** au retour d'un autre onglet, et une page d'extension restée longtemps en arrière-plan se recharge d'elle-même
 - **Quand une lecture ou une page échoue, l'app dit pourquoi** et propose quoi faire : Réessayer, Qualité réduite, Autre version, Sans sous-titres. Serveur injoignable, connexion perdue, fichier introuvable, session expirée : chaque cause a ses mots, et les détails techniques restent repliés
 - **Vos statistiques** : temps devant l'écran, genres, films et acteurs préférés, records, « VF ou VO ? » — à partager par un lien public, révocable à tout moment
 - **La saga d'un film** sur sa fiche, et **des saisons bien plus rapides** : la saison en cours s'ouvre d'emblée
@@ -42,6 +46,10 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - Réinstaller l'app ouvre bien l'écran de connexion, et l'app s'ouvre directement sur l'adresse du serveur
 
 ### EN
+- **Family**: create your family, invite server accounts or add guest profiles for your Apple TVs, with an optional PIN; an invitation appears when you open the app, in real time, or from its notification
+- **Your profile is now organized into six clear sections** (Account, Playback, Appearance, Notifications, Server, Help), with two columns on iPad; pick your theme from live previews and your language in one tap
+- **Quality lowered: the player now says why** (network, an Internet limit set on Jellyfin, or video converted by the server); skipping in converted video shows loading, and several quick skips restart the conversion only once
+- **The large home card stays in place** when you come back from another tab, and an extension page left in the background for a long time reloads by itself
 - **When playback or a page fails, the app says why** and what to do: Retry, Lower quality, Other version, No subtitles. Server unreachable, connection lost, file not found, session expired: each cause has its own words, and technical details stay folded away
 - **Your stats**: screen time, genres, favorite movies and actors, records, "Dubbed or original?" — shareable through a public link, revocable at any time
 - **A movie's saga** on its page, and **much faster seasons**: the current season opens right away
