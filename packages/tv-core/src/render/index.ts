@@ -3,4 +3,5 @@
  * dessine, et comment) et l'ombre portée lue dans les styles iOS.
  */
 export * from "./dropShadow";
+export * from "./haloDrawing";
 export * from "./renderProfile";

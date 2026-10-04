@@ -1,9 +1,11 @@
 import { memo, useMemo } from "react";
-import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { PixelRatio, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Svg, { Defs, FeGaussianBlur, Filter, LinearGradient, Rect, Stop } from "react-native-svg";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { haloDrawing } from "@tentacle-tv/tv-core";
 import { brandLight, type ArtworkPalette } from "../color/artworkPalette";
 import { PoolLayerView, useLayerPool } from "../motion/LayerStack";
+import { RENDER } from "../render/renderProfile";
 
 /**
  * Le halo d'une œuvre : sa lumière qui déborde tout autour de son cadre, aux
@@ -16,7 +18,9 @@ import { PoolLayerView, useLayerPool } from "../motion/LayerStack";
  *
  * Le flou se dessine au QUART de sa taille, puis le GPU l'agrandit : un flou
  * agrandi reste un flou, et le fil principal calcule seize fois moins de
- * pixels quand l'œuvre change (le héros qui tourne). Quand elle change, le
+ * pixels quand l'œuvre change (le héros qui tourne). L'échelle et l'écart-type
+ * écrit viennent du profil de rendu (`haloDrawing`, tv-core) : Android floute
+ * autrement (RenderScript, plafonné), pour le même halo à l'œil. Quand elle change, le
  * nouveau halo entre en fondu pendant que l'ancien s'efface (préréglage
  * `hero`) — il ne disparaît plus d'un coup avant que l'autre n'arrive.
  *
@@ -42,8 +46,6 @@ export interface ArtworkHaloProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** L'échelle du dessin, avant agrandissement. */
-const DRAW = 0.25;
 /** Les halos gardés dessinés : les cinq titres d'un héros, plus celui qui part. */
 const POOL = 6;
 
@@ -56,18 +58,21 @@ interface Geometry {
   radius: number;
   spread: number;
   margin: number;
-  blur: number;
+  /** L'échelle du dessin, avant agrandissement. */
+  draw: number;
+  /** L'écart-type écrit dans le filtre. */
+  deviation: number;
 }
 
 /** Le halo dessiné petit, agrandi autour de son centre à la taille `w × h`. */
 const HaloDrawing = memo(function HaloDrawing({ glows, g, opacity }: { glows: readonly string[]; g: Geometry; opacity: number }) {
   const [a, b, c] = glows;
-  const small = { width: g.w * DRAW, height: g.h * DRAW };
+  const small = { width: g.w * g.draw, height: g.h * g.draw };
   const place = {
     left: (g.w - small.width) / 2,
     top: (g.h - small.height) / 2,
     opacity,
-    transform: [{ scale: 1 / DRAW }],
+    transform: [{ scale: 1 / g.draw }],
   };
   return (
     <View style={[styles.drawing, small, place]}>
@@ -82,7 +87,7 @@ const HaloDrawing = memo(function HaloDrawing({ glows, g, opacity }: { glows: re
           {/* Le rayon du flou est en points d'écran (react-native-svg ne
               l'échelonne pas avec le viewBox) : il suit le dessin. */}
           <Filter id="halo-blur" x="-20%" y="-30%" width="140%" height="160%">
-            <FeGaussianBlur stdDeviation={g.blur * DRAW} />
+            <FeGaussianBlur stdDeviation={g.deviation} />
           </Filter>
         </Defs>
         <Rect
@@ -118,7 +123,10 @@ export const ArtworkHalo = memo(function ArtworkHalo({
   // au tour suivant, chaque halo revient déjà dessiné — aucun flou n'est
   // recalculé (quelques centaines de Kio, éteints quand ils ne servent pas).
   const layers = useLayerPool(glows.join("-"), glows, POOL);
-  const g = useMemo<Geometry>(() => ({ w, h, width, height, radius, spread, margin, blur }), [w, h, width, height, radius, spread, margin, blur]);
+  const g = useMemo<Geometry>(() => {
+    const { scale, deviation } = haloDrawing(RENDER, blur, PixelRatio.get());
+    return { w, h, width, height, radius, spread, margin, draw: scale, deviation };
+  }, [w, h, width, height, radius, spread, margin, blur]);
   return (
     <View pointerEvents="none" style={[{ position: "absolute", left: -margin, top: -margin, width: w, height: h }, style]}>
       {layers.map((layer) => (

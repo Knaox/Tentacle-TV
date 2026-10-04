@@ -8,6 +8,7 @@ describe("le profil de rendu", () => {
       nativeGlass: true,
       shadows: "layer",
       haloDrawScale: 0.25,
+      svgBlur: "points",
       animatedLayerTexture: false,
       muteReleaseLogs: false,
     });

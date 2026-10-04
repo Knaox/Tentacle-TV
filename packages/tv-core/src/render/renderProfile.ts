@@ -20,6 +20,14 @@ export type ShadowRendering =
    *  cache par géométrie et teinté au dessin : aucun flou par image. */
   | "mask";
 
+/** Comment `react-native-svg` floute (`FeGaussianBlur`). */
+export type SvgBlurRendering =
+  /** L'écart-type écrit, en points (Core Image). */
+  | "points"
+  /** Android (patch Tentacle de react-native-svg) : RenderScript, rayon =
+   *  2 × l'écart-type écrit, plafonné à 25, en pixels du dessin. */
+  | "renderscript";
+
 export interface RenderProfile {
   /** Le mouvement de la refonte (ressorts, fondus) sur le fil d'interface.
    *  Faux : chaque animation se pose aussitôt. */
@@ -32,6 +40,8 @@ export interface RenderProfile {
   /** L'échelle à laquelle un halo d'œuvre se floute avant d'être agrandi par
    *  le GPU (1 : à sa taille ; 0,25 : seize fois moins de pixels). */
   haloDrawScale: number;
+  /** Le flou SVG de la plateforme (voir `haloDrawing`). */
+  svgBlur: SvgBlurRendering;
   /** Pendant une animation de transformation (focus, appui), la vue est
    *  rendue dans une texture que le GPU déplace sans repeindre ses enfants
    *  (`renderToHardwareTextureAndroid`). Sans effet hors Android. */
@@ -47,6 +57,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     nativeGlass: true,
     shadows: "layer",
     haloDrawScale: 0.25,
+    svgBlur: "points",
     animatedLayerTexture: false,
     muteReleaseLogs: false,
   },
@@ -58,6 +69,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     nativeGlass: false,
     shadows: "mask",
     haloDrawScale: 0.25,
+    svgBlur: "renderscript",
     animatedLayerTexture: true,
     muteReleaseLogs: true,
   },
