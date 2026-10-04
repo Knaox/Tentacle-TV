@@ -470,7 +470,16 @@ jeté), profils de l'Apple TV, code PIN : le CONTRAT est dans
   jeton Jellyfin du web, du bureau, du mobile seulement — jamais une TV, un
   profil de TV ni « voir en tant que ».
 - **Un invité n'apparaît dans AUCUNE liste** (Watch Together, candidats,
-  utilisateurs, admin) ; seulement dans les sessions en cours (`familyGuestOf`).
+  utilisateurs, admin, classement, recommandations en fond) ; seulement dans
+  les sessions en cours (`familyGuestOf`). Toute nouvelle liste de comptes
+  passe par `withoutFamilyGuests` (`familyGuestMarkers.ts`), la seule source.
+- **Une session de profil regarde, elle n'administre rien** (ni push, ni
+  téléchargements, ni jumelage, ni compte) ; un invité n'a en plus ni Watch
+  Together, ni tickets, ni partage, ni extensions : une seule liste de
+  préfixes, `profileSessionLimits.ts`, appliquée par `requireAuth`.
+- **Proxy : un jeton d'appareil n'écrit que SES données** (le proxy lui prête
+  la clé admin) : `jellyfinProxy/deviceWrites.ts`, relevé de ce que les TV
+  livrées envoient. Un nouveau geste d'écriture d'une TV s'y ajoute, testé.
 - Un nouveau geste de la Famille : une entrée dans `FAMILY_ROUTES` d'abord,
   jamais une route à part.
 

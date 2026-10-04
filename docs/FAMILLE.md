@@ -15,6 +15,8 @@ Une règle, une source :
 | Schémas d'entrée (zod) | `apps/backend/src/services/family/familySchemas.ts` |
 | Appels et crochets | api-client `family/familyApi.ts`, `family/familyTvApi.ts`, `hooks/useFamily.ts`, `hooks/useFamilyLive.ts` |
 | Tables | `schema.prisma` › `Family`, `FamilyMember`, `FamilyInvitation`, `ProfilePin`, `ProfilePinAttempt`, colonnes de `PairedDevice` ; `core-init.sql` (additif) |
+| Services du serveur | `apps/backend/src/services/family/` (un fichier par sujet, voir « Côté serveur ») |
+| Routes | `apps/backend/src/routes/family/` (posées d'après `FAMILY_ROUTES` par `familyRouting.ts`) |
 
 ## Les rôles
 
@@ -163,9 +165,27 @@ profil), jamais « voir en tant que » : `family.personal_session_required`.
 
 Une session de profil REGARDE (bibliothèque, lecture, notes, Ma liste,
 préférences) mais n'administre rien : ni jumelage d'un autre appareil, ni
-compte (suppression, mot de passe), ni Famille personnelle, ni
-administration. Sans quoi un membre retiré garderait un accès par une TV
-jumelée depuis son profil.
+compte (suppression, mot de passe, comptes externes), ni push, ni
+téléchargements, ni Famille personnelle, ni administration. Sans quoi un
+membre retiré garderait un accès par une TV jumelée depuis son profil. Un
+INVITÉ, en plus : ni Watch Together (REST et socket), ni tickets, ni liens de
+partage, ni extensions — Vigie compris ; un MEMBRE garde Vigie, ses demandes
+sont les siennes. Une seule liste de préfixes refusés
+(`services/family/profileSessionLimits.ts`), appliquée par `requireAuth` et
+`requireAdmin` — donc aussi aux routes des extensions : 403
+`family.personal_session_required` ou `family.guest_account`.
+
+### Le proxy : un appareil n'écrit que ses données
+
+Pour tout jeton d'appareil (TV d'avant, session de profil), le proxy
+`/api/jellyfin/*` prête la clé d'administration de Jellyfin. Il ne laisse
+donc passer, en écriture, que ce que les TV livrées envoient — relevé le
+2026-10-04 sur l'Apple TV, l'Android TV (depuis tv-v1.0.0) et la LG :
+négociation de lecture, reports de lecture, données de lecture, vu, favori,
+Ma liste, arrêt de son transcodage (`routes/jellyfinProxy/deviceWrites.ts`,
+`DEVICE_WRITE_ROUTES`). Toute lecture reste jugée par la liste blanche des
+chemins ; toute autre écriture : 403, rien n'atteint Jellyfin. Un nouveau
+geste d'écriture d'une TV s'ajoute à cette liste, nommé et testé.
 
 ## Invitations
 
@@ -228,10 +248,55 @@ refusé.
 ## Administration
 
 Deux interrupteurs dans `server_config`, ACTIVÉS par défaut
-(`GET`/`PUT /api/admin/family`) : « Familles » et « Profils invités ». Les
-couper refuse toute nouvelle action et coupe les sessions de profil en cours
-— membres et invités pour le premier, invités pour le second. La session du
-propriétaire sur sa propre TV reste.
+(`GET`/`PUT /api/admin/family`, administrateur en session personnelle) :
+« Familles » et « Profils invités ». Les couper refuse toute nouvelle action
+(inviter, accepter, créer un invité, ouvrir un profil coupé) et coupe les
+sessions de profil en cours — membres et invités pour le premier, invités pour
+le second — avec leur « Rester » ; les rallumer ne ressuscite aucune session.
+La session du propriétaire sur sa propre TV reste. Retirer, quitter,
+supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
+
+## Côté serveur
+
+| Sujet | Fichier (`apps/backend/src/services/family/`) |
+|-------|------|
+| Refus typés (code → statut du contrat) | `familyErrors.ts` |
+| Interrupteurs, capacité, compte de démonstration | `familyConfig.ts` |
+| PIN (scrypt), essais et blocages | `familyPins.ts` |
+| Un geste à la fois par famille | `familyLock.ts` |
+| Marqueur « invité » des listes, étiquette des sessions | `familyGuestMarkers.ts` |
+| Cloche, push, socket | `familyNotify.ts` |
+| Familles et profils en base, refus 403 / 404 | `familyStore.ts` |
+| Coupure des sessions de profil (avant la réponse) | `familySessions.ts` |
+| Comptes Jellyfin des invités | `guestAccounts.ts` |
+| Invitations ; réponses et expiration | `familyInvitations.ts`, `familyInvitationAnswers.ts` |
+| Invités et PIN ; membres, dissolution, compte disparu | `familyGuests.ts`, `familyMembers.ts` |
+| Vue d'ensemble, candidats | `familyOverview.ts`, `familyCandidates.ts` |
+| Apple TV : échange ; profils et sessions | `familyTvEnroll.ts`, `familyTv.ts` |
+| Garde d'appelant des routes | `familyCaller.ts` |
+| Périmètre des sessions de profil | `profileSessionLimits.ts` |
+| Balayage (10 min) | `familySweep.ts` |
+
+Le balayage (toutes les dix minutes et au démarrage) : les invitations échues
+sortent de la cloche ; un compte disparu de Jellyfin (supprimé depuis son
+tableau de bord) emporte sa famille ou son adhésion ; un compte DÉSACTIVÉ perd
+ses sessions de profil. Jellyfin muet : rien n'est conclu.
+
+Journaux : préfixe `[family]`, jamais un jeton, un PIN ni un mot de passe ;
+une invitation n'y paraît que par le début de son identifiant.
+
+## Preuves
+
+- Bancs de bout en bout (vraies routes, base en mémoire, faux Jellyfin qui
+  crée et supprime des comptes) : `apps/backend/test/family*.test.ts` — Apple
+  TV, PIN et gestion, invitations, révocations, périmètre et listes, balayage.
+- Proxy : `apps/backend/test/jellyfinProxyDeviceWrites.test.ts` (vrai serveur
+  amont).
+- Un VRAI Jellyfin jetable (10.11 et 12.1) : `test/jellyfin-compat/suites/
+  family.compat.ts` — compte invité caché, sans droit, mot de passe inconnu ;
+  jeton Quick Connect propre à chaque session de profil ; coupures jusqu'à
+  `DELETE /Devices` ; membre retiré, compte intact.
+- Les tests d'attaque de T8 : `apps/backend/test/famille-securite/`.
 
 ## Compatibilité
 
