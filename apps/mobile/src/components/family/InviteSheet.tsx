@@ -17,11 +17,11 @@ import { makeFamilyFormStyles } from "./familyFormStyles";
 const SEARCH_DELAY_MS = 300;
 
 /**
- * Inviter un compte du serveur. Les candidats viennent du SERVEUR : les
- * comptes de l'écran de connexion de Jellyfin filtrés par la saisie, un
- * compte caché seulement par son nom exact — jamais un invité, soi-même, un
- * membre, une invitation en attente ni un compte désactivé. Rien ne
- * distingue ici un compte caché d'un nom qui n'existe pas.
+ * Inviter un compte du serveur (le propriétaire, ou qui crée sa famille). Les
+ * candidats viennent du SERVEUR, affichés d'emblée : tous les comptes (v2),
+ * la saisie affine — jamais un invité, soi-même ni un compte désactivé. Un
+ * compte déjà dans une famille paraît grisé, sans dire laquelle, et ne
+ * s'invite pas ; une invitation qui l'attend déjà se dit « envoyée ».
  */
 export function InviteSheet({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(["familyWeb", "familyMobile"]);
@@ -108,16 +108,29 @@ const CandidateRow = memo(function CandidateRow({ candidate, last, done, disable
   const { t } = useTranslation(["familyWeb", "familyMobile"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
+  // Un serveur v1 ne marque rien : tout candidat qu'il rend s'invite.
+  const status = done ? "invited" : candidate.status ?? "available";
+  const taken = status === "in_family";
   return (
-    <View style={[st.row, !last && st.rowBordered]}>
-      <UserAvatar userId={candidate.userId} name={candidate.name} hasAvatar={candidate.imageTag !== null} imageTag={candidate.imageTag} size={36} />
-      <Text style={st.name} numberOfLines={1}>{candidate.name}</Text>
-      {done ? (
-        <View style={st.done} accessible accessibilityLabel={`${t("familyMobile:sent")} — ${candidate.name}`}>
-          <Feather name="check" size={15} color={theme.colors.status.success} />
-          <Text style={st.doneText}>{t("familyMobile:sent")}</Text>
+    <View
+      style={[st.row, !last && st.rowBordered]}
+      accessible={status !== "available"}
+      accessibilityState={taken ? { disabled: true } : undefined}
+      accessibilityLabel={status === "available" ? undefined : `${candidate.name} — ${t(taken ? "familyMobile:candidateInFamily" : "familyMobile:candidateInvited")}`}
+    >
+      <View style={[st.identity, taken && st.taken]}>
+        <UserAvatar userId={candidate.userId} name={candidate.name} hasAvatar={candidate.imageTag !== null} imageTag={candidate.imageTag} size={36} />
+        <View style={st.nameColumn}>
+          <Text style={st.name} numberOfLines={1}>{candidate.name}</Text>
+          {taken ? <Text style={st.status}>{t("familyMobile:candidateInFamily")}</Text> : null}
         </View>
-      ) : (
+      </View>
+      {status === "invited" ? (
+        <View style={st.done}>
+          <Feather name="check" size={15} color={theme.colors.status.success} />
+          <Text style={st.doneText}>{t("familyMobile:candidateInvited")}</Text>
+        </View>
+      ) : status === "available" ? (
         <Pressable
           onPress={() => onInvite(candidate)}
           disabled={disabled}
@@ -128,7 +141,7 @@ const CandidateRow = memo(function CandidateRow({ candidate, last, done, disable
         >
           <Text style={st.inviteText}>{t("familyWeb:invite.send")}</Text>
         </Pressable>
-      )}
+      ) : null}
     </View>
   );
 });
@@ -153,7 +166,12 @@ const makeStyles = (t: AppTheme) =>
     messageError: { color: t.colors.statusPairs.error.fg },
     row: { flexDirection: "row", alignItems: "center", gap: spacing.sm + 2, minHeight: 60, paddingHorizontal: spacing.md },
     rowBordered: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.colors.border.subtle },
-    name: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.primary, flex: 1 },
+    identity: { flex: 1, flexDirection: "row", alignItems: "center", gap: spacing.sm + 2 },
+    // Grisé, et dit en toutes lettres : la couleur ne porte pas seule l'information.
+    taken: { opacity: 0.5 },
+    nameColumn: { flex: 1 },
+    name: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.primary },
+    status: { ...typography.small, color: t.colors.text.tertiary, marginTop: 1 },
     invite: {
       minHeight: 36,
       paddingHorizontal: spacing.md,
