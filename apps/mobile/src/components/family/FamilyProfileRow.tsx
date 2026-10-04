@@ -11,27 +11,26 @@ import { makeFamilyRowStyles } from "./familyRowStyles";
 interface FamilyProfileRowProps {
   profile: FamilyProfileDto;
   last: boolean;
-  /** Les gestes du propriétaire (session personnelle). */
-  canManage: boolean;
-  onRemove: (profile: FamilyProfileDto) => void;
-  onManageGuest: (profile: FamilyProfileDto) => void;
+  /** Le profil se gère d'ici : la ligne entière ouvre son panneau (chevron). */
+  onOpen?: (profile: FamilyProfileDto) => void;
 }
 
 const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest: "family:kindGuest" } as const;
 
 /**
- * Un profil de MA famille : avatar à sa couleur, nom, rôle, ancienneté, code
- * PIN. Les gestes : retirer un membre (son compte n'est jamais touché) ;
- * « Gérer » un invité — son code PIN, sa suppression.
+ * Un profil de la famille : avatar à sa couleur, nom, rôle, ancienneté, code
+ * PIN. Quand on peut le gérer, la ligne entière ouvre son panneau
+ * (`FamilyProfileSheet`) — une cible pleine largeur plutôt qu'un petit mot.
  */
-export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, canManage, onRemove, onManageGuest }: FamilyProfileRowProps) {
+export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, onOpen }: FamilyProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family", "familyMobile"]);
   const theme = useTheme();
   const st = useThemedStyles(makeFamilyRowStyles);
   const { formatDate } = useFamilyText();
   const guest = profile.kind === "guest";
+  const kind = t(KIND_KEY[profile.kind]);
 
-  return (
+  const content = (
     <View style={[st.row, !last && st.bordered]}>
       <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />
       <View style={st.body}>
@@ -41,7 +40,7 @@ export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, 
         </Text>
         <View style={st.meta}>
           <View style={[st.chip, guest && st.chipGuest]}>
-            <Text style={[st.chipText, guest && st.chipGuestText]}>{t(KIND_KEY[profile.kind])}</Text>
+            <Text style={[st.chipText, guest && st.chipGuestText]}>{kind}</Text>
           </View>
           {profile.since ? <Text style={st.metaText}>{t("familyWeb:owned.since", { date: formatDate(profile.since) })}</Text> : null}
           {profile.hasPin ? (
@@ -52,28 +51,20 @@ export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, 
           ) : null}
         </View>
       </View>
-      {canManage && profile.kind === "member" ? (
-        <Pressable
-          onPress={() => onRemove(profile)}
-          hitSlop={6}
-          accessibilityRole="button"
-          accessibilityLabel={`${t("familyWeb:owned.remove")} — ${profile.name}`}
-          style={({ pressed }) => [st.action, pressed && st.dim]}
-        >
-          <Text style={st.dangerText}>{t("familyWeb:owned.remove")}</Text>
-        </Pressable>
-      ) : null}
-      {canManage && guest ? (
-        <Pressable
-          onPress={() => onManageGuest(profile)}
-          hitSlop={6}
-          accessibilityRole="button"
-          accessibilityLabel={`${t("familyMobile:manage")} — ${profile.name}`}
-          style={({ pressed }) => [st.action, pressed && st.dim]}
-        >
-          <Text style={st.actionText}>{t("familyMobile:manage")}</Text>
-        </Pressable>
-      ) : null}
+      {onOpen ? <Feather name="chevron-right" size={18} color={theme.colors.text.quaternary} /> : null}
     </View>
+  );
+
+  if (!onOpen) return content;
+  return (
+    <Pressable
+      onPress={() => onOpen(profile)}
+      accessibilityRole="button"
+      accessibilityLabel={`${profile.name}, ${kind}`}
+      accessibilityHint={t("familyMobile:openProfileHint")}
+      style={({ pressed }) => (pressed ? st.pressed : undefined)}
+    >
+      {content}
+    </Pressable>
   );
 });

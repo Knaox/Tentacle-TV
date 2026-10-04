@@ -3,70 +3,44 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useCancelFamilyInvitation, useDeleteFamilyGuest, useRemoveFamilyMember } from "@tentacle-tv/api-client";
+import { useCancelFamilyInvitation } from "@tentacle-tv/api-client";
 import { FAMILY_LIMITS, ownedCounts, type FamilyOverviewDto, type FamilyProfileDto, type OutgoingInvitationDto } from "@tentacle-tv/shared";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import type { FamilyScreenModel } from "@/family/familyScreenModel";
 import { useFamilyText } from "@/family/useFamilyText";
 import { showToast } from "@/notices/toastStore";
 import { ctaGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { haptic } from "@/utils/haptics";
 import { FamilyProfileRow } from "./FamilyProfileRow";
 import { GuestSheet } from "./GuestSheet";
 import { InviteSheet } from "./InviteSheet";
 import { PendingInvitationsSection } from "./PendingInvitationsSection";
-import { GuestPinSheet } from "./PinSheet";
-
-/** Le temps qu'une alerte iOS se retire : présenter autre chose pendant sa
- *  sortie (feuille, seconde alerte) échoue sans bruit. */
-const ALERT_SETTLE_MS = 350;
-const afterAlert = (run: () => void) => setTimeout(run, ALERT_SETTLE_MS);
+import { useProfilePanel } from "./useProfilePanel";
 
 /**
  * « Ma famille » : les profils (le propriétaire en tête, puis les membres,
  * puis les invités), les deux gestes qui la font grandir — inviter un compte,
  * créer un invité —, puis les invitations en attente. Sans famille, un appel
- * à la créer : elle naît au premier invité ou à la première invitation. Tout
- * geste qui retire passe par une confirmation qui dit ce qu'il coûte.
+ * à la créer : elle naît au premier invité ou à la première invitation. Un
+ * appui sur un profil ouvre son panneau (`useProfilePanel`) ; tout geste qui
+ * retire passe par une confirmation qui dit ce qu'il coûte.
  */
 export function OwnedFamilySection({ overview, model }: { overview: FamilyOverviewDto; model: FamilyScreenModel }) {
   const { t } = useTranslation(["familyWeb", "family", "familyMobile"]);
   const st = useThemedStyles(makeStyles);
   const theme = useTheme();
   const { errorText, codeText } = useFamilyText();
-  const removeMember = useRemoveFamilyMember();
-  const deleteGuest = useDeleteFamilyGuest();
   const cancelInvite = useCancelFamilyInvitation();
   const [sheet, setSheet] = useState<"invite" | "guest" | null>(null);
-  const [pinGuest, setPinGuest] = useState<FamilyProfileDto | null>(null);
 
   const owned = overview.owned;
   const manage = model.personal;
   const counts = useMemo(() => ownedCounts(owned), [owned]);
   const failed = useCallback((error: unknown) => showToast({ title: errorText(error) }), [errorText]);
-
-  const confirmRemove = useCallback((profile: FamilyProfileDto) => {
-    Alert.alert(t("familyWeb:confirm.removeTitle", { name: profile.name }), t("familyWeb:confirm.removeBody"), [
-      { text: t("familyWeb:cancel"), style: "cancel" },
-      { text: t("familyWeb:confirm.removeAction"), style: "destructive", onPress: () => { haptic("destructive"); removeMember.mutate(profile.userId, { onError: failed }); } },
-    ]);
-  }, [t, removeMember, failed]);
-
-  const confirmDeleteGuest = useCallback((profile: FamilyProfileDto) => {
-    Alert.alert(t("familyWeb:confirm.deleteGuestTitle", { name: profile.name }), t("familyWeb:confirm.deleteGuestBody"), [
-      { text: t("familyWeb:cancel"), style: "cancel" },
-      { text: t("familyWeb:confirm.deleteGuestAction"), style: "destructive", onPress: () => { haptic("destructive"); deleteGuest.mutate(profile.userId, { onError: failed }); } },
-    ]);
-  }, [t, deleteGuest, failed]);
-
-  // « Gérer » un invité : son code PIN, ou sa suppression (confirmée à part).
-  const manageGuest = useCallback((profile: FamilyProfileDto) => {
-    Alert.alert(t("familyMobile:manageTitle", { name: profile.name }), undefined, [
-      { text: t("familyWeb:owned.setPin"), onPress: () => afterAlert(() => setPinGuest(profile)) },
-      { text: t("familyWeb:owned.delete"), style: "destructive", onPress: () => afterAlert(() => confirmDeleteGuest(profile)) },
-      { text: t("familyWeb:cancel"), style: "cancel" },
-    ]);
-  }, [t, confirmDeleteGuest]);
+  // Le propriétaire gère chaque profil sauf le sien : le PIN d'un invité, retirer ou supprimer.
+  const panel = useProfilePanel(useCallback((profile: FamilyProfileDto) => ({
+    pin: profile.kind === "guest",
+    remove: profile.kind !== "owner",
+  }), []));
 
   const confirmCancel = useCallback((invitation: OutgoingInvitationDto) => {
     const name = invitation.inviteeName;
@@ -91,9 +65,7 @@ export function OwnedFamilySection({ overview, model }: { overview: FamilyOvervi
               key={profile.userId}
               profile={profile}
               last={index === owned.profiles.length - 1 && !manage}
-              canManage={manage}
-              onRemove={confirmRemove}
-              onManageGuest={manageGuest}
+              onOpen={manage && profile.kind !== "owner" ? panel.open : undefined}
             />
           ))
         ) : (
@@ -138,7 +110,7 @@ export function OwnedFamilySection({ overview, model }: { overview: FamilyOvervi
 
       {sheet === "invite" ? <InviteSheet onClose={() => setSheet(null)} /> : null}
       {sheet === "guest" ? <GuestSheet onClose={() => setSheet(null)} /> : null}
-      {pinGuest ? <GuestPinSheet guest={pinGuest} onClose={() => setPinGuest(null)} /> : null}
+      {panel.element}
     </>
   );
 }

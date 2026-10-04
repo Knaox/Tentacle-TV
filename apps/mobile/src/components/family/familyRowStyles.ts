@@ -26,4 +26,5 @@ export const makeFamilyRowStyles = (t: AppTheme) =>
     dangerText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.status.error },
     pill: { minHeight: 36, justifyContent: "center", paddingHorizontal: spacing.md, borderRadius: RADIUS.pill, backgroundColor: t.colors.brand.soft },
     dim: { opacity: 0.5 },
+    pressed: { backgroundColor: t.colors.fill.subtle },
   });

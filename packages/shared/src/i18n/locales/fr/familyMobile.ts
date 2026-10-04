@@ -9,8 +9,7 @@ export default {
   addGuestHint: "Un profil sans mot de passe, qui ne s'ouvre que sur vos TV.",
   /** La validation de la feuille « invité », à côté de son titre : un mot. */
   create: "Créer",
-  manage: "Gérer",
-  manageTitle: "Profil invité « {{name}} »",
+  openProfileHint: "Ouvre les réglages de ce profil",
   sent: "Envoyée",
   posterLabel: "Invitation à rejoindre une famille",
   pinShow: "Afficher les chiffres",

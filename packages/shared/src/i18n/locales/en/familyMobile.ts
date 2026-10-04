@@ -7,8 +7,7 @@ export default {
   addGuestHint: "A profile without a password, which only opens on your TVs.",
   /** La validation de la feuille « invité », à côté de son titre : un mot. */
   create: "Create",
-  manage: "Manage",
-  manageTitle: "Guest profile “{{name}}”",
+  openProfileHint: "Opens this profile's settings",
   sent: "Sent",
   posterLabel: "Invitation to join a family",
   pinShow: "Show digits",
