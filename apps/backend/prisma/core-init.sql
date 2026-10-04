@@ -713,8 +713,8 @@ PREPARE fm_v2_stmt FROM @fm_v2_sql;
 EXECUTE fm_v2_stmt;
 DEALLOCATE PREPARE fm_v2_stmt;
 
--- Le droit d'un invité « peut demander » (ses extensions, au nom du
--- propriétaire) — coupé par défaut. Posé à part : une base qui a déjà les
+-- Le droit d'un invité « peut demander » (les extensions, à son propre nom)
+-- — coupé par défaut. Posé à part : une base qui a déjà les
 -- colonnes ci-dessus le reçoit aussi.
 SET @fm_req_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'family_members' AND COLUMN_NAME = 'canRequestTitles');

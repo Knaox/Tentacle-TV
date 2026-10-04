@@ -136,9 +136,9 @@ export async function createGuest(actor: Actor, body: { name: unknown; color: Fa
 }
 
 /** Le propriétaire — lui SEUL — règle les droits d'un invité (v2). « Peut
- *  demander » : la session de l'invité utilise les extensions à son nom
- *  (`familyDelegation.ts`). Lu à chaque requête : le retirer coupe à l'appel
- *  suivant ; l'invité l'apprend aussi par son socket. */
+ *  demander » : la session de l'invité utilise les extensions à SON PROPRE
+ *  nom (`familyGuestExtensions.ts`). Lu à chaque requête : le retirer coupe à
+ *  l'appel suivant ; l'invité l'apprend aussi par son socket. */
 export async function setGuestRights(owner: Actor, guestUserId: string, patch: SetGuestRightsBody): Promise<FamilyGuestRights> {
   await refuseReviewAccount(owner.userId);
   const mine = await familyOf(owner.userId);

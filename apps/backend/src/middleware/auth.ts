@@ -21,10 +21,6 @@ export interface JellyfinUser {
   session?: SessionKind;
   /** `tvProfile` : le jumelage de la TV dont la session dépend. */
   pairingId?: string;
-  /** Famille v2 — sur une route d'extension, un invité autorisé agit pour le
-   *  propriétaire : l'utilisateur EST alors le propriétaire (jamais admin), et
-   *  ceci dit l'invité (`services/family/familyDelegation.ts`). */
-  delegatedBy?: { userId: string; username: string };
 }
 
 type ValidationResult =
@@ -156,10 +152,10 @@ export function getTokenFromRequest(request: FastifyRequest): string | null {
   return tokenFromAuthHeaders(request.headers) ?? null;
 }
 
-/** Le périmètre d'une session de profil de TV (la Famille) : 403 hors de lui
- *  et, sur une route d'extension, l'identité « agit pour » d'un invité
- *  autorisé. Rend l'utilisateur que la route doit voir — ou null : la réponse
- *  est partie (refus, ou base muette : on ferme). */
+/** Le périmètre d'une session de profil de TV (la Famille) : 403 hors de lui.
+ *  Sur une route d'extension, un invité autorisé y est LUI-MÊME, sous le nom
+ *  de son compte Jellyfin. Rend l'utilisateur que la route doit voir — ou
+ *  null : la réponse est partie (refus, ou base muette : on ferme). */
 async function profileScoped(request: FastifyRequest, reply: FastifyReply, user: JellyfinUser): Promise<JellyfinUser | null> {
   try {
     const scope = await profileSessionScope(request.url, user);
@@ -167,10 +163,7 @@ async function profileScoped(request: FastifyRequest, reply: FastifyReply, user:
       reply.status(403).send(scope.body);
       return null;
     }
-    if (scope.kind === "actFor") {
-      return { ...scope.identity, session: user.session, pairingId: user.pairingId, delegatedBy: { userId: user.userId, username: user.username } };
-    }
-    return user;
+    return scope.accountName ? { ...user, username: scope.accountName } : user;
   } catch {
     reply.status(503).send({ message: "Base de données indisponible" });
     return null;
@@ -211,8 +204,6 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
   }
   const user = await profileScoped(request, reply, result.user);
   if (!user) return reply;
-  // Une identité déléguée n'est jamais administratrice.
-  if (!user.isAdmin) return reply.status(403).send({ message: "Forbidden" });
 
   (request as any).user = user;
 }

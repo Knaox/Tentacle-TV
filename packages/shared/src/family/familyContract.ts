@@ -82,9 +82,11 @@ export interface FamilyCapability {
   v: number;
   enabled: boolean;
   guests: boolean;
-  /** v2 : le droit d'invité « peut demander » existe (`FamilyGuestRights`) —
-   *  la Famille et les invités allumés. Toujours rendu par un serveur v2 ;
-   *  absent : non. */
+  /** v2 : le droit d'invité « peut demander » a un sens ici — la Famille et
+   *  les invités allumés, ET une extension active et configurée sait demander
+   *  un titre (contrat `titles`, sa route `request`). Faux : les clients
+   *  n'offrent pas l'interrupteur. Toujours rendu par un serveur v2 ; absent :
+   *  non. */
   guestRequests?: boolean;
 }
 
@@ -102,12 +104,13 @@ export const FAMILY_DEFAULT_MEMBER_RIGHTS: Readonly<FamilyMemberRights> = { crea
 /**
  * Les droits que le propriétaire — et LUI SEUL — donne à UN invité, COUPÉS par
  * défaut. `requestTitles` (« peut demander des films ») : la session de cet
- * invité utilise les EXTENSIONS au nom du propriétaire — délégation « agit
- * pour », générique : sur les routes d'extension (`/api/plugins/…`) et nulle
- * part ailleurs, l'extension reçoit l'identité du propriétaire (jamais
- * administrateur ; `delegatedBy` dit l'invité). Sans le droit : aucune
- * extension, comme si le serveur n'en avait pas. Le retirer coupe à l'appel
- * suivant, et la session de l'invité l'apprend par `family:update`.
+ * invité utilise les EXTENSIONS à SON PROPRE NOM — sur les routes d'extension
+ * (`/api/plugins/…`) et nulle part ailleurs ; l'extension y reçoit l'invité
+ * lui-même (jamais administrateur), sous le nom de son compte Jellyfin. Sans
+ * le droit : aucune extension, comme si le serveur n'en avait pas. Le retirer
+ * coupe à l'appel suivant, et la session de l'invité l'apprend par
+ * `family:update`. Proposé seulement si une extension sait demander un titre
+ * (`FamilyCapability.guestRequests`).
  */
 export interface FamilyGuestRights {
   requestTitles: boolean;

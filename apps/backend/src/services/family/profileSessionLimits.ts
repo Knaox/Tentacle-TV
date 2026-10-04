@@ -1,5 +1,5 @@
 import type { FamilyErrorBody } from "../../family/familyProtocol";
-import { EXTENSIONS_PREFIX, extensionDelegate, type ExtensionIdentity } from "./familyDelegation";
+import { EXTENSIONS_PREFIX, guestExtensionAccess } from "./familyGuestExtensions";
 import { isFamilyGuest } from "./familyGuestMarkers";
 
 /**
@@ -13,8 +13,8 @@ import { isFamilyGuest } from "./familyGuestMarkers";
  *   externes, clés d'invitation) ;
  * - un INVITÉ, en plus : ni Watch Together, ni tickets, ni liens de partage —
  *   il n'apparaît dans AUCUNE liste (SEC-F-21) ; les extensions, seulement si
- *   le propriétaire lui a permis « peut demander », et alors AU NOM du
- *   propriétaire (`familyDelegation.ts`) ; sans ce droit, aucune.
+ *   le propriétaire lui a permis « peut demander », et alors à SON PROPRE NOM
+ *   (`familyGuestExtensions.ts`) ; sans ce droit, aucune.
  *
  * Un MEMBRE garde ses extensions sous SON identité : c'est un vrai compte, ses
  * demandes sont les siennes.
@@ -43,12 +43,9 @@ export interface ScopedUser {
   pairingId?: string;
 }
 
-/** Le verdict sur une requête : passer telle quelle, refuser (403), ou — sur
- *  une route d'extension, pour un invité autorisé — agir pour le propriétaire. */
-export type ProfileScope =
-  | { kind: "pass" }
-  | { kind: "refuse"; body: FamilyErrorBody }
-  | { kind: "actFor"; identity: ExtensionIdentity };
+/** Le verdict sur une requête : passer — sur une route d'extension, un invité
+ *  autorisé sous le nom de son compte Jellyfin (`accountName`) — ou refuser (403). */
+export type ProfileScope = { kind: "pass"; accountName?: string } | { kind: "refuse"; body: FamilyErrorBody };
 
 const PASS: ProfileScope = { kind: "pass" };
 
@@ -64,10 +61,10 @@ export async function profileSessionScope(url: string, user: ScopedUser): Promis
   }
   if (within(path, GUEST_DENIED)) return (await isFamilyGuest(user.userId)) ? guestRefusal() : PASS;
   if (within(path, [EXTENSIONS_PREFIX])) {
-    const delegate = await extensionDelegate(user.userId);
-    if (delegate === null) return PASS;
-    if (delegate === "denied") return guestRefusal();
-    return { kind: "actFor", identity: delegate };
+    const access = await guestExtensionAccess(user.userId);
+    if (access === null) return PASS;
+    if (access === "denied") return guestRefusal();
+    return access.accountName ? { kind: "pass", accountName: access.accountName } : PASS;
   }
   return PASS;
 }

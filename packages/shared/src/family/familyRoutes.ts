@@ -75,7 +75,8 @@ export const FAMILY_ROUTES = {
    *  supprimé (sa lecture est perdue). */
   deleteGuest: { method: "DELETE", path: "/api/family/guests/:userId", callers: ["personal", "ownerTv", "memberTv"] },
   /** `SetGuestRightsBody` → `FamilyGuestRights`. Le propriétaire SEUL règle les
-   *  droits d'un invité (v2) — « peut demander » : ses extensions, à son nom. */
+   *  droits d'un invité (v2) — « peut demander » : les extensions, au nom de
+   *  l'invité lui-même. */
   setGuestRights: {
     method: "PUT",
     path: "/api/family/guests/:userId/rights",
