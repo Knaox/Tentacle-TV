@@ -25,9 +25,9 @@ export const DATA_SAVER_LABEL_KEYS: Record<DataSaverSetting, string> = {
  * pas savoir (lien rapide mais facturé au volume, ou lent mais illimité).
  */
 export function DataSettingsScreen() {
-  const { t } = useTranslation("offline");
+  const { t } = useTranslation("profile");
   return (
-    <SettingsScaffold title={t("dataTitle")}>
+    <SettingsScaffold title={t("dataSaver")}>
       <DataPane />
     </SettingsScaffold>
   );

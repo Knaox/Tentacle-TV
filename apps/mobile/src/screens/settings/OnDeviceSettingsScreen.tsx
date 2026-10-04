@@ -22,7 +22,7 @@ import { spacing } from "@/theme";
 export function OnDeviceSettingsScreen() {
   const { t } = useTranslation("offline");
   return (
-    <SettingsScaffold title={t("settingsTitle")}>
+    <SettingsScaffold title={t("profileRowSettings")}>
       <OnDeviceSettingsPane />
     </SettingsScaffold>
   );

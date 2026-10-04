@@ -10,7 +10,7 @@ import { SettingsScaffold } from "./SettingsScaffold";
 export function DevicesScreen() {
   const { t } = useTranslation("profile");
   return (
-    <SettingsScaffold title={t("pairedDevices")}>
+    <SettingsScaffold title={t("devicesAndTv")}>
       <DevicesPane />
     </SettingsScaffold>
   );

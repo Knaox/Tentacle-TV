@@ -1,5 +1,5 @@
 import { SettingsRow, type SettingsIcon } from "@/components/settings";
-import { useProfilePane } from "./ProfilePaneContext";
+import { useOpenProfilePane } from "./ProfilePaneContext";
 import type { ProfilePaneId } from "./profilePanes";
 
 interface Props {
@@ -12,21 +12,10 @@ interface Props {
 }
 
 /**
- * La ligne qui ouvre un volet : chevron sur téléphone (un écran s'ouvre),
- * surbrillance sur tablette (le volet s'affiche à droite).
+ * La ligne qui ouvre un volet — le deuxième niveau : un écran sur téléphone,
+ * la colonne de détail sur tablette. Le chevron dit qu'on descend d'un cran.
  */
 export function ProfilePaneRow({ pane, icon, label, description, value, last }: Props) {
-  const { open, selected, inline } = useProfilePane(pane);
-  return (
-    <SettingsRow
-      icon={icon}
-      label={label}
-      description={description}
-      value={value}
-      chevron={!inline}
-      selected={selected}
-      last={last}
-      onPress={open}
-    />
-  );
+  const open = useOpenProfilePane(pane);
+  return <SettingsRow icon={icon} label={label} description={description} value={value} chevron last={last} onPress={open} />;
 }

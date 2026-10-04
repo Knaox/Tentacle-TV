@@ -21,9 +21,9 @@ import { SettingsScaffold } from "./SettingsScaffold";
  * téléphone, le profil tablette le pose dans sa colonne de détail.
  */
 export function PersonalizationScreen() {
-  const { t } = useTranslation("preferences");
+  const { t } = useTranslation("profile");
   return (
-    <SettingsScaffold title={t("sectionPersonalization")}>
+    <SettingsScaffold title={t("homeAndRecommendations")}>
       <PersonalizationPane />
     </SettingsScaffold>
   );

@@ -14,7 +14,7 @@ import { SettingsScaffold } from "./SettingsScaffold";
 export function PlaybackScreen() {
   const { t } = useTranslation("profile");
   return (
-    <SettingsScaffold title={t("playback")}>
+    <SettingsScaffold title={t("player")}>
       <PlaybackPane />
     </SettingsScaffold>
   );
