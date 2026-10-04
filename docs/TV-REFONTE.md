@@ -1061,6 +1061,31 @@ Hermes `.last_build_configuration` va dans `Pods/`, là où React Native le
 lit — ailleurs, la phase « Replace Hermes » réextrait et casse sur l'espace
 du chemin).
 
+### L'avance rapide réglable (Apple TV, 2026-10-04)
+
+Décision de l'utilisateur : certains ne veulent pas que le décompte VALIDE
+la nouvelle position. Réglage « Avance rapide », onglet Lecture des
+Réglages (`ScrubCountdownSection`) :
+
+- **À la fin du décompte** : *Revenir où j'étais* (DÉFAUT — un changement
+  voulu : on a lâché la télécommande, on ne retrouve pas le film déplacé) ou
+  *Reprendre à la nouvelle position* (le comportement d'avant) ;
+- **Délai** : 3, 5 (défaut), 10 ou 15 s ;
+- **par profil** : rangé sur le téléviseur sous
+  `tentacle_scrub_countdown:<id Jellyfin>` (`lib/scrubCountdownSettings.ts`,
+  modèle et magasin purs dans tv-core `player/scrubCountdownSettings.ts`).
+
+Inchangé : en pause ni décompte ni sortie seule ; OK lit aussitôt ; Retour
+annule ; un geste relance le décompte, un geste continu le tient ; les sauts
+instantanés. La pilule dit l'issue et l'autre choix (« Retour à 12:34 dans
+5 s » · « OK : lire ici », ou « Lecture dans 5 s » · « Retour : revenir à
+12:34 »). La règle reste dans tv-core, la politique passée en paramètre
+(`readCountdownPolicy`) ; Android TV n'a pas le réglage et garde la reprise
+à 5 s (couture `hooks/scrubCountdownPolicy(.ios).ts`), webOS n'est pas
+concerné. Preuves : tests tv-core (deux issues × quatre délais, pause, OK,
+Retour, gestes), banc « lecteur vivant » (scènes `lecture` et
+`lecture-reprendre`), banc de traces du lecteur inchangé.
+
 ## Le lecteur — quitter et reprendre (Apple TV, Android TV)
 
 Branche `refonte/tv-lecteur-reprise`. Demande de l'utilisateur (2026-10-01) :

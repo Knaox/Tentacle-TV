@@ -161,9 +161,16 @@ abandon sur inactivité dans `apps/tv` ; la LG garde 7 s).
 - **Sortie** (les deux) : décompte arrêté, moteurs coupés, `scrubEndedAt =
   maintenant`, vitesse effacée, habillage rallumé (`revealOverlay`).
 
-Décompte (`scrubCountdown.ts`) : entré EN LECTURE, armé ; reprise
-automatique 5 000 ms (`RESUME_COUNTDOWN_MS`) après le dernier geste,
-affichée « Lecture dans 5…1 s » (un rendu par seconde affichée). Tout geste
+Décompte (`scrubCountdown.ts`) : entré EN LECTURE, armé ; il se ferme seul
+au bout du délai de sa POLITIQUE après le dernier geste, lue à chaque
+ouverture (`readCountdownPolicy`) — issue `resume` (lire à la cible ; cible
+inchangée : annulation) ou `return` (annulation : aucun seek, la lecture
+repart d'où elle était). Sans politique : `RESUME_COUNTDOWN_POLICY` (reprise,
+5 000 ms, `RESUME_COUNTDOWN_MS`) — Android TV. Apple TV : le réglage
+« Avance rapide » du profil (`scrubCountdownSettings.ts` ; défaut : revenir,
+5 s ; délais 3, 5, 10, 15 s), par la couture `hooks/scrubCountdownPolicy(.ios).ts`.
+Affiché « Retour à 12:34 dans 5…1 s » / « Lecture dans 5…1 s », avec le geste
+de l'autre choix (un rendu par seconde affichée). Tout geste
 (`enter`, `step`, `touch`) le relance en entier (`reportingActivity`) ; un
 geste CONTINU le tient (`hold` : décompte masqué) et son relâchement
 (`release`) le relance en entier. Entré EN PAUSE : jamais armé, la cible
@@ -432,7 +439,7 @@ Grâce : 600 ms après chaque Retour consommé. Sur Android, `usePreventRemove`
 | 300 ms écho select/playPause après une touche média | `MEDIA_KEY_ECHO_MS` |
 | 600 ms toucher qui accompagne un appui | `TOUCH_AFTER_PRESS_MS` |
 | +30 s / −10 s | `seekTuning` `SKIP_FORWARD_SECONDS` / `SKIP_BACK_SECONDS` |
-| 5 000 ms décompte de validation | `seekTuning` `RESUME_COUNTDOWN_MS` |
+| 5 000 ms décompte de validation (sans réglage : Android TV) ; Apple TV : 3/5/10/15 s du réglage | `seekTuning` `RESUME_COUNTDOWN_MS`, `scrubCountdownSettings` |
 | 1 500 ms badge (et fenêtre de cumul) | `useSkipFlash` `SKIP_BADGE_MS` |
 | 1 s cible « inchangée » | `useScrubController` `UNMOVED_SECONDS` |
 | 400 ms d'appuis ignorés après un tic de maintien | `useScrubHoldMotor` `isHoldTicking` |
