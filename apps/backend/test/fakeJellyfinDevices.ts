@@ -8,7 +8,8 @@
  * - `POST /Users/AuthenticateWithQuickConnect` → le jeton ;
  * - `DELETE /Devices?id` → supprime l'appareil (jeton compris) ; inconnu :
  *   404, ou 400 comme Jellyfin 12 (`deleteStatus`) ;
- * - `GET /Devices/Info?id`, `GET /Users/Me` (le jeton → son compte).
+ * - `GET /Devices/Info?id`, `GET /Users/Me` (le jeton → son compte) ;
+ * - `GET /QuickConnect/Enabled` (anonyme) : le réglage.
  *
  * S'installe sur le `fetch` global (le module de frappe s'en sert).
  */
@@ -48,6 +49,7 @@ export function fakeJellyfinFetch(jf: FakeJellyfin) {
     const token = modernJellyfinToken(init?.headers);
     const fail = (name: string) => jf.failing.has(name);
 
+    if (step === "GET /QuickConnect/Enabled") return json(jf.quickConnect);
     if (step === "POST /QuickConnect/Initiate") {
       if (fail("initiate")) return new Response("", { status: 503 });
       if (!jf.quickConnect) return new Response("Quick connect is disabled", { status: 401 });

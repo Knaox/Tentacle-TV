@@ -69,6 +69,23 @@ describe("la frappe d'un jeton propre", () => {
     expect(row("h:salon")?.jellyfinAccessToken).toBeNull();
   });
 
+  it("voit Quick Connect rallumé sans attendre dix minutes", async () => {
+    pair("h:salon");
+    jf.quickConnect = false;
+    expect(await ensureOwnJellyfinToken("h:salon", OWNER)).toBeNull();
+    jf.quickConnect = true;
+    expect(await ensureOwnJellyfinToken("h:salon", OWNER)).toBeTruthy();
+    expect(jf.calls.filter((c) => c === "GET /QuickConnect/Enabled")).toHaveLength(1);
+  });
+
+  it("ne repose la question qu'une fois par minute pendant l'attente", async () => {
+    pair("h:salon");
+    jf.quickConnect = false;
+    for (let i = 0; i < 4; i++) expect(await ensureOwnJellyfinToken("h:salon", OWNER)).toBeNull();
+    expect(jf.calls.filter((c) => c === "GET /QuickConnect/Enabled")).toHaveLength(1);
+    expect(jf.calls.filter((c) => c === "POST /QuickConnect/Initiate")).toHaveLength(1);
+  });
+
   it("supprime de Jellyfin l'appareil d'un jumelage révoqué pendant la frappe", async () => {
     // Pas de ligne : révoquée entre la demande et l'enregistrement.
     expect(await ensureOwnJellyfinToken("h:salon", OWNER)).toBeNull();

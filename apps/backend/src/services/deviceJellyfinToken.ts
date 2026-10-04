@@ -3,6 +3,7 @@ import { pairedDeviceIdForHash } from "./deviceSessions/deviceAuth";
 import { hashToken } from "./jwt";
 import { cleanupJellyfinDevice, noteJellyfinDevice, settleJellyfinDevice } from "./jellyfinDeviceCleanup";
 import { mintJellyfinToken } from "./jellyfinQuickConnect";
+import { getJellyfinUrl } from "./configStore";
 
 /**
  * Le jeton Jellyfin PROPRE d'une TV jumelée : frappé pour elle seule
@@ -20,13 +21,31 @@ import { mintJellyfinToken } from "./jellyfinQuickConnect";
  * - Rangée seulement si le jumelage existe encore : révoqué pendant la frappe,
  *   l'appareil frappé est aussitôt supprimé de Jellyfin.
  * - Quick Connect coupé : on ne le redemande pas avant dix minutes ; la TV
- *   passe par le proxy, sans jeton Jellyfin.
+ *   passe par le proxy, sans jeton Jellyfin. Rallumé entre-temps, il se voit
+ *   à la minute : `GET /QuickConnect/Enabled` (anonyme), une fois par minute
+ *   au plus pendant l'attente.
  */
 
 const DISABLED_BACKOFF_MS = 10 * 60_000;
+const REPROBE_EVERY_MS = 60_000;
 
 let disabledUntil = 0;
+let lastProbe = 0;
 const inflight = new Map<string, Promise<string | null>>();
+
+/** Quick Connect est-il revenu ? Une question par minute au plus. */
+async function quickConnectBack(now: number): Promise<boolean> {
+  if (now - lastProbe < REPROBE_EVERY_MS) return false;
+  lastProbe = now;
+  const base = getJellyfinUrl();
+  if (!base) return false;
+  try {
+    const res = await fetch(`${base}/QuickConnect/Enabled`, { signal: AbortSignal.timeout(3_000) });
+    return res.ok && (await res.json()) === true;
+  } catch {
+    return false;
+  }
+}
 
 export interface PairingOwner {
   jellyfinUserId: string;
@@ -51,7 +70,11 @@ export function provisionOwnJellyfinToken(deviceJwt: string, owner: PairingOwner
 }
 
 async function mint(tokenHash: string, owner: PairingOwner): Promise<string | null> {
-  if (!hasPrisma() || Date.now() < disabledUntil) return null;
+  if (!hasPrisma()) return null;
+  if (Date.now() < disabledUntil) {
+    if (!(await quickConnectBack(Date.now()))) return null;
+    disabledUntil = 0;
+  }
   const jellyfinDeviceId = await pairedDeviceIdForHash(tokenHash);
   await noteJellyfinDevice(jellyfinDeviceId, tokenHash, "minting");
 
@@ -77,5 +100,6 @@ async function mint(tokenHash: string, owner: PairingOwner): Promise<string | nu
 /** Tests uniquement. */
 export function resetOwnJellyfinTokenForTests(): void {
   disabledUntil = 0;
+  lastProbe = 0;
   inflight.clear();
 }
