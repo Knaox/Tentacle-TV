@@ -102,20 +102,26 @@ attente, Compose for TV, Netflix, YouTube) : le focus avance à un rythme
 PROPRE qui accélère, la liste défile à vitesse continue, rien ne se redessine
 à chaque pas en dehors de la carte quittée et de la carte prise. D'où :
 
-1. **La cadence** — tv-core `input/repeatPacing.ts` (`paceArrow`,
-   `releaseArrow`, `REPEAT_PACING`) : l'appui passe toujours ; une
-   répétition passe si l'intervalle est écoulé depuis le pas précédent (160 ms
-   au début, 60 ms au bout de 1,5 s, au jeu de 12 ms), sinon elle est
-   ABSORBÉE (consommée, le focus ne bouge pas — le JS l'a vue passer :
-   `ReactRootView` émet avant de distribuer). Appliquée nativement
-   (`RepeatPacer.kt`) : la décision précède le déplacement du focus.
-2. **Le mouvement** — tv-core `focus/burstFollow.ts` : chaque pas de rafale
+1. **La cadence** — tv-core `input/repeatPacing.ts` (`holdRepeat`,
+   `holdTick`, `holdRelease`, `REPEAT_PACING`) : l'appui fait son pas (isolé) ;
+   la première répétition OUVRE la tenue et fait un pas ; ensuite les pas
+   tombent sur l'horloge des images, à un intervalle qui accélère EN CONTINU
+   (160 ms → 70 ms en 1,5 s, ~6 → ~14 pas par seconde : l'Apple TV, flèche
+   tenue, fait ~12 lignes par seconde au banc des bibliothèques), sans
+   rattrapage. Les répétitions sont ABSORBÉES — elles ne disent plus que
+   « toujours tenue » (le JS les a vues passer : `ReactRootView` émet avant de
+   distribuer). Caler les pas sur les répétitions (toutes les ~50 ms) aurait
+   donné une vitesse en marches : 150, 100 puis 50 ms, la vitesse doublant
+   d'un coup. Plus aucune répétition depuis 300 ms : la tenue est finie (le
+   relâchement est parti ailleurs). Appliquée nativement (`HoldPacer.kt`) :
+   la décision précède le déplacement du focus.
+2. **Le mouvement** — tv-core `focus/burstFollow.ts` : chaque pas de tenue
    va de là où la vue EST à sa cible, à vitesse constante, en l'intervalle
-   réel depuis le pas précédent (`burstSegmentMs`, borné 40-200 ms) : à
-   cadence régulière, la page arrive quand le pas suivant part. Le ressort
-   par pas traînerait (2 v/ω : plus d'une ligne derrière à 6 pas/s) ; le saut
-   saccade. Flèche relâchée : le segment en vol finit sur le ressort, vitesse
-   bornée pour ne pas dépasser (`settleVelocity`).
+   jusqu'au pas suivant plus une image (`burstSegmentMs`) : la page ne
+   s'arrête jamais entre deux pas. Le ressort par pas traînerait (2 v/ω :
+   plus d'une ligne derrière à 6 pas/s) ; le saut saccade. Flèche relâchée :
+   le segment en vol finit sur le ressort, vitesse bornée pour ne pas
+   dépasser (`settleVelocity`).
 3. **Rien à chaque pas qui ne soit nécessaire** : les grilles sont des
    FlashList (lignes recyclées, `drawDistance` de deux lignes), les rangées
    reculent par une valeur partagée lue sur le fil d'interface

@@ -5,106 +5,106 @@
  *
  * Laissé à lui-même, le focus ferait un pas à CHAQUE répétition : vingt
  * cartes ou lignes par seconde dès la première, plus vite que l'œil ne suit
- * et plus vite que les images n'arrivent — la page saute de case en case.
- * Ce que font Leanback (`BaseGridView`, ses déplacements en attente) et les
- * applications du salon (Netflix, YouTube) : le focus avance à un rythme
- * propre, qui ACCÉLÈRE tant que la flèche reste tenue, jusqu'à un plafond.
- * L'Apple TV fait de même à sa façon (son défilement rapide après une à deux
- * secondes de rafale) ; ce module en donne l'équivalent à une télécommande
- * qui n'a que des répétitions.
+ * et que les images n'arrivent. Caler les pas sur les répétitions ne suffit
+ * pas non plus : elles tombent toutes les 50 ms, un pas sur trois puis un sur
+ * deux puis chacune — la vitesse DOUBLE d'un coup, deux fois.
  *
- * - le PREMIER appui passe toujours (ce n'est pas une répétition) ;
- * - une répétition passe si l'intervalle de la rafale est écoulé depuis le
- *   pas précédent, au jeu de la plateforme près (`jitterMs` : ses répétitions
- *   ne tombent pas pile) ; sinon elle est ABSORBÉE — le focus ne bouge pas,
- *   la touche est consommée ;
- * - l'intervalle va de `startIntervalMs` à `minIntervalMs`, linéairement,
- *   sur `rampMs` depuis le premier pas de la rafale (sa première répétition
- *   acceptée) ;
- * - relâcher la flèche, ou en presser une autre, finit la rafale.
+ * Ce que font Leanback (`BaseGridView` : ses déplacements en attente, joués à
+ * son rythme) et les applications du salon : le focus avance sur SA propre
+ * horloge, qui ACCÉLÈRE en continu tant que la flèche reste tenue. Ici :
  *
- * Le pas d'une rafale rend aussi l'intervalle RÉEL depuis le pas précédent :
- * la page qui suit le focus le parcourt à vitesse constante pendant ce temps
+ * - la première répétition OUVRE la tenue et fait un pas tout de suite (l'appui,
+ *   lui, a déjà fait le sien : c'est un pas isolé) ;
+ * - ensuite, un pas tous les `repeatInterval` — de `startIntervalMs` à
+ *   `minIntervalMs`, linéairement sur `rampMs` —, sur l'horloge des images,
+ *   sans rattrapage (une image en retard ne fait jamais deux pas) ;
+ * - les répétitions ne font plus que dire « toujours tenue » : absorbées ;
+ * - relâcher la flèche, ou en presser une autre, arrête tout ; plus aucune
+ *   répétition depuis `silentReleaseMs` aussi (le relâchement est parti
+ *   ailleurs : le focus a quitté ce qui tenait la flèche).
+ *
+ * Chaque pas dit aussi l'intervalle jusqu'au suivant : la page qui suit le
+ * focus le parcourt à vitesse constante pendant ce temps
  * (`focus/burstFollow.ts`) — elle arrive quand le pas suivant part.
  *
- * L'Apple TV n'en a pas besoin (`RemoteTraits` : sa table ne répète pas) :
- * rien n'y change. Sur Android TV, la traduction est NATIVE
- * (`apps/tv/android/.../focus/RepeatPacer.kt`) : la touche doit être
- * absorbée AVANT que la plateforme ne déplace le focus. Les constantes y
- * passent depuis ce module (`platform/androidtv/focus/`) ; ses tests sont le
- * cahier des charges des deux.
+ * Les valeurs rejoignent l'Apple TV, flèche tenue sur une grille : ~12 lignes
+ * par seconde mesurées au banc des bibliothèques (63 449 pt en ~10 s).
+ *
+ * L'Apple TV n'en a pas besoin (sa table ne répète pas) : rien n'y change.
+ * Sur Android TV, l'application est NATIVE (`HoldPacer.kt`) : une répétition
+ * doit être absorbée AVANT que la plateforme ne déplace le focus. Les
+ * constantes y passent depuis ce module (`platform/androidtv/focus/`) ; ses
+ * tests sont le cahier des charges des deux.
  *
  * Module pur : temps en millisecondes, horloge passée par l'appelant.
  */
 
 export const REPEAT_PACING = {
-  /** L'intervalle au début d'une rafale : ~6 pas par seconde. */
+  /** L'intervalle au début d'une tenue : ~6 pas par seconde. */
   startIntervalMs: 160,
-  /** Le plafond, atteint au bout de `rampMs` : ~16 à 20 pas par seconde. */
-  minIntervalMs: 60,
-  /** La montée de l'un à l'autre, depuis le premier pas de la rafale. */
+  /** Le plafond, atteint au bout de `rampMs` : ~14 pas par seconde. */
+  minIntervalMs: 70,
+  /** La montée de l'un à l'autre, depuis le premier pas de la tenue. */
   rampMs: 1_500,
-  /** Le jeu des répétitions de la plateforme (elles ne tombent pas pile). */
-  jitterMs: 12,
+  /** Plus aucune répétition depuis ce temps (elles viennent toutes les ~50 ms) : relâchée. */
+  silentReleaseMs: 300,
 } as const;
 
 export type RepeatPacingSpec = { readonly [K in keyof typeof REPEAT_PACING]: number };
 
-export interface RepeatPacingState {
-  /** La touche de la rafale en cours (un code de la plateforme), ou null. */
+export interface HoldPacingState {
+  /** La flèche tenue (un code de la plateforme), ou null. */
   key: number | string | null;
-  /** Le premier pas de la rafale (sa première répétition acceptée) ; 0 : aucun encore. */
-  burstAt: number;
-  /** Le dernier pas accepté (l'appui compris). */
-  lastStepAt: number;
+  /** Le premier pas de la tenue. */
+  holdAt: number;
+  /** Le prochain pas, sur l'horloge de la tenue. */
+  nextStepAt: number;
+  /** La dernière répétition reçue. */
+  lastRepeatAt: number;
 }
 
-export const REPEAT_IDLE: RepeatPacingState = { key: null, burstAt: 0, lastStepAt: 0 };
+export const HOLD_IDLE: HoldPacingState = { key: null, holdAt: 0, nextStepAt: 0, lastRepeatAt: 0 };
 
-export interface RepeatDecision {
-  /** Le focus fait-il ce pas ? */
-  accept: boolean;
-  /** Le pas appartient-il à une rafale (une répétition acceptée) ? */
-  burst: boolean;
-  /** L'intervalle réel depuis le pas précédent (0 pour un appui). */
-  intervalMs: number;
-  state: RepeatPacingState;
-}
-
-/** L'intervalle voulu, `elapsedMs` après le premier pas de la rafale. */
+/** L'intervalle voulu, `elapsedMs` après le premier pas de la tenue. */
 export function repeatInterval(elapsedMs: number, spec: RepeatPacingSpec = REPEAT_PACING): number {
   const progress = spec.rampMs > 0 ? Math.min(1, Math.max(0, elapsedMs / spec.rampMs)) : 1;
   return spec.startIntervalMs - (spec.startIntervalMs - spec.minIntervalMs) * progress;
 }
 
 /**
- * Une flèche enfoncée : son premier appui (`repeat: false`) ou une répétition.
- * Rend s'il faut déplacer le focus, et l'état suivant.
+ * Une répétition de la plateforme : elle ouvre la tenue (`started` : le
+ * premier pas est dû tout de suite) ou dit seulement qu'elle continue.
+ * Jamais un pas par elle-même : c'est `holdTick` qui les fait.
  */
-export function paceArrow(
-  state: RepeatPacingState,
-  input: { key: number | string; repeat: boolean; now: number },
-  spec: RepeatPacingSpec = REPEAT_PACING,
-): RepeatDecision {
-  const { key, repeat, now } = input;
-  if (!repeat || state.key !== key) {
-    // Un appui neuf (ou une autre flèche) : toujours un pas, une rafale neuve.
-    return { accept: true, burst: false, intervalMs: 0, state: { key, burstAt: 0, lastStepAt: now } };
-  }
-  const elapsed = now - state.lastStepAt;
-  const wanted = repeatInterval(state.burstAt > 0 ? now - state.burstAt : 0, spec);
-  if (elapsed < wanted - spec.jitterMs) {
-    return { accept: false, burst: true, intervalMs: 0, state };
-  }
-  return {
-    accept: true,
-    burst: true,
-    intervalMs: elapsed,
-    state: { key, burstAt: state.burstAt > 0 ? state.burstAt : now, lastStepAt: now },
-  };
+export function holdRepeat(state: HoldPacingState, input: { key: number | string; now: number }): { started: boolean; state: HoldPacingState } {
+  const { key, now } = input;
+  if (state.key !== key) return { started: true, state: { key, holdAt: now, nextStepAt: now, lastRepeatAt: now } };
+  return { started: false, state: { ...state, lastRepeatAt: now } };
 }
 
-/** La flèche relâchée : la rafale finit. */
-export function releaseArrow(state: RepeatPacingState, key: number | string): RepeatPacingState {
-  return state.key === key ? REPEAT_IDLE : state;
+export interface HoldTick {
+  /** Un pas, maintenant. */
+  step: boolean;
+  /** Ce pas : l'intervalle jusqu'au suivant (la durée de son mouvement). */
+  intervalMs: number;
+  /** La tenue est finie (plus aucune répétition) : plus d'images à attendre. */
+  released: boolean;
+  state: HoldPacingState;
+}
+
+/** Une image de la tenue, à `now` : faut-il faire un pas ? */
+export function holdTick(state: HoldPacingState, now: number, spec: RepeatPacingSpec = REPEAT_PACING): HoldTick {
+  if (state.key === null) return { step: false, intervalMs: 0, released: true, state };
+  if (now - state.lastRepeatAt > spec.silentReleaseMs) return { step: false, intervalMs: 0, released: true, state: HOLD_IDLE };
+  if (now < state.nextStepAt) return { step: false, intervalMs: 0, released: false, state };
+  const intervalMs = repeatInterval(state.nextStepAt - state.holdAt, spec);
+  const scheduled = state.nextStepAt + intervalMs;
+  // En retard d'un intervalle entier (une image très longue) : on repart d'ici, sans rattraper.
+  const nextStepAt = scheduled > now ? scheduled : now + intervalMs;
+  return { step: true, intervalMs, released: false, state: { ...state, nextStepAt } };
+}
+
+/** La flèche relâchée (la sienne) : la tenue finit. Une autre flèche relâchée n'y touche pas. */
+export function holdRelease(state: HoldPacingState, key: number | string): HoldPacingState {
+  return state.key === key ? HOLD_IDLE : state;
 }

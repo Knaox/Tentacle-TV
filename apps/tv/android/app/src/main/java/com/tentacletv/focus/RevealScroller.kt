@@ -32,7 +32,8 @@ import kotlin.math.min
  * isolé, sur le ressort de la section.
  */
 internal object RevealScroller {
-  /** Le pas du focus en cours, posé par la section qui l'a décidé ; sinon un pas isolé. */
+  /** Le pas du focus en cours, posé par la section qui l'a décidé ; sinon un pas isolé.
+   *  `intervalMs` : jusqu'au pas suivant de la tenue (`HoldPacer`). */
   class Step(val burst: Boolean, val intervalMs: Double)
 
   var currentStep: Step? = null
@@ -78,8 +79,8 @@ internal object RevealScroller {
 
   private const val DEFAULT_RESPONSE = 0.5f
 
-  /** `burstSegmentMs` (burstFollow.ts) : bornes 40 et 200 ms. */
-  private fun burstSegmentMs(intervalMs: Double): Float = min(200.0, max(40.0, intervalMs)).toFloat()
+  /** `burstSegmentMs` (burstFollow.ts) : l'intervalle jusqu'au pas suivant, plus une image ; bornes 40 et 250 ms. */
+  private fun burstSegmentMs(intervalMs: Double): Float = min(250.0, max(40.0, intervalMs + 17.0)).toFloat()
 
   /** Relève, avant que les ScrollView ne sautent, ce que le focus de `focused` fera défiler. */
   fun capture(section: TentacleFocusSection, focused: View): Plan? {

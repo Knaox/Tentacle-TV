@@ -29,7 +29,7 @@ import java.util.WeakHashMap
  *   au-delà (le rail), sans le « saut de page » de `HorizontalScrollView` —
  *   ni, en HAUT / BAS sans section au-delà, celui de `ScrollView` ;
  * - le SUIVI de la page (`reveal*`) : `RevealScroller`, au focus ;
- * - la CADENCE d'une flèche maintenue (`tvPacing`) : `RepeatPacer`.
+ * - la CADENCE d'une flèche maintenue (`tvPacing`) : `HoldPacer`.
  *
  * Ce qui décide est dans tv-core (`focus/sections.ts`, `focus/reveal.ts`,
  * `focus/revealMotion.ts`, `focus/burstFollow.ts`, `input/repeatPacing.ts`) ;
@@ -71,21 +71,29 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
       return super.dispatchKeyEvent(event)
     }
     if (event.action == KeyEvent.ACTION_UP) {
-      if (RepeatPacer.release(event.keyCode)) RevealFollower.settleAll()
+      if (HoldPacer.release(event.keyCode)) RevealFollower.settleAll()
       return super.dispatchKeyEvent(event)
     }
     if (event.action != KeyEvent.ACTION_DOWN) return super.dispatchKeyEvent(event)
-    val decision = RepeatPacer.pace(event.keyCode, event.repeatCount > 0, event.eventTime)
-    // Une répétition en avance sur la cadence : absorbée, le focus ne bouge pas
-    // (le JS l'a déjà vue passer : `ReactRootView` la lui donne avant nous).
-    if (!decision.accept) return true
-    RevealScroller.currentStep = RevealScroller.Step(decision.burst, decision.intervalMs)
+    if (event.repeatCount > 0) {
+      // La flèche TENUE : ses pas sur l'horloge de la tenue, ses répétitions
+      // absorbées (le JS les a déjà vues passer : `ReactRootView` les lui donne
+      // avant nous).
+      if (HoldPacer.repeat(event.keyCode, direction, rootView)) return true
+    } else {
+      HoldPacer.cancel()
+    }
+    return move(focused, direction, null) ?: super.dispatchKeyEvent(event)
+  }
+
+  /** Un pas : isolé (`holdIntervalMs` null, le ressort) ou de tenue ; null — rien à décider ici. */
+  private fun move(focused: View, direction: Int, holdIntervalMs: Double?): Boolean? {
+    RevealScroller.currentStep = holdIntervalMs?.let { RevealScroller.Step(burst = true, intervalMs = it) }
     try {
-      val handled = when (direction) {
+      return when (direction) {
         View.FOCUS_UP, View.FOCUS_DOWN -> moveVertically(focused, direction)
         else -> moveInRow(focused, direction)
-      }
-      return handled ?: super.dispatchKeyEvent(event)
+      } ?: if (holdIntervalMs != null) platformMove(focused, direction) else null
     } finally {
       RevealScroller.currentStep = null
     }
@@ -127,6 +135,19 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
   }
 
   companion object {
+    /**
+     * Un pas de TENUE (`HoldPacer`), depuis le focus du moment — il a pu
+     * changer de section. Faux : plus de section sous le focus, la tenue
+     * s'arrête (Android reprend la main).
+     */
+    internal fun heldStep(root: View, direction: Int, intervalMs: Double): Boolean {
+      val focused = root.findFocus() ?: return false
+      if (focused is EditText) return false
+      val section = FocusGeometry.innermostSection(focused) ?: return false
+      section.move(focused, direction, intervalMs)
+      return true
+    }
+
     private val registry: MutableSet<TentacleFocusSection> = Collections.newSetFromMap(WeakHashMap())
 
     /** Les sections attachées à une fenêtre. */

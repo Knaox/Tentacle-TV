@@ -3,14 +3,14 @@ import { BURST_FOLLOW, burstSegmentMs, clampRowOffset, linearAt, rowRevealOffset
 import { springAt } from "./revealMotion";
 
 describe("burstSegmentMs — la durée d'un segment de rafale", () => {
-  it("reprend l'intervalle réel au pas précédent", () => {
-    expect(burstSegmentMs(150)).toBe(150);
-    expect(burstSegmentMs(50)).toBe(50);
+  it("l'intervalle jusqu'au pas suivant, plus une image : la page ne s'arrête jamais entre deux pas", () => {
+    expect(burstSegmentMs(160)).toBe(160 + BURST_FOLLOW.overlapMs);
+    expect(burstSegmentMs(70)).toBe(70 + BURST_FOLLOW.overlapMs);
   });
 
-  it("bornée : la première répétition (~470 ms) reprend la cadence ; une répétition en avance ne fait pas un saut", () => {
-    expect(burstSegmentMs(470)).toBe(BURST_FOLLOW.maxSegmentMs);
-    expect(burstSegmentMs(5)).toBe(BURST_FOLLOW.minSegmentMs);
+  it("bornée des deux côtés", () => {
+    expect(burstSegmentMs(1_000)).toBe(BURST_FOLLOW.maxSegmentMs);
+    expect(burstSegmentMs(0)).toBe(BURST_FOLLOW.minSegmentMs);
   });
 });
 

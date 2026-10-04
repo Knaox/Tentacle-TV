@@ -7,9 +7,10 @@
  * pas (le pas isolé) traînerait d'une à deux lignes derrière lui : le focus
  * sortirait de l'écran. Un saut par pas (le défaut d'Android) saccade. Ici,
  * chaque pas de rafale part de là où la page EST et va à la cible du pas, à
- * vitesse CONSTANTE, en exactement l'intervalle qui sépare ce pas du
- * précédent : à cadence régulière, la page arrive quand le pas suivant part —
- * un mouvement continu, sans à-coup, et le focus toujours montré.
+ * vitesse CONSTANTE, en l'intervalle qui le sépare du pas SUIVANT (la cadence
+ * le dit d'avance), plus une image : la page arrive à peine après le départ
+ * du pas suivant, elle ne s'arrête jamais entre deux — un mouvement continu,
+ * sans à-coup, et le focus toujours montré.
  *
  * Quand la rafale finit (flèche relâchée), la page finit son segment sur le
  * ressort du pas isolé, en gardant sa vitesse — bornée pour ne jamais
@@ -26,16 +27,18 @@
  */
 
 export const BURST_FOLLOW = {
-  /** Un segment n'est jamais plus court (une répétition arrivée en avance). */
+  /** Le recouvrement : une image de plus que l'intervalle — les pas tombent sur
+   *  l'horloge des images, un segment fini un rien trop tôt arrêterait la page. */
+  overlapMs: 17,
+  /** Un segment n'est jamais plus court… */
   minSegmentMs: 40,
-  /** … ni plus long (la première répétition vient ~470 ms après l'appui :
-   *  son segment reprend la cadence de la rafale). */
-  maxSegmentMs: 200,
+  /** … ni plus long. */
+  maxSegmentMs: 250,
 } as const;
 
-/** La durée du segment d'un pas de rafale, depuis l'intervalle réel au pas précédent. */
+/** La durée du segment d'un pas de rafale, depuis l'intervalle jusqu'au pas suivant. */
 export function burstSegmentMs(intervalMs: number): number {
-  return Math.min(BURST_FOLLOW.maxSegmentMs, Math.max(BURST_FOLLOW.minSegmentMs, intervalMs));
+  return Math.min(BURST_FOLLOW.maxSegmentMs, Math.max(BURST_FOLLOW.minSegmentMs, intervalMs + BURST_FOLLOW.overlapMs));
 }
 
 /** Où en est un segment linéaire `elapsedMs` après son départ, et sa vitesse (unités par seconde). */

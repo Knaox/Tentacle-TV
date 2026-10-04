@@ -65,7 +65,7 @@ class TentacleFocusSectionManager : ReactViewManager() {
 
   @ReactProp(name = "tvPacing")
   fun setTvPacing(view: TentacleFocusSection, pacing: ReadableMap?) {
-    RepeatPacer.configure(pacing)
+    HoldPacer.configure(pacing)
   }
 
   companion object {
