@@ -8,6 +8,8 @@ import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.events.RCTEventEmitter
+import com.tentacletv.probe.PlayerLoadRegistry
+import com.tentacletv.probe.PlayerLoadSource
 
 /**
  * La vue mpv du téléviseur — le moteur du TRANSCODAGE (ExoPlayer reste le moteur
@@ -18,7 +20,7 @@ import com.facebook.react.uimanager.events.RCTEventEmitter
 class MpvPlayerView(
     private val reactContext: ThemedReactContext
 ) : SurfaceView(reactContext),
-    SurfaceHolder.Callback, MPVLib.EventObserver {
+    SurfaceHolder.Callback, MPVLib.EventObserver, PlayerLoadSource {
 
     companion object {
         private const val TAG = "MpvPlayerView"
@@ -32,14 +34,13 @@ class MpvPlayerView(
     private var pendingPaused: Boolean? = null
     private var lastProgressEmit = 0L
     var progressInterval = 1000L
+    override fun loadState() = mpvLoadState(mpv, lastLoadedUrl != null)
 
     // Dimensions vidéo pour l'évènement de format
     private var videoParamsW = 0
     private var videoParamsH = 0
 
-    init {
-        holder.addCallback(this)
-    }
+    init { holder.addCallback(this) }
 
     // --- Cycle de vie de la surface ---
 
@@ -111,6 +112,7 @@ class MpvPlayerView(
         val handle = mpv ?: run { Log.w(TAG, ">>> loadFile DEFERRED"); return }
         if (url == lastLoadedUrl) return
         lastLoadedUrl = url
+        PlayerLoadRegistry.attach(this)
         try {
             // `#tnt-start=<seconds>` (posé côté JS) : démarrer DIRECTEMENT à la
             // position via l'option start de loadfile — un seek post-chargement
@@ -178,6 +180,7 @@ class MpvPlayerView(
         if (destroyed) return
         destroyed = true
         keepScreenOn = false // anti-veille : la vue meurt, la veille reprend ses droits
+        PlayerLoadRegistry.detach(this)
         val handle = mpv ?: return
         mpv = null
         initialized = false

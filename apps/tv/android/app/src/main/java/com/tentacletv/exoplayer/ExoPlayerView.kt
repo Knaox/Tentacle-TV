@@ -16,11 +16,13 @@ import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.uimanager.ThemedReactContext
+import com.tentacletv.probe.PlayerLoadRegistry
+import com.tentacletv.probe.PlayerLoadSource
 
 @UnstableApi
 class ExoPlayerView(
     private val reactContext: ThemedReactContext,
-) : FrameLayout(reactContext) {
+) : FrameLayout(reactContext), PlayerLoadSource {
 
     companion object {
         private const val TAG = "ExoPlayerView"
@@ -49,6 +51,8 @@ class ExoPlayerView(
     private val listener = ExoPlaybackListener(emitter, { player }) { keepScreenOn = false }
     private val poller = ExoProgressPoller(this, { player }, emitter) { progressInterval }
     private val displayModeSwitcher = DisplayModeSwitcher(reactContext)
+    private val loadMeter = ExoLoadMeter()
+    override fun loadState() = loadMeter.state(player)
     // Les codecs préférés suivent le branchement HDMI (cf. ExoPlayerFactory.kt).
     private val capabilitiesFollower = ExoAudioCapabilitiesFollower(reactContext) { player }
     // Ceinture : l'activité meurt sans passer par destroy() → le panneau
@@ -120,6 +124,7 @@ class ExoPlayerView(
             .also { exo ->
                 exo.setAudioAttributes(ExoPlayerFactory.mediaAudioAttributes, false)
                 exo.addListener(listener)
+                exo.addAnalyticsListener(loadMeter)
 
                 // Cadence connue → l'estimateur d'ExoPlayer est coupé (il lit des
                 // horodatages arrondis à la milliseconde et demande 24,39 ou 23,81) ;
@@ -169,6 +174,8 @@ class ExoPlayerView(
         }
         lastLoadedUrl = loadKey
         listener.loadEmitted = false
+        loadMeter.reset()
+        PlayerLoadRegistry.attach(this)
         currentSubtitleUrl = null
         // Start playback AT the requested position (resume / track-change
         // reload) — no frame from 0:00 is ever decoded, unlike a post-prepare
@@ -277,6 +284,7 @@ class ExoPlayerView(
         destroyed = true
         keepScreenOn = false // anti-veille : la vue meurt, la veille reprend ses droits
         emitter.enabled = false
+        PlayerLoadRegistry.detach(this)
         poller.stop()
         capabilitiesFollower.stop()
         reactContext.removeLifecycleEventListener(hostLifecycle)

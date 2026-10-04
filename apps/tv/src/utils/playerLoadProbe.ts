@@ -1,11 +1,13 @@
 import { NativeModules } from "react-native";
 
 /**
- * Ce qu'AVPlayer a chargé (tvOS, module natif `TentaclePlayerProbe`) : le
- * seul signe, pendant une ouverture ou un arrêt, que des données ARRIVENT —
- * react-native-video ne publie sa mémoire qu'en lecture. `null` sans lecteur
- * monté, sur Android TV, ou sous un natif plus ancien que la sonde : la
- * reprise retombe alors sur la position et la mémoire vues en lecture.
+ * Ce que le lecteur a chargé (module natif `TentaclePlayerProbe` : AVPlayer
+ * sur tvOS, `ios/TentacleTV/PlayerLoadProbe.m` ; ExoPlayer ou mpv sur Android
+ * TV, `probe/PlayerLoadProbe.kt`) : le seul signe, pendant une ouverture ou
+ * un arrêt, que des données ARRIVENT. `null` sans lecteur monté, ou sous un
+ * natif plus ancien que la sonde : la reprise retombe alors sur la position
+ * et la mémoire vues en lecture. mpv ne compte pas les octets : sa mémoire
+ * (`loadedEnd`) qui avance suffit (`loadGrew`).
  */
 export interface PlayerLoad {
   /** La fin la plus lointaine de ce qui est chargé, en secondes. */
