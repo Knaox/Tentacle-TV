@@ -5,6 +5,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { haloDrawing } from "@tentacle-tv/tv-core";
 import { brandLight, type ArtworkPalette } from "../color/artworkPalette";
 import { PoolLayerView, useLayerPool } from "../motion/LayerStack";
+import { HaloMask } from "./HaloMask";
 import { RENDER } from "../render/renderProfile";
 
 /**
@@ -19,8 +20,10 @@ import { RENDER } from "../render/renderProfile";
  * Le flou se dessine au QUART de sa taille, puis le GPU l'agrandit : un flou
  * agrandi reste un flou, et le fil principal calcule seize fois moins de
  * pixels quand l'œuvre change (le héros qui tourne). L'échelle et l'écart-type
- * écrit viennent du profil de rendu (`haloDrawing`, tv-core) : Android floute
- * autrement (RenderScript, plafonné), pour le même halo à l'œil. Quand elle change, le
+ * écrit viennent du profil de rendu (`haloDrawing`, tv-core). Sur Android
+ * (`halos: "mask"`), le halo est la vue native `HaloMask` : la forme floutée
+ * une fois par géométrie, teinte au dessin — le même halo à l'œil, sans flou
+ * à calculer quand l'œuvre change. Quand elle change, le
  * nouveau halo entre en fondu pendant que l'ancien s'efface (préréglage
  * `hero`) — il ne disparaît plus d'un coup avant que l'autre n'arrive.
  *
@@ -131,7 +134,11 @@ export const ArtworkHalo = memo(function ArtworkHalo({
     <View pointerEvents="none" style={[{ position: "absolute", left: -margin, top: -margin, width: w, height: h }, style]}>
       {layers.map((layer) => (
         <PoolLayerView key={layer.slot} present={layer.present} motion="hero">
-          <HaloDrawing glows={layer.item} g={g} opacity={opacity} />
+          {HaloMask ? (
+            <HaloMask glows={layer.item} blur={blur} radius={radius + spread} inset={margin - spread} opacity={opacity} />
+          ) : (
+            <HaloDrawing glows={layer.item} g={g} opacity={opacity} />
+          )}
         </PoolLayerView>
       ))}
     </View>

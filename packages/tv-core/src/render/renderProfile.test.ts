@@ -8,6 +8,7 @@ describe("le profil de rendu", () => {
       nativeGlass: true,
       shadows: "layer",
       haloDrawScale: 0.25,
+      halos: "svg",
       svgBlur: "points",
     });
   });
@@ -17,6 +18,7 @@ describe("le profil de rendu", () => {
     expect(android.motion).toBe(true);
     expect(android.shadows).toBe("mask");
     expect(android.nativeGlass).toBe(false);
+    expect(android.halos).toBe("mask");
     expect(android.haloDrawScale).toBe(RENDER_PROFILES.tvos.haloDrawScale);
   });
 

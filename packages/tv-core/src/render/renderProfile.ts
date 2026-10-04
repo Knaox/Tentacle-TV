@@ -28,6 +28,14 @@ export type SvgBlurRendering =
    *  2 × l'écart-type écrit, plafonné à 25, en pixels du dessin. */
   | "renderscript";
 
+/** Comment se dessine le halo d'une œuvre (`ArtworkHalo`). */
+export type HaloRendering =
+  /** Un SVG flouté une fois, au dessin réduit (`haloDrawing`). */
+  | "svg"
+  /** Une forme floutée une fois PAR GÉOMÉTRIE (vue native `TentacleHaloView`),
+   *  teinte par un dégradé au dessin : rien ne se floute quand l'œuvre change. */
+  | "mask";
+
 export interface RenderProfile {
   /** Le mouvement de la refonte (ressorts, fondus) sur le fil d'interface.
    *  Faux : chaque animation se pose aussitôt. */
@@ -40,6 +48,8 @@ export interface RenderProfile {
   /** L'échelle à laquelle un halo d'œuvre se floute avant d'être agrandi par
    *  le GPU (1 : à sa taille ; 0,25 : seize fois moins de pixels). */
   haloDrawScale: number;
+  /** Le rendu des halos d'œuvre. */
+  halos: HaloRendering;
   /** Le flou SVG de la plateforme (voir `haloDrawing`). */
   svgBlur: SvgBlurRendering;
 }
@@ -50,6 +60,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     nativeGlass: true,
     shadows: "layer",
     haloDrawScale: 0.25,
+    halos: "svg",
     svgBlur: "points",
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
@@ -60,6 +71,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     nativeGlass: false,
     shadows: "mask",
     haloDrawScale: 0.25,
+    halos: "mask",
     svgBlur: "renderscript",
   },
 };
