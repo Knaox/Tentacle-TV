@@ -33,8 +33,10 @@ export default {
     kicker: "Profile",
     owner: "Owner of this TV",
     memberOf: "Member · {{owner}}'s family",
+    profilesTitle: "Profiles on this TV",
     switchProfile: "Switch profile",
     switchCaption: "Each profile has its own playback, lists and settings.",
+    unpairCaption: "This TV will forget its family and return to the pairing screen. Guest profiles remain: only their owner deletes them.",
     unpairOwnerOnly: "Only {{owner}}'s profile can unpair this TV.",
   },
   manage: {

@@ -33,8 +33,10 @@ export default {
     kicker: "Profil",
     owner: "Propriétaire de cette TV",
     memberOf: "Membre · famille de {{owner}}",
+    profilesTitle: "Profils de cette TV",
     switchProfile: "Changer de profil",
     switchCaption: "Chaque profil a sa lecture, ses listes et ses réglages.",
+    unpairCaption: "Cette TV oubliera sa famille et reviendra à l'écran de jumelage. Les profils invités restent : seul leur propriétaire les supprime.",
     unpairOwnerOnly: "Seul le profil de {{owner}} peut déjumeler cette TV.",
   },
   manage: {

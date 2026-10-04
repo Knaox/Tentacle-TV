@@ -35,8 +35,10 @@ export interface SettingsProfile {
   color: FamilyProfileColor;
   /** « Gérer les profils » : le profil du propriétaire, sur une TV qui le permet. */
   canManage: boolean;
-  /** Seul le profil du propriétaire déjumelle la TV ; ailleurs, la phrase qui le dit. */
-  unpairNote: string | null;
+  /** Seul le profil du propriétaire déjumelle la TV. */
+  canUnpair: boolean;
+  /** Ce que dit « Oublier ce jumelage » : ce que fait le déjumelage, ou qui peut le faire. */
+  unpairCaption: string;
 }
 
 /** Les trois réglages de piste d'une bibliothèque. */

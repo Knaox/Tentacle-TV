@@ -21,7 +21,7 @@ export const ProfileSection = memo(function ProfileSection({ canManage, onSwitch
   const { t } = useTranslation("familyTv");
   return (
     <View style={styles.section}>
-      <SectionTitle title={t("settings.switchProfile")} caption={t("settings.switchCaption")} />
+      <SectionTitle title={t("settings.profilesTitle")} caption={t("settings.switchCaption")} />
       <View style={styles.actions}>
         <PillButton label={t("settings.switchProfile")} icon="user" variant="primary" size="md" focusKey="settings:switchProfile" onPress={onSwitchProfile} />
         {canManage ? (

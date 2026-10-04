@@ -5,6 +5,7 @@ import { confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
 import { Icon } from "../../icons/Icon";
 import { colors, text, white } from "../../theme/tokens";
 import { ConfirmPill } from "./ConfirmPill";
+import { ProfileAvatar } from "../profiles/ProfileAvatar";
 import { ProfileSection } from "./ProfileSection";
 import { Avatar, InfoRow, SectionTitle, settingsText } from "./settingsParts";
 import type { AccountAction, SettingsAccount } from "./settingsTypes";
@@ -60,7 +61,11 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
   return (
     <View>
       <View style={styles.profile}>
-        <Avatar uri={account.avatarUri} name={account.name} size={168} />
+        {profile ? (
+          <ProfileAvatar name={account.name} color={profile.color} uri={account.avatarUri} size={168} />
+        ) : (
+          <Avatar uri={account.avatarUri} name={account.name} size={168} />
+        )}
         <View style={styles.identity}>
           <Text style={text.kicker}>{profile ? t("familyTv:settings.kicker") : t("pairing:tvCompteJumele")}</Text>
           <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
@@ -78,8 +83,8 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
       ) : null}
 
       <View style={styles.forget}>
-        <SectionTitle title={t("pairing:tvOublierTitre")} caption={profile?.unpairNote ?? t("pairing:tvUnpairCaption")} />
-        {profile?.unpairNote ? null : (
+        <SectionTitle title={t("pairing:tvOublierTitre")} caption={profile?.unpairCaption ?? t("pairing:tvUnpairCaption")} />
+        {profile && !profile.canUnpair ? null : (
           <View style={styles.actions}>
             {profile ? null : (
               <ConfirmPill

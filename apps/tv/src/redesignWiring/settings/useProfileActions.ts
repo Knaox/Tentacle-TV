@@ -40,7 +40,8 @@ export function useProfileActions() {
       role,
       color,
       canManage: kind === "owner" && canManage,
-      unpairNote: kind === "owner" ? null : t("familyTv:settings.unpairOwnerOnly", owner),
+      canUnpair: kind === "owner",
+      unpairCaption: kind === "owner" ? t("familyTv:settings.unpairCaption") : t("familyTv:settings.unpairOwnerOnly", owner),
     };
   }, [kind, ownerName, color, canManage, t]);
 
