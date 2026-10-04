@@ -84,6 +84,23 @@ export default {
   qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
   qualityReducedDetail: "Qualité réduite : réseau mesuré à {{measured}} Mb/s, le fichier en demande {{source}} Mb/s",
   qualityAutoBadge: "Auto",
+  // POURQUOI la qualité baisse en Auto (`player/qualityDrop.ts`) : le message
+  // éphémère, puis sa ligne relisible dans le menu Qualité, sous « Auto ».
+  qualityDropTitle: "Qualité réduite",
+  qualityDrop: {
+    network: "Le réseau mesuré ({{measured}} Mb/s) ne porte pas ce fichier ({{source}} Mb/s) : la qualité s'adapte.",
+    remoteLimit: "Jellyfin limite les connexions par Internet à {{limit}} Mb/s : ce réglage du serveur réduit la qualité.",
+    server_videoFormat: "Le serveur convertit la vidéo, que cet appareil ne lit pas telle quelle : l'image perd un peu en finesse.",
+    server_hdr: "Le serveur convertit la vidéo HDR pour cet écran : l'image perd un peu en finesse.",
+    server_subtitles: "Le serveur incruste les sous-titres dans l'image : elle perd un peu en finesse.",
+  },
+  qualityDropMenu: {
+    network: "Réseau mesuré à {{measured}} Mb/s, le fichier en demande {{source}}",
+    remoteLimit: "Limite Internet de Jellyfin : {{limit}} Mb/s",
+    server_videoFormat: "Vidéo convertie par le serveur pour cet appareil",
+    server_hdr: "Vidéo HDR convertie par le serveur pour cet écran",
+    server_subtitles: "Sous-titres incrustés par le serveur",
+  },
   directSessionExpired: "Session Jellyfin expirée — reconfirmez le jumelage depuis un appareil connecté",
   // Le motif technique d'une erreur de lecture, replié.
   details: "Détails",

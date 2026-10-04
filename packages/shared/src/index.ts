@@ -82,6 +82,11 @@ export * from "./help/trailerHint";
 export * from "./notices/noticePolicy";
 export * from "./notices/serverUpdateNotice";
 export * from "./notices/adminKeyHealth";
+// « Qualité réduite » sur le lecteur : pourquoi la qualité baisse en Auto (le
+// réseau mesuré, la limite Internet de Jellyfin, la conversion du serveur), et
+// quand le dire — une info éphémère, masquable par le compte.
+export * from "./player/qualityDrop";
+export * from "./notices/qualityDropNotice";
 // Le modèle commun des messages d'erreur : une cause en mots de spectateur
 // (quoi, pourquoi, une à trois actions, détails repliés), classée d'un échec
 // brut — une seule source pour le web, le bureau, le mobile et la tablette.

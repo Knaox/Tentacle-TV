@@ -80,6 +80,23 @@ export default {
   qualityReduced: "Quality lowered to match your network speed",
   qualityReducedDetail: "Quality lowered: network measured at {{measured}} Mb/s, the file needs {{source}} Mb/s",
   qualityAutoBadge: "Auto",
+  // POURQUOI la qualité baisse en Auto (`player/qualityDrop.ts`) : le message
+  // éphémère, puis sa ligne relisible dans le menu Qualité, sous « Auto ».
+  qualityDropTitle: "Quality lowered",
+  qualityDrop: {
+    network: "The measured network ({{measured}} Mb/s) can't carry this file ({{source}} Mb/s): quality adapts.",
+    remoteLimit: "Jellyfin limits connections over the Internet to {{limit}} Mb/s: this server setting lowers the quality.",
+    server_videoFormat: "The server converts the video, which this device can't play as is: the picture loses a little detail.",
+    server_hdr: "The server converts the HDR video for this screen: the picture loses a little detail.",
+    server_subtitles: "The server burns the subtitles into the picture: it loses a little detail.",
+  },
+  qualityDropMenu: {
+    network: "Network measured at {{measured}} Mb/s, the file needs {{source}}",
+    remoteLimit: "Jellyfin Internet limit: {{limit}} Mb/s",
+    server_videoFormat: "Video converted by the server for this device",
+    server_hdr: "HDR video converted by the server for this screen",
+    server_subtitles: "Subtitles burned in by the server",
+  },
   directSessionExpired: "Jellyfin session expired — confirm pairing again from a signed-in device",
   // Le motif technique d'une erreur de lecture, replié.
   details: "Details",
