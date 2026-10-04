@@ -1,39 +1,45 @@
 import { canOpenRailMenu } from "./railMenu";
+import { RAIL_PROFILE_KEY, isNavMenuKey, navEntryOf } from "./railKeys";
 
 /**
- * L'INDICATION « Maintenir OK : organiser » du rail — module pur. Plus de
- * légende permanente : une ligne discrète, à côté de l'entrée focalisée,
- * seulement quand elle dit quelque chose d'utile :
+ * Les ASTUCES du rail ouvert — module pur. Deux lignes courtes, à droite du
+ * rail, jamais focalisables, qui ne prennent aucune place dans la colonne :
  *
- * - sur une entrée ORGANISABLE (celles qu'un appui maintenu ouvre, `railMenu`),
- *   hors déplacement et menu fermé ;
- * - après un court temps de focus SUR elle (`RAIL_HINT_DWELL_MS`) : parcourir
- *   le rail ne la fait jamais clignoter d'entrée en entrée ;
- * - les premières fois seulement (`RAIL_HINT_MAX_SHOWS` passages dans le rail
- *   où elle a paru), puis plus jamais : le geste vit aussi dans Réglages ›
- *   Navigation.
+ * - « Maintenir OK : organiser », à hauteur de l'entrée ORGANISABLE qui a le
+ *   focus (celles qu'un appui maintenu ouvre, `railMenu`), hors déplacement
+ *   et menu fermé — TOUT DE SUITE, et à chaque fois (décision de
+ *   l'utilisateur, 2026-10-04 : elle attendait 1,2 s de focus, et ne paraissait
+ *   que les trois premières fois) ;
+ * - « ◀ Réglages », à hauteur du profil : GAUCHE depuis toute entrée mène aux
+ *   réglages (`railShortcuts`). Rail focalisé, hors déplacement et menu, pas
+ *   sur le profil lui-même — GAUCHE n'y mène nulle part.
+ *
+ * Elles paraissent comme tout ce qui se révèle au focus (`focus/focusReveal`) :
+ * sans attendre, en un fondu bref.
+ *
+ * Le compte d'apparitions d'avant (clé `tentacle_rail_organize_hint`) n'est
+ * plus lu : resté sur l'appareil, il ne gêne rien.
  */
 
-/** Le temps de focus sur une entrée avant que l'indication paraisse. */
-export const RAIL_HINT_DWELL_MS = 1200;
-/** Le nombre de passages dans le rail où elle paraît, au plus. */
-export const RAIL_HINT_MAX_SHOWS = 3;
-/** Le compte des passages, rangé sur l'appareil. ⚠️ Traversée par le stockage : ne jamais renommer. */
-export const RAIL_HINT_SHOWN_KEY = "tentacle_rail_organize_hint";
-
-/** Dans combien de temps l'indication paraît pour cette entrée ; null : pas pour elle (ou plus jamais). */
-export function railHintDelay(state: { entryKey: string | null; moving: boolean; menuOpen: boolean; shown: number }): number | null {
-  if (!state.entryKey || state.menuOpen || state.shown >= RAIL_HINT_MAX_SHOWS) return null;
-  return canOpenRailMenu(state.entryKey, state.moving) ? RAIL_HINT_DWELL_MS : null;
+export interface RailHintState {
+  /** L'entrée du rail qui a le focus (`navEntryOf`), ou null : le focus est ailleurs. */
+  entryKey: string | null;
+  moving: boolean;
+  menuOpen: boolean;
 }
 
-/** Le compte rangé ; illisible ou absent : zéro. */
-export function readRailHintShown(raw: string | null): number {
-  const value = raw === null ? Number.NaN : Number.parseInt(raw, 10);
-  return Number.isFinite(value) && value > 0 ? value : 0;
+/** L'entrée du rail que désigne une clé de focus, ou null (contenu, menu d'une entrée). */
+export function railHintEntry(focusKey: string | null): string | null {
+  return focusKey === null || isNavMenuKey(focusKey) ? null : navEntryOf(focusKey);
 }
 
-/** Le compte après un passage dans le rail : il ne compte qu'UNE fois par passage, même si l'indication paraît sur plusieurs entrées. */
-export function railHintShownAfter(shown: number, countedThisVisit: boolean): number {
-  return countedThisVisit ? shown : shown + 1;
+/** L'entrée à côté de laquelle dire « Maintenir OK : organiser », ou null. */
+export function railOrganizeHintEntry(state: RailHintState): string | null {
+  if (!state.entryKey || state.menuOpen) return null;
+  return canOpenRailMenu(state.entryKey, state.moving) ? state.entryKey : null;
+}
+
+/** « ◀ Réglages » se dit-il ? Rail focalisé, hors déplacement et menu, ailleurs que sur le profil. */
+export function railSettingsHintShown(state: RailHintState & { railFocused: boolean }): boolean {
+  return state.railFocused && !state.moving && !state.menuOpen && state.entryKey !== null && state.entryKey !== RAIL_PROFILE_KEY;
 }

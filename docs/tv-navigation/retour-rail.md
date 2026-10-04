@@ -19,8 +19,8 @@ référence (`apps/tv/harness/nav-golden/scenarios/retour-rail/`).
 | Pile du Retour | `packages/tv-core/src/nav/backLayers.ts`, `apps/tv/src/redesignWiring/back/BackScope.tsx` |
 | Couches d'un écran à rail | `redesignWiring/screen/useRailBackLayers.ts`, `RedesignScreen.tsx`, `useRedesignScreen.ts` |
 | Croix Retour | `redesignWiring/focus/backFocus.tsx` (`useBackFocus`) |
-| Rail : vue | `apps/tv/src/redesign/nav/*` (`NavRail`, `NavCapsule`, `NavList`, `NavItem`, `NavEntryMenu`, `NavLegend`, `NavOrganizeHint`, `NavSwitcherItem`, `ProfileStack`, `NavScrollIndicator`, `NavTextMeasure`, `navFrame`, `navGeometry`, `navText`) |
-| Rail : câblage | `redesignWiring/nav/*` (`useRailState`, `useRailArrange`, `useNavCatalog`, `useNavEntries`, `NavMenuModal`), `screen/RailBridges.tsx`, `screen/RailShortcuts.tsx` |
+| Rail : vue | `apps/tv/src/redesign/nav/*` (`NavRail`, `NavCapsule`, `NavList`, `NavItem`, `NavEntryMenu`, `NavLegend`, `NavHints`, `NavHintLine`, `NavSwitcherItem`, `ProfileStack`, `NavScrollIndicator`, `NavTextMeasure`, `navFrame`, `navGeometry`, `navText`) |
+| Rail : câblage | `redesignWiring/nav/*` (`useRailState`, `useRailArrange`, `useNavCatalog`, `useNavEntries`, `useRailHints`, `NavMenuModal`), `screen/RailBridges.tsx`, `screen/RailShortcuts.tsx` |
 | Politique du rail (pure) | tv-core `nav/railPinning`, `railOrder`, `railColumn`, `railScroll`, `railSpec` |
 | Demandes dans le rail | `redesignWiring/vigie/RequestsEntry.tsx`, `RequestsPanel.tsx`, `redesign/requests/RequestsPanelView.tsx` |
 | Suite de fiches | tv-core `nav/detailChain.ts`, `apps/tv/src/navigation/detailPage.ts` (le branchement `useOpenDetail` est à T7) |
@@ -179,11 +179,14 @@ changent ni de nom ni de comportement.
 - **F6** [code] Légende : plus de bulle permanente (choix de l'utilisateur,
   2026-10-04 : trop de raccourcis autour du profil). Pendant un déplacement
   seulement : « ↕ Haut, bas : déplacer », « ⊙ OK pose, Retour annule »
-  (`railHintMove`, `railHintDrop`). « ⊙ Maintenir OK : organiser » devient une
-  ligne CONTEXTUELLE à droite du rail, à hauteur de l'entrée organisable
-  focalisée (`NavOrganizeHint`) : après 1,2 s de focus sur elle, les trois
-  premiers passages dans le rail seulement (tv-core `nav/railHint`, compte
-  sur l'appareil `tentacle_rail_organize_hint`).
+  (`railHintMove`, `railHintDrop`). Hors déplacement, deux ASTUCES, des lignes
+  seules à droite du rail (`NavHints` → `NavHintLine`), règle dans tv-core
+  `nav/railHint` : « ⊙ Maintenir OK : organiser » à hauteur de l'entrée
+  organisable focalisée, et « ◀ Réglages » à hauteur du profil (GAUCHE y mène ;
+  pas sur le profil lui-même). TOUT DE SUITE et à chaque fois (retour d'essai
+  du 2026-10-04 : « organiser » attendait 1,2 s et ne paraissait que les
+  trois premières fois ; le compte `tentacle_rail_organize_hint`, resté sur
+  les appareils, n'est plus lu).
 - **F7** [code] « Changer de profil » (Apple TV passée aux profils, Famille) :
   une entrée `nav:SwitchProfile` juste au-dessus du profil, dans son bloc ;
   pictogramme = l'empilement des profils de la famille (`ProfileStack` : trois

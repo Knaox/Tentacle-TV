@@ -13,7 +13,7 @@ import { TVOS_REMOTE_SUPPORTED } from "../input";
  * déplacement — HAUT depuis Rechercher y reste, BAS depuis le profil y reste
  * (le rail s'arrête à ses bouts, il ne boucle plus), GAUCHE → le profil une
  * fois armé (`railLeftArmDelay`). La
- * légende du rail ouvert le dit (« ◀ Profil et réglages »).
+ * astuce du rail ouvert le dit (« ◀ Réglages », tv-core `nav/railHint`).
  */
 
 export interface RailShortcutsProps {

@@ -18,8 +18,8 @@ import { useProfileSwitcher } from "./useProfileSwitcher";
  *
  * Aucune légende permanente : pendant un déplacement seulement, ses touches
  * (`previewOrder` est alors l'ordre en cours, que rien n'a encore
- * enregistré). « Maintenir OK : organiser » se dit à côté d'une entrée, le
- * moment venu (`useRailOrganizeHint`).
+ * enregistré). « Maintenir OK : organiser » et « ◀ Réglages » se disent à
+ * côté de ce qu'ils concernent, au focus (`useRailHints`).
  */
 
 /** « Tout afficher » : tv-core (`nav/railKeys`). */

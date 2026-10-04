@@ -14,12 +14,10 @@ import {
   ITEM_INSET,
   LABEL_GAP,
   LIST_TOP,
-  MARGIN_BOTTOM,
   RAIL_LEFT,
   SEARCH_TOP,
   SEPARATOR_TOP,
   expandedItemWidth,
-  listEntryCenter,
   listGeometry,
   navExpandedWidth,
   navLayout,
@@ -28,9 +26,9 @@ import {
   type NavTextWidths,
 } from "./navGeometry";
 import { NavItem } from "./NavItem";
-import { NavLegend, type NavHint } from "./NavLegend";
+import { HINTS_GAP, NavHints } from "./NavHints";
+import type { NavHint } from "./NavLegend";
 import { NavList } from "./NavList";
-import { NavOrganizeHint } from "./NavOrganizeHint";
 import { NavSwitcherItem } from "./NavSwitcherItem";
 import type { StackProfile } from "./ProfileStack";
 import { NavTextMeasure } from "./NavTextMeasure";
@@ -58,9 +56,10 @@ export type { NavRailGeometry } from "./navGeometry";
  * Repliées, une bande d'icônes en pilule ; ouvertes (le focus y est), elles
  * s'élargissent PAR-DESSUS le contenu, sous un voile, avec leurs libellés —
  * à la largeur de leur intitulé le plus long, mesurée (`NavTextMeasure`) et
- * bornée. Pendant un déplacement, à droite du profil, la bulle qui en dit les
- * touches (`NavLegend`) ; sinon, au plus, « Maintenir OK : organiser » à côté
- * de l'entrée focalisée (`NavOrganizeHint`), quand l'intégration le dit.
+ * bornée. À droite, les astuces (`NavHints`) : pendant un déplacement, la
+ * bulle de ses touches ; sinon, quand l'intégration le dit (tv-core
+ * `nav/railHint`), « Maintenir OK : organiser » à côté de l'entrée
+ * organisable focalisée et « ◀ Réglages » à hauteur du profil.
  *
  * L'organisation se voit ici, se décide à l'intégration : `heldKey` (le menu
  * d'appui long de cette entrée est ouvert), `movingKey` (on la déplace).
@@ -128,6 +127,8 @@ export interface NavRailProps {
   hints?: NavHint[];
   /** « Maintenir OK : organiser », à côté de l'entrée qu'elle concerne — quand l'intégration le dit. */
   organizeHint?: { entryKey: string; label: string } | null;
+  /** « ◀ Réglages », à hauteur du profil — quand l'intégration le dit. */
+  settingsHint?: { label: string } | null;
   heldKey?: string | null;
   movingKey?: string | null;
   onSelect?: (key: string) => void;
@@ -138,7 +139,6 @@ export interface NavRailProps {
 }
 
 /** Entre le rail ouvert et sa légende. */
-const LEGEND_GAP = 20;
 
 /** Le filet sous Rechercher : en retrait des bords de la capsule. */
 const SEPARATOR_INSET = 24;
@@ -146,7 +146,7 @@ const SEPARATOR_INSET = 24;
 const sameWidths = (a: NavTextWidths | null, b: NavTextWidths) => !!a && a.label === b.label && a.caption === b.caption;
 
 export const NavRail = memo(function NavRail(props: NavRailProps) {
-  const { search, entries, account, accessory, switcher, activeKey, expanded, hints, organizeHint, heldKey, movingKey, onGeometry } = props;
+  const { search, entries, account, accessory, switcher, activeKey, expanded, hints, organizeHint, settingsHint, heldKey, movingKey, onGeometry } = props;
   const { onSelect, onLongPress, onFocusChange } = props;
   const { openness, moving } = useUnfold(expanded);
   const veil = usePresence(expanded, "veil");
@@ -265,20 +265,18 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
           </View>
         </Capsule>
       </View>
-      {/* Rail ouvert, et le temps qu'il se replie (elle s'efface avec lui) :
-          elle passe sur le contenu, jamais pendant que le focus y navigue. */}
-      {hints?.length && labels ? (
-        <NavLegend hints={hints} openness={openness} left={RAIL_LEFT + expandedWidth + LEGEND_GAP} bottom={MARGIN_BOTTOM} />
-      ) : null}
-      {organizeHint && hintIndex >= 0 && expanded ? (
-        <NavOrganizeHint
-          key={organizeHint.entryKey}
-          label={organizeHint.label}
-          center={listEntryCenter(layout, hintIndex)}
-          left={RAIL_LEFT + expandedWidth + LEGEND_GAP}
-          scrollY={listScroll}
-        />
-      ) : null}
+      <NavHints
+        moveHints={hints}
+        organize={organizeHint}
+        settings={settingsHint}
+        organizeIndex={hintIndex}
+        layout={layout}
+        left={RAIL_LEFT + expandedWidth + HINTS_GAP}
+        openness={openness}
+        listScroll={listScroll}
+        expanded={expanded}
+        labels={labels}
+      />
       <NavTextMeasure labels={texts} captions={captions} onMeasure={onMeasure} />
     </NavFrameContext.Provider>
   );

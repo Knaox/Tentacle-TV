@@ -7,11 +7,11 @@ import { colors } from "../theme/tokens";
 import { navText } from "./navText";
 
 /**
- * La légende du rail ouvert : une bulle de verre posée à DROITE du rail, en
- * bas, à côté du bloc du profil — une ligne par touche, un pictogramme de
- * touche et ce qu'elle fait : « ◀ Profil et réglages » (la flèche montre le
- * profil, à sa gauche), « ⊙ Maintenir OK : organiser » ; pendant un
- * déplacement, les touches du déplacement. Jamais focalisable.
+ * La légende d'un DÉPLACEMENT dans le rail : une bulle de verre posée à
+ * DROITE du rail, en bas, à côté du bloc du profil — une ligne par touche, un
+ * pictogramme de touche et ce qu'elle fait (« Haut, bas : déplacer », « OK
+ * pose, Retour annule »). Jamais focalisable. Hors déplacement, les astuces
+ * sont des lignes seules (`NavHintLine`, posées par `NavHints`).
  *
  * Hors du rail exprès : dans la colonne, elle réservait sa place sous le bloc
  * des pages (le bloc n'était plus centré dès que l'élément des demandes était

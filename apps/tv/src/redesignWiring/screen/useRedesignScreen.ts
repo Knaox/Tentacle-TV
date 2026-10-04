@@ -5,7 +5,7 @@ import { sameRailGeometry, type NavRailGeometry } from "../../redesign/nav/navGe
 import { useFocusStore, type FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useLibraryPrefetch } from "../library/useLibraryPrefetch";
 import { useNavEntries } from "../nav/useNavEntries";
-import { useRailOrganizeHint } from "../nav/useRailOrganizeHint";
+import { useRailHints } from "../nav/useRailHints";
 import { useRailArrange, type RailArrange } from "../nav/useRailArrange";
 import { openNavigationSettings, useRailActions, useRailFocused } from "../nav/useRailState";
 import { useRequestsAccessory } from "../vigie/RequestsEntry";
@@ -129,11 +129,12 @@ export function useRedesignScreen({
   const expanded = railExpanded({ railFocused, heldKey, movingKey });
   // Les demandes en cours (Vigie), dans le bloc du profil — ou rien.
   const accessory = useRequestsAccessory(focus, movingKey !== null);
-  // « Maintenir OK : organiser », à côté d'une entrée, le moment venu (tv-core `railHint`).
-  const organizeHint = useRailOrganizeHint(focus, { railFocused, moving: movingKey !== null, menuOpen: heldKey !== null });
+  // Les astuces du rail ouvert — « Maintenir OK : organiser », « ◀ Réglages » —, tout de suite (tv-core `railHint`).
+  const railHints = useRailHints(focus, { railFocused, moving: movingKey !== null, menuOpen: heldKey !== null });
+  const { organize: organizeHint, settings: settingsHint } = railHints;
   const nav = useMemo<NavRailProps>(
-    () => ({ ...entries, accessory, organizeHint, activeKey: railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry }),
-    [entries, accessory, organizeHint, railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry],
+    () => ({ ...entries, accessory, organizeHint, settingsHint, activeKey: railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry }),
+    [entries, accessory, organizeHint, settingsHint, railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry],
   );
 
   return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, arrange, railGeometry, rows };

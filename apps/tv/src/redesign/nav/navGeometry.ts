@@ -151,6 +151,11 @@ export function listEntryCenter(layout: NavLayout, index: number): number {
   return layout.strip.top + LIST_TOP + LIST_PAD + index * PITCH + ITEM / 2;
 }
 
+/** Le centre du profil, à l'écran (le bloc du bas ne défile pas). */
+export function profileCenter(layout: NavLayout): number {
+  return layout.bottom.top + layout.profileTop + ITEM / 2;
+}
+
 /** Les largeurs naturelles des textes du rail, mesurées (points). */
 export interface NavTextWidths {
   /** Le plus long libellé d'entrée (gras, celui du focus), nom du compte compris. */
