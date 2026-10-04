@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { BackHandler } from "react-native";
 import { backOutcome, createBackLayers, isPushedPage } from "@tentacle-tv/tv-core";
-import { BackLayersContext } from "../../common/back/BackLayersContext";
-import type { BackScopeProps } from "../../common/back/backScopeProps";
+import { BackLayersContext } from "../../shared/back/BackLayersContext";
+import type { BackScopeProps } from "../../shared/back/backScopeProps";
 
 /**
  * L'APPLICATEUR du Retour sur Android TV — le pendant de `TvosBackScope` : la

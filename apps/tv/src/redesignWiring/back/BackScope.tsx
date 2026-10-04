@@ -1,8 +1,8 @@
-import type { BackScopeProps } from "../../platform/common/back/backScopeProps";
+import type { BackScopeProps } from "../../platform/shared/back/backScopeProps";
 import { PlatformBackScope } from "../../platform/backScope";
 import { REDESIGN_ACTIVE } from "../redesignGate";
 
-export { useBackLayer, useBackLayers } from "../../platform/common/back/useBackLayers";
+export { useBackLayer, useBackLayers } from "../../platform/shared/back/useBackLayers";
 
 /**
  * Le RETOUR d'un écran : la portée que le navigateur pose autour de chaque

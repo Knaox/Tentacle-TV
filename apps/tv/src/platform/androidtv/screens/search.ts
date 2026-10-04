@@ -6,7 +6,7 @@ import { useSpeechRecognition } from "../../../hooks/useSpeechRecognition";
 import type { RootStackParamList } from "../../../navigation/types";
 import type { FocusStore } from "../../tvos/focus/focusStore";
 import { useSearchKeyboard as useSharedSearchKeyboard } from "../../tvos/screens/search";
-import type { SearchDictation } from "../../common/screens/searchDictation";
+import type { SearchDictation } from "../../shared/screens/searchDictation";
 
 /**
  * L'applicateur Android TV de la RECHERCHE — le même écran que l'Apple TV, la

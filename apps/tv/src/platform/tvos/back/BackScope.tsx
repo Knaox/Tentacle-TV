@@ -3,8 +3,8 @@ import { StyleSheet } from "react-native";
 import { backOutcome, createBackLayers, isPushedPage, takesBack } from "@tentacle-tv/tv-core";
 import { MenuPressInterceptor } from "../../../components/focus/MenuPressInterceptor";
 import { receiveMenu } from "../input";
-import { BackLayersContext } from "../../common/back/BackLayersContext";
-import type { BackScopeProps } from "../../common/back/backScopeProps";
+import { BackLayersContext } from "../../shared/back/BackLayersContext";
+import type { BackScopeProps } from "../../shared/back/backScopeProps";
 
 /**
  * L'APPLICATEUR du Retour sur Apple TV — il applique, il ne décide pas.
