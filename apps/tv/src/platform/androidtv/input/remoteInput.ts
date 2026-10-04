@@ -3,18 +3,17 @@ import {
   ANDROIDTV_BACK_SIGNAL,
   ANDROIDTV_BINDINGS,
   createBackTakers,
+  createAndroidTvReader,
   createRemoteInput,
-  readAndroidTvEvent,
   type IntentEvent,
 } from "@tentacle-tv/tv-core";
-import { attachRemoteLog } from "./remoteLog";
 
 /**
  * L'ENTRÉE UNIQUE de la télécommande d'Android TV — le pendant de
  * `platform/tvos/input/remoteInput.ts`, et le seul abonnement natif à la
  * télécommande du chemin refondu sur Android.
  *
- * Chaque événement de `TVEventHandler` est lu en signal (`readAndroidTvEvent`)
+ * Chaque événement de `TVEventHandler` est lu en signal (`createAndroidTvReader`)
  * et donné à l'entrée commune de tv-core (`createRemoteInput`), qui le traduit
  * par la table d'Android TV (`ANDROIDTV_BINDINGS`) en intention, la montre à
  * ses observateurs puis la fait résoudre par la pile des contextes. Rien ne se
@@ -48,8 +47,11 @@ export const takeBack = backTakers.add;
 let keySubscription: { remove(): void } | null = null;
 let backSubscription: { remove(): void } | null = null;
 
+/** La lecture se souvient des touches enfoncées : un enfoncement redit est une répétition (`repeat`). */
+const read = createAndroidTvReader();
+
 function dispatch(event: HWEvent): void {
-  androidTvInput.receive(readAndroidTvEvent(event, Date.now()));
+  androidTvInput.receive(read(event, Date.now()));
 }
 
 /**
@@ -89,7 +91,6 @@ function sync(needed: boolean): void {
 }
 
 androidTvInput.onDemand(sync);
-attachRemoteLog(androidTvInput);
 backTakers.onDemand((needed) => {
   if (needed) installBack();
 });

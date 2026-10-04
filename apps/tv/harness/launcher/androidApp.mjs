@@ -31,12 +31,16 @@ const apkStamp = () => {
 };
 const installedPath = () => adb(["shell", "pm", "path", PACKAGE])?.trim() || null;
 
+/** L'ABI de l'appareil : la build n'en compile qu'une (le natif de quatre ABI coûte quatre fois plus). */
+const deviceAbi = () => adb(["shell", "getprop", "ro.product.cpu.abi"])?.trim() || "arm64-v8a";
+
 async function gradleBuild() {
   const log = path.join(STATE_DIR, "gradle.log");
+  const abi = deviceAbi();
   const start = Date.now();
   const heartbeat = setInterval(() => note(`build en cours… ${minutes(Date.now() - start)}`), 60_000);
   try {
-    await runLogged("./gradlew", ["assembleDebug", "-x", "lint"], { cwd: ANDROID_DIR, env: { ANDROID_HOME: SDK }, log });
+    await runLogged("./gradlew", ["assembleDebug", "-x", "lint", `-PreactNativeArchitectures=${abi}`], { cwd: ANDROID_DIR, env: { ANDROID_HOME: SDK }, log });
   } catch {
     const lines = fs.readFileSync(log, "utf8").split("\n");
     const errors = lines.filter((line) => /error:|FAILURE|What went wrong/.test(line)).slice(-12);
@@ -45,7 +49,7 @@ async function gradleBuild() {
   } finally {
     clearInterval(heartbeat);
   }
-  note(`build Gradle réussi en ${minutes(Date.now() - start)} — journal : ${shortPath(log)}`);
+  note(`build Gradle (${abi}) réussi en ${minutes(Date.now() - start)} — journal : ${shortPath(log)}`);
 }
 
 /** Installe l'APK ; une signature différente (build d'ailleurs) oblige à désinstaller d'abord. */

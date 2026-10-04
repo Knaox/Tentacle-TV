@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "../translate";
-import { ANDROIDTV_BACK_SIGNAL, ANDROIDTV_BINDINGS, readAndroidTvEvent, type AndroidTvNativeEvent } from "./androidtv";
+import { ANDROIDTV_BACK_SIGNAL, ANDROIDTV_BINDINGS, createAndroidTvReader, readAndroidTvEvent, type AndroidTvNativeEvent } from "./androidtv";
 import { boundSignals } from "./types";
 
 /**
@@ -65,7 +65,7 @@ describe("ANDROIDTV_BINDINGS — appuis", () => {
     expect(intentOf({ eventType: "right", eventKeyAction: UP })).toEqual({ type: "move", direction: "droite" });
   });
 
-  it("ne compte pas l'enfoncement : un appui ne vaut qu'une fois, même si la plateforme livrait les deux phases", () => {
+  it("ne compte pas l'enfoncement : un appui ne vaut qu'une fois (l'app livre les deux phases)", () => {
     expect(intentOf({ eventType: "select", eventKeyAction: DOWN })).toBeNull();
     expect(intentOf({ eventType: "up", eventKeyAction: DOWN })).toBeNull();
     expect(intentOf({ eventType: "select", eventKeyAction: -1 })).toBeNull();
@@ -136,5 +136,28 @@ describe("readAndroidTvEvent", () => {
     expect(readAndroidTvEvent({ eventType: "select", eventKeyAction: 1 }, 5).phase).toBe("up");
     expect(readAndroidTvEvent({ eventType: "focus", eventKeyAction: -1 }, 5).phase).toBeNull();
     expect(readAndroidTvEvent({ eventType: "back" }, 5)).toEqual({ name: "back", phase: null, at: 5 });
+  });
+});
+
+describe("createAndroidTvReader — les répétitions d'une touche tenue", () => {
+  it("marque repeat un enfoncement redit sans relâchement, et repart à zéro après", () => {
+    const read = createAndroidTvReader();
+    expect(read({ eventType: "fastForward", eventKeyAction: 0 }, 1).repeat).toBeUndefined();
+    expect(read({ eventType: "fastForward", eventKeyAction: 0 }, 2)).toEqual({ name: "fastForward", phase: "down", repeat: true, at: 2 });
+    expect(read({ eventType: "fastForward", eventKeyAction: 1 }, 3).repeat).toBeUndefined();
+    expect(read({ eventType: "fastForward", eventKeyAction: 0 }, 4).repeat).toBeUndefined();
+  });
+
+  it("ne fait qu'une intention d'une touche de transport tenue : au relâchement", () => {
+    const read = createAndroidTvReader();
+    const intents = [0, 0, 0, 1].map((action, at) => translator.translate(read({ eventType: "rewind", eventKeyAction: action }, at))?.intent ?? null);
+    expect(intents).toEqual([null, null, null, { type: "transport", command: "retour" }]);
+  });
+
+  it("suit chaque touche à part : le maintien de OK ne marque pas la croix", () => {
+    const read = createAndroidTvReader();
+    read({ eventType: "select", eventKeyAction: 0 }, 1);
+    expect(read({ eventType: "longSelect", eventKeyAction: 0 }, 2).repeat).toBeUndefined();
+    expect(read({ eventType: "down", eventKeyAction: 0 }, 3).repeat).toBeUndefined();
   });
 });

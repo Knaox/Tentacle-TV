@@ -25,8 +25,13 @@ import type { NoiseBinding, PressBinding, RemoteBindings } from "./types";
  *   relâchement — l'adaptateur le nomme `back` ;
  * - `Modal.onRequestClose` : Retour dans une modale (son propre `Dialog`).
  *
- * Phases, telles que react-native-tvos les livre (`enableKeyDownEvents`
- * laissé à faux) : un appui simple n'arrive qu'au RELÂCHEMENT (1). OK et la
+ * Phases, telles que react-native-tvos les livre — l'app allume
+ * `ReactFeatureFlags.enableKeyDownEvents` (`MainApplication.kt`) : un appui
+ * simple dit son ENFONCEMENT (0) puis son RELÂCHEMENT (1), et la table ne
+ * compte que le relâchement (`on: ["up"]`), comme tvOS. Une touche de
+ * transport tenue (Avance, Retour rapides…) redit son enfoncement à chaque
+ * répétition d'Android : `createAndroidTvReader` les marque `repeat`, pour
+ * qui veut suivre le maintien (le lecteur), sans intention de plus. OK et la
  * croix maintenus : Android répète l'enfoncement (première répétition à
  * `ViewConfiguration.getKeyRepeatTimeout()`, 500 ms sous Android 11, puis
  * toutes les 50 ms) ; react-native-tvos en tire UN `long…` à 0 (le seuil
@@ -56,6 +61,24 @@ export interface AndroidTvNativeEvent {
 export function readAndroidTvEvent(event: AndroidTvNativeEvent, at: number): RemoteSignal {
   const phase = event.eventKeyAction === undefined ? null : ANDROIDTV_KEY_ACTIONS[event.eventKeyAction] ?? null;
   return { name: event.eventType, phase, at };
+}
+
+/**
+ * La lecture AVEC MÉMOIRE de l'adaptateur : un enfoncement d'une touche déjà
+ * enfoncée (sans relâchement entre les deux) est une répétition d'Android, et
+ * le signal le dit (`repeat`). Le natif ne transmet pas le compteur de
+ * répétition : c'est la seule façon de le retrouver.
+ */
+export function createAndroidTvReader(): (event: AndroidTvNativeEvent, at: number) => RemoteSignal {
+  const held = new Set<string>();
+  return (event, at) => {
+    const signal = readAndroidTvEvent(event, at);
+    if (signal.phase === "up") held.delete(signal.name);
+    if (signal.phase !== "down") return signal;
+    if (held.has(signal.name)) return { ...signal, repeat: true };
+    held.add(signal.name);
+    return signal;
+  };
 }
 
 /** Le nom que l'adaptateur donne à Retour (`BackHandler`, `Modal.onRequestClose`). */

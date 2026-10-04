@@ -4,7 +4,7 @@
 // Le lanceur de la refonte de l'UI TV, pour l'utilisateur, en une commande
 // (depuis la racine du dépôt) :
 //   pnpm tv:refonte [--rebuild]   l'app réelle, refondue, au simulateur Apple TV
-//   pnpm tv:refonte:android [--rebuild] [--journal]
+//   pnpm tv:refonte:android [--rebuild] [--journal] [--sans-backend]
 //                                 la même, sur l'émulateur Android TV : backend
 //                                 de dev, Metro dédié (port 8091 et suivants)
 //                                 avec TENTACLE_TV_REDESIGN=1, émulateur
@@ -16,8 +16,9 @@
 //                                 (8081 → Metro, 3001 → backend), app ouverte
 //                                 (am start -n com.tentacletv.mobile/
 //                                 com.tentacletv.MainActivity). --journal : chaque
-//                                 touche et son intention dans le journal de
-//                                 Metro (lignes « [remote] »).
+//                                 touche et son intention dans logcat
+//                                 (ReactNativeJS, lignes « [remote] ») ;
+//                                 --sans-backend : ni réutilisé ni lancé.
 //   pnpm tv:banc [commande…]      le banc UI ; avec une commande, la lui passe
 //   pnpm tv:stop                  éteint ce que les trois ont lancé (émulateur
 //                                 compris, par son PID, et rend son verrou)

@@ -4,7 +4,7 @@
  *   (`src/redesignWiring/redesignGate.ts`) ;
  * - `process.env.TENTACLE_TV_REMOTE_LOG` : le journal de la télécommande
  *   (`src/platform/androidtv/input/remoteLog.ts`), chaque signal et
- *   l'intention qu'il porte, dans la console (Metro, logcat `ReactNativeJS`).
+ *   l'intention qu'il porte, dans la console (logcat `ReactNativeJS`).
  *
  * La valeur est celle de l'environnement du processus qui transforme le code :
  * Metro (`TENTACLE_TV_REDESIGN=1 react-native start`, ce que fait

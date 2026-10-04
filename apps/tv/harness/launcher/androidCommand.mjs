@@ -1,11 +1,12 @@
 // Provisoire — à retirer quand Android TV aura basculé sur la refonte (A5).
 //
-// `pnpm tv:refonte:android [--rebuild] [--journal]` : la refonte de l'UI TV sur
+// `pnpm tv:refonte:android [--rebuild] [--journal] [--sans-backend]` : la refonte de l'UI TV sur
 // l'émulateur Android TV, en une commande — backend de dev, Metro dédié avec
 // l'aiguillage de la refonte (`TENTACLE_TV_REDESIGN=1`), émulateur sous
 // verrou, build debug installée, `adb reverse`, app ouverte.
-// `--journal` : chaque touche et l'intention qu'elle porte, dans le journal de
-// Metro (`TENTACLE_TV_REMOTE_LOG=1`). `pnpm tv:stop` éteint tout.
+// `--journal` : chaque touche et l'intention qu'elle porte, dans la console de
+// l'app — logcat `ReactNativeJS` (`TENTACLE_TV_REMOTE_LOG=1`). `--sans-backend` : ni réutilisé ni
+// lancé (l'app s'ouvre sur son écran de configuration). `pnpm tv:stop` éteint tout.
 import { awaitFirstBundle, BACKEND_URL, ensureBackend, ensureMetro, logSize, pairingPageServed } from "./services.mjs";
 import { ensureEmulator, requireAndroidSdk, AVD_NAME, LOCK_DIR, stopEmulator } from "./androidEmulator.mjs";
 import { ensureAndroidApp, launchApp, reversePorts } from "./androidApp.mjs";
@@ -19,7 +20,9 @@ export async function refonteAndroid(args, header) {
   const journal = args.includes("--journal");
   header("Refonte de l'UI TV — Android TV");
   requireAndroidSdk();
-  const backendUp = await ensureBackend();
+  const withoutBackend = args.includes("--sans-backend");
+  const backendUp = withoutBackend ? false : await ensureBackend();
+  if (withoutBackend) step("Backend de dev", "laissé de côté (--sans-backend)");
   const env = { TENTACLE_TV_REDESIGN: "1", ...(journal ? { TENTACLE_TV_REMOTE_LOG: "1" } : {}) };
   const metro = await ensureMetro({ key: "metroAndroid", basePort: ANDROID_METRO_BASE_PORT, env, label: "Metro (Android, refonte)" });
   await ensureEmulator();
@@ -42,7 +45,8 @@ export async function refonteAndroid(args, header) {
   say();
   say("Télécommande (fenêtre de l'émulateur) : flèches = croix, Entrée = OK, Échap = Retour ;");
   say("  OK maintenu : garder Entrée enfoncée ; Lecture/Pause : « adb -s emulator-5584 shell input keyevent 85 ».");
-  if (journal) say(`Journal des touches : ${shortPath(metro.record.log)} (lignes « [remote] »).`);
+  if (journal) say("Journal des touches : adb -s emulator-5584 logcat -s ReactNativeJS (lignes « [remote] »).");
+  say("Build debug : Menu ouvre le menu de développement de React Native (Retour le ferme).");
   say("Une retouche JavaScript se voit aussitôt ; une retouche native se reconstruit au prochain « pnpm tv:refonte:android ».");
   say(`L'émulateur tient le verrou ${shortPath(LOCK_DIR)} tant qu'il tourne. Tout arrêter : pnpm tv:stop`);
 }

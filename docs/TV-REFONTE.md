@@ -226,7 +226,12 @@ pnpm tv:refonte:android
 
 Fenêtre de l'émulateur : flèches = croix, Entrée = OK (maintenue : OK
 maintenu), Échap = Retour. `--journal` écrit chaque touche et son intention
-dans le journal de Metro (lignes `[remote]`) ; `--rebuild` force la build.
+dans la console de l'app (logcat, `adb -s emulator-5584 logcat -s
+ReactNativeJS`, lignes `[remote]` — Metro n'affiche plus la console depuis RN
+0.77) ; `--rebuild` force la build ; `--sans-backend` ouvre l'app sans backend
+(écran de configuration). Build DEBUG : Menu (et l'Avance rapide maintenue)
+ouvrent le menu de développement de React Native, qui avale les touches
+suivantes — Retour le ferme. Une build livrée n'a pas ce menu.
 
 **Le banc UI**, au simulateur « Tentacle TV — banc UI » : `bench:ui up` en
 arrière-plan, puis `bench:ui sim`, sur des ports libres. La commande rend la

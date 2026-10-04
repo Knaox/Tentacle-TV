@@ -8,6 +8,7 @@ import { androidTvInput, ANDROIDTV_REMOTE_SUPPORTED } from "./remoteInput";
  * reste de l'app la lit par le point d'entrée neutre (`platform/input`).
  */
 export { androidTvInput, ANDROIDTV_REMOTE_SUPPORTED, receiveBack, receiveMenu, takeBack, withMenuIntent } from "./remoteInput";
+export { attachRemoteLog, REMOTE_LOG_ENABLED } from "./remoteLog";
 export type { BackTaker } from "@tentacle-tv/tv-core";
 export type { RemoteContextOptions } from "../../shared/remoteHooks";
 

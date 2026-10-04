@@ -97,12 +97,12 @@ version qu'appelle `ReactRootView.dispatchKeyEvent`) — tests :
 
 | Ce que fait la télécommande | Signal (`eventType`) | Phase livrée | Intention |
 |---|---|---|---|
-| Croix | `up` `down` `left` `right` | relâchement (1) seulement | `move` |
+| Croix | `up` `down` `left` `right` | enfoncement (0) puis relâchement (1) — l'app allume `enableKeyDownEvents` (`MainApplication.kt`) ; la table ne compte que le relâchement | `move` |
 | OK (DPAD_CENTER, ENTER, NUMPAD_ENTER, BUTTON_SELECT, SPACE ; manette A par repli) | `select` | relâchement | `select` |
-| OK maintenu | `longSelect` | 0 à la première répétition d'Android (500 ms sous Android 11), 1 au relâchement — pas de `select` derrière | `hold select start` / `end` |
+| OK maintenu | `select` 0, puis `longSelect` | 0 à la première répétition d'Android (500 ms sous Android 11), 1 au relâchement — pas de `select` 1 derrière | `hold select start` / `end` |
 | Croix maintenue | `longUp`… | idem ; le focus natif suit lui-même les répétitions | `hold <direction>` — le défilement rapide, comme le glisser du pavé de tvOS |
 | Lecture/Pause (Shield ; absente des télécommandes Google TV) | `playPause` | relâchement | `playPause` |
-| Lecture, Pause, Stop, Avance, Retour rapides | `play` `pause` `stop` `fastForward` `rewind` | relâchement | `transport` |
+| Lecture, Pause, Stop, Avance, Retour rapides | `play` `pause` `stop` `fastForward` `rewind` | relâchement ; tenue, l'enfoncement se redit à chaque répétition (signal `repeat`, sans intention) | `transport` |
 | Chaîne +/− | `channelUp` `channelDown` | relâchement | `page` |
 | Retour (BACK, manette B) | `back` — lu dans `BackHandler`, `Modal.onRequestClose` | relâchement | `retour` |
 | Menu ≡, Info, chiffres, couleurs, guide… | leur nom | — | bruit déclaré : aucune intention (Apple TV n'a pas ces touches ; l'appui maintenu sur OK tient lieu de Menu, comme sur Apple TV) |
@@ -111,8 +111,15 @@ version qu'appelle `ReactRootView.dispatchKeyEvent`) — tests :
 `traits` : focus natif déplacé AVANT l'intention, appui au relâchement, maintien
 ANNONCÉ (seuil 500 ms), Retour décidé AU GESTE (`backDecidedAhead: false`), pas
 de surface tactile, `playPauseKey: "sometimes"`. Aucun ajout natif n'a été
-nécessaire : react-native-tvos livre déjà Menu, le relâchement et le maintien ;
-les répétitions, il les avale (et le focus natif les suit).
+nécessaire : react-native-tvos livre déjà Menu, l'enfoncement, le relâchement
+et le maintien ; les répétitions de OK et de la croix, il les avale (et le focus
+natif les suit), celles des autres touches arrivent en enfoncements redits, que
+la lecture de l'adaptateur (`createAndroidTvReader`) marque `repeat`.
+
+Éprouvé à l'émulateur (2026-10-05, `pnpm tv:refonte:android --journal`,
+`adb shell input keyevent …`) : croix, OK, OK maintenu (`--longpress 23`),
+croix maintenue, Lecture/Pause, transport, chaînes, Menu (bruit) et Retour
+donnent chacun l'intention de ce tableau.
 
 **L'entrée unique** `apps/tv/src/platform/androidtv/input/` : `TVEventHandler`
 à la demande, comme tvOS ; Retour par UN écouteur `BackHandler`, inscrit après
