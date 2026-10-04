@@ -1,0 +1,32 @@
+# Profil de référence (Baseline Profile) d'Android TV — compilé par AGP dans
+# l'APK (assets/dexopt/baseline.prof), installé par androidx.profileinstaller
+# (déjà tiré par androidx) : le code Java/Kotlin du rendu est compilé d'avance
+# au lieu d'être interprété puis compilé à la volée pendant les premiers
+# défilements. Le JS, lui, est du bytecode Hermes, hors de ce profil.
+#
+# Des jokers plutôt qu'un profil enregistré (Macrobenchmark) : le pont de
+# React Native, la mise en page (Yoga), les images (Fresco), Reanimated, le
+# SVG, les dégradés et nos vues natives servent tous au premier écran comme
+# au défilement.
+HSPLcom/facebook/react/**;->**(**)**
+HSPLcom/facebook/hermes/**;->**(**)**
+HSPLcom/facebook/jni/**;->**(**)**
+HSPLcom/facebook/yoga/**;->**(**)**
+HSPLcom/facebook/soloader/**;->**(**)**
+HSPLcom/facebook/imagepipeline/**;->**(**)**
+HSPLcom/facebook/drawee/**;->**(**)**
+HSPLcom/facebook/fresco/**;->**(**)**
+HSPLcom/facebook/common/**;->**(**)**
+HSPLcom/facebook/datasource/**;->**(**)**
+HSPLcom/swmansion/**;->**(**)**
+HSPLcom/horcrux/svg/**;->**(**)**
+HSPLcom/BV/LinearGradient/**;->**(**)**
+HSPLcom/tentacletv/**;->**(**)**
+Lcom/facebook/react/**;
+Lcom/facebook/hermes/**;
+Lcom/facebook/yoga/**;
+Lcom/facebook/imagepipeline/**;
+Lcom/facebook/drawee/**;
+Lcom/swmansion/**;
+Lcom/horcrux/svg/**;
+Lcom/tentacletv/**;
