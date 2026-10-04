@@ -120,7 +120,8 @@ export const TV_MOTION = {
    * L'ENTRÉE dans un profil (« Qui regarde ? », Apple TV) : le profil choisi
    * s'avance au centre et grandit, les autres reculent et s'effacent, puis la
    * pile native fond vers l'accueil, qui charge déjà. Les deux temps tiennent
-   * en 600 ms ; la session s'ouvre pendant le premier.
+   * en 600 ms ; la session s'ouvre pendant le premier. Ce qu'on attend avant
+   * de dire qu'on attend n'est pas du mouvement : tv-core `profileEntrance`.
    */
   profile: {
     /** Le profil choisi qui s'avance (sortie douce) ; le reste s'efface dans le même temps. */
@@ -131,11 +132,6 @@ export const TV_MOTION = {
     recedeScale: 0.9,
     /** Le fondu de la pile native vers l'accueil. */
     homeFadeMs: 260,
-    /** Ce qu'attend « Ouverture de… » : rien ne se dit si le serveur répond vite. */
-    openingHintDelayMs: 500,
-    /** L'accueil arrivé par le fondu ne dit « Chargement… » qu'après ce délai :
-     *  le fondu en tient lieu, sans panneau en surimpression du profil. */
-    homeQuietMs: 900,
   },
   /**
    * La parallaxe au pouce : ce que le doigt posé sur le pavé tactile fait à

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TV_MOTION } from "@tentacle-tv/theme";
+import { HOME_ARRIVAL_QUIET_MS } from "@tentacle-tv/tv-core";
 
 /**
  * L'accueil arrivé depuis « Qui regarde ? » (`entrance`) fond par-dessus le
@@ -12,7 +12,7 @@ export function useArrivalQuiet(entrance: boolean): boolean {
   const [quiet, setQuiet] = useState(entrance);
   useEffect(() => {
     if (!entrance) return undefined;
-    const timer = setTimeout(() => setQuiet(false), TV_MOTION.profile.homeQuietMs);
+    const timer = setTimeout(() => setQuiet(false), HOME_ARRIVAL_QUIET_MS);
     return () => clearTimeout(timer);
   }, [entrance]);
   return quiet;

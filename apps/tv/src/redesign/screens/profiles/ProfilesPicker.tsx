@@ -2,8 +2,9 @@ import { memo, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { TV_STAGE, TV_MOTION } from "@tentacle-tv/theme";
+import { TV_STAGE } from "@tentacle-tv/theme";
 import {
+  OPENING_HINT_DELAY_MS,
   PROFILES_ACTIONS_GROUP,
   PROFILES_MANAGE_KEY,
   PROFILES_STAY_KEY,
@@ -104,7 +105,7 @@ export const ProfilesPicker = memo(function ProfilesPicker({ model, onPick, onTi
 function OpeningHint({ label }: { label: string }) {
   const [due, setDue] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setDue(true), TV_MOTION.profile.openingHintDelayMs);
+    const timer = setTimeout(() => setDue(true), OPENING_HINT_DELAY_MS);
     return () => clearTimeout(timer);
   }, []);
   return due ? <OpeningLine label={label} /> : null;
