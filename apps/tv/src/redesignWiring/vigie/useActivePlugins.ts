@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { tentacleApiFetch } from "@tentacle-tv/api-client";
+import { TentacleApiError, tentacleApiFetch } from "@tentacle-tv/api-client";
 import type { SearchablePlugin, TitlesPlugin } from "@tentacle-tv/shared";
 import { MY_TITLES_REFRESH } from "@tentacle-tv/tv-core";
 
@@ -13,6 +13,10 @@ import { MY_TITLES_REFRESH } from "@tentacle-tv/tv-core";
  * Une seule lecture pour tout l'appareil, rafraîchie de loin en loin : le
  * cache des requêtes est purgé au déjumelage, la liste d'un autre compte ou
  * d'un autre serveur ne survit donc pas.
+ *
+ * Un profil INVITÉ de la Famille n'a pas d'extensions : le serveur refuse
+ * (403 `family.guest_account`). Ce refus vaut « aucune extension » — rien
+ * ne paraît, aucune erreur, aucun nouvel essai (`useVigieGate` rend `null`).
  */
 
 export const ACTIVE_PLUGINS_KEY = ["plugins", "active"] as const;
@@ -36,7 +40,14 @@ function pick(raw: unknown): ActivePlugin[] {
 export function useActivePlugins(): ActivePlugin[] | null {
   const { data } = useQuery({
     queryKey: ACTIVE_PLUGINS_KEY,
-    queryFn: async () => pick(await tentacleApiFetch<unknown>("/api/plugins/active")),
+    queryFn: async () => {
+      try {
+        return pick(await tentacleApiFetch<unknown>("/api/plugins/active"));
+      } catch (error) {
+        if (error instanceof TentacleApiError && error.status === 403) return [];
+        throw error;
+      }
+    },
     staleTime: MY_TITLES_REFRESH.accessMs,
     retry: 1,
   });
