@@ -1,6 +1,6 @@
 {
   "domain": "ecrans",
-  "reference": "84f3cedd0",
+  "reference": "485ecf4c3",
   "defaults": {
     "settleMs": 1000
   },
@@ -225,13 +225,15 @@
         {
           "do": [
             "down",
+            "down",
+            "down",
             "down"
           ],
           "settleMs": 900,
           "expect": {
             "focus": "settings:lib:0:audio"
           },
-          "why": "la première préférence de bibliothèque — appuis comptés : un appui maintenu s'arrête où sa vitesse le mène"
+          "why": "la première préférence de bibliothèque — appuis comptés : un appui maintenu s'arrête où sa vitesse le mène ; depuis T1, les deux lignes de l'avance rapide (issue, délai) précèdent la langue"
         },
         {
           "do": "select",
