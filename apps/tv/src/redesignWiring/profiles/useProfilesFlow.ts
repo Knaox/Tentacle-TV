@@ -15,6 +15,7 @@ import {
   pinLockLapsed,
   pinLockRemainingMs,
   pinRefused,
+  pickerOrder,
   pickerRemembers,
   planProfileLaunch,
   planProfilePick,
@@ -87,11 +88,13 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
       else setPhase({ kind: "error", refusal: loaded.refusal });
       return;
     }
-    setListing(loaded.listing);
+    // Le compte de la TV en tête (tv-core `pickerOrder`) : la rangée, ses index et son focus d'entrée suivent cet ordre.
+    const ordered = pickerOrder(loaded.listing);
+    setListing(ordered);
     // À l'arrivée seulement : une relecture après un refus garde la case telle que laissée.
-    if (planIntent) setRemember(pickerRemembers(loaded.listing, lastLeftRemembered()));
-    const plan = planIntent ? planProfileLaunch(loaded.listing, planIntent, Date.now()) : { kind: "picker" as const };
-    if (plan.kind === "open") return open(loaded.listing, plan.profileId, { remember: plan.remember, launch: plan.launch }, "open");
+    if (planIntent) setRemember(pickerRemembers(ordered, lastLeftRemembered()));
+    const plan = planIntent ? planProfileLaunch(ordered, planIntent, Date.now()) : { kind: "picker" as const };
+    if (plan.kind === "open") return open(ordered, plan.profileId, { remember: plan.remember, launch: plan.launch }, "open");
     setPhase({ kind: "picker" });
   }
 

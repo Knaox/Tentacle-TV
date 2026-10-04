@@ -96,3 +96,18 @@ export function manageEntryProfile(listing: TvProfilesDto): TvProfileDto | null 
   const paired = pairedAccountOf(listing);
   return managers.find((profile) => sameUserId(profile.userId, paired.userId)) ?? managers[0] ?? null;
 }
+
+/**
+ * L'ORDRE de « Qui regarde ? » : le profil du compte qui a JUMELÉ la TV en
+ * tête — c'est lui qui la regarde d'ordinaire, et le focus s'y pose d'emblée
+ * (`pickerEntryIndex`), dès le tout premier échange —, puis les autres dans
+ * l'ordre du serveur (propriétaire, membres, invités). Sur la TV du
+ * propriétaire, rien ne bouge : il est déjà premier.
+ */
+export function pickerOrder<T extends Pick<TvProfilesDto, "profiles" | "owner"> & Partial<Pick<TvProfilesDto, "pairedBy">>>(listing: T): T {
+  const paired = pairedAccountOf(listing);
+  const index = listing.profiles.findIndex((profile) => sameUserId(profile.userId, paired.userId));
+  if (index <= 0) return listing;
+  const profiles = [listing.profiles[index], ...listing.profiles.slice(0, index), ...listing.profiles.slice(index + 1)];
+  return { ...listing, profiles };
+}

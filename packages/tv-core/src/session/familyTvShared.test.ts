@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FamilyRights, TvProfileDto, TvProfilesDto } from "@tentacle-tv/shared";
 
-import { manageEntryProfile } from "./profileLaunch";
+import { manageEntryProfile, pickerEntryIndex, pickerOrder } from "./profileLaunch";
 import { profileManages, profileRecordOf, recordManages, recordPairedTheTv, type TvProfileRecord } from "./tvProfileSession";
 
 /** La Famille PARTAGÉE (contrat v2) sur l'Apple TV : la TV d'un membre montre toute la famille. */
@@ -61,6 +61,23 @@ describe("la famille partagée sur la TV d'un membre", () => {
     const marcWithoutRights = marcsTv({ profiles: [ANNE, { ...MARC, manage: null }, ZOE] });
     expect(manageEntryProfile(marcWithoutRights)?.userId).toBe("anne");
     expect(manageEntryProfile(marcsTv({ canManage: false }))).toBeNull();
+  });
+});
+
+describe("l'ordre de « Qui regarde ? »", () => {
+  it("met le compte de la TV en tête, le focus s'y pose d'emblée, l'ordre des autres ne bouge pas", () => {
+    const ordered = pickerOrder(marcsTv());
+    expect(ordered.profiles.map((profile) => profile.userId)).toEqual(["marc", "anne", "zoe"]);
+    expect(pickerEntryIndex(ordered, null)).toBe(0);
+  });
+
+  it("ne change rien sur la TV du propriétaire, ni pour un compte absent de la liste", () => {
+    const annesTv = marcsTv({ pairedBy: { userId: "anne", name: "anne" }, owner: { userId: "anne", name: "anne" } });
+    expect(pickerOrder(annesTv)).toBe(annesTv);
+    const stranger = marcsTv({ pairedBy: { userId: "inconnu", name: "?" } });
+    expect(pickerOrder(stranger)).toBe(stranger);
+    // Un serveur v1 : `owner` dit le compte de la TV, déjà en tête.
+    expect(pickerOrder(v1Listing()).profiles[0].userId).toBe("anne");
   });
 });
 
