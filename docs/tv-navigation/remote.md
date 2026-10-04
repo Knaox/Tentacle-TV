@@ -1,4 +1,4 @@
-# La télécommande — intentions, table tvOS, entrée unique
+# La télécommande — intentions, tables tvOS et Android TV, entrée unique
 
 Domaine de T1. Index : [`../TV-NAVIGATION.md`](../TV-NAVIGATION.md).
 Code : `packages/tv-core/src/remote/` (contrat), `packages/tv-core/src/input/`
@@ -59,7 +59,12 @@ Un seul abonnement à `TVEventHandler` pour le chemin refondu
 l'entrée commune (`tvosInput = createRemoteInput(TVOS_BINDINGS)`), dans cet
 ordre : observateurs, puis pile des contextes.
 L'abonnement naît avec le premier écouteur et part avec le dernier ; hors
-Apple TV, rien ne s'abonne. Tout s'importe de `platform/tvos/input` :
+Apple TV, rien ne s'abonne. La refonte importe tout du point d'entrée NEUTRE,
+`platform/input` (`index.ts` : l'Apple TV, la base ; `index.android.ts` : Android
+TV, aux mêmes noms — `remoteInput` et `REMOTE_SUPPORTED` y désignent l'entrée de
+la plateforme) ; seuls les fichiers `.ios` et l'adaptateur lui-même importent
+`platform/tvos/input`. Les crochets sont écrits une fois
+(`platform/shared/remoteHooks.ts`) et posés sur chaque entrée :
 
 | Export | Signature | Usage |
 |---|---|---|
@@ -82,6 +87,66 @@ migrent (rotation du héros et « au-delà du bord » : T3 ; feuille des saisons
 T6 ; bande-annonce : T7 ; pan du lecteur : T5). Plus rien ne l'important, elles
 sont RETIRÉES (fin du lot, 2026-10-03), avec l'événement brut qu'elles lisaient
 (`subscribeNativeRemote`).
+
+## Android TV — table et entrée unique (lot A0, 2026-10-05)
+
+**La table** `packages/tv-core/src/remote/bindings/androidtv.ts`, relevée dans
+`ReactAndroid/.../modules/core/ReactAndroidHWInputDeviceHelper.java` (la
+version qu'appelle `ReactRootView.dispatchKeyEvent`) — tests :
+`androidtv.test.ts`, aucun signal oublié ni inventé.
+
+| Ce que fait la télécommande | Signal (`eventType`) | Phase livrée | Intention |
+|---|---|---|---|
+| Croix | `up` `down` `left` `right` | relâchement (1) seulement | `move` |
+| OK (DPAD_CENTER, ENTER, NUMPAD_ENTER, BUTTON_SELECT, SPACE ; manette A par repli) | `select` | relâchement | `select` |
+| OK maintenu | `longSelect` | 0 à la première répétition d'Android (500 ms sous Android 11), 1 au relâchement — pas de `select` derrière | `hold select start` / `end` |
+| Croix maintenue | `longUp`… | idem ; le focus natif suit lui-même les répétitions | `hold <direction>` — le défilement rapide, comme le glisser du pavé de tvOS |
+| Lecture/Pause (Shield ; absente des télécommandes Google TV) | `playPause` | relâchement | `playPause` |
+| Lecture, Pause, Stop, Avance, Retour rapides | `play` `pause` `stop` `fastForward` `rewind` | relâchement | `transport` |
+| Chaîne +/− | `channelUp` `channelDown` | relâchement | `page` |
+| Retour (BACK, manette B) | `back` — lu dans `BackHandler`, `Modal.onRequestClose` | relâchement | `retour` |
+| Menu ≡, Info, chiffres, couleurs, guide… | leur nom | — | bruit déclaré : aucune intention (Apple TV n'a pas ces touches ; l'appui maintenu sur OK tient lieu de Menu, comme sur Apple TV) |
+| `longPlayPause`, `longRewind`… | — | jamais émis (maintien détecté pour OK et la croix seulement) | bruit déclaré |
+
+`traits` : focus natif déplacé AVANT l'intention, appui au relâchement, maintien
+ANNONCÉ (seuil 500 ms), Retour décidé AU GESTE (`backDecidedAhead: false`), pas
+de surface tactile, `playPauseKey: "sometimes"`. Aucun ajout natif n'a été
+nécessaire : react-native-tvos livre déjà Menu, le relâchement et le maintien ;
+les répétitions, il les avale (et le focus natif les suit).
+
+**L'entrée unique** `apps/tv/src/platform/androidtv/input/` : `TVEventHandler`
+à la demande, comme tvOS ; Retour par UN écouteur `BackHandler`, inscrit après
+le conteneur de navigation (BackHandler interroge le DERNIER inscrit d'abord ;
+`useBackButton` de react-navigation s'inscrit à la pose du conteneur). Au
+geste : Retour entre dans l'entrée commune, puis il est pris si un contexte le
+prend, sinon si un PRENEUR inscrit le prend (`takeBack(() => boolean)`, le
+dernier inscrit d'abord — tv-core `remote/backTakers`) : c'est là que
+l'applicateur du Retour d'Android (couches, page poussée) se branche, le
+pendant de `MenuPressInterceptor`. Personne : le navigateur, puis la sortie.
+
+**Le journal** (`remoteLog.ts`) : `TENTACLE_TV_REMOTE_LOG=1` dans
+l'environnement de Metro (`pnpm tv:refonte:android --journal`) écrit chaque
+signal et son intention, préfixe `[remote]`, dans Metro et logcat.
+
+### Les indications de touches — `RemoteBindings.hints`
+
+Tout texte qui nomme une touche vient de la table (`bindings/hints.ts`, seize
+identifiants) : `remoteHint(id)` dans le branchement (`platform/input`),
+`useRemoteHints()` dans les vues (`redesign/remote/remoteHints.tsx`,
+fournisseur posé dans `App.tsx` ; sans lui — le banc —, les mots de la Siri
+Remote). Apple TV garde ses clés ; Android TV n'en change qu'une :
+
+- **la feuille des saisons** — Lecture/Pause y demande. Sur une télécommande
+  qui l'a (Shield), rien ne change ; sans (Google TV), l'équivalent le plus
+  naturel est déjà dans la feuille : cocher par OK, puis son bouton
+  « Demander N saisons » au pied, focalisable. L'indication le dit
+  (`requests:seasonsShortcutAndroid` : « Lecture/Pause, ou cocher puis
+  Demander »). Menu ≡ n'a pas été retenu : absent des télécommandes Google TV,
+  et sans rapport avec « demander » ;
+- **le lecteur sans Lecture/Pause** (décision de l'utilisateur) : le
+  comportement de l'Apple TV, et OK prend le relais — un OK montre l'habillage,
+  un second met en pause. La table l'annonce (`playPauseKey: "sometimes"`) ;
+  le câblage est celui du lecteur (tâche A4).
 
 ### Équivalences d'une migration (pour mémoire, et pour Android TV)
 

@@ -212,25 +212,36 @@ toujours ni `TVEventHandler` ni `useTVEventHandler`, ni `BackHandler`, ni
 natif. Android TV (l'ancienne UI, aiguillée par `redesignGate.ts`) et webOS
 (`apps/tv-webos`) ne sont pas touchés par ce lot.
 
-## Porter une autre télécommande (Android TV, plus tard)
+## Porter une autre télécommande (Android TV : posé le 2026-10-05)
 
 Rien à recoder dans les comportements. Deux pièces, et c'est tout :
 
-1. **La table** `packages/tv-core/src/remote/bindings/androidtv.ts`, au format
-   `RemoteBindings` : chaque signal natif → son intention. Une plateforme qui
-   annonce l'enfoncement ET le relâchement choisit sa phase (`on: ["down"]`),
-   sans quoi l'appui compterait deux fois ; la répétition d'une touche tenue
-   passe par `RemoteSignal.repeat`. Ses `traits` disent ce qui diffère de tvOS
-   (`pressOnRelease: false`, `announcedHolds: false`, pas de surface tactile…),
-   et ses tests vérifient qu'aucun signal n'est oublié.
-2. **L'adaptateur** `apps/tv/src/platform/androidtv/input/` : un abonnement
-   aux événements natifs, une lecture en `RemoteSignal`, et
+1. **La table** `packages/tv-core/src/remote/bindings/androidtv.ts` (faite), au
+   format `RemoteBindings` : chaque signal natif → son intention. Une
+   plateforme qui annonce l'enfoncement ET le relâchement choisit sa phase
+   (`on: ["up"]`), sans quoi l'appui compterait deux fois ; la répétition d'une
+   touche tenue passe par `RemoteSignal.repeat`. Ses `traits` disent ce qui
+   diffère de tvOS (`backDecidedAhead: false`, pas de surface tactile,
+   `playPauseKey`…), ses `hints` les mots qui nomment ses touches, et ses
+   tests vérifient qu'aucun signal n'est oublié.
+2. **L'adaptateur** `apps/tv/src/platform/androidtv/input/` (fait) : un
+   abonnement aux événements natifs, une lecture en `RemoteSignal`, et
    `createRemoteInput(ANDROIDTV_BINDINGS)` — le pendant de
    `platform/tvos/input/remoteInput.ts` ; puis les applicateurs de chaque
    domaine avec les outils natifs d'Android (`requestFocus`, `nextFocus*`).
 
+**Le point d'entrée neutre.** Le reste de l'app n'importe pas un adaptateur :
+il importe `platform/<domaine>` — `index.ts` (l'Apple TV, la base : tsc le lit,
+Metro le prend sur tvOS) et son jumeau `index.android.ts`, aux MÊMES noms.
+C'est fait pour la télécommande (`platform/input`) ; chaque domaine porté
+suit le même modèle. Les faits de l'appareil qui ne sont pas la télécommande
+(Liquid Glass…) : `platform/traits.ts` / `traits.android.ts`. La garde du lint
+couvre les fichiers `.android` et autorise `platform/androidtv/` comme
+`platform/tvos/`. Contrôle : tsc en `.ios` ET en `.android`
+(`moduleSuffixes`).
+
 Les comportements, eux, lisent déjà des intentions et des `traits` : ils
-servent tels quels.
+servent tels quels. Détail Android : `tv-navigation/remote.md`.
 
 ## Les documents par domaine
 

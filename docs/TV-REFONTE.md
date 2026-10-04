@@ -203,6 +203,31 @@ jeton, et le jumelage reste ensuite sur ce simulateur :
 Télécommande : flèches = pavé, Entrée = OK, Échap = Menu ; Window › Show
 Apple TV Remote pour le reste.
 
+**La refonte à l'émulateur Android TV** (provisoire aussi, le temps que la
+refonte y bascule — tâche A5) :
+
+```bash
+pnpm tv:refonte:android
+```
+
+- **Backend de dev** : le même que ci-dessus (3001).
+- **Metro DÉDIÉ**, sur le premier port libre à partir de 8091, lancé avec
+  `TENTACLE_TV_REDESIGN=1` : l'aiguillage de développement de la refonte sur
+  Android (`redesignGate.ts`), inliné au bundle par Babel. Jamais celui de
+  `pnpm dev:tv`, qui ne l'a pas.
+- **L'émulateur « TentacleTV_Shield_API31 »**, créé la première fois : au plus
+  près de la NVIDIA Shield (Android TV 12 arm64 — l'API 30 n'existe qu'en
+  x86 —, 1080p, densité 320, 3 Go), démarré `-memory 3072 -gpu host
+  -no-snapshot`, SOUS VERROU : un seul émulateur à la fois sur la machine
+  (`Projet - local/.claude/locks/android-emulator`, que les sessions de
+  travail se partagent). Pris : la commande le dit et s'arrête.
+- **L'app** : build debug, reconstruite seulement si le natif a changé ;
+  `adb reverse` (8081 → Metro, 3001 → backend) ; ouverte par `am start`.
+
+Fenêtre de l'émulateur : flèches = croix, Entrée = OK (maintenue : OK
+maintenu), Échap = Retour. `--journal` écrit chaque touche et son intention
+dans le journal de Metro (lignes `[remote]`) ; `--rebuild` force la build.
+
 **Le banc UI**, au simulateur « Tentacle TV — banc UI » : `bench:ui up` en
 arrière-plan, puis `bench:ui sim`, sur des ports libres. La commande rend la
 main quand l'app du banc a publié son catalogue : le banc est alors pilotable.
@@ -218,8 +243,9 @@ son simulateur sont retrouvés seuls :
 pnpm tv:banc planche accueil --focus
 ```
 
-**Tout éteindre** — le Metro, le banc et le backend lancés par le lanceur,
-les deux simulateurs dédiés, et Simulator.app s'il ne montre plus aucun
+**Tout éteindre** — les Metro, le banc et le backend lancés par le lanceur,
+l'émulateur Android (par son PID ; le verrou est rendu), les deux simulateurs
+dédiés, et Simulator.app s'il ne montre plus aucun
 appareil ; jamais ce qu'il n'a pas lancé lui-même (un backend réutilisé reste
 en marche) :
 
@@ -235,8 +261,11 @@ Journaux (Metro, banc, backend, `pod install`, build) et état :
 Rien d'autre ne dépend de lui :
 
 - supprimer le dossier `apps/tv/harness/launcher/` ;
-- retirer du `package.json` racine les trois lignes `tv:refonte`, `tv:banc`
-  et `tv:stop` ;
+- retirer du `package.json` racine les quatre lignes `tv:refonte`,
+  `tv:refonte:android`, `tv:banc` et `tv:stop` ;
+- à la bascule d'Android (A5) : le plugin `apps/tv/babel/inlineRedesignFlag.js`
+  (et sa ligne dans `babel.config.js`, le `cacheVersion` de `metro.config.js`)
+  — ou le garder pour le seul journal de la télécommande ;
 - retirer le bloc « En une commande » en tête de
   `apps/tv/harness/ui-bench/README.md` (jusqu'au trait `---`), et cette
   section-ci ;
@@ -249,6 +278,10 @@ xcrun simctl delete "Tentacle TV — refonte"
 
 ```bash
 xcrun simctl delete "Tentacle TV — banc UI"
+```
+
+```bash
+~/Library/Android/sdk/cmdline-tools/latest/bin/avdmanager delete avd -n TentacleTV_Shield_API31
 ```
 
 ## Voir le résultat, sans navigateur
