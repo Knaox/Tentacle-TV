@@ -20,6 +20,7 @@ import { useLiquidGlass } from "./lib/liquidGlass";
 import { LiquidGlassProvider } from "./redesign/glass/liquidGlassMode";
 import { RemoteHintsProvider } from "./redesign/remote/remoteHints";
 import { REMOTE_BINDINGS } from "./platform/input";
+import { PLATFORM_TRAITS } from "./platform/traits";
 import { applyBackendUrl } from "./lib/backendUrls";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
 import { AppNavigator } from "./navigation/AppNavigator";
@@ -272,7 +273,7 @@ export function App() {
   if (!ready || !client) return <BootScreen />;
 
   return (
-    <LiquidGlassProvider enabled={liquidGlass}>
+    <LiquidGlassProvider enabled={PLATFORM_TRAITS.liquidGlass && liquidGlass}>
       <RemoteHintsProvider hints={REMOTE_BINDINGS.hints}>
         <ErrorBoundary>
           <QueryClientProvider client={queryClient}>

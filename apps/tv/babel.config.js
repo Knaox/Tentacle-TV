@@ -1,4 +1,5 @@
 module.exports = {
   presets: ["module:@react-native/babel-preset"],
-  plugins: ["react-native-reanimated/plugin"],
+  // Reanimated en DERNIER, comme son plugin l'exige.
+  plugins: ["./babel/inlineRedesignFlag", "react-native-reanimated/plugin"],
 };

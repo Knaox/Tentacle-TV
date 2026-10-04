@@ -53,6 +53,10 @@ for (const name of singletonNames) {
 const defaultConfig = getDefaultConfig(projectRoot);
 
 const config = {
+  // L'aiguillage de développement de la refonte sur Android TV est inliné
+  // par Babel (babel/inlineRedesignFlag.js) : sa valeur entre dans la clé du
+  // cache, sans quoi un bundle transformé avec l'autre valeur serait resservi.
+  cacheVersion: `redesign-${process.env.TENTACLE_TV_REDESIGN ?? "off"}`,
   watchFolders: [monorepoRoot],
   resolver: {
     nodeModulesPaths: [

@@ -103,6 +103,9 @@ export interface SettingsViewProps {
   onSelectScrubOutcome?: (outcome: "return" | "resume") => void;
   onSelectScrubDelay?: (seconds: number) => void;
   onToggleLiquidGlass?: (next: boolean) => void;
+  /** Faux : l'onglet Apparence (le réglage Liquid Glass) n'existe pas sur
+   *  cette plateforme (trait `liquidGlass`). Absent : il existe. */
+  appearance?: boolean;
   onMoveNavEntry?: (key: string) => void;
   onToggleNavEntry?: (key: string) => void;
   onShowAllNav?: () => void;
@@ -121,7 +124,7 @@ const PANEL_RADIUS = TV_STAGE.hero.radius;
 const PANEL_INNER = PANEL_WIDTH - PANEL_PAD_X * 2;
 
 export const SettingsView = memo(function SettingsView(props: SettingsViewProps) {
-  const { nav, tab, account, playback, about, navigation, choiceList, palette = NEUTRAL_PALETTE } = props;
+  const { nav, tab, account, playback, about, navigation, choiceList, palette = NEUTRAL_PALETTE, appearance = true } = props;
   const { t } = useTranslation(["preferences", "nav", "about"]);
   const liquid = useLiquidGlassEnabled();
   const navTotal = navigation?.entries.length ?? 0;
@@ -130,13 +133,13 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
   const tabs = useMemo<SettingsTabItem[]>(() => [
     { key: "account", label: t("preferences:sectionAccount"), caption: account.name, icon: "user" },
     { key: "playback", label: t("preferences:sectionPlayback"), caption: t(`preferences:${PRESET_LABEL_KEYS[playback.preset]}`), icon: "playCircle" },
-    {
-      key: "appearance",
+    ...(appearance ? [{
+      key: "appearance" as const,
       label: t("preferences:sectionAppearance"),
       // Le verre en cours, nommé : « Liquid Glass » ou « Verre classique ».
       caption: t(liquid ? "preferences:liquidGlassTitle" : "preferences:glassClassic"),
-      icon: "sparkles",
-    },
+      icon: "sparkles" as const,
+    }] : []),
     ...(navigation ? [{
       key: "navigation" as const,
       label: t("preferences:sectionNavigation"),
@@ -145,7 +148,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
       icon: "panelLeft" as const,
     }] : []),
     { key: "about", label: t("nav:about"), caption: t("about:version", { version: about.version }), icon: "info" },
-  ], [t, account.name, playback.preset, liquid, navigation, navShown, navTotal, about.version]);
+  ], [t, account.name, playback.preset, appearance, liquid, navigation, navShown, navTotal, about.version]);
 
   return (
     <View style={styles.root}>
@@ -189,7 +192,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onSelectScrubDelay={props.onSelectScrubDelay}
                 />
               ) : null}
-              {tab === "appearance" ? (
+              {tab === "appearance" && appearance ? (
                 <AppearancePanel width={PANEL_INNER} previewImageUri={props.glassPreviewUri} onToggleLiquidGlass={props.onToggleLiquidGlass} />
               ) : null}
               {tab === "navigation" && navigation ? (

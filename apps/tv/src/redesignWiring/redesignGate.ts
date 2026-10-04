@@ -13,10 +13,16 @@ import type { RootStackParamList } from "../navigation/types";
  * refonte vit dans `redesignWiring/<écran>/`. Jamais d'aiguillage dans la
  * logique partagée (hooks de données, tv-core, api-client) : elle sert les deux.
  *
- * Apple TV : oui. Android TV : non — il garde l'UI actuelle tant que la
- * refonte n'y a pas été éprouvée sur boîtier.
+ * Apple TV : oui. Android TV : pas encore en production — mais en
+ * DÉVELOPPEMENT, oui quand le bundle a été construit avec
+ * `TENTACLE_TV_REDESIGN=1` (Metro ou build Gradle ; c'est ce que fait
+ * `pnpm tv:refonte:android`). La valeur est inlinée par Babel
+ * (`babel/inlineRedesignFlag.js`) : absente — la CI, toute build livrée —,
+ * Android garde l'UI actuelle. La bascule définitive retirera la condition.
  */
-export const REDESIGN_ACTIVE: boolean = Platform.OS === "ios";
+const ANDROID_DEV_OPT_IN = process.env.TENTACLE_TV_REDESIGN === "1";
+
+export const REDESIGN_ACTIVE: boolean = Platform.OS === "ios" || (Platform.OS === "android" && ANDROID_DEV_OPT_IN);
 
 type RouteName = keyof RootStackParamList;
 

@@ -8,6 +8,7 @@ import { TabDestinationProvider, useActiveTabDestination, useSettingsGroups } fr
 import { SettingsView } from "../../redesign/screens/settings/SettingsView";
 import type { SettingsTab } from "../../redesign/screens/settings/settingsTypes";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
+import { PLATFORM_TRAITS } from "../../platform/traits";
 import { backdropUriOf, paletteOfItem } from "../cards/cardArtwork";
 import { useBackLayer } from "../back/BackScope";
 import { RedesignScreen } from "../screen/RedesignScreen";
@@ -86,7 +87,8 @@ export function SettingsRedesign({ route }: Props) {
           onToggleMatchFrameRate={model.onToggleMatchFrameRate}
           onSelectScrubOutcome={model.onSelectScrubOutcome}
           onSelectScrubDelay={model.onSelectScrubDelay}
-          onToggleLiquidGlass={model.onToggleLiquidGlass}
+          appearance={PLATFORM_TRAITS.liquidGlass}
+          onToggleLiquidGlass={PLATFORM_TRAITS.liquidGlass ? model.onToggleLiquidGlass : undefined}
           onMoveNavEntry={nav.onMoveNavEntry}
           onToggleNavEntry={nav.onToggleNavEntry}
           onShowAllNav={nav.onShowAllNav}
