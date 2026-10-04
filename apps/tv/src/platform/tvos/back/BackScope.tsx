@@ -1,8 +1,10 @@
-import { createContext, useCallback, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { StyleSheet } from "react-native";
-import { backOutcome, createBackLayers, isPushedPage, takesBack, type BackLayers } from "@tentacle-tv/tv-core";
+import { backOutcome, createBackLayers, isPushedPage, takesBack } from "@tentacle-tv/tv-core";
 import { MenuPressInterceptor } from "../../../components/focus/MenuPressInterceptor";
 import { receiveMenu } from "../input";
+import { BackLayersContext } from "../../common/back/BackLayersContext";
+import type { BackScopeProps } from "../../common/back/backScopeProps";
 
 /**
  * L'APPLICATEUR du Retour sur Apple TV — il applique, il ne décide pas.
@@ -29,14 +31,7 @@ import { receiveMenu } from "../input";
  * inscrit quand même sa couche « menu ».
  */
 
-export interface BackScopeProps {
-  route: { name: string };
-  navigation: { canGoBack(): boolean; goBack(): void };
-  children: ReactNode;
-}
-
-/** La pile des couches de l'écran ; `null` hors d'une portée (Android TV). */
-export const BackLayersContext = createContext<BackLayers | null>(null);
+export type { BackScopeProps };
 
 export function TvosBackScope({ route, navigation, children }: BackScopeProps) {
   const [layers] = useState(createBackLayers);

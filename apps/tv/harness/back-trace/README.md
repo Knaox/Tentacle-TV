@@ -29,6 +29,17 @@ rail, lecteur (menu > habillage > page), rang égal (le plus récemment activé,
 mise à jour sans changer de rang), jumelage à la racine, appui pris puis
 couche désactivée avant le relâchement (relevé B3), couche démontée.
 
+**Android refondu** (lot « Android TV = Apple TV ») : `verify` construit en plus
+le banc pour Android avec l'aiguillage de la refonte forcé à vrai — la portée
+d'Android TV (`platform/androidtv/back/AndroidBackScope`), l'appui Retour rejoué
+comme Android le donne (écouteurs de BackHandler du dernier au premier). Chaque
+appui des scénarios communs doit produire le MÊME effet qu'iOS ; là où UIKit
+quitte, Android appelle `exitApp`. Deux écarts voulus, écrits dans `bench.mjs`
+(`ANDROID_EXPECTED`) : l'appui pris d'avance puis avalé (B3) n'existe pas sur
+Android, qui décide au relâchement ; un écran qui n'est pas devant laisse passer
+l'appui (`ecran-derriere`, scénario propre à Android). Contre-épreuve : une
+sortie rendue à la plateforme (`return false`) fait échouer quatre scénarios.
+
 Contre-épreuve faite à la mise en place : retirer `Library` des pages du rail
 fait échouer `verify` sur iOS.
 

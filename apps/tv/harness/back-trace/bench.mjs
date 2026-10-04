@@ -40,9 +40,21 @@ function referenceTree() {
   return tree;
 }
 
-async function bundle(tree, os) {
+/** Le banc Android REFONDU : l'aiguillage de la refonte forcé à vrai, comme sur un boîtier où elle est active. */
+const REFONTE_GATE = {
+  name: "refonte-gate",
+  setup(context) {
+    context.onResolve({ filter: /\/redesignGate$/ }, () => ({ path: "refonte-gate", namespace: "refonte" }));
+    context.onLoad({ filter: /.*/, namespace: "refonte" }, () => ({
+      contents: "export const REDESIGN_ACTIVE = true; export const REDESIGN_ROUTES = new Set();",
+      loader: "ts",
+    }));
+  },
+};
+
+async function bundle(tree, os, refonte = false) {
   mkdirSync(OUT, { recursive: true });
-  const outfile = join(OUT, `bench-${tree === REPO ? "courant" : "reference"}-${os}.mjs`);
+  const outfile = join(OUT, `bench-${tree === REPO ? "courant" : "reference"}-${os}${refonte ? "-refonte" : ""}.mjs`);
   const first = os === "ios" ? [".ios.tsx", ".ios.ts"] : [".android.tsx", ".android.ts"];
   await build({
     entryPoints: [join(HERE, "harness.tsx")],
@@ -54,7 +66,8 @@ async function bundle(tree, os) {
     logLevel: "error",
     resolveExtensions: [...first, ".tsx", ".ts", ".mjs", ".js", ".json"],
     nodePaths: [join(REPO, "node_modules")],
-    define: { __BENCH_OS__: JSON.stringify(os) },
+    define: { __BENCH_OS__: JSON.stringify(os), __BENCH_REFONTE__: JSON.stringify(refonte) },
+    plugins: refonte ? [REFONTE_GATE] : [],
     alias: {
       "@bench/BackScope": join(tree, "apps/tv/src/redesignWiring/back/BackScope.tsx"),
       "@tentacle-tv/tv-core": join(tree, "packages/tv-core/src/index.ts"),
@@ -73,6 +86,32 @@ async function bundle(tree, os) {
 
 async function tracesOf(tree) {
   return { ios: await bundle(tree, "ios"), android: await bundle(tree, "android") };
+}
+
+/**
+ * Android refondu = Apple TV : chaque appui des scénarios communs doit avoir
+ * le MÊME effet que sur iOS (couche appelée, recul). Là où UIKit quitte
+ * (l'appui laissé à la plateforme), Android appelle `exitApp`. Deux écarts
+ * VOULUS, écrits ici : l'appui pris d'avance puis avalé (relevé B3) n'existe
+ * pas sur Android, qui décide au relâchement — il quitte ; et l'écran qui
+ * n'est pas devant laisse passer l'appui (scénario propre à Android).
+ */
+const ANDROID_EXPECTED = {
+  "appui-avale": [{ to: "app", effects: ["exitApp"] }],
+  "ecran-derriere": [{ to: "platform", effects: [] }],
+};
+
+function androidParity(ios, android) {
+  const presses = (trace) => trace.filter((step) => "press" in step);
+  const off = [];
+  for (const [name, trace] of Object.entries(android.scenarios)) {
+    const expected = ANDROID_EXPECTED[name] ??
+      presses(ios.scenarios[name]).map((step) => (step.to === "platform" ? { to: "app", effects: ["exitApp"] } : { to: "app", effects: step.effects }));
+    const obtained = presses(trace).map(({ to, effects }) => ({ to, effects }));
+    if (JSON.stringify(expected) !== JSON.stringify(obtained)) off.push({ name, expected, obtained });
+    if (trace.some((step) => step.interceptor)) off.push({ name, interceptor: "rendu sur Android" });
+  }
+  return off;
 }
 
 /** La part comparée : les scénarios et les appels aux API natives, pas ce qui n'existe que dans l'arbre courant. */
@@ -102,6 +141,13 @@ if (command === "record") {
       console.log(`${os} : useBackLayers ${off.length ? "DIFFÈRE sur " + off.join(", ") : "redonne chaque trace"}`);
       if (off.length) failed = true;
     }
+  }
+  const refonte = await bundle(REPO, "android", true);
+  const off = androidParity(current.ios, refonte);
+  console.log(`android refondu : ${off.length ? "DIFFÈRE d'iOS sur " + off.map((entry) => entry.name).join(", ") : "mêmes effets qu'iOS, appui par appui"}`);
+  if (off.length) {
+    failed = true;
+    writeFileSync(join(OUT, "diff-android-refonte.json"), JSON.stringify(off, null, 2));
   }
   process.exit(failed ? 1 : 0);
 } else {

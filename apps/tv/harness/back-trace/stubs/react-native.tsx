@@ -47,10 +47,25 @@ export function requireNativeComponent(name: string) {
 
 export const findNodeHandle = (): null => null;
 
+/**
+ * BackHandler : chaque appel est noté. Les écouteurs sont gardés dans
+ * `globalThis.__backListeners` — le banc Android refondu rejoue un appui
+ * Retour comme Android : du dernier inscrit au premier, jusqu'au premier qui
+ * le prend (`true`).
+ */
+const backListeners: (() => boolean | null | undefined)[] = ((bench as unknown as { __backListeners?: (() => boolean | null | undefined)[] }).__backListeners ??= []);
+
 export const BackHandler = {
-  addEventListener(event: string) {
+  addEventListener(event: string, handler: () => boolean | null | undefined) {
     bench.__calls.push(`BackHandler.addEventListener:${event}`);
-    return { remove: () => bench.__calls.push(`BackHandler.remove:${event}`) };
+    backListeners.push(handler);
+    return {
+      remove: () => {
+        bench.__calls.push(`BackHandler.remove:${event}`);
+        const index = backListeners.indexOf(handler);
+        if (index >= 0) backListeners.splice(index, 1);
+      },
+    };
   },
   exitApp() {
     bench.__calls.push("BackHandler.exitApp");

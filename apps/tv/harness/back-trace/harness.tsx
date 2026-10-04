@@ -28,12 +28,18 @@ type Step = { render: LayerProps[] } | { press: string } | { stalePress: string;
 interface Scenario {
   route: string;
   canGoBack: boolean;
+  /** Faux : l'écran n'est pas devant (un autre est poussé par-dessus). */
+  focused?: boolean;
   steps: Step[];
 }
+
+/** Vrai pour le banc Android REFONDU : la portée d'Android TV, Retour rejoué par BackHandler. */
+declare const __BENCH_REFONTE__: boolean;
 
 const bench = globalThis as unknown as {
   __native: Record<string, { enabled?: boolean; onMenuPress?: () => void }>;
   __calls: string[];
+  __backListeners?: (() => boolean | null | undefined)[];
   IS_REACT_ACT_ENVIRONMENT: boolean;
 };
 bench.IS_REACT_ACT_ENVIRONMENT = true;
@@ -76,10 +82,31 @@ function nativeState() {
   return interceptor ? { interceptor: { enabled: !!interceptor.enabled } } : { interceptor: null };
 }
 
-function run({ route, canGoBack, steps }: Scenario, asSpecs = false): unknown[] {
+/**
+ * Un appui Retour comme Android le donne : du dernier écouteur inscrit au
+ * premier, jusqu'au premier qui le prend. Personne : il revient à la
+ * plateforme (React Navigation, puis l'activité). `exitApp` appelé : la sortie.
+ */
+function androidPress(label: string, trace: unknown[]) {
+  effects = [];
+  const before = bench.__calls.length;
+  let taken = false;
+  act(() => {
+    for (const listener of [...(bench.__backListeners ?? [])].reverse()) {
+      if (listener()) {
+        taken = true;
+        break;
+      }
+    }
+  });
+  if (bench.__calls.slice(before).includes("BackHandler.exitApp")) effects.push("exitApp");
+  trace.push({ press: label, to: taken ? "app" : "platform", effects });
+}
+
+function run({ route, canGoBack, focused = true, steps }: Scenario, asSpecs = false): unknown[] {
   const trace: unknown[] = [];
   const root: Root = createRoot(fakeContainer());
-  const navigation = { canGoBack: () => canGoBack, goBack: () => effects.push("goBack") };
+  const navigation = { canGoBack: () => canGoBack, goBack: () => effects.push("goBack"), isFocused: () => focused };
   const view = (layers: LayerProps[]) => (
     <Back.BackScope route={{ name: route }} navigation={navigation}>
       {asSpecs ? <Specs layers={layers} /> : layers.map((layer) => <Layer key={layer.name} {...layer} />)}
@@ -94,6 +121,11 @@ function run({ route, canGoBack, steps }: Scenario, asSpecs = false): unknown[] 
     if ("render" in step) {
       act(() => root.render(view(step.render)));
       trace.push({ render: step.render.map((l) => `${l.name}:${l.kind}:${l.active ? "on" : "off"}`), ...nativeState() });
+    } else if ("press" in step && __BENCH_REFONTE__) {
+      androidPress(step.press, trace);
+    } else if ("stalePress" in step && __BENCH_REFONTE__) {
+      act(() => root.render(view(step.then)));
+      androidPress(step.stalePress, trace);
     } else if ("press" in step) {
       const interceptor = bench.__native.TVMenuPressInterceptor;
       press(step.press, interceptor?.onMenuPress, !!interceptor?.enabled);
@@ -209,8 +241,22 @@ const SCENARIOS: Record<string, Scenario> = {
   },
 };
 
+/**
+ * Android refondu seulement : une portée dont l'écran n'est pas devant laisse
+ * passer l'appui (aux autres écrans de la pile, qui restent montés).
+ */
+const ANDROID_SCENARIOS: Record<string, Scenario> = {
+  "ecran-derriere": {
+    route: "Home",
+    canGoBack: false,
+    focused: false,
+    steps: [{ render: [L("ouvrirRail", "page", true)] }, { press: "un écran poussé par-dessus" }],
+  },
+};
+
 const scenarios: Record<string, unknown[]> = {};
 for (const [name, scenario] of Object.entries(SCENARIOS)) scenarios[name] = run(scenario);
+if (__BENCH_REFONTE__) for (const [name, scenario] of Object.entries(ANDROID_SCENARIOS)) scenarios[name] = run(scenario);
 
 // L'API nouvelle : les mêmes couches déclarées en liste donnent la même trace.
 const specsEquivalent: Record<string, boolean> | null = "useBackLayers" in Back
