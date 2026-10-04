@@ -74,6 +74,7 @@ export function SettingsRedesign({ route }: Props) {
           onLogout={model.onLogout}
           onSwitchProfile={profiles.onSwitchProfile}
           onManageProfiles={profiles.onManageProfiles}
+          onOwnPin={profiles.onOwnPin}
           onSelectPreset={model.onSelectPreset}
           onSelectLanguage={model.onSelectLanguage}
           onOpenLibrarySetting={model.onOpenLibrarySetting}

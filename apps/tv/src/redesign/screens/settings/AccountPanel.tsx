@@ -9,6 +9,7 @@ import { ProfileAvatar } from "../profiles/ProfileAvatar";
 import { ProfileSection } from "./ProfileSection";
 import { Avatar, InfoRow, SectionTitle, settingsText } from "./settingsParts";
 import type { AccountAction, SettingsAccount } from "./settingsTypes";
+import type { OwnPinMode } from "@tentacle-tv/tv-core";
 
 /**
  * L'onglet Compte : qui regarde (portrait, nom), où (serveur, appareil), et
@@ -37,6 +38,8 @@ export interface AccountPanelProps {
   onLogout?: () => void;
   onSwitchProfile?: () => void;
   onManageProfiles?: () => void;
+  /** SON code PIN : créer, changer, retirer. */
+  onOwnPin?: (mode: OwnPinMode) => void;
 }
 
 export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps) {
@@ -75,7 +78,13 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
 
       {/* En tête : changer de profil est le geste le plus fréquent d'une TV de famille. */}
       {profile ? (
-        <ProfileSection canManage={profile.canManage} onSwitchProfile={props.onSwitchProfile} onManageProfiles={props.onManageProfiles} />
+        <ProfileSection
+          canManage={profile.canManage}
+          pin={profile.pin}
+          onSwitchProfile={props.onSwitchProfile}
+          onManageProfiles={props.onManageProfiles}
+          onOwnPin={props.onOwnPin}
+        />
       ) : null}
 
       <View style={styles.infos}>

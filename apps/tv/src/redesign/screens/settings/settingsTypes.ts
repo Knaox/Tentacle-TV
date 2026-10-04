@@ -1,3 +1,4 @@
+import type { OwnPinMode } from "@tentacle-tv/tv-core";
 import type { FamilyProfileColor, PlaybackPreset } from "@tentacle-tv/shared";
 import type { IconName } from "../../icons/Icon";
 
@@ -39,6 +40,8 @@ export interface SettingsProfile {
   canUnpair: boolean;
   /** Ce que dit « Oublier ce jumelage » : ce que fait le déjumelage, ou qui peut le faire. */
   unpairCaption: string;
+  /** SON code PIN : a-t-il un code, et les gestes offerts (aucun pour un invité — `ownPinModes`). */
+  pin: { hasPin: boolean; modes: OwnPinMode[] };
 }
 
 /** Les trois réglages de piste d'une bibliothèque. */

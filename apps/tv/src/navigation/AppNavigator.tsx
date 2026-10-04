@@ -29,6 +29,7 @@ const TrailerScreen = React.lazy(() => import("../screens/TrailerScreen").then(m
 const WatchlistScreen = React.lazy(() => import("../screens/WatchlistScreen").then(m => ({ default: m.WatchlistScreen })));
 const FavoritesScreen = React.lazy(() => import("../screens/FavoritesScreen").then(m => ({ default: m.FavoritesScreen })));
 const ManageProfilesScreen = React.lazy(() => import("../screens/ManageProfilesScreen").then(m => ({ default: m.ManageProfilesScreen })));
+const ProfilePinScreen = React.lazy(() => import("../screens/ProfilePinScreen").then(m => ({ default: m.ProfilePinScreen })));
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -119,6 +120,7 @@ export function AppNavigator() {
       {/* La Famille (Apple TV) : « Qui regarde ? » et « Gérer les profils ». */}
       <Stack.Screen name="Profiles" component={ProfilesScreen} initialParams={{ intent: "launch" }} options={{ animation: "none" }} />
       <Stack.Screen name="ManageProfiles" component={ManageProfilesScreen} />
+      <Stack.Screen name="ProfilePin" component={ProfilePinScreen} />
       {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
           onglets) → nav snappy ET pas de course animation/focus qui empêchait
           l'auto-collapse du rail au retour sur l'Accueil (pop). */}

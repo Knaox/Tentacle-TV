@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { readProfileRecord, recordManages, recordPairedTheTv, tvSessionMode } from "@tentacle-tv/tv-core";
+import { ownPinModes, readProfileRecord, recordManages, recordPairedTheTv, tvSessionMode, type OwnPinMode } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { SettingsProfile } from "../../redesign/screens/settings/settingsTypes";
 import { switchProfile } from "../../auth/profileSession";
@@ -29,6 +29,7 @@ export function useProfileActions() {
   const familyOwnerName = record?.familyOwnerName ?? tvAccountName;
   const color = record?.color ?? null;
   const manages = record ? recordManages(record) : false;
+  const hasPin = record?.hasPin === true;
   const pairedTheTv = record ? recordPairedTheTv(record) : false;
 
   const profile = useMemo<SettingsProfile | null>(() => {
@@ -46,13 +47,16 @@ export function useProfileActions() {
       canManage: manages,
       canUnpair: pairedTheTv,
       unpairCaption: pairedTheTv ? t("familyTv:settings.unpairCaption") : t("familyTv:settings.unpairOwnerOnly", { owner: tvAccountName }),
+      pin: { hasPin, modes: ownPinModes(kind, hasPin) },
     };
-  }, [kind, familyOwnerName, tvAccountName, color, manages, pairedTheTv, t]);
+  }, [kind, familyOwnerName, tvAccountName, color, manages, pairedTheTv, hasPin, t]);
 
   const onSwitchProfile = useCallback(() => {
     void switchProfile({ jfClient, storage, queryClient });
   }, [jfClient, storage, queryClient]);
   const onManageProfiles = useCallback(() => navigation.navigate("ManageProfiles", { origin: "settings" }), [navigation]);
 
-  return { profile, onSwitchProfile, onManageProfiles };
+  const onOwnPin = useCallback((mode: OwnPinMode) => navigation.navigate("ProfilePin", { mode }), [navigation]);
+
+  return { profile, onSwitchProfile, onManageProfiles, onOwnPin };
 }

@@ -18,6 +18,7 @@ import { ChoiceSheet } from "./ChoiceSheet";
 import { NavigationPanel } from "./NavigationPanel";
 import { PlaybackPanel } from "./PlaybackPanel";
 import { SettingsTabs, TAB_WIDTH, type SettingsTabItem } from "./SettingsTabs";
+import type { OwnPinMode } from "@tentacle-tv/tv-core";
 import type {
   AccountAction,
   ChoiceListModel,
@@ -91,6 +92,8 @@ export interface SettingsViewProps {
   /** Famille (Apple TV) : « Changer de profil », « Gérer les profils ». */
   onSwitchProfile?: () => void;
   onManageProfiles?: () => void;
+  /** SON code PIN : créer, changer, retirer. */
+  onOwnPin?: (mode: OwnPinMode) => void;
   onSelectPreset?: (preset: Exclude<PlaybackPreset, "custom">) => void;
   onSelectLanguage?: (language: InterfaceLanguage) => void;
   onOpenLibrarySetting?: (libraryId: string, key: LibrarySettingKey) => void;
@@ -170,6 +173,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onLogout={props.onLogout}
                   onSwitchProfile={props.onSwitchProfile}
                   onManageProfiles={props.onManageProfiles}
+                  onOwnPin={props.onOwnPin}
                 />
               ) : null}
               {tab === "playback" ? (

@@ -7,6 +7,7 @@ export * from "./unpairJournal";
 export * from "./tvProfileKeys";
 export * from "./tvProfileSession";
 export * from "./profileLaunch";
+export * from "./ownPin";
 export * from "./profileEntrance";
 export * from "./profileRefusal";
 export * from "./pinEntry";

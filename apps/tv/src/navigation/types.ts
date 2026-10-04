@@ -8,6 +8,8 @@ export type RootStackParamList = {
    *  vient ; depuis « Qui regarde ? », Retour y ramène (la session du
    *  propriétaire, ouverte pour gérer, se referme). */
   ManageProfiles: { origin: "profiles" | "settings" };
+  /** SON code PIN (Réglages › Compte) : créer, changer, retirer. */
+  ProfilePin: { mode: "create" | "change" | "remove" };
   /** `entrance` : l'arrivée depuis « Qui regarde ? » — l'accueil fond par-dessus. */
   Home: { entrance?: boolean } | undefined;
   /** « Pour vous » : recommandations de la bibliothèque seule. */
