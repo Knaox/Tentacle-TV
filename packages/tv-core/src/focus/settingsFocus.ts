@@ -52,3 +52,16 @@ export function navSettingsLockedKeys(rowCount: number): string[] {
  * première ligne prend le focus (RG-10).
  */
 export const NAV_SETTINGS_AFTER_RESET = navSettingsRowKey(0);
+
+/** Les gestes de SON code PIN (Réglages › Compte, Famille) : `settings:pin:<create|change|remove>`. */
+export const settingsPinKey = (mode: string): string => `settings:pin:${mode}`;
+
+/**
+ * Le RETOUR du pavé de son code PIN : le premier geste de la section tel
+ * qu'elle est devenue — créer un code fait paraître « Changer » et
+ * « Retirer », en retirer fait reparaître « Créer » : le bouton qui avait
+ * ouvert le pavé n'est plus là, le focus ne retombe pas sur l'onglet.
+ */
+export function settingsPinReturnKey(modes: readonly string[]): string | null {
+  return modes.length > 0 ? settingsPinKey(modes[0]) : null;
+}

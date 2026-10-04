@@ -7,6 +7,7 @@ import {
   settingsChoiceEntryIndex,
   settingsChoiceKey,
   settingsEntryKey,
+  settingsPinReturnKey,
 } from "./settingsFocus";
 
 describe("onglets des réglages", () => {
@@ -35,5 +36,13 @@ describe("Réglages › Navigation", () => {
 
   it("après « Tout afficher » ou « Ordre par défaut » : la première ligne", () => {
     expect(NAV_SETTINGS_AFTER_RESET).toBe("settings:nav:0");
+  });
+});
+
+describe("le retour du pavé de son code PIN", () => {
+  it("rend le focus au premier geste de la section, tel qu'elle est devenue", () => {
+    expect(settingsPinReturnKey(["change", "remove"])).toBe("settings:pin:change");
+    expect(settingsPinReturnKey(["create"])).toBe("settings:pin:create");
+    expect(settingsPinReturnKey([])).toBeNull();
   });
 });

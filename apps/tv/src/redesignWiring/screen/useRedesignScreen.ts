@@ -45,6 +45,9 @@ export interface RedesignScreenOptions {
    *  `focus/rowRewind.ts`) — sorties de l'écran, au changement de page par le
    *  rail, et Retour vers la première carte. */
   rewindRows?: boolean;
+  /** Au RETOUR sur l'écran (la pile redescend), la clé à viser à la place de
+   *  la dernière de contenu — les réglages, au retour du pavé de son code PIN. */
+  onReturn?: (contentKey: string | null) => string | null;
 }
 
 export interface RedesignScreenModel {
@@ -75,6 +78,7 @@ export function useRedesignScreen({
   onReselect,
   focus: given,
   rewindRows = false,
+  onReturn,
 }: RedesignScreenOptions): RedesignScreenModel {
   const own = useFocusStore();
   const focus = given ?? own;
@@ -84,7 +88,7 @@ export function useRedesignScreen({
   // Les rangées lisent la clé de contenu, qui vient après elles.
   const remembered = useRef<() => string | null>(() => null);
   const rows = useRowRewind(focus, { enabled: rewindRows, remembered: () => remembered.current() });
-  const { contentKey } = useEntryFocus(focus, entryKey, rows?.resume);
+  const { contentKey } = useEntryFocus(focus, entryKey, onReturn ?? rows?.resume);
   remembered.current = contentKey;
   // Une bibliothèque focalisée dans la navigation : sa grille se prépare.
   useLibraryPrefetch(focus);

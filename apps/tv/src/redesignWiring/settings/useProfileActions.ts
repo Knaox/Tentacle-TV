@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigation, type NavigationProp } from "@react-navigation/native";
+import { useIsFocused, useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { ownPinModes, readProfileRecord, recordManages, recordPairedTheTv, tvSessionMode, type OwnPinMode } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
@@ -22,6 +22,8 @@ export function useProfileActions() {
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  // Relu à chaque retour sur l'écran : le pavé du code PIN vient de mettre le profil à jour.
+  useIsFocused();
   const record = tvSessionMode(storage) === "profile" ? readProfileRecord(storage) : null;
   const kind = record?.kind ?? null;
   // Le compte de la TV (seul à la déjumeler) et le propriétaire de la famille : deux comptes en v2.
@@ -56,7 +58,15 @@ export function useProfileActions() {
   }, [jfClient, storage, queryClient]);
   const onManageProfiles = useCallback(() => navigation.navigate("ManageProfiles", { origin: "settings" }), [navigation]);
 
-  const onOwnPin = useCallback((mode: OwnPinMode) => navigation.navigate("ProfilePin", { mode }), [navigation]);
+  // Le pavé du code PIN est ouvert : au retour, le focus rejoint la section (`useOwnPinReturn`).
+  const pinOpened = useRef(false);
+  const onOwnPin = useCallback(
+    (mode: OwnPinMode) => {
+      pinOpened.current = true;
+      navigation.navigate("ProfilePin", { mode });
+    },
+    [navigation],
+  );
 
-  return { profile, onSwitchProfile, onManageProfiles, onOwnPin };
+  return { profile, onSwitchProfile, onManageProfiles, onOwnPin, pinOpened };
 }

@@ -14,6 +14,7 @@ import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { ChoiceModal } from "./ChoiceModal";
 import { useNavigationSettings } from "./useNavigationSettings";
+import { useOwnPinReturn } from "./useOwnPinReturn";
 import { useProfileActions } from "./useProfileActions";
 import { useSettingsModel } from "./useSettingsModel";
 
@@ -41,7 +42,9 @@ export function SettingsRedesign({ route }: Props) {
   const [tab, setTab] = useState<SettingsTab>(route.params?.tab ?? SETTINGS_DEFAULT_TAB);
   const focus = useFocusStore();
   const nav = useNavigationSettings(focus);
-  const screen = useRedesignScreen({ railKey: "Settings", entryKey: settingsEntryKey(tab), focus });
+  // Au retour du pavé de son code PIN, le focus rejoint la section « Code PIN ».
+  const onReturn = useOwnPinReturn(profiles.pinOpened);
+  const screen = useRedesignScreen({ railKey: "Settings", entryKey: settingsEntryKey(tab), focus, onReturn });
   // Retour annule d'abord un déplacement en cours dans l'onglet Navigation.
   useBackLayer("menu", nav.navigation.movingKey !== null, nav.cancelNavMove);
   useSettingsGroups(screen.focus);
