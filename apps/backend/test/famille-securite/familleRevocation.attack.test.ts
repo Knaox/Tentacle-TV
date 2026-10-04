@@ -102,7 +102,9 @@ describe("SEC-F-13 : changer un PIN coupe les sessions du profil", () => {
     await send("PUT", "/api/family/pin", tokens.damien, { pin: "4242" });
     const pairing = await enroll(app, await pairTv(h.state!, IDS.damien, "Damien"));
     const token = (await openProfile(app, pairing, { profileId: IDS.damien, pin: "4242", remember: true })).json().token as string;
-    await send("PUT", "/api/family/pin", tokens.damien, { pin: "1357" });
+    // Changer un PIN existant exige le PIN courant (v2). Depuis le web, TOUTES
+    // les sessions de profil du compte tombent — la « Rester » comprise.
+    await send("PUT", "/api/family/pin", tokens.damien, { pin: "1357", currentPin: "4242" });
     expect((await status(token)).profileEnded).toBe(true);
     expect(endReasons()).toContain("pin_changed");
   });
