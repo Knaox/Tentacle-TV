@@ -137,6 +137,26 @@ l'exige (mêmes essais, même blocage) et ouvre la gestion dix minutes
 membre, annuler une invitation) ne passent qu'ainsi. JAMAIS depuis une TV :
 accepter, refuser, quitter, poser son propre PIN, dissoudre.
 
+### 7. La séquence de l'Apple TV (pour le client)
+
+1. `/api/config` › `features.family` absent : le jumelage d'avant, rien ne change.
+2. La TV porte un jeton d'avant : fermer son socket, `enrollTvProfiles`, garder
+   le jeton de jumelage À LA PLACE de l'ancien — ne plus jamais présenter
+   l'ancien (il vaut « revoked » partout : l'app se déjumellerait).
+3. `fetchTvProfiles` (jeton de jumelage) : 401 `revoked` → déjumelée ;
+   `stickyProfileId` → ouvrir ce profil (`remember: true`, sans PIN) ;
+   `pickerRequired` faux → ouvrir le seul profil ; sinon « Qui regarde ? ».
+4. `openTvProfileSession` : le jeton de session devient LE jeton de l'app
+   (préférences, socket, proxy, direct, rafraîchissement).
+5. `family:profile-ended` sur le socket, ou 401 `profileEnded` à une porte :
+   oublier le jeton de session, revenir au 3.
+6. « Changer de profil » : `endTvToken(jeton de session)`, puis le 3.
+   « Déjumeler » : `endTvToken(jeton de jumelage)`.
+7. « Gérer les profils » (`canManage`, profil du propriétaire) :
+   `unlockTvManage` (PIN s'il en a un), puis les routes `ownerTv` avec le jeton
+   de session — vue d'ensemble, candidats, inviter, annuler, créer ou supprimer
+   un invité, retirer un membre.
+
 ## Qui agit : toujours le porteur du jeton
 
 L'acteur se déduit du jeton, JAMAIS d'un identifiant du corps ou de la query
