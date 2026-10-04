@@ -12,9 +12,11 @@ import { FamilyFailure } from "./familyErrors";
  *   gardé, jamais montré : personne n'y entre par nom et mot de passe ;
  * - caché de l'écran de connexion, jamais administrateur, sans droit de
  *   gestion, de suppression ni de téléchargement ;
- * - les MÊMES bibliothèques et restrictions que le propriétaire (contrôle
+ * - les MÊMES bibliothèques et restrictions que son CRÉATEUR (contrôle
  *   parental, tags, horaires), recopiées de sa politique — jamais son
- *   fournisseur d'authentification ;
+ *   fournisseur d'authentification. Le créateur, c'est le propriétaire, ou
+ *   le membre qui l'a créé (v2) : un membre n'ouvre jamais, par un invité,
+ *   les bibliothèques du propriétaire ;
  * - un nom ASCII reconnaissable par un administrateur (« Lea - invite de
  *   Damien »), départagé au besoin.
  *
@@ -22,8 +24,8 @@ import { FamilyFailure } from "./familyErrors";
  * que Jellyfin vient de donner à l'invité, on n'y change que nos champs.
  */
 
-/** Ce que l'invité reçoit du propriétaire : l'accès aux bibliothèques et les restrictions. */
-const COPIED_FROM_OWNER = [
+/** Ce que l'invité reçoit de son créateur : l'accès aux bibliothèques et les restrictions. */
+const COPIED_FROM_CREATOR = [
   "EnableAllFolders",
   "EnabledFolders",
   "EnableAllChannels",
@@ -46,7 +48,7 @@ const COPIED_FROM_OWNER = [
   "ForceRemoteSourceTranscoding",
 ] as const;
 
-/** Ce qu'un invité n'a JAMAIS, quoi qu'ait le propriétaire. */
+/** Ce qu'un invité n'a JAMAIS, quoi qu'ait son créateur. */
 const FORCED: Record<string, unknown> = {
   IsAdministrator: false,
   IsHidden: true,
@@ -82,9 +84,9 @@ function unavailable(step: string, result: JellyfinResult<unknown>): FamilyFailu
 }
 
 /** La politique de l'invité : la sienne, les bibliothèques et restrictions du propriétaire, nos interdits. */
-export function guestPolicy(current: Policy, owner: Policy): Policy {
+export function guestPolicy(current: Policy, creator: Policy): Policy {
   const policy: Policy = { ...current };
-  for (const field of COPIED_FROM_OWNER) if (field in owner) policy[field] = owner[field];
+  for (const field of COPIED_FROM_CREATOR) if (field in creator) policy[field] = creator[field];
   return { ...policy, ...FORCED };
 }
 
@@ -125,14 +127,15 @@ export async function deleteGuestAccount(userId: string): Promise<void> {
  */
 export async function createGuestAccount(input: {
   guestName: string;
-  owner: { userId: string; name: string };
+  /** Le créateur : la source de la politique, et le nom (« … - invite de Léa »). */
+  creator: { userId: string; name: string };
   lang: "fr" | "en";
 }): Promise<{ userId: string; jellyfinName: string }> {
-  const ownerPolicy = (await fetchUser(input.owner.userId)).Policy ?? {};
+  const creatorPolicy = (await fetchUser(input.creator.userId)).Policy ?? {};
   let created: UserDto | null = null;
   let jellyfinName = "";
   for (let attempt = 1; attempt <= 5 && !created; attempt++) {
-    jellyfinName = guestAccountName(input.guestName, input.owner.name, input.lang, attempt);
+    jellyfinName = guestAccountName(input.guestName, input.creator.name, input.lang, attempt);
     const password = crypto.randomBytes(48).toString("base64url");
     const result = await jellyfinAdminFetch<UserDto>("/Users/New", { method: "POST", body: { Name: jellyfinName, Password: password } });
     if (result.ok && result.data?.Id) created = result.data;
@@ -143,7 +146,7 @@ export async function createGuestAccount(input: {
   const userId = created.Id;
   try {
     await scramblePassword(userId);
-    await writePolicy(userId, guestPolicy(created.Policy ?? (await fetchUser(userId)).Policy ?? {}, ownerPolicy));
+    await writePolicy(userId, guestPolicy(created.Policy ?? (await fetchUser(userId)).Policy ?? {}, creatorPolicy));
     const check = (await fetchUser(userId)).Policy ?? {};
     if (check.IsAdministrator !== false || check.IsHidden !== true || check.EnableContentDownloading !== false) {
       throw new FamilyFailure("family.jellyfin_refused", "Politique de l'invité non retenue par Jellyfin");
@@ -156,14 +159,14 @@ export async function createGuestAccount(input: {
   return { userId, jellyfinName };
 }
 
-/** Recopie au besoin les bibliothèques et restrictions du propriétaire (à
+/** Recopie au besoin les bibliothèques et restrictions de son créateur (à
  *  l'ouverture d'une session d'invité). Silencieux : la session reste sûre,
  *  les interdits de l'invité ne dépendent pas de cette recopie. */
-export async function syncGuestPolicy(guestUserId: string, ownerUserId: string): Promise<void> {
+export async function syncGuestPolicy(guestUserId: string, creatorUserId: string): Promise<void> {
   try {
-    const [guest, owner] = await Promise.all([fetchUser(guestUserId), fetchUser(ownerUserId)]);
+    const [guest, creator] = await Promise.all([fetchUser(guestUserId), fetchUser(creatorUserId)]);
     const current = guest.Policy ?? {};
-    const wanted = guestPolicy(current, owner.Policy ?? {});
+    const wanted = guestPolicy(current, creator.Policy ?? {});
     const changed = Object.keys(wanted).some((key) => JSON.stringify(wanted[key]) !== JSON.stringify(current[key]));
     if (changed) await writePolicy(guestUserId, wanted);
   } catch {

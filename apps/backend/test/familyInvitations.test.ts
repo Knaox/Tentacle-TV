@@ -95,7 +95,7 @@ describe("inviter et répondre", () => {
     const res = await post("/api/family/invitations/accept", tokens.lea, { id });
     expect(res.statusCode).toBe(410);
     expect(res.json().code).toBe("family.invite_expired");
-    expect(h.state!.db.data.familyMember).toHaveLength(0);
+    expect(h.state!.db.data.familyMember.filter((m) => m.kind !== "owner")).toHaveLength(0);
     expect(h.state!.db.data.notification.filter((n) => n.jellyfinUserId === IDS.lea)).toHaveLength(0);
   });
 
@@ -116,17 +116,41 @@ describe("inviter et répondre", () => {
   });
 });
 
-describe("les candidats", () => {
-  it("ne montrent ni compte caché (sauf nom exact), ni désactivé, ni soi-même, ni invité", async () => {
+describe("les candidats (v2)", () => {
+  const candidates = async (token: string, q = "") =>
+    app.inject({ method: "GET", url: `/api/family/candidates${q ? `?q=${encodeURIComponent(q)}` : ""}`, headers: bearer(token) });
+  const list = async (q = "") => (await candidates(tokens.damien, q)).json().map((c: { name: string; status: string }) => [c.name, c.status]);
+
+  it("tous les comptes, cachés compris ; jamais un désactivé, soi-même, un invité ni le compte de démonstration", async () => {
+    await h.state!.db.client.provisioningCode.create({ data: { code: "X".repeat(12), jellyfinUserId: IDS.demo, username: "Demo" } });
     await post("/api/family/guests", tokens.damien, { name: "Zoé", color: "pink" });
-    const list = async (q = "") =>
-      (await app.inject({ method: "GET", url: `/api/family/candidates${q ? `?q=${encodeURIComponent(q)}` : ""}`, headers: bearer(tokens.damien) })).json()
-        .map((c: { name: string }) => c.name);
-    expect(await list()).toEqual(["Demo", "Hugo", "Léa"]);
-    expect(await list("cach")).toEqual([]);
-    expect(await list("Caché")).toEqual(["Caché"]);
+    expect(await list()).toEqual([["Caché", "available"], ["Hugo", "available"], ["Léa", "available"]]);
+    expect(await list("cach")).toEqual([["Caché", "available"]]);
     expect((await invite(tokens.damien, IDS.coupe)).json().code).toBe("family.candidate_invalid");
     expect((await invite(tokens.damien, IDS.damien)).json().code).toBe("family.candidate_invalid");
+  });
+
+  it("marque l'invité en attente et le compte déjà dans une famille — sans dire laquelle — et les met après", async () => {
+    await invite(tokens.damien, IDS.lea);
+    // Hugo fonde sa famille en invitant Caché : Hugo est pris, Caché pas encore.
+    await invite(tokens.hugo, IDS.cache);
+    expect(await list()).toEqual([
+      ["Caché", "available"],
+      ["Demo", "available"],
+      ["Hugo", "in_family"],
+      ["Léa", "invited"],
+    ]);
+    const hugoSees = (await candidates(tokens.hugo)).json();
+    expect(hugoSees.find((c: { userId: string }) => c.userId === IDS.damien)).toMatchObject({ status: "in_family" });
+    expect(Object.keys(hugoSees[0]).sort()).toEqual(["imageTag", "name", "status", "userId"]);
+  });
+
+  it("un membre n'en voit aucun : il n'invite personne", async () => {
+    const id = (await invite(tokens.damien, IDS.lea)).json().id;
+    await post("/api/family/invitations/accept", tokens.lea, { id });
+    const res = await candidates(tokens.lea);
+    expect(res.statusCode).toBe(403);
+    expect(res.json().code).toBe("family.not_owner");
   });
 });
 

@@ -343,10 +343,10 @@ model Family {
   @@map("families")
 }
 
-/// Les profils d'une famille autres que le propriétaire : `member` (compte du
-/// serveur qui a accepté une invitation ; le retirer ne touche JAMAIS son
-/// compte) ou `guest` (compte Jellyfin créé par Tentacle, caché, mot de passe
-/// jeté).
+/// Les personnes d'une famille (v2) : `owner` (le propriétaire — sa ligne
+/// porte l'unicité « une famille par compte »), `member` (compte du serveur
+/// qui a accepté une invitation ; le retirer ne touche JAMAIS son compte) ou
+/// `guest` (compte Jellyfin créé par Tentacle, caché, mot de passe jeté).
 model FamilyMember {
   id           String   @id @default(cuid())
   familyId     String   @db.VarChar(191)
@@ -364,7 +364,8 @@ model FamilyMember {
   createdAt    DateTime @default(now())
 
   @@unique([familyId, userId])
-  @@index([userId])
+  /// v2 : UNE famille par compte — propriétaire, membre ou invité, une seule ligne.
+  @@unique([userId])
   @@map("family_members")
 }
 

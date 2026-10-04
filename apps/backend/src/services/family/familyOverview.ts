@@ -15,13 +15,12 @@ import { familyRightsOf } from "../../family/familyRights";
 import { getFamilySwitches, isReviewAccount } from "./familyConfig";
 import { profilesWithPin } from "./familyPins";
 import {
+  familyOf,
   familyProfiles,
-  findOwnedFamily,
   fold,
   guestRowOf,
   jellyfinUserMap,
   memberKind,
-  membershipsOf,
   profileColor,
   type FamilyRow,
   type MemberRow,
@@ -31,10 +30,10 @@ import {
  * `GET /api/family` — l'état de la Famille pour le porteur du jeton : SA
  * famille (`family`, la même pour le propriétaire et chaque membre :
  * propriétaire en tête, puis membres, puis invités ; les invitations en
- * attente au seul propriétaire), et — en session personnelle seulement — les
- * invitations qu'il a reçues. `owned` et `memberships` gardent la forme v1
- * tant que des clients la lisent. Les noms et avatars viennent de Jellyfin
- * quand il répond, sinon du dernier nom connu.
+ * attente au seul propriétaire), et — en session personnelle, pour un compte
+ * qui n'est dans aucune famille — les invitations qu'il a reçues. `owned` et
+ * `memberships` gardent la forme v1 tant que des clients la lisent. Les noms
+ * et avatars viennent de Jellyfin quand il répond, sinon du dernier nom connu.
  */
 
 export interface OverviewCaller {
@@ -63,12 +62,15 @@ function creatorOf(family: FamilyRow, row: MemberRow): { createdBy: string; fall
   return { createdBy, fallbackName: fold(createdBy) === fold(family.ownerUserId) ? family.ownerName : null };
 }
 
+/** Les profils d'une famille : le propriétaire (sa ligne `owner`), puis les
+ *  membres, puis les invités, chacun dans son ordre d'arrivée. */
 export function profileDtos(family: FamilyRow, rows: MemberRow[], users: UserMap, pins: Set<string>): FamilyProfileDto[] {
+  const ownerRow = rows.find((row) => row.kind === "owner") ?? null;
   const owner: FamilyProfileDto = {
     userId: family.ownerUserId,
     kind: "owner",
     name: nameOf(users, family.ownerUserId, family.ownerName),
-    color: profileColor(family.ownerColor, family.ownerUserId),
+    color: profileColor(ownerRow?.color ?? family.ownerColor, family.ownerUserId),
     hasPin: pins.has(family.ownerUserId),
     imageTag: imageOf(users, family.ownerUserId),
     since: null,
@@ -77,6 +79,7 @@ export function profileDtos(family: FamilyRow, rows: MemberRow[], users: UserMap
     rights: null,
   };
   const others = rows
+    .filter((row) => row.kind !== "owner")
     .map((row): FamilyProfileDto => {
       const guest = row.kind === "guest";
       const creator = guest ? creatorOf(family, row) : null;
@@ -113,7 +116,7 @@ async function pendingOf(family: FamilyRow, users: UserMap, now: number): Promis
 /** LA famille du porteur, vue par lui : son rôle, ses droits. */
 async function familyView(family: FamilyRow, role: FamilyRole, self: MemberRow | null, users: UserMap, now: number): Promise<FamilyDto> {
   const rows = await familyProfiles(family.id);
-  const pins = await profilesWithPin([family.ownerUserId, ...rows.map((row) => row.userId)]);
+  const pins = await profilesWithPin(rows.map((row) => row.userId).concat(family.ownerUserId));
   return {
     id: family.id,
     role,
@@ -150,30 +153,23 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
   const users = await jellyfinUserMap();
   const [review, guest] = await Promise.all([isReviewAccount(caller.userId), guestRowOf(caller.userId)]);
 
-  const ownedFamily = await findOwnedFamily(caller.userId);
-  const joined = await membershipsOf(caller.userId);
-  const family = ownedFamily
-    ? await familyView(ownedFamily, "owner", null, users, now)
-    : joined[0]
-      ? await familyView(joined[0].family, "member", joined[0].row, users, now)
-      : null;
+  const mine = await familyOf(caller.userId);
+  const family = mine ? await familyView(mine.family, mine.role, mine.role === "member" ? mine.self : null, users, now) : null;
   const owned: FamilyOverviewDto["owned"] =
-    ownedFamily && family
+    mine?.role === "owner" && family
       ? { id: family.id, profiles: family.profiles, pendingInvitations: family.pendingInvitations, createdAt: family.createdAt }
       : null;
-  const memberships = joined.map(({ row, family: other }) => ({
-    familyId: other.id,
-    ownerUserId: other.ownerUserId,
-    ownerName: nameOf(users, other.ownerUserId, other.ownerName),
-    since: row.createdAt.toISOString(),
-  }));
+  const memberships =
+    mine?.role === "member" && family
+      ? [{ familyId: family.id, ownerUserId: family.owner.userId, ownerName: family.owner.name, since: family.since ?? "" }]
+      : [];
 
   return {
     v: FAMILY_CONTRACT_VERSION,
     switches: getFamilySwitches(),
     account: {
-      canOwn: !guest && !review && (ownedFamily !== null || joined.length === 0),
-      canJoin: !guest && !review && ownedFamily === null && joined.length === 0,
+      canOwn: !guest && !review && mine?.role !== "member",
+      canJoin: !guest && !review && mine === null,
       reviewAccount: review,
       hasPin: (await profilesWithPin([caller.userId])).has(caller.userId),
       personalSession: caller.personal,
@@ -181,7 +177,7 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
     family,
     owned,
     memberships,
-    incoming: caller.personal ? await incomingOf(caller, users, now) : [],
+    incoming: caller.personal && mine === null ? await incomingOf(caller, users, now) : [],
     limits: { maxProfiles: FAMILY_MAX_PROFILES, maxGuests: FAMILY_MAX_GUESTS },
   };
 }

@@ -27,11 +27,8 @@
  * de la query. Aucune route ne prend d'identifiant de famille pour AGIR :
  * elles visent LA famille du porteur (il n'en a qu'une, propriétaire ou
  * membre). Le rôle se juge dans le service : un membre sur un geste de
- * propriétaire reçoit `family.not_owner`.
- *
- * v2, à l'implémentation : `overview`, `createGuest` et `deleteGuest`
- * s'ouvrent à `memberTv` (un membre gère SES invités depuis sa TV) ; la table
- * le dira avec le serveur qui le fait.
+ * propriétaire reçoit `family.not_owner`. Depuis sa TV, un membre voit la
+ * famille et gère SES invités (`memberTv`) ; jamais le reste.
  *
  * Deux routes existantes changent de sens pour la TV (docs/FAMILLE.md) :
  * `POST /api/pair/self/revoke` porté par le jeton de jumelage DÉJUMELLE la TV
@@ -57,7 +54,7 @@ const HOUR = 3_600_000;
 
 export const FAMILY_ROUTES = {
   /** → `FamilyOverviewDto`. */
-  overview: { method: "GET", path: "/api/family", callers: ["personal", "ownerTv"] },
+  overview: { method: "GET", path: "/api/family", callers: ["personal", "ownerTv", "memberTv"] },
   /** `DissolveBody` → `{ dissolved: true }`. Le propriétaire seul : membres
    *  sortis, invités supprimés de Jellyfin (tous, quel que soit leur créateur). */
   dissolve: { method: "DELETE", path: "/api/family", callers: ["personal"], rateLimit: { max: 5, windowMs: HOUR } },
@@ -70,13 +67,13 @@ export const FAMILY_ROUTES = {
   createGuest: {
     method: "POST",
     path: "/api/family/guests",
-    callers: ["personal", "ownerTv"],
+    callers: ["personal", "ownerTv", "memberTv"],
     rateLimit: { max: 10, windowMs: HOUR },
   },
   /** → `{ deleted: true }`. Le propriétaire : tout invité ; un membre : ceux
    *  qu'il a créés (`family.not_owner` sinon). Son compte Jellyfin est
    *  supprimé (sa lecture est perdue). */
-  deleteGuest: { method: "DELETE", path: "/api/family/guests/:userId", callers: ["personal", "ownerTv"] },
+  deleteGuest: { method: "DELETE", path: "/api/family/guests/:userId", callers: ["personal", "ownerTv", "memberTv"] },
   /** `SetPinBody` → `{ hasPin }`. Le PIN d'un invité : le propriétaire, ou le
    *  membre qui l'a créé. */
   setGuestPin: {

@@ -119,7 +119,9 @@ describe("les invités", () => {
     const names = ["Zoé", "Noé", "Léo", "Max"];
     const results = await Promise.all(names.map((name) => send("POST", "/api/family/guests", tokens.damien, { name, color: "blue" })));
     expect(results.map((r) => r.statusCode).sort()).toEqual([200, 200, 200, 409]);
-    expect(h.state!.db.data.familyMember).toHaveLength(3);
+    expect(h.state!.db.data.familyMember.filter((m) => m.kind === "guest")).toHaveLength(3);
+    // v2 : le propriétaire a sa ligne — une seule famille, la sienne.
+    expect(h.state!.db.data.familyMember.filter((m) => m.kind === "owner")).toHaveLength(1);
     expect(h.state!.db.data.family).toHaveLength(1);
   });
 });

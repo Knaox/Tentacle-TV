@@ -3,10 +3,10 @@ import { getTokenFromRequest, validateToken } from "../../middleware/auth";
 import { getPrisma } from "../db";
 import { hashToken, verifyDeviceToken, verifyTvPairingToken } from "../jwt";
 import { PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../pairedDeviceStatus";
-import type { FamilyRouteSpec } from "../../family/familyRoutes";
-import { sameUserId } from "../../family/familyRules";
+import type { FamilyCaller, FamilyRouteSpec } from "../../family/familyRoutes";
 import { FamilyFailure, sendFamilyFailure } from "./familyErrors";
 import { hasPin } from "./familyPins";
+import { tvManageRole } from "./familyTv";
 
 /**
  * Qui appelle une route de la Famille — TOUJOURS déduit du jeton, jamais d'un
@@ -14,8 +14,9 @@ import { hasPin } from "./familyPins";
  * `FAMILY_ROUTES` décide s'il en a le droit :
  *
  * - `personal` : le jeton Jellyfin du web, du bureau, du mobile ;
- * - `ownerTv` : la session de profil du PROPRIÉTAIRE sur SA TV, « Gérer les
- *   profils » ouvert par son PIN (ouvert d'office s'il n'en a pas) ;
+ * - `ownerTv` / `memberTv` : la session de profil du propriétaire de la
+ *   famille / d'un membre, sur une TV de la famille, « Gérer les profils »
+ *   ouvert par SON PIN (ouvert d'office s'il n'en a pas) ;
  * - `tvProfile` : une session de profil, quel qu'en soit le profil ;
  * - `tvPairing` / `tvLegacy` : les jetons de jumelage, jugés par leur route ;
  * - `admin` : un administrateur EN SESSION PERSONNELLE.
@@ -29,7 +30,7 @@ export interface FamilyActor {
   username: string;
   isAdmin: boolean;
   /** Appelant retenu par la table. */
-  as: "personal" | "ownerTv" | "tvProfile" | "tvPairing" | "tvLegacy" | "admin";
+  as: FamilyCaller;
   token: string;
 }
 
@@ -43,13 +44,15 @@ function forbidden(): FamilyFailure {
   return new FamilyFailure("family.personal_session_required", "Geste réservé à une session personnelle");
 }
 
-async function ownerTvAllowed(token: string, userId: string, now: number): Promise<"ok" | "not_owner" | "locked"> {
+/** Qui gère depuis cette session de profil, et « Gérer les profils » est-il ouvert ? */
+async function manageVerdict(token: string, userId: string, now: number): Promise<{ role: "ownerTv" | "memberTv" | null; open: boolean }> {
   const prisma = getPrisma();
   const session = await prisma.pairedDevice.findUnique({ where: { tokenHash: hashToken(token) } });
   const pairing = session?.parentId ? await prisma.pairedDevice.findUnique({ where: { id: session.parentId } }) : null;
-  if (!session || !pairing || session.profileKind !== "owner" || !sameUserId(pairing.jellyfinUserId, userId)) return "not_owner";
-  if (session.manageUntil && session.manageUntil.getTime() > now) return "ok";
-  return (await hasPin(userId)) ? "locked" : "ok";
+  if (!session || !pairing) return { role: null, open: false };
+  const role = await tvManageRole(userId, pairing.jellyfinUserId);
+  const open = (session.manageUntil !== null && session.manageUntil.getTime() > now) || !(await hasPin(userId));
+  return { role, open };
 }
 
 /** Une `preHandler` par route : pose `request.familyActor`, ou répond le refus. */
@@ -106,13 +109,14 @@ export function familyGuard(spec: FamilyRouteSpec) {
     }
     if (session === "tvProfile") {
       if (callers.has("tvProfile")) return actor("tvProfile");
-      if (callers.has("ownerTv")) {
-        const verdict = await ownerTvAllowed(token, userId, Date.now());
-        if (verdict === "ok") return actor("ownerTv");
-        if (verdict === "locked") {
-          return sendFamilyFailure(reply, new FamilyFailure("family.manage_locked", "« Gérer les profils » : PIN du propriétaire requis"));
+      if (callers.has("ownerTv") || callers.has("memberTv")) {
+        const { role, open } = await manageVerdict(token, userId, Date.now());
+        // Un membre sur un geste de propriétaire : le même refus qu'en session personnelle.
+        if (!role || !callers.has(role)) {
+          return sendFamilyFailure(reply, new FamilyFailure("family.not_owner", "Réservé au propriétaire de la famille"));
         }
-        return sendFamilyFailure(reply, new FamilyFailure("family.not_owner", "Réservé au profil du propriétaire"));
+        if (!open) return sendFamilyFailure(reply, new FamilyFailure("family.manage_locked", "« Gérer les profils » : PIN requis"));
+        return actor(role);
       }
       if (callers.has("tvPairing")) {
         return sendFamilyFailure(reply, new FamilyFailure("family.pairing_required", "Jeton de jumelage de TV requis"));

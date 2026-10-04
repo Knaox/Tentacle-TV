@@ -1,13 +1,18 @@
+import { randomUUID } from "crypto";
 import { getPrisma } from "../db";
 import { getJellyfinUsers, type CachedJellyfinUser } from "../watchTogether/usersCache";
 import { defaultProfileColor, isProfileColor, type FamilyCounts } from "../../family/familyRules";
-import type { FamilyProfileColor, FamilyProfileKind } from "../../family/familyContract";
+import type { FamilyProfileColor, FamilyProfileKind, FamilyRole } from "../../family/familyContract";
 import { FamilyFailure } from "./familyErrors";
 
 /**
- * La Famille en base : familles, profils (membres et invités), capacités,
- * adhésions. Les identifiants de comptes sont ceux que Jellyfin rend (le
- * porteur d'un jeton) ; les comparaisons tolèrent tirets et casse.
+ * La Famille en base (v2) : UNE famille par compte. Chaque personne de la
+ * famille a SA ligne dans `family_members` — le propriétaire (`owner`), les
+ * membres, les invités — et l'unicité de `userId` en base interdit d'en avoir
+ * deux : un compte ne peut être ni propriétaire de deux familles, ni membre
+ * de deux, ni l'un et l'autre. Les identifiants de comptes sont ceux que
+ * Jellyfin rend (le porteur d'un jeton) ; les comparaisons tolèrent tirets et
+ * casse.
  */
 
 export interface FamilyRow {
@@ -33,6 +38,14 @@ export interface MemberRow {
   createdAt: Date;
 }
 
+/** La famille d'une personne, et à quel titre elle en est. */
+export interface FamilyMembership {
+  family: FamilyRow;
+  role: FamilyRole;
+  /** Sa ligne dans la famille. */
+  self: MemberRow;
+}
+
 export function fold(id: string): string {
   return id.replace(/-/g, "").toLowerCase();
 }
@@ -41,8 +54,13 @@ export function profileColor(stored: string | null, userId: string): FamilyProfi
   return isProfileColor(stored) ? stored : defaultProfileColor(userId);
 }
 
-export function memberKind(row: MemberRow): Exclude<FamilyProfileKind, "owner"> {
-  return row.kind === "guest" ? "guest" : "member";
+export function memberKind(row: MemberRow): FamilyProfileKind {
+  return row.kind === "guest" ? "guest" : row.kind === "owner" ? "owner" : "member";
+}
+
+/** Une violation d'unicité Prisma (P2002). */
+export function isUniqueViolation(error: unknown): boolean {
+  return (error as { code?: unknown } | null)?.code === "P2002";
 }
 
 export async function findOwnedFamily(ownerUserId: string): Promise<FamilyRow | null> {
@@ -53,21 +71,45 @@ export async function findFamily(id: string): Promise<FamilyRow | null> {
   return getPrisma().family.findUnique({ where: { id } });
 }
 
-/** La famille du propriétaire, créée au besoin. Une seule par propriétaire :
- *  l'unicité est une contrainte de la base, une course perdue relit la gagnante. */
+/** La famille de cette personne — propriétaire ou membre ; null pour un
+ *  invité (il n'agit pas) et pour un compte sans famille. */
+export async function familyOf(userId: string): Promise<FamilyMembership | null> {
+  const self = await getPrisma().familyMember.findUnique({ where: { userId } });
+  if (!self || (self.kind !== "owner" && self.kind !== "member")) return null;
+  const family = await findFamily(self.familyId);
+  return family ? { family, role: self.kind === "owner" ? "owner" : "member", self } : null;
+}
+
+/**
+ * La famille que possède ce compte, créée au besoin. La ligne du
+ * propriétaire passe EN PREMIER : si le compte est déjà dans une famille,
+ * l'unicité la refuse avant que rien d'autre ne soit écrit
+ * (`family.already_in_family`).
+ */
 export async function ensureOwnedFamily(owner: { userId: string; name: string }): Promise<FamilyRow> {
   const prisma = getPrisma();
   const existing = await findOwnedFamily(owner.userId);
   if (existing) return existing;
+  const familyId = randomUUID().replace(/-/g, "");
   try {
-    return await prisma.family.create({ data: { ownerUserId: owner.userId, ownerName: owner.name } });
+    await prisma.familyMember.create({
+      data: { familyId, userId: owner.userId, kind: "owner", displayName: owner.name.slice(0, 100) },
+    });
   } catch (error) {
+    if (isUniqueViolation(error)) throw new FamilyFailure("family.already_in_family", "Déjà dans une famille");
+    throw error;
+  }
+  try {
+    return await prisma.family.create({ data: { id: familyId, ownerUserId: owner.userId, ownerName: owner.name } });
+  } catch (error) {
+    await prisma.familyMember.deleteMany({ where: { familyId, userId: owner.userId, kind: "owner" } });
     const again = await findOwnedFamily(owner.userId);
     if (again) return again;
     throw error;
   }
 }
 
+/** Toutes les lignes d'une famille, propriétaire compris, par ordre d'arrivée. */
 export async function familyProfiles(familyId: string): Promise<MemberRow[]> {
   return getPrisma().familyMember.findMany({ where: { familyId }, orderBy: { createdAt: "asc" } });
 }
@@ -77,7 +119,14 @@ export async function findProfile(familyId: string, userId: string): Promise<Mem
   return rows.find((row) => fold(row.userId) === fold(userId)) ?? null;
 }
 
-/** Profils présents et invitations en attente (encore valables). */
+/** Les PERSONNES d'une famille (propriétaire et membres) : celles qui la
+ *  voient, la relisent et dont les TV la montrent. */
+export function personsOf(family: FamilyRow, rows: MemberRow[]): string[] {
+  const persons = rows.filter((row) => row.kind === "member").map((row) => row.userId);
+  return [family.ownerUserId, ...persons];
+}
+
+/** Profils présents (hors propriétaire) et invitations en attente (encore valables). */
 export async function familyCounts(familyId: string, now: number): Promise<FamilyCounts> {
   const prisma = getPrisma();
   const rows = await familyProfiles(familyId);
@@ -85,44 +134,36 @@ export async function familyCounts(familyId: string, now: number): Promise<Famil
     where: { familyId, status: "pending", expiresAt: { gt: new Date(now) } },
   });
   return {
-    members: rows.filter((row) => row.kind !== "guest").length,
+    members: rows.filter((row) => row.kind === "member").length,
     guests: rows.filter((row) => row.kind === "guest").length,
     pendingInvitations,
   };
 }
 
-/** Les familles dont ce compte est MEMBRE. */
+/** @deprecated v1 — la famille dont ce compte est MEMBRE (une au plus en v2) : `familyOf`. */
 export async function membershipsOf(userId: string): Promise<Array<{ row: MemberRow; family: FamilyRow }>> {
-  const prisma = getPrisma();
-  const rows = await prisma.familyMember.findMany({ where: { userId, kind: "member" } });
-  if (rows.length === 0) return [];
-  const families = await prisma.family.findMany({ where: { id: { in: rows.map((row) => row.familyId) } } });
-  const byId = new Map(families.map((family) => [family.id, family]));
-  return rows.flatMap((row) => {
-    const family = byId.get(row.familyId);
-    return family ? [{ row, family }] : [];
-  });
+  const mine = await familyOf(userId);
+  return mine?.role === "member" ? [{ row: mine.self, family: mine.family }] : [];
 }
 
 /** Ce compte est-il un invité (d'une famille quelconque) ? */
 export async function guestRowOf(userId: string): Promise<MemberRow | null> {
-  const rows = await getPrisma().familyMember.findMany({ where: { userId, kind: "guest" } });
-  return rows[0] ?? null;
+  const row = await getPrisma().familyMember.findUnique({ where: { userId } });
+  return row?.kind === "guest" ? row : null;
 }
 
 /**
- * Le refus d'un geste de propriétaire sur une cible qui n'est pas dans SA
- * famille (SEC-F-07) : 403 si le porteur est MEMBRE de la famille de la cible
- * — il sait qu'elle existe, il n'en est pas le propriétaire —, 404 sinon (rien
- * ne confirme l'existence de la famille d'autrui).
+ * Le refus d'un geste sur une cible qui n'est pas à la portée du porteur
+ * (SEC-F-07) : 403 si la cible est dans SA famille — il sait qu'elle existe,
+ * il n'en a pas le droit —, 404 sinon (rien ne confirme l'existence de la
+ * famille d'autrui). Sans cible (dissoudre) : 403 pour un membre.
  */
 export async function ownerRefusal(callerUserId: string, targetUserId: string | null): Promise<FamilyFailure> {
-  const memberships = await membershipsOf(callerUserId);
-  if (memberships.length > 0) {
+  const mine = await familyOf(callerUserId);
+  if (mine?.role === "member") {
     if (targetUserId === null) return new FamilyFailure("family.not_owner", "Réservé au propriétaire de la famille");
-    for (const { family } of memberships) {
-      const inside = fold(family.ownerUserId) === fold(targetUserId) || (await findProfile(family.id, targetUserId)) !== null;
-      if (inside) return new FamilyFailure("family.not_owner", "Réservé au propriétaire de la famille");
+    if ((await findProfile(mine.family.id, targetUserId)) !== null) {
+      return new FamilyFailure("family.not_owner", "Réservé au propriétaire de la famille");
     }
   }
   return new FamilyFailure("family.not_found", "Introuvable");

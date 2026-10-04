@@ -18,6 +18,7 @@ import { forgetFamilyGuests } from "../src/services/family/familyGuestMarkers";
 import { forgetReviewAccount } from "../src/services/family/familyConfig";
 import { resetOwnJellyfinTokenForTests } from "../src/services/deviceJellyfinToken";
 import { resetTokenOwnerCacheForTests } from "../src/services/deviceTokenHealth";
+import { resetGuestCreationsForTests } from "../src/services/family/familyGuests";
 import { hashToken, signDeviceToken } from "../src/services/jwt";
 import { addUser } from "./fakeJellyfinUsers";
 import type { HarnessState } from "./familyMocks";
@@ -54,6 +55,7 @@ export function resetCaches(): void {
   forgetReviewAccount();
   resetOwnJellyfinTokenForTests();
   resetTokenOwnerCacheForTests();
+  resetGuestCreationsForTests();
 }
 
 /** Les comptes du banc (identifiants Jellyfin : 32 hexadécimaux). */

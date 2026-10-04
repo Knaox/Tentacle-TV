@@ -18,6 +18,14 @@ export function familyUpdate(userIds: Iterable<string>, scope: FamilyUpdateScope
   for (const userId of new Set(userIds)) sendSocket(userId, { type: "family:update", scope });
 }
 
+/** La famille PARTAGÉE a changé : son propriétaire et chacun de ses membres
+ *  relisent (et `also` — un membre qui vient d'en sortir). */
+export async function notifyFamily(familyId: string, also: Iterable<string> = []): Promise<void> {
+  const rows = await getPrisma().familyMember.findMany({ where: { familyId }, select: { userId: true, kind: true } });
+  const persons = rows.filter((row) => row.kind !== "guest").map((row) => row.userId);
+  familyUpdate([...persons, ...also], "family");
+}
+
 /** Un nom tel qu'il entre dans la cloche ou un push : sans saut de ligne ni
  *  caractère de contrôle, borné (SEC-F-24). */
 export function plainName(raw: string): string {

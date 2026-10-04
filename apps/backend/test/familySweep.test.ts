@@ -48,6 +48,8 @@ async function join(userId: string, token: string): Promise<void> {
   await post("/api/family/invitations/accept", token, { id });
 }
 
+const members = () => h.state!.db.data.familyMember.filter((m) => m.kind === "member");
+
 /** Les profils nés il y a plus d'une minute : le balayage les juge. */
 function age(): void {
   for (const row of h.state!.db.data.familyMember) row.createdAt = new Date(Date.now() - 5 * 60_000);
@@ -67,7 +69,7 @@ describe("le balayage", () => {
     age();
     h.state!.jf.users.delete(IDS.hugo);
     await sweepFamily();
-    expect(h.state!.db.data.familyMember).toHaveLength(0);
+    expect(members()).toHaveLength(0);
     expect(h.state!.db.data.notification.map((n) => [n.jellyfinUserId, n.type])).toContainEqual([IDS.damien, "family_member_left"]);
   });
 
@@ -79,7 +81,7 @@ describe("le balayage", () => {
     await sweepFamily();
     const res = await app.inject({ method: "GET", url: "/api/protected", headers: bearer(session) });
     expect(res.json().profileEnded).toBe(true);
-    expect(h.state!.db.data.familyMember).toHaveLength(1);
+    expect(members()).toHaveLength(1);
   });
 
   it("ne conclut rien d'un Jellyfin muet", async () => {
@@ -87,6 +89,6 @@ describe("le balayage", () => {
     age();
     h.fetch = async () => new Response("", { status: 503 });
     await sweepFamily();
-    expect(h.state!.db.data.familyMember).toHaveLength(1);
+    expect(members()).toHaveLength(1);
   });
 });

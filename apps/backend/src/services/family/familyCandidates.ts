@@ -1,19 +1,21 @@
 import { getPrisma } from "../db";
 import { getJellyfinUsers } from "../watchTogether/usersCache";
 import type { FamilyCandidateDto } from "../../family/familyContract";
-import { selectCandidates } from "../../family/familyRules";
+import { familyCandidates, type FamilyCandidateSource } from "../../family/familyRights";
 import { isReviewAccount, requireFamilies } from "./familyConfig";
 import { FamilyFailure } from "./familyErrors";
 import { familyGuestOwners, isFamilyGuest } from "./familyGuestMarkers";
 import type { Actor } from "./familyInvitations";
-import { familyProfiles, findOwnedFamily } from "./familyStore";
+import { familyOf } from "./familyStore";
 
 /**
- * Les comptes qu'un propriétaire peut inviter (SEC-F-22) : ceux de l'écran de
- * connexion de Jellyfin, filtrés par la saisie ; un compte CACHÉ par son nom
- * exact seulement — jamais par une liste ni un préfixe. Jamais un compte
- * désactivé, soi-même, un membre ou un invité de sa famille, une invitation
- * en attente, un invité d'une famille quelconque, le compte de démonstration.
+ * Les comptes qu'un propriétaire peut chercher pour inviter (v2) : TOUS ceux
+ * du serveur, cachés de l'écran de connexion de Jellyfin compris — la Famille
+ * vit dans une instance —, affinés par la saisie. Jamais un compte désactivé,
+ * soi-même, un invité d'une famille quelconque, ni le compte de démonstration.
+ * Un compte déjà dans une famille (n'importe laquelle) est rendu marqué
+ * `in_family`, sans dire laquelle ; une invitation de la famille l'attend :
+ * `invited`. Un membre n'invite personne : `family.not_owner`.
  */
 
 const LIMIT = 50;
@@ -22,25 +24,31 @@ export async function listCandidates(actor: Actor, query: string, now: number): 
   requireFamilies();
   if (await isReviewAccount(actor.userId)) throw new FamilyFailure("family.review_account", "Compte de démonstration : aucune invitation");
   if (await isFamilyGuest(actor.userId)) throw new FamilyFailure("family.guest_account", "Un invité n'invite personne");
+  const mine = await familyOf(actor.userId);
+  if (mine?.role === "member") throw new FamilyFailure("family.not_owner", "Un membre n'invite personne : réservé au propriétaire");
   const users = await getJellyfinUsers();
   if (!users) throw new FamilyFailure("family.jellyfin_unavailable", "Comptes Jellyfin indisponibles");
 
-  const exclude = [actor.userId];
-  const family = await findOwnedFamily(actor.userId);
-  if (family) {
-    exclude.push(...(await familyProfiles(family.id)).map((row) => row.userId));
-    const pending = await getPrisma().familyInvitation.findMany({
-      where: { familyId: family.id, status: "pending", expiresAt: { gt: new Date(now) } },
-      select: { inviteeUserId: true },
-    });
-    exclude.push(...pending.map((row) => row.inviteeUserId));
-  }
-  // Les invités de TOUTES les familles (identifiants déjà pliés), et le compte de démonstration.
-  exclude.push(...(await familyGuestOwners()).keys());
-  const sources = [];
+  const prisma = getPrisma();
+  const persons = await prisma.familyMember.findMany({ where: { kind: { in: ["owner", "member"] } }, select: { userId: true } });
+  const invited = mine
+    ? await prisma.familyInvitation.findMany({
+        where: { familyId: mine.family.id, status: "pending", expiresAt: { gt: new Date(now) } },
+        select: { inviteeUserId: true },
+      })
+    : [];
+  // Les invités de TOUTES les familles (identifiants déjà pliés), et soi-même.
+  const exclude = [actor.userId, ...(await familyGuestOwners()).keys()];
+  const sources: FamilyCandidateSource[] = [];
   for (const user of users) {
     if (await isReviewAccount(user.id)) continue;
-    sources.push({ id: user.id, name: user.name, isHidden: user.isHidden, isDisabled: user.isDisabled, imageTag: user.imageTag });
+    sources.push({ id: user.id, name: user.name, isDisabled: user.isDisabled, imageTag: user.imageTag });
   }
-  return selectCandidates(sources, { query, exclude, limit: LIMIT });
+  return familyCandidates(sources, {
+    query,
+    exclude,
+    inFamily: persons.map((row) => row.userId),
+    invited: invited.map((row) => row.inviteeUserId),
+    limit: LIMIT,
+  });
 }

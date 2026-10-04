@@ -622,10 +622,12 @@ CREATE TABLE IF NOT EXISTS `family_members` (
   `displayName` varchar(100) NOT NULL,
   `color` varchar(16) NULL,
   `jellyfinName` varchar(255) NULL,
+  `createdBy` varchar(255) NULL,
+  `canCreateGuests` tinyint(1) NOT NULL DEFAULT 0,
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `family_members_familyId_userId_key` (`familyId`, `userId`),
-  KEY `family_members_userId_idx` (`userId`)
+  UNIQUE KEY `family_members_userId_key` (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `family_invitations` (
@@ -709,6 +711,83 @@ SET @fm_v2_sql := IF(@fm_v2_cols = 0,
 PREPARE fm_v2_stmt FROM @fm_v2_sql;
 EXECUTE fm_v2_stmt;
 DEALLOCATE PREPARE fm_v2_stmt;
+
+-- La Famille v2 : UNE famille par compte. Une base de la v1 (un compte
+-- propriétaire ET membre, ou membre de plusieurs familles) y passe SANS RIEN
+-- PERDRE : chaque personne garde sa famille la plus ANCIENNE, et une famille
+-- dont le propriétaire est resté ailleurs y est FUSIONNÉE (membres et invités
+-- le suivent). Tout est rejouable : sur une base déjà en v2, rien ne bouge.
+
+-- 1. Le propriétaire a SA ligne (`owner`) : c'est elle qui porte l'unicité.
+INSERT INTO `family_members` (`id`, `familyId`, `userId`, `kind`, `displayName`, `color`, `createdAt`)
+SELECT CONCAT('owner-', f.`id`), f.`id`, f.`ownerUserId`, 'owner', LEFT(f.`ownerName`, 100), f.`ownerColor`, f.`createdAt`
+FROM `families` f
+WHERE NOT EXISTS (SELECT 1 FROM `family_members` m WHERE m.`familyId` = f.`id` AND m.`userId` = f.`ownerUserId`);
+
+-- 2. Les invités d'avant la v2 ont été créés par le propriétaire de LEUR
+--    famille — dit avant toute fusion.
+UPDATE `family_members` g JOIN `families` f ON f.`id` = g.`familyId`
+SET g.`createdBy` = f.`ownerUserId`
+WHERE g.`kind` = 'guest' AND g.`createdBy` IS NULL;
+
+-- 3. Un compte dans plusieurs familles garde la plus ancienne (date, puis
+--    identifiant) ; ses autres lignes partent.
+DELETE m FROM `family_members` m
+JOIN `families` f ON f.`id` = m.`familyId`
+JOIN (
+  SELECT m2.`userId`, MIN(CONCAT(DATE_FORMAT(f2.`createdAt`, '%Y%m%d%H%i%s%f'), '|', f2.`id`)) AS `keepKey`
+  FROM `family_members` m2 JOIN `families` f2 ON f2.`id` = m2.`familyId`
+  GROUP BY m2.`userId` HAVING COUNT(*) > 1
+) k ON k.`userId` = m.`userId`
+WHERE CONCAT(DATE_FORMAT(f.`createdAt`, '%Y%m%d%H%i%s%f'), '|', f.`id`) <> k.`keepKey`;
+
+-- 4. Une famille dont le propriétaire est resté dans une autre (plus
+--    ancienne) y est fusionnée : ses membres et ses invités le suivent. Une
+--    passe remonte d'un cran ; cinq couvrent toute chaîne réaliste.
+UPDATE `family_members` o JOIN `families` f ON f.`id` = o.`familyId`
+JOIN `family_members` ex ON ex.`userId` = f.`ownerUserId` AND ex.`familyId` <> f.`id`
+SET o.`familyId` = ex.`familyId`;
+UPDATE `family_members` o JOIN `families` f ON f.`id` = o.`familyId`
+JOIN `family_members` ex ON ex.`userId` = f.`ownerUserId` AND ex.`familyId` <> f.`id`
+SET o.`familyId` = ex.`familyId`;
+UPDATE `family_members` o JOIN `families` f ON f.`id` = o.`familyId`
+JOIN `family_members` ex ON ex.`userId` = f.`ownerUserId` AND ex.`familyId` <> f.`id`
+SET o.`familyId` = ex.`familyId`;
+UPDATE `family_members` o JOIN `families` f ON f.`id` = o.`familyId`
+JOIN `family_members` ex ON ex.`userId` = f.`ownerUserId` AND ex.`familyId` <> f.`id`
+SET o.`familyId` = ex.`familyId`;
+UPDATE `family_members` o JOIN `families` f ON f.`id` = o.`familyId`
+JOIN `family_members` ex ON ex.`userId` = f.`ownerUserId` AND ex.`familyId` <> f.`id`
+SET o.`familyId` = ex.`familyId`;
+
+--    Ses invitations en attente sont closes, puis la famille vide disparaît.
+UPDATE `family_invitations` i JOIN `families` f ON f.`id` = i.`familyId`
+JOIN `family_members` ex ON ex.`userId` = f.`ownerUserId` AND ex.`familyId` <> f.`id`
+SET i.`status` = 'cancelled', i.`respondedAt` = CURRENT_TIMESTAMP(3)
+WHERE i.`status` = 'pending';
+DELETE f FROM `families` f
+JOIN `family_members` ex ON ex.`userId` = f.`ownerUserId` AND ex.`familyId` <> f.`id`
+WHERE NOT EXISTS (SELECT 1 FROM `family_members` r WHERE r.`familyId` = f.`id`);
+
+-- 5. Un compte déjà dans une famille n'en rejoint pas d'autre : ses
+--    invitations en attente sont closes, et quittent sa cloche.
+UPDATE `family_invitations` i
+JOIN `family_members` m ON m.`userId` = i.`inviteeUserId` AND m.`kind` IN ('owner', 'member')
+SET i.`status` = 'cancelled', i.`respondedAt` = CURRENT_TIMESTAMP(3)
+WHERE i.`status` = 'pending';
+DELETE n FROM `notifications` n
+JOIN `family_invitations` i ON i.`id` = n.`refId`
+WHERE n.`type` = 'family_invite' AND i.`status` <> 'pending';
+
+-- 6. L'unicité, en base : un compte, une ligne — une famille.
+SET @fm_user_key := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'family_members' AND INDEX_NAME = 'family_members_userId_key');
+SET @fm_user_key_sql := IF(@fm_user_key = 0,
+  'CREATE UNIQUE INDEX `family_members_userId_key` ON `family_members` (`userId`)',
+  'DO 0');
+PREPARE fm_user_key_stmt FROM @fm_user_key_sql;
+EXECUTE fm_user_key_stmt;
+DEALLOCATE PREPARE fm_user_key_stmt;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Purge de `server_config` : clés abandonnées par une évolution.

@@ -33,8 +33,9 @@ const SPECS: Record<string, ModelSpec> = {
   },
   family: { unique: [["ownerUserId"]], defaults: () => ({ id: id("fam"), ownerColor: null, createdAt: now(), updatedAt: now() }) },
   familyMember: {
-    unique: [["familyId", "userId"]],
-    defaults: () => ({ id: id("fm"), color: null, jellyfinName: null, createdAt: now() }),
+    // v2 : une famille par compte — l'unicité de `userId` est celle de la base.
+    unique: [["familyId", "userId"], ["userId"]],
+    defaults: () => ({ id: id("fm"), color: null, jellyfinName: null, createdBy: null, canCreateGuests: false, createdAt: now() }),
   },
   familyInvitation: { defaults: () => ({ status: "pending", createdAt: now(), respondedAt: null, snoozedUntil: null }) },
   profilePin: { key: ["userId"], defaults: () => ({ updatedAt: now() }) },
