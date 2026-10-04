@@ -182,9 +182,13 @@ export interface CandidateView {
 
 /** Un candidat dans la liste : invitable, ou grisé avec sa raison (« déjà dans
  *  une famille », sans jamais dire laquelle ; « invitation en attente »). Un
- *  statut inconnu (serveur plus récent) se grise sans raison. */
-export function candidateView(candidate: Pick<FamilyCandidateDto, "status">): CandidateView {
+ *  statut ABSENT vient d'un serveur v1 : il ne rendait que des comptes
+ *  invitables — le client, livré à part, les laisse invitables. Un statut
+ *  inconnu (serveur plus récent) se grise sans raison. */
+export function candidateView(candidate: { status?: FamilyCandidateDto["status"] | null }): CandidateView {
   switch (candidate.status) {
+    case undefined:
+    case null:
     case "available":
       return { invitable: true, noteKey: null };
     case "in_family":

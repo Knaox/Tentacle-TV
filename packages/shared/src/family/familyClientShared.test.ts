@@ -111,6 +111,11 @@ describe("candidateView", () => {
     expect(candidateView({ status: "later" as never })).toEqual({ invitable: false, noteKey: null });
   });
 
+  it("un serveur v1 ne pose pas de statut : ses candidats restent invitables", () => {
+    expect(candidateView({})).toEqual({ invitable: true, noteKey: null });
+    expect(candidateView({ status: null })).toEqual({ invitable: true, noteKey: null });
+  });
+
   it("chaque raison a ses mots dans les deux langues", () => {
     for (const status of ["in_family", "invited"] as const) {
       const key = candidateView({ status }).noteKey!.replace("family:candidates.", "") as keyof typeof fr.candidates;
