@@ -2,6 +2,7 @@ import { getPrisma, hasPrisma } from "../db";
 import { getJellyfinUsers, invalidateJellyfinUsers } from "../watchTogether/usersCache";
 import { expireDueInvitations } from "./familyInvitationAnswers";
 import { forgetFamilyAccount } from "./familyMembers";
+import { endProfileEverywhere } from "./familySessions";
 import { fold } from "./familyStore";
 
 /**
@@ -9,7 +10,8 @@ import { fold } from "./familyStore";
  * - les invitations échues sortent de la cloche ;
  * - un compte disparu de Jellyfin (supprimé depuis son tableau de bord, sans
  *   passer par Tentacle) emporte sa famille ou son adhésion, comme une
- *   suppression par Tentacle.
+ *   suppression par Tentacle ;
+ * - un compte désactivé dans Jellyfin perd ses sessions de profil.
  *
  * Prudence : Jellyfin muet ou liste vide → rien n'est conclu ; un profil né
  * après la lecture de la liste attend le passage suivant.
@@ -25,6 +27,12 @@ async function forgetVanishedAccounts(now: number): Promise<void> {
   const users = await getJellyfinUsers();
   if (!users || users.length === 0) return;
   const known = new Set(users.map((user) => fold(user.id)));
+  // Un compte DÉSACTIVÉ dans Jellyfin ne garde aucune session de profil : le
+  // proxy, qui prête la clé admin aux appareils, la servirait encore.
+  for (const user of users.filter((entry) => entry.isDisabled)) {
+    const sessions = await getPrisma().pairedDevice.count({ where: { jellyfinUserId: user.id, parentId: { not: null } } });
+    if (sessions > 0) await endProfileEverywhere(user.id, "removed");
+  }
   const prisma = getPrisma();
   const owners = await prisma.family.findMany({ select: { ownerUserId: true } });
   const profiles = await prisma.familyMember.findMany({ select: { userId: true, createdAt: true } });
