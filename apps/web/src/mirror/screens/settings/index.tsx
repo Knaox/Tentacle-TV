@@ -27,9 +27,11 @@ export function MirrorSettingsPane() {
   const split = useProfileSplit();
   const offline = useOfflineMode();
   const { isAdmin } = getUserInfo();
-  const { available: family } = useFamilyAvailability();
+  const { available: family, settled: familySettled } = useFamilyAvailability();
   const pane = parsePaneParam(raw);
 
+  // La Famille dépend de `/api/config` : on attend sa réponse avant de conclure.
+  if (pane === "family" && !familySettled) return null;
   if (!pane || !isPaneAvailable(pane, { offline, isAdmin, family })) return <Navigate to="/profile" replace />;
   if (split) return <Navigate to={profilePaneRoute(pane)} replace />;
 

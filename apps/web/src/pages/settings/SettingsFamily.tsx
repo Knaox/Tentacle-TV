@@ -24,10 +24,10 @@ import { SECONDARY_BUTTON } from "../../family/page/familyUi";
  * la page n'existe pas.
  */
 export function SettingsFamily() {
-  const { available } = useFamilyAvailability();
+  const { available, settled } = useFamilyAvailability();
   const overview = useFamilyOverview({ enabled: available });
 
-  if (!available || overview.data === null) return <Navigate to="/settings" replace />;
+  if ((settled && !available) || overview.data === null) return <Navigate to="/settings" replace />;
 
   return (
     <PageTransition>
