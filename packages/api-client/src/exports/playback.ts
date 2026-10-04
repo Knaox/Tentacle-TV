@@ -41,3 +41,14 @@ export { applyTranscodeTarget, fitServerCappedTranscode } from "../jellyfin/urlB
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
 // cap automatique de qualité des clients TV.
 export { primeBitrateMeasure, cachedBitrate, measureBitrate, type BitrateMeasureOptions } from "../jellyfin/bitrateMeasure";
+// Le saut pendant un transcodage : les sauts rapides regroupés en un seul
+// redémarrage, l'attente dite (indicateur, phrase, modèle d'erreur au délai).
+export { useTranscodeSeek, type TranscodeSeek, type TranscodeSeekInput } from "../playback/useTranscodeSeek";
+export {
+  createTranscodeSeekController, type TranscodeSeekController, type TranscodeSeekHost, type TranscodeSeekState,
+} from "../playback/transcodeSeekController";
+// « Qualité réduite » sur le lecteur : pourquoi la qualité baisse en Auto.
+export {
+  useQualityDropNotice, qualityDropDismissal,
+  type QualityDropNoticeView, type QualityDropNoticeInput, type QualityDropNoticeResult,
+} from "../notices/useQualityDropNotice";

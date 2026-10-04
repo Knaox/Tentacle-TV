@@ -87,6 +87,7 @@ export default {
   // POURQUOI la qualité baisse en Auto (`player/qualityDrop.ts`) : le message
   // éphémère, puis sa ligne relisible dans le menu Qualité, sous « Auto ».
   qualityDropTitle: "Qualité réduite",
+  qualityDropDismissed: "Masqué. La raison reste lisible dans le menu Qualité.",
   qualityDrop: {
     network: "Le réseau mesuré ({{measured}} Mb/s) ne porte pas ce fichier ({{source}} Mb/s) : la qualité s'adapte.",
     remoteLimit: "Jellyfin limite les connexions par Internet à {{limit}} Mb/s : ce réglage du serveur réduit la qualité.",
@@ -180,6 +181,9 @@ export default {
   // La ligne discrète d'un transcodage lent (ouverture, changement de qualité,
   // arrêt en lecture) : rien n'est bloqué, le chargement continue.
   transcodeSlowHint: "Le transcodage peut prendre un peu plus de temps",
+  // Après un saut pendant un transcodage (`player/transcodeSeek.ts`) : la
+  // phrase sous l'indicateur, quand l'attente dépasse 5 s.
+  seekPreparing: "Le serveur prépare la vidéo à ce passage…",
   networkSlowHint: "La connexion est trop lente pour cette qualité",
   // L'onglet « Réglages » du lecteur Apple TV : la qualité, et tout ce qui
   // n'est pas un choix de piste (« Pistes » ne garde qu'audio et sous-titres).
