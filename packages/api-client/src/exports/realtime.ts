@@ -4,7 +4,7 @@ export { useHomeWebSocket, setWsBackendUrl } from "../hooks/useHomeWebSocket";
 // Socket Tentacle partagé (multiplexé : home, notifications, Watch Together)
 export {
   acquireSocket, sendSocketMessage, subscribeSocket, onSocketStatus,
-  getSocketStatus, sampleClock, setClockSampling, type SocketStatus,
+  getSocketStatus, sampleClock, setClockSampling, resetSocketSession, type SocketStatus,
 } from "../socket/tentacleSocket";
 export { getClockOffsetMs, getClockRttMs } from "../socket/clockSync";
 

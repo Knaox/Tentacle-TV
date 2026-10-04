@@ -205,6 +205,21 @@ export function acquireSocket(token?: string | null): () => void {
   };
 }
 
+/**
+ * La session de l'application vient de changer avant que ses consommateurs ne
+ * le sachent (Apple TV : un profil de la Famille quitté). La connexion se
+ * ferme et son authentification est oubliée, tout de suite : elle ne sert plus
+ * une seconde avec l'ancien jeton — et ne se reconnecte pas en le présentant
+ * encore. Chaque consommateur reprend la socket avec son nouveau jeton
+ * (`acquireSocket`) ; jusque-là, elle reste fermée.
+ */
+export function resetSocketSession(): void {
+  authToken = undefined;
+  authClosed = false;
+  if (lingerTimer) { clearTimeout(lingerTimer); lingerTimer = null; }
+  teardown();
+}
+
 /** Envoie un message (false si le socket n'est pas ouvert). */
 export function sendSocketMessage(msg: WsClientMessage): boolean {
   if (ws?.readyState !== WebSocket.OPEN) return false;

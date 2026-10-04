@@ -18,8 +18,14 @@ class FakeWebSocket {
   constructor(public url: string) {
     FakeWebSocket.instances.push(this);
   }
-  send(): void {}
-  close(): void {}
+  sent: string[] = [];
+  closed = false;
+  send(data: string): void {
+    this.sent.push(data);
+  }
+  close(): void {
+    this.closed = true;
+  }
 }
 
 type SocketModule = typeof import("./tentacleSocket");
@@ -57,5 +63,29 @@ describe("tentacleSocket", () => {
   it("ne connecte rien sans acquisition", () => {
     socket.setWsBackendUrl("http://backend.test");
     expect(FakeWebSocket.instances).toHaveLength(0);
+  });
+
+  it("une session qui change ferme la connexion de l'ancien jeton, et la suivante présente le nouveau", () => {
+    socket.setWsBackendUrl("http://backend.test");
+    const before = socket.acquireSocket("jeton-profil-a");
+    const first = FakeWebSocket.instances[0];
+    first.readyState = FakeWebSocket.OPEN;
+    first.onopen?.();
+    expect(first.sent[0]).toBe(JSON.stringify({ type: "auth", token: "jeton-profil-a" }));
+
+    socket.resetSocketSession();
+    expect(first.closed).toBe(true);
+    expect(first.onclose).toBeNull();
+    expect(socket.getSocketStatus()).toBe("idle");
+    // Rien ne se reconnecte avec l'ancien jeton.
+    expect(FakeWebSocket.instances).toHaveLength(1);
+
+    before();
+    const after = socket.acquireSocket("jeton-profil-b");
+    const second = FakeWebSocket.instances[1];
+    second.readyState = FakeWebSocket.OPEN;
+    second.onopen?.();
+    expect(second.sent[0]).toBe(JSON.stringify({ type: "auth", token: "jeton-profil-b" }));
+    after();
   });
 });
