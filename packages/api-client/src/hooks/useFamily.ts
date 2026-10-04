@@ -12,6 +12,7 @@ import {
   removeFamilyMember,
   sendFamilyInvitation,
   setFamilyGuestPin,
+  setFamilyMemberRights,
   setOwnFamilyPin,
   snoozeFamilyInvitation,
 } from "../family/familyApi";
@@ -40,7 +41,7 @@ export function useFamilyOverview(options: { enabled?: boolean } = {}) {
   });
 }
 
-/** Les comptes invitables (filtrés par la saisie ; un compte caché par son nom exact). */
+/** Les candidats (v2 : tous les comptes, cachés compris, marqués `in_family` / `invited` ; `query` affine). */
 export function useFamilyCandidates(query: string, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: familyCandidatesKey(query),
@@ -87,6 +88,11 @@ export function useSetOwnFamilyPin() {
 
 export function useRemoveFamilyMember() {
   return useFamilyMutation(removeFamilyMember);
+}
+
+/** Le propriétaire permet (ou retire) à un membre de créer des invités — retirer ne supprime rien. */
+export function useSetFamilyMemberRights() {
+  return useFamilyMutation(setFamilyMemberRights);
 }
 
 export function useSendFamilyInvitation() {

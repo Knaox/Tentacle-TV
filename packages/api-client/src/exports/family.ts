@@ -3,7 +3,7 @@
 // l'Apple TV, les crochets et le temps réel. Contrat : @tentacle-tv/shared › family/.
 export {
   familyErrorFromApi, fetchFamilyOverview, fetchFamilyCandidates, createFamilyGuest, deleteFamilyGuest,
-  setFamilyGuestPin, setOwnFamilyPin, removeFamilyMember, sendFamilyInvitation, cancelFamilyInvitation,
+  setFamilyGuestPin, setOwnFamilyPin, removeFamilyMember, setFamilyMemberRights, sendFamilyInvitation, cancelFamilyInvitation,
   acceptFamilyInvitation, declineFamilyInvitation, snoozeFamilyInvitation, leaveFamily, dissolveFamily,
 } from "../family/familyApi";
 export {
@@ -11,7 +11,7 @@ export {
 } from "../family/familyTvApi";
 export {
   FAMILY_KEY, FAMILY_OVERVIEW_KEY, familyCandidatesKey, useFamilyOverview, useFamilyCandidates,
-  useCreateFamilyGuest, useDeleteFamilyGuest, useSetFamilyGuestPin, useSetOwnFamilyPin, useRemoveFamilyMember,
+  useCreateFamilyGuest, useDeleteFamilyGuest, useSetFamilyGuestPin, useSetOwnFamilyPin, useRemoveFamilyMember, useSetFamilyMemberRights,
   useSendFamilyInvitation, useCancelFamilyInvitation, useAcceptFamilyInvitation, useDeclineFamilyInvitation,
   useSnoozeFamilyInvitation, useLeaveFamily, useDissolveFamily,
 } from "../hooks/useFamily";
