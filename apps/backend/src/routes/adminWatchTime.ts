@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getPrisma, hasPrisma } from "../services/db";
 import { collectorState } from "../services/watchTime/collector";
+import { withoutFamilyGuests } from "../services/family/familyGuestMarkers";
 
 /**
  * Diagnostic du collecteur de temps — enregistré depuis adminRoutes, donc
@@ -46,15 +47,16 @@ export const adminWatchTimeRoutes: FastifyPluginAsync = async (app) => {
     ]);
 
     // Les clés de cette réponse sont le contrat de la route : elles restent en
-    // français, comme celles de `CollectorState`.
+    // français, comme celles de `CollectorState`. Un invité de la Famille n'y
+    // paraît pas (aucune liste) : il ne se voit que dans les sessions en cours.
     return {
       collecteur: collector,
-      aujourdhui: perUser.map((u) => ({
+      aujourdhui: (await withoutFamilyGuests(perUser, (u) => u.jellyfinUserId)).map((u) => ({
         userId: u.jellyfinUserId,
         segments: u._count._all,
         secondes: u._sum.seconds ?? 0,
       })),
-      derniers: latest,
+      derniers: await withoutFamilyGuests(latest, (segment) => segment.jellyfinUserId),
     };
   });
 };
