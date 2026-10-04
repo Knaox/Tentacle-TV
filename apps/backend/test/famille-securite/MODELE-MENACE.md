@@ -286,16 +286,39 @@ Chaque cas d'abus est relié à l'exigence testable qui le ferme (section 6).
   `Secure`, d'une API en contexte sûr, ni du TLS. *Preuve : la suite d'attaque
   tourne deux fois (HTTP puis HTTPS) avec les mêmes verdicts (recette phase 4).*
 
+### Proxy Jellyfin — faille existante à corriger (hors Famille, signalée par le coordinateur)
+
+- **SEC-F-34** — Un **jeton d'appareil** ne doit **jamais** obtenir la clé
+  d'administration pour une **mutation arbitraire** de Jellyfin. La substitution
+  de la clé admin ne vaut que pour les routes de lecture/session autorisées ; la
+  garde de périmètre (`userScope`) ne couvre que `/Users/{id}/…`, or la liste
+  blanche laisse passer `Items/{id}` en **toutes méthodes**. *Prouvé rouge le
+  2026-10-04 : `DELETE`/`POST /api/jellyfin/Items/{id}` porté par un JWT
+  d'appareil → 200, exécuté chez Jellyfin avec la clé admin. Attendu après
+  correction (T2) : refus (403 ; 401 toléré), et aucune mutation ne part avec la
+  clé admin. Test : `proxyMutationAppareil.attack.test.ts` (en attente de la
+  correction).*
+
 ---
 
-## 7. Ce que la phase 2 vérifiera (tests d'attaque)
+## 7. État des tests d'attaque (phase 2, 2026-10-04)
 
-Chaque `SEC-F-xx` → au moins un test dans `test/famille-securite/`. Tant que le
-contrat de T2 n'est pas fusionné, ces tests sont **marqués en attente**
-(`it.todo` / `describe.skip` avec le `SEC-F-xx` en titre) pour garder la garde
-verte ; la liste des tests en attente est transmise au coordinateur. Dès le
-contrat fusionné, ils deviennent actifs et **ne sont plus modifiés** (T2 les
-fait passer).
+Fichiers dans `test/famille-securite/` :
+
+- `familleReglesPures.attack.test.ts` — **27 actifs verts** (règles pures déjà
+  fusionnées) : SEC-F-05, 14, 17, 22, 23, 24, 33.
+- `familleContratRoutes.attack.test.ts` — **38 actifs verts** (invariants du
+  contrat de routes) : SEC-F-04, 07, 18, 19, 27, et présence/statut des codes de
+  refus (SEC-F-03, 05, 08, 16, 17, 23, 28, 33).
+- `proxyMutationAppareil.attack.test.ts` — **SEC-F-34, `describe.skip`** : prouvé
+  rouge aujourd'hui, attend la correction proxy de T2.
+- `familleServeur.attente.test.ts` — **36 `it.todo`** : scénarios qui exigent le
+  serveur en marche (socle d'auth T2 `d3093b90c` non fusionné). SEC-F-01, 02, 03,
+  06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27,
+  28, 29, 30, 31, 32, 33.
+
+Total : 65 actifs verts, 3 en attente (proxy), 36 todo. Garde verte. Les tests
+en attente **ne sont plus modifiés** une fois activés : T2 les fait passer.
 
 ## 8. Notes pour T2 (conception serveur, en parallèle)
 
