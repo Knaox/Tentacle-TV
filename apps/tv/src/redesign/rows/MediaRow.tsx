@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { cardIndexOf } from "../cards/cardFocusKeys";
@@ -8,6 +8,7 @@ import type { CardModel } from "../cards/cardTypes";
 import { useForcedFocusKey } from "../focus/focusPreview";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
+import { useRowRewindPort } from "./rowRewindPort";
 
 /**
  * Une rangée : son titre (36 pt), puis ses cartes à l'horizontale, peu
@@ -15,7 +16,14 @@ import { text } from "../theme/tokens";
  * un peu — par une valeur partagée que chaque carte lit sur le fil
  * d'interface (`useRowFocus`) : un pas du focus ne redessine pas la rangée.
  * La clé de focus d'une carte est `${rowKey}:${index}`.
+ *
+ * Sur une page qui le demande (l'accueil, « Pour vous » : `rowRewindPort`),
+ * la rangée se déclare avec sa remise au début — l'intégration la ramène à sa
+ * première carte, sans animation, une fois sortie de l'écran.
  */
+
+/** Le vide sous les cartes d'une rangée (sa marge et le bas de sa piste) : rien ne s'y voit au repos. */
+export const MEDIA_ROW_TRAILING = TV_STAGE.row.spacing;
 
 export interface MediaRowProps {
   rowKey: string;
@@ -45,6 +53,12 @@ export const MediaRow = memo(function MediaRow({
   onFocusCard,
 }: MediaRowProps) {
   const forced = useForcedFocusKey();
+  const track = useRef<ScrollView>(null);
+  const rewind = useRowRewindPort();
+  useEffect(
+    () => rewind?.register(rowKey, () => track.current?.scrollTo({ x: 0, y: 0, animated: false })),
+    [rewind, rowKey],
+  );
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
 
   const onFocusChange = useCallback(
@@ -63,6 +77,7 @@ export const MediaRow = memo(function MediaRow({
         {accessory}
       </View>
       <ScrollView
+        ref={track}
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.track}

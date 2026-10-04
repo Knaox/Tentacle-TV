@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
+import { RowRewindProvider } from "../../redesign/rows/rowRewindPort";
 import { RailBridges } from "../../platform/tvos/back/RailBridges";
 import { RailShortcuts } from "../../platform/tvos/back/RailShortcuts";
 import { NavMenuModal } from "../nav/NavMenuModal";
@@ -19,14 +20,16 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
  *   de la navigation vers le profil (`RailShortcuts`) — les applicateurs tvOS
  *   (`platform/tvos/back/`) des règles de tv-core (`nav/railShortcuts`) ;
  * - le menu d'appui long d'une entrée (`NavMenuModal`, une Modal : son Menu
- *   part dans `onRequestClose`).
+ *   part dans `onRequestClose`) ;
+ * - le port des RANGÉES qui reviennent au début (`rowRewindPort`), quand
+ *   l'écran en a (`rewindRows`).
  */
 export function RedesignScreen({ screen, children }: { screen: RedesignScreenModel; children: ReactNode }) {
   useRailBackLayers(screen);
   return (
     <View style={styles.fill}>
       <FocusBindingProvider bind={screen.focus.binder}>
-        {children}
+        <RowRewindProvider value={screen.rows?.port ?? null}>{children}</RowRewindProvider>
         <NavMenuModal arrange={screen.arrange} focus={screen.focus} railWidth={screen.railGeometry?.expandedWidth} />
       </FocusBindingProvider>
       <RailBridges

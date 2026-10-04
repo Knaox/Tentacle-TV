@@ -6,7 +6,12 @@ import { RAIL_HOME_KEY, RAIL_PROFILE_KEY, navKeyOf } from "./railKeys";
  * Les couches du Retour d'un écran à RAIL, déclarées — module pur ; la portée
  * de la plateforme les inscrit (`useBackLayers`) dans cet ordre.
  *
- * Sur une page du rail, la règle de `railBackStep` :
+ * D'abord, sur une carte d'une rangée qui revient au début (l'accueil,
+ * « Pour vous » — `focus/rowRewind.ts`) qui n'est pas sa première : le focus
+ * va à la première carte (couche « page »). Posé là, le Retour suivant fait
+ * ce qu'il faisait.
+ *
+ * Puis, sur une page du rail, la règle de `railBackStep` :
  * - le focus dans la page : le rail s'ouvre, sur l'entrée de la page (couche
  *   « page ») ;
  * - le rail ouvert : le focus va sur le profil (couche « rail ») ;
@@ -19,7 +24,7 @@ import { RAIL_HOME_KEY, RAIL_PROFILE_KEY, navKeyOf } from "./railKeys";
  * ferme le menu d'une entrée (couches « menu »).
  */
 
-export type RailBackAction = "openRail" | "toProfile" | "cancelMove" | "closeMenu";
+export type RailBackAction = "rowStart" | "openRail" | "toProfile" | "cancelMove" | "closeMenu";
 
 export interface RailBackState {
   /** L'écran est une page du rail (`isRailPage`). */
@@ -30,12 +35,17 @@ export interface RailBackState {
   onProfile: boolean;
   moving: boolean;
   menuOpen: boolean;
+  /** Le focus est sur une carte d'une rangée déclarée, pas sur sa première (`rowBackTarget`). */
+  awayFromRowStart?: boolean;
 }
 
 export function railScreenBackLayers(state: RailBackState): BackLayerSpec<RailBackAction>[] {
   const step = railBackStep({ railFocused: state.railFocused, onSettings: state.onProfile });
+  // Une seule couche « page » active à la fois : la première carte passe avant le rail.
+  const rowStart = !state.railFocused && (state.awayFromRowStart ?? false);
   return [
-    { id: "openRail", kind: "page", active: state.railPage && step === "openRail", action: "openRail" },
+    { id: "rowStart", kind: "page", active: rowStart, action: "rowStart" },
+    { id: "openRail", kind: "page", active: state.railPage && step === "openRail" && !rowStart, action: "openRail" },
     { id: "toProfile", kind: "rail", active: state.railPage && step === "toSettings", action: "toProfile" },
     { id: "cancelMove", kind: "menu", active: state.moving, action: "cancelMove" },
     { id: "closeMenu", kind: "menu", active: state.menuOpen, action: "closeMenu" },

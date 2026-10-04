@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from "react-native";
+import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { CARD_NOTE_SPACE } from "../../cards/CardFocusNote";
@@ -9,7 +9,8 @@ import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
-import { MediaRow } from "../../rows/MediaRow";
+import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
+import { useRowRewindPort } from "../../rows/rowRewindPort";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
@@ -42,7 +43,9 @@ import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
  * Le héros et chaque étagère sont des SECTIONS (`FocusSection`, clés
  * `section:hero`, `section:<étagère>`) : HAUT / BAS passe à la voisine, au plus
  * proche, et l'étagère focalisée vient ENTIÈRE à l'écran — sa légende et la
- * raison de la carte avec elle —, en un seul mouvement.
+ * raison de la carte avec elle —, en un seul mouvement. Une étagère revient
+ * au début une fois sortie de l'écran : la page dit au port des rangées
+ * (`rowRewindPort`) où elles sont et qu'elle défile.
  */
 
 export interface ForYouShelfModel {
@@ -96,6 +99,14 @@ export const ForYouView = memo(function ForYouView({
   onFocusCard,
 }: ForYouViewProps) {
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
+  const rewind = useRowRewindPort();
+  const onScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, layoutMeasurement } = event.nativeEvent;
+      rewind?.scroll(contentOffset.y, layoutMeasurement.height);
+    },
+    [rewind],
+  );
   return (
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
@@ -108,6 +119,8 @@ export const ForYouView = memo(function ForYouView({
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           onLayout={onViewportLayout}
+          onScroll={rewind ? onScroll : undefined}
+          scrollEventThrottle={32}
         >
           {hero ? (
             <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
@@ -172,6 +185,17 @@ const Shelf = memo(function Shelf({
   onFocusCard?: ShelfHandler;
 }) {
   const key = shelf.key;
+  const withNotes = shelf.cards.some((card) => card.focusNote);
+  const rewind = useRowRewindPort();
+  const layout = useCallback(
+    (event: LayoutChangeEvent) => {
+      onLayout(event);
+      // Sous les cartes : la marge de la rangée, et la place de la raison (montrée au focus seulement).
+      const { y, height } = event.nativeEvent.layout;
+      rewind?.layout(key, y, height - MEDIA_ROW_TRAILING - (withNotes ? CARD_NOTE_SPACE : 0));
+    },
+    [onLayout, rewind, key, withNotes],
+  );
   const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
   const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
@@ -179,11 +203,11 @@ const Shelf = memo(function Shelf({
     <FocusSection
       focusKey={`section:${key}`}
       reveal={SHELF_REVEAL}
-      onLayout={onLayout}
+      onLayout={layout}
       style={[
         first === "afterHead" && styles.firstAfterHead,
         first === "alone" && styles.firstAlone,
-        shelf.cards.some((card) => card.focusNote) && styles.withNotes,
+        withNotes && styles.withNotes,
       ]}
     >
       <MediaRow

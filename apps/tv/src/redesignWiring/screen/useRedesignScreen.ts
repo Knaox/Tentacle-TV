@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { railEntryTarget, railExpanded } from "@tentacle-tv/tv-core";
 import type { NavRailProps } from "../../redesign/nav/NavRail";
 import { sameRailGeometry, type NavRailGeometry } from "../../redesign/nav/navGeometry";
@@ -9,6 +9,7 @@ import { useRailArrange, type RailArrange } from "../nav/useRailArrange";
 import { openNavigationSettings, useRailActions, useRailFocused } from "../nav/useRailState";
 import { useRequestsAccessory } from "../vigie/RequestsEntry";
 import { useEntryFocus } from "../../platform/tvos/focus/useEntryFocus";
+import { useRowRewind, type RowRewindHandle } from "../../platform/tvos/focus/useRowRewind";
 
 /**
  * Ce qu'un écran refondu AVEC navigation demande au socle — l'accueil, « Pour
@@ -39,6 +40,10 @@ export interface RedesignScreenOptions {
   /** Le magasin de focus de l'écran, quand l'écran en a besoin AVANT ce hook
    *  (sinon il en crée un). */
   focus?: FocusStore;
+  /** Ses rangées reviennent au début (l'accueil, « Pour vous » : tv-core
+   *  `focus/rowRewind.ts`) — sorties de l'écran, au changement de page par le
+   *  rail, et Retour vers la première carte. */
+  rewindRows?: boolean;
 }
 
 export interface RedesignScreenModel {
@@ -59,15 +64,27 @@ export interface RedesignScreenModel {
    *  ouverte (publié par la vue) : les ponts et les raccourcis s'y posent.
    *  `null` tant que la vue ne l'a pas publiée. */
   railGeometry: NavRailGeometry | null;
+  /** Les rangées qui reviennent au début, ou null : l'écran n'en a pas. */
+  rows: RowRewindHandle | null;
 }
 
-export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus: given }: RedesignScreenOptions): RedesignScreenModel {
+export function useRedesignScreen({
+  railKey,
+  entryKey = null,
+  onReselect,
+  focus: given,
+  rewindRows = false,
+}: RedesignScreenOptions): RedesignScreenModel {
   const own = useFocusStore();
   const focus = given ?? own;
   const arrange = useRailArrange(focus, openNavigationSettings);
   const entries = useNavEntries({ previewOrder: arrange.previewOrder, moving: arrange.movingKey !== null });
   const railFocused = useRailFocused(focus);
-  const { contentKey } = useEntryFocus(focus, entryKey);
+  // Les rangées lisent la clé de contenu, qui vient après elles.
+  const remembered = useRef<() => string | null>(() => null);
+  const rows = useRowRewind(focus, { enabled: rewindRows, remembered: () => remembered.current() });
+  const { contentKey } = useEntryFocus(focus, entryKey, rows?.resume);
+  remembered.current = contentKey;
   // Une bibliothèque focalisée dans la navigation : sa grille se prépare.
   useLibraryPrefetch(focus);
 
@@ -85,11 +102,12 @@ export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus:
   // qu'elle avait en partant — une entrée du rail, qui rouvrait le rail au
   // retour sur l'accueil, sur l'ancienne page. Le focus repasse donc d'abord
   // dans son contenu, DANS le même geste (`focusNow`) : UIKit retient le
-  // contenu.
+  // contenu. Sur une carte, le DÉBUT de sa rangée : on change de page, la
+  // rangée revient au début (`useRowRewind`).
   const refocusContent = useCallback(() => {
     const key = contentKey();
-    if (key) focus.focusNow(key);
-  }, [focus, contentKey]);
+    if (key) focus.focusNow(rows ? rows.startOf(key) : key);
+  }, [focus, contentKey, rows]);
 
   const { onSelect, onLongPress } = useRailActions(railKey, focus, focusContent, arrange, { onReselect, refocusContent });
 
@@ -111,5 +129,5 @@ export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus:
     [entries, accessory, railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry],
   );
 
-  return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, arrange, railGeometry };
+  return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, arrange, railGeometry, rows };
 }

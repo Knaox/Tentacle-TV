@@ -31,10 +31,30 @@ describe("railScreenBackLayers — Retour sur un écran à rail", () => {
     expect(resolveBack(railScreenBackLayers(page({ railPage: false, menuOpen: true })), { pushed: true })).toMatchObject({ action: "closeMenu" });
   });
 
-  it("les quatre couches, dans l'ordre d'inscription", () => {
+  it("les cinq couches, dans l'ordre d'inscription", () => {
     expect(railScreenBackLayers(page()).map((spec) => [spec.id, spec.kind])).toEqual([
-      ["openRail", "page"], ["toProfile", "rail"], ["cancelMove", "menu"], ["closeMenu", "menu"],
+      ["rowStart", "page"], ["openRail", "page"], ["toProfile", "rail"], ["cancelMove", "menu"], ["closeMenu", "menu"],
     ]);
+  });
+});
+
+describe("railScreenBackLayers — Retour dans une rangée défilée (accueil, « Pour vous »)", () => {
+  it("une fois : la première carte de la rangée, avant le rail", () => {
+    expect(resolveBack(railScreenBackLayers(page({ awayFromRowStart: true })), { pushed: false })).toMatchObject({ kind: "layer", action: "rowStart" });
+  });
+
+  it("deux fois : posé sur la première carte, Retour fait ce qu'il faisait — le rail s'ouvre", () => {
+    expect(resolveBack(railScreenBackLayers(page({ awayFromRowStart: false })), { pushed: false })).toMatchObject({ action: "openRail" });
+  });
+
+  it("une seule couche « page » active à la fois : l'ordre ne dépend pas de l'activation", () => {
+    const active = railScreenBackLayers(page({ awayFromRowStart: true })).filter((spec) => spec.active);
+    expect(active.map((spec) => spec.id)).toEqual(["rowStart"]);
+  });
+
+  it("le rail ouvert ou un menu passent avant, comme avant", () => {
+    expect(resolveBack(railScreenBackLayers(page({ awayFromRowStart: true, railFocused: true })), { pushed: false })).toMatchObject({ action: "toProfile" });
+    expect(resolveBack(railScreenBackLayers(page({ awayFromRowStart: true, menuOpen: true })), { pushed: false })).toMatchObject({ action: "closeMenu" });
   });
 });
 

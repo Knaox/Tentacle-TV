@@ -28,6 +28,8 @@ import { isNavKey } from "../../../redesignWiring/nav/useRailState";
  *   la clôt aussi — une affiche arrivée plus tard ne lui volera pas le focus ;
  * - au RETOUR (la pile redescend sur l'écran), le focus revient au dernier
  *   élément de contenu qui l'avait, s'il est encore là ; sinon à l'entrée.
+ *   `onReturn` peut lui en substituer une autre — le début de sa rangée, quand
+ *   on revient sur l'accueil par le rail (`useRowRewind`).
  */
 
 const PREFERRED: FocusExtras = { native: { hasTVPreferredFocus: true } };
@@ -43,9 +45,15 @@ interface Arrival {
   cancel: (() => void) | null;
 }
 
-export function useEntryFocus(focus: FocusStore, entryKey: string | null): EntryFocus {
+export function useEntryFocus(
+  focus: FocusStore,
+  entryKey: string | null,
+  onReturn?: (contentKey: string | null) => string | null,
+): EntryFocus {
   const entryRef = useRef(entryKey);
   entryRef.current = entryKey;
+  const onReturnRef = useRef(onReturn);
+  onReturnRef.current = onReturn;
   const lastContent = useRef<string | null>(null);
   const arrivalRef = useRef<Arrival | null>(null);
   arrivalRef.current ??= { state: startArrival(Date.now()), cancel: null };
@@ -100,8 +108,10 @@ export function useEntryFocus(focus: FocusStore, entryKey: string | null): Entry
   const first = useRef(true);
   useFocusEffect(
     useCallback(() => {
-      const key = returnClaim(first.current, contentKey());
+      const firstPassage = first.current;
       first.current = false;
+      const remembered = contentKey();
+      const key = returnClaim(firstPassage, firstPassage || !onReturnRef.current ? remembered : onReturnRef.current(remembered));
       return key ? focus.claim(key) : undefined;
     }, [focus, contentKey]),
   );

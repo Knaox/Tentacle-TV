@@ -92,7 +92,8 @@ export function ForYouRedesign({ navigation }: Props) {
 
   const firstShelf = models.shelves[0];
   const entryKey = forYouEntryKey({ status: status ? { withAction: !!status.primary } : null, hasHero: hero !== null, firstShelfKey: firstShelf?.key ?? null });
-  const screen = useRedesignScreen({ railKey: "Recommendations", entryKey });
+  // Ses étagères reviennent au début : hors de l'écran, et par Retour.
+  const screen = useRedesignScreen({ railKey: "Recommendations", entryKey, rewindRows: true });
   const { focusedPalette, onFocusCard } = useAmbientPalette(screen.focus);
   const cardActions = useTVCardActions();
 

@@ -9,7 +9,8 @@ import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
-import { MediaRow } from "../../rows/MediaRow";
+import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
+import { useRowRewindPort } from "../../rows/rowRewindPort";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 
@@ -36,6 +37,9 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
  *
  * `onHeroVisibleChange` dit quand le héros quitte l'écran — plus de la
  * moitié défilée — et quand il y revient : sa rotation s'y suspend.
+ *
+ * Les rangées reviennent au début une fois sorties de l'écran : la page dit
+ * au port des rangées (`rowRewindPort`) où elles sont et qu'elle défile.
  *
  * Clés de focus : `hero:primary`, `hero:secondary`, `hero:list`,
  * `<rangée>:<index>` pour les cartes, `filter:remove`, `status:primary`,
@@ -102,15 +106,18 @@ export const HomeView = memo(function HomeView({
 }: HomeViewProps) {
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const heroVisible = useRef(true);
+  const rewind = useRowRewindPort();
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, layoutMeasurement } = event.nativeEvent;
+      rewind?.scroll(contentOffset.y, layoutMeasurement.height);
       // Plus de la moitié du héros hors de l'écran : il n'est plus dans le champ (tv-core).
-      const visible = heroInView(event.nativeEvent.contentOffset.y, TV_STAGE.hero.top, TV_STAGE.hero.height);
+      const visible = heroInView(contentOffset.y, TV_STAGE.hero.top, TV_STAGE.hero.height);
       if (visible === heroVisible.current) return;
       heroVisible.current = visible;
       onHeroVisibleChange?.(visible);
     },
-    [onHeroVisibleChange],
+    [onHeroVisibleChange, rewind],
   );
   return (
     <View style={styles.root}>
@@ -187,6 +194,15 @@ const HomeRow = memo(function HomeRow({
   onFocusCard?: RowHandler;
 }) {
   const key = row.key;
+  const rewind = useRowRewindPort();
+  const layout = useCallback(
+    (event: LayoutChangeEvent) => {
+      onLayout(event);
+      const { y, height } = event.nativeEvent.layout;
+      rewind?.layout(key, y, height - MEDIA_ROW_TRAILING);
+    },
+    [onLayout, rewind, key],
+  );
   const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
   const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
@@ -194,7 +210,7 @@ const HomeRow = memo(function HomeRow({
     <FocusSection
       focusKey={`section:${key}`}
       reveal={ROW_REVEAL}
-      onLayout={onLayout}
+      onLayout={layout}
       style={first === "afterHero" ? styles.firstAfterHero : first === "alone" ? styles.firstAlone : undefined}
     >
       <MediaRow

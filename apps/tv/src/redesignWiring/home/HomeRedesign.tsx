@@ -77,7 +77,8 @@ export function HomeRedesign({ navigation }: Props) {
   const empty = !loading && !failed && featuredQuery.data?.length === 0 && home.rows.length === 0 && !home.resume?.length;
   const entryKey = homeEntryKey({ failed, loading, empty, hasHero: hero.hero !== null, firstRowKey: home.rows[0]?.key ?? null });
 
-  const screen = useRedesignScreen({ railKey: "Home", entryKey, focus });
+  // Ses rangées reviennent au début : hors de l'écran, au changement de page, et par Retour.
+  const screen = useRedesignScreen({ railKey: "Home", entryKey, focus, rewindRows: true });
   const { focusedPalette, onFocusCard } = useAmbientPalette(focus);
 
   const retry = useCallback(() => {
