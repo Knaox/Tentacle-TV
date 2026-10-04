@@ -8,11 +8,12 @@ import { ambiguityMessage } from "./cdpTarget.mjs";
 import { currentCheckout, referenceCheckout } from "./checkout.mjs";
 import { ensureNativeApp } from "./nativeApp.mjs";
 import { httpJson, loadState, saveState, waitFor } from "./processes.mjs";
-import { agentRun, tryEvaluate } from "./remote.mjs";
+import { agentRun, evaluate, tryEvaluate } from "./remote.mjs";
 import { ensureAgent, ensureBackend, ensureCdpd, ensureMetro } from "./services.mjs";
 import { describeDevice, ensureInstalled, ensureSimulator, findDevice, launchApp, resetAppState } from "./simulator.mjs";
 import { frozenSnapshot } from "./snapshot.mjs";
 import { settle } from "./observe.mjs";
+import { ANDROID_PACKAGE, androidDevice, describeAndroid, ensureAndroidApp, launchAndroidApp, resetAndroidSession, reversePorts, warmAndroidBundle } from "./android.mjs";
 import { TEST_BUNDLE, checkUserApp, describePhysical, deviceIds, ensureDeviceApp, ensureDeviceInstalled, launchOnDevice, macIp } from "./device.mjs";
 
 /**
@@ -42,6 +43,7 @@ export async function prepare(ctx, { at = null, erase = true } = {}) {
   const checkout = at ? await referenceCheckout(at) : currentCheckout();
   step("Code servi", checkout.label);
   if (ctx.device) return preparePhysical(ctx, checkout, snapshot);
+  if (ctx.android) return prepareAndroid(ctx, checkout, snapshot, at);
   const { fingerprint, app } = await ensureNativeApp(checkout);
   let device = ensureSimulator(ctx.sim);
   device = eraseOnce(ctx, device, { erase });
@@ -74,6 +76,24 @@ async function preparePhysical(ctx, checkout, snapshot) {
   const agentTarget = { udid, physical: true, host: macIp(), bundle: TEST_BUNDLE };
   await ensureAgent(ctx, agentTarget);
   return { checkout, snapshot, device: { udid, physical: true }, agentTarget, fingerprint, deviceInfo: describePhysical() };
+}
+
+/**
+ * Android TV : l'app debug déjà installée sur l'appareil adb de la place (une
+ * build de CE dossier : le banc ne construit pas d'APK), Metro et faux backend
+ * par `adb reverse`. Le code servi est le dossier courant : les références
+ * sont celles de l'Apple TV, jamais enregistrées ici.
+ */
+async function prepareAndroid(ctx, checkout, snapshot, at) {
+  if (at) throw new BenchError("Android TV rejoue le dossier courant contre les références de l'Apple TV : pas de --at");
+  const device = androidDevice();
+  ensureAndroidApp();
+  reversePorts(ctx);
+  await ensureBackend(ctx, snapshot);
+  await ensureMetro(ctx, checkout);
+  await warmAndroidBundle(ctx);
+  await ensureCdpd(ctx, { appId: ANDROID_PACKAGE });
+  return { checkout, snapshot, device: { ...device, android: true }, agentTarget: null, fingerprint: "android-debug", deviceInfo: describeAndroid(device) };
 }
 
 /**
@@ -114,7 +134,15 @@ export async function coldStart(ctx, session, start = {}) {
   // relancé UNE fois ici, avant de conclure « agent absent ».
   await ensureAgent(ctx, session.agentTarget, { relaunchNote: true });
   await applyFixtures(ctx, start.fixtures ?? []);
-  if (session.device.physical) {
+  if (session.device.android) {
+    reversePorts(ctx);
+    await launchAndroidApp();
+    await awaitSingleTarget(ctx);
+    const probe = await waitFor(() => tryEvaluate(ctx, "globalThis.__navGolden ? globalThis.__navGolden.version : 0"), { timeoutMs: 180_000, everyMs: 500 });
+    if (!probe) throw new BenchError("la sonde du banc n'a pas paru dans l'app Android");
+    // La session du banc posée par la sonde, puis le JS rechargé.
+    await resetAndroidSession(ctx, evaluate, { session: start.session ?? "paired", storage: start.storage ?? {} });
+  } else if (session.device.physical) {
     // L'app de TEST relancée ; la sonde remet son état à zéro sur ses arguments.
     launchOnDevice(ctx, { session: start.session ?? "paired", storage: start.storage ?? {} });
   } else {

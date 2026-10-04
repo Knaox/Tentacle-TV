@@ -93,6 +93,8 @@ export function benchContext(options) {
     sim,
     // L'Apple TV physique (« Chambre », ou NAV_GOLDEN_DEVICE_UDID / _COREDEVICE) : le passage « appareil ».
     device: options.device === true || process.env.NAV_GOLDEN_DEVICE === "1",
+    // Android TV (émulateur ou boîtier par adb, `lib/android.mjs`) : les références de l'Apple TV rejouées telles quelles.
+    android: options.android === true || process.env.NAV_GOLDEN_ANDROID === "1",
     stateFile: path.join(CACHE_DIR, "slots", `${slot}.json`),
     logDir: path.join(CACHE_DIR, "slots", `${slot}-logs`),
   };

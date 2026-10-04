@@ -286,4 +286,21 @@ function emitRemote(event) {
   DeviceEventEmitter.emit("onHWKeyEvent", event);
 }
 
-globalThis.__navGolden = { state, observe, navigate, emitRemote, version: 1 };
+/**
+ * Android TV (pas de `Settings`) : le stockage de l'app est AsyncStorage
+ * (`storage/RNStorageAdapter.ts`), lu au démarrage. La sonde le vide, pose les
+ * clés du banc, puis recharge le JS : l'app redémarre sur la session voulue
+ * (`lib/android.mjs`). Jamais appelée sur Apple TV.
+ */
+function androidReset(keys) {
+  const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+  const { DevSettings } = require("react-native");
+  return AsyncStorage.clear()
+    .then(() => AsyncStorage.multiSet(Object.entries(keys).map(([key, value]) => [key, String(value)])))
+    .then(() => DevSettings.reload());
+}
+
+/** Change à chaque chargement du JS : le banc voit un rechargement. */
+const boot = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+globalThis.__navGolden = { state, observe, navigate, emitRemote, androidReset, boot, version: 1 };
