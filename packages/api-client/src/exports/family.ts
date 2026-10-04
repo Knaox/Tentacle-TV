@@ -16,3 +16,6 @@ export {
   useSnoozeFamilyInvitation, useLeaveFamily, useDissolveFamily,
 } from "../hooks/useFamily";
 export { useFamilyLive, type UseFamilyLiveOptions } from "../hooks/useFamilyLive";
+// L'administration : les interrupteurs « Familles » et « Profils invités ».
+export { fetchFamilySwitches, setFamilySwitches } from "../family/familyAdminApi";
+export { FAMILY_SWITCHES_KEY, useFamilySwitches, useSetFamilySwitches } from "../hooks/useFamilyAdmin";
