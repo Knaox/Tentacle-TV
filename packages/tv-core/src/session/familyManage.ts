@@ -83,7 +83,7 @@ export interface ManageRowModel {
   /** Un membre, vu par le propriétaire : ses droits, réglables (« Peut créer des invités ») ; null sinon. */
   memberRights: FamilyMemberRights | null;
   /** Un invité, vu par le propriétaire, sur un serveur qui annonce le droit :
-   *  « Peut demander des films » (ses demandes partent au nom du propriétaire) ; null sinon. */
+   *  « Peut demander des films » (il demande alors à son propre nom) ; null sinon. */
   guestRights: FamilyGuestRights | null;
 }
 

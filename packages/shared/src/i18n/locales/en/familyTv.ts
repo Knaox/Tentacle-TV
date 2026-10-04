@@ -70,7 +70,7 @@ export default {
     addedBy: "Guest · added by {{name}}",
     addedByYou: "Guest · added by you",
     canRequestTitles: "Can request films",
-    requestOn: "{{name}} can now request films; their requests go out in your name.",
+    requestOn: "{{name}} can now request films.",
     requestOff: "{{name}} can no longer request films.",
   },
   guest: {
