@@ -2,11 +2,14 @@ import type { MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { useEndCardRating } from "@tentacle-tv/api-client";
 import { LoadingBar } from "./PlayerLoadingScreen";
+import { PlaybackSpinner } from "./PlaybackSpinner";
 import { PlaybackOverlay } from "./PlaybackOverlay";
 import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
 
 interface VideoPlayerOverlaysProps {
   loading: boolean;
+  /** Une attente qui dure (saut pendant un transcodage) : la phrase sous l'indicateur. */
+  loadingHint?: string;
   /** La première image a été rendue au moins une fois pour ce média. */
   hasStarted: boolean;
   showPlayButton: boolean;
@@ -44,7 +47,7 @@ interface VideoPlayerOverlaysProps {
  * identiques dans les deux thèmes clair/sombre.
  */
 export function VideoPlayerOverlays({
-  loading, hasStarted, showPlayButton, posterUrl,
+  loading, loadingHint, hasStarted, showPlayButton, posterUrl,
   overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible,
   panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
@@ -66,14 +69,7 @@ export function VideoPlayerOverlays({
           première image. Tout se lit désormais dans l'état. */}
       {!showPlayButton && (hasStarted ? (
         // Buffering EN COURS de lecture (réseau qui cale) : spinner discret.
-        loading && (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            {/* `spinner-lecture` n'habille rien ici : c'est la prise que le
-                téléviseur utilise pour l'agrandir, quarante-huit pixels étant
-                illisibles à trois mètres. Le web garde sa taille. */}
-            <div className="spinner-lecture h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-          </div>
-        )
+        loading && <PlaybackSpinner hint={loadingHint} />
       ) : (
         // Chargement INITIAL du média : bannière (backdrop) + barre de chargement.
         // Tenue sans interruption du montage jusqu'à la première image.

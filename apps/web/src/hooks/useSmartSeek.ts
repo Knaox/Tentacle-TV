@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback, type MutableRefObject } from "react";
+import { useTranscodeSeek, type TranscodeSeek } from "@tentacle-tv/api-client";
 import type { SkipFlash } from "../components/SkipBadge";
 import { observeSeek, EMPTY_SEEK, SEEK_WATCH_PERIOD_MS } from "./seekLanding";
 import { hlsSeekOutsideRun } from "./hlsTimeline";
@@ -81,6 +82,9 @@ export function useSmartSeek({
    * `seekLanding.ts` — pure, testée, et documentée sur ce que `buffered` vaut
    * réellement ici.
    */
+  // Le saut pendant un transcodage (règle partagée) : il regroupe les appuis
+  // et dit l'attente. La veille ci-dessous lui annonce l'atterrissage.
+  const gateRef = useRef<TranscodeSeek | null>(null);
   const armWatch = useCallback((ptsTarget: number, clamped: number) => {
     clearInterval(seekStallTimer.current);
     const armed = Date.now();
@@ -116,6 +120,7 @@ export function useSmartSeek({
 
       clearInterval(seekStallTimer.current);
       if (lit) reportLoading?.(false);
+      if (verdict === "landed") gateRef.current?.landed();
       if (verdict === "renegotiate") {
         console.warn("[Tentacle:Seek] saut sans effet — session neuve", { target: Math.round(clamped) });
         seekTargetRef.current = clamped;
@@ -224,16 +229,24 @@ export function useSmartSeek({
     onSeekRequest?.(clamped);
   }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete, onSeekToEnd, armWatch]);
 
+  // Converti par le serveur (ni lecture directe) : des appuis rapides font UN
+  // saut, depuis la cible en cours — un seul ffmpeg relancé par Jellyfin.
+  const gate = useTranscodeSeek({
+    transcoding: !isDirectPlay, duration: 0, position: () => currentTimeRef.current, apply: handleSeek,
+  });
+  gateRef.current = gate;
+
   // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier, swipe)
   const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
   const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(skipFlashTimer.current), []);
+  const { seekBy } = gate;
   const skipBy = useCallback((delta: number) => {
-    handleSeek(Math.max(0, currentTimeRef.current + delta));
+    seekBy(delta);
     setSkipFlash({ delta, id: Date.now() });
     clearTimeout(skipFlashTimer.current);
     skipFlashTimer.current = setTimeout(() => setSkipFlash(null), 1000);
-  }, [handleSeek]);
+  }, [seekBy]);
 
-  return { handleSeek, skipBy, skipFlash };
+  return { handleSeek: gate.seekTo, skipBy, skipFlash, seekWait: gate };
 }

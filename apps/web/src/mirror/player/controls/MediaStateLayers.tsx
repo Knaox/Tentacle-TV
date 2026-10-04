@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MirrorPlayerLoadingScreen } from "../loading/MirrorPlayerLoadingScreen";
+import { PlaybackSpinner } from "../../../components/player/PlaybackSpinner";
 import type { MirrorPlayerMedia } from "../types";
 
 const LOADING_FADE_MS = 280;
@@ -37,11 +38,7 @@ export function MediaStateLayers({ media, item, onBack }: {
         <MirrorPlayerLoadingScreen item={item} onCancel={onBack} leaving={hasStarted} />
       )}
 
-      {hasStarted && loading && !showPlayButton && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-        </div>
-      )}
+      {hasStarted && loading && !showPlayButton && <PlaybackSpinner hint={media.loadingHint} />}
 
       {showPlayButton && (
         <button

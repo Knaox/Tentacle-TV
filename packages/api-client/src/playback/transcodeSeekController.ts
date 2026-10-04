@@ -33,7 +33,12 @@ export interface TranscodeSeekHost {
 const IDLE: TranscodeSeekState = { target: null, phase: "idle" };
 
 export interface TranscodeSeekController {
-  request: (request: SeekRequest) => void;
+  /**
+   * Une demande de saut. `immediate` : une position choisie d'un geste unique
+   * (la barre relâchée) part sans attendre le calme — sauf si des appuis sont
+   * déjà en attente, auxquels elle se joint.
+   */
+  request: (request: SeekRequest, options?: { immediate?: boolean }) => void;
   /** Un relevé du lecteur : la position, et s'il charge. L'atterrissage se constate ici. */
   observe: (position: number, buffering: boolean) => void;
   /** Le lecteur dit lui-même que le saut a abouti (`playback-restart` de mpv, verdict du web). */
@@ -93,7 +98,7 @@ export function createTranscodeSeekController(host: TranscodeSeekHost): Transcod
   };
 
   return {
-    request(request) {
+    request(request, options) {
       const t = now();
       if (!host.transcoding()) {
         // Lecture directe : les octets sont là, le lecteur saute tout de suite.
@@ -103,11 +108,13 @@ export function createTranscodeSeekController(host: TranscodeSeekHost): Transcod
       }
       // La base d'un écart : la cible en cours (en attente ou appliquée), jamais
       // une position que le lecteur n'a pas encore quittée.
+      const joining = pending !== null;
       pending = accumulateSeek(pending, request, target() ?? host.position(), t, host.duration());
       since ??= t;
       clearTimeout(commitTimer);
-      commitTimer = setTimeout(commit, Math.max(0, seekDueAt(pending) - t));
-      emit({ target: pending.target, phase: seekWaitPhase(since, t) });
+      if (options?.immediate && !joining) commit();
+      else commitTimer = setTimeout(commit, Math.max(0, seekDueAt(pending) - t));
+      emit({ target: pending?.target ?? applied, phase: seekWaitPhase(since, t) });
       armPhase();
     },
     observe(position, buffering) {

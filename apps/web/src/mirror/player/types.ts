@@ -19,6 +19,8 @@ export interface MirrorPlayerMedia {
   hasStarted: boolean;
   /** Mise en mémoire tampon en cours de lecture. */
   loading: boolean;
+  /** Une attente qui dure (saut pendant un transcodage) : la phrase sous l'indicateur. */
+  loadingHint?: string;
   /** Lecture automatique refusée par le navigateur : un tap pour lancer. */
   showPlayButton: boolean;
   setShowPlayButton: (v: boolean) => void;

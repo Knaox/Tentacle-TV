@@ -14,7 +14,7 @@ export interface TranscodeSeekInput {
 }
 
 export interface TranscodeSeek {
-  /** Aller à une position du film (barre, télécommande, saut de segment). */
+  /** Aller à une position du film (barre, télécommande, saut de segment) — tout de suite, sauf à rejoindre des appuis en attente. */
   seekTo: (target: number) => void;
   /** Un écart depuis la cible en cours (« +30 s », « −10 s », double toucher). */
   seekBy: (delta: number) => void;
@@ -52,13 +52,14 @@ export function useTranscodeSeek(input: TranscodeSeekInput): TranscodeSeek {
 
   useEffect(() => () => controller.reset(), [controller]);
 
-  return useMemo(() => ({
-    seekTo: (target: number) => controller.request({ to: target }),
+  // Les gestes sont STABLES (une identité pour toute la vie du lecteur) : les
+  // raccourcis, le transport de Watch Together et l'arbitre s'y abonnent.
+  const actions = useMemo(() => ({
+    seekTo: (target: number) => controller.request({ to: target }, { immediate: true }),
     seekBy: (delta: number) => controller.request({ by: delta }),
-    target: state.target,
-    phase: state.phase,
     observe: controller.observe,
     landed: controller.landed,
     reset: controller.reset,
-  }), [controller, state]);
+  }), [controller]);
+  return useMemo(() => ({ ...actions, target: state.target, phase: state.phase }), [actions, state]);
 }

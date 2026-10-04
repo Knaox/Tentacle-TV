@@ -73,6 +73,18 @@ describe("createTranscodeSeekController", () => {
     expect(controller.state().phase).toBe("idle");
   });
 
+  it("une position choisie à la barre part tout de suite, mais rejoint des appuis en attente", () => {
+    const { controller, applied } = setup({ position: 100 });
+    controller.request({ to: 900 }, { immediate: true });
+    expect(applied).toEqual([900]);
+    expect(controller.state()).toEqual({ target: 900, phase: "loading" });
+    controller.request({ by: 30 });
+    controller.request({ to: 1200 }, { immediate: true });
+    expect(applied).toEqual([900]);
+    vi.advanceTimersByTime(SEEK_SETTLE_MS);
+    expect(applied).toEqual([900, 1200]);
+  });
+
   it("hors transcodage, le saut part tout de suite, sans attente dite", () => {
     const { controller, applied, states } = setup({ transcoding: false, position: 100 });
     controller.request({ by: -10 });

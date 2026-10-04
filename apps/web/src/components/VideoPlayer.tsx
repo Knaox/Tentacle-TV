@@ -26,6 +26,7 @@ import { useGatedPlay } from "../hooks/useGatedPlay";
 import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
 import { usePlayerVolume } from "../hooks/usePlayerVolume";
 import { useElementFullscreen } from "../hooks/useElementFullscreen";
+import { useSeekWaitFeedback } from "../hooks/useSeekWaitFeedback";
 import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
 import { useSanitizedSubtitles } from "../hooks/useSanitizedSubtitles";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
@@ -116,7 +117,7 @@ export function VideoPlayer({
     isPaused: () => videoRef.current?.paused ?? true, onRequestPlay,
   });
 
-  const { handleSeek, skipBy, skipFlash } = useSmartSeek({
+  const { handleSeek, skipBy, skipFlash, seekWait } = useSmartSeek({
     videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef, hlsRunStartRef,
     src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
     reportLoading: setLoading,
@@ -172,6 +173,8 @@ export function VideoPlayer({
   const sanitizedSubtitleUrl = useSanitizedSubtitles({ tracks: textTracks, selection: currentSubtitle, src });
 
   currentTimeRef.current = currentTime;
+  // Le saut pendant un transcodage : l'attente dite, le délai dépassé au modèle d'erreur.
+  const { waiting: seekWaiting, hint: loadingHint } = useSeekWaitFeedback(seekWait, { position: currentTime, buffering: loading, onFailure });
 
   useEffect(() => {
     const mark = () => { userInteractedRef.current = true; };
@@ -199,7 +202,8 @@ export function VideoPlayer({
   });
 
   const controls = {
-    playing, currentTime, duration, buffered, volume, fullscreen,
+    // Pendant un saut regroupé ou attendu, la barre montre le passage visé.
+    playing, currentTime: seekWait.target ?? currentTime, duration, buffered, volume, fullscreen,
     item, itemId, mediaSourceId, title, subtitle,
     audioTracks, subtitleTracks, qualityPresets,
     currentAudio, currentSubtitle, currentQuality, sourceQuality, autoQualityActive, qualityDrop,
@@ -259,10 +263,10 @@ export function VideoPlayer({
 
       {mirror ? (
         <MirrorPlayerOverlay controls={controls} playback={playback} bridge={bridge}
-          media={{ hasStarted, loading, showPlayButton, setShowPlayButton, videoRef, userInteractedRef }} />
+          media={{ hasStarted, loading: loading || seekWaiting, loadingHint, showPlayButton, setShowPlayButton, videoRef, userInteractedRef }} />
       ) : (<>
         <VideoPlayerOverlays
-          loading={loading} hasStarted={hasStarted}
+          loading={loading || seekWaiting} loadingHint={loadingHint} hasStarted={hasStarted}
           showPlayButton={showPlayButton}
           posterUrl={posterUrl}
           overlay={playback.overlay} countdownTotals={playback.countdownTotals}
