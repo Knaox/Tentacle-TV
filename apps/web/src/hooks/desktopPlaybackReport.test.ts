@@ -11,6 +11,11 @@ describe("échec du lecteur de bureau", () => {
     expect(desktopPlaybackReport({ kind: "player", messageKey: "player:streamStartFailed" })).toEqual({ from: "marker", marker: "startTimeout" });
   });
 
+  it("un saut pendant un transcodage qui ne ramène rien est son propre délai dépassé", () => {
+    expect(desktopPlaybackReport({ kind: "player", messageKey: "errors:reasonSeekTimeout", started: true }))
+      .toEqual({ from: "marker", marker: "seekTimeout" });
+  });
+
   it("une fin de fichier en erreur garde le message de mpv, que la sonde départagera", () => {
     const report = desktopPlaybackReport({ kind: "player", detail: "end-file (error=-13)" });
     expect(report).toMatchObject({ from: "engine", failure: { engine: "mpv", message: "loading failed", code: "-13" } });

@@ -20,12 +20,15 @@ import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
 import { useEndCardRating } from "@tentacle-tv/api-client";
 import { LoadingBackButton, LoadingBar } from "./PlayerLoadingScreen";
 import { PlaybackOverlay } from "./PlaybackOverlay";
+import { PlaybackSpinner } from "./PlaybackSpinner";
 
 interface DesktopPlayerOverlaysProps {
   showLoadingOverlay: boolean;
   /** La sortie de l'écran de chargement — l'habillage en est retiré. */
   onBack: () => void;
   buffering: boolean;
+  /** Une attente qui dure (saut pendant un transcodage) : la phrase sous l'indicateur. */
+  loadingHint?: string;
   /** Réserve mpv en secondes (`demuxer-cache-duration`) — affichée en debug. */
   buffered: number;
   posterUrl?: string;
@@ -52,7 +55,7 @@ interface DesktopPlayerOverlaysProps {
 }
 
 export function DesktopPlayerOverlays({
-  showLoadingOverlay, onBack, buffering, buffered, posterUrl,
+  showLoadingOverlay, onBack, buffering, loadingHint, buffered, posterUrl,
   overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible, panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
@@ -89,11 +92,7 @@ export function DesktopPlayerOverlays({
       {showLoadingOverlay && <LoadingBackButton onClick={onBack} />}
 
       {/* Buffering spinner (during playback — seeking, network stall) */}
-      {buffering && !showLoadingOverlay && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-        </div>
-      )}
+      {buffering && !showLoadingOverlay && <PlaybackSpinner hint={loadingHint} layer="z-20" />}
 
       <PlaybackOverlay
         overlay={overlay}

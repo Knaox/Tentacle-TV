@@ -53,6 +53,8 @@ const MPV_ERROR_STRINGS: Record<number, string> = {
  */
 export function desktopPlaybackReport(failure: PlaybackFailure): SharedPlaybackFailure {
   if (failure.messageKey === "player:streamStartFailed") return { from: "marker", marker: "startTimeout" };
+  // Un saut pendant un transcodage qui n'a rien ramené (`useSeekWaitFeedback`).
+  if (failure.messageKey === "errors:reasonSeekTimeout") return { from: "marker", marker: "seekTimeout" };
   const code = /error=(-?\d+)/.exec(failure.detail ?? "")?.[1];
   const text = code !== undefined ? MPV_ERROR_STRINGS[Number(code)] ?? `mpv error ${code}` : failure.detail ?? "";
   return { from: "engine", failure: { ...mpvFailure(text), code: code ?? undefined } };

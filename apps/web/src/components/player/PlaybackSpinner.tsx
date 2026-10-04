@@ -12,9 +12,9 @@ import { memo } from "react";
  * utilise pour l'agrandir, quarante-huit pixels étant illisibles à trois
  * mètres. Le web garde sa taille.
  */
-export const PlaybackSpinner = memo(function PlaybackSpinner({ hint }: { hint?: string }) {
+export const PlaybackSpinner = memo(function PlaybackSpinner({ hint, layer = "z-10" }: { hint?: string; layer?: string }) {
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 px-6">
+    <div className={`pointer-events-none absolute inset-0 ${layer} flex flex-col items-center justify-center gap-4 px-6`}>
       <div className="spinner-lecture h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white motion-reduce:animate-[spin_2.4s_linear_infinite]" />
       {hint && (
         <p role="status" aria-live="polite" className="max-w-sm rounded-full bg-black/60 px-4 py-1.5 text-center text-sm text-white/90">

@@ -24,12 +24,14 @@ import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
+import { useSeekWaitFeedback } from "../hooks/useSeekWaitFeedback";
+import { QualityDropNotice } from "./player/QualityDropNotice";
 import { EMPTY_SUBTITLE_FILES, type DesktopPlayerProps } from "./player/desktopPlayer.types";
 
 export function DesktopPlayer({
   src, title, subtitle, startPositionSeconds, jellyfinDuration,
   audioTracks = [], subtitleTracks = [],
-  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive, qualityDrop,
   onAudioChange, onSubtitleChange, onQualityChange,
   isLocalPlayback = false, offline = false, localLibraryId = null,
   localSubtitleFiles = EMPTY_SUBTITLE_FILES, onProgress, onStarted,
@@ -87,7 +89,6 @@ export function DesktopPlayer({
   const draggingRef = useRef(false);
   const reportUserSeek = (seconds: number) => onSeekComplete?.(seconds, state.paused, true);
 
-  // MPV tracks split by type
   const mpvAudio = useMemo(() => state.tracks.filter((t) => t.type === "audio"), [state.tracks]);
   const mpvSubs = useMemo(() => state.tracks.filter((t) => t.type === "sub"), [state.tracks]);
 
@@ -166,9 +167,9 @@ export function DesktopPlayer({
 
   const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
 
-  // ±10/30 s et « jusqu'au bout » (un +30 s qui atteint la fin la termine).
-  const { seekToMpvEnd, skipRelativeOrEnd } = useDesktopSkip({
-    state, dur, effectiveMpvOffset, seek, seekRelative, groupActive: inGroupSession, onUserSeek: reportUserSeek,
+  // ±10/30 s et « jusqu'au bout » ; sur un transcodage, appuis regroupés et attente dite.
+  const { seekToMpvEnd, skipRelativeOrEnd, seekbarSeek, seekWait } = useDesktopSkip({
+    state, dur, effectiveMpvOffset, seek, seekRelative, groupActive: inGroupSession, onUserSeek: reportUserSeek, transcoding: isHls,
   });
 
   // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
@@ -181,7 +182,7 @@ export function DesktopPlayer({
   const seekbar = useDesktopSeekbar({
     dur, paused: state.paused, isDirectPlay, item, mediaSourceId,
     localItemId: isLocalPlayback ? itemId : undefined,
-    effectiveMpvOffset, seek, setPause,
+    effectiveMpvOffset, seek: seekbarSeek, setPause,
     // La pause du glissement n'est pas celle de l'utilisateur : aucun badge.
     ignoreNextToggle,
     // Relâcher la poignée sur le bord termine la lecture (affiche de fin).
@@ -192,7 +193,10 @@ export function DesktopPlayer({
   });
 
   const actualPos = state.position + effectiveMpvOffset.current;
-  const displayProgress = seekbar.dragProgress ?? (dur > 0 ? actualPos / dur : 0);
+  // L'attente d'un saut pendant un transcodage : indicateur, phrase, modèle d'erreur au délai.
+  const seekFeedback = useSeekWaitFeedback(seekWait, { position: actualPos, buffering: state.buffering || state.seeking,
+    onFailure: () => onFallbackToWeb?.({ kind: "player", messageKey: "errors:reasonSeekTimeout", started: true }) });
+  const displayProgress = seekbar.dragProgress ?? (dur > 0 ? (seekWait.target ?? actualPos) / dur : 0);
   const bufProg = dur > 0 ? Math.min((actualPos + state.buffered) / dur, 1) : 0;
   const hasSettings = displayAudio.length > 0 || displaySubs.length > 0 || !!onQualityChange;
 
@@ -247,7 +251,7 @@ export function DesktopPlayer({
       <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); setShowEpisodes(false); }} onDoubleClick={() => toggleFullscreen()} />
 
       <DesktopPlayerOverlays
-        showLoadingOverlay={showLoadingOverlay} onBack={goBack} buffering={state.buffering}
+        showLoadingOverlay={showLoadingOverlay} onBack={goBack} buffering={state.buffering || seekFeedback.waiting} loadingHint={seekFeedback.hint}
         buffered={state.buffered} posterUrl={posterUrl}
         overlay={playback.overlay} countdownTotals={playback.countdownTotals}
         onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
@@ -260,11 +264,10 @@ export function DesktopPlayer({
         onRatingEngage={playback.cancelNextCountdown}
       />
 
-      {/* Badge « +30s / −10s » après un saut */}
       <SkipBadge flash={skipFlash} />
+      <QualityDropNotice drop={qualityDrop ?? null} started={hasStarted} itemId={itemId} />
 
-      {/* Et son pendant à chaque bascule lecture/pause, d'où qu'elle vienne —
-          barre d'espace, bouton, télécommande média. */}
+      {/* Le badge de chaque bascule lecture/pause (espace, bouton, télécommande média). */}
       <PlaybackBadge flash={playbackFlash} />
 
       {/* Pendant le CHARGEMENT, rien à commander : l'habillage cède la place à
@@ -280,7 +283,7 @@ export function DesktopPlayer({
         // le menu montrait brièvement la piste précédente.
         curAudio={currentAudio} curSub={currentSubtitle}
         currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets} autoQualityActive={autoQualityActive}
-        hasSettings={hasSettings} hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
+        qualityDrop={qualityDrop} hasSettings={hasSettings} hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
         dur={dur} actualPos={actualPos} displayProgress={displayProgress} bufProg={bufProg}
         seekbar={seekbar}
         showSettings={showSettings} showEpisodes={showEpisodes}

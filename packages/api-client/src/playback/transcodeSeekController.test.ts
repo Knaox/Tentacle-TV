@@ -73,16 +73,26 @@ describe("createTranscodeSeekController", () => {
     expect(controller.state().phase).toBe("idle");
   });
 
-  it("une position choisie à la barre part tout de suite, mais rejoint des appuis en attente", () => {
+  it("une position choisie d'un geste final part tout de suite, et emporte les appuis en attente", () => {
     const { controller, applied } = setup({ position: 100 });
     controller.request({ to: 900 }, { immediate: true });
     expect(applied).toEqual([900]);
     expect(controller.state()).toEqual({ target: 900, phase: "loading" });
     controller.request({ by: 30 });
     controller.request({ to: 1200 }, { immediate: true });
-    expect(applied).toEqual([900]);
+    expect(applied).toEqual([900, 1200]);
     vi.advanceTimersByTime(SEEK_SETTLE_MS);
     expect(applied).toEqual([900, 1200]);
+  });
+
+  it("une poignée glissée : seule la dernière position part", () => {
+    const { controller, applied } = setup();
+    for (const at of [300, 420, 610, 700]) {
+      controller.request({ to: at });
+      vi.advanceTimersByTime(100);
+    }
+    vi.advanceTimersByTime(SEEK_SETTLE_MS);
+    expect(applied).toEqual([700]);
   });
 
   it("hors transcodage, le saut part tout de suite, sans attente dite", () => {

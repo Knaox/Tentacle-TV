@@ -14,8 +14,12 @@ export interface TranscodeSeekInput {
 }
 
 export interface TranscodeSeek {
-  /** Aller à une position du film (barre, télécommande, saut de segment) — tout de suite, sauf à rejoindre des appuis en attente. */
-  seekTo: (target: number) => void;
+  /**
+   * Aller à une position du film (barre relâchée, télécommande, saut de
+   * segment) : tout de suite. `settle` : une position parmi d'autres (poignée
+   * qu'on glisse) — regroupée comme un appui.
+   */
+  seekTo: (target: number, options?: { settle?: boolean }) => void;
   /** Un écart depuis la cible en cours (« +30 s », « −10 s », double toucher). */
   seekBy: (delta: number) => void;
   /** La position visée, à afficher pendant le regroupement et l'attente ; `null` sinon. */
@@ -55,7 +59,8 @@ export function useTranscodeSeek(input: TranscodeSeekInput): TranscodeSeek {
   // Les gestes sont STABLES (une identité pour toute la vie du lecteur) : les
   // raccourcis, le transport de Watch Together et l'arbitre s'y abonnent.
   const actions = useMemo(() => ({
-    seekTo: (target: number) => controller.request({ to: target }, { immediate: true }),
+    seekTo: (target: number, options?: { settle?: boolean }) =>
+      controller.request({ to: target }, { immediate: !options?.settle }),
     seekBy: (delta: number) => controller.request({ by: delta }),
     observe: controller.observe,
     landed: controller.landed,

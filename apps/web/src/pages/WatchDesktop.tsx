@@ -39,7 +39,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    qualityKey, setQualityKey, sourceQuality, qualityPresets, autoModeArmed, setStartTicks,
+    qualityKey, setQualityKey, sourceQuality, qualityPresets, autoModeArmed, qualityDrop, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset,
@@ -257,7 +257,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         key={`${itemId}:${attempt}`} src={streamUrl} title={title} subtitle={epSubtitle}
         startPositionSeconds={group.groupStartPositionSeconds ?? playback.resumeAt ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
         audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-        currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality} autoQualityActive={autoModeArmed}
+        currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality} autoQualityActive={autoModeArmed} qualityDrop={qualityDrop}
         qualityPresets={qualityPresets}
         onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
         /* Lecture locale : le fichier EST la source — changer la « qualité »

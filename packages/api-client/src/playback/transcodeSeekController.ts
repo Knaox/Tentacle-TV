@@ -34,9 +34,9 @@ const IDLE: TranscodeSeekState = { target: null, phase: "idle" };
 
 export interface TranscodeSeekController {
   /**
-   * Une demande de saut. `immediate` : une position choisie d'un geste unique
-   * (la barre relâchée) part sans attendre le calme — sauf si des appuis sont
-   * déjà en attente, auxquels elle se joint.
+   * Une demande de saut. `immediate` : une position choisie d'un geste final
+   * (la barre relâchée, la télécommande) part sans attendre le calme, et
+   * emporte les appuis en attente — c'est elle la cible.
    */
   request: (request: SeekRequest, options?: { immediate?: boolean }) => void;
   /** Un relevé du lecteur : la position, et s'il charge. L'atterrissage se constate ici. */
@@ -108,11 +108,10 @@ export function createTranscodeSeekController(host: TranscodeSeekHost): Transcod
       }
       // La base d'un écart : la cible en cours (en attente ou appliquée), jamais
       // une position que le lecteur n'a pas encore quittée.
-      const joining = pending !== null;
       pending = accumulateSeek(pending, request, target() ?? host.position(), t, host.duration());
       since ??= t;
       clearTimeout(commitTimer);
-      if (options?.immediate && !joining) commit();
+      if (options?.immediate) commit();
       else commitTimer = setTimeout(commit, Math.max(0, seekDueAt(pending) - t));
       emit({ target: pending?.target ?? applied, phase: seekWaitPhase(since, t) });
       armPhase();
