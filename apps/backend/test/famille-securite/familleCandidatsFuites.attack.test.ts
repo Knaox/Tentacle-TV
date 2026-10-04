@@ -51,15 +51,15 @@ const candidateNames = async (q = "") =>
   (await app.inject({ method: "GET", url: `/api/family/candidates${q ? `?q=${encodeURIComponent(q)}` : ""}`, headers: bearer(tokens.damien) }))
     .json().map((c: { name: string }) => c.name);
 
-describe("SEC-F-22 : les candidats ne trahissent aucun compte caché", () => {
-  it("un compte caché ne sort que sur son nom EXACT ; jamais désactivé, soi-même, ou invité", async () => {
+// SEC-F-42 (v2) : l'énumération des comptes devient VOULUE — un compte caché
+// de l'écran de connexion PARAÎT désormais dans les candidats (règle pure
+// attaquée dans familleDroitsV2). Reste borné : jamais un invité, un désactivé
+// ni soi-même. Ce bloc n'éprouve QUE ces invariants (vrais en v1 comme en v2) ;
+// « le caché paraît en recherche partielle » par le service attend le
+// branchement de T2 (familleV2.attente.test.ts).
+describe("SEC-F-42 : les candidats n'exposent jamais un invité, un désactivé, ni soi-même", () => {
+  it("l'invité créé, le compte désactivé et soi-même restent hors des candidats, et ne s'invitent pas", async () => {
     await post("/api/family/guests", tokens.damien, { name: "Zoé", color: "pink" }); // un invité
-    // Recherche partielle : le caché reste invisible, un nom inconnu aussi (même réponse vide).
-    expect(await candidateNames("cach")).toEqual([]);
-    expect(await candidateNames("CachÉ_inconnu")).toEqual([]);
-    // Nom exact : le caché paraît.
-    expect(await candidateNames("Caché")).toContain("Caché");
-    // Jamais : le compte désactivé, soi-même, l'invité déjà créé.
     const all = await candidateNames();
     expect(all).not.toContain("Coupé"); // désactivé
     expect(all).not.toContain("Damien"); // soi-même

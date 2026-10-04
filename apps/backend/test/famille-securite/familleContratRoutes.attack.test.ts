@@ -123,6 +123,22 @@ describe("rôles : retrait de membre et suppression d'invité réservés au prop
 
 // ── Les codes de refus existent, avec le bon statut HTTP ──────────────────────
 
+// ── SEC-F-38 (v2) : régler les droits d'un membre est un geste de gestion ─────
+
+describe("SEC-F-38 : seul le propriétaire (sa session, ou sa TV) règle les droits d'un membre", () => {
+  it("setMemberRights existe, PUT, et n'est appelable ni par un jeton de jumelage ni par une session de profil quelconque", () => {
+    expect(FAMILY_ROUTES.setMemberRights.method).toBe("PUT");
+    expect(callersOf("setMemberRights")).toEqual(["personal", "ownerTv"]);
+    expect(callersOf("setMemberRights")).not.toContain("tvPairing");
+    expect(callersOf("setMemberRights")).not.toContain("tvProfile");
+    expect(callersOf("setMemberRights")).not.toContain("memberTv");
+  });
+
+  it("la cible du réglage est dans l'URL (un membre précis), le droit dans le corps", () => {
+    expect(FAMILY_ROUTES.setMemberRights.path).toContain(":userId");
+  });
+});
+
 describe("protocole : chaque refus du modèle de menace a son code et son statut", () => {
   it.each([
     ["family.not_found", 404], // SEC-F-03 IDOR : « inexistant » == « pas à toi »
@@ -141,6 +157,9 @@ describe("protocole : chaque refus du modèle de menace a son code et son statut
     ["family.guest_account", 403], // un invité ne gère rien
     ["family.full", 409], // SEC-F-33
     ["family.guests_full", 409], // SEC-F-33
+    ["family.guest_right_required", 403], // SEC-F-38 v2 : un membre sans le droit de créer
+    ["family.already_in_family", 409], // SEC-F-36 v2 : une seule famille par personne
+    ["family.owner_must_dissolve", 403], // SEC-F-37 v2 : le propriétaire ne quitte pas, il dissout
   ] as const)("%s → %i", (code, status) => {
     expect(FAMILY_ERROR_STATUS[code as keyof typeof FAMILY_ERROR_STATUS]).toBe(status);
   });

@@ -35,8 +35,6 @@ import {
   normalizeGuestName,
   pinGate,
   pinLockDuration,
-  selectCandidates,
-  type CandidateSource,
   type InviteHistory,
   type PinAttemptState,
 } from "../../src/family/familyRules";
@@ -183,46 +181,11 @@ describe("SEC-F-17 : verrou du PIN", () => {
   });
 });
 
-// ── SEC-F-22 : candidats — comptes cachés non énumérables ─────────────────────
-
-describe("SEC-F-22 : sélection des candidats à l'invitation", () => {
-  const users: CandidateSource[] = [
-    { id: "visible1", name: "Alice", isHidden: false, isDisabled: false, imageTag: "t" },
-    { id: "visible2", name: "Alain", isHidden: false, isDisabled: false, imageTag: null },
-    { id: "hidden", name: "SecretAdmin", isHidden: true, isDisabled: false, imageTag: null },
-    { id: "disabled", name: "Banni", isHidden: false, isDisabled: true, imageTag: null },
-  ];
-
-  it("ne révèle jamais un compte caché par une recherche partielle (anti-énumération)", () => {
-    for (const q of ["", "Secret", "secretadm", "S", "Admin"]) {
-      const out = selectCandidates(users, { query: q, exclude: [], limit: 50 });
-      expect(out.find((c) => c.userId === "hidden")).toBeUndefined();
-    }
-  });
-
-  it("ne rend un compte caché QUE sur son nom exact (casse indifférente)", () => {
-    const out = selectCandidates(users, { query: "secretadmin", exclude: [], limit: 50 });
-    expect(out.map((c) => c.userId)).toContain("hidden");
-  });
-
-  it("un nom caché inconnu et un nom inexistant rendent le MÊME résultat (vide) : rien ne confirme l'existence", () => {
-    const inconnu = selectCandidates(users, { query: "NExistePas", exclude: [], limit: 50 });
-    const cacheNonDeviné = selectCandidates(users, { query: "SecretAdmi", exclude: [], limit: 50 });
-    expect(inconnu).toEqual([]);
-    expect(cacheNonDeviné).toEqual([]);
-  });
-
-  it("n'offre jamais un compte désactivé, ni soi-même, ni un membre/invité/invitation déjà là (exclude)", () => {
-    const out = selectCandidates(users, { query: "", exclude: ["visible2"], limit: 50 });
-    const ids = out.map((c) => c.userId);
-    expect(ids).not.toContain("disabled"); // désactivé
-    expect(ids).not.toContain("visible2"); // exclu (soi/membre/invité)
-    expect(ids).toContain("visible1");
-    // exclude insensible à la casse et aux tirets (identifiants Jellyfin).
-    const folded = selectCandidates(users, { query: "", exclude: ["VISI-BLE1"], limit: 50 });
-    expect(folded.map((c) => c.userId)).not.toContain("visible1");
-  });
-});
+// SEC-F-22 (candidats cachés non énumérables, v1) est ABANDONNÉ par la v2 :
+// l'énumération devient voulue mais bornée. La règle candidats v2
+// (`familyCandidates`) est attaquée dans `familleDroitsV2.attack.test.ts`
+// (SEC-F-42) ; son branchement au service suit chez T2
+// (`familleV2.attente.test.ts`).
 
 // ── SEC-F-24 : noms d'invité — injection et longueur ──────────────────────────
 
