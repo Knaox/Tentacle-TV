@@ -3,8 +3,14 @@ import { useTranslation } from "react-i18next";
 import { useTentacleConfig, useInterfaceLanguage, useSetInterfaceLanguage } from "@tentacle-tv/api-client";
 import { SettingsChoiceRow } from "../settings/SettingsChoiceRow";
 
+/** Chaque langue sous SON nom, comme sur l'Apple TV : qui cherche l'anglais lit « English ». */
+const LANGUAGES = [
+  { value: "fr", label: "Français" },
+  { value: "en", label: "English" },
+];
+
 /**
- * La langue d'interface, en ligne : « Langue [Français | Anglais] ».
+ * La langue d'interface : « Langue », puis une pastille par langue.
  * Synchronisée avec le backend (DB), comme sur web/TV : reflète la langue
  * stockée côté serveur (changée depuis un autre appareil) et la persiste au
  * changement.
@@ -35,7 +41,7 @@ export function LanguageChoiceRow({ last }: { last?: boolean }) {
     <SettingsChoiceRow
       icon="globe"
       label={t("language")}
-      options={[{ value: "fr", label: t("french") }, { value: "en", label: t("english") }]}
+      options={LANGUAGES}
       value={currentLang}
       onChange={switchLanguage}
       last={last}
