@@ -34,6 +34,8 @@ import { adminSegmentRoutes } from "./routes/adminSegments";
 import { downloadRoutes } from "./routes/downloads";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
+import { familyRoutes } from "./routes/family/familyRoutes";
+import { adminFamilyRoutes, familyTvRoutes } from "./routes/family/familyTvRoutes";
 import { shareRoutes } from "./routes/share";
 import { tmdbRoutes } from "./routes/tmdb";
 import { trailerRoutes } from "./routes/trailers";
@@ -62,6 +64,7 @@ import { externalAccountRoutes } from "./routes/externalAccounts";
 import { startRecoJobs, stopRecoJobs } from "./services/reco/jobs";
 import { startSearchJobs, stopSearchJobs } from "./services/search/jobs";
 import { startPairingCleanup } from "./services/pairingCleanup";
+import { startFamilySweep } from "./services/family/familySweep";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
 import { startNotificationPushWorker } from "./services/notificationPushWorker";
@@ -225,6 +228,7 @@ async function main() {
             if (state === "running") {
               console.log("[Guard] Auto-recovery succeeded — state is now running");
               startPairingCleanup();
+              startFamilySweep();
             }
           }
         } catch (err) {
@@ -256,6 +260,10 @@ async function main() {
   await app.register(downloadRoutes, { prefix: "/api/downloads" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
+  // La Famille (docs/FAMILLE.md) : routes et appelants tirés du contrat.
+  await app.register(familyRoutes, { prefix: "/api/family" });
+  await app.register(familyTvRoutes, { prefix: "/api/family" });
+  await app.register(adminFamilyRoutes, { prefix: "/api/admin" });
   await app.register(shareRoutes, { prefix: "/api/share" });
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
   await app.register(trailerRoutes, { prefix: "/api/trailers" });
@@ -343,6 +351,7 @@ async function main() {
   // Start background workers only when fully configured
   if (state === "running") {
     startPairingCleanup();
+    startFamilySweep();
     startJellyfinPoller();
     startJellyfinWs();
     startNotificationPushWorker();

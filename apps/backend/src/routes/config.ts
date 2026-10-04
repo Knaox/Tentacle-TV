@@ -8,6 +8,7 @@ import { pairedJellyfinDeviceId } from "../services/deviceSessions/deviceAuth";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
 import { BACKEND_VERSION } from "../services/version";
 import { jellyfinAcceptsLegacyAuth } from "../services/jellyfinLegacyAuth";
+import { familyCapability } from "../services/family/familyConfig";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
 
@@ -19,6 +20,8 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       features: {
         downloads: false,
         demo: DEMO_MODE,
+        // La Famille : absente d'un serveur d'avant — les clients n'en montrent rien.
+        family: familyCapability(),
       },
       // URL publique canonique du serveur (domaine fronté par le worker Cloudflare).
       // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du

@@ -4,6 +4,8 @@ import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
 import { revokePairedDevices } from "../services/deviceRevocation";
+import { forgetFamilyAccount } from "../services/family/familyMembers";
+import { isFamilyGuest } from "../services/family/familyGuestMarkers";
 import { clearSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
@@ -120,11 +122,15 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // 2. Clean up Tentacle DB data — ses TV d'abord, par la révocation commune :
-    // prévenues en direct, refusées partout, leurs sessions fermées.
+    // prévenues en direct, refusées partout, leurs sessions fermées. Puis la
+    // Famille : sa famille dissoute (invités supprimés), ses adhésions retirées.
     const prisma = getPrisma();
     try {
-      const devices = await prisma.pairedDevice.findMany({ where: { jellyfinUserId: user.userId }, select: { id: true } });
+      const devices = await prisma.pairedDevice.findMany({ where: { jellyfinUserId: user.userId, parentId: null }, select: { id: true } });
       await revokePairedDevices(devices, "account");
+      await forgetFamilyAccount(user.userId, Date.now()).catch((err) => {
+        request.log.warn({ err: (err as Error)?.message }, "famille du compte supprimé : reprise au prochain balayage");
+      });
       await prisma.$transaction([
         prisma.libraryPreference.deleteMany({ where: { jellyfinUserId: user.userId } }),
         prisma.notification.deleteMany({ where: { jellyfinUserId: user.userId } }),
@@ -173,6 +179,8 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
         (u) => u.Name.toLowerCase() === username.toLowerCase()
       );
       if (!match) return reply.send(successResponse);
+      // Un invité de la Famille n'a pas de mot de passe à retrouver (personne ne le connaît).
+      if (await isFamilyGuest(match.Id).catch(() => true)) return reply.send(successResponse);
 
       const prisma = getPrisma();
       await prisma.supportTicket.create({
