@@ -1,5 +1,6 @@
 import type { RemoteTraits } from "../remote/bindings/types";
 import { holdDirection, type Direction, type RemoteIntent } from "../remote/intents";
+import type { SignalPhase } from "../remote/signals";
 import type { ScrubDir } from "./arrowHold";
 import type { PlayerRemoteHandlers } from "./playerControls";
 
@@ -22,6 +23,10 @@ import type { PlayerRemoteHandlers } from "./playerControls";
  *   Retour (`nav/backLayers`, couches de `playerBack.ts`) qui le sert. Le
  *   glisser (`drag`) a son interprète (`touchScrub.ts`) ; le glisser rapide
  *   (`swipe`) et les pages n'agissent pas.
+ * - Avance et Retour rapides (touches de transport, Android TV) défilent à
+ *   chaque enfoncement et répétition ; leur RELÂCHEMENT (`phase` « up » du
+ *   signal) est un relâchement de maintien : l'avance s'arrête quand on lâche
+ *   la touche, sans attendre le silence des répétitions.
  */
 
 export type PlayerRemoteStep =
@@ -47,6 +52,8 @@ export function scrubDirOf(direction: Direction): ScrubDir | null {
 export function playerRemoteSteps(
   intent: RemoteIntent,
   traits: Pick<RemoteTraits, "pressOnRelease">,
+  /** La phase du signal d'origine (`IntentEvent.signal.phase`) ; absente : un appui. */
+  phase: SignalPhase | null = null,
 ): PlayerRemoteStep[] {
   const released = traits.pressOnRelease ? [RELEASE] : [];
   switch (intent.type) {
@@ -68,6 +75,7 @@ export function playerRemoteSteps(
       return dir ? [RELEASE] : [];
     }
     case "transport":
+      if ((intent.command === "avance" || intent.command === "retour") && phase === "up") return [RELEASE];
       if (intent.command === "avance") return [{ kind: "mediaSeek", dir: "forward" }, ANY_PRESS];
       if (intent.command === "retour") return [{ kind: "mediaSeek", dir: "backward" }, ANY_PRESS];
       return [];

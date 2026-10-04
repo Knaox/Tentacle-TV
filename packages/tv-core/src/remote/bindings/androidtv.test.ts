@@ -87,11 +87,11 @@ describe("ANDROIDTV_BINDINGS — appuis", () => {
     expect(commands).toEqual(["lecture", "pause", "arret"]);
   });
 
-  it("avance et recul rapides comptent à l'enfoncement, répétitions comprises — jamais au relâchement", () => {
-    expect(intentOf({ eventType: "fastForward", eventKeyAction: DOWN })).toEqual({ type: "transport", command: "avance" });
-    expect(intentOf({ eventType: "rewind", eventKeyAction: DOWN })).toEqual({ type: "transport", command: "retour" });
-    expect(intentOf({ eventType: "fastForward", eventKeyAction: UP })).toBeNull();
-    expect(intentOf({ eventType: "rewind", eventKeyAction: UP })).toBeNull();
+  it("avance et recul rapides comptent à l'enfoncement ET au relâchement (le lecteur lit la phase)", () => {
+    for (const action of [DOWN, UP]) {
+      expect(intentOf({ eventType: "fastForward", eventKeyAction: action })).toEqual({ type: "transport", command: "avance" });
+      expect(intentOf({ eventType: "rewind", eventKeyAction: action })).toEqual({ type: "transport", command: "retour" });
+    }
   });
 
   it("garde la date d'arrivée et le signal d'origine", () => {
@@ -155,11 +155,11 @@ describe("createAndroidTvReader — les répétitions d'une touche tenue", () =>
     expect(read({ eventType: "fastForward", eventKeyAction: 0 }, 4).repeat).toBeUndefined();
   });
 
-  it("Avance et Retour rapides tenus : une intention par enfoncement et par répétition (le lecteur accélère à leur rythme), rien au relâchement", () => {
+  it("Avance et Retour rapides tenus : une intention par enfoncement, par répétition (marquée) et au relâchement", () => {
     const read = createAndroidTvReader();
-    const intents = [0, 0, 0, 1].map((action, at) => translator.translate(read({ eventType: "rewind", eventKeyAction: action }, at))?.intent ?? null);
-    const rewind = { type: "transport", command: "retour" };
-    expect(intents).toEqual([rewind, rewind, rewind, null]);
+    const events = [0, 0, 0, 1].map((action, at) => translator.translate(read({ eventType: "rewind", eventKeyAction: action }, at)));
+    expect(events.map((e) => e?.intent)).toEqual(Array(4).fill({ type: "transport", command: "retour" }));
+    expect(events.map((e) => [e?.signal.phase, e?.signal.repeat ?? false])).toEqual([["down", false], ["down", true], ["down", true], ["up", false]]);
   });
 
   it("les autres touches de transport tenues ne font qu'une intention : au relâchement", () => {

@@ -43,6 +43,14 @@ describe("la table intention → gestes du lecteur (Siri Remote)", () => {
     expect(tvos({ type: "transport", command: "lecture" })).toEqual([]);
   });
 
+  it("le relâchement d'Avance ou de Retour rapides relâche le maintien (Android TV)", () => {
+    const steps = (command: "avance" | "retour", phase: "down" | "up") =>
+      playerRemoteSteps({ type: "transport", command }, { pressOnRelease: true }, phase).map((s) => s.kind);
+    expect(steps("avance", "down")).toEqual(["mediaSeek", "anyPress"]);
+    expect(steps("avance", "up")).toEqual(["release"]);
+    expect(steps("retour", "up")).toEqual(["release"]);
+  });
+
   it("sans annonce au relâchement, aucun relâchement implicite", () => {
     const steps = playerRemoteSteps({ type: "move", direction: "droite" }, { pressOnRelease: false }).map((s) => s.kind);
     expect(steps).toEqual(["arrow", "anyPress"]);
