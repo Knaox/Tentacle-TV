@@ -75,7 +75,7 @@ export const NavItem = memo(function NavItem(props: NavItemProps) {
 
 function Glyph({ icon, avatarUri, initial, glyph, color }: { icon?: IconName; avatarUri?: string; initial?: string; glyph?: (color: string) => ReactNode; color: string }) {
   if (glyph) return <>{glyph(color)}</>;
-  if (avatarUri) return <Image source={{ uri: avatarUri }} style={styles.avatar} />;
+  if (avatarUri) return <Image source={{ uri: avatarUri }} style={styles.avatar} fadeDuration={0} />;
   if (initial) {
     return (
       <View style={[styles.avatar, styles.initialBox]}>

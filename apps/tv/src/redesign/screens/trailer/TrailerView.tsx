@@ -66,12 +66,12 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
     <View style={styles.root}>
       {state !== "unavailable" && video ? <View style={StyleSheet.absoluteFill}>{video}</View> : null}
       {state === "playing" && !video && backdropUri ? (
-        <Image source={{ uri: backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={{ uri: backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
       ) : null}
       {state !== "playing" ? (
         <View style={[StyleSheet.absoluteFill, styles.cover]}>
           {backdropUri ? (
-            <Image source={{ uri: backdropUri }} style={[StyleSheet.absoluteFill, styles.dimArt]} resizeMode="cover" blurRadius={state === "unavailable" ? 18 : 0} />
+            <Image source={{ uri: backdropUri }} style={[StyleSheet.absoluteFill, styles.dimArt]} resizeMode="cover" blurRadius={state === "unavailable" ? 18 : 0} fadeDuration={0} />
           ) : null}
         </View>
       ) : null}
