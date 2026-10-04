@@ -1,6 +1,6 @@
 {
   "domain": "socle",
-  "reference": "84f3cedd0",
+  "reference": "9bcf1e600",
   "scenarios": [
     {
       "id": "retour-accueil",
@@ -77,7 +77,7 @@
     {
       "id": "retour-reglages",
       "title": "Retour depuis les réglages",
-      "start": { "keys": ["left", "up", "up", "select"], "screen": "Settings" },
+      "start": { "keys": ["left", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "select"], "screen": "Settings" },
       "steps": [
         { "do": "menu", "settleMs": 600 },
         { "do": "menu", "settleMs": 600 },

@@ -3,20 +3,99 @@
   "domain": "socle",
   "suite": "retour",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "9bcf1e60020dc15b05e657e157ec0716e064be17",
+    "label": "référence 9bcf1e600"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T2",
+    "name": "Tentacle TV — refonte",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T02:33:50.596Z",
+  "recordedAt": "2026-10-04T17:03:18.927Z",
   "scenarios": {
+    "retour-reglages": {
+      "hash": "70d07834eb36",
+      "durationMs": 42145,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:account",
+        "label": "Compte",
+        "frame": [
+          176,
+          164,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": null,
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "background",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": null,
+          "params": null,
+          "stack": [],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "background",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": null,
+          "params": null,
+          "stack": [],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
     "retour-ma-liste": {
       "hash": "2bdbba5a67f8",
       "durationMs": 33550,
@@ -648,85 +727,6 @@
             "Home",
             "Search"
           ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "background",
-          "focus": null,
-          "label": null,
-          "frame": null,
-          "groups": [],
-          "route": null,
-          "params": null,
-          "stack": [],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "retour-reglages": {
-      "hash": "68752a9ac953",
-      "durationMs": 52702,
-      "start": {
-        "app": "foreground",
-        "focus": "settings:tab:account",
-        "label": "Compte",
-        "frame": [
-          176,
-          164,
-          340,
-          100
-        ],
-        "groups": [
-          "settings:tabs"
-        ],
-        "route": "Settings",
-        "params": null,
-        "stack": [
-          "Home",
-          "Settings"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
-          "frame": [
-            56,
-            964,
-            276,
-            64
-          ],
-          "groups": [],
-          "route": "Settings",
-          "params": null,
-          "stack": [
-            "Home",
-            "Settings"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "background",
-          "focus": null,
-          "label": null,
-          "frame": null,
-          "groups": [],
-          "route": null,
-          "params": null,
-          "stack": [],
           "panel": null,
           "panelOwners": [],
           "writes": []
