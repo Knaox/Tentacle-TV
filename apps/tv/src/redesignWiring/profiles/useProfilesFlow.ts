@@ -179,8 +179,11 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     },
     erase: () => setEntry((current) => erasePinDigit(current)),
     closePin: () => {
+      // Bloqué en route : la rangée se relit, et dit jusqu'à quand.
+      const locked = entry.phase === "locked";
       setEntry(PIN_ENTRY_START);
-      setPhase({ kind: "picker" });
+      if (locked) void load(null);
+      else setPhase({ kind: "picker" });
     },
     /** « Déjumeler cet appareil » sous une erreur : double appui (tv-core `confirmPress`). */
     unpairFromError: () => {

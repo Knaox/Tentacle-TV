@@ -127,7 +127,8 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: "row", gap: 40, justifyContent: "center" },
   notice: { height: 70, justifyContent: "center" },
   noticeText: { ...text.body, color: colors.warningFg, textAlign: "center" },
-  actions: { flexDirection: "row", gap: 28, alignItems: "center" },
+  // Pleine largeur : BAS depuis le profil le plus à droite (ou à gauche) y trouve une cible.
+  actions: { flexDirection: "row", gap: 28, alignItems: "center", justifyContent: "center", alignSelf: "stretch" },
   hint: { ...text.caption, marginTop: 22, textAlign: "center" },
   // En haut à gauche, sur toute la largeur : HAUT depuis le pavé y monte.
   backBar: {

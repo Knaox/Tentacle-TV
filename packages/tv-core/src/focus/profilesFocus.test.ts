@@ -10,8 +10,10 @@ import {
   PROFILES_BACK_KEY,
   manageEntryKey,
   manageFocusAfterRemoval,
+  manageGuardedKeys,
   manageRowKey,
   pinDigitKey,
+  profilesGuardedKeys,
   profileTileKey,
   profilesEntryKey,
 } from "./profilesFocus";
@@ -71,3 +73,17 @@ describe("le Retour des profils", () => {
     expect(manageBackAction("list", "profiles")).toBe("toProfiles");
   });
 });
+
+describe("le clic fantôme", () => {
+  it("garde chaque profil, chaque touche du pavé et les actions — jamais la croix", () => {
+    const keys = profilesGuardedKeys();
+    expect(keys).toContain(profileTileKey(5));
+    expect(keys).toContain(pinDigitKey("0"));
+    expect(keys).toContain("pin:erase");
+    expect(keys).not.toContain(PROFILES_BACK_KEY);
+    expect(manageGuardedKeys()).toContain("guest:create");
+    expect(manageGuardedKeys()).toContain("invite:candidate:4");
+    expect(manageGuardedKeys()).not.toContain(MANAGE_BACK_KEY);
+  });
+});
+

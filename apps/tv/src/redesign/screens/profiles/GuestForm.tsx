@@ -4,14 +4,14 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { FAMILY_GUEST_NAME_MAX, FAMILY_PROFILE_COLORS, type FamilyProfileColor } from "@tentacle-tv/shared";
-import { GUEST_COLORS_GROUP, GUEST_CREATE_KEY, GUEST_NAME_KEY, guestColorKey } from "@tentacle-tv/tv-core";
+import { GUEST_ACTIONS_GROUP, GUEST_COLORS_GROUP, GUEST_CREATE_KEY, GUEST_NAME_KEY, guestColorKey } from "@tentacle-tv/tv-core";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, text, white } from "../../theme/tokens";
-import { PairingField } from "../pairing/PairingField";
+import { FIELD, PairingField } from "../pairing/PairingField";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { profileStops } from "./profileColors";
 
@@ -21,8 +21,8 @@ import { profileStops } from "./profileColors";
  * deux. « Créer le profil » envoie ; le serveur crée le compte (caché, sans
  * mot de passe connu) et nettoie le nom.
  *
- * Clés : `guest:name`, `guest:color:<couleur>`, `guest:create` ; groupe
- * `guest:colors`.
+ * Clés : `guest:name`, `guest:color:<couleur>`, `guest:create` ; groupes
+ * `guest:colors`, `guest:actions` (pleine largeur : BAS depuis toute couleur).
  */
 export const GuestForm = memo(function GuestForm({ name, color, creating, error, onName, onColor, onSubmit }: {
   name: string;
@@ -54,10 +54,10 @@ export const GuestForm = memo(function GuestForm({ name, color, creating, error,
             <Swatch key={swatch} color={swatch} selected={swatch === color} label={t(`colors.${swatch}`)} onPress={onColor ? () => onColor(swatch) : undefined} />
           ))}
         </FocusGroup>
-        <View style={styles.submit}>
+        <FocusGroup focusKey={GUEST_ACTIONS_GROUP} style={styles.submit}>
           <PillButton label={creating ? t("guest.creating") : t("guest.create")} icon="check" variant="primary" focusKey={GUEST_CREATE_KEY} onPress={creating ? undefined : onSubmit} />
           {creating ? <ActivityIndicator color={colors.text} /> : null}
-        </View>
+        </FocusGroup>
         <Text style={styles.error}>{error ?? " "}</Text>
       </View>
       <View style={styles.preview}>
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   swatch: { width: SWATCH, height: SWATCH, borderRadius: SWATCH / 2, borderWidth: 3, borderColor: "transparent" },
   swatchSelected: { borderColor: white(0.9) },
   swatchFill: { flex: 1, borderRadius: SWATCH / 2, alignItems: "center", justifyContent: "center" },
-  submit: { flexDirection: "row", alignItems: "center", gap: 20, marginTop: 46 },
+  submit: { flexDirection: "row", alignItems: "center", gap: 20, marginTop: 46, width: FIELD.width },
   error: { ...fonts.semibold, fontSize: 26, lineHeight: 34, marginTop: 18, color: colors.warningFg },
   preview: { alignItems: "center", paddingTop: 70 },
   previewName: { ...text.heading, marginTop: 28, maxWidth: 360, textAlign: "center" },

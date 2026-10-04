@@ -1,11 +1,11 @@
 import type { TFunction } from "i18next";
 import type { FamilyCandidateDto, FamilyOverviewDto, FamilyProfileColor } from "@tentacle-tv/shared";
-import { manageCapacity, manageRows, type ManageBlock, type ManageRowModel } from "@tentacle-tv/tv-core";
+import { INVITE_SHOWN_CANDIDATES, manageCapacity, manageRows, type ManageBlock, type ManageRowModel } from "@tentacle-tv/tv-core";
 import type { InviteCandidateView, ManageRowView } from "../../redesign/screens/profiles/ManageProfilesView";
 import { profileAvatarUri } from "./profilesModel";
 
-/** Les comptes qu'une recherche montre au plus : la page tient sans défiler. */
-export const SHOWN_CANDIDATES = 5;
+/** Les comptes qu'une recherche montre au plus : la page tient sans défiler (tv-core). */
+export const SHOWN_CANDIDATES = INVITE_SHOWN_CANDIDATES;
 
 export interface ManageOwner {
   userId: string;

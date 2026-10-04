@@ -41,7 +41,8 @@ export default {
   },
   manage: {
     title: "Gérer les profils",
-    subtitle: "Famille de {{owner}} · {{count}} profils sur {{max}}",
+    subtitle_one: "Famille de {{owner}} · {{count}} profil sur {{max}}",
+    subtitle_other: "Famille de {{owner}} · {{count}} profils sur {{max}}",
     createGuest: "Créer un invité",
     inviteMember: "Inviter un membre",
     guestsFull: "Trois invités au plus par famille.",

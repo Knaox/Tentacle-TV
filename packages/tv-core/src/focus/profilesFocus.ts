@@ -1,3 +1,4 @@
+import { FAMILY_MAX_PROFILES, FAMILY_PROFILE_COLORS } from "@tentacle-tv/shared";
 import { STATUS_PRIMARY_KEY } from "./homeEntry";
 
 /**
@@ -66,6 +67,8 @@ export const GUEST_NAME_KEY = "guest:name";
 export const GUEST_COLORS_GROUP = "guest:colors";
 export const guestColorKey = (color: string): string => `guest:color:${color}`;
 export const GUEST_CREATE_KEY = "guest:create";
+/** La rangée de « Créer le profil », pleine largeur : BAS depuis n'importe quelle couleur y mène. */
+export const GUEST_ACTIONS_GROUP = "guest:actions";
 
 export const INVITE_SEARCH_KEY = "invite:search";
 export const INVITE_RESULTS_GROUP = "invite:results";
@@ -115,3 +118,46 @@ export function manageFocusAfterRemoval(input: ManageEntryInput, removedRow: num
   const next = remaining.find((row) => row >= removedRow) ?? remaining[remaining.length - 1];
   return next !== undefined ? manageRowKey(next) : manageEntryKey({ ...input, view: "list", actionRows: [] });
 }
+
+// ── Le clic fantôme ─────────────────────────────────────────────────────────
+
+/** Les comptes qu'une recherche d'invitation montre au plus (la page tient sans défiler). */
+export const INVITE_SHOWN_CANDIDATES = 5;
+
+const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+const range = (count: number): number[] => Array.from({ length: count }, (_, index) => index);
+
+/**
+ * Les cibles GARDÉES du clic fantôme : sur ces écrans, chaque geste change la
+ * page sous un OK encore enfoncé — un profil ouvre le pavé, la croix rend la
+ * rangée, « Créer le profil » rend la liste —, et l'OK relâché validerait la
+ * cible qui vient de prendre le focus (vécu au simulateur : le pavé rouvert
+ * avec un chiffre tapé). L'OK qui n'a pas COMMENCÉ sur une cible n'y vaut
+ * rien. La croix n'en est pas : son verrou passe par la même liaison
+ * (`backCross`), et elle ne s'ouvre jamais sous un OK.
+ */
+export function profilesGuardedKeys(): string[] {
+  return [
+    ...range(FAMILY_MAX_PROFILES).map(profileTileKey),
+    PROFILES_STAY_KEY,
+    PROFILES_MANAGE_KEY,
+    ...DIGITS.map(pinDigitKey),
+    PIN_ERASE_KEY,
+  ];
+}
+
+export function manageGuardedKeys(): string[] {
+  return [
+    MANAGE_CREATE_KEY,
+    MANAGE_INVITE_KEY,
+    ...range(FAMILY_MAX_PROFILES).map(manageRowKey),
+    GUEST_NAME_KEY,
+    ...FAMILY_PROFILE_COLORS.map(guestColorKey),
+    GUEST_CREATE_KEY,
+    INVITE_SEARCH_KEY,
+    ...range(INVITE_SHOWN_CANDIDATES).map(inviteCandidateKey),
+    ...DIGITS.map(pinDigitKey),
+    PIN_ERASE_KEY,
+  ];
+}
+
