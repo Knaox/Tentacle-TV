@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "expo-router";
 import {
   FAMILY_ROUTE,
@@ -42,6 +42,9 @@ export function FamilyInvitationHost() {
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set());
   const [shownId, setShownId] = useState<string | null>(null);
   const inPlayer = pathname.startsWith("/watch");
+  // Lue par l'effet de la demande sans le relancer à chaque navigation.
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   const incoming = overview.data?.incoming;
   const invitation = useMemo(
@@ -50,7 +53,8 @@ export function FamilyInvitationHost() {
   );
 
   // La demande d'une invitation précise : la Famille se relit d'abord (elle a
-  // pu être répondue ailleurs). Introuvable une fois relue → sa page.
+  // pu être répondue ailleurs). Introuvable une fois relue → sa page (sans
+  // l'empiler une seconde fois si on y est déjà).
   const { refetch } = overview;
   useEffect(() => {
     if (!requestedId || !available) return;
@@ -59,7 +63,7 @@ export function FamilyInvitationHost() {
       if (cancelled) return;
       if (!result.data?.incoming.some((item) => item.id === requestedId)) {
         clearFamilyPosterRequest();
-        router.push(FAMILY_ROUTE as never);
+        if (pathnameRef.current !== FAMILY_ROUTE) router.push(FAMILY_ROUTE as never);
       }
     });
     return () => {
