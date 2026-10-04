@@ -83,6 +83,26 @@ export async function endMemberLink(others: string[], leavingUserId: string, rea
   return theirs + (await endForeignOnTvsOf([leavingUserId], reason));
 }
 
+/** Les sessions d'un profil sur toutes les TV SAUF celle qui agit — son PIN
+ *  changé depuis sa session de profil : cette session reste, avec son « Ne plus
+ *  proposer à l'ouverture » ; partout ailleurs, l'une et l'autre tombent. */
+export async function endProfileElsewhere(
+  profileUserId: string,
+  keep: { sessionId: string; pairingId: string },
+  reason: FamilyProfileEndReason,
+): Promise<number> {
+  const prisma = getPrisma();
+  await prisma.pairedDevice.updateMany({
+    where: { stickyProfileId: profileUserId, parentId: null, id: { not: keep.pairingId } },
+    data: { stickyProfileId: null },
+  });
+  const rows = await prisma.pairedDevice.findMany({
+    where: { jellyfinUserId: profileUserId, parentId: { not: null }, id: { not: keep.sessionId } },
+    select: { id: true },
+  });
+  return endSessions(rows, reason);
+}
+
 /** Toutes les sessions d'un profil, sur toutes les TV (PIN changé, invité supprimé, compte supprimé). */
 export async function endProfileEverywhere(profileUserId: string, reason: FamilyProfileEndReason): Promise<number> {
   await forgetSticky({ profileUserId });

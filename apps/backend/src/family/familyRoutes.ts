@@ -58,8 +58,20 @@ export const FAMILY_ROUTES = {
   /** `DissolveBody` → `{ dissolved: true }`. Le propriétaire seul : membres
    *  sortis, invités supprimés de Jellyfin (tous, quel que soit leur créateur). */
   dissolve: { method: "DELETE", path: "/api/family", callers: ["personal"], rateLimit: { max: 5, windowMs: HOUR } },
-  /** `SetPinBody` → `{ hasPin }`. Le PIN de CE compte, pour lui-même. */
-  setOwnPin: { method: "PUT", path: "/api/family/pin", callers: ["personal"], rateLimit: { max: 10, windowMs: MINUTE } },
+  /** `SetOwnPinBody` → `{ hasPin }`. Le PIN de CE compte, par lui-même : en
+   *  session personnelle, ou depuis SA session de profil sur une TV — le
+   *  propriétaire, un membre, un compte sans famille ; jamais un invité (son
+   *  PIN est celui que pose son propriétaire ou son créateur :
+   *  `family.guest_account`), jamais le compte de démonstration. `currentPin`
+   *  exigé dès qu'un PIN existe. Ses AUTRES sessions de profil tombent sur
+   *  toutes les TV, et son « Ne plus proposer à l'ouverture » ailleurs ; la
+   *  session de TV qui agit reste, avec le sien. */
+  setOwnPin: {
+    method: "PUT",
+    path: "/api/family/pin",
+    callers: ["personal", "tvProfile"],
+    rateLimit: { max: 10, windowMs: MINUTE },
+  },
   /** `CreateGuestBody` → `FamilyProfileDto`. Le propriétaire, ou un membre qui
    *  en a le droit (`family.guest_right_required` sinon) : l'invité entre dans
    *  la famille PARTAGÉE, `createdBy` = son créateur. Un compte sans famille

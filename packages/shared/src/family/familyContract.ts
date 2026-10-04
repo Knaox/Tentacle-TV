@@ -276,6 +276,17 @@ export interface SetPinBody {
   pin: string | null;
 }
 
+/** Son PIN, par soi-même (`setOwnPin`) : depuis une session personnelle, ou
+ *  depuis SA session de profil sur une TV — l'acteur est toujours la session,
+ *  jamais un identifiant du corps. */
+export interface SetOwnPinBody extends SetPinBody {
+  /** Le PIN actuel : EXIGÉ dès que le compte en a un, sur toute session.
+   *  Vérifié comme à l'ouverture d'un profil — même compteur par profil, même
+   *  blocage : `family.pin_required`, `family.pin_invalid` (`attemptsLeft`),
+   *  `family.pin_locked` (`lockedUntil`). Ignoré sans PIN posé. */
+  currentPin?: string;
+}
+
 export interface InviteBody {
   userId: string;
 }

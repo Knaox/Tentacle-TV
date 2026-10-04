@@ -24,6 +24,10 @@ export const familyIdSchema = z.string().min(1).max(191).regex(/^[A-Za-z0-9_-]+$
 /** `null` retire le PIN ; la forme (quatre chiffres) est jugée par `isValidPin`. */
 export const setPinBodySchema = z.object({ pin: z.union([z.string().max(16), z.null()]) });
 
+/** Son PIN : le nouveau, et l'actuel s'il en a un. Un identifiant glissé dans
+ *  le corps est ignoré — l'acteur vient du jeton. */
+export const setOwnPinBodySchema = setPinBodySchema.extend({ currentPin: z.string().max(16).optional() });
+
 export const createGuestBodySchema = z.object({
   name: z.string().max(200),
   color: z.enum(FAMILY_PROFILE_COLORS),

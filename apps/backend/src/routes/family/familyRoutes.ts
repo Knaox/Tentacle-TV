@@ -3,7 +3,9 @@ import { buildOverview } from "../../services/family/familyOverview";
 import { listCandidates } from "../../services/family/familyCandidates";
 import { cancelInvitation, inviteMember } from "../../services/family/familyInvitations";
 import { acceptInvitation, declineInvitation, snoozeInvitation } from "../../services/family/familyInvitationAnswers";
-import { createGuest, deleteGuest, setGuestPin, setGuestRights, setOwnPin } from "../../services/family/familyGuests";
+import { createGuest, deleteGuest, setGuestPin, setGuestRights } from "../../services/family/familyGuests";
+import { setOwnPin } from "../../services/family/familyOwnPin";
+import { hashToken } from "../../services/jwt";
 import { dissolveFamily, leaveFamily, removeMember, setMemberRights } from "../../services/family/familyMembers";
 import {
   candidatesQuerySchema,
@@ -14,6 +16,7 @@ import {
   inviteBodySchema,
   setGuestRightsBodySchema,
   setMemberRightsBodySchema,
+  setOwnPinBodySchema,
   setPinBodySchema,
   userIdSchema,
 } from "../../services/family/familySchemas";
@@ -21,8 +24,9 @@ import { actorOf, registerFamilyRoute } from "./familyRouting";
 
 /**
  * Les routes de la Famille sous `/api/family` — sessions personnelles (web,
- * bureau, mobile) et, pour la gestion, la session du propriétaire sur sa TV.
- * Qui peut quoi : `FAMILY_ROUTES` (le contrat). L'acteur vient du jeton.
+ * bureau, mobile) et, pour la gestion et son propre PIN, les sessions de
+ * profil sur les TV. Qui peut quoi : `FAMILY_ROUTES` (le contrat). L'acteur
+ * vient du jeton.
  */
 
 function param(params: unknown, key: string): unknown {
@@ -102,9 +106,11 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
     leaveFamily(actorOf(actor), familyIdSchema.parse(param(request.params, "familyId"))),
   );
 
-  registerFamilyRoute(app, "setOwnPin", async (request, actor) => {
-    const { pin } = setPinBodySchema.parse(request.body);
-    return setOwnPin(actorOf(actor), pin);
+  registerFamilyRoute(app, "setOwnPin", async (request, actor, now) => {
+    const body = setOwnPinBodySchema.parse(request.body);
+    // Depuis une TV : la session qui agit reste — c'est celle de CE jeton.
+    const tvSessionTokenHash = actor.as === "tvProfile" ? hashToken(actor.token) : null;
+    return setOwnPin({ ...actorOf(actor), tvSessionTokenHash }, body, now);
   });
 
   registerFamilyRoute(app, "dissolve", async (request, actor, now) => {

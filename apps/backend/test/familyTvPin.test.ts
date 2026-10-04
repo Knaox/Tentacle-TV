@@ -3,7 +3,8 @@
  * serveur seul compare (SEC-F-16), cinq essais puis blocage — même le bon PIN
  * échoue, et changer de TV n'y change rien (SEC-F-17) ; « Rester sur ce
  * profil » épargne le PIN jusqu'au prochain changement ; la gestion des
- * profils sur la TV exige le PIN du propriétaire (SEC-F-18).
+ * profils sur la TV exige le PIN du propriétaire (SEC-F-18). Son PIN depuis
+ * la TV : `familyOwnPinTv.test.ts`.
  */
 
 import type { FastifyInstance } from "fastify";
@@ -42,8 +43,8 @@ beforeEach(() => {
   tokens = seedUsers(h.state);
 });
 
-const setPin = (token: string, pin: string | null) =>
-  app.inject({ method: "PUT", url: "/api/family/pin", headers: bearer(token), payload: { pin } });
+const setPin = (token: string, pin: string | null, currentPin?: string) =>
+  app.inject({ method: "PUT", url: "/api/family/pin", headers: bearer(token), payload: { pin, ...(currentPin && { currentPin }) } });
 const tv = async () => enroll(app, await pairTv(h.state!, IDS.damien, "Damien"));
 
 describe("le PIN d'un profil", () => {
@@ -108,7 +109,7 @@ describe("le PIN d'un profil", () => {
     expect(again.statusCode).toBe(200);
     const token = again.json().token;
 
-    await setPin(tokens.damien, "1357");
+    await setPin(tokens.damien, "1357", "4242");
     const cut = await app.inject({ method: "GET", url: "/api/protected", headers: bearer(token) });
     expect(cut.json().profileEnded).toBe(true);
     expect(h.state!.ended).toContainEqual([expect.any(String), "pin_changed"]);
@@ -117,13 +118,6 @@ describe("le PIN d'un profil", () => {
     expect((await openProfile(app, salon, { profileId: IDS.damien })).json().code).toBe("family.pin_required");
   });
 
-  it("se pose en session personnelle seulement", async () => {
-    const salon = await tv();
-    const session = (await openProfile(app, salon, { profileId: IDS.damien })).json().token;
-    const fromTv = await setPin(session, "4242");
-    expect(fromTv.statusCode).toBe(403);
-    expect(fromTv.json().code).toBe("family.personal_session_required");
-  });
 });
 
 describe("« Gérer les profils » sur la TV", () => {

@@ -85,16 +85,17 @@ export async function lockedProfiles(userIds: string[], now: number): Promise<Ma
 }
 
 interface PinCheck {
-  pairingId: string;
+  /** Le jumelage de la TV ; null : une session personnelle. Pour le journal. */
+  pairingId: string | null;
   userId: string;
   pin: string | undefined;
   now: number;
 }
 
 /**
- * Le PIN présenté sur une TV pour un profil. Sans PIN posé : rien à vérifier.
- * Lève `pin_locked`, `pin_required`, `pin_format` ou `pin_invalid` ; une
- * réussite efface les essais ratés. `pairingId` ne sert qu'au journal.
+ * Le PIN présenté pour un profil — sur une TV, ou pour changer le sien. Sans
+ * PIN posé : rien à vérifier. Lève `pin_locked`, `pin_required`, `pin_format`
+ * ou `pin_invalid` ; une réussite efface les essais ratés.
  *
  * UN ESSAI À LA FOIS PAR PROFIL, toutes TV confondues : lire le compteur,
  * comparer (scrypt, lent) puis l'écrire se font sous le verrou du profil.
@@ -103,6 +104,20 @@ interface PinCheck {
  */
 export function checkProfilePin(input: PinCheck): Promise<void> {
   return withFamilyLock(`pin:${input.userId}`, () => checkNow(input));
+}
+
+/**
+ * Change (ou retire, `null`) son propre PIN : le nouveau doit être bien formé
+ * AVANT tout essai — une faute de frappe ne coûte pas un essai —, puis le PIN
+ * actuel est vérifié comme à l'ouverture d'un profil (même compteur, même
+ * blocage), et le nouveau écrit sous le MÊME verrou : rien ne s'intercale.
+ */
+export async function changeOwnPin(input: PinCheck & { next: string | null }): Promise<void> {
+  if (input.next !== null && !isValidPin(input.next)) throw new FamilyFailure("family.pin_format", "Le PIN compte quatre chiffres");
+  await withFamilyLock(`pin:${input.userId}`, async () => {
+    await checkNow(input);
+    await writePin(input.userId, input.next);
+  });
 }
 
 async function checkNow(input: PinCheck): Promise<void> {
@@ -129,7 +144,8 @@ async function checkNow(input: PinCheck): Promise<void> {
     lockedUntil: next.state.lockedUntil === null ? null : new Date(next.state.lockedUntil),
   };
   await prisma.profilePinAttempt.upsert({ where: key, create: { userId: input.userId, ...data }, update: data });
-  console.log(`[family] PIN refusé sur le jumelage ${input.pairingId} (${next.lockedUntil ? "bloqué" : `${next.attemptsLeft} essai(s) restant(s)`})`);
+  const where = input.pairingId ? `sur le jumelage ${input.pairingId}` : "en session personnelle";
+  console.log(`[family] PIN refusé ${where} (${next.lockedUntil ? "bloqué" : `${next.attemptsLeft} essai(s) restant(s)`})`);
   if (next.lockedUntil !== null) {
     throw new FamilyFailure("family.pin_locked", "Trop d'essais : profil bloqué sur cette TV", { lockedUntil: iso(next.lockedUntil) });
   }

@@ -9,7 +9,7 @@ import { forgetFamilyGuests, isFamilyGuest } from "./familyGuestMarkers";
 import type { Actor } from "./familyInvitations";
 import { closeIncomingInvitations } from "./familyInvitations";
 import { withFamilyLock } from "./familyLock";
-import { familyUpdate, notifyFamily } from "./familyNotify";
+import { notifyFamily } from "./familyNotify";
 import { writePin } from "./familyPins";
 import { endProfileEverywhere } from "./familySessions";
 import { abandonGuestAccount, cleanupGuestAccount, retireGuestRow, settleCreatedGuest } from "./guestAccountCleanup";
@@ -27,7 +27,8 @@ import {
 } from "./familyStore";
 
 /**
- * Les invités d'une famille et les PIN (docs/FAMILLE.md). Créer un invité,
+ * Les invités d'une famille et leur PIN (docs/FAMILLE.md) — le sien, chacun le
+ * change dans `familyOwnPin.ts`. Créer un invité,
  * c'est créer un compte Jellyfin : sous le verrou de la famille (trois au
  * plus, six profils au plus — SEC-F-33), dans la limite de six par jour et
  * par famille (SEC-F-23), jamais pour le compte de démonstration (SEC-F-28).
@@ -185,13 +186,3 @@ export async function setGuestPin(actor: Actor, guestUserId: string, pin: string
   return { hasPin: pin !== null };
 }
 
-/** Son propre PIN : ses sessions de profil tombent sur TOUTES les TV. */
-export async function setOwnPin(caller: Actor, pin: string | null): Promise<{ hasPin: boolean }> {
-  if (await isFamilyGuest(caller.userId)) throw new FamilyFailure("family.guest_account", "Un invité n'a pas de session personnelle");
-  await writePin(caller.userId, pin);
-  await endProfileEverywhere(caller.userId, "pin_changed");
-  const mine = await familyOf(caller.userId);
-  if (mine) await notifyFamily(mine.family.id);
-  else familyUpdate([caller.userId], "family");
-  return { hasPin: pin !== null };
-}

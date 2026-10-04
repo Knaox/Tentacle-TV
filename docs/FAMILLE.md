@@ -138,8 +138,8 @@ profils » existe (au moins un `manage`). Les avatars se lisent sans jeton
   (`family:profile-ended` `replaced`).
 - `remember: true` pose « Rester sur ce profil » : au lancement, la TV rouvre
   ce profil SANS PIN. `remember` absent ou faux l'ôte. Tout retrait, tout
-  changement de PIN de ce profil l'efface ; fermer volontairement la session
-  aussi.
+  changement de PIN de ce profil l'efface — sauf sur la TV d'où le profil a
+  changé SON PIN lui-même ; fermer volontairement la session aussi.
 - En quittant un profil, la TV oublie ses jetons : le rouvrir repasse par le
   serveur, et par le PIN.
 
@@ -177,8 +177,9 @@ Le propriétaire passe `ownerTv` (vue d'ensemble, candidats, inviter, annuler,
 retirer un membre, régler ses droits, créer ou supprimer un invité) ; un
 membre passe `memberTv` (vue d'ensemble, créer un invité s'il en a le droit,
 supprimer les siens) — un geste de propriétaire lui répond
-`family.not_owner`. JAMAIS depuis une TV : accepter, refuser, quitter, poser
-son propre PIN ou celui d'un invité, dissoudre.
+`family.not_owner`. JAMAIS depuis une TV : accepter, refuser, quitter, le PIN
+d'un invité, dissoudre. Son PIN, si : depuis SA session de profil (« Code
+PIN »).
 
 ### 7. La séquence de l'Apple TV (pour le client)
 
@@ -226,10 +227,12 @@ avant de clore l'invitation — la seconde de deux courses échoue
 
 ## Sessions personnelles, sessions de TV
 
-Accepter, refuser, « plus tard », quitter, poser son PIN, le PIN d'un invité,
-dissoudre : **session personnelle** seulement — le jeton Jellyfin du web, du
-bureau, du mobile. Jamais un jeton d'appareil (TV d'avant ou session de
-profil), jamais « voir en tant que » : `family.personal_session_required`.
+Accepter, refuser, « plus tard », quitter, le PIN d'un invité, dissoudre :
+**session personnelle** seulement — le jeton Jellyfin du web, du bureau, du
+mobile. Jamais un jeton d'appareil (TV d'avant ou session de profil), jamais
+« voir en tant que » : `family.personal_session_required`. Son propre PIN
+fait exception : aussi depuis SA session de profil sur une TV (`tvProfile`),
+jamais depuis le jeton de jumelage, une TV d'avant ni « voir en tant que ».
 
 Une session de profil REGARDE (bibliothèque, lecture, notes, Ma liste,
 préférences) mais n'administre rien : ni jumelage d'un autre appareil, ni
@@ -326,15 +329,23 @@ geste d'écriture d'une TV s'ajoute à cette liste, nommé et testé.
 
 ## Code PIN
 
-Quatre chiffres par profil, facultatif. Chacun le pose pour lui-même
-(`PUT /api/family/pin`) ; celui d'un invité, le propriétaire ou le membre qui
-l'a créé. Haché par scrypt
+Quatre chiffres par profil, facultatif. Chacun le pose, le change ou le
+retire pour lui-même (`PUT /api/family/pin`, `SetOwnPinBody`), en session
+personnelle ou depuis SA session de profil sur une TV — l'acteur est toujours
+la session, jamais le corps. Le changer ou le retirer exige le PIN actuel
+(`currentPin`), sur toute session, compté comme à l'ouverture d'un profil
+(`pin_required`, `pin_invalid`, `pin_locked`) ; un nouveau PIN mal formé est
+refusé avant tout essai. Jamais un invité (`family.guest_account`) : le sien,
+le propriétaire ou le membre qui l'a créé le pose ; jamais le compte de
+démonstration (`family.review_account`). Haché par scrypt
 (sel propre), jamais rendu. Les essais se comptent PAR PROFIL, toutes TV
 confondues (`profile_pin_attempts`) : changer de TV ne remet pas le compteur à
 zéro. Cinq, puis 15 min, 1 h, 4 h, 24 h de blocage
 (`FAMILY_PIN_LOCK_STEPS_MS`) ; pendant un blocage, même le bon PIN échoue ;
 une réussite efface. Poser, changer ou
-retirer un PIN coupe le profil sur les TV et ôte « Rester sur ce profil ».
+retirer un PIN coupe le profil sur les TV et ôte « Rester sur ce profil » —
+sauf, quand un profil change SON PIN depuis une TV, la session de cette TV et
+son « Rester », qui restent.
 Le PIN de chacun protège aussi SA gestion des profils sur les TV.
 
 ## Temps réel, cloche, push
@@ -413,7 +424,8 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 | Comptes Jellyfin des invités | `guestAccounts.ts` |
 | Journal durable des comptes d'invités à supprimer | `guestAccountCleanup.ts` |
 | Invitations ; réponses et expiration | `familyInvitations.ts`, `familyInvitationAnswers.ts` |
-| Invités et PIN ; membres, dissolution, compte disparu | `familyGuests.ts`, `familyMembers.ts` |
+| Invités et leur PIN ; membres, dissolution, compte disparu | `familyGuests.ts`, `familyMembers.ts` |
+| Son propre PIN (session personnelle ou session de profil) | `familyOwnPin.ts` |
 | Vue d'ensemble, candidats | `familyOverview.ts`, `familyCandidates.ts` |
 | Apple TV : échange ; profils et sessions | `familyTvEnroll.ts`, `familyTv.ts` |
 | Garde d'appelant des routes | `familyCaller.ts` |
@@ -490,7 +502,8 @@ une invitation n'y paraît que par le début de son identifiant.
   des membres et leur politique), `familySharedTv` (TV de membre, coupures,
   gestion d'un membre), `familyMemberRights`, `familyGuestRequests` (le
   droit « peut demander » : l'invité à son nom, sur les extensions seules),
-  `pluginRequests` (la capacité), `familyGuestCleanup` (un invité supprimé
+  `pluginRequests` (la capacité), `familyOwnPinTv` (son PIN depuis sa
+  session de profil), `familyGuestCleanup` (un invité supprimé
   l'est vraiment : Jellyfin qui refuse ou se tait, plantage, création ratée).
 - Proxy : `apps/backend/test/jellyfinProxyDeviceWrites.test.ts` (vrai serveur
   amont).

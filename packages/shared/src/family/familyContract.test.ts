@@ -21,9 +21,13 @@ describe("table des routes", () => {
   });
 
   it("réserve les gestes personnels aux sessions personnelles", () => {
-    for (const name of ["acceptInvite", "declineInvite", "snoozeInvite", "leave", "setOwnPin", "dissolve", "setGuestPin"] as const) {
+    for (const name of ["acceptInvite", "declineInvite", "snoozeInvite", "leave", "dissolve", "setGuestPin"] as const) {
       expect(FAMILY_ROUTES[name].callers).toEqual(["personal"]);
     }
+  });
+
+  it("son PIN : en session personnelle, ou depuis SA session de profil sur une TV — jamais un jeton de TV", () => {
+    expect(FAMILY_ROUTES.setOwnPin.callers).toEqual(["personal", "tvProfile"]);
   });
 
   it("ne laisse le jeton de jumelage QUE lister, ouvrir un profil et s'échanger", () => {
