@@ -16,13 +16,14 @@ import {
   pinDigitKey,
   readProfileRecord,
   type ManageRowModel,
+  type ManageView,
 } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import { refusalOfError } from "../../auth/profileOpening";
 import { leaveProfile } from "../../auth/profileSession";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { openPairingKeyboard } from "../../platform/tvos/screens/pairing";
-import { useManageFocus, useManageGroups } from "../../platform/tvos/screens/profiles";
+import { useGuestColorsEntry, useManageFocus, useManageGroups } from "../../platform/tvos/screens/profiles";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { KeyboardOpenerProvider } from "../../redesign/screens/pairing/keyboardOpener";
 import { ManageProfilesView } from "../../redesign/screens/profiles/ManageProfilesView";
@@ -92,6 +93,9 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
     : null;
   listRef.current = list;
   const entryInput = entryInputOf(list);
+  // La dernière page quittée (créer un invité, inviter) : de retour sur la liste, le focus rejoint son bouton.
+  const lastPage = useRef<ManageView | null>(null);
+  if (actions.view !== "list") lastPage.current = actions.view;
   const candidates = useFamilyCandidates(actions.invite.search, { enabled: ready && actions.view === "invite" });
 
   // La gestion refermée pendant qu'on lisait la famille : elle se rouvre.
@@ -118,10 +122,12 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
     model.kind === "loading" ? null
       : model.kind === "error" ? STATUS_PRIMARY_KEY
         : model.kind === "pin" ? (unlock.entry.phase === "locked" ? MANAGE_BACK_KEY : pinDigitKey("1"))
-          : manageEntryKey({ view: actions.view, ...entryInput, guestNamed: actions.guest.name.trim().length > 0 });
+          : manageEntryKey({ view: actions.view, ...entryInput, guestNamed: actions.guest.name.trim().length > 0, returnFrom: lastPage.current });
   useManageFocus(store, { entryKey, arrival: `${unlock.phase}:${actions.view}:${overview.data ? "data" : "none"}` });
+  useGuestColorsEntry(store, actions.view === "guest" ? actions.guest.color : null);
 
-  const exit = () => (origin === "profiles" ? leaveProfile(context, "switch") : navigation.goBack());
+  // Venue de « Qui regarde ? » : la session ouverte pour gérer se referme, et le focus y revient sur « Gérer les profils ».
+  const exit = () => (origin === "profiles" ? leaveProfile(context, "switch", { returnTo: "manage" }) : navigation.goBack());
   const back = () => {
     const action = ready ? manageBackAction(actions.view, origin, store.focusedKey()) : null;
     // Depuis un résultat de la recherche : la recherche d'abord (tv-core `manageBackAction`).

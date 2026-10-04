@@ -94,10 +94,10 @@ async function followProfileLanguage(storage: UnpairContext["storage"], token: s
   storage.setItem("tentacle_language", language);
 }
 
-/** Va à « Qui regarde ? », seule page de la pile (Retour y quitte l'application). */
-export function showProfiles(intent: ProfilesRouteIntent): void {
+/** Va à « Qui regarde ? », seule page de la pile (Retour y quitte l'application). `returnTo` : la page d'où l'on revient. */
+export function showProfiles(intent: ProfilesRouteIntent, returnTo?: "manage"): void {
   if (!navigationRef.isReady()) return;
-  navigationRef.reset({ index: 0, routes: [{ name: "Profiles", params: { intent } }] });
+  navigationRef.reset({ index: 0, routes: [{ name: "Profiles", params: returnTo ? { intent, returnTo } : { intent } }] });
 }
 
 /**
@@ -120,10 +120,10 @@ export function showProfiles(intent: ProfilesRouteIntent): void {
 export function leaveProfile(
   { jfClient, storage, queryClient }: UnpairContext,
   intent: ProfilesRouteIntent,
-  { serverEnded = false }: { serverEnded?: boolean } = {},
+  { serverEnded = false, returnTo }: { serverEnded?: boolean; returnTo?: "manage" } = {},
 ): void {
   if (tvSessionMode(storage) !== "profile" && !storage.getItem("tentacle_token")) {
-    showProfiles(intent);
+    showProfiles(intent, returnTo);
     return;
   }
   const token = storage.getItem("tentacle_token");
@@ -147,7 +147,7 @@ export function leaveProfile(
   endWipe(storage);
 
   notifySessionChanged();
-  showProfiles(intent);
+  showProfiles(intent, returnTo);
   if (!serverEnded && token && serverUrl) scheduleRevocationDrain(0);
 }
 

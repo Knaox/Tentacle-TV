@@ -88,7 +88,15 @@ export function ProfilesRedesign({ navigation, route }: Props) {
   // Le profil qui avait ouvert le pavé, sinon celui qu'on vient de quitter, sinon le premier : le
   // compte de la TV, mis en tête par l'automate (tv-core `pickerOrder`).
   const tileIndex = listing ? pickerEntryIndex(listing, flow.lastPicked ?? lastLeftProfileId()) : 0;
-  const entryKey = profilesEntryKey({ phase: phase.kind, tileIndex, pinLocked: entry.phase === "locked" });
+  // De retour de « Gérer les profils », le focus y revient — jusqu'au premier geste dans la rangée.
+  const returnTo = flow.lastPicked ? null : (route.params?.returnTo ?? null);
+  const entryKey = profilesEntryKey({
+    phase: phase.kind,
+    tileIndex,
+    pinLocked: entry.phase === "locked",
+    returnTo,
+    canManage: listing ? manageEntryProfile(listing) !== null : false,
+  });
   useProfilesFocus(store, { entryKey, arrival: phase.kind });
 
   const back = profilesBackAction(phase.kind);

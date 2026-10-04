@@ -11,8 +11,10 @@ import {
   inviteCandidateFocusable,
   inviteCandidateKey,
   inviteCandidateOrder,
+  guestColorsEntryKey,
   manageEntryKey,
   manageFocusAfterRemoval,
+  PROFILES_MANAGE_KEY,
   manageGuardedKeys,
   manageRowKey,
   pinDigitKey,
@@ -116,5 +118,28 @@ describe("la recherche d'invitation (retours d'essai)", () => {
     expect(manageBackAction("invite", "settings", INVITE_SEARCH_KEY)).toBe("toList");
     expect(manageBackAction("invite", "profiles", null)).toBe("toList");
     expect(manageBackAction("list", "profiles", inviteCandidateKey(0))).toBe("toProfiles");
+  });
+});
+
+describe("le retour du focus sur les pages de profils", () => {
+  it("revient sur « Gérer les profils » en sortant de la gestion, s'il existe encore", () => {
+    expect(profilesEntryKey({ phase: "picker", tileIndex: 2, returnTo: "manage", canManage: true })).toBe(PROFILES_MANAGE_KEY);
+    expect(profilesEntryKey({ phase: "picker", tileIndex: 2, returnTo: "manage", canManage: false })).toBe(profileTileKey(2));
+    expect(profilesEntryKey({ phase: "picker", tileIndex: 2 })).toBe(profileTileKey(2));
+  });
+
+  it("revient sur le bouton qui a ouvert la page quittée, sinon l'entrée de la liste", () => {
+    const list = { view: "list" as const, canCreateGuest: true, canInvite: true, actionRows: [1] };
+    expect(manageEntryKey({ ...list, returnFrom: "invite" })).toBe(MANAGE_INVITE_KEY);
+    expect(manageEntryKey({ ...list, returnFrom: "guest" })).toBe(MANAGE_CREATE_KEY);
+    // La famille est pleine depuis : « Créer un invité » n'est plus là, l'entrée habituelle.
+    expect(manageEntryKey({ ...list, canCreateGuest: false, returnFrom: "guest" })).toBe(MANAGE_INVITE_KEY);
+    expect(manageEntryKey({ ...list, returnFrom: null })).toBe(MANAGE_CREATE_KEY);
+  });
+});
+
+describe("la rangée des couleurs d'un invité", () => {
+  it("entre par la couleur choisie", () => {
+    expect(guestColorsEntryKey("green")).toBe("guest:color:green");
   });
 });

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { INVITE_RESULTS_GROUP, INVITE_SEARCH_BAR, INVITE_SEARCH_KEY, inviteCandidateFocusable, inviteCandidateKey } from "@tentacle-tv/tv-core";
 import { Icon } from "../../icons/Icon";
 import { Chip } from "../../controls/Chip";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { colors, fonts, text, white } from "../../theme/tokens";
 import { PairingField } from "../pairing/PairingField";
 import type { InviteCandidateView, ManageNotice } from "./manageTypes";
@@ -33,7 +33,7 @@ export const InviteMember = memo(function InviteMember({ query, candidates, more
     <View>
       <Text style={styles.explain}>{t("invite.explain")}</Text>
       {/* Pleine largeur : HAUT depuis n'importe quel résultat y remonte (tv-core `INVITE_SEARCH_BAR`). */}
-      <FocusGroup focusKey={INVITE_SEARCH_BAR} style={styles.searchBar}>
+      <FocusSection focusKey={INVITE_SEARCH_BAR} style={styles.searchBar}>
         <PairingField
           focusKey={INVITE_SEARCH_KEY}
           icon="search"
@@ -45,14 +45,14 @@ export const InviteMember = memo(function InviteMember({ query, candidates, more
           onChangeText={onQuery}
           onSubmitEditing={onSearch}
         />
-      </FocusGroup>
+      </FocusSection>
       <Text style={styles.hidden}>{t("invite.hiddenHint")}</Text>
       {candidates === null ? (
         <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
       ) : candidates.length === 0 ? (
         <Text style={styles.empty}>{query.trim() ? t("invite.noMatch") : t("invite.none")}</Text>
       ) : (
-        <FocusGroup focusKey={INVITE_RESULTS_GROUP} style={styles.results}>
+        <FocusSection focusKey={INVITE_RESULTS_GROUP} list style={styles.results}>
           {candidates.map((candidate, index) => (
             <View key={candidate.id} style={styles.row}>
               <ProfileAvatar name={candidate.name} color={null} uri={candidate.avatarUri} size={68} />
@@ -60,7 +60,7 @@ export const InviteMember = memo(function InviteMember({ query, candidates, more
               <CandidateChip candidate={candidate} focusKey={inviteCandidateKey(index)} onInvite={onInvite} />
             </View>
           ))}
-        </FocusGroup>
+        </FocusSection>
       )}
       {more ? <Text style={styles.more}>{t("invite.more")}</Text> : null}
       <Text style={[styles.notice, { color: notice?.tone === "error" ? colors.warningFg : colors.successFg }]}>{notice?.text ?? " "}</Text>

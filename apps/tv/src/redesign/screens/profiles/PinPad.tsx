@@ -4,7 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { FAMILY_PIN_LENGTH } from "@tentacle-tv/shared";
 import { PIN_DIGITS, PIN_ERASE_KEY, PIN_PAD_GROUP, pinDigitKey } from "@tentacle-tv/tv-core";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
@@ -51,7 +51,7 @@ export const PinPad = memo(function PinPad({ pad, onDigit, onErase }: {
           <Text style={[styles.message, { color: tone }]}>{pad.message}</Text>
         ) : null}
       </View>
-      <FocusGroup focusKey={PIN_PAD_GROUP} style={styles.keys}>
+      <FocusSection focusKey={PIN_PAD_GROUP} style={styles.keys}>
         {PIN_DIGITS.map((digit) => (
           <PinKey
             key={digit}
@@ -63,7 +63,7 @@ export const PinPad = memo(function PinPad({ pad, onDigit, onErase }: {
           />
         ))}
         <PinKey focusKey={PIN_ERASE_KEY} icon="backspace" accessibilityLabel={t("pin.erase")} disabled={silent} onPress={onErase} />
-      </FocusGroup>
+      </FocusSection>
     </View>
   );
 });

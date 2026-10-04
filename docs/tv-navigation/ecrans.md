@@ -495,17 +495,24 @@ NON modifiés : `hooks/usePairingFlow.ts`, `hooks/usePairingCode.ts`.
 ## 8 bis. Les profils de la Famille (`Profiles`, `ManageProfiles`)
 
 Apple TV passée aux profils (docs/FAMILLE.md). Règles : tv-core
-`focus/profilesFocus.ts`, `nav/profilesBack.ts`, `nav/railProfile.ts`,
-`session/` (lancement, refus, PIN) ; applicateur
+`focus/profilesFocus.ts`, `nav/profilesBack.ts`, `session/` (lancement,
+refus, PIN, son code PIN) ; applicateur
 `platform/tvos/screens/profiles.ts` ; câblage `redesignWiring/profiles/`.
 
 - **PR-1** Entrée réclamée à chaque phase (`profilesEntryKey`) : « Qui
-  regarde ? » sur le profil qu'on vient de quitter (sinon le premier,
-  `profiles:tile:<i>`) ; le pavé sur `pin:digit:1`, ou sur la croix
-  `profiles:back` quand il est bloqué ; une erreur sur `status:primary`.
-- **PR-2** Groupes qui mémorisent (`AutoFocusGuide`) : `profiles:tiles`,
-  `profiles:actions` et `pin:pad`. Les actions sont PLEINE LARGEUR : BAS
-  depuis le profil le plus à droite (ou à gauche) les trouve.
+  regarde ? » sur le profil qu'on vient de quitter (sinon le premier — le
+  compte de la TV, `pickerOrder`) ; de retour de « Gérer les profils », sur
+  `profiles:manage`, jusqu'au premier geste dans la rangée ; le pavé sur
+  `pin:digit:1`, ou sur la croix `profiles:back` quand il est bloqué ; une
+  erreur sur `status:primary`.
+- **PR-2** HAUT / BAS : comme sur les autres pages, chaque rangée est une
+  SECTION de voisinage (`FocusSection`, § focus R — au plus proche) :
+  `profiles:tiles`, `profiles:actions`, `pin:pad` ; dans la gestion
+  `manage:actions`, `manage:rows` (liste), `guest:nameBar`, `guest:colors`
+  (entrée déclarée : la couleur choisie, `guestColorsEntryKey`),
+  `guest:actions`, `invite:searchBar`, `invite:results` (liste). Plus de
+  guides qui mémorisent (retours d'essai du 2026-10-04 : on ne remontait
+  plus à la recherche d'invitation).
 - **PR-3** Clic fantôme : chaque geste change la page sous un OK enfoncé
   (profil → pavé, croix → rangée). Profils, touches du pavé, actions et
   cibles de la gestion sont gardés (`profilesGuardedKeys`,
@@ -519,19 +526,21 @@ Apple TV passée aux profils (docs/FAMILLE.md). Règles : tv-core
 - **PR-5** « Gérer les profils » (`manageEntryKey`, `manageBackAction`) :
   entrée par la première action possible (créer un invité, inviter, la
   première ligne qui porte un geste, la croix) ; l'invité par son nom puis
-  « Créer » ; l'invitation par la recherche. Après un retrait, la ligne qui
-  prend la place (`manageFocusAfterRemoval`), une fois la famille relue.
-  Retour : une page → la liste ; la liste → les réglages, ou, ouverte depuis
-  « Qui regarde ? », la session ouverte pour gérer se referme et la rangée
-  revient. La rangée de « Créer le profil » est pleine largeur (BAS depuis
-  toute couleur). Famille PARTAGÉE (v2) : qui gère depuis « Qui regarde ? »
+  « Créer » ; l'invitation par la recherche. De retour d'une page, le bouton
+  qui l'a ouverte (`returnFrom`). Après un retrait, la ligne qui prend la
+  place (`manageFocusAfterRemoval`), une fois la famille relue. Retour : un
+  résultat d'invitation → la recherche (`toSearch`) ; une page → la liste ;
+  la liste → les réglages, ou, ouverte depuis « Qui regarde ? », la session
+  ouverte pour gérer se referme et la rangée revient, focus sur « Gérer les
+  profils ». Famille PARTAGÉE (v2) : qui gère depuis « Qui regarde ? »
   = le profil du compte de la TV s'il gère, sinon le propriétaire
   (`manageEntryProfile`), derrière SON PIN ; chaque ligne n'a que les gestes
   de ses droits (`manageRows` : un membre, ses invités) ; sur la ligne d'un
   membre, le propriétaire a la case « Peut créer des invités »
   (`manage:right:<i>`, avant `manage:row:<i>` : GAUCHE / DROITE de l'une à
-  l'autre). Un candidat déjà dans une famille ou déjà invité se montre sans
-  s'inviter.
+  l'autre). Les résultats d'invitation : invitables d'abord
+  (`inviteCandidateOrder`), seuls à prendre le focus
+  (`inviteCandidateFocusable`) — BAS depuis la recherche va au premier.
 - **PR-6** Rail : l'entrée « Changer de profil » (`nav:SwitchProfile`, juste
   au-dessus du profil) mène à « Qui regarde ? » ; le profil n'a plus d'appui
   maintenu, OK y ouvre les réglages (retour-rail.md, F7).

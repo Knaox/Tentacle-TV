@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { MANAGE_ACTIONS_GROUP, MANAGE_CREATE_KEY, MANAGE_INVITE_KEY, MANAGE_ROWS_GROUP, manageRightKey, manageRowKey } from "@tentacle-tv/tv-core";
 import { PillButton } from "../../controls/PillButton";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, text, white } from "../../theme/tokens";
 import { ConfirmPill } from "../settings/ConfirmPill";
@@ -44,17 +44,17 @@ export const ManageList = memo(function ManageList({ rows, canCreateGuest, canIn
   return (
     <View>
       {canCreateGuest || canInvite ? (
-        <FocusGroup focusKey={MANAGE_ACTIONS_GROUP} style={styles.actions}>
+        <FocusSection focusKey={MANAGE_ACTIONS_GROUP} style={styles.actions}>
           {canCreateGuest ? <PillButton label={t("manage.createGuest")} icon="plus" size="md" focusKey={MANAGE_CREATE_KEY} onPress={onCreateGuest} /> : null}
           {canInvite ? <PillButton label={t("manage.inviteMember")} icon="user" size="md" focusKey={MANAGE_INVITE_KEY} onPress={onInvite} /> : null}
-        </FocusGroup>
+        </FocusSection>
       ) : null}
       {blocked ? <Text style={styles.blocked}>{blocked}</Text> : null}
-      <FocusGroup focusKey={MANAGE_ROWS_GROUP} style={styles.rows}>
+      <FocusSection focusKey={MANAGE_ROWS_GROUP} list style={styles.rows}>
         {rows.map((row, index) => (
           <Row key={row.id} row={row} index={index} armed={row.id === armedId} onAction={onRowAction} onBlur={onRowBlur} onRight={onRowRight} />
         ))}
-      </FocusGroup>
+      </FocusSection>
       <View style={styles.footer}>
         {armed ? (
           <View style={styles.hintRow}>

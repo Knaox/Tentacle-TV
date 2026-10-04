@@ -4,9 +4,9 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { FAMILY_GUEST_NAME_MAX, FAMILY_PROFILE_COLORS, type FamilyProfileColor } from "@tentacle-tv/shared";
-import { GUEST_ACTIONS_GROUP, GUEST_COLORS_GROUP, GUEST_CREATE_KEY, GUEST_NAME_KEY, guestColorKey } from "@tentacle-tv/tv-core";
+import { GUEST_ACTIONS_GROUP, GUEST_COLORS_GROUP, GUEST_CREATE_KEY, GUEST_NAME_BAR, GUEST_NAME_KEY, guestColorKey } from "@tentacle-tv/tv-core";
 import { PillButton } from "../../controls/PillButton";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
@@ -38,26 +38,28 @@ export const GuestForm = memo(function GuestForm({ name, color, creating, error,
     <View style={styles.root}>
       <View style={styles.form}>
         <Text style={styles.explain}>{t("guest.explain")}</Text>
-        <PairingField
-          focusKey={GUEST_NAME_KEY}
-          icon="user"
-          label={t("guest.nameLabel")}
-          caption
-          value={name}
-          placeholder={t("guest.namePlaceholder")}
-          keyboard={{ returnKeyType: "done", textContentType: "givenName", autoComplete: "off" }}
-          onChangeText={(next) => onName?.(next.slice(0, FAMILY_GUEST_NAME_MAX))}
-        />
+        <FocusSection focusKey={GUEST_NAME_BAR}>
+          <PairingField
+            focusKey={GUEST_NAME_KEY}
+            icon="user"
+            label={t("guest.nameLabel")}
+            caption
+            value={name}
+            placeholder={t("guest.namePlaceholder")}
+            keyboard={{ returnKeyType: "done", textContentType: "givenName", autoComplete: "off" }}
+            onChangeText={(next) => onName?.(next.slice(0, FAMILY_GUEST_NAME_MAX))}
+          />
+        </FocusSection>
         <Text style={styles.caption}>{t("guest.colorLabel")}</Text>
-        <FocusGroup focusKey={GUEST_COLORS_GROUP} style={styles.swatches}>
+        <FocusSection focusKey={GUEST_COLORS_GROUP} style={styles.swatches}>
           {FAMILY_PROFILE_COLORS.map((swatch) => (
             <Swatch key={swatch} color={swatch} selected={swatch === color} label={t(`colors.${swatch}`)} onPress={onColor ? () => onColor(swatch) : undefined} />
           ))}
-        </FocusGroup>
-        <FocusGroup focusKey={GUEST_ACTIONS_GROUP} style={styles.submit}>
+        </FocusSection>
+        <FocusSection focusKey={GUEST_ACTIONS_GROUP} style={styles.submit}>
           <PillButton label={creating ? t("guest.creating") : t("guest.create")} icon="check" variant="primary" focusKey={GUEST_CREATE_KEY} onPress={creating ? undefined : onSubmit} />
           {creating ? <ActivityIndicator color={colors.text} /> : null}
-        </FocusGroup>
+        </FocusSection>
         <Text style={styles.error}>{error ?? " "}</Text>
       </View>
       <View style={styles.preview}>

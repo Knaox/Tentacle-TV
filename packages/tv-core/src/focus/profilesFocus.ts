@@ -4,11 +4,17 @@ import { STATUS_PRIMARY_KEY } from "./homeEntry";
 /**
  * Le focus des PROFILS d'une Apple TV (Famille) — « Qui regarde ? », le pavé
  * du code PIN, « Gérer les profils » et ses deux pages (créer un invité,
- * inviter un membre). Module pur : la plateforme pose les guides, réclame,
+ * inviter un membre). Module pur : la plateforme pose les sections, réclame,
  * verrouille ; ces règles disent seulement OÙ.
+ *
+ * Comme sur les autres pages, chaque rangée d'éléments est une SECTION de
+ * voisinage (`focus/sections` : HAUT / BAS mènent au plus proche de la
+ * section voisine) — la rangée des profils, ses actions, le pavé, les gestes
+ * et les lignes de la gestion, la recherche et ses résultats. L'entrée de
+ * chaque page, et le RETOUR : on revient sur ce qui a ouvert la page quittée.
  */
 
-/** « Qui regarde ? » : la rangée des profils (un groupe qui mémorise), puis ses actions. */
+/** « Qui regarde ? » : la rangée des profils, puis ses actions — deux sections. */
 export const PROFILES_TILES_GROUP = "profiles:tiles";
 export const PROFILES_ACTIONS_GROUP = "profiles:actions";
 export const PROFILES_STAY_KEY = "profiles:stay";
@@ -19,7 +25,7 @@ export const profileTileKey = (index: number): string => `profiles:tile:${index}
 export const PROFILES_BACK_KEY = "profiles:back";
 export const PROFILES_BACK_BAR_KEY = "profiles:top";
 
-/** Le pavé du code : une rangée de chiffres, puis ⌫. */
+/** Le pavé du code : une rangée de chiffres, puis ⌫ — une section. */
 export const PIN_PAD_GROUP = "pin:pad";
 export const pinDigitKey = (digit: string): string => `pin:digit:${digit}`;
 export const PIN_ERASE_KEY = "pin:erase";
@@ -32,13 +38,17 @@ export interface ProfilesEntryInput {
   tileIndex?: number;
   /** Le pavé est bloqué : il n'y a rien à taper, seule la sortie. */
   pinLocked?: boolean;
+  /** On revient de « Gérer les profils » : le focus y retourne, s'il existe encore. */
+  returnTo?: "manage" | null;
+  canManage?: boolean;
 }
 
 /**
  * L'entrée de l'écran, réclamée à chaque changement de phase : le profil
- * qu'on vient de quitter (sinon le premier) ; sur le pavé, son premier
- * chiffre — ou la croix quand il est bloqué ; sur une erreur, « Réessayer » ;
- * pendant un chargement, rien (rien n'est focalisable).
+ * qu'on vient de quitter (sinon le premier) — ou « Gérer les profils » quand
+ * on en revient ; sur le pavé, son premier chiffre — ou la croix quand il est
+ * bloqué ; sur une erreur, « Réessayer » ; pendant un chargement, rien (rien
+ * n'est focalisable).
  */
 export function profilesEntryKey(input: ProfilesEntryInput): string | null {
   switch (input.phase) {
@@ -47,6 +57,7 @@ export function profilesEntryKey(input: ProfilesEntryInput): string | null {
     case "error":
       return STATUS_PRIMARY_KEY;
     case "picker":
+      if (input.returnTo === "manage" && input.canManage) return PROFILES_MANAGE_KEY;
       return profileTileKey(Math.max(0, input.tileIndex ?? 0));
     case "pin":
       return input.pinLocked ? PROFILES_BACK_KEY : pinDigitKey(PIN_ENTRY_DIGIT);
@@ -72,9 +83,21 @@ export const GUEST_CREATE_KEY = "guest:create";
 /** La rangée de « Créer le profil », pleine largeur : BAS depuis n'importe quelle couleur y mène. */
 export const GUEST_ACTIONS_GROUP = "guest:actions";
 
+/**
+ * L'entrée DÉCLARÉE de la rangée des couleurs : un sélecteur entre par sa
+ * sélection (politique « toujours », comme l'onglet de la saison affichée
+ * de la fiche) — BAS depuis le nom tombe sur la couleur choisie, pas sur la
+ * plus proche du milieu du champ.
+ */
+export function guestColorsEntryKey(selected: string): string {
+  return guestColorKey(selected);
+}
+
 export const INVITE_SEARCH_KEY = "invite:search";
-/** La bande de la recherche, PLEINE LARGEUR : HAUT depuis n'importe quel résultat (leurs boutons sont à droite) y remonte. */
+/** La section de la recherche : HAUT depuis n'importe quel résultat y remonte (au plus proche — la seule cible). */
 export const INVITE_SEARCH_BAR = "invite:searchBar";
+/** La section du nom de l'invité, au-dessus de ses couleurs. */
+export const GUEST_NAME_BAR = "guest:nameBar";
 export const INVITE_RESULTS_GROUP = "invite:results";
 export const inviteCandidateKey = (index: number): string => `invite:candidate:${index}`;
 const INVITE_CANDIDATE_PREFIX = "invite:candidate:";
@@ -123,17 +146,22 @@ export interface ManageEntryInput {
   guestNamed?: boolean;
   /** Des comptes à inviter s'affichent. */
   candidates?: number;
+  /** La page d'où l'on revient sur la liste : le focus retourne au bouton qui l'a ouverte. */
+  returnFrom?: ManageView | null;
 }
 
 /**
  * L'entrée de chaque page : la liste entre par sa première action possible
  * (créer un invité, sinon inviter, sinon la première ligne qui en porte une,
- * sinon la croix) ; l'invité, par son nom — ou par « Créer » une fois nommé ;
- * l'invitation, par la recherche.
+ * sinon la croix) — et, au retour d'une page, par le bouton qui l'avait
+ * ouverte s'il est encore là ; l'invité, par son nom — ou par « Créer » une
+ * fois nommé ; l'invitation, par la recherche.
  */
 export function manageEntryKey(input: ManageEntryInput): string {
   switch (input.view) {
     case "list":
+      if (input.returnFrom === "invite" && input.canInvite) return MANAGE_INVITE_KEY;
+      if (input.returnFrom === "guest" && input.canCreateGuest) return MANAGE_CREATE_KEY;
       if (input.canCreateGuest) return MANAGE_CREATE_KEY;
       if (input.canInvite) return MANAGE_INVITE_KEY;
       return input.actionRows.length > 0 ? manageRowKey(input.actionRows[0]) : MANAGE_BACK_KEY;

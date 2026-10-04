@@ -12,7 +12,7 @@ import {
   profileTileKey,
 } from "@tentacle-tv/tv-core";
 import { PillButton } from "../../controls/PillButton";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { useEntrance, useMotion } from "../../motion/useMotion";
 import { colors, text } from "../../theme/tokens";
 import { ProfileTile, TILE_GAP, type TileEntrance } from "./ProfileTile";
@@ -59,7 +59,7 @@ export const ProfilesPicker = memo(function ProfilesPicker({ model, onPick, onTi
   return (
     <View style={styles.center}>
       <Animated.Text style={[styles.title, chrome]}>{t("familyTv:whoIsWatching")}</Animated.Text>
-      <FocusGroup focusKey={PROFILES_TILES_GROUP} style={styles.tiles}>
+      <FocusSection focusKey={PROFILES_TILES_GROUP} style={styles.tiles}>
         {model.profiles.map((profile, index) => (
           <ProfileTile
             key={profile.id}
@@ -73,13 +73,13 @@ export const ProfilesPicker = memo(function ProfilesPicker({ model, onPick, onTi
             onFocusChange={(focused) => onTileFocus(index, focused)}
           />
         ))}
-      </FocusGroup>
+      </FocusSection>
       <View style={styles.lower}>
         <Animated.View style={chrome}>
           <View style={styles.notice}>
             {model.notice ? <Text style={styles.noticeText}>{model.notice}</Text> : null}
           </View>
-          <FocusGroup focusKey={PROFILES_ACTIONS_GROUP} style={styles.actions}>
+          <FocusSection focusKey={PROFILES_ACTIONS_GROUP} style={styles.actions}>
             <StayToggle
               label={t("familyTv:stayOnProfile")}
               checked={model.remember}
@@ -91,7 +91,7 @@ export const ProfilesPicker = memo(function ProfilesPicker({ model, onPick, onTi
             {model.canManage ? (
               <PillButton label={t("familyTv:manageProfiles")} icon="settings" size="md" focusKey={PROFILES_MANAGE_KEY} disabled={entering} onPress={onManage} />
             ) : null}
-          </FocusGroup>
+          </FocusSection>
           <Text style={styles.hint}>{model.remember ? t("familyTv:stayOnProfileHint") : " "}</Text>
         </Animated.View>
         {model.entering ? <OpeningHint label={model.entering.label} /> : null}
