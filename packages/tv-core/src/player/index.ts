@@ -31,5 +31,6 @@ export * from "./touchScrub";
 export * from "./playerBack";
 export * from "./playerStage";
 export * from "./playerFocus";
+export * from "./osdReveal";
 export * from "./troublePanel";
 export * from "./trailerChrome";

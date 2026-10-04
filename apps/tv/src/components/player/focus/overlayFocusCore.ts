@@ -51,6 +51,12 @@ interface CoreArgs {
   /** Primitive de restauration du focus natif — SEUL point spécifique à la
    *  plateforme (Android = setNativeProps direct ; tvOS = cycle false→true). */
   restore: (node: FocusNode) => void;
+  /** La cible d'une restauration IMPLICITE (réapparition de l'habillage, départ
+   *  de la pilule) à la place du dernier bouton utilisé — tv-core
+   *  `osdRevealTarget` : Lecture/Pause là où la télécommande peut n'avoir
+   *  qu'OK pour mettre en pause. Absent : le dernier bouton (Apple TV). La
+   *  pilule de saut garde son droit : la restauration implicite lui cède. */
+  implicitTarget?: TransportKey | null;
 }
 
 /**
@@ -66,7 +72,7 @@ const TRANSPORT_ROW: TransportKey[] = [
   "prev", "skipback", "playpause", "skipforward", "scrub", "next", "episodes", "settings", "options",
 ];
 
-export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef }: CoreArgs): OverlayFocusControl {
+export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef, implicitTarget }: CoreArgs): OverlayFocusControl {
   const btnRefs = useRef<Partial<Record<TransportKey, FocusNode>>>({});
   // Node handles natifs par bouton — alimentent nextFocusLeft/Right (Android :
   // moteur de proximité ; tvOS : ignorés mais inoffensifs). Une map + un compteur
@@ -158,16 +164,17 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTarg
     restoreTimers.current = [
       setTimeout(() => {
         if (yieldToSkip && (skipClaimedSince(askedAt - SKIP_CLAIM_LEAD_MS) || skipHoldsFocus())) return;
-        const target = (wanted ? btnRefs.current[wanted] : undefined)
+        const aimed = wanted ?? implicitTarget ?? undefined;
+        const target = (aimed ? btnRefs.current[aimed] : undefined)
           ?? btnRefs.current[lastFocusedRef.current]
           ?? btnRefs.current.playpause
           ?? null;
-        if (wanted) lastFocusedRef.current = wanted;
+        if (aimed) lastFocusedRef.current = aimed;
         restore(target);
       }, 220),
       setTimeout(() => { restoringFocusRef.current = false; }, 520),
     ];
-  }, [restore]);
+  }, [restore, implicitTarget]);
   useEffect(() => {
     const timers = restoreTimers;
     return () => timers.current.forEach(clearTimeout);
