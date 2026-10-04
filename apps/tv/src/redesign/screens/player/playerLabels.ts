@@ -1,6 +1,7 @@
 import type { SkipLabelKey } from "@tentacle-tv/shared";
 import { formatClock } from "./formatClock";
 import type { PlayerLabels, ScrubCountdownModel } from "./playerTypes";
+import { BASE_REMOTE_HINTS, type RemoteHints } from "@tentacle-tv/tv-core";
 
 /**
  * Les mots de l'habillage, tirés des clés i18n (`player`, `common`) — le
@@ -10,7 +11,8 @@ import type { PlayerLabels, ScrubCountdownModel } from "./playerTypes";
 
 export type Translate = (key: string, options?: Record<string, unknown>) => string;
 
-export function playerChromeLabels(t: Translate, seek: { back: number; forward: number }): PlayerLabels {
+/** `hints` : les mots qui nomment les touches (`RemoteBindings.hints`) ; le banc garde ceux de la Siri Remote. */
+export function playerChromeLabels(t: Translate, seek: { back: number; forward: number }, hints: RemoteHints = BASE_REMOTE_HINTS): PlayerLabels {
   // Ni « Retour » ni « Fermer » : la croix (`BackButton`) dit « Retour » elle-même.
   return {
     play: t("player:play"),
@@ -35,8 +37,8 @@ export function playerChromeLabels(t: Translate, seek: { back: number; forward: 
     qualityGuideTitle: t("player:qualityGuideTitle"),
     qualityGuideOriginal: t("player:qualityGuideOriginal"),
     qualityGuideConverted: t("player:qualityGuideConverted"),
-    scrubConfirm: t("player:scrubConfirmHint"),
-    scrubCancel: t("player:scrubCancelHint"),
+    scrubConfirm: t(hints.scrubConfirm),
+    scrubCancel: t(hints.scrubCancel),
   };
 }
 
@@ -58,11 +60,12 @@ export function seekFlashLabel(t: Translate, deltaSeconds: number): string {
  *  (« Lecture dans 5 s ») — et le geste de l'autre choix. */
 export function scrubCountdownLabels(
   t: Translate, outcome: ScrubCountdownModel["outcome"], seconds: number, origin: number,
+  hints: RemoteHints = BASE_REMOTE_HINTS,
 ): { label: string; hint: string } {
   const time = formatClock(origin);
   return outcome === "return"
-    ? { label: t("player:scrubReturnToIn", { time, seconds }), hint: t("player:scrubOtherPlayHere") }
-    : { label: t("player:scrubPlayIn", { seconds }), hint: t("player:scrubOtherGoBack", { time }) };
+    ? { label: t("player:scrubReturnToIn", { time, seconds }), hint: t(hints.scrubPlayHere) }
+    : { label: t("player:scrubPlayIn", { seconds }), hint: t(hints.scrubGoBack, { time }) };
 }
 
 /** « Épisode suivant dans 8 s » — carte du générique et affiche de fin. */

@@ -6,6 +6,7 @@ import { usePairedAccount } from "../../hooks/usePairedAccount";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { useNavCatalog } from "./useNavCatalog";
 import { useProfileSwitcher } from "./useProfileSwitcher";
+import { remoteHint } from "../../platform/input";
 
 /**
  * Ce que la navigation refondue propose, dans l'ordre où on la parcourt, sur
@@ -51,8 +52,8 @@ export function useNavEntries({ previewOrder = null, moving = false }: NavEntrie
     () =>
       moving
         ? [
-            { icon: "moveVertical", label: t("railHintMove") },
-            { icon: "circleDot", label: t("railHintDrop") },
+            { icon: "moveVertical", label: t(remoteHint("railMove")) },
+            { icon: "circleDot", label: t(remoteHint("railDrop")) },
           ]
         : [],
     [t, moving],

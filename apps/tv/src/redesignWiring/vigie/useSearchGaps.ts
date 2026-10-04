@@ -11,6 +11,7 @@ import { absentFromMine, mineLabel } from "./absentStates";
 import type { AbsentTitle } from "./absentTitle";
 import type { TitleRequests } from "./useTitleRequests";
 import type { VigieGate } from "./useVigieGate";
+import { remoteHint } from "../../platform/input";
 
 /**
  * L'entrée « recherche » des saisons MANQUANTES (garde Vigie ouverte) : une
@@ -94,7 +95,7 @@ export function useSearchGaps(
         posterUri: gap.title.imageUrl ?? undefined,
         absent: gap.mine ? absentFromMine(t, gap.mine) : { label: t("requests:missingSeasons", { count: gap.count }), tone: "neutral" },
       }),
-      focusNote: gap.count > 0 ? t("requests:hintSeasons") : undefined,
+      focusNote: gap.count > 0 ? t(remoteHint("absentSeasons")) : undefined,
     })),
     [found, t],
   );

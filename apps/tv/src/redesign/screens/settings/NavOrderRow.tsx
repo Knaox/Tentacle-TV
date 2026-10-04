@@ -8,6 +8,7 @@ import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim } from "../../theme/tokens";
 import type { NavigationSettingsEntry } from "./settingsTypes";
+import { useRemoteHints } from "../../remote/remoteHints";
 
 /**
  * Une ligne du réglage « Navigation » : l'entrée, et à droite sa visibilité.
@@ -76,6 +77,7 @@ function Surface({ focused, moving, children }: { focused: boolean; moving?: boo
 
 function MainBody({ index, entry, moving, focused }: { index: number; entry: NavigationSettingsEntry; moving: boolean; focused: boolean }) {
   const { t } = useTranslation("preferences");
+  const hints = useRemoteHints();
   return (
     <Surface focused={focused} moving={moving}>
       {(dark) => {
@@ -90,7 +92,7 @@ function MainBody({ index, entry, moving, focused }: { index: number; entry: Nav
             </Text>
             {dark || moving ? (
               <Text style={[styles.hint, { color: soft }]} numberOfLines={1}>
-                {moving ? t("navigationMovingHint") : t("navigationMoveHint")}
+                {moving ? t(hints.navigationMoving) : t(hints.navigationMove)}
               </Text>
             ) : null}
           </View>

@@ -8,6 +8,7 @@ import { RatingStars } from "../../rating/RatingStars";
 import { colors, fonts, text } from "../../theme/tokens";
 import { RatingRuler } from "./RatingRuler";
 import type { SheetRatingModel } from "./sheetTypes";
+import { useRemoteHints } from "../../remote/remoteHints";
 
 /**
  * La note, dans le grand panneau : les étoiles en GRAND (demi-étoiles
@@ -43,6 +44,7 @@ export const RatingPanel = memo(function RatingPanel({
   onRate?: (score: number | null) => void;
 }) {
   const { t } = useTranslation();
+  const hints = useRemoteHints();
   const [nativeAim, setNativeAim] = useState<RulerAim | null>(null);
   const forced = useForcedFocusKey();
   const aim = forced !== null ? scaleAimOf(forced) : nativeAim;
@@ -67,7 +69,7 @@ export const RatingPanel = memo(function RatingPanel({
       <View style={styles.hint}>
         <Icon name="chevronLeft" size={22} color={colors.textTertiary} strokeWidth={2.4} />
         <Icon name="chevronRight" size={22} color={colors.textTertiary} strokeWidth={2.4} />
-        <Text style={styles.hintText}>{t("cards:ratingRulerHint")}</Text>
+        <Text style={styles.hintText}>{t(hints.ratingRuler)}</Text>
       </View>
     </View>
   );

@@ -10,6 +10,7 @@ import { ProfileSection } from "./ProfileSection";
 import { Avatar, InfoRow, SectionTitle, settingsText } from "./settingsParts";
 import type { AccountAction, SettingsAccount } from "./settingsTypes";
 import type { OwnPinMode } from "@tentacle-tv/tv-core";
+import { useRemoteHints } from "../../remote/remoteHints";
 
 /**
  * L'onglet Compte : qui regarde (portrait, nom), où (serveur, appareil), et
@@ -45,6 +46,7 @@ export interface AccountPanelProps {
 export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps) {
   const { account, initialArmed = null, onChangeServer, onLogout } = props;
   const { t } = useTranslation(["pairing", "nav", "common", "preferences", "familyTv"]);
+  const hints = useRemoteHints();
   const profile = account.profile ?? null;
   const [armed, setArmed] = useState<AccountAction | null>(initialArmed);
 
@@ -122,7 +124,7 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
         <View style={[styles.armedHint, { opacity: armed ? 1 : 0 }]}>
           <Icon name="alert" size={26} color={colors.accent} strokeWidth={2.4} />
           <Text style={[settingsText.hint, styles.armedText]}>
-            {armed === "logout" ? t("pairing:tvUnpairHint") : t("preferences:tvPressAgainToConfirm")}
+            {armed === "logout" ? t(hints.unpairAgain) : t(hints.pressAgainToConfirm)}
           </Text>
         </View>
       </View>

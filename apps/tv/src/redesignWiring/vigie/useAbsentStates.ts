@@ -11,6 +11,7 @@ import type { ArrivalReading } from "./arrivalModels";
 import { useArrivals, useLiveRefresh } from "./liveRequests";
 import { useAppActive } from "./useAppActive";
 import type { VigieGate } from "./useVigieGate";
+import { remoteHint } from "../../platform/input";
 
 /**
  * Ce que les cartes de titres ABSENTS disent quand la garde Vigie est ouverte
@@ -86,9 +87,9 @@ export function useAbsentStates(gate: VigieGate | null, keys: readonly TitleKey[
       hintOf: (key) => {
         if (mineOf.has(key) || arrivals.has(key)) return undefined;
         const offer = stateOf.get(key)?.request;
-        if (offer?.mode === "direct") return t("requests:hintRequest");
+        if (offer?.mode === "direct") return t(remoteHint("absentRequest"));
         const seasons = offer?.mode === "open" && parseTitleKey(key)?.mediaType === "tv" && gate.provider.seasonsPath !== null;
-        return seasons ? t("requests:hintSeasons") : undefined;
+        return seasons ? t(remoteHint("absentSeasons")) : undefined;
       },
     };
   }, [gate, keys, stable, mineOf, reading, arrivals, t]);

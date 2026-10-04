@@ -10,6 +10,7 @@ import {
 import { allSeasonsChecked, hasAllSeasonsRow, seasonTitle } from "@tentacle-tv/tv-core";
 import type { SeasonRowModel, SeasonsSheetModel } from "../../redesign/screens/requests/SeasonsSheet";
 import { arrivalOf, type ArrivalReading } from "./arrivalModels";
+import { remoteHint } from "../../platform/input";
 
 /**
  * La feuille des saisons mise en mots — le modèle commun aux plateformes
@@ -77,7 +78,7 @@ export function seasonsSheetModel(
     ...(hasAllSeasonsRow(requestable)
       ? { all: { label: t("requests:seasonsAll"), detail: t("requests:missingSeasons", { count: requestable.length }), selected: allSeasonsChecked(requestable, checked) } }
       : {}),
-    ...(requestable.length > 0 ? { shortcut: t("requests:seasonsShortcut") } : {}),
+    ...(requestable.length > 0 ? { shortcut: t(remoteHint("seasonsShortcut")) } : {}),
     seasons: withOwn(t, withTitles(t, pick.rows, answer), own),
     message: pick.message,
     submit: pick.submitLabel ? { label: pick.submitLabel, kind: "request" } : { label: t("common:close"), kind: "close" },

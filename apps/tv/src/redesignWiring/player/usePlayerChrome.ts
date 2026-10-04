@@ -19,6 +19,7 @@ import { usePlayerChromeActions } from "./usePlayerChromeActions";
 import { usePlayerEpisodesPanel } from "./usePlayerEpisodesPanel";
 import { usePlaybackTrouble } from "./usePlaybackTrouble";
 import { usePlayerSheet } from "./usePlayerSheet";
+import { REMOTE_BINDINGS } from "../../platform/input";
 
 const EMPTY_MEDIA: PlayerMedia = { title: "" };
 
@@ -58,7 +59,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
   // Lecture LOCALE du réglage : l'arbitre resynchronise déjà.
   const autoPlayOn = usePlaybackSettings({ resync: false }).next.nextAutoPlay;
   const labels = useMemo(
-    () => playerChromeLabels(translate, { back: SKIP_BACK_SECONDS, forward: SKIP_FORWARD_SECONDS }),
+    () => playerChromeLabels(translate, { back: SKIP_BACK_SECONDS, forward: SKIP_FORWARD_SECONDS }, REMOTE_BINDINGS.hints),
     [translate],
   );
   const { controls, overlay, autoPlay } = p;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { railHintEntry, railOrganizeHintEntry, railSettingsHintShown } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
+import { remoteHint } from "../../platform/input";
 
 export interface RailHints {
   /** « Maintenir OK : organiser », à côté de cette entrée. */
@@ -33,7 +34,7 @@ export function useRailHints(focus: FocusStore, state: { railFocused: boolean; m
 
   const organizeEntry = railOrganizeHintEntry({ entryKey, moving, menuOpen });
   const settingsShown = railSettingsHintShown({ entryKey, moving, menuOpen, railFocused });
-  const organizeLabel = t("railHintOrganize");
+  const organizeLabel = t(remoteHint("railOrganize"));
   const settingsLabel = t("railProfile");
   const organize = useMemo(
     () => (organizeEntry && railFocused ? { entryKey: organizeEntry, label: organizeLabel } : null),

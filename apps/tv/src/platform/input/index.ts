@@ -25,7 +25,7 @@ export {
 /** La table de la télécommande de cette plateforme. */
 export const REMOTE_BINDINGS = TVOS_BINDINGS;
 
-/** La clé i18n d'un texte qui nomme une touche, selon la télécommande ; `null` : ne rien dire. */
-export function remoteHint(id: RemoteHintId): string | null {
+/** La clé i18n d'un texte qui nomme une touche, selon la télécommande (`t(remoteHint(id))`). */
+export function remoteHint(id: RemoteHintId): string {
   return REMOTE_BINDINGS.hints[id];
 }

@@ -5,10 +5,9 @@
  * écrite en dur dans une vue : une télécommande qui n'a pas la touche, ou qui
  * la nomme autrement, dit autre chose sans qu'aucun écran ne change.
  *
- * Chaque indication est une clé i18n complète (`espace:clé`), ou `null` quand
- * la plateforme n'a rien à dire (l'écran ne montre alors pas l'indication).
- * Les mots restent dans `packages/shared/src/i18n/locales/{fr,en}/` ; la table
- * ne choisit que LAQUELLE.
+ * Chaque indication est une clé i18n complète (`espace:clé`). Les mots
+ * restent dans `packages/shared/src/i18n/locales/{fr,en}/` ; la table ne
+ * choisit que LAQUELLE.
  *
  * Une nouvelle indication : un identifiant ici, sa clé dans CHAQUE table
  * (le typage l'exige), et la vue qui la lit par `remoteHint(id)` (adaptateur).
@@ -53,8 +52,8 @@ export const REMOTE_HINT_IDS = [
 
 export type RemoteHintId = (typeof REMOTE_HINT_IDS)[number];
 
-/** Une clé i18n complète par indication ; `null` : rien à dire. */
-export type RemoteHints = Readonly<Record<RemoteHintId, string | null>>;
+/** Une clé i18n complète par indication. */
+export type RemoteHints = Readonly<Record<RemoteHintId, string>>;
 
 /**
  * Les mots d'une télécommande de salon à croix, OK, Retour et Lecture/Pause —

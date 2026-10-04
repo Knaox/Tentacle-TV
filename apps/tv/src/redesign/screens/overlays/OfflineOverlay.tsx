@@ -11,6 +11,7 @@ import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim, text } from "../../theme/tokens";
 import { ConfirmPill } from "../settings/ConfirmPill";
+import { useRemoteHints } from "../../remote/remoteHints";
 
 /**
  * Le serveur ne répond plus : tout l'écran est couvert, et rien ne se
@@ -57,6 +58,7 @@ export const OfflineOverlay = memo(function OfflineOverlay({
   onUnpair,
 }: OfflineOverlayProps) {
   const { t } = useTranslation(["common", "pairing"]);
+  const hints = useRemoteHints();
   const backing = useNativeGlassBacking("strong");
   const [armedAction, setArmedAction] = useState<typeof UNPAIR | null>(initialArmed ? UNPAIR : null);
   const armed = armedAction !== null;
@@ -103,7 +105,7 @@ export const OfflineOverlay = memo(function OfflineOverlay({
         {/* Toujours là, invisible au repos : armer ne décale rien. */}
         <View style={[styles.armedHint, { opacity: armed ? 1 : 0 }]}>
           <Icon name="alert" size={26} color={colors.accent} strokeWidth={2.4} />
-          <Text style={styles.armedText} numberOfLines={1}>{t("pairing:tvUnpairHint")}</Text>
+          <Text style={styles.armedText} numberOfLines={1}>{t(hints.unpairAgain)}</Text>
         </View>
         {serverUrl ? (
           <View style={styles.server}>

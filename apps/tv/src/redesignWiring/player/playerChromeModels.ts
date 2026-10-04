@@ -18,6 +18,7 @@ import type {
   UpNextModel,
 } from "../../redesign/screens/player/playerTypes";
 import { plainText } from "./playerArt";
+import { REMOTE_BINDINGS } from "../../platform/input";
 
 /**
  * L'état du lecteur, projeté dans le contrat de l'habillage refondu
@@ -154,7 +155,7 @@ export function buildScrubCountdown(
   if (!state) return null;
   return {
     outcome: state.outcome,
-    ...scrubCountdownLabels(t, state.outcome, state.remaining, origin),
+    ...scrubCountdownLabels(t, state.outcome, state.remaining, origin, REMOTE_BINDINGS.hints),
     countdown: { remaining: state.remaining, total: state.total },
     live: true,
   };

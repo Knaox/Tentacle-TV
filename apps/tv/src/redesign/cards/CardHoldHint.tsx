@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../icons/Icon";
 import { colors, fonts } from "../theme/tokens";
+import { useRemoteHints } from "../remote/remoteHints";
 
 /**
  * « Maintenir OK : plus d'options » — sous la légende de TOUTE carte qui a le
@@ -18,10 +19,11 @@ import { colors, fonts } from "../theme/tokens";
 
 export const CardHoldHint = memo(function CardHoldHint() {
   const { t } = useTranslation("cards");
+  const hints = useRemoteHints();
   return (
     <View style={styles.hint}>
       <Icon name="remote" size={22} color={colors.textTertiary} strokeWidth={1.8} />
-      <Text style={styles.text} numberOfLines={1}>{t("holdForOptions")}</Text>
+      <Text style={styles.text} numberOfLines={1}>{t(hints.holdForOptions)}</Text>
     </View>
   );
 });

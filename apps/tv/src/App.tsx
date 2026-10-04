@@ -18,6 +18,8 @@ import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter"
 import { rehydrateStores } from "./lib/stores";
 import { useLiquidGlass } from "./lib/liquidGlass";
 import { LiquidGlassProvider } from "./redesign/glass/liquidGlassMode";
+import { RemoteHintsProvider } from "./redesign/remote/remoteHints";
+import { REMOTE_BINDINGS } from "./platform/input";
 import { applyBackendUrl } from "./lib/backendUrls";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
 import { AppNavigator } from "./navigation/AppNavigator";
@@ -271,17 +273,19 @@ export function App() {
 
   return (
     <LiquidGlassProvider enabled={liquidGlass}>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider>
-            <TentacleConfigContext.Provider value={{ storage, uuid }}>
-              <JellyfinClientContext.Provider value={client}>
-                <AppContent />
-              </JellyfinClientContext.Provider>
-            </TentacleConfigContext.Provider>
-          </ThemeProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <RemoteHintsProvider hints={REMOTE_BINDINGS.hints}>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+              <TentacleConfigContext.Provider value={{ storage, uuid }}>
+                <JellyfinClientContext.Provider value={client}>
+                  <AppContent />
+                </JellyfinClientContext.Provider>
+              </TentacleConfigContext.Provider>
+            </ThemeProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </RemoteHintsProvider>
     </LiquidGlassProvider>
   );
 }

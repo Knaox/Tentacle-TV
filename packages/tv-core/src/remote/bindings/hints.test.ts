@@ -21,7 +21,6 @@ describe("indications de touches", () => {
   it("chaque clé choisie existe en français et en anglais", () => {
     for (const table of TABLES) {
       for (const [id, key] of Object.entries(table.hints)) {
-        if (key === null) continue;
         for (const lng of ["fr", "en"]) expect(i18n.exists(key, { lng }), `${table.platform} ${id} → ${key} (${lng})`).toBe(true);
       }
     }
