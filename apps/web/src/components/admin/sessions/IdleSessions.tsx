@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { MessageSquare, Radio } from "lucide-react";
 import { buttonStatus, type AdminSessionDto, type Feedback } from "@tentacle-tv/shared";
 import { UserAvatar } from "../../ui/UserAvatar";
+import { FamilyGuestTag } from "./FamilyGuestTag";
 import { ActionPill } from "./ActionPill";
 import { SessionAppLabel } from "./SessionAppLabel";
 
@@ -40,6 +41,7 @@ export const IdleSessions = memo(function IdleSessions({
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-2 text-sm font-medium text-content-primary">
               <span className="truncate">{session.userName}</span>
+              <FamilyGuestTag owner={session.familyGuestOf} />
               {session.viaTentacle && (
                 <Radio size={12} aria-label={t("viaTentacle")} className="shrink-0 text-brand" />
               )}

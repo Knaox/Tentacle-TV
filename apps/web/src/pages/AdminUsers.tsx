@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePairedDevices } from "@tentacle-tv/api-client";
 import { AdminPage } from "../components/admin/kit";
+import { FamilySwitchesSection } from "../components/admin/users/FamilySwitchesSection";
 import { UserSheet } from "../components/admin/users/UserSheet";
 import { UsersGrid } from "../components/admin/users/UsersGrid";
 import { UsersSummary } from "../components/admin/users/UsersSummary";
@@ -32,7 +33,7 @@ function currentUserId(): string | undefined {
  * résumé chiffré, la recherche, un filtre et un tri, puis une grille de
  * cartes qui occupe toute la largeur. Une carte ouvre la fiche du compte
  * (`?user=`) : activité, droits de téléchargement, appareils jumelés, et
- * « Voir en tant que ».
+ * « Voir en tant que ». Sous la grille, les interrupteurs de la Famille.
  *
  * Le garde admin est celui d'`AdminLayout`, et la coquille pose marges et
  * largeur : la page n'apporte que son contenu.
@@ -105,6 +106,8 @@ export function AdminUsers() {
         onRetry={retry}
         onShowAll={showAll}
       />
+      {/* Qui peut former une famille : un réglage du serveur, sous la liste des comptes. */}
+      <FamilySwitchesSection />
       <UserSheet
         user={openUser}
         isSelf={sameUserId(openUser?.id, selfId)}
