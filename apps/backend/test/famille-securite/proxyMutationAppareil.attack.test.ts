@@ -82,7 +82,7 @@ function adminMutationsReached(): Array<{ method: string; url: string; auth: str
 // monté tant que le test attend la correction de T2 (les hooks de niveau
 // fichier tournent même quand tous les describe sont skippés). Au dé-skip,
 // ils s'exécutent normalement.
-describe.skip("SEC-F-34 : un jeton d'appareil ne mute pas Jellyfin avec la clé admin (attend la correction proxy de T2)", () => {
+describe("SEC-F-34 : un jeton d'appareil ne mute pas Jellyfin avec la clé admin (attend la correction proxy de T2)", () => {
   beforeAll(async () => {
     jellyfin = http.createServer((req, res) => {
       const auth = String(req.headers.authorization ?? req.headers["x-emby-token"] ?? "");
