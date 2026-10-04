@@ -5,7 +5,7 @@ import { PlayerChromeView } from "../../redesign/screens/player/PlayerChromeView
 import { TVPlayerEngine } from "../../components/player/TVPlayerEngine";
 import type { TransportKey } from "../../components/player/focus/useOverlayFocus";
 import { useTvFocusClaim } from "../../hooks/useTvFocusClaim";
-import { PlayerBackground, PlayerFocusStateProvider } from "../../platform/tvos/player";
+import { CHROME_UNMOUNTS_WHEN_HIDDEN, PlayerBackground, PlayerFocusStateProvider } from "../../platform/player";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import type { PlayerRedesignStageProps } from "./playerStageTypes";
 import { usePlayerBackLayers, useOsdPin } from "./usePlayerBackLayers";
@@ -77,7 +77,7 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
       />
       <FocusBindingProvider bind={focus.binder}>
         <PlayerFocusStateProvider value={focus.state}>
-          <PlayerChromeView {...chrome.view} onPanelExited={focus.onPanelExited} />
+          <PlayerChromeView {...chrome.view} onPanelExited={focus.onPanelExited} unmountHiddenChrome={CHROME_UNMOUNTS_WHEN_HIDDEN} />
         </PlayerFocusStateProvider>
       </FocusBindingProvider>
     </View>

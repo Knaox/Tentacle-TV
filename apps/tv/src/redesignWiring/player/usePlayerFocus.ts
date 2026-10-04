@@ -6,7 +6,7 @@ import type { FocusBinder, FocusBinding } from "../../redesign/focus/focusBindin
 import { setSkipNode } from "../../components/player/focus/osdFocusBus";
 import { useOverlayFocus, type TransportKey } from "../../components/player/focus/useOverlayFocus";
 import { useSkipPillFocus } from "../../components/player/focus/useSkipPillFocus";
-import { PLAYER_GROUP_CONTAINERS, withExitLock, withPreferredFocus, type PlayerFocusState } from "../../platform/tvos/player";
+import { PLAYER_GROUP_CONTAINERS, withExitLock, withPreferredFocus, type PlayerFocusState } from "../../platform/player";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useEndExitLocked, useExitLocked } from "./endExitLock";
 import { usePanelReturnFocus } from "./usePanelReturnFocus";

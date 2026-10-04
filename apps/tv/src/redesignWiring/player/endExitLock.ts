@@ -31,4 +31,4 @@ export function useEndExitLocked(store: FocusStore, endShown: boolean): boolean 
 }
 
 /** Ce que le port pose sur la croix verrouillée : l'applicateur tvOS. */
-export { END_EXIT_LOCK } from "../../platform/tvos/player";
+export { END_EXIT_LOCK } from "../../platform/player";
