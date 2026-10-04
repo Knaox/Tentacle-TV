@@ -6,7 +6,10 @@
  * - la TV passe aux profils ; chaque session de profil reçoit SON jeton
  *   Jellyfin (Quick Connect), sur un identifiant à elle ; toute coupure le
  *   fait disparaître de Jellyfin (`DELETE /Devices`) ;
- * - un membre retiré perd son profil sur la TV, jamais son compte.
+ * - un membre retiré perd son profil sur la TV, jamais son compte ;
+ * - v2 : la TV d'un MEMBRE montre toute la famille et y ouvre le propriétaire
+ *   avec SON jeton ; l'invité d'un membre reçoit la politique de ce membre
+ *   (jamais davantage) ; le membre retiré, sa TV perd les autres profils.
  *
  * Sous la fonctionnalité « Téléviseurs jumelés » du catalogue : rien n'est
  * ajouté au manifeste publié, seuls des contrôles.
@@ -21,14 +24,27 @@ import { backendApi, ctx, jellyfin, okJson } from "./support";
 interface Profile { userId: string; kind: string; name: string }
 interface Streaming { directStreaming: { jellyfinToken: string | null; deviceId?: string } }
 
-const state: { pairing?: string; guestId?: string; guestName?: string } = {};
+interface ProfileSession {
+  token: string;
+  jellyfinToken: string;
+  deviceId: string;
+}
 
-/** Une TV jumelée par le flux « appareil », puis passée aux profils. */
-async function profileTv(name: string): Promise<string> {
+const state: {
+  pairing?: string;
+  guestId?: string;
+  guestName?: string;
+  memberTv?: string;
+  memberGuestId?: string;
+  ownerOnMemberTv?: ProfileSession;
+} = {};
+
+/** Une TV jumelée par le flux « appareil » (confirmée par `confirmToken`), puis passée aux profils. */
+async function profileTv(name: string, confirmToken: string = ctx().user.token): Promise<string> {
   const { code } = await okJson<{ code: string }>(fetch(`${ctx().backend.url}/api/pair/device/generate`, {
     method: "POST", headers: { "Content-Type": "application/json", "X-Forwarded-For": "192.168.1.43" }, body: JSON.stringify({ deviceName: name }),
   }), "code de la TV");
-  await okJson(backendApi("/api/pair/device/confirm", ctx().user.token, { method: "POST", body: JSON.stringify({ code }) }), "confirmation");
+  await okJson(backendApi("/api/pair/device/confirm", confirmToken, { method: "POST", body: JSON.stringify({ code }) }), "confirmation");
   const status = await okJson<{ token: string }>(fetch(`${ctx().backend.url}/api/pair/device/status/${code}`), "statut");
   const { pairingToken } = await okJson<{ pairingToken: string }>(backendApi("/api/family/tv/enroll", status.token, { method: "POST" }), "échange");
   return pairingToken;
@@ -37,9 +53,9 @@ async function profileTv(name: string): Promise<string> {
 /** Une session de profil et SON jeton Jellyfin. Si une suite précédente a coupé
  *  Quick Connect, le serveur attend de le voir rallumé (20 s au plus) : on
  *  redemande la configuration du direct jusque-là. */
-async function openSession(profileId: string): Promise<{ token: string; jellyfinToken: string; deviceId: string }> {
+async function openSession(profileId: string, pairing: string = state.pairing!): Promise<ProfileSession> {
   const { token } = await okJson<{ token: string }>(
-    backendApi("/api/family/tv/sessions", state.pairing!, { method: "POST", body: JSON.stringify({ profileId }) }),
+    backendApi("/api/family/tv/sessions", pairing, { method: "POST", body: JSON.stringify({ profileId }) }),
     "session de profil",
   );
   let direct: Streaming["directStreaming"] = { jellyfinToken: null };
@@ -114,17 +130,56 @@ feature("userdata.paired-devices", () => {
     expect(await signIn(state.guestName!, "")).not.toBe(200);
   });
 
-  check("Famille : un membre retiré perd son profil sur la TV, Jellyfin compris, et garde son compte", async () => {
+  check("Famille v2 : la TV d'un membre montre toute la famille ; l'invité d'un membre suit SA politique", async () => {
     const { id } = await okJson<{ id: string }>(
       backendApi("/api/family/invitations", ctx().user.token, { method: "POST", body: JSON.stringify({ userId: ctx().user2.id }) }),
       "invitation",
     );
     await okJson(backendApi("/api/family/invitations/accept", ctx().user2.token, { method: "POST", body: JSON.stringify({ id }) }), "acceptation");
+    // Le membre est plus restreint que le propriétaire : son invité n'en reçoit jamais davantage.
+    const member = await okJson<{ Policy: Record<string, unknown> }>(jellyfin(`/Users/${ctx().user2.id}`, ctx().apiKey), "membre");
+    const restrict = await jellyfin(`/Users/${ctx().user2.id}/Policy`, ctx().apiKey, {
+      method: "POST",
+      body: JSON.stringify({ ...member.Policy, MaxParentalRating: 7 }),
+    });
+    expect(restrict.ok).toBe(true);
+    await okJson(
+      backendApi(`/api/family/members/${ctx().user2.id}/rights`, ctx().user.token, { method: "PUT", body: JSON.stringify({ createGuests: true }) }),
+      "droit de créer des invités",
+    );
+    const guest = await okJson<{ userId: string; createdBy: string }>(
+      backendApi("/api/family/guests", ctx().user2.token, { method: "POST", body: JSON.stringify({ name: "Invite membre", color: "pink" }) }),
+      "invité du membre",
+    );
+    expect(sameId(guest.createdBy, ctx().user2.id)).toBe(true);
+    const account = await okJson<{ Policy: Record<string, unknown> }>(jellyfin(`/Users/${guest.userId}`, ctx().apiKey), "compte de l'invité du membre");
+    expect(account.Policy).toMatchObject({ MaxParentalRating: 7, IsHidden: true, IsAdministrator: false, EnableContentDownloading: false });
+    state.memberGuestId = guest.userId;
+
+    state.memberTv = await profileTv("Apple TV du membre", ctx().user2.token);
+    const listing = await okJson<{ pairedBy: { userId: string }; profiles: Profile[] }>(
+      backendApi("/api/family/tv/profiles", state.memberTv),
+      "Qui regarde ? (TV du membre)",
+    );
+    expect(sameId(listing.pairedBy.userId, ctx().user2.id)).toBe(true);
+    expect(listing.profiles.map((p) => p.kind)).toEqual(["owner", "member", "guest"]);
+    const owner = await openSession(ctx().user.id, state.memberTv);
+    expect(sameId((await me(owner.jellyfinToken)).id, ctx().user.id)).toBe(true);
+    expect(await devices()).toContain(owner.deviceId);
+    state.ownerOnMemberTv = owner;
+  });
+
+  check("Famille : un membre retiré perd son profil sur la TV, Jellyfin compris, et garde son compte — sa TV perd les autres", async () => {
     const member = await openSession(ctx().user2.id);
     expect(sameId((await me(member.jellyfinToken)).id, ctx().user2.id)).toBe(true);
     await okJson(backendApi(`/api/family/members/${ctx().user2.id}`, ctx().user.token, { method: "DELETE" }), "retrait");
     expect((await me(member.jellyfinToken)).status).toBe(401);
     expect(await devices()).not.toContain(member.deviceId);
+    // v2 : sur la TV du membre, la session du propriétaire tombe aussi, Jellyfin compris.
+    expect((await me(state.ownerOnMemberTv!.jellyfinToken)).status).toBe(401);
+    expect(await devices()).not.toContain(state.ownerOnMemberTv!.deviceId);
+    // Son invité reste dans la famille (au propriétaire) ; son compte, intact.
+    expect((await jellyfin(`/Users/${state.memberGuestId}`, ctx().apiKey)).status).toBe(200);
     expect((await me(ctx().user2.token)).status).toBe(200);
     expect(await signIn(ctx().user2.name, COMPAT_PASSWORD)).toBe(200);
   });
