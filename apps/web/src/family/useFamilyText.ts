@@ -32,6 +32,8 @@ export function useFamilyText() {
       if (!refusal) return t("familyWeb:errors.generic");
       const when = refusal.retryAt ?? refusal.lockedUntil;
       const base = codeText(refusal.code);
+      // Un code PIN faux dit les essais qui restent avant le blocage.
+      if (refusal.attemptsLeft !== undefined) return `${base} ${t("family:pin.attemptsLeft", { count: refusal.attemptsLeft })}`;
       return when ? `${base} ${t("familyWeb:errors.retryAt", { date: formatDateTime(when) })}` : base;
     },
     [t, codeText, formatDateTime],

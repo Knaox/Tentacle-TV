@@ -10,9 +10,13 @@ interface PinDialogProps {
   pending: boolean;
   /** Le refus du serveur, déjà dit en mots. */
   error: string | null;
-  onSubmit: (pin: string) => void;
+  /** `currentPin` : le code en place, quand `requireCurrent` le demande. */
+  onSubmit: (pin: string, currentPin?: string) => void;
   /** Le profil a déjà un code : « Retirer le code » s'offre aussi. */
-  onRemove?: () => void;
+  onRemove?: (currentPin?: string) => void;
+  /** SON propre code déjà posé : le changer ou le retirer exige l'actuel
+   *  (le serveur le vérifie, mêmes essais et même blocage qu'une TV). */
+  requireCurrent?: boolean;
   onClose: () => void;
 }
 
@@ -28,30 +32,52 @@ function digitsOnly(value: string): string {
  * numérique, aucune API réservée aux contextes sécurisés : le dialogue marche
  * pareil en HTTP.
  */
-export function PinDialog({ open, title, pending, error, onSubmit, onRemove, onClose }: PinDialogProps) {
-  const { t } = useTranslation("familyWeb");
+export function PinDialog({ open, title, pending, error, onSubmit, onRemove, requireCurrent = false, onClose }: PinDialogProps) {
+  const { t } = useTranslation(["familyWeb", "family"]);
+  const [current, setCurrent] = useState("");
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const titleId = useId();
+  const currentId = useId();
   const pinId = useId();
   const confirmId = useId();
   const hintId = useId();
   const errorId = useId();
 
   const close = () => {
+    setCurrent("");
     setPin("");
     setConfirm("");
     setLocalError(null);
     onClose();
   };
 
+  /** Le code en place, s'il est exigé et bien formé ; sinon l'erreur est dite. */
+  const currentOrError = (): { ok: true; value?: string } | { ok: false } => {
+    if (!requireCurrent) return { ok: true };
+    if (!isValidPin(current)) {
+      setLocalError(t("family:pin.currentMissing"));
+      return { ok: false };
+    }
+    return { ok: true, value: current };
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    const held = currentOrError();
+    if (!held.ok) return;
     if (!isValidPin(pin)) return setLocalError(t("pin.format"));
     if (pin !== confirm) return setLocalError(t("pin.mismatch"));
     setLocalError(null);
-    onSubmit(pin);
+    onSubmit(pin, held.value);
+  };
+
+  const remove = () => {
+    const held = currentOrError();
+    if (!held.ok || !onRemove) return;
+    setLocalError(null);
+    onRemove(held.value);
   };
 
   const shown = localError ?? error;
@@ -74,6 +100,13 @@ export function PinDialog({ open, title, pending, error, onSubmit, onRemove, onC
         <p id={hintId} className="mt-2 text-sm leading-relaxed text-content-tertiary">
           {t("pin.hint")} {t("pin.effect")}
         </p>
+        {requireCurrent && (
+          <div className="mt-5">
+            <label htmlFor={currentId} className="mb-1.5 block text-xs font-semibold text-content-secondary">{t("family:pin.currentLabel")}</label>
+            <input id={currentId} value={current} onChange={(e) => setCurrent(digitsOnly(e.target.value))} {...fieldProps} />
+            <p className="mt-1.5 text-xs text-content-tertiary">{t("family:pin.currentHint")}</p>
+          </div>
+        )}
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor={pinId} className="mb-1.5 block text-xs font-semibold text-content-secondary">{t("pin.label")}</label>
@@ -89,7 +122,7 @@ export function PinDialog({ open, title, pending, error, onSubmit, onRemove, onC
         )}
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
           {onRemove && (
-            <button type="button" onClick={onRemove} disabled={pending}
+            <button type="button" onClick={remove} disabled={pending}
               className="mr-auto rounded-lg px-2 py-2 text-sm font-semibold text-status-error-fg hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-45">
               {t("myPin.remove")}
             </button>

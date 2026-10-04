@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSetFamilyGuestPin, useSetOwnFamilyPin } from "@tentacle-tv/api-client";
-import { FAMILY_PIN_LENGTH, type FamilyProfileDto } from "@tentacle-tv/shared";
+import { FAMILY_PIN_LENGTH, isValidPin, type FamilyProfileDto, type SetOwnPinBody } from "@tentacle-tv/shared";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import { pinDigits, pinEntryProblem } from "@/family/pinInput";
 import { useFamilyText } from "@/family/useFamilyText";
@@ -19,7 +19,11 @@ interface PinSheetProps {
   pending: boolean;
   /** Le refus du serveur, déjà dit en mots. */
   error: string | null;
-  onSubmit: (pin: string | null) => void;
+  /** `currentPin` : le code en place, quand `requireCurrent` le demande. */
+  onSubmit: (pin: string | null, currentPin?: string) => void;
+  /** SON propre code déjà posé : le changer ou le retirer exige l'actuel
+   *  (le serveur le vérifie, mêmes essais et même blocage qu'une TV). */
+  requireCurrent?: boolean;
   onClose: () => void;
 }
 
@@ -29,30 +33,55 @@ interface PinSheetProps {
  * clavier numérique ; le serveur le hache et le vérifie seul — il n'est
  * jamais relu, gardé sur l'appareil ni mis dans une URL.
  */
-function PinSheet({ title, hasPin, pending, error, onSubmit, onClose }: PinSheetProps) {
-  const { t } = useTranslation(["familyWeb", "familyMobile"]);
+function PinSheet({ title, hasPin, pending, error, onSubmit, requireCurrent = false, onClose }: PinSheetProps) {
+  const { t } = useTranslation(["familyWeb", "familyMobile", "family"]);
   const theme = useTheme();
   const form = useThemedStyles(makeFamilyFormStyles);
   const st = useThemedStyles(makeStyles);
+  const [current, setCurrent] = useState("");
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState("");
   const [visible, setVisible] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const pinRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
 
+  /** Le code en place, s'il est exigé et bien formé ; sinon l'erreur est dite. */
+  const currentOrError = (): { ok: true; value?: string } | { ok: false } => {
+    if (!requireCurrent) return { ok: true };
+    if (!isValidPin(current)) {
+      setLocalError(t("family:pin.currentMissing"));
+      return { ok: false };
+    }
+    return { ok: true, value: current };
+  };
+
   const submit = () => {
+    const held = currentOrError();
+    if (!held.ok) return;
     const problem = pinEntryProblem(pin, confirm);
     if (problem) return setLocalError(t(problem === "format" ? "familyWeb:pin.format" : "familyWeb:pin.mismatch"));
     setLocalError(null);
-    onSubmit(pin);
+    onSubmit(pin, held.value);
+  };
+
+  const remove = () => {
+    const held = currentOrError();
+    if (!held.ok) return;
+    setLocalError(null);
+    onSubmit(null, held.value);
   };
 
   const shown = localError ?? error;
-  const field = (value: string, onChange: (next: string) => void, label: string, last: boolean) => (
+  /** Un champ du code : l'actuel, le nouveau, sa confirmation — « suivant » mène au champ d'après. */
+  const field = (value: string, onChange: (next: string) => void, label: string, role: "current" | "pin" | "confirm") => {
+    const last = role === "confirm";
+    const next = role === "current" ? pinRef : confirmRef;
+    return (
     <View style={form.group}>
       <Text style={form.label}>{label}</Text>
       <TextInput
-        ref={last ? confirmRef : undefined}
+        ref={role === "pin" ? pinRef : last ? confirmRef : undefined}
         value={value}
         onChangeText={(next) => onChange(pinDigits(next))}
         secureTextEntry={!visible}
@@ -64,11 +93,12 @@ function PinSheet({ title, hasPin, pending, error, onSubmit, onClose }: PinSheet
         editable={!pending}
         accessibilityLabel={label}
         returnKeyType={last ? "done" : "next"}
-        onSubmitEditing={last ? submit : () => confirmRef.current?.focus()}
+        onSubmitEditing={last ? submit : () => next.current?.focus()}
         style={[form.field, st.pin]}
       />
     </View>
-  );
+    );
+  };
 
   return (
     <FamilySheet
@@ -78,9 +108,15 @@ function PinSheet({ title, hasPin, pending, error, onSubmit, onClose }: PinSheet
       action={{ label: t("familyWeb:pin.save"), onPress: submit, pending }}
     >
       <Text style={form.lead}>{t("familyWeb:pin.hint")} {t("familyWeb:pin.effect")}</Text>
+      {requireCurrent ? (
+        <View>
+          {field(current, setCurrent, t("family:pin.currentLabel"), "current")}
+          <Text style={form.hint}>{t("family:pin.currentHint")}</Text>
+        </View>
+      ) : null}
       <View style={st.fields}>
-        <View style={st.column}>{field(pin, setPin, t("familyWeb:pin.label"), false)}</View>
-        <View style={st.column}>{field(confirm, setConfirm, t("familyWeb:pin.confirmLabel"), true)}</View>
+        <View style={st.column}>{field(pin, setPin, t("familyWeb:pin.label"), "pin")}</View>
+        <View style={st.column}>{field(confirm, setConfirm, t("familyWeb:pin.confirmLabel"), "confirm")}</View>
       </View>
       <Pressable
         onPress={() => setVisible((v) => !v)}
@@ -96,7 +132,7 @@ function PinSheet({ title, hasPin, pending, error, onSubmit, onClose }: PinSheet
       {hasPin ? (
         <View style={st.remove}>
           <SettingsSection>
-            <SettingsRow icon="unlock" label={t("familyWeb:myPin.remove")} destructive last disabled={pending} onPress={() => onSubmit(null)} />
+            <SettingsRow icon="unlock" label={t("familyWeb:myPin.remove")} destructive last disabled={pending} onPress={remove} />
           </SettingsSection>
         </View>
       ) : null}
@@ -133,7 +169,13 @@ export function OwnPinSheet({ hasPin, onClose }: { hasPin: boolean; onClose: () 
       hasPin={hasPin}
       pending={setPin.isPending}
       error={flow.error}
-      onSubmit={(pin) => { flow.reset(); setPin.mutate(pin, flow.callbacks); }}
+      // Un code déjà posé ne se change ni ne se retire sans l'actuel.
+      requireCurrent={hasPin}
+      onSubmit={(pin, currentPin) => {
+        flow.reset();
+        const body: SetOwnPinBody = { pin, ...(currentPin !== undefined && { currentPin }) };
+        setPin.mutate(body, flow.callbacks);
+      }}
       onClose={onClose}
     />
   );

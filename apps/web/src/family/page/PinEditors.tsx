@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSetFamilyGuestPin, useSetOwnFamilyPin } from "@tentacle-tv/api-client";
-import type { FamilyProfileDto } from "@tentacle-tv/shared";
+import type { FamilyProfileDto, SetOwnPinBody } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
 import { useFamilyText } from "../useFamilyText";
 import { PinDialog } from "./PinDialog";
@@ -35,15 +35,17 @@ function usePinFlow<T>(mutate: (vars: T, options: { onSuccess: (r: { hasPin: boo
 export function OwnPinDialog({ hasPin, onClose }: { hasPin: boolean; onClose: () => void }) {
   const { t } = useTranslation("familyWeb");
   const setPin = useSetOwnFamilyPin();
-  const flow = usePinFlow<string | null>(setPin.mutate, onClose);
+  const flow = usePinFlow<SetOwnPinBody>(setPin.mutate, onClose);
+  // Un code déjà posé ne se change ni ne se retire sans l'actuel.
   return (
     <PinDialog
       open
       title={t("pin.titleSelf")}
       pending={setPin.isPending}
       error={flow.error}
-      onSubmit={(pin) => flow.run(pin)}
-      onRemove={hasPin ? () => flow.run(null) : undefined}
+      requireCurrent={hasPin}
+      onSubmit={(pin, currentPin) => flow.run({ pin, currentPin })}
+      onRemove={hasPin ? (currentPin) => flow.run({ pin: null, currentPin }) : undefined}
       onClose={onClose}
     />
   );

@@ -5,6 +5,7 @@ import {
   type FamilyCandidateDto,
   type FamilyErrorBody,
   type FamilyGuestRights,
+  type SetOwnPinBody,
   type FamilyMemberRights,
   type FamilyMembershipDto,
   type FamilyOverviewDto,
@@ -59,8 +60,14 @@ export function setFamilyGuestPin(input: { userId: string; pin: string | null })
   return send(familyPath("setGuestPin", { userId: input.userId }), "PUT", { pin: input.pin });
 }
 
-export function setOwnFamilyPin(pin: string | null): Promise<{ hasPin: boolean }> {
-  return send(familyPath("setOwnPin"), "PUT", { pin });
+/** Son propre PIN : `currentPin` est EXIGÉ pour changer ou retirer un PIN
+ *  déjà posé (sinon `family.pin_required`) ; il est vérifié comme à
+ *  l'ouverture d'un profil, mêmes essais, même blocage. */
+export function setOwnFamilyPin(body: SetOwnPinBody): Promise<{ hasPin: boolean }> {
+  return send(familyPath("setOwnPin"), "PUT", {
+    pin: body.pin,
+    ...(body.currentPin !== undefined && { currentPin: body.currentPin }),
+  });
 }
 
 export function removeFamilyMember(userId: string): Promise<{ removed: true }> {

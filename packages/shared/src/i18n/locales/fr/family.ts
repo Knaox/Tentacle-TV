@@ -24,6 +24,14 @@ export default {
     inFamily: "Déjà dans une famille",
     invited: "Invitation en attente",
   },
+  /** Changer ou retirer SON code exige l'actuel (`SetOwnPinBody.currentPin`). */
+  pin: {
+    currentLabel: "Code actuel",
+    currentHint: "Pour changer ou retirer votre code, saisissez d'abord celui en place.",
+    currentMissing: "Saisissez votre code actuel, quatre chiffres.",
+    attemptsLeft_one: "Encore {{count}} essai avant blocage.",
+    attemptsLeft_other: "Encore {{count}} essais avant blocage.",
+  },
   poster: {
     title: "{{owner}} vous invite à rejoindre sa famille",
     profile: "Votre profil s'ouvrira sur les TV de {{owner}} sans mot de passe, sauf si vous posez un code PIN.",

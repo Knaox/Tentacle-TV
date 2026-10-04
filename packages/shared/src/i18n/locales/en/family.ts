@@ -23,6 +23,14 @@ export default {
     inFamily: "Already in a family",
     invited: "Invitation pending",
   },
+  /** Changing or removing YOUR PIN needs the current one (`SetOwnPinBody.currentPin`). */
+  pin: {
+    currentLabel: "Current PIN",
+    currentHint: "To change or remove your PIN, first enter the one in place.",
+    currentMissing: "Enter your current four-digit PIN.",
+    attemptsLeft_one: "{{count}} attempt left before lockout.",
+    attemptsLeft_other: "{{count}} attempts left before lockout.",
+  },
   poster: {
     title: "{{owner}} invites you to join their family",
     profile: "Your profile will open on {{owner}}'s TVs without a password, unless you set a PIN code.",
