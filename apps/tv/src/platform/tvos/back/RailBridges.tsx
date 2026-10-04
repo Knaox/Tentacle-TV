@@ -3,10 +3,11 @@ import { StyleSheet, TVFocusGuideView } from "react-native";
 import { RAIL_HOME_KEY, navKeyOf, railBridge, railEntryTarget, type RailFrame } from "@tentacle-tv/tv-core";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import type { FocusStore } from "../focus/focusStore";
-import { TVOS_REMOTE_SUPPORTED } from "../input";
+import { REMOTE_SUPPORTED } from "../../input";
 
 /**
- * Les PONTS de focus entre la navigation et le contenu (tvOS) — l'applicateur
+ * Les PONTS de focus entre la navigation et le contenu (Apple TV, Android TV —
+ * `TVFocusGuideView` y est le même guide) — l'applicateur
  * de `railBridge` (tv-core `nav/railShortcuts`) : un guide invisible sur la
  * zone qu'il décide.
  *
@@ -41,7 +42,8 @@ export function RailBridges({ focus, railFocused, railKey, contentKey, railGeome
     });
   }, [focus, railKey]);
 
-  if (!TVOS_REMOTE_SUPPORTED) return null;
+  // Toute télécommande de téléviseur (point d'entrée neutre) : Android TV a les mêmes ponts.
+  if (!REMOTE_SUPPORTED) return null;
 
   const bridge = railBridge({
     railFocused,
