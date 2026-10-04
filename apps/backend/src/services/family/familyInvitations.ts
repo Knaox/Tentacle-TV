@@ -4,7 +4,7 @@ import { getJellyfinUsers } from "../watchTogether/usersCache";
 import { FAMILY_INVITATION_TTL_MS, type OutgoingInvitationDto } from "../../family/familyContract";
 import type { FamilyInvitationStatus } from "../../family/familyProtocol";
 import { capacityError, inviteBlock, sameUserId, type InviteHistory } from "../../family/familyRules";
-import { isReviewAccount, requireFamilies } from "./familyConfig";
+import { isReviewAccount, refuseReviewAccount, requireFamilies } from "./familyConfig";
 import { FamilyFailure, iso } from "./familyErrors";
 import { isFamilyGuest } from "./familyGuestMarkers";
 import { withFamilyLock } from "./familyLock";
@@ -105,6 +105,7 @@ export async function inviteMember(owner: Actor, inviteeUserId: string, now: num
 
 /** Le propriétaire retire une invitation. Le destinataire, lui, refuse : 403. */
 export async function cancelInvitation(caller: Actor, id: string, now: number): Promise<{ cancelled: true }> {
+  await refuseReviewAccount(caller.userId);
   const prisma = getPrisma();
   const invitation = await prisma.familyInvitation.findUnique({ where: { id } });
   if (!invitation || !sameUserId(invitation.ownerUserId, caller.userId)) {

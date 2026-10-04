@@ -80,3 +80,10 @@ export async function isReviewAccount(userId: string): Promise<boolean> {
 export function forgetReviewAccount(): void {
   reviewCache = null;
 }
+
+/** Le compte de démonstration ne fait AUCUN geste de propriétaire (SEC-F-28). */
+export async function refuseReviewAccount(userId: string): Promise<void> {
+  if (await isReviewAccount(userId)) {
+    throw new FamilyFailure("family.review_account", "Compte de démonstration : aucun geste de propriétaire");
+  }
+}

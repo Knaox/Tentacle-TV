@@ -2,7 +2,7 @@ import { getPrisma } from "../db";
 import { loadPushLangs } from "../pushLang";
 import type { FamilyProfileColor, FamilyProfileDto } from "../../family/familyContract";
 import { capacityError, guestQuotaBlock, normalizeGuestName } from "../../family/familyRules";
-import { isReviewAccount, requireGuests } from "./familyConfig";
+import { isReviewAccount, refuseReviewAccount, requireGuests } from "./familyConfig";
 import { FamilyFailure, iso } from "./familyErrors";
 import { forgetFamilyGuests, isFamilyGuest } from "./familyGuestMarkers";
 import type { Actor } from "./familyInvitations";
@@ -27,6 +27,7 @@ const DAY_MS = 24 * 3_600_000;
 const recentCreations = new Map<string, number[]>();
 
 async function ownedGuest(owner: Actor, guestUserId: string): Promise<MemberRow> {
+  await refuseReviewAccount(owner.userId);
   const family = await findOwnedFamily(owner.userId);
   const row = family ? await findProfile(family.id, guestUserId) : null;
   if (!row || row.kind !== "guest") throw await ownerRefusal(owner.userId, guestUserId);

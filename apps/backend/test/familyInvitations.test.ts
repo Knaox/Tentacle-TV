@@ -135,6 +135,10 @@ describe("le compte de démonstration", () => {
     await h.state!.db.client.provisioningCode.create({ data: { code: "X".repeat(12), jellyfinUserId: IDS.demo, username: "Demo" } });
     expect((await invite(tokens.demo, IDS.lea)).json().code).toBe("family.review_account");
     expect((await post("/api/family/guests", tokens.demo, { name: "Zoé", color: "pink" })).json().code).toBe("family.review_account");
+    const dissolve = await app.inject({ method: "DELETE", url: "/api/family", headers: bearer(tokens.demo), payload: { confirm: "dissolve" } });
+    expect(dissolve.json().code).toBe("family.review_account");
+    const remove = await app.inject({ method: "DELETE", url: `/api/family/members/${IDS.lea}`, headers: bearer(tokens.demo) });
+    expect(remove.json().code).toBe("family.review_account");
     expect(h.state!.db.data.family).toHaveLength(0);
     expect((await invite(tokens.damien, IDS.demo)).json().code).toBe("family.candidate_invalid");
     expect((await overview(tokens.demo)).account).toMatchObject({ reviewAccount: true, canOwn: false, canJoin: false });

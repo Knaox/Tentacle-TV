@@ -1,4 +1,5 @@
 import { getPrisma } from "../db";
+import { refuseReviewAccount } from "./familyConfig";
 import { FamilyFailure } from "./familyErrors";
 import { forgetFamilyGuests } from "./familyGuestMarkers";
 import type { Actor } from "./familyInvitations";
@@ -16,6 +17,7 @@ import { familyProfiles, findFamily, findOwnedFamily, findProfile, membershipsOf
  */
 
 export async function removeMember(owner: Actor, memberUserId: string): Promise<{ removed: true }> {
+  await refuseReviewAccount(owner.userId);
   const family = await findOwnedFamily(owner.userId);
   const row = family ? await findProfile(family.id, memberUserId) : null;
   if (!family || !row || row.kind !== "member") throw await ownerRefusal(owner.userId, memberUserId);
@@ -77,6 +79,7 @@ async function dissolve(family: FamilyRow, now: number): Promise<{ members: stri
 }
 
 export async function dissolveFamily(owner: Actor, now: number): Promise<{ dissolved: true }> {
+  await refuseReviewAccount(owner.userId);
   const family = await findOwnedFamily(owner.userId);
   if (!family) throw await ownerRefusal(owner.userId, null);
   const { members, invitees } = await withFamilyLock(owner.userId, () => dissolve(family, now));
