@@ -449,6 +449,31 @@ bande-annonce (`/prepare`) ; chaque lecture rend compte au serveur (`/report`,
 `docker logs … | grep '\[trailers\]'`). Mesures, banc et fragilités :
 `docs/BANDES-ANNONCES.md`.
 
+## Famille — un contrat, et le serveur décide de tout
+
+Propriétaire, membres, invités (vrais comptes Jellyfin cachés, mot de passe
+jeté), profils de l'Apple TV, code PIN : le CONTRAT est dans
+`packages/shared/src/family/` (`familyContract`, `familyProtocol`,
+`familyRoutes`, `familyRules`), recopié octet pour octet dans
+`apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet : `docs/FAMILLE.md`.
+
+- **Rien ne se décide sur un client** : PIN haché et vérifié par le serveur
+  (jamais envoyé à une TV), droits lus dans `FAMILY_ROUTES` (`callers`), à
+  l'identique en HTTP et en HTTPS — aucun jeton ni PIN dans une URL ni un
+  journal (`[family]`).
+- **Apple TV : le jeton de jumelage s'ÉCHANGE** (`/api/family/tv/enroll`)
+  contre un jeton « profils seuls » qu'aucune autre porte ne connaît — il
+  liste les profils, en ouvre un, se déjumelle. La session de profil est une
+  ligne ENFANT de `paired_devices` : un jeton d'appareil au nom du profil, qui
+  passe toutes les portes comme un jumelage. Une TV d'avant garde son jeton.
+- **Gestes personnels** (accepter, refuser, quitter, son PIN, dissoudre) :
+  jeton Jellyfin du web, du bureau, du mobile seulement — jamais une TV, un
+  profil de TV ni « voir en tant que ».
+- **Un invité n'apparaît dans AUCUNE liste** (Watch Together, candidats,
+  utilisateurs, admin) ; seulement dans les sessions en cours (`familyGuestOf`).
+- Un nouveau geste de la Famille : une entrée dans `FAMILY_ROUTES` d'abord,
+  jamais une route à part.
+
 ## Navigation TV — une seule source
 
 L'Apple TV refondue est la référence de la navigation. Ce qui DÉCIDE — focus,
