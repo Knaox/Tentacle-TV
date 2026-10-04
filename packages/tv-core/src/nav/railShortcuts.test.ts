@@ -13,7 +13,7 @@ describe("railShortcuts — les raccourcis du rail", () => {
   });
 
   it("au-dessus → profil, au-dessous → Rechercher, à gauche → profil", () => {
-    expect(RAIL_SHORTCUT_TARGETS).toEqual({ above: "nav:Settings", below: "nav:Search", left: "nav:Settings" });
+    expect(RAIL_SHORTCUT_TARGETS).toEqual({ above: "nav:Search", below: "nav:Settings", left: "nav:Settings" });
   });
 
   it("GAUCHE s'arme après 450 ms, ou 1 100 ms arrivé en rafale (contenu focalisé il y a moins de 350 ms)", () => {

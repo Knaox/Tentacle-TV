@@ -376,7 +376,7 @@ Source : `TentacleRevealScroller.m`, `TentacleRevealMotion.m`,
   l'entrée ACTIVE (à défaut, Accueil) ; rail focalisé → zone à droite du
   rail ouvert (`left + expandedWidth + 12`) vers `contentKey()`.
 - **Raccourcis du rail** (`RailShortcuts`, T4) : 450 ms / 1 100 ms d'armement
-  du guide de gauche (350 ms de « rafale »), boucle Rechercher ↔ profil.
+  du guide de gauche (350 ms de « rafale ») ; le rail s'arrête à ses bouts (il bouclait Rechercher ↔ profil jusqu'au 2026-10-04).
 - **Parcourir** (T7) : entrée `status:primary` / `grid:0` / `browse:back`,
   reprise de `grid:0` ou `status:primary` quand la croix tient le focus —
   notes envoyées à T7.

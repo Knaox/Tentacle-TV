@@ -10,8 +10,9 @@ import { TVOS_REMOTE_SUPPORTED } from "../input";
  * Les RACCOURCIS de la navigation (tvOS) — l'applicateur de tv-core
  * (`nav/railShortcuts`) : trois guides invisibles aux bords des capsules,
  * posés seulement pendant que le focus est dans le rail, hors menu et
- * déplacement — HAUT depuis Rechercher → le profil, BAS depuis le profil →
- * Rechercher, GAUCHE → le profil une fois armé (`railLeftArmDelay`). La
+ * déplacement — HAUT depuis Rechercher y reste, BAS depuis le profil y reste
+ * (le rail s'arrête à ses bouts, il ne boucle plus), GAUCHE → le profil une
+ * fois armé (`railLeftArmDelay`). La
  * légende du rail ouvert le dit (« ◀ Profil et réglages »).
  */
 

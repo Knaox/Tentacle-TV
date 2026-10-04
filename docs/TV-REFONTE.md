@@ -35,6 +35,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 23. Saut de 30 s, validation en 5 s (Apple TV, Android TV) | Fait (2026-10-03) : → +30 s, ← −10 s, les boutons de l'habillage font pareil ; une seule règle pour toutes les entrées — la cible posée, « Lecture dans 5 s », OK lit, Retour annule, rien en pause ; plus d'abandon à 7 s — « Saut de 30 s et validation en 5 s » ci-dessous. |
 | 24. Badges de qualité au focus (Apple TV) | Fait (2026-10-03) : « 4K · VISION · ATMOS » dans l'image, en bas à droite, sur la rangée de la note, quand le focus a tenu 300 ms ; la qualité lue au focus, un titre à la fois (jamais les flux dans les grilles) ; la fiche dit la même chose — « Les badges de qualité au focus (Apple TV) » ci-dessous. |
 | 25. Défilement rapide sans creux (Apple TV) | Fait (2026-10-03) : flèche maintenue ou glisser, la page ne ralentit plus quand tvOS passe en défilement rapide — pendant une rafale, c'est tvOS qui défile, vers nos cibles ; un appui isolé garde le ressort. Natif : app à reconstruire — « Le défilement rapide sans creux (Apple TV) » ci-dessous. |
+| 26. Les rangées qui reviennent au début (Apple TV) | Fait (2026-10-04) : mode « mixte » — une rangée de l'accueil ou de « Pour vous » garde sa place tant qu'elle est à l'écran, revient au début (sans animation) une fois sortie de l'écran ou quand on change de page par le rail ; Retour sur une carte défilée ramène à la première — « Les rangées qui reviennent au début (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -598,8 +599,9 @@ politique partagée dans `packages/tv-core/src/nav/`.
   (même mécanique), sa pastille l'affiche ou la masque ; « Tout afficher » et
   « Ordre par défaut » quand ils ont à faire.
 - **Les réglages vite** (`RailShortcuts`, guides du câblage) : la navigation
-  BOUCLE (HAUT depuis Rechercher → profil, BAS depuis le profil →
-  Rechercher) et GAUCHE depuis toute entrée mène au profil — « gauche,
+  s'ARRÊTE à ses bouts (HAUT sur Rechercher, BAS sur le profil n'y font
+  plus rien — elle bouclait jusqu'au 2026-10-04, décision de l'utilisateur)
+  et GAUCHE depuis toute entrée mène au profil — « gauche,
   gauche » depuis le contenu. La Siri Remote n'émet pas la fin d'un appui
   maintenu sur une flèche : le guide s'arme après 450 ms, ou 1,1 s si l'on
   est arrivé dans une rafale (flèche maintenue) — mesuré : maintenu 1,2 s et
@@ -2947,6 +2949,81 @@ d'une ligne à l'autre ne change pas) ; en haut, le titre et les filtres
 reviennent. Même chose à l'accueil (rangées) et sur une fiche longue.
 
 ---
+
+## Les rangées qui reviennent au début (Apple TV)
+
+Branche `claude/sweet-napier-49484e` (lot du 2026-10-04, T9). Retour de
+l'utilisateur : dans les carrousels (Reprendre la lecture…), on défile vers la
+droite, on descend d'un cran — la rangée du dessus reste décalée, et pour
+revenir au début il faut tout refaire défiler.
+
+**Le choix de l'utilisateur : le mode MIXTE.** Netflix garde la place et fait
+de Retour la sortie rapide ; Apple recommande la mémoire du focus ; la remise à
+zéro systématique est un piège (on perd sa place en descendant par erreur).
+D'où, pour les rangées de l'ACCUEIL et de « POUR VOUS » :
+
+1. une rangée GARDE sa position tant qu'une part d'elle est à l'écran —
+   descendre d'un cran pour regarder la rangée suivante ne fait rien perdre ;
+2. elle REVIENT AU DÉBUT, sans animation, dès qu'elle SORT de l'écran (plus
+   rien d'elle ne se voit, en descendant comme en remontant) ou qu'on CHANGE
+   DE PAGE par le rail (Accueil → Films → Accueil) ; revenir d'une fiche n'est
+   PAS changer de page : la rangée est rendue telle qu'on l'a laissée, le
+   focus sur la carte ouverte ;
+3. **Retour** sur une carte qui n'est pas la première ramène le focus à la
+   PREMIÈRE (la rangée défile, à la vue) ; le Retour suivant fait ce qu'il
+   faisait — le rail s'ouvre.
+
+Ni les épisodes, ni les saisons, ni la distribution d'une fiche, ni la
+recherche : on y cherche un élément précis, garder sa place compte. Les
+bibliothèques, Ma liste et les favoris sont des grilles (aucun carrousel).
+
+**Où vit la règle** : tv-core `focus/rowRewind.ts` (pure, testée : à l'écran,
+sortie, changement de page à l'écran ou page couverte, retour de fiche,
+Retour une fois puis deux) et la couche `rowStart` de `railScreenBackLayers`
+(`nav/railBack.ts`) — exclusive de `openRail` : une seule couche « page »
+active, l'ordre ne dépend jamais de l'activation. L'adaptateur
+(`platform/tvos/focus/useRowRewind.ts`) applique : le port des rangées
+(`redesign/rows/rowRewindPort.tsx`, où `MediaRow` se déclare et où la page dit
+où sont ses rangées et qu'elle défile), le rail qui annonce ses changements de
+page AVANT de les poser (`onRailPageChange`), la clé rendue au retour
+(`useEntryFocus`, `onReturn`) et l'état du Retour (`useAwayFromRowStart`). Une
+page s'y abonne par `useRedesignScreen({ rewindRows: true })`.
+
+**Ce que ça coûte** : une remise au début est un `scrollTo` sans animation
+d'une rangée qui n'est pas à l'écran — aucun état React, aucun rendu, aucune
+image de plus. La page lit son défilement (l'accueil le lisait déjà pour le
+héros ; « Pour vous » s'y abonne, un événement toutes les 32 ms au plus pendant
+qu'elle défile) et ne parcourt que les rangées déplacées. L'état du Retour
+change quand le focus passe de la première carte à une autre (ou revient) :
+un rendu du cadre de l'écran (`RedesignScreen`), pas de sa vue.
+
+**Le cas qui a demandé du soin** — l'accueil quitté par le rail ALORS QU'UNE
+FICHE LE COUVRAIT (fiche ouverte depuis une carte, puis une page du rail
+depuis l'étagère d'une personne) : UIKit lui rendra, au retour, la carte d'où
+l'on était parti. Remise au début pendant qu'elle est cachée, sa rangée
+défilerait, à la vue, jusqu'à cette carte, puis de nouveau jusqu'au début. Elle
+attend donc le retour : remise au début et focus sur sa première carte au même
+instant. Quitté À L'ÉCRAN, l'accueil rend d'abord son focus au début de la
+rangée (`refocusContent` → `startOf`), et toutes les rangées reviennent au
+début sous la page choisie.
+
+**Preuves** : tests tv-core (`rowRewind.test.ts`, `railBack.test.ts`) ; banc
+nav-golden `focus/rangees-debut` (six scénarios, enregistrés sur 23bf658b7) —
+la rangée sortie revient au début (`resume:3` relevé à x = 1424, sa place sans
+défilement, contre 1460 et `resume:4` avant), Accueil → « Pour vous » →
+Accueil la rend au début, le retour de fiche rend l'affiche ouverte, Retour
+mène à la première carte puis au rail ; contre-épreuve sur la base c9881a7d5 :
+quatre écarts sur six, exactement là où le comportement change. Une seule
+référence existante bouge : `focus/home-sections#home-rows`, pas 21 (« À
+suivre », défilée puis sortie de l'écran, revient au début : HAUT y entre sur
+`nextUp:3` au lieu de `nextUp:5`).
+
+À éprouver sur l'Apple TV (tâche de l'utilisateur) : Reprendre défilée, BAS
+d'un cran puis HAUT — elle n'a pas bougé ; BAS jusqu'à Déjà vus puis
+remontée — elle est au début, sans qu'on l'ait vue bouger ; Accueil → Films →
+Accueil ; une affiche ouverte puis Retour — la même affiche ; Retour sur une
+carte défilée, deux fois. Le glisser du pavé dans une rangée n'est pas
+simulable : à éprouver aussi.
 
 ## Inventaire — les écrans
 

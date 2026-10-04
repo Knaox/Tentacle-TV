@@ -217,8 +217,12 @@ changent ni de nom ni de comportement.
   gauche + largeur ouverte + 12) rend le focus à la dernière cible de contenu
   encore montée, sinon à l'entrée. Les deux ponts ne coexistent jamais.
 - **S3** [code] Rail focalisé, hors menu et déplacement : HAUT depuis
-  Rechercher → profil (la navigation boucle).
-- **S4** [code] BAS depuis le profil → Rechercher.
+  Rechercher → Rechercher : le rail s'arrête à son bout. (Il bouclait sur le
+  profil jusqu'au 2026-10-04 : décision de l'utilisateur, la navigation ne
+  boucle plus. Le guide vise l'entrée elle-même — sans lui, tvOS chercherait
+  plus loin, dans le contenu.)
+- **S4** [code] BAS depuis le profil → le profil, de même (bouclait sur
+  Rechercher).
 - **S5** [code] BAS depuis la dernière entrée → profil (géométrie seule).
 - **S6** [code + mesuré] GAUCHE depuis n'importe quelle entrée → profil, une
   fois le guide ARMÉ : 450 ms après l'arrivée dans le rail ; 1 100 ms si le
@@ -371,7 +375,8 @@ changent ni de nom ni de comportement.
   profil, la pile `[Home, Library]` inchangée : c'est R2.1 / R2.2 (sur une
   page du rail, Retour ne dépile jamais — décidé le 2026-10-01) ; le 3e
   Retour quitte. Épinglé par `retour-pages#bibliotheque-retour-x3`.
-- **B6** (mesuré au banc, référence ; le carnet dit l'inverse) Rail de 24
+- **B6** — CORRIGÉ le 2026-10-04 (le rail ne boucle plus : BAS maintenu
+  s'arrête sur le profil). Relevé d'origine : (mesuré au banc, référence ; le carnet dit l'inverse) Rail de 24
   entrées, BAS maintenu : le focus passe la dernière entrée, le profil, puis
   BOUCLE sur Rechercher (le raccourci « sous le profil ») ; le carnet
   (« La navigation — beaucoup de bibliothèques ») annonçait un arrêt sur la

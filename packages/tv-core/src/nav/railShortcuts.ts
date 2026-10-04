@@ -13,8 +13,12 @@ import { RAIL_PROFILE_KEY, RAIL_SEARCH_KEY, isNavKey, navKeyOf } from "./railKey
  *   dernière cible de contenu (sinon l'entrée de l'écran).
  *
  * Les raccourcis, rail focalisé, hors menu et déplacement :
- * - HAUT depuis Rechercher → le profil (la navigation boucle) ;
- * - BAS depuis le profil → Rechercher ;
+ * - HAUT depuis Rechercher : Rechercher — le rail s'ARRÊTE à son bout ;
+ * - BAS depuis le profil : le profil — de même (décidé par l'utilisateur le
+ *   2026-10-04 : la navigation ne boucle plus ; elle bouclait sur le profil
+ *   et sur Rechercher). Le guide vise l'entrée du bord elle-même : sans lui,
+ *   tvOS chercherait une cible plus loin, dans le contenu (la croix d'une
+ *   étagère) ;
  * - GAUCHE depuis toute entrée → le profil, une fois ARMÉ : 450 ms après
  *   l'arrivée dans le rail, 1 100 ms si l'on y est arrivé en rafale (le contenu
  *   avait le focus il y a moins de 350 ms : flèche maintenue — la Siri Remote
@@ -28,10 +32,10 @@ export const RAIL_LEFT_ARM_AFTER_STREAM_MS = 1100;
 /** Une arrivée dans le rail moins longtemps que ça après un focus de contenu vient d'une flèche maintenue. */
 export const RAIL_STREAM_MS = 350;
 
-/** Les cibles des trois raccourcis (clés de focus). */
+/** Les cibles des trois raccourcis (clés de focus) : au-dessus du rail, son haut ; sous lui, son bas. */
 export const RAIL_SHORTCUT_TARGETS = {
-  above: navKeyOf(RAIL_PROFILE_KEY),
-  below: navKeyOf(RAIL_SEARCH_KEY),
+  above: navKeyOf(RAIL_SEARCH_KEY),
+  below: navKeyOf(RAIL_PROFILE_KEY),
   left: navKeyOf(RAIL_PROFILE_KEY),
 } as const;
 
