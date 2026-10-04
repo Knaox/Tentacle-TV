@@ -16,7 +16,7 @@ interface Props {
 /**
  * « Qualité réduite » sur le lecteur web et le bureau — la règle partagée
  * (`useQualityDropNotice`) rendue dans la carte des avertissements, habillée
- * pour la vidéo. En haut, au centre, loin de la barre de lecture ; 6 s
+ * pour la vidéo. Sous la barre du haut (jamais sur Retour), au centre ; 6 s
  * suspendues au survol et au focus ; « Ne plus afficher » est un rappel du
  * COMPTE. Monté seulement quand il y a quelque chose à dire (règle GPU).
  */
@@ -27,7 +27,7 @@ export const QualityDropNotice = memo(function QualityDropNotice({ drop, started
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none absolute inset-x-0 top-6 z-40 flex justify-center px-4"
+      className="pointer-events-none absolute inset-x-0 top-20 z-40 flex justify-center px-4"
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
     >
