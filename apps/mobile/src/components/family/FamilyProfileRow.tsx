@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import type { FamilyProfileDto } from "@tentacle-tv/shared";
+import { guestCanRequest, type FamilyProfileDto } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "@/family/FamilyAvatar";
 import { useFamilyText } from "@/family/useFamilyText";
 import { useTheme, useThemedStyles } from "@/theme";
@@ -48,6 +48,12 @@ export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, 
           </View>
           {yours ? <Text style={st.metaText}>{t("familyWeb:shared.yourGuest")}</Text> : null}
           {profile.since ? <Text style={st.metaText}>{t("familyWeb:owned.since", { date: formatDate(profile.since) })}</Text> : null}
+          {guest && guestCanRequest(profile) ? (
+            <View style={st.pinMeta}>
+              <Feather name="film" size={11} color={theme.colors.text.tertiary} />
+              <Text style={st.metaText}>{t("family:rights.requestTitles")}</Text>
+            </View>
+          ) : null}
           {profile.hasPin ? (
             <View style={st.pinMeta}>
               <Feather name="lock" size={11} color={theme.colors.text.tertiary} />

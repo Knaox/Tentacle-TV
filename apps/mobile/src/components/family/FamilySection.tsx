@@ -16,6 +16,7 @@ import {
 } from "@tentacle-tv/shared";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import type { FamilyScreenModel } from "@/family/familyScreenModel";
+import { useFamilyAvailability } from "@/family/useFamilyAvailability";
 import { useFamilyText } from "@/family/useFamilyText";
 import { showToast } from "@/notices/toastStore";
 import { ctaGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -50,8 +51,13 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
 
   const family = overview.family;
   const counts = useMemo(() => familyCounts(family), [family]);
-  const actionsOf = useCallback((profile: FamilyProfileDto) => profileActions(overview, profile, me), [overview, me]);
-  const panel = useProfilePanel(family?.profiles ?? NO_PROFILES, actionsOf);
+  // « Peut demander » n'existe que si le serveur l'annonce (`/api/config`).
+  const guestRequests = useFamilyAvailability().capability?.guestRequests;
+  const actionsOf = useCallback(
+    (profile: FamilyProfileDto) => profileActions(overview, profile, me, { guestRequests }),
+    [overview, me, guestRequests],
+  );
+  const panel = useProfilePanel(family?.profiles ?? NO_PROFILES, actionsOf, family?.owner.name ?? "");
 
   const confirmCancel = useCallback((invitation: OutgoingInvitationDto) => {
     const name = invitation.inviteeName;
