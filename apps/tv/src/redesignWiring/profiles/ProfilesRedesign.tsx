@@ -82,7 +82,8 @@ export function ProfilesRedesign({ navigation, route }: Props) {
 
   const store = useFocusStore();
   useProfilesGroups(store);
-  const tileIndex = listing ? pickerEntryIndex(listing, lastLeftProfileId()) : 0;
+  // Le profil qui avait ouvert le pavé, sinon celui qu'on vient de quitter.
+  const tileIndex = listing ? pickerEntryIndex(listing, flow.lastPicked ?? lastLeftProfileId()) : 0;
   const entryKey = profilesEntryKey({ phase: phase.kind, tileIndex, pinLocked: entry.phase === "locked" });
   useProfilesFocus(store, { entryKey, arrival: phase.kind });
 

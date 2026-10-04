@@ -59,6 +59,8 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
   const [notice, setNotice] = useState<ProfileRefusal | null>(null);
   const [entry, setEntry] = useState<PinEntry>(PIN_ENTRY_START);
   const [unpairArmed, setUnpairArmed] = useState(false);
+  // Le profil qui a ouvert le pavé : la rangée y rend le focus en revenant.
+  const [lastPicked, setLastPicked] = useState<string | null>(null);
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
@@ -152,11 +154,13 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     notice,
     entry,
     unpairArmed,
+    lastPicked,
     retry: () => void load(intent),
     pick: (index: number) => {
       const profile = listing?.profiles[index];
       if (!listing || !profile || busy) return;
       setNotice(null);
+      setLastPicked(profile.userId);
       const plan = planProfilePick(profile, listing, remember, Date.now());
       if (plan.kind === "locked") return setNotice({ kind: "locked", until: plan.until });
       if (plan.kind === "pin") return showPin(listing, profile.userId, "open", plan.remember, plan.launch);
@@ -166,6 +170,7 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
       const owner = listing?.profiles.find((profile) => profile.kind === "owner");
       if (!listing || !owner || busy || !listing.canManage) return;
       setNotice(null);
+      setLastPicked(owner.userId);
       if (isProfileLocked(owner, Date.now())) return setNotice({ kind: "locked", until: owner.lockedUntil });
       if (owner.hasPin) return showPin(listing, owner.userId, "manage", false, "picked");
       void open(listing, owner.userId, { remember: false, launch: "picked" }, "manage");
