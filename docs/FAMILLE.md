@@ -53,8 +53,7 @@ montrent.
   ni de téléchargement. Les invités d'un membre qui part restent dans la
   famille ; le propriétaire les gère. Le propriétaire — lui seul — peut lui
   donner « peut demander des films » (`FamilyGuestRights.requestTitles`,
-  coupé par défaut, `setGuestRights`) : voir « La délégation aux
-  extensions ». Nom Jellyfin ASCII reconnaissable : « Lea - invite de
+  coupé par défaut, `setGuestRights`) : voir « L'invité et les extensions ». Nom Jellyfin ASCII reconnaissable : « Lea - invite de
   Damien » (`guestAccountName`). Il n'apparaît dans AUCUNE liste — seulement
   dans les sessions en cours, étiqueté `familyGuestOf` (« Invité · famille de X »).
   Le supprimer supprime son compte Jellyfin (sa lecture est perdue).
@@ -236,36 +235,47 @@ téléchargements, ni Famille personnelle, ni administration. Sans quoi un
 membre retiré garderait un accès par une TV jumelée depuis son profil. Un
 INVITÉ, en plus : ni Watch Together (REST et socket), ni tickets, ni liens de
 partage — et aucune extension, sauf si le propriétaire lui a donné « peut
-demander » : alors les routes d'extension le voient comme le propriétaire (voir
-ci-dessous) ; un MEMBRE garde ses extensions sous SON identité, ses demandes
-sont les siennes. Une seule liste de préfixes refusés
+demander » : alors il les utilise à SON PROPRE NOM (voir ci-dessous) ; un
+MEMBRE garde ses extensions sous SON identité, ses demandes sont les siennes. Une seule liste de préfixes refusés
 (`services/family/profileSessionLimits.ts`), appliquée par `requireAuth` et
 `requireAdmin` — donc aussi aux routes des extensions : 403
 `family.personal_session_required` ou `family.guest_account`.
 
-### La délégation aux extensions (« peut demander »)
+### L'invité et les extensions (« peut demander »)
 
-Décision de Damien (v2) : un invité à qui le propriétaire a donné « peut
-demander des films » voit les extensions (Vigie…) et ses demandes partent AU
-NOM DU PROPRIÉTAIRE. C'est un mécanisme GÉNÉRIQUE du cœur, sans rien de propre
-à une extension (`services/family/familyDelegation.ts`, appliqué par
+Décision de Damien (v2, corrigée le 04/10 : plus de délégation) : un invité à
+qui le propriétaire — lui seul — a donné « peut demander des films »
+(`FamilyGuestRights.requestTitles`, coupé par défaut) utilise les extensions
+(Vigie…) À SON PROPRE NOM. Un mécanisme GÉNÉRIQUE du cœur, sans rien de propre
+à une extension (`services/family/familyGuestExtensions.ts`, appliqué par
 `requireAuth` via `profileSessionLimits.ts`) :
 
 - **où** : les routes d'extension, et elles seules — `/api/plugins/…` (le cœur :
   `/active`, `/:id/bundle` ; chaque extension : `/api/plugins/<id>/…`).
-  Partout ailleurs, l'invité reste lui-même, avec son périmètre : ni Watch
-  Together, ni tickets, ni partage, ni rien d'autre ;
-- **ce que reçoit l'extension** dans `request.user` : `{ userId, username }`
-  du PROPRIÉTAIRE de la famille, `isAdmin: false` quoi qu'il arrive (un
-  propriétaire administrateur ne prête jamais ce titre : une route
-  `requireAdmin` d'extension lui répond 403), `session: "tvProfile"`, et
-  `delegatedBy: { userId, username }` — l'invité, pour qui veut le dire. Le
-  jeton présenté reste celui de la session de l'invité ;
+  Partout ailleurs, rien ne change pour lui : ni Watch Together, ni tickets,
+  ni partage ;
+- **ce que reçoit l'extension** dans `request.user` : l'invité lui-même — son
+  identifiant Jellyfin, `isAdmin: false`, `session: "tvProfile"` — et pour nom
+  celui de son COMPTE Jellyfin (« Zoe - invite de Damien ») : unique et
+  stable, quand le prénom du profil (« Zoé ») peut être celui d'un autre
+  compte. Personne n'agit pour un autre ; une route `requireAdmin`
+  d'extension lui répond 403 ;
 - **sans le droit** : 403 `family.guest_account` sur toute route d'extension,
   que les clients traitent comme « aucune extension » ;
 - **retrait** : le droit se lit en base à CHAQUE requête — retiré, il coupe à
   l'appel suivant ; la session de l'invité l'apprend aussi par
-  `family:update`.
+  `family:update` ;
+- **proposé seulement s'il a un sens** : `features.family.guestRequests` est
+  vrai quand une extension ACTIVE et CONFIGURÉE déclare la demande du contrat
+  `titles` (`titles.request`, `services/pluginRequests.ts`) — aucune
+  extension n'est nommée ; sinon les clients n'offrent pas l'interrupteur ;
+- **les membres** : aucun droit de la Famille à ce sujet — leurs extensions
+  sont les leurs, sous leur identité.
+
+Côté Vigie (vérifié dans son dépôt, rien n'y change) : une demande part au
+nom du compte qui la fait ; un compte inconnu de Jellyseerr y est importé
+depuis Jellyfin à sa première demande (un compte caché aussi), sinon un
+compte local Jellyseerr à son nom.
 
 ### Le proxy : un appareil n'écrit que ses données
 
@@ -396,7 +406,7 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 | Cloche, push, socket | `familyNotify.ts` |
 | Familles et profils en base (`familyOf` : la famille d'un compte et son rôle), refus 403 / 404 | `familyStore.ts` |
 | Coupure des sessions de profil (avant la réponse) | `familySessions.ts` |
-| Délégation « agit pour » d'un invité autorisé (routes d'extension) | `familyDelegation.ts` |
+| Un invité autorisé et les extensions (à son nom) | `familyGuestExtensions.ts` |
 | Comptes Jellyfin des invités | `guestAccounts.ts` |
 | Invitations ; réponses et expiration | `familyInvitations.ts`, `familyInvitationAnswers.ts` |
 | Invités et PIN ; membres, dissolution, compte disparu | `familyGuests.ts`, `familyMembers.ts` |
@@ -445,8 +455,9 @@ une invitation n'y paraît que par le début de son identifiant.
   TV, PIN et gestion, invitations, révocations, périmètre et listes, balayage ;
   v2 : `familyOneFamily` (une famille par compte, courses comprises ; invités
   des membres et leur politique), `familySharedTv` (TV de membre, coupures,
-  gestion d'un membre), `familyMemberRights`, `familyGuestDelegation` (le
-  droit « peut demander » et sa délégation, nulle part ailleurs).
+  gestion d'un membre), `familyMemberRights`, `familyGuestRequests` (le
+  droit « peut demander » : l'invité à son nom, sur les extensions seules),
+  `pluginRequests` (la capacité).
 - Proxy : `apps/backend/test/jellyfinProxyDeviceWrites.test.ts` (vrai serveur
   amont).
 - Un VRAI Jellyfin jetable (10.11 et 12.1) : `test/jellyfin-compat/suites/
@@ -459,7 +470,8 @@ une invitation n'y paraît que par le début de son identifiant.
 
 - Capacité : `/api/config` › `features.family` (`{ v, enabled, guests,
   guestRequests }` — `v: 2` depuis la Famille partagée ; `guestRequests` : le
-  droit « peut demander » existe).
+  droit « peut demander » a un sens ici, une extension sachant demander un
+  titre).
   Absente : serveur d'avant — les clients ne montrent rien de la Famille ; pas
   de minServer imposé.
 - Une TV d'avant les profils garde son jumelage ; les clients publiés ne
