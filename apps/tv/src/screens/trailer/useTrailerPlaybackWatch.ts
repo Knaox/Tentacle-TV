@@ -3,7 +3,7 @@ import { AppState } from "react-native";
 import type { OnLoadData, OnProgressData, OnVideoErrorData } from "react-native-video";
 
 /**
- * Le chien de garde de la bande-annonce (Apple TV) : une lecture qui finit
+ * Le chien de garde de la bande-annonce (Apple TV, Android TV) : une lecture qui finit
  * TOUJOURS — par l'image à l'écran, par sa fin, ou par un échec que l'écran
  * dit (« indisponible »). AVPlayer, lui, peut attendre sans fin un flux qui
  * ne répond pas : mesuré au simulateur, plus d'une minute et demie de
@@ -135,8 +135,11 @@ export function useTrailerPlaybackWatch(streamUrl: string | null, callbacks: Pla
         arm();
       },
       onError: (e: OnVideoErrorData) => {
+        // AVPlayer (code, description) ou ExoPlayer (errorCode, errorString).
         const err = e?.error;
-        finish(`AVPlayer ${err?.code ?? "?"} : ${err?.localizedDescription ?? err?.localizedFailureReason ?? err?.error ?? "?"}`);
+        const code = err?.code ?? err?.errorCode ?? "?";
+        const text = err?.localizedDescription ?? err?.localizedFailureReason ?? err?.error ?? err?.errorString ?? "?";
+        finish(`lecteur ${code} : ${text}`);
       },
       onEnd: () => finish(null),
     }),

@@ -16,7 +16,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
 
 /**
  * La bande-annonce refondue (Apple TV) : `TrailerView` autour du lecteur
- * actuel — le flux résolu par le serveur (`TrailerWebView.ios.tsx`), sourd à
+ * actuel — le flux résolu par le serveur (`TrailerWebView.tsx`), sourd à
  * la télécommande, qui dit chacune de ses issues : la première image
  * (« lecture »), la fin, ou l'échec (« indisponible » — jamais un chargement
  * sans fin). La croix Retour est le seul élément focalisable et prend le
