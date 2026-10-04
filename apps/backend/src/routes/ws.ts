@@ -12,6 +12,7 @@ import {
 } from "../services/deviceSessions/gateway";
 import { isSessionMessageType } from "../services/deviceSessions/protocolParse";
 import { FAMILY_PROFILE_ENDED_CLOSE_CODE } from "../family/familyProtocol";
+import { canUseWatchTogether } from "../services/family/profileSessionLimits";
 
 const AUTH_TIMEOUT_MS = 15_000;
 /** Ping protocolaire toutes les 10 s ; deux pongs manqués = socket mort,
@@ -48,7 +49,14 @@ function handleParsedMessage(
   }
   if (msg.type.startsWith("wt:")) {
     const user = getUser();
-    if (user) handleWtMessage(user, msg, socket);
+    // Un profil invité de la Famille n'a pas Watch Together (il n'apparaît dans aucune liste).
+    if (user?.session === "tvProfile") {
+      void canUseWatchTogether(user).then((allowed) => {
+        if (allowed) handleWtMessage(user, msg, socket);
+      });
+    } else if (user) {
+      handleWtMessage(user, msg, socket);
+    }
     return;
   }
   if (isSessionMessageType(msg.type)) {

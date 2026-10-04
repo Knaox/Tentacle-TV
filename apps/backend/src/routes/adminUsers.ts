@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { withoutFamilyGuests } from "../services/family/familyGuestMarkers";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { signImpersonationToken } from "../services/jwt";
@@ -57,7 +58,8 @@ export const adminUsersRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(502).send({ message: `Jellyfin a répondu ${res.status}` });
       }
       const users = (await res.json()) as JellyfinUserDto[];
-      return users.map(toAdminUser);
+      // Un invité de la Famille n'apparaît dans aucune liste, la sienne non plus.
+      return (await withoutFamilyGuests(users, (u) => u.Id)).map(toAdminUser);
     } catch {
       return reply.status(502).send({ message: "Impossible de contacter Jellyfin" });
     }

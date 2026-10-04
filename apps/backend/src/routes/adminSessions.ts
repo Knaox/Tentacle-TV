@@ -5,6 +5,7 @@ import { loadRawSessions, sendMessage, sendPlaystate } from "../services/adminSe
 import { buildSnapshot } from "../services/adminSessions/snapshot";
 import type { AdminGroupActionResultDto } from "../services/adminSessions/dto";
 import { allRooms } from "../services/watchTogether/roomRegistry";
+import { familyGuestOwners } from "../services/family/familyGuestMarkers";
 
 /**
  * Le tableau de bord des sessions en direct — enregistré depuis adminRoutes,
@@ -31,7 +32,9 @@ const messageBody = z.object({
 async function snapshot() {
   const now = Date.now();
   const { sessions, at } = await loadRawSessions(now);
-  return buildSnapshot({ raw: sessions, receivedAt: at, connections: sessionConnections(), rooms: allRooms(), now });
+  // Les invités de la Famille, étiquetés (base muette : sans étiquette, rien de plus).
+  const familyGuests = await familyGuestOwners().catch(() => new Map<string, string>());
+  return buildSnapshot({ raw: sessions, receivedAt: at, connections: sessionConnections(), rooms: allRooms(), now, familyGuests });
 }
 
 /** Les sessions Jellyfin des membres d'une salle — `null` si la salle n'existe pas. */

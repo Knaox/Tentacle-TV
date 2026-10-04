@@ -1,6 +1,7 @@
 import { getPrisma } from "../db";
 import { tmdbConfigured } from "../tmdb/client";
 import { getJellyfinUsers } from "../watchTogether/usersCache";
+import { withoutFamilyGuests } from "../family/familyGuestMarkers";
 import { generatePool } from "./generationJob";
 import { isPoolStale, readPool } from "./poolStore";
 import { PROFILE_SCHEMA_VERSION, rebuildProfile } from "./profileBuilder";
@@ -89,9 +90,11 @@ function sleep(ms: number): Promise<void> {
 async function runFanout(opts: FanoutOptions): Promise<void> {
   // Sans clé, rien d'utile à calculer : le mode générique ne coûte rien.
   if (!tmdbConfigured()) return;
-  const users = await getJellyfinUsers();
+  const jellyfinUsers = await getJellyfinUsers();
+  // Les invités de la Famille ne figurent dans aucune liste, celle-ci comprise.
+  const users = jellyfinUsers ? await withoutFamilyGuests(jellyfinUsers, (u) => u.id).catch(() => null) : null;
   if (!users) {
-    console.warn("[Reco] Fan-out abandonné : Jellyfin muet (le prochain démarrage retentera)");
+    console.warn("[Reco] Fan-out abandonné : Jellyfin ou la base muets (le prochain démarrage retentera)");
     return;
   }
 

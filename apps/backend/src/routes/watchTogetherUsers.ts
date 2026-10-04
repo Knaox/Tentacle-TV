@@ -3,6 +3,7 @@ import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { isUserOnline } from "../services/wsManager";
 import { getJellyfinUsers } from "../services/watchTogether/usersCache";
 import type { WtInvitableUserDto } from "../services/watchTogether/protocol";
+import { withoutFamilyGuests } from "../services/family/familyGuestMarkers";
 
 /**
  * Watch Together — utilisateurs invitables (REST, préfixe /api/watch-together).
@@ -20,7 +21,10 @@ export const watchTogetherUsersRoutes: FastifyPluginAsync = async (app) => {
     if (!users) {
       return reply.status(502).send({ message: "Impossible de contacter Jellyfin" });
     }
-    const result: WtInvitableUserDto[] = users
+    // Un invité de la Famille n'apparaît dans aucune liste.
+    const listed = await withoutFamilyGuests(users, (u) => u.id).catch(() => null);
+    if (!listed) return reply.status(503).send({ message: "Base de données indisponible" });
+    const result: WtInvitableUserDto[] = listed
       .filter((u) => !u.isDisabled && u.id !== user.userId)
       .map((u) => ({
         id: u.id,

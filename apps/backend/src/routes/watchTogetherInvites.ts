@@ -14,6 +14,7 @@ import {
   roomToDto,
 } from "../services/watchTogether/broadcast";
 import { getJellyfinUsers, getUserBasic } from "../services/watchTogether/usersCache";
+import { withoutFamilyGuests } from "../services/family/familyGuestMarkers";
 import { sendChatHistory } from "../services/watchTogether/chat";
 import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { WT_MAX_INVITES_PER_REQUEST } from "../services/watchTogether/protocol";
@@ -60,7 +61,9 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(403).send({ code: "not_host", message: "Seul l'hôte peut inviter" });
     }
 
-    const allUsers = await getJellyfinUsers();
+    // Un invité de la Famille n'est jamais invitable (il n'apparaît dans aucune liste).
+    const jellyfinUsers = await getJellyfinUsers();
+    const allUsers = jellyfinUsers ? await withoutFamilyGuests(jellyfinUsers, (u) => u.id).catch(() => null) : null;
     const contextItemId = room.itemId ?? room.contextItemId;
     const itemName = contextItemId ? await fetchItemName(contextItemId, user.userId) : null;
 

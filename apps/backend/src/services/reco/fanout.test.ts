@@ -6,6 +6,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../db", () => ({
+  // Sans base de la Famille : aucun invité à écarter.
+  hasPrisma: () => false,
   getPrisma: () => ({
     recoSettings: { findMany: async () => [] },
     tasteProfile: {

@@ -25,6 +25,10 @@ export interface SnapshotInput {
   connections: readonly ConnectionView[];
   rooms: Iterable<Room>;
   now: number;
+  /** La Famille : invité (identifiant plié — sans tirets, minuscules) → nom
+   *  de son propriétaire. La seule place où un invité paraît : « Invité ·
+   *  famille de X ». */
+  familyGuests?: ReadonlyMap<string, string>;
 }
 
 function overlayTentacle(session: AdminSessionDto, connections: readonly ConnectionView[], now: number): void {
@@ -58,6 +62,7 @@ export function buildSnapshot(input: SnapshotInput): AdminSessionsSnapshotDto {
     if (session === null) continue;
     if (session.nowPlaying === null && input.now - Date.parse(session.lastActivity) > IDLE_WINDOW_MS) continue;
     overlayTentacle(session, input.connections, input.now);
+    session.familyGuestOf = input.familyGuests?.get(session.userId.replace(/-/g, "").toLowerCase()) ?? null;
     sessions.push(session);
   }
 

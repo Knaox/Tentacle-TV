@@ -3,6 +3,7 @@ import { getJellyfinUrl } from "../services/configStore";
 import { verifyImpersonationToken } from "../services/jwt";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders } from "../services/jellyfinAuth";
 import { pairedDeviceStatus, PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../services/pairedDeviceStatus";
+import { profileSessionRefusal } from "../services/family/profileSessionLimits";
 
 /**
  * D'où vient la session d'une requête — la Famille en tire ses droits
@@ -151,6 +152,18 @@ export function getTokenFromRequest(request: FastifyRequest): string | null {
   return tokenFromAuthHeaders(request.headers) ?? null;
 }
 
+/** Une session de profil de TV hors de son périmètre (la Famille) : 403. */
+async function outOfProfileScope(request: FastifyRequest, reply: FastifyReply, user: JellyfinUser): Promise<boolean> {
+  try {
+    const refusal = await profileSessionRefusal(request.url, user);
+    if (!refusal) return false;
+    reply.status(403).send(refusal);
+  } catch {
+    reply.status(503).send({ message: "Base de données indisponible" });
+  }
+  return true;
+}
+
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
   const token = getTokenFromRequest(request);
   if (!token) {
@@ -162,6 +175,7 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
     const { status, body } = rejection(result);
     return reply.status(status).send(body);
   }
+  if (await outOfProfileScope(request, reply, result.user)) return reply;
 
   (request as any).user = result.user;
 }
@@ -181,6 +195,7 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
   if (!result.user.isAdmin) {
     return reply.status(403).send({ message: "Forbidden" });
   }
+  if (await outOfProfileScope(request, reply, result.user)) return reply;
 
   (request as any).user = result.user;
 }

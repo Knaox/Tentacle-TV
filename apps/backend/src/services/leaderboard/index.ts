@@ -1,4 +1,5 @@
 import { getJellyfinUsers } from "../watchTogether/usersCache";
+import { withoutFamilyGuests } from "../family/familyGuestMarkers";
 import { statsCore } from "./coreStats";
 import { watchMeasures } from "./measured";
 import type { Leaderboard, LeaderboardEntry } from "./types";
@@ -42,7 +43,8 @@ async function build(): Promise<Leaderboard | null> {
 
   // Les comptes désactivés ne jouent plus : les laisser dans le classement
   // reviendrait à faire figurer d'anciens membres au tableau d'honneur.
-  const active = accounts
+  // Ni les comptes désactivés, ni les invités de la Famille (aucune liste).
+  const active = (await withoutFamilyGuests(accounts, (u) => u.id))
     .filter((u) => !u.isDisabled)
     .map((u) => ({ id: u.id, name: u.name, hasAvatar: u.hasAvatar }));
 

@@ -132,12 +132,15 @@ describe("le jeton de jumelage « profils seuls »", () => {
 });
 
 describe("les listes d'appareils", () => {
-  it("ne montrent jamais une session de profil, et ne la déjumellent pas", async () => {
+  it("ne montrent jamais une session de profil ; une session de profil n'y touche pas", async () => {
     const mine = await app.inject({ method: "GET", url: "/api/pair/my-devices", headers: as(OWNER_TV) });
     expect(mine.json().map((d: { id: string }) => d.id).sort()).toEqual(["pd-1", "pd-3"]);
     const all = await app.inject({ method: "GET", url: "/api/pair/devices", headers: as(OWNER_TV) });
     expect(all.json()).toHaveLength(2);
+    // Une session de profil n'atteint pas le jumelage (périmètre de la Famille).
     const child = await app.inject({ method: "DELETE", url: "/api/pair/my-devices/pd-2", headers: as(PROFILE) });
-    expect(child.statusCode).toBe(404);
+    expect(child.statusCode).toBe(403);
+    expect(child.json().code).toBe("family.personal_session_required");
+    expect(h.db!.state.devices.map((d) => d.id)).toContain("pd-2");
   });
 });

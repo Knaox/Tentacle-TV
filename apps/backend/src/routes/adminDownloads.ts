@@ -26,6 +26,7 @@ import {
 } from "../services/downloadBandwidth/caps";
 import { isValidIpOrCidr, normalizeEntry } from "../services/downloadBandwidth/pool";
 import { listUsersRights, updateUserRights } from "../services/jellyfinAdminPolicy";
+import { withoutFamilyGuests } from "../services/family/familyGuestMarkers";
 
 const patchSchema = z
   .object({
@@ -72,7 +73,8 @@ export const adminDownloadRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/users", async (_request, reply) => {
     try {
-      return await listUsersRights();
+      // Un invité de la Famille n'a aucun droit à régler, ni de place dans la liste.
+      return await withoutFamilyGuests(await listUsersRights(), (u) => u.id);
     } catch (error) {
       const code = error instanceof Error ? error.message : "jellyfin-unreachable";
       return reply.status(STATUS_BY_ERROR[code] ?? 502).send({ error: code });
