@@ -23,6 +23,7 @@ import {
   type OutgoingInvitationDto,
 } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
+import { useFamilyAvailability } from "../useFamilyAvailability";
 import { useFamilyText } from "../useFamilyText";
 import { FamilyConfirm, type FamilyPending } from "./FamilyConfirm";
 import { GuestDialog } from "./GuestDialog";
@@ -53,6 +54,9 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const { errorText, codeText } = useFamilyText();
   const toast = useToast();
   const viewerId = useUserId();
+  // « Peut demander » n'existe que si le serveur l'annonce (/api/config).
+  const guestRequests = useFamilyAvailability().capability?.guestRequests;
+  const capability = useMemo(() => ({ guestRequests }), [guestRequests]);
   const removeMember = useRemoveFamilyMember();
   const deleteGuest = useDeleteFamilyGuest();
   const cancelInvite = useCancelFamilyInvitation();
@@ -134,7 +138,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
                 profile={profile}
                 last={index === family.profiles.length - 1 && !buttons}
                 isSelf={isOwnProfile(profile, viewerId)}
-                actions={profileActions(overview, profile, viewerId)}
+                actions={profileActions(overview, profile, viewerId, capability)}
                 showCreator={!!profile.createdBy && !sameUserId(profile.createdBy, family.owner.userId)}
                 ownerName={family.owner.name}
                 rightPending={setRights.isPending || setGuestRights.isPending}
