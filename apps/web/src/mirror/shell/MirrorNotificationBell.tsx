@@ -15,6 +15,7 @@ import {
   useUnreadCount,
   type AppNotification,
 } from "@tentacle-tv/api-client";
+import { openFamilyNotification } from "../../family/familyPosterStore";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { BottomSheet } from "../ui/BottomSheet";
 import { NotifSheetHeader } from "./NotifSheetHeader";
@@ -76,6 +77,8 @@ export function MirrorNotificationBell() {
   const onPress = useCallback(
     (n: AppNotification) => {
       if (!n.read) markOne.mutate(n.id);
+      // « X vous invite… » : l'affiche de l'invitation, pas une page.
+      if (openFamilyNotification(n)) return close();
       const route = resolveNotificationRoute(n, "web", pluginNavMeta);
       if (route) {
         close();

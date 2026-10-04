@@ -17,6 +17,7 @@ import type { AppNotification } from "@tentacle-tv/api-client";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { NotifRow } from "./notifications/NotifRow";
+import { openFamilyNotification } from "../family/familyPosterStore";
 import { ConfirmDeleteModal } from "./notifications/ConfirmDeleteModal";
 
 interface NotificationBellProps {
@@ -76,6 +77,12 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
   const handleNotifClick = useCallback(
     (n: AppNotification) => {
       if (!n.read) markOneMut.mutate(n.id);
+      // « X vous invite… » : l'affiche de l'invitation, pas une page.
+      if (openFamilyNotification(n)) {
+        setOpen(false);
+        sel.exitSelectionMode();
+        return;
+      }
       const route = resolveNotificationRoute(n, "web", pluginNavMeta);
       if (route) {
         setOpen(false);

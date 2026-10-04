@@ -7,6 +7,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { NoticeHost } from "./notices/NoticeHost";
 import { useLeaderboardOpen, closeLeaderboard } from "./easterEggs/logoEggStore";
 import { useMirror } from "../mirror/useFormFactor";
+import { FamilyInvitationHost } from "../family/FamilyInvitationHost";
 
 /** Chargée à la demande : le bureau ne télécharge rien du miroir. */
 const MirrorLayout = lazy(() => import("../mirror/shell/MirrorLayout").then((m) => ({ default: m.MirrorLayout })));
@@ -32,14 +33,20 @@ const WatchLeaderboardPanel = lazy(() =>
  */
 export function AppLayout() {
   const mirror = useMirror();
-  if (mirror) {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-surface-0" />}>
-        <MirrorLayout />
-      </Suspense>
-    );
-  }
-  return <DesktopLayout />;
+  return (
+    <>
+      {mirror ? (
+        <Suspense fallback={<div className="min-h-screen bg-surface-0" />}>
+          <MirrorLayout />
+        </Suspense>
+      ) : (
+        <DesktopLayout />
+      )}
+      {/* L'affiche d'invitation de la Famille (et son fil temps réel) : la
+          coquille seulement — jamais par-dessus le lecteur ni une fiche immersive. */}
+      <FamilyInvitationHost />
+    </>
+  );
 }
 
 function DesktopLayout() {
