@@ -42,6 +42,7 @@ import requests from "./requests";
 import adminOverview from "./adminOverview";
 import notices from "./notices";
 import family from "./family";
+import familyWeb from "./familyWeb";
 
 export default {
   common, auth, setup, player, admin,
@@ -59,4 +60,5 @@ export default {
   adminOverview,
   notices,
   family,
+  familyWeb,
 };

@@ -19,6 +19,7 @@ const NAMESPACES = [
   "adminOverview",
   "notices",
   "family",
+  "familyWeb",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {
