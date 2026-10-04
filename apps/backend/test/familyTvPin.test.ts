@@ -68,6 +68,25 @@ describe("le PIN d'un profil", () => {
     expect(listing.profiles[0].lockedUntil).toBeTruthy();
   });
 
+  it("des essais simultanés, sur plusieurs TV, n'en laissent jamais passer plus de cinq", async () => {
+    await setPin(tokens.damien, "4242");
+    const salon = await tv();
+    const chambre = await tv();
+    // Douze essais lancés ensemble, le BON PIN en dernier sur la chambre.
+    const results = await Promise.all(
+      Array.from({ length: 12 }, (_, i) =>
+        openProfile(app, i % 2 ? chambre : salon, { profileId: IDS.damien, pin: i === 11 ? "4242" : "0000" }),
+      ),
+    );
+    const codes = results.map((res) => (res.json() as { code?: string }).code ?? "ouvert");
+    // Quatre refus comptés, le cinquième pose le blocage ; tous les autres le
+    // trouvent — le bon PIN compris, qui n'ouvre rien.
+    expect(codes.filter((code) => code === "family.pin_invalid")).toHaveLength(4);
+    expect(codes.filter((code) => code === "family.pin_locked")).toHaveLength(8);
+    expect(codes).not.toContain("ouvert");
+    expect(h.state!.db.data.profilePinAttempt).toEqual([expect.objectContaining({ failures: 0, lockCount: 1 })]);
+  });
+
   it("ne sort jamais du serveur, ni en clair ni haché", async () => {
     await setPin(tokens.damien, "4242");
     const salon = await tv();

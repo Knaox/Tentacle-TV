@@ -3,6 +3,7 @@ import { promisify } from "util";
 import { getPrisma } from "../db";
 import { afterPinFailure, isValidPin, pinGate, type PinAttemptState } from "../../family/familyRules";
 import { FamilyFailure, iso } from "./familyErrors";
+import { withFamilyLock } from "./familyLock";
 
 /**
  * Le code PIN d'un profil (docs/FAMILLE.md) : quatre chiffres, haché par
@@ -83,12 +84,28 @@ export async function lockedProfiles(userIds: string[], now: number): Promise<Ma
   return locked;
 }
 
+interface PinCheck {
+  pairingId: string;
+  userId: string;
+  pin: string | undefined;
+  now: number;
+}
+
 /**
  * Le PIN présenté sur une TV pour un profil. Sans PIN posé : rien à vérifier.
  * Lève `pin_locked`, `pin_required`, `pin_format` ou `pin_invalid` ; une
  * réussite efface les essais ratés. `pairingId` ne sert qu'au journal.
+ *
+ * UN ESSAI À LA FOIS PAR PROFIL, toutes TV confondues : lire le compteur,
+ * comparer (scrypt, lent) puis l'écrire se font sous le verrou du profil.
+ * Sans lui, des essais simultanés lisaient le même compteur et passaient
+ * tous — bien plus de cinq avant que le blocage ne s'installe.
  */
-export async function checkProfilePin(input: { pairingId: string; userId: string; pin: string | undefined; now: number }): Promise<void> {
+export function checkProfilePin(input: PinCheck): Promise<void> {
+  return withFamilyLock(`pin:${input.userId}`, () => checkNow(input));
+}
+
+async function checkNow(input: PinCheck): Promise<void> {
   const prisma = getPrisma();
   const stored = await prisma.profilePin.findUnique({ where: { userId: input.userId } });
   if (!stored) return;

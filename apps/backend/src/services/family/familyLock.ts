@@ -7,6 +7,10 @@
  * verrou, puis écrit. Tentacle tourne en un seul processus : le verrou en
  * mémoire suffit ; l'unicité du propriétaire reste, elle, une contrainte de la
  * base.
+ *
+ * La même file sert, sous d'autres clés, à ouvrir une session de profil
+ * (`tv:<jumelage>`, une à la fois par TV) et à juger un PIN (`pin:<profil>`,
+ * un essai à la fois par profil).
  */
 
 const queues = new Map<string, Promise<unknown>>();
