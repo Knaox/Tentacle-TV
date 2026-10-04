@@ -34,14 +34,20 @@ async function profileTv(name: string): Promise<string> {
   return pairingToken;
 }
 
+/** Une session de profil et SON jeton Jellyfin. Si une suite précédente a coupé
+ *  Quick Connect, le serveur attend de le voir rallumé (20 s au plus) : on
+ *  redemande la configuration du direct jusque-là. */
 async function openSession(profileId: string): Promise<{ token: string; jellyfinToken: string; deviceId: string }> {
   const { token } = await okJson<{ token: string }>(
     backendApi("/api/family/tv/sessions", state.pairing!, { method: "POST", body: JSON.stringify({ profileId }) }),
     "session de profil",
   );
-  const { directStreaming } = await okJson<Streaming>(backendApi("/api/config/streaming?jellyfinAuth=modern", token), "config du direct");
-  if (!directStreaming.jellyfinToken || !directStreaming.deviceId) throw new Error("la session de profil n'a pas reçu son jeton Jellyfin");
-  return { token, jellyfinToken: directStreaming.jellyfinToken, deviceId: directStreaming.deviceId };
+  let direct: Streaming["directStreaming"] = { jellyfinToken: null };
+  await waitUntil(async () => {
+    direct = (await okJson<Streaming>(backendApi("/api/config/streaming?jellyfinAuth=modern", token), "config du direct")).directStreaming;
+    return !!direct.jellyfinToken && !!direct.deviceId;
+  }, 30_000, "jeton Jellyfin de la session de profil", 2_000);
+  return { token, jellyfinToken: direct.jellyfinToken!, deviceId: direct.deviceId! };
 }
 
 const me = async (token: string) => {
