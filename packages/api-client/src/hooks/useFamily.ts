@@ -12,6 +12,7 @@ import {
   removeFamilyMember,
   sendFamilyInvitation,
   setFamilyGuestPin,
+  setFamilyGuestRights,
   setFamilyMemberRights,
   setOwnFamilyPin,
   snoozeFamilyInvitation,
@@ -88,6 +89,11 @@ export function useSetOwnFamilyPin() {
 
 export function useRemoveFamilyMember() {
   return useFamilyMutation(removeFamilyMember);
+}
+
+/** Le propriétaire permet (ou retire) à un invité de « demander » — retirer coupe aussitôt. */
+export function useSetFamilyGuestRights() {
+  return useFamilyMutation(setFamilyGuestRights);
 }
 
 /** Le propriétaire permet (ou retire) à un membre de créer des invités — retirer ne supprime rien. */

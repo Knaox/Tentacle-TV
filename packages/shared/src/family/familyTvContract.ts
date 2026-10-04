@@ -1,4 +1,4 @@
-import type { FamilyProfileColor, FamilyProfileKind, FamilyRights, FamilySwitches } from "./familyContract";
+import type { FamilyGuestRights, FamilyProfileColor, FamilyProfileKind, FamilyRights, FamilySwitches } from "./familyContract";
 
 /**
  * La Famille sur l'Apple TV — le CONTRAT des TV (v2). Le reste du contrat :
@@ -30,6 +30,10 @@ export interface TvProfileDto {
   lockedUntil: string | null;
   /** Un invité : le compte qui l'a créé ; null sinon. */
   createdBy: string | null;
+  /** Un invité : ses droits (`requestTitles` : les extensions, au nom du
+   *  propriétaire) ; null sinon. Toujours rendu par un serveur v2 ; absent :
+   *  aucun droit. */
+  guestRights?: FamilyGuestRights | null;
   /** Ce que CE profil gérerait sur cette TV (« Gérer les profils », derrière
    *  SON PIN) ; null : rien à y gérer — un invité, le compte de démonstration. */
   manage: FamilyRights | null;

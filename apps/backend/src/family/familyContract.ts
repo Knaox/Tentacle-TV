@@ -82,6 +82,10 @@ export interface FamilyCapability {
   v: number;
   enabled: boolean;
   guests: boolean;
+  /** v2 : le droit d'invité « peut demander » existe (`FamilyGuestRights`) —
+   *  la Famille et les invités allumés. Toujours rendu par un serveur v2 ;
+   *  absent : non. */
+  guestRequests?: boolean;
 }
 
 /** Les droits que le propriétaire donne à UN membre — tous COUPÉS par défaut,
@@ -94,6 +98,22 @@ export interface FamilyMemberRights {
 }
 
 export const FAMILY_DEFAULT_MEMBER_RIGHTS: Readonly<FamilyMemberRights> = { createGuests: false };
+
+/**
+ * Les droits que le propriétaire — et LUI SEUL — donne à UN invité, COUPÉS par
+ * défaut. `requestTitles` (« peut demander des films ») : la session de cet
+ * invité utilise les EXTENSIONS au nom du propriétaire — délégation « agit
+ * pour », générique : sur les routes d'extension (`/api/plugins/…`) et nulle
+ * part ailleurs, l'extension reçoit l'identité du propriétaire (jamais
+ * administrateur ; `delegatedBy` dit l'invité). Sans le droit : aucune
+ * extension, comme si le serveur n'en avait pas. Le retirer coupe à l'appel
+ * suivant, et la session de l'invité l'apprend par `family:update`.
+ */
+export interface FamilyGuestRights {
+  requestTitles: boolean;
+}
+
+export const FAMILY_DEFAULT_GUEST_RIGHTS: Readonly<FamilyGuestRights> = { requestTitles: false };
 
 /**
  * Ce que PEUT un compte dans sa famille, d'après son rôle (`familyRightsOf`).
@@ -133,6 +153,9 @@ export interface FamilyProfileDto {
   createdByName: string | null;
   /** Un membre : ce que le propriétaire lui permet ; null pour le propriétaire et les invités. */
   rights: FamilyMemberRights | null;
+  /** Un invité : ce que le propriétaire lui permet ; null sinon. Toujours rendu
+   *  par un serveur v2 ; absent : aucun droit. */
+  guestRights?: FamilyGuestRights | null;
 }
 
 export interface OutgoingInvitationDto {
@@ -256,6 +279,9 @@ export interface InviteBody {
 
 /** Le propriétaire règle les droits d'un membre : seuls les champs présents changent. */
 export type SetMemberRightsBody = Partial<FamilyMemberRights>;
+
+/** Le propriétaire règle les droits d'un invité : seuls les champs présents changent. */
+export type SetGuestRightsBody = Partial<FamilyGuestRights>;
 
 /** La dissolution exige ce mot, en toutes lettres. */
 export interface DissolveBody {

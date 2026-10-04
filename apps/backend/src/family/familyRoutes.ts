@@ -74,6 +74,14 @@ export const FAMILY_ROUTES = {
    *  qu'il a créés (`family.not_owner` sinon). Son compte Jellyfin est
    *  supprimé (sa lecture est perdue). */
   deleteGuest: { method: "DELETE", path: "/api/family/guests/:userId", callers: ["personal", "ownerTv", "memberTv"] },
+  /** `SetGuestRightsBody` → `FamilyGuestRights`. Le propriétaire SEUL règle les
+   *  droits d'un invité (v2) — « peut demander » : ses extensions, à son nom. */
+  setGuestRights: {
+    method: "PUT",
+    path: "/api/family/guests/:userId/rights",
+    callers: ["personal", "ownerTv"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
   /** `SetPinBody` → `{ hasPin }`. Le PIN d'un invité : le propriétaire, ou le
    *  membre qui l'a créé. */
   setGuestPin: {

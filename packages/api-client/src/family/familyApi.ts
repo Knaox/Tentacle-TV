@@ -4,6 +4,7 @@ import {
   type CreateGuestBody,
   type FamilyCandidateDto,
   type FamilyErrorBody,
+  type FamilyGuestRights,
   type FamilyMemberRights,
   type FamilyMembershipDto,
   type FamilyOverviewDto,
@@ -64,6 +65,12 @@ export function setOwnFamilyPin(pin: string | null): Promise<{ hasPin: boolean }
 
 export function removeFamilyMember(userId: string): Promise<{ removed: true }> {
   return send(familyPath("removeMember", { userId }), "DELETE");
+}
+
+/** Le propriétaire règle les droits d'un invité (v2) — « peut demander » : ses
+ *  extensions, au nom du propriétaire. Seuls les champs donnés changent. */
+export function setFamilyGuestRights(input: { userId: string; rights: Partial<FamilyGuestRights> }): Promise<FamilyGuestRights> {
+  return send(familyPath("setGuestRights", { userId: input.userId }), "PUT", input.rights);
 }
 
 /** Le propriétaire règle les droits d'un membre (v2) : seuls les champs donnés changent. */
