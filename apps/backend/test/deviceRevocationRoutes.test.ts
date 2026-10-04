@@ -26,6 +26,7 @@ vi.mock("../src/services/jwt", () => ({
     token.startsWith("jwt-")
       ? { userId: token.startsWith("jwt-autre") ? "u2" : "u1", username: "Knaoxtest", isAdmin: token.startsWith("jwt-admin"), deviceId: "d", type: "paired_device" }
       : null,
+  verifyTvPairingToken: async () => null,
 }));
 vi.mock("../src/services/db", () => ({ hasPrisma: () => true, getPrisma: () => h.db!.client }));
 vi.mock("../src/services/deviceSessions/deviceAuth", () => ({ pairedDeviceIdForHash: async (hash: string) => `derive-${hash}` }));

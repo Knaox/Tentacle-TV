@@ -68,9 +68,10 @@ async function rename(fingerprint: string, label: string): Promise<void> {
   const prisma = getPrisma();
   const device = await prisma.pairedDevice.findUnique({
     where: { tokenHash: fingerprint },
-    select: { id: true, name: true, jellyfinUserId: true },
+    select: { id: true, name: true, jellyfinUserId: true, parentId: true },
   });
-  if (!device || !PLACEHOLDERS.has(device.name)) return;
+  // Une session de profil (Famille) porte le nom de sa TV : on ne la renomme pas.
+  if (!device || device.parentId || !PLACEHOLDERS.has(device.name)) return;
 
   const name = await availableName(device.jellyfinUserId, label);
   await prisma.pairedDevice.update({ where: { id: device.id }, data: { name } });
@@ -90,7 +91,7 @@ async function availableName(jellyfinUserId: string, label: string): Promise<str
   const prisma = getPrisma();
   const taken = new Set(
     (await prisma.pairedDevice.findMany({
-      where: { jellyfinUserId },
+      where: { jellyfinUserId, parentId: null },
       select: { name: true },
     })).map((a: { name: string }) => a.name),
   );

@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { Readable } from "stream";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
-import { pairedDeviceStatus, REVOKED_REPLY } from "../services/pairedDeviceStatus";
+import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceStatus";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders, tokenFromQuery } from "../services/jellyfinAuth";
 
 const ParamsSchema = z.object({
@@ -48,7 +48,7 @@ export const jellyfinTrickplayRoutes: FastifyPluginAsync = async (app) => {
     }
     // Un jeton d'appareil n'obtient la clé admin que si son jumelage existe encore.
     const device = await pairedDeviceStatus(incomingToken);
-    if (device.status === "revoked") return reply.status(401).send(REVOKED_REPLY);
+    if (device.status === "revoked") return reply.status(401).send(revokedReplyFor(device.payload));
     if (device.status === "unreachable") return reply.status(503).send({ message: "Base de données indisponible" });
     const adminKey = getJellyfinApiKey();
     const jellyfinToken = device.status === "paired" && adminKey ? adminKey : incomingToken;

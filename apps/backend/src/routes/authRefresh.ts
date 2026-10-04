@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getJellyfinUrl } from "../services/configStore";
 import { verifyImpersonationToken } from "../services/jwt";
-import { pairedDeviceStatus, REVOKED_REPLY } from "../services/pairedDeviceStatus";
+import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceStatus";
 import { setSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
@@ -46,7 +46,8 @@ export const authRefreshRoutes: FastifyPluginAsync = async (app) => {
       // (verdict de DB), à distinguer des 401 « aléatoires » (Jellyfin qui
       // refuse, secret en avarie) qui ne doivent JAMAIS déjumeler une TV.
       const device = await pairedDeviceStatus(token);
-      if (device.status === "revoked") return reply.status(401).send(REVOKED_REPLY);
+      // Une session de profil terminée (`profileEnded`) ne déjumelle pas la TV.
+      if (device.status === "revoked") return reply.status(401).send(revokedReplyFor(device.payload));
       if (device.status === "unreachable") {
         return reply.status(503).send({ message: "Base de données indisponible" });
       }

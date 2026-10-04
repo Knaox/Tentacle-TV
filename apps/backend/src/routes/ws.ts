@@ -11,6 +11,7 @@ import {
   type ChannelConnection,
 } from "../services/deviceSessions/gateway";
 import { isSessionMessageType } from "../services/deviceSessions/protocolParse";
+import { FAMILY_PROFILE_ENDED_CLOSE_CODE } from "../family/familyProtocol";
 
 const AUTH_TIMEOUT_MS = 15_000;
 /** Ping protocolaire toutes les 10 s ; deux pongs manqués = socket mort,
@@ -103,8 +104,14 @@ async function authenticateAndBind(
   // Révoqué pendant la validation : la révocation a poussé AVANT que cette
   // socket ne soit connue — elle ne l'aurait jamais fermée.
   const revoked = result.ok ? isDeviceRevoked(tokenHash) : result.revoked === true;
+  const profileEnded = result.ok ? result.user.session === "tvProfile" : result.profileEnded === true;
   if (!result.ok || revoked) {
-    if (revoked) {
+    if (revoked && profileEnded) {
+      // Une session de profil (Famille) terminée : la TV revient à « Qui
+      // regarde ? » — surtout pas `revoked`, qui la déjumellerait.
+      ws.send(JSON.stringify({ type: "auth_error", reason: "profile_ended" }));
+      ws.close(FAMILY_PROFILE_ENDED_CLOSE_CODE, "Profile session ended");
+    } else if (revoked) {
       // Le jumelage n'existe plus — typiquement une TV éteinte pendant qu'on la
       // déjumelait : elle l'apprend dès qu'elle se reconnecte.
       ws.send(JSON.stringify({ type: "auth_error", reason: "revoked" }));

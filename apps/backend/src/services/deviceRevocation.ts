@@ -5,7 +5,8 @@ import { endPairedDeviceSessions } from "./deviceSessions/gateway";
 import { forgetJellyfinTokenOwner } from "./deviceTokenHealth";
 import { cleanupJellyfinDevice } from "./jellyfinDeviceCleanup";
 import { markDeviceRevoked } from "./pairedDeviceStatus";
-import { revokeDeviceByTokenHash } from "./wsManager";
+import { endProfileSessionSockets, revokeDeviceByTokenHash } from "./wsManager";
+import type { FamilyProfileEndReason } from "../family/familyProtocol";
 
 /**
  * Le déjumelage, côté serveur — la seule porte, quel que soit le geste : la
@@ -32,9 +33,21 @@ import { revokeDeviceByTokenHash } from "./wsManager";
  *
  * Un jumelage d'avant (copie d'un autre jeton, `jellyfinDeviceId` nul) n'a
  * rien chez Jellyfin qui soit à lui : seule sa session est fermée.
+ *
+ * La Famille (docs/FAMILLE.md) : une SESSION DE PROFIL est une ligne enfant
+ * (`parentId`). Révoquer un jumelage de TV révoque d'abord ses sessions de
+ * profil ; une session de profil révoquée prévient sa TV par
+ * `family:profile-ended` (la TV revient à « Qui regarde ? ») et non par
+ * `session:revoked` (qui la déjumellerait).
  */
 
-export type RevocationReason = "self" | "user" | "admin" | "account" | "epoch" | "provisioning";
+export type RevocationReason = "self" | "user" | "admin" | "account" | "epoch" | "provisioning" | "family";
+
+export interface RevocationOptions {
+  /** Une session de profil : pourquoi elle cesse, dit à la TV. Défaut :
+   *  `closed` (la TV elle-même), `unpaired` pour celles qu'emporte leur jumelage. */
+  profileEnd?: FamilyProfileEndReason;
+}
 
 /** Les sessions d'une TV s'arrêtent vite ou pas du tout : on n'attend pas plus. */
 const SESSION_END_TIMEOUT_MS = 3_000;
@@ -46,16 +59,31 @@ export interface Revocation {
 
 type Target = { id: string } | { tokenHash: string };
 
-export async function revokePairedDevice(target: Target, reason: RevocationReason): Promise<Revocation | null> {
+export async function revokePairedDevice(
+  target: Target,
+  reason: RevocationReason,
+  options: RevocationOptions = {},
+): Promise<Revocation | null> {
   const prisma = getPrisma();
   const device = await prisma.pairedDevice.findUnique({
     where: target,
-    select: { id: true, tokenHash: true, jellyfinAccessToken: true, jellyfinDeviceId: true },
+    select: { id: true, tokenHash: true, jellyfinAccessToken: true, jellyfinDeviceId: true, parentId: true, jellyfinUserId: true },
   });
   if (!device) {
     // Déjà révoqué : rien à défaire, mais la porte reste close.
     if ("tokenHash" in target) markDeviceRevoked(target.tokenHash);
     return null;
+  }
+
+  // Un jumelage de TV emporte d'abord ses sessions de profil.
+  const pending: Promise<void>[] = [];
+  if (!device.parentId) {
+    const profileEnd = options.profileEnd ?? (reason === "account" ? "account_deleted" : "unpaired");
+    const children = await prisma.pairedDevice.findMany({ where: { parentId: device.id }, select: { id: true } });
+    for (const child of children) {
+      const ended = await revokePairedDevice({ id: child.id }, reason, { profileEnd });
+      if (ended) pending.push(ended.settled);
+    }
   }
 
   await prisma.$transaction(async (tx) => {
@@ -74,11 +102,33 @@ export async function revokePairedDevice(target: Target, reason: RevocationReaso
     forgetValidatedToken(device.jellyfinAccessToken);
     forgetJellyfinTokenOwner(device.jellyfinAccessToken);
   }
-  revokeDeviceByTokenHash(device.tokenHash);
-  console.log(`[Jumelage] Appareil ${device.id} révoqué (${reason})`);
+  if (device.parentId) {
+    const profileEnd = options.profileEnd ?? "closed";
+    // Quitter un profil de soi-même ôte « Rester sur ce profil ».
+    if (profileEnd === "closed") await forgetSticky(device.parentId, device.jellyfinUserId);
+    endProfileSessionSockets(device.tokenHash, profileEnd);
+    console.log(`[family] Session de profil ${device.id} terminée (${profileEnd})`);
+  } else {
+    revokeDeviceByTokenHash(device.tokenHash);
+    console.log(`[Jumelage] Appareil ${device.id} révoqué (${reason})`);
+  }
 
-  return { settled: settle(device.tokenHash, device.jellyfinDeviceId) };
+  pending.push(settle(device.tokenHash, device.jellyfinDeviceId));
+  return { settled: Promise.all(pending).then(() => undefined) };
 }
+
+/** Le profil « Rester » de la TV, s'il était celui qu'on quitte. */
+async function forgetSticky(pairingId: string, profileUserId: string): Promise<void> {
+  try {
+    await getPrisma().pairedDevice.updateMany({
+      where: { id: pairingId, stickyProfileId: profileUserId },
+      data: { stickyProfileId: null },
+    });
+  } catch {
+    // Sans gravité : le profil reste « Rester » jusqu'au prochain choix.
+  }
+}
+
 
 async function settle(tokenHash: string, jellyfinDeviceId: string | null): Promise<void> {
   const sessionDeviceId = jellyfinDeviceId ?? (await pairedDeviceIdForHash(tokenHash).catch(() => null));

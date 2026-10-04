@@ -2,19 +2,32 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { getJellyfinUrl } from "../services/configStore";
 import { verifyImpersonationToken } from "../services/jwt";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders } from "../services/jellyfinAuth";
-import { pairedDeviceStatus, REVOKED_REPLY } from "../services/pairedDeviceStatus";
+import { pairedDeviceStatus, PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../services/pairedDeviceStatus";
+
+/**
+ * D'où vient la session d'une requête — la Famille en tire ses droits
+ * (`family/familyRoutes.ts`) : `personal` = le jeton Jellyfin du web, du
+ * bureau, du mobile ; `tvLegacy` = une TV jumelée d'avant les profils ;
+ * `tvProfile` = une session de profil d'une TV (Famille) ; `impersonation` =
+ * « voir en tant que ». Absent : un appel interne, jamais tenu pour personnel.
+ */
+export type SessionKind = "personal" | "tvLegacy" | "tvProfile" | "impersonation";
 
 export interface JellyfinUser {
   userId: string;
   username: string;
   isAdmin: boolean;
+  session?: SessionKind;
+  /** `tvProfile` : le jumelage de la TV dont la session dépend. */
+  pairingId?: string;
 }
 
 type ValidationResult =
   | { ok: true; user: JellyfinUser }
   /** `revoked` : un jeton d'appareil dont le jumelage n'existe plus — le seul
-   *  refus qui autorise un client à se déjumeler. */
-  | { ok: false; reason: "invalid" | "unreachable"; revoked?: true };
+   *  refus qui autorise un client à se déjumeler ; `profileEnded` : c'était une
+   *  session de profil, la TV revient à « Qui regarde ? » sans se déjumeler. */
+  | { ok: false; reason: "invalid" | "unreachable"; revoked?: true; profileEnded?: true };
 
 // Token validation cache (TTL 5 min) to avoid hammering Jellyfin on every request
 const tokenCache = new Map<string, { user: JellyfinUser; expiresAt: number }>();
@@ -84,7 +97,7 @@ export async function validateToken(token: string): Promise<ValidationResult> {
   if (impersonation) {
     return {
       ok: true,
-      user: { userId: impersonation.userId, username: impersonation.username, isAdmin: false },
+      user: { userId: impersonation.userId, username: impersonation.username, isAdmin: false, session: "impersonation" },
     };
   }
 
@@ -92,14 +105,21 @@ export async function validateToken(token: string): Promise<ValidationResult> {
   //    pas — le même verdict que le proxy, la socket et le rafraîchissement.
   const device = await pairedDeviceStatus(token);
   if (device.status === "paired") {
-    const { userId, username, isAdmin } = device.payload;
-    return { ok: true, user: { userId, username, isAdmin } };
+    const { userId, username, isAdmin, scope, pairingId } = device.payload;
+    // Une session de profil n'est JAMAIS administratrice, quoi que dise le jeton.
+    if (scope === "profile") return { ok: true, user: { userId, username, isAdmin: false, session: "tvProfile", pairingId } };
+    return { ok: true, user: { userId, username, isAdmin, session: "tvLegacy" } };
   }
-  if (device.status === "revoked") return { ok: false, reason: "invalid", revoked: true };
+  if (device.status === "revoked") {
+    return device.payload.scope === "profile"
+      ? { ok: false, reason: "invalid", revoked: true, profileEnded: true }
+      : { ok: false, reason: "invalid", revoked: true };
+  }
   if (device.status === "unreachable") return { ok: false, reason: "unreachable" };
 
-  // 2. Jeton Jellyfin (web, bureau, mobile).
-  return validateJellyfinToken(token);
+  // 2. Jeton Jellyfin (web, bureau, mobile) : la session personnelle.
+  const result = await validateJellyfinToken(token);
+  return result.ok ? { ok: true, user: { ...result.user, session: "personal" } } : result;
 }
 
 /** Le jeton Jellyfin d'un appareil révoqué n'est plus cru sur parole : ni le
@@ -112,6 +132,7 @@ export function forgetValidatedToken(token: string): void {
  *  le jumelage n'existe plus. */
 function rejection(result: Extract<ValidationResult, { ok: false }>) {
   if (result.reason === "unreachable") return { status: 503, body: { message: "Jellyfin unreachable" } };
+  if (result.profileEnded) return { status: 401, body: PROFILE_ENDED_REPLY };
   return { status: 401, body: result.revoked ? REVOKED_REPLY : { message: "Invalid token" } };
 }
 

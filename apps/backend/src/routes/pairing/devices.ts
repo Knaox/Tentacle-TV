@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { getPrisma } from "../../services/db";
 import { getTokenFromRequest, requireAuth, requireAdmin } from "../../middleware/auth";
 import type { JellyfinUser } from "../../middleware/auth";
-import { hashToken, verifyDeviceToken } from "../../services/jwt";
+import { hashToken, verifyDeviceToken, verifyTvPairingToken } from "../../services/jwt";
 import { revokePairedDevice } from "../../services/deviceRevocation";
 
 /** Ce que la liste des appareils montre d'un jumelage — jamais un jeton. */
@@ -32,12 +32,15 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
   // faire oublier. Idempotente : la TV la renvoie jusqu'à confirmation (après
   // un plantage, un serveur coupé), et un jumelage déjà supprimé répond comme
   // un jumelage supprimé à l'instant. Un jeton illisible n'ouvre rien : 401.
+  // La Famille : le jeton de jumelage d'une TV passée aux profils la
+  // déjumelle (ses sessions de profil avec) ; le jeton d'une session de
+  // profil ne ferme que cette session (« Changer de profil »).
   app.post(
     "/self/revoke",
     { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
     async (request, reply) => {
       const token = getTokenFromRequest(request);
-      if (!token || !(await verifyDeviceToken(token))) {
+      if (!token || !((await verifyDeviceToken(token)) || (await verifyTvPairingToken(token)))) {
         return reply.status(401).send({ message: "Jeton d'appareil invalide" });
       }
       await revokePairedDevice({ tokenHash: hashToken(token) }, "self");
@@ -51,8 +54,9 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
     { preHandler: [requireAuth] },
     async (request) => {
       const user = (request as unknown as { user: JellyfinUser }).user;
+      // Les jumelages seulement : une session de profil n'est pas un appareil.
       const devices = await getPrisma().pairedDevice.findMany({
-        where: { jellyfinUserId: user.userId },
+        where: { jellyfinUserId: user.userId, parentId: null },
         orderBy: { createdAt: "desc" },
       });
       return devices.map(toView);
@@ -69,7 +73,7 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrisma();
 
       const device = await prisma.pairedDevice.findUnique({ where: { id } });
-      if (!device || device.jellyfinUserId !== user.userId) {
+      if (!device || device.jellyfinUserId !== user.userId || device.parentId) {
         return reply.status(404).send({ message: "Appareil introuvable" });
       }
 
@@ -82,6 +86,7 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
   // ── GET /devices — List paired devices (admin only) ──
   app.get("/devices", { preHandler: [requireAdmin] }, async () => {
     const devices = await getPrisma().pairedDevice.findMany({
+      where: { parentId: null },
       orderBy: { createdAt: "desc" },
     });
     return devices.map(toView);

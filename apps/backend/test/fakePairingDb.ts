@@ -15,6 +15,13 @@ export interface DeviceRow {
   jellyfinDeviceId: string | null;
   lastSeen: Date;
   createdAt: Date;
+  /** La Famille : session de profil (ligne enfant) et mode profils d'un jumelage. */
+  parentId: string | null;
+  profileKind: string | null;
+  profilesSince: Date | null;
+  legacyTokenHash: string | null;
+  stickyProfileId: string | null;
+  manageUntil: Date | null;
 }
 
 export interface CleanupRow {
@@ -63,7 +70,8 @@ export function createPairingDb() {
       guard();
       const row: DeviceRow = {
         id: `pd-${++state.serial}`, name: "TV", jellyfinUserId: "", username: "", jellyfinAccessToken: null,
-        jellyfinDeviceId: null, lastSeen: new Date(), createdAt: new Date(), ...args.data,
+        jellyfinDeviceId: null, lastSeen: new Date(), createdAt: new Date(), parentId: null, profileKind: null,
+        profilesSince: null, legacyTokenHash: null, stickyProfileId: null, manageUntil: null, ...args.data,
       };
       state.devices.push(row);
       return { ...row };

@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { Readable } from "stream";
 import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from "undici";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
-import { pairedDeviceStatus, REVOKED_REPLY } from "../services/pairedDeviceStatus";
+import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceStatus";
 import { getCached, getCacheTtl } from "../services/jellyfinCache";
 import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
 import { clearDeviceTokenIfInvalid } from "../services/deviceTokenHealth";
@@ -65,7 +65,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // cache, avant la clé admin qui lui serait substituée. Un JWT signé ne
     // suffisait pas : révoqué, il gardait l'accès, à vie (il n'expire pas).
     const device = incomingToken ? await pairedDeviceStatus(incomingToken) : null;
-    if (device?.status === "revoked") return reply.status(401).send(REVOKED_REPLY);
+    if (device?.status === "revoked") return reply.status(401).send(revokedReplyFor(device.payload));
     if (device?.status === "unreachable") return reply.status(503).send({ message: "Base de données indisponible" });
 
     nameDeviceFromHeader(incomingToken, incoming.identityHeader);

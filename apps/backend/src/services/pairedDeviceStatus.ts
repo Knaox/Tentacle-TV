@@ -33,6 +33,15 @@ export type PairedDeviceVerdict =
  *  seul feu vert de déjumelage des clients (cf. `routes/authRefresh.ts`). */
 export const REVOKED_REPLY = { message: "Appareil révoqué", revoked: true } as const;
 
+/** Une session de PROFIL terminée (la Famille) : la TV revient à « Qui
+ *  regarde ? » — `profileEnded` lui dit de ne PAS se déjumeler. */
+export const PROFILE_ENDED_REPLY = { message: "Session de profil terminée", revoked: true, profileEnded: true } as const;
+
+/** Ce qu'une porte répond à ce jeton d'appareil révoqué. */
+export function revokedReplyFor(payload: Pick<DeviceTokenPayload, "scope">) {
+  return payload.scope === "profile" ? PROFILE_ENDED_REPLY : REVOKED_REPLY;
+}
+
 const PAIRED_TTL_MS = 15_000;
 /** `lastSeen` n'a pas besoin d'une écriture par requête : une par minute. */
 const LAST_SEEN_EVERY_MS = 60_000;

@@ -9,6 +9,27 @@ export interface DeviceTokenPayload {
   isAdmin: boolean;
   deviceId: string;
   type: "paired_device";
+  /** La Famille : une SESSION DE PROFIL d'une TV (ligne enfant de
+   *  `paired_devices`), au nom du profil — jamais administrateur. */
+  scope?: "profile";
+  /** Session de profil : le jumelage de la TV dont elle dépend. */
+  pairingId?: string;
+}
+
+/**
+ * Le jeton de jumelage d'une TV passée aux profils (docs/FAMILLE.md) : il ne
+ * sert qu'à lister les profils, à en ouvrir un et à se déjumeler. Son TYPE le
+ * tient à l'écart de toute autre porte — `verifyDeviceToken` exige
+ * `paired_device` : un oubli échoue fermé. Comme un jeton d'appareil, il
+ * n'expire pas ; la ligne de son empreinte fait foi.
+ */
+export interface TvPairingTokenPayload {
+  type: "tv_pairing";
+  pairingId: string;
+  userId: string;
+  username: string;
+  /** Rend chaque jeton unique (empreinte unique en base). */
+  nonce: string;
 }
 
 export interface ImpersonationTokenPayload {
@@ -94,6 +115,29 @@ export async function verifyDeviceToken(token: string): Promise<DeviceTokenPaylo
     // leur date (pas de re-pairing forcé) ; la révocation DB fait foi.
     const decoded = jwt.verify(token, secret, { ignoreExpiration: true }) as DeviceTokenPayload;
     if (decoded.type !== "paired_device") return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+/** Une session de profil de TV : un jeton d'appareil au nom du profil, qui
+ *  passe toutes les portes comme un jumelage — sans aucun droit d'administration. */
+export function signProfileSessionToken(input: { userId: string; username: string; pairingId: string }): Promise<string> {
+  return signDeviceToken({ ...input, isAdmin: false, deviceId: crypto.randomUUID(), scope: "profile" });
+}
+
+export async function signTvPairingToken(input: { pairingId: string; userId: string; username: string }): Promise<string> {
+  const secret = await getOrCreateJwtSecret();
+  const payload: TvPairingTokenPayload = { ...input, type: "tv_pairing", nonce: crypto.randomBytes(16).toString("hex") };
+  return jwt.sign(payload, secret);
+}
+
+export async function verifyTvPairingToken(token: string): Promise<TvPairingTokenPayload | null> {
+  try {
+    const secret = await getOrCreateJwtSecret();
+    const decoded = jwt.verify(token, secret, { ignoreExpiration: true }) as TvPairingTokenPayload;
+    if (decoded.type !== "tv_pairing" || typeof decoded.pairingId !== "string") return null;
     return decoded;
   } catch {
     return null;

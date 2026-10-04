@@ -1,7 +1,11 @@
 import type { WebSocket } from "@fastify/websocket";
 import { invalidateByCarousel } from "./jellyfinCache";
 import type { WtServerMessage } from "./watchTogether/protocol";
-import type { FamilyWsMessage } from "../family/familyProtocol";
+import {
+  FAMILY_PROFILE_ENDED_CLOSE_CODE,
+  type FamilyProfileEndReason,
+  type FamilyWsMessage,
+} from "../family/familyProtocol";
 
 /** Carousel identifiers for home:update events. */
 export type CarouselId = string;
@@ -141,6 +145,27 @@ export function revokeDeviceByTokenHash(tokenHash: string): void {
     send(ws, { type: "session:revoked" });
     if (ws.readyState === 1 /* OPEN */) ws.close(4009, "Device revoked");
   }
+}
+
+/** La Famille : la session de PROFIL d'une TV vient de cesser — la TV revient
+ *  à « Qui regarde ? » (elle ne se déjumelle pas : ce n'est pas
+ *  `session:revoked`). Poussé puis fermé (4010). */
+export function endProfileSessionSockets(tokenHash: string, reason: FamilyProfileEndReason): void {
+  const dset = deviceSockets.get(tokenHash);
+  if (!dset) return;
+  for (const ws of dset) {
+    send(ws, { type: "family:profile-ended", reason });
+    if (ws.readyState === 1 /* OPEN */) ws.close(FAMILY_PROFILE_ENDED_CLOSE_CODE, "Profile session ended");
+  }
+}
+
+/** Les sockets d'un jeton qui ne vaut plus session (l'échange du jumelage
+ *  d'une TV contre son jeton « profils seuls ») : fermées sans un mot — la TV
+ *  qui vient de l'échanger les a déjà quittées. */
+export function closeDeviceSockets(tokenHash: string, code: number, reason: string): void {
+  const dset = deviceSockets.get(tokenHash);
+  if (!dset) return;
+  for (const ws of dset) if (ws.readyState === 1 /* OPEN */) ws.close(code, reason);
 }
 
 // ── Broadcasting ──
