@@ -13,10 +13,13 @@ import type { ScrubCountdownModel } from "./playerTypes";
 import { SOFT_BASE } from "./surfaces";
 
 /**
- * Le DÉCOMPTE du défilement : quand la lecture repartira à la position visée
- * si l'on ne bouge plus — « Lecture dans 5 s ». Une pilule de verre discrète,
- * posée au bas de la vignette, juste au-dessus du temps visé et de l'écart ;
- * sa barre, au dégradé de la marque, se vide avec le temps.
+ * Le DÉCOMPTE du défilement : ce qui se passera si l'on ne bouge plus, et
+ * quand — revenir où l'on était (« Retour à 12:34 dans 5 s », l'icône de
+ * l'historique) ou lire à la position visée (« Lecture dans 5 s », lecture),
+ * selon le réglage « Avance rapide » ; dessous, plus discret, le geste de
+ * l'autre choix (« OK : lire ici »). Une pilule de verre, posée au bas de la
+ * vignette, juste au-dessus du temps visé et de l'écart ; sa barre, au
+ * dégradé de la marque, se vide avec le temps.
  *
  * Le décompte est une valeur reçue (secondes restantes, sur combien) : rien
  * ne compte ici. `live` : la barre GLISSE d'une seconde à la suivante, sur le
@@ -25,6 +28,8 @@ import { SOFT_BASE } from "./surfaces";
  */
 
 const HEIGHT = 56;
+/** Avec la ligne de l'autre choix. */
+const HEIGHT_HINTED = 84;
 const PAD_X = 22;
 const BAR = 3;
 
@@ -52,13 +57,30 @@ export const ScrubCountdown = memo(function ScrubCountdown({ model, appear }: {
     return { opacity: p, transform: [{ translateY: 8 * (1 - p) }] };
   });
   const drain = useAnimatedStyle(() => ({ transform: [{ translateX: -(1 - fill.value) * width.value }] }));
+  const hinted = !!model.hint;
   return (
-    <Animated.View style={enter} pointerEvents="none" accessible accessibilityLabel={model.label}>
-      <GlassSurface radius={HEIGHT / 2} tone="strong" style={[styles.pill, backing]}>
-        <Icon name="play" size={22} color={colors.text} strokeWidth={2.4} />
-        <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-          {model.label}
-        </Text>
+    <Animated.View
+      style={enter}
+      pointerEvents="none"
+      accessible
+      accessibilityLabel={hinted ? `${model.label}. ${model.hint}` : model.label}
+    >
+      <GlassSurface
+        radius={(hinted ? HEIGHT_HINTED : HEIGHT) / 2}
+        tone="strong"
+        style={[styles.pill, hinted ? styles.pillHinted : null, backing]}
+      >
+        <Icon name={model.outcome === "return" ? "history" : "play"} size={22} color={colors.text} strokeWidth={2.4} />
+        <View style={styles.lines}>
+          <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+            {model.label}
+          </Text>
+          {hinted ? (
+            <Text style={styles.hint} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+              {model.hint}
+            </Text>
+          ) : null}
+        </View>
         <View style={styles.track} onLayout={(event) => { width.value = event.nativeEvent.layout.width; }}>
           <Animated.View style={[StyleSheet.absoluteFill, drain]}>
             <BrandGradient />
@@ -79,7 +101,10 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     backgroundColor: SOFT_BASE,
   },
-  label: { ...fonts.semibold, fontSize: 24, color: colors.text, fontVariant: ["tabular-nums"], flexShrink: 1 },
+  pillHinted: { height: HEIGHT_HINTED, paddingBottom: 10 },
+  lines: { flexShrink: 1, gap: 2 },
+  label: { ...fonts.semibold, fontSize: 24, color: colors.text, fontVariant: ["tabular-nums"] },
+  hint: { ...fonts.medium, fontSize: 20, color: colors.textSecondary, fontVariant: ["tabular-nums"] },
   track: {
     position: "absolute",
     left: PAD_X,

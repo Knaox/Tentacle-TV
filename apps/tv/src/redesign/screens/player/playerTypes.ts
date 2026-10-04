@@ -79,11 +79,16 @@ export interface Countdown {
   total: number;
 }
 
-/** Le décompte du défilement (`ScrubCountdown`) : la lecture repartira à la
- *  position visée. */
+/** Le décompte du défilement (`ScrubCountdown`) : ce qui se passera à son
+ *  terme, et comment faire l'autre choix. */
 export interface ScrubCountdownModel {
-  /** « Lecture dans 5 s » (`scrubCountdownLabel`). */
+  /** Revenir où l'on était, ou lire à la position visée (le réglage
+   *  « Avance rapide »). */
+  outcome: "return" | "resume";
+  /** « Retour à 12:34 dans 5 s » / « Lecture dans 5 s » (`scrubCountdownLabels`). */
   label: string;
+  /** L'autre choix : « OK : lire ici » / « Retour : revenir à 12:34 ». */
+  hint?: string;
   /** En secondes. */
   countdown: Countdown;
   /** La barre glisse d'une seconde à la suivante ; sans, elle se pose (banc). */

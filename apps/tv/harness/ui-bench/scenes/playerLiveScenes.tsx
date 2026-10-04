@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeviceEventEmitter, Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
+import { SCRUB_COUNTDOWN_DEFAULTS, scrubCountdownPolicyOf, type ScrubCountdownPolicy } from "@tentacle-tv/tv-core";
 import { MenuPressInterceptor } from "../../../src/components/focus/MenuPressInterceptor";
 import { BACKGROUND_FOCUS } from "../../../src/components/player/focus/osdFocusBus";
 import { useTVPlayerBack } from "../../../src/hooks/useTVPlayerBack";
@@ -35,6 +36,9 @@ import type { BenchScene } from "./types";
  * émettent ; `__liveMenu()` rend à la portée l'appui sur Menu que lui rendrait
  * l'intercepteur natif (le Menu physique n'atteint jamais le JS) ; `__live()`
  * rend l'état ; `__liveLog` journalise sauts, pauses, reprises et sortie.
+ *
+ * Le décompte suit la politique de la scène : le défaut du réglage « Avance
+ * rapide » (revenir où l'on était, 5 s), ou « reprendre » au délai donné.
  */
 
 interface LiveEntry { at: number; event: string; value?: number }
@@ -91,7 +95,7 @@ const IDLE_SOURCES = {
   onSelectQuality: noop, onSelectSeason: noop, episodeById: () => undefined, onOpenSheet: noop,
 };
 
-function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boolean }) {
+function LivePlayer({ data, startPaused, policy }: { data: BenchData; startPaused: boolean; policy: ScrubCountdownPolicy }) {
   const item = byName(data, "Interstellar");
   const duration = item ? durationOf(item) : 0;
   const frame = item ? videoFrameOf(data, item) : undefined;
@@ -116,6 +120,7 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
     onBack: () => log("back"),
     onPlayPause: togglePause,
     onScrubPause: (pause) => { log(pause ? "scrub:pause" : "scrub:play"); setPaused(pause); },
+    countdownPolicy: policy,
   });
   // Le Retour du lecteur refondu, tel que `PlayerScreen` et `PlayerRedesignStage` le câblent.
   const back = useTVPlayerBack({
@@ -146,7 +151,7 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
   const scrub: ScrubModel | null = controls.scrubbing
     ? {
       target: controls.scrubPosition, speed: parseSpeedLabel(controls.speedLabel), frame: frame ? { uri: frame } : null,
-      countdown: buildScrubCountdown(controls.scrubCountdown, t),
+      countdown: buildScrubCountdown(controls.scrubCountdown, t, time),
     }
     : null;
   const flash = controls.skipFlash;
@@ -183,7 +188,9 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
 
 const styles = StyleSheet.create({ stage: { flex: 1, backgroundColor: "#000" }, fill: { flex: 1 } });
 
-const scene = (id: string, label: string, startPaused: boolean): BenchScene => ({
+const RETURN_DEFAULT = scrubCountdownPolicyOf(SCRUB_COUNTDOWN_DEFAULTS);
+
+const scene = (id: string, label: string, startPaused: boolean, policy = RETURN_DEFAULT): BenchScene => ({
   id: `lecteur-vivant/${id}`,
   group: "Lecteur vivant",
   label,
@@ -195,12 +202,13 @@ const scene = (id: string, label: string, startPaused: boolean): BenchScene => (
   },
   render: (data) => (
     <BackScope route={LIVE_ROUTE} navigation={NO_STACK}>
-      <LivePlayer data={data} startPaused={startPaused} />
+      <LivePlayer data={data} startPaused={startPaused} policy={policy} />
     </BackScope>
   ),
 });
 
 export const PLAYER_LIVE_SCENES: BenchScene[] = [
-  scene("lecture", "En lecture · pavé, flèches et Retour injectés (CDP)", false),
+  scene("lecture", "En lecture · décompte « revenir », 5 s (défaut) · pavé, flèches, Retour (CDP)", false),
+  scene("lecture-reprendre", "En lecture · décompte « reprendre », 10 s", false, { outcome: "resume", delayMs: 10_000 }),
   scene("pause", "En pause · pavé, flèches et Retour injectés (CDP)", true),
 ];

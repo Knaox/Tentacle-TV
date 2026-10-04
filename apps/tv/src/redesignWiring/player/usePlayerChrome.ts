@@ -112,7 +112,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
   const scrub: ScrubModel | null = scrubbing
     ? {
       target: controls.scrubPosition, speed: parseSpeedLabel(controls.speedLabel), frame: trickplayFrame(tp?.info, aim),
-      countdown: buildScrubCountdown(controls.scrubCountdown, translate),
+      countdown: buildScrubCountdown(controls.scrubCountdown, translate, p.displayTime),
     }
     : null;
   // Rechargement doux (piste, qualité) : la dernière image, figée.

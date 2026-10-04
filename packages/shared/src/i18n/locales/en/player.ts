@@ -39,9 +39,14 @@ export default {
   nextEpisodeLabel: "Next episode",
   scrubConfirmHint: "OK · Play here",
   scrubCancelHint: "Back · Cancel",
-  // Le décompte du défilement (TV) : la lecture repartira à la position
-  // visée si l'on ne bouge plus (entré en lecture, toutes entrées).
+  // Le décompte du défilement (TV) : ce qui se passera si l'on ne bouge plus
+  // (entré en lecture, toutes entrées) — lire à la position visée, ou
+  // revenir où l'on était (réglage « Avance rapide », Apple TV) — et, dessous,
+  // le geste de l'autre choix.
   scrubPlayIn: "Playing in {{seconds}}s",
+  scrubReturnToIn: "Back to {{time}} in {{seconds}}s",
+  scrubOtherPlayHere: "OK: play here",
+  scrubOtherGoBack: "Back: return to {{time}}",
   nowPlaying: "Now playing",
   loadFailed: "Playback could not start. Check the server or try again.",
   streamStartFailed: "The video stream did not start. Retry or change quality.",

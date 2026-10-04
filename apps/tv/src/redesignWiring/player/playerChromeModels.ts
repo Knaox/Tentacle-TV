@@ -4,7 +4,7 @@ import {
 import type { ScrubCountdownState } from "@tentacle-tv/tv-core";
 import type { MetaItem } from "../../redesign/hero/MetaLine";
 import {
-  nextCountdownLabel, scrubCountdownLabel, skipPillLabel, type Translate,
+  nextCountdownLabel, scrubCountdownLabels, skipPillLabel, type Translate,
 } from "../../redesign/screens/player/playerLabels";
 import type {
   EndScreenModel,
@@ -145,12 +145,16 @@ export function buildEndScreen(
   return { ...upNext, seriesTitle: series.title, logoUri: series.logoUri, backdropUri: series.backdropUri, palette: series.palette };
 }
 
-/** Le décompte du défilement (`scrubCountdown.ts`) : la lecture repartira à
- *  la position visée, dit en clair (« Lecture dans 5 s »). */
-export function buildScrubCountdown(state: ScrubCountdownState | null, t: Translate): ScrubCountdownModel | null {
+/** Le décompte du défilement (`scrubCountdown.ts`) dit en clair : revenir à
+ *  `origin`, la position d'où l'on défile (« Retour à 12:34 dans 5 s »), ou
+ *  lire à la position visée (« Lecture dans 5 s ») — et l'autre choix. */
+export function buildScrubCountdown(
+  state: ScrubCountdownState | null, t: Translate, origin: number,
+): ScrubCountdownModel | null {
   if (!state) return null;
   return {
-    label: scrubCountdownLabel(t, state.remaining),
+    outcome: state.outcome,
+    ...scrubCountdownLabels(t, state.outcome, state.remaining, origin),
     countdown: { remaining: state.remaining, total: state.total },
     live: true,
   };

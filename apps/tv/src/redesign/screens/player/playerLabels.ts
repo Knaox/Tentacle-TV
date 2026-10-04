@@ -1,5 +1,6 @@
 import type { SkipLabelKey } from "@tentacle-tv/shared";
-import type { PlayerLabels } from "./playerTypes";
+import { formatClock } from "./formatClock";
+import type { PlayerLabels, ScrubCountdownModel } from "./playerTypes";
 
 /**
  * Les mots de l'habillage, tirés des clés i18n (`player`, `common`) — le
@@ -52,9 +53,16 @@ export function seekFlashLabel(t: Translate, deltaSeconds: number): string {
   return t(deltaSeconds >= 0 ? "player:seekFlashForward" : "player:seekFlashBack", { seconds });
 }
 
-/** Le décompte du défilement : la lecture repartira à la position visée. */
-export function scrubCountdownLabel(t: Translate, seconds: number): string {
-  return t("player:scrubPlayIn", { seconds });
+/** Le décompte du défilement : ce qui se passera à son terme — revenir à
+ *  `origin` (« Retour à 12:34 dans 5 s ») ou lire à la position visée
+ *  (« Lecture dans 5 s ») — et le geste de l'autre choix. */
+export function scrubCountdownLabels(
+  t: Translate, outcome: ScrubCountdownModel["outcome"], seconds: number, origin: number,
+): { label: string; hint: string } {
+  const time = formatClock(origin);
+  return outcome === "return"
+    ? { label: t("player:scrubReturnToIn", { time, seconds }), hint: t("player:scrubOtherPlayHere") }
+    : { label: t("player:scrubPlayIn", { seconds }), hint: t("player:scrubOtherGoBack", { time }) };
 }
 
 /** « Épisode suivant dans 8 s » — carte du générique et affiche de fin. */
