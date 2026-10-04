@@ -4,7 +4,7 @@ import {
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
-import { authVerdictApplies } from "@tentacle-tv/tv-core";
+import { refreshAction } from "@tentacle-tv/tv-core";
 import { refreshWithRetry, attemptReAuth as attemptReAuthHelper } from "./tokenRefresh";
 import { readCredentials } from "./credentialManager";
 import { replayPendingEnrollment } from "./profileEnrollment";
@@ -68,51 +68,53 @@ async function refreshFlow(
   jfClient.setLoggingIn(true);
   try {
     const refresh = await refreshWithRetry({ serverUrl, token });
-    // La session a changé pendant l'appel (l'échange, un profil) : ce verdict parle d'un
-    // jeton qui n'est plus le sien — ni rafraîchi, ni révoqué (tv-core `authVerdictApplies`).
-    if (!authVerdictApplies(token, storage.getItem("tentacle_token"))) return;
-    if (refresh.ok) {
-      jfClient.setAccessToken(refresh.accessToken);
-      setPreferencesToken(refresh.accessToken);
-      storage.setItem("tentacle_token", refresh.accessToken);
-      jfClient.resetAuthState();
-      return;
-    }
-
-    // Réseau/serveur down : garder la session intacte.
-    if (refresh.reason !== "expired") return;
-
-    // Révocation confirmée (la ligne paired_devices n'existe plus, verdict de
-    // base) : le seul 401 qui déjumelle — même en lecture, même en tâche de
-    // fond. Un 401 nu (Jellyfin qui refuse, secret en avarie, backend à moitié
-    // démarré) CONSERVE la session : les bannières d'état informent.
-    // La Famille (Apple TV) : une session de PROFIL fermée par le serveur
-    // ramène à « Qui regarde ? » ; un « révoqué » sur le jeton d'avant alors
-    // qu'un échange attend sa réponse rejoue l'échange avant d'y croire.
-    if (refresh.revoked === true) {
-      const context = { jfClient, storage, queryClient };
-      if (refresh.profileEnded === true) {
+    // La DÉCISION est dans tv-core (`refreshAction`, testée) ; on l'applique.
+    // D'abord : la session a-t-elle changé pendant l'appel (l'échange, un
+    // profil) ? Le verdict parle alors d'un jeton qui n'est plus le sien — ni
+    // rafraîchi, ni révoqué.
+    const action = refreshAction(token, storage.getItem("tentacle_token"), refresh);
+    const context = { jfClient, storage, queryClient };
+    switch (action.kind) {
+      case "ignore":
+      case "keep":
+        // Réseau ou serveur en panne : la session reste intacte.
+        return;
+      case "adopt":
+        jfClient.setAccessToken(action.accessToken);
+        setPreferencesToken(action.accessToken);
+        storage.setItem("tentacle_token", action.accessToken);
+        jfClient.resetAuthState();
+        return;
+      // Révocation confirmée (la ligne paired_devices n'existe plus, verdict de
+      // base) : le seul 401 qui ferme quelque chose — même en lecture, même en
+      // tâche de fond. Un 401 nu (Jellyfin qui refuse, secret en avarie, backend
+      // à moitié démarré) CONSERVE la session : les bannières d'état informent.
+      case "endProfile":
+        // La Famille (Apple TV) : une session de PROFIL fermée par le serveur ramène à « Qui regarde ? ».
         endedProfile(context);
         return;
+      case "revoked": {
+        // Un « révoqué » sur le jeton d'avant alors qu'un échange attend sa réponse rejoue l'échange avant d'y croire.
+        const replay = await replayPendingEnrollment(context);
+        if (replay === "none" || replay === "failed") unpairDevice(context, "revoked");
+        return;
       }
-      const replay = await replayPendingEnrollment(context);
-      if (replay === "none" || replay === "failed") unpairDevice(context, "revoked");
-      return;
-    }
-
-    // Token réellement expiré — tenter un re-login avec les credentials sauvés
-    const creds = readCredentials(storage);
-    if (creds) {
-      const newToken = await attemptReAuthHelper({
-        serverUrl,
-        username: creds.username,
-        password: creds.password,
-      });
-      if (newToken) {
-        jfClient.setAccessToken(newToken);
-        setPreferencesToken(newToken);
-        storage.setItem("tentacle_token", newToken);
-        jfClient.resetAuthState();
+      case "reauth": {
+        // Token réellement expiré — tenter un re-login avec les credentials sauvés
+        const creds = readCredentials(storage);
+        if (!creds) return;
+        const newToken = await attemptReAuthHelper({
+          serverUrl,
+          username: creds.username,
+          password: creds.password,
+        });
+        if (newToken) {
+          jfClient.setAccessToken(newToken);
+          setPreferencesToken(newToken);
+          storage.setItem("tentacle_token", newToken);
+          jfClient.resetAuthState();
+        }
+        return;
       }
     }
   } finally {
