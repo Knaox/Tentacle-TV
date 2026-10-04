@@ -474,3 +474,27 @@ SEC-F-10..15/20 (révocation immédiate — ÉLARGIE par SEC-F-43), SEC-F-16/17/
 minimal), SEC-F-21/29/31 (invité invisible des listes, mdp jeté, sans droit),
 SEC-F-25/26/27 (push/socket/journaux sans secret), SEC-F-28 (démo),
 SEC-F-32 (parité HTTP/HTTPS), SEC-F-34 (proxy à écriture bornée).
+
+### SEC-F-45 — Délégation « agit pour » (droit d'invité « peut demander »)
+
+Un invité à qui le propriétaire a donné `requestTitles` se présente aux routes
+d'EXTENSION (`/api/plugins/…`), et à elles SEULES, sous l'identité du
+propriétaire (`isAdmin` toujours faux, `session: "tvProfile"`, `delegatedBy` =
+l'invité ; le jeton présenté reste le sien). Exigences testables :
+
+- `actFor` (identité du propriétaire) n'arrive QUE sur `/api/plugins/…` ; partout
+  ailleurs l'invité reste lui-même (jamais l'identité du propriétaire hors des
+  extensions) ;
+- une route d'ADMIN d'extension (`requireAdmin`) → 403 pour un invité délégué
+  (jamais administrateur) ;
+- un invité SANS le droit → 403 `family.guest_account` sur les extensions ;
+- un invité délégué garde son périmètre : ni Watch Together, ni tickets, ni
+  partage, ni push/compte ;
+- le droit se relit en base À CHAQUE requête : le retirer coupe à l'appel
+  suivant, et la session reçoit `family:update` ;
+- régler le droit (`PUT /api/family/guests/:userId/rights {requestTitles}`) est
+  réservé au PROPRIÉTAIRE ; un membre → `not_owner`, un invité → 403 ;
+- un MEMBRE garde SON identité sur les extensions (ses demandes sont les siennes).
+
+Tests : `familleV2Delegation.attack.test.ts`. Tous les `SEC-F-xx` de la Famille
+(v1 + v2 + délégation) sont désormais des tests ACTIFS — plus aucun `todo`.
