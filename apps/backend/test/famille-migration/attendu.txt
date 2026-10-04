@@ -1,0 +1,13 @@
+familles	F1,F3,F5,F6,F7
+famille F1	a:owner,b:member,guest0:guest<a
+famille F3	c:owner,d:member,e:member,guest1:guest<d
+famille F5	f:owner,i:member
+famille F6	h:owner
+famille F7	j:owner,k:member,l:member,m:member
+doublons	0
+familles sans ligne owner	0
+nom du proprietaire F1	100
+couleur du proprietaire F1	pink
+invitations	inv1:cancelled,inv2:pending,inv3:cancelled,inv4:accepted
+cloches	n:family_invite:inv2,a:ticket_reply:inv1
+index unique userId	1
