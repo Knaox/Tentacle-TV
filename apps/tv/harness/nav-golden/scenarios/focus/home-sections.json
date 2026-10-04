@@ -1,6 +1,6 @@
 {
   "domain": "focus",
-  "reference": "84f3cedd0",
+  "reference": "d6f78c5a2",
   "defaults": { "settleMs": 900 },
   "scenarios": [
     {

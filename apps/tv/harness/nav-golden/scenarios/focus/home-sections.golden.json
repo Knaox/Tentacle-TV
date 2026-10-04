@@ -3,23 +3,23 @@
   "domain": "focus",
   "suite": "home-sections",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "d6f78c5a238a8e75fa78d6baea8f89328efcc924",
+    "label": "référence d6f78c5a2"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T3",
+    "name": "Tentacle TV — banc UI",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:15:38.716Z",
+  "recordedAt": "2026-10-04T14:31:34.673Z",
   "scenarios": {
     "home-entry": {
       "hash": "6f4a6ccd45a5",
-      "durationMs": 31157,
+      "durationMs": 17466,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -181,7 +181,7 @@
     },
     "home-rows": {
       "hash": "c516a85d235a",
-      "durationMs": 52000,
+      "durationMs": 50374,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -680,10 +680,10 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "nextUp:5",
-          "label": "Les Griffin",
+          "focus": "nextUp:3",
+          "label": "Cauchemar en cuisine avec Philippe Etchebest",
           "frame": [
-            1460,
+            1424,
             126,
             380,
             287
@@ -727,7 +727,7 @@
     },
     "home-row-end": {
       "hash": "797aadb9667e",
-      "durationMs": 56338,
+      "durationMs": 49873,
       "start": {
         "app": "foreground",
         "focus": "watched:0",
@@ -923,7 +923,7 @@
     },
     "home-filter-chip": {
       "hash": "122ed3dd2baa",
-      "durationMs": 40165,
+      "durationMs": 36276,
       "start": {
         "app": "foreground",
         "focus": "filter:remove",
@@ -1170,7 +1170,7 @@
     },
     "home-return": {
       "hash": "61fc3108d7f7",
-      "durationMs": 50929,
+      "durationMs": 28748,
       "start": {
         "app": "foreground",
         "focus": "reco:forYou:2",
@@ -1247,7 +1247,7 @@
     },
     "home-burst": {
       "hash": "322272b81db6",
-      "durationMs": 32617,
+      "durationMs": 29467,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",

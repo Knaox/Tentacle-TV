@@ -1,96 +1,538 @@
 {
   "domain": "focus",
-  "reference": "23bf658b7",
-  "defaults": { "settleMs": 900 },
+  "reference": "d6f78c5a2",
+  "defaults": {
+    "settleMs": 900
+  },
   "scenarios": [
     {
       "id": "rangee-a-l-ecran",
       "title": "Une rangée défilée garde sa place tant qu'elle est à l'écran",
       "why": "W6 (mode mixte, 2026-10-04) : descendre d'un cran pour regarder la rangée suivante ne fait rien perdre — HAUT ramène sur Reprendre, toujours défilée (au plus proche, loin de la première carte).",
-      "rules": ["W6", "R6"],
-      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "keys": ["wait:1", "left", "right"], "focus": "hero:primary" },
+      "rules": [
+        "W6",
+        "R6"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": "down", "expect": { "focus": "resume:0" } },
-        { "do": ["right", "wait:0.4", "right", "wait:0.4", "right", "wait:0.4", "right"], "settleMs": 700, "expect": { "focus": "resume:4" } },
-        { "do": "down", "why": "À suivre, au plus proche de la 5e vignette : Reprendre reste à l'écran" },
-        { "do": "up", "why": "W6 : Reprendre n'a pas bougé — la vignette au plus proche, pas la première" }
+        {
+          "do": "down",
+          "expect": {
+            "focus": "resume:0"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 700,
+          "expect": {
+            "focus": "resume:4"
+          }
+        },
+        {
+          "do": "down",
+          "why": "À suivre, au plus proche de la 5e vignette : Reprendre reste à l'écran"
+        },
+        {
+          "do": "up",
+          "why": "W6 : Reprendre n'a pas bougé — la vignette au plus proche, pas la première"
+        }
       ]
     },
     {
       "id": "rangee-sortie",
       "title": "Sortie de l'écran, la rangée revient au début ; celle encore à l'écran garde sa place",
       "why": "W6 : quatre rangées plus bas, Reprendre n'est plus à l'écran — elle revient au début sans animation ; en remontant, HAUT y entre au plus proche, donc au début.",
-      "rules": ["W6", "R6", "V2"],
-      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "keys": ["wait:1", "left", "right"], "focus": "hero:primary" },
+      "rules": [
+        "W6",
+        "R6",
+        "V2"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": "down", "expect": { "focus": "resume:0" } },
-        { "do": ["right", "wait:0.4", "right", "wait:0.4", "right", "wait:0.4", "right"], "settleMs": 700, "expect": { "focus": "resume:4" } },
-        { "do": "down" },
-        { "do": "down" },
-        { "do": "down" },
-        { "do": "down", "why": "Films : Reprendre est sortie de l'écran par le haut" },
-        { "do": "up" },
-        { "do": "up" },
-        { "do": "up" },
-        { "do": "up", "why": "W6 : Reprendre est revenue au début — la vignette au plus proche est l'une des premières" }
+        {
+          "do": "down",
+          "expect": {
+            "focus": "resume:0"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 700,
+          "expect": {
+            "focus": "resume:4"
+          }
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "down",
+          "why": "Films : Reprendre est sortie de l'écran par le haut"
+        },
+        {
+          "do": "up"
+        },
+        {
+          "do": "up"
+        },
+        {
+          "do": "up"
+        },
+        {
+          "do": "up",
+          "why": "W6 : Reprendre est revenue au début — la vignette au plus proche est l'une des premières"
+        }
       ]
     },
     {
       "id": "rangee-changement-de-page",
       "title": "Changer de page par le rail remet les rangées au début ; le focus revient où il était",
       "why": "W6 : Accueil → « Pour vous » → Accueil, par le rail. Reprendre était défilée et à l'écran (le focus sur le héros) : au retour, elle est au début.",
-      "rules": ["W6", "A4", "N1.2"],
-      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "keys": ["wait:1", "left", "right"], "focus": "hero:primary" },
+      "rules": [
+        "W6",
+        "A4",
+        "N1.2"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": "down", "expect": { "focus": "resume:0" } },
-        { "do": ["right", "wait:0.4", "right", "wait:0.4", "right", "wait:0.4", "right"], "settleMs": 700, "expect": { "focus": "resume:4" } },
-        { "do": "up", "expect": { "focus": "hero:list" }, "why": "le héros, au plus proche ; Reprendre reste défilée, à l'écran" },
-        { "do": ["left", "wait:0.4", "left"], "settleMs": 500, "expect": { "focus": "hero:primary" } },
-        { "do": "left", "expect": { "focus": "nav:Home" } },
-        { "do": ["down", "wait:0.6", "select"], "settleMs": 2000, "expect": { "route": "Recommendations" } },
-        { "do": "left", "expect": { "focus": "nav:Recommendations" } },
-        { "do": ["up", "wait:0.6", "select"], "settleMs": 1500, "expect": { "route": "Home", "focus": "hero:primary" }, "why": "A4 : la dernière clé de contenu de l'accueil" },
-        { "do": "down", "why": "W6 : Reprendre est revenue au début" }
+        {
+          "do": "down",
+          "expect": {
+            "focus": "resume:0"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 700,
+          "expect": {
+            "focus": "resume:4"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "hero:list"
+          },
+          "why": "le héros, au plus proche ; Reprendre reste défilée, à l'écran"
+        },
+        {
+          "do": [
+            "left",
+            "wait:0.4",
+            "left"
+          ],
+          "settleMs": 500,
+          "expect": {
+            "focus": "hero:primary"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Home"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "wait:0.6",
+            "select"
+          ],
+          "settleMs": 2000,
+          "expect": {
+            "route": "Recommendations"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Recommendations"
+          }
+        },
+        {
+          "do": [
+            "up",
+            "wait:0.6",
+            "select"
+          ],
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home",
+            "focus": "hero:primary"
+          },
+          "why": "A4 : la dernière clé de contenu de l'accueil"
+        },
+        {
+          "do": "down",
+          "why": "W6 : Reprendre est revenue au début"
+        }
       ]
     },
     {
       "id": "rangee-retour-de-fiche",
       "title": "Revenir d'une fiche rend la rangée exactement comme on l'a laissée",
       "why": "W6 : une fiche n'est pas un changement de page — Retour rend le focus à l'affiche ouverte, la rangée à sa place.",
-      "rules": ["W6", "A4", "R2.9"],
-      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "keys": ["wait:1", "left", "right"], "focus": "hero:primary" },
+      "rules": [
+        "W6",
+        "A4",
+        "R2.9"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": ["down", "wait:0.9", "down", "wait:0.9", "down", "wait:0.9", "down"], "settleMs": 900, "why": "« Pour vous », sous la pastille" },
-        { "do": ["right", "wait:0.4", "right", "wait:0.4", "right"], "settleMs": 700 },
-        { "do": "select", "settleMs": 3000, "expect": { "route": "MediaDetail" } },
-        { "do": "menu", "settleMs": 1500, "expect": { "route": "Home" }, "why": "la même affiche, la rangée défilée comme on l'a laissée" }
+        {
+          "do": [
+            "down",
+            "wait:0.9",
+            "down",
+            "wait:0.9",
+            "down",
+            "wait:0.9",
+            "down"
+          ],
+          "settleMs": 900,
+          "why": "« Pour vous », sous la pastille"
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 700
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "expect": {
+            "route": "MediaDetail"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home"
+          },
+          "why": "la même affiche, la rangée défilée comme on l'a laissée"
+        }
       ]
     },
     {
       "id": "rangee-retour-premiere-carte",
       "title": "Retour dans une rangée défilée : la première carte ; un deuxième Retour : le rail",
       "why": "R2.0 : Retour sur une carte qui n'est pas la première ramène à la première (la rangée défile, à la vue) ; posé là, Retour fait ce qu'il faisait (R2.1 : le rail s'ouvre).",
-      "rules": ["R2.0", "R2.1", "W6"],
-      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "keys": ["wait:1", "left", "right"], "focus": "hero:primary" },
+      "rules": [
+        "R2.0",
+        "R2.1",
+        "W6"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": ["down", "wait:0.9", "down"], "settleMs": 900, "expect": { "focus": "nextUp:0" } },
-        { "do": ["right", "wait:0.4", "right", "wait:0.4", "right", "wait:0.4", "right", "wait:0.4", "right"], "settleMs": 700, "expect": { "focus": "nextUp:5" } },
-        { "do": "menu", "settleMs": 1200, "expect": { "focus": "nextUp:0", "route": "Home" } },
-        { "do": "menu", "expect": { "focus": "nav:Home", "route": "Home" } },
-        { "do": "right", "expect": { "focus": "nextUp:0" } }
+        {
+          "do": [
+            "down",
+            "wait:0.9",
+            "down"
+          ],
+          "settleMs": 900,
+          "expect": {
+            "focus": "nextUp:0"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 700,
+          "expect": {
+            "focus": "nextUp:5"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "nextUp:0",
+            "route": "Home"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Home",
+            "route": "Home"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "nextUp:0"
+          }
+        }
       ]
     },
     {
       "id": "etagere-retour-premiere-carte",
       "title": "« Pour vous » : Retour sur une étagère défilée, la première affiche ; puis le rail",
       "why": "R2.0 sur la page « Pour vous », ouverte par le rail.",
-      "rules": ["R2.0", "R2.1", "W6"],
-      "start": { "fixtures": ["focus/foryou"], "keys": ["left", "wait:0.8", "down", "wait:0.6", "select", "wait:2"], "focus": "hero:primary" },
+      "rules": [
+        "R2.0",
+        "R2.1",
+        "W6"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/foryou"
+        ],
+        "keys": [
+          "left",
+          "wait:0.8",
+          "down",
+          "wait:0.6",
+          "select",
+          "wait:2"
+        ],
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": ["down", "wait:0.9", "down"], "settleMs": 900, "why": "la 2e étagère (la 1re porte la pastille)" },
-        { "do": ["right", "wait:0.4", "right", "wait:0.4", "right", "wait:0.4", "right"], "settleMs": 700 },
-        { "do": "menu", "settleMs": 1200, "why": "la première affiche de l'étagère" },
-        { "do": "menu", "expect": { "focus": "nav:Recommendations" } }
+        {
+          "do": [
+            "down",
+            "wait:0.9",
+            "down"
+          ],
+          "settleMs": 900,
+          "why": "la 2e étagère (la 1re porte la pastille)"
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 700
+        },
+        {
+          "do": "menu",
+          "settleMs": 1200,
+          "why": "la première affiche de l'étagère"
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Recommendations"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rangee-page-couverte",
+      "title": "Accueil couvert par une fiche, quitté par le rail : au retour, la rangée est au début, le focus sur sa première carte",
+      "why": "W6, le cas délicat : une affiche défilée de Films ouvre sa fiche, puis la page d'une personne (qui montre le rail) ; le rail ramène à l'accueil. UIKit lui rendrait l'affiche d'où l'on était parti — la rangée attend le retour pour revenir au début, le focus va à sa première carte.",
+      "rules": [
+        "W6",
+        "A4",
+        "N1.2",
+        "R2.8"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home",
+          "retour-rail/filmographies"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "wait:0.9",
+            "down",
+            "wait:0.9",
+            "down",
+            "wait:0.9",
+            "down",
+            "wait:0.9",
+            "down"
+          ],
+          "settleMs": 900,
+          "why": "Films, sous « Pour vous »"
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 700,
+          "why": "trois affiches plus loin : la rangée défile"
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "expect": {
+            "route": "MediaDetail"
+          }
+        },
+        {
+          "do": [
+            "wait:1",
+            "down"
+          ],
+          "settleMs": 900,
+          "why": "la distribution"
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "expect": {
+            "route": "SearchBrowse"
+          },
+          "why": "la page de la personne, avec le rail ; l'accueil est dessous, couvert"
+        },
+        {
+          "do": "left",
+          "settleMs": 900,
+          "expect": {
+            "focus": "nav:Search"
+          },
+          "why": "le rail, sur l'entrée de la page (Rechercher)"
+        },
+        {
+          "do": "down",
+          "settleMs": 700,
+          "expect": {
+            "focus": "nav:Home"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2000,
+          "expect": {
+            "route": "Home",
+            "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0"
+          },
+          "why": "W6 : un changement de page par le rail — la rangée de Films au début, le focus sur sa première affiche (UIKit rendait l'affiche ouverte)"
+        }
       ]
     }
   ]
