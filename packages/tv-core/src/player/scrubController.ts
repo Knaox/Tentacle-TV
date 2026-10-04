@@ -1,6 +1,9 @@
 import { createArrowHold, type ArrowHold, type ScrubDir, type ScrubInputProfile } from "./arrowHold";
 import type { PlayerTimers } from "./playerTimers";
-import { createScrubCountdown, reportingActivity, type ScrubCountdownState } from "./scrubCountdown";
+import {
+  createScrubCountdown, reportingActivity,
+  type ScrubCountdownOutcome, type ScrubCountdownPolicy, type ScrubCountdownState,
+} from "./scrubCountdown";
 import { createScrubMachine } from "./scrubMachine";
 import { jumpSecondsOf } from "./seekTuning";
 
@@ -75,15 +78,23 @@ export interface ScrubController {
  *    l'appui d'un saut fixe, la machine ne connaît que ses pas
  *    proportionnels — la position AFFICHÉE fait donc foi : les pas de la
  *    machine s'y appliquent en DELTAS, et la validation cherche l'affichage ;
- *  - le DÉCOMPTE : entré en lecture, la lecture repart à la cible 5 s après
- *    le dernier geste (cible inchangée : sans seek) ; entré en pause, la cible
- *    attend OK ou Retour.
+ *  - le DÉCOMPTE : entré en lecture, le défilement se ferme seul au bout du
+ *    délai de sa politique (`readCountdownPolicy`, lue à chaque ouverture)
+ *    après le dernier geste — en lisant depuis la cible (`resume` ; cible
+ *    inchangée : sans seek) ou en revenant où l'on était (`return` : une
+ *    annulation, sans seek). Entré en pause, la cible attend OK ou Retour.
+ *    Défaut : `RESUME_COUNTDOWN_POLICY` (le comportement d'avant le réglage).
  *
  * Module pur, minuteurs injectés.
  */
 export function createScrubController(
   host: ScrubControllerHost,
-  { profile, timers }: { profile: ScrubInputProfile; timers: PlayerTimers },
+  { profile, timers, readCountdownPolicy }: {
+    profile: ScrubInputProfile;
+    timers: PlayerTimers;
+    /** Ce que fait le décompte, et quand (le réglage « Avance rapide »). */
+    readCountdownPolicy?: () => ScrubCountdownPolicy;
+  },
 ): ScrubController {
   let scrubbing = false;
   let position = 0;
@@ -94,7 +105,12 @@ export function createScrubController(
   let hold: ArrowHold | null = null;
   const stopMotors = () => hold?.stopAll();
 
-  const countdown = createScrubCountdown({ onChange: (state) => host.onCountdown(state), onResume: () => resume(), timers });
+  const countdown = createScrubCountdown({
+    onChange: (state) => host.onCountdown(state),
+    onExpire: (outcome) => expire(outcome),
+    timers,
+    readPolicy: readCountdownPolicy,
+  });
 
   const clampDisplay = (value: number) => {
     const duration = host.readDuration() || 0;
@@ -146,10 +162,11 @@ export function createScrubController(
     },
   }), countdown);
 
-  function resume(): void {
-    host.debug?.("[SCRUB] reprise automatique");
+  /** Le décompte est échu : revenir où l'on était, ou lire depuis la cible. */
+  function expire(outcome: ScrubCountdownOutcome): void {
+    host.debug?.(`[SCRUB] fin du décompte (${outcome})`);
     stopMotors();
-    if (Math.abs(position - origin) < UNMOVED_SECONDS) machine.cancel();
+    if (outcome === "return" || Math.abs(position - origin) < UNMOVED_SECONDS) machine.cancel();
     else machine.confirm();
   }
 

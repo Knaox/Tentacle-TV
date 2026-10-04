@@ -3,63 +3,89 @@ import type { PlayerTimers } from "./playerTimers";
 import { RESUME_COUNTDOWN_MS } from "./seekTuning";
 
 /**
- * Le DÉCOMPTE de validation du défilement — une seule règle, quelle que soit
- * l'entrée (pavé, flèches, maintien, boutons de l'habillage, touches média) :
+ * Le DÉCOMPTE du défilement — une seule règle, quelle que soit l'entrée
+ * (pavé, flèches, maintien, boutons de l'habillage, touches média) :
  *
- *  - entré EN LECTURE, le défilement reprend seul à la position visée au bout
- *    de `RESUME_COUNTDOWN_MS`, décompté en entier à l'écran (« Lecture dans
- *    5 s »). Tout geste le relance ; un geste continu (doigt posé, maintien)
- *    le suspend, et son relâchement repart d'un décompte entier ;
+ *  - entré EN LECTURE, le défilement se ferme seul au bout du délai de sa
+ *    POLITIQUE, décompté en entier à l'écran — en lisant depuis la position
+ *    visée (`resume` : « Lecture dans 5 s ») ou en revenant où l'on était
+ *    (`return` : « Retour à 12:34 dans 5 s »). Tout geste le relance ; un
+ *    geste continu (doigt posé, maintien) le suspend, et son relâchement
+ *    repart d'un décompte entier ;
  *  - entré EN PAUSE, rien ne part seul : la cible attend OK ou Retour (la
  *    machine n'a plus d'abandon sur inactivité, `idleCancelMs: null`).
  *
- * OK valide aussitôt et Retour annule : c'est le contrôleur qui ferme
- * (`end`). Module pur, horloge et minuteurs injectables (Apple TV et Android
- * TV le lisent par `apps/tv` `useScrubCountdown`). Un seul minuteur,
- * posé à la prochaine seconde affichée : l'état ne change qu'une fois par
- * seconde, et un glisser qui repousse l'échéance à chaque image n'en repose
- * aucun.
+ * OK valide aussitôt et Retour annule, quelle que soit la politique : c'est
+ * le contrôleur qui ferme (`end`). La politique est LUE à chaque ouverture
+ * (`readPolicy`) : un réglage changé vaut dès le défilement suivant, jamais
+ * au milieu d'un décompte. Module pur, horloge et minuteurs injectables
+ * (Apple TV et Android TV le lisent par `apps/tv` `useTVPlayerControls`). Un
+ * seul minuteur, posé à la prochaine seconde affichée : l'état ne change
+ * qu'une fois par seconde, et un glisser qui repousse l'échéance à chaque
+ * image n'en repose aucun.
  */
+
+/** Ce que fait le décompte à son terme : revenir où l'on était (annuler) ou
+ *  lire depuis la position visée (valider). */
+export type ScrubCountdownOutcome = "return" | "resume";
+
+/** La politique du décompte : son issue, et son délai. */
+export interface ScrubCountdownPolicy {
+  outcome: ScrubCountdownOutcome;
+  /** Le délai entier, en ms — un multiple de la seconde affichée. */
+  delayMs: number;
+}
+
+/** La politique d'avant le réglage : la lecture repart à la cible au bout de
+ *  `RESUME_COUNTDOWN_MS`. C'est le défaut du cerveau — Android TV, qui n'a
+ *  pas le réglage, la garde telle quelle. */
+export const RESUME_COUNTDOWN_POLICY: ScrubCountdownPolicy = { outcome: "resume", delayMs: RESUME_COUNTDOWN_MS };
 
 export interface ScrubCountdownState {
   /** Secondes restantes, arrondies au-dessus : 5, 4… 1. */
   remaining: number;
   /** Les secondes du décompte entier. */
   total: number;
+  /** Ce qui se passera à son terme. */
+  outcome: ScrubCountdownOutcome;
 }
 
 /** Les minuteurs du décompte (`playerTimers.ts`). */
 export type CountdownTimers = PlayerTimers;
 
 export interface ScrubCountdown {
-  /** Un défilement s'ouvre ; `paused` : la lecture était en pause — rien ne
-   *  reprendra seul. */
+  /** Un défilement s'ouvre (la politique est lue ici) ; `paused` : la lecture
+   *  était en pause — rien ne se fermera seul. */
   begin: (paused: boolean) => void;
   /** Il se ferme (OK, Retour, reprise) : plus rien ne court. */
   end: () => void;
   /** Un geste (entrée, pas, toucher) : le décompte repart en entier. */
   activity: () => void;
-  /** Un geste continu commence (doigt posé, maintien) : la reprise attend. */
+  /** Un geste continu commence (doigt posé, maintien) : le décompte attend. */
   hold: () => void;
-  /** Il s'achève : la reprise repart d'un décompte entier. */
+  /** Il s'achève : le décompte repart en entier. */
   release: () => void;
   destroy: () => void;
 }
 
-export function createScrubCountdown({ onChange, onResume, timers }: {
+export function createScrubCountdown({ onChange, onExpire, timers, readPolicy }: {
   onChange: (state: ScrubCountdownState | null) => void;
-  /** La reprise est échue : lire depuis la position visée. */
-  onResume: () => void;
+  /** Le décompte est échu : son issue est celle de la politique lue à
+   *  l'ouverture. */
+  onExpire: (outcome: ScrubCountdownOutcome) => void;
   timers: CountdownTimers;
+  /** La politique, lue à chaque ouverture. Défaut : `RESUME_COUNTDOWN_POLICY`. */
+  readPolicy?: () => ScrubCountdownPolicy;
 }): ScrubCountdown {
-  /** Un défilement entré en lecture court : il reprendra seul. */
+  /** Un défilement entré en lecture court : il se fermera seul. */
   let armed = false;
   let held = false;
-  let resumeAt = 0;
+  let expiresAt = 0;
   let timer: unknown = null;
   let dueAt = 0;
   let shown: ScrubCountdownState | null = null;
-  const total = Math.ceil(RESUME_COUNTDOWN_MS / 1000);
+  let policy = RESUME_COUNTDOWN_POLICY;
+  let total = Math.ceil(policy.delayMs / 1000);
 
   function show(next: ScrubCountdownState | null): void {
     if (next === shown || (!!next && !!shown && next.remaining === shown.remaining)) return;
@@ -91,22 +117,22 @@ export function createScrubCountdown({ onChange, onResume, timers }: {
       return;
     }
     const now = timers.now();
-    const left = resumeAt - now;
+    const left = expiresAt - now;
     if (left <= 0) {
       armed = false;
       clear();
       show(null);
-      onResume();
+      onExpire(policy.outcome);
       return;
     }
     const remaining = Math.ceil(left / 1000);
-    show({ remaining, total });
-    wakeAt(resumeAt - (remaining - 1) * 1000, now);
+    show({ remaining, total, outcome: policy.outcome });
+    wakeAt(expiresAt - (remaining - 1) * 1000, now);
   }
 
   /** Le décompte entier, depuis maintenant. */
   function restart(): void {
-    resumeAt = timers.now() + RESUME_COUNTDOWN_MS;
+    expiresAt = timers.now() + policy.delayMs;
     schedule();
   }
 
@@ -119,13 +145,15 @@ export function createScrubCountdown({ onChange, onResume, timers }: {
 
   return {
     begin: (paused) => {
+      policy = readPolicy?.() ?? RESUME_COUNTDOWN_POLICY;
+      total = Math.ceil(policy.delayMs / 1000);
       armed = !paused;
       held = false;
       restart();
     },
     end,
     activity: () => {
-      // Le geste continu tient la reprise : son relâchement la relancera.
+      // Le geste continu tient le décompte : son relâchement le relancera.
       if (armed && !held) restart();
     },
     hold: () => {
@@ -145,7 +173,7 @@ export function createScrubCountdown({ onChange, onResume, timers }: {
 /**
  * La machine du défilement dont chaque geste — entrée, pas, toucher — est
  * rapporté au décompte, au moment même : il repart en entier, et l'écran ne
- * dit jamais « dans 1 s » d'une reprise qu'un geste vient de repousser.
+ * dit jamais « dans 1 s » d'une fermeture qu'un geste vient de repousser.
  */
 export function reportingActivity(machine: ScrubMachine, countdown: ScrubCountdown): ScrubMachine {
   return {

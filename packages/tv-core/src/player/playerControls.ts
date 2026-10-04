@@ -3,7 +3,7 @@ import { createOverlayAutoHide } from "./overlayAutoHide";
 import type { PlayerTimers } from "./playerTimers";
 import { isScrubTwinPress, scrubConfirmable, touchFollowsPress } from "./pressGuards";
 import { createScrubController, type ScrubController } from "./scrubController";
-import type { ScrubCountdownState } from "./scrubCountdown";
+import type { ScrubCountdownPolicy, ScrubCountdownState } from "./scrubCountdown";
 import type { TouchMode } from "./scrubTouchTuning";
 import { jumpSecondsOf } from "./seekTuning";
 import { createSkipFlash, type SkipFlashState } from "./skipFlash";
@@ -88,6 +88,10 @@ export interface PlayerControls {
  * (5 s), les gardes des appuis jumeaux (`pressGuards.ts`). Le même cerveau
  * sert Apple TV et Android TV ; seul le profil des flèches change.
  *
+ * `readCountdownPolicy` : ce que fait le décompte du défilement, et quand —
+ * le réglage « Avance rapide » de l'Apple TV ; sans lui, la politique d'avant
+ * (`RESUME_COUNTDOWN_POLICY`), que garde Android TV.
+ *
  * `initialPanelOpen` : la sortie du défilement rallume l'habillage avec l'état
  * du panneau au PREMIER rendu du lecteur — la fermeture que la machine du
  * défilement gardait (constat 8 de `docs/tv-navigation/lecteur.md`, repris tel
@@ -95,7 +99,12 @@ export interface PlayerControls {
  */
 export function createPlayerControls(
   host: PlayerControlsHost,
-  { profile, timers, initialPanelOpen }: { profile: ScrubInputProfile; timers: PlayerTimers; initialPanelOpen: boolean },
+  { profile, timers, initialPanelOpen, readCountdownPolicy }: {
+    profile: ScrubInputProfile;
+    timers: PlayerTimers;
+    initialPanelOpen: boolean;
+    readCountdownPolicy?: () => ScrubCountdownPolicy;
+  },
 ): PlayerControls {
   let lastPressAt = 0;
   /** Un appui directionnel déjà servi ne rallume pas l'habillage (`anyPress`). */
@@ -137,7 +146,7 @@ export function createPlayerControls(
     onSpeedLabel: host.onSpeedLabel,
     onCountdown: host.onCountdown,
     debug: host.debug,
-  }, { profile, timers });
+  }, { profile, timers, readCountdownPolicy });
 
   const showOverlay = () => {
     if (!scrub.isScrubbing()) revealOverlay();

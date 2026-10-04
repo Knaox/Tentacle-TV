@@ -18,6 +18,7 @@ export * from "./hevcTag";
 export * from "./seekTuning";
 export * from "./scrubTouchTuning";
 export * from "./scrubCountdown";
+export * from "./scrubCountdownSettings";
 export * from "./playerTimers";
 export * from "./skipFlash";
 export * from "./pressGuards";
