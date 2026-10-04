@@ -10,6 +10,7 @@ export * from "./profileLaunch";
 export * from "./profileRefusal";
 export * from "./pinEntry";
 export * from "./knownProfiles";
+export * from "./familyManage";
 export * from "./revocationDrain";
 export * from "./passwordPairing";
 export * from "./loginForm";
