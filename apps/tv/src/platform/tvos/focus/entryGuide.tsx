@@ -3,6 +3,7 @@ import { TVFocusGuideView, type View } from "react-native";
 import { groupEntryKey } from "@tentacle-tv/tv-core";
 import type { FocusGroupContainerProps } from "../../../redesign/focus/focusBinding";
 import type { FocusStore } from "./focusStore";
+import { guideFocusable } from "./guideFocusable";
 
 /**
  * Le guide d'ENTRÉE d'un groupe (`FocusGroup`) : quand le focus y arrive
@@ -27,7 +28,8 @@ import type { FocusStore } from "./focusStore";
  * Et un guide sans destination se DÉCLARE non focalisable : react-native-tvos
  * marque sélectionnable tout guide dont `destinations` est un tableau, même
  * vide, et le guide retombé en simple vue devenait une cible invisible (le
- * pont du lecteur l'a payé : `BridgeGuide`).
+ * pont du lecteur l'a payé : `BridgeGuide`) — sur Apple TV seulement : sur
+ * Android TV, ce `false` bloquerait tout le groupe (`guideFocusable`).
  */
 
 export interface EntryGuideOptions {
@@ -74,7 +76,7 @@ export function createEntryGuide(store: FocusStore, options: EntryGuideOptions):
         style={style}
         pointerEvents={pointerEvents}
         destinations={target}
-        focusable={target.length > 0 ? undefined : false}
+        focusable={guideFocusable(target.length > 0)}
         trapFocusLeft={trapLeft}
         trapFocusRight={trapRight}
       >

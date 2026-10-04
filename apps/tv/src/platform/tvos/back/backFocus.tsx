@@ -6,6 +6,7 @@ import {
 import type { FocusGroupContainerProps } from "../../../redesign/focus/focusBinding";
 import { setFocusLocked } from "../focus/focusLocks";
 import type { FocusStore } from "../focus/focusStore";
+import { guideFocusable } from "../focus/guideFocusable";
 
 /**
  * Le focus de la croix Retour d'un écran (`BackButton`, posée par sa vue en
@@ -153,7 +154,7 @@ function createBackGuide(store: FocusStore, backKey: string, lock: BackLock): Co
         style={style}
         pointerEvents={pointerEvents}
         destinations={target}
-        focusable={target.length > 0 ? undefined : false}
+        focusable={guideFocusable(target.length > 0)}
       >
         {children}
       </TVFocusGuideView>

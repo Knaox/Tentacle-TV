@@ -5,6 +5,7 @@ import type { FocusGroupContainerProps } from "../../../redesign/focus/focusBind
 import { osdPlayPauseNodeRef, useSkipNode } from "../../../components/player/focus/osdFocusBus";
 import { AutoFocusGuide, TrapFocusGuide } from "../focus/focusGuides";
 import type { FocusStore } from "../focus/focusStore";
+import { guideFocusable } from "../focus/guideFocusable";
 
 /**
  * Les GUIDES de focus du lecteur Apple TV, posés sur les groupes que ses vues
@@ -98,7 +99,7 @@ function ScreenTrap({ destinations, style, pointerEvents, children }: FocusGroup
   return (
     <TVFocusGuideView
       destinations={destinations}
-      focusable={destinations.length > 0 ? undefined : false}
+      focusable={guideFocusable(destinations.length > 0)}
       trapFocusUp
       trapFocusDown
       trapFocusLeft
@@ -140,7 +141,7 @@ function BridgeGuide({ destinations, style, pointerEvents, children }: FocusGrou
   return (
     <TVFocusGuideView
       destinations={destinations}
-      focusable={destinations.length > 0 ? undefined : false}
+      focusable={guideFocusable(destinations.length > 0)}
       style={style}
       pointerEvents={pointerEvents}
     >
