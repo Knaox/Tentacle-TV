@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router-dom";
 import { Info } from "lucide-react";
 import { Shimmer } from "@tentacle-tv/ui";
-import { useFamilyOverview } from "@tentacle-tv/api-client";
+import { familyErrorFromApi, useFamilyOverview } from "@tentacle-tv/api-client";
 import type { FamilyOverviewDto } from "@tentacle-tv/shared";
 import { PageTransition } from "../../components/PageTransition";
 import { useFamilyAvailability } from "../../family/useFamilyAvailability";
@@ -24,6 +24,7 @@ import { SECONDARY_BUTTON } from "../../family/page/familyUi";
  * la page n'existe pas.
  */
 export function SettingsFamily() {
+  const { t } = useTranslation("familyWeb");
   const { available, settled } = useFamilyAvailability();
   const overview = useFamilyOverview({ enabled: available });
 
@@ -34,6 +35,9 @@ export function SettingsFamily() {
       <div className="max-w-2xl">
         {overview.data ? (
           <FamilyContent overview={overview.data} />
+        ) : overview.isError && familyErrorFromApi(overview.error)?.code === "family.personal_session_required" ? (
+          // « Voir en tant que » : la Famille n'est pas lisible, et c'est voulu.
+          <Notice text={t("notice.personalOnly")} />
         ) : overview.isError ? (
           <LoadError error={overview.error} onRetry={() => void overview.refetch()} />
         ) : (
@@ -58,10 +62,7 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
     <>
       <p className="mb-5 text-sm leading-relaxed text-content-tertiary">{t("description")}</p>
       {notices.map((notice) => (
-        <p key={notice} className="mb-4 flex gap-2 rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2.5 text-sm text-content-secondary">
-          <Info size={16} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-content-tertiary" />
-          {notice}
-        </p>
+        <Notice key={notice} text={notice} />
       ))}
       {personal && <IncomingInvitationsSection incoming={overview.incoming} />}
       <OwnedFamilySection overview={overview} />
@@ -69,6 +70,16 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
       {personal && (account.canJoin || overview.owned !== null) && <MyPinSection hasPin={account.hasPin} />}
       {personal && overview.owned && <DissolveSection />}
     </>
+  );
+}
+
+/** Un encart d'information : ce qui change ce que la page permet, et pourquoi. */
+function Notice({ text }: { text: string }) {
+  return (
+    <p className="mb-4 flex gap-2 rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2.5 text-sm text-content-secondary">
+      <Info size={16} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-content-tertiary" />
+      {text}
+    </p>
   );
 }
 
