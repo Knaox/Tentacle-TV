@@ -263,3 +263,4 @@ variantes `.android.ts` de `platform/tvos/focus/` vers
 | [`tv-navigation/ecrans.md`](tv-navigation/ecrans.md) | écrans | T7 |
 | [`tv-navigation/inventaire.md`](tv-navigation/inventaire.md) | l'inventaire, la garde (lint) et l'audit | T8 |
 | [`tv-navigation/android-focus.md`](tv-navigation/android-focus.md) | focus et défilement rapide sur Android TV | A1 |
+| [`tv-navigation/android.md`](tv-navigation/android.md) | Android TV refondu : Retour, panneaux, écrans | lot Android, A3 |
