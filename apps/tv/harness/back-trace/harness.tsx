@@ -87,6 +87,9 @@ function nativeState() {
  * premier, jusqu'au premier qui le prend. Personne : il revient à la
  * plateforme (React Navigation, puis l'activité). `exitApp` appelé : la sortie.
  */
+/** L'entrée unique d'Android s'inscrit à BackHandler après le rendu en cours (`setTimeout`) : on la laisse faire. */
+const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 1));
+
 function androidPress(label: string, trace: unknown[]) {
   effects = [];
   const before = bench.__calls.length;
@@ -103,7 +106,7 @@ function androidPress(label: string, trace: unknown[]) {
   trace.push({ press: label, to: taken ? "app" : "platform", effects });
 }
 
-function run({ route, canGoBack, focused = true, steps }: Scenario, asSpecs = false): unknown[] {
+async function run({ route, canGoBack, focused = true, steps }: Scenario, asSpecs = false): Promise<unknown[]> {
   const trace: unknown[] = [];
   const root: Root = createRoot(fakeContainer());
   const navigation = { canGoBack: () => canGoBack, goBack: () => effects.push("goBack"), isFocused: () => focused };
@@ -122,9 +125,11 @@ function run({ route, canGoBack, focused = true, steps }: Scenario, asSpecs = fa
       act(() => root.render(view(step.render)));
       trace.push({ render: step.render.map((l) => `${l.name}:${l.kind}:${l.active ? "on" : "off"}`), ...nativeState() });
     } else if ("press" in step && __BENCH_REFONTE__) {
+      await settle();
       androidPress(step.press, trace);
     } else if ("stalePress" in step && __BENCH_REFONTE__) {
       act(() => root.render(view(step.then)));
+      await settle();
       androidPress(step.stalePress, trace);
     } else if ("press" in step) {
       const interceptor = bench.__native.TVMenuPressInterceptor;
@@ -255,12 +260,14 @@ const ANDROID_SCENARIOS: Record<string, Scenario> = {
 };
 
 const scenarios: Record<string, unknown[]> = {};
-for (const [name, scenario] of Object.entries(SCENARIOS)) scenarios[name] = run(scenario);
-if (__BENCH_REFONTE__) for (const [name, scenario] of Object.entries(ANDROID_SCENARIOS)) scenarios[name] = run(scenario);
+for (const [name, scenario] of Object.entries(SCENARIOS)) scenarios[name] = await run(scenario);
+if (__BENCH_REFONTE__) for (const [name, scenario] of Object.entries(ANDROID_SCENARIOS)) scenarios[name] = await run(scenario);
 
 // L'API nouvelle : les mêmes couches déclarées en liste donnent la même trace.
 const specsEquivalent: Record<string, boolean> | null = "useBackLayers" in Back
-  ? Object.fromEntries(Object.entries(SCENARIOS).map(([name, scenario]) => [name, JSON.stringify(run(scenario, true)) === JSON.stringify(scenarios[name])]))
+  ? Object.fromEntries(
+      await Promise.all(Object.entries(SCENARIOS).map(async ([name, scenario]) => [name, JSON.stringify(await run(scenario, true)) === JSON.stringify(scenarios[name])])),
+    )
   : null;
 
 process.stdout.write(JSON.stringify({ scenarios, calls: bench.__calls, specsEquivalent }));

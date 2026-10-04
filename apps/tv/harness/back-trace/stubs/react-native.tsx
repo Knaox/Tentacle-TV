@@ -19,6 +19,7 @@ bench.__calls ??= [];
 
 export const Platform = {
   OS: __BENCH_OS__,
+  isTV: true,
   select: <T,>(options: Record<string, T>): T | undefined => options[__BENCH_OS__] ?? options.default,
 };
 
