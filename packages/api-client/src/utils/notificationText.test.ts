@@ -39,6 +39,13 @@ describe("formatNotifTitle", () => {
       .toBe('notifications:ticketReplyTitle{"subject":"Vieux"}');
   });
 
+  it("la Famille dit le nom de l'autre, jamais une phrase stockée", () => {
+    expect(formatNotifTitle({ type: "family_invite", title: "Damien", body: null }, t))
+      .toBe('family:notifications.family_invite{"name":"Damien"}');
+    expect(formatNotifTitle({ type: "family_invite_declined", title: "Léa", body: null }, t))
+      .toBe('family:notifications.family_invite_declined{"name":"Léa"}');
+  });
+
   it("un type inconnu garde son titre", () => {
     expect(formatNotifTitle({ type: "request_status", title: "Tel quel", body: null }, t)).toBe("Tel quel");
   });

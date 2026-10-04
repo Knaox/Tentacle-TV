@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { FamilyCapability } from "@tentacle-tv/shared";
 
 let _backendBase = "";
 
@@ -10,6 +11,8 @@ export interface AppFeatures {
   downloads: boolean;
   demo: boolean;
   sharedWatchlists?: boolean;
+  /** La Famille : absente d'un serveur d'avant (rien ne s'en montre alors). */
+  family?: FamilyCapability;
 }
 
 export interface AppConfig {

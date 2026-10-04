@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveNotificationRoute } from "./notificationRoute";
+import { FAMILY_ROUTE, resolveNotificationRoute } from "./notificationRoute";
 
 describe("resolveNotificationRoute — tickets", () => {
   it("l'auteur atterrit sur sa page de support, fiche ouverte", () => {
@@ -75,5 +75,12 @@ describe("resolveNotificationRoute — demandes (request_status)", () => {
   it("sans métadonnées de plugin, pas de route", () => {
     expect(resolveNotificationRoute({ type: "request_status", refId: "r1" }, "mobile")).toBeNull();
     expect(resolveNotificationRoute({ type: "request_status", refId: "r1" }, "web", [])).toBeNull();
+  });
+
+  it("mène toute notification de la Famille à l'écran de la Famille", () => {
+    for (const type of ["family_invite", "family_invite_accepted", "family_member_removed", "family_dissolved"]) {
+      expect(resolveNotificationRoute({ type, refId: "x" }, "web")).toBe(FAMILY_ROUTE);
+      expect(resolveNotificationRoute({ type, refId: null }, "mobile")).toBe(FAMILY_ROUTE);
+    }
   });
 });

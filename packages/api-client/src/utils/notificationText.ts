@@ -1,3 +1,4 @@
+import { familyNotificationKey, isFamilyNotificationType } from "@tentacle-tv/shared";
 import type { AppNotification } from "../hooks/useNotifications";
 import { TICKET_STATUS_LABEL_KEYS } from "./ticketMeta";
 
@@ -74,6 +75,8 @@ export function formatNotifTitle(
       return t("notifications:ticketUserClosedTitle", { username, subject: n.title });
     }
     default:
+      // La Famille : `title` garde le nom de l'autre (cf. FAMILY_NOTIFICATION_TYPES).
+      if (isFamilyNotificationType(n.type)) return t(familyNotificationKey(n.type), { name: n.title });
       return n.title;
   }
 }

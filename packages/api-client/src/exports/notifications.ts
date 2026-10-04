@@ -5,7 +5,7 @@ export {
 } from "../hooks/useNotifications";
 
 // Notification route resolution
-export { resolveNotificationRoute, type NotifPluginMeta } from "../utils/notificationRoute";
+export { resolveNotificationRoute, FAMILY_ROUTE, type NotifPluginMeta } from "../utils/notificationRoute";
 export { EXTENSIONS_TAB_PATH, extensionSectionId, parseExtensionSectionId, extensionSectionHref } from "../utils/extensionSection";
 export { isPluginActive, isVigieActive, isVigieRecoAvailable, SEER_PLUGIN_ID, type PluginPresence } from "../utils/pluginPresence";
 export { formatNotifTitle, notifBodyText, parseTicketNotifBody, type NotifTranslate } from "../utils/notificationText";

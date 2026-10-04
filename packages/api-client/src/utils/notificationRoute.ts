@@ -1,5 +1,8 @@
 import { extensionSectionHref } from "./extensionSection";
 
+/** L'écran de la Famille, le même chemin sur le web, le bureau et le mobile. */
+export const FAMILY_ROUTE = "/family";
+
 /** Minimal plugin metadata needed for notification route resolution. */
 export interface NotifPluginMeta {
   pluginId: string;
@@ -49,6 +52,15 @@ export function resolveNotificationRoute(
     // qu'un (le serveur met alors son ID dans refId), l'accueil sinon.
     case "library_added":
       return refId ? `/media/${refId}` : null;
+
+    // La Famille : l'écran de la Famille de chaque client (web, bureau, mobile).
+    case "family_invite":
+    case "family_invite_accepted":
+    case "family_invite_declined":
+    case "family_member_left":
+    case "family_member_removed":
+    case "family_dissolved":
+      return FAMILY_ROUTE;
 
     case "watchlist_share":
       return platform === "mobile" && refId

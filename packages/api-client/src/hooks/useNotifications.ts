@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { FamilyNotificationType } from "@tentacle-tv/shared";
 
 let _backendBase = "/api/notifications";
 
@@ -43,7 +44,9 @@ export interface AppNotification {
     | "ticket_user_reply"
     | "ticket_user_closed"
     | "request_status"
-    | "watchlist_share";
+    | "watchlist_share"
+    /** La Famille (`FAMILY_NOTIFICATION_TYPES`) : `title` = le nom de l'autre. */
+    | FamilyNotificationType;
   title: string;
   body: string | null;
   refId: string | null;
