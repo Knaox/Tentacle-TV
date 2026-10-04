@@ -481,9 +481,14 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
   liste les profils, en ouvre un, se déjumelle. La session de profil est une
   ligne ENFANT de `paired_devices` : un jeton d'appareil au nom du profil, qui
   passe toutes les portes comme un jumelage. Une TV d'avant garde son jeton.
-- **Gestes personnels** (accepter, refuser, quitter, son PIN, dissoudre) :
-  jeton Jellyfin du web, du bureau, du mobile seulement — jamais une TV, un
-  profil de TV ni « voir en tant que ».
+- **Gestes personnels** (accepter, refuser, quitter, dissoudre) : jeton
+  Jellyfin du web, du bureau, du mobile seulement — jamais une TV, un profil de
+  TV ni « voir en tant que ». **Seule exception : SON PIN**, que le propriétaire
+  ou un membre pose, change ou retire aussi depuis SON profil sur la TV
+  (`setOwnPin`, appelant `tvProfile` ; l'acteur est la session, jamais le
+  corps). Changer ou retirer un PIN existant exige `currentPin`, vérifié comme
+  à l'ouverture d'un profil (même compteur, même blocage). Un invité garde le
+  PIN de son propriétaire ; le compte de démonstration n'en pose jamais.
 - **Un invité n'apparaît dans AUCUNE liste** (Watch Together, candidats,
   utilisateurs, admin, classement, recommandations en fond) ; seulement dans
   les sessions en cours (`familyGuestOf`). Toute nouvelle liste de comptes
