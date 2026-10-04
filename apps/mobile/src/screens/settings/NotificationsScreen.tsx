@@ -13,12 +13,14 @@ import {
 import { SettingsScaffold } from "./SettingsScaffold";
 import { BrandSwitch, SettingsSection, SettingsRow } from "@/components/settings";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
+import { useFamilyAvailability } from "@/family/useFamilyAvailability";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { ensureNotificationPermission, registerForPushToken } from "@/services/pushNotifications";
 
 /**
  * Sous-écran « Notifications » : les préférences push. Ajouts bibliothèque et
- * Seer sont opt-in ; « Tickets de support » est ACTIVÉE par défaut (même
+ * Seer sont opt-in ; « Tickets de support » et « Famille » (les invitations
+ * reçues, face à un serveur qui a la Famille) sont ACTIVÉES par défaut (même
  * table de défauts que le serveur, PUSH_PREF_DEFAULTS — un serveur ancien qui
  * ne renvoie pas la clé n'éteint pas le réglage). Le toggle Seer n'apparaît
  * que si le plugin `seer` est actif. En développement, une ligne envoie une
@@ -42,6 +44,8 @@ export function NotificationsPane() {
   const register = useRegisterPushDevice();
   const { data: plugins } = useActivePlugins();
   const seerActive = !!plugins?.some((p) => p.pluginId === "seer");
+  // Les invitations de la Famille : seulement face à un serveur qui l'a.
+  const { available: familyAvailable } = useFamilyAvailability();
 
   // Bouton de test : outil de diagnostic DEV uniquement (invisible en prod,
   // même pour les admins — l'endpoint backend refuse aussi) et réservé aux
@@ -121,8 +125,17 @@ export function NotificationsPane() {
           label={t("ticketsTitle")}
           description={t("ticketsDesc")}
           trailing={renderSwitch("tickets")}
-          last
+          last={!familyAvailable}
         />
+        {familyAvailable ? (
+          <SettingsRow
+            icon="users"
+            label={t("familyTitle")}
+            description={t("familyDesc")}
+            trailing={renderSwitch("family")}
+            last
+          />
+        ) : null}
       </SettingsSection>
 
       {/* Outil de diagnostic : une ligne, pas un bouton de marque plein cadre. */}
