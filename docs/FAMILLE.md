@@ -110,9 +110,10 @@ compte de la TV. Chaque profil dit `hasPin`, `lockedUntil` s'il est bloqué par
 trop d'essais ratés, `createdBy` (un invité) et `manage` : ce qu'il gérerait
 sur cette TV derrière SON PIN (`FamilyRights` ; null pour un invité et pour le
 compte de démonstration). `pickerRequired` dès deux profils — l'Apple TV ne le
-lit plus : elle montre « Qui regarde ? » même pour un seul. `stickyProfileId` : le profil « Rester sur ce profil ». `canManage` :
-« Gérer les profils » existe (au moins un `manage`). Les avatars se lisent
-sans jeton (`/api/jellyfin/Users/{id}/Images/Primary?tag=…`).
+lit plus : elle montre « Qui regarde ? » même pour un seul. `stickyProfileId` :
+le profil retenu (« Ne plus proposer à l'ouverture »). `canManage` : « Gérer les
+profils » existe (au moins un `manage`). Les avatars se lisent sans jeton
+(`/api/jellyfin/Users/{id}/Images/Primary?tag=…`).
 
 ### 4. La session de profil — `POST /api/family/tv/sessions`
 
