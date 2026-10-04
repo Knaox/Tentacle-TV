@@ -130,14 +130,16 @@ export async function inviteMember(owner: Actor, inviteeUserId: string, now: num
   return { id: created.id, inviteeUserId: target.id, inviteeName: target.name, ...invitationDates(created) };
 }
 
-/** Le propriétaire retire une invitation. Le destinataire, lui, refuse : 403. */
+/** Le propriétaire retire une invitation. Le destinataire, lui, refuse, et un
+ *  membre de la famille n'annule rien : 403 ; tout autre compte : 404. */
 export async function cancelInvitation(caller: Actor, id: string, now: number): Promise<{ cancelled: true }> {
   await refuseReviewAccount(caller.userId);
   const prisma = getPrisma();
   const invitation = await prisma.familyInvitation.findUnique({ where: { id } });
   if (!invitation || !sameUserId(invitation.ownerUserId, caller.userId)) {
-    if (invitation && sameUserId(invitation.inviteeUserId, caller.userId)) {
-      throw new FamilyFailure("family.not_owner", "Seul l'émetteur annule une invitation");
+    const insider = invitation && (await familyOf(caller.userId))?.family.id === invitation.familyId;
+    if (invitation && (sameUserId(invitation.inviteeUserId, caller.userId) || insider)) {
+      throw new FamilyFailure("family.not_owner", "Seul le propriétaire annule une invitation");
     }
     throw invitationNotFound();
   }

@@ -58,6 +58,10 @@ describe("une famille par compte", () => {
   it("un membre n'invite pas, ne fonde rien et ne quitte que sa famille ; le propriétaire dissout", async () => {
     await join(tokens.damien, IDS.lea, tokens.lea);
     expect(await code(invite(tokens.lea, IDS.hugo))).toBe("family.not_owner");
+    // Annuler une invitation de SA famille : 403 ; un compte sans lien : 404.
+    const pending = (await invite(tokens.damien, IDS.cache)).json().id;
+    expect(await code(send("POST", "/api/family/invitations/cancel", tokens.lea, { id: pending }))).toBe("family.not_owner");
+    expect((await send("POST", "/api/family/invitations/cancel", tokens.hugo, { id: pending })).statusCode).toBe(404);
     expect(await code(guest(tokens.lea, "Zoé"))).toBe("family.guest_right_required");
     expect(h.state!.db.data.family).toHaveLength(1);
     const familyId = h.state!.db.data.family[0].id as string;
