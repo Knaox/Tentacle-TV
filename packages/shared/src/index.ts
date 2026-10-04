@@ -87,6 +87,9 @@ export * from "./notices/adminKeyHealth";
 // quand le dire — une info éphémère, masquable par le compte.
 export * from "./player/qualityDrop";
 export * from "./notices/qualityDropNotice";
+// Le saut pendant un transcodage : les sauts rapides regroupés en un seul
+// redémarrage, l'attente dite (indicateur, phrase, modèle d'erreur au délai).
+export * from "./player/transcodeSeek";
 // Le modèle commun des messages d'erreur : une cause en mots de spectateur
 // (quoi, pourquoi, une à trois actions, détails repliés), classée d'un échec
 // brut — une seule source pour le web, le bureau, le mobile et la tablette.

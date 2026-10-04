@@ -22,6 +22,10 @@ describe("la cause d'un échec", () => {
     expect(classifyProblem({ marker: "startTimeout", reachability: "ok", streamAnswered: true, transcoding: true })).toBe("startTimeout");
     // Direct, le flux répond mais n'arrive pas à temps : la connexion ne suit pas.
     expect(classifyProblem({ marker: "startTimeout", reachability: "ok", streamAnswered: true })).toBe("bandwidthTooLow");
+    // Un saut pendant une conversion qui ne ramène rien : même symptôme, sondé d'abord.
+    expect(classifyProblem({ marker: "seekTimeout", reachability: "ok", streamAnswered: true, transcoding: true, started: true }))
+      .toBe("seekTimeout");
+    expect(classifyProblem({ marker: "seekTimeout", reachability: "jellyfin" })).toBe("jellyfinUnreachable");
     expect(classifyProblem({ marker: "engineFailed", status: 500 })).toBe("engineFailed");
     expect(classifyProblem({ marker: "subtitleBurn" })).toBe("subtitleBurnFailed");
     expect(classifyProblem({ marker: "bandwidth" })).toBe("bandwidthTooLow");

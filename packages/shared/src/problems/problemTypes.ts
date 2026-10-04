@@ -53,6 +53,8 @@ export type ProblemCause =
   | "connectionLost"
   | "bandwidthTooLow"
   | "startTimeout"
+  /** Après un saut pendant une conversion, la vidéo ne revient pas (`player/transcodeSeek.ts`). */
+  | "seekTimeout"
   | "decodeFailed"
   | "engineFailed"
   | "offlineFileMissing"

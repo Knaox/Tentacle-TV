@@ -67,6 +67,8 @@ export default {
   hintBandwidthTooLow: "Une qualité réduite demande moins au réseau.",
   reasonStartTimeout: "La vidéo n'est pas arrivée à temps.",
   hintStartTimeout: "Le serveur est peut-être très occupé à la convertir. Réessayez, ou choisissez une qualité réduite.",
+  reasonSeekTimeout: "Le serveur n'a pas ramené la vidéo à ce passage.",
+  hintSeekTimeout: "Il convertit la vidéo depuis ce nouveau point et n'a pas suivi. Réessayez : la lecture reprendra à ce passage.",
   reasonDecodeFailed: "Cet appareil n'a pas réussi à décoder cette vidéo.",
   hintDecodeFailed: "Une qualité réduite la fait convertir dans un format plus simple.",
   reasonEngineFailed: "Le lecteur vidéo de l'application n'a pas pu démarrer.",

@@ -22,6 +22,8 @@ export type FailureKind =
 /** Ce que l'app pose elle-même sur un échec qu'elle a constaté. */
 export type FailureMarker =
   | "startTimeout"
+  /** Un saut pendant une conversion n'a rien ramené dans le délai (`SEEK_TIMEOUT_MS`). */
+  | "seekTimeout"
   | "engineFailed"
   | "subtitleBurn"
   | "bandwidth"
@@ -106,6 +108,7 @@ function fromMarker(raw: RawProblem): ProblemCause | null {
     // Un délai dépassé est un SYMPTÔME : un refus HTTP ou un serveur muet,
     // sondés, le disent mieux — il ne vaut qu'en dernier (cf. classifyProblem).
     case "startTimeout": return null;
+    case "seekTimeout": return null;
     case "engineFailed": return "engineFailed";
     case "subtitleBurn": return "subtitleBurnFailed";
     case "bandwidth": return "bandwidthTooLow";
@@ -230,6 +233,9 @@ export function classifyProblem(input: RawProblem): ProblemCause {
     // suit pas le débit du fichier. Converti, c'est le serveur qui peine.
     return raw.streamAnswered && !raw.transcoding && !raw.local ? "bandwidthTooLow" : "startTimeout";
   }
+  // Même symptôme après un saut : les sondes ont parlé avant, sinon le serveur
+  // n'a pas ramené la vidéo au nouveau passage.
+  if (raw.marker === "seekTimeout") return "seekTimeout";
   if (raw.streamAnswered && kind !== "tls" && kind !== "cleartext") return fromAnsweredStream(raw, kind);
   if (kind) return fromKind(raw, kind) ?? "unknown";
   return "unknown";

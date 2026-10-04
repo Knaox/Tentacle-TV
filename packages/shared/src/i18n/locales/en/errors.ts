@@ -67,6 +67,8 @@ export default {
   hintBandwidthTooLow: "A lower quality asks less of the network.",
   reasonStartTimeout: "The video didn't arrive in time.",
   hintStartTimeout: "The server may be busy converting it. Try again, or pick a lower quality.",
+  reasonSeekTimeout: "The server didn't bring the video back at this point.",
+  hintSeekTimeout: "It converts the video from this new point and couldn't keep up. Try again: playback will resume here.",
   reasonDecodeFailed: "This device couldn't decode this video.",
   hintDecodeFailed: "A lower quality has it converted to a simpler format.",
   reasonEngineFailed: "The app's video player couldn't start.",

@@ -109,6 +109,10 @@ export const CAUSES: Record<ProblemCause, CauseEntry> = {
     icon: "clock", reason: "reasonStartTimeout", hint: "hintStartTimeout",
     actions: ["retry", "lowerQuality", "back"], transient: false,
   },
+  seekTimeout: {
+    icon: "clock", reason: "reasonSeekTimeout", hint: "hintSeekTimeout",
+    actions: ["retry", "lowerQuality", "back"], transient: false,
+  },
   decodeFailed: {
     icon: "film", reason: "reasonDecodeFailed", hint: "hintDecodeFailed",
     actions: ["lowerQuality", "otherVersion", "back"], transient: false,
