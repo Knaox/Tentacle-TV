@@ -121,6 +121,7 @@ export default {
   tvUsernamePlaceholder: "Votre nom d'utilisateur",
   tvPasswordPlaceholder: "Votre mot de passe",
   tvLoginHint: "Saisissez-les avec la télécommande, ou avec votre iPhone quand il vous le propose.",
+  tvLoginHintAndroid: "Saisissez-les avec la télécommande, ou depuis votre téléphone avec l'appli Google TV.",
   tvLoginInvalid: "Nom d'utilisateur ou mot de passe incorrect. Vérifiez-les, puis réessayez.",
   tvLoginRefused:
     "Ce compte ne peut pas se connecter : il est désactivé, bloqué après trop d'erreurs, ou restreint. Contactez l'administrateur du serveur.",

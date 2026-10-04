@@ -32,9 +32,9 @@ describe("indications de touches", () => {
     expect(TVOS_BINDINGS.hints.seasonsShortcut).toBe("requests:seasonsShortcut");
   });
 
-  it("Android TV ne change que le raccourci des saisons (Lecture/Pause n'est pas sur toutes ses télécommandes)", () => {
+  it("Android TV ne change que le raccourci des saisons (Lecture/Pause n'est pas sur toutes ses télécommandes) et la saisie du jumelage (pas d'iPhone)", () => {
     const changed = REMOTE_HINT_IDS.filter((id) => ANDROIDTV_BINDINGS.hints[id] !== BASE_REMOTE_HINTS[id]);
-    expect(changed).toEqual(["seasonsShortcut"]);
+    expect(changed).toEqual(["seasonsShortcut", "loginTyping"]);
     expect(ANDROIDTV_BINDINGS.traits.playPauseKey).toBe("sometimes");
   });
 });

@@ -48,6 +48,8 @@ export const REMOTE_HINT_IDS = [
   "unpairAgain",
   /** Un geste qui demande un second OK (confirmer). */
   "pressAgainToConfirm",
+  /** Jumelage, identifiant et mot de passe : avec quoi les saisir (la télécommande, et le téléphone de la plateforme). */
+  "loginTyping",
 ] as const;
 
 export type RemoteHintId = (typeof REMOTE_HINT_IDS)[number];
@@ -77,4 +79,5 @@ export const BASE_REMOTE_HINTS: RemoteHints = {
   scrubGoBack: "player:scrubOtherGoBack",
   unpairAgain: "pairing:tvUnpairHint",
   pressAgainToConfirm: "preferences:tvPressAgainToConfirm",
+  loginTyping: "pairing:tvLoginHint",
 };

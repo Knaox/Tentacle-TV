@@ -118,6 +118,7 @@ export default {
   tvUsernamePlaceholder: "Your username",
   tvPasswordPlaceholder: "Your password",
   tvLoginHint: "Type them with the remote, or with your iPhone when it offers to.",
+  tvLoginHintAndroid: "Type them with the remote, or from your phone with the Google TV app.",
   tvLoginInvalid: "Incorrect username or password. Check them, then try again.",
   tvLoginRefused:
     "This account can't sign in: it's disabled, locked after too many failed attempts, or restricted. Contact your server administrator.",

@@ -7,6 +7,7 @@ import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, text } from "../../theme/tokens";
+import { useRemoteHints } from "../../remote/remoteHints";
 import { PairingError } from "./PairingError";
 import { PairingField, type PairingFieldHandle } from "./PairingField";
 import type { LoginError } from "./pairingTypes";
@@ -53,6 +54,7 @@ export const LoginStep = memo(function LoginStep({
   onUseCode?: () => void;
 }) {
   const { t } = useTranslation(["auth", "pairing"]);
+  const hints = useRemoteHints();
   const usernameField = useRef<PairingFieldHandle>(null);
   const passwordField = useRef<PairingFieldHandle>(null);
   // « Se connecter » et la validation d'un clavier : la règle de tv-core (`session/loginForm`).
@@ -115,7 +117,7 @@ export const LoginStep = memo(function LoginStep({
       </FocusGroup>
       <View style={styles.hint}>
         <Icon name="remote" size={28} color={colors.textTertiary} />
-        <Text style={styles.hintText}>{t("pairing:tvLoginHint")}</Text>
+        <Text style={styles.hintText}>{t(hints.loginTyping)}</Text>
       </View>
     </View>
   );

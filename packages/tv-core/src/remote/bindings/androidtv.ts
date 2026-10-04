@@ -179,5 +179,8 @@ export const ANDROIDTV_BINDINGS: RemoteBindings = {
     // Sans Lecture/Pause (Google TV), la feuille garde son bouton « Demander »
     // au pied : cocher par OK, puis l'atteindre — l'indication dit les deux.
     seasonsShortcut: "requests:seasonsShortcutAndroid",
+    // Pas d'iPhone qui propose de saisir : sur Android TV, le téléphone tape
+    // dans le champ par l'appli Google TV.
+    loginTyping: "pairing:tvLoginHintAndroid",
   },
 };
