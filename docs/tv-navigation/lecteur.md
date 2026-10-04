@@ -643,7 +643,7 @@ gestes du lecteur sont donc ceux des §§ 4.3 à 4.7, aux mêmes durées.
 |---|---|
 | ← / → (appui), habillage masqué | saut −10 / +30 s + badge |
 | ← / → maintenus | défilement : tic 250 ms, paliers ×1 → ×8, décompte 5 s au relâcher |
-| ⏩ / ⏪ (touches média, Shield) | ouvrent le défilement ; tenues, il accélère au rythme de leurs répétitions (`mediaPulse`, chien de garde 700 ms) ; défilement ouvert, un appui pousse la cible |
+| ⏩ / ⏪ (touches média, Shield) | ouvrent le défilement à l'ENFONCEMENT ; tenues, il accélère au rythme de leurs répétitions (`mediaPulse`, le moteur commun) et s'arrête au RELÂCHEMENT de la touche ; défilement ouvert, un appui pousse la cible. La table les lie à l'enfoncement, aux répétitions et au relâchement (`enableKeyDownEvents`) ; `playerRemoteSteps` lit la phase du signal |
 | ↑ / ↓ | rallument l'habillage (ce que les consignes d'Android appellent « jeter un œil aux commandes ») |
 | OK, habillage masqué | rallume l'habillage, focus sur **Lecture/Pause** (ci-dessous) |
 | OK, habillage affiché | l'action du bouton focalisé (Lecture/Pause : la pause) |
@@ -678,3 +678,19 @@ mettre en pause — est celui qu'on reproche au lecteur de Plex.
   surtout elle reste FOCALISABLE : le moteur de focus d'Android ignore la
   transparence. Le fondu de sortie se joue en entier, puis l'habillage part ;
   il revient avec le même fondu d'entrée.
+
+### 13.4 Les preuves
+
+- **Banc de traces, mode `androidtv`** (`apps/tv/harness/player-trace`,
+  `TRACE_PLATFORM=androidtv`) : les 26 scénarios de l'Apple TV sans pavé,
+  rejoués avec les événements tels qu'Android TV les émet (enfoncement puis
+  relâchement, `longX` tiré de la répétition, jumeau d'OK avant le clic du
+  bouton), sur l'entrée unique d'Android et l'aiguillage de la refonte
+  allumé : effets et états IDENTIQUES aux traces de référence de l'Apple TV,
+  à la milliseconde (26/26). ⏩ tenu puis lâché et ⏪ isolé, propres à
+  Android, par assertions (`androidtv.test.ts`). Les modes `ios` (33) et
+  `android` (16, l'ancienne UI tant que l'aiguillage la garde) restent
+  identiques à leurs traces.
+- **tv-core** : `osdRevealTarget`, `scrubInputProfileOf`,
+  `playerRemoteSteps` (relâchement des touches média), table
+  `ANDROIDTV_BINDINGS` (⏩/⏪ aux trois phases).
