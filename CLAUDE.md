@@ -453,9 +453,20 @@ bande-annonce (`/prepare`) ; chaque lecture rend compte au serveur (`/report`,
 
 Propriétaire, membres, invités (vrais comptes Jellyfin cachés, mot de passe
 jeté), profils de l'Apple TV, code PIN : le CONTRAT est dans
-`packages/shared/src/family/` (`familyContract`, `familyProtocol`,
-`familyRoutes`, `familyRules`), recopié octet pour octet dans
-`apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet : `docs/FAMILLE.md`.
+`packages/shared/src/family/` (`familyContract`, `familyTvContract`,
+`familyProtocol`, `familyRoutes`, `familyRules`, `familyRights`), recopié octet
+pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
+`docs/FAMILLE.md`.
+
+- **UNE famille par compte, PARTAGÉE (v2)** : propriétaire OU membre, jamais
+  deux — la base le tient (`family_members.userId` unique, le propriétaire y a
+  sa ligne `owner`). Seul le propriétaire invite, retire, règle les droits et
+  dissout ; un membre crée des invités si le propriétaire le lui permet (avec
+  la politique Jellyfin de SON créateur) et ne gère que les siens. La TV de
+  tout membre montre toute la famille ; un membre qui part perd les autres
+  profils sur ses TV et quitte celles des autres. Une base v1 passe en v2 par
+  `core-init.sql` sans rien perdre (fusion des familles croisées) — banc :
+  `zsh apps/backend/test/famille-migration/banc.sh`.
 
 - **Rien ne se décide sur un client** : PIN haché et vérifié par le serveur
   (jamais envoyé à une TV), droits lus dans `FAMILY_ROUTES` (`callers`), à

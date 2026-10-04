@@ -1,15 +1,17 @@
 # La Famille — carnet
 
-Décisions de Damien du 2026-10-04 ; elles font foi. Ce carnet dit le CONTRAT
-(ce que les clients consomment) et le MÉCANISME (ce que le serveur garantit).
-Une règle, une source :
+Décisions de Damien du 2026-10-04 — la v1 le matin, la **v2** après son essai
+de l'après-midi (famille PARTAGÉE, une famille par compte) ; elles font foi.
+Ce carnet dit le CONTRAT (ce que les clients consomment) et le MÉCANISME (ce
+que le serveur garantit). Une règle, une source :
 
 | Quoi | Où |
 |------|----|
-| Limites, réponses, corps | `packages/shared/src/family/familyContract.ts` |
+| Limites, réponses, corps | `packages/shared/src/family/familyContract.ts` ; la TV : `familyTvContract.ts` |
 | Codes d'erreur, temps réel, notifications | `packages/shared/src/family/familyProtocol.ts` |
 | Routes et appelants permis | `packages/shared/src/family/familyRoutes.ts` (`FAMILY_ROUTES`) |
-| Règles pures (PIN, capacité, invitations, candidats, noms) | `packages/shared/src/family/familyRules.ts` |
+| Règles pures (PIN, capacité, invitations, noms) | `packages/shared/src/family/familyRules.ts` |
+| Droits et candidats (v2) | `packages/shared/src/family/familyRights.ts` (`familyRightsOf`, `canManageGuest`, `familyCandidates`) |
 | Lecture d'un refus, clés i18n (clients seulement) | `packages/shared/src/family/familyLabels.ts`, espace i18n `family` |
 | Ce que les écrans montrent (places, gestes permis, affiche, couleurs) | `packages/shared/src/family/familyClient.ts` (clients seulement) |
 | Miroirs du serveur (octet pour octet, `familyMirror.test.ts`) | `apps/backend/src/family/` |
@@ -21,23 +23,41 @@ Une règle, une source :
 
 ## Les rôles
 
-- **Propriétaire** : tout compte du serveur sauf un invité ; UNE famille au
-  plus. Il invite, crée des invités, retire, supprime, dissout. La famille naît
-  à son premier invité ou à sa première invitation.
-- **Membre** : un compte EXISTANT qui a accepté une invitation ; membre de
-  plusieurs familles s'il le veut. Le retirer le sort de la famille, jamais de
-  Jellyfin.
+**UNE famille par compte, PARTAGÉE par tous ses membres (v2).** Un compte
+appartient à une famille au plus, comme propriétaire OU comme membre : la base
+le tient (chaque personne a SA ligne dans `family_members`, propriétaire
+compris — `kind = owner` — et `userId` y est unique). Quand un membre a
+accepté, la famille est celle de tous ses membres : ils la voient, leurs TV la
+montrent.
+
+- **Propriétaire** : tout compte du serveur sauf un invité, s'il n'est membre
+  d'aucune famille. Lui SEUL invite, annule une invitation, retire un membre,
+  règle les droits des membres et dissout ; il ne « quitte » pas sa famille
+  (`family.owner_must_dissolve`). La famille naît à son premier invité ou à
+  sa première invitation.
+- **Membre** : un compte EXISTANT qui a accepté une invitation. Il ne crée
+  pas de famille, n'en rejoint pas d'autre et n'est plus invitable
+  (`family.already_in_family`) ; un geste de propriétaire lui répond
+  `family.not_owner`. Il crée des invités SI le propriétaire le lui permet
+  (`FamilyMemberRights.createGuests`, par membre, COUPÉ par défaut, réglable
+  depuis le web, le bureau, le mobile et la TV — `setMemberRights`) ; il ne
+  supprime et ne protège (PIN) que les invités qu'il a créés, même privé du
+  droit d'en créer. Retirer le droit ne supprime rien. Le retirer de la
+  famille le sort, jamais de Jellyfin.
 - **Invité** : un VRAI compte Jellyfin créé par le serveur (clé d'API), caché
   (`IsHidden`), au mot de passe fort jeté aussitôt — personne n'y entre ; seules
-  les TV du propriétaire l'ouvrent. Mêmes bibliothèques et restrictions que le
-  propriétaire, jamais administrateur, aucun droit de gestion, de suppression
-  ni de téléchargement. Nom Jellyfin ASCII reconnaissable : « Lea - invite de
+  les TV de la famille l'ouvrent. Il porte son créateur (`createdBy`) et en
+  reçoit les bibliothèques et restrictions — le propriétaire, ou le membre qui
+  l'a créé : un membre n'ouvre jamais, par un invité, les bibliothèques du
+  propriétaire. Jamais administrateur, aucun droit de gestion, de suppression
+  ni de téléchargement. Les invités d'un membre qui part restent dans la
+  famille ; le propriétaire les gère. Nom Jellyfin ASCII reconnaissable : « Lea - invite de
   Damien » (`guestAccountName`). Il n'apparaît dans AUCUNE liste — seulement
   dans les sessions en cours, étiqueté `familyGuestOf` (« Invité · famille de X »).
   Le supprimer supprime son compte Jellyfin (sa lecture est perdue).
   Déjumeler une TV ne supprime JAMAIS un invité.
 - **Limites** : 6 profils par famille, propriétaire et invitations en attente
-  compris, dont 3 invités au plus.
+  compris, dont 3 invités au plus, tous créateurs confondus.
 
 ## L'Apple TV : jumelage, profils, sessions
 
@@ -76,21 +96,26 @@ par le serveur (PIN compris), la TV ne lit rien.
 
 ### 3. « Qui regarde ? » — `GET /api/family/tv/profiles`
 
-Le propriétaire de la TV (le compte qui l'a jumelée) en tête, puis sa famille
-— les membres si la Famille est active, les invités si les deux interrupteurs
-le sont (`isProfileKindAllowed`). Chaque profil dit `hasPin` et, s'il est
-bloqué par trop d'essais ratés, `lockedUntil`. `pickerRequired` dès deux profils ; sinon la TV ouvre le seul.
-`stickyProfileId` : le profil « Rester sur ce profil ». `canManage` : « Gérer
-les profils » existe (faux pour le compte de démonstration). Les avatars se lisent
+TOUTE la famille du compte qui a jumelé la TV (`pairedBy`), qu'il en soit le
+propriétaire ou un membre : le propriétaire en tête, puis les membres, puis
+les invités (chacun par ordre d'arrivée) ; les invités si les deux
+interrupteurs le permettent. Sans famille, ou « Familles » coupé : le seul
+compte de la TV. Chaque profil dit `hasPin`, `lockedUntil` s'il est bloqué par
+trop d'essais ratés, `createdBy` (un invité) et `manage` : ce qu'il gérerait
+sur cette TV derrière SON PIN (`FamilyRights` ; null pour un invité et pour le
+compte de démonstration). `pickerRequired` dès deux profils ; sinon la TV ouvre
+le seul. `stickyProfileId` : le profil « Rester sur ce profil ». `canManage` :
+« Gérer les profils » existe (au moins un `manage`). Les avatars se lisent
 sans jeton (`/api/jellyfin/Users/{id}/Images/Primary?tag=…`).
 
 ### 4. La session de profil — `POST /api/family/tv/sessions`
 
 `{ profileId, pin?, remember? }` → `{ token, user, profile, remembered }`.
 
-- Le serveur vérifie que le profil appartient à la famille de CETTE TV
-  (sinon 403 `family.profile_unavailable` : une TV n'ouvre jamais le profil
-  d'une autre famille), que les interrupteurs le permettent, et le PIN
+- Le serveur vérifie que le profil appartient à la famille de CETTE TV — celle
+  du compte qui l'a jumelée — (sinon 403 `family.profile_unavailable` : une TV
+  n'ouvre jamais le profil d'une autre famille), que les interrupteurs le
+  permettent, et le PIN
   (scrypt, jamais envoyé ni comparé sur la TV). Erreurs : `family.pin_required`,
   `family.pin_invalid` (`attemptsLeft`), `family.pin_locked` (`lockedUntil`),
   `family.disabled`, `family.guests_disabled`.
@@ -115,7 +140,12 @@ sans jeton (`/api/jellyfin/Users/{id}/Images/Primary?tag=…`).
 - Ce qui coupe une session de profil, IMMÉDIATEMENT et AVANT la réponse du
   geste qui la coupe : départ ou retrait du membre, suppression de l'invité,
   changement de PIN, dissolution, coupure par l'admin, compte supprimé,
-  déjumelage. Jeton refusé chez Tentacle ET chez Jellyfin (`DELETE /Devices`),
+  déjumelage. La famille étant PARTAGÉE, les coupures en suivent les TV : un
+  membre qui part (ou qu'on retire) perd tous les AUTRES profils sur ses TV,
+  et son profil quitte celles des autres ; la dissolution, comme « Familles »
+  coupé, ne laisse à chaque TV que son propre compte. Le balayage coupe en
+  outre toute session qu'aucune TV ne devrait plus montrer
+  (`family_changed`). Jeton refusé chez Tentacle ET chez Jellyfin (`DELETE /Devices`),
   socket prévenue (`family:profile-ended` + `reason`, puis fermeture 4010),
   et aux portes REST un 401
   `{ revoked: true, profileEnded: true }` — la TV revient à « Qui regarde ? »
@@ -131,12 +161,16 @@ sans jeton (`/api/jellyfin/Users/{id}/Images/Primary?tag=…`).
 
 ### 6. « Gérer les profils » — `POST /api/family/tv/manage/unlock`
 
-Depuis la session du PROPRIÉTAIRE seulement. S'il a un PIN, le serveur
-l'exige (mêmes essais, même blocage) et ouvre la gestion dix minutes
-(`manageUntil`) ; sans PIN, ouverte d'office. Les routes `ownerTv` de
-`FAMILY_ROUTES` (lister, créer ou supprimer un invité, inviter, retirer un
-membre, annuler une invitation) ne passent qu'ainsi. JAMAIS depuis une TV :
-accepter, refuser, quitter, poser son propre PIN, dissoudre.
+Depuis la session du propriétaire OU d'un membre, sur une TV de la famille —
+jamais un invité. Le serveur exige le PIN de CE profil s'il en a un (mêmes
+essais, même blocage) et ouvre la gestion dix minutes (`manageUntil`) ; sans
+PIN, ouverte d'office. La réponse dit les droits de la session (`rights`).
+Le propriétaire passe `ownerTv` (vue d'ensemble, candidats, inviter, annuler,
+retirer un membre, régler ses droits, créer ou supprimer un invité) ; un
+membre passe `memberTv` (vue d'ensemble, créer un invité s'il en a le droit,
+supprimer les siens) — un geste de propriétaire lui répond
+`family.not_owner`. JAMAIS depuis une TV : accepter, refuser, quitter, poser
+son propre PIN ou celui d'un invité, dissoudre.
 
 ### 7. La séquence de l'Apple TV (pour le client)
 
@@ -153,29 +187,32 @@ accepter, refuser, quitter, poser son propre PIN, dissoudre.
    oublier le jeton de session, revenir au 3.
 6. « Changer de profil » : `endTvToken(jeton de session)`, puis le 3.
    « Déjumeler » : `endTvToken(jeton de jumelage)`.
-7. « Gérer les profils » (`canManage`, profil du propriétaire) :
-   `unlockTvManage` (PIN s'il en a un), puis les routes `ownerTv` avec le jeton
-   de session — vue d'ensemble, candidats, inviter, annuler, créer ou supprimer
-   un invité, retirer un membre.
+7. « Gérer les profils » (`canManage` ; le profil qui gère a un `manage`) :
+   `unlockTvManage` (SON PIN s'il en a un), puis les routes `ownerTv` ou
+   `memberTv` avec le jeton de session, selon `rights`.
 
 ## Qui agit : toujours le porteur du jeton
 
 L'acteur se déduit du jeton, JAMAIS d'un identifiant du corps ou de la query
-(un `ownerUserId` ou un `fromUserId` glissé dans un corps est ignoré). Les
-routes du propriétaire ne prennent aucun identifiant de famille : elles
-agissent sur LA famille que possède le porteur. D'où les réponses :
+(un `ownerUserId` ou un `fromUserId` glissé dans un corps est ignoré). Aucune
+route n'agit sur un identifiant de famille : elles visent LA famille du
+porteur (il n'en a qu'une). D'où les réponses :
 
-- un membre qui tente un geste de propriétaire (retirer, supprimer un invité,
-  dissoudre) → 403 `family.not_owner` ;
+- un membre qui tente un geste de propriétaire (inviter, retirer, régler des
+  droits, dissoudre) ou vise un invité qu'il n'a pas créé → 403
+  `family.not_owner` ;
 - tout autre compte → 404 `family.not_found` : la cible n'est pas dans SA
   famille ;
 - une invitation dont on n'est ni l'émetteur ni le destinataire → 404, la même
   réponse qu'une invitation qui n'existe pas (rien ne confirme son existence).
 
-Les limites (6 profils, 3 invités, une famille par propriétaire) tiennent sous
-des gestes CONCURRENTS : chaque geste qui change la composition d'une famille
-s'y exécute seul (verrou par famille), et l'unicité du propriétaire est une
-contrainte de la base.
+Les limites (6 profils, 3 invités, une famille par compte) tiennent sous des
+gestes CONCURRENTS : chaque geste qui change la composition d'une famille s'y
+exécute seul (verrou par famille), et « une famille par compte » est une
+contrainte de la BASE (`family_members.userId` unique) : fonder sa famille
+écrit d'abord la ligne du propriétaire, accepter écrit la ligne du membre
+avant de clore l'invitation — la seconde de deux courses échoue
+(`family.already_in_family`).
 
 ## Sessions personnelles, sessions de TV
 
@@ -210,12 +247,19 @@ geste d'écriture d'une TV s'ajoute à cette liste, nommé et testé.
 
 ## Invitations
 
-- Candidats (`GET /api/family/candidates?q=`) : les comptes visibles à
-  l'écran de connexion de Jellyfin, filtrés par la saisie ; un compte CACHÉ
-  par son nom exact seulement ; jamais un invité, soi-même, un membre, une
-  invitation en attente, un compte désactivé, le compte de démonstration
-  (`selectCandidates`). Un refus ne distingue jamais un compte caché d'un nom
-  qui n'existe pas (`family.candidate_invalid`).
+- Candidats (`GET /api/family/candidates?q=`, v2) : TOUS les comptes du
+  serveur, cachés de l'écran de connexion de Jellyfin compris (la Famille vit
+  dans une instance — décision de Damien), affinés par la saisie (quelques
+  lettres suffisent) ; jamais un invité, soi-même, un compte désactivé, le
+  compte de démonstration (`familyCandidates`). Un compte déjà dans une
+  famille est rendu `in_family` — sans dire laquelle —, une invitation de la
+  famille l'attend : `invited` ; seul `available` s'invite. Au propriétaire
+  (ou à un compte sans famille) seulement : un membre reçoit
+  `family.not_owner`.
+- Une famille par compte : la cible d'une invitation n'est dans aucune famille
+  (`family.already_in_family`, `already_member` si c'est la vôtre). Qui entre
+  dans une famille — en acceptant une invitation, ou en fondant la sienne —
+  voit ses autres invitations reçues closes (et retirées de sa cloche).
 - Identifiant d'invitation : 128 bits aléatoires (base64url) — jamais un
   cuid —, porté dans le CORPS des gestes (`InvitationActionBody`), jamais dans
   une URL : le serveur journalise ses URL. Les journaux n'en montrent que le
@@ -224,7 +268,8 @@ geste d'écriture d'une TV s'ajoute à cette liste, nommé et testé.
   `family.invite_expired`. Anti-abus (`inviteBlock`) : une seule en attente par
   (famille, compte) ; 7 jours après un refus du même compte ; 10 envois par
   24 h et par propriétaire ; 10 en attente par destinataire. Créer un invité
-  (un compte Jellyfin) : 6 par 24 h et par propriétaire (`guestQuotaBlock`).
+  (un compte Jellyfin) : 6 par 24 h et par famille, tous créateurs confondus
+  (`guestQuotaBlock`).
 - Le destinataire est prévenu par la cloche (`family_invite`), un push
   (préférence `family`, activée par défaut) et l'AFFICHE au lancement du web,
   du bureau et du mobile (`incoming`, en direct par `family:update`
@@ -235,19 +280,22 @@ geste d'écriture d'une TV s'ajoute à cette liste, nommé et testé.
 ## Code PIN
 
 Quatre chiffres par profil, facultatif. Chacun le pose pour lui-même
-(`PUT /api/family/pin`) ; le propriétaire pour ses invités. Haché par scrypt
+(`PUT /api/family/pin`) ; celui d'un invité, le propriétaire ou le membre qui
+l'a créé. Haché par scrypt
 (sel propre), jamais rendu. Les essais se comptent PAR PROFIL, toutes TV
 confondues (`profile_pin_attempts`) : changer de TV ne remet pas le compteur à
 zéro. Cinq, puis 15 min, 1 h, 4 h, 24 h de blocage
 (`FAMILY_PIN_LOCK_STEPS_MS`) ; pendant un blocage, même le bon PIN échoue ;
 une réussite efface. Poser, changer ou
 retirer un PIN coupe le profil sur les TV et ôte « Rester sur ce profil ».
-Le PIN du propriétaire protège aussi « Gérer les profils ».
+Le PIN de chacun protège aussi SA gestion des profils sur les TV.
 
 ## Temps réel, cloche, push
 
-- `family:update` `{ scope: "owned" | "memberships" | "invitations" }` : relire
-  `["family"]` (`useFamilyLive`).
+- `family:update` `{ scope: "family" | "invitations" }` (v1 : `owned`,
+  `memberships`) : relire `["family"]` (`useFamilyLive`, quelle que soit la
+  portée). Un changement de la famille partagée prévient son propriétaire ET
+  chacun de ses membres (`notifyFamily`).
 - `family:profile-ended` `{ reason }` sur le socket d'une session de profil,
   puis fermeture 4010.
 - La cloche garde des DONNÉES : `title` = le nom de l'autre, `refId` =
@@ -296,9 +344,10 @@ Deux interrupteurs dans `server_config`, ACTIVÉS par défaut
 (`GET`/`PUT /api/admin/family`, administrateur en session personnelle) :
 « Familles » et « Profils invités ». Les couper refuse toute nouvelle action
 (inviter, accepter, créer un invité, ouvrir un profil coupé) et coupe les
-sessions de profil en cours — membres et invités pour le premier, invités pour
-le second — avec leur « Rester » ; les rallumer ne ressuscite aucune session.
-La session du propriétaire sur sa propre TV reste. Retirer, quitter,
+sessions de profil en cours avec leur « Rester » — pour le premier, tout profil
+autre que le compte de chaque TV ; pour le second, les invités — ; les
+rallumer ne ressuscite aucune session. La session du compte de chaque TV
+reste. Retirer, quitter,
 supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 
 ## Côté serveur
@@ -311,7 +360,7 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 | Un geste à la fois par famille | `familyLock.ts` |
 | Marqueur « invité » des listes, étiquette des sessions | `familyGuestMarkers.ts` |
 | Cloche, push, socket | `familyNotify.ts` |
-| Familles et profils en base, refus 403 / 404 | `familyStore.ts` |
+| Familles et profils en base (`familyOf` : la famille d'un compte et son rôle), refus 403 / 404 | `familyStore.ts` |
 | Coupure des sessions de profil (avant la réponse) | `familySessions.ts` |
 | Comptes Jellyfin des invités | `guestAccounts.ts` |
 | Invitations ; réponses et expiration | `familyInvitations.ts`, `familyInvitationAnswers.ts` |
@@ -325,7 +374,31 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 Le balayage (toutes les dix minutes et au démarrage) : les invitations échues
 sortent de la cloche ; un compte disparu de Jellyfin (supprimé depuis son
 tableau de bord) emporte sa famille ou son adhésion ; un compte DÉSACTIVÉ perd
-ses sessions de profil. Jellyfin muet : rien n'est conclu.
+ses sessions de profil ; une session de profil qu'aucune TV ne devrait plus
+montrer est coupée (`family_changed`) et son « Rester » oublié. Jellyfin muet :
+rien n'est conclu.
+
+### La migration v1 → v2 (`core-init.sql`)
+
+Rejouable, sans rien perdre ; sur une base déjà en v2, rien ne bouge :
+
+1. chaque famille reçoit la ligne de son propriétaire (`owner-<famille>`) ;
+2. les invités d'avant la v2 reçoivent leur créateur — le propriétaire de LEUR
+   famille, dit avant toute fusion ;
+3. un compte dans plusieurs familles garde la plus ANCIENNE (date, puis
+   identifiant) ; ses autres lignes partent ;
+4. une famille dont le propriétaire est resté dans une autre (plus ancienne) y
+   est FUSIONNÉE : ses membres et ses invités le suivent (chaînes comprises),
+   ses invitations en attente se closent, puis elle disparaît, vide ;
+5. les invitations en attente vers un compte désormais dans une famille se
+   closent, et quittent sa cloche ;
+6. l'index unique `family_members_userId_key`.
+
+Exemple — l'essai du 04/10 : deux familles croisées (chacun propriétaire de la
+sienne et membre de celle de l'autre) deviennent UNE famille, la plus ancienne
+— son propriétaire, l'autre membre. Le balayage du démarrage coupe ensuite les
+sessions de profil que la fusion a rendues impossibles. Banc : MariaDB 11 et
+MySQL 8.0/9.6, données de chaque cas, rejeu idempotent.
 
 Journaux : préfixe `[family]`, jamais un jeton, un PIN ni un mot de passe ;
 une invitation n'y paraît que par le début de son identifiant.
@@ -334,7 +407,10 @@ une invitation n'y paraît que par le début de son identifiant.
 
 - Bancs de bout en bout (vraies routes, base en mémoire, faux Jellyfin qui
   crée et supprime des comptes) : `apps/backend/test/family*.test.ts` — Apple
-  TV, PIN et gestion, invitations, révocations, périmètre et listes, balayage.
+  TV, PIN et gestion, invitations, révocations, périmètre et listes, balayage ;
+  v2 : `familyOneFamily` (une famille par compte, courses comprises ; invités
+  des membres et leur politique), `familySharedTv` (TV de membre, coupures,
+  gestion d'un membre), `familyMemberRights`.
 - Proxy : `apps/backend/test/jellyfinProxyDeviceWrites.test.ts` (vrai serveur
   amont).
 - Un VRAI Jellyfin jetable (10.11 et 12.1) : `test/jellyfin-compat/suites/
@@ -357,8 +433,12 @@ Tout se décide côté serveur, à l'identique en HTTP et en HTTPS : rien ne
 dépend du TLS, d'un cookie Secure ni d'une API web réservée aux contextes
 sécurisés. Aucun jeton ni PIN dans une URL ni un journal (`[family]` sans
 secret). Personne ne peut inviter au nom d'un autre, accepter à la place d'un
-autre, entrer sans invitation, ouvrir un profil depuis une TV qui n'est pas
-celle du propriétaire, obtenir un jeton pour un compte hors de sa famille,
-garder un accès après un retrait, lister les comptes cachés, deviner un
-identifiant d'invitation, contourner un PIN, ni atteindre une fonction
-d'administration par un profil.
+autre, entrer sans invitation, appartenir à deux familles, ouvrir un profil
+depuis une TV qui n'est pas celle d'une personne de sa famille, obtenir un
+jeton pour un compte hors de sa famille, garder un accès après un retrait,
+gérer un invité qu'il n'a pas créé (membre), prêter à un invité plus de
+bibliothèques que son créateur n'en a, deviner un identifiant d'invitation,
+contourner un PIN, ni atteindre une fonction d'administration par un profil.
+La liste des comptes du serveur (cachés compris, décision de Damien) ne se
+rend qu'au propriétaire ou à un compte sans famille — jamais à un membre, un
+invité ni un jeton de TV non déverrouillé.
