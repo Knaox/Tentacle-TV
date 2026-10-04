@@ -51,7 +51,10 @@ montrent.
   l'a créé : un membre n'ouvre jamais, par un invité, les bibliothèques du
   propriétaire. Jamais administrateur, aucun droit de gestion, de suppression
   ni de téléchargement. Les invités d'un membre qui part restent dans la
-  famille ; le propriétaire les gère. Nom Jellyfin ASCII reconnaissable : « Lea - invite de
+  famille ; le propriétaire les gère. Le propriétaire — lui seul — peut lui
+  donner « peut demander des films » (`FamilyGuestRights.requestTitles`,
+  coupé par défaut, `setGuestRights`) : voir « La délégation aux
+  extensions ». Nom Jellyfin ASCII reconnaissable : « Lea - invite de
   Damien » (`guestAccountName`). Il n'apparaît dans AUCUNE liste — seulement
   dans les sessions en cours, étiqueté `familyGuestOf` (« Invité · famille de X »).
   Le supprimer supprime son compte Jellyfin (sa lecture est perdue).
@@ -91,6 +94,10 @@ par le serveur (PIN compris), la TV ne lit rien.
   réponse perdue ne coûte pas un rejumelage. Le premier usage du nouveau
   jeton l'efface.
 - Rejouer l'échange avec le jeton de jumelage le rend tel quel.
+- L'échange relit la ligne du jumelage et se rejoue sur un conflit d'écriture
+  (`services/dbRetry.ts`) : juste après un jumelage, le serveur y écrit de
+  lui-même le jeton Jellyfin de la TV, et MariaDB 11 refuserait sinon la
+  transaction (1020) — vu sur un vrai Jellyfin 12.1.
 - Un serveur ramené à une version d'avant la Famille ne connaît plus ce jeton :
   la TV doit être rejumelée.
 
@@ -204,7 +211,8 @@ porteur (il n'en a qu'une). D'où les réponses :
 - tout autre compte → 404 `family.not_found` : la cible n'est pas dans SA
   famille ;
 - une invitation dont on n'est ni l'émetteur ni le destinataire → 404, la même
-  réponse qu'une invitation qui n'existe pas (rien ne confirme son existence).
+  réponse qu'une invitation qui n'existe pas (rien ne confirme son existence) ;
+  un membre de SA famille qui l'annulerait → 403 `family.not_owner`.
 
 Les limites (6 profils, 3 invités, une famille par compte) tiennent sous des
 gestes CONCURRENTS : chaque geste qui change la composition d'une famille s'y
@@ -227,11 +235,37 @@ compte (suppression, mot de passe, comptes externes), ni push, ni
 téléchargements, ni Famille personnelle, ni administration. Sans quoi un
 membre retiré garderait un accès par une TV jumelée depuis son profil. Un
 INVITÉ, en plus : ni Watch Together (REST et socket), ni tickets, ni liens de
-partage, ni extensions — Vigie compris ; un MEMBRE garde Vigie, ses demandes
+partage — et aucune extension, sauf si le propriétaire lui a donné « peut
+demander » : alors les routes d'extension le voient comme le propriétaire (voir
+ci-dessous) ; un MEMBRE garde ses extensions sous SON identité, ses demandes
 sont les siennes. Une seule liste de préfixes refusés
 (`services/family/profileSessionLimits.ts`), appliquée par `requireAuth` et
 `requireAdmin` — donc aussi aux routes des extensions : 403
 `family.personal_session_required` ou `family.guest_account`.
+
+### La délégation aux extensions (« peut demander »)
+
+Décision de Damien (v2) : un invité à qui le propriétaire a donné « peut
+demander des films » voit les extensions (Vigie…) et ses demandes partent AU
+NOM DU PROPRIÉTAIRE. C'est un mécanisme GÉNÉRIQUE du cœur, sans rien de propre
+à une extension (`services/family/familyDelegation.ts`, appliqué par
+`requireAuth` via `profileSessionLimits.ts`) :
+
+- **où** : les routes d'extension, et elles seules — `/api/plugins/…` (le cœur :
+  `/active`, `/:id/bundle` ; chaque extension : `/api/plugins/<id>/…`).
+  Partout ailleurs, l'invité reste lui-même, avec son périmètre : ni Watch
+  Together, ni tickets, ni partage, ni rien d'autre ;
+- **ce que reçoit l'extension** dans `request.user` : `{ userId, username }`
+  du PROPRIÉTAIRE de la famille, `isAdmin: false` quoi qu'il arrive (un
+  propriétaire administrateur ne prête jamais ce titre : une route
+  `requireAdmin` d'extension lui répond 403), `session: "tvProfile"`, et
+  `delegatedBy: { userId, username }` — l'invité, pour qui veut le dire. Le
+  jeton présenté reste celui de la session de l'invité ;
+- **sans le droit** : 403 `family.guest_account` sur toute route d'extension,
+  que les clients traitent comme « aucune extension » ;
+- **retrait** : le droit se lit en base à CHAQUE requête — retiré, il coupe à
+  l'appel suivant ; la session de l'invité l'apprend aussi par
+  `family:update`.
 
 ### Le proxy : un appareil n'écrit que ses données
 
@@ -362,6 +396,7 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 | Cloche, push, socket | `familyNotify.ts` |
 | Familles et profils en base (`familyOf` : la famille d'un compte et son rôle), refus 403 / 404 | `familyStore.ts` |
 | Coupure des sessions de profil (avant la réponse) | `familySessions.ts` |
+| Délégation « agit pour » d'un invité autorisé (routes d'extension) | `familyDelegation.ts` |
 | Comptes Jellyfin des invités | `guestAccounts.ts` |
 | Invitations ; réponses et expiration | `familyInvitations.ts`, `familyInvitationAnswers.ts` |
 | Invités et PIN ; membres, dissolution, compte disparu | `familyGuests.ts`, `familyMembers.ts` |
@@ -410,7 +445,8 @@ une invitation n'y paraît que par le début de son identifiant.
   TV, PIN et gestion, invitations, révocations, périmètre et listes, balayage ;
   v2 : `familyOneFamily` (une famille par compte, courses comprises ; invités
   des membres et leur politique), `familySharedTv` (TV de membre, coupures,
-  gestion d'un membre), `familyMemberRights`.
+  gestion d'un membre), `familyMemberRights`, `familyGuestDelegation` (le
+  droit « peut demander » et sa délégation, nulle part ailleurs).
 - Proxy : `apps/backend/test/jellyfinProxyDeviceWrites.test.ts` (vrai serveur
   amont).
 - Un VRAI Jellyfin jetable (10.11 et 12.1) : `test/jellyfin-compat/suites/
@@ -421,7 +457,9 @@ une invitation n'y paraît que par le début de son identifiant.
 
 ## Compatibilité
 
-- Capacité : `/api/config` › `features.family` (`{ v, enabled, guests }`).
+- Capacité : `/api/config` › `features.family` (`{ v, enabled, guests,
+  guestRequests }` — `v: 2` depuis la Famille partagée ; `guestRequests` : le
+  droit « peut demander » existe).
   Absente : serveur d'avant — les clients ne montrent rien de la Famille ; pas
   de minServer imposé.
 - Une TV d'avant les profils garde son jumelage ; les clients publiés ne

@@ -486,7 +486,10 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
   passe par `withoutFamilyGuests` (`familyGuestMarkers.ts`), la seule source.
 - **Une session de profil regarde, elle n'administre rien** (ni push, ni
   téléchargements, ni jumelage, ni compte) ; un invité n'a en plus ni Watch
-  Together, ni tickets, ni partage, ni extensions : une seule liste de
+  Together, ni tickets, ni partage, ni extensions — sauf « peut demander »,
+  que le propriétaire seul lui donne : sur les routes d'extension, et là
+  seulement, il agit alors pour le propriétaire, jamais admin
+  (`familyDelegation.ts`) : une seule liste de
   préfixes, `profileSessionLimits.ts`, appliquée par `requireAuth`.
 - **Proxy : un jeton d'appareil n'écrit que SES données** (le proxy lui prête
   la clé admin) : `jellyfinProxy/deviceWrites.ts`, relevé de ce que les TV
