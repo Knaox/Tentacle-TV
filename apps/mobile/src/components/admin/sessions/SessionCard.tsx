@@ -11,6 +11,7 @@ import {
 } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { ActionPill } from "./ActionPill";
+import { FamilyGuestTag } from "./FamilyGuestTag";
 import { AppLabel } from "./AppLabel";
 import { CommandStatus } from "./CommandStatus";
 import { PlaybackDetails } from "./PlaybackDetails";
@@ -88,6 +89,7 @@ export const SessionCard = memo(function SessionCard({ session, now, clockOffset
               </View>
             )}
           </View>
+          <FamilyGuestTag owner={session.familyGuestOf} />
           <AppLabel session={session} style={st.app} />
         </View>
       </View>

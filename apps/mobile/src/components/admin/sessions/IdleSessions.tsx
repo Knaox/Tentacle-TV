@@ -6,6 +6,7 @@ import type { TFunction } from "i18next";
 import { buttonStatus, type AdminSessionDto, type Feedback } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { ActionPill } from "./ActionPill";
+import { FamilyGuestTag } from "./FamilyGuestTag";
 import { AppLabel } from "./AppLabel";
 import { UserAvatar } from "./UserAvatar";
 
@@ -41,6 +42,7 @@ export const IdleSessions = memo(function IdleSessions({ sessions, now, feedback
               <Text style={st.name} numberOfLines={1}>{session.userName}</Text>
               {session.viaTentacle && <Feather name="radio" size={12} color={theme.colors.brand.light} accessibilityLabel={t("viaTentacle")} />}
             </View>
+            <FamilyGuestTag owner={session.familyGuestOf} />
             <AppLabel session={session} style={st.app} />
             {/* Sa propre ligne : au bout de l'appareil, elle était la première tronquée. */}
             <Text style={st.active} numberOfLines={1}>
