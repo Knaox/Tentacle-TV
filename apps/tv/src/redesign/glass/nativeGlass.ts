@@ -1,4 +1,5 @@
 import { Platform, UIManager, requireNativeComponent, type HostComponent, type ViewProps } from "react-native";
+import { RENDER } from "../render/renderProfile";
 import type { GlassTone } from "./GlassSurface";
 
 /**
@@ -8,7 +9,8 @@ import type { GlassTone } from "./GlassSurface";
  *
  * Présent quand trois conditions tiennent : l'app tourne sur Apple TV, son
  * binaire embarque la vue (un binaire plus ancien ne l'a pas), et le système
- * sait rendre le verre (constante `supported` : tvOS 26 et plus). Sinon —
+ * sait rendre le verre (constante `supported` : tvOS 26 et plus) ; le profil
+ * de rendu le permet (`RENDER.nativeGlass`). Sinon —
  * Android TV, tvOS 17 et 18 — `NativeGlassView` vaut `null` et `GlassSurface`
  * garde sa simulation. Lu une fois, au chargement : rien de tout cela ne
  * change pendant que l'app tourne.
@@ -22,7 +24,7 @@ export interface NativeGlassProps extends ViewProps {
 const VIEW_NAME = "TentacleGlassView";
 
 function detectNativeGlass(): boolean {
-  if (Platform.OS !== "ios" || !Platform.isTV) return false;
+  if (!RENDER.nativeGlass || Platform.OS !== "ios" || !Platform.isTV) return false;
   const config = UIManager.getViewManagerConfig(VIEW_NAME) as { Constants?: { supported?: unknown } } | null | undefined;
   return config?.Constants?.supported === true;
 }

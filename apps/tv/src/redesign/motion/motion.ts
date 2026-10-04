@@ -1,20 +1,19 @@
-import { Platform } from "react-native";
 import { Easing, withSpring, withTiming, type AnimationCallback } from "react-native-reanimated";
 import { TV_MOTION, type TvSpring } from "@tentacle-tv/theme";
+import { RENDER } from "../render/renderProfile";
 
 /**
- * Le mouvement de la refonte — Apple TV SEULEMENT, joué sur le fil
- * d'interface : un préréglage dit comment une valeur va de 0 à 1 (ce qui
- * arrive) et revient (ce qui s'en va), avec les jetons de `TV_MOTION`.
+ * Le mouvement de la refonte, joué sur le fil d'interface : un préréglage dit
+ * comment une valeur va de 0 à 1 (ce qui arrive) et revient (ce qui s'en va),
+ * avec les jetons de `TV_MOTION` — les mêmes sur Apple TV et Android TV.
  *
- * L'aiguillage vit ICI, une fois : hors Apple TV (Android TV, qui ne monte pas
- * encore ces vues), chaque préréglage devient instantané — aucune animation
- * de la refonte n'y part. Réduire les animations (réglage d'accessibilité) fait
- * de même.
+ * L'aiguillage vit dans le profil de rendu (`RENDER.motion`) : un profil sans
+ * mouvement rend chaque préréglage instantané. Réduire les animations (réglage
+ * d'accessibilité) fait de même.
  */
 
-/** Apple TV : le seul appareil qui reçoit le mouvement de la refonte. */
-export const MOTION_ENABLED: boolean = Platform.OS === "ios" && Platform.isTV;
+/** Vrai quand le profil de rendu de l'appareil joue le mouvement. */
+export const MOTION_ENABLED: boolean = RENDER.motion;
 
 const bezier = ([x1, y1, x2, y2]: readonly [number, number, number, number]) => Easing.bezier(x1, y1, x2, y2);
 

@@ -18,7 +18,8 @@
     "./playback": "./src/playback/index.ts",
     "./titles": "./src/titles/index.ts",
     "./cards": "./src/cards/index.ts",
-    "./panels": "./src/panels/index.ts"
+    "./panels": "./src/panels/index.ts",
+    "./render": "./src/render/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

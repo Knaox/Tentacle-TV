@@ -54,7 +54,7 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `focus/FocusTarget` | Le seul Pressable : `focusKey`, `onPress`, `onLongPress`, `onFocusChange`, enfant `(focused) => …` |
 | `focus/FocusGroup` | Un groupe nommé (`focusKey`) : une View tant que l'intégration ne lui donne pas de conteneur (`focusBinding`) |
 | `focus/useFocusProgress` | 0 → 1 au focus (Reanimated), pour les styles animés — le mouvement du focus par défaut, un préréglage ou une durée sinon |
-| `motion/motion` | `MOTION_ENABLED` (Apple TV), `EASE`, `motionTo(cible, préréglage)` : `focus`, `recede`, `reveal`, `veil`, `panel`, `unfold`, `press`, `ambient`, `hero`, `page`, `settle`, `imageIn`, `chrome` |
+| `motion/motion` | `MOTION_ENABLED` (profil de rendu, `render/renderProfile`), `EASE`, `motionTo(cible, préréglage)` : `focus`, `recede`, `reveal`, `veil`, `panel`, `unfold`, `press`, `ambient`, `hero`, `page`, `settle`, `imageIn`, `chrome` |
 | `motion/useMotion` | `useMotion(on, préréglage)` : 0 → 1 lancé dans la tâche du rendu ; `usePresence(shown, préréglage)` : monté le temps de sa sortie |
 | `motion/useCrossfade` | Fondu enchaîné sur deux calques (`dissolve` : images opaques ; `blend` : lumières), les changements en rafale regroupés |
 | `motion/useSwap` | L'échange d'un contenu unique (sortie, changement invisible, entrée) : le texte du héros |

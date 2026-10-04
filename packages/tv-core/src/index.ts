@@ -20,3 +20,4 @@ export * from "./playback";
 export * from "./titles";
 export * from "./cards";
 export * from "./panels";
+export * from "./render";

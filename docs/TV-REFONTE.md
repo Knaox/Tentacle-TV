@@ -703,12 +703,14 @@ La vue reste dans `redesign/nav/`, la règle de colonne dans
   ouvert, avec et sans l'élément des demandes (un gabarit du banc) :
   `bench:ui planche rail/ --focus --lang=fr,en`.
 
-## Le mouvement (Apple TV)
+## Le mouvement (Apple TV, puis Android TV)
 
 Branche `refonte/tv-animations`. Les transitions et animations de la
-refonte sont pour Apple TV SEULEMENT : `MOTION_ENABLED`
-(`redesign/motion/motion.ts`) ; ailleurs, et avec « Réduire les
-animations », tout se pose aussitôt à son état final. Tout tourne sur le
+refonte se jouent là où le profil de rendu le dit : `MOTION_ENABLED`
+(`redesign/motion/motion.ts`) lit `RENDER.motion`
+(`redesign/render/renderProfile.ts`, tables dans tv-core `render/`) — Apple
+TV et Android TV ; avec « Réduire les animations », tout se pose aussitôt à
+son état final. Tout tourne sur le
 fil d'interface (worklets Reanimated) : aucun aller-retour JS pendant une
 animation, aucune animation de mise en page.
 

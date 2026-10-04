@@ -520,7 +520,6 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | `lib/platformLabel.ts` | 8 | Platform.OS | HORS | libellé « Apple TV » / « Android TV » |
 | `redesign/cards/nativeDesaturate.ts` | 1, 17, 18, 21 | `requireNativeComponent`, `UIManager`, `Platform.OS`/`isTV` | HORS | vue native de RENDU (gris GPU d'un titre absent) ; ni focus ni télécommande |
 | `redesign/glass/nativeGlass.ts` | 1, 25, 26, 35 | requireNativeComponent, UIManager, Platform | HORS | le verre natif (rendu) |
-| `redesign/motion/motion.ts` | 17 | Platform.OS/isTV | HORS | le mouvement n'est joué que sur Apple TV (rendu) |
 | `redesign/motion/Reveal.tsx` | 32 | setTimeout | HORS | apparition différée (rendu) |
 | `redesign/motion/useRowRecede.ts` | 31, 54 | setTimeout | HORS | recul des voisines au focus (rendu) |
 | `redesign/motion/useStagedMount.ts` | 27, 30, 31 | requestAnimationFrame, setTimeout | HORS | montage étagé (rendu) |
