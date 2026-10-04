@@ -420,6 +420,25 @@ model ProfilePinAttempt {
 /// quand leur jumelage n'est plus — journal qui survit au plantage. `reason` :
 /// `minting` (frappe en cours : soldée si la ligne du jumelage le porte) ou
 /// `revoked` (jumelage supprimé : `DELETE /Devices` jusqu'à confirmation).
+/// Les comptes Jellyfin d'INVITÉS à supprimer (Famille) — un journal DURABLE,
+/// comme `paired_device_cleanups` : inscrit dans la transaction qui retire
+/// l'invité, soldé quand Jellyfin confirme (ou que le compte n'existe plus),
+/// rejoué après chaque échec, au démarrage et à chaque balayage.
+model GuestAccountCleanup {
+  id             String   @id @default(cuid())
+  jellyfinUserId String   @unique @db.VarChar(255)
+  /// Le nom du compte invité, pour le journal ; null s'il n'est pas connu.
+  jellyfinName   String?  @db.VarChar(255)
+  reason         String   @db.VarChar(20)
+  attempts       Int      @default(0)
+  lastError      String?  @db.VarChar(255)
+  nextAttemptAt  DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@index([nextAttemptAt])
+  @@map("guest_account_cleanups")
+}
+
 model PairedDeviceCleanup {
   id                    String    @id @default(cuid())
   jellyfinDeviceId      String    @unique @db.VarChar(255)

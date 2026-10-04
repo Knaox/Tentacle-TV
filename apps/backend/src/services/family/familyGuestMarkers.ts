@@ -8,7 +8,10 @@ import { getPrisma, hasPrisma } from "../db";
  * son propriétaire.
  *
  * La base fait foi (`family_members.kind = guest`), gardée 30 secondes ;
- * `forgetFamilyGuests` après toute création ou suppression d'invité. Base
+ * `forgetFamilyGuests` après toute création ou suppression d'invité. Un
+ * compte au journal des suppressions (`guest_account_cleanups` : en
+ * création, ou supprimé mais pas encore chez Jellyfin) reste un invité, sans
+ * propriétaire, jusqu'à ce qu'il disparaisse. Base
  * muette et aucune réponse connue : on lève — une liste qui ne peut pas
  * écarter les invités ne se rend pas. Sans base du tout (serveur en
  * installation), il n'existe aucune famille, donc aucun invité.
@@ -33,7 +36,10 @@ async function load(): Promise<Map<string, string>> {
       })
     : [];
   const ownerOf = new Map(families.map((family) => [family.id, family.ownerName]));
-  return new Map(guests.map((guest) => [fold(guest.userId), ownerOf.get(guest.familyId) ?? ""]));
+  const owners = new Map(guests.map((guest) => [fold(guest.userId), ownerOf.get(guest.familyId) ?? ""]));
+  const leaving = await prisma.guestAccountCleanup.findMany({ select: { jellyfinUserId: true } });
+  for (const entry of leaving) if (!owners.has(fold(entry.jellyfinUserId))) owners.set(fold(entry.jellyfinUserId), "");
+  return owners;
 }
 
 /** Invité → nom de son propriétaire (identifiants pliés : sans tirets, minuscules). */

@@ -664,6 +664,22 @@ CREATE TABLE IF NOT EXISTS `profile_pin_attempts` (
   PRIMARY KEY (`userId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Les comptes Jellyfin d'invités à supprimer : un journal DURABLE (comme
+-- `paired_device_cleanups`), rejoué jusqu'à ce que Jellyfin confirme.
+CREATE TABLE IF NOT EXISTS `guest_account_cleanups` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `jellyfinName` varchar(255) NULL,
+  `reason` varchar(20) NOT NULL,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `lastError` varchar(255) NULL,
+  `nextAttemptAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `guest_account_cleanups_jellyfinUserId_key` (`jellyfinUserId`),
+  KEY `guest_account_cleanups_nextAttemptAt_idx` (`nextAttemptAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Les sessions de profil des TV : six colonnes et deux index sur `paired_devices`.
 SET @pd_family_cols := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'paired_devices' AND COLUMN_NAME = 'parentId');

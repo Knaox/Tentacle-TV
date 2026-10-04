@@ -6,9 +6,12 @@ import { forgetFamilyAccount } from "./familyMembers";
 import { endProfileEverywhere, endSessions } from "./familySessions";
 import { fold } from "./familyStore";
 import { tvEntries } from "./familyTv";
+import { sweepGuestAccounts } from "./guestAccountCleanup";
 
 /**
  * Le balayage de la Famille, toutes les dix minutes et au démarrage :
+ * - les comptes d'invités au journal des suppressions partent de Jellyfin
+ *   (`guestAccountCleanup.ts`) — en premier : rien plus loin ne les retarde ;
  * - les invitations échues sortent de la cloche ;
  * - un compte disparu de Jellyfin (supprimé depuis son tableau de bord, sans
  *   passer par Tentacle) emporte sa famille ou son adhésion, comme une
@@ -83,6 +86,7 @@ async function endStaleProfileSessions(): Promise<void> {
 
 export async function sweepFamily(now: number = Date.now()): Promise<void> {
   if (!hasPrisma()) return;
+  await sweepGuestAccounts(now).catch((error) => console.log(`[family] journal des comptes invités : ${(error as Error)?.message ?? error}`));
   try {
     const expired = await expireDueInvitations(now);
     if (expired > 0) console.log(`[family] ${expired} invitation(s) échue(s)`);

@@ -26,6 +26,8 @@ export interface FakeJellyfinUsers extends FakeJellyfin {
   personalTokens: Map<string, string>;
   /** `POST /Users/New` refusé (panne simulée). */
   refuseCreation: boolean;
+  /** `DELETE /Users/{id}` refusé (panne simulée) : le compte reste. */
+  refuseDeletion: boolean;
 }
 
 export function defaultPolicy(over: Record<string, unknown> = {}): Record<string, unknown> {
@@ -48,7 +50,7 @@ export function defaultPolicy(over: Record<string, unknown> = {}): Record<string
 }
 
 export function createFakeJellyfinUsers(): FakeJellyfinUsers {
-  return { ...createFakeJellyfin(), users: new Map(), personalTokens: new Map(), refuseCreation: false };
+  return { ...createFakeJellyfin(), users: new Map(), personalTokens: new Map(), refuseCreation: false, refuseDeletion: false };
 }
 
 /** Ajoute un compte ; rend le jeton de sa session personnelle. */
@@ -108,6 +110,7 @@ export function fakeJellyfinUsersFetch(jf: FakeJellyfinUsers) {
       return new Response(null, { status: 204 });
     }
     if (method === "DELETE" && !match[2]) {
+      if (jf.refuseDeletion) return new Response("", { status: 500 });
       jf.users.delete(user.Id);
       for (const [deviceId, device] of jf.devices) if (device.userId === user.Id) jf.devices.delete(deviceId);
       return new Response(null, { status: 204 });

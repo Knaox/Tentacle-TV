@@ -12,7 +12,8 @@ import { withFamilyLock } from "./familyLock";
 import { familyUpdate, notifyFamily } from "./familyNotify";
 import { writePin } from "./familyPins";
 import { endProfileEverywhere } from "./familySessions";
-import { createGuestAccount, deleteGuestAccount } from "./guestAccounts";
+import { abandonGuestAccount, cleanupGuestAccount, retireGuestRow, settleCreatedGuest } from "./guestAccountCleanup";
+import { createGuestAccount } from "./guestAccounts";
 import {
   ensureOwnedFamily,
   familyCounts,
@@ -35,7 +36,7 @@ import {
  * la famille PARTAGÉE — avec la politique Jellyfin de son CRÉATEUR. Le
  * propriétaire gère tous les invités ; un membre, ceux qu'il a créés
  * (`canManageGuest`). Supprimer un invité coupe ses sessions de TV puis
- * supprime son compte.
+ * supprime son compte — par le journal durable (`guestAccountCleanup.ts`).
  */
 
 const DAY_MS = 24 * 3_600_000;
@@ -113,10 +114,13 @@ export async function createGuest(actor: Actor, body: { name: unknown; color: Fa
       console.log(`[family] Invité créé (compte Jellyfin « ${account.jellyfinName} »)`);
       return { row: created, founded: existing === null };
     } catch (error) {
-      await deleteGuestAccount(account.userId).catch(() => undefined);
+      await abandonGuestAccount(account.userId, account.jellyfinName);
       throw error;
     }
   });
+  // La ligne porte le compte. Si ce solde échoue, le balayage le fera : un
+  // invité vivant n'est jamais supprimé.
+  await settleCreatedGuest(row.userId).catch(() => undefined);
   forgetFamilyGuests();
   if (founded) await closeIncomingInvitations(actor.userId, now);
   await notifyFamily(row.familyId);
@@ -154,21 +158,21 @@ export async function setGuestRights(owner: Actor, guestUserId: string, patch: S
   return { requestTitles: updated.canRequestTitles === true };
 }
 
-/** Sessions coupées sur toutes les TV, puis compte Jellyfin supprimé (sa lecture est perdue). */
+/** Sessions coupées sur toutes les TV ; l'invité quitte la base et son compte
+ *  entre au journal des suppressions, ensemble ; puis le compte part de
+ *  Jellyfin — aussitôt, et jusqu'à confirmation sinon : un Jellyfin muet
+ *  n'arrête plus le geste. Sa lecture est perdue. */
 export async function deleteGuest(actor: Actor, guestUserId: string): Promise<{ deleted: true }> {
   const { family } = await manageableGuest(actor, guestUserId);
-  await withFamilyLock(family.ownerUserId, async () => {
+  const userId = await withFamilyLock(family.ownerUserId, async () => {
     const { row } = await manageableGuest(actor, guestUserId);
     await endProfileEverywhere(row.userId, "guest_deleted");
-    await deleteGuestAccount(row.userId);
-    const prisma = getPrisma();
-    await prisma.familyMember.deleteMany({ where: { id: row.id } });
-    await prisma.profilePin.deleteMany({ where: { userId: row.userId } });
-    await prisma.profilePinAttempt.deleteMany({ where: { userId: row.userId } });
+    await retireGuestRow(row, "guest_deleted");
     console.log(`[family] Invité supprimé (compte Jellyfin « ${row.jellyfinName ?? "?"} »)`);
+    return row.userId;
   });
-  forgetFamilyGuests();
   await notifyFamily(family.id);
+  await cleanupGuestAccount(userId).catch(() => false);
   return { deleted: true };
 }
 

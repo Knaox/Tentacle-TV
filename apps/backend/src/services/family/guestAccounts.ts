@@ -3,6 +3,7 @@ import { jellyfinAdminFetch, type JellyfinResult } from "../jellyfinAdminFetch";
 import { invalidateJellyfinUsers } from "../watchTogether/usersCache";
 import { guestAccountName } from "../../family/familyRules";
 import { FamilyFailure } from "./familyErrors";
+import { abandonGuestAccount, noteGuestAccount } from "./guestAccountCleanup";
 
 /**
  * Le compte Jellyfin d'un invité (docs/FAMILLE.md, SEC-F-29/31), par la clé
@@ -22,6 +23,10 @@ import { FamilyFailure } from "./familyErrors";
  *
  * `POST /Users/{id}/Policy` REMPLACE toute la politique : on part de celle
  * que Jellyfin vient de donner à l'invité, on n'y change que nos champs.
+ *
+ * Un compte d'invité ne se supprime QUE par le journal durable
+ * (`guestAccountCleanup.ts`) : jamais un « au mieux » qu'un Jellyfin muet
+ * laisserait derrière lui.
  */
 
 /** Ce que l'invité reçoit de son créateur : l'accès aux bibliothèques et les restrictions. */
@@ -114,16 +119,12 @@ async function scramblePassword(userId: string): Promise<void> {
   if (!legacy.ok) throw unavailable("mot de passe de l'invité", legacy);
 }
 
-export async function deleteGuestAccount(userId: string): Promise<void> {
-  const result = await jellyfinAdminFetch(`/Users/${encodeURIComponent(userId)}`, { method: "DELETE", expectEmpty: true });
-  invalidateJellyfinUsers();
-  if (result.ok || (!result.ok && result.status === 404)) return;
-  throw unavailable("suppression de l'invité", result);
-}
-
 /**
- * Crée le compte d'un invité. Tout échec APRÈS la création supprime le
- * compte : jamais un invité à moitié fait (sans mot de passe, ou visible).
+ * Crée le compte d'un invité. Dès que Jellyfin l'a créé, le compte entre au
+ * journal (`creating`) : un plantage ne laisse pas d'orphelin. Tout échec
+ * APRÈS la création supprime le compte, durablement : jamais un invité à
+ * moitié fait (sans mot de passe, ou visible). L'appelant solde l'entrée
+ * quand la ligne de l'invité existe (`settleCreatedGuest`).
  */
 export async function createGuestAccount(input: {
   guestName: string;
@@ -145,6 +146,7 @@ export async function createGuestAccount(input: {
   if (!created?.Id) throw new FamilyFailure("family.jellyfin_refused", "Aucun nom de compte libre pour l'invité");
   const userId = created.Id;
   try {
+    await noteGuestAccount(userId, jellyfinName, "creating");
     await scramblePassword(userId);
     await writePolicy(userId, guestPolicy(created.Policy ?? (await fetchUser(userId)).Policy ?? {}, creatorPolicy));
     const check = (await fetchUser(userId)).Policy ?? {};
@@ -152,7 +154,7 @@ export async function createGuestAccount(input: {
       throw new FamilyFailure("family.jellyfin_refused", "Politique de l'invité non retenue par Jellyfin");
     }
   } catch (error) {
-    await deleteGuestAccount(userId).catch(() => undefined);
+    await abandonGuestAccount(userId, jellyfinName);
     throw error;
   }
   invalidateJellyfinUsers();

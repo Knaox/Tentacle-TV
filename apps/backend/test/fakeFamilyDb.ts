@@ -31,6 +31,10 @@ const SPECS: Record<string, ModelSpec> = {
     unique: [["jellyfinDeviceId"]],
     defaults: () => ({ id: id("cl"), attempts: 0, nextAttemptAt: now(), createdAt: now() }),
   },
+  guestAccountCleanup: {
+    unique: [["jellyfinUserId"]],
+    defaults: () => ({ id: id("gc"), jellyfinName: null, attempts: 0, lastError: null, nextAttemptAt: now(), createdAt: now() }),
+  },
   family: { unique: [["ownerUserId"]], defaults: () => ({ id: id("fam"), ownerColor: null, createdAt: now(), updatedAt: now() }) },
   familyMember: {
     // v2 : une famille par compte — l'unicité de `userId` est celle de la base.

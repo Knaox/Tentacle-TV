@@ -56,7 +56,8 @@ montrent.
   coupé par défaut, `setGuestRights`) : voir « L'invité et les extensions ». Nom Jellyfin ASCII reconnaissable : « Lea - invite de
   Damien » (`guestAccountName`). Il n'apparaît dans AUCUNE liste — seulement
   dans les sessions en cours, étiqueté `familyGuestOf` (« Invité · famille de X »).
-  Le supprimer supprime son compte Jellyfin (sa lecture est perdue).
+  Le supprimer supprime son compte Jellyfin (sa lecture est perdue) — pour
+  de bon : voir « Un invité supprimé l'est vraiment ».
   Déjumeler une TV ne supprime JAMAIS un invité.
 - **Limites** : 6 profils par famille, propriétaire et invitations en attente
   compris, dont 3 invités au plus, tous créateurs confondus.
@@ -410,6 +411,7 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 | Coupure des sessions de profil (avant la réponse) | `familySessions.ts` |
 | Un invité autorisé et les extensions (à son nom) | `familyGuestExtensions.ts` |
 | Comptes Jellyfin des invités | `guestAccounts.ts` |
+| Journal durable des comptes d'invités à supprimer | `guestAccountCleanup.ts` |
 | Invitations ; réponses et expiration | `familyInvitations.ts`, `familyInvitationAnswers.ts` |
 | Invités et PIN ; membres, dissolution, compte disparu | `familyGuests.ts`, `familyMembers.ts` |
 | Vue d'ensemble, candidats | `familyOverview.ts`, `familyCandidates.ts` |
@@ -418,12 +420,41 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 | Périmètre des sessions de profil | `profileSessionLimits.ts` |
 | Balayage (10 min) | `familySweep.ts` |
 
-Le balayage (toutes les dix minutes et au démarrage) : les invitations échues
+Le balayage (toutes les dix minutes et au démarrage) : les comptes d'invités
+au journal des suppressions partent de Jellyfin ; les invitations échues
 sortent de la cloche ; un compte disparu de Jellyfin (supprimé depuis son
 tableau de bord) emporte sa famille ou son adhésion ; un compte DÉSACTIVÉ perd
 ses sessions de profil ; une session de profil qu'aucune TV ne devrait plus
 montrer est coupée (`family_changed`) et son « Rester » oublié. Jellyfin muet :
 rien n'est conclu.
+
+### Un invité supprimé l'est vraiment
+
+Un compte d'invité ne se supprime QUE par un journal durable,
+`guest_account_cleanups` (comme `paired_device_cleanups` pour les appareils) :
+
+- suppression d'un invité, dissolution (geste du propriétaire, ou compte du
+  propriétaire disparu) : l'invité quitte la base et son compte entre au
+  journal dans la MÊME transaction. Le geste aboutit toujours — Jellyfin
+  injoignable ou qui refuse ne l'arrête plus — ; le compte part aussitôt, et
+  jusqu'à confirmation sinon ;
+- création : le compte entre au journal dès que Jellyfin en rend
+  l'identifiant (`creating`), et en sort quand la ligne de l'invité existe.
+  Une création qui échoue (`abandoned`) ou qu'un plantage interrompt ne laisse
+  aucun compte — jamais balayée avant cinq minutes : une création en cours
+  n'est pas morte ;
+- nouvel essai à 1 min, 5 min, 15 min, 1 h, puis toutes les 6 h, au
+  démarrage et à chaque balayage ; journal `[family] Compte invité « … »` ;
+- jamais une personne de la Famille (propriétaire, membre, invité vivant),
+  jamais un administrateur : l'entrée est soldée, le compte reste. Un compte
+  inconnu de Jellyfin compte pour supprimé ;
+- tant qu'il existe, le compte reste un invité pour toutes les listes.
+
+Le départ ou le retrait d'un membre ne supprime aucun compte : ses invités
+restent dans la famille. Ce que le journal ne couvre pas, faute d'identifiant
+à y écrire : la réponse perdue d'un `POST /Users/New` (Jellyfin au-delà de
+5 s), un plantage entre cette réponse et l'écriture du journal ; base muette
+à cet instant, le compte est supprimé sur-le-champ, sans rejeu.
 
 ### La migration v1 → v2 (`core-init.sql`)
 
@@ -459,7 +490,8 @@ une invitation n'y paraît que par le début de son identifiant.
   des membres et leur politique), `familySharedTv` (TV de membre, coupures,
   gestion d'un membre), `familyMemberRights`, `familyGuestRequests` (le
   droit « peut demander » : l'invité à son nom, sur les extensions seules),
-  `pluginRequests` (la capacité).
+  `pluginRequests` (la capacité), `familyGuestCleanup` (un invité supprimé
+  l'est vraiment : Jellyfin qui refuse ou se tait, plantage, création ratée).
 - Proxy : `apps/backend/test/jellyfinProxyDeviceWrites.test.ts` (vrai serveur
   amont).
 - Un VRAI Jellyfin jetable (10.11 et 12.1) : `test/jellyfin-compat/suites/

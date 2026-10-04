@@ -7,15 +7,17 @@ import type { Actor } from "./familyInvitations";
 import { withFamilyLock } from "./familyLock";
 import { clearInvitationBell, familyUpdate, notifyFamily, ringBell } from "./familyNotify";
 import { endForeignOnTvsOf, endMemberLink, endProfileEverywhere } from "./familySessions";
-import { deleteGuestAccount } from "./guestAccounts";
+import { cleanupGuestAccounts, retireGuestRow } from "./guestAccountCleanup";
 import { familyOf, familyProfiles, findFamily, findOwnedFamily, fold, ownerRefusal, personsOf, type FamilyRow } from "./familyStore";
 
 /**
  * Sortir de la Famille : un membre retiré par le propriétaire, un membre qui
  * part, une famille dissoute, un compte supprimé. Retirer un membre ne touche
- * JAMAIS son compte Jellyfin (SEC-F-10) ; dissoudre supprime les comptes des
- * invités, quel qu'en soit le créateur. Chaque sortie coupe d'abord les
- * sessions de profil concernées — v2 : sur les TV de TOUTE la famille.
+ * JAMAIS son compte Jellyfin (SEC-F-10), ni ceux des invités qu'il a créés —
+ * ils restent dans la famille ; dissoudre supprime les comptes des invités,
+ * quel qu'en soit le créateur, par le journal durable
+ * (`guestAccountCleanup.ts`). Chaque sortie coupe d'abord les sessions de
+ * profil concernées — v2 : sur les TV de TOUTE la famille.
  */
 
 /** La famille du porteur, s'il en est le propriétaire — sinon le bon refus. */
@@ -78,20 +80,25 @@ export async function setMemberRights(owner: Actor, memberUserId: string, patch:
   return { createGuests: updated.canCreateGuests === true };
 }
 
+interface Dissolved {
+  members: string[];
+  invitees: string[];
+  /** Les comptes des invités, au journal des suppressions. */
+  guests: string[];
+}
+
 /** Les TV de toute la famille ne gardent que leur propre compte, les invités
- *  sont supprimés de Jellyfin, les membres sortent, les invitations se closent.
- *  Un invité que Jellyfin refuse de supprimer arrête la dissolution : la
- *  famille reste, rien n'est à moitié fait, le geste se rejoue. */
-async function dissolve(family: FamilyRow, now: number): Promise<{ members: string[]; invitees: string[] }> {
+ *  quittent la base (leurs comptes au journal des suppressions), les membres
+ *  sortent, les invitations se closent. Jellyfin n'est pas attendu : un
+ *  compte qu'il ne supprime pas tout de suite le sera (`afterDissolve`). */
+async function dissolve(family: FamilyRow, now: number): Promise<Dissolved> {
   const prisma = getPrisma();
   const rows = await familyProfiles(family.id);
   await endForeignOnTvsOf(personsOf(family, rows), "dissolved");
-  for (const guest of rows.filter((row) => row.kind === "guest")) {
+  const guests = rows.filter((row) => row.kind === "guest");
+  for (const guest of guests) {
     await endProfileEverywhere(guest.userId, "dissolved");
-    await deleteGuestAccount(guest.userId);
-    await prisma.familyMember.deleteMany({ where: { id: guest.id } });
-    await prisma.profilePin.deleteMany({ where: { userId: guest.userId } });
-    await prisma.profilePinAttempt.deleteMany({ where: { userId: guest.userId } });
+    await retireGuestRow(guest, "dissolved");
   }
   forgetFamilyGuests();
   const members = rows.filter((row) => row.kind === "member").map((row) => row.userId);
@@ -103,19 +110,22 @@ async function dissolve(family: FamilyRow, now: number): Promise<{ members: stri
   });
   for (const invitation of pending) await clearInvitationBell(invitation.inviteeUserId, invitation.id);
   await prisma.family.deleteMany({ where: { id: family.id } });
-  return { members, invitees: pending.map((invitation) => invitation.inviteeUserId) };
+  return { members, invitees: pending.map((invitation) => invitation.inviteeUserId), guests: guests.map((guest) => guest.userId) };
 }
 
-async function announceDissolved(family: FamilyRow, result: { members: string[]; invitees: string[] }): Promise<void> {
+/** Hors du verrou : la cloche et les sockets préviennent, puis les comptes des
+ *  invités partent de Jellyfin — aussitôt, et jusqu'à confirmation sinon. */
+async function afterDissolve(family: FamilyRow, result: Dissolved): Promise<void> {
   for (const member of result.members) await ringBell(member, "family_dissolved", family.ownerName, family.id);
   familyUpdate([family.ownerUserId, ...result.members], "family");
   familyUpdate(result.invitees, "invitations");
+  await cleanupGuestAccounts(result.guests);
 }
 
 export async function dissolveFamily(owner: Actor, now: number): Promise<{ dissolved: true }> {
   const family = await ownedBy(owner, null);
   const result = await withFamilyLock(owner.userId, () => dissolve(family, now));
-  await announceDissolved(family, result);
+  await afterDissolve(family, result);
   console.log(`[family] Famille ${family.id} dissoute`);
   return { dissolved: true };
 }
@@ -132,7 +142,7 @@ export async function forgetFamilyAccount(userId: string, now: number): Promise<
   // Sans ligne, une famille possédée reste possible sur une base pas encore migrée.
   const family = row ? await findFamily(row.familyId) : await findOwnedFamily(userId);
   if ((row?.kind === "owner" || !row) && family) {
-    await announceDissolved(family, await withFamilyLock(family.ownerUserId, () => dissolve(family, now)));
+    await afterDissolve(family, await withFamilyLock(family.ownerUserId, () => dissolve(family, now)));
   } else if (row?.kind === "member" && family) {
     const persons = await detachMember(family, userId, "account_deleted");
     await ringBell(family.ownerUserId, "family_member_left", row.displayName, family.id);
