@@ -17,8 +17,8 @@ import { emitProxyEvents } from "./jellyfinProxy/events";
 import { carriesPlaybackUrl, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
 import { readsInFull, replyFromCache, sendBuffered } from "./jellyfinProxy/bufferedReply";
-import { isOutOfScope, userIdFromPath, userIdFromQuery } from "./jellyfinProxy/userScope";
 import { readIncomingAuth } from "./jellyfinProxy/incomingAuth";
+import { deviceRefusal } from "./jellyfinProxy/deviceGuard";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
 import { resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
@@ -70,24 +70,12 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
 
     nameDeviceFromHeader(incomingToken, incoming.identityHeader);
 
-    // Un appareil jumelé ne parle que pour SON compte.
-    //
-    // La clé admin est substituée en aval pour un JWT d'appareil : sans ce
-    // garde, changer l'identifiant dans l'URL donnait accès aux données d'un
-    // autre compte, avec les pleins pouvoirs derrière. La liste blanche
-    // autorise `Users/{id}/Items`, `/Views`, `/FavoriteItems/…`,
-    // `/PlayedItems/…` — donc la lecture ET la modification.
-    //
-    // Ce garde remplace celui qui ne couvrait que l'upload d'avatar : il porte
-    // sur TOUTES les méthodes et toutes les routes qui nomment un utilisateur.
-    // Un jeton Jellyfin natif n'est pas concerné (Jellyfin décide lui-même), ni
-    // un jeton d'usurpation, dont c'est justement la raison d'être.
-    if (device?.status === "paired" && (userIdFromPath(wildcardPath) !== null || userIdFromQuery(q) !== null)) {
-      if (isOutOfScope(wildcardPath, device.payload.userId, q)) {
-        request.log.warn(
-          { path: wildcardPath, method: request.method },
-          "acces refuse : appareil hors de son perimetre utilisateur",
-        );
+    // Un appareil ne parle que pour SON compte (cf. deviceGuard) : la clé
+    // admin lui est prêtée en aval.
+    if (device?.status === "paired") {
+      const refusal = deviceRefusal(wildcardPath, device.payload.userId, q);
+      if (refusal) {
+        request.log.warn({ path: wildcardPath, method: request.method }, refusal);
         return reply.status(403).send({ error: "Forbidden" });
       }
     }
