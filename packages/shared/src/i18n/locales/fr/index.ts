@@ -44,6 +44,7 @@ import notices from "./notices";
 import family from "./family";
 import familyWeb from "./familyWeb";
 import familyTv from "./familyTv";
+import familyMobile from "./familyMobile";
 
 export default {
   common, auth, setup, player, admin,
@@ -63,4 +64,5 @@ export default {
   family,
   familyWeb,
   familyTv,
+  familyMobile,
 };
