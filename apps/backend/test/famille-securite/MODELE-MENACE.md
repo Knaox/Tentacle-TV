@@ -475,26 +475,29 @@ minimal), SEC-F-21/29/31 (invité invisible des listes, mdp jeté, sans droit),
 SEC-F-25/26/27 (push/socket/journaux sans secret), SEC-F-28 (démo),
 SEC-F-32 (parité HTTP/HTTPS), SEC-F-34 (proxy à écriture bornée).
 
-### SEC-F-45 — Délégation « agit pour » (droit d'invité « peut demander »)
+### SEC-F-45 — Droit d'invité « peut demander » (extensions, À SON PROPRE NOM)
 
-Un invité à qui le propriétaire a donné `requestTitles` se présente aux routes
-d'EXTENSION (`/api/plugins/…`), et à elles SEULES, sous l'identité du
-propriétaire (`isAdmin` toujours faux, `session: "tvProfile"`, `delegatedBy` =
-l'invité ; le jeton présenté reste le sien). Exigences testables :
+Décision affinée (2026-10-04) : il n'y a PLUS de délégation d'identité. Un invité
+à qui le propriétaire a donné `requestTitles` atteint les routes d'EXTENSION
+(`/api/plugins/…`), et à elles seules, sous SON PROPRE compte (`request.user =
+{ userId: l'invité, username: le nom de son compte Jellyfin, isAdmin: false,
+session: "tvProfile" }`, aucun `delegatedBy`). Ses demandes sont les siennes.
+Exigences testables :
 
-- `actFor` (identité du propriétaire) n'arrive QUE sur `/api/plugins/…` ; partout
-  ailleurs l'invité reste lui-même (jamais l'identité du propriétaire hors des
-  extensions) ;
-- une route d'ADMIN d'extension (`requireAdmin`) → 403 pour un invité délégué
-  (jamais administrateur) ;
+- sur `/api/plugins/…`, un invité autorisé est LUI-MÊME — jamais l'identité du
+  propriétaire, jamais `delegatedBy`, jamais administrateur ;
+- une route d'ADMIN d'extension (`requireAdmin`) → 403 (jamais administrateur) ;
 - un invité SANS le droit → 403 `family.guest_account` sur les extensions ;
-- un invité délégué garde son périmètre : ni Watch Together, ni tickets, ni
-  partage, ni push/compte ;
+- l'invité garde son périmètre : ni Watch Together, ni tickets, ni partage, ni
+  push/compte ;
 - le droit se relit en base À CHAQUE requête : le retirer coupe à l'appel
   suivant, et la session reçoit `family:update` ;
 - régler le droit (`PUT /api/family/guests/:userId/rights {requestTitles}`) est
   réservé au PROPRIÉTAIRE ; un membre → `not_owner`, un invité → 403 ;
+- la capacité `features.family.guestRequests` n'est VRAIE qu'avec une extension
+  active ET configurée déclarant `titles.request` : sans elle, le droit n'est
+  pas proposé (capacité fausse) ;
 - un MEMBRE garde SON identité sur les extensions (ses demandes sont les siennes).
 
 Tests : `familleV2Delegation.attack.test.ts`. Tous les `SEC-F-xx` de la Famille
-(v1 + v2 + délégation) sont désormais des tests ACTIFS — plus aucun `todo`.
+(v1 + v2) sont désormais des tests ACTIFS — plus aucun `todo`.

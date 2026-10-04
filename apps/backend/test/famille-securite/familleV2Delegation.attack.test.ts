@@ -26,6 +26,8 @@ import { freshState } from "../familyMocks";
 import { fakeJellyfinUsersFetch } from "../fakeJellyfinUsers";
 import { IDS, bearer, buildFamilyApp, enroll, openProfile, pairTv, resetCaches, seedUsers } from "../familyHarness";
 import { requireAdmin } from "../../src/middleware/auth";
+import { familyCapability } from "../../src/services/family/familyConfig";
+import { forgetRequestExtension } from "../../src/services/pluginRequests";
 
 let app: FastifyInstance;
 let tokens: ReturnType<typeof seedUsers>;
@@ -61,31 +63,32 @@ async function guestSession(): Promise<{ zoe: string; session: string }> {
   return { zoe, session };
 }
 
-describe("délégation : un invité autorisé agit pour le propriétaire — sur les extensions SEULEMENT", () => {
-  it("sur /api/plugins : identité du propriétaire, jamais admin, delegatedBy = l'invité", async () => {
+describe("extensions : un invité autorisé agit à SON PROPRE NOM — sur /api/plugins seulement", () => {
+  it("sur /api/plugins : l'invité est LUI-MÊME (son compte Jellyfin), jamais admin, aucune délégation d'identité", async () => {
     const { zoe, session } = await guestSession();
     expect((await rights(zoe, { requestTitles: true })).json()).toEqual({ requestTitles: true });
     const seen = (await send("GET", EXTENSION, session)).json().user;
-    expect(seen.userId).toBe(IDS.damien); // agit POUR le propriétaire
+    expect(seen.userId).toBe(zoe); // à SON nom
+    expect(seen.userId).not.toBe(IDS.damien); // jamais celui du propriétaire
+    expect(seen.username).not.toBe("Damien"); // le nom de SON compte Jellyfin
     expect(seen.isAdmin).toBe(false); // jamais administrateur
     expect(seen.session).toBe("tvProfile");
-    expect(seen.delegatedBy).toEqual({ userId: zoe, username: "Zoé" });
+    expect(seen.delegatedBy).toBeUndefined(); // plus aucune délégation d'identité
   });
 
-  it("POINT DUR : hors /api/plugins, l'invité reste LUI-MÊME (jamais l'identité du propriétaire)", async () => {
+  it("l'invité reste LUI-MÊME partout, extensions comprises (jamais l'identité du propriétaire)", async () => {
     const { zoe, session } = await guestSession();
     await rights(zoe, { requestTitles: true });
-    // Une route quelconque sous session : c'est l'invité, pas le propriétaire.
     const me = (await send("GET", "/api/protected", session)).json().user;
     expect(me.userId).toBe(zoe);
     expect(me.userId).not.toBe(IDS.damien);
     expect(me.delegatedBy).toBeUndefined();
-    // L'overview de la Famille reste lu au nom de l'invité.
-    const ov = await send("GET", "/api/family", session);
-    expect(JSON.stringify(ov.json())).not.toContain('"delegatedBy"');
+    // Nulle part la réponse ne porte l'identité du propriétaire déguisée.
+    const ext = await send("GET", EXTENSION, session);
+    expect(ext.json().user.delegatedBy).toBeUndefined();
   });
 
-  it("POINT DUR : une route d'ADMIN d'extension refuse l'invité délégué (403, car jamais admin)", async () => {
+  it("une route d'ADMIN d'extension refuse l'invité (403, car jamais administrateur)", async () => {
     const { zoe, session } = await guestSession();
     await rights(zoe, { requestTitles: true });
     expect((await send("GET", "/api/plugins/seer/admin/settings", session)).statusCode).toBe(403);
@@ -109,7 +112,7 @@ describe("délégation : cantonnée, révocable, réservée au propriétaire", (
   it("retirer le droit coupe à l'appel SUIVANT, et pousse family:update à l'invité", async () => {
     const { zoe, session } = await guestSession();
     await rights(zoe, { requestTitles: true });
-    expect((await send("GET", EXTENSION, session)).json().user.userId).toBe(IDS.damien);
+    expect((await send("GET", EXTENSION, session)).json().user.userId).toBe(zoe); // à son nom
     expect((await rights(zoe, { requestTitles: false })).json()).toEqual({ requestTitles: false });
     expect((await send("GET", EXTENSION, session)).json().code).toBe("family.guest_account");
     expect(h.state!.socket.some((s) => s.userId === zoe && s.msg.type === "family:update")).toBe(true);
@@ -126,5 +129,16 @@ describe("délégation : cantonnée, révocable, réservée au propriétaire", (
     const asMember = (await send("GET", EXTENSION, leaProfile)).json().user;
     expect(asMember.userId).toBe(IDS.lea); // un membre agit sous SON identité
     expect(asMember.delegatedBy).toBeUndefined();
+  });
+});
+
+describe("SEC-F-45 : le droit « peut demander » n'est proposé qu'avec une extension de demandes", () => {
+  it("sans extension active déclarant titles.request, la capacité guestRequests est fausse", () => {
+    forgetRequestExtension();
+    // Le harnais n'a aucune extension installée : la capacité est fausse, donc
+    // le client ne PROPOSE pas le droit (même si la Famille et les invités sont allumés).
+    const cap = familyCapability();
+    expect(cap.guests).toBe(true);
+    expect(cap.guestRequests).toBe(false);
   });
 });
