@@ -16,6 +16,7 @@ import { OfflineShell } from "@/offline/OfflineShell";
 import { SessionMessageHost } from "@/session/SessionMessageHost";
 import { NoticeHost } from "@/notices/NoticeHost";
 import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
+import { FamilyInvitationHost } from "@/family/FamilyInvitationHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
@@ -162,6 +163,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           <Stack.Screen name="about" options={{ presentation: "card" }} />
           <Stack.Screen name="credits" options={{ presentation: "card" }} />
           <Stack.Screen name="profile/[section]" options={{ presentation: "card" }} />
+          <Stack.Screen name="family" options={{ presentation: "card" }} />
           <Stack.Screen name="settings/password" options={{ presentation: "card" }} />
           <Stack.Screen name="settings/playback" options={{ presentation: "card" }} />
           <Stack.Screen name="settings/notifications" options={{ presentation: "card" }} />
@@ -182,6 +184,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       {/* Les avertissements (serveur, TMDB, clé d'administration) : un à la fois, jamais sur le lecteur. */}
       <NoticeHost />
       <MutationFailureBinding />
+      {/* L'affiche d'invitation de la Famille : au lancement et en direct, jamais sur le lecteur. */}
+      <FamilyInvitationHost />
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
       <SessionMessageHost />
       {showLoading && (
