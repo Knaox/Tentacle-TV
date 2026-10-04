@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { FamilyOverviewDto, FamilyProfileDto, IncomingInvitationDto, OwnedFamilyDto } from "@tentacle-tv/shared";
-import { isFamilyAvailable, ownedCounts, ownerActions, pickPosterInvitation } from "./familyModel";
+import { FAMILY_PROFILE_COLORS, type FamilyOverviewDto, type FamilyProfileDto, type IncomingInvitationDto, type OwnedFamilyDto } from "./familyContract";
+import {
+  familyPosterRequestOf,
+  FAMILY_PROFILE_COLOR_STOPS,
+  isFamilyAvailable,
+  ownedCounts,
+  ownerActions,
+  pickPosterInvitation,
+  profileColorStops,
+} from "./familyClient";
 
 const NOW = Date.parse("2026-10-04T12:00:00Z");
 const HOUR = 3_600_000;
@@ -118,5 +126,21 @@ describe("pickPosterInvitation", () => {
     const later = invitation("a", { snoozedUntil: iso(NOW + HOUR) });
     expect(pickPosterInvitation([later], { now: NOW, dismissed: new Set(["a"]), requestedId: "a" })?.id).toBe("a");
     expect(pickPosterInvitation([later], { now: NOW, dismissed: none, requestedId: "gone" })).toBeNull();
+  });
+});
+
+describe("familyPosterRequestOf", () => {
+  it("une invitation reçue ouvre SON affiche ; le reste mène à la page", () => {
+    expect(familyPosterRequestOf({ type: "family_invite", refId: "inv" })).toBe("inv");
+    expect(familyPosterRequestOf({ type: "family_invite", refId: null })).toBeNull();
+    expect(familyPosterRequestOf({ type: "family_invite_accepted", refId: "inv" })).toBeNull();
+    expect(familyPosterRequestOf({ type: "ticket_reply", refId: "t" })).toBeNull();
+  });
+});
+
+describe("couleurs de profil", () => {
+  it("chaque couleur du contrat a ses deux teintes ; une inconnue prend le violet", () => {
+    for (const color of FAMILY_PROFILE_COLORS) expect(FAMILY_PROFILE_COLOR_STOPS[color]).toHaveLength(2);
+    expect(profileColorStops("mauve" as never)).toEqual(FAMILY_PROFILE_COLOR_STOPS.violet);
   });
 });

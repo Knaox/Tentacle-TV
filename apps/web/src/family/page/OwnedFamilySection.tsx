@@ -3,10 +3,17 @@ import { useTranslation } from "react-i18next";
 import { UserPlus, Users } from "lucide-react";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { useCancelFamilyInvitation, useDeleteFamilyGuest, useRemoveFamilyMember } from "@tentacle-tv/api-client";
-import type { FamilyErrorCode, FamilyOverviewDto, FamilyProfileDto, OutgoingInvitationDto } from "@tentacle-tv/shared";
+import {
+  FAMILY_LIMITS,
+  ownedCounts,
+  ownerActions,
+  type FamilyErrorCode,
+  type FamilyOverviewDto,
+  type FamilyProfileDto,
+  type OutgoingInvitationDto,
+} from "@tentacle-tv/shared";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../contexts/ToastContext";
-import { FAMILY_LIMITS, ownedCounts, ownerActions } from "../familyModel";
 import { useFamilyText } from "../useFamilyText";
 import { GuestDialog } from "./GuestDialog";
 import { InviteDialog } from "./InviteDialog";

@@ -11,6 +11,7 @@ Une règle, une source :
 | Routes et appelants permis | `packages/shared/src/family/familyRoutes.ts` (`FAMILY_ROUTES`) |
 | Règles pures (PIN, capacité, invitations, candidats, noms) | `packages/shared/src/family/familyRules.ts` |
 | Lecture d'un refus, clés i18n (clients seulement) | `packages/shared/src/family/familyLabels.ts`, espace i18n `family` |
+| Ce que les écrans montrent (places, gestes permis, affiche, couleurs) | `packages/shared/src/family/familyClient.ts` (clients seulement) |
 | Miroirs du serveur (octet pour octet, `familyMirror.test.ts`) | `apps/backend/src/family/` |
 | Schémas d'entrée (zod) | `apps/backend/src/services/family/familySchemas.ts` |
 | Appels et crochets | api-client `family/familyApi.ts`, `family/familyTvApi.ts`, `hooks/useFamily.ts`, `hooks/useFamilyLive.ts` |
@@ -266,7 +267,7 @@ Le PIN du propriétaire protège aussi « Gérer les profils ».
 - **L'affiche** est montée une fois par `AppLayout` (bureau comme miroir,
   jamais sur le lecteur), avec `useFamilyLive` ; « Plus tard » et la
   fermeture la taisent, la cloche rouvre l'invitation qu'on clique. Règles
-  pures : `familyModel.ts`.
+  pures, communes au mobile : shared `family/familyClient.ts`.
 - **Administration** : les interrupteurs vivent dans Admin › Utilisateurs (un
   réglage, pas une alerte) ; les sessions en cours étiquettent l'invité
   (`FamilyGuestTag`).

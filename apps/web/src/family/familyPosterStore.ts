@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { familyPosterRequestOf } from "@tentacle-tv/shared";
 
 /**
  * La demande d'ouvrir l'affiche d'une invitation précise — la cloche la pose
@@ -41,7 +42,8 @@ export function useFamilyPosterRequest(): string | null {
  * commune (`resolveNotificationRoute`).
  */
 export function openFamilyNotification(notification: { type: string; refId: string | null }): boolean {
-  if (notification.type !== "family_invite" || !notification.refId) return false;
-  requestFamilyPoster(notification.refId);
+  const invitationId = familyPosterRequestOf(notification);
+  if (!invitationId) return false;
+  requestFamilyPoster(invitationId);
   return true;
 }

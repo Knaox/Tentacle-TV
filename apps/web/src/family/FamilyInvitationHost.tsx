@@ -6,7 +6,7 @@ import {
   useJellyfinClient,
   useSnoozeFamilyInvitation,
 } from "@tentacle-tv/api-client";
-import { pickPosterInvitation } from "./familyModel";
+import { pickPosterInvitation } from "@tentacle-tv/shared";
 import { clearFamilyPosterRequest, useFamilyPosterRequest } from "./familyPosterStore";
 import { FamilyInvitationPoster } from "./FamilyInvitationPoster";
 import { useFamilyAvailability } from "./useFamilyAvailability";

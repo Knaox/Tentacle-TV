@@ -1,19 +1,21 @@
 import {
-  capacityError,
   FAMILY_MAX_GUESTS,
   FAMILY_MAX_PROFILES,
   type FamilyCapability,
-  type FamilyErrorCode,
   type FamilyOverviewDto,
   type IncomingInvitationDto,
   type OwnedFamilyDto,
-} from "@tentacle-tv/shared";
+  type FamilyProfileColor,
+} from "./familyContract";
+import { capacityError } from "./familyRules";
+import type { FamilyErrorCode } from "./familyProtocol";
 
 /**
- * La Famille sur le web et le bureau — ce que l'écran MONTRE, tiré de la vue
- * d'ensemble rendue par le serveur. Rien n'y est décidé à la place du
- * serveur : ces règles masquent un bouton voué au refus, le serveur refuse de
- * toute façon (docs/FAMILLE.md). Module pur : `familyModel.test.ts`.
+ * La Famille côté CLIENTS (web, bureau, mobile) — ce que l'écran MONTRE, tiré
+ * de la vue d'ensemble rendue par le serveur. Rien n'y est décidé à la place
+ * du serveur : ces règles masquent un bouton voué au refus, le serveur refuse
+ * de toute façon (docs/FAMILLE.md). Pas de miroir : le serveur n'en a pas
+ * besoin. Module pur : `familyClient.test.ts`.
  */
 
 /** La Famille existe-t-elle ici ? Serveur d'avant (capacité absente) ou hors
@@ -92,4 +94,37 @@ export function pickPosterInvitation(
     .filter((invitation) => isPosterEligible(invitation, options.now, options.dismissed))
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
   return eligible[0] ?? null;
+}
+
+/**
+ * Le clic sur une notification de la Famille (cloche ou push) : l'invitation
+ * dont l'AFFICHE doit s'ouvrir, ou null — les autres notifications mènent à
+ * la page de la Famille. L'identifiant ne fait que CHOISIR parmi les
+ * invitations que le serveur rend à la session ; il n'est jamais renvoyé
+ * tel quel au serveur.
+ */
+export function familyPosterRequestOf(notification: { type: string; refId: string | null | undefined }): string | null {
+  return notification.type === "family_invite" && notification.refId ? notification.refId : null;
+}
+
+/**
+ * Les couleurs d'un profil : le contrat n'en donne que les NOMS
+ * (`FAMILY_PROFILE_COLORS`), chaque client les peint — avec ces deux teintes
+ * profondes, en dégradé, sous une initiale blanche. Chaque paire tient 4,5:1
+ * contre le blanc à son point le plus clair.
+ */
+export const FAMILY_PROFILE_COLOR_STOPS: Record<FamilyProfileColor, readonly [string, string]> = {
+  violet: ["#6d28d9", "#7c3aed"],
+  pink: ["#be185d", "#db2777"],
+  blue: ["#1d4ed8", "#2563eb"],
+  teal: ["#0f766e", "#0d9488"],
+  green: ["#15803d", "#16a34a"],
+  amber: ["#a16207", "#b45309"],
+  orange: ["#c2410c", "#ea580c"],
+  red: ["#b91c1c", "#dc2626"],
+};
+
+/** Les deux teintes d'un profil ; une couleur inconnue (serveur plus récent) prend le violet. */
+export function profileColorStops(color: FamilyProfileColor): readonly [string, string] {
+  return FAMILY_PROFILE_COLOR_STOPS[color] ?? FAMILY_PROFILE_COLOR_STOPS.violet;
 }

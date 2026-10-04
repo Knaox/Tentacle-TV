@@ -116,6 +116,7 @@ export * from "./family/familyProtocol";
 export * from "./family/familyRoutes";
 export * from "./family/familyRules";
 export * from "./family/familyLabels";
+export * from "./family/familyClient";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
