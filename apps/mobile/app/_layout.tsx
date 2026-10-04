@@ -8,7 +8,7 @@ import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { setPreferencesBackendUrl, fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
-import { ServerUrlContext } from "@/providers/ServerUrlContext";
+import { ServerUrlContext, useServerUrl } from "@/providers/ServerUrlContext";
 import { BrandSpinner } from "@/components/ui";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { AuthRedirect } from "@/auth/AuthRedirect";
@@ -126,6 +126,7 @@ export default function RootLayout() {
  */
 function ThemedShell({ showLoading }: { showLoading: boolean }) {
   const theme = useTheme();
+  const { serverUrl } = useServerUrl();
   const surface = theme.colors.surface.s0;
   const screenOptions = useMemo(() => ({
     headerShown: false,
@@ -184,8 +185,10 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       {/* Les avertissements (serveur, TMDB, clé d'administration) : un à la fois, jamais sur le lecteur. */}
       <NoticeHost />
       <MutationFailureBinding />
-      {/* L'affiche d'invitation de la Famille : au lancement et en direct, jamais sur le lecteur. */}
-      <FamilyInvitationHost />
+      {/* L'affiche d'invitation de la Famille : au lancement et en direct, jamais sur le
+          lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
+          lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
+      {serverUrl && !showLoading ? <FamilyInvitationHost /> : null}
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
       <SessionMessageHost />
       {showLoading && (
