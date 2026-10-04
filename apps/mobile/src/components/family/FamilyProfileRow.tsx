@@ -13,6 +13,8 @@ interface FamilyProfileRowProps {
   last: boolean;
   /** Ce profil est celui de ce compte (« · Vous »). */
   you: boolean;
+  /** Un invité que ce compte (un membre) a créé : « Votre invité ». */
+  yours?: boolean;
   /** Le profil se gère d'ici : la ligne entière ouvre son panneau (chevron). */
   onOpen?: (profile: FamilyProfileDto) => void;
 }
@@ -24,7 +26,7 @@ const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest
  * PIN. Quand on peut le gérer, la ligne entière ouvre son panneau
  * (`FamilyProfileSheet`) — une cible pleine largeur plutôt qu'un petit mot.
  */
-export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, you, onOpen }: FamilyProfileRowProps) {
+export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, you, yours, onOpen }: FamilyProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family", "familyMobile"]);
   const theme = useTheme();
   const st = useThemedStyles(makeFamilyRowStyles);
@@ -44,6 +46,7 @@ export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, 
           <View style={[st.chip, guest && st.chipGuest]}>
             <Text style={[st.chipText, guest && st.chipGuestText]}>{kind}</Text>
           </View>
+          {yours ? <Text style={st.metaText}>{t("familyWeb:shared.yourGuest")}</Text> : null}
           {profile.since ? <Text style={st.metaText}>{t("familyWeb:owned.since", { date: formatDate(profile.since) })}</Text> : null}
           {profile.hasPin ? (
             <View style={st.pinMeta}>

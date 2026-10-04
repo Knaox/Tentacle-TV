@@ -66,10 +66,11 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
   }, [t, cancelInvite, errorText]);
 
   const title = !family || family.role === "owner"
-    ? t("familyWeb:owned.title")
-    : t("familyWeb:memberships.row", { owner: family.owner.name });
+    ? t("familyWeb:shared.titleOwner")
+    : t("familyWeb:shared.titleMember", { owner: family.owner.name });
   const caption = [
     family && `${t("familyWeb:owned.capacity", { count: counts.profiles, max: FAMILY_LIMITS.profiles })} · ${t("familyWeb:owned.guests", { count: counts.guests, max: FAMILY_LIMITS.guests })}`,
+    family?.role === "member" && t("familyWeb:shared.memberNotice", { owner: family.owner.name }),
     model.role === "member" && model.showAddGuest && t("familyMobile:memberMayCreate"),
     model.blocked && codeText(model.blocked),
   ].filter(Boolean).join("\n");
@@ -86,6 +87,7 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
               profile={profile}
               last={index === family.profiles.length - 1 && !hasActions}
               you={isOwnProfile(profile, me)}
+              yours={family.role === "member" && profile.createdBy !== null && isOwnProfile({ userId: profile.createdBy }, me)}
               onOpen={hasPanel(actionsOf(profile)) ? panel.open : undefined}
             />
           ))

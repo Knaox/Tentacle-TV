@@ -3,7 +3,7 @@ import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, StyleSheet, Tex
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useAcceptFamilyInvitation, useDeclineFamilyInvitation } from "@tentacle-tv/api-client";
+import { familyErrorFromApi, useAcceptFamilyInvitation, useDeclineFamilyInvitation } from "@tentacle-tv/api-client";
 import type { IncomingInvitationDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { retainModal } from "@/components/ui/modalGate";
@@ -61,7 +61,11 @@ export function FamilyInvitationPoster({ invitation, onLater, onDone }: FamilyIn
         showToast({ title: t("familyWeb:poster.accepted", { owner }) });
         onDone(invitation.id);
       },
-      onError: (failure) => setError(errorText(failure)),
+      // Déjà dans une famille : la phrase qui dit quoi faire (la quitter d'abord).
+      onError: (failure) =>
+        setError(familyErrorFromApi(failure)?.code === "family.already_in_family"
+          ? t("familyWeb:shared.alreadyInFamily")
+          : errorText(failure)),
     });
   };
 

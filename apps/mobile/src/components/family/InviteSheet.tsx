@@ -108,11 +108,9 @@ const CandidateRow = memo(function CandidateRow({ candidate, last, done, disable
   const { t } = useTranslation(["familyWeb", "family"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  // Un serveur v1 ne marque rien (`status` absent) : tout candidat qu'il rend
-  // s'invite. Sinon la règle partagée (`candidateView`) dit invitable ou grisé.
-  const view = done
-    ? { invitable: false, noteKey: "family:candidates.invited" }
-    : candidate.status === undefined ? { invitable: true, noteKey: null } : candidateView(candidate);
+  // La règle partagée dit invitable ou grisé (un serveur v1, sans statut :
+  // invitable) ; une invitation envoyée d'ici se dit tout de suite.
+  const view = done ? { invitable: false, noteKey: "family:candidates.invited" } : candidateView(candidate);
   const invited = view.noteKey === "family:candidates.invited";
   const taken = !view.invitable && !invited;
   const note = view.noteKey ? t(view.noteKey) : null;

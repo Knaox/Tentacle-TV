@@ -12,6 +12,5 @@ export default {
   pinShow: "Show digits",
   pinHide: "Hide digits",
   // v2 — ce que seul le mobile dit (les mots communs vivent dans `family`).
-  leaveRow: "Leave the family",
   memberMayCreate: "The owner lets you create guests: you manage the ones you create.",
 } as const;

@@ -73,14 +73,14 @@ export function DissolveSection() {
  * les autres profils des siennes.
  */
 export function LeaveSection({ familyId, ownerName }: { familyId: string; ownerName: string }) {
-  const { t } = useTranslation(["familyWeb", "familyMobile"]);
+  const { t } = useTranslation("familyWeb");
   const { errorText } = useFamilyText();
   const leave = useLeaveFamily();
   const confirm = () => {
-    Alert.alert(t("familyWeb:confirm.leaveTitle", { owner: ownerName }), t("familyWeb:confirm.leaveBody"), [
-      { text: t("familyWeb:cancel"), style: "cancel" },
+    Alert.alert(t("confirm.leaveTitle", { owner: ownerName }), t("confirm.leaveBody"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: t("familyWeb:confirm.leaveAction"),
+        text: t("confirm.leaveAction"),
         style: "destructive",
         onPress: () => {
           haptic("destructive");
@@ -91,7 +91,15 @@ export function LeaveSection({ familyId, ownerName }: { familyId: string; ownerN
   };
   return (
     <SettingsSection>
-      <SettingsRow icon="log-out" label={t("familyMobile:leaveRow")} destructive last disabled={leave.isPending} onPress={confirm} />
+      <SettingsRow
+        icon="log-out"
+        label={t("shared.leave")}
+        description={t("shared.leaveHint")}
+        destructive
+        last
+        disabled={leave.isPending}
+        onPress={confirm}
+      />
     </SettingsSection>
   );
 }

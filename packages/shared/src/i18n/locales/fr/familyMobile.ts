@@ -14,6 +14,5 @@ export default {
   pinShow: "Afficher les chiffres",
   pinHide: "Masquer les chiffres",
   // v2 — ce que seul le mobile dit (les mots communs vivent dans `family`).
-  leaveRow: "Quitter la famille",
   memberMayCreate: "Le propriétaire vous permet de créer des invités : vous gérez ceux que vous créez.",
 } as const;

@@ -12,7 +12,7 @@ import { showToast } from "@/notices/toastStore";
  * la famille relue (le panneau ne garde aucun instantané).
  */
 export function MemberRightsSection({ member }: { member: FamilyProfileDto }) {
-  const { t } = useTranslation("family");
+  const { t } = useTranslation(["family", "familyWeb"]);
   const { errorText } = useFamilyText();
   const setRights = useSetFamilyMemberRights();
   const value = member.rights?.createGuests === true;
@@ -20,22 +20,25 @@ export function MemberRightsSection({ member }: { member: FamilyProfileDto }) {
   const toggle = (next: boolean) => {
     setRights.mutate(
       { userId: member.userId, rights: { createGuests: next } },
-      { onError: (failure) => showToast({ title: errorText(failure) }) },
+      {
+        onSuccess: () => showToast({ title: t("familyWeb:rights.saved") }),
+        onError: (failure) => showToast({ title: errorText(failure) }),
+      },
     );
   };
 
   return (
-    <SettingsSection caption={t("rights.createGuestsHint")}>
+    <SettingsSection caption={t("family:rights.createGuestsHint")}>
       <SettingsRow
         icon="user-plus"
-        label={t("rights.createGuests")}
+        label={t("family:rights.createGuests")}
         last
         trailing={
           <BrandSwitch
             value={setRights.isPending ? setRights.variables?.rights.createGuests === true : value}
             onValueChange={toggle}
             disabled={setRights.isPending}
-            accessibilityLabel={`${t("rights.createGuests")} — ${member.name}`}
+            accessibilityLabel={`${t("family:rights.createGuests")} — ${member.name}`}
           />
         }
       />
