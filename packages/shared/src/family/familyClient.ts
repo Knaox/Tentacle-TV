@@ -134,9 +134,10 @@ export function isOwnProfile(profile: Pick<FamilyProfileDto, "userId">, viewerUs
   return !!viewerUserId && sameUserId(profile.userId, viewerUserId);
 }
 
-/** Un droit réglable sur un profil : « peut créer des invités » (un membre).
- *  « Peut demander des films » (un invité) attend la décision du lot. */
-export type FamilyProfileRight = "createGuests";
+/** Un droit réglable sur un profil : « peut créer des invités » (un membre),
+ *  « peut demander des films » (un invité — ses demandes partent au nom du
+ *  propriétaire). Le propriétaire seul les règle. */
+export type FamilyProfileRight = "createGuests" | "requestTitles";
 
 export interface ProfileActions {
   /** Poser, changer ou retirer le code PIN de ce profil (un invité). */
@@ -152,8 +153,9 @@ const NO_ACTIONS: ProfileActions = { pin: false, remove: false, right: null };
 /**
  * Ce que CE compte peut faire sur UN profil de sa famille, depuis le web, le
  * bureau ou le mobile (session personnelle) : le propriétaire retire un
- * membre et règle ses droits ; supprimer un invité et poser son PIN reviennent
- * au propriétaire, ou au membre qui l'a créé (`canManageGuest`). Jamais un
+ * membre et règle ses droits, et règle « peut demander » d'un invité ;
+ * supprimer un invité et poser son PIN reviennent au propriétaire, ou au
+ * membre qui l'a créé (`canManageGuest`). Jamais un
  * geste sur soi-même ni sur le propriétaire — son propre PIN et « Quitter »
  * ont leur place à part. Le serveur revérifie tout.
  */
@@ -170,7 +172,21 @@ export function profileActions(
     return { pin: false, remove: owner, right: owner ? "createGuests" : null };
   }
   const manage = canManageGuest(family.rights, profile.createdBy, viewerUserId);
-  return { pin: manage, remove: manage, right: null };
+  return { pin: manage, remove: manage, right: guestRightOf(overview, profile) };
+}
+
+/** « Peut demander des films » se règle par le propriétaire, la Famille et les
+ *  invités allumés, sur un serveur qui le connaît : il rend toujours
+ *  `guestRights` sur un invité (absent : serveur d'avant le droit). */
+function guestRightOf(overview: FamilyOverviewDto, profile: FamilyProfileDto): FamilyProfileRight | null {
+  const { switches, family } = overview;
+  if (!family?.rights.manageMembers || profile.guestRights === undefined) return null;
+  return switches.families && switches.guests ? "requestTitles" : null;
+}
+
+/** Le droit « peut demander » d'un invité : un champ absent vaut « coupé ». */
+export function guestCanRequest(profile: Pick<FamilyProfileDto, "guestRights">): boolean {
+  return profile.guestRights?.requestTitles === true;
 }
 
 export interface CandidateView {

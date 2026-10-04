@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FamilyDto, FamilyOverviewDto, FamilyProfileDto, FamilyRole } from "./familyContract";
 import { familyRightsOf } from "./familyRights";
-import { candidateView, familyOwnerName, familyViewerRole, isOwnProfile, profileActions } from "./familyClient";
+import { candidateView, familyOwnerName, familyViewerRole, guestCanRequest, isOwnProfile, profileActions } from "./familyClient";
 import fr from "../i18n/locales/fr/family";
 import en from "../i18n/locales/en/family";
 
@@ -21,6 +21,7 @@ function profile(kind: FamilyProfileDto["kind"], userId: string, createdBy: stri
     userId, kind, name: userId, color: "violet", hasPin: false, imageTag: null,
     since: kind === "owner" ? null : "2026-10-04T00:00:00Z",
     createdBy, createdByName: createdBy, rights: kind === "member" ? { createGuests: true } : null,
+    guestRights: kind === "guest" ? { requestTitles: false } : null,
   };
 }
 
@@ -69,9 +70,16 @@ describe("profileActions — le propriétaire", () => {
     expect(profileActions(o, find(ANA), OWNER)).toEqual({ pin: false, remove: true, right: "createGuests" });
   });
 
-  it("gère TOUS les invités, même ceux d'un membre", () => {
-    expect(profileActions(o, find("lea"), OWNER)).toEqual({ pin: true, remove: true, right: null });
-    expect(profileActions(o, find("tom"), OWNER)).toEqual({ pin: true, remove: true, right: null });
+  it("gère TOUS les invités, même ceux d'un membre, et règle leur « peut demander »", () => {
+    expect(profileActions(o, find("lea"), OWNER)).toEqual({ pin: true, remove: true, right: "requestTitles" });
+    expect(profileActions(o, find("tom"), OWNER)).toEqual({ pin: true, remove: true, right: "requestTitles" });
+  });
+
+  it("ne règle « peut demander » ni invités coupés, ni face à un serveur qui ne le connaît pas", () => {
+    const off = { ...o, switches: { families: true, guests: false } };
+    expect(profileActions(off, find("lea"), OWNER).right).toBeNull();
+    const older = { ...find("lea"), guestRights: undefined };
+    expect(profileActions(o, older, OWNER).right).toBeNull();
   });
 
   it("ne fait rien sur lui-même", () => {
@@ -81,6 +89,10 @@ describe("profileActions — le propriétaire", () => {
 
 describe("profileActions — un membre", () => {
   const m = overview("member");
+
+  it("ne règle jamais « peut demander », même sur ses invités", () => {
+    expect(profileActions(m, find("tom"), ANA).right).toBeNull();
+  });
 
   it("ne gère que les invités qu'il a créés", () => {
     expect(profileActions(m, find("tom"), ANA)).toEqual({ pin: true, remove: true, right: null });
@@ -100,6 +112,15 @@ describe("profileActions — sans session personnelle ni famille", () => {
     expect(profileActions(overview("owner", { personalSession: false }), find(ANA), OWNER).remove).toBe(false);
     expect(profileActions(overview(null), find(ANA), OWNER).remove).toBe(false);
     expect(profileActions(overview("owner"), find(ANA), null).remove).toBe(false);
+  });
+});
+
+describe("guestCanRequest", () => {
+  it("un champ absent ou nul vaut « coupé »", () => {
+    expect(guestCanRequest({ guestRights: { requestTitles: true } })).toBe(true);
+    expect(guestCanRequest({ guestRights: { requestTitles: false } })).toBe(false);
+    expect(guestCanRequest({})).toBe(false);
+    expect(guestCanRequest({ guestRights: null })).toBe(false);
   });
 });
 
