@@ -8,16 +8,10 @@ export default {
   /** La validation de la feuille « invité », à côté de son titre : un mot. */
   create: "Create",
   openProfileHint: "Opens this profile's settings",
-  sent: "Sent",
   posterLabel: "Invitation to join a family",
   pinShow: "Show digits",
   pinHide: "Hide digits",
-  // v2 — en attendant les mots communs de la Famille partagée (espace `family`).
+  // v2 — ce que seul le mobile dit (les mots communs vivent dans `family`).
   leaveRow: "Leave the family",
-  memberCreateGuests: "Can create guests",
-  memberCreateGuestsHint: "They only manage the guests they create; three guests at most in the family.",
   memberMayCreate: "The owner lets you create guests: you manage the ones you create.",
-  addedBy: "Added by {{name}}",
-  candidateInFamily: "Already in a family",
-  candidateInvited: "Invitation sent",
 } as const;

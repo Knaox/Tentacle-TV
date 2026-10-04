@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useFamilyCandidates, useSendFamilyInvitation } from "@tentacle-tv/api-client";
-import type { FamilyCandidateDto } from "@tentacle-tv/shared";
+import { candidateView, type FamilyCandidateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { useFamilyText } from "@/family/useFamilyText";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -105,32 +105,37 @@ const CandidateRow = memo(function CandidateRow({ candidate, last, done, disable
   disabled: boolean;
   onInvite: (candidate: FamilyCandidateDto) => void;
 }) {
-  const { t } = useTranslation(["familyWeb", "familyMobile"]);
+  const { t } = useTranslation(["familyWeb", "family"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  // Un serveur v1 ne marque rien : tout candidat qu'il rend s'invite.
-  const status = done ? "invited" : candidate.status ?? "available";
-  const taken = status === "in_family";
+  // Un serveur v1 ne marque rien (`status` absent) : tout candidat qu'il rend
+  // s'invite. Sinon la règle partagée (`candidateView`) dit invitable ou grisé.
+  const view = done
+    ? { invitable: false, noteKey: "family:candidates.invited" }
+    : candidate.status === undefined ? { invitable: true, noteKey: null } : candidateView(candidate);
+  const invited = view.noteKey === "family:candidates.invited";
+  const taken = !view.invitable && !invited;
+  const note = view.noteKey ? t(view.noteKey) : null;
   return (
     <View
       style={[st.row, !last && st.rowBordered]}
-      accessible={status !== "available"}
+      accessible={!view.invitable}
       accessibilityState={taken ? { disabled: true } : undefined}
-      accessibilityLabel={status === "available" ? undefined : `${candidate.name} — ${t(taken ? "familyMobile:candidateInFamily" : "familyMobile:candidateInvited")}`}
+      accessibilityLabel={view.invitable ? undefined : [candidate.name, note].filter(Boolean).join(" — ")}
     >
       <View style={[st.identity, taken && st.taken]}>
         <UserAvatar userId={candidate.userId} name={candidate.name} hasAvatar={candidate.imageTag !== null} imageTag={candidate.imageTag} size={36} />
         <View style={st.nameColumn}>
           <Text style={st.name} numberOfLines={1}>{candidate.name}</Text>
-          {taken ? <Text style={st.status}>{t("familyMobile:candidateInFamily")}</Text> : null}
+          {taken && note ? <Text style={st.status}>{note}</Text> : null}
         </View>
       </View>
-      {status === "invited" ? (
+      {invited ? (
         <View style={st.done}>
           <Feather name="check" size={15} color={theme.colors.status.success} />
-          <Text style={st.doneText}>{t("familyMobile:candidateInvited")}</Text>
+          <Text style={st.doneText}>{note}</Text>
         </View>
-      ) : status === "available" ? (
+      ) : view.invitable ? (
         <Pressable
           onPress={() => onInvite(candidate)}
           disabled={disabled}

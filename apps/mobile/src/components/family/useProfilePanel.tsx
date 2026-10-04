@@ -2,9 +2,8 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useDeleteFamilyGuest, useRemoveFamilyMember } from "@tentacle-tv/api-client";
-import type { FamilyProfileDto } from "@tentacle-tv/shared";
+import type { FamilyProfileDto, ProfileActions } from "@tentacle-tv/shared";
 import { whenNoModal } from "@/components/ui/modalGate";
-import type { ProfilePanelRights } from "@/family/profilePanelRights";
 import { useFamilyText } from "@/family/useFamilyText";
 import { showToast } from "@/notices/toastStore";
 import { haptic } from "@/utils/haptics";
@@ -21,7 +20,7 @@ import { GuestPinSheet } from "./PinSheet";
  */
 export function useProfilePanel(
   profiles: readonly FamilyProfileDto[],
-  rightsOf: (profile: FamilyProfileDto) => ProfilePanelRights,
+  actionsOf: (profile: FamilyProfileDto) => ProfileActions,
 ) {
   const { t } = useTranslation("familyWeb");
   const { errorText } = useFamilyText();
@@ -67,7 +66,7 @@ export function useProfilePanel(
     );
   }, [t, deleteGuest, removeMember, failed]);
 
-  const rights = open ? rightsOf(open) : null;
+  const rights = open ? actionsOf(open) : null;
   const element: ReactNode = (
     <>
       {open && rights ? (
@@ -77,7 +76,7 @@ export function useProfilePanel(
           onRemove={rights.remove ? () => confirmRemove(open) : undefined}
           onClose={close}
         >
-          {rights.memberRights ? <MemberRightsSection member={open} /> : null}
+          {rights.right === "createGuests" ? <MemberRightsSection member={open} /> : null}
         </FamilyProfileSheet>
       ) : null}
       {pinGuest ? <GuestPinSheet guest={pinGuest} onClose={() => setPinGuestId(null)} /> : null}

@@ -4,9 +4,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useCancelFamilyInvitation, useUserId } from "@tentacle-tv/api-client";
-import { FAMILY_LIMITS, familyCounts, sameUserId, type FamilyOverviewDto, type FamilyProfileDto, type OutgoingInvitationDto } from "@tentacle-tv/shared";
+import {
+  FAMILY_LIMITS,
+  familyCounts,
+  isOwnProfile,
+  profileActions,
+  type FamilyOverviewDto,
+  type FamilyProfileDto,
+  type OutgoingInvitationDto,
+  type ProfileActions,
+} from "@tentacle-tv/shared";
 import { SettingsRow, SettingsSection } from "@/components/settings";
-import { hasPanel, profilePanelRights } from "@/family/profilePanelRights";
 import type { FamilyScreenModel } from "@/family/familyScreenModel";
 import { useFamilyText } from "@/family/useFamilyText";
 import { showToast } from "@/notices/toastStore";
@@ -19,6 +27,9 @@ import { useProfilePanel } from "./useProfilePanel";
 
 const NO_PROFILES: readonly FamilyProfileDto[] = [];
 
+/** Le profil a-t-il un panneau pour ce compte (un geste au moins) ? */
+const hasPanel = (actions: ProfileActions) => actions.pin || actions.remove || actions.right !== null;
+
 /**
  * LA famille de ce compte (v2, partagée) — « Ma famille » pour son
  * propriétaire, « Famille de X » pour un membre : tous les profils (le
@@ -26,7 +37,7 @@ const NO_PROFILES: readonly FamilyProfileDto[] = [];
  * la font grandir selon le rôle, puis les invitations en attente (le seul
  * propriétaire). Sans famille, un appel à la créer : elle naît au premier
  * invité ou à la première invitation. Un appui sur un profil qu'on gère ouvre
- * son panneau (`useProfilePanel`).
+ * son panneau (`useProfilePanel`, gestes de `profileActions`).
  */
 export function FamilySection({ overview, model }: { overview: FamilyOverviewDto; model: FamilyScreenModel }) {
   const { t } = useTranslation(["familyWeb", "family", "familyMobile"]);
@@ -39,11 +50,8 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
 
   const family = overview.family;
   const counts = useMemo(() => familyCounts(family), [family]);
-  const rightsOf = useCallback(
-    (profile: FamilyProfileDto) => (family ? profilePanelRights(family, profile, me) : { pin: false, remove: false, memberRights: false }),
-    [family, me],
-  );
-  const panel = useProfilePanel(family?.profiles ?? NO_PROFILES, rightsOf);
+  const actionsOf = useCallback((profile: FamilyProfileDto) => profileActions(overview, profile, me), [overview, me]);
+  const panel = useProfilePanel(family?.profiles ?? NO_PROFILES, actionsOf);
 
   const confirmCancel = useCallback((invitation: OutgoingInvitationDto) => {
     const name = invitation.inviteeName;
@@ -77,8 +85,8 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
               key={profile.userId}
               profile={profile}
               last={index === family.profiles.length - 1 && !hasActions}
-              you={me !== null && sameUserId(profile.userId, me)}
-              onOpen={model.personal && hasPanel(rightsOf(profile)) ? panel.open : undefined}
+              you={isOwnProfile(profile, me)}
+              onOpen={hasPanel(actionsOf(profile)) ? panel.open : undefined}
             />
           ))
         ) : (

@@ -12,7 +12,7 @@ import { showToast } from "@/notices/toastStore";
  * la famille relue (le panneau ne garde aucun instantané).
  */
 export function MemberRightsSection({ member }: { member: FamilyProfileDto }) {
-  const { t } = useTranslation("familyMobile");
+  const { t } = useTranslation("family");
   const { errorText } = useFamilyText();
   const setRights = useSetFamilyMemberRights();
   const value = member.rights?.createGuests === true;
@@ -25,17 +25,17 @@ export function MemberRightsSection({ member }: { member: FamilyProfileDto }) {
   };
 
   return (
-    <SettingsSection caption={t("memberCreateGuestsHint")}>
+    <SettingsSection caption={t("rights.createGuestsHint")}>
       <SettingsRow
         icon="user-plus"
-        label={t("memberCreateGuests")}
+        label={t("rights.createGuests")}
         last
         trailing={
           <BrandSwitch
             value={setRights.isPending ? setRights.variables?.rights.createGuests === true : value}
             onValueChange={toggle}
             disabled={setRights.isPending}
-            accessibilityLabel={`${t("memberCreateGuests")} — ${member.name}`}
+            accessibilityLabel={`${t("rights.createGuests")} — ${member.name}`}
           />
         }
       />
