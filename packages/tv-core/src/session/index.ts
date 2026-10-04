@@ -14,5 +14,6 @@ export * from "./pinEntry";
 export * from "./knownProfiles";
 export * from "./familyManage";
 export * from "./revocationDrain";
+export * from "./authVerdict";
 export * from "./passwordPairing";
 export * from "./loginForm";

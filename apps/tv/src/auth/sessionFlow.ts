@@ -4,6 +4,7 @@ import {
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
+import { authVerdictApplies } from "@tentacle-tv/tv-core";
 import { refreshWithRetry, attemptReAuth as attemptReAuthHelper } from "./tokenRefresh";
 import { readCredentials } from "./credentialManager";
 import { replayPendingEnrollment } from "./profileEnrollment";
@@ -67,6 +68,9 @@ async function refreshFlow(
   jfClient.setLoggingIn(true);
   try {
     const refresh = await refreshWithRetry({ serverUrl, token });
+    // La session a changé pendant l'appel (l'échange, un profil) : ce verdict parle d'un
+    // jeton qui n'est plus le sien — ni rafraîchi, ni révoqué (tv-core `authVerdictApplies`).
+    if (!authVerdictApplies(token, storage.getItem("tentacle_token"))) return;
     if (refresh.ok) {
       jfClient.setAccessToken(refresh.accessToken);
       setPreferencesToken(refresh.accessToken);
