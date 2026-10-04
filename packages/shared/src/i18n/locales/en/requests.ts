@@ -34,6 +34,7 @@ export default {
   seasonNamed: "{{season}} · {{name}}",
   seasonsAll: "All missing seasons",
   seasonsShortcut: "Play/Pause: request",
+  seasonsShortcutAndroid: "Play/Pause, or check then Request",
   seasonEpisodes_one: "{{count}} episode",
   seasonEpisodes_other: "{{count}} episodes",
   seasonsLoading: "Reading the seasons…",

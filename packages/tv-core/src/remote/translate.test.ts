@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createTranslator, dragPhaseOf, holdPhaseOf } from "./translate";
+import { BASE_REMOTE_HINTS } from "./bindings/hints";
 import type { RemoteBindings } from "./bindings/types";
 import type { RemoteSignal } from "./signals";
 
@@ -26,8 +27,9 @@ const TABLE: RemoteBindings = {
   system: [],
   traits: {
     focusMovesBeforeIntent: true, pressOnRelease: false, announcedHolds: false, holdThresholdMs: null,
-    backDecidedAhead: false, touchSurface: false, dragOnDemand: false, dragUnit: null,
+    backDecidedAhead: false, touchSurface: false, dragOnDemand: false, dragUnit: null, playPauseKey: "always",
   },
+  hints: BASE_REMOTE_HINTS,
 };
 
 const signal = (name: string, phase: RemoteSignal["phase"], extra: Partial<RemoteSignal> = {}): RemoteSignal => ({

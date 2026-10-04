@@ -50,6 +50,9 @@ export default {
   // qui coche tout (dès deux saisons), et le raccourci dit au pied de la feuille.
   seasonsAll: "Toutes les saisons manquantes",
   seasonsShortcut: "Lecture/Pause : demander",
+  // Android TV : la télécommande Google TV n'a pas Lecture/Pause — cocher par
+  // OK, puis le bouton « Demander » au pied de la feuille, juste à côté.
+  seasonsShortcutAndroid: "Lecture/Pause, ou cocher puis Demander",
   seasonEpisodes_one: "{{count}} épisode",
   seasonEpisodes_other: "{{count}} épisodes",
   seasonsLoading: "Lecture des saisons…",

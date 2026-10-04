@@ -1,4 +1,5 @@
 import type { RemoteSignal, SignalPhase } from "../signals";
+import { BASE_REMOTE_HINTS } from "./hints";
 import type { RemoteBindings } from "./types";
 
 /**
@@ -113,5 +114,7 @@ export const TVOS_BINDINGS: RemoteBindings = {
     touchSurface: true,
     dragOnDemand: true,
     dragUnit: "point de la vue racine (translation et vitesse par seconde, react-native-tvos)",
+    playPauseKey: "always",
   },
+  hints: BASE_REMOTE_HINTS,
 };

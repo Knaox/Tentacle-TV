@@ -1,5 +1,6 @@
 import type { BackIntent, Direction, HoldKey, MoveIntent, PageIntent, PlayPauseIntent, SelectIntent, TransportIntent } from "../intents";
 import type { SignalPhase } from "../signals";
+import type { RemoteHints } from "./hints";
 
 /**
  * Le FORMAT d'une table de traduction de télécommande : des données, une table
@@ -22,8 +23,9 @@ import type { SignalPhase } from "../signals";
  * - le BRUIT DÉCLARÉ : reçu, mais pas une intention (le focus qui bouge).
  *
  * Une table liste aussi ce que la télécommande a mais que l'app ne reçoit
- * JAMAIS (le système le garde), et les faits de la plateforme que les
- * comportements doivent connaître (`traits`) — au lieu d'un `Platform.OS`.
+ * JAMAIS (le système le garde), les faits de la plateforme que les
+ * comportements doivent connaître (`traits`) — au lieu d'un `Platform.OS` —,
+ * et les mots qui nomment ses touches à l'écran (`hints`).
  *
  * Module pur : ni DOM, ni React Native.
  */
@@ -99,6 +101,10 @@ export interface RemoteTraits {
   dragOnDemand: boolean;
   /** L'unité des mesures d'un `drag`. */
   dragUnit: string | null;
+  /** La touche Lecture/Pause : `always`, toute télécommande de la plateforme
+   *  l'a ; `sometimes`, certaines seulement (télécommande Google TV) — un
+   *  comportement qui en dépend garde alors un chemin par OK. */
+  playPauseKey: "always" | "sometimes";
 }
 
 export interface RemoteBindings {
@@ -113,6 +119,8 @@ export interface RemoteBindings {
   noise: readonly NoiseBinding[];
   system: readonly SystemControl[];
   traits: RemoteTraits;
+  /** Les textes à l'écran qui nomment une touche (`hints.ts`). */
+  hints: RemoteHints;
 }
 
 /** Tous les signaux que la table connaît, intentions et bruit déclaré. */
