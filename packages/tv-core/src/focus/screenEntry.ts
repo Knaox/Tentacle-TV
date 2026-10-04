@@ -1,3 +1,5 @@
+import { HOME_LOADING_KEY } from "./homeEntry";
+
 /**
  * L'ENTRÉE d'un écran, et le RETOUR sur lui — où va le focus quand on arrive,
  * et quand la pile redescend sur l'écran.
@@ -71,6 +73,16 @@ export function entryClaim(arrival: ScreenArrival, entryKey: string | null): str
  */
 export function closesArrival(arrival: ScreenArrival, inRail: boolean, now: number): boolean {
   return arrival.open && (!inRail || now - arrival.startedAt > ARRIVAL_RAIL_IS_USER_MS);
+}
+
+/**
+ * Une cible qui TIENT le focus pendant un chargement — l'ancre invisible de
+ * l'accueil (`HOME_LOADING_KEY`) — n'est pas du contenu : elle ne clôt pas
+ * l'arrivée (l'entrée qui suit, le héros, se réclame encore) et ne se retient
+ * pas comme dernier contenu (`lastContentAfter`).
+ */
+export function holdsArrival(focusKey: string): boolean {
+  return focusKey === HOME_LOADING_KEY;
 }
 
 /** La clôture : la préférence à retirer ; la réclamation en cours s'annule. */

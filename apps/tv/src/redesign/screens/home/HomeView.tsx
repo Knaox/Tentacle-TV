@@ -1,12 +1,14 @@
 import { memo, useCallback, useRef } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { heroInView } from "@tentacle-tv/tv-core";
+import { HOME_LOADING_KEY, heroInView } from "@tentacle-tv/tv-core";
+import { useTranslation } from "react-i18next";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { FocusTarget } from "../../focus/FocusTarget";
 import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
@@ -62,6 +64,8 @@ export interface HomeViewProps {
   palette: ArtworkPalette;
   /** Chargement, erreur, accueil vide : le panneau remplace le contenu. */
   status?: StatusPanelProps | null;
+  /** Le chargement : une ancre invisible tient le focus dans le contenu (`home:loading`), la navigation reste repliée. */
+  holdFocus?: boolean;
   /** La pastille du filtre de plateformes (« Netflix · Disney+ »). */
   filter?: { label: string } | null;
   /** La rangée qui la porte. */
@@ -92,6 +96,7 @@ export const HomeView = memo(function HomeView({
   rows,
   palette,
   status,
+  holdFocus = false,
   filter,
   filterRowKey,
   onRemoveFilter,
@@ -104,6 +109,8 @@ export const HomeView = memo(function HomeView({
   onFocusCard,
   onHeroVisibleChange,
 }: HomeViewProps) {
+  const { t } = useTranslation();
+  const loadingLabel = t("common:loading");
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const heroVisible = useRef(true);
   const rewind = useRowRewindPort();
@@ -161,6 +168,12 @@ export const HomeView = memo(function HomeView({
           ))}
         </ScrollView>
       )}
+      {/* Après le contenu (rien ne la recouvre : tvOS ne focalise jamais ce qui l'est), hors du panneau centré. */}
+      {holdFocus ? (
+        <FocusTarget focusKey={HOME_LOADING_KEY} style={styles.anchor} accessibilityLabel={loadingLabel}>
+          {() => null}
+        </FocusTarget>
+      ) : null}
       <NavRail {...nav} />
     </View>
   );
@@ -233,6 +246,8 @@ const HomeRow = memo(function HomeRow({
 });
 
 const styles = StyleSheet.create({
+  // L'ancre du chargement : invisible, dans le contenu (en haut à gauche, hors du panneau centré).
+  anchor: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.hero.top, width: 24, height: 24 },
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
   scroll: { paddingBottom: 160 },

@@ -9,7 +9,7 @@
 //   POST /__fixtures   { "sets": ["base/vigie-off", "<domaine>/<jeu>"] } — remet à la base, applique
 //   GET  /__journal?since=<n>   requêtes et ÉCRITURES après le numéro n
 //   GET  /__peek                numéro courant, jeux appliqués, modes
-//   GET  /__modes?health=down   change un mode en cours de route (health, vigie, vigieScenario, demandes, trailers)
+//   GET  /__modes?health=down   change un mode en cours de route (health, vigie, vigieScenario, demandes, trailers, slowResumeMs)
 //   GET  /__unknown             les routes demandées que le banc ne sert pas (à ajouter)
 import http from "node:http";
 import path from "node:path";
@@ -97,6 +97,9 @@ async function handle(req, res) {
   // Le serveur « coupé » ou « muet » l'est pour TOUT, comme un vrai serveur absent.
   if (data.modes.health === "down") return req.socket.destroy();
   if (data.modes.health === "mute") return undefined;
+  // Un serveur lent sur les sources du héros (retours d'essai du 2026-10-04 : l'accueil se montrait avant lui).
+  const slow = Number(data.modes.slowResumeMs) || 0;
+  if (slow > 0 && /\/Items\/Resume$|\/Shows\/NextUp$/i.test(url.pathname)) await new Promise((resolve) => setTimeout(resolve, slow));
   for (const route of data.routes) {
     if (route.method === req.method && route.pattern.test(url.pathname)) return route.handler(req, res, { url, body, data, json });
   }

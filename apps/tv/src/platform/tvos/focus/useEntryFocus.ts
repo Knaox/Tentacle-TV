@@ -5,6 +5,7 @@ import {
   closesArrival,
   contentKeyOf,
   entryClaim,
+  holdsArrival,
   lastContentAfter,
   preferEntry,
   returnClaim,
@@ -90,7 +91,8 @@ export function useEntryFocus(
   useEffect(
     () =>
       focus.subscribe((key, focused) => {
-        if (!focused) return;
+        // L'ancre d'un chargement tient le focus, elle n'est pas du contenu (tv-core `holdsArrival`).
+        if (!focused || holdsArrival(key)) return;
         const inRail = isNavKey(key);
         lastContent.current = lastContentAfter(lastContent.current, key, inRail);
         if (closesArrival(arrivalRef.current!.state, inRail, Date.now())) endArrival();

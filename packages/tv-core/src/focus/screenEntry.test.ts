@@ -3,6 +3,7 @@ import {
   ARRIVAL_RAIL_IS_USER_MS,
   closeArrival,
   closesArrival,
+  holdsArrival,
   contentKeyOf,
   entryClaim,
   lastContentAfter,
@@ -10,7 +11,7 @@ import {
   returnClaim,
   startArrival,
 } from "./screenEntry";
-import { forYouEntryKey, homeEntryKey, rowCardKey } from "./homeEntry";
+import { forYouEntryKey, homeEntryKey, homeLoading, rowCardKey } from "./homeEntry";
 
 describe("screenEntry — l'arrivée sur un écran", () => {
   it("la préférence suit l'entrée pendant l'arrivée : l'ancienne la perd, la nouvelle la reçoit", () => {
@@ -81,7 +82,8 @@ describe("homeEntry — l'entrée de l'accueil et de « Pour vous »", () => {
 
   it("l'accueil : erreur → Réessayer, chargement ou vide → rien, héros → Lire, sinon la 1re carte", () => {
     expect(homeEntryKey({ ...home, failed: true, loading: true })).toBe("status:primary");
-    expect(homeEntryKey({ ...home, loading: true })).toBeNull();
+    // Le chargement tient le focus dans le contenu : la navigation ne se déplie pas.
+    expect(homeEntryKey({ ...home, loading: true })).toBe("home:loading");
     expect(homeEntryKey({ ...home, empty: true })).toBeNull();
     expect(homeEntryKey(home)).toBe("hero:primary");
     expect(homeEntryKey({ ...home, hasHero: false })).toBe("resume:0");
@@ -99,5 +101,30 @@ describe("homeEntry — l'entrée de l'accueil et de « Pour vous »", () => {
 
   it("la clé d'une carte de rangée", () => {
     expect(rowCardKey("library:abc", 3)).toBe("library:abc:3");
+  });
+});
+
+describe("l'accueil se montre d'un bloc", () => {
+  const ready = { failed: false, featuredSettled: true, resumeSettled: true, librariesSettled: true, heroPending: false };
+
+  it("charge tant qu'une source du héros, ou les bibliothèques, n'a pas répondu", () => {
+    expect(homeLoading(ready)).toBe(false);
+    // Les bibliothèques ont répondu, pas la reprise : avant, l'accueil se montrait — puis le héros s'insérait au-dessus.
+    expect(homeLoading({ ...ready, resumeSettled: false })).toBe(true);
+    expect(homeLoading({ ...ready, featuredSettled: false })).toBe(true);
+    expect(homeLoading({ ...ready, librariesSettled: false })).toBe(true);
+  });
+
+  it("attend l'art du premier héros, mais jamais une erreur", () => {
+    expect(homeLoading({ ...ready, heroPending: true })).toBe(true);
+    expect(homeLoading({ ...ready, failed: true, featuredSettled: false, heroPending: true })).toBe(false);
+  });
+});
+
+describe("l'ancre du chargement de l'accueil", () => {
+  it("tient le focus sans clore l'arrivée ni compter comme contenu", () => {
+    expect(holdsArrival("home:loading")).toBe(true);
+    expect(holdsArrival("hero:primary")).toBe(false);
+    expect(holdsArrival("nav:Home")).toBe(false);
   });
 });

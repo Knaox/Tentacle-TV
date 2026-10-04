@@ -18,6 +18,7 @@ export const DEFAULT_MODES = Object.freeze({
   vigieScenario: "still", // still | live | empty
   demandes: "off", // on : un titre absent s'offre à la demande
   trailers: "ready", // ready | broken (la résolution échoue)
+  slowResumeMs: "0", // > 0 : la reprise et « À suivre » répondent en retard (un serveur lent : l'accueil attend son héros)
 });
 
 export function loadSnapshot(dir) {

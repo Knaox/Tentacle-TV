@@ -2,9 +2,9 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
-import { useFeaturedItems, useLibraries } from "@tentacle-tv/api-client";
+import { useFeaturedItems, useLibraries, useResumeItems } from "@tentacle-tv/api-client";
 import { latestAdditionsSeasonId, type MediaItem } from "@tentacle-tv/shared";
-import { homeEntryKey } from "@tentacle-tv/tv-core";
+import { homeEntryKey, homeLoading } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 import { HomeView } from "../../redesign/screens/home/HomeView";
@@ -45,6 +45,8 @@ export function HomeRedesign({ navigation, route }: Props) {
 
   const featuredQuery = useFeaturedItems();
   const librariesQuery = useLibraries();
+  // La même lecture que la rangée « Reprendre » (cache commun) : une source du héros.
+  const resumeQuery = useResumeItems();
   const home = useHomeRowModels();
   const { rows: layout } = useTVHomeRows();
   const filterRowKey = useRecoFilterChipRow(layout);
@@ -69,12 +71,19 @@ export function HomeRedesign({ navigation, route }: Props) {
   const [heroInView, setHeroInView] = useState(true);
   const hero = useHomeHero(focus, home.resume, { play, detail, sheet }, heroInView && cardActions.sheet === null);
 
-  // L'état de l'écran d'abord : il décide de l'entrée du focus. Le premier
-  // héros attend l'art de son titre (logo, fond) : l'écran se dit en
-  // chargement plutôt que de s'afficher sans lui.
+  // L'état de l'écran d'abord : il décide de l'entrée du focus. L'accueil se
+  // montre D'UN BLOC (tv-core `homeLoading`) : les sources du héros et les
+  // bibliothèques ont répondu, le premier héros a son art — puis le héros en
+  // haut, le focus sur sa lecture, sans page qui remonte.
   const failed = featuredQuery.isError && librariesQuery.isError;
-  const loading =
-    !failed && (((featuredQuery.isLoading || librariesQuery.isLoading) && !featuredQuery.data && !librariesQuery.data) || hero.pending);
+  const settled = (query: { data?: unknown; isError: boolean }) => query.data !== undefined || query.isError;
+  const loading = homeLoading({
+    failed,
+    featuredSettled: settled(featuredQuery),
+    resumeSettled: settled(resumeQuery),
+    librariesSettled: settled(librariesQuery),
+    heroPending: hero.pending,
+  });
   const empty = !loading && !failed && featuredQuery.data?.length === 0 && home.rows.length === 0 && !home.resume?.length;
   const entryKey = homeEntryKey({ failed, loading, empty, hasHero: hero.hero !== null, firstRowKey: home.rows[0]?.key ?? null });
 
@@ -139,6 +148,7 @@ export function HomeRedesign({ navigation, route }: Props) {
         rows={home.rows}
         palette={palette}
         status={status}
+        holdFocus={loading}
         filter={filter}
         filterRowKey={filterRowKey}
         onRemoveFilter={removeFilter}
