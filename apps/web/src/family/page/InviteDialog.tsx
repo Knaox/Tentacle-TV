@@ -74,7 +74,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
             className={`${FIELD} pl-9`}
           />
         </div>
-        <p id={hintId} className="mt-2 text-xs leading-relaxed text-content-tertiary">{t("candidates.hint")}</p>
+        <p id={hintId} className="mt-2 text-xs leading-relaxed text-content-tertiary">{t("invite.hint")}</p>
 
         <div className="mt-4 min-h-[120px] flex-1 overflow-y-auto rounded-xl border border-line-subtle bg-surface-1" aria-busy={searching}>
           {candidates.isError ? (

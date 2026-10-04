@@ -45,6 +45,13 @@ export default {
     pendingRow: "Envoyée le {{sent}} · expire le {{expires}}",
     cancelInvite: "Annuler",
   },
+  memberships: {
+    title: "Ma famille",
+    row: "Famille de {{owner}}",
+    since: "Membre depuis le {{date}}",
+    leave: "Quitter",
+    hint: "Votre profil s'ouvre sur les TV de votre famille. Un code PIN le protège.",
+  },
   myPin: {
     title: "Mon code PIN",
     on: "Code PIN actif",
@@ -90,12 +97,10 @@ export default {
     leaveHint: "Votre profil disparaît des TV de la famille, et ses profils des vôtres.",
     alreadyInFamily: "Vous faites déjà partie d'une famille : quittez-la pour accepter une autre invitation.",
   },
-  candidates: {
-    hint: "Tous les comptes du serveur. Ceux qui sont déjà dans une famille ne peuvent pas être invités.",
-  },
   invite: {
     title: "Inviter un compte",
     searchLabel: "Rechercher un compte",
+    hint: "Tous les comptes du serveur sont listés ; la recherche affine. Ceux qui sont déjà dans une famille ne peuvent pas être invités.",
     searchPlaceholder: "Nom du compte",
     empty: "Aucun compte à inviter pour le moment.",
     noMatch: "Aucun compte ne correspond à « {{query}} ».",

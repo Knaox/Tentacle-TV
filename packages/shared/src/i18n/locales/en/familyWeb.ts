@@ -44,6 +44,13 @@ export default {
     pendingRow: "Sent {{sent}} · expires {{expires}}",
     cancelInvite: "Cancel",
   },
+  memberships: {
+    title: "My family",
+    row: "{{owner}}'s family",
+    since: "Member since {{date}}",
+    leave: "Leave",
+    hint: "Your profile opens on your family's TVs. A PIN protects it.",
+  },
   myPin: {
     title: "My PIN",
     on: "PIN enabled",
@@ -89,12 +96,10 @@ export default {
     leaveHint: "Your profile disappears from the family's TVs, and its profiles from yours.",
     alreadyInFamily: "You are already in a family: leave it to accept another invitation.",
   },
-  candidates: {
-    hint: "Every account on the server. Accounts already in a family cannot be invited.",
-  },
   invite: {
     title: "Invite an account",
     searchLabel: "Search for an account",
+    hint: "Every account on the server is listed; search narrows it down. Accounts already in a family cannot be invited.",
     searchPlaceholder: "Account name",
     empty: "No account to invite right now.",
     noMatch: "No account matches “{{query}}”.",
