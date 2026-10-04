@@ -3,134 +3,23 @@
   "domain": "socle",
   "suite": "rail",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "94b18d325358483a4a886ed5a02823ab83116263",
+    "label": "référence 94b18d325"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T2",
+    "name": "Tentacle TV — banc UI",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T02:32:46.565Z",
+  "recordedAt": "2026-10-04T14:47:13.114Z",
   "scenarios": {
-    "rail-05": {
-      "hash": "13b01017eeaa",
-      "durationMs": 23183,
-      "start": {
-        "app": "foreground",
-        "focus": "grid:0",
-        "label": "(500) jours ensemble",
-        "frame": [
-          176,
-          265,
-          244,
-          439
-        ],
-        "groups": [
-          "grid:line:0"
-        ],
-        "route": "Library",
-        "params": {
-          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
-          "libraryName": "Films"
-        },
-        "stack": [
-          "Home",
-          "Library"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "left",
-          "app": "foreground",
-          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
-          "label": "Films",
-          "frame": [
-            56,
-            693,
-            276,
-            64
-          ],
-          "groups": [],
-          "route": "Library",
-          "params": {
-            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
-            "libraryName": "Films"
-          },
-          "stack": [
-            "Home",
-            "Library"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "up",
-            "up",
-            "up",
-            "up",
-            "up"
-          ],
-          "app": "foreground",
-          "focus": "nav:Home",
-          "label": "Accueil",
-          "frame": [
-            56,
-            333,
-            276,
-            64
-          ],
-          "groups": [],
-          "route": "Library",
-          "params": {
-            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
-            "libraryName": "Films"
-          },
-          "stack": [
-            "Home",
-            "Library"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            248,
-            556,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "rail-01": {
-      "hash": "dc89da647e20",
-      "durationMs": 33831,
+      "hash": "80243e7bbffe",
+      "durationMs": 21359,
       "start": {
         "app": "foreground",
         "focus": "nav:Home",
@@ -175,27 +64,6 @@
         },
         {
           "do": "up",
-          "app": "foreground",
-          "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
-          "frame": [
-            56,
-            964,
-            276,
-            64
-          ],
-          "groups": [],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
           "app": "foreground",
           "focus": "nav:Search",
           "label": "Rechercher",
@@ -407,11 +275,11 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "nav:Search",
-          "label": "Rechercher",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
           "frame": [
             56,
-            244,
+            964,
             276,
             64
           ],
@@ -429,7 +297,7 @@
     },
     "rail-02": {
       "hash": "f1ee73e612d3",
-      "durationMs": 24677,
+      "durationMs": 10305,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -501,7 +369,7 @@
     },
     "rail-03": {
       "hash": "7fee0e53b13f",
-      "durationMs": 43312,
+      "durationMs": 15444,
       "start": {
         "app": "foreground",
         "focus": "resume:0",
@@ -640,7 +508,7 @@
     },
     "rail-04": {
       "hash": "b7c48469abda",
-      "durationMs": 51706,
+      "durationMs": 19424,
       "start": {
         "app": "foreground",
         "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
@@ -790,6 +658,117 @@
           "stack": [
             "Home",
             "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rail-05": {
+      "hash": "13b01017eeaa",
+      "durationMs": 20129,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            333,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
           ],
           "panel": null,
           "panelOwners": [],

@@ -1,13 +1,13 @@
 {
   "domain": "retour-rail",
-  "reference": "84f3cedd0",
+  "reference": "94b18d325",
   "defaults": {
     "settleMs": 700
   },
   "scenarios": [
     {
-      "id": "rail-boucle",
-      "title": "HAUT depuis Rechercher → profil ; BAS depuis le profil → Rechercher ; BAS depuis la dernière entrée → profil",
+      "id": "rail-butees",
+      "title": "Le rail s'arrête à ses bouts : HAUT sur Rechercher y reste ; BAS sur le profil y reste ; BAS depuis la dernière entrée → profil",
       "rules": [
         "S3",
         "S4",
@@ -56,20 +56,18 @@
         {
           "do": "up",
           "expect": {
-            "focus": "nav:Settings"
+            "focus": "nav:Search"
           },
-          "why": "S3 : la navigation boucle"
+          "why": "S3 : la butée du haut"
         },
         {
           "do": "down",
           "expect": {
-            "focus": "nav:Search"
-          },
-          "why": "S4"
+            "focus": "nav:Home"
+          }
         },
         {
           "do": [
-            "down",
             "down",
             "down",
             "down",
@@ -87,10 +85,17 @@
           "expect": {
             "focus": "nav:Settings"
           },
-          "why": "S5 : sans Vigie, rien entre la dernière entrée et le profil"
+          "why": "S5 : de la dernière entrée au profil"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Settings"
+          },
+          "why": "S4 : la butée du bas"
         }
       ],
-      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+      "why": "S3, S4 (décision de l'utilisateur, 2026-10-04 : la navigation ne boucle plus), S5."
     },
     {
       "id": "gauche-arme",

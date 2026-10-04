@@ -1,6 +1,6 @@
 {
   "domain": "retour-rail",
-  "reference": "84f3cedd0",
+  "reference": "94b18d325",
   "defaults": {
     "settleMs": 700
   },
@@ -43,16 +43,19 @@
         {
           "do": "holddown:3",
           "expect": {
-            "focus": "nav:Search",
-            "label": "Rechercher"
+            "focus": "nav:Settings"
           },
           "settleMs": 1000,
-          "why": "relevé B6 : la flèche maintenue passe la dernière entrée et le profil, puis boucle sur Rechercher (le carnet disait l'inverse)"
+          "why": "B6 corrigé (2026-10-04) : la flèche maintenue passe la dernière entrée et s'arrête sur le profil — le rail ne boucle plus"
         },
         {
           "do": "holdup:5",
           "settleMs": 1000,
-          "why": "jusqu'où remonte la flèche maintenue (relevé)"
+          "why": "HAUT maintenu remonte toute la colonne et s'arrête sur Rechercher",
+          "expect": {
+            "focus": "nav:Search",
+            "label": "Rechercher"
+          }
         }
       ]
     }

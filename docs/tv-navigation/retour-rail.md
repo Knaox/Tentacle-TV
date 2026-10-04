@@ -555,7 +555,7 @@ de référence et repassent à l'identique après l'extraction.
 | `retour-pages.json` | Retour sur les pages du rail : rail, profil, sortie ; Réglages en deux appuis |
 | `navigation.json` | choisir une page, l'entrée courante, Rechercher (étagère, barre), étagères poussées |
 | `fiches.json` | fiche, suite de fiches (similaires, casting), épisode → série, croix Retour |
-| `raccourcis.json` | la boucle du rail, GAUCHE armé, GAUCHE maintenu, ponts rail ↔ contenu |
+| `raccourcis.json` | les butées du rail (il ne boucle plus, 2026-10-04), GAUCHE armé, GAUCHE maintenu, ponts rail ↔ contenu |
 | `organiser.json` | menu d'une entrée, Monter, Masquer, Tout afficher, Déplacer (poser, annuler, sortir, butée), appuis longs sans menu, Réglages › Navigation ; écart B2 |
 | `defilement.json` | 24 bibliothèques : défilement, flèche maintenue |
 | `demandes.json` | l'aperçu des demandes, sa fenêtre, Retour |

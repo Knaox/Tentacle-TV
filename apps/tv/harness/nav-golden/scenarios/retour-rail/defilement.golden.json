@@ -3,23 +3,23 @@
   "domain": "retour-rail",
   "suite": "defilement",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "94b18d325358483a4a886ed5a02823ab83116263",
+    "label": "référence 94b18d325"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T4",
+    "name": "Tentacle TV — banc UI",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:01:56.676Z",
+  "recordedAt": "2026-10-04T14:50:40.795Z",
   "scenarios": {
     "rail-24-bibliotheques": {
-      "hash": "bbb7864ca9f5",
-      "durationMs": 35138,
+      "hash": "b63f7199e5fe",
+      "durationMs": 29252,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -75,11 +75,11 @@
         {
           "do": "holddown:3",
           "app": "foreground",
-          "focus": "nav:Search",
-          "label": "Rechercher",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
           "frame": [
             56,
-            60,
+            964,
             289,
             64
           ],
@@ -100,11 +100,11 @@
         {
           "do": "holdup:5",
           "app": "foreground",
-          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
-          "label": "Animés",
+          "focus": "nav:Search",
+          "label": "Rechercher",
           "frame": [
             56,
-            321,
+            60,
             289,
             64
           ],

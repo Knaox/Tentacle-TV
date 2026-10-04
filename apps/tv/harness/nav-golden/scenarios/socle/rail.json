@@ -1,10 +1,10 @@
 {
   "domain": "socle",
-  "reference": "84f3cedd0",
+  "reference": "94b18d325",
   "scenarios": [
     {
       "id": "rail-01",
-      "title": "Le rail de haut en bas : l'ordre des entrées, et HAUT depuis Recherche",
+      "title": "Le rail de haut en bas : l'ordre des entrées, et ses butées (HAUT sur Recherche, BAS sur le profil)",
       "why": "L'ordre du rail et ses bords : ce que voit l'utilisateur qui le parcourt.",
       "start": {
         "keys": [
@@ -21,13 +21,16 @@
         },
         {
           "do": "up",
-          "why": "au-dessus de Recherche : ce que fait la référence"
+          "expect": {
+            "focus": "nav:Search"
+          },
+          "why": "au-dessus de Recherche : la butée — le rail ne boucle plus (2026-10-04)"
         },
         {
-          "do": "down"
-        },
-        {
-          "do": "down"
+          "do": "down",
+          "expect": {
+            "focus": "nav:Home"
+          }
         },
         {
           "do": "down",
@@ -82,7 +85,10 @@
         },
         {
           "do": "down",
-          "why": "sous le profil : la butée"
+          "expect": {
+            "focus": "nav:Settings"
+          },
+          "why": "sous le profil : la butée — le rail ne boucle plus (2026-10-04)"
         }
       ]
     },
