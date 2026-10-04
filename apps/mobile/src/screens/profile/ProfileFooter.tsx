@@ -34,7 +34,7 @@ export function ProfileFooter({ onLogout }: { onLogout: () => void }) {
   return (
     <>
       <SettingsSection>
-        <SettingsRow icon="log-out" label={t("logout")} destructive last onPress={onLogout} />
+        <SettingsRow icon="log-out" label={t("signOut")} destructive last onPress={onLogout} />
       </SettingsSection>
       <Text style={st.version}>{t("version", { version: appVersion })}</Text>
     </>

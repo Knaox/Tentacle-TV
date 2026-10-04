@@ -86,5 +86,6 @@ export default {
   offlineGroup: "Hors ligne",
   devicesAndTv: "Appareils et TV",
   family: "Famille",
+  signOut: "Se déconnecter",
   homeAndRecommendations: "Accueil et recommandations",
 } as const;

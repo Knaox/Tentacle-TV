@@ -86,5 +86,6 @@ export default {
   offlineGroup: "Offline",
   devicesAndTv: "Devices and TVs",
   family: "Family",
+  signOut: "Sign out",
   homeAndRecommendations: "Home and recommendations",
 } as const;
