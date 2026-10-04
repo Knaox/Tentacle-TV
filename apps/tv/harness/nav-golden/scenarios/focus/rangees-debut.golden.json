@@ -1,0 +1,1095 @@
+{
+  "format": 1,
+  "domain": "focus",
+  "suite": "rangees-debut",
+  "reference": {
+    "sha": "23bf658b79d54f2e944f4fd921f4c2b0dd9d97d5",
+    "label": "référence 23bf658b7"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "Tentacle TV — banc UI",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-04T13:09:05.864Z",
+  "scenarios": {
+    "rangee-changement-de-page": {
+      "hash": "3b9be831e2c2",
+      "durationMs": 32608,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "resume:4",
+          "label": "Lovely Bones",
+          "frame": [
+            1460,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            883,
+            556,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "left",
+            "wait:0.4",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            333,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "wait:0.6",
+            "select"
+          ],
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Recommendations",
+          "label": "Pour vous",
+          "frame": [
+            56,
+            405,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "up",
+            "wait:0.6",
+            "select"
+          ],
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-a-l-ecran": {
+      "hash": "18658417a555",
+      "durationMs": 20853,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "resume:4",
+          "label": "Lovely Bones",
+          "frame": [
+            1460,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nextUp:3",
+          "label": "Cauchemar en cuisine avec Philippe Etchebest",
+          "frame": [
+            1424,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "resume:4",
+          "label": "Lovely Bones",
+          "frame": [
+            1460,
+            252,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-sortie": {
+      "hash": "dd8c4e83578d",
+      "durationMs": 30135,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "resume:4",
+          "label": "Lovely Bones",
+          "frame": [
+            1460,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nextUp:3",
+          "label": "Cauchemar en cuisine avec Philippe Etchebest",
+          "frame": [
+            1424,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "reco:forYou:5",
+          "label": "28 Jours plus tard",
+          "frame": [
+            1556,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:5",
+          "label": "#Chef",
+          "frame": [
+            1556,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "watched:3",
+          "label": "Les Kassos",
+          "frame": [
+            1424,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:watched"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:5",
+          "label": "#Chef",
+          "frame": [
+            1556,
+            126,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "reco:forYou:5",
+          "label": "28 Jours plus tard",
+          "frame": [
+            1556,
+            134,
+            240,
+            433
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nextUp:3",
+          "label": "Cauchemar en cuisine avec Philippe Etchebest",
+          "frame": [
+            1424,
+            126,
+            380,
+            287
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "resume:3",
+          "label": "Flight",
+          "frame": [
+            1424,
+            126,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-retour-de-fiche": {
+      "hash": "8970b32bb73e",
+      "durationMs": 26368,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "wait:0.9",
+            "down",
+            "wait:0.9",
+            "down",
+            "wait:0.9",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "reco:forYou:1",
+          "label": "Avatar : De feu et de cendres",
+          "frame": [
+            452,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "reco:forYou:4",
+          "label": "Naruto Shippuden",
+          "frame": [
+            1280,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            120,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "5a894256982e6b48c1d621f4eecb17dd"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "reco:forYou:4",
+          "label": "Naruto Shippuden",
+          "frame": [
+            1280,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-retour-premiere-carte": {
+      "hash": "9d67cd34f38e",
+      "durationMs": 26055,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "wait:0.9",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "nextUp:5",
+          "label": "Les Griffin",
+          "frame": [
+            1460,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            333,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "etagere-retour-premiere-carte": {
+      "hash": "ac2c237a336b",
+      "durationMs": 26355,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Recommendations",
+        "params": null,
+        "stack": [
+          "Home",
+          "Recommendations"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "wait:0.9",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "forYou:1",
+          "label": "Iron Man 2",
+          "frame": [
+            452,
+            451,
+            240,
+            433
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "forYou:5",
+          "label": "Les Gardiens de la Galaxie : Volume 3",
+          "frame": [
+            1556,
+            451,
+            240,
+            433
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "forYou:0",
+          "label": "Avatar : De feu et de cendres",
+          "frame": [
+            176,
+            451,
+            240,
+            433
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Recommendations",
+          "label": "Pour vous",
+          "frame": [
+            56,
+            405,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

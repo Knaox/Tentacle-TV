@@ -130,6 +130,9 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 #### `platform/tvos/focus/useEntryFocus.ts`
 - L2, 33, 101 · hasTVPreferredFocus, useFocusEffect · **ADAPTATEUR** · FAIT (dfb021e84) : applique tv-core `focus/screenEntry` (préférence pendant l'arrivée, clôture, retour au dernier contenu) ; `useFocusEffect` = événement de pile
 
+#### `platform/tvos/focus/useRowRewind.ts`
+- L94, 95 · `onRailPageChange`, `navigation.isFocused()` · **ADAPTATEUR** · FAIT (T9, 2026-10-04) : applique tv-core `focus/rowRewind` — la rangée sortie de l'écran ou quittée par le rail revient au début (`scrollTo` sans animation) ; l'état du Retour vers la première carte (`useAwayFromRowStart`)
+
 #### `platform/tvos/focus/useKeepFocusWithin.ts`
 - L19, 30 · setTimeout(`KEEP_WITHIN_CHECK_MS`) · **ADAPTATEUR** · FAIT : règle et durée de tv-core `focus/keepWithin`
 

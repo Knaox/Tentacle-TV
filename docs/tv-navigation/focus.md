@@ -311,6 +311,27 @@ Source : `TentacleRevealScroller.m`, `TentacleRevealMotion.m`,
   variante de la carte.
 - **W5 — Recul des voisines** : visuel ; « aucune » dit **32 ms** après un
   flou que personne n'a relevé.
+- **W6 — Retour au début (mode « mixte », 2026-10-04)** — tv-core
+  `focus/rowRewind.ts`, appliqué par `platform/tvos/focus/useRowRewind.ts`
+  sur les pages qui le demandent (`useRedesignScreen({ rewindRows: true })` :
+  l'accueil, « Pour vous ») :
+  - une rangée GARDE sa position tant qu'une part d'elle est à l'écran ;
+  - sortie de l'écran (plus rien d'elle ne se voit, en dessous comme au-dessus),
+    elle revient au début d'un `scrollTo` sans animation — jamais celle qui
+    porte le focus, jamais une rangée pas encore mesurée ;
+  - changer de page PAR LE RAIL (Accueil → Films → Accueil) remet toutes les
+    rangées au début et rend le focus à la première carte de celle où l'on
+    était ; revenir d'une fiche ne change rien (la carte ouverte reprend le
+    focus, la rangée est telle qu'on l'a laissée) ;
+  - Retour sur une carte autre que la première → la première (couche
+    `rowStart` de `railScreenBackLayers`, retour-rail.md § 3, R2.0).
+  Une rangée est « déplacée » quand une carte autre que la première a pris le
+  focus. Ni les épisodes, ni les saisons, ni la distribution d'une fiche, ni
+  la recherche : aucun fournisseur du port (`redesign/rows/rowRewindPort.tsx`),
+  rien ne bouge. Cas couvert : la page quittée par le rail alors qu'une fiche
+  la couvrait — UIKit lui rendra la carte d'où l'on était parti ; sa rangée
+  attend donc le retour pour revenir au début (sinon elle défilerait, à la
+  vue, jusqu'à la carte puis jusqu'au début).
 
 ## Z — Les hooks hérités, côté Apple TV
 

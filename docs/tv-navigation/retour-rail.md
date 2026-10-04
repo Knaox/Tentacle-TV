@@ -110,6 +110,7 @@ changent ni de nom ni de comportement.
 
 | # | Contexte | Retour (Menu) |
 |---|---|---|
+| R2.0 | Accueil ou « Pour vous », focus sur une carte d'une rangée qui n'est PAS sa première (2026-10-04) | Le focus va à la première carte de la rangée — elle défile, à la vue. Le Retour suivant : R2.1. Couche `rowStart` (« page »), exclusive de `openRail` : une seule couche « page » active (tv-core `railScreenBackLayers`, `focus/rowRewind.ts`). |
 | R2.1 | Page du rail, focus dans le contenu | Le rail s'ouvre, focus sur l'entrée de la page (`nav:<railKey>`, sinon `nav:Home` si elle n'est pas montée). |
 | R2.2 | Page du rail, focus sur une entrée du rail autre que le profil (y compris l'aperçu des demandes `nav:Requests`) | Focus sur le profil (`nav:Settings`), rail toujours ouvert, page inchangée. |
 | R2.3 | Page du rail, focus sur le profil | Sortie de l'application (X1). |
