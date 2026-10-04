@@ -9,7 +9,7 @@ import {
   type ViewProps,
   type ViewStyle,
 } from "react-native";
-import { dropShadowOf } from "@tentacle-tv/tv-core";
+import { dropShadowOf, shadowExtent } from "@tentacle-tv/tv-core";
 import { RENDER } from "./renderProfile";
 
 /**
@@ -20,9 +20,11 @@ import { RENDER } from "./renderProfile";
  * source, l'Apple TV les dessine elle-même et ce composant n'y rend RIEN
  * (profil de rendu `shadows: "layer"`).
  *
- * Ailleurs (`shadows: "mask"`) : la vue native `TentacleShadowView`, à la
- * taille de son parent, qui dessine autour de lui un masque flouté une fois
- * (voir `render/TentacleShadowView.kt`) — jamais par-dessus son fond. Le
+ * Ailleurs (`shadows: "mask"`) : la vue native `TentacleShadowView`, qui
+ * déborde de son parent de toute l'étendue du flou (ses bornes couvrent ce
+ * qu'elle dessine : Android repeint juste quand elle bouge) et dessine autour
+ * de lui un masque flouté une fois (voir `render/TentacleShadowView.kt`) —
+ * jamais par-dessus son fond. Le
  * parent ne doit pas rogner (`overflow: "hidden"`) : sur Apple TV non plus,
  * une vue qui rogne ne projette pas d'ombre.
  *
@@ -40,6 +42,8 @@ interface ShadowMask {
   maskOffsetY: number;
   maskRadius: number;
   maskOutset: number;
+  /** Le débord de la vue autour de son parent, de chaque côté. */
+  maskExtent: number;
 }
 
 type NativeShadowProps = ViewProps & ShadowMask;
@@ -72,6 +76,7 @@ function maskOf(of: StyleProp<ViewStyle>, coverage: number | undefined): ShadowM
     maskOffsetY: spec.offsetY,
     maskRadius: typeof flat.borderRadius === "number" ? flat.borderRadius : 0,
     maskOutset: typeof flat.borderWidth === "number" ? flat.borderWidth : 0,
+    maskExtent: shadowExtent(spec) + (typeof flat.borderWidth === "number" ? flat.borderWidth : 0),
   };
 }
 
@@ -86,7 +91,8 @@ export const DropShadow = NativeShadow ? memo(function DropShadow({ of, coverage
   const Shadow = NativeShadow as HostComponent<NativeShadowProps>;
   const mask = maskOf(of, coverage);
   if (!mask) return null;
-  return <Shadow pointerEvents="none" {...mask} style={StyleSheet.absoluteFill} />;
+  const e = -mask.maskExtent;
+  return <Shadow pointerEvents="none" {...mask} style={{ position: "absolute", left: e, top: e, right: e, bottom: e }} />;
 }) : NoShadow;
 
 /** Apple TV : l'ombre est celle du système, rien à ajouter. */

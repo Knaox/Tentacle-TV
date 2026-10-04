@@ -71,3 +71,9 @@ export function shadowMaskGeometry(blur: number): { margin: number; scale: numbe
   const scale = sigma <= MASK_MIN_SIGMA ? 1 : Math.max(0.125, MASK_MIN_SIGMA / sigma);
   return { margin: Math.ceil(sigma * 3), scale };
 }
+
+/** Jusqu'où une ombre déborde de sa boîte, de chaque côté, en points : la
+ *  marge de son flou plus son décalage. */
+export function shadowExtent(spec: Pick<DropShadowSpec, "blur" | "offsetX" | "offsetY">): number {
+  return shadowMaskGeometry(spec.blur).margin + Math.ceil(Math.max(Math.abs(spec.offsetX), Math.abs(spec.offsetY)));
+}

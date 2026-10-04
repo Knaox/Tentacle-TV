@@ -16,9 +16,10 @@ import kotlin.math.roundToInt
 /**
  * L'ombre portée d'une vue de la refonte, là où Android ne dessine pas celle
  * de ses styles iOS (`shadowColor`, `shadowRadius`… : ancienne architecture).
- * Posée en PREMIER enfant de la vue qui projette (`DropShadow`), à sa taille,
- * elle dessine autour d'elle, hors de ses bords — jamais dessus : la boîte
- * elle-même est exclue du dessin, son fond reste intact.
+ * Posée en PREMIER enfant de la vue qui projette (`DropShadow`), elle en
+ * déborde de toute l'étendue du flou (`extent`) — ses bornes couvrent son
+ * dessin, la région repeinte quand elle bouge aussi — et dessine autour de la
+ * boîte, jamais dessus : la boîte est exclue du dessin, son fond reste intact.
  *
  * Le flou se calcule UNE fois par géométrie (`ShadowMasks`) — un masque
  * alpha, réduit, mis en cache et partagé par toutes les cartes de même taille
@@ -53,18 +54,23 @@ class TentacleShadowView(context: Context) : View(context) {
     set(value) { field = value; invalidate() }
   var outset = 0f
     set(value) { field = value; invalidate() }
+  /** Le débord de la vue autour de la boîte qui projette (posé par le JS). */
+  var extent = 0f
+    set(value) { field = value; invalidate() }
 
   override fun onDraw(canvas: Canvas) {
     val alpha = (Color.alpha(color) * opacity).roundToInt().coerceIn(0, 255)
-    if (alpha == 0 || width <= 0 || height <= 0) return
-    // La forme qui projette : la boîte, bordure comprise (la vue est posée
-    // DANS la bordure de son parent).
-    val w = width + 2 * outset
-    val h = height + 2 * outset
-    val mask = ShadowMasks.get(w.roundToInt(), h.roundToInt(), cornerRadius, blur)
+    // La boîte qui projette, dans la vue qui déborde d'elle de `extent` ;
+    // bordure comprise (le JS mesure dans la bordure de son parent).
+    val left = extent - outset
+    val top = extent - outset
+    val right = width - extent + outset
+    val bottom = height - extent + outset
+    if (alpha == 0 || right <= left || bottom <= top) return
+    val mask = ShadowMasks.get((right - left).roundToInt(), (bottom - top).roundToInt(), cornerRadius, blur)
     val m = mask.margin
-    dst.set(-outset - m + offsetX, -outset - m + offsetY, width + outset + m + offsetX, height + outset + m + offsetY)
-    holeRect.set(-outset, -outset, width + outset, height + outset)
+    dst.set(left - m + offsetX, top - m + offsetY, right + m + offsetX, bottom + m + offsetY)
+    holeRect.set(left, top, right, bottom)
     hole.rewind()
     hole.addRoundRect(holeRect, cornerRadius, cornerRadius, Path.Direction.CW)
     paint.color = color
@@ -103,4 +109,7 @@ class TentacleShadowViewManager : SimpleViewManager<TentacleShadowView>() {
 
   @ReactProp(name = "maskOutset", defaultFloat = 0f)
   fun setMaskOutset(view: TentacleShadowView, outset: Float) { view.outset = PixelUtil.toPixelFromDIP(outset) }
+
+  @ReactProp(name = "maskExtent", defaultFloat = 0f)
+  fun setMaskExtent(view: TentacleShadowView, extent: Float) { view.extent = PixelUtil.toPixelFromDIP(extent) }
 }

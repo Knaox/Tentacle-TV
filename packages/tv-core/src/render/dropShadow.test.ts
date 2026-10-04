@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dropShadowOf, shadowMaskGeometry } from "./dropShadow";
+import { dropShadowOf, shadowExtent, shadowMaskGeometry } from "./dropShadow";
 
 describe("l'ombre lue dans les styles iOS", () => {
   it("reprend couleur, opacité, flou et décalage tels qu'écrits", () => {
@@ -39,5 +39,12 @@ describe("la géométrie du masque", () => {
     expect(shadowMaskGeometry(4).scale).toBe(1);
     expect(shadowMaskGeometry(30).scale * 30).toBeCloseTo(4);
     expect(shadowMaskGeometry(200).scale).toBe(0.125);
+  });
+});
+
+describe("l'étendue d'une ombre", () => {
+  it("couvre la marge du flou et le plus grand décalage", () => {
+    expect(shadowExtent({ blur: 30, offsetX: 0, offsetY: 28 })).toBe(118);
+    expect(shadowExtent({ blur: 4, offsetX: -3, offsetY: 2 })).toBe(15);
   });
 });
