@@ -19,11 +19,24 @@ const probeDir = path.resolve(__dirname, "../probe");
 const base = require(path.join(appDir, "metro.config.js"));
 const baseResolve = base.resolver.resolveRequest;
 
+/**
+ * React Native lui-même n'est jamais emprunté : la CLI (`react-native start`)
+ * fait tourner son InitializeCore AVANT le module principal, résolu dans le
+ * `react-native` du checkout — emprunté, le graphe n'avait que la copie du
+ * principal, InitializeCore ne tournait jamais et l'app mourait au lancement
+ * dans un worktree qui a sa PROPRE installation (« Property 'window' doesn't
+ * exist », vu à l'émulateur Android). Singleton (`metro.config.js`) : une
+ * seule copie quand même, celle du checkout (pour une référence, un lien vers
+ * le principal).
+ */
+const OWN_REACT_NATIVE = `${path.sep}node_modules${path.sep}react-native${path.sep}`;
+
 /** Un fichier résolu dans un node_modules du checkout : la même copie chez le principal. */
 function borrowed(filePath) {
   if (!main || path.resolve(checkout) === path.resolve(main)) return filePath;
   const rel = path.relative(checkout, filePath);
   if (rel.startsWith("..") || !rel.split(path.sep).includes("node_modules")) return filePath;
+  if (`${path.sep}${rel}`.includes(OWN_REACT_NATIVE)) return filePath;
   const twin = path.join(main, rel);
   return fs.existsSync(twin) ? twin : filePath;
 }
