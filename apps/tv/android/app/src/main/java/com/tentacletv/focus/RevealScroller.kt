@@ -22,7 +22,8 @@ import kotlin.math.min
  * - la PAGE (la ScrollView verticale la plus proche) va à la cible de la
  *   section qui RÉVÈLE l'élément (la plus proche dont le mode n'est pas
  *   `none`) — `reveal.ts` (`revealOffset`, `clampRevealOffset`) ; sans
- *   section qui révèle, Android garde son défilement ;
+ *   section qui révèle, la cible d'Android (le moins pour montrer
+ *   l'élément), mais en un mouvement — comme le défilement propre de tvOS ;
  * - la RANGÉE (la ScrollView horizontale entre l'élément et sa section) va à
  *   `rowRevealOffset` (`burstFollow.ts`) : la carte montrée aussi loin des
  *   bords que les bouts de la rangée le sont de son contenu.
@@ -47,12 +48,16 @@ internal object RevealScroller {
     fun apply() {
       val step = currentStep
       val segment = if (step?.burst == true) burstSegmentMs(step.intervalMs) else null
-      if (page != null && revealing != null) {
+      if (page != null) {
         val follower = RevealFollower.of(page, horizontal = false)
+        // Sans section qui révèle : la cible d'Android (là où il vient de sauter), animée.
+        val jumped = page.scrollY.toFloat()
         // Android vient de sauter : on rend la position d'avant, puis on y va.
         if (page.scrollY != pageAt) page.scrollTo(page.scrollX, pageAt)
-        val spring = revealing.revealResponse to revealing.revealDamping
-        follower.moveTo(pageTarget(page, revealing, follower.base()), spring, segment)
+        val spring = (revealing ?: FocusGeometry.innermostSection(focused))?.let { it.revealResponse to it.revealDamping }
+          ?: (DEFAULT_RESPONSE to 1f)
+        val target = if (revealing != null) pageTarget(page, revealing, follower.base()) else if (jumped != pageAt.toFloat()) jumped else null
+        if (target != null) follower.moveTo(target, spring, segment)
       }
       if (row != null) {
         val follower = RevealFollower.of(row, horizontal = true)
@@ -72,7 +77,7 @@ internal object RevealScroller {
   /** Relève, avant que les ScrollView ne sautent, ce que le focus de `focused` fera défiler. */
   fun capture(section: TentacleFocusSection, focused: View): Plan? {
     val revealing = revealingSection(focused)
-    val page = if (revealing != null) FocusGeometry.ancestor<ReactScrollView>(revealing) else null
+    val page = FocusGeometry.ancestor<ReactScrollView>(revealing ?: focused)
     val row = FocusGeometry.ancestor<ReactHorizontalScrollView>(focused, stop = section)
     if (page == null && row == null) return null
     return Plan(page, page?.scrollY ?: 0, row, row?.scrollX ?: 0, focused, revealing)
