@@ -45,7 +45,7 @@ export const ManageList = memo(function ManageList({ rows, canCreateGuest, canIn
     <View>
       {canCreateGuest || canInvite ? (
         <FocusGroup focusKey={MANAGE_ACTIONS_GROUP} style={styles.actions}>
-          {canCreateGuest ? <PillButton label={t("manage.createGuest")} icon="plus" variant="primary" size="md" focusKey={MANAGE_CREATE_KEY} onPress={onCreateGuest} /> : null}
+          {canCreateGuest ? <PillButton label={t("manage.createGuest")} icon="plus" size="md" focusKey={MANAGE_CREATE_KEY} onPress={onCreateGuest} /> : null}
           {canInvite ? <PillButton label={t("manage.inviteMember")} icon="user" size="md" focusKey={MANAGE_INVITE_KEY} onPress={onInvite} /> : null}
         </FocusGroup>
       ) : null}
