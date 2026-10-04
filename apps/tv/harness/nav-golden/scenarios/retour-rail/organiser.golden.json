@@ -3,23 +3,23 @@
   "domain": "retour-rail",
   "suite": "organiser",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
+    "label": "référence 17dde80e0"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T4",
+    "name": "Tentacle TV — banc UI",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:28:46.931Z",
+  "recordedAt": "2026-10-04T19:23:53.302Z",
   "scenarios": {
     "menu-entree-retour": {
       "hash": "59eaa18d4ac1",
-      "durationMs": 25803,
+      "durationMs": 28635,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -249,7 +249,7 @@
     },
     "monter-x2-puis-retour": {
       "hash": "98f78143207d",
-      "durationMs": 25402,
+      "durationMs": 24237,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -506,7 +506,7 @@
     },
     "monter-puis-double-retour": {
       "hash": "3f405ab37c59",
-      "durationMs": 25850,
+      "durationMs": 20801,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -657,7 +657,7 @@
           ],
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -682,7 +682,7 @@
     },
     "masquer-puis-tout-afficher": {
       "hash": "be66f4e3223e",
-      "durationMs": 24493,
+      "durationMs": 22212,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -888,7 +888,7 @@
     },
     "tout-afficher-du-menu": {
       "hash": "797d4c6a4be9",
-      "durationMs": 28254,
+      "durationMs": 27087,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1126,7 +1126,7 @@
     },
     "deplacer-puis-poser": {
       "hash": "e2ef2a92c14e",
-      "durationMs": 27866,
+      "durationMs": 22214,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1349,7 +1349,7 @@
     },
     "deplacer-puis-annuler": {
       "hash": "51bb6191c676",
-      "durationMs": 25167,
+      "durationMs": 22148,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1541,7 +1541,7 @@
     },
     "deplacer-puis-sortir": {
       "hash": "9ce169e37e2f",
-      "durationMs": 24886,
+      "durationMs": 21216,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1710,7 +1710,7 @@
     },
     "deplacer-butee-en-tete": {
       "hash": "771dd68a283a",
-      "durationMs": 24391,
+      "durationMs": 23549,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1908,7 +1908,7 @@
     },
     "appui-long-accueil": {
       "hash": "2b6eea423e90",
-      "durationMs": 19791,
+      "durationMs": 19616,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1997,7 +1997,7 @@
     },
     "appui-long-rechercher": {
       "hash": "8d53c414068e",
-      "durationMs": 22306,
+      "durationMs": 19273,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2087,7 +2087,7 @@
     },
     "appui-long-profil": {
       "hash": "a70ae37bcecb",
-      "durationMs": 23413,
+      "durationMs": 18011,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2123,7 +2123,7 @@
           ],
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -2148,7 +2148,7 @@
           "do": "hold:1.5",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -2173,7 +2173,7 @@
     },
     "menu-vers-reglages-navigation": {
       "hash": "3e1b62d065b6",
-      "durationMs": 24925,
+      "durationMs": 21006,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2322,7 +2322,7 @@
     },
     "reglages-navigation-deplacer": {
       "hash": "7a408fbd606d",
-      "durationMs": 36303,
+      "durationMs": 28408,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:navigation",

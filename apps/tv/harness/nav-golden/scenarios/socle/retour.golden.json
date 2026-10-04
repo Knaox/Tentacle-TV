@@ -3,189 +3,23 @@
   "domain": "socle",
   "suite": "retour",
   "reference": {
-    "sha": "9bcf1e60020dc15b05e657e157ec0716e064be17",
-    "label": "référence 9bcf1e600"
+    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
+    "label": "référence 17dde80e0"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — refonte",
+    "name": "Tentacle TV — banc UI",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T17:03:18.927Z",
+  "recordedAt": "2026-10-04T18:55:21.199Z",
   "scenarios": {
-    "retour-reglages": {
-      "hash": "70d07834eb36",
-      "durationMs": 42145,
-      "start": {
-        "app": "foreground",
-        "focus": "settings:tab:account",
-        "label": "Compte",
-        "frame": [
-          176,
-          164,
-          340,
-          100
-        ],
-        "groups": [
-          "settings:tabs"
-        ],
-        "route": "Settings",
-        "params": null,
-        "stack": [
-          "Home",
-          "Settings"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
-          "frame": [
-            56,
-            964,
-            276,
-            64
-          ],
-          "groups": [],
-          "route": "Settings",
-          "params": null,
-          "stack": [
-            "Home",
-            "Settings"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "background",
-          "focus": null,
-          "label": null,
-          "frame": null,
-          "groups": [],
-          "route": null,
-          "params": null,
-          "stack": [],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "background",
-          "focus": null,
-          "label": null,
-          "frame": null,
-          "groups": [],
-          "route": null,
-          "params": null,
-          "stack": [],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "retour-ma-liste": {
-      "hash": "2bdbba5a67f8",
-      "durationMs": 33550,
-      "start": {
-        "app": "foreground",
-        "focus": "grid:0",
-        "label": "Rick et Morty",
-        "frame": [
-          176,
-          196,
-          244,
-          439
-        ],
-        "groups": [
-          "grid:line:0"
-        ],
-        "route": "Watchlist",
-        "params": null,
-        "stack": [
-          "Home",
-          "Watchlist"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "nav:Watchlist",
-          "label": "Ma liste",
-          "frame": [
-            56,
-            477,
-            276,
-            64
-          ],
-          "groups": [],
-          "route": "Watchlist",
-          "params": null,
-          "stack": [
-            "Home",
-            "Watchlist"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
-          "frame": [
-            56,
-            964,
-            276,
-            64
-          ],
-          "groups": [],
-          "route": "Watchlist",
-          "params": null,
-          "stack": [
-            "Home",
-            "Watchlist"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "background",
-          "focus": null,
-          "label": null,
-          "frame": null,
-          "groups": [],
-          "route": null,
-          "params": null,
-          "stack": [],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "retour-accueil": {
       "hash": "ab039fb4ebaf",
-      "durationMs": 36002,
+      "durationMs": 32734,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -234,7 +68,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -269,7 +103,7 @@
     },
     "retour-pour-vous": {
       "hash": "78f78c543981",
-      "durationMs": 68759,
+      "durationMs": 27540,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -320,7 +154,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -354,9 +188,96 @@
         }
       ]
     },
+    "retour-ma-liste": {
+      "hash": "2bdbba5a67f8",
+      "durationMs": 25720,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "Rick et Morty",
+        "frame": [
+          176,
+          196,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Watchlist",
+        "params": null,
+        "stack": [
+          "Home",
+          "Watchlist"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Watchlist",
+          "label": "Ma liste",
+          "frame": [
+            56,
+            477,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "background",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": null,
+          "params": null,
+          "stack": [],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
     "retour-favoris": {
       "hash": "8d1fdc23be98",
-      "durationMs": 69976,
+      "durationMs": 31075,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -407,7 +328,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -443,7 +364,7 @@
     },
     "retour-animes": {
       "hash": "fd5d2555f9d5",
-      "durationMs": 41772,
+      "durationMs": 30851,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -500,7 +421,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -539,7 +460,7 @@
     },
     "retour-series": {
       "hash": "8a8ee6d37174",
-      "durationMs": 33793,
+      "durationMs": 31888,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -623,7 +544,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -662,7 +583,7 @@
     },
     "retour-recherche": {
       "hash": "ff846e3cedc3",
-      "durationMs": 34123,
+      "durationMs": 26829,
       "start": {
         "app": "foreground",
         "focus": "key:A",
@@ -713,7 +634,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -747,9 +668,88 @@
         }
       ]
     },
+    "retour-reglages": {
+      "hash": "70d07834eb36",
+      "durationMs": 42268,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:account",
+        "label": "Compte",
+        "frame": [
+          176,
+          164,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": null,
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "background",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": null,
+          "params": null,
+          "stack": [],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "background",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": null,
+          "params": null,
+          "stack": [],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
     "retour-fiche": {
       "hash": "1b241a1569c7",
-      "durationMs": 18949,
+      "durationMs": 18111,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
@@ -824,7 +824,7 @@
     },
     "retour-lecteur": {
       "hash": "fb7b4a4e077f",
-      "durationMs": 16043,
+      "durationMs": 24436,
       "start": {
         "app": "foreground",
         "focus": "resume:0",

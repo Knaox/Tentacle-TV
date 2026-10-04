@@ -3,8 +3,8 @@
   "domain": "retour-rail",
   "suite": "raccourcis",
   "reference": {
-    "sha": "a353b2c24d54e6bd65163f37de3271e16cd5f1d8",
-    "label": "référence a353b2c24"
+    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
+    "label": "référence 17dde80e0"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T15:14:21.313Z",
+  "recordedAt": "2026-10-04T19:12:36.205Z",
   "scenarios": {
     "rail-butees": {
       "hash": "63adb811e76f",
-      "durationMs": 23689,
+      "durationMs": 23657,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -190,7 +190,7 @@
           "do": "down",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -215,7 +215,7 @@
           "do": "down",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -240,7 +240,7 @@
     },
     "gauche-arme": {
       "hash": "49b8da1156c2",
-      "durationMs": 16104,
+      "durationMs": 16124,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -300,7 +300,7 @@
           ],
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -325,7 +325,7 @@
     },
     "gauche-maintenu": {
       "hash": "f0fe56cc477f",
-      "durationMs": 18458,
+      "durationMs": 18812,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -412,7 +412,7 @@
           ],
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -437,7 +437,7 @@
     },
     "pont-rail-contenu": {
       "hash": "73f5cef2091b",
-      "durationMs": 14983,
+      "durationMs": 15416,
       "start": {
         "app": "foreground",
         "focus": "grid:0",

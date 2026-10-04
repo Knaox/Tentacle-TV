@@ -3,23 +3,23 @@
   "domain": "retour-rail",
   "suite": "retour-pages",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
+    "label": "référence 17dde80e0"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T4",
+    "name": "Tentacle TV — banc UI",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:36:50.441Z",
+  "recordedAt": "2026-10-04T19:10:07.337Z",
   "scenarios": {
     "accueil-retour-x3": {
       "hash": "5b8382e3de8f",
-      "durationMs": 30656,
+      "durationMs": 30707,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -68,7 +68,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -103,7 +103,7 @@
           "do": "activate",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -124,7 +124,7 @@
     },
     "bibliotheque-retour-x3": {
       "hash": "1499391cbb31",
-      "durationMs": 31069,
+      "durationMs": 28065,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -181,7 +181,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -220,7 +220,7 @@
           "do": "activate",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -245,7 +245,7 @@
     },
     "reglages-retour-x2": {
       "hash": "a288dc37d9f8",
-      "durationMs": 34261,
+      "durationMs": 31539,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -274,7 +274,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -310,7 +310,7 @@
           "do": "activate",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -332,7 +332,7 @@
     },
     "rail-entree-vers-profil": {
       "hash": "c0a06744b641",
-      "durationMs": 19493,
+      "durationMs": 16651,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -418,7 +418,7 @@
           "do": "menu",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,

@@ -3,208 +3,23 @@
   "domain": "ecrans",
   "suite": "reglages",
   "reference": {
-    "sha": "485ecf4c30d2897bc5b5fce0566f0401fb7d1df5",
-    "label": "référence 485ecf4c3"
+    "sha": "17dde80e020fd0f086595284c669cb92bbc52cf6",
+    "label": "référence 17dde80e0"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — refonte",
+    "name": "Tentacle TV — banc UI",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T12:21:59.512Z",
+  "recordedAt": "2026-10-04T19:05:31.867Z",
   "scenarios": {
-    "reglages-liste-de-choix": {
-      "hash": "dbcdcc94382c",
-      "durationMs": 37720,
-      "start": {
-        "app": "foreground",
-        "focus": "settings:tab:playback",
-        "label": "Lecture",
-        "frame": [
-          176,
-          278,
-          340,
-          100
-        ],
-        "groups": [
-          "settings:tabs"
-        ],
-        "route": "Settings",
-        "params": null,
-        "stack": [
-          "Home",
-          "Settings"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "wait:1",
-          "app": "foreground",
-          "focus": "settings:tab:playback",
-          "label": "Lecture",
-          "frame": [
-            176,
-            278,
-            340,
-            100
-          ],
-          "groups": [
-            "settings:tabs"
-          ],
-          "route": "Settings",
-          "params": null,
-          "stack": [
-            "Home",
-            "Settings"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "settings:preset:default",
-          "label": "Par défaut",
-          "frame": [
-            612,
-            278,
-            210,
-            60
-          ],
-          "groups": [
-            "settings:lines",
-            "settings:panel"
-          ],
-          "route": "Settings",
-          "params": null,
-          "stack": [
-            "Home",
-            "Settings"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "down",
-            "down",
-            "down",
-            "down"
-          ],
-          "app": "foreground",
-          "focus": "settings:lib:0:audio",
-          "label": "Audio : Par défaut",
-          "frame": [
-            641,
-            738,
-            355,
-            108
-          ],
-          "groups": [
-            "settings:lines",
-            "settings:panel"
-          ],
-          "route": "Settings",
-          "params": null,
-          "stack": [
-            "Home",
-            "Settings"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "settings:choice:0",
-          "label": "Par défaut",
-          "frame": [
-            1054,
-            233,
-            740,
-            80
-          ],
-          "groups": [],
-          "route": "Settings",
-          "params": null,
-          "stack": [
-            "Home",
-            "Settings"
-          ],
-          "panel": [
-            "settings:choice:0"
-          ],
-          "panelOwners": [
-            "FadingModal"
-          ],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "settings:choice:1",
-          "label": "VO (langue originale)",
-          "frame": [
-            1054,
-            319,
-            740,
-            80
-          ],
-          "groups": [],
-          "route": "Settings",
-          "params": null,
-          "stack": [
-            "Home",
-            "Settings"
-          ],
-          "panel": [
-            "settings:choice:0"
-          ],
-          "panelOwners": [
-            "FadingModal"
-          ],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "settings:lib:0:audio",
-          "label": "Audio : Par défaut",
-          "frame": [
-            641,
-            738,
-            355,
-            108
-          ],
-          "groups": [
-            "settings:lines",
-            "settings:panel"
-          ],
-          "route": "Settings",
-          "params": null,
-          "stack": [
-            "Home",
-            "Settings"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "reglages-onglets": {
       "hash": "1f952d09cb16",
-      "durationMs": 42111,
+      "durationMs": 42791,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -551,7 +366,7 @@
           "do": "left",
           "app": "foreground",
           "focus": "nav:Settings",
-          "label": "Knaoxtest, Profil et réglages",
+          "label": "Knaoxtest, Réglages",
           "frame": [
             56,
             964,
@@ -573,7 +388,7 @@
     },
     "reglages-double-appui": {
       "hash": "564d8ce9e8e2",
-      "durationMs": 33564,
+      "durationMs": 33339,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -774,9 +589,194 @@
         }
       ]
     },
+    "reglages-liste-de-choix": {
+      "hash": "dbcdcc94382c",
+      "durationMs": 40745,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:playback",
+        "label": "Lecture",
+        "frame": [
+          176,
+          278,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": null,
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "settings:tab:playback",
+          "label": "Lecture",
+          "frame": [
+            176,
+            278,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:preset:default",
+          "label": "Par défaut",
+          "frame": [
+            612,
+            278,
+            210,
+            60
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "settings:lib:0:audio",
+          "label": "Audio : Par défaut",
+          "frame": [
+            641,
+            738,
+            355,
+            108
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:choice:0",
+          "label": "Par défaut",
+          "frame": [
+            1054,
+            233,
+            740,
+            80
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": [
+            "settings:choice:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:choice:1",
+          "label": "VO (langue originale)",
+          "frame": [
+            1054,
+            319,
+            740,
+            80
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": [
+            "settings:choice:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "settings:lib:0:audio",
+          "label": "Audio : Par défaut",
+          "frame": [
+            641,
+            738,
+            355,
+            108
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
     "reglages-navigation-deplacer": {
       "hash": "fbcd8f3e8baa",
-      "durationMs": 46162,
+      "durationMs": 46556,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:navigation",
