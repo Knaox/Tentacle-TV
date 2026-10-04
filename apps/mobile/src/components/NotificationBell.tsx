@@ -24,6 +24,7 @@ import { ProblemState } from "@/components/problems/ProblemState";
 import { usePageProblem } from "@/components/problems/usePageProblem";
 import { toNotifPluginMeta, useActivePlugins } from "@/hooks/useActivePlugins";
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
+import { openFamilyNotification } from "@/family/familyPosterStore";
 import { BottomSheet } from "./ui";
 import { SwipeableNotifRow } from "./notifications/SwipeableNotifRow";
 import { NotifSheetHeader } from "./notifications/NotifSheetHeader";
@@ -100,6 +101,8 @@ export function NotificationBell() {
     setVisible(false);
     exitSelection();
     if (!n.read) markOne.mutate(n.id);
+    // « X vous invite… » ouvre l'affiche de l'invitation, une fois la feuille retirée.
+    if (openFamilyNotification(router, n)) return;
     const route = resolveNotificationRoute(n, "mobile", pluginNavMeta);
     // Une destination d'onglet (section d'extension…) se rejoint sans empiler.
     if (route) openNotificationRoute(router, route);

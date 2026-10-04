@@ -10,6 +10,7 @@ import {
 import type { NotifPluginMeta, StorageAdapter } from "@tentacle-tv/api-client";
 import { activePluginsQueryOptions, toNotifPluginMeta } from "@/hooks/useActivePlugins";
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
+import { openFamilyNotification } from "@/family/familyPosterStore";
 import {
   configureNotificationHandler,
   registerForPushToken,
@@ -77,6 +78,9 @@ export function PushRegistrationSync({
         router.push("/on-device" as never);
         return;
       }
+      // Une invitation de la Famille : le push ne fait qu'OUVRIR l'affiche, qui
+      // relit l'invitation au serveur avec la session de l'utilisateur.
+      if (openFamilyNotification(router, { type, refId: data?.refId ?? null })) return;
       let meta: NotifPluginMeta[] = [];
       if (type === "request_status" && serverUrl && token) {
         try {
