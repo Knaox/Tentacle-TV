@@ -32,6 +32,7 @@ import { useMultiSelect } from "@/hooks/useMultiSelect";
 import { spacing, useGrid, useTheme, useThemedStyles } from "@/theme";
 import { usePlayFromWatchlist, useSummaryLine, useWatchlistScreen } from "./useWatchlistScreen";
 import { useSearchDock } from "@/screens/collection/useSearchDock";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 const STAGE_EMPTY = { new: "stageEmptyNew", inProgress: "stageEmptyInProgress", watched: "stageEmptyWatched" } as const;
 const NONE: MediaItem[] = [];
@@ -53,6 +54,8 @@ export function WatchlistScreen() {
   const insets = useSafeAreaInsets();
   const { height: windowH } = useWindowDimensions();
   const { data: raw, isLoading, error, refetch, isRefetching } = useWatchlistAll();
+  // L'anneau suit le geste seul (cf. usePullToRefresh) : une relève poussée ne pousse pas la page.
+  const pull = usePullToRefresh(refetch);
   // Une erreur n'est pas une liste vide : le dire, et réessayer.
   const failure = usePageProblem(raw ? null : error, { onRetry: () => void refetch(), availability: { canGoBack: false } });
   const batchRemove = useBatchRemoveWatchlist();
@@ -195,7 +198,7 @@ export function WatchlistScreen() {
     <CatalogEmpty filtered onReset={() => { filters.reset(); filters.patch({ type: "all" }); }} />
   );
 
-  const refresh = <RefreshControl refreshing={isRefetching} onRefresh={selection.active ? undefined : refetch} tintColor={colors.brand.violet} />;
+  const refresh = <RefreshControl refreshing={pull.refreshing} onRefresh={selection.active ? undefined : pull.onRefresh} tintColor={colors.brand.violet} />;
 
   return (
     <SubtleBackground ambient>

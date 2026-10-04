@@ -22,6 +22,7 @@ import type { HomeRowActions, HomeRowData } from "@/components/home/homeRowRegis
 import { useHomeRows } from "@/components/home/useHomeRows";
 import { CardDensityProvider } from "@/contexts/CardDensityContext";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useRecoNavigation } from "@/hooks/useRecoNavigation";
 import { useRecoFilterChipRow } from "@/components/reco/useRecoFilterChipRow";
 import { ProblemState } from "@/components/problems/ProblemState";
@@ -73,13 +74,17 @@ export function HomeScreen() {
 
   const isLoading = featured.isLoading || resume.isLoading;
 
-  const handleRefresh = useCallback(() => {
-    featured.refetch();
-    resume.refetch();
-    nextUp.refetch();
-    libraries.refetch();
-    for (const queryKey of REFRESH_KEYS) void queryClient.invalidateQueries({ queryKey });
-  }, [featured, resume, nextUp, libraries, queryClient]);
+  const handleRefresh = useCallback(() => Promise.all([
+    featured.refetch(),
+    resume.refetch(),
+    nextUp.refetch(),
+    libraries.refetch(),
+    ...REFRESH_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+  ]), [featured, resume, nextUp, libraries, queryClient]);
+  // L'anneau suit le GESTE seul : une relève poussée par le serveur (« featured »
+  // à chaque ajout, repli toutes les minutes) poussait la page — et le héros
+  // restait plus bas si elle finissait pendant qu'on était sur un autre onglet.
+  const pull = usePullToRefresh(handleRefresh);
 
   // Une carte regroupée des « Derniers ajouts » ouvre la série sur la saison de son dernier ajout.
   const handlePress = useCallback((item: MediaItem) => { router.push(`/media/${item.Id}${latestAdditionsDetailQuery(item)}`); }, [router]);
@@ -153,8 +158,8 @@ export function HomeScreen() {
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
-            refreshing={featured.isFetching && !featured.isLoading}
-            onRefresh={handleRefresh}
+            refreshing={pull.refreshing}
+            onRefresh={pull.onRefresh}
             tintColor={theme.colors.brand.violet}
             progressBackgroundColor={theme.colors.surface.s1}
           />

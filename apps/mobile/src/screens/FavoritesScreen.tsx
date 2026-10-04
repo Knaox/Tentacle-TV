@@ -31,6 +31,7 @@ import { useCollectionFilters } from "./collection/useCollectionFilters";
 import { useSearchDock } from "./collection/useSearchDock";
 import { useFavoriteSections, type FavoriteSection } from "./favorites/useFavoriteSections";
 import { spacing, useGrid, useTheme, useThemedStyles } from "@/theme";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 const POSTER_ASPECT = 2 / 3;
 const NO_SECTIONS: FavoriteSection[] = [];
@@ -55,6 +56,8 @@ export function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const { height: windowH } = useWindowDimensions();
   const { data: raw, isLoading, error, refetch, isRefetching } = useFavoritesAll();
+  // L'anneau suit le geste seul (cf. usePullToRefresh) : une relève poussée ne pousse pas la page.
+  const pull = usePullToRefresh(refetch);
   // Une erreur n'est pas une liste vide : le dire, et réessayer.
   const failure = usePageProblem(raw ? null : error, { onRetry: () => void refetch(), availability: { canGoBack: false } });
   const batchRemove = useBatchRemoveFavorites();
@@ -132,7 +135,7 @@ export function FavoritesScreen() {
   const subtitle = !hasContent
     ? ""
     : [t("itemCount", { count: summary.total }), hours > 0 ? t("favorites:summaryMovieHours", { count: hours }) : null].filter(Boolean).join(" · ");
-  const refresh = <RefreshControl refreshing={isRefetching} onRefresh={selection.active ? undefined : refetch} tintColor={colors.brand.violet} />;
+  const refresh = <RefreshControl refreshing={pull.refreshing} onRefresh={selection.active ? undefined : pull.onRefresh} tintColor={colors.brand.violet} />;
 
   const hero = (
     <CollectionHero

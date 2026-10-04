@@ -14,6 +14,7 @@ import { GridRowView, useGridRows } from "./GridRowView";
 import { gridRowKey, type GridRow } from "./gridRows";
 import { ProblemState } from "@/components/problems/ProblemState";
 import { usePageProblem } from "@/components/problems/usePageProblem";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 /** En hauteurs d'écran : au-delà, le bouton « revenir en haut » se montre. */
 const SCROLL_TOP_SCREENS = 1.5;
@@ -121,6 +122,9 @@ export const CatalogGrid = memo(function CatalogGrid({
   // du chargement, et la liste recevrait un gestionnaire neuf à chacune.
   const catalogRef = useRef(catalog);
   catalogRef.current = catalog;
+  // L'anneau suit le geste seul (cf. usePullToRefresh) : une grille relue en
+  // fond ne pousse pas la page.
+  const pull = usePullToRefresh(() => catalogRef.current.refetch());
   const handleEndReached = useCallback(() => {
     const current = catalogRef.current;
     if (current.hasNextPage && !current.isFetchingNextPage) {
@@ -181,8 +185,8 @@ export const CatalogGrid = memo(function CatalogGrid({
           windowSize={WINDOW_SCREENS}
           ListFooterComponent={footer}
           ListEmptyComponent={emptyComponent}
-          onRefresh={catalog.refetch}
-          refreshing={catalog.isRefetching && !catalog.isFetchingNextPage}
+          onRefresh={pull.onRefresh}
+          refreshing={pull.refreshing}
           showsVerticalScrollIndicator={false}
         />
       </SeriesRatingScope>

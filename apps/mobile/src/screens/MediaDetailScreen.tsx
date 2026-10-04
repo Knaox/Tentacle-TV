@@ -20,6 +20,7 @@ import { DetailStageBlock } from "../components/detail/DetailStageBlock";
 import { DetailImageViewer } from "../components/detail/DetailImageViewer";
 import { StageFocus } from "../components/detail/StageFocus";
 import { useMediaDetailAnimations } from "../hooks/useMediaDetailAnimations";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
@@ -66,6 +67,9 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
     itemType: item?.Type,
   });
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
+  // L'anneau suit le geste seul : une fiche relue après « Vu » ou un favori
+  // ne doit pas pousser la page sous le doigt (cf. usePullToRefresh).
+  const pull = usePullToRefresh(refetch);
   // Vue « image plein écran » : index de l'image ouverte, `null` = fermée.
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const gallery = useMemo(() => (item ? detailGallery(item) : []), [item]);
@@ -133,7 +137,7 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
             {header}
           </ScrollView>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: spacing.xxxl + 40, paddingTop: spacing.sm }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={theme.colors.brand.violet} />}
+            refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={theme.colors.brand.violet} />}
             showsVerticalScrollIndicator={false}>
             {body}
           </ScrollView>
@@ -151,7 +155,7 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
     <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
       <AnimatedScrollView onScroll={anims.scrollHandler} scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: spacing.xxxl + 40 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={theme.colors.brand.violet} />}
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={theme.colors.brand.violet} />}
         showsVerticalScrollIndicator={false}>
         {/* La SCÈNE : le bloc titre est posé DANS le décor, il ne le quitte
             jamais — c'est ce qui garde son texte blanc lisible dans les deux
