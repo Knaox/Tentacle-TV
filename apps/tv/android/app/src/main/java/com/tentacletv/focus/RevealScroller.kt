@@ -58,6 +58,13 @@ internal object RevealScroller {
           ?: (DEFAULT_RESPONSE to 1f)
         val target = if (revealing != null) pageTarget(page, revealing, follower.base()) else if (jumped != pageAt.toFloat()) jumped else null
         if (target != null) follower.moveTo(target, spring, segment)
+        // V10 : la section montrée par un pas isolé reste en place si un montage la déplace.
+        val keeper = ShownKeeper.of(page)
+        if (revealing != null && segment == null) {
+          keeper.show(revealing) { section -> follower.moveTo(pageTarget(page, section, follower.base()), spring, null) }
+        } else {
+          keeper.show(null, null)
+        }
       }
       if (row != null) {
         val follower = RevealFollower.of(row, horizontal = true)

@@ -57,6 +57,19 @@ internal class RevealFollower private constructor(private val scroll: ViewGroup,
 
   val moving: Boolean get() = mode != Mode.IDLE
 
+  /** Prévenu quand un autre fait défiler la vue (le suivi de la section s'arrête). */
+  var onForeign: (() -> Unit)? = null
+
+  /**
+   * Ce qui est montré a bougé de `delta` dans le contenu (un montage au-dessus) :
+   * la vue le suit d'autant, tout de suite, et sa cible aussi (V10).
+   */
+  fun shift(delta: Float) {
+    target += delta
+    from += delta
+    set(position() + delta)
+  }
+
   /** Là où la vue va (la cible d'un mouvement en cours), sinon là où elle est. */
   fun base(): Float = if (moving) target else position().toFloat()
 
@@ -142,7 +155,11 @@ internal class RevealFollower private constructor(private val scroll: ViewGroup,
   override fun doFrame(frameTimeNanos: Long) {
     if (mode == Mode.IDLE || !scroll.isAttachedToWindow) return stop()
     // Un défilement qui n'est pas le nôtre : on ne le dispute pas.
-    if (lastSet != Int.MIN_VALUE && abs(position() - lastSet) > 1) return stop()
+    if (lastSet != Int.MIN_VALUE && abs(position() - lastSet) > 1) {
+      stop()
+      onForeign?.invoke()
+      return
+    }
     val (x, v) = stateAt(max(frameTimeNanos, startNanos))
     val done = when (mode) {
       Mode.LINEAR -> x == target && v == 0f
