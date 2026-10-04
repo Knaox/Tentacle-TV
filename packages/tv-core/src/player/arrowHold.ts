@@ -9,8 +9,8 @@ export type ScrubDir = "forward" | "backward";
 /**
  * Les flèches du lecteur, telles que la PLATEFORME les émet. Le geste est le
  * même partout — un appui SAUTE, un maintien DÉFILE — ; seule la façon de les
- * reconnaître change (`apps/tv` : `scrubInput.ts` pour Android TV,
- * `scrubInput.ios.ts` pour Apple TV).
+ * reconnaître change — lue dans les traits de la télécommande
+ * (`scrubInputProfileOf`, ci-dessous ; `apps/tv` : `scrubInput.ts`).
  */
 export interface ScrubInputProfile {
   /** Un appui simple ne se tranche qu'au relâchement : son début peut encore

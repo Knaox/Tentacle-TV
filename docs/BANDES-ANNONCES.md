@@ -92,7 +92,7 @@ VPN, IPv6 d'un côté et IPv4 de l'autre) se les voyait refuser en 403.
 
 ### Apple TV (`apps/tv/src/screens/trailer/`, `redesignWiring/`)
 
-- **La fiche prépare la bande-annonce** (`useTrailerPreparation.ios.ts`) :
+- **La fiche prépare la bande-annonce** (`useTrailerPreparation.ts`, Apple TV et Android TV) :
   300 ms après que la liste des bandes-annonces est arrêtée, le serveur
   extrait et charge le maître et les premières listes pendant qu'on lit la
   fiche. Le lancement n'attend plus yt-dlp.

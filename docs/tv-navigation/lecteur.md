@@ -22,7 +22,7 @@ l'extraction, le § 12 comment l'équivalence se prouve.
 | Décompte de validation (pur) | `hooks/scrubCountdown.ts`, `hooks/useScrubCountdown.ts` | oui |
 | Sauts et délai de validation | `hooks/seekTuning.ts` | oui |
 | Badge des sauts (cumul) | `hooks/useSkipFlash.ts` | oui (Android : `TVSkipBadge`) |
-| Couture des flèches par plateforme | `hooks/scrubInput.ios.ts` / `scrubInput.ts` | profil par plateforme |
+| Couture des flèches par plateforme | `hooks/scrubInput.ts` (depuis le lot Android TV : `scrubInputProfileOf(traits)`, § 13) | profil lu dans les traits |
 | Pavé tactile (pan) | `hooks/useScrubGestures.ios.ts` (Android : `useScrubGestures.ts`, vide) | tvOS seul |
 | Gains et seuils du pavé (purs) | `hooks/scrubTouchTuning.ts` | tvOS seul (lu par le cerveau) |
 | Pan tenu au compteur | `platform/tvos/input/panGesture.ts` (propriétaire : T1) | tvOS seul |
@@ -444,7 +444,7 @@ Grâce : 600 ms après chaque Retour consommé. Sur Android, `usePreventRemove`
 | 1 s cible « inchangée » | `useScrubController` `UNMOVED_SECONDS` |
 | 400 ms d'appuis ignorés après un tic de maintien | `useScrubHoldMotor` `isHoldTicking` |
 | 400 / 550 ms maintien déduit du key-down (Android) | `HOLD_FROM_DOWN_SCRUB_MS` / `_ENGAGE_MS` |
-| profil tvOS : `tapOnRelease` faux, `holdFromKeyDown` faux, `holdArmMs` 0, `holdEndAnnounced` vrai | `scrubInput.ios.ts` |
+| profil tvOS : `tapOnRelease` faux, `holdFromKeyDown` faux, `holdArmMs` 0, `holdEndAnnounced` vrai | `scrubInput.ts` (`scrubInputProfileOf`) |
 | profil Android : vrai, vrai, 250 ms, faux | `scrubInput.ts` |
 | 250 ms tic ; 1 000 ms par palier ; paliers 1/2/4/8 | tv-core `holdTiming` / `scrubMachine` |
 | silence 700 ms (défaut), 350 ms (plancher), ×2,5 l'intervalle, rebond < 60 ms, répétition ≤ 450 ms, 2 répétitions, cadence de dalle ≤ 200 ms, maintien annoncé plafonné 30 s | tv-core `holdTiming` |
@@ -557,7 +557,7 @@ tels quels, sans les juger.
 `holdMotor`, `scrubMachine`, `arrowArbiter` (communs avec webOS) : inchangés.
 
 **Apple TV** — l'entrée unique de T1 (`platform/tvos/input`) : la
-télécommande (`hooks/usePlayerRemoteBinding.ios.ts` → `useRemoteIntents` →
+télécommande (`hooks/usePlayerIntentBinding.ts`, ex-`usePlayerRemoteBinding.ios.ts` → `useRemoteIntents` →
 `playerRemoteSteps`), le pavé (`useScrubGestures.ios.ts`, intentions
 `drag`, pan tenu par `usePanGesture`), le message-outil
 (`usePlaybackTrouble`). Retour : la pile de T4 (`usePlayerBackLayers` →

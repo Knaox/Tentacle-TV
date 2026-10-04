@@ -2,8 +2,8 @@ import type { MutableRefObject } from "react";
 import type { TouchMode } from "@tentacle-tv/tv-core";
 
 /** Le sens d'un déplacement et le profil des flèches vivent dans tv-core
- *  (`player/arrowHold.ts`) ; la couture par plateforme (`scrubInput.ts`,
- *  `scrubInput.ios.ts`) en donne les valeurs. */
+ *  (`player/arrowHold.ts`) ; `scrubInput.ts` en donne les valeurs, lues dans
+ *  les traits de la télécommande (`scrubInputProfileOf`). */
 export type { ScrubDir, ScrubInputProfile } from "@tentacle-tv/tv-core";
 
 /**

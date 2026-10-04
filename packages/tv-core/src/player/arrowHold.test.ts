@@ -9,7 +9,7 @@ const TIMERS = {
   clearTimeout: (handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
-/** Les deux profils du lecteur d'`apps/tv` (`scrubInput.ios.ts`, `scrubInput.ts`). */
+/** Les deux profils du lecteur d'`apps/tv` : maintien annoncé (Apple TV, Android TV refondu), key-down bruts (ancienne UI d'Android TV). */
 const TVOS: ScrubInputProfile = { tapOnRelease: false, holdFromKeyDown: false, holdArmMs: 0, holdEndAnnounced: true };
 const ANDROID: ScrubInputProfile = { tapOnRelease: true, holdFromKeyDown: true, holdArmMs: 250, holdEndAnnounced: false };
 

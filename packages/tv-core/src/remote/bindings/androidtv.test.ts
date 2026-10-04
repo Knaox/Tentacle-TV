@@ -155,10 +155,17 @@ describe("createAndroidTvReader — les répétitions d'une touche tenue", () =>
     expect(read({ eventType: "fastForward", eventKeyAction: 0 }, 4).repeat).toBeUndefined();
   });
 
-  it("ne fait qu'une intention d'une touche de transport tenue : au relâchement", () => {
+  it("Avance et Retour rapides tenus : une intention par enfoncement et par répétition (le lecteur accélère à leur rythme), rien au relâchement", () => {
     const read = createAndroidTvReader();
     const intents = [0, 0, 0, 1].map((action, at) => translator.translate(read({ eventType: "rewind", eventKeyAction: action }, at))?.intent ?? null);
-    expect(intents).toEqual([null, null, null, { type: "transport", command: "retour" }]);
+    const rewind = { type: "transport", command: "retour" };
+    expect(intents).toEqual([rewind, rewind, rewind, null]);
+  });
+
+  it("les autres touches de transport tenues ne font qu'une intention : au relâchement", () => {
+    const read = createAndroidTvReader();
+    const intents = [0, 0, 0, 1].map((action, at) => translator.translate(read({ eventType: "play", eventKeyAction: action }, at))?.intent ?? null);
+    expect(intents).toEqual([null, null, null, { type: "transport", command: "lecture" }]);
   });
 
   it("suit chaque touche à part : le maintien de OK ne marque pas la croix", () => {

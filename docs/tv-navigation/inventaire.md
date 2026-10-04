@@ -263,7 +263,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 #### `hooks/playerTimers.ts` — partagé Android TV
 - L11, 12 · setTimeout / clearTimeout (`PLAYER_TIMERS`) · **ADAPTATEUR** · les minuteurs du moteur JS, injectés aux machines du lecteur de tv-core (qui n'en arment aucun)
 
-#### `hooks/usePlayerRemoteBinding.ios.ts`
+#### `hooks/usePlayerRemoteBinding.ios.ts` (devenu `usePlayerIntentBinding.ts`, commun à Android TV refondu)
 - L1, 15 · useIsFocused · **ADAPTATEUR** · FAIT (819571cc0) : la télécommande du lecteur Apple TV par l'entrée unique (`useRemoteIntents`) → `playerRemoteSteps` (tv-core), écran devant
 
 #### `hooks/useTVEpisodeNav.ts` — partagé Android TV
@@ -547,9 +547,9 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | `screens/SearchScreen.tsx` ⇄ | 2, 63, 98, 109–111, 121, 201, 203, 226, 228, 231, 257 | TVFocusGuideView, setNativeProps, minuteries | ANCIENNE | import + corps Legacy |
 | `screens/SettingsScreen.tsx` ⇄ | 2, 39, 56, 58–60, 62, 72 | TVFocusGuideView autoFocus, goBack | ANCIENNE | import + corps Legacy (L56-60 : commentaire) |
 | `screens/trailer/resolveTrailerStream.ts` | 54, 56 | setTimeout | HORS | borne réseau (45 s) de la résolution du flux |
-| `screens/trailer/TrailerWebView.ios.tsx` | 96 | focusable={false} | ANCIENNE | le fichier tourne sur tvOS, mais la prop n'existe que sur Android dans react-native-video 6.19.3 : INERTE (bug 7) — exception PERMANENTE de la garde (arbitrage : gardé tel quel) |
+| `screens/trailer/TrailerWebView.tsx` (ex-`.ios`) | 96 | focusable={false} | ANCIENNE | commun à Apple TV et Android TV depuis le lot Android TV : la prop n'existe que sur Android dans react-native-video 6.19 — inerte sur tvOS (bug 7), vivante sur Android ; le fichier sort de la portée de la garde (plus de `.ios`), l'exception est retirée |
 | `screens/trailer/useTrailerPlaybackWatch.ts` | 53, 92, 95, 96 | setTimeout | HORS | chien de garde du flux ; ses verdicts ne deviennent un retour que dans TrailerRedesign |
-| `screens/trailer/useTrailerPreparation.ios.ts` | 24 | setTimeout 300 ms | HORS | préchauffage serveur de la bande-annonce |
+| `screens/trailer/useTrailerPreparation.ts` (ex-`.ios`, commun) | 24 | setTimeout 300 ms | HORS | préchauffage serveur de la bande-annonce |
 | `screens/TrailerScreen.tsx` ⇄ | 43, 72, 86, 87, 90 | goBack, hasTVPreferredFocus, onFocus | ANCIENNE | corps Legacy |
 | `screens/WatchlistScreen.tsx` ⇄ | 46 | useTVRemote/goBack | ANCIENNE | corps Legacy |
 | `storage/queryPersistStorage.ts` | 3, 22, 29, 36 | IS_TVOS | HORS | stockage |
