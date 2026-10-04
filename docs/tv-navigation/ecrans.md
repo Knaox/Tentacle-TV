@@ -492,6 +492,44 @@ NON modifiés : `hooks/usePairingFlow.ts`, `hooks/usePairingCode.ts`.
 
 ---
 
+## 8 bis. Les profils de la Famille (`Profiles`, `ManageProfiles`)
+
+Apple TV passée aux profils (docs/FAMILLE.md). Règles : tv-core
+`focus/profilesFocus.ts`, `nav/profilesBack.ts`, `nav/railProfile.ts`,
+`session/` (lancement, refus, PIN) ; applicateur
+`platform/tvos/screens/profiles.ts` ; câblage `redesignWiring/profiles/`.
+
+- **PR-1** Entrée réclamée à chaque phase (`profilesEntryKey`) : « Qui
+  regarde ? » sur le profil qu'on vient de quitter (sinon le premier,
+  `profiles:tile:<i>`) ; le pavé sur `pin:digit:1`, ou sur la croix
+  `profiles:back` quand il est bloqué ; une erreur sur `status:primary`.
+- **PR-2** Groupes qui mémorisent (`AutoFocusGuide`) : `profiles:tiles`,
+  `profiles:actions` et `pin:pad`. Les actions sont PLEINE LARGEUR : BAS
+  depuis le profil le plus à droite (ou à gauche) les trouve.
+- **PR-3** Clic fantôme : chaque geste change la page sous un OK enfoncé
+  (profil → pavé, croix → rangée). Profils, touches du pavé, actions et
+  cibles de la gestion sont gardés (`profilesGuardedKeys`,
+  `manageGuardedKeys`) ; la croix ne l'est pas (son verrou passe par la
+  même liaison, et elle ne s'ouvre jamais sous un OK). Vécu au simulateur :
+  le pavé rouvert avec un chiffre tapé.
+- **PR-4** Retour (`profilesBackAction`) : le pavé recule vers la rangée
+  (couche « page ») ; la rangée est la RACINE — aucune couche, UIKit quitte
+  l'app. « Qui regarde ? » n'est jamais une page poussée : tout chemin qui y
+  mène remet la pile à elle seule (`showProfiles`).
+- **PR-5** « Gérer les profils » (`manageEntryKey`, `manageBackAction`) :
+  entrée par la première action possible (créer un invité, inviter, la
+  première ligne qui porte un geste, la croix) ; l'invité par son nom puis
+  « Créer » ; l'invitation par la recherche. Après un retrait, la ligne qui
+  prend la place (`manageFocusAfterRemoval`), une fois la famille relue.
+  Retour : une page → la liste ; la liste → les réglages, ou, ouverte depuis
+  « Qui regarde ? », la session du propriétaire se referme et la rangée
+  revient. La rangée de « Créer le profil » est pleine largeur (BAS depuis
+  toute couleur).
+- **PR-6** Rail : MAINTENIR OK sur le profil (`railHold`) change de profil ;
+  OK y ouvre toujours les réglages.
+
+---
+
 ## 9. Vigie hors feuilles (demander depuis la recherche, la saga, la fiche)
 
 **Fichiers** — `redesignWiring/vigie/` SAUF `AbsentSheetRedesign`,
