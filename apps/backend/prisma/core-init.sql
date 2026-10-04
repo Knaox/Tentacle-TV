@@ -596,6 +596,112 @@ EXECUTE pd_jf_device_stmt;
 DEALLOCATE PREPARE pd_jf_device_stmt;
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- La Famille (docs/FAMILLE.md). Voir schema.prisma > Family, FamilyMember,
+-- FamilyInvitation, ProfilePin, ProfilePinAttempt, et les colonnes ajoutées à
+-- `paired_devices` (sessions de profil des TV) et à `notification_preferences`
+-- (préférence push « family », ACTIVÉE par défaut). Colonnes et index se
+-- décident dans information_schema : rejouable sur MariaDB comme sur MySQL.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `families` (
+  `id` varchar(191) NOT NULL,
+  `ownerUserId` varchar(255) NOT NULL,
+  `ownerName` varchar(255) NOT NULL,
+  `ownerColor` varchar(16) NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `families_ownerUserId_key` (`ownerUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `family_members` (
+  `id` varchar(191) NOT NULL,
+  `familyId` varchar(191) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `kind` varchar(10) NOT NULL,
+  `displayName` varchar(100) NOT NULL,
+  `color` varchar(16) NULL,
+  `jellyfinName` varchar(255) NULL,
+  `isVirtual` tinyint(1) NOT NULL DEFAULT 0,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `family_members_familyId_userId_key` (`familyId`, `userId`),
+  KEY `family_members_userId_idx` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `family_invitations` (
+  `id` varchar(64) NOT NULL,
+  `familyId` varchar(191) NOT NULL,
+  `ownerUserId` varchar(255) NOT NULL,
+  `inviteeUserId` varchar(255) NOT NULL,
+  `inviteeName` varchar(255) NOT NULL,
+  `status` varchar(12) NOT NULL DEFAULT 'pending',
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `expiresAt` datetime(3) NOT NULL,
+  `respondedAt` datetime(3) NULL,
+  `snoozedUntil` datetime(3) NULL,
+  PRIMARY KEY (`id`),
+  KEY `family_invitations_inviteeUserId_status_idx` (`inviteeUserId`, `status`),
+  KEY `family_invitations_ownerUserId_createdAt_idx` (`ownerUserId`, `createdAt`),
+  KEY `family_invitations_familyId_status_idx` (`familyId`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `profile_pins` (
+  `userId` varchar(255) NOT NULL,
+  `pinHash` varchar(255) NOT NULL,
+  `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `profile_pin_attempts` (
+  `pairingId` varchar(191) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `failures` int(11) NOT NULL DEFAULT 0,
+  `lockCount` int(11) NOT NULL DEFAULT 0,
+  `lockedUntil` datetime(3) NULL,
+  `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`pairingId`, `userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Les sessions de profil des TV : six colonnes et deux index sur `paired_devices`.
+SET @pd_family_cols := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'paired_devices' AND COLUMN_NAME = 'parentId');
+SET @pd_family_sql := IF(@pd_family_cols = 0,
+  'ALTER TABLE `paired_devices` ADD COLUMN `parentId` varchar(191) NULL, ADD COLUMN `profileKind` varchar(10) NULL, ADD COLUMN `profilesSince` datetime(3) NULL, ADD COLUMN `legacyTokenHash` varchar(64) NULL, ADD COLUMN `stickyProfileId` varchar(255) NULL, ADD COLUMN `manageUntil` datetime(3) NULL',
+  'DO 0');
+PREPARE pd_family_stmt FROM @pd_family_sql;
+EXECUTE pd_family_stmt;
+DEALLOCATE PREPARE pd_family_stmt;
+
+SET @pd_parent_idx := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'paired_devices' AND INDEX_NAME = 'paired_devices_parentId_idx');
+SET @pd_parent_idx_sql := IF(@pd_parent_idx = 0,
+  'CREATE INDEX `paired_devices_parentId_idx` ON `paired_devices` (`parentId`)',
+  'DO 0');
+PREPARE pd_parent_idx_stmt FROM @pd_parent_idx_sql;
+EXECUTE pd_parent_idx_stmt;
+DEALLOCATE PREPARE pd_parent_idx_stmt;
+
+SET @pd_legacy_idx := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'paired_devices' AND INDEX_NAME = 'paired_devices_legacyTokenHash_idx');
+SET @pd_legacy_idx_sql := IF(@pd_legacy_idx = 0,
+  'CREATE INDEX `paired_devices_legacyTokenHash_idx` ON `paired_devices` (`legacyTokenHash`)',
+  'DO 0');
+PREPARE pd_legacy_idx_stmt FROM @pd_legacy_idx_sql;
+EXECUTE pd_legacy_idx_stmt;
+DEALLOCATE PREPARE pd_legacy_idx_stmt;
+
+-- La préférence push « family » : les lignes existantes la reçoivent ACTIVÉE.
+SET @np_family_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'notification_preferences' AND COLUMN_NAME = 'family');
+SET @np_family_sql := IF(@np_family_col = 0,
+  'ALTER TABLE `notification_preferences` ADD COLUMN `family` tinyint(1) NOT NULL DEFAULT 1 AFTER `tickets`',
+  'DO 0');
+PREPARE np_family_stmt FROM @np_family_sql;
+EXECUTE np_family_stmt;
+DEALLOCATE PREPARE np_family_stmt;
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- Purge de `server_config` : clés abandonnées par une évolution.
 -- La table n'est pas créée ici — c'est le `prisma db push` du setup qui la
 -- fait naître. Sur une base VIERGE, ce script s'exécute avant le setup et

@@ -109,6 +109,8 @@ model NotificationPreference {
   libraryAdded    Boolean  @default(false)
   seerAvailable   Boolean  @default(true)
   tickets         Boolean  @default(true)
+  /// La Famille : les invitations reçues. ACTIVÉE par défaut (docs/FAMILLE.md).
+  family          Boolean  @default(true)
   updatedAt       DateTime @updatedAt
 
   @@map("notification_preferences")
@@ -303,10 +305,109 @@ model PairedDevice {
   jellyfinDeviceId      String?   @db.VarChar(255)
   lastSeen              DateTime  @default(now())
   createdAt             DateTime  @default(now())
+  /// La Famille (docs/FAMILLE.md). Une SESSION DE PROFIL d'une TV est une
+  /// ligne enfant : `parentId` = le jumelage de la TV, `jellyfinUserId` = le
+  /// compte du profil, son propre jeton Jellyfin. Nul : un jumelage de TV.
+  parentId              String?   @db.VarChar(191)
+  /// Session de profil : `owner` | `member` | `guest`.
+  profileKind           String?   @db.VarChar(10)
+  /// Jumelage passé aux profils : son jeton (échangé) ne vaut plus session —
+  /// il liste les profils et en ouvre un, rien d'autre.
+  profilesSince         DateTime?
+  /// L'empreinte du jeton d'avant l'échange, tant que le nouveau n'a pas
+  /// servi : une réponse perdue se rejoue, une seule fois.
+  legacyTokenHash       String?   @db.VarChar(64)
+  /// « Rester sur ce profil » : le profil que cette TV rouvre sans PIN.
+  stickyProfileId       String?   @db.VarChar(255)
+  /// Session du propriétaire : « Gérer les profils » ouvert jusqu'à (PIN).
+  manageUntil           DateTime?
 
   @@index([jellyfinUserId])
   @@index([tokenHash])
+  @@index([parentId])
+  @@index([legacyTokenHash])
   @@map("paired_devices")
+}
+
+/// La Famille (docs/FAMILLE.md) : un propriétaire — tout compte du serveur
+/// sauf un invité —, une famille au plus.
+model Family {
+  id          String   @id @default(cuid())
+  ownerUserId String   @unique @db.VarChar(255)
+  /// Dernier nom connu du propriétaire : l'affiche, la cloche, les sessions.
+  ownerName   String   @db.VarChar(255)
+  ownerColor  String?  @db.VarChar(16)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("families")
+}
+
+/// Les profils d'une famille autres que le propriétaire : `member` (compte du
+/// serveur qui a accepté une invitation ; le retirer ne touche JAMAIS son
+/// compte) ou `guest` (compte Jellyfin créé par Tentacle, caché, mot de passe
+/// jeté ; `isVirtual` : invité du compte de démonstration, sans compte Jellyfin).
+model FamilyMember {
+  id           String   @id @default(cuid())
+  familyId     String   @db.VarChar(191)
+  userId       String   @db.VarChar(255)
+  kind         String   @db.VarChar(10)
+  displayName  String   @db.VarChar(100)
+  color        String?  @db.VarChar(16)
+  /// Invité : le nom de son compte Jellyfin (« Lea - invite de Damien »).
+  jellyfinName String?  @db.VarChar(255)
+  isVirtual    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@unique([familyId, userId])
+  @@index([userId])
+  @@map("family_members")
+}
+
+/// Les invitations : identifiant aléatoire de 128 bits (jamais un cuid —
+/// personne ne doit pouvoir le deviner), sept jours de validité.
+model FamilyInvitation {
+  id            String    @id @db.VarChar(64)
+  familyId      String    @db.VarChar(191)
+  ownerUserId   String    @db.VarChar(255)
+  inviteeUserId String    @db.VarChar(255)
+  inviteeName   String    @db.VarChar(255)
+  /// pending | accepted | declined | cancelled | expired
+  status        String    @default("pending") @db.VarChar(12)
+  createdAt     DateTime  @default(now())
+  expiresAt     DateTime
+  respondedAt   DateTime?
+  /// « Plus tard » : l'affiche se tait jusqu'à cette date, la cloche garde.
+  snoozedUntil  DateTime?
+
+  @@index([inviteeUserId, status])
+  @@index([ownerUserId, createdAt])
+  @@index([familyId, status])
+  @@map("family_invitations")
+}
+
+/// Le code PIN d'un profil (quatre chiffres) — propriétaire, membre ou invité :
+/// haché lentement (scrypt, sel propre), jamais rendu, jamais envoyé à une TV.
+model ProfilePin {
+  userId    String   @id @db.VarChar(255)
+  pinHash   String   @db.VarChar(255)
+  updatedAt DateTime @updatedAt
+
+  @@map("profile_pins")
+}
+
+/// Les essais de PIN ratés, par TV (jumelage) et par profil : cinq, puis un
+/// blocage de plus en plus long (`family/familyRules.ts`). Une réussite efface.
+model ProfilePinAttempt {
+  pairingId   String    @db.VarChar(191)
+  userId      String    @db.VarChar(255)
+  failures    Int       @default(0)
+  lockCount   Int       @default(0)
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@id([pairingId, userId])
+  @@map("profile_pin_attempts")
 }
 
 /// Les appareils Jellyfin frappés pour des TV, à faire disparaître de Jellyfin
