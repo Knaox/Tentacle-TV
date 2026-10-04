@@ -42,13 +42,6 @@ export interface RenderProfile {
   haloDrawScale: number;
   /** Le flou SVG de la plateforme (voir `haloDrawing`). */
   svgBlur: SvgBlurRendering;
-  /** Pendant une animation de transformation (focus, appui), la vue est
-   *  rendue dans une texture que le GPU déplace sans repeindre ses enfants
-   *  (`renderToHardwareTextureAndroid`). Sans effet hors Android. */
-  animatedLayerTexture: boolean;
-  /** En production, `console.log` / `info` / `debug` ne font rien (chaque
-   *  appel formate puis écrit dans le journal système, sur le fil JS). */
-  muteReleaseLogs: boolean;
 }
 
 export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderProfile>>> = {
@@ -58,8 +51,6 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     shadows: "layer",
     haloDrawScale: 0.25,
     svgBlur: "points",
-    animatedLayerTexture: false,
-    muteReleaseLogs: false,
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
   // floutée en ancienne architecture — les ombres passent par un masque
@@ -70,8 +61,6 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     shadows: "mask",
     haloDrawScale: 0.25,
     svgBlur: "renderscript",
-    animatedLayerTexture: true,
-    muteReleaseLogs: true,
   },
 };
 

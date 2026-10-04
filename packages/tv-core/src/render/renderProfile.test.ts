@@ -9,8 +9,6 @@ describe("le profil de rendu", () => {
       shadows: "layer",
       haloDrawScale: 0.25,
       svgBlur: "points",
-      animatedLayerTexture: false,
-      muteReleaseLogs: false,
     });
   });
 

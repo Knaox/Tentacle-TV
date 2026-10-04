@@ -8,6 +8,7 @@ import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { useRecede, type RowPlace } from "../motion/useRowRecede";
 import { colors, white } from "../theme/tokens";
 import { dressingStyles, FadingRestShadow, FocusRaised, FocusSheen, useFocusDressing } from "./CardFocusDressing";
+import { DropShadow } from "../render/DropShadow";
 
 /**
  * Le cadre d'une carte et son focus façon Apple TV — SANS contour :
@@ -132,7 +133,9 @@ function FrameBody({
       {dressed && !glow ? (
         <FadingRestShadow progress={p} radius={radius} />
       ) : (
-        <View style={[StyleSheet.absoluteFill, dressingStyles.shadowRest, { borderRadius: radius }]} />
+        <View style={[StyleSheet.absoluteFill, dressingStyles.shadowRest, { borderRadius: radius }]}>
+          <DropShadow of={[dressingStyles.shadowRest, { borderRadius: radius }]} />
+        </View>
       )}
       {dressed ? <FocusRaised progress={p} glow={glow} radius={radius} focused={focused} onSettled={settle} /> : null}
       <View style={[shape, styles.clip]}>
