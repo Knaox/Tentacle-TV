@@ -37,28 +37,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.25.5",
-    "tag": "desktop-v1.25.5",
+    "version": "1.26.0",
+    "tag": "desktop-v1.26.0",
     "notes": {
-      "fr": "• Quand une lecture ou une page échoue, l'application dit pourquoi et propose quoi faire : Réessayer, Qualité réduite, Autre version. Un fichier manquant ne bascule plus vers un lecteur de secours, et une lecture qui échoue dès le départ ne reste plus en chargement sans fin\n• Plus d'image en blocs dans les scènes d'action quand la qualité baisse : une qualité réduite garde une définition que son débit peut tenir, et l'automatique adapte le débit à la connexion au lieu de tomber d'un cran entier\n• Administration : un tableau de bord plus lisible, des avertissements qui s'effacent seuls et se masquent pour de bon, la commande de mise à jour du serveur à copier, et la raison du transcodage en clair dans les sessions (« S1 E1 » pour un épisode)\n• Les messages de l'administrateur restent visibles en plein écran\n• Le bouton principal des bannières aux couleurs de Tentacle, et plus de mention légale au premier lancement",
-      "en": "• When playback or a page fails, the app says why and what to do: Retry, Lower quality, Other version. A missing file no longer falls back to a backup player, and playback that fails right away no longer loads forever\n• No more blocky picture in action scenes when quality drops: a reduced quality keeps a resolution its bitrate can hold, and automatic quality fits the bitrate to the connection instead of dropping a whole step\n• Administration: a clearer dashboard, warnings that fade on their own and can be hidden for good, the server update command to copy, and transcoding reasons in plain words in sessions (\"S1 E1\" for an episode)\n• Admin messages stay visible in full screen\n• The main banner button in Tentacle colors, and no more legal notice at first launch"
+      "fr": "• Famille : depuis les réglages, créez votre famille, invitez des comptes du serveur ou ajoutez des profils invités pour vos Apple TV, chacun avec son code PIN facultatif\n• Famille partagée : chaque membre voit toute la famille ; le propriétaire décide qui peut créer des invités, et quels invités peuvent demander des films, à leur propre nom\n• Les invitations à rejoindre une famille s'affichent à l'ouverture de l'app et en direct ; acceptez, refusez, ou répondez plus tard depuis la cloche\n• Qualité réduite : le lecteur dit pourquoi (réseau, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur), et la raison se relit dans le menu Qualité\n• Sauter pendant une vidéo convertie : un chargement visible dès l'appui, et plusieurs sauts rapides ne relancent la conversion qu'une fois",
+      "en": "• Family: from Settings, create your family, invite server accounts or add guest profiles for your Apple TVs, each with an optional PIN\n• Shared family: every member sees the whole family; the owner decides who can create guests, and which guests can request movies, in their own name\n• Family invitations appear when the app opens and in real time; accept, decline, or answer later from the notification bell\n• Quality lowered: the player now says why (network, an Internet limit set on Jellyfin, or video converted by the server), and the reason stays in the Quality menu\n• Skipping in converted video: loading shows right away, and several quick skips restart the conversion only once"
     },
     "assets": {
       "appimage": {
-        "name": "tentacle-tv_1.25.5_x86_64.AppImage",
-        "sha256": "24351b285027505be16afea10d83662bf35fd7844d5cf50cd0067b7d6a77942a"
+        "name": "tentacle-tv_1.26.0_x86_64.AppImage",
+        "sha256": "949a92ba90246162ecc9f5f2724164613d0d66576e464221991ec17a195776fd"
       },
       "deb": {
-        "name": "tentacle-tv_1.25.5_amd64.deb",
-        "sha256": "e98d738702f6a29b7b3a9ab9113944f169a8eb5cb55d7067726600b4bb504e83"
+        "name": "tentacle-tv_1.26.0_amd64.deb",
+        "sha256": "dd67c413605a648991831d9588cbc37c01871eb65ee064c2a3eb102fc65e97b2"
       },
       "rpm": {
-        "name": "tentacle-tv_1.25.5_x86_64.rpm",
-        "sha256": "bd11fc6b04aead6dba852b3ab84b71bb16a2ed333d3cc4b41dbed5642851d7d4"
+        "name": "tentacle-tv_1.26.0_x86_64.rpm",
+        "sha256": "5f67bb1a94086ad163f97fce6e8de6dc73fad61baff893f285976e108a6df56a"
       },
       "pacman": {
-        "name": "tentacle-tv_1.25.5_x64.pkg.tar.zst",
-        "sha256": "14d4a5c1b9907bcb1b7cf72cb090d12058c3f089eb460345bbf0995adae85c22"
+        "name": "tentacle-tv_1.26.0_x64.pkg.tar.zst",
+        "sha256": "136da46d18bc1a28aa93cbfb87ac278723b765c8bc867541ca29990e19d5fdfd"
       }
     }
   }
