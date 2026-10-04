@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { androidSerial } from "./android.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const BENCH_DIR = path.resolve(HERE, "..");
@@ -81,6 +82,15 @@ export function slotPorts(slot) {
   };
 }
 
+/**
+ * Android TV (`--android`) : l'appareil adb tenu (émulateur sous verrou, ou
+ * boîtier) ; l'APK debug du dossier servi, ou `--apk`.
+ */
+function androidOf(options) {
+  if (options.android !== true && process.env.NAV_GOLDEN_ANDROID !== "1") return { android: false };
+  return { android: true, serial: androidSerial(), apk: options.apk ?? null };
+}
+
 /** Les options communes de la ligne de commande : `--slot`, `--sim`, `--device`. */
 export function benchContext(options) {
   const slot = Number(options.slot ?? process.env.NAV_GOLDEN_SLOT ?? NaN);
@@ -93,6 +103,7 @@ export function benchContext(options) {
     sim,
     // L'Apple TV physique (« Chambre », ou NAV_GOLDEN_DEVICE_UDID / _COREDEVICE) : le passage « appareil ».
     device: options.device === true || process.env.NAV_GOLDEN_DEVICE === "1",
+    ...androidOf(options),
     stateFile: path.join(CACHE_DIR, "slots", `${slot}.json`),
     logDir: path.join(CACHE_DIR, "slots", `${slot}-logs`),
   };

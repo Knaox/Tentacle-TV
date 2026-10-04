@@ -5,6 +5,7 @@ import { BenchError, sleep } from "./config.mjs";
 import { macIp } from "./device.mjs";
 import { httpJson } from "./processes.mjs";
 import { resolveGesture, substitutionsFor, unknownPlaceholders } from "./substitute.mjs";
+import { androidPerform } from "./android.mjs";
 
 /**
  * Un geste que l'agent a REFUSÉ sans mourir (un `type:` sans clavier ouvert) :
@@ -105,6 +106,8 @@ function panScript(dx, dy, ms) {
 
 /** Joue un geste ; rend la durée à attendre en plus (glissé en cours). */
 export async function perform(ctx, gesture) {
+  // Android : adb appuie (aucun agent) ; l'adresse de la place est localhost (adb reverse).
+  if (ctx.android && (await androidPerform(ctx, gesture.startsWith("type:") ? resolveGesture(gesture, subsOf(ctx)) : gesture))) return 0;
   if (KEYS.has(gesture) || HOLDS.test(gesture)) {
     await agentRun(ctx, [gesture]);
     return 0;

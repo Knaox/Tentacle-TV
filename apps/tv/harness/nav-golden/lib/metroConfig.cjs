@@ -24,6 +24,12 @@ function borrowed(filePath) {
   if (!main || path.resolve(checkout) === path.resolve(main)) return filePath;
   const rel = path.relative(checkout, filePath);
   if (rel.startsWith("..") || !rel.split(path.sep).includes("node_modules")) return filePath;
+  // react-native lui-même reste celui du checkout : la CLI désigne InitializeCore
+  // (lancé AVANT l'app) par SON chemin à elle ; emprunté, il n'était plus lancé
+  // dans un checkout qui a ses propres node_modules (« Property 'window' doesn't
+  // exist »). Même lockfile, mêmes octets ; une seule copie (singleton de l'app).
+  const parts = rel.split(path.sep);
+  if (parts[parts.lastIndexOf("node_modules") + 1] === "react-native") return filePath;
   const twin = path.join(main, rel);
   return fs.existsSync(twin) ? twin : filePath;
 }

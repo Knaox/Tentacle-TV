@@ -6,6 +6,7 @@ import { sleep } from "./config.mjs";
 import { httpJson } from "./processes.mjs";
 import { agentRun, subsOf, tryEvaluate } from "./remote.mjs";
 import { normalizeObservation } from "./substitute.mjs";
+import { androidForeground } from "./android.mjs";
 
 const POLL_MS = 150;
 const NULL_FOCUS_QUIET_MS = 4000;
@@ -19,6 +20,18 @@ async function writesSince(ctx, seq) {
   return (await httpJson(`http://127.0.0.1:${ctx.ports.backend}/__journal?since=${seq}`))?.json?.writes ?? [];
 }
 
+/**
+ * Le cadre ramené à l'espace de la référence (tvOS : 1920 points de large) :
+ * Android mesure en dp (960 de large à 320 ppp, sauf densité réglée par
+ * l'app). Sans largeur connue, tel quel.
+ */
+const REFERENCE_WIDTH = 1920;
+function scaledFrame(frame, windowWidth) {
+  if (!Array.isArray(frame) || !windowWidth || windowWidth === REFERENCE_WIDTH) return frame ?? null;
+  const k = REFERENCE_WIDTH / windowWidth;
+  return frame.map((v) => Math.round(v * k));
+}
+
 /** Le relevé brut de la sonde, ramené à ce que le banc compare. */
 function normalize(raw, writes, app = "foreground") {
   const focus = raw?.focus ?? {};
@@ -26,7 +39,7 @@ function normalize(raw, writes, app = "foreground") {
     app,
     focus: focus.key ?? null,
     label: focus.label ?? null,
-    frame: focus.frame ?? null,
+    frame: scaledFrame(focus.frame, raw?.window?.width),
     groups: focus.groups ?? [],
     route: raw?.route ?? null,
     params: raw?.params ?? null,
@@ -41,6 +54,7 @@ function normalize(raw, writes, app = "foreground") {
 
 /** L'app est-elle passée en arrière-plan (Menu à la racine) ? L'agent le dit. */
 async function appInBackground(ctx) {
+  if (ctx.android) return !androidForeground(ctx);
   try {
     const [reply] = await agentRun(ctx, ["focus"], { timeoutMs: 15_000 });
     return String(reply?.info ?? "").startsWith("background:");

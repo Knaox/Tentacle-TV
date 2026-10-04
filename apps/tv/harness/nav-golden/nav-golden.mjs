@@ -17,6 +17,8 @@
 //   obs                                         le relevé de l'app en cours
 //   import-app <chemin.app> [--at <rév>]        range une build déjà faite dans le cache (par empreinte)
 //
+//   --android [--apk <chemin>]  rejoue sur l'appareil Android tenu (émulateur sous verrou), contre les références tvOS
+//
 // Cibles : <domaine> · <domaine>/<fichier> · <domaine>#<id> · <domaine>/<fichier>#<id>.
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -42,6 +44,7 @@ function parseArgs(argv) {
     if (arg === "--no-erase") options.erase = false;
     else if (arg === "--sim-off") options.simOff = true;
     else if (arg === "--device") options.device = true;
+    else if (arg === "--android") options.android = true;
     else if (arg.startsWith("--")) {
       const [key, inline] = arg.slice(2).split("=");
       options[key] = inline ?? argv[++i];
@@ -77,9 +80,11 @@ async function runSuites(mode, options, targets) {
   const startedAt = Date.now();
   const suites = validSuites(targets);
   const ctx = benchContext(options);
+  // La référence est TOUJOURS celle de l'Apple TV : Android se vérifie contre elle, il ne l'écrit jamais.
+  if (ctx.android && mode === "record") throw new BenchError("record --android refusé : les références sont celles de l'Apple TV (verify --android les rejoue)");
   const at = mode === "record" ? referenceOf(suites, options.at) : options.at ?? null;
   const count = suites.reduce((n, s) => n + s.scenarios.length, 0);
-  const where = ctx.device ? "Apple TV physique" : `simulateur « ${ctx.sim} »`;
+  const where = ctx.android ? `Android TV (${ctx.serial})` : ctx.device ? "Apple TV physique" : `simulateur « ${ctx.sim} »`;
   step(mode === "record" ? "Enregistrer" : "Vérifier", `${count} scénario(s) de ${[...new Set(suites.map((s) => s.domain))].join(", ")} — place ${ctx.ports.slot}, ${where}`);
   const session = await prepare(ctx, { at, erase: options.erase !== false });
   sessionSummary(session);
@@ -88,7 +93,7 @@ async function runSuites(mode, options, targets) {
   const results = mode === "record"
     ? await recordSuites(ctx, session, suites, { repeat: Number(options.repeat ?? 2), retries: Number(options.retries ?? 1), onResult })
     : await verifySuites(ctx, session, suites, { retries: Number(options.retries ?? 1), onResult });
-  const failing = writeReport(mode, results, { session, startedAt });
+  const failing = writeReport(ctx.android ? `${mode}-android` : mode, results, { session, startedAt });
   if (ctx.device) checkUserApp("après le passage");
   process.exitCode = failing ? 1 : 0;
 }
@@ -102,7 +107,7 @@ async function interactive(command, options, positional) {
     const obs = await coldStart(ctx, session, scenario.start ?? {});
     return say(JSON.stringify(obs, null, 2));
   }
-  if (!ctx.device && !findDevice(ctx.sim)) throw new BenchError(`pas de simulateur « ${ctx.sim} » : « up » ou « start » d'abord`);
+  if (!ctx.device && !ctx.android && !findDevice(ctx.sim)) throw new BenchError(`pas de simulateur « ${ctx.sim} » : « up » ou « start » d'abord`);
   const since = await journalSeq(ctx);
   let extra = 0;
   for (const gesture of command === "do" ? positional : []) {
@@ -175,7 +180,7 @@ async function main() {
     const ctx = benchContext(options);
     const stopped = await stopAll(ctx);
     step("Place", stopped.length ? `arrêtés : ${stopped.join(", ")}` : "rien ne tournait");
-    const device = findDevice(ctx.sim);
+    const device = ctx.android ? null : findDevice(ctx.sim);
     if (options.simOff && device?.state === "Booted") capture("xcrun", ["simctl", "shutdown", device.udid]);
     return undefined;
   }

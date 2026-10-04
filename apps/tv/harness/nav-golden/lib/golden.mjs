@@ -7,6 +7,7 @@ import { note, warn } from "./config.mjs";
 import { CRITICAL, diffObservation, notesOf, unstableFields } from "./compare.mjs";
 import { hashScenario } from "./scenarios.mjs";
 import { runScenario } from "./runner.mjs";
+import { androidSkipReason } from "./android.mjs";
 
 const FORMAT = 1;
 /**
@@ -148,8 +149,10 @@ export async function verifySuites(ctx, session, suites, { retries = 1, onResult
     const obsolete = golden && (golden.observation ?? 1) !== OBSERVATION_VERSION;
     for (const scenario of suite.scenarios) {
       const entry = golden?.scenarios?.[scenario.id];
-      if (scenario.skip) {
-        results.push(onResult({ suite, scenario, status: "skipped", reason: scenario.skip }));
+      // Android : la référence reste celle de l'Apple TV ; un geste du pavé tactile n'y a pas d'équivalent.
+      const skip = scenario.skip ?? (ctx.android ? androidSkipReason(scenario) : null);
+      if (skip) {
+        results.push(onResult({ suite, scenario, status: "skipped", reason: skip }));
         continue;
       }
       if (!entry) {

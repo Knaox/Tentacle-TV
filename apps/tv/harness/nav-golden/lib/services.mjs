@@ -82,24 +82,27 @@ export async function ensureMetro(ctx, checkout) {
       return res?.text === "packager-status:running";
     },
   });
-  if (!record.warmed) await warmBundle(ctx, record);
+  // Le paquet chauffé est celui de la plateforme jouée : passer de tvOS à Android en rechauffe un.
+  if (record.warmed !== (ctx.android ? "android" : true)) await warmBundle(ctx, record);
   return record;
 }
 
-export const bundleUrl = (port) => `http://127.0.0.1:${port}/index.bundle?platform=ios&dev=true&minify=false&modulesOnly=false&runModule=true&app=com.tentacle.mobile`;
+export const bundleUrl = (port, android = false) => (android
+  ? `http://127.0.0.1:${port}/index.bundle?platform=android&dev=true&minify=false&modulesOnly=false&runModule=true&app=com.tentacletv.mobile`
+  : `http://127.0.0.1:${port}/index.bundle?platform=ios&dev=true&minify=false&modulesOnly=false&runModule=true&app=com.tentacle.mobile`);
 
 /** Le premier paquet dépasse le délai de l'app sous charge : on le construit avant elle. */
 async function warmBundle(ctx, record) {
   const start = Date.now();
   note("premier paquet JS en construction (jusqu'à quelques minutes sous charge)…");
-  const res = await httpJson(bundleUrl(ctx.ports.metro), { timeoutMs: 600_000 });
+  const res = await httpJson(bundleUrl(ctx.ports.metro, ctx.android), { timeoutMs: 600_000 });
   if (res?.status !== 200) throw new BenchError(`Metro n'a pas servi le paquet (${res?.status ?? "délai"}) — journal : ${record.log}`);
   if (!res.text.includes("nav-golden-real-app") && !res.text.includes("navProbe")) {
     throw new BenchError("le paquet ne contient pas la sonde du banc : l'enveloppe Metro n'a pas pris (apps/tv/index.js a-t-il changé ?)");
   }
   note(`paquet prêt en ${duration(Date.now() - start)} (${Math.round(res.text.length / 1e6)} Mo)`);
   const state = loadState(ctx.stateFile);
-  state.metro = { ...state.metro, warmed: true };
+  state.metro = { ...state.metro, warmed: ctx.android ? "android" : true };
   saveState(ctx.stateFile, state);
 }
 

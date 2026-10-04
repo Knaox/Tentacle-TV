@@ -9,7 +9,8 @@
 // `focusKey` (le port de focus de la refonte : `redesign/focus/FocusTarget`).
 // Indépendante des magasins de focus que la refactorisation déplace : elle ne
 // lit que l'UIKit (par RN-tvOS), l'arbre React et React Navigation.
-const { LogBox, TVEventHandler } = require("react-native");
+const { LogBox, Platform, TVEventHandler } = require("react-native");
+const ANDROID = Platform.OS === "android";
 
 // Les bandeaux de LogBox prennent le focus et masquent le haut de l'écran.
 LogBox.ignoreAllLogs(true);
@@ -42,6 +43,8 @@ function fromBase64(text) {
  * domaine de l'app de test seulement. Sans ces arguments (simulateur), rien.
  */
 function resetForBench() {
+  // Android : le banc écrit la session dans la base de l'app avant son lancement (`lib/android.mjs`).
+  if (ANDROID) return;
   const { Settings } = require("react-native");
   const session = Settings.get("navGoldenSession");
   if (typeof session !== "string") return;
@@ -241,6 +244,28 @@ function measure(tag) {
   return frame.tag === tag ? frame.value : null;
 }
 
+/**
+ * Le stockage relu sur Android : AsyncStorage est asynchrone — le relevé rend
+ * la lecture du relevé précédent (le banc attend un relevé stable).
+ */
+const storageMirror = {};
+function readStorage(keys) {
+  if (!ANDROID) {
+    const { Settings } = require("react-native");
+    const out = {};
+    for (const key of keys) {
+      const value = Settings.get(key);
+      out[key] = value === undefined ? null : value;
+    }
+    return out;
+  }
+  const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+  AsyncStorage.multiGet(keys).then((pairs) => pairs.forEach(([k, v]) => { storageMirror[k] = v === undefined ? null : v; }), () => {});
+  const out = {};
+  for (const key of keys) out[key] = key in storageMirror ? storageMirror[key] : null;
+  return out;
+}
+
 /** Ce que le banc relève après chaque geste. */
 function observe(options = {}) {
   const nav = routeOf();
@@ -255,19 +280,14 @@ function observe(options = {}) {
     params: nav.params,
     stack: nav.stack,
     modals: modalsOf(modals),
+    // La largeur de la fenêtre : le banc ramène le cadre à l'échelle de la référence (Android en dp).
+    window: { width: require("react-native").Dimensions.get("window").width },
   };
   if (options.texts && options.texts.length) {
     const all = screenTexts(nav.key, modals);
     result.texts = options.texts.map((wanted) => all.some((text) => text.includes(wanted)));
   }
-  if (options.storage && options.storage.length) {
-    const { Settings } = require("react-native");
-    result.storage = {};
-    for (const key of options.storage) {
-      const value = Settings.get(key);
-      result.storage[key] = value === undefined ? null : value;
-    }
-  }
+  if (options.storage && options.storage.length) result.storage = readStorage(options.storage);
   return result;
 }
 

@@ -350,6 +350,51 @@ En fin de lot, retirer l'app de test (l'app de l'utilisateur reste) :
 xcrun devicectl device uninstall app --device DA96352F-A2B7-55A9-86B0-D087B44828B8 com.tentacle.mobile.navtest
 ```
 
+## Android TV (`--android`)
+
+L'Apple TV est la référence ABSOLUE d'Android TV : `verify --android` rejoue
+les mêmes scénarios sur l'app Android et les compare aux références prises
+sur tvOS, écart par écart. `record --android` est refusé (une référence est
+toujours celle de l'Apple TV).
+
+```bash
+# l'émulateur tenu sous verrou (un seul sur la machine), APK DEBUG construite
+ANDROID_SERIAL=emulator-5596 node apps/tv/harness/nav-golden/nav-golden.mjs verify --slot 6 --android [domaine]
+#   --apk <chemin>  une autre APK debug que apps/tv/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+- **L'appareil** est celui que l'on tient (`ANDROID_SERIAL`, sinon le seul
+  branché) : le banc ne lance ni n'arrête d'émulateur. L'APK doit être une
+  build **debug** (elle charge son JS depuis Metro, et `run-as` l'exige) ;
+  réinstallée quand elle change.
+- **Metro et le faux backend** passent par `adb reverse` (8081 → le Metro de
+  la place, 310n → 310n) : l'adresse du faux backend reste
+  `http://localhost:310n`, comme au simulateur.
+- **Démarrage à froid** : `am force-stop`, `pm clear`, puis la session du banc
+  écrite dans la base d'AsyncStorage de l'app (`databases/RKStorage`, table
+  `catalystLocalStorage`, `PRAGMA user_version = 1` — à 0, l'app rejoue sa
+  création, échoue et efface la base) avant son lancement.
+- **La télécommande** : la console de l'émulateur (`adb emu event send`) APPUIE
+  puis RELÂCHE, si bien que `hold:<s>` et `holdright:<s>` sont de vrais appuis
+  maintenus, répétitions d'Android comprises ; sur un boîtier réel,
+  `input keyevent` (un appui long sans durée). `menu` est le Retour d'Android,
+  `play` la touche Lecture/Pause, `type:` passe par `input text`. Les
+  scénarios au pavé tactile (`swipe:`, `pan:`) sont IGNORÉS, raison dite : la
+  télécommande Android n'en a pas.
+- **Le cadre** se compare dans l'espace de la référence (1920 de large) : la
+  sonde rend la largeur de la fenêtre, le banc ramène le cadre à 1920 si
+  besoin (l'app Android règle déjà sa densité pour 1920 × 1080 pt).
+- **Le stockage** (`expect.storage`) est relu dans AsyncStorage, une lecture
+  en retard (asynchrone) : le relevé stable la rattrape.
+- Rapport : `out/verify-android-<date>.md`.
+
+Piège payé en l'écrivant : dans un worktree qui a SES node_modules
+(`pnpm install`, pas des liens vers le principal), l'enveloppe Metro
+empruntait aussi `react-native` au principal, alors que la CLI désigne
+`InitializeCore` (lancé AVANT l'app) par le chemin du worktree — il n'était
+plus lancé (« Property 'window' doesn't exist »). `react-native` lui-même
+n'est plus emprunté.
+
 ## Limites connues
 
 - **Balayage et glissé** : l'agent XCUITest n'a que des appuis (XCUIRemote).

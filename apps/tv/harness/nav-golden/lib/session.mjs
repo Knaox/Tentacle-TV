@@ -13,6 +13,7 @@ import { ensureAgent, ensureBackend, ensureCdpd, ensureMetro } from "./services.
 import { describeDevice, ensureInstalled, ensureSimulator, findDevice, launchApp, resetAppState } from "./simulator.mjs";
 import { frozenSnapshot } from "./snapshot.mjs";
 import { settle } from "./observe.mjs";
+import { ANDROID_PACKAGE, androidForeground, describeAndroid, ensureAndroidApp, launchAndroidApp, resetAndroidApp, reversePorts } from "./android.mjs";
 import { TEST_BUNDLE, checkUserApp, describePhysical, deviceIds, ensureDeviceApp, ensureDeviceInstalled, launchOnDevice, macIp } from "./device.mjs";
 
 /**
@@ -41,6 +42,7 @@ export async function prepare(ctx, { at = null, erase = true } = {}) {
   const snapshot = await frozenSnapshot();
   const checkout = at ? await referenceCheckout(at) : currentCheckout();
   step("Code servi", checkout.label);
+  if (ctx.android) return prepareAndroid(ctx, checkout, snapshot);
   if (ctx.device) return preparePhysical(ctx, checkout, snapshot);
   const { fingerprint, app } = await ensureNativeApp(checkout);
   let device = ensureSimulator(ctx.sim);
@@ -74,6 +76,24 @@ async function preparePhysical(ctx, checkout, snapshot) {
   const agentTarget = { udid, physical: true, host: macIp(), bundle: TEST_BUNDLE };
   await ensureAgent(ctx, agentTarget);
   return { checkout, snapshot, device: { udid, physical: true }, agentTarget, fingerprint, deviceInfo: describePhysical() };
+}
+
+/**
+ * Android TV : l'appareil tenu (émulateur sous verrou), l'APK debug installée,
+ * Metro et faux backend par `adb reverse`, pas d'agent (adb appuie).
+ */
+async function prepareAndroid(ctx, checkout, snapshot) {
+  const state = loadState(ctx.stateFile);
+  const app = ensureAndroidApp(ctx, checkout, state, ctx.apk);
+  if (app.changed) {
+    step("App Android", `installée : ${app.apk}`);
+    saveState(ctx.stateFile, { ...loadState(ctx.stateFile), androidApk: app.stamp });
+  }
+  await ensureBackend(ctx, snapshot);
+  await ensureMetro(ctx, checkout);
+  reversePorts(ctx);
+  await ensureCdpd(ctx, { appId: ANDROID_PACKAGE });
+  return { checkout, snapshot, device: { udid: ctx.serial, android: true }, agentTarget: null, fingerprint: app.stamp.split(":").slice(1).join(":"), deviceInfo: describeAndroid(ctx) };
 }
 
 /**
@@ -112,6 +132,7 @@ export async function applyFixtures(ctx, sets = []) {
 export async function coldStart(ctx, session, start = {}) {
   // L'agent mort entre deux scénarios (un test XCUITest fini sur une exception) :
   // relancé UNE fois ici, avant de conclure « agent absent ».
+  if (ctx.android) return coldStartAndroid(ctx, start);
   await ensureAgent(ctx, session.agentTarget, { relaunchNote: true });
   await applyFixtures(ctx, start.fixtures ?? []);
   if (session.device.physical) {
@@ -137,6 +158,26 @@ export async function coldStart(ctx, session, start = {}) {
   // Simulator.app) : on la ramène, deux fois au plus — ce n'est pas l'app qui a décidé.
   for (let i = 0; i < 2 && entry.app === "background"; i++) {
     await agentRun(ctx, ["activate"]);
+    entry = await settle(ctx, { since: 0, minMs: 1000, quietMs: 1500, timeoutMs: 30_000 });
+  }
+  return entry;
+}
+
+/** Le démarrage à froid sur Android : app effacée, session écrite dans sa base, lancée. */
+async function coldStartAndroid(ctx, start) {
+  await applyFixtures(ctx, start.fixtures ?? []);
+  reversePorts(ctx);
+  await resetAndroidApp(ctx, { session: start.session ?? "paired", storage: start.storage ?? {} });
+  await launchAndroidApp(ctx);
+  await awaitSingleTarget(ctx);
+  const loaded = await waitFor(() => tryEvaluate(ctx, "globalThis.__navGolden ? globalThis.__navGolden.version : 0"), { timeoutMs: 180_000, everyMs: 500 });
+  if (!loaded) throw new BenchError("la sonde du banc n'a pas paru dans l'app Android (APK debug ? Metro joint par adb reverse ? écran rouge ?)");
+  const ready = await waitFor(async () => (await tryEvaluate(ctx, "globalThis.__navGolden.observe().route")) ?? null, { timeoutMs: 90_000, everyMs: 400 });
+  if (!ready) throw new BenchError("la navigation de l'app n'est jamais prête");
+  await sleep(300);
+  let entry = await settle(ctx, { since: 0, minMs: 1500, quietMs: 1500, timeoutMs: 60_000, nullQuietMs: 10_000 });
+  if (entry.app === "background" && !androidForeground(ctx)) {
+    await launchAndroidApp(ctx);
     entry = await settle(ctx, { since: 0, minMs: 1000, quietMs: 1500, timeoutMs: 30_000 });
   }
   return entry;
