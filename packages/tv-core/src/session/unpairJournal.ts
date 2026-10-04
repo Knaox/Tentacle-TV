@@ -1,3 +1,5 @@
+import { TV_ENROLL_PENDING_KEY, TV_KNOWN_PROFILES_KEY, TV_PAIRING_TOKEN_KEY, TV_PROFILE_KEY } from "./tvProfileKeys";
+
 /**
  * Le déjumelage d'un téléviseur, tel qu'il survit à un plantage.
  *
@@ -20,6 +22,11 @@
  * la nouvelle session vit dans ses propres clés, et la purge n'est rejouée que
  * si `wiping` est levé — jamais sur la seule présence de révocations.
  *
+ * La Famille (Apple TV) ajoute une purge plus petite : QUITTER UN PROFIL
+ * (`beginProfileLeave`, portée `profile`) efface la session du profil
+ * (`PROFILE_STORAGE_KEYS`) et met son jeton de côté, mais garde le jumelage —
+ * le jeton de jumelage, qui ouvre les autres profils.
+ *
  * Module pur, stockage injecté : `localStorage` côté LG, `RNStorageAdapter`
  * côté natif (synchrone une fois hydraté). L'ordre des écritures est celui des
  * appels sur les deux : le marqueur est sur le disque avant le premier
@@ -30,21 +37,23 @@
 export const UNPAIR_PENDING_KEY = "tentacle_unpair_pending";
 
 /**
- * Ce que la purge efface : tout ce qui appartient au compte jumelé. Les
- * réglages de l'APPAREIL restent (langue de l'interface, rail, verre, réglages
- * matériels du lecteur, identifiant d'appareil) — ils servent dès l'écran de
- * jumelage et ne disent rien du compte.
+ * Ce qui appartient à la SESSION ouverte — le compte d'un jumelage d'avant les
+ * profils, ou le profil ouvert sur une Apple TV passée aux profils (Famille).
+ * Quitter un profil n'efface QUE ceci (`beginProfileLeave`) : la TV reste
+ * jumelée. Les réglages de l'APPAREIL restent (langue de l'interface, rail,
+ * verre, réglages matériels du lecteur, identifiant d'appareil) — ils servent
+ * dès l'écran de jumelage et ne disent rien du compte.
  *
  * Aucune de ces clés n'est renommée : ce sont celles que les applications
  * écrivent déjà.
  */
-export const ACCOUNT_STORAGE_KEYS: readonly string[] = [
+export const PROFILE_STORAGE_KEYS: readonly string[] = [
   "tentacle_token",
   "tentacle_user",
   "tentacle_jellyfin_token",
   "tentacle_jellyfin_url",
   "tentacle_credentials",
-  // L'identité Jellyfin que le serveur a dérivée pour CE jumelage.
+  // L'identité Jellyfin que le serveur a dérivée pour CE jumelage (ou cette session de profil).
   "tentacle_device_id_jf",
   // Le cache persisté des requêtes : les hubs de l'accueil du compte.
   "tentacle_query_cache_v1",
@@ -56,6 +65,20 @@ export const ACCOUNT_STORAGE_KEYS: readonly string[] = [
   "tentacle_playback_outbox",
   // Le marqueur de la relance à froid (`PLAYBACK_MARKER_KEY`, `playback/coldStart`).
   "tentacle_playback_marker",
+  // Le profil de la session ouverte (Famille, Apple TV).
+  TV_PROFILE_KEY,
+];
+
+/**
+ * Ce que le DÉJUMELAGE efface : la session, et ce qui tient le jumelage
+ * lui-même — le jeton de jumelage d'une TV passée aux profils, et ce qu'elle
+ * retient de sa famille.
+ */
+export const ACCOUNT_STORAGE_KEYS: readonly string[] = [
+  ...PROFILE_STORAGE_KEYS,
+  TV_PAIRING_TOKEN_KEY,
+  TV_KNOWN_PROFILES_KEY,
+  TV_ENROLL_PENDING_KEY,
 ];
 
 /** Le minimum qu'un stockage doit offrir, synchrone. */
@@ -79,6 +102,9 @@ export interface PendingRevocation {
 
 export interface UnpairJournal {
   wiping: boolean;
+  /** `profile` : la purge en cours ne quitte qu'un PROFILE (Famille) — la TV
+   *  reste jumelée ; absente : un déjumelage. */
+  scope?: "profile";
   revocations: PendingRevocation[];
 }
 
@@ -109,9 +135,10 @@ export function readUnpairJournal(storage: SessionStorage): UnpairJournal {
   const raw = storage.getItem(UNPAIR_PENDING_KEY);
   if (raw === null || raw === "") return { wiping: false, revocations: [] };
   try {
-    const parsed = JSON.parse(raw) as { wiping?: unknown; revocations?: unknown };
+    const parsed = JSON.parse(raw) as { wiping?: unknown; scope?: unknown; revocations?: unknown };
     const revocations = Array.isArray(parsed.revocations) ? parsed.revocations.filter(isRevocation) : [];
-    return { wiping: parsed.wiping === true, revocations };
+    const wiping = parsed.wiping === true;
+    return wiping && parsed.scope === "profile" ? { wiping, scope: "profile", revocations } : { wiping, revocations };
   } catch {
     return { wiping: true, revocations: [] };
   }
@@ -132,14 +159,33 @@ export function writeUnpairJournal(storage: SessionStorage, journal: UnpairJourn
  * `leaving` nul (révocation venue du serveur) : rien à révoquer.
  */
 export function beginUnpair(storage: SessionStorage, leaving: LeavingSession | null, now: number): void {
+  writeUnpairJournal(storage, { wiping: true, revocations: withLeaving(readUnpairJournal(storage), leaving, now) });
+}
+
+/**
+ * Premier geste quand on QUITTE UN PROFILE (Famille, Apple TV), AVANT tout
+ * effacement : la purge de la session est déclarée en cours — rejouée au
+ * démarrage sur les seules clés de la session (`PROFILE_STORAGE_KEYS`), la TV
+ * restant jumelée — et le jeton de la session mis de côté pour sa révocation
+ * (la même route : portée par une session de profil, elle ne ferme qu'elle).
+ * Un déjumelage déjà en cours n'est jamais rétrogradé en simple sortie.
+ */
+export function beginProfileLeave(storage: SessionStorage, leaving: LeavingSession | null, now: number): void {
   const journal = readUnpairJournal(storage);
+  const revocations = withLeaving(journal, leaving, now);
+  const accountPending = journal.wiping && journal.scope !== "profile";
+  writeUnpairJournal(storage, accountPending ? { wiping: true, revocations } : { wiping: true, scope: "profile", revocations });
+}
+
+/** Les révocations du marqueur, le jeton quitté en plus (une fois). */
+function withLeaving(journal: UnpairJournal, leaving: LeavingSession | null, now: number): PendingRevocation[] {
   const serverUrl = leaving?.serverUrl?.trim();
   const token = leaving?.token?.trim();
-  if (serverUrl && token && !journal.revocations.some((r) => r.token === token)) {
-    journal.revocations.push({ serverUrl, token, since: now, attempts: 0, notBefore: now });
+  const revocations = [...journal.revocations];
+  if (serverUrl && token && !revocations.some((r) => r.token === token)) {
+    revocations.push({ serverUrl, token, since: now, attempts: 0, notBefore: now });
   }
-  const revocations = journal.revocations.slice(-MAX_PENDING_REVOCATIONS);
-  writeUnpairJournal(storage, { wiping: true, revocations });
+  return revocations.slice(-MAX_PENDING_REVOCATIONS);
 }
 
 /** Efface ce qui appartient au compte. Idempotent. */
@@ -155,30 +201,34 @@ export function endWipe(storage: SessionStorage): void {
 
 /**
  * Au démarrage, avant que quoi que ce soit lise la session : une purge
- * interrompue est rejouée. Rend `true` si c'était le cas — l'appareil est
- * alors à jumeler.
+ * interrompue est rejouée. Rend `true` si c'était un déjumelage — l'appareil
+ * est alors à jumeler. La sortie d'un profil interrompue n'efface que la
+ * session (`profileKeys`) : la TV reste jumelée, et rend `false`.
  */
-export function resumeUnpair(storage: SessionStorage, keys: readonly string[] = ACCOUNT_STORAGE_KEYS): boolean {
-  if (!readUnpairJournal(storage).wiping) return false;
-  wipeAccount(storage, keys);
+export function resumeUnpair(
+  storage: SessionStorage,
+  keys: readonly string[] = ACCOUNT_STORAGE_KEYS,
+  profileKeys: readonly string[] = PROFILE_STORAGE_KEYS,
+): boolean {
+  const journal = readUnpairJournal(storage);
+  if (!journal.wiping) return false;
+  const unpairing = journal.scope !== "profile";
+  wipeAccount(storage, unpairing ? keys : profileKeys);
   endWipe(storage);
-  return true;
+  return unpairing;
 }
 
 /** Le serveur a confirmé : le jeton mis de côté est détruit. */
 export function settleRevocation(storage: SessionStorage, token: string): void {
   const journal = readUnpairJournal(storage);
-  writeUnpairJournal(storage, {
-    wiping: journal.wiping,
-    revocations: journal.revocations.filter((r) => r.token !== token),
-  });
+  writeUnpairJournal(storage, { ...journal, revocations: journal.revocations.filter((r) => r.token !== token) });
 }
 
 /** Échec : la tentative est comptée et la suivante repoussée de `delayMs`. */
 export function deferRevocation(storage: SessionStorage, token: string, now: number, delayMs: number): void {
   const journal = readUnpairJournal(storage);
   writeUnpairJournal(storage, {
-    wiping: journal.wiping,
+    ...journal,
     revocations: journal.revocations.map((r) =>
       r.token === token ? { ...r, attempts: r.attempts + 1, notBefore: now + delayMs } : r,
     ),
