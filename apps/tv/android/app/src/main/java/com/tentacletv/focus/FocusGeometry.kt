@@ -1,0 +1,95 @@
+package com.tentacletv.focus
+
+import android.graphics.RectF
+import android.view.View
+import android.view.ViewGroup
+import com.facebook.react.views.view.ReactViewGroup
+import java.lang.reflect.Field
+
+/**
+ * La géométrie et la portée du focus, lues dans la fenêtre au moment du geste.
+ */
+internal object FocusGeometry {
+  private val location = IntArray(2)
+
+  /** Le cadre d'une vue dans sa fenêtre, transformations comprises (une carte
+   *  agrandie au focus), comme `convertRect:toView:nil` sur Apple TV. */
+  fun box(view: View): RectF {
+    view.getLocationInWindow(location)
+    val left = location[0].toFloat()
+    val top = location[1].toFloat()
+    return RectF(left, top, left + view.width * view.scaleX, top + view.height * view.scaleY)
+  }
+
+  fun isDescendant(view: View, ancestor: View): Boolean {
+    var v: Any? = view.parent
+    while (v is View) {
+      if (v === ancestor) return true
+      v = v.parent
+    }
+    return false
+  }
+
+  private const val SCREEN_CLASS = "com.swmansion.rnscreens.Screen"
+
+  /** L'écran (react-native-screens) qui porte la vue — le pendant du
+   *  `reactViewController` d'Apple TV : une section d'un écran empilé dessous
+   *  n'est jamais visée. Null hors d'une pile d'écrans. */
+  fun screenOf(view: View): View? {
+    var v: Any? = view.parent
+    while (v is View) {
+      if (v.javaClass.name == SCREEN_CLASS) return v
+      v = v.parent
+    }
+    return null
+  }
+
+  private val trapFields: Map<Boolean, Field?> by lazy {
+    fun field(name: String): Field? =
+      runCatching { ReactViewGroup::class.java.getDeclaredField(name).apply { isAccessible = true } }.getOrNull()
+    mapOf(true to field("trapFocusUp"), false to field("trapFocusDown"))
+  }
+
+  /** Le conteneur le plus proche qui RETIENT le focus dans cette direction
+   *  (`TVFocusGuideView trapFocusUp/Down`, un panneau) : la règle n'en sort
+   *  pas plus que le moteur d'Android. */
+  fun trapOf(view: View, up: Boolean): View? {
+    val field = trapFields[up] ?: return null
+    var v: Any? = view.parent
+    while (v is View) {
+      if (v is ReactViewGroup && runCatching { field.getBoolean(v) }.getOrDefault(false)) return v
+      v = v.parent
+    }
+    return null
+  }
+
+  /** La section la plus proche au-dessus de `view` (elle-même comprise). */
+  fun innermostSection(view: View): TentacleFocusSection? {
+    var v: Any? = view
+    while (v is View) {
+      if (v is TentacleFocusSection) return v
+      v = v.parent
+    }
+    return null
+  }
+
+  /** La section de VOISINAGE la plus proche au-dessus de `view`. */
+  fun innermostNeighborSection(view: View): TentacleFocusSection? {
+    var v: Any? = view
+    while (v is View) {
+      if (v is TentacleFocusSection && v.tvNeighbors) return v
+      v = v.parent
+    }
+    return null
+  }
+
+  /** Le premier ancêtre de `view` de la classe voulue, sans dépasser `stop`. */
+  inline fun <reified T : ViewGroup> ancestor(view: View, stop: View? = null): T? {
+    var v: Any? = view.parent
+    while (v is View && v !== stop) {
+      if (v is T) return v
+      v = v.parent
+    }
+    return null
+  }
+}
