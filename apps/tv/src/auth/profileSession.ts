@@ -173,7 +173,11 @@ export function endedProfile(context: UnpairContext): void {
  * regarde ? » : relancer l'app ne contourne jamais un PIN.
  */
 export function leaveProfileAtBoot(storage: UnpairContext["storage"]): void {
-  if (coldStartProfile(storage) !== "leave") return;
+  if (coldStartProfile(storage) === "leave") leaveSessionAtBoot(storage);
+}
+
+/** La sortie au démarrage : jeton mis de côté pour révocation, données du profil effacées. */
+export function leaveSessionAtBoot(storage: UnpairContext["storage"]): void {
   beginProfileLeave(
     storage,
     { serverUrl: storage.getItem("tentacle_server_url"), token: storage.getItem("tentacle_token") },
