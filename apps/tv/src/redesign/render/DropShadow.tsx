@@ -4,6 +4,7 @@ import {
   UIManager,
   processColor,
   requireNativeComponent,
+  type ColorValue,
   type HostComponent,
   type StyleProp,
   type ViewProps,
@@ -35,7 +36,9 @@ import { RENDER } from "./renderProfile";
 
 /** Des props à plat : React ne renvoie au natif que celles qui changent. */
 interface ShadowMask {
-  maskColor: number;
+  /** La couleur telle qu'écrite : la prop native est de type « Color », React
+   *  Native la convertit lui-même (une valeur déjà convertie serait refusée). */
+  maskColor: ColorValue;
   maskOpacity: number;
   maskBlur: number;
   maskOffsetX: number;
@@ -66,10 +69,9 @@ function maskOf(of: StyleProp<ViewStyle>, coverage: number | undefined): ShadowM
   const flat = StyleSheet.flatten(of) ?? {};
   const spec = dropShadowOf(flat, coverage ?? alphaOf(flat.backgroundColor));
   if (!spec) return null;
-  const color = processColor(spec.color);
-  if (typeof color !== "number") return null;
+  if (typeof processColor(spec.color) !== "number") return null;
   return {
-    maskColor: color,
+    maskColor: spec.color,
     maskOpacity: spec.opacity,
     maskBlur: spec.blur,
     maskOffsetX: spec.offsetX,
