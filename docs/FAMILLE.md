@@ -255,6 +255,25 @@ Le PIN du propriétaire protège aussi « Gérer les profils ».
   quitte la cloche du destinataire.
 - Push : seule `family_invite` part (préférence `family`).
 
+## Le web et le bureau (même build)
+
+- **Réglages › Famille** (`/settings/family` ; `/family`, la route de la
+  cloche, y mène ; le miroir la sert en volet du profil) : seulement si
+  `/api/config` annonce la Famille — on attend sa réponse avant de conclure.
+  Invitations reçues, ma famille (inviter, créer un invité, retirer,
+  supprimer, PIN d'un invité), invitations en attente, mes familles, mon
+  PIN, dissolution derrière une case à cocher. Code : `apps/web/src/family/`.
+- **L'affiche** est montée une fois par `AppLayout` (bureau comme miroir,
+  jamais sur le lecteur), avec `useFamilyLive` ; « Plus tard » et la
+  fermeture la taisent, la cloche rouvre l'invitation qu'on clique. Règles
+  pures : `familyModel.ts`.
+- **Administration** : les interrupteurs vivent dans Admin › Utilisateurs (un
+  réglage, pas une alerte) ; les sessions en cours étiquettent l'invité
+  (`FamilyGuestTag`).
+- Éprouvé en HTTP sur une IP du réseau : rien n'y dépend de `crypto.subtle`,
+  `crypto.randomUUID` ni du presse-papiers ; le cookie de session part sans
+  `Secure` sur HTTP.
+
 ## Le compte de démonstration (revue Apple)
 
 Reconnu par le serveur : le compte de provisionnement désigné dans
