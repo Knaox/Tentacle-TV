@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { UserPlus, Users } from "lucide-react";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { useCancelFamilyInvitation, useDeleteFamilyGuest, useRemoveFamilyMember } from "@tentacle-tv/api-client";
-import type { FamilyOverviewDto, FamilyProfileDto, OutgoingInvitationDto } from "@tentacle-tv/shared";
+import type { FamilyErrorCode, FamilyOverviewDto, FamilyProfileDto, OutgoingInvitationDto } from "@tentacle-tv/shared";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../contexts/ToastContext";
 import { FAMILY_LIMITS, ownedCounts, ownerActions } from "../familyModel";
@@ -14,6 +14,9 @@ import { PendingInvitations } from "./PendingInvitations";
 import { GuestPinDialog } from "./PinEditors";
 import { ProfileRow } from "./ProfileRow";
 import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON } from "./familyUi";
+
+/** Les refus que la page dit déjà dans ses encarts (SettingsFamily). */
+const NOTICED = new Set<FamilyErrorCode>(["family.personal_session_required", "family.disabled", "family.guests_disabled"]);
 
 type Pending =
   | { kind: "remove"; profile: FamilyProfileDto }
@@ -57,9 +60,10 @@ export function OwnedFamilySection({ overview }: { overview: FamilyOverviewDto }
   };
 
   const copy = confirmCopy(confirming, t);
-  // L'obstacle le plus parlant : celui de l'invitation s'il y en a un, sinon celui de l'invité.
+  // L'obstacle le plus parlant : celui de l'invitation s'il y en a un, sinon
+  // celui de l'invité — sauf ceux que les encarts de la page disent déjà.
   const blocked = actions.invite ?? actions.addGuest;
-  const blockedText = blocked && blocked !== "family.personal_session_required" ? codeText(blocked) : null;
+  const blockedText = blocked && !NOTICED.has(blocked) ? codeText(blocked) : null;
 
   const buttons = manage && (
     <div className="flex flex-wrap gap-2">

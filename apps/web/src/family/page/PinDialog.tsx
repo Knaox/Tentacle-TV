@@ -68,7 +68,7 @@ export function PinDialog({ open, title, pending, error, onSubmit, onRemove, onC
   };
 
   return (
-    <Modal open={open} onClose={pending ? () => {} : close} maxWidth={400} labelledBy={titleId}>
+    <Modal open={open} onClose={pending ? () => {} : close} maxWidth={400} labelledBy={titleId} dismissOnBackdrop={false}>
       <form className="p-6" onSubmit={submit} noValidate>
         <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{title}</h2>
         <p id={hintId} className="mt-2 text-sm leading-relaxed text-content-tertiary">

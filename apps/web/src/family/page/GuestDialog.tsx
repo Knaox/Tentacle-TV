@@ -55,7 +55,7 @@ export function GuestDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal open onClose={close} maxWidth={460} labelledBy={titleId}>
+    <Modal open onClose={close} maxWidth={460} labelledBy={titleId} dismissOnBackdrop={false}>
       <form className="p-6" onSubmit={submit} noValidate>
         <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{t("guest.title")}</h2>
         <p className="mt-2 text-sm leading-relaxed text-content-tertiary">{t("guest.explain")}</p>
