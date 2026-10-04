@@ -1,5 +1,6 @@
 import { getConfigValue, setConfigValue } from "../configStore";
 import { getPrisma, hasPrisma } from "../db";
+import { hasRequestExtension } from "../pluginRequests";
 import { FAMILY_CONTRACT_VERSION, type FamilyCapability, type FamilySwitches } from "../../family/familyContract";
 import { FamilyFailure } from "./familyErrors";
 
@@ -24,7 +25,8 @@ export function getFamilySwitches(): FamilySwitches {
 export function familyCapability(): FamilyCapability {
   const switches = getFamilySwitches();
   const guests = switches.families && switches.guests;
-  return { v: FAMILY_CONTRACT_VERSION, enabled: switches.families, guests, guestRequests: guests };
+  // « Peut demander » n'a de sens que si une extension sait demander un titre.
+  return { v: FAMILY_CONTRACT_VERSION, enabled: switches.families, guests, guestRequests: guests && hasRequestExtension() };
 }
 
 export async function setFamilySwitches(patch: Partial<FamilySwitches>): Promise<FamilySwitches> {
