@@ -1,46 +1,54 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useDeleteFamilyGuest, useRemoveFamilyMember } from "@tentacle-tv/api-client";
 import type { FamilyProfileDto } from "@tentacle-tv/shared";
 import { whenNoModal } from "@/components/ui/modalGate";
+import type { ProfilePanelRights } from "@/family/profilePanelRights";
 import { useFamilyText } from "@/family/useFamilyText";
 import { showToast } from "@/notices/toastStore";
 import { haptic } from "@/utils/haptics";
 import { FamilyProfileSheet } from "./FamilyProfileSheet";
+import { MemberRightsSection } from "./MemberRightsSection";
 import { GuestPinSheet } from "./PinSheet";
 
-/** Ce que le panneau d'un profil permet ici (la page le décide d'après le serveur). */
-export interface ProfilePanelRights {
-  pin: boolean;
-  remove: boolean;
-}
-
 /**
- * Le panneau d'un profil et ses suites : la feuille du code PIN s'ouvre une
- * fois le panneau retiré (une modale à la fois, `modalGate`), et le geste qui
- * retire se confirme en disant ce qu'il coûte avant de partir.
+ * Le panneau d'un profil et ses suites. Le panneau retient l'IDENTIFIANT du
+ * profil et le relit dans la famille à chaque rendu : un droit réglé, un PIN
+ * posé s'y voient aussitôt ; un profil disparu (retiré ailleurs) le referme.
+ * La feuille du code PIN s'ouvre une fois le panneau retiré (une modale à la
+ * fois, `modalGate`) ; le geste qui retire se confirme en disant ce qu'il coûte.
  */
-export function useProfilePanel(rightsOf: (profile: FamilyProfileDto) => ProfilePanelRights) {
+export function useProfilePanel(
+  profiles: readonly FamilyProfileDto[],
+  rightsOf: (profile: FamilyProfileDto) => ProfilePanelRights,
+) {
   const { t } = useTranslation("familyWeb");
   const { errorText } = useFamilyText();
   const removeMember = useRemoveFamilyMember();
   const deleteGuest = useDeleteFamilyGuest();
-  const [open, setOpen] = useState<FamilyProfileDto | null>(null);
-  const [pinGuest, setPinGuest] = useState<FamilyProfileDto | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [pinGuestId, setPinGuestId] = useState<string | null>(null);
+  const open = openId ? profiles.find((p) => p.userId === openId) ?? null : null;
+  const pinGuest = pinGuestId ? profiles.find((p) => p.userId === pinGuestId) ?? null : null;
 
-  const close = useCallback(() => setOpen(null), []);
+  // Retiré ailleurs (autre appareil, départ) : le panneau se referme.
+  useEffect(() => {
+    if (openId && !open) setOpenId(null);
+  }, [openId, open]);
+
+  const close = useCallback(() => setOpenId(null), []);
   const failed = useCallback((error: unknown) => showToast({ title: errorText(error) }), [errorText]);
 
   const openPin = useCallback((profile: FamilyProfileDto) => {
-    setOpen(null);
-    whenNoModal(() => setPinGuest(profile));
+    setOpenId(null);
+    whenNoModal(() => setPinGuestId(profile.userId));
   }, []);
 
   const confirmRemove = useCallback((profile: FamilyProfileDto) => {
     const guest = profile.kind === "guest";
     const name = profile.name;
-    const done = { onSuccess: () => setOpen(null), onError: failed };
+    const done = { onSuccess: () => setOpenId(null), onError: failed };
     Alert.alert(
       guest ? t("confirm.deleteGuestTitle", { name }) : t("confirm.removeTitle", { name }),
       guest ? t("confirm.deleteGuestBody") : t("confirm.removeBody"),
@@ -68,11 +76,14 @@ export function useProfilePanel(rightsOf: (profile: FamilyProfileDto) => Profile
           onPin={rights.pin ? () => openPin(open) : undefined}
           onRemove={rights.remove ? () => confirmRemove(open) : undefined}
           onClose={close}
-        />
+        >
+          {rights.memberRights ? <MemberRightsSection member={open} /> : null}
+        </FamilyProfileSheet>
       ) : null}
-      {pinGuest ? <GuestPinSheet guest={pinGuest} onClose={() => setPinGuest(null)} /> : null}
+      {pinGuest ? <GuestPinSheet guest={pinGuest} onClose={() => setPinGuestId(null)} /> : null}
     </>
   );
 
-  return { open: setOpen as (profile: FamilyProfileDto) => void, element };
+  const openProfile = useCallback((profile: FamilyProfileDto) => setOpenId(profile.userId), []);
+  return { open: openProfile, element };
 }

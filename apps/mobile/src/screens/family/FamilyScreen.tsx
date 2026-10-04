@@ -4,9 +4,9 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { familyErrorFromApi, useFamilyOverview } from "@tentacle-tv/api-client";
 import type { FamilyOverviewDto } from "@tentacle-tv/shared";
-import { DissolveSection, FamilyNotice, MyPinSection } from "@/components/family/AccountSections";
-import { IncomingInvitationsSection, MembershipsSection } from "@/components/family/MembershipSections";
-import { OwnedFamilySection } from "@/components/family/OwnedFamilySection";
+import { DissolveSection, FamilyNotice, LeaveSection, MyPinSection } from "@/components/family/AccountSections";
+import { FamilySection } from "@/components/family/FamilySection";
+import { IncomingInvitationsSection } from "@/components/family/MembershipSections";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import { Skeleton } from "@/components/ui";
 import { familyScreenModel } from "@/family/familyScreenModel";
@@ -18,10 +18,12 @@ import { SettingsScaffold } from "../settings/SettingsScaffold";
 
 /**
  * Profil › Compte › Famille — les mêmes gestes que le web et le bureau, sur
- * iPhone comme sur iPad (colonne centrée) : invitations reçues, ma famille
- * (inviter, créer un invité, retirer, supprimer, PIN d'un invité),
- * invitations en attente, mes familles (quitter), mon code PIN, et la
- * dissolution, à part.
+ * iPhone comme sur iPad (colonne centrée). v2 : UNE famille par compte,
+ * partagée. Sans famille : les invitations reçues, ou créer la sienne. Dans
+ * une famille : tous ses profils (un appui ouvre le panneau de ceux qu'on
+ * gère), les gestes du rôle — le propriétaire invite, règle les droits,
+ * retire, dissout ; un membre crée des invités si on le lui permet, et
+ * quitte —, puis mon code PIN.
  *
  * Tout vient de `GET /api/family`, relu en direct par `family:update` (monté
  * par l'hôte de l'affiche, à la racine) : une réponse arrivée d'un autre
@@ -63,9 +65,9 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
       <Text style={st.description}>{t("description")}</Text>
       {model.notices.map((key) => <FamilyNotice key={key} text={t(key)} />)}
       {model.showIncoming ? <IncomingInvitationsSection incoming={overview.incoming} /> : null}
-      <OwnedFamilySection overview={overview} model={model} />
-      {model.showMemberships ? <MembershipsSection memberships={overview.memberships} canLeave={model.personal} /> : null}
+      <FamilySection overview={overview} model={model} />
       {model.showMyPin ? <MyPinSection hasPin={overview.account.hasPin} /> : null}
+      {model.showLeave && overview.family ? <LeaveSection familyId={overview.family.id} ownerName={overview.family.owner.name} /> : null}
       {model.showDissolve ? <DissolveSection /> : null}
     </>
   );

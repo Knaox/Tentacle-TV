@@ -43,6 +43,9 @@ export function FamilyProfileSheet({ profile, children, onPin, onRemove, onClose
             .filter(Boolean)
             .join(" · ")}
         </Text>
+        {guest && profile.createdByName ? (
+          <Text style={st.meta}>{t("familyMobile:addedBy", { name: profile.createdByName })}</Text>
+        ) : null}
       </View>
 
       {children}

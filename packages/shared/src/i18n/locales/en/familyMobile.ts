@@ -12,4 +12,12 @@ export default {
   posterLabel: "Invitation to join a family",
   pinShow: "Show digits",
   pinHide: "Hide digits",
+  // v2 — en attendant les mots communs de la Famille partagée (espace `family`).
+  leaveRow: "Leave the family",
+  memberCreateGuests: "Can create guests",
+  memberCreateGuestsHint: "They only manage the guests they create; three guests at most in the family.",
+  memberMayCreate: "The owner lets you create guests: you manage the ones you create.",
+  addedBy: "Added by {{name}}",
+  candidateInFamily: "Already in a family",
+  candidateInvited: "Invitation sent",
 } as const;

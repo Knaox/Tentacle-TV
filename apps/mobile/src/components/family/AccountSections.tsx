@@ -1,15 +1,19 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useLeaveFamily } from "@tentacle-tv/api-client";
 import { SettingsRow, SettingsSection } from "@/components/settings";
+import { useFamilyText } from "@/family/useFamilyText";
+import { showToast } from "@/notices/toastStore";
+import { haptic } from "@/utils/haptics";
 import { spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { DissolveSheet } from "./DissolveSheet";
 import { makeFamilyRowStyles } from "./familyRowStyles";
 import { OwnPinSheet } from "./PinSheet";
 
 /** Mon code PIN : poser, changer, retirer — il protège mon profil sur les TV
- *  de mes familles (et « Gérer les profils » sur celles de la mienne). */
+ *  de la famille, et « Gérer les profils » sur les miennes. */
 export function MyPinSection({ hasPin }: { hasPin: boolean }) {
   const { t } = useTranslation("familyWeb");
   const theme = useTheme();
@@ -60,6 +64,35 @@ export function DissolveSection() {
       </SettingsSection>
       {open ? <DissolveSheet onClose={() => setOpen(false)} /> : null}
     </>
+  );
+}
+
+/**
+ * Quitter la famille (un MEMBRE : le propriétaire, lui, dissout) — à tout
+ * moment, confirmé : son profil disparaît aussitôt des TV de la famille, et
+ * les autres profils des siennes.
+ */
+export function LeaveSection({ familyId, ownerName }: { familyId: string; ownerName: string }) {
+  const { t } = useTranslation(["familyWeb", "familyMobile"]);
+  const { errorText } = useFamilyText();
+  const leave = useLeaveFamily();
+  const confirm = () => {
+    Alert.alert(t("familyWeb:confirm.leaveTitle", { owner: ownerName }), t("familyWeb:confirm.leaveBody"), [
+      { text: t("familyWeb:cancel"), style: "cancel" },
+      {
+        text: t("familyWeb:confirm.leaveAction"),
+        style: "destructive",
+        onPress: () => {
+          haptic("destructive");
+          leave.mutate(familyId, { onError: (failure) => showToast({ title: errorText(failure) }) });
+        },
+      },
+    ]);
+  };
+  return (
+    <SettingsSection>
+      <SettingsRow icon="log-out" label={t("familyMobile:leaveRow")} destructive last disabled={leave.isPending} onPress={confirm} />
+    </SettingsSection>
   );
 }
 

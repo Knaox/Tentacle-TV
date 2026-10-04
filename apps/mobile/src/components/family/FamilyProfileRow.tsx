@@ -11,6 +11,8 @@ import { makeFamilyRowStyles } from "./familyRowStyles";
 interface FamilyProfileRowProps {
   profile: FamilyProfileDto;
   last: boolean;
+  /** Ce profil est celui de ce compte (« · Vous »). */
+  you: boolean;
   /** Le profil se gère d'ici : la ligne entière ouvre son panneau (chevron). */
   onOpen?: (profile: FamilyProfileDto) => void;
 }
@@ -22,7 +24,7 @@ const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest
  * PIN. Quand on peut le gérer, la ligne entière ouvre son panneau
  * (`FamilyProfileSheet`) — une cible pleine largeur plutôt qu'un petit mot.
  */
-export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, onOpen }: FamilyProfileRowProps) {
+export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, you, onOpen }: FamilyProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family", "familyMobile"]);
   const theme = useTheme();
   const st = useThemedStyles(makeFamilyRowStyles);
@@ -36,7 +38,7 @@ export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, 
       <View style={st.body}>
         <Text style={st.title} numberOfLines={1}>
           {profile.name}
-          {profile.kind === "owner" ? <Text style={st.metaText}>{`  · ${t("familyWeb:owned.you")}`}</Text> : null}
+          {you ? <Text style={st.metaText}>{`  · ${t("familyWeb:owned.you")}`}</Text> : null}
         </Text>
         <View style={st.meta}>
           <View style={[st.chip, guest && st.chipGuest]}>

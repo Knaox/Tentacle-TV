@@ -14,4 +14,12 @@ export default {
   posterLabel: "Invitation à rejoindre une famille",
   pinShow: "Afficher les chiffres",
   pinHide: "Masquer les chiffres",
+  // v2 — en attendant les mots communs de la Famille partagée (espace `family`).
+  leaveRow: "Quitter la famille",
+  memberCreateGuests: "Peut créer des invités",
+  memberCreateGuestsHint: "Il ne gère que les invités qu'il crée ; trois invités au plus dans la famille.",
+  memberMayCreate: "Le propriétaire vous permet de créer des invités : vous gérez ceux que vous créez.",
+  addedBy: "Ajouté par {{name}}",
+  candidateInFamily: "Déjà dans une famille",
+  candidateInvited: "Invitation envoyée",
 } as const;
