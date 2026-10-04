@@ -14,7 +14,6 @@ import {
 } from "@tentacle-tv/tv-core";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
-import { Chip } from "../../controls/Chip";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { colors, text } from "../../theme/tokens";
@@ -22,6 +21,7 @@ import { StatusPanel } from "../shared/StatusPanel";
 import { PinPad } from "./PinPad";
 import { PROFILES_PALETTE, profilePalette } from "./profileColors";
 import { ProfileTile } from "./ProfileTile";
+import { StayToggle } from "./StayToggle";
 import type { ProfilesViewProps } from "./profilesTypes";
 
 export type { PinPadModel, ProfileTileModel, ProfilesViewModel, ProfilesViewProps } from "./profilesTypes";
@@ -33,8 +33,8 @@ export type { PinPadModel, ProfileTileModel, ProfilesViewModel, ProfilesViewProp
  * focalisé. Quatre visages, que l'intégration choisit (`model`) :
  * - `loading` : la lecture des profils, ou l'ouverture de l'un d'eux ;
  * - `error` : les profils illisibles — Réessayer, et un second geste ;
- * - `picker` : la rangée des profils (six au plus), « Rester sur ce profil »
- *   et « Gérer les profils » dessous ;
+ * - `picker` : la rangée des profils (six au plus), la case discrète « Ne
+ *   plus proposer à l'ouverture » et « Gérer les profils » dessous ;
  * - `pin` : le pavé du code du profil choisi, sa croix Retour en haut à
  *   gauche, comme partout.
  *
@@ -89,10 +89,9 @@ export const ProfilesView = memo(function ProfilesView(props: ProfilesViewProps)
               {model.notice ? <Text style={styles.noticeText}>{model.notice}</Text> : null}
             </View>
             <FocusGroup focusKey={PROFILES_ACTIONS_GROUP} style={styles.actions}>
-              <Chip
+              <StayToggle
                 label={t("familyTv:stayOnProfile")}
-                icon={model.remember ? "check" : "circleDot"}
-                selected={model.remember}
+                checked={model.remember}
                 focusKey={PROFILES_STAY_KEY}
                 accessibilityLabel={`${t("familyTv:stayOnProfile")} : ${t(model.remember ? "preferences:reglageActive" : "preferences:reglageDesactive")}`}
                 onPress={props.onToggleRemember}
