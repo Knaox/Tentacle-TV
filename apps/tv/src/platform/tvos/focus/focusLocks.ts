@@ -11,11 +11,12 @@ import type { FocusExtras, FocusStore } from "./focusStore";
  * Libérer retire toute la liaison ajoutée à la clé.
  */
 
-const LOCKED: FocusExtras = { native: { isTVSelectable: false } };
+/** Les props d'une cible verrouillée (tvOS : `isTVSelectable`). */
+export const FOCUS_LOCKED: FocusExtras = { native: { isTVSelectable: false } };
 
 type Settable = { setNativeProps?: (props: object) => void };
 
 export function setFocusLocked(focus: FocusStore, key: string, locked: boolean): void {
-  focus.bind(key, locked ? LOCKED : null);
+  focus.bind(key, locked ? FOCUS_LOCKED : null);
   (focus.node(key) as Settable | null)?.setNativeProps?.({ isTVSelectable: !locked });
 }

@@ -1,4 +1,5 @@
 import type { FocusBinding } from "../../../redesign/focus/focusBinding";
+import { FOCUS_LOCKED } from "../focus/focusLocks";
 import type { FocusExtras } from "../focus/focusStore";
 
 /**
@@ -7,8 +8,8 @@ import type { FocusExtras } from "../focus/focusStore";
  * entrée (`preferredFocusOf`) et la croix verrouillée (`exitLocked`).
  */
 
-/** La croix verrouillée : sur tvOS, `isTVSelectable` décide. */
-export const END_EXIT_LOCK: FocusExtras = { native: { isTVSelectable: false } };
+/** La croix verrouillée : le verrou de la plateforme (`focusLocks`). */
+export const END_EXIT_LOCK: FocusExtras = FOCUS_LOCKED;
 
 /** La liaison avec sa préférence d'origine ; `undefined` : celle de toujours. */
 export function withPreferredFocus(binding: FocusBinding, preferred: boolean | undefined): FocusBinding {

@@ -11,11 +11,12 @@ import type { FocusExtras, FocusStore } from "../../tvos/focus/focusStore";
  * liaison de la clé (prochain rendu) ET le nœud déjà monté.
  */
 
-const LOCKED: FocusExtras = { native: { tvFocusable: false } };
+/** Les props d'une cible verrouillée (Android : `tvFocusable`). */
+export const FOCUS_LOCKED: FocusExtras = { native: { tvFocusable: false } };
 
 type Settable = { setNativeProps?: (props: object) => void };
 
 export function setFocusLocked(focus: FocusStore, key: string, locked: boolean): void {
-  focus.bind(key, locked ? LOCKED : null);
+  focus.bind(key, locked ? FOCUS_LOCKED : null);
   (focus.node(key) as Settable | null)?.setNativeProps?.({ tvFocusable: !locked });
 }
