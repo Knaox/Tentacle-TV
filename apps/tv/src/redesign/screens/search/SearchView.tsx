@@ -42,7 +42,10 @@ import {
  *   (`tvSearchIsEmpty`) ; cartes par `resolveCardMarkers`, lignes par
  *   `itemMeta` / `matchReason` / `personMeta` ;
  * - `dictation` : `system` sur tvOS (le champ ouvre le clavier système, sa
- *   dictée ; aucun micro), `key` sur Android TV (`useSpeechRecognition`) ;
+ *   dictée ; aucun micro), `systemAndKey` sur Android TV (le champ ouvre le
+ *   clavier système — Gboard, Leanback, et leur dictée — ET la touche micro
+ *   de l'app, `useSpeechRecognition`),
+ *   `key` : la touche micro seule, le champ n'est qu'un affichage ;
  * - `palette` : `paletteFromBlurHash` du meilleur résultat ou de la carte
  *   focalisée.
  * Callbacks : la saisie (`onKey`, `onSpace`, `onDelete`, `onClear`,
@@ -63,7 +66,7 @@ export interface SearchViewProps {
   suggestions: SearchSuggestionModel[];
   content: SearchContentModel;
   labels: SearchInputLabels;
-  dictation: "system" | "key";
+  dictation: "system" | "key" | "systemAndKey";
   /** Android TV : le micro écoute. */
   listening?: boolean;
   palette: ArtworkPalette;
@@ -95,14 +98,14 @@ export const SearchView = memo(function SearchView(props: SearchViewProps) {
           query={query}
           completion={completion}
           placeholder={labels.placeholder}
-          systemInput={dictation === "system"}
+          systemInput={dictation !== "key"}
           dictationHint={labels.dictationHint}
           onPress={props.onPressField}
         />
         <View style={styles.keyboard}>
           <SearchKeyboard
             labels={labels}
-            withMic={dictation === "key"}
+            withMic={dictation !== "system"}
             listening={listening}
             onKey={props.onKey}
             onSpace={props.onSpace}

@@ -12,7 +12,7 @@ import {
 } from "@tentacle-tv/tv-core";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
 import type { RootStackParamList } from "../../navigation/types";
-import { useSearchGroups, useSearchKeyboard } from "../../platform/tvos/screens/search";
+import { useSearchDictation, useSearchGroups, useSearchKeyboard } from "../../platform/searchInput";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import type { ArtworkPalette } from "../../redesign/color/artworkPalette";
 import { SearchView } from "../../redesign/screens/search/SearchView";
@@ -37,8 +37,9 @@ const isInputKey = (key: string) => key === SEARCH_FIELD_KEY || key.startsWith("
  * clavier en grille et les suggestions ; à droite les résultats en rangées,
  * sur le moteur de Tentacle — la bibliothèque, et, quand le serveur sait
  * demander des titres, la rangée « À demander » (`useSearchAbsent`). Dictée : celle du
- * clavier système, qu'ouvre le champ (`useSearchKeyboard`) — jamais le micro,
- * que tvOS refuse aux apps.
+ * clavier système, qu'ouvre le champ (`useSearchKeyboard`) — sur Apple TV,
+ * jamais le micro, que tvOS refuse aux apps ; sur Android TV, la touche micro
+ * de l'app en plus (`useSearchDictation`, `platform/searchInput`).
  *
  * Chaque colonne garde sa place (groupes `search:input` et `search:results`) :
  * aller aux résultats mène au meilleur, puis au dernier visité ; revenir au
@@ -65,6 +66,8 @@ export function SearchRedesign() {
   const { focus } = screen;
   useSearchGroups(focus);
   const keyboard = useSearchKeyboard(focus, results.submitAnswer, results.firstKey, navigation);
+  // Apple TV : la dictée du clavier système ; Android TV : aussi le micro de l'app.
+  const dictation = useSearchDictation(input.setQuery);
   const { openPoster, openLandscape, sheet } = useTVCardActions();
   const labels = useMemo(() => searchInputLabels(t), [t]);
 
@@ -150,7 +153,9 @@ export function SearchRedesign() {
         suggestions={results.suggestions}
         content={content}
         labels={labels}
-        dictation="system"
+        dictation={dictation.dictation}
+        listening={dictation.listening}
+        onMic={dictation.onMic}
         palette={focusedPalette ?? results.palette}
         onPressField={keyboard.onPressField}
         onKey={input.onKey}
