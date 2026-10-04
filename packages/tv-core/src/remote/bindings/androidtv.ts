@@ -85,11 +85,21 @@ export function createAndroidTvReader(): (event: AndroidTvNativeEvent, at: numbe
 export const ANDROIDTV_BACK_SIGNAL = "back";
 
 const HANDLER = "TVEventHandler";
-/** Un appui simple ne compte qu'au relâchement — seule phase livrée, mais
- *  dite : si `enableKeyDownEvents` s'allumait un jour, rien ne compterait double. */
+/** Un appui simple ne compte qu'au relâchement : l'app allume
+ *  `enableKeyDownEvents` (`MainApplication.kt`, pour les touches média
+ *  ci-dessous), l'enfoncement arrive donc aussi — il ne compte pas double. */
 const ON_RELEASE = ["up"] as const satisfies readonly SignalPhase[];
+/** Les touches d'avance et de recul rapides comptent à l'ENFONCEMENT, chaque
+ *  répétition comprise (Android répète une touche tenue toutes les ~50 ms
+ *  après ~500 ms ; react-native-tvos ne détecte pas leur maintien) : le
+ *  lecteur ouvre le défilement au premier, puis accélère au rythme des
+ *  répétitions et s'arrête à leur silence (tv-core `mediaPulse`, le moteur
+ *  commun) — la même avance que la croix maintenue. Exige
+ *  `enableKeyDownEvents`. */
+const ON_PRESS_AND_REPEAT = ["down"] as const satisfies readonly SignalPhase[];
 
 const press = (signal: string, intent: PressBinding["intent"], source: string): PressBinding => ({ signal, intent, on: ON_RELEASE, source });
+const repeated = (signal: string, intent: PressBinding["intent"], source: string): PressBinding => ({ signal, intent, on: ON_PRESS_AND_REPEAT, source });
 
 const NO_USE = "aucune intention ne lui correspond dans l'app (Apple TV n'a pas la touche)";
 const unused = (signal: string, reason = NO_USE): NoiseBinding => ({ signal, reason });
@@ -108,8 +118,8 @@ export const ANDROIDTV_BINDINGS: RemoteBindings = {
     press("play", { type: "transport", command: "lecture" }, `${HANDLER} — MEDIA_PLAY`),
     press("pause", { type: "transport", command: "pause" }, `${HANDLER} — MEDIA_PAUSE`),
     press("stop", { type: "transport", command: "arret" }, `${HANDLER} — MEDIA_STOP`),
-    press("fastForward", { type: "transport", command: "avance" }, `${HANDLER} — MEDIA_FAST_FORWARD`),
-    press("rewind", { type: "transport", command: "retour" }, `${HANDLER} — MEDIA_REWIND`),
+    repeated("fastForward", { type: "transport", command: "avance" }, `${HANDLER} — MEDIA_FAST_FORWARD, chaque enfoncement et répétition`),
+    repeated("rewind", { type: "transport", command: "retour" }, `${HANDLER} — MEDIA_REWIND, chaque enfoncement et répétition`),
     press("channelUp", { type: "page", direction: "haut" }, `${HANDLER} — CHANNEL_UP (téléviseurs, Google TV)`),
     press("channelDown", { type: "page", direction: "bas" }, `${HANDLER} — CHANNEL_DOWN`),
     press(ANDROIDTV_BACK_SIGNAL, { type: "retour" }, "BackHandler (hardwareBackPress), Modal.onRequestClose — BACK, manette B"),

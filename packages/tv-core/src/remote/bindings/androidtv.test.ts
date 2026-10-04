@@ -80,11 +80,18 @@ describe("ANDROIDTV_BINDINGS — appuis", () => {
   });
 
   it("traduit les touches de transport dédiées dans le vocabulaire d'origine", () => {
-    const commands = ["play", "pause", "stop", "fastForward", "rewind"].map((eventType) => {
+    const commands = ["play", "pause", "stop"].map((eventType) => {
       const intent = intentOf({ eventType, eventKeyAction: UP });
       return intent?.type === "transport" ? intent.command : null;
     });
-    expect(commands).toEqual(["lecture", "pause", "arret", "avance", "retour"]);
+    expect(commands).toEqual(["lecture", "pause", "arret"]);
+  });
+
+  it("avance et recul rapides comptent à l'enfoncement, répétitions comprises — jamais au relâchement", () => {
+    expect(intentOf({ eventType: "fastForward", eventKeyAction: DOWN })).toEqual({ type: "transport", command: "avance" });
+    expect(intentOf({ eventType: "rewind", eventKeyAction: DOWN })).toEqual({ type: "transport", command: "retour" });
+    expect(intentOf({ eventType: "fastForward", eventKeyAction: UP })).toBeNull();
+    expect(intentOf({ eventType: "rewind", eventKeyAction: UP })).toBeNull();
   });
 
   it("garde la date d'arrivée et le signal d'origine", () => {
