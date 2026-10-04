@@ -15,7 +15,9 @@ import type { MediaSource } from "../types/media";
  *   aux sessions hors du réseau local : c'est la limite Internet que
  *   l'administrateur a posée, pas la connexion ;
  * - `server` : le serveur CONVERTIT l'image (format, plage HDR, sous-titres
- *   incrustés) — elle perd en finesse même quand le réseau suffit.
+ *   incrustés) ET la sert plus bas que la source — débit vidéo ou
+ *   définition. Une conversion à débit et définition intacts, ou de conteneur
+ *   et d'audio seulement, n'est pas une « qualité réduite » : rien ne se dit.
  *
  * Rien en dehors du mode Auto : un palier choisi à la main est voulu.
  */
@@ -42,7 +44,7 @@ export interface QualityDropInput {
   /** Le plafond Auto posé sur ce flux, et la mesure qui l'a décidé. `null` : aucun. */
   cap: { measuredBps: number | null } | null;
   /** Le fichier d'origine (son débit total), tel que la fiche le connaît. */
-  source: Pick<MediaSource, "Bitrate"> | null | undefined;
+  source: Partial<Pick<MediaSource, "Bitrate" | "MediaStreams">> | null | undefined;
   /** Le `MediaSource` servi par `PlaybackInfo` : `TranscodingUrl`, `TranscodeReasons`. */
   served: Pick<MediaSource, "TranscodingUrl" | "TranscodeReasons"> | null | undefined;
 }
@@ -95,6 +97,22 @@ export function servedBitrate(served: QualityDropInput["served"]): number | null
   return video + (Number.isFinite(audio) && audio > 0 ? audio : 0);
 }
 
+/** Le flux converti est-il plus pauvre que la source : débit vidéo ou définition plus bas ? */
+export function conversionLowersQuality(
+  source: QualityDropInput["source"],
+  served: QualityDropInput["served"],
+): boolean {
+  const url = served?.TranscodingUrl;
+  const video = source?.MediaStreams?.find((stream) => stream.Type === "Video");
+  if (!url || !video) return false;
+  const servedVideo = Number(urlParam(url, "VideoBitrate"));
+  if (video.BitRate && Number.isFinite(servedVideo) && servedVideo > 0 && servedVideo < video.BitRate * LIMIT_TOLERANCE) return true;
+  const maxHeight = Number(urlParam(url, "MaxHeight"));
+  const maxWidth = Number(urlParam(url, "MaxWidth"));
+  if (video.Height && Number.isFinite(maxHeight) && maxHeight > 0 && maxHeight < video.Height) return true;
+  return !!video.Width && Number.isFinite(maxWidth) && maxWidth > 0 && maxWidth < video.Width;
+}
+
 function conversionOf(reasons: readonly string[]): ServerConversion | null {
   for (const [pattern, conversion] of CONVERSIONS) {
     if (reasons.some((reason) => pattern.test(reason))) return conversion;
@@ -121,7 +139,7 @@ export function qualityDrop(input: QualityDropInput): QualityDrop | null {
     return { cause: "network", measuredBps: measured, neededBps: needed };
   }
 
-  const conversion = transcoding ? conversionOf(reasons) : null;
+  const conversion = transcoding && conversionLowersQuality(input.source, input.served) ? conversionOf(reasons) : null;
   return conversion ? { cause: "server", conversion } : null;
 }
 

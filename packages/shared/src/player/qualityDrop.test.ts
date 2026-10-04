@@ -3,8 +3,13 @@ import { formatMbps, qualityDrop, qualityDropKey, qualityDropText, servedBitrate
 
 const url = (query: string) => `/videos/x/master.m3u8?MediaSourceId=a&${query}&PlaySessionId=p`;
 
+const SOURCE = {
+  Bitrate: 14_000_000,
+  MediaStreams: [{ Type: "Video", BitRate: 13_600_000, Width: 1920, Height: 1080 }],
+} as unknown as QualityDropInput["source"];
+
 function input(over: Partial<QualityDropInput>): QualityDropInput {
-  return { auto: true, requestedBps: 120_000_000, cap: null, source: { Bitrate: 14_000_000 }, served: null, ...over };
+  return { auto: true, requestedBps: 120_000_000, cap: null, source: SOURCE, served: null, ...over };
 }
 
 describe("qualityDrop", () => {
@@ -68,14 +73,26 @@ describe("qualityDrop", () => {
     expect(drop).toBeNull();
   });
 
-  it("dit la conversion du serveur : format, HDR, sous-titres", () => {
-    const served = (reasons: string) => ({ TranscodingUrl: url(`VideoBitrate=12000000&TranscodeReasons=${reasons}`) });
+  it("dit la conversion du serveur quand elle abaisse le débit : format, HDR, sous-titres", () => {
+    const served = (reasons: string) => ({ TranscodingUrl: url(`VideoBitrate=8000000&TranscodeReasons=${reasons}`) });
     expect(qualityDrop(input({ served: served("VideoCodecNotSupported") })))
       .toEqual({ cause: "server", conversion: "videoFormat" });
     expect(qualityDrop(input({ served: served("VideoRangeTypeNotSupported") })))
       .toEqual({ cause: "server", conversion: "hdr" });
     expect(qualityDrop(input({ served: served("SubtitleCodecNotSupported,AudioCodecNotSupported") })))
       .toEqual({ cause: "server", conversion: "subtitles" });
+  });
+
+  it("dit la conversion qui abaisse la définition, même à débit intact", () => {
+    const served = { TranscodingUrl: url("VideoBitrate=13600000&MaxHeight=720&TranscodeReasons=VideoCodecNotSupported") };
+    expect(qualityDrop(input({ served }))).toEqual({ cause: "server", conversion: "videoFormat" });
+  });
+
+  it("se tait sur une conversion qui garde débit et définition", () => {
+    // Mesuré sur le banc : un MPEG-2 1080p à 8 Mb/s, converti par Jellyfin avec un plafond de 150 Mb/s.
+    const served = { TranscodingUrl: url("VideoBitrate=149872000&AudioBitrate=128000&TranscodeReasons=VideoCodecNotSupported,AudioCodecNotSupported") };
+    expect(qualityDrop(input({ served }))).toBeNull();
+    expect(qualityDrop(input({ served: { TranscodingUrl: url("VideoBitrate=13600000&TranscodeReasons=SubtitleCodecNotSupported") } }))).toBeNull();
   });
 
   it("se tait sur un remux : l'image est copiée", () => {
@@ -86,7 +103,7 @@ describe("qualityDrop", () => {
 
   it("lit les raisons d'un Jellyfin d'avant 10.9 (chaîne à virgules)", () => {
     const drop = qualityDrop(input({
-      served: { TranscodingUrl: url("VideoBitrate=12000000"), TranscodeReasons: "AudioCodecNotSupported, VideoCodecNotSupported" },
+      served: { TranscodingUrl: url("VideoBitrate=8000000"), TranscodeReasons: "AudioCodecNotSupported, VideoCodecNotSupported" },
     }));
     expect(drop).toEqual({ cause: "server", conversion: "videoFormat" });
   });
