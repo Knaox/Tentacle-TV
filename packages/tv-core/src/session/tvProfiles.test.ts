@@ -11,7 +11,7 @@ import {
   writeProfileRecord,
   type TvProfileRecord,
 } from "./tvProfileSession";
-import { findProfile, isProfileLocked, pickerEntryIndex, planProfileLaunch, planProfilePick } from "./profileLaunch";
+import { findProfile, isProfileLocked, pickerEntryIndex, pickerRemembers, planProfileLaunch, planProfilePick } from "./profileLaunch";
 import { readKnownProfiles, rememberProfiles } from "./knownProfiles";
 import type { SessionStorage } from "./unpairJournal";
 
@@ -70,13 +70,22 @@ describe("la session d'une Apple TV passée aux profils", () => {
     expect(readProfileRecord(fakeStorage({ [TV_PROFILE_KEY]: "{oups" }).storage)).toBeNull();
   });
 
-  it("au démarrage à froid, ne reprend que « Rester » ou le seul profil sans PIN", () => {
+  it("au démarrage à froid, ne reprend que le profil retenu", () => {
     expect(resumesOnLaunch(record("sticky", true))).toBe(true);
-    expect(resumesOnLaunch(record("single"))).toBe(true);
-    // Relancer l'app ne contourne jamais un code.
-    expect(resumesOnLaunch(record("single", true))).toBe(false);
+    // Relancer l'app ne contourne jamais un code, ni « Qui regarde ? ».
     expect(resumesOnLaunch(record("picked"))).toBe(false);
+    expect(resumesOnLaunch(record("picked", true))).toBe(false);
     expect(resumesOnLaunch(null)).toBe(false);
+  });
+
+  it("quitte au démarrage la session du seul profil ouvert d'office par une version d'avant", () => {
+    const legacy = fakeStorage({
+      [TV_PAIRING_TOKEN_KEY]: "p",
+      tentacle_token: "s",
+      [TV_PROFILE_KEY]: JSON.stringify({ ...record("picked"), launch: "single" }),
+    });
+    expect(readProfileRecord(legacy.storage)).toBeNull();
+    expect(coldStartProfile(legacy.storage)).toBe("leave");
   });
 
   it("décide du démarrage à froid avant que rien ne lise la session", () => {
@@ -104,15 +113,24 @@ describe("le profil à ouvrir", () => {
     expect(planProfileLaunch(listing([OWNER, locked], { stickyProfileId: "nina" }), "launch", NOW)).toEqual({ kind: "picker" });
   });
 
-  it("ouvre le seul profil, après son PIN s'il en a un", () => {
-    expect(planProfileLaunch(listing([OWNER]), "launch", NOW)).toEqual({ kind: "open", profileId: "damien", remember: false, launch: "single" });
-    const guarded = { ...OWNER, hasPin: true };
-    expect(planProfileLaunch(listing([guarded]), "launch", NOW)).toEqual({ kind: "pin", profileId: "damien", launch: "single" });
+  it("montre « Qui regarde ? » au lancement même pour un profil seul, PIN ou pas", () => {
+    expect(planProfileLaunch(listing([OWNER]), "launch", NOW)).toEqual({ kind: "picker" });
+    expect(planProfileLaunch(listing([{ ...OWNER, hasPin: true }]), "launch", NOW)).toEqual({ kind: "picker" });
+    // Le serveur ne l'exige pas (`pickerRequired` faux) : l'Apple TV le montre quand même.
+    expect(planProfileLaunch(listing([OWNER], { pickerRequired: false }), "launch", NOW)).toEqual({ kind: "picker" });
+    expect(planProfileLaunch(listing([OWNER, LEA]), "launch", NOW)).toEqual({ kind: "picker" });
   });
 
-  it("montre « Qui regarde ? » dès deux profils, et toujours pour « Changer de profil »", () => {
-    expect(planProfileLaunch(listing([OWNER, LEA]), "launch", NOW)).toEqual({ kind: "picker" });
+  it("montre toujours « Qui regarde ? » pour « Changer de profil », même avec un profil retenu", () => {
     expect(planProfileLaunch(listing([OWNER]), "switch", NOW)).toEqual({ kind: "picker" });
+    expect(planProfileLaunch(listing([OWNER, NINA], { stickyProfileId: "nina" }), "switch", NOW)).toEqual({ kind: "picker" });
+  });
+
+  it("coche « Ne plus proposer à l'ouverture » pour un profil retenu, ou qu'on vient de quitter", () => {
+    expect(pickerRemembers({ stickyProfileId: "nina" }, false)).toBe(true);
+    // « Changer de profil » : le serveur a oublié le profil en fermant sa session, la case s'en souvient.
+    expect(pickerRemembers({ stickyProfileId: null }, true)).toBe(true);
+    expect(pickerRemembers({ stickyProfileId: null }, false)).toBe(false);
   });
 
   it("au choix d'un profil : son PIN d'abord, sauf s'il est « Rester » sur cette TV", () => {

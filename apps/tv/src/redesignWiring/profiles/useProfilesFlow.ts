@@ -12,6 +12,7 @@ import {
   pinLockLapsed,
   pinLockRemainingMs,
   pinRefused,
+  pickerRemembers,
   planProfileLaunch,
   planProfilePick,
   pressPinDigit,
@@ -23,13 +24,13 @@ import {
   type ProfileRefusal,
 } from "@tentacle-tv/tv-core";
 import { loadProfiles, openProfile } from "../../auth/profileOpening";
-import { leaveProfile } from "../../auth/profileSession";
+import { lastLeftRemembered, leaveProfile } from "../../auth/profileSession";
 import { unpairDevice } from "../../auth/unpair";
 
 /**
  * L'AUTOMATE de « Qui regarde ? » (Apple TV, Famille) : lire les profils,
- * ouvrir celui qui s'ouvre seul (« Rester », le seul profil), sinon montrer la
- * rangée ; le pavé du PIN d'un profil protégé ; « Gérer les profils » par la
+ * ouvrir le profil retenu (« Ne plus proposer à l'ouverture »), sinon montrer
+ * la rangée ; le pavé du PIN d'un profil protégé ; « Gérer les profils » par la
  * session du propriétaire. Les décisions sont celles de tv-core
  * (`session/profileLaunch`, `session/profileRefusal`, `session/pinEntry`) ;
  * le serveur juge tout — PIN compris, que la TV ne fait que transmettre.
@@ -80,9 +81,10 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
       return;
     }
     setListing(loaded.listing);
+    // À l'arrivée seulement : une relecture après un refus garde la case telle que laissée.
+    if (planIntent) setRemember(pickerRemembers(loaded.listing, lastLeftRemembered()));
     const plan = planIntent ? planProfileLaunch(loaded.listing, planIntent, Date.now()) : { kind: "picker" as const };
     if (plan.kind === "open") return open(loaded.listing, plan.profileId, { remember: plan.remember, launch: plan.launch }, "open");
-    if (plan.kind === "pin") return showPin(loaded.listing, plan.profileId, "open", false, plan.launch);
     setPhase({ kind: "picker" });
   }
 

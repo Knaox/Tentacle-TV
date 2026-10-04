@@ -21,8 +21,11 @@ import type { SessionStorage } from "./unpairJournal";
  */
 
 /** Comment la session s'est ouverte — c'est ce qui dit si un démarrage à froid la reprend :
- *  `sticky` (« Rester sur ce profil »), `single` (le seul profil de la TV), `picked` (choisi). */
-export type ProfileLaunch = "sticky" | "single" | "picked";
+ *  `sticky` (« Ne plus proposer à l'ouverture »), `picked` (choisie dans « Qui regarde ? »).
+ *  ⚠️ Écrit sur le disque : une valeur d'avant (`single`, le seul profil
+ *  ouvert d'office) rend l'enregistrement illisible — la session est quittée
+ *  au démarrage, et « Qui regarde ? » s'affiche. */
+export type ProfileLaunch = "sticky" | "picked";
 
 export interface TvProfileRecord {
   profileId: string;
@@ -41,7 +44,7 @@ export interface TvProfileRecord {
 }
 
 const KINDS: readonly FamilyProfileKind[] = ["owner", "member", "guest"];
-const LAUNCHES: readonly ProfileLaunch[] = ["sticky", "single", "picked"];
+const LAUNCHES: readonly ProfileLaunch[] = ["sticky", "picked"];
 
 /** Le profil ouvert, tel que la TV le retient. */
 export function profileRecordOf(
@@ -120,13 +123,12 @@ export function hasProfilePairing(storage: SessionStorage): boolean {
 
 /**
  * Au démarrage à froid, la session de profil d'avant se REPREND-elle ? Seulement
- * celle de « Rester sur ce profil », ou celle du SEUL profil de la TV quand il
- * n'a pas de PIN. Toute autre repasse par « Qui regarde ? » — et par le PIN :
- * relancer l'app ne doit jamais contourner un code.
+ * celle du profil retenu (« Ne plus proposer à l'ouverture »). Toute autre
+ * repasse par « Qui regarde ? » — et par le PIN : relancer l'app ne doit
+ * jamais contourner un code.
  */
 export function resumesOnLaunch(record: TvProfileRecord | null): boolean {
-  if (!record) return false;
-  return record.launch === "sticky" || (record.launch === "single" && !record.hasPin);
+  return record?.launch === "sticky";
 }
 
 /**

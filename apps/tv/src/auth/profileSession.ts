@@ -44,9 +44,17 @@ const OUTBOX_FLUSH_BUDGET_MS = 3_000;
 /** Le profil qu'on vient de quitter — « Qui regarde ? » y pose le focus. En
  *  mémoire seulement : il ne dit rien qui doive survivre à l'app. */
 let lastProfileId: string | null = null;
+/** Ce profil était-il retenu (« Ne plus proposer à l'ouverture ») ? Le
+ *  serveur l'oublie en fermant la session ; la case de « Qui regarde ? »
+ *  s'en souvient (tv-core `pickerRemembers`). */
+let lastRemembered = false;
 
 export function lastLeftProfileId(): string | null {
   return lastProfileId;
+}
+
+export function lastLeftRemembered(): boolean {
+  return lastRemembered;
 }
 
 /** Pourquoi on revient à « Qui regarde ? » — l'écran en tire le profil à ouvrir (`planProfileLaunch`). */
@@ -119,7 +127,10 @@ export function leaveProfile(
   }
   const token = storage.getItem("tentacle_token");
   const serverUrl = storage.getItem("tentacle_server_url");
-  lastProfileId = readProfileRecord(storage)?.profileId ?? lastProfileId;
+  const record = readProfileRecord(storage);
+  lastProfileId = record?.profileId ?? lastProfileId;
+  // Coupée par le serveur (retrait, départ, PIN changé) : c'est lui qui a révoqué le choix.
+  lastRemembered = !serverEnded && record?.launch === "sticky";
   beginProfileLeave(storage, serverEnded ? null : { serverUrl, token }, Date.now());
 
   jfClient.setAccessToken(null);
@@ -155,10 +166,9 @@ export async function switchProfile(context: UnpairContext): Promise<void> {
 
 /**
  * La session de profil a cessé côté serveur (`family:profile-ended`, ou un 401
- * `profileEnded` à une porte) : retour à « Qui regarde ? » — la rangée,
- * même pour un profil seul : aucun profil ne s'ouvre à la place de celui
- * qu'on vient de couper —, jamais au jumelage. Sans session de profil
- * ouverte, rien à faire.
+ * `profileEnded` à une porte) : retour à « Qui regarde ? » — la rangée : aucun
+ * profil ne s'ouvre à la place de celui qu'on vient de couper —, jamais au
+ * jumelage. Sans session de profil ouverte, rien à faire.
  */
 export function endedProfile(context: UnpairContext): void {
   if (tvSessionMode(context.storage) !== "profile") return;
@@ -167,10 +177,10 @@ export function endedProfile(context: UnpairContext): void {
 
 /**
  * Au démarrage à froid, AVANT que rien ne lise la session : une session de
- * profil qui ne se reprend pas (ni « Rester sur ce profil », ni le seul profil
- * sans PIN — `coldStartProfile`, tv-core) est quittée — jeton mis de côté pour
- * révocation, données du profil effacées. L'app s'ouvre alors sur « Qui
- * regarde ? » : relancer l'app ne contourne jamais un PIN.
+ * profil qui ne se reprend pas (tout profil sauf celui retenu par « Ne plus
+ * proposer à l'ouverture » — `coldStartProfile`, tv-core) est quittée — jeton
+ * mis de côté pour révocation, données du profil effacées. L'app s'ouvre
+ * alors sur « Qui regarde ? » : relancer l'app ne contourne jamais un PIN.
  */
 export function leaveProfileAtBoot(storage: UnpairContext["storage"]): void {
   if (coldStartProfile(storage) === "leave") leaveSessionAtBoot(storage);

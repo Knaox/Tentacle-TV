@@ -103,9 +103,9 @@ function adoptPairing({ jfClient, storage }: UnpairContext, pairingToken: string
 
 /**
  * Juste après l'échange (ou un jumelage neuf sur un serveur à Famille) : le
- * profil qui s'ouvre seul s'ouvre — le propriétaire seul et sans PIN, le cas
- * le plus courant, ne voit RIEN changer ; sinon « Qui regarde ? ». Rend vrai
- * si une session de profil est ouverte.
+ * profil retenu s'ouvre (un jumelage refait, quand le serveur s'en souvient) ;
+ * sinon « Qui regarde ? », même pour un profil seul. Rend vrai si une session
+ * de profil est ouverte.
  */
 export async function openOnLaunch(context: UnpairContext): Promise<boolean> {
   const loaded = await loadProfiles(context);

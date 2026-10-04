@@ -8,18 +8,18 @@ import type { ProfileLaunch } from "./tvProfileSession";
  * montrer pour ne JAMAIS faire voir un refus : un profil bloqué ne s'ouvre pas
  * à l'aveugle, un profil protégé demande son code avant l'appel.
  *
- * - `launch` (démarrage, session terminée par le serveur) : le profil « Rester »
- *   s'ouvre seul, sans PIN ; le SEUL profil de la TV aussi — après son PIN
- *   s'il en a un ; sinon « Qui regarde ? ».
- * - `switch` (« Changer de profil ») : toujours « Qui regarde ? », même pour un
- *   profil seul — c'est là que vit « Gérer les profils ».
+ * - `launch` (démarrage, session terminée par le serveur) : le profil retenu
+ *   par « Ne plus proposer à l'ouverture » s'ouvre seul, sans PIN ; sinon
+ *   « Qui regarde ? » — TOUJOURS, même pour un profil seul (`pickerRequired`
+ *   du serveur n'y change rien : l'Apple TV montre qui regarde).
+ * - `switch` (« Changer de profil ») : toujours « Qui regarde ? » — c'est là
+ *   que vit « Gérer les profils », et que la case se décoche.
  */
 
 export type ProfileIntent = "launch" | "switch";
 
 export type LaunchPlan =
-  | { kind: "open"; profileId: string; remember: boolean; launch: Exclude<ProfileLaunch, "picked"> }
-  | { kind: "pin"; profileId: string; launch: "single" }
+  | { kind: "open"; profileId: string; remember: true; launch: "sticky" }
   | { kind: "picker" };
 
 /** Un profil bloqué par trop d'essais ratés (toutes TV confondues), à `now`. */
@@ -40,13 +40,19 @@ export function planProfileLaunch(listing: TvProfilesDto, intent: ProfileIntent,
   if (sticky && !isProfileLocked(sticky, now)) {
     return { kind: "open", profileId: sticky.userId, remember: true, launch: "sticky" };
   }
-  if (!listing.pickerRequired && listing.profiles.length === 1) {
-    const only = listing.profiles[0];
-    if (isProfileLocked(only, now)) return { kind: "picker" };
-    if (only.hasPin) return { kind: "pin", profileId: only.userId, launch: "single" };
-    return { kind: "open", profileId: only.userId, remember: false, launch: "single" };
-  }
   return { kind: "picker" };
+}
+
+/**
+ * La case « Ne plus proposer à l'ouverture » à l'arrivée sur « Qui regarde ? » :
+ * cochée si la TV a encore un profil retenu, ou si l'on vient de QUITTER un
+ * profil retenu (« Changer de profil » : le serveur l'a oublié en fermant la
+ * session — la case le rappelle, et le profil choisi ensuite le devient à son
+ * tour). Une session coupée par le serveur (retrait, départ, PIN changé) ne
+ * la coche pas : c'est lui qui a révoqué le choix.
+ */
+export function pickerRemembers(listing: Pick<TvProfilesDto, "stickyProfileId">, leftRemembered: boolean): boolean {
+  return leftRemembered || !!listing.stickyProfileId;
 }
 
 export type PickPlan =
@@ -55,9 +61,9 @@ export type PickPlan =
   | { kind: "locked"; until: string };
 
 /**
- * OK sur un profil de « Qui regarde ? ». `remember` : « Rester sur ce profil »
- * coché. Le profil « Rester » de cette TV s'ouvre sans PIN (le serveur l'en
- * dispense) ; tout autre profil protégé demande son code d'abord.
+ * OK sur un profil de « Qui regarde ? ». `remember` : « Ne plus proposer à
+ * l'ouverture » coché. Le profil retenu de cette TV s'ouvre sans PIN (le
+ * serveur l'en dispense) ; tout autre profil protégé demande son code d'abord.
  */
 export function planProfilePick(
   profile: TvProfileDto,

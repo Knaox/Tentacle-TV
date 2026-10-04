@@ -29,7 +29,6 @@ import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow } from "./auth/sessionFlow";
 import { wakeRevocationDrain } from "./auth/revocationQueue";
 import { leaveProfileAtBoot } from "./auth/profileSession";
-import { confirmSingleProfileAtBoot } from "./auth/profileBoot";
 import { ForegroundSessionValidator } from "./components/ForegroundSessionValidator";
 import { TVSessionGuard } from "./components/TVSessionGuard";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
@@ -235,7 +234,6 @@ export function App() {
       // Apple TV (Famille) : la session d'un profil qui ne se reprend pas au
       // lancement est quittée avant que rien ne la lise — « Qui regarde ? ».
       leaveProfileAtBoot(storage);
-      await confirmSingleProfileAtBoot(storage);
       // Sans session, le cache persisté n'est à personne : ni en mémoire, ni
       // sur le disque.
       await cacheHydrated;

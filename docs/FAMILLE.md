@@ -109,8 +109,8 @@ interrupteurs le permettent. Sans famille, ou « Familles » coupé : le seul
 compte de la TV. Chaque profil dit `hasPin`, `lockedUntil` s'il est bloqué par
 trop d'essais ratés, `createdBy` (un invité) et `manage` : ce qu'il gérerait
 sur cette TV derrière SON PIN (`FamilyRights` ; null pour un invité et pour le
-compte de démonstration). `pickerRequired` dès deux profils ; sinon la TV ouvre
-le seul. `stickyProfileId` : le profil « Rester sur ce profil ». `canManage` :
+compte de démonstration). `pickerRequired` dès deux profils — l'Apple TV ne le
+lit plus : elle montre « Qui regarde ? » même pour un seul. `stickyProfileId` : le profil « Rester sur ce profil ». `canManage` :
 « Gérer les profils » existe (au moins un `manage`). Les avatars se lisent
 sans jeton (`/api/jellyfin/Users/{id}/Images/Primary?tag=…`).
 
@@ -186,7 +186,8 @@ son propre PIN ou celui d'un invité, dissoudre.
    l'ancien (il vaut « revoked » partout : l'app se déjumellerait).
 3. `fetchTvProfiles` (jeton de jumelage) : 401 `revoked` → déjumelée ;
    `stickyProfileId` → ouvrir ce profil (`remember: true`, sans PIN) ;
-   `pickerRequired` faux → ouvrir le seul profil ; sinon « Qui regarde ? ».
+   sinon « Qui regarde ? », même pour un profil seul (case « Ne plus proposer
+   à l'ouverture » = `remember`).
 4. `openTvProfileSession` : le jeton de session devient LE jeton de l'app
    (préférences, socket, proxy, direct, rafraîchissement).
 5. `family:profile-ended` sur le socket, ou 401 `profileEnded` à une porte :

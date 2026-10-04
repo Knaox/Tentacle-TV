@@ -28,7 +28,7 @@ export type { PinPadModel, ProfileTileModel, ProfilesViewModel, ProfilesViewProp
 
 /**
  * « Qui regarde ? » (`Profiles`, Apple TV, Famille) — la page qui ouvre l'app
- * dès deux profils, et à laquelle on revient en changeant de profil. Aucun
+ * (sauf un profil retenu), et à laquelle on revient en changeant de profil. Aucun
  * logo : la marque est dans la lumière, qui prend la couleur du profil
  * focalisé. Quatre visages, que l'intégration choisit (`model`) :
  * - `loading` : la lecture des profils, ou l'ouverture de l'un d'eux ;
