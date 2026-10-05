@@ -30,7 +30,6 @@ autre appareil : `APPLETV_DEVICE=<id>`).
 | `library-bench/` | Bibliothèques : 1 200 films, faux Tentacle + faux Jellyfin, i/s et RAM, A/B |
 | `live-requests/` | Demandes Vigie qui avancent, sans Vigie ni Jellyseerr |
 | `slow-transcode/` | Serveur qui transcode lentement (encodeur réglable) |
-| `focus-bench/` | Navigation D-pad avec les vrais composants, sans compte |
 | `atv-remote/` | Pilote de télécommande XCUITest + CDP (simulateur ; appareil réel seulement sur demande de l'utilisateur) |
 | `vitrine/` | Visuels des stores et du site |
 

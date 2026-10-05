@@ -37,7 +37,7 @@ retirant le préfixe (`AGENT_HOST`, `AGENT_PORT`, `AGENT_BUNDLE`).
 `'platform=tvOS Simulator,id=<UDID>'` et `TEST_RUNNER_AGENT_HOST=127.0.0.1`.
 Le lanceur de tests passe devant l'application en démarrant : commencer par
 `activate`, sinon `focus` échoue (`kAXErrorServerNotFound`) et met fin au
-test. C'est ce que sert le banc de focus (`../focus-bench`), sans compte.
+test. Le banc de référence de la navigation (`../nav-golden`) s'en sert.
 
 ## Commander
 
