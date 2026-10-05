@@ -39,11 +39,18 @@ internal object BeamSearch {
     // hauteur de l'écran) perdait contre une entrée du rail alignée sur la
     // carte, plus loin pourtant ; GAUCHE depuis une rangée visait « Séries »
     // au lieu de l'entrée active (nav-golden `socle/rail#rail-03`).
+    // Un concurrent qui CHEVAUCHE la source dans l'axe du geste (une carte sous
+    // le rail ouvert) n'est pas « au-delà » pour tvOS, qui ne vise jamais ce
+    // qui est recouvert : le guide l'emporte aussi (DROITE depuis le rail rend
+    // la dernière carte visitée, `focus/rangees-debut#rangee-retour-premiere-carte`).
     val guide = nearestInBeam(focused, direction) { FocusGeometry.isFocusGuide(it) }
-    if (guide != null && guide !== next &&
-      (!nextInBeam || majorDistance(from, FocusGeometry.box(guide), direction) < majorDistance(from, FocusGeometry.box(next!!), direction))
-    ) {
-      return guide
+    if (guide != null && guide !== next) {
+      val nextBox = next?.let { FocusGeometry.box(it) }
+      if (!nextInBeam || nextBox == null || overlapsAlong(from, nextBox, direction) ||
+        majorDistance(from, FocusGeometry.box(guide), direction) < majorDistance(from, nextBox, direction)
+      ) {
+        return guide
+      }
     }
     if (nextInBeam) return next
     return nearestInBeam(focused, direction)
@@ -70,6 +77,14 @@ internal object BeamSearch {
     View.FOCUS_RIGHT -> (from.left < to.left || from.right <= to.left) && from.right < to.right
     View.FOCUS_UP -> (from.bottom > to.bottom || from.top >= to.bottom) && from.top > to.top
     else -> (from.top < to.top || from.bottom <= to.top) && from.bottom < to.bottom
+  }
+
+  /** `to` empiète sur `from` dans l'axe du geste (il commence avant son bord de sortie). */
+  private fun overlapsAlong(from: RectF, to: RectF, direction: Int): Boolean = when (direction) {
+    View.FOCUS_LEFT -> to.right > from.left
+    View.FOCUS_RIGHT -> to.left < from.right
+    View.FOCUS_UP -> to.bottom > from.top
+    else -> to.top < from.bottom
   }
 
   private fun majorDistance(from: RectF, to: RectF, direction: Int): Float = max(0f, when (direction) {
