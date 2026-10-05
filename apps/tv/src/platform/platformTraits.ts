@@ -8,4 +8,8 @@ export interface PlatformTraits {
   /** Le réglage « Liquid Glass » existe : faux, le verre reste ENRICHI (le
    *  rendu du réglage coupé) et le réglage n'est pas proposé. */
   liquidGlass: boolean;
+  /** Le moteur du lecteur annonce sa première image posée, son prêt (Exo,
+   *  mpv) : le lecteur le tient en pause jusque-là, puis lève l'écran de
+   *  chargement et la pause d'un même geste (tv-core `startGate`). */
+  playerAnnouncesFirstFrame: boolean;
 }

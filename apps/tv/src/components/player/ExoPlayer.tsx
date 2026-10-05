@@ -19,7 +19,7 @@ export type { ExoTextTrack } from "./playerTypes";
 
 interface ExoEvent {
   nativeEvent: {
-    type: "progress" | "load" | "end" | "error" | "tracks" | "videoSize" | "subtitles";
+    type: "progress" | "load" | "firstFrame" | "end" | "error" | "tracks" | "videoSize" | "subtitles";
     currentTime?: number;
     bufferedTime?: number;
     duration?: number;
@@ -54,6 +54,8 @@ interface ExoPlayerProps {
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
+  /** Android : première image posée sur la surface, son prêt (tv-core `startGate`). */
+  onFirstFrame?: () => void;
   onEnd?: () => void;
   onError?: (error: string) => void;
   onTracks?: (tracks: MpvTrack[]) => void;
@@ -81,7 +83,7 @@ function dispatchCommand(ref: React.RefObject<any>, command: string, args: any[]
 
 export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
   function ExoPlayer(
-    { source, paused, progressInterval = 1000, audioPassthrough = true, frameRate, textTracks, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles },
+    { source, paused, progressInterval = 1000, audioPassthrough = true, frameRate, textTracks, style, onProgress, onLoad, onFirstFrame, onEnd, onError, onTracks, onVideoSize, onSubtitles },
     ref,
   ) {
     const nativeRef = useRef(null);
@@ -109,6 +111,9 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
           case "load":
             onLoad?.(duration ?? 0);
             break;
+          case "firstFrame":
+            onFirstFrame?.();
+            break;
           case "end":
             onEnd?.();
             break;
@@ -126,7 +131,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
             break;
         }
       },
-      [onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles],
+      [onProgress, onLoad, onFirstFrame, onEnd, onError, onTracks, onVideoSize, onSubtitles],
     );
 
     return (

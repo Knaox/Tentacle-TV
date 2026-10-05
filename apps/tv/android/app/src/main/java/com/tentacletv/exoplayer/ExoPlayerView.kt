@@ -176,7 +176,7 @@ class ExoPlayerView(
             return
         }
         lastLoadedUrl = loadKey
-        listener.loadEmitted = false
+        listener.resetStart()
         loadMeter.reset()
         PlayerLoadRegistry.attach(this)
         startTrace.reset("exo")
@@ -211,7 +211,7 @@ class ExoPlayerView(
         val wasPlaying = p.playWhenReady
         currentSubtitleUrl = subtitleUrl
         lastLoadedUrl = null // Force reload
-        listener.loadEmitted = false
+        listener.resetStart()
         poller.lastSubtitleText = ""
 
         if (subtitleUrl != null && subtitleUrl.isNotEmpty()) Log.w(TAG, ">>> loadSubtitle url=${subtitleUrl.take(120)}")

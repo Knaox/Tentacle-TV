@@ -36,6 +36,31 @@ class ExoPlaybackListener(
 
     /** Un seul `load` par source : remis à faux par la vue à chaque (re)chargement. */
     @Volatile var loadEmitted = false
+        private set
+    /** Le verrou de démarrage (tv-core `startGate`) : la première image posée
+     *  ET le lecteur prêt — le son aussi —, annoncés une fois par source. Le
+     *  lecteur est tenu en pause jusque-là : l'image attend sur la surface. */
+    private var renderedFirstFrame = false
+    private var startAnnounced = false
+
+    /** Une nouvelle source (ou la même, rechargée) : tout se réannonce. */
+    fun resetStart() {
+        loadEmitted = false
+        renderedFirstFrame = false
+        startAnnounced = false
+    }
+
+    override fun onRenderedFirstFrame() {
+        renderedFirstFrame = true
+        announceStartIfReady()
+    }
+
+    private fun announceStartIfReady() {
+        val exo = playerProvider() ?: return
+        if (startAnnounced || !renderedFirstFrame || exo.playbackState != Player.STATE_READY) return
+        startAnnounced = true
+        emitter.emit("firstFrame", Arguments.createMap())
+    }
     /** Après `loadSubtitle()` : activer le texte et forcer la VTT side-loadée au prochain onTracksChanged. */
     @Volatile var pendingSubtitleEnable = false
     /** Les pistes du flux courant, adressables par `setAudioTrack` / `setSubtitleTrack`. */
@@ -46,11 +71,14 @@ class ExoPlaybackListener(
         Log.w(TAG, ">>> playbackState=${stateStr(playbackState)}")
         val exo = playerProvider() ?: return
         when (playbackState) {
-            Player.STATE_READY -> if (!loadEmitted) {
-                loadEmitted = true
-                emitter.emit("load", Arguments.createMap().apply {
-                    putDouble("duration", exo.duration.toDouble() / 1000.0)
-                })
+            Player.STATE_READY -> {
+                if (!loadEmitted) {
+                    loadEmitted = true
+                    emitter.emit("load", Arguments.createMap().apply {
+                        putDouble("duration", exo.duration.toDouble() / 1000.0)
+                    })
+                }
+                announceStartIfReady()
             }
             Player.STATE_ENDED -> {
                 onEnded()
