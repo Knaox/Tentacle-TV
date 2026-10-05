@@ -60,12 +60,47 @@ Relevé dans react-native-tvos 0.80 (Android) :
   Android choisit à l'ouverture du `Dialog` la première cible focalisable de
   l'arbre : le même verrou décide, posé par `tvFocusable` (jumeau
   `focusLocks.android.ts`, lot A1) au lieu d'`isTVSelectable`.
+- **Entrée réclamée** : le verrou ne suffit pas sur Android. Le `Dialog` ne
+  reçoit le focus qu'en prenant la fenêtre (`restoreDefaultFocus`), souvent
+  avant le montage de son contenu, et plus jamais ensuite — tvOS, lui, finit
+  par focaliser la seule cible libre. Le jumeau `useChoiceEntry.android.ts`
+  réclame donc l'entrée décidée (`claim` → `hasTVPreferredFocus`).
 - **Fermeture** : la fenêtre de l'activité reprend le focus là où il était (la
   carte d'origine), comme tvOS le rend à la carte.
+
+### 2.1 Relevé à l'émulateur (2026-10-05, `main` + A0, refonte forcée)
+
+| Essai | Résultat |
+|---|---|
+| OK maintenu sur une vignette 16:9 (« Reprendre la lecture ») | ✅ le grand panneau s'ouvre, « Reprendre » en tête |
+| Relâchement d'OK sous le panneau ouvert | ✅ aucune écriture au faux backend (garde anti-clic fantôme) |
+| Retour dans le panneau | ✅ fermé par `onRequestClose`, un seul Retour, focus rendu à la carte |
+| Entrée sur l'échelle (cran 5) | ❌ aucun focus dans le `Dialog` ; seule « Noter 5 » est focalisable (verrou d'A1 appliqué), mais sa demande de focus échoue |
+| Flèche dans le panneau sans focus | ❌ plantage natif : `StackOverflowError`, `ReactViewGroup.requestFocus` ↔ `requestFocusViewOrAncestor` |
+
+Le plantage vient des guides de focus natifs de react-native-tvos sur Android
+(lot A1) : un guide dont la destination refuse le focus remonte les ancêtres
+de celle-ci jusqu'à lui-même, puis redemande la même destination, sans fin.
+Sans le correctif d'A1 (`guideFocusable.android` : un guide sans cible ne doit
+pas poser `focusable={false}`, qui bloque ses descendants sur Android), il
+arrive dès l'ouverture du panneau. Avec ce correctif, il arrive à la première
+flèche : la destination (le cran retenu) refuse encore le focus. À reprendre
+avec A1 sur l'arbre fusionné, avant que la refonte ne soit livrée sur Android.
+
+Méthode : `input keyevent --longpress` relâche avant le seuil de 550 ms
+(`LONG_PRESS_THRESHOLD_MS`) et n'est pas un maintien. Le vrai maintien
+(enfoncement, répétitions à 500 ms puis 50 ms, relâchement) est injecté par
+`app_process` (`InputManagerGlobal.injectInputEvent`, comme la commande
+`input`).
 
 ## 3. Les écrans
 
 Légende : ✅ tourne tel quel · 🔧 câblé par A3 · ↗ autre tâche du lot · ⚠ écart assumé.
+
+Retour relevé à l'émulateur, écran par écran : accueil (page → rail → profil
+→ sortie de l'app, comme tvOS), fiche poussée (recule), lecteur (recule vers
+l'accueil), recherche (rail), Réglages (rail sur leur entrée, puis sortie),
+grand panneau (fermé).
 
 | Écran | Entrée | État Android | Écarts, décisions |
 |---|---|---|---|
@@ -98,6 +133,16 @@ premier résultat après une validation. La dictée de l'app (module natif
 grille : `SearchView` en mode `systemAndKey` (tvOS : `system`). Sans micro sur
 l'appareil, `system` — la dictée du clavier système reste. Applicateur :
 `platform/androidtv/screens/search.ts`, façade `platform/searchInput`.
+
+### 3.1 bis Les champs cachés (recherche, jumelage, profils)
+
+tvOS ignore une vue d'opacité nulle ; Android non. À l'émulateur, HAUT depuis
+le champ de la recherche envoyait le focus au vrai `TextInput`, hors écran.
+`platform/textEntry` (jumeau `.android`) : sur Android, le champ caché est non
+focalisable hors saisie (`HIDDEN_INPUT_PROPS`), libéré le temps de l'ouvrir
+(`openHiddenInput`), rendu et reverrouillé à la fermeture du clavier, le focus
+remis au bouton du champ (jumelage, profils : `KeyboardEntryProvider`) ou à la
+règle de l'écran (recherche).
 
 ### 3.2 Conditions d'utilisation
 
