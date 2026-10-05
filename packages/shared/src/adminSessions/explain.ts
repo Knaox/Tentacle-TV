@@ -1,5 +1,5 @@
 import type { AdminSessionDto } from "../types/adminSessionsDto";
-import { deliveryOf, type DeliveryKind } from "./delivery";
+import { declaredTranscodeOnly, deliveryOf, type DeliveryKind } from "./delivery";
 import { acceleratorLabel, channelsLabel, codecLabel, formatBitrate, rangeLabel, resolutionLabel } from "./format";
 
 /**
@@ -27,6 +27,10 @@ const REASON_ORDER = [
   "AnamorphicVideoNotSupported",
   "InterlacedVideoNotSupported",
   "ContainerBitrateExceedsLimit",
+  // Pas une raison de Jellyfin : la NÔTRE, quand il n'en donne aucune et que le
+  // débit servi est sous celui de la source — un plafond que l'appareil a
+  // demandé sans le dire (bureau et TV jusqu'à 1.26, cf. `reasonLines`).
+  "ClientBitrateLimit",
   "VideoBitrateNotSupported",
   "AudioCodecNotSupported",
   "AudioChannelsNotSupported",
@@ -64,6 +68,8 @@ export interface ReasonLine {
 
 export interface PlaybackExplanation {
   kind: DeliveryKind;
+  /** Le client se dit « Transcode », mais Jellyfin n'encode rien pour lui. */
+  declaredTranscode: boolean;
   reasons: ReasonLine[];
   /** Ce que le serveur change : « HEVC → H.264 », « 4K → 1080p », « TrueHD 5.1 → AAC 2.0 ». */
   changes: string[];
@@ -124,8 +130,22 @@ function params(reason: string, session: Pick<AdminSessionDto, "source">): Recor
   }
 }
 
-function reasonLines(session: Pick<AdminSessionDto, "source" | "transcoding">): ReasonLine[] {
+/** Le débit d'une source, s'il est vraisemblable. */
+function sourceBitrate(session: Pick<AdminSessionDto, "source">): number | null {
+  const rate = session.source?.bitrate;
+  return rate && rate >= PLAUSIBLE_BITRATE ? rate : null;
+}
+
+function reasonLines(session: Pick<AdminSessionDto, "source" | "transcoding">, kind: DeliveryKind): ReasonLine[] {
   const raw = session.transcoding?.reasons ?? [];
+  // Jellyfin n'a reçu aucune raison (URL construite par le client, sans
+  // `TranscodeReasons`) mais l'image sort sous le débit de la source : c'est
+  // un plafond de débit demandé par l'appareil — pas une incompatibilité.
+  const served = session.transcoding?.bitrate;
+  const sourceRate = sourceBitrate(session);
+  if (raw.length === 0 && kind === "video" && served && sourceRate !== null && served < sourceRate) {
+    return [{ reason: "ClientBitrateLimit", known: true, params: null }];
+  }
   const seen = new Set<string>();
   const lines: ReasonLine[] = [];
   for (const reason of raw) {
@@ -172,7 +192,7 @@ function changes(session: Pick<AdminSessionDto, "source" | "transcoding">, kind:
     // Le débit de Jellyfin est un PLAFOND : il ne dit quelque chose que s'il
     // est sous celui de la source (un palier, une limite). Au-dessus, il n'a
     // rien changé — « 11 Mb/s → 18 Mb/s » se lirait comme un gonflement.
-    const sourceRate = s?.bitrate && s.bitrate >= PLAUSIBLE_BITRATE ? s.bitrate : null;
+    const sourceRate = sourceBitrate(session);
     if (t.bitrate && (sourceRate === null || t.bitrate < sourceRate)) {
       out.push(arrow(sourceRate === null ? null : formatBitrate(sourceRate, locale), formatBitrate(t.bitrate, locale)));
     }
@@ -200,7 +220,8 @@ export function explainPlayback(
   const kind = deliveryOf(session);
   return {
     kind,
-    reasons: kind === "direct" ? [] : reasonLines(session),
+    declaredTranscode: declaredTranscodeOnly(session),
+    reasons: kind === "direct" ? [] : reasonLines(session, kind),
     changes: changes(session, kind, locale),
     encoder: encoder(session, kind),
   };

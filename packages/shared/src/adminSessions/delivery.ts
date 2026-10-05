@@ -46,11 +46,20 @@ export function deliveryOf(
     if (video && !transcoding.isVideoDirect) return "video";
     return transcoding.isAudioDirect ? "remux" : "audio";
   }
-  // Aucun travail décrit : « DirectStream » sert alors le fichier tel quel
-  // (flux statique). Un « Transcode » sans description est pris au pire —
-  // un instrument de mesure ne doit jamais flatter ce qu'il mesure.
-  if (session.playMethod === "Transcode") return video ? "video" : "audio";
+  // Aucun travail décrit : rien ne tourne chez Jellyfin. « DirectStream » sert
+  // le fichier tel quel ; un « Transcode » aussi — c'est le client qui le
+  // DÉCLARE (un état resté d'un épisode transcodé, mesuré le 2026-10-05 : un
+  // épisode lu en `Static=true` s'affichait « Transcodage »). Jellyfin attache
+  // `TranscodingInfo` à la session dès que ffmpeg tourne pour cet appareil :
+  // son absence vaut « aucun encodage » (`declaredTranscodeOnly` le dit).
   return "direct";
+}
+
+/** Le client se dit « Transcode », mais Jellyfin n'encode rien pour lui. */
+export function declaredTranscodeOnly(
+  session: Pick<AdminSessionDto, "playMethod" | "transcoding" | "nowPlaying">,
+): boolean {
+  return session.nowPlaying !== null && session.playMethod === "Transcode" && session.transcoding === null;
 }
 
 /** Combien de lectures de chaque sorte : l'en-tête du tableau de bord. */

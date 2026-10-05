@@ -79,7 +79,7 @@ describe("chaque raison de Jellyfin se dit, avec ses détails quand on les a", (
   });
 
   it("une lecture directe n'a pas de raison à dire", () => {
-    expect(explainPlayback(session(null), "fr")).toEqual({ kind: "direct", reasons: [], changes: [], encoder: null });
+    expect(explainPlayback(session(null), "fr")).toEqual({ kind: "direct", declaredTranscode: false, reasons: [], changes: [], encoder: null });
   });
 });
 
@@ -117,6 +117,29 @@ describe("ce qui change", () => {
   it("encodage logiciel dit, encodeur inconnu tu", () => {
     expect(explainPlayback(session({ videoCodec: "h264", hardwareAccelerationType: "none" }), "fr").encoder).toBe("software");
     expect(explainPlayback(session({ videoCodec: "h264" }), "fr").encoder).toBeNull();
+  });
+});
+
+describe("ce que Jellyfin n'a pas reçu, dit quand même (passation du 2026-10-05)", () => {
+  // Baby Reindeer S01E03 : HEVC 4K ~20 Mb/s, baisse automatique du bureau à
+  // 16,1 Mb/s en H.264 ; Jellyfin enregistre TranscodeReasons: null.
+  const baby: AdminSourceDto = { ...SOURCE, bitrate: 20_600_000 };
+
+  it("aucune raison, débit servi sous la source : limite de débit de l'appareil, pas incompatibilité", () => {
+    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 16_484_000, reasons: [] }, baby), "fr");
+    expect(e.kind).toBe("video");
+    expect(e.reasons).toEqual([{ reason: "ClientBitrateLimit", known: true, params: null }]);
+    expect(reasonKey(e.reasons[0])).toBe("reason.ClientBitrateLimit");
+  });
+
+  it("aucune raison et aucun plafond visible : rien d'inventé", () => {
+    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 25_000_000, reasons: [] }, baby), "fr");
+    expect(e.reasons).toEqual([]);
+  });
+
+  it("le client se dit « Transcode », Jellyfin n'encode rien : direct, déclaré seulement", () => {
+    const e = explainPlayback({ ...session(null), playMethod: "Transcode" }, "fr");
+    expect(e).toMatchObject({ kind: "direct", declaredTranscode: true, reasons: [], changes: [] });
   });
 });
 

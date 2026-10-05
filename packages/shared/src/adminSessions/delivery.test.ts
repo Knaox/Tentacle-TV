@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { AdminSessionDto, AdminTranscodingDto } from "../types/adminSessionsDto";
-import { countDeliveries, deliveryOf } from "./delivery";
+import { countDeliveries, declaredTranscodeOnly, deliveryOf } from "./delivery";
 
 function transcoding(isVideoDirect: boolean, isAudioDirect: boolean): AdminTranscodingDto {
   return { isVideoDirect, isAudioDirect, reasons: [] };
@@ -45,15 +45,21 @@ describe("deliveryOf", () => {
     expect(deliveryOf(session({ playMethod: "Transcode", transcoding: transcoding(false, false) }))).toBe("video");
   });
 
-  it("un « Transcode » sans description est pris au pire", () => {
-    expect(deliveryOf(session({ playMethod: "Transcode", transcoding: null }))).toBe("video");
+  it("un « Transcode » sans aucun encodage chez Jellyfin : direct, déclaré seulement", () => {
+    // Mesuré le 2026-10-05 : un épisode lu en Static=true, déclaré « Transcode » par le client.
+    const declared = session({ playMethod: "Transcode", transcoding: null });
+    expect(deliveryOf(declared)).toBe("direct");
+    expect(declaredTranscodeOnly(declared)).toBe(true);
+    expect(declaredTranscodeOnly(session({ playMethod: "Transcode", transcoding: transcoding(false, false) }))).toBe(false);
+    expect(declaredTranscodeOnly(session({ playMethod: "DirectPlay" }))).toBe(false);
   });
 
   it("de la musique n'a pas d'image à réencoder", () => {
     const song = { itemId: "m", name: "Song", type: "Audio", imageItemId: "m" };
     expect(deliveryOf(session({ nowPlaying: song, source: { audioCodec: "flac" }, playMethod: "Transcode", transcoding: transcoding(false, false) }))).toBe("audio");
     expect(deliveryOf(session({ nowPlaying: song, source: { audioCodec: "flac" }, playMethod: "Transcode", transcoding: transcoding(false, true) }))).toBe("remux");
-    expect(deliveryOf(session({ nowPlaying: song, source: null, playMethod: "Transcode", transcoding: null }))).toBe("audio");
+    // Sans encodage chez Jellyfin, la musique déclarée « Transcode » part telle quelle.
+    expect(deliveryOf(session({ nowPlaying: song, source: null, playMethod: "Transcode", transcoding: null }))).toBe("direct");
   });
 });
 

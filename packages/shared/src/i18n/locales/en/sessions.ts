@@ -53,6 +53,7 @@ export default {
   countVideo_other: "{{count}} transcodes",
   // What the card says: the kind in plain words, why, what changes, the source.
   directPlayShort: "file as is",
+  declaredTranscode: "declared as transcoding by the device, nothing is encoded",
   remuxShort: "container only, lossless",
   audioTranscodeShort: "picture untouched, audio converted",
   transcodeShort: "picture re-encoded",
@@ -144,6 +145,7 @@ export default {
     VideoResolutionNotSupported: "{{resolution}} is too high a resolution for the device",
     VideoResolutionNotSupported_generic: "Resolution too high for the device",
     ContainerBitrateExceedsLimit: "Bitrate capped: quality tier chosen on the device, or the server's bitrate limit",
+    ClientBitrateLimit: "Bitrate capped by the device (network or quality tier): Jellyfin wasn't told why",
     VideoBitrateNotSupported: "Video bitrate too high for the device",
     AudioBitrateNotSupported: "Audio bitrate too high for the device",
     AudioIsExternal: "External audio track: the server muxes it in",

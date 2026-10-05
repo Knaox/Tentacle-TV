@@ -53,6 +53,7 @@ export default {
   countVideo_other: "{{count}} transcodages",
   // Ce que dit la carte : la sorte en clair, pourquoi, ce qui change, la source.
   directPlayShort: "le fichier tel quel",
+  declaredTranscode: "déclaré transcodage par l'appareil, rien n'est encodé",
   remuxShort: "conteneur seulement, sans perte",
   audioTranscodeShort: "image intacte, son converti",
   transcodeShort: "image réencodée",
@@ -144,6 +145,7 @@ export default {
     VideoResolutionNotSupported: "Définition {{resolution}} trop élevée pour l'appareil",
     VideoResolutionNotSupported_generic: "Définition trop élevée pour l'appareil",
     ContainerBitrateExceedsLimit: "Débit plafonné : palier de qualité choisi sur l'appareil, ou limite de débit du serveur",
+    ClientBitrateLimit: "Débit plafonné par l'appareil (réseau ou palier de qualité) : Jellyfin n'en a pas reçu la raison",
     VideoBitrateNotSupported: "Débit vidéo trop élevé pour l'appareil",
     AudioBitrateNotSupported: "Débit audio trop élevé pour l'appareil",
     AudioIsExternal: "Piste audio externe au fichier : le serveur l'assemble",
