@@ -135,6 +135,12 @@ async function run() {
     await device.waitReady("accueil", 60_000);
     device.forceStop();
     device.compileProfile();
+    // L'échauffement, non mesuré : chaque scénario joué une fois. Le relais
+    // retaille alors les images à la taille que CETTE version demande, et
+    // l'app remplit son cache disque — toutes les versions se mesurent sur
+    // des caches pleins, comme chez un utilisateur qui revient.
+    for (const scenario of scenarios) await playScenario(device, scenario, null, null);
+    console.log("échauffement fait");
     for (const scenario of scenarios) {
       const played = [];
       for (let i = 0; i < rounds; i++) {
