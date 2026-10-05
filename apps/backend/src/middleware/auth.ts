@@ -207,3 +207,24 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
 
   (request as any).user = user;
 }
+
+/**
+ * Un administrateur en SESSION PERSONNELLE (web, bureau, mobile) : une TV
+ * jumelée par un administrateur porte `isAdmin` dans son jeton, mais une TV
+ * n'administre pas ce qui touche à l'accès au serveur depuis Internet.
+ */
+export async function requirePersonalAdmin(request: FastifyRequest, reply: FastifyReply) {
+  const token = getTokenFromRequest(request);
+  if (!token) {
+    return reply.status(401).send({ message: "Unauthorized" });
+  }
+  const result = await validateToken(token);
+  if (!result.ok) {
+    const { status, body } = rejection(result);
+    return reply.status(status).send(body);
+  }
+  if (!result.user.isAdmin || result.user.session !== "personal") {
+    return reply.status(403).send({ message: "Forbidden" });
+  }
+  (request as FastifyRequest & { user?: JellyfinUser }).user = result.user;
+}
