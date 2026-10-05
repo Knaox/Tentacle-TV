@@ -81,6 +81,13 @@ export type SessionClientMessage =
   /** Fin de lecture ; `playback:stopped` répond une fois Jellyfin servi. */
   | { type: "playback:stop"; state: PlaybackStateDto; requestId: string };
 
+/**
+ * L'état de Jellyfin vu par le backend (`jellyfinHealth.ts`) : `up` il sert ;
+ * `restarting` / `shutting-down` il l'a annoncé sur sa socket ; `down` il ne
+ * répond plus ; `starting` il répond « en cours de chargement ».
+ */
+export type JellyfinHealthState = "up" | "restarting" | "shutting-down" | "down" | "starting";
+
 /** Messages du backend vers le lecteur. */
 export type SessionServerMessage =
   /**
@@ -95,4 +102,11 @@ export type SessionServerMessage =
   | { type: "session:general"; name: string; arguments: Record<string, string> }
   /** Message à afficher (`DisplayMessage` de Jellyfin, ou tableau de bord Tentacle). */
   | { type: "session:message"; header: string; text: string; timeoutMs?: number }
-  | { type: "playback:stopped"; requestId: string; ok: boolean };
+  | { type: "playback:stopped"; requestId: string; ok: boolean }
+  /**
+   * Jellyfin change d'état — envoyé à chaque changement, et juste après
+   * `session:ready` tant qu'il n'est pas `up`. `since` : l'heure du serveur
+   * (ms) où l'état a commencé. Additif : un lecteur qui ne le connaît pas
+   * l'ignore (pas de `minServer` à monter).
+   */
+  | { type: "server:jellyfin"; state: JellyfinHealthState; since: number };

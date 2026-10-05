@@ -1,4 +1,5 @@
 import { getJellyfinUrl } from "../configStore";
+import { jellyfinHealth, onJellyfinHealth } from "../jellyfinHealth";
 import { DeviceSocket } from "./deviceSocket";
 import { DEVICE_CAPABILITIES, jellyfinCaller } from "./jellyfinCalls";
 import { PlaybackReporter } from "./playbackReporter";
@@ -28,6 +29,14 @@ const registry = new SessionRegistry({
       onGeneralCommand: handlers.onGeneralCommand,
     }),
   createReporter: (auth) => new PlaybackReporter(jellyfinCaller(auth)),
+  jellyfinHealth,
+});
+
+// Les lecteurs apprennent chaque changement ; au retour, les connexions des
+// appareils rouvrent sans attendre, et leurs reports repartent.
+onJellyfinHealth((next, previous) => {
+  registry.jellyfinChanged(next.state, next.since);
+  if (next.state === "up" && previous.state !== "up") registry.jellyfinBack();
 });
 
 export type { ChannelConnection, ConnectionView };

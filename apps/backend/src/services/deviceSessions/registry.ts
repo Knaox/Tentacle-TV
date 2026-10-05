@@ -1,15 +1,19 @@
 import type { DeviceAuth } from "./deviceAuth";
 import type { PlaybackReporter } from "./playbackReporter";
-import type {
-  PlaybackEventDto,
-  PlaybackStateDto,
-  SessionPlaystateCommandDto,
-  SessionServerMessage,
-} from "./protocolMessages";
+import type { JellyfinHealthState, PlaybackEventDto, PlaybackStateDto } from "./protocolMessages";
 import { generalMessage } from "./generalMessage";
 import { keyOf, samePlayback } from "./registryKeys";
+import type {
+  ChannelConnection,
+  ConnectionView,
+  DeviceHandlers,
+  DeviceLink,
+  HelloInfo,
+  RegistryDeps,
+} from "./registryTypes";
 
 export { generalMessage };
+export type { ChannelConnection, ConnectionView, DeviceHandlers, DeviceLink, HelloInfo, RegistryDeps };
 
 /**
  * Le registre du canal de session : quelles connexions de lecteurs, sur quels
@@ -28,42 +32,6 @@ export { generalMessage };
 
 /** Un lecteur qui revient dans ce délai (coupure réseau, socket rouverte) reprend sa lecture sans arrêt. */
 export const RECONNECT_GRACE_MS = 5_000;
-
-/** Ce que le registre attend d'une connexion `/api/ws`. */
-export interface ChannelConnection {
-  readonly userId: string;
-  readonly username: string;
-  send(msg: SessionServerMessage): void;
-}
-
-/** Ce que le registre attend de la connexion Jellyfin d'un appareil. */
-export interface DeviceLink {
-  isLive(): boolean;
-  open(): void;
-  close(): void;
-}
-
-export interface DeviceHandlers {
-  onOpen(): void;
-  onLost(): void;
-  onPlaystate(command: SessionPlaystateCommandDto, seekPositionTicks?: number): void;
-  onGeneralCommand(name: string, args: Record<string, string>): void;
-}
-
-/** Ce que dit `session:hello` : une étiquette, et le nom d'une application jumelée. */
-export interface HelloInfo {
-  deviceId?: string;
-  client?: string;
-  device?: string;
-  appVersion?: string;
-}
-
-export interface RegistryDeps {
-  enabled(): boolean;
-  resolveAuth(conn: ChannelConnection, authToken: string, hello: HelloInfo): Promise<DeviceAuth | null>;
-  createDevice(auth: DeviceAuth, handlers: DeviceHandlers): DeviceLink;
-  createReporter(auth: DeviceAuth): PlaybackReporter;
-}
 
 interface ConnectionEntry {
   conn: ChannelConnection;
@@ -87,16 +55,6 @@ interface DeviceEntry {
   openedOnce: boolean;
 }
 
-/** Ce que le tableau de bord voit d'une connexion. */
-export interface ConnectionView {
-  userId: string;
-  username: string;
-  deviceId: string | undefined;
-  remoteControl: boolean;
-  connectedAt: number;
-  playback: PlaybackStateDto | null;
-}
-
 export class SessionRegistry {
   private readonly connections = new Map<ChannelConnection, ConnectionEntry>();
   private readonly devices = new Map<string, DeviceEntry>();
@@ -113,6 +71,7 @@ export class SessionRegistry {
     if (entry.device !== null && entry.device.key !== key) this.detach(entry);
     if (auth === null || key === null) {
       conn.send({ type: "session:ready", reporting: false, remoteControl: false });
+      this.tellJellyfinState(conn);
       return;
     }
     // Un appareil jumelé est connu de Jellyfin sous l'identifiant dérivé :
@@ -122,6 +81,27 @@ export class SessionRegistry {
     entry.device = device;
     device.connections.add(entry);
     conn.send({ type: "session:ready", reporting: true, remoteControl: device.link.isLive() });
+    this.tellJellyfinState(conn);
+  }
+
+  /** Jellyfin change d'état : chaque lecteur annoncé l'apprend. */
+  jellyfinChanged(state: JellyfinHealthState, since: number): void {
+    for (const entry of this.connections.values()) entry.conn.send({ type: "server:jellyfin", state, since });
+  }
+
+  /**
+   * Jellyfin est revenu : chaque connexion d'appareil rouvre tout de suite
+   * (son backoff pouvait attendre 30 s). Son `onOpen` relance les reports :
+   * Jellyfin a oublié les sessions.
+   */
+  jellyfinBack(): void {
+    for (const device of this.devices.values()) device.link.reconnectNow();
+  }
+
+  /** Tant que Jellyfin n'est pas là, un lecteur qui s'annonce l'apprend aussitôt. */
+  private tellJellyfinState(conn: ChannelConnection): void {
+    const health = this.deps.jellyfinHealth();
+    if (health.state !== "up") conn.send({ type: "server:jellyfin", state: health.state, since: health.since });
   }
 
   async start(conn: ChannelConnection, state: PlaybackStateDto, resumed: boolean): Promise<void> {

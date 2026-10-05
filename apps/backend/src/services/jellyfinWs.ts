@@ -5,6 +5,7 @@ import { pokeWatchTime } from "./watchTime/collector";
 import { sessionSignatures } from "./jellyfinWsSessions";
 import { handleServerEvent } from "./jellyfinWsEvents";
 import { jellyfinAuthHeaders } from "./jellyfinAuth";
+import { jellyfinAnnounced, jellyfinSocketLost, jellyfinSocketOpened, onJellyfinHealth } from "./jellyfinHealth";
 
 /**
  * Le WebSocket Jellyfin — ce qu'il livre vraiment, et à quelles conditions.
@@ -138,6 +139,14 @@ function handleMessage(data: WebSocket.Data): void {
           ws.send(JSON.stringify({ MessageType: "KeepAlive" }));
         }
         break;
+      // Envoyés à TOUTES les sockets, clé d'API comprise (mesuré, 10.11) :
+      // `docker restart` dit « ShuttingDown », un redémarrage par l'API « Restarting ».
+      case "ServerRestarting":
+        jellyfinAnnounced("restarting");
+        break;
+      case "ServerShuttingDown":
+        jellyfinAnnounced("shutting-down");
+        break;
       default:
         handleServerEvent(type, msg.Data);
     }
@@ -205,6 +214,7 @@ function connect(): void {
     backoff = INITIAL_BACKOFF;
     wsConnected = true;
     lastMessageMs = Date.now();
+    jellyfinSocketOpened();
 
     // Sans cet abonnement, la socket ne dit RIEN (cf. l'en-tête du fichier).
     // La période est une politesse : Jellyfin pousse sur événement de lecture.
@@ -245,7 +255,11 @@ function connect(): void {
     wsConnected = false;
     lastSessionsFrameMs = 0;
     ws = null;
-    if (!stopped) scheduleReconnect();
+    if (!stopped) {
+      // Une fermeture ne dit pas que Jellyfin est tombé : la sonde ira voir.
+      jellyfinSocketLost();
+      scheduleReconnect();
+    }
   });
 
   socket.on("error", (err) => {
@@ -266,6 +280,14 @@ export function stopJellyfinWs(): void {
   stopped = true;
   cleanup();
 }
+
+// Jellyfin revenu : rouvrir tout de suite, sans attendre le backoff (jusqu'à 30 s).
+onJellyfinHealth((next, previous) => {
+  if (next.state !== "up" || previous.state === "up" || stopped || ws !== null) return;
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  backoff = INITIAL_BACKOFF;
+  connect();
+});
 
 export function restartJellyfinWs(): void {
   console.log("[JellyfinWs] Redémarrage (config modifiée)");

@@ -100,6 +100,15 @@ export class DeviceSocket {
     this.connect();
   }
 
+  /** Jellyfin est revenu : rouvrir maintenant plutôt qu'au bout du backoff. */
+  reconnectNow(): void {
+    if (this.closed || this.socket !== null) return;
+    if (this.reconnectTimer !== null) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+    this.backoff = INITIAL_BACKOFF_MS;
+    this.connect();
+  }
+
   /** Fermeture délibérée : Jellyfin retire la session, plus de reconnexion. */
   close(): void {
     this.closed = true;

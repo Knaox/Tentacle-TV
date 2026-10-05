@@ -11,6 +11,7 @@ import {
 } from "../services/db";
 import { parseDatabaseUrl } from "../services/databaseInfo";
 import { restartJellyfinWs } from "../services/jellyfinWs";
+import { jellyfinHealth } from "../services/jellyfinHealth";
 import { invalidateAdminKeyHealth } from "../services/jellyfinKeyHealth";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
@@ -115,6 +116,8 @@ async function jellyfinStatus() {
     status: "error",
     error: probe.error,
     ...(probe.error === "jellyfin-rejected" ? { httpStatus: probe.httpStatus } : {}),
+    // Redémarre, s'arrête, démarre : ce que la surveillance en direct en sait.
+    health: jellyfinHealth(),
   };
 }
 

@@ -2,7 +2,7 @@ import type { DeviceAuth } from "./deviceAuth";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { JellyfinCaller } from "./jellyfinCalls";
 import { PlaybackReporter } from "./playbackReporter";
-import type { PlaybackStateDto, SessionServerMessage } from "./protocolMessages";
+import type { JellyfinHealthState, PlaybackStateDto, SessionServerMessage } from "./protocolMessages";
 import {
   generalMessage,
   RECONNECT_GRACE_MS,
@@ -30,6 +30,7 @@ const nameOf = (auth: DeviceAuth) => (auth.identity ? `${auth.token}#${auth.iden
 
 function harness(opts: { token?: string | null; enabled?: boolean; paired?: boolean } = {}) {
   const log: string[] = [];
+  const health: { state: JellyfinHealthState; since: number } = { state: "up", since: 0 };
   const devices: FakeDevice[] = [];
   const caller = (token: string): JellyfinCaller => ({
     post: (path) => {
@@ -62,13 +63,15 @@ function harness(opts: { token?: string | null; enabled?: boolean; paired?: bool
           this.closed = true;
           log.push(`${token} close`);
         },
+        reconnectNow() { log.push(`${token} reconnectNow`); },
       };
       devices.push(device);
       return device;
     },
     createReporter: (auth) => new PlaybackReporter(caller(nameOf(auth))),
+    jellyfinHealth: () => health,
   });
-  return { registry, log, devices };
+  return { registry, log, devices, health };
 }
 
 function connection(userId = "u1"): ChannelConnection & { received: SessionServerMessage[] } {
@@ -228,3 +231,57 @@ describe("SessionRegistry — appareils jumelés", () => {
   });
 });
 
+describe("SessionRegistry — panne de Jellyfin", () => {
+  it("chaque lecteur annoncé apprend le changement d'état, rattaché ou non", async () => {
+    const { registry } = harness();
+    const a = connection();
+    const off = harness({ token: null });
+    const b = connection();
+    await registry.hello(a, "jeton");
+    await off.registry.hello(b, "jwt");
+    registry.jellyfinChanged("restarting", 42);
+    off.registry.jellyfinChanged("restarting", 42);
+    expect(a.received.at(-1)).toEqual({ type: "server:jellyfin", state: "restarting", since: 42 });
+    expect(b.received.at(-1)).toEqual({ type: "server:jellyfin", state: "restarting", since: 42 });
+  });
+
+  it("un lecteur qui s'annonce pendant la panne l'apprend juste après session:ready", async () => {
+    const { registry, health } = harness();
+    health.state = "down";
+    health.since = 7;
+    const c = connection();
+    await registry.hello(c, "jeton");
+    expect(c.received).toEqual([
+      { type: "session:ready", reporting: true, remoteControl: false },
+      { type: "server:jellyfin", state: "down", since: 7 },
+    ]);
+    const none = harness({ token: null });
+    none.health.state = "starting";
+    const d = connection();
+    await none.registry.hello(d, "jwt");
+    expect(d.received.map((m) => m.type)).toEqual(["session:ready", "server:jellyfin"]);
+  });
+
+  it("Jellyfin là : rien de plus que session:ready", async () => {
+    const { registry } = harness();
+    const c = connection();
+    await registry.hello(c, "jeton");
+    expect(c.received.map((m) => m.type)).toEqual(["session:ready"]);
+  });
+
+  it("au retour, chaque connexion d'appareil rouvre, puis les lectures se redisent", async () => {
+    const { registry, log, devices } = harness();
+    const c = connection();
+    await registry.hello(c, "jeton");
+    devices[0].live = true;
+    devices[0].handlers.onOpen();
+    await registry.start(c, STATE, false);
+    devices[0].handlers.onLost();
+    log.length = 0;
+    registry.jellyfinBack();
+    expect(log).toEqual(["jeton reconnectNow"]);
+    devices[0].handlers.onOpen();
+    await vi.runOnlyPendingTimersAsync();
+    expect(log).toContain("jeton /Sessions/Playing/Progress");
+  });
+});
