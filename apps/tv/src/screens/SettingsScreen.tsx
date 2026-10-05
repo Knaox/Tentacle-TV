@@ -1,77 +1,14 @@
-import { useState } from "react";
-import { ScrollView, Text, TVFocusGuideView, View } from "react-native";
-import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { TVScreenFrame } from "../components/nav/TVScreenFrame";
-import { useTVRemote } from "../components/focus/useTVRemote";
-import { useTVContentEntry } from "../hooks/useTVContentEntry";
-import { TVSettingsTabs, type SettingsSection } from "../components/settings/TVSettingsTabs";
-import { TVSettingsAccountSection } from "../components/settings/TVSettingsAccountSection";
-import { TVSettingsPlaybackSection } from "../components/settings/TVSettingsPlaybackSection";
-import { TVSettingsAboutSection } from "../components/settings/TVSettingsAboutSection";
-import { Colors, Typography } from "../theme/colors";
-import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import { SettingsRedesign } from "../redesignWiring/settings/SettingsRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
 /**
- * Les réglages, en UNE page à trois sections — Compte · Lecture · À propos
- * (parité `SettingsTv` webOS). Absorbe les anciens écrans Préférences et
- * À propos, et récupère « Changer de serveur » et « Déconnexion », descendus
- * du rail vers la section Compte. Les sections sont un état local : Retour
- * QUITTE les réglages d'un seul appui, il ne remonte pas les sections qu'on
- * vient de parcourir. Le panneau de réglages DANS le lecteur reste séparé :
- * il est par-lecture.
- *
- * Sur Apple TV, la refonte (`redesignWiring/settings/SettingsRedesign`) :
- * même logique, partagée par les hooks des sections.
+ * Les réglages (la refonte, `redesignWiring/settings/SettingsRedesign`) : la
+ * logique de chaque section vit dans ses crochets. Le panneau de réglages DANS
+ * le lecteur reste séparé : il est par-lecture.
  */
 export function SettingsScreen(props: Props) {
-  return REDESIGN_ACTIVE ? <SettingsRedesign {...props} /> : <LegacySettingsScreen {...props} />;
-}
-
-function LegacySettingsScreen({ navigation }: Props) {
-  const { t } = useTranslation("preferences");
-  const [section, setSection] = useState<SettingsSection>("account");
-
-  useTVRemote({ onBack: () => navigation.goBack() });
-
-  // Sélection « Réglages » au rail → focus sur l'onglet affiché.
-  const contentEntry = useTVContentEntry();
-
-  return (
-    <TVScreenFrame>
-      <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-        <Text style={{ color: Colors.textPrimary, ...Typography.pageTitle, marginBottom: 24 }}>
-          {t("settingsTitle")}
-        </Text>
-
-        <View style={{ flex: 1, flexDirection: "row", gap: 40 }}>
-          <TVSettingsTabs active={section} onSelect={setSection} entryRef={contentEntry} />
-
-          {/* Le panneau, sur TOUTE la hauteur de la rangée : une pression DROITE
-              depuis n'importe quel onglet le rencontre, quelle que soit la hauteur
-              du premier focusable. Sans ce guide, tvOS ne trouvait rien : le
-              premier bouton de « Compte » est plus bas que les trois onglets et
-              aucune bande verticale ne se chevauche. `autoFocus` sans
-              `destinations` : première visite → premier focusable, ensuite → là
-              où on l'avait laissé. « À propos » n'a aucun focusable : la recherche
-              échoue et le focus reste sur l'onglet — le no-op voulu. */}
-          <TVFocusGuideView autoFocus style={{ flex: 1 }}>
-            <ScrollView
-              style={{ flex: 1 }}
-              contentContainerStyle={{ paddingBottom: 48, paddingRight: 8 }}
-              showsVerticalScrollIndicator={false}
-            >
-              {section === "account" && <TVSettingsAccountSection />}
-              {section === "playback" && <TVSettingsPlaybackSection />}
-              {section === "about" && <TVSettingsAboutSection />}
-            </ScrollView>
-          </TVFocusGuideView>
-        </View>
-      </View>
-    </TVScreenFrame>
-  );
+  return <SettingsRedesign {...props} />;
 }
