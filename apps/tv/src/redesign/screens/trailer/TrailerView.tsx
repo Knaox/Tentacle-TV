@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim, text } from "../../theme/tokens";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * La bande-annonce, plein écran. La vidéo occupe tout ; par-dessus, rien que
@@ -87,14 +88,14 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
       {state === "playing" && waiting ? (
         <View pointerEvents="none" style={styles.center}>
           <View style={styles.waitBadge}>
-            <ActivityIndicator size="large" color={colors.text} style={styles.waitSpinner} />
+            <ActivitySpinner size="large" color={colors.text} style={styles.waitSpinner} />
           </View>
         </View>
       ) : null}
 
       {state === "loading" ? (
         <View pointerEvents="none" style={styles.center}>
-          <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
+          <ActivitySpinner size="large" color={colors.text} style={styles.spinner} />
           <Text style={styles.kicker}>{t("trailer")}</Text>
           <Text style={[styles.title, styles.centered]} numberOfLines={2}>{title}</Text>
         </View>

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import { colors, fonts, text, white } from "../../theme/tokens";
 import { FIELD, PairingField } from "../pairing/PairingField";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { profileStops } from "./profileColors";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Créer un invité : son prénom au clavier de l'Apple TV (OK sur le champ),
@@ -58,7 +59,7 @@ export const GuestForm = memo(function GuestForm({ name, color, creating, error,
         </FocusSection>
         <FocusSection focusKey={GUEST_ACTIONS_GROUP} style={styles.submit}>
           <PillButton label={creating ? t("guest.creating") : t("guest.create")} icon="check" variant="primary" focusKey={GUEST_CREATE_KEY} onPress={creating ? undefined : onSubmit} />
-          {creating ? <ActivityIndicator color={colors.text} /> : null}
+          {creating ? <ActivitySpinner color={colors.text} /> : null}
         </FocusSection>
         <Text style={styles.error}>{error ?? " "}</Text>
       </View>

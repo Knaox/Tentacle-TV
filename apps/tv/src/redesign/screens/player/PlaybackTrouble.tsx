@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
@@ -15,6 +15,7 @@ import type {
   PlaybackTroubleModel, TroubleActionKey, TroubleNoticeModel, TroublePanelModel, TroublePillKey,
 } from "./playbackTroubleTypes";
 import { DENSE_BASE, SOFT_BASE } from "./surfaces";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Le message-outil du lecteur, quand un serveur ne répond plus — un OUTIL plus
@@ -91,7 +92,7 @@ const Panel = memo(function Panel({ model, onAction }: {
             <Text style={styles.detail}>{model.detail}</Text>
             <View style={styles.status}>
               <View style={styles.statusMark}>
-                {model.busy ? <ActivityIndicator size="small" color={white(0.72)} style={styles.spinner} /> : <View style={styles.statusDot} />}
+                {model.busy ? <ActivitySpinner size="small" color={white(0.72)} style={styles.spinner} /> : <View style={styles.statusDot} />}
               </View>
               <Text style={styles.statusText} numberOfLines={1}>{model.status}</Text>
             </View>

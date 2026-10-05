@@ -1,5 +1,5 @@
 import { forwardRef, memo, useCallback, useImperativeHandle, useRef } from "react";
-import { ActivityIndicator, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
+import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -8,6 +8,7 @@ import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim } from "../../theme/tokens";
 import { useKeyboardEntry } from "./keyboardOpener";
 import { DropShadow } from "../../render/DropShadow";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Un champ du jumelage — l'adresse du serveur, l'identifiant, le mot de passe :
@@ -118,7 +119,7 @@ function Face({ focused, icon, shown, placeholder, busy }: { focused: boolean; i
         >
           {empty ? placeholder : shown}
         </Text>
-        {busy ? <ActivityIndicator size="large" color={ink} /> : null}
+        {busy ? <ActivitySpinner size="large" color={ink} /> : null}
       </View>
     </Animated.View>
   );

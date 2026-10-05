@@ -1,5 +1,5 @@
 import { memo, useEffect } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { BrandMark } from "../../brand/BrandMark";
@@ -9,6 +9,7 @@ import { Icon } from "../../icons/Icon";
 import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, white } from "../../theme/tokens";
 import type { CodeState } from "./pairingTypes";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * La carte du code, à droite de l'écran de jumelage : le code en TRÈS grand
@@ -41,7 +42,7 @@ export const CodeCard = memo(function CodeCard({ code, fallback, onRetry }: {
       <GlassSurface radius={RADIUS} tone="regular" style={StyleSheet.absoluteFill} elevated />
       {code.status === "loading" ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
+          <ActivitySpinner size="large" color={colors.text} style={styles.spinner} />
           <Text style={styles.message}>{t("pairing:tvPreparingCode")}</Text>
         </View>
       ) : null}

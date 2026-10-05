@@ -1,11 +1,12 @@
 import { memo } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { BrandMark } from "../../brand/BrandMark";
 import { PillButton } from "../../controls/PillButton";
 import { GlassSurface } from "../../glass/GlassSurface";
 import type { IconName } from "../../icons/Icon";
 import { colors, text } from "../../theme/tokens";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Ce qui remplace un écran quand il n'a rien à montrer : chargement, erreur,
@@ -36,7 +37,7 @@ export const StatusPanel = memo(function StatusPanel({
     <View style={[styles.center, { paddingLeft: inset }]}>
       <GlassSurface radius={TV_STAGE.radius.panel} tone="strong" style={styles.panel} elevated>
         {kind === "loading" ? (
-          <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
+          <ActivitySpinner size="large" color={colors.text} style={styles.spinner} />
         ) : (
           <BrandMark size={96} crying={kind === "error"} />
         )}

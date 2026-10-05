@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { INVITE_RESULTS_GROUP, INVITE_SEARCH_BAR, INVITE_SEARCH_KEY, inviteCandidateFocusable, inviteCandidateKey } from "@tentacle-tv/tv-core";
 import { Icon } from "../../icons/Icon";
@@ -9,6 +9,7 @@ import { colors, fonts, text, white } from "../../theme/tokens";
 import { PairingField } from "../pairing/PairingField";
 import type { InviteCandidateView, ManageNotice } from "./manageTypes";
 import { ProfileAvatar } from "./ProfileAvatar";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Inviter un membre : TOUS les comptes du serveur (v2), masqués compris,
@@ -48,7 +49,7 @@ export const InviteMember = memo(function InviteMember({ query, candidates, more
       </FocusSection>
       <Text style={styles.hidden}>{t("invite.hiddenHint")}</Text>
       {candidates === null ? (
-        <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
+        <ActivitySpinner size="large" color={colors.text} style={styles.spinner} />
       ) : candidates.length === 0 ? (
         <Text style={styles.empty}>{query.trim() ? t("invite.noMatch") : t("invite.none")}</Text>
       ) : (

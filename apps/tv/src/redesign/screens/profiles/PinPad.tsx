@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { FAMILY_PIN_LENGTH } from "@tentacle-tv/shared";
@@ -13,6 +13,7 @@ import { pressScale, usePressProgress } from "../../motion/pressProgress";
 import { colors, fonts, text, white } from "../../theme/tokens";
 import { ProfileAvatar } from "./ProfileAvatar";
 import type { PinPadModel } from "./profilesTypes";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Le pavé du code PIN : le profil, quatre points, et les dix chiffres sur une
@@ -44,7 +45,7 @@ export const PinPad = memo(function PinPad({ pad, onDigit, onErase }: {
       <View style={styles.status}>
         {pad.phase === "checking" ? (
           <View style={styles.checking}>
-            <ActivityIndicator color={colors.textSecondary} />
+            <ActivitySpinner color={colors.textSecondary} />
             <Text style={[styles.message, { color: colors.textSecondary }]}>{t("pin.checking")}</Text>
           </View>
         ) : pad.message ? (

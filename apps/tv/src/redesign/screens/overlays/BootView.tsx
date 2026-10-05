@@ -1,10 +1,11 @@
 import { memo } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
 import { NEUTRAL_PALETTE } from "../../color/artworkPalette";
 import { colors } from "../../theme/tokens";
 import { Glow } from "../pairing/Glow";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Le démarrage : le temps de relire le stockage, les réglages et la langue.
@@ -23,7 +24,7 @@ export const BootView = memo(function BootView() {
           <Glow size={640} color={colors.accent} opacity={0.3} style={styles.glow} />
           <BrandMark size={200} />
         </View>
-        <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
+        <ActivitySpinner size="large" color={colors.text} style={styles.spinner} />
       </View>
     </View>
   );

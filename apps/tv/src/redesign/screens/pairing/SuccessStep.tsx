@@ -1,11 +1,12 @@
 import { memo } from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, ZoomIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, text } from "../../theme/tokens";
 import { Glow } from "./Glow";
 import { DropShadow } from "../../render/DropShadow";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Le jumelage a réussi : la coche verte (elle entre en s'agrandissant, sur
@@ -33,7 +34,7 @@ export const SuccessStep = memo(function SuccessStep({ userName, avatarUri }: { 
         </View>
       </Animated.View>
       <Animated.View entering={FadeIn.duration(400).delay(360)} style={styles.redirect}>
-        <ActivityIndicator size="small" color={colors.textTertiary} />
+        <ActivitySpinner size="small" color={colors.textTertiary} />
         <Text style={styles.redirectText}>{t("redirectingHome")}</Text>
       </Animated.View>
     </View>

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GlassSurface } from "../../glass/GlassSurface";
@@ -8,6 +8,7 @@ import { Icon } from "../../icons/Icon";
 import { Presented } from "../../motion/Presented";
 import { colors, fonts, white } from "../../theme/tokens";
 import { DENSE_BASE, SOFT_BASE } from "./surfaces";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * Ce que le lecteur dit sans rien demander — aucun de ces éléments n'est
@@ -42,7 +43,7 @@ export const BufferingBadge = memo(function BufferingBadge({ hint }: { hint?: st
     <View pointerEvents="none" style={styles.center}>
       <View>
         <GlassSurface radius={BADGE / 2} tone="regular" elevated style={[styles.buffering, backing]}>
-          <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
+          <ActivitySpinner size="large" color={colors.text} style={styles.spinner} />
         </GlassSurface>
         <Presented value={hint ?? null} motion="reveal">{(text, appear) => <BufferingHint text={text} appear={appear} />}</Presented>
       </View>

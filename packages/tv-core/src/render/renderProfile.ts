@@ -44,6 +44,14 @@ export type LightRendering =
    *  ni bitmap, ni rastérisation quand la couleur change. */
   | "shader";
 
+/** Comment se dessine l'indicateur d'activité (`ActivityIndicator`). */
+export type SpinnerRendering =
+  /** Celui du système (UIActivityIndicatorView) : la référence. */
+  | "system"
+  /** Redessiné à l'identique de l'Apple TV (vue native `TentacleSpinnerView`,
+   *  `activitySpinner`) : huit rayons, 20 images par seconde. */
+  | "drawn";
+
 export interface RenderProfile {
   /** Le mouvement de la refonte (ressorts, fondus) sur le fil d'interface.
    *  Faux : chaque animation se pose aussitôt. */
@@ -72,6 +80,8 @@ export interface RenderProfile {
    *  les images taillées « au double des points » (fiche, panneau, portraits).
    *  2 sur l'Apple TV 4K ; 1 sur Android TV, rendue en 1080p. */
   imageScale: number;
+  /** L'indicateur d'activité. */
+  spinner: SpinnerRendering;
 }
 
 export interface CardArtworkSize {
@@ -109,6 +119,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     cardArtwork: CARD_ARTWORK.tvos,
     stagedRows: false,
     imageScale: 2,
+    spinner: "system",
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
   // floutée en ancienne architecture — les ombres passent par un masque
@@ -125,6 +136,9 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     // Le fil UI de la Shield ne crée pas 2 400 vues dans une image (`rowStaging`).
     stagedRows: true,
     imageScale: 1,
+    // L'indicateur système d'Android est un autre dessin (un arc Material) :
+    // celui de l'Apple TV, redessiné (`activitySpinner`).
+    spinner: "drawn",
   },
 };
 

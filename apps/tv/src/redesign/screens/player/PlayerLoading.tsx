@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
@@ -11,6 +11,7 @@ import { TitleArt } from "../../hero/TitleArt";
 import { Presented } from "../../motion/Presented";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import type { PlayerMedia, PlayerPhase } from "./playerTypes";
+import { ActivitySpinner } from "../../controls/ActivitySpinner";
 
 /**
  * L'écran d'ouverture du média — il couvre tout, habillage compris, tant que
@@ -94,7 +95,7 @@ export const PlayerLoading = memo(function PlayerLoading({
           <View style={styles.progress}>
             <View style={styles.status}>
               <View style={styles.spinner}>
-                <ActivityIndicator size="large" color={colors.text} />
+                <ActivitySpinner size="large" color={colors.text} />
               </View>
               {step ? <Text style={styles.stepLabel} numberOfLines={1}>{step.label}</Text> : null}
               <Presented value={hint} motion="reveal">{(text, appear) => <Hint text={text} appear={appear} />}</Presented>
