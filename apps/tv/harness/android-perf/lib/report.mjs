@@ -53,6 +53,9 @@ export function summarizeRound(records, cpu) {
     cpu,
     readyMs: ready?.sinceProcessMs ?? ready?.sinceScreenMs ?? null,
     labels: windows.map((w) => Object.keys(w.labels ?? {}).join("+")),
+    // Les fenêtres brutes : médianes et pointes de chaque phase, pour séparer
+    // le coût régulier d'une animation des images qui portent un montage.
+    records,
   };
 }
 
