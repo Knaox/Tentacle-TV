@@ -6,7 +6,6 @@ import {
   heroEdgeKey,
   heroHoldAfter,
   heroInView,
-  heroItemsOf,
   heroRotateDelay,
   heroRotationActive,
   heroRotationArmed,
@@ -15,19 +14,11 @@ import {
   nextHeroIndex,
 } from "./rotation";
 
-describe("heroItemsOf — les titres du héros", () => {
-  it("les reprises d'abord, cinq au plus", () => {
-    expect(HERO_MAX_ITEMS).toBe(5);
-    expect(heroItemsOf([1, 2, 3, 4, 5, 6, 7], [9])).toEqual({ items: [1, 2, 3, 4, 5], fromResume: true });
-  });
-
-  it("sans reprise, la sélection du serveur", () => {
-    expect(heroItemsOf([], [8, 9])).toEqual({ items: [8, 9], fromResume: false });
-    expect(heroItemsOf(undefined, undefined)).toEqual({ items: [], fromResume: false });
-  });
-});
-
 describe("la rotation — quand le titre change", () => {
+  it("cinq titres au plus", () => {
+    expect(HERO_MAX_ITEMS).toBe(5);
+  });
+
   it("8 s, 16 s en mouvement réduit", () => {
     expect(HERO_ROTATE_MS).toBe(8_000);
     expect(heroRotateDelay(false)).toBe(8_000);

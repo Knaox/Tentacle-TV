@@ -4,8 +4,8 @@ import type { RemoteIntent } from "../remote/intents";
  * Le HÉROS qui tourne — l'accueil, façon app TV d'Apple : quels titres il
  * montre, quand il passe au suivant, et lequel il affiche.
  *
- * - Les titres : les visionnages à REPRENDRE d'abord, sinon la sélection du
- *   serveur — `HERO_MAX_ITEMS` au plus.
+ * - Les titres : ceux du mode que le compte a choisi (`heroSource.ts`) —
+ *   `HERO_MAX_ITEMS` au plus.
  * - Il avance SEUL, toutes les `HERO_ROTATE_MS` (deux fois moins vite en
  *   mouvement réduit), même quand le focus est sur l'un de ses boutons : les
  *   boutons gardent leurs clés, le focus ne bouge pas.
@@ -29,12 +29,6 @@ export const HERO_MAX_ITEMS = 5;
 
 /** Un titre toutes les 8 s. */
 export const HERO_ROTATE_MS = 8_000;
-
-/** Les titres du héros : les reprises s'il y en a, sinon la sélection du serveur. */
-export function heroItemsOf<T>(resume: readonly T[] | undefined, featured: readonly T[] | undefined): { items: T[]; fromResume: boolean } {
-  const fromResume = !!resume && resume.length > 0;
-  return { items: (fromResume ? resume! : (featured ?? [])).slice(0, HERO_MAX_ITEMS), fromResume };
-}
 
 /** L'attente entre deux titres : deux fois plus longue en mouvement réduit. */
 export function heroRotateDelay(reducedMotion: boolean): number {

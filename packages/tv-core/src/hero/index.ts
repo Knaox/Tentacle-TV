@@ -3,3 +3,4 @@
  *  bitmap), et la rotation de ses titres. */
 export * from "./ambilight";
 export * from "./rotation";
+export * from "./heroSource";

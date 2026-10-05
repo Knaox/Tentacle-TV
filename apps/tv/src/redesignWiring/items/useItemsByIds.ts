@@ -19,6 +19,11 @@ const FIELDS = "ProductionYear,Genres,PrimaryImageAspectRatio,ProviderIds,MediaS
 const IMAGES = "EnableImageTypes=Primary,Backdrop,Thumb,Logo&ImageTypeLimit=1&EnableUserData=true";
 
 export function useItemsByIds(ids: readonly string[]): ReadonlyMap<string, MediaItem> {
+  return useItemsByIdsState(ids).items;
+}
+
+/** Les items, et si TOUS les lots ont répondu (données ou échec) — ce qu'attend un écran qui se montre d'un bloc. */
+export function useItemsByIdsState(ids: readonly string[]): { items: ReadonlyMap<string, MediaItem>; settled: boolean } {
   const client = useJellyfinClient();
   const userId = useUserId();
   const chunks = useMemo(() => {
@@ -47,5 +52,6 @@ export function useItemsByIds(ids: readonly string[]): ReadonlyMap<string, Media
   if (cache.current.stamp !== stamp) {
     cache.current = { stamp, map: new Map(results.flatMap((result) => result.data ?? []).map((item) => [item.Id, item])) };
   }
-  return cache.current.map;
+  const settled = results.every((result) => result.data !== undefined || result.isError);
+  return { items: cache.current.map, settled };
 }
