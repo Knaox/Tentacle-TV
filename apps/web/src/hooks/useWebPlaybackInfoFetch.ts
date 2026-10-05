@@ -45,8 +45,18 @@ export function useWebPlaybackInfoFetch({
 }: Options): void {
   /** Tout ce qui, HORS piste audio, oblige à redemander une session. */
   const contextRef = useRef<string | null>(null);
+  /** Le titre du dernier passage de l'effet. */
+  const lastItemRef = useRef(itemId);
 
   useEffect(() => {
+    // L'épisode vient de changer (la page reste montée) : la remise à zéro de
+    // `useWatchSession` ne tourne qu'à ce même commit, ce rendu porte encore la
+    // piste, la position et les préférences de l'épisode d'AVANT. Mesuré (banc
+    // web) : un PlaybackInfo de B partait avec la piste et la position de A,
+    // suivi d'un second. On attend le rendu remis à zéro.
+    const itemChanged = lastItemRef.current !== itemId;
+    lastItemRef.current = itemId;
+    if (itemChanged) return;
     if (isDesktop || !prefsReady || !itemId) return;
     const resumeTicks = item?.UserData?.PlaybackPositionTicks ?? 0;
     const ticks = startTicks > 0 ? startTicks : resumeTicks;
