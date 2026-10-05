@@ -3,8 +3,8 @@ import { findNodeHandle, type View } from "react-native";
 import { EMPTY_FOCUS_TRACK, trackFocus, type FocusTrack } from "@tentacle-tv/tv-core";
 import type { FocusBinder, FocusBinding } from "../../../redesign/focus/focusBinding";
 import { claimTvFocus } from "../../../hooks/useTvFocusClaim";
-import { parallaxOf } from "../../../redesignWiring/remote/parallax";
 import { SECTION_NEIGHBORS } from "./sectionNeighbors";
+import { targetEffects } from "./targetEffects";
 
 /**
  * Le magasin de focus d'un écran refondu — la moitié « app » du port du focus
@@ -23,7 +23,8 @@ import { SECTION_NEIGHBORS } from "./sectionNeighbors";
  * les nœuds natifs et applique les réclamations.
  *
  * Il traduit aussi la FORME qu'une cible déclare (`FocusTarget form`) en
- * effets natifs du focus — la parallaxe au pouce (`remote/parallax.ts`) —, et
+ * effets natifs du focus — la parallaxe au pouce sur Apple TV
+ * (`targetEffects.ts`) —, et
  * celle d'un groupe (`FocusSection`) en règle de voisinage
  * (`sectionNeighbors.ts`) : figées avec la liaison.
  */
@@ -108,7 +109,7 @@ export function createFocusStore(): FocusStore {
       // Les effets natifs de la forme (la parallaxe au pouce, la règle des
       // sections) d'abord : les props d'une clé (verrous, guides, entrée) les
       // complètent.
-      const effects = form === "section" ? SECTION_NEIGHBORS : parallaxOf(form);
+      const effects = form === "section" ? SECTION_NEIGHBORS : targetEffects(form);
       binding = {
         ...extra,
         native: effects || extra?.native ? { ...effects, ...extra?.native } : undefined,
