@@ -1,5 +1,11 @@
 import type { RemoteIntent } from "../remote/intents";
 
+/** Le relevé du mode de mesure : les vues mises à jour par Reanimated, comptées
+ *  sur son runtime d'interface, rapportées au journal tous les `reanimatedReportMs`. */
+export const PERF_SAMPLING = {
+  reanimatedReportMs: 200,
+} as const;
+
 /**
  * Le nom d'un GESTE dans le journal du mode de mesure (Android TV,
  * `apps/tv/src/platform/perf`) : la fenêtre d'images qu'il provoque porte ce

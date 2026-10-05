@@ -1,5 +1,5 @@
 import { runOnJS, runOnUI } from "react-native-reanimated";
-import { countCommit, perfLabelOf, type FiberLike } from "@tentacle-tv/tv-core/render";
+import { countCommit, PERF_SAMPLING, perfLabelOf, type FiberLike } from "@tentacle-tv/tv-core/render";
 import { navigationRef } from "../../../navigation/navigationRef";
 import { androidTvInput } from "../input";
 import { PERF_ENABLED, perfCommit, perfMark, perfReanimated } from "./perfNative";
@@ -71,9 +71,10 @@ function installCommitHook(): void {
 /**
  * Les mises à jour de Reanimated, comptées sur son runtime d'interface :
  * chaque image, `UpdatePropsManager.flush` envoie ses opérations par
- * `_updatePropsPaper` — enveloppé ici, relevé toutes les 200 ms. Lancé après
- * l'app : Reanimated doit être prêt (et ses imports, inlinés par Metro, ne se
- * chargent qu'ici — jamais avant le moteur de React).
+ * `_updatePropsPaper` — enveloppé ici, relevé tous les
+ * `PERF_SAMPLING.reanimatedReportMs`. Lancé au premier écran : Reanimated est
+ * alors prêt (et ses imports, inlinés par Metro, ne se chargent qu'ici —
+ * jamais avant le moteur de React).
  */
 function countReanimatedUpdates(): void {
   runOnUI(() => {
@@ -100,12 +101,11 @@ function countReanimatedUpdates(): void {
       scope.__tentaclePerfFlushes = 0;
       runOnJS(perfReanimated)(updates, flushes);
     })();
-  }, 200);
+  }, PERF_SAMPLING.reanimatedReportMs);
 }
 
 if (PERF_ENABLED) {
   installCommitHook();
-  setTimeout(countReanimatedUpdates, 2000);
   androidTvInput.observe(({ intent }) => {
     const label = perfLabelOf(intent);
     if (label) perfMark(label);
@@ -114,6 +114,7 @@ if (PERF_ENABLED) {
   navigationRef.addListener("state", () => {
     const name = navigationRef.getCurrentRoute()?.name;
     if (!name || name === screen) return;
+    if (screen === undefined) countReanimatedUpdates();
     screen = name;
     perfMark(`écran:${name}`);
   });
