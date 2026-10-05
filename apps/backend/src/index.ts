@@ -10,6 +10,7 @@ import websocket from "@fastify/websocket";
 import { registerStaticClients } from "./static/staticClients";
 import { LOG_REDACT_PATHS, redactUrl } from "./services/logRedaction";
 import { getRealClientIp } from "./services/networkUtils";
+import { challengeRoutes } from "./remoteAccess/challengeRoute";
 import { isTrustedProxy } from "./services/trustedProxies";
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, getDatabaseUrlSource, reconnectPrisma } from "./services/db";
 import { ensureDatabaseSchema } from "./services/schemaInit/ensureSchema";
@@ -194,6 +195,8 @@ async function main() {
   // ── Setup routes (always available) ──
   await app.register(setupWizardRoutes, { prefix: "/api/setup" });
   await app.register(healthRoutes, { prefix: "/api" });
+  // Le défi du test d'ouverture, lu depuis Internet par le service de test.
+  await app.register(challengeRoutes);
 
   // ── Theme routes (always available — clients need them pre-setup to boot) ──
   await app.register(themeRoutes, { prefix: "/api/theme" });
