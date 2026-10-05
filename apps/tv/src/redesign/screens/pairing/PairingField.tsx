@@ -62,6 +62,7 @@ export const PairingField = memo(
     const input = useRef<TextInput>(null);
     const entry = useKeyboardEntry();
     const openKeyboard = entry?.open;
+    const Input = entry?.Input ?? TextInput;
     const open = useCallback(() => {
       const field = input.current;
       if (field) openKeyboard?.(field, focusKey);
@@ -74,7 +75,7 @@ export const PairingField = memo(
         <FocusTarget focusKey={focusKey} form="row" onPress={open} accessibilityLabel={label}>
           {(focused) => <Face focused={focused} icon={icon} shown={shown} placeholder={placeholder} busy={busy} />}
         </FocusTarget>
-        <TextInput
+        <Input
           ref={input}
           value={value}
           onChangeText={onChangeText}
@@ -85,7 +86,6 @@ export const PairingField = memo(
           autoCorrect={false}
           spellCheck={false}
           {...keyboard}
-          {...entry?.hiddenInputProps}
           style={styles.hiddenInput}
         />
       </View>

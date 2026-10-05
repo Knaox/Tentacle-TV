@@ -1,12 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { SearchSubmitAnswer } from "@tentacle-tv/tv-core";
 import { useSpeechRecognition } from "../../../hooks/useSpeechRecognition";
-import type { RootStackParamList } from "../../../navigation/types";
-import type { FocusStore } from "../../tvos/focus/focusStore";
-import { useSearchKeyboard as useSharedSearchKeyboard } from "../../tvos/screens/search";
 import type { SearchDictation } from "../../shared/screens/searchDictation";
-import { openHiddenInput } from "./hiddenInput";
 
 /**
  * L'applicateur Android TV de la RECHERCHE — le même écran que l'Apple TV, la
@@ -16,8 +10,8 @@ import { openHiddenInput } from "./hiddenInput";
  *
  * - le champ ouvre le clavier système d'Android (Gboard, clavier Leanback),
  *   comme il ouvre celui de tvOS, par le champ caché de la plateforme
- *   (`openHiddenInput`) : non focalisable hors saisie, et rendu à la
- *   fermeture du clavier — sa fin de saisie (`onEndEditing`) suit, et la
+ *   (`HiddenTextInput`) : verrouillé hors saisie, et rendu à la fermeture du
+ *   clavier — sa fin de saisie (`onEndEditing`) suit, et la
  *   règle commune rend le focus au clavier de l'écran
  *   (`SEARCH_KEYBOARD_CLOSED_KEY`), ou au premier résultat après une
  *   validation — comme sur Apple TV ;
@@ -27,22 +21,7 @@ import { openHiddenInput } from "./hiddenInput";
  *   la saisie, comme une suggestion choisie.
  */
 
-export { useSearchGroups } from "../../tvos/screens/search";
-
-/** Le clavier système : celui de l'Apple TV, ouvert par le champ caché d'Android. */
-export function useSearchKeyboard(
-  focus: FocusStore,
-  answer: SearchSubmitAnswer,
-  firstKey: string | null,
-  navigation: NativeStackNavigationProp<RootStackParamList>,
-) {
-  const keyboard = useSharedSearchKeyboard(focus, answer, firstKey, navigation);
-  const { ref } = keyboard.input;
-  const onPressField = useCallback(() => {
-    if (ref.current) openHiddenInput(ref.current);
-  }, [ref]);
-  return { ...keyboard, onPressField };
-}
+export { useSearchGroups, useSearchKeyboard } from "../../tvos/screens/search";
 
 export type { SearchDictation };
 
