@@ -161,7 +161,16 @@ function arrowDevice() {
  * (Android synthétise les répétitions, comme sous une télécommande), sinon la
  * console de l'émulateur.
  */
+const HOLD_DEX = "/data/local/tmp/hold.dex";
+/** Les codes Android des touches tenues (l'injecteur `android-burst/hold`). */
+const ANDROID_HOLD_CODES = { 353: 23, 103: 19, 108: 20, 105: 21, 106: 22 };
+
 async function holdKey(code, seconds) {
+  // L'injecteur d'abord : de vraies répétitions, même sans clavier déclaré.
+  if ((shell(`ls ${HOLD_DEX} 2>/dev/null || true`) ?? "").includes("hold.dex")) {
+    shell(`CLASSPATH=${HOLD_DEX} app_process /system/bin Hold ${ANDROID_HOLD_CODES[code]} ${Math.round(seconds * 1000)}`);
+    return;
+  }
   const device = arrowDevice();
   const linux = code === LINUX_KEYCODES[""] && device ? device.select : code;
   const press = (down) =>
