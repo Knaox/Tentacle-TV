@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from "react";
+import { useJellyfinOutage } from "@tentacle-tv/api-client";
 import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInUp, FadeOutUp } from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
@@ -35,7 +36,10 @@ export const PlayerStallNotice = memo(function PlayerStallNotice({
   const insets = useSafeAreaInsets();
   const [stalled, setStalled] = useState(false);
   const [closed, setClosed] = useState(false);
-  const waiting = buffering && started && !paused;
+  // Jellyfin en panne : le bandeau de panne dit la vraie cause — « Qualité
+  // réduite » n'y changerait rien.
+  const outage = useJellyfinOutage();
+  const waiting = buffering && started && !paused && outage.phase === "none";
 
   useEffect(() => {
     if (!waiting) {

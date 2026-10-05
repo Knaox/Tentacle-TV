@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useJellyfinOutage } from "@tentacle-tv/api-client";
 
 interface Options {
   streamUrl: string | null | undefined;
@@ -24,8 +25,12 @@ const LOADING_TIMEOUT_MS = 20_000;
 export function usePlayerLoadingWatchdog({
   streamUrl, videoReady, suspended, retryCount, retryingRef, retryTranscoded, fail,
 }: Options): void {
+  // Jellyfin en panne (dit par le serveur) : rien ne peut charger, et une relance
+  // transcodée y perdrait un palier pour rien. Le retour rouvre le flux.
+  const outage = useJellyfinOutage();
+  const down = outage.phase === "outage" || outage.phase === "long";
   useEffect(() => {
-    if (!streamUrl || videoReady || suspended) return;
+    if (!streamUrl || videoReady || suspended || down) return;
     const timer = setTimeout(() => {
       if (!videoReady && !retryingRef.current) {
         console.log("[Tentacle:Player] loading timeout (20s) — URL:", streamUrl.slice(0, 200));
@@ -39,5 +44,5 @@ export function usePlayerLoadingWatchdog({
       }
     }, LOADING_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [streamUrl, videoReady, suspended]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [streamUrl, videoReady, suspended, down]); // eslint-disable-line react-hooks/exhaustive-deps
 }

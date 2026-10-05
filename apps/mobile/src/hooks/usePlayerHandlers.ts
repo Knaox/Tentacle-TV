@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
+import { playbackErrorsSuppressed, useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { EngineLoadData, EngineProgressData, PlayerEngineHandle } from "@/player/engine/types";
 import { registerOpenPlayer } from "@/player/openPlayer";
@@ -137,6 +137,9 @@ export function usePlayerHandlers({
    * l'écran, qui en tire la cause et les gestes utiles.
    */
   const handleError = useCallback((e: unknown) => {
+    // Panne de Jellyfin (ou sa reprise) : ni bascule de moteur ni palier perdu —
+    // le flux sera rouvert à l'identique au retour (`usePlayerProblem`).
+    if (playbackErrorsSuppressed()) return;
     // Guard against duplicate onError from ExoPlayer or race with retryingRef
     if (retryingRef.current) return;
     const errorDetail = e && typeof e === "object" ? JSON.stringify(e) : String(e);

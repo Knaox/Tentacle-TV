@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "expo-router";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useJellyfinClient, useOutageGate } from "@tentacle-tv/api-client";
 import type { MediaItem, ProblemActionKey, QualityPreset } from "@tentacle-tv/shared";
 import { buildStreamUrl } from "@/hooks/usePlaybackInfoFetch";
 import { setManualOffline } from "@/offline/connectivityStore";
@@ -66,7 +67,24 @@ export function usePlayerProblem(args: PlayerProblemArgs) {
     burningSubtitles: args.burnInSubIndex >= 0,
     sourceUrl,
   });
-  const { report, clear } = failure;
+  const { report: diagnose, clear } = failure;
+  const queryClient = useQueryClient();
+  const argsRef = useRef(args);
+  argsRef.current = args;
+
+  /** Rouvrir le flux là où il en était — mêmes pistes, nouvelle session (`restart`). */
+  const reopen = useCallback(() => {
+    const a = argsRef.current;
+    clear(); a.resetGuards();
+    // La fiche n'avait pas pu se lire pendant la panne : on la relit d'abord.
+    if (!a.item) void queryClient.invalidateQueries({ queryKey: ["item", a.itemId] });
+    else a.restart();
+  }, [clear, queryClient]);
+
+  // Panne de Jellyfin (dite par le serveur) : les erreurs se taisent — ni
+  // diagnostic, ni écran d'erreur — et son retour rouvre le flux, toujours :
+  // la règle commune au web, au bureau et au mobile (`useOutageGate`).
+  const report = useOutageGate<PlaybackFailureReport>(reopen, diagnose);
 
   // La négociation a échoué : un message, une fois par échec.
   useEffect(() => {
@@ -135,5 +153,5 @@ export function usePlayerProblem(args: PlayerProblemArgs) {
     }
   }, [clear, resetGuards, restart, retryTranscoded, otherVersion, router, args.itemId, leavePlayer]);
 
-  return { problem, diagnosing: failure.diagnosing, report, onAction, canLowerQuality: lowerTier };
+  return { problem, diagnosing: failure.diagnosing, report, onAction, canLowerQuality: lowerTier, reopen };
 }

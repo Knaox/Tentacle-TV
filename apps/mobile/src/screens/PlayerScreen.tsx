@@ -19,6 +19,7 @@ import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import type { PlayerEngineHandle } from "../player/engine/types";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { PlayerQualityNotice, useMobileQualityDrop } from "../components/player/PlayerQualityNotice";
+import { JellyfinOutageBanner } from "../components/player/JellyfinOutageBanner";
 import { SeekWaitIndicator } from "../components/player/SeekWaitIndicator";
 import { usePlayerSeekGate } from "../hooks/usePlayerSeekGate";
 import { PlayerStallNotice } from "../components/player/PlayerStallNotice";
@@ -286,6 +287,7 @@ export function PlayerScreen({ itemId, version }: Props) {
       />
 
       <PlayerQualityNotice drop={qualityDrop} started={started} itemId={itemId} />
+      <JellyfinOutageBanner onRetry={failure.reopen} />
       <SeekWaitIndicator phase={seek.phase} />
       <PlayerStallNotice buffering={isBuffering && seek.phase === "idle"} started={started} paused={paused} transcoding={!pb.isDirectPlay}
         canLowerQuality={failure.canLowerQuality} onLowerQuality={pb.lowerQuality} />
