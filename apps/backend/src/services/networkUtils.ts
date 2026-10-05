@@ -1,3 +1,5 @@
+import { isTrustedProxy } from "./trustedProxies";
+
 /**
  * IP classification utilities for direct streaming routing.
  * Determines if a client IP is on a private network (RFC 1918, loopback, IPv6 link-local).
@@ -53,13 +55,21 @@ export function isPrivateIp(ip: string): boolean {
 }
 
 /**
- * Extract the real client IP from a Fastify request.
- * Priority: CF-Connecting-IP (Cloudflare) → X-Real-IP (nginx) → request.ip
+ * L'adresse réelle du client : `CF-Connecting-IP` (Cloudflare), puis
+ * `X-Real-IP` (nginx) — seulement quand la requête arrive d'un mandataire de
+ * confiance (`trustedProxies.ts`) ; sinon `request.ip`, que Fastify ne tire
+ * lui aussi de `X-Forwarded-For` qu'à travers des mandataires de confiance.
  */
-export function getRealClientIp(request: { ip: string; headers: Record<string, string | string[] | undefined> }): string {
-  const cf = request.headers["cf-connecting-ip"];
-  if (typeof cf === "string" && cf) return cf;
-  const realIp = request.headers["x-real-ip"];
-  if (typeof realIp === "string" && realIp) return realIp;
+export function getRealClientIp(request: {
+  ip: string;
+  headers: Record<string, string | string[] | undefined>;
+  socket?: { remoteAddress?: string };
+}): string {
+  if (isTrustedProxy(request.socket?.remoteAddress)) {
+    const cf = request.headers["cf-connecting-ip"];
+    if (typeof cf === "string" && cf) return cf;
+    const realIp = request.headers["x-real-ip"];
+    if (typeof realIp === "string" && realIp) return realIp;
+  }
   return request.ip;
 }

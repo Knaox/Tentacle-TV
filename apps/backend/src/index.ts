@@ -8,6 +8,9 @@ import { ZodError } from "zod";
 import websocket from "@fastify/websocket";
 
 import { registerStaticClients } from "./static/staticClients";
+import { LOG_REDACT_PATHS, redactUrl } from "./services/logRedaction";
+import { getRealClientIp } from "./services/networkUtils";
+import { isTrustedProxy } from "./services/trustedProxies";
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, getDatabaseUrlSource, reconnectPrisma } from "./services/db";
 import { ensureDatabaseSchema } from "./services/schemaInit/ensureSchema";
 import { applyPairingEpoch } from "./services/pairingEpoch";
@@ -78,18 +81,16 @@ const HOST = process.env.HOST || "0.0.0.0";
 async function main() {
   const app = Fastify({
     logger: {
+      // Ni jeton, ni mot de passe, ni clé — où qu'un appel de journal les mette.
+      redact: { paths: LOG_REDACT_PATHS, censor: "[redacted]" },
       serializers: {
         req(request) {
-          const cf = request.headers?.["cf-connecting-ip"];
-          const realIp = request.headers?.["x-real-ip"];
-          const clientIp = (typeof cf === "string" && cf) ? cf
-            : (typeof realIp === "string" && realIp) ? realIp
-            : request.raw?.socket?.remoteAddress ?? "";
           return {
             method: request.method,
-            url: request.url,
+            // Les segments HLS portent le jeton de session dans l'URL.
+            url: redactUrl(request.url),
             host: request.headers?.host,
-            remoteAddress: clientIp,
+            remoteAddress: getRealClientIp(request),
             remotePort: request.raw?.socket?.remotePort,
           };
         },
@@ -97,8 +98,8 @@ async function main() {
     },
     // Allow large bodies for proxied requests (images, etc.)
     bodyLimit: 50 * 1024 * 1024,
-    // Trust X-Forwarded-* headers from reverse proxy (nginx) for real client IP
-    trustProxy: true,
+    // `X-Forwarded-*` cru des seuls mandataires voisins (cf. trustedProxies.ts).
+    trustProxy: (address: string) => isTrustedProxy(address),
   });
 
   // Security headers

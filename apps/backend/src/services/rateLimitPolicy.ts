@@ -1,4 +1,5 @@
 import type { FastifyRequest } from "fastify";
+import { getRealClientIp } from "./networkUtils";
 
 /**
  * Deux compteurs, pas un seul.
@@ -53,9 +54,14 @@ export const RATE_LIMIT_API = Number(process.env.RATE_LIMIT) || 1000;
 /** Plafond d'images, réglable à part. Six mille par minute = cent par seconde. */
 export const RATE_LIMIT_IMAGES = Number(process.env.RATE_LIMIT_IMAGES) || 6000;
 
-/** Un seau par famille ET par client — le préfixe suffit à les séparer. */
+/**
+ * Un seau par famille ET par client — le préfixe suffit à les séparer. Le
+ * client, c'est son adresse RÉELLE : derrière Cloudflare, `request.ip` serait
+ * le relais de Cloudflare, partagé par des milliers de visiteurs.
+ */
 export function rateLimitKey(request: FastifyRequest): string {
-  return isImage(request.url) ? `img:${request.ip}` : request.ip;
+  const client = getRealClientIp(request);
+  return isImage(request.url) ? `img:${client}` : client;
 }
 
 export function rateLimitMax(request: FastifyRequest): number {
