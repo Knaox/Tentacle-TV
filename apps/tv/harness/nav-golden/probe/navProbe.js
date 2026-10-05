@@ -15,7 +15,7 @@ const ANDROID = Platform.OS === "android";
 // Les bandeaux de LogBox prennent le focus et masquent le haut de l'écran.
 LogBox.ignoreAllLogs(true);
 
-const state = { tag: null, seq: 0, at: Date.now(), keys: [], reset: null };
+const state = { tag: null, seq: 0, at: Date.now(), keys: [], reset: null, trail: [] };
 
 /** Base64 → texte (UTF-8), sans dépendance. */
 function fromBase64(text) {
@@ -66,6 +66,9 @@ function resetForBench() {
 resetForBench();
 
 function focused(tag) {
+  // La chronologie des focus (diagnostic : `__navGolden.state.trail`).
+  state.trail.push(tag);
+  if (state.trail.length > 30) state.trail.shift();
   state.tag = tag;
   state.seq += 1;
   state.at = Date.now();

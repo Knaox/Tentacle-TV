@@ -57,7 +57,10 @@ export function ensureAndroidApp(ctx, checkout, state, apkOption) {
   const stat = fs.statSync(apk);
   const stamp = `${apk}:${stat.size}:${stat.mtimeMs}`;
   const installed = (shell(ctx, `pm path ${ANDROID_PACKAGE}`) ?? "").includes("package:");
-  if (installed && state.androidApk === stamp) return { apk, stamp, changed: false };
+  // Une autre installation (un lanceur, une build livrée) a pu passer entre-temps :
+  // sans le drapeau DEBUGGABLE, `run-as` refuse et la session ne s'écrit plus.
+  const debuggable = /pkgFlags=\[[^\]]*DEBUGGABLE/.test(shell(ctx, `dumpsys package ${ANDROID_PACKAGE}`) ?? "");
+  if (installed && debuggable && state.androidApk === stamp) return { apk, stamp, changed: false };
   const out = adb(ctx, ["install", "-r", "-d", apk], { timeout: 300_000 });
   if (!out?.includes("Success")) throw new BenchError(`installation de l'APK refusée : ${out ?? "adb muet"}`);
   return { apk, stamp, changed: true };
