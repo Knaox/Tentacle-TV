@@ -7,6 +7,7 @@ import { getLibraryIndexMemo } from "../services/reco/candidates/libraryMemo";
 import { spreadByGenre } from "../services/reco/globalRows";
 import { pokePage } from "../services/reco/pageJobs";
 import { servePage } from "../services/reco/pageService";
+import { requestedTitleKeys } from "../services/reco/requestedTitles";
 
 const feedbackSchema = z.object({
   itemKey: z.string().regex(/^(movie|tv):\d+$/),
@@ -86,6 +87,15 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     });
     pokePage(user.userId, "feedback");
     return { ok: true };
+  });
+
+  // ── GET /requested — les titres que le compte a demandés : masqués de ses
+  //    recommandations (requestedTitles.ts). Un client y relit ce qu'il doit
+  //    retirer de ce qu'il tient déjà (la pile d'Affiner, les pages en cache)
+  //    au retour d'une page d'extension où une demande a pu partir. ──
+  app.get("/requested", async (request) => {
+    const user = (request as any).user as JellyfinUser;
+    return { keys: await requestedTitleKeys(user.userId) };
   });
 
   // ── GET /coldstart — la grille « choisissez cinq titres » : les mieux notés

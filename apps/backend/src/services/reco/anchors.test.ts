@@ -124,6 +124,14 @@ describe("construction des ancres", () => {
     expect(set.has("movie:78")).toBe(false);
   });
 
+  it("un titre DEMANDÉ n'est qu'un masque : ni ancre, ni jugement", () => {
+    const set = buildAnchors(inputs({
+      feedback: [{ itemKey: "movie:79", action: "requested", createdAt: iso(1) }],
+    }));
+    expect(byKey(set).has("movie:79")).toBe(false);
+    expect(set.judged.has("movie:79")).toBe(false);
+  });
+
   it("un titre sans identité TMDB garde une ancre sur sa fiche Jellyfin", () => {
     const set = buildAnchors(inputs({ favorites: [{ Id: "x1", Name: "Animé AniDB", Type: "Series", ProviderIds: { AniDB: "5" } }] }));
     expect(set.anchors[0].key).toBe("jf:x1");

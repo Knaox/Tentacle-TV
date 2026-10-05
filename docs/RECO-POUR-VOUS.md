@@ -13,6 +13,7 @@ exclusion au service de chaque page (`serveContext` → `accountExclusionKeys`
 | Geste | Exclusion servie |
 |-------|------------------|
 | note, « Ne plus me proposer », like Vigie, verdict d'Affiner, mise de côté (`watchlist_pending`, les deux drapeaux) | base, relue à chaque requête |
+| titre DEMANDÉ (extension de demandes), pour le seul compte qui l'a demandé | base (`recommendation_feedback`, action `requested`) — masqué seulement : ni goût, ni ancre, ni statistique (`services/reco/requestedTitles.ts`) |
 | cœur, Ma liste, « vu » d'un titre de la bibliothèque | index en mémoire, retouché dès que la requête du proxy a réussi (`userDataPatchOf` → `patchLibraryMemo`), sans attendre le balayage |
 
 ## 2. Jamais sous le curseur : le retrait au LÂCHER
@@ -67,3 +68,19 @@ graine, ni « Parce que vous avez aimé… ») : c'est un **potentiel**.
 
 La page Statistiques lit la même donnée : le goût dans les ancres, les
 potentiels à part.
+
+## 4. Un titre demandé est masqué, pas jugé
+
+Demander un titre (à l'extension de demandes, Vigie) le retire des
+recommandations — « Pour vous », Affiner, toute rangée servie — pour le SEUL
+compte qui l'a demandé. Ce n'est pas un goût : il ne pèse ni sur le profil, ni
+sur les statistiques.
+
+- Serveur : l'extension le dit après chaque demande acceptée, d'où qu'elle
+  parte (carte du cœur ou page de l'extension) — `ctx.recommendations.titleRequested`
+  → `hideRequestedTitle` (action `requested`, qui n'écrase jamais un refus).
+  `GET /api/reco/requested` rend les clés du compte.
+- Client : une demande faite d'une carte du cœur pose la clé dans le cache
+  `REQUESTED_TITLES_KEY` ; au retour d'une page d'extension, la liste se relit.
+  Le titre sort de la pile d'Affiner, et des rangées au lâcher (règle 2) :
+  « demandé » vaut jugé pour `isRecoItemJudged`.
