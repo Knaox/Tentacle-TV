@@ -16,7 +16,7 @@ const SDK = process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android
 const ADB = path.join(SDK, "platform-tools/adb");
 const KEYS_DEX = "/data/local/tmp/perf-keys.dex";
 
-export const KEY = { up: 19, down: 20, left: 21, right: 22, ok: 23, back: 4, playPause: 85 };
+export const KEY = { up: 19, down: 20, left: 21, right: 22, ok: 23, back: 4, playPause: 85, fastForward: 90 };
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

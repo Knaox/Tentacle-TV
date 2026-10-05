@@ -94,6 +94,14 @@ export const SCENARIOS = [
     steps: 5,
   },
   {
+    id: "decompte",
+    title: "Le défilement du lecteur : ⏩ ouvre la vignette et son décompte (« Lecture dans 5 s »), qui s'écoule puis referme tout",
+    fixtures: ["base/vigie-off", "lecteur/flux-mp4"],
+    setup: [tap("down"), wait(1500), tap("ok"), wait(7000)],
+    gesture: [tap("fastForward"), wait(7500)],
+    steps: 1,
+  },
+  {
     id: "grille",
     title: "La grille des films : BAS tenu 4 s puis HAUT tenu 4 s",
     expectReady: "bibliothèque",
