@@ -8,6 +8,7 @@ import { CardShell } from "../../cards/CardShell";
 import { useCardFocused } from "../../cards/useCardFocused";
 import { FocusSection } from "../../focus/FocusSection";
 import { useForcedFocusKey } from "../../focus/focusPreview";
+import { useStagedRow } from "../../rows/rowStage";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
 import { useRowFocus } from "../../motion/useRowRecede";
@@ -101,27 +102,38 @@ const ExtraCell = memo(function ExtraCell({
 
 export const ExtrasRow = memo(function ExtrasRow({
   extras,
+  stageRank,
   onOpen,
   onFocusChange,
 }: {
   extras: ExtraModel[];
+  /** Sa place dans une page échelonnée (`rowStage`, Android TV). */
+  stageRank?: number;
   onOpen?: (extra: ExtraModel) => void;
   onFocusChange?: (focused: boolean) => void;
 }) {
   const forced = useForcedFocusKey();
   const forcedIndex = forced?.startsWith("extra:") ? Number(forced.slice(6)) : null;
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forcedIndex);
+  const { shown, demand } = useStagedRow(stageRank, extras.length);
+  const onItem = useCallback(
+    (index: number, focused: boolean) => {
+      onItemFocusChange(index, focused);
+      if (focused) demand();
+    },
+    [onItemFocusChange, demand],
+  );
   return (
     <FocusSection focusKey="detail:extras">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
-        {extras.map((extra, index) => (
+        {extras.slice(0, shown).map((extra, index) => (
           <ExtraCell
             key={extra.id}
             extra={extra}
             index={index}
             row={row}
             onOpen={onOpen}
-            onItemFocusChange={onItemFocusChange}
+            onItemFocusChange={onItem}
             onFocusChange={onFocusChange}
           />
         ))}

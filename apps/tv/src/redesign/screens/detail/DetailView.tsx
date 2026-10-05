@@ -7,6 +7,7 @@ import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButto
 import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import type { ArtworkPalette } from "../../color/artworkPalette";
+import { RowStageProvider } from "../../rows/rowStage";
 import { StatusPanel } from "../shared/StatusPanel";
 import { DetailBackdrop, DetailTopFade } from "./DetailBackdrop";
 import { DetailHeader } from "./DetailHeader";
@@ -154,9 +155,13 @@ export const DetailView = memo(function DetailView({
               onOpenSeries={onOpenSeries}
             />
           </FocusSection>
-          <SectionStage>
-            <DetailSections {...sections} onSectionLayout={onSectionLayout} />
-          </SectionStage>
+          {/* Les cartes des rangées montées par parts (Android TV, `rowStage`) :
+              une section qui arrive ne fige plus la page le temps de ses cartes. */}
+          <RowStageProvider>
+            <SectionStage>
+              <DetailSections {...sections} onSectionLayout={onSectionLayout} />
+            </SectionStage>
+          </RowStageProvider>
         </Animated.ScrollView>
         <DetailTopFade scrollY={scrollY} />
       </>

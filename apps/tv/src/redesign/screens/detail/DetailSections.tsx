@@ -6,7 +6,7 @@ import { FocusSection } from "../../focus/FocusSection";
 import { MediaRow } from "../../rows/MediaRow";
 import { colors, fonts } from "../../theme/tokens";
 import { CastRow, CrewColumns } from "./CastRow";
-import { DETAIL_LEFT, DetailSection } from "./DetailSection";
+import { DETAIL_LEFT, DetailSection, SECTION_RANK } from "./DetailSection";
 import { EpisodeRail } from "./EpisodeRail";
 import { ExtrasRow } from "./ExtrasRow";
 import { SagaRow } from "./SagaRow";
@@ -74,6 +74,7 @@ export const DetailSections = memo(function DetailSections({
               cards={collection}
               variant="poster"
               inset={DETAIL_LEFT}
+              stageRank={SECTION_RANK.collection}
               onPressCard={onOpenCard ? (card) => onOpenCard("collection", card) : undefined}
               onLongPressCard={onLongPressCard}
             />
@@ -103,13 +104,13 @@ export const DetailSections = memo(function DetailSections({
       ) : null}
       {cast?.length || crew?.length ? (
         <DetailSection sectionKey="cast" title={t("media:castAndCrew")} onLayout={onSectionLayout}>
-          {cast?.length ? <CastRow people={cast} onOpen={onOpenPerson} /> : null}
+          {cast?.length ? <CastRow people={cast} stageRank={SECTION_RANK.cast} onOpen={onOpenPerson} /> : null}
           {crew?.length ? <CrewColumns groups={crew} /> : null}
         </DetailSection>
       ) : null}
       {extras?.length ? (
         <DetailSection sectionKey="extras" title={t("common:extras")} onLayout={onSectionLayout}>
-          <ExtrasRow extras={extras} onOpen={onOpenExtra} />
+          <ExtrasRow extras={extras} stageRank={SECTION_RANK.extras} onOpen={onOpenExtra} />
         </DetailSection>
       ) : null}
       {saga && saga.entries.length > 1 ? (
@@ -121,6 +122,7 @@ export const DetailSections = memo(function DetailSections({
         >
           <SagaRow
             entries={saga.entries}
+            stageRank={SECTION_RANK.saga}
             onOpen={onOpenSagaEntry}
             onLongPress={onLongPressSagaEntry}
           />
@@ -135,6 +137,7 @@ export const DetailSections = memo(function DetailSections({
               cards={similar}
               variant="poster"
               inset={DETAIL_LEFT}
+              stageRank={SECTION_RANK.similar}
               onPressCard={onOpenCard ? (card) => onOpenCard("similar", card) : undefined}
               onLongPressCard={onLongPressCard}
             />

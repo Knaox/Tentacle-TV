@@ -26,8 +26,9 @@ export const DETAIL_LEFT = TV_STAGE.safe.x + 24;
 export const SECTION_ANCHOR_TOP = 72;
 const ANCHOR: FocusSectionReveal = { mode: "anchor", top: SECTION_ANCHOR_TOP };
 
-/** Le rang de montage de chaque section, dans l'ordre de la fiche. */
-const RANK: Record<DetailSectionKey, number> = { header: 0, collection: 0, episodes: 1, cast: 2, extras: 3, saga: 4, similar: 5 };
+/** Le rang de montage de chaque section, dans l'ordre de la fiche — celui
+ *  aussi des cartes de ses rangées (`rowStage`, Android TV). */
+export const SECTION_RANK: Record<DetailSectionKey, number> = { header: 0, collection: 0, episodes: 1, cast: 2, extras: 3, saga: 4, similar: 5 };
 const RANKS = 6;
 
 /** Les rangs libérés (`useStagedMount`) ; hors d'une page qui arrive, tous. */
@@ -52,7 +53,7 @@ export const DetailSection = memo(function DetailSection({
   onLayout: (key: DetailSectionKey, y: number, height: number) => void;
   children: ReactNode;
 }) {
-  const shown = RANK[sectionKey] < useContext(SectionStageContext);
+  const shown = SECTION_RANK[sectionKey] < useContext(SectionStageContext);
   return (
     <FocusSection
       reveal={ANCHOR}

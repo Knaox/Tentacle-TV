@@ -7,6 +7,7 @@ import { cardIndexOf } from "../../cards/cardFocusKeys";
 import { MediaCard } from "../../cards/MediaCard";
 import { FocusSection } from "../../focus/FocusSection";
 import { useForcedFocusKey } from "../../focus/focusPreview";
+import { useStagedRow } from "../../rows/rowStage";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { useRowFocus } from "../../motion/useRowRecede";
 import { colors, fonts } from "../../theme/tokens";
@@ -100,27 +101,38 @@ const SagaEntry = memo(function SagaEntry({ entry, index, row, onItemFocusChange
 
 export const SagaRow = memo(function SagaRow({
   entries,
+  stageRank,
   onOpen,
   onLongPress,
   onFocusChange,
 }: {
   entries: SagaEntryModel[];
+  /** Sa place dans une page échelonnée (`rowStage`, Android TV). */
+  stageRank?: number;
   onOpen?: (entry: SagaEntryModel) => void;
   onLongPress?: (entry: SagaEntryModel) => void;
   onFocusChange?: (focused: boolean) => void;
 }) {
   const forced = useForcedFocusKey();
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, "saga") : null);
+  const { shown, demand } = useStagedRow(stageRank, entries.length);
+  const onItem = useCallback(
+    (index: number, focused: boolean) => {
+      onItemFocusChange(index, focused);
+      if (focused) demand();
+    },
+    [onItemFocusChange, demand],
+  );
   return (
     <FocusSection focusKey="detail:saga">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
-        {entries.map((entry, index) => (
+        {entries.slice(0, shown).map((entry, index) => (
           <SagaEntry
             key={entry.key}
             entry={entry}
             index={index}
             row={row}
-            onItemFocusChange={onItemFocusChange}
+            onItemFocusChange={onItem}
             onOpen={onOpen}
             onLongPress={onLongPress}
             onFocusChange={onFocusChange}
