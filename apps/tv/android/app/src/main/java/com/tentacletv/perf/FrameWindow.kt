@@ -21,6 +21,12 @@ internal class FrameWindow(val startedAtMs: Long, private val intervalNs: Long) 
   enum class Phase(val key: String) { TOTAL("total"), DELAY("delay"), INPUT("input"), ANIM("anim"), LAYOUT("layout"), DRAW("draw"), SYNC("sync"), ISSUE("issue"), SWAP("swap") }
 
   private val samples = ArrayList<LongArray>(128)
+  /** Les images dont le travail PROCESSEUR (fil UI + synchronisation, sans
+   *  le GPU) dépasse 2, 4, 8 ms et un intervalle : ce qui se transpose d'un
+   *  appareil à l'autre — le processeur de l'émulateur va ~8 fois plus vite
+   *  qu'un cœur de la Shield, 2 ms y valent un intervalle là-bas. */
+  private val cpuLimitsNs = longArrayOf(2_000_000L, 4_000_000L, 8_000_000L, intervalNs)
+  private val cpuOver = IntArray(cpuLimitsNs.size)
   private var janky = 0
   private var severe = 0
   var dropped = 0
@@ -39,6 +45,8 @@ internal class FrameWindow(val startedAtMs: Long, private val intervalNs: Long) 
     val total = phases[Phase.TOTAL.ordinal]
     if (total > intervalNs) janky++
     if (total > 2 * intervalNs) severe++
+    val cpu = ui(phases) + phases[Phase.SYNC.ordinal]
+    for (i in cpuLimitsNs.indices) if (cpu > cpuLimitsNs[i]) cpuOver[i]++
     lastFrameAtMs = atMs
   }
 
@@ -75,7 +83,8 @@ internal class FrameWindow(val startedAtMs: Long, private val intervalNs: Long) 
     val totals = series { it[Phase.TOTAL.ordinal] }
     val react = if (commits > 0) " · React : $commits validations, $components composants, $mounts vues créées, $updates mises à jour" else ""
     val drops = if (dropped > 0) " ($dropped non relevées)" else ""
-    return "[perf] ${labelText()} — $frames images$drops, $janky ratée${if (janky > 1) "s" else ""}, $severe grave${if (severe > 1) "s" else ""}" +
+    val cpuJank = if (cpuOver[3] > 0) " (${cpuOver[3]} par le processeur)" else ""
+    return "[perf] ${labelText()} — $frames images$drops, $janky ratée${if (janky > 1) "s" else ""}$cpuJank, $severe grave${if (severe > 1) "s" else ""}" +
       " · durée p50 ${ms(percentile(totals, 0.5))} · p95 ${ms(percentile(totals, 0.95))} · max ${ms(percentile(totals, 1.0))} ms" +
       " · fil UI p95 ${ms(percentile(series(::ui), 0.95))} (animations p95 ${ms(percentile(series { it[Phase.ANIM.ordinal] }, 0.95))})" +
       " · rendu p95 ${ms(percentile(series(::render), 0.95))} ms$react"
@@ -91,6 +100,7 @@ internal class FrameWindow(val startedAtMs: Long, private val intervalNs: Long) 
     for ((key, sorted) in all) {
       out.append(",\"$key\":{\"p50\":${num(percentile(sorted, 0.5))},\"p95\":${num(percentile(sorted, 0.95))},\"max\":${num(percentile(sorted, 1.0))},\"sum\":${num(sorted.sum() / 1e6)}}")
     }
+    out.append(",\"cpuOver\":{\"2\":${cpuOver[0]},\"4\":${cpuOver[1]},\"8\":${cpuOver[2]},\"interval\":${cpuOver[3]}}")
     out.append(",\"commits\":$commits,\"components\":$components,\"mounts\":$mounts,\"updates\":$updates}")
     return out.toString()
   }
