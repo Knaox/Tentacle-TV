@@ -33,7 +33,7 @@ export default {
   resume: "Resume",
   watched: "Watched",
   percentWatched: "{{percent}}% watched",
-  resumeWatching: "Continue watching",
+  resumeWatching: "Where you left off",
   nextEpisodes: "Next episodes",
   nextEpisode: "Up next",
   alreadyWatched: "Already watched",

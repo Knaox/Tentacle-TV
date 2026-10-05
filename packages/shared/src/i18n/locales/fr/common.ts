@@ -33,7 +33,9 @@ export default {
   resume: "Reprendre",
   watched: "Vu",
   percentWatched: "{{percent}}% visionné",
-  resumeWatching: "Reprendre la lecture",
+  // Titre de la rangée et accroche du héros : jamais « Reprendre », que dit
+  // déjà le bouton juste en dessous.
+  resumeWatching: "Là où vous en étiez",
   nextEpisodes: "Prochains épisodes",
   nextEpisode: "À suivre",
   alreadyWatched: "Déjà visionné",
