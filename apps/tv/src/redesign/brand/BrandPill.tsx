@@ -38,10 +38,14 @@ export const BrandPill = memo(function BrandPill({ progress, radius, children }:
         <DropShadow of={[styles.glow, round]} />
       </Animated.View>
       <View style={[styles.body, round]}>
-        <BrandGradient diagonal />
-        <Animated.View style={[StyleSheet.absoluteFill, styles.veil, veil]} />
+        {/* L'arrondi posé AUSSI sur les dégradés : Android ne rogne pas un
+            LinearGradient enfant d'un parent arrondi sans fond — la pilule
+            sortait à angles droits (constaté à l'émulateur). Sans effet sur
+            tvOS, où le parent rogne déjà. */}
+        <BrandGradient diagonal style={round} />
+        <Animated.View style={[StyleSheet.absoluteFill, styles.veil, round, veil]} />
         <Animated.View style={[StyleSheet.absoluteFill, lit]}>
-          <LinearGradient colors={SHEEN} locations={SHEEN_STOPS} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={SHEEN} locations={SHEEN_STOPS} style={[StyleSheet.absoluteFill, round]} />
           <View style={[StyleSheet.absoluteFill, styles.rimLit, round]} />
         </Animated.View>
         <View style={[StyleSheet.absoluteFill, styles.rim, round]} />
