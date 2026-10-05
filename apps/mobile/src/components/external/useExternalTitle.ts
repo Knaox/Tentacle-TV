@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useRouter } from "expo-router";
 import {
   useFavoriteByTmdb, useIsFavoritePending, useIsWatchlistPending, useLikesAvailable, useRequestTitle, useTitleState,
   useWatchlistByTmdb, type RatingIdentity,
 } from "@tentacle-tv/api-client";
 import { titleKey, titleProvider, type TitleMediaType, type TitleProvider, type TitleState } from "@tentacle-tv/shared";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
+import { useOpenPluginHref } from "./useOpenPluginHref";
 
 /** L'identité TMDB d'une carte hors bibliothèque. */
 export interface ExternalTitle {
@@ -63,7 +63,6 @@ export function useExternalTitleActions(
   onLeave?: () => void,
 ): ExternalTitleActions {
   const { t } = useTranslation("cards");
-  const router = useRouter();
   const { provider, lang } = useTitleProvider();
   const key = titleKey(title.mediaType, title.tmdbId);
   const state = useTitleState(provider, key, lang);
@@ -75,19 +74,13 @@ export function useExternalTitleActions(
   const favorites = useFavoriteByTmdb();
   const [outcome, setOutcome] = useState<{ ok: boolean; message: string } | null>(null);
 
-  // La page de l'extension, par sa route (`/discover?request=tv:1399`) : chemin et requête séparés.
+  // La page de l'extension, par sa route (`/discover?request=tv:1399`).
+  const pushPlugin = useOpenPluginHref(provider);
   const openPlugin = useCallback((href: string) => {
     onLeave?.();
-    if (openHref) {
-      openHref(href);
-      return;
-    }
-    if (!provider) return;
-    const at = href.indexOf("?");
-    const path = at < 0 ? href : href.slice(0, at);
-    const query = at < 0 ? undefined : href.slice(at);
-    router.push({ pathname: "/plugin/[pluginId]", params: { pluginId: provider.pluginId, path, ...(query ? { query } : {}) } });
-  }, [provider, router, onLeave, openHref]);
+    if (openHref) openHref(href);
+    else pushPlugin(href);
+  }, [pushPlugin, onLeave, openHref]);
 
   const request = () => {
     const offer = state?.request;

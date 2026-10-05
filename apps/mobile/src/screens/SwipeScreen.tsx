@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { swipeLangOf, useSwipeCardDetails, useSwipeDeck } from "@tentacle-tv/api-client";
-import type { SwipeVerdict } from "@tentacle-tv/api-client";
+import type { SwipeCard, SwipeVerdict } from "@tentacle-tv/api-client";
+import { useExternalTitleState, useTitleProvider } from "@/components/external/useExternalTitle";
+import { useOpenPluginHref } from "@/components/external/useOpenPluginHref";
 import { Skeleton } from "@/components/ui";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
@@ -19,6 +21,11 @@ const HAPTIC: Record<SwipeVerdict, HapticCue> = {
   superlike: "success",
   skip: "select",
 };
+
+/** L'identité d'une carte HORS bibliothèque — la seule qui ait une fiche chez l'extension. */
+function outsideTitle(card: SwipeCard | undefined) {
+  return card && !card.jellyfinItemId ? { mediaType: card.mediaType, tmdbId: card.tmdbId } : null;
+}
 
 /**
  * La section « Affiner » de l'onglet Pour vous : une pile de films et de
@@ -42,6 +49,13 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
   // Le verso de la suivante se charge pendant qu'on juge celle-ci, et elle le
   // porte déjà : son texte ne change pas au moment où elle monte en tête.
   const { data: nextDetails } = useSwipeCardDetails(deck.cards[1], lang);
+  // La fiche d'un titre hors bibliothèque chez l'extension, si elle la donne ;
+  // celle de la suivante se lit d'avance, dans la même requête.
+  const { provider } = useTitleProvider();
+  const topPage = useExternalTitleState(outsideTitle(top))?.page ?? null;
+  useExternalTitleState(outsideTitle(deck.cards[1]));
+  const pageSlotOf = useCallback((card: SwipeCard) => !!provider && !card.jellyfinItemId, [provider]);
+  const onOpenPage = useOpenPluginHref(provider);
   const topKey = top?.key;
   useEffect(() => {
     setInfoOpen(false);
@@ -103,6 +117,9 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
           onRelease={commit}
           onExited={onExited}
           onToggleInfo={onToggleInfo}
+          topPage={topPage}
+          pageSlotOf={pageSlotOf}
+          onOpenPage={onOpenPage}
         />
       )}
       {saveFailed && <SwipeSaveFailedNative />}
