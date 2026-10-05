@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useGenerateTvToken, useRelayConfirm, useDevicePairConfirm } from "@tentacle-tv/api-client";
+import { useAutoSubmitPairingCode, useGenerateTvToken, useRelayConfirm, useDevicePairConfirm } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../lib/backendBase";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { PairingLockedNotice } from "../components/pair/PairingLockedNotice";
@@ -61,8 +61,15 @@ export function PairDevice() {
   const code = chars.join("");
   const canSubmit = code.length === 4 && status === "idle";
 
+  // Corriger une case après un refus remet au repos : le code repart, complet.
+  const backToIdle = useCallback(() => {
+    setStatus((current) => (current === "error" ? "idle" : current));
+    setErrorMsg("");
+  }, []);
+
   const handleChange = useCallback((index: number, value: string) => {
     const char = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(-1);
+    backToIdle();
     setChars((prev) => {
       const next = [...prev];
       next[index] = char;
@@ -71,7 +78,7 @@ export function PairDevice() {
     if (char && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
-  }, []);
+  }, [backToIdle]);
 
   const handleKeyDown = useCallback((index: number, e: React.KeyboardEvent) => {
     if (e.key === "Backspace" && !chars[index] && index > 0) {
@@ -87,10 +94,11 @@ export function PairDevice() {
       .replace(/[^A-Z0-9]/g, "")
       .slice(0, 4);
     if (pasted.length === 4) {
+      backToIdle();
       setChars(pasted.split(""));
       inputRefs.current[3]?.focus();
     }
-  }, []);
+  }, [backToIdle]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
@@ -135,6 +143,10 @@ export function PairDevice() {
       }
     }
   }, [canSubmit, code, deviceConfirmMut, tvTokenMut, relayConfirmMut, t]);
+
+  // Le dernier caractère saisi (ou le code collé) lance le jumelage : le
+  // bouton reste pour qui préfère le presser.
+  useAutoSubmitPairingCode(code, status, handleSubmit);
 
   const handleReset = useCallback(() => {
     setChars(["", "", "", ""]);
