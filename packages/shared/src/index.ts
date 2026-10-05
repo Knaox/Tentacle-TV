@@ -86,6 +86,7 @@ export * from "./notices/adminKeyHealth";
 // réseau mesuré, la limite Internet de Jellyfin, la conversion du serveur), et
 // quand le dire — une info éphémère, masquable par le compte.
 export * from "./player/qualityDrop";
+export * from "./player/jellyfinOutageCopy";
 export * from "./notices/qualityDropNotice";
 // Le saut pendant un transcodage : les sauts rapides regroupés en un seul
 // redémarrage, l'attente dite (indicateur, phrase, modèle d'erreur au délai).

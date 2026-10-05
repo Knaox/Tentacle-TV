@@ -191,4 +191,16 @@ export default {
   qualityGuideTitle: "Comment choisir",
   qualityGuideOriginal: "« Original » lit le fichier tel quel, sans conversion : la meilleure image, si le réseau suit.",
   qualityGuideConverted: "Les autres qualités sont converties par le serveur : plus légères pour le réseau, elles peuvent mettre un peu plus de temps à démarrer.",
+  // Panne de Jellyfin pendant la lecture (`player/jellyfinOutageCopy.ts`) : un
+  // titre par état, dit par le serveur Tentacle — jamais une erreur de lecture.
+  jellyfinOutage: {
+    restarting: "Jellyfin redémarre",
+    shuttingDown: "Jellyfin s'arrête",
+    down: "Jellyfin est arrêté",
+    starting: "Jellyfin redémarre — presque prêt",
+    hint: "La lecture reprendra toute seule, au même endroit.",
+    longTitle: "Jellyfin ne répond toujours pas",
+    longHint: "Votre position est gardée : la lecture reprendra dès son retour.",
+    retry: "Réessayer",
+  },
 } as const;

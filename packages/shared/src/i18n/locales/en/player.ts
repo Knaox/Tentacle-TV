@@ -186,4 +186,16 @@ export default {
   qualityGuideTitle: "How to choose",
   qualityGuideOriginal: "“Original” plays the file as is, with no conversion: the best picture, if the network keeps up.",
   qualityGuideConverted: "The other qualities are converted by the server: lighter on the network, they can take a little longer to start.",
+  // Jellyfin outage during playback (`player/jellyfinOutageCopy.ts`): one
+  // title per state, told by the Tentacle server — never a playback error.
+  jellyfinOutage: {
+    restarting: "Jellyfin is restarting",
+    shuttingDown: "Jellyfin is shutting down",
+    down: "Jellyfin is stopped",
+    starting: "Jellyfin is restarting — almost ready",
+    hint: "Playback will resume on its own, right where it left off.",
+    longTitle: "Jellyfin still isn't responding",
+    longHint: "Your position is saved: playback will resume as soon as it's back.",
+    retry: "Try again",
+  },
 } as const;
