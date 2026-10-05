@@ -4,7 +4,7 @@ import fr from "./locales/fr";
 import en from "./locales/en";
 
 const NAMESPACES = [
-  "common", "auth", "setup", "player", "admin",
+  "common", "auth", "player", "admin",
   "tickets", "pairing", "preferences", "about", "notifications", "nav",
   "adminPlugins", "adminInvites", "adminServices", "adminMetadata", "adminJellyfin", "adminRecommended", "media", "errors", "profile", "disclaimer",
   "watchTogether", "downloads", "easterEggs", "reco", "whatsNew", "offline", "sessions", "search",

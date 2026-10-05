@@ -1,0 +1,78 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ExistingLibrary, JellyfinProbeResult, LibraryOutcome, LibraryPlan, SetupCompleteResponse, SetupContext } from "@tentacle-tv/shared";
+import { setupApi, setupSession } from "./setupApi";
+import { defaultLocale, needsDatabase, NO_BACK, resumeStep, wizardSteps, type JellyfinMode, type WizardLocale, type WizardStep } from "./wizardModel";
+
+/** Ce que l'assistant a appris en chemin. Le mot de passe ne vit qu'ici, en mémoire, jamais stocké. */
+export interface WizardData {
+  context: SetupContext | null;
+  jellyfinUrl: string;
+  probe: JellyfinProbeResult | null;
+  mode: JellyfinMode | null;
+  credentials: { username: string; password: string } | null;
+  locale: WizardLocale;
+  existing: ExistingLibrary[];
+  plans: LibraryPlan[];
+  outcomes: LibraryOutcome[] | null;
+  session: SetupCompleteResponse | null;
+  /** L'installation a repris après un rechargement : le compte sera redemandé à la fin. */
+  resumed: boolean;
+}
+
+export interface Wizard {
+  step: WizardStep;
+  position: number;
+  total: number;
+  data: WizardData;
+  patch: (next: Partial<WizardData>) => void;
+  next: () => void;
+  /** Aller droit à un écran : la reprise d'une installation commencée. */
+  go: (step: WizardStep) => void;
+  back: (() => void) | undefined;
+}
+
+export function useWizard(): Wizard {
+  const [step, setStep] = useState<WizardStep>("welcome");
+  const [data, setData] = useState<WizardData>(() => ({
+    context: null,
+    jellyfinUrl: "",
+    probe: null,
+    mode: null,
+    credentials: null,
+    locale: defaultLocale(typeof navigator !== "undefined" ? navigator.language : undefined),
+    existing: [],
+    plans: [],
+    outcomes: null,
+    session: null,
+    resumed: false,
+  }));
+
+  const steps = useMemo(
+    () => wizardSteps({ needsDatabase: needsDatabase(data.context), mode: data.mode, askFinalAccount: data.resumed && !data.credentials }),
+    [data.context, data.mode, data.resumed, data.credentials],
+  );
+  const index = Math.max(0, steps.indexOf(step));
+  const patch = useCallback((next: Partial<WizardData>) => setData((prev) => ({ ...prev, ...next })), []);
+  const next = useCallback(() => setStep(steps[Math.min(index + 1, steps.length - 1)]), [steps, index]);
+  const back = useCallback(() => setStep(steps[Math.max(index - 1, 0)]), [steps, index]);
+
+  // Une session d'assistant retrouvée (rechargement de l'onglet) : on reprend
+  // là où l'installation s'était arrêtée. Expirée, on repart du code.
+  useEffect(() => {
+    if (!setupSession.read()) return;
+    let cancelled = false;
+    setupApi
+      .context()
+      .then((context) => {
+        if (cancelled) return;
+        setData((prev) => ({ ...prev, context, resumed: true, jellyfinUrl: context.jellyfin.url ?? context.jellyfin.suggestedUrl ?? "" }));
+        setStep(resumeStep(context));
+      })
+      .catch(() => setupSession.clear());
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { step, position: index + 1, total: steps.length, data, patch, next, go: setStep, back: NO_BACK.has(step) ? undefined : back };
+}
