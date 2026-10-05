@@ -4,7 +4,7 @@ import { resolve } from "path";
 import { DATA_ROOT } from "../services/dataDir";
 import { databaseUrlFromEnv } from "../services/databaseEnv";
 import { SETUP_LOCK_FILE, unsealSetup } from "../setup/setupLock";
-import { setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
+import { discardSetupToken, setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
 
 /**
  * `tentacle` — la commande de la MACHINE. L'assistant ne se rouvre jamais par
@@ -17,6 +17,11 @@ import { setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
  */
 const USAGE = "usage: tentacle setup token | tentacle setup reset";
 const SETUP_FLAGS = ["setup_completed", "admin_jellyfin_id", "admin_username"];
+const RESET_DONE = [
+  "Assistant rouvert. Redémarrez le serveur ; le code d'installation sera dans ses journaux :",
+  "Wizard reopened. Restart the server; the setup code will be in its logs:",
+  "  docker compose restart tentacle && docker compose logs tentacle",
+];
 
 function databaseUrl(): string | null {
   const fromEnv = databaseUrlFromEnv(process.env);
@@ -76,9 +81,10 @@ export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.en
     return 1;
   }
   unsealSetup();
-  printToken(port);
-  console.log("Assistant rouvert. Redémarrez le serveur pour qu'il le prenne en compte :");
-  console.log("Wizard reopened. Restart the server to apply it:  docker compose restart tentacle");
+  // Pas de code ici : le serveur en cours tient l'assistant pour fermé, et le
+  // redémarrage en écrit un neuf — celui qu'on afficherait serait déjà caduc.
+  discardSetupToken();
+  for (const line of RESET_DONE) console.log(line);
   return 0;
 }
 

@@ -55,14 +55,18 @@ describe("tentacle setup", () => {
     expect(existsSync(token)).toBe(false);
   });
 
-  it("reset : drapeaux effacés, verrou retiré, code neuf", async () => {
+  it("reset : drapeaux effacés, verrou retiré, et aucun code — le redémarrage en écrit un", async () => {
     writeFileSync(lock, "x");
+    writeFileSync(token, "AAAA-BBBB-CCCC\n");
     process.env.DATABASE_URL = "mysql://u:p@db/x";
     expect(await runCli(["setup", "reset"], {})).toBe(0);
     delete process.env.DATABASE_URL;
     expect(h.deleted).toEqual([["setup_completed", "admin_jellyfin_id", "admin_username"]]);
     expect(existsSync(lock)).toBe(false);
-    expect(existsSync(token)).toBe(true);
+    expect(existsSync(token)).toBe(false);
+    const printed = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(printed).toContain("docker compose logs tentacle");
+    expect(printed).not.toMatch(/[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}/);
   });
 
   it("reset sans base : rien n'est touché", async () => {
