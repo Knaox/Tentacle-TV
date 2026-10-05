@@ -1,5 +1,6 @@
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import type { SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { cardIndexOf } from "../cards/cardFocusKeys";
 import { MediaCard } from "../cards/MediaCard";
@@ -20,6 +21,10 @@ import { useRowRewindPort } from "./rowRewindPort";
  * Sur une page qui le demande (l'accueil, « Pour vous » : `rowRewindPort`),
  * la rangée se déclare avec sa remise au début — l'intégration la ramène à sa
  * première carte, sans animation, une fois sortie de l'écran.
+ *
+ * Chaque carte est mémoïsée avec des gestionnaires STABLES (`RowCard`) : une
+ * rangée qui s'allonge, ou dont la liste change, ne redessine pas les cartes
+ * qu'elle a déjà.
  */
 
 /** Le vide sous les cartes d'une rangée (sa marge et le bas de sa piste) : rien ne s'y voit au repos. */
@@ -61,12 +66,12 @@ export const MediaRow = memo(function MediaRow({
   );
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
 
-  const onFocusChange = useCallback(
-    (index: number, focused: boolean) => {
+  const onItemFocus = useCallback(
+    (index: number, focused: boolean, card: CardModel) => {
       onItemFocusChange(index, focused);
-      if (focused) onFocusCard?.(cards[index]);
+      if (focused) onFocusCard?.(card);
     },
-    [cards, onFocusCard, onItemFocusChange],
+    [onFocusCard, onItemFocusChange],
   );
 
   if (cards.length === 0) return null;
@@ -87,24 +92,53 @@ export const MediaRow = memo(function MediaRow({
           variant === "morph" && styles.morphContent,
         ]}
       >
-        {cards.map((card, index) => {
-          const common = {
-            card,
-            focusKey: `${rowKey}:${index}`,
-            place: { row, index },
-            onPress: onPressCard ? () => onPressCard(card) : undefined,
-            onLongPress: onLongPressCard ? () => onLongPressCard(card) : undefined,
-            onFocusChange: (focused: boolean) => onFocusChange(index, focused),
-          };
-          return variant === "morph" ? (
-            <MorphCard key={card.id} {...common} />
-          ) : (
-            <MediaCard key={card.id} {...common} variant={variant} width={cardWidth} />
-          );
-        })}
+        {cards.map((card, index) => (
+          <RowCard
+            key={card.id}
+            card={card}
+            index={index}
+            row={row}
+            rowKey={rowKey}
+            variant={variant}
+            width={cardWidth}
+            onPressCard={onPressCard}
+            onLongPressCard={onLongPressCard}
+            onItemFocus={onItemFocus}
+          />
+        ))}
       </ScrollView>
     </View>
   );
+});
+
+/** Une carte de la rangée, ses gestionnaires liés à SA carte une fois pour toutes. */
+const RowCard = memo(function RowCard({
+  card,
+  index,
+  row,
+  rowKey,
+  variant,
+  width,
+  onPressCard,
+  onLongPressCard,
+  onItemFocus,
+}: {
+  card: CardModel;
+  index: number;
+  row: SharedValue<number>;
+  rowKey: string;
+  variant: MediaRowProps["variant"];
+  width?: number;
+  onPressCard?: (card: CardModel) => void;
+  onLongPressCard?: (card: CardModel) => void;
+  onItemFocus: (index: number, focused: boolean, card: CardModel) => void;
+}) {
+  const place = useMemo(() => ({ row, index }), [row, index]);
+  const onPress = useMemo(() => (onPressCard ? () => onPressCard(card) : undefined), [onPressCard, card]);
+  const onLongPress = useMemo(() => (onLongPressCard ? () => onLongPressCard(card) : undefined), [onLongPressCard, card]);
+  const onFocusChange = useCallback((focused: boolean) => onItemFocus(index, focused, card), [onItemFocus, index, card]);
+  const common = { card, focusKey: `${rowKey}:${index}`, place, onPress, onLongPress, onFocusChange };
+  return variant === "morph" ? <MorphCard {...common} /> : <MediaCard {...common} variant={variant} width={width} />;
 });
 
 const styles = StyleSheet.create({
