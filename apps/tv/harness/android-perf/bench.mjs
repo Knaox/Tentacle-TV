@@ -165,8 +165,8 @@ async function run() {
     }
   } finally {
     device.setPerf(false);
-    await proxy.close();
     backend.kill();
+    await proxy.close();
   }
   const file = path.join(RUNS, `${tag}.json`);
   fs.writeFileSync(file, JSON.stringify({ tag, apk, date: new Date().toISOString(), device: device.describe(), images: proxy.stats, results }, null, 2));

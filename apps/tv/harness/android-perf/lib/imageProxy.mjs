@@ -125,7 +125,23 @@ export function startImageProxy({ port, target, cacheDir, resize = true, log = (
     socket.on("error", () => upstream.destroy());
   });
 
+  // Les connexions ouvertes (keep-alive, tunnels WebSocket) : `close()` les
+  // détruit, sinon il attendrait que l'app les lâche — elle ne le fait jamais.
+  const sockets = new Set();
+  server.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.on("close", () => sockets.delete(socket));
+  });
+  server.on("upgrade", (_req, socket) => {
+    sockets.add(socket);
+    socket.on("close", () => sockets.delete(socket));
+  });
+  const close = () =>
+    new Promise((done) => {
+      server.close(() => done());
+      for (const socket of sockets) socket.destroy();
+    });
   return new Promise((resolve) => {
-    server.listen(port, "::", () => resolve({ server, stats, close: () => new Promise((done) => server.close(done)) }));
+    server.listen(port, "::", () => resolve({ server, stats, close }));
   });
 }
