@@ -101,6 +101,7 @@ services:
         condition: service_started
     environment:
       TENTACLE_STACK: full
+      TENTACLE_HOST_PORT: ${TENTACLE_PORT:-3000} # the setup link printed in the logs
       DB_HOST: db
       DB_PASSWORD_FILE: /run/tentacle-secrets/db_password
       JELLYFIN_INTERNAL_URL: http://jellyfin:8096

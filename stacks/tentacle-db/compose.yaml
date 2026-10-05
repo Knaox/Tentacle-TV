@@ -59,6 +59,7 @@ services:
         condition: service_healthy
     environment:
       TENTACLE_STACK: db
+      TENTACLE_HOST_PORT: ${TENTACLE_PORT:-3000} # the setup link printed in the logs
       DB_HOST: db
       DB_PASSWORD_FILE: /run/tentacle-secrets/db_password
       PUID: ${PUID:-1000}

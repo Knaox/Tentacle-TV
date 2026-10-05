@@ -227,6 +227,8 @@ COPY --from=base /app/versions.json ./versions.json
 # compat/jellyfin.json à /app : cherché en remontant depuis dist/services/jellyfinCompat
 COPY --from=base /app/compat/jellyfin.json ./compat/jellyfin.json
 COPY --chmod=0755 apps/backend/docker-entrypoint.sh ./apps/backend/docker-entrypoint.sh
+# `tentacle setup token|reset` : seul moyen de rouvrir l'assistant d'installation.
+COPY --chmod=0755 apps/backend/docker/tentacle-cli.sh /usr/local/bin/tentacle
 RUN mkdir -p /app/apps/backend/data && chown node:node /app/apps/backend/data
 
 WORKDIR /app/apps/backend

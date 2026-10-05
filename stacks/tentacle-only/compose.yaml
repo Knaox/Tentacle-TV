@@ -23,6 +23,7 @@ services:
     restart: unless-stopped
     environment:
       TENTACLE_STACK: only
+      TENTACLE_HOST_PORT: ${TENTACLE_PORT:-3000} # the setup link printed in the logs
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
       TZ: ${TZ:-Europe/Paris}
