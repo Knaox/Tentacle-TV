@@ -56,3 +56,16 @@ accepté qu'après 4 s de calme (`NULL_FOCUS_QUIET_MS` du banc) : pendant un
 défilement, il tombe au bord de la reprise automatique. Les défilements
 (`lec-05` au bouton ⏩, `lec-06` au maintien, `lec-08` au pavé) s'ouvrent et se
 ferment donc dans le même pas, sans relevé entre les gestes.
+
+## Démarrage du lecteur d'Android TV : trois MKV
+
+`flux-h264-ac3`, `flux-hevc-eac3` et `flux-hdr10-eac3` font du même film un MKV
+1080p à 23,976 i/s (la bascule de fréquence d'affichage), son 5.1 en AC-3 ou
+E-AC-3 (le passthrough), HDR10 pour le dernier — 90 s, générés une fois :
+
+```bash
+cd ~/Library/Caches/tentacle-nav-golden/lecteur
+ffmpeg -f lavfi -i "testsrc2=size=1920x1080:rate=24000/1001:duration=90" -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=90,aformat=channel_layouts=5.1" -c:v libx264 -preset ultrafast -tune zerolatency -b:v 6M -g 48 -pix_fmt yuv420p -c:a ac3 -b:a 384k banc-h264-ac3.mkv
+ffmpeg -f lavfi -i "testsrc2=size=1920x1080:rate=24000/1001:duration=90" -f lavfi -i "sine=frequency=660:sample_rate=48000:duration=90,aformat=channel_layouts=5.1" -c:v libx265 -preset ultrafast -x265-params "keyint=48" -b:v 5M -pix_fmt yuv420p -tag:v hvc1 -c:a eac3 -b:a 384k banc-hevc-eac3.mkv
+ffmpeg -f lavfi -i "testsrc2=size=1920x1080:rate=24000/1001:duration=90" -f lavfi -i "sine=frequency=880:sample_rate=48000:duration=90,aformat=channel_layouts=5.1" -c:v libx265 -preset ultrafast -pix_fmt yuv420p10le -x265-params "keyint=48:colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc:master-display=G(13250,34500)B(7500,3000)R(34000,16000)WP(15635,16450)L(10000000,1):max-cll=1000,400:hdr10=1" -b:v 6M -tag:v hvc1 -color_primaries bt2020 -color_trc smpte2084 -colorspace bt2020nc -c:a eac3 -b:a 384k banc-hdr10-eac3.mkv
+```
