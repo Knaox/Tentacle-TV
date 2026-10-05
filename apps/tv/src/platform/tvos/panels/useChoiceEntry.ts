@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CHOICE_ENTRY_RELEASE_MS, createChoiceEntry } from "@tentacle-tv/tv-core";
 import { setFocusLocked } from "../focus/focusLocks";
 import type { FocusStore } from "../focus/focusStore";
+import { useChoiceEntryClaim } from "./choiceEntryClaim";
 
 /**
  * Applique le verrou d'entrée d'une liste en `Modal` (tv-core
@@ -23,6 +24,8 @@ export function useChoiceEntry(focus: FocusStore, keys: readonly string[], entry
     for (const key of locks.unlock) setFocusLocked(focus, key, false);
     for (const key of locks.lock) setFocusLocked(focus, key, true);
   }
+  // Android : la Modal ne focalise rien d'elle-même — l'entrée est réclamée.
+  useChoiceEntryClaim(focus, entryKey);
   useEffect(() => {
     if (!entryKey) return undefined;
     const free = (freed: readonly string[] | null) => {
