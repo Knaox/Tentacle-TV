@@ -20,6 +20,7 @@ import { adminJellyfinCompatRoutes } from "./adminJellyfinCompat";
 import { adminJellyfinSetupRoutes } from "./adminJellyfinSetup";
 import { adminServerLinksRoutes } from "./adminServerLinks";
 import { adminServerUpdateRoutes } from "./adminServerUpdate";
+import { remoteAccessRoutes } from "../remoteAccess/remoteAccessRoutes";
 
 export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAdmin);
@@ -53,6 +54,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Mise à jour du serveur : version en service, dernière publiée, installation (hérite de requireAdmin).
   await app.register(adminServerUpdateRoutes);
+
+  // Accès à distance : réglages et test d'ouverture (requireAdmin, puis session personnelle seulement).
+  await app.register(remoteAccessRoutes);
 
   /** GET /api/admin/public-url — Read the public server URL (DB value + env fallback). */
   app.get("/public-url", async () => {
