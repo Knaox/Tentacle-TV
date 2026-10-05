@@ -52,7 +52,10 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/my-devices",
     { preHandler: [requireAuth] },
-    async (request) => {
+    async (request, reply) => {
+      // Jamais servie d'un cache (navigateur, mandataire) : relue après un
+      // déjumelage, elle doit dire l'état du serveur à l'instant.
+      reply.header("Cache-Control", "private, no-store");
       const user = (request as unknown as { user: JellyfinUser }).user;
       // Les jumelages seulement : une session de profil n'est pas un appareil.
       const devices = await getPrisma().pairedDevice.findMany({
@@ -84,7 +87,8 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
   );
 
   // ── GET /devices — List paired devices (admin only) ──
-  app.get("/devices", { preHandler: [requireAdmin] }, async () => {
+  app.get("/devices", { preHandler: [requireAdmin] }, async (_request, reply) => {
+    reply.header("Cache-Control", "private, no-store");
     const devices = await getPrisma().pairedDevice.findMany({
       where: { parentId: null },
       orderBy: { createdAt: "desc" },

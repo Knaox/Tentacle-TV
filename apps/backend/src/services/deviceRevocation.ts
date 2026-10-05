@@ -1,5 +1,6 @@
 import { forgetValidatedToken } from "../middleware/auth";
 import { getPrisma } from "./db";
+import { retryOnWriteConflict } from "./dbRetry";
 import { pairedDeviceIdForHash } from "./deviceSessions/deviceAuth";
 import { endPairedDeviceSessions } from "./deviceSessions/gateway";
 import { forgetJellyfinTokenOwner } from "./deviceTokenHealth";
@@ -86,16 +87,25 @@ export async function revokePairedDevice(
     }
   }
 
-  await prisma.$transaction(async (tx) => {
-    if (device.jellyfinDeviceId) {
-      await tx.pairedDeviceCleanup.upsert({
-        where: { jellyfinDeviceId: device.jellyfinDeviceId },
-        create: { jellyfinDeviceId: device.jellyfinDeviceId, tokenHash: device.tokenHash, reason: "revoked" },
-        update: { reason: "revoked", nextAttemptAt: new Date() },
-      });
-    }
-    await tx.pairedDevice.deleteMany({ where: { id: device.id } });
-  });
+  // MariaDB 11 (isolation par instantané) refuse la transaction si la ligne a
+  // bougé depuis sa lecture — `lastSeen`, ou le jeton Jellyfin que le serveur
+  // pose juste après un jumelage (erreur 1020) : la TV restait alors jumelée.
+  // On RELIT dans la transaction, et on rejoue le tout (`dbRetry.ts`).
+  const jellyfinDeviceId = await retryOnWriteConflict(() =>
+    prisma.$transaction(async (tx) => {
+      const fresh = await tx.pairedDevice.findUnique({ where: { id: device.id }, select: { jellyfinDeviceId: true } });
+      const deviceId = fresh ? fresh.jellyfinDeviceId : device.jellyfinDeviceId;
+      if (deviceId) {
+        await tx.pairedDeviceCleanup.upsert({
+          where: { jellyfinDeviceId: deviceId },
+          create: { jellyfinDeviceId: deviceId, tokenHash: device.tokenHash, reason: "revoked" },
+          update: { reason: "revoked", nextAttemptAt: new Date() },
+        });
+      }
+      await tx.pairedDevice.deleteMany({ where: { id: device.id } });
+      return deviceId;
+    }),
+  );
 
   markDeviceRevoked(device.tokenHash);
   if (device.jellyfinAccessToken) {
@@ -113,7 +123,7 @@ export async function revokePairedDevice(
     console.log(`[Jumelage] Appareil ${device.id} révoqué (${reason})`);
   }
 
-  pending.push(settle(device.tokenHash, device.jellyfinDeviceId));
+  pending.push(settle(device.tokenHash, jellyfinDeviceId));
   return { settled: Promise.all(pending).then(() => undefined) };
 }
 
