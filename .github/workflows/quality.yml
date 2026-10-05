@@ -1,8 +1,8 @@
 # Tentacle TV — le garde-fou de qualité
 #
 # Le SEUL workflow qui juge le code plutôt que de le livrer. Il tourne sur les
-# poussées vers `main` et sur les pull requests ; il ne construit rien, ne signe
-# rien, ne publie rien.
+# poussées vers `main` et vers `dev` (dont l'image `:dev` l'attend), et sur les
+# pull requests ; il ne construit rien, ne signe rien, ne publie rien.
 #
 # POURQUOI IL EXISTE. Il n'y en avait aucun : sur les sept workflows du dépôt,
 # seul `webos.yml` jouait `typecheck` et les tests, et uniquement au moment
@@ -40,7 +40,7 @@ name: Qualité
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "dev"]
   pull_request:
   workflow_dispatch:
 

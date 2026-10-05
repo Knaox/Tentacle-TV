@@ -14,6 +14,12 @@
 #   • store — `:latest` bascule et la Release GitHub `server-vX.Y.Z` est créée.
 #             C'est ce cran, et lui seul, qui met en service.
 #
+# ET UN CRAN DE DÉVELOPPEMENT, « dev » : `:dev` et `:dev-<sha>`, jamais
+# `:latest` ni `:vX.Y.Z`, ni Release, ni bump — l'image de la branche `dev`,
+# pour qui veut l'éprouver avant une livraison. C'est la SEULE exception au
+# « rien ne part d'un push » : une poussée sur `dev` qui touche le serveur le
+# lance d'elle-même (et rend sans objet la précédente, encore en cours).
+#
 # L'image Docker EST le serveur : une seule cible, `docker`.
 #
 # ⚠️ LE CLIENT LG N'EN FAIT PLUS PARTIE. L'image sert aussi, sous /tv, le client
@@ -41,16 +47,37 @@ on:
       channel:
         description: "Jusqu'où aller"
         type: choice
-        options: [build, test, store]
+        options: [build, test, store, dev]
         default: test
       version:
         description: "Version X.Y.Z à livrer (vide = versions.json inchangé)"
         type: string
         default: ""
+  # Le cran dev, et lui seul : ce qui change l'image du serveur, sur `dev`.
+  push:
+    branches: [dev]
+    paths:
+      - "apps/backend/**"
+      - "apps/web/**"
+      - "packages/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "patches/**"
+      - "versions.json"
+      - "compat/jellyfin.json"
+      - ".github/workflows/server.yml"
+      - ".github/workflows/server-image.yml"
+      - ".github/scripts/lib/server-image.mjs"
+      - ".github/scripts/server-image-plan.mjs"
 
+# Les livraisons s'attendent (rien ne s'y perd). Une poussée sur dev rend la
+# précédente sans objet : elle l'annule.
 concurrency:
-  group: release-server
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'push' && 'server-dev' || 'release-server' }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   # ── Ce qui rend tout le reste reproductible (voir mobile.yml, même forme) ──
@@ -64,8 +91,15 @@ jobs:
     outputs:
       sha: ${{ steps.plan.outputs.sha }}
       version: ${{ steps.plan.outputs.version }}
-      channel: ${{ inputs.channel }}
+      # Une poussée sur dev n'a pas d'entrées : c'est le cran dev.
+      channel: ${{ inputs.channel || 'dev' }}
     steps:
+      - name: Le cran dev ne bumpe jamais
+        if: inputs.channel == 'dev' && inputs.version != ''
+        run: |
+          echo "::error::Le cran dev publie :dev sans toucher aux versions : laisse « version » vide."
+          exit 1
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -102,7 +136,7 @@ jobs:
           SHA="${BUMPED_SHA:-${{ github.sha }}}"
           git checkout --quiet "$SHA"
           VERSION=$(jq -r .server versions.json)
-          echo "Serveur ${VERSION} — cran ${{ inputs.channel }} · sha ${SHA}"
+          echo "Serveur ${VERSION} — cran ${{ inputs.channel || 'dev' }} · sha ${SHA}"
           { echo "sha=$SHA"; echo "version=$VERSION"; } >> "$GITHUB_OUTPUT"
 
       - name: Pré-vol des notes de version

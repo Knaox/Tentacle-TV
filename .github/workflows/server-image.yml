@@ -26,7 +26,9 @@
 #   | webos  | :vS-webos-W         | :vS-webos-W + :latest          | server-vS-webos-W         |
 #   |        |                     |                                | (server-webos.md, [W])    |
 #
-# Au cran build, l'image est construite et rien n'est poussé.
+# Au cran build, l'image est construite et rien n'est poussé. Au cran dev
+# (serveur seulement, la branche `dev`) : `:dev` + `:dev-<sha>`, jamais
+# `:latest`, aucune Release.
 #
 # LA BASCULE DE `:latest` EST UN COMPARE-AND-SWAP. Le plan note l'empreinte de
 # `:latest` ; le job qui la bascule la relit juste avant d'écrire et refuse si
@@ -44,7 +46,7 @@ on:
         type: string
         required: true
       channel:
-        description: "build | test | store"
+        description: "build | test | store | dev (serveur seulement)"
         type: string
         required: true
       sha:

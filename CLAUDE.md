@@ -40,6 +40,7 @@ pnpm docker:logs      # Tail container logs
 
 # Livrer — voir « Livraison » plus bas. RIEN ne part d'un push :
 # tout passe par un déclenchement de workflow, depuis « Tentacle Deploy.html ».
+# Seule exception : une poussée sur la branche `dev` publie l'image `:dev`.
 gh workflow run server.yml -f channel=store   # le serveur, par exemple
 ```
 
@@ -75,6 +76,14 @@ une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
 | `build` | Construit et archive les artefacts. **Rien ne part nulle part.** |
 | `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`, image en `:vS-webos-X.Y.Z` sans bouger `:latest`. **Publié, sans aucun geste ensuite.** |
 | `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé (par le serveur OU par webOS). **En ligne, sans un clic de plus.** |
+
+**Le cran `dev` (serveur seulement)** : l'image de la branche `dev`, pour qui
+veut l'éprouver avant une livraison — `ghcr.io/knaox/tentacle-tv:dev` et
+`:dev-<sha8>`, jamais `:latest` ni `:vX.Y.Z`, aucune Release, aucun bump.
+SEULE exception au « rien ne part d'un push » : une poussée sur `dev` qui
+touche le serveur lance `server.yml` d'elle-même (filtre `paths`, et la
+précédente encore en cours est annulée) ; `quality.yml` tourne aussi sur `dev`
+et garde ce cran comme les autres. La page de déploiement le propose aussi.
 
 `promote` (le défaut au cran store) reprend **le binaire déjà testé** au lieu
 d'en reconstruire un autre. Windows fait exception : le Microsoft Store exige le

@@ -3,7 +3,7 @@
 // « :latest » et « :v1.22.0 » sont la même image, sans aucun label.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { LABELS, PlanError, planServerImage, webosTag } from '../lib/server-image.mjs';
+import { devTag, LABELS, PlanError, planServerImage, webosTag } from '../lib/server-image.mjs';
 
 const IMAGE = 'ghcr.io/knaox/tentacle-tv';
 const SHA = 'a'.repeat(40);
@@ -47,6 +47,21 @@ test('serveur : étiquettes, bascule et Release selon le cran', () => {
   assert.equal(store.release.changelog, 'changelogs/server.md');
   assert.equal(store.release.version, '1.22.1');
   assert.equal(store.release.latest, true);
+});
+
+test('serveur au cran dev : « :dev » et son commit, jamais « :latest » ni de Release', () => {
+  const dev = planServerImage(server('dev'), { production: unlabeled1220 });
+  assert.equal(dev.push, true);
+  assert.deepEqual(dev.tags, ['dev', 'dev-aaaaaaaa']);
+  assert.equal(dev.expectLatest, '', ':latest ne bouge pas au cran dev');
+  assert.equal(dev.release, null);
+  assert.deepEqual(dev.contexts, [`tv-client-build=docker-image://${IMAGE}@${D_1220}`]);
+  assert.equal(devTag('0123456789abcdef'.repeat(2) + '01234567'), 'dev-01234567');
+  assert.ok(dev.notices.some((n) => /Cran dev/.test(n.text)));
+});
+
+test('webOS n\'a pas de cran dev', () => {
+  assert.throws(() => planServerImage(webos('dev'), { production: unlabeled1220, base: unlabeled1220 }), PlanError);
 });
 
 test('serveur : un client non étiqueté est repris tel quel, et le label le dit', () => {

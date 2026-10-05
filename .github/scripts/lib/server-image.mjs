@@ -31,7 +31,13 @@ export const LABELS = {
 };
 
 export const MODES = ['server', 'webos'];
-export const CHANNELS = ['build', 'test', 'store'];
+// « dev » : l'image de la branche dev, pour qui veut l'éprouver avant une
+// livraison — `:dev` et `:dev-<sha>`, jamais `:latest` ni `:vX.Y.Z`, ni
+// Release. Le serveur seulement : le client LG n'a pas de cran dev.
+export const CHANNELS = ['build', 'test', 'store', 'dev'];
+
+/** L'étiquette d'une image de développement, épinglée à son commit. */
+export const devTag = (sha) => `dev-${sha.slice(0, 8)}`;
 
 /** Une décision impossible : le message dit pourquoi et quoi faire. */
 export class PlanError extends Error {}
@@ -85,8 +91,12 @@ function planServer(p, production) {
   const clientText = clientVersion
     ? `${clientVersion}, inchangé — celui de l'image en service`
     : 'inchangé — celui de l\'image en service (non étiqueté : antérieur à la livraison webOS séparée)';
+  if (p.channel === 'dev') {
+    notices.push({ level: 'notice', text: `Cran dev : « :dev » et « :${devTag(p.sha)} » seulement — « :latest » et `
+      + `« :v${S} » ne bougent pas, aucune Release.` });
+  }
 
-  const tags = { build: [], test: [`v${S}`], store: [`v${S}`, 'latest'] }[p.channel];
+  const tags = { build: [], test: [`v${S}`], store: [`v${S}`, 'latest'], dev: ['dev', devTag(p.sha)] }[p.channel];
   return {
     mode: 'server',
     channel: p.channel,
@@ -126,6 +136,9 @@ function planServer(p, production) {
 function planWebos(p, production, base) {
   const S = p.serverVersion;
   const W = p.webosVersion;
+  if (p.channel === 'dev') {
+    throw new PlanError('Le cran dev ne vaut que pour le serveur (server.yml) : le client LG se livre au cran test ou store.');
+  }
   if (!isVersion(W)) throw new PlanError(`version webOS illisible : « ${W} ».`);
   if (!isVersion(p.minServer)) throw new PlanError(`minServer illisible : « ${p.minServer} ».`);
   if (!p.clientDir) throw new PlanError('répertoire du client LG manquant.');

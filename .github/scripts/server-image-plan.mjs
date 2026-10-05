@@ -2,7 +2,7 @@
 // pour quiconque veut savoir, AVANT de lancer, ce qu'une livraison ferait.
 //
 //   node .github/scripts/server-image-plan.mjs plan --mode server|webos \
-//     --channel build|test|store --sha <sha> [--image ghcr.io/knaox/tentacle-tv] \
+//     --channel build|test|store|dev --sha <sha> [--image ghcr.io/knaox/tentacle-tv] \
 //     [--client-dir tv-client-dist] [--versions versions.json]
 //   node .github/scripts/server-image-plan.mjs digest <image:étiquette>
 //
@@ -115,7 +115,7 @@ async function digest() {
 
 const commands = { plan, digest };
 if (!commands[command]) {
-  console.error('usage : server-image-plan.mjs plan --mode server|webos --channel build|test|store --sha <sha> | digest <ref>');
+  console.error('usage : server-image-plan.mjs plan --mode server|webos --channel build|test|store|dev --sha <sha> | digest <ref>');
   process.exit(1);
 }
 try {
