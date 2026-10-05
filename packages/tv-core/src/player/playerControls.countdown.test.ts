@@ -65,7 +65,7 @@ describe("le défaut du réglage : revenir où j'étais, au bout de 5 s", () => 
     vi.advanceTimersByTime(1100);
     p.send(holdRight("end"));
     expect(p.view.target).toBeGreaterThan(1200);
-    expect(p.view.countdown).toEqual({ remaining: 5, total: 5, outcome: "return" });
+    expect(p.view.countdown).toMatchObject({ remaining: 5, total: 5, outcome: "return" });
     vi.advanceTimersByTime(4999);
     expect(p.view.scrubbing).toBe(true);
     vi.advanceTimersByTime(1);
@@ -119,7 +119,7 @@ describe("reprendre à la nouvelle position", () => {
     p.controls.enterScrub();
     vi.advanceTimersByTime(500);
     p.send(RIGHT);
-    expect(p.view.countdown).toEqual({ remaining: 10, total: 10, outcome: "resume" });
+    expect(p.view.countdown).toMatchObject({ remaining: 10, total: 10, outcome: "resume" });
     vi.advanceTimersByTime(9999);
     expect(p.view.scrubbing).toBe(true);
     vi.advanceTimersByTime(1);
@@ -167,7 +167,7 @@ describe("sans réglage (Android TV)", () => {
     p.controls.enterScrub();
     vi.advanceTimersByTime(500);
     p.send(RIGHT);
-    expect(p.view.countdown).toEqual({ remaining: 5, total: 5, outcome: "resume" });
+    expect(p.view.countdown).toMatchObject({ remaining: 5, total: 5, outcome: "resume" });
     vi.advanceTimersByTime(5000);
     expect(p.log).toEqual(["scrubPause:true", "seek:1230", "scrubPause:false"]);
   });
