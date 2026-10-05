@@ -211,12 +211,17 @@ export class FakeJellyfin {
     req.on("data", (chunk) => { raw += chunk; });
     req.on("end", () => {
       const token = tokenOf(req, url);
-      this.hits.push({ at: Date.now(), method: req.method ?? "GET", path: url.pathname, token, body: safeJson(raw) as Record<string, unknown> | null });
-      this.route(req.method ?? "GET", url, token, res);
+      const body = safeJson(raw) as Record<string, unknown> | null;
+      this.hits.push({ at: Date.now(), method: req.method ?? "GET", path: url.pathname, token, body });
+      this.route(req.method ?? "GET", url, token, res, req, body);
     });
   }
 
-  private route(method: string, url: URL, token: string | null, res: ServerResponse): void {
+  /** Des routes en plus (médias du banc web) : vrai si la requête est servie. */
+  extra: ((method: string, url: URL, req: IncomingMessage, res: ServerResponse, body: Record<string, unknown> | null) => boolean) | null = null;
+
+  private route(method: string, url: URL, token: string | null, res: ServerResponse, req?: IncomingMessage, body?: Record<string, unknown> | null): void {
+    if (req && this.extra?.(method, url, req, res, body ?? null)) return;
     const info = {
       LocalAddress: this.url, ServerName: "banc", Version: "10.11.11", ProductName: "Jellyfin Server",
       OperatingSystem: "", Id: SERVER_ID, StartupWizardCompleted: true,

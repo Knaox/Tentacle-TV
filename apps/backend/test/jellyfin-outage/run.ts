@@ -14,13 +14,12 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { seedBackendConfig, startBackend, startDatabase, stopDatabase } from "../jellyfin-compat/backendEnv";
-import { assertDockerReady } from "../jellyfin-compat/docker";
 import { Checks } from "../notif-e2e/checks";
-import { API_KEY, FakeJellyfin, sleep, type FakeUser } from "./fakeJellyfin";
+import { API_KEY, sleep, type FakeUser } from "./fakeJellyfin";
 import { FakePlayer } from "./players";
 import { RealClient } from "./realClient";
 import { apiRestart, dockerKill, dockerRestart, dockerStop, socketBlip, type Bench } from "./scenarios";
+import { startStack } from "./stack";
 
 const args = process.argv.slice(2);
 const keep = args.includes("--keep");
@@ -40,14 +39,8 @@ const USERS: FakeUser[] = ["bureau", "web", "mobile", "client-reel", "retardatai
 async function main(): Promise<number> {
   mkdirSync(runDir, { recursive: true });
   const log = (line: string): void => console.log(`[panne] ${line}`);
-  assertDockerReady();
-  const fake = new FakeJellyfin(FAKE_PORT, USERS);
-  await fake.start();
-  log(`faux Jellyfin sur ${fake.url}`);
-  const dbUrl = await startDatabase(DB, log);
-  await seedBackendConfig(dbUrl, { jellyfinUrl: fake.url, apiKey: API_KEY, adminUserId: USERS[0].Id });
-  const backend = await startBackend({ port: BACKEND_PORT, dbUrl, runDir });
-  log(`backend sur ${backend.url} (journal : ${join(runDir, "backend.log")})`);
+  const stack = await startStack({ users: USERS, runDir, fakePort: FAKE_PORT, backendPort: BACKEND_PORT, db: DB, keep, log });
+  const { fake, backend } = stack;
   const checks = new Checks();
   const measures: Bench["measures"] = {};
   const players = USERS.slice(0, 3).map((u) => new FakePlayer(u.Name, u.token, backend.url, ITEM));
@@ -82,9 +75,7 @@ async function main(): Promise<number> {
   } finally {
     for (const p of [...players, joiner, stranger]) p.close();
     client.stop();
-    await backend.stop();
-    await fake.stop();
-    if (!keep) stopDatabase(DB);
+    await stack.stop();
   }
   const report = { at: new Date().toISOString(), measures, results: checks.results };
   writeFileSync(join(runDir, "rapport.json"), JSON.stringify(report, null, 2));

@@ -13,6 +13,7 @@
     "bench:notifications": "tsx test/notif-e2e/run.ts",
     "test:jellyfin-compat": "tsx test/jellyfin-compat/run.ts",
     "bench:jellyfin-outage": "tsx test/jellyfin-outage/run.ts",
+    "bench:jellyfin-outage:web": "tsx test/jellyfin-outage/runWeb.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
