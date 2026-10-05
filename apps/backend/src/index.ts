@@ -17,7 +17,8 @@ import { applyPairingEpoch } from "./services/pairingEpoch";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
 
-import { setupRoutes } from "./routes/setup";
+import { setupWizardRoutes } from "./setup/setupWizardRoutes";
+import { bootSetup } from "./setup/setupRuntime";
 import { authRoutes } from "./routes/auth";
 import { inviteRoutes } from "./routes/invites";
 import { healthRoutes } from "./routes/health";
@@ -191,7 +192,7 @@ async function main() {
   registerBodyParsers(app);
 
   // ── Setup routes (always available) ──
-  await app.register(setupRoutes, { prefix: "/api/setup" });
+  await app.register(setupWizardRoutes, { prefix: "/api/setup" });
   await app.register(healthRoutes, { prefix: "/api" });
 
   // ── Theme routes (always available — clients need them pre-setup to boot) ──
@@ -340,6 +341,9 @@ async function main() {
 
   const state = getAppState();
   console.log(`[App] State: ${state}`);
+  // Installation ouverte : un code neuf dans les journaux, et le Jellyfin
+  // voisin (pile complète) verrouillé. Le port annoncé est celui de l'hôte.
+  bootSetup(process.env.TENTACLE_HOST_PORT || PORT);
 
   // Watch Together : présence (grâce de déconnexion, délivrance des invites).
   // Inconditionnel — le WS /api/ws est exempté du guard de setup.
