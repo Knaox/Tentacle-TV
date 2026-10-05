@@ -23,6 +23,11 @@ interface SwipeStackCardProps {
 }
 
 const SPRING = { type: "spring", stiffness: 420, damping: 32 } as const;
+
+/** Le pointeur a-t-il été relâché sur un bouton de la carte ? */
+function isOnButton(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("button") !== null;
+}
 /** Mouvement réduit : les cartes se remplacent en fondu — ni zoom ni glissement. */
 const REDUCED = { duration: 0, opacity: { duration: 0.12 } } as const;
 /** Mouvement réduit : une carte lâchée avant le seuil revient, vite et sans rebond. */
@@ -116,8 +121,13 @@ export const SwipeStackCard = memo(function SwipeStackCard({
       }}
       onTap={
         top && !binary
-          ? () => {
-              if (!dragged.current) onToggleInfo();
+          ? (event) => {
+              // Un bouton de la carte (ⓘ) fait son propre geste : framer-motion
+              // écoute le pointeur en NATIF sur la carte, le `stopPropagation`
+              // de React n'y peut rien — sans cette garde, le clic sur ⓘ
+              // basculait le verso deux fois, donc pas du tout (issue #8).
+              if (dragged.current || isOnButton(event.target)) return;
+              onToggleInfo();
             }
           : undefined
       }

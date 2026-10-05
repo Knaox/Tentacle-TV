@@ -57,6 +57,10 @@ export const SwipeControls = memo(function SwipeControls({
             <button
               type="button"
               onClick={onPress}
+              // Un clic de souris ne garde pas le focus : sinon Espace (le
+              // synopsis) rejouait le dernier bouton cliqué — un « j'aime » de
+              // plus au lieu du verso (issue #8). Le clavier (Tab) le garde.
+              onMouseDown={(e) => e.preventDefault()}
               disabled={off}
               aria-label={key === "undo" ? t("undo") : label}
               title={key === "undo" ? t("undo") : label}

@@ -69,6 +69,8 @@ export const SwipeCardFace = memo(function SwipeCardFace({
             onToggleInfo();
           }}
           onPointerDown={(e) => e.stopPropagation()}
+          // Pas de focus à la souris : Espace doit rester « synopsis » (cf. SwipeControls).
+          onMouseDown={(e) => e.preventDefault()}
           aria-expanded={infoOpen}
           aria-label={infoOpen ? t("hideInfo") : t("showInfo")}
           title={infoOpen ? t("hideInfo") : t("showInfo")}
