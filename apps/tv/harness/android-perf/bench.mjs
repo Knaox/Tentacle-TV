@@ -82,7 +82,13 @@ async function startBackend() {
   throw new Error(`le faux backend ne répond pas sur ${BACKEND_PORT} — ${path.join(CACHE, "backend.log")}`);
 }
 
+/** Les jeux du faux backend d'un scénario (nav-golden `/__fixtures`). */
+function applyFixtures(sets) {
+  execFileSync("curl", ["-s", "-X", "POST", `http://127.0.0.1:${BACKEND_PORT}/__fixtures`, "-d", JSON.stringify({ sets })], { stdio: "ignore" });
+}
+
 async function playScenario(device, scenario, traceFile, shotFile) {
+  applyFixtures(scenario.fixtures ?? ["base/vigie-off"]);
   device.forceStop();
   device.clearLog();
   const launchMs = device.launch();

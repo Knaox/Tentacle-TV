@@ -5,7 +5,8 @@
 //
 // Touches (`Keys.java`) : `tap:<code>`, `tap:<code>x<n>@<ms>`,
 // `hold:<code>:<ms>`, `wait:<ms>` — codes Android : 19 haut, 20 bas,
-// 21 gauche, 22 droite, 23 OK, 4 Retour.
+// 21 gauche, 22 droite, 23 OK, 4 Retour. `fixtures` : les jeux du faux
+// backend (nav-golden) le temps du scénario ; par défaut, sans Vigie.
 import { KEY } from "./device.mjs";
 
 const tap = (key, times, every) => (times ? `tap:${KEY[key]}x${times}@${every}` : `tap:${KEY[key]}`);
@@ -73,6 +74,14 @@ export const SCENARIOS = [
     setup: [tap("right"), wait(1500)],
     gesture: [tap("ok"), wait(3500), tap("down", 3, 800), wait(900), tap("up", 3, 800), wait(900), tap("back"), wait(1500)],
     steps: 8,
+  },
+  {
+    id: "lecteur",
+    title: "Le lecteur : « Orgueil et Préjugés » (MP4 du banc), OK fait paraître l'habillage, 3 sauts à droite, puis l'habillage s'efface",
+    fixtures: ["base/vigie-off", "lecteur/flux-mp4"],
+    setup: [tap("down"), wait(1500), tap("ok"), wait(7000)],
+    gesture: [tap("ok"), wait(1500), tap("right", 3, 700), wait(1500), wait(6500)],
+    steps: 5,
   },
   {
     id: "grille",
