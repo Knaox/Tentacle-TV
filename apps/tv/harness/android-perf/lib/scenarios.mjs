@@ -76,6 +76,13 @@ export const SCENARIOS = [
     steps: 8,
   },
   {
+    id: "recherche",
+    title: "La recherche : trois lettres tapées au clavier de l'écran (les résultats arrivent à chaque frappe)",
+    setup: [tap("left"), wait(900), tap("up"), wait(700), tap("ok"), wait(3000)],
+    gesture: [tap("ok"), wait(1800), tap("right"), wait(400), tap("ok"), wait(1800), tap("right"), wait(400), tap("ok"), wait(2500)],
+    steps: 3,
+  },
+  {
     id: "lecteur",
     title: "Le lecteur : « Orgueil et Préjugés » (MP4 du banc), OK fait paraître l'habillage, 3 sauts à droite, puis l'habillage s'efface",
     fixtures: ["base/vigie-off", "lecteur/flux-mp4"],
