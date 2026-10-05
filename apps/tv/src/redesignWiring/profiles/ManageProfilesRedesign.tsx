@@ -22,10 +22,9 @@ import type { RootStackParamList } from "../../navigation/types";
 import { refusalOfError } from "../../auth/profileOpening";
 import { leaveProfile } from "../../auth/profileSession";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
-import { openPairingKeyboard } from "../../platform/tvos/screens/pairing";
 import { useGuestColorsEntry, useManageFocus, useManageGroups } from "../../platform/tvos/screens/profiles";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
-import { KeyboardOpenerProvider } from "../../redesign/screens/pairing/keyboardOpener";
+import { KeyboardEntryProvider } from "../../redesign/screens/pairing/keyboardOpener";
 import { ManageProfilesView } from "../../redesign/screens/profiles/ManageProfilesView";
 import { useBackLayer } from "../back/BackScope";
 import { buildManageModel } from "./manageScreenModel";
@@ -33,6 +32,7 @@ import { SHOWN_CANDIDATES, candidateViews, freeColor, manageListModel } from "./
 import { useManageActions } from "./useManageActions";
 import { useFamilyCapability } from "./useFamilyCapability";
 import { useManageUnlock } from "./useManageUnlock";
+import { useHiddenKeyboard } from "../pairing/useHiddenKeyboard";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ManageProfiles">;
 
@@ -74,6 +74,8 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   useFamilyLive({ token: storage.getItem("tentacle_token"), enabled: ready });
 
   const store = useFocusStore();
+
+  const keyboardEntry = useHiddenKeyboard(store);
   useManageGroups(store);
   const pendingClaim = useRef<string | null>(null);
   // La liste de CE rendu, lue par le geste qui retire (il part après lui).
@@ -140,7 +142,7 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   return (
     <View style={styles.fill}>
       <FocusBindingProvider bind={store.binder}>
-        <KeyboardOpenerProvider value={openPairingKeyboard}>
+        <KeyboardEntryProvider value={keyboardEntry}>
           <ManageProfilesView
             model={model}
             onBack={back}
@@ -168,7 +170,7 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
             onDigit={unlock.digit}
             onErase={unlock.erase}
           />
-        </KeyboardOpenerProvider>
+        </KeyboardEntryProvider>
       </FocusBindingProvider>
     </View>
   );

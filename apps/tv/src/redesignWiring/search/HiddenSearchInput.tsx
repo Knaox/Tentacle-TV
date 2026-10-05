@@ -1,8 +1,11 @@
 import type { RefObject } from "react";
 import { StyleSheet, TextInput, type NativeSyntheticEvent, type TextInputEndEditingEventData, type TextInputSubmitEditingEventData } from "react-native";
 
+import { HIDDEN_INPUT_PROPS } from "../../platform/textEntry";
+
 /**
- * Le VRAI champ de la recherche sur tvOS : hors écran, jamais candidat du
+ * Le VRAI champ de la recherche (sur Android TV, non focalisable hors saisie :
+ * `platform/textEntry`) : hors écran, jamais candidat du
  * moteur de focus géométrique. Le bouton `search:field` de la vue le
  * focalise, ce qui fait monter le clavier système (et sa dictée) ; ce qu'on
  * y tape, dicte ou valide revient à l'écran.
@@ -23,6 +26,7 @@ export function HiddenSearchInput({ inputRef, value, onChangeText, onSubmitEditi
       onEndEditing={onEndEditing}
       returnKeyType="search"
       autoCorrect={false}
+      {...HIDDEN_INPUT_PROPS}
       style={styles.offscreen}
     />
   );

@@ -6,9 +6,9 @@ import { pairingBackAction, pairingEntryKey, type PairingBackAction } from "@ten
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../navigation/types";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
-import { openPairingKeyboard, useLoginErrorFocus, usePairingFocus, usePairingGroups } from "../../platform/tvos/screens/pairing";
+import { useLoginErrorFocus, usePairingFocus, usePairingGroups } from "../../platform/tvos/screens/pairing";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
-import { KeyboardOpenerProvider } from "../../redesign/screens/pairing/keyboardOpener";
+import { KeyboardEntryProvider } from "../../redesign/screens/pairing/keyboardOpener";
 import { PairingView } from "../../redesign/screens/pairing/PairingView";
 import { usePairingFlow, type PairingFlow, type PairingFlowOptions } from "../../hooks/usePairingFlow";
 import { useRelayPairingCode, useServerPairingCode } from "../../hooks/usePairingCode";
@@ -16,6 +16,7 @@ import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { useBackLayer } from "../back/BackScope";
 import { enrollIfAnnounced, openOnLaunch } from "../../auth/profileEnrollment";
 import { toPairingStep } from "./pairingModel";
+import { useHiddenKeyboard } from "./useHiddenKeyboard";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
 
@@ -94,6 +95,8 @@ export function PairingRedesign({ navigation }: Props) {
   const step = toPairingStep(flow, relay, server, serverUrl, portrait);
 
   const store = useFocusStore();
+
+  const keyboardEntry = useHiddenKeyboard(store);
   usePairingGroups(store);
   usePairingFocus(store, { entryKey: pairingEntryKey(step), arrival: step.kind });
   useLoginErrorFocus(store, step.kind === "manualLogin" ? step.error : null);
@@ -106,7 +109,7 @@ export function PairingRedesign({ navigation }: Props) {
   return (
     <View style={styles.fill}>
       <FocusBindingProvider bind={store.binder}>
-        <KeyboardOpenerProvider value={openPairingKeyboard}>
+        <KeyboardEntryProvider value={keyboardEntry}>
         <PairingView
           step={step}
           language={flow.language}
@@ -126,7 +129,7 @@ export function PairingRedesign({ navigation }: Props) {
           onLoginBack={flow.backToServer}
           onServerCodeBack={flow.backToLogin}
         />
-        </KeyboardOpenerProvider>
+        </KeyboardEntryProvider>
       </FocusBindingProvider>
     </View>
   );

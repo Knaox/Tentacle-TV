@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { Keyboard, type TextInput } from "react-native";
+import { useCallback, useMemo, useRef } from "react";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { SearchSubmitAnswer } from "@tentacle-tv/tv-core";
 import { useSpeechRecognition } from "../../../hooks/useSpeechRecognition";
@@ -7,6 +6,7 @@ import type { RootStackParamList } from "../../../navigation/types";
 import type { FocusStore } from "../../tvos/focus/focusStore";
 import { useSearchKeyboard as useSharedSearchKeyboard } from "../../tvos/screens/search";
 import type { SearchDictation } from "../../shared/screens/searchDictation";
+import { openHiddenInput } from "./hiddenInput";
 
 /**
  * L'applicateur Android TV de la RECHERCHE — le même écran que l'Apple TV, la
@@ -15,12 +15,11 @@ import type { SearchDictation } from "../../shared/screens/searchDictation";
  * changent, la SAISIE seulement :
  *
  * - le champ ouvre le clavier système d'Android (Gboard, clavier Leanback),
- *   comme il ouvre celui de tvOS. Mais un clavier d'Android qu'on referme par
- *   Retour ne retire PAS le focus du champ (tvOS, si) : le vrai champ, hors
- *   écran, le garderait, et la croix partirait de nulle part. À sa fermeture
- *   (`keyboardDidHide`), le champ est donc rendu (`blur`) : sa fin de saisie
- *   (`onEndEditing`) suit, et la règle commune rend le focus au clavier de
- *   l'écran (`SEARCH_KEYBOARD_CLOSED_KEY`), ou au premier résultat après une
+ *   comme il ouvre celui de tvOS, par le champ caché de la plateforme
+ *   (`openHiddenInput`) : non focalisable hors saisie, et rendu à la
+ *   fermeture du clavier — sa fin de saisie (`onEndEditing`) suit, et la
+ *   règle commune rend le focus au clavier de l'écran
+ *   (`SEARCH_KEYBOARD_CLOSED_KEY`), ou au premier résultat après une
  *   validation — comme sur Apple TV ;
  * - la dictée est celle de l'APP, par la touche micro du clavier à l'écran
  *   (`useSpeechRecognition`, le module natif `VoiceRecognition`) — tvOS
@@ -30,7 +29,7 @@ import type { SearchDictation } from "../../shared/screens/searchDictation";
 
 export { useSearchGroups } from "../../tvos/screens/search";
 
-/** Le clavier système : celui de l'Apple TV, plus le rendu du champ à sa fermeture. */
+/** Le clavier système : celui de l'Apple TV, ouvert par le champ caché d'Android. */
 export function useSearchKeyboard(
   focus: FocusStore,
   answer: SearchSubmitAnswer,
@@ -38,17 +37,11 @@ export function useSearchKeyboard(
   navigation: NativeStackNavigationProp<RootStackParamList>,
 ) {
   const keyboard = useSharedSearchKeyboard(focus, answer, firstKey, navigation);
-  useBlurOnKeyboardHide(keyboard.input.ref);
-  return keyboard;
-}
-
-function useBlurOnKeyboardHide(ref: React.RefObject<TextInput | null>): void {
-  useEffect(() => {
-    const subscription = Keyboard.addListener("keyboardDidHide", () => {
-      if (ref.current?.isFocused()) ref.current.blur();
-    });
-    return () => subscription.remove();
+  const { ref } = keyboard.input;
+  const onPressField = useCallback(() => {
+    if (ref.current) openHiddenInput(ref.current);
   }, [ref]);
+  return { ...keyboard, onPressField };
 }
 
 export type { SearchDictation };

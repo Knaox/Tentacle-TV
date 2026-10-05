@@ -6,7 +6,7 @@ import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim } from "../../theme/tokens";
-import { useKeyboardOpener } from "./keyboardOpener";
+import { useKeyboardEntry } from "./keyboardOpener";
 
 /**
  * Un champ du jumelage — l'adresse du serveur, l'identifiant, le mot de passe :
@@ -24,7 +24,7 @@ import { useKeyboardOpener } from "./keyboardOpener";
  * titre aussi le clavier système.
  *
  * Le geste natif d'ouverture n'est pas ici : la plateforme le fournit
- * (`useKeyboardOpener`, son applicateur) — il oublie d'abord un focus périmé
+ * (`useKeyboardEntry`, son applicateur) — il oublie d'abord un focus périmé
  * du champ, qu'un clavier qui n'a pas paru laisse derrière lui.
  */
 
@@ -60,11 +60,12 @@ export const PairingField = memo(
     ref,
   ) {
     const input = useRef<TextInput>(null);
-    const openKeyboard = useKeyboardOpener();
+    const entry = useKeyboardEntry();
+    const openKeyboard = entry?.open;
     const open = useCallback(() => {
       const field = input.current;
-      if (field) openKeyboard?.(field);
-    }, [openKeyboard]);
+      if (field) openKeyboard?.(field, focusKey);
+    }, [openKeyboard, focusKey]);
     useImperativeHandle(ref, () => ({ open }), [open]);
     const shown = secure ? "•".repeat(Math.min(value.length, MAX_DOTS)) : value;
     return (
@@ -84,6 +85,7 @@ export const PairingField = memo(
           autoCorrect={false}
           spellCheck={false}
           {...keyboard}
+          {...entry?.hiddenInputProps}
           style={styles.hiddenInput}
         />
       </View>
