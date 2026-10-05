@@ -37,6 +37,12 @@ class PerfModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
     if (PerfConfig.enabled) FrameWindows.commit(components, mounts, updates)
   }
 
+  /** Ce que Reanimated a envoyé au natif depuis le dernier relevé : vues mises à jour, images. */
+  @ReactMethod
+  fun reanimated(updates: Int, flushes: Int) {
+    if (PerfConfig.enabled) FrameWindows.reanimated(updates, flushes)
+  }
+
   override fun onHostResume() {
     reactApplicationContext.currentActivity?.let(::watch)
   }

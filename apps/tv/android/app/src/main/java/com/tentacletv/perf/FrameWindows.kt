@@ -34,6 +34,7 @@ internal object FrameWindows {
   private var window: FrameWindow? = null
   private val pendingLabels = LinkedHashMap<String, Int>()
   private val pendingReact = IntArray(4)
+  private val pendingRea = IntArray(2)
   private var screenMarkAtMs = 0L
   private var screenName: String? = null
   private var startupReported = false
@@ -98,6 +99,19 @@ internal object FrameWindows {
     }
   }
 
+  fun reanimated(updates: Int, flushes: Int) {
+    handler.post {
+      val open = window
+      if (open != null) {
+        open.reaUpdates += updates
+        open.reaFlushes += flushes
+      } else {
+        pendingRea[0] += updates
+        pendingRea[1] += flushes
+      }
+    }
+  }
+
   /** Un écran affiché (« écran:… ») ou prêt (« prêt:… ») : le temps du chargement. */
   private fun reportReady(label: String, atMs: Long) {
     if (label.startsWith("écran:")) {
@@ -140,6 +154,9 @@ internal object FrameWindows {
       opened.updates += pendingReact[3]
       pendingReact.fill(0)
     }
+    opened.reaUpdates += pendingRea[0]
+    opened.reaFlushes += pendingRea[1]
+    pendingRea.fill(0)
     window = opened
     return opened
   }

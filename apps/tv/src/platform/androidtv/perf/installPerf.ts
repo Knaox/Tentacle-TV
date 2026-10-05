@@ -1,7 +1,8 @@
+import { runOnJS, runOnUI } from "react-native-reanimated";
 import { countCommit, perfLabelOf, type FiberLike } from "@tentacle-tv/tv-core/render";
 import { navigationRef } from "../../../navigation/navigationRef";
 import { androidTvInput } from "../input";
-import { PERF_ENABLED, perfCommit, perfMark } from "./perfNative";
+import { PERF_ENABLED, perfCommit, perfMark, perfReanimated } from "./perfNative";
 
 /**
  * Le branchement du mode de mesure (`perfNative`), au tout début du
@@ -12,7 +13,10 @@ import { PERF_ENABLED, perfCommit, perfMark } from "./perfNative";
  *   chaque validation, même en production ; on y compte les composants rendus
  *   et les vues créées ou changées (tv-core `countCommit`) ;
  * - les GESTES de la télécommande (observés, jamais pris) et l'ÉCRAN courant
- *   nomment les fenêtres d'images du journal.
+ *   nomment les fenêtres d'images du journal ;
+ * - les mises à jour de vues que REANIMATED envoie au natif à chaque image
+ *   (`_updatePropsPaper`, enveloppé sur son runtime d'interface) : le premier
+ *   poste du fil UI pendant une animation.
  *
  * Éteint (le cas de toute build livrée, sauf propriété posée), rien n'est
  * installé.
@@ -64,8 +68,44 @@ function installCommitHook(): void {
   };
 }
 
+/**
+ * Les mises à jour de Reanimated, comptées sur son runtime d'interface :
+ * chaque image, `UpdatePropsManager.flush` envoie ses opérations par
+ * `_updatePropsPaper` — enveloppé ici, relevé toutes les 200 ms. Lancé après
+ * l'app : Reanimated doit être prêt (et ses imports, inlinés par Metro, ne se
+ * chargent qu'ici — jamais avant le moteur de React).
+ */
+function countReanimatedUpdates(): void {
+  runOnUI(() => {
+    "worklet";
+    const scope = globalThis as unknown as Record<string, unknown>;
+    if (scope.__tentaclePerfOps !== undefined) return;
+    scope.__tentaclePerfOps = 0;
+    scope.__tentaclePerfFlushes = 0;
+    const original = scope._updatePropsPaper as (operations: unknown[]) => void;
+    scope._updatePropsPaper = (operations: unknown[]) => {
+      scope.__tentaclePerfOps = (scope.__tentaclePerfOps as number) + operations.length;
+      scope.__tentaclePerfFlushes = (scope.__tentaclePerfFlushes as number) + 1;
+      original(operations);
+    };
+  })();
+  setInterval(() => {
+    runOnUI(() => {
+      "worklet";
+      const scope = globalThis as unknown as Record<string, number>;
+      const updates = scope.__tentaclePerfOps;
+      const flushes = scope.__tentaclePerfFlushes;
+      if (!updates) return;
+      scope.__tentaclePerfOps = 0;
+      scope.__tentaclePerfFlushes = 0;
+      runOnJS(perfReanimated)(updates, flushes);
+    })();
+  }, 200);
+}
+
 if (PERF_ENABLED) {
   installCommitHook();
+  setTimeout(countReanimatedUpdates, 2000);
   androidTvInput.observe(({ intent }) => {
     const label = perfLabelOf(intent);
     if (label) perfMark(label);

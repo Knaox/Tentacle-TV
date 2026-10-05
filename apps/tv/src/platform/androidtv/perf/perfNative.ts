@@ -15,6 +15,7 @@ interface PerfNativeModule {
   enabled?: boolean;
   mark(label: string): void;
   commit(components: number, mounts: number, updates: number): void;
+  reanimated(updates: number, flushes: number): void;
 }
 
 const native = NativeModules.TentaclePerf as PerfNativeModule | undefined;
@@ -30,6 +31,11 @@ export function perfMark(label: string): void {
 /** Ce qu'une validation React a coûté (`installPerf`). */
 export function perfCommit(components: number, mounts: number, updates: number): void {
   if (PERF_ENABLED) native?.commit(components, mounts, updates);
+}
+
+/** Ce que Reanimated a envoyé au natif : vues mises à jour, images (`installPerf`). */
+export function perfReanimated(updates: number, flushes: number): void {
+  if (PERF_ENABLED) native?.reanimated(updates, flushes);
 }
 
 /**

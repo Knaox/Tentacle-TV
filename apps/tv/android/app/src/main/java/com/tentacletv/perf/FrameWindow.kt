@@ -36,6 +36,9 @@ internal class FrameWindow(val startedAtMs: Long, private val intervalNs: Long) 
   var components = 0
   var mounts = 0
   var updates = 0
+  /** Les vues que Reanimated a mises à jour, et en combien d'images (son rappel par image). */
+  var reaUpdates = 0
+  var reaFlushes = 0
 
   val frames: Int get() = samples.size
 
@@ -82,12 +85,13 @@ internal class FrameWindow(val startedAtMs: Long, private val intervalNs: Long) 
     fun ms(value: Double) = String.format(Locale.FRANCE, "%.1f", value)
     val totals = series { it[Phase.TOTAL.ordinal] }
     val react = if (commits > 0) " · React : $commits validations, $components composants, $mounts vues créées, $updates mises à jour" else ""
+    val rea = if (reaFlushes > 0) String.format(Locale.FRANCE, " · Reanimated : %d vues mises à jour en %d images (%.1f par image)", reaUpdates, reaFlushes, reaUpdates.toDouble() / reaFlushes) else ""
     val drops = if (dropped > 0) " ($dropped non relevées)" else ""
     val cpuJank = if (cpuOver[3] > 0) " (${cpuOver[3]} par le processeur)" else ""
     return "[perf] ${labelText()} — $frames images$drops, $janky ratée${if (janky > 1) "s" else ""}$cpuJank, $severe grave${if (severe > 1) "s" else ""}" +
       " · durée p50 ${ms(percentile(totals, 0.5))} · p95 ${ms(percentile(totals, 0.95))} · max ${ms(percentile(totals, 1.0))} ms" +
       " · fil UI p95 ${ms(percentile(series(::ui), 0.95))} (animations p95 ${ms(percentile(series { it[Phase.ANIM.ordinal] }, 0.95))})" +
-      " · rendu p95 ${ms(percentile(series(::render), 0.95))} ms$react"
+      " · rendu p95 ${ms(percentile(series(::render), 0.95))} ms$react$rea"
   }
 
   /** La même mesure, détaillée, pour le banc (`apps/tv/harness/android-perf`). */
@@ -101,6 +105,7 @@ internal class FrameWindow(val startedAtMs: Long, private val intervalNs: Long) 
       out.append(",\"$key\":{\"p50\":${num(percentile(sorted, 0.5))},\"p95\":${num(percentile(sorted, 0.95))},\"max\":${num(percentile(sorted, 1.0))},\"sum\":${num(sorted.sum() / 1e6)}}")
     }
     out.append(",\"cpuOver\":{\"2\":${cpuOver[0]},\"4\":${cpuOver[1]},\"8\":${cpuOver[2]},\"interval\":${cpuOver[3]}}")
+    out.append(",\"reaUpdates\":$reaUpdates,\"reaFlushes\":$reaFlushes")
     out.append(",\"commits\":$commits,\"components\":$components,\"mounts\":$mounts,\"updates\":$updates}")
     return out.toString()
   }
