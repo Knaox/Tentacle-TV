@@ -33,7 +33,11 @@ export function summarizeRound(records, cpu) {
   const sum = (pick) => windows.reduce((n, w) => n + pick(w), 0);
   const phases = Object.fromEntries(PHASES.map((key) => [key, sum((w) => w[key]?.sum ?? 0)]));
   const ready = records.find((record) => record.ready);
+  const stalls = records.filter((record) => record.stallMs);
   return {
+    stallCount: stalls.length,
+    stallMax: Math.max(0, ...stalls.map((s) => s.stallMs)),
+    stallMs: stalls.reduce((n, s) => n + s.stallMs, 0),
     windows: windows.length,
     frames: sum((w) => w.frames),
     janky: sum((w) => w.janky),
@@ -67,6 +71,8 @@ export function summarizeScenario(scenario, rounds) {
     janky: avg((r) => r.janky),
     severe: avg((r) => r.severe),
     worstP95: Math.max(...rounds.map((r) => r.worstP95)),
+    stallCount: avg((r) => r.stallCount ?? 0),
+    stallMax: Math.max(...rounds.map((r) => r.stallMax ?? 0)),
     worstFrame: Math.max(...rounds.map((r) => r.worstFrame)),
     phases: Object.fromEntries(PHASES.map((key) => [key, avg((r) => r.phases[key])])),
     uiWork: avg((r) => r.uiWork),
@@ -77,6 +83,7 @@ export function summarizeScenario(scenario, rounds) {
     cpu: Object.fromEntries([...groups].map((g) => [g, avg((r) => r.cpu?.[g] ?? 0)])),
     readyMs: rounds.some((r) => r.readyMs !== null) ? avg((r) => r.readyMs ?? 0) : null,
     launchMs: rounds.some((r) => r.launchMs) ? avg((r) => r.launchMs ?? 0) : null,
+    gfx: rounds.some((r) => r.gfx) ? { frames: avg((r) => r.gfx?.frames ?? 0), janky: avg((r) => r.gfx?.janky ?? 0), p90: Math.max(...rounds.map((r) => r.gfx?.p90 ?? 0)), p99: Math.max(...rounds.map((r) => r.gfx?.p99 ?? 0)) } : null,
     uploads: rounds.some((r) => r.trace) ? { count: avg((r) => r.trace?.uploads.count ?? 0), ms: avg((r) => r.trace?.uploads.ms ?? 0), bySize: rounds.find((r) => r.trace)?.trace.uploads.bySize.slice(0, 5) } : null,
   };
 }
@@ -90,9 +97,11 @@ export function describe(s) {
   return [
     `${s.id} — ${s.title}`,
     `  ${f0(s.frames)} images, ${f1(s.janky)} ratées (${f1((100 * s.janky) / Math.max(1, s.frames))} %), ${f1(s.severe)} graves · p95 pire ${f1(s.worstP95)} ms · pire image ${f1(s.worstFrame)} ms`,
+    ...(s.stallCount > 0 ? [`  fil UI bloqué : ${f1(s.stallCount)} fois (≥ 48 ms), au pire ${f0(s.stallMax)} ms`] : []),
     `  phases Σ (ms) : attente ${f0(s.phases.delay)} · anim ${f0(s.phases.anim)} · dessin ${f0(s.phases.draw)} · sync ${f0(s.phases.sync)} · cmd GPU ${f0(s.phases.issue)} · échange ${f0(s.phases.swap)}`,
     `  React par pas : ${f1(s.commits / s.steps)} validations, ${per(s.components)} composants, ${per(s.mounts)} vues créées, ${per(s.updates)} mises à jour`,
     `  CPU (ms) : ${Object.entries(s.cpu).sort((a, b) => b[1] - a[1]).map(([g, ms]) => `${g} ${f0(ms)}`).join(" · ")}`,
+    ...(s.gfx ? [`  gfxinfo (toutes fenêtres) : ${f0(s.gfx.frames)} images, ${f1(s.gfx.janky)} ratées, p90 ${f0(s.gfx.p90)} ms, p99 ${f0(s.gfx.p99)} ms`] : []),
     ...(s.uploads ? [`  textures envoyées : ${f1(s.uploads.count)} (${f0(s.uploads.ms)} ms) — ${s.uploads.bySize.map((u) => `${u.size} ×${u.count} ${f0(u.ms)} ms`).join(" · ")}`] : []),
     ...(s.readyMs !== null ? [`  prêt en ${f0(s.readyMs)} ms${s.launchMs ? ` (première image de l'activité ${f0(s.launchMs)} ms)` : ""}`] : []),
   ].join("\n");

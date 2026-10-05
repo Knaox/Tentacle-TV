@@ -104,12 +104,13 @@ async function playScenario(device, scenario, traceFile, shotFile) {
   await device.waitQuiet(1200);
   if (shotFile) device.screencap(shotFile);
   device.clearLog();
+  device.gfxReset();
   const before = device.threadCpu();
   if (traceFile) startTrace(device, PACKAGE);
   device.keys(...scenario.gesture);
   await device.waitQuiet(1500);
   const after = device.threadCpu();
-  const round = summarizeRound(device.perfRecords(), cpuDelta(before, after));
+  const round = { ...summarizeRound(device.perfRecords(), cpuDelta(before, after)), gfx: device.gfxStats() };
   if (!traceFile) return round;
   const text = stopTrace(device);
   fs.writeFileSync(traceFile, text);

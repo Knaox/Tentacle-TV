@@ -105,6 +105,23 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
       shell(`CLASSPATH=${KEYS_DEX} app_process /system/bin Keys ${steps.join(" ")}`, { timeout: 120_000 });
     },
 
+    /** Le décompte d'Android pour TOUTES les fenêtres du processus (une Modal
+     *  est une fenêtre à part, que FrameMetrics de l'activité ne voit pas). */
+    gfxReset() {
+      shell(`dumpsys gfxinfo ${PACKAGE} reset`);
+    },
+
+    gfxStats() {
+      const text = shell(`dumpsys gfxinfo ${PACKAGE}`);
+      const num = (re) => Number(text.match(re)?.[1] ?? NaN);
+      return {
+        frames: num(/Total frames rendered: (\d+)/),
+        janky: num(/Janky frames: (\d+)/),
+        p90: num(/90th percentile: (\d+)ms/),
+        p99: num(/99th percentile: (\d+)ms/),
+      };
+    },
+
     clearLog() {
       adb(["logcat", "-c"]);
     },
