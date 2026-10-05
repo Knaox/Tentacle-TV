@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { memo, useMemo } from "react";
+import { ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import type { CardModel } from "../../cards/cardTypes";
 import { Chip } from "../../controls/Chip";
@@ -116,24 +116,72 @@ export const SearchResults = memo(function SearchResults({
             );
           default:
             return (
-              <FocusSection key={section.key} focusKey={`section:${section.key}`} reveal={ROW_REVEAL} style={dim} onLayout={layout}>
-                <MediaRow
-                  rowKey={section.key}
-                  title={section.title}
-                  cards={section.cards}
-                  variant={section.key === "episodes" ? "landscape" : "poster"}
-                  cardWidth={section.key === "episodes" ? 340 : undefined}
-                  inset={RESULTS_CLIP}
-                  accessory={section.count ? <Text style={styles.count}>{section.count}</Text> : undefined}
-                  onPressCard={onPressCard ? (card) => onPressCard(section.key, card) : undefined}
-                  onLongPressCard={onLongPressCard ? (card) => onLongPressCard(section.key, card) : undefined}
-                  onFocusCard={onFocusCard ? (card) => onFocusCard(section.key, card) : undefined}
-                />
-              </FocusSection>
+              <ResultRow
+                key={section.key}
+                sectionKey={section.key}
+                title={section.title}
+                cards={section.cards}
+                count={section.count}
+                stale={stale}
+                onLayout={layout}
+                onPressCard={onPressCard}
+                onLongPressCard={onLongPressCard}
+                onFocusCard={onFocusCard}
+              />
             );
         }
       })}
     </ScrollView>
+  );
+});
+
+type SectionHandler = (sectionKey: string, card: CardModel) => void;
+
+/**
+ * Une rangée de résultats, ses gestionnaires liés à SA section une fois pour
+ * toutes : une frappe qui redessine les résultats ne redessine pas une rangée
+ * dont les cartes n'ont pas changé, ni ses cartes.
+ */
+const ResultRow = memo(function ResultRow({
+  sectionKey,
+  title,
+  cards,
+  count,
+  stale,
+  onLayout,
+  onPressCard,
+  onLongPressCard,
+  onFocusCard,
+}: {
+  sectionKey: string;
+  title: string;
+  cards: CardModel[];
+  count?: string;
+  stale: boolean;
+  onLayout: (event: LayoutChangeEvent) => void;
+  onPressCard?: SectionHandler;
+  onLongPressCard?: SectionHandler;
+  onFocusCard?: SectionHandler;
+}) {
+  const press = useMemo(() => (onPressCard ? (card: CardModel) => onPressCard(sectionKey, card) : undefined), [onPressCard, sectionKey]);
+  const longPress = useMemo(() => (onLongPressCard ? (card: CardModel) => onLongPressCard(sectionKey, card) : undefined), [onLongPressCard, sectionKey]);
+  const focus = useMemo(() => (onFocusCard ? (card: CardModel) => onFocusCard(sectionKey, card) : undefined), [onFocusCard, sectionKey]);
+  const accessory = useMemo(() => (count ? <Text style={styles.count}>{count}</Text> : undefined), [count]);
+  return (
+    <FocusSection focusKey={`section:${sectionKey}`} reveal={ROW_REVEAL} style={stale ? styles.stale : null} onLayout={onLayout}>
+      <MediaRow
+        rowKey={sectionKey}
+        title={title}
+        cards={cards}
+        variant={sectionKey === "episodes" ? "landscape" : "poster"}
+        cardWidth={sectionKey === "episodes" ? 340 : undefined}
+        inset={RESULTS_CLIP}
+        accessory={accessory}
+        onPressCard={press}
+        onLongPressCard={longPress}
+        onFocusCard={focus}
+      />
+    </FocusSection>
   );
 });
 
