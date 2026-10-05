@@ -4,6 +4,8 @@
  * `destinations` est un tableau, même vide, et le guide retombé en simple
  * vue devenait une cible invisible (le pont du lecteur l'a payé :
  * `BridgeGuide`). Android TV a sa variante (`guideFocusable.android.ts`).
+ * La seule règle de TOUS les guides : guides d'entrée, et ceux du lecteur
+ * (`playerFocusContainers`).
  */
 export function guideFocusable(hasTarget: boolean): false | undefined {
   return hasTarget ? undefined : false;

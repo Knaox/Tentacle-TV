@@ -9,7 +9,7 @@
  * et les GUIDES de l'habillage (`TVFocusGuideView` : `autoFocus`,
  * `destinations`, `trapFocus*` sont implémentés par `ReactViewGroup`).
  * Propre à Android : la croix verrouillée (`tvFocusable`, pas
- * `isTVSelectable`), et les guides vides (`tvos/player/emptyGuide.android.ts`).
+ * `isTVSelectable`), et les guides vides (`focus/guideFocusable`, commun à tous les guides).
  */
 export { PlayerBackground } from "../../tvos/player/PlayerBackground";
 export { PLAYER_GROUP_CONTAINERS, PlayerFocusStateProvider, type PlayerFocusState } from "../../tvos/player/playerFocusContainers";

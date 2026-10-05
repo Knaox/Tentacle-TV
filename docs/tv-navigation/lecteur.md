@@ -623,7 +623,7 @@ valent pour Android TV ; ce qui suit ne dit que ce qui diffère, et pourquoi.
 
 | Rôle | Apple TV | Android TV |
 |---|---|---|
-| Applicateurs du lecteur | `platform/tvos/player` | `platform/androidtv/player` — fond et guides repris (react-native-tvos sert `autoFocus`, `destinations`, `trapFocus*` sur Android, `ReactViewGroup`), croix verrouillée par `tvFocusable`, guides vides sans `focusable` (`emptyGuide.android.ts`) |
+| Applicateurs du lecteur | `platform/tvos/player` | `platform/androidtv/player` — fond et guides repris (react-native-tvos sert `autoFocus`, `destinations`, `trapFocus*` sur Android, `ReactViewGroup`), croix verrouillée par `tvFocusable`, guides vides sans `focusable` (`focus/guideFocusable`, la règle de tous les guides) |
 | Point d'entrée neutre | `platform/player/index.ts` | `platform/player/index.android.ts` |
 | Télécommande du lecteur | `usePlayerRemoteBinding` : `useRemoteIntents` → `playerRemoteSteps` | le même, sur l'entrée d'Android TV (`platform/input`, table `ANDROIDTV_BINDINGS`) |
 | Profil des flèches | `scrubInputProfileOf(traits)` | le même : maintien annoncé (`longLeft` 0 puis 1) → profil de l'Apple TV |
@@ -690,7 +690,7 @@ mettre en pause — est celui qu'on reproche au lecteur de Plex.
 - **Guides du lecteur** : sur Android, `TVFocusGuideView` rend `focusable` en
   `tvFocusable`, qui BLOQUE les descendants — et la prop retirée retombe à
   faux. Un pont ou un piège d'écran sans destination n'y reçoit donc rien
-  (`emptyGuide.android.ts`) : avant, la croix de la feuille des pistes était
+  (`focus/guideFocusable.android.ts`, unifié avec les guides d'entrée par A5) : avant, la croix de la feuille des pistes était
   inatteignable.
 
 ### 13.4 Les preuves
