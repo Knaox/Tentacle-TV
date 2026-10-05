@@ -8,17 +8,10 @@
  * l'identique sur Android : le FOND (`TouchableOpacity` focalisable, préféré),
  * et les GUIDES de l'habillage (`TVFocusGuideView` : `autoFocus`,
  * `destinations`, `trapFocus*` sont implémentés par `ReactViewGroup`).
- * Propres à Android : la croix verrouillée (`tvFocusable`, pas
- * `isTVSelectable`) et l'habillage effacé qui se démonte.
+ * Propre à Android : la croix verrouillée (`tvFocusable`, pas
+ * `isTVSelectable`), et les guides vides (`tvos/player/emptyGuide.android.ts`).
  */
 export { PlayerBackground } from "../../tvos/player/PlayerBackground";
 export { PLAYER_GROUP_CONTAINERS, PlayerFocusStateProvider, type PlayerFocusState } from "../../tvos/player/playerFocusContainers";
 export { END_EXIT_LOCK, withExitLock, withPreferredFocus } from "./playerFocusBindings";
 
-/**
- * L'habillage effacé se DÉMONTE : le moteur de focus d'Android ne tient pas
- * compte de la transparence — un bouton à opacité 0 reste atteignable depuis
- * le fond — et une vue cachée coûte encore ses rendus (la frise suit la
- * lecture chaque seconde).
- */
-export const CHROME_UNMOUNTS_WHEN_HIDDEN = true;
