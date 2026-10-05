@@ -57,7 +57,7 @@ export const RequestsPeek = memo(function RequestsPeek({ model, dark }: { model:
       ))}
       {model.count > 1 ? (
         <View style={styles.badge}>
-          <BrandGradient diagonal />
+          <BrandGradient diagonal style={styles.badgeFill} />
           <Text style={styles.badgeText}>{model.count > 99 ? "99+" : model.count}</Text>
         </View>
       ) : null}
@@ -92,6 +92,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: white(0.28),
   },
+  // Android ne rogne pas un dégradé enfant d'un parent arrondi sans fond : il prend l'arrondi lui-même (dans la bordure).
+  badgeFill: { borderRadius: 13 - 1.5 },
   badge: {
     position: "absolute",
     right: 0,

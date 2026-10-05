@@ -49,7 +49,7 @@ function UserScorePill({ score }: { score: number }) {
   const { t } = useTranslation();
   return (
     <View style={styles.userScore} accessibilityLabel={t("media:detailYourScoreValue", { score })}>
-      <BrandGradient />
+      <BrandGradient style={styles.userScoreFill} />
       <Svg width={20} height={20} viewBox={STAR_VIEWBOX}>
         <Path d={STAR_PATH} fill={colors.onAccent} />
       </Svg>
@@ -112,6 +112,8 @@ const styles = StyleSheet.create({
   episodeTitle: { ...text.title, fontSize: 64, lineHeight: 70, maxWidth: 1000 },
   seriesLink: { flexDirection: "row", marginTop: -2 },
   metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 16, marginTop: 6 },
+  // Android ne rogne pas un dégradé enfant d'un parent arrondi sans fond : il prend l'arrondi lui-même.
+  userScoreFill: { borderRadius: 18 },
   userScore: {
     flexDirection: "row",
     alignItems: "center",

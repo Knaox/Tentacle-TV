@@ -12,7 +12,7 @@ import { colors, fonts } from "../theme/tokens";
 export const CardBadge = memo(function CardBadge({ label, compact = false }: { label: string; compact?: boolean }) {
   return (
     <View pointerEvents="none" style={[styles.badge, compact && styles.compact]}>
-      <BrandGradient />
+      <BrandGradient style={styles.round} />
       <Text style={styles.text} numberOfLines={1}>{label}</Text>
     </View>
   );
@@ -29,6 +29,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
+  // Android ne rogne pas un dégradé enfant d'un parent arrondi sans fond : il prend l'arrondi lui-même.
+  round: { borderRadius: 17 },
   compact: { top: 10, left: 10, paddingHorizontal: 10 },
   text: { ...fonts.extrabold, fontSize: 22, color: colors.onAccent },
 });

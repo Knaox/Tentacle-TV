@@ -57,7 +57,7 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
           {markers.userScore !== null ? (
             <View style={styles.userScore}>
               {/* Le dégradé de la marque, comme la note perso du bureau (`CardRatingBadge`). */}
-              <BrandGradient />
+              <BrandGradient style={styles.userScoreFill} />
               <Star size={glyph - RATING_PILL.user.starInset} color={colors.onAccent} />
               <Text style={[styles.userValue, compact && styles.valueCompact]}>{formatUserScore(markers.userScore)}</Text>
             </View>
@@ -101,6 +101,8 @@ const styles = StyleSheet.create({
     borderRadius: RATING_PILL.user.height / 2,
     overflow: "hidden",
   },
+  // Android ne rogne pas un dégradé enfant d'un parent arrondi sans fond : il prend l'arrondi lui-même.
+  userScoreFill: { borderRadius: RATING_PILL.user.height / 2 },
   userValue: { ...fonts.extrabold, fontSize: RATING_PILL.fontSize, color: colors.onAccent },
   track: { position: "absolute", left: 0, right: 0, bottom: 0, height: 6, backgroundColor: "rgba(255, 255, 255, 0.22)" },
   fill: { height: 6, overflow: "hidden" },
