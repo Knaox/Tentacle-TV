@@ -1,4 +1,4 @@
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { contentFrameRate, type MediaStream as JfStream } from "@tentacle-tv/shared";
 
 /** Reprise tvOS : le fragment `#tnt-start=<sec>` (AVPlayer ne lit pas les fragments) porte la position
  *  absolue de reprise. On le parse puis on le retire de l'URI. Cf. AVPlayerSurface (timeline absolue).
@@ -27,12 +27,9 @@ export function formatTrackLabel(s: JfStream): string {
 }
 
 /**
- * La cadence du flux vidéo, pour caler le téléviseur dessus (Android TV).
- * `RealFrameRate` d'abord (exacte), `AverageFrameRate` en repli. Les valeurs
- * aberrantes sont refusées : mieux vaut ne rien basculer que basculer de travers.
+ * La cadence du flux vidéo, pour caler le téléviseur dessus (Android TV) : la
+ * règle partagée avec le mobile (`contentFrameRate`, shared).
  */
 export function videoFrameRate(streams: JfStream[]): number | undefined {
-  const video = streams.find((s) => s.Type === "Video");
-  const fps = video?.RealFrameRate ?? video?.AverageFrameRate;
-  return typeof fps === "number" && fps >= 5 && fps <= 480 ? fps : undefined;
+  return contentFrameRate(streams);
 }

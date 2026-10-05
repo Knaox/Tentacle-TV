@@ -195,6 +195,7 @@ export * from "./playback/skipMuting";
 export * from "./playback/autoNextEngine";
 export * from "./playback/playbackSettingsStore";
 export * from "./player/deviceSettings";
+export * from "./player/contentFrameRate";
 // Résolution des pistes selon les préférences : même algorithme côté backend
 // (en ligne) et côté client (lecteur local hors ligne).
 export * from "./preferences";
