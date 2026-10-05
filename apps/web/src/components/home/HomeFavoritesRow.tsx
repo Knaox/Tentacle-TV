@@ -11,6 +11,7 @@ import { MediaRow } from "../rows/MediaRow";
 export function HomeFavoritesRow({ animDelay }: { animDelay: number }) {
   const { t } = useTranslation("common");
   const { data: favorites } = useFavorites();
-  if (!favorites?.length) return null;
-  return <MediaRow title={t("common:myFavorites")} items={favorites} animDelay={animDelay} href="/favorites" />;
+  if (!favorites) return null;
+  // Vide : rien — mais après la tenue (le dernier cœur décoché part au lâcher).
+  return <MediaRow title={t("common:myFavorites")} items={favorites} animDelay={animDelay} href="/favorites" hideWhenEmpty />;
 }

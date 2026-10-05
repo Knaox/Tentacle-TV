@@ -18,8 +18,8 @@ export interface HomeRowData {
 
 /**
  * LE registre de l'accueil configurable : une clé de rangée → son rendu. Les
- * quatre rangées historiques gardent leurs composants et leurs gardes de
- * non-vacuité ; `favorites` rend « Mes favoris » ; `library:<id>` rend la
+ * quatre rangées historiques gardent leurs composants ; leur garde de
+ * non-vacuité vit dans la rangée (`hideWhenEmpty`), APRÈS la tenue au survol ; `favorites` rend « Mes favoris » ; `library:<id>` rend la
  * rangée « Derniers ajouts » ; `reco:<row>` rend une rangée de recommandation
  * (mêmes composants que la page Recommandations). Clé inconnue → rien, jamais
  * une erreur.
@@ -36,44 +36,48 @@ export function HomeRow({
   const { t } = useTranslation("common");
 
   if (rowKey === "resume") {
-    if (!data.resumeItems?.length) return null;
+    if (!data.resumeItems) return null;
     return (
       <ContinueWatchingRow
         title={t("common:resumeWatching")}
         items={data.resumeItems}
         animDelay={animDelay}
+        hideWhenEmpty
       />
     );
   }
   if (rowKey === "nextUp") {
-    if (!data.nextUp?.length) return null;
+    if (!data.nextUp) return null;
     return (
       <ContinueWatchingRow
         title={t("common:nextEpisodes")}
         items={data.nextUp}
         animDelay={animDelay}
+        hideWhenEmpty
       />
     );
   }
   if (rowKey === "watchlist") {
-    if (!data.watchlist?.length) return null;
+    if (!data.watchlist) return null;
     return (
       <MediaRow
         title={t("common:myList")}
         items={data.watchlist}
         animDelay={animDelay}
         href="/watchlist"
+        hideWhenEmpty
       />
     );
   }
   if (rowKey === "watched") {
-    if (!data.watchedItems?.length) return null;
+    if (!data.watchedItems) return null;
     return (
       <MediaRow
         title={t("common:alreadyWatched")}
         items={data.watchedItems}
         variant="episode"
         animDelay={animDelay}
+        hideWhenEmpty
       />
     );
   }
