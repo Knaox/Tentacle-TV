@@ -10,6 +10,7 @@ import { withMenuIntent } from "../../platform/input";
 import { useBackLayers } from "../back/BackScope";
 import { setFocusLocked } from "../../platform/tvos/focus/focusLocks";
 import { useFocusStore, type FocusStore } from "../../platform/tvos/focus/focusStore";
+import { useChoiceEntryClaim } from "../../platform/tvos/panels/choiceEntryClaim";
 import { STILL_READING, type ArrivalReading } from "./arrivalModels";
 import { requestItemModel, requestsCountText } from "./requestModels";
 
@@ -18,7 +19,8 @@ import { requestItemModel, requestsCountText } from "./requestModels";
  * `Modal`, comme le grand panneau d'une carte.
  *
  * - La `Modal` PIÈGE le focus ; la croix en est la seule action : elle prend
- *   l'entrée (l'élément du haut, que tvOS choisit dans une Modal), sous la
+ *   l'entrée (l'élément du haut, que tvOS choisit dans une Modal ; réclamé
+ *   sur Android, `useChoiceEntryClaim`), sous la
  *   garde anti-clic fantôme — la fenêtre s'ouvre sous un OK encore enfoncé.
  * - LECTURE SEULE : les lignes ne sont focalisables que pour faire défiler une
  *   liste qui dépasse (`requestsRowsFocusable`, tv-core) ; OK n'y fait rien.
@@ -49,6 +51,8 @@ export function RequestsPanel({
   const focus = useFocusStore();
   const items = useMemo(() => titles?.map((title) => requestItemModel(title, t, reading)) ?? null, [titles, t, reading]);
   useRowLocks(focus, items ? items.map((item) => requestRowKey(item.key)) : []);
+  // Android : la Modal (un Dialog) ne focalise rien d'elle-même — la croix est réclamée.
+  useChoiceEntryClaim(focus, REQUESTS_CLOSE_KEY);
   const bind = useCallback<FocusBinder>(
     (key, form) => {
       const binding = focus.binder(key, form);
