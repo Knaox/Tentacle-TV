@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { usePreventRemove } from "@react-navigation/native";
 import { createPlayerBack, playerBackHolding } from "@tentacle-tv/tv-core";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
 import { PLAYER_TIMERS } from "./playerTimers";
@@ -13,9 +12,9 @@ import { PLAYER_TIMERS } from "./playerTimers";
  * (couche passagère de la pile du Retour sur Apple TV, BackHandler sur Android
  * TV, bouton Retour de l'habillage) : une seule source de vérité.
  *
- * Android TV : le bouton système est retenu ici par `usePreventRemove` tant
- * qu'un état passager le prendrait (`holding`). Apple TV refondue : la pile du
- * Retour le reçoit d'abord (`usePlayerBackLayers`, `holdsSystemBack` faux).
+ * Le bouton système arrive d'abord à la pile du Retour (`usePlayerBackLayers`,
+ * sur les deux téléviseurs) ; `holding` lui dit d'avance si un état passager
+ * le prendrait.
  */
 export function useTVPlayerBack(args: {
   /** État de scrub RENDU (la prévention native se base sur le dernier rendu). */
@@ -31,11 +30,8 @@ export function useTVPlayerBack(args: {
   surfaceRef: { readonly current: PlayerOverlay };
   /** Ferme l'overlay auto-play ; vrai si un départ (navigation) est engagé. */
   dismissAutoPlay: () => boolean;
-  /** Le bouton physique est retenu ICI, par `usePreventRemove` (défaut). Faux
-   *  sur Apple TV refondue. */
-  holdsSystemBack?: boolean;
 }) {
-  const { scrubbing, surfaceActive, skipRefusable, holdsSystemBack = true } = args;
+  const { scrubbing, surfaceActive, skipRefusable } = args;
   const scrubbingRef = useRef(scrubbing);
   scrubbingRef.current = scrubbing;
   const latest = useRef(args);
@@ -55,7 +51,6 @@ export function useTVPlayerBack(args: {
   const routeBack = back.routeBack;
   // Ce que `routeBack` prendrait au prochain Retour — dit d'avance.
   const holding = playerBackHolding({ scrubbing, surfaceActive, skipRefusable, graceActive });
-  usePreventRemove(holdsSystemBack && holding, () => { routeBack(); });
 
   return { routeBack, holding };
 }

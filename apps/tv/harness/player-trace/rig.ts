@@ -109,8 +109,6 @@ export function Rig() {
       envStore.patch({ overlay: { kind: "none" } });
       return wasFinal && envStore.get().ended;
     },
-    // Comme `PlayerScreen` : `!REDESIGN_ACTIVE` — Android TV refondu passe par la pile des couches.
-    holdsSystemBack: __rig.platform === "android" && !__rig.androidtv,
   });
   routeBackRef.current = back.routeBack;
 

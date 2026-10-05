@@ -2,14 +2,13 @@ import { useEffect, useRef } from "react";
 import { osdRevealTarget } from "@tentacle-tv/tv-core";
 import type { TransportKey } from "../components/player/focus/overlayFocusCore";
 import { REMOTE_BINDINGS } from "../platform/input";
-import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 
 /**
  * Où l'habillage réapparaît (la refonte) : Lecture/Pause là où OK fait la
  * pause (tv-core `osdRevealTarget`, Android TV), en cible DOUCE — elle cède à
- * la pilule de saut ; sinon (Apple TV, ancienne UI) le dernier bouton.
+ * la pilule de saut ; sinon (Apple TV) le dernier bouton.
  */
-const REVEAL_TARGET: TransportKey | undefined = (REDESIGN_ACTIVE && osdRevealTarget(REMOTE_BINDINGS.traits)) || undefined;
+const REVEAL_TARGET: TransportKey | undefined = osdRevealTarget(REMOTE_BINDINGS.traits) || undefined;
 
 /**
  * Les deux moments où l'habillage du lecteur REPREND le focus de lui-même —

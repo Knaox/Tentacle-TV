@@ -12,7 +12,6 @@ import { BackScope } from "../redesignWiring/back/BackScope";
 // Direct imports — initial screens, must load immediately
 import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
-import { PlayerSettingsScreen } from "../screens/player/PlayerSettingsScreen";
 import { ProfilesScreen } from "../screens/ProfilesScreen";
 
 // Lazy-loaded screens
@@ -126,19 +125,6 @@ export function AppNavigator() {
           l'écran était dépilé puis restauré — et l'accueil CLIGNOTAIT une
           image, animation ou pas (un fondu devenait un fondu enchaîné). */}
       <Stack.Screen name="Player" component={PlayerScreen} options={{ animation: "none" }} />
-      {/* Réglages/Qualité en MODALE transparente : ESC ferme la modale
-          proprement (révèle l'épisode), pas de flash de page précédente. */}
-      <Stack.Screen
-        name="PlayerSettings"
-        component={PlayerSettingsScreen}
-        options={{
-          presentation: "transparentModal",
-          animation: "fade",
-          // Sans ça, le `contentStyle` opaque global (bgDeep) masquerait la
-          // vidéo sous la modale → fond transparent pour voir l'épisode.
-          contentStyle: { backgroundColor: "transparent" },
-        }}
-      />
       <Stack.Screen name="Trailer" component={TrailerScreen} />
       <Stack.Screen name="Search" component={SearchScreen} options={{ animation: "none" }} />
       <Stack.Screen name="SearchBrowse" component={SearchBrowseScreen} />

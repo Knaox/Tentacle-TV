@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import type { MediaItem, PlayerOverlay, QualityKey } from "@tentacle-tv/shared";
 import type { PlayerChromeViewProps } from "../../redesign/screens/player/PlayerChromeView";
-import type { AutoPlayCtx } from "../../components/player/TVAutoPlaySwitch";
+import type { AutoPlayCtx } from "../../components/player/playerStageBaseProps";
 import type { SheetTab } from "./usePlayerSheet";
 
 /** Ce que les gestes de l'habillage appellent — les mêmes que l'habillage actuel. */

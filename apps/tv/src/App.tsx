@@ -144,9 +144,8 @@ const sessionServerUrl = (): string | null =>
  *  lecture d'abord — un film en streaming direct continue sans Tentacle, et le
  *  voile le cachait, piégeait le focus, et son Menu quittait l'application.
  *  Le lecteur dit lui-même ce qui manque ; à la sortie, le voile paraît si la
- *  panne dure. `PlayerSettings` : la modale des réglages d'Android TV, posée
- *  sur un lecteur qui joue encore. */
-const PLAYBACK_ROUTES = new Set(["Player", "PlayerSettings", "Trailer"]);
+ *  panne dure. */
+const PLAYBACK_ROUTES = new Set(["Player", "Trailer"]);
 
 function AppContent() {
   // L'URL serveur peut changer en cours de session : déconnexion (supprimée du

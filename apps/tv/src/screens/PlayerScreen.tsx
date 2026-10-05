@@ -21,7 +21,6 @@ import { useTVSourceReset } from "../hooks/useTVSourceReset";
 import { useTVPlayerBack } from "../hooks/useTVPlayerBack";
 import { useTVErrorHandler } from "../hooks/useTVErrorHandler";
 import { useTVPanelControls } from "../hooks/useTVPanelControls";
-import { useTVSettingsBridge } from "../hooks/useTVSettingsBridge";
 import { useTVSubtitleSync } from "../hooks/useTVSubtitleSync";
 import { useTVPrismProgress } from "../hooks/useTVPrismProgress";
 import { useTVTrackLists } from "../hooks/useTVTrackLists";
@@ -29,10 +28,8 @@ import { useTVSessionRemote } from "../hooks/useTVSessionRemote";
 import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
 import { usePlayerItem } from "../hooks/usePlayerItem";
 import { useTVOsdEntryFocus } from "../hooks/useTVOsdEntryFocus";
-import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import { PlayerRedesignStage } from "../redesignWiring/player/PlayerRedesignStage";
 import type { PlayerRedesignStageProps } from "../redesignWiring/player/playerStageTypes";
-import { LegacyPlayerStage } from "./player/LegacyPlayerStage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
@@ -64,7 +61,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     showSettings, setShowSettings, showSettingsRef,
     showEpisodes, setShowEpisodes, showEpisodesRef,
     osdFocusSignal, osdFocusTargetRef, bumpOsdFocus,
-  } = useTVPanelControls({ backgroundRef, recoverySuppressedRef: eofActiveRef, holdsSystemBack: !REDESIGN_ACTIVE });
+  } = useTVPanelControls({ backgroundRef, recoverySuppressedRef: eofActiveRef });
 
   // Bus d'état partagé (positions, gates, refs miroir) + pipeline de flux.
   const s = usePlayerMediaState();
@@ -181,8 +178,6 @@ export function PlayerScreen({ route, navigation }: Props) {
       playback.overlay.kind === "skip" && playback.overlay.auto && playback.overlay.dismissible,
     dismissSegment: playback.dismissOverlay,
     dismissAutoPlay,
-    // Apple TV : la pile de couches du Retour (`usePlayerBackLayers`) le reçoit d'abord.
-    holdsSystemBack: !REDESIGN_ACTIVE,
   });
   routeBackRef.current = back.routeBack;
 
@@ -194,11 +189,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, p.mediaSource?.Id);
 
-  // Sous-titres : pistes texte natives (Android) + overlay JS + synchro d'affichage.
+  // Sous-titres : le calque JS (les deux téléviseurs) + synchro d'affichage.
   const { subtitleCue, textTracks } = useTVSubtitleSync({
     itemId, mediaSourceId: p.mediaSource?.Id, streams: p.streams,
-    useExoPlayer: p.useExoPlayer, subtitleIndex: p.subtitleIndex,
-    exoRef, subtitleTrackMap: p.mpvTracks.subtitleTrackMap,
+    subtitleIndex: p.subtitleIndex,
     displayTimeRef, bufferedTimeRef, lastProgressTime, lastDisplayUpdate, pausedStateRef,
     overlayVisible: controls.overlayVisible, setDisplayTime, setBufferedTime,
   });
@@ -242,14 +236,13 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Le panneau des épisodes s'ouvre déjà rempli : saisons et saison en cours préchargées.
   useEpisodePanelPrefetch(item, hasStarted);
 
-  // Pont vers la route MODALE Réglages/Qualité.
-  const { handleCloseSettings } = useTVSettingsBridge({
-    audioTracksList, subtitleTracksList, audioIndex: p.audioIndex, subtitleIndex: p.subtitleIndex,
-    qualityKey: quality.qualityKey, qualityPresets: quality.qualityPresets, sourceQuality: p.sourceQuality,
-    autoQualityActive: p.autoCapActive,
-    handleAudioChange: p.handleAudioChange, handleSubtitleChange: p.handleSubtitleChange, handleQualityChange,
-    showOverlay: controls.showOverlay, setShowSettings, showSettingsRef, bumpOsdFocus,
-  });
+  // Fermer le panneau Réglages/Qualité (dans l'habillage) : l'état, puis le focus à l'OSD.
+  const handleCloseSettings = () => {
+    setShowSettings(false);
+    showSettingsRef.current = false;
+    controls.showOverlay();
+    bumpOsdFocus();
+  };
 
   const { handleVideoSize, playerStyle } = useTVPlayerStyle();
 
@@ -258,8 +251,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   // elle qui neutralise l'habillage du lecteur, pas le chiffre.
   const autoPlayActive = autoPlay.source !== null;
   eofActiveRef.current = autoPlay.source === "eof";
-  // Les MÊMES props aux deux habillages — l'orchestration reste une : Android
-  // TV garde le sien (`LegacyPlayerStage`), Apple TV rend la refonte.
+  // Les props de l'habillage refondu — le même sur les deux téléviseurs.
   const stage: PlayerRedesignStageProps = {
     item: item ?? placeholderItem, streamUrl, failed: p.failed || s.openFailed, prismStep: prismProgress.step,
     onRetry: () => (s.openFailed && streamUrl ? void p.restartStream({ reason: "manual" }) : p.setReloadNonce((n) => n + 1)),
@@ -282,9 +274,6 @@ export function PlayerScreen({ route, navigation }: Props) {
       setShowSettings(true);
       showSettingsRef.current = true;
       controls.showOverlay();
-      // Android : la MODALE Réglages/Qualité (cf. PlayerSettingsScreen). La
-      // refonte ouvre son panneau DANS l'habillage.
-      if (!REDESIGN_ACTIVE) navigation.navigate("PlayerSettings");
     },
     onSelectAudio: p.handleAudioChange, onSelectSubtitle: p.handleSubtitleChange,
     onSelectQuality: handleQualityChange, onCloseSettings: handleCloseSettings,
@@ -296,5 +285,5 @@ export function PlayerScreen({ route, navigation }: Props) {
     onEofDismiss: () => { dismissAutoPlay(); },
     back: { transient: back.holding, routeBack: back.routeBack, hideOverlay: controls.hideOverlay },
   };
-  return REDESIGN_ACTIVE ? <PlayerRedesignStage {...stage} /> : <LegacyPlayerStage {...stage} />;
+  return <PlayerRedesignStage {...stage} />;
 }

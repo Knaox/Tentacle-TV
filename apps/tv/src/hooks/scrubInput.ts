@@ -1,6 +1,5 @@
 import { scrubInputProfileOf } from "@tentacle-tv/tv-core";
 import { REMOTE_BINDINGS } from "../platform/input";
-import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import type { ScrubInputProfile } from "./scrubGestureTypes";
 
 /**
@@ -10,10 +9,5 @@ import type { ScrubInputProfile } from "./scrubGestureTypes";
  * (`longLeft` au seuil, puis au relâchement) : un appui saute, un maintien
  * défile dès son début et s'arrête à sa fin — les mêmes pas, la même
  * accélération.
- *
- * L'ancienne UI d'Android TV (tant que l'aiguillage la garde) lit encore les
- * key-down bruts de `useTVRemote` : son profil d'avant, à retirer avec elle.
  */
-export const SCRUB_INPUT: ScrubInputProfile = scrubInputProfileOf(
-  REDESIGN_ACTIVE ? REMOTE_BINDINGS.traits : { announcedHolds: false },
-);
+export const SCRUB_INPUT: ScrubInputProfile = scrubInputProfileOf(REMOTE_BINDINGS.traits);

@@ -1,17 +1,17 @@
 import { MemoizedPlayer } from "./MemoizedPlayer";
-import type { TVPlayerViewProps } from "./TVPlayerView";
+import type { PlayerStageBaseProps } from "./playerStageBaseProps";
 
 export type TVPlayerEngineProps = Pick<
-  TVPlayerViewProps,
+  PlayerStageBaseProps,
   | "streamUrl" | "paused" | "playerPaused" | "hasStarted" | "reloadFrameSec" | "useExoPlayer" | "exoRef" | "mpvRef"
   | "playerStyle" | "textTracks" | "subtitleIndex" | "isDirectPlay" | "prismTextTrackIndex" | "frameRate"
   | "onLoad" | "onProgress" | "onEnd" | "onError" | "onTracks" | "onVideoSize"
 >;
 
 /**
- * Le MOTEUR du lecteur, monté à l'identique sous les deux habillages — celui
- * d'Android TV (`TVPlayerView`) et celui de la refonte Apple TV : l'habillage
- * change, jamais la façon de monter la vidéo.
+ * Le MOTEUR du lecteur (ExoPlayer ou mpv sur Android TV, AVPlayer sur Apple
+ * TV), monté sous l'habillage refondu : l'habillage ne change jamais la façon
+ * de monter la vidéo.
  */
 export function TVPlayerEngine(props: TVPlayerEngineProps) {
   return (

@@ -6,7 +6,7 @@ import {
 } from "@tentacle-tv/api-client";
 import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
 import { useNextEpisodeMedia } from "./useNextEpisodeMedia";
-import type { AutoPlayCtx } from "../components/player/TVAutoPlaySwitch";
+import type { AutoPlayCtx } from "../components/player/playerStageBaseProps";
 
 /**
  * L'arbitre de lecture partagé, câblé pour le téléviseur.
