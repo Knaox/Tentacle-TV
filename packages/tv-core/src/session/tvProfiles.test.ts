@@ -126,11 +126,12 @@ describe("le profil à ouvrir", () => {
     expect(planProfileLaunch(listing([OWNER, NINA], { stickyProfileId: "nina" }), "switch", NOW)).toEqual({ kind: "picker" });
   });
 
-  it("coche « Ne plus proposer à l'ouverture » pour un profil retenu, ou qu'on vient de quitter", () => {
-    expect(pickerRemembers({ stickyProfileId: "nina" }, false)).toBe(true);
-    // « Changer de profil » : le serveur a oublié le profil en fermant sa session, la case s'en souvient.
-    expect(pickerRemembers({ stickyProfileId: null }, true)).toBe(true);
-    expect(pickerRemembers({ stickyProfileId: null }, false)).toBe(false);
+  it("coche « Ne plus proposer à l'ouverture » au lancement pour un profil retenu, jamais après « Changer de profil »", () => {
+    expect(pickerRemembers({ stickyProfileId: "nina" }, "launch")).toBe(true);
+    expect(pickerRemembers({ stickyProfileId: null }, "launch")).toBe(false);
+    // « Changer de profil » : la case revient décochée pour le profil choisi ensuite.
+    expect(pickerRemembers({ stickyProfileId: null }, "switch")).toBe(false);
+    expect(pickerRemembers({ stickyProfileId: "nina" }, "switch")).toBe(false);
   });
 
   it("au choix d'un profil : son PIN d'abord, sauf s'il est « Rester » sur cette TV", () => {

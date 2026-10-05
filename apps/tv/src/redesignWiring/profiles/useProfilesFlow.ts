@@ -28,7 +28,7 @@ import {
   type ProfileRefusal,
 } from "@tentacle-tv/tv-core";
 import { loadProfiles, openProfile } from "../../auth/profileOpening";
-import { lastLeftRemembered, leaveProfile } from "../../auth/profileSession";
+import { leaveProfile } from "../../auth/profileSession";
 import { unpairDevice } from "../../auth/unpair";
 import { MOTION_ENABLED } from "../../redesign/motion/motion";
 
@@ -92,7 +92,7 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     const ordered = pickerOrder(loaded.listing);
     setListing(ordered);
     // À l'arrivée seulement : une relecture après un refus garde la case telle que laissée.
-    if (planIntent) setRemember(pickerRemembers(ordered, lastLeftRemembered()));
+    if (planIntent) setRemember(pickerRemembers(ordered, planIntent));
     const plan = planIntent ? planProfileLaunch(ordered, planIntent, Date.now()) : { kind: "picker" as const };
     if (plan.kind === "open") return open(ordered, plan.profileId, { remember: plan.remember, launch: plan.launch }, "open");
     setPhase({ kind: "picker" });

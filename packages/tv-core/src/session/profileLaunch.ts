@@ -13,7 +13,7 @@ import { pairedAccountOf, profileManages, type ProfileLaunch } from "./tvProfile
  *   « Qui regarde ? » — TOUJOURS, même pour un profil seul (`pickerRequired`
  *   du serveur n'y change rien : l'Apple TV montre qui regarde).
  * - `switch` (« Changer de profil ») : toujours « Qui regarde ? » — c'est là
- *   que vit « Gérer les profils », et que la case se décoche.
+ *   que vit « Gérer les profils » ; la case y arrive décochée.
  */
 
 export type ProfileIntent = "launch" | "switch";
@@ -45,14 +45,14 @@ export function planProfileLaunch(listing: TvProfilesDto, intent: ProfileIntent,
 
 /**
  * La case « Ne plus proposer à l'ouverture » à l'arrivée sur « Qui regarde ? » :
- * cochée si la TV a encore un profil retenu, ou si l'on vient de QUITTER un
- * profil retenu (« Changer de profil » : le serveur l'a oublié en fermant la
- * session — la case le rappelle, et le profil choisi ensuite le devient à son
- * tour). Une session coupée par le serveur (retrait, départ, PIN changé) ne
- * la coche pas : c'est lui qui a révoqué le choix.
+ * cochée seulement au LANCEMENT, si la TV a encore un profil retenu (bloqué,
+ * il n'a pas pu s'ouvrir seul). « Changer de profil » la rend DÉCOCHÉE : le
+ * choix vaut pour un profil, jamais pour le suivant — qui veut que le profil
+ * choisi ensuite s'ouvre seul la recoche (le serveur a oublié l'ancien en
+ * fermant sa session).
  */
-export function pickerRemembers(listing: Pick<TvProfilesDto, "stickyProfileId">, leftRemembered: boolean): boolean {
-  return leftRemembered || !!listing.stickyProfileId;
+export function pickerRemembers(listing: Pick<TvProfilesDto, "stickyProfileId">, intent: ProfileIntent): boolean {
+  return intent === "launch" && !!listing.stickyProfileId;
 }
 
 export type PickPlan =

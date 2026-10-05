@@ -45,17 +45,8 @@ const OUTBOX_FLUSH_BUDGET_MS = 3_000;
 /** Le profil qu'on vient de quitter — « Qui regarde ? » y pose le focus. En
  *  mémoire seulement : il ne dit rien qui doive survivre à l'app. */
 let lastProfileId: string | null = null;
-/** Ce profil était-il retenu (« Ne plus proposer à l'ouverture ») ? Le
- *  serveur l'oublie en fermant la session ; la case de « Qui regarde ? »
- *  s'en souvient (tv-core `pickerRemembers`). */
-let lastRemembered = false;
-
 export function lastLeftProfileId(): string | null {
   return lastProfileId;
-}
-
-export function lastLeftRemembered(): boolean {
-  return lastRemembered;
 }
 
 /** Pourquoi on revient à « Qui regarde ? » — l'écran en tire le profil à ouvrir (`planProfileLaunch`). */
@@ -130,8 +121,6 @@ export function leaveProfile(
   const serverUrl = storage.getItem("tentacle_server_url");
   const record = readProfileRecord(storage);
   lastProfileId = record?.profileId ?? lastProfileId;
-  // Coupée par le serveur (retrait, départ, PIN changé) : c'est lui qui a révoqué le choix.
-  lastRemembered = !serverEnded && record?.launch === "sticky";
   beginProfileLeave(storage, serverEnded ? null : { serverUrl, token }, Date.now());
 
   jfClient.setAccessToken(null);
