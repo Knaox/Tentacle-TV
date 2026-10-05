@@ -118,17 +118,26 @@ export const SCENARIOS = [
   },
   {
     id: "page-films",
-    title: "Changer de page par le rail : « Films » (la grille d'affiches), puis Retour revient à l'accueil",
+    title: "Changer de page par le rail : ouvrir « Films » (la grille d'affiches)",
     setup: [tap("left"), wait(700), tap("down", 5, 350), wait(900)],
-    gesture: [tap("ok"), wait(4000), tap("back"), wait(2500)],
-    steps: 2,
+    gesture: [tap("ok"), wait(4000)],
+    steps: 1,
   },
   {
     id: "page-pourvous",
-    title: "Changer de page par le rail : « Pour vous » (ses rangées), puis Retour revient à l'accueil",
+    title: "Changer de page par le rail : ouvrir « Pour vous » (ses rangées)",
     setup: [tap("left"), wait(700), tap("down"), wait(900)],
-    gesture: [tap("ok"), wait(4000), tap("back"), wait(2500)],
-    steps: 2,
+    gesture: [tap("ok"), wait(4000)],
+    steps: 1,
+  },
+  {
+    // Retour, sur une page du rail, ouvre le rail (`railBackStep`) : on y
+    // remonte à « Accueil ».
+    id: "page-accueil",
+    title: "Revenir à l'accueil par le rail depuis « Films » (l'accueil gardé sous la page)",
+    setup: [tap("left"), wait(700), tap("down", 5, 350), wait(700), tap("ok"), wait(4000), tap("back"), wait(900), tap("up", 5, 350), wait(900)],
+    gesture: [tap("ok"), wait(3000)],
+    steps: 1,
   },
   {
     id: "grille",
