@@ -58,7 +58,7 @@ export function FamilyInvitationPoster({ invitation, onLater, onDone }: FamilyIn
     accept.mutate(invitation.id, {
       onSuccess: () => {
         haptic("success");
-        showToast({ title: t("familyWeb:poster.accepted", { owner }) });
+        showToast({ title: t("familyWeb:poster.accepted", { owner }), tone: "success" });
         onDone(invitation.id);
       },
       // Déjà dans une famille : la phrase qui dit quoi faire (la quitter d'abord).
@@ -73,7 +73,7 @@ export function FamilyInvitationPoster({ invitation, onLater, onDone }: FamilyIn
     setError(null);
     decline.mutate(invitation.id, {
       onSuccess: () => {
-        showToast({ title: t("familyWeb:poster.declined") });
+        showToast({ title: t("familyWeb:poster.declined"), tone: "info" });
         onDone(invitation.id);
       },
       onError: (failure) => setError(errorText(failure)),

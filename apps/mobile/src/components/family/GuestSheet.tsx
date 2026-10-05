@@ -47,7 +47,7 @@ export function GuestSheet({ onClose }: { onClose: () => void }) {
       {
         onSuccess: (profile) => {
           haptic("success");
-          showToast({ title: t("familyWeb:guest.created", { name: profile.name }) });
+          showToast({ title: t("familyWeb:guest.created", { name: profile.name }), tone: "success" });
           onClose();
         },
         onError: (failure) => setError(errorText(failure)),

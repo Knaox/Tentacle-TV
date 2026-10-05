@@ -1,8 +1,16 @@
 import { useSyncExternalStore } from "react";
 
 /**
+ * Le ton d'un message bref : `failure` (le défaut — un geste défait, triangle
+ * rouge), `success` (une réussite — coche verte : « Vous avez rejoint la
+ * famille », « Code PIN enregistré »), `info` (un simple constat, violet).
+ */
+export type ToastTone = "failure" | "success" | "info";
+
+/**
  * Les messages brefs du mobile — un geste défait faute de serveur (« Ma
- * liste n'a pas pu être modifiée — Le serveur Tentacle ne répond pas »).
+ * liste n'a pas pu être modifiée — Le serveur Tentacle ne répond pas »), ou
+ * une réussite dite au ton `success`.
  * Rendus par l'hôte des avertissements, en haut : deux au plus, le même
  * titre jamais deux fois de suite.
  */
@@ -10,6 +18,18 @@ export interface AppToast {
   id: number;
   title: string;
   text?: string;
+  /** Absent : `failure` — les appels d'avant le ton restaient des échecs. */
+  tone?: ToastTone;
+}
+
+/** Ce que rend la carte pour chaque ton : sa couleur et son pictogramme. */
+export function toastAppearance(tone: ToastTone | undefined): {
+  severity: "blocking" | "success" | "info";
+  icon: "alert-triangle" | "check" | "info";
+} {
+  if (tone === "success") return { severity: "success", icon: "check" };
+  if (tone === "info") return { severity: "info", icon: "info" };
+  return { severity: "blocking", icon: "alert-triangle" };
 }
 
 const MAX_TOASTS = 2;

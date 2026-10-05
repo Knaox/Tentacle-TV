@@ -21,7 +21,7 @@ export function MemberRightsSection({ member }: { member: FamilyProfileDto }) {
     setRights.mutate(
       { userId: member.userId, rights: { createGuests: next } },
       {
-        onSuccess: () => showToast({ title: t("familyWeb:rights.saved") }),
+        onSuccess: () => showToast({ title: t("familyWeb:rights.saved"), tone: "success" }),
         onError: (failure) => showToast({ title: errorText(failure) }),
       },
     );

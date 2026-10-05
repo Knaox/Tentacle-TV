@@ -32,7 +32,7 @@ export function DissolveSheet({ onClose }: { onClose: () => void }) {
     haptic("destructive");
     dissolve.mutate(undefined, {
       onSuccess: () => {
-        showToast({ title: t("danger.dissolved") });
+        showToast({ title: t("danger.dissolved"), tone: "success" });
         onClose();
       },
       onError: (failure) => setError(errorText(failure)),

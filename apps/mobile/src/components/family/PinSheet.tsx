@@ -149,7 +149,7 @@ function usePinFlow(onClose: () => void) {
     error,
     callbacks: {
       onSuccess: (result: { hasPin: boolean }) => {
-        showToast({ title: t(result.hasPin ? "pin.saved" : "pin.removed") });
+        showToast({ title: t(result.hasPin ? "pin.saved" : "pin.removed"), tone: "success" });
         onClose();
       },
       onError: (failure: unknown) => setError(errorText(failure)),

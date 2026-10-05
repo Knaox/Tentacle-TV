@@ -20,7 +20,7 @@ export function GuestRightsSection({ guest }: { guest: FamilyProfileDto }) {
     setRights.mutate(
       { userId: guest.userId, rights: { requestTitles: next } },
       {
-        onSuccess: () => showToast({ title: t("familyWeb:rights.saved") }),
+        onSuccess: () => showToast({ title: t("familyWeb:rights.saved"), tone: "success" }),
         onError: (failure) => showToast({ title: errorText(failure) }),
       },
     );
