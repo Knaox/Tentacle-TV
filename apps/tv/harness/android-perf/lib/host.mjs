@@ -22,7 +22,9 @@ export function createHostPolicy(enabled, log = () => {}) {
   if (!enabled) return { slow: false, measuring: async (fn) => fn(), restore: () => {} };
   let pids = [];
   try {
-    pids = execFileSync("pgrep", ["-f", "qemu-system"], { encoding: "utf8" }).split("\n").filter(Boolean);
+    // Le NOM du processus, jamais sa ligne de commande : un shell qui contient
+    // « qemu-system » (un pgrep, un script) y passerait aussi.
+    pids = execFileSync("pgrep", ["-x", "qemu-system-(aarch64|x86_64)"], { encoding: "utf8" }).split("\n").filter(Boolean);
   } catch {
     // pgrep sort en erreur quand rien ne correspond.
   }

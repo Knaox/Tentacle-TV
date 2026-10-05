@@ -15,7 +15,7 @@ TENTACLE_TV_REDESIGN=1 ./gradlew assembleRelease assembleDebug -x lint -PreactNa
 node apps/tv/harness/android-perf/bench.mjs run --apk <release.apk> --debug-apk <debug.apk> --tag avant [--only focus-rangee,grille] [--rounds 3] [--trace]
 node apps/tv/harness/android-perf/bench.mjs compare avant apres
 # deux versions en ALTERNANCE (A, B, puis B, A) — la seule comparaison fiable
-node apps/tv/harness/android-perf/bench.mjs ab --a <avant.apk> --tag-a avant --b <apres.apk> --tag-b apres --debug-apk <debug.apk> [--rounds 2] [--shots] [--slow]
+node apps/tv/harness/android-perf/bench.mjs ab --a <avant.apk> --tag-a avant --b <apres.apk> --tag-b apres --debug-apk <debug.apk> [--rounds 2] [--shots] [--slow] [--no-warmup]
 node apps/tv/harness/android-perf/bench.mjs diff avant apres   # captures : PSNR, SSIM, côte à côte
 ```
 
@@ -28,6 +28,10 @@ l'émulateur, le temps de chaque MESURE, en priorité d'arrière-plan
 (`taskpolicy -b`), que le M4 n'exécute que sur ses six cœurs économes
 (l'installation et la mise en place restent rapides) : des passes
 comparables entre elles, et un émulateur à ~3 fois la Shield au lieu de ~8.
+Après un geste, le repos s'attend au plus 6 s ; `--no-warmup` saute
+l'échauffement quand les caches sont déjà chauds (même jeu, mêmes tailles
+d'images qu'une passe précédente) : une passe complète en alternance tient
+alors dans le créneau d'un verrou.
 
 **Mesurer en alternance.** Le 05/10, la moitié « après » d'une passe a
 tourné pendant qu'une autre machine virtuelle occupait le Mac : 311 images

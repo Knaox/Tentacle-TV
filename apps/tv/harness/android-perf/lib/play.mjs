@@ -51,7 +51,11 @@ export function createPlayer({ device, backendPort, host }) {
     if (traceFile) startTrace(device, PACKAGE);
     await host.measuring(async () => {
       device.keys(...scenario.gesture);
-      await device.waitQuiet(1500);
+      // La fin du geste : ses animations, puis le repos — au plus 6 s. Sur un
+      // émulateur lent, de petits blocages (décodage, ramasse-miettes)
+      // repoussaient le repos jusqu'au plafond de 15 s : la passe doublait, et
+      // la mesure comptait ce qui n'était plus le geste.
+      await device.waitQuiet(1500, 6000);
     });
     const after = device.threadCpu();
     const round = { ...summarizeRound(device.perfRecords(), cpuDelta(before, after)), gfx: device.gfxStats(), hostLoad: [loadAtGesture, hostLoad()] };

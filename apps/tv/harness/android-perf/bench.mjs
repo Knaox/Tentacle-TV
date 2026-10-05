@@ -11,6 +11,8 @@
 //     (deux versions en ALTERNANCE, contre la dérive de l'environnement)
 //   `--slow` (run, ab) : l'émulateur sur les cœurs économes du Mac le temps
 //     de chaque mesure — constantes, plus proches de la Shield (`lib/host.mjs`)
+//   `--no-warmup` (run, ab) : sans échauffement, quand les caches sont déjà
+//     chauds (images retaillées par le relais, cache disque de l'app)
 //   node apps/tv/harness/android-perf/bench.mjs show <nom>
 //   node apps/tv/harness/android-perf/bench.mjs compare <avant> <après>
 //   node apps/tv/harness/android-perf/bench.mjs diff <avant> <après>     (captures : SSIM, PSNR, côte à côte)
@@ -135,8 +137,10 @@ async function run() {
   const scenarios = scenariosOf(option("only"));
   await withBench(debugApk, async (device, player, proxy) => {
     await player.prepareApk(apk);
-    await player.warmup(scenarios);
-    console.log("échauffement fait");
+    if (!flag("no-warmup")) {
+      await player.warmup(scenarios);
+      console.log("échauffement fait");
+    }
     const results = [];
     for (const scenario of scenarios) {
       const played = [];
@@ -166,7 +170,7 @@ async function ab() {
   const rounds = Number(option("rounds", "2"));
   const scenarios = scenariosOf(option("only"));
   await withBench(debugApk, async (device, player, proxy) => {
-    for (const tag of tags) {
+    for (const tag of flag("no-warmup") ? [] : tags) {
       await player.prepareApk(apks[tag]);
       await player.warmup(scenarios);
       console.log(`échauffement ${tag} fait`);
