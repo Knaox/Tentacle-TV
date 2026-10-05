@@ -15,9 +15,19 @@ TENTACLE_TV_REDESIGN=1 ./gradlew assembleRelease assembleDebug -x lint -PreactNa
 node apps/tv/harness/android-perf/bench.mjs run --apk <release.apk> --debug-apk <debug.apk> --tag avant [--only focus-rangee,grille] [--rounds 3] [--trace]
 node apps/tv/harness/android-perf/bench.mjs compare avant apres
 # deux versions en ALTERNANCE (A, B, puis B, A) — la seule comparaison fiable
-node apps/tv/harness/android-perf/bench.mjs ab --a <avant.apk> --tag-a avant --b <apres.apk> --tag-b apres --debug-apk <debug.apk> [--rounds 2] [--shots]
+node apps/tv/harness/android-perf/bench.mjs ab --a <avant.apk> --tag-a avant --b <apres.apk> --tag-b apres --debug-apk <debug.apk> [--rounds 2] [--shots] [--slow]
 node apps/tv/harness/android-perf/bench.mjs diff avant apres   # captures : PSNR, SSIM, côte à côte
 ```
+
+**Mesurer sur les cœurs économes (`--slow`).** L'Apple M4 n'a que quatre
+cœurs de performance : quand d'autres sessions compilent, l'émulateur passe
+d'une famille de cœurs à l'autre, et le même geste coûte deux à trois fois
+plus d'une passe à l'autre (le 05/10, la même base : le fil UI d'un pas du
+focus à 1,9 ms par image à 14 h, à 4,9-9,1 ms à 16 h). `--slow` place
+l'émulateur, le temps de chaque MESURE, en priorité d'arrière-plan
+(`taskpolicy -b`), que le M4 n'exécute que sur ses six cœurs économes
+(l'installation et la mise en place restent rapides) : des passes
+comparables entre elles, et un émulateur à ~3 fois la Shield au lieu de ~8.
 
 **Mesurer en alternance.** Le 05/10, la moitié « après » d'une passe a
 tourné pendant qu'une autre machine virtuelle occupait le Mac : 311 images

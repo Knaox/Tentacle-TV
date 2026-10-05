@@ -9,6 +9,8 @@
 //   node apps/tv/harness/android-perf/bench.mjs run --apk <release.apk> --debug-apk <debug.apk> --tag <nom> [--only a,b] [--rounds 3] [--trace] [--shots]
 //   node apps/tv/harness/android-perf/bench.mjs ab --a <apk> --tag-a <nom> --b <apk> --tag-b <nom> --debug-apk <apk> [--only a,b] [--rounds 2] [--shots]
 //     (deux versions en ALTERNANCE, contre la dérive de l'environnement)
+//   `--slow` (run, ab) : l'émulateur sur les cœurs économes du Mac le temps
+//     de chaque mesure — constantes, plus proches de la Shield (`lib/host.mjs`)
 //   node apps/tv/harness/android-perf/bench.mjs show <nom>
 //   node apps/tv/harness/android-perf/bench.mjs compare <avant> <après>
 //   node apps/tv/harness/android-perf/bench.mjs diff <avant> <après>     (captures : SSIM, PSNR, côte à côte)
@@ -22,6 +24,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDevice, sleep } from "./lib/device.mjs";
+import { createHostPolicy } from "./lib/host.mjs";
 import { startImageProxy } from "./lib/imageProxy.mjs";
 import { createPlayer } from "./lib/play.mjs";
 import { compareTable, describe, summarizeScenario } from "./lib/report.mjs";
@@ -91,13 +94,15 @@ async function withBench(debugApk, fn) {
   const device = createDevice();
   console.log(`appareil : ${device.describe()}`);
   device.pushKeys(keysDex());
+  const host = createHostPolicy(flag("slow"), console.log);
   const backend = await startBackend();
   const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
   try {
     await device.writeSession({ debugApk, port: PORT });
-    return await fn(device, createPlayer({ device, backendPort: BACKEND_PORT }), proxy);
+    return await fn(device, createPlayer({ device, backendPort: BACKEND_PORT, host }), proxy);
   } finally {
     device.setPerf(false);
+    host.restore();
     backend.kill();
     await proxy.close();
   }
@@ -116,7 +121,8 @@ function filesOf(tag, scenario, round) {
 
 function save(tag, apk, device, proxy, results) {
   const file = path.join(RUNS, `${tag}.json`);
-  fs.writeFileSync(file, JSON.stringify({ tag, apk, date: new Date().toISOString(), device: device.describe(), images: proxy.stats, results }, null, 2));
+  const host = { slow: flag("slow") };
+  fs.writeFileSync(file, JSON.stringify({ tag, apk, date: new Date().toISOString(), device: device.describe(), host, images: proxy.stats, results }, null, 2));
   console.log(`résultats : ${file}`);
 }
 

@@ -15,7 +15,7 @@ export class SetupError extends Error {}
  *  autre machine virtuelle ou un build voisin ne vaut rien. */
 const hostLoad = () => Math.round(os.loadavg()[0] * 10) / 10;
 
-export function createPlayer({ device, backendPort }) {
+export function createPlayer({ device, backendPort, host }) {
   const applyFixtures = (sets) =>
     execFileSync("curl", ["-s", "-X", "POST", `http://127.0.0.1:${backendPort}/__fixtures`, "-d", JSON.stringify({ sets })], { stdio: "ignore" });
 
@@ -24,14 +24,19 @@ export function createPlayer({ device, backendPort }) {
     device.forceStop();
     device.clearLog();
     const loadBefore = hostLoad();
-    const launchMs = device.launch();
+    if (scenario.cold) {
+      // Le démarrage à froid se mesure du lancement au repos.
+      return host.measuring(async () => {
+        const launchMs = device.launch();
+        if (!(await device.waitReady("accueil", 45_000))) throw new Error("l'accueil ne s'est jamais dit prêt (session ? faux backend ? mode de mesure ?)");
+        await device.waitQuiet(1500);
+        const round = summarizeRound(device.perfRecords(), cpuDelta({}, device.threadCpu()));
+        return { ...round, launchMs, hostLoad: [loadBefore, hostLoad()] };
+      });
+    }
+    device.launch();
     const ready = await device.waitReady("accueil", 45_000);
     if (!ready) throw new Error("l'accueil ne s'est jamais dit prêt (session ? faux backend ? mode de mesure ?)");
-    if (scenario.cold) {
-      await device.waitQuiet(1500);
-      const round = summarizeRound(device.perfRecords(), cpuDelta({}, device.threadCpu()));
-      return { ...round, launchMs, hostLoad: [loadBefore, hostLoad()] };
-    }
     await sleep(3000);
     device.keys(...(scenario.setup ?? []));
     await device.waitQuiet(1200);
@@ -44,8 +49,10 @@ export function createPlayer({ device, backendPort }) {
     const before = device.threadCpu();
     const loadAtGesture = hostLoad();
     if (traceFile) startTrace(device, PACKAGE);
-    device.keys(...scenario.gesture);
-    await device.waitQuiet(1500);
+    await host.measuring(async () => {
+      device.keys(...scenario.gesture);
+      await device.waitQuiet(1500);
+    });
     const after = device.threadCpu();
     const round = { ...summarizeRound(device.perfRecords(), cpuDelta(before, after)), gfx: device.gfxStats(), hostLoad: [loadAtGesture, hostLoad()] };
     if (!traceFile) return round;
