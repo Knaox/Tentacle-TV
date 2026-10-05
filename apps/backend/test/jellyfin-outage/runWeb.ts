@@ -20,7 +20,7 @@ import { Chrome } from "./chrome";
 import { sleep, type FakeUser } from "./fakeJellyfin";
 import { FakeMedia, ITEM_B, ITEM_ID } from "./fakeMedia";
 import { startStack } from "./stack";
-import { PROBE, checkReopenedTranscode, nextEpisode, playThrough, waitPlaying, type WebBench } from "./webScenarios";
+import { PROBE, checkReopenedTranscode, nextEpisode, playThrough, waitChannel, waitPlaying, type WebBench } from "./webScenarios";
 
 const args = process.argv.slice(2);
 const keep = args.includes("--keep");
@@ -47,6 +47,8 @@ async function startVite(backendUrl: string): Promise<ChildProcess> {
 async function openPlayer(chrome: Chrome): Promise<void> {
   await chrome.navigate(`http://127.0.0.1:${VITE_PORT}/watch/${ITEM_ID}`);
   await waitPlaying(chrome, 4, 60_000);
+  // Une panne avant que le canal de la page ne soit annoncé ne lui serait pas dite : on l'attend.
+  await waitChannel(chrome, 20_000);
 }
 
 async function main(): Promise<number> {
@@ -116,6 +118,10 @@ async function main(): Promise<number> {
   } catch (err) {
     checks.that("le banc web a tourné jusqu'au bout", false, err instanceof Error ? err.message : String(err));
   } finally {
+    // Une source modifiée pendant le passage : Vite recharge l'app à chaud, la
+    // vidéo disparaît — les mesures ne valent plus rien. On le dit, sans accuser le lecteur.
+    const hmr = chrome.console.filter((line) => line.text.includes("[vite] hot updated")).length;
+    checks.that("aucun rechargement à chaud pendant le passage (sinon : rejouer sans toucher aux sources)", hmr === 0, hmr);
     writeFileSync(join(runDir, "console.json"), JSON.stringify(chrome.console, null, 2));
     writeFileSync(join(runDir, "traces.json"), JSON.stringify(bench.traces));
     await chrome.stop();

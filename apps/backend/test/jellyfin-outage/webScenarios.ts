@@ -25,7 +25,21 @@ export interface Sample {
 
 /** Posé dans chaque document : la sonde de la page. */
 export const PROBE = `
-window.__bench = { samples: [] };
+window.__bench = { samples: [], jellyfin: [] };
+// Chaque état de Jellyfin REÇU par la page (au niveau du WebSocket) : la
+// preuve que son canal est annoncé, et l'heure de réception, à part de l'affichage.
+const NativeWebSocket = window.WebSocket;
+window.WebSocket = class extends NativeWebSocket {
+  constructor(...args) {
+    super(...args);
+    this.addEventListener("message", (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg && msg.type === "server:jellyfin") window.__bench.jellyfin.push({ at: Date.now(), state: msg.state });
+      } catch { /* trame non JSON (Vite) */ }
+    });
+  }
+};
 setInterval(() => {
   const v = document.querySelector("video");
   const b = document.querySelector("[data-jellyfin-outage]");
@@ -48,6 +62,15 @@ export interface WebBench {
 
 export async function drain(chrome: Chrome): Promise<Sample[]> {
   return chrome.evaluate<Sample[]>("const s = window.__bench ? window.__bench.samples : []; if (window.__bench) window.__bench.samples = []; return s;");
+}
+
+/** Attend que le canal de session de la page soit annoncé (premier `server:jellyfin` reçu). */
+export async function waitChannel(chrome: Chrome, timeoutMs: number): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!(await chrome.evaluate<boolean>("return !!window.__bench && window.__bench.jellyfin.length > 0;"))) {
+    if (Date.now() > deadline) throw new Error("le canal de session de la page ne s'est pas annoncé");
+    await sleep(100);
+  }
 }
 
 /** Attend que la vidéo avance (au moins `seconds` de lecture). */
@@ -95,6 +118,10 @@ export async function playThrough(b: WebBench, key: string, label: string, outag
   await sleep(18_000);
   const samples = await drain(b.chrome);
   b.traces[key] = samples.map((s) => ({ ...s, rel: s.at - up }));
+  const received = await b.chrome.evaluate<Array<{ at: number; state: string }>>("return window.__bench.jellyfin;");
+  const firstReceived = received.find((m) => m.at >= t0 && m.state !== "up");
+  b.measures[`${key}.received`] = firstReceived ? firstReceived.at - t0 : null;
+  b.measures[`${key}.receivedStates`] = received.filter((m) => m.at >= t0).map((m) => m.state).join(" → ");
   const firstBanner = samples.find((s) => s.at >= t0 && s.banner !== null);
   note(b, `${key}.banner`, "bandeau affiché", firstBanner ? firstBanner.at - t0 : null, 10_000);
   const states = samples.filter((s) => s.state !== null).map((s) => s.state).filter((s, i, all) => s !== all[i - 1]);

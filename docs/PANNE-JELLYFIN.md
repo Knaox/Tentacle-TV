@@ -49,15 +49,28 @@ Apple TV et Android TV : l'état vaut une sonde qui fait foi dans leur reprise
 
 ```bash
 pnpm bench:jellyfin-outage       # vrai backend + faux Jellyfin + faux lecteurs : 57 vérifications
-pnpm bench:jellyfin-outage:web   # la vraie app web dans Chrome sans tête : 48 vérifications
+pnpm bench:jellyfin-outage:web   # la vraie app web dans Chrome sans tête : 42 vérifications
 ```
 
 Le faux Jellyfin (`test/jellyfin-outage/fakeJellyfin.ts`) rejoue les séquences
 du tableau ci-dessus ; le banc web sert un vrai film (fichier direct à débit
-bridé, HLS à deux pistes audio) et mesure depuis la page. Résultats du
-2026-10-05 : annonce reçue en 2 ms, retour dit 0,06 à 0,7 s après le vrai
-retour, bandeau du lecteur en 10 à 200 ms, aucune erreur, reprise 2 à 3,4 s
-après le retour à la position exacte, nouvelle session, même piste audio.
+bridé — sans bride, le lecteur met tout en réserve et ne cale jamais —, HLS à
+deux pistes audio, deux titres) et mesure depuis la page. Ne rien éditer
+pendant un passage : Vite recharge l'app à chaud et le banc le déclare invalide.
+
+Passage final du 2026-10-05 (57/57 et 42/42) :
+
+| Mesure | Résultat |
+|---|---|
+| Annonce de Jellyfin → lecteurs | 1 ms |
+| `docker stop` / `kill` → « arrêté » dit | 2,0 s / 3,0 s |
+| Vrai retour → « up » dit (le 200 transitoire ignoré) | 10 à 724 ms |
+| Retour → lectures redites et nouvelle session chez Jellyfin | 20 à 734 ms |
+| Bandeau du lecteur web | 39 à 152 ms |
+| Image calée pendant la panne | 2,4 à 21,3 s |
+| Retour → lecture repartie, position exacte | 2,3 à 3,4 s |
+| Socket coupée, Jellyfin servant | aucun message |
+| Épisode suivant | une négociation, sa piste, aucune position héritée |
 
 Ce que les bancs ne jouent pas : mpv (bureau), le mobile et les téléviseurs
 sur appareil — leur logique passe par les mêmes règles, testées unitairement.
