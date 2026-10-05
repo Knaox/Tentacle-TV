@@ -3,6 +3,7 @@ import { wtPositionTicksAt } from "../watchTogether/protocolMessages";
 import type { Room } from "../watchTogether/roomTypes";
 import type { AdminSessionDto, AdminSessionsSnapshotDto, AdminWatchGroupDto } from "./dto";
 import { toAdminSession, type RawSession } from "./mapSession";
+import type { TranscodeMemory } from "./transcodeMemory";
 
 /**
  * L'instantané du tableau de bord : les sessions de Jellyfin, éclairées par
@@ -29,6 +30,8 @@ export interface SnapshotInput {
    *  de son propriétaire. La seule place où un invité paraît : « Invité ·
    *  famille de X ». */
   familyGuests?: ReadonlyMap<string, string>;
+  /** Les encodages vus par titre (`transcodeMemory.ts`) : `TranscodingInfo` clignote. */
+  transcodes?: TranscodeMemory;
 }
 
 function overlayTentacle(session: AdminSessionDto, connections: readonly ConnectionView[], now: number): void {
@@ -56,9 +59,11 @@ function compare(a: AdminSessionDto, b: AdminSessionDto): number {
 
 export function buildSnapshot(input: SnapshotInput): AdminSessionsSnapshotDto {
   const sessions: AdminSessionDto[] = [];
+  input.transcodes?.observe(input.raw);
   for (const raw of input.raw) {
     if (raw === null || typeof raw !== "object") continue;
-    const session = toAdminSession(raw as RawSession, input.receivedAt);
+    const remembered = input.transcodes ? input.transcodes.recall(raw as RawSession) : (raw as RawSession);
+    const session = toAdminSession(remembered, input.receivedAt);
     if (session === null) continue;
     if (session.nowPlaying === null && input.now - Date.parse(session.lastActivity) > IDLE_WINDOW_MS) continue;
     overlayTentacle(session, input.connections, input.now);

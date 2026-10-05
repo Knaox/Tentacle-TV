@@ -24,7 +24,7 @@ const SHORT: Record<DeliveryKind, string> = {
 export const PlaybackDetails = memo(function PlaybackDetails({ session }: { session: AdminSessionDto }) {
   const { t, i18n } = useTranslation("sessions");
   const st = useThemedStyles(makeStyles);
-  const { kind, declaredTranscode, reasons, changes, encoder } = explainPlayback(session, i18n.language);
+  const { kind, reasons, changes, encoder } = explainPlayback(session, i18n.language);
   const { source } = session;
   const completion = session.transcoding?.completionPercentage;
 
@@ -37,8 +37,6 @@ export const PlaybackDetails = memo(function PlaybackDetails({ session }: { sess
     : "";
   const what = joinParts([
     t(SHORT[kind]),
-    // Le client se dit « Transcode » sans que Jellyfin encode rien : on le dit, sans l'en croire.
-    declaredTranscode ? t("declaredTranscode") : null,
     encoder === null ? null : encoder === "software" ? t("software") : t("encoderHardware", { name: encoder }),
     completion !== undefined && kind !== "direct" ? t("completion", { percent: Math.round(completion) }) : null,
   ]);

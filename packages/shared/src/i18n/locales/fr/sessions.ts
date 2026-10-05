@@ -53,7 +53,6 @@ export default {
   countVideo_other: "{{count}} transcodages",
   // Ce que dit la carte : la sorte en clair, pourquoi, ce qui change, la source.
   directPlayShort: "le fichier tel quel",
-  declaredTranscode: "déclaré transcodage par l'appareil, rien n'est encodé",
   remuxShort: "conteneur seulement, sans perte",
   audioTranscodeShort: "image intacte, son converti",
   transcodeShort: "image réencodée",

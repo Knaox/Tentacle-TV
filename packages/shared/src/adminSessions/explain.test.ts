@@ -79,7 +79,7 @@ describe("chaque raison de Jellyfin se dit, avec ses détails quand on les a", (
   });
 
   it("une lecture directe n'a pas de raison à dire", () => {
-    expect(explainPlayback(session(null), "fr")).toEqual({ kind: "direct", declaredTranscode: false, reasons: [], changes: [], encoder: null });
+    expect(explainPlayback(session(null), "fr")).toEqual({ kind: "direct", reasons: [], changes: [], encoder: null });
   });
 });
 
@@ -137,10 +137,6 @@ describe("ce que Jellyfin n'a pas reçu, dit quand même (passation du 2026-10-0
     expect(e.reasons).toEqual([]);
   });
 
-  it("le client se dit « Transcode », Jellyfin n'encode rien : direct, déclaré seulement", () => {
-    const e = explainPlayback({ ...session(null), playMethod: "Transcode" }, "fr");
-    expect(e).toMatchObject({ kind: "direct", declaredTranscode: true, reasons: [], changes: [] });
-  });
 });
 
 describe("libellés", () => {

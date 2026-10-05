@@ -6,6 +6,7 @@ import { sessionSignatures } from "./jellyfinWsSessions";
 import { handleServerEvent } from "./jellyfinWsEvents";
 import { jellyfinAuthHeaders } from "./jellyfinAuth";
 import { jellyfinAnnounced, jellyfinSocketLost, jellyfinSocketOpened, onJellyfinHealth } from "./jellyfinHealth";
+import { transcodeMemory } from "./adminSessions/transcodeMemory";
 
 /**
  * Le WebSocket Jellyfin — ce qu'il livre vraiment, et à quelles conditions.
@@ -102,6 +103,7 @@ function buildWsTarget(): { url: string; headers: Record<string, string> } | nul
 function handleSessions(data: unknown): void {
   lastSessionsFrameMs = Date.now();
   latestFrame = { sessions: Array.isArray(data) ? data : [], at: lastSessionsFrameMs };
+  transcodeMemory.observe(latestFrame.sessions); // `TranscodingInfo` clignote : on retient chaque encodage vu.
   const { playing, states } = sessionSignatures(data as never);
 
   const segmentEdge = states !== statesSignature;

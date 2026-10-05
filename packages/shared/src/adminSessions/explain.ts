@@ -1,5 +1,5 @@
 import type { AdminSessionDto } from "../types/adminSessionsDto";
-import { declaredTranscodeOnly, deliveryOf, type DeliveryKind } from "./delivery";
+import { deliveryOf, type DeliveryKind } from "./delivery";
 import { acceleratorLabel, channelsLabel, codecLabel, formatBitrate, rangeLabel, resolutionLabel } from "./format";
 
 /**
@@ -68,8 +68,6 @@ export interface ReasonLine {
 
 export interface PlaybackExplanation {
   kind: DeliveryKind;
-  /** Le client se dit « Transcode », mais Jellyfin n'encode rien pour lui. */
-  declaredTranscode: boolean;
   reasons: ReasonLine[];
   /** Ce que le serveur change : « HEVC → H.264 », « 4K → 1080p », « TrueHD 5.1 → AAC 2.0 ». */
   changes: string[];
@@ -220,7 +218,6 @@ export function explainPlayback(
   const kind = deliveryOf(session);
   return {
     kind,
-    declaredTranscode: declaredTranscodeOnly(session),
     reasons: kind === "direct" ? [] : reasonLines(session, kind),
     changes: changes(session, kind, locale),
     encoder: encoder(session, kind),

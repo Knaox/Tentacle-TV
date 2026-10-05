@@ -3,6 +3,7 @@ import { z } from "zod";
 import { sessionConnections } from "../services/deviceSessions/gateway";
 import { loadRawSessions, sendMessage, sendPlaystate } from "../services/adminSessions/jellyfinAdmin";
 import { buildSnapshot } from "../services/adminSessions/snapshot";
+import { transcodeMemory } from "../services/adminSessions/transcodeMemory";
 import type { AdminGroupActionResultDto } from "../services/adminSessions/dto";
 import { allRooms } from "../services/watchTogether/roomRegistry";
 import { familyGuestOwners } from "../services/family/familyGuestMarkers";
@@ -34,7 +35,9 @@ async function snapshot() {
   const { sessions, at } = await loadRawSessions(now);
   // Les invités de la Famille, étiquetés (base muette : sans étiquette, rien de plus).
   const familyGuests = await familyGuestOwners().catch(() => new Map<string, string>());
-  return buildSnapshot({ raw: sessions, receivedAt: at, connections: sessionConnections(), rooms: allRooms(), now, familyGuests });
+  return buildSnapshot({
+    raw: sessions, receivedAt: at, connections: sessionConnections(), rooms: allRooms(), now, familyGuests, transcodes: transcodeMemory,
+  });
 }
 
 /** Les sessions Jellyfin des membres d'une salle — `null` si la salle n'existe pas. */
