@@ -37,7 +37,7 @@ export const JellyfinOutageNotice = memo(function JellyfinOutageNotice({ onRetry
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
     >
-      <div className="pointer-events-auto w-[min(26rem,100%)]" data-jellyfin-outage={outage.state}>
+      <div className="pointer-events-auto w-[min(26rem,100%)]">
         <NoticeCard
           surface="player"
           severity={long ? "blocking" : "info"}

@@ -522,7 +522,7 @@ TOUJOURS rouvert au retour (même position, mêmes pistes, nouvelle session) ;
 la TV en fait une sonde qui fait foi (tv-core `serverOutage.ts`). Toute sonde
 « Jellyfin est revenu » exige l'`Id` de `/System/Info/Public` : le serveur
 d'attente de 10.11 rend un 200 sans `Id` pendant son démarrage (mesuré).
-Faits mesurés, bancs (`bench:jellyfin-outage`, `:web`) : `docs/PANNE-JELLYFIN.md`.
+Faits mesurés : `docs/PANNE-JELLYFIN.md`.
 
 ## Navigation TV — une seule source
 

@@ -32,7 +32,7 @@ export function PlaybackProblemScreen({ model, posterUrl, title, subtitle, onAct
   }, [onBack]);
 
   return (
-    <div data-playback-problem="" className="relative h-screen w-screen overflow-hidden bg-[#0a0a12] fade-in-on-mount">
+    <div className="relative h-screen w-screen overflow-hidden bg-[#0a0a12] fade-in-on-mount">
       {posterUrl && (
         <img src={posterUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
       )}

@@ -1,7 +1,7 @@
 # Panne de Jellyfin pendant une lecture
 
 Passation du 2026-10-05 (Baby Reindeer S01E03 sur le bureau 1.26.0). Ce qui
-est en place, ce qui a été MESURÉ, et les deux bancs qui le rejouent.
+est en place, et ce qui a été MESURÉ.
 
 ## Le principe
 
@@ -45,20 +45,12 @@ Apple TV et Android TV : l'état vaut une sonde qui fait foi dans leur reprise
   arrive « sans raison ». Avec `ContainerBitrateExceedsLimit`, Jellyfin
   l'enregistre et le tableau de bord dit « débit plafonné ».
 
-## Les bancs (depuis `apps/backend`, Docker requis)
+## Mesuré pendant le chantier
 
-```bash
-pnpm bench:jellyfin-outage       # vrai backend + faux Jellyfin + faux lecteurs : 57 vérifications
-pnpm bench:jellyfin-outage:web   # la vraie app web dans Chrome sans tête : 42 vérifications
-```
-
-Le faux Jellyfin (`test/jellyfin-outage/fakeJellyfin.ts`) rejoue les séquences
-du tableau ci-dessus ; le banc web sert un vrai film (fichier direct à débit
-bridé — sans bride, le lecteur met tout en réserve et ne cale jamais —, HLS à
-deux pistes audio, deux titres) et mesure depuis la page. Ne rien éditer
-pendant un passage : Vite recharge l'app à chaud et le banc le déclare invalide.
-
-Passage final du 2026-10-05 (57/57 et 42/42) :
+Avec un faux Jellyfin qui rejouait ces séquences, le vrai backend et la vraie
+app web dans Chrome (outillage retiré ensuite, au profit d'essais manuels ;
+il vit dans l'historique de la branche, commit « test(serveur) : le banc des
+pannes… ») :
 
 | Mesure | Résultat |
 |---|---|
@@ -67,10 +59,9 @@ Passage final du 2026-10-05 (57/57 et 42/42) :
 | Vrai retour → « up » dit (le 200 transitoire ignoré) | 10 à 724 ms |
 | Retour → lectures redites et nouvelle session chez Jellyfin | 20 à 734 ms |
 | Bandeau du lecteur web | 39 à 152 ms |
-| Image calée pendant la panne | 2,4 à 21,3 s |
-| Retour → lecture repartie, position exacte | 2,3 à 3,4 s |
+| Retour → lecture repartie, position exacte (image calée 2,4 à 21,3 s) | 2,3 à 3,4 s |
 | Socket coupée, Jellyfin servant | aucun message |
 | Épisode suivant | une négociation, sa piste, aucune position héritée |
 
-Ce que les bancs ne jouent pas : mpv (bureau), le mobile et les téléviseurs
-sur appareil — leur logique passe par les mêmes règles, testées unitairement.
+Non vérifié sur appareil : mpv (bureau), le mobile et les téléviseurs — leur
+logique passe par les mêmes règles, testées unitairement.
