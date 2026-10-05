@@ -8,7 +8,7 @@ import { ZodError } from "zod";
 import websocket from "@fastify/websocket";
 
 import { registerStaticClients } from "./static/staticClients";
-import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
+import { initPrisma, hasDatabaseUrl, getDatabaseUrl, getDatabaseUrlSource, reconnectPrisma } from "./services/db";
 import { ensureDatabaseSchema } from "./services/schemaInit/ensureSchema";
 import { applyPairingEpoch } from "./services/pairingEpoch";
 import { detectAppState, getAppState } from "./services/configStore";
@@ -313,7 +313,8 @@ async function main() {
 
   // ── Initialize database (with retry for Docker Compose / slow DB starts) ──
   const dbUrl = getDatabaseUrl();
-  const dbSource = process.env.DATABASE_URL ? "env" : dbUrl ? "file (data/database.json)" : "none";
+  // L'environnement, c'est DATABASE_URL ou les variables DB_* des piles Docker.
+  const dbSource = getDatabaseUrlSource() === "env" ? "env" : dbUrl ? "file (data/database.json)" : "none";
   console.log(`[DB] DATABASE_URL source: ${dbSource}`);
   if (dbUrl) {
     // Log masked URL for debugging

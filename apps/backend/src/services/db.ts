@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import { DATA_ROOT } from "./dataDir";
 import { resolveDatabaseUrlSource, type DatabaseUrlSource } from "./databaseInfo";
+import { databaseUrlFromEnv } from "./databaseEnv";
 
 const DATA_DIR = DATA_ROOT;
 const DB_CONFIG_FILE = resolve(DATA_DIR, "database.json");
@@ -23,13 +24,14 @@ function readConfigFileUrl(): string | null {
 }
 
 // L'environnement et le fichier TELS QU'AU DÉMARRAGE : `saveDatabaseUrl`
-// réécrit les deux à chaud (cf. `resolveDatabaseUrlSource`).
-const bootEnvUrl = process.env.DATABASE_URL || null;
+// réécrit les deux à chaud (cf. `resolveDatabaseUrlSource`). L'environnement,
+// c'est `DATABASE_URL` ou les variables `DB_*` des piles Docker (databaseEnv.ts).
+const bootEnvUrl = databaseUrlFromEnv(process.env);
 const bootFileUrl = readConfigFileUrl();
 
-/** Read DATABASE_URL from env var or persisted config file. */
+/** L'URL de la base : l'environnement d'abord, sinon `data/database.json`. */
 export function getDatabaseUrl(): string | null {
-  return process.env.DATABASE_URL || readConfigFileUrl();
+  return databaseUrlFromEnv(process.env) || readConfigFileUrl();
 }
 
 /** Qui décide de la connexion au prochain démarrage : l'environnement ou `data/database.json`. */
