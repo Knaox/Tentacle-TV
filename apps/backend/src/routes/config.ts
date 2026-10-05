@@ -9,11 +9,12 @@ import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
 import { BACKEND_VERSION } from "../services/version";
 import { jellyfinAcceptsLegacyAuth } from "../services/jellyfinLegacyAuth";
 import { familyCapability } from "../services/family/familyConfig";
+import { serverAddresses } from "../remoteAccess/serverAddresses";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
 
 export const configRoutes: FastifyPluginAsync = async (app) => {
-  app.get("/config", async () => {
+  app.get("/config", async (request) => {
     return {
       version: BACKEND_VERSION,
       brandName: "Tentacle TV",
@@ -28,6 +29,8 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
       // LAN/DNS privé) qui n'est joignable que depuis le réseau interne.
       publicUrl: getPublicUrl(),
+      // Les adresses locales et publiques (Tentacle, Jellyfin) — les locales au seul réseau local.
+      addresses: serverAddresses(isPrivateIp(getRealClientIp(request))),
     };
   });
 
