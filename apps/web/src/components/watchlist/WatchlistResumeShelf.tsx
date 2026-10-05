@@ -1,7 +1,11 @@
-import { memo } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { useHeldRowItems } from "@tentacle-tv/api-client";
+import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { WatchlistResumeTile } from "./WatchlistResumeTile";
+
+const mediaKey = (item: MediaItem) => item.Id;
 
 interface WatchlistResumeShelfProps {
   items: MediaItem[];
@@ -19,13 +23,26 @@ interface WatchlistResumeShelfProps {
  * La vignette est la carte paysage de toutes les rangées (`WatchlistResumeTile`).
  */
 export const WatchlistResumeShelf = memo(function WatchlistResumeShelf({
-  items, onPlay, pendingPlayId,
+  items: served, onPlay, pendingPlayId,
 }: WatchlistResumeShelfProps) {
   const { t } = useTranslation("watchlist");
+  // Survolée, la rangée est TENUE : « vu » ou Ma liste retirée depuis une
+  // vignette ne la fait partir qu'au lâcher (rows/heldRow, comme l'accueil).
+  const rowRef = useRef<HTMLElement | null>(null);
+  const [hovered, setHovered] = useState(false);
+  const leave = useCallback(() => setHovered(false), []);
+  useHoverGuard(rowRef, hovered, leave);
+  const items = useHeldRowItems(served, hovered, mediaKey);
   if (items.length === 0) return null;
 
   return (
-    <section aria-labelledby="watchlist-resume-title" className="mb-8">
+    <section
+      ref={rowRef}
+      aria-labelledby="watchlist-resume-title"
+      className="mb-8"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={leave}
+    >
       {/* Sous le panneau d'outils, sur la page : texte thémé. */}
       <div className="mb-3 flex items-baseline gap-3">
         <h2 id="watchlist-resume-title" className="text-lg font-bold tracking-tight text-content-primary">
