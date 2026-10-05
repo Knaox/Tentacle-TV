@@ -65,7 +65,7 @@ services:
       TZ: ${TZ:-Europe/Paris}
     ports:
       - "${JELLYFIN_PORT:-8096}:8096"
-      - "7359:7359/udp" # lets Jellyfin apps find the server on your network
+      - "${JELLYFIN_DISCOVERY_PORT:-7359}:7359/udp" # lets Jellyfin apps find the server on your network
     volumes:
       - jellyfin-config:/config
       - jellyfin-cache:/cache
