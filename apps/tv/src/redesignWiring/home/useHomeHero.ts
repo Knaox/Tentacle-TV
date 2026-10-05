@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 import { useCardToggles, useFeaturedItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
@@ -10,6 +9,7 @@ import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useBeyondEdge } from "../../platform/tvos/focus/useBeyondEdge";
 import { backdropUriOf } from "../cards/cardArtwork";
 import { heroModelOf } from "../hero/heroModel";
+import { prefetchImage, useHeroImageReady } from "./heroImageReady";
 import { useHeroArts } from "./useHeroArts";
 import { useHeroRotation } from "./useHeroRotation";
 
@@ -36,6 +36,8 @@ export interface HomeHero {
   current: MediaItem | null;
   /** Des titres attendent le premier art : l'écran se dit « en chargement ». */
   pending: boolean;
+  /** Le premier héros attend son image (bornée) : l'écran se dit encore « en chargement ». */
+  imagePending: boolean;
   onPrimary: () => void;
   onSecondary: () => void;
   onToggleList: () => void;
@@ -73,7 +75,7 @@ export function useHomeHero(
   useEffect(() => {
     for (const item of items) {
       const uri = backdropUriOf(client, item);
-      if (uri) void Image.prefetch(uri);
+      if (uri) void prefetchImage(uri);
     }
   }, [items, client]);
 
@@ -136,5 +138,18 @@ export function useHomeHero(
     onBeyond: advance,
   });
 
-  return { hero, current, pending: items.length > 0 && !hero, onPrimary, onSecondary, onToggleList, onLongPress };
+  // Son image d'abord : sans elle, le cadre du premier héros paraissait vide
+  // et l'image tombait après les rangées (tv-core `homeLoading`).
+  const imageReady = useHeroImageReady(hero !== null, hero?.backdropUri);
+
+  return {
+    hero,
+    current,
+    pending: items.length > 0 && !hero,
+    imagePending: hero !== null && !imageReady,
+    onPrimary,
+    onSecondary,
+    onToggleList,
+    onLongPress,
+  };
 }

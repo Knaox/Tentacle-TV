@@ -84,6 +84,7 @@ export function HomeRedesign({ navigation, route }: Props) {
     resumeSettled: settled(resumeQuery),
     librariesSettled: settled(librariesQuery),
     heroPending: hero.pending,
+    heroImagePending: hero.imagePending,
   });
   const empty = !loading && !failed && featuredQuery.data?.length === 0 && home.rows.length === 0 && !home.resume?.length;
   // Le mode de mesure (Android TV, éteint par défaut) : l'accueil est prêt.

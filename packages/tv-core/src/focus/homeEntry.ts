@@ -36,19 +36,30 @@ export interface HomeReadiness {
   librariesSettled: boolean;
   /** Le premier héros attend l'art de son titre (logo, fond). */
   heroPending: boolean;
+  /** Le premier héros attend son IMAGE — au plus `HERO_IMAGE_WAIT_MS`. */
+  heroImagePending: boolean;
 }
+
+/**
+ * Ce que l'accueil attend au plus l'image de son premier héros : au-delà, il
+ * se montre sans elle — un réseau lent ne le retient pas.
+ */
+export const HERO_IMAGE_WAIT_MS = 1500;
 
 /**
  * L'accueil se montre D'UN BLOC, en haut, sur son héros : il charge tant
  * que les sources du héros (vedettes, reprise) et les bibliothèques n'ont pas
- * répondu, ou que le premier héros attend son art. Avant, il se montrait dès
- * la première réponse : le focus se posait sur une rangée, puis le héros
- * s'insérait au-dessus et la page remontait. Les rangées qui arrivent ensuite
- * se rangent sous le héros, sans rien déplacer de ce qu'on regarde.
+ * répondu, ou que le premier héros attend son art, puis son image (bornée :
+ * `HERO_IMAGE_WAIT_MS`) — sans elle, le cadre du héros paraissait vide, et
+ * l'image tombait après les rangées (retour d'essai, Apple TV, 2026-10-05).
+ * Avant, il se montrait dès la première réponse : le focus se posait sur une
+ * rangée, puis le héros s'insérait au-dessus et la page remontait. Les
+ * rangées qui arrivent ensuite se rangent sous le héros, sans rien déplacer
+ * de ce qu'on regarde.
  */
 export function homeLoading(state: HomeReadiness): boolean {
   if (state.failed) return false;
-  return !state.featuredSettled || !state.resumeSettled || !state.librariesSettled || state.heroPending;
+  return !state.featuredSettled || !state.resumeSettled || !state.librariesSettled || state.heroPending || state.heroImagePending;
 }
 
 export interface HomeEntryState {

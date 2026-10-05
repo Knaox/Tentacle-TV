@@ -105,7 +105,7 @@ describe("homeEntry — l'entrée de l'accueil et de « Pour vous »", () => {
 });
 
 describe("l'accueil se montre d'un bloc", () => {
-  const ready = { failed: false, featuredSettled: true, resumeSettled: true, librariesSettled: true, heroPending: false };
+  const ready = { failed: false, featuredSettled: true, resumeSettled: true, librariesSettled: true, heroPending: false, heroImagePending: false };
 
   it("charge tant qu'une source du héros, ou les bibliothèques, n'a pas répondu", () => {
     expect(homeLoading(ready)).toBe(false);
@@ -118,6 +118,11 @@ describe("l'accueil se montre d'un bloc", () => {
   it("attend l'art du premier héros, mais jamais une erreur", () => {
     expect(homeLoading({ ...ready, heroPending: true })).toBe(true);
     expect(homeLoading({ ...ready, failed: true, featuredSettled: false, heroPending: true })).toBe(false);
+  });
+
+  it("attend aussi l'image du premier héros : son cadre ne paraît jamais vide", () => {
+    expect(homeLoading({ ...ready, heroImagePending: true })).toBe(true);
+    expect(homeLoading({ ...ready, failed: true, heroImagePending: true })).toBe(false);
   });
 });
 
