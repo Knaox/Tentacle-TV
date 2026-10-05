@@ -33,10 +33,10 @@ class MpvPlayerView(
     private var lastLoadedUrl: String? = null
     private var pendingPaused: Boolean? = null
     private var lastProgressEmit = 0L
+    private val startTrace = MpvStartTrace()
     var progressInterval = 1000L
     override fun loadState() = mpvLoadState(mpv, lastLoadedUrl != null)
 
-    // Dimensions vidéo pour l'évènement de format
     private var videoParamsW = 0
     private var videoParamsH = 0
 
@@ -60,9 +60,7 @@ class MpvPlayerView(
         pendingPaused?.let { setPaused(it) }
     }
 
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        Log.d(TAG, ">>> surfaceChanged ${width}x$height")
-    }
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) = Unit
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         val handle = mpv ?: return
@@ -128,6 +126,7 @@ class MpvPlayerView(
             else
                 arrayOf("loadfile", cleanUrl, "replace")
             Log.w(TAG, ">>> loadFile start=$startSec url=${cleanUrl.take(120)}")
+            startTrace.reset("mpv start=$startSec")
             handle.command(cmd)
         } catch (e: Exception) {
             Log.e(TAG, ">>> loadFile FAILED", e)
@@ -207,12 +206,13 @@ class MpvPlayerView(
         when (property) {
             "track-list/count" -> sendTrackList()
             "video-params/w" -> { videoParamsW = value.toInt(); emitVideoSizeIfReady() }
-            "video-params/h" -> { videoParamsH = value.toInt(); emitVideoSizeIfReady() }
+            "video-params/h" -> { videoParamsH = value.toInt(); emitVideoSizeIfReady(); startTrace.log("image ${videoParamsW}×$value") }
         }
     }
 
     override fun eventProperty(property: String, value: Boolean) {
         if (destroyed) return
+        if (property == "pause") startTrace.log("pause=$value")
         if (property == "eof-reached" && value) {
             Log.w(TAG, ">>> EOF reached")
             emitEvent("end", Arguments.createMap())
@@ -223,6 +223,7 @@ class MpvPlayerView(
         if (destroyed) return
         when (property) {
             "time-pos" -> {
+                startTrace.position(value)
                 val now = System.currentTimeMillis()
                 if (now - lastProgressEmit >= progressInterval) {
                     lastProgressEmit = now
@@ -240,10 +241,9 @@ class MpvPlayerView(
         }
     }
 
-    override fun event(eventId: Int) {
-        // END_FILE n'est pas fiable — il part aussi aux transitions (loadfile qui
-        // remplace) ; la vraie fin vient de la propriété eof-reached.
-    }
+    // END_FILE n'est pas fiable (il part aussi quand un loadfile remplace) :
+    // la vraie fin vient de la propriété eof-reached.
+    override fun event(eventId: Int) = startTrace.event(eventId)
 
     // --- Liste des pistes ---
 
