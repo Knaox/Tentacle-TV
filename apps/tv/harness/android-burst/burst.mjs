@@ -3,7 +3,12 @@
 // l'émulateur, Android synthétise les répétitions), et ce que l'app a dessiné
 // pendant — `dumpsys gfxinfo` (images, images ratées, centiles).
 //
-//   node apps/tv/harness/android-burst/burst.mjs <down|up|left|right> <secondes> [--repeat 3] [--pause 1.5]
+//   node apps/tv/harness/android-burst/burst.mjs <down|up|left|right> <secondes> [--repeat 3] [--pause 1.5] [--device /dev/input/eventN]
+//
+// La touche est tenue par `sendevent` sur le périphérique d'entrée qui déclare
+// les flèches (`--device`, sinon cherché par `getevent -lp`), ou à défaut par
+// la console de l'émulateur. Au niveau du noyau, Android synthétise lui-même
+// les répétitions, comme sous une vraie télécommande.
 //
 // L'app doit être DEVANT, le focus là où la rafale doit partir (par exemple
 // avec nav-golden `start`/`do --android`). Chaque passage : gfxinfo remis à
@@ -26,6 +31,10 @@ const seconds = Number(secondsArg);
 const repeat = option("repeat", 3);
 const pause = option("pause", 1.5);
 
+const deviceArg = (() => {
+  const i = rest.indexOf("--device");
+  return i >= 0 ? rest[i + 1] : null;
+})();
 const adb = (...args) => execFileSync("adb", [...(process.env.ANDROID_SERIAL ? ["-s", process.env.ANDROID_SERIAL] : []), ...args], { encoding: "utf8" });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -43,12 +52,30 @@ function parse(text) {
   };
 }
 
+/** Le périphérique d'entrée qui déclare les quatre flèches (`getevent -lp`). */
+function arrowDevice() {
+  if (deviceArg) return deviceArg;
+  const blocks = adb("shell", "getevent", "-lp").split(/^add device \d+: /m).slice(1);
+  for (const block of blocks) {
+    const path = block.split("\n")[0].trim();
+    if (["KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT"].every((key) => new RegExp(`\\b${key}\\b`).test(block))) return path;
+  }
+  return null;
+}
+
+const device = arrowDevice();
+console.log(device ? `touche tenue par sendevent sur ${device}` : "touche tenue par la console de l'émulateur");
+const press = (down) =>
+  device
+    ? adb("shell", `sendevent ${device} 1 ${CODES[dir]} ${down ? 1 : 0}; sendevent ${device} 0 0 0`)
+    : adb("emu", "event", "send", `EV_KEY:${CODES[dir]}:${down ? 1 : 0}`, "EV_SYN:0:0");
+
 const runs = [];
 for (let i = 0; i < repeat; i++) {
   adb("shell", "dumpsys", "gfxinfo", PACKAGE, "reset");
-  adb("emu", "event", "send", `EV_KEY:${CODES[dir]}:1`, "EV_SYN:0:0");
+  press(true);
   await sleep(seconds * 1000);
-  adb("emu", "event", "send", `EV_KEY:${CODES[dir]}:0`, "EV_SYN:0:0");
+  press(false);
   await sleep(800); // la page finit son mouvement
   const run = parse(adb("shell", "dumpsys", "gfxinfo", PACKAGE));
   runs.push(run);

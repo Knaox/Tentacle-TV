@@ -135,13 +135,42 @@ export async function androidRun(ctx, commands) {
   return replies;
 }
 
-/** Une touche réellement TENUE (console de l'émulateur) : Android en synthétise les répétitions. */
-async function holdKey(code, seconds) {
-  if (adb(["emu", "event", "send", `EV_KEY:${code}:1`, "EV_SYN:0:0"]) === null) {
-    throw new BenchError("maintien impossible : la console de l'émulateur ne répond pas (adb emu) — un boîtier réel n'a pas de console");
+let inputDevice;
+
+/**
+ * Le périphérique d'entrée qui déclare les quatre flèches (`getevent -lp`),
+ * et s'il connaît KEY_SELECT — lu une fois. `null` : aucun (la console de
+ * l'émulateur prend le relais).
+ */
+function arrowDevice() {
+  if (inputDevice !== undefined) return inputDevice;
+  inputDevice = null;
+  for (const block of (shell("getevent -lp") ?? "").split(/^add device \d+: /m).slice(1)) {
+    const path = block.split("\n")[0].trim();
+    const has = (key) => new RegExp(`\\b${key}\\b`).test(block);
+    if (["KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT"].every(has)) {
+      inputDevice = { path, select: has("KEY_SELECT") ? 353 : 28 };
+      break;
+    }
   }
+  return inputDevice;
+}
+
+/**
+ * Une touche réellement TENUE : `sendevent` sur le périphérique des flèches
+ * (Android synthétise les répétitions, comme sous une télécommande), sinon la
+ * console de l'émulateur.
+ */
+async function holdKey(code, seconds) {
+  const device = arrowDevice();
+  const linux = code === LINUX_KEYCODES[""] && device ? device.select : code;
+  const press = (down) =>
+    device
+      ? shell(`sendevent ${device.path} 1 ${linux} ${down ? 1 : 0}; sendevent ${device.path} 0 0 0`)
+      : adb(["emu", "event", "send", `EV_KEY:${linux}:${down ? 1 : 0}`, "EV_SYN:0:0"]);
+  if (press(true) === null) throw new BenchError("maintien impossible : ni sendevent ni la console de l'émulateur ne répondent");
   await sleep(seconds * 1000);
-  adb(["emu", "event", "send", `EV_KEY:${code}:0`, "EV_SYN:0:0"]);
+  press(false);
 }
 
 /** Ce qui décrit la place dans les relevés. */
