@@ -87,6 +87,7 @@ export function summarizeScenario(scenario, rounds) {
     readyMs: rounds.some((r) => r.readyMs !== null) ? avg((r) => r.readyMs ?? 0) : null,
     launchMs: rounds.some((r) => r.launchMs) ? avg((r) => r.launchMs ?? 0) : null,
     gfx: rounds.some((r) => r.gfx) ? { frames: avg((r) => r.gfx?.frames ?? 0), janky: avg((r) => r.gfx?.janky ?? 0), p90: Math.max(...rounds.map((r) => r.gfx?.p90 ?? 0)), p99: Math.max(...rounds.map((r) => r.gfx?.p99 ?? 0)) } : null,
+    traceTop: rounds.find((r) => r.trace)?.trace ?? null,
     uploads: rounds.some((r) => r.trace) ? { count: avg((r) => r.trace?.uploads.count ?? 0), ms: avg((r) => r.trace?.uploads.ms ?? 0), bySize: rounds.find((r) => r.trace)?.trace.uploads.bySize.slice(0, 5) } : null,
   };
 }
@@ -106,6 +107,10 @@ export function describe(s) {
     `  CPU (ms) : ${Object.entries(s.cpu).sort((a, b) => b[1] - a[1]).map(([g, ms]) => `${g} ${f0(ms)}`).join(" · ")}`,
     ...(s.gfx ? [`  gfxinfo (toutes fenêtres) : ${f0(s.gfx.frames)} images, ${f1(s.gfx.janky)} ratées, p90 ${f0(s.gfx.p90)} ms, p99 ${f0(s.gfx.p99)} ms`] : []),
     ...(s.uploads ? [`  textures envoyées : ${f1(s.uploads.count)} (${f0(s.uploads.ms)} ms) — ${s.uploads.bySize.map((u) => `${u.size} ×${u.count} ${f0(u.ms)} ms`).join(" · ")}`] : []),
+    ...(s.traceTop ? [
+      `  fil UI (trace) : ${s.traceTop.mainThread.slice(0, 6).map((t) => `${t.name} ×${t.count} ${f0(t.ms)} ms (max ${f1(t.max)})`).join(" · ")}`,
+      `  RenderThread (trace) : ${s.traceTop.renderThread.slice(0, 6).map((t) => `${t.name} ×${t.count} ${f0(t.ms)} ms (max ${f1(t.max)})`).join(" · ")}`,
+    ] : []),
     ...(s.readyMs !== null ? [`  prêt en ${f0(s.readyMs)} ms${s.launchMs ? ` (première image de l'activité ${f0(s.launchMs)} ms)` : ""}`] : []),
   ].join("\n");
 }

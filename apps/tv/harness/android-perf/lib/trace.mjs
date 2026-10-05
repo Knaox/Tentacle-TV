@@ -20,14 +20,14 @@ export function parseSlices(text) {
   for (const line of text.split("\n")) {
     const m = line.match(LINE);
     if (!m) continue;
-    const [, thread, tid, , ts, kind, , name] = m;
+    const [, thread, tid, , ts, kind, pid, name] = m;
     const t = Number(ts) * 1000;
     const stack = stacks.get(tid) ?? [];
     stacks.set(tid, stack);
     if (kind === "B") stack.push({ name: name ?? "", start: t, thread });
     else {
       const open = stack.pop();
-      if (open) slices.push({ thread: open.thread, tid, name: open.name, start: open.start, ms: t - open.start });
+      if (open) slices.push({ thread: open.thread, tid, pid, name: open.name, start: open.start, ms: t - open.start });
     }
   }
   return slices;
@@ -45,18 +45,23 @@ export function summarizeTrace(text) {
     entry.ms += upload.ms;
     bySize.set(size, entry);
   }
-  const render = slices.filter((s) => s.thread === "RenderThread");
-  const top = new Map();
-  for (const s of render) {
-    const key = s.name.replace(/\d+x\d+/g, "WxH").replace(/\d+/g, "N");
-    const entry = top.get(key) ?? { name: key, count: 0, ms: 0, max: 0 };
-    entry.count++;
-    entry.ms += s.ms;
-    entry.max = Math.max(entry.max, s.ms);
-    top.set(key, entry);
-  }
+  const topOf = (list) => {
+    const top = new Map();
+    for (const s of list) {
+      const key = s.name.replace(/\d+x\d+/g, "WxH").replace(/\d+/g, "N");
+      const entry = top.get(key) ?? { name: key, count: 0, ms: 0, max: 0 };
+      entry.count++;
+      entry.ms += s.ms;
+      entry.max = Math.max(entry.max, s.ms);
+      top.set(key, entry);
+    }
+    return [...top.values()].sort((a, b) => b.ms - a.ms).slice(0, 15);
+  };
+  // Le fil principal : celui dont le tid est le pid (le nom de fil y est celui du paquet, tronqué).
+  const main = slices.filter((s) => s.tid === s.pid);
   return {
     uploads: { count: uploads.length, ms: uploads.reduce((n, s) => n + s.ms, 0), bySize: [...bySize.values()].sort((a, b) => b.ms - a.ms) },
-    renderThread: [...top.values()].sort((a, b) => b.ms - a.ms).slice(0, 12),
+    renderThread: topOf(slices.filter((s) => s.thread === "RenderThread")),
+    mainThread: topOf(main),
   };
 }
