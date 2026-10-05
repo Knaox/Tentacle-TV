@@ -44,17 +44,22 @@ internal object FocusGeometry {
     return null
   }
 
-  private val trapFields: Map<Boolean, Field?> by lazy {
+  private val trapFields: Map<Int, Field?> by lazy {
     fun field(name: String): Field? =
       runCatching { ReactViewGroup::class.java.getDeclaredField(name).apply { isAccessible = true } }.getOrNull()
-    mapOf(true to field("trapFocusUp"), false to field("trapFocusDown"))
+    mapOf(
+      View.FOCUS_UP to field("trapFocusUp"),
+      View.FOCUS_DOWN to field("trapFocusDown"),
+      View.FOCUS_LEFT to field("trapFocusLeft"),
+      View.FOCUS_RIGHT to field("trapFocusRight"),
+    )
   }
 
   /** Le conteneur le plus proche qui RETIENT le focus dans cette direction
-   *  (`TVFocusGuideView trapFocusUp/Down`, un panneau) : la règle n'en sort
-   *  pas plus que le moteur d'Android. */
-  fun trapOf(view: View, up: Boolean): View? {
-    val field = trapFields[up] ?: return null
+   *  (`TVFocusGuideView trapFocus*`, un panneau) : la règle n'en sort pas
+   *  plus que le moteur d'Android. */
+  fun trapOf(view: View, direction: Int): View? {
+    val field = trapFields[direction] ?: return null
     var v: Any? = view.parent
     while (v is View) {
       if (v is ReactViewGroup && runCatching { field.getBoolean(v) }.getOrDefault(false)) return v

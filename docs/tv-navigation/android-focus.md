@@ -70,9 +70,16 @@ tvOS, plus `tvPacing`), enregistrés par `TentacleFocusPackage` dans
   `trapFocusUp/Down` d'un ancêtre.
 - **GAUCHE / DROITE dans une rangée** (R11) : le moteur géométrique
   d'Android borné à la rangée (`FocusFinder.findNextFocus(rangée…)`, ce que
-  fait `HorizontalScrollView`), mais la rangée suit en un mouvement ; rien
-  dans la rangée : `false`, et le moteur cherche au-delà (le rail) — sans le
-  « saut de page » de `HorizontalScrollView.arrowScroll`.
+  fait `HorizontalScrollView`), mais la rangée suit en un mouvement.
+- **Ailleurs, ou rien au-delà** (R8, R11) — `BeamSearch.kt` : le moteur de la
+  plateforme (`focusSearch` : pièges, guides, `nextFocus*`), mais tenu au
+  FAISCEAU comme celui de tvOS — « pas de chevauchement, pas de voisin » (N4).
+  `FocusFinder` prend sinon une cible en diagonale : au bout d'une rangée,
+  DROITE sautait sur la rangée d'en dessous. Une cible imposée par
+  `nextFocus*` passe telle quelle ; rien dans le faisceau : le focus reste —
+  ni le « saut de page » de `ScrollView.arrowScroll` (une demi-page vers un
+  vide), ni celui de `HorizontalScrollView`. La section prend la touche dans
+  tous les cas.
 - **Suivi (V1-V6, V9, V11)** — `RevealScroller.kt` + `RevealFollower.kt` :
   à `requestChildFocus`, la section la plus proche de l'élément relève la
   position de la page et de la rangée AVANT que `ReactScrollView` ne saute

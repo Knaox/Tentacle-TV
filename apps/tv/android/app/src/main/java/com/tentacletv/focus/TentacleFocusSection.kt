@@ -25,9 +25,10 @@ import java.util.WeakHashMap
  * - la RANGÉE : GAUCHE / DROITE dans une rangée défilante — la carte voisine,
  *   par le moteur géométrique d'Android, borné à la rangée (ce que fait
  *   `HorizontalScrollView`), mais sans son saut : la rangée suit en un
- *   mouvement (`RevealScroller`). Rien dans la rangée : le moteur cherche
- *   au-delà (le rail), sans le « saut de page » de `HorizontalScrollView` —
- *   ni, en HAUT / BAS sans section au-delà, celui de `ScrollView` ;
+ *   mouvement (`RevealScroller`) ;
+ * - ailleurs, ou rien au-delà : le moteur de la plateforme tenu au FAISCEAU,
+ *   comme celui de tvOS (`BeamSearch`) — ni cible en diagonale, ni « saut de
+ *   page » d'une ScrollView qui ne trouve rien ;
  * - le SUIVI de la page (`reveal*`) : `RevealScroller`, au focus ;
  * - la CADENCE d'une flèche maintenue (`tvPacing`) : `HoldPacer`.
  *
@@ -83,48 +84,31 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
     } else {
       HoldPacer.cancel()
     }
-    return move(focused, direction, null) ?: super.dispatchKeyEvent(event)
-  }
-
-  /** Un pas : isolé (`holdIntervalMs` null, le ressort) ou de tenue ; null — rien à décider ici. */
-  private fun move(focused: View, direction: Int, holdIntervalMs: Double?): Boolean? {
-    RevealScroller.currentStep = holdIntervalMs?.let { RevealScroller.Step(burst = true, intervalMs = it) }
-    try {
-      return when (direction) {
-        View.FOCUS_UP, View.FOCUS_DOWN -> moveVertically(focused, direction)
-        else -> moveInRow(focused, direction)
-      } ?: if (holdIntervalMs != null) platformMove(focused, direction) else null
-    } finally {
-      RevealScroller.currentStep = null
-    }
-  }
-
-  /** HAUT / BAS : la règle des sections ; rien au-delà : le moteur d'Android (R8). */
-  private fun moveVertically(focused: View, direction: Int): Boolean? {
-    val from = FocusGeometry.innermostNeighborSection(focused) ?: return null
-    val target = FocusNeighbors.target(from, focused, direction == View.FOCUS_UP) ?: return platformMove(focused, direction)
-    return if (target.requestFocus(direction)) true else null
+    return move(focused, direction, null)
   }
 
   /**
-   * Le moteur d'Android — `focusSearch` du focalisé, par le chemin de ses
-   * ancêtres (pièges, guides, `nextFocus*`), comme ViewRootImpl — mais SANS le
-   * « saut de page » d'une ScrollView qui ne trouve rien (`arrowScroll` défile
-   * d'une demi-page) : sur Apple TV, rien au-delà, rien ne bouge. La touche est
-   * prise dans tous les cas.
+   * Un pas : isolé (`holdIntervalMs` null, le ressort) ou de tenue. HAUT / BAS :
+   * la règle des sections ; GAUCHE / DROITE dans une rangée défilante : le
+   * moteur géométrique d'Android borné à la rangée (ce que fait
+   * `HorizontalScrollView`, sans son saut). Sinon — rien au-delà, ou pas de
+   * rangée —, le moteur de la plateforme tenu au faisceau (`BeamSearch`) ; rien
+   * dans le faisceau : le focus reste. La touche est prise dans tous les cas :
+   * ni le « saut de page » d'une ScrollView qui ne trouve rien, ni une cible en
+   * diagonale.
    */
-  private fun platformMove(focused: View, direction: Int): Boolean {
-    focused.focusSearch(direction)?.requestFocus(direction)
-    return true
-  }
-
-  /** GAUCHE / DROITE dans une rangée défilante ; null hors d'une rangée. */
-  private fun moveInRow(focused: View, direction: Int): Boolean? {
-    val row = FocusGeometry.ancestor<ReactHorizontalScrollView>(focused, stop = this) ?: return null
-    val next = FocusFinder.getInstance().findNextFocus(row, focused, direction)
-    if (next != null) return if (next.requestFocus(direction)) true else null
-    // Rien dans la rangée : le moteur d'Android cherche au-delà (le rail), sans saut de page.
-    return platformMove(focused, direction)
+  private fun move(focused: View, direction: Int, holdIntervalMs: Double?): Boolean {
+    RevealScroller.currentStep = holdIntervalMs?.let { RevealScroller.Step(burst = true, intervalMs = it) }
+    try {
+      val target = when (direction) {
+        View.FOCUS_UP, View.FOCUS_DOWN -> FocusGeometry.innermostNeighborSection(focused)?.let { FocusNeighbors.target(it, focused, direction == View.FOCUS_UP) }
+        else -> FocusGeometry.ancestor<ReactHorizontalScrollView>(focused, stop = this)?.let { FocusFinder.getInstance().findNextFocus(it, focused, direction) }
+      } ?: BeamSearch.target(focused, direction)
+      target?.requestFocus(direction)
+      return true
+    } finally {
+      RevealScroller.currentStep = null
+    }
   }
 
   override fun requestChildFocus(child: View, focused: View) {

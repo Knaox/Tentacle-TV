@@ -117,7 +117,7 @@ internal object FocusNeighbors {
     val fromBox = FocusGeometry.box(from)
     val window = from.rootView
     val scope = FocusGeometry.screenOf(from)
-    val trap = FocusGeometry.trapOf(from, up)
+    val trap = FocusGeometry.trapOf(from, if (up) View.FOCUS_UP else View.FOCUS_DOWN)
     return TentacleFocusSection.attached()
       .asSequence()
       .filter { it !== from && it.tvNeighbors && it.rootView === window && FocusGeometry.screenOf(it) === scope }
