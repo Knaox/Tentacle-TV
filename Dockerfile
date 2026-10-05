@@ -16,20 +16,29 @@
 # Sans contexte nommé (docker compose build, docker build .), tout se
 # construit depuis les sources, comme avant. Voir
 # .github/workflows/server-image.yml.
-FROM node:20-alpine AS base
+#
+# UNE IMAGE LÉGÈRE. L'image finale ne garde que ce qui tourne : Node, le
+# serveur compilé, ses SEULES dépendances de production (élaguées), les deux
+# clients et les outils média. Elle recopiait le `node_modules` complet du
+# monorepo — dépendances de développement du web et du téléviseur comprises :
+# 307 Mo compressés sur 479 (relevé du registre, v1.23.0).
+ARG NODE_IMAGE=node:24-alpine
 
-# Enable corepack for pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
+# ── Construction : l'espace de travail utile, dépendances de dev comprises ───
+FROM ${NODE_IMAGE} AS base
 WORKDIR /app
 
-# Copy workspace config and all package.json files
+# pnpm à la version de `packageManager` (package.json), jamais « latest » : le
+# même build ne doit pas changer d'outil d'un jour à l'autre.
+COPY package.json ./
+RUN corepack enable && corepack install
+
 # `.npmrc` porte `node-linker=hoisted`, et il n'est pas facultatif : sans lui,
 # pnpm installe en arborescence isolée et un paquet n'est visible que du
 # `package.json` qui le déclare. Le client téléviseur compile les sources
 # d'apps/web (React Query, framer-motion, hls.js…) sans les redéclarer — en
 # isolé, leur résolution échoue et le build meurt sur `@tanstack/react-query`.
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc ./
+COPY pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/backend/package.json apps/backend/package.json
 # Client LG webOS : une variante de build d'apps/web, servie par ce serveur
@@ -54,17 +63,8 @@ COPY packages/tv-core/package.json packages/tv-core/package.json
 # imports une fois les sources arrivées par le COPY global.
 COPY packages/offline-core/package.json packages/offline-core/package.json
 COPY patches/ patches/
-
-# Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# En arborescence aplatie, un `node_modules` d'espace de travail n'existe que si
-# une version y entre en conflit avec la racine. L'étage de production recopie
-# celui du backend : on le garantit présent, faute de quoi le COPY échouerait
-# selon les seules versions résolues.
-RUN mkdir -p apps/backend/node_modules
-
-# Copy source code (web, backend, client téléviseur, and shared packages)
 COPY packages/ packages/
 COPY apps/web/ apps/web/
 COPY apps/backend/ apps/backend/
@@ -76,20 +76,24 @@ COPY versions.json versions.json
 # serveur remplace par une révision plus récente lue sur GitHub.
 COPY compat/jellyfin.json compat/jellyfin.json
 
-# Build frontend
 WORKDIR /app/apps/web
 RUN pnpm build
 
-# Build backend — la clé Klipy (GIFs du chat WT) est GRAVÉE dans le code
-# compilé avant tsc (secret GitHub KLIPY_API_KEY → build-arg) : elle ne passe
-# ni par l'ENV de l'image finale ni par docker-compose, et n'est pas
-# modifiable par l'opérateur. Absente = GIFs proprement désactivés.
+# La clé Klipy (GIFs du chat WT) est GRAVÉE dans le code compilé avant tsc
+# (secret GitHub KLIPY_API_KEY → build-arg) : elle ne passe ni par l'ENV de
+# l'image finale ni par docker-compose, et n'est pas modifiable par
+# l'opérateur. Absente = GIFs proprement désactivés.
 WORKDIR /app/apps/backend
 ARG KLIPY_API_KEY=""
 RUN KLIPY_API_KEY="$KLIPY_API_KEY" node scripts/bake-klipy-key.mjs
-RUN npx prisma generate && pnpm build
-
-# Build shared-deps.js for plugin sandbox
+# Le client Prisma, le serveur compilé sans ses cartes de sources, et le
+# schéma complet en SQL qu'une base vierge reçoit au premier démarrage
+# (services/schemaInit) : la CLI Prisma ne part plus dans l'image.
+RUN pnpm exec prisma generate \
+  && pnpm build \
+  && pnpm db:schema-sql \
+  && find dist -name '*.map' -delete
+# shared-deps.js : les dépendances communes des plugins (bac à sable)
 RUN node scripts/build-shared-deps.js
 
 # ── Le client LG webOS, construit depuis les sources ────────────────────────
@@ -110,38 +114,52 @@ RUN pnpm build
 FROM scratch AS tv-client
 COPY --from=tv-client-build /app/apps/tv-webos/client/dist /
 
+# ── Les dépendances de production du serveur, seules, élaguées ──────────────
+# Le serveur ne dépend d'aucun paquet de l'espace de travail : son
+# `package.json` suffit. `pnpm deploy` en tire ses dépendances de production
+# aux versions exactes du verrou — un `install --filter` en mode « hoisted »
+# ramenait le verrou ENTIER (700 paquets, react-native et expo compris). Sans
+# les pairs facultatifs de @prisma/client (la CLI prisma, typescript) ; et les
+# patchs, qui ne visent que le mobile et la TV, sont tolérés sans emploi.
+# Le client Prisma vient de l'étape de construction, déjà généré ; l'élagage
+# (docker/prune-node-modules.sh) ne garde que ce que Node charge. Les modules
+# serveur des plugins (Vigie) n'importent que des modules intégrés de Node :
+# rien ne leur manque.
+FROM ${NODE_IMAGE} AS prod-deps
+WORKDIR /app
+COPY package.json ./
+RUN corepack enable && corepack install
+COPY pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY apps/backend/package.json apps/backend/package.json
+COPY patches/ patches/
+RUN pnpm --filter @tentacle-tv/backend deploy --prod --legacy --ignore-scripts \
+      --config.allow-unused-patches=true --config.auto-install-peers=false /deploy
+COPY --from=base /app/node_modules/.prisma/client /deploy/node_modules/.prisma/client
+COPY apps/backend/docker/prune-node-modules.sh /tmp/prune-node-modules.sh
+RUN sh /tmp/prune-node-modules.sh /deploy/node_modules
+
 # ── Le serveur : backend + client web, SANS le client LG ────────────────────
-FROM node:20-alpine AS server
+FROM ${NODE_IMAGE} AS server
 
-# NODE_ENV n'était posé NULLE PART — ni ici, ni dans docker-compose, ni dans
-# l'entrypoint. Trois conséquences, toutes silencieuses :
-#
-#  - six `setCookie` posaient `secure: NODE_ENV === "production"`, donc `false` :
-#    le cookie de session partait sans le drapeau Secure. (Corrigé à la source
-#    par `secure: "auto"`, qui suit le protocole réel — ceci n'en est plus la
-#    condition, tant mieux.)
-#  - `/api/push/test` se voulait « introuvable en prod, même admin » : son garde
-#    est `if (NODE_ENV === "production") return 404`, qui ne se déclenchait
-#    jamais. L'outil de diagnostic était donc joignable en production.
-#  - `shared-deps.js` était servi en `no-cache` au lieu d'un cache d'un jour.
-#
-# Posé dans l'étage de PRODUCTION uniquement : dans l'étage de build, il ferait
-# sauter les devDependencies dont `tsc` et `vite` ont besoin.
-ENV NODE_ENV=production
+# NODE_ENV n'était posé NULLE PART — cookies sans Secure, outil de diagnostic
+# joignable, cache de shared-deps.js coupé. Le port et l'interface suivent
+# l'EXPOSE : sans PORT, le serveur écoutait sur 3001 derrière un EXPOSE 3000.
+# XDG_CACHE_HOME : yt-dlp écrit son cache là où l'utilisateur du serveur le peut.
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOST=0.0.0.0 \
+    TENTACLE_DEPLOYMENT=docker \
+    XDG_CACHE_HOME=/tmp/.cache
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# chromaprint : fournit `fpcalc`, l'empreinte audio de l'analyse inter-épisodes
-# (services/audioFingerprintTool.ts). Binaire LGPL invoqué, jamais lié — comme
-# yt-dlp. Tire les bibliothèques ffmpeg d'Alpine (≈ 60-80 Mo, amd64 et arm64).
+# chromaprint : `fpcalc`, l'empreinte audio de l'analyse inter-épisodes
+# (services/audioFingerprintTool.ts) — binaire LGPL invoqué, jamais lié.
 # ffmpeg : décode l'extrait audio de l'analyse de fin de média
-# (services/tailAnalysis/tailAudio.ts) ; nommé à part, il ne dépend de rien.
-# python3 : fait tourner le zipapp de yt-dlp, ci-dessous.
-# deno : le moteur JavaScript avec lequel yt-dlp résout les défis de YouTube
-# (« EJS ») — sans lui, YouTube ne sert plus de HLS muxé, seulement un MP4 que
-# googlevideo refuse en 403 (mesuré le 2026-09-29). node 20 ne compte pas :
-# yt-dlp le refuse comme moteur.
-RUN apk add --no-cache chromaprint ffmpeg python3 deno
+# (services/tailAnalysis/tailAudio.ts). python3 : fait tourner le zipapp de
+# yt-dlp. Plus de deno : yt-dlp résout les défis JavaScript de YouTube avec le
+# Node du serveur (≥ 22, services/trailers/ytExtract.ts). su-exec : rendre la
+# main à l'utilisateur du serveur après la préparation du volume. tini : un
+# vrai PID 1, qui transmet les signaux et récolte les processus orphelins.
+RUN apk add --no-cache chromaprint ffmpeg python3 su-exec tini
 
 # yt-dlp : résolution des bandes-annonces YouTube → flux HLS jouable (Apple TV
 # n'a pas de WebView). Le zipapp OFFICIEL, épinglé et vérifié : le paquet
@@ -157,32 +175,30 @@ RUN wget -q -O /usr/local/bin/yt-dlp "https://github.com/yt-dlp/yt-dlp/releases/
   && [ "$(yt-dlp --version)" = "${YTDLP_VERSION}" ]
 
 WORKDIR /app
-
-# Copy built artifacts
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/apps/backend/dist ./apps/backend/dist
-COPY --from=base /app/apps/backend/prisma ./apps/backend/prisma
-COPY --from=base /app/apps/backend/node_modules ./apps/backend/node_modules
+COPY --from=prod-deps /deploy/node_modules ./node_modules
 COPY --from=base /app/apps/backend/package.json ./apps/backend/package.json
-COPY --from=base /app/apps/backend/data/shared-deps ./apps/backend/data/shared-deps
-# Seed copy for shared-deps — entrypoint refreshes them on every start
-# so that image updates bring new shared-deps even when volume already exists
+COPY --from=base /app/apps/backend/dist ./apps/backend/dist
+COPY --from=base /app/apps/backend/prisma/core-init.sql /app/apps/backend/prisma/schema-full.sql ./apps/backend/prisma/
+# Les dépendances partagées des plugins : l'entrypoint les recopie à chaque
+# démarrage dans le volume, pour qu'une mise à jour de l'image les apporte.
 COPY --from=base /app/apps/backend/data/shared-deps /app/shared-deps-seed
 COPY --from=base /app/apps/web/dist ./apps/web/dist
 # versions.json à /app : lu par BACKEND_VERSION (dist/services → ../../../../)
 COPY --from=base /app/versions.json ./versions.json
 # compat/jellyfin.json à /app : cherché en remontant depuis dist/services/jellyfinCompat
 COPY --from=base /app/compat/jellyfin.json ./compat/jellyfin.json
-
-# Copy entrypoint script
-COPY apps/backend/docker-entrypoint.sh ./apps/backend/docker-entrypoint.sh
-RUN chmod +x ./apps/backend/docker-entrypoint.sh
-
-EXPOSE 3000
+COPY --chmod=0755 apps/backend/docker-entrypoint.sh ./apps/backend/docker-entrypoint.sh
+RUN mkdir -p /app/apps/backend/data && chown node:node /app/apps/backend/data
 
 WORKDIR /app/apps/backend
-
-CMD ["sh", "docker-entrypoint.sh"]
+EXPOSE 3000
+# Sans curl : le fetch de Node suffit. /api/health répond aussi en mode
+# installation. Sonde rapprochée au démarrage (`--start-interval`) : un compose
+# qui attend ce serveur « sain » n'attend pas trente secondes de plus.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --start-interval=3s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+ENTRYPOINT ["/sbin/tini", "--", "/app/apps/backend/docker-entrypoint.sh"]
+CMD ["serve"]
 
 # ── L'image livrée : le serveur, puis le client LG par-dessus ───────────────
 # DERNIÈRE étape, donc la cible par défaut. Chemins absolus : le WORKDIR hérité

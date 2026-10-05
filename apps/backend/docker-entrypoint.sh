@@ -1,78 +1,56 @@
 #!/bin/sh
-set -e
+# Le point d'entrée de l'image Tentacle (lancé par tini, PID 1).
+#
+# En root — le cas d'un `docker run` ou d'un compose ordinaire —, il ne garde
+# ce droit que le temps de préparer le dossier de données : un volume créé par
+# une image d'avant appartient à root. Puis il cède la place au serveur sous
+# PUID:PGID (1000:1000 par défaut, l'utilisateur `node` de l'image). Lancé
+# directement en non-root (`--user`, Podman sans root), il saute cette marche.
+#
+# Ce que faisait l'ancienne version et qui n'est plus là :
+#  - l'URL de la base lue dans data/database.json : le serveur la lit lui-même ;
+#  - `npx prisma generate` à chaque démarrage : le client est généré au build ;
+#  - `npx prisma db execute core-init.sql` : le serveur pose son schéma par le
+#    client Prisma (services/schemaInit) — la CLI n'est plus dans l'image.
+set -eu
 
-# --- 1. Load DATABASE_URL from data/database.json if not in env ---
-if [ -z "$DATABASE_URL" ]; then
-  if [ -f data/database.json ]; then
-    DB_URL=$(node -e "
-      try {
-        const cfg = JSON.parse(require('fs').readFileSync('data/database.json', 'utf8'));
-        if (cfg.url) process.stdout.write(cfg.url);
-      } catch {}
-    " 2>/dev/null)
+DATA_DIR="${TENTACLE_DATA_DIR:-/app/apps/backend/data}"
+PUID="${PUID:-1000}"
+PGID="${PGID:-1000}"
+SERVER="/app/apps/backend/dist/index.js"
 
-    if [ -n "$DB_URL" ]; then
-      export DATABASE_URL="$DB_URL"
-      echo "[Entrypoint] DATABASE_URL loaded from data/database.json"
-    fi
+# Les dépendances partagées des plugins suivent l'image, même dans un volume ancien.
+refresh_shared_deps() {
+  mkdir -p "$DATA_DIR/shared-deps"
+  if [ -d /app/shared-deps-seed ]; then
+    cp -f /app/shared-deps-seed/* "$DATA_DIR/shared-deps/" 2>/dev/null || true
   fi
-fi
+}
 
-# --- 2. Refresh shared-deps from image seed ---
-if [ -d /app/shared-deps-seed ]; then
-  mkdir -p data/shared-deps
-  cp -f /app/shared-deps-seed/* data/shared-deps/ 2>/dev/null || true
-  echo "[Entrypoint] Shared deps updated from image"
-fi
-
-# --- 3. Regenerate Prisma client to match the schema baked into this image ---
-# Filet de sécurité : garantit que le client Prisma correspond toujours au
-# schema.prisma présent dans l'image, même si le client buildé était périmé
-# (ex. nouveau modèle ajouté). Sans ça, prisma.<model> est undefined → 500.
-echo "[Entrypoint] Generating Prisma client..."
-npx prisma generate || echo "[Entrypoint] WARNING: prisma generate failed — using prebuilt client."
-
-# --- 4. DB wait + migrations, or setup mode ---
-if [ -n "$DATABASE_URL" ]; then
-  echo "[Entrypoint] Waiting for database to be ready..."
-
-  MAX_RETRIES=10
-  RETRY_INTERVAL=2
-  attempt=1
-
-  while [ "$attempt" -le "$MAX_RETRIES" ]; do
-    if node -e "
-      const url = process.env.DATABASE_URL || '';
-      const match = url.match(/@([^:]+):(\d+)/);
-      if (!match) { process.exit(1); }
-      const net = require('net');
-      const sock = net.createConnection({ host: match[1], port: Number(match[2]), timeout: 2000 });
-      sock.on('connect', () => { sock.destroy(); process.exit(0); });
-      sock.on('error', () => process.exit(1));
-      sock.on('timeout', () => { sock.destroy(); process.exit(1); });
-    " 2>/dev/null; then
-      echo "[Entrypoint] Database is reachable (attempt $attempt/$MAX_RETRIES)"
-      break
-    fi
-
-    echo "[Entrypoint] Database not ready (attempt $attempt/$MAX_RETRIES) — retrying in ${RETRY_INTERVAL}s..."
-    sleep "$RETRY_INTERVAL"
-    attempt=$((attempt + 1))
-  done
-
-  if [ "$attempt" -gt "$MAX_RETRIES" ]; then
-    echo "[Entrypoint] ERROR: Database not reachable after $MAX_RETRIES attempts. Starting server anyway."
-  else
-    # Tables CORE uniquement, de façon additive (CREATE TABLE IF NOT EXISTS).
-    # On n'utilise PAS `prisma db push` : il supprimerait les tables du plugin
-    # Seer (non déclarées dans schema.prisma). Voir prisma/core-init.sql.
-    echo "[Entrypoint] Applying core schema (additive, ne touche pas aux tables plugin)..."
-    npx prisma db execute --schema prisma/schema.prisma --file prisma/core-init.sql \
-      || echo "[Entrypoint] WARNING: core schema init failed — server will start in setup mode."
+# Un volume d'une image d'avant (root) ou un PUID changé : tout est rendu à
+# l'utilisateur du serveur. Rien à faire quand tout lui appartient déjà.
+own_data_dir() {
+  if [ -n "$(find "$DATA_DIR" \( ! -user "$PUID" -o ! -group "$PGID" \) -print 2>/dev/null | head -n 1)" ]; then
+    echo "[Entrypoint] Dossier de données rendu à $PUID:$PGID"
+    chown -R "$PUID:$PGID" "$DATA_DIR"
   fi
-else
-  echo "[Entrypoint] No DATABASE_URL — starting in setup mode"
-fi
+}
 
-echo "[Entrypoint] Starting Tentacle server..."
-exec node dist/index.js
+serve() {
+  if [ "$(id -u)" = "0" ]; then
+    mkdir -p "$DATA_DIR"
+    own_data_dir
+    # La copie se fait SOUS l'utilisateur du serveur : faite en root, elle
+    # rendait les fichiers à root et le chown repassait à chaque démarrage.
+    su-exec "$PUID:$PGID" "$0" refresh-shared-deps
+    exec su-exec "$PUID:$PGID" node "$SERVER"
+  fi
+  refresh_shared_deps
+  exec node "$SERVER"
+}
+
+case "${1:-serve}" in
+  serve) serve ;;
+  refresh-shared-deps) refresh_shared_deps ;;
+  *) exec "$@" ;;
+esac

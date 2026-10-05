@@ -189,6 +189,11 @@ node scripts/package-macos.mjs --lib ./lib/mpv --arch arm64
   (la ligne `yt-dlp` du `SHA2-256SUMS` de la release) ; entre deux images, le
   backend pose seul la dernière version (`services/ytDlp.ts`, `TENTACLE_YTDLP_AUTOUPDATE=0`
   pour s'en tenir à l'épinglée).
+- **Poids de l'image** : le `node_modules` final vient de `pnpm deploy --prod`
+  (le serveur seul), élagué par `apps/backend/docker/prune-node-modules.sh`.
+  Une dépendance de production ajoutée au serveur y entre d'elle-même ; un
+  fichier dont elle aurait besoin à l'exécution et que l'élagage retire
+  (`docs/`, `test/`, `*.ts`…) se rétablit dans ce script.
 
 ### Doc d'installation utilisateur (Android TV / Shield)
 
