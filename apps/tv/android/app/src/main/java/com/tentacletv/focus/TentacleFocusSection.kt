@@ -57,6 +57,7 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     registry.add(this)
+    ReparentGuard.install(this)
   }
 
   override fun onDetachedFromWindow() {
