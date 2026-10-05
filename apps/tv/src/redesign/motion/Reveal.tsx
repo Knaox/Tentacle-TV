@@ -83,10 +83,12 @@ function RevealBody({
     // `motion` : lu au moment du geste, il ne relance rien.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown, reduced, progress, onGone]);
-  const appear = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ translateY: rise * (1 - progress.value) }],
-  }));
+  // Sans montée, la seule opacité : Reanimated renvoie TOUT le style à chaque
+  // image, et une transformation (même nulle) coûte sa conversion et son
+  // application au natif — pour rien.
+  const appear = useAnimatedStyle(() =>
+    rise === 0 ? { opacity: progress.value } : { opacity: progress.value, transform: [{ translateY: rise * (1 - progress.value) }] },
+  );
   return (
     <Animated.View pointerEvents="none" style={[style, appear]}>
       {children}
