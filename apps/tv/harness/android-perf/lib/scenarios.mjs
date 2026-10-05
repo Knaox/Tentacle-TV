@@ -117,6 +117,20 @@ export const SCENARIOS = [
     steps: 2,
   },
   {
+    id: "page-films",
+    title: "Changer de page par le rail : « Films » (la grille d'affiches), puis Retour revient à l'accueil",
+    setup: [tap("left"), wait(700), tap("down", 5, 350), wait(900)],
+    gesture: [tap("ok"), wait(4000), tap("back"), wait(2500)],
+    steps: 2,
+  },
+  {
+    id: "page-pourvous",
+    title: "Changer de page par le rail : « Pour vous » (ses rangées), puis Retour revient à l'accueil",
+    setup: [tap("left"), wait(700), tap("down"), wait(900)],
+    gesture: [tap("ok"), wait(4000), tap("back"), wait(2500)],
+    steps: 2,
+  },
+  {
     id: "grille",
     title: "La grille des films : BAS tenu 4 s puis HAUT tenu 4 s",
     expectReady: "bibliothèque",
