@@ -46,6 +46,7 @@ export function summarizeRound(records, cpu) {
     worstFrame: Math.max(0, ...windows.map((w) => w.total?.max ?? 0)),
     phases,
     uiWork: phases.input + phases.anim + phases.layout + phases.draw,
+    cpuOver: Object.fromEntries(["2", "4", "8", "interval"].map((k) => [k, sum((w) => w.cpuOver?.[k] ?? 0)])),
     commits: sum((w) => w.commits),
     components: sum((w) => w.components),
     mounts: sum((w) => w.mounts),
@@ -75,6 +76,7 @@ export function summarizeScenario(scenario, rounds) {
     severe: avg((r) => r.severe),
     worstP95: Math.max(...rounds.map((r) => r.worstP95)),
     stallCount: avg((r) => r.stallCount ?? 0),
+    cpuOver: Object.fromEntries(["2", "4", "8", "interval"].map((k) => [k, avg((r) => r.cpuOver?.[k] ?? 0)])),
     stallMax: Math.max(...rounds.map((r) => r.stallMax ?? 0)),
     worstFrame: Math.max(...rounds.map((r) => r.worstFrame)),
     phases: Object.fromEntries(PHASES.map((key) => [key, avg((r) => r.phases[key])])),
@@ -101,6 +103,7 @@ export function describe(s) {
   return [
     `${s.id} — ${s.title}`,
     `  ${f0(s.frames)} images, ${f1(s.janky)} ratées (${f1((100 * s.janky) / Math.max(1, s.frames))} %), ${f1(s.severe)} graves · p95 pire ${f1(s.worstP95)} ms · pire image ${f1(s.worstFrame)} ms`,
+    ...(s.cpuOver && s.cpuOver["2"] > 0 ? [`  travail processeur (fil UI + sync) par image : > 2 ms ${f1(s.cpuOver["2"])} · > 4 ms ${f1(s.cpuOver["4"])} · > 8 ms ${f1(s.cpuOver["8"])} · > intervalle ${f1(s.cpuOver.interval)}`] : []),
     ...(s.stallCount > 0 ? [`  fil UI bloqué : ${f1(s.stallCount)} fois (≥ 48 ms), au pire ${f0(s.stallMax)} ms`] : []),
     `  phases Σ (ms) : attente ${f0(s.phases.delay)} · anim ${f0(s.phases.anim)} · dessin ${f0(s.phases.draw)} · sync ${f0(s.phases.sync)} · cmd GPU ${f0(s.phases.issue)} · échange ${f0(s.phases.swap)}`,
     `  React par pas : ${f1(s.commits / s.steps)} validations, ${per(s.components)} composants, ${per(s.mounts)} vues créées, ${per(s.updates)} mises à jour`,
