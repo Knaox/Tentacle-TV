@@ -58,6 +58,8 @@ export const CardShell = memo(function CardShell({
     [centerFrame, frame],
   );
   return (
+    // Jamais aplatie (`collapsable={false}`) : sur Android, `zIndex` posé au
+    // focus ferait créer la vue et re-parenter la cible — qui perdait le focus.
     <View collapsable={false} style={[{ width }, front && styles.front, style]}>
       {/* La place de l'image : elle se dessine dans la cible, plus bas. */}
       <View style={{ height: frameHeight }} />

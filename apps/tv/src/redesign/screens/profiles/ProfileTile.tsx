@@ -69,7 +69,9 @@ export const ProfileTile = memo(function ProfileTile({ model, index, focusKey, e
 
 const { advanceScale, recedeScale } = TV_MOTION.profile;
 
-/** Toujours monté (une tuile qui changerait d'enveloppe se remonterait, et perdrait le focus). */
+/** Toujours monté (une tuile qui changerait d'enveloppe se remonterait, et perdrait le focus).
+ *  Jamais aplati non plus (`collapsable={false}`) : sur Android, `zIndex` posé
+ *  au focus ferait créer la vue et re-parenter la tuile — qui perdrait le focus. */
 function Entering({ entrance, index, front, children }: { entrance: TileEntrance; index: number; front?: boolean; children: ReactNode }) {
   const { progress, chosen, count, still } = entrance;
   const style = useAnimatedStyle(() => {
@@ -81,7 +83,11 @@ function Entering({ entrance, index, front, children }: { entrance: TileEntrance
     }
     return { opacity: 1 - p, transform: still ? [] : [{ scale: 1 - (1 - recedeScale) * p }] };
   });
-  return <Animated.View style={[front ? styles.front : null, style]}>{children}</Animated.View>;
+  return (
+    <Animated.View collapsable={false} style={[front ? styles.front : null, style]}>
+      {children}
+    </Animated.View>
+  );
 }
 
 function Body({ model, focused, guestLabel }: { model: ProfileTileModel; focused: boolean; guestLabel: string }) {
