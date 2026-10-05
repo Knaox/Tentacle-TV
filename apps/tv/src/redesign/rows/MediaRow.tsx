@@ -9,6 +9,7 @@ import type { CardModel } from "../cards/cardTypes";
 import { useForcedFocusKey } from "../focus/focusPreview";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
+import { CullingTrack } from "./CullingTrack";
 import { useRowRewindPort } from "./rowRewindPort";
 import { useStagedRow } from "./rowStage";
 
@@ -104,20 +105,22 @@ export const MediaRow = memo(function MediaRow({
           variant === "morph" && styles.morphContent,
         ]}
       >
-        {cards.slice(0, shown).map((card, index) => (
-          <RowCard
-            key={card.id}
-            card={card}
-            index={index}
-            row={row}
-            rowKey={rowKey}
-            variant={variant}
-            width={cardWidth}
-            onPressCard={onPressCard}
-            onLongPressCard={onLongPressCard}
-            onItemFocus={onItemFocus}
-          />
-        ))}
+        <CullingTrack gap={TV_STAGE.row.gap}>
+          {cards.slice(0, shown).map((card, index) => (
+            <RowCard
+              key={card.id}
+              card={card}
+              index={index}
+              row={row}
+              rowKey={rowKey}
+              variant={variant}
+              width={cardWidth}
+              onPressCard={onPressCard}
+              onLongPressCard={onLongPressCard}
+              onItemFocus={onItemFocus}
+            />
+          ))}
+        </CullingTrack>
       </ScrollView>
     </View>
   );

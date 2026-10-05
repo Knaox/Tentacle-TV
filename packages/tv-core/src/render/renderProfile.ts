@@ -82,6 +82,10 @@ export interface RenderProfile {
   imageScale: number;
   /** L'indicateur d'activité. */
   spinner: SpinnerRendering;
+  /** Ce qui est hors de l'écran sort de la liste d'affichage (pistes de cartes,
+   *  sections — vues natives `TentacleCullTrack`, `TentacleFocusSection`) :
+   *  monté et focalisable, le RenderThread ne le parcourt plus. */
+  cullOffscreen: boolean;
 }
 
 export interface CardArtworkSize {
@@ -120,6 +124,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     stagedRows: false,
     imageScale: 2,
     spinner: "system",
+    cullOffscreen: false,
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
   // floutée en ancienne architecture — les ombres passent par un masque
@@ -139,6 +144,10 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     // L'indicateur système d'Android est un autre dessin (un arc Material) :
     // celui de l'Apple TV, redessiné (`activitySpinner`).
     spinner: "drawn",
+    // Le RenderThread de la Shield parcourt tout l'arbre à chaque image
+    // (React Native ne rogne rien) : ~16 ms à l'accueil, dont l'essentiel hors
+    // de l'écran (trace Skia, 2026-10-05).
+    cullOffscreen: true,
   },
 };
 

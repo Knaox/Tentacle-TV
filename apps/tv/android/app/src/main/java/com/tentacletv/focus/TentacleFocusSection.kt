@@ -1,12 +1,15 @@
 package com.tentacletv.focus
 
 import android.content.Context
+import android.graphics.Canvas
 import android.view.FocusFinder
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.EditText
 import com.facebook.react.views.scroll.ReactHorizontalScrollView
 import com.facebook.react.views.view.ReactViewGroup
+import com.tentacletv.render.DrawCulling
 import java.util.Collections
 import java.util.WeakHashMap
 
@@ -30,7 +33,10 @@ import java.util.WeakHashMap
  *   comme celui de tvOS (`BeamSearch`) — ni cible en diagonale, ni « saut de
  *   page » d'une ScrollView qui ne trouve rien ;
  * - le SUIVI de la page (`reveal*`) : `RevealScroller`, au focus ;
- * - la CADENCE d'une flèche maintenue (`tvPacing`) : `HoldPacer`.
+ * - la CADENCE d'une flèche maintenue (`tvPacing`) : `HoldPacer` ;
+ * - le DESSIN : loin de l'écran, ses enfants sortent de sa liste d'affichage
+ *   (`DrawCulling`) — montés et focalisables, le RenderThread ne les parcourt
+ *   plus.
  *
  * Ce qui décide est dans tv-core (`focus/sections.ts`, `focus/reveal.ts`,
  * `focus/revealMotion.ts`, `focus/burstFollow.ts`, `input/repeatPacing.ts`) ;
@@ -57,15 +63,31 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
     return if (view != null && view !== this) view else null
   }
 
+  /** Ses enfants sont hors de sa liste d'affichage (loin de l'écran, `DrawCulling`). */
+  private var drawCulled = false
+
+  /** Avant chaque image : revenue près de l'écran (ou partie loin), elle se redessine. */
+  private val cullCheck = ViewTreeObserver.OnPreDrawListener {
+    if (DrawCulling.isFar(this) != drawCulled) invalidate()
+    true
+  }
+
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     registry.add(this)
     ReparentGuard.install(this)
+    viewTreeObserver.addOnPreDrawListener(cullCheck)
   }
 
   override fun onDetachedFromWindow() {
+    viewTreeObserver.removeOnPreDrawListener(cullCheck)
     registry.remove(this)
     super.onDetachedFromWindow()
+  }
+
+  override fun dispatchDraw(canvas: Canvas) {
+    drawCulled = DrawCulling.isFar(this)
+    if (!drawCulled) super.dispatchDraw(canvas)
   }
 
   override fun dispatchKeyEvent(event: KeyEvent): Boolean {

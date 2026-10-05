@@ -15,6 +15,7 @@ describe("le profil de rendu", () => {
       stagedRows: false,
       imageScale: 2,
       spinner: "system",
+      cullOffscreen: false,
     });
   });
 
@@ -29,6 +30,7 @@ describe("le profil de rendu", () => {
     expect(android.stagedRows).toBe(true);
     expect(android.imageScale).toBe(1);
     expect(android.spinner).toBe("drawn");
+    expect(android.cullOffscreen).toBe(true);
   });
 
   it("demande sur Android TV les images des cartes à leur plus grande taille d'affichage, focus compris", () => {
