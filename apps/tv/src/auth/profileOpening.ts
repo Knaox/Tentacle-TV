@@ -3,6 +3,7 @@ import type { TvProfilesDto } from "@tentacle-tv/shared";
 import {
   PROFILE_STORAGE_KEYS,
   TV_PAIRING_TOKEN_KEY,
+  cacheProfiles,
   profileRefusalOf,
   rememberProfiles,
   scrubCountdownKey,
@@ -42,13 +43,15 @@ export type ProfilesLoad = { ok: true; listing: TvProfilesDto } | { ok: false; r
 
 /**
  * Les profils de la TV. Au passage, ce que la TV range par profil (l'avance
- * rapide) s'efface pour ceux qui ont quitté la famille.
+ * rapide) s'efface pour ceux qui ont quitté la famille, et la liste se garde :
+ * au prochain lancement, « Qui regarde ? » paraît sans attendre.
  */
 export async function loadProfiles({ storage }: Pick<UnpairContext, "storage">, signal?: AbortSignal): Promise<ProfilesLoad> {
   const call = pairingCall(storage);
   if (!call) return { ok: false, refusal: { kind: "unpaired" } };
   try {
     const listing = await fetchTvProfiles({ ...call, signal });
+    cacheProfiles(storage, listing);
     for (const gone of rememberProfiles(storage, listing.profiles.map((profile) => profile.userId))) {
       storage.removeItem(scrubCountdownKey(gone));
     }

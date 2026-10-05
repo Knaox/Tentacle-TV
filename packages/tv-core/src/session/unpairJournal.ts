@@ -1,4 +1,4 @@
-import { TV_ENROLL_PENDING_KEY, TV_KNOWN_PROFILES_KEY, TV_PAIRING_TOKEN_KEY, TV_PROFILE_KEY } from "./tvProfileKeys";
+import { TV_ENROLL_PENDING_KEY, TV_KNOWN_PROFILES_KEY, TV_PAIRING_TOKEN_KEY, TV_PROFILE_KEY, TV_PROFILES_LISTING_KEY } from "./tvProfileKeys";
 
 /**
  * Le déjumelage d'un téléviseur, tel qu'il survit à un plantage.
@@ -78,6 +78,7 @@ export const ACCOUNT_STORAGE_KEYS: readonly string[] = [
   ...PROFILE_STORAGE_KEYS,
   TV_PAIRING_TOKEN_KEY,
   TV_KNOWN_PROFILES_KEY,
+  TV_PROFILES_LISTING_KEY,
   TV_ENROLL_PENDING_KEY,
 ];
 
