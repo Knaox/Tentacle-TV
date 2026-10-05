@@ -623,11 +623,13 @@ valent pour Android TV ; ce qui suit ne dit que ce qui diffère, et pourquoi.
 
 | Rôle | Apple TV | Android TV |
 |---|---|---|
-| Applicateurs du lecteur | `platform/tvos/player` | `platform/androidtv/player` — fond et guides repris (react-native-tvos sert `autoFocus`, `destinations`, `trapFocus*` sur Android, `ReactViewGroup`), croix verrouillée par `focusable` |
+| Applicateurs du lecteur | `platform/tvos/player` | `platform/androidtv/player` — fond et guides repris (react-native-tvos sert `autoFocus`, `destinations`, `trapFocus*` sur Android, `ReactViewGroup`), croix verrouillée par `tvFocusable`, guides vides sans `focusable` (`emptyGuide.android.ts`) |
 | Point d'entrée neutre | `platform/player/index.ts` | `platform/player/index.android.ts` |
 | Télécommande du lecteur | `usePlayerRemoteBinding` : `useRemoteIntents` → `playerRemoteSteps` | le même, sur l'entrée d'Android TV (`platform/input`, table `ANDROIDTV_BINDINGS`) |
 | Profil des flèches | `scrubInputProfileOf(traits)` | le même : maintien annoncé (`longLeft` 0 puis 1) → profil de l'Apple TV |
-| Habillage effacé | monté, transparent | DÉMONTÉ à la fin de son fondu (`CHROME_UNMOUNTS_WHEN_HIDDEN`) |
+| Habillage effacé | monté, transparent | le même (un essai de démontage a été retiré, § 13.3) |
+| Sous-titres | calque JS (`SubtitleLayer`) | le même : ExoPlayer ne rend plus le texte sous la refonte (`EXO_NATIVE_TEXT`) |
+| Sonde du chargement | `TentaclePlayerProbe` (AVPlayer) | `TentaclePlayerProbe` (`probe/PlayerLoadProbe.kt` : ExoPlayer, mpv) |
 | Bande-annonce | flux HLS relayé (`/api/trailers/resolve`), react-native-video | le même composant (`TrailerWebView.tsx`) : ExoPlayer media3 dans react-native-video |
 
 ### 13.2 La télécommande dans le lecteur
@@ -654,9 +656,11 @@ gestes du lecteur sont donc ceux des §§ 4.3 à 4.7, aux mêmes durées.
 **Sans touche Lecture/Pause** (télécommande Google TV ; trait `playPauseKey:
 "sometimes"`) : le comportement de l'Apple TV est gardé, OK prend le relais —
 un premier OK montre l'habillage, un second met en pause. Pour que le second OK
-soit TOUJOURS la pause, l'habillage qui réapparaît se pose sur Lecture/Pause
-(tv-core `osdRevealTarget` → `overlayFocusCore`, restauration implicite) au
-lieu du dernier bouton utilisé ; la pilule de saut qui tient le focus le garde.
+soit TOUJOURS la pause, l'habillage qui RÉAPPARAÎT se pose sur Lecture/Pause
+(tv-core `osdRevealTarget`, posé par `useTVOsdEntryFocus` en cible DOUCE :
+elle cède à la pilule de saut comme une restauration implicite) au lieu du
+dernier bouton utilisé. Les autres restaurations ne changent pas : un panneau
+refermé rend le focus au bouton qui l'a ouvert (« Pistes »).
 C'est la règle de YouTube et de Netflix sur Android TV et des consignes
 d'Android (« le bouton central met en pause et montre les commandes ») ; le
 défaut inverse — l'habillage revenu sur « +30 », et OK qui saute au lieu de
@@ -672,14 +676,37 @@ mettre en pause — est celui qu'on reproche au lecteur de Plex.
   l'anime : le style du lecteur (`useTVPlayerStyle`) est figé par le format de
   la vidéo, et tout ce qui bouge (habillage, voile de pause, badge) se compose
   AU-DESSUS, sans retracer la surface.
-- **L'habillage effacé se démonte** (`useMountedWhileVisible`) : sur Android,
-  une vue à opacité 0 n'est pas dessinée (HWUI saute un nœud transparent) mais
-  elle coûte encore ses rendus — la frise suit la lecture chaque seconde — et
-  surtout elle reste FOCALISABLE : le moteur de focus d'Android ignore la
-  transparence. Le fondu de sortie se joue en entier, puis l'habillage part ;
-  il revient avec le même fondu d'entrée.
+- **L'habillage effacé reste monté**, transparent, comme sur l'Apple TV. Un
+  démontage à la fin du fondu a été essayé puis retiré : sous le moteur
+  « Bridge » d'Android, une vue animée montée pendant que son opacité vaut 0
+  garde une opacité NATIVE de 0 au rendu suivant, alors que le JS la croit à
+  1 — OK puis OK mettait en pause sans épingler l'habillage (mesuré à
+  l'émulateur ; les vues natives présentes, visibles, en place). Une vue à
+  opacité 0 n'est pas dessinée (HWUI saute un nœud transparent). Habillage
+  éteint, le FOND tient le focus plein écran : les flèches ne trouvent rien
+  au-delà et ne vont pas dans l'habillage caché (→ saute, vérifié). Reste à
+  éprouver : ↑ depuis la pilule de saut habillage éteint (le moteur de focus
+  d'Android ignore la transparence ; tvOS, non).
+- **Guides du lecteur** : sur Android, `TVFocusGuideView` rend `focusable` en
+  `tvFocusable`, qui BLOQUE les descendants — et la prop retirée retombe à
+  faux. Un pont ou un piège d'écran sans destination n'y reçoit donc rien
+  (`emptyGuide.android.ts`) : avant, la croix de la feuille des pistes était
+  inatteignable.
 
 ### 13.4 Les preuves
+
+- **Émulateur** (Shield API 31, build debug, faux serveur du banc nav-golden
+  et sa vidéo MP4, aucun compte réel) : l'habillage refondu sur ExoPlayer ;
+  OK révèle sur Lecture/Pause, second OK met en pause, habillage épinglé ;
+  → habillage masqué saute de +30 s (badge) ; ← déplace le focus dans
+  l'habillage ; ⏩ ouvre le défilement (« OK · Lire ici · Retour · Annuler »),
+  ses répétitions et son relâchement arrivent (`down`, `down` répété, `up`) ;
+  Lecture/Pause reprend ; feuille des pistes : entrée sur l'option retenue,
+  ← vers la croix, OK ferme, focus rendu à « Pistes » ; bande-annonce :
+  `/resolve` demandé, échec rendu (`/report`), retour seul, sans WebView.
+  En build debug, ⏩ tenu ouvre aussi le menu de développement de React
+  Native (`ReactDelegate`) — jamais en release. Retour, lui, attend la
+  portée du Retour d'Android (A3) : sans elle, il quitte le lecteur.
 
 - **Banc de traces, mode `androidtv`** (`apps/tv/harness/player-trace`,
   `TRACE_PLATFORM=androidtv`) : les 26 scénarios de l'Apple TV sans pavé,
