@@ -218,6 +218,12 @@ Corrigé pendant la vérification :
 | « Qui regarde ? » coupe « compat-user2 » | nom limité à la tuile (248 pt) — vrai aussi sur tvOS | nom sur la tuile et son écart, réduit plutôt que coupé (les deux téléviseurs) |
 | (banc) focus d'une Modal invisible, app en arrière-plan non vue, maintiens | sonde et pilote | `topFocus`/`topBlur`, `AppState`, injecteur `Hold.java` |
 
+Bilan des domaines rejoués (les écarts de CADRE seuls ne comptent pas) :
+identiques à l'Apple TV — panneaux-cartes (19/19), socle/rail, raccourcis du
+rail (4/4), organiser le rail (12/14), Retour des pages (3/4), recherche
+(comportement), Retour → première carte, fenêtre des demandes, profils de la
+Famille ; écarts restants listés au § 4.4.
+
 Le plantage des panneaux à guides (§ 2.1, `StackOverflowError`) ne se
 reproduit plus sur `main` fusionné : panneaux-cartes, 19 scénarios, même
 comportement que l'Apple TV (entrée sur le cran 5, guides des trois groupes,
@@ -250,6 +256,28 @@ relevé : le nom coupé (corrigé, ci-dessus).
   d'« Afficher le code » — égalité géométrique (deux boutons presque à même
   distance ; tvOS départage par le recouvrement), aggravée par les textes plus
   étroits (`socle/demarrage#demarrage-jumelage`, pas 3).
+- **Réglages : GAUCHE depuis le panneau** file au rail (`nav:Settings`) au
+  lieu de l'onglet (`ecrans/reglages#reglages-onglets`) : le guide de la
+  colonne (`TabsGuide`) a bien sa destination côté JS, mais le natif ne la
+  tient pas — RÉAPPLIQUÉE à la main par la sonde (`setDestinations`), elle
+  marche. Une réapplication à l'image suivante, puis à la mise en page, n'a
+  pas suffi (essai retiré). Piste : l'ordre des commandes de vue de
+  l'ancienne architecture (`UIViewOperationQueue` les exécute AVANT les
+  créations du même lot, une seule reprise). Même famille, sans doute :
+  l'entrée de Réglages › Navigation (`reglages-navigation-deplacer`).
+- **Feuilles de filtres de la bibliothèque** : BAS tenu finit sur « Effacer »
+  au lieu d'« Appliquer » (`bibliotheque-liste-genres`), BAS depuis les
+  années vise « Appliquer » au lieu du préréglage (`bibliotheque-liste-annees`).
+- **Parcourir une personne** : BAS depuis l'en-tête entre en `grid:1` au lieu
+  de `grid:0` (`parcourir-personne`).
+- **Bande-annonce indisponible** : l'écran reste au lieu de rendre la fiche
+  (`bande-annonce-indisponible`, A4).
+- **Jumelage** : le clavier système d'Android (Gboard) laisse le focus au
+  champ, celui de tvOS le prend en plein écran — écart de plateforme, pas de
+  comportement (`ecrans/jumelage`).
+- **Non analysés** (dernière passe) : `vigie`, `jumelage-sortie`,
+  `defilement#rail-24-bibliotheques`, `retour-pages#accueil-retour-x3`,
+  `collections` (fiche lente à l'arrivée, sans doute la build debug).
 - **Fiche lente** (série) : à l'arrivée, le focus peut tomber sur la croix
   (`ecrans/fiche#fiche-saisons-episodes`) — la build debug de l'émulateur est
   lente, à revérifier en release.
