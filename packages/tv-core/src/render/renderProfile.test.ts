@@ -12,6 +12,7 @@ describe("le profil de rendu", () => {
       lights: "svg",
       svgBlur: "points",
       cardArtwork: { landscapeWidth: 640, posterHeight: 480 },
+      stagedRows: false,
     });
   });
 
@@ -23,6 +24,7 @@ describe("le profil de rendu", () => {
     expect(android.halos).toBe("mask");
     expect(android.lights).toBe("shader");
     expect(android.haloDrawScale).toBe(RENDER_PROFILES.tvos.haloDrawScale);
+    expect(android.stagedRows).toBe(true);
   });
 
   it("demande sur Android TV les images des cartes à leur plus grande taille d'affichage, focus compris", () => {

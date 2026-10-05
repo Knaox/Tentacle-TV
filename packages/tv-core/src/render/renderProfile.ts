@@ -65,6 +65,9 @@ export interface RenderProfile {
   /** Les images des CARTES demandées au serveur, en pixels : la largeur d'une
    *  vignette 16:9, la hauteur d'une affiche 2:3 (`CARD_ARTWORK`). */
   cardArtwork: CardArtworkSize;
+  /** Les rangées d'une page montées par ÉCHELONS (`rowStaging`) : l'écran
+   *  d'abord, le reste une part par image. Faux : tout d'un bloc. */
+  stagedRows: boolean;
 }
 
 export interface CardArtworkSize {
@@ -100,6 +103,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     lights: "svg",
     svgBlur: "points",
     cardArtwork: CARD_ARTWORK.tvos,
+    stagedRows: false,
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
   // floutée en ancienne architecture — les ombres passent par un masque
@@ -113,6 +117,8 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     lights: "shader",
     svgBlur: "renderscript",
     cardArtwork: CARD_ARTWORK.androidtv,
+    // Le fil UI de la Shield ne crée pas 2 400 vues dans une image (`rowStaging`).
+    stagedRows: true,
   },
 };
 

@@ -13,6 +13,7 @@ import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
+import { RowStageProvider } from "../../rows/rowStage";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 
@@ -132,41 +133,44 @@ export const HomeView = memo(function HomeView({
       {status ? (
         <StatusPanel {...status} />
       ) : (
-        <ScrollView
-          ref={scrollRef}
-          style={styles.fill}
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          onLayout={onViewportLayout}
-          onScroll={handleScroll}
-          scrollEventThrottle={32}
-        >
-          {hero ? (
-            <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
-              <HeroBanner
-                hero={hero}
-                width={HERO_WIDTH}
-                onPrimary={onHeroPrimary}
-                onSecondary={onHeroSecondary}
-                onToggleList={onHeroToggleList}
-                onLongPress={onHeroLongPress}
+        <RowStageProvider>
+          <ScrollView
+            ref={scrollRef}
+            style={styles.fill}
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            onLayout={onViewportLayout}
+            onScroll={handleScroll}
+            scrollEventThrottle={32}
+          >
+            {hero ? (
+              <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
+                <HeroBanner
+                  hero={hero}
+                  width={HERO_WIDTH}
+                  onPrimary={onHeroPrimary}
+                  onSecondary={onHeroSecondary}
+                  onToggleList={onHeroToggleList}
+                  onLongPress={onHeroLongPress}
+                />
+              </FocusSection>
+            ) : null}
+            {rows.map((row, index) => (
+              <HomeRow
+                key={row.key}
+                row={row}
+                rank={index}
+                first={index === 0 ? (hero ? "afterHero" : "alone") : undefined}
+                filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
+                onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
+                onRemoveFilter={onRemoveFilter}
+                onPressCard={onPressCard}
+                onLongPressCard={onLongPressCard}
+                onFocusCard={onFocusCard}
               />
-            </FocusSection>
-          ) : null}
-          {rows.map((row, index) => (
-            <HomeRow
-              key={row.key}
-              row={row}
-              first={index === 0 ? (hero ? "afterHero" : "alone") : undefined}
-              filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
-              onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
-              onRemoveFilter={onRemoveFilter}
-              onPressCard={onPressCard}
-              onLongPressCard={onLongPressCard}
-              onFocusCard={onFocusCard}
-            />
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        </RowStageProvider>
       )}
       {/* Après le contenu (rien ne la recouvre : tvOS ne focalise jamais ce qui l'est), hors du panneau centré. */}
       {holdFocus ? (
@@ -188,6 +192,7 @@ type RowHandler = (rowKey: string, card: CardModel) => void;
  */
 const HomeRow = memo(function HomeRow({
   row,
+  rank,
   first,
   filterLabel,
   onLayout,
@@ -197,6 +202,8 @@ const HomeRow = memo(function HomeRow({
   onFocusCard,
 }: {
   row: HomeRowModel;
+  /** Sa place dans la page : son tour dans le montage échelonné (`rowStage`). */
+  rank: number;
   /** La première rangée : son écart au héros, ou au haut de l'écran. */
   first?: "afterHero" | "alone";
   filterLabel?: string;
@@ -232,6 +239,7 @@ const HomeRow = memo(function HomeRow({
         cards={row.cards}
         variant={row.variant}
         inset={LEFT}
+        stageRank={rank}
         accessory={
           filterLabel ? (
             <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} />

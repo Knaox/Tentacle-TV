@@ -11,6 +11,7 @@ import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
+import { RowStageProvider } from "../../rows/rowStage";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
@@ -113,45 +114,48 @@ export const ForYouView = memo(function ForYouView({
       {status ? (
         <StatusPanel {...status} />
       ) : (
-        <ScrollView
-          ref={scrollRef}
-          style={styles.fill}
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          onLayout={onViewportLayout}
-          onScroll={rewind ? onScroll : undefined}
-          scrollEventThrottle={32}
-        >
-          {hero ? (
-            <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
-              <HeroBanner
-                hero={hero}
-                width={HERO_WIDTH}
-                onPrimary={onHeroPrimary}
-                onSecondary={onHeroSecondary}
-                onToggleList={onHeroToggleList}
+        <RowStageProvider>
+          <ScrollView
+            ref={scrollRef}
+            style={styles.fill}
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            onLayout={onViewportLayout}
+            onScroll={rewind ? onScroll : undefined}
+            scrollEventThrottle={32}
+          >
+            {hero ? (
+              <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
+                <HeroBanner
+                  hero={hero}
+                  width={HERO_WIDTH}
+                  onPrimary={onHeroPrimary}
+                  onSecondary={onHeroSecondary}
+                  onToggleList={onHeroToggleList}
+                />
+              </FocusSection>
+            ) : null}
+            {notice ? (
+              <View style={hero ? styles.noticeAfterHero : styles.noticeAlone}>
+                <ForYouNotice notice={notice} width={HERO_WIDTH} />
+              </View>
+            ) : null}
+            {shelves.map((shelf, index) => (
+              <Shelf
+                key={shelf.key}
+                shelf={shelf}
+                rank={index}
+                first={index === 0 ? (hero || notice ? "afterHead" : "alone") : undefined}
+                filterLabel={index === 0 && filter ? filter.label : undefined}
+                onRemoveFilter={onRemoveFilter}
+                onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
+                onPressCard={onPressCard}
+                onLongPressCard={onLongPressCard}
+                onFocusCard={onFocusCard}
               />
-            </FocusSection>
-          ) : null}
-          {notice ? (
-            <View style={hero ? styles.noticeAfterHero : styles.noticeAlone}>
-              <ForYouNotice notice={notice} width={HERO_WIDTH} />
-            </View>
-          ) : null}
-          {shelves.map((shelf, index) => (
-            <Shelf
-              key={shelf.key}
-              shelf={shelf}
-              first={index === 0 ? (hero || notice ? "afterHead" : "alone") : undefined}
-              filterLabel={index === 0 && filter ? filter.label : undefined}
-              onRemoveFilter={onRemoveFilter}
-              onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
-              onPressCard={onPressCard}
-              onLongPressCard={onLongPressCard}
-              onFocusCard={onFocusCard}
-            />
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        </RowStageProvider>
       )}
       <NavRail {...nav} />
     </View>
@@ -167,6 +171,7 @@ type ShelfHandler = (shelfKey: string, card: CardModel) => void;
  */
 const Shelf = memo(function Shelf({
   shelf,
+  rank,
   first,
   filterLabel,
   onRemoveFilter,
@@ -176,6 +181,8 @@ const Shelf = memo(function Shelf({
   onFocusCard,
 }: {
   shelf: ForYouShelfModel;
+  /** Sa place dans la page : son tour dans le montage échelonné (`rowStage`). */
+  rank: number;
   first?: "afterHead" | "alone";
   filterLabel?: string;
   onRemoveFilter?: () => void;
@@ -216,6 +223,7 @@ const Shelf = memo(function Shelf({
         cards={shelf.cards}
         variant="poster"
         inset={LEFT}
+        stageRank={rank}
         accessory={
           filterLabel ? (
             <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} />

@@ -10,6 +10,7 @@ import { useForcedFocusKey } from "../focus/focusPreview";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
 import { useRowRewindPort } from "./rowRewindPort";
+import { useStagedCount } from "./rowStage";
 
 /**
  * Une rangée : son titre (36 pt), puis ses cartes à l'horizontale, peu
@@ -22,6 +23,8 @@ import { useRowRewindPort } from "./rowRewindPort";
  * la rangée se déclare avec sa remise au début — l'intégration la ramène à sa
  * première carte, sans animation, une fois sortie de l'écran.
  *
+ * `stageRank` : sa place dans une page dont les rangées se montent par
+ * échelons (`rowStage`, Android TV) — elle ne rend que les cartes libérées.
  * Chaque carte est mémoïsée avec des gestionnaires STABLES (`RowCard`) : une
  * rangée qui s'allonge, ou dont la liste change, ne redessine pas les cartes
  * qu'elle a déjà.
@@ -40,6 +43,8 @@ export interface MediaRowProps {
   /** Retrait gauche du titre et de la première carte (la colonne de contenu). */
   inset: number;
   accessory?: React.ReactNode;
+  /** Sa place dans une page échelonnée (`rowStage`), de haut en bas. */
+  stageRank?: number;
   onPressCard?: (card: CardModel) => void;
   onLongPressCard?: (card: CardModel) => void;
   onFocusCard?: (card: CardModel) => void;
@@ -53,6 +58,7 @@ export const MediaRow = memo(function MediaRow({
   cardWidth,
   inset,
   accessory,
+  stageRank,
   onPressCard,
   onLongPressCard,
   onFocusCard,
@@ -65,6 +71,7 @@ export const MediaRow = memo(function MediaRow({
     [rewind, rowKey],
   );
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
+  const shown = useStagedCount(stageRank, cards.length);
 
   const onItemFocus = useCallback(
     (index: number, focused: boolean, card: CardModel) => {
@@ -74,7 +81,9 @@ export const MediaRow = memo(function MediaRow({
     [onFocusCard, onItemFocusChange],
   );
 
-  if (cards.length === 0) return null;
+  // Rien tant que l'échelonnement ne lui a rien libéré : jamais une piste
+  // vide (une ScrollView sans cartes prendrait le focus sur Android).
+  if (cards.length === 0 || shown === 0) return null;
   return (
     <View style={styles.row}>
       <View style={[styles.header, { paddingLeft: inset }]}>
@@ -92,7 +101,7 @@ export const MediaRow = memo(function MediaRow({
           variant === "morph" && styles.morphContent,
         ]}
       >
-        {cards.map((card, index) => (
+        {cards.slice(0, shown).map((card, index) => (
           <RowCard
             key={card.id}
             card={card}
