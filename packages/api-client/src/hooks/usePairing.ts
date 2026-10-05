@@ -1,4 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  MY_PAIRED_DEVICES_KEY, PAIRED_DEVICES_KEY, forgetPairedDevice, isAlreadyRevoked, refreshPairedDevices,
+} from "./pairedDevicesCache";
 
 let _backendBase = "/api/pair";
 let _tokenOverride: string | null = null;
@@ -36,7 +39,8 @@ async function pairFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
-    throw new Error(msg);
+    // Le statut voyage avec l'erreur : un 404 au déjumelage veut dire « déjà parti ».
+    throw Object.assign(new Error(msg), { status: res.status });
   }
   return res.json();
 }
@@ -108,7 +112,7 @@ export function useClaimPairingCode() {
 /** List all paired devices (admin) */
 export function usePairedDevices() {
   return useQuery({
-    queryKey: ["paired-devices"],
+    queryKey: PAIRED_DEVICES_KEY,
     queryFn: () => pairFetch<PairedDevice[]>("/devices"),
     staleTime: 30_000,
   });
@@ -120,9 +124,11 @@ export function useRevokePairedDevice() {
   return useMutation({
     mutationFn: (id: string) =>
       pairFetch<{ success: boolean }>(`/devices/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["paired-devices"] });
+    onSuccess: (_result, id) => forgetPairedDevice(qc, id),
+    onError: (error, id) => {
+      if (isAlreadyRevoked(error)) forgetPairedDevice(qc, id);
     },
+    onSettled: () => refreshPairedDevices(qc),
   });
 }
 
@@ -176,10 +182,7 @@ export function useDevicePairConfirm() {
       }),
     // Le jumelage vient de créer une ligne d'appareil : les listes qui la
     // montrent (la sienne, celle de l'admin) sont périmées à l'instant même.
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my-paired-devices"] });
-      qc.invalidateQueries({ queryKey: ["paired-devices"] });
-    },
+    onSuccess: () => refreshPairedDevices(qc),
   });
 }
 
@@ -196,17 +199,14 @@ export function useGenerateTvToken() {
     mutationFn: () =>
       pairFetch<TvTokenResponse>("/tv-token", { method: "POST" }),
     // Comme `useDevicePairConfirm` : une ligne d'appareil vient de naître.
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my-paired-devices"] });
-      qc.invalidateQueries({ queryKey: ["paired-devices"] });
-    },
+    onSuccess: () => refreshPairedDevices(qc),
   });
 }
 
 /** List current user's paired devices */
 export function useMyPairedDevices() {
   return useQuery({
-    queryKey: ["my-paired-devices"],
+    queryKey: MY_PAIRED_DEVICES_KEY,
     queryFn: () => pairFetch<PairedDevice[]>("/my-devices"),
     staleTime: 30_000,
   });
@@ -218,8 +218,13 @@ export function useRevokeMyDevice() {
   return useMutation({
     mutationFn: (id: string) =>
       pairFetch<{ success: boolean }>(`/my-devices/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my-paired-devices"] });
+    // La ligne quitte la liste à l'instant, puis la liste est relue — la
+    // sienne ET celle de l'admin (même appareil). Un 404 : déjà révoqué
+    // ailleurs (l'admin, la TV elle-même) — elle part aussi.
+    onSuccess: (_result, id) => forgetPairedDevice(qc, id),
+    onError: (error, id) => {
+      if (isAlreadyRevoked(error)) forgetPairedDevice(qc, id);
     },
+    onSettled: () => refreshPairedDevices(qc),
   });
 }
