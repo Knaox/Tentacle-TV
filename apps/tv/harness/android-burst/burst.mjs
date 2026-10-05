@@ -17,6 +17,9 @@ import { execFileSync } from "node:child_process";
 
 const PACKAGE = process.env.NAV_GOLDEN_ANDROID_PACKAGE ?? "com.tentacletv.mobile";
 const CODES = { up: 103, down: 108, left: 105, right: 106 };
+/** Les codes Android, pour l'injecteur (`hold/Hold.java`). */
+const ANDROID_CODES = { up: 19, down: 20, left: 21, right: 22 };
+const HOLD_DEX = "/data/local/tmp/hold.dex";
 
 const [dir, secondsArg, ...rest] = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -63,8 +66,11 @@ function arrowDevice() {
   return null;
 }
 
-const device = arrowDevice();
-console.log(device ? `touche tenue par sendevent sur ${device}` : "touche tenue par la console de l'émulateur");
+// L'injecteur d'abord (comme `input`, droits du shell : de vraies répétitions,
+// même sans clavier déclaré) ; sinon sendevent ; sinon la console.
+const injector = adb("shell", `ls ${HOLD_DEX} 2>/dev/null || true`).includes("hold.dex");
+const device = injector ? null : arrowDevice();
+console.log(injector ? "touche tenue par l'injecteur (hold.dex)" : device ? `touche tenue par sendevent sur ${device}` : "touche tenue par la console de l'émulateur");
 const press = (down) =>
   device
     ? adb("shell", `sendevent ${device} 1 ${CODES[dir]} ${down ? 1 : 0}; sendevent ${device} 0 0 0`)
@@ -73,9 +79,12 @@ const press = (down) =>
 const runs = [];
 for (let i = 0; i < repeat; i++) {
   adb("shell", "dumpsys", "gfxinfo", PACKAGE, "reset");
-  press(true);
-  await sleep(seconds * 1000);
-  press(false);
+  if (injector) adb("shell", `CLASSPATH=${HOLD_DEX} app_process /system/bin Hold ${ANDROID_CODES[dir]} ${Math.round(seconds * 1000)}`);
+  else {
+    press(true);
+    await sleep(seconds * 1000);
+    press(false);
+  }
   await sleep(800); // la page finit son mouvement
   const run = parse(adb("shell", "dumpsys", "gfxinfo", PACKAGE));
   runs.push(run);

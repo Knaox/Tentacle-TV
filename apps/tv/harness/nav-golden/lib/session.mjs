@@ -140,8 +140,12 @@ export async function coldStart(ctx, session, start = {}) {
     await awaitSingleTarget(ctx);
     const probe = await waitFor(() => tryEvaluate(ctx, "globalThis.__navGolden ? globalThis.__navGolden.version : 0"), { timeoutMs: 180_000, everyMs: 500 });
     if (!probe) throw new BenchError("la sonde du banc n'a pas paru dans l'app Android");
-    // La session du banc posée par la sonde, puis le JS rechargé.
-    await resetAndroidSession(ctx, evaluate, { session: start.session ?? "paired", storage: start.storage ?? {} });
+    // La session du banc posée par la sonde, puis le JS rechargé — sauf
+    // NAV_GOLDEN_ANDROID_KEEP_SESSION=1 (session déjà posée, stockage sans
+    // clé propre au scénario) : en debug, recharger le JS fait parfois planter
+    // Reanimated (AndroidUIScheduler.triggerUI).
+    const keep = process.env.NAV_GOLDEN_ANDROID_KEEP_SESSION === "1" && Object.keys(start.storage ?? {}).length === 0 && (start.session ?? "paired") === "paired";
+    if (!keep) await resetAndroidSession(ctx, evaluate, { session: start.session ?? "paired", storage: start.storage ?? {} });
   } else if (session.device.physical) {
     // L'app de TEST relancée ; la sonde remet son état à zéro sur ses arguments.
     launchOnDevice(ctx, { session: start.session ?? "paired", storage: start.storage ?? {} });
