@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { PLAYER } from "@/theme";
 import { AirPlayIndicator } from "@/components/player/AirPlayIndicator";
 import { PlayerGestures } from "@/components/player/PlayerGestures";
@@ -11,6 +11,8 @@ import {
   type MpvSource,
   type MpvTrack,
 } from "../../../modules/mpv-player";
+import { displayFrameRate } from "./displayFrameRate";
+import { useEngineSettings } from "./engineSettings";
 import { engineAudioTracks, mpvAudioId, mpvSubtitleId } from "./trackMapping";
 import type { EngineSurfaceProps } from "./types";
 
@@ -22,7 +24,7 @@ import type { EngineSurfaceProps } from "./types";
  * coup — un fichier par piste choisie, pas dix au chargement.
  */
 export function MpvVideoSurface({
-  engineRef, streamUrl, headers, startPositionMs, selectedAudioIndex, selectedSubtitleIndex,
+  engineRef, streamUrl, headers, streams, startPositionMs, selectedAudioIndex, selectedSubtitleIndex,
   externalSubtitles, title, artist, paused, currentTime, isAirPlaying, showLoading, overlayVisible,
   reloadToken, subtitleScale, subtitlePosition, subtitleDelay, audioDelay,
   onLoad, onProgress, onEnd, onError, onBuffering, onPausedChange, onAirPlayRoute, onPipChange,
@@ -31,6 +33,13 @@ export function MpvVideoSurface({
   const viewRef = useRef<MpvPlayerViewHandle>(null);
   const [tracks, setTracks] = useState<readonly MpvTrack[]>([]);
   const [loaded, setLoaded] = useState(false);
+  /** La cadence lue par mpv, repli quand Jellyfin ne la connaît pas. */
+  const [loadedFps, setLoadedFps] = useState<number | undefined>(undefined);
+  const { matchFrameRate } = useEngineSettings();
+  const frameRate = useMemo(
+    () => displayFrameRate({ platform: Platform.OS === "android" ? "android" : "ios", enabled: matchFrameRate, streams, loadedFps }),
+    [matchFrameRate, streams, loadedFps],
+  );
   /** Externes déjà demandés à mpv, pour ne pas les ajouter deux fois. */
   const requestedRef = useRef<Set<number>>(new Set());
 
@@ -65,6 +74,7 @@ export function MpvVideoSurface({
   // Nouvelle source : l'état des pistes repart de zéro.
   useEffect(() => {
     setLoaded(false);
+    setLoadedFps(undefined);
     setTracks([]);
     requestedRef.current = new Set();
   }, [source]);
@@ -99,6 +109,7 @@ export function MpvVideoSurface({
     const info = event.nativeEvent;
     setTracks(info.tracks);
     setLoaded(true);
+    setLoadedFps(info.fps);
     if (initialExternal) requestedRef.current.add(initialExternal.jellyfinIndex);
     onLoad({
       duration: info.duration,
@@ -122,6 +133,7 @@ export function MpvVideoSurface({
         subtitlePosition={subtitlePosition}
         subtitleDelay={subtitleDelay}
         audioDelay={audioDelay}
+        frameRate={Platform.OS === "android" ? frameRate : undefined}
         onLoad={handleLoad}
         onTracksChanged={(event) => setTracks(event.nativeEvent.tracks)}
         onProgress={(event) => onProgress({

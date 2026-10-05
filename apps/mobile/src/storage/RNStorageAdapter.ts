@@ -33,9 +33,10 @@ const STORAGE_KEYS = [
   "tentacle_offline_cellular_ack",
   // Le lecteur — réglages D'APPAREIL (`player/engine/engineSettings.ts`) :
   // moteur vidéo, Atmos du système, sous-titres stylés, taille et position des
-  // sous-titres. Un téléphone décode ce que l'autre ne décode pas : pas de compte.
+  // sous-titres, fréquence de l'écran calée sur le film. Un téléphone décode
+  // ce que l'autre ne décode pas : pas de compte.
   "tentacle_video_engine", "tentacle_prefer_system_atmos", "tentacle_mpv_styled_subs",
-  "tentacle_sub_scale", "tentacle_sub_pos",
+  "tentacle_sub_scale", "tentacle_sub_pos", "tentacle_match_frame_rate",
   // Ma liste en grille ou en liste — préférence d'appareil, même clé que le web.
   "tentacle_watchlist_view",
 ];

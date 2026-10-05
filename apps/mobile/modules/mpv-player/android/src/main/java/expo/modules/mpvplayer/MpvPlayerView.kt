@@ -46,6 +46,8 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
 
     private val surfaceView: SurfaceView
     internal val renderer = MpvRenderer(context)
+    /** L'écran calé sur la cadence du film (prop `frameRate`). */
+    private val refreshMatcher = DisplayRefreshMatcher()
     private var currentConfig: MpvLoadConfig? = null
     private var pendingConfig: MpvLoadConfig? = null
     private var surfaceReady = false
@@ -91,6 +93,7 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     override fun surfaceCreated(holder: SurfaceHolder) {
         surfaceReady = true
         renderer.attachSurface(holder.surface)
+        refreshMatcher.onSurfaceAvailable(holder.surface)
         if (surfaceView.width > 0 && surfaceView.height > 0) renderer.updateSurfaceSize(surfaceView.width, surfaceView.height)
         val pending = pendingConfig
         if (pending != null) {
@@ -110,6 +113,7 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         surfaceReady = false
+        refreshMatcher.onSurfaceLost()
         renderer.suspendPlayback()
         renderer.releaseVideoOutput()
     }
@@ -147,6 +151,12 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
         renderer.play()
     }
 
+    /** La cadence du film (0 = ne rien demander à l'écran). */
+    fun setContentFrameRate(fps: Double) {
+        if (released) return
+        refreshMatcher.setContentFrameRate(activity(), surfaceView.holder.surface, fps.toFloat())
+    }
+
     fun seekTo(seconds: Double) = renderer.seekTo(seconds)
     fun getPosition(): Double = renderer.cachedPosition
 
@@ -172,6 +182,8 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     fun destroy() {
         renderer.delegate = null
         renderer.stop()
+        // Sortie du lecteur : l'écran retrouve sa fréquence d'origine.
+        refreshMatcher.reset(activity())
         surfaceReady = false
         pendingConfig = null
         currentConfig = null

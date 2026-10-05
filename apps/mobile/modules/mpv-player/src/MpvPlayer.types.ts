@@ -144,6 +144,11 @@ export interface MpvPlayerNativeProps {
   /** Décalage audio en secondes (positif = son retardé). */
   audioDelay?: number;
   pipAutoStart?: boolean;
+  /**
+   * Android seulement : la cadence du film, sur laquelle l'écran se cale
+   * (0 = ne rien demander ; la fréquence d'origine revient). iOS l'ignore.
+   */
+  frameRate?: number;
   style?: StyleProp<ViewStyle>;
   onLoad?: NativeEvent<MpvLoadEvent>;
   onProgress?: NativeEvent<MpvProgressEvent>;

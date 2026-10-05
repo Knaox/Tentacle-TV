@@ -56,6 +56,7 @@ class MpvPlayerModule : Module() {
             Prop("subtitlePosition") { view: MpvPlayerView, position: Int -> view.renderer.setSubtitlePosition(position.coerceIn(0, 150)) }
             Prop("subtitleDelay") { view: MpvPlayerView, seconds: Double -> view.renderer.setSubtitleDelay(seconds) }
             Prop("audioDelay") { view: MpvPlayerView, seconds: Double -> view.renderer.setAudioDelay(seconds) }
+            Prop("frameRate") { view: MpvPlayerView, fps: Double -> view.setContentFrameRate(fps) }
             Prop("pipAutoStart") { view: MpvPlayerView, enabled: Boolean -> view.pipAutoStart = enabled }
 
             AsyncFunction("seekTo") { view: MpvPlayerView, seconds: Double -> view.seekTo(seconds) }

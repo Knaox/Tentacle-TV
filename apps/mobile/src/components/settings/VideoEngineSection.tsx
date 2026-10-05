@@ -19,8 +19,9 @@ const ENGINE_ICONS = { auto: "zap", native: "smartphone", mpv: "cpu" } as const;
 /**
  * Les réglages d'APPAREIL du lecteur vidéo — ils ne suivent pas le compte :
  * ils dépendent de la puce, de l'écran et des écouteurs de ce téléphone.
- * Deux sections : le moteur (lignes à coche, chacune avec sa phrase) et son
- * interrupteur propre à la plateforme, puis la taille et la position des
+ * Deux sections : le moteur (lignes à coche, chacune avec sa phrase) et ses
+ * interrupteurs propres à la plateforme (Android : sous-titres stylés, puis
+ * l'écran calé sur la cadence du film), puis la taille et la position des
  * sous-titres. Le mot « mpv » ne s'écrit jamais à l'écran : « lecteur
  * avancé » et « lecteur système ». Sans lecteur avancé dans cette build, rien.
  */
@@ -54,7 +55,7 @@ export function VideoEngineSection() {
           icon={ios ? "speaker" : "type"}
           label={t(switchKey)}
           description={t(`${switchKey}Hint`)}
-          last
+          last={ios}
           trailing={
             <BrandSwitch
               value={switchValue}
@@ -63,6 +64,21 @@ export function VideoEngineSection() {
             />
           }
         />
+        {!ios && (
+          <SettingsRow
+            icon="monitor"
+            label={t("matchScreenFrameRate")}
+            description={t("matchScreenFrameRateHint")}
+            last
+            trailing={
+              <BrandSwitch
+                value={settings.matchFrameRate}
+                onValueChange={(next) => setEngineSetting("matchFrameRate", next)}
+                accessibilityLabel={t("matchScreenFrameRate")}
+              />
+            }
+          />
+        )}
       </SettingsSection>
 
       <SettingsSection title={t("subtitles")} caption={t("subtitleTuningHint")}>

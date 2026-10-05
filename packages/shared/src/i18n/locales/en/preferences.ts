@@ -340,6 +340,9 @@ export default {
   styledSubtitlesViaMpv: "Styled subtitles by the advanced player",
   styledSubtitlesViaMpvHint:
     "ASS subtitles keep their fonts, colors and positions. Off, the system player shows them as plain text.",
+  matchScreenFrameRate: "Match screen refresh rate",
+  matchScreenFrameRateHint:
+    "During playback the screen switches to the film's frame rate (120 Hz for a 24 fps film, on screens that support it), so camera pans stay perfectly smooth. It returns to its usual rate when you leave the player.",
   subtitleScale: "Subtitle size",
   subtitleScaleSmall: "Small",
   subtitleScaleLarge: "Large",
