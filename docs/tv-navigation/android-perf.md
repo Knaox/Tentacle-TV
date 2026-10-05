@@ -226,3 +226,8 @@ Laissé de côté, et pourquoi : R8 (réduction du code Java/Kotlin) — les
 rappels JNI de libmpv et la réflexion de React Native le rendent risqué pour
 le lecteur, pour un gain surtout de taille ; le verre en direct — le profil
 d'Android le dessine déjà sans flou (A2).
+
+## 7. Sur la vraie Shield (lot A7)
+
+Mesures, procédure et correctifs sur la Shield elle-même :
+[android-perf-shield.md](android-perf-shield.md).
