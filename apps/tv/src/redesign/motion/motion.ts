@@ -1,6 +1,7 @@
 import { Easing, withSpring, withTiming, type AnimationCallback } from "react-native-reanimated";
 import { TV_MOTION, type TvSpring } from "@tentacle-tv/theme";
 import { RENDER } from "../render/renderProfile";
+import { withSteadyTiming } from "./steadyTiming";
 
 /**
  * Le mouvement de la refonte, joué sur le fil d'interface : un préréglage dit
@@ -14,6 +15,8 @@ import { RENDER } from "../render/renderProfile";
 
 /** Vrai quand le profil de rendu de l'appareil joue le mouvement. */
 export const MOTION_ENABLED: boolean = RENDER.motion;
+/** Les fondus suivent les images rendues (`steadyTiming`, Android TV). */
+const STEADY: boolean = RENDER.steadyMotion;
 
 const bezier = ([x1, y1, x2, y2]: readonly [number, number, number, number]) => Easing.bezier(x1, y1, x2, y2);
 
@@ -106,9 +109,10 @@ export function motionTo(target: number, motion: Motion, instant = false, done?:
     if (done) done(true);
     return target;
   }
-  if (typeof motion === "number") return withTiming(target, { duration: motion, easing: EASE.out }, done);
+  const timed = (duration: number, easing: (typeof EASE)[keyof typeof EASE]) =>
+    STEADY ? withSteadyTiming(target, { duration, easing }, done) : withTiming(target, { duration, easing }, done);
+  if (typeof motion === "number") return timed(motion, EASE.out);
   const leg = target === 0 ? PRESETS[motion].exit : PRESETS[motion].enter;
-  return leg.kind === "spring"
-    ? withSpring(target, leg.config, done)
-    : withTiming(target, { duration: leg.duration, easing: leg.easing }, done);
+  // Un ressort borne déjà le pas de son intégration (Reanimated : 64 ms).
+  return leg.kind === "spring" ? withSpring(target, leg.config, done) : timed(leg.duration, leg.easing);
 }

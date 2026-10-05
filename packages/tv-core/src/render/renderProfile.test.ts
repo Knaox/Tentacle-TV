@@ -5,6 +5,7 @@ describe("le profil de rendu", () => {
   it("garde à l'Apple TV son rendu de référence : ombres du système, verre natif, rien d'Android", () => {
     expect(renderProfileOf("tvos")).toEqual({
       motion: true,
+      steadyMotion: false,
       nativeGlass: true,
       shadows: "layer",
       haloDrawScale: 0.25,
@@ -22,6 +23,7 @@ describe("le profil de rendu", () => {
   it("donne à Android TV le même mouvement, des ombres en masque et jamais le verre natif", () => {
     const android = renderProfileOf("androidtv");
     expect(android.motion).toBe(true);
+    expect(android.steadyMotion).toBe(true);
     expect(android.shadows).toBe("mask");
     expect(android.nativeGlass).toBe(false);
     expect(android.halos).toBe("mask");

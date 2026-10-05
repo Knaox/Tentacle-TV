@@ -56,6 +56,11 @@ export interface RenderProfile {
   /** Le mouvement de la refonte (ressorts, fondus) sur le fil d'interface.
    *  Faux : chaque animation se pose aussitôt. */
   motion: boolean;
+  /** Les fondus suivent les IMAGES rendues : une image en retard (un montage
+   *  qui retient le fil d'interface) n'avance la course que de deux images —
+   *  le fondu se voit en entier au lieu d'être fini avant sa première image.
+   *  Faux : l'horloge murale. */
+  steadyMotion: boolean;
   /** Le verre natif du système (UIGlassEffect, tvOS 26) quand il existe.
    *  Faux : le verre dessiné, toujours. */
   nativeGlass: boolean;
@@ -114,6 +119,7 @@ const CARD_ARTWORK: Readonly<Record<RenderPlatform, CardArtworkSize>> = {
 export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderProfile>>> = {
   tvos: {
     motion: true,
+    steadyMotion: false,
     nativeGlass: true,
     shadows: "layer",
     haloDrawScale: 0.25,
@@ -131,6 +137,10 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
   // précalculé, le verre est toujours dessiné (Liquid Glass y est coupé).
   androidtv: {
     motion: true,
+    // Monter ce qui paraît retient le fil d'interface de la Shield 100 à
+    // 400 ms : à l'horloge murale, un fondu de 140 ms y était fini avant sa
+    // première image (la pilule du décompte qui apparaît d'un coup).
+    steadyMotion: true,
     nativeGlass: false,
     shadows: "mask",
     haloDrawScale: 0.25,
