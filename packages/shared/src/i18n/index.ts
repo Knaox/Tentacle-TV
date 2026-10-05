@@ -17,6 +17,7 @@ const NAMESPACES = [
   "serverLinks",
   "remoteAccess",
   "remoteAccessHelp",
+  "setupWizard",
   "requests",
   "adminOverview",
   "notices",

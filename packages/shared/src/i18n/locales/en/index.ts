@@ -40,6 +40,7 @@ import trailerHelp from "./trailerHelp";
 import serverLinks from "./serverLinks";
 import remoteAccess from "./remoteAccess";
 import remoteAccessHelp from "./remoteAccessHelp";
+import setupWizard from "./setupWizard";
 import requests from "./requests";
 import adminOverview from "./adminOverview";
 import notices from "./notices";
@@ -62,6 +63,7 @@ export default {
   serverLinks,
   remoteAccess,
   remoteAccessHelp,
+  setupWizard,
   requests,
   adminOverview,
   notices,
