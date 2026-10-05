@@ -30,13 +30,16 @@ function Portrait({ person, focused, place }: { person: SearchPersonModel; focus
   const p = useFocusProgress(focused);
   const recede = useRecede(place);
   const press = usePressProgress();
+  // Le recul (opacité) et le soulèvement (transformation) en deux styles : un
+  // portrait qui recule ne renvoie plus sa transformation à chaque image
+  // (Reanimated renvoie un style entier dès qu'une valeur change — `CardFrame`).
   const lift = useAnimatedStyle(() => ({
-    opacity: 1 - (1 - TV_STAGE.focus.recede) * recede.value,
     transform: [{ translateY: -4 * p.value }, { scale: (1 + 0.1 * p.value) * pressScale(press ? press.value : 0) }],
   }));
+  const fade = useAnimatedStyle(() => ({ opacity: 1 - (1 - TV_STAGE.focus.recede) * recede.value }));
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   return (
-    <Animated.View style={[styles.portrait, lift]}>
+    <Animated.View style={[styles.portrait, lift, fade]}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, shadow]}>
         <DropShadow of={styles.shadow} />
       </Animated.View>

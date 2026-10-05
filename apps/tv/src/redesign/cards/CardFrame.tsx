@@ -128,15 +128,20 @@ function FrameBody({
   const dim = useFocusProgress(dimmed && !focused, "recede");
   const enclosing = usePressProgress();
   const pressed = press ?? enclosing;
-  const lift = useAnimatedStyle(() => ({
+  // Deux styles pour deux mouvements indépendants : Reanimated renvoie un
+  // style ENTIER dès qu'une de ses valeurs change. D'un seul tenant, chaque
+  // carte d'une rangée qui recule (son opacité seule) renvoyait aussi, à
+  // chaque image, sa transformation — décomposée en matrice par le
+  // gestionnaire de vues. Mêmes valeurs, dans la même image.
+  const lift = useAnimatedStyle(() => ({ transform: cardLift(p.value, pressed ? pressed.value : 0) }));
+  const fade = useAnimatedStyle(() => ({
     opacity: 1 - (1 - TV_STAGE.focus.recede) * (recede ? recede.value : dim.value),
-    transform: cardLift(p.value, pressed ? pressed.value : 0),
   }));
   // Soulèvement, reflet et fondu de l'ombre : au focus, le temps du retour.
   const [dressed, settle] = useFocusDressing(focused);
   const shape = { width, height, borderRadius: radius };
   return (
-    <Animated.View style={[shape, cardOrigin(origin), lift]}>
+    <Animated.View style={[shape, cardOrigin(origin), lift, fade]}>
       {dressed && !glow ? (
         <FadingRestShadow progress={p} radius={radius} />
       ) : (
