@@ -2,6 +2,7 @@ import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
+import { useAmbientOf, type AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
@@ -44,6 +45,8 @@ export interface BrowseViewProps {
   initials?: string;
   cards: CardModel[];
   palette: ArtworkPalette;
+  /** La lumière de l'affiche focalisée (`ambientSource`) : la vue la suit, l'écran câblé ne se redessine pas. */
+  ambient?: AmbientSource;
   columns?: 5 | 6;
   loading?: boolean;
   /** Rien de cette personne, ce genre, ce studio dans la bibliothèque — la
@@ -59,7 +62,8 @@ export interface BrowseViewProps {
 }
 
 export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
-  const { nav, cards, palette, columns = 6, loading, empty, status } = props;
+  const { nav, cards, columns = 6, loading, empty, status } = props;
+  const palette = useAmbientOf(props.ambient, props.palette);
   const header = (
     <BrowseHeader
       kind={props.kind}

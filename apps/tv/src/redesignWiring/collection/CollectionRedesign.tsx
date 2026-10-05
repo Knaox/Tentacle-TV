@@ -70,6 +70,7 @@ function CollectionRedesign({ kind, query }: { kind: Kind; query: CollectionQuer
         count={t("library:titles", { count: items.length })}
         cards={grid.cards}
         palette={grid.palette}
+        ambient={grid.ambient}
         loading={loading}
         empty={empty}
         status={status}

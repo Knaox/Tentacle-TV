@@ -1,7 +1,8 @@
 import { memo, useCallback } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { AmbientBackdrop } from "../../background/AmbientBackdrop";
+import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
+import type { AmbientSource } from "../../background/ambientSource";
 import { CARD_NOTE_SPACE } from "../../cards/CardFocusNote";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
@@ -39,7 +40,8 @@ import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
  *   `useSaveRecoProviderFilter().mutate([])` ;
  * - `status` : chargement (`!page && !isError`), erreur (`isError`,
  *   Réessayer), en préparation, vide ;
- * - `palette` : `paletteFromBlurHash` de la carte focalisée, sinon du héros.
+ * - `palette` : `paletteFromBlurHash` du héros (ou de la première carte) ;
+ *   `ambient` : celle de la carte focalisée, que le fond suit seul.
  *
  * Le héros et chaque étagère sont des SECTIONS (`FocusSection`, clés
  * `section:hero`, `section:<étagère>`) : HAUT / BAS passe à la voisine, au plus
@@ -67,6 +69,8 @@ export interface ForYouViewProps {
   shelves: ForYouShelfModel[];
   filter?: ForYouFilterModel | null;
   palette: ArtworkPalette;
+  /** La lumière de la carte focalisée, que le fond suit seul (`ambientSource`). */
+  ambient?: AmbientSource;
   /** Chargement, erreur, en préparation, vide : le panneau remplace la page. */
   status?: StatusPanelProps | null;
   onHeroPrimary?: () => void;
@@ -90,6 +94,7 @@ export const ForYouView = memo(function ForYouView({
   shelves,
   filter,
   palette,
+  ambient,
   status,
   onHeroPrimary,
   onHeroSecondary,
@@ -110,7 +115,7 @@ export const ForYouView = memo(function ForYouView({
   );
   return (
     <View style={styles.root}>
-      <AmbientBackdrop palette={palette} />
+      <LiveAmbientBackdrop source={ambient} palette={palette} />
       {status ? (
         <StatusPanel {...status} />
       ) : (

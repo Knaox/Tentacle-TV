@@ -107,6 +107,7 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
         labels={labels}
         cards={grid.cards}
         palette={grid.palette}
+        ambient={grid.ambient}
         loading={loading}
         loadingMore={loadingMore}
         noResults={noResults}

@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
+import { useAmbientOf, type AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -64,6 +65,8 @@ export interface LibraryViewProps extends FilterSheetHandlers {
   cards: CardModel[];
   /** La lumière du fond : l'affiche focalisée, sinon la première. */
   palette: ArtworkPalette;
+  /** La lumière de l'affiche focalisée (`ambientSource`) : la vue la suit, l'écran câblé ne se redessine pas. */
+  ambient?: AmbientSource;
   columns?: 5 | 6;
   /** Premier chargement : affiches fantômes, barre de filtres en place. */
   loading?: boolean;
@@ -114,7 +117,8 @@ function PageTitle({ title, count }: { title: string; count?: string }) {
 }
 
 export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
-  const { nav, title, count, pills, activeFilters, labels, cards, palette, columns = 6, loading, loadingMore, noResults, status, sheet } = props;
+  const { nav, title, count, pills, activeFilters, labels, cards, columns = 6, loading, loadingMore, noResults, status, sheet } = props;
+  const palette = useAmbientOf(props.ambient, props.palette);
   const { onPressPill, onRemoveFilter, onClearAll } = props;
   // L'en-tête, le vide et le pied ne changent pas avec la lumière : la carte
   // focalisée la change à chaque pas du focus, et des éléments neufs à chaque

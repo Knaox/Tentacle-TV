@@ -2,6 +2,7 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
+import { useAmbientOf, type AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import type { IconName } from "../../icons/Icon";
@@ -47,6 +48,8 @@ export interface CollectionViewProps {
   cards: CardModel[];
   /** La lumière du fond : l'affiche focalisée, sinon la première. */
   palette: ArtworkPalette;
+  /** La lumière de l'affiche focalisée (`ambientSource`) : la vue la suit, l'écran câblé ne se redessine pas. */
+  ambient?: AmbientSource;
   columns?: 5 | 6;
   loading?: boolean;
   /** La collection est vide : pictogramme, titre, indice, action. */
@@ -77,7 +80,8 @@ export const CollectionView = memo(function CollectionView({
   title,
   count,
   cards,
-  palette,
+  palette: fallback,
+  ambient,
   columns = 6,
   loading,
   empty,
@@ -87,6 +91,7 @@ export const CollectionView = memo(function CollectionView({
   onLongPressCard,
   onFocusCard,
 }: CollectionViewProps) {
+  const palette = useAmbientOf(ambient, fallback);
   const header = <Header kicker={kicker} title={title} count={loading || empty ? undefined : count} />;
   const placeholder = loading ? (
     <GridSkeleton columns={columns} rows={2} />

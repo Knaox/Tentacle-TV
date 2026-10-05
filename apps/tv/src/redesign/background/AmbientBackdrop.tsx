@@ -5,6 +5,7 @@ import { TV_LIGHT } from "@tentacle-tv/theme";
 import { boundedLight, type ArtworkPalette } from "../color/artworkPalette";
 import { PoolLayerView, useLayerPool } from "../motion/LayerStack";
 import { colors } from "../theme/tokens";
+import { useAmbientOf, type AmbientSource } from "./ambientSource";
 import { RadialLight } from "./RadialLight";
 import { SoftGradient, STAGE_SIZE } from "./SoftGradient";
 
@@ -125,6 +126,19 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ palette, intensit
       ))}
     </View>
   );
+});
+
+/**
+ * Le fond vivant d'un écran dont la lumière SUIT LE FOCUS sans le redessiner :
+ * celle de `source` (la carte focalisée, `ambientSource`), sinon `palette`
+ * (le héros, la première carte). Sans source : `AmbientBackdrop` tel quel.
+ */
+export const LiveAmbientBackdrop = memo(function LiveAmbientBackdrop({
+  source,
+  palette,
+  intensity,
+}: AmbientBackdropProps & { source?: AmbientSource }) {
+  return <AmbientBackdrop palette={useAmbientOf(source, palette)} intensity={intensity} />;
 });
 
 const styles = StyleSheet.create({

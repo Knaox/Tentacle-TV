@@ -92,7 +92,7 @@ export function HomeRedesign({ navigation, route }: Props) {
 
   // Ses rangées reviennent au début : hors de l'écran, au changement de page, et par Retour.
   const screen = useRedesignScreen({ railKey: "Home", entryKey, focus, rewindRows: true });
-  const { focusedPalette, onFocusCard } = useAmbientPalette(focus);
+  const { ambient, onFocusCard } = useAmbientPalette(focus);
 
   const retry = useCallback(() => {
     void featuredQuery.refetch();
@@ -141,7 +141,8 @@ export function HomeRedesign({ navigation, route }: Props) {
     [targetOf, openLandscape, openPoster, openReco],
   );
 
-  const palette = focusedPalette ?? hero.hero?.palette ?? home.rows[0]?.cards[0]?.palette ?? NEUTRAL_PALETTE;
+  // La lumière quand aucune carte n'impose la sienne (`ambient`, que le fond suit seul).
+  const palette = hero.hero?.palette ?? home.rows[0]?.cards[0]?.palette ?? NEUTRAL_PALETTE;
 
   return (
     <RedesignScreen screen={screen}>
@@ -150,6 +151,7 @@ export function HomeRedesign({ navigation, route }: Props) {
         hero={hero.hero}
         rows={home.rows}
         palette={palette}
+        ambient={ambient}
         status={status}
         holdFocus={loading}
         filter={filter}

@@ -88,6 +88,7 @@ export function BrowseRedesign({ kind, id, name }: Params) {
         initials={person ? initials(name) : undefined}
         cards={grid.cards}
         palette={grid.palette}
+        ambient={grid.ambient}
         loading={loading}
         empty={empty}
         status={status}

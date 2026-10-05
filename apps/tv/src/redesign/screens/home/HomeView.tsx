@@ -3,7 +3,8 @@ import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScroll
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { HOME_LOADING_KEY, heroInView } from "@tentacle-tv/tv-core";
 import { useTranslation } from "react-i18next";
-import { AmbientBackdrop } from "../../background/AmbientBackdrop";
+import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
+import type { AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
@@ -61,8 +62,10 @@ export interface HomeViewProps {
   nav: NavRailProps;
   hero: HeroModel | null;
   rows: HomeRowModel[];
-  /** La lumière du fond : celle de la carte focalisée, sinon du héros. */
+  /** La lumière du fond quand aucune carte n'impose la sienne : celle du héros. */
   palette: ArtworkPalette;
+  /** La lumière de la carte focalisée, que le fond suit seul (`ambientSource`). */
+  ambient?: AmbientSource;
   /** Chargement, erreur, accueil vide : le panneau remplace le contenu. */
   status?: StatusPanelProps | null;
   /** Le chargement : une ancre invisible tient le focus dans le contenu (`home:loading`), la navigation reste repliée. */
@@ -96,6 +99,7 @@ export const HomeView = memo(function HomeView({
   hero,
   rows,
   palette,
+  ambient,
   status,
   holdFocus = false,
   filter,
@@ -129,7 +133,7 @@ export const HomeView = memo(function HomeView({
   );
   return (
     <View style={styles.root}>
-      <AmbientBackdrop palette={palette} />
+      <LiveAmbientBackdrop source={ambient} palette={palette} />
       {status ? (
         <StatusPanel {...status} />
       ) : (

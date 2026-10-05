@@ -94,7 +94,7 @@ export function ForYouRedesign({ navigation }: Props) {
   const entryKey = forYouEntryKey({ status: status ? { withAction: !!status.primary } : null, hasHero: hero !== null, firstShelfKey: firstShelf?.key ?? null });
   // Ses étagères reviennent au début : hors de l'écran, et par Retour.
   const screen = useRedesignScreen({ railKey: "Recommendations", entryKey, rewindRows: true });
-  const { focusedPalette, onFocusCard } = useAmbientPalette(screen.focus);
+  const { ambient, onFocusCard } = useAmbientPalette(screen.focus);
   const cardActions = useTVCardActions();
 
   const detail = useCallback((itemId: string) => navigation.navigate("MediaDetail", { itemId }), [navigation]);
@@ -137,7 +137,8 @@ export function ForYouRedesign({ navigation }: Props) {
     [targetOf, openReco],
   );
 
-  const palette = focusedPalette ?? hero?.palette ?? firstShelf?.cards[0]?.palette ?? NEUTRAL_PALETTE;
+  // La lumière quand aucune carte n'impose la sienne (`ambient`, que le fond suit seul).
+  const palette = hero?.palette ?? firstShelf?.cards[0]?.palette ?? NEUTRAL_PALETTE;
 
   return (
     <RedesignScreen screen={screen}>
@@ -148,6 +149,7 @@ export function ForYouRedesign({ navigation }: Props) {
         shelves={models.shelves}
         filter={filter}
         palette={palette}
+        ambient={ambient}
         status={status}
         onHeroPrimary={onHeroPrimary}
         onHeroSecondary={onHeroSecondary}

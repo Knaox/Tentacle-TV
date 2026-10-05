@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -14,10 +14,10 @@ import { useTVCardActions } from "../../components/cards/actions/useTVCardAction
 import type { RootStackParamList } from "../../navigation/types";
 import { useSearchDictation, useSearchGroups, useSearchKeyboard } from "../../platform/searchInput";
 import type { CardModel } from "../../redesign/cards/cardTypes";
-import type { ArtworkPalette } from "../../redesign/color/artworkPalette";
 import { SearchView } from "../../redesign/screens/search/SearchView";
 import type { SearchFacetModel, SearchPersonModel } from "../../redesign/screens/search/searchViewModel";
 import { RedesignScreen } from "../screen/RedesignScreen";
+import { useAmbientStore } from "../screen/ambientStore";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { useTitleRequests } from "../vigie/useTitleRequests";
 import { openSearchGap } from "../vigie/useSearchGaps";
@@ -71,14 +71,15 @@ export function SearchRedesign() {
   const { openPoster, openLandscape, sheet } = useTVCardActions();
   const labels = useMemo(() => searchInputLabels(t), [t]);
 
-  // La lumière du fond : la carte focalisée, sinon le meilleur résultat.
-  const [focusedPalette, setFocusedPalette] = useState<ArtworkPalette | null>(null);
+  // La lumière du fond : la carte focalisée, sinon le meilleur résultat —
+  // tenue hors du rendu (`ambient`) : un pas du focus ne redessine que le fond.
+  const ambient = useAmbientStore();
   useEffect(() => focus.subscribe((key, focused) => {
-    if (focused && (key === "top" || isInputKey(key))) setFocusedPalette(null);
-  }), [focus]);
+    if (focused && (key === "top" || isInputKey(key))) ambient.set(null);
+  }), [focus, ambient]);
   const onFocusCard = useCallback((_section: string, card: CardModel) => {
-    if (card.palette) setFocusedPalette(card.palette);
-  }, []);
+    if (card.palette) ambient.set(card.palette);
+  }, [ambient]);
 
   const { remember, setQuery } = input;
   const { markBrowsing } = keyboard;
@@ -156,7 +157,8 @@ export function SearchRedesign() {
         dictation={dictation.dictation}
         listening={dictation.listening}
         onMic={dictation.onMic}
-        palette={focusedPalette ?? results.palette}
+        palette={results.palette}
+        ambient={ambient}
         onPressField={keyboard.onPressField}
         onKey={input.onKey}
         onSpace={input.onSpace}

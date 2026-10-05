@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { AmbientBackdrop } from "../../background/AmbientBackdrop";
+import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
+import type { AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -46,8 +47,8 @@ import {
  *   clavier système — Gboard, Leanback, et leur dictée — ET la touche micro
  *   de l'app, `useSpeechRecognition`),
  *   `key` : la touche micro seule, le champ n'est qu'un affichage ;
- * - `palette` : `paletteFromBlurHash` du meilleur résultat ou de la carte
- *   focalisée.
+ * - `palette` : `paletteFromBlurHash` du meilleur résultat ; `ambient` :
+ *   celle de la carte focalisée, que le fond suit seul.
  * Callbacks : la saisie (`onKey`, `onSpace`, `onDelete`, `onClear`,
  * `onMic`, `onPressField`), le choix d'une suggestion ou d'une recherche
  * récente (remplace la saisie), l'ouverture d'un résultat — la
@@ -70,6 +71,8 @@ export interface SearchViewProps {
   /** Android TV : le micro écoute. */
   listening?: boolean;
   palette: ArtworkPalette;
+  /** La lumière de la carte focalisée, que le fond suit seul (`ambientSource`). */
+  ambient?: AmbientSource;
   onPressField?: () => void;
   onKey?: (char: string) => void;
   onSpace?: () => void;
@@ -89,10 +92,10 @@ export interface SearchViewProps {
 }
 
 export const SearchView = memo(function SearchView(props: SearchViewProps) {
-  const { nav, query, completion, suggestions, content, labels, dictation, listening, palette } = props;
+  const { nav, query, completion, suggestions, content, labels, dictation, listening, palette, ambient } = props;
   return (
     <View style={styles.root}>
-      <AmbientBackdrop palette={palette} />
+      <LiveAmbientBackdrop source={ambient} palette={palette} />
       <FocusGroup focusKey="search:input" style={styles.input}>
         <SearchField
           query={query}

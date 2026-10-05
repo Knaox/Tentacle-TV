@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, type ReactNode } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { cardPressOf, holdPanelOf } from "@tentacle-tv/tv-core";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../redesign/color/artworkPalette";
+import type { AmbientSource } from "../../redesign/background/ambientSource";
 import { useCardModels } from "../cards/cardModels";
+import { useAmbientStore } from "../screen/ambientStore";
 import { useOpenDetail } from "../detail/useOpenDetail";
 
 /** La légende d'une affiche de grille : l'année. Stable (niveau du module) :
@@ -14,8 +16,10 @@ export const yearSubtitle = (item: MediaItem): string | undefined =>
 
 export interface PosterGrid {
   cards: CardModel[];
-  /** La lumière du fond : l'affiche focalisée, sinon la première. */
+  /** La lumière du fond quand aucune affiche n'impose la sienne : la première. */
   palette: ArtworkPalette;
+  /** La lumière de l'affiche focalisée, que le fond suit seul (`ambientSource`). */
+  ambient: AmbientSource;
   onPressCard: (card: CardModel) => void;
   onLongPressCard: (card: CardModel) => void;
   onFocusCard: (card: CardModel) => void;
@@ -34,7 +38,8 @@ export interface PosterGrid {
 export function usePosterGrid(items: MediaItem[]): PosterGrid {
   const { openTitle } = useOpenDetail();
   const cards = useCardModels(items, { variant: "poster", subtitle: yearSubtitle });
-  const [focused, setFocused] = useState<ArtworkPalette | null>(null);
+  // Tenue hors du rendu : un pas du focus dans la grille ne redessine que le fond.
+  const ambient = useAmbientStore();
   const byId = useMemo(() => new Map(items.map((item) => [item.Id, item])), [items]);
   // Les gestionnaires lisent l'index du moment : stables d'une page à
   // l'autre, une page qui arrive ne redessine pas toute la grille montée.
@@ -50,12 +55,13 @@ export function usePosterGrid(items: MediaItem[]): PosterGrid {
     if (item && holdPanelOf({ surface: "grid" })?.kind === "media") openPoster(item);
   }, [openPoster]);
   const onFocusCard = useCallback((card: CardModel) => {
-    if (card.palette) setFocused(card.palette);
-  }, []);
+    if (card.palette) ambient.set(card.palette);
+  }, [ambient]);
 
   return {
     cards,
-    palette: focused ?? cards[0]?.palette ?? NEUTRAL_PALETTE,
+    palette: cards[0]?.palette ?? NEUTRAL_PALETTE,
+    ambient,
     onPressCard,
     onLongPressCard,
     onFocusCard,
