@@ -66,6 +66,10 @@ export interface CardFrameProps {
   origin?: "top" | "center";
   /** La lueur du focus (`cardGlowOf`) ; sans elle, l'ombre noire. */
   glow?: CardGlow;
+  /** Le ressort du focus, quand la carte le partage avec ce qu'elle dessine
+   *  hors du cadre (la légende qui suit l'image) : un seul ressort, les mêmes
+   *  valeurs à chaque image. Sans lui, le cadre a le sien. */
+  focusProgress?: SharedValue<number>;
   /** Ce qui ne paraît qu'au focus, DANS l'image (les badges de qualité) :
    *  monté avec l'habit du focus, le temps du retour compris — rien au repos. */
   focusLayer?: ReactNode;
@@ -115,9 +119,12 @@ function FrameBody({
   origin = "top",
   glow,
   focusLayer,
+  focusProgress,
   children,
 }: CardFrameProps & { recede: SharedValue<number> | null }) {
-  const p = useFocusProgress(focused);
+  // Partagé, le ressort propre reste au repos (jamais lancé).
+  const own = useFocusProgress(focusProgress === undefined && focused);
+  const p = focusProgress ?? own;
   const dim = useFocusProgress(dimmed && !focused, "recede");
   const enclosing = usePressProgress();
   const pressed = press ?? enclosing;

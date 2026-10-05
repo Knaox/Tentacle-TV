@@ -1,6 +1,6 @@
 import { memo, useMemo, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient } from "../background/SoftGradient";
 import { useFocusProgress } from "../focus/useFocusProgress";
@@ -74,8 +74,8 @@ function captionShift(height: number, origin: "top" | "center" = "top"): number 
   return origin === "center" ? growth / 2 : growth - 4;
 }
 
-function Caption({ focused, shift, children }: { focused: boolean; shift: number; children: ReactNode }) {
-  const p = useFocusProgress(focused);
+/** La légende suit l'image qui grandit — sur le MÊME ressort que le cadre (`progress`). */
+function Caption({ progress: p, shift, children }: { progress: SharedValue<number>; shift: number; children: ReactNode }) {
   const follow = useAnimatedStyle(() => ({ transform: [{ translateY: shift * p.value }] }));
   return <Animated.View style={[styles.caption, follow]}>{children}</Animated.View>;
 }
@@ -110,6 +110,8 @@ export const MediaCard = memo(function MediaCard({
   const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
+  // Un seul ressort pour le cadre et la légende (`CardFrame focusProgress`).
+  const progress = useFocusProgress(focused);
   const glow = useMemo(() => cardGlowOf(card.palette, glowTone), [card.palette, glowTone]);
   return (
     <CardShell
@@ -131,6 +133,7 @@ export const MediaCard = memo(function MediaCard({
           dimmed={dimmed}
           origin={origin}
           glow={glow}
+          focusProgress={progress}
           focusLayer={
             card.quality && !card.absent ? (
               <CardQualityBadges
@@ -170,7 +173,7 @@ export const MediaCard = memo(function MediaCard({
       }
     >
       {hideCaption ? null : (
-        <Caption focused={focused} shift={captionShift(height, origin)}>
+        <Caption progress={progress} shift={captionShift(height, origin)}>
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
           {card.subtitle ? <Text style={styles.subtitle} numberOfLines={card.subtitleLines ?? 1}>{card.subtitle}</Text> : null}
           <CardFocusFooter
