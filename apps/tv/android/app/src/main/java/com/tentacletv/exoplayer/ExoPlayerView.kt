@@ -3,6 +3,7 @@ package com.tentacletv.exoplayer
 import android.graphics.Color
 import android.graphics.Typeface
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.SurfaceView
 import android.view.View
 import android.widget.FrameLayout
@@ -16,6 +17,7 @@ import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.uimanager.ThemedReactContext
+import com.tentacletv.R
 import com.tentacletv.probe.PlayerLoadRegistry
 import com.tentacletv.probe.PlayerLoadSource
 
@@ -71,7 +73,9 @@ class ExoPlayerView(
     init {
         Log.w(TAG, ">>> CONSTRUCTOR viewId=$id")
 
-        playerView = PlayerView(reactContext).apply {
+        // Gonflée sans barre de contrôle (`tentacle_exo_player_frame`) : construite
+        // puis masquée, elle coûtait ~40 ms au lancement d'une vidéo (Shield).
+        playerView = (LayoutInflater.from(reactContext).inflate(R.layout.tentacle_exo_player, this, false) as PlayerView).apply {
             useController = false // We use our own React Native overlay
             subtitleView?.apply {
                 setApplyEmbeddedStyles(true)
