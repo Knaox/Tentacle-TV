@@ -15,7 +15,10 @@ import type { FocusStore } from "../../tvos/focus/focusStore";
  * Deux pièces : un piège HAUT / BAS (`trapFocusUp` / `trapFocusDown`,
  * `ReactViewGroup.focusSearch`), et la section native (`TentacleFocusSection`,
  * sans voisins) : les flèches du rail passent alors par son moteur au
- * faisceau (`BeamSearch`), où un guide l'emporte sur ce qu'il recouvre.
+ * faisceau (`BeamSearch`), où un guide l'emporte sur ce qu'il recouvre. Une
+ * flèche TENUE n'en sort pas (`holdInside`) : GAUCHE maintenu depuis le
+ * contenu s'arrête sur l'entrée, comme à l'Apple TV, au lieu de filer au
+ * profil une fois le raccourci armé (`retour-rail/raccourcis#gauche-maintenu`).
  */
 function RailGroupContainer({ style, pointerEvents, children }: FocusGroupContainerProps) {
   const guide = (
@@ -25,7 +28,7 @@ function RailGroupContainer({ style, pointerEvents, children }: FocusGroupContai
   );
   if (!NativeFocusSection) return guide;
   return (
-    <NativeFocusSection style={style} pointerEvents={pointerEvents} revealMode="none" revealResponse={0.5} revealDamping={1}>
+    <NativeFocusSection style={style} pointerEvents={pointerEvents} revealMode="none" revealResponse={0.5} revealDamping={1} holdInside>
       {guide}
     </NativeFocusSection>
   );

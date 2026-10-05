@@ -44,6 +44,9 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
   var revealDamping: Float = 1f
   var lineList: Boolean = false
   var tvNeighbors: Boolean = false
+  /** Les pas d'une flèche TENUE ne sortent pas de la section (le rail : l'Apple
+   *  TV s'arrête sur l'entrée, une tenue ne file pas au profil ni au contenu). */
+  var holdInside: Boolean = false
   /** L'entrée déclarée : le numéro natif (l'identifiant de vue, ancienne architecture) d'un de ses éléments. */
   var tvEntry: Int? = null
 
@@ -105,6 +108,8 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
         View.FOCUS_UP, View.FOCUS_DOWN -> FocusGeometry.innermostNeighborSection(focused)?.let { FocusNeighbors.target(it, focused, direction == View.FOCUS_UP) }
         else -> FocusGeometry.ancestor<ReactHorizontalScrollView>(focused, stop = this)?.let { FocusFinder.getInstance().findNextFocus(it, focused, direction) }
       } ?: BeamSearch.target(focused, direction)
+      // Une tenue qui sortirait d'une section qui la retient : le focus reste.
+      if (holdIntervalMs != null && holdInside && target != null && !FocusGeometry.isDescendant(target, this)) return true
       target?.requestFocus(direction)
       return true
     } finally {

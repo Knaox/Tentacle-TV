@@ -53,6 +53,11 @@ class TentacleFocusSectionManager : ReactViewManager() {
     view.lineList = lineList
   }
 
+  @ReactProp(name = "holdInside")
+  fun setHoldInside(view: TentacleFocusSection, enabled: Boolean) {
+    view.holdInside = enabled
+  }
+
   @ReactProp(name = "tvNeighbors")
   fun setTvNeighbors(view: TentacleFocusSection, enabled: Boolean) {
     view.tvNeighbors = enabled

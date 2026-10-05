@@ -19,6 +19,8 @@ export interface NativeFocusSectionProps extends ViewProps {
   revealResponse: number;
   revealDamping: number;
   lineList?: boolean;
+  /** Android : les pas d'une flèche tenue ne sortent pas de la section. */
+  holdInside?: boolean;
 }
 
 const VIEW_NAME = "TentacleFocusSection";
