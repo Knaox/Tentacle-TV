@@ -41,10 +41,15 @@ class PerfModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
     reactApplicationContext.currentActivity?.let(::watch)
   }
 
-  override fun onHostPause() {}
+  override fun onHostPause() {
+    UiThreadUtil.runOnUiThread { UiStallMonitor.stop() }
+  }
 
   override fun onHostDestroy() {
-    UiThreadUtil.runOnUiThread { FrameWindows.detach() }
+    UiThreadUtil.runOnUiThread {
+      FrameWindows.detach()
+      UiStallMonitor.stop()
+    }
   }
 
   private fun watch(activity: Activity) {
@@ -52,6 +57,7 @@ class PerfModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
       @Suppress("DEPRECATION")
       val rate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) activity.display?.refreshRate ?: 60f else activity.windowManager.defaultDisplay.refreshRate
       FrameWindows.attach(activity.window, rate)
+      UiStallMonitor.start(rate)
     }
   }
 }

@@ -72,6 +72,7 @@ internal object FrameWindows {
 
   fun mark(label: String) {
     val at = SystemClock.uptimeMillis()
+    UiStallMonitor.lastLabel = label
     handler.post {
       reportReady(label, at)
       // L'écran courant nomme chaque fenêtre qui s'ouvre ; un changement
