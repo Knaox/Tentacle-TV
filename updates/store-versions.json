@@ -17,12 +17,12 @@
   },
   "playMobile": {
     "$comment": "Version Android (téléphone/tablette) RÉELLEMENT servie par la piste de PRODUCTION de la fiche Play. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (.github/scripts/store-live.mjs : API de rapports Play en lecture seule, recoupée avec la fiche publique ; puis patch-store-manifest.mjs --only=play-mobile --track=production), comme le bloc macAppStore — jamais à l’envoi : mobile.yml le patchait dès la publication, cran test compris, et le site annonçait une version de piste fermée. Ne PAS le déduire de versions.json → mobile, qui porte l’intention et non la publication.",
-    "version": "1.10.2",
+    "version": "1.10.3",
     "packageName": "com.tentacletv.mobile",
     "track": "production",
     "notes": {
-      "fr": "• La qualité automatique suit enfin le vrai débit : la mesure du réseau était fausse, la qualité ne baissait jamais sur une connexion lente\n• La lecture directe marche dès l'ouverture de l'app, sans attendre un retour au premier plan\n• Demander les saisons qui manquent à une série depuis la recherche, par l'appui long\n• Corrections et stabilité",
-      "en": "• Automatic quality finally follows the real bandwidth: the network measurement was wrong, so quality never dropped on a slow connection\n• Direct streaming works as soon as the app opens, without waiting to come back to the foreground\n• Request the seasons a series is missing from search, with a long press\n• Fixes and stability"
+      "fr": "• Famille : invitations, profils invités et PIN pour vos Apple TV\n• Profil rangé en six rubriques\n• Des erreurs claires, et pourquoi la qualité baisse\n• Plus d'image en blocs dans l'action\n• L'accueil et les extensions ne se bloquent plus au retour\n• Barre d'onglets lisible, navigation plus fluide",
+      "en": "• Family: invitations, guest profiles and PIN for your Apple TVs\n• Profile organized in six sections\n• Clear errors, and why quality drops\n• No more blocky picture in action scenes\n• Home and extensions no longer get stuck when you come back\n• Clearer tab bar, smoother navigation"
     }
   },
   "playTv": {
