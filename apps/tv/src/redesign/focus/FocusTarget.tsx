@@ -115,7 +115,11 @@ export const FocusTarget = memo(function FocusTarget({
       // Les props natives de l'intégration d'abord : elles ne remplacent
       // jamais les gestionnaires de la vue.
       {...binding?.native}
-      {...(disabled ? binding?.disabledNative : undefined)}
+      // Désactivée, la cible se verrouille (Android : `tvFocusable: false`) —
+      // jamais sous le focus : la vue focalisée qu'on verrouille fait boucler
+      // react-native-tvos dans un guide qui la vise (`focusLockWaitsForBlur`,
+      // tv-core). Le verrou suit la perte du focus.
+      {...(disabled && !focused ? binding?.disabledNative : undefined)}
       ref={binding?.ref}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}

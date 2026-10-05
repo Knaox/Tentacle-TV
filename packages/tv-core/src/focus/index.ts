@@ -46,3 +46,4 @@ export * from "./libraryFocus";
 export * from "./settingsFocus";
 export * from "./pairingFocus";
 export * from "./profilesFocus";
+export * from "./focusLockTiming";
