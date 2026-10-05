@@ -69,6 +69,14 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
       adb(["reverse", `tcp:${port}`, `tcp:${port}`]);
     },
 
+    /** Le code compilé d'avance par le profil de l'APK (Baseline Profile),
+     *  comme après une installation par le Play Store — les deux APK d'une
+     *  comparaison partent ainsi du même état. Le profil s'écrit au premier
+     *  lancement (profileinstaller). */
+    compileProfile() {
+      shell(`cmd package compile -m speed-profile -f ${PACKAGE}`, { timeout: 300_000 });
+    },
+
     setPerf(on) {
       shell(`setprop debug.tentacle.perf ${on ? 1 : 0}`);
     },

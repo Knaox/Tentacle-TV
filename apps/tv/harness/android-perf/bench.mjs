@@ -6,9 +6,10 @@
 // processeur de chaque fil. Faux backend nav-golden derrière un relais qui
 // sert les images à la taille demandée, comme Jellyfin : aucun compte réel.
 //
-//   node apps/tv/harness/android-perf/bench.mjs run --apk <release.apk> --debug-apk <debug.apk> --tag <nom> [--only a,b] [--rounds 3] [--trace]
+//   node apps/tv/harness/android-perf/bench.mjs run --apk <release.apk> --debug-apk <debug.apk> --tag <nom> [--only a,b] [--rounds 3] [--trace] [--shots]
 //   node apps/tv/harness/android-perf/bench.mjs show <nom>
 //   node apps/tv/harness/android-perf/bench.mjs compare <avant> <après>
+//   node apps/tv/harness/android-perf/bench.mjs diff <avant> <après>     (captures : SSIM, PSNR, côte à côte)
 //
 // L'appareil doit tourner AVANT (pnpm tv:refonte:android, verrou pris). Les
 // deux APK : la release à mesurer, et une debug de la même clé (la session
@@ -81,7 +82,7 @@ async function startBackend() {
   throw new Error(`le faux backend ne répond pas sur ${BACKEND_PORT} — ${path.join(CACHE, "backend.log")}`);
 }
 
-async function playScenario(device, scenario, traceFile) {
+async function playScenario(device, scenario, traceFile, shotFile) {
   device.forceStop();
   device.clearLog();
   const launchMs = device.launch();
@@ -95,6 +96,7 @@ async function playScenario(device, scenario, traceFile) {
   await sleep(3000);
   device.keys(...(scenario.setup ?? []));
   await device.waitQuiet(1200);
+  if (shotFile) device.screencap(shotFile);
   device.clearLog();
   const before = device.threadCpu();
   if (traceFile) startTrace(device, PACKAGE);
@@ -126,12 +128,22 @@ async function run() {
     await device.writeSession({ debugApk, port: PORT });
     device.install(apk);
     device.setPerf(true);
+    // Un premier lancement écrit le profil ; puis la compilation qu'aurait faite le Play Store.
+    device.forceStop();
+    device.clearLog();
+    device.launch();
+    await device.waitReady("accueil", 60_000);
+    device.forceStop();
+    device.compileProfile();
     for (const scenario of scenarios) {
       const played = [];
       for (let i = 0; i < rounds; i++) {
-        const traceFile = flag("trace") ? path.join(CACHE, "traces", `${tag}-${scenario.id}-${i + 1}.txt`) : null;
+        const traceFile = flag("trace") && i === 0 ? path.join(CACHE, "traces", `${tag}-${scenario.id}.txt`) : null;
         if (traceFile) fs.mkdirSync(path.dirname(traceFile), { recursive: true });
-        played.push(await playScenario(device, scenario, traceFile));
+        // Une capture au moment où le geste part (l'état de départ, focus posé) : la preuve qu'une version rend comme l'autre.
+        const shotFile = flag("shots") && i === 0 ? path.join(CACHE, "shots", `${tag}-${scenario.id}.png`) : null;
+        if (shotFile) fs.mkdirSync(path.dirname(shotFile), { recursive: true });
+        played.push(await playScenario(device, scenario, traceFile, shotFile));
         process.stdout.write(".");
       }
       const summary = summarizeScenario(scenario, played);
@@ -150,11 +162,33 @@ async function run() {
 
 const load = (tag) => JSON.parse(fs.readFileSync(path.join(RUNS, `${tag}.json`), "utf8"));
 
+/** Les captures de deux passages, scénario par scénario : SSIM et PSNR (ImageMagick), et l'image côte à côte. */
+function diffShots(a, b) {
+  const dir = path.join(CACHE, "shots");
+  for (const name of fs.readdirSync(dir).filter((f) => f.startsWith(`${a}-`) && f.endsWith(".png"))) {
+    const scenario = name.slice(a.length + 1, -4);
+    const other = path.join(dir, `${b}-${scenario}.png`);
+    if (!fs.existsSync(other)) continue;
+    const metric = (kind) => {
+      try {
+        execFileSync("magick", ["compare", "-metric", kind, path.join(dir, name), other, "null:"], { stdio: ["ignore", "ignore", "pipe"] });
+        return "identiques";
+      } catch (error) {
+        return String(error.stderr ?? "").trim();
+      }
+    };
+    const side = path.join(dir, `cote-a-cote-${a}-${b}-${scenario}.png`);
+    execFileSync("magick", [path.join(dir, name), other, "+append", side]);
+    console.log(`${scenario} : SSIM ${metric("SSIM")} · PSNR ${metric("PSNR")} — ${side}`);
+  }
+}
+
 async function main() {
   if (command === "run") return run();
   if (command === "show") return load(rest[0]).results.forEach((s) => console.log(describe(s)));
   if (command === "compare") return console.log(compareTable(load(rest[0]).results, load(rest[1]).results));
-  console.error("usage : bench.mjs run|show|compare — voir l'en-tête du fichier");
+  if (command === "diff") return diffShots(rest[0], rest[1]);
+  console.error("usage : bench.mjs run|show|compare|diff — voir l'en-tête du fichier");
   process.exit(2);
 }
 
