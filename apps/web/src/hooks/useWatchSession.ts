@@ -130,7 +130,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
   }, [itemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useDefaultTracks({
-    streams, audioOverrideRef, subtitleOverrideRef, prefsApplied,
+    streams, audioOverrideRef, subtitleOverrideRef, prefsApplied, prefsReady, itemKey: `${itemId}|${mediaSourceId}`,
     setAudioIndex, setSubtitleIndex,
     // mpv rend les sous-titres image lui-même : rien à éviter de ce côté.
     costlyBurnIn: !isDesktop && pbInfo.pgsClientUnavailable,

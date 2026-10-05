@@ -1,4 +1,4 @@
-import { useEffect, type MutableRefObject } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 
 /** Sous-titres gravés dans une image, qu'aucun `<track>` ne sait afficher. */
@@ -27,6 +27,16 @@ interface Options {
    * qu'il n'avait aucune raison de préférer.
    */
   costlyBurnIn?: boolean;
+  /**
+   * La première source est partie (préférences résolues — ou abandonnées) :
+   * la piste audio par défaut ne s'impose plus. Sans cette garde, une fiche
+   * relue en cours de lecture (nouvelle liste de pistes) ramenait la piste par
+   * défaut quand `/resolve` avait échoué — un flux transcodé se rouvrait sur
+   * elle, puis sur la préférence (deux sessions, passation du 2026-10-05).
+   */
+  prefsReady?: boolean;
+  /** Le titre lu : sa PREMIÈRE liste de pistes reçoit toujours les défauts (`prefsReady` est encore celui du titre d'avant). */
+  itemKey?: string;
 }
 
 /**
@@ -66,10 +76,14 @@ export function defaultSubtitle(streams: JfStream[], costlyBurnIn: boolean): num
  */
 export function useDefaultTracks({
   streams, audioOverrideRef, subtitleOverrideRef, prefsApplied,
-  setAudioIndex, setSubtitleIndex, costlyBurnIn = false,
+  setAudioIndex, setSubtitleIndex, costlyBurnIn = false, prefsReady = false, itemKey,
 }: Options): void {
+  const audioSeenFor = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (streams.length > 0 && !audioOverrideRef.current && !prefsApplied.current) {
+    if (streams.length === 0) return;
+    const firstForItem = audioSeenFor.current !== itemKey;
+    audioSeenFor.current = itemKey;
+    if (!audioOverrideRef.current && !prefsApplied.current && (firstForItem || !prefsReady)) {
       const defAudio = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
         ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0;
       setAudioIndex(defAudio);
