@@ -1,5 +1,4 @@
 export type RootStackParamList = {
-  Disclaimer: undefined;
   PairCode: undefined;
   /** « Qui regarde ? » (Apple TV, Famille) : `launch` — démarrage, session
    *  fermée par le serveur ; `switch` — « Changer de profil ». */

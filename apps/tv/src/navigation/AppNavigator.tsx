@@ -7,11 +7,9 @@ import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
 import { SkeletonLoader } from "./ScreenFallback";
 import { ErrorBoundary } from "../components/ErrorBoundary";
-import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import { BackScope } from "../redesignWiring/back/BackScope";
 
 // Direct imports — initial screens, must load immediately
-import { DisclaimerScreen } from "../screens/DisclaimerScreen";
 import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { PlayerSettingsScreen } from "../screens/player/PlayerSettingsScreen";
@@ -35,13 +33,12 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 /**
  * Le fondu enchaîné de la pile native (react-native-screens : un animateur
- * UIKit, joué par Core Animation, sans JS). Apple TV (refonte) : la durée de
- * `TV_MOTION` — un écran poussé (la fiche d'une carte) se pose en 320 ms au
- * lieu de 500, pendant que son image se pose et que son en-tête arrive
- * (`DetailBackdrop`, `DetailHeader`). Android TV : la durée par défaut, rien
- * ne change.
+ * UIKit, joué par Core Animation, sans JS ; l'animateur des fragments sur
+ * Android) : la durée de `TV_MOTION` — un écran poussé (la fiche d'une carte)
+ * se pose en 320 ms au lieu de 500, pendant que son image se pose et que son
+ * en-tête arrive (`DetailBackdrop`, `DetailHeader`).
  */
-const FADE_MS: number | undefined = REDESIGN_ACTIVE ? TV_MOTION.page.fadeMs : undefined;
+const FADE_MS = TV_MOTION.page.fadeMs;
 
 /**
  * Préchauffe les écrans lazy après le premier rendu de l'accueil : le registre
@@ -65,25 +62,14 @@ export function preloadCoreScreens() {
 
 export function AppNavigator() {
   const { storage } = useTentacleConfig();
-  const disclaimerAccepted = storage.getItem("disclaimer_accepted") === "true";
-  const hasServerUrl = !!storage.getItem("tentacle_server_url");
   const hasToken = !!storage.getItem("tentacle_token");
   // Apple TV passée aux profils (Famille), aucun profil ouvert : « Qui regarde ? ».
   const choosing = tvSessionMode(storage) === "choosing";
 
-  // Les conditions d'utilisation, au premier lancement seulement (aucun serveur
-  // ni acceptation) — Android TV seulement : la refonte (Apple TV) les a
-  // retirées, sa langue se choisit sur l'accueil du jumelage. La clé
-  // `disclaimer_accepted` reste celle d'Android TV : ne jamais la renommer.
-  // Sur TV, pas de page de login : sans token actif → toujours le jumelage.
-  const showDisclaimer = !REDESIGN_ACTIVE && !hasServerUrl && !disclaimerAccepted;
-  const initialRouteName = showDisclaimer
-    ? "Disclaimer"
-    : choosing
-      ? "Profiles"
-      : hasToken
-        ? "Home"
-        : "PairCode";
+  // Sur TV, pas de page de login : sans token actif → toujours le jumelage
+  // (sa langue se choisit sur son accueil ; plus de conditions d'utilisation
+  // à accepter, sur aucun des deux téléviseurs).
+  const initialRouteName = choosing ? "Profiles" : hasToken ? "Home" : "PairCode";
 
   return (
     <Stack.Navigator
@@ -94,10 +80,10 @@ export function AppNavigator() {
         animationDuration: FADE_MS,
         contentStyle: { backgroundColor: Colors.bgDeep },
         statusBarHidden: true,
-        // Apple TV : Menu ne dépile jamais un écran de lui-même — la pile de
+        // Menu (Apple TV) ne dépile jamais un écran de lui-même — la pile de
         // couches du Retour décide (`BackScope`), et UIKit ne garde que la
-        // sortie de l'application. Android TV : sans effet.
-        gestureEnabled: !REDESIGN_ACTIVE,
+        // sortie de l'application. Sans effet sur Android.
+        gestureEnabled: false,
       }}
       // Frontière de chargement PAR ÉCRAN, pas autour du Navigator : un
       // Suspense global gèle tout l'arbre à la première navigation vers un
@@ -115,7 +101,6 @@ export function AppNavigator() {
         </BackScope>
       )}
     >
-      {REDESIGN_ACTIVE ? null : <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />}
       <Stack.Screen name="PairCode" component={PairCodeScreen} />
       {/* La Famille (Apple TV) : « Qui regarde ? » et « Gérer les profils ». */}
       <Stack.Screen name="Profiles" component={ProfilesScreen} initialParams={{ intent: "launch" }} options={{ animation: "none" }} />
