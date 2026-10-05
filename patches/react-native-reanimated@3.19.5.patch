@@ -1,0 +1,87 @@
+diff --git a/android/src/main/java/com/swmansion/reanimated/NodesManager.java b/android/src/main/java/com/swmansion/reanimated/NodesManager.java
+index 48c64ee..6cf2410 100644
+--- a/android/src/main/java/com/swmansion/reanimated/NodesManager.java
++++ b/android/src/main/java/com/swmansion/reanimated/NodesManager.java
+@@ -7,6 +7,7 @@ import android.os.SystemClock;
+ import android.view.View;
+ import com.facebook.react.bridge.Arguments;
+ import com.facebook.react.bridge.GuardedRunnable;
++import com.facebook.react.bridge.JavaOnlyArray;
+ import com.facebook.react.bridge.JavaOnlyMap;
+ import com.facebook.react.bridge.ReactApplicationContext;
+ import com.facebook.react.bridge.ReactContext;
+@@ -401,37 +402,41 @@ public class NodesManager implements EventDispatcherListener {
+     }
+ 
+     // TODO: update PropsNode to use this method instead of its own way of updating props
+-    boolean hasUIProps = false;
+-    boolean hasNativeProps = false;
+-    boolean hasJSProps = false;
+-    JavaOnlyMap newUIProps = new JavaOnlyMap();
+-    WritableMap newJSProps = Arguments.createMap();
+-    WritableMap newNativeProps = Arguments.createMap();
++    // Tentacle patch : called for every animated view on every frame. The maps
++    // are only allocated when a prop needs them (the two native ones were
++    // created — JNI allocations, then finalized — even when they stayed
++    // empty), and UI-thread props coming from C++ as native arrays or maps
++    // (`transform`) are cloned once into Java structures (`addUIProp`) instead
++    // of deep-copied into new native ones, then read back through JNI by the
++    // view manager.
++    JavaOnlyMap newUIProps = null;
++    WritableMap newJSProps = null;
++    WritableMap newNativeProps = null;
+ 
+     for (Map.Entry<String, Object> entry : props.entrySet()) {
+       String key = entry.getKey();
+       Object value = entry.getValue();
+       if (uiProps.contains(key)) {
+-        hasUIProps = true;
+-        addProp(newUIProps, key, value);
++        if (newUIProps == null) newUIProps = new JavaOnlyMap();
++        addUIProp(newUIProps, key, value);
+       } else if (nativeProps.contains(key)) {
+-        hasNativeProps = true;
++        if (newNativeProps == null) newNativeProps = Arguments.createMap();
+         addProp(newNativeProps, key, value);
+       } else {
+-        hasJSProps = true;
++        if (newJSProps == null) newJSProps = Arguments.createMap();
+         addProp(newJSProps, key, value);
+       }
+     }
+ 
+     if (viewTag != View.NO_ID) {
+-      if (hasUIProps) {
++      if (newUIProps != null) {
+         mUIImplementation.synchronouslyUpdateViewOnUIThread(
+             viewTag, new ReactStylesDiffMap(newUIProps));
+       }
+-      if (hasNativeProps) {
++      if (newNativeProps != null) {
+         enqueueUpdateViewOnNativeThread(viewTag, newNativeProps, true);
+       }
+-      if (hasJSProps) {
++      if (newJSProps != null) {
+         WritableMap evt = Arguments.createMap();
+         evt.putInt("viewTag", viewTag);
+         evt.putMap("props", newJSProps);
+@@ -514,6 +519,19 @@ public class NodesManager implements EventDispatcherListener {
+     return copy;
+   }
+ 
++  // Tentacle patch : a UI-thread prop applied right away on the view. A native
++  // array or map coming from C++ is cloned once into Java structures (one JNI
++  // import per level), read by the view manager without JNI.
++  private static void addUIProp(JavaOnlyMap propMap, String key, Object value) {
++    if (value instanceof ReadableArray && !(value instanceof WritableArray)) {
++      propMap.putArray(key, JavaOnlyArray.deepClone((ReadableArray) value));
++    } else if (value instanceof ReadableMap && !(value instanceof WritableMap)) {
++      propMap.putMap(key, JavaOnlyMap.deepClone((ReadableMap) value));
++    } else {
++      addProp(propMap, key, value);
++    }
++  }
++
+   private static void addProp(WritableMap propMap, String key, Object value) {
+     if (value == null) {
+       propMap.putNull(key);
