@@ -17,6 +17,7 @@ import { useHomeLifecycle } from "../../hooks/useHomeLifecycle";
 import type { RootStackParamList } from "../../navigation/types";
 import { useRecoFilter } from "../reco/useRecoFilter";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
+import { usePerfReady } from "../../platform/perf";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useAmbientPalette } from "../screen/useAmbientPalette";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -85,6 +86,8 @@ export function HomeRedesign({ navigation, route }: Props) {
     heroPending: hero.pending,
   });
   const empty = !loading && !failed && featuredQuery.data?.length === 0 && home.rows.length === 0 && !home.resume?.length;
+  // Le mode de mesure (Android TV, éteint par défaut) : l'accueil est prêt.
+  usePerfReady("accueil", !loading && !failed);
   const entryKey = homeEntryKey({ failed, loading, empty, hasHero: hero.hero !== null, firstRowKey: home.rows[0]?.key ?? null });
 
   // Ses rangées reviennent au début : hors de l'écran, au changement de page, et par Retour.

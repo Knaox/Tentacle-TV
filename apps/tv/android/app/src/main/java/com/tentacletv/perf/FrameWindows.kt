@@ -41,6 +41,13 @@ internal object FrameWindows {
 
   private val closer = Runnable { close() }
 
+  /** La mesure de `FrameMetrics` de chaque phase, dans l'ordre de `FrameWindow.Phase`. */
+  private val METRIC_OF = intArrayOf(
+    FrameMetrics.TOTAL_DURATION, FrameMetrics.UNKNOWN_DELAY_DURATION, FrameMetrics.INPUT_HANDLING_DURATION,
+    FrameMetrics.ANIMATION_DURATION, FrameMetrics.LAYOUT_MEASURE_DURATION, FrameMetrics.DRAW_DURATION,
+    FrameMetrics.SYNC_DURATION, FrameMetrics.COMMAND_ISSUE_DURATION, FrameMetrics.SWAP_BUFFERS_DURATION,
+  )
+
   private val listener = Window.OnFrameMetricsAvailableListener { _, metrics, dropCount -> onFrame(metrics, dropCount) }
 
   /** Écoute les images de `target` (sur le fil principal). */
@@ -111,18 +118,11 @@ internal object FrameWindows {
 
   private fun onFrame(metrics: FrameMetrics, dropCount: Int) {
     val now = SystemClock.uptimeMillis()
-    val total = metrics.getMetric(FrameMetrics.TOTAL_DURATION)
-    val anim = metrics.getMetric(FrameMetrics.ANIMATION_DURATION)
-    val ui = metrics.getMetric(FrameMetrics.UNKNOWN_DELAY_DURATION) +
-      metrics.getMetric(FrameMetrics.INPUT_HANDLING_DURATION) + anim +
-      metrics.getMetric(FrameMetrics.LAYOUT_MEASURE_DURATION) +
-      metrics.getMetric(FrameMetrics.DRAW_DURATION)
-    val render = metrics.getMetric(FrameMetrics.SYNC_DURATION) +
-      metrics.getMetric(FrameMetrics.COMMAND_ISSUE_DURATION) +
-      metrics.getMetric(FrameMetrics.SWAP_BUFFERS_DURATION)
+    val phases = LongArray(FrameWindow.Phase.values().size)
+    for (phase in FrameWindow.Phase.values()) phases[phase.ordinal] = metrics.getMetric(METRIC_OF[phase.ordinal])
     val open = window ?: open(now)
     open.dropped += dropCount
-    open.add(total, ui, anim, render, now)
+    open.add(phases, now)
     handler.removeCallbacks(closer)
     handler.postDelayed(closer, IDLE_CLOSE_MS)
   }

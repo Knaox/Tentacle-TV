@@ -15,6 +15,7 @@ import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { gridCatalogParams } from "./gridCatalogParams";
 import { activeFiltersOf, pillsOf, type GenreOption } from "./libraryFilterModel";
 import { yearSpanOf } from "./libraryFilterSheets";
+import { usePerfReady } from "../../platform/perf";
 import { useLibraryCatalogState } from "./useLibraryCatalogState";
 import { useLibraryFilterBar } from "./useLibraryFilterBar";
 import { useLibrarySheets } from "./useLibrarySheets";
@@ -90,6 +91,8 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
   }, [platforms, hasMore, loadingMore, items.length, loadMore]);
 
   useLibraryLoadReprise(focus, { loading, items: items.length });
+  // Le mode de mesure (Android TV, éteint par défaut) : la bibliothèque est prête.
+  usePerfReady("bibliothèque", !loading && (items.length > 0 || status !== null));
 
   const onEndReached = useCallback(() => loadMore(), [loadMore]);
 

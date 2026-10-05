@@ -12,6 +12,7 @@ import { ActionSheetRedesign } from "../sheet/ActionSheetRedesign";
 import { useTitleRequests } from "../vigie/useTitleRequests";
 import { useSeriesGapTabs } from "../vigie/useSeriesGapTabs";
 import { useDetailActions } from "./useDetailActions";
+import { usePerfReady } from "../../platform/perf";
 import { useDetailModel, type DetailModel } from "./useDetailModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
@@ -69,6 +70,8 @@ export function MediaDetailRedesign({ route }: Props) {
   });
 
   const focus = useFocusStore();
+  // Le mode de mesure (Android TV, éteint par défaut) : la fiche est prête.
+  usePerfReady("fiche", !!model.props.header && !!model.props.actions);
   useDetailFocus(focus, {
     entryKey: entryKeyOf(model),
     seasonIds: shown?.seasons.map((season) => season.id) ?? [],
