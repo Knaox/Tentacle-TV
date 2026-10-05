@@ -42,7 +42,7 @@ fichiers qui diffèrent ont une variante `.android.ts` À CÔTÉ du fichier tvOS
 |---|---|---|
 | `sectionNeighbors.ts` : `{ tvNeighbors: true }` | `{ tvNeighbors: true, tvPacing: REPEAT_PACING }` | la cadence d'une flèche tenue (§ 3), passée de tv-core à la section native |
 | `focusLocks.ts` : `isTVSelectable` | `tvFocusable` (`FOCUS_LOCKED`) | ni `isTVSelectable` (tvOS seul) ni `focusable={false}` (RN Android garde la vue focalisable « pour l'accessibilité ») n'agissent |
-| `guideFocusable.ts` : sans cible, `false` | `undefined` | `focusable={false}` d'un `TVFocusGuideView` devient `tvFocusable={false}` sur Android : `FOCUS_BLOCK_DESCENDANTS`, TOUT le groupe devient inatteignable. Un guide sans destination ni `autoFocus` n'y est pas un guide. Lu par le guide d'entrée, la croix Retour, les deux ponts du lecteur |
+| `guideFocusable.ts` : sans cible, `false` | `undefined` | `focusable={false}` d'un `TVFocusGuideView` devient `tvFocusable={false}` sur Android : `FOCUS_BLOCK_DESCENDANTS`, TOUT le groupe devient inatteignable. Un guide sans destination ni `autoFocus` n'y est pas un guide. Lu par le guide d'entrée et la croix Retour (les guides du lecteur : A4) |
 | `END_EXIT_LOCK` (lecteur) | `FOCUS_LOCKED` | le verrou de la plateforme |
 
 Le reste sert tel quel : `hasTVPreferredFocus` appelle `requestFocus()` sur
