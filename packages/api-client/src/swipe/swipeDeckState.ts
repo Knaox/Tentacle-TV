@@ -21,7 +21,9 @@ export type SwipeDeckAction =
   | { type: "loaded"; cards: SwipeCard[]; counts?: SwipeCounts }
   | { type: "judged"; verdict: SwipeVerdict }
   | { type: "undone" }
-  | { type: "restore"; key: string };
+  | { type: "restore"; key: string }
+  /** Demandés ailleurs (cf. reco/requestedTitles) : ils quittent la file, sans verdict. */
+  | { type: "hidden"; keys: readonly string[] };
 
 /** Annulations possibles d'affilée. */
 export const HISTORY_MAX = 30;
@@ -81,6 +83,14 @@ export function swipeDeckReducer(state: SwipeDeckState, action: SwipeDeckAction)
         counts: bump(state.counts, last.verdict, -1),
         exhausted: false,
       };
+    }
+    case "hidden": {
+      const gone = new Set(action.keys);
+      const queue = state.queue.filter((c) => !gone.has(c.key));
+      if (queue.length === state.queue.length) return state;
+      const left = state.queue.filter((c) => gone.has(c.key)).map((c) => c.key);
+      // Retenus comme vus : le serveur ne les resert pas avant d'en savoir autant.
+      return { ...state, queue, seen: [...state.seen.filter((k) => !gone.has(k)), ...left].slice(-SEEN_MAX) };
     }
     case "restore": {
       // L'enregistrement a échoué : la carte revient en haut, son verdict sort

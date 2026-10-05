@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useFocusEffect } from "expo-router";
 import { swipeLangOf, useSwipeCardDetails, useSwipeDeck } from "@tentacle-tv/api-client";
 import type { SwipeCard, SwipeVerdict } from "@tentacle-tv/api-client";
 import { useExternalTitleState, useTitleProvider } from "@/components/external/useExternalTitle";
@@ -61,7 +62,12 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
     setInfoOpen(false);
   }, [topKey]);
 
-  const { judge, undo, dismissSaveFailed, saveFailed } = deck;
+  const { judge, undo, dismissSaveFailed, saveFailed, refreshRequested } = deck;
+  // Retour de la page de l'extension (empilée par-dessus) : un titre qu'on y a
+  // demandé quitte la pile.
+  useFocusEffect(useCallback(() => {
+    refreshRequested();
+  }, [refreshRequested]));
   useEffect(() => {
     if (!saveFailed) return;
     const id = setTimeout(dismissSaveFailed, 5000);

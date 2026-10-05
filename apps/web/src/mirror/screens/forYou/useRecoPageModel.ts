@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { heroSelectionFromRows, useRecoPage } from "@tentacle-tv/api-client";
+import { heroSelectionFromRows, useRecoPage, useRequestedTitles } from "@tentacle-tv/api-client";
 import { useRecoFilter } from "../../../hooks/useRecoFilter";
 import { hasColdStartAck, markColdStartAck } from "../../../lib/coldStartAck";
 
@@ -30,6 +30,8 @@ export function useRecoPageModel() {
   const { selected } = useRecoFilter();
   const query = useRecoPage(selected);
   const page = query.data;
+  // Un titre demandé ailleurs (page de l'extension) sort des rangées au retour.
+  useRequestedTitles();
 
   const heroSeed = useRef(Math.random());
   const hero = useMemo(() => heroSelectionFromRows(page?.rows, heroSeed.current), [page?.rows]);

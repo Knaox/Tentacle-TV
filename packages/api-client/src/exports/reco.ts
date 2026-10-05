@@ -18,6 +18,9 @@ export { useRecoLive } from "../hooks/useRecoLive";
 // reco/recoRetirement, reco/useRecoHold)
 export { useRecoHold, useRecoCardHold, useHeldRecoItems, useIsRecoLeaving } from "../reco/useRecoHold";
 export { RECO_LEAVE_MS } from "../reco/recoRetirement";
+// Un titre demandé sort des recommandations du compte (cf. reco/requestedTitles)
+export { useRequestedTitles, markTitleRequested } from "../reco/requestedTitles";
+export { REQUESTED_TITLES_KEY } from "../reco/requestedTitlesKey";
 
 // Images, titres et état TMDB des recommandations, partagés par les clients
 // (cf. reco/recoImages, reco/recoRowTitles, hooks/useAdminMetadata)

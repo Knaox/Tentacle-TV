@@ -11,6 +11,7 @@ import { FAVORITE_SERIES_IDS_KEY, WATCHLIST_SERIES_IDS_KEY } from "../hooks/watc
 import { recoItemsOf } from "./recoCacheItems";
 import { isRecoItemHeld, markRecoRetired, startRecoLeave, unholdRecoCard } from "./recoRetirementState";
 import { recoMarkerItem } from "./useRecoMarkerItem";
+import { REQUESTED_TITLES_KEY } from "./requestedTitlesKey";
 
 /**
  * « Pour vous » ne propose que ce qu'on n'a pas encore jugé : un titre ajouté
@@ -25,7 +26,8 @@ import { recoMarkerItem } from "./useRecoMarkerItem";
  * carte affichent (`resolveCardMarkers`) : la pastille d'états (Ma liste,
  * favori, vu) ou une note. Une carte hors bibliothèque (Vigie) est jugée
  * quand elle est mise de côté pour Ma liste, aimée en attendant son arrivée,
- * ou notée.
+ * ou notée. Un titre DEMANDÉ sort de même (cf. requestedTitles.ts) : masqué,
+ * pas jugé — mais pas sous le curseur non plus.
  */
 
 /** Le titre porte-t-il un jugement, d'après les caches des marqueurs de carte ? */
@@ -40,6 +42,7 @@ export function isRecoItemJudged(qc: QueryClient, item: RecoRowItem): boolean {
   };
   // Hors bibliothèque, Ma liste et le cœur attendent l'arrivée du titre.
   const key = titleKey(item.mediaType, item.tmdbId);
+  if ((qc.getQueryData<string[]>(REQUESTED_TITLES_KEY) ?? []).includes(key)) return true;
   const pending = !item.jellyfinItemId && (qc.getQueryData<string[]>(WATCHLIST_PENDING_KEY) ?? []).includes(key);
   const liked = !item.jellyfinItemId && (qc.getQueryData<string[]>(FAVORITE_PENDING_KEY) ?? []).includes(key);
   const ratings = qc.getQueryData<UserRatingEntry[]>(["ratings"]);

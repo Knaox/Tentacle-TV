@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFocusEffect } from "expo-router";
 import {
-  heroSelectionFromRows, invalidateRecoQueries, useRecoPage, useRecoSettings, useTentacleConfig, useUserId,
+  heroSelectionFromRows, invalidateRecoQueries, useRecoPage, useRecoSettings, useRequestedTitles, useTentacleConfig, useUserId,
 } from "@tentacle-tv/api-client";
 import { hasColdStartAck, markColdStartAck } from "@/reco/coldStartAck";
 
@@ -30,6 +31,13 @@ export function useRecoPageModel() {
   const providerFilter = settings.data?.providerFilter ?? EMPTY;
   const query = useRecoPage(providerFilter, { enabled: settingsReady });
   const page = query.data;
+
+  // Un titre demandé dans la page de l'extension (empilée par-dessus) sort
+  // des rangées quand l'écran reprend le focus.
+  const { refetch: refetchRequested } = useRequestedTitles();
+  useFocusEffect(useCallback(() => {
+    void refetchRequested();
+  }, [refetchRequested]));
 
   const heroSeed = useRef(Math.random());
   const hero = useMemo(() => heroSelectionFromRows(page?.rows, heroSeed.current), [page?.rows]);
