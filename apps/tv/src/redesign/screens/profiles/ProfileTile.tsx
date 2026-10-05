@@ -30,6 +30,14 @@ export const TILE_WIDTH = 248;
 /** L'écart entre deux tuiles de la rangée. */
 export const TILE_GAP = 40;
 const FOCUS_SCALE = 1.12;
+/**
+ * La place d'un NOM : la tuile et son écart, moins une marge — il ne touche
+ * jamais celui de la voisine. Plus long encore, il se RÉDUIT (jusqu'à
+ * `NAME_MIN_SCALE`) au lieu d'être coupé : « compat-user2 » sortait en
+ * « compat-us… » (2026-10-05).
+ */
+const NAME_WIDTH = TILE_WIDTH + TILE_GAP - 12;
+const NAME_MIN_SCALE = 0.7;
 
 /**
  * L'entrée dans un profil, partagée par la rangée : sa progression (0 → 1, et
@@ -117,13 +125,22 @@ function Body({ model, focused, guestLabel }: { model: ProfileTileModel; focused
           </View>
         ) : null}
       </Animated.View>
-      <Text style={[styles.name, { color: focused ? colors.text : colors.textSecondary }]} numberOfLines={1}>
+      <Text
+        style={[styles.name, { color: focused ? colors.text : colors.textSecondary }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={NAME_MIN_SCALE}
+      >
         {model.name}
       </Text>
       {locked ? (
-        <Text style={[styles.caption, styles.locked]} numberOfLines={1}>{model.lockedLabel}</Text>
+        <Text style={[styles.caption, styles.locked]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={NAME_MIN_SCALE}>
+          {model.lockedLabel}
+        </Text>
       ) : model.guest ? (
-        <Text style={styles.caption} numberOfLines={1}>{guestLabel}</Text>
+        <Text style={styles.caption} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={NAME_MIN_SCALE}>
+          {guestLabel}
+        </Text>
       ) : (
         <Text style={styles.caption}> </Text>
       )}
@@ -163,7 +180,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: white(0.2),
   },
-  name: { ...text.heading, marginTop: 30, maxWidth: TILE_WIDTH, textAlign: "center" },
-  caption: { ...fonts.medium, fontSize: 24, lineHeight: 30, marginTop: 6, color: colors.textTertiary, textAlign: "center" },
+  name: { ...text.heading, marginTop: 30, width: NAME_WIDTH, textAlign: "center" },
+  caption: { ...fonts.medium, fontSize: 24, lineHeight: 30, marginTop: 6, width: NAME_WIDTH, color: colors.textTertiary, textAlign: "center" },
   locked: { color: colors.warningFg },
 });
