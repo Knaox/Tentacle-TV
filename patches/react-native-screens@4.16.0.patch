@@ -1,9 +1,9 @@
 diff --git a/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt b/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt
 new file mode 100644
-index 0000000..58898c6
+index 0000000..fb87af1
 --- /dev/null
 +++ b/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt
-@@ -0,0 +1,129 @@
+@@ -0,0 +1,131 @@
 +package com.swmansion.rnscreens
 +
 +import android.animation.Animator
@@ -33,6 +33,8 @@ index 0000000..58898c6
 + * `rns_fade_out` / `rns_fade_in` (même durée, même courbe — celle d'une
 + * `Animation` sans interpolateur), et l'écran qui s'efface est dessiné
 + * PAR-DESSUS le nouveau, comme la vue qui partait (`ScreenStack.dispatchDraw`).
++ * Caché, il quitte la pile sans animation (`ScreenStack.removeHiddenCovered`) :
++ * il ne reparaît pas le temps de son retrait.
 + *
 + * Opt-in (`ScreenStack.keepCoveredScreensAttached`) : sans lui, rien ne change.
 + */
@@ -134,10 +136,18 @@ index 0000000..58898c6
 +    }
 +}
 diff --git a/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt b/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
-index 9894cd4..6a5629d 100644
+index 9894cd4..7113cc3 100644
 --- a/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
 +++ b/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
-@@ -31,6 +31,9 @@ class ScreenStack(
+@@ -4,6 +4,7 @@ import android.content.Context
+ import android.graphics.Canvas
+ import android.os.Build
+ import android.view.View
++import androidx.fragment.app.FragmentTransaction
+ import com.facebook.react.bridge.ReactContext
+ import com.facebook.react.uimanager.UIManagerHelper
+ import com.swmansion.rnscreens.Screen.StackAnimation
+@@ -31,6 +32,9 @@ class ScreenStack(
      private var childrenDrawingOrderStrategy: ChildrenDrawingOrderStrategy? = null
      private var disappearingTransitioningChildren: MutableList<View> = ArrayList()
  
@@ -147,7 +157,7 @@ index 9894cd4..6a5629d 100644
      var goingForward = false
  
      /**
-@@ -183,6 +186,22 @@ class ScreenStack(
+@@ -183,6 +187,22 @@ class ScreenStack(
  
          goingForward = shouldUseOpenAnimation
  
@@ -170,12 +180,23 @@ index 9894cd4..6a5629d 100644
          if (shouldUseOpenAnimation &&
              newTop != null &&
              needsDrawReordering(newTop, stackAnimation) &&
-@@ -234,14 +253,27 @@ class ScreenStack(
+@@ -221,6 +241,9 @@ class ScreenStack(
+         }
+ 
+         createTransaction().let { transaction ->
++            // Tentacle patch : un écran recouvert ET caché qui s'en va part sans
++            // animation (`removeHiddenCovered`) — avant les animations de la transaction.
++            val silent = removeHiddenCovered(transaction, newTop, visibleBottom, keepCovered)
+             if (stackAnimation != null) {
+                 transaction.setTweenAnimations(stackAnimation, shouldUseOpenAnimation)
+             }
+@@ -234,14 +257,26 @@ class ScreenStack(
                          dismissedWrappers.contains(
                              wrapper,
                          )
 -                }.forEach { wrapper -> transaction.remove(wrapper.fragment) }
-+                }.forEach { wrapper ->
++                }.filter { it !in silent }
++                .forEach { wrapper ->
 +                    wrapper.fragment.view?.let { coveredScreens.forget(it) }
 +                    transaction.remove(wrapper.fragment)
 +                }
@@ -188,11 +209,9 @@ index 9894cd4..6a5629d 100644
 -                .forEach { wrapper -> transaction.remove(wrapper.fragment) }
 +                .forEach { wrapper ->
 +                    // Tentacle patch : recouvert, il reste attaché (voir `keepCovered`).
-+                    if (keepCovered && wrapper.fragment.isAdded && wrapper.fragment.view != null &&
-+                        wrapper !== newTop && wrapper.screen.activityState !== Screen.ActivityState.INACTIVE
-+                    ) {
++                    if (keepsCovered(wrapper, newTop, keepCovered)) {
 +                        toCover.add(wrapper)
-+                    } else {
++                    } else if (wrapper !in silent) {
 +                        wrapper.fragment.view?.let { coveredScreens.forget(it) }
 +                        transaction.remove(wrapper.fragment)
 +                    }
@@ -200,7 +219,7 @@ index 9894cd4..6a5629d 100644
  
              // attach screens that just became visible
              if (visibleBottom != null && !visibleBottom.fragment.isAdded) {
-@@ -281,6 +313,10 @@ class ScreenStack(
+@@ -281,6 +316,50 @@ class ScreenStack(
              turnOffA11yUnderTransparentScreen(visibleBottom)
              transaction.commitNowAllowingStateLoss()
          }
@@ -208,10 +227,50 @@ index 9894cd4..6a5629d 100644
 +        // Tentacle patch : recouverts une fois le nouvel écran en place — il prend
 +        // le focus qu'ils rendent ; un fondu les efface par-dessus lui.
 +        toCover.forEach { wrapper -> wrapper.fragment.view?.let { coveredScreens.cover(it, fades && shouldUseOpenAnimation) } }
++    }
++
++    // Tentacle patch : un écran recouvert que la mise à jour garde attaché (`keepCovered`).
++    private fun keepsCovered(
++        wrapper: ScreenFragmentWrapper,
++        newTop: ScreenFragmentWrapper?,
++        keepCovered: Boolean,
++    ): Boolean =
++        keepCovered && wrapper.fragment.isAdded && wrapper.fragment.view != null &&
++            wrapper !== newTop && wrapper.screen.activityState !== Screen.ActivityState.INACTIVE
++
++    /**
++     * Tentacle patch : les écrans recouverts ET cachés que cette mise à jour retire
++     * de la pile, ou en détache, partent SANS animation — retirés ici, avant que
++     * la transaction ne reçoive ses animations, qui ne valent que pour les
++     * opérations suivantes. Animés, ils redevenaient visibles le temps de leur
++     * retrait, par-dessus le nouvel écran : l'accueil passait sous « Qui
++     * regarde ? » au changement de profil. Avant le patch, déjà détachés, ils
++     * partaient sans rien montrer ; de même ici.
++     */
++    private fun removeHiddenCovered(
++        transaction: FragmentTransaction,
++        newTop: ScreenFragmentWrapper?,
++        visibleBottom: ScreenFragmentWrapper?,
++        keepCovered: Boolean,
++    ): Set<ScreenFragmentWrapper> {
++        val leaving =
++            stack.filter { !screenWrappers.contains(it) || dismissedWrappers.contains(it) } +
++                screenWrappers
++                    .takeWhile { it !== visibleBottom }
++                    .filter { (it !== newTop && !dismissedWrappers.contains(it)) || it.screen.activityState === Screen.ActivityState.INACTIVE }
++                    .filterNot { keepsCovered(it, newTop, keepCovered) }
++        val silent = HashSet<ScreenFragmentWrapper>()
++        for (wrapper in leaving) {
++            val view = wrapper.fragment.view ?: continue
++            if (!coveredScreens.isHidden(view) || !silent.add(wrapper)) continue
++            coveredScreens.forget(view)
++            transaction.remove(wrapper.fragment)
++        }
++        return silent
      }
  
      // only top visible screen should be accessible
-@@ -330,6 +366,14 @@ class ScreenStack(
+@@ -330,6 +409,14 @@ class ScreenStack(
  
          childrenDrawingOrderStrategy?.apply(drawingOps)
  
@@ -226,7 +285,7 @@ index 9894cd4..6a5629d 100644
          drawAndRelease()
      }
  
-@@ -338,6 +382,8 @@ class ScreenStack(
+@@ -338,6 +425,8 @@ class ScreenStack(
          child: View,
          drawingTime: Long,
      ): Boolean {
@@ -235,7 +294,7 @@ index 9894cd4..6a5629d 100644
          drawingOps.add(
              obtainDrawingOp().apply {
                  this.canvas = canvas
-@@ -374,6 +420,14 @@ class ScreenStack(
+@@ -374,6 +463,14 @@ class ScreenStack(
      companion object {
          const val TAG = "ScreenStack"
  
