@@ -41,6 +41,17 @@ export const MAX_EXTRAPOLATION_MS = 90_000;
 
 type Timer = ReturnType<typeof setTimeout>;
 
+/**
+ * Une ligne par début, reprise et changement de méthode — rares, et sans eux
+ * un « transcodage » affiché à tort ne se diagnostique pas (passation du
+ * 2026-10-05 : les reports n'étaient pas journalisés). Ni jeton ni compte.
+ */
+function logReport(what: string, s: PlaybackStateDto): void {
+  console.log(
+    `[lecture] ${what} ${s.itemId} ${s.playMethod} session=${s.playSessionId ?? "-"} audio=${s.audioStreamIndex ?? "-"} st=${s.subtitleStreamIndex ?? "-"}`,
+  );
+}
+
 function samePlayback(a: PlaybackStateDto, b: PlaybackStateDto): boolean {
   return a.itemId === b.itemId && (a.playSessionId ?? "") === (b.playSessionId ?? "");
 }
@@ -81,6 +92,7 @@ export class PlaybackReporter {
     const adopted = this.state !== null;
     this.accept(state);
     if (adopted) return;
+    logReport(resumed ? "reprise" : "début", state);
     await this.report(resumed ? "/Sessions/Playing/Progress" : "/Sessions/Playing");
   }
 
@@ -90,8 +102,15 @@ export class PlaybackReporter {
       void this.start(state, true);
       return;
     }
+    // La méthode qui change sans nouvelle session (le flux passé du HLS au
+    // fichier statique, ou l'inverse) est un BORD : sans ce report, Jellyfin
+    // garde l'ancienne jusqu'au signe de vie — quatre minutes de
+    // « Transcode » sur une lecture directe (mesuré : il ne la corrige qu'au
+    // report suivant, `TranscodingInfo` périmé compris).
+    const methodChanged = state.playMethod !== this.state.playMethod || state.mediaSourceId !== this.state.mediaSourceId;
+    if (methodChanged) logReport("méthode", state);
     this.accept(state);
-    if (event === "tick") return;
+    if (event === "tick" && !methodChanged) return;
     if (this.edgeTimer !== null) return;
     this.edgeTimer = setTimeout(() => {
       this.edgeTimer = null;

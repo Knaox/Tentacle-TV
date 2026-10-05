@@ -225,3 +225,19 @@ describe("PlaybackReporter — position", () => {
     expect(r.current()?.positionTicks).toBe(42);
   });
 });
+
+describe("PlaybackReporter — la méthode de lecture", () => {
+  it("un passage du HLS au fichier statique, même session, est redit à Jellyfin aussitôt", async () => {
+    const rec = recorder();
+    const reporter = new PlaybackReporter(rec.caller, () => now);
+    await reporter.start(state({ playMethod: "Transcode" }));
+    rec.calls.length = 0;
+    reporter.progress("tick", state({ playMethod: "Transcode" }));
+    await vi.advanceTimersByTimeAsync(EDGE_COALESCE_MS * 2);
+    expect(rec.paths()).toEqual([]);
+    reporter.progress("tick", state({ playMethod: "DirectPlay" }));
+    await vi.advanceTimersByTimeAsync(EDGE_COALESCE_MS * 2);
+    expect(rec.paths()).toEqual(["/Sessions/Playing/Progress"]);
+    expect(rec.calls[0].body?.PlayMethod).toBe("DirectPlay");
+  });
+});
