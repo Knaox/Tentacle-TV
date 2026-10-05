@@ -54,17 +54,29 @@ internal object FocusNeighbors {
 
   private fun canTakeFocus(view: View) = view.isFocusable && view.isEnabled && view.width > 0 && view.height > 0
 
-  /** Les éléments focalisables d'une section, sans descendre dans une autre
-   *  section de voisinage ni sous un `tvFocusable={false}`. */
+  /**
+   * Les éléments focalisables d'une section, sans descendre dans une autre
+   * section de voisinage ni sous un `tvFocusable={false}`. Un conteneur qui
+   * ne se focalise qu'APRÈS ses descendants (`FOCUS_AFTER_DESCENDANTS` : une
+   * ScrollView, une rangée défilante — focalisables sur Android) n'est pas un
+   * élément : on descend dans ses cartes, comme `addFocusables` ; il ne compte
+   * que s'il n'en a aucune. Sinon le focus visé tombait sur la rangée, qui le
+   * donnait à une vue intérieure de sa première carte — retirée au rendu
+   * suivant, et Android rendait le focus au premier focalisable (le héros).
+   */
   private fun collect(view: View, items: MutableList<View>, root: Boolean) {
     if (view.visibility != View.VISIBLE || view.alpha <= 0.01f) return
     if (!root && view is TentacleFocusSection && view.tvNeighbors) return
-    if (!root && canTakeFocus(view)) {
+    val group = view as? ViewGroup
+    val after = group != null && group.descendantFocusability == ViewGroup.FOCUS_AFTER_DESCENDANTS
+    if (!root && !after && canTakeFocus(view)) {
       items.add(view)
       return
     }
-    if (view !is ViewGroup || view.descendantFocusability == ViewGroup.FOCUS_BLOCK_DESCENDANTS) return
-    for (i in 0 until view.childCount) collect(view.getChildAt(i), items, false)
+    if (group == null || group.descendantFocusability == ViewGroup.FOCUS_BLOCK_DESCENDANTS) return
+    val before = items.size
+    for (i in 0 until group.childCount) collect(group.getChildAt(i), items, false)
+    if (!root && after && items.size == before && canTakeFocus(view)) items.add(view)
   }
 
   /** `facingItems` : rien de leur section au-dessus (en descendant) ou au-dessous (en remontant), dans leur colonne. */
