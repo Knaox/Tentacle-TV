@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ElementRef } from "react";
+import { useCallback, useRef, useState, type ElementRef, type MutableRefObject } from "react";
 import type { TouchableOpacity } from "react-native";
 import type { TransportKey } from "../components/player/focus/overlayFocusCore";
 import { usePreventRemove } from "@react-navigation/native";
@@ -44,9 +44,11 @@ export function useTVPanelControls(args: {
    * `undefined` garde l'ancien comportement : le dernier bouton utilisé.
    */
   const [osdFocusSignal, setOsdFocusSignal] = useState(0);
-  const osdFocusTargetRef = useRef<TransportKey | undefined>(undefined);
-  const bumpOsdFocus = useCallback((target?: TransportKey) => {
+  // `soft` : une cible douce, qui cède à la pilule de saut (`overlayFocusCore`).
+  const osdFocusTargetRef = useRef<TransportKey | undefined>(undefined) as MutableRefObject<TransportKey | undefined> & { soft?: boolean };
+  const bumpOsdFocus = useCallback((target?: TransportKey, soft = false) => {
     osdFocusTargetRef.current = target;
+    osdFocusTargetRef.soft = soft;
     setOsdFocusSignal((s) => s + 1);
   }, []);
 

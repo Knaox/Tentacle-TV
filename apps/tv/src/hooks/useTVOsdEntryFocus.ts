@@ -1,5 +1,15 @@
 import { useEffect, useRef } from "react";
+import { osdRevealTarget } from "@tentacle-tv/tv-core";
 import type { TransportKey } from "../components/player/focus/overlayFocusCore";
+import { REMOTE_BINDINGS } from "../platform/input";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+
+/**
+ * Où l'habillage réapparaît (la refonte) : Lecture/Pause là où OK fait la
+ * pause (tv-core `osdRevealTarget`, Android TV), en cible DOUCE — elle cède à
+ * la pilule de saut ; sinon (Apple TV, ancienne UI) le dernier bouton.
+ */
+const REVEAL_TARGET: TransportKey | undefined = (REDESIGN_ACTIVE && osdRevealTarget(REMOTE_BINDINGS.traits)) || undefined;
 
 /**
  * Les deux moments où l'habillage du lecteur REPREND le focus de lui-même —
@@ -7,7 +17,8 @@ import type { TransportKey } from "../components/player/focus/overlayFocusCore";
  * habillages (Android TV, refonte Apple TV) les partagent.
  *
  * 1. L'habillage RÉAPPARAÎT : le focus va au dernier bouton de transport
- *    utilisé — sauf si le bouton de saut le tient : il le garde
+ *    utilisé (Android TV refondu : Lecture/Pause, `REVEAL_TARGET`) — sauf si
+ *    le bouton de saut le tient : il le garde
  *    (`skipHoldsFocus`). « Réapparaît » veut dire qu'il SE MONTRE : l'appelant ne le dit
  *    pas quand une surface le tait (carte « à suivre », affiche de fin) — un
  *    appui de côté pendant la carte réveillait l'habillage resté caché
@@ -24,13 +35,13 @@ import type { TransportKey } from "../components/player/focus/overlayFocusCore";
 export function useTVOsdEntryFocus(args: {
   overlayVisible: boolean;
   hasStarted: boolean;
-  bumpOsdFocus: (target?: TransportKey) => void;
+  bumpOsdFocus: (target?: TransportKey, soft?: boolean) => void;
 }) {
   const { overlayVisible, hasStarted, bumpOsdFocus } = args;
 
   const prevOverlayVisibleRef = useRef(true);
   useEffect(() => {
-    if (overlayVisible && !prevOverlayVisibleRef.current) bumpOsdFocus();
+    if (overlayVisible && !prevOverlayVisibleRef.current) bumpOsdFocus(REVEAL_TARGET, true);
     prevOverlayVisibleRef.current = overlayVisible;
   }, [overlayVisible, bumpOsdFocus]);
 

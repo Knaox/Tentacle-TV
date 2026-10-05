@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import { osdRevealTarget } from "@tentacle-tv/tv-core";
 import {
   useOverlayFocusCore,
   type FocusNode,
@@ -7,12 +6,7 @@ import {
   type TransportKey,
 } from "./overlayFocusCore";
 import { requestAndroidTvFocus } from "../../../hooks/useTvFocusClaim";
-import { REMOTE_BINDINGS } from "../../../platform/input";
-import { REDESIGN_ACTIVE } from "../../../redesignWiring/redesignGate";
 
-/** La refonte : l'habillage réapparaît sur Lecture/Pause là où OK fait la
- *  pause (tv-core `osdRevealTarget`) ; l'ancienne UI, sur le dernier bouton. */
-const IMPLICIT_TARGET = REDESIGN_ACTIVE ? osdRevealTarget(REMOTE_BINDINGS.traits) : null;
 
 export type { TransportKey, OverlayFocusControl, OverlayButtonProps } from "./overlayFocusCore";
 
@@ -34,5 +28,5 @@ export function useOverlayFocus({ focusSignal, scrubbing, focusTargetRef }: UseO
   const restore = useCallback((node: FocusNode) => {
     requestAndroidTvFocus(node);
   }, []);
-  return useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef, implicitTarget: IMPLICIT_TARGET });
+  return useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef });
 }

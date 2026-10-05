@@ -15,6 +15,16 @@ export type TransportKey =
   | "back" | "prev" | "skipback" | "playpause"
   | "skipforward" | "scrub" | "next" | "episodes" | "settings" | "options";
 
+/**
+ * Le bouton visé par le signal courant. `soft` : une cible DOUCE — elle cède
+ * à la pilule de saut comme une restauration implicite (la réapparition de
+ * l'habillage sur Lecture/Pause, tv-core `osdRevealTarget`).
+ */
+export interface OsdFocusTarget {
+  readonly current: TransportKey | undefined;
+  readonly soft?: boolean;
+}
+
 export type FocusNode = { setNativeProps?: (p: Record<string, unknown>) => void } | null;
 
 export interface OverlayButtonProps {
@@ -44,19 +54,13 @@ interface CoreArgs {
    * décidée par celui qui déclenche (« rends le focus aux épisodes »), pas par
    * un rendu. Absent → le dernier bouton utilisé, comme auparavant.
    */
-  focusTargetRef?: { readonly current: TransportKey | undefined };
+  focusTargetRef?: OsdFocusTarget;
   /** En scrub (OSD masqué, fond focusable) : verrou de navigation en filet et
    *  gel de la mémoire de focus. */
   scrubbing: boolean;
   /** Primitive de restauration du focus natif — SEUL point spécifique à la
    *  plateforme (Android = setNativeProps direct ; tvOS = cycle false→true). */
   restore: (node: FocusNode) => void;
-  /** La cible d'une restauration IMPLICITE (réapparition de l'habillage, départ
-   *  de la pilule) à la place du dernier bouton utilisé — tv-core
-   *  `osdRevealTarget` : Lecture/Pause là où la télécommande peut n'avoir
-   *  qu'OK pour mettre en pause. Absent : le dernier bouton (Apple TV). La
-   *  pilule de saut garde son droit : la restauration implicite lui cède. */
-  implicitTarget?: TransportKey | null;
 }
 
 /**
@@ -72,7 +76,7 @@ const TRANSPORT_ROW: TransportKey[] = [
   "prev", "skipback", "playpause", "skipforward", "scrub", "next", "episodes", "settings", "options",
 ];
 
-export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef, implicitTarget }: CoreArgs): OverlayFocusControl {
+export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef }: CoreArgs): OverlayFocusControl {
   const btnRefs = useRef<Partial<Record<TransportKey, FocusNode>>>({});
   // Node handles natifs par bouton — alimentent nextFocusLeft/Right (Android :
   // moteur de proximité ; tvOS : ignorés mais inoffensifs). Une map + un compteur
@@ -164,17 +168,16 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTarg
     restoreTimers.current = [
       setTimeout(() => {
         if (yieldToSkip && (skipClaimedSince(askedAt - SKIP_CLAIM_LEAD_MS) || skipHoldsFocus())) return;
-        const aimed = wanted ?? implicitTarget ?? undefined;
-        const target = (aimed ? btnRefs.current[aimed] : undefined)
+        const target = (wanted ? btnRefs.current[wanted] : undefined)
           ?? btnRefs.current[lastFocusedRef.current]
           ?? btnRefs.current.playpause
           ?? null;
-        if (aimed) lastFocusedRef.current = aimed;
+        if (wanted) lastFocusedRef.current = wanted;
         restore(target);
       }, 220),
       setTimeout(() => { restoringFocusRef.current = false; }, 520),
     ];
-  }, [restore, implicitTarget]);
+  }, [restore]);
   useEffect(() => {
     const timers = restoreTimers;
     return () => timers.current.forEach(clearTimeout);
@@ -183,7 +186,8 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTarg
   useEffect(() => {
     if (!focusSignal) return;
     const wanted = focusTargetRef?.current;
-    scheduleRestore(wanted, !wanted);
+    // Une cible douce cède à la pilule, comme une restauration implicite.
+    scheduleRestore(wanted, !wanted || focusTargetRef?.soft === true);
   }, [focusSignal, scheduleRestore, focusTargetRef]);
 
   // Le bouton de saut qui tenait le focus s'en va : retour au dernier bouton
