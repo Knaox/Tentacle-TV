@@ -76,6 +76,19 @@ export function closesArrival(arrival: ScreenArrival, inRail: boolean, now: numb
 }
 
 /**
+ * Un focus dans la NAVIGATION pendant l'arrivée, avant `ARRIVAL_RAIL_IS_USER_MS` :
+ * c'est la plateforme qui l'y a posé, pas l'utilisateur — tvOS, au bout d'une
+ * transition (« Qui regarde ? » → l'accueil, en fondu), donne le focus à ce
+ * qui est en haut à gauche, et la préférence de l'entrée n'y peut rien. La
+ * navigation ne s'ouvre pas pour lui, et l'entrée se réclame aussitôt : sans
+ * quoi elle se dépliait puis se repliait au lancement (retour d'essai, Apple
+ * TV, 2026-10-05).
+ */
+export function railHeldByArrival(arrival: ScreenArrival, now: number): boolean {
+  return arrival.open && now - arrival.startedAt <= ARRIVAL_RAIL_IS_USER_MS;
+}
+
+/**
  * Une cible qui TIENT le focus pendant un chargement — l'ancre invisible de
  * l'accueil (`HOME_LOADING_KEY`) — n'est pas du contenu : elle ne clôt pas
  * l'arrivée (l'entrée qui suit, le héros, se réclame encore) et ne se retient

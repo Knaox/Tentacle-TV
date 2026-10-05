@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import {
   closeArrival,
@@ -8,6 +8,7 @@ import {
   holdsArrival,
   lastContentAfter,
   preferEntry,
+  railHeldByArrival,
   returnClaim,
   startArrival,
   type ScreenArrival,
@@ -27,6 +28,10 @@ import { isNavKey } from "../../../redesignWiring/nav/useRailState";
  * - le premier focus posé dans le contenu CLÔT l'arrivée : l'entrée lâche sa
  *   préférence. L'utilisateur qui gagne la navigation pendant un chargement
  *   la clôt aussi — une affiche arrivée plus tard ne lui volera pas le focus ;
+ * - un focus que la PLATEFORME pose dans la navigation pendant l'arrivée
+ *   (tvOS, au bout d'une transition : ce qui est en haut à gauche) ne l'ouvre
+ *   pas (`railHeld`), et l'entrée se réclame aussitôt (tv-core
+ *   `railHeldByArrival`) ;
  * - au RETOUR (la pile redescend sur l'écran), le focus revient au dernier
  *   élément de contenu qui l'avait, s'il est encore là ; sinon à l'entrée.
  *   `onReturn` peut lui en substituer une autre — le début de sa rangée, quand
@@ -38,6 +43,8 @@ const PREFERRED: FocusExtras = { native: { hasTVPreferredFocus: true } };
 export interface EntryFocus {
   /** La clé de contenu à viser : la dernière focalisée si elle est montée, sinon l'entrée. */
   contentKey: () => string | null;
+  /** La navigation a un focus que la plateforme y a posé pendant l'arrivée : elle ne s'ouvre pas. */
+  railHeld: boolean;
 }
 
 interface Arrival {
@@ -56,6 +63,7 @@ export function useEntryFocus(
   const onReturnRef = useRef(onReturn);
   onReturnRef.current = onReturn;
   const lastContent = useRef<string | null>(null);
+  const [railHeld, setRailHeld] = useState(false);
   const arrivalRef = useRef<Arrival | null>(null);
   arrivalRef.current ??= { state: startArrival(Date.now()), cancel: null };
   const arrival = arrivalRef.current;
@@ -92,16 +100,31 @@ export function useEntryFocus(
   useEffect(
     () =>
       focus.subscribe((key, focused) => {
+        if (!focused) return;
+        const inRail = isNavKey(key);
+        if (!inRail) setRailHeld(false);
         // L'ancre d'un chargement tient le focus, elle n'est pas du contenu (tv-core `holdsArrival`).
-        if (!focused || holdsArrival(key)) return;
+        if (holdsArrival(key)) return;
         // Un écran COUVERT (une fiche poussée par-dessus) : Android y pose
         // parfois un focus de passage — le premier focalisable visible, le
         // temps que l'écran poussé prenne le sien —, tvOS jamais. Il ne compte
         // pas : le retour rend la carte d'où l'on est parti.
         if (!navigation.isFocused()) return;
-        const inRail = isNavKey(key);
+        const current = arrivalRef.current!;
+        // La plateforme l'a posé dans la navigation pendant l'arrivée : elle
+        // reste fermée, et l'entrée se réclame tout de suite (tv-core).
+        if (inRail && railHeldByArrival(current.state, Date.now())) {
+          setRailHeld(true);
+          const entry = entryClaim(current.state, entryRef.current);
+          if (entry) {
+            current.cancel?.();
+            current.cancel = focus.claim(entry);
+          }
+          return;
+        }
+        setRailHeld(false);
         lastContent.current = lastContentAfter(lastContent.current, key, inRail);
-        if (closesArrival(arrivalRef.current!.state, inRail, Date.now())) endArrival();
+        if (closesArrival(current.state, inRail, Date.now())) endArrival();
       }),
     [focus, endArrival, navigation],
   );
@@ -124,5 +147,5 @@ export function useEntryFocus(
     }, [focus, contentKey]),
   );
 
-  return { contentKey };
+  return { contentKey, railHeld };
 }

@@ -8,6 +8,7 @@ import {
   entryClaim,
   lastContentAfter,
   preferEntry,
+  railHeldByArrival,
   returnClaim,
   startArrival,
 } from "./screenEntry";
@@ -47,6 +48,16 @@ describe("screenEntry — l'arrivée sur un écran", () => {
     expect(ARRIVAL_RAIL_IS_USER_MS).toBe(600);
     expect(closesArrival(arrival, true, 1_600)).toBe(false);
     expect(closesArrival(arrival, true, 1_601)).toBe(true);
+  });
+
+  it("un focus de la plateforme dans la navigation, pendant l'arrivée, ne l'ouvre pas", () => {
+    const arrival = startArrival(1_000);
+    expect(railHeldByArrival(arrival, 1_300)).toBe(true);
+    expect(railHeldByArrival(arrival, 1_600)).toBe(true);
+    // Passé le délai, c'est l'utilisateur : la navigation s'ouvre.
+    expect(railHeldByArrival(arrival, 1_601)).toBe(false);
+    // L'arrivée close (l'entrée atteinte), plus rien n'est retenu.
+    expect(railHeldByArrival(closeArrival(arrival).arrival, 1_100)).toBe(false);
   });
 
   it("une arrivée close ne se clôt plus", () => {

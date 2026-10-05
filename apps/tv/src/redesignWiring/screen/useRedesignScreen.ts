@@ -88,7 +88,7 @@ export function useRedesignScreen({
   // Les rangées lisent la clé de contenu, qui vient après elles.
   const remembered = useRef<() => string | null>(() => null);
   const rows = useRowRewind(focus, { enabled: rewindRows, remembered: () => remembered.current() });
-  const { contentKey } = useEntryFocus(focus, entryKey, onReturn ?? rows?.resume);
+  const { contentKey, railHeld } = useEntryFocus(focus, entryKey, onReturn ?? rows?.resume);
   remembered.current = contentKey;
   // Une bibliothèque focalisée dans la navigation : sa grille se prépare.
   useLibraryPrefetch(focus);
@@ -126,11 +126,13 @@ export function useRedesignScreen({
 
   // Le menu d'une entrée ou un déplacement gardent la navigation ouverte.
   const { heldKey, movingKey } = arrange;
-  const expanded = railExpanded({ railFocused, heldKey, movingKey });
+  // Un focus que la plateforme pose dans la navigation à l'arrivée ne l'ouvre pas (`railHeld`).
+  const railOpen = railFocused && !railHeld;
+  const expanded = railExpanded({ railFocused: railOpen, heldKey, movingKey });
   // Les demandes en cours (Vigie), dans le bloc du profil — ou rien.
   const accessory = useRequestsAccessory(focus, movingKey !== null);
   // Les astuces du rail ouvert — « Maintenir OK : organiser », « ◀ Réglages » —, tout de suite (tv-core `railHint`).
-  const railHints = useRailHints(focus, { railFocused, moving: movingKey !== null, menuOpen: heldKey !== null });
+  const railHints = useRailHints(focus, { railFocused: railOpen, moving: movingKey !== null, menuOpen: heldKey !== null });
   const { organize: organizeHint, settings: settingsHint } = railHints;
   const nav = useMemo<NavRailProps>(
     () => ({ ...entries, accessory, organizeHint, settingsHint, activeKey: railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry }),
