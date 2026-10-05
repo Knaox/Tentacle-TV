@@ -115,6 +115,7 @@ export const FocusTarget = memo(function FocusTarget({
       // Les props natives de l'intégration d'abord : elles ne remplacent
       // jamais les gestionnaires de la vue.
       {...binding?.native}
+      {...(disabled ? binding?.disabledNative : undefined)}
       ref={binding?.ref}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}

@@ -4,7 +4,7 @@ import { EMPTY_FOCUS_TRACK, trackFocus, type FocusTrack } from "@tentacle-tv/tv-
 import type { FocusBinder, FocusBinding } from "../../../redesign/focus/focusBinding";
 import { claimTvFocus } from "../../../hooks/useTvFocusClaim";
 import { SECTION_NEIGHBORS } from "./sectionNeighbors";
-import { targetEffects } from "./targetEffects";
+import { DISABLED_TARGET, targetEffects } from "./targetEffects";
 
 /**
  * Le magasin de focus d'un écran refondu — la moitié « app » du port du focus
@@ -113,6 +113,7 @@ export function createFocusStore(): FocusStore {
       binding = {
         ...extra,
         native: effects || extra?.native ? { ...effects, ...extra?.native } : undefined,
+        disabledNative: form === "section" ? undefined : (DISABLED_TARGET as Record<string, unknown> | undefined),
         ref: (node: View | null) => attach(key, node),
         onFocus: () => changed(key, true),
         onBlur: () => changed(key, false),

@@ -15,3 +15,10 @@ const RELEASED: Readonly<Record<string, unknown>> = Object.freeze({ tvFocusable:
 export function targetEffects(form: FocusForm | undefined): Readonly<Record<string, unknown>> | undefined {
   return form === "section" ? undefined : RELEASED;
 }
+
+/**
+ * Ce qu'une cible DÉSACTIVÉE porte en plus : `tvFocusable: false`. Sur
+ * Android, une `Pressable` désactivée reste focalisable (React Native ne lui
+ * retire pas le focus, « pour l'accessibilité ») ; tvOS la saute.
+ */
+export const DISABLED_TARGET: Readonly<Record<string, unknown>> | undefined = Object.freeze({ tvFocusable: false });

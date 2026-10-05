@@ -11,3 +11,6 @@ import { parallaxOf } from "../../../redesignWiring/remote/parallax";
 export function targetEffects(form: FocusForm | undefined): Readonly<Record<string, unknown>> | undefined {
   return parallaxOf(form);
 }
+
+/** Ce qu'une cible désactivée porte en plus : rien — tvOS ne focalise pas une `Pressable` désactivée. */
+export const DISABLED_TARGET: Readonly<Record<string, unknown>> | undefined = undefined;

@@ -33,6 +33,12 @@ export interface FocusBinding {
    */
   native?: Record<string, unknown>;
   /**
+   * Les props natives d'une cible DÉSACTIVÉE (`disabled`), en plus des
+   * précédentes : là où la plateforme ne retire pas d'elle-même le focus à
+   * un élément désactivé (Android). Sans : rien de plus.
+   */
+  disabledNative?: Record<string, unknown>;
+  /**
    * Ignore l'OK qui n'a pas COMMENCÉ sur cet élément — le relâchement d'un OK
    * maintenu qui vient de révéler l'habillage du lecteur : il faut un appui
    * (`onPressIn`) sur l'élément avant que la validation compte.
