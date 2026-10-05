@@ -2,7 +2,6 @@
 // appuis UIKit) et le runtime JS (démon CDP, la sonde du banc). Et le
 // vocabulaire des gestes d'un scénario, traduit en ordres.
 import { BenchError, sleep } from "./config.mjs";
-import { androidRun } from "./android.mjs";
 import { macIp } from "./device.mjs";
 import { httpJson } from "./processes.mjs";
 import { resolveGesture, substitutionsFor, unknownPlaceholders } from "./substitute.mjs";
@@ -50,7 +49,6 @@ export async function tryEvaluate(ctx, expression) {
 
 /** Des ordres à l'agent (`down`, `hold:1.2`, `activate`, `focus`…). */
 export async function agentRun(ctx, commands, { timeoutMs = 60_000 } = {}) {
-  if (ctx.android) return androidRun(ctx, commands);
   const send = () => httpJson(`http://127.0.0.1:${ctx.ports.agentHttp}/run`, { method: "POST", body: commands, timeoutMs });
   let res = await send();
   // Un ordre sans effet de bord (ramener l'app, lire le focus) se renvoie une fois :

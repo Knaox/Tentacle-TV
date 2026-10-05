@@ -82,7 +82,7 @@ export async function ensureMetro(ctx, checkout) {
       return res?.text === "packager-status:running";
     },
   });
-  if (!record.warmed && !ctx.android) await warmBundle(ctx, record);
+  if (!record.warmed) await warmBundle(ctx, record);
   return record;
 }
 
@@ -170,7 +170,6 @@ export async function agentProducts({ physical = false } = {}) {
  * `{ udid, host, bundle }`, l'agent y vise l'app de TEST).
  */
 export async function ensureAgent(ctx, target, { relaunchNote = false } = {}) {
-  if (ctx.android) return null; // adb joue les gestes (`android.mjs`)
   await ensureAgentServer(ctx);
   const connected = async () => (await httpJson(`http://127.0.0.1:${ctx.ports.agentHttp}/status`))?.json?.connected === true;
   const state = loadState(ctx.stateFile);

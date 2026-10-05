@@ -18,10 +18,6 @@
 //   import-app <chemin.app> [--at <rév>]        range une build déjà faite dans le cache (par empreinte)
 //
 // Cibles : <domaine> · <domaine>/<fichier> · <domaine>#<id> · <domaine>/<fichier>#<id>.
-//
-// --android : rejoue sur Android TV (émulateur ou boîtier par adb, app debug
-// installée) les références de l'Apple TV — verify, start, do, obs ; jamais
-// record (`lib/android.mjs`).
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { BenchError, SCENARIOS_DIR, benchContext, capture, duration, say, step, warn } from "./lib/config.mjs";
@@ -46,7 +42,6 @@ function parseArgs(argv) {
     if (arg === "--no-erase") options.erase = false;
     else if (arg === "--sim-off") options.simOff = true;
     else if (arg === "--device") options.device = true;
-    else if (arg === "--android") options.android = true;
     else if (arg.startsWith("--")) {
       const [key, inline] = arg.slice(2).split("=");
       options[key] = inline ?? argv[++i];
@@ -82,11 +77,9 @@ async function runSuites(mode, options, targets) {
   const startedAt = Date.now();
   const suites = validSuites(targets);
   const ctx = benchContext(options);
-  // Les références sont celles de l'Apple TV : Android TV les rejoue, il n'en écrit jamais.
-  if (mode === "record" && ctx.android) throw new BenchError("record sur Android TV : refusé — les références sont celles de l'Apple TV (verify --android les rejoue)");
   const at = mode === "record" ? referenceOf(suites, options.at) : options.at ?? null;
   const count = suites.reduce((n, s) => n + s.scenarios.length, 0);
-  const where = ctx.android ? "Android TV (adb)" : ctx.device ? "Apple TV physique" : `simulateur « ${ctx.sim} »`;
+  const where = ctx.device ? "Apple TV physique" : `simulateur « ${ctx.sim} »`;
   step(mode === "record" ? "Enregistrer" : "Vérifier", `${count} scénario(s) de ${[...new Set(suites.map((s) => s.domain))].join(", ")} — place ${ctx.ports.slot}, ${where}`);
   const session = await prepare(ctx, { at, erase: options.erase !== false });
   sessionSummary(session);
@@ -109,7 +102,7 @@ async function interactive(command, options, positional) {
     const obs = await coldStart(ctx, session, scenario.start ?? {});
     return say(JSON.stringify(obs, null, 2));
   }
-  if (!ctx.device && !ctx.android && !findDevice(ctx.sim)) throw new BenchError(`pas de simulateur « ${ctx.sim} » : « up » ou « start » d'abord`);
+  if (!ctx.device && !findDevice(ctx.sim)) throw new BenchError(`pas de simulateur « ${ctx.sim} » : « up » ou « start » d'abord`);
   const since = await journalSeq(ctx);
   let extra = 0;
   for (const gesture of command === "do" ? positional : []) {

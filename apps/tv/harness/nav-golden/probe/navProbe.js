@@ -62,31 +62,17 @@ function resetForBench() {
 }
 resetForBench();
 
-/**
- * La CHRONOLOGIE du focus et des touches (diagnostic, `timeline()`) : chaque
- * prise et perte du focus natif avec sa clé, chaque touche avec sa phase et sa
- * répétition — de quoi voir qui a déplacé le focus, et quand.
- */
-const timeline = [];
-function mark(entry) {
-  timeline.push({ t: Date.now(), ...entry });
-  if (timeline.length > 400) timeline.shift();
-}
-
 TVEventHandler.addListener((event) => {
   if (!event) return;
   if (event.eventType === "focus") {
     state.tag = event.tag;
     state.seq += 1;
     state.at = Date.now();
-    mark({ focus: event.tag });
   } else if (event.eventType === "blur") {
     if (state.tag === event.tag) state.tag = null;
-    mark({ blur: event.tag });
   } else {
     state.keys.push({ t: Date.now(), type: event.eventType, action: event.eventKeyAction });
     if (state.keys.length > 100) state.keys.shift();
-    mark({ press: event.eventType, action: event.eventKeyAction });
   }
 });
 
@@ -300,72 +286,4 @@ function emitRemote(event) {
   DeviceEventEmitter.emit("onHWKeyEvent", event);
 }
 
-/**
- * Android TV (pas de `Settings`) : le stockage de l'app est AsyncStorage
- * (`storage/RNStorageAdapter.ts`), lu au démarrage. La sonde le vide, pose les
- * clés du banc, puis recharge le JS : l'app redémarre sur la session voulue
- * (`lib/android.mjs`). Jamais appelée sur Apple TV.
- */
-function androidReset(keys) {
-  const AsyncStorage = require("@react-native-async-storage/async-storage").default;
-  const { DevSettings } = require("react-native");
-  return AsyncStorage.clear()
-    .then(() => AsyncStorage.multiSet(Object.entries(keys).map(([key, value]) => [key, String(value)])))
-    .then(() => DevSettings.reload());
-}
-
-/** Change à chaque chargement du JS : le banc voit un rechargement. */
-const boot = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-/** La chronologie depuis `since` (ms), les tags rendus en clés de focus. */
-function timelineSince(since = 0) {
-  return timeline.filter((e) => e.t >= since).map((e) => {
-    const tag = e.focus ?? e.blur;
-    return tag == null ? e : { ...e, key: focusOf(tag).key };
-  });
-}
-
-/**
- * L'espion des ÉCRITURES natives du focus (diagnostic) : chaque
- * `hasTVPreferredFocus` posé par `setNativeProps`/les props, chaque commande
- * `requestTVFocus`, avec l'instant, le tag visé et la pile JS — pour savoir
- * QUI déplace le focus. `spyFocus()` l'arme, `focusWrites(depuis)` le relit.
- */
-const writes = [];
-let spying = false;
-function spyFocus() {
-  if (spying) return true;
-  spying = true;
-  const { UIManager } = require("react-native");
-  const record = (kind, tag, detail) => {
-    writes.push({ t: Date.now(), kind, tag, key: focusOf(tag).key, detail, stack: String(new Error().stack).split("\n").slice(2, 9).join(" | ") });
-    if (writes.length > 200) writes.shift();
-  };
-  const updateView = UIManager.updateView;
-  UIManager.updateView = function (tag, name, props) {
-    if (props && (props.hasTVPreferredFocus !== undefined || props.tvFocusable !== undefined)) record("props", tag, JSON.stringify(props));
-    return updateView.apply(this, arguments);
-  };
-  const manage = UIManager.manageChildren;
-  UIManager.manageChildren = function (container, moveFrom, moveTo, addTags, addAt, removeAt) {
-    if (removeAt && removeAt.length) {
-      const host = findHost(container);
-      const chain = [];
-      for (let node = host; node && chain.length < 8; node = node.return) {
-        const name = nameOf(node);
-        if (name && typeof node.type !== "string") chain.push(name + (propsOf(node).focusKey ? `[${propsOf(node).focusKey}]` : ""));
-      }
-      record("remove", container, JSON.stringify({ removeAt, addAt, moveFrom, chain }));
-    }
-    return manage.apply(this, arguments);
-  };
-  const command = UIManager.dispatchViewManagerCommand;
-  UIManager.dispatchViewManagerCommand = function (tag, cmd, args) {
-    if (String(cmd).includes("requestTVFocus") || cmd === UIManager.getViewManagerConfig?.("RCTView")?.Commands?.requestTVFocus) record("command", tag, String(cmd));
-    return command.apply(this, arguments);
-  };
-  return true;
-}
-const focusWrites = (since = 0) => writes.filter((w) => w.t >= since);
-
-globalThis.__navGolden = { state, observe, navigate, emitRemote, androidReset, boot, timeline: timelineSince, spyFocus, focusWrites, version: 1 };
+globalThis.__navGolden = { state, observe, navigate, emitRemote, version: 1 };
