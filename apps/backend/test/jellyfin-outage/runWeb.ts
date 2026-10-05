@@ -18,9 +18,9 @@ import { Checks } from "../notif-e2e/checks";
 import { BACKEND_DIR } from "../notif-e2e/benchEnv";
 import { Chrome } from "./chrome";
 import { sleep, type FakeUser } from "./fakeJellyfin";
-import { FakeMedia, ITEM_ID } from "./fakeMedia";
+import { FakeMedia, ITEM_B, ITEM_ID } from "./fakeMedia";
 import { startStack } from "./stack";
-import { PROBE, checkReopenedTranscode, playThrough, waitPlaying, type WebBench } from "./webScenarios";
+import { PROBE, checkReopenedTranscode, nextEpisode, playThrough, waitPlaying, type WebBench } from "./webScenarios";
 
 const args = process.argv.slice(2);
 const keep = args.includes("--keep");
@@ -77,7 +77,7 @@ async function main(): Promise<number> {
     media.mode = "direct";
     if (only === "hls") media.mode = "transcode";
     await openPlayer(chrome);
-    if (only !== "hls") {
+    if (only !== "hls" && only !== "episode") {
     checks.that("lecture directe en cours (fichier statique)", media.hits.some((h) => h.kind === "static"));
     await playThrough(bench, "webDirect", "lecture directe, docker stop 20 s puis start", async () => {
       await stack.fake.dockerStop();
@@ -87,7 +87,7 @@ async function main(): Promise<number> {
     await openPlayer(chrome);
     await playThrough(bench, "webDirectRestart", "lecture directe, docker restart", () => stack.fake.dockerRestart(), ["shutting-down", "starting"]);
     }
-    if (only !== "direct") {
+    if (only !== "direct" && only !== "episode") {
 
     media.mode = "transcode";
     media.defaultAudio = 2;
@@ -105,6 +105,14 @@ async function main(): Promise<number> {
     }, ["shutting-down", "down", "starting"]);
     checkReopenedTranscode(bench, tStop, "2");
     }
+    if (only === "episode") {
+      media.mode = "transcode";
+      media.defaultAudio = 2;
+      await openPlayer(chrome);
+      // Une position de reprise non nulle pour A (comme après une relance) : de quoi voir une fuite.
+      await playThrough(bench, "episodeOutage", "A, redémarrage par l'API", () => stack.fake.apiRestart(), ["restarting", "starting"]);
+    }
+    await nextEpisode(bench, ITEM_B);
   } catch (err) {
     checks.that("le banc web a tourné jusqu'au bout", false, err instanceof Error ? err.message : String(err));
   } finally {

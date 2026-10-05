@@ -135,3 +135,25 @@ export function checkReopenedTranscode(b: WebBench, since: number, audio: string
   b.checks.that("les segments repartent sur la nouvelle session", segments.length > 0 && segments.every((h) => psids.includes(h.query.get("PlaySessionId"))),
     [...new Set(segments.map((h) => h.query.get("PlaySessionId")))]);
 }
+
+/**
+ * L'épisode suivant, SANS recharger la page (comme « épisode suivant » : la
+ * route change, la page reste) : B doit partir sur SES valeurs — sa piste
+ * par défaut, aucune position héritée de A. Passation : « au changement
+ * d'épisode, remettre à zéro… ne jamais repartir sur la piste d'avant ».
+ */
+export async function nextEpisode(b: WebBench, itemB: string): Promise<void> {
+  b.checks.begin("Lecteur web — épisode suivant sans recharger la page");
+  const since = Date.now();
+  await b.chrome.evaluate(`history.pushState({}, "", "/watch/${itemB}"); dispatchEvent(new PopStateEvent("popstate")); return true;`);
+  await waitPlaying(b.chrome, 3, 60_000);
+  const infos = b.media.hits.filter((h) => h.kind === "playbackinfo" && h.item === itemB && h.at >= since);
+  const seen = infos.map((h) => `audio=${h.query.get("AudioStreamIndex")} début=${h.query.get("StartTimeTicks") || "0"}`);
+  b.measures.nextEpisode = seen.join(" | ");
+  b.checks.that(`B : ${infos.length} négociation(s), chacune sur SA piste (1), jamais celle de A (2)`,
+    infos.length > 0 && infos.every((h) => h.query.get("AudioStreamIndex") === "1"), seen);
+  b.checks.that("B : aucune négociation avec la position de A", infos.every((h) => !Number(h.query.get("StartTimeTicks") || 0)), seen);
+  const streamsA = b.media.hits.filter((h) => h.at >= since && h.item !== itemB && h.kind !== "playbackinfo");
+  b.checks.that("plus aucune requête de flux pour A après le passage à B (hors fin de l'ancien)", streamsA.filter((h) => h.at > since + 3_000).length === 0,
+    streamsA.length);
+}

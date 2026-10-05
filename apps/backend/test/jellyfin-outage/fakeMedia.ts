@@ -15,11 +15,15 @@ import { join } from "node:path";
 import type { FakeJellyfin } from "./fakeJellyfin";
 
 export const ITEM_ID = "f11af11af11af11af11af11af11af11a";
+/** Le titre suivant (même fichier) : sa piste par défaut est la 1, quoi qu'il arrive à A. */
+export const ITEM_B = "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0";
+const ID = "([0-9a-f]{32})";
 const RUNTIME_TICKS = 180 * 10_000_000;
 
 export interface MediaHit {
   at: number;
   kind: "static" | "master" | "variant" | "segment" | "playbackinfo";
+  item: string;
   query: URLSearchParams;
 }
 
@@ -67,70 +71,76 @@ export class FakeMedia {
     fake.extra = (method, url, req, res, body) => this.route(method, url, req, res, body);
   }
 
-  private source(transcode: boolean, psid: string, audio: number): Record<string, unknown> {
+  private defaultAudioOf(id: string): number {
+    return id === ITEM_B ? 1 : this.defaultAudio;
+  }
+
+  private source(id: string, transcode: boolean, psid: string, audio: number): Record<string, unknown> {
     const base = {
-      Id: ITEM_ID, Protocol: "File", Path: "/media/panne.mp4", Type: "Default", Container: "mov,mp4,m4a,3gp,3g2,mj2",
+      Id: id, Protocol: "File", Path: "/media/panne.mp4", Type: "Default", Container: "mov,mp4,m4a,3gp,3g2,mj2",
       Size: statSync(join(this.dir, "panne.mp4")).size, Name: "panne", IsRemote: false, RunTimeTicks: RUNTIME_TICKS,
       SupportsTranscoding: true, SupportsDirectStream: !transcode, SupportsDirectPlay: !transcode, Bitrate: 1_200_000,
-      MediaStreams: streams(this.defaultAudio), DefaultAudioStreamIndex: this.defaultAudio,
+      MediaStreams: streams(this.defaultAudioOf(id)), DefaultAudioStreamIndex: this.defaultAudioOf(id),
     };
     if (!transcode) return base;
-    const query = `DeviceId=banc&MediaSourceId=${ITEM_ID}&PlaySessionId=${psid}&AudioStreamIndex=${audio}&VideoCodec=h264&AudioCodec=aac&TranscodeReasons=ContainerBitrateExceedsLimit&SegmentContainer=ts`;
-    return { ...base, TranscodingUrl: `/videos/${ITEM_ID}/master.m3u8?${query}`, TranscodingSubProtocol: "hls", TranscodingContainer: "ts", TranscodeReasons: ["ContainerBitrateExceedsLimit"] };
+    const query = `DeviceId=banc&MediaSourceId=${id}&PlaySessionId=${psid}&AudioStreamIndex=${audio}&VideoCodec=h264&AudioCodec=aac&TranscodeReasons=ContainerBitrateExceedsLimit&SegmentContainer=ts`;
+    return { ...base, TranscodingUrl: `/videos/${id}/master.m3u8?${query}`, TranscodingSubProtocol: "hls", TranscodingContainer: "ts", TranscodeReasons: ["ContainerBitrateExceedsLimit"] };
   }
 
   private route(method: string, url: URL, req: IncomingMessage, res: ServerResponse, body: Record<string, unknown> | null): boolean {
     const path = url.pathname.toLowerCase();
     const at = Date.now();
-    if (method === "POST" && path === `/items/${ITEM_ID}/playbackinfo`) {
+    const known = (id: string | undefined): id is string => id === ITEM_ID || id === ITEM_B;
+    const info = new RegExp(`^/items/${ID}/playbackinfo$`).exec(path);
+    if (method === "POST" && known(info?.[1])) {
+      const id = info[1];
       this.session += 1;
       const psid = `ps${this.session}`;
-      const audio = Number(body?.AudioStreamIndex ?? url.searchParams.get("AudioStreamIndex") ?? 1) || 1;
-      const query = new URLSearchParams({ PlaySessionId: psid, AudioStreamIndex: String(audio), StartTimeTicks: String(body?.StartTimeTicks ?? "") });
-      this.hits.push({ at, kind: "playbackinfo", query });
-      json(res, { MediaSources: [this.source(this.mode === "transcode", psid, audio)], PlaySessionId: psid });
+      const audio = Number(body?.AudioStreamIndex ?? url.searchParams.get("AudioStreamIndex") ?? this.defaultAudioOf(id)) || 1;
+      const query = new URLSearchParams({ PlaySessionId: psid, AudioStreamIndex: String(audio), StartTimeTicks: String(body?.StartTimeTicks ?? url.searchParams.get("StartTimeTicks") ?? "") });
+      this.hits.push({ at, kind: "playbackinfo", item: id, query });
+      json(res, { MediaSources: [this.source(id, this.mode === "transcode", psid, audio)], PlaySessionId: psid });
       return true;
     }
-    if (method === "GET" && new RegExp(`^/(users/[^/]+/)?items/${ITEM_ID}$`).test(path)) {
+    const item = new RegExp(`^/(?:users/[^/]+/)?items/${ID}$`).exec(path);
+    if (method === "GET" && known(item?.[1])) {
+      const id = item[1];
       json(res, {
-        Id: ITEM_ID, Name: "Panne (banc)", Type: "Movie", MediaType: "Video", RunTimeTicks: RUNTIME_TICKS, Container: "mov,mp4,m4a,3gp,3g2,mj2",
-        ImageTags: {}, BackdropImageTags: [], UserData: { PlaybackPositionTicks: 0, Played: false, IsFavorite: false, PlayCount: 0 },
-        MediaSources: [this.source(false, "", 1)], MediaStreams: streams(this.defaultAudio),
+        Id: id, Name: id === ITEM_B ? "Panne (banc) — B" : "Panne (banc)", Type: "Movie", MediaType: "Video", RunTimeTicks: RUNTIME_TICKS,
+        Container: "mov,mp4,m4a,3gp,3g2,mj2", ImageTags: {}, BackdropImageTags: [],
+        UserData: { PlaybackPositionTicks: 0, Played: false, IsFavorite: false, PlayCount: 0 },
+        MediaSources: [this.source(id, false, "", 1)], MediaStreams: streams(this.defaultAudioOf(id)),
       });
       return true;
     }
     // Ce que Jellyfin rend en TABLEAU (un objet y casse les hooks de la fiche).
-    if (method === "GET" && new RegExp(`^/(users/[^/]+/)?items/${ITEM_ID}/(ancestors|specialfeatures|localtrailers)$`).test(path)) {
+    const list = new RegExp(`^/(?:users/[^/]+/)?items/${ID}/(?:ancestors|specialfeatures|localtrailers)$`).exec(path);
+    if (method === "GET" && known(list?.[1])) {
       json(res, []);
       return true;
     }
-    if (path === `/videos/${ITEM_ID}/stream` || path === `/videos/${ITEM_ID}/stream.mp4`) {
-      this.hits.push({ at, kind: "static", query: url.searchParams });
-      sendFile(req, res, join(this.dir, "panne.mp4"), "video/mp4", this.throttle.bytesPerSecond);
-      return true;
-    }
+    const media = new RegExp(`^/videos/${ID}/(stream|stream\\.mp4|master\\.m3u8|main\\.m3u8|hls1/main/(\\d+)\\.ts)$`).exec(path);
+    if (!media || !known(media[1])) return false;
+    const [, id, what, segment] = media;
     const audio = url.searchParams.get("AudioStreamIndex") === "2" ? 2 : 1;
-    if (path === `/videos/${ITEM_ID}/master.m3u8`) {
-      this.hits.push({ at, kind: "master", query: url.searchParams });
+    if (what.startsWith("stream")) {
+      this.hits.push({ at, kind: "static", item: id, query: url.searchParams });
+      sendFile(req, res, join(this.dir, "panne.mp4"), "video/mp4", this.throttle.bytesPerSecond);
+    } else if (what === "master.m3u8") {
+      this.hits.push({ at, kind: "master", item: id, query: url.searchParams });
       res.writeHead(200, { "Content-Type": "application/vnd.apple.mpegurl" });
       res.end(`#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1300000,CODECS="avc1.64001e,mp4a.40.2",RESOLUTION=640x360\nmain.m3u8?${url.searchParams}\n`);
-      return true;
-    }
-    if (path === `/videos/${ITEM_ID}/main.m3u8`) {
-      this.hits.push({ at, kind: "variant", query: url.searchParams });
-      const list = readFileSync(join(this.dir, "hls", `a${audio}.m3u8`), "utf8").replace(/^a\d-(\d+)\.ts$/gm, (_m, n) => `hls1/main/${n}.ts?${url.searchParams}`);
+    } else if (what === "main.m3u8") {
+      this.hits.push({ at, kind: "variant", item: id, query: url.searchParams });
+      const playlist = readFileSync(join(this.dir, "hls", `a${audio}.m3u8`), "utf8").replace(/^a\d-(\d+)\.ts$/gm, (_m, n) => `hls1/main/${n}.ts?${url.searchParams}`);
       res.writeHead(200, { "Content-Type": "application/vnd.apple.mpegurl" });
-      res.end(list);
-      return true;
-    }
-    const segment = new RegExp(`^/videos/${ITEM_ID}/hls1/main/(\\d+)\\.ts$`).exec(path);
-    if (segment) {
-      this.hits.push({ at, kind: "segment", query: url.searchParams });
-      const file = join(this.dir, "hls", `a${audio}-${segment[1]}.ts`);
+      res.end(playlist);
+    } else {
+      this.hits.push({ at, kind: "segment", item: id, query: url.searchParams });
+      const file = join(this.dir, "hls", `a${audio}-${segment}.ts`);
       setTimeout(() => { if (!res.destroyed) sendFile(req, res, file, "video/mp2t"); }, this.throttle.segmentDelayMs);
-      return true;
     }
-    return false;
+    return true;
   }
 }
 
