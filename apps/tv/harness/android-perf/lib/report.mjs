@@ -94,6 +94,7 @@ export function summarizeScenario(scenario, rounds) {
     launchMs: rounds.some((r) => r.launchMs) ? avg((r) => r.launchMs ?? 0) : null,
     gfx: rounds.some((r) => r.gfx) ? { frames: avg((r) => r.gfx?.frames ?? 0), janky: avg((r) => r.gfx?.janky ?? 0), p90: Math.max(...rounds.map((r) => r.gfx?.p90 ?? 0)), p99: Math.max(...rounds.map((r) => r.gfx?.p99 ?? 0)) } : null,
     traceTop: rounds.find((r) => r.trace)?.trace ?? null,
+    hostLoad: Math.max(0, ...rounds.flatMap((r) => r.hostLoad ?? [])),
     uploads: rounds.some((r) => r.trace) ? { count: avg((r) => r.trace?.uploads.count ?? 0), ms: avg((r) => r.trace?.uploads.ms ?? 0), bySize: rounds.find((r) => r.trace)?.trace.uploads.bySize.slice(0, 5) } : null,
   };
 }
@@ -105,7 +106,7 @@ const f1 = (n) => (n === null || n === undefined || Number.isNaN(n) ? "—" : n.
 export function describe(s) {
   const per = (n) => f0(n / s.steps);
   return [
-    `${s.id} — ${s.title}`,
+    `${s.id} — ${s.title}${s.hostLoad ? ` (charge du Mac ≤ ${f1(s.hostLoad)})` : ""}`,
     `  ${f0(s.frames)} images, ${f1(s.janky)} ratées (${f1((100 * s.janky) / Math.max(1, s.frames))} %), ${f1(s.severe)} graves · p95 pire ${f1(s.worstP95)} ms · pire image ${f1(s.worstFrame)} ms`,
     ...(s.cpuOver && s.cpuOver["2"] > 0 ? [`  travail processeur (fil UI + sync) par image : > 2 ms ${f1(s.cpuOver["2"])} · > 4 ms ${f1(s.cpuOver["4"])} · > 8 ms ${f1(s.cpuOver["8"])} · > intervalle ${f1(s.cpuOver.interval)}`] : []),
     ...(s.stallCount > 0 ? [`  fil UI bloqué : ${f1(s.stallCount)} fois (≥ 48 ms), au pire ${f0(s.stallMax)} ms`] : []),

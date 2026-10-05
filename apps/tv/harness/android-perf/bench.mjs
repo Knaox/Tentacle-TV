@@ -7,6 +7,8 @@
 // sert les images à la taille demandée, comme Jellyfin : aucun compte réel.
 //
 //   node apps/tv/harness/android-perf/bench.mjs run --apk <release.apk> --debug-apk <debug.apk> --tag <nom> [--only a,b] [--rounds 3] [--trace] [--shots]
+//   node apps/tv/harness/android-perf/bench.mjs ab --a <apk> --tag-a <nom> --b <apk> --tag-b <nom> --debug-apk <apk> [--only a,b] [--rounds 2] [--shots]
+//     (deux versions en ALTERNANCE, contre la dérive de l'environnement)
 //   node apps/tv/harness/android-perf/bench.mjs show <nom>
 //   node apps/tv/harness/android-perf/bench.mjs compare <avant> <après>
 //   node apps/tv/harness/android-perf/bench.mjs diff <avant> <après>     (captures : SSIM, PSNR, côte à côte)
@@ -19,11 +21,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createDevice, PACKAGE, sleep } from "./lib/device.mjs";
+import { createDevice, sleep } from "./lib/device.mjs";
 import { startImageProxy } from "./lib/imageProxy.mjs";
-import { compareTable, cpuDelta, describe, summarizeRound, summarizeScenario } from "./lib/report.mjs";
+import { createPlayer } from "./lib/play.mjs";
+import { compareTable, describe, summarizeScenario } from "./lib/report.mjs";
 import { scenariosOf } from "./lib/scenarios.mjs";
-import { startTrace, stopTrace, summarizeTrace } from "./lib/trace.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CACHE = path.join(os.homedir(), "Library/Caches/tentacle-android-perf");
@@ -82,55 +84,40 @@ async function startBackend() {
   throw new Error(`le faux backend ne répond pas sur ${BACKEND_PORT} — ${path.join(CACHE, "backend.log")}`);
 }
 
-class SetupError extends Error {}
-
-/** Une passe, rejouée une fois si sa mise en place a dérapé (`expectReady`). */
-async function playChecked(device, scenario, traceFile, shotFile) {
+/** Le faux backend, le relais d'images, la session et l'injecteur : ce que
+ *  toute mesure partage. `fn(device, player, proxy)` mesure ; tout s'arrête après. */
+async function withBench(debugApk, fn) {
+  fs.mkdirSync(RUNS, { recursive: true });
+  const device = createDevice();
+  console.log(`appareil : ${device.describe()}`);
+  device.pushKeys(keysDex());
+  const backend = await startBackend();
+  const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
   try {
-    return await playScenario(device, scenario, traceFile, shotFile);
-  } catch (error) {
-    if (!(error instanceof SetupError)) throw error;
-    console.log(`\n${scenario.id} : ${error.message} — passe rejouée`);
-    return playScenario(device, scenario, traceFile, shotFile);
+    await device.writeSession({ debugApk, port: PORT });
+    return await fn(device, createPlayer({ device, backendPort: BACKEND_PORT }), proxy);
+  } finally {
+    device.setPerf(false);
+    backend.kill();
+    await proxy.close();
   }
 }
 
-/** Les jeux du faux backend d'un scénario (nav-golden `/__fixtures`). */
-function applyFixtures(sets) {
-  execFileSync("curl", ["-s", "-X", "POST", `http://127.0.0.1:${BACKEND_PORT}/__fixtures`, "-d", JSON.stringify({ sets })], { stdio: "ignore" });
+/** Les fichiers de la passe `round` d'un scénario : trace et capture, à la première seulement. */
+function filesOf(tag, scenario, round) {
+  const of = (kind, ext, wanted) => {
+    if (!wanted || round !== 0) return null;
+    const file = path.join(CACHE, kind, `${tag}-${scenario.id}.${ext}`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    return file;
+  };
+  return { traceFile: of("traces", "txt", flag("trace")), shotFile: of("shots", "png", flag("shots")) };
 }
 
-async function playScenario(device, scenario, traceFile, shotFile) {
-  applyFixtures(scenario.fixtures ?? ["base/vigie-off"]);
-  device.forceStop();
-  device.clearLog();
-  const launchMs = device.launch();
-  const ready = await device.waitReady("accueil", 45_000);
-  if (!ready) throw new Error("l'accueil ne s'est jamais dit prêt (session ? faux backend ? mode de mesure ?)");
-  if (scenario.cold) {
-    await device.waitQuiet(1500);
-    const round = summarizeRound(device.perfRecords(), cpuDelta({}, device.threadCpu()));
-    return { ...round, launchMs };
-  }
-  await sleep(3000);
-  device.keys(...(scenario.setup ?? []));
-  await device.waitQuiet(1200);
-  if (scenario.expectReady && !device.perfRecords().some((record) => record.ready === scenario.expectReady)) {
-    throw new SetupError(`la mise en place n'a pas mené à « ${scenario.expectReady} »`);
-  }
-  if (shotFile) device.screencap(shotFile);
-  device.clearLog();
-  device.gfxReset();
-  const before = device.threadCpu();
-  if (traceFile) startTrace(device, PACKAGE);
-  device.keys(...scenario.gesture);
-  await device.waitQuiet(1500);
-  const after = device.threadCpu();
-  const round = { ...summarizeRound(device.perfRecords(), cpuDelta(before, after)), gfx: device.gfxStats() };
-  if (!traceFile) return round;
-  const text = stopTrace(device);
-  fs.writeFileSync(traceFile, text);
-  return { ...round, trace: summarizeTrace(text) };
+function save(tag, apk, device, proxy, results) {
+  const file = path.join(RUNS, `${tag}.json`);
+  fs.writeFileSync(file, JSON.stringify({ tag, apk, date: new Date().toISOString(), device: device.describe(), images: proxy.stats, results }, null, 2));
+  console.log(`résultats : ${file}`);
 }
 
 async function run() {
@@ -140,53 +127,60 @@ async function run() {
   if (!apk || !debugApk || !tag) throw new Error("usage : run --apk <release.apk> --debug-apk <debug.apk> --tag <nom> [--only a,b] [--rounds 3]");
   const rounds = Number(option("rounds", "3"));
   const scenarios = scenariosOf(option("only"));
-  fs.mkdirSync(RUNS, { recursive: true });
-  const device = createDevice();
-  console.log(`appareil : ${device.describe()}`);
-  device.pushKeys(keysDex());
-  const backend = await startBackend();
-  const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
-  const results = [];
-  try {
-    await device.writeSession({ debugApk, port: PORT });
-    device.install(apk);
-    device.setPerf(true);
-    // Un premier lancement écrit le profil ; puis la compilation qu'aurait faite le Play Store.
-    device.forceStop();
-    device.clearLog();
-    device.launch();
-    await device.waitReady("accueil", 60_000);
-    device.forceStop();
-    device.compileProfile();
-    // L'échauffement, non mesuré : chaque scénario joué une fois. Le relais
-    // retaille alors les images à la taille que CETTE version demande, et
-    // l'app remplit son cache disque — toutes les versions se mesurent sur
-    // des caches pleins, comme chez un utilisateur qui revient.
-    for (const scenario of scenarios) await playChecked(device, scenario, null, null).catch((error) => console.log(`\néchauffement ${scenario.id} : ${error.message}`));
+  await withBench(debugApk, async (device, player, proxy) => {
+    await player.prepareApk(apk);
+    await player.warmup(scenarios);
     console.log("échauffement fait");
+    const results = [];
     for (const scenario of scenarios) {
       const played = [];
       for (let i = 0; i < rounds; i++) {
-        const traceFile = flag("trace") && i === 0 ? path.join(CACHE, "traces", `${tag}-${scenario.id}.txt`) : null;
-        if (traceFile) fs.mkdirSync(path.dirname(traceFile), { recursive: true });
-        // Une capture au moment où le geste part (l'état de départ, focus posé) : la preuve qu'une version rend comme l'autre.
-        const shotFile = flag("shots") && i === 0 ? path.join(CACHE, "shots", `${tag}-${scenario.id}.png`) : null;
-        if (shotFile) fs.mkdirSync(path.dirname(shotFile), { recursive: true });
-        played.push(await playChecked(device, scenario, traceFile, shotFile));
+        played.push(await player.playChecked(scenario, filesOf(tag, scenario, i)));
         process.stdout.write(".");
       }
       const summary = summarizeScenario(scenario, played);
       results.push({ ...summary, rawRounds: played });
       console.log(`\n${describe(summary)}`);
     }
-  } finally {
-    device.setPerf(false);
-    backend.kill();
-    await proxy.close();
-  }
-  const file = path.join(RUNS, `${tag}.json`);
-  fs.writeFileSync(file, JSON.stringify({ tag, apk, date: new Date().toISOString(), device: device.describe(), images: proxy.stats, results }, null, 2));
-  console.log(`\nrésultats : ${file} · images servies ${proxy.stats.images} (${proxy.stats.resized} réduites, ${Math.round(proxy.stats.bytesOut / 1024)} Ko sur ${Math.round(proxy.stats.bytesIn / 1024)} Ko)`);
+    save(tag, apk, device, proxy, results);
+  });
+}
+
+/**
+ * Deux versions mesurées en ALTERNANCE (A, B, puis B, A…) : une dérive de
+ * l'environnement (une autre machine virtuelle, un build voisin) touche les
+ * deux à parts égales. Chaque bascule réinstalle la version et recompile son
+ * profil ; la session et les caches de l'app restent.
+ */
+async function ab() {
+  const apks = { [option("tag-a")]: option("a"), [option("tag-b")]: option("b") };
+  const tags = Object.keys(apks);
+  const debugApk = option("debug-apk");
+  if (tags.length !== 2 || tags.some((t) => !t || !apks[t]) || !debugApk) throw new Error("usage : ab --a <apk> --tag-a <nom> --b <apk> --tag-b <nom> --debug-apk <apk> [--only a,b] [--rounds 2]");
+  const rounds = Number(option("rounds", "2"));
+  const scenarios = scenariosOf(option("only"));
+  await withBench(debugApk, async (device, player, proxy) => {
+    for (const tag of tags) {
+      await player.prepareApk(apks[tag]);
+      await player.warmup(scenarios);
+      console.log(`échauffement ${tag} fait`);
+    }
+    const played = Object.fromEntries(tags.map((tag) => [tag, Object.fromEntries(scenarios.map((s) => [s.id, []]))]));
+    for (let round = 0; round < rounds; round++) {
+      for (const tag of round % 2 === 0 ? tags : [...tags].reverse()) {
+        await player.prepareApk(apks[tag]);
+        for (const scenario of scenarios) {
+          played[tag][scenario.id].push(await player.playChecked(scenario, filesOf(tag, scenario, round)));
+          process.stdout.write(".");
+        }
+        console.log(` passe ${round + 1} ${tag} (charge du Mac ${os.loadavg()[0].toFixed(1)})`);
+      }
+    }
+    for (const tag of tags) {
+      const results = scenarios.map((scenario) => ({ ...summarizeScenario(scenario, played[tag][scenario.id]), rawRounds: played[tag][scenario.id] }));
+      save(tag, apks[tag], device, proxy, results);
+    }
+  });
 }
 
 const load = (tag) => JSON.parse(fs.readFileSync(path.join(RUNS, `${tag}.json`), "utf8"));
@@ -214,10 +208,11 @@ function diffShots(a, b) {
 
 async function main() {
   if (command === "run") return run();
+  if (command === "ab") return ab();
   if (command === "show") return load(rest[0]).results.forEach((s) => console.log(describe(s)));
   if (command === "compare") return console.log(compareTable(load(rest[0]).results, load(rest[1]).results));
   if (command === "diff") return diffShots(rest[0], rest[1]);
-  console.error("usage : bench.mjs run|show|compare|diff — voir l'en-tête du fichier");
+  console.error("usage : bench.mjs run|ab|show|compare|diff — voir l'en-tête du fichier");
   process.exit(2);
 }
 
