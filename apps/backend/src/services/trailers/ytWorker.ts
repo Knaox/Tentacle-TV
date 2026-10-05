@@ -89,7 +89,8 @@ function stop(worker: Live): void {
 }
 
 function start(zipapp: string, signature: string, python: string): Live {
-  const proc = spawn(python, ["-u", "-c", WORKER_SCRIPT, zipapp], { stdio: ["pipe", "pipe", "pipe"] });
+  // Le Node de ce serveur sert de moteur JavaScript aux défis de YouTube (cf. ytExtract.ts).
+  const proc = spawn(python, ["-u", "-c", WORKER_SCRIPT, zipapp, process.execPath], { stdio: ["pipe", "pipe", "pipe"] });
   const worker: Live = { proc, signature, ready: Promise.resolve(false), pending: new Map(), idle: null };
   worker.ready = new Promise<boolean>((resolveReady) => {
     const timer = setTimeout(() => {

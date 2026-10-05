@@ -17,10 +17,12 @@ import { clientPasses, isPermanentFailure, pickTrailerSource, type TrailerSource
 /**
  * Les défis JavaScript de YouTube (« EJS ») : `visionos` s'en passe, mais
  * `web_embedded` (vidéos « pour enfants ») et les clients web en ont besoin —
- * moteur deno et solveur tiré de GitHub. Un yt-dlp trop ancien pour cette
- * option (sortie 2, erreur d'usage) est relancé sans elle, une fois pour toutes.
+ * solveur tiré de GitHub, joué par le Node qui fait tourner ce serveur
+ * (yt-dlp l'accepte dès Node 22 ; deno, son moteur par défaut, n'est plus dans
+ * l'image). Un yt-dlp trop ancien pour ces options (sortie 2, erreur d'usage)
+ * est relancé sans elles, une fois pour toutes.
  */
-const EJS_ARGS = ["--remote-components", "ejs:github"];
+const EJS_ARGS = ["--remote-components", "ejs:github", "--js-runtimes", `node:${process.execPath}`];
 let ejsSupported = true;
 
 /**

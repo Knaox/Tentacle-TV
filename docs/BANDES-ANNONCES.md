@@ -159,6 +159,15 @@ enfants » passe par le MP4 (11,6 s dans cette petite VM de deux cœurs, avec
 le premier téléchargement du solveur de défis), et le relais lit maître,
 liste et segments par undici sous Node 20.
 
+**Depuis l'image allégée (2026-10-05), plus de deno** : `node:24-alpine`
+(Node 24.21, Python 3.14), et yt-dlp résout les défis JavaScript avec le
+Node du serveur (`--js-runtimes node:<process.execPath>`, et `js_runtimes`
+pour l'ouvrier ; yt-dlp l'accepte dès Node 22). Mesuré sur la même vidéo,
+même yt-dlp 2026.08.19 : `web_embedded` rend 41 formats dont 25 vidéos à
+URL résolue, avec deno 2.3.1 comme avec Node 24.21 — et `web` seulement des
+images dans les deux cas (jeton PO, sans rapport avec le moteur). Le maître
+`visionos` vient en 2,4 s, ouvrier compris.
+
 ## Les autres plateformes
 
 Web, bureau, mobile, Android TV et LG lisent le lecteur YouTube embarqué :
@@ -175,8 +184,9 @@ qu'on ouvre aujourd'hui dans le navigateur.
   yt-dlp (stable) suit YouTube. Signe à guetter : des lignes
   `via default,web_safari,web_embedded` au lieu de `via visionos`.
 - **Les vidéos « pour enfants »** (Disney, Pixar) n'ont, avec la stable
-  2026.08.19, que le MP4 360p de `web_embedded`, qui exige deno et les défis
-  JavaScript (≈ 4 à 6 s d'extraction). La nightly de yt-dlp (≥ c7fb478) leur
+  2026.08.19, que le MP4 360p de `web_embedded`, qui exige un moteur
+  JavaScript (le Node du serveur) et les défis JavaScript (≈ 4 à 6 s
+  d'extraction). La nightly de yt-dlp (≥ c7fb478) leur
   donne le HLS 91 à 96 jusqu'en 1080p : il arrivera avec la prochaine stable,
   sans rien changer ici. Suivre la nightly en production serait un autre
   choix de mise à jour automatique — non fait.

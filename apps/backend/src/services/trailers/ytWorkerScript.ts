@@ -1,7 +1,8 @@
 /* ------------------------------------------------------------------ */
 /*  L'ouvrier yt-dlp : le programme Python, tenu ici en texte          */
 /*                                                                     */
-/*  Lancé par `python3 -u -c <script> <zipapp>` : il importe yt-dlp    */
+/*  Lancé par `python3 -u -c <script> <zipapp> <node>` : il importe    */
+/*  yt-dlp                                                             */
 /*  UNE fois depuis le zipapp officiel (celui de l'image, ou la copie  */
 /*  tenue à jour), puis répond aux extractions qu'on lui écrit, une    */
 /*  par ligne JSON, chacune dans son fil. En texte et non en fichier : */
@@ -16,6 +17,7 @@
 export const WORKER_SCRIPT = String.raw`
 import json, sys, threading
 sys.path.insert(0, sys.argv[1])
+NODE = sys.argv[2] if len(sys.argv) > 2 else None
 import yt_dlp
 
 lock = threading.Lock()
@@ -46,6 +48,8 @@ def extract(req):
     }
     if req.get("ejs"):
         opts["remote_components"] = ["ejs:github"]
+        if NODE:
+            opts["js_runtimes"] = {"node": {"path": NODE}}
     formats = []
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
