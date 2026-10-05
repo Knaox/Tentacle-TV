@@ -51,6 +51,10 @@ serve() {
 
 case "${1:-serve}" in
   serve) serve ;;
+  # Le service « init » des piles Docker (stacks/) : secrets de la base et
+  # dossiers des médias, avant le premier démarrage — en root, puis il s'arrête
+  # (src/cli/stackInit.ts).
+  init) exec node /app/apps/backend/dist/cli/stackInit.js ;;
   refresh-shared-deps) refresh_shared_deps ;;
   *) exec "$@" ;;
 esac
