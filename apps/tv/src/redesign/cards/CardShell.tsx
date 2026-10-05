@@ -58,7 +58,7 @@ export const CardShell = memo(function CardShell({
     [centerFrame, frame],
   );
   return (
-    <View style={[{ width }, front && styles.front, style]}>
+    <View collapsable={false} style={[{ width }, front && styles.front, style]}>
       {/* La place de l'image : elle se dessine dans la cible, plus bas. */}
       <View style={{ height: frameHeight }} />
       {children}

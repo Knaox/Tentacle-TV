@@ -70,7 +70,7 @@ export const MorphCard = memo(function MorphCard({ card, place, focusKey, onPres
   // L'appui, tenu par la cible, lu par l'affiche.
   const press = useSharedValue(0);
   return (
-    <View style={[styles.cell, focused && styles.front]}>
+    <View collapsable={false} style={[styles.cell, focused && styles.front]}>
       <Body card={card} place={place} focused={focused} press={press} />
       <FocusTarget
         focusKey={focusKey}
