@@ -14,6 +14,7 @@ export * from "./segmentTimeout";
 export * from "./playerItemFallback";
 export * from "./playerErrors";
 export * from "./producerDeath";
+export * from "./serverOutage";
 export * from "./hevcTag";
 export * from "./seekTuning";
 export * from "./scrubTouchTuning";

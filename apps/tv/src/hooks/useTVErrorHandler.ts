@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { playbackErrorsSuppressed } from "@tentacle-tv/api-client";
 import { isAudioTransientError } from "@tentacle-tv/tv-core";
 import { useAudioErrorRetry } from "./useAudioErrorRetry";
 import { useTVDirectStreamRecovery } from "./useTVDirectStreamRecovery";
@@ -54,6 +55,9 @@ export function useTVErrorHandler(args: {
   });
 
   const handleError = useCallback((error: string) => {
+    // Jellyfin en panne (dit par le serveur) : toute erreur est la panne — la
+    // reprise l'attend et relance au retour (ni réessai audio, ni message).
+    if (playbackErrorsSuppressed() && onSourceLost(error)) return;
     if (isAudioTransientError(error)) { onAudioError(error); return; }
     if (onSlowSegment(error)) return;
     if (onSourceLost(error)) return;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo } from "react-native";
-import type { QualityPreset } from "@tentacle-tv/shared";
+import { useJellyfinOutage } from "@tentacle-tv/api-client";
+import { jellyfinOutageCopy, type QualityPreset } from "@tentacle-tv/shared";
 import { activatesTroublePanel, focusInTrouble, TROUBLE_REFOCUS_MS, troubleLeaveReturnsToOsd } from "@tentacle-tv/tv-core";
 import { noteSkipFocusClaim, returnFocusToOsd } from "../../components/player/focus/osdFocusBus";
 import { useRemoteIntents } from "../../platform/input";
@@ -110,18 +111,22 @@ export function usePlaybackTrouble(args: {
 
   const lower = lowerQualityKey(qualityPresets, qualityKey);
   const position = Math.floor(args.position);
+  // Jellyfin en panne, dit par le serveur : son état en titre (la même phrase qu'ailleurs).
+  const outage = useJellyfinOutage();
+  const outageCopy = outage.phase === "outage" || outage.phase === "long" ? jellyfinOutageCopy(outage.state, false) : null;
+  const outageTitle = outageCopy ? t(outageCopy.titleKey) : null;
   const model = useMemo(() => {
     const panel = panelOf({
       t, phase, now, position, nextCheckAt: trouble.nextCheckAt, checking: trouble.checking,
-      stillDown: trouble.stillDown, canLowerQuality: lower !== null && !!onSelectQuality, active,
+      stillDown: trouble.stillDown, canLowerQuality: lower !== null && !!onSelectQuality, active, outageTitle,
     });
-    let notice = noticeOf(t, phase);
+    let notice = noticeOf(t, phase, outageTitle);
     if (notice && tentacleSince !== null && !tentacleFresh && !osdVisible) notice = null;
     if (!panel && !notice && fallbackShown) notice = SERVER_FALLBACK_NOTICE(t);
     if (!panel && !notice && resumedShown) notice = RESUMED_NOTICE(t);
     return troubleModelOf(panel, notice);
   }, [t, phase, now, position, trouble.nextCheckAt, trouble.checking, trouble.stillDown, lower, onSelectQuality, active,
-    tentacleSince, tentacleFresh, osdVisible, resumedShown, fallbackShown]);
+    tentacleSince, tentacleFresh, osdVisible, resumedShown, fallbackShown, outageTitle]);
 
   // Un bouton qui paraît ou part (« Baisser la qualité ») réordonne les vues
   // natives, et UIKit perd le focus de celle qu'il déplace : panneau activé,

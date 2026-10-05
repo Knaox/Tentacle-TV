@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { unstable_batchedUpdates } from "react-native";
-import { cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
+import { cachedBitrate, playbackErrorsSuppressed, useJellyfinClient } from "@tentacle-tv/api-client";
 import {
   decideProducerDeath, decideRecovery, MAX_VAIN_RESTARTS, PROBE_EVERY_MS, RESTART_COOLDOWN_MS, shouldCheckProducer,
   type RecoveryPhase,
@@ -11,6 +11,7 @@ import { IDLE_TROUBLE, noteServerFallback, publishPlaybackTrouble, registerTroub
 import { useStartupRecovery } from "./useStartupRecovery";
 import { useStartupWait } from "./useStartupWait";
 import { useTranscodeReload } from "./useTranscodeReload";
+import { useServerJellyfinHealth } from "./useServerJellyfinHealth";
 import { isFormatError, type RecoverySources } from "./recoverySources";
 import type { RestartReason } from "./streamRestart";
 import { loadGrew, readPlayerLoad } from "../utils/playerLoadProbe";
@@ -260,15 +261,19 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
 
   useStartupRecovery(sources);
   useStartupWait(sources, state, transcode.reload);
+  useServerJellyfinHealth(state, src, tickRef, restart);
 
   /** Confiée en premier par le gestionnaire d'erreurs : `true` = prise en charge. */
   const onSourceLost = useCallback((error: string): boolean => {
     const s = src.current;
     const st = state.current;
     if (!s || !s.s.hasStarted || s.s.endedRef.current) return false;
-    if (isFormatError(error) || AUTH_ERROR.test(error)) return false;
+    // Jellyfin en panne (dit par le serveur) : toute erreur est la panne — ni
+    // transcodage forcé d'une « erreur de format », ni bandeau d'erreur.
+    const outage = playbackErrorsSuppressed();
+    if (!outage && (isFormatError(error) || AUTH_ERROR.test(error))) return false;
     // Serveur joignable et relances vaines : la chaîne de repli reprend la main.
-    if (st.vain >= MAX_VAIN_RESTARTS && st.source === "ok") return false;
+    if (!outage && st.vain >= MAX_VAIN_RESTARTS && st.source === "ok") return false;
     st.lostSince ??= Date.now();
     st.incidentPos ??= s.s.positionRef.current;
     plog("recover", `source perdue (${error.slice(0, 80)}) → reprise`);

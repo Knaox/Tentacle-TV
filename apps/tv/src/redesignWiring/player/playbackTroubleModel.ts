@@ -60,14 +60,23 @@ export function lowerQualityKey(presets: readonly QualityPreset[], current: stri
   return next ? next.key : null;
 }
 
-export function noticeOf(t: Translate, phase: RecoveryPhase): TroubleNoticeModel | null {
+/**
+ * Le titre d'une panne de Jellyfin quand le SERVEUR en dit l'état
+ * (`server:jellyfin` → « Jellyfin redémarre », « est arrêté »…, la phrase
+ * commune aux lecteurs, `jellyfinOutageCopy`) — sinon le titre de la cause.
+ */
+function titleOf(t: Translate, cause: TroubleCause, outageTitle: string | null | undefined): string {
+  return cause === "media" && outageTitle ? outageTitle : t(TITLE[cause]);
+}
+
+export function noticeOf(t: Translate, phase: RecoveryPhase, outageTitle?: string | null): TroubleNoticeModel | null {
   if (phase.kind !== "degraded") return null;
   // Tentacle seul, sous un flux direct : la lecture n'en dépend pas. Sinon (le
   // flux passe par le serveur à terre), elle vit sur ce qui est chargé.
   const detail = phase.streamAffected
     ? t("player:troublePlayingOn", { time: aheadLabel(t, phase.ahead) })
     : t("player:troublePlayingUnaffected");
-  return { mode: "notice", icon: "server", tone: "warning", title: t(TITLE[phase.cause]), detail };
+  return { mode: "notice", icon: "server", tone: "warning", title: titleOf(t, phase.cause, outageTitle), detail };
 }
 
 /** La lecture directe calait au même endroit : le serveur a pris le relais, on le dit. */
@@ -91,6 +100,8 @@ export function panelOf(args: {
   stillDown: boolean;
   canLowerQuality: boolean;
   active: boolean;
+  /** L'état de Jellyfin dit par le serveur, en titre (cf. `titleOf`). */
+  outageTitle?: string | null;
 }): TroublePanelModel | null {
   const { t, phase } = args;
   if (phase.kind !== "waiting" && phase.kind !== "recovering" && phase.kind !== "stuck") return null;
@@ -124,7 +135,7 @@ export function panelOf(args: {
   const actions: TroubleAction[] = [{ key: "retry", label: t("player:troubleRetryNow"), icon: "refresh" }];
   if (slowish && args.canLowerQuality) actions.push({ key: "quality", label: t("player:troubleLowerQuality"), icon: "gauge" });
 
-  const title = back ? t("player:troubleBackTitle") : t(TITLE[cause]);
+  const title = back ? t("player:troubleBackTitle") : titleOf(t, cause, args.outageTitle);
   return { mode: "panel", icon: back ? "refresh" : ICON[cause], title, detail, status, busy, actions, active: args.active };
 }
 

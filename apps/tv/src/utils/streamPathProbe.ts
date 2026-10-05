@@ -33,11 +33,30 @@ export async function probeStreamPath(client: ReturnType<typeof useJellyfinClien
       headers: nativePlayerHeaders(client),
       signal: controller.signal,
     });
-    return res.ok ? { ok: true, culprit: null } : { ok: false, culprit: "media" };
+    return (await jellyfinServes(res)) ? { ok: true, culprit: null } : { ok: false, culprit: "media" };
   } catch {
     return { ok: false, culprit: direct ? "media" : "tentacle" };
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Jellyfin SERT-il vraiment ? Mesuré sur 10.11.11 (2026-10-05) : pendant son
+ * démarrage, le serveur d'attente répond UNE fois 200 à `System/Info/Public`,
+ * en camelCase et sans `Id`, puis 503 « loading » plusieurs secondes. Croire
+ * ce 200 relançait le flux ~6 s trop tôt, pour une relance vaine (deux
+ * vaines : la main rendue à l'utilisateur). Le vrai serveur répond en
+ * PascalCase avec son `Id` — la règle de la sonde du backend
+ * (`jellyfinHealthProbe.ts`).
+ */
+async function jellyfinServes(res: Response): Promise<boolean> {
+  if (!res.ok) return false;
+  try {
+    const info = (await res.json()) as { Id?: unknown } | null;
+    return typeof info?.Id === "string" && info.Id !== "";
+  } catch {
+    return false;
   }
 }
 
