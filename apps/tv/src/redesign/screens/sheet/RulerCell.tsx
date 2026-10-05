@@ -74,11 +74,16 @@ function Cell({ score, label, distance, current, off, focused }: {
   useEffect(() => {
     fade.value = withTiming(fadeOf(distance), { duration: reduced ? 0 : 200 });
   }, [distance, reduced, fade]);
-  const shape = useAnimatedStyle(() => ({ opacity: fade.value, transform: [{ scale: 1 + 0.08 * p.value }] }));
+  // Le pâlissement (la distance au centre : tous les crans à chaque pas) et
+  // l'agrandissement (le focus) en deux styles : un cran qui pâlit ne renvoie
+  // plus sa transformation à chaque image (Reanimated renvoie un style entier
+  // dès qu'une valeur change — `CardFrame`).
+  const dim = useAnimatedStyle(() => ({ opacity: fade.value }));
+  const grow = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.08 * p.value }] }));
   const light = useAnimatedStyle(() => ({ opacity: p.value }));
   const remove = score === null;
   return (
-    <Animated.View style={[styles.cell, remove && styles.remove, off && styles.off, shape]}>
+    <Animated.View style={[styles.cell, remove && styles.remove, off && styles.off, dim, grow]}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.light, light]} />
       {remove ? (
         <>
