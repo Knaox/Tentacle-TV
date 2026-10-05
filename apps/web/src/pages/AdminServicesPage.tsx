@@ -22,6 +22,7 @@ import {
 } from "../components/admin/services/useServicesData";
 import { useHashTarget } from "../components/admin/services/useHashTarget";
 import { cls } from "./adminUtils";
+import { AdminRemoteAccessView } from "../components/remoteAccess/AdminRemoteAccessView";
 
 /**
  * Page « Services » (route /admin/services, admin seulement) : l'état des
@@ -34,10 +35,12 @@ import { cls } from "./adminUtils";
  * Les ancres (`#jellyfin`, `#publicurl`…) mènent à leur section et à son
  * champ : le verrou de jumelage TV et le bandeau de clé Jellyfin y renvoient.
  */
-export function AdminServicesPage() {
+export function AdminServicesPage({ section }: { section?: "remote-access" } = {}) {
   const { isAdmin } = getUserInfo();
   if (!isAdmin) return <Navigate to="/" replace />;
-  return <ServicesContent />;
+  // « Accès à distance » (/admin/remote-access) vit dans ce module paresseux :
+  // la cible webOS remplace `lazyPages.ts` et ne connaît pas d'autre page.
+  return section === "remote-access" ? <AdminRemoteAccessView /> : <ServicesContent />;
 }
 
 function ServicesContent() {

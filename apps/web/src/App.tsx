@@ -219,6 +219,9 @@ export function App() {
               <Route path="invites" element={<AdminInvites />} />
               <Route path="tickets" element={<AdminTicketsPage />} />
               <Route path="services" element={<AdminServicesPage />} />
+              {/* L'accès à distance passe par le module de la page Services : il reste ainsi
+                  hors du client LG sans entrée de plus dans `lazyPages.ts` (cf. AdminRemoteAccessView). */}
+              <Route path="remote-access" element={<AdminServicesPage section="remote-access" />} />
               <Route path="metadata" element={<AdminMetadata />} />
               <Route path="plugins" element={<AdminPlugins />} />
 

@@ -12,6 +12,7 @@ export default {
   navInvites: "Invitations",
   navDownloads: "Téléchargements",
   navServices: "Services",
+  navRemoteAccess: "Accès à distance",
   navMetadata: "Métadonnées",
   navPlugins: "Plugins",
   groupActivity: "Activité",

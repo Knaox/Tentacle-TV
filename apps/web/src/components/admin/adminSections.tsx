@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Database,
+  Globe,
   HardDriveDownload,
   LayoutDashboard,
   LifeBuoy,
@@ -43,6 +44,7 @@ export function useAdminSections(): SettingsShellSection[] {
       { id: "invites", label: t("navInvites"), icon: <Mail size={ICON} />, group: accounts },
       { id: "downloads", label: t("navDownloads"), icon: <HardDriveDownload size={ICON} />, group: accounts },
       { id: "services", label: t("navServices"), icon: <Server size={ICON} />, group: server },
+      { id: "remote-access", label: t("navRemoteAccess"), icon: <Globe size={ICON} />, group: server },
       { id: "metadata", label: t("navMetadata"), icon: <Database size={ICON} />, group: server },
       { id: "plugins", label: t("navPlugins"), icon: <Puzzle size={ICON} />, group: server },
     ];
