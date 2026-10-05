@@ -4,10 +4,11 @@ import {
   RAIL_SHORTCUT_TARGETS, marksContentFocus, railLeftArmDelay, railShortcutZones, railShortcutsActive, type RailFrame,
 } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../focus/focusStore";
-import { TVOS_REMOTE_SUPPORTED } from "../input";
+import { REMOTE_SUPPORTED } from "../../input";
 
 /**
- * Les RACCOURCIS de la navigation (tvOS) — l'applicateur de tv-core
+ * Les RACCOURCIS de la navigation (Apple TV et Android TV : les guides de
+ * focus de react-native-tvos servent les deux) — l'applicateur de tv-core
  * (`nav/railShortcuts`) : trois guides invisibles aux bords des capsules,
  * posés seulement pendant que le focus est dans le rail, hors menu et
  * déplacement — HAUT depuis Rechercher y reste, BAS depuis le profil y reste
@@ -54,7 +55,7 @@ export function RailShortcuts({ focus, railFocused, heldKey, movingKey, railGeom
     [focus],
   );
 
-  if (!TVOS_REMOTE_SUPPORTED || !active || !railGeometry) return null;
+  if (!REMOTE_SUPPORTED || !active || !railGeometry) return null;
   const above = focus.node(RAIL_SHORTCUT_TARGETS.above);
   const below = focus.node(RAIL_SHORTCUT_TARGETS.below);
   const left = focus.node(RAIL_SHORTCUT_TARGETS.left);
