@@ -1,7 +1,10 @@
 /**
  * Le rendu des téléviseurs : le profil de chaque plateforme (ce qu'elle
- * dessine, et comment) et l'ombre portée lue dans les styles iOS.
+ * dessine, et comment), l'ombre portée lue dans les styles iOS, et le coût
+ * d'une validation React (le mode de mesure d'Android TV).
  */
 export * from "./dropShadow";
 export * from "./haloDrawing";
 export * from "./renderProfile";
+export * from "./commitCount";
+export * from "./perfLabels";
