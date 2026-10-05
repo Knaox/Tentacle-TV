@@ -42,8 +42,6 @@ import { TVColdStartLanding } from "./components/TVColdStartLanding";
 import { TVSessionMessageHost } from "./components/TVSessionMessageHost";
 import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
-import { TVNavChrome, deriveRailKey } from "./components/nav/TVNavChrome";
-import { TVNavProvider } from "./context/TVNavContext";
 import { QualityBadgeHost } from "./redesignWiring/cards/QualityBadgeHost";
 import { ThemeProvider, useTheme } from "./theme";
 
@@ -156,18 +154,12 @@ function AppContent() {
   const [serverUrl, setServerUrl] = useState<string | null>(sessionServerUrl);
   const { isReachable, retry } = useServerReachable(serverUrl);
   const { theme } = useTheme();
-  // Route active du rail : suivie via le NavigationContainer (le rail est un
-  // sibling du Navigator, sans accès aux hooks de navigation).
-  const [railKey, setRailKey] = useState<string | null>(null);
   const [playbackShown, setPlaybackShown] = useState(false);
-  const syncRailKey = useCallback(() => {
-    // Ne mettre à jour railKey QUE quand la nav est prête : sinon une synchro
-    // transitoire (isReady=false) effaçait le rail (null) → side bar qui
-    // disparaît. deriveRailKey renvoie déjà null légitimement pour les écrans
-    // plein écran (Player/MediaDetail), donc on n'affiche jamais le rail à tort.
+  const syncNavState = useCallback(() => {
+    // Seulement quand la nav est prête : une synchro transitoire
+    // (isReady=false) ne dit rien de l'écran affiché.
     if (navigationRef.isReady()) {
       const state = navigationRef.getRootState();
-      setRailKey(deriveRailKey(state));
       const route = state?.routes?.[state.index];
       setPlaybackShown(!!route && PLAYBACK_ROUTES.has(route.name));
     }
@@ -200,21 +192,18 @@ function AppContent() {
       <TVColdStartLanding storage={storage} />
       {/* La qualité des titres, lue au focus des cartes de la refonte : une source pour toute l'app. */}
       <QualityBadgeHost>
-        <TVNavProvider>
-            <NavigationContainer
-              ref={navigationRef}
-              theme={navTheme}
-              onReady={syncRailKey}
-              onStateChange={syncRailKey}
-            >
-              <AppNavigator />
-              {/* Rail persistant monté une seule fois (overlay sibling du Navigator) */}
-              <TVNavChrome railKey={railKey} />
-              <OfflineBanner visible={!isReachable && !playbackShown} onRetry={retry} />
-              <PairingExpiredBanner />
-              <TVSessionMessageHost />
-            </NavigationContainer>
-        </TVNavProvider>
+        {/* Le rail vit dans chaque écran refondu (`NavRail`, prop `nav`). */}
+        <NavigationContainer
+          ref={navigationRef}
+          theme={navTheme}
+          onReady={syncNavState}
+          onStateChange={syncNavState}
+        >
+          <AppNavigator />
+          <OfflineBanner visible={!isReachable && !playbackShown} onRetry={retry} />
+          <PairingExpiredBanner />
+          <TVSessionMessageHost />
+        </NavigationContainer>
       </QualityBadgeHost>
     </>
   );

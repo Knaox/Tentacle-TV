@@ -1,6 +1,4 @@
-import type { BackScopeProps } from "../../platform/shared/back/backScopeProps";
 import { PlatformBackScope } from "../../platform/backScope";
-import { REDESIGN_ACTIVE } from "../redesignGate";
 
 export { useBackLayer, useBackLayers } from "../../platform/shared/back/useBackLayers";
 
@@ -14,15 +12,7 @@ export { useBackLayer, useBackLayers } from "../../platform/shared/back/useBackL
  * - Apple TV : `platform/tvos/back/` — `MenuPressInterceptor`, décidé d'avance ;
  * - Android TV : `platform/androidtv/back/` — `BackHandler`, décidé au geste.
  *
- * L'ancienne UI (refonte inactive) : la portée ne fait rien, et `useBackLayer`
- * n'inscrit rien.
- *
- * Ce module ne garde que l'aiguillage : les écrans, le lecteur et les
- * panneaux importent `useBackLayer` / `useBackLayers` d'ici.
+ * Les écrans, le lecteur et les panneaux importent `useBackLayer` /
+ * `useBackLayers` d'ici.
  */
-
-function PassThrough({ children }: BackScopeProps) {
-  return <>{children}</>;
-}
-
-export const BackScope = REDESIGN_ACTIVE ? PlatformBackScope : PassThrough;
+export const BackScope = PlatformBackScope;

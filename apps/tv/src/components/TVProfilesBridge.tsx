@@ -2,14 +2,14 @@ import { useEffect } from "react";
 import { AppState, InteractionManager } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { PROFILES_ENABLED, enrollIfAnnounced, openOnLaunch } from "../auth/profileEnrollment";
+import { enrollIfAnnounced, openOnLaunch } from "../auth/profileEnrollment";
 
 /**
  * Le passage aux PROFILS d'une TV (refonte) jumelée avant la Famille : au
  * démarrage et à chaque retour au premier plan, si le serveur l'annonce
  * désormais, l'échange (`profileEnrollment.ts`), puis le profil qui s'ouvre
  * seul — le propriétaire seul et sans PIN ne voit rien changer ; sinon « Qui
- * regarde ? ». Serveur sans Famille, ancienne UI d'Android TV : rien.
+ * regarde ? ». Serveur sans Famille : rien.
  */
 export function TVProfilesBridge() {
   const { storage } = useTentacleConfig();
@@ -17,7 +17,6 @@ export function TVProfilesBridge() {
   const jfClient = useJellyfinClient();
 
   useEffect(() => {
-    if (!PROFILES_ENABLED) return undefined;
     const context = { jfClient, storage, queryClient };
     let running = false;
     const sync = async () => {

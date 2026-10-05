@@ -7,7 +7,6 @@ import {
   planProfileLaunch,
   tvSessionMode,
 } from "@tentacle-tv/tv-core";
-import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import { loadProfiles, openProfile, refusalOfError } from "./profileOpening";
 import { showProfiles } from "./profileSession";
 import { notifySessionChanged } from "./sessionEvents";
@@ -28,13 +27,6 @@ import { unpairDevice, type UnpairContext } from "./unpair";
  * (que le serveur accepte tant que le nouveau jeton n'a pas servi) avant de
  * croire un « révoqué » (`sessionFlow.ts`).
  */
-
-/**
- * Les profils vivent dans la refonte (« Qui regarde ? », le pavé du PIN,
- * « Gérer les profils ») : l'Apple TV, et Android TV dès que la refonte y est
- * active — le serveur ne distingue pas les plateformes (`/api/family/tv/*`).
- */
-export const PROFILES_ENABLED = REDESIGN_ACTIVE;
 
 const CONFIG_TIMEOUT_MS = 4_000;
 
@@ -58,7 +50,7 @@ export type EnrollOutcome = "enrolled" | "legacy" | "offline" | "unpaired" | "fa
 
 /** L'échange, si le serveur annonce la Famille et que la TV ne l'a pas encore fait. */
 export async function enrollIfAnnounced(context: UnpairContext): Promise<EnrollOutcome> {
-  if (!PROFILES_ENABLED || tvSessionMode(context.storage) !== "legacy") return "legacy";
+  if (tvSessionMode(context.storage) !== "legacy") return "legacy";
   const serverUrl = context.storage.getItem("tentacle_server_url");
   if (!serverUrl) return "legacy";
   const capability = await fetchFamilyCapability(serverUrl);
@@ -72,7 +64,7 @@ export async function enrollNow(context: UnpairContext): Promise<EnrollOutcome> 
   const { storage } = context;
   const serverUrl = storage.getItem("tentacle_server_url");
   const token = storage.getItem("tentacle_token");
-  if (!PROFILES_ENABLED || !serverUrl || !token) return "legacy";
+  if (!serverUrl || !token) return "legacy";
   resetSocketSession();
   storage.setItem(TV_ENROLL_PENDING_KEY, "1");
   try {
@@ -140,7 +132,7 @@ export async function openOnLaunch(context: UnpairContext): Promise<boolean> {
  * échange en suspens.
  */
 export async function replayPendingEnrollment(context: UnpairContext): Promise<EnrollOutcome | "none"> {
-  if (!PROFILES_ENABLED || !context.storage.getItem(TV_ENROLL_PENDING_KEY)) return "none";
+  if (!context.storage.getItem(TV_ENROLL_PENDING_KEY)) return "none";
   const outcome = await enrollNow(context);
   if (outcome === "enrolled") await openOnLaunch(context);
   return outcome;
