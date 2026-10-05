@@ -35,6 +35,13 @@ export function useForcedFocusReveal(margin = REVEAL_NEAREST_MARGIN) {
   const handlers = useRef(new Map<string, (event: LayoutChangeEvent) => void>());
   const viewport = useRef(0);
   const [layoutTick, setLayoutTick] = useState(0);
+  // Hors banc (aucune clé figée), une mise en page ne redessine pas la page :
+  // les cadres se notent, et servent le jour où une clé se fige.
+  const forcedRef = useRef(forced);
+  forcedRef.current = forced;
+  const tick = useCallback(() => {
+    if (forcedRef.current !== null) setLayoutTick((n) => n + 1);
+  }, []);
 
   /** Le gestionnaire `onLayout` d'une section, stable d'un rendu à l'autre. */
   const sectionLayout = useCallback((id: string, prefixes: string[]) => {
@@ -46,18 +53,21 @@ export function useForcedFocusReveal(margin = REVEAL_NEAREST_MARGIN) {
         const { y, height } = event.nativeEvent.layout;
         const box = boxes.current.get(id);
         boxes.current.set(id, { prefixes: box?.prefixes ?? prefixes, y, height });
-        setLayoutTick((tick) => tick + 1);
+        tick();
       };
       handlers.current.set(id, handler);
       boxes.current.set(id, { prefixes, y: current?.y ?? 0, height: current?.height ?? 0 });
     }
     return handler;
-  }, []);
+  }, [tick]);
 
-  const onViewportLayout = useCallback((event: LayoutChangeEvent) => {
-    viewport.current = event.nativeEvent.layout.height;
-    setLayoutTick((tick) => tick + 1);
-  }, []);
+  const onViewportLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      viewport.current = event.nativeEvent.layout.height;
+      tick();
+    },
+    [tick],
+  );
 
   useEffect(() => {
     if (!forced || viewport.current === 0) return;
