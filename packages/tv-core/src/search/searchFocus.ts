@@ -30,6 +30,15 @@ export const SEARCH_ENTRY_KEY = SEARCH_FIRST_KEY;
 export const SEARCH_KEYBOARD_CLOSED_KEY = SEARCH_FIRST_KEY;
 
 /**
+ * Où le focus se pose RÉELLEMENT après RE-6 sur l'Apple TV, la référence : le
+ * CHAMP. UIKit rend le focus à ce qui avait présenté le clavier, après la
+ * réclamation de la première touche (constat 4 de `ecrans.md`, mesuré au
+ * simulateur et sur l'appareil). Une plateforme qui ne rend pas le focus
+ * d'elle-même (Android TV) réclame celui-ci, pour finir au même endroit.
+ */
+export const SEARCH_KEYBOARD_CLOSED_LANDING = SEARCH_FIELD_KEY;
+
+/**
  * Le PREMIER résultat d'une page de rangées, dans leur ordre d'affichage : le
  * meilleur résultat (`top`), sinon la première carte de la première rangée —
  * la rangée « À demander » comprise quand elle est seule (RE-5).

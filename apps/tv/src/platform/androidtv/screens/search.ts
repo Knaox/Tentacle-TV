@@ -11,10 +11,9 @@ import type { SearchDictation } from "../../shared/screens/searchDictation";
  * - le champ ouvre le clavier système d'Android (Gboard, clavier Leanback),
  *   comme il ouvre celui de tvOS, par le champ caché de la plateforme
  *   (`HiddenTextInput`) : verrouillé hors saisie, et rendu à la fermeture du
- *   clavier — sa fin de saisie (`onEndEditing`) suit, et la
- *   règle commune rend le focus au clavier de l'écran
- *   (`SEARCH_KEYBOARD_CLOSED_KEY`), ou au premier résultat après une
- *   validation — comme sur Apple TV ;
+ *   clavier — sa fin de saisie (`onEndEditing`) suit, et le focus revient
+ *   au CHAMP, là où l'Apple TV le rend (`keyboardClosed.android.ts`), ou au
+ *   premier résultat après une validation — comme sur Apple TV ;
  * - la dictée est celle de l'APP, par la touche micro du clavier à l'écran
  *   (`useSpeechRecognition`, le module natif `VoiceRecognition`) — tvOS
  *   refuse le micro aux apps, Android le permet : la phrase reconnue remplace

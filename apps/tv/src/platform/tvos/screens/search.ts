@@ -5,7 +5,6 @@ import {
   SEARCH_BAR_CLAIMS_MS,
   SEARCH_FIELD_KEY,
   SEARCH_INPUT_GROUP,
-  SEARCH_KEYBOARD_CLOSED_KEY,
   SEARCH_RESULTS_GROUP,
   SEARCH_SUBMIT_IDLE,
   SHELF_RETURN_IDLE,
@@ -21,6 +20,7 @@ import type { RootStackParamList } from "../../../navigation/types";
 import { AutoFocusGuide } from "../focus/focusGuides";
 import type { FocusStore } from "../focus/focusStore";
 import { useRemoteIntents } from "../input";
+import { KEYBOARD_CLOSED_CLAIM } from "./keyboardClosed";
 
 /**
  * L'applicateur tvOS de la RECHERCHE — les décisions sont celles de tv-core
@@ -73,7 +73,7 @@ function useSearchSubmit(focus: FocusStore, answer: SearchSubmitAnswer, firstKey
     const step = searchSubmitStep(state.current, event);
     state.current = step.state;
     for (const effect of step.effects) {
-      if (effect.type === "keyboardClosedWithoutSubmit") focus.claim(SEARCH_KEYBOARD_CLOSED_KEY);
+      if (effect.type === "keyboardClosedWithoutSubmit") focus.claim(KEYBOARD_CLOSED_CLAIM);
       else if (effect.type === "cancelGoneTimer") clearTimeout(goneTimer.current);
       else if (effect.type === "armGoneTimer") {
         clearTimeout(goneTimer.current);
