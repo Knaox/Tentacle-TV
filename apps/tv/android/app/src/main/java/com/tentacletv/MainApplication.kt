@@ -58,5 +58,8 @@ class MainApplication : Application(), ReactApplication {
     // `CoveredScreens`) : le retrait puis la réattache figeaient le fil
     // d'interface 150 à 170 ms à chaque Retour sur la Shield.
     ScreenStack.keepCoveredScreensAttached = true
+    // Le fondu de page de l'Apple TV (`IosFade`, même patch) : 320 ms d'UIKit,
+    // l'écran qui part s'efface par-dessus l'autre — plus de creux sombre.
+    ScreenStack.fadeLikeIos = true
   }
 }

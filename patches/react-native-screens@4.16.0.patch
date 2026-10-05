@@ -1,9 +1,9 @@
 diff --git a/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt b/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt
 new file mode 100644
-index 0000000..fb87af1
+index 0000000..cc56d13
 --- /dev/null
 +++ b/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,140 @@
 +package com.swmansion.rnscreens
 +
 +import android.animation.Animator
@@ -32,7 +32,9 @@ index 0000000..fb87af1
 + * l'accessibilité. Les fondus de la pile sont rejoués à l'identique : ceux de
 + * `rns_fade_out` / `rns_fade_in` (même durée, même courbe — celle d'une
 + * `Animation` sans interpolateur), et l'écran qui s'efface est dessiné
-+ * PAR-DESSUS le nouveau, comme la vue qui partait (`ScreenStack.dispatchDraw`).
++ * PAR-DESSUS le nouveau, comme la vue qui partait (`ScreenStack.dispatchDraw`) ;
++ * avec `ScreenStack.fadeLikeIos`, il s'efface comme iOS (`IosFade`) et
++ * l'écran qui revient est à 1 d'emblée.
 + * Caché, il quitte la pile sans animation (`ScreenStack.removeHiddenCovered`) :
 + * il ne reparaît pas le temps de son retrait.
 + *
@@ -63,10 +65,12 @@ index 0000000..fb87af1
 +    /** Recouvert et son fondu fini : il ne se dessine plus. */
 +    fun isHidden(view: View): Boolean = covered.containsKey(view) && running[view] == null
 +
-+    /** Recouvert : invisible, sans focus ni accessibilité ; `fade` : il s'efface. */
++    /** Recouvert : invisible, sans focus ni accessibilité ; `fade` : il s'efface
++     *  (en `iosFadeMs`, à la manière d'iOS, s'il est positif). */
 +    fun cover(
 +        view: View,
 +        fade: Boolean,
++        iosFadeMs: Long = -1L,
 +    ) {
 +        if (covered.containsKey(view)) return
 +        covered[view] = Saved(
@@ -78,7 +82,7 @@ index 0000000..fb87af1
 +        // Comme un écran retiré : son élément focalisé rend le focus, qu'Android
 +        // donne au premier focalisable de la fenêtre — le nouvel écran.
 +        if (view.hasFocus()) view.findFocus()?.clearFocus()
-+        animateAlpha(view, 0f, fade)
++        animateAlpha(view, 0f, fade, iosFadeMs)
 +    }
 +
 +    /** Découvert : focus et accessibilité rendus ; `fade` : il réapparaît. */
@@ -108,6 +112,7 @@ index 0000000..fb87af1
 +        view: View,
 +        to: Float,
 +        fade: Boolean,
++        iosFadeMs: Long = -1L,
 +    ) {
 +        running.remove(view)?.cancel()
 +        if (fadingOut === view) fadingOut = null
@@ -118,25 +123,160 @@ index 0000000..fb87af1
 +        }
 +        if (to == 0f) fadingOut = view
 +        val animator =
-+            ObjectAnimator.ofFloat(view, View.ALPHA, view.alpha, to).apply {
-+                duration = fadeDuration
-+                interpolator = AccelerateDecelerateInterpolator()
-+                addListener(
-+                    object : AnimatorListenerAdapter() {
-+                        override fun onAnimationEnd(animation: Animator) {
-+                            if (running[view] === animation) running.remove(view)
-+                            if (fadingOut === view) fadingOut = null
-+                            stack.invalidate()
-+                        }
-+                    },
-+                )
++            if (iosFadeMs > 0 && to == 0f) {
++                IosFade.fadeOut(view, iosFadeMs)
++            } else {
++                ObjectAnimator.ofFloat(view, View.ALPHA, view.alpha, to).apply {
++                    duration = fadeDuration
++                    interpolator = AccelerateDecelerateInterpolator()
++                }
 +            }
++        animator.addListener(
++            object : AnimatorListenerAdapter() {
++                override fun onAnimationEnd(animation: Animator) {
++                    if (running[view] === animation) running.remove(view)
++                    if (fadingOut === view) fadingOut = null
++                    stack.invalidate()
++                }
++            },
++        )
 +        running[view] = animator
 +        animator.start()
 +    }
 +}
+diff --git a/android/src/main/java/com/swmansion/rnscreens/IosFade.kt b/android/src/main/java/com/swmansion/rnscreens/IosFade.kt
+new file mode 100644
+index 0000000..6ed5da6
+--- /dev/null
++++ b/android/src/main/java/com/swmansion/rnscreens/IosFade.kt
+@@ -0,0 +1,110 @@
++package com.swmansion.rnscreens
++
++import android.animation.Animator
++import android.animation.TimeAnimator
++import android.view.View
++import android.view.animation.AlphaAnimation
++import android.view.animation.Animation
++import android.view.animation.AnimationSet
++import android.view.animation.PathInterpolator
++import android.view.animation.Transformation
++
++/**
++ * Tentacle patch (Android TV) : le fondu de la pile À LA MANIÈRE D'iOS
++ * (`RNSScreenStackAnimator`, `animateFadeWithTransitionContext`), opt-in par
++ * `ScreenStack.fadeLikeIos`.
++ *
++ * iOS : au push, le nouvel écran passe de 0 à 1 PAR-DESSUS l'ancien, resté à 1 ;
++ * au retour, l'écran qui part passe de 1 à 0 par-dessus celui qui revient, déjà
++ * à 1 — en `transitionDuration` (`animationDuration`), sur la courbe
++ * `UIViewAnimationCurveEaseInOut`. Android effaçait l'un pendant que l'autre
++ * paraissait, en 150 ms : le fond passait entre les deux, un creux sombre au
++ * milieu du fondu.
++ *
++ * Deux écrans opaques : « le nouveau paraît par-dessus l'ancien » et « l'ancien
++ * s'efface par-dessus le nouveau » font la MÊME image, a·N + (1 − a)·A. Ici,
++ * c'est donc toujours l'écran QUI S'EN VA qui s'efface, par-dessus : un écran
++ * qui ne change plus — son calque ne se redessine pas, quand celui qui se monte
++ * se redessinerait à chaque bloc de vues reçu. Celui qui reste ou qui arrive
++ * est à 1 d'emblée. Les animations de la transaction ne sont plus que des
++ * maintiens (`rns_no_animation_350`), mis à la durée d'iOS : les évènements de
++ * transition tombent quand le fondu finit, et l'écran retiré reste là jusque-là.
++ *
++ * Le temps de la course avance avec les IMAGES rendues, d'au plus deux images
++ * à la fois (`MAX_STEP_MS`) : retenu par le montage du nouvel écran, le fil
++ * d'interface ne fait plus sauter le fondu — il reprend où il en était.
++ */
++internal object IosFade {
++    /** Ce qu'une image en retard avance au plus : deux images à 60 Hz. */
++    const val MAX_STEP_MS = 34L
++
++    /** Sans `animationDuration` : la durée de react-native-screens sur iOS. */
++    private const val DEFAULT_DURATION_MS = 500L
++
++    /** `UIViewAnimationCurveEaseInOut`. */
++    fun curve() = PathInterpolator(0.42f, 0f, 0.58f, 1f)
++
++    fun durationOf(screen: Screen?): Long = screen?.transitionDuration?.takeIf { it >= 0 }?.toLong() ?: DEFAULT_DURATION_MS
++
++    /**
++     * L'animation d'un écran que la transaction ajoute ou retire : son maintien
++     * mis à la durée du fondu ; retiré, il s'efface de `exitFrom` à 0.
++     */
++    fun transition(
++        animation: Animation,
++        removing: Boolean,
++        durationMs: Long,
++        exitFrom: Float,
++        progress: Animation,
++        listener: Animation.AnimationListener,
++    ): Animation {
++        animation.duration = durationMs
++        progress.duration = durationMs
++        return SteadyAnimationSet().apply {
++            addAnimation(animation)
++            addAnimation(progress)
++            if (removing) {
++                addAnimation(
++                    AlphaAnimation(exitFrom, 0f).apply {
++                        duration = durationMs
++                        interpolator = curve()
++                    },
++                )
++            }
++            setAnimationListener(listener)
++        }
++    }
++
++    /** L'effacement d'un écran recouvert, par-dessus le nouveau (`CoveredScreens`). */
++    fun fadeOut(
++        view: View,
++        durationMs: Long,
++    ): Animator {
++        val from = view.alpha
++        val curve = curve()
++        var elapsedMs = 0L
++        return TimeAnimator().apply {
++            setTimeListener { animator, _, deltaMs ->
++                elapsedMs += deltaMs.coerceIn(0L, MAX_STEP_MS)
++                val fraction = (elapsedMs.toFloat() / durationMs).coerceAtMost(1f)
++                view.alpha = from * (1f - curve.getInterpolation(fraction))
++                if (fraction >= 1f) animator.end()
++            }
++        }
++    }
++
++    /** Un ensemble d'animations dont le temps avance d'au plus `MAX_STEP_MS` par image. */
++    private class SteadyAnimationSet : AnimationSet(false) {
++        private var lastRealMs = -1L
++        private var steadyMs = 0L
++
++        override fun getTransformation(
++            currentTime: Long,
++            outTransformation: Transformation,
++        ): Boolean {
++            steadyMs = if (lastRealMs < 0) currentTime else steadyMs + (currentTime - lastRealMs).coerceIn(0L, MAX_STEP_MS)
++            lastRealMs = currentTime
++            return super.getTransformation(steadyMs, outTransformation)
++        }
++    }
++}
+diff --git a/android/src/main/java/com/swmansion/rnscreens/Screen.kt b/android/src/main/java/com/swmansion/rnscreens/Screen.kt
+index 2b7dcff..0eca8cf 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/Screen.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/Screen.kt
+@@ -58,6 +58,10 @@ class Screen(
+     var stackPresentation = StackPresentation.PUSH
+     var replaceAnimation = ReplaceAnimation.POP
+     var stackAnimation = StackAnimation.DEFAULT
++
++    // Tentacle patch : la durée de transition (`animationDuration`), qu'iOS suit et
++    // qu'Android ignorait — le fondu à la manière d'iOS la lit (`IosFade`).
++    var transitionDuration = -1
+     var isGestureEnabled = true
+     var screenOrientation: Int? = null
+         private set
 diff --git a/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt b/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
-index 9894cd4..7113cc3 100644
+index 9894cd4..a633e5a 100644
 --- a/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
 +++ b/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
 @@ -4,6 +4,7 @@ import android.content.Context
@@ -147,20 +287,36 @@ index 9894cd4..7113cc3 100644
  import com.facebook.react.bridge.ReactContext
  import com.facebook.react.uimanager.UIManagerHelper
  import com.swmansion.rnscreens.Screen.StackAnimation
-@@ -31,6 +32,9 @@ class ScreenStack(
+@@ -31,6 +32,16 @@ class ScreenStack(
      private var childrenDrawingOrderStrategy: ChildrenDrawingOrderStrategy? = null
      private var disappearingTransitioningChildren: MutableList<View> = ArrayList()
  
 +    // Tentacle patch : les écrans recouverts gardés attachés (`CoveredScreens`).
 +    private val coveredScreens = CoveredScreens(this)
 +
++    // Tentacle patch : le fondu en cours à la manière d'iOS (`IosFade`) — sa durée
++    // (négative : aucun), et l'opacité d'où l'écran retiré s'efface.
++    internal var iosFadeMs = -1L
++        private set
++    internal var iosFadeExitFrom = 1f
++        private set
++
      var goingForward = false
  
      /**
-@@ -183,6 +187,22 @@ class ScreenStack(
+@@ -183,7 +194,34 @@ class ScreenStack(
  
          goingForward = shouldUseOpenAnimation
  
+-        if (shouldUseOpenAnimation &&
++        // Tentacle patch : le fondu à la manière d'iOS (`IosFade`), à la durée de
++        // l'écran qui arrive — de celui qui part, au retour —, comme iOS. Un retour
++        // pendant l'effacement de l'écran qui revient : celui qui part s'efface
++        // depuis l'opacité qui donne la même image, rien ne saute.
++        val iosFade = fadeLikeIos && stackAnimation === StackAnimation.FADE
++        iosFadeMs = if (iosFade) IosFade.durationOf((if (shouldUseOpenAnimation) newTop else topScreenWrapper)?.screen) else -1L
++        iosFadeExitFrom = newTop?.fragment?.view?.takeIf { iosFade && it === coveredScreens.fadingOut }?.let { 1f - it.alpha } ?: 1f
++
 +        // Tentacle patch : avec un fondu ou sans animation, un écran recouvert
 +        // reste attaché (`CoveredScreens`) ; toute autre animation garde le
 +        // retrait d'origine.
@@ -175,12 +331,16 @@ index 9894cd4..7113cc3 100644
 +            .asSequence()
 +            .dropWhile { visibleBottom != null && it !== visibleBottom || visibleBottom == null && it !== newTop }
 +            .filter { !dismissedWrappers.contains(it) }
-+            .forEach { wrapper -> wrapper.fragment.view?.let { coveredScreens.uncover(it, fades) } }
++            .forEach { wrapper -> wrapper.fragment.view?.let { coveredScreens.uncover(it, fades && !iosFade) } }
 +
-         if (shouldUseOpenAnimation &&
++        // Tentacle patch : pas avec le fondu à la manière d'iOS — l'écran qui part
++        // s'y efface par-dessus (`IosFade`).
++        if (!iosFade &&
++            shouldUseOpenAnimation &&
              newTop != null &&
              needsDrawReordering(newTop, stackAnimation) &&
-@@ -221,6 +241,9 @@ class ScreenStack(
+             visibleBottom == null
+@@ -221,8 +259,17 @@ class ScreenStack(
          }
  
          createTransaction().let { transaction ->
@@ -188,9 +348,18 @@ index 9894cd4..7113cc3 100644
 +            // animation (`removeHiddenCovered`) — avant les animations de la transaction.
 +            val silent = removeHiddenCovered(transaction, newTop, visibleBottom, keepCovered)
              if (stackAnimation != null) {
-                 transaction.setTweenAnimations(stackAnimation, shouldUseOpenAnimation)
+-                transaction.setTweenAnimations(stackAnimation, shouldUseOpenAnimation)
++                if (iosFade) {
++                    // Tentacle patch : des maintiens, mis à la durée du fondu par
++                    // `ScreensCoordinatorLayout` (`IosFade`).
++                    transaction.setCustomAnimations(R.anim.rns_no_animation_350, R.anim.rns_no_animation_350)
++                } else {
++                    transaction.setTweenAnimations(stackAnimation, shouldUseOpenAnimation)
++                }
              }
-@@ -234,14 +257,26 @@ class ScreenStack(
+ 
+             // Remove all screens that are currently on stack, but should be dismissed, because they're
+@@ -234,14 +281,26 @@ class ScreenStack(
                          dismissedWrappers.contains(
                              wrapper,
                          )
@@ -219,14 +388,14 @@ index 9894cd4..7113cc3 100644
  
              // attach screens that just became visible
              if (visibleBottom != null && !visibleBottom.fragment.isAdded) {
-@@ -281,6 +316,50 @@ class ScreenStack(
+@@ -281,6 +340,50 @@ class ScreenStack(
              turnOffA11yUnderTransparentScreen(visibleBottom)
              transaction.commitNowAllowingStateLoss()
          }
 +
 +        // Tentacle patch : recouverts une fois le nouvel écran en place — il prend
 +        // le focus qu'ils rendent ; un fondu les efface par-dessus lui.
-+        toCover.forEach { wrapper -> wrapper.fragment.view?.let { coveredScreens.cover(it, fades && shouldUseOpenAnimation) } }
++        toCover.forEach { wrapper -> wrapper.fragment.view?.let { coveredScreens.cover(it, fades && shouldUseOpenAnimation, iosFadeMs) } }
 +    }
 +
 +    // Tentacle patch : un écran recouvert que la mise à jour garde attaché (`keepCovered`).
@@ -270,7 +439,7 @@ index 9894cd4..7113cc3 100644
      }
  
      // only top visible screen should be accessible
-@@ -330,6 +409,14 @@ class ScreenStack(
+@@ -330,6 +433,14 @@ class ScreenStack(
  
          childrenDrawingOrderStrategy?.apply(drawingOps)
  
@@ -285,7 +454,7 @@ index 9894cd4..7113cc3 100644
          drawAndRelease()
      }
  
-@@ -338,6 +425,8 @@ class ScreenStack(
+@@ -338,6 +449,8 @@ class ScreenStack(
          child: View,
          drawingTime: Long,
      ): Boolean {
@@ -294,7 +463,7 @@ index 9894cd4..7113cc3 100644
          drawingOps.add(
              obtainDrawingOp().apply {
                  this.canvas = canvas
-@@ -374,6 +463,14 @@ class ScreenStack(
+@@ -374,6 +487,21 @@ class ScreenStack(
      companion object {
          const val TAG = "ScreenStack"
  
@@ -306,9 +475,68 @@ index 9894cd4..7113cc3 100644
 +        @JvmField
 +        var keepCoveredScreensAttached = false
 +
++        /**
++         * Tentacle patch : le fondu de la pile à la manière d'iOS (`IosFade`).
++         * Posé par l'app Android TV, comme `keepCoveredScreensAttached`.
++         */
++        @JvmField
++        var fadeLikeIos = false
++
          private fun needsDrawReordering(
              fragmentWrapper: ScreenFragmentWrapper,
              resolvedStackAnimation: StackAnimation?,
+diff --git a/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt b/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt
+index 0c169a3..5550754 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/ScreenViewManager.kt
+@@ -281,10 +281,15 @@ open class ScreenViewManager :
+         value: Boolean,
+     ) = Unit
+ 
++    // Tentacle patch : gardée pour le fondu à la manière d'iOS (`IosFade`). Sans
++    // `@ReactProp`, l'architecture Paper ne la déclare pas, et JS ne l'envoie pas.
++    @ReactProp(name = "transitionDuration", defaultInt = -1)
+     override fun setTransitionDuration(
+         view: Screen?,
+         value: Int,
+-    ) = Unit
++    ) {
++        view?.transitionDuration = value
++    }
+ 
+     override fun setHideKeyboardOnSwipe(
+         view: Screen?,
+diff --git a/android/src/main/java/com/swmansion/rnscreens/stack/views/ScreensCoordinatorLayout.kt b/android/src/main/java/com/swmansion/rnscreens/stack/views/ScreensCoordinatorLayout.kt
+index ff1409d..b9ebee0 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/stack/views/ScreensCoordinatorLayout.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/stack/views/ScreensCoordinatorLayout.kt
+@@ -6,7 +6,9 @@ import android.view.animation.Animation
+ import android.view.animation.AnimationSet
+ import androidx.coordinatorlayout.widget.CoordinatorLayout
+ import com.facebook.react.uimanager.ReactPointerEventsView
++import com.swmansion.rnscreens.IosFade
+ import com.swmansion.rnscreens.PointerEventsBoxNoneImpl
++import com.swmansion.rnscreens.ScreenStack
+ import com.swmansion.rnscreens.ScreenStackFragment
+ import com.swmansion.rnscreens.bottomsheet.usesFormSheetPresentation
+ import com.swmansion.rnscreens.stack.anim.ScreensAnimation
+@@ -39,6 +41,16 @@ internal class ScreensCoordinatorLayout(
+         }
+ 
+     override fun startAnimation(animation: Animation) {
++        // Tentacle patch : le fondu à la manière d'iOS (`IosFade`). La pile se lit
++        // par le parent : un écran qui part n'a déjà plus de `container`.
++        val stack = parent as? ScreenStack
++        if (stack != null && stack.iosFadeMs > 0) {
++            val progress = ScreensAnimation(fragment)
++            super.startAnimation(
++                IosFade.transition(animation, fragment.isRemoving, stack.iosFadeMs, stack.iosFadeExitFrom, progress, animationListener),
++            )
++            return
++        }
+         // For some reason View##onAnimationEnd doesn't get called for
+         // exit transitions so we explicitly attach animation listener.
+         // We also have some animations that are an AnimationSet, so we don't wrap them
 diff --git a/ios/RNSScreen.mm b/ios/RNSScreen.mm
 index b62a2e2..aa8b417 100644
 --- a/ios/RNSScreen.mm
