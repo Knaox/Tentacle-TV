@@ -44,6 +44,21 @@ internal object FocusGeometry {
     return null
   }
 
+  private val guideFields: Pair<Field?, Field?> by lazy {
+    fun field(name: String): Field? =
+      runCatching { ReactViewGroup::class.java.getDeclaredField(name).apply { isAccessible = true } }.getOrNull()
+    field("focusDestinations") to field("autoFocus")
+  }
+
+  /** Un guide de focus (`TVFocusGuideView` : des `destinations`, ou `autoFocus`) —
+   *  la règle de `ReactViewGroup.isTVFocusGuide`, qui n'est pas publique. */
+  fun isFocusGuide(view: View): Boolean {
+    if (view !is ReactViewGroup) return false
+    val (destinations, autoFocus) = guideFields
+    val targets = runCatching { destinations?.get(view) as? IntArray }.getOrNull()
+    return (targets != null && targets.isNotEmpty()) || runCatching { autoFocus?.getBoolean(view) }.getOrNull() == true
+  }
+
   private val trapFields: Map<Int, Field?> by lazy {
     fun field(name: String): Field? =
       runCatching { ReactViewGroup::class.java.getDeclaredField(name).apply { isAccessible = true } }.getOrNull()

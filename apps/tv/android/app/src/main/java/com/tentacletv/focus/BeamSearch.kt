@@ -20,7 +20,8 @@ import kotlin.math.min
  *
  * - `focusSearch` du focalisé d'abord (pièges, guides, `nextFocus*`) — une
  *   cible imposée par `nextFocus*` est prise telle quelle, une cible dans le
- *   faisceau aussi ;
+ *   faisceau aussi, sauf si un GUIDE du faisceau est plus proche sur l'axe du
+ *   geste (le choix de tvOS) ;
  * - sinon, le plus proche dans le faisceau, s'il y en a un (le moteur
  *   d'Android lui a préféré une diagonale plus proche) — dans le piège de la
  *   direction s'il y en a un ;
@@ -29,9 +30,22 @@ import kotlin.math.min
 internal object BeamSearch {
   fun target(focused: View, direction: Int): View? {
     val next = focused.focusSearch(direction)
-    if (next != null && (userSpecified(focused, direction) || inBeam(FocusGeometry.box(focused), FocusGeometry.box(next), direction))) {
-      return next
+    if (next != null && userSpecified(focused, direction)) return next
+    val from = FocusGeometry.box(focused)
+    val nextInBeam = next != null && inBeam(from, FocusGeometry.box(next), direction)
+    // Un GUIDE dans le faisceau, plus proche sur l'axe du geste que ce
+    // qu'a choisi `FocusFinder`, l'emporte — comme sur tvOS. `FocusFinder`
+    // pondère l'écart CROISÉ : un guide haut (le pont du rail, toute la
+    // hauteur de l'écran) perdait contre une entrée du rail alignée sur la
+    // carte, plus loin pourtant ; GAUCHE depuis une rangée visait « Séries »
+    // au lieu de l'entrée active (nav-golden `socle/rail#rail-03`).
+    val guide = nearestInBeam(focused, direction) { FocusGeometry.isFocusGuide(it) }
+    if (guide != null && guide !== next &&
+      (!nextInBeam || majorDistance(from, FocusGeometry.box(guide), direction) < majorDistance(from, FocusGeometry.box(next!!), direction))
+    ) {
+      return guide
     }
+    if (nextInBeam) return next
     return nearestInBeam(focused, direction)
   }
 
@@ -68,7 +82,7 @@ internal object BeamSearch {
   private fun minorDistance(from: RectF, to: RectF, direction: Int): Float =
     if (horizontal(direction)) abs(from.centerY() - to.centerY()) else abs(from.centerX() - to.centerX())
 
-  private fun nearestInBeam(focused: View, direction: Int): View? {
+  private fun nearestInBeam(focused: View, direction: Int, accept: (View) -> Boolean = { true }): View? {
     val root = (FocusGeometry.trapOf(focused, direction) ?: focused.rootView) as? ViewGroup ?: return null
     val candidates = ArrayList<View>()
     root.addFocusables(candidates, direction)
@@ -77,7 +91,7 @@ internal object BeamSearch {
     var bestMajor = Float.MAX_VALUE
     var bestMinor = Float.MAX_VALUE
     for (candidate in candidates) {
-      if (candidate === focused || FocusGeometry.isDescendant(focused, candidate) || !FocusNeighbors.isShown(candidate)) continue
+      if (candidate === focused || FocusGeometry.isDescendant(focused, candidate) || !FocusNeighbors.isShown(candidate) || !accept(candidate)) continue
       val box = FocusGeometry.box(candidate)
       if (!beyond(from, box, direction) || !inBeam(from, box, direction)) continue
       val major = majorDistance(from, box, direction)
