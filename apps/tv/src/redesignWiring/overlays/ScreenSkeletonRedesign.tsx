@@ -1,6 +1,6 @@
 import { ScreenSkeleton } from "../../redesign/screens/overlays/ScreenSkeleton";
 import { routeRailKey, type RouteLike } from "../../navigation/routeRailKey";
-import { REDESIGN_ROUTES } from "../redesignGate";
+import { RAIL_ROUTES } from "../nav/railRoutes";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 
@@ -10,7 +10,7 @@ import { useRedesignScreen } from "../screen/useRedesignScreen";
  * que rien ne saute quand l'écran arrive.
  */
 export function ScreenSkeletonRedesign({ route }: { route?: RouteLike }) {
-  const railKey = route && REDESIGN_ROUTES.has(route.name) ? routeRailKey(route) : null;
+  const railKey = route && RAIL_ROUTES.has(route.name) ? routeRailKey(route) : null;
   return railKey ? <RailSkeleton railKey={railKey} /> : <ScreenSkeleton />;
 }
 

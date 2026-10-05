@@ -4,7 +4,7 @@ import { SCREEN_ERROR_FOCUS } from "@tentacle-tv/tv-core";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ScreenErrorView } from "../../redesign/screens/overlays/ScreenErrorView";
 import { routeRailKey, type RouteLike } from "../../navigation/routeRailKey";
-import { REDESIGN_ROUTES } from "../redesignGate";
+import { RAIL_ROUTES } from "../nav/railRoutes";
 import { useBackFocus } from "../../platform/tvos/back/backFocus";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { RedesignScreen } from "../screen/RedesignScreen";
@@ -40,7 +40,7 @@ const detailOf = (error: Error | null) => (error ? `${error.name}: ${error.messa
 
 export function ScreenErrorRedesign({ error, route, onRetry }: Props) {
   if (!route) return <DetachedError error={error} onRetry={onRetry} />;
-  const railKey = REDESIGN_ROUTES.has(route.name) ? routeRailKey(route) : null;
+  const railKey = RAIL_ROUTES.has(route.name) ? routeRailKey(route) : null;
   if (railKey) return <RailScreenError error={error} railKey={railKey} onRetry={onRetry} />;
   return <PlainScreenError error={error} onRetry={onRetry} />;
 }

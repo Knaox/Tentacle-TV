@@ -72,7 +72,7 @@ const FAMILIES = {
     ],
   },
   "no-platform-branch": {
-    message: "Navigation TV : pas d'aiguillage de plateforme dans le chemin refondu — l'adaptateur de la plateforme décide (redesignGate.ts pour l'aiguillage de la refonte).",
+    message: "Navigation TV : pas d'aiguillage de plateforme dans le chemin refondu — l'adaptateur de la plateforme décide.",
     selectors: ["MemberExpression[object.name='Platform'][property.name=/^(OS|isTV|isTVOS|select)$/]"],
   },
 };
