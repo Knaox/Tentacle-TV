@@ -23,6 +23,7 @@ export const BASE_SETS = {
   "vigie-vivant": { description: "les demandes avancent avec l'horloge (NON déterministe : libellés de progression)", apply: (d) => { d.modes.vigieScenario = "live"; } },
   "vigie-vide": { description: "aucune demande en cours", apply: (d) => { d.modes.vigieScenario = "empty"; } },
   "demandes-on": { description: "un titre absent s'offre à la demande ; POST titles/request l'ajoute à la liste du banc", apply: (d) => { d.modes.demandes = "on"; } },
+  "heros-reco": { description: "le héros de l'accueil en mode « Pour vous » (le défaut du serveur relevé)", apply: (d) => { d.modes.heroMode = "reco"; } },
   "bandes-annonces-en-panne": { description: "/api/trailers/resolve échoue (502)", apply: (d) => { d.modes.trailers = "broken"; } },
 };
 

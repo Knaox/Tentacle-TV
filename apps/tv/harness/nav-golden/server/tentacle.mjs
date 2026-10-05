@@ -46,7 +46,10 @@ export function createTentacle({ data, json, note, clock }) {
     "GET /api/config/streaming": (req, res) => json(res, 200, { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null, tokenExpired: false } }),
     "GET /api/config/autoplay": (req, res) => json(res, 200, { enabled: true, countdownSeconds: 10 }),
     "GET /api/preferences/language": (req, res) => json(res, 200, { language: "fr" }),
-    "GET /api/preferences/home-layout": (req, res) => json(res, 200, data.snapshot.extras?.homeLayout ?? { stored: false, layout: null }),
+    "GET /api/preferences/home-layout": (req, res) => {
+      const served = data.snapshot.extras?.homeLayout ?? { stored: false, layout: null };
+      json(res, 200, served.layout ? { ...served, layout: { ...served.layout, heroMode: data.modes.heroMode } } : served);
+    },
     "GET /api/preferences/reco": (req, res) => json(res, 200, { providers: [] }),
     "GET /api/preferences/hints": (req, res) => json(res, 200, { dismissed: [] }),
     "GET /api/ratings": (req, res) => json(res, 200, data.ratings),

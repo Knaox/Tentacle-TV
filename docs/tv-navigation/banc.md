@@ -230,7 +230,10 @@ d'erreur, identiques des deux côtés.
 Jeux de la base (`base/<nom>`) : `serveur-coupe`, `serveur-muet`,
 `sante-en-erreur`, `vigie-off`, `vigie-bloque`, `vigie-ancien`,
 `vigie-vivant` (non déterministe), `vigie-vide`, `demandes-on`,
-`bandes-annonces-en-panne`. Liste : `nav-golden.mjs sets`.
+`heros-reco`, `bandes-annonces-en-panne`. Liste : `nav-golden.mjs sets`.
+Le héros de l'accueil suit le mode du serveur (`heroMode`) : le faux backend
+sert `resume` par défaut — le mode sous lequel les références ont été
+enregistrées, quand la TV l'ignorait ; `heros-reco` sert celui de l'instantané.
 
 Le **point d'extension d'un domaine** : `scenarios/<domaine>/fixtures.mjs`.
 
