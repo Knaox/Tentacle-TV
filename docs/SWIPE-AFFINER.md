@@ -157,9 +157,9 @@ signaux) : une séance coûte une seule génération.
 Table `user_swipes` (modèle `UserSwipe`). **Jamais `prisma db push`** : il
 supprimerait les tables du plugin Seer.
 
-- **Production (Docker, MariaDB)** : rien à faire — `docker-entrypoint.sh`
-  rejoue `prisma/core-init.sql` au démarrage, et le `CREATE TABLE IF NOT
-  EXISTS` y figure.
+- **Production (Docker, MariaDB)** : rien à faire — le serveur rejoue
+  `prisma/core-init.sql` à chaque démarrage, par le client Prisma
+  (`services/schemaInit`), et le `CREATE TABLE IF NOT EXISTS` y figure.
 - **Poste local (MySQL 9.6)** : `core-init.sql` entier échoue sur MySQL
   (`ADD COLUMN IF NOT EXISTS`). Rejouer ce seul bloc, depuis `apps/backend` :
 

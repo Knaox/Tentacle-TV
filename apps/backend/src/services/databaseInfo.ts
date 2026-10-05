@@ -31,10 +31,10 @@ export function parseDatabaseUrl(url: string): DatabaseFields | null {
  * D'où vient la connexion, au sens qui compte pour l'administrateur : qui
  * l'emporte au prochain démarrage.
  *
- * `process.env.DATABASE_URL` ne suffit pas à le dire. L'entrée de l'image
- * Docker y exporte elle-même le contenu de `data/database.json` quand
- * l'environnement ne fournit rien, et `saveDatabaseUrl` la réécrit à chaud :
- * la variable est donc presque toujours posée, qu'elle vienne du
+ * `process.env.DATABASE_URL` ne suffit pas à le dire : `saveDatabaseUrl` la
+ * réécrit à chaud, et les images d'avant y exportaient elles-mêmes le contenu
+ * de `data/database.json` (l'entrée Docker ne le fait plus : le serveur lit
+ * le fichier lui-même). La variable peut donc être posée qu'elle vienne du
  * docker-compose ou du fichier. Seule la comparaison des deux, TELS QU'AU
  * DÉMARRAGE, tranche :
  *

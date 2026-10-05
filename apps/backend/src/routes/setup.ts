@@ -1,7 +1,5 @@
 import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import { execSync } from "child_process";
-import { resolve } from "path";
 import {
   hasDatabaseUrl,
   getDatabaseUrl,
@@ -23,6 +21,7 @@ import { injectCorsHosts } from "../services/jellyfinCors";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { buildAuthHeader, deviceIdFor } from "../services/jellyfinIdentity";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
+import { applyDatabaseSchema } from "../services/schemaInit/coreSchema";
 
 /**
  * Guard: if the app is already running (setup completed), require admin auth.
@@ -116,7 +115,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/setup/migrate — Run Prisma migrations to create tables. */
-  app.post("/migrate", { preHandler: setupOrAdmin }, async (_request, reply) => {
+  app.post("/migrate", { preHandler: setupOrAdmin }, async (request, reply) => {
     const dbUrl = getDatabaseUrl();
     if (!dbUrl) {
       return reply.status(400).send({ message: "Base de données non configurée" });
@@ -130,22 +129,16 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
+    // Plus de `prisma db push` : il supprimait les tables des plugins, et la CLI
+    // n'est plus dans l'image. Le même chemin que le démarrage — tout le schéma
+    // sur une base vierge, puis core-init.sql, sans jamais rien retirer.
     try {
-      // Set in current process so child reliably inherits (avoids .env override)
-      process.env.DATABASE_URL = dbUrl;
-      execSync("npx prisma db push", {
-        cwd: resolve(__dirname, "../.."),
-        env: { ...process.env, DATABASE_URL: dbUrl },
-        timeout: 30_000,
-        stdio: "pipe",
-      });
-
-      // Re-detect state after migration
+      await applyDatabaseSchema(dbUrl);
       await detectAppState();
       return { success: true, state: getAppState() };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return reply.status(500).send({ message: `Migration échouée: ${msg}` });
+      request.log.warn({ err }, "setup migrate: schema refused");
+      return reply.status(500).send({ message: "Migration échouée" });
     }
   });
 

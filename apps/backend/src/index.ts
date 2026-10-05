@@ -9,6 +9,7 @@ import websocket from "@fastify/websocket";
 
 import { registerStaticClients } from "./static/staticClients";
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
+import { ensureDatabaseSchema } from "./services/schemaInit/ensureSchema";
 import { applyPairingEpoch } from "./services/pairingEpoch";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
@@ -209,6 +210,9 @@ async function main() {
 
   // ── Setup guard: block most API routes until setup is complete ──
   let lastRecoveryAttempt = 0;
+  // Le schéma (core-init.sql, et tout le schéma sur une base vierge) se pose une
+  // fois par processus, dès que la base répond — au démarrage ou à la reprise.
+  let schemaReady = false;
   app.addHook("onRequest", async (request, reply) => {
     const url = request.url;
     // Always allow: setup, health, theme (read-only public), websocket, static files
@@ -224,6 +228,9 @@ async function main() {
         try {
           const ok = await reconnectPrisma();
           if (ok) {
+            // Base injoignable au démarrage : son schéma n'a pas encore été vérifié.
+            const url = getDatabaseUrl();
+            if (!schemaReady && url) schemaReady = await ensureDatabaseSchema(url);
             state = await detectAppState();
             if (state === "running") {
               console.log("[Guard] Auto-recovery succeeded — state is now running");
@@ -324,6 +331,7 @@ async function main() {
     }
     if (connected) {
       console.log("[DB] Connected successfully");
+      schemaReady = await ensureDatabaseSchema(dbUrl);
       await detectAppState();
       // Identifiant d'installation résolu au démarrage : `mediaBrowserAuthHeader`
       // le lit de façon synchrone. Échec non bloquant — il sera réessayé au
