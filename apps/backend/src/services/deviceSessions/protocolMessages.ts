@@ -105,8 +105,8 @@ export type SessionServerMessage =
   | { type: "playback:stopped"; requestId: string; ok: boolean }
   /**
    * Jellyfin change d'état — envoyé à chaque changement, et juste après
-   * `session:ready` tant qu'il n'est pas `up`. `since` : l'heure du serveur
-   * (ms) où l'état a commencé. Additif : un lecteur qui ne le connaît pas
-   * l'ignore (pas de `minServer` à monter).
+   * chaque `session:ready` (même `up` : une reconnexion efface un état
+   * périmé). `since` : l'heure du serveur (ms) où l'état a commencé.
+   * Additif : un lecteur qui ne le connaît pas l'ignore (pas de `minServer`).
    */
   | { type: "server:jellyfin"; state: JellyfinHealthState; since: number };

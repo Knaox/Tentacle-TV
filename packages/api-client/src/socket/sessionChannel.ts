@@ -5,6 +5,7 @@ import {
   type SessionPlaystateCommandDto,
   type WsServerMessage,
 } from "@tentacle-tv/shared";
+import { receiveJellyfinHealth } from "./jellyfinHealth";
 import { onSocketStatus, sendSocketMessage, subscribeSocket } from "./tentacleSocket";
 
 /**
@@ -81,6 +82,9 @@ function handle(msg: WsServerMessage): void {
       break;
     case "session:message":
       for (const l of [...messageListeners]) l({ header: msg.header, text: msg.text, timeoutMs: msg.timeoutMs });
+      break;
+    case "server:jellyfin":
+      receiveJellyfinHealth(msg.state, msg.since);
       break;
     case "playback:stopped": {
       const resolve = pendingStops.get(msg.requestId);

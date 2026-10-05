@@ -98,10 +98,13 @@ export class SessionRegistry {
     for (const device of this.devices.values()) device.link.reconnectNow();
   }
 
-  /** Tant que Jellyfin n'est pas là, un lecteur qui s'annonce l'apprend aussitôt. */
+  /**
+   * Juste après `session:ready`, l'état de Jellyfin — même `up` : un lecteur
+   * dont la socket a coupé pendant la panne ne doit pas garder un état périmé.
+   */
   private tellJellyfinState(conn: ChannelConnection): void {
     const health = this.deps.jellyfinHealth();
-    if (health.state !== "up") conn.send({ type: "server:jellyfin", state: health.state, since: health.since });
+    conn.send({ type: "server:jellyfin", state: health.state, since: health.since });
   }
 
   async start(conn: ChannelConnection, state: PlaybackStateDto, resumed: boolean): Promise<void> {

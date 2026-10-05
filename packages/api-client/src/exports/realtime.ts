@@ -16,6 +16,14 @@ export {
   type ChannelStatus, type SessionChannelApp, type SessionCommand, type SessionGeneral, type SessionMessage,
 } from "../socket/sessionChannel";
 
+// L'état de Jellyfin dit par le backend (`server:jellyfin`) et ce qu'un lecteur
+// en fait pendant une panne : bandeau, détecteurs muets, reprise au retour.
+export { getJellyfinHealth, onJellyfinHealth, receiveJellyfinHealth, type JellyfinHealth } from "../socket/jellyfinHealth";
+export {
+  outageView, LONG_OUTAGE_MS, RECOVERY_GRACE_MS, type OutagePhase, type OutageView,
+} from "../playback/jellyfinOutage";
+export { useJellyfinOutage, playbackErrorsSuppressed } from "../playback/useJellyfinOutage";
+
 // La télécommande appliquée au lecteur (commande Jellyfin → geste), la même
 // traduction pour le web, le bureau et le mobile.
 export {

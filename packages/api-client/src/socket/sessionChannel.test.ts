@@ -42,6 +42,7 @@ import {
   setActivePlayback,
   clearActivePlayback,
 } from "./sessionChannel";
+import { getJellyfinHealth } from "./jellyfinHealth";
 
 const STATE = { itemId: "item1", playMethod: "DirectPlay" as const, positionTicks: 10, isPaused: false };
 
@@ -136,5 +137,16 @@ describe("sessionChannel", () => {
     expect(messages).toEqual([{ header: "Admin", text: "Bonsoir", timeoutMs: 5000 }]);
     offCommand();
     offMessage();
+  });
+
+  it("l'état de Jellyfin dit par le backend alimente le magasin des lecteurs", () => {
+    server({ type: "server:jellyfin", state: "restarting", since: 123 });
+    expect(getJellyfinHealth()).toMatchObject({ state: "restarting", since: 123 });
+    server({ type: "server:jellyfin", state: "up", since: 456 });
+    expect(getJellyfinHealth()).toMatchObject({ state: "up", recoveries: 1 });
+  });
+
+  it("un type inconnu d'un serveur plus récent est ignoré sans bruit", () => {
+    expect(() => server({ type: "server:futur" } as unknown as WsServerMessage)).not.toThrow();
   });
 });

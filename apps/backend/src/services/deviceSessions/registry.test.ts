@@ -102,18 +102,18 @@ describe("SessionRegistry — rattachement", () => {
     await registry.hello(a, "jeton");
     await registry.hello(b, "jeton");
     expect(devices).toHaveLength(1);
-    expect(a.received).toEqual([{ type: "session:ready", reporting: true, remoteControl: false }]);
+    expect(a.received[0]).toEqual({ type: "session:ready", reporting: true, remoteControl: false });
   });
 
   it("sans jeton Jellyfin (ou canal coupé), le lecteur garde ses reports HTTP", async () => {
     const none = harness({ token: null });
     const c = connection();
     await none.registry.hello(c, "jwt");
-    expect(c.received).toEqual([{ type: "session:ready", reporting: false, remoteControl: false }]);
+    expect(c.received[0]).toEqual({ type: "session:ready", reporting: false, remoteControl: false });
     const off = harness({ enabled: false });
     const d = connection();
     await off.registry.hello(d, "jeton");
-    expect(d.received).toEqual([{ type: "session:ready", reporting: false, remoteControl: false }]);
+    expect(d.received[0]).toEqual({ type: "session:ready", reporting: false, remoteControl: false });
     expect(off.devices).toHaveLength(0);
   });
 
@@ -123,7 +123,8 @@ describe("SessionRegistry — rattachement", () => {
     await registry.hello(c, "jeton");
     devices[0]?.handlers.onOpen();
     devices[0]?.handlers.onLost();
-    expect(c.received.slice(1)).toEqual([
+    // [0] session:ready, [1] l'état de Jellyfin, puis la télécommande gagnée et perdue.
+    expect(c.received.slice(2)).toEqual([
       { type: "session:ready", reporting: true, remoteControl: true },
       { type: "session:ready", reporting: true, remoteControl: false },
     ]);
@@ -262,11 +263,14 @@ describe("SessionRegistry — panne de Jellyfin", () => {
     expect(d.received.map((m) => m.type)).toEqual(["session:ready", "server:jellyfin"]);
   });
 
-  it("Jellyfin là : rien de plus que session:ready", async () => {
+  it("Jellyfin là : session:ready, puis « up » — un état périmé ne survit pas à une reconnexion", async () => {
     const { registry } = harness();
     const c = connection();
     await registry.hello(c, "jeton");
-    expect(c.received.map((m) => m.type)).toEqual(["session:ready"]);
+    expect(c.received).toEqual([
+      { type: "session:ready", reporting: true, remoteControl: false },
+      { type: "server:jellyfin", state: "up", since: 0 },
+    ]);
   });
 
   it("au retour, chaque connexion d'appareil rouvre, puis les lectures se redisent", async () => {
