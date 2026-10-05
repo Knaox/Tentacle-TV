@@ -9,6 +9,12 @@ qu'il devient. Relevé sur 84f3cedd0 (avant toute extraction), recalé sur
 `3cd7a5d19`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
 qu'une tâche vient de toucher sont celles de main au moment du recalage.
 
+> **Bascule d'Android TV (2026-10-05, A5).** L'ancienne UI d'Android TV et
+> l'aiguillage `redesignGate.ts` sont partis : les lignes **ANCIENNE**, les
+> branches `!REDESIGN_ACTIVE`, le mode `TRACE_PLATFORM=android` du banc des
+> traces du lecteur (remplacé par `androidtv`) et les fichiers qu'eux seuls
+> employaient n'existent plus. Ce qui suit reste le relevé d'avant, tel quel.
+
 ## Comment il est fait
 
 - **Le chemin** — la fermeture des imports depuis `App.tsx`, résolue comme

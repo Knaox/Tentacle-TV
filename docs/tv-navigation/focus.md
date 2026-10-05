@@ -337,11 +337,9 @@ Source : `TentacleRevealScroller.m`, `TentacleRevealMotion.m`,
 
 - **Z1 — `useFocusRecovery`** : Android seulement (l'effet sort sur iOS) ;
   aucun usage refondu.
-- **Z2 — `useContentFocusCapture`** : monté sur tvOS (par `TVNavChrome`, à
-  côté du navigateur) mais INERTE : toutes les routes qui ont un rail sont
-  refondues (`REDESIGN_ROUTES`), le rail hérité ne s'affiche jamais, son
-  armement n'est jamais appelé. Ce qu'il faisait, la refonte le fait par A1-A5
-  et A7. Ni l'un ni l'autre ne se touche (partagés avec Android TV).
+- **Z2 — `useContentFocusCapture`** : RETIRÉ avec `TVNavChrome` et
+  l'ancienne UI d'Android TV (bascule du 2026-10-05). Ce qu'il faisait, la
+  refonte le fait par A1-A5 et A7.
 
 ## N — Faits de plateforme mesurés (ce que l'adaptateur doit respecter)
 

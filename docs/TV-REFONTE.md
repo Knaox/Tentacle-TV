@@ -121,11 +121,12 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 
 ## Le socle du branchement (`apps/tv/src/redesignWiring/`)
 
-- **Aiguillage** (`redesignGate.ts`) : `REDESIGN_ACTIVE` vaut vrai sur tvOS,
-  faux sur Android TV. L'écran le lit à son niveau : `REDESIGN_ACTIVE ?
-  <XRedesign /> : <LegacyXScreen />`, l'ancien corps restant dans son fichier.
-  `REDESIGN_ROUTES` liste les routes qui rendent leur propre navigation : le
-  rail actuel (`TVNavChrome`) s'y efface.
+- **Plus d'aiguillage** : la refonte est l'UI des deux téléviseurs depuis la
+  bascule d'Android (2026-10-05, A5) ; `redesignGate.ts` et l'ancienne UI
+  (corps « Legacy… », `TVNavChrome`, feuille `TVCardActionSheet`…) sont
+  partis. Chaque écran de `screens/` rend sa refonte. `nav/railRoutes.ts`
+  (`RAIL_ROUTES`) liste les routes qui rendent leur propre navigation : leur
+  squelette et leur erreur la gardent.
 - **Focus** (`focus/focusStore.ts`) : un magasin par écran, branché sur le
   port (`FocusBindingProvider bind={store.binder}`). Il donne `node`,
   `handle`, `bind`, `claim` (bascule tvOS, nœud relu à chaque étape),
@@ -203,18 +204,17 @@ jeton, et le jumelage reste ensuite sur ce simulateur :
 Télécommande : flèches = pavé, Entrée = OK, Échap = Menu ; Window › Show
 Apple TV Remote pour le reste.
 
-**La refonte à l'émulateur Android TV** (provisoire aussi, le temps que la
-refonte y bascule — tâche A5) :
+**L'app à l'émulateur Android TV** (provisoire aussi) :
 
 ```bash
 pnpm tv:refonte:android
 ```
 
 - **Backend de dev** : le même que ci-dessus (3001).
-- **Metro DÉDIÉ**, sur le premier port libre à partir de 8091, lancé avec
-  `TENTACLE_TV_REDESIGN=1` : l'aiguillage de développement de la refonte sur
-  Android (`redesignGate.ts`), inliné au bundle par Babel. Jamais celui de
-  `pnpm dev:tv`, qui ne l'a pas.
+- **Metro DÉDIÉ**, sur le premier port libre à partir de 8091 (avec
+  `TENTACLE_TV_REMOTE_LOG=1` sous `--journal`, inliné au bundle par Babel).
+  L'aiguillage `TENTACLE_TV_REDESIGN` est parti à la bascule : la refonte est
+  l'UI d'Android TV.
 - **L'émulateur « TentacleTV_Shield_API31 »**, créé la première fois : au plus
   près de la NVIDIA Shield (Android TV 12 arm64 — l'API 30 n'existe qu'en
   x86 —, 1080p, densité 320, 3 Go), démarré `-memory 3072 -gpu host
@@ -268,9 +268,9 @@ Rien d'autre ne dépend de lui :
 - supprimer le dossier `apps/tv/harness/launcher/` ;
 - retirer du `package.json` racine les quatre lignes `tv:refonte`,
   `tv:refonte:android`, `tv:banc` et `tv:stop` ;
-- à la bascule d'Android (A5) : le plugin `apps/tv/babel/inlineRedesignFlag.js`
-  (et sa ligne dans `babel.config.js`, le `cacheVersion` de `metro.config.js`)
-  — ou le garder pour le seul journal de la télécommande ;
+- le plugin `apps/tv/babel/inlineRedesignFlag.js` ne porte plus que le
+  journal de la télécommande (A5 l'a gardé pour lui) : le retirer avec le
+  lanceur, ou le garder pour ce journal ;
 - retirer le bloc « En une commande » en tête de
   `apps/tv/harness/ui-bench/README.md` (jusqu'au trait `---`), et cette
   section-ci ;

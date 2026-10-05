@@ -180,7 +180,7 @@ la TV LG, dit à qui tire l'image). Fichier à part exprès : un `## [1.1.0]` de
 apps/web/        → React 19 + Vite 6 + Tailwind CSS (main web client)
 apps/desktop-electron/ → Electron (Windows, macOS, Linux — same web build, same libmpv)
 apps/mobile/     → Expo 52 + React Native 0.76 (iOS/Android)
-apps/tv/         → React Native for Android TV
+apps/tv/         → React Native (react-native-tvos) for Apple TV and Android TV
 apps/backend/    → Fastify 5 + Prisma 6 + MariaDB
 
 packages/shared/      → Types, i18n translations, constants (used by all)
@@ -303,12 +303,14 @@ MÊME modèle, dans `packages/shared/src/utils/` :
 
 Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
 monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /
-`CardSheetProvider` → la feuille), l'appui MAINTENU sur TV. **Sur Apple TV, rien
-ne se fait sur la carte** (refonte, `apps/tv/src/redesign/`) : au focus, elle
+`CardSheetProvider` → la feuille), l'appui MAINTENU sur TV. **Sur Apple TV et
+Android TV, rien ne se fait sur la carte** (refonte, `apps/tv/src/redesign/`,
+la MÊME sur les deux depuis la bascule d'Android du 2026-10-05) : au focus, elle
 grandit et garde ses marqueurs — note, épingle Ma liste · j'aime · vu,
 progression — et dit sous sa légende, discrète, « Maintenir OK : plus
 d'options » (`CardFocusFooter`, sur toute carte qui s'ouvre par l'appui maintenu
-: c'est le seul chemin vers ses actions). L'appui maintenu ouvre le GRAND
+: c'est le seul chemin vers ses actions ; le nom de la touche vient de la table
+de la plateforme, tv-core `remote/bindings/hints`). L'appui maintenu ouvre le GRAND
 PANNEAU centré (`screens/sheet/ActionSheetView`, câblé par
 `ActionSheetRedesign`) : l'en-tête, les étoiles en grand, l'ÉCHELLE HORIZONTALE
 de la note (`RatingRuler` : GAUCHE / DROITE, les valeurs du bureau —
@@ -324,9 +326,8 @@ fois la note connue ; dans la `Modal`, aucune préférence de focus n'est honor�
 s'ouvre sous un OK encore enfoncé). « Noter » de la fiche ouvre le même panneau,
 réduit à la note. Un seul crochet d'actions (`useCardActions`,
 `apps/tv/src/redesignWiring/cards/`), jamais une copie. Les étoiles ENTIÈRES ne
-valent plus que pour Android TV et webOS (`TVCardActionSheet`,
-`CardActionSheetTv`), pas encore portés, qui gardent les marqueurs au focus. Sur
-tvOS, la cible d'une carte (`CardShell`, `FocusTarget form="card"`) couvre son
+valent plus que pour webOS (`CardActionSheetTv`), pas encore porté, qui garde
+les marqueurs au focus. Sur tvOS, la cible d'une carte (`CardShell`, `FocusTarget form="card"`) couvre son
 image ET sa légende mais ne porte que l'IMAGE ; la légende est dessinée avant
 elle, dessous, hors de son sous-arbre. Jamais un frère qui dessine PAR-DESSUS la
 cible : tvOS ne focalise jamais un élément RECOUVERT par ce qui dessine — la
@@ -521,27 +522,36 @@ les COMPORTEMENTS purs, rangés dans le dossier de domaine qui en parle
 (`focus/`, `nav/`, `player/`, `cards/`, `panels/`, `input/`). L'adaptateur tvOS
 (`apps/tv/src/platform/tvos/` : `input/`, `focus/`, `back/`, `player/`,
 `panels/`…) ne fait qu'APPLIQUER : guides de focus, préférences, sections
-natives, `MenuPressInterceptor`. Contrat et règle de rangement :
-`docs/TV-NAVIGATION.md` ; ce qui reste, ligne à ligne :
+natives, `MenuPressInterceptor`. **Android TV est branché** (bascule du
+2026-10-05 : l'ancienne UI n'existe plus) : sa table
+(`remote/bindings/androidtv.ts` — pas de pavé, Retour au lieu de Menu, OK puis
+OK pour la pause sans touche Lecture/Pause) et son adaptateur
+(`apps/tv/src/platform/androidtv/`, variantes `.android.ts`) appliquent les
+MÊMES comportements ; seuls changent les indications de touches et le verre
+(Liquid Glass éteint, réglage masqué). Contrat et règle de rangement :
+`docs/TV-NAVIGATION.md` ; Android : `docs/tv-navigation/android.md` et
+`android-focus.md` ; ce qui reste, ligne à ligne :
 `docs/tv-navigation/inventaire.md`.
 
 - **Une règle lit des intentions et des traits, jamais un `eventType` ni
   `Platform.OS`** : module pur, horloge injectée, ni React ni React Native
   (`packages/tv-core/src/purity.test.ts` le vérifie).
-- **Un seul abonnement natif à la télécommande** : `platform/tvos/input/`. On
+- **Un seul abonnement natif à la télécommande** : `platform/tvos/input/`
+  (Android : `platform/androidtv/input/`, même API). On
   y observe une intention (`useRemoteIntents`) ou on y inscrit un contexte
   (`useRemoteContext`) — jamais un `TVEventHandler` de plus.
 - **L'adaptateur n'a ni seuil ni durée** : ce qui décide va dans tv-core
   (l'audit liste ce qui y traîne).
 - **Le lint le tient, en ERREUR** (`eslint/tvNavigation.mjs`) : hors de
-  `platform/tvos/`, le chemin refondu n'emploie aucune API native de
+  `platform/tvos/` et `platform/androidtv/`, le chemin refondu n'emploie aucune API native de
   télécommande ni de focus. Les exceptions sont explicites, par famille, et
   justifiées (`eslint/tvNavigationExceptions.mjs`) ; jamais un `eslint-disable`.
   Audit : `node eslint/tvNavigationAudit.mjs`.
-- **Un fichier partagé avec Android TV** ne s'amincit sur tv-core qu'avec un
-  banc qui prouve l'équivalence Android (`apps/tv/harness/back-trace/`,
-  `player-trace/`) ; sinon, un adaptateur Apple TV à part.
-- **Brancher une plateforme** (Android TV, le jour venu) : sa table
+- **Android TV se prouve contre l'Apple TV** : `nav-golden.mjs verify
+  --android` rejoue les scénarios tvOS à l'émulateur et compare aux MÊMES
+  références (jamais de référence Android) ; `player-trace` en
+  `TRACE_PLATFORM=androidtv`, `back-trace` (« android refondu ») de même.
+- **Brancher une autre plateforme** (webOS, le jour venu) : sa table
   (`remote/bindings/<plateforme>.ts`), son adaptateur
   (`apps/tv/src/platform/<plateforme>/`), la portée du lint étendue à son
   chemin. Aucun comportement à réécrire : ceux de tv-core sont déjà les siens.

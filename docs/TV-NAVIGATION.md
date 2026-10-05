@@ -3,9 +3,10 @@
 L'Apple TV refaite (`apps/tv`, chemin « redesign ») est la **source de vérité**
 de la navigation : focus, voisins, entrées, Retour, appui maintenu, raccourcis,
 lecteur, panneaux. Tout ce qui DÉCIDE quitte le code tvOS pour un seul endroit
-commun, `packages/tv-core`, que toutes les plateformes lisent. Android TV recevra
-plus tard une table de traduction de sa télécommande et un petit adaptateur —
-sans recoder un seul comportement.
+commun, `packages/tv-core`, que toutes les plateformes lisent. Android TV y est
+branché depuis le 2026-10-05 (lot « Android TV = Apple TV ») : une table de
+traduction de sa télécommande et un adaptateur, sans un seul comportement
+recodé — et son ancienne UI n'existe plus.
 
 Ce document est l'index. Il fixe l'architecture, le contrat (chemins et API
 exacts), la règle de rangement et la place de l'adaptateur tvOS ; chaque
@@ -209,10 +210,11 @@ Autour de lui, rien ne change de rôle : `redesign/` (les vues) n'importe
 toujours ni `TVEventHandler` ni `useTVEventHandler`, ni `BackHandler`, ni
 `TVEventControl`, ni `TVFocusGuideView` (lint) ; `redesignWiring/` branche les
 écrans (données, composition) et passe par l'adaptateur pour tout ce qui est
-natif. Android TV (l'ancienne UI, aiguillée par `redesignGate.ts`) et webOS
-(`apps/tv-webos`) ne sont pas touchés par ce lot.
+natif. webOS (`apps/tv-webos`) n'est pas concerné. Android TV rend la même
+refonte (bascule du 2026-10-05) : l'aiguillage `redesignGate.ts` et l'ancienne
+UI sont partis.
 
-## Porter une autre télécommande (Android TV : posé le 2026-10-05)
+## Porter une autre télécommande (Android TV : fait et basculé le 2026-10-05)
 
 Rien à recoder dans les comportements. Deux pièces, et c'est tout :
 
@@ -242,6 +244,12 @@ couvre les fichiers `.android` et autorise `platform/androidtv/` comme
 
 Les comportements, eux, lisent déjà des intentions et des `traits` : ils
 servent tels quels. Détail Android : `tv-navigation/remote.md`.
+
+**Prouver l'égalité.** Android TV n'a pas de références à lui : il se vérifie
+contre celles de l'Apple TV. `nav-golden.mjs verify --android` rejoue les
+scénarios à l'émulateur (`tv-navigation/banc.md`, « Android TV ») ;
+`player-trace` en `TRACE_PLATFORM=androidtv` ; `back-trace` (« android
+refondu »). Écarts restants et mesures : `tv-navigation/android.md`.
 
 Le focus d'Android TV (lot « Android TV = Apple TV », A1) : la section native
 `com.tentacletv.focus.TentacleFocusSection` (mêmes props que tvOS), les
