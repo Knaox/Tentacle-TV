@@ -3,6 +3,7 @@ import type { WebSocket } from "@fastify/websocket";
 import { validateToken, type JellyfinUser } from "../middleware/auth";
 import { addConnection, removeConnection } from "../services/wsManager";
 import { isDeviceRevoked } from "../services/pairedDeviceStatus";
+import { jellyfinHealth } from "../services/jellyfinHealth";
 import { hashToken } from "../services/jwt";
 import { handleSocketClosed, handleWtMessage } from "../services/watchTogether/gateway";
 import {
@@ -125,6 +126,10 @@ async function authenticateAndBind(
       ws.send(JSON.stringify({ type: "auth_error", reason: "revoked" }));
       ws.close(4009, "Device revoked");
     } else if (!result.ok && result.reason === "unreachable") {
+      // Jellyfin absent : impossible de juger ce jeton — mais on dit pourquoi,
+      // pour que le lecteur montre « Jellyfin redémarre » plutôt qu'une erreur.
+      const health = jellyfinHealth();
+      if (health.state !== "up") ws.send(JSON.stringify({ type: "server:jellyfin", state: health.state, since: health.since }));
       ws.send(JSON.stringify({ type: "auth_error", reason: "server_unreachable" }));
       ws.close(4003, "Server unreachable");
     } else {

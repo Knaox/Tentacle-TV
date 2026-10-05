@@ -17,6 +17,7 @@
     "rootDir": "."
   },
   "include": ["src", "test"],
-  // La suite de compatibilité a son contrôle à elle (test/jellyfin-compat/tsconfig.json).
-  "exclude": ["node_modules", "dist", "test/jellyfin-compat"]
+  // La suite de compatibilité et le banc des pannes ont leur contrôle à eux
+  // (test/jellyfin-compat/tsconfig.json, test/jellyfin-outage/tsconfig.json).
+  "exclude": ["node_modules", "dist", "test/jellyfin-compat", "test/jellyfin-outage"]
 }
