@@ -25,3 +25,7 @@ export {
   reconcileHomeRows, visibleHomeRows, isHomeRowAvailable, mergeHiddenHomeRows, firstServedRecoRowKey, moveRow,
   type LibraryRef, type ReconcileHomeRowsOptions,
 } from "../utils/homeRows";
+
+// Une rangée survolée ne bouge pas sous le curseur : ce qu'un geste de carte
+// retire part au LÂCHER (cf. rows/heldRow — la règle de toutes les rangées)
+export { useHeldRowItems, useRowSnapshot, heldRowView } from "../rows/heldRow";
