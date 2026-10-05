@@ -1,7 +1,8 @@
 import { memo, useCallback, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { runOnJS, useAnimatedReaction, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { useFocusDressing } from "../cards/CardFocusDressing";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { Icon, type IconName } from "../icons/Icon";
@@ -28,6 +29,12 @@ import { navText } from "./navText";
  *
  * `fade` : le fondu du défilement, posé sur le dessin seulement — la cible
  * focalisable, elle, reste opaque (le moteur de focus l'ignore sinon).
+ *
+ * La pilule blanche du focus et son dessin noir (pictogramme, libellés)
+ * n'existent qu'avec le focus et le temps de son retour (`FocusFill`) : au
+ * repos, elle vaut zéro. Montée pour chaque entrée, elle doublait le rail —
+ * un pictogramme de plus par entrée, et, rail ouvert, des libellés
+ * invisibles qui glissaient à chaque image avec les autres.
  */
 
 export type NavItemMode = "held" | "moving";
@@ -125,9 +132,9 @@ function Body(props: NavItemProps & { focused: boolean }) {
   const { active, mode, fade, focused } = props;
   const { expanded, openness, itemWidth, labels, labelWidth } = useNavFrame();
   const p = useFocusProgress(focused);
-  const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (mode === "moving" ? 0.06 : 0.04) * p.value }] }));
   const labelIn = useAnimatedStyle(() => ({ opacity: openness.value, transform: [{ translateX: -12 * (1 - openness.value) }] }));
+  const [dressed, settle] = useFocusDressing(focused);
   return (
     <Animated.View style={[{ width: itemWidth, height: ITEM }, lift, fade]}>
       {active ? <View style={[StyleSheet.absoluteFill, styles.activeGlass]} /> : null}
@@ -135,12 +142,28 @@ function Body(props: NavItemProps & { focused: boolean }) {
       <Row props={props} width={itemWidth} labels={labels} labelWidth={labelWidth} dark={false} labelIn={labelIn} />
       {/* Le texte noir de la pilule blanche n'existe que rail ouvert : au
           repli, la pilule est déjà réduite à son pictogramme. */}
-      <Animated.View style={[StyleSheet.absoluteFill, styles.focusFill, whiteLayer]}>
-        <Row props={props} width={itemWidth} labels={expanded} labelWidth={labelWidth} dark labelIn={labelIn} />
-      </Animated.View>
+      {dressed ? (
+        <FocusFill progress={p} focused={focused} onSettled={settle}>
+          <Row props={props} width={itemWidth} labels={expanded} labelWidth={labelWidth} dark labelIn={labelIn} />
+        </FocusFill>
+      ) : null}
       {mode ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.ring]} /> : null}
     </Animated.View>
   );
+}
+
+/** La pilule blanche, en fondu avec le focus ; elle dit quand elle s'est
+ *  éteinte, focus parti (`useFocusDressing` la démonte alors). */
+function FocusFill({ progress, focused, onSettled, children }: { progress: SharedValue<number>; focused: boolean; onSettled: () => void; children: ReactNode }) {
+  const whiteLayer = useAnimatedStyle(() => ({ opacity: progress.value }));
+  useAnimatedReaction(
+    () => progress.value < 0.002,
+    (rested, previous) => {
+      if (!focused && rested && previous !== true) runOnJS(onSettled)();
+    },
+    [focused, onSettled],
+  );
+  return <Animated.View style={[StyleSheet.absoluteFill, styles.focusFill, whiteLayer]}>{children}</Animated.View>;
 }
 
 const styles = StyleSheet.create({
