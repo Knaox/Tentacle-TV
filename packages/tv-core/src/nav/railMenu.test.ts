@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   RAIL_MENU_ACTIONS, RAIL_MENU_RETURN_WITHIN_MS, canOpenRailMenu, railMenuEffect, railMenuItems, railMenuModel, railMenuReturnOnClose,
-  railMenuReturnOnFocus, type RailCatalogEntry,
+  railMenuReturnOnFocus, railMenuReturnTarget, type RailCatalogEntry,
 } from "./railMenu";
 
 const entries: RailCatalogEntry[] = [
@@ -79,5 +79,14 @@ describe("railMenu — le focus retrouve l'entrée du menu", () => {
     expect(railMenuReturnOnFocus(pending, "nav:menu:up", 10)).toEqual({ consume: false, claim: null });
     expect(railMenuReturnOnFocus(pending, "grid:0", 10)).toEqual({ consume: false, claim: null });
     expect(railMenuReturnOnFocus(null, "nav:Home", 10)).toEqual({ consume: false, claim: null });
+  });
+});
+
+describe("railMenuReturnTarget", () => {
+  it("la case de l'entrée, dans le délai seulement", () => {
+    const pending = { key: "Library_a", at: 1000 };
+    expect(railMenuReturnTarget(pending, 1200)).toBe("nav:Library_a");
+    expect(railMenuReturnTarget(pending, 1000 + 60_000)).toBeNull();
+    expect(railMenuReturnTarget(null, 1200)).toBeNull();
   });
 });

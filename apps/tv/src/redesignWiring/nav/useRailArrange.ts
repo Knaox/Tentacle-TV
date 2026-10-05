@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   RAIL_LOCKED_WHILE_MOVING, arrangeOnFocus, canOpenRailMenu, navKeyOf, railArrangeReading, railMenuEffect, railMenuModel,
-  railMenuReturnOnClose, railMenuReturnOnFocus, startArrange, type ArrangeMove, type RailMenuAction, type RailMenuModel,
+  railMenuReturnOnClose, railMenuReturnOnFocus, railMenuReturnTarget, startArrange, type ArrangeMove, type RailMenuAction, type RailMenuModel,
   type RailMenuReturn,
 } from "@tentacle-tv/tv-core";
 import { claimAfterRestore } from "../../platform/tvos/focus/claimAfterRestore";
@@ -47,6 +47,8 @@ export interface RailArrange {
   cancelIfMoving: () => boolean;
   /** Une entrée se déplace, relu à l'appel. */
   isMoving: () => boolean;
+  /** La case que le focus doit retrouver, menu retiré (`railMenuReturnTarget`), relue à l'appel. */
+  menuReturnKey: () => string | null;
 }
 
 export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): RailArrange {
@@ -139,6 +141,8 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
     [focus],
   );
 
+  const menuReturnKey = useCallback(() => railMenuReturnTarget(returnTo.current, Date.now()), []);
+
   // Le déplacement : la case voisine prend le focus, l'entrée soulevée y va.
   const moveActive = moving !== null;
   useEffect(() => {
@@ -177,5 +181,6 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
     dropIfMoving,
     cancelIfMoving,
     isMoving,
+    menuReturnKey,
   };
 }

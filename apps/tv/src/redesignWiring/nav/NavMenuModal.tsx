@@ -5,6 +5,8 @@ import type { IconName } from "../../redesign/icons/Icon";
 import { FadingModal } from "../../redesign/motion/FadingModal";
 import { NavEntryMenu, type NavMenuItem } from "../../redesign/nav/NavEntryMenu";
 import { withMenuIntent } from "../../platform/input";
+import { useChoiceEntryClaim } from "../../platform/tvos/panels/choiceEntryClaim";
+import { claimAfterModalExit } from "../../platform/tvos/panels/modalExitClaim";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import type { NavMenuAction, RailArrange } from "./useRailArrange";
 
@@ -39,6 +41,10 @@ export function NavMenuModal({ arrange, focus, railWidth }: { arrange: RailArran
     for (const action of RAIL_MENU_ACTIONS) focus.bind(`${NAV_MENU_PREFIX}${action}`, { phantomPressGuard: true });
   });
 
+  // Android : la Modal (un Dialog) ne focalise rien d'elle-même — la première
+  // ligne (« Déplacer », jamais grisée) est réclamée, celle que tvOS choisit.
+  useChoiceEntryClaim(focus, menu ? `${NAV_MENU_PREFIX}${RAIL_MENU_ACTIONS[0]}` : null);
+
   // Le dernier menu ouvert : ses lignes restent pendant qu'il s'efface.
   const lastMenu = useRef(menu);
   if (menu) lastMenu.current = menu;
@@ -52,7 +58,7 @@ export function NavMenuModal({ arrange, focus, railWidth }: { arrange: RailArran
   );
 
   return (
-    <FadingModal value={menu} onRequestClose={withMenuIntent(closeMenu)}>
+    <FadingModal value={menu} onRequestClose={withMenuIntent(closeMenu)} onExited={() => claimAfterModalExit(focus, arrange.menuReturnKey())}>
       {(shown, leaving) => (
         <NavEntryMenu
           title={shown.label}

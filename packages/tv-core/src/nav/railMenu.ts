@@ -121,6 +121,16 @@ export function railMenuReturnOnClose(heldKey: string | null, now: number): Rail
 }
 
 /**
+ * La Modal du menu vient de se retirer : la case à réclamer d'office, pour une
+ * plateforme qui rend le focus SANS l'annoncer (Android : la fenêtre de
+ * l'activité le redonne à ce qui l'avait). Rien hors délai.
+ */
+export function railMenuReturnTarget(pending: RailMenuReturn | null, now: number): string | null {
+  if (!pending || now - pending.at > RAIL_MENU_RETURN_WITHIN_MS) return null;
+  return navKeyOf(pending.key);
+}
+
+/**
  * Un focus se pose sur `focusKey` : le premier focus rendu au rail (une clé de
  * la navigation hors des lignes du menu) CONSOMME l'attente ; s'il arrive à
  * temps et sur une autre case, il faut réclamer l'entrée du menu.
