@@ -3,7 +3,7 @@
 // particulier l'ENVOI DES TEXTURES (« Upload 960x540 Texture »), que la phase
 // « sync » de FrameMetrics ne détaille pas. Format texte de ftrace :
 //   RenderThread-2911 ( 2871) [001] ...1  1234.567890: tracing_mark_write: B|2871|Upload 960x540 Texture
-const LINE = /^\s*(.+?)-(\d+)\s+\(\s*(\d+|-+)\)\s+\[\d+\][^\d]*([\d.]+): tracing_mark_write: ([BE])\|(\d+)(?:\|(.*))?$/;
+const LINE = /^\s*(.+?)-(\d+)\s+(?:\(\s*([\d-]+)\)\s+)?\[\d+\]\s+(?:\S+\s+)?([\d.]+): tracing_mark_write: ([BE])\|(\d+)(?:\|(.*))?$/;
 
 export function startTrace(device, pkg) {
   device.shell(`atrace --async_start -b 32768 -a ${pkg} gfx view input`);
