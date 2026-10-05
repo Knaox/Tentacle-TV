@@ -1,0 +1,37 @@
+# ══════════════════════════════════════════════════════════════════════════
+#  Tentacle TV — Tentacle ALONE, with your own database and Jellyfin
+# ══════════════════════════════════════════════════════════════════════════
+#  For those who already run MariaDB (or MySQL) and Jellyfin, e.g. on a NAS.
+#
+#  1. Create an empty database and a user for Tentacle on your server, e.g.:
+#       CREATE DATABASE tentacle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+#       CREATE USER 'tentacle'@'%' IDENTIFIED BY '<a long random password>';
+#       GRANT ALL PRIVILEGES ON tentacle.* TO 'tentacle'@'%';
+#  2. Put this file in an empty folder as compose.yaml, then run:
+#       docker compose up -d          (Podman: podman compose up -d)
+#  3. Open  http://<this-machine>:3000  and follow the setup wizard. It asks
+#     for a one-time setup code, printed by:  docker compose logs tentacle
+#     then for your database, your Jellyfin address and administrator.
+#
+#  Nothing to edit in this file: the database is given to the wizard, which
+#  keeps it in the tentacle-data volume (never in this file).
+# ══════════════════════════════════════════════════════════════════════════
+
+services:
+  tentacle:
+    image: ghcr.io/knaox/tentacle-tv:${TENTACLE_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      TENTACLE_STACK: only
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Paris}
+    ports:
+      - "${TENTACLE_PORT:-3000}:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # reaches a database or Jellyfin on this machine
+    volumes:
+      - tentacle-data:/app/apps/backend/data
+
+volumes:
+  tentacle-data:

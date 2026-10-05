@@ -1,0 +1,78 @@
+# ══════════════════════════════════════════════════════════════════════════
+#  Tentacle TV — stack with its database, for an EXISTING Jellyfin
+# ══════════════════════════════════════════════════════════════════════════
+#  For a Jellyfin that already runs elsewhere: a NAS, another container, or
+#  a native install (the only supported way on Windows and macOS).
+#
+#  1. Put this file in an empty folder (e.g. ~/tentacle) as compose.yaml.
+#  2. Run:  docker compose up -d        (Podman: podman compose up -d)
+#  3. Open  http://<this-machine>:3000  and follow the setup wizard. It asks
+#     for a one-time setup code, printed by:  docker compose logs tentacle
+#     then for your Jellyfin address and administrator account.
+#
+#  Nothing to edit: the database passwords are generated on first start, in
+#  a volume only the database and Tentacle can read. Optional settings: a
+#  .env file next to this one — see .env.example.
+#
+#  Jellyfin on THIS machine? Tentacle runs in a container: "localhost" is
+#  Tentacle itself. Give the wizard http://host.docker.internal:8096 (set up
+#  below) or the machine's network address, e.g. http://192.168.1.20:8096.
+# ══════════════════════════════════════════════════════════════════════════
+
+services:
+  # Generates the database secrets on first start, then exits.
+  init:
+    image: ghcr.io/knaox/tentacle-tv:${TENTACLE_VERSION:-latest}
+    command: ["init"]
+    restart: "no"
+    volumes:
+      - tentacle-secrets:/run/tentacle-secrets
+
+  db:
+    image: mariadb:11.8
+    restart: unless-stopped
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      MARIADB_DATABASE: tentacle
+      MARIADB_USER: tentacle
+      MARIADB_PASSWORD_FILE: /run/tentacle-secrets/db_password
+      MARIADB_ROOT_PASSWORD_FILE: /run/tentacle-secrets/db_root_password
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - tentacle-db:/var/lib/mysql
+      - tentacle-secrets:/run/tentacle-secrets:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # No published port: only Tentacle talks to the database.
+
+  tentacle:
+    image: ghcr.io/knaox/tentacle-tv:${TENTACLE_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TENTACLE_STACK: db
+      DB_HOST: db
+      DB_PASSWORD_FILE: /run/tentacle-secrets/db_password
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Paris}
+    ports:
+      - "${TENTACLE_PORT:-3000}:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # reaches a Jellyfin on this machine
+    volumes:
+      - tentacle-data:/app/apps/backend/data
+      - tentacle-secrets:/run/tentacle-secrets:ro
+
+volumes:
+  tentacle-secrets:
+  tentacle-db:
+  tentacle-data:

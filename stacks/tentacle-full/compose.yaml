@@ -1,0 +1,221 @@
+# ══════════════════════════════════════════════════════════════════════════
+#  Tentacle TV — FULL stack (recommended): Tentacle + database + Jellyfin
+# ══════════════════════════════════════════════════════════════════════════
+#  1. Put this file in an empty folder (e.g. ~/tentacle) as compose.yaml.
+#  2. Run:  docker compose up -d        (Podman: podman compose up -d)
+#  3. Open  http://<this-machine>:3000  and follow the setup wizard. It asks
+#     for a one-time setup code, printed by:  docker compose logs tentacle
+#
+#  Nothing to edit: the database passwords are generated on first start, in
+#  a volume only the database and Tentacle can read. Your movies go in
+#  ./media/films and your shows in ./media/series (created on first start,
+#  next to this file). Optional settings (media folder, ports, time zone,
+#  user, public domain…): a .env file next to this one — see .env.example.
+#
+#  Linux is the supported host for this stack. On Windows and macOS, the
+#  Jellyfin project supports a NATIVE install only: use the "tentacle-db"
+#  stack with a native Jellyfin instead.
+# ══════════════════════════════════════════════════════════════════════════
+
+services:
+  # Prepares what must exist before the first start, then exits: database
+  # secrets, and the films / series folders (owned by PUID:PGID).
+  init:
+    image: ghcr.io/knaox/tentacle-tv:${TENTACLE_VERSION:-latest}
+    command: ["init"]
+    restart: "no"
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+    volumes:
+      - tentacle-secrets:/run/tentacle-secrets
+      - ${MEDIA_PATH:-./media}:/media:z
+
+  db:
+    image: mariadb:11.8
+    restart: unless-stopped
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      MARIADB_DATABASE: tentacle
+      MARIADB_USER: tentacle
+      MARIADB_PASSWORD_FILE: /run/tentacle-secrets/db_password
+      MARIADB_ROOT_PASSWORD_FILE: /run/tentacle-secrets/db_root_password
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - tentacle-db:/var/lib/mysql
+      - tentacle-secrets:/run/tentacle-secrets:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # No published port: only Tentacle talks to the database.
+
+  jellyfin:
+    image: jellyfin/jellyfin:12
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      TZ: ${TZ:-Europe/Paris}
+    ports:
+      - "${JELLYFIN_PORT:-8096}:8096"
+      - "7359:7359/udp" # lets Jellyfin apps find the server on your network
+    volumes:
+      - jellyfin-config:/config
+      - jellyfin-cache:/cache
+      - ${MEDIA_PATH:-./media}:/media:z
+    # ── Hardware transcoding (optional) ─────────────────────────────────────
+    # Intel (Quick Sync / VA-API) or AMD (VA-API): uncomment the 4 lines below.
+    # The "render" group id depends on the distribution, read it with:
+    #   getent group render | cut -d: -f3
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # group_add:
+    #   - "105"            # ← replace with your render group id
+    #
+    # NVIDIA: install nvidia-container-toolkit on the host, then uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    # (Podman: use `devices: ["nvidia.com/gpu=all"]` with CDI instead.)
+    #
+    # Then turn it on in Jellyfin: Dashboard › Playback › Transcoding.
+
+  tentacle:
+    image: ghcr.io/knaox/tentacle-tv:${TENTACLE_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      jellyfin:
+        condition: service_started
+    environment:
+      TENTACLE_STACK: full
+      DB_HOST: db
+      DB_PASSWORD_FILE: /run/tentacle-secrets/db_password
+      JELLYFIN_INTERNAL_URL: http://jellyfin:8096
+      TENTACLE_MEDIA_HOST_PATH: ${MEDIA_PATH:-./media}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Paris}
+    ports:
+      - "${TENTACLE_PORT:-3000}:3000"
+    volumes:
+      - tentacle-data:/app/apps/backend/data
+      - tentacle-secrets:/run/tentacle-secrets:ro
+
+  # ── Public access over HTTPS (optional) ───────────────────────────────────
+  # Needs a domain pointing to your public IP and ports 80 + 443 forwarded to
+  # this machine. Set TENTACLE_DOMAIN and JELLYFIN_DOMAIN in .env, then:
+  #   docker compose --profile caddy up -d      (or --profile traefik)
+  # Certificates come from Let's Encrypt. Only one of the two at a time.
+  # Do NOT put Jellyfin behind a Cloudflare Tunnel: Cloudflare's terms keep
+  # video for its paid services (it may cut the tunnel off), and Jellyfin's
+  # community standards give this very case as a terms-of-service violation.
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["caddy"]
+    restart: unless-stopped
+    depends_on: [tentacle, jellyfin]
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+
+  traefik:
+    image: traefik:v3.5
+    profiles: ["traefik"]
+    restart: unless-stopped
+    depends_on: [tentacle, jellyfin]
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.websecure.address=:443
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    configs:
+      - source: traefik-dynamic
+        target: /etc/traefik/dynamic.yml
+    volumes:
+      - traefik-letsencrypt:/letsencrypt
+
+# Reverse proxy settings, generated from your .env (no file to create).
+# Jellyfin answers the web app from another origin: these CORS headers let
+# it, and they REPLACE Jellyfin's own (never duplicated).
+configs:
+  caddyfile:
+    content: |
+      ${TENTACLE_DOMAIN:-tentacle.localhost} {
+        reverse_proxy tentacle:3000
+      }
+      ${JELLYFIN_DOMAIN:-jellyfin.localhost} {
+        reverse_proxy jellyfin:8096 {
+          header_down Access-Control-Allow-Origin "https://${TENTACLE_DOMAIN:-tentacle.localhost}"
+          header_down Access-Control-Allow-Credentials "true"
+          header_down Access-Control-Allow-Methods "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+          header_down Access-Control-Allow-Headers "Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control"
+          header_down Access-Control-Expose-Headers "Content-Length, Content-Range, Date, Server"
+          header_down Access-Control-Max-Age "1728000"
+        }
+      }
+  traefik-dynamic:
+    content: |
+      http:
+        routers:
+          tentacle:
+            rule: Host(`${TENTACLE_DOMAIN:-tentacle.localhost}`)
+            entryPoints: [websecure]
+            service: tentacle
+            tls: { certResolver: letsencrypt }
+          jellyfin:
+            rule: Host(`${JELLYFIN_DOMAIN:-jellyfin.localhost}`)
+            entryPoints: [websecure]
+            service: jellyfin
+            middlewares: [jellyfin-cors]
+            tls: { certResolver: letsencrypt }
+        middlewares:
+          jellyfin-cors:
+            headers:
+              accessControlAllowOriginList: ["https://${TENTACLE_DOMAIN:-tentacle.localhost}"]
+              accessControlAllowCredentials: true
+              accessControlAllowMethods: [GET, POST, OPTIONS, DELETE, PUT, PATCH]
+              accessControlAllowHeaders: [Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control]
+              accessControlExposeHeaders: [Content-Length, Content-Range, Date, Server]
+              accessControlMaxAge: 1728000
+              addVaryHeader: true
+        services:
+          tentacle:
+            loadBalancer:
+              servers: [{ url: "http://tentacle:3000" }]
+          jellyfin:
+            loadBalancer:
+              servers: [{ url: "http://jellyfin:8096" }]
+
+volumes:
+  tentacle-secrets:
+  tentacle-db:
+  tentacle-data:
+  jellyfin-config:
+  jellyfin-cache:
+  caddy-data:
+  caddy-config:
+  traefik-letsencrypt:
