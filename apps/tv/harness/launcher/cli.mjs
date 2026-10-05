@@ -7,7 +7,7 @@
 //   pnpm tv:refonte:android [--rebuild] [--journal] [--sans-backend]
 //                                 la même, sur l'émulateur Android TV : backend
 //                                 de dev, Metro dédié (port 8091 et suivants)
-//                                 avec TENTACLE_TV_REDESIGN=1, émulateur
+//                                 (journal de la télécommande : --journal), émulateur
 //                                 « TentacleTV_Shield_API31 » (créé au besoin,
 //                                 Android TV 12 arm64, 1080p, 3 Go) démarré SOUS
 //                                 VERROU (<Projet - local>/.claude/locks/

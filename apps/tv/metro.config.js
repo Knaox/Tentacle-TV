@@ -53,11 +53,10 @@ for (const name of singletonNames) {
 const defaultConfig = getDefaultConfig(projectRoot);
 
 const config = {
-  // Les drapeaux de développement de la refonte (aiguillage Android, journal
-  // de la télécommande) sont inlinés par Babel (babel/inlineRedesignFlag.js) :
-  // leurs valeurs entrent dans la clé du cache, sans quoi un bundle transformé
-  // avec d'autres valeurs serait resservi.
-  cacheVersion: `redesign-${process.env.TENTACLE_TV_REDESIGN ?? "off"}-remotelog-${process.env.TENTACLE_TV_REMOTE_LOG ?? "off"}`,
+  // Le drapeau de développement du journal de la télécommande est inliné par
+  // Babel (babel/inlineRedesignFlag.js) : sa valeur entre dans la clé du
+  // cache, sans quoi un bundle transformé avec l'autre valeur serait resservi.
+  cacheVersion: `remotelog-${process.env.TENTACLE_TV_REMOTE_LOG ?? "off"}`,
   watchFolders: [monorepoRoot],
   resolver: {
     nodeModulesPaths: [

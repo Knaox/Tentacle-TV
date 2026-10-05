@@ -4,14 +4,16 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ANDROIDTV, effectsOf } from "./androidtv";
 import { run } from "./driver";
-import { ANDROID, IOS } from "./scenarios";
+import { IOS } from "./scenarios";
 
-const mode = process.env.TRACE_PLATFORM === "android" ? "android" : process.env.TRACE_PLATFORM === "androidtv" ? "androidtv" : "ios";
-// Android TV refondu se compare aux traces de l'Apple TV, jamais enregistré à part.
-const platform = mode === "android" ? "android" : "ios";
+// Android TV (la refonte, seule UI depuis la bascule) se compare aux traces de
+// l'Apple TV, jamais enregistré à part. L'ancien mode « android » (l'UI d'avant)
+// est parti avec elle.
+const mode = process.env.TRACE_PLATFORM === "androidtv" ? "androidtv" : "ios";
+const platform = "ios";
 const GOLDEN = path.join(process.env.TRACE_GOLDEN ?? path.join(__dirname, "golden"), platform);
 const record = process.env.TRACE_MODE === "record" && mode !== "androidtv";
-const list = mode === "android" ? ANDROID : mode === "androidtv" ? ANDROIDTV : IOS;
+const list = mode === "androidtv" ? ANDROIDTV : IOS;
 
 describe(`traces du lecteur (${mode})`, () => {
   for (const scenario of list) {

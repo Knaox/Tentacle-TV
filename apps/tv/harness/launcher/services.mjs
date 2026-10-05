@@ -94,7 +94,7 @@ const servesThisApp = async (port) => sameDir(await metroRoot(port), APP_DIR);
  *  `pnpm dev:tv` sur 8081 s'il sert ce dossier, sinon un nouveau sur un port
  *  libre. Rend `{ port, record }` (`record` : le nôtre, pour lire son journal).
  *  Android (`key` « metroAndroid ») : un Metro À PART, lancé avec son
- *  environnement (`env` : l'aiguillage de la refonte, inliné au bundle) —
+ *  environnement (`env` : le journal de la télécommande, inliné au bundle) —
  *  jamais celui de `pnpm dev:tv`, qui ne l'a pas. */
 export async function ensureMetro({ key = "metro", basePort = METRO_DEFAULT_PORT, env = {}, label = "Metro" } = {}) {
   const shared = key === "metro";

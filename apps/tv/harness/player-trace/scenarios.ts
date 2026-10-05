@@ -22,16 +22,6 @@ function drag(dx: number, ms: number, { lift = true, vx }: { lift?: boolean; vx?
   return steps;
 }
 const hold = (dir: "Left" | "Right", ms: number): Step[] => [K(`long${dir}`, 0), W(ms), K(`long${dir}`, 1)];
-const android = {
-  tap: (key: string): Step[] => [K(key, 0), W(90), K(key, 1)],
-  hold(key: "left" | "right", ms: number): Step[] {
-    const long = key === "left" ? "longLeft" : "longRight";
-    const steps: Step[] = [K(key, 0), W(300), K(long, 0), W(200)];
-    for (let t = 500; t < ms; t += 50) steps.push(K(key, 0), W(50));
-    steps.push(K(key, 1));
-    return steps;
-  },
-};
 
 const skip = (auto: boolean, dismissible: boolean) => ({
   kind: "skip", auto, dismissible, labelKey: "skipIntro", countdownSeconds: auto ? 8 : null,
@@ -73,23 +63,4 @@ export const IOS: Scenario[] = [
   { id: "ios-32-maintien-habillage-pause", title: "Pause épinglée : maintien → ne défile pas (habillage affiché) ; Retour masque, puis maintien défile", steps: [...tap("playPause"), W(500), ...hold("Right", 1200), W(500), { menu: true }, W(500), ...hold("Right", 1200), W(2000), { menu: true }, W(1500)] },
   { id: "ios-33-select-pendant-maintien", title: "OK pendant un maintien (défilement) : valide et coupe le tic", steps: [HIDE, K("longRight", 0), W(1300), ...tap("select"), W(400), K("longRight", 1), W(2000)] },
   { id: "ios-30-ouverture", title: "Constat : écran d'ouverture, contrôles vivants (▶︎❙❙, glisser)", env: { opening: true }, steps: [W(500), ...tap("playPause"), W(300), ...drag(400, 600), W(2000), { menu: true }, W(500)] },
-];
-
-export const ANDROID: Scenario[] = [
-  { id: "and-01-saut", title: "Android : appui → (down/up) habillage masqué : saut au key-up", steps: [HIDE, ...android.tap("right"), W(2000)] },
-  { id: "and-02-maintien", title: "Android : maintien → 2,5 s (répétitions) : défilement", steps: [HIDE, ...android.hold("right", 2500), W(7000)] },
-  { id: "and-03-media", title: "Android : touches média ⏩ isolée puis répétée", steps: [HIDE, K("fastForward", 0), W(80), K("fastForward", 1), W(1000), K("fastForward", 0), W(100), K("fastForward", 0), W(100), K("fastForward", 0), W(100), K("fastForward", 0), W(80), K("fastForward", 1), W(400), K("select", 0), W(80), K("select", 1), W(1000)] },
-  { id: "and-04-retour", title: "Android : Retour en défilement annule ; Retour habillage → sortie", steps: [HIDE, ...android.hold("left", 1500), W(500), { androidBack: true }, W(800), { androidBack: true }, W(500)] },
-  { id: "and-05-habillage", title: "Android : habillage affiché, ←/→ ne sautent pas", steps: [W(500), ...android.tap("right"), W(500), ...android.tap("left"), W(6000)] },
-  { id: "and-06-badge", title: "Android : badge cumulé (+30, +60), ← le fait repartir, effacement 1,5 s", steps: [HIDE, ...android.tap("right"), W(700), ...android.tap("right"), W(700), ...android.tap("left"), W(2500)] },
-  { id: "and-07-boutons", title: "Android : boutons +30 / ⏩ (jumeau select absorbé), OK valide, boutons avalés 400 ms", steps: [W(500), { button: "onSeekForward" }, W(600), { button: "onScrub" }, W(1200), ...android.tap("right"), W(500), ...android.tap("select"), W(100), { button: "onPlayPause", twin: "none" }, W(600), { button: "onPlayPause", twin: "none" }, W(1500)] },
-  { id: "and-08-lecture-pause", title: "Android : ▶︎❙❙ bascule et épingle ; en défilement il valide", steps: [HIDE, ...android.tap("playPause"), W(1500), ...android.tap("playPause"), W(6000), K("fastForward", 0), W(80), K("fastForward", 1), W(1500), ...android.tap("playPause"), W(1500)] },
-  { id: "and-09-maintien-sans-long", title: "Android : maintien déduit du key-down (pas de longRight, pas de répétition)", steps: [HIDE, K("right", 0), W(1500), K("right", 1), W(6500)] },
-  { id: "and-10-recul-media", title: "Android : ⏪ isolé ouvre le défilement −10 ; Retour annule, grâce", steps: [HIDE, K("rewind", 0), W(80), K("rewind", 1), W(1000), { androidBack: true }, W(300), { androidBack: true }, W(700), { androidBack: true }, W(500)] },
-  { id: "and-11-pilule-retour", title: "Android : Retour sur une pilule automatique : sourdine + grâce", env: { overlay: skip(true, true) }, steps: [HIDE, { androidBack: true }, W(300), { androidBack: true }, W(800), { androidBack: true }, W(500)] },
-  { id: "and-12-carte-retour", title: "Android : carte « À suivre » : Retour la refuse ; fin : Retour la refuse sans grâce", env: { overlay: nextCard(false) }, steps: [W(500), { androidBack: true }, W(300), { androidBack: true }, W(800), { patch: { overlay: nextCard(true), ended: true } }, W(300), { androidBack: true }, W(500)] },
-  { id: "and-13-reglages", title: "Android : réglages ouverts : flèches neutralisées, Retour les ferme", env: { showSettings: true }, steps: [W(500), ...android.tap("right"), W(300), ...android.tap("playPause"), W(300), { androidBack: true }, W(600), { androidBack: true }, W(500)] },
-  { id: "and-14-episodes", title: "Android : épisodes ouverts : maintien et média neutralisés, Retour les ferme", env: { showEpisodes: true }, steps: [W(500), ...android.hold("right", 1200), W(300), K("fastForward", 0), W(80), K("fastForward", 1), W(300), { androidBack: true }, W(6000)] },
-  { id: "and-15-pan-ignore", title: "Android : aucun pavé (le pan n'est pas tenu)", steps: [HIDE, ...drag(400, 600), W(1000)] },
-  { id: "and-16-haut-bas", title: "Android : ↑/↓ rallument l'habillage ; en défilement ils ne font que relancer le décompte", steps: [HIDE, ...android.tap("up"), W(5600), K("fastForward", 0), W(80), K("fastForward", 1), W(3000), ...android.tap("down"), W(3000), ...android.tap("up"), W(6000)] },
 ];

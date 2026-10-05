@@ -1,22 +1,21 @@
 /**
- * Inline les drapeaux de DÉVELOPPEMENT de la refonte TV dans le bundle :
- * - `process.env.TENTACLE_TV_REDESIGN` : la refonte sur Android TV
- *   (`src/redesignWiring/redesignGate.ts`) ;
- * - `process.env.TENTACLE_TV_REMOTE_LOG` : le journal de la télécommande
- *   (`src/platform/androidtv/input/remoteLog.ts`), chaque signal et
- *   l'intention qu'il porte, dans la console (logcat `ReactNativeJS`).
+ * Inline le drapeau de DÉVELOPPEMENT du journal de la télécommande dans le
+ * bundle : `process.env.TENTACLE_TV_REMOTE_LOG`
+ * (`src/platform/androidtv/input/remoteLog.ts`), chaque signal et l'intention
+ * qu'il porte, dans la console (logcat `ReactNativeJS`).
  *
  * La valeur est celle de l'environnement du processus qui transforme le code :
- * Metro (`TENTACLE_TV_REDESIGN=1 react-native start`, ce que fait
- * `pnpm tv:refonte:android`) ou le bundle d'une build Gradle lancée avec la
- * variable. Absente — la CI, toute build de production —, l'expression vaut
+ * Metro (`TENTACLE_TV_REMOTE_LOG=1 react-native start`, ce que fait
+ * `pnpm tv:refonte:android --journal`) ou le bundle d'une build Gradle lancée
+ * avec la variable. Absente — la CI, toute build de production —, l'expression vaut
  * `undefined` : rien ne change. Le cache de Metro suit les valeurs
  * (`cacheVersion` de `metro.config.js`) : changer une variable ne sert jamais
  * un bundle transformé avec l'autre.
  *
- * Retiré quand Android TV basculera pour de bon sur la refonte (tâche A5).
+ * L'aiguillage de la refonte sur Android (`TENTACLE_TV_REDESIGN`) en est
+ * parti à la bascule (A5) : la refonte y est l'UI tout court.
  */
-const NAMES = ["TENTACLE_TV_REDESIGN", "TENTACLE_TV_REMOTE_LOG"];
+const NAMES = ["TENTACLE_TV_REMOTE_LOG"];
 
 module.exports = function inlineRedesignFlag({ types: t }) {
   return {

@@ -10,7 +10,7 @@ relève tout ce qui en sort : seeks, pauses, sorties, Retour, et chaque
 changement d'état (habillage, épingle, défilement, cible, vitesse, décompte,
 badge, couches). Aucune vidéo, aucun simulateur : quelques secondes.
 
-Les traces de référence (`../nav-golden/scenarios/lecteur/traces/{ios,android}`)
+Les traces de référence (`../nav-golden/scenarios/lecteur/traces/ios`)
 ont été enregistrées sur `84f3cedd0` (avant toute extraction). Un code qui
 rejoue la même trace se comporte à l'identique, à la milliseconde.
 
@@ -20,14 +20,11 @@ rejoue la même trace se comporte à l'identique, à la milliseconde.
 node node_modules/vitest/vitest.mjs run --config apps/tv/harness/player-trace/vitest.config.mjs
 ```
 
-```bash
-TRACE_PLATFORM=android node node_modules/vitest/vitest.mjs run --config apps/tv/harness/player-trace/vitest.config.mjs
-```
-
-Android TV refondu (lot « Android TV = Apple TV ») : les scénarios de
+Android TV (lot « Android TV = Apple TV » ; l'ancien mode `android`, qui
+rejouait l'UI d'avant la bascule, est parti avec elle le 2026-10-05) : les scénarios de
 l'Apple TV sans pavé, rejoués avec les événements tels qu'Android TV les émet
 (enfoncement puis relâchement, `longX` tiré de la répétition) sur l'entrée
-unique d'Android et l'aiguillage de la refonte allumé, comparés aux traces
+unique d'Android, comparés aux traces
 de RÉFÉRENCE de l'Apple TV — effets et états, sans les entrées brutes
 (`androidtv.ts`) ; plus les touches d'Avance et de Retour rapides, que la
 Siri Remote n'a pas, par assertions (`androidtv.test.ts`) :

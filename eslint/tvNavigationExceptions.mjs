@@ -24,9 +24,6 @@ export const TV_NAV_EXCEPTIONS = [
   // La vue native du Retour, à côté de son jumeau d'Android TV (MenuPressInterceptor.tsx) ; seul platform/tvos/back/ l'importe.
   { file: "components/focus/MenuPressInterceptor.ios.tsx", rules: ["no-native-focus-calls"], owner: null, why: "la vue native qui prend Menu (TVMenuPressInterceptor) ; l'applicateur du Retour en décide l'état" },
 
-  // L'aiguillage de la refonte.
-  { file: "redesignWiring/redesignGate.ts", rules: ["no-platform-branch"], owner: null, why: "l'aiguillage de la refonte : le seul choix de plateforme du chemin refondu" },
-
   // Hors navigation.
   { file: "components/player/AVPlayerSurface.tsx", rules: ["no-focus-props"], owner: null, why: "rendu : surface de rendu, jamais focalisable ; inerte sur tvOS, gardé tel quel (arbitrage du lot)" },
   { file: "redesign/glass/nativeGlass.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : détection du verre natif de tvOS 26" },

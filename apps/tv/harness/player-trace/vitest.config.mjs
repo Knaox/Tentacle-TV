@@ -8,11 +8,11 @@ import { defineConfig } from "vitest/config";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../../../..");
 const WT = process.env.TRACE_WT ?? REPO;
-const android = process.env.TRACE_PLATFORM === "android";
+// L'ancien mode « android » (l'UI d'Android d'avant la bascule) n'existe plus.
+if (process.env.TRACE_PLATFORM === "android") throw new Error("TRACE_PLATFORM=android est retiré avec l'ancienne UI d'Android TV : TRACE_PLATFORM=androidtv");
 // Android TV refondu : les fichiers `.android` (l'entrée unique d'Android,
-// `platform/input/index.android.ts`) et l'aiguillage de la refonte allumé.
+// `platform/input/index.android.ts`).
 const androidtv = process.env.TRACE_PLATFORM === "androidtv";
-if (androidtv) process.env.TENTACLE_TV_REDESIGN = "1";
 const ext = [".ts", ".tsx", ".mjs", ".js", ".json"];
 process.env.TRACE_GOLDEN ??= path.join(REPO, "apps/tv/harness/nav-golden/scenarios/lecteur/traces");
 
@@ -30,7 +30,7 @@ export default defineConfig({
       { find: /^react\/(.*)$/, replacement: `${WT}/node_modules/react/$1` },
       { find: /^react-dom\/client$/, replacement: `${WT}/node_modules/react-dom/client.js` },
     ],
-    extensions: android ? ext : androidtv ? [".android.ts", ".android.tsx", ...ext] : [".ios.ts", ".ios.tsx", ...ext],
+    extensions: androidtv ? [".android.ts", ".android.tsx", ...ext] : [".ios.ts", ".ios.tsx", ...ext],
   },
   define: { __DEV__: "false" },
   server: { fs: { allow: [HERE, WT, REPO] } },

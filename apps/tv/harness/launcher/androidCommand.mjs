@@ -1,8 +1,8 @@
 // Provisoire — à retirer quand Android TV aura basculé sur la refonte (A5).
 //
-// `pnpm tv:refonte:android [--rebuild] [--journal] [--sans-backend]` : la refonte de l'UI TV sur
-// l'émulateur Android TV, en une commande — backend de dev, Metro dédié avec
-// l'aiguillage de la refonte (`TENTACLE_TV_REDESIGN=1`), émulateur sous
+// `pnpm tv:refonte:android [--rebuild] [--journal] [--sans-backend]` : l'UI TV (la refonte,
+// seule UI d'Android TV depuis la bascule) sur l'émulateur Android TV, en une
+// commande — backend de dev, Metro dédié, émulateur sous
 // verrou, build debug installée, `adb reverse`, app ouverte.
 // `--journal` : chaque touche et l'intention qu'elle porte, dans la console de
 // l'app — logcat `ReactNativeJS` (`TENTACLE_TV_REMOTE_LOG=1`). `--sans-backend` : ni réutilisé ni
@@ -23,8 +23,8 @@ export async function refonteAndroid(args, header) {
   const withoutBackend = args.includes("--sans-backend");
   const backendUp = withoutBackend ? false : await ensureBackend();
   if (withoutBackend) step("Backend de dev", "laissé de côté (--sans-backend)");
-  const env = { TENTACLE_TV_REDESIGN: "1", ...(journal ? { TENTACLE_TV_REMOTE_LOG: "1" } : {}) };
-  const metro = await ensureMetro({ key: "metroAndroid", basePort: ANDROID_METRO_BASE_PORT, env, label: "Metro (Android, refonte)" });
+  const env = journal ? { TENTACLE_TV_REMOTE_LOG: "1" } : {};
+  const metro = await ensureMetro({ key: "metroAndroid", basePort: ANDROID_METRO_BASE_PORT, env, label: "Metro (Android)" });
   await ensureEmulator();
   await ensureAndroidApp({ force });
   reversePorts(metro.port);
