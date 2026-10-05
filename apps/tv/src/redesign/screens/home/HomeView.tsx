@@ -15,6 +15,7 @@ import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
 import { RowStageProvider } from "../../rows/rowStage";
+import { ScreenReveal } from "../../motion/ScreenReveal";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 
@@ -68,7 +69,8 @@ export interface HomeViewProps {
   ambient?: AmbientSource;
   /** Chargement, erreur, accueil vide : le panneau remplace le contenu. */
   status?: StatusPanelProps | null;
-  /** Le chargement : une ancre invisible tient le focus dans le contenu (`home:loading`), la navigation reste repliée. */
+  /** Le chargement : une ancre invisible tient le focus (`home:loading`) ; la navigation et le contenu
+   *  ne paraissent qu'ensuite, ensemble, en fondu (`ScreenReveal`). */
   holdFocus?: boolean;
   /** La pastille du filtre de plateformes (« Netflix · Disney+ »). */
   filter?: { label: string } | null;
@@ -134,55 +136,59 @@ export const HomeView = memo(function HomeView({
   return (
     <View style={styles.root}>
       <LiveAmbientBackdrop source={ambient} palette={palette} />
-      {status ? (
-        <StatusPanel {...status} />
-      ) : (
-        <RowStageProvider>
-          <ScrollView
-            ref={scrollRef}
-            style={styles.fill}
-            contentContainerStyle={styles.scroll}
-            showsVerticalScrollIndicator={false}
-            onLayout={onViewportLayout}
-            onScroll={handleScroll}
-            scrollEventThrottle={32}
-          >
-            {hero ? (
-              <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
-                <HeroBanner
-                  hero={hero}
-                  width={HERO_WIDTH}
-                  onPrimary={onHeroPrimary}
-                  onSecondary={onHeroSecondary}
-                  onToggleList={onHeroToggleList}
-                  onLongPress={onHeroLongPress}
+      {/* Le premier chargement se dit seul, sans navigation : elle paraît avec le contenu. */}
+      {holdFocus && status ? <StatusPanel {...status} /> : null}
+      <ScreenReveal ready={!holdFocus}>
+        {holdFocus ? null : status ? (
+          <StatusPanel {...status} />
+        ) : (
+          <RowStageProvider>
+            <ScrollView
+              ref={scrollRef}
+              style={styles.fill}
+              contentContainerStyle={styles.scroll}
+              showsVerticalScrollIndicator={false}
+              onLayout={onViewportLayout}
+              onScroll={handleScroll}
+              scrollEventThrottle={32}
+            >
+              {hero ? (
+                <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
+                  <HeroBanner
+                    hero={hero}
+                    width={HERO_WIDTH}
+                    onPrimary={onHeroPrimary}
+                    onSecondary={onHeroSecondary}
+                    onToggleList={onHeroToggleList}
+                    onLongPress={onHeroLongPress}
+                  />
+                </FocusSection>
+              ) : null}
+              {rows.map((row, index) => (
+                <HomeRow
+                  key={row.key}
+                  row={row}
+                  rank={index}
+                  first={index === 0 ? (hero ? "afterHero" : "alone") : undefined}
+                  filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
+                  onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
+                  onRemoveFilter={onRemoveFilter}
+                  onPressCard={onPressCard}
+                  onLongPressCard={onLongPressCard}
+                  onFocusCard={onFocusCard}
                 />
-              </FocusSection>
-            ) : null}
-            {rows.map((row, index) => (
-              <HomeRow
-                key={row.key}
-                row={row}
-                rank={index}
-                first={index === 0 ? (hero ? "afterHero" : "alone") : undefined}
-                filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
-                onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
-                onRemoveFilter={onRemoveFilter}
-                onPressCard={onPressCard}
-                onLongPressCard={onLongPressCard}
-                onFocusCard={onFocusCard}
-              />
-            ))}
-          </ScrollView>
-        </RowStageProvider>
-      )}
+              ))}
+            </ScrollView>
+          </RowStageProvider>
+        )}
+        <NavRail {...nav} />
+      </ScreenReveal>
       {/* Après le contenu (rien ne la recouvre : tvOS ne focalise jamais ce qui l'est), hors du panneau centré. */}
       {holdFocus ? (
         <FocusTarget focusKey={HOME_LOADING_KEY} style={styles.anchor} accessibilityLabel={loadingLabel}>
           {() => null}
         </FocusTarget>
       ) : null}
-      <NavRail {...nav} />
     </View>
   );
 });
