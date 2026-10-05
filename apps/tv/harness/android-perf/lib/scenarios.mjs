@@ -7,6 +7,9 @@
 // `hold:<code>:<ms>`, `wait:<ms>` — codes Android : 19 haut, 20 bas,
 // 21 gauche, 22 droite, 23 OK, 4 Retour. `fixtures` : les jeux du faux
 // backend (nav-golden) le temps du scénario ; par défaut, sans Vigie.
+// `expectReady` : l'écran où la mise en place doit aboutir (« prêt:<nom> » du
+// mode de mesure) — sinon la passe est rejouée : jamais une mesure d'un autre
+// écran que celui du scénario.
 import { KEY } from "./device.mjs";
 
 const tap = (key, times, every) => (times ? `tap:${KEY[key]}x${times}@${every}` : `tap:${KEY[key]}`);
@@ -93,6 +96,7 @@ export const SCENARIOS = [
   {
     id: "grille",
     title: "La grille des films : BAS tenu 4 s puis HAUT tenu 4 s",
+    expectReady: "bibliothèque",
     setup: [tap("left"), wait(700), tap("down", 5, 350), wait(700), tap("ok"), wait(4000)],
     gesture: [hold("down", 4000), wait(1500), hold("up", 4000)],
     steps: 2,

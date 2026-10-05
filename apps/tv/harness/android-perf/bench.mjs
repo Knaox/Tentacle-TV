@@ -82,6 +82,19 @@ async function startBackend() {
   throw new Error(`le faux backend ne répond pas sur ${BACKEND_PORT} — ${path.join(CACHE, "backend.log")}`);
 }
 
+class SetupError extends Error {}
+
+/** Une passe, rejouée une fois si sa mise en place a dérapé (`expectReady`). */
+async function playChecked(device, scenario, traceFile, shotFile) {
+  try {
+    return await playScenario(device, scenario, traceFile, shotFile);
+  } catch (error) {
+    if (!(error instanceof SetupError)) throw error;
+    console.log(`\n${scenario.id} : ${error.message} — passe rejouée`);
+    return playScenario(device, scenario, traceFile, shotFile);
+  }
+}
+
 /** Les jeux du faux backend d'un scénario (nav-golden `/__fixtures`). */
 function applyFixtures(sets) {
   execFileSync("curl", ["-s", "-X", "POST", `http://127.0.0.1:${BACKEND_PORT}/__fixtures`, "-d", JSON.stringify({ sets })], { stdio: "ignore" });
@@ -102,6 +115,9 @@ async function playScenario(device, scenario, traceFile, shotFile) {
   await sleep(3000);
   device.keys(...(scenario.setup ?? []));
   await device.waitQuiet(1200);
+  if (scenario.expectReady && !device.perfRecords().some((record) => record.ready === scenario.expectReady)) {
+    throw new SetupError(`la mise en place n'a pas mené à « ${scenario.expectReady} »`);
+  }
   if (shotFile) device.screencap(shotFile);
   device.clearLog();
   device.gfxReset();
@@ -146,7 +162,7 @@ async function run() {
     // retaille alors les images à la taille que CETTE version demande, et
     // l'app remplit son cache disque — toutes les versions se mesurent sur
     // des caches pleins, comme chez un utilisateur qui revient.
-    for (const scenario of scenarios) await playScenario(device, scenario, null, null);
+    for (const scenario of scenarios) await playChecked(device, scenario, null, null).catch((error) => console.log(`\néchauffement ${scenario.id} : ${error.message}`));
     console.log("échauffement fait");
     for (const scenario of scenarios) {
       const played = [];
@@ -156,7 +172,7 @@ async function run() {
         // Une capture au moment où le geste part (l'état de départ, focus posé) : la preuve qu'une version rend comme l'autre.
         const shotFile = flag("shots") && i === 0 ? path.join(CACHE, "shots", `${tag}-${scenario.id}.png`) : null;
         if (shotFile) fs.mkdirSync(path.dirname(shotFile), { recursive: true });
-        played.push(await playScenario(device, scenario, traceFile, shotFile));
+        played.push(await playChecked(device, scenario, traceFile, shotFile));
         process.stdout.write(".");
       }
       const summary = summarizeScenario(scenario, played);
