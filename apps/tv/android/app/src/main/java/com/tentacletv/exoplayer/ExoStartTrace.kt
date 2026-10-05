@@ -47,8 +47,8 @@ class ExoStartTrace : AnalyticsListener {
     }
 
     override fun onAudioPositionAdvancing(eventTime: AnalyticsListener.EventTime, playoutStartSystemTimeMs: Long) {
-        // L'heure système où le son a réellement commencé à sortir.
-        val start = playoutStartSystemTimeMs - (System.currentTimeMillis() - SystemClock.elapsedRealtime()) - openedAt
+        // L'heure (`elapsedRealtime`) où le son a réellement commencé à sortir.
+        val start = playoutStartSystemTimeMs - openedAt
         log("+${at(eventTime)} ms son qui avance (sorti à +$start ms)")
     }
 
