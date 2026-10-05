@@ -7,7 +7,9 @@
  *   - où il en est : une pastille (« Demandé », « En route »…) ;
  *   - quel geste il offre : le faire sur place (`direct`, un film qu'on
  *     demande d'un geste), ou ouvrir sa page pour un choix (`open`, les
- *     saisons d'une série).
+ *     saisons d'une série) ;
+ *   - (facultatif, venu après) où est sa page : la fiche du titre dans le
+ *     catalogue du plugin (`page`), qu'un client ouvre sans la chercher.
  *
  * Tentacle ne sait RIEN de ce que « demander » veut dire chez le plugin : il
  * valide la forme, affiche les mots du plugin, et relaie le geste. Aucun
@@ -55,9 +57,19 @@ export interface TitleRequestOffer {
   href: string | null;
 }
 
+/** La page du titre chez le plugin — sa fiche dans son catalogue. */
+export interface TitlePageLink {
+  /** Les mots du plugin (« Voir dans le catalogue »). */
+  label: string;
+  /** Une de SES pages, jamais un autre site. */
+  href: string;
+}
+
 export interface TitleState {
   badge: { label: string; tone: ExternalTone } | null;
   request: TitleRequestOffer | null;
+  /** Venue après : absente d'un plugin qui ne la déclare pas, et rien ne s'affiche. */
+  page?: TitlePageLink;
 }
 
 export type TitleRequestOutcome =
@@ -144,12 +156,18 @@ export function readTitleState(raw: unknown): TitleState | null {
     const href = safeHref(q.href);
     if (label !== null && (q.mode === "direct" || href !== null)) request = { mode: q.mode, label, href };
   }
-  return {
+  const state: TitleState = {
     badge: badgeLabel !== null
       ? { label: badgeLabel, tone: TONES.includes(b?.tone as ExternalTone) ? (b?.tone as ExternalTone) : "neutral" }
       : null,
     request,
   };
+  // La page du titre : un libellé ET un lien interne, sinon rien.
+  const pg = r.page && typeof r.page === "object" ? r.page as Record<string, unknown> : null;
+  const pageLabel = pg ? text(pg.label, 60) : null;
+  const pageHref = pg ? safeHref(pg.href) : null;
+  if (pageLabel !== null && pageHref !== null) state.page = { label: pageLabel, href: pageHref };
+  return state;
 }
 
 /** La réponse à une question sur des titres : seules les clés demandées comptent. */
