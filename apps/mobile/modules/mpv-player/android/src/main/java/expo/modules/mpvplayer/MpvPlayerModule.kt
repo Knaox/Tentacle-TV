@@ -5,6 +5,7 @@
 package expo.modules.mpvplayer
 
 import expo.modules.kotlin.modules.Module
+import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.ModuleDefinition
 
 /** Le module Expo « MpvPlayer » sur Android : mêmes props, fonctions et événements qu'iOS. */
@@ -36,6 +37,12 @@ class MpvPlayerModule : Module() {
         // AV1 : dav1d en logiciel, ou MediaCodec quand la puce le décode — mpv choisit (`hwdec-codecs`).
         Function("supportsAv1HardwareDecode") { false }
         Function("isSimulator") { isEmulator() }
+
+        // Le mode d'affichage de la fenêtre, pour les deux moteurs (cf. DisplayModeBridge).
+        Function("getDisplayModes") { DisplayModeBridge.snapshot(appContext.currentActivity) }
+        AsyncFunction("setPreferredDisplayMode") { modeId: Int ->
+            DisplayModeBridge.apply(appContext.currentActivity, modeId)
+        }.runOnQueue(Queues.MAIN)
 
         View(MpvPlayerView::class) {
             Events(

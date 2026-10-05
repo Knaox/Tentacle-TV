@@ -46,7 +46,7 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
 
     private val surfaceView: SurfaceView
     internal val renderer = MpvRenderer(context)
-    /** L'écran calé sur la cadence du film (prop `frameRate`). */
+    /** Le vote de cadence de la surface (prop `frameRate`). */
     private val refreshMatcher = DisplayRefreshMatcher()
     private var currentConfig: MpvLoadConfig? = null
     private var pendingConfig: MpvLoadConfig? = null
@@ -154,7 +154,7 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     /** La cadence du film (0 = ne rien demander à l'écran). */
     fun setContentFrameRate(fps: Double) {
         if (released) return
-        refreshMatcher.setContentFrameRate(activity(), surfaceView.holder.surface, fps.toFloat())
+        refreshMatcher.setContentFrameRate(surfaceView.holder.surface, fps.toFloat())
     }
 
     fun seekTo(seconds: Double) = renderer.seekTo(seconds)
@@ -182,8 +182,8 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     fun destroy() {
         renderer.delegate = null
         renderer.stop()
-        // Sortie du lecteur : l'écran retrouve sa fréquence d'origine.
-        refreshMatcher.reset(activity())
+        // Sortie du lecteur : la surface ne vote plus (la fenêtre, elle, est rendue par JS).
+        refreshMatcher.reset()
         surfaceReady = false
         pendingConfig = null
         currentConfig = null
