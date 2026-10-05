@@ -172,3 +172,92 @@ Le serveur ne distingue pas les plateformes (`/api/family/tv/*`) : Android TV
 refondu passe aux profils comme l'Apple TV (échange du jeton, « Qui regarde ? »,
 PIN). Les claviers des formulaires (invité, invitation) passent par le même
 `openPairingKeyboard`.
+
+## 4. La bascule et la vérification finale (A5, 2026-10-05)
+
+### 4.1 La bascule
+
+`REDESIGN_ACTIVE` a valu vrai sur les deux téléviseurs, puis l'aiguillage
+(`redesignGate.ts`) est parti avec l'ancienne UI d'Android TV, famille par
+famille : accueil et « Pour vous », bibliothèque et collections, recherche,
+fiche, réglages, jumelage et conditions d'utilisation, bande-annonce, lecteur
+(ancien habillage, modale `PlayerSettings`, télécommande `useTVRemote`,
+sous-titres natifs d'ExoPlayer), surfaces de l'app et feuille des cartes
+(`TVCardActionSheet`), navigation (`TVNavChrome`, `TVSideRail`,
+`TVNavContext`). Plus de 150 fichiers. Restent, parce qu'ils marchent côté
+moteur : le lecteur natif (ExoPlayer, mpv, `MemoizedPlayer`, modules Kotlin),
+la reconnaissance vocale (`useSpeechRecognition`, branchée sur la recherche
+refondue), la densité, le stockage, l'authentification. Les routes qui rendent
+leur propre rail : `redesignWiring/nav/railRoutes.ts`.
+
+L'outil qui a fait l'inventaire : la fermeture des imports depuis `index.js`,
+résolue comme Metro pour `.ios` ET `.android` (les fichiers morts des deux
+côtés partent ; un import de type seul ne garde rien en vie à l'exécution —
+c'est ainsi que l'ancien habillage du lecteur tenait encore, par
+`TVPlayerViewProps`, désormais `playerStageBaseProps.ts`).
+
+### 4.2 Ce que le banc dit (nav-golden `verify --android`, Shield API 31)
+
+Les scénarios de l'Apple TV, rejoués sur l'émulateur contre LEURS références
+(`banc.md`, « Android TV »). Un écart de CADRE seul n'est pas un écart de
+comportement : les textes de boutons sont 3 à 6 % plus étroits sur Android,
+même fichier Inter (`assets/fonts`) — le moteur de texte (Skia/Minikin contre
+CoreText). Invisible sans comparaison côte à côte ; à juger sur la Shield.
+
+Corrigé pendant la vérification :
+
+| Écart | Cause | Correctif |
+|---|---|---|
+| GAUCHE, GAUCHE depuis le contenu s'arrête sur l'entrée, pas sur le profil | `RailShortcuts` coupé hors tvOS | monté sur Android (`REMOTE_SUPPORTED`) |
+| GAUCHE depuis une rangée vise l'entrée alignée (« Séries »), pas l'entrée active | `FocusFinder` pondère l'écart croisé : le pont du rail (toute la hauteur) perdait | `BeamSearch` : un guide du faisceau plus proche sur l'axe du geste l'emporte |
+| DROITE depuis le rail ouvert vise une carte recouverte | même moteur ; la carte chevauche le rail | un concurrent qui chevauche la source dans l'axe ne bat pas un guide |
+| « Mes demandes » ouverte sans focus | le `Dialog` ne focalise rien de lui-même | croix réclamée (`useChoiceEntryClaim`) |
+| Retour sur le clavier de la recherche → `key:A` | RE-6 à la lettre ; tvOS rend en fait le champ (constat 4) | `keyboardClosed.android.ts` vise le champ |
+| DROITE depuis le rail ouvert vise une carte recouverte ; BAS depuis la dernière bibliothèque file dans le contenu | le rail n'était dans aucune section native : `FocusFinder` seul | groupe du rail (`RAIL_GROUP_KEY`) lié sur Android : section native + piège HAUT/BAS |
+| Menu d'organisation ouvert sans focus ; « Tout afficher » rend le focus à la mauvaise entrée | `Dialog` : rien focalisé à l'ouverture, focus rendu SANS événement au retrait | « Déplacer » réclamée ; `railMenuReturnTarget` réclamé au retrait (`claimAfterModalExit`) |
+| « Qui regarde ? » coupe « compat-user2 » | nom limité à la tuile (248 pt) — vrai aussi sur tvOS | nom sur la tuile et son écart, réduit plutôt que coupé (les deux téléviseurs) |
+| (banc) focus d'une Modal invisible, app en arrière-plan non vue, maintiens | sonde et pilote | `topFocus`/`topBlur`, `AppState`, injecteur `Hold.java` |
+
+Le plantage des panneaux à guides (§ 2.1, `StackOverflowError`) ne se
+reproduit plus sur `main` fusionné : panneaux-cartes, 19 scénarios, même
+comportement que l'Apple TV (entrée sur le cran 5, guides des trois groupes,
+garde anti-clic, Retour).
+
+### 4.3 Les profils de la Famille, de bout en bout (banc réel)
+
+Jellyfin jetable (harnais `apps/backend/test/jellyfin-compat`, colima),
+backend du worktree, comptes `compat-*` seulement : une famille (propriétaire,
+un membre, deux invités dont un avec PIN), une TV jumelée par le flux
+« appareil ». À l'émulateur : jeton échangé (`/api/family/tv/enroll`),
+« Qui regarde ? » (quatre profils, cadenas, « Gérer les profils »), profil
+sans PIN ouvert, changement de profil depuis le rail puis depuis les
+Réglages (le focus revient au profil actif), profil AVEC PIN par le pavé,
+« Gérer les profils » (rôles, droits, actions) — conformes. Seul défaut
+relevé : le nom coupé (corrigé, ci-dessus).
+
+### 4.4 Reste à faire (relevé par le banc, non corrigé ce soir)
+
+- **Largeur des textes** : 3 à 6 % plus étroits qu'à l'Apple TV (même Inter) —
+  écart de CADRE seul, sur toutes les pages ; à juger sur la Shield, et, si
+  visible, à compenser par un `letterSpacing` mesuré (rendu, A2).
+- **HAUT tenu dans une grille** passe à la barre de filtres ; l'Apple TV
+  s'arrête sur `grid:0` (`ecrans/bibliotheque#bibliotheque-defilement`). La
+  barre est dans la MÊME liste que la grille : la règle de tvOS vient
+  vraisemblablement d'UIKit (un élément encore hors écran pendant la remontée
+  n'est pas visé) — à imiter dans le pas tenu de `TentacleFocusSection`, avec
+  un banc dédié.
+- **Jumelage, HAUT depuis la langue** : « Configurer manuellement » au lieu
+  d'« Afficher le code » — égalité géométrique (deux boutons presque à même
+  distance ; tvOS départage par le recouvrement), aggravée par les textes plus
+  étroits (`socle/demarrage#demarrage-jumelage`, pas 3).
+- **Fiche lente** (série) : à l'arrivée, le focus peut tomber sur la croix
+  (`ecrans/fiche#fiche-saisons-episodes`) — la build debug de l'émulateur est
+  lente, à revérifier en release.
+- **Lecteur** : Android ne demande pas `PlaybackInfo` à l'ouverture (chaîne
+  de flux du moteur Android, reprise telle quelle) — l'Apple TV, si ;
+  défilement : un OK sur la frise rend `player:playpause` au lieu de
+  `player:scrub` (`lecteur#lec-05`, pas 5).
+- **Mesures** : l'émulateur en build debug ne dit rien de la fluidité
+  (~650 ms par image, rendu logiciel) ni de la mémoire (PSS 934 Mo dont
+  757 Mo de tas natif, sans Hermes compilé) : à mesurer sur la Shield, en
+  release.
