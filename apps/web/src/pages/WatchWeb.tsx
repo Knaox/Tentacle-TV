@@ -18,6 +18,7 @@ import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
 import { useGroupIntroSkip } from "../watchTogether/introSkipRefusal";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
+import { JellyfinOutageNotice } from "../components/player/JellyfinOutageNotice";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
@@ -289,6 +290,7 @@ export function WatchWeb() {
         />
       )}
       <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
+      <JellyfinOutageNotice onRetry={playback.reopen} />
     </div>
   );
 }

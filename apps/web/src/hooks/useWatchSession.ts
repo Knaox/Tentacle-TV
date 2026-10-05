@@ -18,7 +18,7 @@ import { useSegmentsLocalFirst } from "./useSegmentsLocalFirst";
 import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId, resumeStartSeconds } from "./watchSessionMedia";
 import { useLocalPosterUrl } from "./useLocalPosterUrl";
 import { useServerTrackPrefs } from "./useServerTrackPrefs";
-import { useOfflineMode } from "../offline/useOfflineMode";
+import { usePlaybackOfflineMode } from "../offline/useOfflineMode";
 import { useLocalEpisodeNavigation } from "../downloads/useLocalEpisodeNavigation";
 import { wtLog } from "../watchTogether/wtLog";
 
@@ -41,9 +41,10 @@ export interface WatchSessionOptions {
   isDesktop: boolean;
   /** Only used by desktop path. Web uses server-driven PlaybackInfo. */
   checkAudioTranscode?: (codec: string, channels: number) => boolean;
+  sessionNonce?: number; // bureau : chaque remontage du lecteur (`attempt`) ouvre une session neuve
 }
 
-export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSessionOptions) {
+export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce = 0 }: WatchSessionOptions) {
   const { t } = useTranslation("player");
   const { itemId } = useParams<{ itemId: string }>();
   const [searchParams] = useSearchParams();
@@ -52,7 +53,8 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // Résolution de la source locale AVANT toute requête serveur : en lecture
   // locale (fichier téléchargé), AUCUNE query réseau ne doit partir — zéro
   // bande passante, en ligne comme hors ligne.
-  const offlineMode = useOfflineMode();
+  // Le « hors ligne » qu'une panne de Jellyfin provoque ne touche pas au flux en cours.
+  const offlineMode = usePlaybackOfflineMode();
   const { localSource, isLocalPlayback, waitingLocal } = useLocalSource({ isDesktop, itemId });
   const { item, isLoading, error: itemError } = useLocalFirstMedia({ itemId, isLocalPlayback, waitingLocal });
   // Config auto-play : pollée pendant une lecture STREAMING (seuil MaxResumePct
@@ -174,7 +176,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const desktopPlaySessionId = useMemo(() => {
     if (!isDesktop) return "";
     return generatePlaySessionId();
-  }, [itemId, isDesktop, qualityKey, audioIndex, burnInSubtitleIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [itemId, isDesktop, qualityKey, audioIndex, burnInSubtitleIndex, sessionNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const desktopIsDirectStream = isDesktop && !desktopIsDirectPlay && needsAudioTranscode && quality == null;
 

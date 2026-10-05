@@ -22,6 +22,7 @@ import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
 import { useGroupIntroSkip } from "../watchTogether/introSkipRefusal";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
+import { JellyfinOutageNotice } from "../components/player/JellyfinOutageNotice";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
@@ -36,6 +37,8 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   // cleanup éprouvé fait le destroy/detach (pas d'orpheline) — et cet écran
   // prend sa place. La bascule de secours n'est PAS mémorisée.
   const [mediaMissing, setMediaMissing] = useState(false);
+  // Chaque remontage du lecteur (réessai, retour de Jellyfin) ouvre une session neuve.
+  const [attempt, setAttempt] = useState(0);
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
@@ -48,7 +51,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     segments, maxResumePct, getPositionTicks,
     isLocalPlayback, localSource, itemError,
-  } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false });
+  } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false, sessionNonce: attempt });
   const { t: tDownloads } = useTranslation("downloads");
 
   // Changement d'épisode : l'écran « fichier introuvable » ne survit pas à
@@ -197,7 +200,6 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
 
   // Un échec que plus rien ne rattrape : dit, avec ses gestes ; un défaut du
   // LECTEUR seul bascule encore vers le lecteur web (useWebPlaybackProblem).
-  const [attempt, setAttempt] = useState(0);
   const playback = useWebPlaybackProblem({
     client, itemId, item, itemError: isLocalPlayback ? null : itemError, negotiationError: null, streamUrl, isDirectPlay,
     burningSubtitles: burnInSubtitleIndex != null, subtitlesActive: subtitleIndex != null,
@@ -286,6 +288,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         applyToSeries={applyToSeries}
       />
       <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
+      <JellyfinOutageNotice onRetry={playback.reopen} />
       {/* Indicateur discret « Lecture locale » — suit le fondu des contrôles. */}
       {isLocalPlayback && controlsVisible && (
         <div className="pointer-events-none absolute right-4 top-4 z-40 rounded-full bg-status-success-bg px-3 py-1 text-xs font-semibold text-status-success-fg">

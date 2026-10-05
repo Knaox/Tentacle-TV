@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import type { JellyfinClient } from "@tentacle-tv/api-client";
+import { getJellyfinHealth, playbackErrorsSuppressed, useJellyfinOutage, type JellyfinClient } from "@tentacle-tv/api-client";
 import {
   describeProblem, diagnosePlaybackFailure, isPlayerFault, lowerQualityTier, nextVersionId, transcodeAllowedOf, VERSION_QUERY_PARAM,
   type DiagnosedFailure, type MediaItem, type PlaybackFailure, type ProblemActionKey, type ProblemModel,
@@ -66,6 +66,12 @@ export function useWebPlaybackProblem(args: WebPlaybackProblemArgs) {
   const seq = useRef(0);
   const argsRef = useRef(args);
   argsRef.current = args;
+  /** Une erreur tue pendant une panne de Jellyfin : le flux est à rouvrir au retour. */
+  const heldRef = useRef(false);
+  /** Une erreur pendant la reprise rouvre UNE fois ; la suivante se diagnostique. */
+  const retriedRef = useRef(false);
+  const reopenRef = useRef<() => void>(() => undefined);
+  const outage = useJellyfinOutage();
 
   /**
    * Un échec à dire. `fallback` (bureau) : si la cause accuse le LECTEUR, la
@@ -73,9 +79,23 @@ export function useWebPlaybackProblem(args: WebPlaybackProblemArgs) {
    * part, au lieu d'un lecteur de secours qui échouerait pareil.
    */
   const report = useCallback((failure: PlaybackFailure, extra: { started?: boolean; fallback?: () => void } = {}) => {
+    if (extra.started) startedRef.current = true;
+    // Jellyfin redémarre ou s'arrête (dit par le serveur) : l'erreur n'a qu'une
+    // cause, déjà dite par le bandeau. Ni écran d'erreur, ni bascule de lecteur.
+    if (playbackErrorsSuppressed()) {
+      if (getJellyfinHealth().state !== "up") {
+        heldRef.current = true;
+        return;
+      }
+      // Jellyfin est revenu : l'ancien flux finit de mourir — on rouvre, une fois.
+      if (!retriedRef.current) {
+        retriedRef.current = true;
+        reopenRef.current();
+        return;
+      }
+    }
     const id = ++seq.current;
     const a = argsRef.current;
-    if (extra.started) startedRef.current = true;
     setDiagnosing(true);
     void diagnosePlaybackFailure(failure, {
       streamUrl: absolute(a.streamUrl),
@@ -162,7 +182,32 @@ export function useWebPlaybackProblem(args: WebPlaybackProblemArgs) {
     }
   }, [clear, lowerKey, otherVersion, navigate, queryClient]);
 
+  /** Rouvrir le flux là où il en était — mêmes pistes, nouvelle session. */
+  const reopen = useCallback(() => {
+    heldRef.current = false;
+    const a = argsRef.current;
+    const at = startedRef.current ? a.positionRef.current : undefined;
+    clear();
+    setResumeAt(at);
+    // La fiche n'avait pas pu se lire pendant la panne : on la relit d'abord.
+    if (!a.item) void queryClient.invalidateQueries({ queryKey: ["item", a.itemId] });
+    else a.restartAt(at ?? 0);
+  }, [clear, queryClient]);
+  reopenRef.current = reopen;
+
+  // Jellyfin est revenu : le flux se rouvre, TOUJOURS. Un transcodage est mort
+  // avec lui ; une lecture directe aussi, souvent, sans le dire — mesuré
+  // (banc web, Chrome) : la réserve épuisée, le `<video>` attend pour toujours,
+  // sans erreur, et ne redemande rien au retour de Jellyfin.
+  const recoveriesRef = useRef(outage.recoveries);
+  useEffect(() => {
+    if (outage.recoveries === recoveriesRef.current) return;
+    recoveriesRef.current = outage.recoveries;
+    retriedRef.current = false;
+    reopen();
+  }, [outage.recoveries, reopen]);
+
   const markStarted = useCallback(() => { startedRef.current = true; }, []);
 
-  return { problem, diagnosing, report, onAction, markStarted, resumeAt };
+  return { problem, diagnosing, report, onAction, markStarted, resumeAt, reopen };
 }

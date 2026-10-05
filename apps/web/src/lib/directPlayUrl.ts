@@ -17,3 +17,14 @@ export function directPlayUrl(client: JellyfinClient, itemId: string, mediaSourc
     ? withDirectApiKey(`${ds.mediaBaseUrl}${path}`, ds.jellyfinToken)
     : `${client.getBaseUrl()}${path}&api_key=${client.getAccessToken() ?? ""}`;
 }
+
+/**
+ * Une relance (« Réessayer », retour de Jellyfin après une panne) rouvre le
+ * MÊME fichier : sans marque, l'URL est identique et le `<video>` garde sa
+ * connexion morte. Jellyfin ignore le paramètre ; la TV fait de même
+ * (`tntRestart`, `streamRestart.ts`). La première lecture n'en porte aucun :
+ * le préchargement (`mediaWarmup.ts`) réchauffe exactement son URL.
+ */
+export function withRestartMark(url: string, restart: number | undefined): string {
+  return restart ? `${url}${url.includes("?") ? "&" : "?"}tntRestart=${restart}` : url;
+}

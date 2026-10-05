@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
-import { killActiveEncoding, type JellyfinClient } from "@tentacle-tv/api-client";
+import { killActiveEncoding, playbackErrorsSuppressed, type JellyfinClient } from "@tentacle-tv/api-client";
 import {
   BURN_IN_SUBTITLE_CODECS, PGS_SUBTITLE_CODECS, TICKS_PER_SECOND,
 } from "@tentacle-tv/shared";
@@ -105,7 +105,9 @@ export function useWebPlaybackFallbacks({
   const signalerMkvNonFiable = pbInfo.signalerMkvNonFiable;
   const handleDirectPlayNonFiable = useCallback((seconds: number) => {
     if (seconds > 0) setStartTicks(Math.floor(seconds * TICKS_PER_SECOND));
-    signalerMkvNonFiable();
+    // Muette pendant une panne de Jellyfin (ou sa reprise) : le fichier n'y est
+    // pour rien — le disqualifier condamnerait la session au remux.
+    if (!playbackErrorsSuppressed()) signalerMkvNonFiable();
     restartPlayback();
   }, [signalerMkvNonFiable, setStartTicks, restartPlayback]);
   const readContainer = (pbInfo.mediaSource?.Container ?? mediaSource?.Container)?.toLowerCase();

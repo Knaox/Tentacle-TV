@@ -89,6 +89,7 @@ export function useWebPlaybackInfoFetch({
       // transcode au bitrate demandé mais garde la définition d'origine.
       maxHeight: quality != null ? qualityMaxHeight : undefined,
       forceTranscode,
+      restart: playbackRestart,
       // Le profil ne voit jamais l'item : il faut lui dire ce qu'on s'apprête à
       // lui faire lire. Seul le téléviseur s'en sert, pour choisir le conteneur
       // d'un remux qui préserve le RPU.

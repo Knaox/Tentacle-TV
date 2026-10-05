@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { applyTranscodeTarget, fitServerCappedTranscode, useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
-import { directPlayUrl } from "../lib/directPlayUrl";
+import { directPlayUrl, withRestartMark } from "../lib/directPlayUrl";
 import { transcodeTarget, type MediaSource, type PlaybackFailure } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
@@ -150,6 +150,7 @@ export function usePlaybackInfo(nativePlayer = false) {
     maxHeight?: number;
     /** Force server-side audio selection (Edge/Chrome: no native audioTracks API). */
     forceTranscode?: boolean;
+    restart?: number; // relance n°N : l'URL directe change, sinon le <video> ne recharge rien
     /**
      * La source est en Dolby Vision — le profil du téléviseur en a besoin pour
      * choisir le conteneur d'un éventuel remux. Sans elle, le profil ne sait
@@ -205,7 +206,7 @@ export function usePlaybackInfo(nativePlayer = false) {
       let url: string;
       const ds = client.getDirectStreaming();
       if (directPlay) {
-        url = directPlayUrl(client, opts.itemId, ms.Id);
+        url = withRestartMark(directPlayUrl(client, opts.itemId, ms.Id), opts.restart);
       } else if (ms.TranscodingUrl) {
         // Transcodage = HLS chargé par hls.js (XHR), donc soumis au CORS. Sur
         // la coquille Electron (origine applicative), le manifeste direct part
