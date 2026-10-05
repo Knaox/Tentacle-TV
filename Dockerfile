@@ -138,6 +138,46 @@ COPY --from=base /app/node_modules/.prisma/client /deploy/node_modules/.prisma/c
 COPY apps/backend/docker/prune-node-modules.sh /tmp/prune-node-modules.sh
 RUN sh /tmp/prune-node-modules.sh /deploy/node_modules
 
+# ── Les outils audio, compilés pour ce seul usage ───────────────────────────
+# Le serveur ne décode que des extraits MP3 : Jellyfin les lui rend déjà en
+# MP3 (services/audioWindows.ts, `/Audio/{id}/stream.mp3`), puis
+# `tailAnalysis/tailAudio.ts` les passe en PCM par ffmpeg et
+# `audioFingerprintTool.ts` en tire l'empreinte par fpcalc. Les paquets
+# d'Alpine tiraient ffmpeg avec TOUS ses codecs vidéo (≈ 60 Mo compressés) ;
+# ici, un ffmpeg statique réduit au MP3 → PCM, et fpcalc lié dessus — même
+# chromaprint, même FFT (fftw3) que le paquet d'Alpine : empreintes et PCM
+# identiques au bit près (mesuré le 2026-10-05 sur trois signaux). Monter de
+# version : docs/RELEASE.md, « Serveur (image Docker) ».
+FROM ${NODE_IMAGE} AS media-tools
+# nasm : l'assembleur des optimisations x86 de ffmpeg — exigé par son
+# `configure` en amd64 (le paquet d'Alpine est construit avec). Sans effet en arm64.
+RUN apk add --no-cache build-base pkgconf xz nasm cmake samurai fftw-dev fftw-static
+ARG FFMPEG_VERSION=8.1.2
+ARG FFMPEG_SHA256=464beb5e7bf0c311e68b45ae2f04e9cc2af88851abb4082231742a74d97b524c
+ADD --checksum=sha256:${FFMPEG_SHA256} https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz /tmp/ffmpeg.tar.xz
+RUN tar -xJf /tmp/ffmpeg.tar.xz -C /tmp && cd /tmp/ffmpeg-${FFMPEG_VERSION} \
+  && ./configure --prefix=/opt/media --enable-static --disable-shared --disable-debug --disable-doc \
+     --disable-autodetect --disable-network --disable-everything --enable-small \
+     --disable-ffprobe --disable-ffplay --enable-ffmpeg \
+     --enable-protocol=file,pipe --enable-demuxer=mp3 --enable-parser=mpegaudio \
+     --enable-decoder=mp3,mp3float --enable-encoder=pcm_s16le --enable-muxer=pcm_s16le \
+     --enable-filter=aresample,aformat,anull --enable-swresample \
+     --extra-ldflags=-static --pkg-config-flags=--static \
+  && make -j"$(nproc)" && make install
+ARG CHROMAPRINT_VERSION=1.6.0
+ARG CHROMAPRINT_SHA256=9d33482e56a1389a37a0d6742c376139fa43e3b8a63d29003222b93db2cb40da
+ADD --checksum=sha256:${CHROMAPRINT_SHA256} https://github.com/acoustid/chromaprint/releases/download/v${CHROMAPRINT_VERSION}/chromaprint-${CHROMAPRINT_VERSION}.tar.gz /tmp/chromaprint.tar.gz
+# fftw3 en STATIQUE : sans le chemin explicite, FindFFTW3 prend la .so et la
+# liaison statique échoue.
+RUN tar -xzf /tmp/chromaprint.tar.gz -C /tmp && cd /tmp/chromaprint-${CHROMAPRINT_VERSION} \
+  && cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DFFT_LIB=fftw3 -DBUILD_TOOLS=ON \
+     -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=/opt/media \
+     -DCMAKE_EXE_LINKER_FLAGS="-static" -DFFTW3_FFTW_LIBRARY=/usr/lib/libfftw3.a \
+  && cmake --build build \
+  && install -m 0755 build/src/cmd/fpcalc /opt/media/bin/fpcalc \
+  && strip /opt/media/bin/ffmpeg /opt/media/bin/fpcalc \
+  && /opt/media/bin/fpcalc -version
+
 # ── Le serveur : backend + client web, SANS le client LG ────────────────────
 FROM ${NODE_IMAGE} AS server
 
@@ -151,15 +191,14 @@ ENV NODE_ENV=production \
     TENTACLE_DEPLOYMENT=docker \
     XDG_CACHE_HOME=/tmp/.cache
 
-# chromaprint : `fpcalc`, l'empreinte audio de l'analyse inter-épisodes
-# (services/audioFingerprintTool.ts) — binaire LGPL invoqué, jamais lié.
-# ffmpeg : décode l'extrait audio de l'analyse de fin de média
-# (services/tailAnalysis/tailAudio.ts). python3 : fait tourner le zipapp de
-# yt-dlp. Plus de deno : yt-dlp résout les défis JavaScript de YouTube avec le
-# Node du serveur (≥ 22, services/trailers/ytExtract.ts). su-exec : rendre la
-# main à l'utilisateur du serveur après la préparation du volume. tini : un
-# vrai PID 1, qui transmet les signaux et récolte les processus orphelins.
-RUN apk add --no-cache chromaprint ffmpeg python3 su-exec tini
+# python3 : fait tourner le zipapp de yt-dlp. Plus de deno : yt-dlp résout
+# les défis JavaScript de YouTube avec le Node du serveur (≥ 22,
+# services/trailers/ytExtract.ts). su-exec : rendre la main à l'utilisateur du
+# serveur après la préparation du volume. tini : un vrai PID 1, qui transmet
+# les signaux et récolte les processus orphelins. ffmpeg et fpcalc (binaires
+# LGPL invoqués, jamais liés au serveur) viennent de l'étape « media-tools ».
+RUN apk add --no-cache python3 su-exec tini
+COPY --from=media-tools /opt/media/bin/ffmpeg /opt/media/bin/fpcalc /usr/local/bin/
 
 # yt-dlp : résolution des bandes-annonces YouTube → flux HLS jouable (Apple TV
 # n'a pas de WebView). Le zipapp OFFICIEL, épinglé et vérifié : le paquet

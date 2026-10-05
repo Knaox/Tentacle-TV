@@ -189,6 +189,13 @@ node scripts/package-macos.mjs --lib ./lib/mpv --arch arm64
   (la ligne `yt-dlp` du `SHA2-256SUMS` de la release) ; entre deux images, le
   backend pose seul la dernière version (`services/ytDlp.ts`, `TENTACLE_YTDLP_AUTOUPDATE=0`
   pour s'en tenir à l'épinglée).
+- **ffmpeg et fpcalc** (analyse audio : openings, endings, fins de média) sont
+  COMPILÉS dans l'étape `media-tools` du `Dockerfile`, réduits au MP3 → PCM :
+  plus de paquet Alpine. Monter de version = `FFMPEG_VERSION`/`FFMPEG_SHA256`
+  (archive `.tar.xz` de ffmpeg.org, empreinte vérifiée à la main) et
+  `CHROMAPRINT_VERSION`/`CHROMAPRINT_SHA256` (archive source de la release
+  GitHub d'acoustid/chromaprint). Garder la FFT `fftw3` : c'est celle du paquet
+  d'Alpine, et les empreintes restent identiques au bit près.
 - **Poids de l'image** : le `node_modules` final vient de `pnpm deploy --prod`
   (le serveur seul), élagué par `apps/backend/docker/prune-node-modules.sh`.
   Une dépendance de production ajoutée au serveur y entre d'elle-même ; un
