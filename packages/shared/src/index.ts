@@ -110,6 +110,14 @@ export * from "./serverLinks/serverLinksVerdict";
 // L'assistant d'installation du serveur : le contrat de /api/setup/* (miroir
 // backend), codes d'erreur traduits par l'espace i18n `setupWizard`.
 export * from "./setupWizard/setupWizardContract";
+// L'accès à distance : protocole du service de test (miroir backend et
+// apps/port-check), contrat des réglages (miroir backend), plan des ports,
+// verdict du test et extraits de mandataire. Mots : espace i18n `remoteAccess`.
+export * from "./remoteAccess/checkProtocol";
+export * from "./remoteAccess/remoteAccessContract";
+export * from "./remoteAccess/portPlan";
+export * from "./remoteAccess/remoteVerdict";
+export * from "./remoteAccess/proxySnippets";
 // La mise à jour du serveur Tentacle : le contrat de /api/admin/server-update
 // (miroir backend), ce que la carte du tableau de bord en dit (à jour,
 // conseillée, obligatoire) et la commande à copier — sans jamais parler à Docker.
