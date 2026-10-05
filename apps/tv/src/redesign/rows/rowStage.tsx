@@ -1,13 +1,14 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { initialRelease, nextRelease, type StagedRow } from "@tentacle-tv/tv-core";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createStagingPacer, initialRelease, nextRelease, type StagedRow } from "@tentacle-tv/tv-core";
 import { RENDER } from "../render/renderProfile";
 
 /**
  * Le montage ÉCHELONNÉ des rangées d'une page (tv-core `render/rowStaging`),
  * là où le profil de rendu le demande (`stagedRows` : Android TV). La page
- * pose `RowStageProvider` ; chaque rangée dit sa place (`useStagedCount`) et
- * ne rend que les cartes libérées : l'écran d'emblée, puis une part par image
- * — ce qui n'est pas encore à l'écran se monte sans retenir ce qui l'est.
+ * pose `RowStageProvider` ; chaque rangée dit sa place (`useStagedRow`) et ne
+ * rend que les cartes libérées : l'écran d'emblée, puis une part par image à
+ * l'heure — ce qui n'est pas encore à l'écran se monte sans retenir ce qui
+ * l'est ; la rangée qui prend le focus passe devant (`demand`).
  *
  * Sans le profil (Apple TV), ou sans fournisseur : tout, tout de suite.
  */
@@ -17,31 +18,45 @@ interface Entry extends StagedRow {
 }
 
 interface RowStager {
-  register(rank: number, total: number, released: number, set: (released: number) => void): () => void;
+  /** Une rangée entre dans la page ; rend son entrée (la demander) et son départ. */
+  register(rank: number, total: number, released: number, set: (released: number) => void): { demand(): void; leave(): void };
 }
 
 function createRowStager(): RowStager & { dispose(): void } {
   const entries = new Set<Entry>();
+  const pacer = createStagingPacer();
   let frame: number | null = null;
-  const pump = () => {
+  const schedule = () => {
+    if (frame === null) frame = requestAnimationFrame(pump);
+  };
+  const pump = (now: number) => {
     frame = null;
     const next = nextRelease([...entries]);
     if (!next) return;
-    for (const entry of entries) {
-      if (entry.rank !== next.rank || entry.released >= entry.total) continue;
-      entry.released = next.released;
-      entry.set(next.released);
-      break;
+    if (pacer.frame(now)) {
+      for (const entry of entries) {
+        if (entry.rank !== next.rank || entry.released >= entry.total) continue;
+        entry.released = next.released;
+        entry.set(next.released);
+        break;
+      }
     }
-    frame = requestAnimationFrame(pump);
+    schedule();
   };
   return {
     register(rank, total, released, set) {
       const entry: Entry = { rank, total, released, set };
       entries.add(entry);
-      if (frame === null) frame = requestAnimationFrame(pump);
-      return () => {
-        entries.delete(entry);
+      schedule();
+      return {
+        demand() {
+          if (entry.demanded) return;
+          entry.demanded = true;
+          schedule();
+        },
+        leave() {
+          entries.delete(entry);
+        },
       };
     },
     dispose() {
@@ -62,12 +77,14 @@ export function RowStageProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Combien de ses `total` cartes une rangée rend : celles que l'échelonnement
- * a libérées (`rank` : sa place dans la page, de haut en bas). Une rangée sans
- * place, ou hors d'une page échelonnée : toutes. Ce qui est libéré le reste
- * (des cartes de plus arrivent avec les données, jamais de moins).
+ * Combien de ses `total` cartes une rangée rend (`shown`) : celles que
+ * l'échelonnement a libérées (`rank` : sa place dans la page, de haut en bas).
+ * Une rangée sans place, ou hors d'une page échelonnée : toutes. Ce qui est
+ * libéré le reste (des cartes de plus arrivent avec les données, jamais de
+ * moins). `demand` (stable) : la rangée a le focus — ce qui lui manque passe
+ * devant ; sans effet hors d'une page échelonnée ou une fois tout monté.
  */
-export function useStagedCount(rank: number | undefined, total: number): number {
+export function useStagedRow(rank: number | undefined, total: number): { shown: number; demand: () => void } {
   const stager = useContext(RowStageContext);
   const staged = stager !== null && rank !== undefined;
   const [released, setReleased] = useState(0);
@@ -76,9 +93,22 @@ export function useStagedCount(rank: number | undefined, total: number): number 
   const shown = staged ? Math.min(total, Math.max(released, initialRelease(rank, total))) : total;
   const current = useRef(shown);
   current.current = shown;
+  const handle = useRef<{ demand(): void } | null>(null);
+  const demanded = useRef(false);
   useLayoutEffect(() => {
     if (!stager || rank === undefined) return undefined;
-    return stager.register(rank, total, current.current, setReleased);
+    const registration = stager.register(rank, total, current.current, setReleased);
+    handle.current = registration;
+    // Une rangée qui revient (plus de cartes) garde sa demande.
+    if (demanded.current) registration.demand();
+    return () => {
+      handle.current = null;
+      registration.leave();
+    };
   }, [stager, rank, total]);
-  return shown;
+  const demand = useCallback(() => {
+    demanded.current = true;
+    handle.current?.demand();
+  }, []);
+  return { shown, demand };
 }

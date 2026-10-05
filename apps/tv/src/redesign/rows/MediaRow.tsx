@@ -10,7 +10,7 @@ import { useForcedFocusKey } from "../focus/focusPreview";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
 import { useRowRewindPort } from "./rowRewindPort";
-import { useStagedCount } from "./rowStage";
+import { useStagedRow } from "./rowStage";
 
 /**
  * Une rangée : son titre (36 pt), puis ses cartes à l'horizontale, peu
@@ -71,14 +71,17 @@ export const MediaRow = memo(function MediaRow({
     [rewind, rowKey],
   );
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
-  const shown = useStagedCount(stageRank, cards.length);
+  const { shown, demand } = useStagedRow(stageRank, cards.length);
 
   const onItemFocus = useCallback(
     (index: number, focused: boolean, card: CardModel) => {
       onItemFocusChange(index, focused);
-      if (focused) onFocusCard?.(card);
+      if (!focused) return;
+      // Parcourue : ce que l'échelonnement ne lui a pas encore monté passe devant.
+      demand();
+      onFocusCard?.(card);
     },
-    [onFocusCard, onItemFocusChange],
+    [onFocusCard, onItemFocusChange, demand],
   );
 
   // Rien tant que l'échelonnement ne lui a rien libéré : jamais une piste
