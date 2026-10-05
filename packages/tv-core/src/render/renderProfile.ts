@@ -68,6 +68,10 @@ export interface RenderProfile {
   /** Les rangées d'une page montées par ÉCHELONS (`rowStaging`) : l'écran
    *  d'abord, le reste une part par image. Faux : tout d'un bloc. */
   stagedRows: boolean;
+  /** Les pixels de l'interface par point : l'échelle à laquelle se demandent
+   *  les images taillées « au double des points » (fiche, panneau, portraits).
+   *  2 sur l'Apple TV 4K ; 1 sur Android TV, rendue en 1080p. */
+  imageScale: number;
 }
 
 export interface CardArtworkSize {
@@ -104,6 +108,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     svgBlur: "points",
     cardArtwork: CARD_ARTWORK.tvos,
     stagedRows: false,
+    imageScale: 2,
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
   // floutée en ancienne architecture — les ombres passent par un masque
@@ -119,6 +124,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     cardArtwork: CARD_ARTWORK.androidtv,
     // Le fil UI de la Shield ne crée pas 2 400 vues dans une image (`rowStaging`).
     stagedRows: true,
+    imageScale: 1,
   },
 };
 

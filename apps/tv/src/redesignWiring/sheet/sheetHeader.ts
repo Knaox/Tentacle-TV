@@ -1,6 +1,7 @@
 import type { JellyfinClient, RecoRowItem } from "@tentacle-tv/api-client";
 import { formatEpisodeCode, latestAdditionsLine, resolveBannerImage, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import type { SheetHeaderModel } from "../../redesign/screens/sheet/ActionSheetView";
+import { imagePixels } from "../cards/imagePixels";
 
 /**
  * L'en-tête de la feuille : ce que la carte MONTRAIT, que le voile vient de
@@ -15,9 +16,11 @@ import type { SheetHeaderModel } from "../../redesign/screens/sheet/ActionSheetV
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
-/** Les images au double de leur taille en points : l'Apple TV 4K rend à ×2. */
-const POSTER_HEIGHT = 312;
-const STILL_WIDTH = 448;
+/** Les images à l'échelle de l'interface (`imagePixels`) : le double des
+ *  points sur l'Apple TV 4K, la taille affichée sur Android TV (1080p) — une
+ *  affiche de 156 points de haut, une vignette de 224 de large. */
+const POSTER_HEIGHT = imagePixels(156);
+const STILL_WIDTH = imagePixels(224);
 
 function tagOf(tag: string | undefined): { tag?: string } {
   return tag ? { tag } : {};

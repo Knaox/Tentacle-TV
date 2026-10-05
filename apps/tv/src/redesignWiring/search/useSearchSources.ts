@@ -4,12 +4,14 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { backdropUriOf, paletteOfItem } from "../cards/cardArtwork";
+import { FOCUS_ZOOM, imagePixels } from "../cards/imagePixels";
 import { useCardModelFactory } from "../cards/cardModels";
 import { legibleLogoOf, metaOf } from "../hero/heroModel";
 import type { SearchModelSources } from "./searchModels";
 
-/** Un portrait de la rangée « Personnes », net sur une Apple TV 4K (échelle 2). */
-const PORTRAIT_HEIGHT = TV_STAGE.card.person.size * 2;
+/** Un portrait de la rangée « Personnes », à l'échelle de l'interface
+ *  (`imagePixels` : net sur une Apple TV 4K, à sa taille sur Android TV). */
+const PORTRAIT_HEIGHT = imagePixels(TV_STAGE.card.person.size, FOCUS_ZOOM);
 
 /**
  * Ce que le modèle de la recherche tire de l'app : les cartes et la lumière

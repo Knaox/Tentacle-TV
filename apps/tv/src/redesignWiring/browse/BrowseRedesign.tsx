@@ -10,14 +10,15 @@ import type { RootStackParamList } from "../../navigation/types";
 import { useBrowseFocus } from "../../platform/tvos/screens/browse";
 import { BrowseView } from "../../redesign/screens/browse/BrowseView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
+import { imagePixels } from "../cards/imagePixels";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 
 type Params = RootStackParamList["SearchBrowse"];
 
-/** Le portrait, net sur une Apple TV 4K (échelle 2). */
-const PORTRAIT_HEIGHT = TV_STAGE.card.person.size * 2;
+/** Le portrait, à l'échelle de l'interface (`imagePixels` : net sur une Apple TV 4K, à sa taille sur Android TV). */
+const PORTRAIT_HEIGHT = imagePixels(TV_STAGE.card.person.size);
 
 /**
  * Parcourir, refondu (Apple TV) : la filmographie d'une personne, un genre ou

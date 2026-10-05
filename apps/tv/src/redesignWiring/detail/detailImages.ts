@@ -1,25 +1,28 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
 import { resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
+import { TV_STAGE } from "@tentacle-tv/theme";
 import { isLogoLegibleOnDark } from "../../redesign/color/artworkPalette";
 import { blurHashOf } from "../cards/cardArtwork";
+import { FOCUS_ZOOM, imagePixels } from "../cards/imagePixels";
 
 /**
- * Les images de la fiche refondue. Les tailles sont en PIXELS : l'Apple TV 4K
- * rend à ×2 et le client n'applique aucune densité sur le téléviseur — on
- * demande donc le double des points affichés, sauf pour le fond (plein cadre,
- * sous ses voiles : 1920 suffisent). Une image que la donnée dit absente n'est
- * jamais demandée : pas de 404 à la chaîne sur une fiche pauvre.
+ * Les images de la fiche refondue. Les tailles sont en PIXELS, à l'échelle de
+ * l'interface (`imagePixels`) : le double des points sur l'Apple TV 4K (×2),
+ * la taille affichée — agrandissement du focus compris — sur Android TV
+ * (1080p) ; sauf pour le fond (plein cadre, sous ses voiles : 1920 suffisent).
+ * Une image que la donnée dit absente n'est jamais demandée : pas de 404 à la
+ * chaîne sur une fiche pauvre.
  */
 
 const BACKDROP_WIDTH = 1920;
 /** Le logo tient dans 680 × 210 points. */
-const LOGO_HEIGHT = 420;
-/** La vignette d'épisode : 460 points de large. */
-const STILL_WIDTH = 920;
-/** Le portrait rond : 176 points. */
-const PORTRAIT_WIDTH = 352;
-/** La vignette d'un extra : 380 points de large. */
-const EXTRA_WIDTH = 760;
+const LOGO_HEIGHT = imagePixels(210);
+/** La vignette d'épisode : 460 points de large, agrandie au focus. */
+const STILL_WIDTH = imagePixels(460, FOCUS_ZOOM);
+/** Le portrait rond : 176 points, agrandi au focus. */
+const PORTRAIT_WIDTH = imagePixels(TV_STAGE.card.person.size, FOCUS_ZOOM);
+/** La vignette d'un extra : 380 points de large, agrandie au focus. */
+const EXTRA_WIDTH = imagePixels(TV_STAGE.card.landscape.width, FOCUS_ZOOM);
 
 const withTag = (tag: string | undefined) => (tag ? { tag } : {});
 
