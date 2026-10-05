@@ -38,6 +38,8 @@ import statsShare from "./statsShare";
 import statsPublic from "./statsPublic";
 import trailerHelp from "./trailerHelp";
 import serverLinks from "./serverLinks";
+import remoteAccess from "./remoteAccess";
+import remoteAccessHelp from "./remoteAccessHelp";
 import requests from "./requests";
 import adminOverview from "./adminOverview";
 import notices from "./notices";
@@ -58,6 +60,8 @@ export default {
   statsPublic,
   trailerHelp,
   serverLinks,
+  remoteAccess,
+  remoteAccessHelp,
   requests,
   adminOverview,
   notices,

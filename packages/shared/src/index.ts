@@ -118,6 +118,8 @@ export * from "./remoteAccess/remoteAccessContract";
 export * from "./remoteAccess/portPlan";
 export * from "./remoteAccess/remoteVerdict";
 export * from "./remoteAccess/proxySnippets";
+export * from "./remoteAccess/routerGuides";
+export * from "./help/remoteAccessGuide";
 // La mise à jour du serveur Tentacle : le contrat de /api/admin/server-update
 // (miroir backend), ce que la carte du tableau de bord en dit (à jour,
 // conseillée, obligatoire) et la commande à copier — sans jamais parler à Docker.
