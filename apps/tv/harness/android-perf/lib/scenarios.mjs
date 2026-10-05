@@ -102,6 +102,21 @@ export const SCENARIOS = [
     steps: 1,
   },
   {
+    id: "aller-retour",
+    title: "Changer de page : « Plus d'infos » du héros ouvre la fiche, puis Retour revient à l'accueil",
+    setup: [tap("right"), wait(1500)],
+    gesture: [tap("ok"), wait(3500), tap("back"), wait(2500)],
+    steps: 2,
+  },
+  {
+    id: "lancement",
+    title: "Lancer une vidéo : OK sur « Reprendre » (MP4 du banc), puis Retour revient à l'accueil",
+    fixtures: ["base/vigie-off", "lecteur/flux-mp4"],
+    setup: [tap("down"), wait(1500)],
+    gesture: [tap("ok"), wait(7000), tap("back"), wait(3000)],
+    steps: 2,
+  },
+  {
     id: "grille",
     title: "La grille des films : BAS tenu 4 s puis HAUT tenu 4 s",
     expectReady: "bibliothèque",
