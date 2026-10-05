@@ -115,7 +115,11 @@ export interface CheckResponse {
   results: CheckTargetResult[];
 }
 
-export type CheckErrorCode = "invalid_input" | "challenge_replayed" | "rate_limited" | "internal";
+/**
+ * `source_not_public` : la demande vient d'une adresse privée ou réservée —
+ * un mandataire mal réglé devant le service. Il ne sonde jamais un réseau interne.
+ */
+export type CheckErrorCode = "invalid_input" | "source_not_public" | "challenge_replayed" | "rate_limited" | "internal";
 
 export interface CheckErrorBody {
   error: CheckErrorCode;
