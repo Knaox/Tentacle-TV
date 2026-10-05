@@ -44,6 +44,30 @@ describe("buildStreamUrl — transcodage de qualité", () => {
   });
 });
 
+describe("buildStreamUrl — la raison dite à Jellyfin", () => {
+  // Passation du 2026-10-05 : la baisse automatique du bureau arrivait chez
+  // Jellyfin sans raison (TranscodeReasons: null) et passait pour une incompatibilité.
+  it("un plafond de débit (palier, baisse automatique) : ContainerBitrateExceedsLimit", () => {
+    const q = params(buildStreamUrl(ctx, "item", { directPlay: false, maxBitrate: 16_484_000, maxHeight: 1080, audioIndex: 2 }));
+    expect(q.get("TranscodeReasons")).toBe("ContainerBitrateExceedsLimit");
+  });
+
+  it("un sous-titre incrusté s'ajoute à la raison", () => {
+    const q = params(buildStreamUrl(ctx, "item", { directPlay: false, maxBitrate: 8_000_000, subtitleStreamIndex: 4 }));
+    expect(q.get("TranscodeReasons")).toBe("ContainerBitrateExceedsLimit,SubtitleCodecNotSupported");
+  });
+
+  it("un repli après erreur dit la sienne, pas un plafond qu'il n'est pas", () => {
+    const q = params(buildStreamUrl(ctx, "item", { directPlay: false, maxBitrate: 8_000_000, transcodeReasons: ["DirectPlayError"] }));
+    expect(q.get("TranscodeReasons")).toBe("DirectPlayError");
+  });
+
+  it("la lecture directe et le remux sans incrustation n'en inventent aucune", () => {
+    expect(params(buildStreamUrl(ctx, "item", {})).has("TranscodeReasons")).toBe(false);
+    expect(params(buildStreamUrl(ctx, "item", { directPlay: false })).has("TranscodeReasons")).toBe(false);
+  });
+});
+
 describe("applyTranscodeTarget", () => {
   // La forme exacte que Jellyfin 10.11 rend en PlaybackInfo (relevée au banc).
   const JELLYFIN =

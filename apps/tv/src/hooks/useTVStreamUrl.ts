@@ -93,9 +93,12 @@ export function useTVStreamUrl(args: {
       }));
     }
     if (forceTranscode) {
+      // Le repli dit SA raison à Jellyfin — pas un plafond de débit qu'il n'est pas.
+      const burnIn = burnInIndex != null && burnInIndex >= 0;
       return mark(client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, maxBitrate: 8_000_000,
         startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
+        transcodeReasons: [burnIn ? "SubtitleCodecNotSupported" : "DirectPlayError"],
       }));
     }
     return mark(client.getStreamUrl(itemId, {

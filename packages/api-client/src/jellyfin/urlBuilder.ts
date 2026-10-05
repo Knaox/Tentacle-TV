@@ -73,6 +73,25 @@ export interface StreamUrlOptions {
    * eux. Non utilisé sur Android (ExoPlayer rend l'ASS nativement).
    */
   burnInSubtitle?: boolean;
+  /**
+   * Pourquoi le serveur transcode, dit à Jellyfin (`TranscodeReasons`, noms de
+   * son énumération). Sans ce paramètre, une URL construite ici arrive chez
+   * Jellyfin SANS raison : il enregistre `TranscodeReasons: null`, et le
+   * tableau de bord ne sait plus distinguer un plafond de débit d'une
+   * incompatibilité. Par défaut : `ContainerBitrateExceedsLimit` sur la branche
+   * du débit (palier, baisse automatique), plus `SubtitleCodecNotSupported`
+   * quand un sous-titre est incrusté. Un repli après erreur passe la sienne
+   * (`DirectPlayError`) ; un chemin qui a vu PlaybackInfo, celles de Jellyfin.
+   */
+  transcodeReasons?: readonly string[];
+}
+
+/** Les raisons d'une URL de transcodage : celles de l'appelant, sinon celles de la branche. */
+function transcodeReasons(options: StreamUrlOptions | undefined, bitrateCap: boolean): string | null {
+  const reasons = new Set(options?.transcodeReasons ?? []);
+  if (reasons.size === 0 && bitrateCap) reasons.add("ContainerBitrateExceedsLimit");
+  if (options?.subtitleStreamIndex != null && options.subtitleStreamIndex >= 0) reasons.add("SubtitleCodecNotSupported");
+  return reasons.size > 0 ? [...reasons].join(",") : null;
 }
 
 export interface StreamUrlContext {
@@ -115,6 +134,9 @@ export function buildStreamUrl(
   p.TranscodingMaxAudioChannels = "6";
   p.RequireAvc = "false";
   p.context = "Streaming";
+
+  const reasons = transcodeReasons(options, Boolean(options?.maxBitrate));
+  if (reasons) p.TranscodeReasons = reasons;
 
   if (!options?.maxBitrate) {
     // Remux: video copy + audio transcode. h264 fallback codec for HW encoding.

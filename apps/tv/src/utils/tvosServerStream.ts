@@ -3,6 +3,7 @@ import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
 import { getHdrCapabilities } from "../lib/hdrCapabilities";
 import { randomSessionId } from "./playerHelpers";
 import { plog } from "./playerDiag";
+import { servedReasons } from "@tentacle-tv/shared";
 
 export interface ServerStream {
   url: string;
@@ -70,10 +71,17 @@ export async function resolveServerStream(a: {
       audioIndex, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
     });
   } else {
-    // Fallback codec : HLS 8 Mbps (parité avec le fallback Android).
+    // Fallback codec : HLS 8 Mbps (parité avec le fallback Android). La raison
+    // part avec l'URL refabriquée : celle du repli, sinon celles que Jellyfin
+    // vient de donner (codec hors profil…) — jamais un plafond inventé.
+    const served = servedReasons(ms);
+    const reasons = a.forceTranscode
+      ? [burnInIndex >= 0 ? "SubtitleCodecNotSupported" : "DirectPlayError"]
+      : served.length > 0 ? served : ["DirectPlayError"];
     url = client.getStreamUrl(itemId, {
       directPlay: false, maxBitrate: 8_000_000,
       audioIndex, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
+      transcodeReasons: reasons,
     });
   }
   plog("stream", `PlaybackInfo → ${directPlay ? "direct play serveur" : "transcode HLS"} (audio=${audioIndex})`);
