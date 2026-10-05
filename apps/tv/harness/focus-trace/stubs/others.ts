@@ -5,7 +5,8 @@ import { useEffect, useRef } from "react";
  *
  * - `@react-navigation/native` : `useFocusEffect` suit l'écran « devant » que le
  *   banc commande (`globalThis.__screen`) — l'effet part à l'arrivée devant, son
- *   nettoyage au départ ; `useIsFocused` lit le même état ;
+ *   nettoyage au départ ; `useIsFocused` et `useNavigation().isFocused()`
+ *   lisent le même état ;
  * - `react-native-reanimated` : `useReducedMotion` (faux) ;
  * - `useRailState` (le rail, T4) : `isNavKey`, la convention des clés `nav:` —
  *   le reste du rail n'est pas sous l'épreuve.
@@ -14,6 +15,12 @@ import { useEffect, useRef } from "react";
 type Screen = { focused: boolean; listeners: Set<(focused: boolean) => void> };
 const bench = globalThis as unknown as { __screen: Screen };
 bench.__screen ??= { focused: true, listeners: new Set() };
+
+/** `navigation.isFocused()` : l'écran est-il devant (`globalThis.__screen`) ? */
+const NAVIGATION = { isFocused: () => bench.__screen.focused };
+export function useNavigation(): typeof NAVIGATION {
+  return NAVIGATION;
+}
 
 export function useFocusEffect(effect: () => undefined | void | (() => void)): void {
   const latest = useRef(effect);

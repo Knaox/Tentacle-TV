@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import {
   closeArrival,
   closesArrival,
@@ -88,16 +88,22 @@ export function useEntryFocus(
     current.cancel = focus.claim(key);
   }, [focus, entryKey]);
 
+  const navigation = useNavigation();
   useEffect(
     () =>
       focus.subscribe((key, focused) => {
         // L'ancre d'un chargement tient le focus, elle n'est pas du contenu (tv-core `holdsArrival`).
         if (!focused || holdsArrival(key)) return;
+        // Un écran COUVERT (une fiche poussée par-dessus) : Android y pose
+        // parfois un focus de passage — le premier focalisable visible, le
+        // temps que l'écran poussé prenne le sien —, tvOS jamais. Il ne compte
+        // pas : le retour rend la carte d'où l'on est parti.
+        if (!navigation.isFocused()) return;
         const inRail = isNavKey(key);
         lastContent.current = lastContentAfter(lastContent.current, key, inRail);
         if (closesArrival(arrivalRef.current!.state, inRail, Date.now())) endArrival();
       }),
-    [focus, endArrival],
+    [focus, endArrival, navigation],
   );
   useEffect(() => () => arrivalRef.current?.cancel?.(), []);
 
