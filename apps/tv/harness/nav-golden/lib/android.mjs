@@ -14,7 +14,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { BenchError, capture, sleep } from "./config.mjs";
+import { fileURLToPath } from "node:url";
+import { BenchError, CACHE_DIR, capture, sleep } from "./config.mjs";
 
 export const ANDROID_PACKAGE = process.env.NAV_GOLDEN_ANDROID_PACKAGE ?? "com.tentacletv.mobile";
 const ACTIVITY = `${ANDROID_PACKAGE}/com.tentacletv.MainActivity`;
@@ -145,27 +146,66 @@ const HOLD_KEY = { hold: "select", holdup: "up", holddown: "down", holdleft: "le
 
 const emu = (ctx, ...events) => adb(ctx, ["emu", "event", "send", ...events]);
 
-/** Appui bref ; par la console de l'émulateur, `input keyevent` sinon (ou si la console refuse). */
+/**
+ * Appui bref : `input keyevent` (enfoncement puis relâchement). La console de
+ * l'émulateur n'injecte rien sur l'AVD Android TV (aucun périphérique n'y
+ * déclare les flèches — mesuré le 2026-10-05).
+ */
 async function tap(ctx, name) {
-  const [linux, code] = KEYS[name];
-  if (isEmulator(ctx)) {
-    const out = emu(ctx, `EV_KEY:${linux}:1`, "EV_SYN:SYN_REPORT:0", `EV_KEY:${linux}:0`, "EV_SYN:SYN_REPORT:0");
-    if (out !== null && !/KO|unknown/i.test(out)) return;
-  }
-  shell(ctx, `input keyevent ${code}`);
+  shell(ctx, `input keyevent ${KEYS[name][1]}`);
 }
 
-/** Appui MAINTENU `seconds` secondes (répétitions comprises) — l'émulateur seulement. */
+const HOLD_SOURCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../android-burst/hold/Hold.java");
+const HOLD_DEX = "/data/local/tmp/hold.dex";
+
+/**
+ * L'injecteur de touche TENUE (`android-burst/hold/Hold.java`) sur l'appareil :
+ * compilé une fois dans le cache du banc, poussé s'il manque. `null` sans
+ * javac ni build-tools (le maintien retombe alors sur la console).
+ */
+function holdInjector(ctx) {
+  if (ctx.holdDex !== undefined) return ctx.holdDex;
+  ctx.holdDex = null;
+  if (!(shell(ctx, `ls ${HOLD_DEX} 2>/dev/null || true`) ?? "").includes("hold.dex")) {
+    const out = path.join(CACHE_DIR, "hold-dex");
+    const dex = path.join(out, "classes.dex");
+    if (!fs.existsSync(dex)) {
+      const jar = fs.readdirSync(path.join(SDK, "platforms")).filter((d) => /^android-\d+$/.test(d)).sort((a, b) => Number(a.split("-")[1]) - Number(b.split("-")[1])).pop();
+      const tools = fs.readdirSync(path.join(SDK, "build-tools")).sort().pop();
+      if (!jar || !tools) return null;
+      const androidJar = path.join(SDK, "platforms", jar, "android.jar");
+      fs.mkdirSync(out, { recursive: true });
+      capture("javac", ["-source", "1.8", "-target", "1.8", "-cp", androidJar, "-d", out, HOLD_SOURCE]);
+      capture(path.join(SDK, "build-tools", tools, "d8"), ["--output", out, "--lib", androidJar, path.join(out, "Hold.class")]);
+      if (!fs.existsSync(dex)) return null;
+    }
+    adb(ctx, ["push", dex, HOLD_DEX]);
+  }
+  ctx.holdDex = HOLD_DEX;
+  return HOLD_DEX;
+}
+
+/**
+ * Appui MAINTENU `seconds` secondes, répétitions comprises (enfoncement, la
+ * 1re répétition à 500 ms puis toutes les 50 ms, relâchement) : l'injecteur,
+ * comme `input` (l'AVD Android TV n'a aucun périphérique qui déclare les
+ * flèches : ni la console ni `sendevent` ne les tiennent). Sans lui, la
+ * console de l'émulateur, puis l'appui long d'Android.
+ */
 async function hold(ctx, name, seconds) {
   const [linux, code] = KEYS[name];
+  const dex = holdInjector(ctx);
+  if (dex) {
+    shell(ctx, `CLASSPATH=${dex} app_process /system/bin Hold ${code} ${Math.round(seconds * 1000)}`);
+    return;
+  }
   if (!isEmulator(ctx)) {
-    // Un boîtier réel : un appui long d'Android (sans durée réglable).
     shell(ctx, `input keyevent --longpress ${code}`);
     return;
   }
-  emu(ctx, `EV_KEY:${linux}:1`, "EV_SYN:SYN_REPORT:0");
+  emu(ctx, `EV_KEY:${linux}:1`);
   await sleep(seconds * 1000);
-  emu(ctx, `EV_KEY:${linux}:0`, "EV_SYN:SYN_REPORT:0");
+  emu(ctx, `EV_KEY:${linux}:0`);
 }
 
 /** Le texte tapé au clavier de l'appareil (`\n` : Entrée). */

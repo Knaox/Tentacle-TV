@@ -106,7 +106,9 @@ function setAsideCrashReports() {
   if (!reports.length) return;
   const aside = path.join(STATE_DIR, "emu-crash");
   fs.mkdirSync(aside, { recursive: true });
-  for (const name of reports) fs.renameSync(path.join(tmp, name), path.join(aside, name));
+  // Horodaté : un rapport du même nom déjà mis de côté (un dossier) ferait échouer le déplacement.
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  for (const name of reports) fs.renameSync(path.join(tmp, name), path.join(aside, `${stamp}-${name}`));
   note(`${reports.length} rapport(s) de plantage d'un émulateur précédent mis de côté (${shortPath(aside)})`);
 }
 

@@ -374,13 +374,25 @@ ANDROID_SERIAL=emulator-5596 node apps/tv/harness/nav-golden/nav-golden.mjs veri
   écrite dans la base d'AsyncStorage de l'app (`databases/RKStorage`, table
   `catalystLocalStorage`, `PRAGMA user_version = 1` — à 0, l'app rejoue sa
   création, échoue et efface la base) avant son lancement.
-- **La télécommande** : la console de l'émulateur (`adb emu event send`) APPUIE
-  puis RELÂCHE, si bien que `hold:<s>` et `holdright:<s>` sont de vrais appuis
-  maintenus, répétitions d'Android comprises ; sur un boîtier réel,
-  `input keyevent` (un appui long sans durée). `menu` est le Retour d'Android,
-  `play` la touche Lecture/Pause, `type:` passe par `input text`. Les
-  scénarios au pavé tactile (`swipe:`, `pan:`) sont IGNORÉS, raison dite : la
-  télécommande Android n'en a pas.
+- **La télécommande** : un appui bref par `input keyevent` ; un appui
+  MAINTENU (`hold:<s>`, `holdright:<s>`…) par l'injecteur
+  `android-burst/hold/Hold.java` (compilé une fois dans le cache du banc,
+  poussé dans `/data/local/tmp/hold.dex`) : enfoncement, répétitions d'Android
+  (500 ms puis toutes les 50 ms), relâchement — l'AVD Android TV n'a aucun
+  périphérique qui déclare les flèches, la console de l'émulateur
+  (`adb emu event send`) et `sendevent` n'y injectent rien. `menu` est le
+  Retour d'Android, `play` la touche Lecture/Pause, `type:` passe par
+  `input text`. Les scénarios au pavé tactile (`swipe:`, `pan:`) sont IGNORÉS,
+  raison dite : la télécommande Android n'en a pas.
+- **Le focus dans une `Modal`** : le focus/blur de `TVEventHandler` ne vient
+  que de la fenêtre de l'activité ; la sonde écoute AUSSI les événements React
+  `topFocus` / `topBlur` (`RCTEventEmitter`), qui viennent de toutes les
+  fenêtres, celle du `Dialog` comprise. À la fermeture, l'activité rend le
+  focus à la carte SANS événement : la sonde revient alors à la vue qui avait
+  le focus avant (si elle est montée).
+- **L'entrée** : l'APK debug charge plus lentement que le simulateur ; un focus
+  encore « en chargement » (`home:loading`) n'est pas une entrée, le banc
+  attend qu'il en sorte avant l'approche.
 - **Le cadre** se compare dans l'espace de la référence (1920 de large) : la
   sonde rend la largeur de la fenêtre, le banc ramène le cadre à 1920 si
   besoin (l'app Android règle déjà sa densité pour 1920 × 1080 pt).

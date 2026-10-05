@@ -176,6 +176,12 @@ async function coldStartAndroid(ctx, start) {
   if (!ready) throw new BenchError("la navigation de l'app n'est jamais prête");
   await sleep(300);
   let entry = await settle(ctx, { since: 0, minMs: 1500, quietMs: 1500, timeoutMs: 60_000, nullQuietMs: 10_000 });
+  // L'APK debug de l'émulateur charge plus lentement que le simulateur : un écran
+  // encore « en chargement » (`home:loading`) n'est pas une entrée — l'approche
+  // partirait pendant qu'il charge.
+  for (let i = 0; i < 20 && /:loading$/.test(entry.focus ?? ""); i++) {
+    entry = await settle(ctx, { since: 0, minMs: 500, quietMs: 1500, timeoutMs: 30_000, nullQuietMs: 10_000 });
+  }
   if (entry.app === "background" && !androidForeground(ctx)) {
     await launchAndroidApp(ctx);
     entry = await settle(ctx, { since: 0, minMs: 1000, quietMs: 1500, timeoutMs: 30_000 });

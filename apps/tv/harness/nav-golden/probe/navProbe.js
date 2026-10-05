@@ -65,12 +65,16 @@ function resetForBench() {
 }
 resetForBench();
 
+function focused(tag) {
+  state.tag = tag;
+  state.seq += 1;
+  state.at = Date.now();
+}
+
 TVEventHandler.addListener((event) => {
   if (!event) return;
   if (event.eventType === "focus") {
-    state.tag = event.tag;
-    state.seq += 1;
-    state.at = Date.now();
+    focused(event.tag);
   } else if (event.eventType === "blur") {
     if (state.tag === event.tag) state.tag = null;
   } else {
@@ -78,6 +82,48 @@ TVEventHandler.addListener((event) => {
     if (state.keys.length > 100) state.keys.shift();
   }
 });
+
+/**
+ * Android : le focus/blur de `TVEventHandler` ne vient que de la fenêtre de
+ * l'activité ; celui d'une `Modal` (sa fenêtre de `Dialog`) n'y passe pas. Les
+ * événements React `topFocus` / `topBlur` que chaque vue envoie
+ * (`ReactViewGroup.onFocusChanged`) passent, eux, par `RCTEventEmitter` —
+ * quelle que soit la fenêtre : on les écoute là, sans rien changer à leur
+ * livraison.
+ */
+/** Pour chaque vue focalisée (Android), celle qui avait le focus juste avant. */
+const previous = new Map();
+
+function hookReactFocusEvents() {
+  const bridgeModule = require("react-native/Libraries/BatchedBridge/BatchedBridge");
+  const BatchedBridge = bridgeModule.default ?? bridgeModule;
+  const wrap = (emitter) => {
+    if (!emitter || emitter.__navGoldenHooked) return;
+    const receive = emitter.receiveEvent;
+    emitter.receiveEvent = function (tag, type, event) {
+      if (type === "topFocus") {
+        if (state.tag !== tag) previous.set(tag, state.tag);
+        focused(tag);
+      } else if (type === "topBlur" && state.tag === tag) {
+        // Une Modal fermée : la fenêtre de l'activité rend le focus à la vue qui
+        // l'avait (la carte), SANS événement. On y revient si elle est montée ;
+        // un vrai déplacement envoie aussitôt le focus suivant.
+        const before = previous.get(tag);
+        state.tag = before != null && findHost(before) ? before : null;
+      }
+      return receive.apply(this, arguments);
+    };
+    emitter.__navGoldenHooked = true;
+  };
+  const existing = BatchedBridge.getCallableModule && BatchedBridge.getCallableModule("RCTEventEmitter");
+  if (existing) return wrap(existing);
+  const register = BatchedBridge.registerCallableModule.bind(BatchedBridge);
+  BatchedBridge.registerCallableModule = (name, module) => {
+    if (name === "RCTEventEmitter") wrap(module);
+    return register(name, module);
+  };
+}
+if (ANDROID) hookReactFocusEvents();
 
 // ─── L'arbre React ───────────────────────────────────────────────────────────
 
