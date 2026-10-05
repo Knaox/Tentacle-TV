@@ -48,12 +48,18 @@ export const FLICK_PX = 180;
 export const OPEN_ENGAGE_PX = 12;
 
 /** Le régime d'un glisser, lu quand le doigt se pose : défilement déjà
- *  ouvert, habillage affiché (à l'écran, pause ou non), habillage caché. */
-export type TouchMode = "open" | "shown" | "hidden";
+ *  ouvert, habillage affiché (à l'écran, pause ou non), habillage caché —
+ *  ou pavé TENU par un bouton qui attend OK (la pilule « Passer l'intro » a
+ *  le focus) : le doigt qui se pose vise le clic, jamais la vidéo. */
+export type TouchMode = "open" | "shown" | "hidden" | "held";
 
 /** Le glisser engage-t-il le défilement ? `dx`, `dy` : sa course depuis la
  *  pose du doigt ; `elapsedMs` : le contact tenu depuis. */
 export function canEngage(mode: TouchMode, dx: number, dy: number, elapsedMs: number): boolean {
+  // Le pavé de la Siri Remote est si sensible qu'un clic glisse toujours un
+  // peu (doigt posé, puis enfoncé) : sous un bouton qui attend OK, aucune
+  // course n'est un défilement. Le maintien ←/→ l'ouvre encore.
+  if (mode === "held") return false;
   const ax = Math.abs(dx);
   if (ax < HORIZONTAL_RATIO * Math.abs(dy)) return false;
   if (mode === "open") return ax >= OPEN_ENGAGE_PX;

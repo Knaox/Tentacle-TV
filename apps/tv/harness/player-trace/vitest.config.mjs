@@ -35,7 +35,7 @@ export default defineConfig({
   define: { __DEV__: "false" },
   server: { fs: { allow: [HERE, WT, REPO] } },
   test: {
-    include: ["trace.test.ts", "androidtv.test.ts"],
+    include: ["trace.test.ts", "androidtv.test.ts", "skipPill.test.ts"],
     setupFiles: ["./setup.ts"],
     environment: "node",
     testTimeout: 120_000,

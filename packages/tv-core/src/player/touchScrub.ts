@@ -1,5 +1,6 @@
 import type { DragPhase } from "../remote/intents";
 import type { PlayerTimers } from "./playerTimers";
+import { contactSawPress } from "./pressGuards";
 import { canEngage, scrubGainFor, type TouchMode } from "./scrubTouchTuning";
 
 /** Un glisser que la plateforme ANNULE n'émet aucune fin : sans nouvelle
@@ -26,6 +27,9 @@ export interface TouchScrubHandlers {
   onWake: () => void;
   /** La durée de la vidéo : tant qu'elle est inconnue, rien ne défile. */
   readDuration: () => number;
+  /** L'heure du dernier appui de la télécommande (0 : aucun) — un contact
+   *  qui en voit un est un clic (`contactSawPress`). */
+  readLastPressAt?: () => number;
 }
 
 export interface TouchScrub {
@@ -45,9 +49,11 @@ export interface TouchScrub {
  * nouveau glisser reprend d'où le curseur en est. Un simple toucher réveille
  * l'habillage.
  *
- * Trois régimes, lus quand le doigt se pose (`canEngage`) : habillage CACHÉ,
+ * Quatre régimes, lus quand le doigt se pose (`canEngage`) : habillage CACHÉ,
  * le glisser ne défile qu'après un contact tenu ; habillage AFFICHÉ, passée la
- * zone morte ; défilement déjà OUVERT, au premier pas. Module pur, minuteurs
+ * zone morte ; défilement déjà OUVERT, au premier pas ; pavé TENU (un bouton
+ * attend OK), jamais. Hors défilement ouvert, un contact pendant lequel un
+ * appui arrive est un CLIC : ni défilement ni réveil. Module pur, minuteurs
  * injectés.
  */
 export function createTouchScrub(handlers: TouchScrubHandlers, timers: PlayerTimers): TouchScrub {
@@ -80,6 +86,11 @@ export function createTouchScrub(handlers: TouchScrubHandlers, timers: PlayerTim
     }
   };
 
+  /** Le contact a vu un appui : c'est un clic (hors défilement ouvert, où
+   *  le doigt vise et où OK valide). */
+  const clicked = () =>
+    s.mode !== "open" && contactSawPress(s.beganAt, handlers.readLastPressAt?.() ?? 0);
+
   /** La fin du geste — relâchement, ou silence d'un geste annulé (ou d'un doigt immobile). */
   const finish = () => {
     if (s.silence !== null) {
@@ -90,7 +101,7 @@ export function createTouchScrub(handlers: TouchScrubHandlers, timers: PlayerTim
     flushNow();
     s.active = false;
     if (s.engaged) handlers.onEndScrub();
-    else handlers.onWake();
+    else if (!clicked()) handlers.onWake();
     s.engaged = false;
   };
 
@@ -135,6 +146,7 @@ export function createTouchScrub(handlers: TouchScrubHandlers, timers: PlayerTim
       if (!s.engaged) {
         if (!((handlers.readDuration() || 0) > 0)) return;
         if (!canEngage(s.mode, x - s.originX, y - s.originY, timers.now() - s.beganAt)) return;
+        if (clicked()) return;
         s.engaged = true;
         s.lastX = x; // le curseur part d'ici : la zone morte ne déplace rien
         handlers.onStartScrub();

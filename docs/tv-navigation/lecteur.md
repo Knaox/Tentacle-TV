@@ -284,6 +284,13 @@ ms ; affiché : 180 ms / 180 pt ; ouvert : 12 pt), bouton ⏩, touches média
   deux, lissage `t²(3−2t)`.
 - Coupé (`enabled` faux : panneau des contrôles ouvert) ou démonté : le geste
   en cours est oublié, le pan est rendu.
+- **Un contact qui voit un appui est un CLIC** (`contactSawPress`,
+  `pressGuards.ts`) : hors défilement ouvert, un appui (ou un relâchement)
+  arrivé pendant que le doigt touche — geste repris après un silence compris
+  — interdit l'engagement ET le réveil de ce contact, quoi qu'il glisse. Un
+  appui d'avant la pose n'y compte pas (le réveil a déjà sa garde de 600 ms).
+- Régime `held` : la pilule de saut tient le focus (`skipHoldsFocus`, lu à la
+  pose) — jamais d'engagement (§ 4.9).
 
 ### 4.9 Pilule de saut
 
@@ -294,6 +301,7 @@ ms ; affiché : 180 ms / 180 pt ; ouvert : 12 pt), bouton ⏩, touches média
 | ↑ | habillage masqué : rallume (la pilule GARDE le focus : `skipHoldsFocus`) ; habillage affiché, focus dans l'îlot : vers Retour (`islandUp`) |
 | ← depuis « Passer », habillage affiché | vers Retour (`islandLeft`) |
 | ↓, habillage affiché | vers lecture/pause (`islandExit`) |
+| glisser, toucher (pilule focalisée) | régime `held` : AUCUN glisser n'engage le défilement, habillage caché ou affiché (`canEngage`) — un clic de la Siri Remote glisse toujours un peu (doigt posé, puis enfoncé : retour d'essai 1.10.1, OK lançait une recherche ou ouvrait la barre). Un simple toucher réveille encore l'habillage. Le maintien ←/→ ouvre toujours le défilement |
 | OK « Passer » | passe le passage, ou rejoint la suite (`nextButton`) ; `onAnyPress` rallume l'habillage |
 | OK « Masquer » | met le passage en sourdine (`dismissOverlay`) |
 | Menu | passage automatique refusable : le met en sourdine + grâce 600 ms ; sinon : Retour ordinaire |

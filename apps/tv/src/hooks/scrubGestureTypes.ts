@@ -18,8 +18,11 @@ export interface ScrubGestureHandlers {
   enabled: boolean;
   /** Le régime du geste, lu quand le doigt se pose : défilement déjà ouvert,
    *  habillage affiché, habillage caché — ce dernier n'engage
-   *  qu'après un contact tenu (`scrubTouchTuning.ts`). */
+   *  qu'après un contact tenu —, ou pavé tenu par la pilule de saut, qui
+   *  n'engage jamais (`scrubTouchTuning.ts`). */
   readTouchMode: () => TouchMode;
+  /** L'heure du dernier appui : un contact qui en voit un est un clic. */
+  readLastPressAt: () => number;
   /** Le doigt se pose (ou repart après un silence) : en défilement, le
    *  décompte attend qu'il s'arrête. */
   onTouchStart: () => void;
