@@ -2,6 +2,7 @@ import { memo, useEffect, useRef } from "react";
 import { animate, motion, useIsPresent, useMotionValue, useTransform, type TargetAndTransition } from "framer-motion";
 import { exitTarget, verdictFromDrag } from "@tentacle-tv/api-client";
 import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api-client";
+import type { TitlePageLink } from "@tentacle-tv/shared";
 import { SwipeCardFace } from "./SwipeCardFace";
 import { SwipeStamps } from "./SwipeStamps";
 
@@ -20,6 +21,10 @@ interface SwipeStackCardProps {
   /** Deux verdicts (cf. SwipeStack) : la carte ne glisse qu'à l'horizontale,
    *  ne se retourne pas, et seul l'écart horizontal juge. */
   binary?: boolean;
+  /** La fiche du titre chez l'extension, et sa place (cf. SwipeCardFace). */
+  page?: TitlePageLink | null;
+  pageSlot?: boolean;
+  onOpenPage?: (href: string) => void;
 }
 
 const SPRING = { type: "spring", stiffness: 420, damping: 32 } as const;
@@ -52,6 +57,9 @@ export const SwipeStackCard = memo(function SwipeStackCard({
   onJudge,
   onToggleInfo,
   binary = false,
+  page,
+  pageSlot,
+  onOpenPage,
 }: SwipeStackCardProps) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -156,6 +164,9 @@ export const SwipeStackCard = memo(function SwipeStackCard({
         infoOpen={top && infoOpen}
         details={details}
         onToggleInfo={onToggleInfo}
+        page={page}
+        pageSlot={pageSlot}
+        onOpenPage={onOpenPage}
       />
       {top && <SwipeStamps x={x} y={y} binary={binary} />}
     </motion.div>

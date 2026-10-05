@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { swipeLangOf, useSwipeCardDetails, useSwipeDeck } from "@tentacle-tv/api-client";
-import type { SwipeVerdict } from "@tentacle-tv/api-client";
+import type { SwipeCard, SwipeVerdict } from "@tentacle-tv/api-client";
+import { useExternalTitleState, useTitleProvider } from "../cards/external/useTitleProvider";
 import { SwipeControls } from "./SwipeControls";
 import { SwipeHeader } from "./SwipeHeader";
 import { SwipeShortcutsLegend } from "./SwipeShortcutsLegend";
@@ -14,6 +16,11 @@ import {
   SwipeSkeleton,
 } from "./SwipeStates";
 import { useSwipeKeyboard } from "./useSwipeKeyboard";
+
+/** L'identité d'une carte HORS bibliothèque — la seule qui ait une fiche chez l'extension. */
+function outsideTitle(card: SwipeCard | undefined) {
+  return card && !card.jellyfinItemId ? { mediaType: card.mediaType, tmdbId: card.tmdbId } : null;
+}
 
 /**
  * La section « Affiner » de la page Recommandations : une pile de films et de
@@ -35,6 +42,14 @@ export function SwipeSection() {
   // Le verso de la suivante se charge pendant qu'on juge celle-ci, et elle le
   // porte déjà : une nouvelle carte arrive toujours côté affiche.
   const { data: nextDetails } = useSwipeCardDetails(next, lang);
+  // La fiche d'un titre hors bibliothèque chez l'extension (Vigie), si elle
+  // la donne ; celle de la suivante se lit d'avance, dans la même requête.
+  const navigate = useNavigate();
+  const { provider } = useTitleProvider();
+  const topPage = useExternalTitleState(outsideTitle(top))?.page ?? null;
+  useExternalTitleState(outsideTitle(next));
+  const pageSlotOf = useCallback((card: SwipeCard) => !!provider && !card.jellyfinItemId, [provider]);
+  const onOpenPage = useCallback((href: string) => navigate(href), [navigate]);
   const topKey = top?.key;
   useEffect(() => {
     setInfoOpen(false);
@@ -86,6 +101,9 @@ export function SwipeSection() {
           nextDetails={nextDetails}
           onJudge={onJudge}
           onToggleInfo={onToggleInfo}
+          topPage={topPage}
+          pageSlotOf={pageSlotOf}
+          onOpenPage={onOpenPage}
         />
       )}
 

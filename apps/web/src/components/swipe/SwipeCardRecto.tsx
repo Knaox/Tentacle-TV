@@ -6,6 +6,8 @@ interface SwipeCardRectoProps {
   card: SwipeCard;
   title: string;
   format: string;
+  /** Garder sous le texte la rangée du bouton de la fiche (cf. SwipeCardFace). */
+  pageSlot?: boolean;
 }
 
 /**
@@ -15,7 +17,7 @@ interface SwipeCardRectoProps {
  * bouton d'info (en bas à droite) est réservée sur TOUTES les cartes : celle
  * qui monte en tête de pile ne recompose pas son titre au moment où on la voit.
  */
-export function SwipeCardRecto({ card, title, format }: SwipeCardRectoProps) {
+export function SwipeCardRecto({ card, title, format, pageSlot = false }: SwipeCardRectoProps) {
   const { t } = useTranslation("swipe");
   return (
     <>
@@ -36,7 +38,7 @@ export function SwipeCardRecto({ card, title, format }: SwipeCardRectoProps) {
         )}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pb-5 pl-5 pr-16 pt-24 text-white">
+      <div className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pl-5 pr-16 pt-24 text-white ${pageSlot ? "pb-[4.5rem]" : "pb-5"}`}>
         <h2 className="text-2xl font-bold leading-tight [text-wrap:balance]">{title}</h2>
         <p className="mt-1 text-sm text-white/80">{format}</p>
         {card.genres.length > 0 && (

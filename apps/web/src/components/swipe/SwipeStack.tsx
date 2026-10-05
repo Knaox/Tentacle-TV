@@ -2,6 +2,7 @@ import { AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { recoPosterUrl, swipeStackZ, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api-client";
+import type { TitlePageLink } from "@tentacle-tv/shared";
 import { SwipeStackCard } from "./SwipeStackCard";
 
 /** Cartes rendues : celle du dessus et deux en attente (leurs affiches se
@@ -30,9 +31,16 @@ interface SwipeStackProps {
    *  coup de cœur, ni « passer », ni verso. Le swipe de groupe (Watch
    *  Together) ; « Affiner » garde ses cinq gestes. */
   binary?: boolean;
+  /** La fiche de la carte du dessus chez l'extension (hors bibliothèque). */
+  topPage?: TitlePageLink | null;
+  /** Les cartes qui gardent la place de ce lien (hors bibliothèque, extension présente). */
+  pageSlotOf?: (card: SwipeCard) => boolean;
+  onOpenPage?: (href: string) => void;
 }
 
-export function SwipeStack({ cards, exitVerdict, infoOpen, details, nextDetails, onJudge, onToggleInfo, binary = false }: SwipeStackProps) {
+export function SwipeStack({
+  cards, exitVerdict, infoOpen, details, nextDetails, onJudge, onToggleInfo, binary = false, topPage = null, pageSlotOf, onOpenPage,
+}: SwipeStackProps) {
   const { t } = useTranslation("swipe");
   const client = useJellyfinClient();
   const reduced = useReducedMotion() ?? false;
@@ -65,6 +73,9 @@ export function SwipeStack({ cards, exitVerdict, infoOpen, details, nextDetails,
             onJudge={onJudge}
             onToggleInfo={onToggleInfo}
             binary={binary}
+            page={depth === 0 ? topPage : null}
+            pageSlot={pageSlotOf?.(card) ?? false}
+            onOpenPage={onOpenPage}
           />
         ))}
       </AnimatePresence>
