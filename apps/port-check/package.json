@@ -1,0 +1,25 @@
+{
+  "name": "@tentacle-tv/port-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Le service de test d'ouverture des serveurs Tentacle (check.tentacletv.app). Jamais déployé par la CI.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/server.cjs --legal-comments=none",
+    "start": "node dist/server.cjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fastify": "^5.2.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.27.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}

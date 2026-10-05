@@ -1,0 +1,11 @@
+# LISTE BLANCHE du contexte de build du service de test (racine du dépôt).
+*
+!package.json
+!pnpm-workspace.yaml
+!pnpm-lock.yaml
+!.npmrc
+!patches/
+!apps/port-check/
+apps/port-check/node_modules
+apps/port-check/dist
+**/.DS_Store
