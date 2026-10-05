@@ -42,7 +42,7 @@ describe("entré en lecture", () => {
     const { countdown, states, onExpire } = harness();
 
     countdown.begin(false);
-    expect(states).toEqual([RESUME_5]);
+    expect(states).toMatchObject([RESUME_5]);
     vi.advanceTimersByTime(4000);
     expect(states.map((s) => s?.remaining)).toEqual([5, 4, 3, 2, 1]);
     expect(onExpire).not.toHaveBeenCalled();
@@ -57,11 +57,28 @@ describe("entré en lecture", () => {
     countdown.begin(false);
     vi.advanceTimersByTime(3500);
     countdown.activity();
-    expect(shown()).toEqual(RESUME_5);
+    expect(shown()).toMatchObject(RESUME_5);
     vi.advanceTimersByTime(4900);
     expect(onExpire).not.toHaveBeenCalled();
     vi.advanceTimersByTime(100);
     expect(onExpire).toHaveBeenCalledTimes(1);
+  });
+
+  it("une relance dans la seconde affichée ouvre une nouvelle COURSE : la barre repart pleine sans attendre la seconde suivante", () => {
+    const { countdown, states, shown } = harness();
+
+    countdown.begin(false);
+    const first = shown()!.run;
+    vi.advanceTimersByTime(400);
+    countdown.activity();
+    // Toujours « 5 s » : l'état est republié quand même, d'une autre course.
+    expect(states).toHaveLength(2);
+    expect(shown()).toMatchObject(RESUME_5);
+    expect(shown()!.run).not.toBe(first);
+    // Les secondes d'une même course gardent sa marque.
+    const second = shown()!.run;
+    vi.advanceTimersByTime(1000);
+    expect(shown()).toMatchObject({ remaining: 4, run: second });
   });
 
   it("un geste continu le tient (masqué), son relâchement repart d'un décompte entier", () => {
@@ -74,7 +91,7 @@ describe("entré en lecture", () => {
     vi.advanceTimersByTime(60_000);
     expect(onExpire).not.toHaveBeenCalled();
     countdown.release();
-    expect(shown()).toEqual(RESUME_5);
+    expect(shown()).toMatchObject(RESUME_5);
     vi.advanceTimersByTime(5000);
     expect(onExpire).toHaveBeenCalledTimes(1);
   });
@@ -116,7 +133,7 @@ describe("la machine qui rapporte ses gestes", () => {
     machine.enter();
     vi.advanceTimersByTime(4500);
     machine.step(1, 1);
-    expect(shown()).toEqual(RESUME_5);
+    expect(shown()).toMatchObject(RESUME_5);
     vi.advanceTimersByTime(4500);
     machine.touch();
     vi.advanceTimersByTime(4999);
@@ -135,7 +152,7 @@ describe("la politique : l'issue et le délai", () => {
     const { countdown, states, onExpire } = harness({ outcome, delayMs: seconds * 1000 });
 
     countdown.begin(false);
-    expect(states[0]).toEqual({ remaining: seconds, total: seconds, outcome });
+    expect(states[0]).toMatchObject({ remaining: seconds, total: seconds, outcome });
     vi.advanceTimersByTime(seconds * 1000 - 1);
     expect(states.map((s) => s?.remaining)).toEqual(Array.from({ length: seconds }, (_, i) => seconds - i));
     expect(onExpire).not.toHaveBeenCalled();
@@ -151,7 +168,7 @@ describe("la politique : l'issue et le délai", () => {
     countdown.begin(false);
     vi.advanceTimersByTime(seconds * 1000 - 500);
     countdown.activity();
-    expect(shown()).toEqual({ remaining: seconds, total: seconds, outcome });
+    expect(shown()).toMatchObject({ remaining: seconds, total: seconds, outcome });
     vi.advanceTimersByTime(seconds * 1000 - 1);
     countdown.hold();
     vi.advanceTimersByTime(60_000);
@@ -186,12 +203,12 @@ describe("la politique : l'issue et le délai", () => {
     countdown.begin(false);
     policy = { outcome: "return", delayMs: 3000 };
     countdown.activity();
-    expect(states.at(-1)).toEqual({ remaining: 10, total: 10, outcome: "resume" });
+    expect(states.at(-1)).toMatchObject({ remaining: 10, total: 10, outcome: "resume" });
     vi.advanceTimersByTime(10_000);
     expect(onExpire).toHaveBeenLastCalledWith("resume");
 
     countdown.begin(false);
-    expect(states.at(-1)).toEqual({ remaining: 3, total: 3, outcome: "return" });
+    expect(states.at(-1)).toMatchObject({ remaining: 3, total: 3, outcome: "return" });
     vi.advanceTimersByTime(3000);
     expect(onExpire).toHaveBeenLastCalledWith("return");
   });

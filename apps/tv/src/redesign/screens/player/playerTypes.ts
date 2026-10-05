@@ -91,7 +91,11 @@ export interface ScrubCountdownModel {
   hint?: string;
   /** En secondes. */
   countdown: Countdown;
-  /** La barre glisse d'une seconde à la suivante ; sans, elle se pose (banc). */
+  /** La course du décompte (tv-core `ScrubCountdownState.run`) : elle change à
+   *  chaque relance — la barre repart alors pleine, même dans la seconde affichée. */
+  run?: number;
+  /** La barre glisse, d'un seul tenant, de la relance à l'échéance ; sans, elle
+   *  se pose à la seconde (banc). */
   live?: boolean;
 }
 

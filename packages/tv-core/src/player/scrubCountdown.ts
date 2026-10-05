@@ -48,6 +48,10 @@ export interface ScrubCountdownState {
   total: number;
   /** Ce qui se passera à son terme. */
   outcome: ScrubCountdownOutcome;
+  /** La COURSE : elle change à chaque relance (ouverture, geste, relâchement),
+   *  même dans la seconde affichée — la barre repart alors pleine et se vide
+   *  jusqu'à l'échéance, sans attendre la seconde suivante. */
+  run: number;
 }
 
 /** Les minuteurs du décompte (`playerTimers.ts`). */
@@ -86,9 +90,10 @@ export function createScrubCountdown({ onChange, onExpire, timers, readPolicy }:
   let shown: ScrubCountdownState | null = null;
   let policy = RESUME_COUNTDOWN_POLICY;
   let total = Math.ceil(policy.delayMs / 1000);
+  let run = 0;
 
   function show(next: ScrubCountdownState | null): void {
-    if (next === shown || (!!next && !!shown && next.remaining === shown.remaining)) return;
+    if (next === shown || (!!next && !!shown && next.remaining === shown.remaining && next.run === shown.run)) return;
     shown = next;
     onChange(next);
   }
@@ -126,13 +131,14 @@ export function createScrubCountdown({ onChange, onExpire, timers, readPolicy }:
       return;
     }
     const remaining = Math.ceil(left / 1000);
-    show({ remaining, total, outcome: policy.outcome });
+    show({ remaining, total, outcome: policy.outcome, run });
     wakeAt(expiresAt - (remaining - 1) * 1000, now);
   }
 
-  /** Le décompte entier, depuis maintenant. */
+  /** Le décompte entier, depuis maintenant : une nouvelle course. */
   function restart(): void {
     expiresAt = timers.now() + policy.delayMs;
+    run += 1;
     schedule();
   }
 

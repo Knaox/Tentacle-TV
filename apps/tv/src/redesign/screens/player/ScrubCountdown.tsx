@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect } from "react";
+import { memo, useLayoutEffect, useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming, type SharedValue,
@@ -21,10 +21,13 @@ import { SOFT_BASE } from "./surfaces";
  * vignette, juste au-dessus du temps visé et de l'écart ; sa barre, au
  * dégradé de la marque, se vide avec le temps.
  *
- * Le décompte est une valeur reçue (secondes restantes, sur combien) : rien
- * ne compte ici. `live` : la barre GLISSE d'une seconde à la suivante, sur le
- * fil d'interface (un `transform`) ; sans (banc), ou animations réduites,
- * elle se pose à la seconde. Rien n'y est focalisable.
+ * Le décompte est une valeur reçue (secondes restantes, sur combien, et sa
+ * course) : rien ne compte ici. `live` : la barre GLISSE sur le fil
+ * d'interface (un `transform`), d'un seul tenant, de la relance — sa course,
+ * `run` — à l'échéance ; les secondes affichées ne la touchent plus : un
+ * minuteur JS en retard ne l'arrête plus à chaque seconde, et une relance dans
+ * la seconde affichée la remplit aussitôt. Sans (banc), ou animations
+ * réduites, elle se pose à la seconde. Rien n'y est focalisable.
  */
 
 const HEIGHT = 56;
@@ -42,15 +45,21 @@ export const ScrubCountdown = memo(function ScrubCountdown({ model, appear }: {
   const reduced = useReducedMotion();
   const fill = useSharedValue(total > 0 ? Math.min(1, remaining / total) : 0);
   const width = useSharedValue(0);
+  const glides = !!model.live && !reduced && MOTION_ENABLED;
+  // Ce qui reste au départ d'une course : lu quand elle part, jamais à ses secondes.
+  const left = useRef(remaining);
+  left.current = remaining;
+  // Posée : à chaque seconde.
   useLayoutEffect(() => {
-    const from = total > 0 ? Math.min(1, remaining / total) : 0;
-    if (!model.live || reduced || !MOTION_ENABLED) {
-      fill.value = from;
-      return;
-    }
-    const to = total > 0 ? Math.max(0, remaining - 1) / total : 0;
-    fill.value = withSequence(withTiming(from, { duration: 0 }), withTiming(to, { duration: 1000, easing: Easing.linear }));
-  }, [remaining, total, model.live, reduced, fill]);
+    if (!glides) fill.value = total > 0 ? Math.min(1, remaining / total) : 0;
+  }, [glides, remaining, total, fill]);
+  // Glissée : une fois par course, jusqu'à l'échéance.
+  useLayoutEffect(() => {
+    if (!glides) return;
+    const seconds = left.current;
+    const from = total > 0 ? Math.min(1, seconds / total) : 0;
+    fill.value = withSequence(withTiming(from, { duration: 0 }), withTiming(0, { duration: seconds * 1000, easing: Easing.linear }));
+  }, [glides, model.run, total, fill]);
   const backing = useNativeGlassBacking("strong");
   const enter = useAnimatedStyle(() => {
     const p = appear ? appear.value : 1;

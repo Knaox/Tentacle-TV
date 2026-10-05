@@ -157,6 +157,7 @@ export function buildScrubCountdown(
     outcome: state.outcome,
     ...scrubCountdownLabels(t, state.outcome, state.remaining, origin, REMOTE_BINDINGS.hints),
     countdown: { remaining: state.remaining, total: state.total },
+    run: state.run,
     live: true,
   };
 }
