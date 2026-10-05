@@ -511,6 +511,19 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
 - Un nouveau geste de la Famille : une entrée dans `FAMILY_ROUTES` d'abord,
   jamais une route à part.
 
+## Panne de Jellyfin — un état dit par le serveur, une règle pour les lecteurs
+
+Le backend sait si Jellyfin redémarre, s'arrête ou démarre
+(`services/jellyfinHealth*.ts` : annonces de sa socket, puis sonde — deux
+échecs font « arrêté ») et le dit à chaque lecteur (`server:jellyfin`, canal
+de session, additif). Les lecteurs n'improvisent pas : `outageView` et
+`useOutageGate` (api-client) — bandeau, aucune erreur pendant la panne, flux
+TOUJOURS rouvert au retour (même position, mêmes pistes, nouvelle session) ;
+la TV en fait une sonde qui fait foi (tv-core `serverOutage.ts`). Toute sonde
+« Jellyfin est revenu » exige l'`Id` de `/System/Info/Public` : le serveur
+d'attente de 10.11 rend un 200 sans `Id` pendant son démarrage (mesuré).
+Faits mesurés, bancs (`bench:jellyfin-outage`, `:web`) : `docs/PANNE-JELLYFIN.md`.
+
 ## Navigation TV — une seule source
 
 L'Apple TV refondue est la référence de la navigation. Ce qui DÉCIDE — focus,
