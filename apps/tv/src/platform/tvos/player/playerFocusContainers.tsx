@@ -4,6 +4,7 @@ import { PLAYER_SCREEN_ENTRIES, timelineBridgeTarget, troubleBridgeTarget } from
 import type { FocusGroupContainerProps } from "../../../redesign/focus/focusBinding";
 import { osdPlayPauseNodeRef, useSkipNode } from "../../../components/player/focus/osdFocusBus";
 import { AutoFocusGuide, TrapFocusGuide } from "../focus/focusGuides";
+import { emptyGuideProps } from "./emptyGuide";
 import type { FocusStore } from "../focus/focusStore";
 
 /**
@@ -98,7 +99,7 @@ function ScreenTrap({ destinations, style, pointerEvents, children }: FocusGroup
   return (
     <TVFocusGuideView
       destinations={destinations}
-      focusable={destinations.length > 0 ? undefined : false}
+      {...emptyGuideProps(destinations)}
       trapFocusUp
       trapFocusDown
       trapFocusLeft
@@ -140,7 +141,7 @@ function BridgeGuide({ destinations, style, pointerEvents, children }: FocusGrou
   return (
     <TVFocusGuideView
       destinations={destinations}
-      focusable={destinations.length > 0 ? undefined : false}
+      {...emptyGuideProps(destinations)}
       style={style}
       pointerEvents={pointerEvents}
     >
