@@ -36,8 +36,11 @@ function tempFolder(): string {
   return d;
 }
 
+/** Demande à un gestionnaire de paquets s'il possède le binaire courant. */
+export type OwnershipProbe = (command: string, args: readonly string[]) => Promise<boolean>;
+
 /** `true` si la commande s'exécute ET réussit — donc si le paquet possède le binaire. */
-function owns(command: string, args: readonly string[]): Promise<boolean> {
+export function owns(command: string, args: readonly string[]): Promise<boolean> {
   return new Promise((resolve) => {
     try {
       const child = spawn(command, [...args], { stdio: "ignore" });
@@ -57,13 +60,17 @@ function owns(command: string, args: readonly string[]): Promise<boolean> {
  * on remplacerait le mauvais fichier. Puis le gestionnaire qui possède le
  * binaire courant. Sinon `unknown` — et la page ne propose alors rien plutôt que
  * de toucher à une installation qu'on ne comprend pas.
+ *
+ * `probe` n'est remplacée que par les tests : interroger les vrais
+ * gestionnaires y dépend de la machine (`dpkg -S` parcourt toute la base des
+ * paquets d'un runner Ubuntu, au-delà des 5 s d'un test).
  */
-export async function detectFormat(): Promise<LinuxFormat> {
+export async function detectFormat(probe: OwnershipProbe = owns): Promise<LinuxFormat> {
   if ((process.env["APPIMAGE"] ?? "") !== "") return "appimage";
   const exe = process.execPath;
-  if (await owns("pacman", ["-Qo", exe])) return "pacman";
-  if (await owns("dpkg", ["-S", exe])) return "deb";
-  if (await owns("rpm", ["-qf", exe])) return "rpm";
+  if (await probe("pacman", ["-Qo", exe])) return "pacman";
+  if (await probe("dpkg", ["-S", exe])) return "deb";
+  if (await probe("rpm", ["-qf", exe])) return "rpm";
   return "unknown";
 }
 
