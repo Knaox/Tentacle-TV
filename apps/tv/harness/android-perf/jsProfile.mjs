@@ -5,6 +5,9 @@
 // où le mode de mesure ne dit que combien de composants se sont rendus.
 //
 //   node apps/tv/harness/android-perf/jsProfile.mjs --metro 8091 --keys "tap:22x6@550" [--out profil.cpuprofile] [--top 25]
+//   node apps/tv/harness/android-perf/jsProfile.mjs --metro 8091 --eval "<expression JS>" [--wait 4000]
+//     (`--eval` : une expression jouée dans l'app pendant le profil — par
+//     exemple remonter l'accueil par le `navigationRef`)
 //
 // L'app debug doit être DEVANT, placée où le geste part ; les touches sont
 // jouées par l'injecteur du banc (`keys/Keys.java`, déjà poussé par `run`).
@@ -77,8 +80,10 @@ async function main() {
   await cdp.send("Profiler.setSamplingInterval", { interval: 250 });
   await cdp.send("Profiler.start");
   const device = createDevice();
+  const expression = option("eval");
+  if (expression) await cdp.send("Runtime.evaluate", { expression, awaitPromise: false });
   device.keys(...keys);
-  await sleep(1500);
+  await sleep(Number(option("wait", "1500")));
   const { result } = await cdp.send("Profiler.stop");
   cdp.close();
   const out = option("out");
