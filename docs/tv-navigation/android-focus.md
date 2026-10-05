@@ -105,8 +105,11 @@ crée, puis y RE-PARENTE ses enfants — retirés puis remis dans le même lot. 
 focalisé retiré perd le focus, qu'Android rend aussitôt au PREMIER
 focalisable de la fenêtre (`rootViewRequestFocus` : le héros). À l'émulateur :
 un BAS sur deux « remontait » au héros, 8 à 200 ms après le geste. Trouvé par
-la chronologie du focus (sonde du banc : `timeline`, `spyFocus`) et la pile
-native du focus rendu (`removeViewInternal` → `rootViewRequestFocus`).
+une chronologie du focus (prises et pertes, touches), un espion des écritures
+natives de focus et de `manageChildren`, et la pile native du focus rendu
+(`removeViewInternal` → `rootViewRequestFocus`) — outils de diagnostic restés
+dans l'historique de la branche `lot-atv/a1` (« test(android) : … l'espion
+des écritures de focus »).
 
 - `collapsable={false}` sur les enveloppes qui changent au focus :
   `CardShell`, `MorphCard`, `ProfileTile` (sans effet sur Apple TV) ;
@@ -172,7 +175,9 @@ passe par l'animateur de tvOS (`revealMotion.ts`). Rien n'y change.
 - `node apps/tv/harness/android-burst/burst.mjs down 4 --repeat 3` : la
   touche tenue, `dumpsys gfxinfo` remis à zéro à chaque passage.
 - nav-golden sur Android (`--android`, les références de l'Apple TV rejouées
-  telles quelles) : le pilote complet est la tâche A5.
+  telles quelles) : le pilote est celui d'A5 ; ses maintiens (`hold:…`)
+  passent par l'injecteur ci-dessus (la console de l'émulateur ne tient
+  aucune flèche sur l'AVD).
 
 Mesures (2026-10-05, AVD « TentacleTV_Shield_API31 », Android 12, 1080p,
 rendu LOGICIEL de l'émulateur : les durées d'image absolues ne disent rien du
@@ -185,25 +190,46 @@ Shield ; elles se comparent entre elles) :
 | Rangée, DROITE tenue 3 s | — | 11 cartes (`resume:11`) ; 69 images, p50 129 ms |
 | Grille de 1 200 films, BAS tenu 4 s | — | `grid:228` : 38 lignes, ~11 lignes/s (l'Apple TV : ~12) ; 95 images, p50 89 ms, p90 101 ms, 0 ratée |
 
-nav-golden `--android`, domaine `focus` (`home-sections`, `home-hero`) : sur
-8 scénarios, la suite des focus est celle de l'Apple TV, pas à pas (BAS /
-HAUT de section en section, pastille du filtre, bout de rangée, rafale,
-au-delà du bord, rotation du héros) — les écarts relevés sont les cadres au
-pixel près (métriques du texte d'Android). Deux écarts de focus restent (§ 5).
+nav-golden `--android` (rejeu des références de l'Apple TV) : domaine
+`focus`, 14 scénarios sur 16 avec la suite des focus de l'Apple TV, pas à pas
+(BAS / HAUT de section en section, pastille du filtre, bout de rangée,
+rafale, au-delà du bord, rotation du héros, entrée du rail, retour d'une
+fiche, rangées remises au début) ; `ecrans/fiche` 8 sur 9 (sections, saison
+affichée, épisode à reprendre, bande des saisons, croix) — les écarts qui
+restent dans ces scénarios sont les cadres au pixel près (métriques du texte
+d'Android : A2). Les écarts de focus restants : § 5.
 
-## 5. Écarts connus
+## 5. Ce que l'émulateur a appris, et les écarts restants
 
-- **GAUCHE depuis le contenu** arrive sur l'entrée du rail AU NIVEAU du
-  bouton (`nav:Favorites` depuis « Reprendre ») au lieu de l'entrée ACTIVE
-  (`nav:Home`) : le pont du rail (`RailBridges`, désormais monté sur Android)
-  n'est pas pris — à éprouver (guide pas candidat, ou destination refusée).
-- **Retour d'une fiche** : le focus revient sur `nextUp:0` au lieu de la carte
-  d'où l'on est parti (`home-return`) — la réclamation au retour sur l'écran
-  (`useEntryFocus`, A5) ou le Retour (A3).
+Corrigés (et pourquoi tvOS ne les avait pas) :
+
+- **Le re-parentage** (§ 2) : la carte focalisée retirée puis remise.
+- **Le magasin de focus** (tv-core `focusTrack`) : Android peut annoncer la
+  prise du héros AVANT un focus de passage sur le rail (la préférence d'entrée
+  focalise un élément encore détaché) ; le suivi retient les clés tenues, le
+  rail ne se croit plus focalisé.
+- **Un écran couvert** (`useEntryFocus`) : en ouvrant une fiche, Android pose
+  un focus de passage dans l'accueil qui s'en va ; il ne compte plus comme
+  dernière clé de contenu — le retour rend la carte quittée.
+- **Une Modal** (`useChoiceEntryClaim`) : fenêtre à part sur Android, elle ne
+  focalisait rien à l'ouverture ; son entrée est réclamée.
+- **Les verrous** (`tvFocusable` toujours posé) et **les cibles désactivées**
+  (`disabledNative`) : une prop retirée vaut `false` sur Android ; une
+  `Pressable` désactivée y reste focalisable.
+- **Les ponts du rail** montés sur Android aussi (`REMOTE_SUPPORTED`).
+
+Restent :
+
+- **Retour sur une carte autre que la première → la première** (couche
+  `rowStart`, `rangee-retour-premiere-carte`, `etagere-retour-premiere-carte`) :
+  Retour ne ramène pas à la première carte — le Retour d'Android (A3).
 - **HAUT tenu depuis une grille** dépasse la première ligne jusqu'à la barre
-  de filtres ; la référence de l'Apple TV (`bibliotheque-defilement`) s'arrête
-  sur `grid:0` — à comparer.
-
+  de filtres ; la référence de l'Apple TV (`bibliotheque-defilement`)
+  s'arrête sur `grid:0` (le défilement rapide de tvOS ne quitte pas la
+  grille) — à trancher.
+- **Le banc ne voit pas le focus dans une Modal** sur Android : la fenêtre du
+  `Dialog` n'émet pas les événements de focus de `TVEventHandler` (racine
+  différente de `ReactRootView`) — à l'écran, l'entrée y est bien focalisée.
 - **La rangée sur tvOS** suit le défilement propre de UIKit ; Android suit
   `rowRevealOffset` (la carte aussi loin des bords que les bouts de la
   rangée le sont de son contenu). À comparer à l'œil sur les deux.
