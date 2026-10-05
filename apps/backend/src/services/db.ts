@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { chmodSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import { DATA_ROOT } from "./dataDir";
 import { resolveDatabaseUrlSource, type DatabaseUrlSource } from "./databaseInfo";
@@ -7,7 +7,6 @@ import { databaseUrlFromEnv } from "./databaseEnv";
 
 const DATA_DIR = DATA_ROOT;
 const DB_CONFIG_FILE = resolve(DATA_DIR, "database.json");
-const ENV_FILE = resolve(__dirname, "../../.env");
 
 let prisma: PrismaClient | null = null;
 /** L'URL de la connexion ouverte : une modification ne l'atteint qu'au redémarrage. */
@@ -28,6 +27,17 @@ function readConfigFileUrl(): string | null {
 // c'est `DATABASE_URL` ou les variables `DB_*` des piles Docker (databaseEnv.ts).
 const bootEnvUrl = databaseUrlFromEnv(process.env);
 const bootFileUrl = readConfigFileUrl();
+// Le fichier porte le mot de passe de la base : lisible du seul compte du
+// serveur. Une version d'avant l'écrivait lisible de tous (0644).
+if (bootFileUrl) restrictToOwner(DB_CONFIG_FILE);
+
+function restrictToOwner(file: string): void {
+  try {
+    chmodSync(file, 0o600);
+  } catch {
+    /* fichier d'un autre propriétaire : le serveur le lit quand même */
+  }
+}
 
 /** L'URL de la base : l'environnement d'abord, sinon `data/database.json`. */
 export function getDatabaseUrl(): string | null {
@@ -44,27 +54,17 @@ export function getActiveDatabaseUrl(): string | null {
   return prisma ? activeUrl : null;
 }
 
-/** Persist a DATABASE_URL so it survives restarts (both .env and fallback file). */
+/**
+ * Garde l'URL pour les démarrages suivants, dans `data/database.json` (0600).
+ * Plus d'écriture de `apps/backend/.env` : le serveur ne le lit pas, et dans
+ * l'image il n'est pas inscriptible (une pile d'erreur à chaque installation).
+ */
 export function saveDatabaseUrl(url: string): void {
-  // Fallback JSON file
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(DB_CONFIG_FILE, JSON.stringify({ url }), "utf-8");
-
-  // Update .env so systemd/docker picks it up on restart
-  try {
-    let content = existsSync(ENV_FILE) ? readFileSync(ENV_FILE, "utf-8") : "";
-    const line = `DATABASE_URL=${url}`;
-    if (/^DATABASE_URL=.*/m.test(content)) {
-      content = content.replace(/^DATABASE_URL=.*/m, line);
-    } else {
-      content = content.trimEnd() + "\n" + line + "\n";
-    }
-    writeFileSync(ENV_FILE, content, "utf-8");
-  } catch (err) {
-    console.warn("[DB] Could not update .env file:", err);
-  }
-
-  // Also update current process
+  writeFileSync(DB_CONFIG_FILE, JSON.stringify({ url }), { encoding: "utf-8", mode: 0o600 });
+  // `mode` ne vaut qu'à la création du fichier.
+  restrictToOwner(DB_CONFIG_FILE);
+  // Le processus en cours la lit aussi (getDatabaseUrl), jusqu'au redémarrage.
   process.env.DATABASE_URL = url;
 }
 
