@@ -11,7 +11,16 @@ import {
   writeProfileRecord,
   type TvProfileRecord,
 } from "./tvProfileSession";
-import { findProfile, isProfileLocked, pickerEntryIndex, pickerRemembers, planProfileLaunch, planProfilePick } from "./profileLaunch";
+import {
+  findProfile,
+  isProfileLocked,
+  pickerEntryIndex,
+  pickerRemembers,
+  planProfileLaunch,
+  planProfilePick,
+  soloProfile,
+  soloStillHolds,
+} from "./profileLaunch";
 import { readKnownProfiles, rememberProfiles } from "./knownProfiles";
 import type { SessionStorage } from "./unpairJournal";
 
@@ -70,8 +79,9 @@ describe("la session d'une Apple TV passée aux profils", () => {
     expect(readProfileRecord(fakeStorage({ [TV_PROFILE_KEY]: "{oups" }).storage)).toBeNull();
   });
 
-  it("au démarrage à froid, ne reprend que le profil retenu", () => {
+  it("au démarrage à froid, ne reprend que le profil retenu ou le compte seul", () => {
     expect(resumesOnLaunch(record("sticky", true))).toBe(true);
+    expect(resumesOnLaunch(record("solo"))).toBe(true);
     // Relancer l'app ne contourne jamais un code, ni « Qui regarde ? ».
     expect(resumesOnLaunch(record("picked"))).toBe(false);
     expect(resumesOnLaunch(record("picked", true))).toBe(false);
@@ -113,12 +123,26 @@ describe("le profil à ouvrir", () => {
     expect(planProfileLaunch(listing([OWNER, locked], { stickyProfileId: "nina" }), "launch", NOW)).toEqual({ kind: "picker" });
   });
 
-  it("montre « Qui regarde ? » au lancement même pour un profil seul, PIN ou pas", () => {
-    expect(planProfileLaunch(listing([OWNER]), "launch", NOW)).toEqual({ kind: "picker" });
+  it("entre directement au lancement pour le compte de la TV dans aucune famille, sans PIN", () => {
+    expect(planProfileLaunch(listing([OWNER]), "launch", NOW)).toEqual({ kind: "open", profileId: "damien", remember: false, launch: "solo" });
+    // Un code reste un code : « Qui regarde ? » et son pavé.
     expect(planProfileLaunch(listing([{ ...OWNER, hasPin: true }]), "launch", NOW)).toEqual({ kind: "picker" });
-    // Le serveur ne l'exige pas (`pickerRequired` faux) : l'Apple TV le montre quand même.
-    expect(planProfileLaunch(listing([OWNER], { pickerRequired: false }), "launch", NOW)).toEqual({ kind: "picker" });
+    // Une famille : « Qui regarde ? », même si un seul profil est ouvrable.
     expect(planProfileLaunch(listing([OWNER, LEA]), "launch", NOW)).toEqual({ kind: "picker" });
+    // Le seul profil rendu n'est pas le compte de la TV : rien d'office.
+    expect(planProfileLaunch(listing([OWNER], { pairedBy: { userId: "marc", name: "Marc" } }), "launch", NOW)).toEqual({ kind: "picker" });
+  });
+
+  it("vérifie qu'une session « solo » reprise l'est toujours", () => {
+    expect(soloStillHolds(listing([OWNER]), "DAMIEN")).toBe(true);
+    expect(soloStillHolds(listing([OWNER, LEA]), "damien")).toBe(false);
+    expect(soloStillHolds(listing([{ ...OWNER, hasPin: true }]), "damien")).toBe(false);
+    expect(soloProfile(listing([OWNER]))?.userId).toBe("damien");
+  });
+
+  it("le compte seul choisi dans « Qui regarde ? » se reprendra au lancement", () => {
+    expect(planProfilePick(OWNER, listing([OWNER]), false, NOW)).toEqual({ kind: "open", remember: false, launch: "solo" });
+    expect(planProfilePick(OWNER, listing([OWNER]), true, NOW)).toEqual({ kind: "open", remember: true, launch: "sticky" });
   });
 
   it("montre toujours « Qui regarde ? » pour « Changer de profil », même avec un profil retenu", () => {
@@ -135,11 +159,11 @@ describe("le profil à ouvrir", () => {
   });
 
   it("au choix d'un profil : son PIN d'abord, sauf s'il est « Rester » sur cette TV", () => {
-    expect(planProfilePick(NINA, { stickyProfileId: null }, false, NOW)).toEqual({ kind: "pin", remember: false, launch: "picked" });
-    expect(planProfilePick(NINA, { stickyProfileId: "nina" }, false, NOW)).toEqual({ kind: "open", remember: false, launch: "picked" });
-    expect(planProfilePick(LEA, { stickyProfileId: null }, true, NOW)).toEqual({ kind: "open", remember: true, launch: "sticky" });
+    expect(planProfilePick(NINA, listing([OWNER, NINA]), false, NOW)).toEqual({ kind: "pin", remember: false, launch: "picked" });
+    expect(planProfilePick(NINA, listing([OWNER, NINA], { stickyProfileId: "nina" }), false, NOW)).toEqual({ kind: "open", remember: false, launch: "picked" });
+    expect(planProfilePick(LEA, listing([OWNER, LEA]), true, NOW)).toEqual({ kind: "open", remember: true, launch: "sticky" });
     const locked = { ...NINA, lockedUntil: "2026-10-04T23:00:00Z" };
-    expect(planProfilePick(locked, { stickyProfileId: null }, false, NOW)).toEqual({ kind: "locked", until: "2026-10-04T23:00:00Z" });
+    expect(planProfilePick(locked, listing([OWNER, locked]), false, NOW)).toEqual({ kind: "locked", until: "2026-10-04T23:00:00Z" });
   });
 
   it("un blocage échu ne bloque plus", () => {

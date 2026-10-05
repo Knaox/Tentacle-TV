@@ -8,10 +8,11 @@ import { pairedAccountOf, profileManages, type ProfileLaunch } from "./tvProfile
  * montrer pour ne JAMAIS faire voir un refus : un profil bloqué ne s'ouvre pas
  * à l'aveugle, un profil protégé demande son code avant l'appel.
  *
- * - `launch` (démarrage, session terminée par le serveur) : le profil retenu
- *   par « Ne plus proposer à l'ouverture » s'ouvre seul, sans PIN ; sinon
- *   « Qui regarde ? » — TOUJOURS, même pour un profil seul (`pickerRequired`
- *   du serveur n'y change rien : l'Apple TV montre qui regarde).
+ * - `launch` (démarrage) : le profil retenu par « Ne plus proposer à
+ *   l'ouverture » s'ouvre seul, sans PIN ; sinon le compte de la TV s'il est
+ *   dans AUCUNE famille et sans PIN (`soloProfile`) — il n'y a personne
+ *   d'autre à choisir ; sinon « Qui regarde ? », même pour un profil seul
+ *   protégé par un code.
  * - `switch` (« Changer de profil ») : toujours « Qui regarde ? » — c'est là
  *   que vit « Gérer les profils » ; la case y arrive décochée.
  */
@@ -20,7 +21,33 @@ export type ProfileIntent = "launch" | "switch";
 
 export type LaunchPlan =
   | { kind: "open"; profileId: string; remember: true; launch: "sticky" }
+  | { kind: "open"; profileId: string; remember: false; launch: "solo" }
   | { kind: "picker" };
+
+type ListingForSolo = Pick<TvProfilesDto, "profiles" | "owner"> & Partial<Pick<TvProfilesDto, "pairedBy">>;
+
+/**
+ * Le compte de la TV quand il n'est dans AUCUNE famille (le serveur ne rend
+ * alors que lui — ou une famille réduite à lui, les invités coupés) et sans
+ * PIN : il n'y a personne à choisir ni de code à demander, la TV entre
+ * directement. Sinon null.
+ */
+export function soloProfile(listing: ListingForSolo): TvProfileDto | null {
+  if (listing.profiles.length !== 1) return null;
+  const only = listing.profiles[0];
+  if (only.hasPin || !sameUserId(only.userId, pairedAccountOf(listing).userId)) return null;
+  return only;
+}
+
+/**
+ * Une session `solo` reprise au démarrage l'est-elle toujours ? La famille a
+ * pu naître pendant que l'app dormait (un invité créé, une invitation
+ * acceptée), ou un PIN se poser : la TV repasse alors par « Qui regarde ? ».
+ */
+export function soloStillHolds(listing: ListingForSolo, profileId: string): boolean {
+  const solo = soloProfile(listing);
+  return !!solo && sameUserId(solo.userId, profileId);
+}
 
 /** Un profil bloqué par trop d'essais ratés (toutes TV confondues), à `now`. */
 export function isProfileLocked(profile: Pick<TvProfileDto, "lockedUntil">, now: number): boolean {
@@ -40,6 +67,8 @@ export function planProfileLaunch(listing: TvProfilesDto, intent: ProfileIntent,
   if (sticky && !isProfileLocked(sticky, now)) {
     return { kind: "open", profileId: sticky.userId, remember: true, launch: "sticky" };
   }
+  const solo = soloProfile(listing);
+  if (solo) return { kind: "open", profileId: solo.userId, remember: false, launch: "solo" };
   return { kind: "picker" };
 }
 
@@ -67,12 +96,14 @@ export type PickPlan =
  */
 export function planProfilePick(
   profile: TvProfileDto,
-  listing: Pick<TvProfilesDto, "stickyProfileId">,
+  listing: Pick<TvProfilesDto, "stickyProfileId"> & ListingForSolo,
   remember: boolean,
   now: number,
 ): PickPlan {
   if (isProfileLocked(profile, now)) return { kind: "locked", until: profile.lockedUntil as string };
-  const launch: ProfileLaunch = remember ? "sticky" : "picked";
+  // Le compte seul choisi depuis « Changer de profil » : il se reprendra au lancement, comme s'il s'était ouvert d'office.
+  const solo = soloProfile(listing);
+  const launch: ProfileLaunch = remember ? "sticky" : solo && sameUserId(solo.userId, profile.userId) ? "solo" : "picked";
   const sticky = !!listing.stickyProfileId && sameUserId(listing.stickyProfileId, profile.userId);
   if (profile.hasPin && !sticky) return { kind: "pin", remember, launch };
   return { kind: "open", remember, launch };

@@ -23,11 +23,13 @@ import type { SessionStorage } from "./unpairJournal";
  */
 
 /** Comment la session s'est ouverte — c'est ce qui dit si un démarrage à froid la reprend :
- *  `sticky` (« Ne plus proposer à l'ouverture »), `picked` (choisie dans « Qui regarde ? »).
+ *  `sticky` (« Ne plus proposer à l'ouverture »), `picked` (choisie dans « Qui regarde ? »),
+ *  `solo` (le compte de la TV, dans aucune famille et sans PIN : ouvert d'office,
+ *  sans « Qui regarde ? » — `soloProfile`).
  *  ⚠️ Écrit sur le disque : une valeur d'avant (`single`, le seul profil
- *  ouvert d'office) rend l'enregistrement illisible — la session est quittée
- *  au démarrage, et « Qui regarde ? » s'affiche. */
-export type ProfileLaunch = "sticky" | "picked";
+ *  ouvert d'office, PIN ou famille compris) rend l'enregistrement illisible —
+ *  la session est quittée au démarrage, et le lancement en décide à nouveau. */
+export type ProfileLaunch = "sticky" | "picked" | "solo";
 
 export interface TvProfileRecord {
   profileId: string;
@@ -55,7 +57,7 @@ export interface TvProfileRecord {
 }
 
 const KINDS: readonly FamilyProfileKind[] = ["owner", "member", "guest"];
-const LAUNCHES: readonly ProfileLaunch[] = ["sticky", "picked"];
+const LAUNCHES: readonly ProfileLaunch[] = ["sticky", "picked", "solo"];
 
 /** Ce que `profileRecordOf` lit de « Qui regarde ? » (v1 : `owner` seul, ni `pairedBy` ni `manage`). */
 export type ProfilesListingRef = Pick<TvProfilesDto, "owner" | "canManage"> & Partial<Pick<TvProfilesDto, "pairedBy" | "profiles">>;
@@ -165,13 +167,15 @@ export function hasProfilePairing(storage: SessionStorage): boolean {
 }
 
 /**
- * Au démarrage à froid, la session de profil d'avant se REPREND-elle ? Seulement
- * celle du profil retenu (« Ne plus proposer à l'ouverture »). Toute autre
- * repasse par « Qui regarde ? » — et par le PIN : relancer l'app ne doit
- * jamais contourner un code.
+ * Au démarrage à froid, la session de profil d'avant se REPREND-elle ? Celle
+ * du profil retenu (« Ne plus proposer à l'ouverture »), et celle du compte
+ * seul ouvert d'office (`solo` : ni famille ni PIN — il n'y a ni choix ni code
+ * à contourner ; la TV vérifie ensuite, en fond, qu'il l'est toujours). Toute
+ * autre repasse par « Qui regarde ? » — et par le PIN : relancer l'app ne
+ * doit jamais contourner un code.
  */
 export function resumesOnLaunch(record: TvProfileRecord | null): boolean {
-  return record?.launch === "sticky";
+  return record?.launch === "sticky" || record?.launch === "solo";
 }
 
 /**
