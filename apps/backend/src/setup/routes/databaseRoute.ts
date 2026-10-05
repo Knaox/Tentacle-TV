@@ -22,11 +22,16 @@ export function databaseUrl(body: SetupDatabaseRequest): string {
   return `mysql://${enc(body.user)}:${enc(body.password)}@${host}:${body.port}/${enc(body.database)}`;
 }
 
-/** Le refus de MariaDB, dit en un code (codes d'erreur de Prisma P1000…P1017). */
+/**
+ * Le refus de MariaDB, dit en un code (codes d'erreur de Prisma P1000…P1017).
+ * Une base absente ne se dit P1003 qu'à un compte qui verrait toutes les bases
+ * (root) ; un compte ordinaire reçoit P1010, « accès refusé à la base » — que
+ * la base manque ou qu'il n'y ait pas de droits, c'est le même conseil.
+ */
 export function databaseErrorCode(err: unknown): SetupErrorCode {
   const code = (err as { errorCode?: unknown }).errorCode;
   if (code === "P1000") return "db_auth_failed";
-  if (code === "P1003") return "db_unknown_database";
+  if (code === "P1003" || code === "P1010") return "db_unknown_database";
   return "db_unreachable";
 }
 
