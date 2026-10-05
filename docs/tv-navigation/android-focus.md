@@ -91,6 +91,31 @@ tvOS, plus `tvPacing`), enregistrés par `TentacleFocusPackage` dans
   d'Android, animée.
 - **Entrée déclarée (E1)** : `tvEntry` = l'identifiant de vue (ancienne
   architecture : le tag React), résolu par `findViewById` dans la section.
+- **Les éléments d'une section** : les focalisables, comme `addFocusables` —
+  une `ScrollView` / `HorizontalScrollView` est FOCALISABLE sur Android
+  (`FOCUS_AFTER_DESCENDANTS`) : on descend dans ses cartes, elle ne compte
+  que si elle n'en a aucune (sinon la règle visait la rangée entière).
+
+### Le re-parentage : un focus perdu sans que personne ne le déplace
+
+Sur Android (ancienne architecture), une `View` qui n'a que des props de mise
+en page est APLATIE : absente du natif. Qu'une prop d'affichage lui arrive (un
+`zIndex` posé au focus pour passer devant les voisines) et React Native la
+crée, puis y RE-PARENTE ses enfants — retirés puis remis dans le même lot. Le
+focalisé retiré perd le focus, qu'Android rend aussitôt au PREMIER
+focalisable de la fenêtre (`rootViewRequestFocus` : le héros). À l'émulateur :
+un BAS sur deux « remontait » au héros, 8 à 200 ms après le geste. Trouvé par
+la chronologie du focus (sonde du banc : `timeline`, `spyFocus`) et la pile
+native du focus rendu (`removeViewInternal` → `rootViewRequestFocus`).
+
+- `collapsable={false}` sur les enveloppes qui changent au focus :
+  `CardShell`, `MorphCard`, `ProfileTile` (sans effet sur Apple TV) ;
+- `ReparentGuard.kt`, le filet pour les autres : un focus effacé par un
+  élément DÉTACHÉ que le même lot a remis lui revient — sauf si le focus a été
+  repris ailleurs entre-temps. Un élément vraiment démonté reste démonté.
+
+Toute nouvelle enveloppe d'un focalisable qui change d'apparence au focus
+(fond, ombre, `zIndex`, `opacity` ≠ 1) se déclare `collapsable={false}`.
 
 - **Compensation (V10)** — `ShownKeeper.kt` : la section montrée par un pas
   isolé reste en place quand un montage la déplace (une rangée qui arrive
@@ -137,16 +162,47 @@ PROPRE qui accélère, la liste défile à vitesse continue, rien ne se redessin
 L'Apple TV ne lit ni l'un ni l'autre : sa table ne répète pas, et sa rafale
 passe par l'animateur de tvOS (`revealMotion.ts`). Rien n'y change.
 
-## 4. Le banc
+## 4. Le banc et les mesures
 
-- `node apps/tv/harness/android-burst/burst.mjs down 4 --repeat 3` : une
-  flèche réellement TENUE (console de l'émulateur : Android synthétise les
-  répétitions ; une rafale de `input keyevent` n'a pas de `repeatCount`),
-  `dumpsys gfxinfo` remis à zéro à chaque passage.
-- nav-golden sur Android (`--android`, les références de l'Apple TV
-  rejouées telles quelles) : tâche A5.
+- **Une touche TENUE** : l'AVD n'a aucun périphérique qui déclare les flèches
+  (ni `adb emu event send` ni `sendevent`), et `input keyevent` ne répète
+  jamais. `apps/tv/harness/android-burst/hold/Hold.java`, exécuté par
+  `app_process` avec les droits du shell (comme `input`), injecte
+  l'enfoncement, de vraies répétitions (500 ms puis 50 ms) et le relâchement.
+- `node apps/tv/harness/android-burst/burst.mjs down 4 --repeat 3` : la
+  touche tenue, `dumpsys gfxinfo` remis à zéro à chaque passage.
+- nav-golden sur Android (`--android`, les références de l'Apple TV rejouées
+  telles quelles) : le pilote complet est la tâche A5.
+
+Mesures (2026-10-05, AVD « TentacleTV_Shield_API31 », Android 12, 1080p,
+rendu LOGICIEL de l'émulateur : les durées d'image absolues ne disent rien du
+Shield ; elles se comparent entre elles) :
+
+| Rafale | Avant (sections natives coupées) | Après |
+|---|---|---|
+| Accueil, BAS tenu 3 s depuis `resume:0` | le focus s'échappe dans le rail (`nav:Settings`) ; 69 images, p50 125 ms, p90 150 ms | `watchlist:0`, la dernière rangée ; 73 images, p50 121 ms, p90 133 ms |
+| Accueil, HAUT tenu 3 s | reste dans le rail (`nav:Search`) ; 64 images, p50 129 ms, p90 150 ms | `hero:primary` ; 72 images, p50 121 ms, p90 129 ms |
+| Rangée, DROITE tenue 3 s | — | 11 cartes (`resume:11`) ; 69 images, p50 129 ms |
+| Grille de 1 200 films, BAS tenu 4 s | — | `grid:228` : 38 lignes, ~11 lignes/s (l'Apple TV : ~12) ; 95 images, p50 89 ms, p90 101 ms, 0 ratée |
+
+nav-golden `--android`, domaine `focus` (`home-sections`, `home-hero`) : sur
+8 scénarios, la suite des focus est celle de l'Apple TV, pas à pas (BAS /
+HAUT de section en section, pastille du filtre, bout de rangée, rafale,
+au-delà du bord, rotation du héros) — les écarts relevés sont les cadres au
+pixel près (métriques du texte d'Android). Deux écarts de focus restent (§ 5).
 
 ## 5. Écarts connus
+
+- **GAUCHE depuis le contenu** arrive sur l'entrée du rail AU NIVEAU du
+  bouton (`nav:Favorites` depuis « Reprendre ») au lieu de l'entrée ACTIVE
+  (`nav:Home`) : le pont du rail (`RailBridges`, désormais monté sur Android)
+  n'est pas pris — à éprouver (guide pas candidat, ou destination refusée).
+- **Retour d'une fiche** : le focus revient sur `nextUp:0` au lieu de la carte
+  d'où l'on est parti (`home-return`) — la réclamation au retour sur l'écran
+  (`useEntryFocus`, A5) ou le Retour (A3).
+- **HAUT tenu depuis une grille** dépasse la première ligne jusqu'à la barre
+  de filtres ; la référence de l'Apple TV (`bibliotheque-defilement`) s'arrête
+  sur `grid:0` — à comparer.
 
 - **La rangée sur tvOS** suit le défilement propre de UIKit ; Android suit
   `rowRevealOffset` (la carte aussi loin des bords que les bouts de la
