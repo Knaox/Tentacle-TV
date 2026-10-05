@@ -86,6 +86,11 @@ async function probeJellyfin(url: string, apiKey: string, timeoutMs: number): Pr
   } catch {
     return { ok: false, error: "jellyfin-unreachable" };
   }
+  // 502/503/504 : Jellyfin (ou le relais devant lui) ne sert pas — pendant son
+  // démarrage, il répond 503 « loading » (mesuré, 10.11). Ce n'est pas un refus
+  // de la clé : sans ce tri, le tableau de bord disait « clé révoquée » en
+  // plein redémarrage.
+  if (res.status === 502 || res.status === 503 || res.status === 504) return { ok: false, error: "jellyfin-unreachable" };
   if (!res.ok) return { ok: false, error: "jellyfin-rejected", httpStatus: res.status };
   const info = (await res.json().catch(() => null)) as { Version?: unknown; ServerName?: unknown } | null;
   if (typeof info?.Version !== "string") return { ok: false, error: "jellyfin-invalid" };

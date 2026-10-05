@@ -62,6 +62,8 @@ const jellyfin = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input);
   if (url.startsWith("http://down.test")) throw new TypeError("fetch failed");
   if (url.startsWith("http://html.test")) return new Response("<html></html>", { status: 200 });
+  // Jellyfin 10.11 pendant son démarrage (mesuré) : 503 « loading », quelle que soit la clé.
+  if (url.startsWith("http://loading.test")) return new Response("Jellyfin Server is loading. Please try again shortly.", { status: 503 });
   if (modernJellyfinToken(init?.headers) !== "bonne-cle") return new Response("", { status: 401 });
   return Response.json({ Version: "10.10.7", ServerName: "Poulpy" });
 });
@@ -113,6 +115,15 @@ describe("GET /services", () => {
     expect(body.jellyfin).toMatchObject({ status: "error", error: "jellyfin-rejected", httpStatus: 401 });
     expect(body.database.status).toBe("error");
     expect(body.database.version).toBe("");
+  });
+
+  it("Jellyfin qui démarre (503) : injoignable, jamais « clé refusée »", async () => {
+    state.config.set("jellyfin_url", "http://loading.test");
+    state.config.set("jellyfin_api_key", "bonne-cle");
+    const { body } = await call("GET", "/services");
+    expect(body.jellyfin).toMatchObject({ status: "error", error: "jellyfin-unreachable" });
+    expect(body.jellyfin.httpStatus).toBeUndefined();
+    expect(body.jellyfin.health).toMatchObject({ state: expect.any(String), since: expect.any(Number) });
   });
 
   it("sans clé enregistrée, ne sonde rien et le dit", async () => {

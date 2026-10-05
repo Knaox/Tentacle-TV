@@ -47,6 +47,12 @@ export default {
   entry_jellyfinUnreachable_body: "Tant qu'il est injoignable, personne ne peut se connecter ni rien regarder.",
   entry_jellyfinUnreachable_details: "Adresse essayée : {{url}}. Vérifiez que Jellyfin tourne et que le serveur Tentacle peut le joindre.",
   entry_jellyfinUnreachable_action: "Vérifier la connexion",
+  entry_jellyfinUnreachable_restarting_title: "Jellyfin redémarre",
+  entry_jellyfinUnreachable_restarting_body: "Les lectures en cours attendent son retour et reprendront seules, au même endroit.",
+  entry_jellyfinUnreachable_shuttingDown_title: "Jellyfin s'arrête",
+  entry_jellyfinUnreachable_shuttingDown_body: "S'il redémarre, les lectures en cours reprendront seules. Sinon, personne ne pourra rien regarder.",
+  entry_jellyfinUnreachable_starting_title: "Jellyfin redémarre — presque prêt",
+  entry_jellyfinUnreachable_starting_body: "Il répond « en cours de chargement » : les lectures reprendront dès qu'il sera prêt.",
 
   entry_jellyfinKeyRejected_revoked_title: "Remplacer la clé d'administration de Jellyfin",
   entry_jellyfinKeyRejected_revoked_body: "Jellyfin ne reconnaît plus la clé enregistrée : notifications d'ajouts, invitations et création de comptes sont à l'arrêt.",

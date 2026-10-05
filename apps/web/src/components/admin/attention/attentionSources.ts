@@ -44,12 +44,20 @@ export function readServicesAttention(raw: unknown): ServicesAttention | null {
     case "error":
       jellyfin = jf.error === "jellyfin-rejected"
         ? { state: "rejected", reason: jf.httpStatus === 403 ? "no-rights" : "revoked" }
-        : { state: "unreachable" };
+        : { state: "unreachable", ...healthOf(jf.health) };
       break;
     default:
       jellyfin = null;
   }
   return { jellyfin, jellyfinUrl: url, databaseDown: raw.database.status === "error" };
+}
+
+const HEALTH_STATES = new Set(["restarting", "shutting-down", "starting", "down"]);
+
+/** L'état en direct de Jellyfin (`health` de `/api/admin/services`, serveur ≥ 1.24) — absent sinon. */
+function healthOf(raw: unknown): { health?: "restarting" | "shutting-down" | "starting" | "down" } {
+  const state = isRecord(raw) ? raw.state : undefined;
+  return typeof state === "string" && HEALTH_STATES.has(state) ? { health: state as "restarting" | "shutting-down" | "starting" | "down" } : {};
 }
 
 const KEY_CHECK: Record<AdminKeyState, AdminKeyCheck> = {

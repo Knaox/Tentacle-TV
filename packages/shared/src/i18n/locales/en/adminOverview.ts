@@ -47,6 +47,12 @@ export default {
   entry_jellyfinUnreachable_body: "While it is unreachable, nobody can sign in or watch anything.",
   entry_jellyfinUnreachable_details: "Address tried: {{url}}. Check that Jellyfin is running and that the Tentacle server can reach it.",
   entry_jellyfinUnreachable_action: "Check the connection",
+  entry_jellyfinUnreachable_restarting_title: "Jellyfin is restarting",
+  entry_jellyfinUnreachable_restarting_body: "Ongoing playback waits for it and will resume on its own, right where it left off.",
+  entry_jellyfinUnreachable_shuttingDown_title: "Jellyfin is shutting down",
+  entry_jellyfinUnreachable_shuttingDown_body: "If it restarts, ongoing playback will resume on its own. Otherwise, nobody can watch anything.",
+  entry_jellyfinUnreachable_starting_title: "Jellyfin is restarting — almost ready",
+  entry_jellyfinUnreachable_starting_body: "It answers “loading”: playback will resume as soon as it's ready.",
 
   entry_jellyfinKeyRejected_revoked_title: "Replace Jellyfin's admin key",
   entry_jellyfinKeyRejected_revoked_body: "Jellyfin no longer recognizes the saved key: new-content notifications, invitations and account creation are stopped.",

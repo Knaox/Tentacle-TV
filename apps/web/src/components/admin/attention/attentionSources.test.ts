@@ -23,6 +23,9 @@ describe("l'état des services, résumé pour « À régler »", () => {
     expect(state({ status: "error", error: "jellyfin-rejected", httpStatus: 403 })).toEqual({ state: "rejected", reason: "no-rights" });
     expect(state({ status: "error", error: "jellyfin-rejected", httpStatus: 401 })).toEqual({ state: "rejected", reason: "revoked" });
     expect(state({ status: "error", error: "jellyfin-unreachable" })).toEqual({ state: "unreachable" });
+    // L'état en direct (serveur ≥ 1.24) précise l'injoignable ; une valeur inconnue est ignorée.
+    expect(state({ status: "error", error: "jellyfin-unreachable", health: { state: "restarting", since: 1 } })).toEqual({ state: "unreachable", health: "restarting" });
+    expect(state({ status: "error", error: "jellyfin-unreachable", health: { state: "up", since: 1 } })).toEqual({ state: "unreachable" });
     expect(state({ status: "bizarre" })).toBeNull();
   });
 

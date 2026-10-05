@@ -47,7 +47,8 @@ const RECOMMENDATION_ORDER: readonly RecommendationId[] = ["publicUrl", "tmdbKey
 export type JellyfinLink =
   | { state: "connected" }
   | { state: "not-configured"; missing: ReadonlyArray<"url" | "key"> }
-  | { state: "unreachable" }
+  /** `health` : ce que la surveillance en direct en sait (`server:jellyfin`) — il redémarre, s'arrête, démarre. */
+  | { state: "unreachable"; health?: "restarting" | "shutting-down" | "starting" | "down" }
   | { state: "rejected"; reason: "revoked" | "no-rights" };
 
 export type AdminKeyCheck = "ok" | "revoked" | "no-rights" | "missing" | "unreachable";
@@ -107,7 +108,11 @@ function blockingEntries(s: AttentionSources): BlockingEntry[] {
     const missing = new Set(jellyfin.missing);
     entries.push({ id: "jellyfinNotConfigured", variant: missing.has("url") ? (missing.has("key") ? "both" : "url") : "key" });
   } else if (jellyfin?.state === "unreachable") {
-    entries.push({ id: "jellyfinUnreachable", variant: null });
+    // Un redémarrage n'est pas une panne à régler : l'entrée le dit (variante),
+    // « arrêté » garde la phrase générique.
+    const health = jellyfin.health;
+    const variant = health === "restarting" || health === "starting" ? health : health === "shutting-down" ? "shuttingDown" : null;
+    entries.push({ id: "jellyfinUnreachable", variant });
   } else if (jellyfin?.state === "rejected") {
     entries.push({ id: "jellyfinKeyRejected", variant: jellyfin.reason });
   } else if (s.adminKey === "revoked" || s.adminKey === "no-rights") {

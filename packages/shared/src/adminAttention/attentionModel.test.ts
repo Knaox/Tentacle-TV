@@ -77,6 +77,11 @@ describe("ce qui demande l'attention de l'administrateur", () => {
     expect(buildAdminAttention({ ...healthy, jellyfin: { state: "rejected", reason: "revoked" } }).blocking)
       .toEqual([{ id: "jellyfinKeyRejected", variant: "revoked" }]);
     expect(buildAdminAttention({ ...healthy, jellyfin: { state: "unreachable" } }).blocking).toEqual([{ id: "jellyfinUnreachable", variant: null }]);
+    // L'état en direct (`server:jellyfin`) : un redémarrage se dit, « arrêté » garde la phrase générique.
+    const variantOf = (health: "restarting" | "shutting-down" | "starting" | "down") =>
+      buildAdminAttention({ ...healthy, jellyfin: { state: "unreachable", health } }).blocking[0]?.variant;
+    expect([variantOf("restarting"), variantOf("shutting-down"), variantOf("starting"), variantOf("down")])
+      .toEqual(["restarting", "shuttingDown", "starting", null]);
     expect(buildAdminAttention({ ...healthy, jellyfin: { state: "not-configured", missing: ["url", "key"] } }).blocking)
       .toEqual([{ id: "jellyfinNotConfigured", variant: "both" }]);
   });
