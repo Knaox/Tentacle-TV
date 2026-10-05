@@ -329,6 +329,9 @@ function observe(options = {}) {
     // La largeur de la fenêtre : le banc ramène le cadre à l'échelle de la référence (Android en dp).
     window: { width: require("react-native").Dimensions.get("window").width },
   };
+  // Android : l'app renvoyée derrière l'accueil (Retour à la racine) garde son JS
+  // vivant — la sonde répond encore ; elle dit donc son état.
+  if (ANDROID) result.appState = require("react-native").AppState.currentState;
   if (options.texts && options.texts.length) {
     const all = screenTexts(nav.key, modals);
     result.texts = options.texts.map((wanted) => all.some((text) => text.includes(wanted)));

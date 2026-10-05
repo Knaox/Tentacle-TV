@@ -88,7 +88,9 @@ export async function settle(ctx, { since, minMs = 0, quietMs = 500, timeoutMs =
       silentSince = null;
     }
     // Les adresses de la place ramenées à leur nom : la référence ne dépend pas de la place.
-    const obs = normalizeObservation(normalize(raw, await writesSince(ctx, since)), subsOf(ctx));
+    // Android : une app passée derrière l'accueil répond encore (`appState`) — relevée comme au simulateur.
+    const away = raw?.appState === "background";
+    const obs = normalizeObservation(away ? normalize(null, await writesSince(ctx, since), "background") : normalize(raw, await writesSince(ctx, since)), subsOf(ctx));
     const sig = raw ? signature(obs) : null;
     const now = Date.now();
     if (sig !== null && sig === lastSig) {
