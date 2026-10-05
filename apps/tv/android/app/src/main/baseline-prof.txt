@@ -22,6 +22,15 @@ HSPLcom/swmansion/**;->**(**)**
 HSPLcom/horcrux/svg/**;->**(**)**
 HSPLcom/BV/LinearGradient/**;->**(**)**
 HSPLcom/tentacletv/**;->**(**)**
+# Ce sur quoi ils reposent, au même chemin chaud : la bibliothèque standard de
+# Kotlin (une bonne part de React Native et de nos vues est en Kotlin),
+# AndroidX (les écrans natifs, les fragments, media3 du lecteur) et OkHttp
+# (chaque image, chaque requête) — interprétés sinon jusqu'à ce que le JIT
+# s'en saisisse, pendant les premiers défilements (lot A6).
+HSPLkotlin/**;->**(**)**
+HSPLandroidx/**;->**(**)**
+HSPLokhttp3/**;->**(**)**
+HSPLokio/**;->**(**)**
 Lcom/facebook/react/**;
 Lcom/facebook/hermes/**;
 Lcom/facebook/yoga/**;
@@ -30,3 +39,6 @@ Lcom/facebook/drawee/**;
 Lcom/swmansion/**;
 Lcom/horcrux/svg/**;
 Lcom/tentacletv/**;
+Lkotlin/**;
+Lokhttp3/**;
+Lokio/**;
