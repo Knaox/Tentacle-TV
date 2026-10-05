@@ -14,7 +14,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { cardRatingFor, missingSeriesRatingIds, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
-import { landscapeOf, paletteOfItem, posterUriOf, progressOf } from "./cardArtwork";
+import { landscapeOf, paletteOfItem, POSTER_FALLBACK_LANDSCAPE_WIDTH, posterUriOf, progressOf } from "./cardArtwork";
 import { cardQualityOf } from "./cardQuality";
 import { sameCard } from "./sameCard";
 
@@ -89,7 +89,8 @@ export function useCardModelFactory(): CardModelFactory {
     (item, options, seriesRatings) => {
       const scope = options.scope ?? (options.variant === "landscape" ? "item" : "series");
       const seriesId = seriesStateId(item);
-      const landscape = landscapeOf(client, item);
+      // Une affiche n'affiche la vignette qu'à défaut d'affiche, rognée dans son cadre 2:3.
+      const landscape = options.variant === "poster" ? landscapeOf(client, item, POSTER_FALLBACK_LANDSCAPE_WIDTH) : landscapeOf(client, item);
       return {
         id: item.Id,
         title: cardTitleOf(item),

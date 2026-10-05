@@ -62,7 +62,33 @@ export interface RenderProfile {
   lights: LightRendering;
   /** Le flou SVG de la plateforme (voir `haloDrawing`). */
   svgBlur: SvgBlurRendering;
+  /** Les images des CARTES demandées au serveur, en pixels : la largeur d'une
+   *  vignette 16:9, la hauteur d'une affiche 2:3 (`CARD_ARTWORK`). */
+  cardArtwork: CardArtworkSize;
 }
+
+export interface CardArtworkSize {
+  landscapeWidth: number;
+  posterHeight: number;
+}
+
+/**
+ * La taille des images des cartes, par plateforme :
+ * - Apple TV : de quoi rester net à l'échelle 2 d'une Apple TV 4K ;
+ * - Android TV : l'interface y est rendue en 1080p (un pixel par point — la
+ *   Shield agrandit l'image entière vers la dalle 4K) : la plus grande carte,
+ *   agrandie par le focus (× 1,08), et rien de plus — une vignette de 380
+ *   points en fait 410, une affiche de grille (366) 395, celle d'une rangée
+ *   (360) 389. Autant d'octets en moins à décoder, à garder en mémoire et à
+ *   envoyer au GPU — l'envoi des textures est la part qui débordait d'une
+ *   image au défilement (banc `android-perf`) —, pour une image que le GPU
+ *   ne réduit plus qu'à peine : la même à l'œil, plus fine si quelque chose
+ *   change.
+ */
+const CARD_ARTWORK: Readonly<Record<RenderPlatform, CardArtworkSize>> = {
+  tvos: { landscapeWidth: 640, posterHeight: 480 },
+  androidtv: { landscapeWidth: 412, posterHeight: 400 },
+};
 
 export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderProfile>>> = {
   tvos: {
@@ -73,6 +99,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     halos: "svg",
     lights: "svg",
     svgBlur: "points",
+    cardArtwork: CARD_ARTWORK.tvos,
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
   // floutée en ancienne architecture — les ombres passent par un masque
@@ -85,6 +112,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     halos: "mask",
     lights: "shader",
     svgBlur: "renderscript",
+    cardArtwork: CARD_ARTWORK.androidtv,
   },
 };
 

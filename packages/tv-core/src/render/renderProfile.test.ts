@@ -11,6 +11,7 @@ describe("le profil de rendu", () => {
       halos: "svg",
       lights: "svg",
       svgBlur: "points",
+      cardArtwork: { landscapeWidth: 640, posterHeight: 480 },
     });
   });
 
@@ -22,6 +23,17 @@ describe("le profil de rendu", () => {
     expect(android.halos).toBe("mask");
     expect(android.lights).toBe("shader");
     expect(android.haloDrawScale).toBe(RENDER_PROFILES.tvos.haloDrawScale);
+  });
+
+  it("demande sur Android TV les images des cartes à leur plus grande taille d'affichage, focus compris", () => {
+    const { cardArtwork } = renderProfileOf("androidtv");
+    const focused = (points: number) => Math.ceil(points * 1.08);
+    // La plus grande vignette (380 points), la plus grande affiche (grille de 6 : 366).
+    expect(cardArtwork.landscapeWidth).toBeGreaterThanOrEqual(focused(380));
+    expect(cardArtwork.posterHeight).toBeGreaterThanOrEqual(focused(366));
+    // Et pas un pixel de plus que le pas suivant.
+    expect(cardArtwork.landscapeWidth).toBeLessThan(focused(380) + 8);
+    expect(cardArtwork.posterHeight).toBeLessThan(focused(366) + 8);
   });
 
   it("rend le profil le plus sobre à une plateforme inconnue", () => {

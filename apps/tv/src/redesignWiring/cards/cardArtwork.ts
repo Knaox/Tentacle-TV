@@ -1,6 +1,7 @@
 import type { useJellyfinClient } from "@tentacle-tv/api-client";
 import { resolveBannerImage, resolveLogoImage, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import { NEUTRAL_PALETTE, paletteFromBlurHash, type ArtworkPalette } from "../../redesign/color/artworkPalette";
+import { RENDER } from "../../redesign/render/renderProfile";
 
 /**
  * Les images et la lumière d'une œuvre, telles que les vues de la refonte les
@@ -11,10 +12,14 @@ import { NEUTRAL_PALETTE, paletteFromBlurHash, type ArtworkPalette } from "../..
 type ImageClient = ReturnType<typeof useJellyfinClient>;
 type BlurHashes = Partial<Record<"Primary" | "Backdrop" | "Thumb" | "Logo", Record<string, string>>>;
 
-/** Les tailles demandées au serveur : de quoi rester net sur une Apple TV 4K
- *  (échelle 2) sans charger l'original. */
-const LANDSCAPE_WIDTH = 640;
-const POSTER_HEIGHT = 480;
+/** Les images des cartes, à la taille du profil de rendu de l'appareil
+ *  (`cardArtwork` : Apple TV, de quoi rester net à l'échelle 2 d'une Apple TV
+ *  4K ; Android TV, la plus grande carte de son interface en 1080p). */
+const { landscapeWidth: LANDSCAPE_WIDTH, posterHeight: POSTER_HEIGHT } = RENDER.cardArtwork;
+/** Une vignette 16:9 qui n'est que le REPLI d'une affiche (titre sans affiche,
+ *  rognée dans le cadre 2:3) : la largeur de toujours, assez pour couvrir la
+ *  hauteur de l'affiche. */
+export const POSTER_FALLBACK_LANDSCAPE_WIDTH = 640;
 const LOGO_WIDTH = 400;
 const BACKDROP_WIDTH = 1280;
 
@@ -62,11 +67,12 @@ export function posterUriOf(client: ImageClient, item: MediaItem): string | unde
  * pas déjà un. Épisode : son image réelle (`resolveBannerImage`). Film ou
  * série : la vignette (Thumb, qui porte déjà le titre), sinon le fond — et
  * alors le logo, s'il est connu (une réponse qui n'a pas demandé les logos
- * ne l'annonce pas : on n'en demande pas un à l'aveugle).
+ * ne l'annonce pas : on n'en demande pas un à l'aveugle). `width` : celle
+ * des cartes (profil de rendu), sauf pour le repli d'une affiche.
  */
-export function landscapeOf(client: ImageClient, item: MediaItem): { uri?: string; logoUri?: string } {
+export function landscapeOf(client: ImageClient, item: MediaItem, width: number = LANDSCAPE_WIDTH): { uri?: string; logoUri?: string } {
   const at = (id: string, type: "Primary" | "Backdrop" | "Thumb", tag?: string) =>
-    client.getImageUrl(id, type, { width: LANDSCAPE_WIDTH, quality: 80, ...(tag ? { tag } : {}) });
+    client.getImageUrl(id, type, { width, quality: 80, ...(tag ? { tag } : {}) });
   if (item.Type === "Episode") {
     const banner = resolveBannerImage(item);
     return { uri: banner ? at(banner.id, banner.type, banner.tag) : undefined };
