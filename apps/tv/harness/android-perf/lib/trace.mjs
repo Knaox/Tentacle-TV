@@ -6,7 +6,10 @@
 const LINE = /^\s*(.+?)-(\d+)\s+(?:\(\s*([\d-]+)\)\s+)?\[\d+\]\s+(?:\S+\s+)?([\d.]+): tracing_mark_write: ([BE])\|(\d+)(?:\|(.*))?$/;
 
 export function startTrace(device, pkg) {
-  device.shell(`atrace --async_start -b 32768 -a ${pkg} gfx view input`);
+  // 16 Mo par cœur : 32 Mo échoue sur la Shield (« Out of memory » à
+  // l'allocation du tampon — la trace ne démarre pas, et rien ne le dit).
+  const out = device.shell(`atrace --async_start -b 16384 -a ${pkg} gfx view input 2>&1`);
+  if (/unable to start|error/i.test(out)) throw new Error(`atrace : ${out.trim()}`);
 }
 
 export function stopTrace(device) {
@@ -17,25 +20,32 @@ export function stopTrace(device) {
 export function parseSlices(text) {
   const stacks = new Map();
   const slices = [];
+  // ftrace écrit « <...> » quand il n'a plus le nom du fil : on le reprend
+  // d'une autre ligne du même fil.
+  const names = new Map();
   for (const line of text.split("\n")) {
     const m = line.match(LINE);
     if (!m) continue;
     const [, thread, tid, , ts, kind, pid, name] = m;
+    if (thread !== "<...>") names.set(tid, thread);
     const t = Number(ts) * 1000;
     const stack = stacks.get(tid) ?? [];
     stacks.set(tid, stack);
-    if (kind === "B") stack.push({ name: name ?? "", start: t, thread });
+    if (kind === "B") stack.push({ name: name ?? "", start: t });
     else {
       const open = stack.pop();
-      if (open) slices.push({ thread: open.thread, tid, pid, name: open.name, start: open.start, ms: t - open.start });
+      if (open) slices.push({ tid, pid, name: open.name, start: open.start, ms: t - open.start, depth: stack.length });
     }
   }
+  for (const slice of slices) slice.thread = names.get(slice.tid) ?? "<...>";
   return slices;
 }
 
 /** L'essentiel d'une trace : les textures envoyées (nombre, taille, temps) et les plus longues tranches du RenderThread. */
-export function summarizeTrace(text) {
-  const slices = parseSlices(text);
+export function summarizeTrace(text, pid = null) {
+  // Sur une vraie Shield, d'autres processus tracent aussi (SurfaceFlinger,
+  // le lanceur, leurs RenderThread) : seul celui de l'app compte.
+  const slices = parseSlices(text).filter((slice) => !pid || slice.pid === String(pid));
   const uploads = slices.filter((s) => /^Upload \d+x\d+ Texture/.test(s.name));
   const bySize = new Map();
   for (const upload of uploads) {

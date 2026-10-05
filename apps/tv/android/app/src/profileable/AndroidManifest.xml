@@ -1,0 +1,9 @@
+<!-- La release PROFILABLE, pour mesurer sur une vraie Shield (simpleperf,
+     Perfetto, profils du tas) sans passer en debug, qui n'est pas
+     représentative : `./gradlew assembleRelease -PtentacleProfileable=1`.
+     Jamais en CI : la release publiée reste telle quelle. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <profileable android:shell="true" />
+    </application>
+</manifest>

@@ -1,0 +1,16 @@
+<!-- L'app de MESURE, installée À CÔTÉ de la vraie (`-PtentaclePerfApp=1` :
+     com.tentacletv.mobile.perf, ses propres données) : le banc android-perf
+     y écrit la session du faux backend sans jamais toucher à l'app ni au
+     jumelage de l'utilisateur. Profilable, comme src/profileable. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:label="Tentacle (mesure)"
+        tools:replace="android:label">
+        <profileable android:shell="true" />
+        <activity
+            android:name="com.tentacletv.MainActivity"
+            android:label="Tentacle (mesure)"
+            tools:replace="android:label" />
+    </application>
+</manifest>

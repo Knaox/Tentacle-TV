@@ -60,9 +60,10 @@ export function createPlayer({ device, backendPort, host }) {
     const after = device.threadCpu();
     const round = { ...summarizeRound(device.perfRecords(), cpuDelta(before, after)), gfx: device.gfxStats(), hostLoad: [loadAtGesture, hostLoad()] };
     if (!traceFile) return round;
+    const pid = device.pid();
     const text = stopTrace(device);
     fs.writeFileSync(traceFile, text);
-    return { ...round, trace: summarizeTrace(text) };
+    return { ...round, trace: summarizeTrace(text, pid) };
   }
 
   /** Une passe, rejouée une fois si sa mise en place a dérapé (`expectReady`). */

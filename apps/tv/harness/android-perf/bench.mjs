@@ -13,6 +13,13 @@
 //     de chaque mesure — constantes, plus proches de la Shield (`lib/host.mjs`)
 //   `--no-warmup` (run, ab) : sans échauffement, quand les caches sont déjà
 //     chauds (images retaillées par le relais, cache disque de l'app)
+//   `--keep-session` (run, ab) : la session du faux backend est déjà écrite
+//     dans l'app (pas de réinstallation de la debug, pas de `pm clear`)
+//   node apps/tv/harness/android-perf/bench.mjs serve [--fixtures a,b]
+//     (le faux backend et son relais seuls, pour explorer ou filmer à la main)
+//   Sur une vraie Shield : ANDROID_SERIAL=<ip>:5555 et
+//     PERF_PACKAGE=com.tentacletv.mobile.perf (l'app de mesure, construite par
+//     `-PtentaclePerfApp=1`, installée À CÔTÉ de celle de l'utilisateur).
 //   node apps/tv/harness/android-perf/bench.mjs show <nom>
 //   node apps/tv/harness/android-perf/bench.mjs compare <avant> <après>
 //   node apps/tv/harness/android-perf/bench.mjs diff <avant> <après>     (captures : SSIM, PSNR, côte à côte)
@@ -100,7 +107,10 @@ async function withBench(debugApk, fn) {
   const backend = await startBackend();
   const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
   try {
-    await device.writeSession({ debugApk, port: PORT });
+    // `--keep-session` : la session du faux backend est déjà dans l'app (une
+    // passe précédente) — rien à réinstaller, seul le relais du port à rouvrir.
+    if (flag("keep-session")) device.adb(["reverse", `tcp:${PORT}`, `tcp:${PORT}`]);
+    else await device.writeSession({ debugApk, port: PORT });
     return await fn(device, createPlayer({ device, backendPort: BACKEND_PORT, host }), proxy);
   } finally {
     device.setPerf(false);
@@ -126,6 +136,28 @@ function save(tag, apk, device, proxy, results) {
   const host = { slow: flag("slow") };
   fs.writeFileSync(file, JSON.stringify({ tag, apk, date: new Date().toISOString(), device: device.describe(), host, images: proxy.stats, results }, null, 2));
   console.log(`résultats : ${file}`);
+}
+
+/** Le faux backend et son relais, sans mesure ni installation, jusqu'à
+ *  l'arrêt (Ctrl+C) : explorer, tracer ou filmer à la main l'app déjà
+ *  installée (`--keep-session` implicite). `--fixtures a,b` : les jeux. */
+async function serve() {
+  fs.mkdirSync(CACHE, { recursive: true });
+  const device = createDevice();
+  console.log(`appareil : ${device.describe()}`);
+  device.pushKeys(keysDex());
+  const backend = await startBackend();
+  const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
+  device.adb(["reverse", `tcp:${PORT}`, `tcp:${PORT}`]);
+  const sets = option("fixtures");
+  if (sets) execFileSync("curl", ["-s", "-X", "POST", `http://127.0.0.1:${BACKEND_PORT}/__fixtures`, "-d", JSON.stringify({ sets: sets.split(",") })], { stdio: "ignore" });
+  console.log(`faux backend ${BACKEND_PORT}, relais ${PORT} — Ctrl+C pour arrêter`);
+  await new Promise((resolve) => {
+    process.on("SIGINT", resolve);
+    process.on("SIGTERM", resolve);
+  });
+  backend.kill();
+  await proxy.close();
 }
 
 async function run() {
@@ -218,6 +250,7 @@ function diffShots(a, b) {
 
 async function main() {
   if (command === "run") return run();
+  if (command === "serve") return serve();
   if (command === "ab") return ab();
   if (command === "show") return load(rest[0]).results.forEach((s) => console.log(describe(s)));
   if (command === "compare") return console.log(compareTable(load(rest[0]).results, load(rest[1]).results));

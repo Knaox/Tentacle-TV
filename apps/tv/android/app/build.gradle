@@ -103,6 +103,22 @@ def copyNdkLibcxx = tasks.register("copyNdkLibcxx", Copy) {
 android.sourceSets.main.jniLibs.srcDir(ndkLibcxxDir)
 preBuild.dependsOn(copyNdkLibcxx)
 
+// Mesurer sur une vraie Shield — deux drapeaux, que la CI ne passe jamais :
+// - `-PtentacleProfileable=1` rend la release profilable
+//   (`<profileable android:shell="true"/>`, src/profileable) : mêmes classes,
+//   même JS, mêmes réglages que la release publiée ;
+// - `-PtentaclePerfApp=1` construit l'app de MESURE, installée à côté de la
+//   vraie (com.tentacletv.mobile.perf, ses propres données, profilable) : le
+//   banc android-perf y écrit la session de son faux backend sans toucher au
+//   jumelage de l'utilisateur.
+if (project.hasProperty('tentaclePerfApp')) {
+    android.defaultConfig.applicationIdSuffix = '.perf'
+    android.sourceSets.debug.manifest.srcFile 'src/perfApp/AndroidManifest.xml'
+    android.sourceSets.release.manifest.srcFile 'src/perfApp/AndroidManifest.xml'
+} else if (project.hasProperty('tentacleProfileable')) {
+    android.sourceSets.release.manifest.srcFile 'src/profileable/AndroidManifest.xml'
+}
+
 dependencies {
     implementation("com.facebook.react:react-android")
     // libmpv-android 1.0.0 — la version du mobile (API par instance, cf. mpv/MPVLib.kt).

@@ -6,7 +6,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export const PACKAGE = "com.tentacletv.mobile";
+/** L'app mesurée : la vraie à l'émulateur ; sur une vraie Shield, l'app de
+ *  MESURE installée à côté (`PERF_PACKAGE=com.tentacletv.mobile.perf`,
+ *  construite par `-PtentaclePerfApp=1`) — jamais celle de l'utilisateur. */
+export const PACKAGE = process.env.PERF_PACKAGE ?? "com.tentacletv.mobile";
+const REAL_PACKAGE = "com.tentacletv.mobile";
 const ACTIVITY = `${PACKAGE}/com.tentacletv.MainActivity`;
 const SDK = process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk");
 const ADB = path.join(SDK, "platform-tools/adb");
@@ -19,6 +23,14 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-5584") {
   const adb = (args, options = {}) => execFileSync(ADB, ["-s", serial, ...args], { encoding: "utf8", maxBuffer: 256 << 20, ...options });
   const shell = (command, options) => adb(["shell", command], options);
+  /** Ce qui EFFACE ou remplace (installation, `pm clear`, session écrite) ne
+   *  vise qu'un émulateur, ou l'app de mesure d'une vraie Shield : l'app et
+   *  le jumelage de l'utilisateur ne se touchent jamais. */
+  const assertDisposable = () => {
+    if (PACKAGE === REAL_PACKAGE && !serial.startsWith("emulator-")) {
+      throw new Error(`${serial} n'est pas un émulateur : le banc n'y écrit que dans l'app de mesure (PERF_PACKAGE=${REAL_PACKAGE}.perf)`);
+    }
+  };
 
   return {
     serial,
@@ -31,6 +43,7 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
     },
 
     install(apk) {
+      assertDisposable();
       const out = adb(["install", "-r", "-d", apk], { timeout: 300_000 });
       if (!out.includes("Success")) throw new Error(`installation refusée : ${out}`);
     },
@@ -42,6 +55,7 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
      * sans effacer ses données (même clé de signature).
      */
     async writeSession({ debugApk, port }) {
+      assertDisposable();
       this.install(debugApk);
       shell(`am force-stop ${PACKAGE}`);
       shell(`pm clear ${PACKAGE}`);

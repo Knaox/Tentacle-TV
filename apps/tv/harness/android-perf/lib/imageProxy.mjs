@@ -45,10 +45,13 @@ function fetchUpstream(target, pathname) {
   });
 }
 
+/** Taille et FORMAT réel de l'image (le faux backend dit « image/jpeg » de
+ *  tout, logos PNG compris : retaillés en JPEG, ils perdaient leur
+ *  transparence — un logo blanc sur un pavé noir, que Jellyfin ne rend pas). */
 async function imageSize(file) {
-  const { stdout } = await run("magick", ["identify", "-format", "%w %h", `${file}[0]`]);
-  const [w, h] = stdout.trim().split(/\s+/).map(Number);
-  return { width: w, height: h };
+  const { stdout } = await run("magick", ["identify", "-format", "%w %h %m", `${file}[0]`]);
+  const [w, h, format] = stdout.trim().split(/\s+/);
+  return { width: Number(w), height: Number(h), format: format ?? "" };
 }
 
 export function startImageProxy({ port, target, cacheDir, resize = true, log = () => {} }) {
@@ -67,8 +70,8 @@ export function startImageProxy({ port, target, cacheDir, resize = true, log = (
       fs.writeFileSync(original, up.body);
       fs.writeFileSync(`${original}.type`, up.type);
     }
-    const type = fs.readFileSync(`${original}.type`, "utf8");
-    const { width, height } = await imageSize(original);
+    const { width, height, format } = await imageSize(original);
+    const type = format === "PNG" ? "image/png" : format === "WEBP" ? "image/webp" : fs.readFileSync(`${original}.type`, "utf8");
     const want = targetSize(width, height, url.searchParams);
     const quality = Number(url.searchParams.get("quality")) || 90;
     let file = original;
