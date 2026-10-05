@@ -12,6 +12,7 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.shell.MainPackageConfig
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
+import com.swmansion.rnscreens.ScreenStack
 import com.tentacletv.exoplayer.ExoPackage
 import com.tentacletv.focus.TentacleFocusPackage
 import com.tentacletv.mpv.MpvPackage
@@ -52,5 +53,10 @@ class MainApplication : Application(), ReactApplication {
     // (a=1) remontent au JS et un MAINTIEN (avance rapide) est indiscernable
     // d'appuis répétés (cf. useButtonSeek / react-native-tvos discussion #728).
     ReactFeatureFlags.enableKeyDownEvents = true
+    // Un écran recouvert (l'accueil sous une fiche, sous le lecteur) reste
+    // attaché, invisible, son focus bloqué (patch de react-native-screens,
+    // `CoveredScreens`) : le retrait puis la réattache figeaient le fil
+    // d'interface 150 à 170 ms à chaque Retour sur la Shield.
+    ScreenStack.keepCoveredScreensAttached = true
   }
 }

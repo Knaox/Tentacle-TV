@@ -1,3 +1,255 @@
+diff --git a/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt b/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt
+new file mode 100644
+index 0000000..58898c6
+--- /dev/null
++++ b/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt
+@@ -0,0 +1,129 @@
++package com.swmansion.rnscreens
++
++import android.animation.Animator
++import android.animation.AnimatorListenerAdapter
++import android.animation.ObjectAnimator
++import android.view.View
++import android.view.ViewGroup
++import android.view.animation.AccelerateDecelerateInterpolator
++import android.view.animation.AnimationUtils
++import java.util.WeakHashMap
++
++/**
++ * Tentacle patch (Android TV) : un écran RECOUVERT par un autre, opaque, reste
++ * attaché à la fenêtre au lieu d'être retiré (`transaction.remove`).
++ *
++ * Retiré, il perdait tout : chaque vue détachée (l'accueil : ~1 800), ses
++ * images Fresco relâchées, ses listes d'affichage jetées par HWUI. Au retour,
++ * React Native rattachait tout et réenregistrait tout dans UNE image — 150 à
++ * 170 ms de fil d'interface figé sur une NVIDIA Shield, à chaque Retour.
++ *
++ * Gardé : attaché mais plus DESSINÉ une fois son fondu fini
++ * (`ScreenStack.drawChild` : `isHidden`) — rien ne le parcourt ni ne s'abîme
++ * à cause de lui tant qu'il est caché, ses vues, ses images et sa mise en
++ * page restent ; au retour, seul son affichage se réenregistre. Focus bloqué
++ * (`FOCUS_BLOCK_DESCENDANTS` : aucune flèche n'y entre), retiré de
++ * l'accessibilité. Les fondus de la pile sont rejoués à l'identique : ceux de
++ * `rns_fade_out` / `rns_fade_in` (même durée, même courbe — celle d'une
++ * `Animation` sans interpolateur), et l'écran qui s'efface est dessiné
++ * PAR-DESSUS le nouveau, comme la vue qui partait (`ScreenStack.dispatchDraw`).
++ *
++ * Opt-in (`ScreenStack.keepCoveredScreensAttached`) : sans lui, rien ne change.
++ */
++internal class CoveredScreens(
++    private val stack: ViewGroup,
++) {
++    /** Les écrans recouverts, et ce qu'on leur a pris. */
++    private class Saved(
++        val descendantFocusability: Int,
++        val importantForAccessibility: Int,
++    )
++
++    private val covered = WeakHashMap<View, Saved>()
++    private val running = WeakHashMap<View, Animator>()
++
++    /** L'écran qui s'efface par-dessus le nouveau, le temps de son fondu. */
++    var fadingOut: View? = null
++        private set
++
++    private val fadeDuration: Long by lazy {
++        AnimationUtils.loadAnimation(stack.context, R.anim.rns_fade_out).duration
++    }
++
++    fun isCovered(view: View): Boolean = covered.containsKey(view)
++
++    /** Recouvert et son fondu fini : il ne se dessine plus. */
++    fun isHidden(view: View): Boolean = covered.containsKey(view) && running[view] == null
++
++    /** Recouvert : invisible, sans focus ni accessibilité ; `fade` : il s'efface. */
++    fun cover(
++        view: View,
++        fade: Boolean,
++    ) {
++        if (covered.containsKey(view)) return
++        covered[view] = Saved(
++            (view as? ViewGroup)?.descendantFocusability ?: ViewGroup.FOCUS_BEFORE_DESCENDANTS,
++            view.importantForAccessibility,
++        )
++        (view as? ViewGroup)?.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
++        view.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
++        // Comme un écran retiré : son élément focalisé rend le focus, qu'Android
++        // donne au premier focalisable de la fenêtre — le nouvel écran.
++        if (view.hasFocus()) view.findFocus()?.clearFocus()
++        animateAlpha(view, 0f, fade)
++    }
++
++    /** Découvert : focus et accessibilité rendus ; `fade` : il réapparaît. */
++    fun uncover(
++        view: View,
++        fade: Boolean,
++    ) {
++        val saved = covered.remove(view) ?: return
++        (view as? ViewGroup)?.descendantFocusability = saved.descendantFocusability
++        view.importantForAccessibility = saved.importantForAccessibility
++        animateAlpha(view, 1f, fade)
++    }
++
++    /** Oublié (l'écran quitte la pile, retiré à l'ancienne) : plus rien ne court,
++     *  et la vue retrouve tout ce qu'on lui avait pris — un fragment rattaché
++     *  plus tard la reprendrait telle quelle. */
++    fun forget(view: View) {
++        running.remove(view)?.cancel()
++        if (fadingOut === view) fadingOut = null
++        val saved = covered.remove(view) ?: return
++        (view as? ViewGroup)?.descendantFocusability = saved.descendantFocusability
++        view.importantForAccessibility = saved.importantForAccessibility
++        view.alpha = 1f
++    }
++
++    private fun animateAlpha(
++        view: View,
++        to: Float,
++        fade: Boolean,
++    ) {
++        running.remove(view)?.cancel()
++        if (fadingOut === view) fadingOut = null
++        if (!fade || view.alpha == to) {
++            view.alpha = to
++            stack.invalidate()
++            return
++        }
++        if (to == 0f) fadingOut = view
++        val animator =
++            ObjectAnimator.ofFloat(view, View.ALPHA, view.alpha, to).apply {
++                duration = fadeDuration
++                interpolator = AccelerateDecelerateInterpolator()
++                addListener(
++                    object : AnimatorListenerAdapter() {
++                        override fun onAnimationEnd(animation: Animator) {
++                            if (running[view] === animation) running.remove(view)
++                            if (fadingOut === view) fadingOut = null
++                            stack.invalidate()
++                        }
++                    },
++                )
++            }
++        running[view] = animator
++        animator.start()
++    }
++}
+diff --git a/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt b/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
+index 9894cd4..6a5629d 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
+@@ -31,6 +31,9 @@ class ScreenStack(
+     private var childrenDrawingOrderStrategy: ChildrenDrawingOrderStrategy? = null
+     private var disappearingTransitioningChildren: MutableList<View> = ArrayList()
+ 
++    // Tentacle patch : les écrans recouverts gardés attachés (`CoveredScreens`).
++    private val coveredScreens = CoveredScreens(this)
++
+     var goingForward = false
+ 
+     /**
+@@ -183,6 +186,22 @@ class ScreenStack(
+ 
+         goingForward = shouldUseOpenAnimation
+ 
++        // Tentacle patch : avec un fondu ou sans animation, un écran recouvert
++        // reste attaché (`CoveredScreens`) ; toute autre animation garde le
++        // retrait d'origine.
++        val keepCovered =
++            keepCoveredScreensAttached &&
++                (stackAnimation == null || stackAnimation === StackAnimation.FADE || stackAnimation === StackAnimation.NONE)
++        val fades = stackAnimation === StackAnimation.FADE
++        val toCover = ArrayList<ScreenFragmentWrapper>()
++        // Ce qui redevient visible, découvert AVANT la transaction : le focus que
++        // rend l'écran qui part y retombe, comme sur un écran rattaché.
++        screenWrappers
++            .asSequence()
++            .dropWhile { visibleBottom != null && it !== visibleBottom || visibleBottom == null && it !== newTop }
++            .filter { !dismissedWrappers.contains(it) }
++            .forEach { wrapper -> wrapper.fragment.view?.let { coveredScreens.uncover(it, fades) } }
++
+         if (shouldUseOpenAnimation &&
+             newTop != null &&
+             needsDrawReordering(newTop, stackAnimation) &&
+@@ -234,14 +253,27 @@ class ScreenStack(
+                         dismissedWrappers.contains(
+                             wrapper,
+                         )
+-                }.forEach { wrapper -> transaction.remove(wrapper.fragment) }
++                }.forEach { wrapper ->
++                    wrapper.fragment.view?.let { coveredScreens.forget(it) }
++                    transaction.remove(wrapper.fragment)
++                }
+ 
+             // Remove all screens underneath visibleBottom && these marked for preload, but keep newTop.
+             screenWrappers
+                 .asSequence()
+                 .takeWhile { it !== visibleBottom }
+                 .filter { (it !== newTop && !dismissedWrappers.contains(it)) || it.screen.activityState === Screen.ActivityState.INACTIVE }
+-                .forEach { wrapper -> transaction.remove(wrapper.fragment) }
++                .forEach { wrapper ->
++                    // Tentacle patch : recouvert, il reste attaché (voir `keepCovered`).
++                    if (keepCovered && wrapper.fragment.isAdded && wrapper.fragment.view != null &&
++                        wrapper !== newTop && wrapper.screen.activityState !== Screen.ActivityState.INACTIVE
++                    ) {
++                        toCover.add(wrapper)
++                    } else {
++                        wrapper.fragment.view?.let { coveredScreens.forget(it) }
++                        transaction.remove(wrapper.fragment)
++                    }
++                }
+ 
+             // attach screens that just became visible
+             if (visibleBottom != null && !visibleBottom.fragment.isAdded) {
+@@ -281,6 +313,10 @@ class ScreenStack(
+             turnOffA11yUnderTransparentScreen(visibleBottom)
+             transaction.commitNowAllowingStateLoss()
+         }
++
++        // Tentacle patch : recouverts une fois le nouvel écran en place — il prend
++        // le focus qu'ils rendent ; un fondu les efface par-dessus lui.
++        toCover.forEach { wrapper -> wrapper.fragment.view?.let { coveredScreens.cover(it, fades && shouldUseOpenAnimation) } }
+     }
+ 
+     // only top visible screen should be accessible
+@@ -330,6 +366,14 @@ class ScreenStack(
+ 
+         childrenDrawingOrderStrategy?.apply(drawingOps)
+ 
++        // Tentacle patch : l'écran recouvert qui s'efface passe par-dessus le
++        // nouveau, comme la vue retirée qu'il remplace (Android dessine les vues
++        // qui partent en dernier).
++        coveredScreens.fadingOut?.let { fading ->
++            val index = drawingOps.indexOfFirst { it.child === fading }
++            if (index >= 0 && index != drawingOps.lastIndex) drawingOps.add(drawingOps.removeAt(index))
++        }
++
+         drawAndRelease()
+     }
+ 
+@@ -338,6 +382,8 @@ class ScreenStack(
+         child: View,
+         drawingTime: Long,
+     ): Boolean {
++        // Tentacle patch : un écran recouvert, son fondu fini, ne se dessine plus.
++        if (coveredScreens.isHidden(child)) return false
+         drawingOps.add(
+             obtainDrawingOp().apply {
+                 this.canvas = canvas
+@@ -374,6 +420,14 @@ class ScreenStack(
+     companion object {
+         const val TAG = "ScreenStack"
+ 
++        /**
++         * Tentacle patch : les écrans recouverts restent attachés, invisibles
++         * (`CoveredScreens`). Posé par l'app Android TV au démarrage ; ailleurs
++         * (le mobile), faux : le comportement d'origine.
++         */
++        @JvmField
++        var keepCoveredScreensAttached = false
++
+         private fun needsDrawReordering(
+             fragmentWrapper: ScreenFragmentWrapper,
+             resolvedStackAnimation: StackAnimation?,
 diff --git a/ios/RNSScreen.mm b/ios/RNSScreen.mm
 index b62a2e2..aa8b417 100644
 --- a/ios/RNSScreen.mm
