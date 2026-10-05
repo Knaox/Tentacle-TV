@@ -62,22 +62,10 @@ import { sagaRoutes } from "./routes/sagas";
 import { recoPageRoutes } from "./routes/recoPage";
 import { recoRowRoutes } from "./routes/recoRows";
 import { externalAccountRoutes } from "./routes/externalAccounts";
-import { startRecoJobs, stopRecoJobs } from "./services/reco/jobs";
-import { startSearchJobs, stopSearchJobs } from "./services/search/jobs";
-import { startPairingCleanup } from "./services/pairingCleanup";
-import { startFamilySweep } from "./services/family/familySweep";
-import { startJellyfinPoller } from "./services/jellyfinPoller";
-import { startJellyfinWs } from "./services/jellyfinWs";
-import { startNotificationPushWorker } from "./services/notificationPushWorker";
-import { startTicketLifecycleWorker } from "./services/ticketLifecycle";
-import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
-import { backfillSwipeFavorites } from "./services/swipe/swipeFavoritesBackfill";
-import { startAnnouncedPurge } from "./services/announcedRegistry";
-import { startNotificationPurge } from "./services/notificationPurge";
-import { sweepStaleTempDirs } from "./services/audioFingerprint";
-import { purgeEmptyAudioVerdicts } from "./services/audioAnalysis";
-import { purgeObsoleteTailRows } from "./services/tailAnalysis/tailStore";
-import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
+import { stopRecoJobs } from "./services/reco/jobs";
+import { stopSearchJobs } from "./services/search/jobs";
+import { stopWatchTime } from "./services/watchTime/collector";
+import { startBackgroundServices } from "./services/backgroundServices";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { setRestartShutdown } from "./services/pluginRestart";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
@@ -234,8 +222,7 @@ async function main() {
             state = await detectAppState();
             if (state === "running") {
               console.log("[Guard] Auto-recovery succeeded — state is now running");
-              startPairingCleanup();
-              startFamilySweep();
+              startBackgroundServices();
             }
           }
         } catch (err) {
@@ -359,27 +346,7 @@ async function main() {
 
   // Start background workers only when fully configured
   if (state === "running") {
-    startPairingCleanup();
-    startFamilySweep();
-    startJellyfinPoller();
-    startJellyfinWs();
-    startNotificationPushWorker();
-    startTicketLifecycleWorker();
-    startLibraryAddedNotifier();
-    // Une fois par serveur : les likes d'Affiner d'avant le cœur deviennent des cœurs.
-    void backfillSwipeFavorites();
-    startAnnouncedPurge();
-    startNotificationPurge();
-    // Analyses audio et de fin de média : les temporaires d'une analyse
-    // interrompue, et ce qui a été rangé sans rien avoir trouvé (on ne range
-    // plus que les trouvailles).
-    void sweepStaleTempDirs();
-    void purgeObsoleteTailRows();
-    void purgeEmptyAudioVerdicts();
-    startWatchTime();
-    startRecoJobs();
-    // Le moteur de recherche : son index se construit peu après le démarrage.
-    startSearchJobs();
+    startBackgroundServices();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }
