@@ -34,6 +34,15 @@ const LIBRARY_PREFIX = "Library_";
  */
 export const RAIL_LOCKED_WHILE_MOVING: readonly string[] = [RAIL_SEARCH_KEY, RAIL_HOME_KEY, RAIL_SHOW_ALL_KEY, RAIL_SWITCH_PROFILE_KEY, RAIL_PROFILE_KEY];
 
+/**
+ * Le GROUPE du rail entier (Rechercher, la liste, les demandes, le profil) :
+ * un tout pour le focus. La plateforme décide ce qu'il retient — Android TV y
+ * garde HAUT et BAS (sous le rail ouvert, le contenu est recouvert : tvOS ne
+ * le vise jamais) ; tvOS ne le lie à rien. Hors préfixe `nav:` : ce n'est pas
+ * une entrée.
+ */
+export const RAIL_GROUP_KEY = "rail:group";
+
 export const navKeyOf = (entryKey: string): string => `${NAV_PREFIX}${entryKey}`;
 
 export const isNavKey = (focusKey: string | null | undefined): boolean => !!focusKey?.startsWith(NAV_PREFIX);

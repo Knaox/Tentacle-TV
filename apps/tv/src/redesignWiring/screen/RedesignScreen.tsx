@@ -4,6 +4,7 @@ import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { RowRewindProvider } from "../../redesign/rows/rowRewindPort";
 import { RailBridges } from "../../platform/tvos/back/RailBridges";
 import { RailShortcuts } from "../../platform/tvos/back/RailShortcuts";
+import { useRailGroup } from "../../platform/tvos/back/railGroup";
 import { NavMenuModal } from "../nav/NavMenuModal";
 import { useRailBackLayers } from "./useRailBackLayers";
 import type { RedesignScreenModel } from "./useRedesignScreen";
@@ -26,6 +27,8 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
  */
 export function RedesignScreen({ screen, children }: { screen: RedesignScreenModel; children: ReactNode }) {
   useRailBackLayers(screen);
+  // Le groupe du rail, lié avant que la vue (et son NavRail) ne se rende.
+  useRailGroup(screen.focus);
   return (
     <View style={styles.fill}>
       <FocusBindingProvider bind={screen.focus.binder}>

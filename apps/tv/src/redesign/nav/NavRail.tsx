@@ -2,7 +2,8 @@ import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from 
 import { StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
-import { railMaxOffset } from "@tentacle-tv/tv-core";
+import { RAIL_GROUP_KEY, railMaxOffset } from "@tentacle-tv/tv-core";
+import { FocusGroup } from "../focus/FocusGroup";
 import { usePresence } from "../motion/useMotion";
 import type { IconName } from "../icons/Icon";
 import { scrim, white } from "../theme/tokens";
@@ -208,7 +209,8 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
           />
         </Animated.View>
       ) : null}
-      <View pointerEvents="box-none" style={[styles.layer, { width: RAIL_LEFT + width }]}>
+      {/* Le rail forme un tout pour le focus (`RAIL_GROUP_KEY`) : la plateforme décide ce qu'il retient. */}
+      <FocusGroup focusKey={RAIL_GROUP_KEY} pointerEvents="box-none" style={[styles.layer, { width: RAIL_LEFT + width }]}>
         <Capsule
           top={layout.strip.top}
           height={layout.strip.height}
@@ -264,7 +266,7 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
             />
           </View>
         </Capsule>
-      </View>
+      </FocusGroup>
       <NavHints
         moveHints={hints}
         organize={organizeHint}
