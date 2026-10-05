@@ -15,9 +15,10 @@
  */
 
 export const ROW_STAGING = {
-  /** Les rangées montées d'emblée : la première est à l'écran sous le héros,
-   *  la deuxième à un BAS. */
-  headRows: 2,
+  /** Les rangées montées d'emblée : la première, à l'écran sous le héros. La
+   *  deuxième (sous le bord, à deux BAS) vient à l'image suivante — la
+   *  première part de l'échelonnement. */
+  headRows: 1,
   /** Les cartes d'une rangée montées d'emblée : un écran de large et la
    *  suivante (4,2 vignettes de 380 points, 6,3 affiches de 240). */
   headCards: 8,

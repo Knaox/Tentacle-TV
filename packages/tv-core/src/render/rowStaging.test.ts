@@ -15,7 +15,7 @@ function play(rows: StagedRow[]): string[] {
 describe("le montage échelonné des rangées", () => {
   it("monte d'emblée l'écran : les premières rangées, leurs premières cartes", () => {
     expect(initialRelease(0, 20)).toBe(ROW_STAGING.headCards);
-    expect(initialRelease(1, 5)).toBe(5);
+    expect(initialRelease(0, 5)).toBe(5);
     expect(initialRelease(ROW_STAGING.headRows, 20)).toBe(0);
   });
 
@@ -26,7 +26,7 @@ describe("le montage échelonné des rangées", () => {
       { rank: 2, total: 10, released: initialRelease(2, 10) },
       { rank: 3, total: 3, released: initialRelease(3, 3) },
     ];
-    expect(play(rows)).toEqual(["2:4", "2:8", "3:3", "0:12", "0:14", "2:10"]);
+    expect(play(rows)).toEqual(["1:4", "1:8", "2:4", "2:8", "3:3", "0:12", "0:14", "2:10"]);
     expect(rows.every((row) => row.released === row.total)).toBe(true);
   });
 
