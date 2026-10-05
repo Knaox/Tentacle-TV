@@ -1,21 +1,5 @@
-import { useCallback } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
-import { useFavoritesAll } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
-import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { TVScreenFrame } from "../components/nav/TVScreenFrame";
-import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
-import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
-import { TVLibraryGrid } from "../components/library/TVLibraryGrid";
-import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
-import { TVCollectionEmpty } from "../components/library/TVCollectionEmpty";
-import { useTVRemote } from "../components/focus/useTVRemote";
-import { useTVContentEntry } from "../hooks/useTVContentEntry";
-import { HeartIcon } from "../components/icons/TVActionIcons";
-import { Colors, Spacing, Typography } from "../theme/colors";
-import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import { FavoritesRedesign } from "../redesignWiring/collection/CollectionRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
@@ -24,75 +8,6 @@ type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
  * Mes favoris en page parcourable (`Filters=IsFavorite`) — grille simple,
  * comme la LG : ni sélection multiple ni partage sur téléviseur.
  */
-export function FavoritesScreen(props: Props) {
-  // Apple TV : la refonte (`redesignWiring/collection`) ; Android TV : l'écran d'avant.
-  return REDESIGN_ACTIVE ? <FavoritesRedesign /> : <LegacyFavoritesScreen {...props} />;
-}
-
-function LegacyFavoritesScreen(props: Props) {
-  return (
-    <AmbientFocusProvider>
-      <FavoritesScreenInner {...props} />
-    </AmbientFocusProvider>
-  );
-}
-
-function FavoritesScreenInner({ navigation }: Props) {
-  const { t } = useTranslation("common");
-  const { data, isLoading } = useFavoritesAll();
-  const setFocusedItem = useAmbientSetter();
-  useTVRemote({ onBack: () => navigation.goBack() });
-  // Sélection au rail → focus sur la 1ʳᵉ carte de la grille.
-  const contentEntry = useTVContentEntry();
-  // Appui long sur une carte → la feuille d'actions.
-  const cardActions = useTVCardActions();
-
-  const openDetail = useCallback((item: MediaItem) => {
-    navigation.navigate("MediaDetail", { itemId: item.Id });
-  }, [navigation]);
-
-  const items = data ?? [];
-
-  return (
-    <TVScreenFrame backdrop={<TVAmbientBackdrop />}>
-      <View style={{ flex: 1 }}>
-        <Text style={{
-          color: Colors.textPrimary, ...Typography.pageTitle,
-          // Pas de marge basse : la grille réserve sous le titre la place
-          // de l'agrandissement de ses cartes (`CARD_FOCUS_BLEED`).
-          paddingHorizontal: Spacing.rowGutter,
-        }}>
-          {t("myFavorites")}
-        </Text>
-        {isLoading ? (
-          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator size="large" color={Colors.accentPurple} />
-          </View>
-        ) : items.length === 0 ? (
-          <TVCollectionEmpty
-            icon={<HeartIcon size={44} color={Colors.textTertiary} />}
-            title={t("emptyFavorites")}
-            hint={t("emptyFavoritesHint")}
-            // Sans action, cet écran n'a aucun focusable : l'anneau n'a nulle
-            // part où se poser et la télécommande devient muette.
-            action={{
-              label: t("browseLibraries"),
-              onPress: () => navigation.navigate("Home"),
-              entryRef: contentEntry,
-            }}
-          />
-        ) : (
-          <TVLibraryGrid
-            listKey="favorites"
-            items={items}
-            onPressItem={openDetail}
-            onLongPressItem={cardActions.openPoster}
-            onItemFocus={setFocusedItem}
-            entryRef={contentEntry}
-          />
-        )}
-      </View>
-      {cardActions.sheet}
-    </TVScreenFrame>
-  );
+export function FavoritesScreen(_props: Props) {
+  return <FavoritesRedesign />;
 }
