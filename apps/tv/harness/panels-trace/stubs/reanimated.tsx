@@ -18,6 +18,9 @@ function finish<T>(target: T, callback?: (finished: boolean) => void): T {
 export const withTiming = <T,>(target: T, _config?: unknown, callback?: (finished: boolean) => void): T => finish(target, callback);
 export const withSpring = <T,>(target: T, _config?: unknown, callback?: (finished: boolean) => void): T => finish(target, callback);
 export const withDelay = <T,>(_ms: number, value: T): T => value;
+// Une animation écrite à la main (`defineAnimation` : `withSteadyTiming`, Android TV) rend aussi sa cible tout de suite.
+export const defineAnimation = <T,>(target: T, factory: () => { callback?: (finished: boolean) => void }): T =>
+  finish(target, factory().callback);
 export const withSequence = <T,>(...values: T[]): T => values[values.length - 1];
 export const withRepeat = <T,>(value: T): T => value;
 export const cancelAnimation = () => {};
