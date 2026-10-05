@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { useAnimatedReaction, useReducedMotion, useSharedValue, type SharedValue } from "react-native-reanimated";
+import { ROW_RECEDE } from "@tentacle-tv/tv-core";
 import { motionTo } from "./motion";
 
 /**
@@ -15,7 +16,13 @@ import { motionTo } from "./motion";
 export interface RowPlace {
   row: SharedValue<number>;
   index: number;
+  /** Sa piste joue le recul elle-même (`CullingTrack`, Android TV) : la carte
+   *  n'anime rien, elle désigne son cadre (`RECEDE_FRAME_ID`). */
+  native?: boolean;
 }
+
+/** Le `nativeID` du cadre d'une carte dont la piste joue le recul (`RowRecede.kt`). */
+export const RECEDE_FRAME_ID = "tentacle:recede-frame";
 
 /**
  * L'index focalisé d'une rangée (-1 : aucun). `forcedIndex` : le focus figé du
@@ -54,7 +61,7 @@ export function useRowFocus(forced: boolean, forcedIndex: number | null): {
       release.current = setTimeout(() => {
         release.current = null;
         if (row.value === index) row.value = -1;
-      }, 32);
+      }, ROW_RECEDE.releaseMs);
     },
     [row],
   );

@@ -5,7 +5,7 @@ import { TV_LIGHT, TV_STAGE } from "@tentacle-tv/theme";
 import { boundedLight, type ArtworkPalette } from "../color/artworkPalette";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { pressScale, usePressProgress } from "../motion/pressProgress";
-import { useRecede, type RowPlace } from "../motion/useRowRecede";
+import { RECEDE_FRAME_ID, useRecede, type RowPlace } from "../motion/useRowRecede";
 import { colors, white } from "../theme/tokens";
 import { dressingStyles, FadingRestShadow, FocusRaised, FocusSheen, useFocusDressing } from "./CardFocusDressing";
 import { DropShadow } from "../render/DropShadow";
@@ -100,7 +100,10 @@ export function cardGlowOf(palette: ArtworkPalette | undefined, tone: "art" | "n
 export const CardFrame = memo(function CardFrame(props: CardFrameProps) {
   // Le recul d'une carte de rangée (une réaction sur le fil d'interface)
   // n'existe que pour elle : `place` ne change pas d'un rendu à l'autre.
-  return props.place ? <RowCardFrame {...props} place={props.place} /> : <FrameBody {...props} recede={null} />;
+  if (!props.place) return <FrameBody {...props} recede={null} />;
+  // Sa piste joue le recul (Android TV) : le cadre se désigne, rien ne s'anime ici.
+  if (props.place.native) return <FrameBody {...props} recede={null} nativeID={RECEDE_FRAME_ID} />;
+  return <RowCardFrame {...props} place={props.place} />;
 });
 
 function RowCardFrame(props: CardFrameProps & { place: RowPlace }) {
@@ -114,6 +117,7 @@ function FrameBody({
   radius,
   focused,
   recede,
+  nativeID,
   dimmed = false,
   press,
   origin = "top",
@@ -121,7 +125,7 @@ function FrameBody({
   focusLayer,
   focusProgress,
   children,
-}: CardFrameProps & { recede: SharedValue<number> | null }) {
+}: CardFrameProps & { recede: SharedValue<number> | null; nativeID?: string }) {
   // Partagé, le ressort propre reste au repos (jamais lancé).
   const own = useFocusProgress(focusProgress === undefined && focused);
   const p = focusProgress ?? own;
@@ -141,7 +145,7 @@ function FrameBody({
   const [dressed, settle] = useFocusDressing(focused);
   const shape = { width, height, borderRadius: radius };
   return (
-    <Animated.View style={[shape, cardOrigin(origin), lift, fade]}>
+    <Animated.View nativeID={nativeID} style={[shape, cardOrigin(origin), lift, fade]}>
       {dressed && !glow ? (
         <FadingRestShadow progress={p} radius={radius} />
       ) : (

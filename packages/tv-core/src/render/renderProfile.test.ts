@@ -17,6 +17,7 @@ describe("le profil de rendu", () => {
       imageScale: 2,
       spinner: "system",
       cullOffscreen: false,
+      nativeRecede: false,
     });
   });
 
@@ -33,6 +34,7 @@ describe("le profil de rendu", () => {
     expect(android.imageScale).toBe(1);
     expect(android.spinner).toBe("drawn");
     expect(android.cullOffscreen).toBe(true);
+    expect(android.nativeRecede).toBe(true);
   });
 
   it("demande sur Android TV les images des cartes à leur plus grande taille d'affichage, focus compris", () => {

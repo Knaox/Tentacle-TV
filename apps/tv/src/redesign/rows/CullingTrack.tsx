@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { UIManager, requireNativeComponent, type HostComponent, type StyleProp, type ViewProps, type ViewStyle } from "react-native";
+import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
+import { ROW_RECEDE } from "@tentacle-tv/tv-core";
 import { RENDER } from "../render/renderProfile";
 
 /**
@@ -13,20 +15,54 @@ import { RENDER } from "../render/renderProfile";
  * Elle s'insère entre le contenu de la ScrollView (qui garde son style : les
  * marges, l'espacement) et les cartes : une ligne, au même espacement — la
  * même mise en page.
+ *
+ * `recede` : la piste joue aussi le RECUL des voisines de la carte focalisée
+ * (`RowRecede.kt`, profil `nativeRecede`), avec les jetons du thème — les
+ * cartes désignent leur cadre (`RowPlace.native`) et n'animent plus rien.
  */
 
 const VIEW_NAME = "TentacleCullTrack";
 
-const NativeTrack: HostComponent<ViewProps> | null =
-  RENDER.cullOffscreen && UIManager.getViewManagerConfig(VIEW_NAME) != null ? requireNativeComponent<ViewProps>(VIEW_NAME) : null;
+interface NativeTrackProps extends ViewProps {
+  recedeFrames?: boolean;
+  recedeOpacity?: number;
+  recedeMs?: number;
+  recedeReleaseMs?: number;
+  recedeCurve?: readonly number[];
+}
+
+const NativeTrack: HostComponent<NativeTrackProps> | null =
+  RENDER.cullOffscreen && UIManager.getViewManagerConfig(VIEW_NAME) != null ? requireNativeComponent<NativeTrackProps>(VIEW_NAME) : null;
 
 /** Vrai quand la piste élaguée existe sur cet appareil. */
 export const CULLING_TRACK = NativeTrack !== null;
 
-export function CullingTrack({ gap, style, children }: { gap: number; style?: StyleProp<ViewStyle>; children: ReactNode }) {
+/** Vrai quand la piste joue le recul des voisines (`RowPlace.native`). */
+export const NATIVE_RECEDE = CULLING_TRACK && RENDER.nativeRecede;
+
+export function CullingTrack({
+  gap,
+  recede = false,
+  style,
+  children,
+}: {
+  gap: number;
+  /** Elle joue le recul des voisines (seulement là où `NATIVE_RECEDE`). */
+  recede?: boolean;
+  style?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
   if (!NativeTrack) return <>{children}</>;
   return (
-    <NativeTrack collapsable={false} style={[{ flexDirection: "row", gap }, style]}>
+    <NativeTrack
+      collapsable={false}
+      style={[{ flexDirection: "row", gap }, style]}
+      recedeFrames={recede && NATIVE_RECEDE}
+      recedeOpacity={TV_STAGE.focus.recede}
+      recedeMs={TV_MOTION.focus.recedeMs}
+      recedeReleaseMs={ROW_RECEDE.releaseMs}
+      recedeCurve={TV_MOTION.curve.inOut}
+    >
       {children}
     </NativeTrack>
   );

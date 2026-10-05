@@ -91,6 +91,10 @@ export interface RenderProfile {
    *  sections — vues natives `TentacleCullTrack`, `TentacleFocusSection`) :
    *  monté et focalisable, le RenderThread ne le parcourt plus. */
   cullOffscreen: boolean;
+  /** Le recul des voisines d'une carte joué par la piste native
+   *  (`TentacleCullTrack` → `RowRecede`) plutôt que par Reanimated, carte par
+   *  carte, sur le fil d'interface. */
+  nativeRecede: boolean;
 }
 
 export interface CardArtworkSize {
@@ -131,6 +135,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     imageScale: 2,
     spinner: "system",
     cullOffscreen: false,
+    nativeRecede: false,
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
   // floutée en ancienne architecture — les ombres passent par un masque
@@ -158,6 +163,9 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     // (React Native ne rogne rien) : ~16 ms à l'accueil, dont l'essentiel hors
     // de l'écran (trace Skia, 2026-10-05).
     cullOffscreen: true,
+    // Une vingtaine de cartes reculent à chaque pas vertical : ~4 ms de fil
+    // d'interface par image sur la Shield, quand Reanimated les animait.
+    nativeRecede: true,
   },
 };
 

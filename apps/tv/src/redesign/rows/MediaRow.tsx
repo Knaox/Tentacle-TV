@@ -9,7 +9,7 @@ import type { CardModel } from "../cards/cardTypes";
 import { useForcedFocusKey } from "../focus/focusPreview";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
-import { CullingTrack } from "./CullingTrack";
+import { CullingTrack, NATIVE_RECEDE } from "./CullingTrack";
 import { useRowRewindPort } from "./rowRewindPort";
 import { useStagedRow } from "./rowStage";
 
@@ -72,6 +72,8 @@ export const MediaRow = memo(function MediaRow({
     [rewind, rowKey],
   );
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
+  // La piste joue le recul (Android TV) — sauf au banc, dont le focus figé passe par la valeur partagée.
+  const nativeRecede = NATIVE_RECEDE && forced === null;
   const { shown, demand } = useStagedRow(stageRank, cards.length);
 
   const onItemFocus = useCallback(
@@ -105,7 +107,7 @@ export const MediaRow = memo(function MediaRow({
           variant === "morph" && styles.morphContent,
         ]}
       >
-        <CullingTrack gap={TV_STAGE.row.gap}>
+        <CullingTrack gap={TV_STAGE.row.gap} recede={nativeRecede}>
           {cards.slice(0, shown).map((card, index) => (
             <RowCard
               key={card.id}
@@ -114,6 +116,7 @@ export const MediaRow = memo(function MediaRow({
               row={row}
               rowKey={rowKey}
               variant={variant}
+              nativeRecede={nativeRecede}
               width={cardWidth}
               onPressCard={onPressCard}
               onLongPressCard={onLongPressCard}
@@ -133,6 +136,7 @@ const RowCard = memo(function RowCard({
   row,
   rowKey,
   variant,
+  nativeRecede,
   width,
   onPressCard,
   onLongPressCard,
@@ -143,12 +147,14 @@ const RowCard = memo(function RowCard({
   row: SharedValue<number>;
   rowKey: string;
   variant: MediaRowProps["variant"];
+  /** Sa piste joue le recul (`CullingTrack`). */
+  nativeRecede: boolean;
   width?: number;
   onPressCard?: (card: CardModel) => void;
   onLongPressCard?: (card: CardModel) => void;
   onItemFocus: (index: number, focused: boolean, card: CardModel) => void;
 }) {
-  const place = useMemo(() => ({ row, index }), [row, index]);
+  const place = useMemo(() => ({ row, index, native: nativeRecede }), [row, index, nativeRecede]);
   const onPress = useMemo(() => (onPressCard ? () => onPressCard(card) : undefined), [onPressCard, card]);
   const onLongPress = useMemo(() => (onLongPressCard ? () => onLongPressCard(card) : undefined), [onLongPressCard, card]);
   const onFocusChange = useCallback((focused: boolean) => onItemFocus(index, focused, card), [onItemFocus, index, card]);

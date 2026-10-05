@@ -9,4 +9,5 @@ export * from "./haloDrawing";
 export * from "./renderProfile";
 export * from "./commitCount";
 export * from "./perfLabels";
+export * from "./rowRecede";
 export * from "./rowStaging";

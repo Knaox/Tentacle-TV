@@ -4,7 +4,10 @@ import android.content.Context
 import android.graphics.Canvas
 import android.view.View
 import android.view.ViewTreeObserver
+import android.view.animation.PathInterpolator
+import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.views.view.ReactViewGroup
 import com.facebook.react.views.view.ReactViewManager
 
@@ -19,6 +22,9 @@ import com.facebook.react.views.view.ReactViewManager
  *
  * Une `View` de React Native pour tout le reste (`ReactViewGroup`) : mêmes
  * props, même ordre de dessin (`zIndex` : la carte focalisée passe devant).
+ *
+ * `recedeFrames` : elle joue aussi le RECUL des voisines de la carte focalisée
+ * (`RowRecede`), à la place de Reanimated.
  */
 class TentacleCullTrack(context: Context) : ReactViewGroup(context) {
   private val origin = IntArray(2)
@@ -33,14 +39,35 @@ class TentacleCullTrack(context: Context) : ReactViewGroup(context) {
     true
   }
 
+  /** Le recul des voisines, quand la piste le joue (`recedeFrames`). */
+  internal val recede = RowRecede(this)
+  var recedeFrames = false
+    set(value) {
+      field = value
+      if (!value) recede.reset()
+    }
+  private val focusWatch = ViewTreeObserver.OnGlobalFocusChangeListener { _, _ -> if (recedeFrames) recede.onFocusMoved() }
+
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     viewTreeObserver.addOnPreDrawListener(cullCheck)
+    viewTreeObserver.addOnGlobalFocusChangeListener(focusWatch)
   }
 
   override fun onDetachedFromWindow() {
     viewTreeObserver.removeOnPreDrawListener(cullCheck)
+    viewTreeObserver.removeOnGlobalFocusChangeListener(focusWatch)
     super.onDetachedFromWindow()
+  }
+
+  override fun requestChildFocus(child: View, focused: View) {
+    super.requestChildFocus(child, focused)
+    if (recedeFrames) recede.onChildFocused(child)
+  }
+
+  override fun onViewAdded(child: View) {
+    super.onViewAdded(child)
+    if (recedeFrames) post { recede.onChildAdded() }
   }
 
   /** La géométrie du moment : l'origine de la piste dans la fenêtre, l'écran, la marge. */
@@ -85,4 +112,24 @@ class TentacleCullTrackManager : ReactViewManager() {
   override fun getName(): String = "TentacleCullTrack"
 
   override fun createViewInstance(context: ThemedReactContext): ReactViewGroup = TentacleCullTrack(context)
+
+  /** La piste joue le recul des voisines (`RowRecede`) ; les valeurs : tv-core et le thème. */
+  @ReactProp(name = "recedeFrames")
+  fun setRecedeFrames(view: TentacleCullTrack, enabled: Boolean) { view.recedeFrames = enabled }
+
+  @ReactProp(name = "recedeOpacity", defaultFloat = 0.72f)
+  fun setRecedeOpacity(view: TentacleCullTrack, opacity: Float) { view.recede.opacity = opacity }
+
+  @ReactProp(name = "recedeMs", defaultInt = 260)
+  fun setRecedeMs(view: TentacleCullTrack, ms: Int) { view.recede.durationMs = ms.toLong() }
+
+  @ReactProp(name = "recedeReleaseMs", defaultInt = 32)
+  fun setRecedeReleaseMs(view: TentacleCullTrack, ms: Int) { view.recede.releaseMs = ms.toLong() }
+
+  /** La courbe de Bézier `[x1, y1, x2, y2]` (`TV_MOTION.curve.inOut`). */
+  @ReactProp(name = "recedeCurve")
+  fun setRecedeCurve(view: TentacleCullTrack, curve: ReadableArray?) {
+    if (curve == null || curve.size() != 4) return
+    view.recede.curve = PathInterpolator(curve.getDouble(0).toFloat(), curve.getDouble(1).toFloat(), curve.getDouble(2).toFloat(), curve.getDouble(3).toFloat())
+  }
 }
