@@ -73,10 +73,13 @@ Relevé dans react-native-tvos 0.80 (Android) :
 | Essai | Résultat |
 |---|---|
 | OK maintenu sur une vignette 16:9 (« Reprendre la lecture ») | ✅ le grand panneau s'ouvre, « Reprendre » en tête |
+| OK maintenu sur une affiche (Ma liste) | ✅ le panneau `poster` s'ouvre |
+| OK maintenu sur un volet absent (saga, faux Vigie) | ✅ le panneau du titre absent s'ouvre, réduit à « Demander » ; rien n'est demandé au relâchement |
+| Fenêtre « Mes demandes » (rail) | ✅ s'ouvre, Retour la ferme et rend le focus à l'entrée |
 | Relâchement d'OK sous le panneau ouvert | ✅ aucune écriture au faux backend (garde anti-clic fantôme) |
 | Retour dans le panneau | ✅ fermé par `onRequestClose`, un seul Retour, focus rendu à la carte |
 | Entrée sur l'échelle (cran 5) | ❌ aucun focus dans le `Dialog` ; seule « Noter 5 » est focalisable (verrou d'A1 appliqué), mais sa demande de focus échoue |
-| Flèche dans le panneau sans focus | ❌ plantage natif : `StackOverflowError`, `ReactViewGroup.requestFocus` ↔ `requestFocusViewOrAncestor` |
+| Flèche dans un panneau à guides (grand panneau, titre absent) | ❌ plantage natif : `StackOverflowError`, `ReactViewGroup.requestFocus` ↔ `requestFocusViewOrAncestor` |
 
 Le plantage vient des guides de focus natifs de react-native-tvos sur Android
 (lot A1) : un guide dont la destination refuse le focus remonte les ancêtres
@@ -98,9 +101,11 @@ Méthode : `input keyevent --longpress` relâche avant le seuil de 550 ms
 Légende : ✅ tourne tel quel · 🔧 câblé par A3 · ↗ autre tâche du lot · ⚠ écart assumé.
 
 Retour relevé à l'émulateur, écran par écran : accueil (page → rail → profil
-→ sortie de l'app, comme tvOS), fiche poussée (recule), lecteur (recule vers
-l'accueil), recherche (rail), Réglages (rail sur leur entrée, puis sortie),
-grand panneau (fermé).
+→ sortie de l'app, comme tvOS), Pour vous, Ma liste, recherche et Réglages
+(le rail s'ouvre sur LEUR entrée ; depuis Réglages, ensuite, la sortie), fiche
+poussée (recule, y compris la fiche d'une saga), lecteur (recule vers
+l'accueil), grand panneau, panneau d'un titre absent et fenêtre des demandes
+(fermés, focus rendu).
 
 | Écran | Entrée | État Android | Écarts, décisions |
 |---|---|---|---|
@@ -137,12 +142,21 @@ l'appareil, `system` — la dictée du clavier système reste. Applicateur :
 ### 3.1 bis Les champs cachés (recherche, jumelage, profils)
 
 tvOS ignore une vue d'opacité nulle ; Android non. À l'émulateur, HAUT depuis
-le champ de la recherche envoyait le focus au vrai `TextInput`, hors écran.
-`platform/textEntry` (jumeau `.android`) : sur Android, le champ caché est non
-focalisable hors saisie (`HIDDEN_INPUT_PROPS`), libéré le temps de l'ouvrir
-(`openHiddenInput`), rendu et reverrouillé à la fermeture du clavier, le focus
-remis au bouton du champ (jumelage, profils : `KeyboardEntryProvider`) ou à la
-règle de l'écran (recherche).
+le champ de la recherche envoyait le focus au vrai `TextInput`, hors écran —
+et `focusable={false}` n'y peut rien (seul `ReactViewManager` connaît la prop).
+Hors mode tactile, react-native-tvos CACHE en plus le clavier sur un `focus()`
+venu du JS : il attend un OK sur le champ lui-même.
+
+`platform/textEntry` (jumeau `.android`) fournit `HiddenTextInput` : sur
+Android, le champ vit dans une vue verrouillée (`tvFocusable={false}`,
+`FOCUS_BLOCK_DESCENDANTS`), déverrouillée le temps de `focus()`, reverrouillée
+au `blur` ; le module natif `TextEntry.showKeyboard` montre le clavier ; le
+champ est rendu à sa fermeture, le focus remis au bouton du champ (jumelage,
+profils : `KeyboardEntryProvider`) ou à la règle de l'écran (recherche). tvOS :
+le `TextInput` tel quel. Émulateur : HAUT depuis le champ y reste ; OK ouvre le
+clavier Gboard d'Android TV, et le texte tapé arrive à la recherche. (Le faux
+backend du banc rend ses résultats sans `match` : l'écran plante ensuite, défaut
+du banc relevé en T6, pas de l'app.)
 
 ### 3.2 Conditions d'utilisation
 
