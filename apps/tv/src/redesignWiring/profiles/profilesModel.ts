@@ -8,12 +8,21 @@ import type { ProfileTileModel } from "../../redesign/screens/profiles/ProfilesV
  * vue : portrait, blocage et son heure, messages du pavé.
  */
 
-/** Le portrait Jellyfin d'un profil, par le proxy du serveur — il se lit sans jeton. */
-export function profileAvatarUri(serverUrl: string | null, userId: string, imageTag: string | null, size = 400): string | undefined {
+/**
+ * Le portrait Jellyfin d'un profil, par le proxy du serveur — il se lit sans
+ * jeton. UNE seule adresse par portrait, quelle que soit la taille du rond :
+ * « Qui regarde ? », la gestion, le pavé et le rail relisent la même image du
+ * cache (une taille par écran refaisait une lecture réseau à chaque écran, et
+ * un échec passager laissait l'initiale à la place de la photo).
+ */
+export function profileAvatarUri(serverUrl: string | null, userId: string, imageTag: string | null): string | undefined {
   if (!serverUrl || !imageTag) return undefined;
   const base = serverUrl.replace(/\/+$/, "");
-  return `${base}/api/jellyfin/Users/${encodeURIComponent(userId)}/Images/Primary?tag=${encodeURIComponent(imageTag)}&maxWidth=${size}&quality=90`;
+  return `${base}/api/jellyfin/Users/${encodeURIComponent(userId)}/Images/Primary?tag=${encodeURIComponent(imageTag)}&maxWidth=${AVATAR_SOURCE_PX}&quality=90`;
 }
+
+/** La largeur demandée pour tout portrait : celle de la plus grande tuile (`TILE_AVATAR`, ×2). */
+const AVATAR_SOURCE_PX = 400;
 
 /** L'heure de fin d'un blocage : l'heure seule le jour même, le jour en plus au-delà. */
 export function formatUnlockTime(iso: string, language: string, now: number): string {

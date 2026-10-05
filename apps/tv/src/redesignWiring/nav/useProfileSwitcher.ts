@@ -25,7 +25,7 @@ export function useProfileSwitcher(): NavSwitcher | null {
       id: profile.userId,
       name: profile.name,
       color: profile.color,
-      avatarUri: profileAvatarUri(serverUrl, profile.userId, profile.imageTag, 96),
+      avatarUri: profileAvatarUri(serverUrl, profile.userId, profile.imageTag),
     }));
     return { key: RAIL_SWITCH_PROFILE_KEY, label, profiles };
   }, [serverUrl, data, label]);

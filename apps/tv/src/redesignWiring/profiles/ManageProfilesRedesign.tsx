@@ -33,6 +33,7 @@ import { useManageActions } from "./useManageActions";
 import { useFamilyCapability } from "./useFamilyCapability";
 import { useManageUnlock } from "./useManageUnlock";
 import { useHiddenKeyboard } from "../pairing/useHiddenKeyboard";
+import { useTvFamilyListing } from "./useTvFamilyListing";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ManageProfiles">;
 
@@ -63,14 +64,21 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   const context = useMemo(() => ({ jfClient, storage, queryClient }), [jfClient, storage, queryClient]);
   const record = readProfileRecord(storage);
   const owner = useMemo(
-    () => ({ userId: record?.profileId ?? "", name: record?.name ?? "", color: record?.color ?? FAMILY_PROFILE_COLORS[0] }),
-    [record?.profileId, record?.name, record?.color],
+    () => ({
+      userId: record?.profileId ?? "",
+      name: record?.name ?? "",
+      color: record?.color ?? FAMILY_PROFILE_COLORS[0],
+      imageTag: record?.imageTag ?? null,
+    }),
+    [record?.profileId, record?.name, record?.color, record?.imageTag],
   );
   const serverUrl = storage.getItem("tentacle_server_url");
 
   const unlock = useManageUnlock(origin, record?.hasPin === true);
   const ready = unlock.phase === "ready";
   const overview = useFamilyOverview({ enabled: ready });
+  // Les portraits que « Qui regarde ? » connaît : le relais d'un aperçu lu pendant que Jellyfin ne répondait pas.
+  const listing = useTvFamilyListing();
   useFamilyLive({ token: storage.getItem("tentacle_token"), enabled: ready });
 
   const store = useFocusStore();
@@ -91,7 +99,7 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   // Le droit d'un membre en cours d'envoi : sa case montre déjà le nouvel état.
   const capability = useFamilyCapability(ready);
   const list = overview.data
-    ? manageListModel(overview.data, owner, serverUrl, i18n.language, t, actions.pendingRight, { guestRequests: capability?.guestRequests })
+    ? manageListModel(overview.data, owner, serverUrl, i18n.language, t, actions.pendingRight, { guestRequests: capability?.guestRequests }, listing?.profiles)
     : null;
   listRef.current = list;
   const entryInput = entryInputOf(list);

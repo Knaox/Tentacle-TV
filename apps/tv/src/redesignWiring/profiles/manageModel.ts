@@ -8,7 +8,9 @@ import {
   manageRows,
   type ManageBlock,
   type ManageCapability,
+  type KnownImageTag,
   type ManageRowModel,
+  withKnownImageTags,
 } from "@tentacle-tv/tv-core";
 import type { InviteCandidateView, ManageRowView } from "../../redesign/screens/profiles/ManageProfilesView";
 import { profileAvatarUri } from "./profilesModel";
@@ -21,6 +23,8 @@ export interface ManageOwner {
   userId: string;
   name: string;
   color: FamilyProfileColor;
+  /** Son portrait, tel que « Qui regarde ? » l'a donné à l'ouverture. */
+  imageTag: string | null;
 }
 
 /** Le droit d'un membre ou d'un invité en cours d'envoi : sa case montre déjà le nouvel état. */
@@ -49,7 +53,7 @@ function rowView(row: ManageRowModel, serverUrl: string | null, language: string
     id: row.id,
     name: row.name,
     color: row.color,
-    avatarUri: row.kind === "invitation" ? undefined : profileAvatarUri(serverUrl, row.userId, row.imageTag, 160),
+    avatarUri: row.kind === "invitation" ? undefined : profileAvatarUri(serverUrl, row.userId, row.imageTag),
     detail,
     invitation: row.kind === "invitation",
     action: row.action ? { kind: row.action, hint: t(hintKey, { name: row.name }) } : null,
@@ -79,8 +83,9 @@ export function manageListModel(
   t: TFunction,
   pending: PendingRight = null,
   capability: ManageCapability = {},
+  known: readonly KnownImageTag[] = [],
 ) {
-  const rows = manageRows(overview, actor, capability);
+  const rows = withKnownImageTags(manageRows(overview, actor, capability), known);
   const capacity = manageCapacity(overview);
   const block = capacity.inviteBlock ?? capacity.guestBlock;
   // Le propriétaire de la FAMILLE (v2 : pas forcément la session) ; v1 : la session.
@@ -99,7 +104,7 @@ export function candidateViews(candidates: FamilyCandidateDto[], sent: ReadonlyS
   return inviteCandidateOrder(candidates).slice(0, SHOWN_CANDIDATES).map((candidate) => ({
     id: candidate.userId,
     name: candidate.name,
-    avatarUri: profileAvatarUri(serverUrl, candidate.userId, candidate.imageTag, 160),
+    avatarUri: profileAvatarUri(serverUrl, candidate.userId, candidate.imageTag),
     sent: sent.has(candidate.userId),
     // Un serveur v1 ne dit pas le statut : tout candidat s'invitait.
     status: candidate.status ?? "available",
