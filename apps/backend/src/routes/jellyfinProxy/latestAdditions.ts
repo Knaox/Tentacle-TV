@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { fetch as undiciFetch } from "undici";
 import { getJellyfinApiKey } from "../../services/configStore";
-import { getCached, setCached } from "../../services/jellyfinCache";
+import { cacheGeneration, getCached, setCached } from "../../services/jellyfinCache";
 import { getJellyfinDispatcher } from "../../services/jellyfinHttpAgent";
 import {
   LATEST_SCAN_PAGE,
@@ -98,6 +98,8 @@ export async function serveLatestAdditions(
     return true;
   }
 
+  // Un geste qui passe pendant le parcours périme la rangée (cf. jellyfinCache).
+  const since = cacheGeneration();
   const signal = requestSignal(request, reply, LATEST_TIMEOUT_MS);
   try {
     const plan = await scanLatest(latest, ctx, signal);
@@ -114,7 +116,7 @@ export async function serveLatestAdditions(
     const { body, replacements } = scrubAdminKey(raw, getJellyfinApiKey(), ctx.token);
     if (replacements > 0) request.log.warn({ path: ctx.path, replacements }, "cle admin retiree des derniers ajouts");
     const buffer = Buffer.from(body, "utf8");
-    setCached(ctx.path, ctx.queryString, ctx.token, buffer, JSON_TYPE, 200, LATEST_TTL_MS);
+    setCached(ctx.path, ctx.queryString, ctx.token, buffer, JSON_TYPE, 200, LATEST_TTL_MS, since);
     reply.status(200).header("content-type", JSON_TYPE).header("cache-control", "no-store").header("x-tentacle-cache", "MISS");
     reply.send(buffer);
     return true;

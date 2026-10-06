@@ -3,7 +3,7 @@ import { Readable } from "stream";
 import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from "undici";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceStatus";
-import { getCached, getCacheTtl } from "../services/jellyfinCache";
+import { cacheGeneration, getCached, getCacheTtl } from "../services/jellyfinCache";
 import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
 import { clearDeviceTokenIfInvalid } from "../services/deviceTokenHealth";
 import { isAllowedProxyPath } from "./jellyfinProxy/patterns";
@@ -91,6 +91,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // Cache lookup for heavy read routes (Latest/Resume/NextUp/Views).
     // Only applies to GET — mutations always go direct.
     const queryString = qs;
+    // Relevée AVANT la lecture : un geste qui passe pendant qu'elle court en
+    // périme la réponse, qui ne se range plus (cf. jellyfinCache).
+    const cacheSince = cacheGeneration();
     const cacheTtl = (request.method === "GET" || request.method === "HEAD")
       ? getCacheTtl(wildcardPath) : null;
     if (cacheTtl !== null) {
@@ -208,7 +211,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // La liste des bibliothèques y passe aussi : elle se trie (libraryViews).
       if (readsInFull(wildcardPath, cacheTtl) && !isMediaResponse && response.status < 400) {
         return sendBuffered(request, reply, response, {
-          path: wildcardPath, queryString, token: incomingToken, ttlMs: cacheTtl,
+          path: wildcardPath, queryString, token: incomingToken, ttlMs: cacheTtl, since: cacheSince,
         });
       }
 

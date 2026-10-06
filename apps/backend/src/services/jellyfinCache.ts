@@ -26,6 +26,26 @@ export interface CacheEntry {
 const CACHE_MAX_ENTRIES = 500;
 const cache = new Map<string, CacheEntry>();
 
+/**
+ * Génération du cache : avancée à chaque invalidation. Une lecture partie
+ * AVANT un geste et revenue APRÈS porte l'état d'avant — elle ne se range
+ * pas (cf. `setCached`), sinon elle resservirait cet état pendant tout son TTL.
+ */
+let generation = 0;
+
+/** La génération courante, à relever au départ d'une lecture qui se mettra en cache. */
+export function cacheGeneration(): number {
+  return generation;
+}
+
+/** Ce qui porte l'état d'un compte (favori, vu, Ma liste) parmi les routes cachées. */
+const ACCOUNT_STATE_PATHS: RegExp[] = [
+  /^Users\/[^/]+\/Items\/Latest/i,
+  /^Users\/[^/]+\/Items\/Resume/i,
+  /^Shows\/NextUp/i,
+  /^Users\/[^/]+\/Items(\?|$)/i,
+];
+
 /** Carousel → liste de regex de paths à invalider. Doit rester synchronisé
  *  avec `wsManager.ts` côté broadcast. */
 const CAROUSEL_INVALIDATION: Record<string, RegExp[]> = {
@@ -88,7 +108,10 @@ export function setCached(
   contentType: string,
   status: number,
   ttlMs: number,
+  since?: number,
 ): void {
+  // Une invalidation est passée pendant la lecture : sa réponse est périmée.
+  if (since !== undefined && since !== generation) return;
   const key = buildCacheKey(path, queryString, userToken);
   // Ne pas cacher les erreurs ou les réponses énormes (>2 Mo)
   if (status >= 400 || body.byteLength > 2 * 1024 * 1024) return;
@@ -109,6 +132,26 @@ export function setCached(
 export function invalidateByCarousel(carousel: string): void {
   const patterns = CAROUSEL_INVALIDATION[carousel];
   if (!patterns || patterns.length === 0) return;
+  const cleared = invalidatePaths(patterns);
+  if (cleared > 0) {
+    // eslint-disable-next-line no-console
+    console.debug(`[jellyfinCache] invalidated ${cleared} entries for ${carousel}`);
+  }
+}
+
+/**
+ * Un geste a changé l'état d'un titre (favori, vu, Ma liste) : TOUTES les
+ * rangées cachées qui le portent tombent — Reprendre, Prochains épisodes,
+ * Derniers ajouts. Le client les relit aussitôt (`invalidateAllMediaQueries`) ;
+ * resservies d'ici, elles rendaient l'état d'avant le geste et la carte
+ * revenait en arrière jusqu'à l'expiration du TTL.
+ */
+export function invalidateAccountState(): void {
+  invalidatePaths(ACCOUNT_STATE_PATHS);
+}
+
+function invalidatePaths(patterns: RegExp[]): number {
+  generation++;
   let cleared = 0;
   for (const key of Array.from(cache.keys())) {
     // La clé est `userKey|path?qs` — on extrait le path après le séparateur
@@ -121,14 +164,12 @@ export function invalidateByCarousel(carousel: string): void {
       cleared++;
     }
   }
-  if (cleared > 0) {
-    // eslint-disable-next-line no-console
-    console.debug(`[jellyfinCache] invalidated ${cleared} entries for ${carousel}`);
-  }
+  return cleared;
 }
 
 /** Vide tout le cache (utilisé en tests / au reload de config Jellyfin). */
 export function clearAll(): void {
+  generation++;
   cache.clear();
 }
 

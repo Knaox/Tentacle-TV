@@ -1,5 +1,6 @@
 import { patchLibraryMemo, type LibraryEntryPatch } from "../../services/reco/candidates/libraryMemo";
 import { broadcastToUser } from "../../services/wsManager";
+import { invalidateAccountState } from "../../services/jellyfinCache";
 
 /** Extract userId from proxy paths like Users/{userId}/FavoriteItems/... */
 function extractUserIdFromPath(path: string): string | null {
@@ -31,6 +32,16 @@ export function userDataPatchOf(
   return null;
 }
 
+/**
+ * Une écriture qui change l'état d'un titre pour le compte : favori, vu, Ma
+ * liste (`Rating`), et l'écriture générique de `UserData`.
+ */
+export function changesAccountState(path: string, method: string | undefined): boolean {
+  if (method !== "POST" && method !== "DELETE") return false;
+  return /^Users\/[^/]+\/(FavoriteItems|PlayedItems)\/[^/]+$/i.test(path)
+    || /^Users\/[^/]+\/Items\/[^/]+\/(Rating|UserData)$/i.test(path);
+}
+
 /** Emit WS events based on successful Jellyfin proxy mutations. */
 export function emitProxyEvents(wildcardPath: string, request: unknown): void {
   // L'index de la reco apprend le geste TOUT DE SUITE : un titre mis en
@@ -39,6 +50,9 @@ export function emitProxyEvents(wildcardPath: string, request: unknown): void {
   const req = request as { method?: string; query?: unknown };
   const userData = userDataPatchOf(wildcardPath, req.method, req.query);
   if (userData) patchLibraryMemo(userData.userId, userData.itemId, userData.patch);
+  // Les rangées que le proxy garde en cache portent cet état : elles tombent
+  // AVANT la réponse, la relecture du client voit le geste (cf. jellyfinCache).
+  if (changesAccountState(wildcardPath, req.method)) invalidateAccountState();
 
   // FavoriteItems → watchlist changed
   if (/FavoriteItems/.test(wildcardPath)) {

@@ -40,6 +40,8 @@ export interface BufferedReplyContext {
   token: string | undefined;
   /** `null` : la réponse n'est pas mise en cache. */
   ttlMs: number | null;
+  /** La génération du cache au départ de la lecture (cf. `cacheGeneration`). */
+  since?: number;
 }
 
 export async function sendBuffered(
@@ -69,7 +71,7 @@ export async function sendBuffered(
   const buf = isLibraryViewsPath(ctx.path) ? keepSupportedLibraries(scrubbed) : scrubbed;
   if (ctx.ttlMs !== null) {
     const contentType = response.headers.get("content-type") ?? "application/json";
-    setCached(ctx.path, ctx.queryString, ctx.token, buf, contentType, response.status, ctx.ttlMs);
+    setCached(ctx.path, ctx.queryString, ctx.token, buf, contentType, response.status, ctx.ttlMs, ctx.since);
     reply.header("x-tentacle-cache", "MISS");
   }
   return reply.send(buf);
