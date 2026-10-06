@@ -29,10 +29,11 @@ describe("parseDeviceMediaProfile — ce que rend le module natif", () => {
 });
 
 describe("profils simulés", () => {
-  it("BCM7271 : HEVC 10 bits et VP9 en 4K, H.264 en 1080p, aucun AV1 ni Dolby Vision", () => {
+  it("BCM7271 : HEVC 10 bits et VP9 en 4K60, H.264 8 bits en 4K30, aucun AV1 ni Dolby Vision", () => {
     expect(hardwareDecoder(BCM7271_PROFILE, "hevc")?.tenBit).toBe(true);
     expect(hardwareDecoder(BCM7271_PROFILE, "vp9")?.maxHeight).toBe(2160);
-    expect(hardwareDecoder(BCM7271_PROFILE, "h264")?.maxHeight).toBe(1088);
+    expect(hardwareDecoder(BCM7271_PROFILE, "h264")?.sizes.at(-1)).toEqual({ width: 3840, height: 2160, maxFrameRate: 30 });
+    expect(hardwareDecoder(BCM7271_PROFILE, "h264")?.tenBit).toBe(false);
     expect(hardwareDecoder(BCM7271_PROFILE, "av1")).toBeNull();
     expect(BCM7271_PROFILE.hdr.dolbyVisionProfiles).toEqual([]);
   });

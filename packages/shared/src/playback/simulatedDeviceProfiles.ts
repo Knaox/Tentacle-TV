@@ -7,6 +7,9 @@ import { DEVICE_MEDIA_PROFILE_VERSION, type DecoderSizePoint, type DeviceMediaPr
  * bcm7271` puis une relance de l'app : le module natif annonce ce nom, et
  * l'app lit le profil ci-dessous au lieu de celui de l'émulateur
  * (`apps/tv/src/lib/deviceMediaProfile.ts`). Propriété vide : le vrai profil.
+ * Seules l'app de MESURE (`*.perf`) et une construction de développement
+ * l'écoutent : une propriété oubliée sur un vrai appareil ne change jamais le
+ * profil de l'app de l'utilisateur.
  */
 
 /** Les trois définitions qu'on teste sur chaque décodeur, à la cadence tenue. */
@@ -27,11 +30,12 @@ const APP_AUDIO_DECODERS = ["aac", "ac3", "eac3", "dts", "truehd", "flac", "opus
 
 /**
  * net+ Box TV UZX4020NPS (Technicolor) : Broadcom BCM7271, 4 × Cortex-A53,
- * 2 Go. Décodage matériel H.264, HEVC (Main 10, 4K), VP9 (Profile 2, 4K),
- * MPEG-2 ; PAS d'AV1, pas de Dolby Vision (aucun décodeur annoncé — à
- * vérifier sur la vraie box). Branchée au cas le plus contraint : un
- * téléviseur 1080p SDR, son par HDMI en AC3 / E-AC3 / Atmos seulement (ni
- * TrueHD ni DTS), haut-parleurs stéréo.
+ * 2 Go. Décodage matériel H.264 (jusqu'en 4K30, ce que Broadcom annonce pour
+ * l'AVC), HEVC (Main 10, 4K60), VP9 (Profile 2, 4K60), MPEG-2 ; PAS d'AV1,
+ * pas de Dolby Vision. HYPOTHÈSES à relever sur la vraie box : les cadences,
+ * les niveaux, et l'absence de décodeur Dolby Vision. Branchée au cas le plus
+ * contraint : un téléviseur 1080p SDR, son par HDMI en AC3 / E-AC3 / Atmos
+ * seulement (ni TrueHD ni DTS), haut-parleurs stéréo.
  */
 export const BCM7271_PROFILE: DeviceMediaProfile = {
   version: DEVICE_MEDIA_PROFILE_VERSION,
@@ -44,8 +48,8 @@ export const BCM7271_PROFILE: DeviceMediaProfile = {
       maxWidth: 3840, maxHeight: 2160, sizes: sizes(60, 60, 60), tenBit: true, hdr10: true, hdr10Plus: false,
     },
     {
-      codec: "h264", decoder: "OMX.brcm.video.h264.decoder", profiles: ["Baseline", "Main", "High"], maxLevel: 42,
-      maxWidth: 1920, maxHeight: 1088, sizes: sizes(60, 60, 0), tenBit: false, hdr10: false, hdr10Plus: false,
+      codec: "h264", decoder: "OMX.brcm.video.h264.decoder", profiles: ["Baseline", "Main", "High"], maxLevel: 51,
+      maxWidth: 3840, maxHeight: 2160, sizes: sizes(60, 60, 30), tenBit: false, hdr10: false, hdr10Plus: false,
     },
     {
       codec: "vp9", decoder: "OMX.brcm.video.vp9.decoder", profiles: ["Profile 0", "Profile 2"], maxLevel: null,
