@@ -1,4 +1,6 @@
 import { NativeModule, requireOptionalNativeModule } from "expo";
+import { Platform } from "react-native";
+import type { DisplayModeInfo } from "@tentacle-tv/shared";
 
 interface MpvNativeLogEvent {
   message: string;
@@ -15,6 +17,20 @@ declare class MpvPlayerNativeModule extends NativeModule<MpvPlayerModuleEvents> 
   isAirPlayRouteActive(): boolean;
   supportsAv1HardwareDecode(): boolean;
   isSimulator(): boolean;
+  /** Android seulement. */
+  getDisplayModes?(): DisplaySnapshot;
+  setPreferredDisplayMode?(modeId: number): Promise<void>;
+}
+
+/** L'écran de l'activité, tel qu'Android le décrit (cf. `DisplayModeBridge.kt`). */
+export interface DisplaySnapshot {
+  sdk: number;
+  currentModeId?: number;
+  modes: DisplayModeInfo[];
+  /** Fréquences joignables sans coupure depuis le mode courant (Android 12+), sinon absent. */
+  seamlessRefreshRates?: number[] | null;
+  /** Préférence système « Adapter la fréquence » (Android 12+ ; « always » avant). */
+  matchPreference?: "always" | "seamless" | "never";
 }
 
 // Chargé en optionnel : sans le module (Android tant que sa moitié n'est pas
@@ -59,4 +75,20 @@ export function addMpvLogListener(
 ): { remove: () => void } | null {
   if (native === null) return null;
   return native.addListener("onNativeLog", listener);
+}
+
+/** Android : les modes de l'écran ; `null` ailleurs ou sans le module. */
+export function getDisplayModes(): DisplaySnapshot | null {
+  if (Platform.OS !== "android") return null;
+  try {
+    return native?.getDisplayModes?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Android : pose le mode de la fenêtre (0 = le rendre). Sans effet ailleurs. */
+export function setPreferredDisplayMode(modeId: number): void {
+  if (Platform.OS !== "android") return;
+  native?.setPreferredDisplayMode?.(modeId)?.catch(() => {});
 }

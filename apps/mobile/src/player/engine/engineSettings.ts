@@ -1,7 +1,7 @@
 /**
  * Les réglages D'APPAREIL du lecteur : le moteur vidéo, l'Atmos du système,
  * les sous-titres stylés par le lecteur avancé, la taille et la position des
- * sous-titres. Ils suivent l'appareil (un téléphone décode, l'autre pas), pas
+ * sous-titres, l'écran calé sur la cadence du film. Ils suivent l'appareil (un téléphone décode, l'autre pas), pas
  * le compte — d'où le stockage de l'application (clés `tentacle_*`, listées
  * dans `STORAGE_KEYS`), comme `deviceSettings.ts` du hors ligne.
  *
@@ -18,6 +18,7 @@ const SYSTEM_ATMOS_KEY = "tentacle_prefer_system_atmos";
 const STYLED_SUBTITLES_KEY = "tentacle_mpv_styled_subs";
 const SUBTITLE_SCALE_KEY = "tentacle_sub_scale";
 const SUBTITLE_POSITION_KEY = "tentacle_sub_pos";
+const MATCH_FRAME_RATE_KEY = "tentacle_match_frame_rate";
 
 export interface EngineSettings {
   engine: VideoEngineSetting;
@@ -29,6 +30,12 @@ export interface EngineSettings {
   subtitleScale: number;
   /** Position verticale en pourcentage (100 = bas de l'image). */
   subtitlePosition: number;
+  /**
+   * Android, lecteur avancé : l'écran passe à la cadence du film (24 → 120 Hz
+   * sur un écran 120 Hz). ALLUMÉ par défaut — un téléphone change de mode sans
+   * couper l'image, au contraire d'un téléviseur ; seul « 0 » est écrit.
+   */
+  matchFrameRate: boolean;
 }
 
 export const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
@@ -37,6 +44,7 @@ export const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
   styledSubtitlesViaMpv: true,
   subtitleScale: 1,
   subtitlePosition: 100,
+  matchFrameRate: true,
 };
 
 let storage: StorageAdapter | null = null;
@@ -61,6 +69,7 @@ function read(adapter: StorageAdapter): EngineSettings {
     styledSubtitlesViaMpv: adapter.getItem(STYLED_SUBTITLES_KEY) !== "0",
     subtitleScale: readNumber(adapter, SUBTITLE_SCALE_KEY, 1, 0.5, 2),
     subtitlePosition: readNumber(adapter, SUBTITLE_POSITION_KEY, 100, 50, 100),
+    matchFrameRate: adapter.getItem(MATCH_FRAME_RATE_KEY) !== "0",
   };
 }
 
@@ -93,6 +102,10 @@ export function setEngineSetting<K extends keyof EngineSettings>(key: K, value: 
       break;
     case "subtitlePosition":
       storage?.setItem(SUBTITLE_POSITION_KEY, String(value));
+      break;
+    case "matchFrameRate":
+      if (value) storage?.removeItem(MATCH_FRAME_RATE_KEY);
+      else storage?.setItem(MATCH_FRAME_RATE_KEY, "0");
       break;
   }
   notify();
