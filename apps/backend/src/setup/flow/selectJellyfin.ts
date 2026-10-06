@@ -4,8 +4,8 @@ import { designatesSibling, presentsAsBlank, probeTarget } from "../jellyfin/sta
 import { SetupError } from "../setupErrors";
 import { pathForServer, type SetupSelection } from "../setupFlowContract";
 import { setupRuntime } from "../setupRuntime";
-import { SETUP_KEYS, claimedAdminId, storedJellyfin } from "../setupStore";
-import { FLOW_KEYS, isLinked, keyCreatedFor, readSelection, requireStep, saveSelection } from "./setupFlow";
+import { SETUP_KEYS, claimedAdminId, rememberStackChoice, storedJellyfin } from "../setupStore";
+import { isLinked, keyCreatedFor, readSelection, requireStep, saveSelection } from "./setupFlow";
 
 /**
  * `POST /jellyfin/select` — le Jellyfin choisi d'un geste de l'administrateur.
@@ -38,7 +38,7 @@ async function abandonLinked(nextUrl: string, log: (message: string) => void): P
     const revoked = await revokeApiKey(stored.url, stored.apiKey);
     log(revoked ? "clé « Tentacle » révoquée sur le Jellyfin abandonné" : "clé « Tentacle » du Jellyfin abandonné non révoquée (injoignable)");
   }
-  for (const key of [SETUP_KEYS.jellyfinUrl, SETUP_KEYS.apiKey, SETUP_KEYS.serverId, SETUP_KEYS.joined, SETUP_KEYS.stackChoice, FLOW_KEYS.keyCreatedFor]) {
+  for (const key of [SETUP_KEYS.jellyfinUrl, SETUP_KEYS.apiKey, SETUP_KEYS.serverId, SETUP_KEYS.joined, SETUP_KEYS.stackChoice, SETUP_KEYS.keyCreatedFor]) {
     await deleteConfigValue(key);
   }
   log("un autre Jellyfin a été choisi : celui préparé avant est oublié");
@@ -63,6 +63,8 @@ export async function selectJellyfin(requested: string, log: (message: string) =
     path: pathForServer({ blank: presentsAsBlank(probed, inStack) }),
   };
   await saveSelection(selection);
+  // Pile complète : un autre Jellyfin choisi EXPRÈS survit au redémarrage (le verrouillage ne l'oublie pas).
+  await rememberStackChoice(selection.url, setupRuntime().deployment.siblingUrl);
   log(`Jellyfin choisi : ${inStack ? "celui de la pile" : "un autre"}, ${selection.path === "fresh" ? "neuf" : "déjà configuré"}`);
   return selection;
 }

@@ -89,13 +89,23 @@ describe("verrouillage du Jellyfin voisin (pile complète)", () => {
     expect(config.has("jellyfin_api_key")).toBe(false);
   });
 
-  it("une base reprise garde un AUTRE Jellyfin : oublié, la pile reprend le sien", async () => {
+  it("une base reprise garde un AUTRE Jellyfin : oublié, la pile reprend le sien — et le choix qui le désignait", async () => {
     config.set("jellyfin_url", "http://172.16.1.30:8096");
     config.set("jellyfin_api_key", "cle-etrangere");
     config.set("jellyfin_server_id", "autre");
+    config.set("setup_jellyfin_selection", JSON.stringify({ url: "http://172.16.1.30:8096", serverId: "autre", serverName: "Salon", version: "10.11.6", inStack: false, path: "configured" }));
     expect(await claimSiblingJellyfin(jf.url, quick)).toBe("claimed");
     expect(config.get("jellyfin_url")).toBe(jf.url);
     expect(config.get("jellyfin_api_key")).toBe("cle-1");
+    expect(config.has("setup_jellyfin_selection")).toBe(false);
+  });
+
+  it("un autre Jellyfin choisi DANS cette pile (pas encore relié) : le choix survit au redémarrage", async () => {
+    const selection = JSON.stringify({ url: "http://172.16.1.30:8096", serverId: "autre", serverName: "Salon", version: "10.11.6", inStack: false, path: "configured" });
+    config.set("setup_jellyfin_selection", selection);
+    config.set("jellyfin_stack_choice", "http://172.16.1.30:8096");
+    await claimSiblingJellyfin(jf.url, quick);
+    expect(config.get("setup_jellyfin_selection")).toBe(selection);
   });
 
   it("configuré par quelqu'un d'autre : on n'y touche pas", async () => {

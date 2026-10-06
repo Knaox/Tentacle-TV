@@ -16,7 +16,8 @@ vi.mock("../../services/configStore", () => ({
 vi.mock("../../services/db", () => ({ hasPrisma: () => state.prisma }));
 vi.mock("../../services/jellyfinWs", () => ({ restartJellyfinWs: () => undefined }));
 
-import { FLOW_KEYS, flowState, readSelection, requireStep } from "./setupFlow";
+import { SETUP_KEYS } from "../setupStore";
+import { flowState, readSelection, requireStep } from "./setupFlow";
 
 const PILE = "http://jellyfin:8096";
 const selection = (over: Record<string, unknown> = {}) =>
@@ -39,7 +40,7 @@ describe("le parcours tenu par le serveur", () => {
   });
 
   it("relié seulement au Jellyfin CHOISI ; celui de la pile, seulement une fois son compte provisoire adopté", () => {
-    state.config.set(FLOW_KEYS.selection, selection({ path: "fresh" }));
+    state.config.set(SETUP_KEYS.selection, selection({ path: "fresh" }));
     expect(flowState().linked).toBe(false);
     state.config.set("jellyfin_url", "http://192.168.1.20:8096");
     state.config.set("jellyfin_api_key", "cle");
@@ -52,7 +53,7 @@ describe("le parcours tenu par le serveur", () => {
   });
 
   it("un Jellyfin déjà configuré relié : jamais de compte ni de bibliothèque créés", () => {
-    state.config.set(FLOW_KEYS.selection, selection());
+    state.config.set(SETUP_KEYS.selection, selection());
     state.config.set("jellyfin_url", PILE);
     state.config.set("jellyfin_api_key", "cle");
     for (const action of ["initialize", "createLibraries", "browse"] as const) expect(() => requireStep(action)).toThrow("step_refused");
@@ -67,7 +68,7 @@ describe("le parcours tenu par le serveur", () => {
 
   it("un choix illisible (base trafiquée, version d'avant) ne vaut rien", () => {
     for (const raw of ["{", JSON.stringify({ url: PILE }), selection({ path: "admin" }), selection({ inStack: "oui" })]) {
-      state.config.set(FLOW_KEYS.selection, raw);
+      state.config.set(SETUP_KEYS.selection, raw);
       expect(readSelection()).toBeNull();
     }
   });

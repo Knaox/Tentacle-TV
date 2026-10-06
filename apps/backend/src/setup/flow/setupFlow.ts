@@ -2,21 +2,15 @@ import { hasPrisma } from "../../services/db";
 import { deleteConfigValue, getConfigValue, setConfigValue } from "../../services/configStore";
 import { SetupError } from "../setupErrors";
 import { setupActionAllowed, type SetupAction, type SetupFlowState, type SetupPath, type SetupSelection } from "../setupFlowContract";
-import { claimedAdminId, storedJellyfin } from "../setupStore";
+import { SETUP_KEYS, claimedAdminId, storedJellyfin } from "../setupStore";
 
 /**
- * Le parcours tenu par le SERVEUR : le Jellyfin choisi (`setup_jellyfin_selection`)
+ * Le parcours tenu par le SERVEUR : le Jellyfin choisi (`SETUP_KEYS.selection`)
  * et son état, d'où `setupActionAllowed` (contrat partagé) tire ce qui est
  * permis. Le client affiche ; ici, on refuse. Rien ne se décide sur ce que le
  * client envoie : le parcours vient de la sonde du Jellyfin, faite par le
  * serveur au moment du choix.
  */
-export const FLOW_KEYS = {
-  /** Le Jellyfin choisi à l'étape « Jellyfin » (JSON `SetupSelection`). */
-  selection: "setup_jellyfin_selection",
-  /** L'adresse du Jellyfin sur lequel CETTE installation a créé la clé « Tentacle » (révocable si on l'abandonne). */
-  keyCreatedFor: "setup_jellyfin_key_created",
-} as const;
 
 const PATHS: ReadonlySet<string> = new Set<SetupPath>(["fresh", "configured"]);
 
@@ -35,7 +29,7 @@ function isSelection(value: unknown): value is SetupSelection {
 }
 
 export function readSelection(): SetupSelection | null {
-  const raw = getConfigValue(FLOW_KEYS.selection);
+  const raw = getConfigValue(SETUP_KEYS.selection);
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -46,13 +40,13 @@ export function readSelection(): SetupSelection | null {
 }
 
 export async function saveSelection(selection: SetupSelection): Promise<void> {
-  await setConfigValue(FLOW_KEYS.selection, JSON.stringify(selection));
+  await setConfigValue(SETUP_KEYS.selection, JSON.stringify(selection));
 }
 
 /** L'installation finie, ou rouverte : plus de choix en cours. */
 export async function forgetSelection(): Promise<void> {
-  await deleteConfigValue(FLOW_KEYS.selection);
-  await deleteConfigValue(FLOW_KEYS.keyCreatedFor);
+  await deleteConfigValue(SETUP_KEYS.selection);
+  await deleteConfigValue(SETUP_KEYS.keyCreatedFor);
 }
 
 /**
@@ -90,9 +84,9 @@ export function chosen(state: SetupFlowState): SetupSelection {
 
 /** La clé « Tentacle » vient d'être créée par cette installation sur ce Jellyfin. */
 export async function noteKeyCreated(url: string): Promise<void> {
-  await setConfigValue(FLOW_KEYS.keyCreatedFor, url);
+  await setConfigValue(SETUP_KEYS.keyCreatedFor, url);
 }
 
 export function keyCreatedFor(): string | null {
-  return getConfigValue(FLOW_KEYS.keyCreatedFor) ?? null;
+  return getConfigValue(SETUP_KEYS.keyCreatedFor) ?? null;
 }
