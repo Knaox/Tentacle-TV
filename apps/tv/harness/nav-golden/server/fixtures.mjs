@@ -11,6 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { DUO, SOLO, serveFamily } from "./fakeFamily.mjs";
 
 /** Les jeux de la base : les modes du serveur que tout domaine peut vouloir. */
 export const BASE_SETS = {
@@ -23,6 +24,8 @@ export const BASE_SETS = {
   "vigie-vivant": { description: "les demandes avancent avec l'horloge (NON déterministe : libellés de progression)", apply: (d) => { d.modes.vigieScenario = "live"; } },
   "vigie-vide": { description: "aucune demande en cours", apply: (d) => { d.modes.vigieScenario = "empty"; } },
   "demandes-on": { description: "un titre absent s'offre à la demande ; POST titles/request l'ajoute à la liste du banc", apply: (d) => { d.modes.demandes = "on"; } },
+  "famille-compte-seul": { description: "la Famille annoncée, le compte du banc seul (sans famille ni PIN) : la TV entre directement", apply: (d) => serveFamily(d, SOLO) },
+  "famille-deux-profils": { description: "la Famille annoncée, le compte du banc et une invitée sans PIN : « Qui regarde ? »", apply: (d) => serveFamily(d, DUO) },
   "heros-reco": { description: "le héros de l'accueil en mode « Pour vous » (le défaut du serveur relevé)", apply: (d) => { d.modes.heroMode = "reco"; } },
   "bandes-annonces-en-panne": { description: "/api/trailers/resolve échoue (502)", apply: (d) => { d.modes.trailers = "broken"; } },
 };
