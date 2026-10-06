@@ -111,6 +111,15 @@ describe("déjumeler depuis la liste des appareils", () => {
     expect(await protectedStatus(CHAMBRE)).toBe(200);
   });
 
+  it("la TV révoquée disparaît aussitôt de la liste du compte, jamais servie d'un cache", async () => {
+    await app.inject({ method: "DELETE", url: `/api/pair/my-devices/${idOf(SALON)}`, headers: as(CHAMBRE) });
+    const list = await app.inject({ method: "GET", url: "/api/pair/my-devices", headers: as(CHAMBRE) });
+    expect(list.statusCode).toBe(200);
+    expect(list.headers["cache-control"]).toBe("private, no-store");
+    expect((list.json() as { id: string }[]).map((d) => d.id)).not.toContain(idOf(SALON));
+    expect(list.json()).toHaveLength(2);
+  });
+
   it("un compte ne révoque pas la TV d'un autre", async () => {
     const res = await app.inject({ method: "DELETE", url: `/api/pair/my-devices/${idOf(AUTRE)}`, headers: as(SALON) });
     expect(res.statusCode).toBe(404);

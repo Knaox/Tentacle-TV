@@ -12,10 +12,13 @@ export interface NoticeCardAction {
   onPress: () => void;
 }
 
-export type NoticeIcon = "server" | "key" | "check" | "alert-triangle" | "activity";
+export type NoticeIcon = "server" | "key" | "check" | "alert-triangle" | "activity" | "info";
+
+/** Les sévérités de la politique partagée, plus la réussite d'un message bref (`toastStore`). */
+export type NoticeCardSeverity = NoticeSeverity | "success";
 
 interface Props {
-  severity: NoticeSeverity;
+  severity: NoticeCardSeverity;
   icon: NoticeIcon;
   title?: string;
   lines: string[];
@@ -35,7 +38,7 @@ interface Props {
 /**
  * Un avertissement surgissant — la même famille que les messages de
  * l'administrateur : surface pleine, liseré, barre de couleur à gauche (rouge
- * pour une panne, ambre pour une recommandation), puis la barre qui se vide
+ * pour une panne, ambre pour une recommandation, vert pour une réussite), puis la barre qui se vide
  * quand il s'efface seul. La croix (44 pt) reste toujours là ; glisser vers le
  * haut ou sur le côté ferme aussi.
  */
@@ -47,9 +50,9 @@ export const NoticeCard = memo(function NoticeCard({
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const pair = severity === "blocking" ? theme.colors.statusPairs.error : severity === "recommendation"
-    ? theme.colors.statusPairs.warning : theme.colors.statusPairs.info;
+    ? theme.colors.statusPairs.warning : severity === "success" ? theme.colors.statusPairs.success : theme.colors.statusPairs.info;
   const accent = severity === "blocking" ? theme.colors.status.error : severity === "recommendation"
-    ? theme.colors.status.warning : theme.colors.brand.violet;
+    ? theme.colors.status.warning : severity === "success" ? theme.colors.status.success : theme.colors.brand.violet;
 
   // La barre se vide sur le fil UI ; tenue, elle s'arrête là où elle en est.
   const progress = useSharedValue(1);

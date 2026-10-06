@@ -42,7 +42,7 @@ export function InviteSheet({ onClose }: { onClose: () => void }) {
       onSuccess: () => {
         haptic("success");
         setSent((previous) => new Set(previous).add(candidate.userId));
-        showToast({ title: t("familyWeb:invite.sent", { name: candidate.name }) });
+        showToast({ title: t("familyWeb:invite.sent", { name: candidate.name }), tone: "success" });
       },
       onError: (failure) => setError(errorText(failure)),
     });

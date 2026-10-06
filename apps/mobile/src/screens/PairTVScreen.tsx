@@ -1,15 +1,11 @@
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { View, Text, Pressable, ActivityIndicator, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import {
-  useGenerateTvToken,
-  useRelayConfirm,
-  useTentacleConfig,
-} from "@tentacle-tv/api-client";
+import { useTentacleConfig } from "@tentacle-tv/api-client";
 import {
   FONT_FAMILY,
   RADIUS,
@@ -23,21 +19,16 @@ import { PairUnavailableCard } from "../components/pair/PairUnavailableCard";
 import { PairTvMedallion } from "../components/pair/PairTvMedallion";
 import { ProblemState } from "../components/problems/ProblemState";
 import { usePageProblem } from "../components/problems/usePageProblem";
-import { pairingErrorKey, usePairingAvailability } from "../hooks/usePairingAvailability";
+import { usePairingAvailability } from "../hooks/usePairingAvailability";
+import { usePairTvFlow } from "../components/pair/usePairTvFlow";
 
 export function PairTVScreen() {
   const { t } = useTranslation("pairing");
-  const { t: te } = useTranslation("errors");
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const theme = useTheme();
   const { storage } = useTentacleConfig();
-  const tvTokenMut = useGenerateTvToken();
-  const relayConfirmMut = useRelayConfirm();
-
-  const [chars, setChars] = useState(["", "", "", ""]);
-  const [status, setStatus] = useState<"idle" | "pairing" | "success" | "error">("idle");
-  const [errorMsg, setErrorMsg] = useState("");
+  const { chars, setChars, status, errorMsg, canSubmit, submit: handleSubmit, reset } = usePairTvFlow(storage);
   const codeInputsRef = useRef<PairCodeInputsHandle>(null);
 
   // Le jumelage exige l'URL publique du serveur ; une panne se dit à part.
@@ -47,58 +38,10 @@ export function PairTVScreen() {
     target: "tentacle", context: "pairing", availability: { canGoBack: false }, onRetry: pairing.retry,
   });
 
-  const code = chars.join("");
-  const canSubmit = code.length === 4 && status === "idle";
-
-  const handleSubmit = useCallback(async () => {
-    if (!canSubmit) return;
-    setStatus("pairing");
-    setErrorMsg("");
-
-    try {
-      const { token } = await tvTokenMut.mutateAsync();
-
-      const base = storage.getItem("tentacle_server_url") ?? "";
-      if (!base) throw new Error(te("noServerUrl"));
-
-      // Préférer l'URL publique du serveur (domaine Cloudflare) pour que la TV
-      // reçoive une adresse joignable depuis l'externe, pas l'URL LAN/interne
-      // que le mobile utilise. Fallback sur `base` si /api/config ne la fournit pas.
-      let serverUrl = base;
-      try {
-        const cfgRes = await fetch(`${base}/api/config`);
-        if (cfgRes.ok) {
-          const cfg = await cfgRes.json();
-          if (cfg?.publicUrl) serverUrl = cfg.publicUrl as string;
-        }
-      } catch {
-        /* réseau indisponible — on garde `base` */
-      }
-
-      const userRaw = storage.getItem("tentacle_user");
-      const user = userRaw ? JSON.parse(userRaw) as { Id: string; Name: string } : null;
-      if (!user?.Id || !user?.Name) throw new Error(te("userInfoNotFound"));
-
-      await relayConfirmMut.mutateAsync({
-        code,
-        serverUrl,
-        token,
-        user: { id: user.Id, name: user.Name },
-      });
-
-      setStatus("success");
-    } catch (err) {
-      setStatus("error");
-      setErrorMsg(t(pairingErrorKey(err)));
-    }
-  }, [canSubmit, code, tvTokenMut, relayConfirmMut, storage, t, te]);
-
   const handleReset = useCallback(() => {
-    setChars(["", "", "", ""]);
-    setStatus("idle");
-    setErrorMsg("");
+    reset();
     codeInputsRef.current?.focusFirst();
-  }, []);
+  }, [reset]);
 
   const contentPad = useContentPadding();
 

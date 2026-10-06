@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useDevicePairConfirm, useGenerateTvToken, useRelayConfirm } from "@tentacle-tv/api-client";
+import { useAutoSubmitPairingCode, useDevicePairConfirm, useGenerateTvToken, useRelayConfirm } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../../lib/backendBase";
 import { pairErrorKey } from "./pairCode";
 
@@ -35,7 +35,7 @@ export function usePairFlow() {
   const tvTokenMut = useGenerateTvToken();
   const relayConfirmMut = useRelayConfirm();
   const deviceConfirmMut = useDevicePairConfirm();
-  const [chars, setChars] = useState(["", "", "", ""]);
+  const [chars, setRawChars] = useState(["", "", "", ""]);
   const [status, setStatus] = useState<PairStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -83,8 +83,18 @@ export function usePairFlow() {
     }
   }, [canSubmit, code, deviceConfirmMut, tvTokenMut, relayConfirmMut, t]);
 
+  // Le dernier caractère saisi (ou le code collé) lance le jumelage.
+  useAutoSubmitPairingCode(code, status, submit);
+
+  // Corriger une case après un refus remet au repos : le code repart, complet.
+  const setChars = useCallback((next: string[]) => {
+    setStatus((current) => (current === "error" ? "idle" : current));
+    setErrorMsg("");
+    setRawChars(next);
+  }, []);
+
   const reset = useCallback(() => {
-    setChars(["", "", "", ""]);
+    setRawChars(["", "", "", ""]);
     setStatus("idle");
     setErrorMsg("");
   }, []);

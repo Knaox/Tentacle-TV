@@ -15,8 +15,8 @@ import { useServerUrl } from "@/providers/ServerUrlContext";
 import { useMessageCountdown } from "@/session/useMessageCountdown";
 import { SHEET_MAX_WIDTH, spacing } from "@/theme";
 import { haptic } from "@/utils/haptics";
-import { NoticeCard, type NoticeCardAction, type NoticeIcon } from "./NoticeCard";
-import { dismissToast, useToasts } from "./toastStore";
+import { NoticeCard, type NoticeCardAction, type NoticeCardSeverity, type NoticeIcon } from "./NoticeCard";
+import { dismissToast, toastAppearance, useToasts } from "./toastStore";
 import { useSwipeDismiss } from "./useSwipeDismiss";
 
 /** Une fois masqué pour de bon : la phrase qui le dit, et « Annuler ». */
@@ -117,12 +117,11 @@ export function NoticeHost() {
   if (!banner && toasts.length === 0) return null;
   return (
     <View pointerEvents="box-none" style={[st.layer, { top: Math.max(insets.top, 12) + spacing.sm }]}>
-      {/* Les gestes défaits d'abord (ce qui vient d'arriver), puis l'avertissement. */}
+      {/* Les messages brefs d'abord (ce qui vient d'arriver), puis l'avertissement. */}
       {toasts.map((toast) => (
         <Banner
           key={`toast-${toast.id}`}
-          severity="blocking"
-          icon="alert-triangle"
+          {...toastAppearance(toast.tone)}
           title={toast.title}
           lines={toast.text ? [toast.text] : []}
           durationMs={NOTICE_AUTO_HIDE_MS}
@@ -135,7 +134,7 @@ export function NoticeHost() {
 }
 
 interface BannerProps {
-  severity: ClientNotice["rule"]["severity"];
+  severity: NoticeCardSeverity;
   icon: NoticeIcon;
   title?: string;
   lines: string[];
