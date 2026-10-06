@@ -20,10 +20,16 @@ export interface OutageNoticeModel {
  * rien pour l'occasion dont le compte à rebours est fini (`doneOccasion`) —
  * un autre état de Jellyfin, ou la panne devenue longue, le refont paraître.
  */
-export function outageNoticeOf(view: Pick<OutageView, "phase" | "state">, doneOccasion: string | null): OutageNoticeModel | null {
+export function outageNoticeOf(
+  view: Pick<OutageView, "phase" | "state" | "recoveries">,
+  doneOccasion: string | null,
+): OutageNoticeModel | null {
   if (view.phase !== "outage" && view.phase !== "long") return null;
   const long = view.phase === "long";
-  const occasion = outageNoticeOccasion(view.state, long);
+  // L'occasion appartient à UNE panne (`recoveries` : le nombre de retours) :
+  // mesuré au simulateur, « redémarre » ne reparaissait plus à la panne
+  // suivante, le lecteur resté monté le croyait déjà dit.
+  const occasion = `${view.recoveries}:${outageNoticeOccasion(view.state, long)}`;
   if (doneOccasion === occasion) return null;
   const copy = jellyfinOutageCopy(view.state, long);
   if (!copy) return null;
