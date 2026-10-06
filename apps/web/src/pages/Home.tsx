@@ -26,6 +26,10 @@ import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { useRecoHeroSlides } from "@tentacle-tv/api-client";
 import { CardDensityProvider } from "../contexts/CardDensityContext";
 import { useRecoFilter } from "../hooks/useRecoFilter";
+import { pickHeroMedia, type MediaItem } from "@tentacle-tv/shared";
+
+/** Une source en échec : rien (identité stable — la bannière ne se refait pas). */
+const NO_ITEMS: MediaItem[] = [];
 
 /**
  * Accueil configurable : l'ordre, l'activation et la densité des rangées
@@ -50,8 +54,8 @@ export function Home() {
   }, [client, queryClient]);
   useHomeWebSocket({ token: wsToken, onSessionRevoked });
 
-  const { data: featured, isLoading: featuredLoading, isError: featuredError } = useFeaturedItems();
-  const { data: resumeItems } = useResumeItems();
+  const { data: featured, isError: featuredError } = useFeaturedItems();
+  const { data: resumeItems, isError: resumeError } = useResumeItems();
   const { data: nextUp } = useNextUp();
   const { data: watchlist } = useWatchlist();
   const { data: watchedItems } = useWatchedItems();
@@ -108,17 +112,22 @@ export function Home() {
 
   // Hero selon le mode : resume (historique — reprise, sinon aléatoire),
   // random (aléatoire seul), fixed (sélection), reco (meilleure suggestion).
-  const heroItems =
-    heroMode === "random"
-      ? featured ?? []
-      : heroMode === "fixed"
-        ? fixedItem.data
-          ? [fixedItem.data]
-          : []
-        : resumeItems && resumeItems.length > 0
-          ? resumeItems.slice(0, 5)
-          : featured ?? [];
-  const heroLoading = featuredLoading && !resumeItems && heroMode !== "fixed";
+  // La règle est PARTAGÉE (shared `pickHeroMedia`, celle du miroir, du mobile
+  // et de la TV) : un mode qui n'a rien — titre fixe effacé de Jellyfin, 404 —
+  // retombe sur la reprise, et un titre sans aucune image n'est jamais choisi.
+  // Une source en échec ne s'attend plus : elle vaut une liste vide.
+  const fixedId = heroMode === "fixed" ? layout?.heroFixedItemId ?? null : null;
+  const heroPick = useMemo(
+    () =>
+      pickHeroMedia(heroMode, {
+        resume: resumeItems ?? (resumeError ? NO_ITEMS : undefined),
+        featured: featured ?? (featuredError ? NO_ITEMS : undefined),
+        fixed: !fixedId ? null : fixedItem.data ?? (fixedItem.isError ? null : undefined),
+      }),
+    [heroMode, resumeItems, resumeError, featured, featuredError, fixedId, fixedItem.data, fixedItem.isError]
+  );
+  const heroItems = heroPick.items;
+  const heroLoading = heroPick.pending;
 
   // Repli du mode reco : la bannière de REPRISE tant que la reco n'a rien à
   // montrer (chargement, profil froid, perso coupée, serveur sans clé TMDB).

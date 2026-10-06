@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { reasonToText, useJellyfinClient, useSeriesWatchState, type RecoRowItem } from "@tentacle-tv/api-client";
-import { formatDuration, formatEpisodeCode, type MediaItem } from "@tentacle-tv/shared";
+import { formatDuration, formatEpisodeCode, heroImageFor, heroImageKey, type MediaItem } from "@tentacle-tv/shared";
 import { CARD_HEIGHT, FRAME_GUTTER } from "@/components/hero/HeroBillboard";
 import { HeroAmbilight } from "@/components/hero/HeroAmbilight";
 import { HeroBackdrop } from "@/components/hero/HeroBackdrop";
 import { HeroEyebrow } from "@/components/hero/HeroEyebrow";
 import { HeroMetaLine } from "@/components/hero/HeroMetaLine";
 import { HeroActions } from "@/components/hero/HeroActions";
+import { homeHeroImageUrl } from "@/components/hero/resolveBackdrop";
+import { useHeroImageFailures } from "@/components/hero/useHeroImageFailures";
 import { useInViewport } from "@/hooks/useInViewport";
 import { extractMediaQuality } from "@/lib/mediaQuality";
 import { firstReasonText } from "./recoMediaItem";
@@ -30,6 +32,12 @@ export function RecoHeroTv({ reco, item }: { reco: RecoRowItem; item: MediaItem 
   const { t } = useTranslation("reco");
   // Hors écran, le halo — une image floutée — n'a rien à faire monté.
   const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
+  // L'image de la règle partagée, et la suivante quand elle échoue — comme
+  // la bannière d'accueil : jamais un cadre noir.
+  const client = useJellyfinClient();
+  const { failed, reportFailure } = useHeroImageFailures();
+  const imageRef = heroImageFor(item, failed);
+  const imageUrl = homeHeroImageUrl(client, item, failed);
 
   return (
     <section className={`relative w-full pb-6 md:pb-10 ${FRAME_GUTTER}`} aria-label={t("heroRegionAria")}>
@@ -40,7 +48,11 @@ export function RecoHeroTv({ reco, item }: { reco: RecoRowItem; item: MediaItem 
           className={`relative w-full overflow-hidden ${CARD_HEIGHT}`}
           style={{ borderRadius: "var(--hero-frame-radius)", boxShadow: "var(--hero-frame-ring)" }}
         >
-          <HeroBackdrop items={[item]} activeIndex={0} />
+          <HeroBackdrop
+            item={item}
+            url={imageUrl}
+            onFailure={imageRef ? () => reportFailure(heroImageKey(imageRef)) : undefined}
+          />
           <RecoHeroContent reco={reco} item={item} />
         </div>
       </div>

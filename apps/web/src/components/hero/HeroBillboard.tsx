@@ -1,9 +1,13 @@
-import type { MediaItem } from "@tentacle-tv/shared";
-import { HeroAmbilight } from "./HeroAmbilight";
+import { useMemo } from "react";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { heroImageFor, heroImageKey, type MediaItem } from "@tentacle-tv/shared";
+import { AmbilightLayer } from "./AmbilightLayer";
 import { HeroBackdrop, HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
 import { useBillboardRotation } from "./useBillboardRotation";
+import { useHeroImageFailures } from "./useHeroImageFailures";
+import { homeHeroImageUrl } from "./resolveBackdrop";
 import { useDataSaverActive } from "../../offline/useDataSaver";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useHoverMount } from "../../hooks/useHoverMount";
@@ -38,6 +42,9 @@ interface HeroBillboardProps {
   rotateMs?: number;
 }
 
+/** Source du halo : l'image affichée, en tout petit (cf. HeroAmbilight). */
+const HALO_SOURCE_WIDTH = 128;
+
 // Synchronisé avec le zoom du backdrop : on change de slide pile à la fin
 // du cycle scale 1 → 1.10 pour un enchaînement perçu comme continu.
 const DEFAULT_ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
@@ -47,7 +54,16 @@ const DEFAULT_ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
  * Targets ~92vh so the topnav floats transparent over its top edge and the
  * fade-to-black bottom flows seamlessly into the first row below.
  */
-export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillboardProps) {
+export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: HeroBillboardProps) {
+  const client = useJellyfinClient();
+  // Une image en échec (404) passe la main à la suivante du titre ; un titre
+  // dont TOUTES les images ont échoué quitte la rotation. Si plus aucun n'en
+  // a, la bannière garde ses titres sur le fond de repli : jamais du noir.
+  const { failed, reportFailure } = useHeroImageFailures();
+  const items = useMemo(() => {
+    const shown = chosen.filter((item) => homeHeroImageUrl(client, item, failed) !== null);
+    return shown.length > 0 ? shown : chosen;
+  }, [chosen, client, failed]);
   const dataSaver = useDataSaverActive();
   // Bannière réellement à l'écran ET fenêtre au premier plan. Tout ce qui suit
   // — rotation, zoom du fond, halo flouté — ne tourne QUE dans ce cas.
@@ -91,9 +107,13 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
       active: !dataSaver && visible && !idle,
     });
 
-  if (!items.length) {
-    return <div className={`w-full ${CARD_HEIGHT}`} />;
-  }
+  // Rien à montrer : la bannière se RETIRE. Un cadre vide de 76 vh restait
+  // noir, sans titre ni bouton (titre fixe effacé de Jellyfin).
+  if (!items.length) return null;
+  const active = items[Math.min(index, items.length - 1)];
+  const imageRef = heroImageFor(active, failed);
+  const imageUrl = homeHeroImageUrl(client, active, failed);
+  const haloUrl = homeHeroImageUrl(client, active, failed, HALO_SOURCE_WIDTH, 70);
 
   // NB: pas de onMouseEnter={pause}/onMouseLeave={resume} sur la section —
   // le hero couvre ~90vh, le curseur le survole quasi en permanence, ce qui
@@ -116,7 +136,7 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
             Démonté hors écran : c'est une image floutée à 48 px sur toute la
             largeur, animée en boucle infinie. Suspendre la rotation ne suffit
             pas, le zoom continuerait de la faire re-rastériser. */}
-        {visible && <HeroAmbilight item={items[index]} />}
+        {visible && <AmbilightLayer url={haloUrl} layerKey={active.Id} />}
 
         {/* La carte. Repère de la transition d'ouverture : c'est ce cadre que
             « Plus d'infos » fait s'ouvrir jusqu'au plein écran de la fiche. */}
@@ -130,8 +150,8 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
           onMouseEnter={arrows.onMouseEnter}
           onMouseLeave={arrows.onMouseLeave}
         >
-          <HeroBackdrop items={items} activeIndex={index} />
-          <HeroContent item={items[index]} animationKey={animKey} />
+          <HeroBackdrop item={active} url={imageUrl} onFailure={imageRef ? () => reportFailure(heroImageKey(imageRef)) : undefined} />
+          <HeroContent item={active} animationKey={animKey} imageUrl={imageUrl} />
           <HeroIndicators
             count={items.length}
             activeIndex={index}

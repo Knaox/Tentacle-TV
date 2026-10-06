@@ -1,14 +1,15 @@
 import { AnimatePresence, cubicBezier, motion } from "framer-motion";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { heroBackdropUrl } from "./resolveBackdrop";
 import { AMBIENT_HZ, cadence } from "../../theme/motion";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { HeroScrims } from "./HeroScrims";
 
 interface HeroBackdropProps {
-  items: MediaItem[];
-  activeIndex: number;
+  item: MediaItem | undefined;
+  /** L'image à montrer ; `null` : aucune — le fond de repli, jamais du noir. */
+  url: string | null;
+  /** L'image a échoué (404…) : la bannière passe à la suivante. */
+  onFailure?: () => void;
 }
 
 /**
@@ -63,16 +64,20 @@ const ZOOM_EASE = cadence(AMBIENT_HZ, HERO_ZOOM_DURATION_S);
  */
 const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1));
 
-export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
-  const client = useJellyfinClient();
-  const item = items[activeIndex];
+/** Le décor d'une bannière sans image : deux lueurs de marque sur le fond de page. */
+const FALLBACK_BACKGROUND = {
+  backgroundImage:
+    "radial-gradient(120% 90% at 85% 10%, rgba(var(--brand-rgb), 0.32), transparent 60%), " +
+    "radial-gradient(90% 80% at 0% 100%, rgba(var(--brand-accent-rgb), 0.2), transparent 65%)",
+};
 
-  // URL résolue par `resolveBackdrop`, partagée avec la transition d'ouverture
-  // de fiche : celle-ci reprend donc un pixel DÉJÀ décodé, sans un octet de
-  // plus. Une URL recalculée d'un côté ou de l'autre (largeur ou qualité
-  // différente) suffirait à provoquer un second chargement, donc un blanc.
-  const url = item ? heroBackdropUrl(client, item) : null;
-  return <HeroBackdropLayer imageKey={item?.Id ?? null} url={url} />;
+export function HeroBackdrop({ item, url, onFailure }: HeroBackdropProps) {
+  // URL résolue par la bannière (`homeHeroImageUrl`), partagée avec le halo et
+  // la transition d'ouverture de fiche : celle-ci reprend donc un pixel DÉJÀ
+  // décodé, sans un octet de plus. Une URL recalculée d'un côté ou de l'autre
+  // (largeur ou qualité différente) suffirait à provoquer un second
+  // chargement, donc un blanc.
+  return <HeroBackdropLayer imageKey={item?.Id ?? null} url={url} onFailure={onFailure} />;
 }
 
 /**
@@ -80,10 +85,12 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
  * hors ligne la nourrit du décor posé sur le disque — mêmes fondus, même zoom,
  * mêmes voiles que l'accueil en ligne.
  */
-export function HeroBackdropLayer({ imageKey, url }: {
+export function HeroBackdropLayer({ imageKey, url, onFailure }: {
   /** Clé de la diapositive (`null` = aucune) : pilote le fondu enchaîné. */
   imageKey: string | null;
   url: string | null;
+  /** Appelé quand l'image échoue, en plus de la masquer. */
+  onFailure?: () => void;
 }) {
   // Calculée AVANT le retour anticipé : le suivi de l'échec est un hook, il ne
   // peut pas vivre après une sortie conditionnelle.
@@ -111,7 +118,7 @@ export function HeroBackdropLayer({ imageKey, url }: {
   if (imageKey === null) {
     return (
       <>
-        <div className="absolute inset-0 bg-surface-0" />
+        <div className="absolute inset-0 bg-surface-0" style={FALLBACK_BACKGROUND} />
         {overlays}
       </>
     );
@@ -119,7 +126,10 @@ export function HeroBackdropLayer({ imageKey, url }: {
 
   return (
     <>
-      <div className="absolute inset-0 bg-surface-0" />
+      {/* Le fond de REPLI, sous l'image : un titre sans image (ou dont l'image
+          a échoué) garde un décor de marque, jamais un cadre noir. Statique —
+          rien n'y est animé, il ne coûte qu'une peinture. */}
+      <div className="absolute inset-0 bg-surface-0" style={FALLBACK_BACKGROUND} />
 
       <AnimatePresence>
         {url && (
@@ -140,7 +150,10 @@ export function HeroBackdropLayer({ imageKey, url }: {
             }}
             className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
             style={{ display: broken ? "none" : undefined }}
-            onError={reportFailure}
+            onError={() => {
+              reportFailure();
+              onFailure?.();
+            }}
           />
         )}
       </AnimatePresence>
