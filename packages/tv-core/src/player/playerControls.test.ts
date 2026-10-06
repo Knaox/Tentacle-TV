@@ -22,8 +22,8 @@ const TIMERS = {
 
 const TVOS: ScrubInputProfile = { tapOnRelease: false, holdFromKeyDown: false, holdArmMs: 0, holdEndAnnounced: true };
 
-function player(init: { paused?: boolean; panel?: boolean; overlay?: boolean; background?: boolean } = {}) {
-  const s = { position: 1200, duration: 3000, paused: false, panel: false, overlay: true, background: false, ...init };
+function player(init: { paused?: boolean; panel?: boolean; overlay?: boolean; background?: boolean; skip?: boolean } = {}) {
+  const s = { position: 1200, duration: 3000, paused: false, panel: false, overlay: true, background: false, skip: false, ...init };
   const log: string[] = [];
   const view = { overlay: s.overlay, scrubbing: false, target: 0, flash: null as number | null, countdown: null as number | null };
   const controls = createPlayerControls({
@@ -34,6 +34,7 @@ function player(init: { paused?: boolean; panel?: boolean; overlay?: boolean; ba
     isPanelOpen: () => s.panel,
     isOverlayVisible: () => view.overlay,
     backgroundHoldsFocus: () => s.background,
+    skipHoldsFocus: () => s.skip,
     seek: (v) => log.push(`seek:${v}`),
     back: () => log.push("back"),
     playPause: () => { s.paused = !s.paused; log.push(s.paused ? "pause" : "play"); },
@@ -194,5 +195,21 @@ describe("le toucher du pavé", () => {
     expect(p.controls.readTouchMode()).toBe("shown");
     p.controls.enterScrub();
     expect(p.controls.readTouchMode()).toBe("open");
+  });
+
+  it("la pilule de saut tient le focus : pavé tenu, habillage caché ou affiché ; le défilement ouvert l'emporte", () => {
+    const p = player({ overlay: false, skip: true });
+    expect(p.controls.readTouchMode()).toBe("held");
+    p.view.overlay = true;
+    expect(p.controls.readTouchMode()).toBe("held");
+    p.controls.enterScrub();
+    expect(p.controls.readTouchMode()).toBe("open");
+  });
+
+  it("l'heure du dernier appui est lisible (le pavé en déduit les clics)", () => {
+    const p = player({ overlay: false });
+    expect(p.controls.readLastPressAt()).toBe(0);
+    p.send({ type: "select" });
+    expect(p.controls.readLastPressAt()).toBe(Date.now());
   });
 });

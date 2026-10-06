@@ -15,11 +15,11 @@ export type { ScrubGestureHandlers, ScrubDir } from "./scrubGestureTypes";
  * (`useScrubGestures.ts`).
  */
 export function useScrubGestures({
-  enabled, readTouchMode, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake, durationRef,
+  enabled, readTouchMode, readLastPressAt, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake, durationRef,
 }: ScrubGestureHandlers): void {
   // Callbacks à jour sans recréer l'interprète.
-  const cbRef = useRef({ readTouchMode, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake });
-  cbRef.current = { readTouchMode, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake };
+  const cbRef = useRef({ readTouchMode, readLastPressAt, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake });
+  cbRef.current = { readTouchMode, readLastPressAt, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake };
   usePanGesture(enabled);
 
   const [touch] = useState(() => createTouchScrub({
@@ -30,6 +30,7 @@ export function useScrubGestures({
     onEndScrub: () => cbRef.current.onEndScrub(),
     onWake: () => cbRef.current.onWake(),
     readDuration: () => durationRef.current,
+    readLastPressAt: () => cbRef.current.readLastPressAt(),
   }, PLAYER_TIMERS));
 
   // Coupé (panneau ouvert, démontage) : le geste en cours n'a plus de suite.

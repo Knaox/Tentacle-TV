@@ -1,0 +1,54 @@
+{
+  "domain": "lecteur",
+  "reference": "39c889046",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "pil-01",
+      "title": "Pilule « Passer l'intro » : un clic qui glisse passe l'intro, sans défiler",
+      "why": "Retour d'essai Apple TV 1.10.1 : OK sur la pilule lançait une recherche dans la vidéo (le pavé lit le clic comme un glisser). Référence enregistrée sur le correctif (le comportement d'avant était le défaut) — § 4.8 et § 4.9 de lecteur.md",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4-intro"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right",
+          "down",
+          "wait:0.9"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": { "route": "Player" },
+          "why": "reprise à 46 s, dans l'intro : la pilule paraît"
+        },
+        {
+          "do": "wait:6",
+          "expect": { "route": "Player", "focus": "player:skip" },
+          "why": "l'habillage s'éteint : la pilule tient le focus"
+        },
+        {
+          "do": "clickpan:300,1500,900",
+          "settleMs": 1500,
+          "expect": { "route": "Player", "focus": "player:playpause" },
+          "why": "le doigt glisse de 300 points en 1,5 s et OK part à 0,9 s : l'intro est passée (la pilule s'en va), l'habillage revient sur lecture/pause — aucun défilement ne s'ouvre"
+        },
+        {
+          "do": ["menu", "wait:1", "menu"],
+          "settleMs": 1500,
+          "expect": { "route": "Home" }
+        }
+      ]
+    }
+  ]
+}

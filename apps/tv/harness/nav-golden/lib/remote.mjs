@@ -76,6 +76,7 @@ export function gestureError(gesture) {
   }
   if (/^swipe:(up|down|left|right)$/.test(gesture)) return null;
   if (/^pan:-?\d+(\.\d+)?,-?\d+(\.\d+)?(,\d+)?$/.test(gesture)) return null;
+  if (/^clickpan:-?\d+,\d+,\d+$/.test(gesture)) return null;
   if (/^backend:[a-zA-Z]+=[\w-]+$/.test(gesture)) return null;
   return `geste inconnu : « ${gesture} »`;
 }
@@ -127,6 +128,15 @@ export async function perform(ctx, gesture) {
   if ((match = gesture.match(/^swipe:(\w+)$/))) {
     await evaluate(ctx, `setTimeout(() => globalThis.__navGolden.emitRemote({ eventType: "${SWIPE[match[1]]}", body: { state: "Ended" } }), 0), 1`);
     return 0;
+  }
+  // Un CLIC qui glisse (la Siri Remote réelle) : le pan court `ms`, et le vrai
+  // OK de l'agent part à `at` ms, en plein glisser.
+  if ((match = gesture.match(/^clickpan:(-?\d+),(\d+),(\d+)$/))) {
+    const [dx, ms, at] = [Number(match[1]), Number(match[2]), Number(match[3])];
+    await evaluate(ctx, panScript(dx, 0, ms));
+    await sleep(at);
+    await agentRun(ctx, ["select"]);
+    return Math.max(0, ms - at) + 50;
   }
   if ((match = gesture.match(/^pan:(-?[\d.]+),(-?[\d.]+)(?:,(\d+))?$/))) {
     const ms = Number(match[3] ?? 400);

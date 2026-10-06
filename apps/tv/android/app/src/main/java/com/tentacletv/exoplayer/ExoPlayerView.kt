@@ -30,8 +30,7 @@ class ExoPlayerView(
         private const val TAG = "ExoPlayerView"
     }
 
-    // PlayerView handles SurfaceView + SubtitleView internally (VoidTV pattern)
-    private val playerView: PlayerView
+    private val playerView: PlayerView // SurfaceView + SubtitleView (motif VoidTV)
 
     private var player: ExoPlayer? = null
     private var destroyed = false
@@ -47,13 +46,13 @@ class ExoPlayerView(
      *  construction du sélecteur ; un changement vaut pour la lecture suivante. */
     var tunneling = false
 
-    // Évènements, listener et sondeur — hors de la vue (ExoEvents.kt,
-    // ExoPlaybackListener.kt) ; la vue ne garde que la machine d'état.
+    // Évènements, listener et sondeur : ExoEvents.kt, ExoPlaybackListener.kt.
     private val emitter = ExoEventEmitter(reactContext) { id }
     private val listener = ExoPlaybackListener(emitter, { player }) { keepScreenOn = false }
     private val poller = ExoProgressPoller(this, { player }, emitter) { progressInterval }
     private val displayModeSwitcher = DisplayModeSwitcher(reactContext)
     private val loadMeter = ExoLoadMeter()
+    private val startTrace = ExoStartTrace()
     override fun loadState() = loadMeter.state(player)
     // Les codecs préférés suivent le branchement HDMI (cf. ExoPlayerFactory.kt).
     private val capabilitiesFollower = ExoAudioCapabilitiesFollower(reactContext) { player }
@@ -129,6 +128,7 @@ class ExoPlayerView(
                 exo.setAudioAttributes(ExoPlayerFactory.mediaAudioAttributes, false)
                 exo.addListener(listener)
                 exo.addAnalyticsListener(loadMeter)
+                exo.addAnalyticsListener(startTrace)
 
                 // Cadence connue → l'estimateur d'ExoPlayer est coupé (il lit des
                 // horodatages arrondis à la milliseconde et demande 24,39 ou 23,81) ;
@@ -141,8 +141,7 @@ class ExoPlayerView(
                     displayModeSwitcher.attachSurface(playerView.videoSurfaceView as? SurfaceView, contentFrameRate)
                 }
 
-                // Attach player to PlayerView — handles video surface + subtitle rendering
-                playerView.player = exo
+                playerView.player = exo // surface vidéo et sous-titres
 
                 // Force legacy subtitle decoding DIRECTLY on the TextRenderer instances
                 // (buildTextRenderers override may not fire — this is guaranteed to work)
@@ -177,9 +176,10 @@ class ExoPlayerView(
             return
         }
         lastLoadedUrl = loadKey
-        listener.loadEmitted = false
+        listener.resetStart()
         loadMeter.reset()
         PlayerLoadRegistry.attach(this)
+        startTrace.reset("exo")
         currentSubtitleUrl = null
         // Start playback AT the requested position (resume / track-change
         // reload) — no frame from 0:00 is ever decoded, unlike a post-prepare
@@ -189,9 +189,8 @@ class ExoPlayerView(
         if (startMs > 0) p.setMediaItem(item, startMs) else p.setMediaItem(item)
         p.prepare()
         p.playWhenReady = pendingPaused != true
-        // Anti-veille : l'écran reste éveillé tant que la LECTURE est active
-        // (keepScreenOn, aucune permission requise). La pause rend la main à la
-        // veille système — protection des dalles OLED, arbitrage produit.
+        // Anti-veille : l'écran reste éveillé tant que la LECTURE est active ; la
+        // pause rend la main à la veille système (dalles OLED, arbitrage produit).
         keepScreenOn = p.playWhenReady
     }
 
@@ -212,7 +211,7 @@ class ExoPlayerView(
         val wasPlaying = p.playWhenReady
         currentSubtitleUrl = subtitleUrl
         lastLoadedUrl = null // Force reload
-        listener.loadEmitted = false
+        listener.resetStart()
         poller.lastSubtitleText = ""
 
         if (subtitleUrl != null && subtitleUrl.isNotEmpty()) Log.w(TAG, ">>> loadSubtitle url=${subtitleUrl.take(120)}")

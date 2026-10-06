@@ -132,10 +132,12 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
       } ?: BeamSearch.target(focused, direction)
       // Une tenue qui sortirait d'une section qui la retient : le focus reste.
       if (holdIntervalMs != null && holdInside && target != null && !FocusGeometry.isDescendant(target, this)) return true
+      if (target != null) RevealScroller.beforeFocus(this, target)
       target?.requestFocus(direction)
       return true
     } finally {
       RevealScroller.currentStep = null
+      RevealScroller.afterFocus()
     }
   }
 

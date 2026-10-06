@@ -85,7 +85,15 @@ tvOS, plus `tvPacing`), enregistrés par `TentacleFocusPackage` dans
   position de la page et de la rangée AVANT que `ReactScrollView` ne saute
   (`scrollToChild` → `scrollBy`), la rend, puis anime vers NOS cibles
   (`revealOffset` ; `rowRevealOffset`), dans le même message — le saut ne se
-  dessine jamais. Pas isolé : le ressort de la section, repris en vol.
+  dessine jamais. **La RANGÉE se relève plus tôt** : la section est
+  l'ANCÊTRE de la `ReactHorizontalScrollView`, dont le `requestChildFocus`
+  (qui saute) passe avant le sien — relevée là, la rangée avait déjà sauté,
+  et une image la montrait en avant avant que le suiveur ne la ramène (le
+  « rendu étrange » du défilement horizontal, 2026-10-06 : 21 changements
+  de sens sur un aller-retour tenu, 1 après ; `rowMotion.mjs`). La section
+  la relève donc AVANT de demander le focus (`RevealScroller.beforeFocus`).
+  Un focus que la section ne donne pas elle-même garde le relevé d'avant.
+  Pas isolé : le ressort de la section, repris en vol.
   Défilement d'un autre (le `scrollTo` du JS) : arrêt. « Supprimer les
   animations » : la vue se pose. Sans section qui révèle : la cible
   d'Android, animée.

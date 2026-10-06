@@ -43,6 +43,14 @@ export function touchFollowsPress(now: number, lastPressAt: number): boolean {
   return now - lastPressAt < TOUCH_AFTER_PRESS_MS;
 }
 
+/** Un appui (ou un relâchement) arrivé PENDANT le contact du doigt : ce
+ *  contact est celui d'un clic, pas d'un glisser — il n'engage pas le
+ *  défilement et ne réveille pas l'habillage, quoi qu'il ait glissé. Un appui
+ *  d'AVANT la pose n'y compte pas (`touchFollowsPress` en décide). */
+export function contactSawPress(contactAt: number, lastPressAt: number): boolean {
+  return lastPressAt > 0 && lastPressAt >= contactAt;
+}
+
 /** Le maintien tient-il encore les appuis directionnels ? */
 export function holdStillTicking(ticking: boolean, now: number, stoppedAt: number): boolean {
   return ticking || now - stoppedAt < HOLD_TICK_TAIL_MS;

@@ -6,4 +6,6 @@ import type { PlatformTraits } from "./platformTraits";
  */
 export const PLATFORM_TRAITS: PlatformTraits = {
   liquidGlass: true,
+  // L'AVPlayer ne dit pas sa première image au lecteur : la règle d'avant.
+  playerAnnouncesFirstFrame: false,
 };

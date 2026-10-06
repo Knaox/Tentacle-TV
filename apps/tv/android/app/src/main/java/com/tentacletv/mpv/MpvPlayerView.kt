@@ -33,10 +33,12 @@ class MpvPlayerView(
     private var lastLoadedUrl: String? = null
     private var pendingPaused: Boolean? = null
     private var lastProgressEmit = 0L
+    private val startTrace = MpvStartTrace()
+    /** `playback-restart` (image ET son prêts) annoncé pour ce fichier. */
+    private var startAnnounced = false
     var progressInterval = 1000L
     override fun loadState() = mpvLoadState(mpv, lastLoadedUrl != null)
 
-    // Dimensions vidéo pour l'évènement de format
     private var videoParamsW = 0
     private var videoParamsH = 0
 
@@ -56,13 +58,13 @@ class MpvPlayerView(
             Log.e(TAG, ">>> surfaceCreated attachSurface FAILED", e)
             return
         }
-        currentUrl?.let { loadFile(it) }
+        // La pause AVANT le loadfile : tenu au démarrage (tv-core `startGate`),
+        // mpv charge et pose sa première image sans jouer une seule seconde.
         pendingPaused?.let { setPaused(it) }
+        currentUrl?.let { loadFile(it) }
     }
 
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        Log.d(TAG, ">>> surfaceChanged ${width}x$height")
-    }
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) = Unit
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         val handle = mpv ?: return
@@ -128,6 +130,8 @@ class MpvPlayerView(
             else
                 arrayOf("loadfile", cleanUrl, "replace")
             Log.w(TAG, ">>> loadFile start=$startSec url=${cleanUrl.take(120)}")
+            startTrace.reset("mpv start=$startSec")
+            startAnnounced = false
             handle.command(cmd)
         } catch (e: Exception) {
             Log.e(TAG, ">>> loadFile FAILED", e)
@@ -207,12 +211,13 @@ class MpvPlayerView(
         when (property) {
             "track-list/count" -> sendTrackList()
             "video-params/w" -> { videoParamsW = value.toInt(); emitVideoSizeIfReady() }
-            "video-params/h" -> { videoParamsH = value.toInt(); emitVideoSizeIfReady() }
+            "video-params/h" -> { videoParamsH = value.toInt(); emitVideoSizeIfReady(); startTrace.log("image ${videoParamsW}×$value") }
         }
     }
 
     override fun eventProperty(property: String, value: Boolean) {
         if (destroyed) return
+        if (property == "pause") startTrace.log("pause=$value")
         if (property == "eof-reached" && value) {
             Log.w(TAG, ">>> EOF reached")
             emitEvent("end", Arguments.createMap())
@@ -223,6 +228,7 @@ class MpvPlayerView(
         if (destroyed) return
         when (property) {
             "time-pos" -> {
+                startTrace.position(value)
                 val now = System.currentTimeMillis()
                 if (now - lastProgressEmit >= progressInterval) {
                     lastProgressEmit = now
@@ -240,35 +246,22 @@ class MpvPlayerView(
         }
     }
 
+    // END_FILE n'est pas fiable (il part aussi quand un loadfile remplace) :
+    // la vraie fin vient de la propriété eof-reached.
     override fun event(eventId: Int) {
-        // END_FILE n'est pas fiable — il part aussi aux transitions (loadfile qui
-        // remplace) ; la vraie fin vient de la propriété eof-reached.
+        startTrace.event(eventId)
+        // Le verrou de démarrage (tv-core `startGate`) : la première reprise du
+        // fichier — image posée, son prêt —, une fois par loadfile.
+        if (eventId != MPVLib.MPV_EVENT_PLAYBACK_RESTART || startAnnounced || destroyed) return
+        startAnnounced = true
+        emitEvent("firstFrame", Arguments.createMap())
     }
 
-    // --- Liste des pistes ---
+    // --- Liste des pistes (MpvTracks.kt) ---
 
     private fun sendTrackList() {
-        val handle = mpv ?: return
-        try {
-            val count = handle.getPropertyInt("track-list/count") ?: return
-            val tracks = Arguments.createArray()
-            for (i in 0 until count) {
-                val id = handle.getPropertyInt("track-list/$i/id") ?: continue
-                tracks.pushMap(Arguments.createMap().apply {
-                    putInt("id", id)
-                    putString("type", handle.getPropertyString("track-list/$i/type") ?: "")
-                    putString("lang", handle.getPropertyString("track-list/$i/lang") ?: "")
-                    putString("title", handle.getPropertyString("track-list/$i/title") ?: "")
-                    putString("codec", handle.getPropertyString("track-list/$i/codec") ?: "")
-                    putBoolean("default", handle.getPropertyBoolean("track-list/$i/default") ?: false)
-                    putBoolean("selected", handle.getPropertyBoolean("track-list/$i/selected") ?: false)
-                })
-            }
-            emitEvent("tracks", Arguments.createMap().apply { putArray("tracks", tracks) })
-            Log.w(TAG, ">>> sendTrackList emitted $count tracks")
-        } catch (e: Exception) {
-            Log.e(TAG, ">>> sendTrackList FAILED", e)
-        }
+        val tracks = mpvTrackList(mpv ?: return) ?: return
+        emitEvent("tracks", Arguments.createMap().apply { putArray("tracks", tracks) })
     }
 
     // --- Format vidéo ---

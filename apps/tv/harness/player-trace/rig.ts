@@ -10,7 +10,7 @@ import { useTVPlayerControls } from "@tv/hooks/useTVPlayerControls";
 import { useTVPlayerBack } from "@tv/hooks/useTVPlayerBack";
 import { useOsdPin, usePlayerBackLayers } from "@tv/redesignWiring/player/usePlayerBackLayers";
 import { usePlayerChromeActions } from "@tv/redesignWiring/player/usePlayerChromeActions";
-import { BACKGROUND_FOCUS } from "@tv/components/player/focus/osdFocusBus";
+import { BACKGROUND_FOCUS, noteSkipHolding } from "@tv/components/player/focus/osdFocusBus";
 import { __rig } from "./mocks/react-native";
 
 export interface Entry { t: number; ev: string; v?: unknown }
@@ -136,6 +136,8 @@ export function Rig() {
   const skipActive = overlay.kind === "skip" || overlay.kind === "nextButton";
   const bgFocused = backgroundFocusable && !skipActive;
   useLayoutEffect(() => { (bgFocused ? BACKGROUND_FOCUS.onFocus : BACKGROUND_FOCUS.onBlur)(); }, [bgFocused]);
+  // La pilule tient le focus là où le fond le cède (`useSkipPillFocus`).
+  useLayoutEffect(() => { noteSkipHolding(skipActive); return () => noteSkipHolding(false); }, [skipActive]);
 
   const onToggleSettings = () => { trace.log("openSettings"); setShowSettings(true); showSettingsRef.current = true; controls.showOverlay(); };
   const actions = usePlayerChromeActions({

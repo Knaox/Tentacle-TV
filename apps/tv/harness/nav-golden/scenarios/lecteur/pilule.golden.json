@@ -1,0 +1,160 @@
+{
+  "format": 1,
+  "domain": "lecteur",
+  "suite": "pilule",
+  "reference": {
+    "sha": "39c8890462cef53bbb7750a5127186a5afc428da",
+    "label": "référence 39c889046"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "1004b49f482c83ea",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T2",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-05T23:42:45.387Z",
+  "scenarios": {
+    "pil-01": {
+      "hash": "2eb63ad2cf36",
+      "durationMs": 40707,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:skip",
+          "label": "Passer l'intro",
+          "frame": [
+            1548,
+            728,
+            276,
+            68
+          ],
+          "groups": [
+            "player:skip-island"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "prefs:resolve",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": "player:skip",
+          "label": "Passer l'intro",
+          "frame": [
+            1548,
+            904,
+            276,
+            68
+          ],
+          "groups": [
+            "player:skip-island"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "clickpan:300,1500,900",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "menu",
+            "wait:1",
+            "menu"
+          ],
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    }
+  }
+}

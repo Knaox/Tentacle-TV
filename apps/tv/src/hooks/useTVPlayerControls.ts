@@ -3,7 +3,7 @@ import {
   createPlayerControls, RESUME_COUNTDOWN_POLICY,
   type ScrubCountdownPolicy, type ScrubCountdownState, type SkipFlashState,
 } from "@tentacle-tv/tv-core";
-import { backgroundHoldsFocus } from "../components/player/focus/osdFocusBus";
+import { backgroundHoldsFocus, skipHoldsFocus } from "../components/player/focus/osdFocusBus";
 import { PLAYER_TIMERS } from "./playerTimers";
 import { SCRUB_INPUT } from "./scrubInput";
 import { usePlayerRemoteBinding } from "./usePlayerRemoteBinding";
@@ -77,6 +77,7 @@ export function useTVPlayerControls({
     isPanelOpen: () => panelOpenRef.current,
     isOverlayVisible: () => overlayVisibleRef.current,
     backgroundHoldsFocus,
+    skipHoldsFocus,
     seek: (seconds) => latest.current.onSeek(seconds),
     back: () => latest.current.onBack(),
     playPause: () => latest.current.onPlayPause(),
@@ -115,6 +116,7 @@ export function useTVPlayerControls({
   useScrubGestures({
     enabled: !panelOpen,
     readTouchMode: core.readTouchMode,
+    readLastPressAt: core.readLastPressAt,
     onTouchStart: core.scrub.touchStart,
     onStartScrub: core.scrub.startDrag,
     onNudgeScrub: core.scrub.nudgeScrub,

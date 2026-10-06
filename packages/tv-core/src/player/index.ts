@@ -29,6 +29,7 @@ export * from "./scrubController";
 export * from "./playerControls";
 export * from "./playerRemote";
 export * from "./touchScrub";
+export * from "./startGate";
 export * from "./playerBack";
 export * from "./playerStage";
 export * from "./playerFocus";

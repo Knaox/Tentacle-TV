@@ -19,6 +19,9 @@ export interface PlayerControlsHost {
   isPanelOpen: () => boolean;
   isOverlayVisible: () => boolean;
   backgroundHoldsFocus: () => boolean;
+  /** Un bouton qui attend OK tient le focus (la pilule « Passer ») : le pavé
+   *  est tenu (`TouchMode` « held »). */
+  skipHoldsFocus?: () => boolean;
   seek: (seconds: number) => void;
   /** Retour, une fois les états passagers servis (Android : BackHandler). */
   back: () => void;
@@ -70,6 +73,8 @@ export interface PlayerControls {
   wakeFromTouch: () => void;
   /** Le régime d'un glisser qui commence. */
   readTouchMode: () => TouchMode;
+  /** L'heure du dernier appui (0 : aucun) — le pavé en déduit les clics. */
+  readLastPressAt: () => number;
   destroy: () => void;
 }
 
@@ -193,8 +198,10 @@ export function createPlayerControls(
     },
     readTouchMode() {
       if (scrub.isScrubbing()) return "open";
+      if (host.skipHoldsFocus?.()) return "held";
       return host.isOverlayVisible() ? "shown" : "hidden";
     },
+    readLastPressAt: () => lastPressAt,
     remote: {
       back() {
         if (host.isPanelOpen()) return;
