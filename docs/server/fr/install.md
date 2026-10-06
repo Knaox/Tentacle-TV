@@ -72,22 +72,28 @@ Une question par écran ; les étapes s'adaptent à la pile détectée.
 2. **Code d'installation** — seulement si l'assistant le demande (voir plus haut).
 3. **Base de données** — *tentacle-only* seulement : hôte, port, base, compte. Depuis Docker, `localhost` est
    Tentacle lui-même : utilisez `host.docker.internal` ou l'adresse de la machine.
-4. **Jellyfin** —
-   - *tentacle-full* : le Jellyfin de la pile, et lui seul, joint par son adresse interne. Il a été
-     **verrouillé dès le démarrage** (personne d'autre ne peut le prendre) ; l'assistant le configure avec
-     le compte choisi ensuite. Déjà configuré par quelqu'un ? L'assistant le dit et demande son compte
-     administrateur ;
-   - *tentacle-db / tentacle-only* et installation native : la liste des Jellyfin trouvés (découverte UDP
-     de Jellyfin, puis la machine d'où l'assistant est ouvert et la passerelle du conteneur, sur les ports
-     courants), chacun avec son adresse, son port, son nom, sa version et **Neuf** / **Déjà configuré**. Le
-     neuf est choisi d'office ; prenez-en un autre, ou donnez une adresse. Depuis un réseau Docker en pont,
-     la découverte ne voit que cette machine : un Jellyfin sur un autre appareil se donne à la main. Neuf →
-     Tentacle le configure ; déjà configuré → connexion avec son compte administrateur (Tentacle crée sa clé
-     d'API lui-même), ou une clé collée.
-5. **Compte** — le compte administrateur de Jellyfin, qui l'est aussi de Tentacle, et la langue et le pays des
-   métadonnées (proposés d'après le navigateur).
-6. **Bibliothèques** — *tentacle-full* propose **Films** (`/media/films`) et **Séries** (`/media/series`) ;
-   parcourez les dossiers de Jellyfin pour en ajouter.
+4. **Jellyfin** — la liste de **tous** les Jellyfin trouvés (découverte UDP de Jellyfin, puis la machine
+   d'où l'assistant est ouvert et la passerelle du conteneur, sur les ports courants), rangés en **Neufs** et
+   **Déjà configurés**, chacun avec son nom, son adresse, son port et sa version. Depuis un réseau Docker en
+   pont, la découverte ne voit que cette machine : un Jellyfin sur un autre appareil se donne à la main.
+   - *tentacle-full* : le Jellyfin de la pile est **en tête** (« Dans cette pile ») et choisi d'office. Il a
+     été **verrouillé dès le démarrage** (personne d'autre ne peut le prendre) et se joint par son adresse
+     interne. Les autres restent choisissables ; si vous en prenez un autre, celui de la pile reste
+     verrouillé, sans servir ;
+   - ailleurs, le neuf est choisi d'office ; prenez-en un autre, ou donnez une adresse.
+5. **Compte** — **Neuf** : vous créez le compte administrateur de Jellyfin (qui l'est aussi de Tentacle), avec
+   la langue et le pays des métadonnées (proposés d'après le navigateur). **Déjà configuré** : vous vous
+   connectez avec un compte administrateur EXISTANT (Tentacle crée sa clé d'API lui-même), ou vous collez une
+   clé ; aucun compte n'est créé.
+6. **Bibliothèques** (Jellyfin neuf) — *tentacle-full* propose **Films** (`/media/films`) et **Séries**
+   (`/media/series`) ; parcourez les dossiers de Jellyfin pour en ajouter.
+   **Réglages conseillés** (Jellyfin déjà configuré, à la place) — Tentacle n'y crée **aucune**
+   bibliothèque ; il rappelle celles qui existent et propose, tous **facultatifs** et décochables, les
+   réglages que le tableau de bord conseille aussi : la détection des passages (Intro Skipper, TheIntroDB,
+   SkipMe.db), la langue des métadonnées, les aperçus de la barre de lecture, la surveillance en temps
+   réel, l'encodage HEVC (seulement avec un encodeur matériel). Chacun montre « actuellement → conseillé » ;
+   ce que vous avez réglé autrement n'est jamais coché d'office. Seul ce qui est coché est appliqué ;
+   **Passer** ne change rien.
 7. **Récapitulatif**, avec **l'adresse de Jellyfin pour les applications** (lecture directe à la maison) :
    construite avec l'adresse par laquelle vous avez ouvert l'assistant et le port publié de Jellyfin
    (`JELLYFIN_PORT`), jamais un nom Docker. Modifiez-la au besoin. Puis **installation** (chaque étape ratée
