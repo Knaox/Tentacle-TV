@@ -13,6 +13,34 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.27.0]
+<!-- Bloc nu : les trois canaux (Mac App Store, Microsoft Store 1500 caractères, Linux) partent tous de la 1.26.0, livrée le 04/10. La panne de Jellyfin et l'administration exigent le serveur 1.24.0 (état de Jellyfin dit par le serveur, routes des passages et de l'accès à distance). -->
+### FR
+- **Jellyfin redémarre pendant un film ?** Avec le serveur 1.24.0, la lecture continue sur ce qui est déjà chargé, sans rechargement à son retour ; le message est temporaire, avec un compte à rebours
+- **Un transcodage interrompu par un redémarrage de Jellyfin reprend au bon endroit**, au lieu de finir le film en avance
+- **Qualité réduite plus fidèle** : le son d'origine (DTS, TrueHD…) est gardé, le Dolby Vision et le HDR restent intacts quand seul le conteneur change, et la vidéo passe en HEVC quand le serveur l'autorise
+- **Le chargement s'affiche dès qu'on choisit une qualité**
+- **L'épisode suivant revérifie la connexion** et revient en lecture directe quand elle le permet
+- **La piste audio choisie reste en place**, sans retour à la piste par défaut en cours de lecture
+- **Jumeler une TV** : le jumelage part dès le dernier caractère du code, et une TV déjumelée quitte aussitôt la liste
+- **Accueil** : une carte marquée vue, ou retirée de Ma liste ou des favoris, reste en place tant que le pointeur est sur sa rangée
+- **Affiner** : « Afficher le synopsis » répond de nouveau au clic, et Espace l'ouvre toujours
+- **Administration** (serveur 1.24.0) : « Jellyfin redémarre » au lieu d'une erreur, la détection des passages installée ou réparée en un clic, un guide de l'accès à distance, et des sessions étiquetées juste
+- La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
+
+### EN
+- **Jellyfin restarts during a movie?** With server 1.24.0, playback continues from what is already loaded, with no reload when it comes back; the message is temporary, with a countdown
+- **A transcode interrupted by a Jellyfin restart resumes at the right place**, instead of ending the movie early
+- **More faithful reduced quality**: original audio (DTS, TrueHD…) is kept, Dolby Vision and HDR stay intact when only the container changes, and video switches to HEVC when the server allows it
+- **Loading shows as soon as you pick a quality**
+- **The next episode re-checks the connection** and returns to direct play when it allows
+- **Your chosen audio track stays put**, with no switch back to the default track during playback
+- **Pairing a TV**: pairing starts as soon as the last character of the code is typed, and an unpaired TV leaves the list right away
+- **Home**: a card you mark as watched, or remove from My List or Favorites, stays put while the pointer is on its row
+- **Refine**: "Show synopsis" responds to clicks again, and Space always opens it
+- **Administration** (server 1.24.0): "Jellyfin is restarting" instead of an error, skip detection installed or repaired in one click, a remote access guide, and accurately labeled sessions
+- The in-progress row is now called "Where you left off"
+
 ## [1.26.0]
 <!-- Bloc nu : Windows (Microsoft Store, 1500 caractères) et Linux partent de la 1.25.5. Le Mac App Store, où la 1.25.5 n'a pas été validée, a son bloc mac-. -->
 ### FR
