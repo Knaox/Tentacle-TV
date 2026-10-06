@@ -8,6 +8,7 @@ cover every case; a guided setup wizard does the rest in the browser.
 | I want… | Read |
 |---|---|
 | to install Tentacle (and Jellyfin, if I don't have one yet) | [install.md](install.md) |
+| who may open the setup wizard, and why (threat model) | [setup-security.md](setup-security.md) |
 | to reach my server away from home, over HTTPS | [remote-access.md](remote-access.md) |
 | hardware transcoding (Intel, AMD, NVIDIA) | [gpu.md](gpu.md) |
 | to update, back up, reopen the wizard, or migrate from the old compose file | [operations.md](operations.md) |

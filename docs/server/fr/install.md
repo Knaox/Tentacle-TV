@@ -23,10 +23,21 @@ curl -fsSLo compose.yaml https://raw.githubusercontent.com/Knaox/Tentacle-TV/mai
 docker compose up -d
 ```
 
-## Premier démarrage : le code d'installation
+## Premier démarrage : ouvrir l'assistant
 
-À chaque démarrage, tant que l'installation n'est pas faite, Tentacle écrit un code à usage unique dans **le
-journal de son conteneur** (ses « logs »). Lisez ce journal comme vous gérez vos conteneurs :
+Ouvrez `http://<cette-machine>:3000` (ou le port choisi). **Depuis le réseau de la maison, c'est tout** : le
+premier navigateur qui joint Tentacle directement depuis une adresse privée (192.168.x.x, 10.x.x.x,
+172.16-31.x.x, ULA IPv6…) réclame le serveur, sans code — comme Jellyfin ou Plex. Un autre appareil a
+ensuite besoin du code pour reprendre la main. Ce que « directement » veut dire, et pourquoi :
+[setup-security.md](setup-security.md).
+
+## Quand l'assistant demande un code
+
+De partout ailleurs — par Internet, derrière un mandataire qui transmet une adresse publique, par un nom de
+domaine public, ou quand Tentacle ne voit pas votre vraie adresse (Docker Desktop, colima) — l'assistant
+demande un code à usage unique, et dit où le lire. À chaque démarrage, tant que l'installation n'est pas
+faite, Tentacle l'écrit dans **le journal de son conteneur** (ses « logs »). Lisez ce journal comme vous
+gérez vos conteneurs :
 
 | Vous utilisez | Où lire le code |
 |---|---|
@@ -57,23 +68,32 @@ docker exec <conteneur> tentacle setup token
 
 Une question par écran ; les étapes s'adaptent à la pile détectée.
 
-1. **Bienvenue** — la langue.
-2. **Code d'installation.**
+1. **Bienvenue** — la langue, puis **Commencer**.
+2. **Code d'installation** — seulement si l'assistant le demande (voir plus haut).
 3. **Base de données** — *tentacle-only* seulement : hôte, port, base, compte. Depuis Docker, `localhost` est
    Tentacle lui-même : utilisez `host.docker.internal` ou l'adresse de la machine.
 4. **Jellyfin** —
-   - *tentacle-full* : le Jellyfin voisin a été **verrouillé dès le démarrage** (personne d'autre ne peut le
-     prendre) ; l'assistant le configure avec le compte choisi ensuite ;
-   - *tentacle-db / tentacle-only* : donnez l'adresse de Jellyfin. Neuf → Tentacle le configure ; déjà
-     configuré → connexion avec son compte administrateur (Tentacle crée sa clé d'API lui-même), ou une clé
-     collée.
-5. **Compte** — le compte administrateur de Jellyfin, qui l'est aussi de Tentacle.
-6. **Langue et pays des métadonnées.**
-7. **Bibliothèques** — *tentacle-full* propose **Films** (`/media/films`) et **Séries** (`/media/series`) ;
+   - *tentacle-full* : le Jellyfin de la pile, et lui seul, joint par son adresse interne. Il a été
+     **verrouillé dès le démarrage** (personne d'autre ne peut le prendre) ; l'assistant le configure avec
+     le compte choisi ensuite. Déjà configuré par quelqu'un ? L'assistant le dit et demande son compte
+     administrateur ;
+   - *tentacle-db / tentacle-only* et installation native : la liste des Jellyfin trouvés (découverte UDP
+     de Jellyfin, puis la machine d'où l'assistant est ouvert et la passerelle du conteneur, sur les ports
+     courants), chacun avec son adresse, son port, son nom, sa version et **Neuf** / **Déjà configuré**. Le
+     neuf est choisi d'office ; prenez-en un autre, ou donnez une adresse. Depuis un réseau Docker en pont,
+     la découverte ne voit que cette machine : un Jellyfin sur un autre appareil se donne à la main. Neuf →
+     Tentacle le configure ; déjà configuré → connexion avec son compte administrateur (Tentacle crée sa clé
+     d'API lui-même), ou une clé collée.
+5. **Compte** — le compte administrateur de Jellyfin, qui l'est aussi de Tentacle, et la langue et le pays des
+   métadonnées (proposés d'après le navigateur).
+6. **Bibliothèques** — *tentacle-full* propose **Films** (`/media/films`) et **Séries** (`/media/series`) ;
    parcourez les dossiers de Jellyfin pour en ajouter.
-8. **Récapitulatif**, puis **installation** (chaque étape ratée se relance seule).
-9. **Accès à distance** (facultatif) — le HTTPS par votre propre mandataire : voir [remote-access.md](remote-access.md).
-10. **Et maintenant ?** — où déposer vos fichiers, les applications de chaque plateforme, un QR code pour
+7. **Récapitulatif**, avec **l'adresse de Jellyfin pour les applications** (lecture directe à la maison) :
+   construite avec l'adresse par laquelle vous avez ouvert l'assistant et le port publié de Jellyfin
+   (`JELLYFIN_PORT`), jamais un nom Docker. Modifiez-la au besoin. Puis **installation** (chaque étape ratée
+   se relance seule).
+8. **Accès à distance** (facultatif) — le HTTPS par votre propre mandataire : voir [remote-access.md](remote-access.md).
+9. **Et maintenant ?** — où déposer vos fichiers, les applications de chaque plateforme, un QR code pour
     ouvrir le serveur.
 
 ## Réglages (`.env`)
