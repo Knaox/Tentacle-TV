@@ -543,8 +543,9 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   `request.ip` (compteur de débit, réseau local, journaux). Docker Desktop/colima perdent l'adresse source :
   documenté, pas contourné.
 - **Accès à distance** (`apps/backend/src/remoteAccess/`, section admin `/admin/remote-access` sous
-  `requirePersonalAdmin` — jamais une TV jumelée) : ports, mandataire HTTPS (Caddy/Traefik par profils,
-  extraits pour un mandataire existant), test d'ouverture mené **depuis l'extérieur** par le service
+  `requirePersonalAdmin` — jamais une TV jumelée) : ports, mandataire HTTPS — **aucune pile
+  n'en embarque** (décision du 2026-10-06 : l'utilisateur a le sien) ; l'admin et la doc donnent les
+  extraits à y poser (Caddyfile, Nginx/NPM, Traefik : `remoteAccess/proxySnippets.ts`), test d'ouverture mené **depuis l'extérieur** par le service
   `apps/port-check` (`REMOTE_CHECK_URL`, défaut check.tentacletv.app, `off` le coupe). Le service ne teste
   que l'adresse du demandeur ; Tentacle se prouve par un défi `/.well-known/tentacle-check/:id` (60 s).
   **Aucun workflow ne construit ni ne déploie `apps/port-check`.** Tailscale = plan B documenté, jamais
@@ -557,7 +558,7 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
 - **Guides des box** (`remoteAccess/routerGuides.ts`) : seulement des pages officielles vérifiées, datées ;
   ce qui n'est pas confirmé vaut `null` (SFR : site fermé à nos outils).
 - **Banc de bout en bout** (`apps/server-e2e`, JAMAIS lancé par `pnpm test`) : de vraies piles, un vrai
-  Jellyfin (10.11, 12.1), le Chrome du système, Caddy et Traefik —
+  Jellyfin (10.11, 12.1), le Chrome du système, Caddy et Traefik (compose PROPRE au banc, `proxies/compose.yaml`, nourri des extraits de l'admin) —
   `pnpm --filter @tentacle-tv/server-e2e test:e2e`, variables dans son README (colima : `E2E_COMPOSE`,
   `DOCKER_HOST`). Ce qui attend un humain : le test réel en 4G (`REAL-TEST.md`) et Linux + Podman + GPU
   (`stacks/tests/linux-podman-gpu.sh`, préparé, pas validé).
