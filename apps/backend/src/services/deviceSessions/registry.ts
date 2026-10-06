@@ -243,8 +243,13 @@ export class SessionRegistry {
     const handlers: DeviceHandlers = {
       onOpen: () => {
         this.broadcast(device, true);
-        // Une connexion qui RENAÎT (Jellyfin redémarré) : il a pu tout oublier.
-        if (device.openedOnce) for (const e of device.connections) void e.reporter?.resync();
+        // Une connexion qui RENAÎT alors que Jellyfin est « up » (socket
+        // coupée seule) : il a pu tout oublier. Pendant un démarrage, rien :
+        // mesuré, une redite acceptée en plein chargement était perdue ;
+        // c'est le retour (`jellyfinBack`) qui redit.
+        if (device.openedOnce && this.deps.jellyfinHealth().state === "up") {
+          for (const e of device.connections) void e.reporter?.resync();
+        }
         device.openedOnce = true;
       },
       onLost: () => this.broadcast(device, false),
