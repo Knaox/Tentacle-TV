@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { tentacleApiFetch } from "../hooks/usePreferences";
+import { useServerCapability } from "../hooks/useServerCapabilities";
 import { recoItemsOf } from "./recoCacheItems";
 import { retireRecoItem } from "./recoRetirement";
 import { isRecoItemHeld } from "./recoRetirementState";
@@ -46,23 +47,28 @@ export function retireRequestedTitles(qc: QueryClient, keys: readonly string[]):
 /**
  * La liste des titres demandés, relue à chaque montage et au retour sur la
  * fenêtre ; `refetch` pour un écran natif qui reprend le focus. Un serveur
- * d'avant n'a pas la route : liste vide, sans erreur.
+ * d'avant n'a pas la route (capacité `reco.requestedTitles`) : rien n'est
+ * demandé, liste vide.
  */
 export function useRequestedTitles(options: { enabled?: boolean } = {}) {
   const qc = useQueryClient();
+  const supported = useServerCapability("reco.requestedTitles");
   const query = useQuery({
     queryKey: REQUESTED_TITLES_KEY,
     queryFn: async () => (await tentacleApiFetch<{ keys?: unknown }>("/api/reco/requested")).keys,
     select: (keys: unknown) => (Array.isArray(keys) ? keys.filter((k): k is string => typeof k === "string") : []),
     staleTime: 0,
     retry: false,
-    enabled: options.enabled ?? true,
+    enabled: supported && (options.enabled ?? true),
   });
   const keys = query.data;
   useEffect(() => {
     if (keys?.length) retireRequestedTitles(qc, keys);
   }, [qc, keys]);
-  return { keys: keys ?? EMPTY, refetch: query.refetch };
+  // `refetch` passe outre `enabled` : sans la route, il ne demande rien non plus.
+  return { keys: keys ?? EMPTY, refetch: supported ? query.refetch : skipRefetch };
 }
 
 const EMPTY: readonly string[] = [];
+
+async function skipRefetch(): Promise<void> {}
