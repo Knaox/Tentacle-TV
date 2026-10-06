@@ -4,6 +4,7 @@ import { setupCompleteRoute } from "./routes/completeRoute";
 import { setupDatabaseRoute } from "./routes/databaseRoute";
 import { setupJellyfinRoutes } from "./routes/jellyfinRoutes";
 import { setupLibraryRoutes } from "./routes/libraryRoutes";
+import { setupSegmentsRoute } from "./routes/segmentsRoute";
 import { setupSessionRoutes } from "./routes/sessionRoutes";
 
 /**
@@ -17,5 +18,6 @@ export const setupWizardRoutes: FastifyPluginAsync = async (app) => {
   await app.register(setupDatabaseRoute);
   await app.register(setupJellyfinRoutes);
   await app.register(setupLibraryRoutes);
+  await app.register(setupSegmentsRoute);
   await app.register(setupCompleteRoute);
 };

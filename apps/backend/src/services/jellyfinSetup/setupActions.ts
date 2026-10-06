@@ -16,8 +16,11 @@ import type { Loose } from "./setupSnapshot";
  * mesuré sur 10.11.8 et 12.1.0 : l'aller-retour ne change rien d'autre.
  *
  * Jamais de redémarrage de Jellyfin d'ici : il couperait toutes les lectures
- * en cours, et dans Docker un conteneur sans politique de relance ne revient
- * pas. Un greffon installé attend donc que l'administrateur redémarre.
+ * en cours. Un greffon installé d'ici attend donc que l'administrateur
+ * redémarre. Seule exception, à part et sur un geste dédié : les greffons de
+ * passages (`services/segmentPlugins/`), qui redémarrent Jellyfin par son API
+ * — un redémarrage DANS le processus, mesuré sous Docker — et jamais pendant
+ * une lecture sans que l'administrateur l'ait demandé.
  */
 
 export type ApplyError = JellyfinFailure | "bad-request" | "busy" | "not-applied";

@@ -18,6 +18,7 @@ import { adminSessionsRoutes } from "./adminSessions";
 import { adminServicesRoutes } from "./adminServices";
 import { adminJellyfinCompatRoutes } from "./adminJellyfinCompat";
 import { adminJellyfinSetupRoutes } from "./adminJellyfinSetup";
+import { adminSegmentPluginsRoutes } from "./adminSegmentPlugins";
 import { adminServerLinksRoutes } from "./adminServerLinks";
 import { adminServerUpdateRoutes } from "./adminServerUpdate";
 import { remoteAccessRoutes } from "../remoteAccess/remoteAccessRoutes";
@@ -48,6 +49,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Réglages recommandés de Jellyfin : état réel et gestes en un clic (hérite de requireAdmin).
   await app.register(adminJellyfinSetupRoutes);
+
+  // Détection des passages : installer / réparer les greffons (requireAdmin, puis session personnelle pour lancer).
+  await app.register(adminSegmentPluginsRoutes);
 
   // Liens du serveur : lien public et lecture directe, sondés (hérite de requireAdmin).
   await app.register(adminServerLinksRoutes);
