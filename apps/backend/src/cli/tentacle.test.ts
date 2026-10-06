@@ -20,7 +20,7 @@ vi.mock("@prisma/client", () => ({
 }));
 
 import { DATA_ROOT } from "../services/dataDir";
-import { runCli } from "./tentacle";
+import { normalizeArgs, runCli } from "./tentacle";
 
 const lock = join(DATA_ROOT, "setup-complete");
 const token = join(DATA_ROOT, "setup-token.txt");
@@ -34,9 +34,27 @@ beforeEach(() => {
 });
 
 describe("tentacle setup", () => {
-  it("refuse ce qu'elle ne connaît pas", async () => {
+  it("refuse ce qu'elle ne connaît pas, en redonnant l'usage complet", async () => {
     expect(await runCli([])).toBe(2);
     expect(await runCli(["setup", "open"])).toBe(2);
+    const said = vi.mocked(console.error).mock.calls.flat().join("\n");
+    expect(said).toContain("Commande inconnue / unknown command : tentacle setup open");
+    expect(said).toContain("tentacle setup token   affiche un code d'installation neuf");
+    expect(said).toContain("tentacle setup reset");
+  });
+
+  it("l'aide se demande, et répond sans erreur", async () => {
+    expect(await runCli(["--help"])).toBe(0);
+    expect(await runCli(["tentacle", "help"])).toBe(0);
+    expect(vi.mocked(console.log).mock.calls.flat().join("\n")).toContain("print a new one-time setup code");
+  });
+
+  it("`tentacle tentacle setup token` est pardonné : le nom tapé deux fois est ignoré", async () => {
+    expect(normalizeArgs(["tentacle", "setup", "token"])).toEqual(["setup", "token"]);
+    expect(normalizeArgs(["Tentacle", "tentacle", "SETUP", "Token"])).toEqual(["setup", "token"]);
+    expect(await runCli(["tentacle", "setup", "token"], {})).toBe(0);
+    expect(existsSync(token)).toBe(true);
+    expect(vi.mocked(console.log).mock.calls.flat().join("\n")).toMatch(/[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}/);
   });
 
   it("token : un code neuf tant que l'installation est ouverte", async () => {
@@ -65,7 +83,8 @@ describe("tentacle setup", () => {
     expect(existsSync(lock)).toBe(false);
     expect(existsSync(token)).toBe(false);
     const printed = vi.mocked(console.log).mock.calls.flat().join("\n");
-    expect(printed).toContain("docker compose logs tentacle");
+    expect(printed).toContain("Redémarrez le serveur");
+    expect(printed).not.toContain("docker compose");
     expect(printed).not.toMatch(/[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}/);
   });
 

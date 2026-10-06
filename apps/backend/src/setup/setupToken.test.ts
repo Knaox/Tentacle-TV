@@ -59,5 +59,13 @@ describe("code d'installation", () => {
     const lines = setupTokenBanner("ABCDEFGHJKMN", 3000).join("\n");
     expect(lines).toContain("ABCD-EFGH-JKMN");
     expect(lines).toContain(":3000/setup#code=ABCD-EFGH-JKMN");
+    expect(lines).toContain("`tentacle setup token` dans la console de ce conteneur");
+    expect(lines).not.toContain("compose");
+  });
+
+  it("hors conteneur, le bandeau donne la commande native", () => {
+    const lines = setupTokenBanner("ABCDEFGHJKMN", 3000, false).join("\n");
+    expect(lines).toContain("node apps/backend/dist/cli/tentacle.js setup token");
+    expect(lines).not.toContain("conteneur");
   });
 });

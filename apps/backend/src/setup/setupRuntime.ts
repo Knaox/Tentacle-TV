@@ -2,6 +2,7 @@ import { hasPrisma } from "../services/db";
 import { isSetupComplete } from "../services/configStore";
 import { readDeployment, type Deployment } from "./deployment";
 import { detectHostOs, type HostOs } from "./hostOs";
+import { hostInfo } from "./hostInfo";
 import { configureJellyfinGuard } from "./jellyfin/guardedFetch";
 import { provisionerFor, type JellyfinProvisioner } from "./provisioners";
 import type { ClaimOutcome } from "./provisioners/siblingClaim";
@@ -32,7 +33,7 @@ export function setupRuntime(): SetupRuntime {
 }
 
 function announceNewToken(): void {
-  for (const line of setupTokenBanner(writeNewSetupToken(), bannerPort)) console.log(line);
+  for (const line of setupTokenBanner(writeNewSetupToken(), bannerPort, hostInfo().containerized)) console.log(line);
 }
 
 let claim: Promise<ClaimOutcome | null> | null = null;

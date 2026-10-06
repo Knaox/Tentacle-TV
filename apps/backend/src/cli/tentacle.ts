@@ -3,25 +3,58 @@ import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 import { DATA_ROOT } from "../services/dataDir";
 import { databaseUrlFromEnv } from "../services/databaseEnv";
+import { readHostInfo } from "../setup/hostInfo";
 import { SETUP_LOCK_FILE, unsealSetup } from "../setup/setupLock";
 import { discardSetupToken, setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
 
 /**
  * `tentacle` — la commande de la MACHINE. L'assistant ne se rouvre jamais par
- * HTTP : seulement d'ici, par qui a la main sur le serveur.
+ * HTTP : seulement d'ici, par qui a la main sur le serveur — dans la console
+ * du conteneur (Portainer, NAS, `docker exec <conteneur> …`) :
  *
- *   docker compose exec tentacle tentacle setup token   # un code neuf (installation ouverte)
- *   docker compose exec tentacle tentacle setup reset   # rouvrir l'assistant
+ *   tentacle setup token   # un code neuf (installation ouverte)
+ *   tentacle setup reset   # rouvrir l'assistant
  *
  * En natif : `node apps/backend/dist/cli/tentacle.js setup …`.
  */
-const USAGE = "usage: tentacle setup token | tentacle setup reset";
-const SETUP_FLAGS = ["setup_completed", "admin_jellyfin_id", "admin_username"];
-const RESET_DONE = [
-  "Assistant rouvert. Redémarrez le serveur ; le code d'installation sera dans ses journaux :",
-  "Wizard reopened. Restart the server; the setup code will be in its logs:",
-  "  docker compose restart tentacle && docker compose logs tentacle",
+const USAGE = [
+  "Tentacle — commandes du serveur / server commands",
+  "",
+  "  tentacle setup token   affiche un code d'installation neuf",
+  "                         print a new one-time setup code",
+  "  tentacle setup reset   rouvre l'assistant d'installation (puis redémarrer le conteneur)",
+  "                         reopen the setup wizard (then restart the container)",
 ];
+const SETUP_FLAGS = ["setup_completed", "admin_jellyfin_id", "admin_username"];
+const HELP = new Set(["help", "-h", "--help"]);
+
+/** Le redémarrage à faire après `reset`, avec l'identifiant du conteneur quand il se lit. */
+function resetDone(): string[] {
+  const { containerized, containerId } = readHostInfo();
+  const target = containerId ?? "<container>";
+  const how = containerized
+    ? [
+        "  Portainer, NAS : « Restart », puis « Logs » / « Journal » du conteneur Tentacle.",
+        `  Ligne de commande / command line : docker restart ${target} && docker logs ${target}`,
+      ]
+    : [];
+  return [
+    "Assistant rouvert. Redémarrez le serveur ; le code d'installation sera dans son journal.",
+    "Wizard reopened. Restart the server; the setup code will be in its logs.",
+    ...how,
+  ];
+}
+
+/**
+ * `tentacle tentacle setup token` (le nom de la commande tapé deux fois, comme
+ * dans `docker compose exec tentacle tentacle …`) est pardonné : un ou
+ * plusieurs `tentacle` en tête sont ignorés.
+ */
+export function normalizeArgs(args: string[]): string[] {
+  let start = 0;
+  while (start < args.length && args[start].toLowerCase() === "tentacle") start += 1;
+  return args.slice(start).map((arg) => arg.toLowerCase());
+}
 
 function databaseUrl(): string | null {
   const fromEnv = databaseUrlFromEnv(process.env);
@@ -53,14 +86,25 @@ async function setupCompleted(): Promise<boolean> {
 }
 
 function printToken(port: string): void {
-  for (const line of setupTokenBanner(writeNewSetupToken(), port)) console.log(line);
+  for (const line of setupTokenBanner(writeNewSetupToken(), port, readHostInfo().containerized)) console.log(line);
 }
 
 export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
-  const [scope, action] = args;
+  const [scope, action] = normalizeArgs(args);
   const port = env.TENTACLE_HOST_PORT || env.PORT || "3000";
+  if (scope !== undefined && HELP.has(scope)) {
+    for (const line of USAGE) console.log(line);
+    return 0;
+  }
+  if (scope === undefined) {
+    for (const line of USAGE) console.error(line);
+    return 2;
+  }
   if (scope !== "setup" || (action !== "token" && action !== "reset")) {
-    console.error(USAGE);
+    const typed = ["tentacle", ...args].join(" ");
+    console.error(`Commande inconnue / unknown command : ${typed}`);
+    console.error("");
+    for (const line of USAGE) console.error(line);
     return 2;
   }
 
@@ -84,7 +128,7 @@ export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.en
   // Pas de code ici : le serveur en cours tient l'assistant pour fermé, et le
   // redémarrage en écrit un neuf — celui qu'on afficherait serait déjà caduc.
   discardSetupToken();
-  for (const line of RESET_DONE) console.log(line);
+  for (const line of resetDone()) console.log(line);
   return 0;
 }
 

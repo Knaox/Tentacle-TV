@@ -80,14 +80,30 @@ export function discardSetupToken(file = SETUP_TOKEN_FILE): void {
   }
 }
 
-/** Le bandeau des journaux : le code, et le lien qui le pré-remplit (fragment, jamais envoyé au serveur). */
-export function setupTokenBanner(token: string, port: string | number): string[] {
+/** La commande d'un code neuf hors conteneur (installation native, depuis la racine du dépôt construit). */
+export const NATIVE_CLI = "node apps/backend/dist/cli/tentacle.js";
+
+/**
+ * Le bandeau des journaux : le code, et le lien qui le pré-remplit (fragment,
+ * jamais envoyé au serveur). Rien n'y suppose `docker compose` ni un nom de
+ * service : le journal se lit dans Portainer, `docker logs`, un NAS…
+ */
+export function setupTokenBanner(token: string, port: string | number, containerized = true): string[] {
   const code = formatSetupToken(token);
+  const renew = containerized
+    ? [
+        "  Single use. New code: `tentacle setup token` in this container's console.",
+        "  Usage unique. Code neuf : `tentacle setup token` dans la console de ce conteneur.",
+      ]
+    : [
+        `  Single use. New code: \`${NATIVE_CLI} setup token\``,
+        `  Usage unique. Code neuf : \`${NATIVE_CLI} setup token\``,
+      ];
   return [
     "══════════════════════════════════════════════════════════════",
     `  Tentacle — setup code / code d'installation : ${code}`,
     `  http://<this-server>:${port}/setup#code=${code}`,
-    "  (single use · usage unique — new code: `tentacle setup token`)",
+    ...renew,
     "══════════════════════════════════════════════════════════════",
   ];
 }
