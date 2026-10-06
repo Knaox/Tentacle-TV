@@ -47,6 +47,14 @@ export interface StreamPlanInput {
    * se copie si elle est lisible (remux, repli d'un conteneur ou d'un son).
    */
   tier: { totalBitrate: number; height?: number | null } | null;
+  /**
+   * Sans palier : la définition que la SORTIE affiche au plus. Seulement pour
+   * une image que le serveur réencode de toute façon (un codec que l'appareil
+   * ne décode pas, `devicePlaybackVerdict`) : un 4K converti pour un écran
+   * 1080p ne coûte que du serveur. Posé sur une image copiable, il forcerait
+   * son réencodage — l'appelant ne le donne donc qu'à un transcodage.
+   */
+  outputMaxHeight?: number | null;
 }
 
 /** Le transcodage décidé : les paramètres Jellyfin, et ce qu'ils promettent. */
@@ -179,6 +187,10 @@ export function planStream(input: StreamPlanInput): StreamPlan {
     params.VideoBitrate = String(COPY_VIDEO_BITRATE);
     params.AudioBitrate = String(copyBitrate ?? CONVERTED_AUDIO_BITRATE);
     params.TranscodingMaxAudioChannels = String(copiesAudio ? engine.maxAudioChannels : 6);
+    if (input.outputMaxHeight && input.outputMaxHeight > 0) {
+      params.MaxWidth = String(Math.round((input.outputMaxHeight * 16) / 9));
+      params.MaxHeight = String(input.outputMaxHeight);
+    }
     return { params, copiesAudio, audioReason, target: null };
   }
 

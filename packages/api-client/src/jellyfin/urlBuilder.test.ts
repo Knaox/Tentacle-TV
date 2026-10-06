@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MPV_ENGINE, AVPLAYER_ENGINE, type MediaSource } from "@tentacle-tv/shared";
+import { MPV_ENGINE, AVPLAYER_ENGINE, BCM7271_PROFILE, exoPlayerEngineFor, type MediaSource } from "@tentacle-tv/shared";
 import { applyTranscodeTarget, buildStreamUrl, fitServerCappedTranscode, type StreamUrlContext } from "./urlBuilder";
 
 const ctx: StreamUrlContext = {
@@ -76,6 +76,35 @@ describe("buildStreamUrl — ce que lit le moteur (planStream)", () => {
     expect(q.has("MaxWidth")).toBe(false);
     expect(q.get("hevc-rangetype")?.split(",")).toEqual(expect.arrayContaining(["HDR10", "DOVIWithHDR10", "DOVI"]));
     expect(q.get("AudioBitrate")).toBe("768000");
+  });
+});
+
+describe("buildStreamUrl — la conversion d'un codec que l'appareil ne décode pas (AV1 sur la box)", () => {
+  const url = () => buildStreamUrl(ctx, "item", {
+    directPlay: false, useProgressiveRemux: false, engine: exoPlayerEngineFor(BCM7271_PROFILE),
+    transcodeReasons: ["VideoCodecNotSupported"], outputMaxHeight: 1080,
+    sourceAudio: { Codec: "eac3", BitRate: 640_000, Channels: 6 },
+  });
+
+  it("HLS : HEVC puis H.264 demandés, l'AV1 absent — Jellyfin réencode, en 1080p pour l'écran", () => {
+    const q = params(url());
+    expect(url()).toContain("/master.m3u8?");
+    expect(q.get("VideoCodec")).toBe("hevc,h264");
+    expect(q.get("MaxHeight")).toBe("1080");
+    expect(q.get("MaxWidth")).toBe("1920");
+    expect(q.get("TranscodeReasons")).toBe("VideoCodecNotSupported");
+  });
+
+  it("le son que l'appareil lit reste copié (E-AC3 en TS)", () => {
+    const q = params(url());
+    expect(q.get("AudioCodec")?.split(",")).toContain("eac3");
+    expect(q.get("AudioBitrate")).toBe("640000");
+  });
+
+  it("sans définition de sortie, rien n'est imposé ; avec un palier, elle est ignorée", () => {
+    expect(params(buildStreamUrl(ctx, "item", { directPlay: false, useProgressiveRemux: false })).has("MaxHeight")).toBe(false);
+    const tiered = params(buildStreamUrl(ctx, "item", { directPlay: false, maxBitrate: 2_528_000, maxHeight: 540, outputMaxHeight: 1080 }));
+    expect(tiered.get("MaxHeight")).toBe("540");
   });
 });
 
