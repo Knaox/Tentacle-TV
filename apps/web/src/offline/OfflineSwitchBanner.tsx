@@ -35,7 +35,7 @@ const SwitchCard = memo(function SwitchCard({ notice }: { notice: ConnectivityNo
   const [focused, setFocused] = useState(false);
   const countdown = useMessageCountdown(notice.durationMs, hovered || focused, notice.done);
   return (
-    <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 top-4 z-[300] flex justify-center px-4">
+    <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 top-20 z-[300] flex justify-center px-4">
       <div
         className="pointer-events-auto w-[min(28rem,100%)] animate-fade-slide-down"
         onPointerEnter={() => setHovered(true)}
