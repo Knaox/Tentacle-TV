@@ -8,7 +8,7 @@ import { RENDER_TIER_THRESHOLDS, type BenchResult, type DeviceSignals, type Rend
  *
  *   adb shell setprop debug.tentacle.lite 1              Lite forcé (0 : normal forcé)
  *   adb shell setprop debug.tentacle.lite.signals netplus
- *   adb shell setprop debug.tentacle.lite.signals "ram=1900,parts=0x41:0xd03*4,bench=400"
+ *   adb shell setprop debug.tentacle.lite.signals "ram=1900,parts=0x41:0xd03*4,bench=0.5"
  *   adb shell setprop debug.tentacle.lite.signals ""     pour revenir aux vrais signaux
  *
  * Puis relancer l'app. Un profil nommé remplace TOUS les signaux ; des
@@ -38,10 +38,10 @@ export const SIMULATED_DEVICES: Readonly<Record<string, DeviceSignals>> = {
     lowRamDevice: true, totalRamMb: 930, memoryClassMb: 96, coreCount: 4, maxFreqMhz: 1500,
     coreIds: times("0x41:0xd03", 4), soc: "S905Y2", sdkInt: 30, display: { width: 1920, height: 1080 },
   },
-  /** Shield TV Pro 2019 : Tegra X1+, 4 × Cortex-A57 visibles, 3 Go, Android 11. */
+  /** Shield TV Pro 2019 : ses signaux tels que lus le 07/10 (Tegra X1+, 4 × Cortex-A57 visibles, 3 Go, Android 11). */
   shield: {
-    lowRamDevice: false, totalRamMb: 2860, memoryClassMb: 192, coreCount: 4, maxFreqMhz: 2014,
-    coreIds: times("0x41:0xd07", 4), soc: "tegra210b01", sdkInt: 30, display: { width: 3840, height: 2160 },
+    lowRamDevice: false, totalRamMb: 2946, memoryClassMb: 192, coreCount: 4, maxFreqMhz: 2014,
+    coreIds: times("0x41:0xd07", 4), soc: "tegra", sdkInt: 30, display: { width: 3840, height: 2160 },
   },
   /** Un appareil dont rien n'a pu être lu. */
   unknown: {},

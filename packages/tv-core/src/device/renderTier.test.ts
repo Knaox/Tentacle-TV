@@ -3,8 +3,9 @@ import { RENDER_TIER_THRESHOLDS, decideAutoTier, parseRenderTierMode, resolveRen
 import { SIMULATED_DEVICES } from "./signalOverride";
 
 const V = RENDER_TIER_THRESHOLDS.benchVersion;
-const fast: BenchResult = { score: 2400, version: V };
-const slow: BenchResult = { score: 400, version: V };
+/** La Shield TV Pro, mesurée ; une box à A53, estimée. */
+const fast: BenchResult = { score: 1.06, version: V };
+const slow: BenchResult = { score: 0.5, version: V };
 const a53 = (n: number) => Array.from({ length: n }, () => "0x41:0xd03");
 const a73 = (n: number) => Array.from({ length: n }, () => "0x41:0xd09");
 
@@ -48,7 +49,7 @@ describe("le niveau de rendu automatique — le tableau des cas", () => {
   it("dit le détail de sa raison : la mémoire lue, les cœurs, le score", () => {
     expect(decideAutoTier(SIMULATED_DEVICES.netplus).detail).toBe("1890 Mio");
     expect(decideAutoTier({ totalRamMb: 3900, coreCount: 4, coreIds: a53(4) }).detail).toBe("4 × Cortex-A53");
-    expect(decideAutoTier({ totalRamMb: 3900 }, slow).detail).toBe(`400 < ${RENDER_TIER_THRESHOLDS.liteBenchBelow}`);
+    expect(decideAutoTier({ totalRamMb: 3900 }, slow).detail).toBe(`0.50 < ${RENDER_TIER_THRESHOLDS.liteBenchBelow}`);
   });
 });
 

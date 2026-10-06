@@ -58,7 +58,7 @@ describe("la simulation des signaux (propriétés de débogage)", () => {
   });
 
   it("injecte un score de micro-test, à la version courante", () => {
-    expect(parseSignalOverride("bench=400")).toEqual({ replace: false, signals: {}, bench: { score: 400, version: RENDER_TIER_THRESHOLDS.benchVersion } });
+    expect(parseSignalOverride("bench=0.5")).toEqual({ replace: false, signals: {}, bench: { score: 0.5, version: RENDER_TIER_THRESHOLDS.benchVersion } });
   });
 
   it("ignore le vide, l'inconnu et l'illisible", () => {
@@ -69,6 +69,6 @@ describe("la simulation des signaux (propriétés de débogage)", () => {
   });
 
   it("chaque profil tient dans une propriété système (91 caractères) — et les clé=valeur d'un essai typique aussi", () => {
-    expect("ram=1900,lowram=0,cores=4,parts=0x42:0x100*4,freq=1600,soc=BCM7271,bench=400".length).toBeLessThanOrEqual(91);
+    expect("ram=1900,lowram=0,cores=4,parts=0x42:0x100*4,freq=1600,soc=BCM7271,bench=0.5".length).toBeLessThanOrEqual(91);
   });
 });

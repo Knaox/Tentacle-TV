@@ -40,10 +40,10 @@ internal object CpuProbe {
     return total.takeIf { it > 0 }
   }
 
-  /** La plus haute `cpuinfo_max_freq` des cœurs (kHz → MHz). */
+  /** La plus haute `cpuinfo_max_freq` des cœurs (kHz → MHz) ; 0 (émulateur) ne dit rien. */
   private fun maxFreqMhz(indices: List<Int>): Int? = indices
     .mapNotNull { readText("$CPU_DIR/cpu$it/cpufreq/cpuinfo_max_freq")?.trim()?.toLongOrNull() }
-    .maxOrNull()?.let { (it / 1000).toInt() }
+    .maxOrNull()?.let { (it / 1000).toInt() }?.takeIf { it > 0 }
 
   /** MIDR_EL1 : fabricant [31:24], cœur [15:4]. */
   private fun midrId(index: Int): String? {

@@ -87,9 +87,14 @@ export const RENDER_TIER_THRESHOLDS = {
    *  passe entre les deux, à 2,5 Gio. */
   liteRamMaxMb: 2560,
   /** La version du micro-test dont `liteBenchBelow` est le barème (miroir de `MicroBench.kt`). */
-  benchVersion: 1,
-  /** Sous ce score, le micro-test dit l'appareil faible. */
-  liteBenchBelow: 900,
+  benchVersion: 2,
+  /** Sous ce score (unités par milliseconde), le micro-test dit l'appareil
+   *  faible. Mesuré (07/10, app de mesure release) : Shield TV Pro 1,06,
+   *  stable à 1 % sur trois lancements. Estimé : une box à 4 × A53/B53 à
+   *  1,6 GHz ≈ 0,45-0,55 (IPC ~0,55-0,6 d'un A57, fréquence × 0,8). Le seuil
+   *  laisse 50 % de marge à la Shield, et passe sous elle la box et tout ce
+   *  qui lui ressemble. À confirmer sur une vraie box. */
+  liteBenchBelow: 0.7,
 } as const;
 
 /** Rien de lu : ni mémoire, ni drapeau, ni cœurs. */
@@ -124,7 +129,7 @@ export function decideAutoTier(signals: DeviceSignals, bench?: BenchResult | nul
   }
   const measured = usableBench(bench);
   if (measured && measured.score < t.liteBenchBelow) {
-    return { tier: "lite", reason: "slowBench", detail: `${Math.round(measured.score)} < ${t.liteBenchBelow}` };
+    return { tier: "lite", reason: "slowBench", detail: `${measured.score.toFixed(2)} < ${t.liteBenchBelow}` };
   }
   return knowsNothing(signals) && !measured ? { tier: "normal", reason: "unknown" } : { tier: "normal", reason: "capable" };
 }

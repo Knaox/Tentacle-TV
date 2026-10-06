@@ -1,5 +1,6 @@
 package com.tentacletv.device
 
+import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.facebook.react.ReactApplication
 import com.facebook.react.bridge.Arguments
@@ -8,6 +9,7 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.UiThreadUtil
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -20,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Débogage (puis relancer l'app) :
  *   adb shell setprop debug.tentacle.lite 1|0              forcer Lite / normal
  *   adb shell setprop debug.tentacle.lite.signals netplus  simuler un appareil
- *   adb shell setprop debug.tentacle.lite.bench now|0      micro-test aussitôt / jamais
+ *   adb shell setprop debug.tentacle.lite.bench now|rerun|0  micro-test aussitôt / refait après 8 s / jamais
  *   adb logcat -s TentacleLite                             signaux, micro-test, décision
  */
 class DeviceModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
@@ -89,14 +91,22 @@ class DeviceModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
     val prop = SystemProps.get(PROP_BENCH)?.trim()
     if (prop == "0") return
     val now = prop == "now"
-    if (!now && !store.benchNeeded(signature)) return
+    val forced = now || prop == "rerun"
+    // Une build debuggable n'emploie pas le code précompilé du système (ART) :
+    // le score s'y effondre (mesuré : ~0 à l'émulateur) et ferait passer tout
+    // appareil de développement en Lite. Il ne s'y garde jamais ; « now » et
+    // « rerun » le mesurent quand même, pour le journal.
+    val debuggable = reactApplicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+    if (debuggable && !forced) return
+    if (!forced && !store.benchNeeded(signature)) return
     if (!benchScheduled.compareAndSet(false, true)) return
     Thread({
       try {
         if (!now) Thread.sleep(BENCH_DELAY_MS)
         val result = MicroBench.run()
-        store.saveBench(result, signature)
-        Log.i(DeviceSignals.TAG, "micro-test v${MicroBench.VERSION} : score %.0f en ${result.durationMs} ms (${result.slices} tranches)".format(result.score))
+        if (!debuggable) store.saveBench(result, signature)
+        val kept = if (debuggable) " — build debuggable : non gardé" else ""
+        Log.i(DeviceSignals.TAG, "micro-test v${MicroBench.VERSION} : score %.2f en ${result.durationMs} ms (${result.slices} tranches)$kept".format(Locale.ROOT, result.score))
       } catch (_: InterruptedException) {
         // Le processus s'en va : le micro-test se refera.
       }
