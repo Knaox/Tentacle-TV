@@ -4,7 +4,7 @@ import {
   MATRIX_AUDIO, MATRIX_SUBTITLES, MATRIX_VIDEO, type MatrixAudio, type MatrixSubtitle, type MatrixVideo,
 } from "./deviceMatrix.fixtures";
 import { devicePlaybackVerdict, type AudioPath, type DevicePlayMethod, type SubtitlePath } from "./devicePlaybackVerdict";
-import { BCM7271_PROFILE } from "./simulatedDeviceProfiles";
+import { BCM7271_PROFILE, SHIELD_PRO_2019_PROFILE } from "./simulatedDeviceProfiles";
 
 /** Ce que l'image d'une ligne de la matrice devient, sur un appareil. */
 interface VideoExpectation {
@@ -94,6 +94,46 @@ describe("matrice de la fiche — BCM7271 (box net+, simulée)", () => {
       notice: "av1Converted",
       maxHeight: 1080,
     });
+  });
+});
+
+/**
+ * La Shield TV Pro 2019, RELEVÉE le 07/10 (téléviseur 4K HDR10 + Dolby Vision,
+ * ampli qui prend tout) : tout se lit tel quel — le Dolby Vision 5 par son
+ * décodeur, le 7 réécrit en 8.1 — sauf l'AV1 (aucun décodeur matériel :
+ * converti par le serveur, en 4K puisque l'écran et le H.264 la tiennent).
+ */
+const SHIELD_VIDEO: Record<MatrixVideo, VideoExpectation> = {
+  "H.264 1080p": DIRECT,
+  "HEVC 8 bits 1080p": DIRECT,
+  "HEVC 8 bits 4K": DIRECT,
+  "HEVC 10 bits 1080p": DIRECT,
+  "HEVC 10 bits 4K": DIRECT,
+  "HDR10 4K": DIRECT,
+  "DV P5 4K": DIRECT,
+  "DV P7 4K": DIRECT,
+  "DV P8 4K": DIRECT,
+  "VP9 4K": DIRECT,
+  "AV1 4K": { method: "Transcode", reason: "VideoCodecNotSupported", notice: "av1Converted" },
+};
+
+/** Le son sur la Shield : tout part tel quel vers l'ampli, sauf l'AAC, décodé. */
+const SHIELD_AUDIO: Record<MatrixAudio, AudioPath> = {
+  "AAC 2.0": "decoded",
+  "AC3 5.1": "passthrough",
+  "E-AC3 Atmos": "passthrough",
+  "TrueHD Atmos": "passthrough",
+  "DTS-HD MA": "passthrough",
+};
+
+describe("matrice de la fiche — Shield TV Pro 2019 (relevée)", () => {
+  it("11 images × 5 sons × 3 sous-titres : chaque case a son verdict", () => {
+    runMatrix(SHIELD_PRO_2019_PROFILE, SHIELD_VIDEO, SHIELD_AUDIO);
+  });
+
+  it("le VP9 10 bits (Profile 2) : la Shield n'annonce que le Profile 0 — converti, jamais décodé en logiciel", () => {
+    const vp9hdr = { ...MATRIX_VIDEO["VP9 4K"], Profile: "Profile 2", BitDepth: 10, VideoRangeType: "HDR10" };
+    expect(devicePlaybackVerdict({ profile: SHIELD_PRO_2019_PROFILE, video: vp9hdr }).reasons).toEqual(["VideoProfileNotSupported"]);
   });
 });
 

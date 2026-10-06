@@ -3,7 +3,7 @@ import type { DeviceMediaProfile } from "./deviceMediaProfile";
 import { deviceHdr, deviceReadsAudio, exoPlayerEngineFor, mpvEngineFor } from "./deviceEngines";
 import { AVPLAYER_ENGINE, EXOPLAYER_ENGINE, MPV_ENGINE, withHdr } from "./engineCapabilities";
 import { engineTranscodingProfiles } from "./engineProfiles";
-import { BCM7271_PROFILE } from "./simulatedDeviceProfiles";
+import { BCM7271_PROFILE, SHIELD_PRO_2019_PROFILE } from "./simulatedDeviceProfiles";
 import { planStream } from "./streamPlan";
 
 /** Une vieille box : H.264 seul, sans HEVC ni sortie HDMI multicanal. */
@@ -92,6 +92,34 @@ describe("ExoPlayer d'après l'appareil — cas limites", () => {
     expect(deviceReadsAudio(passOnly, "dts")).toBe(true);
     expect(deviceReadsAudio(passOnly, "truehd")).toBe(false);
     expect(deviceReadsAudio(BCM7271_PROFILE, "TrueHD")).toBe(true);
+  });
+});
+
+describe("Shield relevée, face à l'ancienne liste fixe d'ExoPlayer", () => {
+  const exo = exoPlayerEngineFor(SHIELD_PRO_2019_PROFILE);
+
+  it("mêmes sons ; codecs vidéo + VP9 (sans effet en TS) ; HDR10+ et Dolby Vision 5 en plus", () => {
+    expect(exo.audioCodecs).toEqual(EXOPLAYER_ENGINE.audioCodecs);
+    expect(exo.maxAudioChannels).toBe(EXOPLAYER_ENGINE.maxAudioChannels);
+    expect(EXOPLAYER_ENGINE.videoCodecs).toEqual(["hevc", "h264"]);
+    expect(exo.videoCodecs).toEqual(["hevc", "h264", "vp9"]);
+    expect(EXOPLAYER_ENGINE.hdr).toEqual({ hdr10: true, hdr10Plus: false, hlg: true, dolbyVision: false, dolbyVisionEnhancementLayer: false });
+    expect(exo.hdr).toEqual({ hdr10: true, hdr10Plus: true, hlg: true, dolbyVision: true, dolbyVisionEnhancementLayer: false });
+  });
+
+  it("un palier 1080p : la même URL qu'avant, à la plage HEVC près (sans effet : un réencodage perd le HDR)", () => {
+    const tier = { totalBitrate: 8_384_000, height: 1080 };
+    const audio = { Codec: "eac3", BitRate: 640_000, Channels: 6 };
+    const before = planStream({ engine: EXOPLAYER_ENGINE, audio, tier }).params;
+    const after = planStream({ engine: exo, audio, tier }).params;
+    expect({ ...after, "hevc-rangetype": "" }).toEqual({ ...before, "hevc-rangetype": "" });
+    expect(after["hevc-rangetype"]).toBe("SDR,HDR10,HDR10Plus,HLG,DOVI,DOVIWithSDR,DOVIWithHDR10,DOVIWithHDR10Plus,DOVIWithHLG");
+  });
+
+  it("mpv sur la Shield : la déclaration fixe, sauf l'AV1 (aucun décodeur matériel)", () => {
+    const mpv = mpvEngineFor(SHIELD_PRO_2019_PROFILE);
+    expect(mpv).toEqual({ ...MPV_ENGINE, engine: mpv.engine, videoCodecs: ["hevc", "h264", "vp9"] });
+    expect(planStream({ engine: mpv, audio: null, tier: null }).params.VideoCodec).toBe("hevc,h264");
   });
 });
 
