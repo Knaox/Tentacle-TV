@@ -63,6 +63,8 @@ export function useHomeHero(
   inView: boolean,
 ): HomeHero {
   const { t } = useTranslation();
+  // Les raisons d'une recommandation se disent dans l'espace `reco`, comme sur « Pour vous ».
+  const { t: tReco } = useTranslation("reco");
   const client = useJellyfinClient();
   const { items, source, recoOf } = useHeroSources();
   const fromResume = source === "resume";
@@ -103,11 +105,11 @@ export function useHomeHero(
       art: face,
       // « Pour vous » se dit comme sur sa page : l'accroche, et la raison du titre.
       kicker: fromResume ? t("common:resumeWatching") : reco ? t("reco:heroKicker") : undefined,
-      reason: reco?.reasons.map((reason) => reasonToText(reason, t)).find((text): text is string => !!text),
+      reason: reco?.reasons.map((reason) => reasonToText(reason, tReco)).find((text): text is string => !!text),
       page: { index: position >= 0 ? position : safeIndex, count: items.length },
       inWatchlist: toggles.watchlist,
     });
-  }, [client, t, current, face, fromResume, source, recoOf, items, safeIndex, toggles.watchlist]);
+  }, [client, t, tReco, current, face, fromResume, source, recoOf, items, safeIndex, toggles.watchlist]);
 
   // Des gestes STABLES, qui lisent l'état du moment : le héros ne se
   // redessine pas quand seule la lumière du fond change.
