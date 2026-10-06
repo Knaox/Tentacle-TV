@@ -121,7 +121,8 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
       return moveTo(state, state.data, previousStep(stepsOf(state.data), state.step));
     case "enter": {
       const data = { ...state.data, context: action.context, clientUrl: action.context.jellyfin.clientUrl ?? "" };
-      return moveTo(state, data, action.step);
+      // L'écran de reprise hors parcours (une base fournie par la pile mais injoignable) : le choix du Jellyfin, qui le dira.
+      return moveTo(state, data, stepsOf(data).includes(action.step) ? action.step : "jellyfin");
     }
     case "choose": {
       const before = state.data.context?.flow.selection?.url ?? null;

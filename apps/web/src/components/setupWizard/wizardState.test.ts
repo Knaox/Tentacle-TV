@@ -98,4 +98,8 @@ describe.each([
     expect(state.step).toBe("signIn");
     expect(state.data.credentials).toEqual({ username: "Knaoxtest", password: "x" });
   });
+
+  it("un écran de reprise hors parcours n'est jamais montré : le choix du Jellyfin à sa place", () => {
+    expect(run(start(), { type: "enter", context: context({}, fromEnv), step: "libraries" }).step).toBe("jellyfin");
+  });
 });
