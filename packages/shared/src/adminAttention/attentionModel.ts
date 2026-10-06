@@ -3,6 +3,7 @@ import type { CompatStatus } from "../jellyfinCompat/compatVerdict";
 import type { SetupCheckId, SetupLevel, SetupState } from "../jellyfinCompat/setupContract";
 import type { LinkCheck, LinkIssue } from "../serverLinks/serverLinksVerdict";
 import type { ServerUpdateStatus } from "../serverUpdate/serverUpdateStatus";
+import { isJellyfinTodo, SEGMENTS_CHECK } from "./jellyfinAdvice";
 
 /**
  * Ce qui demande l'attention de l'administrateur, en tête de la vue
@@ -149,7 +150,8 @@ function jellyfinItems(s: AttentionSources): { variant: string | null; items: st
     // Les greffons de passages ont leur entrée à eux (`segmentPlugins`).
     if (check.level === "optional" || check.id === SEGMENTS_CHECK) continue;
     restart ||= check.state === "pending-restart";
-    if (check.state !== "todo") continue;
+    // La même règle que l'écran « Réglages conseillés » de l'assistant (`jellyfinAdvice.ts`).
+    if (!isJellyfinTodo(check)) continue;
     items.push(`setup:${check.id}`);
     essential ||= check.level === "essential";
   }
@@ -157,8 +159,6 @@ function jellyfinItems(s: AttentionSources): { variant: string | null; items: st
   if (s.jellyfinVersion === "partial") items.push("partial");
   return items.length > 0 ? { variant: essential ? "essential" : null, items } : null;
 }
-
-const SEGMENTS_CHECK = "segmentsProvider";
 
 /**
  * Les greffons de passages (Intro Skipper, TheIntroDB, SkipMe.db) : il en
