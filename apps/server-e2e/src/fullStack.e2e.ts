@@ -42,8 +42,10 @@ describe("pile complète, Jellyfin vierge — l'assistant au navigateur", () => 
       await button("Commencer").click();
       expect(await page.getByLabel("Code d'installation").inputValue()).toBe(code);
       await button("Valider le code").click();
-      await page.getByText(/Jellyfin 12[.\d]* trouvé/).waitFor();
-      await button("Continuer").click();
+      // Le Jellyfin de la pile, en tête et choisi d'office (les autres restent proposés).
+      await page.getByText("Dans cette pile").waitFor({ timeout: 60_000 });
+      expect(await page.getByRole("radio", { name: /Dans cette pile/ }).isChecked()).toBe(true);
+      await button("Configurer ce Jellyfin").click();
       await page.getByLabel("Nom d'utilisateur").fill(USER);
       await page.getByLabel("Mot de passe", { exact: true }).fill(PASSWORD);
       await page.getByLabel("Confirmez le mot de passe").fill(PASSWORD);

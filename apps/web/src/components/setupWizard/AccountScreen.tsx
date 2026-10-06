@@ -49,7 +49,7 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
             ...credentials,
             uiCulture: uiCultureOf(locale.language),
             // Le voisin s'appellerait du nom de son conteneur (« d716b0d5ac48 ») : il prend celui de Tentacle.
-            ...(wizard.data.context?.provisioner === "docker-sibling" ? { serverName: "Tentacle" } : {}),
+            ...(wizard.data.probe?.inStack ? { serverName: "Tentacle" } : {}),
             metadataLanguage: locale.language,
             metadataCountry: locale.country,
           });
@@ -58,10 +58,10 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
         wizard.patch({ credentials });
       } else if (useKey) {
         await setupApi.connect({ url: wizard.data.jellyfinUrl, apiKey: apiKey.trim() });
-        wizard.patch({ mode: "key", credentials: null });
+        wizard.patch({ mode: "key", credentials: null, context: await setupApi.context() });
       } else {
         await setupApi.connect({ url: wizard.data.jellyfinUrl, username: username.trim(), password });
-        wizard.patch({ mode: "connect", credentials: { username: username.trim(), password } });
+        wizard.patch({ mode: "connect", credentials: { username: username.trim(), password }, context: await setupApi.context() });
       }
       wizard.next();
     } catch (err) {
@@ -108,7 +108,8 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
             ) : null}
           </>
         )}
-        <LocaleFields locale={locale} onChange={setLocale} />
+        {/* Un Jellyfin déjà configuré garde sa langue : l'écran suivant la propose, sans l'imposer. */}
+        {creating ? <LocaleFields locale={locale} onChange={setLocale} /> : null}
         <SetupErrorLine code={error} />
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <button type="submit" disabled={pending || !canSubmit} className={primary}>

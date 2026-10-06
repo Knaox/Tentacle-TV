@@ -163,6 +163,8 @@ export function SetupCheckDetails({ check, jellyfinVersion }: { check: SetupChec
       return <Libraries check={check} onKey="librariesOn" offKey="librariesOff" />;
     case "hardwareAcceleration":
       return <Line>{check.current && check.current.toLowerCase() !== "none" ? t("hardwareCurrent", { value: check.current }) : t("hardwareNone")}</Line>;
+    case "hevcEncoding":
+      return <Line>{check.current === "on" ? t("hevcOn") : check.state === "not-needed" ? t("hevcNoHardware") : t("hevcOff")}</Line>;
     case "chapterImages": {
       const on = splitLibraries(check).on;
       return <Line>{on.length > 0 ? t("chaptersOn", { names: on.join(" · ") }) : t("chaptersOff")}</Line>;

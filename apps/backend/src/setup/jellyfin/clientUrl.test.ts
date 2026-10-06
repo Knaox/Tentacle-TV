@@ -10,6 +10,11 @@ describe("l'adresse de Jellyfin donnée aux applications", () => {
     expect(clientJellyfinUrl({ deployment: full, browserHost: "nas.local", jellyfinUrl: "http://jellyfin:8096" })).toBe("http://nas.local:47896");
   });
 
+  it("pile complète, un AUTRE Jellyfin choisi : son adresse à lui, pas le port de la pile", () => {
+    expect(clientJellyfinUrl({ deployment: full, browserHost: "172.16.1.30", jellyfinUrl: "http://172.16.1.30:8096" })).toBe("http://172.16.1.30:8096");
+    expect(clientJellyfinUrl({ deployment: full, browserHost: "nas.local", jellyfinUrl: "http://host.docker.internal:8097" })).toBe("http://nas.local:8097");
+  });
+
   it("pile complète sans port publié déclaré : rien plutôt que 8096 supposé", () => {
     expect(clientJellyfinUrl({ deployment: { ...full, jellyfinHostPort: null }, browserHost: "172.16.1.30" })).toBeNull();
   });

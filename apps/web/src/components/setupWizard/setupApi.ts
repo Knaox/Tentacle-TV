@@ -6,8 +6,11 @@ import {
   type JellyfinDiscoveryResponse,
   type JellyfinInitializeRequest,
   type JellyfinProbeResult,
+  type JellyfinSetupReport,
   type LibrariesRequest,
   type LibraryOutcome,
+  type SetupAdviceOutcome,
+  type SetupAdviceRequest,
   type SetupCompleteRequest,
   type SetupCompleteResponse,
   type SetupContext,
@@ -128,6 +131,10 @@ export const setupApi = {
   startSegments: () => call<unknown>("/jellyfin/segments", { method: "POST" }),
   segmentsStatus: () => call<unknown>("/jellyfin/segments"),
   createLibraries: (body: LibrariesRequest) => call<LibraryOutcome[]>("/jellyfin/libraries", { method: "POST", body }),
+  /** Jellyfin déjà configuré : l'état de ses réglages, le même rapport que l'administration. */
+  recommended: () => call<JellyfinSetupReport>("/jellyfin/recommended"),
+  /** Seulement ce qui a été coché ; une issue par geste. */
+  applyAdvice: (body: SetupAdviceRequest) => call<SetupAdviceOutcome[]>("/jellyfin/recommended", { method: "POST", body }),
   async complete(body: SetupCompleteRequest): Promise<SetupCompleteResponse> {
     const result = await call<SetupCompleteResponse>("/complete", { method: "POST", body, withCredentials: true });
     memorySession = null;

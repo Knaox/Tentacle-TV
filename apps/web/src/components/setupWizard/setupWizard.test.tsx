@@ -45,8 +45,11 @@ vi.stubGlobal("history", { replaceState: () => undefined });
 
 const { WelcomeScreen, CodeScreen } = await import("./IntroScreens");
 const { JellyfinScreen } = await import("./JellyfinScreen");
+const { JellyfinList } = await import("./JellyfinList");
 const { AccountScreen } = await import("./AccountScreen");
-const { ApplyScreen, RecapScreen } = await import("./RecapApplyScreens");
+const { RecapScreen } = await import("./RecapApplyScreens");
+const { ApplyScreen } = await import("./ApplyScreen");
+const { AdviceRow, RecommendedScreen } = await import("./RecommendedScreen");
 const { DoneScreen } = await import("./FinishScreens");
 const { QrCode } = await import("./QrCode");
 type Wizard = import("./useWizard").Wizard;
@@ -57,7 +60,7 @@ function context(over: Partial<SetupContext> = {}): SetupContext {
     stack: "db",
     provisioner: "existing-instance",
     database: { configured: true, connected: true, fromEnv: true },
-    jellyfin: { url: null, suggestedUrl: "http://host.docker.internal:8096", configured: false, claimed: false, clientUrl: null },
+    jellyfin: { url: null, suggestedUrl: "http://host.docker.internal:8096", configured: false, claimed: false, joined: false, clientUrl: null },
     mediaHostPath: null,
     mediaFolders: null,
     os: null,
@@ -82,6 +85,8 @@ function wizard(data: Partial<Wizard["data"]> = {}): Wizard {
       existing: [],
       plans: [],
       outcomes: null,
+      advice: null,
+      adviceOutcomes: null,
       segments: undefined,
       session: null,
       resumed: false,
@@ -124,7 +129,7 @@ describe("les écrans de l'assistant", () => {
   });
 
   it("Jellyfin déjà choisi (retour en arrière) : la liste le garde, coché", () => {
-    const probe = { url: "http://172.16.1.30:47896", version: "12.1.0", serverName: "Neuf", blank: true, compatible: true, clientUrl: "http://172.16.1.30:47896" };
+    const probe = { url: "http://172.16.1.30:47896", version: "12.1.0", serverName: "Neuf", serverId: "neuf", blank: true, inStack: false, compatible: true, clientUrl: "http://172.16.1.30:47896" };
     const out = html(<JellyfinScreen wizard={wizard({ probe })} />);
     expect(out).toContain('role="radiogroup"');
     expect(out).toMatch(/type="radio"[^>]*checked=""[^>]*value="http:\/\/172\.16\.1\.30:47896"/);
@@ -136,6 +141,30 @@ describe("les écrans de l'assistant", () => {
     const out = html(<JellyfinScreen wizard={wizard({ context: context({ stack: "full", provisioner: "docker-sibling" }) })} />);
     expect(out).toContain("jfSubtitleSibling");
     expect(out).not.toContain("jfUrlHint");
+  });
+
+  it("la liste : celui de la pile en tête, puis les neufs, puis les déjà configurés — chacun avec son état et son adresse", () => {
+    const entry = (url: string, blank: boolean, inStack = false) => ({
+      url, serverId: url, version: "10.11.11", serverName: url.split(":")[1].slice(2), blank, inStack, compatible: true, clientUrl: url,
+    });
+    const out = html(
+      <JellyfinList
+        servers={[entry("http://jellyfin:8096", true, true), entry("http://salon:8096", false), entry("http://neuf:8097", true)]}
+        selected="http://jellyfin:8096"
+        onSelect={() => undefined}
+        stackStarting={false}
+      />,
+    );
+    const order = ["jfInStack", "jfGroup_fresh", "http://neuf:8097", "jfGroup_configured", "http://salon:8096"].map((needle) => out.indexOf(needle));
+    expect(order.every((index, i) => index >= 0 && (i === 0 || index > order[i - 1]))).toBe(true);
+    expect(out).toMatch(/type="radio"[^>]*checked=""[^>]*value="http:\/\/jellyfin:8096"/);
+    expect(out).toContain("jfState_configured");
+    expect(out.replaceAll("&quot;", '"')).toContain('jfOptionLine{"host":"salon","port":"8096","version":"10.11.11"}');
+  });
+
+  it("le Jellyfin de la pile qui démarre garde sa place en tête", () => {
+    const out = html(<JellyfinList servers={[]} selected={null} onSelect={() => undefined} stackStarting />);
+    expect(out).toContain("jfStackStarting");
   });
 
   it("le compte : créé (avec confirmation) ou vérifié (avec la clé en recours)", () => {
@@ -155,7 +184,7 @@ describe("les écrans de l'assistant", () => {
       <RecapScreen
         wizard={wizard({
           jellyfinUrl: "http://jellyfin:8096",
-          probe: { url: "http://jellyfin:8096", version: "12.1.0", serverName: "Maison", blank: true, compatible: true, clientUrl: "http://172.16.1.30:47896" },
+          probe: { url: "http://jellyfin:8096", version: "12.1.0", serverName: "Maison", serverId: "maison", blank: true, inStack: true, compatible: true, clientUrl: "http://172.16.1.30:47896" },
           credentials: { username: "Knaoxtest", password: "x" },
           clientUrl: "http://172.16.1.30:47896",
           plans: [{ name: "Films", type: "movies", paths: ["/media/films"] }],
@@ -171,6 +200,53 @@ describe("les écrans de l'assistant", () => {
     expect(out).toContain("Knaoxtest");
     expect(out).toContain("Films (/media/films)");
     expect(out).not.toContain("value=\"x\"");
+  });
+
+  it("Jellyfin déjà configuré : l'écran des réglages conseillés, facultatifs, avec « Passer »", () => {
+    const out = html(<RecommendedScreen wizard={wizard({ mode: "connect" })} />);
+    expect(out).toContain("recTitle");
+    expect(out).toContain("recSkip");
+    expect(out).not.toContain("libraryAdd");
+  });
+
+  it("un conseil dit la valeur en place et la conseillée ; réglé autrement, il n'est pas coché et le dit", () => {
+    const language = { id: "metadataLanguage" as const, gesture: "setMetadataLanguage" as const, current: "en · US", recommended: "fr · FR", preselected: false, targets: [] };
+    const other = html(<AdviceRow advice={language} checked={false} onToggle={() => undefined} />).replaceAll("&quot;", '"');
+    // Les codes deviennent des mots : la langue et le pays, de chaque côté de la flèche.
+    expect(other).toMatch(/recChange\{"current":"lang_en.* · country_US.*","recommended":"lang_fr.* · country_FR/);
+    expect(other).toContain("recSetOtherwise");
+    expect(other).not.toContain('checked=""');
+    const trickplay = { id: "trickplay" as const, gesture: "enableTrickplay" as const, current: "off", recommended: "on", preselected: true, targets: ["Séries"] };
+    const fixed = html(<AdviceRow advice={trickplay} checked onToggle={() => undefined} />).replaceAll("&quot;", '"');
+    expect(fixed).toMatch(/type="checkbox"[^>]*checked=""/);
+    expect(fixed).toContain('recChange{"current":"recValue_off","recommended":"recValue_on"}');
+    expect(fixed).toContain('recTargetsLibraries{"names":"Séries"}');
+    expect(fixed).not.toContain("recSetOtherwise");
+  });
+
+  it("le récapitulatif d'un Jellyfin déjà configuré : rien de créé, les réglages cochés", () => {
+    const out = html(
+      <RecapScreen
+        wizard={wizard({
+          mode: "connect",
+          credentials: { username: "Knaoxtest", password: "x" },
+          existing: [{ name: "Films", type: "movies", paths: ["/m"] }, { name: "Séries", type: "tvshows", paths: ["/s"] }],
+          advice: { segments: true, actions: ["enableTrickplay"], ids: ["segmentsProvider", "trickplay"] },
+        })}
+      />,
+    ).replaceAll("&quot;", '"');
+    expect(out).toContain('recapLibrariesKept{"count":2}');
+    expect(out).toContain("rec_segmentsProvider · rec_trickplay");
+    expect(out).not.toContain("recapLocale");
+  });
+
+  it("l'installation d'un Jellyfin déjà configuré : seulement ce qui est coché, aucune bibliothèque", () => {
+    const joined = html(<ApplyScreen wizard={wizard({ mode: "connect", advice: { segments: false, actions: ["enableTrickplay"], ids: ["trickplay"] } })} onSession={() => undefined} />);
+    expect(joined).not.toContain("segmentPlugins:wizardLine");
+    expect(joined).toContain("applyAdvice");
+    expect(joined).not.toContain("applyLibraries");
+    const withSegments = html(<ApplyScreen wizard={wizard({ mode: "connect", advice: { segments: true, actions: [], ids: ["segmentsProvider"] } })} onSession={() => undefined} />);
+    expect(withSegments.indexOf("segmentPlugins:wizardLine")).toBeLessThan(withSegments.indexOf("applyAdvice"));
   });
 
   it("l'installation règle d'abord la détection des passages ; un échec se dit et n'arrête rien", () => {

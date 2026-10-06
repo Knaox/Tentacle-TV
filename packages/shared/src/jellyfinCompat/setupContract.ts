@@ -18,6 +18,7 @@ export type SetupCheckId =
   | "segmentsProvider"
   | "realtimeMonitor"
   | "hardwareAcceleration"
+  | "hevcEncoding"
   | "chapterImages";
 
 /** Ce que coûte de s'en passer : un pan de Tentacle, un confort, ou rien de visible. */
@@ -39,7 +40,8 @@ export type SetupActionId =
   | "installChapterSegments"
   | "generateTrickplay"
   | "scanMediaSegments"
-  | "refreshMissingMetadata";
+  | "refreshMissingMetadata"
+  | "enableHevcEncoding";
 
 /** Une bibliothèque de films, de séries ou mixte, et ce réglage chez elle. */
 export interface SetupLibrary {

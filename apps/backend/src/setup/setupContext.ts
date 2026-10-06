@@ -1,7 +1,7 @@
 import { getDatabaseUrlSource, hasDatabaseUrl, hasPrisma } from "../services/db";
 import type { FastifyRequest } from "fastify";
 import { clientUrlFor } from "./jellyfin/clientUrlFor";
-import { claimedAdminId, storedJellyfin } from "./setupStore";
+import { chosenOverStack, claimedAdminId, joinedConfiguredJellyfin, storedJellyfin } from "./setupStore";
 import { setupRuntime } from "./setupRuntime";
 import type { SetupContext } from "./setupWizardContract";
 
@@ -12,9 +12,11 @@ import type { SetupContext } from "./setupWizardContract";
 export function buildSetupContext(request: FastifyRequest): SetupContext {
   const { deployment, os, provisioner } = setupRuntime();
   // Pile complète : un Jellyfin enregistré qui n'est pas celui de la pile ne compte pas
-  // (une base reprise d'un autre essai) — le verrouillage du voisin l'oubliera.
+  // (une base reprise d'un autre essai) — le verrouillage du voisin l'oubliera —, sauf
+  // s'il a été choisi EXPRÈS dans l'assistant.
   const recorded = storedJellyfin();
-  const stored = recorded && (!deployment.siblingUrl || recorded.url === deployment.siblingUrl) ? recorded : null;
+  const sibling = deployment.siblingUrl;
+  const stored = recorded && (!sibling || recorded.url === sibling || recorded.url === chosenOverStack()) ? recorded : null;
   return {
     deployment: deployment.deployment,
     stack: deployment.stack,
@@ -28,7 +30,9 @@ export function buildSetupContext(request: FastifyRequest): SetupContext {
       url: stored?.url ?? null,
       suggestedUrl: provisioner.suggestedUrl,
       configured: stored !== null,
-      claimed: claimedAdminId() !== null,
+      // Le verrouillage ne compte que tant que le voisin est le Jellyfin relié.
+      claimed: claimedAdminId() !== null && (!sibling || stored?.url === sibling),
+      joined: stored !== null && joinedConfiguredJellyfin(),
       clientUrl: clientUrlFor(request, stored?.url ?? null),
     },
     mediaHostPath: deployment.mediaHostPath,

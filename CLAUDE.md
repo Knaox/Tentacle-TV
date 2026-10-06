@@ -543,19 +543,25 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   ses onglets (Portainer, `docker logs <ID>`, Compose, NAS, natif) ; aucun texte ne suppose `docker
   compose`. Refus = `{ error: <SetupErrorCode> }`, jamais un message brut ni une réponse de Jellyfin.
   Contrat : `packages/shared/src/setupWizard/setup{Wizard,Discovery}Contract.ts`, recopiés dans le backend
-  (test miroir). **Pile complète : SON Jellyfin et lui seul** (`JELLYFIN_INTERNAL_URL`, l'adresse du
-  navigateur ignorée), prouvé sur un sous-réseau du conteneur (`jellyfin/siblingCheck.ts` — un service
-  renommé envoie le nom au DNS du réseau local) ; un Jellyfin étranger gardé par une base reprise est
-  oublié ; le voisin est **verrouillé au démarrage** (`claimed`) puis pris par le compte choisi. Ailleurs,
-  `GET /jellyfin/discover` liste les Jellyfin joignables (UDP 7359, hôte du navigateur + passerelle sur
-  les ports courants, bornée, adresses privées seulement). L'adresse de Jellyfin des APPLICATIONS
+  (test miroir). **Pile complète : SON Jellyfin en tête et choisi d'office**, joint par
+  `JELLYFIN_INTERNAL_URL` (même vu par son port publié : même identifiant → lui, `jellyfin/stackTarget.ts`),
+  prouvé sur un sous-réseau du conteneur (`jellyfin/siblingCheck.ts` — un service renommé envoie le nom au
+  DNS du réseau local) ; le voisin est **verrouillé au démarrage** (`claimed`) puis pris par le compte
+  choisi. Les AUTRES Jellyfin restent choisissables : la clé du voisin verrouillé est mise de côté (un retour
+  sur lui la reprend), le choix survit au redémarrage (`jellyfin_stack_choice`) ; un Jellyfin étranger gardé
+  par une base reprise SANS ce choix est oublié. `GET /jellyfin/discover` liste TOUS les Jellyfin joignables
+  (UDP 7359, hôte du navigateur + passerelle sur les ports courants, bornée, adresses privées seulement),
+  celui de la pile en tête. **Un Jellyfin DÉJÀ configuré** (`joined`) : compte existant, AUCUNE bibliothèque
+  créée, écran « Réglages conseillés » — la règle du tableau de bord (`adminAttention/jellyfinAdvice.ts`),
+  les gestes de l'admin (`/jellyfin/recommended`, liste fermée), seulement ce qui est coché. L'adresse de Jellyfin des APPLICATIONS
   (`jellyfin_private_url`, `jellyfin/clientUrl.ts`) = hôte du navigateur + `JELLYFIN_HOST_PORT`, jamais un
   nom Docker, ni 8096 supposé, ni l'IP de la passerelle. Jamais de `prisma db push` (il supprime les
   tables des extensions).
 - **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, règle
   pure `wizardModel.ts`, chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
   le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
-  le parcours que si `codeRequired` ; la langue des métadonnées est sous le compte (plus d'écran à part).
+  le parcours que si `codeRequired` ; la langue des métadonnées est sous le compte (plus d'écran à part) —
+  pour un Jellyfin neuf seulement. Liste Jellyfin : `JellyfinList` (pile, neufs, déjà configurés).
 - **`trustProxy` limité aux voisins** (`services/trustedProxies.ts` : boucle locale, RFC 1918, ULA, réseaux
   Docker, + `TRUSTED_PROXIES`) ; l'adresse réelle d'un client se lit par `getRealClientIp`, jamais
   `request.ip` (compteur de débit, réseau local, journaux). Docker Desktop/colima perdent l'adresse source :

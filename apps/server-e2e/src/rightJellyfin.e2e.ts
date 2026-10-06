@@ -118,12 +118,16 @@ describe("pile Portainer : le bon Jellyfin, la bonne adresse, sans code depuis l
     expect(ctx.jellyfin.clientUrl).toBe(`http://${BROWSER_HOST}:${PORTS.jellyfin}`);
   });
 
-  it("la sonde et la découverte ne rendent que le Jellyfin de la pile, quelle que soit l'adresse envoyée", async () => {
+  it("la pile propose SON Jellyfin en tête ; les autres restent visibles, et chacun est bien lui-même", async () => {
     const session = fullSession;
-    const probe = await hostCall(PORTS.tentacle, { path: "/jellyfin/probe", method: "POST", host: `${BROWSER_HOST}:${PORTS.tentacle}`, session, body: { url: "http://host.docker.internal:8096" } });
-    expect(probe.body).toMatchObject({ url: "http://jellyfin:8096", clientUrl: `http://${BROWSER_HOST}:${PORTS.jellyfin}` });
+    const call = (url: string) => hostCall(PORTS.tentacle, { path: "/jellyfin/probe", method: "POST", host: `${BROWSER_HOST}:${PORTS.tentacle}`, session, body: { url } });
+    expect((await call("http://jellyfin:8096")).body).toMatchObject({ url: "http://jellyfin:8096", inStack: true, clientUrl: `http://${BROWSER_HOST}:${PORTS.jellyfin}` });
+    // Le Jellyfin de 8096, choisi exprès : c'est lui, pas celui de la pile.
+    expect((await call("http://host.docker.internal:8096")).body).toMatchObject({ url: "http://host.docker.internal:8096", inStack: false, blank: false });
     const found = await hostCall(PORTS.tentacle, { path: "/jellyfin/discover", host: `${BROWSER_HOST}:${PORTS.tentacle}`, session });
-    expect((found.body as { servers: Array<{ url: string; source: string }> }).servers).toEqual([expect.objectContaining({ url: "http://jellyfin:8096", source: "stack" })]);
+    const servers = (found.body as { servers: Array<{ url: string; source: string; inStack: boolean }> }).servers;
+    expect(servers[0]).toMatchObject({ url: "http://jellyfin:8096", source: "stack", inStack: true });
+    expect(servers.slice(1).every((server) => !server.inStack)).toBe(true);
   });
 
   it("l'installation finie : le Jellyfin de la pile pris par le compte choisi, l'adresse des applications enregistrée", async () => {
@@ -131,7 +135,7 @@ describe("pile Portainer : le bon Jellyfin, la bonne adresse, sans code depuis l
     const at = { host: `${BROWSER_HOST}:${PORTS.tentacle}`, session };
     const init = await hostCall(PORTS.tentacle, {
       ...at, path: "/jellyfin/initialize", method: "POST",
-      body: { url: "http://ignored:1", username: USER, password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" },
+      body: { url: "http://jellyfin:8096", username: USER, password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" },
     });
     expect(init.status, JSON.stringify(init.body)).toBe(200);
     const done = await hostCall(PORTS.tentacle, { ...at, path: "/complete", method: "POST", body: { username: USER, password: PASSWORD } });

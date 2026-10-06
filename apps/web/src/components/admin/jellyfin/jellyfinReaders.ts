@@ -30,7 +30,7 @@ const isText = (value: unknown): value is LocalizedText => isRecord(value) && ty
 
 const STATUSES: readonly CompatStatus[] = ["compatible", "partial", "presumed", "untested", "incompatible"];
 const CHECK_IDS: readonly SetupCheckId[] = [
-  "metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "chapterImages",
+  "metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "hevcEncoding", "chapterImages",
 ];
 
 function readFeature(raw: unknown): CompatFeatureView | null {

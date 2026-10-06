@@ -169,6 +169,31 @@ function hardwareCheck(snapshot: SetupSnapshot): SetupCheck {
   return { ...base, id: "hardwareAcceleration", level: "optional", state, current: type || null, dashboardPath: DASHBOARD.transcoding };
 }
 
+/**
+ * L'encodage HEVC (`AllowHevcEncoding`, éteint par défaut) : sans lui, un
+ * transcodage sort en H.264 même vers un lecteur qui préfère le HEVC — plus
+ * lourd à débit égal. En logiciel, x265 coûte ~10 fois x264
+ * (`docs/TRANSCODAGE-MOTEURS.md`) : on ne le conseille qu'à un serveur qui a
+ * un encodeur matériel. Un Jellyfin qui ne connaît pas le champ : inconnu.
+ */
+function hevcCheck(snapshot: SetupSnapshot): SetupCheck {
+  const encoding = snapshot.encoding;
+  const allowed = encoding?.AllowHevcEncoding;
+  const hardware = text(encoding?.HardwareAccelerationType).toLowerCase();
+  const state: SetupState = !encoding || typeof allowed !== "boolean" ? "unknown"
+    : allowed ? "done"
+    : !hardware || hardware === "none" ? "not-needed" : "todo";
+  return {
+    ...base,
+    id: "hevcEncoding",
+    level: "recommended",
+    state,
+    current: typeof allowed === "boolean" ? (allowed ? "on" : "off") : null,
+    action: state === "todo" ? "enableHevcEncoding" : null,
+    dashboardPath: DASHBOARD.transcoding,
+  };
+}
+
 /** Tentacle n'affiche pas les images de chapitres : les générer coûte au serveur sans rien apporter ici. */
 function chapterImagesCheck(videos: Loose[] | null): SetupCheck {
   return {
@@ -195,6 +220,7 @@ export function evaluateSetup(snapshot: SetupSnapshot, context: SetupContext = {
     segmentsCheck(snapshot),
     libraryFlagCheck("realtimeMonitor", "EnableRealtimeMonitor", videos, null),
     hardwareCheck(snapshot),
+    hevcCheck(snapshot),
     chapterImagesCheck(videos),
   ];
 }

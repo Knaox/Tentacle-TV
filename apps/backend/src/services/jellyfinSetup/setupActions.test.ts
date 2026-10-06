@@ -20,6 +20,7 @@ type Loose = Record<string, unknown>;
 interface FakeJellyfin {
   libraries: Loose[];
   config: Loose;
+  encoding: Loose;
   plugins: Loose[];
   started: string[];
   posts: Array<{ path: string; body: unknown }>;
@@ -54,6 +55,11 @@ const fake = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     case "POST /Packages/Installed/Chapter%20Segments%20Provider":
       jf.plugins.push({ Name: "Chapter Segments Provider", Status: "Restart" });
       return empty();
+    case "GET /System/Configuration/encoding":
+      return json(jf.encoding);
+    case "POST /System/Configuration/encoding":
+      if (!jf.ignoreWrites) jf.encoding = body ?? {};
+      return empty();
     case "GET /Plugins":
       return json(jf.plugins);
     case "GET /ScheduledTasks":
@@ -81,6 +87,7 @@ beforeEach(() => {
       { Name: "Musique", CollectionType: "music", ItemId: "music", LibraryOptions: { EnableTrickplayImageExtraction: false } },
     ],
     config: { PreferredMetadataLanguage: "", MetadataCountryCode: "", ServerName: "Maison", MaxResumePct: 90 },
+    encoding: { HardwareAccelerationType: "vaapi", AllowHevcEncoding: false, AllowAv1Encoding: false, EncodingThreadCount: -1 },
     plugins: [{ Name: "TMDb", Status: "Active" }],
     started: [],
     posts: [],
@@ -127,6 +134,22 @@ describe("gestes en un clic", () => {
       expect(await applySetupAction({ action: "setMetadataLanguage", language, country })).toEqual({ ok: false, error: "bad-request" });
     }
     expect(fake).not.toHaveBeenCalled();
+  });
+
+  it("encodage HEVC : la configuration du transcodage repart entière, un seul champ changé", async () => {
+    expect(await applySetupAction({ action: "enableHevcEncoding" })).toEqual({ ok: true, changed: 1 });
+    expect(jf.encoding).toEqual({ HardwareAccelerationType: "vaapi", AllowHevcEncoding: true, AllowAv1Encoding: false, EncodingThreadCount: -1 });
+    // Déjà permis : rien n'est écrit.
+    jf.posts = [];
+    expect(await applySetupAction({ action: "enableHevcEncoding" })).toEqual({ ok: true, changed: 0 });
+    expect(jf.posts).toEqual([]);
+  });
+
+  it("encodage HEVC que Jellyfin n'enregistre pas, ou champ inconnu : un échec", async () => {
+    jf.ignoreWrites = true;
+    expect(await applySetupAction({ action: "enableHevcEncoding" })).toEqual({ ok: false, error: "not-applied" });
+    jf.encoding = { HardwareAccelerationType: "vaapi" };
+    expect(await applySetupAction({ action: "enableHevcEncoding" })).toEqual({ ok: false, error: "invalid" });
   });
 
   it("greffon officiel de passages : installé par le catalogue, vérifié dans la liste des greffons", async () => {

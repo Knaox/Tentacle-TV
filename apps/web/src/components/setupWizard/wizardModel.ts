@@ -7,8 +7,10 @@ import type { ExistingLibrary, LibraryPlan, SetupContext } from "@tentacle-tv/sh
  * Une question par écran. Les étapes s'adaptent à l'installation détectée :
  * le code n'est demandé qu'à un navigateur qui n'arrive pas directement du
  * réseau local ; la base n'est demandée que si la pile ne la fournit pas ; un Jellyfin vierge
- * se configure (le compte est CRÉÉ), un Jellyfin déjà configuré se rejoint (le
- * compte est VÉRIFIÉ), ou par une clé collée (le compte est demandé à la fin).
+ * se configure (le compte est CRÉÉ, puis les bibliothèques), un Jellyfin déjà
+ * configuré se rejoint (le compte est VÉRIFIÉ, ou par une clé collée — le
+ * compte est alors demandé à la fin) : rien n'y est créé, l'écran des
+ * bibliothèques laisse la place aux réglages conseillés, tous facultatifs.
  */
 export type WizardStep =
   | "welcome"
@@ -17,6 +19,7 @@ export type WizardStep =
   | "jellyfin"
   | "account"
   | "libraries"
+  | "recommended"
   | "finalAccount"
   | "recap"
   | "apply"
@@ -31,6 +34,8 @@ export interface WizardPlan {
   needsCode: boolean;
   needsDatabase: boolean;
   mode: JellyfinMode | null;
+  /** Un Jellyfin DÉJÀ configuré : réglages conseillés au lieu des bibliothèques. */
+  joined: boolean;
   /** Le mot de passe n'est plus en mémoire (clé collée, ou reprise après rechargement). */
   askFinalAccount: boolean;
 }
@@ -42,7 +47,7 @@ export function wizardSteps(plan: WizardPlan): WizardStep[] {
     ...(plan.needsDatabase ? (["database"] as const) : []),
     "jellyfin",
     "account",
-    "libraries",
+    plan.joined ? "recommended" : "libraries",
     ...(plan.askFinalAccount || plan.mode === "key" ? (["finalAccount"] as const) : []),
     "recap",
     "apply",
@@ -68,7 +73,16 @@ export function needsDatabase(context: SetupContext | null): boolean {
 export function resumeStep(context: SetupContext): WizardStep {
   if (needsDatabase(context)) return "database";
   if (!context.jellyfin.configured || context.jellyfin.claimed) return "jellyfin";
-  return "libraries";
+  return context.jellyfin.joined ? "recommended" : "libraries";
+}
+
+/**
+ * Un Jellyfin DÉJÀ configuré : ce que le serveur sait une fois relié
+ * (`joined`) ; avant, le choix fait à l'écran Jellyfin (se connecter).
+ */
+export function joinsConfigured(context: SetupContext | null, mode: JellyfinMode | null): boolean {
+  if (context?.jellyfin.configured && !context.jellyfin.claimed) return context.jellyfin.joined;
+  return mode === "connect" || mode === "key";
 }
 
 /** Jellyfin est à configurer avec le compte choisi : vierge, ou voisin verrouillé en attente. */
@@ -110,15 +124,18 @@ export function isValidLibraryName(name: string): boolean {
 
 /**
  * Les bibliothèques proposées : dans la pile complète, « Films » et « Séries »
- * sur les dossiers que le service `init` a créés — sauf celles qui existent déjà.
+ * sur les dossiers que le service `init` a créés — sauf celles qui existent
+ * déjà. Seulement pour le Jellyfin DE LA PILE : un autre Jellyfin ne voit pas
+ * ces dossiers.
  */
 export function defaultLibraries(
   context: SetupContext | null,
   existing: readonly ExistingLibrary[],
   names: { movies: string; tvshows: string },
+  inStack = true,
 ): LibraryPlan[] {
   const folders = context?.mediaFolders;
-  if (!folders) return [];
+  if (!folders || !inStack) return [];
   const taken = new Set(existing.flatMap((library) => library.paths));
   const plans: LibraryPlan[] = [
     { name: names.movies, type: "movies", paths: [folders.movies] },
@@ -134,6 +151,12 @@ export function hostMediaPaths(context: SetupContext | null): string[] {
   if (!root || !folders) return [];
   const sub = (path: string) => path.slice(folders.root.length).replace(/^\/+/, "");
   return [folders.movies, folders.tvshows].map((path) => `${root}/${sub(path)}`);
+}
+
+/** Le Jellyfin relié est celui de la pile complète (sonde gardée, sinon l'adresse retenue après une reprise). */
+export function linkedToStack(context: SetupContext | null, probe: { inStack: boolean } | null): boolean {
+  if (probe) return probe.inStack;
+  return !!context?.jellyfin.url && context.jellyfin.url === context.jellyfin.suggestedUrl && context.provisioner === "docker-sibling";
 }
 
 /** Le code d'installation glissé dans le lien des journaux (`/setup#code=…`). */

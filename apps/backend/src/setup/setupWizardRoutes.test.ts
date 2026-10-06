@@ -164,7 +164,10 @@ describe("assistant d'installation, de bout en bout", () => {
 
   it("Jellyfin vierge : sondé, initialisé, clé créée — jamais renvoyée", async () => {
     const probe = await call("POST", "/jellyfin/probe", { session, body: { url: jf.url } });
-    expect(probe.json()).toEqual({ url: jf.url, version: "10.11.11", serverName: "jellyfin", blank: true, compatible: true, clientUrl: jf.url.replace("127.0.0.1", "localhost") });
+    expect(probe.json()).toEqual({
+      url: jf.url, serverId: expect.any(String), version: "10.11.11", serverName: "jellyfin", blank: true, inStack: false, compatible: true,
+      clientUrl: jf.url.replace("127.0.0.1", "localhost"),
+    });
     const init = await call("POST", "/jellyfin/initialize", {
       session,
       body: { url: jf.url, username: "Damien", password: ADMIN_PASSWORD, uiCulture: "fr-FR", metadataCountry: "CH", metadataLanguage: "fr" },
@@ -172,7 +175,7 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(init.json()).toEqual({ success: true });
     expect(state.config.get("jellyfin_api_key")).toBe(API_KEY);
     const context = (await call("GET", "/context", { session })).json();
-    expect(context).toMatchObject({ deployment: "native", provisioner: "native-host", jellyfin: { url: jf.url, configured: true, claimed: false } });
+    expect(context).toMatchObject({ deployment: "native", provisioner: "native-host", jellyfin: { url: jf.url, configured: true, claimed: false, joined: false } });
   });
 
   it("les bibliothèques proposées sont créées", async () => {

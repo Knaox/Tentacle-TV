@@ -98,6 +98,12 @@ export interface SetupContext {
     /** Le Jellyfin voisin (pile complète) a été verrouillé dès le démarrage, en attente du compte choisi. */
     claimed: boolean;
     /**
+     * Le Jellyfin relié était DÉJÀ configuré (rejoint par un compte existant ou
+     * une clé) : l'assistant n'y crée aucune bibliothèque, il propose les
+     * réglages conseillés.
+     */
+    joined: boolean;
+    /**
      * L'adresse de Jellyfin que les APPLICATIONS recevront (lecture directe) :
      * l'hôte par lequel l'assistant est ouvert et le port publié. Jamais un
      * nom Docker. `null` : rien à proposer d'office (Jellyfin pas encore choisi).
@@ -249,6 +255,33 @@ export interface LibraryOutcome {
   name: string;
   status: "created" | "exists" | "failed";
   error?: SetupErrorCode;
+}
+
+/**
+ * Un Jellyfin DÉJÀ configuré : les réglages conseillés, tous facultatifs.
+ * `GET /api/setup/jellyfin/recommended` rend le MÊME rapport que
+ * l'administration (`JellyfinSetupReport`) ; l'écran en tire ses conseils par
+ * la règle du tableau de bord (`adminAttention/jellyfinAdvice.ts`). Les
+ * greffons de passages passent par `/jellyfin/segments`.
+ *
+ * Les gestes de l'administration que l'assistant reprend — une liste fermée.
+ */
+export type SetupAdviceAction = "setMetadataLanguage" | "enableTrickplay" | "enableRealtimeMonitor" | "enableHevcEncoding";
+
+/** `POST /api/setup/jellyfin/recommended` — SEULEMENT ce que l'administrateur a coché. */
+export interface SetupAdviceRequest {
+  actions: SetupAdviceAction[];
+  /** `setMetadataLanguage` : « fr », puis le pays, « FR ». */
+  language?: string;
+  country?: string;
+}
+
+/** Une issue par geste demandé (un tableau) ; un échec n'arrête pas les autres. */
+export interface SetupAdviceOutcome {
+  action: SetupAdviceAction;
+  status: "applied" | "failed";
+  /** Le code de l'échec, celui de l'administration (« unreachable », « not-applied »…). */
+  error?: string;
 }
 
 /** `POST /api/setup/complete` — le compte administrateur de Jellyfin, qui l'est aussi de Tentacle. */

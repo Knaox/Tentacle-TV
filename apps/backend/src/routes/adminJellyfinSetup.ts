@@ -19,6 +19,7 @@ const applySchema = z.object({
     "generateTrickplay",
     "scanMediaSegments",
     "refreshMissingMetadata",
+    "enableHevcEncoding",
   ]),
   language: z.string().max(8).optional(),
   country: z.string().max(4).optional(),
