@@ -2,6 +2,8 @@
  * The server setup wizard (web and desktop): one question per screen.
  * `error_<code>` keys follow `SetupErrorCode`.
  */
+import errors from "./setupWizardErrors";
+
 export default {
   // ── The frame ─────────────────────────────────────────────────────────
   progress: "Step {{n}} of {{total}}",
@@ -221,35 +223,6 @@ export default {
   doneRemote_off: "Not set up yet: Tentacle works at home. Administration › Remote access whenever you like.",
   doneOpen: "Open Tentacle",
 
-  // ── Errors ────────────────────────────────────────────────────────────
-  error_setup_closed: "Setup is already done on this server.",
-  error_session_required: "Your setup session expired: enter the code again.",
-  error_invalid_token: "This code is wrong, or it was already used. Check it in the server's logs.",
-  error_rate_limited: "Too many attempts: wait a minute.",
-  error_invalid_input: "A value is not accepted: check the fields.",
-  error_db_unreachable: "The database does not answer: check the host and port.",
-  error_db_auth_failed: "Database account or password refused.",
-  error_db_unknown_database: "This database does not exist, or this account has no access to it.",
-  error_db_schema_failed: "The tables could not be created: does the account have the rights?",
-  error_db_managed_by_stack: "The database comes from the Docker stack: nothing to change here.",
-  error_jf_invalid_url: "This is not a valid http:// or https:// address.",
-  error_jf_forbidden_address: "This address is not allowed.",
-  error_jf_localhost_in_docker: "In Docker, \"localhost\" means Tentacle itself. Try http://host.docker.internal:8096 or the machine's address.",
-  error_jf_unreachable: "Nobody answers at this address: is Jellyfin running, and is the port right?",
-  error_jf_timeout: "Jellyfin does not answer in time.",
-  error_jf_tls_invalid: "This address's HTTPS certificate is refused.",
-  error_jf_not_jellyfin: "Something answers, but it is not Jellyfin.",
-  error_jf_incompatible_version: "This Jellyfin version is not supported: update it.",
-  error_jf_not_blank: "This Jellyfin is already set up: sign in with its administrator account.",
-  error_jf_bad_credentials: "Username or password refused by Jellyfin.",
-  error_jf_not_admin: "This account is not a Jellyfin administrator.",
-  error_jf_api_key_invalid: "This API key is refused by Jellyfin.",
-  error_jf_api_key_failed: "The access key could not be created in Jellyfin.",
-  error_jf_startup_failed: "Jellyfin refused its initial setup. Try again.",
-  error_jf_path_not_found: "This folder does not exist for Jellyfin.",
-  error_jf_library_failed: "Jellyfin could not create this library.",
-  error_jf_not_configured: "Jellyfin is not linked yet: go back to the Jellyfin step.",
-  error_jf_claim_pending: "Jellyfin is still starting: a few seconds.",
-  error_internal: "Something unexpected happened. Try again; if it comes back, check the server's logs.",
-  error_network: "The server does not answer: check that it is still running.",
+  // ── Les erreurs (setupWizardErrors.ts) ───────────────────────────────
+  ...errors,
 };

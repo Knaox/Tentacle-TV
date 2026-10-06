@@ -5,10 +5,12 @@ import { injectCorsHosts } from "../../services/jellyfinCors";
 import { buildAuthHeader, deviceIdForOpaque } from "../../services/jellyfinIdentity";
 import { setSessionCookie } from "../../routes/authCookie";
 import { signOut } from "../jellyfin/accounts";
+import { clientJellyfinUrl } from "../jellyfin/clientUrl";
 import { jellyfinRequest } from "../jellyfin/guardedFetch";
 import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
 import { sealSetup } from "../setupLock";
+import { setupRuntime } from "../setupRuntime";
 import { completeSchema } from "../setupSchemas";
 import { closeAllSetupSessions } from "../setupSession";
 import { claimedAdminId, storedJellyfin, type StoredJellyfin } from "../setupStore";
@@ -75,6 +77,12 @@ export const setupCompleteRoute: FastifyPluginAsync = async (app) => {
         throw new SetupError("jf_not_admin");
       }
 
+      // L'adresse que les applications recevront pour Jellyfin (lecture directe) :
+      // celle revue au récapitulatif, sinon celle que l'assistant propose.
+      const clientUrl =
+        body.jellyfinClientUrl?.replace(/\/+$/, "") ??
+        clientJellyfinUrl({ deployment: setupRuntime().deployment, browserHost: request.hostname, jellyfinUrl: stored.url });
+      if (clientUrl) await setConfigValue("jellyfin_private_url", clientUrl);
       await setConfigValue("admin_jellyfin_id", user.Id);
       await setConfigValue("admin_username", user.Name);
       await setConfigValue("setup_completed", "true");

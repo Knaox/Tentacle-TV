@@ -20,7 +20,7 @@ const { CodeHelpPanel } = await import("./CodeHelpPanels");
 const { codeHelpCommands, codeHelpTabs, initialCodeHelpTab } = await import("./codeHelpModel");
 
 const ID = "3f9c2a7b1d4e";
-const docker = (over: Partial<SetupHostInfo> = {}): SetupHostInfo => ({ deployment: "docker", stack: "full", containerized: true, containerId: ID, ...over });
+const docker = (over: Partial<SetupHostInfo> = {}): SetupHostInfo => ({ deployment: "docker", stack: "full", containerized: true, containerId: ID, codeRequired: true, ...over });
 const decode = (html: string) => html.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
 const panel = (tab: Parameters<typeof CodeHelpPanel>[0]["tab"], containerId: string | null = ID) =>
   decode(renderToStaticMarkup(<CodeHelpPanel tab={tab} commands={codeHelpCommands(containerId, "<conteneur>")} containerId={containerId} />));
@@ -38,7 +38,7 @@ describe("le choix des onglets", () => {
   });
 
   it("hors conteneur : l'installation native seule", () => {
-    const native: SetupHostInfo = { deployment: "native", stack: null, containerized: false, containerId: null };
+    const native: SetupHostInfo = { deployment: "native", stack: null, containerized: false, containerId: null, codeRequired: true };
     expect(codeHelpTabs(native)).toEqual(["native"]);
     expect(initialCodeHelpTab(native)).toBe("native");
   });

@@ -2,8 +2,9 @@ import { randomBytes } from "crypto";
 import { deleteConfigValue, getConfigValue, setConfigValue } from "../../services/configStore";
 import { apiKeyWorks, authenticate, createTentacleKey, signOut } from "../jellyfin/accounts";
 import { probeJellyfin, type ProbedJellyfin } from "../jellyfin/probe";
+import { checkSiblingNetwork, type SiblingCheckDeps } from "../jellyfin/siblingCheck";
 import { finishJellyfinStartup, runJellyfinStartup } from "../jellyfin/startup";
-import { SETUP_KEYS, saveJellyfin, storedJellyfin } from "../setupStore";
+import { SETUP_KEYS, forgetJellyfin, saveJellyfin, storedJellyfin } from "../setupStore";
 
 /**
  * Pile complète : le Jellyfin voisin naît VIERGE, et tant que personne n'a
@@ -18,7 +19,7 @@ import { SETUP_KEYS, saveJellyfin, storedJellyfin } from "../setupStore";
  * arrêt entre les deux étapes ne laisse pas un Jellyfin verrouillé dont
  * personne n'a la clé — le démarrage suivant reprend là.
  */
-export type ClaimOutcome = "claimed" | "already" | "not-blank" | "unreachable";
+export type ClaimOutcome = "claimed" | "already" | "not-blank" | "unreachable" | "elsewhere";
 
 export const PROVISIONAL_ADMIN = "tentacle-setup";
 
@@ -27,6 +28,7 @@ interface ClaimOptions {
   waitMs?: number;
   intervalMs?: number;
   log?: (message: string) => void;
+  network?: SiblingCheckDeps;
 }
 
 async function waitForJellyfin(url: string, waitMs: number, intervalMs: number): Promise<ProbedJellyfin | null> {
@@ -62,12 +64,21 @@ async function keyFromProvisionalAdmin(probed: ProbedJellyfin, secret: string): 
 export async function claimSiblingJellyfin(siblingUrl: string, options: ClaimOptions = {}): Promise<ClaimOutcome> {
   const log = options.log ?? ((message: string) => console.log(`[Setup] ${message}`));
   const stored = storedJellyfin();
-  if (stored && (await apiKeyWorks(stored.url, stored.apiKey))) return "already";
+  // Une base reprise d'un essai précédent peut garder un AUTRE Jellyfin (celui
+  // d'une pile « base » sur la même machine) : la pile complète n'en veut pas.
+  if (stored && stored.url !== siblingUrl) {
+    log("un Jellyfin étranger à la pile était enregistré — oublié, la pile reprend le sien");
+    await forgetJellyfin();
+  } else if (stored && (await apiKeyWorks(stored.url, stored.apiKey))) return "already";
 
   const probed = await waitForJellyfin(siblingUrl, options.waitMs ?? 5 * 60_000, options.intervalMs ?? 3_000);
   if (!probed) {
     log("Jellyfin voisin injoignable — l'assistant réessaiera");
     return "unreachable";
+  }
+  if ((await checkSiblingNetwork(siblingUrl, options.network)) === "elsewhere") {
+    log(`${siblingUrl} ne mène pas au Jellyfin de la pile (hors de ses réseaux) — rien n'est verrouillé`);
+    return "elsewhere";
   }
 
   // Un essai précédent a pu poser NOTRE compte sans aller jusqu'à la clé : on le reprend.

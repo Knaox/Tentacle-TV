@@ -82,5 +82,16 @@ export const completeSchema = z
     deviceId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
     client: z.string().max(64).optional(),
     device: z.string().max(64).optional(),
+    // L'adresse de Jellyfin des applications : http(s), sans identifiants ni requête.
+    jellyfinClientUrl: url.refine(isClientUrl).optional(),
   })
   .strict();
+
+function isClientUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return /^https?:$/.test(parsed.protocol) && !parsed.username && !parsed.password && !parsed.search && !parsed.hash;
+  } catch {
+    return false;
+  }
+}

@@ -41,7 +41,7 @@ export const setupSessionRoutes: FastifyPluginAsync = async (app) => {
    * dire, AVANT le code, comment lire les journaux de ce serveur (identifiant
    * du conteneur, pile). Rien qui ouvre quoi que ce soit ; 404 une fois fini.
    */
-  app.get("/host", { preHandler: requireOpenSetup }, async (): Promise<SetupHostInfo> => hostInfo());
+  app.get("/host", { preHandler: requireOpenSetup }, async (): Promise<SetupHostInfo> => ({ ...hostInfo(), codeRequired: true }));
 
   /**
    * POST /api/setup/session — le code lu dans les journaux, échangé UNE fois
@@ -67,5 +67,5 @@ export const setupSessionRoutes: FastifyPluginAsync = async (app) => {
   );
 
   /** GET /api/setup/context — les étapes à montrer, selon l'installation. */
-  app.get("/context", { preHandler: requireSetupSession }, async (request) => buildSetupContext(request.protocol === "https"));
+  app.get("/context", { preHandler: requireSetupSession }, async (request) => buildSetupContext(request.protocol === "https", request.hostname));
 };

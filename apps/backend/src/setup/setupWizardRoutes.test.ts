@@ -122,7 +122,7 @@ describe("assistant d'installation, de bout en bout", () => {
   it("avant le code : ce que le serveur sait de lui-même, sans session et sans secret", async () => {
     const res = await call("GET", "/host");
     expect(res.statusCode).toBe(200);
-    expect(Object.keys(res.json()).sort()).toEqual(["containerId", "containerized", "deployment", "stack"]);
+    expect(Object.keys(res.json()).sort()).toEqual(["codeRequired", "containerId", "containerized", "deployment", "stack"]);
     expect(res.json()).toMatchObject({ deployment: "native", stack: null });
     expect(res.body).not.toContain(readSetupToken() ?? "absent");
   });
@@ -160,7 +160,7 @@ describe("assistant d'installation, de bout en bout", () => {
 
   it("Jellyfin vierge : sondé, initialisé, clé créée — jamais renvoyée", async () => {
     const probe = await call("POST", "/jellyfin/probe", { session, body: { url: jf.url } });
-    expect(probe.json()).toEqual({ url: jf.url, version: "10.11.11", serverName: "jellyfin", blank: true, compatible: true });
+    expect(probe.json()).toEqual({ url: jf.url, version: "10.11.11", serverName: "jellyfin", blank: true, compatible: true, clientUrl: jf.url.replace("127.0.0.1", "localhost") });
     const init = await call("POST", "/jellyfin/initialize", {
       session,
       body: { url: jf.url, username: "Damien", password: ADMIN_PASSWORD, uiCulture: "fr-FR", metadataCountry: "CH", metadataLanguage: "fr" },
@@ -186,6 +186,8 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(done.json()).toMatchObject({ success: true, AccessToken: "jeton-web", DeviceId: "dev-web", User: { Id: "u1", Name: "Damien" } });
     expect(done.cookies.find((c) => c.name === "tentacle_token")).toMatchObject({ httpOnly: true, sameSite: "Strict" });
     expect(state.config.get("setup_completed")).toBe("true");
+    // L'adresse des applications : le Jellyfin de la boucle locale prend l'hôte du navigateur.
+    expect(state.config.get("jellyfin_private_url")).toBe(jf.url.replace("127.0.0.1", "localhost"));
     expect(state.started).toBe(1);
 
     for (const [method, url] of [["GET", "/host"], ["GET", "/context"], ["POST", "/session"], ["POST", "/jellyfin/probe"], ["POST", "/complete"]] as const) {

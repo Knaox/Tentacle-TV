@@ -57,7 +57,12 @@ beforeEach(() => {
   jf.on("POST /Sessions/Logout", { status: 204 });
 });
 
-const quick = { waitMs: 500, intervalMs: 50, log: () => undefined };
+// Le faux Jellyfin écoute sur 127.0.0.1 : une interface « du réseau de la pile » le couvre.
+const sameNetwork = {
+  resolve: async () => ["127.0.0.1"],
+  interfaces: () => ({ eth0: [{ address: "127.0.0.2", netmask: "255.0.0.0", family: "IPv4" as const, mac: "", internal: false, cidr: "127.0.0.2/8" }] }),
+};
+const quick = { waitMs: 500, intervalMs: 50, log: () => undefined, network: sameNetwork };
 
 describe("verrouillage du Jellyfin voisin (pile complète)", () => {
   it("vierge : administrateur provisoire, clé enregistrée, mot de passe provisoire oublié", async () => {
@@ -75,6 +80,22 @@ describe("verrouillage du Jellyfin voisin (pile complète)", () => {
     jf.requests.splice(0);
     expect(await claimSiblingJellyfin(jf.url, quick)).toBe("already");
     expect(jf.calls("POST /Auth/Keys")).toHaveLength(0);
+  });
+
+  it("le nom mène hors des réseaux de la pile : rien n'est verrouillé", async () => {
+    const elsewhere = { ...quick, network: { ...sameNetwork, interfaces: () => ({}) } };
+    expect(await claimSiblingJellyfin(jf.url, elsewhere)).toBe("elsewhere");
+    expect(jf.calls("POST /Startup/User")).toHaveLength(0);
+    expect(config.has("jellyfin_api_key")).toBe(false);
+  });
+
+  it("une base reprise garde un AUTRE Jellyfin : oublié, la pile reprend le sien", async () => {
+    config.set("jellyfin_url", "http://172.16.1.30:8096");
+    config.set("jellyfin_api_key", "cle-etrangere");
+    config.set("jellyfin_server_id", "autre");
+    expect(await claimSiblingJellyfin(jf.url, quick)).toBe("claimed");
+    expect(config.get("jellyfin_url")).toBe(jf.url);
+    expect(config.get("jellyfin_api_key")).toBe("cle-1");
   });
 
   it("configuré par quelqu'un d'autre : on n'y touche pas", async () => {

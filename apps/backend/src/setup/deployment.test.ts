@@ -8,6 +8,7 @@ describe("installation lue dans l'environnement", () => {
       TENTACLE_STACK: "full",
       JELLYFIN_INTERNAL_URL: "http://jellyfin:8096/",
       TENTACLE_MEDIA_HOST_PATH: "./media",
+      JELLYFIN_HOST_PORT: "47896",
     });
     expect(d).toEqual({
       deployment: "docker",
@@ -16,6 +17,7 @@ describe("installation lue dans l'environnement", () => {
       siblingUrl: "http://jellyfin:8096",
       mediaFolders: { root: "/media", movies: "/media/films", tvshows: "/media/series" },
       mediaHostPath: "./media",
+      jellyfinHostPort: 47896,
     });
     expect(suggestedJellyfinUrl(d)).toBe("http://jellyfin:8096");
   });

@@ -1,0 +1,40 @@
+/**
+ * Les erreurs de l'assistant d'installation : une clé `error_<code>` par code
+ * de `SetupErrorCode` (contrat), plus `error_network`. Fondues dans l'espace
+ * `setupWizard` (`setupWizard.ts`).
+ */
+export default {
+  error_setup_closed: "L'installation est déjà faite sur ce serveur.",
+  error_session_required: "Votre session d'installation a expiré\u00a0: entrez à nouveau le code.",
+  error_invalid_token: "Ce code n'est pas le bon, ou il a déjà servi. Vérifiez-le dans les journaux du serveur.",
+  error_rate_limited: "Trop d'essais\u00a0: patientez une minute.",
+  error_invalid_input: "Une valeur n'est pas acceptée\u00a0: vérifiez les champs.",
+  error_db_unreachable: "La base ne répond pas\u00a0: vérifiez l'hôte et le port.",
+  error_db_auth_failed: "Compte ou mot de passe de la base refusé.",
+  error_db_unknown_database: "Cette base n'existe pas, ou ce compte n'y a pas accès.",
+  error_db_schema_failed: "Les tables n'ont pas pu être créées\u00a0: le compte a-t-il les droits\u00a0?",
+  error_db_managed_by_stack: "La base est fournie par la pile Docker\u00a0: rien à changer ici.",
+  error_jf_invalid_url: "Ce n'est pas une adresse http:// ou https:// valable.",
+  error_jf_forbidden_address: "Cette adresse n'est pas autorisée.",
+  error_jf_localhost_in_docker: "Dans Docker, «\u00a0localhost\u00a0» désigne Tentacle lui-même. Essayez http://host.docker.internal:8096 ou l'adresse de la machine.",
+  error_jf_unreachable: "Personne ne répond à cette adresse\u00a0: Jellyfin est-il démarré, et le port juste\u00a0?",
+  error_jf_timeout: "Jellyfin ne répond pas à temps.",
+  error_jf_tls_invalid: "Le certificat HTTPS de cette adresse est refusé.",
+  error_jf_not_jellyfin: "Quelque chose répond, mais ce n'est pas Jellyfin.",
+  error_jf_incompatible_version: "Cette version de Jellyfin n'est pas prise en charge\u00a0: mettez-la à jour.",
+  error_jf_not_blank: "Ce Jellyfin est déjà configuré\u00a0: connectez-vous avec son compte administrateur.",
+  error_jf_bad_credentials: "Nom d'utilisateur ou mot de passe refusé par Jellyfin.",
+  error_jf_not_admin: "Ce compte n'est pas administrateur de Jellyfin.",
+  error_jf_api_key_invalid: "Cette clé API est refusée par Jellyfin.",
+  error_jf_api_key_failed: "La clé d'accès n'a pas pu être créée dans Jellyfin.",
+  error_jf_startup_failed: "Jellyfin a refusé sa configuration initiale. Réessayez.",
+  error_jf_path_not_found: "Ce dossier n'existe pas pour Jellyfin.",
+  error_jf_library_failed: "Jellyfin n'a pas pu créer cette bibliothèque.",
+  error_jf_not_configured: "Jellyfin n'est pas encore relié\u00a0: revenez à l'étape Jellyfin.",
+  error_jf_claim_pending: "Jellyfin démarre encore\u00a0: quelques secondes.",
+  error_code_required: "Ce navigateur n'arrive pas directement du réseau local\u00a0: entrez le code d'installation.",
+  error_setup_in_progress: "Une installation est déjà en cours depuis un autre appareil\u00a0: entrez le code d'installation pour la reprendre.",
+  error_jf_sibling_elsewhere: "L'adresse interne de Jellyfin mène hors de la pile Docker\u00a0: le service Jellyfin a-t-il été renommé\u00a0? Rétablissez JELLYFIN_INTERNAL_URL sur le nom du service Jellyfin de la pile.",
+  error_internal: "Une erreur inattendue est survenue. Réessayez ; si elle revient, consultez les journaux du serveur.",
+  error_network: "Le serveur ne répond pas\u00a0: vérifiez qu'il tourne toujours.",
+};

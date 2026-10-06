@@ -11,9 +11,10 @@
  * MIROIR : recopié octet pour octet dans `apps/backend/src/setup/` (le backend
  * ne dépend pas de `@tentacle-tv/shared`). On le modifie ICI, puis :
  *
- *   cp packages/shared/src/setupWizard/setupWizardContract.ts apps/backend/src/setup/
+ *   cp packages/shared/src/setupWizard/setup*Contract.ts apps/backend/src/setup/
  *
- * `setupWizardMirror.test.ts` (backend) refuse toute divergence. Aucun import.
+ * `setupWizardMirror.test.ts` (backend) refuse toute divergence. Aucun import,
+ * sinon entre les fichiers du contrat (recopiés ensemble).
  */
 
 /** Comment le serveur tourne : dans l'image Docker, ou installé sur la machine. */
@@ -73,6 +74,12 @@ export interface SetupHostInfo {
    * `null` s'il n'a pas pu être lu.
    */
   containerId: string | null;
+  /**
+   * Ce navigateur devra donner le code d'installation : il n'arrive pas
+   * directement du réseau local, ou l'installation a déjà été réclamée par un
+   * autre (cf. `setupNetworkContract.ts`).
+   */
+  codeRequired: boolean;
 }
 
 /** `GET /api/setup/context` — ce dont l'assistant a besoin pour choisir ses étapes. */
@@ -90,6 +97,12 @@ export interface SetupContext {
     configured: boolean;
     /** Le Jellyfin voisin (pile complète) a été verrouillé dès le démarrage, en attente du compte choisi. */
     claimed: boolean;
+    /**
+     * L'adresse de Jellyfin que les APPLICATIONS recevront (lecture directe) :
+     * l'hôte par lequel l'assistant est ouvert et le port publié. Jamais un
+     * nom Docker. `null` : rien à proposer d'office (Jellyfin pas encore choisi).
+     */
+    clientUrl: string | null;
   };
   /** Le dossier des médias sur l'hôte, tel que le compose le monte (`./media`). */
   mediaHostPath: string | null;
@@ -109,6 +122,8 @@ export interface SetupContext {
 export type SetupErrorCode =
   | "setup_closed"
   | "session_required"
+  | "code_required"
+  | "setup_in_progress"
   | "invalid_token"
   | "rate_limited"
   | "invalid_input"
@@ -135,6 +150,7 @@ export type SetupErrorCode =
   | "jf_library_failed"
   | "jf_not_configured"
   | "jf_claim_pending"
+  | "jf_sibling_elsewhere"
   | "internal";
 
 /** Tout refus de `/api/setup/*` : un code, rien d'autre. */
@@ -161,21 +177,7 @@ export interface SetupDatabaseRequest {
   password: string;
 }
 
-/** Ce qu'une sonde de Jellyfin en a lu — rien d'autre ne remonte au client. */
-export interface JellyfinProbeResult {
-  url: string;
-  version: string;
-  serverName: string;
-  /** Jellyfin n'a pas encore fait son propre assistant : Tentacle le configure. */
-  blank: boolean;
-  /** La version est prise en charge par ce serveur Tentacle (`compat/jellyfin.json`). */
-  compatible: boolean;
-}
-
-/** `POST /api/setup/jellyfin/probe` */
-export interface JellyfinProbeRequest {
-  url: string;
-}
+/** La sonde et la découverte de Jellyfin : `setupDiscoveryContract.ts`. */
 
 /** La langue et le pays des métadonnées (et de l'interface de Jellyfin). */
 export interface SetupLocale {
@@ -257,6 +259,8 @@ export interface SetupCompleteRequest {
   deviceId?: string;
   client?: string;
   device?: string;
+  /** L'adresse de Jellyfin donnée aux applications, revue par l'administrateur. */
+  jellyfinClientUrl?: string;
 }
 
 /**

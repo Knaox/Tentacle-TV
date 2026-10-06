@@ -1,14 +1,16 @@
 import type { FastifyPluginAsync } from "fastify";
 import { hasPrisma } from "../../services/db";
 import { apiKeyWorks, authenticate, createTentacleKey, signOut, verifyApiKey } from "../jellyfin/accounts";
+import { clientJellyfinUrl } from "../jellyfin/clientUrl";
 import { probeJellyfin } from "../jellyfin/probe";
+import { jellyfinTarget } from "../jellyfin/stackTarget";
 import { adoptProvisionalAdmin, applyServerLocale, finishJellyfinStartup, runJellyfinStartup } from "../jellyfin/startup";
 import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
-import { prepareJellyfin } from "../setupRuntime";
+import { prepareJellyfin, setupRuntime } from "../setupRuntime";
 import { connectSchema, initializeSchema, probeSchema } from "../setupSchemas";
 import { claimedAdminId, forgetClaim, saveJellyfin, storedJellyfin } from "../setupStore";
-import type { JellyfinProbeResult } from "../setupWizardContract";
+import type { JellyfinProbeResult } from "../setupDiscoveryContract";
 
 /**
  * Relier Jellyfin. Trois chemins, un seul résultat : l'adresse et la clé
@@ -31,8 +33,9 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
   /** POST /api/setup/jellyfin/probe — y a-t-il un Jellyfin là, vierge ou non, compatible ou non ? */
   app.post("/jellyfin/probe", limited(30), async (request): Promise<JellyfinProbeResult> => {
     const { url } = probeSchema.parse(request.body);
-    const { url: found, version, serverName, blank, compatible } = await probeJellyfin(url);
-    return { url: found, version, serverName, blank, compatible };
+    const { url: found, version, serverName, blank, compatible } = await probeJellyfin(await jellyfinTarget(url));
+    const clientUrl = clientJellyfinUrl({ deployment: setupRuntime().deployment, browserHost: request.hostname, jellyfinUrl: found });
+    return { url: found, version, serverName, blank, compatible, clientUrl };
   });
 
   /**
@@ -59,7 +62,7 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
       return { success: true };
     }
 
-    const probed = await probeJellyfin(body.url);
+    const probed = await probeJellyfin(await jellyfinTarget(body.url));
     if (!probed.compatible) throw new SetupError("jf_incompatible_version");
     if (!probed.blank) throw new SetupError("jf_not_blank");
     await runJellyfinStartup(probed.url, body, body);
@@ -76,7 +79,7 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
   app.post("/jellyfin/connect", limited(10), async (request) => {
     const body = connectSchema.parse(request.body);
     requireDatabase();
-    const probed = await probeJellyfin(body.url);
+    const probed = await probeJellyfin(await jellyfinTarget(body.url));
     if (!probed.compatible) throw new SetupError("jf_incompatible_version");
 
     if ("apiKey" in body) {

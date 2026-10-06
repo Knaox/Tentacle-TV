@@ -2,7 +2,7 @@ import { resolveCompat } from "../../services/jellyfinCompat/compatVerdict";
 import { getCompatManifestState } from "../../services/jellyfinCompat/manifestStore";
 import { BACKEND_VERSION } from "../../services/version";
 import { SetupError } from "../setupErrors";
-import type { JellyfinProbeResult } from "../setupWizardContract";
+import type { JellyfinProbeResult } from "../setupDiscoveryContract";
 import { isLoopbackName } from "./addressGuard";
 import { jellyfinRequest, loopbackAllowed } from "./guardedFetch";
 
@@ -11,7 +11,7 @@ import { jellyfinRequest, loopbackAllowed } from "./guardedFetch";
  * /System/Info/Public`, anonyme, seul appel de la sonde. Rien de plus ne sort
  * de la réponse que les champs lus ici.
  */
-export interface ProbedJellyfin extends JellyfinProbeResult {
+export interface ProbedJellyfin extends Omit<JellyfinProbeResult, "clientUrl"> {
   /** L'identifiant du serveur : ce qui prouve, plus tard, que c'est bien LE même. */
   id: string;
 }

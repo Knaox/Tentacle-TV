@@ -46,7 +46,10 @@ export function containerIdFrom(probe: HostProbe): string | null {
   return null;
 }
 
-export function readHostInfo(probe: HostProbe = systemProbe()): SetupHostInfo {
+/** Ce qui ne dépend pas du navigateur qui demande (`codeRequired`, lui, en dépend). */
+export type MachineInfo = Omit<SetupHostInfo, "codeRequired">;
+
+export function readHostInfo(probe: HostProbe = systemProbe()): MachineInfo {
   const deployment = readDeployment(probe.env);
   const containerized =
     deployment.deployment === "docker" || probe.exists("/.dockerenv") || probe.exists("/run/.containerenv");
@@ -58,10 +61,10 @@ export function readHostInfo(probe: HostProbe = systemProbe()): SetupHostInfo {
   };
 }
 
-let cached: SetupHostInfo | null = null;
+let cached: MachineInfo | null = null;
 
 /** Lu une fois par processus : rien de tout cela ne change sans redémarrage. */
-export function hostInfo(): SetupHostInfo {
+export function hostInfo(): MachineInfo {
   cached ??= readHostInfo();
   return cached;
 }

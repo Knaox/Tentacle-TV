@@ -16,6 +16,8 @@ export interface DeploymentEnv {
   TENTACLE_MEDIA_HOST_PATH?: string;
   /** Les sous-dossiers que crée le service `init` (films, puis séries). */
   TENTACLE_MEDIA_SUBDIRS?: string;
+  /** Le port sur lequel la pile complète PUBLIE Jellyfin (`JELLYFIN_PORT`) : celui que les applications joignent. */
+  JELLYFIN_HOST_PORT?: string;
 }
 
 export interface Deployment {
@@ -28,6 +30,8 @@ export interface Deployment {
   mediaFolders: { root: string; movies: string; tvshows: string } | null;
   /** Le dossier des médias sur l'hôte, pour « déposez vos films ici ». */
   mediaHostPath: string | null;
+  /** Le port publié de Jellyfin (pile complète) ; `null` s'il n'est pas déclaré — jamais 8096 supposé. */
+  jellyfinHostPort: number | null;
 }
 
 const STACKS: readonly SetupStack[] = ["full", "db", "only"];
@@ -52,6 +56,11 @@ function mediaFolders(subdirs: string | undefined): { root: string; movies: stri
   return { root: MEDIA_ROOT, movies: `${MEDIA_ROOT}/${movies}`, tvshows: `${MEDIA_ROOT}/${tvshows}` };
 }
 
+function portOf(value: string | undefined): number | null {
+  const port = Number(value?.trim());
+  return value?.trim() && Number.isInteger(port) && port > 0 && port <= 65535 ? port : null;
+}
+
 export function readDeployment(env: DeploymentEnv = process.env): Deployment {
   const deployment: SetupDeployment = env.TENTACLE_DEPLOYMENT === "docker" ? "docker" : "native";
   const stackValue = env.TENTACLE_STACK?.trim() as SetupStack | undefined;
@@ -73,6 +82,7 @@ export function readDeployment(env: DeploymentEnv = process.env): Deployment {
     siblingUrl,
     mediaFolders: siblingUrl ? mediaFolders(env.TENTACLE_MEDIA_SUBDIRS) : null,
     mediaHostPath: env.TENTACLE_MEDIA_HOST_PATH?.trim() || null,
+    jellyfinHostPort: portOf(env.JELLYFIN_HOST_PORT),
   };
 }
 

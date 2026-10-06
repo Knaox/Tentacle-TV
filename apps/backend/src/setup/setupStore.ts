@@ -41,6 +41,15 @@ export async function saveJellyfin(url: string, apiKey: string, serverId: string
   await detectAppState();
 }
 
+/** Un Jellyfin étranger à la pile complète : oublié, clé comprise. */
+export async function forgetJellyfin(): Promise<void> {
+  await deleteConfigValue(SETUP_KEYS.jellyfinUrl);
+  await deleteConfigValue(SETUP_KEYS.apiKey);
+  await deleteConfigValue(SETUP_KEYS.serverId);
+  await forgetClaim();
+  await detectAppState();
+}
+
 export async function forgetClaim(): Promise<void> {
   await deleteConfigValue(SETUP_KEYS.claimUserId);
   await deleteConfigValue(SETUP_KEYS.claimSecret);

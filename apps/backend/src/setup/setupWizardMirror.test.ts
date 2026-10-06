@@ -4,7 +4,7 @@
  * backend ne dépend pas de `@tentacle-tv/shared`). La source canonique est
  * SHARED ; on modifie là-bas, on recopie ici :
  *
- *   cp packages/shared/src/setupWizard/setupWizardContract.ts apps/backend/src/setup/
+ *   cp packages/shared/src/setupWizard/setup*Contract.ts apps/backend/src/setup/
  */
 
 import { existsSync, readFileSync } from "fs";
@@ -22,9 +22,9 @@ function repoRoot(): string {
 }
 
 describe("miroir du contrat de l'assistant d'installation", () => {
-  it("setupWizardContract.ts est identique octet pour octet à celui de shared", () => {
+  it.each(["setupWizardContract.ts", "setupDiscoveryContract.ts"])("%s est identique octet pour octet à celui de shared", (file) => {
     const root = repoRoot();
-    expect(readFileSync(join(root, "apps/backend/src/setup/setupWizardContract.ts"), "utf8"))
-      .toBe(readFileSync(join(root, "packages/shared/src/setupWizard/setupWizardContract.ts"), "utf8"));
+    expect(readFileSync(join(root, "apps/backend/src/setup", file), "utf8"))
+      .toBe(readFileSync(join(root, "packages/shared/src/setupWizard", file), "utf8"));
   });
 });
