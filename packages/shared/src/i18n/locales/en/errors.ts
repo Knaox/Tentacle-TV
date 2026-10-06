@@ -122,4 +122,12 @@ export default {
   streamDirect: "direct play",
   streamTranscode: "converted by the server",
   streamLocal: "file on this device",
+  // Plus de serveur : trois cas, les mêmes mots partout (`connectivity/connectivityCase.ts`).
+  connectivityDeviceTitle: "You're offline",
+  connectivityDeviceHint: "Check your Internet connection.",
+  connectivityServerTitle: "The Tentacle server is offline",
+  connectivityServerHint: "Check your connection, or that the server is online.",
+  connectivityJellyfinTitle: "Jellyfin can't be reached",
+  connectivityJellyfinHint: "The Tentacle server is connected, but Jellyfin can't be reached right now. Contact your administrator.",
+  connectivityOfflineMode: "Tentacle switches to offline mode: what's on this device stays playable.",
 } as const;
