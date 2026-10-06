@@ -1,4 +1,5 @@
 import type { SetupActionId, SetupCheck, SetupCheckId } from "../jellyfinCompat/setupContract";
+import type { SetupAdviceAction } from "../setupWizard/setupWizardContract";
 
 /**
  * Les réglages de Jellyfin que Tentacle conseille — UNE règle, lue par le
@@ -24,10 +25,13 @@ export function isJellyfinTodo(check: Pick<SetupCheck, "id" | "level" | "state">
 }
 
 /** Les gestes de l'administration qui RÈGLENT un réglage sans risque, repris tels quels par l'assistant. */
-const SAFE_FIXES: ReadonlySet<SetupActionId> = new Set(["setMetadataLanguage", "enableTrickplay", "enableRealtimeMonitor", "enableHevcEncoding"]);
+export const ADVICE_ACTIONS: readonly SetupAdviceAction[] = ["setMetadataLanguage", "enableTrickplay", "enableRealtimeMonitor", "enableHevcEncoding"];
+const SAFE_FIXES: ReadonlySet<SetupActionId> = new Set(ADVICE_ACTIONS);
+
+const isAdviceAction = (action: SetupActionId): action is SetupAdviceAction => SAFE_FIXES.has(action);
 
 /** Le geste d'un conseil : une action de l'administration, ou la pose des greffons de passages. */
-export type AdviceGesture = SetupActionId | "segmentPlugins";
+export type AdviceGesture = SetupAdviceAction | "segmentPlugins";
 
 export interface JellyfinAdvice {
   id: SetupCheckId;
@@ -67,7 +71,7 @@ function adviceFor(check: SetupCheck, locale: AdviceLocale): JellyfinAdvice | nu
     if (!isJellyfinTodo(check)) return null;
     return { id: check.id, gesture: "setMetadataLanguage", current: check.current, recommended, preselected: true, targets: [] };
   }
-  if (!isJellyfinTodo(check) || !check.action || !SAFE_FIXES.has(check.action)) return null;
+  if (!isJellyfinTodo(check) || !check.action || !isAdviceAction(check.action)) return null;
   const targets = (check.libraries ?? []).filter((library) => !library.enabled).map((library) => library.name);
   return { id: check.id, gesture: check.action, current: check.current ?? "off", recommended: "on", preselected: true, targets };
 }

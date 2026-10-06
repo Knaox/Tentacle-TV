@@ -257,6 +257,33 @@ export interface LibraryOutcome {
   error?: SetupErrorCode;
 }
 
+/**
+ * Un Jellyfin DÉJÀ configuré : les réglages conseillés, tous facultatifs.
+ * `GET /api/setup/jellyfin/recommended` rend le MÊME rapport que
+ * l'administration (`JellyfinSetupReport`) ; l'écran en tire ses conseils par
+ * la règle du tableau de bord (`adminAttention/jellyfinAdvice.ts`). Les
+ * greffons de passages passent par `/jellyfin/segments`.
+ *
+ * Les gestes de l'administration que l'assistant reprend — une liste fermée.
+ */
+export type SetupAdviceAction = "setMetadataLanguage" | "enableTrickplay" | "enableRealtimeMonitor" | "enableHevcEncoding";
+
+/** `POST /api/setup/jellyfin/recommended` — SEULEMENT ce que l'administrateur a coché. */
+export interface SetupAdviceRequest {
+  actions: SetupAdviceAction[];
+  /** `setMetadataLanguage` : « fr », puis le pays, « FR ». */
+  language?: string;
+  country?: string;
+}
+
+/** Une issue par geste demandé (un tableau) ; un échec n'arrête pas les autres. */
+export interface SetupAdviceOutcome {
+  action: SetupAdviceAction;
+  status: "applied" | "failed";
+  /** Le code de l'échec, celui de l'administration (« unreachable », « not-applied »…). */
+  error?: string;
+}
+
 /** `POST /api/setup/complete` — le compte administrateur de Jellyfin, qui l'est aussi de Tentacle. */
 export interface SetupCompleteRequest {
   username: string;
