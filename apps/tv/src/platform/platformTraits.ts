@@ -12,4 +12,8 @@ export interface PlatformTraits {
    *  mpv) : le lecteur le tient en pause jusque-là, puis lève l'écran de
    *  chargement et la pause d'un même geste (tv-core `startGate`). */
   playerAnnouncesFirstFrame: boolean;
+  /** Le réglage « Mode Lite » (Automatique / Activé / Désactivé) existe —
+   *  Android TV seulement : le niveau de rendu de l'Apple TV est toujours
+   *  « normal » (`platform/renderTier`). */
+  renderTierSetting: boolean;
 }

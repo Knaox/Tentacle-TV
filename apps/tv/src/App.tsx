@@ -21,6 +21,7 @@ import { LiquidGlassProvider } from "./redesign/glass/liquidGlassMode";
 import { RemoteHintsProvider } from "./redesign/remote/remoteHints";
 import { REMOTE_BINDINGS } from "./platform/input";
 import { PLATFORM_TRAITS } from "./platform/traits";
+import { RenderTierReturn } from "./platform/renderTier";
 import { applyBackendUrl } from "./lib/backendUrls";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
 import { AppNavigator } from "./navigation/AppNavigator";
@@ -203,6 +204,8 @@ function AppContent() {
           <OfflineBanner visible={!isReachable && !playbackShown} onRetry={retry} />
           <PairingExpiredBanner />
           <TVSessionMessageHost />
+          {/* Android TV : rouvre l'écran quitté par le changement du mode Lite (rien sur l'Apple TV). */}
+          <RenderTierReturn />
         </NavigationContainer>
       </QualityBadgeHost>
     </>

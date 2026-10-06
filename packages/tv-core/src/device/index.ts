@@ -6,3 +6,4 @@
 export * from "./cpuCores";
 export * from "./renderTier";
 export * from "./signalOverride";
+export * from "./reloadReturn";
