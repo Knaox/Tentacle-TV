@@ -2,9 +2,10 @@
  * Le guide « Bandes-annonces » : pourquoi une fiche n'en montre pas, et ce que
  * chacun peut y faire. UNE seule source pour toutes les plateformes — la
  * STRUCTURE ici (parties, étapes, liens), les MOTS dans l'espace i18n
- * `trailerHelp`. Le web, le bureau, le miroir et le mobile rendent ce modèle
- * tel quel ; les téléviseurs n'en gardent qu'une phrase qui renvoie vers eux
- * (on ne lit pas un guide à la télécommande).
+ * `trailerHelp`. Le web, le bureau et le miroir rendent ce modèle tel quel ;
+ * les téléviseurs n'en gardent qu'une phrase qui renvoie vers eux (on ne lit
+ * pas un guide à la télécommande). Le mobile ne l'a pas : on n'y règle pas
+ * les bandes-annonces.
  *
  * Deux parties : « Pour tous » (ce n'est pas vous, d'où elles viennent, qui
  * peut agir) et « Pour l'administrateur » (les étapes précises, dans Jellyfin
@@ -13,7 +14,7 @@
  * autres, ce seraient des portes fermées.
  */
 
-/** L'adresse du guide dans les clients — la même sur le web, le bureau, le miroir et le mobile. */
+/** L'adresse du guide dans les clients — la même sur le web, le bureau et le miroir. */
 export const TRAILER_GUIDE_PATH = "/help/trailers";
 
 /** Les deux parties du guide, qui sont aussi ses ancres (`/help/trailers#admin`). */

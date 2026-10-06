@@ -421,11 +421,12 @@ tv-core) ; un membre garde son propre Vigie.
 Le guide « Bandes-annonces » (`/help/trailers`, `#admin` pour la partie
 administrateur) n'a qu'UNE source : sa structure dans
 `packages/shared/src/help/trailerGuide.ts`, ses mots dans l'espace i18n
-`trailerHelp` (lu par le mobile : son garde-fou refuse « téléchargement »).
-Le web, le bureau, le miroir et le mobile le rendent ; les téléviseurs n'en
-disent qu'une phrase qui renvoie vers eux — rien de focalisable sur la fiche.
+`trailerHelp`. Le web, le bureau et le miroir le rendent ; les téléviseurs
+n'en disent qu'une phrase qui renvoie vers eux — rien de focalisable sur la
+fiche. **Le mobile ne l'a plus** (ni entrée dans l'Aide, ni route, ni rappel
+sur la fiche — décision du 2026-10-06) : on n'y règle pas les bandes-annonces.
 
-Le rappel de la fiche (« Vous ne voyez pas les bandes-annonces ? ») suit une
+Le rappel de la fiche (« Vous ne voyez pas les bandes-annonces ? », hors mobile) suit une
 règle partagée (`help/trailerHint.ts`, `useFicheTrailerHint`) : titre sans
 AUCUNE bande-annonce ET serveur mal réglé (`/api/trailers/readiness`), rien
 tant qu'on ne sait pas. Masqué « pour de bon », c'est une préférence du

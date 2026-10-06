@@ -7,8 +7,6 @@ import frProfile from "../../../../../packages/shared/src/i18n/locales/fr/profil
 import enProfile from "../../../../../packages/shared/src/i18n/locales/en/profile";
 import frSessions from "../../../../../packages/shared/src/i18n/locales/fr/sessions";
 import enSessions from "../../../../../packages/shared/src/i18n/locales/en/sessions";
-import frTrailerHelp from "../../../../../packages/shared/src/i18n/locales/fr/trailerHelp";
-import enTrailerHelp from "../../../../../packages/shared/src/i18n/locales/en/trailerHelp";
 import { FAMILY_ROUTE } from "../../../../../packages/api-client/src/utils/notificationRoute";
 import { PROFILE_PANES, PROFILE_PANE_ROUTES } from "./profilePanes";
 import { FAMILY_HREF, PROFILE_SECTIONS } from "./profileSections";
@@ -43,12 +41,16 @@ describe("structure du profil", () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
+  it("l'Aide du mobile n'offre plus le guide des bandes-annonces (rien à y régler)", () => {
+    expect(allEntries.some((e) => e.kind === "screen" && e.href.startsWith("/help/trailers"))).toBe(false);
+  });
+
   it("les anciennes destinations restent atteignables depuis la structure", () => {
     const reachable = new Set<string>([
       ...allEntries.flatMap((e) => (e.kind === "screen" ? [e.href] : e.kind === "pane" ? [PROFILE_PANE_ROUTES[e.id]] : [])),
     ]);
     for (const route of Object.values(PROFILE_PANE_ROUTES)) expect(reachable).toContain(route);
-    for (const route of ["/support", "/about", "/help/trailers", "/on-device", "/admin/sessions"]) expect(reachable).toContain(route);
+    for (const route of ["/support", "/about", "/on-device", "/admin/sessions"]) expect(reachable).toContain(route);
   });
 
   it("la Famille ouvre l'écran des notifications Famille", () => {
@@ -117,7 +119,6 @@ const TABLES: Record<string, [Record<string, unknown>, Record<string, unknown>]>
   offline: [frOffline, enOffline],
   nav: [frNav, enNav],
   sessions: [frSessions, enSessions],
-  trailerHelp: [frTrailerHelp, enTrailerHelp],
 };
 /** Le mot que le mobile n'écrit jamais (CLAUDE.md, espace `offline`). */
 const FORBIDDEN = /t[ée]l[ée]charg|download/i;

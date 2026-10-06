@@ -80,7 +80,7 @@ export default {
   notificationsSummary: "Nouveautés et support",
   serverSummary: "Changer de serveur, réinitialiser",
   serverSummaryAdmin: "Invitations, sessions, changer de serveur",
-  helpSummary: "Support, guides et à propos",
+  helpSummary: "Support et à propos",
   helpSummaryOffline: "À propos et confidentialité",
   player: "Lecteur",
   dataSaver: "Économie de données",

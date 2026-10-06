@@ -148,7 +148,6 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
       {
         entries: [
           { kind: "screen", id: "support", href: "/support", icon: "life-buoy", label: p("support"), requires: ["online"] },
-          { kind: "screen", id: "trailers", href: "/help/trailers", icon: "film", label: { ns: "trailerHelp", key: "helpEntryTitle" }, requires: ["online"] },
           { kind: "screen", id: "about", href: "/about", icon: "info", label: p("about") },
           { kind: "action", id: "privacyPolicy", icon: "shield", label: p("privacyPolicy") },
         ],

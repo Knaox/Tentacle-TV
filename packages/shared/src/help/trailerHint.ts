@@ -2,7 +2,7 @@
  * Le rappel discret des fiches — « Vous ne voyez pas les bandes-annonces ? » —
  * et la lecture du diagnostic du serveur (`TrailerReadiness`, servi par
  * `GET /api/trailers/readiness`), en logique pure : une seule règle pour le
- * web, le miroir, le mobile et les téléviseurs.
+ * web, le miroir et les téléviseurs (le mobile n'a ni guide ni rappel).
  *
  * Le rappel n'est pas une bannière : il ne paraît que sur la fiche d'un titre
  * SANS AUCUNE bande-annonce (ni locale, ni distante, ni Jellyseerr), quand le
