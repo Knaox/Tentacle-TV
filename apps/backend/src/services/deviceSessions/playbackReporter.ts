@@ -38,6 +38,9 @@ export const EDGE_COALESCE_MS = 400;
  * demie de silence, le lecteur n'est plus là pour avancer.
  */
 export const MAX_EXTRAPOLATION_MS = 90_000;
+/** La redite d'après-retour refusée (Jellyfin répond 503 en chargement) : retentée, au plus tant de fois. */
+export const RESYNC_RETRY_MS = 3_000;
+export const RESYNC_ATTEMPTS = 5;
 
 type Timer = ReturnType<typeof setTimeout>;
 
@@ -62,6 +65,7 @@ export class PlaybackReporter {
   private heartbeatTimer: Timer | null = null;
   private edgeTimer: Timer | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private resyncTimer: Timer | null = null;
   private queue: Promise<unknown> = Promise.resolve();
 
   constructor(
@@ -135,9 +139,30 @@ export class PlaybackReporter {
     return this.enqueue(() => this.jf.post("/Sessions/Playing/Stopped", body));
   }
 
-  /** La connexion Jellyfin de l'appareil vient de (re)naître : il a pu tout oublier. */
-  resync(): void {
-    if (this.state !== null) void this.report("/Sessions/Playing/Progress");
+  /**
+   * La connexion Jellyfin de l'appareil vient de RENAÎTRE (Jellyfin
+   * redémarré) : il a oublié la lecture. Le lecteur, lui, continue sur sa
+   * réserve sans rien recharger (shared `jellyfinReturn.ts`) — c'est donc ici
+   * qu'elle se redit : un début (`/Sessions/Playing`), puis l'état complet
+   * (`/Progress` : pause, pistes, volume), à la position extrapolée. Refusée
+   * (Jellyfin encore en chargement), elle se retente.
+   */
+  async resync(attempt = 1): Promise<void> {
+    if (this.state === null) return;
+    const playback = this.state;
+    if (attempt === 1) logReport("redite après le retour de Jellyfin", playback);
+    const ok = await this.report("/Sessions/Playing");
+    // Une autre lecture, ou plus rien, entre-temps : la redite n'a plus d'objet.
+    if (this.state === null || !samePlayback(this.state, playback)) return;
+    if (ok) {
+      await this.report("/Sessions/Playing/Progress");
+      return;
+    }
+    if (attempt >= RESYNC_ATTEMPTS) return;
+    this.resyncTimer = setTimeout(() => {
+      this.resyncTimer = null;
+      void this.resync(attempt + 1);
+    }, RESYNC_RETRY_MS);
   }
 
   /** Oublie tout sans rien dire à Jellyfin (le processus s'arrête). */
@@ -197,6 +222,8 @@ export class PlaybackReporter {
     if (this.heartbeatTimer !== null) clearTimeout(this.heartbeatTimer);
     if (this.edgeTimer !== null) clearTimeout(this.edgeTimer);
     if (this.pingTimer !== null) clearInterval(this.pingTimer);
+    if (this.resyncTimer !== null) clearTimeout(this.resyncTimer);
+    this.resyncTimer = null;
     this.heartbeatTimer = null;
     this.edgeTimer = null;
     this.pingTimer = null;

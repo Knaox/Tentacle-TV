@@ -238,7 +238,7 @@ export class SessionRegistry {
       onOpen: () => {
         this.broadcast(device, true);
         // Une connexion qui RENAÎT (Jellyfin redémarré) : il a pu tout oublier.
-        if (device.openedOnce) for (const e of device.connections) e.reporter?.resync();
+        if (device.openedOnce) for (const e of device.connections) void e.reporter?.resync();
         device.openedOnce = true;
       },
       onLost: () => this.broadcast(device, false),

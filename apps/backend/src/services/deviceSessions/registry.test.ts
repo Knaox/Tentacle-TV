@@ -285,7 +285,9 @@ describe("SessionRegistry — panne de Jellyfin", () => {
     registry.jellyfinBack();
     expect(log).toEqual(["jeton reconnectNow"]);
     devices[0].handlers.onOpen();
-    await vi.runOnlyPendingTimersAsync();
-    expect(log).toContain("jeton /Sessions/Playing/Progress");
+    await vi.advanceTimersByTimeAsync(0);
+    // Jellyfin a oublié la lecture : un début, puis l'état — le lecteur, lui, ne recharge rien.
+    const reports = log.filter((line) => line.startsWith("jeton /Sessions/Playing"));
+    expect(reports).toEqual(["jeton /Sessions/Playing", "jeton /Sessions/Playing/Progress"]);
   });
 });
