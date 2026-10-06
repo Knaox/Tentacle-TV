@@ -107,111 +107,48 @@
 
 ## Quick Start (Docker)
 
-The fastest way to get Tentacle TV running. You only need Docker. Two deployment options are available.
+You only need Docker (or Podman). Pick one of three ready-to-copy stacks — **nothing to edit, no password to
+write**: the database secrets are generated on the first start.
 
-### Option A — All-in-one (recommended)
-
-Includes MariaDB and Tentacle TV in a single stack. Use the provided [`docker-compose.yml`](docker-compose.yml):
-
-```yaml
-services:
-  db:
-    image: mariadb:11
-    container_name: tentacle-db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: CHANGE_ME_ROOT_PASSWORD
-      MYSQL_DATABASE: tentacle_db
-      MYSQL_USER: tentacle_user
-      MYSQL_PASSWORD: CHANGE_ME_DB_PASSWORD
-    volumes:
-      - tentacle-db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  web:
-    image: ghcr.io/knaox/tentacle-tv:latest
-    container_name: tentacle-tv
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: mysql://tentacle_user:CHANGE_ME_DB_PASSWORD@db:3306/tentacle_db
-      JWT_SECRET: CHANGE_ME_LONG_RANDOM_SECRET
-      PORT: "3000"
-      HOST: "0.0.0.0"
-    volumes:
-      - tentacle-data:/app/apps/backend/data
-    ports:
-      - "3000:3000"
-
-volumes:
-  tentacle-db-data:
-  tentacle-data:
-```
-
-> **Important:** Replace `CHANGE_ME_ROOT_PASSWORD`, `CHANGE_ME_DB_PASSWORD` and `CHANGE_ME_LONG_RANDOM_SECRET` with secure values. The password in `MYSQL_PASSWORD` must match the one in `DATABASE_URL`. You can generate secrets with `openssl rand -base64 32`.
+| Stack | Contains | For |
+|---|---|---|
+| [`stacks/tentacle-full`](stacks/tentacle-full/compose.yaml) (recommended) | Tentacle, MariaDB, **Jellyfin** | starting from scratch |
+| [`stacks/tentacle-db`](stacks/tentacle-db/compose.yaml) | Tentacle, MariaDB | a Jellyfin that already runs elsewhere |
+| [`stacks/tentacle-only`](stacks/tentacle-only/compose.yaml) | Tentacle | existing MariaDB/MySQL and Jellyfin |
 
 ```bash
+mkdir tentacle && cd tentacle
+curl -fsSLo compose.yaml https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/stacks/tentacle-full/compose.yaml
 docker compose up -d
+docker compose logs tentacle     # the one-time setup code, and the link to open
 ```
 
-### Option B — External database
+Open `http://<your-server>:3000`, enter the setup code, and answer the wizard's questions one at a time:
+Jellyfin is configured for you, your libraries are created, remote access is guided and tested from the
+outside. Full guide: **[docs/server](docs/server/README.md)** ([français](docs/server/fr/README.md)) —
+install, remote access (port forwarding, Caddy/Traefik, CGNAT), GPU, operations, troubleshooting.
 
-If you already have a MariaDB/MySQL instance (NAS, dedicated server, cloud), use [`docker-compose.external.yml`](docker-compose.external.yml):
-
-```yaml
-services:
-  web:
-    image: ghcr.io/knaox/tentacle-tv:latest
-    container_name: tentacle-tv
-    restart: unless-stopped
-    environment:
-      JWT_SECRET: CHANGE_ME_LONG_RANDOM_SECRET
-      PORT: "3000"
-      HOST: "0.0.0.0"
-    volumes:
-      - tentacle-data:/app/apps/backend/data
-    ports:
-      - "3000:3000"
-
-volumes:
-  tentacle-data:
-```
-
-```bash
-docker compose -f docker-compose.external.yml up -d
-```
-
-The database connection is configured through the setup wizard on first launch and persisted in the `tentacle-data` volume.
-
-### Configure
-
-Open `http://<your-server>:3000` in your browser. The setup wizard will guide you through:
-
-1. **Database** — Auto-detected (Option A) or enter your connection details (Option B)
-2. **Jellyfin** — Enter your Jellyfin server URL and verify the connection
-3. **Admin account** — Sign in with your Jellyfin admin credentials
-
-That's it. You're ready to stream.
+> The previous [`docker-compose.yml`](docker-compose.yml) and [`docker-compose.external.yml`](docker-compose.external.yml)
+> keep working with the new image; moving to a stack is optional
+> ([migration](docs/server/operations.md#migrating-from-the-old-docker-composeyml)).
 
 ### Update
 
-The admin overview (`/admin`) shows the running version, the latest published release and, when a newer one is out, the command to copy. With Docker Compose, run it in the folder of your `docker-compose.yml`:
+The admin overview (`/admin`) shows the running version, the latest published release and, when a newer one is out, the command to copy. With Docker Compose, run it in the folder of your `compose.yaml`:
 
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-If your file pins a version (`ghcr.io/knaox/tentacle-tv:v1.22.3`), change the tag to the new one first — `pull` would fetch nothing new otherwise. With `docker run`, pull the image (`docker pull ghcr.io/knaox/tentacle-tv:latest`), then recreate the container with the same options: your data stays in its volume. Tentacle never talks to Docker itself; the overview notices the restarted server on its own.
+If you pin a version (`TENTACLE_VERSION=v1.23.0`, or `ghcr.io/knaox/tentacle-tv:v1.23.0`), change it to the new one first — `pull` would fetch nothing new otherwise. Tentacle never talks to Docker itself; the overview notices the restarted server on its own.
 
 ---
 
 ## Reverse Proxy (Nginx Proxy Manager)
+
+> New installs: **Administration › Remote access** guides you (Caddy or Traefik profiles of the stacks, your own
+> proxy, router ports, external test) — see [docs/server/remote-access.md](docs/server/remote-access.md).
+> This section details Nginx Proxy Manager, including same-domain direct streaming.
 
 If you expose Tentacle TV through **Nginx Proxy Manager**, follow these steps to enable real-time features (WebSocket).
 
@@ -502,17 +439,23 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Environment Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `DATABASE_URL` | MariaDB connection string | — | Yes |
-| `JWT_SECRET` | Secret key for JWT token signing | — | Yes |
-| `PORT` | Server listening port | `3000` | No |
-| `HOST` | Server bind address | `0.0.0.0` | No |
-| `RATE_LIMIT` | Max requests per minute per IP | `1000` | No |
-| `CORS_ORIGIN` | Allowed CORS origin (dev only) | — | No |
-| `TENTACLE_IMAGE` | The image you deploy (e.g. `ghcr.io/knaox/tentacle-tv:v1.22.3`): the admin overview then gives the exact update command for a pinned tag | — | No |
-| `TENTACLE_INSTALL_RUNTIME` | `docker`, `podman` or `none`: forces container detection where its marker file is missing (Kubernetes, LXC…) | auto | No |
-| `TENTACLE_SERVER_UPDATE_REPO` | `off` turns off the update check (GitHub, at most every six hours) | Knaox/Tentacle-TV | No |
+None is required with the stacks: the database comes from the stack (or the setup wizard), Jellyfin from the
+wizard. Full list in [docs/server/install.md](docs/server/install.md#settings-env).
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATABASE_URL`, or `DB_HOST` · `DB_PORT` · `DB_NAME` · `DB_USER` · `DB_PASSWORD` / `DB_PASSWORD_FILE` | The database, given by the environment instead of the wizard | — |
+| `PORT` | Server listening port | `3000` |
+| `HOST` | Server bind address | `0.0.0.0` |
+| `PUID` / `PGID` | Account the server runs as (the image starts as root only to fix the data folder's ownership) | `1000` |
+| `RATE_LIMIT` | Max requests per minute per IP | `1000` |
+| `TRUSTED_PROXIES` | Extra proxies (IPs/CIDRs) whose `X-Forwarded-For` is trusted — neighbours (local and Docker networks) always are | — |
+| `REMOTE_CHECK_URL` | Remote access test service; `off` disables the test | `https://check.tentacletv.app` |
+| `TENTACLE_PUBLIC_URL` | Fallback public link (the one set in the administration wins) | — |
+| `CORS_ORIGIN` | Allowed CORS origin (dev only) | — |
+| `TENTACLE_IMAGE` | The image you deploy (e.g. `ghcr.io/knaox/tentacle-tv:v1.23.0`): the admin overview then gives the exact update command for a pinned tag | — |
+| `TENTACLE_INSTALL_RUNTIME` | `docker`, `podman` or `none`: forces container detection where its marker file is missing (Kubernetes, LXC…) | auto |
+| `TENTACLE_SERVER_UPDATE_REPO` | `off` turns off the update check (GitHub, at most every six hours) | Knaox/Tentacle-TV |
 
 > Jellyfin URL and API key are configured through the web setup wizard and stored in the database — not in environment variables.
 

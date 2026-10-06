@@ -520,6 +520,43 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
 - Un nouveau geste de la Famille : une entrée dans `FAMILY_ROUTES` d'abord,
   jamais une route à part.
 
+## Serveur — installation, piles, accès à distance (v2)
+
+Doc utilisateur : `docs/server/` (EN) et `docs/server/fr/`. Trois piles prêtes à copier,
+`stacks/tentacle-{full,db,only}/compose.yaml` : **aucun secret écrit** (service `init` → volume
+`tentacle-secrets`, `DB_PASSWORD_FILE`), **jamais le socket Docker**, jamais root (`PUID:PGID`, tini,
+su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration forcée).
+
+- **Assistant d'installation** (`/api/setup/*`, `apps/backend/src/setup/`) : un code à usage unique
+  (12 car. Crockford, journaux + `data/setup-token.txt`) s'échange contre une session (en-tête
+  `X-Tentacle-Setup`, jamais un cookie). Fini, il est **fermé pour toujours** (404 partout sauf
+  `GET /status`, gardé pour les clients livrés) ; seule la CLI de l'image le rouvre
+  (`tentacle setup token|reset`). Refus = `{ error: <SetupErrorCode> }`, jamais un message brut ni une
+  réponse de Jellyfin. Contrat : `packages/shared/src/setupWizard/setupWizardContract.ts`, recopié dans le
+  backend (test miroir). Pile complète : le Jellyfin voisin est **verrouillé au démarrage** (`claimed`) puis
+  pris par le compte choisi. Jamais de `prisma db push` (il supprime les tables des extensions).
+- **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, règle
+  pure `wizardModel.ts`, chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
+  le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire.
+- **`trustProxy` limité aux voisins** (`services/trustedProxies.ts` : boucle locale, RFC 1918, ULA, réseaux
+  Docker, + `TRUSTED_PROXIES`) ; l'adresse réelle d'un client se lit par `getRealClientIp`, jamais
+  `request.ip` (compteur de débit, réseau local, journaux). Docker Desktop/colima perdent l'adresse source :
+  documenté, pas contourné.
+- **Accès à distance** (`apps/backend/src/remoteAccess/`, section admin `/admin/remote-access` sous
+  `requirePersonalAdmin` — jamais une TV jumelée) : ports, mandataire HTTPS (Caddy/Traefik par profils,
+  extraits pour un mandataire existant), test d'ouverture mené **depuis l'extérieur** par le service
+  `apps/port-check` (`REMOTE_CHECK_URL`, défaut check.tentacletv.app, `off` le coupe). Le service ne teste
+  que l'adresse du demandeur ; Tentacle se prouve par un défi `/.well-known/tentacle-check/:id` (60 s).
+  **Aucun workflow ne construit ni ne déploie `apps/port-check`.** Tailscale = plan B documenté, jamais
+  intégré. Contrats : `packages/shared/src/remoteAccess/{checkProtocol,remoteAccessContract}.ts`, recopiés
+  dans le backend (et le protocole dans `apps/port-check/src/`), tests miroirs. Verdict partagé
+  (`remoteVerdict.ts`) : la cause probable en mots, CGNAT par l'adresse WAN de la box.
+- **Une page admin de plus SANS entrée dans `lazyPages.ts`** : la cible webOS le remplace
+  (`apps/tv-webos/.../lazyPagesTv.tsx`) et casserait sur une export inconnue. « Accès à distance » passe
+  donc par le module paresseux de la page Services (`AdminServicesPage section="remote-access"`).
+- **Guides des box** (`remoteAccess/routerGuides.ts`) : seulement des pages officielles vérifiées, datées ;
+  ce qui n'est pas confirmé vaut `null` (SFR : site fermé à nos outils).
+
 ## Panne de Jellyfin — un état dit par le serveur, une règle pour les lecteurs
 
 Le backend sait si Jellyfin redémarre, s'arrête ou démarre
