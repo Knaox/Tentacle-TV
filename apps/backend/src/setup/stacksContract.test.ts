@@ -45,6 +45,12 @@ describe("les piles Docker livrées", () => {
       it("fait tourner Tentacle sous PUID:PGID, jamais root", () => {
         expect(compose).toMatch(/PUID: \$\{PUID:-1000\}/);
       });
+
+      it("n'embarque aucun mandataire : l'utilisateur garde le sien (docs/server/remote-access.md)", () => {
+        expect(code(compose)).not.toMatch(/image:\s*(caddy|traefik|nginx|jc21\/nginx-proxy-manager)\b/);
+        expect(code(compose)).not.toMatch(/^\s*profiles:/m);
+        expect(code(compose)).not.toMatch(/:(80|443)"/);
+      });
     });
   }
 
