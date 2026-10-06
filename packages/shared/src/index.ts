@@ -115,6 +115,7 @@ export * from "./serverLinks/serverLinksVerdict";
 export * from "./setupWizard/setupWizardContract";
 export * from "./setupWizard/setupDiscoveryContract";
 export * from "./setupWizard/setupFlowContract";
+export * from "./setupWizard/setupLibraryContract";
 export * from "./setupWizard/appLinks";
 // L'accès à distance : protocole du service de test (miroir backend et
 // apps/port-check), contrat des réglages (miroir backend), plan des ports,

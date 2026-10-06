@@ -195,25 +195,7 @@ export interface SetupDatabaseRequest {
 
 /** La sonde et la découverte de Jellyfin : `setupDiscoveryContract.ts`. */
 
-/**
- * `POST /api/setup/jellyfin/select` — le Jellyfin choisi, d'un geste de
- * l'administrateur. Le serveur le sonde et en tire le parcours ; la réponse
- * est le contexte à jour (`SetupContext`). Un autre Jellyfin que celui choisi
- * avant : ce qui avait été préparé pour l'ancien est oublié.
- */
-export interface JellyfinSelectRequest {
-  url: string;
-}
-
-/**
- * `POST /api/setup/jellyfin/verify` — le compte administrateur du Jellyfin
- * relié, revérifié (rechargement de la page : le mot de passe n'est jamais
- * gardé). Rien n'est créé ni changé.
- */
-export interface JellyfinVerifyRequest {
-  username: string;
-  password: string;
-}
+/** Le choix du Jellyfin et la revérification du compte : `setupFlowContract.ts`. */
 
 /** La langue et le pays des métadonnées (et de l'interface de Jellyfin). */
 export interface SetupLocale {
@@ -245,47 +227,7 @@ export type JellyfinConnectRequest =
   | { url: string; username: string; password: string }
   | { url: string; apiKey: string };
 
-/** `GET /api/setup/jellyfin/browse?path=` — un dossier du système de fichiers DE JELLYFIN. */
-export interface BrowseEntry {
-  name: string;
-  path: string;
-}
-
-export interface BrowseResult {
-  /** `null` : la racine (les lecteurs, ou `/`). */
-  path: string | null;
-  parent: string | null;
-  entries: BrowseEntry[];
-}
-
-export type LibraryType = "movies" | "tvshows" | "mixed";
-
-export interface LibraryPlan {
-  name: string;
-  type: LibraryType;
-  paths: string[];
-}
-
-/** `GET /api/setup/jellyfin/libraries` — les bibliothèques déjà là (un tableau). */
-export interface ExistingLibrary {
-  name: string;
-  type: string | null;
-  paths: string[];
-}
-
-/** `POST /api/setup/jellyfin/libraries` */
-export interface LibrariesRequest {
-  libraries: LibraryPlan[];
-  metadataLanguage: string;
-  metadataCountry: string;
-}
-
-/** La réponse de `POST /api/setup/jellyfin/libraries` : une issue par bibliothèque demandée (un tableau). */
-export interface LibraryOutcome {
-  name: string;
-  status: "created" | "exists" | "failed";
-  error?: SetupErrorCode;
-}
+/** Les dossiers de Jellyfin et ses bibliothèques (lire, créer) : `setupLibraryContract.ts`. */
 
 /**
  * Un Jellyfin DÉJÀ configuré : les réglages conseillés, tous facultatifs.

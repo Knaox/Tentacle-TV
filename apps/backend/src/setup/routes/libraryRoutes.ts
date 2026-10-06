@@ -5,7 +5,7 @@ import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
 import { browseSchema, librariesSchema } from "../setupSchemas";
 import { storedJellyfin, type StoredJellyfin } from "../setupStore";
-import type { BrowseResult, ExistingLibrary, LibraryOutcome } from "../setupWizardContract";
+import type { BrowseResult, ExistingLibrary, LibraryOutcome } from "../setupLibraryContract";
 
 /**
  * Les dossiers que voit Jellyfin, et ses bibliothèques — par la clé

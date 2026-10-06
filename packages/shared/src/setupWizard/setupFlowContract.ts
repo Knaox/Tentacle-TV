@@ -186,3 +186,23 @@ export function setupActionAllowed(action: SetupAction, state: SetupFlowState): 
       return state.linked;
   }
 }
+
+/**
+ * `POST /api/setup/jellyfin/select` — le Jellyfin choisi, d'un geste de
+ * l'administrateur. Le serveur le sonde et en tire le parcours ; la réponse
+ * est le contexte à jour (`SetupContext`). Un autre Jellyfin que celui choisi
+ * avant : ce qui avait été préparé pour l'ancien est oublié.
+ */
+export interface JellyfinSelectRequest {
+  url: string;
+}
+
+/**
+ * `POST /api/setup/jellyfin/verify` — le compte administrateur du Jellyfin
+ * relié, revérifié (rechargement de la page : le mot de passe n'est jamais
+ * gardé). Rien n'est créé ni changé.
+ */
+export interface JellyfinVerifyRequest {
+  username: string;
+  password: string;
+}
