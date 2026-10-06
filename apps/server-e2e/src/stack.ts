@@ -86,6 +86,22 @@ export class Stack {
     await this.waitHealthy();
   }
 
+  /** Monter SANS effacer les volumes : une pile reprise d'un déploiement précédent (mêmes noms). */
+  async start(): Promise<void> {
+    await this.compose("up", "-d", "--remove-orphans");
+    await this.waitHealthy();
+  }
+
+  /** Démonter en GARDANT les volumes, comme un « Pull and redeploy » de Portainer entre deux piles. */
+  async stop(): Promise<void> {
+    await this.compose("down", "--remove-orphans");
+  }
+
+  /** Une requête dans la base de la pile (compte `tentacle`, mot de passe du volume de secrets). */
+  async sql(query: string): Promise<string> {
+    return this.exec("db", "sh", "-c", `mariadb -N -utentacle -p"$(cat /run/tentacle-secrets/db_password)" tentacle -e "${query.replace(/[`"$\\]/g, "\\$&")}"`);
+  }
+
   async down(): Promise<void> {
     if (process.env.E2E_KEEP === "1" && this.started) return;
     await this.compose("down", "-v", "--remove-orphans").catch(() => undefined);

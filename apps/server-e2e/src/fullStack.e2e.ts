@@ -9,7 +9,8 @@ import { docker, fetchWithin, Stack, waitFor } from "./stack";
 
 /**
  * Pile complète, Jellyfin vierge : l'assistant mené au navigateur, du code des
- * journaux jusqu'à l'accueil — sans jamais ouvrir le tableau de bord de
+ * journaux (Chrome sur le Mac passe par la passerelle de colima : adresse
+ * inconnue, le code est demandé) jusqu'à l'accueil — sans jamais ouvrir le tableau de bord de
  * Jellyfin. Puis l'assistant fermé pour de bon, et un film déposé dans le
  * dossier des médias que Jellyfin retrouve.
  */
@@ -46,11 +47,14 @@ describe("pile complète, Jellyfin vierge — l'assistant au navigateur", () => 
       await page.getByLabel("Nom d'utilisateur").fill(USER);
       await page.getByLabel("Mot de passe", { exact: true }).fill(PASSWORD);
       await page.getByLabel("Confirmez le mot de passe").fill(PASSWORD);
-      await button("Continuer").click();
+      // Plus d'écran « Langue » : proposée d'après le navigateur, elle est sous le compte.
+      expect(await page.getByLabel("Langue", { exact: true }).inputValue()).toBe("fr");
       await button("Préparer Jellyfin").click();
       await page.getByRole("heading", { name: "Vos bibliothèques" }).waitFor({ timeout: 60_000 });
       await page.getByText("/media/films").first().waitFor();
       await button("Continuer").click();
+      // L'adresse de Jellyfin des applications : l'hôte de cette page et le port publié, jamais `http://jellyfin`.
+      expect(await page.getByLabel("Adresse de Jellyfin pour les applications").inputValue()).toBe(`http://127.0.0.1:${PORTS.jellyfin}`);
       await button("Installer").click();
       await page.getByRole("heading", { name: "Accès à distance (facultatif)" }).waitFor({ timeout: 60_000 });
       await button("Plus tard").click();
