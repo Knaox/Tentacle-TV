@@ -28,6 +28,9 @@ import { useHomeHero } from "./useHomeHero";
 import { useHomeRows } from "./useHomeRows";
 import "../../mirror.css";
 
+/** Une source du héros en échec : rien (identité stable). */
+const NO_HERO_ITEMS: MediaItem[] = [];
+
 /** Le compte n'est plus là (profil absent) : la session a expiré. */
 const SESSION_GONE = describeProblem({ cause: "sessionExpired", context: "page", availability: { canGoBack: false } });
 
@@ -69,8 +72,9 @@ export function MirrorHome() {
   const handlePlay = useCallback((item: MediaItem) => navigate(`/watch/${item.Id}`), [navigate]);
   const { slides, loading: heroLoading } = useHomeHero({
     layout,
-    resume: resume.data,
-    featured: featured.data,
+    // Une source en échec ne s'attend plus : elle vaut « rien ».
+    resume: resume.data ?? (resume.isError ? NO_HERO_ITEMS : undefined),
+    featured: featured.data ?? (featured.isError ? NO_HERO_ITEMS : undefined),
     onPlay: handlePlay,
     onInfo: handlePress,
     onRecoOpen: recoNav.open,

@@ -6,7 +6,7 @@ import {
   type HomeLayoutData,
   type RecoRowItem,
 } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { pickHeroMedia, type MediaItem } from "@tentacle-tv/shared";
 import { useRecoFilter } from "../../../hooks/useRecoFilter";
 import type { HeroSlide } from "../../hero/heroSlides";
 import { mediaHeroSlides } from "../../hero/mediaHeroSlides";
@@ -22,6 +22,7 @@ const NO_SLIDES: HeroSlide[] = [];
  */
 export function useHomeHero(input: {
   layout: HomeLayoutData | undefined;
+  /** `undefined` tant que la source n'a pas répondu ; en échec : `[]`. */
   resume: MediaItem[] | undefined;
   featured: MediaItem[] | undefined;
   onPlay: (item: MediaItem) => void;
@@ -37,11 +38,14 @@ export function useHomeHero(input: {
   const fixedId = heroMode === "fixed" ? (layout?.heroFixedItemId ?? undefined) : undefined;
   const fixed = useMediaItem(fixedId);
 
-  const mediaItems = useMemo(() => {
-    if (heroMode === "random") return featured ?? [];
-    if (heroMode === "fixed" && fixed.data) return [fixed.data];
-    return resume && resume.length > 0 ? resume.slice(0, 5) : (featured ?? []);
-  }, [heroMode, featured, resume, fixed.data]);
+  // La règle PARTAGÉE (shared `pickHeroMedia`, celle du bureau et de la TV) :
+  // titre fixe effacé (404) → la reprise ; jamais un titre sans image.
+  const fixedState = !fixedId ? null : (fixed.data ?? (fixed.isError ? null : undefined));
+  const pick = useMemo(
+    () => pickHeroMedia(heroMode, { resume, featured, fixed: fixedState }),
+    [heroMode, resume, featured, fixedState],
+  );
+  const mediaItems = pick.items;
   const mediaSlides = useMemo(
     () => mediaHeroSlides(mediaItems, client, { onPlay, onInfo }),
     [mediaItems, client, onPlay, onInfo],
@@ -51,8 +55,9 @@ export function useHomeHero(input: {
     [heroMode, recoHero.slides, client, onRecoOpen, canOpenReco],
   );
 
-  const slides = heroMode === "reco" && recoSlides.length > 0 ? recoSlides : mediaSlides;
-  // Sélection fixe en cours de chargement : le squelette, pas la reprise puis un saut.
-  const loading = heroMode === "fixed" && !!fixedId && fixed.isPending;
+  const showReco = heroMode === "reco" && recoSlides.length > 0;
+  const slides = showReco ? recoSlides : mediaSlides;
+  // Ce que le mode attend n'a pas répondu : le squelette, pas un saut ensuite.
+  const loading = !showReco && pick.pending;
   return { slides, loading };
 }
