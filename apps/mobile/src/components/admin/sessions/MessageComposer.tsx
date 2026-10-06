@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from "react";
 import {
-  ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import type { MessageInput } from "@/hooks/admin/useAdminSessions";
 import { MessageBanner } from "@/session/MessageBanner";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -55,7 +56,7 @@ export function MessageComposer({ title, recipient, previewName, pending, failed
 
   return (
     <Modal visible animationType="slide" presentationStyle={sheet ? "pageSheet" : "fullScreen"} onRequestClose={onClose}>
-      <KeyboardAvoidingView style={st.root} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingArea style={st.root}>
         <View style={[st.bar, { paddingTop: sheet ? spacing.md : Math.max(insets.top, spacing.md) }]}>
           <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" style={st.barBtn}>
             <Text style={st.cancel}>{t("cancel")}</Text>
@@ -137,7 +138,7 @@ export function MessageComposer({ title, recipient, previewName, pending, failed
             </View>
           )}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingArea>
     </Modal>
   );
 }

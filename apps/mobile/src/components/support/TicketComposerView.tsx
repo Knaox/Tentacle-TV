@@ -4,8 +4,7 @@ import {
   Text,
   TextInput,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  
   Pressable,
   ActivityIndicator,
   type TextStyle,
@@ -14,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import { SubtleBackground, IconButton } from "../ui";
+import { SubtleBackground, IconButton, KeyboardAvoidingArea } from "../ui";
 import { FONT_FAMILY, RADIUS, useContentPadding, useTheme, withAlpha, type AppTheme } from "../../theme";
 import { Chip } from "./Chip";
 import { CATEGORIES, useTicketApi, type Category } from "./ticketTypes";
@@ -59,7 +58,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
 
   return (
     <SubtleBackground ambient>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingArea>
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: contentPad,
@@ -176,7 +175,7 @@ export function TicketComposerView({ onBack, onCreated }: Props) {
             )}
           </Pressable>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingArea>
     </SubtleBackground>
   );
 }

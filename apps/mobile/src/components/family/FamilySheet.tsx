@@ -1,8 +1,9 @@
 import { useEffect, type ReactNode } from "react";
 import {
-  ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
+  ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import { retainModal } from "@/components/ui/modalGate";
 import { MODAL_ORIENTATIONS } from "@/family/modalOrientations";
 import { FONT_FAMILY, SHEET_MAX_WIDTH, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -44,7 +45,7 @@ export function FamilySheet({ title, closeLabel, onClose, action, children }: Fa
       supportedOrientations={[...MODAL_ORIENTATIONS]}
       onRequestClose={close}
     >
-      <KeyboardAvoidingView style={st.root} behavior={sheet ? "padding" : undefined}>
+      <KeyboardAvoidingArea style={st.root}>
         <View style={[st.bar, { paddingTop: sheet ? spacing.md : Math.max(insets.top, spacing.md) }]}>
           <Pressable onPress={close} disabled={pending} hitSlop={10} accessibilityRole="button" style={st.barBtn}>
             <Text style={[st.barText, pending && st.off]}>{closeLabel}</Text>
@@ -80,7 +81,7 @@ export function FamilySheet({ title, closeLabel, onClose, action, children }: Fa
         >
           <View style={st.column}>{children}</View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingArea>
     </Modal>
   );
 }

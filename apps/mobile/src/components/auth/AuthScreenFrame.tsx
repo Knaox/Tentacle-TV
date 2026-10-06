@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { FONT_FAMILY, useTheme, useThemedStyles, withAlpha } from "@/theme";
 import { TentacleLogo } from "../TentacleLogo";
+import { KeyboardAvoidingArea } from "../ui/KeyboardAvoidingArea";
 import { FadeIn, GlassCard, SubtleBackground, makeAuthStyles } from "./authStyles";
 import { LanguageToggle } from "./LanguageToggle";
 
@@ -68,7 +69,7 @@ export function AuthScreenFrame({ title, subtitle, children, footer, onBack, sho
         {showLanguage && <LanguageToggle />}
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingArea>
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
@@ -106,7 +107,7 @@ export function AuthScreenFrame({ title, subtitle, children, footer, onBack, sho
             {footer && <View style={{ marginTop: 12, alignItems: "center" }}>{footer}</View>}
           </FadeIn>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingArea>
     </SubtleBackground>
   );
 }
