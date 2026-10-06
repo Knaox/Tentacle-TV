@@ -70,7 +70,7 @@ class MediaCapabilitiesModule(private val context: ReactApplicationContext) : Re
         try {
           val started = SystemClock.elapsedRealtime()
           val json = profileJson().toString()
-          Log.i(TAG, "relevé au lancement (${SystemClock.elapsedRealtime() - started} ms) : $json")
+          logProfile("relevé au lancement (${SystemClock.elapsedRealtime() - started} ms)", json)
         } catch (e: Throwable) {
           Log.w(TAG, "relevé au lancement impossible : ${e.message}")
         }
@@ -88,6 +88,12 @@ class MediaCapabilitiesModule(private val context: ReactApplicationContext) : Re
       null
     }
     return value?.trim()?.takeIf { it.isNotEmpty() }
+  }
+
+  /** Le profil au journal, par morceaux numérotés : logcat coupe une ligne vers 4 Ko. */
+  private fun logProfile(title: String, json: String) {
+    val parts = json.chunked(3000)
+    parts.forEachIndexed { i, part -> Log.i(TAG, "$title [${i + 1}/${parts.size}] $part") }
   }
 
   /** La sortie (écran, HDR de l'écran, son), relue à chaque changement. */
@@ -121,7 +127,7 @@ class MediaCapabilitiesModule(private val context: ReactApplicationContext) : Re
         val started = SystemClock.elapsedRealtime()
         val json = profileJson().toString()
         val elapsed = SystemClock.elapsedRealtime() - started
-        Log.i(TAG, "profil (${elapsed} ms) : $json")
+        logProfile("profil (${elapsed} ms)", json)
         main.post(::watchOutput)
         promise.resolve(Arguments.createMap().apply {
           putString("json", json)
