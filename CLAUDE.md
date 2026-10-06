@@ -50,7 +50,8 @@ gh workflow run server.yml -f channel=store   # le serveur, par exemple
 
 **Source unique des versions : `versions.json` (racine)** — champs `desktop`,
 `tv`, `webos`, `mobile`, `server`, `minServer` (version serveur minimale exigée
-par les clients — bannière de compat `useServerCompat.ts`). On change la version
+par les clients — avertissement bloquant `useServerCompat.ts` ; au-dessus, les
+nouveautés se règlent par les CAPACITÉS du serveur, cf. plus bas). On change la version
 À UN SEUL ENDROIT, et c'est la CI qui l'écrit : `.github/scripts/bump-version.mjs`
 aligne au passage le `package.json` de la cible. Les **numéros de build**
 (CFBundleVersion / versionCode) sont **auto-incrémentés** par la CI (minutes
@@ -230,6 +231,54 @@ Two API targets from the frontend:
 ### Plugin System
 
 Extensible plugin architecture with admin marketplace. Plugins can add frontend routes and backend endpoints. Plugin registry loaded from GitHub or custom sources with SHA256 verification.
+
+## Capacités du serveur — le serveur décide de ce qui s'affiche
+
+**Un client n'affiche JAMAIS une option, une section ou une fonction que son
+serveur ne sait pas faire.** Un appareil à jour face à un serveur plus ancien
+n'en voit rien et n'en subit aucun effet. Le serveur le DÉCLARE
+(`GET /api/config` → `capabilities`) ; les clients ne lisent que cette
+déclaration. **Jamais un `if (version >= x)`**, jamais un 404 interprété en
+« serveur trop ancien » pour une fonction nouvelle.
+
+- **Le contrat** : `packages/shared/src/serverCapabilities/serverCapabilities.ts`,
+  liste FERMÉE clé → version du serveur qui l'apporte, recopiée octet pour
+  octet dans `apps/backend/src/serverCapabilities/` (`capabilitiesMirror.test.ts`).
+  Les clés traversent le réseau : elles ne se renomment jamais.
+- **Un serveur qui ne déclare rien** (≤ 1.23.x) vaut les clés dont `since`
+  est atteint par sa version — aujourd'hui aucune : comportement d'avant,
+  sans erreur. Dès qu'il déclare, SA liste fait foi.
+- **Une seule porte côté clients** : `useServerCapability("…")`,
+  `useServerCapabilities()` et `<ServerCapabilityGate capability fallback>`
+  (api-client, sur la requête `["app-config", serveur]` déjà en cache). Rien
+  tant que la configuration n'a pas répondu ; `fallback` (le comportement
+  d'avant, une redirection) une fois l'absence établie. Web, bureau, mobile,
+  TV, webOS : la même. Une règle PURE (shared, tv-core) reçoit
+  `capabilities: ReadonlySet<ServerCapability>` en entrée — ex.
+  `buildAdminAttention`, `deliveryOf` —, l'adaptateur la lit par le crochet.
+- **Capacité ≠ réglage.** Ce que l'administration peut COUPER (Famille, ses
+  invités) reste dans `features` ; une capacité dit ce que le CODE du serveur
+  sait faire. Une fonction purement client (fréquence d'écran, lecteur) n'a
+  pas de clé. Une fonction d'EXTENSION se lit sur le contrat qu'elle déclare
+  (`/api/plugins/active` → `titles`, `search`… : `titleProvider`), jamais sur
+  son identifiant.
+- **L'avertissement** : sous `minServer`, « Serveur à mettre à jour »
+  (`serverUpdate`) est bloquant et ne se masque pas ; au-dessus, s'il manque
+  une capacité connue du client, une invitation (`serverNews`, « Pour profiter
+  des dernières nouveautés… »), masquable jusqu'aux prochaines nouveautés
+  (`notices/serverUpdateNotice.ts`).
+
+**Nouvelle fonction qui dépend du serveur — mode d'emploi :**
+1. Ajouter SA clé dans `serverCapabilities.ts` (shared) avec la version du
+   serveur qui la livrera, puis `cp` vers le backend (le test miroir le tient).
+2. Le serveur la déclare d'office (`declaredCapabilities.ts`) — rien à faire
+   tant que la route existe dans ce code.
+3. Chaque client garde l'entrée (bouton, section, route, requête) par
+   `useServerCapability` / `ServerCapabilityGate` — une requête vers une
+   route nouvelle prend `enabled: useServerCapability(…)`, et son `refetch`
+   manuel aussi.
+4. Un test face à un serveur qui ne déclare rien : la fonction est absente,
+   sans erreur.
 
 ## Marque — le logo ne se dessine qu'à un seul endroit
 

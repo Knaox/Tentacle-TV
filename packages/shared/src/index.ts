@@ -75,6 +75,9 @@ export * from "./plugins/pluginSetup";
 // des fiches, lue sur le diagnostic du serveur.
 export * from "./help/trailerGuide";
 export * from "./help/dismissibleHints";
+// Les capacités du serveur : la liste fermée de ce qu'un serveur sait faire,
+// déclarée par `/api/config` (miroir backend) — un client ne montre rien d'autre.
+export * from "./serverCapabilities/serverCapabilities";
 export * from "./help/trailerHint";
 // Les avertissements surgissants des clients : leur politique (gravité,
 // public, effacement seul, « Ne plus afficher » du compte, un seul à la fois)

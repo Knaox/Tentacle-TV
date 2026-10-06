@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAdminMetadataStatus, useIsHintDismissed } from "@tentacle-tv/api-client";
+import { useAdminMetadataStatus, useIsHintDismissed, useServerCapabilities } from "@tentacle-tv/api-client";
 import {
   buildAdminAttention,
   evaluateServerLinks,
@@ -52,6 +52,7 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
   const setup = useJellyfinSetup();
   const compat = useJellyfinCompat();
   const update = useServerUpdate();
+  const { capabilities } = useServerCapabilities();
   const publicUrl = useIsHintDismissed("adminPublicUrl");
   const tmdbKey = useIsHintDismissed("adminTmdbKey");
   const jellyfin = useIsHintDismissed("adminJellyfin");
@@ -95,10 +96,11 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
       jellyfinSetup: setup.isPending ? undefined : setupReport,
       jellyfinVersion: compat.isPending ? undefined : (installed?.status ?? null),
       serverUpdate: update.isPending ? undefined : (verdict?.status ?? null),
+      capabilities,
       dismissed,
     }),
     [services.loading, services.data, key.isPending, key.data, metadata.isPending, metadata.data, links.isPending, checks,
-      setup.isPending, setupReport, compat.isPending, installed, update.isPending, verdict, dismissed],
+      setup.isPending, setupReport, compat.isPending, installed, update.isPending, verdict, capabilities, dismissed],
   );
 
   const context = useMemo<AttentionContext>(

@@ -27,6 +27,7 @@ et Linux reçoivent l'ensemble.
 - **Affiner** : « Afficher le synopsis » répond de nouveau au clic, et Espace l'ouvre toujours
 - **Administration** (serveur 1.24.0) : « Jellyfin redémarre » au lieu d'une erreur, la détection des passages installée ou réparée en un clic, un guide de l'accès à distance, et des sessions étiquetées juste
 - La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
+- **Serveur plus ancien : rien ne casse**, ce qui exige un serveur récent reste caché
 
 ### EN
 - **Jellyfin restarts during a movie?** With server 1.24.0, playback continues from what is already loaded, with no reload when it comes back; the message is temporary, with a countdown
@@ -40,6 +41,7 @@ et Linux reçoivent l'ensemble.
 - **Refine**: "Show synopsis" responds to clicks again, and Space always opens it
 - **Administration** (server 1.24.0): "Jellyfin is restarting" instead of an error, skip detection installed or repaired in one click, a remote access guide, and accurately labeled sessions
 - The in-progress row is now called "Where you left off"
+- **Older server: nothing breaks**, what needs a recent server stays hidden
 
 ## [1.26.0]
 <!-- Bloc nu : Windows (Microsoft Store, 1500 caractères) et Linux partent de la 1.25.5. Le Mac App Store, où la 1.25.5 n'a pas été validée, a son bloc mac-. -->

@@ -25,11 +25,13 @@ describe("avertissements surgissants", () => {
     expect(pickNotice([{ id: "tmdbKey", active: true }], admin)).toBe("tmdbKey");
   });
 
-  it("un seul à la fois, par rang : la clé d'administration, puis le serveur, puis TMDB", () => {
+  it("un seul à la fois, par rang : la clé d'administration, puis le serveur, puis TMDB, puis l'invitation", () => {
     const all = [{ id: "tmdbKey", active: true }, { id: "serverUpdate", active: true }, { id: "adminKey", active: true }] as const;
     expect(pickNotice(all, admin)).toBe("adminKey");
     expect(pickNotice(all.slice(0, 2), admin)).toBe("serverUpdate");
     expect(pickNotice([{ id: "serverUpdate", active: false }, { id: "tmdbKey", active: true }], admin)).toBe("tmdbKey");
+    expect(pickNotice([{ id: "serverNews", active: true }, { id: "tmdbKey", active: true }], admin)).toBe("tmdbKey");
+    expect(pickNotice([{ id: "serverNews", active: true }], admin)).toBe("serverNews");
     expect(pickNotice([], admin)).toBeNull();
   });
 
@@ -45,8 +47,8 @@ describe("avertissements surgissants", () => {
   });
 
   it("se tait sur la vue d'ensemble de l'administration (page exacte) et là où l'on règle le problème", () => {
-    expect([...suppressedNotices("/admin")].sort()).toEqual(["adminKey", "serverUpdate", "tmdbKey"]);
-    expect([...suppressedNotices("/admin/")].sort()).toEqual(["adminKey", "serverUpdate", "tmdbKey"]);
+    expect([...suppressedNotices("/admin")].sort()).toEqual(["adminKey", "serverNews", "serverUpdate", "tmdbKey"]);
+    expect([...suppressedNotices("/admin/")].sort()).toEqual(["adminKey", "serverNews", "serverUpdate", "tmdbKey"]);
     expect([...suppressedNotices("/admin/metadata")]).toEqual(["tmdbKey"]);
     expect([...suppressedNotices("/admin/services")]).toEqual(["adminKey"]);
     expect([...suppressedNotices("/admin/sessions")]).toEqual([]);
@@ -57,8 +59,10 @@ describe("avertissements surgissants", () => {
   it("une recommandation s'efface seule après 6 s ; une panne reste jusqu'à ce qu'on la ferme", () => {
     expect(NOTICE_AUTO_HIDE_MS).toBe(6000);
     expect(noticeAutoHideMs(noticeRule("tmdbKey").severity)).toBe(6000);
-    expect(noticeAutoHideMs(noticeRule("serverUpdate").severity)).toBe(6000);
+    expect(noticeAutoHideMs(noticeRule("serverNews").severity)).toBe(6000);
     expect(noticeAutoHideMs(noticeRule("adminKey").severity)).toBeNull();
+    // Sous l'exigence du client, le serveur est bloquant : il reste.
+    expect(noticeAutoHideMs(noticeRule("serverUpdate").severity)).toBeNull();
   });
 
   it("« Ne plus afficher » : un rappel du compte, offert seulement si le serveur sait le retenir", () => {
@@ -68,8 +72,10 @@ describe("avertissements surgissants", () => {
     expect(canDismissForGood(noticeRule("tmdbKey"), [...DISMISSIBLE_HINTS])).toBe(true);
     // Un serveur d'avant ne retient que le contrat d'origine.
     expect(canDismissForGood(noticeRule("tmdbKey"), ["trailerHelp"])).toBe(false);
-    expect(canDismissForGood(noticeRule("serverUpdate"), undefined)).toBe(false);
-    // Une panne ne se masque jamais pour de bon.
+    expect(canDismissForGood(noticeRule("serverNews"), undefined)).toBe(false);
+    expect(canDismissForGood(noticeRule("serverNews"), [...DISMISSIBLE_HINTS])).toBe(true);
+    // Une panne, un serveur sous l'exigence, ne se masquent jamais pour de bon.
     expect(canDismissForGood(noticeRule("adminKey"), [...DISMISSIBLE_HINTS])).toBe(false);
+    expect(canDismissForGood(noticeRule("serverUpdate"), [...DISMISSIBLE_HINTS])).toBe(false);
   });
 });

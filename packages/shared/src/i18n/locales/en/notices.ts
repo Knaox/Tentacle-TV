@@ -7,12 +7,18 @@ export default {
   close: "Close",
   undo: "Undo",
   dismissForGood: "Don't show again",
-  // The Tentacle server is older than this client requires.
+  // The Tentacle server is older than this client REQUIRES (minServer): blocking.
   serverUpdateTitle: "Tentacle server needs an update",
-  serverUpdateText: "Your server (v{{server}}) is older than this app requires (v{{required}} or later): some features may not work.",
+  serverUpdateText: "This app requires Tentacle server v{{required}} or later; yours is v{{server}}. Please update it.",
+  // `serverUpdateDismiss` / `serverUpdateDismissed`: no longer shown (the required notice can't be hidden), kept.
   serverUpdateDismiss: "Don't show again until the next required update",
   serverUpdateDismissed: "Hidden until the next required update.",
   serverUpdateHow: "See how to update",
+  // The server meets the requirement, but a new feature of this app needs a newer server.
+  serverNewsTitle: "New features available",
+  serverNewsText: "To enjoy the latest features, update your Tentacle server.",
+  serverNewsDismiss: "Don't show again until the next new features",
+  serverNewsDismissed: "Hidden until the next new features.",
   // No TMDB key on the server.
   tmdbKeyTitle: "No TMDB key",
   tmdbKeyText: "Without it, recommendations stay generic for every account: no \"For you\", no taste profile, no platform filters.",

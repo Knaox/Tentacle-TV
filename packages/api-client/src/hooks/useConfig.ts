@@ -19,6 +19,9 @@ export interface AppConfig {
   version: string;
   brandName: string;
   features: AppFeatures;
+  /** Les capacités déclarées (`serverCapabilities.ts`). Absent d'un serveur d'avant 1.24.0 :
+   *  ne se lit jamais directement — `useServerCapability`. */
+  capabilities?: string[];
 }
 
 const defaultConfig: AppConfig = {
@@ -29,7 +32,9 @@ const defaultConfig: AppConfig = {
 
 export function useAppConfig() {
   return useQuery({
-    queryKey: ["app-config"],
+    // Par serveur : un changement de serveur ne garde pas les capacités de l'autre
+    // (les invalidations sur `["app-config"]` couvrent toutes les entrées).
+    queryKey: ["app-config", _backendBase],
     queryFn: async (): Promise<AppConfig> => {
       const res = await fetch(`${_backendBase}/api/config`);
       if (!res.ok) return defaultConfig;

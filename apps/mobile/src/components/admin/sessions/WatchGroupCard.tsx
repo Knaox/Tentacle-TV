@@ -4,7 +4,7 @@ import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useServerCapabilities } from "@tentacle-tv/api-client";
 import {
   buttonStatus, deliveryOf, formatClock, joinParts, livePositionTicks, nowPlayingTitle,
   type AdminSessionDto, type AdminWatchGroupDto, type Feedback,
@@ -37,6 +37,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
+  const { capabilities } = useServerCapabilities();
   // Ce que regarde la salle, lu sur la session d'un membre qui le lit.
   const item = group.members
     .map((m) => (m.sessionId ? sessionsById.get(m.sessionId)?.nowPlaying : undefined))
@@ -105,7 +106,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
                 </Text>
                 {session && <AppLabel session={session} style={st.status} />}
               </View>
-              {session?.nowPlaying && <DeliveryChip kind={deliveryOf(session)} size="sm" />}
+              {session?.nowPlaying && <DeliveryChip kind={deliveryOf(session, capabilities)} size="sm" />}
             </View>
           );
         })}

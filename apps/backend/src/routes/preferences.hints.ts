@@ -9,7 +9,7 @@
  * Rangé dans `server_config` sous `user_hints_<userId>` — une liste JSON —,
  * comme la langue d'interface (`user_lang_<userId>`) : aucune table, aucun
  * schéma à migrer. Rien de masqué = aucune ligne. Un masquage peut retenir
- * une MARQUE (`serverUpdate` : l'exigence de version en vigueur) : l'entrée
+ * une MARQUE (`serverUpdate` : la version des nouveautés proposées) : l'entrée
  * devient `{ hint, mark }`, qu'un serveur d'avant ignore sans erreur. Chaque
  * réponse annonce aussi la liste fermée du serveur (`known`) : un client
  * n'offre « Ne plus afficher » que pour ce que SON serveur sait retenir.

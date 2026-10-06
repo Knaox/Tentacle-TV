@@ -5,7 +5,7 @@ import { StartupOverlays } from "./components/StartupOverlays";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
-import { useJellyfinClient, useTentacleConfig, useUserId, notifyUserChange } from "@tentacle-tv/api-client";
+import { ServerCapabilityGate, useJellyfinClient, useTentacleConfig, useUserId, notifyUserChange } from "@tentacle-tv/api-client";
 import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
 import { backendUrl } from "./main";
@@ -223,7 +223,12 @@ export function App() {
               <Route path="services" element={<AdminServicesPage />} />
               {/* L'accès à distance passe par le module de la page Services : il reste ainsi
                   hors du client LG sans entrée de plus dans `lazyPages.ts` (cf. AdminRemoteAccessView). */}
-              <Route path="remote-access" element={<AdminServicesPage section="remote-access" />} />
+              {/* Section d'un serveur 1.24.0 : un serveur d'avant ne la déclare pas → la vue d'ensemble. */}
+              <Route path="remote-access" element={(
+                <ServerCapabilityGate capability="admin.remoteAccess" fallback={<Navigate to="/admin" replace />}>
+                  <AdminServicesPage section="remote-access" />
+                </ServerCapabilityGate>
+              )} />
               <Route path="metadata" element={<AdminMetadata />} />
               <Route path="plugins" element={<AdminPlugins />} />
 

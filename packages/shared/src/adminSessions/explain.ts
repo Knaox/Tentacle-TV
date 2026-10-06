@@ -1,4 +1,5 @@
 import type { AdminSessionDto } from "../types/adminSessionsDto";
+import type { ServerCapability } from "../serverCapabilities/serverCapabilities";
 import { deliveryOf, type DeliveryKind } from "./delivery";
 import { acceleratorLabel, channelsLabel, codecLabel, formatBitrate, rangeLabel, resolutionLabel } from "./format";
 
@@ -215,8 +216,9 @@ function encoder(session: Pick<AdminSessionDto, "transcoding">, kind: DeliveryKi
 export function explainPlayback(
   session: Pick<AdminSessionDto, "playMethod" | "transcoding" | "nowPlaying" | "source">,
   locale: string,
+  capabilities: ReadonlySet<ServerCapability>,
 ): PlaybackExplanation {
-  const kind = deliveryOf(session);
+  const kind = deliveryOf(session, capabilities);
   return {
     kind,
     reasons: kind === "direct" ? [] : reasonLines(session, kind),

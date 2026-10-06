@@ -144,6 +144,8 @@ export default {
   plugin_skipmeDb: "Base partagée de repères, en complément d'Intro Skipper.",
   segmentsScanHelp:
     "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte. « Installer / réparer » ajoute leurs dépôts, les installe, redémarre Jellyfin s'il le faut (jamais pendant qu'on regarde, sauf si vous le demandez) et les règle. Un dépôt hors ligne n'empêche rien : le geste se refait plus tard.",
+  // Serveur sans « Installer / réparer » (d'avant 1.24.0) : la phrase sans le geste.
+  segmentsStackHelp: "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte.",
   segmentsFrameNote:
     "À la première lecture de chaque film et de chaque épisode, Tentacle lit sa fin : les vignettes de la barre de progression montrent où défile le générique, l'audio sépare la musique des dialogues. Il en tire le début du générique et les scènes qui le suivent, mi-génériques comme post-génériques — même quand un greffon en avait déjà posé un. Il faut que la tâche « Générer des images Trickplay » de Jellyfin soit passée sur le média ; seul ce qui est trouvé est enregistré.",
   audioTitle: "Analyse audio",

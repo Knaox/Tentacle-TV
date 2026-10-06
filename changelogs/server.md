@@ -18,6 +18,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Le tableau de bord conseille l'encodage HEVC** aux serveurs équipés d'un encodeur matériel
 - **Trois piles Docker prêtes à copier** : complète (Tentacle, base et Jellyfin), avec base, ou Tentacle seul. Aucun mot de passe écrit en clair, jamais le socket Docker ; une image plus légère, qui tourne sans droits root et surveille sa propre santé
 - **Accès à distance** : une section d'administration guide pas à pas — ports, HTTPS avec Caddy, Traefik ou nginx, guides des box
+- **Le serveur dit ce qu'il sait faire** : les applications n'affichent que les fonctions qu'il propose. Face à un serveur plus ancien, une nouveauté qui exige un serveur récent reste cachée au lieu d'échouer, et l'administrateur est invité à mettre à jour
 - **Détection des passages** (intro, résumé, générique) : l'assistant installe et règle Intro Skipper, TheIntroDB et SkipMe.db dans Jellyfin, redémarrage compris. Sur un serveur déjà installé : « Installer / réparer la détection des passages », dans Services ; le tableau de bord le recommande s'il manque un greffon
 - **L'analyse audio des passages est désactivée par défaut**, y compris sur les serveurs existants (une seule fois) ; elle se rallume dans Services
 - **Panne de Jellyfin** : le serveur suit son état et le dit aux lecteurs. Le tableau de bord dit « Jellyfin redémarre » plutôt qu'une erreur, et au retour de Jellyfin, une fois vraiment prêt, les lectures en cours lui sont redites aussitôt, position comprise
@@ -40,6 +41,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **The dashboard recommends HEVC encoding** on servers with a hardware encoder
 - **Three ready-to-copy Docker stacks**: full (Tentacle, database and Jellyfin), with database, or Tentacle only. No password written in plain text, never the Docker socket; a lighter image that runs without root and checks its own health
 - **Remote access**: an admin section guides you step by step — ports, HTTPS with Caddy, Traefik or nginx, router guides
+- **The server says what it can do**: apps only show the features it offers. With an older server, a new feature that needs a recent server stays hidden instead of failing, and the administrator is invited to update
 - **Skip detection** (intro, recap, credits): the wizard installs and configures Intro Skipper, TheIntroDB and SkipMe.db in Jellyfin, restart included. On an existing server: "Install / repair skip detection" in Services; the dashboard recommends it when a plugin is missing
 - **Audio analysis for skip detection is now off by default**, including on existing servers (once); turn it back on in Services
 - **Jellyfin outage**: the server tracks its state and tells the players. The dashboard says "Jellyfin is restarting" instead of an error, and when Jellyfin is truly back, ongoing playbacks are reported to it again right away, position included

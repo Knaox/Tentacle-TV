@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
 import type { SegmentPluginKey, SetupPluginState } from "@tentacle-tv/shared";
+import { ServerCapabilityGate } from "@tentacle-tv/api-client";
 import { AdminSection, StatusPill, type StatusTone } from "../kit";
 import { useJellyfinSetup } from "../jellyfin/jellyfinAdminApi";
 import { AudioAnalysisPanel } from "./AudioAnalysisPanel";
@@ -84,10 +85,16 @@ export function SegmentDetectionSection() {
               );
             })}
           </ul>
-          <div className="mt-3">
-            <SegmentPluginsRepair />
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-content-tertiary">{t("segmentsScanHelp")}</p>
+          {/* « Installer / réparer » : un serveur d'avant 1.24.0 n'a pas la route — ni le geste, ni sa phrase. */}
+          <ServerCapabilityGate
+            capability="admin.segmentPlugins"
+            fallback={<p className="mt-3 text-xs leading-relaxed text-content-tertiary">{t("segmentsStackHelp")}</p>}
+          >
+            <div className="mt-3">
+              <SegmentPluginsRepair />
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-content-tertiary">{t("segmentsScanHelp")}</p>
+          </ServerCapabilityGate>
           <p className="mt-2 text-xs leading-relaxed text-content-tertiary">{t("segmentsFrameNote")}</p>
         </div>
         <AudioAnalysisPanel />

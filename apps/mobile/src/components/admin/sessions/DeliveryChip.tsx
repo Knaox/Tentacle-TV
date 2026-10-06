@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { DELIVERY_ORDER, countDeliveries, type AdminSessionDto, type DeliveryKind } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, useTheme } from "@/theme";
+import { useServerCapabilities } from "@tentacle-tv/api-client";
 
 /**
  * La pastille qui dit comment le média arrive — une couleur par poids pour le
@@ -67,7 +68,8 @@ export const DeliveryChip = memo(function DeliveryChip({ kind, count, size = "md
 export const SessionsSummary = memo(function SessionsSummary({ sessions }: { sessions: readonly AdminSessionDto[] }) {
   const { t } = useTranslation("sessions");
   const theme = useTheme();
-  const counts = countDeliveries(sessions);
+  const { capabilities } = useServerCapabilities();
+  const counts = countDeliveries(sessions, capabilities);
   const playing = DELIVERY_ORDER.reduce((sum, kind) => sum + counts[kind], 0);
   return (
     <View style={st.summary}>

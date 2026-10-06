@@ -4,6 +4,7 @@ import type { SetupCheckId, SetupLevel, SetupState } from "../jellyfinCompat/set
 import type { LinkCheck, LinkIssue } from "../serverLinks/serverLinksVerdict";
 import type { ServerUpdateStatus } from "../serverUpdate/serverUpdateStatus";
 import { isJellyfinTodo, SEGMENTS_CHECK } from "./jellyfinAdvice";
+import type { ServerCapability } from "../serverCapabilities/serverCapabilities";
 
 /**
  * Ce qui demande l'attention de l'administrateur, en tête de la vue
@@ -72,6 +73,13 @@ export interface AttentionSources {
   /** Le verdict de la version de Jellyfin installée. */
   jellyfinVersion: Source<CompatStatus>;
   serverUpdate: Source<ServerUpdateStatus>;
+  /**
+   * Ce que le serveur sait faire (`serverCapabilities.ts`). Sans
+   * `admin.segmentPlugins` (serveur d'avant 1.24.0), les greffons de passages
+   * restent un point de l'entrée « Jellyfin », comme alors : aucune entrée ne
+   * renvoie vers un geste que le serveur n'a pas.
+   */
+  capabilities: ReadonlySet<ServerCapability>;
   /** Masquée par le compte ? `undefined` : pas encore lu — la recommandation attend. */
   dismissed: Partial<Record<RecommendationId, boolean>>;
 }
@@ -142,16 +150,19 @@ function linkEntry(check: LinkCheck | undefined): { variant: string; items: stri
 
 function jellyfinItems(s: AttentionSources): { variant: string | null; items: string[] } | null {
   const items: string[] = [];
+  const segmentsApart = s.capabilities.has("admin.segmentPlugins");
   let essential = false;
   // Un réglage fait mais pas encore appliqué (greffon installé ou coupé) attend lui
   // aussi le redémarrage de Jellyfin, même quand Jellyfin ne le signale pas encore.
   let restart = s.jellyfinSetup?.restartPending === true;
   for (const check of s.jellyfinSetup?.checks ?? []) {
     // Les greffons de passages ont leur entrée à eux (`segmentPlugins`).
-    if (check.level === "optional" || check.id === SEGMENTS_CHECK) continue;
+    if (check.level === "optional" || (segmentsApart && check.id === SEGMENTS_CHECK)) continue;
     restart ||= check.state === "pending-restart";
-    // La même règle que l'écran « Réglages conseillés » de l'assistant (`jellyfinAdvice.ts`).
-    if (!isJellyfinTodo(check)) continue;
+    // La même règle que l'écran « Réglages conseillés » de l'assistant (`jellyfinAdvice.ts`) ;
+    // sans entrée à part (serveur d'avant 1.24.0), les greffons restent un point d'ici.
+    const segmentsHere = !segmentsApart && check.id === SEGMENTS_CHECK && check.state === "todo";
+    if (!isJellyfinTodo(check) && !segmentsHere) continue;
     items.push(`setup:${check.id}`);
     essential ||= check.level === "essential";
   }
@@ -178,7 +189,7 @@ function candidates(s: AttentionSources): Map<RecommendationId, { variant: strin
   if (s.tmdbConfigured === false) found.set("tmdbKey", { variant: null, items: [] });
   const jellyfin = usable ? jellyfinItems(s) : null;
   if (jellyfin) found.set("jellyfin", jellyfin);
-  const segments = usable ? segmentPluginsItem(s) : null;
+  const segments = usable && s.capabilities.has("admin.segmentPlugins") ? segmentPluginsItem(s) : null;
   if (segments) found.set("segmentPlugins", segments);
   const directPlay = usable ? linkEntry(s.links?.find((check) => check.id === "directPlay")) : null;
   if (directPlay) found.set("directPlay", directPlay);

@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { countDeliveries, DELIVERY_ORDER, type AdminSessionDto } from "@tentacle-tv/shared";
 import { DeliveryChip } from "./DeliveryChip";
+import { useServerCapabilities } from "@tentacle-tv/api-client";
 
 /**
  * L'en-tête chiffré du tableau de bord : combien de lectures, et ce qu'elles
@@ -10,7 +11,8 @@ import { DeliveryChip } from "./DeliveryChip";
  */
 export const SessionsSummary = memo(function SessionsSummary({ sessions }: { sessions: readonly AdminSessionDto[] }) {
   const { t } = useTranslation("sessions");
-  const counts = countDeliveries(sessions);
+  const { capabilities } = useServerCapabilities();
+  const counts = countDeliveries(sessions, capabilities);
   const playing = DELIVERY_ORDER.reduce((sum, kind) => sum + counts[kind], 0);
   return (
     <div className="flex flex-wrap items-center gap-2">

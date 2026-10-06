@@ -74,6 +74,7 @@ describe("les réglages conseillés d'un Jellyfin déjà configuré", () => {
       jellyfin: { state: "connected" }, adminKey: "ok", databaseDown: false, tmdbConfigured: true, links: [],
       jellyfinSetup: { restartPending: false, checks: fresh }, jellyfinVersion: "compatible", serverUpdate: "up-to-date",
       dismissed: { publicUrl: false, tmdbKey: false, jellyfin: false, segmentPlugins: false, directPlay: false },
+      capabilities: new Set(["admin.segmentPlugins"] as const),
     };
     const attention = buildAdminAttention(sources);
     const items = attention.recommendations.find((entry) => entry.id === "jellyfin")?.items ?? [];

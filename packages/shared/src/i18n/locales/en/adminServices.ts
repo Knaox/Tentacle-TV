@@ -143,6 +143,8 @@ export default {
   plugin_skipmeDb: "Shared timestamp database, complementing Intro Skipper.",
   segmentsScanHelp:
     "They stack: each reports what it knows, the most precise wins. “Install / repair” adds their repositories, installs them, restarts Jellyfin when needed (never while someone is watching, unless you ask) and sets them up. An offline repository blocks nothing: just run it again later.",
+  // Server without "Install / repair" (before 1.24.0): the sentence without the action.
+  segmentsStackHelp: "They stack: each reports what it knows, the most precise wins.",
   segmentsFrameNote:
     "On the first play of every movie and episode, Tentacle reads its ending: the progress bar thumbnails show where the credits roll, the audio tells music from dialogue. From them it finds where the credits start and the scenes that follow, mid-credits and post-credits alike — even when a plugin had already set credits. Jellyfin's \"Generate Trickplay Images\" task must have run on the media; only what is found gets saved.",
   audioTitle: "Audio analysis",

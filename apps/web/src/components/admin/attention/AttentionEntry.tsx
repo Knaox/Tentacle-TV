@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronRight, CircleArrowUp, Database, Eye, EyeOff, Globe, KeyRound, LockOpen,
   OctagonAlert, ServerOff, SkipForward, SlidersHorizontal, Sparkles, Unplug, Zap, type LucideIcon,
 } from "lucide-react";
-import { useSetHintDismissed } from "@tentacle-tv/api-client";
+import { useHintSupported, useSetHintDismissed } from "@tentacle-tv/api-client";
 import type { DismissibleHint } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";
 import { ENTRY_ACTION, detailsKind, entryKeys, type EntryAction, type EntryId } from "./attentionCopy";
@@ -145,6 +145,9 @@ function DismissButton({ hint, hidden, title }: { hint: DismissibleHint; hidden:
   const { t } = useTranslation("adminOverview");
   const { show } = useToast();
   const setDismissed = useSetHintDismissed();
+  // Un rappel que le serveur ne sait pas retenir (liste `known`) : pas de geste voué au refus.
+  const supported = useHintSupported(hint);
+  if (supported === false) return null;
   const label = hidden ? t("restoreLabel", { title }) : t("dismissLabel", { title });
   return (
     <button

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DISMISSIBLE_HINTS } from "../help/dismissibleHints";
 import type { LinkCheck } from "../serverLinks/serverLinksVerdict";
+import { SERVER_CAPABILITY_KEYS } from "../serverCapabilities/serverCapabilities";
 import { RECOMMENDATION_HINTS, buildAdminAttention, type AttentionSources } from "./attentionModel";
 
 const done = (id: LinkCheck["id"]): LinkCheck => ({ id, state: "done", endpoints: [], notes: [] });
@@ -15,6 +16,7 @@ const healthy: AttentionSources = {
   jellyfinSetup: { restartPending: false, checks: [{ id: "trickplay", level: "recommended", state: "done" }] },
   jellyfinVersion: "compatible",
   serverUpdate: "up-to-date",
+  capabilities: new Set(SERVER_CAPABILITY_KEYS),
   dismissed: { publicUrl: false, tmdbKey: false, jellyfin: false, segmentPlugins: false, directPlay: false },
 };
 
@@ -142,6 +144,12 @@ describe("ce qui demande l'attention de l'administrateur", () => {
     // Masquée par le compte, Jellyfin injoignable : elle se tait comme le reste.
     expect(buildAdminAttention({ ...healthy, jellyfinSetup: setup, dismissed: { ...healthy.dismissed, segmentPlugins: true } }).hidden.map((e) => e.id)).toEqual(["segmentPlugins"]);
     expect(buildAdminAttention({ ...healthy, jellyfin: { state: "unreachable" }, jellyfinSetup: setup }).recommendations).toEqual([]);
+  });
+
+  it("serveur d'avant 1.24.0 (sans « Installer / réparer ») : les greffons restent un point de l'entrée Jellyfin", () => {
+    const setup = { restartPending: false, checks: [{ id: "segmentsProvider" as const, level: "recommended" as const, state: "todo" as const }] };
+    const attention = buildAdminAttention({ ...healthy, capabilities: new Set(), jellyfinSetup: setup });
+    expect(attention.recommendations).toEqual([{ id: "jellyfin", hint: "adminJellyfin", variant: null, items: ["setup:segmentsProvider"] }]);
   });
 
   it("lecture directe bloquée par le navigateur : le souci le plus grave donne le titre", () => {
