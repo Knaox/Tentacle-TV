@@ -216,7 +216,7 @@ export function DesktopPlayer({
   });
 
   // Écran de chargement et réserve avant l'image (cf. hook dédié).
-  const { prebuffering, showLoadingOverlay } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause });
+  const { prebuffering, showLoadingOverlay, onQualityChange: chooseQuality } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause, src, currentQuality, onQualityChange });
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause.
   // `wt:cancelAutoNext` = un membre a refusé l'enchaînement — même sémantique
@@ -292,7 +292,7 @@ export function DesktopPlayer({
         goBack={goBack} togglePause={togglePause} skipBy={skipBy}
         toggleMute={toggleMute} setVolume={setVolume} setSpeed={setSpeed} toggleFullscreen={toggleFullscreen}
         handleAudioChange={handleAudioChange} handleSubtitleChange={handleSubtitleChange}
-        onQualityChange={onQualityChange} applyToSeries={applyToSeries}
+        onQualityChange={chooseQuality} applyToSeries={applyToSeries}
         onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
       />
     </div>

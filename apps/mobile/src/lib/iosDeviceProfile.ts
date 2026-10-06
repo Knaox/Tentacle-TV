@@ -1,4 +1,5 @@
 import {
+  AVPLAYER_ENGINE,
   avPlayerHevcTagCondition,
   type DeviceProfile,
   type DirectPlayProfile,
@@ -31,9 +32,9 @@ import { iosTranscodingProfiles } from "./iosTranscodingProfiles";
 export function buildIosDeviceProfile(
   engine: PlayerEngineKind,
   maxBitrate?: number,
-  options: { av1Hardware?: boolean } = {},
+  options: { av1Hardware?: boolean; sourceAudioCodec?: string | null } = {},
 ): DeviceProfile {
-  if (engine === "mpv") return buildIosMpvDeviceProfile(maxBitrate);
+  if (engine === "mpv") return buildIosMpvDeviceProfile(maxBitrate, options.sourceAudioCodec);
 
   const directPlayProfiles: DirectPlayProfile[] = [
     {
@@ -106,7 +107,7 @@ export function buildIosDeviceProfile(
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: iosTranscodingProfiles(),
+    TranscodingProfiles: iosTranscodingProfiles(AVPLAYER_ENGINE),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };

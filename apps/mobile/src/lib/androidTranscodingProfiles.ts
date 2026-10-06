@@ -1,42 +1,13 @@
-import type { TranscodingProfile } from "@tentacle-tv/shared";
+import { engineTranscodingProfiles, type EngineCapabilities, type TranscodingProfile } from "@tentacle-tv/shared";
 
-/** Les profils de TRANSCODAGE Android, communs aux deux moteurs (plafond de débit, palier choisi, replis). */
-export function androidTranscodingProfiles(): TranscodingProfile[] {
-  return [
-    // HLS TS — universel, fonctionne même sur émulateur
-    {
-      Container: "ts",
-      Type: "Video",
-      VideoCodec: "h264",
-      AudioCodec: "aac,mp3",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-      MinSegments: 2,
-      BreakOnNonKeyFrames: true,
-      CopyTimestamps: true,
-    },
-    // HLS TS — devices modernes avec HEVC
-    {
-      Container: "ts",
-      Type: "Video",
-      VideoCodec: "hevc,h264",
-      AudioCodec: "aac,mp3",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-      MinSegments: 2,
-      BreakOnNonKeyFrames: true,
-      CopyTimestamps: true,
-    },
-    // Audio-only
-    {
-      Container: "mp4",
-      Type: "Audio",
-      AudioCodec: "aac",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-    },
-  ];
+/**
+ * Les profils de TRANSCODAGE Android (plafond de débit, palier choisi, replis),
+ * tirés de ce que lit le moteur (`engineTranscodingProfiles`, shared) :
+ * ExoPlayer ou mpv. Le profil du moteur passe EN PREMIER — Jellyfin prend le
+ * premier profil vidéo, et un « H.264 seul » placé devant rendait le HEVC
+ * inaccessible. mpv y reçoit aussi le son tel quel (DTS, TrueHD).
+ */
+/** `sourceAudioCodec` : la piste lue — un DTS sous mpv fait passer le profil en fMP4 (cf. shared). */
+export function androidTranscodingProfiles(engine: EngineCapabilities, sourceAudioCodec?: string | null): TranscodingProfile[] {
+  return engineTranscodingProfiles(engine, { sourceAudioCodec });
 }

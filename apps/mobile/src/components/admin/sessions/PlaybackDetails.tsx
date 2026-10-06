@@ -13,6 +13,7 @@ const SHORT: Record<DeliveryKind, string> = {
   remux: "remuxShort",
   audio: "audioTranscodeShort",
   video: "transcodeShort",
+  pending: "pendingShort",
 };
 
 /**

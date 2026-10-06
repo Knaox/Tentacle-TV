@@ -91,11 +91,10 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
   const [startTicks, setStartTicks] = useState<number>(0);
   // Échelle + preset + cap automatique selon le débit mesuré (toutes
-  // plateformes désormais — la politique web est active) : cf.
-  // useEffectiveQuality. Le sélecteur reçoit la clé EFFECTIVE (palier servi,
-  // cap compris) et un setter qui désarme le cap — jamais le state brut, qui
-  // mentirait au menu. `startTicks` : re-photographie à chaque relance de
-  // session. Local/hors ligne : ni mesure ni cap — rien à adapter.
+  // plateformes) : cf. useEffectiveQuality. Le sélecteur reçoit la clé
+  // EFFECTIVE (palier servi, cap compris) et un setter qui désarme le cap —
+  // jamais le state brut, qui mentirait au menu. `startTicks` : re-photographie
+  // à chaque relance de session. Local/hors ligne : ni mesure ni cap.
   // Web: server-driven stream selection via PlaybackInfo
   // `isDesktop` vaut ici « c'est mpv qui lira » : WatchDesktop n'est monté que
   // derrière `supportsMpv()`, et le repli web repasse par WatchWeb (isDesktop
@@ -103,13 +102,14 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
   const pbInfo = usePlaybackInfo(isDesktop);
   const {
     qualityPresets, quality, qualityMaxHeight, qualityKeyEffective, setQualityKeyManual,
-    autoCapActive, autoModeArmed, qualityDrop,
+    autoCapActive, autoModeArmed, qualityDrop, capPending,
   } = useEffectiveQuality({
     mediaSource, itemId, qualityKey, setQualityKey, startTicks,
     enabled: !offlineMode && !isLocalPlayback,
     served: isDesktop ? null : pbInfo.mediaSource, requestedBps: isDesktop ? null : pbInfo.requestedBps,
   });
   const [prefsReady, setPrefsReady] = useState(false);
+  const streamReady = prefsReady && !capPending; // l'épisode suivant attend sa mesure de débit
   const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
   const positionRef = useRef(0);
   const prefsApplied = useRef(false);
@@ -210,7 +210,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
 
   // ── Web: fetch PlaybackInfo when params change (extraction — cf. hook) ──
   useWebPlaybackInfoFetch({
-    isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
+    isDesktop, prefsReady: streamReady, itemId, mediaSourceId, audioIndex, defaultAudio,
     burnInSubtitleIndex, startTicks, quality, qualityMaxHeight, item,
     supportsNativeAudioTracks, pbInfo, prefsApplied, audioOverrideRef, playbackRestart,
   });
@@ -220,10 +220,10 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
   const urlAudioIndex = desktopIsDirectPlay ? undefined : audioIndex;
 
   const { desktopStreamUrl } = useDesktopSource({
-    isDesktop, itemId, prefsReady, client, mediaSourceId, urlAudioIndex,
+    isDesktop, itemId, prefsReady: streamReady, client, mediaSourceId, urlAudioIndex,
     quality, qualityMaxHeight, desktopIsDirectPlay, startTicks,
     desktopPlaySessionId, burnInSubtitleIndex, useProgressiveRemux,
-    localSource, waitingLocal,
+    sourceAudio: selectedAudioStream ?? null, localSource, waitingLocal,
   });
 
   // ── Unified return values ──

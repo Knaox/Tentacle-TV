@@ -10,7 +10,8 @@ import type { TranscodeMemory } from "./transcodeMemory";
  * ce que Tentacle sait mieux que lui, et les salles Watch Together.
  *
  * - Une lecture portée par le canal de session a sa position À LA SECONDE —
- *   Jellyfin, lui, ne la reçoit qu'aux bords et toutes les quatre minutes.
+ *   Jellyfin, lui, ne la reçoit qu'aux bords et toutes les quatre minutes —,
+ *   et sa méthode de lecture telle que le client la déclare pour CE titre.
  * - Une salle se relie aux sessions de ses membres par (compte, média lu).
  *
  * Fonction pure : le tableau de bord se teste sans Jellyfin ni socket.
@@ -45,6 +46,12 @@ function overlayTentacle(session: AdminSessionDto, connections: readonly Connect
     session.positionTicks = playback.positionTicks;
     session.positionAt = now;
     session.isPaused = playback.isPaused;
+    // La méthode que le client déclare pour CE titre prime : Jellyfin ne la
+    // relit qu'à ses reports, et l'épisode suivant gardait l'étiquette du
+    // précédent. Une lecture directe n'a aucun encodage à elle — celui qui
+    // traînerait encore appartient au titre d'avant.
+    session.playMethod = playback.playMethod;
+    if (playback.playMethod === "DirectPlay") session.transcoding = null;
   }
 }
 

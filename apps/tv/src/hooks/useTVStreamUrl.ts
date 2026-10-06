@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { BURN_IN_SUBTITLE_CODECS, TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import {
+  BURN_IN_SUBTITLE_CODECS, EXOPLAYER_ENGINE, MPV_ENGINE, SAFE_FALLBACK_ENGINE, TICKS_PER_SECOND,
+} from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
 import type { PrismStart } from "../utils/prismCoreStart";
@@ -51,6 +53,8 @@ export function useTVStreamUrl(args: {
   const client = useJellyfinClient();
 
   const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
+  // La piste lue : copiée telle quelle quand le moteur la décode (`planStream`, shared).
+  const sourceAudio = streams.find((s) => s.Type === "Audio" && s.Index === audioIndex) ?? null;
   // En transcode, seuls les sous-titres image (PGS…) passent par l'URL
   // (SubtitleMethod=Encode) ; les sous-titres texte restent en VTT externe.
   const burnInIndex = subtitleIndex != null && subtitleIndex >= 0
@@ -86,19 +90,25 @@ export function useTVStreamUrl(args: {
     const fromTicks = restartAt ? Math.floor(restartAt.at * TICKS_PER_SECOND) : startTicks;
     const mark = (url: string) => withRestartMark(url, restartAt?.mark ?? 0) + startFragment;
     if (isTranscodingQuality) {
+      // Un palier sans repli imposé : c'est ExoPlayer qui lit (`useTVPlayerRouting`).
       return mark(client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false,
         maxBitrate, maxHeight,
         startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
+        engine: forceTranscode ? MPV_ENGINE : EXOPLAYER_ENGINE, sourceAudio,
       }));
     }
     if (forceTranscode) {
       // Le repli dit SA raison à Jellyfin — pas un plafond de débit qu'il n'est pas.
+      // Un sous-titre image à incruster : c'est mpv qui lira, avec tout ce qu'il
+      // décode. Après une erreur : le repli sûr, H.264 + AAC — on ne retente pas
+      // une copie qui vient peut-être d'échouer.
       const burnIn = burnInIndex != null && burnInIndex >= 0;
       return mark(client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, maxBitrate: 8_000_000,
         startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
         transcodeReasons: [burnIn ? "SubtitleCodecNotSupported" : "DirectPlayError"],
+        engine: burnIn ? MPV_ENGINE : SAFE_FALLBACK_ENGINE, sourceAudio,
       }));
     }
     return mark(client.getStreamUrl(itemId, {

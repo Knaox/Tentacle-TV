@@ -1,4 +1,4 @@
-import { useEffect, useState, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { MpvState, PlayOptions } from "./useDesktopPlayer";
 import { isSideCarIndex } from "./localPlaybackTrackSources";
 import { traceCommand } from "./startupTrace";
@@ -207,13 +207,20 @@ export function useMpvSource({
     }
   }, [state.position, state.paused, state.playing, fileLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Clear sourceChanging when playback resumes after a source change
+  // Le rechargement se termine quand le NOUVEAU fichier lit : `fileLoaded`
+  // repart à faux au `play()` et ne revient qu'avec lui. Sans cette garde,
+  // l'ancien fichier — qui joue encore jusqu'au loadfile — l'éteignait aussitôt
+  // levé. Une position qui avance depuis l'ouverture vaut lecture (événement
+  // « playing » perdu : Windows + EAC3 5.1), pour qu'il ne soit jamais éternel.
+  const loadedAtRef = useRef<number | null>(null);
   useEffect(() => {
-    if (state.playing && sourceChanging) {
+    if (!sourceChanging || !fileLoaded) { loadedAtRef.current = null; return; }
+    loadedAtRef.current ??= state.position;
+    if (state.playing || state.position > loadedAtRef.current + 0.25) {
       wtLog("mpv-src", "rebuild terminé — lecture effective");
       setSourceChanging(false);
     }
-  }, [state.playing, sourceChanging]);
+  }, [state.playing, state.position, sourceChanging, fileLoaded]);
 
   return { sourceChanging };
 }

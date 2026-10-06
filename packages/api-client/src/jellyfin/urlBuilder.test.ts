@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { transcodeTarget, type MediaSource } from "@tentacle-tv/shared";
+import { MPV_ENGINE, AVPLAYER_ENGINE, type MediaSource } from "@tentacle-tv/shared";
 import { applyTranscodeTarget, buildStreamUrl, fitServerCappedTranscode, type StreamUrlContext } from "./urlBuilder";
 
 const ctx: StreamUrlContext = {
@@ -44,6 +44,41 @@ describe("buildStreamUrl — transcodage de qualité", () => {
   });
 });
 
+describe("buildStreamUrl — ce que lit le moteur (planStream)", () => {
+  const DTS = { Codec: "dts", BitRate: 768_000, Channels: 6 };
+
+  it("mpv, palier 1080p, DTS 5.1 : son copié, son débit retiré du budget de l'image", () => {
+    const q = params(buildStreamUrl(ctx, "item", {
+      directPlay: false, maxBitrate: 8_384_000, maxHeight: 1080, engine: MPV_ENGINE, sourceAudio: DTS,
+    }));
+    expect(q.get("AllowAudioStreamCopy")).toBe("true");
+    expect(q.get("AudioCodec")?.split(",")).toContain("dts");
+    expect(q.get("AudioBitrate")).toBe("768000");
+    expect(q.get("VideoBitrate")).toBe(String(8_384_000 - 768_000));
+    expect(q.get("VideoCodec")).toBe("hevc,h264");
+    expect(q.get("SegmentContainer")).toBe("ts");
+  });
+
+  it("AVPlayer : segments fMP4, HEVC permis, DTS converti", () => {
+    const q = params(buildStreamUrl(ctx, "item", {
+      directPlay: false, maxBitrate: 8_384_000, maxHeight: 1080, engine: AVPLAYER_ENGINE, sourceAudio: DTS,
+    }));
+    expect(q.get("SegmentContainer")).toBe("mp4");
+    expect(q.get("AudioBitrate")).toBe("384000");
+    expect(q.get("AudioCodec")?.split(",")).not.toContain("dts");
+    // La vraie raison de la conversion du son, en plus du plafond.
+    expect(q.get("TranscodeReasons")).toBe("ContainerBitrateExceedsLimit,AudioCodecNotSupported");
+  });
+
+  it("remux (sans palier) : l'image copiée sans aucune définition imposée, plages HDR déclarées", () => {
+    const q = params(buildStreamUrl(ctx, "item", { directPlay: false, useProgressiveRemux: false, engine: MPV_ENGINE, sourceAudio: DTS }));
+    expect(q.get("AllowVideoStreamCopy")).toBe("true");
+    expect(q.has("MaxWidth")).toBe(false);
+    expect(q.get("hevc-rangetype")?.split(",")).toEqual(expect.arrayContaining(["HDR10", "DOVIWithHDR10", "DOVI"]));
+    expect(q.get("AudioBitrate")).toBe("768000");
+  });
+});
+
 describe("buildStreamUrl — la raison dite à Jellyfin", () => {
   // Passation du 2026-10-05 : la baisse automatique du bureau arrivait chez
   // Jellyfin sans raison (TranscodeReasons: null) et passait pour une incompatibilité.
@@ -76,7 +111,7 @@ describe("applyTranscodeTarget", () => {
     "&TranscodingMaxAudioChannels=6&hevc-level=120&h264-level=51&TranscodeReasons=VideoCodecNotSupported";
 
   it("pose débit, définition et audio du palier", () => {
-    const q = params(applyTranscodeTarget(JELLYFIN, transcodeTarget(2_528_000, 540)));
+    const q = params(applyTranscodeTarget(JELLYFIN, { totalBitrate: 2_528_000, height: 540 }));
     expect(q.get("VideoBitrate")).toBe("2400000");
     expect(q.get("AudioBitrate")).toBe("128000");
     expect(q.get("TranscodingMaxAudioChannels")).toBe("2");
@@ -85,7 +120,7 @@ describe("applyTranscodeTarget", () => {
   });
 
   it("garde tout le reste à l'octet près, et chaque paramètre une seule fois", () => {
-    const out = applyTranscodeTarget(JELLYFIN, transcodeTarget(4_384_000, 720));
+    const out = applyTranscodeTarget(JELLYFIN, { totalBitrate: 4_384_000, height: 720 });
     for (const kept of ["DeviceId=d", "PlaySessionId=ps", "hevc-level=120", "MaxFramerate=23.976025", "TranscodeReasons=VideoCodecNotSupported"]) {
       expect(out).toContain(kept);
     }
@@ -94,13 +129,30 @@ describe("applyTranscodeTarget", () => {
   });
 
   it("remplace un paramètre quelle que soit sa casse", () => {
-    const out = applyTranscodeTarget("/v/master.m3u8?videobitrate=1&maxwidth=2", transcodeTarget(4_384_000, 720));
+    const out = applyTranscodeTarget("/v/master.m3u8?videobitrate=1&maxwidth=2", { totalBitrate: 4_384_000, height: 720 });
     expect(out.match(/videobitrate=/gi)).toHaveLength(1);
     expect(params(out).get("MaxWidth")).toBe("1280");
   });
 
+  it("garde la copie du son que Jellyfin a prévue (DTS déclaré au profil) si elle tient dans le palier", () => {
+    const dtsSource = {
+      Id: "abc", Name: "t", Container: "mkv", SupportsDirectPlay: false, SupportsDirectStream: false, SupportsTranscoding: true,
+      MediaStreams: [
+        { Type: "Video", Codec: "hevc", Index: 0, IsDefault: true, Height: 2160 },
+        { Type: "Audio", Codec: "dts", Index: 1, IsDefault: true, BitRate: 768_000, Channels: 6 },
+      ],
+    } as MediaSource;
+    const planned = JELLYFIN.replace("AudioCodec=aac", "AudioCodec=aac,dts").replace("AudioBitrate=640000", "AudioBitrate=768000");
+    const q = params(applyTranscodeTarget(planned, { totalBitrate: 8_384_000, height: 1080 }, dtsSource));
+    expect(q.get("AudioBitrate")).toBe("768000");
+    expect(q.get("VideoBitrate")).toBe(String(8_384_000 - 768_000));
+    // Sans la copie prévue par Jellyfin, le budget d'un AAC converti.
+    const converted = params(applyTranscodeTarget(JELLYFIN, { totalBitrate: 8_384_000, height: 1080 }, dtsSource));
+    expect(converted.get("AudioBitrate")).toBe("384000");
+  });
+
   it("une URL sans paramètres reste telle quelle", () => {
-    expect(applyTranscodeTarget("/videos/abc/stream", transcodeTarget(1_000_000, 360))).toBe("/videos/abc/stream");
+    expect(applyTranscodeTarget("/videos/abc/stream", { totalBitrate: 1_000_000, height: 360 })).toBe("/videos/abc/stream");
   });
 });
 

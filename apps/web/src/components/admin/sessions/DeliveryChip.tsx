@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { AudioLines, CircleCheck, Cpu, Package, type LucideIcon } from "lucide-react";
+import { AudioLines, CircleCheck, Cpu, Hourglass, Package, type LucideIcon } from "lucide-react";
 import type { DeliveryKind } from "@tentacle-tv/shared";
 
 /**
@@ -13,7 +13,9 @@ import type { DeliveryKind } from "@tentacle-tv/shared";
  *   ne fait que réemballer, sans perte ;
  * - transcodage audio : l'aplat ambre, la famille du transcodage ;
  * - transcodage : le même aplat CERCLÉ d'ambre — plus d'encre pour le plus
- *   lourd, c'est lui que l'œil doit trouver d'abord.
+ *   lourd, c'est lui que l'œil doit trouver d'abord ;
+ * - en analyse : neutre — Jellyfin convertit sans avoir encore dit quoi, on
+ *   ne crie pas au transcodage avant de le savoir.
  *
  * Contour en couleur pleine (`border-status-warning`) et non en opacité : un
  * modificateur `/40` sur un jeton `var()` est supprimé par Tailwind sans un
@@ -33,6 +35,7 @@ const STYLE: Record<DeliveryKind, DeliveryStyle> = {
   remux: { label: "remux", count: "countRemux", hint: "remuxHint", tone: "bg-status-info-bg text-status-info-fg", Icon: Package },
   audio: { label: "audioTranscode", count: "countAudio", hint: "audioTranscodeHint", tone: "bg-status-warning-bg text-status-warning-fg", Icon: AudioLines },
   video: { label: "transcode", count: "countVideo", hint: "transcodeHint", tone: "border border-status-warning bg-status-warning-bg text-status-warning-fg", Icon: Cpu },
+  pending: { label: "pending", count: "countPending", hint: "pendingHint", tone: "bg-fill-soft text-content-secondary", Icon: Hourglass },
 };
 
 const SIZE = {

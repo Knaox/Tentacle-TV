@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
+import { cachedBitrate, useItemBitrateReady, useJellyfinClient } from "@tentacle-tv/api-client";
 import { buildQualityLadder, isPresetOffered, findPreset, qualityDrop as explainDrop } from "@tentacle-tv/shared";
 import type { MediaSource, QualityDrop, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import { startBitrateMeasurement, automaticCap } from "../lib/bitratePolicy";
@@ -47,6 +47,8 @@ export function useEffectiveQuality(args: {
   setQualityKeyManual: (k: QualityKey) => void;
   /** Pourquoi la qualité baisse en Auto (`player/qualityDrop.ts`) — le message, et la ligne du menu. */
   qualityDrop: QualityDrop | null;
+  /** L'épisode suivant attend sa NOUVELLE mesure de débit : le flux ne se choisit pas encore. */
+  capPending: boolean;
 } {
   const { mediaSource, itemId, qualityKey, setQualityKey, startTicks = 0, enabled = true, served, requestedBps } = args;
   const client = useJellyfinClient();
@@ -75,12 +77,17 @@ export function useEffectiveQuality(args: {
   // re-pris quand startTicks bouge (relance de flux) — une lecture partie en
   // Originale parce que la mesure n'était pas prête bascule à la relance
   // suivante au lieu de ramer à vie. Jamais recalculé en lecture continue.
+  //
+  // Un AUTRE titre que celui qui a lu la mesure (l'épisode suivant) la refait
+  // d'abord (`useItemBitrateReady`) : sans quoi il jouait sur la photographie
+  // du précédent, et ne revenait jamais en lecture directe.
+  const { pending: capPending } = useItemBitrateReady(itemId, enabled);
   const sessionKey = `${itemId}|${startTicks}`;
   const evaluatedRef = useRef<string | undefined>(undefined);
   const capRef = useRef<QualityPreset | null>(null);
   // La mesure qui a décidé le cap : c'est elle que le message dit.
   const measuredRef = useRef<number | null>(null);
-  if (sessionKey !== evaluatedRef.current && mediaSource) {
+  if (!capPending && sessionKey !== evaluatedRef.current && mediaSource) {
     evaluatedRef.current = sessionKey;
     measuredRef.current = enabled ? cachedBitrate() : null;
     capRef.current = enabled ? automaticCap(mediaSource) : null;
@@ -121,5 +128,6 @@ export function useEffectiveQuality(args: {
     qualityKeyEffective: autoCapActive && capAuto ? capAuto.key : qualityKey,
     setQualityKeyManual,
     qualityDrop,
+    capPending,
   };
 }

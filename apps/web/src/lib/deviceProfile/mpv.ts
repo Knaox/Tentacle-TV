@@ -1,4 +1,4 @@
-import type { DeviceProfile } from "@tentacle-tv/shared";
+import { MPV_ENGINE, audioCodecParam, type DeviceProfile } from "@tentacle-tv/shared";
 import {
   MUSIC_BITRATE, AUDIO_ONLY_PROFILE, hlsTsProfile, BITMAP_SUBTITLES, TEXT_SUBTITLES,
 } from "./blocks";
@@ -66,9 +66,11 @@ export function buildMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
     ],
     // Repli : Jellyfin n'y vient que si la lecture directe est écartée — un
     // débit bridé par le sélecteur de qualité, ou un sous-titre bitmap à
-    // incruster. `hevc` autorisé, mpv le lit aussi bien que h264.
+    // incruster. `hevc` autorisé, mpv le lit aussi bien que h264 ; le son, tout
+    // ce que mpv décode (DTS, TrueHD…) — la liste de la règle partagée, bornée
+    // aux 40 caractères que Jellyfin accepte.
     TranscodingProfiles: [
-      hlsTsProfile("hevc,h264", "aac,ac3,eac3"),
+      hlsTsProfile("hevc,h264", audioCodecParam(MPV_ENGINE), String(MPV_ENGINE.maxAudioChannels)),
       AUDIO_ONLY_PROFILE,
     ],
     CodecProfiles: [],

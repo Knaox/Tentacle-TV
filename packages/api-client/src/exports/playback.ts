@@ -36,11 +36,14 @@ export { buildTrickplayTileUrl } from "../jellyfin/trickplayUrl";
 export { directJellyfinHeaders, withDirectApiKey } from "../jellyfin/directAuth";
 // Un palier de qualité posé sur l'URL de transcodage rendue par Jellyfin (web, mobile) —
 // choisi par l'utilisateur, ou imposé par la limite de débit Internet du serveur.
-export { applyTranscodeTarget, fitServerCappedTranscode } from "../jellyfin/urlBuilder";
+export { applyTranscodeTarget, fitServerCappedTranscode, type TranscodeTier } from "../jellyfin/transcodingUrl";
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
 // cap automatique de qualité des clients TV.
 export { primeBitrateMeasure, cachedBitrate, measureBitrate, type BitrateMeasureOptions } from "../jellyfin/bitrateMeasure";
+// L'épisode suivant refait la mesure avant de choisir son flux (toutes plateformes).
+export { bitrateForItem, REMEASURE_WAIT_MS } from "../jellyfin/itemBitrate";
+export { useItemBitrateReady } from "../hooks/useItemBitrate";
 // Le saut pendant un transcodage : les sauts rapides regroupés en un seul
 // redémarrage, l'attente dite (indicateur, phrase, modèle d'erreur au délai).
 export { useTranscodeSeek, type TranscodeSeek, type TranscodeSeekInput } from "../playback/useTranscodeSeek";

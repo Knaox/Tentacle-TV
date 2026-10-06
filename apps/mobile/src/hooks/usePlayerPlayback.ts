@@ -132,6 +132,8 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
     if (!userId) return;
     const currentFetch = ++fetchIdRef.current;
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    if (opts?.maxBitrate === undefined) await quality.settleBitrate();
+    if (fetchIdRef.current !== currentFetch) return;
 
     // Palier servi : celui des opts (changement/retry explicites), sinon la
     // photographie du moment — cap auto compris quand le mode est armé.
@@ -141,9 +143,9 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
     const maxHeight = opts?.maxHeight ?? preset?.height ?? 0;
     const targetEngine = opts?.engine ?? engineRef.current;
     const mpv = targetEngine === "mpv";
-    const profile = buildPlatformDeviceProfile(targetEngine, bitrate, opts?.isRetry ?? false);
-
     const sentAudio = opts?.audioStreamIndex ?? audioIndexRef.current;
+    const sentAudioCodec = streams.find((s) => s.Type === "Audio" && s.Index === sentAudio)?.Codec;
+    const profile = buildPlatformDeviceProfile(targetEngine, bitrate, opts?.isRetry ?? false, sentAudioCodec);
     const sentSubtitle = opts?.subtitleStreamIndex ?? (subtitleIndexRef.current >= 0 ? subtitleIndexRef.current : undefined);
 
     try {
@@ -234,7 +236,7 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
       };
       setState((prev) => ({ ...prev, isLoading: false, error }));
     }
-  }, [client, userId, itemId, mediaSourceId, quality]);
+  }, [client, userId, itemId, mediaSourceId, quality, streams]);
 
   const reporting = usePlaybackReporting({
     itemId, mediaSourceId,

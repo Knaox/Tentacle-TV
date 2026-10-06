@@ -594,6 +594,19 @@ la TV en fait une sonde qui fait foi (tv-core `serverOutage.ts`). Toute sonde
 d'attente de 10.11 rend un 200 sans `Id` pendant son démarrage (mesuré).
 Faits mesurés : `docs/PANNE-JELLYFIN.md`.
 
+## Transcodage — le moteur déclare, la règle décide
+
+Aucun client ne choisit « h264 + aac » lui-même : il déclare ce que son MOTEUR décode
+(`packages/shared/src/playback/engineCapabilities.ts` — mpv, AVPlayer, ExoPlayer, repli
+sûr), et `planStream` / `engineTranscodingProfiles` (shared) en tirent codec de sortie
+(HEVC en tête, l'admin Jellyfin garde la main), plages HDR/DV, copie du son et budget.
+Faits mesurés, à ne pas redécouvrir (`docs/TRANSCODAGE-MOTEURS.md`) : le son n'est copié
+que si `AudioBitrate` couvre la piste ; `AudioCodec` ≤ 40 caractères ; **tout réencodage
+d'une source HDR sort en SDR** (Jellyfin, même en HEVC) — le HDR et le Dolby Vision ne
+survivent qu'à une COPIE, jamais avec un `MaxWidth` sous la source ; l'épisode suivant
+refait la mesure du débit (`itemBitrate.ts`). Tableau de bord : un `Transcode` sans
+`TranscodingInfo` est « En analyse », jamais un transcodage présumé.
+
 ## Navigation TV — une seule source
 
 L'Apple TV refondue est la référence de la navigation. Ce qui DÉCIDE — focus,

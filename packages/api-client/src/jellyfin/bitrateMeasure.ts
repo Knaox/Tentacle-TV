@@ -126,12 +126,26 @@ export function primeBitrateMeasure(client: JellyfinClient, options: BitrateMeas
   void measureBitrate(client, options);
 }
 
+/**
+ * Refait la mesure MAINTENANT, même si le cache est frais : la précédente a
+ * été prise avant une autre lecture et ne dit plus rien du lien (cf.
+ * `itemBitrate.ts`). Une mesure déjà en vol est partagée.
+ */
+export function remeasureBitrate(client: JellyfinClient, options: BitrateMeasureOptions = {}): Promise<number | null> {
+  // Le cache n'est pas vidé : tant que la nouvelle n'est pas arrivée,
+  // l'ancienne reste lue — un lien lent ne repart pas sans plafond.
+  return inFlight ?? startMeasure(routeFor(client, options), options);
+}
+
 /** Télécharge le témoin et chronomètre. Renvoie des bits/s bornés, ou null. */
 export function measureBitrate(client: JellyfinClient, options: BitrateMeasureOptions = {}): Promise<number | null> {
   const route = routeFor(client, options);
   const fresh = cachedBitrate();
   if (fresh != null && measuredRoute === route.key) return Promise.resolve(fresh);
-  if (inFlight) return inFlight;
+  return inFlight ?? startMeasure(route, options);
+}
+
+function startMeasure(route: MeasureRoute, options: BitrateMeasureOptions): Promise<number | null> {
   inFlightRoute = route.key;
   const run = options.bufferedFetch ? runBufferedMeasure(route) : runMeasure(route);
   inFlight = run.finally(() => { inFlight = null; inFlightRoute = null; });

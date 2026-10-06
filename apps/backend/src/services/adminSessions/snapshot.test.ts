@@ -113,6 +113,31 @@ describe("buildSnapshot", () => {
     expect(snap.sessions[0]).toMatchObject({ viaTentacle: true, positionTicks: 642 * 10_000_000, positionAt: NOW, isPaused: true });
   });
 
+  it("l'épisode suivant déclaré en lecture directe par le client : direct, sans l'encodage du précédent", () => {
+    // Retour de Damien (06/10) : l'épisode suivant restait étiqueté « Transcodage ».
+    const snap = buildSnapshot({
+      ...base,
+      raw: [rawSession({ PlayState: { PlayMethod: "Transcode", PositionTicks: 0, IsPaused: false } })],
+      connections: [{
+        userId: "u1", username: "Alice", deviceId: "dev1", remoteControl: true, connectedAt: 0,
+        playback: { itemId: "ep1", playMethod: "DirectPlay", positionTicks: 0, isPaused: false },
+      }],
+    });
+    expect(snap.sessions[0]).toMatchObject({ playMethod: "DirectPlay", transcoding: null });
+  });
+
+  it("la méthode d'un AUTRE titre que celui de Jellyfin ne s'applique pas", () => {
+    const snap = buildSnapshot({
+      ...base,
+      raw: [rawSession()],
+      connections: [{
+        userId: "u1", username: "Alice", deviceId: "dev1", remoteControl: true, connectedAt: 0,
+        playback: { itemId: "autre", playMethod: "DirectPlay", positionTicks: 0, isPaused: false },
+      }],
+    });
+    expect(snap.sessions[0].transcoding).not.toBeNull();
+  });
+
   it("deux onglets d'un même appareil : la position vient de celui qui lit", () => {
     const view = (playback: ConnectionView["playback"]): ConnectionView => ({
       userId: "u1", username: "Alice", deviceId: "dev1", remoteControl: true, connectedAt: 0, playback,

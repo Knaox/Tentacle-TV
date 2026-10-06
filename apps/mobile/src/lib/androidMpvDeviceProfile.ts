@@ -1,4 +1,4 @@
-import type { CodecProfile, DeviceProfile, DirectPlayProfile, SubtitleProfile } from "@tentacle-tv/shared";
+import { MPV_ENGINE, type CodecProfile, type DeviceProfile, type DirectPlayProfile, type SubtitleProfile } from "@tentacle-tv/shared";
 import { ANDROID_MPV_SUPPORT, supportList } from "@tentacle-tv/offline-core";
 import { androidTranscodingProfiles } from "./androidTranscodingProfiles";
 
@@ -10,7 +10,7 @@ const EXTERNAL_SUBTITLES = ["ass", "ssa", "subrip", "srt", "vtt", "webvtt"];
  * qu'ExoPlayer ne démuxe ni ne décode (AVI, MPEG-2, DivX, VobSub) et pour
  * l'ASS stylé. Tout se lit en direct ; aucun `Encode`.
  */
-export function buildAndroidMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
+export function buildAndroidMpvDeviceProfile(maxBitrate?: number, sourceAudioCodec?: string | null): DeviceProfile {
   const directPlayProfiles: DirectPlayProfile[] = [
     {
       Container: supportList(ANDROID_MPV_SUPPORT.containers),
@@ -45,7 +45,7 @@ export function buildAndroidMpvDeviceProfile(maxBitrate?: number): DeviceProfile
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: androidTranscodingProfiles(),
+    TranscodingProfiles: androidTranscodingProfiles(MPV_ENGINE, sourceAudioCodec),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };

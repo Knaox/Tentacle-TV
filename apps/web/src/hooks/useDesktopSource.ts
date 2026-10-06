@@ -13,6 +13,7 @@
 
 import { useMemo } from "react";
 import type { JellyfinClient } from "@tentacle-tv/api-client";
+import { MPV_ENGINE, type AudioSource } from "@tentacle-tv/shared";
 import type { LocalSource } from "../downloads/playbackApi";
 import type { SubtitleTrack } from "../components/VideoPlayer";
 import { parseSideCarFileName } from "./localPlaybackTrackSources";
@@ -31,6 +32,8 @@ interface DesktopSourceParams {
   desktopPlaySessionId: string;
   burnInSubtitleIndex: number | undefined;
   useProgressiveRemux: boolean;
+  /** La piste audio lue : copiée telle quelle quand mpv la décode (DTS, TrueHD…). */
+  sourceAudio: AudioSource | null;
   /** Résolution locale (useLocalSource). */
   localSource: LocalSource | null;
   waitingLocal: boolean;
@@ -42,7 +45,7 @@ export function useDesktopSource(params: DesktopSourceParams): {
   const {
     isDesktop, itemId, prefsReady, client, mediaSourceId, urlAudioIndex, quality,
     qualityMaxHeight, desktopIsDirectPlay, startTicks, desktopPlaySessionId,
-    burnInSubtitleIndex, useProgressiveRemux, localSource, waitingLocal,
+    burnInSubtitleIndex, useProgressiveRemux, sourceAudio, localSource, waitingLocal,
   } = params;
 
   const remoteUrl = useMemo(() => {
@@ -53,8 +56,11 @@ export function useDesktopSource(params: DesktopSourceParams): {
       startTimeTicks: !desktopIsDirectPlay && startTicks > 0 ? startTicks : undefined,
       playSessionId: desktopPlaySessionId, useProgressiveRemux,
       subtitleStreamIndex: burnInSubtitleIndex,
+      // C'est mpv qui lit : HEVC, HDR et Dolby Vision, et tout son — la règle
+      // partagée (`planStream`) en tire ce qu'on demande à Jellyfin.
+      engine: MPV_ENGINE, sourceAudio,
     });
-  }, [client, itemId, urlAudioIndex, mediaSourceId, quality, qualityMaxHeight, desktopIsDirectPlay, startTicks, desktopPlaySessionId, prefsReady, burnInSubtitleIndex, isDesktop, useProgressiveRemux]);
+  }, [client, itemId, urlAudioIndex, mediaSourceId, quality, qualityMaxHeight, desktopIsDirectPlay, startTicks, desktopPlaySessionId, prefsReady, burnInSubtitleIndex, isDesktop, useProgressiveRemux, sourceAudio]);
 
   if (!isDesktop) return { desktopStreamUrl: null };
   if (waitingLocal) return { desktopStreamUrl: null };

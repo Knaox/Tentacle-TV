@@ -27,6 +27,7 @@ import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
 import { usePlayerVolume } from "../hooks/usePlayerVolume";
 import { useElementFullscreen } from "../hooks/useElementFullscreen";
 import { useSeekWaitFeedback } from "../hooks/useSeekWaitFeedback";
+import { useSourceSwitch } from "../hooks/useSourceSwitch";
 import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
 import { useSanitizedSubtitles } from "../hooks/useSanitizedSubtitles";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
@@ -175,6 +176,8 @@ export function VideoPlayer({
   currentTimeRef.current = currentTime;
   // Le saut pendant un transcodage : l'attente dite, le délai dépassé au modèle d'erreur.
   const { waiting: seekWaiting, hint: loadingHint } = useSeekWaitFeedback(seekWait, { position: currentTime, buffering: loading, onFailure });
+  // Le choix d'une qualité allume le chargement AU CLIC, pendant la renégociation (`useSourceSwitch`).
+  const qualitySwitch = useSourceSwitch(src, currentQuality, onQualityChange);
 
   useEffect(() => {
     const mark = () => { userInteractedRef.current = true; };
@@ -213,7 +216,7 @@ export function VideoPlayer({
     onToggleFullscreen: toggleFullscreen,
     onBack: () => { markPlayerExit(); navigate(-1); },
     onAudioChange, onSubtitleChange,
-    onQualityChange: useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : onQualityChange,
+    onQualityChange: useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : qualitySwitch.onQualityChange,
     onNextEpisode, onPreviousEpisode,
     applyToSeries, onPlaybackRateChange: applyRate, onPanelsOpenChange: setControlPanelOpen,
   };
@@ -263,10 +266,10 @@ export function VideoPlayer({
 
       {mirror ? (
         <MirrorPlayerOverlay controls={controls} playback={playback} bridge={bridge}
-          media={{ hasStarted, loading: loading || seekWaiting, loadingHint, showPlayButton, setShowPlayButton, videoRef, userInteractedRef }} />
+          media={{ hasStarted, loading: loading || seekWaiting || qualitySwitch.pending, loadingHint, showPlayButton, setShowPlayButton, videoRef, userInteractedRef }} />
       ) : (<>
         <VideoPlayerOverlays
-          loading={loading || seekWaiting} loadingHint={loadingHint} hasStarted={hasStarted}
+          loading={loading || seekWaiting || qualitySwitch.pending} loadingHint={loadingHint} hasStarted={hasStarted}
           showPlayButton={showPlayButton}
           posterUrl={posterUrl}
           overlay={playback.overlay} countdownTotals={playback.countdownTotals}
