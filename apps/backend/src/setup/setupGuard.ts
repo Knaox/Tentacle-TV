@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { SETUP_HEADER } from "./setupWizardContract";
 import { isSetupClosed } from "./setupLock";
 import { touchSetupSession } from "./setupSession";
+import { clientAddress } from "./localAccess/localAccess";
 import { sendSetupError } from "./setupErrors";
 
 /**
@@ -9,7 +10,8 @@ import { sendSetupError } from "./setupErrors";
  *
  *  1. installation finie → 404, pour toujours (rien à découvrir, rien à
  *     rouvrir par HTTP) ;
- *  2. pas de session valide dans l'en-tête `X-Tentacle-Setup` → 401.
+ *  2. pas de session valide dans l'en-tête `X-Tentacle-Setup`, ou une session
+ *     ouverte depuis une autre adresse → 401.
  *
  * L'en-tête maison force en plus le préambule CORS de tout appel venu d'un
  * autre site : un formulaire piégé ne peut ni le poser, ni connaître la session.
@@ -22,5 +24,5 @@ export async function requireOpenSetup(_request: FastifyRequest, reply: FastifyR
 
 export async function requireSetupSession(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | void> {
   if (isSetupClosed()) return sendSetupError(reply, "setup_closed");
-  if (!touchSetupSession(request.headers[SETUP_HEADER])) return sendSetupError(reply, "session_required");
+  if (!touchSetupSession(request.headers[SETUP_HEADER], clientAddress(request))) return sendSetupError(reply, "session_required");
 }

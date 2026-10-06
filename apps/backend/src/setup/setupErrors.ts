@@ -22,6 +22,8 @@ const STATUS: Partial<Record<SetupErrorCode, number>> = {
   setup_closed: 404,
   session_required: 401,
   invalid_token: 401,
+  code_required: 403,
+  setup_in_progress: 409,
   rate_limited: 429,
   db_managed_by_stack: 409,
   jf_not_configured: 409,

@@ -1,5 +1,4 @@
 import { lookup } from "dns/promises";
-import { readFileSync } from "fs";
 import { isIP } from "net";
 import { networkInterfaces } from "os";
 import type { Deployment } from "../deployment";
@@ -7,7 +6,7 @@ import { clientJellyfinUrl } from "../jellyfin/clientUrl";
 import { probeJellyfin, type ProbedJellyfin } from "../jellyfin/probe";
 import { assertStackSibling } from "../jellyfin/stackTarget";
 import type { DiscoveredJellyfin, DiscoverySource, JellyfinDiscoveryResponse } from "../setupDiscoveryContract";
-import { candidateHosts, formatHost, isScannableIp, parseDefaultGateway, SCAN_PORTS } from "./candidates";
+import { candidateHosts, formatHost, isScannableIp, readDefaultGateway, SCAN_PORTS } from "./candidates";
 import { discoverByUdp, type UdpResult } from "./udpDiscovery";
 
 /**
@@ -43,13 +42,7 @@ async function resolvePrivate(name: string): Promise<string[]> {
 const systemDeps: DiscoveryDeps = {
   udp: (unicast) => discoverByUdp({ unicast }),
   probe: (url) => probeJellyfin(url, PROBE_TIMEOUT_MS),
-  gateway: () => {
-    try {
-      return parseDefaultGateway(readFileSync("/proc/net/route", "utf-8"));
-    } catch {
-      return null;
-    }
-  },
+  gateway: readDefaultGateway,
   dockerHostAddresses: async () => [...(await resolvePrivate("host.docker.internal")), ...(await resolvePrivate("host.containers.internal"))],
   ownAddresses: () => Object.values(networkInterfaces()).flatMap((entries) => (entries ?? []).map((entry) => entry.address)),
   checkSibling: (url) => assertStackSibling(url),

@@ -32,7 +32,7 @@ export interface UdpResult {
 /** Le port et le protocole annoncés dans `Address` ; 8096 en http s'il est illisible. */
 export function readReply(message: Buffer, remote: RemoteInfo): UdpCandidate | null {
   if (message.length > 4096 || isIP(remote.address) === 0) return null;
-  let address = "";
+  let address: string;
   try {
     const json = JSON.parse(message.toString("utf-8")) as { Address?: unknown; Id?: unknown };
     if (typeof json.Id !== "string") return null;

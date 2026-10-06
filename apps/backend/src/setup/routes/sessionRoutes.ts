@@ -9,6 +9,8 @@ import { isSetupClosed } from "../setupLock";
 import { noteAcceptedCode, noteFailedCode } from "../setupRuntime";
 import { sessionSchema } from "../setupSchemas";
 import { openSetupSession } from "../setupSession";
+import { claimantAddress, recordClaimant } from "../localAccess/claimant";
+import { setupAccessFor } from "../localAccess/localAccess";
 import { discardSetupToken, normalizeSetupToken, readSetupToken, setupTokensMatch } from "../setupToken";
 import type { SetupHostInfo, SetupSessionResponse, SetupStatusResponse } from "../setupWizardContract";
 
@@ -41,7 +43,10 @@ export const setupSessionRoutes: FastifyPluginAsync = async (app) => {
    * dire, AVANT le code, comment lire les journaux de ce serveur (identifiant
    * du conteneur, pile). Rien qui ouvre quoi que ce soit ; 404 une fois fini.
    */
-  app.get("/host", { preHandler: requireOpenSetup }, async (): Promise<SetupHostInfo> => ({ ...hostInfo(), codeRequired: true }));
+  app.get("/host", { preHandler: requireOpenSetup }, async (request): Promise<SetupHostInfo> => ({
+    ...hostInfo(),
+    codeRequired: setupAccessFor(request).refusal !== null,
+  }));
 
   /**
    * POST /api/setup/session — le code lu dans les journaux, échangé UNE fois
@@ -61,8 +66,32 @@ export const setupSessionRoutes: FastifyPluginAsync = async (app) => {
       }
       discardSetupToken();
       noteAcceptedCode();
+      const { address } = setupAccessFor(request);
+      // Le code prouve l'accès à la machine : il reprend l'installation, et la réclame si personne ne l'a fait.
+      if (!claimantAddress()) recordClaimant(address);
       request.log.info("[Setup] code d'installation accepté : session ouverte");
-      return { session: openSetupSession() };
+      return { session: openSetupSession(address) };
+    },
+  );
+
+  /**
+   * POST /api/setup/session/local — SANS code : le premier navigateur qui
+   * arrive directement du réseau local réclame l'installation. Sinon
+   * `code_required` (adresse publique ou inconnue) ou `setup_in_progress`
+   * (réclamée par une autre adresse) : l'assistant demande alors le code.
+   */
+  app.post(
+    "/session/local",
+    { preHandler: requireOpenSetup, config: { rateLimit: { max: 10, timeWindow: 60_000 } } },
+    async (request): Promise<SetupSessionResponse> => {
+      const access = setupAccessFor(request);
+      if (access.refusal) {
+        request.log.info({ verdict: access.verdict, refusal: access.refusal }, "[Setup] ouverture sans code refusée");
+        throw new SetupError(access.refusal);
+      }
+      recordClaimant(access.address);
+      request.log.info("[Setup] installation réclamée depuis le réseau local : session ouverte");
+      return { session: openSetupSession(access.address) };
     },
   );
 

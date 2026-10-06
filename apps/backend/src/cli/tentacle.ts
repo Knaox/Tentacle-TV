@@ -5,6 +5,7 @@ import { DATA_ROOT } from "../services/dataDir";
 import { databaseUrlFromEnv } from "../services/databaseEnv";
 import { readHostInfo } from "../setup/hostInfo";
 import { SETUP_LOCK_FILE, unsealSetup } from "../setup/setupLock";
+import { forgetClaimant } from "../setup/localAccess/claimant";
 import { discardSetupToken, setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
 
 /**
@@ -125,6 +126,7 @@ export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.en
     return 1;
   }
   unsealSetup();
+  forgetClaimant();
   // Pas de code ici : le serveur en cours tient l'assistant pour fermé, et le
   // redémarrage en écrit un neuf — celui qu'on afficherait serait déjà caduc.
   discardSetupToken();

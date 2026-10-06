@@ -2,6 +2,7 @@ import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { DATA_ROOT } from "../services/dataDir";
 import { isSetupComplete } from "../services/configStore";
+import { forgetClaimant } from "./localAccess/claimant";
 
 /**
  * L'installation finie se FERME pour toujours : toutes les routes d'action de
@@ -21,6 +22,7 @@ export function isSetupClosed(lockFile = SETUP_LOCK_FILE): boolean {
 
 /** Pose le fichier — à la fin de l'assistant, et pour une installation d'avant (base déjà complète). */
 export function sealSetup(lockFile = SETUP_LOCK_FILE, now = new Date()): void {
+  forgetClaimant();
   if (existsSync(lockFile)) return;
   writeFileSync(lockFile, `${now.toISOString()}\n`, { mode: 0o600 });
 }

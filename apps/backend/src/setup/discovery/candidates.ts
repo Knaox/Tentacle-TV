@@ -1,3 +1,4 @@
+import { readFileSync } from "fs";
 import { isIP } from "net";
 import { classifyAddress } from "../jellyfin/addressGuard";
 import { isPrivateAddress } from "../localAccess/privateAddress";
@@ -67,6 +68,15 @@ export function parseDefaultGateway(routeTable: string | null): string | null {
     return ip === "0.0.0.0" ? null : ip;
   }
   return null;
+}
+
+/** La passerelle du conteneur ; `null` hors Linux ou sans route par défaut. */
+export function readDefaultGateway(): string | null {
+  try {
+    return parseDefaultGateway(readFileSync("/proc/net/route", "utf-8"));
+  } catch {
+    return null;
+  }
 }
 
 export function formatHost(host: string): string {
