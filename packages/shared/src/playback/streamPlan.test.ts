@@ -152,6 +152,16 @@ describe("engineTranscodingProfiles — les profils d'un DeviceProfile", () => {
     expect(first.AudioCodec?.split(",")).not.toContain("ac3");
   });
 
+  it("un DTS sous mpv : profil fMP4 (PlaybackInfo retire le DTS d'un profil TS), son copiable", () => {
+    const [first] = engineTranscodingProfiles(MPV_ENGINE, { sourceAudioCodec: "dts" });
+    expect(first.Container).toBe("mp4");
+    expect(first.AudioCodec?.split(",").slice(0, 2)).toEqual(["aac", "dts"]);
+    // Un AC3 reste en TS : en fMP4 sa copie donnerait un init vide.
+    expect(engineTranscodingProfiles(MPV_ENGINE, { sourceAudioCodec: "ac3" })[0].Container).toBe("ts");
+    // Un moteur qui ne lit pas le DTS ne change rien.
+    expect(engineTranscodingProfiles(EXOPLAYER_ENGINE, { sourceAudioCodec: "dts" })[0].Container).toBe("ts");
+  });
+
   it("le repli sûr n'est pas dupliqué", () => {
     expect(engineTranscodingProfiles(SAFE_FALLBACK_ENGINE).filter((p) => p.Type === "Video")).toHaveLength(1);
   });

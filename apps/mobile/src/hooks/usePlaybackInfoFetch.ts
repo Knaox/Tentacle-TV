@@ -143,11 +143,12 @@ export function buildStreamUrl(opts: {
 }
 
 /** Le profil d'appareil du MOTEUR qui lira, selon la plateforme et le débit cible. */
-export function buildPlatformDeviceProfile(engine: PlayerEngineKind, bitrate: number, isRetry: boolean) {
+/** `sourceAudioCodec` : la piste lue — sous mpv, elle choisit le conteneur qui garde le son (shared). */
+export function buildPlatformDeviceProfile(engine: PlayerEngineKind, bitrate: number, isRetry: boolean, sourceAudioCodec?: string | null) {
   const maxBitrate = bitrate > 0 ? bitrate : undefined;
   const profile = Platform.OS === "android"
-    ? buildAndroidDeviceProfile(engine, maxBitrate)
-    : buildIosDeviceProfile(engine, maxBitrate, { av1Hardware: supportsAv1HardwareDecode() });
+    ? buildAndroidDeviceProfile(engine, maxBitrate, sourceAudioCodec)
+    : buildIosDeviceProfile(engine, maxBitrate, { av1Hardware: supportsAv1HardwareDecode(), sourceAudioCodec });
   if (isRetry) profile.DirectPlayProfiles = [];
   return profile;
 }

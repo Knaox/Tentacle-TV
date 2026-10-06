@@ -32,9 +32,9 @@ import { iosTranscodingProfiles } from "./iosTranscodingProfiles";
 export function buildIosDeviceProfile(
   engine: PlayerEngineKind,
   maxBitrate?: number,
-  options: { av1Hardware?: boolean } = {},
+  options: { av1Hardware?: boolean; sourceAudioCodec?: string | null } = {},
 ): DeviceProfile {
-  if (engine === "mpv") return buildIosMpvDeviceProfile(maxBitrate);
+  if (engine === "mpv") return buildIosMpvDeviceProfile(maxBitrate, options.sourceAudioCodec);
 
   const directPlayProfiles: DirectPlayProfile[] = [
     {

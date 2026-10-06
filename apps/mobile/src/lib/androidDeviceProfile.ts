@@ -29,8 +29,12 @@ import { androidTranscodingProfiles } from "./androidTranscodingProfiles";
  * - Transcode HLS TS préféré (fMP4 HLS peut poser problème sur certains devices)
  * - Niveaux codec plus conservateurs (mid-range Android)
  */
-export function buildAndroidDeviceProfile(engine: PlayerEngineKind, maxBitrate?: number): DeviceProfile {
-  if (engine === "mpv") return buildAndroidMpvDeviceProfile(maxBitrate);
+export function buildAndroidDeviceProfile(
+  engine: PlayerEngineKind,
+  maxBitrate?: number,
+  sourceAudioCodec?: string | null,
+): DeviceProfile {
+  if (engine === "mpv") return buildAndroidMpvDeviceProfile(maxBitrate, sourceAudioCodec);
 
   const directPlayProfiles: DirectPlayProfile[] = [
     {

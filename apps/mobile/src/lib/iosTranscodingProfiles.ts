@@ -12,8 +12,8 @@ import { engineTranscodingProfiles, type EngineCapabilities, type TranscodingPro
  * et AVPlayer rend CoreMediaErrorDomain -16172 (One Piece S10E12). La règle
  * partagée les retire d'elle-même de tout profil fMP4.
  */
-export function iosTranscodingProfiles(engine: EngineCapabilities): TranscodingProfile[] {
+export function iosTranscodingProfiles(engine: EngineCapabilities, sourceAudioCodec?: string | null): TranscodingProfile[] {
   // La règle est dans `engineTranscodingProfiles` (shared) : fMP4 sans AC3 pour
   // AVPlayer, TS avec tout son pour mpv, et le repli H.264 + AAC derrière.
-  return engineTranscodingProfiles(engine);
+  return engineTranscodingProfiles(engine, { sourceAudioCodec });
 }

@@ -14,7 +14,7 @@ const EXTERNAL_SUBTITLES = ["ass", "ssa", "subrip", "srt", "vtt", "webvtt"];
  * restent ceux du natif : ils ne servent que sous un plafond de débit ou un
  * palier de qualité choisi (liste fermée des cas où le serveur travaille).
  */
-export function buildIosMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
+export function buildIosMpvDeviceProfile(maxBitrate?: number, sourceAudioCodec?: string | null): DeviceProfile {
   const directPlayProfiles: DirectPlayProfile[] = [
     {
       Container: supportList(IOS_MPV_SUPPORT.containers),
@@ -54,7 +54,7 @@ export function buildIosMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: iosTranscodingProfiles(MPV_ENGINE),
+    TranscodingProfiles: iosTranscodingProfiles(MPV_ENGINE, sourceAudioCodec),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };

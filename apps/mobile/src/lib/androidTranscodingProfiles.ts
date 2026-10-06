@@ -7,6 +7,7 @@ import { engineTranscodingProfiles, type EngineCapabilities, type TranscodingPro
  * premier profil vidéo, et un « H.264 seul » placé devant rendait le HEVC
  * inaccessible. mpv y reçoit aussi le son tel quel (DTS, TrueHD).
  */
-export function androidTranscodingProfiles(engine: EngineCapabilities): TranscodingProfile[] {
-  return engineTranscodingProfiles(engine);
+/** `sourceAudioCodec` : la piste lue — un DTS sous mpv fait passer le profil en fMP4 (cf. shared). */
+export function androidTranscodingProfiles(engine: EngineCapabilities, sourceAudioCodec?: string | null): TranscodingProfile[] {
+  return engineTranscodingProfiles(engine, { sourceAudioCodec });
 }
