@@ -8,7 +8,7 @@ import { publicInfo, startFakeJellyfin, type FakeJellyfin } from "../../test/set
 
 const state = vi.hoisted(() => {
   delete process.env.TENTACLE_DEPLOYMENT;
-  return { config: new Map<string, string>(), appState: "setup_jellyfin", started: 0 };
+  return { config: new Map<string, string>(), appState: "setup_jellyfin", started: 0, segments: [] as unknown[] };
 });
 // Le code d'installation et le verrou s'écrivent dans un dossier jetable.
 vi.mock("../services/dataDir", async () => {
@@ -36,6 +36,10 @@ vi.mock("../services/db", () => ({
 }));
 vi.mock("../services/jellyfinWs", () => ({ restartJellyfinWs: () => undefined }));
 vi.mock("../services/jellyfinCors", () => ({ injectCorsHosts: async () => ({ added: [] }) }));
+vi.mock("../services/segmentPlugins/segmentSetupJob", () => ({
+  startSegmentSetup: async (request: unknown) => void state.segments.push(request),
+  segmentSetupStatus: () => ({ phase: "repositories", running: true }),
+}));
 vi.mock("../services/backgroundServices", () => ({ startBackgroundServices: () => void (state.started += 1) }));
 vi.mock("../services/jellyfinIdentity", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../services/jellyfinIdentity")>()),
@@ -179,6 +183,15 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(res.json()).toEqual([{ name: "Films", status: "created" }]);
   });
 
+  it("la détection des passages part en fond, sans jamais forcer un redémarrage pendant une lecture", async () => {
+    expect((await call("POST", "/jellyfin/segments")).statusCode).toBe(401);
+    const res = await call("POST", "/jellyfin/segments", { session, body: { restartWhilePlaying: true } });
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ phase: "repositories", running: true });
+    expect(state.segments).toEqual([{ restartWhilePlaying: false }]);
+    expect((await call("GET", "/jellyfin/segments", { session })).json()).toMatchObject({ running: true });
+  });
+
   it("la fin : connecté comme après un login, et l'assistant fermé pour toujours", async () => {
     expect((await call("POST", "/complete", { session, body: { username: "Damien", password: "faux" } })).json()).toEqual({ error: "jf_bad_credentials" });
     const done = await call("POST", "/complete", { session, body: { username: "Damien", password: ADMIN_PASSWORD } });
@@ -190,7 +203,7 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(state.config.get("jellyfin_private_url")).toBe(jf.url.replace("127.0.0.1", "localhost"));
     expect(state.started).toBe(1);
 
-    for (const [method, url] of [["GET", "/host"], ["GET", "/context"], ["POST", "/session"], ["POST", "/jellyfin/probe"], ["POST", "/complete"]] as const) {
+    for (const [method, url] of [["GET", "/host"], ["GET", "/context"], ["POST", "/session"], ["POST", "/jellyfin/probe"], ["POST", "/jellyfin/segments"], ["POST", "/complete"]] as const) {
       const res = await call(method, url, { session, body: method === "POST" ? {} : undefined });
       expect(res.statusCode, url).toBe(404);
       expect(res.json()).toEqual({ error: "setup_closed" });

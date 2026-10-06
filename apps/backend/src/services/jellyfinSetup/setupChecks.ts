@@ -140,12 +140,16 @@ function libraryFlagCheck(
   };
 }
 
+/**
+ * Les passages : faits quand les TROIS greffons attendus tournent. Le geste
+ * qui les pose vit à part (`/api/admin/jellyfin/segment-plugins` : il
+ * redémarre Jellyfin) ; ici, seul le scan se relance d'un clic.
+ */
 function segmentsCheck(snapshot: SetupSnapshot): SetupCheck {
   const plugins = snapshot.plugins ? segmentPlugins(snapshot.plugins) : null;
   const state: SetupState = !plugins ? "unknown"
-    : plugins.some((p) => p.state === "active") ? "done"
-    : plugins.some((p) => p.state === "restart") ? "pending-restart" : "todo";
-  const officialMissing = plugins?.some((p) => p.official && p.state === "missing") ?? false;
+    : plugins.every((p) => p.state === "active") ? "done"
+    : plugins.every((p) => p.state === "active" || p.state === "restart") ? "pending-restart" : "todo";
   const task = readTask(snapshot.tasks, TASK_KEYS.segments);
   return {
     ...base,
@@ -154,8 +158,7 @@ function segmentsCheck(snapshot: SetupSnapshot): SetupCheck {
     state,
     plugins,
     task,
-    action: state === "todo" && officialMissing ? "installChapterSegments"
-      : state === "done" && task?.state === "idle" ? "scanMediaSegments" : null,
+    action: state === "done" && task?.state === "idle" ? "scanMediaSegments" : null,
     dashboardPath: DASHBOARD.plugins,
   };
 }

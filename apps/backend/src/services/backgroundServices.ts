@@ -14,6 +14,7 @@ import { sweepStaleTempDirs } from "./audioFingerprint";
 import { purgeEmptyAudioVerdicts } from "./audioAnalysis";
 import { purgeObsoleteTailRows } from "./tailAnalysis/tailStore";
 import { startWatchTime } from "./watchTime/collector";
+import { startSegmentPluginsWatch } from "./segmentPlugins/segmentPluginsWatch";
 
 /**
  * Les tâches de fond d'un serveur INSTALLÉ, lancées une seule fois par
@@ -45,6 +46,8 @@ export function startBackgroundServices(): void {
   void purgeObsoleteTailRows();
   void purgeEmptyAudioVerdicts();
   startWatchTime();
+  // Greffons de passages : Intro Skipper sans écoute (une fois), réglages en attente.
+  startSegmentPluginsWatch();
   startRecoJobs();
   // Le moteur de recherche : son index se construit peu après le démarrage.
   startSearchJobs();

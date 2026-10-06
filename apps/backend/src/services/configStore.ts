@@ -90,11 +90,17 @@ export function isSetupComplete(): boolean {
 }
 
 /**
- * L'analyse audio inter-épisodes (services/audioAnalysis.ts) : ACTIVE tant que
- * l'administrateur ne l'a pas coupée — la clé absente vaut « oui ».
+ * L'analyse audio des passages (voisins de saison, `services/audioAnalysis.ts`,
+ * et l'écoute de la fin de média, `tailAnalysis/`) : COUPÉE tant que
+ * l'administrateur ne l'a pas rallumée — la clé absente vaut « non » (décision
+ * du 2026-10-06 : les greffons et les bases en ligne suffisent, l'écoute fait
+ * transcoder Jellyfin). Les serveurs d'avant sont coupés une fois au démarrage
+ * (`audioAnalysisDefault.ts`).
  */
+export const AUDIO_ANALYSIS_KEY = "audio_analysis_enabled";
+
 export function isAudioAnalysisEnabled(): boolean {
-  return cache.get("audio_analysis_enabled") !== "false";
+  return cache.get(AUDIO_ANALYSIS_KEY) === "true";
 }
 
 export interface DirectStreamingConfig {

@@ -11,7 +11,8 @@ const configStore = vi.hoisted(() => new Map<string, string>());
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
   getJellyfinApiKey: () => "admin-key",
-  isAudioAnalysisEnabled: () => configStore.get("audio_analysis_enabled") !== "false",
+  AUDIO_ANALYSIS_KEY: "audio_analysis_enabled",
+  isAudioAnalysisEnabled: () => configStore.get("audio_analysis_enabled") === "true",
   setConfigValue: async (key: string, value: string) => {
     configStore.set(key, value);
   },
@@ -71,11 +72,11 @@ async function call(method: "GET" | "PUT", token: string, body?: unknown) {
 }
 
 describe("GET /api/admin/audio-analysis", () => {
-  it("rend l'interrupteur (actif par défaut), l'outil et les compteurs", async () => {
+  it("rend l'interrupteur (coupé par défaut), l'outil et les compteurs", async () => {
     const response = await call("GET", "tok-admin");
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
-      enabled: true,
+      enabled: false,
       tool: "fpcalc",
       counters: { jobs: 2, windows: 5, bytes: 14_500_000, seconds: 16, verdicts: 1, silent: 1, deferred: 0 },
     });

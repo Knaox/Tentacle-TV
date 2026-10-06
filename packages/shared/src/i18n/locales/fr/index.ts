@@ -40,6 +40,7 @@ import serverLinks from "./serverLinks";
 import remoteAccess from "./remoteAccess";
 import remoteAccessHelp from "./remoteAccessHelp";
 import setupWizard from "./setupWizard";
+import segmentPlugins from "./segmentPlugins";
 import requests from "./requests";
 import adminOverview from "./adminOverview";
 import notices from "./notices";
@@ -63,6 +64,7 @@ export default {
   remoteAccess,
   remoteAccessHelp,
   setupWizard,
+  segmentPlugins,
   requests,
   adminOverview,
   notices,

@@ -581,6 +581,36 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   `DOCKER_HOST`). Ce qui attend un humain : le test réel en 4G (`REAL-TEST.md`) et Linux + Podman + GPU
   (`stacks/tests/linux-podman-gpu.sh`, préparé, pas validé).
 
+## Détection des passages — trois greffons posés par Tentacle, aucune écoute
+
+Intro, résumé, générique : Tentacle les tient de TROIS greffons de Jellyfin
+qu'il installe et règle lui-même (`apps/backend/src/services/segmentPlugins/`,
+contrat `packages/shared/src/segmentPlugins/`, recopié) — **Intro Skipper** et
+**SkipMe.db** (un seul dépôt, `intro-skipper.org/manifest.json`, qui ne sert un
+manifeste qu'à l'agent `Jellyfin-Server/x.y.z`), **TheIntroDB** (son dépôt
+GitHub, plancher 10.11.6 tenu par nous). Pas « Chapter Segments ». Deux portes,
+un moteur : l'assistant (`/api/setup/jellyfin/segments`, première ligne de
+« Installation », AVANT les bibliothèques) et « Installer / réparer » de
+l'admin (`/api/admin/jellyfin/segment-plugins`, session personnelle). Une
+recommandation du tableau de bord (`segmentPlugins`, masquable) si l'un manque.
+
+- **L'analyse AUDIO est coupée par défaut**, partout : l'interrupteur de
+  Tentacle (`audio_analysis_enabled`, clé absente = « non ») et l'analyse
+  AUTOMATIQUE d'Intro Skipper — Chromaprint n'a pas d'interrupteur à lui
+  (`BaseItemAnalyzerTask.cs`) : `AutoDetectIntros=false` et la tâche
+  `IntroSkipperDetectSegmentsTask` sans déclencheur. Les serveurs d'avant sont
+  coupés UNE fois (marques `audio_analysis_default_off_applied`,
+  `introskipper_audio_off_applied`) ; ensuite, le choix de l'administrateur.
+- **Seule exception à « jamais de redémarrage de Jellyfin »** : ce geste, par
+  `POST /System/Restart` (redémarrage DANS le processus, mesuré sous Docker),
+  jamais pendant une lecture sauf « Redémarrer maintenant » ; « revenu » = `Id`
+  de `/System/Info/Public` PUIS `/Plugins` en JSON (10.11 sert `Id` ~25 s
+  avant le reste). Remis à plus tard, un guet de fond règle les greffons dès
+  qu'ils sont chargés.
+- **Rien de bloquant** : un dépôt muet, un greffon sans version pour ce
+  Jellyfin, chacun a son résultat (`repo-offline`, `unavailable`, `too-old`),
+  dit en mots simples ; l'installation continue.
+
 ## Panne de Jellyfin — un état dit par le serveur, une règle pour les lecteurs
 
 Le backend sait si Jellyfin redémarre, s'arrête ou démarre

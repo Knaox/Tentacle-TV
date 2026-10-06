@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
-import type { SetupCompleteResponse } from "@tentacle-tv/shared";
+import type { SegmentSetupRun, SetupCompleteResponse } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cls } from "../../pages/adminUtils";
 import { Field } from "../admin/services/Field";
@@ -10,6 +10,8 @@ import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
 import { WizardFrame } from "./WizardFrame";
+import { runSegmentSetup } from "./applySegments";
+import { SegmentRunView } from "../segmentPlugins/SegmentRunView";
 
 const primary = `${cls.bp} w-full sm:w-auto`;
 
@@ -69,17 +71,22 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
   );
 }
 
-type Phase = "libraries" | "session" | "done";
+type Phase = "segments" | "libraries" | "session" | "done";
 
 /**
- * L'installation proprement dite : les bibliothèques, puis la session ouverte
- * avec le compte administrateur — comme une connexion ordinaire. Une étape qui
- * échoue se relance seule, sans refaire ce qui a réussi.
+ * L'installation proprement dite : la détection des passages (greffons de
+ * Jellyfin, redémarrage compris — AVANT les bibliothèques, pour qu'aucun scan
+ * ne soit coupé), les bibliothèques, puis la session ouverte avec le compte
+ * administrateur — comme une connexion ordinaire. Une étape qui échoue se
+ * relance seule, sans refaire ce qui a réussi ; les passages ne bloquent
+ * jamais rien.
  */
 export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: (session: SetupCompleteResponse) => void }) {
-  const { t } = useTranslation("setupWizard");
+  const { t } = useTranslation(["setupWizard", "segmentPlugins"]);
   const client = useJellyfinClient();
-  const [phase, setPhase] = useState<Phase>(wizard.data.outcomes ? "session" : "libraries");
+  const firstPhase = (): Phase => (wizard.data.outcomes ? "session" : wizard.data.segments !== undefined ? "libraries" : "segments");
+  const [phase, setPhase] = useState<Phase>(firstPhase);
+  const [segmentRun, setSegmentRun] = useState<SegmentSetupRun | null>(wizard.data.segments ?? null);
   const [error, setError] = useState<WizardErrorCode | null>(null);
   const started = useRef(false);
   const { data, patch, next } = wizard;
@@ -87,7 +94,13 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   const run = useCallback(async () => {
     setError(null);
     try {
-      let current: Phase = data.outcomes ? "session" : "libraries";
+      let current: Phase = data.outcomes ? "session" : data.segments !== undefined ? "libraries" : "segments";
+      if (current === "segments") {
+        const segments = await runSegmentSetup(setSegmentRun);
+        patch({ segments });
+        current = "libraries";
+        setPhase(current);
+      }
       if (current === "libraries") {
         const outcomes = data.plans.length
           ? await setupApi.createLibraries({ libraries: data.plans, metadataLanguage: data.locale.language, metadataCountry: data.locale.country })
@@ -112,7 +125,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
     } catch (err) {
       setError(err instanceof SetupApiError ? err.code : "internal");
     }
-  }, [data.outcomes, data.plans, data.locale, data.credentials, data.clientUrl, client, patch, onSession, next]);
+  }, [data.outcomes, data.segments, data.plans, data.locale, data.credentials, data.clientUrl, client, patch, onSession, next]);
 
   useEffect(() => {
     if (started.current) return;
@@ -132,13 +145,22 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
       <span className={state === "pending" ? "text-content-tertiary" : "text-content-primary"}>{label}</span>
     </li>
   );
-  const libState = phase === "libraries" ? (error ? "error" : "running") : "ok";
+  const segState = phase === "segments" ? "running" : data.segments === null ? "error" : "ok";
+  const libState = phase === "segments" ? "pending" : phase === "libraries" ? (error ? "error" : "running") : "ok";
   const sessionState = phase === "libraries" ? "pending" : phase === "session" ? (error ? "error" : "running") : "ok";
 
   return (
     <WizardFrame title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total}>
       <div className="space-y-4" aria-live="polite">
         <ul className="space-y-2">
+          {line(t("segmentPlugins:wizardLine"), segState)}
+          {segmentRun ? (
+            <li className="pl-6">
+              <SegmentRunView run={segmentRun} />
+            </li>
+          ) : data.segments === null ? (
+            <li className="pl-6 text-xs text-content-tertiary">{t("segmentPlugins:wizardSkipped")}</li>
+          ) : null}
           {line(t("applyLibraries"), libState)}
           {(data.outcomes ?? []).map((outcome) => (
             <li key={outcome.name} className={`pl-6 text-xs ${outcome.status === "failed" ? "text-status-error-fg" : "text-content-tertiary"}`}>

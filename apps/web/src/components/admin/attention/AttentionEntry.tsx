@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
   ChevronDown, ChevronRight, CircleArrowUp, Database, Eye, EyeOff, Globe, KeyRound, LockOpen,
-  OctagonAlert, ServerOff, SlidersHorizontal, Sparkles, Unplug, Zap, type LucideIcon,
+  OctagonAlert, ServerOff, SkipForward, SlidersHorizontal, Sparkles, Unplug, Zap, type LucideIcon,
 } from "lucide-react";
 import { useSetHintDismissed } from "@tentacle-tv/api-client";
 import type { DismissibleHint } from "@tentacle-tv/shared";
@@ -29,6 +29,7 @@ const ICON: Record<EntryId, LucideIcon> = {
   publicUrl: Globe,
   tmdbKey: Sparkles,
   jellyfin: SlidersHorizontal,
+  segmentPlugins: SkipForward,
   directPlay: Zap,
 };
 

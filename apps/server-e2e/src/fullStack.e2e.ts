@@ -30,7 +30,7 @@ beforeAll(() => stack.up());
 afterAll(() => stack.down());
 
 describe("pile complète, Jellyfin vierge — l'assistant au navigateur", () => {
-  it("du code des journaux à l'accueil, bibliothèques créées", async () => {
+  it("du code des journaux à l'accueil, passages réglés, bibliothèques créées", async () => {
     const code = await stack.setupCode();
     // Le verrouillage attend le premier démarrage de Jellyfin : il suit le code, il ne le précède pas.
     await waitFor("le Jellyfin voisin verrouillé", async () => (await stack.logs()).includes("[Setup] Jellyfin voisin verrouillé"), 180_000, 2_000);
@@ -56,7 +56,9 @@ describe("pile complète, Jellyfin vierge — l'assistant au navigateur", () => 
       // L'adresse de Jellyfin des applications : l'hôte de cette page et le port publié, jamais `http://jellyfin`.
       expect(await page.getByLabel("Adresse de Jellyfin pour les applications").inputValue()).toBe(`http://127.0.0.1:${PORTS.jellyfin}`);
       await button("Installer").click();
-      await page.getByRole("heading", { name: "Accès à distance (facultatif)" }).waitFor({ timeout: 60_000 });
+      // La détection des passages d'abord : trois greffons, un redémarrage de Jellyfin.
+      await page.getByText("Détection des passages (intro, générique)").waitFor();
+      await page.getByRole("heading", { name: "Accès à distance (facultatif)" }).waitFor({ timeout: 360_000 });
       await button("Plus tard").click();
       await page.getByRole("heading", { name: "Et maintenant ?" }).waitFor();
       await button("Ouvrir Tentacle").click();
@@ -69,7 +71,7 @@ describe("pile complète, Jellyfin vierge — l'assistant au navigateur", () => 
     } finally {
       await browser.close();
     }
-  });
+  }, 8 * 60_000);
 
   it("l'assistant est fermé pour de bon : 404 partout, sauf l'état", async () => {
     const client = new SetupClient(stack.url(""));

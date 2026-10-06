@@ -1,64 +1,25 @@
 import type { SetupPlugin, SetupPluginState } from "../jellyfinCompat/setupContract";
+import { normalizeGuid, SEGMENT_PLUGIN_SPECS } from "../segmentPlugins/catalog";
 import type { Loose } from "./setupSnapshot";
 
 /**
  * Les greffons Jellyfin qui fournissent des passages (Media Segments) : c'est
  * d'eux que viennent « Passer l'intro », « Passer le générique » et l'épisode
  * suivant au bon moment. Ils s'EMPILENT — chacun signale ce qu'il sait, le
- * résolveur de Tentacle prend le plus précis — et Tentacle analyse déjà la fin
- * des médias à la première lecture (`services/tailAnalysis`).
+ * résolveur de Tentacle prend le plus précis.
  *
- * Un seul est au dépôt OFFICIEL de Jellyfin, donc installable en un clic ; les
- * autres demandent d'ajouter leur dépôt (un choix de confiance qui revient à
- * l'administrateur) ou de poser leur DLL à la main.
+ * Depuis le 2026-10-06, Tentacle les installe lui-même (assistant, ou
+ * « Installer / réparer » de l'administration — `services/segmentPlugins/`) :
+ * Intro Skipper, TheIntroDB et SkipMe.db, les trois attendus. « Chapter
+ * Segments » n'est plus proposé (il n'apporte rien de plus) ; son geste reste
+ * pour les clients livrés qui l'envoient encore.
  */
-
-export interface SegmentProvider {
-  name: string;
-  match: RegExp;
-  official: boolean;
-  homepage: string;
-  repositoryUrl: string | null;
-}
 
 export const CHAPTER_SEGMENTS = {
   /** Nom du paquet au catalogue officiel (`/Packages`) et son identifiant d'assemblage. */
   packageName: "Chapter Segments Provider",
   assemblyGuid: "698b6f3314ca49b59d79fc3c0ab941f5",
 };
-
-export const SEGMENT_PROVIDERS: readonly SegmentProvider[] = [
-  {
-    name: "Intro Skipper",
-    match: /intro\s*skipper/i,
-    official: false,
-    homepage: "https://github.com/intro-skipper/intro-skipper",
-    // « All Jellyfin Versions » d'après le projet : le manifeste s'adapte à la version qui le lit.
-    repositoryUrl: "https://intro-skipper.org/manifest.json",
-  },
-  {
-    name: CHAPTER_SEGMENTS.packageName,
-    match: /chapter\s*segments/i,
-    official: true,
-    homepage: "https://github.com/jellyfin/jellyfin-plugin-chapter-segments",
-    repositoryUrl: null,
-  },
-  {
-    name: "TheIntroDB",
-    match: /introdb/i,
-    official: false,
-    homepage: "https://github.com/TheIntroDB/jellyfin-plugin",
-    repositoryUrl: "https://raw.githubusercontent.com/TheIntroDB/jellyfin-plugin/main/manifest.json",
-  },
-  {
-    name: "SkipMe.db",
-    match: /skipme/i,
-    official: false,
-    homepage: "https://github.com/intro-skipper/skipme.db-plugin",
-    // Pas de dépôt : une DLL à poser à la main (Jellyfin 12 seulement).
-    repositoryUrl: null,
-  },
-];
 
 /** « Active », « Restart », « Disabled »… tels que `/Plugins` les rend. */
 function pluginState(status: unknown): SetupPluginState {
@@ -75,16 +36,17 @@ function pluginState(status: unknown): SetupPluginState {
   }
 }
 
-/** Chaque fournisseur connu, et où il en est sur ce serveur. */
+/** Chaque greffon attendu, et où il en est sur ce serveur (reconnu par son identifiant, à défaut son nom). */
 export function segmentPlugins(installed: readonly Loose[]): SetupPlugin[] {
-  return SEGMENT_PROVIDERS.map((provider) => {
-    const found = installed.find((plugin) => typeof plugin.Name === "string" && provider.match.test(plugin.Name));
+  return SEGMENT_PLUGIN_SPECS.map((spec) => {
+    const found = installed.find((plugin) => normalizeGuid(plugin.Id) === spec.guid)
+      ?? installed.find((plugin) => typeof plugin.Name === "string" && plugin.Name.toLowerCase() === spec.packageName.toLowerCase());
     return {
-      name: provider.name,
+      name: spec.packageName,
       state: found ? pluginState(found.Status) : "missing",
-      official: provider.official,
-      homepage: provider.homepage,
-      repositoryUrl: provider.repositoryUrl,
+      official: false,
+      homepage: spec.homepage,
+      repositoryUrl: spec.repository.url,
     };
   });
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ExistingLibrary, JellyfinProbeResult, LibraryOutcome, LibraryPlan, SetupCompleteResponse, SetupContext } from "@tentacle-tv/shared";
+import type { ExistingLibrary, JellyfinProbeResult, LibraryOutcome, LibraryPlan, SegmentSetupRun, SetupCompleteResponse, SetupContext } from "@tentacle-tv/shared";
 import { setupApi, setupSession } from "./setupApi";
 import { defaultLocale, needsDatabase, NO_BACK, resumeStep, wizardSteps, type JellyfinMode, type WizardLocale, type WizardStep } from "./wizardModel";
 
@@ -14,6 +14,11 @@ export interface WizardData {
   existing: ExistingLibrary[];
   plans: LibraryPlan[];
   outcomes: LibraryOutcome[] | null;
+  /**
+   * La détection des passages : `undefined` pas encore faite, `null` faite
+   * sans succès (l'installation continue), sinon son résultat.
+   */
+  segments: SegmentSetupRun | null | undefined;
   session: SetupCompleteResponse | null;
   /** L'installation a repris après un rechargement : le compte sera redemandé à la fin. */
   resumed: boolean;
@@ -54,6 +59,7 @@ export function useWizard(): Wizard {
     existing: [],
     plans: [],
     outcomes: null,
+    segments: undefined,
     session: null,
     resumed: false,
     needsCode: true,

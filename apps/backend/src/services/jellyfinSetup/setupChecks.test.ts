@@ -116,24 +116,39 @@ describe("réglages recommandés", () => {
     expect(check(evaluateSetup(snapshot({ config })), "metadataLanguage")).toMatchObject({ state: "todo", current: null, action: "setMetadataLanguage" });
   });
 
-  it("passages : aucun greffon → à faire, le greffon officiel s'installe d'un clic", () => {
+  it("passages : aucun greffon → à faire ; les trois attendus, sans Chapter Segments", () => {
     const segments = check(evaluateSetup(snapshot()), "segmentsProvider");
-    expect(segments).toMatchObject({ state: "todo", action: "installChapterSegments" });
-    expect(segments.plugins?.find((p) => p.official)).toMatchObject({ name: "Chapter Segments Provider", state: "missing" });
+    expect(segments).toMatchObject({ state: "todo", action: null });
+    expect(segments.plugins?.map((p) => [p.name, p.state])).toEqual([["Intro Skipper", "missing"], ["TheIntroDB", "missing"], ["SkipMe.db", "missing"]]);
     expect(segments.task).toMatchObject({ state: "running", progress: 42, lastRunAt: "2026-09-29T11:06:51Z" });
   });
 
-  it("passages : greffon installé en attente de redémarrage (10.11.8, « Restart »)", () => {
-    const plugins = [...PLUGINS_12_1, { Name: "Chapter Segments Provider", Status: "Restart", Id: "c" }];
+  it("passages : un seul des trois ne suffit plus", () => {
+    const plugins = [...PLUGINS_12_1, { Name: "Intro Skipper", Status: "Active", Id: "c83d86bb-a1e0-4c35-a113-e2101cf4ee6b" }];
+    expect(check(evaluateSetup(snapshot({ plugins })), "segmentsProvider")).toMatchObject({ state: "todo" });
+  });
+
+  it("passages : posés, en attente de redémarrage (« Restart »)", () => {
+    const plugins = [
+      ...PLUGINS_12_1,
+      { Name: "Intro Skipper", Status: "Active", Id: "c83d86bba1e04c35a113e2101cf4ee6b" },
+      { Name: "TheIntroDB", Status: "Restart", Id: "c9e41b9563e445e29db6b83df21ae5e7" },
+      { Name: "SkipMe.db", Status: "Restart", Id: "b2a63e620ac545759ad22c7534ccb83d" },
+    ];
     expect(check(evaluateSetup(snapshot({ plugins })), "segmentsProvider")).toMatchObject({ state: "pending-restart", action: null });
   });
 
-  it("passages : un fournisseur tiers actif suffit ; le scan se relance d'un clic quand il est au repos", () => {
-    const plugins = [...PLUGINS_12_1, { Name: "Intro Skipper", Status: "Active", Id: "i" }];
+  it("passages : les trois actifs ; le scan se relance d'un clic quand il est au repos", () => {
+    const plugins = [
+      ...PLUGINS_12_1,
+      { Name: "Intro Skipper", Status: "Active", Id: "c83d86bba1e04c35a113e2101cf4ee6b" },
+      { Name: "TheIntroDB", Status: "Active", Id: "c9e41b9563e445e29db6b83df21ae5e7" },
+      { Name: "SkipMe.db", Status: "Active", Id: "b2a63e620ac545759ad22c7534ccb83d" },
+    ];
     const tasks = [{ Key: "TaskExtractMediaSegments", Id: "t-seg", State: "Idle", LastExecutionResult: null }];
     const segments = check(evaluateSetup(snapshot({ plugins, tasks })), "segmentsProvider");
     expect(segments).toMatchObject({ state: "done", action: "scanMediaSegments" });
-    expect(segments.plugins?.find((p) => p.name === "Intro Skipper")).toMatchObject({ state: "active", repositoryUrl: "https://intro-skipper.org/manifest.json" });
+    expect(segments.plugins?.find((p) => p.name === "SkipMe.db")).toMatchObject({ state: "active", repositoryUrl: "https://intro-skipper.org/manifest.json" });
   });
 
   it("accélération matérielle : « none » est à faire, mais seulement conseillé ; sans lien vers autre chose que le transcodage", () => {

@@ -29,9 +29,10 @@
  *   (`notices/serverUpdateNotice.ts`).
  * - `tmdbKey` : « Aucune clé TMDB » (administrateurs) — l'avertissement
  *   surgissant des clients.
- * - `adminPublicUrl`, `adminDirectPlay`, `adminTmdbKey`, `adminJellyfin` : les
- *   RECOMMANDATIONS du tableau de bord d'administration (lien public et HTTPS,
- *   lecture directe, clé TMDB, réglages conseillés de Jellyfin). Une
+ * - `adminPublicUrl`, `adminDirectPlay`, `adminTmdbKey`, `adminJellyfin`,
+ *   `adminSegmentPlugins` : les RECOMMANDATIONS du tableau de bord
+ *   d'administration (lien public et HTTPS, lecture directe, clé TMDB,
+ *   réglages conseillés de Jellyfin, greffons de passages). Une
  *   recommandation masquée se retrouve sous « N recommandations masquées ».
  *   Distinctes des fenêtres des clients : masquer l'une ne masque pas l'autre.
  * - `autoQuality` : « Qualité réduite » sur le lecteur — pourquoi la qualité
@@ -40,7 +41,7 @@
  */
 export const DISMISSIBLE_HINTS = [
   "trailerHelp", "serverUpdate", "tmdbKey", "adminPublicUrl", "adminDirectPlay", "adminTmdbKey", "adminJellyfin",
-  "autoQuality",
+  "autoQuality", "adminSegmentPlugins",
 ] as const;
 
 export type DismissibleHint = (typeof DISMISSIBLE_HINTS)[number];
