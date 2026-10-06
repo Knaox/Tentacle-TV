@@ -56,7 +56,7 @@ async function imageSize(file) {
 
 export function startImageProxy({ port, target, cacheDir, resize = true, log = () => {} }) {
   fs.mkdirSync(cacheDir, { recursive: true });
-  const stats = { images: 0, resized: 0, bytesIn: 0, bytesOut: 0 };
+  const stats = { images: 0, resized: 0, bytesIn: 0, bytesOut: 0, log: [] };
 
   async function serveImage(req, res, url) {
     const key = crypto.createHash("sha1").update(url.pathname).digest("hex").slice(0, 20);
@@ -87,6 +87,9 @@ export function startImageProxy({ port, target, cacheDir, resize = true, log = (
     stats.images++;
     stats.bytesIn += fs.statSync(original).size;
     stats.bytesOut += body.length;
+    // Chaque image servie, à sa taille rendue : ce que l'app DÉCODERA (le
+    // relevé des images décodées par écran, `baseline.mjs`).
+    stats.log.push({ at: Date.now(), kind: url.pathname.match(/\/Images\/(\w+)/)?.[1] ?? "img", width: want.width, height: want.height, format: type, bytes: body.length });
     res.writeHead(200, { "content-type": type, "content-length": body.length, "cache-control": "max-age=3600" });
     res.end(body);
   }

@@ -225,6 +225,40 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
       return cpu;
     },
 
+    /** La mémoire du processus (`dumpsys meminfo`, « App Summary », en Ko) :
+     *  PSS total, tas Java, natif (bitmaps compris depuis Android 8), graphique
+     *  (textures, tampons GL), code, pile, système. */
+    memory() {
+      const text = shell(`dumpsys meminfo ${PACKAGE}`);
+      const num = (re) => Number(text.match(re)?.[1] ?? NaN);
+      return {
+        pss: num(/TOTAL PSS:\s+(\d+)/) || num(/TOTAL:\s+(\d+)/),
+        rss: num(/TOTAL RSS:\s+(\d+)/),
+        java: num(/Java Heap:\s+(\d+)/),
+        native: num(/Native Heap:\s+(\d+)/),
+        graphics: num(/Graphics:\s+(\d+)/),
+        code: num(/Code:\s+(\d+)/),
+        stack: num(/Stack:\s+(\d+)/),
+        privateOther: num(/Private Other:\s+(\d+)/),
+        system: num(/System:\s+(\d+)/),
+        views: num(/^\s*Views:\s+(\d+)/m),
+      };
+    },
+
+    /** Les vues natives attachées et le poids de leurs listes d'affichage
+     *  (`dumpsys gfxinfo`, « View hierarchy »), fenêtre par fenêtre. */
+    viewHierarchy() {
+      const text = shell(`dumpsys gfxinfo ${PACKAGE}`);
+      const windows = [...text.matchAll(/(\d+) views, ([\d.]+) kB of (?:display lists|render nodes)/g)].map((m) => ({ views: Number(m[1]), kb: Number(m[2]) }));
+      return { views: windows.reduce((n, w) => n + w.views, 0), displayListKb: windows.reduce((n, w) => n + w.kb, 0), windows: windows.length };
+    },
+
+    /** Les effets coupés au PROCHAIN lancement (`debug.tentacle.fx`, lue par
+     *  l'app de MESURE seulement) : liste séparée par des virgules, vide = aucun. */
+    setFx(names) {
+      shell(`setprop debug.tentacle.fx '${names.length ? names.join(",") : "none"}'`);
+    },
+
     screencap(file) {
       fs.writeFileSync(file, execFileSync(ADB, ["-s", serial, "exec-out", "screencap", "-p"], { maxBuffer: 64 << 20 }));
     },
