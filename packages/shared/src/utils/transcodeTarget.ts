@@ -114,9 +114,18 @@ const MIN_VIDEO_BITRATE = 300_000;
  * vidéo, la part audio, et la définition qui va avec. Une seule fonction pour
  * les URL fabriquées par les lecteurs natifs (`buildStreamUrl`) et pour celles
  * que rend Jellyfin aux lecteurs web et mobiles.
+ *
+ * `copiedAudioBitrate` : le son part tel quel (copie, cf. `streamPlan.ts`) —
+ * c'est SON débit qui sort du budget de l'image, et non celui d'un AAC
+ * converti. Jellyfin ne copie d'ailleurs la piste que si `AudioBitrate` la
+ * couvre.
  */
-export function transcodeTarget(totalBitrate: number, height?: number | null): TranscodeTarget {
-  const audioBitrate = reservedAudioBitrate(height);
+export function transcodeTarget(
+  totalBitrate: number,
+  height?: number | null,
+  copiedAudioBitrate?: number | null,
+): TranscodeTarget {
+  const audioBitrate = copiedAudioBitrate && copiedAudioBitrate > 0 ? copiedAudioBitrate : reservedAudioBitrate(height);
   return {
     videoBitrate: Math.max(totalBitrate - audioBitrate, MIN_VIDEO_BITRATE),
     audioBitrate,

@@ -199,6 +199,8 @@ export * from "./playback/audioVerdict";
 // L'étiquette HEVC qu'AVFoundation lit telle quelle (`hvc1`, `dvh1`) : une
 // règle pour l'Apple TV, le lecteur système de l'iPhone et de l'iPad, et Safari.
 export * from "./playback/hevcTag";
+export * from "./playback/engineCapabilities";
+export * from "./playback/streamPlan";
 export * from "./playback/playbackSettings";
 export * from "./playback/playbackPresets";
 export * from "./playback/segmentWindow";
