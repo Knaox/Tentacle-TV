@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { TextTrackType } from "react-native-video";
-import { transcodeTarget, type MediaSource, type MediaStream as JfStream, type PlaybackInfoResponse } from "@tentacle-tv/shared";
+import type { MediaSource, MediaStream as JfStream, PlaybackInfoResponse } from "@tentacle-tv/shared";
 import { applyTranscodeTarget, fitServerCappedTranscode, withDirectApiKey } from "@tentacle-tv/api-client";
 import { supportsAv1HardwareDecode } from "../../modules/mpv-player";
 import { externalSubtitleFormat } from "@/player/engine/trackMapping";
@@ -114,7 +114,7 @@ export function buildStreamUrl(opts: {
   // « Originale », la même règle si la limite de débit Internet du serveur a
   // plafonné le flux (`fitServerCappedTranscode`).
   let transcodingPath = quality
-    ? applyTranscodeTarget(ms.TranscodingUrl, transcodeTarget(quality.bitrate, quality.height || undefined))
+    ? applyTranscodeTarget(ms.TranscodingUrl, { totalBitrate: quality.bitrate, height: quality.height || undefined }, ms)
     : fitServerCappedTranscode(ms.TranscodingUrl, ms);
 
   if (ds) {

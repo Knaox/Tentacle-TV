@@ -36,7 +36,7 @@ export { buildTrickplayTileUrl } from "../jellyfin/trickplayUrl";
 export { directJellyfinHeaders, withDirectApiKey } from "../jellyfin/directAuth";
 // Un palier de qualité posé sur l'URL de transcodage rendue par Jellyfin (web, mobile) —
 // choisi par l'utilisateur, ou imposé par la limite de débit Internet du serveur.
-export { applyTranscodeTarget, fitServerCappedTranscode } from "../jellyfin/urlBuilder";
+export { applyTranscodeTarget, fitServerCappedTranscode, type TranscodeTier } from "../jellyfin/transcodingUrl";
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
 // cap automatique de qualité des clients TV.

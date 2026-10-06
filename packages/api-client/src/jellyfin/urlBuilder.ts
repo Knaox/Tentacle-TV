@@ -1,7 +1,10 @@
-import { TRANSCODE_TIERS, bestTierForBudget, transcodeTarget, type MediaSource, type TranscodeTarget } from "@tentacle-tv/shared";
+import { SAFE_FALLBACK_ENGINE, planStream, type AudioSource, type EngineCapabilities } from "@tentacle-tv/shared";
 import { buildQuery } from "./types";
 import { imageBudget } from "../net/dataSaver";
 import { pixelDensity } from "../net/pixelDensity";
+
+// Les paliers posés sur les URL que rend Jellyfin (web, mobile, LG) : `transcodingUrl.ts`.
+export { applyTranscodeTarget, fitServerCappedTranscode, type TranscodeTier } from "./transcodingUrl";
 
 /** Callback that rewrites a same-origin proxy URL to the direct-streaming URL
  *  when direct streaming is active, otherwise returns the proxy URL unchanged. */
@@ -84,6 +87,14 @@ export interface StreamUrlOptions {
    * (`DirectPlayError`) ; un chemin qui a vu PlaybackInfo, celles de Jellyfin.
    */
   transcodeReasons?: readonly string[];
+  /**
+   * Ce que le moteur qui lira sait décoder (`engineCapabilities.ts`, shared) :
+   * c'est lui qui décide du codec de sortie, des plages HDR gardées et de la
+   * copie du son (`planStream`). Absent : le repli sûr, H.264 + AAC.
+   */
+  engine?: EngineCapabilities;
+  /** La piste audio lue, telle que la fiche la décrit — pour la copier si le moteur la lit. */
+  sourceAudio?: AudioSource | null;
 }
 
 /** Les raisons d'une URL de transcodage : celles de l'appelant, sinon celles de la branche. */
@@ -138,106 +149,28 @@ export function buildStreamUrl(
   const reasons = transcodeReasons(options, Boolean(options?.maxBitrate));
   if (reasons) p.TranscodeReasons = reasons;
 
-  if (!options?.maxBitrate) {
-    // Remux: video copy + audio transcode. h264 fallback codec for HW encoding.
-    // VideoBitrate/MaxWidth are safety nets if Jellyfin can't copy (HDR tonemapping).
-    p.VideoCodec = "h264";
-    p.AllowVideoStreamCopy = "true";
-    p.AllowAudioStreamCopy = "false";
-    p.AudioCodec = "aac";
-    p.CopyTimestamps = "true";
-    p.VideoBitrate = "139616000";
-    p.AudioBitrate = "384000";
-    p.MaxWidth = "1920";
-
-    if (options?.useProgressiveRemux !== false) {
-      return ctx.resolveMediaUrl(`${ctx.baseUrl}/Videos/${itemId}/stream.mp4?${buildQuery(p)}`);
-    }
-    // HLS remux fallback (Safari/iOS) — TS segments
-    return buildHlsUrl(ctx.baseUrl, itemId, p, ctx.resolveMediaUrl);
-  }
-
-  // Transcodage de qualité (palier, ou repli codec) en HLS : débit vidéo,
-  // définition et audio décidés ENSEMBLE par `transcodeTarget` (shared) — la
-  // règle même qu'applique `applyTranscodeTarget` aux URL que Jellyfin rend aux
-  // lecteurs web et mobiles. `MaxWidth` suit le palier : figé à 1920, il
-  // laissait Jellyfin choisir seul la définition (un « 480p » servi en 540p).
-  const target = transcodeTarget(options.maxBitrate, options.maxHeight);
-  p.AllowVideoStreamCopy = "false";
-  p.AllowAudioStreamCopy = "false";
-  p.EnableAudioVbrEncoding = "true";
+  // Ce que le moteur lit décide de tout le reste (`planStream`, shared) : sans
+  // palier, l'image est COPIÉE — HDR et Dolby Vision compris, aucune
+  // définition imposée — et le son l'est aussi quand le moteur le décode ;
+  // avec un palier, débit vidéo, définition et budget audio vont ensemble, le
+  // son copié sortant du budget de l'image. La même règle que celle
+  // qu'applique `applyTranscodeTarget` aux URL que rend Jellyfin.
+  const engine = options?.engine ?? SAFE_FALLBACK_ENGINE;
+  const tier = options?.maxBitrate ? { totalBitrate: options.maxBitrate, height: options.maxHeight } : null;
+  const progressive = !tier && options?.useProgressiveRemux !== false;
+  // Le remux progressif est un MP4 : les règles du fMP4 valent (pas d'AC3 copié).
+  const plan = planStream({
+    engine: progressive ? { ...engine, segmentContainer: "mp4" } : engine,
+    audio: options?.sourceAudio, tier,
+  });
+  Object.assign(p, plan.params);
   p.CopyTimestamps = "true";
-  p.VideoCodec = "h264";
-  p.AudioCodec = "aac";
-  p.VideoBitrate = String(target.videoBitrate);
-  p.AudioBitrate = String(target.audioBitrate);
-  p.TranscodingMaxAudioChannels = String(target.audioChannels);
-  p.MaxWidth = String(target.maxWidth);
-  if (target.maxHeight) p.MaxHeight = String(target.maxHeight);
+
+  if (progressive) {
+    delete p.SegmentContainer;
+    return ctx.resolveMediaUrl(`${ctx.baseUrl}/Videos/${itemId}/stream.mp4?${buildQuery(p)}`);
+  }
   return buildHlsUrl(ctx.baseUrl, itemId, p, ctx.resolveMediaUrl);
-}
-
-/** Les paramètres qu'un palier impose à une URL de transcodage, quelle que soit leur casse d'origine. */
-const TARGET_PARAMS = ["VideoBitrate", "AudioBitrate", "TranscodingMaxAudioChannels", "MaxWidth", "MaxHeight"];
-
-/**
- * Pose un palier de qualité sur l'URL de transcodage que Jellyfin a rendue
- * (`TranscodingUrl` de PlaybackInfo, lecteurs web et mobiles).
- *
- * Jellyfin y écrit `VideoBitrate = plafond − audio` mais aucune définition :
- * au moment du manifeste, il la recalcule d'après ce débit et sert du 720p à
- * 1,2 Mb/s, qui part en blocs à la première scène d'action. On y impose donc
- * le débit, la définition et l'audio du palier — les mêmes que `buildStreamUrl`
- * pose sur les URL des lecteurs natifs. Le reste de l'URL est rendu tel quel,
- * à l'octet près : session, pistes, profils de codecs.
- */
-export function applyTranscodeTarget(url: string, target: TranscodeTarget): string {
-  const q = url.indexOf("?");
-  if (q < 0) return url;
-  const replaced = new Set(TARGET_PARAMS.map((k) => k.toLowerCase()));
-  const kept = url
-    .slice(q + 1)
-    .split("&")
-    .filter((pair) => pair !== "" && !replaced.has(pair.split("=")[0].toLowerCase()));
-  kept.push(
-    `VideoBitrate=${target.videoBitrate}`,
-    `AudioBitrate=${target.audioBitrate}`,
-    `TranscodingMaxAudioChannels=${target.audioChannels}`,
-    `MaxWidth=${target.maxWidth}`,
-  );
-  if (target.maxHeight) kept.push(`MaxHeight=${target.maxHeight}`);
-  return `${url.slice(0, q)}?${kept.join("&")}`;
-}
-
-/** Sous ce débit vidéo, Jellyfin quitte le 1080p et choisit seul une définition qu'il affame. */
-const STARVING_BELOW = TRANSCODE_TIERS.find((t) => t.key === "quality1080p")?.floor ?? 6_500_000;
-
-/** Un paramètre numérique d'une URL de transcodage, quelle que soit sa casse. */
-function numericParam(url: string, name: string): number | null {
-  const match = new RegExp(`[?&]${name}=(\\d+)`, "i").exec(url);
-  return match ? Number(match[1]) : null;
-}
-
-/**
- * Le transcodage que JELLYFIN a plafonné de lui-même, en « Originale » : la
- * limite de débit du streaming Internet (du serveur ou du compte) s'applique
- * aux lecteurs distants sans qu'aucun palier n'ait été choisi. Jellyfin écrit
- * alors `VideoBitrate = limite − audio` et choisit seul la définition — le
- * 720p à 1,2 Mb/s qui part en blocs dans l'action. Quand le débit permis est
- * sous celui de la source ET sous le plancher du 1080p — la zone où Jellyfin
- * affame l'encodeur —, on y pose le meilleur palier qui tient dans cette
- * limite (`bestTierForBudget`, shared). Sinon l'URL reste celle de Jellyfin :
- * copie, remux, transcodage de codec à plein débit, ou plafond assez haut pour
- * qu'il garde lui-même le 1080p, voire la 4K d'un téléviseur.
- */
-export function fitServerCappedTranscode(url: string, source: MediaSource | null | undefined): string {
-  const videoBitrate = numericParam(url, "VideoBitrate");
-  const video = source?.MediaStreams?.find((s) => s.Type === "Video");
-  const sourceVideoBitrate = video?.BitRate ?? source?.Bitrate;
-  if (!videoBitrate || !sourceVideoBitrate || videoBitrate >= sourceVideoBitrate) return url;
-  if (videoBitrate >= STARVING_BELOW) return url;
-  const tier = bestTierForBudget(source, videoBitrate + (numericParam(url, "AudioBitrate") ?? 0));
-  return tier?.bitrate ? applyTranscodeTarget(url, transcodeTarget(tier.bitrate, tier.height)) : url;
 }
 
 export function buildHlsUrl(
@@ -264,7 +197,7 @@ export function buildHlsUrl(
     p.EnableSubtitlesInManifest = "true";
     p.SubtitleMethod = "Hls";
   }
-  p.SegmentContainer = "ts";
+  p.SegmentContainer ??= "ts";
   p.MinSegments = "2";
   return resolveMediaUrl(`${baseUrl}/Videos/${itemId}/master.m3u8?${buildQuery(p)}`);
 }

@@ -156,3 +156,31 @@ export function planStream(input: StreamPlanInput): StreamPlan {
   if (target.maxHeight) params.MaxHeight = String(target.maxHeight);
   return { params, copiesAudio, target };
 }
+
+/** Ce qu'une `TranscodingUrl` de Jellyfin dit du son (paramètres lus sans casse). */
+export interface ServedAudioParams {
+  audioCodecs: readonly string[];
+  audioBitrate: number | null;
+  allowCopy: boolean;
+}
+
+/**
+ * Jellyfin a-t-il prévu de COPIER le son, et la copie tient-elle dans le
+ * palier ? Il la prévoit quand le profil d'appareil déclare le codec : il pose
+ * alors `AudioBitrate` au débit de la piste (768000 pour un DTS, mesuré). Un
+ * palier qui y écrirait le budget d'un AAC (384000) annulerait la copie — et
+ * Jellyfin convertirait en disant que l'appareil ne lit pas ce son. Rend le
+ * débit à garder, ou `null` : le son sera converti au budget du palier.
+ */
+export function keptAudioCopyBitrate(
+  served: ServedAudioParams,
+  audio: AudioSource | null | undefined,
+  totalBitrate: number,
+): number | null {
+  const codec = audio?.Codec?.toLowerCase();
+  const bitrate = audio?.BitRate ?? null;
+  if (!codec || !bitrate || bitrate <= 0 || !served.allowCopy) return null;
+  if (!served.audioCodecs.includes(codec)) return null;
+  if (served.audioBitrate === null || served.audioBitrate < bitrate) return null;
+  return bitrate <= totalBitrate * AUDIO_COPY_MAX_SHARE ? bitrate : null;
+}

@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { applyTranscodeTarget, fitServerCappedTranscode, useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
 import { directPlayUrl, withRestartMark } from "../lib/directPlayUrl";
-import { transcodeTarget, type MediaSource, type PlaybackFailure } from "@tentacle-tv/shared";
+import type { MediaSource, PlaybackFailure } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
   buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
@@ -224,7 +224,7 @@ export function usePlaybackInfo(nativePlayer = false) {
         // débit Internet du serveur peut avoir plafonné le flux : la même règle
         // s'y applique (`fitServerCappedTranscode`), sinon l'URL reste intacte.
         const transcodingPath = opts.maxStreamingBitrate != null
-          ? applyTranscodeTarget(ms.TranscodingUrl, transcodeTarget(opts.maxStreamingBitrate, opts.maxHeight))
+          ? applyTranscodeTarget(ms.TranscodingUrl, { totalBitrate: opts.maxStreamingBitrate, height: opts.maxHeight }, ms)
           : fitServerCappedTranscode(ms.TranscodingUrl, ms);
         // TranscodingUrl from proxy contains the admin API key (from token swap).
         // Replace it with the user's own Jellyfin token for direct streaming.

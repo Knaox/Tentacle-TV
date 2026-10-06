@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AVPLAYER_ENGINE, EXOPLAYER_ENGINE, MPV_ENGINE, SAFE_FALLBACK_ENGINE, readableRangeTypes, withHdr,
 } from "./engineCapabilities";
-import { AUDIO_COPY_MAX_SHARE, audioCopyBitrate, planStream, segmentAudioCodecs } from "./streamPlan";
+import { AUDIO_COPY_MAX_SHARE, audioCopyBitrate, keptAudioCopyBitrate, planStream, segmentAudioCodecs } from "./streamPlan";
 
 const DTS_51 = { Codec: "dts", BitRate: 768_000, Channels: 6 };
 const TRUEHD_71 = { Codec: "truehd", BitRate: 4_000_000, Channels: 8 };
@@ -105,5 +105,23 @@ describe("planStream — l'image", () => {
 
   it("en TS, l'AV1 et le VP9 ne sont pas déclarés (ils ne voyagent qu'en fMP4)", () => {
     expect(planStream({ engine: MPV_ENGINE, audio: null, tier: null }).params.VideoCodec).toBe("hevc,h264");
+  });
+});
+
+describe("keptAudioCopyBitrate — la copie prévue par Jellyfin, gardée par le palier", () => {
+  const served = { audioCodecs: ["aac", "dts", "ac3"], audioBitrate: 768_000, allowCopy: true };
+
+  it("DTS déclaré, AudioBitrate posé à son débit : la copie tient dans un palier 1080p", () => {
+    expect(keptAudioCopyBitrate(served, DTS_51, 8_384_000)).toBe(768_000);
+  });
+
+  it("Jellyfin ne l'a pas prévue (codec absent, débit trop bas, copie interdite) : rien à garder", () => {
+    expect(keptAudioCopyBitrate({ ...served, audioCodecs: ["aac"] }, DTS_51, 8_384_000)).toBeNull();
+    expect(keptAudioCopyBitrate({ ...served, audioBitrate: 384_000 }, DTS_51, 8_384_000)).toBeNull();
+    expect(keptAudioCopyBitrate({ ...served, allowCopy: false }, DTS_51, 8_384_000)).toBeNull();
+  });
+
+  it("trop lourde pour un petit palier : convertie", () => {
+    expect(keptAudioCopyBitrate(served, DTS_51, 2_524_000)).toBeNull();
   });
 });
