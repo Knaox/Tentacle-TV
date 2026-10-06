@@ -1,3 +1,5 @@
+import { useSegments } from "expo-router";
+import { useJellyfinOutage, veilYieldsToPlayer } from "@tentacle-tv/api-client";
 import { isDeviceSideReason } from "@tentacle-tv/offline-core";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { OfflineSwitchBanner } from "./OfflineSwitchBanner";
@@ -19,11 +21,16 @@ export function OfflineOverlays() {
   const { state, reason } = useConnectivity();
   const hasLocalContent = useHasLocalContent();
   const { isChecking, retry, handleLogout, handleChangeServer, goOffline } = useOfflineVeilActions();
+  // Jellyfin seul en panne, dite par le serveur, lecteur ouvert : l'image joue
+  // encore sur sa réserve — le message temporaire du lecteur dit la cause.
+  const [root] = useSegments();
+  const { phase } = useJellyfinOutage();
+  const yields = veilYieldsToPlayer({ playerOpen: root === "watch", reason, phase });
 
   return (
     <>
       <OfflineBanner
-        visible={state === "offline-auto" && hasLocalContent === false && !isDeviceSideReason(reason)}
+        visible={state === "offline-auto" && hasLocalContent === false && !isDeviceSideReason(reason) && !yields}
         isChecking={isChecking}
         onRetry={retry}
         onLogout={handleLogout}

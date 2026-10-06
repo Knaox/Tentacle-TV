@@ -1,4 +1,4 @@
-import { getJellyfinUrl } from "./configStore";
+import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
 import { JellyfinHealthMachine, type HealthSnapshot } from "./jellyfinHealthMachine";
 import { probeJellyfinHealth } from "./jellyfinHealthProbe";
 
@@ -14,7 +14,7 @@ import { probeJellyfinHealth } from "./jellyfinHealthProbe";
  */
 
 const machine = new JellyfinHealthMachine({
-  probe: () => probeJellyfinHealth(getJellyfinUrl()),
+  probe: () => probeJellyfinHealth(getJellyfinUrl(), getJellyfinApiKey()),
   clock: {
     now: () => Date.now(),
     setTimeout: (fn, ms) => setTimeout(fn, ms),

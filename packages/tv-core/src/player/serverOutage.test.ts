@@ -27,12 +27,27 @@ describe("l'état de Jellyfin dit par le serveur", () => {
     expect(d.restart).toBe(false);
   });
 
-  it("au retour : une relance, sauf relance toute fraîche ou lecture finie", () => {
+  it("au retour, l'image qui tient sur sa réserve continue : aucune relance", () => {
     const now = 200_000;
-    expect(restartOnJellyfinReturn({ now, started: true, ended: false, restarting: false, lastRestartAt: null })).toBe(true);
-    expect(restartOnJellyfinReturn({ now, started: true, ended: false, restarting: false, lastRestartAt: now - RETURN_RESTART_SKIP_MS + 1 })).toBe(false);
-    expect(restartOnJellyfinReturn({ now, started: true, ended: false, restarting: true, lastRestartAt: null })).toBe(false);
-    expect(restartOnJellyfinReturn({ now, started: false, ended: false, restarting: false, lastRestartAt: null })).toBe(false);
-    expect(restartOnJellyfinReturn({ now, started: true, ended: true, restarting: false, lastRestartAt: null })).toBe(false);
+    expect(restartOnJellyfinReturn({ now, started: true, ended: false, restarting: false, lastRestartAt: null, lost: false })).toBe(false);
+  });
+
+  it("au retour, la source perdue pendant la panne : une relance, sauf relance toute fraîche ou lecture finie", () => {
+    const now = 200_000;
+    const lost = { now, started: true, ended: false, restarting: false, lastRestartAt: null, lost: true };
+    expect(restartOnJellyfinReturn(lost)).toBe(true);
+    expect(restartOnJellyfinReturn({ ...lost, lastRestartAt: now - RETURN_RESTART_SKIP_MS + 1 })).toBe(false);
+    expect(restartOnJellyfinReturn({ ...lost, restarting: true })).toBe(false);
+    expect(restartOnJellyfinReturn({ ...lost, started: false })).toBe(false);
+    expect(restartOnJellyfinReturn({ ...lost, ended: true })).toBe(false);
+  });
+
+  it("au retour, l'image arrêtée au bout de sa réserve : la reprise ordinaire relance, chemin vu répondre", () => {
+    const now = 200_000;
+    // Le retour pose « le chemin répond » ; la panne vue (downSince) rend la relance mûre.
+    const d = decideRecovery({
+      ...base, now, stalledSince: now - 10_000, source: "ok", sourceCheckedAt: now, downSince: 150_000, downWhat: "media",
+    });
+    expect(d.restart).toBe(true);
   });
 });

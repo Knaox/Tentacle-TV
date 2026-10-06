@@ -38,6 +38,8 @@ export interface RecoverySources {
     isPrismCore: boolean;
     /** Le fichier lu tel quel (sinon : un transcodage du serveur). */
     isDirectPlay: boolean;
+    /** ExoPlayer (ou AVPlayer sur l'Apple TV) ; sinon mpv sur Android TV (`streamEngine`). */
+    useExoPlayer: boolean;
     /** Ce que le flux demande au réseau (b/s) : le palier d'un transcodage, le
      *  débit du fichier lu tel quel — `null` s'il est inconnu. */
     streamBitrate: number | null;

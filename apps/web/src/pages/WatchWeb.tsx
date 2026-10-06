@@ -209,6 +209,7 @@ export function WatchWeb() {
     burningSubtitles: burnInSubtitleIndex != null, subtitlesActive: subtitleIndex != null,
     mediaSourceId, qualityKey, qualityPresets, positionRef,
     restartAt: handleSeekRequest, setQuality: handleQualityChange, dropSubtitles: () => handleSubtitleChange(null), leave: cancelLoading,
+    onBufferingChange: groupSync.notifyBuffering,
   });
 
   const [showResumeIndicator, setShowResumeIndicator] = useState(false);
@@ -275,7 +276,7 @@ export function WatchWeb() {
           pgsSubtitleUrl={pgsSubtitleUrl} onPgsFailure={reportPgsFailure}
           segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
-          onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError} onFailure={playback.report}
+          onBufferingChange={playback.onBuffering} onFatalError={groupSync.notifyFatalError} onFailure={playback.report}
           onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
           inGroupSession={group.groupActive}
           onControlsVisibilityChange={setControlsVisible}

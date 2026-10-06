@@ -283,9 +283,33 @@ describe("SessionRegistry — panne de Jellyfin", () => {
     devices[0].handlers.onLost();
     log.length = 0;
     registry.jellyfinBack();
-    expect(log).toEqual(["jeton reconnectNow"]);
+    // La socket rouvre ET la lecture se redit dès le retour, sans attendre la socket.
+    await vi.advanceTimersByTimeAsync(0);
+    expect(log[0]).toBe("jeton reconnectNow");
     devices[0].handlers.onOpen();
-    await vi.runOnlyPendingTimersAsync();
-    expect(log).toContain("jeton /Sessions/Playing/Progress");
+    await vi.advanceTimersByTimeAsync(0);
+    // Jellyfin a oublié la lecture : un début, puis l'état — le lecteur, lui, ne recharge rien.
+    const reports = log.filter((line) => line.startsWith("jeton /Sessions/Playing"));
+    expect(reports).toEqual(["jeton /Sessions/Playing", "jeton /Sessions/Playing/Progress"]);
+  });
+
+  it("la socket qui rouvre PENDANT le démarrage ne redit rien ; le retour redit, une fois", async () => {
+    const { registry, log, devices, health } = harness();
+    const c = connection();
+    await registry.hello(c, "jeton");
+    devices[0].live = true;
+    devices[0].handlers.onOpen();
+    await registry.start(c, STATE, false);
+    devices[0].handlers.onLost();
+    health.state = "starting";
+    log.length = 0;
+    devices[0].handlers.onOpen();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(log.filter((line) => line.startsWith("jeton /Sessions/Playing"))).toEqual([]);
+    health.state = "up";
+    registry.jellyfinBack();
+    devices[0].handlers.onOpen();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(log.filter((line) => line.startsWith("jeton /Sessions/Playing"))).toEqual(["jeton /Sessions/Playing", "jeton /Sessions/Playing/Progress"]);
   });
 });

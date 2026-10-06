@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@tentacle-tv/api-client";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth, useJellyfinOutage, veilYieldsToPlayer } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { CryingTentacle } from "./CryingTentacle";
 import { useServerReachable } from "../hooks/useServerReachable";
+import { useConnectivity } from "../offline/useConnectivity";
 import { isDesktopApp } from "../desktop/bridge";
 
 interface OfflineBannerProps {
@@ -42,7 +43,13 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
     }
   }, [isReachable, reloadOnReconnect]);
 
-  if (isReachable) return null;
+  // Jellyfin seul en panne, dite par le serveur, lecteur ouvert : l'image joue
+  // encore sur sa réserve — le message temporaire du lecteur dit la cause.
+  const { reason } = useConnectivity();
+  const { pathname } = useLocation();
+  const { phase } = useJellyfinOutage();
+  const yields = veilYieldsToPlayer({ playerOpen: pathname.startsWith("/watch/"), reason, phase });
+  if (isReachable || yields) return null;
 
   // Reload the page afterwards — the OfflineBanner renders at App root when
   // backendDown is true, short-circuiting the router. Without a reload, calling

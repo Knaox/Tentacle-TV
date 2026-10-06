@@ -12,13 +12,36 @@ chaque `session:ready` (même `up`). Additif : un client plus ancien l'ignore,
 pas de `minServer` à monter. Aussi dans `/api/health` et `/api/admin/services`.
 
 Les lecteurs appliquent UNE règle (`packages/api-client/src/playback/`) :
-`outageView` (bandeau, écran d'arrêt au bout de 3 min, 15 s de reprise
-muette) et `useOutageGate` (erreurs tues pendant la panne, flux TOUJOURS
-rouvert au retour — même position, mêmes pistes, nouvelle session). Les
-phrases : `jellyfinOutageCopy` (shared). Web et bureau : `useWebPlaybackProblem`
-+ `JellyfinOutageNotice` ; mobile : `usePlayerProblem` + `JellyfinOutageBanner` ;
-Apple TV et Android TV : l'état vaut une sonde qui fait foi dans leur reprise
-(tv-core `serverOutage.ts`, `useServerJellyfinHealth`). webOS : hors périmètre.
+`outageView` (phases, 15 s de reprise muette) et `useOutageGate` (erreurs tues
+pendant la panne). Les phrases : `jellyfinOutageCopy` (shared). Web, bureau et
+webOS : `useWebPlaybackProblem` + `JellyfinOutageNotice` ; mobile :
+`usePlayerProblem` + `JellyfinOutageBanner` ; Apple TV et Android TV : l'état
+vaut une sonde qui fait foi dans leur reprise (tv-core `serverOutage.ts`,
+`useServerJellyfinHealth`).
+
+### Le retour est transparent (retour de Damien, 2026-10-06)
+
+Avant, le flux se rouvrait TOUJOURS au retour : une vidéo qui tenait sur sa
+réserve était rechargée. Désormais (shared `jellyfinReturn.ts`) :
+
+- la lecture qui a tenu continue, RIEN ne se recharge ; le serveur redit la
+  lecture à Jellyfin, qui l'a oubliée : `/Sessions/Playing` puis `/Progress`,
+  à la position extrapolée (`PlaybackReporter.resync`, retentée sur 503), et
+  un `/Progress` de plus 10 s après pour un transcodage ;
+- le lecteur reprend son flux seul au bout de sa réserve : `<video>` et mpv
+  se reconnectent, hls.js et mpv redemandent le segment suivant et Jellyfin
+  relance l'encodage à ce segment ;
+- le flux ne se rouvre (même position, mêmes pistes) que s'il le faut : la
+  lecture n'avait pas démarré, le flux est mort PENDANT la panne (erreur tue),
+  ou, dans les 3 min après le retour, une erreur ou une image arrêtée plus de
+  5 s. Une fois par retour. Une nouvelle panne referme cette fenêtre.
+
+Les messages sont TEMPORAIRES (`useOutageNotice`) : 10 s, compte à rebours
+visible (« Disparaît dans N s »), 20 s pour « ne répond toujours pas » qui
+garde « Réessayer » ; ils reparaissent à chaque nouvel état de Jellyfin. Le
+retour se passe sans un mot. Le voile plein écran « serveur injoignable » du
+web et du mobile cède au message du lecteur quand la panne est dite par le
+serveur (`veilYieldsToPlayer`) — il recouvrait une vidéo qui jouait encore.
 
 ## Mesuré sur Jellyfin 10.11.11 (conteneur officiel)
 
@@ -63,5 +86,48 @@ pannes… ») :
 | Socket coupée, Jellyfin servant | aucun message |
 | Épisode suivant | une négociation, sa piste, aucune position héritée |
 
-Non vérifié sur appareil : mpv (bureau), le mobile et les téléviseurs — leur
-logique passe par les mêmes règles, testées unitairement.
+## Mesuré le 2026-10-06 : le retour transparent
+
+Banc réel : Jellyfin 10.11.11 jetable (conteneur `pj-jf-10.11`, colima),
+MariaDB et backend à soi, un film de 10 min à 6 Mb/s (460 Mo), compte
+Knaoxtest du Jellyfin jetable ; vraie app web (Chrome du volet) et vrai
+Electron (profil jetable, `CFFIXED_USER_HOME`). Jellyfin a mis 8 à 45 s à
+revenir selon le geste (colima). Côté Jellyfin, `/Sessions` relevé toutes
+les 0,5 s ; côté lecteur, évènements `<video>`, requêtes de flux, cache et
+`loadfile` de mpv.
+
+| Lecteur, geste | Réserve | Ce qui se passe au retour |
+|---|---|---|
+| Web, lecture directe, `docker restart` (30 s) | ≈ 50 s (Chrome garde plus que `buffered`) | rien : image continue, aucun `loadfile`, aucune requête de flux |
+| Web, direct, `POST /System/Restart` (39 s) | idem | rien ; session redite chez Jellyfin 0,5 s après son retour |
+| Web, direct, `docker stop` 145 s | épuisée à +52 s, `error` du `<video>` tue | rouvert (flux mort pendant la panne) à 248,6 s exactement, image en 0,7 s |
+| Web, transcodage 540p (hls.js), restart 9 s | 120 s | rien : hls.js redemande le segment suivant, Jellyfin relance l'encodage |
+| Web, transcodage, `docker stop` 72 s | 120 s | rien : hls.js retente toutes les ~8 s, aucune erreur fatale |
+| Bureau (mpv), direct, restart 16 s | tout le fichier (545 s, 512 Mio) | rien : un seul `loadfile`, cache 533 → 465 s |
+| Bureau, transcodage, restart | 260 s | AVANT correctif : ffmpeg a sauté tous les segments sur les 503, mpv est sorti sur une fausse fin du film (490/600 s). Après : rouvert au retour, reprise à la position |
+
+- Les messages : « s'arrête » → « est arrêté » → « redémarre — presque
+  prêt », chacun décompté 10 → 1 puis effacé ; au retour, effacé aussitôt.
+  Le décompte se suspend fenêtre cachée (volet du navigateur masqué).
+- Le voile « Oups, le serveur fait une pause ! » recouvrait la vidéo qui
+  jouait : il cède désormais au message du lecteur (`veilYieldsToPlayer`).
+- La socket de l'appareil chez Jellyfin rouvre PENDANT son démarrage : la
+  redite se fait au retour dit par la santé (API authentifiée prête), pas à
+  la réouverture de la socket (45 s de démarrage relevés).
+- La redite d'un transcodage arrive avant que l'encodage ne renaisse :
+  Jellyfin l'enregistre « DirectPlay » ; un report de plus 10 s après.
+- `console.info` est retiré du build : les décisions s'écrivent en
+  `console.warn`, « [panne] Jellyfin revenu : lecture gardée… » ou
+  « [panne] flux rouvert : <cause> ».
+
+Apple TV (simulateur tvOS, clone effacé, build Debug + Metro, jumelée au
+banc) : trois redémarrages, lecture directe AVPlayer, réserve dite par le
+lecteur « 35 s chargées ». Au retour : « lecture gardée, rien n'est
+rechargé », position qui continue ; le bandeau dit chaque état, décompté
+10 → 1. Deux défauts trouvés là et corrigés : le message d'un état déjà dit
+à la panne PRÉCÉDENTE ne reparaissait plus, et la redite partie pendant le
+démarrage (socket rouverte tôt) était perdue — session revenue 18 s après
+Jellyfin, 1 s après correctif.
+
+Non joués : le mobile, Android TV, webOS (son lecteur est celui du web) —
+leur logique passe par les mêmes règles partagées, testées unitairement.

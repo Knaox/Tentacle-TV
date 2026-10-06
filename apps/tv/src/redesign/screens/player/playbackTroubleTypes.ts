@@ -32,6 +32,8 @@ export interface TroubleNoticeModel {
   tone: TroubleTone;
   title: string;
   detail?: string;
+  /** Un bandeau temporaire : « Disparaît dans 7 s ». */
+  countdown?: string;
 }
 
 export interface TroublePanelModel {

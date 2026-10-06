@@ -5,7 +5,7 @@ import {
   receiveJellyfinHealth,
   resetJellyfinHealthForTests,
 } from "../socket/jellyfinHealth";
-import { LONG_OUTAGE_MS, RECOVERY_GRACE_MS, outageView } from "./jellyfinOutage";
+import { LONG_OUTAGE_MS, RECOVERY_GRACE_MS, outageView, veilYieldsToPlayer } from "./jellyfinOutage";
 
 /**
  * La panne de Jellyfin côté lecteur : le magasin (alimenté par
@@ -69,5 +69,19 @@ describe("règle du lecteur pendant une panne", () => {
     const view = outageView(getJellyfinHealth(), now);
     expect(view).toMatchObject({ phase: "recovering", suppressErrors: true, recoveries: 1, nextChangeInMs: RECOVERY_GRACE_MS });
     expect(outageView(getJellyfinHealth(), now + RECOVERY_GRACE_MS)).toMatchObject({ phase: "none", suppressErrors: false });
+  });
+});
+
+describe("le voile « serveur injoignable » et le lecteur", () => {
+  it("lecteur ouvert, Jellyfin seul en panne DITE par le serveur : le voile cède au message du lecteur", () => {
+    for (const phase of ["outage", "long", "recovering"] as const) {
+      expect(veilYieldsToPlayer({ playerOpen: true, reason: "jellyfin", phase })).toBe(true);
+    }
+  });
+
+  it("hors lecteur, Tentacle injoignable, ou panne que le serveur ne dit pas : le voile, comme avant", () => {
+    expect(veilYieldsToPlayer({ playerOpen: false, reason: "jellyfin", phase: "outage" })).toBe(false);
+    expect(veilYieldsToPlayer({ playerOpen: true, reason: "backend", phase: "outage" })).toBe(false);
+    expect(veilYieldsToPlayer({ playerOpen: true, reason: "jellyfin", phase: "none" })).toBe(false);
   });
 });

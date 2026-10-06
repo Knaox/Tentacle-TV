@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fr from "../i18n/locales/fr/player";
 import en from "../i18n/locales/en/player";
-import { jellyfinOutageCopy } from "./jellyfinOutageCopy";
+import { jellyfinOutageCopy, outageNoticeDurationMs, outageNoticeOccasion, OUTAGE_NOTICE_MS } from "./jellyfinOutageCopy";
 
 /** Chaque état a SA phrase, dans les deux langues, sans le mot interdit au mobile. */
 
@@ -36,5 +36,15 @@ describe("le bandeau d'une panne de Jellyfin", () => {
 
   it("« docker restart » finit par « redémarre » : le titre attendu sous 10 s", () => {
     expect(lookup(fr as unknown as Record<string, unknown>, jellyfinOutageCopy("starting", false)!.titleKey.replace("player:", ""))).toMatch(/^Jellyfin redémarre/);
+  });
+
+  it("un message temporaire, qui reparaît à chaque nouvel état et quand la panne dure", () => {
+    expect(outageNoticeDurationMs(false)).toBe(OUTAGE_NOTICE_MS);
+    expect(outageNoticeDurationMs(true)).toBeGreaterThan(OUTAGE_NOTICE_MS);
+    const occasions = new Set([
+      outageNoticeOccasion("restarting", false), outageNoticeOccasion("down", false), outageNoticeOccasion("down", true),
+    ]);
+    expect(occasions.size).toBe(3);
+    expect(outageNoticeOccasion("down", false)).toBe(outageNoticeOccasion("down", false));
   });
 });

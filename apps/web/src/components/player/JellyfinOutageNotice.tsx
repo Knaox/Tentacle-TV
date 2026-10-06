@@ -1,35 +1,35 @@
 import { memo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { useJellyfinOutage } from "@tentacle-tv/api-client";
-import { jellyfinOutageCopy } from "@tentacle-tv/shared";
+import { useOutageNotice, type OutageNotice } from "@tentacle-tv/api-client";
 import { NoticeCard } from "../notices/NoticeCard";
+import { useMessageCountdown } from "../session/useMessageCountdown";
 import { useFullscreenPortalTarget } from "../../hooks/useFullscreenPortalTarget";
-
-/** Après « Réessayer », l'écran d'arrêt redevient un bandeau le temps de voir si ça reprend. */
-const RETRY_SNOOZE_MS = 30_000;
 
 /**
  * Jellyfin redémarre, s'arrête, démarre — dit par le serveur Tentacle
- * (`server:jellyfin`), sur le lecteur web et le bureau. Un bandeau non
- * bloquant (la lecture directe continue sur sa réserve) ; quand la panne dure
- * (`long`), l'écran d'arrêt avec « Réessayer », la position gardée. Monté
- * dans la cible plein écran (sinon invisible en plein écran) ; aucun flou :
- * sur le bureau, mpv dessine sous la page. Rien n'est monté hors panne.
+ * (`server:jellyfin`), sur le lecteur web, le bureau et webOS. Un message
+ * TEMPORAIRE, compte à rebours visible (`useOutageNotice`) : il paraît à
+ * chaque nouvel état, puis s'efface — la lecture continue sur sa réserve, et
+ * le retour de Jellyfin se passe sans un mot. Quand la panne dure, « ne
+ * répond toujours pas » propose « Réessayer », la position gardée. Le survol
+ * et le focus suspendent le compte. Monté dans la cible plein écran (sinon
+ * invisible en plein écran) ; aucun flou : sur le bureau, mpv dessine sous la
+ * page. Rien n'est monté hors panne.
  */
 export const JellyfinOutageNotice = memo(function JellyfinOutageNotice({ onRetry }: { onRetry: () => void }) {
-  const { t } = useTranslation("player");
-  const outage = useJellyfinOutage();
+  const notice = useOutageNotice();
   const target = useFullscreenPortalTarget();
-  const [closedState, setClosedState] = useState<string | null>(null);
-  const [snoozedUntil, setSnoozedUntil] = useState(0);
-  if (outage.phase !== "outage" && outage.phase !== "long") return null;
-  const long = outage.phase === "long" && Date.now() > snoozedUntil;
-  // Fermé à la main : il revient au prochain changement d'état, ou quand la panne dure.
-  if (!long && closedState === outage.state) return null;
-  const copy = jellyfinOutageCopy(outage.state, long);
-  if (!copy) return null;
-  return createPortal(
+  if (!notice) return null;
+  return createPortal(<OutageCard key={notice.occasion} notice={notice} onRetry={onRetry} />, target);
+});
+
+const OutageCard = memo(function OutageCard({ notice, onRetry }: { notice: OutageNotice; onRetry: () => void }) {
+  const { t } = useTranslation("player");
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const countdown = useMessageCountdown(notice.durationMs, hovered || focused, notice.done);
+  return (
     <div
       role="status"
       aria-live="polite"
@@ -37,23 +37,28 @@ export const JellyfinOutageNotice = memo(function JellyfinOutageNotice({ onRetry
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
     >
-      <div className="pointer-events-auto w-[min(26rem,100%)]">
+      <div
+        className="pointer-events-auto w-[min(26rem,100%)]"
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      >
         <NoticeCard
           surface="player"
-          severity={long ? "blocking" : "info"}
+          severity={notice.long ? "blocking" : "info"}
           icon="server"
-          title={t(copy.titleKey)}
-          lines={[t(copy.hintKey)]}
-          primary={long ? {
+          title={t(notice.copy.titleKey)}
+          lines={[t(notice.copy.hintKey)]}
+          primary={notice.long ? {
             label: t("jellyfinOutage.retry"),
-            onClick: () => { setSnoozedUntil(Date.now() + RETRY_SNOOZE_MS); onRetry(); },
+            onClick: () => { notice.done(); onRetry(); },
           } : undefined}
-          onClose={() => setClosedState(outage.state)}
-          countdown={null}
-          durationMs={null}
+          onClose={notice.done}
+          countdown={countdown}
+          durationMs={notice.durationMs}
         />
       </div>
-    </div>,
-    target,
+    </div>
   );
 });

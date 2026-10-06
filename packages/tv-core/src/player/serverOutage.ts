@@ -10,12 +10,19 @@
  *
  *  - en panne : le chemin du flux est À TERRE, Jellyfin en cause — le bandeau
  *    le dit tout de suite, la relance attend ;
- *  - de retour : le flux se relance à la position, UNE fois, même si l'image
- *    tient encore sur sa réserve (un transcodage est mort avec Jellyfin ;
- *    PrismCore aussi, au bout de sa réserve) — sauf relance toute fraîche :
- *    la sonde de la TV a pu voir le retour la première.
+ *  - de retour : le retour est TRANSPARENT (la règle des six lecteurs, shared
+ *    `jellyfinReturn.ts`). L'image qui tient sur sa réserve continue, rien
+ *    ne se relance — le serveur redit la lecture à Jellyfin. Le flux ne se
+ *    relance tout de suite que s'il a été PERDU pendant la panne (une erreur
+ *    confiée à la reprise) ; une image arrêtée, au bout de sa réserve, suit
+ *    le chemin ordinaire de `decideRecovery` (grâce, chemin qui répond,
+ *    relance immédiate : la panne vue la rend mûre) — un transcodage que
+ *    Jellyfin ne reprend pas, PrismCore au bout de sa réserve aussi. Jamais
+ *    sur une relance toute fraîche : la sonde de la TV a pu voir le retour la
+ *    première.
  */
 
+import { decideJellyfinReturn } from "@tentacle-tv/shared";
 import type { Culprit, Health } from "./playbackRecovery";
 
 /** Une relance plus récente que ça a déjà servi le retour de Jellyfin. */
@@ -34,14 +41,17 @@ export function serverOutageProbe(now: number, prev: { downSince: number | null;
   return { source: "down", culprit: "media", checkedAt: now, downSince: prev.downSince ?? now, downWhat: prev.downWhat ?? "media" };
 }
 
-/** Jellyfin revenu, dit par le serveur : relancer le flux ? */
+/** Jellyfin revenu, dit par le serveur : relancer le flux tout de suite ? */
 export function restartOnJellyfinReturn(args: {
   now: number;
   started: boolean;
   ended: boolean;
   restarting: boolean;
   lastRestartAt: number | null;
+  /** Le lecteur a perdu sa source pendant la panne (erreur confiée à la reprise). */
+  lost: boolean;
 }): boolean {
   if (!args.started || args.ended || args.restarting) return false;
+  if (decideJellyfinReturn({ started: true, failedDuringOutage: args.lost }) === "resume") return false;
   return args.lastRestartAt === null || args.now - args.lastRestartAt >= RETURN_RESTART_SKIP_MS;
 }

@@ -38,6 +38,13 @@ export const EDGE_COALESCE_MS = 400;
  * demie de silence, le lecteur n'est plus là pour avancer.
  */
 export const MAX_EXTRAPOLATION_MS = 90_000;
+/** La redite d'après-retour refusée (Jellyfin répond 503 en chargement) : retentée, au plus tant de fois. */
+export const RESYNC_RETRY_MS = 3_000;
+export const RESYNC_ATTEMPTS = 5;
+/** Après la redite d'un transcodage : le temps que l'encodage renaisse (mesuré : 1 à 3 s). */
+export const RESYNC_TRANSCODE_REPORT_MS = 10_000;
+/** Une redite réussie depuis moins que ça vaut pour ce retour. */
+export const RESYNC_DEDUP_MS = 20_000;
 
 type Timer = ReturnType<typeof setTimeout>;
 
@@ -62,6 +69,9 @@ export class PlaybackReporter {
   private heartbeatTimer: Timer | null = null;
   private edgeTimer: Timer | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private resyncTimer: Timer | null = null;
+  private resyncedAt: number | null = null;
+  private resyncing = false;
   private queue: Promise<unknown> = Promise.resolve();
 
   constructor(
@@ -135,9 +145,57 @@ export class PlaybackReporter {
     return this.enqueue(() => this.jf.post("/Sessions/Playing/Stopped", body));
   }
 
-  /** La connexion Jellyfin de l'appareil vient de (re)naître : il a pu tout oublier. */
-  resync(): void {
-    if (this.state !== null) void this.report("/Sessions/Playing/Progress");
+  /**
+   * La connexion Jellyfin de l'appareil vient de RENAÎTRE (Jellyfin
+   * redémarré) : il a oublié la lecture. Le lecteur, lui, continue sur sa
+   * réserve sans rien recharger (shared `jellyfinReturn.ts`) — c'est donc ici
+   * qu'elle se redit : un début (`/Sessions/Playing`), puis l'état complet
+   * (`/Progress` : pause, pistes, volume), à la position extrapolée. Refusée
+   * (Jellyfin encore en chargement), elle se retente.
+   */
+  async resync(attempt = 1): Promise<void> {
+    if (this.state === null) return;
+    const playback = this.state;
+    if (attempt === 1) {
+      // Deux signaux pour un même retour (socket rouverte, santé « up ») : une
+      // redite — sauf si la précédente s'est épuisée sur des 503.
+      if (this.resyncing) return;
+      if (this.resyncedAt !== null && this.now() - this.resyncedAt < RESYNC_DEDUP_MS) return;
+      this.resyncing = true;
+      logReport("redite après le retour de Jellyfin", playback);
+    }
+    const ok = await this.report("/Sessions/Playing");
+    // Une autre lecture, ou plus rien, entre-temps : la redite n'a plus d'objet.
+    if (this.state === null || !samePlayback(this.state, playback)) {
+      this.resyncing = false;
+      return;
+    }
+    if (ok) {
+      this.resyncing = false;
+      this.resyncedAt = this.now();
+      await this.report("/Sessions/Playing/Progress");
+      // Un transcodage : Jellyfin n'a pas encore relancé l'encodage (le
+      // lecteur le redemande au segment suivant) et enregistre « DirectPlay »
+      // (mesuré, banc du 06/10). Un report de plus, l'encodage revenu.
+      if (playback.playMethod !== "DirectPlay") this.schedulePostResync();
+      return;
+    }
+    if (attempt >= RESYNC_ATTEMPTS) {
+      this.resyncing = false;
+      return;
+    }
+    this.resyncTimer = setTimeout(() => {
+      this.resyncTimer = null;
+      void this.resync(attempt + 1);
+    }, RESYNC_RETRY_MS);
+  }
+
+  private schedulePostResync(): void {
+    if (this.resyncTimer !== null) clearTimeout(this.resyncTimer);
+    this.resyncTimer = setTimeout(() => {
+      this.resyncTimer = null;
+      void this.report("/Sessions/Playing/Progress");
+    }, RESYNC_TRANSCODE_REPORT_MS);
   }
 
   /** Oublie tout sans rien dire à Jellyfin (le processus s'arrête). */
@@ -197,6 +255,9 @@ export class PlaybackReporter {
     if (this.heartbeatTimer !== null) clearTimeout(this.heartbeatTimer);
     if (this.edgeTimer !== null) clearTimeout(this.edgeTimer);
     if (this.pingTimer !== null) clearInterval(this.pingTimer);
+    if (this.resyncTimer !== null) clearTimeout(this.resyncTimer);
+    this.resyncTimer = null;
+    this.resyncing = false;
     this.heartbeatTimer = null;
     this.edgeTimer = null;
     this.pingTimer = null;

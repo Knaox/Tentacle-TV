@@ -6,6 +6,9 @@ import {
   HEARTBEAT_MS,
   MAX_EXTRAPOLATION_MS,
   PlaybackReporter,
+  RESYNC_DEDUP_MS,
+  RESYNC_RETRY_MS,
+  RESYNC_TRANSCODE_REPORT_MS,
   TRANSCODE_PING_MS,
 } from "./playbackReporter";
 
@@ -24,9 +27,11 @@ function recorder() {
   const calls: Call[] = [];
   let release: (() => void) | null = null;
   let hold = false;
+  let failing = 0;
   const caller: JellyfinCaller = {
     post: (path, body) => {
       calls.push({ path, body: body as Record<string, unknown> | undefined });
+      if (failing > 0) { failing -= 1; return Promise.resolve(false); }
       if (!hold) return Promise.resolve(true);
       return new Promise<boolean>((resolve) => {
         release = () => resolve(true);
@@ -39,6 +44,7 @@ function recorder() {
     paths: () => calls.map((c) => c.path),
     holdNext: () => { hold = true; },
     releaseHeld: () => { hold = false; release?.(); },
+    failNext: (count: number) => { failing = count; },
   };
 }
 
@@ -199,12 +205,69 @@ describe("PlaybackReporter — ce qui mérite une requête", () => {
     expect(r.isActive()).toBe(true);
   });
 
-  it("resync redit l'état à un Jellyfin qui a pu l'oublier", async () => {
+  it("resync redit la lecture à un Jellyfin redémarré : un début, puis l'état, à la position", async () => {
+    const { rec, r } = reporter();
+    await r.start(state({ positionTicks: 0 }));
+    now += 12_000;
+    await r.resync();
+    expect(rec.paths()).toEqual(["/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Progress"]);
+    expect(rec.calls.slice(1).map((c) => c.body?.PositionTicks)).toEqual([12 * TICKS_PER_SECOND, 12 * TICKS_PER_SECOND]);
+  });
+
+  it("resync refusé (Jellyfin encore en chargement) : retenté, puis l'état", async () => {
     const { rec, r } = reporter();
     await r.start(state());
-    r.resync();
-    await advance(0);
-    expect(rec.paths()).toEqual(["/Sessions/Playing", "/Sessions/Playing/Progress"]);
+    rec.failNext(2);
+    await r.resync();
+    await advance(RESYNC_RETRY_MS);
+    await advance(RESYNC_RETRY_MS);
+    expect(rec.paths()).toEqual([
+      "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Progress",
+    ]);
+  });
+
+  it("resync d'un transcodage : un report de plus, l'encodage revenu", async () => {
+    const { rec, r } = reporter();
+    await r.start(state({ playMethod: "Transcode" }));
+    await r.resync();
+    await advance(RESYNC_TRANSCODE_REPORT_MS);
+    expect(rec.paths()).toEqual([
+      "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Progress", "/Sessions/Playing/Progress",
+    ]);
+    expect(rec.calls.at(-1)?.body?.PlayMethod).toBe("Transcode");
+  });
+
+  it("deux signaux pour un même retour (socket, santé) : une seule redite", async () => {
+    const { rec, r } = reporter();
+    await r.start(state());
+    await r.resync();
+    await r.resync();
+    expect(rec.paths()).toEqual(["/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Progress"]);
+    now += RESYNC_DEDUP_MS;
+    await r.resync();
+    expect(rec.paths().length).toBe(5);
+  });
+
+  it("une redite épuisée sur des 503 (socket rouverte en plein démarrage) n'empêche pas celle du retour", async () => {
+    const { rec, r } = reporter();
+    await r.start(state());
+    rec.failNext(5);
+    await r.resync();
+    for (let i = 0; i < 4; i++) await advance(RESYNC_RETRY_MS);
+    expect(rec.paths().filter((p) => p === "/Sessions/Playing").length).toBe(6);
+    await r.resync();
+    expect(rec.paths().slice(-2)).toEqual(["/Sessions/Playing", "/Sessions/Playing/Progress"]);
+  });
+
+  it("resync sans lecture, ou après l'arrêt : rien", async () => {
+    const { rec, r } = reporter();
+    await r.resync();
+    await r.start(state());
+    rec.failNext(1);
+    await r.resync();
+    await r.stop();
+    await advance(RESYNC_RETRY_MS * 2);
+    expect(rec.paths()).toEqual(["/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Stopped"]);
   });
 });
 
