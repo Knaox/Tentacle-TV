@@ -58,3 +58,37 @@ par `dovi_tool`, multiplexé par `mkvmerge`), deux épisodes H.264 1080p.
   tableau de bord (« HDR10 → SDR » quel que soit le codec de sortie).
 - L'épisode suivant refait la mesure du débit (`itemBitrate.ts`, api-client) avant de
   choisir son flux, attendue au plus 2,5 s.
+
+## Android TV — le moteur déclare d'après l'APPAREIL (07/10, mode Lite)
+
+Sur Android TV, ExoPlayer lit d'abord (mpv seulement après une erreur d'Exo). Ses
+déclarations ne sont plus des listes fixes : elles viennent du profil de l'appareil.
+
+- **Le relevé** (`apps/tv/android/.../media/`, module `TentacleMediaCapabilities`) :
+  décodeurs vidéo MATÉRIELS vus comme ExoPlayer les voit (`MediaCodecUtil` de Media3 ;
+  `c2.android.*`, `c2.google.*`, `OMX.google.*` écartés), profils et niveaux dans les mots
+  de Jellyfin, cadence tenue en 720p / 1080p / 2160p (le test de Media3), 10 bits ; profils
+  Dolby Vision ; plages HDR de l'écran ; son HDMI (`AudioCapabilities` de Media3) et sons
+  décodés (plateforme + extension FFmpeg) ; mode de sortie. Lu à la première ouverture du
+  lecteur, relu sur un changement d'écran ou d'HDMI. Forme : `DeviceMediaProfile`
+  (`packages/shared/src/playback/deviceMediaProfile.ts`).
+- **Les moteurs** : `exoPlayerEngineFor` / `mpvEngineFor` (`deviceEngines.ts`). Un codec
+  n'est déclaré que s'il a un décodeur matériel ; le HDR suit le décodeur HEVC 10 bits (pas
+  l'écran : la box ramène elle-même le HDR10 au SDR) ; le Dolby Vision, un décodeur du
+  profil 5. Les sons des segments d'ExoPlayer restent ceux mesurés (ni DTS ni TrueHD en TS).
+  Sans profil : les déclarations fixes.
+- **Le verdict** (`devicePlaybackVerdict.ts`) : lecture directe, flux direct (image copiée,
+  son converti), transcodage (image réencodée) ou refus. Jamais le décodage LOGICIEL d'une
+  image : l'extension FFmpeg du lecteur décode H.264 et HEVC sur le processeur, et un
+  Cortex-A53 ne le tient pas. Le niveau est relevé mais ne décide pas (un H.264 de niveau
+  5.1 en 1080p, courant, serait refusé à tort) ; la taille et la cadence sont le vrai test.
+- **L'AV1 sans décodeur** (décision du 07/10) : le serveur convertit — HEVC si
+  l'administrateur l'a permis, sinon H.264 —, à la définition de l'écran au plus
+  (`planStream.outputMaxHeight`), et le lecteur le dit une fois : « Cet appareil ne lit pas
+  l'AV1 : le serveur convertit » (`player:deviceNotice.av1Converted`).
+- **Le banc** : `adb shell setprop debug.tentacle.media_profile bcm7271` injecte le profil
+  simulé de la box net+ (`simulatedDeviceProfiles.ts`) ; `survey` fait écrire le profil réel
+  dans `logcat -s TentacleMedia` 5 s après le lancement, sans une touche. Écouté par l'app
+  de mesure (`*.perf`) et une construction de développement seulement.
+- La matrice de la fiche (11 images × 5 sons × 3 sous-titres) est un test de la règle :
+  `devicePlaybackVerdict.test.ts`.
