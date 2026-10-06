@@ -41,6 +41,8 @@ export const MAX_EXTRAPOLATION_MS = 90_000;
 /** La redite d'après-retour refusée (Jellyfin répond 503 en chargement) : retentée, au plus tant de fois. */
 export const RESYNC_RETRY_MS = 3_000;
 export const RESYNC_ATTEMPTS = 5;
+/** Après la redite d'un transcodage : le temps que l'encodage renaisse (mesuré : 1 à 3 s). */
+export const RESYNC_TRANSCODE_REPORT_MS = 10_000;
 
 type Timer = ReturnType<typeof setTimeout>;
 
@@ -156,6 +158,10 @@ export class PlaybackReporter {
     if (this.state === null || !samePlayback(this.state, playback)) return;
     if (ok) {
       await this.report("/Sessions/Playing/Progress");
+      // Un transcodage : Jellyfin n'a pas encore relancé l'encodage (le
+      // lecteur le redemande au segment suivant) et enregistre « DirectPlay »
+      // (mesuré, banc du 06/10). Un report de plus, l'encodage revenu.
+      if (playback.playMethod !== "DirectPlay") this.schedulePostResync();
       return;
     }
     if (attempt >= RESYNC_ATTEMPTS) return;
@@ -163,6 +169,14 @@ export class PlaybackReporter {
       this.resyncTimer = null;
       void this.resync(attempt + 1);
     }, RESYNC_RETRY_MS);
+  }
+
+  private schedulePostResync(): void {
+    if (this.resyncTimer !== null) clearTimeout(this.resyncTimer);
+    this.resyncTimer = setTimeout(() => {
+      this.resyncTimer = null;
+      void this.report("/Sessions/Playing/Progress");
+    }, RESYNC_TRANSCODE_REPORT_MS);
   }
 
   /** Oublie tout sans rien dire à Jellyfin (le processus s'arrête). */

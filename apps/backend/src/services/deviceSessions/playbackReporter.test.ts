@@ -7,6 +7,7 @@ import {
   MAX_EXTRAPOLATION_MS,
   PlaybackReporter,
   RESYNC_RETRY_MS,
+  RESYNC_TRANSCODE_REPORT_MS,
   TRANSCODE_PING_MS,
 } from "./playbackReporter";
 
@@ -222,6 +223,17 @@ describe("PlaybackReporter — ce qui mérite une requête", () => {
     expect(rec.paths()).toEqual([
       "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Progress",
     ]);
+  });
+
+  it("resync d'un transcodage : un report de plus, l'encodage revenu", async () => {
+    const { rec, r } = reporter();
+    await r.start(state({ playMethod: "Transcode" }));
+    await r.resync();
+    await advance(RESYNC_TRANSCODE_REPORT_MS);
+    expect(rec.paths()).toEqual([
+      "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Progress", "/Sessions/Playing/Progress",
+    ]);
+    expect(rec.calls.at(-1)?.body?.PlayMethod).toBe("Transcode");
   });
 
   it("resync sans lecture, ou après l'arrêt : rien", async () => {
