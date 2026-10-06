@@ -46,6 +46,11 @@ async function measure(options: { bufferedFetch?: boolean }): Promise<number | n
   return pending;
 }
 
+// Le module s'importe DANS chaque test (après `vi.resetModules`) : sous une
+// machine chargée, la transformation dépassait les 5 s par défaut, et la mesure
+// restée en vol polluait le test suivant. 20 s couvrent ce chargement.
+vi.setConfig({ testTimeout: 20_000 });
+
 describe("bitrateMeasure — un fetch qui attend le corps entier (opt-in)", () => {
   it("conversion lente, réseau rapide : c'est le réseau qu'on mesure", async () => {
     vi.stubGlobal("fetch", rnFetch({ latencyMs: 20, bps: 200e6, convertMs: 900 }));

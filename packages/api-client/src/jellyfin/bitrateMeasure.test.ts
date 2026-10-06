@@ -32,6 +32,11 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+// Le module s'importe DANS chaque test (après `vi.resetModules`) : sous une
+// machine chargée, la transformation dépassait les 5 s par défaut, et la mesure
+// restée en vol polluait le test suivant. 20 s couvrent ce chargement.
+vi.setConfig({ testTimeout: 20_000 });
+
 describe("bitrateMeasure", () => {
   it("mesure le serveur Jellyfin quand le direct est ouvert et demandé", async () => {
     const { measureBitrate } = await import("./bitrateMeasure");
