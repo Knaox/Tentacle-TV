@@ -119,11 +119,17 @@ export function setupStage(state: SetupFlowState): SetupStep {
 /** On ne revient pas en arrière depuis ces écrans : ce qu'ils ont fait est fait. */
 export const SETUP_NO_BACK: ReadonlySet<SetupStep> = new Set<SetupStep>(["welcome", "apply", "remote", "done"]);
 
+/** L'ouverture de la session : une fois passée, on n'y revient pas (le code a servi). */
+const SESSION_STEPS: ReadonlySet<SetupStep> = new Set<SetupStep>(["welcome", "code"]);
+
 /** L'écran d'avant, DANS le parcours ; `null` : pas de retour. */
 export function previousStep(steps: readonly SetupStep[], step: SetupStep): SetupStep | null {
   const index = steps.indexOf(step);
   if (index <= 0 || SETUP_NO_BACK.has(step)) return null;
-  return steps[index - 1];
+  const previous = steps[index - 1];
+  // Du code à l'accueil, oui (rien n'est encore ouvert) ; d'après la session, non.
+  if (SESSION_STEPS.has(previous) && step !== "code") return null;
+  return previous;
 }
 
 /** L'écran d'après, DANS le parcours ; `null` : le dernier, ou un écran hors parcours. */
