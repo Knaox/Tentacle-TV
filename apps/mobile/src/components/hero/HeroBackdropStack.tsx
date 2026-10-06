@@ -25,7 +25,10 @@ export function HeroBackdropStack({ slides, activeIndex, portrait }: HeroBackdro
       {slides.map((slide, i) => {
         const url = slideVisual(slide, portrait);
         if (!url) return null;
-        const fallbackUrl = url === slide.backdropUri ? null : slide.backdropUri;
+        // Le second choix : l'autre visuel du titre — le large en portrait,
+        // l'affiche en paysage (un fond en 404 ne laisse plus la carte vide).
+        const other = url === slide.backdropUri ? (slide.posterUri ?? null) : slide.backdropUri;
+        const fallbackUrl = other === url ? null : other;
         return <CrossfadeImage key={slide.id} url={url} fallbackUrl={fallbackUrl} active={i === activeIndex} />;
       })}
     </View>
