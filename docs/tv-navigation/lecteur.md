@@ -701,6 +701,19 @@ mettre en pause — est celui qu'on reproche au lecteur de Plex.
   (`focus/guideFocusable.android.ts`, unifié avec les guides d'entrée par A5) : avant, la croix de la feuille des pistes était
   inatteignable.
 
+- **Le démarrage : image et son prêts, puis tout part** (tv-core
+  `startGate`, trait `playerAnnouncesFirstFrame`). Le moteur est TENU EN
+  PAUSE depuis l'ouverture (`startHeld`, `PlayerScreen`) ; Exo annonce
+  `firstFrame` quand sa première image est posée ET qu'il est prêt (le son
+  aussi), mpv à son premier `playback-restart` (la pause posée avant le
+  `loadfile`). Cette annonce lève l'écran de chargement ET la pause dans le
+  même rendu : l'image attend sur la surface, sous l'écran opaque, et le son
+  part avec le mouvement. Filet : 3 s après le « prêt » sans première image.
+  Avant (mesuré à l'émulateur, `startup.mjs`) : le moteur jouait dès son
+  « prêt », l'écran de chargement attendait la progression suivante — 1,6 s
+  de son sur l'écran de chargement, puis une image déjà partie. Journal du
+  démarrage : `adb logcat -s TntStart`. L'Apple TV n'annonce rien : inchangée.
+
 ### 13.4 Les preuves
 
 - **Émulateur** (Shield API 31, build debug, faux serveur du banc nav-golden
