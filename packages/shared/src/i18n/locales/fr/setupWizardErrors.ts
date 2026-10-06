@@ -35,6 +35,7 @@ export default {
   error_code_required: "Ce navigateur n'arrive pas directement du réseau local\u00a0: entrez le code d'installation.",
   error_setup_in_progress: "Une installation est déjà en cours depuis un autre appareil\u00a0: entrez le code d'installation pour la reprendre.",
   error_jf_sibling_elsewhere: "L'adresse interne de Jellyfin mène hors de la pile Docker\u00a0: le service Jellyfin a-t-il été renommé\u00a0? Rétablissez JELLYFIN_INTERNAL_URL sur le nom du service Jellyfin de la pile.",
+  error_step_refused: "Cette étape ne fait pas partie de l'installation de ce Jellyfin\u00a0: revenez à l'étape Jellyfin.",
   error_internal: "Une erreur inattendue est survenue. Réessayez ; si elle revient, consultez les journaux du serveur.",
   error_network: "Le serveur ne répond pas\u00a0: vérifiez qu'il tourne toujours.",
 };

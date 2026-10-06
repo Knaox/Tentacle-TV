@@ -13,6 +13,7 @@ function ctx(over: Partial<SetupContext> = {}): SetupContext {
     mediaFolders: { root: "/media", movies: "/media/films", tvshows: "/media/series" },
     os: null,
     missingJellyfin: { kind: "compose", stack: "tentacle-full", docsUrl: "https://tentacletv.app/install/" },
+    flow: { databasePending: false, selection: null, linked: false },
     secure: false,
     ...over,
   };

@@ -14,7 +14,7 @@ const CODES: Record<SetupErrorCode, true> = {
   jf_invalid_url: true, jf_forbidden_address: true, jf_localhost_in_docker: true, jf_unreachable: true, jf_timeout: true,
   jf_tls_invalid: true, jf_not_jellyfin: true, jf_incompatible_version: true, jf_not_blank: true, jf_bad_credentials: true,
   jf_not_admin: true, jf_api_key_invalid: true, jf_api_key_failed: true, jf_startup_failed: true, jf_path_not_found: true,
-  jf_library_failed: true, jf_not_configured: true, jf_claim_pending: true, jf_sibling_elsewhere: true, internal: true,
+  jf_library_failed: true, jf_not_configured: true, jf_claim_pending: true, jf_sibling_elsewhere: true, step_refused: true, internal: true,
 };
 
 describe("vocabulaire de l'assistant d'installation", () => {

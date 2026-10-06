@@ -35,6 +35,7 @@ export default {
   error_code_required: "This browser isn't reaching the server directly from your home network: enter the setup code.",
   error_setup_in_progress: "Setup is already under way from another device: enter the setup code to take it over.",
   error_jf_sibling_elsewhere: "Jellyfin's internal address leads outside the Docker stack: was the Jellyfin service renamed? Point JELLYFIN_INTERNAL_URL back to the stack's Jellyfin service name.",
+  error_step_refused: "This step isn't part of setting up this Jellyfin: go back to the Jellyfin step.",
   error_internal: "Something unexpected happened. Try again; if it comes back, check the server's logs.",
   error_network: "The server does not answer: check that it is still running.",
 };

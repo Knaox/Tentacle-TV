@@ -65,6 +65,7 @@ function context(over: Partial<SetupContext> = {}): SetupContext {
     mediaFolders: null,
     os: null,
     missingJellyfin: { kind: "compose", stack: "tentacle-full", docsUrl: "https://tentacletv.app/install/" },
+    flow: { databasePending: false, selection: null, linked: false },
     secure: false,
     ...over,
   };
