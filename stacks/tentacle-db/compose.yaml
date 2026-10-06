@@ -9,7 +9,7 @@
 #  3. Open  http://<this-machine>:3000  and follow the setup wizard. From your
 #     home network, no code; from elsewhere it asks for one, printed in
 #     Tentacle's log (Portainer: the container's Logs).
-#     then for your Jellyfin address and administrator account.
+#     It then lists the Jellyfin servers it finds; pick yours.
 #
 #  Nothing to edit: the database passwords are generated on first start, in
 #  a volume only the database and Tentacle can read. Optional settings: a
