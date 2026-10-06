@@ -211,6 +211,7 @@ export * from "./playback/streamPlan";
 export * from "./playback/engineProfiles";
 export * from "./playback/deviceMediaProfile";
 export * from "./playback/simulatedDeviceProfiles";
+export * from "./playback/deviceEngines";
 export * from "./playback/playbackSettings";
 export * from "./playback/playbackPresets";
 export * from "./playback/segmentWindow";
