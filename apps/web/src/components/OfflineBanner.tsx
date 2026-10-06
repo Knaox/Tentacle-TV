@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth, useJellyfinOutage, veilYieldsToPlayer } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
+import { connectivityCaseOf, connectivityCopy } from "@tentacle-tv/shared";
 import { CryingTentacle } from "./CryingTentacle";
 import { useServerReachable } from "../hooks/useServerReachable";
 import { useConnectivity } from "../offline/useConnectivity";
@@ -13,11 +14,14 @@ interface OfflineBannerProps {
 }
 
 /**
- * Overlay plein écran affiché quand le serveur est injoignable.
- * Se masque automatiquement quand la connexion revient.
+ * Overlay plein écran affiché quand le serveur est injoignable — le WEB et le
+ * client LG seulement : le bureau et le mobile passent hors ligne sans voile.
+ * Il dit l'un des trois cas partagés (`connectivityCase.ts`) : pas de réseau,
+ * serveur Tentacle hors ligne, Jellyfin injoignable — jamais « ce n'est pas
+ * votre faute ». Se masque automatiquement quand la connexion revient.
  */
 export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "errors"]);
   const { isReachable, retry } = useServerReachable();
   // L'essai manuel se VOIT : libellé « nouvelle tentative… » + bouton figé
   // le temps de la sonde (pattern ContentErrorState), plancher 600 ms.
@@ -50,6 +54,7 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
   const { phase } = useJellyfinOutage();
   const yields = veilYieldsToPlayer({ playerOpen: pathname.startsWith("/watch/"), reason, phase });
   if (isReachable || yields) return null;
+  const copy = connectivityCopy(connectivityCaseOf(reason) ?? "server");
 
   // Reload the page afterwards — the OfflineBanner renders at App root when
   // backendDown is true, short-circuiting the router. Without a reload, calling
@@ -80,13 +85,10 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
       <div className="flex flex-col items-center px-8 text-center">
         <CryingTentacle size={160} />
         <h2 className="mt-8 text-2xl font-bold text-content-primary">
-          {t("offlineTitle")}
+          {t(copy.titleKey)}
         </h2>
         <p className="mt-4 max-w-md text-sm leading-relaxed text-content-tertiary">
-          {t("offlineMessage")}
-        </p>
-        <p className="mt-2 max-w-md text-xs leading-relaxed text-content-quaternary">
-          {t("offlineHint")}
+          {t(copy.hintKey)}
         </p>
         {/* Boutons alignés sur le design system : CTA primaire = bouton blanc
             (même style que le Play de la fiche média), secondaires en ghost. */}

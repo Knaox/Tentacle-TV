@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { connectivityCaseOf, connectivityCopy } from "@tentacle-tv/shared";
 import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { probeNow, setManualOffline } from "./connectivityStore";
@@ -17,6 +18,8 @@ import { probeNow, setManualOffline } from "./connectivityStore";
 export function ConnectivityChip() {
   const { t } = useTranslation("downloads");
   const snap = useConnectivity();
+  // La cause en mots, la même que le message de bascule (les trois cas partagés).
+  const offlineCause = connectivityCopy(connectivityCaseOf(snap.reason) ?? "server");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -90,9 +93,7 @@ export function ConnectivityChip() {
                 ? `${t("offlineManualEnabled")} ${
                     snap.reachable ? t("offlineServerReachable") : t("offlineServerUnreachable")
                   }`
-                : snap.reason === "jellyfin"
-                  ? t("offlineReasonJellyfin")
-                  : t("offlineReasonBackend")}
+                : `${t(offlineCause.titleKey)}. ${t(offlineCause.hintKey)}`}
             </p>
             {!manual && (
               <p className="mt-1 text-xs leading-relaxed text-content-quaternary">

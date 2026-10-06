@@ -680,6 +680,20 @@ la TV en fait une sonde qui fait foi (tv-core `serverOutage.ts`). Toute sonde
 d'attente de 10.11 rend un 200 sans `Id` pendant son démarrage (mesuré).
 Faits mesurés : `docs/PANNE-JELLYFIN.md`.
 
+## Plus de serveur — trois cas, jamais un voile là où le hors ligne existe
+
+Sans serveur, une seule règle dit POURQUOI (`packages/shared/src/connectivity/
+connectivityCase.ts`) : l'APPAREIL sans réseau (« Vous êtes hors ligne »), le
+serveur Tentacle muet ou trop lent (« Le serveur Tentacle est hors ligne »),
+Jellyfin injoignable derrière un Tentacle qui répond. Jamais « ce n'est pas
+votre faute ». Le mobile et le bureau ne montrent AUCUN voile : ils passent en
+mode hors ligne quelle que soit la cause, même sans titre gardé, et un message
+TEMPORAIRE le dit (`useConnectivityNotice`, api-client : une fois par bascule
+ou changement de cause, compte à rebours, jamais sur le lecteur). Le web, la
+TV LG et l'Apple TV / Android TV gardent leur écran, avec ces mêmes mots ; la
+TV demande à la page de connectivité du système si elle a un réseau
+(`deviceNetworkProbe`, seulement après un échec du serveur, gardé 15 s).
+
 ## Transcodage — le moteur déclare, la règle décide
 
 Aucun client ne choisit « h264 + aac » lui-même : il déclare ce que son MOTEUR décode

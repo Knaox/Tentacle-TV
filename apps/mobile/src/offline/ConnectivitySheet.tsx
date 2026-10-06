@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { BottomSheet, Button } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { setManualOffline, type NetworkType } from "./connectivityStore";
-import { offlineReasonKey } from "./offlineReasonText";
+import { offlineReasonCopy } from "./offlineReasonText";
 import { useConnectivity } from "./useConnectivity";
 import { useProbeRetry } from "./useProbeRetry";
 
@@ -53,7 +53,7 @@ export function ConnectivitySheet({ visible, onClose }: Props) {
   const networkKey = NETWORK_KEYS[snap.networkType];
   const description = manual
     ? `${t("offlineManualEnabled")} ${snap.reachable ? t("offlineServerReachable") : t("offlineServerUnreachable")}`
-    : t(offlineReasonKey(snap.reason));
+    : `${t(offlineReasonCopy(snap.reason).titleKey)}. ${t(offlineReasonCopy(snap.reason).hintKey)}`;
 
   return (
     <BottomSheet visible={visible} onClose={onClose} snapPoints={[0.42, 0.6]}>

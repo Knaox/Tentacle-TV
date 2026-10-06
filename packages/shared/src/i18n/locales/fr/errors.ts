@@ -122,4 +122,12 @@ export default {
   streamDirect: "lecture directe",
   streamTranscode: "conversion par le serveur",
   streamLocal: "fichier sur cet appareil",
+  // Plus de serveur : trois cas, les mêmes mots partout (`connectivity/connectivityCase.ts`).
+  connectivityDeviceTitle: "Vous êtes hors ligne",
+  connectivityDeviceHint: "Vérifiez votre connexion Internet.",
+  connectivityServerTitle: "Le serveur Tentacle est hors ligne",
+  connectivityServerHint: "Vérifiez votre connexion, ou que le serveur est en ligne.",
+  connectivityJellyfinTitle: "Jellyfin n'est pas joignable",
+  connectivityJellyfinHint: "Le serveur Tentacle est connecté, mais Jellyfin n'est pas joignable pour le moment. Contactez votre administrateur.",
+  connectivityOfflineMode: "Tentacle passe en mode hors ligne : ce qui est sur cet appareil reste lisible.",
 } as const;

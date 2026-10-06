@@ -1,17 +1,17 @@
 import { memo } from "react";
-import { AlertTriangle, Check, Gauge, KeyRound, Pause, Server, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Check, Gauge, KeyRound, Pause, Server, WifiOff, X, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { NoticeSeverity } from "@tentacle-tv/shared";
 import type { MessageCountdown } from "../session/useMessageCountdown";
 
-export type NoticeIcon = "server" | "key" | "check" | "alert" | "gauge";
+export type NoticeIcon = "server" | "key" | "check" | "alert" | "gauge" | "wifiOff";
 
 export interface NoticeCardAction {
   label: string;
   onClick: () => void;
 }
 
-const ICONS: Record<NoticeIcon, LucideIcon> = { server: Server, key: KeyRound, check: Check, alert: AlertTriangle, gauge: Gauge };
+const ICONS: Record<NoticeIcon, LucideIcon> = { server: Server, key: KeyRound, check: Check, alert: AlertTriangle, gauge: Gauge, wifiOff: WifiOff };
 
 /** La couleur de la gravité : la barre de gauche, la pastille, la barre du temps. */
 const TONES: Record<NoticeSeverity, { accent: string; chip: string }> = {

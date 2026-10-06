@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import type { ConnectivityReason } from "@tentacle-tv/shared";
+import { probeDeviceNetwork } from "./deviceNetworkProbe";
 import { publishServerReachability, registerServerProbe } from "./serverReachability";
 
 /**
@@ -21,6 +23,11 @@ import { publishServerReachability, registerServerProbe } from "./serverReachabi
  *
  * Cette stratégie protège la TV des redémarrages backend transitoires : si le
  * backend revient en moins de 12 s, l'utilisateur ne voit aucune bannière.
+ *
+ * La CAUSE d'un échec (`reason`, les cas partagés de `connectivityCase.ts`) :
+ * une réponse en erreur accuse le serveur ; pas de réponse, on demande au
+ * système s'il a un réseau (`deviceNetworkProbe`) — non : « Vous êtes hors
+ * ligne » ; oui : le serveur, ou la connexion trop lente pour le joindre.
  */
 const PROBE_TIMEOUT_MS = 4000;
 const PERSISTENT_KO_MS = 12_000;
@@ -29,6 +36,7 @@ const POLL_OFFLINE_MS = 5_000;
 export function useServerReachable(serverUrl: string | null) {
   const queryClient = useQueryClient();
   const [isReachable, setIsReachable] = useState(true);
+  const [reason, setReason] = useState<ConnectivityReason>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Timestamp du premier échec consécutif. Reset dès qu'un check réussit.
   const firstKoAtRef = useRef<number | null>(null);
@@ -39,16 +47,19 @@ export function useServerReachable(serverUrl: string | null) {
     if (confirmTimerRef.current) { clearTimeout(confirmTimerRef.current); confirmTimerRef.current = null; }
   }, []);
 
-  const probeServer = useCallback(async (): Promise<boolean> => {
-    if (!serverUrl) return true;
+  /** `null` : le serveur répond ; sinon, pourquoi pas. */
+  const probeServer = useCallback(async (): Promise<ConnectivityReason> => {
+    if (!serverUrl) return null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
       const res = await fetch(`${serverUrl}/api/health`, { signal: controller.signal });
-      clearTimeout(timeout);
-      return res.ok;
+      return res.ok ? null : "backend";
     } catch {
-      return false;
+      if (!(await probeDeviceNetwork())) return "network";
+      return controller.signal.aborted ? "timeout" : "backend";
+    } finally {
+      clearTimeout(timeout);
     }
   }, [serverUrl]);
 
@@ -57,8 +68,9 @@ export function useServerReachable(serverUrl: string | null) {
   const evaluateRef = useRef<() => Promise<void>>(async () => {});
 
   const evaluate = useCallback(async () => {
-    const ok = await probeServer();
-    if (ok) {
+    const failure = await probeServer();
+    setReason(failure);
+    if (failure === null) {
       clearConfirm();
       firstKoAtRef.current = null;
       if (!isReachable || wasOfflineRef.current) {
@@ -93,7 +105,7 @@ export function useServerReachable(serverUrl: string | null) {
   const retry = useCallback(() => evaluate(), [evaluate]);
 
   // Lisible hors de l'application : le lecteur la lit (cf. serverReachability).
-  useEffect(() => { publishServerReachability(isReachable); }, [isReachable]);
+  useEffect(() => { publishServerReachability(isReachable, reason); }, [isReachable, reason]);
   useEffect(() => {
     registerServerProbe(retry);
     return () => registerServerProbe(null);
@@ -108,6 +120,7 @@ export function useServerReachable(serverUrl: string | null) {
       firstKoAtRef.current = null;
       wasOfflineRef.current = false;
       setIsReachable(true);
+      setReason(null);
     }
   }, [serverUrl, clearConfirm]);
 
@@ -152,5 +165,5 @@ export function useServerReachable(serverUrl: string | null) {
     return unsubscribe;
   }, [queryClient, evaluate]);
 
-  return { isReachable, retry };
+  return { isReachable, reason, retry };
 }

@@ -2,14 +2,15 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
-import { useFeaturedItems, useLibraries, useResumeItems } from "@tentacle-tv/api-client";
-import { latestAdditionsSeasonId, type MediaItem } from "@tentacle-tv/shared";
+import { useFeaturedItems, useJellyfinOutage, useLibraries, useResumeItems } from "@tentacle-tv/api-client";
+import { connectivityCaseOf, connectivityCopy, latestAdditionsSeasonId, type MediaItem } from "@tentacle-tv/shared";
 import { homeEntryKey, homeLoading } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 import { HomeView } from "../../redesign/screens/home/HomeView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
 import { useUnpairDevice } from "../../hooks/useUnpairDevice";
+import { useServerReachability } from "../../hooks/serverReachability";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
 import { useTVHomeRows } from "../../components/home/useTVHomeRows";
 import { useRecoFilterChipRow } from "../../components/reco/useRecoFilterChipRow";
@@ -105,12 +106,19 @@ export function HomeRedesign({ navigation, route }: Props) {
   const reconnect = useCallback(() => unpair("home"), [unpair]);
 
   const quiet = useArrivalQuiet(route.params?.entrance === true);
+  // Pourquoi l'accueil n'a pas pu se charger, dans les mots partagés : le
+  // serveur (ou le réseau) d'après la sonde, Jellyfin d'après le serveur.
+  const reachability = useServerReachability();
+  const { phase: outagePhase } = useJellyfinOutage();
+  const failCause = !reachability.reachable
+    ? connectivityCaseOf(reachability.reason) ?? "server"
+    : outagePhase === "outage" || outagePhase === "long" ? "jellyfin" : null;
   const status = useMemo<StatusPanelProps | null>(() => {
     if (failed) {
       return {
         kind: "error",
-        title: t("common:connectionError"),
-        message: t("common:offlineMessage"),
+        title: failCause ? t(connectivityCopy(failCause).titleKey) : t("common:connectionError"),
+        message: failCause ? t(connectivityCopy(failCause).hintKey) : t("common:offlineMessage"),
         primary: { label: t("common:retry"), icon: "refresh", onPress: retry },
         secondary: { label: t("common:reconnect"), icon: "logout", onPress: reconnect },
       };
@@ -118,7 +126,7 @@ export function HomeRedesign({ navigation, route }: Props) {
     if (loading) return quiet ? null : { kind: "loading", title: t("common:loading") };
     if (empty) return { kind: "empty", title: t("common:emptyLibrary"), message: t("common:emptyHomeHint") };
     return null;
-  }, [failed, loading, empty, quiet, t, retry, reconnect]);
+  }, [failed, failCause, loading, empty, quiet, t, retry, reconnect]);
 
   const { targetOf } = home;
   const onPressCard = useCallback(

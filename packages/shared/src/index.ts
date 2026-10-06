@@ -91,6 +91,7 @@ export * from "./notices/adminKeyHealth";
 // quand le dire — une info éphémère, masquable par le compte.
 export * from "./player/qualityDrop";
 export * from "./player/jellyfinOutageCopy";
+export * from "./connectivity/connectivityCase";
 export * from "./player/jellyfinReturn";
 export * from "./notices/qualityDropNotice";
 // Le saut pendant un transcodage : les sauts rapides regroupés en un seul

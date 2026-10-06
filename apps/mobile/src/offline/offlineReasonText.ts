@@ -1,14 +1,14 @@
+import { connectivityCaseOf, connectivityCopy, type ConnectivityCopy } from "@tentacle-tv/shared";
 import type { OfflineReason } from "@tentacle-tv/offline-core";
 
 /**
- * La clé, QUALIFIÉE par son espace, qui dit POURQUOI l'application est hors
- * ligne. Une seule formulation pour la bulle d'état, le bandeau de bascule et
- * l'état vide : deux textes qui divergent sur la même panne feraient douter
- * de l'un des deux.
+ * Les clés, QUALIFIÉES par leur espace, qui disent POURQUOI l'application est
+ * hors ligne — les trois cas de la règle partagée (`connectivityCase.ts`) :
+ * l'appareil sans réseau, le serveur Tentacle muet, Jellyfin injoignable.
+ * Une seule formulation pour le message de bascule, la bulle d'état et l'état
+ * vide : deux textes qui divergent sur la même panne feraient douter de l'un
+ * des deux. Sans cause connue, le serveur.
  */
-export function offlineReasonKey(reason: OfflineReason): string {
-  if (reason === "network") return "downloads:offlineReasonNetwork";
-  if (reason === "jellyfin") return "downloads:offlineReasonJellyfin";
-  if (reason === "timeout") return "offline:reasonTimeout";
-  return "downloads:offlineReasonBackend";
+export function offlineReasonCopy(reason: OfflineReason): ConnectivityCopy {
+  return connectivityCopy(connectivityCaseOf(reason) ?? "server");
 }
