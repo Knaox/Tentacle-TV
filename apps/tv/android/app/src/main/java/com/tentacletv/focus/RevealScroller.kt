@@ -38,6 +38,27 @@ internal object RevealScroller {
 
   var currentStep: Step? = null
 
+  /**
+   * La rangée, relevée AVANT que la section ne demande le focus. La
+   * `ReactHorizontalScrollView` saute dans SON `requestChildFocus` (`scrollBy`),
+   * qui passe avant celui de la section — son ancêtre : relevée là, la rangée
+   * aurait déjà sauté, et une image la montrait en avant puis la ramenait
+   * (mesuré à l'émulateur pendant une flèche tenue : 386 → 716 → 417).
+   */
+  private var pendingRow: ReactHorizontalScrollView? = null
+  private var pendingRowAt = 0
+
+  /** La section va donner le focus à `target` : la rangée qui le porte est relevée. */
+  fun beforeFocus(section: TentacleFocusSection, target: View) {
+    val row = FocusGeometry.ancestor<ReactHorizontalScrollView>(target, stop = section)
+    pendingRow = row
+    pendingRowAt = row?.scrollX ?: 0
+  }
+
+  fun afterFocus() {
+    pendingRow = null
+  }
+
   class Plan(
     private val page: ReactScrollView?,
     private val pageAt: Int,
@@ -88,7 +109,8 @@ internal object RevealScroller {
     val page = FocusGeometry.ancestor<ReactScrollView>(revealing ?: focused)
     val row = FocusGeometry.ancestor<ReactHorizontalScrollView>(focused, stop = section)
     if (page == null && row == null) return null
-    return Plan(page, page?.scrollY ?: 0, row, row?.scrollX ?: 0, focused, revealing)
+    val rowAt = if (row != null && row === pendingRow) pendingRowAt else row?.scrollX ?: 0
+    return Plan(page, page?.scrollY ?: 0, row, rowAt, focused, revealing)
   }
 
   /** V1 : la section qui RÉVÈLE `item` — la plus proche de lui, dans sa page. */
