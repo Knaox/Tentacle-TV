@@ -58,11 +58,21 @@ export function needsDatabase(context: SetupContext | null): boolean {
   return !!context && !context.database.fromEnv && !context.database.connected;
 }
 
-/** Où reprendre une installation déjà commencée (session retrouvée). */
+/**
+ * Où reprendre une installation déjà commencée (session retrouvée). Le voisin
+ * de la pile complète, verrouillé au démarrage, porte déjà la clé de Tentacle
+ * (`configured`) mais attend encore le compte choisi (`claimed`) : on passe
+ * par Jellyfin, pas par-dessus.
+ */
 export function resumeStep(context: SetupContext): WizardStep {
   if (needsDatabase(context)) return "database";
-  if (!context.jellyfin.configured) return "jellyfin";
+  if (!context.jellyfin.configured || context.jellyfin.claimed) return "jellyfin";
   return "libraries";
+}
+
+/** Jellyfin est à configurer avec le compte choisi : vierge, ou voisin verrouillé en attente. */
+export function jellyfinNeedsInitialize(context: SetupContext | null): boolean {
+  return !context || !context.jellyfin.configured || context.jellyfin.claimed;
 }
 
 const LANGUAGES = ["fr", "en", "de", "it", "es", "pt", "nl"] as const;

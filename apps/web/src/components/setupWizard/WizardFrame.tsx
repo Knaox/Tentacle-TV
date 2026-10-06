@@ -10,6 +10,8 @@ interface WizardFrameProps {
   position: number;
   total: number;
   onBack?: () => void;
+  /** `full` : une carte plus large, pour l'accès à distance et ses extraits. */
+  width?: "wide" | "full";
   children: ReactNode;
 }
 
@@ -19,11 +21,11 @@ interface WizardFrameProps {
  * `scaleX` (transform seul : rien n'est repeint), neutralisée si l'on a
  * demandé moins de mouvement.
  */
-export function WizardFrame({ title, subtitle, position, total, onBack, children }: WizardFrameProps) {
+export function WizardFrame({ title, subtitle, position, total, onBack, width = "wide", children }: WizardFrameProps) {
   const { t } = useTranslation("setupWizard");
   return (
     <AuthLayout
-      width="wide"
+      width={width}
       title={title}
       subtitle={subtitle}
       header={

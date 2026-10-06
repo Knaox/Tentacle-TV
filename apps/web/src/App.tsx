@@ -128,6 +128,8 @@ export function App() {
         <Routes>
           {/* Public */}
           <Route path="/login" element={<ByFormFactor desktop={<Login />} mirror={<MirrorLogin />} />} />
+          {/* Le lien de l'assistant (journaux du serveur) : une fois l'installation faite, l'accueil. */}
+          <Route path="/setup" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<ByFormFactor desktop={<Register />} mirror={<MirrorRegister />} />} />
           <Route path="/share/:token" element={<SharePage />} />
           <Route path="/share/:token/:itemId" element={<SharedItemDetail />} />

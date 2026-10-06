@@ -40,6 +40,8 @@ describe("les étapes de l'assistant", () => {
   it("reprise : là où l'installation s'était arrêtée", () => {
     expect(resumeStep(ctx({ database: { configured: false, connected: false, fromEnv: false } }))).toBe("database");
     expect(resumeStep(ctx())).toBe("jellyfin");
+    // Le voisin verrouillé au démarrage a déjà la clé, mais attend le compte : on passe par Jellyfin.
+    expect(resumeStep(ctx({ jellyfin: { url: "http://jellyfin:8096", suggestedUrl: null, configured: true, claimed: true } }))).toBe("jellyfin");
     expect(resumeStep(ctx({ jellyfin: { url: "http://jellyfin:8096", suggestedUrl: null, configured: true, claimed: false } }))).toBe("libraries");
   });
 });

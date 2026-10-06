@@ -14,8 +14,8 @@ interface AuthLayoutProps {
   footer?: ReactNode;
   /** Au-dessus du titre, dans la carte : l'avis de session expirée, un stepper. */
   header?: ReactNode;
-  /** `wide` pour l'assistant d'installation, dont les grilles veulent de la place. */
-  width?: "default" | "wide";
+  /** `wide` pour l'assistant d'installation, dont les grilles veulent de la place ; `full` pour son accès à distance. */
+  width?: "default" | "wide" | "full";
 }
 
 /**
@@ -31,7 +31,7 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ title, subtitle, children, footer, header, width = "default" }: AuthLayoutProps) {
   const { t } = useTranslation("auth");
-  const cardWidth = width === "wide" ? "max-w-lg" : "max-w-[26rem]";
+  const cardWidth = width === "full" ? "max-w-3xl" : width === "wide" ? "max-w-lg" : "max-w-[26rem]";
 
   return (
     <div className="relative isolate flex min-h-dvh flex-col overflow-x-hidden bg-surface-0">

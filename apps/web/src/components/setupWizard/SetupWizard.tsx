@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import type { SetupCompleteResponse } from "@tentacle-tv/shared";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { AccountScreen, FinalAccountScreen } from "./AccountScreen";
@@ -36,7 +37,15 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     },
     [client, storage],
   );
-  const onFinish = useCallback((session: SetupCompleteResponse) => onComplete(session.AccessToken, session.User), [onComplete]);
+  // Le lien des journaux mène à /setup, que l'application installée ne connaît pas : on rentre à l'accueil.
+  const navigate = useNavigate();
+  const onFinish = useCallback(
+    (session: SetupCompleteResponse) => {
+      navigate("/", { replace: true });
+      onComplete(session.AccessToken, session.User);
+    },
+    [navigate, onComplete],
+  );
 
   switch (wizard.step) {
     case "welcome":

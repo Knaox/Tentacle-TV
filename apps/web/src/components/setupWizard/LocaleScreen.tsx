@@ -4,7 +4,7 @@ import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
-import { METADATA_COUNTRIES, METADATA_LANGUAGES, uiCultureOf } from "./wizardModel";
+import { jellyfinNeedsInitialize, METADATA_COUNTRIES, METADATA_LANGUAGES, uiCultureOf } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 
 /**
@@ -19,7 +19,7 @@ export function LocaleScreen({ wizard }: { wizard: Wizard }) {
   const [locale, setLocale] = useState(wizard.data.locale);
   const [error, setError] = useState<WizardErrorCode | null>(null);
   const [pending, setPending] = useState(false);
-  const initializing = wizard.data.mode === "initialize" && !wizard.data.context?.jellyfin.configured;
+  const initializing = wizard.data.mode === "initialize" && jellyfinNeedsInitialize(wizard.data.context);
 
   const submit = async () => {
     setError(null);
@@ -37,6 +37,8 @@ export function LocaleScreen({ wizard }: { wizard: Wizard }) {
         username: credentials.username,
         password: credentials.password,
         uiCulture: uiCultureOf(locale.language),
+        // Le voisin s'appellerait du nom de son conteneur (« d716b0d5ac48 ») : il prend celui de Tentacle.
+        ...(wizard.data.context?.provisioner === "docker-sibling" ? { serverName: "Tentacle" } : {}),
         metadataLanguage: locale.language,
         metadataCountry: locale.country,
       });

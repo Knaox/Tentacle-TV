@@ -13,7 +13,7 @@ import { WizardFrame } from "./WizardFrame";
 export function RemoteScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   return (
-    <WizardFrame title={t("remoteTitle")} subtitle={t("remoteSubtitle")} position={wizard.position} total={wizard.total}>
+    <WizardFrame title={t("remoteTitle")} subtitle={t("remoteSubtitle")} position={wizard.position} total={wizard.total} width="full">
       <div className="space-y-6">
         <RemoteAccessPanel variant="wizard" />
         <div className="flex flex-wrap gap-3">
@@ -81,7 +81,7 @@ export function DoneScreen({ wizard, onFinish }: { wizard: Wizard; onFinish: (se
 
         <section aria-labelledby="done-apps">
           <h2 id="done-apps" className="font-semibold text-content-primary">{t("doneAppsTitle")}</h2>
-          <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <ul className="mt-2 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
             {APP_LINKS.map((app) => (
               <li key={app.platform}>
                 <a href={app.url} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-between gap-2 rounded-lg border border-line-subtle bg-fill-faint px-3 text-content-primary transition-colors hover:bg-fill-subtle">
