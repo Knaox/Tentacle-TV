@@ -32,7 +32,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
 - La version minimale exigée des clients reste 1.23.0
 - **Un favori, « vu » ou Ma liste coché depuis une carte de l'accueil ne se décoche plus tout seul** un instant après
-- **La grande bannière de l'accueil ne reste plus noire** quand le titre choisi pour elle a disparu de Jellyfin : elle montre vos reprises ou la sélection du serveur ; une image introuvable laisse la place à une autre image du titre, sinon à un fond aux couleurs de Tentacle
+- **La grande bannière de l'accueil ne reste plus noire** quand le titre choisi pour elle a disparu de Jellyfin : elle montre vos reprises ou la sélection du serveur. Un titre sans image de fond en reçoit une autre du même film ou de la même série — sur TMDB si la clé est configurée, sinon parmi les images de Jellyfin — avant l'affiche
 
 ### EN
 - **New setup wizard**: one question per screen. From your home network it opens without a code; the one-time code, read in the container log, is only asked from elsewhere. The metadata language is chosen with the account
@@ -55,7 +55,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - The in-progress row is now called "Where you left off"
 - The minimum server version required by clients stays 1.23.0
 - **Marking a title as favourite, watched or in My List from a home card no longer undoes itself** a moment later
-- **The large home banner no longer stays black** when the title picked for it is gone from Jellyfin: it shows your titles to resume or the server's picks; a missing image gives way to another image of the title, or to a Tentacle-colored background
+- **The large home banner no longer stays black** when the title picked for it is gone from Jellyfin: it shows your titles to resume or the server's picks. A title with no background image gets another one of the same movie or series — from TMDB when a key is set, otherwise among Jellyfin's images — before the poster
 
 ## [1.23.0]
 ### FR
