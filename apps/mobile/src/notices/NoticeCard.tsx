@@ -12,7 +12,7 @@ export interface NoticeCardAction {
   onPress: () => void;
 }
 
-export type NoticeIcon = "server" | "key" | "check" | "alert-triangle" | "activity" | "info";
+export type NoticeIcon = "server" | "key" | "check" | "alert-triangle" | "activity" | "info" | "wifi-off";
 
 /** Les sévérités de la politique partagée, plus la réussite d'un message bref (`toastStore`). */
 export type NoticeCardSeverity = NoticeSeverity | "success";

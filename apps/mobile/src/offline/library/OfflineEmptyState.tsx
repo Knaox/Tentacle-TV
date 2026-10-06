@@ -3,10 +3,9 @@ import { StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { isDeviceSideReason } from "@tentacle-tv/offline-core";
 import { Button } from "@/components/ui";
 import { ConnectivitySheet } from "@/offline/ConnectivitySheet";
-import { offlineReasonKey } from "@/offline/offlineReasonText";
+import { offlineReasonCopy } from "@/offline/offlineReasonText";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useProbeRetry } from "@/offline/useProbeRetry";
 import { backOrHome } from "@/utils/backOrHome";
@@ -20,12 +19,12 @@ interface Props {
 /**
  * L'état vide du catalogue local, dessiné : un disque de marque, le titre, le
  * conseil, et l'issue qui convient — retour à l'accueil quand on est en ligne,
- * « Repasser en ligne » quand on s'est mis hors ligne à la main, et, quand
- * c'est la connexion qui manque, la cause dite et un « Réessayer » — pas un
- * conseil de rangement pour un appareil qui n'a simplement plus de réseau.
+ * « Repasser en ligne » quand on s'est mis hors ligne à la main, et, passé
+ * hors ligne de lui-même, la cause dite (appareil, serveur, Jellyfin) et un
+ * « Réessayer ».
  */
 export function OfflineEmptyState({ standalone }: Props) {
-  const { t } = useTranslation(["offline", "downloads", "common"]);
+  const { t } = useTranslation(["offline", "downloads", "common", "errors"]);
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
   const router = useRouter();
@@ -34,13 +33,16 @@ export function OfflineEmptyState({ standalone }: Props) {
   const [sheet, setSheet] = useState(false);
   const online = state === "online" || state === "checking";
   const generic = standalone || online;
-  const deviceSide = !generic && state === "offline-auto" && isDeviceSideReason(reason);
-  const title = deviceSide
-    ? t("offline:libraryEmptyOfflineTitle")
+  // Passé hors ligne de lui-même : la cause dite (les trois cas partagés) et
+  // « Réessayer » — pas un conseil de rangement pour un appareil sans réseau.
+  const auto = !generic && state === "offline-auto";
+  const cause = offlineReasonCopy(reason);
+  const title = auto
+    ? t(cause.titleKey)
     : t(generic ? "offline:emptyTitle" : "offline:libraryEmptyTitle");
-  // Une seule formulation de la cause, la même que la bulle et le bandeau.
-  const message = deviceSide
-    ? `${t(offlineReasonKey(reason))} ${t("offline:libraryEmptyOfflineHint")}`
+  // Une seule formulation de la cause, la même que la bulle et le message.
+  const message = auto
+    ? `${t(cause.hintKey)} ${t("offline:libraryEmptyOfflineHint")}`
     : t(generic ? "offline:emptyMessage" : "offline:libraryEmptyMessage");
 
   return (
@@ -54,7 +56,7 @@ export function OfflineEmptyState({ standalone }: Props) {
         <Button title={t("offline:emptyGoHome")} variant="secondary" onPress={() => backOrHome(router)} style={st.cta} />
       ) : state === "offline-manual" ? (
         <Button title={t("downloads:offlineGoOnline")} variant="ghost" onPress={() => setSheet(true)} style={st.cta} />
-      ) : deviceSide ? (
+      ) : auto ? (
         <Button title={t("downloads:offlineRetry")} variant="ghost" onPress={retry} loading={isChecking} style={st.cta} />
       ) : null}
       <ConnectivitySheet visible={sheet} onClose={() => setSheet(false)} />
