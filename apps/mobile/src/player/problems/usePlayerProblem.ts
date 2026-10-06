@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useOutageGate } from "@tentacle-tv/api-client";
-import type { MediaItem, ProblemActionKey, QualityPreset } from "@tentacle-tv/shared";
+import { mpvStreamLost, type MediaItem, type ProblemActionKey, type QualityPreset } from "@tentacle-tv/shared";
 import { buildStreamUrl } from "@/hooks/usePlaybackInfoFetch";
 import { setManualOffline } from "@/offline/connectivityStore";
 import type { PlaybackFailureReport } from "./playbackFailure";
@@ -35,6 +35,8 @@ export interface PlayerProblemArgs {
   paused: boolean;
   /** Le lecteur attend des données : lu par la règle du retour de Jellyfin. */
   buffering: boolean;
+  /** Le moteur est mpv : son flux peut se perdre en silence pendant une panne (`mpvStreamLost`). */
+  mpv: boolean;
   /** La relance À L'IDENTIQUE (même moteur, même palier). */
   restart: (opts?: { withoutSubtitles?: boolean }) => void;
   /** La relance transcodée, sur le lecteur système, un palier plus bas. */
@@ -87,7 +89,10 @@ export function usePlayerProblem(args: PlayerProblemArgs) {
   // diagnostic, ni écran d'erreur — et à son retour la lecture continue sur
   // sa réserve ; le flux ne se rouvre que s'il le faut : la règle commune au
   // web, au bureau et au mobile (`useOutageGate`).
-  const gate = useOutageGate<PlaybackFailureReport>(reopen, diagnose, () => argsRef.current.started);
+  // mpv : l'état de son cache n'est pas lu ici — un transcodage est réputé perdu (règle partagée).
+  const streamLost = () => argsRef.current.mpv
+    && mpvStreamLost({ transcoding: !argsRef.current.isDirectPlay, cacheEof: null, cacheEndS: null, durationS: null });
+  const gate = useOutageGate<PlaybackFailureReport>(reopen, diagnose, () => argsRef.current.started, streamLost);
   const report = gate.report;
   // Une image arrêtée au retour de Jellyfin se rouvre si elle ne repart pas seule.
   const { stalled } = gate;

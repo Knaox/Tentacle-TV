@@ -1,10 +1,12 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { useJellyfinOutage } from "@tentacle-tv/api-client";
+import { mpvStreamLost } from "@tentacle-tv/shared";
 import { restartOnJellyfinReturn, serverOutageProbe } from "@tentacle-tv/tv-core";
 import type { RecoveryState } from "./recoveryState";
 import type { RecoverySources } from "./recoverySources";
 import type { RestartReason } from "./streamRestart";
 import { plog } from "../utils/playerDiag";
+import { engineIsMpv } from "./streamEngine";
 
 /**
  * L'état de Jellyfin dit par le serveur (`server:jellyfin`), appliqué à la
@@ -40,7 +42,11 @@ export function useServerJellyfinHealth(
     const s = src.current;
     // Le chemin répond : la décision le sait sans attendre sa sonde.
     Object.assign(st, { source: "ok", culprit: null, checkedAt: Date.now() });
-    const lost = st.lostSince !== null;
+    // Perdu : une erreur confiée à la reprise pendant la panne, ou mpv (Android
+    // TV) en transcodage, dont ffmpeg saute les segments pendant le redémarrage.
+    const mpvLost = !!s && engineIsMpv(s.p.useExoPlayer)
+      && mpvStreamLost({ transcoding: !s.p.isDirectPlay, cacheEof: null, cacheEndS: null, durationS: null });
+    const lost = st.lostSince !== null || mpvLost;
     const go = restartOnJellyfinReturn({
       now: Date.now(), started: !!s?.s.hasStarted, ended: !!s?.s.endedRef.current, restarting: st.restarting, lastRestartAt: st.lastRestartAt, lost,
     });
