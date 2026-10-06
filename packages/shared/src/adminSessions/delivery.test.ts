@@ -45,9 +45,11 @@ describe("deliveryOf", () => {
     expect(deliveryOf(session({ playMethod: "Transcode", transcoding: transcoding(false, false) }))).toBe("video");
   });
 
-  it("un « Transcode » sans description est pris au pire", () => {
-    // Jellyfin ne garde « Transcode » que si un encodage vivait au dernier report (mesuré, 10.11.11).
-    expect(deliveryOf(session({ playMethod: "Transcode", transcoding: null }))).toBe("video");
+  it("un « Transcode » sans description n'est plus pris au pire : « en analyse »", () => {
+    // Jellyfin ne garde « Transcode » que si un encodage vit (mesuré, 10.11.11) — mais ce
+    // peut être un remux ou un son converti. L'épisode suivant, à ses premières secondes,
+    // n'est donc plus étiqueté « Transcodage » sans preuve (retour de Damien, 06/10).
+    expect(deliveryOf(session({ playMethod: "Transcode", transcoding: null }))).toBe("pending");
   });
 
   it("de la musique n'a pas d'image à réencoder", () => {
@@ -67,6 +69,6 @@ describe("countDeliveries", () => {
       session({ id: "d", playMethod: "Transcode", transcoding: transcoding(false, false) }),
       session({ id: "e", nowPlaying: null, playMethod: null }),
     ]);
-    expect(counts).toEqual({ direct: 1, remux: 1, audio: 1, video: 1 });
+    expect(counts).toEqual({ direct: 1, remux: 1, audio: 1, video: 1, pending: 0 });
   });
 });

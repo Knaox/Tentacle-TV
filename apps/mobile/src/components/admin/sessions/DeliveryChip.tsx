@@ -17,13 +17,15 @@ import { FONT_FAMILY, RADIUS, useTheme } from "@/theme";
  *   l'œil doit trouver d'abord.
  */
 
-type Tone = "success" | "info" | "warning";
+type Tone = "success" | "info" | "warning" | "neutral";
 
 const STYLE: Record<DeliveryKind, { label: string; count: string; hint: string; icon: keyof typeof Feather.glyphMap; tone: Tone; ring?: true }> = {
   direct: { label: "directPlay", count: "countDirect", hint: "directPlayHint", icon: "check-circle", tone: "success" },
   remux: { label: "remux", count: "countRemux", hint: "remuxHint", icon: "package", tone: "info" },
   audio: { label: "audioTranscode", count: "countAudio", hint: "audioTranscodeHint", icon: "music", tone: "warning" },
   video: { label: "transcode", count: "countVideo", hint: "transcodeHint", icon: "cpu", tone: "warning", ring: true },
+  // Jellyfin convertit sans avoir dit quoi : neutre, pas d'alerte avant de savoir.
+  pending: { label: "pending", count: "countPending", hint: "pendingHint", icon: "clock", tone: "neutral" },
 };
 
 export const DeliveryChip = memo(function DeliveryChip({ kind, count, size = "md" }: {
@@ -35,7 +37,9 @@ export const DeliveryChip = memo(function DeliveryChip({ kind, count, size = "md
   const { t } = useTranslation("sessions");
   const theme = useTheme();
   const style = STYLE[kind];
-  const pair = theme.colors.statusPairs[style.tone];
+  const pair = style.tone === "neutral"
+    ? { bg: theme.colors.surface.s2, fg: theme.colors.text.secondary }
+    : theme.colors.statusPairs[style.tone];
   const label = count === undefined ? t(style.label) : t(style.count, { count });
   return (
     <View

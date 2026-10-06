@@ -182,11 +182,12 @@ function changes(session: Pick<AdminSessionDto, "source" | "transcoding">, kind:
   if (kind === "video") {
     out.push(arrow(codecLabel(s?.videoCodec), codecLabel(t.videoCodec)));
     out.push(arrow(resolutionLabel(s?.width, s?.height), resolutionLabel(t.width, t.height)));
-    // Une image HDR réencodée en H.264 (8 bits) passe forcément en SDR — Jellyfin
-    // la convertit (mappage tonal) ; il le dit aussi quand l'écran ne sait pas.
+    // Une image HDR RÉENCODÉE passe toujours en SDR, en H.264 comme en HEVC :
+    // Jellyfin tone-mappe dès que la source est HDR 10 bits et ramène `main10`
+    // à `main` (mesuré sur 10.11.11, sources jusqu'à `master`). Le HDR et le
+    // Dolby Vision ne survivent qu'à une COPIE de l'image.
     const range = rangeLabel(s?.videoRange);
-    const toSdr = t.reasons.includes("VideoRangeTypeNotSupported") || t.videoCodec?.toLowerCase() === "h264";
-    if (range && toSdr) out.push(`${range} → SDR`);
+    if (range) out.push(`${range} → SDR`);
     // Le débit de Jellyfin est un PLAFOND : il ne dit quelque chose que s'il
     // est sous celui de la source (un palier, une limite). Au-dessus, il n'a
     // rien changé — « 11 Mb/s → 18 Mb/s » se lirait comme un gonflement.
