@@ -14,22 +14,19 @@
 // Mêmes variables que le banc : ANDROID_SERIAL, PERF_PACKAGE (l'app de mesure
 // sur une vraie Shield), PERF_PORT (le relais ; le faux backend à +10).
 // Résultats : ~/Library/Caches/tentacle-android-perf/baseline/<nom>.json.
-import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { CACHE, keysDex, startBackend } from "./lib/benchSetup.mjs";
 import { PACKAGE, createDevice, sleep } from "./lib/device.mjs";
+import { resumedPackage } from "./lib/keyGuard.mjs";
 import { createHostPolicy } from "./lib/host.mjs";
 import { startImageProxy } from "./lib/imageProxy.mjs";
 import { createPlayer } from "./lib/play.mjs";
 import { describe, summarizeScenario } from "./lib/report.mjs";
 import { SCENARIOS, scenariosOf } from "./lib/scenarios.mjs";
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CACHE = path.join(os.homedir(), "Library/Caches/tentacle-android-perf");
 const OUT = path.join(CACHE, "baseline");
-const SDK = process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk");
 const PORT = Number(process.env.PERF_PORT ?? 3107);
 const BACKEND_PORT = Number(process.env.PERF_BACKEND_PORT ?? PORT + 10);
 
@@ -54,53 +51,13 @@ export const SCREENS = {
 
 const loadNow = () => Math.round(os.loadavg()[0] * 10) / 10;
 
-function latestSnapshot() {
-  if (process.env.SNAPSHOT_DIR) return process.env.SNAPSHOT_DIR;
-  const root = path.join(os.homedir(), "Library/Caches/tentacle-nav-golden/snapshots");
-  const dirs = fs.readdirSync(root).map((name) => path.join(root, name)).filter((dir) => fs.existsSync(path.join(dir, "snapshot.json")));
-  return dirs.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
-}
-
-function keysDex() {
-  const source = path.join(HERE, "keys/Keys.java");
-  const out = path.join(CACHE, "keys");
-  const dex = path.join(out, "classes.dex");
-  if (fs.existsSync(dex) && fs.statSync(dex).mtimeMs > fs.statSync(source).mtimeMs) return dex;
-  fs.mkdirSync(out, { recursive: true });
-  const platforms = fs.readdirSync(path.join(SDK, "platforms")).sort();
-  const jar = path.join(SDK, "platforms", platforms[platforms.length - 1], "android.jar");
-  const tools = fs.readdirSync(path.join(SDK, "build-tools")).sort();
-  execFileSync("javac", ["-source", "1.8", "-target", "1.8", "-cp", jar, "-d", out, source], { stdio: "ignore" });
-  execFileSync(path.join(SDK, "build-tools", tools[tools.length - 1], "d8"), ["--output", out, "--lib", jar, path.join(out, "Keys.class")]);
-  return dex;
-}
-
-async function startBackend() {
-  const log = fs.openSync(path.join(CACHE, `backend-${PORT}.log`), "w");
-  const child = spawn(process.execPath, [path.join(HERE, "../nav-golden/server/fakeServer.mjs")], {
-    env: { ...process.env, PORT: String(BACKEND_PORT), SNAPSHOT_DIR: latestSnapshot() },
-    stdio: ["ignore", log, log],
-  });
-  for (let i = 0; i < 40; i++) {
-    await sleep(250);
-    try {
-      execFileSync("curl", ["-s", "-X", "POST", `http://127.0.0.1:${BACKEND_PORT}/__fixtures`, "-d", '{"sets":["base/vigie-off"]}'], { stdio: "ignore" });
-      return child;
-    } catch {
-      // pas encore à l'écoute
-    }
-  }
-  child.kill();
-  throw new Error(`le faux backend ne répond pas sur ${BACKEND_PORT}`);
-}
-
 async function withBench(fn) {
   fs.mkdirSync(OUT, { recursive: true });
   const device = createDevice();
   console.log(`appareil : ${device.describe()} — charge du Mac ${loadNow()}`);
   device.pushKeys(keysDex());
   const host = createHostPolicy(false);
-  const backend = await startBackend();
+  const backend = await startBackend(BACKEND_PORT);
   const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: true, log: console.log });
   const player = createPlayer({ device, backendPort: BACKEND_PORT, host });
   try {
@@ -252,18 +209,21 @@ async function soak() {
     const started = Date.now();
     const pid0 = device.pid();
     let next = 1;
-    const foreground = () => device.shell("dumpsys activity activities | grep -E 'mResumedActivity|ResumedActivity:'").includes(`${PACKAGE}/`);
-    // Revenir à l'accueil SANS relancer le processus : Retour, un à la fois,
+    // Revenir à l'accueil SANS relancer le processus : Retour, un à la fois
+    // (par la GARDE : l'injecteur relit le premier plan avant l'appui),
     // jusqu'à ce que l'app passe en arrière-plan (Retour sur l'accueil la
     // quitte), puis `am start` la ramène — même processus, comme un
-    // utilisateur qui sort et revient. Jamais une touche envoyée au lanceur.
+    // utilisateur qui sort et revient. La lecture du premier plan ne lève
+    // rien ici : une app sortie est le but ; aucune touche ne part après.
+    const inForeground = () => resumedPackage(device.shell("dumpsys activity activities", { timeout: 30_000 })) === PACKAGE;
     const goHome = async () => {
-      for (let i = 0; i < 6 && foreground(); i++) {
+      for (let i = 0; i < 6 && inForeground(); i++) {
         device.keys("tap:4");
         await sleep(1100);
       }
       device.launch();
       await sleep(3500);
+      device.assertForeground();
     };
     while (Date.now() < end) {
       for (const scenario of loop) {
