@@ -31,7 +31,7 @@ import { applyThrottle, hostLoad, qemuPidOf } from "./throttle.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const LITE_RUNS = path.join(CACHE, "lite");
 const PORT = Number(process.env.PERF_PORT ?? 3111);
-const BACKEND_PORT = PORT + 10;
+const BACKEND_PORT = Number(process.env.PERF_BACKEND_PORT ?? PORT + 10);
 /** Au-delà, une passe ne se compare plus : on la refait (consigne du lot). */
 export const MAX_HOST_LOAD = 30;
 
