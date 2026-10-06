@@ -131,6 +131,8 @@ export * from "./serverUpdate/updateCommands";
 // Le tableau de bord d'administration : ce qui est À RÉGLER (bloquant, jamais
 // masquable) et les RECOMMANDATIONS (masquables par compte), en logique pure.
 export * from "./adminAttention/attentionModel";
+// La détection des passages installée par Tentacle (contrat recopié dans le backend).
+export * from "./segmentPlugins/segmentPluginsContract";
 // La Famille : le contrat (réponses, corps, codes d'erreur, temps réel,
 // notifications), la table des routes et de leurs appelants, les règles
 // pures (PIN, capacité, invitations, candidats) — miroirs backend — et la
