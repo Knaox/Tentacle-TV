@@ -31,3 +31,6 @@ export {
 
 // Politique réseau — timeout par tentative + suspicion de panne (cf. net/requestPolicy)
 export { requestTimeoutMs, setRequestTimeoutMs, setNetworkSuspectListener, setOfflineHintSupplier } from "../net/requestPolicy";
+
+// Le message temporaire d'un passage hors ligne (mobile, bureau) — cf. shared connectivityCase
+export { useConnectivityNotice, type ConnectivityNotice } from "../net/useConnectivityNotice";
