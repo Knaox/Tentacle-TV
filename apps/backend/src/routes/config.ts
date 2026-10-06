@@ -10,6 +10,7 @@ import { BACKEND_VERSION } from "../services/version";
 import { jellyfinAcceptsLegacyAuth } from "../services/jellyfinLegacyAuth";
 import { familyCapability } from "../services/family/familyConfig";
 import { serverAddresses } from "../remoteAccess/serverAddresses";
+import { declaredServerCapabilities } from "../serverCapabilities/declaredCapabilities";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
 
@@ -24,6 +25,9 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         // La Famille : absente d'un serveur d'avant — les clients n'en montrent rien.
         family: familyCapability(),
       },
+      // Ce que ce serveur sait faire (`serverCapabilities.ts`) : un client ne
+      // montre rien de ce qui n'y figure pas. Absent d'un serveur d'avant 1.24.0.
+      capabilities: declaredServerCapabilities(),
       // URL publique canonique du serveur (domaine fronté par le worker Cloudflare).
       // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du
       // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
