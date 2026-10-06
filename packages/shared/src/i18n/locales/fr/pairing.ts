@@ -8,7 +8,7 @@ export default {
   codeInvalid: "Code invalide ou expiré. Vérifiez le code sur votre TV et réessayez.",
   codeExpireNote: "Le code expire après 5 minutes. S'il a expiré, générez-en un nouveau.",
   tvPairTitle: "Jumeler cet appareil",
-  tvPairInstructions: "Sur votre téléphone ou ordinateur, ouvrez Tentacle TV, allez dans Paramètres puis Jumeler la TV, et entrez ce code.",
+  tvPairInstructions: "Sur votre téléphone, ouvrez Tentacle TV puis Profil › Appareils et TV ; sur ordinateur, « Jumeler la TV » dans le menu. Entrez ce code.",
   codeExpired: "Code expiré",
   expiresIn: "Expire dans {{time}}",
   generateNewCode: "Générer un nouveau code",

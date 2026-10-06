@@ -8,7 +8,7 @@ export default {
   codeInvalid: "Invalid or expired code. Check the code on your TV and try again.",
   codeExpireNote: "The code expires after 5 minutes. If expired, generate a new one.",
   tvPairTitle: "Pair this device",
-  tvPairInstructions: "On your phone or computer, open Tentacle TV, go to Settings then Pair TV, and enter this code.",
+  tvPairInstructions: "On your phone, open Tentacle TV, then Profile › Devices and TVs; on a computer, “Pair TV” in the menu. Enter this code.",
   codeExpired: "Code expired",
   expiresIn: "Expires in {{time}}",
   generateNewCode: "Generate new code",
