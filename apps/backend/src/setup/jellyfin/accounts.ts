@@ -109,3 +109,13 @@ export async function apiKeyWorks(url: string, key: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Révoque la clé « Tentacle » d'un Jellyfin abandonné en cours d'installation
+ * (un autre a été choisi). Jamais bloquant : un Jellyfin éteint garde une clé
+ * que plus personne n'utilise, visible dans son tableau de bord.
+ */
+export async function revokeApiKey(url: string, key: string): Promise<boolean> {
+  const reply = await jellyfinRequest(url, `/Auth/Keys/${encodeURIComponent(key)}`, { method: "DELETE", authorization: jellyfinTokenAuth(key) }).catch(() => null);
+  return !!reply && reply.status >= 200 && reply.status < 300;
+}

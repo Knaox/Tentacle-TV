@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { CircleCheck } from "lucide-react";
 import { Field } from "../admin/services/Field";
 import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
@@ -29,6 +30,23 @@ export function DatabaseScreen({ wizard }: { wizard: Wizard }) {
       setPending(false);
     }
   };
+
+  // Déjà reliée (un retour en arrière) : rien à refaire, rien à rechanger ici.
+  if (wizard.data.context?.database.connected) {
+    return (
+      <WizardFrame title={t("dbTitle")} subtitle={t("dbSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+        <div className="space-y-5">
+          <p className="flex items-center gap-2 text-sm text-content-primary" role="status">
+            <CircleCheck size={16} aria-hidden="true" className="shrink-0 text-status-success-fg" />
+            {t("dbDone")}
+          </p>
+          <button type="button" onClick={wizard.next} className={`${cls.bp} w-full sm:w-auto`} autoFocus>
+            {t("next")}
+          </button>
+        </div>
+      </WizardFrame>
+    );
+  }
 
   return (
     <WizardFrame title={t("dbTitle")} subtitle={t("dbSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>

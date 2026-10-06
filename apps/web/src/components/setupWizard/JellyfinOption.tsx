@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Boxes } from "lucide-react";
+import { Boxes, Sparkles } from "lucide-react";
 import type { JellyfinProbeResult } from "@tentacle-tv/shared";
 import { hostAndPort, serverState } from "./jellyfinChoice";
 
@@ -11,10 +11,22 @@ const BADGE = {
 
 /**
  * Une ligne de la liste : un vrai bouton radio, le nom, l'état en toutes
- * lettres (jamais la couleur seule), « dans cette pile » s'il y a lieu, puis
- * l'adresse, le port et la version.
+ * lettres (jamais la couleur seule), « dans cette pile » et « Conseillé »
+ * s'il y a lieu, puis l'adresse, le port et la version.
  */
-export function JellyfinOption({ server, name, checked, onSelect }: { server: JellyfinProbeResult; name: string; checked: boolean; onSelect: () => void }) {
+export function JellyfinOption({
+  server,
+  name,
+  checked,
+  recommended,
+  onSelect,
+}: {
+  server: JellyfinProbeResult;
+  name: string;
+  checked: boolean;
+  recommended: boolean;
+  onSelect: () => void;
+}) {
   const { t } = useTranslation("setupWizard");
   const state = serverState(server);
   const { host, port } = hostAndPort(server.url);
@@ -30,6 +42,12 @@ export function JellyfinOption({ server, name, checked, onSelect }: { server: Je
         <span className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-content-primary">{server.serverName || t("jfUnnamed")}</span>
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE[state]}`}>{t(`jfState_${state}`)}</span>
+          {recommended ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 px-2 py-0.5 text-xs font-medium text-content-primary">
+              <Sparkles size={12} aria-hidden="true" />
+              {t("jfRecommended")}
+            </span>
+          ) : null}
           {server.inStack ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-fill-soft px-2 py-0.5 text-xs font-medium text-content-secondary">
               <Boxes size={12} aria-hidden="true" />

@@ -79,7 +79,9 @@ describe("tentacle setup", () => {
     process.env.DATABASE_URL = "mysql://u:p@db/x";
     expect(await runCli(["setup", "reset"], {})).toBe(0);
     delete process.env.DATABASE_URL;
-    expect(h.deleted).toEqual([["setup_completed", "admin_jellyfin_id", "admin_username"]]);
+    expect(h.deleted).toEqual([
+      ["setup_completed", "admin_jellyfin_id", "admin_username", "setup_jellyfin_selection", "setup_jellyfin_key_created", "setup_jellyfin_joined"],
+    ]);
     expect(existsSync(lock)).toBe(false);
     expect(existsSync(token)).toBe(false);
     const printed = vi.mocked(console.log).mock.calls.flat().join("\n");

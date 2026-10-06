@@ -1,6 +1,6 @@
 import { jellyfinTokenAuth } from "../../services/jellyfinAuth";
 import { SetupError } from "../setupErrors";
-import type { BrowseEntry, BrowseResult, ExistingLibrary, LibraryOutcome, LibraryPlan } from "../setupWizardContract";
+import type { BrowseEntry, BrowseResult, ExistingLibrary, LibraryOutcome, LibraryPlan } from "../setupLibraryContract";
 import { jellyfinRequest } from "./guardedFetch";
 
 /**

@@ -7,9 +7,18 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ stored: true as boolean, applied: [] as unknown[], failing: new Set<string>() }));
+const state = vi.hoisted(() => ({ stored: true as boolean, path: "configured" as string, applied: [] as unknown[], failing: new Set<string>() }));
 
 vi.mock("../setupGuard", () => ({ requireSetupSession: async () => undefined }));
+// Le parcours : seulement un Jellyfin DÉJÀ configuré (la règle elle-même est testée dans shared).
+vi.mock("../flow/setupFlow", async () => {
+  const { SetupError } = await import("../setupErrors");
+  return {
+    requireStep: () => {
+      if (state.path !== "configured") throw new SetupError("step_refused");
+    },
+  };
+});
 vi.mock("../setupStore", () => ({ storedJellyfin: () => (state.stored ? { url: "http://jf", apiKey: "cle" } : null) }));
 vi.mock("../../services/jellyfinSetup/setupService", () => ({
   buildSetupReport: async () => ({ checkedAt: "now", jellyfinVersion: "10.11.11", dashboardUrl: null, restartPending: false, error: null, checks: [] }),
@@ -36,6 +45,7 @@ afterAll(async () => app.close());
 
 beforeEach(() => {
   state.stored = true;
+  state.path = "configured";
   state.applied = [];
   state.failing.clear();
 });
@@ -84,6 +94,13 @@ describe("les réglages conseillés, appliqués par l'assistant", () => {
   it("sans Jellyfin relié : rien", async () => {
     state.stored = false;
     expect((await post({ actions: ["enableTrickplay"] })).json()).toEqual({ error: "jf_not_configured" });
+    expect(state.applied).toEqual([]);
+  });
+
+  it("un Jellyfin NEUF : ni l'état ni les gestes — ce n'est pas son parcours", async () => {
+    state.path = "fresh";
+    expect((await app.inject({ method: "GET", url: "/api/setup/jellyfin/recommended" })).json()).toEqual({ error: "step_refused" });
+    expect((await post({ actions: ["enableTrickplay"] })).json()).toEqual({ error: "step_refused" });
     expect(state.applied).toEqual([]);
   });
 });

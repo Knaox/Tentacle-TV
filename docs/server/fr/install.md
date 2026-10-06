@@ -76,18 +76,27 @@ Une question par écran ; les étapes s'adaptent à la pile détectée.
    d'où l'assistant est ouvert et la passerelle du conteneur, sur les ports courants), rangés en **Neufs** et
    **Déjà configurés**, chacun avec son nom, son adresse, son port et sa version. Depuis un réseau Docker en
    pont, la découverte ne voit que cette machine : un Jellyfin sur un autre appareil se donne à la main.
-   - *tentacle-full* : le Jellyfin de la pile est **en tête** (« Dans cette pile ») et choisi d'office. Il a
-     été **verrouillé dès le démarrage** (personne d'autre ne peut le prendre) et se joint par son adresse
+   Cette étape n'est **jamais sautée**, même avec un seul Jellyfin, et **rien n'y est choisi pour vous** :
+   un badge « Conseillé » montre celui que Tentacle propose, c'est vous qui cochez.
+   - *tentacle-full* : le Jellyfin de la pile est **en tête** (« Dans cette pile »), conseillé. Il a été
+     **verrouillé dès le démarrage** (personne d'autre ne peut le prendre) et se joint par son adresse
      interne. Les autres restent choisissables ; si vous en prenez un autre, celui de la pile reste
      verrouillé, sans servir ;
-   - ailleurs, le neuf est choisi d'office ; prenez-en un autre, ou donnez une adresse.
-5. **Compte** — **Neuf** : vous créez le compte administrateur de Jellyfin (qui l'est aussi de Tentacle), avec
-   la langue et le pays des métadonnées (proposés d'après le navigateur). **Déjà configuré** : vous vous
-   connectez avec un compte administrateur EXISTANT (Tentacle crée sa clé d'API lui-même), ou vous collez une
-   clé ; aucun compte n'est créé.
-6. **Bibliothèques** (Jellyfin neuf) — *tentacle-full* propose **Films** (`/media/films`) et **Séries**
-   (`/media/series`) ; parcourez les dossiers de Jellyfin pour en ajouter.
-   **Réglages conseillés** (Jellyfin déjà configuré, à la place) — Tentacle n'y crée **aucune**
+   - ailleurs, le neuf est conseillé ; prenez celui que vous voulez, ou donnez une adresse.
+
+   Votre choix fixe la suite — **deux parcours**, que le serveur fait respecter (il refuse tout geste qui
+   n'en fait pas partie, quoi que fasse le navigateur). Le Jellyfin choisi reste rappelé en tête de chaque
+   écran (« Jellyfin “Salon” · déjà configuré »). Revenir à cette étape pour en choisir un autre recalcule
+   le parcours ; ce qui avait été préparé pour l'autre est oublié (un compte déjà créé sur un Jellyfin y
+   reste).
+5. **Jellyfin neuf — votre compte administrateur** : vous le créez (il l'est aussi de Tentacle), avec la
+   langue et le pays des métadonnées (proposés d'après le navigateur).
+   **Jellyfin déjà configuré — connexion** : vous vous connectez avec un compte administrateur qui EXISTE
+   (Tentacle crée sa clé d'API lui-même). Aucun compte n'est créé, ni ici, ni plus tard.
+6. **Jellyfin neuf — bibliothèques** : de vraies bibliothèques Jellyfin, créées dans Jellyfin. *tentacle-full*
+   propose **Films** (`/media/films`) et **Séries** (`/media/series`) ; parcourez les dossiers de Jellyfin
+   pour en ajouter.
+   **Jellyfin déjà configuré — réglages conseillés** (aucun écran de bibliothèques) — Tentacle n'y crée **aucune**
    bibliothèque ; il rappelle celles qui existent et propose, tous **facultatifs** et décochables, les
    réglages que le tableau de bord conseille aussi : la détection des passages (Intro Skipper, TheIntroDB,
    SkipMe.db), la langue des métadonnées, les aperçus de la barre de lecture, la surveillance en temps

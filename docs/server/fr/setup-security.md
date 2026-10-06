@@ -47,6 +47,7 @@ main sur la machine.
 | Un invité du Wi-Fi arrive le premier | il le verrait ; vous le remarqueriez aussitôt (l'assistant vous demanderait le code). Finissez l'installation juste après le démarrage, ou `tentacle setup reset` et recommencez |
 | Quelqu'un devine le code | 60 bits, 5 essais par minute et par adresse, un code neuf après 10 faux |
 | L'assistant utilisé après l'installation | fermé pour toujours : toutes ses routes répondent 404 |
+| Un navigateur trafiqué (ou un appel direct à l'API) saute une étape : crée un compte ou une bibliothèque sur un Jellyfin déjà configuré, saute le choix du Jellyfin | le **serveur** tient le parcours (`setupFlowContract.ts`) : le Jellyfin choisi, sondé par le serveur, le décide ; tout geste hors parcours est refusé (`step_refused`) |
 | L'assistant tourné contre votre réseau (SSRF) | Jellyfin n'est cherché qu'aux adresses privées ou à celle que le navigateur a tapée, installation ouverte, avec une session ; lien local et métadonnées des clouds refusés à la connexion |
 
 ## Le compromis assumé

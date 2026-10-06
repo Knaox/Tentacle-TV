@@ -6,7 +6,9 @@ import { hostInfo } from "../hostInfo";
 import { apiKeyWorks, authenticate, createTentacleKey, signOut, verifyApiKey } from "../jellyfin/accounts";
 import { clientUrlFor } from "../jellyfin/clientUrlFor";
 import { presentsAsBlank, probeTarget } from "../jellyfin/stackTarget";
-import { adoptProvisionalAdmin, applyServerLocale, finishJellyfinStartup, runJellyfinStartup } from "../jellyfin/startup";
+import { adoptProvisionalAdmin, applyServerLocale, runJellyfinStartup } from "../jellyfin/startup";
+import { designatesSelection } from "../flow/selectJellyfin";
+import { chosen, noteKeyCreated, requireStep } from "../flow/setupFlow";
 import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
 import { prepareJellyfin, setupRuntime } from "../setupRuntime";
@@ -23,9 +25,14 @@ import type { JellyfinDiscoveryResponse, JellyfinProbeResult } from "../setupDis
  *  - Jellyfin DÉJÀ configuré → son compte administrateur (la clé est créée
  *    d'office), ou une clé collée — rien n'y est créé (`joined`).
  *
- * Pile complète : son Jellyfin est proposé d'office, les autres restent
+ * Pile complète : son Jellyfin est proposé en tête, les autres restent
  * choisissables. Choisir un autre met la clé du voisin verrouillé de côté —
  * un retour sur lui le reprend.
+ *
+ * Le PARCOURS d'abord (`flow/setupFlow.ts`) : `initialize` (créer le compte)
+ * n'existe que pour le Jellyfin NEUF choisi, `connect` que pour le Jellyfin
+ * DÉJÀ configuré choisi — et toujours celui-là, jamais une autre adresse.
+ * Sans choix, ou hors parcours : `step_refused`.
  */
 const SESSION = { preHandler: requireSetupSession };
 const limited = (max: number) => ({ ...SESSION, config: { rateLimit: { max, timeWindow: 60_000 } } });
@@ -81,9 +88,11 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
   app.post("/jellyfin/initialize", limited(10), async (request) => {
     const body = initializeSchema.parse(request.body);
     requireDatabase();
+    const selection = chosen(requireStep("initialize"));
+    if (!designatesSelection(body.url, selection)) throw new SetupError("step_refused");
 
     const { siblingUrl } = setupRuntime().deployment;
-    const { probed, inStack } = await probeTarget(body.url);
+    const { probed, inStack } = await probeTarget(selection.url);
     const claimedId = claimedAdminId();
     const claimKey = siblingUrl && inStack ? siblingClaimKey(siblingUrl) : null;
     if (claimedId && claimKey) {
@@ -92,6 +101,8 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
       await adoptProvisionalAdmin(probed.url, claimKey, claimedId, body);
       await applyServerLocale(probed.url, claimKey, body);
       await forgetClaim();
+      // Sa clé « Tentacle » vient du verrouillage : c'est bien cette installation qui l'a créée.
+      await noteKeyCreated(probed.url);
       await rememberChoice(probed.url, siblingUrl, false);
       return { success: true };
     }
@@ -103,6 +114,7 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
     try {
       await setClaimAside(siblingUrl);
       await saveJellyfin(probed.url, await createTentacleKey(probed.url, account.token), probed.id);
+      await noteKeyCreated(probed.url);
       await rememberChoice(probed.url, siblingUrl, false);
     } finally {
       await signOut(probed.url, account.token);
@@ -114,9 +126,13 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
   app.post("/jellyfin/connect", limited(10), async (request) => {
     const body = connectSchema.parse(request.body);
     requireDatabase();
+    const selection = chosen(requireStep("connect"));
+    if (!designatesSelection(body.url, selection)) throw new SetupError("step_refused");
     const { siblingUrl } = setupRuntime().deployment;
-    const { probed, inStack } = await probeTarget(body.url);
+    const { probed, inStack } = await probeTarget(selection.url);
     if (!probed.compatible) throw new SetupError("jf_incompatible_version");
+    // Redevenu vierge entre le choix et la connexion : ce n'est plus ce parcours-là, on rechoisit.
+    if (presentsAsBlank(probed, inStack)) throw new SetupError("step_refused");
     // Un autre Jellyfin que celui de la pile : la clé du voisin verrouillé est gardée de côté.
     const relink = async (key: string) => {
       if (inStack) await forgetClaim();
@@ -136,13 +152,10 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
       if (!account.isAdmin) throw new SetupError("jf_not_admin");
       // Une reprise sur le MÊME Jellyfin garde sa clé : pas une « Tentacle » de plus.
       const stored = storedJellyfin();
-      const key =
-        stored && stored.url === probed.url && (await apiKeyWorks(stored.url, stored.apiKey))
-          ? stored.apiKey
-          : await createTentacleKey(probed.url, account.token);
+      const reused = stored && stored.url === probed.url && (await apiKeyWorks(stored.url, stored.apiKey));
+      const key = reused ? stored.apiKey : await createTentacleKey(probed.url, account.token);
       await relink(key);
-      // Compte posé, assistant de Jellyfin jamais fini : on le ferme.
-      if (probed.blank) await finishJellyfinStartup(probed.url, key);
+      if (!reused) await noteKeyCreated(probed.url);
     } finally {
       await signOut(probed.url, account.token);
     }

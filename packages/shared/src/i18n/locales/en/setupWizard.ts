@@ -3,6 +3,7 @@
  * `error_<code>` keys follow `SetupErrorCode`.
  */
 import errors from "./setupWizardErrors";
+import flow from "./setupWizardFlow";
 
 export default {
   // ── The frame ─────────────────────────────────────────────────────────
@@ -87,8 +88,8 @@ export default {
 
   // ── Jellyfin ──────────────────────────────────────────────────────────
   jfTitle: "Jellyfin",
-  jfSubtitleSibling: "The Jellyfin installed with this stack is selected. Other Jellyfin servers found on your network are offered too.",
-  jfSubtitleExisting: "The Jellyfin servers Tentacle found. The new one is picked for you; choose another if you prefer.",
+  jfSubtitleSibling: "Choose the Jellyfin Tentacle will use. The one installed with this stack comes first, recommended; the other Jellyfin servers on your network are offered too.",
+  jfSubtitleExisting: "Choose the Jellyfin Tentacle will use, among those it found: nothing is picked for you.",
   jfSubtitleNative: "Tentacle looks for Jellyfin on this machine and on your network.",
   jfUrl: "Jellyfin address",
   jfUrlHint: "For example http://192.168.1.20:8096. From Docker, a Jellyfin on this machine is reached at http://host.docker.internal:8096.",
@@ -117,7 +118,7 @@ export default {
   jfGroup_incompatible: "Not supported by this Tentacle server",
   jfStackStarting: "This stack's Jellyfin is starting: Tentacle is locking it for you…",
   jfSearchingOthers: "Looking for other Jellyfin servers on your network…",
-  jfNextBlank: "New: you create its administrator account, Tentacle prepares the Movies and Shows libraries and installs skip detection.",
+  jfNextBlank: "New: you create its administrator account, then its libraries — real Jellyfin libraries. Tentacle also installs skip detection.",
   jfNextConfigured: "Already set up: you sign in with an administrator account of this Jellyfin. Tentacle creates nothing there — no account, no library — and will only suggest recommended settings, all optional.",
   jfStackAddress: "In the Docker stack: {{host}}, port {{port}}",
   jfStackConfigured: "This stack's Jellyfin was already set up by someone. Tentacle only connects to it with its administrator account: that's the next step.",
@@ -177,7 +178,7 @@ export default {
 
   // ── The libraries ─────────────────────────────────────────────────────
   librariesTitle: "Your libraries",
-  librariesSubtitle: "Where Jellyfin finds your movies and shows. You can add more later.",
+  librariesSubtitle: "This Jellyfin's libraries: where it finds your movies and shows. Tentacle creates them in Jellyfin; you can add more later, from Jellyfin.",
   librariesExisting: "Already in Jellyfin",
   librariesNew: "To create",
   librariesNone: "No library to create: you can add some from Jellyfin.",
@@ -289,6 +290,7 @@ export default {
   doneRemote_off: "Not set up yet: Tentacle works at home. Administration › Remote access whenever you like.",
   doneOpen: "Open Tentacle",
 
-  // ── Les erreurs (setupWizardErrors.ts) ───────────────────────────────
+  // ── Errors and the path (setupWizardErrors.ts, setupWizardFlow.ts) ──────
   ...errors,
+  ...flow,
 };

@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DisposableJellyfin } from "./jellyfin";
+import { jellyfinState } from "./jellyfinSetupProbe";
 import { errorOf, SetupClient } from "./setupClient";
 import { docker, Stack, waitFor } from "./stack";
 
@@ -93,6 +94,9 @@ TAGS.forEach((tag, index) => {
     it("Jellyfin configuré : sondé, puis rejoint par le compte (mauvais mot de passe et mauvaise clé refusés)", async () => {
       const probed = await client.call("/jellyfin/probe", { method: "POST", body: { url: jellyfinUrl } });
       expect(probed.body).toMatchObject({ blank: false, compatible: true });
+      // Sans choix, rien : puis le choix, qui fixe le parcours « déjà configuré ».
+      expect(errorOf(await client.call("/jellyfin/connect", { method: "POST", body: { url: jellyfinUrl, username: USER, password } }))).toBe("step_refused");
+      expect((await client.call("/jellyfin/select", { method: "POST", body: { url: jellyfinUrl } })).status).toBe(200);
       expect(errorOf(await client.call("/jellyfin/connect", { method: "POST", body: { url: jellyfinUrl, username: USER, password: "faux-mot-de-passe" } }))).toBe("jf_bad_credentials");
       expect(errorOf(await client.call("/jellyfin/connect", { method: "POST", body: { url: jellyfinUrl, apiKey: "0123456789abcdef0123456789abcdef" } }))).toBe("jf_api_key_invalid");
       expect((await client.call("/jellyfin/connect", { method: "POST", body: { url: jellyfinUrl, username: USER, password } })).status).toBe(200);
@@ -107,13 +111,20 @@ TAGS.forEach((tag, index) => {
       await waitFor("les bibliothèques de nouveau lisibles", async () => (await client.call("/jellyfin/libraries")).status === 200, 120_000, 3_000);
     });
 
-    it("une bibliothèque créée sur un dossier de Jellyfin", async () => {
+    it("déjà configuré : aucune bibliothèque ni aucun compte ne s'y crée, même par un appel direct", async () => {
       await docker("exec", jellyfin.name, "mkdir", "-p", "/media/films");
       const created = await client.call("/jellyfin/libraries", {
         method: "POST",
         body: { libraries: [{ name: "Films", type: "movies", paths: ["/media/films"] }], metadataLanguage: "fr", metadataCountry: "CH" },
       });
-      expect(created.body).toEqual([{ name: "Films", status: "created" }]);
+      expect(errorOf(created)).toBe("step_refused");
+      const account = await client.call("/jellyfin/initialize", {
+        method: "POST",
+        body: { url: jellyfinUrl, username: "Intrus", password: "mot-de-passe-intrus", uiCulture: "fr", metadataCountry: "CH", metadataLanguage: "fr" },
+      });
+      expect(errorOf(account)).toBe("step_refused");
+      const state = await jellyfinState(jellyfin.url, await jellyfin.token(USER, password));
+      expect(state.libraries.map((library) => library.name)).not.toContain("Films");
     });
 
     it("la clé d'API et le mot de passe ne ressortent jamais : ni réponse, ni journal", async () => {

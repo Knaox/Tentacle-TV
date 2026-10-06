@@ -4,6 +4,7 @@ import { apiKeyWorks, authenticate, createTentacleKey, signOut } from "../jellyf
 import { probeJellyfin, type ProbedJellyfin } from "../jellyfin/probe";
 import { checkSiblingNetwork, type SiblingCheckDeps } from "../jellyfin/siblingCheck";
 import { finishJellyfinStartup, runJellyfinStartup } from "../jellyfin/startup";
+import { forgetSelection, readSelection } from "../flow/setupFlow";
 import { SETUP_KEYS, chosenOverStack, forgetJellyfin, saveJellyfin, storedJellyfin } from "../setupStore";
 
 /**
@@ -63,6 +64,13 @@ async function keyFromProvisionalAdmin(probed: ProbedJellyfin, secret: string): 
 
 export async function claimSiblingJellyfin(siblingUrl: string, options: ClaimOptions = {}): Promise<ClaimOutcome> {
   const log = options.log ?? ((message: string) => console.log(`[Setup] ${message}`));
+  // Un choix fait hors de cette pile (une base reprise d'une pile « base ») ne vaut pas ici :
+  // l'assistant le redemandera. Un autre Jellyfin choisi DANS cette pile est gardé (`stackChoice`).
+  const selection = readSelection();
+  if (selection && selection.url !== siblingUrl && selection.url !== chosenOverStack()) {
+    log("un Jellyfin choisi hors de cette pile était retenu — choix oublié, l'assistant le redemandera");
+    await forgetSelection();
+  }
   const stored = storedJellyfin();
   // Un autre Jellyfin choisi EXPRÈS dans l'assistant (la liste le permet) : gardé, et
   // le voisin n'est pas touché — sa clé, s'il était verrouillé, est déjà de côté.

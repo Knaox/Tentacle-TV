@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SetupContext } from "@tentacle-tv/shared";
-import { codeFromHash, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, joinsConfigured, needsDatabase, resumeStep, uiCultureOf, wizardSteps } from "./wizardModel";
+import { codeFromHash, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, needsDatabase, resumeStep, showsChosenServer, uiCultureOf, wizardLength, wizardSteps } from "./wizardModel";
 
 function ctx(over: Partial<SetupContext> = {}): SetupContext {
   return {
@@ -13,44 +13,65 @@ function ctx(over: Partial<SetupContext> = {}): SetupContext {
     mediaFolders: { root: "/media", movies: "/media/films", tvshows: "/media/series" },
     os: null,
     missingJellyfin: { kind: "compose", stack: "tentacle-full", docsUrl: "https://tentacletv.app/install/" },
+    flow: { databasePending: false, selection: null, linked: false },
     secure: false,
     ...over,
   };
 }
 
-describe("les étapes de l'assistant", () => {
-  it("pile complète ouverte du réseau local, Jellyfin vierge : ni code, ni base, ni compte final", () => {
-    expect(wizardSteps({ needsCode: false, needsDatabase: false, mode: "initialize", joined: false, askFinalAccount: false })).toEqual([
-      "welcome", "jellyfin", "account", "libraries", "recap", "apply", "remote", "done",
-    ]);
+const selection = (path: "fresh" | "configured", inStack = true) => ({
+  url: inStack ? "http://jellyfin:8096" : "http://192.168.1.20:8096", serverId: "id", serverName: "Salon", version: "10.11.11", inStack, path,
+});
+const withFlow = (flow: SetupContext["flow"], over: Partial<SetupContext> = {}) => ctx({ ...over, flow });
+
+describe("les étapes de l'assistant (le parcours du serveur)", () => {
+  it("rien de choisi : jusqu'au choix du Jellyfin, jamais au-delà — et le total déjà juste", () => {
+    expect(wizardSteps({ needsCode: false, context: ctx() })).toEqual(["welcome", "jellyfin"]);
+    expect(wizardLength({ needsCode: false, context: ctx() })).toBe(8);
+    expect(wizardLength({ needsCode: true, context: ctx() })).toBe(9);
   });
 
-  it("le code n'est demandé qu'à qui n'arrive pas directement du réseau local", () => {
-    expect(wizardSteps({ needsCode: true, needsDatabase: false, mode: "initialize", joined: false, askFinalAccount: false }).slice(0, 3)).toEqual(["welcome", "code", "jellyfin"]);
+  it("Jellyfin NEUF : compte créé, puis bibliothèques", () => {
+    const context = withFlow({ databasePending: false, selection: selection("fresh"), linked: false });
+    expect(wizardSteps({ needsCode: false, context })).toEqual(["welcome", "jellyfin", "account", "libraries", "recap", "apply", "remote", "done"]);
   });
 
-  it("pile seule et clé collée : la base, puis le compte demandé à la fin", () => {
-    const steps = wizardSteps({ needsCode: true, needsDatabase: true, mode: "key", joined: true, askFinalAccount: false });
-    expect(steps.slice(0, 4)).toEqual(["welcome", "code", "database", "jellyfin"]);
-    expect(steps.indexOf("finalAccount")).toBe(steps.indexOf("recap") - 1);
+  it("Jellyfin DÉJÀ configuré : connexion, puis réglages conseillés — ni compte créé ni bibliothèques", () => {
+    const context = withFlow({ databasePending: false, selection: selection("configured", false), linked: true });
+    const steps = wizardSteps({ needsCode: true, context });
+    expect(steps).toEqual(["welcome", "code", "jellyfin", "signIn", "recommended", "recap", "apply", "remote", "done"]);
+    expect(steps).toHaveLength(wizardLength({ needsCode: true, context }));
   });
 
-  it("Jellyfin déjà configuré : les réglages conseillés à la place des bibliothèques", () => {
-    const steps = wizardSteps({ needsCode: false, needsDatabase: false, mode: "connect", joined: true, askFinalAccount: false });
-    expect(steps).toEqual(["welcome", "jellyfin", "account", "recommended", "recap", "apply", "remote", "done"]);
-    expect(steps).not.toContain("libraries");
+  it("la base a son écran quand l'environnement ne la donne pas, même une fois reliée", () => {
+    const db = { configured: true, connected: true, fromEnv: false };
+    expect(wizardSteps({ needsCode: false, context: ctx({ database: db }) })).toEqual(["welcome", "database", "jellyfin"]);
+    expect(needsDatabase(ctx({ database: db }))).toBe(false);
+    expect(needsDatabase(ctx({ database: { configured: false, connected: false, fromEnv: false } }))).toBe(true);
+    expect(needsDatabase(null)).toBe(false);
   });
 
-  it("déjà configuré ou non : le serveur le dit une fois relié, le choix de l'écran Jellyfin avant", () => {
-    expect(joinsConfigured(null, "connect")).toBe(true);
-    expect(joinsConfigured(null, "initialize")).toBe(false);
-    const linked = (joined: boolean, claimed = false) =>
-      ctx({ jellyfin: { url: "http://jf", suggestedUrl: null, configured: true, claimed, joined, clientUrl: null } });
-    expect(joinsConfigured(linked(true), null)).toBe(true);
-    expect(joinsConfigured(linked(false), "connect")).toBe(false);
-    // Le voisin verrouillé n'est pas encore le choix : on suit l'écran.
-    expect(joinsConfigured(linked(false, true), "connect")).toBe(true);
-    expect(resumeStep(linked(true))).toBe("recommended");
+  it("reprise : là où en est le SERVEUR — un Jellyfin resté enregistré ne saute jamais le choix", () => {
+    expect(resumeStep(withFlow({ databasePending: true, selection: null, linked: false }), false)).toBe("database");
+    // Le cas vécu : un Jellyfin relié par un essai d'avant, aucun choix fait dans CETTE installation.
+    const leftover = withFlow({ databasePending: false, selection: null, linked: false }, {
+      jellyfin: { url: "http://jellyfin:8096", suggestedUrl: "http://jellyfin:8096", configured: true, claimed: false, joined: false, clientUrl: null },
+    });
+    expect(resumeStep(leftover, false)).toBe("jellyfin");
+    expect(resumeStep(withFlow({ databasePending: false, selection: selection("fresh"), linked: false }), false)).toBe("account");
+    expect(resumeStep(withFlow({ databasePending: false, selection: selection("configured"), linked: false }), false)).toBe("signIn");
+    // Relié, mais le mot de passe n'est plus en mémoire : le premier écran du parcours le redemande.
+    expect(resumeStep(withFlow({ databasePending: false, selection: selection("fresh"), linked: true }), false)).toBe("account");
+    expect(resumeStep(withFlow({ databasePending: false, selection: selection("configured"), linked: true }), true)).toBe("recommended");
+  });
+
+  it("le Jellyfin choisi n'est rappelé que sur les écrans de son parcours", () => {
+    expect(showsChosenServer("signIn", "configured")).toBe(true);
+    expect(showsChosenServer("recap", "fresh")).toBe(true);
+    expect(showsChosenServer("jellyfin", "fresh")).toBe(false);
+    expect(showsChosenServer("libraries", "configured")).toBe(false);
+    expect(showsChosenServer("done", "fresh")).toBe(false);
+    expect(showsChosenServer("recap", null)).toBe(false);
   });
 
   it("un AUTRE Jellyfin que celui de la pile ne se voit pas proposer les dossiers de la pile", () => {
@@ -58,20 +79,6 @@ describe("les étapes de l'assistant", () => {
     const names = { movies: "Films", tvshows: "Séries" };
     expect(defaultLibraries(full, [], names)).toHaveLength(2);
     expect(defaultLibraries(full, [], names, false)).toEqual([]);
-  });
-
-  it("la base n'est demandée que si l'environnement ne la donne pas", () => {
-    expect(needsDatabase(ctx())).toBe(false);
-    expect(needsDatabase(ctx({ database: { configured: false, connected: false, fromEnv: false } }))).toBe(true);
-    expect(needsDatabase(null)).toBe(false);
-  });
-
-  it("reprise : là où l'installation s'était arrêtée", () => {
-    expect(resumeStep(ctx({ database: { configured: false, connected: false, fromEnv: false } }))).toBe("database");
-    expect(resumeStep(ctx())).toBe("jellyfin");
-    // Le voisin verrouillé au démarrage a déjà la clé, mais attend le compte : on passe par Jellyfin.
-    expect(resumeStep(ctx({ jellyfin: { url: "http://jellyfin:8096", suggestedUrl: null, configured: true, claimed: true, joined: false, clientUrl: null } }))).toBe("jellyfin");
-    expect(resumeStep(ctx({ jellyfin: { url: "http://jellyfin:8096", suggestedUrl: null, configured: true, claimed: false, joined: false, clientUrl: null } }))).toBe("libraries");
   });
 });
 

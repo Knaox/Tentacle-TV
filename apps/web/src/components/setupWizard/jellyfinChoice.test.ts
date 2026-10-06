@@ -1,23 +1,35 @@
 import { describe, expect, it } from "vitest";
 import type { JellyfinProbeResult } from "@tentacle-tv/shared";
-import { groupServers, hostAndPort, isValidClientUrl, mergeServers, preselectedUrl, serverState, withManual } from "./jellyfinChoice";
+import { groupServers, hostAndPort, isValidClientUrl, mergeServers, recommendedUrl, serverState, withManual, withSelection } from "./jellyfinChoice";
 
 const jf = (url: string, blank: boolean, compatible = true): JellyfinProbeResult => ({
   url, serverId: url, version: "10.11.11", serverName: "x", blank, inStack: false, compatible, clientUrl: url,
 });
 
 describe("le choix de Jellyfin", () => {
-  it("le vierge est présélectionné, même après un configuré ; jamais un incompatible", () => {
-    expect(preselectedUrl([jf("http://a:8096", false), jf("http://b:47896", true)])).toBe("http://b:47896");
-    expect(preselectedUrl([jf("http://a:8096", true, false), jf("http://b:8097", false)])).toBe("http://b:8097");
-    expect(preselectedUrl([jf("http://a:8096", true, false)])).toBeNull();
-    expect(preselectedUrl([])).toBeNull();
+  it("le CONSEILLÉ : le neuf, même après un configuré ; aucun s'il n'y a que des déjà configurés, jamais un incompatible", () => {
+    expect(recommendedUrl([jf("http://a:8096", false), jf("http://b:47896", true)])).toBe("http://b:47896");
+    expect(recommendedUrl([jf("http://a:8096", true, false), jf("http://b:8097", false)])).toBeNull();
+    expect(recommendedUrl([jf("http://a:8096", true, false)])).toBeNull();
+    expect(recommendedUrl([])).toBeNull();
   });
 
-  it("pile complète : le sien est choisi d'office, même déjà configuré, sauf s'il n'est pas pris en charge", () => {
+  it("pile complète : le sien est conseillé, même déjà configuré, sauf s'il n'est pas pris en charge", () => {
     const stack = { ...jf("http://jellyfin:8096", false), inStack: true };
-    expect(preselectedUrl([jf("http://a:8097", true), stack])).toBe("http://jellyfin:8096");
-    expect(preselectedUrl([{ ...stack, compatible: false }, jf("http://a:8097", true)])).toBe("http://a:8097");
+    expect(recommendedUrl([jf("http://a:8097", true), stack])).toBe("http://jellyfin:8096");
+    expect(recommendedUrl([{ ...stack, compatible: false }, jf("http://a:8097", true)])).toBe("http://a:8097");
+  });
+
+  it("le Jellyfin déjà choisi reste dans la liste, dans l'état de SON parcours", () => {
+    const selection = { url: "http://a:8097", serverId: "http://a:8097", serverName: "x", version: "10.11.11", inStack: false, path: "fresh" as const };
+    // Son compte vient d'être créé : Jellyfin le dit configuré, le parcours reste « neuf ».
+    expect(withSelection([jf("http://a:8097", false)], selection, null)).toEqual([jf("http://a:8097", true)]);
+    // Absent de la recherche (adresse saisie à la main) : il revient en tête.
+    expect(withSelection([jf("http://b:8096", false)], { ...selection, path: "configured" }, "http://a:8097").map((s) => [s.url, s.blank])).toEqual([
+      ["http://a:8097", false],
+      ["http://b:8096", false],
+    ]);
+    expect(withSelection([jf("http://b:8096", false)], null, null)).toEqual([jf("http://b:8096", false)]);
   });
 
   it("une seule liste : celui de la pile en tête, chaque serveur une fois (même vu par son port publié)", () => {

@@ -9,22 +9,20 @@ import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { CodeHelp } from "./CodeHelp";
 import { SetupErrorLine } from "./SetupErrorLine";
-import { enteredData, type Wizard } from "./useWizard";
-import { codeFromHash, resumeStep } from "./wizardModel";
+import type { Wizard } from "./useWizard";
+import { codeFromHash } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 
 const primary = `${cls.bp} w-full sm:w-auto`;
 
 /**
  * Une session ouverte (code ou réseau local) : le contexte, puis l'écran où
- * reprendre. Le mot de passe n'a jamais été gardé : une installation déjà
- * avancée le redemandera à la fin.
+ * le SERVEUR dit d'en être — le choix du Jellyfin s'il n'est pas fait. Le mot
+ * de passe n'a jamais été gardé : une installation déjà reliée le redemande
+ * au premier écran de son parcours.
  */
 async function enterWizard(wizard: Wizard): Promise<void> {
-  const context = await setupApi.context();
-  const resume = resumeStep(context);
-  wizard.patch({ ...enteredData(context), ...(resume === "libraries" ? { resumed: true } : {}) });
-  wizard.go(resume);
+  wizard.enter(await setupApi.context());
 }
 
 /** Où tourne le serveur, et si CE navigateur devra donner le code ; `null` : serveur d'avant la route, ou muet. */
@@ -78,7 +76,7 @@ export function WelcomeScreen({ wizard }: { wizard: Wizard }) {
   };
 
   return (
-    <WizardFrame title={t("welcomeTitle")} subtitle={t("welcomeSubtitle")} position={wizard.position} total={wizard.total}>
+    <WizardFrame title={t("welcomeTitle")} subtitle={t("welcomeSubtitle")} position={wizard.position} total={wizard.total} hideProgress={host === undefined}>
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-sm text-content-secondary">{t("welcomeLanguage")}</span>

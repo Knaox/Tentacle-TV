@@ -1,68 +1,103 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Field } from "../admin/services/Field";
-import { cls } from "../../pages/adminUtils";
+import { CredentialsForm, DoneLine, primary } from "./AccountParts";
 import { LocaleFields } from "./LocaleFields";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
-import { jellyfinNeedsInitialize, uiCultureOf } from "./wizardModel";
+import { uiCultureOf } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 
-const primary = `${cls.bp} w-full sm:w-auto`;
-const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary";
-
 /**
- * Le compte administrateur, et la langue des métadonnées (proposée d'après le
- * navigateur). Jellyfin vierge : le compte est CRÉÉ, et Jellyfin configuré
- * aussitôt — son propre assistant, mené par l'API. Jellyfin configuré : le
- * compte est VÉRIFIÉ tout de suite — la clé d'accès est créée d'office — ou
- * l'on colle une clé, et le compte est demandé à la fin.
+ * Jellyfin NEUF seulement (le parcours `fresh`) : le compte administrateur est
+ * CRÉÉ, et Jellyfin configuré aussitôt — son propre assistant, mené par
+ * l'API —, avec la langue des métadonnées proposée d'après le navigateur.
+ * Une fois créé (retour en arrière, rechargement), l'écran le dit et ne
+ * recrée rien ; sans le mot de passe en mémoire, il le redemande et le fait
+ * vérifier par Jellyfin.
  */
 export function AccountScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
-  const creating = wizard.data.mode === "initialize";
-  const [useKey, setUseKey] = useState(wizard.data.mode === "key");
-  const [username, setUsername] = useState(wizard.data.credentials?.username ?? "");
+  const linked = wizard.data.context?.flow.linked ?? false;
+  return (
+    <WizardFrame
+      title={t("accountTitleCreate")}
+      subtitle={t("accountSubtitleCreate")}
+      position={wizard.position}
+      total={wizard.total}
+      onBack={wizard.back}
+      server={wizard.server}
+    >
+      {linked ? <AccountCreated wizard={wizard} /> : <CreateAccountForm wizard={wizard} />}
+    </WizardFrame>
+  );
+}
+
+function AccountCreated({ wizard }: { wizard: Wizard }) {
+  const { t } = useTranslation("setupWizard");
+  const credentials = wizard.data.credentials;
+  if (credentials) {
+    return (
+      <div className="space-y-5">
+        <DoneLine>{t("accountDone", { name: credentials.username })}</DoneLine>
+        <button type="button" onClick={wizard.next} className={primary} autoFocus>
+          {t("next")}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <CredentialsForm
+      submitLabel={t("accountVerify")}
+      onSubmit={async (entered) => {
+        try {
+          await setupApi.verify(entered);
+          wizard.patch({ credentials: entered });
+          wizard.next();
+          return null;
+        } catch (err) {
+          return err instanceof SetupApiError ? err.code : "internal";
+        }
+      }}
+    >
+      <DoneLine>{t("accountDoneAnonymous")}</DoneLine>
+      <p className="text-sm text-content-secondary">{t("accountDoneVerify")}</p>
+    </CredentialsForm>
+  );
+}
+
+function CreateAccountForm({ wizard }: { wizard: Wizard }) {
+  const { t } = useTranslation("setupWizard");
+  const selection = wizard.data.context?.flow.selection ?? null;
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [apiKey, setApiKey] = useState("");
   const [locale, setLocale] = useState(wizard.data.locale);
   const [error, setError] = useState<WizardErrorCode | null>(null);
   const [pending, setPending] = useState(false);
 
-  const short = creating && password.length > 0 && password.length < 8;
-  const mismatch = creating && confirm.length > 0 && confirm !== password;
-  const canSubmit = useKey ? apiKey.trim().length >= 16 : username.trim() !== "" && password !== "" && !short && (!creating || confirm === password);
+  const short = password.length > 0 && password.length < 8;
+  const mismatch = confirm.length > 0 && confirm !== password;
+  const canSubmit = !!selection && username.trim() !== "" && password !== "" && !short && confirm === password;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!selection) return;
     setError(null);
-    wizard.patch({ locale });
     setPending(true);
     try {
-      if (creating) {
-        const credentials = { username: username.trim(), password };
-        if (jellyfinNeedsInitialize(wizard.data.context)) {
-          await setupApi.initialize({
-            url: wizard.data.jellyfinUrl,
-            ...credentials,
-            uiCulture: uiCultureOf(locale.language),
-            // Le voisin s'appellerait du nom de son conteneur (« d716b0d5ac48 ») : il prend celui de Tentacle.
-            ...(wizard.data.probe?.inStack ? { serverName: "Tentacle" } : {}),
-            metadataLanguage: locale.language,
-            metadataCountry: locale.country,
-          });
-          wizard.patch({ context: await setupApi.context() });
-        }
-        wizard.patch({ credentials });
-      } else if (useKey) {
-        await setupApi.connect({ url: wizard.data.jellyfinUrl, apiKey: apiKey.trim() });
-        wizard.patch({ mode: "key", credentials: null, context: await setupApi.context() });
-      } else {
-        await setupApi.connect({ url: wizard.data.jellyfinUrl, username: username.trim(), password });
-        wizard.patch({ mode: "connect", credentials: { username: username.trim(), password }, context: await setupApi.context() });
-      }
+      const credentials = { username: username.trim(), password };
+      await setupApi.initialize({
+        url: selection.url,
+        ...credentials,
+        uiCulture: uiCultureOf(locale.language),
+        // Le voisin s'appellerait du nom de son conteneur (« d716b0d5ac48 ») : il prend celui de Tentacle.
+        ...(selection.inStack ? { serverName: "Tentacle" } : {}),
+        metadataLanguage: locale.language,
+        metadataCountry: locale.country,
+      });
+      wizard.patch({ locale, credentials, context: await setupApi.context() });
       wizard.next();
     } catch (err) {
       setError(err instanceof SetupApiError ? err.code : "internal");
@@ -72,81 +107,32 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
   };
 
   return (
-    <WizardFrame
-      title={creating ? t("accountTitleCreate") : t("accountTitleLogin")}
-      subtitle={creating ? t("accountSubtitleCreate") : t("accountSubtitleLogin")}
-      position={wizard.position}
-      total={wizard.total}
-      onBack={wizard.back}
-    >
-      <form onSubmit={(e) => void submit(e)} className="space-y-4">
-        {useKey && !creating ? (
-          <Field label={t("accountKey")} hint={t("accountKeyHint")} value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" spellCheck={false} required />
-        ) : (
-          <>
-            <Field label={t("accountUsername")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" spellCheck={false} required autoFocus />
-            <Field
-              label={t("accountPassword")}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={creating ? "new-password" : "current-password"}
-              hint={creating ? t("accountPasswordHint") : undefined}
-              error={short ? t("accountPasswordShort") : null}
-              required
-            />
-            {creating ? (
-              <Field
-                label={t("accountPasswordConfirm")}
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                autoComplete="new-password"
-                error={mismatch ? t("accountPasswordMismatch") : null}
-                required
-              />
-            ) : null}
-          </>
-        )}
-        {/* Un Jellyfin déjà configuré garde sa langue : l'écran suivant la propose, sans l'imposer. */}
-        {creating ? <LocaleFields locale={locale} onChange={setLocale} /> : null}
-        <SetupErrorLine code={error} />
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <button type="submit" disabled={pending || !canSubmit} className={primary}>
-            {pending ? t("working") : creating ? t("localePrepare") : t("accountConnect")}
-          </button>
-          {!creating ? (
-            <button type="button" onClick={() => setUseKey((v) => !v)} className={linkBtn}>
-              {useKey ? t("accountUseAccount") : t("accountUseKey")}
-            </button>
-          ) : null}
-        </div>
-      </form>
-    </WizardFrame>
-  );
-}
-
-/** Clé collée, ou reprise après rechargement : le compte administrateur, qui ouvrira la session à la fin. */
-export function FinalAccountScreen({ wizard }: { wizard: Wizard }) {
-  const { t } = useTranslation("setupWizard");
-  const [username, setUsername] = useState(wizard.data.credentials?.username ?? "");
-  const [password, setPassword] = useState("");
-  return (
-    <WizardFrame title={t("accountTitleFinal")} subtitle={t("accountSubtitleFinal")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          wizard.patch({ credentials: { username: username.trim(), password } });
-          wizard.next();
-        }}
-        className="space-y-4"
-      >
-        <Field label={t("accountUsername")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" spellCheck={false} required autoFocus />
-        <Field label={t("accountPassword")} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
-        <button type="submit" disabled={!username.trim() || !password} className={primary}>
-          {t("next")}
-        </button>
-      </form>
-    </WizardFrame>
+    <form onSubmit={(e) => void submit(e)} className="space-y-4">
+      <Field label={t("accountUsername")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" spellCheck={false} required autoFocus />
+      <Field
+        label={t("accountPassword")}
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        autoComplete="new-password"
+        hint={t("accountPasswordHint")}
+        error={short ? t("accountPasswordShort") : null}
+        required
+      />
+      <Field
+        label={t("accountPasswordConfirm")}
+        type="password"
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        autoComplete="new-password"
+        error={mismatch ? t("accountPasswordMismatch") : null}
+        required
+      />
+      <LocaleFields locale={locale} onChange={setLocale} />
+      <SetupErrorLine code={error} />
+      <button type="submit" disabled={pending || !canSubmit} className={primary}>
+        {pending ? t("working") : t("localePrepare")}
+      </button>
+    </form>
   );
 }

@@ -118,6 +118,8 @@ export * from "./serverLinks/serverLinksVerdict";
 // backend), codes d'erreur traduits par l'espace i18n `setupWizard`.
 export * from "./setupWizard/setupWizardContract";
 export * from "./setupWizard/setupDiscoveryContract";
+export * from "./setupWizard/setupFlowContract";
+export * from "./setupWizard/setupLibraryContract";
 export * from "./setupWizard/appLinks";
 // L'accès à distance : protocole du service de test (miroir backend et
 // apps/port-check), contrat des réglages (miroir backend), plan des ports,

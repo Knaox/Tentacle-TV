@@ -607,8 +607,16 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   (`jellyfin_private_url`, `jellyfin/clientUrl.ts`) = hôte du navigateur + `JELLYFIN_HOST_PORT`, jamais un
   nom Docker, ni 8096 supposé, ni l'IP de la passerelle. Jamais de `prisma db push` (il supprime les
   tables des extensions).
-- **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, règle
-  pure `wizardModel.ts`, chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
+- **Le PARCOURS est une machine à états partagée** (`packages/shared/src/setupWizard/setupFlowContract.ts`,
+  recopiée dans le backend) que le SERVEUR fait respecter (`setup/flow/`) : le choix du Jellyfin
+  (`POST /jellyfin/select`, gardé dans `setup_jellyfin_selection`) n'est jamais sauté ni fait d'office, et
+  fixe le parcours — neuf (`fresh` : compte CRÉÉ, puis vraies bibliothèques Jellyfin) ou déjà configuré
+  (`configured` : connexion, puis réglages conseillés). Tout geste hors parcours → `step_refused` (409) :
+  jamais de compte ni de bibliothèque créés sur un Jellyfin déjà configuré, même par un appel direct.
+  Changer de Jellyfin oublie l'ancien (sa clé révoquée si l'installation l'a créée) ; `tentacle setup reset`
+  efface le choix. Un nouveau geste de l'assistant : une `SetupAction` d'abord, jamais une route sans garde.
+- **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, état pur
+  `wizardState.ts` (on ne va, n'avance, ne revient que DANS le parcours), chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
   le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
   le parcours que si `codeRequired` ; la langue des métadonnées est sous le compte (plus d'écran à part) —
   pour un Jellyfin neuf seulement. Liste Jellyfin : `JellyfinList` (pile, neufs, déjà configurés).

@@ -24,6 +24,10 @@ export const SETUP_KEYS = {
   stackChoice: "jellyfin_stack_choice",
   /** Un Jellyfin DÉJÀ configuré a été rejoint : l'assistant n'y crée aucune bibliothèque. */
   joined: "setup_jellyfin_joined",
+  /** Le Jellyfin choisi à l'étape « Jellyfin », et donc le parcours (`flow/setupFlow.ts`). */
+  selection: "setup_jellyfin_selection",
+  /** L'adresse du Jellyfin sur lequel CETTE installation a créé la clé « Tentacle » (révocable si on l'abandonne). */
+  keyCreatedFor: "setup_jellyfin_key_created",
 } as const;
 
 export interface StoredJellyfin {
@@ -50,13 +54,15 @@ export async function saveJellyfin(url: string, apiKey: string, serverId: string
   await detectAppState();
 }
 
-/** Un Jellyfin étranger à la pile complète : oublié, clé comprise. */
+/** Un Jellyfin étranger à la pile complète : oublié, clé comprise — et le choix qui le désignait. */
 export async function forgetJellyfin(): Promise<void> {
   await deleteConfigValue(SETUP_KEYS.jellyfinUrl);
   await deleteConfigValue(SETUP_KEYS.apiKey);
   await deleteConfigValue(SETUP_KEYS.serverId);
   await deleteConfigValue(SETUP_KEYS.stackChoice);
   await deleteConfigValue(SETUP_KEYS.joined);
+  await deleteConfigValue(SETUP_KEYS.selection);
+  await deleteConfigValue(SETUP_KEYS.keyCreatedFor);
   await forgetClaim();
   await detectAppState();
 }
@@ -84,13 +90,18 @@ export async function setClaimAside(siblingUrl: string | null): Promise<void> {
   await setConfigValue(SETUP_KEYS.claimKey, stored.apiKey);
 }
 
+/** Pile complète : un autre Jellyfin que celui de la pile, choisi EXPRÈS — le démarrage ne l'oublie pas. */
+export async function rememberStackChoice(url: string, siblingUrl: string | null): Promise<void> {
+  if (siblingUrl && url !== siblingUrl) await setConfigValue(SETUP_KEYS.stackChoice, url);
+  else await deleteConfigValue(SETUP_KEYS.stackChoice);
+}
+
 /**
  * Le choix fait dans l'assistant : un autre Jellyfin que celui de la pile
  * (gardé au prochain démarrage), et s'il était DÉJÀ configuré (rejoint).
  */
 export async function rememberChoice(url: string, siblingUrl: string | null, joined: boolean): Promise<void> {
-  if (siblingUrl && url !== siblingUrl) await setConfigValue(SETUP_KEYS.stackChoice, url);
-  else await deleteConfigValue(SETUP_KEYS.stackChoice);
+  await rememberStackChoice(url, siblingUrl);
   if (joined) await setConfigValue(SETUP_KEYS.joined, "1");
   else await deleteConfigValue(SETUP_KEYS.joined);
 }

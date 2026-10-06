@@ -6,6 +6,8 @@ import {
   type JellyfinDiscoveryResponse,
   type JellyfinInitializeRequest,
   type JellyfinProbeResult,
+  type JellyfinSelectRequest,
+  type JellyfinVerifyRequest,
   type JellyfinSetupReport,
   type LibrariesRequest,
   type LibraryOutcome,
@@ -27,7 +29,13 @@ import { BACKEND, creds } from "../../pages/adminUtils";
  * `sessionStorage` : un rechargement de l'onglet reprend là où l'on était,
  * un nouvel onglet redemande le code. Un refus ne dit qu'un code.
  */
-export type WizardErrorCode = SetupErrorCode | "network";
+/**
+ * Les codes du serveur, plus ceux que le client constate seul : `network`
+ * (le serveur ne répond pas), `server_outdated` (un serveur d'avant le
+ * parcours — l'application de bureau embarque l'assistant et peut tomber sur
+ * un serveur plus ancien qu'elle).
+ */
+export type WizardErrorCode = SetupErrorCode | "network" | "server_outdated";
 
 export class SetupApiError extends Error {
   constructor(readonly code: WizardErrorCode) {
@@ -41,10 +49,14 @@ const KNOWN: ReadonlySet<string> = new Set<SetupErrorCode>([
   "jf_invalid_url", "jf_forbidden_address", "jf_localhost_in_docker", "jf_unreachable", "jf_timeout",
   "jf_tls_invalid", "jf_not_jellyfin", "jf_incompatible_version", "jf_not_blank", "jf_bad_credentials",
   "jf_not_admin", "jf_api_key_invalid", "jf_api_key_failed", "jf_startup_failed", "jf_path_not_found",
-  "jf_library_failed", "jf_not_configured", "jf_claim_pending", "jf_sibling_elsewhere", "internal",
+  "jf_library_failed", "jf_not_configured", "jf_claim_pending", "jf_sibling_elsewhere", "step_refused", "internal",
 ]);
 
 const SESSION_KEY = "tentacle_setup_session";
+/** Comment la session a été ouverte (`code` ou `local`) : un rechargement garde le même nombre d'écrans. */
+const VIA_KEY = "tentacle_setup_session_via";
+
+export type SessionVia = "code" | "local";
 
 export const setupSession = {
   read(): string | null {
@@ -54,9 +66,19 @@ export const setupSession = {
       return null;
     }
   },
-  write(value: string): void {
+  /** Ouverte par le code ou sans (réseau local) ; `null` : inconnu (session d'avant). */
+  via(): SessionVia | null {
+    try {
+      const value = sessionStorage.getItem(VIA_KEY);
+      return value === "code" || value === "local" ? value : null;
+    } catch {
+      return null;
+    }
+  },
+  write(value: string, via: SessionVia): void {
     try {
       sessionStorage.setItem(SESSION_KEY, value);
+      sessionStorage.setItem(VIA_KEY, via);
     } catch {
       /* onglet privé : la session vit le temps de la page */
     }
@@ -64,6 +86,7 @@ export const setupSession = {
   clear(): void {
     try {
       sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(VIA_KEY);
     } catch {
       /* rien à effacer */
     }
@@ -101,28 +124,37 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; wi
   return raw as T;
 }
 
-function keepSession(session: string): void {
+function keepSession(session: string, via: SessionVia): void {
   memorySession = session;
-  setupSession.write(session);
+  setupSession.write(session, via);
 }
 
 export const setupApi = {
   async openSession(token: string): Promise<void> {
     const { session } = await call<SetupSessionResponse>("/session", { method: "POST", body: { token }, withSession: false });
-    keepSession(session);
+    keepSession(session, "code");
   },
   /** Sans code, depuis le réseau local ; sinon `code_required` ou `setup_in_progress`. */
   async openLocalSession(): Promise<void> {
     const { session } = await call<SetupSessionResponse>("/session/local", { method: "POST", withSession: false });
-    keepSession(session);
+    keepSession(session, "local");
   },
   /** Avant le code : où tourne le serveur (public tant que l'installation est ouverte). */
   host: () => call<SetupHostInfo>("/host", { withSession: false }),
-  context: () => call<SetupContext>("/context"),
+  async context(): Promise<SetupContext> {
+    const context = await call<SetupContext>("/context");
+    // Un serveur d'avant le parcours ne le dit pas : sans lui, l'assistant ne saurait que deviner.
+    if (!context || typeof context.flow !== "object" || context.flow === null) throw new SetupApiError("server_outdated");
+    return context;
+  },
   database: (body: SetupDatabaseRequest) => call<{ success: true }>("/database", { method: "POST", body }),
   probe: (url: string) => call<JellyfinProbeResult>("/jellyfin/probe", { method: "POST", body: { url } }),
   discover: () => call<JellyfinDiscoveryResponse>("/jellyfin/discover"),
   prepare: () => call<unknown>("/jellyfin/prepare", { method: "POST" }),
+  /** Le Jellyfin choisi : le serveur en tire le parcours, et rend le contexte à jour. */
+  select: (url: string) => call<SetupContext>("/jellyfin/select", { method: "POST", body: { url } satisfies JellyfinSelectRequest }),
+  /** Le compte du Jellyfin relié, revérifié (après un rechargement) : rien n'est créé. */
+  verify: (body: JellyfinVerifyRequest) => call<{ success: true }>("/jellyfin/verify", { method: "POST", body }),
   initialize: (body: JellyfinInitializeRequest) => call<{ success: true }>("/jellyfin/initialize", { method: "POST", body }),
   connect: (body: JellyfinConnectRequest) => call<{ success: true }>("/jellyfin/connect", { method: "POST", body }),
   browse: (path?: string) => call<BrowseResult>(`/jellyfin/browse${path ? `?path=${encodeURIComponent(path)}` : ""}`),

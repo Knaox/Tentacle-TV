@@ -28,6 +28,8 @@ const STATUS: Partial<Record<SetupErrorCode, number>> = {
   db_managed_by_stack: 409,
   jf_not_configured: 409,
   jf_claim_pending: 409,
+  // Un geste hors du parcours en cours : l'état de l'installation l'interdit.
+  step_refused: 409,
   internal: 500,
 };
 
@@ -41,7 +43,13 @@ export function sendSetupError(reply: FastifyReply, code: SetupErrorCode): Fasti
 
 /** Le gestionnaire d'erreurs des routes de l'assistant (portée de leur plugin seulement). */
 export function setupErrorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply): FastifyReply {
-  if (error instanceof SetupError) return sendSetupError(reply, error.code);
+  if (error instanceof SetupError) {
+    // Une application de bureau d'avant le parcours saute le choix du Jellyfin : le journal dit quoi faire.
+    if (error.code === "step_refused") {
+      request.log.info({ route: request.routeOptions.url }, "[Setup] geste hors du parcours refusé — un client d'avant ? Ouvrez l'assistant dans un navigateur (le lien de ces journaux)");
+    }
+    return sendSetupError(reply, error.code);
+  }
   if (error instanceof ZodError) return sendSetupError(reply, "invalid_input");
   const status = (error as FastifyError).statusCode;
   if (status === 429) return sendSetupError(reply, "rate_limited");

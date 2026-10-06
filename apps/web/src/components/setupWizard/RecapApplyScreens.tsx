@@ -2,9 +2,9 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { cls } from "../../pages/adminUtils";
 import { Field } from "../admin/services/Field";
-import { hostAndPort, isValidClientUrl, serverState } from "./jellyfinChoice";
+import { hostAndPort, isValidClientUrl } from "./jellyfinChoice";
 import type { Wizard } from "./useWizard";
-import { joinsConfigured } from "./wizardModel";
+import { pathOf, selectionOf } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 
 const primary = `${cls.bp} w-full sm:w-auto`;
@@ -19,17 +19,24 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
   const { data } = wizard;
   const [clientUrl, setClientUrl] = useState(data.clientUrl);
   const invalid = clientUrl.trim() !== "" && !isValidClientUrl(clientUrl);
-  const jellyfin = data.probe
-    ? t("recapJellyfinLine", { name: data.probe.serverName, version: data.probe.version, ...hostAndPort(data.probe.url), state: t(`jfState_${serverState(data.probe)}`) })
-    : data.jellyfinUrl || data.context?.jellyfin.url || "—";
+  const selection = selectionOf(data.context);
+  const jellyfin = selection
+    ? t("recapJellyfinLine", {
+        name: selection.serverName || t("jfUnnamed"),
+        version: selection.version,
+        ...hostAndPort(selection.url),
+        state: t(selection.path === "fresh" ? "jfState_blank" : "jfState_configured"),
+      })
+    : "—";
   // Un Jellyfin déjà configuré : rien n'y est créé, seuls les réglages cochés changent.
-  const joined = joinsConfigured(data.context, data.mode);
+  const joined = pathOf(data.context) === "configured";
+  const kept = data.existing.map((library) => library.name).join(" · ");
   const advice = data.advice?.ids ?? [];
   const rows: Array<[string, string]> = joined
     ? [
         [t("recapJellyfin"), jellyfin],
         [t("recapAccount"), data.credentials?.username ?? "—"],
-        [t("recapLibrariesKeptLabel"), t("recapLibrariesKept", { count: data.existing.length })],
+        [t("recapLibrariesKeptLabel"), kept ? t("recapLibrariesExisting", { names: kept }) : t("recapLibrariesNoneYet")],
         [t("recapAdvice"), advice.length ? advice.map((id) => t(`rec_${id}`)).join(" · ") : t("recapNothing")],
       ]
     : [
@@ -39,7 +46,7 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
         [t("recapLibraries"), data.plans.length ? data.plans.map((p) => `${p.name} (${p.paths[0]})`).join(" · ") : t("recapNothing")],
       ];
   return (
-    <WizardFrame title={t("recapTitle")} subtitle={t("recapSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+    <WizardFrame title={t("recapTitle")} subtitle={t("recapSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
       <dl className="divide-y divide-line-subtle rounded-xl border border-line-subtle">
         {rows.map(([label, value]) => (
           <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-[9rem_1fr]">

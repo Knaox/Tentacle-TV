@@ -7,12 +7,17 @@ import { FolderBrowser } from "./FolderBrowser";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
-import { defaultLibraries, isValidLibraryName, linkedToStack } from "./wizardModel";
+import { defaultLibraries, isValidLibraryName } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 
 const TYPES: readonly LibraryType[] = ["movies", "tvshows", "mixed"];
 
-/** Les bibliothèques : celles qui existent (lues), celles à créer (proposées d'office dans la pile complète). */
+/**
+ * Jellyfin NEUF seulement (le parcours `fresh`) : de VRAIES bibliothèques
+ * Jellyfin, créées par son API (`/Library/VirtualFolders`) à l'installation —
+ * celles qui existent déjà sont lues, celles à créer proposées d'office dans
+ * la pile complète (les dossiers que son service `init` a préparés).
+ */
 export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   const [plans, setPlans] = useState<LibraryPlan[]>(wizard.data.plans);
@@ -30,12 +35,12 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
       .libraries()
       .then((found) => {
         patch({ existing: found });
-        const inStack = linkedToStack(context, wizard.data.probe);
+        const inStack = context?.flow.selection?.inStack ?? false;
         setPlans(defaultLibraries(context, found, { movies: t("libraryDefaultMovies"), tvshows: t("libraryDefaultShows") }, inStack));
         setLoaded(true);
       })
       .catch((err) => setError(err instanceof SetupApiError ? err.code : "internal"));
-  }, [loaded, attempt, context, patch, t, wizard.data.probe]);
+  }, [loaded, attempt, context, patch, t]);
 
   const update = (index: number, next: Partial<LibraryPlan>) => setPlans((all) => all.map((plan, i) => (i === index ? { ...plan, ...next } : plan)));
   const valid = plans.every((plan) => isValidLibraryName(plan.name.trim()) && plan.paths.length > 0);
@@ -46,7 +51,7 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
   };
 
   return (
-    <WizardFrame title={t("librariesTitle")} subtitle={t("librariesSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+    <WizardFrame title={t("librariesTitle")} subtitle={t("librariesSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
       <div className="space-y-5">
         <SetupErrorLine
           code={error}

@@ -1,5 +1,6 @@
 import { getDatabaseUrlSource, hasDatabaseUrl, hasPrisma } from "../services/db";
 import type { FastifyRequest } from "fastify";
+import { flowState } from "./flow/setupFlow";
 import { clientUrlFor } from "./jellyfin/clientUrlFor";
 import { chosenOverStack, claimedAdminId, joinedConfiguredJellyfin, storedJellyfin } from "./setupStore";
 import { setupRuntime } from "./setupRuntime";
@@ -17,6 +18,7 @@ export function buildSetupContext(request: FastifyRequest): SetupContext {
   const recorded = storedJellyfin();
   const sibling = deployment.siblingUrl;
   const stored = recorded && (!sibling || recorded.url === sibling || recorded.url === chosenOverStack()) ? recorded : null;
+  const flow = flowState();
   return {
     deployment: deployment.deployment,
     stack: deployment.stack,
@@ -33,8 +35,10 @@ export function buildSetupContext(request: FastifyRequest): SetupContext {
       // Le verrouillage ne compte que tant que le voisin est le Jellyfin relié.
       claimed: claimedAdminId() !== null && (!sibling || stored?.url === sibling),
       joined: stored !== null && joinedConfiguredJellyfin(),
-      clientUrl: clientUrlFor(request, stored?.url ?? null),
+      // Celle du Jellyfin CHOISI (avant même d'y être relié), sinon du relié.
+      clientUrl: clientUrlFor(request, flow.selection?.url ?? stored?.url ?? null),
     },
+    flow,
     mediaHostPath: deployment.mediaHostPath,
     mediaFolders: deployment.mediaFolders,
     os: os ? { id: os.id, name: os.name, family: os.family } : null,
