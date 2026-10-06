@@ -4,7 +4,7 @@
 
 | Symptôme | Remède |
 |---|---|
-| « Ce code n'est pas le bon, ou il a déjà servi » | Un code ne sert qu'une fois. `docker compose logs tentacle` montre celui en vigueur ; `docker compose exec tentacle tentacle setup token` en donne un neuf. |
+| « Ce code n'est pas le bon, ou il a déjà servi » | Un code ne sert qu'une fois. Le journal du conteneur Tentacle (Portainer : *Logs* ; `docker logs <conteneur>`) montre celui en vigueur ; `tentacle setup token` dans sa console (`docker exec <conteneur> tentacle setup token`) en donne un neuf. |
 | « Trop d'essais » | Cinq codes par minute et par adresse, et un code neuf après dix faux (pour tout le monde) : patientez une minute, lisez le nouveau code dans les journaux. |
 | L'assistant dit l'installation déjà faite | Il est fermé pour de bon. Rouvrez-le depuis la machine : [operations.md](operations.md#rouvrir-lassistant-dinstallation). |
 | « Dans Docker, localhost désigne Tentacle lui-même » | Donnez la vraie adresse de Jellyfin : `http://host.docker.internal:8096` (Jellyfin sur la même machine) ou `http://192.168.x.y:8096`. |
@@ -16,4 +16,4 @@
 | Tout paraît « local » derrière Docker Desktop | Docker Desktop et colima cachent l'adresse des visiteurs : voir [remote-access.md](remote-access.md#mandataires-de-confiance). |
 | La vidéo reste noire ou saccade en transcodage | Voir [gpu.md](gpu.md) ; vérifiez les réglages de transcodage de Jellyfin. |
 
-Les journaux d'abord : `docker compose logs --tail 200 tentacle` (et `jellyfin`, `db`).
+Les journaux d'abord : celui du conteneur Tentacle (Portainer : *Logs* ; `docker logs --tail 200 <conteneur>` ; Compose : `docker compose logs --tail 200 tentacle`), puis ceux de Jellyfin et de la base.

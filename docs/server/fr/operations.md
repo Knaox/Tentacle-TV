@@ -16,25 +16,29 @@ dernière publiée et la commande à copier — Tentacle ne pilote jamais Docker
 ## Journaux
 
 ```bash
-docker compose logs -f tentacle
+docker compose logs -f tentacle     # Compose, depuis le dossier de la pile
+docker logs -f <conteneur>          # tout conteneur Docker/Podman, par son nom ou son identifiant
 ```
 
-Jetons, mots de passe et clés d'API y sont masqués.
+Dans Portainer : *Containers* → le conteneur Tentacle → **Logs** ; sur un NAS, la page du journal du
+conteneur. Jetons, mots de passe et clés d'API y sont masqués.
 
 ## Rouvrir l'assistant d'installation
 
-L'installation faite, l'assistant est fermé pour de bon. Seule la machine peut le rouvrir :
+L'installation faite, l'assistant est fermé pour de bon. Seule la machine peut le rouvrir : tapez
+`tentacle setup reset` dans la console du conteneur (Portainer : **Console** → *Connect*), redémarrez le
+conteneur, et lisez le nouveau code dans son journal. Depuis un terminal :
 
 ```bash
-docker compose exec tentacle tentacle setup reset
-docker compose restart tentacle
-docker compose logs tentacle        # le nouveau code d'installation
+docker exec <conteneur> tentacle setup reset
+docker restart <conteneur>
+docker logs <conteneur>             # le nouveau code d'installation
 ```
 
 Vos réglages, le lien avec Jellyfin et les bibliothèques restent ; l'assistant reprend aux bibliothèques et
 redemande le compte administrateur à la fin.
 
-Un nouveau code tant que l'installation est encore ouverte : `docker compose exec tentacle tentacle setup token`.
+Un nouveau code tant que l'installation est encore ouverte : `tentacle setup token` dans la console du conteneur (`docker exec <conteneur> tentacle setup token`).
 
 ## La clé d'API de Jellyfin
 

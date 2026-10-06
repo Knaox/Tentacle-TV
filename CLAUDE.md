@@ -531,7 +531,10 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   (12 car. Crockford, journaux + `data/setup-token.txt`) s'échange contre une session (en-tête
   `X-Tentacle-Setup`, jamais un cookie). Fini, il est **fermé pour toujours** (404 partout sauf
   `GET /status`, gardé pour les clients livrés) ; seule la CLI de l'image le rouvre
-  (`tentacle setup token|reset`). Refus = `{ error: <SetupErrorCode> }`, jamais un message brut ni une
+  (`tentacle setup token|reset`, un `tentacle` en trop en tête est pardonné). Avant le code, `GET /host`
+  (public, ouvert seulement) dit où lire le journal : pile, conteneur, identifiant court lu dans `HOSTNAME`
+  ou le montage de `/etc/hostname` (`setup/hostInfo.ts`) — l'écran du code en tire ses onglets (Portainer,
+  `docker logs <ID>`, Compose, NAS, natif) ; aucun texte ne suppose `docker compose`. Refus = `{ error: <SetupErrorCode> }`, jamais un message brut ni une
   réponse de Jellyfin. Contrat : `packages/shared/src/setupWizard/setupWizardContract.ts`, recopié dans le
   backend (test miroir). Pile complète : le Jellyfin voisin est **verrouillé au démarrage** (`claimed`) puis
   pris par le compte choisi. Jamais de `prisma db push` (il supprime les tables des extensions).

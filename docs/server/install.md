@@ -25,11 +25,18 @@ docker compose up -d
 
 ## First start: the setup code
 
-```bash
-docker compose logs tentacle
-```
+On every start until setup is done, Tentacle writes a one-time setup code to **its container's log**. Read
+that log the way you manage containers:
 
-prints a block like:
+| You use | Where to read the code |
+|---|---|
+| **Portainer** | *Containers* → the Tentacle container → **Logs** |
+| a terminal (Docker, Podman) | `docker logs <container>` (or `podman logs <container>`) |
+| Docker Compose | `docker compose logs tentacle` from the stack's folder (`tentacle` is the service name in the official stacks; use yours if you renamed it) |
+| Synology, Unraid, another interface | the container's **Log** / **Logs** page |
+
+`<container>` is the container's name or ID (`docker ps` lists them). The wizard's code screen shows this
+container's ID and the exact commands, ready to copy. The log holds a block like:
 
 ```
   Tentacle — setup code / code d'installation : ABCD-EFGH-JKMN
@@ -37,10 +44,12 @@ prints a block like:
 ```
 
 Open the link (replace `<this-server>` with the machine's address) — the code is filled in for you. It is
-single-use and also written to `data/setup-token.txt` in the data volume. Lost or used? Get a new one:
+single-use and also written to `data/setup-token.txt` in the data volume. Lost or used? Get a new one by
+typing `tentacle setup token` in the container's console (Portainer: **Console** → *Connect*; Synology,
+Unraid: the container's terminal), or from a terminal:
 
 ```bash
-docker compose exec tentacle tentacle setup token
+docker exec <container> tentacle setup token
 ```
 
 ## The wizard, step by step

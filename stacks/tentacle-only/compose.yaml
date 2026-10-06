@@ -10,7 +10,8 @@
 #  2. Put this file in an empty folder as compose.yaml, then run:
 #       docker compose up -d          (Podman: podman compose up -d)
 #  3. Open  http://<this-machine>:3000  and follow the setup wizard. It asks
-#     for a one-time setup code, printed by:  docker compose logs tentacle
+#     for a one-time setup code, printed in Tentacle's log:
+#       docker compose logs tentacle   (Portainer: the container's Logs)
 #     then for your database, your Jellyfin address and administrator.
 #
 #  Nothing to edit in this file: the database is given to the wizard, which

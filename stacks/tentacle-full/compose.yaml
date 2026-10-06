@@ -4,7 +4,8 @@
 #  1. Put this file in an empty folder (e.g. ~/tentacle) as compose.yaml.
 #  2. Run:  docker compose up -d        (Podman: podman compose up -d)
 #  3. Open  http://<this-machine>:3000  and follow the setup wizard. It asks
-#     for a one-time setup code, printed by:  docker compose logs tentacle
+#     for a one-time setup code, printed in Tentacle's log:
+#       docker compose logs tentacle   (Portainer: the container's Logs)
 #
 #  Nothing to edit: the database passwords are generated on first start, in
 #  a volume only the database and Tentacle can read. Your movies go in

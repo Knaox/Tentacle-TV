@@ -20,8 +20,12 @@ couvrent tous les cas ; un assistant guidé fait le reste dans le navigateur.
 mkdir tentacle && cd tentacle
 curl -fsSLo compose.yaml https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/stacks/tentacle-full/compose.yaml
 docker compose up -d
-docker compose logs tentacle     # le code d'installation, et le lien à ouvrir
+docker compose logs tentacle     # le code d'installation et le lien (Portainer : « Logs » du conteneur)
 ```
+
+Portainer, un NAS, un autre nom de service ? Le code est dans **le journal du conteneur Tentacle**, où que
+vous le lisiez ; l'écran du code de l'assistant affiche l'identifiant de ce conteneur et les commandes de
+chaque cas.
 
 Ouvrez `http://<cette-machine>:3000`, entrez le code et répondez aux questions de l'assistant, une à la fois :
 Jellyfin est configuré pour vous, vos bibliothèques sont créées, et vous êtes connecté.

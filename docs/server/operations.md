@@ -16,25 +16,28 @@ to copy — Tentacle never drives Docker itself.
 ## Logs
 
 ```bash
-docker compose logs -f tentacle
+docker compose logs -f tentacle     # Compose, from the stack's folder
+docker logs -f <container>          # any Docker/Podman container, by name or ID
 ```
 
-Tokens, passwords and API keys are masked in the logs.
+In Portainer: *Containers* → the Tentacle container → **Logs**; on a NAS, the container's log page. Tokens, passwords and API keys are masked in the logs.
 
 ## Reopen the setup wizard
 
-Setup done, the wizard is closed for good. Only the machine can reopen it:
+Setup done, the wizard is closed for good. Only the machine can reopen it: type `tentacle setup reset` in
+the container's console (Portainer: **Console** → *Connect*), restart the container, and read the new setup
+code in its log. From a terminal:
 
 ```bash
-docker compose exec tentacle tentacle setup reset
-docker compose restart tentacle
-docker compose logs tentacle        # the new setup code
+docker exec <container> tentacle setup reset
+docker restart <container>
+docker logs <container>             # the new setup code
 ```
 
 Your settings, Jellyfin link and libraries stay; the wizard resumes at the libraries and asks for the
 administrator account at the end.
 
-A new setup code while setup is still open: `docker compose exec tentacle tentacle setup token`.
+A new setup code while setup is still open: `tentacle setup token` in the container's console (`docker exec <container> tentacle setup token`).
 
 ## Jellyfin API key
 
