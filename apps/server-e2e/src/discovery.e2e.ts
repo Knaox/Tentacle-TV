@@ -76,6 +76,9 @@ describe("pile sans Jellyfin : la liste des Jellyfin joignables", () => {
 
   it("le vierge choisi est configuré ; le Jellyfin déjà configuré n'a rien reçu", async () => {
     const url = servers[0].url;
+    // Le choix d'abord : sans lui, le serveur refuse de configurer quoi que ce soit.
+    const chosen = await hostCall(PORT, { ...at, session, path: "/jellyfin/select", method: "POST", body: { url } });
+    expect(chosen.status, JSON.stringify(chosen.body)).toBe(200);
     const init = await hostCall(PORT, {
       ...at, session, path: "/jellyfin/initialize", method: "POST",
       body: { url, username: USER, password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" },

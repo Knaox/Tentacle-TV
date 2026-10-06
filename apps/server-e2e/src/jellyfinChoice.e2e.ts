@@ -94,8 +94,8 @@ describe("A. pile complète : la liste, puis un Jellyfin DÉJÀ configuré", () 
       await page.getByText("Dans cette pile").waitFor({ timeout: 60_000 });
       await page.getByText("Déjà configurés — vous vous connectez avec un compte administrateur existant").waitFor({ timeout: 60_000 });
       await page.getByText("Neufs — Tentacle les configure pour vous").waitFor();
-      // Rien de touché : celui de la pile est choisi d'office.
-      expect(await page.getByRole("radio", { name: /Dans cette pile/ }).isChecked()).toBe(true);
+      // Rien n'est coché d'office : celui de la pile est seulement conseillé.
+      expect(await page.locator('input[type="radio"]:checked').count()).toBe(0);
       await page.screenshot({ path: join(PROOFS, "1-liste-jellyfin.png"), fullPage: true });
       await page.getByRole("radio", { name: /Salon/ }).check();
       await page.getByText(/Tentacle n'y crée rien/).waitFor();
@@ -122,7 +122,7 @@ describe("A. pile complète : la liste, puis un Jellyfin DÉJÀ configuré", () 
       await box(/Détection des passages/).uncheck();
       await button("Continuer").click();
 
-      await page.getByText("Aucune création — 2 bibliothèques déjà dans Jellyfin").waitFor();
+      await page.getByText(/Aucune création — déjà dans Jellyfin.*Films · Séries/).waitFor();
       await page.screenshot({ path: join(PROOFS, "3-recapitulatif.png"), fullPage: true });
       await button("Installer").click();
       await page.getByRole("heading", { name: "Accès à distance (facultatif)" }).waitFor({ timeout: 120_000 });
@@ -166,6 +166,7 @@ describe("B. pile complète : son Jellyfin NEUF — le parcours complet", () => 
     const call = (path: string, method: "GET" | "POST" = "GET", body?: unknown) => hostCall(B.tentacle, { ...at, path, method, body, session });
     const stack = ((await call("/jellyfin/discover")).body as { servers: Found[] }).servers[0];
     expect(stack).toMatchObject({ inStack: true, blank: true });
+    expect((await call("/jellyfin/select", "POST", { url: stack.url })).status).toBe(200);
     expect((await call("/jellyfin/initialize", "POST", { url: stack.url, username: USER, password: PASSWORD, serverName: "Tentacle", uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" })).status).toBe(200);
     expect((await call("/context")).body).toMatchObject({ jellyfin: { configured: true, claimed: false, joined: false } });
     expect((await call("/jellyfin/segments", "POST")).status).toBe(202);

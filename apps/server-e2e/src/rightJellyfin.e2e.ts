@@ -88,6 +88,7 @@ describe("pile Portainer : le bon Jellyfin, la bonne adresse, sans code depuis l
     expect((await neighbour.call({ path: "/context", host, session })).body).toEqual({ error: "session_required" });
 
     // L'essai d'alors : relié au Jellyfin DÉJÀ configuré de la machine (8096), jamais fini.
+    await owner.call({ path: "/jellyfin/select", method: "POST", host, session, body: { url: "http://host.docker.internal:8096" } });
     const connect = await owner.call({ path: "/jellyfin/connect", method: "POST", host, session, body: { url: "http://host.docker.internal:8096", username: USER, password: PASSWORD } });
     expect(connect.status, JSON.stringify(connect.body)).toBe(200);
     // Les « appareils » quittent le réseau de la pile : compose ne le retire pas tant qu'il sert.
@@ -133,6 +134,7 @@ describe("pile Portainer : le bon Jellyfin, la bonne adresse, sans code depuis l
   it("l'installation finie : le Jellyfin de la pile pris par le compte choisi, l'adresse des applications enregistrée", async () => {
     const session = fullSession;
     const at = { host: `${BROWSER_HOST}:${PORTS.tentacle}`, session };
+    expect((await hostCall(PORTS.tentacle, { ...at, path: "/jellyfin/select", method: "POST", body: { url: "http://jellyfin:8096" } })).status).toBe(200);
     const init = await hostCall(PORTS.tentacle, {
       ...at, path: "/jellyfin/initialize", method: "POST",
       body: { url: "http://jellyfin:8096", username: USER, password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" },

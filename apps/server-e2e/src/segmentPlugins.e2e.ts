@@ -44,6 +44,7 @@ describe("pile complète, Jellyfin 12 neuf", () => {
     expect((await client.open(code)).status).toBe(200);
     const context = (await client.call("/context")).body as { jellyfin: { url: string | null; suggestedUrl: string | null } };
     const url = context.jellyfin.url ?? context.jellyfin.suggestedUrl;
+    expect((await client.call("/jellyfin/select", { method: "POST", body: { url } })).status).toBe(200);
     const init = await client.call("/jellyfin/initialize", {
       method: "POST",
       body: { url, username: USER, password: PASSWORD, uiCulture: "fr-FR", metadataCountry: "FR", metadataLanguage: "fr" },
@@ -134,6 +135,7 @@ describe("Jellyfin 10.11 existant, pile avec base", () => {
     await docker("exec", jellyfin.name, "sh", "-c", "echo '127.0.0.1 raw.githubusercontent.com' >> /etc/hosts");
     expect((await client.open(await stack.setupCode())).status).toBe(200);
     const url = `http://host.docker.internal:${ports.jellyfin}`;
+    expect((await client.call("/jellyfin/select", { method: "POST", body: { url } })).status).toBe(200);
     expect((await client.call("/jellyfin/connect", { method: "POST", body: { url, username: USER, password: PASSWORD } })).status).toBe(200);
     await client.call("/jellyfin/segments", { method: "POST" });
     const first = await followRun(async () => (await client.call("/jellyfin/segments")).body as Run);
