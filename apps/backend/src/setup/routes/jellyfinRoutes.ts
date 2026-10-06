@@ -1,9 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import { hasPrisma } from "../../services/db";
+import { readDefaultGateway } from "../discovery/candidates";
 import { discoverJellyfins } from "../discovery/discover";
 import { hostInfo } from "../hostInfo";
 import { apiKeyWorks, authenticate, createTentacleKey, signOut, verifyApiKey } from "../jellyfin/accounts";
-import { clientJellyfinUrl } from "../jellyfin/clientUrl";
+import { clientUrlFor } from "../jellyfin/clientUrlFor";
 import { probeJellyfin } from "../jellyfin/probe";
 import { jellyfinTarget } from "../jellyfin/stackTarget";
 import { adoptProvisionalAdmin, applyServerLocale, finishJellyfinStartup, runJellyfinStartup } from "../jellyfin/startup";
@@ -36,8 +37,7 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
   app.post("/jellyfin/probe", limited(30), async (request): Promise<JellyfinProbeResult> => {
     const { url } = probeSchema.parse(request.body);
     const { url: found, version, serverName, blank, compatible } = await probeJellyfin(await jellyfinTarget(url));
-    const clientUrl = clientJellyfinUrl({ deployment: setupRuntime().deployment, browserHost: request.hostname, jellyfinUrl: found });
-    return { url: found, version, serverName, blank, compatible, clientUrl };
+    return { url: found, version, serverName, blank, compatible, clientUrl: clientUrlFor(request, found) };
   });
 
   /**
@@ -46,7 +46,7 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
    * lance une quarantaine de sondes bornées.
    */
   app.get("/jellyfin/discover", limited(6), async (request): Promise<JellyfinDiscoveryResponse> =>
-    discoverJellyfins({ deployment: setupRuntime().deployment, browserHost: request.hostname, containerized: hostInfo().containerized }),
+    discoverJellyfins({ deployment: setupRuntime().deployment, browserHost: request.hostname, containerized: hostInfo().containerized, gateway: hostInfo().containerized ? readDefaultGateway() : null }),
   );
 
   /**

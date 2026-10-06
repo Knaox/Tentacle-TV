@@ -14,8 +14,9 @@ import { isLoopbackName } from "./addressGuard";
  *  - pile complète : `JELLYFIN_HOST_PORT`, et rien si la pile ne le déclare
  *    pas — jamais 8096 supposé ;
  *  - ailleurs : l'adresse du Jellyfin choisi, sauf si elle ne vaut que pour
- *    le serveur (boucle locale, `host.docker.internal`, nom Docker sans point)
- *    — l'hôte y est remplacé par celui du navigateur, le port gardé.
+ *    le serveur (boucle locale, `host.docker.internal`, nom Docker sans point,
+ *    passerelle du conteneur) — l'hôte y est remplacé par celui du
+ *    navigateur, le port gardé.
  *
  * Proposée seulement : l'administrateur la revoit au récapitulatif.
  */
@@ -25,6 +26,8 @@ export interface ClientUrlInput {
   browserHost: string | undefined;
   /** L'adresse par laquelle le serveur joint ce Jellyfin (absente : pas encore choisi). */
   jellyfinUrl?: string | null;
+  /** La passerelle du conteneur : l'hôte Docker vu du pont, injoignable d'un téléphone. */
+  gateway?: string | null;
 }
 
 /** Un hôte que seul le serveur sait joindre. */
@@ -55,7 +58,7 @@ export function clientJellyfinUrl(input: ClientUrlInput): string | null {
   } catch {
     return null;
   }
-  if (!isServerOnlyHost(url.hostname)) return input.jellyfinUrl;
+  if (!isServerOnlyHost(url.hostname) && url.hostname !== input.gateway) return input.jellyfinUrl;
   if (!browser) return null;
   url.hostname = browser;
   return url.toString().replace(/\/+$/, "");

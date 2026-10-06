@@ -28,6 +28,10 @@ describe("l'adresse de Jellyfin donnée aux applications", () => {
     expect(clientJellyfinUrl({ deployment: other, browserHost: "172.16.1.30", jellyfinUrl: "http://jellyfin:8096" })).toBe("http://172.16.1.30:8096");
   });
 
+  it("un Jellyfin trouvé par la passerelle du conteneur : l'hôte du navigateur, jamais l'IP Docker", () => {
+    expect(clientJellyfinUrl({ deployment: other, browserHost: "172.16.1.30", jellyfinUrl: "http://172.18.0.1:8097", gateway: "172.18.0.1" })).toBe("http://172.16.1.30:8097");
+  });
+
   it("un hôte de navigateur douteux n'entre pas dans l'adresse", () => {
     expect(clientJellyfinUrl({ deployment: full, browserHost: "evil/path" })).toBeNull();
     expect(clientJellyfinUrl({ deployment: other, jellyfinUrl: "http://127.0.0.1:8096", browserHost: undefined })).toBeNull();

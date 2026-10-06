@@ -80,6 +80,7 @@ export interface DiscoverInput {
   deployment: Deployment;
   browserHost: string | undefined;
   containerized: boolean;
+  gateway?: string | null;
 }
 
 export async function discoverJellyfins(input: DiscoverInput, deps: DiscoveryDeps = systemDeps): Promise<JellyfinDiscoveryResponse> {
@@ -91,7 +92,7 @@ export async function discoverJellyfins(input: DiscoverInput, deps: DiscoveryDep
     blank: server.blank,
     compatible: server.compatible,
     source: server.source,
-    clientUrl: clientJellyfinUrl({ deployment, browserHost, jellyfinUrl: server.url }),
+    clientUrl: clientJellyfinUrl({ deployment, browserHost, jellyfinUrl: server.url, gateway: input.gateway }),
   });
 
   if (deployment.siblingUrl) {

@@ -96,5 +96,5 @@ export const setupSessionRoutes: FastifyPluginAsync = async (app) => {
   );
 
   /** GET /api/setup/context — les étapes à montrer, selon l'installation. */
-  app.get("/context", { preHandler: requireSetupSession }, async (request) => buildSetupContext(request.protocol === "https", request.hostname));
+  app.get("/context", { preHandler: requireSetupSession }, async (request) => buildSetupContext(request));
 };

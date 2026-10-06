@@ -16,8 +16,8 @@
 #  .env file next to this one — see .env.example.
 #
 #  Jellyfin on THIS machine? Tentacle runs in a container: "localhost" is
-#  Tentacle itself. Give the wizard http://host.docker.internal:8096 (set up
-#  below) or the machine's network address, e.g. http://192.168.1.20:8096.
+#  Tentacle itself. The wizard lists the Jellyfin servers it finds; one on
+#  this machine is reached through host.docker.internal (set up below).
 # ══════════════════════════════════════════════════════════════════════════
 
 services:
