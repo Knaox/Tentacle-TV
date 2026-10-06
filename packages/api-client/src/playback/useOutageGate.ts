@@ -32,7 +32,9 @@ export function useOutageGate<F>(
     streamLost: () => latest.current.streamLost?.() ?? false,
     reopen: () => latest.current.reopen(),
     diagnose: (failure) => latest.current.diagnose(failure),
-    log: (line) => console.info(line),
+    // `warn` : le build de production retire `console.info` (vite `pure`), et
+    // ces décisions, rares, sont le premier indice d'un incident chez l'utilisateur.
+    log: (line) => console.warn(line),
   }), []);
   useEffect(() => () => gate.dispose(), [gate]);
 
