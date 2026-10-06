@@ -16,7 +16,7 @@ vi.mock("../../services/wsManager", () => ({
   broadcastToUser: (userId: string, carousel: string) => broadcasts.push(`${userId} ${carousel}`),
 }));
 
-import { emitProxyEvents, userDataPatchOf } from "./events";
+import { changesAccountState, emitProxyEvents, userDataPatchOf } from "./events";
 
 beforeEach(() => {
   patches.length = 0;
@@ -43,5 +43,28 @@ describe("le drapeau posé par une requête du proxy", () => {
     emitProxyEvents("Users/u1/FavoriteItems/i1", { method: "POST", query: {} });
     expect(patches).toEqual([["u1", "i1", { isFavorite: true }]]);
     expect(broadcasts).toEqual(["u1 watchlist"]);
+  });
+});
+
+describe("l'écriture qui change l'état d'un titre (et vide les rangées en cache)", () => {
+  it.each([
+    ["POST", "Users/u1/FavoriteItems/i1"],
+    ["DELETE", "Users/u1/FavoriteItems/i1"],
+    ["POST", "Users/u1/PlayedItems/i1"],
+    ["DELETE", "Users/u1/PlayedItems/i1"],
+    ["POST", "Users/u1/Items/i1/Rating"],
+    ["DELETE", "Users/u1/Items/i1/Rating"],
+    ["POST", "Users/u1/Items/i1/UserData"],
+  ])("%s %s : oui", (method, path) => {
+    expect(changesAccountState(path, method)).toBe(true);
+  });
+
+  it.each([
+    ["GET", "Users/u1/FavoriteItems/i1"],
+    ["GET", "Users/u1/Items/Resume"],
+    ["POST", "Sessions/Playing/Progress"],
+    ["POST", "Items/i1"],
+  ])("%s %s : non", (method, path) => {
+    expect(changesAccountState(path, method)).toBe(false);
   });
 });

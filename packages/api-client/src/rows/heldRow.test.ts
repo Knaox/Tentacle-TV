@@ -41,3 +41,25 @@ describe("une rangée tenue", () => {
     expect(ids(heldRowView([card("a")], null, true, id))).toEqual(["a"]);
   });
 });
+
+/**
+ * Une rangée tenue ne fige que la PLACE de ses cartes, jamais leur état :
+ * favori, vu, Ma liste suivent la dernière version de la liste — la mise à
+ * jour optimiste d'un geste fait pendant le survol se voit tout de suite.
+ */
+describe("l'état d'une carte d'une rangée tenue", () => {
+  interface Media { Id: string; UserData: { IsFavorite: boolean; Played: boolean; Likes: boolean } }
+  const media = (Id: string, flags: Partial<Media["UserData"]> = {}): Media => ({
+    Id,
+    UserData: { IsFavorite: false, Played: false, Likes: false, ...flags },
+  });
+  const key = (m: Media) => m.Id;
+  const frozen = [media("a"), media("b")];
+
+  it.each(["IsFavorite", "Played", "Likes"] as const)("%s suit la liste patchée", (flag) => {
+    const patched = [media("a"), media("b", { [flag]: true })];
+    const view = heldRowView(patched, frozen, true, key);
+    expect(view.map(key)).toEqual(["a", "b"]);
+    expect(view[1].UserData[flag]).toBe(true);
+  });
+});
