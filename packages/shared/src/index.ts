@@ -91,6 +91,7 @@ export * from "./notices/qualityDropNotice";
 // Le saut pendant un transcodage : les sauts rapides regroupés en un seul
 // redémarrage, l'attente dite (indicateur, phrase, modèle d'erreur au délai).
 export * from "./player/transcodeSeek";
+export * from "./player/sourceSwitch";
 // Le modèle commun des messages d'erreur : une cause en mots de spectateur
 // (quoi, pourquoi, une à trois actions, détails repliés), classée d'un échec
 // brut — une seule source pour le web, le bureau, le mobile et la tablette.
