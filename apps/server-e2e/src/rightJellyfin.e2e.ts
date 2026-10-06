@@ -37,6 +37,8 @@ const blank = new DisposableJellyfin("asst-jf-blank", 8097, "12.1", MEDIA);
 const owner = new LanDevice("asst-lan-owner", `${PROJECT}_default`);
 const neighbour = new LanDevice("asst-lan-neighbour", `${PROJECT}_default`);
 let stack: Stack;
+// Le code ne sert qu'une fois : la session de la pile complète sert à tous ses tests.
+let fullSession = "";
 
 async function codeSession(s: Stack): Promise<string> {
   const reply = await hostCall(PORTS.tentacle, { path: "/session", method: "POST", host: `${BROWSER_HOST}:${PORTS.tentacle}`, body: { token: await s.setupCode() } });
@@ -109,15 +111,15 @@ describe("pile Portainer : le bon Jellyfin, la bonne adresse, sans code depuis l
     await stack.start();
     await waitFor("le Jellyfin de la pile verrouillé", async () => (await stack.logs()).includes("Jellyfin voisin verrouillé"), 240_000, 2_000);
     expect(await stack.logs()).toContain("un Jellyfin étranger à la pile était enregistré");
-    const session = await codeSession(stack);
-    const ctx = await context(session);
+    fullSession = await codeSession(stack);
+    const ctx = await context(fullSession);
     expect(ctx.jellyfin).toMatchObject({ url: "http://jellyfin:8096", configured: true, claimed: true });
     // L'adresse des applications : l'hôte du navigateur et le port PUBLIÉ — jamais `http://jellyfin`, jamais 8096.
     expect(ctx.jellyfin.clientUrl).toBe(`http://${BROWSER_HOST}:${PORTS.jellyfin}`);
   });
 
   it("la sonde et la découverte ne rendent que le Jellyfin de la pile, quelle que soit l'adresse envoyée", async () => {
-    const session = await codeSession(stack);
+    const session = fullSession;
     const probe = await hostCall(PORTS.tentacle, { path: "/jellyfin/probe", method: "POST", host: `${BROWSER_HOST}:${PORTS.tentacle}`, session, body: { url: "http://host.docker.internal:8096" } });
     expect(probe.body).toMatchObject({ url: "http://jellyfin:8096", clientUrl: `http://${BROWSER_HOST}:${PORTS.jellyfin}` });
     const found = await hostCall(PORTS.tentacle, { path: "/jellyfin/discover", host: `${BROWSER_HOST}:${PORTS.tentacle}`, session });
@@ -125,7 +127,7 @@ describe("pile Portainer : le bon Jellyfin, la bonne adresse, sans code depuis l
   });
 
   it("l'installation finie : le Jellyfin de la pile pris par le compte choisi, l'adresse des applications enregistrée", async () => {
-    const session = await codeSession(stack);
+    const session = fullSession;
     const at = { host: `${BROWSER_HOST}:${PORTS.tentacle}`, session };
     const init = await hostCall(PORTS.tentacle, {
       ...at, path: "/jellyfin/initialize", method: "POST",

@@ -58,6 +58,8 @@ describe("pile sans Jellyfin : la liste des Jellyfin joignables", () => {
     expect(reply.status, JSON.stringify(reply.body)).toBe(200);
     const body = reply.body as { servers: Found[]; udp: string; bridged: boolean };
     servers = body.servers;
+    // La liste telle que l'assistant la reçoit, gardée dans la sortie du banc.
+    console.info(JSON.stringify({ udp: body.udp, bridged: body.bridged, servers: servers.map(({ url, blank, source, clientUrl }) => ({ url, blank, source, clientUrl })) }));
     const ports = servers.map((s) => new URL(s.url).port);
     expect(ports).toContain("8096");
     expect(ports).toContain("8097");

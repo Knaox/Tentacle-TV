@@ -25,15 +25,21 @@ export interface LanReply {
   body: unknown;
 }
 
+// `fetch` ne laisse pas poser `Host` : `http.request`, si.
 const SCRIPT = `
 const r = JSON.parse(process.env.REQ);
+const payload = r.body === undefined ? undefined : JSON.stringify(r.body);
 const headers = { host: r.host };
-if (r.body !== undefined) headers["content-type"] = "application/json";
+if (payload) headers["content-type"] = "application/json";
 if (r.session) headers["x-tentacle-setup"] = r.session;
 if (r.forwardedFor) headers["x-forwarded-for"] = r.forwardedFor;
-fetch("http://tentacle:3000/api/setup" + r.path, { method: r.method || "GET", headers, body: r.body === undefined ? undefined : JSON.stringify(r.body) })
-  .then(async (res) => { const text = await res.text(); let body = text; try { body = JSON.parse(text); } catch {} console.log(JSON.stringify({ status: res.status, body })); })
-  .catch((e) => { console.log(JSON.stringify({ status: 0, body: String(e) })); });
+const req = require("http").request({ host: "tentacle", port: 3000, path: "/api/setup" + r.path, method: r.method || "GET", headers }, (res) => {
+  let text = ""; res.on("data", (c) => (text += c));
+  res.on("end", () => { let body = text; try { body = JSON.parse(text); } catch {} console.log(JSON.stringify({ status: res.statusCode, body })); });
+});
+req.on("error", (e) => console.log(JSON.stringify({ status: 0, body: String(e) })));
+if (payload) req.write(payload);
+req.end();
 `;
 
 /** Un conteneur qui dure : la même adresse d'un appel à l'autre, comme un vrai appareil. */

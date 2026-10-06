@@ -48,7 +48,7 @@ describe("pile complète, Jellyfin vierge — l'assistant au navigateur", () => 
       await page.getByLabel("Mot de passe", { exact: true }).fill(PASSWORD);
       await page.getByLabel("Confirmez le mot de passe").fill(PASSWORD);
       // Plus d'écran « Langue » : proposée d'après le navigateur, elle est sous le compte.
-      expect(await page.getByLabel("Langue", { exact: true }).inputValue()).toBe("fr");
+      expect(await page.getByRole("combobox", { name: "Langue", exact: true }).inputValue()).toBe("fr");
       await button("Préparer Jellyfin").click();
       await page.getByRole("heading", { name: "Vos bibliothèques" }).waitFor({ timeout: 60_000 });
       await page.getByText("/media/films").first().waitFor();
