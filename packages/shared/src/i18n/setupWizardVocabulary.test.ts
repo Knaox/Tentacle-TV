@@ -29,6 +29,6 @@ describe("vocabulaire de l'assistant d'installation", () => {
   });
 
   it("chaque code d'erreur du contrat a ses mots, et l'erreur réseau aussi", () => {
-    for (const code of [...Object.keys(CODES), "network"]) expect(Object.keys(frWizard)).toContain(`error_${code}`);
+    for (const code of [...Object.keys(CODES), "network", "server_outdated"]) expect(Object.keys(frWizard)).toContain(`error_${code}`);
   });
 });

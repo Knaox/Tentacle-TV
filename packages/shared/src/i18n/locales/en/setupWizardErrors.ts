@@ -1,6 +1,7 @@
 /**
  * Les erreurs de l'assistant d'installation : une clé `error_<code>` par code
- * de `SetupErrorCode` (contrat), plus `error_network`. Fondues dans l'espace
+ * de `SetupErrorCode` (contrat), plus `error_network` et
+ * `error_server_outdated` (constatés par le client). Fondues dans l'espace
  * `setupWizard` (`setupWizard.ts`).
  */
 export default {
@@ -38,4 +39,5 @@ export default {
   error_step_refused: "This step isn't part of setting up this Jellyfin: go back to the Jellyfin step.",
   error_internal: "Something unexpected happened. Try again; if it comes back, check the server's logs.",
   error_network: "The server does not answer: check that it is still running.",
+  error_server_outdated: "This Tentacle server is older than this app: open the wizard in a browser (the link in its logs), or update the server.",
 };

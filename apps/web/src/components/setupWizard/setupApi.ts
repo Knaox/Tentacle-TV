@@ -29,7 +29,13 @@ import { BACKEND, creds } from "../../pages/adminUtils";
  * `sessionStorage` : un rechargement de l'onglet reprend là où l'on était,
  * un nouvel onglet redemande le code. Un refus ne dit qu'un code.
  */
-export type WizardErrorCode = SetupErrorCode | "network";
+/**
+ * Les codes du serveur, plus ceux que le client constate seul : `network`
+ * (le serveur ne répond pas), `server_outdated` (un serveur d'avant le
+ * parcours — l'application de bureau embarque l'assistant et peut tomber sur
+ * un serveur plus ancien qu'elle).
+ */
+export type WizardErrorCode = SetupErrorCode | "network" | "server_outdated";
 
 export class SetupApiError extends Error {
   constructor(readonly code: WizardErrorCode) {
@@ -135,7 +141,12 @@ export const setupApi = {
   },
   /** Avant le code : où tourne le serveur (public tant que l'installation est ouverte). */
   host: () => call<SetupHostInfo>("/host", { withSession: false }),
-  context: () => call<SetupContext>("/context"),
+  async context(): Promise<SetupContext> {
+    const context = await call<SetupContext>("/context");
+    // Un serveur d'avant le parcours ne le dit pas : sans lui, l'assistant ne saurait que deviner.
+    if (!context || typeof context.flow !== "object" || context.flow === null) throw new SetupApiError("server_outdated");
+    return context;
+  },
   database: (body: SetupDatabaseRequest) => call<{ success: true }>("/database", { method: "POST", body }),
   probe: (url: string) => call<JellyfinProbeResult>("/jellyfin/probe", { method: "POST", body: { url } }),
   discover: () => call<JellyfinDiscoveryResponse>("/jellyfin/discover"),
