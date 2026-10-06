@@ -85,13 +85,16 @@ export function SegmentDetectionSection() {
               );
             })}
           </ul>
-          {/* « Installer / réparer » : un serveur d'avant 1.24.0 n'a pas la route. */}
-          <ServerCapabilityGate capability="admin.segmentPlugins">
+          {/* « Installer / réparer » : un serveur d'avant 1.24.0 n'a pas la route — ni le geste, ni sa phrase. */}
+          <ServerCapabilityGate
+            capability="admin.segmentPlugins"
+            fallback={<p className="mt-3 text-xs leading-relaxed text-content-tertiary">{t("segmentsStackHelp")}</p>}
+          >
             <div className="mt-3">
               <SegmentPluginsRepair />
             </div>
+            <p className="mt-3 text-xs leading-relaxed text-content-tertiary">{t("segmentsScanHelp")}</p>
           </ServerCapabilityGate>
-          <p className="mt-3 text-xs leading-relaxed text-content-tertiary">{t("segmentsScanHelp")}</p>
           <p className="mt-2 text-xs leading-relaxed text-content-tertiary">{t("segmentsFrameNote")}</p>
         </div>
         <AudioAnalysisPanel />
