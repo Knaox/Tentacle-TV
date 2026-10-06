@@ -20,7 +20,7 @@ export {
 // en fait pendant une panne : bandeau, détecteurs muets, reprise au retour.
 export { getJellyfinHealth, onJellyfinHealth, receiveJellyfinHealth, type JellyfinHealth } from "../socket/jellyfinHealth";
 export {
-  outageView, LONG_OUTAGE_MS, RECOVERY_GRACE_MS, type OutagePhase, type OutageView,
+  outageView, veilYieldsToPlayer, LONG_OUTAGE_MS, RECOVERY_GRACE_MS, type OutagePhase, type OutageView,
 } from "../playback/jellyfinOutage";
 export { useJellyfinOutage, playbackErrorsSuppressed } from "../playback/useJellyfinOutage";
 export { createOutageGate, type OutageGate, type OutageGateDeps } from "../playback/outageGate";

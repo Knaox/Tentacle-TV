@@ -60,3 +60,15 @@ export function outageView(health: JellyfinHealth, now: number, clockOffsetMs: n
   }
   return { ...base, phase: "none", suppressErrors: false, nextChangeInMs: null };
 }
+
+/**
+ * Le voile plein écran « serveur injoignable » (web, mobile) cède-t-il au
+ * message du lecteur ? Oui quand le lecteur est ouvert et que c'est Jellyfin
+ * seul qui manque, une panne DITE par le serveur (reprise comprise) : le
+ * voile recouvrirait une image qui joue encore sur sa réserve, et le message
+ * temporaire du lecteur dit déjà la cause. Le serveur Tentacle lui-même
+ * injoignable, ou un serveur qui ne dit rien de Jellyfin : le voile, comme avant.
+ */
+export function veilYieldsToPlayer(p: { playerOpen: boolean; reason: string | null; phase: OutagePhase }): boolean {
+  return p.playerOpen && p.reason === "jellyfin" && p.phase !== "none";
+}
