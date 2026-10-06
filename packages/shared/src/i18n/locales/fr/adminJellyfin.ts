@@ -174,6 +174,13 @@ export default {
   hardwareCurrent: "En place : {{value}}",
   hardwareNone: "Aucune : le processeur seul convertit.",
 
+  check_hevcEncoding: "Encodage HEVC",
+  why_hevcEncoding: "Quand Jellyfin doit convertir une vidéo, le HEVC garde une meilleure image à débit égal que le H.264 — pour les lecteurs qui le lisent. À réserver à une machine qui a un encodeur matériel : en logiciel, il coûte dix fois plus.",
+  hevcOn: "Autorisé.",
+  hevcOff: "Coupé : les conversions sortent en H.264.",
+  hevcNoHardware: "Coupé — sans accélération matérielle, mieux vaut le laisser ainsi.",
+  hevcApply: "Autoriser l'encodage HEVC",
+
   check_chapterImages: "Images de chapitres",
   why_chapterImages: "Tentacle ne les affiche pas : les laisser coupées épargne le processeur et le disque de Jellyfin.",
   chaptersOn: "Activées sur : {{names}}",

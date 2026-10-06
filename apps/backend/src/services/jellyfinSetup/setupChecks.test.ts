@@ -69,9 +69,9 @@ describe("bibliothèques concernées", () => {
 });
 
 describe("réglages recommandés", () => {
-  it("rend les huit réglages, dans l'ordre de la page", () => {
+  it("rend les neuf réglages, dans l'ordre de la page", () => {
     expect(evaluateSetup(snapshot()).map((c) => c.id)).toEqual([
-      "metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "chapterImages",
+      "metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "hevcEncoding", "chapterImages",
     ]);
   });
 
@@ -156,6 +156,16 @@ describe("réglages recommandés", () => {
     expect(check(evaluateSetup(snapshot({ encoding: { HardwareAccelerationType: "vaapi" } })), "hardwareAcceleration")).toMatchObject({ state: "done", current: "vaapi" });
   });
 
+  it("encodage HEVC : conseillé seulement avec un encodeur matériel ; un Jellyfin muet sur ce champ reste inconnu", () => {
+    const hevc = (encoding: Record<string, unknown> | null) => check(evaluateSetup(snapshot({ encoding })), "hevcEncoding");
+    expect(hevc({ HardwareAccelerationType: "vaapi", AllowHevcEncoding: false })).toMatchObject({
+      state: "todo", level: "recommended", current: "off", action: "enableHevcEncoding", dashboardPath: "/web/#/dashboard/playback/transcoding",
+    });
+    expect(hevc({ HardwareAccelerationType: "none", AllowHevcEncoding: false })).toMatchObject({ state: "not-needed", action: null });
+    expect(hevc({ HardwareAccelerationType: "", AllowHevcEncoding: true })).toMatchObject({ state: "done", current: "on", action: null });
+    expect(hevc({ HardwareAccelerationType: "qsv" })).toMatchObject({ state: "unknown", current: null, action: null });
+  });
+
   it("images de chapitres : jamais « à faire » — Tentacle ne les affiche pas", () => {
     const libraries = [library("Films", "movies", { EnableChapterImageExtraction: true })];
     const chapters = check(evaluateSetup(snapshot({ libraries })), "chapterImages");
@@ -165,7 +175,7 @@ describe("réglages recommandés", () => {
 
   it("ce que Jellyfin n'a pas rendu est inconnu, sans rien inventer", () => {
     const checks = evaluateSetup(snapshot({ libraries: null, plugins: null, config: null, encoding: null, tasks: null, missingTmdb: null, trailers: null }));
-    expect(checks.filter((c) => c.id !== "chapterImages").map((c) => c.state)).toEqual(Array(7).fill("unknown"));
+    expect(checks.filter((c) => c.id !== "chapterImages").map((c) => c.state)).toEqual(Array(8).fill("unknown"));
     expect(checks.every((c) => c.action === null)).toBe(true);
   });
 });

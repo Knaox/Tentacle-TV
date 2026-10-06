@@ -79,6 +79,26 @@ async function setMetadataLanguage(language: string | undefined, country: string
   return saved ? { ok: true, changed: 1 } : fail("not-applied");
 }
 
+/**
+ * « Autoriser l'encodage HEVC » : la configuration du transcodage relue,
+ * UN champ changé, renvoyée entière, puis relue (même règle que le reste).
+ */
+async function enableHevcEncoding(): Promise<ApplyOutcome> {
+  const current = await jellyfinAdminFetch("/System/Configuration/encoding");
+  if (!current.ok) return fail(current.failure);
+  if (!isRecord(current.data) || typeof current.data.AllowHevcEncoding !== "boolean") return fail("invalid");
+  if (current.data.AllowHevcEncoding) return { ok: true, changed: 0 };
+  const res = await jellyfinAdminFetch("/System/Configuration/encoding", {
+    method: "POST",
+    body: { ...current.data, AllowHevcEncoding: true },
+    expectEmpty: true,
+  });
+  if (!res.ok) return fail(res.failure);
+  const after = await jellyfinAdminFetch("/System/Configuration/encoding");
+  if (!after.ok) return fail(after.failure);
+  return isRecord(after.data) && after.data.AllowHevcEncoding === true ? { ok: true, changed: 1 } : fail("not-applied");
+}
+
 /** Le greffon officiel de passages par chapitres — au catalogue que Jellyfin configure par défaut. */
 async function installChapterSegments(): Promise<ApplyOutcome> {
   const name = encodeURIComponent(CHAPTER_SEGMENTS.packageName);
@@ -149,6 +169,8 @@ export async function applySetupAction(request: SetupApplyRequest): Promise<Appl
         return await runTask(TASK_KEYS.segments);
       case "refreshMissingMetadata":
         return await refreshMissingMetadata();
+      case "enableHevcEncoding":
+        return await enableHevcEncoding();
       default:
         return fail("bad-request");
     }
