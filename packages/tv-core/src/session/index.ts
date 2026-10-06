@@ -12,6 +12,7 @@ export * from "./profileEntrance";
 export * from "./profileRefusal";
 export * from "./pinEntry";
 export * from "./knownProfiles";
+export * from "./profilesListingCache";
 export * from "./familyManage";
 export * from "./revocationDrain";
 export * from "./authVerdict";

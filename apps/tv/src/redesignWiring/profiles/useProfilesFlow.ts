@@ -6,6 +6,7 @@ import { unlockTvManage, useJellyfinClient, useTentacleConfig } from "@tentacle-
 import type { TvProfilesDto } from "@tentacle-tv/shared";
 import {
   PIN_ENTRY_START,
+  cachedPicker,
   confirmPress,
   erasePinDigit,
   findProfile,
@@ -28,7 +29,7 @@ import {
   type ProfileRefusal,
 } from "@tentacle-tv/tv-core";
 import { loadProfiles, openProfile } from "../../auth/profileOpening";
-import { lastLeftRemembered, leaveProfile } from "../../auth/profileSession";
+import { leaveProfile } from "../../auth/profileSession";
 import { unpairDevice } from "../../auth/unpair";
 import { MOTION_ENABLED } from "../../redesign/motion/motion";
 
@@ -59,9 +60,13 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
   const jfClient = useJellyfinClient();
   const context = useMemo(() => ({ jfClient, storage, queryClient }), [jfClient, storage, queryClient]);
 
-  const [listing, setListing] = useState<TvProfilesDto | null>(null);
-  const [phase, setPhase] = useState<ProfilesPhase>({ kind: "loading", opening: null });
-  const [remember, setRemember] = useState(false);
+  // La dernière rangée connue paraît AUSSITÔT (tv-core `cachedPicker`) ; le serveur la relit en fond.
+  const [cached] = useState(() => cachedPicker(storage, intent, Date.now()));
+  const [listing, setListing] = useState<TvProfilesDto | null>(cached);
+  const [phase, setPhase] = useState<ProfilesPhase>(cached ? { kind: "picker" } : { kind: "loading", opening: null });
+  const [remember, setRemember] = useState(() => (cached ? pickerRemembers(cached, intent) : false));
+  // Un geste dans la rangée gardée : sa relecture ne décide plus rien à la place de l'utilisateur.
+  const acted = useRef(false);
   const [notice, setNotice] = useState<ProfileRefusal | null>(null);
   const [entry, setEntry] = useState<PinEntry>(PIN_ENTRY_START);
   const [unpairArmed, setUnpairArmed] = useState(false);
@@ -79,20 +84,22 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     setPhase({ kind: "pin", profileId, purpose, remember: keep, launch });
   }
 
-  async function load(planIntent: ProfileIntent | null): Promise<void> {
-    setPhase({ kind: "loading", opening: null });
+  /** `background` : la rangée gardée est déjà là — pas de « Chargement », et un serveur muet la laisse telle quelle. */
+  async function load(planIntent: ProfileIntent | null, background = false): Promise<void> {
+    if (!background) setPhase({ kind: "loading", opening: null });
     const loaded = await loadProfiles(context);
     if (!alive.current) return;
     if (!loaded.ok) {
       if (loaded.refusal.kind === "unpaired") unpairDevice(context, "revoked");
-      else setPhase({ kind: "error", refusal: loaded.refusal });
+      else if (!background) setPhase({ kind: "error", refusal: loaded.refusal });
       return;
     }
     // Le compte de la TV en tête (tv-core `pickerOrder`) : la rangée, ses index et son focus d'entrée suivent cet ordre.
     const ordered = pickerOrder(loaded.listing);
     setListing(ordered);
+    if (background && acted.current) return;
     // À l'arrivée seulement : une relecture après un refus garde la case telle que laissée.
-    if (planIntent) setRemember(pickerRemembers(ordered, lastLeftRemembered()));
+    if (planIntent) setRemember(pickerRemembers(ordered, planIntent));
     const plan = planIntent ? planProfileLaunch(ordered, planIntent, Date.now()) : { kind: "picker" as const };
     if (plan.kind === "open") return open(ordered, plan.profileId, { remember: plan.remember, launch: plan.launch }, "open");
     setPhase({ kind: "picker" });
@@ -170,9 +177,9 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     return () => clearTimeout(timer);
   }, [entry]);
 
-  // Une fois, à l'arrivée : le profil qui s'ouvre seul, sinon la rangée.
+  // Une fois, à l'arrivée : le profil qui s'ouvre seul, sinon la rangée (relue en fond si elle est déjà là).
   useEffect(() => {
-    void load(intent);
+    void load(intent, cached !== null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -191,6 +198,7 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     pick: (index: number) => {
       const profile = listing?.profiles[index];
       if (!listing || !profile || busy) return;
+      acted.current = true;
       setNotice(null);
       setLastPicked(profile.userId);
       const plan = planProfilePick(profile, listing, remember, Date.now());
@@ -202,13 +210,17 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     manage: () => {
       const manager = listing ? manageEntryProfile(listing) : null;
       if (!listing || !manager || busy) return;
+      acted.current = true;
       setNotice(null);
       setLastPicked(manager.userId);
       if (isProfileLocked(manager, Date.now())) return setNotice({ kind: "locked", until: manager.lockedUntil });
       if (manager.hasPin) return showPin(listing, manager.userId, "manage", false, "picked");
       void open(listing, manager.userId, { remember: false, launch: "picked" }, "manage");
     },
-    toggleRemember: () => setRemember((current) => !current),
+    toggleRemember: () => {
+      acted.current = true;
+      setRemember((current) => !current);
+    },
     digit: (digit: string) => {
       if (phase.kind !== "pin" || !listing) return;
       const { entry: next, submit } = pressPinDigit(entry, digit as PinDigit);

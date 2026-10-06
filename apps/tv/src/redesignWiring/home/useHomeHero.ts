@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
-import { useCardToggles, useFeaturedItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
+import { reasonToText, useCardToggles, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { heroEdgeKey, heroItemsOf, heroShown, holdPanelOf, nextHeroIndex } from "@tentacle-tv/tv-core";
+import { heroEdgeKey, heroShown, holdPanelOf, nextHeroIndex } from "@tentacle-tv/tv-core";
 import type { HeroModel } from "../../redesign/hero/HeroBanner";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useBeyondEdge } from "../../platform/tvos/focus/useBeyondEdge";
@@ -11,12 +11,15 @@ import { backdropUriOf } from "../cards/cardArtwork";
 import { heroModelOf } from "../hero/heroModel";
 import { prefetchImage, useHeroImageReady } from "./heroImageReady";
 import { useHeroArts } from "./useHeroArts";
+import { useHeroSources } from "./useHeroSources";
 import { useHeroRotation } from "./useHeroRotation";
 
 /**
- * Le héros de l'accueil : les visionnages à REPRENDRE d'abord (cinq au plus),
- * sinon une sélection au hasard du serveur — les règles de tv-core
- * (`hero/rotation.ts` : les titres, le suivant, le titre affiché, le bord).
+ * Le héros de l'accueil : ses titres selon le mode que le compte a choisi et
+ * que le serveur garde — reprise, sélection au hasard, titre fixe ou « Pour
+ * vous », comme le web, le bureau et le mobile (`useHeroSources`, tv-core
+ * `hero/heroSource.ts`) ; le suivant, le titre affiché et le bord : tv-core
+ * `hero/rotation.ts`.
  * Il tourne seul, en fondu, même focalisé — le minuteur repart à chaque
  * geste, rien ne tourne hors champ
  * (`useHeroRotation`). Et on le tourne à la main : DROITE au-delà du dernier
@@ -55,15 +58,16 @@ export interface HomeHeroActions {
 
 export function useHomeHero(
   focus: FocusStore,
-  resume: MediaItem[] | undefined,
   actions: HomeHeroActions,
   /** Le héros est dans le champ (`HomeView`, `onHeroVisibleChange`). */
   inView: boolean,
 ): HomeHero {
   const { t } = useTranslation();
+  // Les raisons d'une recommandation se disent dans l'espace `reco`, comme sur « Pour vous ».
+  const { t: tReco } = useTranslation("reco");
   const client = useJellyfinClient();
-  const featured = useFeaturedItems().data;
-  const { items, fromResume } = useMemo(() => heroItemsOf(resume, featured), [resume, featured]);
+  const { items, source, recoOf } = useHeroSources();
+  const fromResume = source === "resume";
 
   const [index, setIndex] = useState(0);
   const safeIndex = items.length > 0 ? index % items.length : 0;
@@ -95,14 +99,17 @@ export function useHomeHero(
   const hero = useMemo(() => {
     if (!current || !face) return null;
     const position = items.findIndex((item) => item.Id === current.Id);
+    const reco = source === "reco" ? recoOf.get(current.Id) : undefined;
     return heroModelOf(client, t, {
       item: current,
       art: face,
-      kicker: fromResume ? t("common:resumeWatching") : undefined,
+      // « Pour vous » se dit comme sur sa page : l'accroche, et la raison du titre.
+      kicker: fromResume ? t("common:resumeWatching") : reco ? t("reco:heroKicker") : undefined,
+      reason: reco?.reasons.map((reason) => reasonToText(reason, tReco)).find((text): text is string => !!text),
       page: { index: position >= 0 ? position : safeIndex, count: items.length },
       inWatchlist: toggles.watchlist,
     });
-  }, [client, t, current, face, fromResume, items, safeIndex, toggles.watchlist]);
+  }, [client, t, tReco, current, face, fromResume, source, recoOf, items, safeIndex, toggles.watchlist]);
 
   // Des gestes STABLES, qui lisent l'état du moment : le héros ne se
   // redessine pas quand seule la lumière du fond change.
@@ -145,7 +152,8 @@ export function useHomeHero(
   return {
     hero,
     current,
-    pending: items.length > 0 && !hero,
+    // La source du mode n'est pas connue, ou le premier titre attend son art.
+    pending: source === null || (items.length > 0 && !hero),
     imagePending: hero !== null && !imageReady,
     onPrimary,
     onSecondary,

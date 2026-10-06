@@ -19,6 +19,10 @@ export const DEFAULT_MODES = Object.freeze({
   demandes: "off", // on : un titre absent s'offre à la demande
   trailers: "ready", // ready | broken (la résolution échoue)
   slowResumeMs: "0", // > 0 : la reprise et « À suivre » répondent en retard (un serveur lent : l'accueil attend son héros)
+  // Le mode du héros servi par la mise en page de l'accueil (resume | random | reco | fixed). L'instantané
+  // porte celui du serveur relevé (« reco ») ; les références ont été enregistrées quand la TV l'ignorait
+  // — en reprise, de fait : c'est le mode du banc, sauf jeu contraire (`base/heros-reco`).
+  heroMode: "resume",
 });
 
 export function loadSnapshot(dir) {

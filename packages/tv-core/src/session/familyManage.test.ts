@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FamilyOverviewDto, FamilyProfileDto, FamilyRights } from "@tentacle-tv/shared";
 
-import { manageActionRows, manageCapacity, manageRows } from "./familyManage";
+import { manageActionRows, manageCapacity, manageRows, withKnownImageTags } from "./familyManage";
 
 const profile = (userId: string, kind: FamilyProfileDto["kind"]): FamilyProfileDto => ({
   userId, kind, name: userId, color: "teal", hasPin: false, imageTag: null, since: kind === "owner" ? null : "2026-10-04T20:00:00Z",
@@ -44,7 +44,26 @@ describe("« Gérer les profils »", () => {
   it("sans famille encore, montre le propriétaire seul", () => {
     const rows = manageRows(overview([], { owned: null }), { userId: "damien", name: "Damien", color: "violet" });
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ kind: "owner", name: "Damien", action: null });
+    expect(rows[0]).toMatchObject({ kind: "owner", name: "Damien", action: null, imageTag: null });
+  });
+
+  it("sans famille encore, garde le portrait du profil ouvert", () => {
+    const rows = manageRows(overview([], { owned: null }), { userId: "damien", name: "Damien", color: "violet", imageTag: "tag-d" });
+    expect(rows[0].imageTag).toBe("tag-d");
+  });
+
+  it("reprend un portrait connu quand l'aperçu n'en dit rien, jamais pour un invité", () => {
+    const rows = manageRows(
+      overview([{ ...OWNER, imageTag: null }, { ...profile("nina", "member"), imageTag: "tag-n2" }, profile("lea", "guest")]),
+      { userId: "damien", name: "Damien", color: "violet" },
+    );
+    const known = [
+      { userId: "DAMIEN", imageTag: "tag-d" },
+      { userId: "nina", imageTag: "tag-n1" },
+      { userId: "lea", imageTag: "tag-l" },
+    ];
+    expect(withKnownImageTags(rows, known).map((row) => row.imageTag)).toEqual(["tag-d", "tag-n2", null]);
+    expect(withKnownImageTags(rows, []).map((row) => row.imageTag)).toEqual([null, "tag-n2", null]);
   });
 
   it("ne propose pas un geste voué au refus", () => {

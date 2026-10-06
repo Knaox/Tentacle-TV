@@ -29,7 +29,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 /**
  * L'accueil refondu (Apple TV) : `HomeView`, alimentée par les mêmes données
- * que l'accueil actuel — héros (reprises, sinon sélection du serveur),
+ * que l'accueil actuel — héros (le mode du compte, gardé par le serveur),
  * rangées dans l'ordre de la mise en page du compte, pastille du filtre de
  * plateformes, lumière de l'œuvre focalisée — dans le cadre du socle
  * (`RedesignScreen` : navigation, Menu, focus d'entrée et de retour).
@@ -70,7 +70,7 @@ export function HomeRedesign({ navigation, route }: Props) {
   // Le héros dans le champ, et aucun panneau par-dessus : sa rotation se
   // suspend quand il en sort, ou qu'un grand panneau s'ouvre devant lui.
   const [heroInView, setHeroInView] = useState(true);
-  const hero = useHomeHero(focus, home.resume, { play, detail, sheet }, heroInView && cardActions.sheet === null);
+  const hero = useHomeHero(focus, { play, detail, sheet }, heroInView && cardActions.sheet === null);
 
   // L'état de l'écran d'abord : il décide de l'entrée du focus. L'accueil se
   // montre D'UN BLOC (tv-core `homeLoading`) : les sources du héros et les

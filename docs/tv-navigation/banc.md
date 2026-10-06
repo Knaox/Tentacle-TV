@@ -230,7 +230,14 @@ d'erreur, identiques des deux côtés.
 Jeux de la base (`base/<nom>`) : `serveur-coupe`, `serveur-muet`,
 `sante-en-erreur`, `vigie-off`, `vigie-bloque`, `vigie-ancien`,
 `vigie-vivant` (non déterministe), `vigie-vide`, `demandes-on`,
+`heros-reco`, `famille-compte-seul`, `famille-deux-profils`,
 `bandes-annonces-en-panne`. Liste : `nav-golden.mjs sets`.
+Le héros de l'accueil suit le mode du serveur (`heroMode`) : le faux backend
+sert `resume` par défaut — le mode sous lequel les références ont été
+enregistrées, quand la TV l'ignorait ; `heros-reco` sert celui de l'instantané.
+Les jeux `famille-*` annoncent la Famille (`server/fakeFamily.mjs` : échange,
+« Qui regarde ? », sessions) : la TV y passe aux profils comme chez un vrai
+serveur — le compte seul entre directement, deux profils montrent la rangée.
 
 Le **point d'extension d'un domaine** : `scenarios/<domaine>/fixtures.mjs`.
 

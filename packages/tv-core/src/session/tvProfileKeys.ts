@@ -24,6 +24,12 @@ export const TV_PROFILE_KEY = "tentacle_tv_profile";
  *  (l'avance rapide) s'effacent quand ils quittent la famille. */
 export const TV_KNOWN_PROFILES_KEY = "tentacle_tv_known_profiles";
 
+/** La dernière liste de « Qui regarde ? » lue du serveur (`TvProfilesDto`) :
+ *  au lancement, la rangée paraît aussitôt, AVANT toute attente — la liste se
+ *  relit en fond. Rien de secret (noms, couleurs, portraits, « a un PIN ») ;
+ *  elle part avec le jumelage. */
+export const TV_PROFILES_LISTING_KEY = "tentacle_tv_profiles_listing";
+
 /** Un échange envoyé sans réponse : le serveur a pu l'appliquer. Tant qu'il
  *  est là, un « révoqué » sur l'ancien jeton rejoue l'échange au lieu de
  *  déjumeler (la réponse perdue ne coûte pas un rejumelage). */

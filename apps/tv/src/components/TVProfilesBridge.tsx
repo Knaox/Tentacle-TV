@@ -3,13 +3,15 @@ import { AppState, InteractionManager } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { enrollIfAnnounced, openOnLaunch } from "../auth/profileEnrollment";
+import { confirmSoloSession } from "../auth/soloCheck";
 
 /**
  * Le passage aux PROFILS d'une TV (refonte) jumelée avant la Famille : au
  * démarrage et à chaque retour au premier plan, si le serveur l'annonce
  * désormais, l'échange (`profileEnrollment.ts`), puis le profil qui s'ouvre
- * seul — le propriétaire seul et sans PIN ne voit rien changer ; sinon « Qui
- * regarde ? ». Serveur sans Famille : rien.
+ * seul — le compte dans aucune famille et sans PIN ne voit rien changer ;
+ * sinon « Qui regarde ? ». Serveur sans Famille : rien. Au même moment, une
+ * session « solo » reprise au démarrage se vérifie (`confirmSoloSession`).
  */
 export function TVProfilesBridge() {
   const { storage } = useTentacleConfig();
@@ -24,6 +26,7 @@ export function TVProfilesBridge() {
       running = true;
       try {
         if ((await enrollIfAnnounced(context)) === "enrolled") await openOnLaunch(context);
+        else await confirmSoloSession(context);
       } finally {
         running = false;
       }

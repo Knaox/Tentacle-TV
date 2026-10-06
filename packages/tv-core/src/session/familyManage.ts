@@ -115,13 +115,13 @@ function addedByOf(profile: FamilyProfileDto, ownerId: string | null): string | 
  */
 export function manageRows(
   overview: FamilyOverviewDto,
-  actor: { userId: string; name: string; color: FamilyProfileColor },
+  actor: { userId: string; name: string; color: FamilyProfileColor; imageTag?: string | null },
   capability: ManageCapability = {},
 ): ManageRowModel[] {
   const family = managedFamilyOf(overview);
   if (!family) {
     return [{
-      id: actor.userId, kind: "owner", name: actor.name, userId: actor.userId, color: actor.color, imageTag: null,
+      id: actor.userId, kind: "owner", name: actor.name, userId: actor.userId, color: actor.color, imageTag: actor.imageTag ?? null,
       hasPin: overview.account.hasPin, action: null, expiresAt: null, createdByName: null, createdByYou: false, memberRights: null, guestRights: null,
     }];
   }
@@ -160,6 +160,26 @@ export function manageRows(
     guestRights: null,
   }));
   return [...profiles, ...invitations];
+}
+
+/** Un portrait connu d'ailleurs (« Qui regarde ? », le profil ouvert). */
+export interface KnownImageTag {
+  userId: string;
+  imageTag: string | null;
+}
+
+/**
+ * Le portrait d'un propriétaire ou d'un membre que l'aperçu rend sans photo
+ * (le serveur l'a lu pendant que Jellyfin ne répondait pas : tous les
+ * portraits y valent null), repris de ce que la TV en sait déjà. Jamais pour
+ * un invité ni une invitation : ils n'en ont pas.
+ */
+export function withKnownImageTags(rows: readonly ManageRowModel[], known: readonly KnownImageTag[]): ManageRowModel[] {
+  return rows.map((row) => {
+    if (row.imageTag || (row.kind !== "owner" && row.kind !== "member")) return row;
+    const tag = known.find((candidate) => candidate.imageTag && sameUserId(candidate.userId, row.userId))?.imageTag;
+    return tag ? { ...row, imageTag: tag } : row;
+  });
 }
 
 /** Les rangs des lignes qui portent une action (le focus de la page s'y pose). */
