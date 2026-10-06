@@ -5,6 +5,46 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.11.0]
+<!-- Bloc nu : Google Play (500 caractères), qui a la 1.10.3 depuis le 04/10. -->
+### FR
+- **Appareils et TV** dans le Profil : la TV se jumelle dès le dernier caractère du code
+- **L'écran se cale sur la cadence du film**, sans saccade
+- **Jellyfin redémarre ?** La lecture continue, sans rechargement (serveur 1.24.0)
+- **Qualité réduite plus fine** (HEVC), son d'origine gardé
+- Une réussite de la Famille s'affiche en vert
+- Une TV déjumelée quitte aussitôt la liste
+- « Là où vous en étiez » pour les titres entamés
+
+### EN
+- **Devices and TVs** in Profile: the TV pairs as soon as the code's last character is typed
+- **The screen matches the film's frame rate**, no stutter
+- **Jellyfin restarting?** Playback continues, with no reload (server 1.24.0)
+- **Sharper reduced quality** (HEVC), original audio kept
+- Family successes now show in green
+- An unpaired TV leaves the list right away
+- "Where you left off" for in-progress titles
+
+## [ios-1.11.0]
+<!-- Bloc iOS (App Store Connect, 4000 caractères) : l'App Store part de la 1.10.3, soumise le 04/10. La cadence de l'écran est propre à Android : absente ici. -->
+### FR
+- **« Appareils et TV » a sa place dans le Profil, juste sous Compte** : un appui, et l'on saisit le code de la TV ; les appareils jumelés suivent, prêts à être révoqués
+- **Le jumelage part dès le dernier caractère du code**, accepte aussi le code d'une TV configurée à la main, et « Jumeler une autre TV » repart sans quitter l'écran ; une TV déjumelée quitte aussitôt la liste
+- **Jellyfin redémarre pendant un film ?** Avec le serveur 1.24.0, la lecture continue sur ce qui est déjà chargé, sans rechargement à son retour ; le message est temporaire, et l'écran « serveur injoignable » ne recouvre plus le lecteur
+- **Qualité réduite plus fine** (HEVC quand le serveur l'autorise), et le son d'origine gardé avec le lecteur avancé
+- **L'épisode suivant revérifie la connexion** avant de choisir sa qualité
+- **Famille** : rejoindre une famille ou changer son code PIN s'annonce par une coche verte, et non plus par un triangle rouge
+- La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
+
+### EN
+- **"Devices and TVs" now has its own spot in Profile, right under Account**: one tap and you type the TV's code; your paired devices follow, ready to revoke
+- **Pairing starts as soon as the last character of the code is typed**, also accepts the code of a manually configured TV, and "Pair another TV" starts again without leaving the screen; an unpaired TV leaves the list right away
+- **Jellyfin restarts during a movie?** With server 1.24.0, playback continues from what is already loaded, with no reload when it comes back; the message is temporary, and the "server unreachable" screen no longer covers the player
+- **Sharper reduced quality** (HEVC when the server allows it), and original audio kept with the advanced player
+- **The next episode re-checks the connection** before picking its quality
+- **Family**: joining a family or changing your PIN now shows a green check, no longer a red triangle
+- The in-progress row is now called "Where you left off"
+
 ## [1.10.3]
 <!-- Bloc nu : Google Play (500 caractères), qui a déjà la 1.10.2. L'App Store, resté à la 1.8.2, a son bloc ios-. -->
 ### FR
