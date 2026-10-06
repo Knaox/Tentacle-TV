@@ -176,6 +176,12 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
         .map((json) => JSON.parse(json));
     },
 
+    /** Les écrans visités depuis le dernier `clearLog` : les marques `écran:<route>` du mode de mesure, sans doublons successifs. */
+    screens() {
+      const out = adb(["logcat", "-d", "-s", "TentaclePerf:I"]);
+      return [...out.matchAll(/écran:(\w+)/g)].map((m) => m[1]).filter((name, i, all) => name !== all[i - 1]);
+    },
+
     /** Attend qu'un écran se dise prêt (`prêt:<name>`) ; rend sa mesure, ou null. */
     async waitReady(name, timeoutMs = 30_000) {
       const end = Date.now() + timeoutMs;

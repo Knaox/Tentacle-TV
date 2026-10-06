@@ -140,6 +140,27 @@ export const SCENARIOS = [
     steps: 1,
   },
   {
+    // « Bleach » : 6e affiche d'« Animés », l'une des cinq séries dont
+    // l'instantané garde les saisons. HAUT puis BAS : la première affiche,
+    // que le focus d'entrée soit sur elle ou sur la barre de filtres. Jamais
+    // OK sur un épisode (il lancerait la lecture) : OK sur un ONGLET de saison.
+    id: "saisons-episodes",
+    title: "Saisons et épisodes (« Bleach ») : BAS aux onglets puis aux épisodes, 4 épisodes à droite, HAUT, la saison 3 choisie, ses épisodes",
+    expectReady: "fiche",
+    setup: [tap("left"), wait(1200), tap("down", 4, 350), wait(900), tap("ok"), wait(6000), tap("up"), wait(900), tap("down"), wait(900), tap("right", 5, 450), wait(900), tap("ok"), wait(5000)],
+    gesture: [tap("down"), wait(1800), tap("down"), wait(1800), tap("right", 4, 600), wait(900), tap("up"), wait(1200), tap("right", 2, 600), wait(600), tap("ok"), wait(2500), tap("down"), wait(1500), tap("right", 3, 600), wait(900)],
+    steps: 14,
+  },
+  {
+    // GAUCHE depuis le rail : « Réglages ». Aucun OK dans un panneau : on ne
+    // change aucun réglage, on ne fait que montrer les onglets et parcourir.
+    id: "reglages",
+    title: "Réglages : les onglets montrés un à un (OK sur l'onglet), puis le panneau Lecture parcouru, sans rien changer",
+    setup: [tap("left"), wait(1500), tap("left"), wait(1200), tap("ok"), wait(4000)],
+    gesture: [tap("down"), wait(700), tap("ok"), wait(1500), tap("down"), wait(700), tap("ok"), wait(1500), tap("down"), wait(700), tap("ok"), wait(1500), tap("up", 2, 700), wait(700), tap("ok"), wait(1500), tap("right"), wait(900), tap("down", 4, 700), wait(900), tap("up", 4, 700), wait(700), tap("left"), wait(900)],
+    steps: 18,
+  },
+  {
     id: "grille",
     title: "La grille des films : BAS tenu 4 s puis HAUT tenu 4 s",
     expectReady: "bibliothèque",
