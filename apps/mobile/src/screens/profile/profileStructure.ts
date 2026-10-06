@@ -2,7 +2,7 @@ import { PROFILE_SECTIONS } from "./profileSections";
 import type { ProfilePaneId } from "./profilePanes";
 
 /**
- * La STRUCTURE du profil (mobile et tablette) : six rubriques, chacune une
+ * La STRUCTURE du profil (mobile et tablette) : sept rubriques, chacune une
  * page de groupes, chaque entrée un réglage sur place, une page (volet ou
  * écran) ou une action. DEUX niveaux, jamais trois : une rubrique ouvre sa
  * page, une entrée de la page ouvre la sienne, et une page de deuxième niveau
@@ -13,7 +13,7 @@ import type { ProfilePaneId } from "./profilePanes";
  * serveur disparaît au lieu d'échouer, et une rubrique vide disparaît avec.
  */
 
-export type ProfileSectionId = "account" | "playback" | "appearance" | "notifications" | "server" | "help";
+export type ProfileSectionId = "account" | "devices" | "playback" | "appearance" | "notifications" | "server" | "help";
 
 /** Un libellé : sa clé et son espace i18n. */
 export interface I18nRef {
@@ -140,7 +140,7 @@ export function findSection(id: string): ProfileSection | undefined {
 
 /**
  * Ce qu'ouvre une rubrique : sa page, ou — quand elle ne contient qu'UN volet
- * (Notifications) — ce volet directement, sans page intermédiaire d'une seule
+ * (Appareils et TV, Notifications) — ce volet directement, sans page intermédiaire d'une seule
  * ligne.
  */
 export type SectionTarget = { kind: "page" } | { kind: "pane"; id: ProfilePaneId };

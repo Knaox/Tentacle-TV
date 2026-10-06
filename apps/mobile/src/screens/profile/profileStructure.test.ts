@@ -28,8 +28,8 @@ const section = (id: string) => PROFILE_SECTIONS.find((s) => s.id === id)!;
 const allEntries = PROFILE_SECTIONS.flatMap((s) => s.groups.flatMap((g) => g.entries));
 
 describe("structure du profil", () => {
-  it("six rubriques au plus, et aucune page de rubrique au-delà de six entrées", () => {
-    expect(PROFILE_SECTIONS.length).toBeLessThanOrEqual(6);
+  it("sept rubriques au plus, et aucune page de rubrique au-delà de six entrées", () => {
+    expect(PROFILE_SECTIONS.length).toBeLessThanOrEqual(7);
     for (const s of PROFILE_SECTIONS) expect(entries(s, { ...admin, family: true }).length).toBeLessThanOrEqual(6);
   });
 
@@ -63,7 +63,7 @@ describe("structure du profil", () => {
   });
 
   it("en ligne, toutes les rubriques paraissent", () => {
-    expect(visibleSections(user).map((s) => s.id)).toEqual(["account", "playback", "appearance", "notifications", "server", "help"]);
+    expect(visibleSections(user).map((s) => s.id)).toEqual(["account", "devices", "playback", "appearance", "notifications", "server", "help"]);
   });
 
   it("les invitations et les sessions sont réservées à un administrateur", () => {
@@ -78,8 +78,8 @@ describe("structure du profil", () => {
   });
 
   it("la Famille reste cachée tant que le serveur ne l'annonce pas", () => {
-    expect(ids(section("account"), user)).toEqual(["password", "devices", "deleteAccount"]);
-    expect(ids(section("account"), { ...user, family: true })).toEqual(["password", "family", "devices", "deleteAccount"]);
+    expect(ids(section("account"), user)).toEqual(["password", "deleteAccount"]);
+    expect(ids(section("account"), { ...user, family: true })).toEqual(["password", "family", "deleteAccount"]);
     expect(sectionSummary(section("account"), { ...user, family: true })?.key).toBe("accountSummaryFamily");
     expect(ids(section("account"), { ...offline, family: true })).toEqual([]);
   });
@@ -91,6 +91,18 @@ describe("structure du profil", () => {
   it("une rubrique d'un seul volet ouvre ce volet, les autres leur page", () => {
     expect(sectionTarget(section("notifications"), user)).toEqual({ kind: "pane", id: "notifications" });
     expect(sectionTarget(section("account"), user)).toEqual({ kind: "page" });
+  });
+
+  it("« Appareils et TV » est la deuxième rubrique, et ouvre DIRECTEMENT le jumelage", () => {
+    expect(visibleSections(user)[1]?.id).toBe("devices");
+    expect(sectionTarget(section("devices"), user)).toEqual({ kind: "pane", id: "devices" });
+    expect(PROFILE_PANE_ROUTES.devices).toBe("/settings/devices");
+    // Une seule entrée : rien ne la double dans Compte.
+    expect(allEntries.filter((e) => e.id === "devices")).toHaveLength(1);
+  });
+
+  it("hors ligne, « Appareils et TV » disparaît (le jumelage parle au serveur)", () => {
+    expect(visibleSections(offline).some((s) => s.id === "devices")).toBe(false);
   });
 
   it("la tablette garde la rubrique choisie tant qu'elle existe", () => {

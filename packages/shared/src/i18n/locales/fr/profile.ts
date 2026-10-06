@@ -71,8 +71,9 @@ export default {
   stats: "Mes statistiques",
   statsHint: "Temps de visionnage, genres et habitudes",
   // Rubriques du profil mobile (apps/mobile/src/screens/profile/profileSections.ts).
-  accountSummary: "Mot de passe, appareils et TV",
-  accountSummaryFamily: "Famille, mot de passe, appareils et TV",
+  accountSummary: "Mot de passe et suppression du compte",
+  accountSummaryFamily: "Famille et mot de passe",
+  devicesSummary: "Jumeler une TV, appareils jumelés",
   playbackSummary: "Lecteur et économie de données",
   playbackSummaryOffline: "Lecteur, données et hors ligne",
   appearanceSummary: "Thème, langue et accueil",

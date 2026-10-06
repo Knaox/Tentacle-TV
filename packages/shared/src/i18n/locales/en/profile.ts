@@ -71,8 +71,9 @@ export default {
   stats: "My stats",
   statsHint: "Watch time, genres and habits",
   // Rubriques du profil mobile (apps/mobile/src/screens/profile/profileSections.ts).
-  accountSummary: "Password, devices and TVs",
-  accountSummaryFamily: "Family, password, devices and TVs",
+  accountSummary: "Password and account deletion",
+  accountSummaryFamily: "Family and password",
+  devicesSummary: "Pair a TV, paired devices",
   playbackSummary: "Player and data saver",
   playbackSummaryOffline: "Player, data and offline",
   appearanceSummary: "Theme, language and home",

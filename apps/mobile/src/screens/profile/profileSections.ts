@@ -6,7 +6,8 @@ import type { I18nRef, ProfileSection } from "./profileStructure";
  * s'ajoute ici, dans la rubrique dont elle parle ; jamais une ligne en dur
  * dans un écran.
  *
- *   Compte         — Mot de passe▸ · Famille ▢ · Appareils et TV▸ | Supprimer mon compte
+ *   Compte         — Mot de passe▸ · Famille ▢ | Supprimer mon compte
+ *   Appareils et TV — (le volet lui-même : jumeler une TV, puis les appareils jumelés)
  *   Lecture        — Lecteur▸ · Économie de données▸ | Hors ligne : Mes titres ▢ · Réglages hors ligne▸ · Passer hors ligne
  *   Apparence      — Thème · Langue · Liquid Glass | Accueil et recommandations▸
  *   Notifications  — (le volet lui-même)
@@ -38,7 +39,6 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
           // Réservée à la Famille du mobile : cachée tant que l'écran n'est pas
           // branché, et face à un serveur sans Famille (ou Famille coupée).
           { kind: "screen", id: "family", href: FAMILY_HREF, icon: "users", label: p("family"), requires: ["family"] },
-          { kind: "pane", id: "devices", icon: "tv", label: p("devicesAndTv"), requires: ["online"] },
         ],
       },
       {
@@ -46,6 +46,17 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
           { kind: "action", id: "deleteAccount", icon: "user-x", label: p("deleteAccount"), destructive: true, requires: ["online"] },
         ],
       },
+    ],
+  },
+  // Jumeler une TV se trouve SANS CHERCHER : une rubrique d'un seul volet,
+  // juste sous Compte, qui ouvre directement les cases du code.
+  {
+    id: "devices",
+    icon: "tv",
+    label: p("devicesAndTv"),
+    summaries: [{ label: p("devicesSummary") }],
+    groups: [
+      { entries: [{ kind: "pane", id: "devices", icon: "tv", label: p("devicesAndTv"), requires: ["online"] }] },
     ],
   },
   {
