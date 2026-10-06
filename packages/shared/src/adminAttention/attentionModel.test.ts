@@ -15,7 +15,7 @@ const healthy: AttentionSources = {
   jellyfinSetup: { restartPending: false, checks: [{ id: "trickplay", level: "recommended", state: "done" }] },
   jellyfinVersion: "compatible",
   serverUpdate: "up-to-date",
-  dismissed: { publicUrl: false, tmdbKey: false, jellyfin: false, directPlay: false },
+  dismissed: { publicUrl: false, tmdbKey: false, jellyfin: false, segmentPlugins: false, directPlay: false },
 };
 
 const httpOnly: LinkCheck = {
@@ -37,7 +37,7 @@ describe("ce qui demande l'attention de l'administrateur", () => {
 
   it("chaque recommandation se masque par un rappel de la liste fermée", () => {
     for (const hint of Object.values(RECOMMENDATION_HINTS)) expect(DISMISSIBLE_HINTS).toContain(hint);
-    expect(new Set(Object.values(RECOMMENDATION_HINTS)).size).toBe(4);
+    expect(new Set(Object.values(RECOMMENDATION_HINTS)).size).toBe(5);
   });
 
   it("HTTP seulement : une recommandation, avec son souci", () => {
@@ -108,7 +108,7 @@ describe("ce qui demande l'attention de l'administrateur", () => {
   it("un réglage en attente de redémarrage se dit, même sans redémarrage signalé par Jellyfin", () => {
     const attention = buildAdminAttention({
       ...healthy,
-      jellyfinSetup: { restartPending: false, checks: [{ id: "segmentsProvider", level: "recommended", state: "pending-restart" }] },
+      jellyfinSetup: { restartPending: false, checks: [{ id: "trickplay", level: "recommended", state: "pending-restart" }] },
     });
     expect(attention.recommendations).toEqual([{ id: "jellyfin", hint: "adminJellyfin", variant: null, items: ["restart"] }]);
   });
@@ -126,6 +126,22 @@ describe("ce qui demande l'attention de l'administrateur", () => {
     expect(attention.recommendations.map((entry) => `${entry.id}:${String(entry.variant)}`)).toEqual([
       "publicUrl:not-https", "tmdbKey:null", "directPlay:off",
     ]);
+  });
+
+  it("greffons de passages manquants : une entrée à eux, pas dans les réglages groupés", () => {
+    const setup = { restartPending: false, checks: [{ id: "segmentsProvider" as const, level: "recommended" as const, state: "todo" as const }] };
+    const attention = buildAdminAttention({ ...healthy, jellyfinSetup: setup });
+    expect(attention.recommendations).toEqual([{ id: "segmentPlugins", hint: "adminSegmentPlugins", variant: null, items: [] }]);
+  });
+
+  it("greffons de passages posés : leur entrée dit le redémarrage, l'entrée Jellyfin aussi s'il est signalé", () => {
+    const setup = { restartPending: false, checks: [{ id: "segmentsProvider" as const, level: "recommended" as const, state: "pending-restart" as const }] };
+    expect(buildAdminAttention({ ...healthy, jellyfinSetup: setup }).recommendations).toEqual([
+      { id: "segmentPlugins", hint: "adminSegmentPlugins", variant: "restart", items: [] },
+    ]);
+    // Masquée par le compte, Jellyfin injoignable : elle se tait comme le reste.
+    expect(buildAdminAttention({ ...healthy, jellyfinSetup: setup, dismissed: { ...healthy.dismissed, segmentPlugins: true } }).hidden.map((e) => e.id)).toEqual(["segmentPlugins"]);
+    expect(buildAdminAttention({ ...healthy, jellyfin: { state: "unreachable" }, jellyfinSetup: setup }).recommendations).toEqual([]);
   });
 
   it("lecture directe bloquée par le navigateur : le souci le plus grave donne le titre", () => {

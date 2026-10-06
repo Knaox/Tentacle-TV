@@ -12,7 +12,8 @@ import type { ServerUpdateStatus } from "../serverUpdate/serverUpdateStatus";
  *   d'administration absente ou refusée, base en panne, version de Jellyfin
  *   incompatible, mise à jour du serveur obligatoire). Jamais masquable.
  * - RECOMMANDATIONS : ce qui rendrait Tentacle meilleur (lien public et
- *   HTTPS, clé TMDB, réglages conseillés de Jellyfin, lecture directe).
+ *   HTTPS, clé TMDB, réglages conseillés de Jellyfin, détection des
+ *   passages, lecture directe).
  *   Chacune se masque par compte (`RECOMMENDATION_HINTS`, rappels de
  *   `/api/preferences/hints`) et se retrouve sous « N masquées ».
  *
@@ -31,18 +32,19 @@ export type BlockingId =
   | "jellyfinIncompatible"
   | "serverUpdateRequired";
 
-export type RecommendationId = "publicUrl" | "tmdbKey" | "jellyfin" | "directPlay";
+export type RecommendationId = "publicUrl" | "tmdbKey" | "jellyfin" | "segmentPlugins" | "directPlay";
 
 /** Le rappel qui masque chaque recommandation — des clés à elles, distinctes des fenêtres des clients. */
 export const RECOMMENDATION_HINTS: Record<RecommendationId, DismissibleHint> = {
   publicUrl: "adminPublicUrl",
   tmdbKey: "adminTmdbKey",
   jellyfin: "adminJellyfin",
+  segmentPlugins: "adminSegmentPlugins",
   directPlay: "adminDirectPlay",
 };
 
 /** L'ordre de lecture : la sécurité, puis ce que voient tous les comptes, puis le confort. */
-const RECOMMENDATION_ORDER: readonly RecommendationId[] = ["publicUrl", "tmdbKey", "jellyfin", "directPlay"];
+const RECOMMENDATION_ORDER: readonly RecommendationId[] = ["publicUrl", "tmdbKey", "jellyfin", "segmentPlugins", "directPlay"];
 
 export type JellyfinLink =
   | { state: "connected" }
@@ -144,7 +146,8 @@ function jellyfinItems(s: AttentionSources): { variant: string | null; items: st
   // aussi le redémarrage de Jellyfin, même quand Jellyfin ne le signale pas encore.
   let restart = s.jellyfinSetup?.restartPending === true;
   for (const check of s.jellyfinSetup?.checks ?? []) {
-    if (check.level === "optional") continue;
+    // Les greffons de passages ont leur entrée à eux (`segmentPlugins`).
+    if (check.level === "optional" || check.id === SEGMENTS_CHECK) continue;
     restart ||= check.state === "pending-restart";
     if (check.state !== "todo") continue;
     items.push(`setup:${check.id}`);
@@ -155,6 +158,18 @@ function jellyfinItems(s: AttentionSources): { variant: string | null; items: st
   return items.length > 0 ? { variant: essential ? "essential" : null, items } : null;
 }
 
+const SEGMENTS_CHECK = "segmentsProvider";
+
+/**
+ * Les greffons de passages (Intro Skipper, TheIntroDB, SkipMe.db) : il en
+ * manque un — à installer d'un geste —, ou ils attendent le redémarrage.
+ */
+function segmentPluginsItem(s: AttentionSources): { variant: string | null; items: string[] } | null {
+  const state = s.jellyfinSetup?.checks.find((check) => check.id === SEGMENTS_CHECK)?.state;
+  if (state === "todo") return { variant: null, items: [] };
+  return state === "pending-restart" ? { variant: "restart", items: [] } : null;
+}
+
 function candidates(s: AttentionSources): Map<RecommendationId, { variant: string | null; items: string[] }> {
   const found = new Map<RecommendationId, { variant: string | null; items: string[] }>();
   const usable = jellyfinUsable(s);
@@ -163,6 +178,8 @@ function candidates(s: AttentionSources): Map<RecommendationId, { variant: strin
   if (s.tmdbConfigured === false) found.set("tmdbKey", { variant: null, items: [] });
   const jellyfin = usable ? jellyfinItems(s) : null;
   if (jellyfin) found.set("jellyfin", jellyfin);
+  const segments = usable ? segmentPluginsItem(s) : null;
+  if (segments) found.set("segmentPlugins", segments);
   const directPlay = usable ? linkEntry(s.links?.find((check) => check.id === "directPlay")) : null;
   if (directPlay) found.set("directPlay", directPlay);
   return found;

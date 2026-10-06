@@ -102,6 +102,11 @@ export default {
   entry_jellyfin_partial: "With Jellyfin {{version}}, some Tentacle features are missing.",
   entry_jellyfin_compatLink: "See compatibility",
   entry_jellyfin_allSettings: "All Jellyfin settings",
+  entry_segmentPlugins_title: "Install skip detection",
+  entry_segmentPlugins_body: "“Skip intro” and “Skip credits” come from Jellyfin plugins, and some are missing. Tentacle installs and sets them up in one go.",
+  entry_segmentPlugins_restart_title: "Restart Jellyfin for skip detection",
+  entry_segmentPlugins_restart_body: "The plugins are in place; they will be active after Jellyfin restarts.",
+  entry_segmentPlugins_action: "Install / repair",
 
   entry_directPlay_off_title: "Turn on direct play",
   entry_directPlay_off_body: "Videos would come straight from Jellyfin instead of through Tentacle: better quality, lighter server.",

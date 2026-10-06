@@ -19,6 +19,7 @@ const ENTRIES: Record<string, readonly (string | null)[]> = {
   serverUpdateRequired: [null],
   publicUrl: ["missing", "not-https", "not-public", "internal-host", "other-server", "unverified"],
   tmdbKey: [null],
+  segmentPlugins: [null, "restart"],
   directPlay: ["off", "mixed-content", "cors-missing", "not-public", "internal-host", "unverified"],
 };
 

@@ -102,6 +102,11 @@ export default {
   entry_jellyfin_partial: "Avec Jellyfin {{version}}, certaines fonctions de Tentacle manquent.",
   entry_jellyfin_compatLink: "Voir la compatibilité",
   entry_jellyfin_allSettings: "Tous les réglages de Jellyfin",
+  entry_segmentPlugins_title: "Installer la détection des passages",
+  entry_segmentPlugins_body: "« Passer l'intro » et « Passer le générique » viennent de greffons de Jellyfin, et il en manque. Tentacle les installe et les règle d'un geste.",
+  entry_segmentPlugins_restart_title: "Redémarrer Jellyfin pour la détection des passages",
+  entry_segmentPlugins_restart_body: "Les greffons sont posés ; ils seront actifs après un redémarrage de Jellyfin.",
+  entry_segmentPlugins_action: "Installer / réparer",
 
   entry_directPlay_off_title: "Activer la lecture directe",
   entry_directPlay_off_body: "Les vidéos partiraient de Jellyfin sans repasser par Tentacle : meilleure qualité, serveur moins chargé.",

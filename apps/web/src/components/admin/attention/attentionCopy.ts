@@ -27,6 +27,7 @@ export const ENTRY_ACTION: Record<EntryId, EntryAction> = {
   publicUrl: { kind: "link", to: "/admin/services#publicurl", label: "configure" },
   tmdbKey: { kind: "link", to: "/admin/metadata", label: "configure" },
   jellyfin: { kind: "toggle", label: "entry_jellyfin_action", hideLabel: "entry_jellyfin_hideAction" },
+  segmentPlugins: { kind: "link", to: "/admin/services#segments", label: "entry_segmentPlugins_action" },
   directPlay: { kind: "link", to: "/admin/services#directstreaming", label: "configure" },
 };
 

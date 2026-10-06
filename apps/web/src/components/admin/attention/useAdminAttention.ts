@@ -55,8 +55,9 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
   const publicUrl = useIsHintDismissed("adminPublicUrl");
   const tmdbKey = useIsHintDismissed("adminTmdbKey");
   const jellyfin = useIsHintDismissed("adminJellyfin");
+  const segmentPlugins = useIsHintDismissed("adminSegmentPlugins");
   const directPlay = useIsHintDismissed("adminDirectPlay");
-  const hintsKnown = [publicUrl, tmdbKey, jellyfin, directPlay].every((value) => value !== undefined);
+  const hintsKnown = [publicUrl, tmdbKey, jellyfin, segmentPlugins, directPlay].every((value) => value !== undefined);
   const [hintsGraceOver, setHintsGraceOver] = useState(false);
   useEffect(() => {
     if (hintsKnown) return;
@@ -65,8 +66,8 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
   }, [hintsKnown]);
   const dismissed = useMemo(() => {
     const or = (value: boolean | undefined) => value ?? (hintsGraceOver ? false : undefined);
-    return { publicUrl: or(publicUrl), tmdbKey: or(tmdbKey), jellyfin: or(jellyfin), directPlay: or(directPlay) };
-  }, [publicUrl, tmdbKey, jellyfin, directPlay, hintsGraceOver]);
+    return { publicUrl: or(publicUrl), tmdbKey: or(tmdbKey), jellyfin: or(jellyfin), segmentPlugins: or(segmentPlugins), directPlay: or(directPlay) };
+  }, [publicUrl, tmdbKey, jellyfin, segmentPlugins, directPlay, hintsGraceOver]);
 
   const checks = useMemo(() => (links.data ? evaluateServerLinks(links.data) : null), [links.data]);
   const report = update.data;
