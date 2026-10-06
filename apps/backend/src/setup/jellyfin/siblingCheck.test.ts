@@ -1,15 +1,11 @@
+import type { NetworkInterfaceInfo } from "os";
 import { describe, expect, it } from "vitest";
 import { checkSiblingNetwork } from "./siblingCheck";
 
-const iface = (cidr: string, internal = false) => ({
-  address: cidr.split("/")[0],
-  netmask: "",
-  family: cidr.includes(":") ? ("IPv6" as const) : ("IPv4" as const),
-  mac: "",
-  internal,
-  cidr,
-  ...(cidr.includes(":") ? { scopeid: 0 } : {}),
-});
+const iface = (cidr: string, internal = false): NetworkInterfaceInfo =>
+  cidr.includes(":")
+    ? { address: cidr.split("/")[0], netmask: "", family: "IPv6", mac: "", internal, cidr, scopeid: 0 }
+    : { address: cidr.split("/")[0], netmask: "", family: "IPv4", mac: "", internal, cidr };
 // Le conteneur de Tentacle : le réseau de sa pile (172.20.0.0/16), sa boucle locale, un lien local IPv6.
 const container = () => ({ lo: [iface("127.0.0.1/8", true)], eth0: [iface("172.20.0.4/16"), iface("fe80::1/64")] });
 const deps = (addresses: string[]) => ({ resolve: async () => addresses, interfaces: container });
