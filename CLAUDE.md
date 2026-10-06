@@ -556,6 +556,11 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   donc par le module paresseux de la page Services (`AdminServicesPage section="remote-access"`).
 - **Guides des box** (`remoteAccess/routerGuides.ts`) : seulement des pages officielles vérifiées, datées ;
   ce qui n'est pas confirmé vaut `null` (SFR : site fermé à nos outils).
+- **Banc de bout en bout** (`apps/server-e2e`, JAMAIS lancé par `pnpm test`) : de vraies piles, un vrai
+  Jellyfin (10.11, 12.1), le Chrome du système, Caddy et Traefik —
+  `pnpm --filter @tentacle-tv/server-e2e test:e2e`, variables dans son README (colima : `E2E_COMPOSE`,
+  `DOCKER_HOST`). Ce qui attend un humain : le test réel en 4G (`REAL-TEST.md`) et Linux + Podman + GPU
+  (`stacks/tests/linux-podman-gpu.sh`, préparé, pas validé).
 
 ## Panne de Jellyfin — un état dit par le serveur, une règle pour les lecteurs
 
