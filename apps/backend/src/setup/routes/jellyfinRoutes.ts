@@ -101,6 +101,8 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
       await adoptProvisionalAdmin(probed.url, claimKey, claimedId, body);
       await applyServerLocale(probed.url, claimKey, body);
       await forgetClaim();
+      // Sa clé « Tentacle » vient du verrouillage : c'est bien cette installation qui l'a créée.
+      await noteKeyCreated(probed.url);
       await rememberChoice(probed.url, siblingUrl, false);
       return { success: true };
     }

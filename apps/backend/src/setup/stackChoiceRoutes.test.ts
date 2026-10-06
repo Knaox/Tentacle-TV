@@ -78,6 +78,7 @@ beforeAll(async () => {
   // Le Jellyfin de la pile, verrouillé au démarrage par l'administrateur provisoire.
   stack.on("GET /System/Info/Public", () => publicInfo({ Id: "pile", ServerName: "Tentacle" }));
   adminRoutes(stack, "cle-pile");
+  stack.on("DELETE /Auth/Keys/cle-pile", { status: 204 });
   stack.on("GET /Users/prov", { status: 200, json: { Id: "prov", Name: "tentacle-setup" } });
   stack.on("POST /Users", { status: 204 });
   stack.on("POST /Users/Password", { status: 204 });
@@ -197,6 +198,8 @@ describe("pile complète : choisir un autre Jellyfin que celui de la pile", () =
 
   it("de nouveau l'autre, puis la fin : l'installation se ferme sur LUI, et le choix est oublié", async () => {
     expect((await select(other.url)).json().flow).toMatchObject({ linked: false, selection: { path: "configured" } });
+    // Celui de la pile, adopté puis abandonné : la clé que Tentacle y avait posée est révoquée.
+    expect(stack.calls("DELETE /Auth/Keys/cle-pile")).toHaveLength(1);
     expect((await call("POST", "/jellyfin/connect", { url: other.url, username: "Damien", password: PASSWORD })).json()).toEqual({ success: true });
     const done = await call("POST", "/complete", { username: "Damien", password: PASSWORD });
     expect(done.statusCode).toBe(200);
