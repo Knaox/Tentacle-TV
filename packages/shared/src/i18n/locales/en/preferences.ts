@@ -334,6 +334,10 @@ export default {
   videoEngineSystemHint: "Always the system player: the server converts what it cannot play.",
   videoEngineAdvancedHint:
     "Always the advanced player: everything plays as it is. AirPlay and Dolby Vision profile 5 go back to the system player.",
+  // Android : ni AirPlay, ni Dolby Vision profil 5, ni Atmos du système.
+  videoEngineAutoHintAndroid:
+    "The system player when it plays the file as it is, the advanced player for everything else — MKV, DTS, TrueHD, styled subtitles — with no server conversion.",
+  videoEngineAdvancedHintAndroid: "Always the advanced player: everything plays as it is.",
   preferSystemAtmos: "Prefer system Atmos",
   preferSystemAtmosHint:
     "The system player decodes Dolby Atmos (E-AC-3) for spatial audio on headphones; the server repackages the file when needed.",

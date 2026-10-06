@@ -1,8 +1,17 @@
+import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { MediaPreferencesSection } from "@/components/profile";
 import { PlaybackSettingsSection, VideoEngineSection } from "@/components/settings";
+import { isPlayerSettingShown, type PlayerSettingsContext } from "@/player/engine/playerSettingsPlatforms";
+import { isMpvAvailable } from "../../../modules/mpv-player";
 import { SettingsScaffold } from "./SettingsScaffold";
+
+/** Le seul endroit où l'écran lit la plateforme : la table décide du reste. */
+const settingsContext = (): PlayerSettingsContext => ({
+  platform: Platform.OS === "android" ? "android" : "ios",
+  advancedEngine: isMpvAvailable(),
+});
 
 /**
  * Sous-écran « Lecture » : ce qui suit le COMPTE d'abord (ce que le lecteur
@@ -21,11 +30,12 @@ export function PlaybackScreen() {
 }
 
 export function PlaybackPane() {
+  const ctx = settingsContext();
   return (
     <>
-      <PlaybackSettingsSection />
-      <MediaPreferencesSection />
-      <VideoEngineSection />
+      {isPlayerSettingShown("playbackMode", ctx) && <PlaybackSettingsSection />}
+      {isPlayerSettingShown("mediaLanguages", ctx) && <MediaPreferencesSection />}
+      <VideoEngineSection ctx={ctx} />
     </>
   );
 }
