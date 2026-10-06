@@ -1,5 +1,5 @@
 import type { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { hasWideHeroImage, type MediaItem } from "@tentacle-tv/shared";
 import { TV_AMBILIGHT } from "@tentacle-tv/theme";
 import { HeroContent } from "@/components/HeroBannerContent";
 import { heroImageUrl, heroPosterUrl } from "./heroImages";
@@ -25,6 +25,8 @@ export function mediaHeroSlides(
   return items.map((item) => ({
     id: item.Id,
     backdropUri: heroImageUrl(client, item),
+    mediaId: item.Id,
+    wideUri: hasWideHeroImage(item) ? heroImageUrl(client, item) : null,
     haloUri: heroImageUrl(client, item, TV_AMBILIGHT.sourceWidth, 70),
     posterUri: heroPosterUrl(client, item),
     haloPosterUri: heroPosterUrl(client, item, TV_AMBILIGHT.sourceWidth, 70),

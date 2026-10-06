@@ -20,6 +20,12 @@ export interface HeroSlide {
   /** Source minuscule du halo quand la carte montre l'affiche : la lueur
    *  prolonge l'image VISIBLE, pas une autre. */
   haloPosterUri?: string | null;
+  /** Le titre Jellyfin, pour son REPLI côté serveur (fond TMDB, autre image
+   *  Jellyfin) quand ses visuels manquent ou échouent. Absent : aucun repli. */
+  mediaId?: string;
+  /** Le visuel LARGE annoncé seulement (`null` : le titre n'en a pas) — là
+   *  où `backdropUri` retombe sur l'affiche. Absent : `backdropUri`. */
+  wideUri?: string | null;
   /** Le bloc texte/CTA ; `active` rejoue la cascade d'entrée. */
   render: (active: boolean) => ReactNode;
 }

@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
-import { slideVisual, type HeroSlide } from "./heroSlides";
+import { useHeroArtworkUrls } from "@tentacle-tv/api-client";
+import { heroSlideNeedsArtwork, heroSlideSource } from "@tentacle-tv/shared";
+import type { HeroSlide } from "./heroSlides";
+
+/** La taille du repli Jellyfin : celle du visuel large (`heroImageUrl`). */
+const ARTWORK_SIZE = { width: 1280, quality: 85 };
 
 // Synced with web/HeroBackdrop : the new slide arrives exactly when the
 // scale 1 → 1.06 zoom cycle ends, so the carousel feels like an uninterrupted
@@ -22,27 +27,20 @@ interface HeroBackdropStackProps {
 export function HeroBackdropStack({ slides, activeIndex, portrait }: HeroBackdropStackProps) {
   return (
     <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-      {slides.map((slide, i) => {
-        const url = slideVisual(slide, portrait);
-        if (!url) return null;
-        // Le second choix : l'autre visuel du titre — le large en portrait,
-        // l'affiche en paysage (un fond en 404 ne laisse plus la carte vide).
-        const other = url === slide.backdropUri ? (slide.posterUri ?? null) : slide.backdropUri;
-        const fallbackUrl = other === url ? null : other;
-        return <CrossfadeImage key={slide.id} url={url} fallbackUrl={fallbackUrl} active={i === activeIndex} />;
-      })}
+      {slides.map((slide, i) => (
+        <CrossfadeImage key={slide.id} slide={slide} portrait={portrait} active={i === activeIndex} />
+      ))}
     </View>
   );
 }
 
 interface CrossfadeImageProps {
-  url: string;
-  /** Le visuel large, si l'affiche demandée n'existe pas. */
-  fallbackUrl?: string | null;
+  slide: HeroSlide;
+  portrait: boolean;
   active: boolean;
 }
 
-function CrossfadeImage({ url, fallbackUrl, active }: CrossfadeImageProps) {
+function CrossfadeImage({ slide, portrait, active }: CrossfadeImageProps) {
   // Linear scale 1 → 1.06 over HERO_ROTATE_MS — perceived as constant-speed travel.
   // No reset when becoming inactive: the image fades to opacity 0 first, then
   // the next activation snaps scale back to 1 *while invisible*, avoiding the
@@ -54,11 +52,15 @@ function CrossfadeImage({ url, fallbackUrl, active }: CrossfadeImageProps) {
     if (active) { scale.value = 1; scale.value = withTiming(HERO_ZOOM_TARGET, { duration: HERO_ROTATE_MS, easing: Easing.linear }); }
   }, [active, opacity, scale]);
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ scale: scale.value }] }));
-  // Image introuvable (affiche ou backdrop Jellyfin absent) : on retombe sur
-  // le visuel large, puis sur l'aplat et les voiles du cadre — jamais d'icône
-  // cassée.
+  // Image introuvable : l'autre visuel du titre, puis son REPLI côté serveur
+  // (le fond TMDB, sinon toute image Jellyfin du titre et de sa série), puis
+  // l'aplat et les voiles du cadre — jamais d'icône cassée. La règle est
+  // partagée avec le miroir (`heroSlideSource`).
   const [failed, setFailed] = useState<readonly string[]>([]);
-  const src = [url, fallbackUrl].find((u): u is string => !!u && !failed.includes(u)) ?? null;
+  const sources = { wide: slide.wideUri !== undefined ? slide.wideUri : slide.backdropUri, poster: slide.posterUri, portrait, failed };
+  const lookUp = active && !!slide.mediaId && heroSlideNeedsArtwork(sources);
+  const artwork = useHeroArtworkUrls(slide.mediaId, lookUp, ARTWORK_SIZE);
+  const src = heroSlideSource({ ...sources, artwork });
   return (
     <Animated.View style={[StyleSheet.absoluteFillObject, animStyle]}>
       {src && (
