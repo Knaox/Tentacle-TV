@@ -1,5 +1,5 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { heroImageFor, type MediaItem } from "@tentacle-tv/shared";
 
 /** Largeur du backdrop de bannière — une seule définition pour toute l'app. */
 export const HERO_BACKDROP_WIDTH = 1920;
@@ -41,4 +41,22 @@ export function heroBackdropUrl(client: JellyfinClient, item: MediaItem | undefi
 /** Premier item de la liste qui possède un backdrop exploitable. */
 export function firstBackdropItem(items: MediaItem[] | undefined): MediaItem | null {
   return items?.find((item) => resolveBackdropId(item) !== null) ?? null;
+}
+
+/**
+ * L'image de la bannière d'ACCUEIL pour un titre : la première de la règle
+ * partagée (`heroImageFor` : fond, fond du parent, vignette, affiche) qui n'a
+ * pas déjà échoué, ou `null`. Le fond d'un titre qui en a un garde l'URL de
+ * `heroBackdropUrl` à l'octet près (même largeur, même qualité) : la fiche et
+ * la transition d'ouverture reprennent la même image en cache.
+ */
+export function homeHeroImageUrl(
+  client: Pick<JellyfinClient, "getImageUrl">,
+  item: MediaItem,
+  failed: ReadonlySet<string>,
+  width = HERO_BACKDROP_WIDTH,
+  quality = 85
+): string | null {
+  const ref = heroImageFor(item, failed);
+  return ref ? client.getImageUrl(ref.id, ref.type, { width, quality }) : null;
 }

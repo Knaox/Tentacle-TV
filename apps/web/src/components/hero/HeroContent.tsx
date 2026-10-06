@@ -18,6 +18,8 @@ import { fadeUp, textCascade } from "../../theme/motion";
 interface HeroContentProps {
   item: MediaItem;
   animationKey: number;
+  /** L'image affichée par la bannière (cf. HeroActions). */
+  imageUrl?: string | null;
 }
 
 /**
@@ -34,7 +36,7 @@ interface HeroContentProps {
  * Sous `prefers-reduced-motion`, les variants sont absents : le contenu
  * s'affiche d'un coup, sans animation.
  */
-export function HeroContent({ item, animationKey }: HeroContentProps) {
+export function HeroContent({ item, animationKey, imageUrl }: HeroContentProps) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const reduced = useReducedMotion();
@@ -161,7 +163,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         )}
 
         <motion.div variants={itemVariants}>
-          <HeroActions item={item} onPlay={handlePlay} resuming={hasProgress} episodeCode={episodeCode} />
+          <HeroActions item={item} onPlay={handlePlay} resuming={hasProgress} episodeCode={episodeCode} imageUrl={imageUrl} />
         </motion.div>
       </motion.div>
     </div>

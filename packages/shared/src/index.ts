@@ -7,6 +7,7 @@ export * from "./utils/trickplay";
 export * from "./utils/cardImage";
 // Le logo d'une œuvre — le sien, sinon celui de sa série — seulement s'il est annoncé.
 export * from "./utils/logoImage";
+export * from "./hero";
 export * from "./utils/cardRating";
 export * from "./utils/cardMarkers";
 export * from "./utils/cardMarkerGlyphs";

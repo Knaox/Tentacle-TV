@@ -29,6 +29,10 @@ interface HeroActionsProps {
   resuming: boolean;
   /** Code S/E affiché en suffixe du CTA quand une reprise est proposée. */
   episodeCode: string | null;
+  /** L'image que la bannière montre — la transition d'ouverture reprend
+   *  CELLE-LÀ (un repli sur l'affiche, pas un fond en 404). Absente : le fond
+   *  de `heroBackdropUrl`. */
+  imageUrl?: string | null;
 }
 
 /**
@@ -40,7 +44,7 @@ interface HeroActionsProps {
  * un épisode. Le CTA secondaire comble ce trou ; il reste en verre discret pour
  * que la hiérarchie visuelle continue de désigner « Lecture ».
  */
-export function HeroActions({ item, onPlay, resuming, episodeCode }: HeroActionsProps) {
+export function HeroActions({ item, onPlay, resuming, episodeCode, imageUrl }: HeroActionsProps) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const client = useJellyfinClient();
@@ -63,7 +67,7 @@ export function HeroActions({ item, onPlay, resuming, episodeCode }: HeroActions
    */
   const openDetail = (e: React.MouseEvent) => {
     const frame = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hero-frame]");
-    const url = heroBackdropUrl(client, item);
+    const url = imageUrl !== undefined ? imageUrl : heroBackdropUrl(client, item);
     if (frame && url) {
       const radius = parseFloat(getComputedStyle(frame).borderTopLeftRadius) || 0;
       captureDetailOrigin(frame, item.Id, url, radius);

@@ -16,9 +16,12 @@ interface FakeRow extends Record<string, unknown> {
 const rows = new Map<string, FakeRow>();
 const caps = vi.hoisted(() => ({ tmdb: true, seerr: null as { url: string } | null }));
 const ws = vi.hoisted(() => ({ sendToUser: vi.fn() }));
+/** Le faux Jellyfin des titres : ceux que le compte voit, et Jellyfin muet. */
+const jf = vi.hoisted(() => ({ visible: new Set<string>(), down: false, itemsCalls: 0 }));
 
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
+  getJellyfinApiKey: () => "cle-banc",
 }));
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
@@ -59,9 +62,24 @@ beforeEach(() => {
   caps.tmdb = true;
   caps.seerr = null;
   ws.sendToUser.mockClear();
+  jf.visible = new Set();
+  jf.down = false;
+  jf.itemsCalls = 0;
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/Items") {
+        jf.itemsCalls++;
+        if (jf.down) throw new TypeError("fetch failed");
+        // Comme Jellyfin 10.11 : un `Ids` qui n'est pas un GUID est ignoré,
+        // et la réponse liste d'autres titres.
+        const id = url.searchParams.get("Ids") ?? "";
+        const items = /^[0-9a-f]{32}$/i.test(id.replace(/-/g, ""))
+          ? [...jf.visible].filter((v) => v === id.replace(/-/g, "").toLowerCase()).map((Id) => ({ Id }))
+          : [{ Id: "dossierfilms" }];
+        return new Response(JSON.stringify({ Items: items }), { status: 200 });
+      }
       if (String(input).includes("/Users/Me")) {
         return new Response(
           JSON.stringify({ Id: "u1", Name: "banc", Policy: { IsAdministrator: false } }),
@@ -202,5 +220,60 @@ describe("GET/PUT /api/preferences/home-layout", () => {
       catalog: FULL,
     });
     await app.close();
+  });
+
+  describe("titre fixe du héros", () => {
+    const FIXED = "0123456789abcdef0123456789abcdef";
+    const fixedRow = (id: string) => ({
+      jellyfinUserId: "u1",
+      heroMode: "fixed",
+      heroFixedItemId: id,
+      rows: "[]",
+      cardDensity: "normal",
+    });
+
+    it("effacé de Jellyfin ou caché au compte : servi en « reprise », rien n'est réécrit", async () => {
+      rows.set("u1", fixedRow(FIXED));
+      const app = await makeApp();
+      const body = (await app.inject({ method: "GET", url: URL_PATH, headers })).json();
+      expect(body.layout.heroMode).toBe("resume");
+      expect(body.layout.heroFixedItemId).toBe(FIXED);
+      expect(body.heroFixedMissing).toBe(true);
+      expect(rows.get("u1")?.heroMode).toBe("fixed");
+      await app.close();
+    });
+
+    it("présent (tirets ou non) : servi tel quel", async () => {
+      jf.visible.add(FIXED);
+      rows.set("u1", fixedRow("01234567-89ab-cdef-0123-456789abcdef"));
+      const app = await makeApp();
+      const body = (await app.inject({ method: "GET", url: URL_PATH, headers })).json();
+      expect(body.layout.heroMode).toBe("fixed");
+      expect(body.heroFixedMissing).toBeUndefined();
+      await app.close();
+    });
+
+    it("un id qui n'est pas un GUID ne passe pas pour présent (Jellyfin ignore alors le filtre)", async () => {
+      rows.set("u1", fixedRow("pas-un-guid"));
+      const app = await makeApp();
+      expect((await app.inject({ method: "GET", url: URL_PATH, headers })).json().layout.heroMode).toBe("resume");
+      await app.close();
+    });
+
+    it("Jellyfin muet : on ne décide rien, le choix est servi", async () => {
+      jf.down = true;
+      rows.set("u1", fixedRow(FIXED));
+      const app = await makeApp();
+      expect((await app.inject({ method: "GET", url: URL_PATH, headers })).json().layout.heroMode).toBe("fixed");
+      await app.close();
+    });
+
+    it("un autre mode ne coûte aucune requête à Jellyfin", async () => {
+      rows.set("u1", { ...fixedRow(FIXED), heroMode: "reco" });
+      const app = await makeApp();
+      expect((await app.inject({ method: "GET", url: URL_PATH, headers })).json().layout.heroMode).toBe("reco");
+      expect(jf.itemsCalls).toBe(0);
+      await app.close();
+    });
   });
 });

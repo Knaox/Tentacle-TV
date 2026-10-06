@@ -28,6 +28,9 @@ import { useRecoFilterChipRow } from "@/components/reco/useRecoFilterChipRow";
 import { ProblemState } from "@/components/problems/ProblemState";
 import { spacing, useTheme } from "@/theme";
 
+/** Une source du héros en échec : rien (identité stable). */
+const NO_HERO_ITEMS: MediaItem[] = [];
+
 /** Les caches que « tirer pour rafraîchir » renouvelle, au-delà des requêtes
  *  déjà tenues par l'écran : la mise en page et les rangées auto-alimentées. */
 const REFRESH_KEYS: string[][] = [
@@ -92,8 +95,9 @@ export function HomeScreen() {
   // Le bandeau suit le mode du compte (reprise, aléatoire, titre fixe, reco).
   const { slides: heroSlides, loading: heroLoading } = useHomeHero({
     layout,
-    resume: resume.data,
-    featured: featured.data,
+    // Une source en échec ne s'attend plus : elle vaut « rien ».
+    resume: resume.data ?? (resume.isError ? NO_HERO_ITEMS : undefined),
+    featured: featured.data ?? (featured.isError ? NO_HERO_ITEMS : undefined),
     onPlay: handlePlay,
     onInfo: handlePress,
     onRecoOpen: recoNav.open,

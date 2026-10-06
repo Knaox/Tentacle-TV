@@ -5,6 +5,7 @@ import type { JellyfinUser } from "../middleware/auth";
 import { homeRowCatalog, isKnownHomeRowKey, serverHomeRowCapabilities } from "../services/homeRowCatalog";
 import type { HomeRowDescriptor } from "../services/homeRowCatalog";
 import { notifyPreferencesUpdate } from "./preferences.notify";
+import { isFixedHeroItemVisible } from "../services/fixedHeroItem";
 
 // Clés de rangées admises : celles du catalogue — TOUTES, quel que soit l'état
 // des capacités du moment — et les bibliothèques dynamiques (`library:<guid>`).
@@ -50,14 +51,23 @@ export function registerHomeLayoutRoutes(app: FastifyInstance): void {
     } catch {
       // JSON illisible : le catalogue — la prochaine sauvegarde réécrit proprement.
     }
+    // Titre fixe effacé de Jellyfin ou caché au compte : le héros est servi en
+    // « reprise ». Les clients livrés (le bureau, l'app du Microsoft Store)
+    // rendaient sinon une bannière NOIRE, sans titre ni bouton. Rien n'est
+    // réécrit : le titre revenu (bibliothèque rouverte), le choix revient.
+    const fixedMissing =
+      row.heroMode === "fixed" &&
+      !!row.heroFixedItemId &&
+      (await isFixedHeroItemVisible(user.userId, row.heroFixedItemId)) === false;
     return {
       stored: true,
       layout: {
-        heroMode: row.heroMode,
+        heroMode: fixedMissing ? "resume" : row.heroMode,
         heroFixedItemId: row.heroFixedItemId,
         rows,
         cardDensity: row.cardDensity,
       },
+      ...(fixedMissing ? { heroFixedMissing: true } : {}),
       catalog,
     };
   });

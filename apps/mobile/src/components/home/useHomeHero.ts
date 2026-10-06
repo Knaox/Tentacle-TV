@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useJellyfinClient, useMediaItem, useRecoHeroSlides, useRecoSettings } from "@tentacle-tv/api-client";
 import type { HomeLayoutData, RecoRowItem } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { pickHeroMedia, type MediaItem } from "@tentacle-tv/shared";
 import type { HeroSlide } from "@/components/hero/heroSlides";
 import { mediaHeroSlides } from "@/components/hero/mediaHeroSlides";
 import { recoHeroSlides } from "@/components/reco/hero/recoHeroSlides";
@@ -11,6 +11,7 @@ const NO_SLIDES: HeroSlide[] = [];
 
 interface HomeHeroInput {
   layout: HomeLayoutData | undefined;
+  /** `undefined` tant que la source n'a pas répondu ; en échec : `[]`. */
   resume: MediaItem[] | undefined;
   featured: MediaItem[] | undefined;
   onPlay: (item: MediaItem) => void;
@@ -39,11 +40,14 @@ export function useHomeHero(input: HomeHeroInput): { slides: HeroSlide[]; loadin
   const fixedId = heroMode === "fixed" ? (input.layout?.heroFixedItemId ?? undefined) : undefined;
   const fixed = useMediaItem(fixedId);
 
-  const mediaItems = useMemo(() => {
-    if (heroMode === "random") return input.featured ?? [];
-    if (heroMode === "fixed" && fixed.data) return [fixed.data];
-    return input.resume && input.resume.length > 0 ? input.resume.slice(0, 5) : input.featured ?? [];
-  }, [heroMode, input.featured, input.resume, fixed.data]);
+  // La règle PARTAGÉE (shared `pickHeroMedia`, celle du web et de la TV) :
+  // titre fixe effacé (404) → la reprise ; jamais un titre sans image.
+  const fixedState = !fixedId ? null : (fixed.data ?? (fixed.isError ? null : undefined));
+  const pick = useMemo(
+    () => pickHeroMedia(heroMode, { resume: input.resume, featured: input.featured, fixed: fixedState }),
+    [heroMode, input.resume, input.featured, fixedState],
+  );
+  const mediaItems = pick.items;
   const mediaSlides = useMemo(
     () => mediaHeroSlides(mediaItems, client, { onPlay: input.onPlay, onInfo: input.onInfo }),
     [mediaItems, client, input.onPlay, input.onInfo],
@@ -55,8 +59,9 @@ export function useHomeHero(input: HomeHeroInput): { slides: HeroSlide[]; loadin
     [heroMode, recoHero.slides, client, input.onRecoOpen, input.canOpenReco],
   );
 
-  const slides = heroMode === "reco" && recoSlides.length > 0 ? recoSlides : mediaSlides;
-  // Sélection fixe en cours de chargement : le squelette, pas la reprise puis un saut.
-  const loading = heroMode === "fixed" && !!fixedId && fixed.isPending;
+  const showReco = heroMode === "reco" && recoSlides.length > 0;
+  const slides = showReco ? recoSlides : mediaSlides;
+  // Ce que le mode attend n'a pas répondu : le squelette, pas un saut ensuite.
+  const loading = !showReco && pick.pending;
   return { slides, loading };
 }

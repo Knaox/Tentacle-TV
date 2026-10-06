@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFeaturedItems, useHomeLayout, useMediaItem, useResumeItems, type RecoRowItem } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { hasHeroImage, type MediaItem } from "@tentacle-tv/shared";
 import {
   HERO_SOURCE_WAIT_MS,
   heroItemsFrom,
@@ -28,6 +28,17 @@ function settledList(query: { data?: MediaItem[]; isError: boolean }): MediaItem
 }
 
 /**
+ * Les seuls titres qui ANNONCENT une image (shared `hasHeroImage`, la règle du
+ * web et du mobile) : Jellyfin 10.11 ignore `HasBackdrop` dans la sélection
+ * (mesuré), et un titre sans image laissait un héros sans décor. Une source
+ * qui n'en garde aucun cède la place au repli de tv-core.
+ */
+function withImage(list: readonly MediaItem[] | undefined): MediaItem[] | undefined {
+  if (!list) return undefined;
+  return list.every(hasHeroImage) ? (list as MediaItem[]) : list.filter(hasHeroImage);
+}
+
+/**
  * Les titres du héros selon le mode que le compte a choisi — gardé par le
  * SERVEUR (`useHomeLayout`, la mise en page de l'accueil, persistée : connue
  * dès le démarrage à froid), le même que le web, le bureau et le mobile. Les
@@ -37,12 +48,16 @@ function settledList(query: { data?: MediaItem[]; isError: boolean }): MediaItem
 export function useHeroSources(): HeroSources {
   const layoutQuery = useHomeLayout();
   const mode = heroModeOf(layoutQuery.data, layoutQuery.isError);
-  const resume = settledList(useResumeItems());
-  const featured = settledList(useFeaturedItems());
+  const resumeList = settledList(useResumeItems());
+  const featuredList = settledList(useFeaturedItems());
+  const resume = useMemo(() => withImage(resumeList), [resumeList]);
+  const featured = useMemo(() => withImage(featuredList), [featuredList]);
 
   const fixedId = mode === "fixed" ? (layoutQuery.data?.heroFixedItemId ?? undefined) : undefined;
   const fixedQuery = useMediaItem(fixedId);
-  const fixed = !fixedId ? null : fixedQuery.data?.Id === fixedId ? fixedQuery.data : fixedQuery.isError ? null : undefined;
+  // Le titre fixe effacé (404) ou sans aucune image : « aucun », le repli.
+  const fixedData = fixedQuery.data?.Id === fixedId ? fixedQuery.data : undefined;
+  const fixed = !fixedId ? null : fixedData ? (hasHeroImage(fixedData) ? fixedData : null) : fixedQuery.isError ? null : undefined;
 
   const reco = useHomeRecoHero(mode === "reco");
 
@@ -54,7 +69,7 @@ export function useHeroSources(): HeroSources {
   }, []);
 
   const inputs = useMemo<HeroInputs<MediaItem>>(
-    () => ({ resume, featured, fixed, reco: reco.items }),
+    () => ({ resume, featured, fixed, reco: withImage(reco.items) }),
     [resume, featured, fixed, reco.items],
   );
   // La source déjà montrée reste, tant que le mode ne change pas : rien ne saute sous les yeux.
