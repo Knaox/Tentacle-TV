@@ -38,8 +38,9 @@ export type AudioPath = "passthrough" | "decoded" | "converted" | "none";
  */
 export type SubtitlePath = "native" | "text" | "burnIn" | "none";
 
-/** Ce qu'on dit au spectateur, discrètement : la conversion de l'AV1. */
-export type DeviceNotice = "av1Converted";
+/** Ce qu'on dit au spectateur, discrètement (clés `player:deviceNotice.*`) : la conversion de l'AV1. */
+export const DEVICE_NOTICES = ["av1Converted"] as const;
+export type DeviceNotice = (typeof DEVICE_NOTICES)[number];
 
 export type AudioSourceInfo = Pick<MediaStream, "Codec" | "Profile" | "Channels" | "DisplayTitle">;
 export type SubtitleSourceInfo = Pick<MediaStream, "Codec" | "IsExternal">;

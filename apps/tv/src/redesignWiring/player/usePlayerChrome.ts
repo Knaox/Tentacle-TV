@@ -6,6 +6,7 @@ import type { PlayerChromeViewProps } from "../../redesign/screens/player/Player
 import { playerChromeLabels, seekFlashLabel, type Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlayerMedia, PlayerPanel, ScrubModel } from "../../redesign/screens/player/playerTypes";
 import { useAutoCapNotice } from "../../hooks/useAutoCapNotice";
+import { useDeviceNotice } from "../../hooks/useDeviceNotice";
 import { usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
 import { playerChromeVisibility, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
@@ -157,7 +158,10 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     () => (flash ? { forward: flash.delta > 0, label: seekFlashLabel(translate, flash.delta) } : null),
     [flash, translate],
   );
-  const notice = useAutoCapNotice(!!p.autoCapActive, p.hasStarted, p.autoCapReason);
+  // « Qualité réduite » d'abord ; sinon ce que l'appareil fait convertir (Android TV).
+  const capNotice = useAutoCapNotice(!!p.autoCapActive, p.hasStarted, p.autoCapReason);
+  const deviceNotice = useDeviceNotice(p.deviceNotice, p.hasStarted);
+  const notice = capNotice ?? deviceNotice;
   // Un transcodage qui se fait attendre en pleine lecture (changement de
   // qualité, serveur lent) : rien ne bloque, une ligne sous l'indicateur.
   const bufferingHint = recovery.kind === "transcoding" ? translate("player:transcodeSlowHint") : null;

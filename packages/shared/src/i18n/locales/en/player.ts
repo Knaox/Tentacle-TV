@@ -198,4 +198,9 @@ export default {
     longHint: "Your position is saved: playback will resume as soon as it's back.",
     retry: "Try again",
   },
+  // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
+  // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).
+  deviceNotice: {
+    av1Converted: "This device can't play AV1: the server converts it",
+  },
 } as const;

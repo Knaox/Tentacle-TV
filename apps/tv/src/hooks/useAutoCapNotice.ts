@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-
-const NOTICE_MS = 5000;
+import { useOnceNotice } from "./useOnceNotice";
 
 /**
  * Le message « Qualité réduite » — quand le plafond automatique de débit
@@ -22,20 +20,7 @@ export function useAutoCapNotice(
   reason?: { measuredBps?: number; sourceBps?: number },
 ): string | null {
   const { t } = useTranslation("player");
-  const [visible, setVisible] = useState(false);
-  const shownRef = useRef(false);
-
-  useEffect(() => {
-    if (!capped) { shownRef.current = false; setVisible(false); }
-  }, [capped]);
-
-  useEffect(() => {
-    if (!capped || !ready || shownRef.current) return;
-    shownRef.current = true;
-    setVisible(true);
-    const timer = setTimeout(() => setVisible(false), NOTICE_MS);
-    return () => { clearTimeout(timer); setVisible(false); };
-  }, [capped, ready]);
+  const visible = useOnceNotice(capped, ready);
 
   if (!visible) return null;
   return reason?.measuredBps && reason.sourceBps
