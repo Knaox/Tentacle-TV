@@ -19,7 +19,7 @@ export type { ExoTextTrack } from "./playerTypes";
 
 interface ExoEvent {
   nativeEvent: {
-    type: "progress" | "load" | "firstFrame" | "end" | "error" | "tracks" | "videoSize" | "subtitles";
+    type: "progress" | "load" | "firstFrame" | "audioStarted" | "end" | "error" | "tracks" | "videoSize" | "subtitles";
     currentTime?: number;
     bufferedTime?: number;
     duration?: number;
@@ -29,6 +29,7 @@ interface ExoEvent {
     videoHeight?: number;
     pixelRatio?: number;
     text?: string;
+    audioFollows?: boolean;
   };
 }
 
@@ -54,8 +55,10 @@ interface ExoPlayerProps {
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
-  /** Android : première image posée sur la surface, son prêt (tv-core `startGate`). */
-  onFirstFrame?: () => void;
+  /** Android : première image posée sur la surface, son prêt (tv-core `startGate`) ;
+   *  `audioFollows` : le départ réel du son s'annoncera (`onAudioStarted`). */
+  onFirstFrame?: (audioFollows: boolean) => void;
+  onAudioStarted?: () => void;
   onEnd?: () => void;
   onError?: (error: string) => void;
   onTracks?: (tracks: MpvTrack[]) => void;
@@ -83,7 +86,7 @@ function dispatchCommand(ref: React.RefObject<any>, command: string, args: any[]
 
 export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
   function ExoPlayer(
-    { source, paused, progressInterval = 1000, audioPassthrough = true, frameRate, textTracks, style, onProgress, onLoad, onFirstFrame, onEnd, onError, onTracks, onVideoSize, onSubtitles },
+    { source, paused, progressInterval = 1000, audioPassthrough = true, frameRate, textTracks, style, onProgress, onLoad, onFirstFrame, onAudioStarted, onEnd, onError, onTracks, onVideoSize, onSubtitles },
     ref,
   ) {
     const nativeRef = useRef(null);
@@ -103,7 +106,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
 
     const handleEvent = useCallback(
       (event: ExoEvent) => {
-        const { type, currentTime, bufferedTime, duration, error, tracks, videoWidth, videoHeight, pixelRatio, text } = event.nativeEvent;
+        const { type, currentTime, bufferedTime, duration, error, tracks, videoWidth, videoHeight, pixelRatio, text, audioFollows } = event.nativeEvent;
         switch (type) {
           case "progress":
             onProgress?.(currentTime ?? 0, bufferedTime ?? 0);
@@ -112,7 +115,10 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
             onLoad?.(duration ?? 0);
             break;
           case "firstFrame":
-            onFirstFrame?.();
+            onFirstFrame?.(audioFollows === true);
+            break;
+          case "audioStarted":
+            onAudioStarted?.();
             break;
           case "end":
             onEnd?.();
@@ -131,7 +137,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
             break;
         }
       },
-      [onProgress, onLoad, onFirstFrame, onEnd, onError, onTracks, onVideoSize, onSubtitles],
+      [onProgress, onLoad, onFirstFrame, onAudioStarted, onEnd, onError, onTracks, onVideoSize, onSubtitles],
     );
 
     return (

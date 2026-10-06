@@ -10,7 +10,7 @@ import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
 import { usePlayerMediaState } from "../hooks/usePlayerMediaState";
 import { usePlayerStreamPipeline } from "../hooks/usePlayerStreamPipeline";
 import { useTVPlaybackLifecycle } from "../hooks/useTVPlaybackLifecycle";
-import { startHeld, useTVPlayerEventHandlers } from "../hooks/useTVPlayerEventHandlers";
+import { useTVPlayerEventHandlers } from "../hooks/useTVPlayerEventHandlers";
 import { useTVTrickplay } from "../hooks/useTVTrickplay";
 import { useTVPlayerStyle } from "../hooks/useTVPlayerStyle";
 import { useTVQualityChange } from "../hooks/useTVQualityChange";
@@ -257,7 +257,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     onRetry: () => (s.openFailed && streamUrl ? void p.restartStream({ reason: "manual" }) : p.setReloadNonce((n) => n + 1)),
     countdownTotals: playback.countdownTotals, qualityPresets: quality.qualityPresets,
     // Android : le moteur reste en pause jusqu'à sa première image (tv-core `startGate`).
-    paused, playerPaused: paused || reloadHold || startHeld(hasStarted), isLoading, hasStarted,
+    paused, playerPaused: paused || reloadHold || (!hasStarted && events.holdingStart), isLoading, hasStarted,
     videoError, displayTime, bufferedTime, displayDuration, showSettings,
     autoPlayActive, hasPreviousEpisode: !!previousEpisode,
     useExoPlayer: p.useExoPlayer, isDirectPlay, prismTextTrackIndex: p.prismTextTrackIndex, frameRate: p.frameRate, exoRef, mpvRef,
@@ -265,7 +265,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     qualityKey: quality.qualityKey, sourceQuality: p.sourceQuality, autoCapActive: p.autoCapActive, autoCapReason: p.autoCapReason,
     overlay: playback.overlay, onSkipSegment: playback.skipNow, onDismissSegment: playback.dismissOverlay,
     onPlayNextNow: playback.playNow, autoPlay, controls,
-    onLoad: handleLoad, onFirstFrame: events.handleFirstFrame, onProgress: handleProgress, onEnd: handleEnd,
+    onLoad: handleLoad, onFirstFrame: events.handleFirstFrame, onAudioStarted: events.handleAudioStarted, onProgress: handleProgress, onEnd: handleEnd,
     onError: handleError, onTracks: p.mpvTracks.handleTracks, onVideoSize: handleVideoSize,
     onPlayPause: handlePlayPause,
     // Bouton Retour de l'OSD : MÊME routage que le bouton physique (avant : sortie

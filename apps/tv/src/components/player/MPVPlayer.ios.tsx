@@ -24,8 +24,9 @@ interface MPVPlayerProps {
   prismTextTrackIndex?: number | null;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
-  /** Android seulement (tv-core `startGate`) : l'AVPlayer n'annonce rien, la prop est écartée. */
-  onFirstFrame?: () => void;
+  /** Android seulement (tv-core `startGate`) : l'AVPlayer n'annonce rien, les props sont écartées. */
+  onFirstFrame?: (audioFollows: boolean) => void;
+  onAudioStarted?: () => void;
   onEnd?: () => void;
   onError?: (error: string) => void;
   onTracks?: (tracks: MpvTrack[]) => void;
@@ -33,7 +34,7 @@ interface MPVPlayerProps {
 }
 
 export const MPVPlayer = forwardRef<MPVPlayerHandle, MPVPlayerProps>(
-  function MPVPlayer({ onFirstFrame: _onFirstFrame, ...props }, ref) {
+  function MPVPlayer({ onFirstFrame: _onFirstFrame, onAudioStarted: _onAudioStarted, ...props }, ref) {
     return <AVPlayerSurface ref={ref} {...props} />;
   },
 );

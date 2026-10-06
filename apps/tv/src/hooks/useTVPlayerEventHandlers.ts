@@ -1,19 +1,20 @@
-import { useCallback, useEffect, useRef } from "react";
-import { holdsStart, START_GATE_FALLBACK_MS, startGateOpen } from "@tentacle-tv/tv-core";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  holdsStart, START_AUDIO_WAIT_MS, START_GATE_FALLBACK_MS, startGateOpen, startReleased, type StartGateState,
+} from "@tentacle-tv/tv-core";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
 import { PLATFORM_TRAITS } from "../platform/traits";
 
 const ANNOUNCES = PLATFORM_TRAITS.playerAnnouncesFirstFrame;
 
-/** Le moteur est-il tenu en pause au démarrage (tv-core `holdsStart`) ? */
-export const startHeld = (started: boolean): boolean => holdsStart(ANNOUNCES, started);
 
 /**
  * Regroupe les callbacks transmis aux players ExoPlayer/MPV :
  *  - handleLoad : fin de préparation + reportStart (la position de départ est
  *    gérée nativement via le fragment #tnt-start de l'URL)
- *  - handleFirstFrame : première image posée, son prêt (Android) — le verrou
- *    de démarrage s'ouvre (tv-core `startGate`) : écran levé, pause levée
+ *  - handleFirstFrame / handleAudioStarted (Android) : le verrou de démarrage
+ *    (tv-core `startGate`) — la première image lève la pause, le départ réel
+ *    du son lève l'écran de chargement ; `holdingStart` dit la pause tenue
  *  - handleProgress : maj position/buffered (timeline absolue), throttling 1s
  *  - handleEnd : annonce la fin (l'arbitre en tire l'affiche ou la sortie)
  *  - rebuffering watchdog
@@ -93,50 +94,65 @@ export function useTVPlayerEventHandlers(args: {
   // les progress de l'ANCIEN flux ne doivent plus valider la lecture, sinon
   // l'écran de chargement disparaît avant que le nouveau flux soit prêt.
   // Le verrou de démarrage (tv-core `startGate`) : « prêt » du flux, première
-  // image, et le filet qui l'ouvre sans elle.
-  const firstFrameRef = useRef(false);
-  const loadedAtRef = useRef<number | null>(null);
+  // image, départ du son, et les filets qui s'en passent.
+  const gateRef = useRef<StartGateState>({ announcesFirstFrame: ANNOUNCES, loadedAt: null, firstFrameAt: null, audioFollows: false, audioStarted: false });
+  const [released, setReleased] = useState(false);
   const gateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const gateOpen = useCallback(() => startGateOpen({
-    announcesFirstFrame: ANNOUNCES, loadedAt: loadedAtRef.current, firstFrame: firstFrameRef.current,
-  }, Date.now()), []);
+  const gateOpen = useCallback(() => startGateOpen(gateRef.current, Date.now()), []);
   const clearGateTimer = useCallback(() => {
     if (gateTimerRef.current !== null) clearTimeout(gateTimerRef.current);
     gateTimerRef.current = null;
   }, []);
   useEffect(() => clearGateTimer, [clearGateTimer]);
+  /** Où en est le verrou : la pause levée, puis l'écran ; sinon, le prochain filet. */
+  const checkGate = useCallback(() => {
+    if (!ANNOUNCES) return;
+    const now = Date.now();
+    const gate = gateRef.current;
+    if (startReleased(gate, now)) setReleased(true);
+    if (startGateOpen(gate, now)) {
+      clearGateTimer();
+      if (loadedRef.current) onPlaybackActiveRef.current?.();
+      return;
+    }
+    const from = gate.firstFrameAt ?? gate.loadedAt;
+    if (from === null) return;
+    clearGateTimer();
+    const wait = (gate.firstFrameAt !== null ? START_AUDIO_WAIT_MS : START_GATE_FALLBACK_MS) - (now - from);
+    gateTimerRef.current = setTimeout(() => {
+      gateTimerRef.current = null;
+      checkGate();
+    }, Math.max(0, wait));
+  }, [clearGateTimer]);
 
   const resetLoaded = useCallback(() => {
     loadedRef.current = false;
     lastProgressPosRef.current = null;
-    firstFrameRef.current = false;
-    loadedAtRef.current = null;
+    gateRef.current = { announcesFirstFrame: ANNOUNCES, loadedAt: null, firstFrameAt: null, audioFollows: false, audioStarted: false };
+    setReleased(false);
     clearGateTimer();
   }, [clearGateTimer]);
 
   const handleLoad = useCallback((_duration: number) => {
     loadedRef.current = true;
-    loadedAtRef.current = Date.now();
+    gateRef.current.loadedAt = Date.now();
     setIsLoading(false);
     // La position de départ (cf. useTVSourceReset) tant qu'aucune progression n'est venue.
     reportStartRef.current(positionRef.current);
-    if (!ANNOUNCES) return;
-    if (firstFrameRef.current) {
-      onPlaybackActiveRef.current?.();
-      return;
-    }
-    clearGateTimer();
-    gateTimerRef.current = setTimeout(() => {
-      gateTimerRef.current = null;
-      if (loadedRef.current && gateOpen()) onPlaybackActiveRef.current?.();
-    }, START_GATE_FALLBACK_MS);
-  }, [setIsLoading, positionRef, clearGateTimer, gateOpen]);
+    checkGate();
+  }, [setIsLoading, positionRef, checkGate]);
 
-  const handleFirstFrame = useCallback(() => {
-    firstFrameRef.current = true;
-    clearGateTimer();
-    if (loadedRef.current) onPlaybackActiveRef.current?.();
-  }, [clearGateTimer]);
+  /** `audioFollows` : le départ du son s'annoncera à part (Exo, flux avec son). */
+  const handleFirstFrame = useCallback((audioFollows: boolean) => {
+    gateRef.current.firstFrameAt = Date.now();
+    gateRef.current.audioFollows = audioFollows;
+    checkGate();
+  }, [checkGate]);
+
+  const handleAudioStarted = useCallback(() => {
+    gateRef.current.audioStarted = true;
+    checkGate();
+  }, [checkGate]);
 
   const handleProgress = useCallback((currentTime: number, buffered: number) => {
     const t = Math.max(0, currentTime);
@@ -214,5 +230,9 @@ export function useTVPlayerEventHandlers(args: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { handleLoad, handleFirstFrame, handleProgress, handleEnd, notifySeek, resetLoaded };
+  return {
+    handleLoad, handleFirstFrame, handleAudioStarted, handleProgress, handleEnd, notifySeek, resetLoaded,
+    /** Le moteur est tenu en pause au démarrage (tv-core `holdsStart`). */
+    holdingStart: holdsStart(ANNOUNCES, released),
+  };
 }

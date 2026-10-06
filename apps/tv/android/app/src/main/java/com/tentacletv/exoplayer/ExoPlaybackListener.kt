@@ -12,6 +12,7 @@ import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import com.facebook.react.bridge.Arguments
 
 private const val TAG = "ExoPlayerView"
@@ -32,7 +33,7 @@ class ExoPlaybackListener(
     private val emitter: ExoEventEmitter,
     private val playerProvider: () -> ExoPlayer?,
     private val onEnded: () -> Unit,
-) : Player.Listener {
+) : Player.Listener, AnalyticsListener {
 
     /** Un seul `load` par source : remis à faux par la vue à chaque (re)chargement. */
     @Volatile var loadEmitted = false
@@ -42,12 +43,21 @@ class ExoPlaybackListener(
      *  lecteur est tenu en pause jusque-là : l'image attend sur la surface. */
     private var renderedFirstFrame = false
     private var startAnnounced = false
+    /** Le son est RÉELLEMENT sorti (l'AudioTrack avance) : l'écran de chargement peut partir. */
+    private var audioAnnounced = false
 
     /** Une nouvelle source (ou la même, rechargée) : tout se réannonce. */
     fun resetStart() {
         loadEmitted = false
         renderedFirstFrame = false
         startAnnounced = false
+        audioAnnounced = false
+    }
+
+    override fun onAudioPositionAdvancing(eventTime: AnalyticsListener.EventTime, playoutStartSystemTimeMs: Long) {
+        if (audioAnnounced) return
+        audioAnnounced = true
+        emitter.emit("audioStarted", Arguments.createMap())
     }
 
     override fun onRenderedFirstFrame() {
@@ -59,7 +69,10 @@ class ExoPlaybackListener(
         val exo = playerProvider() ?: return
         if (startAnnounced || !renderedFirstFrame || exo.playbackState != Player.STATE_READY) return
         startAnnounced = true
-        emitter.emit("firstFrame", Arguments.createMap())
+        // Un flux avec son : son départ réel s'annoncera (`audioStarted`), l'écran l'attend.
+        emitter.emit("firstFrame", Arguments.createMap().apply {
+            putBoolean("audioFollows", exo.currentTracks.isTypeSelected(C.TRACK_TYPE_AUDIO))
+        })
     }
     /** Après `loadSubtitle()` : activer le texte et forcer la VTT side-loadée au prochain onTracksChanged. */
     @Volatile var pendingSubtitleEnable = false

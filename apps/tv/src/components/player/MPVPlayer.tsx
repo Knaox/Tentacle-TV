@@ -47,8 +47,9 @@ interface MPVPlayerProps {
   prismTextTrackIndex?: number | null;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
-  /** Android : première image posée sur la surface, son prêt (tv-core `startGate`). */
-  onFirstFrame?: () => void;
+  /** Android : première image posée, son prêt (tv-core `startGate`) — mpv ne
+   *  l'annonce qu'une fois les deux prêts : le son ne s'annonce pas à part. */
+  onFirstFrame?: (audioFollows: boolean) => void;
   onEnd?: () => void;
   onError?: (error: string) => void;
   onTracks?: (tracks: MpvTrack[]) => void;
@@ -94,7 +95,7 @@ export const MPVPlayer = forwardRef<MPVPlayerHandle, MPVPlayerProps>(
             onLoad?.(duration ?? 0);
             break;
           case "firstFrame":
-            onFirstFrame?.();
+            onFirstFrame?.(false);
             break;
           case "end":
             onEnd?.();

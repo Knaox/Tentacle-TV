@@ -106,8 +106,9 @@ export interface PlayerStageBaseProps {
 
   // Handlers
   onLoad: (duration: number) => void;
-  /** Android : première image posée, son prêt (tv-core `startGate`). */
-  onFirstFrame?: () => void;
+  /** Android : première image posée, son prêt ; départ réel du son (tv-core `startGate`). */
+  onFirstFrame?: (audioFollows: boolean) => void;
+  onAudioStarted?: () => void;
   onProgress: (currentTime: number, buffered: number) => void;
   onEnd: () => void;
   onError: (error: string) => void;
