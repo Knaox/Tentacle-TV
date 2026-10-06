@@ -13,6 +13,7 @@ import {
   type DeliveryKind,
 } from "@tentacle-tv/shared";
 import { DeliveryChip } from "./DeliveryChip";
+import { useServerCapabilities } from "@tentacle-tv/api-client";
 
 /**
  * Comment le média arrive à l'appareil, dit en clair — la règle est partagée
@@ -45,7 +46,8 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 export function PlaybackDetails({ session }: { session: AdminSessionDto }) {
   const { t, i18n } = useTranslation("sessions");
-  const { kind, reasons, changes, encoder } = explainPlayback(session, i18n.language);
+  const { capabilities } = useServerCapabilities();
+  const { kind, reasons, changes, encoder } = explainPlayback(session, i18n.language, capabilities);
   const { source } = session;
   const completion = session.transcoding?.completionPercentage;
 

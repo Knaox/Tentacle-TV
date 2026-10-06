@@ -1,4 +1,5 @@
 import type { AdminSessionDto } from "../types/adminSessionsDto";
+import type { ServerCapability } from "../serverCapabilities/serverCapabilities";
 
 /**
  * Comment le média arrive à l'appareil — rangé du plus léger au plus lourd
@@ -43,6 +44,7 @@ function hasVideo(session: Pick<AdminSessionDto, "nowPlaying" | "source">): bool
 
 export function deliveryOf(
   session: Pick<AdminSessionDto, "playMethod" | "transcoding" | "nowPlaying" | "source">,
+  capabilities: ReadonlySet<ServerCapability>,
 ): DeliveryKind {
   const video = hasVideo(session);
   const { transcoding } = session;
@@ -59,16 +61,24 @@ export function deliveryOf(
   // que le client Tentacle déclare (`snapshot.ts`) ; s'il ne sait rien —
   // l'épisode suivant à ses premières secondes —, la pastille dit « en
   // analyse » au lieu d'un « Transcodage » qu'elle ne peut pas prouver.
-  // Sans image (musique), il ne reste que le son à convertir.
-  if (session.playMethod === "Transcode") return video ? "pending" : "audio";
+  // Sans image (musique), il ne reste que le son à convertir. Un serveur
+  // d'avant 1.24.0 ne retient rien (capacité `admin.sessionStates`) : « en
+  // analyse » n'y finirait jamais — la règle d'alors, au pire, demeure.
+  if (session.playMethod === "Transcode") {
+    if (!video) return "audio";
+    return capabilities.has("admin.sessionStates") ? "pending" : "video";
+  }
   return "direct";
 }
 
 /** Combien de lectures de chaque sorte : l'en-tête du tableau de bord. */
-export function countDeliveries(sessions: readonly AdminSessionDto[]): Record<DeliveryKind, number> {
+export function countDeliveries(
+  sessions: readonly AdminSessionDto[],
+  capabilities: ReadonlySet<ServerCapability>,
+): Record<DeliveryKind, number> {
   const counts: Record<DeliveryKind, number> = { direct: 0, remux: 0, audio: 0, video: 0, pending: 0 };
   for (const session of sessions) {
-    if (session.nowPlaying !== null) counts[deliveryOf(session)]++;
+    if (session.nowPlaying !== null) counts[deliveryOf(session, capabilities)]++;
   }
   return counts;
 }

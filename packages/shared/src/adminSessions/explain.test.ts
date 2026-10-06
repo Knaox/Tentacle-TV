@@ -4,8 +4,12 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { SERVER_CAPABILITY_KEYS } from "../serverCapabilities/serverCapabilities";
 import type { AdminSessionDto, AdminSourceDto, AdminTranscodingDto } from "../types/adminSessionsDto";
 import { containerLabel, explainPlayback, reasonKey, subtitleLabel } from "./explain";
+
+/** Un serveur à jour : il déclare tout. */
+const CAPS = new Set(SERVER_CAPABILITY_KEYS);
 
 const SOURCE: AdminSourceDto = {
   container: "mkv", videoCodec: "hevc", videoProfile: "Main 10", videoBitDepth: 10, width: 3840, height: 2160,
@@ -24,7 +28,7 @@ function session(transcoding: Partial<AdminTranscodingDto> | null, source: Admin
 }
 
 const one = (reason: string, source: AdminSourceDto | null = SOURCE) =>
-  explainPlayback(session({ reasons: [reason] }, source), "fr").reasons[0];
+  explainPlayback(session({ reasons: [reason] }, source), "fr", CAPS).reasons[0];
 
 describe("chaque raison de Jellyfin se dit, avec ses détails quand on les a", () => {
   it.each([
@@ -62,16 +66,16 @@ describe("chaque raison de Jellyfin se dit, avec ses détails quand on les a", (
   });
 
   it("le débit plafonné se dit une fois : palier de l'appareil ou limite du serveur", () => {
-    const { reasons } = explainPlayback(session({ reasons: ["ContainerBitrateExceedsLimit", "VideoBitrateNotSupported"] }), "fr");
+    const { reasons } = explainPlayback(session({ reasons: ["ContainerBitrateExceedsLimit", "VideoBitrateNotSupported"] }), "fr", CAPS);
     expect(reasons.map((r) => r.reason)).toEqual(["ContainerBitrateExceedsLimit"]);
-    expect(explainPlayback(session({ reasons: ["VideoBitrateNotSupported"] }), "fr").reasons[0].reason)
+    expect(explainPlayback(session({ reasons: ["VideoBitrateNotSupported"] }), "fr", CAPS).reasons[0].reason)
       .toBe("ContainerBitrateExceedsLimit");
   });
 
   it("de la plus décisive à la plus anodine ; une raison inconnue va au bout", () => {
     const { reasons } = explainPlayback(session({
       reasons: ["ContainerNotSupported", "FutureReason", "AudioCodecNotSupported", "VideoCodecNotSupported", "SubtitleCodecNotSupported"],
-    }), "fr");
+    }), "fr", CAPS);
     expect(reasons.map((r) => r.reason)).toEqual([
       "SubtitleCodecNotSupported", "VideoCodecNotSupported", "AudioCodecNotSupported", "ContainerNotSupported", "FutureReason",
     ]);
@@ -79,7 +83,7 @@ describe("chaque raison de Jellyfin se dit, avec ses détails quand on les a", (
   });
 
   it("une lecture directe n'a pas de raison à dire", () => {
-    expect(explainPlayback(session(null), "fr")).toEqual({ kind: "direct", reasons: [], changes: [], encoder: null });
+    expect(explainPlayback(session(null), "fr", CAPS)).toEqual({ kind: "direct", reasons: [], changes: [], encoder: null });
   });
 });
 
@@ -88,7 +92,7 @@ describe("ce qui change", () => {
     const e = explainPlayback(session({
       videoCodec: "h264", width: 1920, height: 1080, bitrate: 8_000_000, audioCodec: "aac", audioChannels: 2,
       hardwareAccelerationType: "nvenc", reasons: ["VideoCodecNotSupported"],
-    }), "fr");
+    }), "fr", CAPS);
     expect(e.kind).toBe("video");
     expect(e.changes).toEqual(["HEVC → H.264", "4K → 1080p", "HDR10 → SDR", "40 Mb/s → 8,0 Mb/s", "TrueHD 7.1 → AAC 2.0"]);
     expect(e.encoder).toBe("NVENC");
@@ -98,33 +102,33 @@ describe("ce qui change", () => {
     const e = explainPlayback(session({
       videoCodec: "hevc", width: 1920, height: 1080, bitrate: 8_000_000, isAudioDirect: true,
       reasons: ["ContainerBitrateExceedsLimit"],
-    }), "fr");
+    }), "fr", CAPS);
     expect(e.changes).toContain("HDR10 → SDR");
   });
 
   it("un plafond au-dessus de la source ne change rien : il ne se dit pas", () => {
-    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 18_000_000, isAudioDirect: true }, { ...SOURCE, bitrate: 11_000_000 }), "fr");
+    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 18_000_000, isAudioDirect: true }, { ...SOURCE, bitrate: 11_000_000 }), "fr", CAPS);
     expect(e.changes.some((c) => c.includes("Mb/s"))).toBe(false);
   });
 
   it("un débit d'en-tête absurde ne sert pas de point de départ", () => {
-    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 8_000_000, isAudioDirect: true }, { ...SOURCE, bitrate: 144 }), "fr");
+    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 8_000_000, isAudioDirect: true }, { ...SOURCE, bitrate: 144 }), "fr", CAPS);
     expect(e.changes).toContain("8,0 Mb/s");
   });
 
   it("transcodage audio : seul le son change ; aucun encodeur vidéo", () => {
-    const e = explainPlayback(session({ isVideoDirect: true, audioCodec: "aac", audioChannels: 6, hardwareAccelerationType: "none" }), "fr");
+    const e = explainPlayback(session({ isVideoDirect: true, audioCodec: "aac", audioChannels: 6, hardwareAccelerationType: "none" }), "fr", CAPS);
     expect(e).toMatchObject({ kind: "audio", changes: ["TrueHD 7.1 → AAC 5.1"], encoder: null });
   });
 
   it("remux : seul le conteneur change", () => {
-    const e = explainPlayback(session({ isVideoDirect: true, isAudioDirect: true, container: "mp4", reasons: ["ContainerNotSupported"] }), "fr");
+    const e = explainPlayback(session({ isVideoDirect: true, isAudioDirect: true, container: "mp4", reasons: ["ContainerNotSupported"] }), "fr", CAPS);
     expect(e).toMatchObject({ kind: "remux", changes: ["MKV → MP4"], encoder: null });
   });
 
   it("encodage logiciel dit, encodeur inconnu tu", () => {
-    expect(explainPlayback(session({ videoCodec: "h264", hardwareAccelerationType: "none" }), "fr").encoder).toBe("software");
-    expect(explainPlayback(session({ videoCodec: "h264" }), "fr").encoder).toBeNull();
+    expect(explainPlayback(session({ videoCodec: "h264", hardwareAccelerationType: "none" }), "fr", CAPS).encoder).toBe("software");
+    expect(explainPlayback(session({ videoCodec: "h264" }), "fr", CAPS).encoder).toBeNull();
   });
 });
 
@@ -134,14 +138,14 @@ describe("ce que Jellyfin n'a pas reçu, dit quand même (passation du 2026-10-0
   const baby: AdminSourceDto = { ...SOURCE, bitrate: 20_600_000 };
 
   it("aucune raison, débit servi sous la source : limite de débit de l'appareil, pas incompatibilité", () => {
-    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 16_484_000, reasons: [] }, baby), "fr");
+    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 16_484_000, reasons: [] }, baby), "fr", CAPS);
     expect(e.kind).toBe("video");
     expect(e.reasons).toEqual([{ reason: "ClientBitrateLimit", known: true, params: null }]);
     expect(reasonKey(e.reasons[0])).toBe("reason.ClientBitrateLimit");
   });
 
   it("aucune raison et aucun plafond visible : rien d'inventé", () => {
-    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 25_000_000, reasons: [] }, baby), "fr");
+    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 25_000_000, reasons: [] }, baby), "fr", CAPS);
     expect(e.reasons).toEqual([]);
   });
 

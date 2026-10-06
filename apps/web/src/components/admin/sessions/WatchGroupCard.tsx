@@ -13,7 +13,7 @@ import {
   type AdminWatchGroupDto,
   type Feedback,
 } from "@tentacle-tv/shared";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useServerCapabilities } from "@tentacle-tv/api-client";
 import { easeOut } from "../../../theme/motion";
 import { UserAvatar } from "../../ui/UserAvatar";
 import { ActionPill } from "./ActionPill";
@@ -50,6 +50,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
 }) {
   const { t } = useTranslation("sessions");
   const client = useJellyfinClient();
+  const { capabilities } = useServerCapabilities();
   const reduced = useReducedMotion();
   // Ce que regarde la salle, lu sur la session d'un membre qui le lit.
   const item = group.members
@@ -111,7 +112,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
                   {session && <>{" · "}<SessionAppLabel session={session} /></>}
                 </p>
               </div>
-              {session?.nowPlaying && <DeliveryChip kind={deliveryOf(session)} size="sm" />}
+              {session?.nowPlaying && <DeliveryChip kind={deliveryOf(session, capabilities)} size="sm" />}
             </li>
           );
         })}

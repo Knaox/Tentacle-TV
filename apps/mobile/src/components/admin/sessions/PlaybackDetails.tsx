@@ -7,6 +7,7 @@ import {
 } from "@tentacle-tv/shared";
 import { FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { DeliveryChip } from "./DeliveryChip";
+import { useServerCapabilities } from "@tentacle-tv/api-client";
 
 const SHORT: Record<DeliveryKind, string> = {
   direct: "directPlayShort",
@@ -25,7 +26,8 @@ const SHORT: Record<DeliveryKind, string> = {
 export const PlaybackDetails = memo(function PlaybackDetails({ session }: { session: AdminSessionDto }) {
   const { t, i18n } = useTranslation("sessions");
   const st = useThemedStyles(makeStyles);
-  const { kind, reasons, changes, encoder } = explainPlayback(session, i18n.language);
+  const { capabilities } = useServerCapabilities();
+  const { kind, reasons, changes, encoder } = explainPlayback(session, i18n.language, capabilities);
   const { source } = session;
   const completion = session.transcoding?.completionPercentage;
 
