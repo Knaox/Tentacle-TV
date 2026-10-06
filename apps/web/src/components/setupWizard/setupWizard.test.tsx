@@ -45,6 +45,7 @@ vi.stubGlobal("history", { replaceState: () => undefined });
 
 const { WelcomeScreen, CodeScreen } = await import("./IntroScreens");
 const { JellyfinScreen } = await import("./JellyfinScreen");
+const { JellyfinList } = await import("./JellyfinList");
 const { AccountScreen } = await import("./AccountScreen");
 const { ApplyScreen, RecapScreen } = await import("./RecapApplyScreens");
 const { DoneScreen } = await import("./FinishScreens");
@@ -136,6 +137,30 @@ describe("les écrans de l'assistant", () => {
     const out = html(<JellyfinScreen wizard={wizard({ context: context({ stack: "full", provisioner: "docker-sibling" }) })} />);
     expect(out).toContain("jfSubtitleSibling");
     expect(out).not.toContain("jfUrlHint");
+  });
+
+  it("la liste : celui de la pile en tête, puis les neufs, puis les déjà configurés — chacun avec son état et son adresse", () => {
+    const entry = (url: string, blank: boolean, inStack = false) => ({
+      url, serverId: url, version: "10.11.11", serverName: url.split(":")[1].slice(2), blank, inStack, compatible: true, clientUrl: url,
+    });
+    const out = html(
+      <JellyfinList
+        servers={[entry("http://jellyfin:8096", true, true), entry("http://salon:8096", false), entry("http://neuf:8097", true)]}
+        selected="http://jellyfin:8096"
+        onSelect={() => undefined}
+        stackStarting={false}
+      />,
+    );
+    const order = ["jfInStack", "jfGroup_fresh", "http://neuf:8097", "jfGroup_configured", "http://salon:8096"].map((needle) => out.indexOf(needle));
+    expect(order.every((index, i) => index >= 0 && (i === 0 || index > order[i - 1]))).toBe(true);
+    expect(out).toMatch(/type="radio"[^>]*checked=""[^>]*value="http:\/\/jellyfin:8096"/);
+    expect(out).toContain("jfState_configured");
+    expect(out.replaceAll("&quot;", '"')).toContain('jfOptionLine{"host":"salon","port":"8096","version":"10.11.11"}');
+  });
+
+  it("le Jellyfin de la pile qui démarre garde sa place en tête", () => {
+    const out = html(<JellyfinList servers={[]} selected={null} onSelect={() => undefined} stackStarting />);
+    expect(out).toContain("jfStackStarting");
   });
 
   it("le compte : créé (avec confirmation) ou vérifié (avec la clé en recours)", () => {

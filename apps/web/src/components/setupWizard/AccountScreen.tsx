@@ -49,7 +49,7 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
             ...credentials,
             uiCulture: uiCultureOf(locale.language),
             // Le voisin s'appellerait du nom de son conteneur (« d716b0d5ac48 ») : il prend celui de Tentacle.
-            ...(wizard.data.context?.provisioner === "docker-sibling" ? { serverName: "Tentacle" } : {}),
+            ...(wizard.data.probe?.inStack ? { serverName: "Tentacle" } : {}),
             metadataLanguage: locale.language,
             metadataCountry: locale.country,
           });

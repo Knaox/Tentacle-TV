@@ -1,14 +1,19 @@
 import { useTranslation } from "react-i18next";
+import { Boxes } from "lucide-react";
 import type { JellyfinProbeResult } from "@tentacle-tv/shared";
 import { hostAndPort, serverState } from "./jellyfinChoice";
 
 const BADGE = {
   blank: "bg-status-success-bg text-status-success-fg",
-  configured: "bg-fill-faint text-content-secondary",
+  configured: "bg-status-info-bg text-status-info-fg",
   incompatible: "bg-status-error-bg text-status-error-fg",
 } as const;
 
-/** Une ligne de la liste : un vrai bouton radio, l'adresse, le port, le nom, la version, et l'état en toutes lettres. */
+/**
+ * Une ligne de la liste : un vrai bouton radio, le nom, l'état en toutes
+ * lettres (jamais la couleur seule), « dans cette pile » s'il y a lieu, puis
+ * l'adresse, le port et la version.
+ */
 export function JellyfinOption({ server, name, checked, onSelect }: { server: JellyfinProbeResult; name: string; checked: boolean; onSelect: () => void }) {
   const { t } = useTranslation("setupWizard");
   const state = serverState(server);
@@ -25,6 +30,12 @@ export function JellyfinOption({ server, name, checked, onSelect }: { server: Je
         <span className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-content-primary">{server.serverName || t("jfUnnamed")}</span>
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE[state]}`}>{t(`jfState_${state}`)}</span>
+          {server.inStack ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-fill-soft px-2 py-0.5 text-xs font-medium text-content-secondary">
+              <Boxes size={12} aria-hidden="true" />
+              {t("jfInStack")}
+            </span>
+          ) : null}
         </span>
         <span className="mt-0.5 block break-all text-sm text-content-secondary">
           {t("jfOptionLine", { host, port, version: server.version })}

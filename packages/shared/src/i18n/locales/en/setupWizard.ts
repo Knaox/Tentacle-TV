@@ -86,7 +86,7 @@ export default {
 
   // ── Jellyfin ──────────────────────────────────────────────────────────
   jfTitle: "Jellyfin",
-  jfSubtitleSibling: "The full stack installed Jellyfin next to Tentacle: it is locked for you, waiting for your account.",
+  jfSubtitleSibling: "The Jellyfin installed with this stack is selected. Other Jellyfin servers found on your network are offered too.",
   jfSubtitleExisting: "The Jellyfin servers Tentacle found. The new one is picked for you; choose another if you prefer.",
   jfSubtitleNative: "Tentacle looks for Jellyfin on this machine and on your network.",
   jfUrl: "Jellyfin address",
@@ -110,6 +110,14 @@ export default {
   jfState_configured: "Already set up",
   jfState_incompatible: "Unsupported version",
   jfOptionLine: "{{host}} · port {{port}} · version {{version}}",
+  jfInStack: "In this stack",
+  jfGroup_fresh: "New — Tentacle sets them up for you",
+  jfGroup_configured: "Already set up — you sign in with an existing administrator account",
+  jfGroup_incompatible: "Not supported by this Tentacle server",
+  jfStackStarting: "This stack's Jellyfin is starting: Tentacle is locking it for you…",
+  jfSearchingOthers: "Looking for other Jellyfin servers on your network…",
+  jfNextBlank: "New: you create its administrator account, Tentacle prepares the Movies and Shows libraries and installs skip detection.",
+  jfNextConfigured: "Already set up: you sign in with an administrator account of this Jellyfin. Tentacle creates nothing there — no account, no library — and will only suggest recommended settings, all optional.",
   jfStackAddress: "In the Docker stack: {{host}}, port {{port}}",
   jfStackConfigured: "This stack's Jellyfin was already set up by someone. Tentacle only connects to it with its administrator account: that's the next step.",
   jfPreparing: "Jellyfin is starting: Tentacle is locking it for you…",

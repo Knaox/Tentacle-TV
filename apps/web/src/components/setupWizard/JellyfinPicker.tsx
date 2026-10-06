@@ -1,35 +1,38 @@
-import { useCallback, useEffect, useId, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
 import type { JellyfinDiscoveryResponse, JellyfinProbeResult } from "@tentacle-tv/shared";
 import { AdminNotice } from "../admin/kit";
 import { Field } from "../admin/services/Field";
 import { cls } from "../../pages/adminUtils";
-import { JellyfinOption } from "./JellyfinOption";
-import { preselectedUrl, withManual } from "./jellyfinChoice";
+import { JellyfinList } from "./JellyfinList";
+import { mergeServers, preselectedUrl, serverState, withManual } from "./jellyfinChoice";
 import { MissingJellyfin } from "./MissingJellyfin";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
+import { STACK_WAITING, useStackProbe } from "./useStackProbe";
 
 /** En natif, tant que rien ne répond (Jellyfin en cours d'installation) : une nouvelle recherche de temps en temps. */
 const NATIVE_RETRY_MS = 15_000;
 const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary";
 
 /**
- * Pile sans Jellyfin, ou installation native : les Jellyfin joignables, listés
- * par le serveur (`/jellyfin/discover`), le vierge présélectionné. Une adresse
- * saisie à la main rejoint la liste. Le choix fait, la cible est verrouillée
- * pour la suite de l'assistant.
+ * TOUS les Jellyfin joignables, listés par le serveur (`/jellyfin/discover`),
+ * neufs et déjà configurés bien distingués. Pile complète : le sien en tête
+ * et choisi d'office, sondé à part tant qu'il démarre — les autres restent
+ * choisissables. Sinon, le neuf est choisi d'office. Une adresse saisie à la
+ * main rejoint la liste.
  */
 export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
-  const groupName = useId();
   const context = wizard.data.context;
   const native = context?.provisioner === "native-host";
+  const stackUrl = context?.provisioner === "docker-sibling" ? context.jellyfin.suggestedUrl : null;
+  const stackProbe = useStackProbe(stackUrl, wizard.data.probe);
   const [discovery, setDiscovery] = useState<JellyfinDiscoveryResponse | null>(null);
-  const [servers, setServers] = useState<JellyfinProbeResult[]>(wizard.data.probe ? [wizard.data.probe] : []);
-  const [selected, setSelected] = useState<string | null>(wizard.data.probe?.url ?? null);
+  const [manual, setManual] = useState<JellyfinProbeResult[]>(wizard.data.probe && !wizard.data.probe.inStack ? [wizard.data.probe] : []);
+  const [picked, setPicked] = useState<string | null>(wizard.data.probe?.url ?? null);
   const [searching, setSearching] = useState(true);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
@@ -40,13 +43,7 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
     setSearching(true);
     setError(null);
     try {
-      const found = await setupApi.discover();
-      setDiscovery(found);
-      setServers((prev) => {
-        const manual = prev.filter((p) => !found.servers.some((s) => s.url === p.url));
-        return [...found.servers, ...manual];
-      });
-      setSelected((prev) => prev ?? preselectedUrl(found.servers));
+      setDiscovery(await setupApi.discover());
     } catch (err) {
       setError(err instanceof SetupApiError ? err.code : "internal");
     } finally {
@@ -57,7 +54,13 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
   useEffect(() => {
     void search();
   }, [search]);
-  const empty = discovery !== null && servers.length === 0;
+
+  const servers = useMemo(() => {
+    const found = discovery?.servers ?? [];
+    return mergeServers(stackProbe.probe ?? found.find((s) => s.inStack) ?? null, found, manual);
+  }, [stackProbe.probe, discovery, manual]);
+  const stackStarting = !!stackUrl && stackProbe.waiting && !servers.some((s) => s.inStack);
+  const empty = discovery !== null && servers.length === 0 && !stackStarting;
   useEffect(() => {
     if (!native || !empty || searching) return;
     const timer = setTimeout(() => void search(), NATIVE_RETRY_MS);
@@ -70,8 +73,8 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
     setError(null);
     try {
       const probe = await setupApi.probe(manualUrl.trim());
-      setServers((prev) => withManual(prev, probe));
-      setSelected(probe.compatible ? probe.url : null);
+      setManual((prev) => withManual(prev, probe));
+      setPicked(probe.compatible ? probe.url : null);
       if (!probe.compatible) setError("jf_incompatible_version");
       setManualOpen(false);
     } catch (err) {
@@ -81,7 +84,10 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
     }
   };
 
+  // Rien de touché : celui de la pile, sinon le neuf — et il arrive dès qu'il répond.
+  const selected = picked ?? preselectedUrl(servers);
   const chosen = servers.find((s) => s.url === selected && s.compatible) ?? null;
+  const state = chosen ? serverState(chosen) : null;
   const confirm = () => {
     if (!chosen) return;
     wizard.patch({ probe: chosen, jellyfinUrl: chosen.url, mode: chosen.blank ? "initialize" : "connect", clientUrl: chosen.clientUrl ?? "" });
@@ -90,7 +96,7 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
 
   return (
     <div className="space-y-4">
-      {searching && servers.length === 0 ? (
+      {searching && servers.length === 0 && !stackStarting ? (
         <div className="space-y-2" aria-live="polite">
           <p className="text-sm text-content-tertiary">{t("jfSearching")}</p>
           {[0, 1].map((row) => (
@@ -99,16 +105,12 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
         </div>
       ) : null}
 
-      {servers.length > 0 ? (
-        <div role="radiogroup" aria-label={t("jfListLabel")} className="space-y-2">
-          {servers.map((server) => (
-            <JellyfinOption key={server.url} server={server} name={groupName} checked={selected === server.url} onSelect={() => setSelected(server.url)} />
-          ))}
-        </div>
-      ) : null}
+      <JellyfinList servers={servers} selected={selected} onSelect={setPicked} stackStarting={stackStarting} />
+      {searching && (servers.length > 0 || stackStarting) ? <p className="text-xs text-content-tertiary" aria-live="polite">{t("jfSearchingOthers")}</p> : null}
 
       {empty ? <p className="text-sm text-content-secondary">{t("jfNoneFound")}</p> : null}
       {discovery?.bridged && discovery.udp !== "answered" ? <AdminNotice tone="info">{t("jfBridgedNote")}</AdminNotice> : null}
+      {stackProbe.error && !STACK_WAITING.has(stackProbe.error) ? <SetupErrorLine code={stackProbe.error} onRetry={stackProbe.retry} /> : null}
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <button type="button" onClick={() => void search()} disabled={searching} className={`${linkBtn} inline-flex items-center gap-1.5`}>
@@ -143,8 +145,14 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
       ) : null}
 
       <SetupErrorLine code={error} />
-      {empty && context ? <MissingJellyfin guide={context.missingJellyfin} waiting={native} /> : null}
+      {empty && context && !stackUrl ? <MissingJellyfin guide={context.missingJellyfin} waiting={native} /> : null}
 
+      {state ? (
+        <p className="text-sm text-content-secondary" aria-live="polite">
+          {state === "blank" ? t("jfNextBlank") : t("jfNextConfigured")}
+        </p>
+      ) : null}
+      {chosen?.inStack && state === "configured" ? <AdminNotice tone="warning">{t("jfStackConfigured")}</AdminNotice> : null}
       <button type="button" onClick={confirm} disabled={!chosen} className={`${cls.bp} w-full sm:w-auto`}>
         {chosen?.blank ? t("jfUseBlank") : t("jfUseConfigured")}
       </button>

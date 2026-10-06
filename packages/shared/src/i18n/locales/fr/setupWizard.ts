@@ -89,7 +89,7 @@ export default {
 
   // ── Jellyfin ──────────────────────────────────────────────────────────
   jfTitle: "Jellyfin",
-  jfSubtitleSibling: "La pile complète a installé Jellyfin à côté de Tentacle\u00a0: il est verrouillé pour vous, en attente de votre compte.",
+  jfSubtitleSibling: "Le Jellyfin installé avec cette pile est choisi d'office. Les autres Jellyfin trouvés sur votre réseau restent proposés.",
   jfSubtitleExisting: "Les serveurs Jellyfin que Tentacle a trouvés. Le neuf est choisi d'office\u00a0; prenez-en un autre si vous préférez.",
   jfSubtitleNative: "Tentacle cherche Jellyfin sur cette machine et sur votre réseau.",
   jfUrl: "Adresse de Jellyfin",
@@ -113,6 +113,14 @@ export default {
   jfState_configured: "Déjà configuré",
   jfState_incompatible: "Version non prise en charge",
   jfOptionLine: "{{host}} · port {{port}} · version {{version}}",
+  jfInStack: "Dans cette pile",
+  jfGroup_fresh: "Neufs — Tentacle les configure pour vous",
+  jfGroup_configured: "Déjà configurés — vous vous connectez avec un compte administrateur existant",
+  jfGroup_incompatible: "Non pris en charge par ce serveur Tentacle",
+  jfStackStarting: "Le Jellyfin de cette pile démarre\u00a0: Tentacle le verrouille pour vous…",
+  jfSearchingOthers: "Recherche d'autres Jellyfin sur votre réseau…",
+  jfNextBlank: "Neuf\u00a0: vous créez son compte administrateur, Tentacle prépare les bibliothèques Films et Séries et installe la détection des passages.",
+  jfNextConfigured: "Déjà configuré\u00a0: vous vous connectez avec un compte administrateur de ce Jellyfin. Tentacle n'y crée rien — ni compte, ni bibliothèque — et vous proposera seulement des réglages conseillés, tous facultatifs.",
   jfStackAddress: "Dans la pile Docker\u00a0: {{host}}, port {{port}}",
   jfStackConfigured: "Le Jellyfin de cette pile a déjà été configuré par quelqu'un. Tentacle ne s'y relie qu'avec son compte administrateur\u00a0: c'est l'étape suivante.",
   jfPreparing: "Jellyfin démarre\u00a0: Tentacle le verrouille pour vous…",
