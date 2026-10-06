@@ -140,7 +140,7 @@ async function screens() {
         played.push(await playWithExtras(device, player, proxy, scenario));
         process.stdout.write(".");
       }
-      const summary = { ...summarizeScenario(scenario, played), ...summarizeExtras(played), rawRounds: played.map(({ records, ...r }) => r) };
+      const summary = { ...summarizeScenario(scenario, played), ...summarizeExtras(played), rawRounds: played.map(({ records: _records, ...r }) => r) };
       results.push(summary);
       console.log(`\n${describe(summary)}\n  mémoire (Mo) PSS ${(summary.memory.pss / 1024).toFixed(0)} · Java ${(summary.memory.java / 1024).toFixed(0)} · natif ${(summary.memory.native / 1024).toFixed(0)} · graphique ${(summary.memory.graphics / 1024).toFixed(0)} — ${Math.round(summary.views)} vues — charge ${summary.load}`);
     }
@@ -172,7 +172,7 @@ async function effects() {
     device.setFx([]);
     const results = Object.fromEntries(variants.map((v) => [v, scenarios.map((s) => {
       const rs = played[v][s.id];
-      return { ...summarizeScenario(s, rs), ...summarizeExtras(rs), rawRounds: rs.map(({ records, ...r }) => r) };
+      return { ...summarizeScenario(s, rs), ...summarizeExtras(rs), rawRounds: rs.map(({ records: _records, ...r }) => r) };
     })]));
     save(tag, { device: device.describe(), kind: "effects", results });
     printEffects(results);
@@ -197,7 +197,7 @@ async function soak() {
   const minutes = Number(option("minutes", "10"));
   if (!tag) throw new Error("--tag exigé");
   const loop = ["fiche", "page-films", "saisons-episodes", "focus-rangee", "recherche", "reglages", "accueil-tenu", "grille"].map((id) => SCENARIOS.find((s) => s.id === id));
-  await withBench(async (device, player) => {
+  await withBench(async (device) => {
     device.forceStop();
     device.clearLog();
     device.launch();
