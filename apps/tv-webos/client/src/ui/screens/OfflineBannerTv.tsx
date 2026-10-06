@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { CryingTentacle } from "@/components/CryingTentacle";
+import { connectivityCaseOf, connectivityCopy } from "@tentacle-tv/shared";
 import { useServerReachable } from "@/hooks/useServerReachable";
+import { useConnectivity } from "@/offline/useConnectivity";
 import { unpairTv } from "../../auth/unpairTv";
 
 interface OfflineBannerProps {
@@ -28,10 +30,12 @@ interface OfflineBannerProps {
  * bouton du bureau seulement : rien de tel ici.
  */
 export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "errors"]);
   // Les mots du déjumelage sont ceux des réglages : une seule source de textes.
   const { t: tPairing } = useTranslation("pairing");
   const { isReachable, retry } = useServerReachable();
+  // Les trois cas partagés : pas de réseau, serveur Tentacle, Jellyfin.
+  const { reason } = useConnectivity();
   const client = useJellyfinClient();
   const queryClient = useQueryClient();
   const [retrying, setRetrying] = useState(false);
@@ -47,6 +51,7 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
   }, [isReachable, reloadOnReconnect]);
 
   if (isReachable) return null;
+  const copy = connectivityCopy(connectivityCaseOf(reason) ?? "server");
 
   const handleRetry = async () => {
     setRetrying(true);
@@ -76,9 +81,8 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
     >
       <div className="flex flex-col items-center px-8 text-center">
         <CryingTentacle size={160} />
-        <h2 className="mt-8 text-2xl font-bold text-content-primary">{t("offlineTitle")}</h2>
-        <p className="mt-4 max-w-md text-sm leading-relaxed text-content-tertiary">{t("offlineMessage")}</p>
-        <p className="mt-2 max-w-md text-xs leading-relaxed text-content-quaternary">{t("offlineHint")}</p>
+        <h2 className="mt-8 text-2xl font-bold text-content-primary">{t(copy.titleKey)}</h2>
+        <p className="mt-4 max-w-md text-sm leading-relaxed text-content-tertiary">{t(copy.hintKey)}</p>
         <button
           type="button"
           onClick={() => void handleRetry()}
