@@ -124,15 +124,18 @@ export function isValidLibraryName(name: string): boolean {
 
 /**
  * Les bibliothèques proposées : dans la pile complète, « Films » et « Séries »
- * sur les dossiers que le service `init` a créés — sauf celles qui existent déjà.
+ * sur les dossiers que le service `init` a créés — sauf celles qui existent
+ * déjà. Seulement pour le Jellyfin DE LA PILE : un autre Jellyfin ne voit pas
+ * ces dossiers.
  */
 export function defaultLibraries(
   context: SetupContext | null,
   existing: readonly ExistingLibrary[],
   names: { movies: string; tvshows: string },
+  inStack = true,
 ): LibraryPlan[] {
   const folders = context?.mediaFolders;
-  if (!folders) return [];
+  if (!folders || !inStack) return [];
   const taken = new Set(existing.flatMap((library) => library.paths));
   const plans: LibraryPlan[] = [
     { name: names.movies, type: "movies", paths: [folders.movies] },
@@ -148,6 +151,12 @@ export function hostMediaPaths(context: SetupContext | null): string[] {
   if (!root || !folders) return [];
   const sub = (path: string) => path.slice(folders.root.length).replace(/^\/+/, "");
   return [folders.movies, folders.tvshows].map((path) => `${root}/${sub(path)}`);
+}
+
+/** Le Jellyfin relié est celui de la pile complète (sonde gardée, sinon l'adresse retenue après une reprise). */
+export function linkedToStack(context: SetupContext | null, probe: { inStack: boolean } | null): boolean {
+  if (probe) return probe.inStack;
+  return !!context?.jellyfin.url && context.jellyfin.url === context.jellyfin.suggestedUrl && context.provisioner === "docker-sibling";
 }
 
 /** Le code d'installation glissé dans le lien des journaux (`/setup#code=…`). */

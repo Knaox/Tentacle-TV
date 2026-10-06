@@ -7,7 +7,7 @@ import { FolderBrowser } from "./FolderBrowser";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
-import { defaultLibraries, isValidLibraryName } from "./wizardModel";
+import { defaultLibraries, isValidLibraryName, linkedToStack } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 
 const TYPES: readonly LibraryType[] = ["movies", "tvshows", "mixed"];
@@ -30,11 +30,12 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
       .libraries()
       .then((found) => {
         patch({ existing: found });
-        setPlans(defaultLibraries(context, found, { movies: t("libraryDefaultMovies"), tvshows: t("libraryDefaultShows") }));
+        const inStack = linkedToStack(context, wizard.data.probe);
+        setPlans(defaultLibraries(context, found, { movies: t("libraryDefaultMovies"), tvshows: t("libraryDefaultShows") }, inStack));
         setLoaded(true);
       })
       .catch((err) => setError(err instanceof SetupApiError ? err.code : "internal"));
-  }, [loaded, attempt, context, patch, t]);
+  }, [loaded, attempt, context, patch, t, wizard.data.probe]);
 
   const update = (index: number, next: Partial<LibraryPlan>) => setPlans((all) => all.map((plan, i) => (i === index ? { ...plan, ...next } : plan)));
   const valid = plans.every((plan) => isValidLibraryName(plan.name.trim()) && plan.paths.length > 0);

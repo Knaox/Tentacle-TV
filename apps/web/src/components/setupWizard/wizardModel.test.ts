@@ -53,6 +53,13 @@ describe("les étapes de l'assistant", () => {
     expect(resumeStep(linked(true))).toBe("recommended");
   });
 
+  it("un AUTRE Jellyfin que celui de la pile ne se voit pas proposer les dossiers de la pile", () => {
+    const full = ctx({ provisioner: "docker-sibling", mediaFolders: { root: "/media", movies: "/media/films", tvshows: "/media/series" } });
+    const names = { movies: "Films", tvshows: "Séries" };
+    expect(defaultLibraries(full, [], names)).toHaveLength(2);
+    expect(defaultLibraries(full, [], names, false)).toEqual([]);
+  });
+
   it("la base n'est demandée que si l'environnement ne la donne pas", () => {
     expect(needsDatabase(ctx())).toBe(false);
     expect(needsDatabase(ctx({ database: { configured: false, connected: false, fromEnv: false } }))).toBe(true);
