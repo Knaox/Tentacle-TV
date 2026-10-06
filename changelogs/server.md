@@ -30,6 +30,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Accueil** : une carte marquée vue, ou retirée de Ma liste ou des favoris, reste en place tant que le pointeur est sur sa rangée ; « Afficher le synopsis » d'Affiner répond de nouveau au clic
 - La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
 - La version minimale exigée des clients reste 1.23.0
+- **Un favori, « vu » ou Ma liste coché depuis une carte de l'accueil ne se décoche plus tout seul** un instant après
 
 ### EN
 - **New setup wizard**: one question per screen. From your home network it opens without a code; the one-time code, read in the container log, is only asked from elsewhere. The metadata language is chosen with the account
@@ -50,6 +51,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Home**: a card you mark as watched, or remove from My List or Favorites, stays put while the pointer is on its row; Refine's "Show synopsis" responds to clicks again
 - The in-progress row is now called "Where you left off"
 - The minimum server version required by clients stays 1.23.0
+- **Marking a title as favourite, watched or in My List from a home card no longer undoes itself** a moment later
 
 ## [1.23.0]
 ### FR
