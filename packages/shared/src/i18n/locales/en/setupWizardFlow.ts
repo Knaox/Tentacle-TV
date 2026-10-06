@@ -30,4 +30,5 @@ export default {
 
   dbDone: "The database is connected.",
   recapLibrariesExisting: "Nothing created — already in Jellyfin: {{names}}",
+  recapLibrariesNoneYet: "Nothing created — this Jellyfin has no library yet",
 };

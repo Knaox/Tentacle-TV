@@ -231,6 +231,8 @@ describe("les écrans de l'assistant", () => {
       />,
     ).replaceAll("&quot;", '"');
     expect(out).toContain('recapLibrariesExisting{"names":"Films · Séries"}');
+    const empty = html(<RecapScreen wizard={wizard({ context: chosen("configured", true), credentials: { username: "Knaoxtest", password: "x" } })} />);
+    expect(empty).toContain("recapLibrariesNoneYet");
     expect(out).toContain("rec_segmentsProvider · rec_trickplay");
     expect(out).not.toContain("recapLocale");
   });

@@ -36,7 +36,7 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
     ? [
         [t("recapJellyfin"), jellyfin],
         [t("recapAccount"), data.credentials?.username ?? "—"],
-        [t("recapLibrariesKeptLabel"), kept ? t("recapLibrariesExisting", { names: kept }) : t("recapLibrariesKept", { count: 0 })],
+        [t("recapLibrariesKeptLabel"), kept ? t("recapLibrariesExisting", { names: kept }) : t("recapLibrariesNoneYet")],
         [t("recapAdvice"), advice.length ? advice.map((id) => t(`rec_${id}`)).join(" · ") : t("recapNothing")],
       ]
     : [
