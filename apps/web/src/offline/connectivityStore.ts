@@ -16,6 +16,7 @@
  */
 
 import {
+  applyLinkLost,
   applyProbeResult,
   deriveLinkQuality,
   deriveState,
@@ -26,12 +27,13 @@ import {
   type HysteresisConfig,
   type HysteresisState,
   type LinkQuality,
+  type OfflineReason,
 } from "@tentacle-tv/offline-core";
 import { setNetworkSuspectListener, setOfflineHintSupplier } from "@tentacle-tv/api-client";
 import { isTauri } from "../hooks/mpvRuntime";
 import { backendUrl } from "../main";
 
-export type OfflineReason = "backend" | "jellyfin" | null;
+export type { OfflineReason } from "@tentacle-tv/offline-core";
 
 export interface ConnectivitySnapshot {
   state: ConnectivityState;
@@ -143,6 +145,10 @@ async function runProbe(latencyOnly: boolean): Promise<ProbeResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   const startedAt = Date.now();
+  // La cause d'un échec : l'appareil sans réseau (le navigateur le sait), notre
+  // délai dépassé (la connexion ne mène pas au serveur), sinon le serveur.
+  const failure = (serverSide: OfflineReason): OfflineReason =>
+    deviceOffline() ? "network" : controller.signal.aborted ? "timeout" : serverSide;
   try {
     const backendRes = await fetch(`${backendUrl}/api/health`, { signal: controller.signal });
     const latencyMs = Date.now() - startedAt;
@@ -158,10 +164,10 @@ async function runProbe(latencyOnly: boolean): Promise<ProbeResult> {
         ? { ok: true, reason: null, latencyMs }
         : { ok: false, reason: "jellyfin", latencyMs };
     } catch {
-      return { ok: false, reason: "jellyfin", latencyMs };
+      return { ok: false, reason: failure("jellyfin"), latencyMs };
     }
   } catch {
-    return { ok: false, reason: "backend", latencyMs: null };
+    return { ok: false, reason: failure("backend"), latencyMs: null };
   } finally {
     clearTimeout(timeout);
   }
@@ -173,7 +179,13 @@ async function runProbe(latencyOnly: boolean): Promise<ProbeResult> {
  */
 export async function probeReachability(): Promise<"ok" | "backend" | "jellyfin"> {
   const result = await runProbe(false);
-  return result.ok ? "ok" : result.reason ?? "backend";
+  if (result.ok) return "ok";
+  return result.reason === "jellyfin" ? "jellyfin" : "backend";
+}
+
+/** `navigator.onLine` faux : aucune interface réseau (Electron le tient du système). */
+function deviceOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
 async function probe(latencyOnly = false): Promise<void> {
@@ -183,8 +195,13 @@ async function probe(latencyOnly = false): Promise<void> {
   try {
     const result = await runProbe(latencyOnly);
     const now = Date.now();
-    const outcome = applyProbeResult(hysteresis, result.ok, now, HYSTERESIS);
+    // Sans réseau sur l'appareil, inutile d'attendre une deuxième sonde : la
+    // bascule est immédiate (le RETOUR garde sa confirmation), comme le mobile.
+    const outcome = result.reason === "network"
+      ? applyLinkLost(hysteresis, now)
+      : applyProbeResult(hysteresis, result.ok, now, HYSTERESIS);
     hysteresis = outcome.next;
+    const previousReason = reason;
     reason = result.ok ? null : result.reason;
 
     // Qualité du lien : MÊME machine d'hystérésis, dimension indépendante.
@@ -197,7 +214,8 @@ async function probe(latencyOnly = false): Promise<void> {
       qualityFlipped = q.flipped;
     }
 
-    if (outcome.flipped || qualityFlipped) {
+    // La cause seule qui change se republie aussi : le message en dépend.
+    if (outcome.flipped || qualityFlipped || reason !== previousReason) {
       rebuildSnapshot();
       ensureTimers();
     }
