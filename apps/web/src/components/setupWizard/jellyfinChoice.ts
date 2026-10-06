@@ -1,4 +1,4 @@
-import type { JellyfinProbeResult } from "@tentacle-tv/shared";
+import type { JellyfinProbeResult, SetupSelection } from "@tentacle-tv/shared";
 
 /**
  * La règle du choix de Jellyfin, sans React : quel serveur proposer d'office,
@@ -6,12 +6,33 @@ import type { JellyfinProbeResult } from "@tentacle-tv/shared";
  */
 
 /**
- * Celui de la pile d'abord (pile complète), sinon le neuf (Tentacle le
- * configure), sinon le premier compatible ; jamais un incompatible.
+ * Le Jellyfin CONSEILLÉ (un badge, jamais un choix fait d'office) : celui de
+ * la pile (pile complète), sinon le neuf (Tentacle le configure) ; aucun s'il
+ * n'y a que des Jellyfin déjà configurés — à l'administrateur de dire lequel.
  */
-export function preselectedUrl(servers: readonly JellyfinProbeResult[]): string | null {
+export function recommendedUrl(servers: readonly JellyfinProbeResult[]): string | null {
   const usable = servers.filter((s) => s.compatible);
-  return (usable.find((s) => s.inStack) ?? usable.find((s) => s.blank) ?? usable[0])?.url ?? null;
+  return (usable.find((s) => s.inStack) ?? usable.find((s) => s.blank))?.url ?? null;
+}
+
+/** Le même serveur, vu par son adresse ou par son identifiant. */
+export function sameServer(server: Pick<JellyfinProbeResult, "url" | "serverId">, selection: Pick<SetupSelection, "url" | "serverId"> | null): boolean {
+  return !!selection && (server.url === selection.url || (!!server.serverId && server.serverId === selection.serverId));
+}
+
+/**
+ * Le Jellyfin déjà choisi (un retour à cet écran) : toujours dans la liste,
+ * et montré dans l'état de SON parcours — un Jellyfin neuf dont on vient de
+ * créer le compte n'est plus vierge pour Jellyfin, il reste « neuf » ici.
+ */
+export function withSelection(servers: readonly JellyfinProbeResult[], selection: SetupSelection | null, clientUrl: string | null): JellyfinProbeResult[] {
+  if (!selection) return [...servers];
+  const blank = selection.path === "fresh";
+  const found = servers.some((s) => sameServer(s, selection));
+  const listed = servers.map((s) => (sameServer(s, selection) ? { ...s, blank } : s));
+  if (found) return listed;
+  const { url, serverId, serverName, version, inStack } = selection;
+  return [{ url, serverId, serverName, version, inStack, blank, compatible: true, clientUrl }, ...listed];
 }
 
 /**

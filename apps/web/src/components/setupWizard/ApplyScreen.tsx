@@ -7,7 +7,7 @@ import { runSegmentSetup } from "./applySegments";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
-import { joinsConfigured } from "./wizardModel";
+import { pathOf } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 import { SegmentRunView } from "../segmentPlugins/SegmentRunView";
 
@@ -40,7 +40,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   const { t } = useTranslation(["setupWizard", "segmentPlugins"]);
   const client = useJellyfinClient();
   const { data, patch, next } = wizard;
-  const joined = joinsConfigured(data.context, data.mode);
+  const joined = pathOf(data.context) === "configured";
   const wantSegments = !joined || data.advice?.segments === true;
   const configured = (joined ? data.adviceOutcomes : data.outcomes) !== null;
   const segmentsDone = data.segments !== undefined;
@@ -116,7 +116,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   const adviceOutcomes = data.adviceOutcomes ?? [];
 
   return (
-    <WizardFrame title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total}>
+    <WizardFrame title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total} server={wizard.server}>
       <div className="space-y-4" aria-live="polite">
         <ul className="space-y-2">
           {wantSegments ? line(t("segmentPlugins:wizardLine"), segState) : null}

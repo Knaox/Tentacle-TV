@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import type { SetupCompleteResponse } from "@tentacle-tv/shared";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { AccountScreen, FinalAccountScreen } from "./AccountScreen";
+import { AccountScreen } from "./AccountScreen";
 import { DatabaseScreen } from "./DatabaseScreen";
 import { DoneScreen, RemoteScreen } from "./FinishScreens";
 import { CodeScreen, WelcomeScreen } from "./IntroScreens";
@@ -11,6 +11,7 @@ import { LibrariesScreen } from "./LibrariesScreen";
 import { RecommendedScreen } from "./RecommendedScreen";
 import { ApplyScreen } from "./ApplyScreen";
 import { RecapScreen } from "./RecapApplyScreens";
+import { SignInScreen } from "./SignInScreen";
 import { useWizard } from "./useWizard";
 
 export interface SetupWizardProps {
@@ -19,8 +20,8 @@ export interface SetupWizardProps {
 }
 
 /**
- * L'assistant d'installation v2 — une question par écran, dans l'ordre de
- * `wizardModel.ts`. Chargé à la demande (`pages/ServerSetup.tsx`) : il ne pèse
+ * L'assistant d'installation v2 — une question par écran, dans l'ordre du
+ * PARCOURS que tient le serveur (`setupFlowContract.ts`, par `wizardModel.ts`). Chargé à la demande (`pages/ServerSetup.tsx`) : il ne pèse
  * rien sur un serveur déjà installé, ni dans le client LG.
  */
 export default function SetupWizard({ onComplete }: SetupWizardProps) {
@@ -59,12 +60,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       return <JellyfinScreen wizard={wizard} />;
     case "account":
       return <AccountScreen wizard={wizard} />;
+    case "signIn":
+      return <SignInScreen wizard={wizard} />;
     case "libraries":
       return <LibrariesScreen wizard={wizard} />;
     case "recommended":
       return <RecommendedScreen wizard={wizard} />;
-    case "finalAccount":
-      return <FinalAccountScreen wizard={wizard} />;
     case "recap":
       return <RecapScreen wizard={wizard} />;
     case "apply":

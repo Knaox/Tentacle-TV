@@ -1,63 +1,59 @@
-import type { ExistingLibrary, LibraryPlan, SetupContext } from "@tentacle-tv/shared";
+import {
+  pathEntry,
+  pathOnlySteps,
+  setupFlowLength,
+  setupFlowSteps,
+  setupStage,
+  type ExistingLibrary,
+  type LibraryPlan,
+  type SetupContext,
+  type SetupFlowShape,
+  type SetupPath,
+  type SetupSelection,
+  type SetupStep,
+} from "@tentacle-tv/shared";
 
 /**
- * La règle de l'assistant d'installation, sans React : quels écrans, dans quel
- * ordre, où reprendre après un rechargement, et ce qu'on propose d'office.
+ * La règle de l'assistant d'installation côté client, sans React. Le PARCOURS
+ * n'est pas décidé ici : il vient du serveur (`SetupContext.flow`), par la
+ * machine partagée (`setupFlowContract.ts`) — le client affiche les écrans
+ * du parcours en cours, dans l'ordre, et n'en montre aucun autre.
  *
- * Une question par écran. Les étapes s'adaptent à l'installation détectée :
- * le code n'est demandé qu'à un navigateur qui n'arrive pas directement du
- * réseau local ; la base n'est demandée que si la pile ne la fournit pas ; un Jellyfin vierge
- * se configure (le compte est CRÉÉ, puis les bibliothèques), un Jellyfin déjà
- * configuré se rejoint (le compte est VÉRIFIÉ, ou par une clé collée — le
- * compte est alors demandé à la fin) : rien n'y est créé, l'écran des
- * bibliothèques laisse la place aux réglages conseillés, tous facultatifs.
+ * Une question par écran. Le code n'est demandé qu'à un navigateur qui
+ * n'arrive pas directement du réseau local ; la base n'est demandée que si la
+ * pile ne la fournit pas ; le choix du Jellyfin n'est JAMAIS sauté. Jellyfin
+ * neuf : le compte est CRÉÉ, puis les bibliothèques. Jellyfin déjà
+ * configuré : on s'y CONNECTE, puis les réglages conseillés — rien n'y est créé.
  */
-export type WizardStep =
-  | "welcome"
-  | "code"
-  | "database"
-  | "jellyfin"
-  | "account"
-  | "libraries"
-  | "recommended"
-  | "finalAccount"
-  | "recap"
-  | "apply"
-  | "remote"
-  | "done";
+export type WizardStep = SetupStep;
 
-/** `initialize` : Jellyfin vierge (ou voisin verrouillé) ; `connect` : compte existant ; `key` : clé collée. */
-export type JellyfinMode = "initialize" | "connect" | "key";
-
-export interface WizardPlan {
-  /** Ce navigateur doit donner le code d'installation (cf. `SetupHostInfo.codeRequired`). */
+/** Ce que le client sait de l'installation, pour la liste des écrans. */
+export interface WizardShapeInput {
   needsCode: boolean;
-  needsDatabase: boolean;
-  mode: JellyfinMode | null;
-  /** Un Jellyfin DÉJÀ configuré : réglages conseillés au lieu des bibliothèques. */
-  joined: boolean;
-  /** Le mot de passe n'est plus en mémoire (clé collée, ou reprise après rechargement). */
-  askFinalAccount: boolean;
+  context: SetupContext | null;
 }
 
-export function wizardSteps(plan: WizardPlan): WizardStep[] {
-  return [
-    "welcome",
-    ...(plan.needsCode ? (["code"] as const) : []),
-    ...(plan.needsDatabase ? (["database"] as const) : []),
-    "jellyfin",
-    "account",
-    plan.joined ? "recommended" : "libraries",
-    ...(plan.askFinalAccount || plan.mode === "key" ? (["finalAccount"] as const) : []),
-    "recap",
-    "apply",
-    "remote",
-    "done",
-  ];
+/** La base a son écran quand l'environnement ne la fournit pas — reliée ou non : il fait partie du parcours. */
+export function flowShape({ needsCode, context }: WizardShapeInput): SetupFlowShape {
+  return { needsCode, asksDatabase: !!context && !context.database.fromEnv, path: pathOf(context) };
 }
 
-/** On ne revient pas en arrière depuis ces écrans : ce qu'ils ont fait est fait. */
-export const NO_BACK: ReadonlySet<WizardStep> = new Set(["welcome", "apply", "remote", "done"]);
+export function wizardSteps(input: WizardShapeInput): WizardStep[] {
+  return setupFlowSteps(flowShape(input));
+}
+
+export function wizardLength(input: WizardShapeInput): number {
+  return setupFlowLength(flowShape(input));
+}
+
+/** Le parcours fixé par le serveur ; `null` tant qu'aucun Jellyfin n'est choisi. */
+export function pathOf(context: SetupContext | null): SetupPath | null {
+  return context?.flow.selection?.path ?? null;
+}
+
+export function selectionOf(context: SetupContext | null): SetupSelection | null {
+  return context?.flow.selection ?? null;
+}
 
 /** La base est à demander : pas fournie par l'environnement, et pas encore reliée. */
 export function needsDatabase(context: SetupContext | null): boolean {
@@ -65,29 +61,20 @@ export function needsDatabase(context: SetupContext | null): boolean {
 }
 
 /**
- * Où reprendre une installation déjà commencée (session retrouvée). Le voisin
- * de la pile complète, verrouillé au démarrage, porte déjà la clé de Tentacle
- * (`configured`) mais attend encore le compte choisi (`claimed`) : on passe
- * par Jellyfin, pas par-dessus.
+ * Où reprendre une installation commencée (session ouverte, page rechargée) :
+ * l'étape du serveur. Relié, mais sans le mot de passe en mémoire (il n'est
+ * jamais gardé) : le premier écran du parcours, qui le redemande.
  */
-export function resumeStep(context: SetupContext): WizardStep {
-  if (needsDatabase(context)) return "database";
-  if (!context.jellyfin.configured || context.jellyfin.claimed) return "jellyfin";
-  return context.jellyfin.joined ? "recommended" : "libraries";
+export function resumeStep(context: SetupContext, hasCredentials: boolean): WizardStep {
+  const stage = setupStage(context.flow);
+  const path = pathOf(context);
+  if (path && context.flow.linked && !hasCredentials) return pathEntry(path);
+  return stage;
 }
 
-/**
- * Un Jellyfin DÉJÀ configuré : ce que le serveur sait une fois relié
- * (`joined`) ; avant, le choix fait à l'écran Jellyfin (se connecter).
- */
-export function joinsConfigured(context: SetupContext | null, mode: JellyfinMode | null): boolean {
-  if (context?.jellyfin.configured && !context.jellyfin.claimed) return context.jellyfin.joined;
-  return mode === "connect" || mode === "key";
-}
-
-/** Jellyfin est à configurer avec le compte choisi : vierge, ou voisin verrouillé en attente. */
-export function jellyfinNeedsInitialize(context: SetupContext | null): boolean {
-  return !context || !context.jellyfin.configured || context.jellyfin.claimed;
+/** Les écrans où le Jellyfin choisi est rappelé en tête : ceux du parcours, jusqu'à l'installation. */
+export function showsChosenServer(step: WizardStep, path: SetupPath | null): boolean {
+  return !!path && (pathOnlySteps(path).includes(step) || step === "recap" || step === "apply");
 }
 
 const LANGUAGES = ["fr", "en", "de", "it", "es", "pt", "nl"] as const;
@@ -151,12 +138,6 @@ export function hostMediaPaths(context: SetupContext | null): string[] {
   if (!root || !folders) return [];
   const sub = (path: string) => path.slice(folders.root.length).replace(/^\/+/, "");
   return [folders.movies, folders.tvshows].map((path) => `${root}/${sub(path)}`);
-}
-
-/** Le Jellyfin relié est celui de la pile complète (sonde gardée, sinon l'adresse retenue après une reprise). */
-export function linkedToStack(context: SetupContext | null, probe: { inStack: boolean } | null): boolean {
-  if (probe) return probe.inStack;
-  return !!context?.jellyfin.url && context.jellyfin.url === context.jellyfin.suggestedUrl && context.provisioner === "docker-sibling";
 }
 
 /** Le code d'installation glissé dans le lien des journaux (`/setup#code=…`). */

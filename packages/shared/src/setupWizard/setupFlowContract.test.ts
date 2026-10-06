@@ -86,14 +86,24 @@ describe("le retour en arrière ne remonte que dans le parcours", () => {
     return seen;
   };
 
-  it.each(SHAPES)("%s : depuis le récapitulatif, chaque écran d'avant du parcours, et rien d'autre", (_name, shape) => {
+  it.each(SHAPES)("%s : depuis le récapitulatif, chaque écran d'avant du parcours jusqu'à la session ouverte, et rien d'autre", (_name, shape) => {
     for (const path of ["fresh", "configured"] as const) {
       const steps = setupFlowSteps({ ...shape, path });
       const back = walkBack(steps, "recap");
-      expect(back).toEqual(steps.slice(0, steps.indexOf("recap") + 1).reverse());
+      const first = shape.asksDatabase ? "database" : "jellyfin";
+      expect(back).toEqual(steps.slice(steps.indexOf(first), steps.indexOf("recap") + 1).reverse());
+      expect(back).not.toContain("welcome");
+      expect(back).not.toContain("code");
       const other = path === "fresh" ? ["signIn", "recommended"] : ["account", "libraries"];
       for (const step of other) expect(back).not.toContain(step);
     }
+  });
+
+  it("du code à l'accueil, oui ; une fois la session ouverte, plus de retour vers elles", () => {
+    const steps = setupFlowSteps({ needsCode: true, asksDatabase: false, path: null });
+    expect(previousStep(steps, "code")).toBe("welcome");
+    expect(previousStep(steps, "jellyfin")).toBeNull();
+    expect(previousStep(setupFlowSteps({ needsCode: false, asksDatabase: true, path: null }), "database")).toBeNull();
   });
 
   it("aucun retour depuis l'accueil, l'installation, l'accès à distance ni la fin", () => {

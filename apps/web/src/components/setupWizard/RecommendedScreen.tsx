@@ -64,7 +64,7 @@ export function RecommendedScreen({ wizard }: { wizard: Wizard }) {
   const unreadable = report?.error != null;
 
   return (
-    <WizardFrame title={t("recTitle")} subtitle={t("recSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+    <WizardFrame title={t("recTitle")} subtitle={t("recSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
       <div className="space-y-5">
         <p className="text-sm text-content-secondary">
           {libraries === null

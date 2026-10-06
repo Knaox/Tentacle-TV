@@ -46,7 +46,6 @@ vi.stubGlobal("history", { replaceState: () => undefined });
 const { WelcomeScreen, CodeScreen } = await import("./IntroScreens");
 const { JellyfinScreen } = await import("./JellyfinScreen");
 const { JellyfinList } = await import("./JellyfinList");
-const { AccountScreen } = await import("./AccountScreen");
 const { RecapScreen } = await import("./RecapApplyScreens");
 const { ApplyScreen } = await import("./ApplyScreen");
 const { AdviceRow, RecommendedScreen } = await import("./RecommendedScreen");
@@ -71,16 +70,21 @@ function context(over: Partial<SetupContext> = {}): SetupContext {
   };
 }
 
-function wizard(data: Partial<Wizard["data"]> = {}): Wizard {
+type Path = "fresh" | "configured";
+/** Un contexte où le serveur a fixé le parcours : le Jellyfin choisi, relié ou non. */
+function chosen(path: Path, linked = false, over: Partial<SetupContext> = {}): SetupContext {
+  const selection = { url: "http://jellyfin:8096", serverId: "maison", serverName: "Maison", version: "12.1.0", inStack: true, path };
+  return context({ ...over, flow: { databasePending: false, selection, linked } });
+}
+
+function wizard(data: Partial<Wizard["data"]> = {}, server: Wizard["server"] = null): Wizard {
   return {
     step: "welcome",
     position: 1,
     total: 10,
+    server,
     data: {
       context: context(),
-      jellyfinUrl: "",
-      probe: null,
-      mode: null,
       credentials: null,
       locale: { language: "fr", country: "CH" },
       existing: [],
@@ -90,7 +94,6 @@ function wizard(data: Partial<Wizard["data"]> = {}): Wizard {
       adviceOutcomes: null,
       segments: undefined,
       session: null,
-      resumed: false,
       needsCode: true,
       codeReason: null,
       clientUrl: "",
@@ -99,6 +102,8 @@ function wizard(data: Partial<Wizard["data"]> = {}): Wizard {
     patch: () => undefined,
     next: () => undefined,
     go: () => undefined,
+    enter: () => undefined,
+    choose: () => undefined,
     back: () => undefined,
   };
 }
@@ -109,7 +114,8 @@ describe("les écrans de l'assistant", () => {
   it("bienvenue : la question, la progression, et l'avis HTTP sur le réseau local", () => {
     const out = html(<WelcomeScreen wizard={wizard()} />);
     expect(out).toContain("welcomeTitle");
-    expect(out).toContain("progress{&quot;n&quot;:1,&quot;total&quot;:10}");
+    // Tant qu'on ne sait pas si le code sera demandé, le total n'est pas juste : il n'est pas dit.
+    expect(out).not.toContain("progress{");
     expect(out).toContain('role="progressbar"');
     expect(out).toContain("httpNotice");
   });
@@ -129,9 +135,9 @@ describe("les écrans de l'assistant", () => {
     expect(out).not.toContain('value="http');
   });
 
-  it("Jellyfin déjà choisi (retour en arrière) : la liste le garde, coché", () => {
-    const probe = { url: "http://172.16.1.30:47896", version: "12.1.0", serverName: "Neuf", serverId: "neuf", blank: true, inStack: false, compatible: true, clientUrl: "http://172.16.1.30:47896" };
-    const out = html(<JellyfinScreen wizard={wizard({ probe })} />);
+  it("Jellyfin déjà choisi (retour en arrière) : la liste le garde, coché — c'était un geste", () => {
+    const selection = { url: "http://172.16.1.30:47896", version: "12.1.0", serverName: "Neuf", serverId: "neuf", inStack: false, path: "fresh" as const };
+    const out = html(<JellyfinScreen wizard={wizard({ context: context({ flow: { databasePending: false, selection, linked: false } }) })} />);
     expect(out).toContain('role="radiogroup"');
     expect(out).toMatch(/type="radio"[^>]*checked=""[^>]*value="http:\/\/172\.16\.1\.30:47896"/);
     expect(out).toContain("jfState_blank");
@@ -152,6 +158,7 @@ describe("les écrans de l'assistant", () => {
       <JellyfinList
         servers={[entry("http://jellyfin:8096", true, true), entry("http://salon:8096", false), entry("http://neuf:8097", true)]}
         selected="http://jellyfin:8096"
+        recommended="http://jellyfin:8096"
         onSelect={() => undefined}
         stackStarting={false}
       />,
@@ -164,28 +171,15 @@ describe("les écrans de l'assistant", () => {
   });
 
   it("le Jellyfin de la pile qui démarre garde sa place en tête", () => {
-    const out = html(<JellyfinList servers={[]} selected={null} onSelect={() => undefined} stackStarting />);
+    const out = html(<JellyfinList servers={[]} selected={null} recommended={null} onSelect={() => undefined} stackStarting />);
     expect(out).toContain("jfStackStarting");
-  });
-
-  it("le compte : créé (avec confirmation) ou vérifié (avec la clé en recours)", () => {
-    const create = html(<AccountScreen wizard={wizard({ mode: "initialize" })} />);
-    expect(create).toContain("accountPasswordConfirm");
-    // La langue des métadonnées n'a plus d'écran : elle est là, proposée d'office.
-    expect(create).toContain("localeLanguage");
-    expect(create).toContain("localePrepare");
-    expect(create).not.toContain("accountUseKey");
-    const login = html(<AccountScreen wizard={wizard({ mode: "connect" })} />);
-    expect(login).toContain("accountUseKey");
-    expect(login).not.toContain("accountPasswordConfirm");
   });
 
   it("le récapitulatif dit tout ce qui va être fait", () => {
     const out = html(
       <RecapScreen
         wizard={wizard({
-          jellyfinUrl: "http://jellyfin:8096",
-          probe: { url: "http://jellyfin:8096", version: "12.1.0", serverName: "Maison", serverId: "maison", blank: true, inStack: true, compatible: true, clientUrl: "http://172.16.1.30:47896" },
+          context: chosen("fresh", true),
           credentials: { username: "Knaoxtest", password: "x" },
           clientUrl: "http://172.16.1.30:47896",
           plans: [{ name: "Films", type: "movies", paths: ["/media/films"] }],
@@ -204,7 +198,7 @@ describe("les écrans de l'assistant", () => {
   });
 
   it("Jellyfin déjà configuré : l'écran des réglages conseillés, facultatifs, avec « Passer »", () => {
-    const out = html(<RecommendedScreen wizard={wizard({ mode: "connect" })} />);
+    const out = html(<RecommendedScreen wizard={wizard({ context: chosen("configured", true) })} />);
     expect(out).toContain("recTitle");
     expect(out).toContain("recSkip");
     expect(out).not.toContain("libraryAdd");
@@ -229,24 +223,24 @@ describe("les écrans de l'assistant", () => {
     const out = html(
       <RecapScreen
         wizard={wizard({
-          mode: "connect",
+          context: chosen("configured", true),
           credentials: { username: "Knaoxtest", password: "x" },
           existing: [{ name: "Films", type: "movies", paths: ["/m"] }, { name: "Séries", type: "tvshows", paths: ["/s"] }],
           advice: { segments: true, actions: ["enableTrickplay"], ids: ["segmentsProvider", "trickplay"] },
         })}
       />,
     ).replaceAll("&quot;", '"');
-    expect(out).toContain('recapLibrariesKept{"count":2}');
+    expect(out).toContain('recapLibrariesExisting{"names":"Films · Séries"}');
     expect(out).toContain("rec_segmentsProvider · rec_trickplay");
     expect(out).not.toContain("recapLocale");
   });
 
   it("l'installation d'un Jellyfin déjà configuré : seulement ce qui est coché, aucune bibliothèque", () => {
-    const joined = html(<ApplyScreen wizard={wizard({ mode: "connect", advice: { segments: false, actions: ["enableTrickplay"], ids: ["trickplay"] } })} onSession={() => undefined} />);
+    const joined = html(<ApplyScreen wizard={wizard({ context: chosen("configured", true), advice: { segments: false, actions: ["enableTrickplay"], ids: ["trickplay"] } })} onSession={() => undefined} />);
     expect(joined).not.toContain("segmentPlugins:wizardLine");
     expect(joined).toContain("applyAdvice");
     expect(joined).not.toContain("applyLibraries");
-    const withSegments = html(<ApplyScreen wizard={wizard({ mode: "connect", advice: { segments: true, actions: [], ids: ["segmentsProvider"] } })} onSession={() => undefined} />);
+    const withSegments = html(<ApplyScreen wizard={wizard({ context: chosen("configured", true), advice: { segments: true, actions: [], ids: ["segmentsProvider"] } })} onSession={() => undefined} />);
     expect(withSegments.indexOf("segmentPlugins:wizardLine")).toBeLessThan(withSegments.indexOf("applyAdvice"));
   });
 

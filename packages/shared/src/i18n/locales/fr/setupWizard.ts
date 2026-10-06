@@ -6,6 +6,7 @@
  * devant « ? », « : » et « ! » (garde-fou : `setupWizardVocabulary.test.ts`).
  */
 import errors from "./setupWizardErrors";
+import flow from "./setupWizardFlow";
 
 export default {
   // ── Le cadre ──────────────────────────────────────────────────────────
@@ -90,8 +91,8 @@ export default {
 
   // ── Jellyfin ──────────────────────────────────────────────────────────
   jfTitle: "Jellyfin",
-  jfSubtitleSibling: "Le Jellyfin installé avec cette pile est choisi d'office. Les autres Jellyfin trouvés sur votre réseau restent proposés.",
-  jfSubtitleExisting: "Les serveurs Jellyfin que Tentacle a trouvés. Le neuf est choisi d'office\u00a0; prenez-en un autre si vous préférez.",
+  jfSubtitleSibling: "Choisissez le Jellyfin que Tentacle utilisera. Celui installé avec cette pile est en tête, conseillé\u00a0; les autres Jellyfin de votre réseau sont proposés aussi.",
+  jfSubtitleExisting: "Choisissez le Jellyfin que Tentacle utilisera, parmi ceux qu'il a trouvés\u00a0: rien n'est choisi pour vous.",
   jfSubtitleNative: "Tentacle cherche Jellyfin sur cette machine et sur votre réseau.",
   jfUrl: "Adresse de Jellyfin",
   jfUrlHint: "Par exemple http://192.168.1.20:8096. Depuis Docker, un Jellyfin de cette machine se joint par http://host.docker.internal:8096.",
@@ -120,7 +121,7 @@ export default {
   jfGroup_incompatible: "Non pris en charge par ce serveur Tentacle",
   jfStackStarting: "Le Jellyfin de cette pile démarre\u00a0: Tentacle le verrouille pour vous…",
   jfSearchingOthers: "Recherche d'autres Jellyfin sur votre réseau…",
-  jfNextBlank: "Neuf\u00a0: vous créez son compte administrateur, Tentacle prépare les bibliothèques Films et Séries et installe la détection des passages.",
+  jfNextBlank: "Neuf\u00a0: vous créez son compte administrateur, puis ses bibliothèques — de vraies bibliothèques Jellyfin. Tentacle installe aussi la détection des passages.",
   jfNextConfigured: "Déjà configuré\u00a0: vous vous connectez avec un compte administrateur de ce Jellyfin. Tentacle n'y crée rien — ni compte, ni bibliothèque — et vous proposera seulement des réglages conseillés, tous facultatifs.",
   jfStackAddress: "Dans la pile Docker\u00a0: {{host}}, port {{port}}",
   jfStackConfigured: "Le Jellyfin de cette pile a déjà été configuré par quelqu'un. Tentacle ne s'y relie qu'avec son compte administrateur\u00a0: c'est l'étape suivante.",
@@ -180,7 +181,7 @@ export default {
 
   // ── Les bibliothèques ─────────────────────────────────────────────────
   librariesTitle: "Vos bibliothèques",
-  librariesSubtitle: "Où Jellyfin trouve vos films et vos séries. Vous pourrez en ajouter d'autres plus tard.",
+  librariesSubtitle: "Les bibliothèques de ce Jellyfin\u00a0: où il trouve vos films et vos séries. Tentacle les crée dans Jellyfin\u00a0; vous pourrez en ajouter d'autres plus tard, depuis Jellyfin.",
   librariesExisting: "Déjà dans Jellyfin",
   librariesNew: "À créer",
   librariesNone: "Aucune bibliothèque à créer\u00a0: vous pourrez en ajouter depuis Jellyfin.",
@@ -292,6 +293,7 @@ export default {
   doneRemote_off: "Pas encore réglé\u00a0: Tentacle marche à la maison. Administration › Accès à distance quand vous voudrez.",
   doneOpen: "Ouvrir Tentacle",
 
-  // ── Les erreurs (setupWizardErrors.ts) ───────────────────────────────
+  // ── Les erreurs et le parcours (setupWizardErrors.ts, setupWizardFlow.ts) ──
   ...errors,
+  ...flow,
 };
