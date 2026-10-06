@@ -110,3 +110,37 @@ les deux premiers) :
   composition de SurfaceFlinger avec la vidéo.
 - **Le héros** : un blocage isolé de 166 ms pendant une rotation, dans une
   passe sur deux.
+
+## Démarrage du lecteur et rangées (lot 06/10, T2)
+
+Faux backend du banc, app de mesure, trois MKV 1080p à 23,976 i/s (son 5.1
+AC-3 ou E-AC-3, HDR10 pour le dernier : jeux `lecteur/flux-*`). Deux outils :
+`startup.mjs` (OK sur « Reprendre », écran filmé + journal `TntStart`) et
+`rowMotion.mjs` (décalage de la rangée entre deux images du film).
+
+**Le démarrage** (ms depuis OK ; « visible » : la vidéo paraît dans le film,
+qui retarde de ~0,55 s sur l'écran) :
+
+| | première image | prêt | lecture | son sorti | visible − son |
+|---|---|---|---|---|---|
+| avant (6 lectures) | 1 630-1 985 | 1 723-2 112 | = prêt | 1 829-2 386 | 717 à 1 042 |
+| après (3 lectures) | 1 754-1 806 | 1 772-1 834 | prêt + ~100 | 2 071-2 127 | 354 à 437 |
+
+Avant : le moteur jouait dès son « prêt » ; l'écran de chargement attendait
+la progression suivante — le son sortait sous l'écran de chargement, la vidéo
+paraissait déjà partie. Après : la première image est posée en pause, l'écran
+se lève avec la lecture ; l'image reste figée ~0,2 s (le passthrough vers
+l'ampli), puis le mouvement et le son partent ensemble. Lever l'écran au
+signal « le son avance » (`onAudioPositionAdvancing`) a été essayé puis
+annulé : il arrive ~120 ms après la vraie sortie du son, le son précédait
+alors l'image (une avance se perçoit dès ~45 ms, un retard pas avant ~125).
+
+**Les rangées** (changements de sens d'un aller-retour tenu ; une tenue en
+compte UN) : avant 17, sauts de 260 à 320 px en une image ; après 1, de 20 à
+56 px par image. Pas isolés : avant, un saut de 300 px au départ ; après,
+64 px au plus.
+
+Pièges de la Shield, la nuit : elle se rendort entre deux lectures, et son
+adb réseau tombe avec — `startup.mjs` la réveille et rétablit le relais avant
+chaque lecture ; une APK de 160 Mo s'installe rarement d'une traite. Une
+lecture interrompue rouvre la FICHE au démarrage suivant (voulu).
