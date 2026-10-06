@@ -6,13 +6,15 @@ Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [1.10.1]
-<!-- Bloc nu : Android TV (Google Play, 500 caractères) — première livraison de la refonte, donc 1.10.0 + 1.10.1 résumés. -->
+<!-- Bloc nu : Android TV (Google Play, 500 caractères) — première livraison de la refonte, donc 1.10.0 + 1.10.1 résumés. Complété le 06/10 : panne de Jellyfin et qualité réduite. -->
 ### FR
 - **Android TV redessinée**, comme l'Apple TV : navigation de verre, grand bandeau, grand panneau en maintenant OK
 - **Profils de la famille** avec code PIN (serveur 1.23.0)
 - **La lecture démarre d'un seul tenant**, image et son ensemble
 - **Des rangées sans sursaut** et un accueil qui paraît d'un seul fondu
 - **Le bandeau suit votre réglage**, comme sur mobile
+- **Jellyfin redémarre ?** La lecture continue (serveur 1.24.0)
+- **Qualité réduite plus fine** (HEVC)
 - Plus de plantage au jumelage
 
 ### EN
@@ -21,10 +23,12 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Playback starts in one go**, picture and sound together
 - **Rows scroll without jumps** and Home appears in a single fade
 - **The banner follows your setting**, as on mobile
+- **Jellyfin restarting?** Playback continues (server 1.24.0)
+- **Sharper reduced quality** (HEVC)
 - No more crash when pairing
 
 ## [atv-1.10.1]
-<!-- Bloc Apple TV (App Store Connect, 4000 caractères) : correctifs de la 1.10.0. -->
+<!-- Bloc Apple TV (App Store Connect, 4000 caractères) : depuis la 1.10.0 soumise le 04/10. Complété le 06/10 : panne de Jellyfin, qualité réduite, noms des profils, jumelage. -->
 ### FR
 - **« Passer l'intro » et « Passer le générique » se valident d'un clic**, même quand le doigt glisse un peu sur le pavé : plus de recherche lancée par erreur
 - **Au lancement, « Qui regarde ? » s'affiche aussitôt**, sans écran de chargement avant
@@ -33,6 +37,11 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **La photo des profils s'affiche à nouveau** dans « Gérer les profils »
 - **La bannière de l'accueil suit votre réglage** (reprise, au hasard, titre choisi ou Pour vous), comme sur le mobile et l'ordinateur
 - **L'accueil apparaît d'un seul fondu**, navigation comprise, une fois chargé
+- **Jellyfin redémarre pendant un film ?** Avec le serveur 1.24.0, l'image qui tient n'est plus relancée à son retour, et le bandeau est temporaire, avec un compte à rebours
+- **Qualité réduite plus fine** (HEVC quand le serveur l'autorise) ; l'épisode suivant revérifie la connexion et revient en lecture directe quand elle le permet
+- « Qui regarde ? » ne coupe plus les noms des profils
+- La barre du décompte du défilement se vide d'un seul tenant
+- L'écran de jumelage indique où saisir le code sur le téléphone : Profil › Appareils et TV
 - La rangée des titres entamés s'appelle « Là où vous en étiez »
 
 ### EN
@@ -43,6 +52,11 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Profile photos show again** in "Manage profiles"
 - **The home banner follows your setting** (continue watching, random, a chosen title or For You), as on mobile and desktop
 - **Home appears in a single fade**, navigation included, once loaded
+- **Jellyfin restarts during a movie?** With server 1.24.0, a picture that holds is no longer restarted when it comes back, and the banner is temporary, with a countdown
+- **Sharper reduced quality** (HEVC when the server allows it); the next episode re-checks the connection and returns to direct play when it allows
+- "Who's watching?" no longer cuts off profile names
+- The scrub countdown bar empties in one smooth sweep
+- The pairing screen tells you where to type the code on your phone: Profile › Devices and TVs
 - The in-progress row is now called "Where you left off"
 
 ## [atv-1.10.0]
