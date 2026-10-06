@@ -13,6 +13,8 @@ import com.facebook.react.shell.MainPackageConfig
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 import com.swmansion.rnscreens.ScreenStack
+import com.tentacletv.device.DevicePackage
+import com.tentacletv.device.DeviceSignals
 import com.tentacletv.exoplayer.ExoPackage
 import com.tentacletv.focus.TentacleFocusPackage
 import com.tentacletv.media.MediaCapabilitiesPackage
@@ -36,7 +38,7 @@ class MainApplication : Application(), ReactApplication {
       object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
             // Fresco réglé pour la TV (`render/ImagePipelineTuning` : textures envoyées d'avance).
-            PackageList(this@MainApplication, MainPackageConfig(ImagePipelineTuning.config(this@MainApplication))).packages + listOf(VoiceRecognitionPackage(), MpvPackage(), ExoPackage(), TentacleFocusPackage(), PlayerProbePackage(), RenderPackage(), MediaCapabilitiesPackage())
+            PackageList(this@MainApplication, MainPackageConfig(ImagePipelineTuning.config(this@MainApplication))).packages + listOf(VoiceRecognitionPackage(), MpvPackage(), ExoPackage(), TentacleFocusPackage(), PlayerProbePackage(), RenderPackage(), MediaCapabilitiesPackage(), DevicePackage())
 
         override fun getJSMainModuleName(): String = "index"
 
@@ -48,6 +50,10 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    // Les signaux du niveau de rendu (mémoire, cœurs, SoC), lus sur un fil à
+    // part dès maintenant : prêts avant que le JS ne les demande, donc avant
+    // la première image (`device/DeviceSignals`).
+    DeviceSignals.prime(this)
     SoLoader.init(this, OpenSourceMergedSoMapping)
     // Émet AUSSI les événements TV key-DOWN (eventKeyAction=0) et leurs
     // répétitions vers useTVEventHandler — sans ce flag, seuls les key-up
