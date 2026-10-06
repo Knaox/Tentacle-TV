@@ -30,4 +30,4 @@ export {
 // retire part au LÂCHER (cf. rows/heldRow — la règle de toutes les rangées)
 export { useHeldRowItems, useRowSnapshot, heldRowView } from "../rows/heldRow";
 // Les images de repli de la bannière d'accueil (cf. hooks/useHeroArtwork)
-export { useHeroArtwork, fetchHeroArtwork } from "../hooks/useHeroArtwork";
+export { useHeroArtwork, useHeroArtworkUrls, fetchHeroArtwork } from "../hooks/useHeroArtwork";
