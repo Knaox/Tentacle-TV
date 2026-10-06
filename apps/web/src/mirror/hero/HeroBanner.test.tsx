@@ -6,6 +6,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("../../components/hero/AmbilightLayer", () => ({
   AmbilightLayer: ({ url }: { url: string }) => <i data-halo={url} />,
 }));
+// Le repli côté serveur d'un titre (fond TMDB, autre image Jellyfin) : piloté par le test.
+const artwork = vi.hoisted(() => ({ urls: undefined as string[] | undefined, asked: [] as Array<string | undefined> }));
+vi.mock("@tentacle-tv/api-client", () => ({
+  useHeroArtworkUrls: (itemId: string | undefined, enabled: boolean) => {
+    if (enabled) artwork.asked.push(itemId);
+    return artwork.urls;
+  },
+}));
 import { HeroBanner } from "./HeroBanner";
 import type { HeroSlide } from "./heroSlides";
 
@@ -35,5 +43,21 @@ describe("HeroBanner", () => {
   it("n'affiche aucun point pour une diapositive seule", () => {
     const html = renderToStaticMarkup(<HeroBanner slides={[slide("a")]} />);
     expect(html).not.toContain("w-[22px]");
+  });
+
+  it("un titre sans visuel large : le repli du serveur passe avant l'affiche", () => {
+    artwork.urls = ["https://image.tmdb.org/t/p/w1280/fond.jpg"];
+    artwork.asked = [];
+    const html = renderToStaticMarkup(<HeroBanner slides={[{ ...slide("a"), mediaId: "a", wideUri: null }]} />);
+    expect(artwork.asked).toEqual(["a"]);
+    expect(html).toContain('src="https://image.tmdb.org/t/p/w1280/fond.jpg"');
+    expect(html).not.toContain('src="a-poster"');
+    artwork.urls = undefined;
+  });
+
+  it("un visuel large annoncé : aucune demande au serveur", () => {
+    artwork.asked = [];
+    renderToStaticMarkup(<HeroBanner slides={[{ ...slide("a"), mediaId: "a", wideUri: "a-large" }]} />);
+    expect(artwork.asked).toEqual([]);
   });
 });
