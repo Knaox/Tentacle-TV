@@ -142,12 +142,12 @@ export default {
   plugin_introDb: "Community timestamp database, no local analysis.",
   plugin_skipmeDb: "Shared timestamp database, complementing Intro Skipper.",
   segmentsScanHelp:
-    "They stack: each reports what it knows, the most precise wins, and installing two causes no conflict. After installing, run Jellyfin's \"Media segment scan\" scheduled task — segments only appear once the library has been analysed.",
+    "They stack: each reports what it knows, the most precise wins. “Install / repair” adds their repositories, installs them, restarts Jellyfin when needed (never while someone is watching, unless you ask) and sets them up. An offline repository blocks nothing: just run it again later.",
   segmentsFrameNote:
     "On the first play of every movie and episode, Tentacle reads its ending: the progress bar thumbnails show where the credits roll, the audio tells music from dialogue. From them it finds where the credits start and the scenes that follow, mid-credits and post-credits alike — even when a plugin had already set credits. Jellyfin's \"Generate Trickplay Images\" task must have run on the media; only what is found gets saved.",
   audioTitle: "Audio analysis",
   audioNote:
-    "Tentacle listens to the end of every movie and episode to tell its scenes apart from the credits; and for an episode with no known segments, to the start and end of its season neighbours: what repeats is the opening or the ending. Once per media, on first play; audio clips transcoded by Jellyfin, one at a time, never while another viewer is transcoding video. Nothing is saved when the analysis finds nothing.",
+    "Off by default. When on, Tentacle listens to the end of every movie and episode to tell its scenes apart from the credits; and for an episode with no known segments, to the start and end of its season neighbours: what repeats is the opening or the ending. Once per media, on first play; audio clips transcoded by Jellyfin, one at a time, never while another viewer is transcoding video. Nothing is saved when the analysis finds nothing.",
   audioTool: "Fingerprint tool on this server: {{tool}}.",
   audioUnavailable:
     "No fingerprint tool on this server (fpcalc, or ffmpeg with chromaprint): comparing season neighbours is inactive. The official Docker image ships it.",

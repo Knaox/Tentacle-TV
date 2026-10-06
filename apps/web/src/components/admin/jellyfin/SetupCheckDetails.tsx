@@ -6,6 +6,7 @@ import { useToast } from "../../../contexts/ToastContext";
 import { StatusPill, type StatusTone } from "../kit";
 import { formatMoment, localized } from "./compatPresentation";
 import { splitLibraries } from "./setupPresentation";
+import { SegmentPluginsRepair } from "../services/SegmentPluginsRepair";
 
 /**
  * L'état RÉEL d'un réglage sur le serveur connecté, en une ou deux lignes :
@@ -157,6 +158,8 @@ export function SetupCheckDetails({ check, jellyfinVersion }: { check: SetupChec
         <>
           {check.plugins && <Plugins plugins={check.plugins} />}
           <Task task={check.task} />
+          {/* Le geste à part : il pose les trois greffons et redémarre Jellyfin. */}
+          {check.state !== "done" ? <div className="pt-2"><SegmentPluginsRepair /></div> : null}
         </>
       );
     case "realtimeMonitor":

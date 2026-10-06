@@ -1,39 +1,38 @@
 import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
-import type { SetupPluginState } from "@tentacle-tv/shared";
+import type { SegmentPluginKey, SetupPluginState } from "@tentacle-tv/shared";
 import { AdminSection, StatusPill, type StatusTone } from "../kit";
 import { useJellyfinSetup } from "../jellyfin/jellyfinAdminApi";
 import { AudioAnalysisPanel } from "./AudioAnalysisPanel";
+import { SegmentPluginsRepair } from "./SegmentPluginsRepair";
 
 /**
- * Où le serveur trouve les passages d'un épisode — et comment lui en donner.
+ * Où le serveur trouve les passages d'un épisode — et le geste qui les lui
+ * donne.
  *
- * Les greffons restent la SOURCE PREMIÈRE : ils voient la vidéo et l'audio.
- * Mais Tentacle n'est plus aveugle sans eux : à la première lecture de chaque
- * film et de chaque épisode, l'analyse de FIN DE MÉDIA lit les vignettes
- * trickplay et écoute la fin (`services/tailAnalysis/`) — début du générique,
- * scènes mi- et post-génériques, y compris contre un greffon qui s'est
- * trompé ; et pour un épisode que personne n'a décrit, l'analyse AUDIO écoute
- * ses voisins de saison (`services/audioAnalysis.ts`). Les deux font
- * travailler Jellyfin : elles partagent un interrupteur, et un compteur.
+ * Trois greffons de Jellyfin, que Tentacle installe et règle lui-même
+ * (« Installer / réparer », le même passage que l'assistant d'installation) :
+ * Intro Skipper (son analyse automatique, qui écoute l'audio, reste coupée),
+ * TheIntroDB et SkipMe.db — deux bases en ligne. Ils s'EMPILENT : chacun
+ * signale ce qu'il sait, et le résolveur prend le plus précis.
  *
- * Les greffons s'EMPILENT : chacun signale ce qu'il sait, et le résolveur prend
- * le plus précis. En installer deux ne crée pas de conflit. Chaque carte dit
- * s'il est installé sur le Jellyfin connecté — lu par les réglages
- * recommandés, la même requête que la vue d'ensemble, où il s'installe.
+ * Tentacle a aussi son analyse : à la première lecture, la fin de chaque média
+ * par ses vignettes trickplay (`services/tailAnalysis/`) ; l'ÉCOUTE (fin de
+ * média et voisins de saison) est coupée par défaut, son interrupteur est
+ * ci-dessous. Chaque carte dit si le greffon est installé sur le Jellyfin
+ * connecté — lu par les réglages recommandés, la même requête que la vue
+ * d'ensemble.
  */
 
 interface Plugin {
-  key: string;
-  name: string;
+  key: SegmentPluginKey;
   url: string;
 }
 
 const PLUGINS: readonly Plugin[] = [
-  { key: "introSkipper", name: "Intro Skipper", url: "https://github.com/intro-skipper/intro-skipper" },
-  { key: "chapterSegments", name: "Chapter Segments", url: "https://github.com/jellyfin/jellyfin-plugin-chapter-segments" },
-  { key: "introDb", name: "TheIntroDB", url: "https://github.com/TheIntroDB/jellyfin-plugin" },
-  { key: "skipmeDb", name: "skipme.db", url: "https://github.com/intro-skipper/skipme.db-plugin" },
+  { key: "introSkipper", url: "https://github.com/intro-skipper/intro-skipper" },
+  { key: "theIntroDb", url: "https://github.com/TheIntroDB/jellyfin-plugin" },
+  { key: "skipMeDb", url: "https://github.com/intro-skipper/skipme.db-plugin" },
 ];
 
 const PLUGIN_STATE: Record<SetupPluginState, { tone: StatusTone; key: string }> = {
@@ -51,14 +50,14 @@ function usePluginStates(): Map<string, SetupPluginState> {
 }
 
 export function SegmentDetectionSection() {
-  const { t } = useTranslation(["adminServices", "adminJellyfin"]);
+  const { t } = useTranslation(["adminServices", "adminJellyfin", "segmentPlugins"]);
   const states = usePluginStates();
   return (
     <AdminSection id="segments" title={t("segmentsTitle")} description={t("segmentsDescription")}>
       <div className="space-y-5">
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">{t("segmentsPlugins")}</p>
-          <ul className="grid gap-2 md:grid-cols-2 2xl:grid-cols-4">
+          <ul className="grid gap-2 md:grid-cols-3">
             {PLUGINS.map((plugin) => {
               const state = states.get(plugin.url);
               return (
@@ -71,13 +70,13 @@ export function SegmentDetectionSection() {
                   >
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-content-primary">
-                        {plugin.name}
+                        {t(`segmentPlugins:plugin_${plugin.key}`)}
                         {state && (
                           <StatusPill tone={PLUGIN_STATE[state].tone} size="sm">{t(`adminJellyfin:${PLUGIN_STATE[state].key}`)}</StatusPill>
                         )}
                         <span className="sr-only"> {t("opensNewTab")}</span>
                       </span>
-                      <span className="mt-0.5 block text-xs leading-relaxed text-content-tertiary">{t(`plugin_${plugin.key}`)}</span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-content-tertiary">{t(`segmentPlugins:role_${plugin.key}`)}</span>
                     </span>
                     <ExternalLink size={14} aria-hidden="true" className="mt-1 shrink-0 text-content-quaternary group-hover:text-content-secondary" />
                   </a>
@@ -85,6 +84,9 @@ export function SegmentDetectionSection() {
               );
             })}
           </ul>
+          <div className="mt-3">
+            <SegmentPluginsRepair />
+          </div>
           <p className="mt-3 text-xs leading-relaxed text-content-tertiary">{t("segmentsScanHelp")}</p>
           <p className="mt-2 text-xs leading-relaxed text-content-tertiary">{t("segmentsFrameNote")}</p>
         </div>

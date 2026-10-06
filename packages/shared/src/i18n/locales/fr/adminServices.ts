@@ -143,12 +143,12 @@ export default {
   plugin_introDb: "Base communautaire de repères, sans analyse locale.",
   plugin_skipmeDb: "Base partagée de repères, en complément d'Intro Skipper.",
   segmentsScanHelp:
-    "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte, et en installer deux ne crée pas de conflit. Après installation, lancez la tâche planifiée « Media segment scan » de Jellyfin — les passages n'apparaissent qu'une fois la bibliothèque analysée.",
+    "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte. « Installer / réparer » ajoute leurs dépôts, les installe, redémarre Jellyfin s'il le faut (jamais pendant qu'on regarde, sauf si vous le demandez) et les règle. Un dépôt hors ligne n'empêche rien : le geste se refait plus tard.",
   segmentsFrameNote:
     "À la première lecture de chaque film et de chaque épisode, Tentacle lit sa fin : les vignettes de la barre de progression montrent où défile le générique, l'audio sépare la musique des dialogues. Il en tire le début du générique et les scènes qui le suivent, mi-génériques comme post-génériques — même quand un greffon en avait déjà posé un. Il faut que la tâche « Générer des images Trickplay » de Jellyfin soit passée sur le média ; seul ce qui est trouvé est enregistré.",
   audioTitle: "Analyse audio",
   audioNote:
-    "Tentacle écoute la fin de chaque film et de chaque épisode pour y distinguer les scènes du générique ; et pour un épisode sans passages connus, le début et la fin de ses voisins de saison : ce qui se répète est l'opening ou l'ending. Une fois par média, à la première lecture ; des extraits audio transcodés par Jellyfin, un à la fois, jamais pendant qu'un autre spectateur transcode une vidéo. Rien n'est enregistré quand l'analyse ne trouve rien.",
+    "Coupée par défaut. Allumée, Tentacle écoute la fin de chaque film et de chaque épisode pour y distinguer les scènes du générique ; et pour un épisode sans passages connus, le début et la fin de ses voisins de saison : ce qui se répète est l'opening ou l'ending. Une fois par média, à la première lecture ; des extraits audio transcodés par Jellyfin, un à la fois, jamais pendant qu'un autre spectateur transcode une vidéo. Rien n'est enregistré quand l'analyse ne trouve rien.",
   audioTool: "Outil d'empreinte sur ce serveur : {{tool}}.",
   audioUnavailable:
     "Aucun outil d'empreinte sur ce serveur (fpcalc, ou ffmpeg avec chromaprint) : la comparaison des épisodes voisins est inactive. L'image Docker officielle l'embarque.",
