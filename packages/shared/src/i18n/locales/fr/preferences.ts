@@ -344,7 +344,7 @@ export default {
   // Mobile Android, lecteur avancé : l'écran calé sur la cadence du film.
   matchScreenFrameRate: "Adapter la fréquence de l'écran",
   matchScreenFrameRateHint:
-    "L'écran passe à la cadence du film pendant la lecture (120 Hz pour un film à 24 images par seconde, sur un écran qui le permet) : les travellings restent parfaitement fluides. Il retrouve sa fréquence habituelle en quittant le lecteur.",
+    "L'écran passe à la cadence du film pendant la lecture (120 Hz pour un film à 24 images par seconde, sur un écran qui le permet), puis retrouve sa fréquence habituelle. Sur certains téléphones, le système fixe la fréquence pendant les vidéos : réglez Tentacle sur 120 Hz dans Écran › Taux de rafraîchissement par application.",
   subtitleScale: "Taille des sous-titres",
   subtitleScaleSmall: "Petit",
   subtitleScaleLarge: "Grand",

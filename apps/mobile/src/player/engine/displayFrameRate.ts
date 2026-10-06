@@ -37,19 +37,19 @@ export interface ScreenModes {
 
 /**
  * Le mode que la FENÊTRE demande pendant la lecture, quel que soit le moteur
- * — 0 : ne rien demander. La règle du mode est partagée (`pickDisplayMode`) ;
- * ici, ce que le téléphone permet : la préférence système « jamais » est
- * respectée, « sans coupure seulement » écarte un mode qu'Android ne sait pas
- * joindre sans couper l'image, et un écran déjà au bon mode n'est pas épinglé.
+ * — 0 : ne rien demander. La règle du mode est partagée (`pickDisplayMode`).
+ *
+ * Deux leçons du téléphone réel (OPPO Find X3 Pro, ColorOS 14, 60/120 Hz) :
+ * - le mode est ÉPINGLÉ même quand l'écran y est déjà. L'app tournait à
+ *   120 Hz au départ, donc rien n'était demandé — et le système redescendait
+ *   à 60 Hz dès que la vidéo jouait, sans personne pour l'en empêcher ;
+ * - la préférence système « Adapter la fréquence » ne filtre plus rien : elle
+ *   gouverne l'adaptation AUTOMATIQUE au contenu (le vote de surface), pas une
+ *   demande explicite de la fenêtre. Le seuil « sans coupure seulement »
+ *   écartait le 120 Hz là où 60 ↔ 120 n'est pas annoncé comme sans coupure.
+ *   Le réglage de Tentacle est le choix de l'utilisateur.
  */
 export function windowDisplayMode(fps: number, screen: ScreenModes | null): number {
   if (!(fps > 0) || !screen || screen.currentModeId === undefined) return 0;
-  if (screen.matchPreference === "never") return 0;
-  const target = pickDisplayMode(fps, screen.currentModeId, screen.modes);
-  if (!target || target.id === screen.currentModeId) return 0;
-  const seamless = screen.seamlessRefreshRates;
-  if (screen.matchPreference === "seamless" && seamless && !seamless.some((hz) => Math.abs(hz - target.refreshRate) < 0.01)) {
-    return 0;
-  }
-  return target.id;
+  return pickDisplayMode(fps, screen.currentModeId, screen.modes)?.id ?? 0;
 }

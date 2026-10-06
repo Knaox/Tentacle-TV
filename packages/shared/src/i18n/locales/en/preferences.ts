@@ -342,7 +342,7 @@ export default {
     "ASS subtitles keep their fonts, colors and positions. Off, the system player shows them as plain text.",
   matchScreenFrameRate: "Match screen refresh rate",
   matchScreenFrameRateHint:
-    "During playback the screen switches to the film's frame rate (120 Hz for a 24 fps film, on screens that support it), so camera pans stay perfectly smooth. It returns to its usual rate when you leave the player.",
+    "During playback the screen switches to the film's frame rate (120 Hz for a 24 fps film, on screens that support it), then returns to its usual rate. On some phones the system locks the refresh rate during videos: set Tentacle to 120 Hz in Display › Per-app refresh rate.",
   subtitleScale: "Subtitle size",
   subtitleScaleSmall: "Small",
   subtitleScaleLarge: "Large",

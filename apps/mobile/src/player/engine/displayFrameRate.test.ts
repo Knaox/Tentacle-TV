@@ -39,20 +39,26 @@ describe("windowDisplayMode", () => {
     expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "always" })).toBe(3);
   });
 
-  it("déjà au bon mode : rien n'est épinglé", () => {
-    expect(windowDisplayMode(23.976, { currentModeId: 3, modes })).toBe(0);
-    expect(windowDisplayMode(30, { currentModeId: 1, modes })).toBe(0);
+  it("déjà au bon mode : le mode est épinglé quand même (le système redescendrait pendant la vidéo)", () => {
+    expect(windowDisplayMode(23.976, { currentModeId: 3, modes })).toBe(3);
+    expect(windowDisplayMode(30, { currentModeId: 1, modes })).toBe(1);
   });
 
-  it("respecte la préférence système « jamais »", () => {
-    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "never" })).toBe(0);
+  it("la préférence système ne bloque pas une demande explicite de la fenêtre", () => {
+    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "never" })).toBe(3);
+    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "seamless", seamlessRefreshRates: [] })).toBe(3);
   });
 
-  it("« sans coupure seulement » : seulement un mode joignable sans coupure", () => {
-    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "seamless", seamlessRefreshRates: [90, 120] })).toBe(3);
-    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "seamless", seamlessRefreshRates: [] })).toBe(0);
-    // Avant Android 12, pas de liste : rien ne l'interdit.
-    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "seamless", seamlessRefreshRates: null })).toBe(3);
+  it("écran 60/120 Hz en deux définitions (Find X3 Pro) : 120 Hz dans la définition courante", () => {
+    const oppo = [
+      { id: 1, width: 1440, height: 3216, refreshRate: 120 },
+      { id: 2, width: 1440, height: 3216, refreshRate: 60 },
+      { id: 3, width: 1080, height: 2412, refreshRate: 120 },
+      { id: 4, width: 1080, height: 2412, refreshRate: 60 },
+    ];
+    expect(windowDisplayMode(23.976, { currentModeId: 4, modes: oppo })).toBe(3);
+    expect(windowDisplayMode(24, { currentModeId: 1, modes: oppo })).toBe(1);
+    expect(windowDisplayMode(25, { currentModeId: 4, modes: oppo })).toBe(0);
   });
 
   it("rien sans cadence, sans écran, ni mode qui convienne", () => {
