@@ -3,6 +3,7 @@ import fr from "./locales/fr/sessions";
 import en from "./locales/en/sessions";
 import { REASONS_WITH_DETAILS, TRANSCODE_REASONS, explainPlayback } from "../adminSessions/explain";
 import type { AdminSessionDto } from "../types/adminSessionsDto";
+import { SERVER_CAPABILITY_KEYS } from "../serverCapabilities/serverCapabilities";
 
 /**
  * L'espace `sessions` est lu par le tableau de bord du bureau ET du mobile :
@@ -41,7 +42,7 @@ function paramsFor(reason: string): string[] {
     },
     transcoding: { isVideoDirect: false, isAudioDirect: false, reasons: [reason] },
   };
-  return Object.keys(explainPlayback(session, "fr").reasons[0]?.params ?? {}).sort();
+  return Object.keys(explainPlayback(session, "fr", new Set(SERVER_CAPABILITY_KEYS)).reasons[0]?.params ?? {}).sort();
 }
 
 describe("vocabulaire des sessions", () => {
