@@ -1,0 +1,45 @@
+# ══════════════════════════════════════════════════════════════════════════
+#  Banc de bout en bout — les mandataires de l'UTILISATEUR, simulés
+# ══════════════════════════════════════════════════════════════════════════
+#  Les piles livrées n'embarquent aucun mandataire : ce fichier, propre au
+#  banc (proxies.e2e.ts), pose un Caddy ou un Traefik à côté de la pile
+#  complète, nourri des extraits que génère l'administration
+#  (packages/shared/src/remoteAccess/proxySnippets.ts). Le banc les écrit
+#  dans RUN_DIR/proxy/ avant de monter la pile.
+#
+#  Comme chez l'utilisateur, le mandataire vise les ports PUBLIÉS de
+#  l'hôte (host.docker.internal), pas les services du réseau de la pile.
+#  Aucune autorité publique : Caddy signe avec son autorité interne, Traefik
+#  vise une autorité ACME injoignable et sert son certificat par défaut.
+# ══════════════════════════════════════════════════════════════════════════
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["caddy"]
+    depends_on: [tentacle, jellyfin]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports:
+      - "${PROXY_HTTP_PORT}:80"
+      - "${PROXY_HTTPS_PORT}:443"
+    volumes:
+      - ${RUN_DIR}/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+
+  traefik:
+    image: traefik:v3.5
+    profiles: ["traefik"]
+    depends_on: [tentacle, jellyfin]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.websecure.address=:443
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.storage=/tmp/acme.json
+      - --certificatesresolvers.letsencrypt.acme.caserver=https://127.0.0.1:9/directory
+    ports:
+      - "${PROXY_HTTP_PORT}:80"
+      - "${PROXY_HTTPS_PORT}:443"
+    volumes:
+      - ${RUN_DIR}/proxy/traefik-dynamic.yml:/etc/traefik/dynamic.yml:ro

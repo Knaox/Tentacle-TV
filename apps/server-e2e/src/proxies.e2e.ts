@@ -1,58 +1,45 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { caddySnippet, traefikSnippet, type ProxySnippetInput } from "../../../packages/shared/src/remoteAccess/proxySnippets";
 import { httpCall, httpsCall } from "./https";
-import { REPO, Stack, waitFor } from "./stack";
+import { Stack, waitFor } from "./stack";
 
 /**
- * Les profils `caddy` et `traefik` de la pile complète : HTTPS vers Tentacle,
- * Jellyfin avec UN SEUL en-tête CORS (celui de Tentacle, jamais en double),
- * préambule compris, et le port 80 qui renvoie vers HTTPS.
+ * Le mandataire de l'UTILISATEUR devant la pile complète — les piles livrées
+ * n'en embarquent aucun. Un Caddy ou un Traefik propre au banc
+ * (`apps/server-e2e/proxies/compose.yaml`) reçoit l'extrait EXACT que donne
+ * l'administration (`proxySnippets`), visant les ports publiés de l'hôte comme
+ * chez l'utilisateur : HTTPS vers Tentacle, Jellyfin avec UN SEUL en-tête CORS
+ * (celui de Tentacle, jamais en double), préambule compris, et le port 80 qui
+ * renvoie vers HTTPS.
  *
  * Sur un banc, aucune autorité publique ne signe `*.localtest.me` : Caddy
- * reçoit son autorité interne (`tls internal`, ajouté au Caddyfile LIVRÉ, rien
- * d'autre ne change), Traefik sert son certificat par défaut — et aucun des
- * deux ne s'adresse à Let's Encrypt.
+ * reçoit son autorité interne (`tls internal` ajouté à chaque site de
+ * l'extrait, rien d'autre ne change), Traefik sert son certificat par défaut —
+ * et aucun des deux ne s'adresse à Let's Encrypt.
  */
 const TENTACLE = "tentacle.localtest.me";
 const JELLYFIN = "jellyfin.localtest.me";
 const ORIGIN = `https://${TENTACLE}`;
 const SERVER_ENV = "services:\n  tentacle:\n    environment:\n      REMOTE_CHECK_URL: \"off\"\n";
+const UPSTREAM = "host.docker.internal";
 
-const SHIPPED = readFileSync(join(REPO, "stacks/tentacle-full/compose.yaml"), "utf8");
-
-/** Les lignes qui suivent `marker` dans la pile livrée, tant qu'elles restent sous l'indentation donnée. */
-function shippedBlock(marker: string, indent: string): string[] {
-  const lines: string[] = [];
-  for (const line of SHIPPED.slice(SHIPPED.indexOf(marker) + marker.length).split("\n")) {
-    if (line.trim() !== "" && !line.startsWith(indent)) break;
-    lines.push(line);
-  }
-  return lines;
-}
-
-/** Le Caddyfile de la pile livrée, tel quel, avec l'autorité interne sur chaque site. */
-function caddyOverride(): string {
-  const lines = shippedBlock("  caddyfile:\n    content: |\n", "      ").flatMap((line) =>
-    /^ {6}\$\{[A-Z_]+:-[^}]+\} \{$/.test(line) ? [line, "        tls internal"] : [line],
-  );
-  return `configs:\n  caddyfile:\n    content: |\n${lines.join("\n")}\n${SERVER_ENV}`;
-}
-
-/**
- * La commande livrée de Traefik, plus une autorité ACME injoignable : sur le
- * banc, aucune commande ne part chez Let's Encrypt (Traefik sert alors son
- * certificat par défaut). Ses redirections et sa config restent celles livrées.
- */
-function traefikOverride(): string {
-  const command = shippedBlock("  traefik:\n", "    ").join("\n");
-  const flags = [...command.slice(command.indexOf("    command:\n")).matchAll(/^ {6}- (--\S+)$/gm)].map((m) => m[1]);
-  flags.push("--certificatesresolvers.letsencrypt.acme.caserver=https://127.0.0.1:9/directory");
-  return `${SERVER_ENV}  traefik:\n    command:\n${flags.map((f) => `      - ${f}`).join("\n")}\n`;
+/** Le Caddyfile de l'administration, avec l'autorité interne sur chaque site. */
+function caddyfile(input: ProxySnippetInput): string {
+  return caddySnippet(input)
+    .split("\n")
+    .flatMap((line) => (/^\S+ \{$/.test(line) ? [line, "  tls internal"] : [line]))
+    .join("\n") + "\n";
 }
 
 (["caddy", "traefik"] as const).forEach((proxy, index) => {
   const ports = { tentacle: 3501 + index, jellyfin: 9001 + index, discovery: 7363 + index, http: 8484 + index, https: 8447 + index };
+  const input: ProxySnippetInput = {
+    tentacleDomain: TENTACLE,
+    jellyfinDomain: JELLYFIN,
+    upstreamHost: UPSTREAM,
+    tentaclePort: ports.tentacle,
+    jellyfinPort: ports.jellyfin,
+  };
   const stack = new Stack({
     stack: "full",
     project: `wiz-e2e-${proxy}`,
@@ -60,16 +47,16 @@ function traefikOverride(): string {
       TENTACLE_PORT: String(ports.tentacle),
       JELLYFIN_PORT: String(ports.jellyfin),
       JELLYFIN_DISCOVERY_PORT: String(ports.discovery),
-      HTTP_PORT: String(ports.http),
-      HTTPS_PORT: String(ports.https),
-      TENTACLE_DOMAIN: TENTACLE,
-      JELLYFIN_DOMAIN: JELLYFIN,
+      PROXY_HTTP_PORT: String(ports.http),
+      PROXY_HTTPS_PORT: String(ports.https),
     },
-    override: proxy === "caddy" ? caddyOverride() : traefikOverride(),
+    override: SERVER_ENV,
+    extraComposeFiles: ["apps/server-e2e/proxies/compose.yaml"],
+    files: proxy === "caddy" ? { "proxy/Caddyfile": caddyfile(input) } : { "proxy/traefik-dynamic.yml": `${traefikSnippet(input)}\n` },
     profiles: [proxy],
   });
 
-  describe(`profil ${proxy}`, () => {
+  describe(`mandataire ${proxy}`, () => {
     beforeAll(() => stack.up());
     afterAll(() => stack.down());
 

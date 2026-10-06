@@ -26,8 +26,12 @@ export interface StackOptions {
   project: string;
   /** Les variables du `.env` de la pile (ports, domaines…). */
   env: Record<string, string>;
-  /** Un fichier compose de plus, fusionné par-dessus (variables du serveur, config du mandataire). */
+  /** Un fichier compose de plus, fusionné par-dessus (variables du serveur). */
   override?: string;
+  /** Des fichiers compose du dépôt, fusionnés eux aussi (ex. `apps/server-e2e/proxies/compose.yaml`). */
+  extraComposeFiles?: string[];
+  /** Des fichiers écrits dans le dossier de travail (`RUN_DIR` pour compose) : la config d'un mandataire… */
+  files?: Record<string, string>;
   profiles?: string[];
 }
 
@@ -45,9 +49,13 @@ export class Stack {
     this.media = join(this.dir, "media");
     if (existsSync(this.dir)) rmSync(this.dir, { recursive: true, force: true });
     mkdirSync(this.media, { recursive: true });
-    const env = { TENTACLE_VERSION: IMAGE_TAG, MEDIA_PATH: this.media, ...options.env };
+    const env = { TENTACLE_VERSION: IMAGE_TAG, MEDIA_PATH: this.media, RUN_DIR: this.dir, ...options.env };
     writeFileSync(join(this.dir, ".env"), Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n") + "\n");
     if (options.override) writeFileSync(join(this.dir, "override.yaml"), options.override);
+    for (const [name, content] of Object.entries(options.files ?? {})) {
+      mkdirSync(dirname(join(this.dir, name)), { recursive: true });
+      writeFileSync(join(this.dir, name), content);
+    }
   }
 
   get port(): number {
@@ -60,6 +68,7 @@ export class Stack {
 
   async compose(...args: string[]): Promise<string> {
     const files = ["-f", join(REPO, "stacks", `tentacle-${this.options.stack}`, "compose.yaml")];
+    for (const extra of this.options.extraComposeFiles ?? []) files.push("-f", join(REPO, extra));
     if (this.options.override) files.push("-f", join(this.dir, "override.yaml"));
     const profiles = (this.options.profiles ?? []).flatMap((p) => ["--profile", p]);
     const [bin, ...pre] = COMPOSE;

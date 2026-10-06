@@ -11,7 +11,7 @@ pnpm --filter @tentacle-tv/server-e2e test:e2e
 |---|---|
 | `fullStack.e2e.ts` | full stack, blank Jellyfin 12: the wizard driven in Chrome from the logs' code to the home page; closed for good afterwards; a movie dropped in the media folder is found after a scan |
 | `existingJellyfin.e2e.ts` | db stack in front of an already set up Jellyfin (10.11 and 12.1): session, brute force (429), single-use code, SSRF refusals (cloud metadata, `file:`, `localhost`, redirect), wrong password / API key, Jellyfin stopped mid-way then resumed, library created, no API key nor password in any response or log, closed at the end |
-| `proxies.e2e.ts` | `caddy` and `traefik` profiles: HTTPS to Tentacle, a single CORS header to Jellyfin (preflight included), port 80 redirecting to HTTPS |
+| `proxies.e2e.ts` | the user's own reverse proxy, simulated: a Caddy or a Traefik from the bench's [`proxies/compose.yaml`](proxies/compose.yaml) (the stacks ship none), fed with the exact snippets the admin page generates, targeting the published ports — HTTPS to Tentacle, a single CORS header to Jellyfin (preflight included), port 80 redirecting to HTTPS |
 
 Environment:
 
