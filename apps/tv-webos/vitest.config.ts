@@ -41,5 +41,10 @@ export default defineConfig({
       "scripts/**/*.test.mjs",
       "installateur/**/*.test.mjs",
     ],
+    // Plusieurs tests importent leur module DANS le premier `it` (zones,
+    // searchState) : la transformation tombe alors dans le délai du test. Sous
+    // une machine chargée (crochet pre-push à côté d'autres sessions), elle passe
+    // les 5 s par défaut et le test échoue sans rien avoir vérifié.
+    testTimeout: 20_000,
   },
 });
