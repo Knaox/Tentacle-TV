@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { caddySnippet, isValidDomain, nginxSnippet, stackEnvLines, stackProxyCommand, traefikSnippet } from "./proxySnippets";
+import { caddySnippet, isValidDomain, nginxSnippet, traefikSnippet } from "./proxySnippets";
 
 const input = { tentacleDomain: "tv.example.com", jellyfinDomain: "jf.example.com", upstreamHost: "192.168.1.20", tentaclePort: 3000, jellyfinPort: 8096 };
 
@@ -15,16 +15,7 @@ describe("isValidDomain", () => {
   });
 });
 
-describe("piles livrées", () => {
-  it("les lignes du .env et la commande du profil", () => {
-    expect(stackEnvLines("tv.example.com", "jf.example.com")).toBe("TENTACLE_DOMAIN=tv.example.com\nJELLYFIN_DOMAIN=jf.example.com");
-    expect(stackEnvLines("tv.example.com", null)).toBe("TENTACLE_DOMAIN=tv.example.com");
-    expect(stackProxyCommand("traefik")).toBe("docker compose --profile traefik up -d");
-    expect(() => stackEnvLines("tv.example.com\nX=1", null)).toThrow();
-  });
-});
-
-describe("mandataire existant", () => {
+describe("le mandataire de l'utilisateur", () => {
   it("Caddy : Tentacle, puis Jellyfin avec l'origine de Tentacle", () => {
     const out = caddySnippet(input);
     expect(out).toContain("tv.example.com {\n  reverse_proxy 192.168.1.20:3000\n}");
@@ -45,6 +36,14 @@ describe("mandataire existant", () => {
     expect(out).toContain("rule: Host(`tv.example.com`)");
     expect(out).toContain('servers: [{ url: "http://192.168.1.20:8096" }]');
     expect(out).not.toContain("docker.sock");
+  });
+
+  it("vise l'hôte donné, jamais un service d'une pile (aucun mandataire n'y est embarqué)", () => {
+    for (const out of [caddySnippet(input), nginxSnippet(input), traefikSnippet(input)]) {
+      expect(out).not.toMatch(/tentacle:3000|jellyfin:8096|--profile/);
+    }
+    // Un mandataire posé dans le même réseau Docker vise les services par leur nom.
+    expect(caddySnippet({ ...input, upstreamHost: "tentacle" })).toContain("reverse_proxy tentacle:3000");
   });
 
   it("refuse une entrée qui casserait la configuration", () => {

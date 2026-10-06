@@ -77,15 +77,30 @@ describe("le panneau de l'accès à distance", () => {
     expect(html).toContain('id="guide"');
   });
 
-  it("pile complète et Caddy : les trois étapes, les lignes du .env et la commande du profil", () => {
+  it("Caddy : les trois étapes, et le Caddyfile à poser dans SON mandataire (aucun profil de pile)", () => {
+    h.state = makeState({ localUrl: "http://192.168.1.20:3471" });
     const html = renderToStaticMarkup(<RemoteAccessPanel />);
     for (const key of ["step1Title", "step2Title", "step3Title", "planBTitle"]) expect(html).toContain(key);
-    expect(html).toContain("TENTACLE_DOMAIN=tv.example.com");
-    expect(html).toContain("docker compose --profile caddy up -d");
+    expect(html).toContain("snippetIntro");
+    expect(html).toContain("caddyHint");
+    expect(html).toContain("tv.example.com {\n  reverse_proxy 192.168.1.20:3471\n}");
+    expect(html).not.toContain("--profile");
+    expect(html).not.toContain("TENTACLE_DOMAIN");
     // Derrière un mandataire : 443 et 80 vers l'adresse devinée depuis la page.
     expect(html).toContain("purpose_https");
     expect(html).toContain("192.168.1.20");
     expect(html).toContain("localHttpNotice");
+  });
+
+  it("Traefik ou Nginx : l'onglet du mandataire choisi s'ouvre d'abord", () => {
+    h.state = makeState({ proxy: "traefik" });
+    let html = renderToStaticMarkup(<RemoteAccessPanel />);
+    expect(html).toContain("traefikHint");
+    expect(html).toContain("rule: Host(`tv.example.com`)");
+    h.state = makeState({ proxy: "other" });
+    html = renderToStaticMarkup(<RemoteAccessPanel />);
+    expect(html).toContain("npmHint");
+    expect(html).not.toContain("--profile");
   });
 
   it("sans mandataire : la mise en garde, et le port de Tentacle à rediriger", () => {

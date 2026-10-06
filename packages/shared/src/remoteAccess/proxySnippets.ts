@@ -1,12 +1,13 @@
 /**
  * Les extraits à copier pour mettre un mandataire HTTPS devant Tentacle.
  *
- * - Piles Docker livrées (profils `caddy` et `traefik`) : la configuration
- *   est DÉJÀ dans le compose, générée depuis le `.env` — il ne reste que les
- *   domaines à y écrire et une commande à lancer.
- * - Mandataire existant (Caddy, Nginx / Nginx Proxy Manager, Traefik) : un
- *   bloc qui vise Tentacle (et Jellyfin) sur le réseau local, websockets
- *   compris (Watch Together, notifications).
+ * Les piles Docker livrées n'embarquent AUCUN mandataire : chacun garde le
+ * sien (Caddy, Nginx / Nginx Proxy Manager, Traefik). Ces extraits sont ce
+ * qu'on y pose — un bloc qui vise Tentacle (et Jellyfin) sur le réseau local,
+ * websockets compris (Watch Together, notifications), et pour Jellyfin les
+ * en-têtes CORS de l'application web de Tentacle, sans doublon. Ce sont les
+ * mêmes que montrent l'administration et docs/server/remote-access.md, et que
+ * le banc `apps/server-e2e` (proxies.e2e.ts) éprouve sur de vrais mandataires.
  *
  * Les domaines sont VALIDÉS avant d'entrer dans un extrait : un retour à la
  * ligne glissé dans un nom deviendrait une ligne de configuration.
@@ -43,17 +44,6 @@ function assertInput(input: ProxySnippetInput): void {
   for (const port of [input.tentaclePort, input.jellyfinPort]) {
     if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("invalid port");
   }
-}
-
-/** Les lignes à ajouter au `.env` d'une pile livrée (profils caddy / traefik). */
-export function stackEnvLines(tentacleDomain: string, jellyfinDomain: string | null): string {
-  if (!isValidDomain(tentacleDomain) || (jellyfinDomain && !isValidDomain(jellyfinDomain))) throw new Error("invalid domain");
-  return [`TENTACLE_DOMAIN=${tentacleDomain}`, ...(jellyfinDomain ? [`JELLYFIN_DOMAIN=${jellyfinDomain}`] : [])].join("\n");
-}
-
-/** La commande qui démarre la pile avec son mandataire. */
-export function stackProxyCommand(proxy: "caddy" | "traefik"): string {
-  return `docker compose --profile ${proxy} up -d`;
 }
 
 /** Les en-têtes CORS que Jellyfin doit renvoyer à l'application web de Tentacle (sans doublon). */

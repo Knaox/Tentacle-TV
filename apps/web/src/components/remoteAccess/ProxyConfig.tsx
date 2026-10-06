@@ -6,10 +6,9 @@ import {
   isValidDomain,
   lanAddressOf,
   nginxSnippet,
-  stackEnvLines,
-  stackProxyCommand,
   traefikSnippet,
   type RemoteAccessState,
+  type ReverseProxyKind,
 } from "@tentacle-tv/shared";
 import { AdminNotice, TabPanel, Tabs } from "../admin/kit";
 import { Field } from "../admin/services/Field";
@@ -20,6 +19,11 @@ import { CopyBlock } from "./CopyBlock";
 import { REMOTE_ACCESS_KEY } from "./remoteAccessApi";
 
 type SnippetTab = "caddy" | "nginx" | "traefik";
+
+/** L'onglet ouvert d'abord : celui du mandataire choisi (Nginx pour « un autre »). */
+function defaultTab(proxy: ReverseProxyKind): SnippetTab {
+  return proxy === "caddy" || proxy === "traefik" ? proxy : "nginx";
+}
 
 /** Le nom d'hôte d'une adresse déjà réglée, s'il en fait un domaine. */
 function domainOf(url: string | null): string {
@@ -33,9 +37,11 @@ function domainOf(url: string | null): string {
 }
 
 /**
- * La configuration du mandataire choisi : les domaines, puis ce qu'il y a à
- * copier — lignes du .env et commande pour les piles livrées, extrait Caddy,
- * Nginx ou Traefik pour un mandataire existant — et le lien public à poser.
+ * La configuration du mandataire de l'utilisateur — les piles livrées n'en
+ * embarquent aucun : les domaines, l'adresse de ce serveur vue par le
+ * mandataire, puis l'extrait à y poser (Caddyfile, Nginx / Nginx Proxy
+ * Manager, Traefik ; l'onglet du mandataire choisi s'ouvre d'abord) et le lien
+ * public à régler.
  */
 export function ProxyConfig({ state }: { state: RemoteAccessState }) {
   const { t } = useTranslation("remoteAccess");
@@ -45,7 +51,9 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
   const [tentacleDomain, setTentacleDomain] = useState(() => domainOf(state.publicUrl));
   const [jellyfinDomain, setJellyfinDomain] = useState(() => domainOf(state.jellyfinPublicUrl));
   const [upstream, setUpstream] = useState(() => lanAddressOf(state.settings.localUrl) ?? "");
-  const [tab, setTab] = useState<SnippetTab>("nginx");
+  // L'onglet choisi à la main vaut pour CE mandataire ; en changer rouvre le sien.
+  const [picked, setPicked] = useState<{ proxy: ReverseProxyKind; tab: SnippetTab } | null>(null);
+  const tab = picked && picked.proxy === proxy ? picked.tab : defaultTab(proxy);
   const [publicUrlState, setPublicUrlState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
 
   const tentacleOk = isValidDomain(tentacleDomain);
@@ -64,7 +72,6 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
 
   if (proxy === "none") return <AdminNotice tone="error">{t("noneWarning")}</AdminNotice>;
 
-  const stackProxy = (proxy === "caddy" || proxy === "traefik") && state.deployment === "docker" && state.stack !== null;
   const wantedUrl = tentacleOk ? `https://${input.tentacleDomain}` : null;
 
   const savePublicUrl = async () => {
@@ -84,7 +91,6 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
 
   return (
     <div className="space-y-5">
-      {(proxy === "caddy" || proxy === "traefik") && !stackProxy ? <AdminNotice tone="info">{t("notDockerStack")}</AdminNotice> : null}
       <div className="grid gap-4 md:grid-cols-2">
         <Field
           label={t("domainTentacle")}
@@ -110,17 +116,12 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
         />
       </div>
 
-      {domainsOk && stackProxy ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <CopyBlock label={t("envTitle")} code={stackEnvLines(input.tentacleDomain, input.jellyfinDomain)} />
-          <CopyBlock label={t("commandTitle")} code={stackProxyCommand(proxy === "traefik" ? "traefik" : "caddy")} />
-        </div>
-      ) : null}
-
-      {domainsOk && proxy === "other" ? (
+      {domainsOk ? (
         <div className="space-y-4">
+          <p className="text-sm leading-relaxed text-content-tertiary">{t("snippetIntro")}</p>
           <Field
             label={t("upstreamHost")}
+            hint={t("upstreamHostHint")}
             value={upstream}
             onChange={(e) => setUpstream(e.target.value)}
             placeholder="192.168.1.20"
@@ -132,7 +133,7 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
             idPrefix={tabsId}
             label={t("step1Title")}
             active={tab}
-            onChange={setTab}
+            onChange={(next) => setPicked({ proxy, tab: next })}
             items={[
               { id: "nginx", label: t("snippetNginx") },
               { id: "caddy", label: t("snippetCaddy") },
@@ -146,10 +147,12 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
             <CopyBlock label={t("snippetNginx")} code={nginxSnippet(input)} />
             <p className="text-xs text-content-quaternary">{t("nginxCertHint")}</p>
           </TabPanel>
-          <TabPanel idPrefix={tabsId} id="caddy" active={tab === "caddy"}>
+          <TabPanel idPrefix={tabsId} id="caddy" active={tab === "caddy"} className="space-y-2">
+            <p className="text-sm leading-relaxed text-content-tertiary">{t("caddyHint")}</p>
             <CopyBlock label={t("snippetCaddy")} code={caddySnippet(input)} />
           </TabPanel>
-          <TabPanel idPrefix={tabsId} id="traefik" active={tab === "traefik"}>
+          <TabPanel idPrefix={tabsId} id="traefik" active={tab === "traefik"} className="space-y-2">
+            <p className="text-sm leading-relaxed text-content-tertiary">{t("traefikHint")}</p>
             <CopyBlock label={t("snippetTraefik")} code={traefikSnippet(input)} />
           </TabPanel>
         </div>
