@@ -130,4 +130,30 @@ describe("portillon des erreurs pendant une panne de Jellyfin", () => {
     h.gate.report("b");
     expect(h.log).toEqual(["rouvre", "rouvre"]);
   });
+
+  it("une 2e panne PENDANT la fenêtre d'après-retour : rien ne se rouvre avant SON retour", () => {
+    const h = harness();
+    h.gate.recovered();
+    h.advance(40_000);
+    h.set("down");
+    h.gate.stalled(true);
+    h.advance(RETURN_STALL_MS * 4);
+    h.gate.report("réseau");
+    expect(h.log).toEqual([]);
+    h.set("up");
+    h.gate.recovered();
+    // Le flux a cassé pendant la panne : une réouverture, une seule.
+    expect(h.log).toEqual(["rouvre"]);
+    h.advance(RETURN_STALL_MS * 2);
+    expect(h.log).toEqual(["rouvre"]);
+  });
+
+  it("une image arrêtée quand la panne recommence : le minuteur ne rouvre rien", () => {
+    const h = harness();
+    h.gate.recovered();
+    h.gate.stalled(true);
+    h.set("restarting");
+    h.advance(RETURN_STALL_MS);
+    expect(h.log).toEqual([]);
+  });
 });

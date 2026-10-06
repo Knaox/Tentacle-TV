@@ -68,20 +68,29 @@ export function createOutageGate<F>(deps: OutageGateDeps<F>): OutageGate<F> {
     log(`[panne] flux rouvert : ${why}`);
     deps.reopen();
   };
+  /** Jellyfin de nouveau en panne : la fenêtre d'après-retour se referme (mesuré : une 2e panne y rouvrait le flux). */
+  const down = () => {
+    if (deps.state() === "up") return false;
+    returnedAt = null;
+    disarm();
+    return true;
+  };
   /** Une image arrêtée après le retour : rouvrir si elle ne repart pas d'elle-même. */
   const armStall = () => {
     disarm();
+    if (down()) return;
     const deadline = returnStallDeadline({ now: now(), returnedAt, stalledSince, reopened });
     if (deadline === null) return;
     cancelStall = schedule(() => {
       cancelStall = null;
+      if (down()) return;
       if (stalledSince !== null && !reopened && withinReturnWatch(now(), returnedAt)) reopenOnce("image arrêtée après le retour");
     }, Math.max(0, deadline - now()));
   };
 
   return {
     report(failure) {
-      if (deps.state() !== "up") {
+      if (down()) {
         failedDuringOutage = true;
         return;
       }
