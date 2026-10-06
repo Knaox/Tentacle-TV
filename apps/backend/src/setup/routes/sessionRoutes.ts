@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { detectAppState, getAppState } from "../../services/configStore";
 import { getDatabaseUrlSource, hasDatabaseUrl, hasPrisma, reconnectPrisma } from "../../services/db";
+import { hostInfo } from "../hostInfo";
 import { buildSetupContext } from "../setupContext";
 import { SetupError } from "../setupErrors";
 import { requireOpenSetup, requireSetupSession } from "../setupGuard";
@@ -9,7 +10,7 @@ import { noteAcceptedCode, noteFailedCode } from "../setupRuntime";
 import { sessionSchema } from "../setupSchemas";
 import { openSetupSession } from "../setupSession";
 import { discardSetupToken, normalizeSetupToken, readSetupToken, setupTokensMatch } from "../setupToken";
-import type { SetupSessionResponse, SetupStatusResponse } from "../setupWizardContract";
+import type { SetupHostInfo, SetupSessionResponse, SetupStatusResponse } from "../setupWizardContract";
 
 /** L'état public, l'échange du code, et le contexte de l'assistant. */
 export const setupSessionRoutes: FastifyPluginAsync = async (app) => {
@@ -34,6 +35,13 @@ export const setupSessionRoutes: FastifyPluginAsync = async (app) => {
       setupOpen: !isSetupClosed(),
     };
   });
+
+  /**
+   * GET /api/setup/host — public tant que l'installation est ouverte : de quoi
+   * dire, AVANT le code, comment lire les journaux de ce serveur (identifiant
+   * du conteneur, pile). Rien qui ouvre quoi que ce soit ; 404 une fois fini.
+   */
+  app.get("/host", { preHandler: requireOpenSetup }, async (): Promise<SetupHostInfo> => hostInfo());
 
   /**
    * POST /api/setup/session — le code lu dans les journaux, échangé UNE fois

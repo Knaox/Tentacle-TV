@@ -119,6 +119,14 @@ describe("assistant d'installation, de bout en bout", () => {
     expect((await call("GET", "/status")).json()).toMatchObject({ setupOpen: true });
   });
 
+  it("avant le code : ce que le serveur sait de lui-même, sans session et sans secret", async () => {
+    const res = await call("GET", "/host");
+    expect(res.statusCode).toBe(200);
+    expect(Object.keys(res.json()).sort()).toEqual(["containerId", "containerized", "deployment", "stack"]);
+    expect(res.json()).toMatchObject({ deployment: "native", stack: null });
+    expect(res.body).not.toContain(readSetupToken() ?? "absent");
+  });
+
   it("un code faux est refusé ; au-delà de 5 par minute, l'adresse attend", async () => {
     const wrong = await call("POST", "/session", { body: { token: "AAAA-AAAA-AAAA" }, ip: "10.9.9.9" });
     expect(wrong.statusCode).toBe(401);
@@ -180,7 +188,7 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(state.config.get("setup_completed")).toBe("true");
     expect(state.started).toBe(1);
 
-    for (const [method, url] of [["GET", "/context"], ["POST", "/session"], ["POST", "/jellyfin/probe"], ["POST", "/complete"]] as const) {
+    for (const [method, url] of [["GET", "/host"], ["GET", "/context"], ["POST", "/session"], ["POST", "/jellyfin/probe"], ["POST", "/complete"]] as const) {
       const res = await call(method, url, { session, body: method === "POST" ? {} : undefined });
       expect(res.statusCode, url).toBe(404);
       expect(res.json()).toEqual({ error: "setup_closed" });

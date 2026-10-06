@@ -55,6 +55,26 @@ export interface SetupStatusResponse {
   setupOpen: boolean;
 }
 
+/**
+ * `GET /api/setup/host` — public, mais SEULEMENT tant que l'installation est
+ * ouverte (404 ensuite, comme le reste de l'assistant) : de quoi dire, à
+ * l'écran du code, comment lire les journaux de CE serveur. Ce que le serveur
+ * sait de lui-même, rien de plus : il ne parle jamais à Docker. Aucun secret —
+ * l'identifiant d'un conteneur ne sert qu'à qui a déjà la main sur la machine.
+ */
+export interface SetupHostInfo {
+  deployment: SetupDeployment;
+  stack: SetupStack | null;
+  /** Le serveur tourne dans un conteneur (Docker, Podman). */
+  containerized: boolean;
+  /**
+   * L'identifiant court (12 caractères hexadécimaux) du conteneur, celui
+   * qu'acceptent `docker logs` et `docker exec` quel que soit son nom ;
+   * `null` s'il n'a pas pu être lu.
+   */
+  containerId: string | null;
+}
+
 /** `GET /api/setup/context` — ce dont l'assistant a besoin pour choisir ses étapes. */
 export interface SetupContext {
   deployment: SetupDeployment;
