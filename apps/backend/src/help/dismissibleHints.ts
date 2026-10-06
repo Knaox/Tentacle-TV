@@ -22,11 +22,14 @@
  *
  * - `trailerHelp` : « Vous ne voyez pas les bandes-annonces ? », sur la fiche
  *   d'un titre sans bande-annonce quand le serveur est mal réglé.
- * - `serverUpdate` : « Serveur à mettre à jour » (administrateurs). Masqué
- *   jusqu'à la prochaine mise à jour OBLIGATOIRE : sa marque retient
- *   l'exigence en vigueur (le `minServer` du client), et l'avertissement
- *   revient dès qu'un client en exige une plus haute
- *   (`notices/serverUpdateNotice.ts`).
+ * - `serverUpdate` : l'invitation « Pour profiter des dernières nouveautés,
+ *   mettez à jour votre serveur » (administrateurs ; avertissement
+ *   `serverNews`). Masquée jusqu'aux prochaines nouveautés : sa marque retient
+ *   la version qu'apportait la nouveauté manquante la plus récente, et
+ *   l'invitation revient dès qu'un client en connaît une plus récente
+ *   (`notices/serverUpdateNotice.ts`). Le nom date de l'avertissement d'avant
+ *   — un serveur livré le connaît : il ne se renomme pas. Le serveur SOUS
+ *   l'exigence du client, lui, ne se masque plus.
  * - `tmdbKey` : « Aucune clé TMDB » (administrateurs) — l'avertissement
  *   surgissant des clients.
  * - `adminPublicUrl`, `adminDirectPlay`, `adminTmdbKey`, `adminJellyfin`,
@@ -81,7 +84,7 @@ export interface DismissedHintsResponse {
 export interface DismissHintRequest {
   /** `true` : masquer ; `false` : réafficher. */
   dismissed: boolean;
-  /** Ce que le masquage retient (`serverUpdate` : l'exigence en vigueur). */
+  /** Ce que le masquage retient (`serverUpdate` : la version des nouveautés proposées). */
   mark?: string;
 }
 

@@ -16,12 +16,14 @@ export interface ServerCapabilitiesState {
   capabilities: ReadonlySet<ServerCapability>;
   /** La configuration a répondu (ou échoué) : l'absence d'une clé est un fait. */
   settled: boolean;
+  /** La configuration a RÉPONDU : la liste vient du serveur (pas d'un échec réseau). */
+  known: boolean;
 }
 
 export function useServerCapabilities(): ServerCapabilitiesState {
   const { data, isPending } = useAppConfig();
   const capabilities = useMemo(() => resolveServerCapabilities(data), [data]);
-  return { capabilities, settled: !isPending };
+  return { capabilities, settled: !isPending, known: data !== undefined };
 }
 
 /** Le serveur sait-il faire `capability` ? `false` tant que ce n'est pas prouvé. */

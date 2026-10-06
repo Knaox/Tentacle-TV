@@ -34,8 +34,16 @@ export function noticeContent(notice: ClientNotice): NoticeContent {
         textKeys: ["notices:serverUpdateText"],
         actionKey: "notices:serverUpdateHow",
         actionPath: "/admin",
-        dismissKey: "notices:serverUpdateDismiss",
-        dismissedKey: "notices:serverUpdateDismissed",
+      };
+    case "serverNews":
+      return {
+        icon: "server",
+        titleKey: "notices:serverNewsTitle",
+        textKeys: ["notices:serverNewsText"],
+        actionKey: "notices:serverUpdateHow",
+        actionPath: "/admin",
+        dismissKey: "notices:serverNewsDismiss",
+        dismissedKey: "notices:serverNewsDismissed",
       };
     case "tmdbKey":
       return {

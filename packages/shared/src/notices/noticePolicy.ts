@@ -31,7 +31,7 @@ export type NoticeSeverity = "blocking" | "recommendation" | "info";
 export type NoticeAudience = "admins" | "everyone";
 
 /** Les avertissements surgissants connus. */
-export type NoticeId = "serverUpdate" | "tmdbKey" | "adminKey";
+export type NoticeId = "serverUpdate" | "tmdbKey" | "adminKey" | "serverNews";
 
 export interface NoticeRule {
   id: NoticeId;
@@ -41,10 +41,10 @@ export interface NoticeRule {
   hint: DismissibleHint | null;
   /**
    * Ce que vaut le masquage : `forever` (jusqu'à ce que le compte le
-   * réaffiche), `untilHigherRequirement` (sa marque retient une exigence :
-   * cf. `serverUpdateNotice.ts`).
+   * réaffiche), `untilNewerFeatures` (sa marque retient la version des
+   * nouveautés proposées : cf. `serverUpdateNotice.ts`).
    */
-  dismissScope: "forever" | "untilHigherRequirement" | null;
+  dismissScope: "forever" | "untilNewerFeatures" | null;
 }
 
 /** Le temps de lecture d'une recommandation, avant qu'elle ne s'efface seule. */
@@ -54,13 +54,18 @@ export const NOTICE_AUTO_HIDE_MS = 6000;
  * Par ordre de priorité : un seul se montre à la fois.
  * - `adminKey` : la clé d'administration Jellyfin manque ou n'a plus ses
  *   droits — des fonctions du serveur sont en panne pour TOUS les comptes ;
- * - `serverUpdate` : le serveur est plus ancien que ce client n'exige ;
- * - `tmdbKey` : sans clé TMDB, les recommandations restent génériques.
+ * - `serverUpdate` : le serveur est plus ancien que ce client n'exige
+ *   (`minServer`) — bloquant, comme son entrée « À régler » du tableau de bord ;
+ * - `tmdbKey` : sans clé TMDB, les recommandations restent génériques ;
+ * - `serverNews` : le serveur atteint l'exigence mais une nouveauté de ce
+ *   client attend un serveur plus récent (`serverCapabilities.ts`) — une
+ *   invitation, rien n'y casse.
  */
 export const NOTICE_RULES: readonly NoticeRule[] = [
   { id: "adminKey", severity: "blocking", audience: "admins", hint: null, dismissScope: null },
-  { id: "serverUpdate", severity: "recommendation", audience: "admins", hint: "serverUpdate", dismissScope: "untilHigherRequirement" },
+  { id: "serverUpdate", severity: "blocking", audience: "admins", hint: null, dismissScope: null },
   { id: "tmdbKey", severity: "recommendation", audience: "admins", hint: "tmdbKey", dismissScope: "forever" },
+  { id: "serverNews", severity: "recommendation", audience: "admins", hint: "serverUpdate", dismissScope: "untilNewerFeatures" },
 ];
 
 export function noticeRule(id: NoticeId): NoticeRule {

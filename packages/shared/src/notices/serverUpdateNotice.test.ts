@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { compareAppVersions, isServerOutdated, isServerUpdateMasked, serverUpdateNotice } from "./serverUpdateNotice";
+import { SERVER_CAPABILITY_KEYS } from "../serverCapabilities/serverCapabilities";
+import {
+  compareAppVersions, isServerOutdated, isServerUpdateMasked, serverNewsNotice, serverUpdateNotice,
+} from "./serverUpdateNotice";
 
 /**
- * « Serveur à mettre à jour » : la comparaison des versions, le serveur en
- * retard sur l'exigence du client, et le masquage « jusqu'à la prochaine mise
- * à jour obligatoire » qui cède dès qu'une exigence plus haute arrive.
+ * « Serveur à mettre à jour » : la comparaison des versions, l'avertissement
+ * OBLIGATOIRE sous l'exigence du client (jamais masquable), et l'INVITATION
+ * quand une nouveauté du client attend un serveur plus récent — masquée
+ * jusqu'aux prochaines nouveautés.
  */
 describe("serveur à mettre à jour", () => {
   it("compare les versions segment par segment, les manquants valant zéro", () => {
@@ -34,17 +38,33 @@ describe("serveur à mettre à jour", () => {
     expect(isServerUpdateMasked(null, "1.23.0")).toBe(false);
   });
 
-  it("l'avertissement : admin seulement, serveur en retard, masquage lu et ne couvrant pas l'exigence", () => {
-    const base = { serverVersion: "1.22.0", minServer: "1.23.0", isAdmin: true, dismissal: null };
-    expect(serverUpdateNotice(base)).toEqual({ outdated: true, masked: false, show: true, mark: "1.23.0" });
+  it("l'obligatoire : admin seulement, serveur sous l'exigence, jamais masquable", () => {
+    const base = { serverVersion: "1.22.0", minServer: "1.23.0", isAdmin: true };
+    expect(serverUpdateNotice(base)).toEqual({ outdated: true, show: true });
     expect(serverUpdateNotice({ ...base, isAdmin: false }).show).toBe(false);
     expect(serverUpdateNotice({ ...base, serverVersion: "1.23.0" }).show).toBe(false);
-    // Pas encore lu : rien, plutôt qu'un avertissement qui disparaît aussitôt.
-    expect(serverUpdateNotice({ ...base, dismissal: undefined }).show).toBe(false);
-    // Masqué jusqu'à la prochaine mise à jour obligatoire…
-    expect(serverUpdateNotice({ ...base, dismissal: "1.23.0" })).toMatchObject({ masked: true, show: false });
-    // … qui arrive : le client exige plus haut, l'avertissement revient.
-    expect(serverUpdateNotice({ ...base, minServer: "1.24.0", dismissal: "1.23.0" }))
-      .toEqual({ outdated: true, masked: false, show: true, mark: "1.24.0" });
+    expect(serverUpdateNotice({ ...base, serverVersion: null }).show).toBe(false);
+  });
+
+  it("l'invitation : une nouveauté du client attend un serveur plus récent", () => {
+    const none = new Set<never>();
+    const base = { serverVersion: "1.23.0", minServer: "1.23.0", isAdmin: true, capabilities: none, dismissal: null };
+    expect(serverNewsNotice(base)).toEqual({ available: true, masked: false, show: true, mark: "1.24.0" });
+    expect(serverNewsNotice({ ...base, isAdmin: false }).show).toBe(false);
+    // Un serveur qui déclare tout : rien à proposer.
+    expect(serverNewsNotice({ ...base, capabilities: new Set(SERVER_CAPABILITY_KEYS) })).toMatchObject({ available: false, show: false, mark: null });
+    // Sous l'exigence, c'est l'obligatoire qui parle.
+    expect(serverNewsNotice({ ...base, serverVersion: "1.22.0" }).show).toBe(false);
+    // Rien tant que la version, les capacités ou le masquage ne sont pas lus.
+    expect(serverNewsNotice({ ...base, serverVersion: null }).show).toBe(false);
+    expect(serverNewsNotice({ ...base, capabilities: undefined }).show).toBe(false);
+    expect(serverNewsNotice({ ...base, dismissal: undefined }).show).toBe(false);
+  });
+
+  it("l'invitation masquée jusqu'aux prochaines nouveautés", () => {
+    const base = { serverVersion: "1.23.0", minServer: "1.23.0", isAdmin: true, capabilities: new Set<never>() };
+    expect(serverNewsNotice({ ...base, dismissal: "1.24.0" })).toMatchObject({ masked: true, show: false });
+    // Une marque d'avant (l'exigence 1.23.0 retenue par l'ancien avertissement) ne couvre pas 1.24.0.
+    expect(serverNewsNotice({ ...base, dismissal: "1.23.0" })).toMatchObject({ masked: false, show: true });
   });
 });

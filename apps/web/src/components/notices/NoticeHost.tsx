@@ -32,7 +32,7 @@ interface Confirmation {
  * le problème. Remplace les bandeaux d'avant (serveur, clé admin, TMDB).
  *
  * Essai (développement) — dans la console : `tentacleTestNotice("tmdbKey")`,
- * `("serverUpdate")`, `("adminKey")` ; `(false)` rend la main au vrai état.
+ * `("serverUpdate")`, `("serverNews")`, `("adminKey")` ; `(false)` rend la main au vrai état.
  */
 export function NoticeHost({ top }: { top: string }) {
   const { t } = useTranslation(["notices", "errors"]);
@@ -178,7 +178,7 @@ function useForcedNotice(): ClientNotice | null {
     rule,
     values: { server: "1.17.0", required: MIN_SERVER_VERSION },
     canDismiss: rule.hint !== null,
-    mark: forced === "serverUpdate" ? MIN_SERVER_VERSION : undefined,
+    mark: forced === "serverNews" ? MIN_SERVER_VERSION : undefined,
     adminKeyState: forced === "adminKey" ? "revoquee" : undefined,
   };
 }
