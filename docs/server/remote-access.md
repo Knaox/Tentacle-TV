@@ -7,33 +7,146 @@ what faces the Internet, the router ports, and a test run **from the outside**.
 
 ## 1. Put an HTTPS reverse proxy in front (recommended)
 
-| Option | When |
+The Docker stacks **do not ship a reverse proxy**: you probably already have one (Nginx Proxy Manager, Caddy,
+Traefik…), and Tentacle simply goes behind it. If you have none yet, Caddy is the simplest to install (a system
+package or its own container): certificates are automatic.
+
+| What faces the Internet | What to do |
 |---|---|
-| **Caddy** (`caddy` profile of *tentacle-full*) | the simplest: automatic certificates |
-| **Traefik** (`traefik` profile, file provider — no Docker socket) | you prefer Traefik |
-| **Your own proxy** (Nginx Proxy Manager, Caddy, Traefik…) | it already runs at home: the admin page generates the snippet |
+| **Caddy** | add the Caddyfile block below |
+| **Nginx / Nginx Proxy Manager** (or another proxy) | one proxy host per domain, websockets on — the Nginx block below as a template |
+| **Traefik** | add the routes file below to its file provider (no Docker socket needed) |
 | No proxy | Tentacle's port opened as is: **everything travels in clear text** — avoid it |
 
-With the stacks:
+**Administration › Remote access** writes these blocks with your own domains and this server's address
+(step 1). Each domain needs a DNS **A** record (and **AAAA** if you have IPv6) pointing to your public address;
+the Jellyfin domain is only needed for direct play from the Internet. The examples below use
+`tentacle.example.com`, `jellyfin.example.com` and a server at `192.168.1.20` with the default ports (3000,
+8096): replace them with yours. A proxy running in the **same Docker network** as the stack can target the
+services by name instead: `tentacle:3000` and `jellyfin:8096`.
 
-```bash
-# .env next to compose.yaml
-TENTACLE_DOMAIN=tentacle.example.com
-JELLYFIN_DOMAIN=jellyfin.example.com    # only for direct play from the Internet
+On Jellyfin, the proxy sets **Tentacle's CORS headers in place of Jellyfin's own** (never both: a duplicated
+`Access-Control-Allow-Origin` makes the browser refuse everything).
+
+### Caddy
+
+Caddy gets and renews the certificates on its own once ports 80 and 443 reach it.
+
+```caddyfile
+tentacle.example.com {
+  reverse_proxy 192.168.1.20:3000
+}
+jellyfin.example.com {
+  reverse_proxy 192.168.1.20:8096 {
+    header_down Access-Control-Allow-Origin "https://tentacle.example.com"
+    header_down Access-Control-Allow-Credentials "true"
+    header_down Access-Control-Allow-Methods "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+    header_down Access-Control-Allow-Headers "Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control"
+    header_down Access-Control-Expose-Headers "Content-Length, Content-Range, Date, Server"
+  }
+}
 ```
 
-```bash
-docker compose --profile caddy up -d     # or: --profile traefik
+### Nginx / Nginx Proxy Manager
+
+In **Nginx Proxy Manager**: one *Proxy Host* per domain, to `http://192.168.1.20:3000` (Tentacle) and
+`http://192.168.1.20:8096` (Jellyfin), with *Websockets Support*, a Let's Encrypt certificate and *Force SSL*;
+the Jellyfin CORS lines (`proxy_hide_header` / `add_header`) go in its *Advanced* tab. With plain **Nginx**, add
+your `ssl_certificate` and `ssl_certificate_key` lines:
+
+```nginx
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name tentacle.example.com;
+  client_max_body_size 0;
+  location / {
+    proxy_pass http://192.168.1.20:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_buffering off;
+  }
+}
+
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name jellyfin.example.com;
+  client_max_body_size 0;
+  location / {
+    proxy_pass http://192.168.1.20:8096;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_buffering off;
+    proxy_hide_header Access-Control-Allow-Origin;
+    proxy_hide_header Access-Control-Allow-Credentials;
+    proxy_hide_header Access-Control-Allow-Methods;
+    proxy_hide_header Access-Control-Allow-Headers;
+    proxy_hide_header Access-Control-Expose-Headers;
+    add_header Access-Control-Allow-Origin "https://tentacle.example.com" always;
+    add_header Access-Control-Allow-Credentials "true" always;
+    add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, DELETE, PUT, PATCH" always;
+    add_header Access-Control-Allow-Headers "Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control" always;
+    add_header Access-Control-Expose-Headers "Content-Length, Content-Range, Date, Server" always;
+  }
+}
 ```
 
-Each domain needs a DNS **A** record (and **AAAA** if you have IPv6) pointing to your public address.
-The configuration (CORS headers for Jellyfin included, never duplicated) is already in the compose file.
+### Traefik
+
+A routes file for Traefik's **file provider**. `websecure` and `letsencrypt` are the usual names of the HTTPS
+entry point and the ACME certificate resolver: replace them with yours.
+
+```yaml
+http:
+  routers:
+    tentacle:
+      rule: Host(`tentacle.example.com`)
+      entryPoints: [websecure]
+      service: tentacle
+      tls: { certResolver: letsencrypt }
+    jellyfin:
+      rule: Host(`jellyfin.example.com`)
+      entryPoints: [websecure]
+      service: jellyfin
+      middlewares: [jellyfin-cors]
+      tls: { certResolver: letsencrypt }
+  middlewares:
+    jellyfin-cors:
+      headers:
+        accessControlAllowOriginList: ["https://tentacle.example.com"]
+        accessControlAllowCredentials: true
+        accessControlAllowMethods: [GET, POST, OPTIONS, DELETE, PUT, PATCH]
+        accessControlAllowHeaders: [Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control]
+        accessControlExposeHeaders: [Content-Length, Content-Range, Date, Server]
+        addVaryHeader: true
+  services:
+    tentacle:
+      loadBalancer:
+        servers: [{ url: "http://192.168.1.20:3000" }]
+    jellyfin:
+      loadBalancer:
+        servers: [{ url: "http://192.168.1.20:8096" }]
+```
+
+Then tell Jellyfin about the proxy: add its address to **Known proxies** (Dashboard › Networking), otherwise
+every connection seems to come from the proxy. For Tentacle, see [Trusted proxies](#trusted-proxies).
 
 ## 2. Open the router ports
 
 | Behind a proxy | Without a proxy |
 |---|---|
-| **443** (HTTPS) and **80** (redirect to HTTPS, certificate renewals) → this machine | Tentacle's port (`TENTACLE_PORT`, 3000) → this machine; Jellyfin's (8096) only for direct play |
+| **443** (HTTPS) and **80** (redirect to HTTPS, certificate renewals) → the proxy's machine | Tentacle's port (`TENTACLE_PORT`, 3000) → this machine; Jellyfin's (8096) only for direct play |
 
 Give the server a **fixed address** in the router (DHCP reservation). The admin page links to the official
 guides of Swisscom, Sunrise, Salt, Free, Orange and Bouygues (checked on 2026-10-06; SFR's site could not be

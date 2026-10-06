@@ -11,7 +11,8 @@
 | **tentacle-only** | Tentacle alone | you already have MariaDB/MySQL and Jellyfin |
 
 Each stack is a single `compose.yaml`, ready to copy, with a commented `.env.example` next to it. **Nothing is
-mandatory in `.env`**: every value has a working default.
+mandatory in `.env`**: every value has a working default. No stack ships a reverse proxy: for HTTPS
+from the Internet, put Tentacle behind yours ([remote-access.md](remote-access.md)).
 
 ```bash
 mkdir tentacle && cd tentacle
@@ -60,7 +61,7 @@ One question per screen; the steps adapt to the stack it detects.
 7. **Libraries** — *tentacle-full* proposes **Movies** (`/media/films`) and **Shows** (`/media/series`); browse
    Jellyfin's folders to add others.
 8. **Summary**, then **setup** (each failed step can be retried on its own).
-9. **Remote access** (optional) — see [remote-access.md](remote-access.md).
+9. **Remote access** (optional) — HTTPS through your own reverse proxy: see [remote-access.md](remote-access.md).
 10. **What's next?** — where to drop your files, the apps for each platform, a QR code to open the server.
 
 ## Settings (`.env`)
@@ -76,8 +77,6 @@ Copy `.env.example` to `.env` next to `compose.yaml`, uncomment what you need, t
 | `PUID` / `PGID` | `1000` | the account owning your files (`id -u`, `id -g`) |
 | `TZ` | `Europe/Paris` | time zone |
 | `TENTACLE_VERSION` | `latest` | pin a version (e.g. `v1.23.0`) to update only when you decide |
-| `TENTACLE_DOMAIN`, `JELLYFIN_DOMAIN` | — | *full*: domains for the `caddy` / `traefik` profiles ([remote-access.md](remote-access.md)) |
-| `HTTP_PORT` / `HTTPS_PORT` | `80` / `443` | *full*: ports of the reverse proxy profile |
 
 Server variables you may set in `compose.yaml` (`environment:`) for special cases:
 

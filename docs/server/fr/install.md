@@ -11,7 +11,8 @@
 | **tentacle-only** | Tentacle seul | vous avez déjà MariaDB/MySQL et Jellyfin |
 
 Chaque pile est un seul `compose.yaml`, prêt à copier, avec un `.env.example` commenté à côté. **Rien n'est
-obligatoire dans `.env`** : chaque valeur a un défaut qui marche.
+obligatoire dans `.env`** : chaque valeur a un défaut qui marche. Aucune pile n'embarque de mandataire : pour
+le HTTPS depuis Internet, placez Tentacle derrière le vôtre ([remote-access.md](remote-access.md)).
 
 ```bash
 mkdir tentacle && cd tentacle
@@ -62,7 +63,7 @@ Une question par écran ; les étapes s'adaptent à la pile détectée.
 7. **Bibliothèques** — *tentacle-full* propose **Films** (`/media/films`) et **Séries** (`/media/series`) ;
    parcourez les dossiers de Jellyfin pour en ajouter.
 8. **Récapitulatif**, puis **installation** (chaque étape ratée se relance seule).
-9. **Accès à distance** (facultatif) — voir [remote-access.md](remote-access.md).
+9. **Accès à distance** (facultatif) — le HTTPS par votre propre mandataire : voir [remote-access.md](remote-access.md).
 10. **Et maintenant ?** — où déposer vos fichiers, les applications de chaque plateforme, un QR code pour
     ouvrir le serveur.
 
@@ -79,8 +80,6 @@ Copiez `.env.example` en `.env` à côté de `compose.yaml`, décommentez ce qu'
 | `PUID` / `PGID` | `1000` | le compte propriétaire de vos fichiers (`id -u`, `id -g`) |
 | `TZ` | `Europe/Paris` | le fuseau horaire |
 | `TENTACLE_VERSION` | `latest` | une version figée (ex. `v1.23.0`) pour ne mettre à jour que quand vous le décidez |
-| `TENTACLE_DOMAIN`, `JELLYFIN_DOMAIN` | — | *full* : les domaines des profils `caddy` / `traefik` ([remote-access.md](remote-access.md)) |
-| `HTTP_PORT` / `HTTPS_PORT` | `80` / `443` | *full* : les ports du mandataire |
 
 Variables du serveur, à poser dans `compose.yaml` (`environment:`) pour les cas particuliers :
 

@@ -62,8 +62,10 @@ docker compose logs tentacle     # the one-time setup code, and the link to open
 
 Open `http://<your-server>:3000`, enter the setup code, and answer the wizard's questions one at a time:
 Jellyfin is configured for you, your libraries are created, remote access is guided and tested from the
-outside. Full guide: **[docs/server](docs/server/README.md)** ([français](docs/server/fr/README.md)) —
-install, remote access (port forwarding, Caddy/Traefik, CGNAT), GPU, operations, troubleshooting.
+outside. No stack ships a reverse proxy: for HTTPS from the Internet, Tentacle goes behind **yours** (Nginx
+Proxy Manager, Caddy, Traefik…), and the admin page writes what to put in it. Full guide:
+**[docs/server](docs/server/README.md)** ([français](docs/server/fr/README.md)) — install, remote access (port
+forwarding, your reverse proxy, CGNAT), GPU, operations, troubleshooting.
 
 > The previous [`docker-compose.yml`](docker-compose.yml) and [`docker-compose.external.yml`](docker-compose.external.yml)
 > keep working with the new image; moving to a stack is optional
@@ -149,8 +151,9 @@ If you pin a version (`TENTACLE_VERSION=v1.23.0`, or `ghcr.io/knaox/tentacle-tv:
 
 ## Reverse Proxy (Nginx Proxy Manager)
 
-> New installs: **Administration › Remote access** guides you (Caddy or Traefik profiles of the stacks, your own
-> proxy, router ports, external test) — see [docs/server/remote-access.md](docs/server/remote-access.md).
+> The stacks ship no reverse proxy: Tentacle goes behind yours. **Administration › Remote access** writes what
+> to put in it — a Caddyfile block, an Nginx / Nginx Proxy Manager block or a Traefik routes file — then guides
+> the router ports and tests from the outside; see [docs/server/remote-access.md](docs/server/remote-access.md).
 > This section details Nginx Proxy Manager, including same-domain direct streaming.
 
 If you expose Tentacle TV through **Nginx Proxy Manager**, follow these steps to enable real-time features (WebSocket).

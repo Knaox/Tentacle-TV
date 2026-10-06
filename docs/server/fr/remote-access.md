@@ -7,33 +7,147 @@ Trois étapes : ce qui reçoit Internet, les ports de la box, et un test mené *
 
 ## 1. Un mandataire HTTPS devant (conseillé)
 
-| Option | Quand |
+Les piles Docker **n'embarquent pas de mandataire** : vous en avez sans doute déjà un (Nginx Proxy Manager,
+Caddy, Traefik…), et Tentacle se range simplement derrière. Si vous n'en avez pas encore, Caddy est le plus
+simple à installer (paquet du système ou son propre conteneur) : les certificats sont automatiques.
+
+| Ce qui reçoit Internet | Quoi faire |
 |---|---|
-| **Caddy** (profil `caddy` de *tentacle-full*) | le plus simple : certificats automatiques |
-| **Traefik** (profil `traefik`, fournisseur de fichier — sans socket Docker) | vous préférez Traefik |
-| **Votre mandataire** (Nginx Proxy Manager, Caddy, Traefik…) | il tourne déjà chez vous : la page d'administration génère l'extrait |
+| **Caddy** | ajouter le bloc de Caddyfile ci-dessous |
+| **Nginx / Nginx Proxy Manager** (ou un autre mandataire) | un hôte par domaine, websockets activés — le bloc Nginx ci-dessous pour modèle |
+| **Traefik** | ajouter le fichier de routes ci-dessous à son fournisseur de fichier (sans socket Docker) |
 | Sans mandataire | le port de Tentacle ouvert tel quel : **tout passe en clair** — à éviter |
 
-Avec les piles :
-
-```bash
-# .env à côté de compose.yaml
-TENTACLE_DOMAIN=tentacle.exemple.fr
-JELLYFIN_DOMAIN=jellyfin.exemple.fr    # seulement pour la lecture directe depuis Internet
-```
-
-```bash
-docker compose --profile caddy up -d     # ou : --profile traefik
-```
-
+**Administration › Accès à distance** écrit ces blocs avec vos domaines et l'adresse de ce serveur (étape 1).
 Chaque domaine a besoin d'un enregistrement DNS **A** (et **AAAA** si vous avez l'IPv6) vers votre adresse
-publique. La configuration (en-têtes CORS de Jellyfin compris, jamais en double) est déjà dans le compose.
+publique ; le domaine de Jellyfin ne sert qu'à la lecture directe depuis Internet. Les exemples ci-dessous
+prennent `tentacle.exemple.fr`, `jellyfin.exemple.fr` et un serveur en `192.168.1.20` aux ports par défaut
+(3000, 8096) : remplacez-les par les vôtres. Un mandataire placé dans le **même réseau Docker** que la pile
+peut viser les services par leur nom : `tentacle:3000` et `jellyfin:8096`.
+
+Sur Jellyfin, le mandataire pose **les en-têtes CORS de Tentacle à la place de ceux de Jellyfin** (jamais les
+deux : un `Access-Control-Allow-Origin` en double fait tout refuser par le navigateur).
+
+### Caddy
+
+Caddy obtient et renouvelle seul les certificats dès que les ports 80 et 443 lui parviennent.
+
+```caddyfile
+tentacle.exemple.fr {
+  reverse_proxy 192.168.1.20:3000
+}
+jellyfin.exemple.fr {
+  reverse_proxy 192.168.1.20:8096 {
+    header_down Access-Control-Allow-Origin "https://tentacle.exemple.fr"
+    header_down Access-Control-Allow-Credentials "true"
+    header_down Access-Control-Allow-Methods "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+    header_down Access-Control-Allow-Headers "Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control"
+    header_down Access-Control-Expose-Headers "Content-Length, Content-Range, Date, Server"
+  }
+}
+```
+
+### Nginx / Nginx Proxy Manager
+
+Dans **Nginx Proxy Manager** : un *Proxy Host* par domaine, vers `http://192.168.1.20:3000` (Tentacle) et
+`http://192.168.1.20:8096` (Jellyfin), avec *Websockets Support*, un certificat Let's Encrypt et *Force SSL* ;
+les lignes CORS de Jellyfin (`proxy_hide_header` / `add_header`) vont dans son onglet *Advanced*. Avec **Nginx**
+seul, ajoutez vos lignes `ssl_certificate` et `ssl_certificate_key` :
+
+```nginx
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name tentacle.exemple.fr;
+  client_max_body_size 0;
+  location / {
+    proxy_pass http://192.168.1.20:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_buffering off;
+  }
+}
+
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name jellyfin.exemple.fr;
+  client_max_body_size 0;
+  location / {
+    proxy_pass http://192.168.1.20:8096;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_buffering off;
+    proxy_hide_header Access-Control-Allow-Origin;
+    proxy_hide_header Access-Control-Allow-Credentials;
+    proxy_hide_header Access-Control-Allow-Methods;
+    proxy_hide_header Access-Control-Allow-Headers;
+    proxy_hide_header Access-Control-Expose-Headers;
+    add_header Access-Control-Allow-Origin "https://tentacle.exemple.fr" always;
+    add_header Access-Control-Allow-Credentials "true" always;
+    add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, DELETE, PUT, PATCH" always;
+    add_header Access-Control-Allow-Headers "Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control" always;
+    add_header Access-Control-Expose-Headers "Content-Length, Content-Range, Date, Server" always;
+  }
+}
+```
+
+### Traefik
+
+Un fichier de routes pour le **fournisseur de fichier** de Traefik. `websecure` et `letsencrypt` sont les noms
+habituels du point d'entrée HTTPS et du résolveur de certificats ACME : remplacez-les par les vôtres.
+
+```yaml
+http:
+  routers:
+    tentacle:
+      rule: Host(`tentacle.exemple.fr`)
+      entryPoints: [websecure]
+      service: tentacle
+      tls: { certResolver: letsencrypt }
+    jellyfin:
+      rule: Host(`jellyfin.exemple.fr`)
+      entryPoints: [websecure]
+      service: jellyfin
+      middlewares: [jellyfin-cors]
+      tls: { certResolver: letsencrypt }
+  middlewares:
+    jellyfin-cors:
+      headers:
+        accessControlAllowOriginList: ["https://tentacle.exemple.fr"]
+        accessControlAllowCredentials: true
+        accessControlAllowMethods: [GET, POST, OPTIONS, DELETE, PUT, PATCH]
+        accessControlAllowHeaders: [Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control]
+        accessControlExposeHeaders: [Content-Length, Content-Range, Date, Server]
+        addVaryHeader: true
+  services:
+    tentacle:
+      loadBalancer:
+        servers: [{ url: "http://192.168.1.20:3000" }]
+    jellyfin:
+      loadBalancer:
+        servers: [{ url: "http://192.168.1.20:8096" }]
+```
+
+Puis déclarez le mandataire à Jellyfin : son adresse dans les **proxies connus** (*Known proxies*, Tableau de
+bord › Réseau), sinon toutes les connexions semblent venir du mandataire. Pour Tentacle, voir
+[Mandataires de confiance](#mandataires-de-confiance).
 
 ## 2. Ouvrir les ports de la box
 
 | Derrière un mandataire | Sans mandataire |
 |---|---|
-| **443** (HTTPS) et **80** (redirection vers HTTPS, renouvellement des certificats) → cette machine | le port de Tentacle (`TENTACLE_PORT`, 3000) → cette machine ; celui de Jellyfin (8096) seulement pour la lecture directe |
+| **443** (HTTPS) et **80** (redirection vers HTTPS, renouvellement des certificats) → la machine du mandataire | le port de Tentacle (`TENTACLE_PORT`, 3000) → cette machine ; celui de Jellyfin (8096) seulement pour la lecture directe |
 
 Donnez au serveur une **adresse fixe** dans la box (réservation DHCP). La page d'administration renvoie aux
 guides officiels de Swisscom, Sunrise, Salt, Free, Orange et Bouygues (vérifiés le 2026-10-06 ; le site de SFR
