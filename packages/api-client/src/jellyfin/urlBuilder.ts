@@ -10,7 +10,7 @@ export { applyTranscodeTarget, fitServerCappedTranscode, type TranscodeTier } fr
  *  when direct streaming is active, otherwise returns the proxy URL unchanged. */
 export type ResolveMediaUrl = (proxyUrl: string) => string;
 
-export type ImageType = "Primary" | "Backdrop" | "Logo" | "Thumb";
+export type ImageType = "Primary" | "Backdrop" | "Logo" | "Thumb" | "Banner" | "Art" | "Screenshot" | "Box";
 
 export interface ImageUrlOptions {
   width?: number;
@@ -48,7 +48,9 @@ export function buildImageUrl(
   if (options?.quality) p.quality = String(Math.min(options.quality, maxQuality));
   if (options?.tag) p.tag = options.tag;
   const idx = options?.index ?? 0;
-  const suffix = imageType === "Backdrop" && idx > 0 ? `/${idx}` : "";
+  // L'index désigne la n-ième image d'un type qui en a plusieurs (fonds,
+  // captures) : `/Images/Backdrop/2`.
+  const suffix = idx > 0 ? `/${idx}` : "";
   const url = `${baseUrl}/Items/${itemId}/Images/${imageType}${suffix}?${buildQuery(p)}`;
   return resolveMediaUrl(url);
 }
