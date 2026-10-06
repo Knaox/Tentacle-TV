@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import { PACKAGE, sleep } from "./device.mjs";
+import { ForegroundError } from "./keyGuard.mjs";
 import { cpuDelta, summarizeRound } from "./report.mjs";
 import { startTrace, stopTrace, summarizeTrace } from "./trace.mjs";
 
@@ -94,7 +95,11 @@ export function createPlayer({ device, backendPort, host }) {
    *  à la taille que CETTE version demande, l'app remplit son cache disque. */
   async function warmup(scenarios) {
     for (const scenario of scenarios) {
-      await playChecked(scenario).catch((error) => console.log(`\néchauffement ${scenario.id} : ${error.message}`));
+      await playChecked(scenario).catch((error) => {
+        // La garde des touches ne se rattrape jamais : arrêt net.
+        if (error instanceof ForegroundError) throw error;
+        console.log(`\néchauffement ${scenario.id} : ${error.message}`);
+      });
     }
   }
 

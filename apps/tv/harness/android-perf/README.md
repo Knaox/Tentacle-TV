@@ -11,13 +11,34 @@ réel : le faux backend de nav-golden, derrière un relais qui sert les images
 # l'émulateur d'abord, sous verrou (A6 : TENTACLE_EMULATOR_OWNER=…)
 pnpm tv:refonte:android --sans-backend
 # deux APK de la même clé : la release mesurée, une debug (pour écrire la session)
-TENTACLE_TV_REDESIGN=1 ./gradlew assembleRelease assembleDebug -x lint -PreactNativeArchitectures=arm64-v8a
+TENTACLE_TV_REDESIGN=1 ./gradlew assembleRelease assembleDebug -x lint -PtentaclePerfApp=1 -PreactNativeArchitectures=arm64-v8a
 node apps/tv/harness/android-perf/bench.mjs run --apk <release.apk> --debug-apk <debug.apk> --tag avant [--only focus-rangee,grille] [--rounds 3] [--trace]
 node apps/tv/harness/android-perf/bench.mjs compare avant apres
 # deux versions en ALTERNANCE (A, B, puis B, A) — la seule comparaison fiable
 node apps/tv/harness/android-perf/bench.mjs ab --a <avant.apk> --tag-a avant --b <apres.apk> --tag-b apres --debug-apk <debug.apk> [--rounds 2] [--shots] [--slow] [--no-warmup]
 node apps/tv/harness/android-perf/bench.mjs diff avant apres   # captures : PSNR, SSIM, côte à côte
 ```
+
+**La garde des touches (obligatoire, depuis le 07/10).** Un banc a envoyé
+ses touches alors que l'app de mesure n'était plus au premier plan : elles
+sont parties vers le lanceur, ont ouvert les Paramètres SYSTÈME, et la Shield
+a redémarré. Désormais (`lib/keyGuard.mjs`, `keys/Keys.java`) :
+
+- l'app mesurée est TOUJOURS l'app de mesure `com.tentacletv.mobile.perf`
+  (`-PtentaclePerfApp=1`), à l'émulateur aussi ; le banc refuse de jouer sur
+  `com.tentacletv.mobile` ;
+- l'app est lancée par `am start`, jamais depuis le lanceur ;
+- chaque séquence est coupée après chaque OK et chaque Retour ; avant chaque
+  tronçon, `dumpsys activity activities` doit montrer l'app au premier plan
+  (et le focus d'accord) ; l'injecteur relit le premier plan avant CHAQUE
+  appui (`expect=<paquet>`) ;
+- au moindre doute (rien de lisible, autre app, désaccord) : arrêt net, sans
+  touche (`ForegroundError`, que ni l'échauffement ni une passe rejouée ne
+  rattrapent) ;
+- jamais Accueil, Marche, Menu, Paramètres, Veille ni Applis récentes.
+
+`PERF_KEYS_TRACE=1` affiche l'heure de chaque appui envoyé (à comparer aux
+`input_focus` de `logcat -b events`). Preuve à l'émulateur, docs/android-tv-lite/BANC.md.
 
 **Mesurer sur les cœurs économes (`--slow`).** L'Apple M4 n'a que quatre
 cœurs de performance : quand d'autres sessions compilent, l'émulateur passe

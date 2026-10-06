@@ -5,11 +5,13 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { ForegroundError, assertAllowed, assertForeground, splitAtChecks } from "./keyGuard.mjs";
 
-/** L'app mesurée : la vraie à l'émulateur ; sur une vraie Shield, l'app de
- *  MESURE installée à côté (`PERF_PACKAGE=com.tentacletv.mobile.perf`,
- *  construite par `-PtentaclePerfApp=1`) — jamais celle de l'utilisateur. */
-export const PACKAGE = process.env.PERF_PACKAGE ?? "com.tentacletv.mobile";
+/** L'app mesurée : TOUJOURS l'app de MESURE (`com.tentacletv.mobile.perf`,
+ *  construite par `-PtentaclePerfApp=1`, installée à côté de la vraie), à
+ *  l'émulateur comme sur un appareil réel. Le banc refuse de jouer sur
+ *  `com.tentacletv.mobile`, l'app de l'utilisateur (`keyGuard.mjs`). */
+export const PACKAGE = process.env.PERF_PACKAGE ?? "com.tentacletv.mobile.perf";
 const REAL_PACKAGE = "com.tentacletv.mobile";
 const ACTIVITY = `${PACKAGE}/com.tentacletv.MainActivity`;
 const SDK = process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk");
@@ -24,11 +26,11 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
   const adb = (args, options = {}) => execFileSync(ADB, ["-s", serial, ...args], { encoding: "utf8", maxBuffer: 256 << 20, ...options });
   const shell = (command, options) => adb(["shell", command], options);
   /** Ce qui EFFACE ou remplace (installation, `pm clear`, session écrite) ne
-   *  vise qu'un émulateur, ou l'app de mesure d'une vraie Shield : l'app et
-   *  le jumelage de l'utilisateur ne se touchent jamais. */
+   *  vise que l'app de mesure : l'app et le jumelage de l'utilisateur ne se
+   *  touchent jamais, émulateur compris. */
   const assertDisposable = () => {
-    if (PACKAGE === REAL_PACKAGE && !serial.startsWith("emulator-")) {
-      throw new Error(`${serial} n'est pas un émulateur : le banc n'y écrit que dans l'app de mesure (PERF_PACKAGE=${REAL_PACKAGE}.perf)`);
+    if (PACKAGE === REAL_PACKAGE) {
+      throw new Error(`le banc n'écrit que dans l'app de mesure (PERF_PACKAGE=${REAL_PACKAGE}.perf), jamais dans ${REAL_PACKAGE}`);
     }
   };
 
@@ -113,10 +115,34 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
       return shell(`pidof ${PACKAGE}`).trim().split(/\s+/)[0] || null;
     },
 
-    /** Une séquence de touches (`Keys.java`) : `tap:22`, `tap:22x6@500`, `hold:20:3000`, `wait:800`. */
+    /** L'app de mesure au premier plan, ou une `ForegroundError` (`keyGuard.mjs`). */
+    assertForeground() {
+      assertForeground(PACKAGE, shell("dumpsys activity activities", { timeout: 30_000 }));
+    },
+
+    /**
+     * Une séquence de touches (`Keys.java`) : `tap:22`, `tap:22x6@500`,
+     * `hold:20:3000`, `wait:800` — GARDÉE (`keyGuard.mjs`) : touches système
+     * refusées, séquence coupée à chaque OK et Retour, premier plan vérifié
+     * avant chaque tronçon par le banc et avant chaque appui par l'injecteur.
+     * Au moindre doute : `ForegroundError`, et plus aucune touche.
+     */
     keys(...steps) {
       if (steps.length === 0) return;
-      shell(`CLASSPATH=${KEYS_DEX} app_process /system/bin Keys ${steps.join(" ")}`, { timeout: 120_000 });
+      assertAllowed(PACKAGE, steps);
+      for (const chunk of splitAtChecks(steps)) {
+        this.assertForeground();
+        try {
+          const trace = process.env.PERF_KEYS_TRACE ? "KEYS_TRACE=1 " : "";
+          const out = shell(`${trace}CLASSPATH=${KEYS_DEX} app_process /system/bin Keys expect=${PACKAGE} ${chunk.join(" ")}`, { timeout: 120_000 });
+          if (trace) process.stdout.write(out);
+        } catch (error) {
+          const out = String(error.stdout ?? "");
+          if (process.env.PERF_KEYS_TRACE) process.stdout.write(out);
+          if (error.status === 3 || error.status === 4 || /ARRÊT/.test(out)) throw new ForegroundError(`injecteur : ${out.trim()}`);
+          throw error;
+        }
+      }
     },
 
     /** Le décompte d'Android pour TOUTES les fenêtres du processus (une Modal
