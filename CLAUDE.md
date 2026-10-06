@@ -527,20 +527,35 @@ Doc utilisateur : `docs/server/` (EN) et `docs/server/fr/`. Trois piles prêtes 
 `tentacle-secrets`, `DB_PASSWORD_FILE`), **jamais le socket Docker**, jamais root (`PUID:PGID`, tini,
 su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration forcée).
 
-- **Assistant d'installation** (`/api/setup/*`, `apps/backend/src/setup/`) : un code à usage unique
-  (12 car. Crockford, journaux + `data/setup-token.txt`) s'échange contre une session (en-tête
-  `X-Tentacle-Setup`, jamais un cookie). Fini, il est **fermé pour toujours** (404 partout sauf
-  `GET /status`, gardé pour les clients livrés) ; seule la CLI de l'image le rouvre
-  (`tentacle setup token|reset`, un `tentacle` en trop en tête est pardonné). Avant le code, `GET /host`
-  (public, ouvert seulement) dit où lire le journal : pile, conteneur, identifiant court lu dans `HOSTNAME`
-  ou le montage de `/etc/hostname` (`setup/hostInfo.ts`) — l'écran du code en tire ses onglets (Portainer,
-  `docker logs <ID>`, Compose, NAS, natif) ; aucun texte ne suppose `docker compose`. Refus = `{ error: <SetupErrorCode> }`, jamais un message brut ni une
-  réponse de Jellyfin. Contrat : `packages/shared/src/setupWizard/setupWizardContract.ts`, recopié dans le
-  backend (test miroir). Pile complète : le Jellyfin voisin est **verrouillé au démarrage** (`claimed`) puis
-  pris par le compte choisi. Jamais de `prisma db push` (il supprime les tables des extensions).
+- **Assistant d'installation** (`/api/setup/*`, `apps/backend/src/setup/`) : **sans code depuis la
+  maison** (modèle Jellyfin / Plex, `POST /session/local`, `setup/localAccess/`) — le PREMIER navigateur
+  arrivé DIRECTEMENT d'une adresse privée (RFC 1918, ULA, lien local, boucle locale ; pas le CGNAT) le
+  réclame : sans mandataire ou par un voisin de confiance, jamais par la passerelle du conteneur (Docker
+  Desktop/colima y font passer Internet), et l'hôte TAPÉ doit être local (un domaine public → code). Le
+  réclamant (`data/setup-claimant`) garde la place ; une autre adresse → `setup_in_progress`, le code.
+  Ailleurs, un code à usage unique (12 car. Crockford, journaux + `data/setup-token.txt`) s'échange contre
+  une session. Toute session (en-tête `X-Tentacle-Setup`, jamais un cookie) est LIÉE à l'adresse qui l'a
+  ouverte. Modèle de menace : `docs/server/setup-security.md`. Fini, il est **fermé pour toujours** (404
+  partout sauf `GET /status`, gardé pour les clients livrés) ; seule la CLI de l'image le rouvre
+  (`tentacle setup token|reset`, un `tentacle` en trop en tête est pardonné). `GET /host` (public, ouvert
+  seulement) dit `codeRequired` pour CE navigateur et où lire le journal : pile, conteneur, identifiant
+  court lu dans `HOSTNAME` ou le montage de `/etc/hostname` (`setup/hostInfo.ts`) — l'écran du code en tire
+  ses onglets (Portainer, `docker logs <ID>`, Compose, NAS, natif) ; aucun texte ne suppose `docker
+  compose`. Refus = `{ error: <SetupErrorCode> }`, jamais un message brut ni une réponse de Jellyfin.
+  Contrat : `packages/shared/src/setupWizard/setup{Wizard,Discovery}Contract.ts`, recopiés dans le backend
+  (test miroir). **Pile complète : SON Jellyfin et lui seul** (`JELLYFIN_INTERNAL_URL`, l'adresse du
+  navigateur ignorée), prouvé sur un sous-réseau du conteneur (`jellyfin/siblingCheck.ts` — un service
+  renommé envoie le nom au DNS du réseau local) ; un Jellyfin étranger gardé par une base reprise est
+  oublié ; le voisin est **verrouillé au démarrage** (`claimed`) puis pris par le compte choisi. Ailleurs,
+  `GET /jellyfin/discover` liste les Jellyfin joignables (UDP 7359, hôte du navigateur + passerelle sur
+  les ports courants, bornée, adresses privées seulement). L'adresse de Jellyfin des APPLICATIONS
+  (`jellyfin_private_url`, `jellyfin/clientUrl.ts`) = hôte du navigateur + `JELLYFIN_HOST_PORT`, jamais un
+  nom Docker, ni 8096 supposé, ni l'IP de la passerelle. Jamais de `prisma db push` (il supprime les
+  tables des extensions).
 - **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, règle
   pure `wizardModel.ts`, chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
-  le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire.
+  le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
+  le parcours que si `codeRequired` ; la langue des métadonnées est sous le compte (plus d'écran à part).
 - **`trustProxy` limité aux voisins** (`services/trustedProxies.ts` : boucle locale, RFC 1918, ULA, réseaux
   Docker, + `TRUSTED_PROXIES`) ; l'adresse réelle d'un client se lit par `getRealClientIp`, jamais
   `request.ip` (compteur de débit, réseau local, journaux). Docker Desktop/colima perdent l'adresse source :
