@@ -2,6 +2,8 @@ import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { OFFLINE_VEIL, OFFLINE_VEIL_FOCUS, OFFLINE_VEIL_KEYS } from "@tentacle-tv/tv-core";
+import { connectivityCaseOf } from "@tentacle-tv/shared";
+import { useServerReachability } from "../../hooks/serverReachability";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { OfflineOverlay } from "../../redesign/screens/overlays/OfflineOverlay";
 import { useUnpairDevice } from "../../hooks/useUnpairDevice";
@@ -38,6 +40,8 @@ function OfflineSurface({ onRetry }: { onRetry: () => void | Promise<unknown> })
   const { storage } = useTentacleConfig();
   const unpairDevice = useUnpairDevice();
   const unpair = useCallback(() => unpairDevice("offline"), [unpairDevice]);
+  // Le cas dit par la sonde : pas de réseau, ou le serveur (shared `connectivityCase.ts`).
+  const { reason } = useServerReachability();
   const [retrying, setRetrying] = useState(false);
 
   const store = useFocusStore();
@@ -56,6 +60,7 @@ function OfflineSurface({ onRetry }: { onRetry: () => void | Promise<unknown> })
       <FocusBindingProvider bind={store.binder}>
         <OfflineOverlay
           serverUrl={storage.getItem("tentacle_server_url") ?? undefined}
+          cause={connectivityCaseOf(reason) ?? "server"}
           retrying={retrying}
           onRetry={retry}
           onUnpair={unpair}

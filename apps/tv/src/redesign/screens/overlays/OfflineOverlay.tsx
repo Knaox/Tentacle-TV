@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { OFFLINE_VEIL, confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
+import { connectivityCopy, type ConnectivityCase } from "@tentacle-tv/shared";
 import { BrandMark } from "../../brand/BrandMark";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -16,9 +17,10 @@ import { useRemoteHints } from "../../remote/remoteHints";
 /**
  * Le serveur ne répond plus : tout l'écran est couvert, et rien ne se
  * referme tant que la connexion n'est pas revenue. La pieuvre pleure, deux
- * phrases disent ce qui se passe et que ce n'est pas la faute de
- * l'utilisateur, et deux gestes : réessayer, ou déjumeler l'appareil — la
- * sortie quand le serveur est hors service pour de bon.
+ * phrases disent lequel des trois cas partagés se présente (`cause` :
+ * pas de réseau, serveur Tentacle hors ligne, Jellyfin injoignable — shared
+ * `connectivityCase.ts`) et quoi vérifier, et deux gestes : réessayer, ou
+ * déjumeler l'appareil — la sortie quand le serveur est hors service pour de bon.
  *
  * « Déjumeler cet appareil » se fait à DOUBLE appui, comme « Déconnexion »
  * dans les réglages : le premier arme (« Confirmer le déjumelage », et une
@@ -41,6 +43,8 @@ import { useRemoteHints } from "../../remote/remoteHints";
 export interface OfflineOverlayProps {
   /** Le serveur injoignable, en petit : ce qu'on dira à l'administrateur. */
   serverUrl?: string;
+  /** Lequel des trois cas — le serveur par défaut. */
+  cause?: ConnectivityCase;
   retrying?: boolean;
   initialArmed?: boolean;
   onRetry?: () => void;
@@ -52,12 +56,14 @@ const UNPAIR = "unpair";
 
 export const OfflineOverlay = memo(function OfflineOverlay({
   serverUrl,
+  cause = "server",
   retrying = false,
   initialArmed = false,
   onRetry,
   onUnpair,
 }: OfflineOverlayProps) {
-  const { t } = useTranslation(["common", "pairing"]);
+  const { t } = useTranslation(["common", "pairing", "errors"]);
+  const copy = connectivityCopy(cause);
   const hints = useRemoteHints();
   const backing = useNativeGlassBacking("strong");
   const [armedAction, setArmedAction] = useState<typeof UNPAIR | null>(initialArmed ? UNPAIR : null);
@@ -80,9 +86,8 @@ export const OfflineOverlay = memo(function OfflineOverlay({
         <View style={[StyleSheet.absoluteFill, styles.base, backing]} />
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} elevated />
         <BrandMark size={176} crying />
-        <Text style={styles.title}>{t("offlineTitle")}</Text>
-        <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Text style={styles.hint}>{t("offlineHint")}</Text>
+        <Text style={styles.title}>{t(copy.titleKey)}</Text>
+        <Text style={styles.message}>{t(copy.hintKey)}</Text>
         <View style={styles.actions}>
           <PillButton
             variant="primary"
@@ -134,7 +139,6 @@ const styles = StyleSheet.create({
   base: { borderRadius: RADIUS, backgroundColor: "rgba(10, 10, 14, 0.96)" },
   title: { ...text.title, marginTop: 26, textAlign: "center" },
   message: { ...fonts.regular, fontSize: 30, lineHeight: 42, color: colors.textSecondary, textAlign: "center", marginTop: 20 },
-  hint: { ...fonts.regular, fontSize: 24, lineHeight: 34, color: colors.textTertiary, textAlign: "center", marginTop: 16 },
   actions: { flexDirection: "row", gap: 22, marginTop: 44 },
   armedHint: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 24 },
   // La ligne armée des réglages (`AccountPanel`), au même ton.

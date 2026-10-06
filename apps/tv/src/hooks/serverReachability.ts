@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import type { ConnectivityReason } from "@tentacle-tv/shared";
 
 /**
  * La joignabilité du serveur Tentacle, lisible HORS de l'arbre qui la sonde.
@@ -15,16 +16,20 @@ export interface ServerReachability {
   reachable: boolean;
   /** Depuis quand (horodatage) — de quoi dire « depuis 2 min ». */
   since: number;
+  /** Pourquoi, une fois la panne confirmée : l'appareil sans réseau, le
+   *  serveur muet ou trop lent (shared `connectivityCase.ts`). */
+  reason: ConnectivityReason;
 }
 
-let current: ServerReachability = { reachable: true, since: Date.now() };
+let current: ServerReachability = { reachable: true, since: Date.now(), reason: null };
 const listeners = new Set<() => void>();
 let probe: (() => Promise<unknown>) | null = null;
 
 /** Réservé à `useServerReachable`. */
-export function publishServerReachability(reachable: boolean): void {
-  if (current.reachable === reachable) return;
-  current = { reachable, since: Date.now() };
+export function publishServerReachability(reachable: boolean, reason: ConnectivityReason = null): void {
+  const nextReason = reachable ? null : reason;
+  if (current.reachable === reachable && current.reason === nextReason) return;
+  current = { reachable, since: current.reachable === reachable ? current.since : Date.now(), reason: nextReason };
   listeners.forEach((listener) => listener());
 }
 
