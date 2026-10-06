@@ -130,7 +130,7 @@ export function audioCodecParam(engine: EngineCapabilities, sourceCodec?: string
 }
 
 /** Les codecs vidéo d'un segment : l'AV1 et le VP9 ne voyagent qu'en fMP4. */
-function segmentVideoCodecs(engine: EngineCapabilities): string[] {
+export function segmentVideoCodecs(engine: EngineCapabilities): string[] {
   if (engine.segmentContainer === "mp4") return [...engine.videoCodecs];
   return engine.videoCodecs.filter((codec) => codec === "hevc" || codec === "h264");
 }

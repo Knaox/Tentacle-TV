@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AVPLAYER_ENGINE, EXOPLAYER_ENGINE, MPV_ENGINE, SAFE_FALLBACK_ENGINE, readableRangeTypes, withHdr,
 } from "./engineCapabilities";
+import { engineTranscodingProfiles } from "./engineProfiles";
 import { AUDIO_COPY_MAX_SHARE, audioCopyBitrate, keptAudioCopyBitrate, planStream, segmentAudioCodecs } from "./streamPlan";
 
 const DTS_51 = { Codec: "dts", BitRate: 768_000, Channels: 6 };
@@ -133,5 +134,25 @@ describe("keptAudioCopyBitrate — la copie prévue par Jellyfin, gardée par le
 
   it("trop lourde pour un petit palier : convertie", () => {
     expect(keptAudioCopyBitrate(served, DTS_51, 2_524_000)).toBeNull();
+  });
+});
+
+describe("engineTranscodingProfiles — les profils d'un DeviceProfile", () => {
+  it("le profil du moteur d'abord (Jellyfin prend le premier), le repli H.264 + AAC ensuite", () => {
+    const [first, second, audio] = engineTranscodingProfiles(MPV_ENGINE);
+    expect(first).toMatchObject({ Container: "ts", VideoCodec: "hevc,h264", MaxAudioChannels: "8" });
+    expect(first.AudioCodec?.split(",")).toContain("dts");
+    expect(second).toMatchObject({ Container: "ts", VideoCodec: "h264", AudioCodec: "aac" });
+    expect(audio.Type).toBe("Audio");
+  });
+
+  it("AVPlayer : fMP4, sans AC3 copié", () => {
+    const [first] = engineTranscodingProfiles(AVPLAYER_ENGINE);
+    expect(first.Container).toBe("mp4");
+    expect(first.AudioCodec?.split(",")).not.toContain("ac3");
+  });
+
+  it("le repli sûr n'est pas dupliqué", () => {
+    expect(engineTranscodingProfiles(SAFE_FALLBACK_ENGINE).filter((p) => p.Type === "Video")).toHaveLength(1);
   });
 });

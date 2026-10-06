@@ -1,4 +1,5 @@
 import {
+  AVPLAYER_ENGINE,
   avPlayerHevcTagCondition,
   type DeviceProfile,
   type DirectPlayProfile,
@@ -106,7 +107,7 @@ export function buildIosDeviceProfile(
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: iosTranscodingProfiles(),
+    TranscodingProfiles: iosTranscodingProfiles(AVPLAYER_ENGINE),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };

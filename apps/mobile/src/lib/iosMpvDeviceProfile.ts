@@ -1,4 +1,4 @@
-import type { CodecProfile, DeviceProfile, DirectPlayProfile, SubtitleProfile } from "@tentacle-tv/shared";
+import { MPV_ENGINE, type CodecProfile, type DeviceProfile, type DirectPlayProfile, type SubtitleProfile } from "@tentacle-tv/shared";
 import { IOS_MPV_SUPPORT, supportList } from "@tentacle-tv/offline-core";
 import { iosTranscodingProfiles } from "./iosTranscodingProfiles";
 
@@ -54,7 +54,7 @@ export function buildIosMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: iosTranscodingProfiles(),
+    TranscodingProfiles: iosTranscodingProfiles(MPV_ENGINE),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };

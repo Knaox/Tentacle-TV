@@ -1,8 +1,9 @@
-import type {
-  DeviceProfile,
-  DirectPlayProfile,
-  CodecProfile,
-  SubtitleProfile,
+import {
+  EXOPLAYER_ENGINE,
+  type DeviceProfile,
+  type DirectPlayProfile,
+  type CodecProfile,
+  type SubtitleProfile,
 } from "@tentacle-tv/shared";
 import { ANDROID_NATIVE_SUPPORT, supportList } from "@tentacle-tv/offline-core";
 import type { PlayerEngineKind } from "@/player/engine/types";
@@ -96,7 +97,7 @@ export function buildAndroidDeviceProfile(engine: PlayerEngineKind, maxBitrate?:
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: androidTranscodingProfiles(),
+    TranscodingProfiles: androidTranscodingProfiles(EXOPLAYER_ENGINE),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };

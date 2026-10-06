@@ -1,4 +1,4 @@
-import type { CodecProfile, DeviceProfile, DirectPlayProfile, SubtitleProfile } from "@tentacle-tv/shared";
+import { MPV_ENGINE, type CodecProfile, type DeviceProfile, type DirectPlayProfile, type SubtitleProfile } from "@tentacle-tv/shared";
 import { ANDROID_MPV_SUPPORT, supportList } from "@tentacle-tv/offline-core";
 import { androidTranscodingProfiles } from "./androidTranscodingProfiles";
 
@@ -45,7 +45,7 @@ export function buildAndroidMpvDeviceProfile(maxBitrate?: number): DeviceProfile
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: androidTranscodingProfiles(),
+    TranscodingProfiles: androidTranscodingProfiles(MPV_ENGINE),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };
