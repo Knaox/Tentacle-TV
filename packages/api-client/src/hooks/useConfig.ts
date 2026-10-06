@@ -32,7 +32,9 @@ const defaultConfig: AppConfig = {
 
 export function useAppConfig() {
   return useQuery({
-    queryKey: ["app-config"],
+    // Par serveur : un changement de serveur ne garde pas les capacités de l'autre
+    // (les invalidations sur `["app-config"]` couvrent toutes les entrées).
+    queryKey: ["app-config", _backendBase],
     queryFn: async (): Promise<AppConfig> => {
       const res = await fetch(`${_backendBase}/api/config`);
       if (!res.ok) return defaultConfig;
