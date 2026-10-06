@@ -18,6 +18,23 @@ internal object PerfConfig {
 
   val enabled: Boolean by lazy { systemProperty(PROPERTY) == "1" }
 
+  /**
+   * Les EFFETS COUPÉS pour mesurer leur coût (lot Lite, L1) — l'app de MESURE
+   * seulement (`-PtentaclePerfApp=1`, paquet `….perf`) : dans l'app livrée,
+   * la liste est toujours vide, quoi que dise la propriété.
+   *
+   *   adb shell setprop debug.tentacle.fx blur,glass    puis relancer l'app
+   *   adb shell setprop debug.tentacle.fx none          pour tout rendre
+   *
+   * Noms reconnus : `perfFx.ts` (JS).
+   */
+  fun effectsOff(packageName: String): List<String> {
+    if (!packageName.endsWith(".perf")) return emptyList()
+    return systemProperty(FX_PROPERTY).orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() && it != "none" }
+  }
+
+  private const val FX_PROPERTY = "debug.tentacle.fx"
+
   /** `android.os.SystemProperties` est caché du SDK : lu par réflexion, une fois. */
   private fun systemProperty(name: String): String? = try {
     Class.forName("android.os.SystemProperties").getMethod("get", String::class.java).invoke(null, name) as? String

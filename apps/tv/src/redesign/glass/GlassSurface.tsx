@@ -5,6 +5,10 @@ import { DropShadow } from "../render/DropShadow";
 import { colors, white } from "../theme/tokens";
 import { useGlassRendering } from "./liquidGlassMode";
 import { NativeGlassView } from "./nativeGlass";
+import { effectOff } from "../render/measuredEffects";
+
+// Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
+const GLASS_OFF = effectOff("glass");
 
 /**
  * LA surface de verre de la refonte — une seule brique, un contrat stable.
@@ -67,7 +71,7 @@ export const GlassSurface = memo(function GlassSurface({
       ) : null}
       {rendering === "native" && NativeGlassView ? (
         <NativeGlassView radius={radius} tone={tone} style={StyleSheet.absoluteFill} />
-      ) : (
+      ) : GLASS_OFF ? null : (
         <SimulatedGlass radius={radius} tone={tone} liquid={rendering === "simulated"} />
       )}
       {children}

@@ -1,6 +1,10 @@
 import { memo } from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import LinearGradient, { type LinearGradientProps } from "react-native-linear-gradient";
+import { effectOff } from "../render/measuredEffects";
+
+// Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
+const GRADIENTS_OFF = effectOff("gradients");
 
 /**
  * Un dégradé dessiné PETIT, puis agrandi par le GPU. `react-native-linear-
@@ -52,6 +56,7 @@ export const SoftGradient = memo(function SoftGradient({
   end = BOTTOM,
   ...gradient
 }: SoftGradientProps) {
+  if (GRADIENTS_OFF) return null;
   const w = start.x === end.x ? FLAT : Math.max(FLAT, Math.ceil(width * resolution));
   const h = start.y === end.y ? FLAT : Math.max(FLAT, Math.ceil(height * resolution));
   const drawn = { width: w + 2 * MARGIN, height: h + 2 * MARGIN };

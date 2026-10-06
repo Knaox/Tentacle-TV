@@ -7,6 +7,10 @@ import { brandLight, type ArtworkPalette } from "../color/artworkPalette";
 import { PoolLayerView, useLayerPool } from "../motion/LayerStack";
 import { HaloMask } from "./HaloMask";
 import { RENDER } from "../render/renderProfile";
+import { effectOff } from "../render/measuredEffects";
+
+// Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
+const HALO_OFF = effectOff("blur");
 
 /**
  * Le halo d'une œuvre : sa lumière qui déborde tout autour de son cadre, aux
@@ -130,6 +134,7 @@ export const ArtworkHalo = memo(function ArtworkHalo({
     const { scale, deviation } = haloDrawing(RENDER, blur, PixelRatio.get());
     return { w, h, width, height, radius, spread, margin, draw: scale, deviation };
   }, [w, h, width, height, radius, spread, margin, blur]);
+  if (HALO_OFF) return null;
   return (
     <View pointerEvents="none" style={[{ position: "absolute", left: -margin, top: -margin, width: w, height: h }, style]}>
       {layers.map((layer) => (
