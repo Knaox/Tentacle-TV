@@ -39,6 +39,48 @@
 
 ---
 
+## Quick Start (Docker)
+
+**One file, one command: Tentacle, its MariaDB database and Jellyfin, ready together.** A setup wizard then
+configures everything from your browser.
+
+You only need Docker (or Podman). Pick one of three ready-to-copy stacks — **nothing to edit, no password to
+write**: the database secrets are generated on the first start.
+
+| Stack | Contains | For |
+|---|---|---|
+| [`stacks/tentacle-full`](stacks/tentacle-full/compose.yaml) (recommended) | Tentacle, MariaDB, **Jellyfin** | starting from scratch |
+| [`stacks/tentacle-db`](stacks/tentacle-db/compose.yaml) | Tentacle, MariaDB | a Jellyfin that already runs elsewhere |
+| [`stacks/tentacle-only`](stacks/tentacle-only/compose.yaml) | Tentacle | existing MariaDB/MySQL and Jellyfin |
+
+```bash
+mkdir tentacle && cd tentacle
+curl -fsSLo compose.yaml https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/stacks/tentacle-full/compose.yaml
+docker compose up -d
+docker compose logs tentacle     # the one-time setup code, and the link to open
+```
+
+Open `http://<your-server>:3000`, enter the setup code, and answer the wizard's questions one at a time:
+Jellyfin is configured for you, your libraries are created, remote access is guided and tested from the
+outside. Full guide: **[docs/server](docs/server/README.md)** ([français](docs/server/fr/README.md)) —
+install, remote access (port forwarding, Caddy/Traefik, CGNAT), GPU, operations, troubleshooting.
+
+> The previous [`docker-compose.yml`](docker-compose.yml) and [`docker-compose.external.yml`](docker-compose.external.yml)
+> keep working with the new image; moving to a stack is optional
+> ([migration](docs/server/operations.md#migrating-from-the-old-docker-composeyml)).
+
+### Update
+
+The admin overview (`/admin`) shows the running version, the latest published release and, when a newer one is out, the command to copy. With Docker Compose, run it in the folder of your `compose.yaml`:
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+If you pin a version (`TENTACLE_VERSION=v1.23.0`, or `ghcr.io/knaox/tentacle-tv:v1.23.0`), change it to the new one first — `pull` would fetch nothing new otherwise. Tentacle never talks to Docker itself; the overview notices the restarted server on its own.
+
+---
+
 ## Platforms
 
 | Platform | Status | Download | Technology |
@@ -102,45 +144,6 @@
 - Built-in support tickets
 - TV pairing via 4-digit code
 - Real-time notifications
-
----
-
-## Quick Start (Docker)
-
-You only need Docker (or Podman). Pick one of three ready-to-copy stacks — **nothing to edit, no password to
-write**: the database secrets are generated on the first start.
-
-| Stack | Contains | For |
-|---|---|---|
-| [`stacks/tentacle-full`](stacks/tentacle-full/compose.yaml) (recommended) | Tentacle, MariaDB, **Jellyfin** | starting from scratch |
-| [`stacks/tentacle-db`](stacks/tentacle-db/compose.yaml) | Tentacle, MariaDB | a Jellyfin that already runs elsewhere |
-| [`stacks/tentacle-only`](stacks/tentacle-only/compose.yaml) | Tentacle | existing MariaDB/MySQL and Jellyfin |
-
-```bash
-mkdir tentacle && cd tentacle
-curl -fsSLo compose.yaml https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/stacks/tentacle-full/compose.yaml
-docker compose up -d
-docker compose logs tentacle     # the one-time setup code, and the link to open
-```
-
-Open `http://<your-server>:3000`, enter the setup code, and answer the wizard's questions one at a time:
-Jellyfin is configured for you, your libraries are created, remote access is guided and tested from the
-outside. Full guide: **[docs/server](docs/server/README.md)** ([français](docs/server/fr/README.md)) —
-install, remote access (port forwarding, Caddy/Traefik, CGNAT), GPU, operations, troubleshooting.
-
-> The previous [`docker-compose.yml`](docker-compose.yml) and [`docker-compose.external.yml`](docker-compose.external.yml)
-> keep working with the new image; moving to a stack is optional
-> ([migration](docs/server/operations.md#migrating-from-the-old-docker-composeyml)).
-
-### Update
-
-The admin overview (`/admin`) shows the running version, the latest published release and, when a newer one is out, the command to copy. With Docker Compose, run it in the folder of your `compose.yaml`:
-
-```bash
-docker compose pull && docker compose up -d
-```
-
-If you pin a version (`TENTACLE_VERSION=v1.23.0`, or `ghcr.io/knaox/tentacle-tv:v1.23.0`), change it to the new one first — `pull` would fetch nothing new otherwise. Tentacle never talks to Docker itself; the overview notices the restarted server on its own.
 
 ---
 
