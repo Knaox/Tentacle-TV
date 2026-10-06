@@ -3,7 +3,7 @@ import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
 import { getHdrCapabilities } from "../lib/hdrCapabilities";
 import { randomSessionId } from "./playerHelpers";
 import { plog } from "./playerDiag";
-import { servedReasons } from "@tentacle-tv/shared";
+import { AVPLAYER_ENGINE, SAFE_FALLBACK_ENGINE, servedReasons, withHdr } from "@tentacle-tv/shared";
 
 export interface ServerStream {
   url: string;
@@ -58,6 +58,10 @@ export async function resolveServerStream(a: {
   if (!ms) return null;
 
   const directPlay = !!ms.SupportsDirectPlay && !ms.TranscodingUrl;
+  // AVPlayer, avec ce que CETTE box décode (Dolby Vision selon le modèle) — la
+  // règle partagée (`planStream`) en tire codec de sortie, segments fMP4 et son.
+  const engine = withHdr(AVPLAYER_ENGINE, { hdr10: hdr.hdr10, hdr10Plus: hdr.hdr10, hlg: hdr.hlg, dolbyVision: hdr.dolbyVision });
+  const sourceAudio = ms.MediaStreams?.find((s) => s.Type === "Audio" && s.Index === audioIndex) ?? null;
   const sub = burnInIndex >= 0 ? burnInIndex : undefined;
   // playSessionId stable en transcode (suivi), inutile en direct play.
   const playSessionId = directPlay ? undefined : (info.PlaySessionId ?? randomSessionId());
@@ -69,6 +73,7 @@ export async function resolveServerStream(a: {
     url = client.getStreamUrl(itemId, {
       directPlay: false, maxBitrate, maxHeight,
       audioIndex, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
+      engine, sourceAudio,
     });
   } else {
     // Fallback codec : HLS 8 Mbps (parité avec le fallback Android). La raison
@@ -78,10 +83,13 @@ export async function resolveServerStream(a: {
     const reasons = a.forceTranscode
       ? [burnInIndex >= 0 ? "SubtitleCodecNotSupported" : "DirectPlayError"]
       : served.length > 0 ? served : ["DirectPlayError"];
+    // Après une erreur de lecture : le repli sûr (H.264 + AAC en TS), jamais une
+    // nouvelle tentative de ce qui vient peut-être d'échouer.
     url = client.getStreamUrl(itemId, {
       directPlay: false, maxBitrate: 8_000_000,
       audioIndex, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
       transcodeReasons: reasons,
+      engine: a.forceTranscode && burnInIndex < 0 ? SAFE_FALLBACK_ENGINE : engine, sourceAudio,
     });
   }
   plog("stream", `PlaybackInfo → ${directPlay ? "direct play serveur" : "transcode HLS"} (audio=${audioIndex})`);

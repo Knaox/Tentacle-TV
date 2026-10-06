@@ -85,6 +85,7 @@ export interface StreamUrlOptions {
    * du débit (palier, baisse automatique), plus `SubtitleCodecNotSupported`
    * quand un sous-titre est incrusté. Un repli après erreur passe la sienne
    * (`DirectPlayError`) ; un chemin qui a vu PlaybackInfo, celles de Jellyfin.
+   * Un son converti y ajoute toujours la sienne (`planStream`).
    */
   transcodeReasons?: readonly string[];
   /**
@@ -98,9 +99,11 @@ export interface StreamUrlOptions {
 }
 
 /** Les raisons d'une URL de transcodage : celles de l'appelant, sinon celles de la branche. */
-function transcodeReasons(options: StreamUrlOptions | undefined, bitrateCap: boolean): string | null {
+function transcodeReasons(options: StreamUrlOptions | undefined, bitrateCap: boolean, audioReason: string | null): string | null {
   const reasons = new Set(options?.transcodeReasons ?? []);
   if (reasons.size === 0 && bitrateCap) reasons.add("ContainerBitrateExceedsLimit");
+  // Le son converti dit pourquoi (codec, canaux, débit) : c'est la règle qui le sait.
+  if (audioReason) reasons.add(audioReason);
   if (options?.subtitleStreamIndex != null && options.subtitleStreamIndex >= 0) reasons.add("SubtitleCodecNotSupported");
   return reasons.size > 0 ? [...reasons].join(",") : null;
 }
@@ -146,8 +149,6 @@ export function buildStreamUrl(
   p.RequireAvc = "false";
   p.context = "Streaming";
 
-  const reasons = transcodeReasons(options, Boolean(options?.maxBitrate));
-  if (reasons) p.TranscodeReasons = reasons;
 
   // Ce que le moteur lit décide de tout le reste (`planStream`, shared) : sans
   // palier, l'image est COPIÉE — HDR et Dolby Vision compris, aucune
@@ -165,6 +166,8 @@ export function buildStreamUrl(
   });
   Object.assign(p, plan.params);
   p.CopyTimestamps = "true";
+  const reasons = transcodeReasons(options, Boolean(options?.maxBitrate), plan.audioReason);
+  if (reasons) p.TranscodeReasons = reasons;
 
   if (progressive) {
     delete p.SegmentContainer;

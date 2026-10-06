@@ -54,6 +54,12 @@ export interface StreamPlan {
   params: Record<string, string>;
   /** Le son part tel quel (copie) ; sinon il est converti en AAC. */
   copiesAudio: boolean;
+  /**
+   * Pourquoi le son est converti, au sens de Jellyfin (`TranscodeReasons`) :
+   * le moteur ne lit pas ce codec, pas autant de canaux, ou la piste est trop
+   * lourde pour le palier. `null` : copié, ou piste inconnue.
+   */
+  audioReason: string | null;
   /** Le budget du palier, son compris — `null` sans palier. */
   target: TranscodeTarget | null;
 }
@@ -143,11 +149,21 @@ const COPY_VIDEO_BITRATE = 139_616_000;
 /** Débit réservé au son converti d'une copie : AAC 5.1. */
 const CONVERTED_AUDIO_BITRATE = 384_000;
 
+/** La raison d'une conversion du son, dite avec les mots de Jellyfin. */
+function audioConversionReason(engine: EngineCapabilities, audio: AudioSource | null | undefined): string | null {
+  const codec = audio?.Codec?.toLowerCase();
+  if (!codec) return null;
+  if (!segmentAudioCodecs(engine).includes(codec)) return "AudioCodecNotSupported";
+  if ((audio?.Channels ?? 2) > engine.maxAudioChannels) return "AudioChannelsNotSupported";
+  return "AudioBitrateNotSupported";
+}
+
 export function planStream(input: StreamPlanInput): StreamPlan {
   const { engine, audio, tier } = input;
   const videoCodecs = segmentVideoCodecs(engine);
   const copyBitrate = audioCopyBitrate(engine, audio, tier?.totalBitrate ?? null);
   const copiesAudio = copyBitrate !== null;
+  const audioReason = copiesAudio ? null : audioConversionReason(engine, audio);
   const params: Record<string, string> = {
     VideoCodec: videoCodecs.join(","),
     AudioCodec: audioCodecParam(engine, audio?.Codec),
@@ -163,7 +179,7 @@ export function planStream(input: StreamPlanInput): StreamPlan {
     params.VideoBitrate = String(COPY_VIDEO_BITRATE);
     params.AudioBitrate = String(copyBitrate ?? CONVERTED_AUDIO_BITRATE);
     params.TranscodingMaxAudioChannels = String(copiesAudio ? engine.maxAudioChannels : 6);
-    return { params, copiesAudio, target: null };
+    return { params, copiesAudio, audioReason, target: null };
   }
 
   // Un palier réencode toujours l'image : son budget est le débit total, moins
@@ -176,7 +192,7 @@ export function planStream(input: StreamPlanInput): StreamPlan {
   params.TranscodingMaxAudioChannels = String(copiesAudio ? engine.maxAudioChannels : target.audioChannels);
   params.MaxWidth = String(target.maxWidth);
   if (target.maxHeight) params.MaxHeight = String(target.maxHeight);
-  return { params, copiesAudio, target };
+  return { params, copiesAudio, audioReason, target };
 }
 
 /** Ce qu'une `TranscodingUrl` de Jellyfin dit du son (paramètres lus sans casse). */

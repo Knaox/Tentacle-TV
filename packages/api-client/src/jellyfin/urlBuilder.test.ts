@@ -66,6 +66,8 @@ describe("buildStreamUrl — ce que lit le moteur (planStream)", () => {
     expect(q.get("SegmentContainer")).toBe("mp4");
     expect(q.get("AudioBitrate")).toBe("384000");
     expect(q.get("AudioCodec")?.split(",")).not.toContain("dts");
+    // La vraie raison de la conversion du son, en plus du plafond.
+    expect(q.get("TranscodeReasons")).toBe("ContainerBitrateExceedsLimit,AudioCodecNotSupported");
   });
 
   it("remux (sans palier) : l'image copiée sans aucune définition imposée, plages HDR déclarées", () => {

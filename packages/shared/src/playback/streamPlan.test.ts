@@ -17,11 +17,13 @@ describe("planStream — le son d'une source que le moteur lit", () => {
     // Jellyfin ne copie que si AudioBitrate couvre la piste (mesuré, 10.11).
     expect(plan.params.AudioBitrate).toBe("768000");
     expect(plan.params.VideoBitrate).toBe(String(8_384_000 - 768_000));
+    expect(plan.audioReason).toBeNull();
   });
 
   it("AVPlayer : le DTS n'est pas lu — converti, et la raison de Jellyfin sera juste", () => {
     const plan = planStream({ engine: AVPLAYER_ENGINE, audio: DTS_51, tier: { totalBitrate: 8_384_000, height: 1080 } });
     expect(plan.copiesAudio).toBe(false);
+    expect(plan.audioReason).toBe("AudioCodecNotSupported");
     expect(plan.params.AudioCodec.split(",")).not.toContain("dts");
     expect(plan.params.AudioBitrate).toBe("384000");
   });
@@ -50,6 +52,7 @@ describe("planStream — le son d'une source que le moteur lit", () => {
   it(`un son trop lourd pour le palier (> ${AUDIO_COPY_MAX_SHARE * 100} %) est converti`, () => {
     const plan = planStream({ engine: MPV_ENGINE, audio: TRUEHD_71, tier: { totalBitrate: 8_384_000, height: 1080 } });
     expect(plan.copiesAudio).toBe(false);
+    expect(plan.audioReason).toBe("AudioBitrateNotSupported");
     expect(plan.params.AudioBitrate).toBe("384000");
     expect(plan.params.TranscodingMaxAudioChannels).toBe("6");
   });
