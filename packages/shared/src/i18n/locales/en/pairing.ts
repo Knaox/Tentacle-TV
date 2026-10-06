@@ -46,6 +46,7 @@ export default {
   enterTVCode: "Enter the 4-character code shown on your TV screen.",
   pairTV: "Pair TV",
   tvPairedSuccess: "TV paired successfully!",
+  pairAnotherTv: "Pair another TV",
   relayError: "Could not reach the pairing service. Try again later.",
 
   // Paired devices management

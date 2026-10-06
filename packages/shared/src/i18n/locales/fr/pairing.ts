@@ -46,6 +46,7 @@ export default {
   enterTVCode: "Saisissez le code de 4 caractères affiché sur votre TV.",
   pairTV: "Jumeler la TV",
   tvPairedSuccess: "TV jumelée avec succès !",
+  pairAnotherTv: "Jumeler une autre TV",
   relayError: "Impossible de joindre le service de jumelage. Réessayez plus tard.",
 
   // Gestion des appareils jumelés
