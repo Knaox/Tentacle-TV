@@ -1,4 +1,4 @@
-import type { MediaItem } from "@tentacle-tv/shared";
+import { hasWideHeroImage, type MediaItem } from "@tentacle-tv/shared";
 import { HeroContent } from "./HeroContent";
 import { HALO_SOURCE_WIDTH, heroImageUrl, heroPosterUrl, type HeroImageClient, type HeroSlide } from "./heroSlides";
 
@@ -15,6 +15,8 @@ export function mediaHeroSlides(
   return items.map((item) => ({
     id: item.Id,
     backdropUri: heroImageUrl(client, item),
+    mediaId: item.Id,
+    wideUri: hasWideHeroImage(item) ? heroImageUrl(client, item) : null,
     haloUri: heroImageUrl(client, item, HALO_SOURCE_WIDTH, 70),
     posterUri: heroPosterUrl(client, item),
     haloPosterUri: heroPosterUrl(client, item, HALO_SOURCE_WIDTH, 70),

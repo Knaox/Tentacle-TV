@@ -1,5 +1,10 @@
 import { memo, useState } from "react";
-import { HERO_FADE_MS, HERO_ZOOM_TARGET, slideVisual, type HeroSlide } from "./heroSlides";
+import { useHeroArtworkUrls } from "@tentacle-tv/api-client";
+import { heroSlideNeedsArtwork, heroSlideSource } from "@tentacle-tv/shared";
+import { HERO_FADE_MS, HERO_ZOOM_TARGET, type HeroSlide } from "./heroSlides";
+
+/** La taille du repli Jellyfin : celle du visuel large (`heroImageUrl`). */
+const ARTWORK_SIZE = { width: 1280, quality: 85 };
 
 /**
  * `HeroBackdropStack` de l'app : un calque par diapositive, en fondu croisé de
@@ -21,30 +26,27 @@ export const HeroBackdropStack = memo(function HeroBackdropStack({
 }) {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden>
-      {slides.map((slide, i) => {
-        const url = slideVisual(slide, portrait);
-        if (!url) return null;
-        // Le second choix : l'autre visuel du titre — le large en portrait,
-        // l'affiche en paysage (un fond en 404 ne laisse plus la carte vide).
-        const other = url === slide.backdropUri ? (slide.posterUri ?? null) : slide.backdropUri;
-        const fallbackUrl = other === url ? null : other;
-        return (
-          <CrossfadeImage key={slide.id} url={url} fallbackUrl={fallbackUrl} active={i === activeIndex} playing={playing} />
-        );
-      })}
+      {slides.map((slide, i) => (
+        <CrossfadeImage key={slide.id} slide={slide} portrait={portrait} active={i === activeIndex} playing={playing} />
+      ))}
     </div>
   );
 });
 
-function CrossfadeImage({ url, fallbackUrl, active, playing }: {
-  url: string;
-  fallbackUrl: string | null;
+function CrossfadeImage({ slide, portrait, active, playing }: {
+  slide: HeroSlide;
+  portrait: boolean;
   active: boolean;
   playing: boolean;
 }) {
-  // Image introuvable : le visuel large, puis l'aplat et les voiles du cadre.
+  // Image introuvable : l'autre visuel du titre, puis son REPLI côté serveur
+  // (le fond TMDB, sinon toute image Jellyfin du titre et de sa série), puis
+  // l'aplat et les voiles du cadre — la règle partagée `heroSlideSource`.
   const [failed, setFailed] = useState<readonly string[]>([]);
-  const src = [url, fallbackUrl].find((u): u is string => !!u && !failed.includes(u)) ?? null;
+  const sources = { wide: slide.wideUri !== undefined ? slide.wideUri : slide.backdropUri, poster: slide.posterUri, portrait, failed };
+  const lookUp = active && !!slide.mediaId && heroSlideNeedsArtwork(sources);
+  const artwork = useHeroArtworkUrls(slide.mediaId, lookUp, ARTWORK_SIZE);
+  const src = heroSlideSource({ ...sources, artwork });
   return (
     <div
       className="absolute inset-0"

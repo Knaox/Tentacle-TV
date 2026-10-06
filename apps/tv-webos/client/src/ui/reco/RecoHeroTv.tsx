@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { reasonToText, useJellyfinClient, useSeriesWatchState, type RecoRowItem } from "@tentacle-tv/api-client";
-import { formatDuration, formatEpisodeCode, heroImageFor, heroImageKey, type MediaItem } from "@tentacle-tv/shared";
+import { formatDuration, formatEpisodeCode, type MediaItem } from "@tentacle-tv/shared";
 import { CARD_HEIGHT, FRAME_GUTTER } from "@/components/hero/HeroBillboard";
 import { HeroAmbilight } from "@/components/hero/HeroAmbilight";
 import { HeroBackdrop } from "@/components/hero/HeroBackdrop";
 import { HeroEyebrow } from "@/components/hero/HeroEyebrow";
 import { HeroMetaLine } from "@/components/hero/HeroMetaLine";
 import { HeroActions } from "@/components/hero/HeroActions";
-import { homeHeroImageUrl } from "@/components/hero/resolveBackdrop";
+import { useHeroImage } from "@/components/hero/useHeroImage";
 import { useHeroImageFailures } from "@/components/hero/useHeroImageFailures";
 import { useInViewport } from "@/hooks/useInViewport";
 import { extractMediaQuality } from "@/lib/mediaQuality";
@@ -32,12 +32,12 @@ export function RecoHeroTv({ reco, item }: { reco: RecoRowItem; item: MediaItem 
   const { t } = useTranslation("reco");
   // Hors écran, le halo — une image floutée — n'a rien à faire monté.
   const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
-  // L'image de la règle partagée, et la suivante quand elle échoue — comme
+  // L'image du plan partagé (l'annoncé, puis le fond TMDB ou toute image
+  // Jellyfin du titre, puis l'affiche), la suivante quand elle échoue — comme
   // la bannière d'accueil : jamais un cadre noir.
-  const client = useJellyfinClient();
   const { failed, reportFailure } = useHeroImageFailures();
-  const imageRef = heroImageFor(item, failed);
-  const imageUrl = homeHeroImageUrl(client, item, failed);
+  const image = useHeroImage(item, failed);
+  const imageKey = image.key;
 
   return (
     <section className={`relative w-full pb-6 md:pb-10 ${FRAME_GUTTER}`} aria-label={t("heroRegionAria")}>
@@ -50,8 +50,8 @@ export function RecoHeroTv({ reco, item }: { reco: RecoRowItem; item: MediaItem 
         >
           <HeroBackdrop
             item={item}
-            url={imageUrl}
-            onFailure={imageRef ? () => reportFailure(heroImageKey(imageRef)) : undefined}
+            url={image.url}
+            onFailure={imageKey ? () => reportFailure(imageKey) : undefined}
           />
           <RecoHeroContent reco={reco} item={item} />
         </div>

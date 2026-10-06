@@ -1,5 +1,5 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
-import { heroImageFor, type MediaItem } from "@tentacle-tv/shared";
+import type { HeroImageOption, MediaItem } from "@tentacle-tv/shared";
 
 /** Largeur du backdrop de bannière — une seule définition pour toute l'app. */
 export const HERO_BACKDROP_WIDTH = 1920;
@@ -44,19 +44,19 @@ export function firstBackdropItem(items: MediaItem[] | undefined): MediaItem | n
 }
 
 /**
- * L'image de la bannière d'ACCUEIL pour un titre : la première de la règle
- * partagée (`heroImageFor` : fond, fond du parent, vignette, affiche) qui n'a
- * pas déjà échoué, ou `null`. Le fond d'un titre qui en a un garde l'URL de
- * `heroBackdropUrl` à l'octet près (même largeur, même qualité) : la fiche et
- * la transition d'ouverture reprennent la même image en cache.
+ * L'adresse d'une image du plan de la bannière d'ACCUEIL (shared
+ * `heroImagePlan`). Une image Jellyfin garde l'URL de `heroBackdropUrl` à
+ * l'octet près pour un fond (même largeur, même qualité) : la fiche et la
+ * transition d'ouverture reprennent la même image en cache. Une image TMDB
+ * est servie telle quelle — en `w300` pour une source minuscule (le halo).
  */
-export function homeHeroImageUrl(
+export function heroOptionUrl(
   client: Pick<JellyfinClient, "getImageUrl">,
-  item: MediaItem,
-  failed: ReadonlySet<string>,
+  option: HeroImageOption,
   width = HERO_BACKDROP_WIDTH,
   quality = 85
-): string | null {
-  const ref = heroImageFor(item, failed);
-  return ref ? client.getImageUrl(ref.id, ref.type, { width, quality }) : null;
+): string {
+  if (option.url !== undefined) return width <= 300 ? option.url.replace("/w1280/", "/w300/") : option.url;
+  const { id, type, index } = option.ref;
+  return client.getImageUrl(id, type, { width, quality, ...(index ? { index } : {}) });
 }

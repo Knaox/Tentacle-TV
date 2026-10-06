@@ -45,6 +45,7 @@ import { familyRoutes } from "./routes/family/familyRoutes";
 import { adminFamilyRoutes, familyTvRoutes } from "./routes/family/familyTvRoutes";
 import { shareRoutes } from "./routes/share";
 import { tmdbRoutes } from "./routes/tmdb";
+import { heroArtworkRoutes } from "./routes/heroArtwork";
 import { trailerRoutes } from "./routes/trailers";
 import { trailerMediaRoutes } from "./routes/trailerMedia";
 import { trailerReadinessRoutes } from "./routes/trailerReadiness";
@@ -266,6 +267,7 @@ async function main() {
   await app.register(adminFamilyRoutes, { prefix: "/api/admin" });
   await app.register(shareRoutes, { prefix: "/api/share" });
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
+  await app.register(heroArtworkRoutes, { prefix: "/api/hero" });
   await app.register(trailerRoutes, { prefix: "/api/trailers" });
   // Les flux relayés des bandes-annonces : jeton dans l'URL, AVPlayer n'envoie pas d'en-tête.
   await app.register(trailerMediaRoutes, { prefix: "/api/trailers" });

@@ -1,13 +1,12 @@
-import { useMemo } from "react";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { heroImageFor, heroImageKey, type MediaItem } from "@tentacle-tv/shared";
+import { useEffect, useMemo, useState } from "react";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { AmbilightLayer } from "./AmbilightLayer";
 import { HeroBackdrop, HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
 import { useBillboardRotation } from "./useBillboardRotation";
 import { useHeroImageFailures } from "./useHeroImageFailures";
-import { homeHeroImageUrl } from "./resolveBackdrop";
+import { useHeroImage } from "./useHeroImage";
 import { useDataSaverActive } from "../../offline/useDataSaver";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useHoverMount } from "../../hooks/useHoverMount";
@@ -42,8 +41,7 @@ interface HeroBillboardProps {
   rotateMs?: number;
 }
 
-/** Source du halo : l'image affichée, en tout petit (cf. HeroAmbilight). */
-const HALO_SOURCE_WIDTH = 128;
+const NO_IDS: ReadonlySet<string> = new Set();
 
 // Synchronisé avec le zoom du backdrop : on change de slide pile à la fin
 // du cycle scale 1 → 1.10 pour un enchaînement perçu comme continu.
@@ -55,15 +53,16 @@ const DEFAULT_ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
  * fade-to-black bottom flows seamlessly into the first row below.
  */
 export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: HeroBillboardProps) {
-  const client = useJellyfinClient();
-  // Une image en échec (404) passe la main à la suivante du titre ; un titre
-  // dont TOUTES les images ont échoué quitte la rotation. Si plus aucun n'en
-  // a, la bannière garde ses titres sur le fond de repli : jamais du noir.
+  // Une image en échec (404) passe la main à la suivante du plan du titre
+  // (`useHeroImage` : l'annoncé, le fond TMDB, toute image Jellyfin, l'affiche) ;
+  // un titre qui n'a plus RIEN quitte la rotation. Si aucun n'a d'image, la
+  // bannière garde ses titres sur le fond de marque : jamais du noir.
   const { failed, reportFailure } = useHeroImageFailures();
+  const [exhausted, setExhausted] = useState<ReadonlySet<string>>(NO_IDS);
   const items = useMemo(() => {
-    const shown = chosen.filter((item) => homeHeroImageUrl(client, item, failed) !== null);
+    const shown = chosen.filter((item) => !exhausted.has(item.Id));
     return shown.length > 0 ? shown : chosen;
-  }, [chosen, client, failed]);
+  }, [chosen, exhausted]);
   const dataSaver = useDataSaverActive();
   // Bannière réellement à l'écran ET fenêtre au premier plan. Tout ce qui suit
   // — rotation, zoom du fond, halo flouté — ne tourne QUE dans ce cas.
@@ -107,13 +106,17 @@ export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: H
       active: !dataSaver && visible && !idle,
     });
 
+  const active: MediaItem | undefined = items[Math.min(index, items.length - 1)];
+  const image = useHeroImage(active, failed);
+  const activeId = active?.Id;
+  useEffect(() => {
+    if (image.exhausted && activeId) setExhausted((prev) => (prev.has(activeId) ? prev : new Set(prev).add(activeId)));
+  }, [image.exhausted, activeId]);
+
   // Rien à montrer : la bannière se RETIRE. Un cadre vide de 76 vh restait
   // noir, sans titre ni bouton (titre fixe effacé de Jellyfin).
-  if (!items.length) return null;
-  const active = items[Math.min(index, items.length - 1)];
-  const imageRef = heroImageFor(active, failed);
-  const imageUrl = homeHeroImageUrl(client, active, failed);
-  const haloUrl = homeHeroImageUrl(client, active, failed, HALO_SOURCE_WIDTH, 70);
+  if (!active) return null;
+  const imageKey = image.key;
 
   // NB: pas de onMouseEnter={pause}/onMouseLeave={resume} sur la section —
   // le hero couvre ~90vh, le curseur le survole quasi en permanence, ce qui
@@ -136,7 +139,7 @@ export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: H
             Démonté hors écran : c'est une image floutée à 48 px sur toute la
             largeur, animée en boucle infinie. Suspendre la rotation ne suffit
             pas, le zoom continuerait de la faire re-rastériser. */}
-        {visible && <AmbilightLayer url={haloUrl} layerKey={active.Id} />}
+        {visible && <AmbilightLayer url={image.haloUrl} layerKey={active.Id} />}
 
         {/* La carte. Repère de la transition d'ouverture : c'est ce cadre que
             « Plus d'infos » fait s'ouvrir jusqu'au plein écran de la fiche. */}
@@ -150,8 +153,8 @@ export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: H
           onMouseEnter={arrows.onMouseEnter}
           onMouseLeave={arrows.onMouseLeave}
         >
-          <HeroBackdrop item={active} url={imageUrl} onFailure={imageRef ? () => reportFailure(heroImageKey(imageRef)) : undefined} />
-          <HeroContent item={active} animationKey={animKey} imageUrl={imageUrl} />
+          <HeroBackdrop item={active} url={image.url} onFailure={imageKey ? () => reportFailure(imageKey) : undefined} />
+          <HeroContent item={active} animationKey={animKey} imageUrl={image.url} />
           <HeroIndicators
             count={items.length}
             activeIndex={index}

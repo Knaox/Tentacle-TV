@@ -1,9 +1,13 @@
 import type { MediaItem } from "../types/media";
 
 /** Une image que la bannière d'accueil peut demander : l'item qui la porte, son type. */
+export type HeroImageType = "Backdrop" | "Primary" | "Thumb" | "Banner" | "Art" | "Screenshot" | "Box";
+
 export interface HeroImageRef {
   id: string;
-  type: "Backdrop" | "Primary" | "Thumb";
+  type: HeroImageType;
+  /** Le rang de l'image dans son type (fonds multiples) ; absent : la première. */
+  index?: number;
   /** Le tag annoncé, quand la réponse le porte. */
   tag?: string;
 }
@@ -56,8 +60,8 @@ export function hasHeroImage(item: MediaItem): boolean {
 }
 
 /** La clé d'une image essayée — ce qu'on retient d'un échec. */
-export function heroImageKey(ref: HeroImageRef): string {
-  return `${ref.id}/${ref.type}`;
+export function heroImageKey(ref: Pick<HeroImageRef, "id" | "type" | "index">): string {
+  return ref.index ? `${ref.id}/${ref.type}/${ref.index}` : `${ref.id}/${ref.type}`;
 }
 
 /**
