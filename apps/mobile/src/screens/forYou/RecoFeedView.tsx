@@ -4,7 +4,7 @@ import Animated, { useComposedEventHandler } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { activeFamilyCount, buildPlatformCatalog, useJellyfinClient, useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
-import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
+import { KeyboardAvoidingArea, SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
 import { useHeroMetrics } from "@/components/heroMetrics";
 import { useHeroInView } from "@/components/hero/useHeroInView";
@@ -121,44 +121,46 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
 
   return (
     <SubtleBackground ambient>
-      <Animated.ScrollView
-        style={styles.fill}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: tabBarH + spacing.xl }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        refreshControl={
-          <RefreshControl
-            refreshing={model.refreshing}
-            onRefresh={model.refresh}
-            tintColor={theme.colors.brand.violet}
-            progressBackgroundColor={theme.colors.surface.s1}
+      <KeyboardAvoidingArea ios={false}>
+        <Animated.ScrollView
+          style={styles.fill}
+          contentContainerStyle={{ paddingTop: headerH, paddingBottom: tabBarH + spacing.xl }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={model.refreshing}
+              onRefresh={model.refresh}
+              tintColor={theme.colors.brand.violet}
+              progressBackgroundColor={theme.colors.surface.s1}
+            />
+          }
+        >
+          {sectionSwitch}
+          {heroSlides.length > 0 && <HeroBanner slides={heroSlides} inView={hero.inView} />}
+          <RecoPageHeader showTitle={heroSlides.length === 0} filterCount={activeCount} onOpenFilters={openFilters} />
+          <RecoStatusBanner
+            page={page}
+            hasPersonalizedRows={model.hasPersonalizedRows}
+            onOpenColdStart={model.openColdStart}
+            onOpenSettings={openSettings}
           />
-        }
-      >
-        {sectionSwitch}
-        {heroSlides.length > 0 && <HeroBanner slides={heroSlides} inView={hero.inView} />}
-        <RecoPageHeader showTitle={heroSlides.length === 0} filterCount={activeCount} onOpenFilters={openFilters} />
-        <RecoStatusBanner
-          page={page}
-          hasPersonalizedRows={model.hasPersonalizedRows}
-          onOpenColdStart={model.openColdStart}
-          onOpenSettings={openSettings}
-        />
-        <RecoPageRows
-          page={page}
-          filtered={model.filtered}
-          stale={model.stale}
-          teaser={page.personalized !== false ? <RecoRefineTeaser onPress={onOpenRefine} /> : undefined}
-          canOpen={recoNav.canOpen}
-          onItemPress={recoNav.open}
-        />
-        {/* Ajuster ses acteurs se fait ICI, au contact des rangées — masqué
-            quand la personnalisation est indisponible (perso coupée, pas de
-            clé TMDB : la recherche serait une impasse). */}
-        {model.canPersonalize && <LikedActorsPanel />}
-      </Animated.ScrollView>
+          <RecoPageRows
+            page={page}
+            filtered={model.filtered}
+            stale={model.stale}
+            teaser={page.personalized !== false ? <RecoRefineTeaser onPress={onOpenRefine} /> : undefined}
+            canOpen={recoNav.canOpen}
+            onItemPress={recoNav.open}
+          />
+          {/* Ajuster ses acteurs se fait ICI, au contact des rangées — masqué
+              quand la personnalisation est indisponible (perso coupée, pas de
+              clé TMDB : la recherche serait une impasse). */}
+          {model.canPersonalize && <LikedActorsPanel />}
+        </Animated.ScrollView>
+      </KeyboardAvoidingArea>
 
       <RecoFilterSheet visible={filtersOpen} onClose={closeFilters} catalog={catalog} providerFilter={model.providerFilter} />
     </SubtleBackground>

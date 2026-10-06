@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { ProfilePaneContext } from "./ProfilePaneContext";
+import { KeyboardAvoidingArea } from "@/components/ui";
 import { PROFILE_PANE_REGISTRY } from "./profilePaneRegistry";
 import type { ProfilePaneId } from "./profilePanes";
 import { ProfileSectionBody } from "./ProfileSectionBody";
@@ -40,25 +41,27 @@ export function ProfileDetailPane({ section, ctx, topInset, bottomInset }: Props
   const title = entry ? t(entry.title.key, { ns: entry.title.ns }) : sectionLabel;
 
   return (
-    <ScrollView
-      key={pane ?? "page"}
-      style={st.scroll}
-      contentContainerStyle={[st.content, { paddingTop: topInset + spacing.xl, paddingBottom: bottomInset }]}
-      keyboardShouldPersistTaps="handled"
-      indicatorStyle={Platform.OS === "ios" ? "white" : "default"}
-    >
-      <View style={st.column}>
-        {opened && !direct ? <BackToSection label={sectionLabel} onPress={() => setOpened(null)} /> : null}
-        <Text style={st.title} accessibilityRole="header">{title}</Text>
-        {entry ? (
-          <entry.Component />
-        ) : (
-          <ProfilePaneContext.Provider value={setOpened}>
-            <ProfileSectionBody section={section} ctx={ctx} />
-          </ProfilePaneContext.Provider>
-        )}
-      </View>
-    </ScrollView>
+    <KeyboardAvoidingArea ios={false} style={st.scroll}>
+      <ScrollView
+        key={pane ?? "page"}
+        style={st.scroll}
+        contentContainerStyle={[st.content, { paddingTop: topInset + spacing.xl, paddingBottom: bottomInset }]}
+        keyboardShouldPersistTaps="handled"
+        indicatorStyle={Platform.OS === "ios" ? "white" : "default"}
+      >
+        <View style={st.column}>
+          {opened && !direct ? <BackToSection label={sectionLabel} onPress={() => setOpened(null)} /> : null}
+          <Text style={st.title} accessibilityRole="header">{title}</Text>
+          {entry ? (
+            <entry.Component />
+          ) : (
+            <ProfilePaneContext.Provider value={setOpened}>
+              <ProfileSectionBody section={section} ctx={ctx} />
+            </ProfilePaneContext.Provider>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingArea>
   );
 }
 
