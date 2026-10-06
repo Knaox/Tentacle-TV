@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { JellyfinProbeResult } from "@tentacle-tv/shared";
 import { hostAndPort, isValidClientUrl, preselectedUrl, serverState, withManual } from "./jellyfinChoice";
 
-const jf = (url: string, blank: boolean, compatible = true): JellyfinProbeResult => ({ url, version: "10.11.11", serverName: "x", blank, compatible, clientUrl: url });
+const jf = (url: string, blank: boolean, compatible = true): JellyfinProbeResult => ({
+  url, serverId: url, version: "10.11.11", serverName: "x", blank, inStack: false, compatible, clientUrl: url,
+});
 
 describe("le choix de Jellyfin", () => {
   it("le vierge est présélectionné, même après un configuré ; jamais un incompatible", () => {

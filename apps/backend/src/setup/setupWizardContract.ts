@@ -98,6 +98,12 @@ export interface SetupContext {
     /** Le Jellyfin voisin (pile complète) a été verrouillé dès le démarrage, en attente du compte choisi. */
     claimed: boolean;
     /**
+     * Le Jellyfin relié était DÉJÀ configuré (rejoint par un compte existant ou
+     * une clé) : l'assistant n'y crée aucune bibliothèque, il propose les
+     * réglages conseillés.
+     */
+    joined: boolean;
+    /**
      * L'adresse de Jellyfin que les APPLICATIONS recevront (lecture directe) :
      * l'hôte par lequel l'assistant est ouvert et le port publié. Jamais un
      * nom Docker. `null` : rien à proposer d'office (Jellyfin pas encore choisi).

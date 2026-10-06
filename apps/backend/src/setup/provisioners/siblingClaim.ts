@@ -4,7 +4,7 @@ import { apiKeyWorks, authenticate, createTentacleKey, signOut } from "../jellyf
 import { probeJellyfin, type ProbedJellyfin } from "../jellyfin/probe";
 import { checkSiblingNetwork, type SiblingCheckDeps } from "../jellyfin/siblingCheck";
 import { finishJellyfinStartup, runJellyfinStartup } from "../jellyfin/startup";
-import { SETUP_KEYS, forgetJellyfin, saveJellyfin, storedJellyfin } from "../setupStore";
+import { SETUP_KEYS, chosenOverStack, forgetJellyfin, saveJellyfin, storedJellyfin } from "../setupStore";
 
 /**
  * Pile complète : le Jellyfin voisin naît VIERGE, et tant que personne n'a
@@ -64,6 +64,12 @@ async function keyFromProvisionalAdmin(probed: ProbedJellyfin, secret: string): 
 export async function claimSiblingJellyfin(siblingUrl: string, options: ClaimOptions = {}): Promise<ClaimOutcome> {
   const log = options.log ?? ((message: string) => console.log(`[Setup] ${message}`));
   const stored = storedJellyfin();
+  // Un autre Jellyfin choisi EXPRÈS dans l'assistant (la liste le permet) : gardé, et
+  // le voisin n'est pas touché — sa clé, s'il était verrouillé, est déjà de côté.
+  if (stored && stored.url !== siblingUrl && stored.url === chosenOverStack()) {
+    log("un autre Jellyfin que celui de la pile a été choisi dans l'assistant — gardé");
+    return "already";
+  }
   // Une base reprise d'un essai précédent peut garder un AUTRE Jellyfin (celui
   // d'une pile « base » sur la même machine) : la pile complète n'en veut pas.
   if (stored && stored.url !== siblingUrl) {

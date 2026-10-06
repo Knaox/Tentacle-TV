@@ -17,10 +17,19 @@
 /** Ce qu'une sonde de Jellyfin en a lu — rien d'autre ne remonte au client. */
 export interface JellyfinProbeResult {
   url: string;
+  /** L'identifiant du serveur Jellyfin : un même serveur vu par deux adresses ne compte qu'une fois. */
+  serverId: string;
   version: string;
   serverName: string;
-  /** Jellyfin n'a pas encore fait son propre assistant : Tentacle le configure. */
+  /**
+   * NEUF : Jellyfin n'a pas encore fait son propre assistant (ou c'est celui
+   * de la pile, verrouillé par Tentacle en attendant le compte choisi) —
+   * Tentacle le configure. Sinon DÉJÀ CONFIGURÉ : on s'y connecte avec un
+   * compte administrateur existant, et rien n'y est créé.
+   */
   blank: boolean;
+  /** Le Jellyfin de cette pile (pile complète), joint par son adresse interne. */
+  inStack: boolean;
   /** La version est prise en charge par ce serveur Tentacle (`compat/jellyfin.json`). */
   compatible: boolean;
   /** L'adresse que les applications recevraient pour ce Jellyfin (cf. `SetupContext.jellyfin.clientUrl`). */
@@ -50,7 +59,10 @@ export interface DiscoveredJellyfin extends JellyfinProbeResult {
  */
 export type UdpDiscoveryOutcome = "answered" | "silent" | "unavailable";
 
-/** `GET /api/setup/jellyfin/discover` — les Jellyfin joignables, le vierge d'abord. */
+/**
+ * `GET /api/setup/jellyfin/discover` — les Jellyfin joignables : celui de la
+ * pile en tête (pile complète), puis les neufs, puis les déjà configurés.
+ */
 export interface JellyfinDiscoveryResponse {
   servers: DiscoveredJellyfin[];
   udp: UdpDiscoveryOutcome;

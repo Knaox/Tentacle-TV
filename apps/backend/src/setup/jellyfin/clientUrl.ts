@@ -11,8 +11,8 @@ import { isLoopbackName } from "./addressGuard";
  * La règle : l'hôte par lequel l'administrateur a ouvert l'assistant (il joint
  * cette machine, ses appareils aussi) et le port réellement publié.
  *
- *  - pile complète : `JELLYFIN_HOST_PORT`, et rien si la pile ne le déclare
- *    pas — jamais 8096 supposé ;
+ *  - le Jellyfin de la pile complète : `JELLYFIN_HOST_PORT`, et rien si la
+ *    pile ne le déclare pas — jamais 8096 supposé ;
  *  - ailleurs : l'adresse du Jellyfin choisi, sauf si elle ne vaut que pour
  *    le serveur (boucle locale, `host.docker.internal`, nom Docker sans point,
  *    passerelle du conteneur) — l'hôte y est remplacé par celui du
@@ -47,7 +47,8 @@ export function cleanBrowserHost(raw: string | undefined): string | null {
 
 export function clientJellyfinUrl(input: ClientUrlInput): string | null {
   const browser = cleanBrowserHost(input.browserHost);
-  if (input.deployment.siblingUrl) {
+  const sibling = input.deployment.siblingUrl;
+  if (sibling && (!input.jellyfinUrl || input.jellyfinUrl === sibling)) {
     const port = input.deployment.jellyfinHostPort;
     return browser && port ? `http://${browser}:${port}` : null;
   }

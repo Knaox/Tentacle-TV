@@ -15,6 +15,15 @@ export const SETUP_KEYS = {
   claimUserId: "jellyfin_claim_user_id",
   /** Son mot de passe aléatoire : seulement le temps d'obtenir la clé (reprise après un arrêt). */
   claimSecret: "jellyfin_claim_secret",
+  /**
+   * Pile complète, un AUTRE Jellyfin choisi dans l'assistant : la clé du voisin
+   * verrouillé est mise de côté, pour qu'un retour sur lui le reprenne.
+   */
+  claimKey: "jellyfin_claim_api_key",
+  /** Pile complète : l'adresse d'un autre Jellyfin choisi EXPRÈS — le démarrage ne l'oublie pas. */
+  stackChoice: "jellyfin_stack_choice",
+  /** Un Jellyfin DÉJÀ configuré a été rejoint : l'assistant n'y crée aucune bibliothèque. */
+  joined: "setup_jellyfin_joined",
 } as const;
 
 export interface StoredJellyfin {
@@ -46,6 +55,8 @@ export async function forgetJellyfin(): Promise<void> {
   await deleteConfigValue(SETUP_KEYS.jellyfinUrl);
   await deleteConfigValue(SETUP_KEYS.apiKey);
   await deleteConfigValue(SETUP_KEYS.serverId);
+  await deleteConfigValue(SETUP_KEYS.stackChoice);
+  await deleteConfigValue(SETUP_KEYS.joined);
   await forgetClaim();
   await detectAppState();
 }
@@ -53,4 +64,41 @@ export async function forgetJellyfin(): Promise<void> {
 export async function forgetClaim(): Promise<void> {
   await deleteConfigValue(SETUP_KEYS.claimUserId);
   await deleteConfigValue(SETUP_KEYS.claimSecret);
+  await deleteConfigValue(SETUP_KEYS.claimKey);
+}
+
+/**
+ * La clé du Jellyfin de la pile verrouillé par Tentacle : celle en service,
+ * ou celle mise de côté quand un autre Jellyfin a été choisi entre-temps.
+ */
+export function siblingClaimKey(siblingUrl: string): string | null {
+  const stored = storedJellyfin();
+  if (stored?.url === siblingUrl) return stored.apiKey;
+  return getConfigValue(SETUP_KEYS.claimKey) ?? null;
+}
+
+/** Avant de relier un autre Jellyfin : la clé du voisin verrouillé ne se perd pas. */
+export async function setClaimAside(siblingUrl: string | null): Promise<void> {
+  const stored = storedJellyfin();
+  if (!siblingUrl || !claimedAdminId() || stored?.url !== siblingUrl) return;
+  await setConfigValue(SETUP_KEYS.claimKey, stored.apiKey);
+}
+
+/**
+ * Le choix fait dans l'assistant : un autre Jellyfin que celui de la pile
+ * (gardé au prochain démarrage), et s'il était DÉJÀ configuré (rejoint).
+ */
+export async function rememberChoice(url: string, siblingUrl: string | null, joined: boolean): Promise<void> {
+  if (siblingUrl && url !== siblingUrl) await setConfigValue(SETUP_KEYS.stackChoice, url);
+  else await deleteConfigValue(SETUP_KEYS.stackChoice);
+  if (joined) await setConfigValue(SETUP_KEYS.joined, "1");
+  else await deleteConfigValue(SETUP_KEYS.joined);
+}
+
+export function chosenOverStack(): string | null {
+  return getConfigValue(SETUP_KEYS.stackChoice) ?? null;
+}
+
+export function joinedConfiguredJellyfin(): boolean {
+  return getConfigValue(SETUP_KEYS.joined) === "1";
 }

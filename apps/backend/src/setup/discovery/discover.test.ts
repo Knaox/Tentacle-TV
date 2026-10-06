@@ -60,18 +60,34 @@ describe("la découverte des Jellyfin", () => {
     expect(result.bridged).toBe(false);
   });
 
-  it("pile complète dont le nom mène ailleurs : refusé, rien de sondé", async () => {
+  it("pile complète dont le nom mène ailleurs : son Jellyfin n'est pas listé (l'écran le dit), les autres restent", async () => {
     const full: Deployment = { ...dbStack, stack: "full", provisioner: "docker-sibling", siblingUrl: "http://jellyfin:8096", jellyfinHostPort: 47896 };
     const d = deps({ checkSibling: async () => Promise.reject(new SetupError("jf_sibling_elsewhere")) });
-    await expect(discoverJellyfins({ deployment: full, browserHost: "172.16.1.30", containerized: true }, d)).rejects.toMatchObject({ code: "jf_sibling_elsewhere" });
-    expect(d.probed).toEqual([]);
+    const result = await discoverJellyfins({ deployment: full, browserHost: "172.16.1.30", containerized: true }, d);
+    expect(d.probed).not.toContain("http://jellyfin:8096");
+    expect(result.servers.some((s) => s.inStack)).toBe(false);
+    expect(result.servers.map((s) => s.url)).toContain("http://172.16.1.30:8096");
   });
 
-  it("pile complète : son Jellyfin seulement, sans rien balayer", async () => {
-    const full: Deployment = { ...dbStack, stack: "full", provisioner: "docker-sibling", siblingUrl: "http://172.16.1.30:8097", jellyfinHostPort: 47896 };
-    const d = deps();
-    const result = await discoverJellyfins({ deployment: full, browserHost: "172.16.1.30", containerized: true }, d);
-    expect(d.probed).toEqual(["http://172.16.1.30:8097"]);
-    expect(result.servers).toMatchObject([{ source: "stack", blank: true, clientUrl: "http://172.16.1.30:47896" }]);
+  it("pile complète : son Jellyfin EN TÊTE (neuf tant qu'il est verrouillé), puis les autres, chacun une fois", async () => {
+    const full: Deployment = { ...dbStack, stack: "full", provisioner: "docker-sibling", siblingUrl: "http://jellyfin:8096", jellyfinHostPort: 47896 };
+    // Le Jellyfin de la pile, verrouillé par Tentacle, aussi publié sur 8096 de l'hôte : même identifiant.
+    const stackServers = { ...servers, "http://jellyfin:8096": { id: "configured", blank: false, name: "Pile" } };
+    const d = deps({
+      probe: async (url) => {
+        d.probed.push(url);
+        const s = stackServers[url as keyof typeof stackServers];
+        if (!s) throw new SetupError("jf_unreachable");
+        return { url, id: s.id, version: "10.11.11", serverName: s.name, blank: s.blank, compatible: true };
+      },
+    });
+    const result = await discoverJellyfins({ deployment: full, browserHost: "172.16.1.30", containerized: true, claimed: true }, d);
+    expect(result.servers.map((s) => [s.url, s.inStack, s.blank, s.serverId])).toEqual([
+      ["http://jellyfin:8096", true, true, "configured"],
+      ["http://172.16.1.30:8097", false, true, "blank"],
+      ["http://172.16.1.30:47896", false, false, "udp-only"],
+    ]);
+    expect(result.servers[0]).toMatchObject({ source: "stack", clientUrl: "http://172.16.1.30:47896" });
+    expect(result.servers[1].clientUrl).toBe("http://172.16.1.30:8097");
   });
 });

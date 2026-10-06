@@ -12,7 +12,8 @@ import { requireSetupSession } from "../setupGuard";
 import { sealSetup } from "../setupLock";
 import { completeSchema } from "../setupSchemas";
 import { closeAllSetupSessions } from "../setupSession";
-import { claimedAdminId, storedJellyfin, type StoredJellyfin } from "../setupStore";
+import { claimedAdminId, forgetClaim, storedJellyfin, type StoredJellyfin } from "../setupStore";
+import { setupRuntime } from "../setupRuntime";
 import { discardSetupToken } from "../setupToken";
 import type { SetupCompleteResponse } from "../setupWizardContract";
 
@@ -54,7 +55,9 @@ export const setupCompleteRoute: FastifyPluginAsync = async (app) => {
       const stored = storedJellyfin();
       if (!stored) throw new SetupError("jf_not_configured");
       // Le compte provisoire du Jellyfin voisin n'a pas encore pris le nom choisi.
-      if (claimedAdminId()) throw new SetupError("jf_claim_pending");
+      const { siblingUrl } = setupRuntime().deployment;
+      const otherThanStack = siblingUrl !== null && stored.url !== siblingUrl;
+      if (claimedAdminId() && !otherThanStack) throw new SetupError("jf_claim_pending");
 
       // Une session Jellyfin par (installation, appareil, compte), comme /api/auth/login.
       const deviceId = await deviceIdForOpaque("web", body.deviceId ?? body.username, body.username);
@@ -89,6 +92,12 @@ export const setupCompleteRoute: FastifyPluginAsync = async (app) => {
       sealSetup();
       discardSetupToken();
       closeAllSetupSessions();
+      if (otherThanStack && claimedAdminId()) {
+        // Un autre Jellyfin choisi : celui de la pile garde son compte provisoire (jamais
+        // rouvert à tout le réseau) ; sa clé mise de côté ne sert plus.
+        await forgetClaim();
+        request.log.info("[Setup] le Jellyfin de la pile reste verrouillé par le compte provisoire « tentacle-setup »");
+      }
       startBackgroundServices();
       await allowTentacleOrigin(stored, request.headers.origin, request.log);
 

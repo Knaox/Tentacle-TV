@@ -14,7 +14,9 @@ import { discoverByUdp, type UdpResult } from "./udpDiscovery";
  * (nom, version, vierge ou non). Borné en temps et en nombre : quelques hôtes,
  * quelques ports, huit sondes à la fois, une seconde et demie chacune.
  *
- * Pile complète : le Jellyfin de la pile, et lui seul — pas d'autre choix.
+ * Pile complète : le Jellyfin de la pile EN TÊTE (joint par son adresse
+ * interne), puis les autres Jellyfin joignables — choisissables aussi. Un même
+ * serveur vu par son port publié ne compte qu'une fois : c'est lui.
  */
 const PROBE_TIMEOUT_MS = 1_500;
 const CONCURRENCY = 8;
@@ -53,8 +55,10 @@ interface Target {
   source: DiscoverySource;
 }
 
-async function probeAll(targets: Target[], probe: DiscoveryDeps["probe"]): Promise<Array<ProbedJellyfin & { source: DiscoverySource }>> {
-  const found: Array<ProbedJellyfin & { source: DiscoverySource }> = [];
+type Found = ProbedJellyfin & { source: DiscoverySource };
+
+async function probeAll(targets: Target[], probe: DiscoveryDeps["probe"]): Promise<Found[]> {
+  const found: Found[] = [];
   const queue = targets.slice(0, MAX_PROBES);
   const worker = async () => {
     for (let target = queue.shift(); target; target = queue.shift()) {
@@ -70,7 +74,7 @@ async function probeAll(targets: Target[], probe: DiscoveryDeps["probe"]): Promi
 }
 
 /** Un même serveur vu par deux chemins ne compte qu'une fois — le premier dans l'ordre des cibles l'emporte. */
-function dedupe(found: Array<ProbedJellyfin & { source: DiscoverySource }>, order: string[]): Array<ProbedJellyfin & { source: DiscoverySource }> {
+function dedupe(found: Found[], order: string[]): Found[] {
   const sorted = [...found].sort((a, b) => order.indexOf(a.url) - order.indexOf(b.url));
   const seen = new Set<string>();
   return sorted.filter((server) => (seen.has(server.id) ? false : (seen.add(server.id), true)));
@@ -81,25 +85,37 @@ export interface DiscoverInput {
   browserHost: string | undefined;
   containerized: boolean;
   gateway?: string | null;
+  /** Le Jellyfin de la pile est verrouillé par Tentacle : neuf pour l'administrateur. */
+  claimed?: boolean;
+}
+
+/** Le Jellyfin de la pile, s'il répond et mène bien au réseau de la pile ; sinon rien (l'écran le sonde à part). */
+async function stackEntry(siblingUrl: string, deps: DiscoveryDeps): Promise<Found[]> {
+  try {
+    await deps.checkSibling(siblingUrl);
+  } catch {
+    return [];
+  }
+  return probeAll([{ url: siblingUrl, source: "stack" }], deps.probe);
 }
 
 export async function discoverJellyfins(input: DiscoverInput, deps: DiscoveryDeps = systemDeps): Promise<JellyfinDiscoveryResponse> {
   const { deployment, browserHost } = input;
-  const toEntry = (server: ProbedJellyfin & { source: DiscoverySource }): DiscoveredJellyfin => ({
-    url: server.url,
-    version: server.version,
-    serverName: server.serverName,
-    blank: server.blank,
-    compatible: server.compatible,
-    source: server.source,
-    clientUrl: clientJellyfinUrl({ deployment, browserHost, jellyfinUrl: server.url, gateway: input.gateway }),
-  });
-
-  if (deployment.siblingUrl) {
-    await deps.checkSibling(deployment.siblingUrl);
-    const sibling = await probeAll([{ url: deployment.siblingUrl, source: "stack" }], deps.probe);
-    return { servers: sibling.map(toEntry), udp: "silent", bridged: false };
-  }
+  const toEntry = (server: Found): DiscoveredJellyfin => {
+    const inStack = server.source === "stack";
+    return {
+      url: server.url,
+      serverId: server.id,
+      version: server.version,
+      serverName: server.serverName,
+      blank: server.blank || (inStack && input.claimed === true),
+      inStack,
+      compatible: server.compatible,
+      source: server.source,
+      clientUrl: clientJellyfinUrl({ deployment, browserHost, jellyfinUrl: server.url, gateway: input.gateway }),
+    };
+  };
+  const stack = deployment.siblingUrl ? await stackEntry(deployment.siblingUrl, deps) : [];
 
   const native = deployment.deployment === "native";
   const hosts = candidateHosts({ browserHost, gateway: deps.gateway(), native, dockerHostAddresses: await deps.dockerHostAddresses() });
@@ -115,10 +131,12 @@ export async function discoverJellyfins(input: DiscoverInput, deps: DiscoveryDep
     .filter((target) => !scannedUrls.has(target.url));
   const fromUdp = await probeAll(udpTargets, deps.probe);
 
-  const order = [...scanTargets, ...udpTargets].map((target) => target.url);
-  const servers = dedupe([...scanned, ...fromUdp], order)
-    .sort((a, b) => Number(b.blank) - Number(a.blank) || Number(b.compatible) - Number(a.compatible))
-    .map(toEntry);
+  const order = [...stack.map((entry) => entry.url), ...scanTargets.map((target) => target.url), ...udpTargets.map((target) => target.url)];
+  const others = dedupe([...stack, ...scanned, ...fromUdp], order)
+    .filter((server) => server.source !== "stack")
+    .map(toEntry)
+    .sort((a, b) => Number(b.blank) - Number(a.blank) || Number(b.compatible) - Number(a.compatible));
+  const servers = [...stack.map(toEntry), ...others];
   const browser = browserHost?.replace(/^\[(.*)\]$/, "$1") ?? "";
   const bridged = input.containerized && !deps.ownAddresses().includes(browser);
   return { servers, udp: udp.outcome, bridged };

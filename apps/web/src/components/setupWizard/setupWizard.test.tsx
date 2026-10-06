@@ -57,7 +57,7 @@ function context(over: Partial<SetupContext> = {}): SetupContext {
     stack: "db",
     provisioner: "existing-instance",
     database: { configured: true, connected: true, fromEnv: true },
-    jellyfin: { url: null, suggestedUrl: "http://host.docker.internal:8096", configured: false, claimed: false, clientUrl: null },
+    jellyfin: { url: null, suggestedUrl: "http://host.docker.internal:8096", configured: false, claimed: false, joined: false, clientUrl: null },
     mediaHostPath: null,
     mediaFolders: null,
     os: null,
@@ -124,7 +124,7 @@ describe("les écrans de l'assistant", () => {
   });
 
   it("Jellyfin déjà choisi (retour en arrière) : la liste le garde, coché", () => {
-    const probe = { url: "http://172.16.1.30:47896", version: "12.1.0", serverName: "Neuf", blank: true, compatible: true, clientUrl: "http://172.16.1.30:47896" };
+    const probe = { url: "http://172.16.1.30:47896", version: "12.1.0", serverName: "Neuf", serverId: "neuf", blank: true, inStack: false, compatible: true, clientUrl: "http://172.16.1.30:47896" };
     const out = html(<JellyfinScreen wizard={wizard({ probe })} />);
     expect(out).toContain('role="radiogroup"');
     expect(out).toMatch(/type="radio"[^>]*checked=""[^>]*value="http:\/\/172\.16\.1\.30:47896"/);
@@ -155,7 +155,7 @@ describe("les écrans de l'assistant", () => {
       <RecapScreen
         wizard={wizard({
           jellyfinUrl: "http://jellyfin:8096",
-          probe: { url: "http://jellyfin:8096", version: "12.1.0", serverName: "Maison", blank: true, compatible: true, clientUrl: "http://172.16.1.30:47896" },
+          probe: { url: "http://jellyfin:8096", version: "12.1.0", serverName: "Maison", serverId: "maison", blank: true, inStack: true, compatible: true, clientUrl: "http://172.16.1.30:47896" },
           credentials: { username: "Knaoxtest", password: "x" },
           clientUrl: "http://172.16.1.30:47896",
           plans: [{ name: "Films", type: "movies", paths: ["/media/films"] }],

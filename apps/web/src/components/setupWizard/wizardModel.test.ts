@@ -8,7 +8,7 @@ function ctx(over: Partial<SetupContext> = {}): SetupContext {
     stack: "full",
     provisioner: "docker-sibling",
     database: { configured: true, connected: true, fromEnv: true },
-    jellyfin: { url: null, suggestedUrl: "http://jellyfin:8096", configured: false, claimed: true, clientUrl: null },
+    jellyfin: { url: null, suggestedUrl: "http://jellyfin:8096", configured: false, claimed: true, joined: false, clientUrl: null },
     mediaHostPath: "./media",
     mediaFolders: { root: "/media", movies: "/media/films", tvshows: "/media/series" },
     os: null,
@@ -45,8 +45,8 @@ describe("les étapes de l'assistant", () => {
     expect(resumeStep(ctx({ database: { configured: false, connected: false, fromEnv: false } }))).toBe("database");
     expect(resumeStep(ctx())).toBe("jellyfin");
     // Le voisin verrouillé au démarrage a déjà la clé, mais attend le compte : on passe par Jellyfin.
-    expect(resumeStep(ctx({ jellyfin: { url: "http://jellyfin:8096", suggestedUrl: null, configured: true, claimed: true, clientUrl: null } }))).toBe("jellyfin");
-    expect(resumeStep(ctx({ jellyfin: { url: "http://jellyfin:8096", suggestedUrl: null, configured: true, claimed: false, clientUrl: null } }))).toBe("libraries");
+    expect(resumeStep(ctx({ jellyfin: { url: "http://jellyfin:8096", suggestedUrl: null, configured: true, claimed: true, joined: false, clientUrl: null } }))).toBe("jellyfin");
+    expect(resumeStep(ctx({ jellyfin: { url: "http://jellyfin:8096", suggestedUrl: null, configured: true, claimed: false, joined: false, clientUrl: null } }))).toBe("libraries");
   });
 });
 

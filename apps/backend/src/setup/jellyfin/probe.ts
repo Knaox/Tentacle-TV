@@ -11,7 +11,7 @@ import { jellyfinRequest, loopbackAllowed } from "./guardedFetch";
  * /System/Info/Public`, anonyme, seul appel de la sonde. Rien de plus ne sort
  * de la réponse que les champs lus ici.
  */
-export interface ProbedJellyfin extends Omit<JellyfinProbeResult, "clientUrl"> {
+export interface ProbedJellyfin extends Omit<JellyfinProbeResult, "clientUrl" | "serverId" | "inStack"> {
   /** L'identifiant du serveur : ce qui prouve, plus tard, que c'est bien LE même. */
   id: string;
 }
