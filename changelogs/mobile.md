@@ -12,8 +12,8 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **L'écran se cale sur la cadence du film**, sans saccade
 - **Jellyfin redémarre ?** La lecture continue, sans rechargement (serveur 1.24.0)
 - **Qualité réduite plus fine** (HEVC), son d'origine gardé
-- Une réussite de la Famille s'affiche en vert
-- Une TV déjumelée quitte aussitôt la liste
+- Famille en vert, TV déjumelée retirée aussitôt
+- **Hors ligne** direct, sans fenêtre : un message dit la cause
 - Serveur ancien : rien ne casse, les nouveautés attendent
 - « Là où vous en étiez » pour les titres entamés
 
@@ -22,8 +22,8 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **The screen matches the film's frame rate**, no stutter
 - **Jellyfin restarting?** Playback continues, with no reload (server 1.24.0)
 - **Sharper reduced quality** (HEVC), original audio kept
-- Family successes now show in green
-- An unpaired TV leaves the list right away
+- Family in green, unpaired TV removed at once
+- **Offline** right away, no blocking screen: a message says why
 - Older server: nothing breaks, new features wait
 - "Where you left off" for in-progress titles
 
@@ -36,6 +36,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Qualité réduite plus fine** (HEVC quand le serveur l'autorise), et le son d'origine gardé avec le lecteur avancé
 - **L'épisode suivant revérifie la connexion** avant de choisir sa qualité
 - **Famille** : rejoindre une famille ou changer son code PIN s'annonce par une coche verte, et non plus par un triangle rouge
+- **Hors ligne** : l'application y passe directement, sans fenêtre bloquante ; un message temporaire dit si l'appareil n'a pas de réseau, si le serveur Tentacle est hors ligne ou si Jellyfin est injoignable
 - La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
 
 ### EN
@@ -46,6 +47,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **The next episode re-checks the connection** before picking its quality
 - **Family**: joining a family or changing your PIN now shows a green check, no longer a red triangle
 - The in-progress row is now called "Where you left off"
+- **Offline**: the app goes straight to offline mode, with no blocking screen; a short message says whether the device has no network, the Tentacle server is offline, or Jellyfin can't be reached
 
 ## [1.10.3]
 <!-- Bloc nu : Google Play (500 caractères), qui a déjà la 1.10.2. L'App Store, resté à la 1.8.2, a son bloc ios-. -->
