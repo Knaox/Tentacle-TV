@@ -1,12 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
+import type { SetupHostInfo } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { AdminNotice } from "../admin/kit";
 import { Field } from "../admin/services/Field";
 import { LanguageToggle } from "../auth/LanguageToggle";
-import { CopyBlock } from "../remoteAccess/CopyBlock";
 import { isLocalHttp } from "../remoteAccess/lanAddress";
 import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
+import { CodeHelp } from "./CodeHelp";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
 import { codeFromHash, resumeStep } from "./wizardModel";
@@ -39,6 +40,20 @@ export function CodeScreen({ wizard }: { wizard: Wizard }) {
   const [code, setCode] = useState(prefilled ?? "");
   const [error, setError] = useState<WizardErrorCode | null>(null);
   const [pending, setPending] = useState(false);
+
+  // Où tourne le serveur, pour dire où lire le code. Un serveur d'avant la
+  // route (404) ou muet : tous les chemins sont montrés.
+  const [host, setHost] = useState<SetupHostInfo | null | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    setupApi.host().then(
+      (info) => !cancelled && setHost(info),
+      () => !cancelled && setHost(null),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Le code ne reste pas dans la barre d'adresse une fois repris.
   useEffect(() => {
@@ -85,14 +100,7 @@ export function CodeScreen({ wizard }: { wizard: Wizard }) {
         <button type="submit" disabled={pending || code.trim().length < 12} className={primary}>
           {pending ? t("working") : t("codeSubmit")}
         </button>
-        <details className="rounded-xl border border-line-subtle bg-fill-faint px-4 py-3 text-sm text-content-secondary">
-          <summary className="min-h-11 cursor-pointer py-2.5 font-semibold text-content-primary">{t("codeWhereTitle")}</summary>
-          <div className="space-y-3 pb-1">
-            <CopyBlock label={t("codeWhereLogs")} code="docker compose logs tentacle" />
-            <p>{t("codeWhereFile")}</p>
-            <CopyBlock label={t("codeWhereNew")} code="docker compose exec tentacle tentacle setup token" />
-          </div>
-        </details>
+        <CodeHelp host={host} defaultOpen={!prefilled} />
       </form>
     </WizardFrame>
   );

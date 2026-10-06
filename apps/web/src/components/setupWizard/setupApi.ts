@@ -12,6 +12,7 @@ import {
   type SetupContext,
   type SetupDatabaseRequest,
   type SetupErrorCode,
+  type SetupHostInfo,
   type SetupSessionResponse,
 } from "@tentacle-tv/shared";
 import { BACKEND, creds } from "../../pages/adminUtils";
@@ -102,6 +103,8 @@ export const setupApi = {
     memorySession = session;
     setupSession.write(session);
   },
+  /** Avant le code : où tourne le serveur (public tant que l'installation est ouverte). */
+  host: () => call<SetupHostInfo>("/host", { withSession: false }),
   context: () => call<SetupContext>("/context"),
   database: (body: SetupDatabaseRequest) => call<{ success: true }>("/database", { method: "POST", body }),
   probe: (url: string) => call<JellyfinProbeResult>("/jellyfin/probe", { method: "POST", body: { url } }),
