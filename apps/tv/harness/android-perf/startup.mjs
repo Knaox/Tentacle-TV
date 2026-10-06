@@ -37,7 +37,8 @@ const device = createDevice();
 const ADB = path.join(process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk"), "platform-tools/adb");
 const SERIAL = process.env.ANDROID_SERIAL ?? "emulator-5584";
 const shell = (command) => device.adb(["shell", command]);
-const key = (name) => shell(`input keyevent ${KEY[name]}`);
+// Gardée comme toute touche du banc (`lib/keyGuard.mjs`) : l'app de mesure au premier plan, sinon arrêt.
+const key = (name) => device.keys(`tap:${KEY[name]}`);
 const mark = (text) => shell(`log -t TntStart '${text}'`);
 
 function applyFixtures(set) {
