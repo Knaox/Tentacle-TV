@@ -3,8 +3,8 @@ import frTrailerHelp from "./locales/fr/trailerHelp";
 import enTrailerHelp from "./locales/en/trailerHelp";
 
 /**
- * L'espace `trailerHelp` est lu par le guide du MOBILE et par le rappel de sa
- * fiche : même garde-fou que `offline` et `stats` — le mot « téléchargement »
+ * L'espace `trailerHelp` n'est plus lu par le mobile, mais le miroir (le web
+ * habillé en téléphone) le rend : même garde-fou que `offline` et `stats` — le mot « téléchargement »
  * y est refusé dans les deux langues —, les deux langues portent les mêmes
  * clés, et aucune n'est vide (un texte vide laisserait un trou dans le guide).
  */

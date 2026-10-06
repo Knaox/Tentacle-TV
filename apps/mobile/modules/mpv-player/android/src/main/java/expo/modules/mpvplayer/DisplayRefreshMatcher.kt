@@ -12,8 +12,11 @@ import android.view.Surface
  * `Surface.setFrameRate(…, FIXED_SOURCE)` dit au compositeur la cadence EXACTE
  * de ce qu'on y dessine : il choisit lui-même le mode (24 → 120 Hz sur un écran
  * 60/90/120), en respectant les réglages de l'utilisateur et la batterie.
- * Sans coupure seulement (Android ≥ 12) : un téléviseur branché en HDMI ne
- * doit pas renégocier ici. ExoPlayer (le lecteur système) vote ainsi sur SA
+ * `CHANGE_FRAME_RATE_ALWAYS` (Android ≥ 12) : sur un téléphone, 60 ↔ 120 Hz
+ * n'est pas toujours annoncé « sans coupure », et le seuil « sans coupure
+ * seulement » laissait l'écran à 60 Hz. Un téléphone change de mode sans
+ * écran noir ; le lecteur n'est jamais sur un téléviseur HDMI (app TV à part).
+ * ExoPlayer (le lecteur système) vote ainsi sur SA
  * surface de lui-même ; mpv ne le fait pas, d'où ce module.
  *
  * Le mode de la FENÊTRE (`preferredDisplayModeId`), valable pour les deux
@@ -61,7 +64,7 @@ class DisplayRefreshMatcher {
         if (surface == null || !surface.isValid) return
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                surface.setFrameRate(contentFps, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE, Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS)
+                surface.setFrameRate(contentFps, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE, Surface.CHANGE_FRAME_RATE_ALWAYS)
             } else {
                 surface.setFrameRate(contentFps, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)
             }

@@ -334,6 +334,10 @@ export default {
   videoEngineSystemHint: "Always the system player: the server converts what it cannot play.",
   videoEngineAdvancedHint:
     "Always the advanced player: everything plays as it is. AirPlay and Dolby Vision profile 5 go back to the system player.",
+  // Android : ni AirPlay, ni Dolby Vision profil 5, ni Atmos du système.
+  videoEngineAutoHintAndroid:
+    "The system player when it plays the file as it is, the advanced player for everything else — MKV, DTS, TrueHD, styled subtitles — with no server conversion.",
+  videoEngineAdvancedHintAndroid: "Always the advanced player: everything plays as it is.",
   preferSystemAtmos: "Prefer system Atmos",
   preferSystemAtmosHint:
     "The system player decodes Dolby Atmos (E-AC-3) for spatial audio on headphones; the server repackages the file when needed.",
@@ -342,7 +346,7 @@ export default {
     "ASS subtitles keep their fonts, colors and positions. Off, the system player shows them as plain text.",
   matchScreenFrameRate: "Match screen refresh rate",
   matchScreenFrameRateHint:
-    "During playback the screen switches to the film's frame rate (120 Hz for a 24 fps film, on screens that support it), so camera pans stay perfectly smooth. It returns to its usual rate when you leave the player.",
+    "During playback the screen switches to the film's frame rate (120 Hz for a 24 fps film, on screens that support it), then returns to its usual rate. On some phones the system locks the refresh rate during videos: set Tentacle to 120 Hz in Display › Per-app refresh rate.",
   subtitleScale: "Subtitle size",
   subtitleScaleSmall: "Small",
   subtitleScaleLarge: "Large",

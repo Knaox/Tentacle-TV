@@ -41,17 +41,36 @@ object DisplayModeBridge {
         )
     }
 
-    /** Pose le mode voulu (0 = rendre l'écran à son mode par défaut). À appeler sur le thread principal. */
+    /**
+     * Pose le mode voulu (0 = rendre l'écran à son mode par défaut). À appeler
+     * sur le thread principal. Le mode ET sa fréquence (`preferredRefreshRate`) :
+     * certains systèmes ne lisent que l'un des deux. Deux secondes plus tard, le
+     * journal dit si l'écran a suivi — c'est là que se voit un fabricant qui
+     * fixe la fréquence pendant les vidéos (ColorOS, OxygenOS : liste blanche).
+     */
     fun apply(activity: Activity?, modeId: Int) {
         val window = activity?.window ?: return
         if (modeId == 0 && appliedModeId == 0) return
-        val params = window.attributes
-        if (params.preferredDisplayModeId == modeId) { appliedModeId = modeId; return }
-        params.preferredDisplayModeId = modeId
-        window.attributes = params
-        appliedModeId = modeId
         val display: Display? = window.decorView.display
-        Log.i(TAG, if (modeId == 0) "fenêtre rendue au mode par défaut" else "fenêtre → mode $modeId (écran en ${display?.mode?.refreshRate} Hz)")
+        val targetHz = display?.supportedModes?.firstOrNull { it.modeId == modeId }?.refreshRate ?: 0f
+        val params = window.attributes
+        appliedModeId = modeId
+        if (params.preferredDisplayModeId == modeId && params.preferredRefreshRate == targetHz) return
+        params.preferredDisplayModeId = modeId
+        params.preferredRefreshRate = targetHz
+        window.attributes = params
+        if (modeId == 0) {
+            Log.i(TAG, "fenêtre rendue au mode par défaut")
+            return
+        }
+        Log.i(TAG, "fenêtre → mode $modeId ($targetHz Hz), écran en ${display?.mode?.refreshRate} Hz")
+        window.decorView.postDelayed({
+            if (appliedModeId != modeId) return@postDelayed
+            val now = window.decorView.display?.mode
+            val followed = now != null && kotlin.math.abs(now.refreshRate - targetHz) < 0.5f
+            Log.i(TAG, if (followed) "écran passé à ${now?.refreshRate} Hz (mode ${now?.modeId})"
+                else "écran resté à ${now?.refreshRate} Hz (mode ${now?.modeId}) : demande de $targetHz Hz ignorée par le système")
+        }, 2000)
     }
 
     private fun matchPreference(activity: Activity): String {
