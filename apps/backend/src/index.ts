@@ -15,6 +15,7 @@ import { isTrustedProxy } from "./services/trustedProxies";
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, getDatabaseUrlSource, reconnectPrisma } from "./services/db";
 import { ensureDatabaseSchema } from "./services/schemaInit/ensureSchema";
 import { applyPairingEpoch } from "./services/pairingEpoch";
+import { applyAudioAnalysisDefault } from "./services/audioAnalysisDefault";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
 
@@ -335,6 +336,8 @@ async function main() {
       // Rejumelage général des téléviseurs quand `versions.json` le demande.
       // Après `detectAppState`, qui a chargé `server_config` en mémoire.
       await applyPairingEpoch();
+      // L'analyse audio des passages, coupée une fois sur les serveurs d'avant.
+      await applyAudioAnalysisDefault();
     } else {
       console.warn("[DB] All connection attempts failed — entering setup mode");
     }

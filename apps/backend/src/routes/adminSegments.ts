@@ -12,7 +12,7 @@ import { z } from "zod";
 import { requireAdmin } from "../middleware/auth";
 import { audioAnalysisCounters } from "../services/audioAnalysis";
 import { detectFingerprintTool } from "../services/audioFingerprintTool";
-import { isAudioAnalysisEnabled, setConfigValue } from "../services/configStore";
+import { AUDIO_ANALYSIS_KEY, isAudioAnalysisEnabled, setConfigValue } from "../services/configStore";
 
 const putSchema = z.object({ enabled: z.boolean() });
 
@@ -33,7 +33,7 @@ export const adminSegmentRoutes: FastifyPluginAsync = async (app) => {
     if (!parsed.success) {
       return reply.status(400).send({ message: parsed.error.issues[0].message });
     }
-    await setConfigValue("audio_analysis_enabled", String(parsed.data.enabled));
+    await setConfigValue(AUDIO_ANALYSIS_KEY, String(parsed.data.enabled));
     return { success: true, enabled: parsed.data.enabled };
   });
 };
