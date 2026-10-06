@@ -207,7 +207,6 @@ export * from "./playback/audioVerdict";
 // règle pour l'Apple TV, le lecteur système de l'iPhone et de l'iPad, et Safari.
 export * from "./playback/hevcTag";
 export * from "./playback/engineCapabilities";
-export * from "./playback/deviceDecoderProfile";
 export * from "./playback/streamPlan";
 export * from "./playback/engineProfiles";
 export * from "./playback/playbackSettings";
