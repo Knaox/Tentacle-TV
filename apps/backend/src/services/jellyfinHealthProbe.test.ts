@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyProbe } from "./jellyfinHealthProbe";
+import { classifyAuthProbe, classifyProbe } from "./jellyfinHealthProbe";
 
 /** Les réponses MESURÉES sur Jellyfin 10.11.11 pendant un redémarrage, et leur verdict. */
 
@@ -25,5 +25,17 @@ describe("sonde de santé de Jellyfin", () => {
     expect(classifyProbe(502, "Bad Gateway")).toBe("fail");
     expect(classifyProbe(404, "")).toBe("fail");
     expect(classifyProbe(200, "<html>proxy</html>")).toBe("fail");
+  });
+
+  it("l'Id ne suffit pas : l'API authentifiée qui répond encore 503, il démarre", () => {
+    // Relevé sur 10.11.11 : l'Id public ~25 s avant la fin des 503 de l'API authentifiée.
+    expect(classifyAuthProbe(503)).toBe("starting");
+    expect(classifyAuthProbe(200)).toBe("ok");
+  });
+
+  it("une clé refusée dit Jellyfin LÀ ; une autre erreur, échec", () => {
+    expect(classifyAuthProbe(401)).toBe("ok");
+    expect(classifyAuthProbe(403)).toBe("ok");
+    expect(classifyAuthProbe(500)).toBe("fail");
   });
 });
