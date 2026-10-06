@@ -11,7 +11,7 @@ import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { MediaMissingScreen } from "../components/player/MediaMissingScreen";
 import { PlaybackProblemScreen } from "../components/problems/PlaybackProblemScreen";
-import { useWebPlaybackProblem } from "../hooks/useWebPlaybackProblem";
+import { desktopStreamLost, useWebPlaybackProblem } from "../hooks/useWebPlaybackProblem";
 import { useWatchStopCleanup } from "../hooks/useWatchStopCleanup";
 import { desktopPlaybackReport, type PlaybackFailure } from "../hooks/playbackFailure";
 import { playbackTitles } from "../hooks/watchSessionMedia";
@@ -206,7 +206,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     mediaSourceId, qualityKey, qualityPresets, positionRef,
     restartAt: (seconds) => { setStartTicks(Math.floor(seconds * TICKS_PER_SECOND)); setAttempt((n) => n + 1); },
     setQuality: (key) => { void handleQualityChange(key); }, dropSubtitles: () => { void handleSubtitleChange(null); },
-    leave: () => { void handleMediaBack(); }, onBufferingChange: groupSync.notifyBuffering,
+    leave: () => { void handleMediaBack(); }, onBufferingChange: groupSync.notifyBuffering, streamLost: () => desktopStreamLost(!isDirectPlay),
   });
   const handlePlayerFailure = useCallback((failure: PlaybackFailure) => {
     if (isLocalPlayback) { onFallbackToWeb?.(); return; }
