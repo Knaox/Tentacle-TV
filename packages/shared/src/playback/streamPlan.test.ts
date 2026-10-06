@@ -34,6 +34,13 @@ describe("planStream — le son d'une source que le moteur lit", () => {
     expect(audioCopyBitrate(EXOPLAYER_ENGINE, AC3_51, null)).toBe(640_000);
   });
 
+  it("AudioCodec tient en 40 caractères (sinon Jellyfin répond 400), la piste lue d'abord", () => {
+    const plan = planStream({ engine: MPV_ENGINE, audio: { Codec: "vorbis", BitRate: 192_000, Channels: 2 }, tier: null });
+    expect(plan.params.AudioCodec.length).toBeLessThanOrEqual(40);
+    expect(plan.params.AudioCodec.startsWith("aac,vorbis,")).toBe(true);
+    expect(plan.params.VideoCodec.length).toBeLessThanOrEqual(40);
+  });
+
   it("l'AAC est toujours le premier codec : celui de sortie quand le son est converti", () => {
     for (const engine of [MPV_ENGINE, AVPLAYER_ENGINE, EXOPLAYER_ENGINE]) {
       expect(segmentAudioCodecs(engine)[0]).toBe("aac");

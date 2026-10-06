@@ -223,7 +223,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
     isDesktop, itemId, prefsReady, client, mediaSourceId, urlAudioIndex,
     quality, qualityMaxHeight, desktopIsDirectPlay, startTicks,
     desktopPlaySessionId, burnInSubtitleIndex, useProgressiveRemux,
-    localSource, waitingLocal,
+    sourceAudio: selectedAudioStream ?? null, localSource, waitingLocal,
   });
 
   // ── Unified return values ──

@@ -101,6 +101,28 @@ export function audioCopyBitrate(
   return bitrate;
 }
 
+/**
+ * Jellyfin refuse un `AudioCodec` (et un `VideoCodec`) de plus de 40
+ * caractères : 400, « must match ^[a-zA-Z0-9\-\._,|]{0,40}$ » (mesuré, 10.11).
+ */
+export const CODEC_PARAM_MAX = 40;
+
+/**
+ * La liste `AudioCodec` d'une URL : l'AAC (la sortie), le codec de la piste
+ * lue s'il se copie, puis les autres tant que la liste tient en 40 caractères.
+ */
+export function audioCodecParam(engine: EngineCapabilities, sourceCodec?: string | null): string {
+  const all = segmentAudioCodecs(engine);
+  const source = sourceCodec?.toLowerCase();
+  const ordered = source && all.includes(source) ? ["aac", source, ...all.filter((c) => c !== "aac" && c !== source)] : all;
+  const kept: string[] = [];
+  for (const codec of [...new Set(ordered)]) {
+    if ([...kept, codec].join(",").length > CODEC_PARAM_MAX) continue;
+    kept.push(codec);
+  }
+  return kept.join(",");
+}
+
 /** Les codecs vidéo d'un segment : l'AV1 et le VP9 ne voyagent qu'en fMP4. */
 function segmentVideoCodecs(engine: EngineCapabilities): string[] {
   if (engine.segmentContainer === "mp4") return [...engine.videoCodecs];
@@ -128,7 +150,7 @@ export function planStream(input: StreamPlanInput): StreamPlan {
   const copiesAudio = copyBitrate !== null;
   const params: Record<string, string> = {
     VideoCodec: videoCodecs.join(","),
-    AudioCodec: segmentAudioCodecs(engine).join(","),
+    AudioCodec: audioCodecParam(engine, audio?.Codec),
     AllowAudioStreamCopy: "true",
     SegmentContainer: engine.segmentContainer,
     ...rangeParams(engine, videoCodecs),
