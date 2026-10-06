@@ -10,6 +10,43 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.24.0]
+### FR
+- **Nouvel assistant d'installation** : une question par écran. Depuis votre réseau local, il s'ouvre sans code ; le code à usage unique, lu dans le journal du conteneur, n'est plus exigé qu'ailleurs. La langue des métadonnées se choisit avec le compte
+- **Toujours le bon Jellyfin** : la pile complète se relie à SON Jellyfin, même quand une installation précédente en avait retenu un autre. Sans Jellyfin dans la pile, l'assistant liste ceux qu'il trouve (neuf ou déjà configuré) et propose le neuf. Les applications reçoivent la bonne adresse de Jellyfin pour la lecture directe, modifiable avant la fin
+- **Trois piles Docker prêtes à copier** : complète (Tentacle, base et Jellyfin), avec base, ou Tentacle seul. Aucun mot de passe écrit en clair, jamais le socket Docker ; une image plus légère, qui tourne sans droits root et surveille sa propre santé
+- **Accès à distance** : une section d'administration guide pas à pas — ports, HTTPS avec Caddy, Traefik ou nginx, guides des box
+- **Détection des passages** (intro, résumé, générique) : l'assistant installe et règle Intro Skipper, TheIntroDB et SkipMe.db dans Jellyfin, redémarrage compris. Sur un serveur déjà installé : « Installer / réparer la détection des passages », dans Services ; le tableau de bord le recommande s'il manque un greffon
+- **L'analyse audio des passages est désactivée par défaut**, y compris sur les serveurs existants (une seule fois) ; elle se rallume dans Services
+- **Panne de Jellyfin** : le serveur suit son état et le dit aux lecteurs. Le tableau de bord dit « Jellyfin redémarre » plutôt qu'une erreur, et au retour de Jellyfin, une fois vraiment prêt, les lectures en cours lui sont redites aussitôt, position comprise
+- **Lecteur web** : pendant un redémarrage de Jellyfin, la lecture continue sur ce qui est déjà chargé, sans rechargement à son retour ; le message est temporaire, avec un compte à rebours, et l'écran « serveur injoignable » ne recouvre plus la vidéo
+- **Lecteur web, qualité réduite plus fidèle** : le son d'origine est gardé, le Dolby Vision et le HDR restent intacts quand seul le conteneur change, la vidéo passe en HEVC quand Jellyfin l'autorise, et le chargement s'affiche dès le choix d'une qualité
+- **L'épisode suivant** revérifie la connexion et revient en lecture directe quand elle le permet ; il ne reprend plus la piste audio ni la position du précédent, et la piste choisie ne revient plus à celle par défaut en cours de lecture
+- **Sessions du tableau de bord** : « direct » quand rien n'est converti, « En analyse » tant qu'une conversion n'est pas décrite, la limite de débit de l'appareil indiquée, et l'épisode suivant n'est plus étiqueté « Transcodage » à tort
+- **Jumelage** : le code d'une TV saisi en entier lance le jumelage ; déjumeler une TV ne peut plus échouer, et elle quitte aussitôt la liste
+- **Sécurité** : seules les adresses transmises par un mandataire voisin sont crues, les jetons sont masqués dans les journaux, et l'assistant se ferme pour de bon une fois l'installation finie
+- **Accueil** : une carte marquée vue, ou retirée de Ma liste ou des favoris, reste en place tant que le pointeur est sur sa rangée ; « Afficher le synopsis » d'Affiner répond de nouveau au clic
+- La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
+- La version minimale exigée des clients reste 1.23.0
+
+### EN
+- **New setup wizard**: one question per screen. From your home network it opens without a code; the one-time code, read in the container log, is only asked from elsewhere. The metadata language is chosen with the account
+- **Always the right Jellyfin**: the full stack links to ITS own Jellyfin, even when an earlier setup had kept another one. With no Jellyfin in the stack, the wizard lists the ones it finds (new or already set up) and suggests the new one. Apps get the right Jellyfin address for direct play, editable before finishing
+- **Three ready-to-copy Docker stacks**: full (Tentacle, database and Jellyfin), with database, or Tentacle only. No password written in plain text, never the Docker socket; a lighter image that runs without root and checks its own health
+- **Remote access**: an admin section guides you step by step — ports, HTTPS with Caddy, Traefik or nginx, router guides
+- **Skip detection** (intro, recap, credits): the wizard installs and configures Intro Skipper, TheIntroDB and SkipMe.db in Jellyfin, restart included. On an existing server: "Install / repair skip detection" in Services; the dashboard recommends it when a plugin is missing
+- **Audio analysis for skip detection is now off by default**, including on existing servers (once); turn it back on in Services
+- **Jellyfin outage**: the server tracks its state and tells the players. The dashboard says "Jellyfin is restarting" instead of an error, and when Jellyfin is truly back, ongoing playbacks are reported to it again right away, position included
+- **Web player**: while Jellyfin restarts, playback continues from what is already loaded, with no reload when it comes back; the message is temporary, with a countdown, and the "server unreachable" screen no longer covers the video
+- **Web player, more faithful reduced quality**: original audio is kept, Dolby Vision and HDR stay intact when only the container changes, video switches to HEVC when Jellyfin allows it, and loading shows as soon as you pick a quality
+- **The next episode** re-checks the connection and returns to direct play when it allows; it no longer inherits the previous episode's audio track or position, and your chosen track no longer switches back to the default during playback
+- **Dashboard sessions**: "direct" when nothing is converted, "Analysing" while a conversion is not yet described, the device's bitrate limit shown, and the next episode no longer mislabeled "Transcoding"
+- **Pairing**: typing a TV's full code starts pairing; unpairing a TV can no longer fail, and it leaves the list right away
+- **Security**: forwarded addresses are trusted only from neighboring proxies, tokens are masked in logs, and the wizard closes for good once setup is done
+- **Home**: a card you mark as watched, or remove from My List or Favorites, stays put while the pointer is on its row; Refine's "Show synopsis" responds to clicks again
+- The in-progress row is now called "Where you left off"
+- The minimum server version required by clients stays 1.23.0
+
 ## [1.23.0]
 ### FR
 - **Famille** : une famille partagée par tous ses membres — jusqu'à six profils, dont trois invités créés par le serveur, sur l'Apple TV de chacun ; des invitations entre comptes du serveur (push, cloche et affiche au lancement), un code PIN facultatif par profil. Le propriétaire invite et retire, et décide qui peut ajouter des invités ; un invité peut, s'il y est autorisé, demander des films à son propre nom — tout se décide sur le serveur, en HTTP comme en HTTPS
