@@ -17,6 +17,8 @@
  * sinon entre les fichiers du contrat (recopiés ensemble).
  */
 
+import type { SetupFlowState } from "./setupFlowContract";
+
 /** Comment le serveur tourne : dans l'image Docker, ou installé sur la machine. */
 export type SetupDeployment = "docker" | "native";
 
@@ -110,6 +112,12 @@ export interface SetupContext {
      */
     clientUrl: string | null;
   };
+  /**
+   * Le PARCOURS, tenu par le serveur (`setupFlowContract.ts`) : le Jellyfin
+   * choisi et où en est l'installation. Le client en tire ses écrans ; le
+   * serveur refuse tout geste qui n'en fait pas partie.
+   */
+  flow: SetupFlowState;
   /** Le dossier des médias sur l'hôte, tel que le compose le monte (`./media`). */
   mediaHostPath: string | null;
   /**
@@ -157,6 +165,8 @@ export type SetupErrorCode =
   | "jf_not_configured"
   | "jf_claim_pending"
   | "jf_sibling_elsewhere"
+  /** Un geste hors du parcours en cours (`setupActionAllowed`) : créer un compte sur un Jellyfin déjà configuré, sauter le choix… */
+  | "step_refused"
   | "internal";
 
 /** Tout refus de `/api/setup/*` : un code, rien d'autre. */
@@ -184,6 +194,26 @@ export interface SetupDatabaseRequest {
 }
 
 /** La sonde et la découverte de Jellyfin : `setupDiscoveryContract.ts`. */
+
+/**
+ * `POST /api/setup/jellyfin/select` — le Jellyfin choisi, d'un geste de
+ * l'administrateur. Le serveur le sonde et en tire le parcours ; la réponse
+ * est le contexte à jour (`SetupContext`). Un autre Jellyfin que celui choisi
+ * avant : ce qui avait été préparé pour l'ancien est oublié.
+ */
+export interface JellyfinSelectRequest {
+  url: string;
+}
+
+/**
+ * `POST /api/setup/jellyfin/verify` — le compte administrateur du Jellyfin
+ * relié, revérifié (rechargement de la page : le mot de passe n'est jamais
+ * gardé). Rien n'est créé ni changé.
+ */
+export interface JellyfinVerifyRequest {
+  username: string;
+  password: string;
+}
 
 /** La langue et le pays des métadonnées (et de l'interface de Jellyfin). */
 export interface SetupLocale {

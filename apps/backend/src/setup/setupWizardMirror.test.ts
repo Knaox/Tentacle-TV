@@ -22,7 +22,7 @@ function repoRoot(): string {
 }
 
 describe("miroir du contrat de l'assistant d'installation", () => {
-  it.each(["setupWizardContract.ts", "setupDiscoveryContract.ts"])("%s est identique octet pour octet à celui de shared", (file) => {
+  it.each(["setupWizardContract.ts", "setupDiscoveryContract.ts", "setupFlowContract.ts"])("%s est identique octet pour octet à celui de shared", (file) => {
     const root = repoRoot();
     expect(readFileSync(join(root, "apps/backend/src/setup", file), "utf8"))
       .toBe(readFileSync(join(root, "packages/shared/src/setupWizard", file), "utf8"));

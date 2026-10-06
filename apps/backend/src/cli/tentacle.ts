@@ -26,7 +26,16 @@ const USAGE = [
   "  tentacle setup reset   rouvre l'assistant d'installation (puis redémarrer le conteneur)",
   "                         reopen the setup wizard (then restart the container)",
 ];
-const SETUP_FLAGS = ["setup_completed", "admin_jellyfin_id", "admin_username"];
+// Rouvrir l'assistant, c'est aussi repartir du CHOIX du Jellyfin : le choix
+// et le parcours d'avant ne valent plus (`setup/flow/setupFlow.ts`).
+const SETUP_FLAGS = [
+  "setup_completed",
+  "admin_jellyfin_id",
+  "admin_username",
+  "setup_jellyfin_selection",
+  "setup_jellyfin_key_created",
+  "setup_jellyfin_joined",
+];
 const HELP = new Set(["help", "-h", "--help"]);
 
 /** Le redémarrage à faire après `reset`, avec l'identifiant du conteneur quand il se lit. */

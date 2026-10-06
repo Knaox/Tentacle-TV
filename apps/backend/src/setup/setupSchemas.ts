@@ -32,6 +32,11 @@ export const databaseSchema = z
 
 export const probeSchema = z.object({ url }).strict();
 
+/** Le Jellyfin choisi : son adresse, telle que la liste la donne (vide : celui de la pile). */
+export const selectSchema = z.object({ url: z.string().trim().max(2048) }).strict();
+
+export const verifySchema = z.object({ username: anyUsername, password: anyPassword }).strict();
+
 export const initializeSchema = z
   .object({
     url,

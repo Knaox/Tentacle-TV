@@ -3,6 +3,7 @@ import { setupErrorHandler } from "./setupErrors";
 import { setupAdviceRoute } from "./routes/adviceRoute";
 import { setupCompleteRoute } from "./routes/completeRoute";
 import { setupDatabaseRoute } from "./routes/databaseRoute";
+import { setupFlowRoutes } from "./routes/flowRoutes";
 import { setupJellyfinRoutes } from "./routes/jellyfinRoutes";
 import { setupLibraryRoutes } from "./routes/libraryRoutes";
 import { setupSegmentsRoute } from "./routes/segmentsRoute";
@@ -17,6 +18,7 @@ export const setupWizardRoutes: FastifyPluginAsync = async (app) => {
   app.setErrorHandler(setupErrorHandler);
   await app.register(setupSessionRoutes);
   await app.register(setupDatabaseRoute);
+  await app.register(setupFlowRoutes);
   await app.register(setupJellyfinRoutes);
   await app.register(setupLibraryRoutes);
   await app.register(setupSegmentsRoute);

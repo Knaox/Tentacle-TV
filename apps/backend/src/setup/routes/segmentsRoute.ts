@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { segmentSetupStatus, startSegmentSetup } from "../../services/segmentPlugins/segmentSetupJob";
 import type { SegmentSetupRun } from "../../services/segmentPlugins/segmentPluginsContract";
+import { requireStep } from "../flow/setupFlow";
 import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
 import { storedJellyfin } from "../setupStore";
@@ -17,6 +18,7 @@ export const setupSegmentsRoute: FastifyPluginAsync = async (app) => {
     "/jellyfin/segments",
     { preHandler: requireSetupSession, config: { rateLimit: { max: 10, timeWindow: 60_000 } } },
     async (_request, reply): Promise<SegmentSetupRun> => {
+      requireStep("segments");
       if (!storedJellyfin()) throw new SetupError("jf_not_configured");
       void startSegmentSetup({ restartWhilePlaying: false });
       return reply.status(202).send(segmentSetupStatus());

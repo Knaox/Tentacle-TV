@@ -86,6 +86,7 @@ beforeAll(async () => {
   // Un autre Jellyfin de la maison, DÉJÀ configuré.
   other.on("GET /System/Info/Public", () => publicInfo({ Id: "salon", ServerName: "Salon" }));
   adminRoutes(other, "cle-salon");
+  other.on("DELETE /Auth/Keys/cle-salon-1", { status: 204 });
 
   Object.assign(process.env, { TENTACLE_DEPLOYMENT: "docker", TENTACLE_STACK: "full", JELLYFIN_INTERNAL_URL: stack.url, JELLYFIN_HOST_PORT: "47896" });
   for (const [key, value] of Object.entries({ jellyfin_url: stack.url, jellyfin_api_key: "cle-pile", jellyfin_server_id: "pile", jellyfin_claim_user_id: "prov" })) {
@@ -108,40 +109,99 @@ afterAll(async () => {
 });
 
 describe("pile complète : choisir un autre Jellyfin que celui de la pile", () => {
+  const select = (url: string) => call("POST", "/jellyfin/select", { url });
+  const flow = async () => (await call("GET", "/context")).json().flow;
+
   it("chacun dit ce qu'il est : celui de la pile, neuf tant qu'il est verrouillé ; l'autre, déjà configuré", async () => {
     expect((await call("POST", "/jellyfin/probe", { url: stack.url })).json()).toMatchObject({ serverId: "pile", inStack: true, blank: true, clientUrl: "http://localhost:47896" });
     expect((await call("POST", "/jellyfin/probe", { url: other.url })).json()).toMatchObject({ url: other.url, serverId: "salon", inStack: false, blank: false });
   });
 
-  it("l'autre, choisi : relié par son compte, la clé du voisin mise de côté, rien à créer", async () => {
+  it("rien n'est choisi d'office, même verrouillé : le parcours attend le choix, et le serveur refuse tout le reste", async () => {
+    expect(await flow()).toEqual({ databasePending: false, selection: null, linked: false });
+    for (const [url, body] of [
+      ["/jellyfin/initialize", { url: stack.url, username: "Damien", password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" }],
+      ["/jellyfin/connect", { url: other.url, username: "Damien", password: PASSWORD }],
+      ["/complete", { username: "Damien", password: PASSWORD }],
+    ] as const) {
+      const res = await call("POST", url, body);
+      expect([url, res.statusCode, res.json()]).toEqual([url, 409, { error: "step_refused" }]);
+    }
+  });
+
+  it("l'autre, choisi : parcours « déjà configuré » — jamais de compte créé, même par un appel direct", async () => {
+    const context = (await select(other.url)).json();
+    expect(context.flow).toEqual({
+      databasePending: false,
+      linked: false,
+      selection: { url: other.url, serverId: "salon", serverName: "Salon", version: "10.11.11", inStack: false, path: "configured" },
+    });
+    expect(context.jellyfin.clientUrl).toBe(other.url.replace("127.0.0.1", "localhost"));
+    const init = await call("POST", "/jellyfin/initialize", { url: other.url, username: "Pirate", password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" });
+    expect(init.json()).toEqual({ error: "step_refused" });
+    // Une autre adresse que celle choisie : refusée, quel que soit le parcours.
+    expect((await call("POST", "/jellyfin/connect", { url: stack.url, username: "Damien", password: PASSWORD })).json()).toEqual({ error: "step_refused" });
+  });
+
+  it("relié par son compte, la clé du voisin mise de côté ; ni bibliothèque à créer, ni dossier à parcourir", async () => {
     expect((await call("POST", "/jellyfin/connect", { url: other.url, username: "Damien", password: PASSWORD })).json()).toEqual({ success: true });
     expect(state.config.get("jellyfin_url")).toBe(other.url);
     expect(state.config.get("jellyfin_claim_api_key")).toBe("cle-pile");
     expect(state.config.get("jellyfin_stack_choice")).toBe(other.url);
+    expect((await flow()).linked).toBe(true);
     expect((await call("GET", "/context")).json().jellyfin).toMatchObject({ url: other.url, configured: true, claimed: false, joined: true });
+    const create = await call("POST", "/jellyfin/libraries", { libraries: [{ name: "Films", type: "movies", paths: ["/media/films"] }], metadataLanguage: "fr", metadataCountry: "FR" });
+    expect(create.json()).toEqual({ error: "step_refused" });
+    expect((await call("GET", "/jellyfin/browse")).json()).toEqual({ error: "step_refused" });
+    expect(other.calls("POST /Library/VirtualFolders")).toHaveLength(0);
+  });
+
+  it("le même rechoisi : rien ne change (ni le parcours, ni la clé)", async () => {
+    expect((await select(other.url)).json().flow).toMatchObject({ linked: true, selection: { path: "configured" } });
+    expect(state.config.get("jellyfin_url")).toBe(other.url);
   });
 
   it("un redémarrage de Tentacle garde ce choix, sans toucher au voisin", async () => {
     expect(await claimSiblingJellyfin(stack.url, { log: () => undefined })).toBe("already");
     expect(state.config.get("jellyfin_url")).toBe(other.url);
+    expect((await flow()).selection.url).toBe(other.url);
   });
 
-  it("retour sur celui de la pile : il reprend sa clé et prend le compte choisi", async () => {
+  it("retour à « Jellyfin », celui de la pile choisi : l'autre est oublié (sa clé révoquée), le parcours redevient « neuf »", async () => {
+    const context = (await select("")).json();
+    expect(context.flow).toMatchObject({ linked: false, selection: { url: stack.url, inStack: true, path: "fresh" } });
+    expect(other.calls("DELETE /Auth/Keys/cle-salon-1")).toHaveLength(1);
+    expect(state.config.has("jellyfin_stack_choice")).toBe(false);
+    // Rien de l'autre parcours : la connexion est refusée.
+    expect((await call("POST", "/jellyfin/connect", { url: stack.url, username: "Damien", password: PASSWORD })).json()).toEqual({ error: "step_refused" });
+  });
+
+  it("il reprend sa clé et prend le compte choisi", async () => {
     const init = await call("POST", "/jellyfin/initialize", { url: stack.url, username: "Damien", password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" });
     expect(init.json()).toEqual({ success: true });
     expect(state.config.get("jellyfin_url")).toBe(stack.url);
     expect(state.config.get("jellyfin_api_key")).toBe("cle-pile");
     expect(stack.calls("POST /Users/Password")).toHaveLength(1);
     expect(state.config.has("jellyfin_claim_user_id")).toBe(false);
-    expect(state.config.has("jellyfin_stack_choice")).toBe(false);
-    expect((await call("GET", "/context")).json().jellyfin).toMatchObject({ url: stack.url, claimed: false, joined: false });
+    expect((await flow())).toMatchObject({ linked: true, selection: { path: "fresh" } });
+    // Le compte est créé : une seconde fois, non.
+    const again = await call("POST", "/jellyfin/initialize", { url: stack.url, username: "Autre", password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" });
+    expect(again.json()).toEqual({ error: "step_refused" });
+    expect((await call("GET", "/jellyfin/recommended")).json()).toEqual({ error: "step_refused" });
   });
 
-  it("de nouveau l'autre, puis la fin : l'installation se ferme sur LUI", async () => {
+  it("revérifier le compte (rechargement) : le bon mot de passe, sinon refusé — rien n'est créé", async () => {
+    expect((await call("POST", "/jellyfin/verify", { username: "Damien", password: "faux" })).json()).toEqual({ error: "jf_bad_credentials" });
+    expect((await call("POST", "/jellyfin/verify", { username: "Damien", password: PASSWORD })).json()).toEqual({ success: true });
+  });
+
+  it("de nouveau l'autre, puis la fin : l'installation se ferme sur LUI, et le choix est oublié", async () => {
+    expect((await select(other.url)).json().flow).toMatchObject({ linked: false, selection: { path: "configured" } });
     expect((await call("POST", "/jellyfin/connect", { url: other.url, username: "Damien", password: PASSWORD })).json()).toEqual({ success: true });
     const done = await call("POST", "/complete", { username: "Damien", password: PASSWORD });
     expect(done.statusCode).toBe(200);
     expect(state.config.get("jellyfin_url")).toBe(other.url);
     expect(state.config.get("jellyfin_private_url")).toBe(other.url.replace("127.0.0.1", "localhost"));
+    expect(state.config.has("setup_jellyfin_selection")).toBe(false);
   });
 });

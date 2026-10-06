@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { JellyfinSetupReport } from "../../services/jellyfinCompat/setupContract";
 import { applySetupAction } from "../../services/jellyfinSetup/setupActions";
 import { buildSetupReport } from "../../services/jellyfinSetup/setupService";
+import { requireStep } from "../flow/setupFlow";
 import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
 import { storedJellyfin } from "../setupStore";
@@ -27,7 +28,9 @@ const adviceSchema = z
 
 const SESSION = { preHandler: requireSetupSession };
 
+/** Les réglages conseillés n'appartiennent qu'au parcours d'un Jellyfin DÉJÀ configuré, relié. */
 function requireJellyfin(): void {
+  requireStep("advice");
   if (!storedJellyfin()) throw new SetupError("jf_not_configured");
 }
 

@@ -28,6 +28,8 @@ const STATUS: Partial<Record<SetupErrorCode, number>> = {
   db_managed_by_stack: 409,
   jf_not_configured: 409,
   jf_claim_pending: 409,
+  // Un geste hors du parcours en cours : l'état de l'installation l'interdit.
+  step_refused: 409,
   internal: 500,
 };
 

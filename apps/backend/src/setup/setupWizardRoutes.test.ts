@@ -162,12 +162,29 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(res.json()).toEqual({ error: "db_managed_by_stack" });
   });
 
-  it("Jellyfin vierge : sondé, initialisé, clé créée — jamais renvoyée", async () => {
+  it("sans Jellyfin choisi : ni compte, ni connexion, ni bibliothèque, ni fin — le choix d'abord", async () => {
+    expect((await call("GET", "/context", { session })).json().flow).toEqual({ databasePending: false, selection: null, linked: false });
+    for (const [url, body] of [
+      ["/jellyfin/initialize", { url: jf.url, username: "Damien", password: ADMIN_PASSWORD, uiCulture: "fr-FR", metadataCountry: "CH", metadataLanguage: "fr" }],
+      ["/jellyfin/connect", { url: jf.url, username: "Damien", password: ADMIN_PASSWORD }],
+      ["/jellyfin/libraries", { libraries: [{ name: "Films", type: "movies", paths: ["/media/films"] }], metadataLanguage: "fr", metadataCountry: "CH" }],
+      ["/jellyfin/verify", { username: "Damien", password: ADMIN_PASSWORD }],
+      ["/complete", { username: "Damien", password: ADMIN_PASSWORD }],
+    ] as const) {
+      expect([url, (await call("POST", url, { session, body })).json()]).toEqual([url, { error: "step_refused" }]);
+    }
+  });
+
+  it("Jellyfin vierge : sondé, choisi (parcours « neuf »), initialisé, clé créée — jamais renvoyée", async () => {
     const probe = await call("POST", "/jellyfin/probe", { session, body: { url: jf.url } });
     expect(probe.json()).toEqual({
       url: jf.url, serverId: expect.any(String), version: "10.11.11", serverName: "jellyfin", blank: true, inStack: false, compatible: true,
       clientUrl: jf.url.replace("127.0.0.1", "localhost"),
     });
+    const chosen = (await call("POST", "/jellyfin/select", { session, body: { url: jf.url } })).json();
+    expect(chosen.flow).toMatchObject({ linked: false, selection: { url: jf.url, inStack: false, path: "fresh" } });
+    // Neuf : on n'y « rejoint » pas un compte existant.
+    expect((await call("POST", "/jellyfin/connect", { session, body: { url: jf.url, username: "Damien", password: ADMIN_PASSWORD } })).json()).toEqual({ error: "step_refused" });
     const init = await call("POST", "/jellyfin/initialize", {
       session,
       body: { url: jf.url, username: "Damien", password: ADMIN_PASSWORD, uiCulture: "fr-FR", metadataCountry: "CH", metadataLanguage: "fr" },
@@ -202,6 +219,7 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(done.json()).toMatchObject({ success: true, AccessToken: "jeton-web", DeviceId: "dev-web", User: { Id: "u1", Name: "Damien" } });
     expect(done.cookies.find((c) => c.name === "tentacle_token")).toMatchObject({ httpOnly: true, sameSite: "Strict" });
     expect(state.config.get("setup_completed")).toBe("true");
+    expect(state.config.has("setup_jellyfin_selection")).toBe(false);
     // L'adresse des applications : le Jellyfin de la boucle locale prend l'hôte du navigateur.
     expect(state.config.get("jellyfin_private_url")).toBe(jf.url.replace("127.0.0.1", "localhost"));
     expect(state.started).toBe(1);

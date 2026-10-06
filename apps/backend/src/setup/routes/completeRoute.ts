@@ -7,6 +7,7 @@ import { setSessionCookie } from "../../routes/authCookie";
 import { signOut } from "../jellyfin/accounts";
 import { clientUrlFor } from "../jellyfin/clientUrlFor";
 import { jellyfinRequest } from "../jellyfin/guardedFetch";
+import { forgetSelection, requireStep } from "../flow/setupFlow";
 import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
 import { sealSetup } from "../setupLock";
@@ -52,6 +53,8 @@ export const setupCompleteRoute: FastifyPluginAsync = async (app) => {
     { preHandler: requireSetupSession, config: { rateLimit: { max: 10, timeWindow: 60_000 } } },
     async (request, reply): Promise<SetupCompleteResponse> => {
       const body = completeSchema.parse(request.body);
+      // Le Jellyfin choisi, relié au compte choisi : rien d'autre ne se finit.
+      requireStep("complete");
       const stored = storedJellyfin();
       if (!stored) throw new SetupError("jf_not_configured");
       // Le compte provisoire du Jellyfin voisin n'a pas encore pris le nom choisi.
@@ -88,6 +91,7 @@ export const setupCompleteRoute: FastifyPluginAsync = async (app) => {
       await setConfigValue("admin_jellyfin_id", user.Id);
       await setConfigValue("admin_username", user.Name);
       await setConfigValue("setup_completed", "true");
+      await forgetSelection();
       setAppState("running");
       sealSetup();
       discardSetupToken();
