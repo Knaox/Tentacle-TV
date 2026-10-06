@@ -42,7 +42,11 @@ Install the NVIDIA Container Toolkit on the host, then:
 
 ## Podman
 
-- Intel/AMD: the same `devices` line; in rootless mode, your user must belong to the `render` group.
+- Intel/AMD, rootful: the same `devices` and `group_add` lines.
+- Intel/AMD, rootless: a numeric `group_add` does not cross the user namespace. Your user must belong to the
+  `render` group, and the service gets `userns_mode: keep-id` with `group_add: ["keep-groups"]` (crun runtime)
+  instead. This is what the community reports; it is not verified by the project yet, and it does not work
+  everywhere.
 - NVIDIA: CDI instead of `deploy` — `devices: ["nvidia.com/gpu=all"]` (generate the CDI spec with
   `nvidia-ctk cdi generate`).
 

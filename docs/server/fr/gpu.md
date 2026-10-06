@@ -42,7 +42,11 @@ Installez le NVIDIA Container Toolkit sur l'hôte, puis :
 
 ## Podman
 
-- Intel/AMD : la même ligne `devices` ; sans root, votre compte doit faire partie du groupe `render`.
+- Intel/AMD, avec root : les mêmes lignes `devices` et `group_add`.
+- Intel/AMD, sans root : un `group_add` numérique ne traverse pas l'espace de noms utilisateur. Votre compte
+  doit faire partie du groupe `render`, et le service reçoit à la place `userns_mode: keep-id` et
+  `group_add: ["keep-groups"]` (runtime crun). C'est ce que rapporte la communauté ; le projet ne l'a pas
+  encore vérifié, et cela ne fonctionne pas partout.
 - NVIDIA : CDI au lieu de `deploy` — `devices: ["nvidia.com/gpu=all"]` (générez la spécification CDI avec
   `nvidia-ctk cdi generate`).
 
