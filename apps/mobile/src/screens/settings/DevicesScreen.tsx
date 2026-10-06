@@ -1,11 +1,14 @@
 import { useTranslation } from "react-i18next";
 
+import { PairTvSection } from "@/components/pair/PairTvSection";
 import { PairedDevicesSection } from "@/components/profile";
 import { SettingsScaffold } from "./SettingsScaffold";
 
 /**
- * Sous-écran « Appareils appairés » : jumeler une TV, puis la liste des
- * appareils jumelés et leur révocation.
+ * « Appareils et TV » : le jumelage d'une TV EN TÊTE — les cases du code
+ * tout de suite, sans écran de plus —, puis la liste des appareils jumelés
+ * et leur révocation. Plein écran sur téléphone, colonne de détail sur
+ * tablette (`DevicesPane`).
  */
 export function DevicesScreen() {
   const { t } = useTranslation("profile");
@@ -17,5 +20,10 @@ export function DevicesScreen() {
 }
 
 export function DevicesPane() {
-  return <PairedDevicesSection />;
+  return (
+    <>
+      <PairTvSection />
+      <PairedDevicesSection />
+    </>
+  );
 }

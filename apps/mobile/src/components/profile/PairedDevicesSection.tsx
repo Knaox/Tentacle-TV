@@ -1,5 +1,4 @@
 import { Alert, Pressable, Text, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useMyPairedDevices, useRevokeMyDevice } from "@tentacle-tv/api-client";
 import { SettingsRow, SettingsSection } from "@/components/settings";
@@ -7,14 +6,13 @@ import { Skeleton } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 
 /**
- * Les appareils jumelés au compte : jumeler une TV en tête, puis une ligne
- * par appareil (nom, dernière activité) et sa révocation — confirmée, parce
- * qu'il faudrait refaire le jumelage devant la TV pour revenir en arrière.
+ * Les appareils jumelés au compte — le jumelage, lui, est au-dessus
+ * (`PairTvSection`) : une ligne par appareil (nom, dernière activité) et sa
+ * révocation, confirmée, parce qu'il faudrait refaire le jumelage devant la
+ * TV pour revenir en arrière.
  */
 export function PairedDevicesSection() {
   const { t } = useTranslation("pairing");
-  const { t: tp } = useTranslation("profile");
-  const router = useRouter();
   const st = useThemedStyles(makeStyles);
   const { data: devices, isLoading, isError } = useMyPairedDevices();
   const revokeMut = useRevokeMyDevice();
@@ -27,43 +25,37 @@ export function PairedDevicesSection() {
   };
 
   return (
-    <>
-      <SettingsSection>
-        <SettingsRow icon="cast" label={tp("pairTV")} accent chevron last onPress={() => router.push("/pair-tv")} />
-      </SettingsSection>
-
-      <SettingsSection title={t("pairedDevices")}>
-        {isLoading ? (
-          <Skeleton width="100%" height={104} radius={0} />
-        ) : isError ? (
-          <SettingsRow icon="alert-circle" label={t("devicesLoadError")} last />
-        ) : !devices || devices.length === 0 ? (
-          <SettingsRow icon="info" label={t("noPairedDevices")} last />
-        ) : (
-          devices.map((device, index) => (
-            <SettingsRow
-              key={device.id}
-              icon="tv"
-              label={device.name}
-              description={t("lastActive", { date: new Date(device.lastSeen).toLocaleDateString() })}
-              last={index === devices.length - 1}
-              trailing={
-                <Pressable
-                  onPress={() => confirmRevoke(device.id, device.name)}
-                  disabled={revokeMut.isPending}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${t("revoke")} : ${device.name}`}
-                  style={({ pressed }) => [st.revoke, (pressed || revokeMut.isPending) && st.revokeDim]}
-                >
-                  <Text style={st.revokeText}>{t("revoke")}</Text>
-                </Pressable>
-              }
-            />
-          ))
-        )}
-      </SettingsSection>
-    </>
+    <SettingsSection title={t("pairedDevices")}>
+      {isLoading ? (
+        <Skeleton width="100%" height={104} radius={0} />
+      ) : isError ? (
+        <SettingsRow icon="alert-circle" label={t("devicesLoadError")} last />
+      ) : !devices || devices.length === 0 ? (
+        <SettingsRow icon="info" label={t("noPairedDevices")} last />
+      ) : (
+        devices.map((device, index) => (
+          <SettingsRow
+            key={device.id}
+            icon="tv"
+            label={device.name}
+            description={t("lastActive", { date: new Date(device.lastSeen).toLocaleDateString() })}
+            last={index === devices.length - 1}
+            trailing={
+              <Pressable
+                onPress={() => confirmRevoke(device.id, device.name)}
+                disabled={revokeMut.isPending}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`${t("revoke")} : ${device.name}`}
+                style={({ pressed }) => [st.revoke, (pressed || revokeMut.isPending) && st.revokeDim]}
+              >
+                <Text style={st.revokeText}>{t("revoke")}</Text>
+              </Pressable>
+            }
+          />
+        ))
+      )}
+    </SettingsSection>
   );
 }
 
