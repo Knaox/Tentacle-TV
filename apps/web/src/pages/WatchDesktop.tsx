@@ -206,7 +206,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     mediaSourceId, qualityKey, qualityPresets, positionRef,
     restartAt: (seconds) => { setStartTicks(Math.floor(seconds * TICKS_PER_SECOND)); setAttempt((n) => n + 1); },
     setQuality: (key) => { void handleQualityChange(key); }, dropSubtitles: () => { void handleSubtitleChange(null); },
-    leave: () => { void handleMediaBack(); },
+    leave: () => { void handleMediaBack(); }, onBufferingChange: groupSync.notifyBuffering,
   });
   const handlePlayerFailure = useCallback((failure: PlaybackFailure) => {
     if (isLocalPlayback) { onFallbackToWeb?.(); return; }
@@ -280,7 +280,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
         onFallbackToWeb={handlePlayerFailure} onMediaMissing={handleMediaMissing}
         transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
-        onBufferingChange={groupSync.notifyBuffering}
+        onBufferingChange={playback.onBuffering}
         onSeekComplete={(seconds, _paused, explicit) => groupSync.notifySeek(seconds, { explicit })}
         onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
         inGroupSession={group.groupActive}

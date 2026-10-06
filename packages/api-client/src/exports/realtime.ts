@@ -24,7 +24,7 @@ export {
 } from "../playback/jellyfinOutage";
 export { useJellyfinOutage, playbackErrorsSuppressed } from "../playback/useJellyfinOutage";
 export { createOutageGate, type OutageGate, type OutageGateDeps } from "../playback/outageGate";
-export { useOutageGate } from "../playback/useOutageGate";
+export { useOutageGate, type OutageGateHandle } from "../playback/useOutageGate";
 
 // La télécommande appliquée au lecteur (commande Jellyfin → geste), la même
 // traduction pour le web, le bureau et le mobile.

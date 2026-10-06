@@ -34,6 +34,8 @@ export interface WebPlaybackProblemArgs {
   /** Couper les sous-titres, puis renégocier. */
   dropSubtitles: () => void;
   leave: () => void;
+  /** Le lecteur attend des données ou rejoue — relayé (Watch Together), et lu par la règle du retour de Jellyfin. */
+  onBufferingChange?: (buffering: boolean) => void;
 }
 
 /** `started` : la lecture avait démarré ; `fallback` (bureau) : la bascule vers le lecteur web. */
@@ -118,9 +120,11 @@ export function useWebPlaybackProblem(args: WebPlaybackProblemArgs) {
     });
   }, []);
 
-  // Panne de Jellyfin (dite par le serveur) : les erreurs se taisent, et son
-  // retour rouvre le flux — la règle commune au web, au bureau et au mobile.
-  const gated = useOutageGate(reopen, diagnose);
+  // Panne de Jellyfin (dite par le serveur) : les erreurs se taisent, et à
+  // son retour la lecture continue sur sa réserve — le flux ne se rouvre que
+  // s'il le faut. La règle commune au web, au bureau et au mobile.
+  const gate = useOutageGate(reopen, diagnose, () => startedRef.current);
+  const gated = gate.report;
   const report = useCallback((failure: PlaybackFailure, extra: ReportExtra = {}) => {
     if (extra.started) startedRef.current = true;
     gated({ failure, extra });
@@ -187,5 +191,11 @@ export function useWebPlaybackProblem(args: WebPlaybackProblemArgs) {
 
   const markStarted = useCallback(() => { startedRef.current = true; }, []);
 
-  return { problem, diagnosing, report, onAction, markStarted, resumeAt, reopen };
+  const { stalled } = gate;
+  const onBuffering = useCallback((buffering: boolean) => {
+    stalled(buffering);
+    argsRef.current.onBufferingChange?.(buffering);
+  }, [stalled]);
+
+  return { problem, diagnosing, report, onAction, markStarted, resumeAt, reopen, onBuffering };
 }

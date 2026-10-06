@@ -33,6 +33,8 @@ export interface PlayerProblemArgs {
   started: boolean;
   videoReady: boolean;
   paused: boolean;
+  /** Le lecteur attend des données : lu par la règle du retour de Jellyfin. */
+  buffering: boolean;
   /** La relance À L'IDENTIQUE (même moteur, même palier). */
   restart: (opts?: { withoutSubtitles?: boolean }) => void;
   /** La relance transcodée, sur le lecteur système, un palier plus bas. */
@@ -82,9 +84,14 @@ export function usePlayerProblem(args: PlayerProblemArgs) {
   }, [clear, queryClient]);
 
   // Panne de Jellyfin (dite par le serveur) : les erreurs se taisent — ni
-  // diagnostic, ni écran d'erreur — et son retour rouvre le flux, toujours :
-  // la règle commune au web, au bureau et au mobile (`useOutageGate`).
-  const report = useOutageGate<PlaybackFailureReport>(reopen, diagnose);
+  // diagnostic, ni écran d'erreur — et à son retour la lecture continue sur
+  // sa réserve ; le flux ne se rouvre que s'il le faut : la règle commune au
+  // web, au bureau et au mobile (`useOutageGate`).
+  const gate = useOutageGate<PlaybackFailureReport>(reopen, diagnose, () => argsRef.current.started);
+  const report = gate.report;
+  // Une image arrêtée au retour de Jellyfin se rouvre si elle ne repart pas seule.
+  const { stalled } = gate;
+  useEffect(() => { stalled(args.buffering && args.started && !args.paused); }, [args.buffering, args.started, args.paused, stalled]);
 
   // La négociation a échoué : un message, une fois par échec.
   useEffect(() => {

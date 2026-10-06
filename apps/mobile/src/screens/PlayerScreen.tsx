@@ -149,7 +149,7 @@ export function PlayerScreen({ itemId, version }: Props) {
     streamUrl: pb.streamUrl, headers: pb.headers, isLoading: pb.isLoading, negotiationError: pb.error,
     isDirectPlay: pb.isDirectPlay, burnInSubIndex: pb.burnInSubIndex, subtitleIndex: pb.subtitleIndex,
     mediaSourceId: pb.mediaSourceId, qualityKey: pb.qualityKey, qualityPresets: pb.qualityPresets,
-    started, videoReady, paused, restart: pb.restart, retryTranscoded, leavePlayer,
+    started, videoReady, paused, buffering: isBuffering, restart: pb.restart, retryTranscoded, leavePlayer,
     resetGuards: () => { retryCount.current = 0; retryingRef.current = false; },
   });
   reportRef.current = failure.report;

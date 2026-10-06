@@ -8,11 +8,14 @@ import type { JellyfinHealth } from "../socket/jellyfinHealth";
  *  - `outage` : un bandeau dit l'état (« Jellyfin redémarre… »), la lecture
  *    directe continue sur son tampon, et AUCUN détecteur de problème ne
  *    parle : une erreur de flux pendant une panne n'a qu'une cause, déjà dite.
- *  - `long` : la panne dure (`LONG_OUTAGE_MS`) — un écran d'arrêt avec
- *    « Réessayer », la position gardée. Le retour de Jellyfin relance quand même.
- *  - `recovering` : Jellyfin est revenu, le lecteur rouvre son flux
- *    (`recoveries` a changé) ; les détecteurs se taisent encore
- *    `RECOVERY_GRACE_MS`, le temps que l'ancien flux finisse de mourir.
+ *  - `long` : la panne dure (`LONG_OUTAGE_MS`) — un message avec
+ *    « Réessayer », la position gardée.
+ *  - `recovering` : Jellyfin est revenu (`recoveries` a changé) ; la lecture
+ *    continue sans rien recharger, sauf s'il le faut (shared
+ *    `jellyfinReturn.ts`) ; les détecteurs se taisent encore
+ *    `RECOVERY_GRACE_MS`, le temps que le flux se reconnecte.
+ *
+ * Les messages sont temporaires (`useOutageNotice`).
  */
 
 export const LONG_OUTAGE_MS = 180_000;
