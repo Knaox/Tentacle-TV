@@ -23,9 +23,8 @@ interface MemoizedPlayerProps {
   /** Android TV : cadence du flux (ExoPlayer seulement — mpv ne bascule rien). */
   frameRate?: number;
   onLoad: (duration: number) => void;
-  /** Android : première image posée, son prêt ; départ réel du son (tv-core `startGate`). */
-  onFirstFrame?: (audioFollows: boolean) => void;
-  onAudioStarted?: () => void;
+  /** Android : première image posée, son prêt (tv-core `startGate`). */
+  onFirstFrame?: () => void;
   onProgress: (currentTime: number, buffered: number) => void;
   onEnd: () => void;
   onError: (error: string) => void;
@@ -35,7 +34,7 @@ interface MemoizedPlayerProps {
 
 export const MemoizedPlayer = memo(function MemoizedPlayer({
   useExoPlayer: isExo, exoRef, mpvRef, source, paused, muted, playerStyle, textTracks, subtitleIndex, isDirectPlay, prismTextTrackIndex, frameRate,
-  onLoad, onFirstFrame, onAudioStarted, onProgress, onEnd, onError, onTracks, onVideoSize,
+  onLoad, onFirstFrame, onProgress, onEnd, onError, onTracks, onVideoSize,
 }: MemoizedPlayerProps) {
   return isExo ? (
     <ExoPlayer
@@ -52,7 +51,6 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       style={playerStyle}
       onLoad={onLoad}
       onFirstFrame={onFirstFrame}
-      onAudioStarted={onAudioStarted}
       onProgress={onProgress}
       onEnd={onEnd}
       onError={onError}

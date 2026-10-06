@@ -5,7 +5,7 @@ export type TVPlayerEngineProps = Pick<
   PlayerStageBaseProps,
   | "streamUrl" | "paused" | "playerPaused" | "hasStarted" | "reloadFrameSec" | "useExoPlayer" | "exoRef" | "mpvRef"
   | "playerStyle" | "textTracks" | "subtitleIndex" | "isDirectPlay" | "prismTextTrackIndex" | "frameRate"
-  | "onLoad" | "onFirstFrame" | "onAudioStarted" | "onProgress" | "onEnd" | "onError" | "onTracks" | "onVideoSize"
+  | "onLoad" | "onFirstFrame" | "onProgress" | "onEnd" | "onError" | "onTracks" | "onVideoSize"
 >;
 
 /**
@@ -24,7 +24,7 @@ export function TVPlayerEngine(props: TVPlayerEngineProps) {
       textTracks={props.textTracks} subtitleIndex={props.subtitleIndex} isDirectPlay={props.isDirectPlay}
       prismTextTrackIndex={props.prismTextTrackIndex}
       frameRate={props.frameRate}
-      onLoad={props.onLoad} onFirstFrame={props.onFirstFrame} onAudioStarted={props.onAudioStarted} onProgress={props.onProgress} onEnd={props.onEnd}
+      onLoad={props.onLoad} onFirstFrame={props.onFirstFrame} onProgress={props.onProgress} onEnd={props.onEnd}
       onError={props.onError} onTracks={props.onTracks} onVideoSize={props.onVideoSize}
     />
   );

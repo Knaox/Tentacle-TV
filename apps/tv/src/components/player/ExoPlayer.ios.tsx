@@ -28,9 +28,8 @@ interface ExoPlayerProps {
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
-  /** Android seulement (tv-core `startGate`) : l'AVPlayer n'annonce rien, les props sont écartées. */
-  onFirstFrame?: (audioFollows: boolean) => void;
-  onAudioStarted?: () => void;
+  /** Android seulement (tv-core `startGate`) : l'AVPlayer n'annonce rien, la prop est écartée. */
+  onFirstFrame?: () => void;
   onEnd?: () => void;
   onError?: (error: string) => void;
   onTracks?: (tracks: MpvTrack[]) => void;
@@ -41,7 +40,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
   // `audioPassthrough` et `frameRate` sont extraits pour NE PAS être transmis : la
   // surface AVPlayer ne les connaît pas, et les laisser passer poserait un attribut
   // inconnu sur la vue native. Le tiret bas dit au linter que l'omission est voulue.
-  function ExoPlayer({ audioPassthrough: _audioPassthrough, frameRate: _frameRate, onFirstFrame: _onFirstFrame, onAudioStarted: _onAudioStarted, ...rest }, ref) {
+  function ExoPlayer({ audioPassthrough: _audioPassthrough, frameRate: _frameRate, onFirstFrame: _onFirstFrame, ...rest }, ref) {
     // `textTracks` + `subtitleIndex` transmis à la surface (sous-titres natifs).
     return <AVPlayerSurface ref={ref} {...rest} />;
   },

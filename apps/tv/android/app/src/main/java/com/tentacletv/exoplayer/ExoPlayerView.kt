@@ -46,6 +46,7 @@ class ExoPlayerView(
      *  construction du sélecteur ; un changement vaut pour la lecture suivante. */
     var tunneling = false
 
+    // Évènements, listener et sondeur : ExoEvents.kt, ExoPlaybackListener.kt.
     private val emitter = ExoEventEmitter(reactContext) { id }
     private val listener = ExoPlaybackListener(emitter, { player }) { keepScreenOn = false }
     private val poller = ExoProgressPoller(this, { player }, emitter) { progressInterval }
@@ -128,7 +129,6 @@ class ExoPlayerView(
                 exo.addListener(listener)
                 exo.addAnalyticsListener(loadMeter)
                 exo.addAnalyticsListener(startTrace)
-                exo.addAnalyticsListener(listener) // le départ réel du son (verrou de démarrage)
 
                 // Cadence connue → l'estimateur d'ExoPlayer est coupé (il lit des
                 // horodatages arrondis à la milliseconde et demande 24,39 ou 23,81) ;
