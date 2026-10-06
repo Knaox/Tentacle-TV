@@ -90,12 +90,18 @@ export class SessionRegistry {
   }
 
   /**
-   * Jellyfin est revenu : chaque connexion d'appareil rouvre tout de suite
-   * (son backoff pouvait attendre 30 s). Son `onOpen` relance les reports :
-   * Jellyfin a oublié les sessions.
+   * Jellyfin est revenu — son API répond (`jellyfinHealthProbe`) : chaque
+   * connexion d'appareil rouvre tout de suite (son backoff pouvait attendre
+   * 30 s), et chaque lecture se redit, Jellyfin les a oubliées. Pas
+   * seulement à la réouverture de la socket : mesuré (banc du 2026-10-06),
+   * elle rouvre PENDANT le démarrage, et la redite s'épuisait sur des 503
+   * avant que Jellyfin soit prêt (45 s de démarrage).
    */
   jellyfinBack(): void {
-    for (const device of this.devices.values()) device.link.reconnectNow();
+    for (const device of this.devices.values()) {
+      device.link.reconnectNow();
+      for (const e of device.connections) void e.reporter?.resync();
+    }
   }
 
   /**

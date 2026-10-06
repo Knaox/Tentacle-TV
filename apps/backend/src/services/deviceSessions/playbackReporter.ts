@@ -43,6 +43,8 @@ export const RESYNC_RETRY_MS = 3_000;
 export const RESYNC_ATTEMPTS = 5;
 /** Après la redite d'un transcodage : le temps que l'encodage renaisse (mesuré : 1 à 3 s). */
 export const RESYNC_TRANSCODE_REPORT_MS = 10_000;
+/** Une redite réussie depuis moins que ça vaut pour ce retour. */
+export const RESYNC_DEDUP_MS = 20_000;
 
 type Timer = ReturnType<typeof setTimeout>;
 
@@ -68,6 +70,8 @@ export class PlaybackReporter {
   private edgeTimer: Timer | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private resyncTimer: Timer | null = null;
+  private resyncedAt: number | null = null;
+  private resyncing = false;
   private queue: Promise<unknown> = Promise.resolve();
 
   constructor(
@@ -152,11 +156,23 @@ export class PlaybackReporter {
   async resync(attempt = 1): Promise<void> {
     if (this.state === null) return;
     const playback = this.state;
-    if (attempt === 1) logReport("redite après le retour de Jellyfin", playback);
+    if (attempt === 1) {
+      // Deux signaux pour un même retour (socket rouverte, santé « up ») : une
+      // redite — sauf si la précédente s'est épuisée sur des 503.
+      if (this.resyncing) return;
+      if (this.resyncedAt !== null && this.now() - this.resyncedAt < RESYNC_DEDUP_MS) return;
+      this.resyncing = true;
+      logReport("redite après le retour de Jellyfin", playback);
+    }
     const ok = await this.report("/Sessions/Playing");
     // Une autre lecture, ou plus rien, entre-temps : la redite n'a plus d'objet.
-    if (this.state === null || !samePlayback(this.state, playback)) return;
+    if (this.state === null || !samePlayback(this.state, playback)) {
+      this.resyncing = false;
+      return;
+    }
     if (ok) {
+      this.resyncing = false;
+      this.resyncedAt = this.now();
       await this.report("/Sessions/Playing/Progress");
       // Un transcodage : Jellyfin n'a pas encore relancé l'encodage (le
       // lecteur le redemande au segment suivant) et enregistre « DirectPlay »
@@ -164,7 +180,10 @@ export class PlaybackReporter {
       if (playback.playMethod !== "DirectPlay") this.schedulePostResync();
       return;
     }
-    if (attempt >= RESYNC_ATTEMPTS) return;
+    if (attempt >= RESYNC_ATTEMPTS) {
+      this.resyncing = false;
+      return;
+    }
     this.resyncTimer = setTimeout(() => {
       this.resyncTimer = null;
       void this.resync(attempt + 1);
@@ -238,6 +257,7 @@ export class PlaybackReporter {
     if (this.pingTimer !== null) clearInterval(this.pingTimer);
     if (this.resyncTimer !== null) clearTimeout(this.resyncTimer);
     this.resyncTimer = null;
+    this.resyncing = false;
     this.heartbeatTimer = null;
     this.edgeTimer = null;
     this.pingTimer = null;

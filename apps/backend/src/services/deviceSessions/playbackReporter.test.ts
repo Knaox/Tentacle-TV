@@ -6,6 +6,7 @@ import {
   HEARTBEAT_MS,
   MAX_EXTRAPOLATION_MS,
   PlaybackReporter,
+  RESYNC_DEDUP_MS,
   RESYNC_RETRY_MS,
   RESYNC_TRANSCODE_REPORT_MS,
   TRANSCODE_PING_MS,
@@ -234,6 +235,28 @@ describe("PlaybackReporter — ce qui mérite une requête", () => {
       "/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Progress", "/Sessions/Playing/Progress",
     ]);
     expect(rec.calls.at(-1)?.body?.PlayMethod).toBe("Transcode");
+  });
+
+  it("deux signaux pour un même retour (socket, santé) : une seule redite", async () => {
+    const { rec, r } = reporter();
+    await r.start(state());
+    await r.resync();
+    await r.resync();
+    expect(rec.paths()).toEqual(["/Sessions/Playing", "/Sessions/Playing", "/Sessions/Playing/Progress"]);
+    now += RESYNC_DEDUP_MS;
+    await r.resync();
+    expect(rec.paths().length).toBe(5);
+  });
+
+  it("une redite épuisée sur des 503 (socket rouverte en plein démarrage) n'empêche pas celle du retour", async () => {
+    const { rec, r } = reporter();
+    await r.start(state());
+    rec.failNext(5);
+    await r.resync();
+    for (let i = 0; i < 4; i++) await advance(RESYNC_RETRY_MS);
+    expect(rec.paths().filter((p) => p === "/Sessions/Playing").length).toBe(6);
+    await r.resync();
+    expect(rec.paths().slice(-2)).toEqual(["/Sessions/Playing", "/Sessions/Playing/Progress"]);
   });
 
   it("resync sans lecture, ou après l'arrêt : rien", async () => {

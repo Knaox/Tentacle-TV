@@ -283,7 +283,9 @@ describe("SessionRegistry — panne de Jellyfin", () => {
     devices[0].handlers.onLost();
     log.length = 0;
     registry.jellyfinBack();
-    expect(log).toEqual(["jeton reconnectNow"]);
+    // La socket rouvre ET la lecture se redit dès le retour, sans attendre la socket.
+    await vi.advanceTimersByTimeAsync(0);
+    expect(log[0]).toBe("jeton reconnectNow");
     devices[0].handlers.onOpen();
     await vi.advanceTimersByTimeAsync(0);
     // Jellyfin a oublié la lecture : un début, puis l'état — le lecteur, lui, ne recharge rien.
