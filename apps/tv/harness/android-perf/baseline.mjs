@@ -111,7 +111,7 @@ async function playWithExtras(device, player, proxy, scenario) {
 function summarizeExtras(rounds) {
   const avg = (pick) => rounds.reduce((n, r) => n + (pick(r) ?? 0), 0) / rounds.length;
   return {
-    memory: Object.fromEntries(["pss", "java", "native", "graphics", "code", "privateOther"].map((k) => [k, avg((r) => r.memory?.[k])])),
+    memory: Object.fromEntries(["pss", "java", "native", "graphics", "otherMtrack", "code", "privateOther", "views"].map((k) => [k, avg((r) => r.memory?.[k])])),
     views: avg((r) => r.hierarchy?.views),
     displayListKb: avg((r) => r.hierarchy?.displayListKb),
     images: rounds[0]?.images ?? {},

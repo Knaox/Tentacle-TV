@@ -242,6 +242,11 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
         privateOther: num(/Private Other:\s+(\d+)/),
         system: num(/System:\s+(\d+)/),
         views: num(/^\s*Views:\s+(\d+)/m),
+        // La mémoire du GPU, ligne par ligne : la Shield (Tegra) range ses
+        // textures dans « Other mtrack », que le résumé « Graphics » ne compte pas.
+        eglMtrack: num(/^\s*EGL mtrack\s+(\d+)/m) || 0,
+        glMtrack: num(/^\s*GL mtrack\s+(\d+)/m) || 0,
+        otherMtrack: num(/^\s*Other mtrack\s+(\d+)/m) || 0,
       };
     },
 
@@ -249,7 +254,7 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
      *  (`dumpsys gfxinfo`, « View hierarchy »), fenêtre par fenêtre. */
     viewHierarchy() {
       const text = shell(`dumpsys gfxinfo ${PACKAGE}`);
-      const windows = [...text.matchAll(/(\d+) views, ([\d.]+) kB of (?:display lists|render nodes)/g)].map((m) => ({ views: Number(m[1]), kb: Number(m[2]) }));
+      const windows = [...text.matchAll(/(\d+) views, ([\d.,]+) kB of (?:display lists|render nodes)/g)].map((m) => ({ views: Number(m[1]), kb: Number(m[2].replace(",", ".")) }));
       return { views: windows.reduce((n, w) => n + w.views, 0), displayListKb: windows.reduce((n, w) => n + w.kb, 0), windows: windows.length };
     },
 
