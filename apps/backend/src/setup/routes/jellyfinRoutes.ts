@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { hasPrisma } from "../../services/db";
+import { discoverJellyfins } from "../discovery/discover";
+import { hostInfo } from "../hostInfo";
 import { apiKeyWorks, authenticate, createTentacleKey, signOut, verifyApiKey } from "../jellyfin/accounts";
 import { clientJellyfinUrl } from "../jellyfin/clientUrl";
 import { probeJellyfin } from "../jellyfin/probe";
@@ -10,7 +12,7 @@ import { requireSetupSession } from "../setupGuard";
 import { prepareJellyfin, setupRuntime } from "../setupRuntime";
 import { connectSchema, initializeSchema, probeSchema } from "../setupSchemas";
 import { claimedAdminId, forgetClaim, saveJellyfin, storedJellyfin } from "../setupStore";
-import type { JellyfinProbeResult } from "../setupDiscoveryContract";
+import type { JellyfinDiscoveryResponse, JellyfinProbeResult } from "../setupDiscoveryContract";
 
 /**
  * Relier Jellyfin. Trois chemins, un seul résultat : l'adresse et la clé
@@ -37,6 +39,15 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
     const clientUrl = clientJellyfinUrl({ deployment: setupRuntime().deployment, browserHost: request.hostname, jellyfinUrl: found });
     return { url: found, version, serverName, blank, compatible, clientUrl };
   });
+
+  /**
+   * GET /api/setup/jellyfin/discover — les Jellyfin joignables, le vierge
+   * d'abord. Session exigée (installation ouverte), et peu d'appels : chacun
+   * lance une quarantaine de sondes bornées.
+   */
+  app.get("/jellyfin/discover", limited(6), async (request): Promise<JellyfinDiscoveryResponse> =>
+    discoverJellyfins({ deployment: setupRuntime().deployment, browserHost: request.hostname, containerized: hostInfo().containerized }),
+  );
 
   /**
    * POST /api/setup/jellyfin/prepare — relance le verrouillage du Jellyfin

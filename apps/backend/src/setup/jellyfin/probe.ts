@@ -81,14 +81,15 @@ function redirectedBase(from: string, location: string | null): string | null {
   return normalizeJellyfinUrl(`${target.protocol}//${target.host}${target.pathname.slice(0, -INFO_PATH.length)}`);
 }
 
-export async function probeJellyfin(input: string): Promise<ProbedJellyfin> {
+/** `timeoutMs` : plus court pour la découverte, qui sonde des adresses où rien n'écoute. */
+export async function probeJellyfin(input: string, timeoutMs = 4_000): Promise<ProbedJellyfin> {
   let url = normalizeJellyfinUrl(input);
-  let reply = await jellyfinRequest(url, INFO_PATH, { timeoutMs: 4_000, maxBytes: 64 * 1024 });
+  let reply = await jellyfinRequest(url, INFO_PATH, { timeoutMs, maxBytes: 64 * 1024 });
   if (reply.status >= 300 && reply.status < 400) {
     const next = redirectedBase(url, reply.location);
     if (!next) throw new SetupError("jf_not_jellyfin");
     url = next;
-    reply = await jellyfinRequest(url, INFO_PATH, { timeoutMs: 4_000, maxBytes: 64 * 1024 });
+    reply = await jellyfinRequest(url, INFO_PATH, { timeoutMs, maxBytes: 64 * 1024 });
   }
   if (reply.status !== 200) throw new SetupError("jf_not_jellyfin");
 
