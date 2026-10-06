@@ -45,6 +45,7 @@ have access to the machine.
 | A guest on your Wi-Fi gets there first | they would see it; you'd notice at once (you can't open the wizard without the code). Finish setup right after starting the server, or `tentacle setup reset` and start again |
 | Someone guesses the code | 60 bits, 5 tries per minute per address, a new code after 10 wrong ones |
 | The wizard used after setup | closed for good: every route answers 404 |
+| A tampered browser (or a direct API call) skips a step: creates an account or a library on a Jellyfin that was already set up, skips choosing the Jellyfin | the **server** holds the path (`setupFlowContract.ts`): the chosen Jellyfin, probed by the server, decides it; any step outside it is refused (`step_refused`) |
 | The wizard turned against your network (SSRF) | Jellyfin is only looked for at private addresses or the one your browser typed, while setup is open, with a session; link-local and cloud metadata are refused at connection time |
 
 ## The trade-off we accepted

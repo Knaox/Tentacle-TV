@@ -73,17 +73,25 @@ One question per screen; the steps adapt to the stack it detects.
    machine you opened the wizard from and the container's gateway on the usual ports), grouped as **New** and
    **Already set up**, each with its name, address, port and version. From a Docker bridge network the
    discovery only sees this machine: Jellyfin on another device is entered by hand.
-   - *tentacle-full*: the stack's own Jellyfin comes **first** ("In this stack") and is selected. It was
+   This step is **never skipped**, even with a single Jellyfin, and **nothing is picked for you**: a
+   "Recommended" badge shows the one Tentacle suggests, you tick it yourself.
+   - *tentacle-full*: the stack's own Jellyfin comes **first** ("In this stack"), recommended. It was
      **locked at startup** (nobody else can claim it) and is reached by its internal address. The others
      can still be chosen; if you pick another one, the stack's Jellyfin stays locked, unused;
-   - elsewhere, the new one is selected for you; pick another, or enter an address.
-5. **Account** — **New**: you create Jellyfin's administrator account (which is also Tentacle's), with the
-   metadata language and country (suggested from your browser). **Already set up**: you sign in with an
-   EXISTING administrator account (Tentacle creates its API key itself), or paste an API key; no account is
-   created.
-6. **Libraries** (new Jellyfin) — *tentacle-full* proposes **Movies** (`/media/films`) and **Shows**
-   (`/media/series`); browse Jellyfin's folders to add others.
-   **Recommended settings** (already set up Jellyfin, instead) — Tentacle creates **no** library; it lists the
+   - elsewhere, the new one is recommended; pick the one you want, or enter an address.
+
+   Your choice sets what follows — **two paths**, enforced by the server (it refuses any step outside the
+   current path, whatever the browser does). The chosen Jellyfin stays shown at the top of each screen
+   ("Jellyfin “Living room” · already set up"). Coming back to this step to pick another one recomputes
+   the path; what was prepared for the previous one is dropped (an account already created on a Jellyfin
+   stays there).
+5. **New Jellyfin — your administrator account**: you create it (it is also Tentacle's), with the metadata
+   language and country (suggested from your browser).
+   **Already set up Jellyfin — sign in**: you sign in with an administrator account that EXISTS (Tentacle
+   creates its API key itself). No account is created, neither here nor later.
+6. **New Jellyfin — libraries**: real Jellyfin libraries, created in Jellyfin. *tentacle-full* proposes
+   **Movies** (`/media/films`) and **Shows** (`/media/series`); browse Jellyfin's folders to add others.
+   **Already set up Jellyfin — recommended settings** (no libraries screen) — Tentacle creates **no** library; it lists the
    existing ones and offers, all **optional** and untickable, the settings the dashboard recommends too:
    skip detection (Intro Skipper, TheIntroDB, SkipMe.db), metadata language, seek bar previews, real-time
    monitoring, HEVC encoding (only with a hardware encoder). Each shows "currently → recommended"; what you
