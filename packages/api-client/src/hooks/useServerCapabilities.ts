@@ -32,15 +32,19 @@ export function useServerCapability(capability: ServerCapability): boolean {
 export interface ServerCapabilityGateProps {
   capability: ServerCapability;
   children?: ReactNode;
-  /** Ce qui se rend à la place — rien par défaut. */
+  /** Ce qui se rend quand le serveur ne la déclare pas (le comportement d'avant,
+   *  une redirection) — rien par défaut. */
   fallback?: ReactNode;
 }
 
 /**
  * Le composant de garde : rend `children` seulement si le serveur déclare la
- * capacité. Sans DOM ni vue native — le même pour le web, le mobile et la TV.
+ * capacité, `fallback` une fois l'absence établie, et RIEN tant que la
+ * configuration n'a pas répondu (ni l'un ni l'autre ne clignote). Sans DOM ni
+ * vue native — le même pour le web, le mobile et la TV.
  */
 export function ServerCapabilityGate({ capability, children, fallback = null }: ServerCapabilityGateProps) {
-  const allowed = useServerCapability(capability);
-  return createElement(Fragment, null, allowed ? children : fallback);
+  const { capabilities, settled } = useServerCapabilities();
+  if (capabilities.has(capability)) return createElement(Fragment, null, children);
+  return settled ? createElement(Fragment, null, fallback) : null;
 }

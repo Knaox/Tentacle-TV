@@ -13,6 +13,8 @@ import {
   Users,
 } from "lucide-react";
 import type { SettingsShellSection } from "@tentacle-tv/ui";
+import { useServerCapabilities } from "@tentacle-tv/api-client";
+import type { ServerCapability } from "@tentacle-tv/shared";
 
 /**
  * Les sections de l'administration — une seule liste pour le rail de la
@@ -25,18 +27,24 @@ import type { SettingsShellSection } from "@tentacle-tv/ui";
  *
  * Les libellés sont des clés `nav*` propres au rail : les titres de pages
  * appartiennent aux pages, qui peuvent les reformuler sans toucher au rail.
+ *
+ * Une section qui exige une capacité du serveur (`capability`) n'existe que
+ * s'il la déclare (`serverCapabilities.ts`) : un serveur d'avant ne la montre pas.
  */
 
 export const OVERVIEW_ID = "overview";
 const ICON = 17;
 
+type AdminSection = SettingsShellSection & { capability?: ServerCapability };
+
 export function useAdminSections(): SettingsShellSection[] {
   const { t } = useTranslation("admin");
+  const { capabilities } = useServerCapabilities();
   return useMemo(() => {
     const activity = t("groupActivity");
     const accounts = t("groupAccounts");
     const server = t("groupServer");
-    return [
+    const sections: AdminSection[] = [
       { id: OVERVIEW_ID, label: t("navOverview"), icon: <LayoutDashboard size={ICON} /> },
       { id: "sessions", label: t("navSessions"), icon: <MonitorPlay size={ICON} />, group: activity },
       { id: "tickets", label: t("navTickets"), icon: <LifeBuoy size={ICON} />, group: activity },
@@ -44,11 +52,16 @@ export function useAdminSections(): SettingsShellSection[] {
       { id: "invites", label: t("navInvites"), icon: <Mail size={ICON} />, group: accounts },
       { id: "downloads", label: t("navDownloads"), icon: <HardDriveDownload size={ICON} />, group: accounts },
       { id: "services", label: t("navServices"), icon: <Server size={ICON} />, group: server },
-      { id: "remote-access", label: t("navRemoteAccess"), icon: <Globe size={ICON} />, group: server },
+      {
+        id: "remote-access", label: t("navRemoteAccess"), icon: <Globe size={ICON} />, group: server, capability: "admin.remoteAccess",
+      },
       { id: "metadata", label: t("navMetadata"), icon: <Database size={ICON} />, group: server },
       { id: "plugins", label: t("navPlugins"), icon: <Puzzle size={ICON} />, group: server },
     ];
-  }, [t]);
+    return sections
+      .filter((section) => !section.capability || capabilities.has(section.capability))
+      .map(({ capability: _capability, ...section }) => section);
+  }, [t, capabilities]);
 }
 
 /** La route d'une section : la vue d'ensemble est l'index `/admin`. */
