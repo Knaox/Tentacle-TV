@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cachedBitrate, primeBitrateMeasure, useJellyfinClient } from "@tentacle-tv/api-client";
+import { bitrateForItem, cachedBitrate, primeBitrateMeasure, useJellyfinClient } from "@tentacle-tv/api-client";
 import { buildQualityLadder, capForBitrate, findPreset, isPresetOffered } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import { MOBILE_BITRATE_MEASURE } from "@/utils/bitrateMeasureOptions";
@@ -31,6 +31,9 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
    *  (la mesure de la voie du flux au moment T) quand la clé est « original »
    *  non désarmée. */
   presetForFetch: () => QualityPreset;
+  /** Avant de résoudre le flux : l'épisode suivant refait SA mesure de débit
+   *  (`bitrateForItem`, api-client), le premier titre n'attend jamais. */
+  settleBitrate: () => Promise<void>;
   /** Choix du menu : désarme le cap pour l'item, puis applique. */
   selectQualityManual: (key: QualityKey) => QualityPreset;
   /** Descente d'un palier pour un retry de transcodage (logique historique) —
@@ -84,6 +87,10 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
     return cap ?? manual;
   }, [qualityKey, qualityPresets, itemId, mediaSource, client]);
 
+  const settleBitrate = useCallback(async () => {
+    await bitrateForItem(client, itemId, MOBILE_BITRATE_MEASURE);
+  }, [client, itemId]);
+
   const selectQualityManual = useCallback(
     (key: QualityKey): QualityPreset => {
       disarmedRef.current = itemId;
@@ -114,6 +121,7 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
     autoCap: autoCapActive && appliedCap ? { bitrate: appliedCap.bitrate, measuredBps: capMeasured } : null,
     autoModeArmed,
     presetForFetch,
+    settleBitrate,
     selectQualityManual,
     degradeOneTier,
   };

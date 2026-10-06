@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { primeBitrateMeasure, cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
+import { primeBitrateMeasure, cachedBitrate, useItemBitrateReady, useJellyfinClient } from "@tentacle-tv/api-client";
 import { capForBitrate } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import { TV_BITRATE_MEASURE } from "../utils/bitrateMeasureOptions";
@@ -40,6 +40,8 @@ export function useTVAutoQualityCap(args: {
   /** Choix MANUEL dans le menu (y compris re-choisir « Originale ») : le cap se
    *  désarme pour cet item — l'utilisateur a repris la main, on ne la reprend plus. */
   disarm: () => void;
+  /** L'épisode suivant attend sa NOUVELLE mesure (`useItemBitrateReady`) : pas d'URL avant. */
+  pending: boolean;
 } {
   const { mediaSource, itemId, qualityKey, startTicks } = args;
   const client = useJellyfinClient();
@@ -55,11 +57,15 @@ export function useTVAutoQualityCap(args: {
   // Photographie par (item, session) : re-prise quand startTicks bouge — un
   // reload reconstruit le flux de toute façon, c'est le seul moment où changer
   // de palier ne coûte rien de plus.
+  // Un autre titre que celui qui a lu la mesure (l'épisode suivant) la refait
+  // d'abord : sinon il jouait sur la photographie du précédent, et ne revenait
+  // jamais en lecture directe quand la connexion s'était améliorée.
+  const { pending } = useItemBitrateReady(itemId, true, TV_BITRATE_MEASURE);
   const sessionKey = `${itemId}|${startTicks}`;
   const evaluatedRef = useRef<string | undefined>(undefined);
   const capRef = useRef<QualityPreset | null>(null);
   const measuredRef = useRef<number | null>(null);
-  if (sessionKey !== evaluatedRef.current && mediaSource) {
+  if (!pending && sessionKey !== evaluatedRef.current && mediaSource) {
     evaluatedRef.current = sessionKey;
     measuredRef.current = cachedBitrate();
     capRef.current = capForBitrate(mediaSource, measuredRef.current);
@@ -75,7 +81,7 @@ export function useTVAutoQualityCap(args: {
   const disarm = useCallback(() => { disarmedRef.current = itemId; }, [itemId]);
 
   const active = qualityKey === "original" && cap != null && disarmedRef.current !== itemId;
-  if (!active || !cap) return { active: false, disarm };
+  if (!active || !cap) return { active: false, disarm, pending };
   return {
     active: true,
     key: cap.key,
@@ -85,5 +91,6 @@ export function useTVAutoQualityCap(args: {
     measuredBps: measuredRef.current ?? undefined,
     sourceBps: mediaSource?.Bitrate ?? undefined,
     disarm,
+    pending,
   };
 }

@@ -136,7 +136,7 @@ export function usePlayerStreamPipeline(args: {
     forceTranscode, isTranscodingQuality: transcodingQuality,
     maxBitrate: effectiveMaxBitrate, maxHeight: effectiveMaxHeight,
     isDirectPlay: requestedDirectPlay,
-    reloadNonce, ready: !!item || itemFailed,
+    reloadNonce, ready: (!!item || itemFailed) && !cap.pending, // l'épisode suivant attend sa mesure
   });
   // La relance du flux à une position, même forme, en rechargement doux —
   // retour au premier plan, reprise après coupure (contrat : `streamRestart.ts`).

@@ -132,6 +132,8 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
     if (!userId) return;
     const currentFetch = ++fetchIdRef.current;
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    if (opts?.maxBitrate === undefined) await quality.settleBitrate();
+    if (fetchIdRef.current !== currentFetch) return;
 
     // Palier servi : celui des opts (changement/retry explicites), sinon la
     // photographie du moment — cap auto compris quand le mode est armé.
