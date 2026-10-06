@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo } from "react-native";
-import { useJellyfinOutage } from "@tentacle-tv/api-client";
+import { useJellyfinOutage, useOutageNotice } from "@tentacle-tv/api-client";
 import { jellyfinOutageCopy, type QualityPreset } from "@tentacle-tv/shared";
 import { activatesTroublePanel, focusInTrouble, TROUBLE_REFOCUS_MS, troubleLeaveReturnsToOsd } from "@tentacle-tv/tv-core";
 import { noteSkipFocusClaim, returnFocusToOsd } from "../../components/player/focus/osdFocusBus";
@@ -10,6 +10,7 @@ import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlaybackTroubleModel, TroubleActionKey } from "../../redesign/screens/player/playbackTroubleTypes";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { lowerQualityKey, noticeOf, panelOf, RESUMED_NOTICE, SERVER_FALLBACK_NOTICE, troubleModelOf } from "./playbackTroubleModel";
+import { useOutageNoticeCountdown } from "./useOutageNoticeCountdown";
 
 /** « La lecture a repris » : le temps de le lire. */
 const RESUMED_NOTICE_MS = 4000;
@@ -115,6 +116,9 @@ export function usePlaybackTrouble(args: {
   const outage = useJellyfinOutage();
   const outageCopy = outage.phase === "outage" || outage.phase === "long" ? jellyfinOutageCopy(outage.state, false) : null;
   const outageTitle = outageCopy ? t(outageCopy.titleKey) : null;
+  // Son bandeau est TEMPORAIRE, compte à rebours visible (la règle des
+  // lecteurs, `useOutageNotice`) ; ensuite, seulement avec l'habillage.
+  const outageLeft = useOutageNoticeCountdown(useOutageNotice());
   const model = useMemo(() => {
     const panel = panelOf({
       t, phase, now, position, nextCheckAt: trouble.nextCheckAt, checking: trouble.checking,
@@ -122,11 +126,15 @@ export function usePlaybackTrouble(args: {
     });
     let notice = noticeOf(t, phase, outageTitle);
     if (notice && tentacleSince !== null && !tentacleFresh && !osdVisible) notice = null;
+    if (notice && phase.kind === "degraded" && phase.cause === "media" && outageTitle) {
+      if (outageLeft !== null) notice = { ...notice, countdown: t("sessions:vanishesIn", { count: outageLeft }) };
+      else if (!osdVisible) notice = null;
+    }
     if (!panel && !notice && fallbackShown) notice = SERVER_FALLBACK_NOTICE(t);
     if (!panel && !notice && resumedShown) notice = RESUMED_NOTICE(t);
     return troubleModelOf(panel, notice);
   }, [t, phase, now, position, trouble.nextCheckAt, trouble.checking, trouble.stillDown, lower, onSelectQuality, active,
-    tentacleSince, tentacleFresh, osdVisible, resumedShown, fallbackShown, outageTitle]);
+    tentacleSince, tentacleFresh, osdVisible, resumedShown, fallbackShown, outageTitle, outageLeft]);
 
   // Un bouton qui paraît ou part (« Baisser la qualité ») réordonne les vues
   // natives, et UIKit perd le focus de celle qu'il déplace : panneau activé,

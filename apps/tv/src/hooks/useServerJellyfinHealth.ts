@@ -10,7 +10,10 @@ import { plog } from "../utils/playerDiag";
  * L'état de Jellyfin dit par le serveur (`server:jellyfin`), appliqué à la
  * reprise de la lecture (`usePlaybackRecovery`) — la décision est dans
  * tv-core (`serverOutage.ts`) : en panne, une sonde qui fait foi ; au retour,
- * une relance du flux à la position, mêmes pistes, nouvelle session.
+ * « le chemin répond », et rien ne se relance tant que l'image tient sur sa
+ * réserve (le serveur redit la lecture à Jellyfin) — une relance à la
+ * position, mêmes pistes, nouvelle session, seulement si le flux a été perdu
+ * pendant la panne ; une image arrêtée suit la reprise ordinaire.
  */
 export function useServerJellyfinHealth(
   state: MutableRefObject<RecoveryState>,
@@ -37,10 +40,12 @@ export function useServerJellyfinHealth(
     const s = src.current;
     // Le chemin répond : la décision le sait sans attendre sa sonde.
     Object.assign(st, { source: "ok", culprit: null, checkedAt: Date.now() });
+    const lost = st.lostSince !== null;
     const go = restartOnJellyfinReturn({
-      now: Date.now(), started: !!s?.s.hasStarted, ended: !!s?.s.endedRef.current, restarting: st.restarting, lastRestartAt: st.lastRestartAt,
+      now: Date.now(), started: !!s?.s.hasStarted, ended: !!s?.s.endedRef.current, restarting: st.restarting, lastRestartAt: st.lastRestartAt, lost,
     });
-    plog("recover", `Jellyfin de retour, dit par le serveur → ${go ? "relance du flux" : "relance déjà faite"}`);
+    const why = go ? "relance du flux (perdu pendant la panne)" : lost ? "relance déjà faite" : "lecture gardée, rien n'est rechargé";
+    plog("recover", `Jellyfin de retour, dit par le serveur → ${why}`);
     if (go) void restart("network");
     else tick.current();
   }, [outage.recoveries]); // eslint-disable-line react-hooks/exhaustive-deps

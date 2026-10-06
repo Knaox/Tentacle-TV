@@ -67,6 +67,7 @@ const Notice = memo(function Notice({ model, appear }: { model: TroubleNoticeMod
           <Text style={styles.noticeTitle} numberOfLines={1}>{model.title}</Text>
           {model.detail ? <Text style={styles.noticeDetail} numberOfLines={1}>{model.detail}</Text> : null}
         </View>
+        {model.countdown ? <Text style={styles.noticeCountdown} numberOfLines={1}>{model.countdown}</Text> : null}
       </GlassSurface>
     </Animated.View>
   );
@@ -152,6 +153,7 @@ const styles = StyleSheet.create({
   noticeText: { gap: 2, flexShrink: 1 },
   noticeTitle: { ...fonts.semibold, fontSize: 26, color: colors.text },
   noticeDetail: { ...fonts.medium, fontSize: 22, color: white(0.72), fontVariant: ["tabular-nums"] },
+  noticeCountdown: { ...fonts.medium, fontSize: 20, color: white(0.5), fontVariant: ["tabular-nums"], marginLeft: 12 },
   center: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   back: { position: "absolute", top: BACK_TOP, left: SAFE.x },
   // Toute la largeur, sous la croix et au-dessus du panneau (centré, plus de 320 pt du haut).
