@@ -263,6 +263,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     useExoPlayer: p.useExoPlayer, isDirectPlay, prismTextTrackIndex: p.prismTextTrackIndex, frameRate: p.frameRate, exoRef, mpvRef,
     backgroundRef, playerStyle, audioTracksList, subtitleTracksList, audioIndex: p.audioIndex, subtitleIndex: p.subtitleIndex,
     qualityKey: quality.qualityKey, sourceQuality: p.sourceQuality, autoCapActive: p.autoCapActive, autoCapReason: p.autoCapReason,
+    deviceNotice: p.deviceNotice,
     overlay: playback.overlay, onSkipSegment: playback.skipNow, onDismissSegment: playback.dismissOverlay,
     onPlayNextNow: playback.playNow, autoPlay, controls,
     onLoad: handleLoad, onFirstFrame: events.handleFirstFrame, onProgress: handleProgress, onEnd: handleEnd,

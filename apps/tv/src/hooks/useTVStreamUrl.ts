@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
-  BURN_IN_SUBTITLE_CODECS, EXOPLAYER_ENGINE, MPV_ENGINE, SAFE_FALLBACK_ENGINE, TICKS_PER_SECOND,
+  BURN_IN_SUBTITLE_CODECS, SAFE_FALLBACK_ENGINE, TICKS_PER_SECOND, exoPlayerEngineFor, mpvEngineFor,
 } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { useDeviceMediaProfile } from "../lib/deviceMediaProfile";
 import { randomSessionId } from "../utils/playerHelpers";
+import { useDeviceConversion } from "./useDeviceConversion";
 import type { PrismStart } from "../utils/prismCoreStart";
 import { resolveRestartAt, withRestartMark, type RestartAt, type RestartOutcome } from "./streamRestart";
 
@@ -12,7 +14,12 @@ import { resolveRestartAt, withRestartMark, type RestartAt, type RestartOutcome 
  * Construit l'URL Jellyfin selon le mode de lecture :
  *  - Qualité user transcodée → maxBitrate + maxHeight/Width depuis le preset
  *  - forceTranscode codec → fallback 8 Mbps (compat MPV)
+ *  - Ce que CET appareil ne décode pas en matériel (l'AV1 d'une box qui n'en a
+ *    pas…) → servi par le serveur, lu par ExoPlayer (`useDeviceConversion`)
  *  - Direct play → URL Static avec sourceVideoCodec
+ *
+ * Les moteurs déclarent ce que l'appareil décode (`exoPlayerEngineFor`,
+ * `mpvEngineFor`, shared) : sans profil, leur déclaration fixe, comme avant.
  *
  * Génère un `playSessionId` stable tant qu'on reste en direct play (`undefined`)
  * et un UUID frais pour chaque session transcodée.
@@ -51,6 +58,9 @@ export function useTVStreamUrl(args: {
     reloadNonce, ready,
   } = args;
   const client = useJellyfinClient();
+  const device = useDeviceMediaProfile();
+  const exoEngine = useMemo(() => exoPlayerEngineFor(device.profile), [device.profile]);
+  const mpvEngine = useMemo(() => mpvEngineFor(device.profile), [device.profile]);
 
   const sourceVideoCodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
   // La piste lue : copiée telle quelle quand le moteur la décode (`planStream`, shared).
@@ -77,13 +87,17 @@ export function useTVStreamUrl(args: {
     return Promise.resolve("ok");
   };
 
+  // Ce que l'appareil ne lit pas tel quel : le serveur le sert (shared `devicePlaybackVerdict`).
+  const conversion = useDeviceConversion(device.profile, streams, sourceAudio);
+  const directPlay = isDirectPlay && !conversion;
+
   const playSessionId = useMemo(() => {
-    if (isDirectPlay) return undefined;
+    if (directPlay) return undefined;
     return randomSessionId();
-  }, [audioIndex, burnInIndex, startTicks, isDirectPlay, forceTranscode, isTranscodingQuality, restartAt?.mark]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [audioIndex, burnInIndex, startTicks, directPlay, forceTranscode, isTranscodingQuality, restartAt?.mark, conversion?.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
-    if (!itemId || !ready) return null;
+    if (!itemId || !ready || device.pending) return null;
     // Fragment de position de départ — jamais envoyé en HTTP, lu par le natif
     const from = restartAt ? restartAt.at : (startSeconds ?? 0);
     const startFragment = from > 1 ? `#tnt-start=${Math.floor(from)}` : "";
@@ -95,7 +109,7 @@ export function useTVStreamUrl(args: {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false,
         maxBitrate, maxHeight,
         startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
-        engine: forceTranscode ? MPV_ENGINE : EXOPLAYER_ENGINE, sourceAudio,
+        engine: forceTranscode ? mpvEngine : exoEngine, sourceAudio,
       }));
     }
     if (forceTranscode) {
@@ -108,15 +122,25 @@ export function useTVStreamUrl(args: {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, maxBitrate: 8_000_000,
         startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
         transcodeReasons: [burnIn ? "SubtitleCodecNotSupported" : "DirectPlayError"],
-        engine: burnIn ? MPV_ENGINE : SAFE_FALLBACK_ENGINE, sourceAudio,
+        engine: burnIn ? mpvEngine : SAFE_FALLBACK_ENGINE, sourceAudio,
+      }));
+    }
+    if (conversion) {
+      // Sans palier ni repli : ExoPlayer lit ce que le serveur sert — l'image
+      // copiée quand elle se décode, sinon réencodée (HEVC d'abord), à la
+      // définition de l'écran au plus ; la raison dite à Jellyfin.
+      return mark(client.getStreamUrl(itemId, {
+        mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, useProgressiveRemux: false,
+        startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
+        transcodeReasons: conversion.reasons, engine: exoEngine, sourceAudio, outputMaxHeight: conversion.maxHeight,
       }));
     }
     return mark(client.getStreamUrl(itemId, {
       mediaSourceId, directPlay: true, playSessionId, sourceVideoCodec,
     }));
-  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce, ready, restartAt]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce, ready, restartAt, device.pending, exoEngine, mpvEngine, conversion?.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
+  // `isDirectPlay` est décidé côté client sur Android (profil de l'appareil compris), renvoyé pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
   // `isPrismCore`/`prism`/`retryMuxed` : PrismCore = tvOS uniquement, inertes ici ; `failed`
   // toujours false (URL construite en synchrone, aucun fetch qui puisse échouer) : parité `.ios.ts`.
@@ -124,5 +148,13 @@ export function useTVStreamUrl(args: {
   // et le type de retour perdrait les champs de `PrismStart` pour les consommateurs.)
   const prism = undefined as PrismStart | undefined;
   const retryMuxed = async (_positionSec: number): Promise<boolean> => false;
-  return { streamUrl, playSessionId, isDirectPlay, isPrismCore: false, prism, failed: false, retryMuxed, restart };
+  // Ce que dit le flux servi pour l'appareil (seulement quand c'est lui qui est
+  // lu, ni palier ni repli) : `isDirectStream` pour le rapport de lecture,
+  // `deviceNotice` pour le message. Android seulement : la variante tvOS ne
+  // les rend pas (lus `?? false` / `?? null`).
+  const converting = isDirectPlay && conversion !== null;
+  return {
+    streamUrl, playSessionId, isDirectPlay: directPlay, isPrismCore: false, prism, failed: false, retryMuxed, restart,
+    isDirectStream: converting && conversion?.method === "DirectStream", deviceNotice: converting ? conversion?.notice ?? null : null,
+  };
 }
