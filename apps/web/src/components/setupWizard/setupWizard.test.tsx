@@ -46,7 +46,7 @@ vi.stubGlobal("history", { replaceState: () => undefined });
 const { WelcomeScreen, CodeScreen } = await import("./IntroScreens");
 const { JellyfinScreen } = await import("./JellyfinScreen");
 const { AccountScreen } = await import("./AccountScreen");
-const { RecapScreen } = await import("./RecapApplyScreens");
+const { ApplyScreen, RecapScreen } = await import("./RecapApplyScreens");
 const { DoneScreen } = await import("./FinishScreens");
 const { QrCode } = await import("./QrCode");
 type Wizard = import("./useWizard").Wizard;
@@ -82,6 +82,7 @@ function wizard(data: Partial<Wizard["data"]> = {}): Wizard {
       existing: [],
       plans: [],
       outcomes: null,
+      segments: undefined,
       session: null,
       resumed: false,
       needsCode: true,
@@ -170,6 +171,21 @@ describe("les écrans de l'assistant", () => {
     expect(out).toContain("Knaoxtest");
     expect(out).toContain("Films (/media/films)");
     expect(out).not.toContain("value=\"x\"");
+  });
+
+  it("l'installation règle d'abord la détection des passages ; un échec se dit et n'arrête rien", () => {
+    const first = html(<ApplyScreen wizard={wizard({ step: "apply" } as never)} onSession={() => undefined} />);
+    expect(first.indexOf("segmentPlugins:wizardLine")).toBeGreaterThan(-1);
+    expect(first.indexOf("segmentPlugins:wizardLine")).toBeLessThan(first.indexOf("applyLibraries"));
+    const skipped = html(<ApplyScreen wizard={wizard({ segments: null })} onSession={() => undefined} />);
+    expect(skipped).toContain("segmentPlugins:wizardSkipped");
+    const run = {
+      phase: "done" as const, running: false, startedAt: "t", finishedAt: "t", restart: "done" as const, configured: true, error: null,
+      plugins: [{ key: "introSkipper" as const, outcome: "installed" as const }, { key: "theIntroDb" as const, outcome: "repo-offline" as const }, { key: "skipMeDb" as const, outcome: "present" as const }],
+    };
+    const done = html(<ApplyScreen wizard={wizard({ segments: run })} onSession={() => undefined} />);
+    expect(done).toContain("outcome_repo-offline");
+    expect(done).toContain("restart_done");
   });
 
   it("et maintenant : les dossiers de l'hôte, le QR code, les applications", () => {

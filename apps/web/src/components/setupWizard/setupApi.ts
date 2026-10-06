@@ -124,6 +124,9 @@ export const setupApi = {
   connect: (body: JellyfinConnectRequest) => call<{ success: true }>("/jellyfin/connect", { method: "POST", body }),
   browse: (path?: string) => call<BrowseResult>(`/jellyfin/browse${path ? `?path=${encodeURIComponent(path)}` : ""}`),
   libraries: () => call<ExistingLibrary[]>("/jellyfin/libraries"),
+  /** La détection des passages : lancée en fond, suivie par `segmentsStatus`. */
+  startSegments: () => call<unknown>("/jellyfin/segments", { method: "POST" }),
+  segmentsStatus: () => call<unknown>("/jellyfin/segments"),
   createLibraries: (body: LibrariesRequest) => call<LibraryOutcome[]>("/jellyfin/libraries", { method: "POST", body }),
   async complete(body: SetupCompleteRequest): Promise<SetupCompleteResponse> {
     const result = await call<SetupCompleteResponse>("/complete", { method: "POST", body, withCredentials: true });
