@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
 import type { SetupCompleteResponse } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cls } from "../../pages/adminUtils";
+import { Field } from "../admin/services/Field";
+import { hostAndPort, isValidClientUrl, serverState } from "./jellyfinChoice";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
@@ -11,11 +13,21 @@ import { WizardFrame } from "./WizardFrame";
 
 const primary = `${cls.bp} w-full sm:w-auto`;
 
+/**
+ * Tout ce qui va être fait, et l'adresse de Jellyfin que recevront les
+ * applications (lecture directe) : proposée d'après l'adresse de cette page et
+ * le port publié, modifiable ici — jamais un nom Docker.
+ */
 export function RecapScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   const { data } = wizard;
+  const [clientUrl, setClientUrl] = useState(data.clientUrl);
+  const invalid = clientUrl.trim() !== "" && !isValidClientUrl(clientUrl);
+  const jellyfin = data.probe
+    ? t("recapJellyfinLine", { name: data.probe.serverName, version: data.probe.version, ...hostAndPort(data.probe.url), state: t(`jfState_${serverState(data.probe)}`) })
+    : data.jellyfinUrl || data.context?.jellyfin.url || "—";
   const rows: Array<[string, string]> = [
-    [t("recapJellyfin"), data.probe ? `${data.probe.serverName} · ${data.probe.version} · ${data.jellyfinUrl}` : data.jellyfinUrl || data.context?.jellyfin.url || "—"],
+    [t("recapJellyfin"), jellyfin],
     [t("recapAccount"), data.credentials?.username ?? "—"],
     [t("recapLocale"), `${t(`lang_${data.locale.language}`)} · ${t(`country_${data.locale.country}`)}`],
     [t("recapLibraries"), data.plans.length ? data.plans.map((p) => `${p.name} (${p.paths[0]})`).join(" · ") : t("recapNothing")],
@@ -30,9 +42,29 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
           </div>
         ))}
       </dl>
-      <button type="button" onClick={wizard.next} className={`${primary} mt-6`}>
-        {t("recapApply")}
-      </button>
+      <form
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          wizard.patch({ clientUrl: clientUrl.trim().replace(/\/+$/, "") });
+          wizard.next();
+        }}
+        className="mt-6 space-y-6"
+      >
+        <Field
+          label={t("recapClientUrl")}
+          hint={t("recapClientUrlHint")}
+          value={clientUrl}
+          onChange={(e) => setClientUrl(e.target.value)}
+          error={invalid ? t("recapClientUrlInvalid") : null}
+          placeholder="http://192.168.1.20:8096"
+          inputMode="url"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <button type="submit" disabled={invalid} className={primary}>
+          {t("recapApply")}
+        </button>
+      </form>
     </WizardFrame>
   );
 }
@@ -71,6 +103,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
         deviceId: client.getLoginDeviceId(),
         client: client.getClientName(),
         device: client.getDeviceName(),
+        ...(data.clientUrl ? { jellyfinClientUrl: data.clientUrl } : {}),
       });
       patch({ session, credentials: null });
       onSession(session);
@@ -79,7 +112,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
     } catch (err) {
       setError(err instanceof SetupApiError ? err.code : "internal");
     }
-  }, [data.outcomes, data.plans, data.locale, data.credentials, client, patch, onSession, next]);
+  }, [data.outcomes, data.plans, data.locale, data.credentials, data.clientUrl, client, patch, onSession, next]);
 
   useEffect(() => {
     if (started.current) return;

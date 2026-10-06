@@ -19,14 +19,18 @@ function ctx(over: Partial<SetupContext> = {}): SetupContext {
 }
 
 describe("les étapes de l'assistant", () => {
-  it("pile complète, Jellyfin vierge : ni base ni compte final", () => {
-    expect(wizardSteps({ needsDatabase: false, mode: "initialize", askFinalAccount: false })).toEqual([
-      "welcome", "code", "jellyfin", "account", "locale", "libraries", "recap", "apply", "remote", "done",
+  it("pile complète ouverte du réseau local, Jellyfin vierge : ni code, ni base, ni compte final", () => {
+    expect(wizardSteps({ needsCode: false, needsDatabase: false, mode: "initialize", askFinalAccount: false })).toEqual([
+      "welcome", "jellyfin", "account", "libraries", "recap", "apply", "remote", "done",
     ]);
   });
 
+  it("le code n'est demandé qu'à qui n'arrive pas directement du réseau local", () => {
+    expect(wizardSteps({ needsCode: true, needsDatabase: false, mode: "initialize", askFinalAccount: false }).slice(0, 3)).toEqual(["welcome", "code", "jellyfin"]);
+  });
+
   it("pile seule et clé collée : la base, puis le compte demandé à la fin", () => {
-    const steps = wizardSteps({ needsDatabase: true, mode: "key", askFinalAccount: false });
+    const steps = wizardSteps({ needsCode: true, needsDatabase: true, mode: "key", askFinalAccount: false });
     expect(steps.slice(0, 4)).toEqual(["welcome", "code", "database", "jellyfin"]);
     expect(steps.indexOf("finalAccount")).toBe(steps.indexOf("recap") - 1);
   });

@@ -84,6 +84,9 @@ function wizard(data: Partial<Wizard["data"]> = {}): Wizard {
       outcomes: null,
       session: null,
       resumed: false,
+      needsCode: true,
+      codeReason: null,
+      clientUrl: "",
       ...data,
     },
     patch: () => undefined,
@@ -111,11 +114,21 @@ describe("les écrans de l'assistant", () => {
     expect(out).toContain("docker compose logs tentacle");
   });
 
-  it("Jellyfin existant : l'adresse proposée et le guide de la pile complète", () => {
-    const out = html(<JellyfinScreen wizard={wizard({ jellyfinUrl: "http://host.docker.internal:8096" })} />);
+  it("Jellyfin existant : la recherche part seule, aucune adresse supposée", () => {
+    const out = html(<JellyfinScreen wizard={wizard()} />);
     expect(out).toContain("jfSubtitleExisting");
-    expect(out).toContain('value="http://host.docker.internal:8096"');
-    expect(out).toContain("jfMissingCompose");
+    expect(out).toContain("jfSearching");
+    expect(out).not.toContain("host.docker.internal:8096\"");
+    expect(out).not.toContain('value="http');
+  });
+
+  it("Jellyfin déjà choisi (retour en arrière) : la liste le garde, coché", () => {
+    const probe = { url: "http://172.16.1.30:47896", version: "12.1.0", serverName: "Neuf", blank: true, compatible: true, clientUrl: "http://172.16.1.30:47896" };
+    const out = html(<JellyfinScreen wizard={wizard({ probe })} />);
+    expect(out).toContain('role="radiogroup"');
+    expect(out).toMatch(/type="radio"[^>]*checked=""[^>]*value="http:\/\/172\.16\.1\.30:47896"/);
+    expect(out).toContain("jfState_blank");
+    expect(out).toContain("jfUseBlank");
   });
 
   it("Jellyfin voisin : pas d'adresse à saisir, la recherche part seule", () => {
@@ -127,6 +140,9 @@ describe("les écrans de l'assistant", () => {
   it("le compte : créé (avec confirmation) ou vérifié (avec la clé en recours)", () => {
     const create = html(<AccountScreen wizard={wizard({ mode: "initialize" })} />);
     expect(create).toContain("accountPasswordConfirm");
+    // La langue des métadonnées n'a plus d'écran : elle est là, proposée d'office.
+    expect(create).toContain("localeLanguage");
+    expect(create).toContain("localePrepare");
     expect(create).not.toContain("accountUseKey");
     const login = html(<AccountScreen wizard={wizard({ mode: "connect" })} />);
     expect(login).toContain("accountUseKey");
@@ -140,11 +156,17 @@ describe("les écrans de l'assistant", () => {
           jellyfinUrl: "http://jellyfin:8096",
           probe: { url: "http://jellyfin:8096", version: "12.1.0", serverName: "Maison", blank: true, compatible: true, clientUrl: "http://172.16.1.30:47896" },
           credentials: { username: "Knaoxtest", password: "x" },
+          clientUrl: "http://172.16.1.30:47896",
           plans: [{ name: "Films", type: "movies", paths: ["/media/films"] }],
         })}
       />,
     );
-    expect(out).toContain("Maison · 12.1.0 · http://jellyfin:8096");
+    expect(out).toContain("recapJellyfinLine");
+    expect(out).toContain("&quot;name&quot;:&quot;Maison&quot;");
+    expect(out).toContain("&quot;host&quot;:&quot;jellyfin&quot;");
+    // L'adresse des applications : jamais le nom Docker, modifiable.
+    expect(out).toContain('value="http://172.16.1.30:47896"');
+    expect(out).toContain("recapClientUrl");
     expect(out).toContain("Knaoxtest");
     expect(out).toContain("Films (/media/films)");
     expect(out).not.toContain("value=\"x\"");

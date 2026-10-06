@@ -2,19 +2,22 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Field } from "../admin/services/Field";
 import { cls } from "../../pages/adminUtils";
+import { LocaleFields } from "./LocaleFields";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
+import { jellyfinNeedsInitialize, uiCultureOf } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 
 const primary = `${cls.bp} w-full sm:w-auto`;
 const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary";
 
 /**
- * Le compte administrateur. Jellyfin vierge : il est CRÉÉ ici (rien ne part
- * avant l'écran suivant, qui configure Jellyfin avec la langue choisie).
- * Jellyfin configuré : il est VÉRIFIÉ tout de suite — la clé d'accès est
- * créée d'office — ou l'on colle une clé, et le compte est demandé à la fin.
+ * Le compte administrateur, et la langue des métadonnées (proposée d'après le
+ * navigateur). Jellyfin vierge : le compte est CRÉÉ, et Jellyfin configuré
+ * aussitôt — son propre assistant, mené par l'API. Jellyfin configuré : le
+ * compte est VÉRIFIÉ tout de suite — la clé d'accès est créée d'office — ou
+ * l'on colle une clé, et le compte est demandé à la fin.
  */
 export function AccountScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
@@ -24,6 +27,7 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [locale, setLocale] = useState(wizard.data.locale);
   const [error, setError] = useState<WizardErrorCode | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -34,14 +38,25 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (creating) {
-      wizard.patch({ credentials: { username: username.trim(), password } });
-      wizard.next();
-      return;
-    }
+    wizard.patch({ locale });
     setPending(true);
     try {
-      if (useKey) {
+      if (creating) {
+        const credentials = { username: username.trim(), password };
+        if (jellyfinNeedsInitialize(wizard.data.context)) {
+          await setupApi.initialize({
+            url: wizard.data.jellyfinUrl,
+            ...credentials,
+            uiCulture: uiCultureOf(locale.language),
+            // Le voisin s'appellerait du nom de son conteneur (« d716b0d5ac48 ») : il prend celui de Tentacle.
+            ...(wizard.data.context?.provisioner === "docker-sibling" ? { serverName: "Tentacle" } : {}),
+            metadataLanguage: locale.language,
+            metadataCountry: locale.country,
+          });
+          wizard.patch({ context: await setupApi.context() });
+        }
+        wizard.patch({ credentials });
+      } else if (useKey) {
         await setupApi.connect({ url: wizard.data.jellyfinUrl, apiKey: apiKey.trim() });
         wizard.patch({ mode: "key", credentials: null });
       } else {
@@ -93,10 +108,11 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
             ) : null}
           </>
         )}
+        <LocaleFields locale={locale} onChange={setLocale} />
         <SetupErrorLine code={error} />
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <button type="submit" disabled={pending || !canSubmit} className={primary}>
-            {pending ? t("working") : creating ? t("next") : t("accountConnect")}
+            {pending ? t("working") : creating ? t("localePrepare") : t("accountConnect")}
           </button>
           {!creating ? (
             <button type="button" onClick={() => setUseKey((v) => !v)} className={linkBtn}>

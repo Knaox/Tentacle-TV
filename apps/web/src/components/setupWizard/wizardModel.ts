@@ -5,7 +5,8 @@ import type { ExistingLibrary, LibraryPlan, SetupContext } from "@tentacle-tv/sh
  * ordre, où reprendre après un rechargement, et ce qu'on propose d'office.
  *
  * Une question par écran. Les étapes s'adaptent à l'installation détectée :
- * la base n'est demandée que si la pile ne la fournit pas ; un Jellyfin vierge
+ * le code n'est demandé qu'à un navigateur qui n'arrive pas directement du
+ * réseau local ; la base n'est demandée que si la pile ne la fournit pas ; un Jellyfin vierge
  * se configure (le compte est CRÉÉ), un Jellyfin déjà configuré se rejoint (le
  * compte est VÉRIFIÉ), ou par une clé collée (le compte est demandé à la fin).
  */
@@ -15,7 +16,6 @@ export type WizardStep =
   | "database"
   | "jellyfin"
   | "account"
-  | "locale"
   | "libraries"
   | "finalAccount"
   | "recap"
@@ -27,6 +27,8 @@ export type WizardStep =
 export type JellyfinMode = "initialize" | "connect" | "key";
 
 export interface WizardPlan {
+  /** Ce navigateur doit donner le code d'installation (cf. `SetupHostInfo.codeRequired`). */
+  needsCode: boolean;
   needsDatabase: boolean;
   mode: JellyfinMode | null;
   /** Le mot de passe n'est plus en mémoire (clé collée, ou reprise après rechargement). */
@@ -36,11 +38,10 @@ export interface WizardPlan {
 export function wizardSteps(plan: WizardPlan): WizardStep[] {
   return [
     "welcome",
-    "code",
+    ...(plan.needsCode ? (["code"] as const) : []),
     ...(plan.needsDatabase ? (["database"] as const) : []),
     "jellyfin",
     "account",
-    "locale",
     "libraries",
     ...(plan.askFinalAccount || plan.mode === "key" ? (["finalAccount"] as const) : []),
     "recap",

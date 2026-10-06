@@ -3,6 +3,7 @@ import {
   type BrowseResult,
   type ExistingLibrary,
   type JellyfinConnectRequest,
+  type JellyfinDiscoveryResponse,
   type JellyfinInitializeRequest,
   type JellyfinProbeResult,
   type LibrariesRequest,
@@ -32,12 +33,12 @@ export class SetupApiError extends Error {
 }
 
 const KNOWN: ReadonlySet<string> = new Set<SetupErrorCode>([
-  "setup_closed", "session_required", "invalid_token", "rate_limited", "invalid_input",
+  "setup_closed", "session_required", "code_required", "setup_in_progress", "invalid_token", "rate_limited", "invalid_input",
   "db_unreachable", "db_auth_failed", "db_unknown_database", "db_schema_failed", "db_managed_by_stack",
   "jf_invalid_url", "jf_forbidden_address", "jf_localhost_in_docker", "jf_unreachable", "jf_timeout",
   "jf_tls_invalid", "jf_not_jellyfin", "jf_incompatible_version", "jf_not_blank", "jf_bad_credentials",
   "jf_not_admin", "jf_api_key_invalid", "jf_api_key_failed", "jf_startup_failed", "jf_path_not_found",
-  "jf_library_failed", "jf_not_configured", "jf_claim_pending", "internal",
+  "jf_library_failed", "jf_not_configured", "jf_claim_pending", "jf_sibling_elsewhere", "internal",
 ]);
 
 const SESSION_KEY = "tentacle_setup_session";
@@ -97,17 +98,27 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; wi
   return raw as T;
 }
 
+function keepSession(session: string): void {
+  memorySession = session;
+  setupSession.write(session);
+}
+
 export const setupApi = {
   async openSession(token: string): Promise<void> {
     const { session } = await call<SetupSessionResponse>("/session", { method: "POST", body: { token }, withSession: false });
-    memorySession = session;
-    setupSession.write(session);
+    keepSession(session);
+  },
+  /** Sans code, depuis le réseau local ; sinon `code_required` ou `setup_in_progress`. */
+  async openLocalSession(): Promise<void> {
+    const { session } = await call<SetupSessionResponse>("/session/local", { method: "POST", withSession: false });
+    keepSession(session);
   },
   /** Avant le code : où tourne le serveur (public tant que l'installation est ouverte). */
   host: () => call<SetupHostInfo>("/host", { withSession: false }),
   context: () => call<SetupContext>("/context"),
   database: (body: SetupDatabaseRequest) => call<{ success: true }>("/database", { method: "POST", body }),
   probe: (url: string) => call<JellyfinProbeResult>("/jellyfin/probe", { method: "POST", body: { url } }),
+  discover: () => call<JellyfinDiscoveryResponse>("/jellyfin/discover"),
   prepare: () => call<unknown>("/jellyfin/prepare", { method: "POST" }),
   initialize: (body: JellyfinInitializeRequest) => call<{ success: true }>("/jellyfin/initialize", { method: "POST", body }),
   connect: (body: JellyfinConnectRequest) => call<{ success: true }>("/jellyfin/connect", { method: "POST", body }),

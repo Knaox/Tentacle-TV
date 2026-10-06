@@ -8,7 +8,6 @@ import { DoneScreen, RemoteScreen } from "./FinishScreens";
 import { CodeScreen, WelcomeScreen } from "./IntroScreens";
 import { JellyfinScreen } from "./JellyfinScreen";
 import { LibrariesScreen } from "./LibrariesScreen";
-import { LocaleScreen } from "./LocaleScreen";
 import { ApplyScreen, RecapScreen } from "./RecapApplyScreens";
 import { useWizard } from "./useWizard";
 
@@ -58,8 +57,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       return <JellyfinScreen wizard={wizard} />;
     case "account":
       return <AccountScreen wizard={wizard} />;
-    case "locale":
-      return <LocaleScreen wizard={wizard} />;
     case "libraries":
       return <LibrariesScreen wizard={wizard} />;
     case "finalAccount":
