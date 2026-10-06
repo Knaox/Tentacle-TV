@@ -120,5 +120,14 @@ les 0,5 s ; côté lecteur, évènements `<video>`, requêtes de flux, cache et
   `console.warn`, « [panne] Jellyfin revenu : lecture gardée… » ou
   « [panne] flux rouvert : <cause> ».
 
-Non joués sur appareil : le mobile, l'Apple TV, Android TV — leur logique
-passe par les mêmes règles partagées, testées unitairement.
+Apple TV (simulateur tvOS, clone effacé, build Debug + Metro, jumelée au
+banc) : trois redémarrages, lecture directe AVPlayer, réserve dite par le
+lecteur « 35 s chargées ». Au retour : « lecture gardée, rien n'est
+rechargé », position qui continue ; le bandeau dit chaque état, décompté
+10 → 1. Deux défauts trouvés là et corrigés : le message d'un état déjà dit
+à la panne PRÉCÉDENTE ne reparaissait plus, et la redite partie pendant le
+démarrage (socket rouverte tôt) était perdue — session revenue 18 s après
+Jellyfin, 1 s après correctif.
+
+Non joués : le mobile, Android TV, webOS (son lecteur est celui du web) —
+leur logique passe par les mêmes règles partagées, testées unitairement.
