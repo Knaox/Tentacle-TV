@@ -13,7 +13,9 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 ## [1.24.0]
 ### FR
 - **Nouvel assistant d'installation** : une question par écran. Depuis votre réseau local, il s'ouvre sans code ; le code à usage unique, lu dans le journal du conteneur, n'est plus exigé qu'ailleurs. La langue des métadonnées se choisit avec le compte
-- **Toujours le bon Jellyfin** : la pile complète se relie à SON Jellyfin, même quand une installation précédente en avait retenu un autre. Sans Jellyfin dans la pile, l'assistant liste ceux qu'il trouve (neuf ou déjà configuré) et propose le neuf. Les applications reçoivent la bonne adresse de Jellyfin pour la lecture directe, modifiable avant la fin
+- **Choisir son Jellyfin** : l'assistant liste tous les Jellyfin trouvés, en distinguant les neufs des déjà configurés (nom, adresse, port, version). En pile complète, celui de la pile reste proposé en tête — même si une installation précédente en avait retenu un autre — mais vous pouvez en choisir un autre. Les applications reçoivent la bonne adresse de Jellyfin pour la lecture directe, modifiable avant la fin
+- **Un Jellyfin déjà configuré reste tel quel** : connexion avec votre compte administrateur existant, aucune bibliothèque créée, et des réglages conseillés tous facultatifs (détection des passages, langue des métadonnées, aperçus, surveillance en temps réel, encodage HEVC) — seul ce que vous cochez est appliqué
+- **Le tableau de bord conseille l'encodage HEVC** aux serveurs équipés d'un encodeur matériel
 - **Trois piles Docker prêtes à copier** : complète (Tentacle, base et Jellyfin), avec base, ou Tentacle seul. Aucun mot de passe écrit en clair, jamais le socket Docker ; une image plus légère, qui tourne sans droits root et surveille sa propre santé
 - **Accès à distance** : une section d'administration guide pas à pas — ports, HTTPS avec Caddy, Traefik ou nginx, guides des box
 - **Détection des passages** (intro, résumé, générique) : l'assistant installe et règle Intro Skipper, TheIntroDB et SkipMe.db dans Jellyfin, redémarrage compris. Sur un serveur déjà installé : « Installer / réparer la détection des passages », dans Services ; le tableau de bord le recommande s'il manque un greffon
@@ -31,7 +33,9 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 
 ### EN
 - **New setup wizard**: one question per screen. From your home network it opens without a code; the one-time code, read in the container log, is only asked from elsewhere. The metadata language is chosen with the account
-- **Always the right Jellyfin**: the full stack links to ITS own Jellyfin, even when an earlier setup had kept another one. With no Jellyfin in the stack, the wizard lists the ones it finds (new or already set up) and suggests the new one. Apps get the right Jellyfin address for direct play, editable before finishing
+- **Pick your Jellyfin**: the wizard lists every Jellyfin server it finds, telling new ones from already set up ones (name, address, port, version). In the full stack, the stack's own Jellyfin stays first — even when an earlier setup had kept another one — but you can pick another. Apps get the right Jellyfin address for direct play, editable before finishing
+- **An already set up Jellyfin stays as it is**: sign in with your existing administrator account, no library created, and recommended settings that are all optional (skip detection, metadata language, previews, real-time monitoring, HEVC encoding) — only what you tick is applied
+- **The dashboard recommends HEVC encoding** on servers with a hardware encoder
 - **Three ready-to-copy Docker stacks**: full (Tentacle, database and Jellyfin), with database, or Tentacle only. No password written in plain text, never the Docker socket; a lighter image that runs without root and checks its own health
 - **Remote access**: an admin section guides you step by step — ports, HTTPS with Caddy, Traefik or nginx, router guides
 - **Skip detection** (intro, recap, credits): the wizard installs and configures Intro Skipper, TheIntroDB and SkipMe.db in Jellyfin, restart included. On an existing server: "Install / repair skip detection" in Services; the dashboard recommends it when a plugin is missing
