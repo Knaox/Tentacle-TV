@@ -14,6 +14,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Qualité réduite plus fine** (HEVC), son d'origine gardé
 - Une réussite de la Famille s'affiche en vert
 - Une TV déjumelée quitte aussitôt la liste
+- Serveur ancien : rien ne casse, les nouveautés attendent
 - « Là où vous en étiez » pour les titres entamés
 
 ### EN
@@ -23,6 +24,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Sharper reduced quality** (HEVC), original audio kept
 - Family successes now show in green
 - An unpaired TV leaves the list right away
+- Older server: nothing breaks, new features wait
 - "Where you left off" for in-progress titles
 
 ## [ios-1.11.0]
