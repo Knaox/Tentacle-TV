@@ -53,10 +53,19 @@ function startLog() {
 
 async function playOnce(set, round) {
   applyFixtures(set);
+  // Une Shield laissée seule se rendort entre deux lectures (et son adb réseau
+  // avec, qui perd en revenant le relais vers le faux backend).
+  shell("input keyevent KEYCODE_WAKEUP");
+  device.adb(["reverse", `tcp:${PORT}`, `tcp:${PORT}`]);
   device.forceStop();
   shell(`am start -W -n ${PACKAGE}/com.tentacletv.MainActivity`);
   await sleep(9000); // l'accueil, ses images, son héros
-  key("down"); // « Reprendre »
+  // L'approche convergente de nav-golden : du héros comme du rail (entrée
+  // perdue sous charge), GAUCHE puis DROITE ramènent au héros ; BAS : « Reprendre ».
+  for (const name of ["left", "right", "down"]) {
+    key(name);
+    await sleep(700);
+  }
   await sleep(1500);
   device.adb(["logcat", "-c"]);
   const remote = `/sdcard/tnt-startup.mp4`;
