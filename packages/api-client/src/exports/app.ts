@@ -6,6 +6,12 @@ export { useUserId, notifyUserChange } from "../hooks/useUserId";
 // App config & feature flags
 export { useAppConfig, useAutoplayConfig, setConfigBackendUrl, type AppConfig, type AppFeatures, type AutoplayConfig } from "../hooks/useConfig";
 
+// Les capacités du serveur : la seule porte d'une fonction qui dépend du serveur
+export {
+  useServerCapabilities, useServerCapability, ServerCapabilityGate,
+  type ServerCapabilitiesState, type ServerCapabilityGateProps,
+} from "../hooks/useServerCapabilities";
+
 // Direct streaming config
 export {
   useStreamingConfig, fetchStreamingConfig, setStreamingConfigBackendUrl, STREAMING_CONFIG_QUERY_KEY, type StreamingConfig,

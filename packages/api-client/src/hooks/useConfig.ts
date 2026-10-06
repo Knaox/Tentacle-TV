@@ -19,6 +19,9 @@ export interface AppConfig {
   version: string;
   brandName: string;
   features: AppFeatures;
+  /** Les capacités déclarées (`serverCapabilities.ts`). Absent d'un serveur d'avant 1.24.0 :
+   *  ne se lit jamais directement — `useServerCapability`. */
+  capabilities?: string[];
 }
 
 const defaultConfig: AppConfig = {
