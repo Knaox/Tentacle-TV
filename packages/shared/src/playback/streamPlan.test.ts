@@ -114,6 +114,16 @@ describe("planStream — l'image", () => {
     expect(planStream({ engine: AVPLAYER_ENGINE, audio: null, tier: null }).params.SegmentContainer).toBe("mp4");
   });
 
+  it("sans palier, une définition de SORTIE borne l'image réencodée (un 4K converti pour un écran 1080p)", () => {
+    const plan = planStream({ engine: EXOPLAYER_ENGINE, audio: AC3_51, tier: null, outputMaxHeight: 1080 });
+    expect(plan.params.MaxHeight).toBe("1080");
+    expect(plan.params.MaxWidth).toBe("1920");
+    expect(plan.copiesAudio).toBe(true);
+    // Avec un palier, c'est le palier qui décide de la définition.
+    const tiered = planStream({ engine: EXOPLAYER_ENGINE, audio: null, tier: { totalBitrate: 2_528_000, height: 540 }, outputMaxHeight: 1080 });
+    expect(tiered.params.MaxHeight).toBe("540");
+  });
+
   it("en TS, l'AV1 et le VP9 ne sont pas déclarés (ils ne voyagent qu'en fMP4)", () => {
     expect(planStream({ engine: MPV_ENGINE, audio: null, tier: null }).params.VideoCodec).toBe("hevc,h264");
   });

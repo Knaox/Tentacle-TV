@@ -130,7 +130,7 @@ export function usePlayerStreamPipeline(args: {
   // fiche — deux pour le même appareil sur un AV1, qui calait. Une fiche en
   // échec relâche la garde : le flux tente sa chance, comme avant.
   const itemFailed = useMediaItem(itemId).isError;
-  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed, restart } = useTVStreamUrl({
+  const stream = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
     forceTranscode, isTranscodingQuality: transcodingQuality,
@@ -138,6 +138,10 @@ export function usePlayerStreamPipeline(args: {
     isDirectPlay: requestedDirectPlay,
     reloadNonce, ready: (!!item || itemFailed) && !cap.pending, // l'épisode suivant attend sa mesure
   });
+  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed, restart } = stream;
+  // Android : un flux servi pour ce que l'appareil ne lit pas (`useDeviceConversion`) ; tvOS : absents.
+  const deviceDirectStream = stream.isDirectStream ?? false;
+  const deviceNotice = stream.deviceNotice ?? null;
   // La relance du flux à une position, même forme, en rechargement doux —
   // retour au premier plan, reprise après coupure (contrat : `streamRestart.ts`).
   const { restartStream, noteSeek } = useStreamRestart({
@@ -200,7 +204,7 @@ export function usePlayerStreamPipeline(args: {
   const frameRate = useMemo(() => videoFrameRate(streams), [streams]);
 
   const reporting = usePlaybackReporting({
-    itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
+    itemId, mediaSourceId, isDirectPlay, isDirectStream: isDirectStream || deviceDirectStream, playSessionId,
     audioStreamIndex: audioIndex,
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
   });
@@ -263,7 +267,7 @@ export function usePlayerStreamPipeline(args: {
   });
 
   return {
-    quality, autoCapActive: cap.active,
+    quality, autoCapActive: cap.active, deviceNotice,
     autoCapReason: cap.active ? { measuredBps: cap.measuredBps, sourceBps: cap.sourceBps } : undefined,
     sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration, frameRate,
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,

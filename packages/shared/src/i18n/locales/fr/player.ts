@@ -203,4 +203,9 @@ export default {
     longHint: "Votre position est gardée : la lecture reprendra dès son retour.",
     retry: "Réessayer",
   },
+  // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
+  // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).
+  deviceNotice: {
+    av1Converted: "Cet appareil ne lit pas l'AV1 : le serveur convertit",
+  },
 } as const;

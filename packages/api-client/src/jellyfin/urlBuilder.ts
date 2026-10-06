@@ -98,6 +98,12 @@ export interface StreamUrlOptions {
   engine?: EngineCapabilities;
   /** La piste audio lue, telle que la fiche la décrit — pour la copier si le moteur la lit. */
   sourceAudio?: AudioSource | null;
+  /**
+   * Sans palier (`maxBitrate` absent) : la définition de la sortie, pour une
+   * image que le serveur réencode de toute façon (`planStream.outputMaxHeight`).
+   * Ignorée avec un palier, qui a la sienne.
+   */
+  outputMaxHeight?: number | null;
 }
 
 /** Les raisons d'une URL de transcodage : celles de l'appelant, sinon celles de la branche. */
@@ -164,7 +170,7 @@ export function buildStreamUrl(
   // Le remux progressif est un MP4 : les règles du fMP4 valent (pas d'AC3 copié).
   const plan = planStream({
     engine: progressive ? { ...engine, segmentContainer: "mp4" } : engine,
-    audio: options?.sourceAudio, tier,
+    audio: options?.sourceAudio, tier, outputMaxHeight: tier ? null : options?.outputMaxHeight,
   });
   Object.assign(p, plan.params);
   p.CopyTimestamps = "true";

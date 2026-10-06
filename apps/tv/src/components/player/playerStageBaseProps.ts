@@ -1,6 +1,6 @@
 import type { ElementRef } from "react";
 import type { TouchableOpacity, ViewStyle } from "react-native";
-import type { MediaItem, PlayerOverlay, QualityKey, SourceQuality, SubtitleCue } from "@tentacle-tv/shared";
+import type { DeviceNotice, MediaItem, PlayerOverlay, QualityKey, SourceQuality, SubtitleCue } from "@tentacle-tv/shared";
 import type { UseTVTrickplayResult } from "../../hooks/useTVTrickplay";
 import type { TransportKey } from "./focus/overlayFocusCore";
 import type { ExoTextTrack } from "./ExoPlayer";
@@ -64,6 +64,8 @@ export interface PlayerStageBaseProps {
   autoCapActive?: boolean;
   /** Débits (bits/s) qui ont motivé le cap : affichés dans le message. */
   autoCapReason?: { measuredBps?: number; sourceBps?: number };
+  /** Android TV : ce que l'appareil ne décode pas et que le serveur convertit (l'AV1) → message 5 s. */
+  deviceNotice?: DeviceNotice | null;
   displayTime: number;
   bufferedTime: number;
   displayDuration: number;

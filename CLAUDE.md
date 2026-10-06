@@ -706,6 +706,10 @@ d'une source HDR sort en SDR** (Jellyfin, même en HEVC) — le HDR et le Dolby 
 survivent qu'à une COPIE, jamais avec un `MaxWidth` sous la source ; l'épisode suivant
 refait la mesure du débit (`itemBitrate.ts`). Tableau de bord : un `Transcode` sans
 `TranscodingInfo` est « En analyse », jamais un transcodage présumé.
+**Android TV déclare d'après l'APPAREIL** (`deviceMediaProfile` relevé par le module
+natif, `exoPlayerEngineFor` / `mpvEngineFor`, verdict `devicePlaybackVerdict`) : jamais
+le décodage logiciel d'une image ; l'AV1 sans décodeur est converti par le serveur, et
+le lecteur le dit. Profil simulé du banc : `debug.tentacle.media_profile` (app `.perf`).
 
 ## Navigation TV — une seule source
 
