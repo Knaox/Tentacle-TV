@@ -8,7 +8,9 @@ import { DoneScreen, RemoteScreen } from "./FinishScreens";
 import { CodeScreen, WelcomeScreen } from "./IntroScreens";
 import { JellyfinScreen } from "./JellyfinScreen";
 import { LibrariesScreen } from "./LibrariesScreen";
-import { ApplyScreen, RecapScreen } from "./RecapApplyScreens";
+import { RecommendedScreen } from "./RecommendedScreen";
+import { ApplyScreen } from "./ApplyScreen";
+import { RecapScreen } from "./RecapApplyScreens";
 import { useWizard } from "./useWizard";
 
 export interface SetupWizardProps {
@@ -59,6 +61,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       return <AccountScreen wizard={wizard} />;
     case "libraries":
       return <LibrariesScreen wizard={wizard} />;
+    case "recommended":
+      return <RecommendedScreen wizard={wizard} />;
     case "finalAccount":
       return <FinalAccountScreen wizard={wizard} />;
     case "recap":

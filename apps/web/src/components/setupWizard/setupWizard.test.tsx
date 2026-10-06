@@ -47,7 +47,9 @@ const { WelcomeScreen, CodeScreen } = await import("./IntroScreens");
 const { JellyfinScreen } = await import("./JellyfinScreen");
 const { JellyfinList } = await import("./JellyfinList");
 const { AccountScreen } = await import("./AccountScreen");
-const { ApplyScreen, RecapScreen } = await import("./RecapApplyScreens");
+const { RecapScreen } = await import("./RecapApplyScreens");
+const { ApplyScreen } = await import("./ApplyScreen");
+const { AdviceRow, RecommendedScreen } = await import("./RecommendedScreen");
 const { DoneScreen } = await import("./FinishScreens");
 const { QrCode } = await import("./QrCode");
 type Wizard = import("./useWizard").Wizard;
@@ -83,6 +85,8 @@ function wizard(data: Partial<Wizard["data"]> = {}): Wizard {
       existing: [],
       plans: [],
       outcomes: null,
+      advice: null,
+      adviceOutcomes: null,
       segments: undefined,
       session: null,
       resumed: false,
@@ -196,6 +200,53 @@ describe("les écrans de l'assistant", () => {
     expect(out).toContain("Knaoxtest");
     expect(out).toContain("Films (/media/films)");
     expect(out).not.toContain("value=\"x\"");
+  });
+
+  it("Jellyfin déjà configuré : l'écran des réglages conseillés, facultatifs, avec « Passer »", () => {
+    const out = html(<RecommendedScreen wizard={wizard({ mode: "connect" })} />);
+    expect(out).toContain("recTitle");
+    expect(out).toContain("recSkip");
+    expect(out).not.toContain("libraryAdd");
+  });
+
+  it("un conseil dit la valeur en place et la conseillée ; réglé autrement, il n'est pas coché et le dit", () => {
+    const language = { id: "metadataLanguage" as const, gesture: "setMetadataLanguage" as const, current: "en · US", recommended: "fr · FR", preselected: false, targets: [] };
+    const other = html(<AdviceRow advice={language} checked={false} onToggle={() => undefined} />).replaceAll("&quot;", '"');
+    // Les codes deviennent des mots : la langue et le pays, de chaque côté de la flèche.
+    expect(other).toMatch(/recChange\{"current":"lang_en.* · country_US.*","recommended":"lang_fr.* · country_FR/);
+    expect(other).toContain("recSetOtherwise");
+    expect(other).not.toContain('checked=""');
+    const trickplay = { id: "trickplay" as const, gesture: "enableTrickplay" as const, current: "off", recommended: "on", preselected: true, targets: ["Séries"] };
+    const fixed = html(<AdviceRow advice={trickplay} checked onToggle={() => undefined} />).replaceAll("&quot;", '"');
+    expect(fixed).toMatch(/type="checkbox"[^>]*checked=""/);
+    expect(fixed).toContain('recChange{"current":"recValue_off","recommended":"recValue_on"}');
+    expect(fixed).toContain('recTargetsLibraries{"names":"Séries"}');
+    expect(fixed).not.toContain("recSetOtherwise");
+  });
+
+  it("le récapitulatif d'un Jellyfin déjà configuré : rien de créé, les réglages cochés", () => {
+    const out = html(
+      <RecapScreen
+        wizard={wizard({
+          mode: "connect",
+          credentials: { username: "Knaoxtest", password: "x" },
+          existing: [{ name: "Films", type: "movies", paths: ["/m"] }, { name: "Séries", type: "tvshows", paths: ["/s"] }],
+          advice: { segments: true, actions: ["enableTrickplay"], ids: ["segmentsProvider", "trickplay"] },
+        })}
+      />,
+    ).replaceAll("&quot;", '"');
+    expect(out).toContain('recapLibrariesKept{"count":2}');
+    expect(out).toContain("rec_segmentsProvider · rec_trickplay");
+    expect(out).not.toContain("recapLocale");
+  });
+
+  it("l'installation d'un Jellyfin déjà configuré : seulement ce qui est coché, aucune bibliothèque", () => {
+    const joined = html(<ApplyScreen wizard={wizard({ mode: "connect", advice: { segments: false, actions: ["enableTrickplay"], ids: ["trickplay"] } })} onSession={() => undefined} />);
+    expect(joined).not.toContain("segmentPlugins:wizardLine");
+    expect(joined).toContain("applyAdvice");
+    expect(joined).not.toContain("applyLibraries");
+    const withSegments = html(<ApplyScreen wizard={wizard({ mode: "connect", advice: { segments: true, actions: [], ids: ["segmentsProvider"] } })} onSession={() => undefined} />);
+    expect(withSegments.indexOf("segmentPlugins:wizardLine")).toBeLessThan(withSegments.indexOf("applyAdvice"));
   });
 
   it("l'installation règle d'abord la détection des passages ; un échec se dit et n'arrête rien", () => {

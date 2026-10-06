@@ -7,8 +7,10 @@ import type { ExistingLibrary, LibraryPlan, SetupContext } from "@tentacle-tv/sh
  * Une question par écran. Les étapes s'adaptent à l'installation détectée :
  * le code n'est demandé qu'à un navigateur qui n'arrive pas directement du
  * réseau local ; la base n'est demandée que si la pile ne la fournit pas ; un Jellyfin vierge
- * se configure (le compte est CRÉÉ), un Jellyfin déjà configuré se rejoint (le
- * compte est VÉRIFIÉ), ou par une clé collée (le compte est demandé à la fin).
+ * se configure (le compte est CRÉÉ, puis les bibliothèques), un Jellyfin déjà
+ * configuré se rejoint (le compte est VÉRIFIÉ, ou par une clé collée — le
+ * compte est alors demandé à la fin) : rien n'y est créé, l'écran des
+ * bibliothèques laisse la place aux réglages conseillés, tous facultatifs.
  */
 export type WizardStep =
   | "welcome"
@@ -17,6 +19,7 @@ export type WizardStep =
   | "jellyfin"
   | "account"
   | "libraries"
+  | "recommended"
   | "finalAccount"
   | "recap"
   | "apply"
@@ -31,6 +34,8 @@ export interface WizardPlan {
   needsCode: boolean;
   needsDatabase: boolean;
   mode: JellyfinMode | null;
+  /** Un Jellyfin DÉJÀ configuré : réglages conseillés au lieu des bibliothèques. */
+  joined: boolean;
   /** Le mot de passe n'est plus en mémoire (clé collée, ou reprise après rechargement). */
   askFinalAccount: boolean;
 }
@@ -42,7 +47,7 @@ export function wizardSteps(plan: WizardPlan): WizardStep[] {
     ...(plan.needsDatabase ? (["database"] as const) : []),
     "jellyfin",
     "account",
-    "libraries",
+    plan.joined ? "recommended" : "libraries",
     ...(plan.askFinalAccount || plan.mode === "key" ? (["finalAccount"] as const) : []),
     "recap",
     "apply",
@@ -68,7 +73,16 @@ export function needsDatabase(context: SetupContext | null): boolean {
 export function resumeStep(context: SetupContext): WizardStep {
   if (needsDatabase(context)) return "database";
   if (!context.jellyfin.configured || context.jellyfin.claimed) return "jellyfin";
-  return "libraries";
+  return context.jellyfin.joined ? "recommended" : "libraries";
+}
+
+/**
+ * Un Jellyfin DÉJÀ configuré : ce que le serveur sait une fois relié
+ * (`joined`) ; avant, le choix fait à l'écran Jellyfin (se connecter).
+ */
+export function joinsConfigured(context: SetupContext | null, mode: JellyfinMode | null): boolean {
+  if (context?.jellyfin.configured && !context.jellyfin.claimed) return context.jellyfin.joined;
+  return mode === "connect" || mode === "key";
 }
 
 /** Jellyfin est à configurer avec le compte choisi : vierge, ou voisin verrouillé en attente. */

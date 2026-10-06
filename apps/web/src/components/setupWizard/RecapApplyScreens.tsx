@@ -1,17 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
-import type { SegmentSetupRun, SetupCompleteResponse } from "@tentacle-tv/shared";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cls } from "../../pages/adminUtils";
 import { Field } from "../admin/services/Field";
 import { hostAndPort, isValidClientUrl, serverState } from "./jellyfinChoice";
-import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
-import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
+import { joinsConfigured } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
-import { runSegmentSetup } from "./applySegments";
-import { SegmentRunView } from "../segmentPlugins/SegmentRunView";
 
 const primary = `${cls.bp} w-full sm:w-auto`;
 
@@ -28,12 +22,22 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
   const jellyfin = data.probe
     ? t("recapJellyfinLine", { name: data.probe.serverName, version: data.probe.version, ...hostAndPort(data.probe.url), state: t(`jfState_${serverState(data.probe)}`) })
     : data.jellyfinUrl || data.context?.jellyfin.url || "—";
-  const rows: Array<[string, string]> = [
-    [t("recapJellyfin"), jellyfin],
-    [t("recapAccount"), data.credentials?.username ?? "—"],
-    [t("recapLocale"), `${t(`lang_${data.locale.language}`)} · ${t(`country_${data.locale.country}`)}`],
-    [t("recapLibraries"), data.plans.length ? data.plans.map((p) => `${p.name} (${p.paths[0]})`).join(" · ") : t("recapNothing")],
-  ];
+  // Un Jellyfin déjà configuré : rien n'y est créé, seuls les réglages cochés changent.
+  const joined = joinsConfigured(data.context, data.mode);
+  const advice = data.advice?.ids ?? [];
+  const rows: Array<[string, string]> = joined
+    ? [
+        [t("recapJellyfin"), jellyfin],
+        [t("recapAccount"), data.credentials?.username ?? "—"],
+        [t("recapLibrariesKeptLabel"), t("recapLibrariesKept", { count: data.existing.length })],
+        [t("recapAdvice"), advice.length ? advice.map((id) => t(`rec_${id}`)).join(" · ") : t("recapNothing")],
+      ]
+    : [
+        [t("recapJellyfin"), jellyfin],
+        [t("recapAccount"), data.credentials?.username ?? "—"],
+        [t("recapLocale"), `${t(`lang_${data.locale.language}`)} · ${t(`country_${data.locale.country}`)}`],
+        [t("recapLibraries"), data.plans.length ? data.plans.map((p) => `${p.name} (${p.paths[0]})`).join(" · ") : t("recapNothing")],
+      ];
   return (
     <WizardFrame title={t("recapTitle")} subtitle={t("recapSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
       <dl className="divide-y divide-line-subtle rounded-xl border border-line-subtle">
@@ -67,111 +71,6 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
           {t("recapApply")}
         </button>
       </form>
-    </WizardFrame>
-  );
-}
-
-type Phase = "segments" | "libraries" | "session" | "done";
-
-/**
- * L'installation proprement dite : la détection des passages (greffons de
- * Jellyfin, redémarrage compris — AVANT les bibliothèques, pour qu'aucun scan
- * ne soit coupé), les bibliothèques, puis la session ouverte avec le compte
- * administrateur — comme une connexion ordinaire. Une étape qui échoue se
- * relance seule, sans refaire ce qui a réussi ; les passages ne bloquent
- * jamais rien.
- */
-export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: (session: SetupCompleteResponse) => void }) {
-  const { t } = useTranslation(["setupWizard", "segmentPlugins"]);
-  const client = useJellyfinClient();
-  const firstPhase = (): Phase => (wizard.data.outcomes ? "session" : wizard.data.segments !== undefined ? "libraries" : "segments");
-  const [phase, setPhase] = useState<Phase>(firstPhase);
-  const [segmentRun, setSegmentRun] = useState<SegmentSetupRun | null>(wizard.data.segments ?? null);
-  const [error, setError] = useState<WizardErrorCode | null>(null);
-  const started = useRef(false);
-  const { data, patch, next } = wizard;
-
-  const run = useCallback(async () => {
-    setError(null);
-    try {
-      let current: Phase = data.outcomes ? "session" : data.segments !== undefined ? "libraries" : "segments";
-      if (current === "segments") {
-        const segments = await runSegmentSetup(setSegmentRun);
-        patch({ segments });
-        current = "libraries";
-        setPhase(current);
-      }
-      if (current === "libraries") {
-        const outcomes = data.plans.length
-          ? await setupApi.createLibraries({ libraries: data.plans, metadataLanguage: data.locale.language, metadataCountry: data.locale.country })
-          : [];
-        patch({ outcomes });
-        current = "session";
-        setPhase(current);
-      }
-      if (!data.credentials) throw new SetupApiError("jf_bad_credentials");
-      const session = await setupApi.complete({
-        username: data.credentials.username,
-        password: data.credentials.password,
-        deviceId: client.getLoginDeviceId(),
-        client: client.getClientName(),
-        device: client.getDeviceName(),
-        ...(data.clientUrl ? { jellyfinClientUrl: data.clientUrl } : {}),
-      });
-      patch({ session, credentials: null });
-      onSession(session);
-      setPhase("done");
-      next();
-    } catch (err) {
-      setError(err instanceof SetupApiError ? err.code : "internal");
-    }
-  }, [data.outcomes, data.segments, data.plans, data.locale, data.credentials, data.clientUrl, client, patch, onSession, next]);
-
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    void run();
-  }, [run]);
-
-  const line = (label: string, state: "pending" | "running" | "ok" | "error") => (
-    <li className="flex items-center gap-2 text-sm">
-      {state === "ok" ? (
-        <CircleCheck size={16} aria-hidden="true" className="text-status-success-fg" />
-      ) : state === "error" ? (
-        <CircleAlert size={16} aria-hidden="true" className="text-status-error-fg" />
-      ) : (
-        <LoaderCircle size={16} aria-hidden="true" className={state === "running" ? "text-content-secondary motion-safe:animate-spin" : "text-content-quaternary"} />
-      )}
-      <span className={state === "pending" ? "text-content-tertiary" : "text-content-primary"}>{label}</span>
-    </li>
-  );
-  const segState = phase === "segments" ? "running" : data.segments === null ? "error" : "ok";
-  const libState = phase === "segments" ? "pending" : phase === "libraries" ? (error ? "error" : "running") : "ok";
-  const sessionState = phase === "libraries" ? "pending" : phase === "session" ? (error ? "error" : "running") : "ok";
-
-  return (
-    <WizardFrame title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total}>
-      <div className="space-y-4" aria-live="polite">
-        <ul className="space-y-2">
-          {line(t("segmentPlugins:wizardLine"), segState)}
-          {segmentRun ? (
-            <li className="pl-6">
-              <SegmentRunView run={segmentRun} />
-            </li>
-          ) : data.segments === null ? (
-            <li className="pl-6 text-xs text-content-tertiary">{t("segmentPlugins:wizardSkipped")}</li>
-          ) : null}
-          {line(t("applyLibraries"), libState)}
-          {(data.outcomes ?? []).map((outcome) => (
-            <li key={outcome.name} className={`pl-6 text-xs ${outcome.status === "failed" ? "text-status-error-fg" : "text-content-tertiary"}`}>
-              {t(`outcome_${outcome.status}`, { name: outcome.name })}
-              {outcome.error ? ` — ${t(`error_${outcome.error}`)}` : ""}
-            </li>
-          ))}
-          {line(t("applySession"), sessionState)}
-        </ul>
-        <SetupErrorLine code={error} onRetry={() => void run()} />
-      </div>
     </WizardFrame>
   );
 }

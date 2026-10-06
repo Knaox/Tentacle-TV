@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SetupContext } from "@tentacle-tv/shared";
-import { codeFromHash, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, needsDatabase, resumeStep, uiCultureOf, wizardSteps } from "./wizardModel";
+import { codeFromHash, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, joinsConfigured, needsDatabase, resumeStep, uiCultureOf, wizardSteps } from "./wizardModel";
 
 function ctx(over: Partial<SetupContext> = {}): SetupContext {
   return {
@@ -20,19 +20,37 @@ function ctx(over: Partial<SetupContext> = {}): SetupContext {
 
 describe("les étapes de l'assistant", () => {
   it("pile complète ouverte du réseau local, Jellyfin vierge : ni code, ni base, ni compte final", () => {
-    expect(wizardSteps({ needsCode: false, needsDatabase: false, mode: "initialize", askFinalAccount: false })).toEqual([
+    expect(wizardSteps({ needsCode: false, needsDatabase: false, mode: "initialize", joined: false, askFinalAccount: false })).toEqual([
       "welcome", "jellyfin", "account", "libraries", "recap", "apply", "remote", "done",
     ]);
   });
 
   it("le code n'est demandé qu'à qui n'arrive pas directement du réseau local", () => {
-    expect(wizardSteps({ needsCode: true, needsDatabase: false, mode: "initialize", askFinalAccount: false }).slice(0, 3)).toEqual(["welcome", "code", "jellyfin"]);
+    expect(wizardSteps({ needsCode: true, needsDatabase: false, mode: "initialize", joined: false, askFinalAccount: false }).slice(0, 3)).toEqual(["welcome", "code", "jellyfin"]);
   });
 
   it("pile seule et clé collée : la base, puis le compte demandé à la fin", () => {
-    const steps = wizardSteps({ needsCode: true, needsDatabase: true, mode: "key", askFinalAccount: false });
+    const steps = wizardSteps({ needsCode: true, needsDatabase: true, mode: "key", joined: true, askFinalAccount: false });
     expect(steps.slice(0, 4)).toEqual(["welcome", "code", "database", "jellyfin"]);
     expect(steps.indexOf("finalAccount")).toBe(steps.indexOf("recap") - 1);
+  });
+
+  it("Jellyfin déjà configuré : les réglages conseillés à la place des bibliothèques", () => {
+    const steps = wizardSteps({ needsCode: false, needsDatabase: false, mode: "connect", joined: true, askFinalAccount: false });
+    expect(steps).toEqual(["welcome", "jellyfin", "account", "recommended", "recap", "apply", "remote", "done"]);
+    expect(steps).not.toContain("libraries");
+  });
+
+  it("déjà configuré ou non : le serveur le dit une fois relié, le choix de l'écran Jellyfin avant", () => {
+    expect(joinsConfigured(null, "connect")).toBe(true);
+    expect(joinsConfigured(null, "initialize")).toBe(false);
+    const linked = (joined: boolean, claimed = false) =>
+      ctx({ jellyfin: { url: "http://jf", suggestedUrl: null, configured: true, claimed, joined, clientUrl: null } });
+    expect(joinsConfigured(linked(true), null)).toBe(true);
+    expect(joinsConfigured(linked(false), "connect")).toBe(false);
+    // Le voisin verrouillé n'est pas encore le choix : on suit l'écran.
+    expect(joinsConfigured(linked(false, true), "connect")).toBe(true);
+    expect(resumeStep(linked(true))).toBe("recommended");
   });
 
   it("la base n'est demandée que si l'environnement ne la donne pas", () => {

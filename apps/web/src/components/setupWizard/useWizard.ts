@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ExistingLibrary, JellyfinProbeResult, LibraryOutcome, LibraryPlan, SegmentSetupRun, SetupCompleteResponse, SetupContext } from "@tentacle-tv/shared";
+import type {
+  ExistingLibrary, JellyfinProbeResult, LibraryOutcome, LibraryPlan, SegmentSetupRun, SetupAdviceAction, SetupAdviceOutcome, SetupCompleteResponse, SetupContext,
+} from "@tentacle-tv/shared";
 import { setupApi, setupSession } from "./setupApi";
-import { defaultLocale, needsDatabase, NO_BACK, resumeStep, wizardSteps, type JellyfinMode, type WizardLocale, type WizardStep } from "./wizardModel";
+import { defaultLocale, joinsConfigured, needsDatabase, NO_BACK, resumeStep, wizardSteps, type JellyfinMode, type WizardLocale, type WizardStep } from "./wizardModel";
+
+/** Ce que l'administrateur a coché à l'écran des réglages conseillés (rien : « Passer »). */
+export interface AdviceChoice {
+  /** Poser les greffons de passages (Jellyfin redémarre une fois). */
+  segments: boolean;
+  actions: SetupAdviceAction[];
+  /** Les titres des réglages cochés, pour le récapitulatif (clés `rec_<id>`). */
+  ids: string[];
+}
 
 /** Ce que l'assistant a appris en chemin. Le mot de passe ne vit qu'ici, en mémoire, jamais stocké. */
 export interface WizardData {
@@ -14,6 +25,10 @@ export interface WizardData {
   existing: ExistingLibrary[];
   plans: LibraryPlan[];
   outcomes: LibraryOutcome[] | null;
+  /** Jellyfin déjà configuré : les réglages conseillés cochés (`null` : pas encore vus). */
+  advice: AdviceChoice | null;
+  /** Leur issue, une fois appliqués. */
+  adviceOutcomes: SetupAdviceOutcome[] | null;
   /**
    * La détection des passages : `undefined` pas encore faite, `null` faite
    * sans succès (l'installation continue), sinon son résultat.
@@ -59,6 +74,8 @@ export function useWizard(): Wizard {
     existing: [],
     plans: [],
     outcomes: null,
+    advice: null,
+    adviceOutcomes: null,
     segments: undefined,
     session: null,
     resumed: false,
@@ -73,6 +90,7 @@ export function useWizard(): Wizard {
         needsCode: data.needsCode,
         needsDatabase: needsDatabase(data.context),
         mode: data.mode,
+        joined: joinsConfigured(data.context, data.mode),
         askFinalAccount: data.resumed && !data.credentials,
       }),
     [data.needsCode, data.context, data.mode, data.resumed, data.credentials],
