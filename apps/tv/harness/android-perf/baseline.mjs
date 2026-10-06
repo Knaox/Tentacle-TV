@@ -142,6 +142,9 @@ async function screens() {
       }
       const summary = { ...summarizeScenario(scenario, played), ...summarizeExtras(played), rawRounds: played.map(({ records: _records, ...r }) => r) };
       results.push(summary);
+      // Enregistré après CHAQUE écran : une passe coupée (garde, mise en place
+      // ratée) garde ce qu'elle a mesuré.
+      save(tag, { device: device.describe(), partial: true, results });
       console.log(`\n${describe(summary)}\n  mémoire (Mo) PSS ${(summary.memory.pss / 1024).toFixed(0)} · Java ${(summary.memory.java / 1024).toFixed(0)} · natif ${(summary.memory.native / 1024).toFixed(0)} · graphique ${(summary.memory.graphics / 1024).toFixed(0)} — ${Math.round(summary.views)} vues — charge ${summary.load}`);
     }
     save(tag, { device: device.describe(), images: { ...proxy.stats, log: undefined }, results });
