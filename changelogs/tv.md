@@ -5,6 +5,46 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
+## [1.10.1]
+<!-- Bloc nu : Android TV (Google Play, 500 caractères) — première livraison de la refonte, donc 1.10.0 + 1.10.1 résumés. -->
+### FR
+- **Android TV redessinée**, comme l'Apple TV : navigation de verre, grand bandeau, grand panneau en maintenant OK
+- **Profils de la famille** avec code PIN (serveur 1.23.0)
+- **La lecture démarre d'un seul tenant**, image et son ensemble
+- **Des rangées sans sursaut** et un accueil qui paraît d'un seul fondu
+- **Le bandeau suit votre réglage**, comme sur mobile
+- Plus de plantage au jumelage
+
+### EN
+- **Android TV redesigned**, like Apple TV: glass navigation, large banner, large panel when holding OK
+- **Family profiles** with PIN (server 1.23.0)
+- **Playback starts in one go**, picture and sound together
+- **Rows scroll without jumps** and Home appears in a single fade
+- **The banner follows your setting**, as on mobile
+- No more crash when pairing
+
+## [atv-1.10.1]
+<!-- Bloc Apple TV (App Store Connect, 4000 caractères) : correctifs de la 1.10.0. -->
+### FR
+- **« Passer l'intro » et « Passer le générique » se valident d'un clic**, même quand le doigt glisse un peu sur le pavé : plus de recherche lancée par erreur
+- **Au lancement, « Qui regarde ? » s'affiche aussitôt**, sans écran de chargement avant
+- **Sans famille, l'Apple TV ouvre directement votre compte**
+- **« Ne plus proposer à l'ouverture » revient décoché** quand on change de profil
+- **La photo des profils s'affiche à nouveau** dans « Gérer les profils »
+- **La bannière de l'accueil suit votre réglage** (reprise, au hasard, titre choisi ou Pour vous), comme sur le mobile et l'ordinateur
+- **L'accueil apparaît d'un seul fondu**, navigation comprise, une fois chargé
+- La rangée des titres entamés s'appelle « Là où vous en étiez »
+
+### EN
+- **"Skip Intro" and "Skip Credits" accept a click** even when your finger slides slightly on the touch surface: no more accidental seeking
+- **At launch, "Who's watching?" shows right away**, with no loading screen first
+- **Without a family, Apple TV opens your account directly**
+- **"Don't ask again at launch" is unchecked again** when you switch profiles
+- **Profile photos show again** in "Manage profiles"
+- **The home banner follows your setting** (continue watching, random, a chosen title or For You), as on mobile and desktop
+- **Home appears in a single fade**, navigation included, once loaded
+- The in-progress row is now called "Where you left off"
+
 ## [atv-1.10.0]
 <!-- Bloc Apple TV (TestFlight et App Store Connect, 4000 caractères). Pas de bloc nu : Android TV ne part pas en 1.10.0, et le pré-vol ne lui demande ses notes que s'il est livré. Réécrit pour le second TestFlight 1.10.0 (retours d'essai), sans les fonctions des extensions. -->
 ### FR
