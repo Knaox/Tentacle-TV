@@ -38,19 +38,17 @@ describe("le retour de Jellyfin", () => {
     expect(decideJellyfinReturn({ started: true, failedDuringOutage: false, streamLost: false })).toBe("resume");
   });
 
-  it("mpv : un flux fini AVANT la fin est perdu (segments sautés pendant la panne)", () => {
-    // Mesuré : 503 pendant le redémarrage, tous les segments restants sautés, cache arrêté à 488 s sur 600.
+  it("mpv : un transcodage est toujours réputé perdu (segments sautés pendant la panne, mesuré)", () => {
     expect(mpvStreamLost({ transcoding: true, cacheEof: true, cacheEndS: 488, durationS: 600 })).toBe(true);
-    expect(mpvStreamLost({ transcoding: false, cacheEof: true, cacheEndS: 300, durationS: 600 })).toBe(true);
-  });
-
-  it("mpv : la vraie fin en cache, ou un flux qui court encore, ne sont pas perdus", () => {
-    expect(mpvStreamLost({ transcoding: false, cacheEof: true, cacheEndS: 599.9, durationS: 600 })).toBe(false);
-    expect(mpvStreamLost({ transcoding: true, cacheEof: false, cacheEndS: 300, durationS: 600 })).toBe(false);
-  });
-
-  it("mpv sans état du cache : un transcodage est réputé perdu, une lecture directe gardée", () => {
+    expect(mpvStreamLost({ transcoding: true, cacheEof: false, cacheEndS: 300, durationS: 600 })).toBe(true);
     expect(mpvStreamLost({ transcoding: true, cacheEof: null, cacheEndS: null, durationS: null })).toBe(true);
+  });
+
+  it("mpv en lecture directe : perdu seulement si le flux s'est fini AVANT la fin", () => {
+    expect(mpvStreamLost({ transcoding: false, cacheEof: true, cacheEndS: 300, durationS: 600 })).toBe(true);
+    // Tout le fichier en cache (mesuré : 545 s d'avance) : la vraie fin, gardée.
+    expect(mpvStreamLost({ transcoding: false, cacheEof: true, cacheEndS: 599.9, durationS: 600 })).toBe(false);
+    expect(mpvStreamLost({ transcoding: false, cacheEof: false, cacheEndS: 300, durationS: 600 })).toBe(false);
     expect(mpvStreamLost({ transcoding: false, cacheEof: null, cacheEndS: null, durationS: null })).toBe(false);
   });
 });

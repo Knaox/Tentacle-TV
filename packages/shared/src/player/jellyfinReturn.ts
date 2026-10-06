@@ -51,10 +51,12 @@ export function decideJellyfinReturn(p: {
  * et sort sur une fausse fin du film. En lecture directe, la reconnexion de
  * ffmpeg (≈ 30 s, `stream-lavf-o`) peut s'épuiser de même.
  *
- * Avec l'état du cache (`demuxer-cache-state` : `eof`, `cache-end`, et la
- * `duration` de mpv, même ligne de temps) : perdu si le flux est fini AVANT
- * la fin. Sans lui (`cacheEof` à `null`) : prudence — un transcodage est
- * réputé perdu, une lecture directe gardée.
+ * Un transcodage est donc TOUJOURS réputé perdu : le saut des segments
+ * prend ~40 ms par segment, il peut courir encore au retour de Jellyfin sur
+ * un long film, et mpv sauterait alors du contenu sans aucune fin prématurée
+ * à voir. Une lecture directe ne l'est que si l'état du cache le montre
+ * (`demuxer-cache-state` : `eof`, `cache-end`, et la `duration` de mpv, même
+ * ligne de temps) : flux fini AVANT la fin. Sans état du cache, gardée.
  */
 export function mpvStreamLost(p: {
   transcoding: boolean;
@@ -62,9 +64,8 @@ export function mpvStreamLost(p: {
   cacheEndS: number | null;
   durationS: number | null;
 }): boolean {
-  if (p.cacheEof === null) return p.transcoding;
-  if (!p.cacheEof) return false;
-  if (p.cacheEndS === null || p.durationS === null || p.durationS <= 0) return p.transcoding;
+  if (p.transcoding) return true;
+  if (p.cacheEof !== true || p.cacheEndS === null || p.durationS === null || p.durationS <= 0) return false;
   return p.cacheEndS < p.durationS - PREMATURE_EOF_MARGIN_S;
 }
 

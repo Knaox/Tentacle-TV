@@ -13,9 +13,11 @@ interface CacheState {
  * `duration`, même ligne de temps ; la règle est partagée (`mpvStreamLost`).
  * Mesuré : un transcodage HLS dont ffmpeg a sauté les segments pendant le
  * redémarrage finit son flux en avance — sans ce contrôle, mpv jouait sa
- * réserve puis sortait sur une fausse fin du film.
+ * réserve puis sortait sur une fausse fin du film. Un transcodage est donc
+ * toujours rouvert ; seule une lecture directe lit le cache.
  */
 export async function desktopStreamLost(transcoding: boolean): Promise<boolean> {
+  if (transcoding) return mpvStreamLost({ transcoding, cacheEof: null, cacheEndS: null, durationS: null });
   try {
     const [raw, duration] = await Promise.all([
       getProperty("demuxer-cache-state", "string"),
@@ -29,6 +31,6 @@ export async function desktopStreamLost(transcoding: boolean): Promise<boolean> 
       durationS: duration,
     });
   } catch {
-    return mpvStreamLost({ transcoding, cacheEof: null, cacheEndS: null, durationS: null });
+    return false;
   }
 }
