@@ -14,6 +14,9 @@
  * s'il le FAUT :
  *  - la lecture n'avait pas démarré (la négociation est morte avec Jellyfin) ;
  *  - le lecteur a perdu son flux PENDANT la panne (erreur tue alors) ;
+ *  - le moteur a perdu son flux SANS le dire (`streamLost`) : mpv, quand
+ *    ffmpeg abandonne pendant la panne, finit son flux en avance et jouerait
+ *    sa réserve jusqu'à une fausse « fin du film » (`mpvStreamLost`) ;
  *  - après le retour, une erreur, ou une image arrêtée plus de
  *    `RETURN_STALL_MS` : l'URL ne vaut plus, l'encodage ne repart pas, ou la
  *    réserve s'est épuisée sans que le lecteur sache se reconnecter. Une fois
@@ -28,8 +31,41 @@ export const RETURN_STALL_MS = 5_000;
 
 export type JellyfinReturnAction = "resume" | "reopen";
 
-export function decideJellyfinReturn(p: { started: boolean; failedDuringOutage: boolean }): JellyfinReturnAction {
-  return !p.started || p.failedDuringOutage ? "reopen" : "resume";
+/** Une fin de flux à plus de tant de la durée n'est pas la fin du film. */
+export const PREMATURE_EOF_MARGIN_S = 5;
+
+export function decideJellyfinReturn(p: {
+  started: boolean;
+  failedDuringOutage: boolean;
+  /** Le moteur a perdu son flux sans erreur (`mpvStreamLost`). */
+  streamLost?: boolean;
+}): JellyfinReturnAction {
+  return !p.started || p.failedDuringOutage || p.streamLost === true ? "reopen" : "resume";
+}
+
+/**
+ * mpv a-t-il perdu son flux pendant la panne ? Mesuré (banc du 2026-10-06,
+ * Jellyfin redémarré) : sur un transcodage HLS, le démultiplexeur de ffmpeg
+ * reçoit des 503 et SAUTE tous les segments restants en quelques secondes
+ * (« failed too many times, skipping »), puis s'arrête — mpv joue sa réserve
+ * et sort sur une fausse fin du film. En lecture directe, la reconnexion de
+ * ffmpeg (≈ 30 s, `stream-lavf-o`) peut s'épuiser de même.
+ *
+ * Avec l'état du cache (`demuxer-cache-state` : `eof`, `cache-end`, et la
+ * `duration` de mpv, même ligne de temps) : perdu si le flux est fini AVANT
+ * la fin. Sans lui (`cacheEof` à `null`) : prudence — un transcodage est
+ * réputé perdu, une lecture directe gardée.
+ */
+export function mpvStreamLost(p: {
+  transcoding: boolean;
+  cacheEof: boolean | null;
+  cacheEndS: number | null;
+  durationS: number | null;
+}): boolean {
+  if (p.cacheEof === null) return p.transcoding;
+  if (!p.cacheEof) return false;
+  if (p.cacheEndS === null || p.durationS === null || p.durationS <= 0) return p.transcoding;
+  return p.cacheEndS < p.durationS - PREMATURE_EOF_MARGIN_S;
 }
 
 /** La fenêtre d'après-retour est-elle encore ouverte ? */

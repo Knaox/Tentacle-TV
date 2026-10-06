@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { decideJellyfinReturn, returnStallDeadline, RETURN_STALL_MS, RETURN_WATCH_MS, withinReturnWatch } from "./jellyfinReturn";
+import {
+  decideJellyfinReturn, mpvStreamLost, returnStallDeadline, RETURN_STALL_MS, RETURN_WATCH_MS, withinReturnWatch,
+} from "./jellyfinReturn";
 
 describe("le retour de Jellyfin", () => {
   it("une lecture qui a tenu sur sa réserve continue, sans rien recharger", () => {
@@ -29,5 +31,26 @@ describe("le retour de Jellyfin", () => {
     expect(returnStallDeadline({ now: 0, returnedAt: 1000, stalledSince: null, reopened: false })).toBeNull();
     expect(returnStallDeadline({ now: 0, returnedAt: null, stalledSince: 2000, reopened: false })).toBeNull();
     expect(returnStallDeadline({ now: 0, returnedAt: 1000, stalledSince: 1000 + RETURN_WATCH_MS, reopened: false })).toBeNull();
+  });
+
+  it("un moteur qui a perdu son flux sans erreur se rouvre", () => {
+    expect(decideJellyfinReturn({ started: true, failedDuringOutage: false, streamLost: true })).toBe("reopen");
+    expect(decideJellyfinReturn({ started: true, failedDuringOutage: false, streamLost: false })).toBe("resume");
+  });
+
+  it("mpv : un flux fini AVANT la fin est perdu (segments sautés pendant la panne)", () => {
+    // Mesuré : 503 pendant le redémarrage, tous les segments restants sautés, cache arrêté à 488 s sur 600.
+    expect(mpvStreamLost({ transcoding: true, cacheEof: true, cacheEndS: 488, durationS: 600 })).toBe(true);
+    expect(mpvStreamLost({ transcoding: false, cacheEof: true, cacheEndS: 300, durationS: 600 })).toBe(true);
+  });
+
+  it("mpv : la vraie fin en cache, ou un flux qui court encore, ne sont pas perdus", () => {
+    expect(mpvStreamLost({ transcoding: false, cacheEof: true, cacheEndS: 599.9, durationS: 600 })).toBe(false);
+    expect(mpvStreamLost({ transcoding: true, cacheEof: false, cacheEndS: 300, durationS: 600 })).toBe(false);
+  });
+
+  it("mpv sans état du cache : un transcodage est réputé perdu, une lecture directe gardée", () => {
+    expect(mpvStreamLost({ transcoding: true, cacheEof: null, cacheEndS: null, durationS: null })).toBe(true);
+    expect(mpvStreamLost({ transcoding: false, cacheEof: null, cacheEndS: null, durationS: null })).toBe(false);
   });
 });

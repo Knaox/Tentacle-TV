@@ -12,20 +12,24 @@ export interface OutageGateHandle<F> {
 
 /**
  * `outageGate.ts` branché sur un lecteur React : `report` remplace le report
- * d'erreur du lecteur, `stalled` reçoit ses attentes, et le retour de
- * Jellyfin ne rouvre le flux (`reopen`) que s'il le faut. Les rappels sont
+ * d'erreur du lecteur, `stalled` reçoit ses attentes, `streamLost` dit si le
+ * moteur a perdu son flux en silence, et le retour de Jellyfin ne rouvre le
+ * flux (`reopen`) que s'il le faut. Les rappels sont
  * lus au moment de servir : l'appelant peut les recréer à chaque rendu.
  */
 export function useOutageGate<F>(
   reopen: () => void,
   diagnose: (failure: F) => void,
   started: () => boolean,
+  /** Le moteur a-t-il perdu son flux sans erreur (mpv) ? Lu au retour de Jellyfin. */
+  streamLost?: () => boolean | Promise<boolean>,
 ): OutageGateHandle<F> {
-  const latest = useRef({ reopen, diagnose, started });
-  latest.current = { reopen, diagnose, started };
+  const latest = useRef({ reopen, diagnose, started, streamLost });
+  latest.current = { reopen, diagnose, started, streamLost };
   const gate = useMemo(() => createOutageGate<F>({
     state: () => getJellyfinHealth().state,
     started: () => latest.current.started(),
+    streamLost: () => latest.current.streamLost?.() ?? false,
     reopen: () => latest.current.reopen(),
     diagnose: (failure) => latest.current.diagnose(failure),
     log: (line) => console.info(line),

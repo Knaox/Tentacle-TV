@@ -28,6 +28,8 @@ export interface OutageGateDeps<F> {
   reopen(): void;
   /** Le chemin ordinaire d'une erreur : diagnostic, écran, gestes. */
   diagnose(failure: F): void;
+  /** Le moteur a-t-il perdu son flux SANS erreur (mpv : `mpvStreamLost`) ? Lu au retour. */
+  streamLost?(): boolean | Promise<boolean>;
   now?(): number;
   schedule?(run: () => void, ms: number): () => void;
   /** Une ligne par décision (console du lecteur). */
@@ -101,17 +103,27 @@ export function createOutageGate<F>(deps: OutageGateDeps<F>): OutageGate<F> {
       deps.diagnose(failure);
     },
     recovered() {
-      returnedAt = now();
+      const at = now();
+      returnedAt = at;
       reopened = false;
       const started = deps.started();
-      const action = decideJellyfinReturn({ started, failedDuringOutage });
+      const failed = failedDuringOutage;
       failedDuringOutage = false;
-      if (action === "reopen") {
-        reopenOnce(started ? "flux perdu pendant la panne" : "lecture pas encore démarrée");
-        return;
-      }
-      log("[panne] Jellyfin revenu : lecture gardée, rien n'est rechargé");
-      if (stalledSince !== null) armStall();
+      const decide = (streamLost: boolean) => {
+        // Une autre panne, un autre retour, ou déjà rouvert : la réponse arrive trop tard.
+        if (returnedAt !== at || reopened) return;
+        const action = decideJellyfinReturn({ started, failedDuringOutage: failed, streamLost });
+        if (action === "reopen") {
+          const why = !started ? "lecture pas encore démarrée" : failed ? "flux perdu pendant la panne" : "flux fini avant la fin (moteur)";
+          reopenOnce(why);
+          return;
+        }
+        log("[panne] Jellyfin revenu : lecture gardée, rien n'est rechargé");
+        if (stalledSince !== null) armStall();
+      };
+      const lost = started && !failed && deps.streamLost ? deps.streamLost() : false;
+      if (typeof lost === "boolean") decide(lost);
+      else void lost.then(decide, () => decide(false));
     },
     stalled(on) {
       if (!on) {

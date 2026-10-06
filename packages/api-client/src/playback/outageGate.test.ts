@@ -7,7 +7,7 @@ import { createOutageGate } from "./outageGate";
  * et le mobile partagent. Horloge et minuteries simulées.
  */
 
-function harness(opts: { started?: boolean } = {}) {
+function harness(opts: { started?: boolean; streamLost?: () => boolean | Promise<boolean> } = {}) {
   let state: JellyfinHealthState = "up";
   let clock = 0;
   let timers: Array<{ at: number; run: () => void; live: boolean }> = [];
@@ -17,6 +17,7 @@ function harness(opts: { started?: boolean } = {}) {
     started: () => opts.started ?? true,
     reopen: () => log.push("rouvre"),
     diagnose: (f) => log.push(`diagnostic ${f}`),
+    streamLost: opts.streamLost,
     now: () => clock,
     schedule: (run, ms) => {
       const timer = { at: clock + ms, run, live: true };
@@ -154,6 +155,41 @@ describe("portillon des erreurs pendant une panne de Jellyfin", () => {
     h.gate.stalled(true);
     h.set("restarting");
     h.advance(RETURN_STALL_MS);
+    expect(h.log).toEqual([]);
+  });
+
+  it("le moteur a perdu son flux sans erreur (mpv, segments sautés) : rouvert au retour", () => {
+    const h = harness({ streamLost: () => true });
+    h.set("down");
+    h.set("up");
+    h.gate.recovered();
+    expect(h.log).toEqual(["rouvre"]);
+  });
+
+  it("la vérification du moteur peut répondre plus tard ; rien si une autre panne l'a devancée", async () => {
+    let answer: (lost: boolean) => void = () => undefined;
+    const h = harness({ streamLost: () => new Promise<boolean>((r) => { answer = r; }) });
+    h.gate.recovered();
+    expect(h.log).toEqual([]);
+    answer(true);
+    await Promise.resolve();
+    expect(h.log).toEqual(["rouvre"]);
+
+    let late: (lost: boolean) => void = () => undefined;
+    const g = harness({ streamLost: () => new Promise<boolean>((r) => { late = r; }) });
+    g.gate.recovered();
+    g.set("down");
+    g.gate.report("réseau");
+    late(true);
+    await Promise.resolve();
+    expect(g.log).toEqual([]);
+  });
+
+  it("flux intact selon le moteur : lecture gardée", async () => {
+    const h = harness({ streamLost: () => Promise.resolve(false) });
+    h.gate.recovered();
+    await Promise.resolve();
+    h.advance(RETURN_WATCH_MS);
     expect(h.log).toEqual([]);
   });
 });
