@@ -1,11 +1,14 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { View, TextInput, type TextStyle } from "react-native";
+import { useTranslation } from "react-i18next";
 import { FONT_FAMILY, RADIUS, useTheme } from "../../theme";
 
 interface Props {
   chars: string[];
   onChange: (next: string[]) => void;
   status: "idle" | "pairing" | "success" | "error";
+  /** Le clavier s'ouvre sur la première case (défaut) ; non quand l'écran a d'autres usages. */
+  autoFocus?: boolean;
 }
 
 export interface PairCodeInputsHandle {
@@ -17,10 +20,11 @@ export interface PairCodeInputsHandle {
  * input array, focus auto avance, retour sur backspace.
  */
 export const PairCodeInputs = forwardRef<PairCodeInputsHandle, Props>(function PairCodeInputs(
-  { chars, onChange, status }: Props,
+  { chars, onChange, status, autoFocus = true }: Props,
   ref,
 ) {
   const { colors } = useTheme();
+  const { t } = useTranslation("pairing");
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useImperativeHandle(ref, () => ({
@@ -81,8 +85,8 @@ export const PairCodeInputs = forwardRef<PairCodeInputsHandle, Props>(function P
             autoCapitalize="characters"
             autoCorrect={false}
             editable={status !== "pairing"}
-            autoFocus={i === 0}
-            accessibilityLabel={`Code digit ${i + 1}`}
+            autoFocus={autoFocus && i === 0}
+            accessibilityLabel={t("codeCharacter", { index: i + 1 })}
             style={[
               {
                 width: 60,

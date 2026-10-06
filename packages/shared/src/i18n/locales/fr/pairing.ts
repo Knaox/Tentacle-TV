@@ -47,6 +47,7 @@ export default {
   pairTV: "Jumeler la TV",
   tvPairedSuccess: "TV jumelée avec succès !",
   pairAnotherTv: "Jumeler une autre TV",
+  codeCharacter: "Caractère {{index}} du code",
   relayError: "Impossible de joindre le service de jumelage. Réessayez plus tard.",
 
   // Gestion des appareils jumelés

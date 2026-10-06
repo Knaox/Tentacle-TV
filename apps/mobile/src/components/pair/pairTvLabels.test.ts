@@ -9,7 +9,7 @@ const FORBIDDEN = /t[ée]l[ée]charg|download/i;
 
 /** Ce que lit « Appareils et TV » : PairTvSection, PairTvCard, PairedDevicesSection. */
 const PAIRING_KEYS = [
-  "pairYourTV", "enterTVCode", "codeExpireNote", "pairTV", "tvPairedSuccess", "pairAnotherTv",
+  "pairYourTV", "enterTVCode", "codeExpireNote", "pairTV", "tvPairedSuccess", "pairAnotherTv", "codeCharacter",
   "pairedDevices", "noPairedDevices", "lastActive", "revoke", "revokeConfirm", "devicesLoadError", "cancel",
 ] as const;
 

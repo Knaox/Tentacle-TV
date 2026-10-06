@@ -15,6 +15,8 @@ import { usePairTvFlow } from "./usePairTvFlow";
 interface Props {
   /** Une fois la TV jumelée, offrir d'en jumeler une autre sans quitter l'écran. */
   allowAnother?: boolean;
+  /** Ouvrir le clavier sur la première case dès l'arrivée (l'écran `/pair-tv`). */
+  autoFocus?: boolean;
 }
 
 /**
@@ -23,7 +25,7 @@ interface Props {
  * repartir. La même dans l'écran `/pair-tv` et en tête d'« Appareils et TV ».
  * Le jumelage exige l'URL publique du serveur ; une panne se dit à part.
  */
-export function PairTvCard({ allowAnother = false }: Props) {
+export function PairTvCard({ allowAnother = false, autoFocus = true }: Props) {
   const { t } = useTranslation("pairing");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -70,7 +72,7 @@ export function PairTvCard({ allowAnother = false }: Props) {
   } else {
     body = (
       <>
-        <PairCodeInputs ref={codeInputsRef} chars={chars} onChange={setChars} status={status} />
+        <PairCodeInputs ref={codeInputsRef} chars={chars} onChange={setChars} status={status} autoFocus={autoFocus} />
         {status === "error" && errorMsg ? (
           <View style={st.errorRow} accessibilityLiveRegion="polite">
             <Feather name="alert-circle" size={16} color={theme.colors.status.error} />

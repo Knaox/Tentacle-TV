@@ -47,6 +47,7 @@ export default {
   pairTV: "Pair TV",
   tvPairedSuccess: "TV paired successfully!",
   pairAnotherTv: "Pair another TV",
+  codeCharacter: "Code character {{index}}",
   relayError: "Could not reach the pairing service. Try again later.",
 
   // Paired devices management

@@ -18,7 +18,8 @@ export function PairTvSection() {
     <View style={st.wrap}>
       <Text style={st.title} accessibilityRole="header">{t("pairYourTV")}</Text>
       <Text style={st.hint}>{t("enterTVCode")}</Text>
-      <PairTvCard allowAnother />
+      {/* Pas de clavier d'office : il couvrirait la liste et ses « Révoquer ». */}
+      <PairTvCard allowAnother autoFocus={false} />
       <View style={st.note}>
         <Feather name="clock" size={12} color={theme.colors.text.quaternary} />
         <Text style={st.noteText}>{t("codeExpireNote")}</Text>
