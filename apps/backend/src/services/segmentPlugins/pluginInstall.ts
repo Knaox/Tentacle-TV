@@ -62,7 +62,9 @@ export async function readPackages(): Promise<Loose[] | null> {
 
 /**
  * Le paquet absent du catalogue : son dépôt est-il muet, ou n'a-t-il rien pour
- * cette version ? On lit le manifeste comme Jellyfin le lit (même agent).
+ * cette version ? On lit le manifeste comme Jellyfin le lit (même agent). Une
+ * version compatible au manifeste que Jellyfin n'a pourtant pas vue : c'est
+ * Jellyfin qui ne joint pas le dépôt (pare-feu, DNS du conteneur) — « muet ».
  */
 export async function probeManifest(spec: SegmentPluginSpec, jellyfinVersion: string): Promise<"repo-offline" | "unavailable"> {
   try {
@@ -72,8 +74,11 @@ export async function probeManifest(spec: SegmentPluginSpec, jellyfinVersion: st
     });
     if (!res.ok) return "repo-offline";
     const manifest: unknown = await res.json();
-    const listed = Array.isArray(manifest) && manifest.some((entry) => isRecord(entry) && normalizeGuid(entry.guid) === spec.guid);
-    return listed ? "unavailable" : "repo-offline";
+    const entry = Array.isArray(manifest) ? manifest.find((candidate) => isRecord(candidate) && normalizeGuid(candidate.guid) === spec.guid) : undefined;
+    if (!isRecord(entry)) return "repo-offline";
+    const versions = Array.isArray(entry.versions) ? entry.versions.filter(isRecord) : [];
+    const compatible = versions.some((version) => versionAtLeast(jellyfinVersion, text(version.targetAbi) || "0"));
+    return compatible ? "repo-offline" : "unavailable";
   } catch {
     return "repo-offline";
   }

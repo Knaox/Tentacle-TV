@@ -53,6 +53,8 @@ export class FakeJellyfin {
   tasks: Loose[] = [{ Id: "t-seg", Key: "TaskExtractMediaSegments", Triggers: [{ Type: "IntervalTrigger" }] }];
   /** Dépôts qui ne répondent pas (ni à Jellyfin, ni à la sonde). */
   offline = new Set<string>();
+  /** Dépôts que SEUL Jellyfin ne joint pas (la sonde de Tentacle, elle, les lit). */
+  unreachableFromJellyfin = new Set<string>();
   playing = false;
   pendingRestart = false;
   /** Nombre de sondes publiques pendant lesquelles il reste « tombé » après un redémarrage. */
@@ -90,7 +92,7 @@ export class FakeJellyfin {
     }
     if (path === "/Packages") {
       return ok(Object.values(this.seeds)
-        .filter((seed) => this.repoKnown(seed.repo) && !this.offline.has(seed.repo) && seed.versions.length > 0)
+        .filter((seed) => this.repoKnown(seed.repo) && !this.offline.has(seed.repo) && !this.unreachableFromJellyfin.has(seed.repo) && seed.versions.length > 0)
         .map((seed) => ({ name: seed.name, guid: seed.guid, versions: seed.versions.map((version) => ({ version, repositoryUrl: seed.repo })) })));
     }
     const install = path.match(/^\/Packages\/Installed\/([^?]+)\?assemblyGuid=(\w+)/);
@@ -152,6 +154,11 @@ export class FakeJellyfin {
     }
     const seed = Object.values(this.seeds).find((candidate) => candidate.repo === url);
     if (!seed || this.offline.has(url)) return new Response("", { status: 502 });
-    return Response.json(Object.values(this.seeds).filter((s) => s.repo === url).map((s) => ({ guid: s.guid, name: s.name, versions: [] })));
+    // Le manifeste tel que le serveur le publie : une version trop récente pour un greffon « sans version ».
+    return Response.json(Object.values(this.seeds).filter((s) => s.repo === url).map((s) => ({
+      guid: s.guid,
+      name: s.name,
+      versions: s.versions.length > 0 ? s.versions.map((version) => ({ version, targetAbi: "10.0.0.0" })) : [{ version: "9.9.9.9", targetAbi: "99.0.0.0" }],
+    })));
   }
 }

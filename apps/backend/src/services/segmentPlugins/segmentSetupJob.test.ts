@@ -74,6 +74,12 @@ describe("passage d'installation des greffons de passages", () => {
     expect(run.configured).toBe(true);
   });
 
+  it("Jellyfin seul ne joint pas un dépôt que Tentacle lit : « hors ligne », pas « sans version »", async () => {
+    state.jf.unreachableFromJellyfin.add("https://raw.githubusercontent.com/TheIntroDB/jellyfin-plugin/main/manifest.json");
+    const run = await startSegmentSetup({}, clock);
+    expect(outcomes(run).theIntroDb).toBe("repo-offline");
+  });
+
   it("aucune version pour ce Jellyfin : « indisponible », pas « hors ligne »", async () => {
     state.jf.seeds.skipMeDb.versions = [];
     const run = await startSegmentSetup({}, clock);
