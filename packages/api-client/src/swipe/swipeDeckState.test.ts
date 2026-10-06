@@ -79,4 +79,20 @@ describe("séance de swipe", () => {
     expect(s.exhausted).toBe(true);
     expect(swipeDeckReducer(s, { type: "undone" }).exhausted).toBe(false);
   });
+
+  it("un titre demandé quitte la file sans verdict, et le serveur ne le resert pas", () => {
+    const s = run(
+      { type: "loaded", cards: [card(1), card(2), card(3)], counts: SERVER_COUNTS },
+      { type: "hidden", keys: ["movie:2", "movie:99"] },
+    );
+    expect(s.queue.map((c) => c.key)).toEqual(["movie:1", "movie:3"]);
+    expect(s.counts).toEqual(SERVER_COUNTS);
+    expect(s.history).toEqual([]);
+    expect(deckExcludeKeys(s)).toContain("movie:2");
+  });
+
+  it("rien de demandé dans la file : le même état, aucun rendu", () => {
+    const before = run({ type: "loaded", cards: [card(1)], counts: SERVER_COUNTS });
+    expect(swipeDeckReducer(before, { type: "hidden", keys: ["movie:7"] })).toBe(before);
+  });
 });

@@ -25,6 +25,16 @@ export interface PluginBackendContext {
   /** Auth middleware */
   requireAuth: (req: import("fastify").FastifyRequest, reply: import("fastify").FastifyReply) => Promise<void>;
   requireAdmin: (req: import("fastify").FastifyRequest, reply: import("fastify").FastifyReply) => Promise<void>;
+  /**
+   * Les recommandations du cœur. `titleRequested` : le compte vient de
+   * demander ce titre (une extension de demandes le dit après CHAQUE demande
+   * acceptée, d'où qu'elle parte) — il sort de SES recommandations, sans
+   * peser sur son goût (services/reco/requestedTitles.ts). Venu après : une
+   * extension doit le tester avant de l'appeler.
+   */
+  recommendations: {
+    titleRequested: (userId: string, title: { mediaType: "movie" | "tv"; tmdbId: number }) => Promise<void>;
+  };
 }
 
 export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
@@ -110,12 +120,21 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
       // Lazy imports to avoid circular dependencies
       const { getPrisma } = await import("./db");
       const { requireAuth, requireAdmin } = await import("../middleware/auth");
+      const { hideRequestedTitle } = await import("./reco/requestedTitles");
 
       const ctx: PluginBackendContext = {
         pluginId: plugin.pluginId,
         getPrisma,
         requireAuth,
         requireAdmin,
+        recommendations: {
+          // Jamais une panne pour l'extension : la demande est faite, le masquage est un plus.
+          titleRequested: async (userId, title) => {
+            await hideRequestedTitle(userId, title).catch((err) => {
+              console.warn(`[PluginBackend] ${plugin.pluginId}: titleRequested`, err instanceof Error ? err.message : err);
+            });
+          },
+        },
       };
 
       // Register plugin routes under /api/plugins/{pluginId}/

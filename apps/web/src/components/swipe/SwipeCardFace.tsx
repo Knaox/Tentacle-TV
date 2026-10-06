@@ -1,7 +1,8 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Info } from "lucide-react";
+import { ExternalLink, Info } from "lucide-react";
 import type { SwipeCard, SwipeCardDetails } from "@tentacle-tv/api-client";
+import type { TitlePageLink } from "@tentacle-tv/shared";
 import { SwipeCardRecto } from "./SwipeCardRecto";
 import { SwipeInfoPanel } from "./SwipeInfoPanel";
 
@@ -13,6 +14,12 @@ interface SwipeCardFaceProps {
   infoOpen: boolean;
   details: SwipeCardDetails | undefined;
   onToggleInfo: () => void;
+  /** La fiche du titre chez l'extension (hors bibliothèque) — `null` : aucune. */
+  page?: TitlePageLink | null;
+  /** Une extension pourrait en donner une : sa place est gardée, le texte ne
+   *  bouge pas quand le lien arrive. */
+  pageSlot?: boolean;
+  onOpenPage?: (href: string) => void;
 }
 
 /**
@@ -27,6 +34,9 @@ export const SwipeCardFace = memo(function SwipeCardFace({
   infoOpen,
   details,
   onToggleInfo,
+  page = null,
+  pageSlot = false,
+  onOpenPage,
 }: SwipeCardFaceProps) {
   const { t } = useTranslation("swipe");
   const [broken, setBroken] = useState(false);
@@ -58,7 +68,7 @@ export const SwipeCardFace = memo(function SwipeCardFace({
       {/* Verso ouvert : le texte du recto s'efface — sous le voile, il
           transparaissait en fantôme. L'affiche seule reste dessous. */}
       {!(interactive && infoOpen) && (
-        <SwipeCardRecto card={card} title={title} format={format.join(" · ")} />
+        <SwipeCardRecto card={card} title={title} format={format.join(" · ")} pageSlot={pageSlot} />
       )}
 
       {interactive && (
@@ -69,12 +79,31 @@ export const SwipeCardFace = memo(function SwipeCardFace({
             onToggleInfo();
           }}
           onPointerDown={(e) => e.stopPropagation()}
+          // Pas de focus à la souris : Espace doit rester « synopsis » (cf. SwipeControls).
+          onMouseDown={(e) => e.preventDefault()}
           aria-expanded={infoOpen}
           aria-label={infoOpen ? t("hideInfo") : t("showInfo")}
           title={infoOpen ? t("hideInfo") : t("showInfo")}
           className="absolute bottom-4 right-4 z-20 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           <Info size={20} aria-hidden />
+        </button>
+      )}
+
+      {interactive && page && onOpenPage && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenPage(page.href);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.preventDefault()}
+          title={page.label}
+          className="absolute bottom-4 left-4 z-20 flex h-11 max-w-[calc(100%-6rem)] cursor-pointer items-center gap-2 rounded-full border border-white/25 bg-black/60 px-4 text-sm font-semibold text-white transition-colors hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          <ExternalLink size={16} className="shrink-0" aria-hidden />
+          <span className="truncate">{page.label}</span>
         </button>
       )}
 

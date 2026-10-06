@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { invalidateRecoQueries } from "../hooks/useRecoPage";
+import { useRequestedTitles } from "../reco/requestedTitles";
 import { FAVORITE_LIST_KEYS, FAVORITE_SERIES_IDS_KEY } from "../hooks/watchlistEffects";
 import { INITIAL_SWIPE_DECK, deckExcludeKeys, swipeDeckReducer } from "./swipeDeckState";
 import type { SwipeCard, SwipeCardDetails, SwipeDeckResponse, SwipeLang, SwipeVerdict } from "./swipeTypes";
@@ -28,6 +29,8 @@ export interface SwipeDeck {
   undo: () => void;
   retry: () => void;
   dismissSaveFailed: () => void;
+  /** Relit les titres demandés (un écran natif qui reprend le focus). */
+  refreshRequested: () => void;
 }
 
 /**
@@ -72,6 +75,14 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
       setFetching(false);
     }
   }, [lang]);
+
+  // Un titre demandé (sur la page de l'extension ouverte d'une carte, ou
+  // ailleurs) quitte la pile sans verdict — et sans compter.
+  const requested = useRequestedTitles();
+  const requestedKeys = requested.keys;
+  useEffect(() => {
+    if (requestedKeys.length) dispatch({ type: "hidden", keys: requestedKeys });
+  }, [requestedKeys, state.queue.length]);
 
   // Premier lot, puis recharge dès que la file baisse.
   const { queue, exhausted, loaded } = state;
@@ -135,6 +146,7 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
     undo,
     retry,
     dismissSaveFailed,
+    refreshRequested: requested.refetch,
   };
 }
 

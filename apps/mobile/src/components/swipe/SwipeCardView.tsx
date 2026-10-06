@@ -1,5 +1,8 @@
 import { memo, useEffect, useMemo, useRef } from "react";
-import { PanResponder, Pressable, StyleSheet } from "react-native";
+import { PanResponder, Pressable, StyleSheet, Text } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import type { TitlePageLink } from "@tentacle-tv/shared";
+import { FONT_FAMILY } from "@/theme";
 import Animated, {
   Easing, ReduceMotion, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming,
 } from "react-native-reanimated";
@@ -27,6 +30,11 @@ interface Props {
   onToggleInfo: () => void;
   accessibilityActions: Array<{ name: string; label: string }>;
   onAccessibilityAction: (name: string) => void;
+  /** La fiche du titre chez l'extension (carte du dessus, hors bibliothèque). */
+  page?: TitlePageLink | null;
+  /** Sa place, gardée sur toute carte hors bibliothèque dès qu'une extension est là. */
+  pageSlot?: boolean;
+  onOpenPage?: (href: string) => void;
 }
 
 const SPRING = { damping: 18, stiffness: 220 };
@@ -57,7 +65,7 @@ function toRest(reduced: boolean) {
  */
 export const SwipeCardView = memo(function SwipeCardView({
   card, depth, zIndex, posterUri, infoOpen, details, reducedMotion, label, screenWidth, exit,
-  onRelease, onExited, onToggleInfo, accessibilityActions, onAccessibilityAction,
+  onRelease, onExited, onToggleInfo, accessibilityActions, onAccessibilityAction, page = null, pageSlot = false, onOpenPage,
 }: Props) {
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
@@ -159,11 +167,34 @@ export const SwipeCardView = memo(function SwipeCardView({
         onAccessibilityAction={(e) => onAccessibilityAction(e.nativeEvent.actionName)}
       >
         {/* La carte qui part garde sa face : verso ouvert au verdict, il le reste. */}
-        <SwipeCardFace card={card} posterUri={posterUri} interactive={depth === 0} infoOpen={depth === 0 && infoOpen} details={details} />
+        <SwipeCardFace card={card} posterUri={posterUri} interactive={depth === 0} infoOpen={depth === 0 && infoOpen} details={details} pageSlot={pageSlot} />
       </Pressable>
+      {/* Frère de la carte, pas enfant : la carte est UN élément pour VoiceOver,
+          ce bouton doit rester atteignable. Un toucher l'ouvre ; un glisser
+          parti de lui emporte la carte, comme ailleurs. */}
+      {top && page && onOpenPage && (
+        <Pressable
+          style={st.page}
+          onPress={() => onOpenPage(page.href)}
+          accessibilityRole="link"
+          accessibilityLabel={page.label}
+          hitSlop={6}
+        >
+          <Feather name="external-link" size={15} color="#fff" />
+          <Text style={st.pageText} numberOfLines={1}>{page.label}</Text>
+        </Pressable>
+      )}
       {depth === 0 && <SwipeStampsNative tx={tx} ty={ty} />}
     </Animated.View>
   );
 });
 
-const st = StyleSheet.create({ fill: { flex: 1 } });
+const st = StyleSheet.create({
+  fill: { flex: 1 },
+  page: {
+    position: "absolute", left: 14, bottom: 14, maxWidth: "80%", height: 40, flexDirection: "row", alignItems: "center", gap: 8,
+    paddingHorizontal: 14, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.65)",
+    borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.3)",
+  },
+  pageText: { flexShrink: 1, color: "#fff", fontSize: 14, fontFamily: FONT_FAMILY.semibold, fontWeight: "600" },
+});

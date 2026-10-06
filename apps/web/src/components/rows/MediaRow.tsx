@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { useHeldRowItems } from "@tentacle-tv/api-client";
 import { PosterCard } from "../cards/PosterCard";
 import { EpisodeCard } from "../cards/EpisodeCard";
 import type { PosterImageMode } from "@tentacle-tv/shared";
@@ -9,10 +10,13 @@ import { RowScrollControls } from "./RowScrollControls";
 import { useRowScroll } from "./useRowScroll";
 import { useRowCardWidth } from "./useRowCardWidth";
 import { useRowWindow } from "./useRowWindow";
+import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
 
 export type CardVariant = "poster" | "episode";
+
+const mediaKey = (item: MediaItem) => item.Id;
 
 interface MediaRowProps {
   title: string;
@@ -25,6 +29,10 @@ interface MediaRowProps {
   href?: string;
   /** Pour les épisodes en carte poster : `series` force le poster de la série. */
   posterImageMode?: PosterImageMode;
+  /** Vide : rien du tout, plutôt que « aucun résultat ». La garde vit ICI,
+   *  après la tenue : la dernière carte retirée d'une rangée survolée y reste
+   *  jusqu'au lâcher, la rangée avec elle. */
+  hideWhenEmpty?: boolean;
 }
 
 /**
@@ -38,9 +46,10 @@ interface MediaRowProps {
  * bibliothèques du serveur. Il est désormais en O(écran) : ~44 cartes, quel que
  * soit le catalogue.
  */
-export function MediaRow({ title, items, variant = "poster", animDelay = 0, href, posterImageMode }: MediaRowProps) {
+export function MediaRow({ title, items: served, variant = "poster", animDelay = 0, href, posterImageMode, hideWhenEmpty = false }: MediaRowProps) {
   const { t } = useTranslation("common");
   const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
+  const rowRef = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
   const { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll } = useRowScroll();
   // Largeur calée sur la rangée : un nombre entier de cartes la remplit
@@ -54,9 +63,21 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
   const { ref: observeRow, visible: rowOnScreen } = useInViewport<HTMLElement>("400px");
   // Les deux observateurs (entrée + porte) partagent la racine d'un seul geste.
   const setRowRoot = useCallback((el: HTMLElement | null) => {
+    rowRef.current = el;
     setRowEl(el);
     observeRow(el);
   }, [observeRow]);
+  // Survol de la rangée : il MONTE les zones de défilement (leur
+  // `backdrop-filter` ne coûte rien démonté), et il TIENT la rangée — une
+  // carte qu'un geste retire (« vu » dans Reprendre, le cœur décoché dans Mes
+  // favoris, Ma liste retirée) ne part qu'au lâcher, rien ne glisse sous le
+  // curseur (rows/heldRow, la règle de toutes les rangées). 200 ms = le tempo
+  // de la classe Tailwind remplacée.
+  const controls = useHoverMount(200);
+  // La page défile sous un curseur immobile : la rangée n'est plus survolée,
+  // elle se relâche (cf. RecoRow).
+  useHoverGuard(rowRef, controls.hovered, controls.onMouseLeave);
+  const items = useHeldRowItems(served, controls.hovered, mediaKey);
   const track = useRowWindow({
     scrollRef,
     count: items.length,
@@ -86,12 +107,6 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
     onScroll();
     track.onScroll();
   }, [onScroll, track]);
-  // Survol de la rangée — ne sert qu'à MONTER les zones de défilement. Elles
-  // portent un `backdrop-filter` et il y en a jusqu'à deux par rangée : les
-  // laisser à `opacity: 0` sur une dizaine de rangées revenait à entretenir
-  // une vingtaine de couches floutées invisibles. 200 ms = le tempo de la
-  // classe Tailwind remplacée.
-  const controls = useHoverMount(200);
 
   // L'élément vit dans un ÉTAT : une rangée née vide (branche « aucun
   // résultat ») puis remplie remonte sa section, et l'observateur doit suivre
@@ -114,6 +129,7 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
   }, [scrollByAmount]);
 
   if (!items.length) {
+    if (hideWhenEmpty) return null;
     return (
       <section className="mb-8">
         <RowHeader title={title} />

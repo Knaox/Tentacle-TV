@@ -3,6 +3,7 @@ import { StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from "r
 import { useTranslation } from "react-i18next";
 import { recoPosterUrl, swipeStackZ, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api-client";
+import type { TitlePageLink } from "@tentacle-tv/shared";
 import { SwipeCardView } from "./SwipeCardView";
 
 /** Cartes montées : celle du dessus et deux en attente (affiches chargées d'avance). */
@@ -30,6 +31,10 @@ interface Props {
   onRelease: (verdict: SwipeVerdict) => void;
   onExited: (id: number) => void;
   onToggleInfo: () => void;
+  /** La fiche de la carte du dessus chez l'extension (hors bibliothèque). */
+  topPage?: TitlePageLink | null;
+  pageSlotOf?: (card: SwipeCard) => boolean;
+  onOpenPage?: (href: string) => void;
 }
 
 /**
@@ -42,6 +47,7 @@ interface Props {
  */
 export function SwipeDeckView({
   cards, exiting, infoOpen, details, nextDetails, reducedMotion, onRelease, onExited, onToggleInfo,
+  topPage = null, pageSlotOf, onOpenPage,
 }: Props) {
   const { t } = useTranslation("swipe");
   const client = useJellyfinClient();
@@ -102,6 +108,9 @@ export function SwipeDeckView({
               onToggleInfo={onToggleInfo}
               accessibilityActions={actions}
               onAccessibilityAction={onAction}
+              page={depth === 0 && !exit ? topPage : null}
+              pageSlot={pageSlotOf?.(card) ?? false}
+              onOpenPage={onOpenPage}
             />
           ))}
         </View>

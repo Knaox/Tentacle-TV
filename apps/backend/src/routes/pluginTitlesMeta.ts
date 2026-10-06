@@ -18,11 +18,14 @@
  * qui identifient un titre par sa clé TMDB (« movie:603 », « tv:1399 ») :
  *
  *   GET  state?keys=movie:603,tv:1399&lang=fr
- *     → { items: { "movie:603": { badge, request } } }
+ *     → { items: { "movie:603": { badge, request, page? } } }
  *       badge   : { label, tone } | null — où en est le titre (« Demandé »…) ;
  *       request : { mode: "direct" | "open", label, href? } | null — le geste
  *                 offert : « direct » se fait sur place (POST request),
- *                 « open » ouvre la page du plugin à `href` (un choix à faire).
+ *                 « open » ouvre la page du plugin à `href` (un choix à faire) ;
+ *       page    : { label, href } — facultatif, venu après : la fiche du titre
+ *                 dans le catalogue du plugin, qu'un client ouvre sans la
+ *                 chercher (« Affiner »). Absent : aucun lien.
  *   POST request  { mediaType, tmdbId, lang }
  *     → { ok: true, message } | { ok: false, message } | { href }
  *   GET  access

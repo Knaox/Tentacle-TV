@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { heldRowView, useRowSnapshot } from "../rows/heldRow";
 import { useQueryClient } from "@tanstack/react-query";
 import { releaseRecoCard } from "./recoRetirement";
 import { holdRecoCard, isRecoDismissed, isRecoLeaving, subscribeRecoLeaving } from "./recoRetirementState";
@@ -46,14 +47,17 @@ export function useRecoCardHold(id: string | null, lingerMs = 0): void {
   useRecoHold(held ? [held] : null);
 }
 
-/** Pur : ce qu'une rangée tenue montre — sa photographie, moins les titres écartés. */
+const recoKey = (item: { key: string }) => item.key;
+const recoDropped = (item: { key: string }) => isRecoDismissed(item.key);
+
+/** Pur : ce qu'une rangée tenue montre — sa photographie (la règle de toutes
+ *  les rangées, rows/heldRow.ts), moins les titres écartés. */
 export function heldRecoView<T extends { key: string }>(
   items: readonly T[],
   frozen: readonly T[] | null,
   held: boolean
 ): readonly T[] {
-  if (!held) return items;
-  return (frozen ?? items).filter((item) => !isRecoDismissed(item.key));
+  return heldRowView(items, frozen, held, recoKey, recoDropped);
 }
 
 /**
@@ -65,13 +69,10 @@ export function heldRecoView<T extends { key: string }>(
  * données, sans les titres jugés.
  */
 export function useHeldRecoItems<T extends { key: string }>(items: readonly T[], held: boolean): readonly T[] {
-  const [frozen, setFrozen] = useState<readonly T[] | null>(null);
-  // État dérivé des props, posé pendant le rendu (motif documenté de React) :
-  // la photographie est celle du rendu où le survol commence.
-  if (held && frozen === null) setFrozen(items);
-  else if (!held && frozen !== null) setFrozen(null);
-  const source = held ? (frozen ?? items) : items;
-  useRecoHold(held ? source.map((item) => item.key) : null);
+  // La photographie de la rangée tenue, comme toute rangée (rows/heldRow.ts) ;
+  // la reco y ajoute la tenue de ses cartes : un titre jugé part au lâcher.
+  const frozen = useRowSnapshot(items, held);
+  useRecoHold(frozen ? frozen.map((item) => item.key) : null);
   return useMemo(() => heldRecoView(items, frozen, held), [held, frozen, items]);
 }
 

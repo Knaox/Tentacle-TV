@@ -2,6 +2,7 @@ import { memo, useEffect, useRef } from "react";
 import { animate, motion, useIsPresent, useMotionValue, useTransform, type TargetAndTransition } from "framer-motion";
 import { exitTarget, verdictFromDrag } from "@tentacle-tv/api-client";
 import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api-client";
+import type { TitlePageLink } from "@tentacle-tv/shared";
 import { SwipeCardFace } from "./SwipeCardFace";
 import { SwipeStamps } from "./SwipeStamps";
 
@@ -20,9 +21,18 @@ interface SwipeStackCardProps {
   /** Deux verdicts (cf. SwipeStack) : la carte ne glisse qu'à l'horizontale,
    *  ne se retourne pas, et seul l'écart horizontal juge. */
   binary?: boolean;
+  /** La fiche du titre chez l'extension, et sa place (cf. SwipeCardFace). */
+  page?: TitlePageLink | null;
+  pageSlot?: boolean;
+  onOpenPage?: (href: string) => void;
 }
 
 const SPRING = { type: "spring", stiffness: 420, damping: 32 } as const;
+
+/** Le pointeur a-t-il été relâché sur un bouton de la carte ? */
+function isOnButton(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("button") !== null;
+}
 /** Mouvement réduit : les cartes se remplacent en fondu — ni zoom ni glissement. */
 const REDUCED = { duration: 0, opacity: { duration: 0.12 } } as const;
 /** Mouvement réduit : une carte lâchée avant le seuil revient, vite et sans rebond. */
@@ -47,6 +57,9 @@ export const SwipeStackCard = memo(function SwipeStackCard({
   onJudge,
   onToggleInfo,
   binary = false,
+  page,
+  pageSlot,
+  onOpenPage,
 }: SwipeStackCardProps) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -116,8 +129,13 @@ export const SwipeStackCard = memo(function SwipeStackCard({
       }}
       onTap={
         top && !binary
-          ? () => {
-              if (!dragged.current) onToggleInfo();
+          ? (event) => {
+              // Un bouton de la carte (ⓘ) fait son propre geste : framer-motion
+              // écoute le pointeur en NATIF sur la carte, le `stopPropagation`
+              // de React n'y peut rien — sans cette garde, le clic sur ⓘ
+              // basculait le verso deux fois, donc pas du tout (issue #8).
+              if (dragged.current || isOnButton(event.target)) return;
+              onToggleInfo();
             }
           : undefined
       }
@@ -146,6 +164,9 @@ export const SwipeStackCard = memo(function SwipeStackCard({
         infoOpen={top && infoOpen}
         details={details}
         onToggleInfo={onToggleInfo}
+        page={page}
+        pageSlot={pageSlot}
+        onOpenPage={onOpenPage}
       />
       {top && <SwipeStamps x={x} y={y} binary={binary} />}
     </motion.div>

@@ -79,6 +79,25 @@ describe("la réponse du plugin", () => {
     expect(states.get("movie:603")).toEqual({ badge: { label: "Demandé", tone: "neutral" }, request: null });
   });
 
+  it("lit la page du titre quand le plugin la donne, et seulement entière et interne", () => {
+    const states = readTitleStates({
+      items: {
+        "movie:603": { badge: null, request: null, page: { label: "Voir dans le catalogue", href: "/discover?media=movie:603" } },
+        "tv:1399": { badge: null, request: null, page: { label: "Voir", href: "https://ailleurs.example" } },
+        "movie:11": { badge: null, request: null, page: { href: "/discover?media=movie:11" } },
+      },
+    }, keys);
+    expect(states.get("movie:603")?.page).toEqual({ label: "Voir dans le catalogue", href: "/discover?media=movie:603" });
+    expect(states.get("tv:1399")?.page).toBeUndefined();
+    expect(states.get("movie:11")?.page).toBeUndefined();
+  });
+
+  it("un plugin d'avant la page ne la donne pas : aucun champ, aucune erreur", () => {
+    const state = readTitleStates({ items: { "movie:603": { badge: null, request: null } } }, keys).get("movie:603");
+    expect(state).toEqual({ badge: null, request: null });
+    expect(state && "page" in state).toBe(false);
+  });
+
   it("rend une carte vide sur une réponse illisible", () => {
     expect(readTitleStates(null, keys).size).toBe(0);
     expect(readTitleStates({ items: [] }, keys).size).toBe(0);

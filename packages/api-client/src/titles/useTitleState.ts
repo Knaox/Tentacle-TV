@@ -12,6 +12,7 @@ import {
 } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { loadTitleState } from "./titleStateBatcher";
+import { markTitleRequested } from "../reco/requestedTitles";
 
 /**
  * Ce que l'extension de demandes dit d'un titre hors bibliothèque — sa
@@ -66,6 +67,8 @@ export function useRequestTitle(provider: TitleProvider | null, lang: string, or
       const queryKey = titleStateQueryKey(provider, lang, key);
       if (outcome.kind === "done" && outcome.state) qc.setQueryData(queryKey, outcome.state);
       else if (outcome.kind === "done") void qc.invalidateQueries({ queryKey });
+      // Demandé : le titre sort des recommandations du compte (au lâcher d'une carte tenue).
+      if (outcome.kind === "done" && outcome.ok) markTitleRequested(qc, key);
     },
   });
 }

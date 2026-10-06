@@ -14,6 +14,8 @@ interface Props {
   interactive: boolean;
   infoOpen: boolean;
   details: SwipeCardDetails | undefined;
+  /** La place du bouton de la fiche (hors bibliothèque, extension présente). */
+  pageSlot?: boolean;
 }
 
 /**
@@ -21,7 +23,7 @@ interface Props {
  * la demande, son verso — le synopsis, sur un voile quasi opaque. Même
  * contenu que la carte du web.
  */
-export const SwipeCardFace = memo(function SwipeCardFace({ card, posterUri, interactive, infoOpen, details }: Props) {
+export const SwipeCardFace = memo(function SwipeCardFace({ card, posterUri, interactive, infoOpen, details, pageSlot = false }: Props) {
   const { t } = useTranslation("swipe");
   const theme = useTheme();
   const [broken, setBroken] = useState(false);
@@ -45,7 +47,7 @@ export const SwipeCardFace = memo(function SwipeCardFace({ card, posterUri, inte
 
       {/* Verso ouvert : le texte du recto s'efface — sous le voile, il
           transparaissait en fantôme. L'affiche seule reste dessous. */}
-      {!(interactive && infoOpen) && <SwipeCardRectoNative card={card} title={title} format={format} />}
+      {!(interactive && infoOpen) && <SwipeCardRectoNative card={card} title={title} format={format} pageSlot={pageSlot} />}
 
       {interactive && infoOpen && (
         <View style={st.info}>

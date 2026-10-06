@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
-import { useJellyfinClient, useRecoPage } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useRecoPage, useRequestedTitles } from "@tentacle-tv/api-client";
 import { ContentErrorState } from "../components/ContentErrorState";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
@@ -56,6 +56,9 @@ function ForYouSection() {
   const { selected, filterKey } = useRecoFilter();
   const client = useJellyfinClient();
   const { data: served, isPlaceholderData, isError, refetch } = useRecoPage(selected);
+  // Un titre demandé dans la page de l'extension (ouverte d'une carte) sort
+  // des rangées au retour : la liste se relit à chaque montage de la page.
+  useRequestedTitles();
   // La page AFFICHÉE suit la page servie une fois ses premières affiches
   // décodées (budget borné) : un changement de filtre arrive habillé.
   const { page, settling } = useSettledRecoPage(served, client);

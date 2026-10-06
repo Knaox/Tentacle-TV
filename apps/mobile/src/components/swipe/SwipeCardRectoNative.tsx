@@ -9,6 +9,8 @@ interface Props {
   card: SwipeCard;
   title: string;
   format: string;
+  /** Garder sous le texte la rangée du bouton de la fiche (cf. SwipeCardView). */
+  pageSlot?: boolean;
 }
 
 const SCRIM = ["transparent", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.92)"] as const;
@@ -18,7 +20,7 @@ const SCRIM = ["transparent", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.92)"] as const;
  * de la carte et sa note en haut ; en bas, sur un dégradé, le titre, le
  * format, les genres, la présence en bibliothèque et la raison.
  */
-export function SwipeCardRectoNative({ card, title, format }: Props) {
+export function SwipeCardRectoNative({ card, title, format, pageSlot = false }: Props) {
   const { t } = useTranslation("swipe");
   const theme = useTheme();
   return (
@@ -38,7 +40,7 @@ export function SwipeCardRectoNative({ card, title, format }: Props) {
         )}
       </View>
 
-      <LinearGradient colors={SCRIM} locations={[0, 0.45, 1]} style={st.bottom} pointerEvents="none">
+      <LinearGradient colors={SCRIM} locations={[0, 0.45, 1]} style={[st.bottom, pageSlot && st.bottomWithPage]} pointerEvents="none">
         <Text style={st.title} numberOfLines={2}>{title}</Text>
         {!!format && <Text style={st.format}>{format}</Text>}
         {card.genres.length > 0 && (
@@ -68,6 +70,7 @@ const st = StyleSheet.create({
   chip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.65)", borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.3)" },
   chipText: { color: "#fff", fontSize: 12, fontFamily: FONT_FAMILY.semibold, fontWeight: "600" },
   bottom: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingBottom: 18, paddingTop: 72 },
+  bottomWithPage: { paddingBottom: 68 },
   title: { ...typography.title, color: "#fff" },
   format: { ...typography.caption, color: "rgba(255,255,255,0.8)", marginTop: 3 },
   genres: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
