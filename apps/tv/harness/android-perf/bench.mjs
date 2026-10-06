@@ -27,22 +27,20 @@
 // L'appareil doit tourner AVANT (pnpm tv:refonte:android, verrou pris). Les
 // deux APK : la release à mesurer, et une debug de la même clé (la session
 // s'écrit par `run-as`). Résultats : ~/Library/Caches/tentacle-android-perf/runs/.
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { createDevice, sleep } from "./lib/device.mjs";
+import { createDevice } from "./lib/device.mjs";
+import { keysDex, startBackend } from "./lib/benchSetup.mjs";
 import { createHostPolicy } from "./lib/host.mjs";
 import { startImageProxy } from "./lib/imageProxy.mjs";
 import { createPlayer } from "./lib/play.mjs";
 import { compareTable, describe, summarizeScenario } from "./lib/report.mjs";
 import { scenariosOf } from "./lib/scenarios.mjs";
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CACHE = path.join(os.homedir(), "Library/Caches/tentacle-android-perf");
 const RUNS = path.join(CACHE, "runs");
-const SDK = process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk");
 /** Le port du relais (celui que l'app appelle) et celui du faux backend, derrière. */
 const PORT = Number(process.env.PERF_PORT ?? 3107);
 const BACKEND_PORT = PORT + 10;
@@ -54,48 +52,6 @@ const option = (name, fallback = null) => {
 };
 const flag = (name) => rest.includes(`--${name}`);
 
-function latestSnapshot() {
-  if (process.env.SNAPSHOT_DIR) return process.env.SNAPSHOT_DIR;
-  const root = path.join(os.homedir(), "Library/Caches/tentacle-nav-golden/snapshots");
-  const dirs = fs.readdirSync(root).map((name) => path.join(root, name)).filter((dir) => fs.existsSync(path.join(dir, "snapshot.json")));
-  if (!dirs.length) throw new Error(`aucun instantané nav-golden dans ${root}`);
-  return dirs.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
-}
-
-/** L'injecteur de touches (`keys/Keys.java`), compilé au besoin. */
-function keysDex() {
-  const source = path.join(HERE, "keys/Keys.java");
-  const out = path.join(CACHE, "keys");
-  const dex = path.join(out, "classes.dex");
-  if (fs.existsSync(dex) && fs.statSync(dex).mtimeMs > fs.statSync(source).mtimeMs) return dex;
-  fs.mkdirSync(out, { recursive: true });
-  const platforms = fs.readdirSync(path.join(SDK, "platforms")).sort();
-  const jar = path.join(SDK, "platforms", platforms[platforms.length - 1], "android.jar");
-  const tools = fs.readdirSync(path.join(SDK, "build-tools")).sort();
-  execFileSync("javac", ["-source", "1.8", "-target", "1.8", "-cp", jar, "-d", out, source], { stdio: "ignore" });
-  execFileSync(path.join(SDK, "build-tools", tools[tools.length - 1], "d8"), ["--output", out, "--lib", jar, path.join(out, "Keys.class")]);
-  return dex;
-}
-
-async function startBackend() {
-  const log = fs.openSync(path.join(CACHE, "backend.log"), "w");
-  const child = spawn(process.execPath, [path.join(HERE, "../nav-golden/server/fakeServer.mjs")], {
-    env: { ...process.env, PORT: String(BACKEND_PORT), SNAPSHOT_DIR: latestSnapshot() },
-    stdio: ["ignore", log, log],
-  });
-  for (let i = 0; i < 40; i++) {
-    await sleep(250);
-    try {
-      execFileSync("curl", ["-s", "-X", "POST", `http://127.0.0.1:${BACKEND_PORT}/__fixtures`, "-d", '{"sets":["base/vigie-off"]}'], { stdio: "ignore" });
-      return child;
-    } catch {
-      // pas encore à l'écoute
-    }
-  }
-  child.kill();
-  throw new Error(`le faux backend ne répond pas sur ${BACKEND_PORT} — ${path.join(CACHE, "backend.log")}`);
-}
-
 /** Le faux backend, le relais d'images, la session et l'injecteur : ce que
  *  toute mesure partage. `fn(device, player, proxy)` mesure ; tout s'arrête après. */
 async function withBench(debugApk, fn) {
@@ -104,7 +60,7 @@ async function withBench(debugApk, fn) {
   console.log(`appareil : ${device.describe()}`);
   device.pushKeys(keysDex());
   const host = createHostPolicy(flag("slow"), console.log);
-  const backend = await startBackend();
+  const backend = await startBackend(BACKEND_PORT);
   const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
   try {
     // `--keep-session` : la session du faux backend est déjà dans l'app (une
@@ -146,7 +102,7 @@ async function serve() {
   const device = createDevice();
   console.log(`appareil : ${device.describe()}`);
   device.pushKeys(keysDex());
-  const backend = await startBackend();
+  const backend = await startBackend(BACKEND_PORT);
   const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
   device.adb(["reverse", `tcp:${PORT}`, `tcp:${PORT}`]);
   const sets = option("fixtures");
