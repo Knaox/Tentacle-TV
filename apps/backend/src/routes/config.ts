@@ -17,6 +17,7 @@ const DEMO_MODE = process.env.DEMO_MODE === "true";
 
 export const configRoutes: FastifyPluginAsync = async (app) => {
   app.get("/config", async (request) => {
+    const clientIsPrivate = isPrivateIp(getRealClientIp(request));
     return {
       version: BACKEND_VERSION,
       brandName: "Tentacle TV",
@@ -33,11 +34,12 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du
       // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
       // LAN/DNS privé) qui n'est joignable que depuis le réseau interne.
-      // Coupé (« Accès depuis l'extérieur »), l'adresse privée de ce serveur : le
+      // Coupé (« Accès depuis l'extérieur »), l'adresse privée de ce serveur ; rien
+      // de réglé, celle par laquelle ce client du réseau local nous joint : le
       // jumelage reste possible, et la TV grave une adresse qu'elle joint (`exposure.ts`).
-      publicUrl: pairingUrl(),
+      publicUrl: pairingUrl({ clientIsPrivate, protocol: request.protocol, host: request.host }),
       // Les adresses locales et publiques (Tentacle, Jellyfin) — les locales au seul réseau local.
-      addresses: serverAddresses(isPrivateIp(getRealClientIp(request))),
+      addresses: serverAddresses(clientIsPrivate),
     };
   });
 

@@ -49,6 +49,13 @@ describe("serverAddresses", () => {
     h.exposed = "true";
     expect(pairingUrl()).toBe("https://tv.example.com");
   });
+
+  it("le jumelage branché sur les réglages : la requête du client ne sert qu'à défaut", () => {
+    const view = { clientIsPrivate: true, protocol: "http", host: "nas.local:3000" };
+    expect(pairingUrl(view)).toBe("https://tv.example.com");
+    h.exposed = "false";
+    expect(pairingUrl(view)).toBe("http://192.168.1.20:3000");
+  });
 });
 
 describe("l'adresse de lecture directe donnée à un client", () => {

@@ -1,4 +1,5 @@
 import { getDirectStreamingConfig, getPublicUrl } from "../services/configStore";
+import { choosePairingUrl, type PairingRequestView } from "./pairingAddress";
 import { readRemoteAccessSettings } from "./remoteAccessSettings";
 
 /**
@@ -18,15 +19,17 @@ export function publishedPublicUrl(): string | null {
 }
 
 /**
- * L'adresse que `/api/config` → `publicUrl` donne aux clients d'avant : le
- * mobile n'offre le jumelage d'une TV que si elle existe, et la TV la grave.
- * Coupé, c'est l'adresse PRIVÉE de ce serveur (celle qu'une TV de la maison
- * joint), et à défaut le lien réglé — jamais rien de moins qu'avant : couper
- * l'accès extérieur ne casse pas le jumelage.
+ * L'adresse que `/api/config` → `publicUrl` donne aux clients : le mobile et
+ * le web n'offrent le jumelage d'une TV que s'ils en ont une, et la TV la
+ * grave. Allumé, le lien public — sinon l'adresse privée réglée ; coupé,
+ * l'adresse PRIVÉE (celle qu'une TV de la maison joint), à défaut le lien
+ * réglé ; rien de réglé, celle par laquelle CE client du réseau local nous
+ * joint (`pairingAddress.ts`). Couper l'accès extérieur, ou ne jamais régler
+ * de lien public, ne casse pas le jumelage à la maison.
  */
-export function pairingUrl(): string | null {
-  if (isExposed()) return getPublicUrl();
-  return readRemoteAccessSettings().localUrl ?? getPublicUrl();
+export function pairingUrl(view?: PairingRequestView): string | null {
+  const { enabled, localUrl } = readRemoteAccessSettings();
+  return choosePairingUrl({ exposed: enabled, publicUrl: getPublicUrl(), localUrl, view });
 }
 
 /** L'adresse publique de Jellyfin, si la lecture directe s'en sert ET que l'accès extérieur est allumé. */
