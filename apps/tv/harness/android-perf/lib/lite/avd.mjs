@@ -51,6 +51,7 @@ export const LITE_AVDS = {
   Lite_Rech_3G: { ramMb: 3072, cores: 4, port: 5694, label: "Shield : 3 Go, 4 cœurs (recherche, nav-golden --android)" },
   // L'AVD de la tâche L5b (montage, virtualisation) : sa propre console.
   Lite_L5b_2G: { ramMb: 2048, cores: 4, port: 5672, label: "box net+ : 2 Go, 4 cœurs (L5b, montage)" },
+  Lite_L5b_1G: { ramMb: 1024, cores: 2, port: 5674, label: "Android TV 1 Go, 2 cœurs (L5b, montage)" },
 };
 
 export function liteProfile(name) {
