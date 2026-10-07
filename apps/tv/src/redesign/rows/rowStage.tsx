@@ -132,14 +132,17 @@ export function useRenewedRow<T>(rank: number | undefined, items: readonly T[], 
   // remises à zéro à chaque liste neuve (identité — une liste inchangée garde
   // la sienne).
   const generation = useRef<{ items: readonly T[] | null; released: number; demanded: boolean }>({ items: null, released: 0, demanded: false });
+  const previous = useRef<readonly T[]>([]);
   if (generation.current.items !== items) {
-    const initial = staged ? initialRelease(rank, items.length) : items.length;
+    // Une rangée qui ne montrait rien (les premiers résultats) se remplit par
+    // parts dès la première image : ses cartes ne s'ajoutent pas au montage
+    // de ce qui l'entoure (le meilleur résultat, la page qui change).
+    const initial = !staged ? items.length : previous.current.length === 0 ? 0 : initialRelease(rank, items.length);
     generation.current = { items, released: staged && head !== undefined && initial > 0 ? Math.min(initial, head) : initial, demanded: false };
   }
   const current = generation.current;
   // Ce que l'échelonnement pose : la tête, puis tout une fois la rangée parcourue.
   const limit = current.demanded ? items.length : Math.min(items.length, head ?? ROW_STAGING.headCards);
-  const previous = useRef<readonly T[]>([]);
   const shown = staged ? renewedItems(items, previous.current, current.released) : items;
   useLayoutEffect(() => {
     previous.current = shown;
