@@ -7,7 +7,8 @@ import { useFocusProgress } from "../focus/useFocusProgress";
 import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { RECEDE_FRAME_ID, useRecede, type RowPlace } from "../motion/useRowRecede";
 import { colors, white } from "../theme/tokens";
-import { dressingStyles, FadingRestShadow, FocusRaised, FocusSheen, useFocusDressing } from "./CardFocusDressing";
+import { dressingStyles, FadingRestShadow, FocusOutline, FocusRaised, FocusSheen, useFocusDressing } from "./CardFocusDressing";
+import { CARD_FOCUS_OUTLINE } from "./cardFocus";
 import { DropShadow } from "../render/DropShadow";
 import { effectOff } from "../render/measuredEffects";
 
@@ -32,6 +33,11 @@ const FOCUS_SCALE_OFF = effectOff("focusScale");
  * soulèvement, le reflet et le fondu de l'ombre (`CardFocusDressing`) ne
  * naissent qu'avec le focus — une grille en monte des centaines.
  *
+ * Profil Lite (`cardFocus: "outline"`) : rien de cela — un liseré d'accent
+ * au focus (`FocusOutline`), à la taille de la carte, en fondu bref ; ni
+ * agrandissement, ni soulèvement, ni ombre, ni reflet. Le recul des voisines
+ * et l'appui restent ceux du mouvement (brefs en Lite).
+ *
  * Le cadre ne fait que DESSINER : sur tvOS, un focalisable recouvert par un
  * frère qui dessine n'est plus proposé par la recherche géométrique du focus.
  * Une carte rend donc son cadre DANS sa cible focalisable (`FocusTarget
@@ -43,7 +49,7 @@ const FOCUS_SCALE_OFF = effectOff("focusScale");
  *  et l'appui (OK enfoncé), qui l'enfonce d'un cran. */
 function cardLift(progress: number, press: number): [{ translateY: number }, { scale: number }] {
   "worklet";
-  const lifted = FOCUS_SCALE_OFF ? 0 : progress;
+  const lifted = FOCUS_SCALE_OFF || CARD_FOCUS_OUTLINE ? 0 : progress;
   return [{ translateY: -4 * lifted }, { scale: (1 + (TV_STAGE.focus.cardScale - 1) * lifted) * pressScale(press) }];
 }
 
@@ -150,6 +156,18 @@ function FrameBody({
   const [dressedOn, settle] = useFocusDressing(focused);
   const dressed = dressedOn && !FOCUS_SCALE_OFF;
   const shape = { width, height, borderRadius: radius };
+  if (CARD_FOCUS_OUTLINE) {
+    return (
+      <Animated.View nativeID={nativeID} style={[shape, cardOrigin(origin), lift, fade]}>
+        <View style={[shape, styles.clip]}>
+          {children}
+          {focused ? focusLayer : null}
+          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius }, styles.hairline]} />
+        </View>
+        <FocusOutline progress={p} radius={radius} />
+      </Animated.View>
+    );
+  }
   return (
     <Animated.View nativeID={nativeID} style={[shape, cardOrigin(origin), lift, fade]}>
       {dressed && !glow ? (

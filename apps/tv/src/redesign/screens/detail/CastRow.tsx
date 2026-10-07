@@ -14,6 +14,7 @@ import { useRowFocus } from "../../motion/useRowRecede";
 import { colors, fonts, white } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { CrewGroupModel, PersonModel } from "./detailTypes";
+import { CARD_FOCUS_SCALE } from "../../cards/cardFocus";
 
 /**
  * Casting et équipe : les portraits RONDS de la distribution (nom, rôle),
@@ -29,7 +30,7 @@ import type { CrewGroupModel, PersonModel } from "./detailTypes";
 
 const SIZE = TV_STAGE.card.person.size;
 const CELL = SIZE + 36;
-const NAME_SHIFT = SIZE * (TV_STAGE.focus.cardScale - 1);
+const NAME_SHIFT = SIZE * (CARD_FOCUS_SCALE - 1);
 
 function initials(name: string): string {
   const words = name.split(/\s+/).filter(Boolean);

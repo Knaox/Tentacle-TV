@@ -16,6 +16,7 @@ import { cardLogoBottom, LOGO_BOX } from "./cardMarkerGeometry";
 import { CardQualityBadges } from "./CardQualityBadges";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused } from "./useCardFocused";
+import { CARD_FOCUS_SCALE } from "./cardFocus";
 
 /**
  * La carte d'un titre — deux formats, un seul modèle :
@@ -70,8 +71,8 @@ const DEFAULT_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STA
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
  *  la légende descend d'autant, l'image ne la recouvre jamais. */
 function captionShift(height: number, origin: "top" | "center" = "top"): number {
-  const growth = height * (TV_STAGE.focus.cardScale - 1);
-  return origin === "center" ? growth / 2 : growth - 4;
+  const growth = height * (CARD_FOCUS_SCALE - 1);
+  return origin === "center" ? growth / 2 : Math.max(0, growth - 4);
 }
 
 /** La légende suit l'image qui grandit — sur le MÊME ressort que le cadre (`progress`). */
