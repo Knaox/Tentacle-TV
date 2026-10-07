@@ -51,13 +51,16 @@ export const LITE_ROUTE = ["focus-rangee", "accueil-pas", "rail", "page-films", 
  * - Films : Retour sur l'accueil ouvre le rail sur « Accueil » ; Films est
  *   5 crans plus bas ; 6 rangées de la grille vers le bas puis vers le haut
  *   (des pas comptés : après une tenue, la grille n'est pas revenue en haut et
- *   la suite dérive — vécu), puis Retour : l'accueil (la page ouverte par
- *   le rail s'est EMPILÉE sur l'accueil — capture de la dérive).
+ *   la suite dérive — vécu), puis Retour, qui ouvre le rail sur « Films »
+ *   (règle du Retour des pages du rail, la même que l'Apple TV —
+ *   nav-golden `retour-rail/retour-pages#bibliotheque-retour-x3` : la page
+ *   ne s'empile plus sur l'accueil, un 2e Retour irait aux Réglages et un 3e
+ *   quitterait l'app) ; 5 crans vers le haut jusqu'à « Accueil », OK.
  */
 export const ENDURANCE_SEGMENTS = [
   { id: "rangees", expect: "Home", keys: ["tap:20", "wait:900", "tap:22x5@500", "wait:600", "tap:21x5@500", "wait:600", "hold:20:2500", "wait:900", "hold:19:3500", "wait:1200"] },
   { id: "fiche", expect: "Home", through: "MediaDetail", keys: ["tap:22x3@450", "wait:600", "tap:21", "wait:700", "tap:23", "wait:3500", "tap:20x3@700", "wait:900", "tap:4", "wait:2500"] },
-  { id: "films", expect: "Home", through: "Library", keys: ["wait:1500", "tap:4", "wait:1800", "tap:20x5@450", "wait:2000", "tap:23", "wait:4500", "tap:20x6@450", "wait:900", "tap:19x6@450", "wait:1500", "tap:4", "wait:3500"] },
+  { id: "films", expect: "Home", through: "Library", keys: ["wait:1500", "tap:4", "wait:1800", "tap:20x5@450", "wait:2000", "tap:23", "wait:4500", "tap:20x6@450", "wait:900", "tap:19x6@450", "wait:1500", "tap:4", "wait:1800", "tap:19x5@450", "wait:1500", "tap:23", "wait:3500"] },
 ];
 
 export function stamp() {
