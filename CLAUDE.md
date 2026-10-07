@@ -688,6 +688,21 @@ la TV en fait une sonde qui fait foi (tv-core `serverOutage.ts`). Toute sonde
 d'attente de 10.11 rend un 200 sans `Id` pendant son démarrage (mesuré).
 Faits mesurés : `docs/PANNE-JELLYFIN.md`.
 
+## Ajouts en direct — les sockets des comptes, jamais un relevé
+
+Un titre ajouté entre dans « Derniers ajouts » sans changer de page, sur toutes
+les plateformes. Jellyfin n'envoie `LibraryChanged` et `UserDataChanged` qu'aux
+sessions d'un COMPTE : la socket du serveur (clé d'API) n'en reçoit aucun. Ce sont
+les sockets que le canal de session tient pour chaque appareil, au nom de son
+compte, qui les reçoivent et les relaient (`services/jellyfinUserEvents.ts`) :
+aucune requête au repos — **jamais un relevé rapide** côté serveur. Jellyfin
+retient l'évènement `LibraryUpdateDuration` s (30 par défaut, 5 conseillé par
+le tableau de bord). Côté client, une carte a pour clé son TITRE
+(`rowItemKeys`, shared), jamais sa place ; sur le web la nouvelle entre sous les
+yeux (`useRowArrivals`, accroche coupée le temps de l'arrivée). Toute requête
+`/Items?Recursive=true` faite avec la clé d'API porte `adminUserParam()` : sans
+`userId`, Jellyfin rate les titres ajoutés depuis son démarrage (mesuré, 10.11).
+
 ## Plus de serveur — trois cas, jamais un voile là où le hors ligne existe
 
 Sans serveur, une seule règle dit POURQUOI (`packages/shared/src/connectivity/
