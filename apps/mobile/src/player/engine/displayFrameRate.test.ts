@@ -18,19 +18,25 @@ describe("fluidDisplayMode", () => {
     expect(fluidDisplayMode({ platform: "android", enabled: true, screen: { currentModeId: 5, modes: oppo } })?.id).toBe(8);
   });
 
-  it("24 i/s : un mode à 24 Hz exact passe avant tout, 72 Hz non (pas exact)", () => {
-    const withCinema = [...oppo, { id: 9, width: 1080, height: 2412, refreshRate: 24 }];
-    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 2, modes: withCinema } })?.id).toBe(9);
+  it("le meilleur multiple : 24 i/s sur 60/72/90/120 → 120 (5 × 24), jamais 72 ni 90", () => {
     expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 2, modes: oppo } })?.id).toBe(1);
+    const cinema = [{ id: 1, width: 1080, height: 2400, refreshRate: 24 }, { id: 2, width: 1080, height: 2400, refreshRate: 60 }];
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 2, modes: cinema } })?.id).toBe(1);
+    const max72 = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 72 }];
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 24, screen: { currentModeId: 1, modes: max72 } })?.id).toBe(2);
   });
 
-  it("le meilleur selon le modèle : 90 reste 90, un écran 30/60 passe à 60", () => {
+  it("30 i/s : 90 sur un écran 60/90, 60 sur un écran 30/60", () => {
     const max90 = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 90 }];
     const max60 = [{ id: 1, width: 1080, height: 2400, refreshRate: 30 }, { id: 2, width: 1080, height: 2400, refreshRate: 60 }];
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 29.97, screen: { currentModeId: 1, modes: max90 } })?.id).toBe(2);
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 30, screen: { currentModeId: 1, modes: max60 } })?.id).toBe(2);
+  });
+
+  it("aucun multiple exact (24 i/s sur 60/90, 25 i/s sur 60/120) : la fréquence la plus haute", () => {
+    const max90 = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 90 }];
     expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 1, modes: max90 } })?.id).toBe(2);
-    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 1, modes: max60 } })?.id).toBe(2);
-    // 30 i/s sur un écran 30/60 : le mode exact, 30 Hz.
-    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 30, screen: { currentModeId: 2, modes: max60 } })?.id).toBe(1);
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 25, screen: { currentModeId: 2, modes: oppo } })?.id).toBe(1);
   });
 
   it("réglage désactivé : rien n'est demandé, le téléphone décide", () => {
