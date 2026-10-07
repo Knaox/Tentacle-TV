@@ -23,6 +23,14 @@ import type { LatestAdditions } from "./latestAdditionsTypes";
  * suivantes — la rangée garde sa longueur, complétée par les ajouts d'après,
  * regroupés de la même façon.
  *
+ * Un dossier VIDE — une série ou une saison arrivée sans AUCUN épisode réel
+ * (les épisodes « manquants », annoncés sans fichier, ne sont pas dans
+ * l'inventaire) — n'ouvre pas de carte : il n'y a rien à regarder. Sauf si le
+ * compte a coché dans Jellyfin « Afficher les épisodes manquants dans les
+ * saisons » (`keepEmptyFolders`) : Jellyfin montre alors ces séries partout,
+ * la rangée aussi. Un groupe resté sans épisode ne compte pas parmi les
+ * cartes : la rangée garde sa longueur avec les ajouts suivants.
+ *
  * Pourquoi pas le `GroupItems` de Jellyfin (`/Items/Latest`) : il change de
  * règle à chaque version — 10.10 regroupe dans une fenêtre fixe (une saison
  * entière y réduit la rangée à quelques cartes), 10.11 regroupe par NOM de
@@ -58,22 +66,41 @@ function seriesOf(addition: ScannedAddition): string | null {
 
 type Slot = { kind: "item"; id: string } | { kind: "series"; seriesId: string; members: ScannedAddition[] };
 
+/** Un groupe de série sans aucun épisode réel : seulement des dossiers (série, saisons). */
+const isEmptyFolder = (slot: Slot): boolean => slot.kind === "series" && !slot.members.some((m) => m.Type === "Episode");
+
+export interface LatestPlanOptions {
+  /** Le compte affiche les épisodes manquants (Jellyfin) : les dossiers vides gardent leur carte. */
+  keepEmptyFolders?: boolean;
+}
+
 /**
  * Les cartes de la rangée, `cards` au plus, dans l'ordre de leur ajout le plus
  * récent. `scanned` doit être trié du plus récent au plus ancien.
  */
-export function planLatestCards(scanned: readonly ScannedAddition[], cards: number): LatestCard[] {
+export function planLatestCards(scanned: readonly ScannedAddition[], cards: number, options: LatestPlanOptions = {}): LatestCard[] {
+  const keepEmpty = options.keepEmptyFolders === true;
   const slots: Slot[] = [];
   const bySeries = new Map<string, Slot & { kind: "series" }>();
+  // Un dossier vide peut encore recevoir ses épisodes plus loin dans l'inventaire
+  // (Jellyfin date un dossier APRÈS ses fichiers, mais pas toujours) : il ne
+  // compte pour la longueur de la rangée qu'une fois rempli, et, la rangée
+  // pleine, il est le seul à recueillir encore des ajouts plus anciens.
+  const counted = () => (keepEmpty ? slots.length : slots.filter((slot) => !isEmptyFolder(slot)).length);
+  let full = false;
   for (const addition of scanned) {
     if (!addition.Id) continue;
     const seriesId = seriesOf(addition);
     const open = seriesId ? bySeries.get(seriesId) : undefined;
     if (open) {
-      open.members.push(addition);
+      if (!full || isEmptyFolder(open)) open.members.push(addition);
       continue;
     }
-    if (slots.length >= cards) break;
+    if (full || counted() >= cards) {
+      full = true;
+      if (keepEmpty) break;
+      continue;
+    }
     if (seriesId) {
       const slot = { kind: "series" as const, seriesId, members: [addition] };
       bySeries.set(seriesId, slot);
@@ -82,7 +109,8 @@ export function planLatestCards(scanned: readonly ScannedAddition[], cards: numb
       slots.push({ kind: "item", id: addition.Id });
     }
   }
-  return slots.map(toCard);
+  const shown = keepEmpty ? slots : slots.filter((slot) => !isEmptyFolder(slot));
+  return shown.slice(0, cards).map(toCard);
 }
 
 /** « Ajoutés ensemble » : la fenêtre d'un dossier nouveau, avant le dernier ajout du groupe. */

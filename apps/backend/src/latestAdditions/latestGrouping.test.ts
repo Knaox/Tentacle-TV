@@ -170,12 +170,39 @@ describe("planLatestCards — inventaire imparfait", () => {
     expect(plan).toEqual([{ kind: "item", id: "orphan" }, { kind: "item", id: "f" }]);
   });
 
-  it("une saison seule (sans épisode dans la rangée) devient la carte de sa série", () => {
-    const plan = planLatestCards(inventory(season("A", 4)), 16);
+  it("une saison seule (sans épisode dans la rangée) devient la carte de sa série si le compte affiche les épisodes manquants", () => {
+    const plan = planLatestCards(inventory(season("A", 4)), 16, { keepEmptyFolders: true });
     expect(summary(plan)).toEqual(["A:0e:S4"]);
   });
 
   it("aucun ajout : aucune carte", () => {
     expect(planLatestCards([], 16)).toEqual([]);
+  });
+});
+
+describe("planLatestCards — un dossier vide n'est pas un ajout", () => {
+  it("une série arrivée sans aucun épisode (dossier vide) n'a pas de carte", () => {
+    const plan = planLatestCards(inventory(movie("m1"), season("V", 1), series("V"), movie("m2")), 16);
+    expect(summary(plan)).toEqual(["m2", "m1"]);
+  });
+
+  it("une saison vide d'une série déjà là n'a pas de carte", () => {
+    expect(planLatestCards(inventory(season("A", 4)), 16)).toEqual([]);
+  });
+
+  it("« Afficher les épisodes manquants » (Jellyfin) : le dossier vide garde sa carte", () => {
+    const plan = planLatestCards(inventory(movie("m1"), season("V", 1), series("V")), 16, { keepEmptyFolders: true });
+    expect(summary(plan)).toEqual(["V:0e:NS1", "m1"]);
+  });
+
+  it("un dossier vide ne prend pas de place : la rangée garde sa longueur", () => {
+    const plan = planLatestCards(inventory(movie("m1"), movie("m2"), series("V")), 2);
+    expect(summary(plan)).toEqual(["m2", "m1"]);
+  });
+
+  it("un dossier dont les épisodes arrivent après la fin de la rangée garde sa carte, remplie", () => {
+    // Plus ancien → plus récent : les épisodes de N, un film, puis le dossier de N.
+    const plan = planLatestCards(inventory(episode("N", 1, 1), episode("N", 1, 2), movie("m1"), series("N")), 2);
+    expect(summary(plan)).toEqual(["N:2e:N", "m1"]);
   });
 });
