@@ -88,6 +88,17 @@ async function withBench(fn) {
   }
 }
 
+/** L'adb RÉSEAU de la Shield tombe toutes les dix minutes environ : le
+ *  rétablir (aucune touche). Sans effet sur un émulateur. */
+function reconnect(device) {
+  if (!device.serial.includes(":")) return;
+  try {
+    execFileSync(path.join(process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk"), "platform-tools/adb"), ["connect", device.serial], { stdio: "ignore", timeout: 20_000 });
+  } catch {
+    // le tour suivant le redira
+  }
+}
+
 /** Les images servies entre deux instants : nombre, octets transférés, et
  *  octets DÉCODÉS (ARGB_8888 : 4 octets par pixel), par sorte d'image. */
 function imagesBetween(log, from, to) {
@@ -188,14 +199,8 @@ async function effects() {
             console.log(`\n${variant} ${scenario.id} : ${error.message} — tour perdu`);
             // L'adb RÉSEAU de la Shield tombe toutes les dix minutes environ :
             // on le rétablit avant le tour suivant (aucune touche ici).
-            if (device.serial.includes(":")) {
-              try {
-                execFileSync(path.join(process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk"), "platform-tools/adb"), ["connect", device.serial], { stdio: "ignore", timeout: 20_000 });
-              } catch {
-                // le tour suivant le redira
-              }
-              await sleep(3000);
-            }
+            reconnect(device);
+            await sleep(3000);
           }
         }
         console.log(` passe ${round + 1} ${variant} (charge ${loadNow()})`);
@@ -263,9 +268,20 @@ async function soak() {
     while (Date.now() < end) {
       for (const scenario of loop) {
         if (Date.now() >= end) break;
-        device.keys(...(scenario.setup ?? []), ...(scenario.gesture ?? []));
-        await goHome();
+        try {
+          device.keys(...(scenario.setup ?? []), ...(scenario.gesture ?? []));
+          await goHome();
+        } catch (error) {
+          if (error instanceof ForegroundError) throw error;
+          // adb réseau tombé : rétabli, l'app ramenée par am start (jamais une touche).
+          console.log(`${scenario.id} : ${error.message} — on reprend`);
+          reconnect(device);
+          await sleep(3000);
+          device.launch();
+          await sleep(3500);
+        }
         if (Date.now() >= started + next * 60_000) {
+          reconnect(device);
           const sample = { minute: next, memory: device.memory(), hierarchy: device.viewHierarchy(), load: loadNow(), samePid: device.pid() === pid0 };
           samples.push(sample);
           console.log(`${next} min : PSS ${(sample.memory.pss / 1024).toFixed(0)} Mo · Java ${(sample.memory.java / 1024).toFixed(0)} · natif ${(sample.memory.native / 1024).toFixed(0)} · graphique ${(sample.memory.graphics / 1024).toFixed(0)} · ${sample.hierarchy.views} vues · même processus ${sample.samePid}`);
