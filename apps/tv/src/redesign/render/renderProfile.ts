@@ -1,4 +1,5 @@
-import { RENDER_PROFILES, type RenderProfile } from "@tentacle-tv/tv-core";
+import { NativeModules } from "react-native";
+import { renderProfileFor, tierFromDeviceConstants, type DeviceConstants, type RenderProfile } from "@tentacle-tv/tv-core";
 
 /**
  * LE profil de rendu de l'appareil (`@tentacle-tv/tv-core`, `render/`) — le
@@ -6,5 +7,14 @@ import { RENDER_PROFILES, type RenderProfile } from "@tentacle-tv/tv-core";
  * mouvement, halos lisent ICI ce qu'ils dessinent. Choisi par le suffixe du
  * fichier, sans `Platform.OS` : celui-ci sert Android TV,
  * `renderProfile.ios.ts` l'Apple TV.
+ *
+ * Sur Android TV, le NIVEAU de rendu choisit la variante : `lite` sur une box
+ * peu puissante (`LITE_PROFILE`), le profil d'Android TV sinon. Le niveau est
+ * relu ici dans les constantes de `TentacleDevice`, par le MÊME calcul que
+ * `platform/renderTier` (tv-core `tierFromDeviceConstants`) — la refonte
+ * n'importe pas l'app. Fixe pour la vie du JS : il ne change qu'au
+ * redémarrage.
  */
-export const RENDER: Readonly<RenderProfile> = RENDER_PROFILES.androidtv;
+const tier = tierFromDeviceConstants(NativeModules.TentacleDevice as DeviceConstants | undefined).state.tier;
+
+export const RENDER: Readonly<RenderProfile> = renderProfileFor("androidtv", tier);

@@ -1,10 +1,6 @@
 import { NativeModules } from "react-native";
 import {
-  applySignalOverride,
-  parseForcedTier,
-  parseRenderTierMode,
-  parseSignalOverride,
-  resolveRenderTier,
+  tierFromDeviceConstants,
   type BenchResult,
   type DeviceSignals,
   type RenderTier,
@@ -35,15 +31,11 @@ interface DeviceNativeModule {
 
 export const deviceNative = NativeModules.TentacleDevice as DeviceNativeModule | undefined;
 
-const override = parseSignalOverride(deviceNative?.signalOverride);
+// Le calcul est celui de tv-core (`device/nativeTier`), le même que relit le
+// profil de rendu de la refonte (`redesign/render/renderProfile.ts`).
+const { state, override } = tierFromDeviceConstants(deviceNative);
 
-export const RENDER_TIER_STATE: Readonly<RenderTierState> = resolveRenderTier({
-  platform: "androidtv",
-  mode: parseRenderTierMode(deviceNative?.mode),
-  signals: applySignalOverride(deviceNative?.signals ?? {}, override),
-  bench: override?.bench ?? deviceNative?.bench ?? null,
-  forced: parseForcedTier(deviceNative?.forcedTier),
-});
+export const RENDER_TIER_STATE: Readonly<RenderTierState> = state;
 
 export const RENDER_TIER: RenderTier = RENDER_TIER_STATE.tier;
 
