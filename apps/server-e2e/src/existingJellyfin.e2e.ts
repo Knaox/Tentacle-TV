@@ -111,20 +111,21 @@ TAGS.forEach((tag, index) => {
       await waitFor("les bibliothèques de nouveau lisibles", async () => (await client.call("/jellyfin/libraries")).status === 200, 120_000, 3_000);
     });
 
-    it("déjà configuré : aucune bibliothèque ni aucun compte ne s'y crée, même par un appel direct", async () => {
-      await docker("exec", jellyfin.name, "mkdir", "-p", "/media/films");
-      const created = await client.call("/jellyfin/libraries", {
-        method: "POST",
-        body: { libraries: [{ name: "Films", type: "movies", paths: ["/media/films"] }], metadataLanguage: "fr", metadataCountry: "CH" },
-      });
-      expect(errorOf(created)).toBe("step_refused");
+    it("déjà configuré : jamais un compte ; des bibliothèques seulement tant qu'il n'en avait AUCUNE à la connexion", async () => {
+      await docker("exec", jellyfin.name, "mkdir", "-p", "/media/films", "/media/series");
       const account = await client.call("/jellyfin/initialize", {
         method: "POST",
         body: { url: jellyfinUrl, username: "Intrus", password: "mot-de-passe-intrus", uiCulture: "fr", metadataCountry: "CH", metadataLanguage: "fr" },
       });
       expect(errorOf(account)).toBe("step_refused");
+      // Configuré mais sans bibliothèque (le cas vécu sous Portainer) : en créer est permis.
+      const library = (name: string, path: string) => ({ method: "POST" as const, body: { libraries: [{ name, type: "movies", paths: [path] }], metadataLanguage: "fr", metadataCountry: "CH" } });
+      expect((await client.call("/jellyfin/libraries", library("Films", "/media/films"))).body).toEqual([{ name: "Films", status: "created" }]);
+      // Reconnecté, il en a une : plus rien ne s'y crée.
+      expect((await client.call("/jellyfin/connect", { method: "POST", body: { url: jellyfinUrl, username: USER, password } })).status).toBe(200);
+      expect(errorOf(await client.call("/jellyfin/libraries", library("Séries", "/media/series")))).toBe("step_refused");
       const state = await jellyfinState(jellyfin.url, await jellyfin.token(USER, password));
-      expect(state.libraries.map((library) => library.name)).not.toContain("Films");
+      expect(state.libraries.map((l) => l.name)).toEqual(["Films"]);
     });
 
     it("la clé d'API et le mot de passe ne ressortent jamais : ni réponse, ni journal", async () => {

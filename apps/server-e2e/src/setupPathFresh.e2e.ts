@@ -96,15 +96,16 @@ describe("parcours « neuf », sans Jellyfin dans la pile, après avoir changé 
       // ── Une VRAIE bibliothèque Jellyfin ─────────────────────────────────
       await journey.at("Vos bibliothèques");
       expect(await journey.direct("POST", "/jellyfin/initialize", { url: "http://ignore:8097", username: "Autre", password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" })).toEqual(refused);
-      await journey.button("Ajouter une bibliothèque").click();
-      await page.getByLabel("Nom", { exact: true }).fill("Films");
-      await journey.button("Choisir un dossier").click();
+      // Hors de la pile : Films et Séries proposées SANS dossier — à choisir soi-même.
+      expect(await journey.button("Continuer").isDisabled()).toBe(true);
+      await journey.button("Choisir le dossier").first().click();
       for (const folder of ["/", "media", "films"]) {
         const entry = journey.button(folder);
         await entry.first().waitFor({ timeout: folder === "/" ? 5_000 : 30_000 }).then(() => entry.first().click(), () => undefined);
       }
       await journey.button("Choisir ce dossier").click();
       await page.getByText("/media/films").first().waitFor();
+      await page.getByRole("button", { name: "Retirer Séries" }).click();
       await journey.button("Continuer").click();
       await journey.at("Récapitulatif");
       await page.getByText("Films (/media/films)").waitFor();
