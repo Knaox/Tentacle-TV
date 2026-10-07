@@ -14,7 +14,7 @@ import { WizardFrame } from "./WizardFrame";
 export function RemoteScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   return (
-    <WizardFrame title={t("remoteTitle")} subtitle={t("remoteSubtitle")} position={wizard.position} total={wizard.total} width="full">
+    <WizardFrame help={wizard} title={t("remoteTitle")} subtitle={t("remoteSubtitle")} position={wizard.position} total={wizard.total} width="full">
       <div className="space-y-6">
         <RemoteAccessPanel variant="wizard" />
         <div className="flex flex-wrap gap-3">
@@ -53,7 +53,7 @@ export function DoneScreen({ wizard, onFinish }: { wizard: Wizard; onFinish: (se
   const session = data.session;
 
   return (
-    <WizardFrame title={t("doneTitle")} subtitle={t("doneSubtitle")} position={wizard.position} total={wizard.total}>
+    <WizardFrame help={wizard} title={t("doneTitle")} subtitle={t("doneSubtitle")} position={wizard.position} total={wizard.total}>
       <div className="space-y-6 text-sm leading-relaxed text-content-secondary">
         <AddContentTutorial folders={folders} />
 

@@ -122,6 +122,7 @@ export * from "./setupWizard/setupFlowContract";
 export * from "./setupWizard/setupLibraryContract";
 export * from "./setupWizard/appLinks";
 export * from "./setupWizard/setupDocLinks";
+export * from "./setupWizard/setupHelp";
 // L'accès à distance : protocole du service de test (miroir backend et
 // apps/port-check), contrat des réglages (miroir backend), plan des ports,
 // verdict du test et extraits de mandataire. Mots : espace i18n `remoteAccess`.

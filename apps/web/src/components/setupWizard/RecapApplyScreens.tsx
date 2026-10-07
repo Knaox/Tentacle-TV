@@ -51,7 +51,7 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
         [t("recapLibraries"), planned || t("recapNothing")],
       ];
   return (
-    <WizardFrame title={t("recapTitle")} subtitle={t("recapSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
+    <WizardFrame help={wizard} title={t("recapTitle")} subtitle={t("recapSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
       <dl className="divide-y divide-line-subtle rounded-xl border border-line-subtle">
         {rows.map(([label, value]) => (
           <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-[9rem_1fr]">

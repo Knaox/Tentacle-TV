@@ -34,7 +34,7 @@ export function DatabaseScreen({ wizard }: { wizard: Wizard }) {
   // Déjà reliée (un retour en arrière) : rien à refaire, rien à rechanger ici.
   if (wizard.data.context?.database.connected) {
     return (
-      <WizardFrame title={t("dbTitle")} subtitle={t("dbSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+      <WizardFrame help={wizard} title={t("dbTitle")} subtitle={t("dbSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
         <div className="space-y-5">
           <p className="flex items-center gap-2 text-sm text-content-primary" role="status">
             <CircleCheck size={16} aria-hidden="true" className="shrink-0 text-status-success-fg" />
@@ -49,7 +49,7 @@ export function DatabaseScreen({ wizard }: { wizard: Wizard }) {
   }
 
   return (
-    <WizardFrame title={t("dbTitle")} subtitle={t("dbSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+    <WizardFrame help={wizard} title={t("dbTitle")} subtitle={t("dbSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
       <form onSubmit={(e) => void submit(e)} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
           <Field label={t("dbHost")} hint={t("dbHostHint")} value={form.host} onChange={set("host")} autoComplete="off" spellCheck={false} required />

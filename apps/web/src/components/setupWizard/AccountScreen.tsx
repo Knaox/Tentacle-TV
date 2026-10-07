@@ -22,6 +22,7 @@ export function AccountScreen({ wizard }: { wizard: Wizard }) {
   const linked = wizard.data.context?.flow.linked ?? false;
   return (
     <WizardFrame
+      help={wizard}
       title={t("accountTitleCreate")}
       subtitle={t("accountSubtitleCreate")}
       position={wizard.position}

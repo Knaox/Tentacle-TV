@@ -7,6 +7,7 @@
  */
 import errors from "./setupWizardErrors";
 import flow from "./setupWizardFlow";
+import help from "./setupWizardHelp";
 import finish from "./setupWizardFinish";
 import libraries from "./setupWizardLibraries";
 
@@ -273,4 +274,5 @@ export default {
   ...flow,
   ...libraries,
   ...finish,
+  ...help,
 };

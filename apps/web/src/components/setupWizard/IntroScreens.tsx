@@ -76,7 +76,7 @@ export function WelcomeScreen({ wizard }: { wizard: Wizard }) {
   };
 
   return (
-    <WizardFrame title={t("welcomeTitle")} subtitle={t("welcomeSubtitle")} position={wizard.position} total={wizard.total} hideProgress={host === undefined}>
+    <WizardFrame help={wizard} title={t("welcomeTitle")} subtitle={t("welcomeSubtitle")} position={wizard.position} total={wizard.total} hideProgress={host === undefined}>
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-sm text-content-secondary">{t("welcomeLanguage")}</span>
@@ -124,7 +124,7 @@ export function CodeScreen({ wizard }: { wizard: Wizard }) {
   };
 
   return (
-    <WizardFrame title={t("codeTitle")} subtitle={t("codeSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+    <WizardFrame help={wizard} title={t("codeTitle")} subtitle={t("codeSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
       <form onSubmit={(e) => void submit(e)} className="space-y-5">
         {wizard.data.codeReason === "setup_in_progress" ? <AdminNotice tone="info">{t("codeInProgress")}</AdminNotice> : null}
         <Field

@@ -10,7 +10,7 @@ export default {
   doneMediaTitle: "Déposez vos films et vos séries",
   doneMediaHost: "Sur cette machine, dans\u00a0:",
   doneMediaGeneric: "Dans les dossiers de vos bibliothèques.",
-  doneMediaScan: "Jellyfin les trouve tout seul à sa prochaine analyse, ou tout de suite par «\u00a0Analyser toutes les médiathèques\u00a0» dans son tableau de bord.",
+  doneMediaScan: "Jellyfin les trouve tout seul à sa prochaine analyse, ou tout de suite par «\u00a0Actualiser toutes les médiathèques\u00a0» dans son tableau de bord.",
   doneAppsTitle: "Les applications",
   app_web: "Navigateur",
   app_macos: "macOS",
@@ -48,6 +48,6 @@ export default {
   addSchemaLabel: "En quatre temps\u00a0: le dossier, votre film, l'analyse par Jellyfin, le titre dans Tentacle.",
   addNaming: "Un dossier par film, au nom du titre et de son année\u00a0: «\u00a0Dune (2021)/Dune (2021).mkv\u00a0». Pour une série\u00a0: «\u00a0Nom de la série/Saison 01/…\u00a0».",
   addTiming: "Combien de temps\u00a0? Jellyfin repère un nouveau fichier en une minute environ quand la surveillance en temps réel est active (c'est le cas des bibliothèques créées par Tentacle)\u00a0; sinon, à sa prochaine analyse planifiée, toutes les 12\u00a0heures. Comptez ensuite de quelques secondes à quelques minutes par titre.",
-  addRescan: "Pour relancer l'analyse tout de suite\u00a0: dans Jellyfin, Tableau de bord › Médiathèques › «\u00a0Analyser toutes les médiathèques\u00a0».",
+  addRescan: "Pour relancer l'analyse tout de suite\u00a0: dans Jellyfin, Tableau de bord › Médiathèques › «\u00a0Actualiser toutes les médiathèques\u00a0».",
   addGuide: "Le guide complet",
 };

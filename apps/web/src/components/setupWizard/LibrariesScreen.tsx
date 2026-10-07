@@ -77,6 +77,7 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
 
   return (
     <WizardFrame
+      help={wizard}
       title={optional ? t("librariesTitleEmpty") : t("librariesTitle")}
       subtitle={optional ? t("librariesSubtitleEmpty") : t("librariesSubtitle")}
       position={wizard.position}

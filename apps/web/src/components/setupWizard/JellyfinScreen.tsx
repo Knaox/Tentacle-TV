@@ -15,7 +15,7 @@ export function JellyfinScreen({ wizard }: { wizard: Wizard }) {
   const subtitle =
     provisioner === "docker-sibling" ? t("jfSubtitleSibling") : provisioner === "native-host" ? t("jfSubtitleNative") : t("jfSubtitleExisting");
   return (
-    <WizardFrame title={t("jfTitle")} subtitle={subtitle} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+    <WizardFrame help={wizard} title={t("jfTitle")} subtitle={subtitle} position={wizard.position} total={wizard.total} onBack={wizard.back}>
       <JellyfinPicker wizard={wizard} />
     </WizardFrame>
   );

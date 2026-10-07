@@ -120,7 +120,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   const adviceOutcomes = data.adviceOutcomes ?? [];
 
   return (
-    <WizardFrame title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total} server={wizard.server}>
+    <WizardFrame help={wizard} title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total} server={wizard.server}>
       <div className="space-y-4" aria-live="polite">
         <ul className="space-y-2">
           {wantSegments ? line(t("segmentPlugins:wizardLine"), segState) : null}

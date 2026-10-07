@@ -26,3 +26,17 @@ describe("« Pour ajouter du contenu »", () => {
     expect(html).not.toContain("add-content-folders");
   });
 });
+
+describe("« Besoin d'aide ? »", async () => {
+  const { SetupHelp } = await import("./SetupHelp");
+  it("replié d'office : ses questions-réponses et la page du site de l'écran, dans la langue de l'interface", () => {
+    const html = renderToStaticMarkup(<SetupHelp step="remote" noLibraries={false} />);
+    expect(html).toMatch(/^<details(?![^>]*open)/);
+    for (const key of ["helpToggle", "help_remote_needed_q", "help_remote_proxy_a", "help_remote_nothing_q"]) expect(html).toContain(key);
+    expect(html).toContain("https://tentacletv.app/docs/server/remote-access/?lang=fr");
+  });
+
+  it("les bibliothèques d'un Jellyfin configuré vide : l'ancre de leur cas", () => {
+    expect(renderToStaticMarkup(<SetupHelp step="libraries" noLibraries />)).toContain("libraries/?lang=fr#existing-jellyfin-without-libraries");
+  });
+});

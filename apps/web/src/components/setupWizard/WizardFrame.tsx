@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Server } from "lucide-react";
-import type { SetupSelection } from "@tentacle-tv/shared";
+import type { SetupSelection, SetupStep } from "@tentacle-tv/shared";
 import { AuthLayout } from "../auth/AuthLayout";
+import { SetupHelp } from "./SetupHelp";
 
 interface WizardFrameProps {
   title: string;
@@ -17,6 +18,8 @@ interface WizardFrameProps {
   hideProgress?: boolean;
   /** `full` : une carte plus large, pour l'accès à distance et ses extraits. */
   width?: "wide" | "full";
+  /** L'écran, pour son « Besoin d'aide ? » (questions et page du site) ; absent : pas d'aide. */
+  help?: { step: SetupStep; data: { context: { flow: { noLibraries?: boolean } } | null } };
   children: ReactNode;
 }
 
@@ -27,7 +30,7 @@ interface WizardFrameProps {
  * demandé moins de mouvement. Sous elle, le Jellyfin choisi et son état, en
  * toutes lettres : on sait toujours quel serveur on prépare.
  */
-export function WizardFrame({ title, subtitle, position, total, onBack, server, hideProgress, width = "wide", children }: WizardFrameProps) {
+export function WizardFrame({ title, subtitle, position, total, onBack, server, hideProgress, width = "wide", help, children }: WizardFrameProps) {
   const { t } = useTranslation("setupWizard");
   return (
     <AuthLayout
@@ -69,6 +72,7 @@ export function WizardFrame({ title, subtitle, position, total, onBack, server, 
       }
     >
       {children}
+      {help ? <SetupHelp step={help.step} noLibraries={help.data.context?.flow.noLibraries ?? false} /> : null}
     </AuthLayout>
   );
 }

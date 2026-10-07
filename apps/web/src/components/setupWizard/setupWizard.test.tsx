@@ -272,8 +272,11 @@ describe("les écrans de l'assistant", () => {
     expect(out).toContain("./media/series");
     expect(out).toContain('role="img"');
     expect(out).toContain("http://192.168.1.20:3471");
-    // Les huit applications, et le guide « ajouter du contenu ».
-    expect(out.match(/target="_blank"/g)).toHaveLength(9);
+    // Les huit applications, le guide « ajouter du contenu », et la page d'aide de l'écran.
+    expect(out.match(/target="_blank"/g)).toHaveLength(10);
+    expect(out).toContain('data-testid="setup-help"');
+    expect(out).toContain("helpToggle");
+    expect(out).toContain("https://tentacletv.app/docs/server/");
     expect(out).toContain("addTiming");
     expect(out).toContain("doneRemote_off");
   });
