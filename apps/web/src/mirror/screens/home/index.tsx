@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { describeProblem } from "@tentacle-tv/shared";
+import { describeProblem, libraryHasNoTitles } from "@tentacle-tv/shared";
 import { PageProblem } from "../../../components/problems/PageProblem";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { ContentErrorState } from "../../../components/ContentErrorState";
+import { EmptyLibraryState } from "../../../components/home/EmptyLibraryState";
 import { useRecoNavigation } from "../../../lib/recoNavigation";
 import { MediaCard } from "../../cards/MediaCard";
 import { HeroBanner } from "../../hero/HeroBanner";
@@ -130,6 +131,15 @@ export function MirrorHome() {
     return (
       <SubtleBackground>
         <PageProblem model={SESSION_GONE} onAction={() => navigate("/login")} />
+      </SubtleBackground>
+    );
+  }
+
+  // Aucun titre : l'état vide, le même que l'accueil du bureau, au lieu d'un écran noir.
+  if (libraryHasNoTitles(libraries.data) && !resume.data?.length) {
+    return (
+      <SubtleBackground>
+        <EmptyLibraryState />
       </SubtleBackground>
     );
   }

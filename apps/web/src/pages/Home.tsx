@@ -26,7 +26,8 @@ import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { useRecoHeroSlides } from "@tentacle-tv/api-client";
 import { CardDensityProvider } from "../contexts/CardDensityContext";
 import { useRecoFilter } from "../hooks/useRecoFilter";
-import { pickHeroMedia, type MediaItem } from "@tentacle-tv/shared";
+import { libraryHasNoTitles, pickHeroMedia, type MediaItem } from "@tentacle-tv/shared";
+import { EmptyLibraryState } from "../components/home/EmptyLibraryState";
 
 /** Une source en échec : rien (identité stable — la bannière ne se refait pas). */
 const NO_ITEMS: MediaItem[] = [];
@@ -147,6 +148,16 @@ export function Home() {
     return (
       <PageTransition>
         <ContentErrorState />
+      </PageTransition>
+    );
+  }
+
+  // Aucun titre dans les bibliothèques : la bannière et les rangées ne
+  // rendraient rien — un écran noir. On dit quoi faire.
+  if (libraryHasNoTitles(libraries) && !resumeItems?.length) {
+    return (
+      <PageTransition>
+        <EmptyLibraryState />
       </PageTransition>
     );
   }
