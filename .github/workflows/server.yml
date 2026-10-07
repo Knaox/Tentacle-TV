@@ -165,3 +165,16 @@ jobs:
       sha: ${{ needs.prepare.outputs.sha }}
     secrets:
       KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
+
+  # ── L'offre de sources (GPL / LGPL) : une Release « sources-<tag> » à part,
+  #    en parallèle de la livraison — rien ne l'attend (sources.yml).
+  sources:
+    needs: prepare
+    if: needs.prepare.outputs.channel == 'test' || needs.prepare.outputs.channel == 'store'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/sources.yml
+    with:
+      app: server
+      tag: server-v${{ needs.prepare.outputs.version }}
+      sha: ${{ needs.prepare.outputs.sha }}

@@ -25,9 +25,13 @@ inventory: `docs/LICENCES.md`).
 
 They are invoked as separate processes (`execFile`); they form an aggregate
 with Tentacle TV, not a combined work (AGPL section 5). **Source offer:** the
-corresponding source of the GPL and LGPL programs above, at the exact versions
-shipped in a given image, is available on request from the maintainer through
-GitHub issues, for at least three years after that image was published.
+corresponding source of the GPL and LGPL programs above, at the versions
+shipped, is published with every release as the GitHub pre-release
+`sources-server-vX.Y.Z` (`.github/workflows/sources.yml`). For images published
+before that mechanism existed (up to `server-v1.23.0`, whose ffmpeg was
+Alpine's GPL build with x264 / x265), the source is available on request from
+the maintainer through GitHub issues, for at least three years after the image
+was published.
 
 ## Node.js packages
 

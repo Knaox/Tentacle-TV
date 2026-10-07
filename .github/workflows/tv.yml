@@ -640,3 +640,15 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: node .github/scripts/asc-submit-review.mjs
 
+  # ── L'offre de sources (GPL / LGPL) : une Release « sources-<tag> » à part,
+  #    en parallèle de la livraison — rien ne l'attend (sources.yml).
+  sources:
+    needs: prepare
+    if: needs.prepare.outputs.channel == 'test' || needs.prepare.outputs.channel == 'store'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/sources.yml
+    with:
+      app: tv
+      tag: ${{ needs.prepare.outputs.tag }}
+      sha: ${{ needs.prepare.outputs.sha }}

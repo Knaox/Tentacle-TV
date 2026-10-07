@@ -177,9 +177,12 @@ protégerait mieux la faculté d'accorder les permissions de `LICENSE-EXCEPTIONS
    publiés par une Release du dépôt — sinon le GPL côtoie Firebase dans l'APK.
 3. **Windows** : construire `libmpv-2.dll` soi-même à tags épinglés, ou archiver la
    source exacte ; tant que ce n'est pas fait, la LGPL n'est pas tenue (source introuvable).
-4. **Sources** : à chaque Release (`desktop-v*`, `server-v*`, `mobile-v*`, `tv-v*`), une
-   archive des sources des composants (L)GPL embarqués + manifeste des versions (Homebrew,
-   apt, Alpine). Y compris pour les images serveur et les apps déjà publiées.
+4. **Sources** : fait — `sources.yml`, appelé par mobile, tv, desktop et server aux crans
+   test et store, publie la pré-version `sources-<tag>` (code de Tentacle au commit livré +
+   archives amont des composants (L)GPL, liste dans `.github/scripts/lib/source-offer.mjs`).
+   Reste : le relancer à la main pour les livraisons DÉJÀ publiées (server-v1.23.0 et son
+   ffmpeg GPL d'Alpine, desktop-v1.26.0, mobile-v1.10.x, tv-v1.10.x) ; manifeste des
+   versions Homebrew / apt réellement embarquées par le bureau.
 5. **Mac App Store** : fait sur cette branche (`scripts/macosLicenses.mjs`) — à vérifier
    dans le prochain `.pkg` (`Contents/Resources/licenses`).
 6. **Boutiques** : CLUF personnalisé (App Store Connect, Partner Center) qui réserve les
