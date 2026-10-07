@@ -37,28 +37,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.26.0",
-    "tag": "desktop-v1.26.0",
+    "version": "1.27.0",
+    "tag": "desktop-v1.27.0",
     "notes": {
-      "fr": "• Famille : depuis les réglages, créez votre famille, invitez des comptes du serveur ou ajoutez des profils invités pour vos Apple TV, chacun avec son code PIN facultatif\n• Famille partagée : chaque membre voit toute la famille ; le propriétaire décide qui peut créer des invités, et quels invités peuvent demander des films, à leur propre nom\n• Les invitations à rejoindre une famille s'affichent à l'ouverture de l'app et en direct ; acceptez, refusez, ou répondez plus tard depuis la cloche\n• Qualité réduite : le lecteur dit pourquoi (réseau, limite Internet fixée sur Jellyfin, ou vidéo convertie par le serveur), et la raison se relit dans le menu Qualité\n• Sauter pendant une vidéo convertie : un chargement visible dès l'appui, et plusieurs sauts rapides ne relancent la conversion qu'une fois",
-      "en": "• Family: from Settings, create your family, invite server accounts or add guest profiles for your Apple TVs, each with an optional PIN\n• Shared family: every member sees the whole family; the owner decides who can create guests, and which guests can request movies, in their own name\n• Family invitations appear when the app opens and in real time; accept, decline, or answer later from the notification bell\n• Quality lowered: the player now says why (network, an Internet limit set on Jellyfin, or video converted by the server), and the reason stays in the Quality menu\n• Skipping in converted video: loading shows right away, and several quick skips restart the conversion only once"
+      "fr": "• Jellyfin redémarre pendant un film ? Avec le serveur 1.24.0, la lecture continue sans rechargement ; message temporaire, avec compte à rebours\n• Hors ligne : le message dit la cause (pas de réseau, serveur Tentacle ou Jellyfin injoignable) et s'efface seul\n• Un transcodage coupé par un redémarrage de Jellyfin reprend au bon endroit, au lieu de finir le film en avance\n• Qualité réduite plus fidèle : le son d'origine (DTS, TrueHD…) est gardé, le Dolby Vision et le HDR restent intacts quand seul le conteneur change, et la vidéo passe en HEVC quand le serveur l'autorise\n• Le chargement s'affiche dès qu'on choisit une qualité\n• L'épisode suivant revérifie la connexion et revient en lecture directe quand elle le permet\n• La piste audio choisie reste en place, sans retour à la piste par défaut en cours de lecture\n• Jumeler une TV : dès le dernier caractère du code ; une TV déjumelée quitte aussitôt la liste\n• Accueil : une carte vue, ou retirée de Ma liste ou des favoris, reste en place tant que le pointeur est sur sa rangée\n• Affiner : « Afficher le synopsis » répond de nouveau au clic, et Espace l'ouvre toujours\n• Administration (serveur 1.24.0) : « Jellyfin redémarre » au lieu d'une erreur, la détection des passages installée ou réparée en un clic, un guide de l'accès à distance, et des sessions étiquetées juste\n• La rangée des titres entamés s'appelle désormais « Là où vous en étiez »\n• Serveur plus ancien : rien ne casse, ce qui exige un serveur récent reste caché",
+      "en": "• Jellyfin restarts during a movie? With server 1.24.0, playback continues with no reload; temporary message, with a countdown\n• Offline: the message says why (no network, Tentacle server or Jellyfin unreachable) and clears itself\n• A transcode interrupted by a Jellyfin restart resumes at the right place, instead of ending the movie early\n• More faithful reduced quality: original audio (DTS, TrueHD…) is kept, Dolby Vision and HDR stay intact when only the container changes, and video switches to HEVC when the server allows it\n• Loading shows as soon as you pick a quality\n• The next episode re-checks the connection and returns to direct play when it allows\n• Your chosen audio track stays put, with no switch back to the default track during playback\n• Pairing a TV: pairing starts as soon as the last character of the code is typed, and an unpaired TV leaves the list right away\n• Home: a card you mark as watched, or remove from My List or Favorites, stays put while the pointer is on its row\n• Refine: \"Show synopsis\" responds to clicks again, and Space always opens it\n• Administration (server 1.24.0): \"Jellyfin is restarting\" instead of an error, skip detection installed or repaired in one click, a remote access guide, and accurately labeled sessions\n• The in-progress row is now called \"Where you left off\"\n• Older server: nothing breaks, what needs a recent server stays hidden"
     },
     "assets": {
       "appimage": {
-        "name": "tentacle-tv_1.26.0_x86_64.AppImage",
-        "sha256": "949a92ba90246162ecc9f5f2724164613d0d66576e464221991ec17a195776fd"
+        "name": "tentacle-tv_1.27.0_x86_64.AppImage",
+        "sha256": "5c573cca4c1de550107911252b6059be681e51a95fa11c9a84c66f40f3867a55"
       },
       "deb": {
-        "name": "tentacle-tv_1.26.0_amd64.deb",
-        "sha256": "dd67c413605a648991831d9588cbc37c01871eb65ee064c2a3eb102fc65e97b2"
+        "name": "tentacle-tv_1.27.0_amd64.deb",
+        "sha256": "eed9a70b93dab9827a4d286683e5b95f3271c16964a0038ff390d17247b31002"
       },
       "rpm": {
-        "name": "tentacle-tv_1.26.0_x86_64.rpm",
-        "sha256": "5f67bb1a94086ad163f97fce6e8de6dc73fad61baff893f285976e108a6df56a"
+        "name": "tentacle-tv_1.27.0_x86_64.rpm",
+        "sha256": "94e635f5dc87ab909fa5ece9a90ef75272495af9a39e108a7b26c787cbc69e6c"
       },
       "pacman": {
-        "name": "tentacle-tv_1.26.0_x64.pkg.tar.zst",
-        "sha256": "136da46d18bc1a28aa93cbfb87ac278723b765c8bc867541ca29990e19d5fdfd"
+        "name": "tentacle-tv_1.27.0_x64.pkg.tar.zst",
+        "sha256": "7cc5b501fed2a852d4b092b952726ba165484b55285af94a17219862939ad89f"
       }
     }
   }
