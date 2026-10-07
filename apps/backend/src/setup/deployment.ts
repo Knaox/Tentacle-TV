@@ -13,8 +13,13 @@ export interface DeploymentEnv {
   TENTACLE_DEPLOYMENT?: string;
   TENTACLE_STACK?: string;
   JELLYFIN_INTERNAL_URL?: string;
+  /**
+   * Facultatif, plus posé par les piles : Tentacle n'a AUCUN réglage des
+   * médias, il lit les dossiers chez Jellyfin. Un compose d'avant qui le
+   * donne encore enrichit seulement l'affichage (« sur votre serveur »).
+   */
   TENTACLE_MEDIA_HOST_PATH?: string;
-  /** Les sous-dossiers que crée le service `init` (films, puis séries). */
+  /** Les sous-dossiers que crée `jellyfin-init` (films, puis séries). */
   TENTACLE_MEDIA_SUBDIRS?: string;
   /** Le port sur lequel la pile complète PUBLIE Jellyfin (`JELLYFIN_PORT`) : celui que les applications joignent. */
   JELLYFIN_HOST_PORT?: string;
@@ -28,7 +33,7 @@ export interface Deployment {
   siblingUrl: string | null;
   /** Où Jellyfin voit les médias, dans son conteneur (pile complète) : les bibliothèques proposées. */
   mediaFolders: { root: string; movies: string; tvshows: string } | null;
-  /** Le dossier des médias sur l'hôte, pour « déposez vos films ici ». */
+  /** Le dossier des médias sur l'hôte, pour « déposez vos films ici » — `null` sans vieux compose qui le donne. */
   mediaHostPath: string | null;
   /** Le port publié de Jellyfin (pile complète) ; `null` s'il n'est pas déclaré — jamais 8096 supposé. */
   jellyfinHostPort: number | null;
@@ -47,7 +52,7 @@ function cleanUrl(value: string | undefined): string | null {
 
 const MEDIA_ROOT = "/media";
 
-/** Les mêmes noms que le service `init` (`stackInit.ts`), par défaut `films,series`. */
+/** Les mêmes noms que `jellyfin-init` (pile complète), par défaut `films,series`. */
 function mediaFolders(subdirs: string | undefined): { root: string; movies: string; tvshows: string } {
   const [movies = "films", tvshows = "series"] = (subdirs ?? "films,series")
     .split(",")
