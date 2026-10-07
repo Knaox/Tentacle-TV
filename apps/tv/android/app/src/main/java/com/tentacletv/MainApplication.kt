@@ -15,9 +15,11 @@ import com.facebook.soloader.SoLoader
 import com.swmansion.rnscreens.ScreenStack
 import com.tentacletv.device.DevicePackage
 import com.tentacletv.device.DeviceSignals
+import com.tentacletv.device.RenderTierStore
 import com.tentacletv.exoplayer.ExoPackage
 import com.tentacletv.focus.TentacleFocusPackage
 import com.tentacletv.media.MediaCapabilitiesPackage
+import com.tentacletv.memory.LiteMemory
 import com.tentacletv.mpv.MpvPackage
 import com.tentacletv.probe.PlayerProbePackage
 import com.tentacletv.render.ImagePipelineTuning
@@ -68,5 +70,17 @@ class MainApplication : Application(), ReactApplication {
     // Le fondu de page de l'Apple TV (`IosFade`, même patch) : 320 ms d'UIKit,
     // l'écran qui part s'efface par-dessus l'autre — plus de creux sombre.
     ScreenStack.fadeLikeIos = true
+    // Le budget mémoire du mode Lite (`memory/LiteMemory`), parti de la
+    // décision du lancement précédent ; le JS le confirme avant la première
+    // image (`TentacleDevice.report`). En Lite, les images des écrans
+    // recouverts sont relâchées (`ScreenStack.releaseCoveredScreens`).
+    LiteMemory.apply(RenderTierStore(this).lastTier)
+  }
+
+  /** Lite : le système manque de mémoire, ou l'app passe derrière — les images
+   *  que rien n'affiche quittent la mémoire. Normal : rien de plus qu'avant. */
+  override fun onTrimMemory(level: Int) {
+    super.onTrimMemory(level)
+    LiteMemory.onTrimMemory(level)
   }
 }
