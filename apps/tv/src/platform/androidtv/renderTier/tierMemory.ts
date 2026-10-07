@@ -1,8 +1,6 @@
 import { useEffect } from "react";
+import { LITE_RELEASE_SETTLE_MS } from "@tentacle-tv/tv-core";
 import { deviceNative, RENDER_TIER } from "./tierNative";
-
-/** Le temps que l'écran recouvert se cache et que ses images se relâchent. */
-const SETTLE_MS = 1200;
 
 /**
  * Lite : un écran qui recouvre toute l'interface (le lecteur) vide, une fois
@@ -15,7 +13,7 @@ export function useReleaseHiddenImages(reason: string): void {
   useEffect(() => {
     const native = deviceNative;
     if (RENDER_TIER !== "lite" || !native?.releaseHiddenImages) return;
-    const timer = setTimeout(() => native.releaseHiddenImages?.(reason), SETTLE_MS);
+    const timer = setTimeout(() => native.releaseHiddenImages?.(reason), LITE_RELEASE_SETTLE_MS);
     return () => clearTimeout(timer);
   }, [reason]);
 }

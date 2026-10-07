@@ -18,3 +18,10 @@ export const LITE_BACKDROP_WIDTH = 960;
 export function backdropWidthFor(tier: RenderTier, width: number): number {
   return tier === "lite" ? Math.min(width, LITE_BACKDROP_WIDTH) : width;
 }
+
+/**
+ * Lite : le temps qu'un écran qui recouvre toute l'interface (le lecteur) se
+ * pose — l'écran recouvert caché, ses images relâchées — avant de vider les
+ * caches d'images (`useReleaseHiddenImages`, Android TV).
+ */
+export const LITE_RELEASE_SETTLE_MS = 1200;
