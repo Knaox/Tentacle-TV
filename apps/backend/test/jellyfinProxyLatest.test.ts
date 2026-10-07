@@ -19,6 +19,9 @@ const upstream = vi.hoisted(() => ({
   scanStatus: 200,
   /** La bibliothèque, du plus récent au plus ancien — servie par pages (`StartIndex`, `Limit`). */
   inventory: [] as Array<Record<string, unknown>>,
+  /** « Afficher les épisodes manquants » du compte (`/Users/u1`), lu à part des requêtes de la rangée. */
+  displayMissing: false,
+  settingsReads: 0,
 }));
 vi.mock("../src/services/configStore", () => ({
   getJellyfinUrl: () => upstream.url,
@@ -39,6 +42,7 @@ vi.mock("../src/services/wsManager", () => ({ broadcastToUser: () => {} }));
 
 import { jellyfinProxyRoutes } from "../src/routes/jellyfinProxy";
 import { clearAll, invalidateByCarousel } from "../src/services/jellyfinCache";
+import { resetMissingEpisodesCache } from "../src/routes/jellyfinProxy/missingEpisodesSetting";
 
 /** La bibliothèque de séries, du plus récent au plus ancien : A et B mêlées, une saison de C. */
 const INVENTORY = [
@@ -73,6 +77,11 @@ beforeAll(async () => {
   jellyfin = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://jellyfin.test");
     const authorization = String(req.headers.authorization ?? "");
+    // Le réglage du compte : compté à part, il ne fait pas partie des requêtes de la rangée.
+    if (url.pathname === "/Users/u1") {
+      upstream.settingsReads++;
+      return json(res, 200, { Id: "u1", Configuration: { DisplayMissingEpisodes: upstream.displayMissing } });
+    }
     upstream.calls.push({ path: url.pathname, query: url.searchParams, authorization });
     if (!/Token="jeton-de-test-/.test(authorization)) return json(res, 401, {});
     if (url.pathname !== "/Items" || url.searchParams.get("userId") !== "u1") return json(res, 404, {});
@@ -107,6 +116,9 @@ afterAll(async () => {
 
 beforeEach(() => {
   clearAll();
+  resetMissingEpisodesCache();
+  upstream.displayMissing = false;
+  upstream.settingsReads = 0;
   upstream.calls = [];
   upstream.scanStatus = 200;
   upstream.inventory = INVENTORY;
@@ -234,5 +246,28 @@ describe("GET /api/jellyfin/Users/{id}/Items — « Derniers ajouts » d'une bib
   it("un jeton refusé reste un 401 pour le client", async () => {
     const res = await row(ROW, "jeton-perime");
     expect(res.status).toBe(401);
+  });
+});
+
+describe("« Derniers ajouts » — un dossier vide n'est pas un ajout", () => {
+  /** Une série arrivée sans aucun fichier (son dossier, une saison), puis la bibliothèque d'avant. */
+  const WITH_EMPTY = [
+    { Id: "V", Type: "Series", DateCreated: "2026-10-03T10:00:00Z" },
+    { Id: "V-s1", Type: "Season", SeriesId: "V", IndexNumber: 1, DateCreated: "2026-10-03T10:00:00Z" },
+    ...INVENTORY,
+  ];
+
+  it("la série sans épisode n'a pas de carte ; le réglage du compte est lu une fois", async () => {
+    upstream.inventory = WITH_EMPTY;
+    const res = await row(ROW);
+    expect(res.body?.Items.map((i) => i.Id)).toEqual(["C", "A", "B-s4e1"]);
+    expect(upstream.settingsReads).toBe(1);
+  });
+
+  it("le compte affiche les épisodes manquants (Jellyfin) : le dossier vide garde sa carte", async () => {
+    upstream.inventory = WITH_EMPTY;
+    upstream.displayMissing = true;
+    const res = await row(ROW);
+    expect(res.body?.Items.map((i) => i.Id)).toEqual(["V", "C", "A", "B-s4e1"]);
   });
 });
