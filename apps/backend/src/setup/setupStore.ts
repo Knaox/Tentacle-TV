@@ -28,6 +28,8 @@ export const SETUP_KEYS = {
   selection: "setup_jellyfin_selection",
   /** L'adresse du Jellyfin sur lequel CETTE installation a créé la clé « Tentacle » (révocable si on l'abandonne). */
   keyCreatedFor: "setup_jellyfin_key_created",
+  /** « Configurer plus tard » la clé TMDB : à la fin, l'avis `tmdbKey` est masqué pour l'administrateur (`flow/tmdbChoice.ts`). */
+  tmdbLater: "setup_tmdb_later",
 } as const;
 
 export interface StoredJellyfin {

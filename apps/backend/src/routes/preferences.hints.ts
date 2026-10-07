@@ -61,6 +61,30 @@ async function readState(userId: string): Promise<HintsState> {
   }
 }
 
+/** Rien de masqué = aucune ligne ; sinon les noms, et la marque de ceux qui en portent une. */
+async function writeState(userId: string, next: HintsState): Promise<void> {
+  const prisma = getPrisma();
+  const key = hintsConfigKey(userId);
+  if (next.dismissed.length === 0) {
+    await prisma.serverConfig.deleteMany({ where: { key } });
+  } else {
+    const value = JSON.stringify(storedHintEntries(next.dismissed, next.marks));
+    await prisma.serverConfig.upsert({ where: { key }, create: { key, value }, update: { value } });
+  }
+}
+
+/**
+ * Masquer un rappel « pour de bon » pour un compte, côté serveur — le même
+ * effet que son « Ne plus afficher ». Sert à l'assistant d'installation
+ * (« Configurer plus tard » la clé TMDB → `tmdbKey`). Garde les autres
+ * rappels et leurs marques ; aucun appareil à prévenir (le compte n'en a pas encore).
+ */
+export async function dismissAccountHint(userId: string, hint: DismissibleHint): Promise<void> {
+  const current = await readState(userId);
+  if (current.dismissed.includes(hint)) return;
+  await writeState(userId, { dismissed: normalizeDismissedHints([...current.dismissed, hint]), marks: current.marks });
+}
+
 /** La réponse : les rappels masqués, leurs marques, et la liste fermée de ce serveur. */
 function responseOf(state: HintsState): DismissedHintsResponse {
   const marks: DismissedHintMarks = {};
@@ -93,14 +117,7 @@ export function registerHintsRoutes(app: FastifyInstance): void {
       marks,
     };
 
-    const prisma = getPrisma();
-    const key = hintsConfigKey(user.userId);
-    if (next.dismissed.length === 0) {
-      await prisma.serverConfig.deleteMany({ where: { key } });
-    } else {
-      const value = JSON.stringify(storedHintEntries(next.dismissed, next.marks));
-      await prisma.serverConfig.upsert({ where: { key }, create: { key, value }, update: { value } });
-    }
+    await writeState(user.userId, next);
     notifyPreferencesUpdate(request, user.userId, "hints");
     return responseOf(next);
   });

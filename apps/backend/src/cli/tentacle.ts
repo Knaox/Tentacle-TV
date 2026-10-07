@@ -38,6 +38,7 @@ const SETUP_FLAGS = [
   "setup_jellyfin_selection",
   "setup_jellyfin_key_created",
   "setup_jellyfin_joined",
+  "setup_tmdb_later",
 ];
 const HELP = new Set(["help", "-h", "--help"]);
 

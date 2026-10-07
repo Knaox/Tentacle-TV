@@ -8,6 +8,7 @@ import { setupJellyfinRoutes } from "./routes/jellyfinRoutes";
 import { setupLibraryRoutes } from "./routes/libraryRoutes";
 import { setupSegmentsRoute } from "./routes/segmentsRoute";
 import { setupSessionRoutes } from "./routes/sessionRoutes";
+import { setupTmdbRoute } from "./routes/tmdbRoute";
 
 /**
  * `/api/setup/*` — l'assistant d'installation. Avant la fin : un code lu dans
@@ -23,5 +24,6 @@ export const setupWizardRoutes: FastifyPluginAsync = async (app) => {
   await app.register(setupLibraryRoutes);
   await app.register(setupSegmentsRoute);
   await app.register(setupAdviceRoute);
+  await app.register(setupTmdbRoute);
   await app.register(setupCompleteRoute);
 };
