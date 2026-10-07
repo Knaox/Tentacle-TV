@@ -1,5 +1,5 @@
 import { NativeModules } from "react-native";
-import { renderProfileFor, tierFromDeviceConstants, type DeviceConstants, type RenderProfile } from "@tentacle-tv/tv-core";
+import { renderProfileFor, tierFromDeviceConstants, type DeviceConstants, type RenderProfile, type RenderTier } from "@tentacle-tv/tv-core";
 
 /**
  * LE profil de rendu de l'appareil (`@tentacle-tv/tv-core`, `render/`) — le
@@ -15,6 +15,8 @@ import { renderProfileFor, tierFromDeviceConstants, type DeviceConstants, type R
  * n'importe pas l'app. Fixe pour la vie du JS : il ne change qu'au
  * redémarrage.
  */
-const tier = tierFromDeviceConstants(NativeModules.TentacleDevice as DeviceConstants | undefined).state.tier;
+/** Le niveau de rendu de l'appareil — la seule source du niveau dans la
+ *  refonte (le montage, `mountProfile`, le lit aussi). */
+export const DEVICE_TIER: RenderTier = tierFromDeviceConstants(NativeModules.TentacleDevice as DeviceConstants | undefined).state.tier;
 
-export const RENDER: Readonly<RenderProfile> = renderProfileFor("androidtv", tier);
+export const RENDER: Readonly<RenderProfile> = renderProfileFor("androidtv", DEVICE_TIER);

@@ -6,6 +6,8 @@ import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, gridLineReveal } from "@tent
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { useGridAhead } from "./useGridAhead";
+import { mountProfile } from "../../render/mountProfile";
 
 /**
  * La grille d'affiches des pages de catalogue — bibliothèque, Ma liste,
@@ -144,6 +146,8 @@ export const PosterGrid = memo(function PosterGrid({
 }: PosterGridProps) {
   const width = posterWidth(columns);
   const lines = useLines(cards, columns);
+  const list = useRef<FlashList<Line>>(null);
+  const focusCard = useGridAhead(list, cards, columns, onFocusCard);
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<Line>) => (
       <GridLine
@@ -153,15 +157,16 @@ export const PosterGrid = memo(function PosterGrid({
         focusPrefix={focusPrefix}
         onPressCard={onPressCard}
         onLongPressCard={onLongPressCard}
-        onFocusCard={onFocusCard}
+        onFocusCard={focusCard}
       />
     ),
-    [width, focusPrefix, onPressCard, onLongPressCard, onFocusCard],
+    [width, focusPrefix, onPressCard, onLongPressCard, focusCard],
   );
   return (
     // FlashList veut un parent de taille connue : la scène.
     <View style={styles.list}>
       <FlashList
+        ref={list}
         // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
         key={`grid-${columns}`}
         data={lines}
@@ -171,8 +176,9 @@ export const PosterGrid = memo(function PosterGrid({
         // Deux lignes d'avance de chaque côté (la liste étend ensuite son
         // avance par étapes) : une flèche maintenue trouve toujours la ligne
         // suivante montée — la règle des sections la cherche parmi les
-        // lignes présentes.
-        drawDistance={DRAW_DISTANCE}
+        // lignes présentes. Le profil de montage la règle (`mountProfile` :
+        // une ligne en mode Lite).
+        drawDistance={mountProfile().gridDrawDistance}
         ListHeaderComponent={header}
         ListEmptyComponent={empty}
         ListFooterComponent={footer}
@@ -204,9 +210,6 @@ const CAPTION_ESTIMATE = 67;
 function lineStride(width: number): number {
   return Math.round(width * 1.5) + CAPTION_ESTIMATE + GRID_ROW_GAP;
 }
-
-/** Ce que la liste garde monté au-delà de l'écran, de chaque côté. */
-const DRAW_DISTANCE = 1100;
 
 const SCROLL_PROPS = { showsScrollIndex: false };
 

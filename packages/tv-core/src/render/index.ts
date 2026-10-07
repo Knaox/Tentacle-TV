@@ -16,3 +16,4 @@ export * from "./liteMotion";
 export * from "./twoStopGradient";
 export * from "./stableList";
 export * from "./rowRenewal";
+export * from "./mountProfile";

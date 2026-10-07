@@ -168,7 +168,12 @@ export const SCENARIOS = [
     id: "saisons-episodes",
     title: "Saisons et épisodes (« Bleach ») : BAS aux onglets puis aux épisodes, 4 épisodes à droite, HAUT, la saison 3 choisie, ses épisodes",
     expectReady: "fiche",
-    setup: [wait(1500), tap("left"), wait(1500), tap("down", 4, 450), wait(2000), tap("ok"), wait(8000), tap("down"), wait(1500), tap("up"), wait(1500), tap("down"), wait(2000), tap("right", 5, 600), wait(900), tap("ok"), wait(5000)],
+    // La page ouverte par le rail pose le focus sur sa première affiche si le
+    // catalogue est déjà là, sinon sur la barre des filtres (relevé du 07/10) :
+    // HAUT puis BAS ramène dans les deux cas à la première affiche (HAUT ne
+    // mène nulle part depuis les filtres). « Bleach » est la sixième. Un faux
+    // backend neuf sert son premier catalogue en plus de 10 s (L1) : 14 s.
+    setup: [wait(1500), tap("left"), wait(1500), tap("down", 4, 450), wait(2000), tap("ok"), wait(14000), tap("up"), wait(1200), tap("down"), wait(1500), tap("right", 5, 600), wait(900), tap("ok"), wait(5000)],
     gesture: [tap("down"), wait(1800), tap("down"), wait(1800), tap("right", 4, 600), wait(900), tap("up"), wait(1200), tap("right", 2, 600), wait(600), tap("ok"), wait(2500), tap("down"), wait(1500), tap("right", 3, 600), wait(900)],
     steps: 14,
   },

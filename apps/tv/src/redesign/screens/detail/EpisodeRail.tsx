@@ -4,6 +4,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusSection } from "../../focus/FocusSection";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useRowFocus } from "../../motion/useRowRecede";
+import { mountProfile } from "../../render/mountProfile";
 import { white } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import { EPISODE_CARD, EpisodeCard } from "./EpisodeCard";
@@ -77,6 +78,8 @@ export const EpisodeRail = memo(function EpisodeRail({
   );
 
   if (episodes === null) return <Ghosts />;
+  // La fenêtre de la liste (`mountProfile`), constante pour la vie du JS.
+  const listWindow = mountProfile().episodes;
   const initial = Math.min(Math.max(0, anchorIndex), Math.max(0, episodes.length - 1));
   return (
     <FocusSection focusKey="detail:episodes">
@@ -89,8 +92,9 @@ export const EpisodeRail = memo(function EpisodeRail({
         // arrive calé sur la colonne de contenu, pas contre le bord.
         getItemLayout={(_, index) => ({ length: STEP, offset: STEP * index, index })}
         initialScrollIndex={initial > 0 ? initial : undefined}
-        initialNumToRender={6}
-        windowSize={5}
+        initialNumToRender={listWindow.initialNumToRender}
+        windowSize={listWindow.windowSize}
+        maxToRenderPerBatch={listWindow.maxToRenderPerBatch}
         showsHorizontalScrollIndicator={false}
         style={styles.track}
         contentContainerStyle={styles.content}
