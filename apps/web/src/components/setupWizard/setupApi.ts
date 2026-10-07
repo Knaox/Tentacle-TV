@@ -20,6 +20,7 @@ import {
   type SetupErrorCode,
   type SetupHostInfo,
   type SetupSessionResponse,
+  type SetupTmdbRequest,
 } from "@tentacle-tv/shared";
 import { BACKEND, creds } from "../../pages/adminUtils";
 
@@ -50,6 +51,7 @@ const KNOWN: ReadonlySet<string> = new Set<SetupErrorCode>([
   "jf_tls_invalid", "jf_not_jellyfin", "jf_incompatible_version", "jf_not_blank", "jf_bad_credentials",
   "jf_not_admin", "jf_api_key_invalid", "jf_api_key_failed", "jf_startup_failed", "jf_path_not_found",
   "jf_library_failed", "jf_not_configured", "jf_claim_pending", "jf_sibling_elsewhere", "step_refused", "internal",
+  "tmdb_key_invalid", "tmdb_unreachable",
 ]);
 
 const SESSION_KEY = "tentacle_setup_session";
@@ -167,6 +169,8 @@ export const setupApi = {
   recommended: () => call<JellyfinSetupReport>("/jellyfin/recommended"),
   /** Seulement ce qui a été coché ; une issue par geste. */
   applyAdvice: (body: SetupAdviceRequest) => call<SetupAdviceOutcome[]>("/jellyfin/recommended", { method: "POST", body }),
+  /** La clé TMDB (validée par TMDB avant d'être gardée), ou « plus tard » : le contexte à jour. */
+  tmdb: (body: SetupTmdbRequest) => call<SetupContext>("/tmdb", { method: "POST", body }),
   async complete(body: SetupCompleteRequest): Promise<SetupCompleteResponse> {
     const result = await call<SetupCompleteResponse>("/complete", { method: "POST", body, withCredentials: true });
     memorySession = null;

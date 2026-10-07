@@ -132,3 +132,20 @@ describe("ce qui est proposé d'office", () => {
     expect(codeFromHash("#rien")).toBeNull();
   });
 });
+
+describe("la clé TMDB (écran facultatif, déclaré par le serveur)", () => {
+  const tmdb = { configured: false, source: null, last4: null, later: false };
+
+  it("dans les deux parcours, juste avant le récapitulatif — et compté dès l'accueil", () => {
+    const fresh = withFlow({ databasePending: false, selection: selection("fresh"), linked: true, tmdb });
+    expect(wizardSteps({ needsCode: false, context: fresh })).toEqual(["welcome", "jellyfin", "account", "libraries", "tmdb", "recap", "apply", "remote", "done"]);
+    const configured = withFlow({ databasePending: false, selection: selection("configured", false), linked: true, tmdb });
+    expect(wizardSteps({ needsCode: false, context: configured })).toEqual(["welcome", "jellyfin", "signIn", "recommended", "tmdb", "recap", "apply", "remote", "done"]);
+    expect(wizardLength({ needsCode: false, context: withFlow({ databasePending: false, selection: null, linked: false, tmdb }) })).toBe(9);
+  });
+
+  it("un serveur d'avant l'écran ne le déclare pas : aucun écran TMDB", () => {
+    const old = withFlow({ databasePending: false, selection: selection("fresh"), linked: true });
+    expect(wizardSteps({ needsCode: false, context: old })).not.toContain("tmdb");
+  });
+});

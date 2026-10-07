@@ -103,3 +103,17 @@ describe.each([
     expect(run(start(), { type: "enter", context: context({}, fromEnv), step: "libraries" }).step).toBe("jellyfin");
   });
 });
+
+describe("la clé TMDB dans le parcours", () => {
+  const tmdb = { configured: false, source: null, last4: null, later: false } as const;
+
+  it.each([PILE, SALON])("$path : on y arrive après le dernier écran du parcours, on la passe vers le récapitulatif, et on en revient", (server) => {
+    const linked = context({ selection: server, linked: true, tmdb });
+    const last = server.path === "fresh" ? "libraries" : "recommended";
+    const at = run(start(), { type: "enter", context: linked, step: last }, { type: "next" });
+    expect(at.step).toBe("tmdb");
+    expect(run(at, { type: "next" }).step).toBe("recap");
+    expect(run(at, { type: "next" }, { type: "back" }).step).toBe("tmdb");
+    expect(run(at, { type: "back" }).step).toBe(last);
+  });
+});

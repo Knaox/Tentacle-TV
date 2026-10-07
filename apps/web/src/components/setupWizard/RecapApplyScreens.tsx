@@ -37,18 +37,25 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
     ? planned ? t("recapLibrariesCreate", { names: planned }) : t("recapLibrariesSkipped")
     : kept ? t("recapLibrariesExisting", { names: kept }) : t("recapLibrariesNoneYet");
   const advice = data.advice?.ids ?? [];
+  // La clé TMDB, si le serveur propose son écran : gardée, fournie par le serveur, ou à poser plus tard.
+  const tmdb = data.context?.flow.tmdb;
+  const tmdbRow: Array<[string, string]> = tmdb
+    ? [[t("recapTmdb"), tmdb.configured ? t(tmdb.source === "env" ? "recapTmdbEnv" : "recapTmdbSaved", { last4: tmdb.last4 ?? "" }) : t("recapTmdbLater")]]
+    : [];
   const rows: Array<[string, string]> = joined
     ? [
         [t("recapJellyfin"), jellyfin],
         [t("recapAccount"), data.credentials?.username ?? "—"],
         [t("recapLibrariesKeptLabel"), keptLine],
         [t("recapAdvice"), advice.length ? advice.map((id) => t(`rec_${id}`)).join(" · ") : t("recapNothing")],
+        ...tmdbRow,
       ]
     : [
         [t("recapJellyfin"), jellyfin],
         [t("recapAccount"), data.credentials?.username ?? "—"],
         [t("recapLocale"), `${t(`lang_${data.locale.language}`)} · ${t(`country_${data.locale.country}`)}`],
         [t("recapLibraries"), planned || t("recapNothing")],
+        ...tmdbRow,
       ];
   return (
     <WizardFrame help={wizard} title={t("recapTitle")} subtitle={t("recapSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>

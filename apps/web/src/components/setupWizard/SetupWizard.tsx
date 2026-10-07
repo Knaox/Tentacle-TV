@@ -12,6 +12,7 @@ import { RecommendedScreen } from "./RecommendedScreen";
 import { ApplyScreen } from "./ApplyScreen";
 import { RecapScreen } from "./RecapApplyScreens";
 import { SignInScreen } from "./SignInScreen";
+import { TmdbScreen } from "./TmdbScreen";
 import { useWizard } from "./useWizard";
 
 export interface SetupWizardProps {
@@ -66,6 +67,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       return <LibrariesScreen wizard={wizard} />;
     case "recommended":
       return <RecommendedScreen wizard={wizard} />;
+    case "tmdb":
+      return <TmdbScreen wizard={wizard} />;
     case "recap":
       return <RecapScreen wizard={wizard} />;
     case "apply":
