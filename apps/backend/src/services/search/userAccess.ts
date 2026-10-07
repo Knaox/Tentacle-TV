@@ -9,9 +9,9 @@
  * champ, pas d'image — quelques centaines d'octets par titre.
  *
  * Même mémoïsation que l'index de la reco (`libraryMemo.ts`) : servi tout de
- * suite, rafraîchi EN FOND au-delà de dix minutes, 10 s après un
- * `UserDataChanged` du compte, et à la demande après un `LibraryChanged`.
- * Jamais de balayage dans une requête, sauf la toute première du compte.
+ * suite, rafraîchi EN FOND au-delà de dix minutes, et 10 s après un
+ * `UserDataChanged` du compte ou un `LibraryChanged`. Jamais de balayage dans
+ * une requête, sauf la toute première du compte.
  */
 
 import type { SearchUserData } from "../../search/searchTypes";
@@ -119,9 +119,18 @@ export function refreshUserAccess(userId: string): void {
   }, REFRESH_DEBOUNCE_MS));
 }
 
-/** La bibliothèque a changé : tous les comptes se rafraîchiront à leur prochaine recherche. */
+/**
+ * La bibliothèque a changé : les droits de chaque compte connu se relèvent EN
+ * FOND, sans attendre sa prochaine recherche. Seulement marqués périmés, ils
+ * servaient l'ancien relevé à cette recherche-là : le titre qui venait
+ * d'arriver n'y était pas — la première recherche après un ajout ne le
+ * trouvait pas, la deuxième si (mesuré au banc, « La Nuit des morts-vivants »).
+ */
 export function markAllUserAccessStale(): void {
-  for (const entry of memo.values()) entry.access.at = 0;
+  for (const [userId, entry] of memo) {
+    entry.access.at = 0;
+    refreshUserAccess(userId);
+  }
 }
 
 /** Retire les comptes que personne n'a lus depuis un jour. */

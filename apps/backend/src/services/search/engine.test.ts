@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseSearchQuery } from "../../search/searchText";
-import { PEOPLE, sampleCatalog } from "../../../test/searchCatalog";
+import { PEOPLE, item, sampleCatalog } from "../../../test/searchCatalog";
 import { SearchEngine, correctionOf } from "./engine";
 
 /**
@@ -36,6 +36,13 @@ describe("SearchEngine.searchItems", () => {
 
   it("trouve un titre à trait d'union tapé soudé", () => {
     expect(names("spiderman")).toContain("Spider-Man: No Way Home");
+  });
+
+  it("trouve un titre à trait d'union tapé en deux mots, ou avec le trait d'union", () => {
+    const dead = new SearchEngine([item({ id: "nuit", name: "La Nuit des morts-vivants", originalTitle: "Night of the Living Dead" })]);
+    for (const query of ["morts vivants", "morts-vivants", "nuit des morts"]) {
+      expect(dead.searchItems(parseSearchQuery(query), "AND").map((c) => c.id)).toEqual(["nuit"]);
+    }
   });
 
   it("lit les numéros dans les deux écritures", () => {
