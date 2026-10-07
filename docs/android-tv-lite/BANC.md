@@ -239,3 +239,28 @@ testeur externe), et en partie sur la Shield (baseline, Lite forcé) :
 - le Wi-Fi seul (débit, `LoadControl`) ;
 - le démarrage à froid avec le lanceur de l'opérateur ;
 - le changement de mode (Auto / Activé / Désactivé) sans perte d'état.
+
+## Le coût d'une lecture (`cout run`, tâche L4)
+
+Le son décodé par l'extension FFmpeg du lecteur et le rendu des sous-titres,
+sur les cœurs de l'appareil : un jeu `lecteur/flux-l4-*` (README du domaine
+lecteur ; fichiers par `lib/lite/l4media.py`), la lecture lancée depuis
+« Reprendre » (BAS, OK, sous la garde), l'écran du lecteur VÉRIFIÉ (sinon la
+passe est rejouée une fois, puis le jeu est sauté), puis une fenêtre mesurée
+SANS AUCUNE TOUCHE : le temps processeur de chaque fil, en ms par seconde de
+lecture (1000 = un cœur plein).
+
+```bash
+PERF_PORT=3153 node lite.mjs cout run Lite_L4_2G --apk … --debug-apk … \
+  [--sets aac,eac3,dts,truehd,ass,pgs] [--throttle duty:25] [--window 20]
+```
+
+**À lire sans freinage.** Sous `duty:N`, le temps compté par fil inclut les
+instants où qemu est suspendu (l'horloge invitée continue) : les totaux
+gonflent au hasard (de 408 à 1 200 ms/s pour le même genre de passe, mesuré).
+Sans freinage, les fils tournent à la vitesse d'un cœur du Mac : l'écart
+entre deux jeux (un son face à l'AAC) se ramène à un A53 par le facteur ~12
+(`audioDecodeCost.ts`).
+
+Le relais et le faux backend REFUSENT un port déjà pris (un autre banc) :
+`PERF_PORT` les déplace (relais `PERF_PORT`, faux backend `PERF_PORT + 10`).

@@ -69,3 +69,19 @@ ffmpeg -f lavfi -i "testsrc2=size=1920x1080:rate=24000/1001:duration=90" -f lavf
 ffmpeg -f lavfi -i "testsrc2=size=1920x1080:rate=24000/1001:duration=90" -f lavfi -i "sine=frequency=660:sample_rate=48000:duration=90,aformat=channel_layouts=5.1" -c:v libx265 -preset ultrafast -x265-params "keyint=48" -b:v 5M -pix_fmt yuv420p -tag:v hvc1 -c:a eac3 -b:a 384k banc-hevc-eac3.mkv
 ffmpeg -f lavfi -i "testsrc2=size=1920x1080:rate=24000/1001:duration=90" -f lavfi -i "sine=frequency=880:sample_rate=48000:duration=90,aformat=channel_layouts=5.1" -c:v libx265 -preset ultrafast -pix_fmt yuv420p10le -x265-params "keyint=48:colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc:master-display=G(13250,34500)B(7500,3000)R(34000,16000)WP(15635,16450)L(10000000,1):max-cll=1000,400:hdr10=1" -b:v 6M -tag:v hvc1 -color_primaries bt2020 -color_trc smpte2084 -colorspace bt2020nc -c:a eac3 -b:a 384k banc-hdr10-eac3.mkv
 ```
+
+## Jeux L4 : le coût du son décodé et des sous-titres (box faible)
+
+`flux-l4-truehd`, `flux-l4-dts`, `flux-l4-eac3`, `flux-l4-ac3`, `flux-l4-aac`,
+`flux-l4-ass` et `flux-l4-pgs` font du film une image LÉGÈRE (H.264 640×360,
+décodée par l'hôte de l'émulateur) portant un son ou un sous-titre LOURD :
+bruit rose (le pire cas d'un codec sans perte), ASS de 6 lignes à l'écran en
+permanence (servi en WebVTT, comme Jellyfin le fait pour Android TV), PGS
+dense. Le sous-titre est choisi d'office (préférences de pistes du faux
+Tentacle). Fichiers générés une fois dans `lecteur/l4/` :
+
+```bash
+python3 apps/tv/harness/android-perf/lib/lite/l4media.py
+```
+
+Mesure : `lite.mjs cout run` (`docs/android-tv-lite/BANC.md`, « Le coût d'une lecture »).
