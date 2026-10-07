@@ -79,7 +79,7 @@ de toute façon compatible AGPL.
 
 | Canal | libmpv livrée | Licence effective | État |
 |---|---|---|---|
-| Mac App Store | build maison `build-mpv-lgpl-macos.sh` : mpv 0.40.0 `-Dgpl=false`, FFmpeg 7.1.1, dylibs séparées | LGPL-2.1+ | ✅ vérifié dans l'app installée (« libavutil license: LGPL version 2.1 or later ») ; ⚠️ `LICENSE` d'Electron et `LICENSES.chromium.html` absents du `.app` (posés à côté puis non emballés) |
+| Mac App Store | build maison `build-mpv-lgpl-macos.sh` : mpv 0.40.0 `-Dgpl=false`, FFmpeg 7.1.1, dylibs séparées | LGPL-2.1+ | ✅ vérifié dans l'app installée (« libavutil license: LGPL version 2.1 or later ») ; 🛠 `LICENSE` d'Electron et `LICENSES.chromium.html` étaient absents du `.app` (posés à côté puis non emballés) : désormais dans `Contents/Resources/licenses` (`scripts/macosLicenses.mjs`) |
 | Microsoft Store | **DLL tierce commitée** `lib/mpv/libmpv-2.dll` (zhongfly/mpv-winbuild, variante LGPL, mpv master 0.41.0-233, FFmpeg 8 `--enable-version3` + OpenSSL, statique) | LGPL-3.0+ | ⚠️ **source introuvable** (builds purgés après 30 jours, commit non reproductible) ; 🛠 l'app disait « LGPL v2.1+ » |
 | Linux (GitHub) | build maison `build-mpv-linux.sh` : mpv 0.41.0 `-Dgpl=true` (X11), FFmpeg 7.1.1 LGPL statique | GPL-2.0+ (→ GPL-3 combinée) | ✅ compatible AGPL ; ⚠️ aucune source jointe aux Releases |
 
@@ -180,8 +180,8 @@ protégerait mieux la faculté d'accorder les permissions de `LICENSE-EXCEPTIONS
 4. **Sources** : à chaque Release (`desktop-v*`, `server-v*`, `mobile-v*`, `tv-v*`), une
    archive des sources des composants (L)GPL embarqués + manifeste des versions (Homebrew,
    apt, Alpine). Y compris pour les images serveur et les apps déjà publiées.
-5. **Mac App Store** : poser `LICENSE` d'Electron et `LICENSES.chromium.html` dans
-   `Contents/Resources` avant la signature (`package-macos.mjs`).
+5. **Mac App Store** : fait sur cette branche (`scripts/macosLicenses.mjs`) — à vérifier
+   dans le prochain `.pkg` (`Contents/Resources/licenses`).
 6. **Boutiques** : CLUF personnalisé (App Store Connect, Partner Center) qui réserve les
    droits des composants LGPL/GPL (modification, rétro-ingénierie pour le débogage) ;
    fiches : « AGPL-3.0 » + URL de la source.

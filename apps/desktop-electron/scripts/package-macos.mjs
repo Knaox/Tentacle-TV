@@ -46,6 +46,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
 import { sign, flat } from "@electron/osx-sign";
+import { placeLicenses } from "./macosLicenses.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_DIR = path.resolve(HERE, "..");
@@ -292,6 +293,7 @@ const paths = await packager({
 
 const appPath = path.join(paths[0], `${PRODUCT_NAME}.app`);
 placeDylibs(appPath);
+placeLicenses(appPath, paths[0], { root: ROOT, appDir: APP_DIR });
 
 if (appIdentity === "") {
   // Essai local : une signature ad hoc suffit à lancer le paquet sur place. Rien

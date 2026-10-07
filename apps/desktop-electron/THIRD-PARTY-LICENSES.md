@@ -19,6 +19,10 @@ avec sa mention et ouvre le texte complet de chaque licence, hors ligne (catalog
 | **Microsoft Store** | `lib/mpv/libmpv-2.dll`, binaire **tiers** de zhongfly/mpv-winbuild (variante LGPL) : mpv master 0.41.0-233, FFmpeg 8.x `--enable-version3` + OpenSSL 3, tout lié statiquement dans la DLL | **LGPL-3.0-or-later** (et non v2.1+ comme on l'écrivait) | https://github.com/zhongfly/mpv-winbuild — ⚠️ build non reproductible, plus téléchargeable (voir « Restes ») |
 | **Linux** (Releases GitHub) | mpv **0.41.0** `-Dgpl=true` — la sortie vidéo X11 n'existe pas autrement — avec FFmpeg **n7.1.1** LGPL lié dedans, + bibliothèques apt d'Ubuntu 22.04 dans `resources/lib` | **GPL-2.0-or-later** (GPL-3 une fois combiné ; compatible AGPL-3) | `scripts/build-mpv-linux.sh` |
 
+Le paquet Mac App Store porte dans `Contents/Resources/licenses` la licence de Tentacle
+TV, ses permissions, ce fichier, la licence d'Electron et `LICENSES.chromium.html`
+(`scripts/macosLicenses.mjs` ; jusqu'en 1.26.x, les deux derniers manquaient).
+
 Aucune bibliothèque GPL-2.0-only, aucun encodeur GPL (x264, x265), aucun composant
 `nonfree`. Liaison dynamique : la libmpv livrée est remplaçable, et la variable
 d'environnement `TENTACLE_MPV_LIB` charge une libmpv modifiée (LGPL : « relier »).
@@ -39,9 +43,6 @@ d'environnement `TENTACLE_MPV_LIB` charge une libmpv modifiée (LGPL : « relier
 
 - **Windows** : la source exacte de `libmpv-2.dll` n'est plus disponible ; construire
   la DLL soi-même à tags épinglés, ou archiver sa source avec chaque Release.
-- **Mac App Store** : `LICENSE` d'Electron et `LICENSES.chromium.html` sont posés à
-  côté du `.app` puis non emballés (`package-macos.mjs`, `flat()`) ; les poser dans
-  `Contents/Resources` avant la signature.
 - **Sources** : joindre à chaque Release `desktop-vX.Y.Z` les sources de la chaîne mpv
   et le manifeste des versions Homebrew / apt réellement embarquées.
 - `lib/mpv/libmpv.dylib` (mpv Homebrew **GPL**, jamais chargée) et `libmpv-wrapper.*`
