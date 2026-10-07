@@ -106,6 +106,7 @@ export default {
   publicUrlNone: "Aucune adresse publique : les téléviseurs ne peuvent pas être jumelés.",
   publicUrlSaved: "Adresse publique enregistrée.",
   publicUrlCleared: "Adresse effacée.",
+  publicUrlExposureNote: "Publiée seulement quand « Accès depuis l'extérieur » est allumé (Administration › Accès à distance).",
 
   // Lecture directe.
   directTitle: "Lecture directe",
@@ -118,6 +119,10 @@ export default {
   directPrivateLabel: "URL privée de Jellyfin (réseau local)",
   directPrivateHint: "Joignable depuis le réseau local, par exemple http://192.168.1.50:8096.",
   directUrlsRequired: "Les deux adresses sont nécessaires pour activer la lecture directe.",
+  directPrivateRequired: "L'adresse privée est nécessaire pour activer la lecture directe.",
+  directPublicSwitch: "Lecture directe depuis l'extérieur (facultatif)",
+  directPublicSwitchHint: "Coupée : hors de la maison, la lecture passe par Tentacle. Allumée : Jellyfin doit être joignable depuis Internet, et « Accès depuis l'extérieur » allumé (Accès à distance).",
+  directPublicMissing: "Donnez l'adresse publique de Jellyfin, ou coupez la lecture directe depuis l'extérieur.",
   directMixedContent:
     "Adresse en HTTP sur un site en HTTPS : le navigateur bloquera les flux (contenu mixte). Passez par une adresse HTTPS ou un proxy HTTPS devant Jellyfin.",
   directCorsHelp:

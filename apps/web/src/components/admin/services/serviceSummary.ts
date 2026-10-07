@@ -63,7 +63,7 @@ export function summarizePublicUrl(config: PublicUrlConfig): Summary {
 
 export function summarizeDirectStreaming(config: DirectStreamingConfig): Summary {
   return config.enabled
-    ? { tone: "success", label: "directOn", detail: hostOf(config.publicUrl) || undefined }
+    ? { tone: "success", label: "directOn", detail: hostOf(config.publicUrl) || hostOf(config.privateUrl) || undefined }
     : { tone: "neutral", label: "directOff" };
 }
 

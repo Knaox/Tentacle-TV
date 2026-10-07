@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useServerCapability } from "@tentacle-tv/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../../../contexts/ToastContext";
 import { cls } from "../../../pages/adminUtils";
@@ -46,6 +47,8 @@ export function PublicUrlSection() {
 
 function PublicUrlForm({ frame, config }: { frame: Frame; config: PublicUrlConfig }) {
   const { t } = useTranslation("adminServices");
+  // « Accès depuis l'extérieur » décide de la publication (capacité `admin.remoteExposure`).
+  const exposure = useServerCapability("admin.remoteExposure");
   const { show } = useToast();
   const queryClient = useQueryClient();
   const explain = useExplainFailure();
@@ -113,6 +116,7 @@ function PublicUrlForm({ frame, config }: { frame: Frame; config: PublicUrlConfi
             <AdminNotice tone="warning" className="lg:mt-5">{t("publicUrlNone")}</AdminNotice>
           )}
         </div>
+        {exposure ? <p className="text-xs leading-relaxed text-content-tertiary">{t("publicUrlExposureNote")}</p> : null}
         <SectionFooter status={failure && <ResultLine ok={false}>{failure}</ResultLine>}>
           {dirty && (
             <button
