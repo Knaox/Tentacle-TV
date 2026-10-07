@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import { parseCorsOrigins, tentacleCorsDelegator } from "./services/tentacleCors";
 import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import compress from "@fastify/compress";
@@ -131,37 +132,11 @@ async function main() {
   // Cookie support (httpOnly auth cookies for web)
   await app.register(cookie);
 
-  // CORS: restrictive in production, permissive in dev
-  const corsOrigins = process.env.CORS_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean);
-  // Origines des webviews des apps de bureau — toujours autorisées car émises
-  // uniquement par l'app native, jamais par un navigateur tiers.
-  //
-  //  - Tauri (macOS, Linux)  : tauri://localhost, http(s)://tauri.localhost
-  //  - Electron (Windows)    : tentacle://app — schéma privilégié déclaré par
-  //    la coquille (`apps/desktop-electron/src/main/appProtocol.ts`).
-  //
-  // ⚠️ L'origine Electron manquait. Dès que `CORS_ORIGINS` est défini — donc en
-  // production —, la coquille se faisait refuser CHAQUE appel au préambule
-  // (« Response to preflight request doesn't pass access control check »), y
-  // compris la connexion. Elle ne s'en apercevait pas en développement tant que
-  // la variable restait vide, la politique étant alors permissive.
-  const APP_ORIGINS = [
-    "tauri://localhost",
-    "https://tauri.localhost",
-    "http://tauri.localhost",
-    "tentacle://app",
-  ];
-  await app.register(cors, {
-    origin: corsOrigins?.length
-      ? (origin, cb) => {
-          // Allow requests with no origin (mobile apps, curl, server-to-server)
-          if (!origin) return cb(null, true);
-          if (corsOrigins.includes(origin) || APP_ORIGINS.includes(origin)) return cb(null, true);
-          cb(new Error("CORS origin not allowed"), false);
-        }
-      : true,
-    credentials: true,
-  });
+  // CORS de Tentacle : permissif sans `CORS_ORIGINS` ; avec, la liste plus les
+  // applications de bureau (Electron `tentacle://app`, ancienne coquille Tauri),
+  // le lien public et l'adresse locale réglés, et la page servie par Tentacle
+  // lui-même — décidé requête par requête (`services/tentacleCors.ts`).
+  await app.register(cors, { delegator: tentacleCorsDelegator(parseCorsOrigins(process.env.CORS_ORIGINS)) });
 
   await app.register(compress, { threshold: 1024 });
   // Images et API ne partagent plus le même compteur — cf. rateLimitPolicy.ts.
