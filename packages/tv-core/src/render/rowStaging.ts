@@ -78,18 +78,36 @@ export interface StagedRow {
   demanded?: boolean;
 }
 
+/** Ce qu'une rangée garde quand elle quitte l'écran et que le profil la
+ *  ramène à sa tête (`retireOffscreenRows`) : sa tête, rien de plus. */
+export function headRelease(total: number): number {
+  return Math.min(total, ROW_STAGING.headCards);
+}
+
 /** Ce qu'une rangée monte à son arrivée dans la page. */
 export function initialRelease(rank: number, total: number): number {
   return rank < ROW_STAGING.headRows ? Math.min(total, ROW_STAGING.headCards) : 0;
 }
 
 /**
+ * Ce que l'échelonnement monte de lui-même (le profil de montage du niveau de
+ * rendu, `mountProfile`) : `eager`, les queues de toutes les rangées, en fond,
+ * jusqu'à ce que la page soit montée entière ; `demanded`, les têtes
+ * seulement — la queue d'une rangée ne se monte que quand elle est parcourue
+ * (`demanded`). Une rangée a toujours sa tête : HAUT / BAS trouve donc
+ * toujours ses cartes, au même endroit.
+ */
+export type StagingTails = "eager" | "demanded";
+
+/**
  * La part suivante, `ROW_STAGING.chunk` cartes : d'abord ce qui manque à une
  * rangée qui a le FOCUS (`demanded`), puis la TÊTE de la plus haute rangée qui
  * n'a pas la sienne (la page se remplit de haut en bas, un écran de large),
- * puis la QUEUE de la plus haute rangée incomplète. `null` : tout est monté.
+ * puis la QUEUE de la plus haute rangée incomplète — sauf avec `tails:
+ * "demanded"`, où une queue attend que sa rangée soit parcourue. `null` :
+ * plus rien à monter.
  */
-export function nextRelease(rows: readonly StagedRow[]): { rank: number; released: number } | null {
+export function nextRelease(rows: readonly StagedRow[], tails: StagingTails = "eager"): { rank: number; released: number } | null {
   let demanded: StagedRow | null = null;
   let head: StagedRow | null = null;
   let tail: StagedRow | null = null;
@@ -100,7 +118,7 @@ export function nextRelease(rows: readonly StagedRow[]): { rank: number; release
       if (!demanded || row.rank < demanded.rank) demanded = row;
     } else if (row.released < headTarget) {
       if (!head || row.rank < head.rank) head = row;
-    } else if (!tail || row.rank < tail.rank) {
+    } else if (tails === "eager" && (!tail || row.rank < tail.rank)) {
       tail = row;
     }
   }
