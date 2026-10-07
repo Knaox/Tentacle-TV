@@ -140,7 +140,7 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
-  - MPVKit (0.41.0-av5)
+  - MPVKit (0.41.0-av5-lgpl)
   - MpvPlayer (1.0.0):
     - ExpoModulesCore
     - MPVKit
@@ -2529,9 +2529,9 @@ SPEC CHECKSUMS:
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
-  MPVKit: a3577c450099523c3f34aaceb34423375a401f29
-  MpvPlayer: f18ef4786f13d50e7968c2cab0b01ca55dcd9349
-  OfflineStorage: 64feae4124dfcff639f5b99c46a8c7240188f3a6
+  MPVKit: e71b32bbe3434755b6c94239883128b102137c67
+  MpvPlayer: b4121bfa1bc159cbeae4acabd60061cdd1258293
+  OfflineStorage: c882207f3bb5ec280c81aa1bf585ab68f487d7a3
   RCTDeprecation: 943572d4be82d480a48f4884f670135ae30bf990
   RCTRequired: 8f3cfc90cc25cf6e420ddb3e7caaaabc57df6043
   RCTTypeSafety: 16a4144ca3f959583ab019b57d5633df10b5e97c

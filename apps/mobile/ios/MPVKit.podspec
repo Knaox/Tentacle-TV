@@ -5,25 +5,26 @@
 # dossier du module à dessein : l'autolinking Expo y prendrait ce podspec pour
 # un pod de développement, qui ne télécharge jamais sa source `:http`.
 #
-# ⚠️ v1 = binaires du fork Streamyfin, construits en configuration GPL :
-# acceptables en développement et sur TestFlight, PAS pour l'App Store.
-# Avant soumission, `.github/workflows/mpvkit.yml` construit la variante LGPL
-# (mpv -Dgpl=false, FFmpeg sans --enable-gpl, sans libsmbclient) et publie une
-# Release GitHub : remplacer alors `:http`, `:sha256`, `version` et `license`.
+# Variante LGPL construite par `.github/workflows/mpvkit.yml` (run 37645796496,
+# 2026-10-07) : mpv -Dgpl=false, FFmpeg sans --enable-gpl ni --enable-nonfree
+# (« LGPL version 3 or later »), sans libsmbclient ni LuaJIT. C'est le binaire
+# de TestFlight comme de l'App Store — le même. La garde de mobile.yml
+# (check-podspec-license.mjs) refuse toute autre source dès le cran test.
+# Jusqu'en 1.10.x : binaires GPL du fork (0.41.0-av5), non conformes.
 Pod::Spec.new do |s|
   s.name             = 'MPVKit'
-  s.version          = '0.41.0-av5'
-  s.summary          = 'MPVKit avec la sortie vidéo AVFoundation (fork Streamyfin)'
+  s.version          = '0.41.0-av5-lgpl'
+  s.summary          = 'MPVKit LGPL avec la sortie vidéo AVFoundation (fork Streamyfin)'
   s.description      = <<-DESC
     Fork de MPVKit ajoutant vo_avfoundation : rendu dans un AVSampleBufferDisplayLayer,
     image dans l image, VideoToolbox, OSD composite pour les sous-titres, HDR.
   DESC
   s.homepage         = 'https://github.com/streamyfin/MPVKit'
-  s.license          = { :type => 'GPL-3.0', :text => 'GPL-3.0 (binaires de développement). Variante LGPL exigée avant soumission : voir mpvkit.yml.' }
+  s.license          = { :type => 'LGPL-3.0-or-later', :text => 'mpv LGPL-2.1-or-later, FFmpeg LGPL-3.0-or-later ; voir apps/mobile/THIRD-PARTY-LICENSES.md.' }
   s.author           = { 'streamyfin' => 'https://github.com/streamyfin' }
   s.source           = {
-    :http   => 'https://github.com/streamyfin/MPVKit/releases/download/0.41.0-av5/MPVKit.xcframework.zip',
-    :sha256 => '80a79fbb34b1a3ae84744fe7bb9d365d2a006a5f617460933b7ce777251d3618'
+    :http   => 'https://github.com/Knaox/Tentacle-TV/releases/download/mpvkit-lgpl-0.41.0-av5/MPVKit.xcframework.zip',
+    :sha256 => '68ffe2969de9451eec36671f4706fc313f118bfcfa085d175304a8563de1c583'
   }
 
   s.ios.deployment_target = '15.1'
