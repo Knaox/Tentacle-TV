@@ -73,6 +73,9 @@ export interface StagedRow {
   total: number;
   /** Ses cartes déjà montées. */
   released: number;
+  /** Sa TÊTE (les cartes d'un écran de large et la suivante) quand elle n'est
+   *  pas `ROW_STAGING.headCards` (`rowHeadCards`, mode Lite). */
+  head?: number;
   /** Elle a (eu) le focus : ce qui lui manque passe avant tout le reste — on
    *  la parcourt, sa queue ne doit jamais manquer sous le pouce. */
   demanded?: boolean;
@@ -80,13 +83,25 @@ export interface StagedRow {
 
 /** Ce qu'une rangée garde quand elle quitte l'écran et que le profil la
  *  ramène à sa tête (`retireOffscreenRows`) : sa tête, rien de plus. */
-export function headRelease(total: number): number {
-  return Math.min(total, ROW_STAGING.headCards);
+export function headRelease(total: number, head: number = ROW_STAGING.headCards): number {
+  return Math.min(total, head);
+}
+
+/**
+ * La tête AJUSTÉE d'une rangée (mode Lite, `fitRowHeads`) : les cartes qu'un
+ * écran montre (`viewWidth` points de piste, une carte tous les `stride`), et
+ * la suivante — jamais plus que `ROW_STAGING.headCards`. Une rangée de
+ * vignettes 16:9 (380 + 36 points, 1 744 de piste) en montre 5 : sa tête en
+ * fait 6 ; une rangée d'affiches (240 + 36) en montre 7 : 8.
+ */
+export function rowHeadCards(viewWidth: number, stride: number): number {
+  if (!(stride > 0) || !(viewWidth > 0)) return ROW_STAGING.headCards;
+  return Math.min(ROW_STAGING.headCards, Math.ceil(viewWidth / stride) + 1);
 }
 
 /** Ce qu'une rangée monte à son arrivée dans la page. */
-export function initialRelease(rank: number, total: number): number {
-  return rank < ROW_STAGING.headRows ? Math.min(total, ROW_STAGING.headCards) : 0;
+export function initialRelease(rank: number, total: number, head: number = ROW_STAGING.headCards): number {
+  return rank < ROW_STAGING.headRows ? Math.min(total, head) : 0;
 }
 
 /**
@@ -113,7 +128,7 @@ export function nextRelease(rows: readonly StagedRow[], tails: StagingTails = "e
   let tail: StagedRow | null = null;
   for (const row of rows) {
     if (row.released >= row.total) continue;
-    const headTarget = Math.min(row.total, ROW_STAGING.headCards);
+    const headTarget = Math.min(row.total, row.head ?? ROW_STAGING.headCards);
     if (row.demanded) {
       if (!demanded || row.rank < demanded.rank) demanded = row;
     } else if (row.released < headTarget) {
@@ -123,7 +138,7 @@ export function nextRelease(rows: readonly StagedRow[], tails: StagingTails = "e
     }
   }
   if (demanded) return { rank: demanded.rank, released: Math.min(demanded.total, demanded.released + ROW_STAGING.chunk) };
-  if (head) return { rank: head.rank, released: Math.min(Math.min(head.total, ROW_STAGING.headCards), head.released + ROW_STAGING.chunk) };
+  if (head) return { rank: head.rank, released: Math.min(Math.min(head.total, head.head ?? ROW_STAGING.headCards), head.released + ROW_STAGING.chunk) };
   if (tail) return { rank: tail.rank, released: Math.min(tail.total, tail.released + ROW_STAGING.chunk) };
   return null;
 }

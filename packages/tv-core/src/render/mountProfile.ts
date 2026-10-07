@@ -32,6 +32,9 @@ export interface MountProfile {
   /** Les queues des rangées échelonnées : montées en fond (`eager`), ou
    *  seulement quand la rangée est parcourue (`demanded`, `rowStaging`). */
   rowTails: StagingTails;
+  /** La tête d'une rangée ajustée à ce qu'un écran en montre, et la carte
+   *  suivante (`rowHeadCards`) : 6 vignettes 16:9 au lieu de 8. */
+  fitRowHeads: boolean;
   /** Une rangée sortie de l'écran, ramenée au début (`rowRewindPort`),
    *  revient aussi à sa TÊTE : sa queue se démonte, et se remontera si on la
    *  parcourt de nouveau. */
@@ -47,6 +50,10 @@ export interface MountProfile {
    *  de chaque côté (`drawDistance` de FlashList : au chargement elle monte
    *  l'écran, puis s'étend jusqu'au triple, puis revient à cette valeur). */
   gridDrawDistance: number;
+  /** L'avance de la grille dès que le focus quitte sa première ligne (au
+   *  moins `gridDrawDistance`) : l'ouverture monte peu, le parcours garde la
+   *  ligne suivante montée. */
+  gridActiveDrawDistance: number;
   /** Le premier montage de la grille ÉTALÉ : une ligne par image à l'heure
    *  (`nextLineCount`), au lieu de l'écran entier dans la même image. */
   gridStaging: boolean;
@@ -57,24 +64,30 @@ export interface MountProfile {
 export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>> = {
   normal: {
     rowTails: "eager",
+    fitRowHeads: false,
     retireOffscreenRows: false,
     stageSearchRows: false,
     recycleSearchCards: false,
     // Deux lignes d'avance de chaque côté (une ligne de six affiches : ~494 points).
     gridDrawDistance: 1100,
+    gridActiveDrawDistance: 1100,
     gridStaging: false,
     // Les valeurs de React Native pour le lot (10) : celles d'avant.
     episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
   },
   lite: {
     rowTails: "demanded",
+    fitRowHeads: true,
     retireOffscreenRows: true,
     stageSearchRows: true,
     recycleSearchCards: true,
-    // Une ligne d'avance et son écart (494 + 52 points pour six affiches) :
-    // celle que BAS rejoint est toujours montée, même avant que la page ne
-    // défile vers la ligne focalisée.
-    gridDrawDistance: 600,
+    // L'ouverture : l'écran et ce qui affleure (FlashList s'étend d'abord au
+    // triple : 450 points — la troisième ligne, pas la quatrième).
+    gridDrawDistance: 150,
+    // Le parcours : une ligne d'avance et son écart (437 à 494 points selon
+    // les colonnes) — celle que BAS rejoint est montée, même avant que la
+    // page ne défile vers la ligne focalisée.
+    gridActiveDrawDistance: 600,
     gridStaging: true,
     // Un écran de vignettes (≈ 3,4) et la suivante ; un écran de chaque côté.
     episodes: { initialNumToRender: 4, windowSize: 3, maxToRenderPerBatch: 2 },

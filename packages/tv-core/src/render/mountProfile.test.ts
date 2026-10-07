@@ -5,10 +5,12 @@ describe("le profil de montage", () => {
   it("garde, au niveau normal, le montage d'avant le mode Lite à l'identique", () => {
     expect(mountProfileOf("normal")).toEqual({
       rowTails: "eager",
+      fitRowHeads: false,
       retireOffscreenRows: false,
       stageSearchRows: false,
       recycleSearchCards: false,
       gridDrawDistance: 1100,
+      gridActiveDrawDistance: 1100,
       gridStaging: false,
       episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
     });
@@ -18,6 +20,7 @@ describe("le profil de montage", () => {
     const lite = mountProfileOf("lite");
     const normal = MOUNT_PROFILES.normal;
     expect(lite.rowTails).toBe("demanded");
+    expect(lite.fitRowHeads).toBe(true);
     expect(lite.retireOffscreenRows).toBe(true);
     expect(lite.stageSearchRows).toBe(true);
     expect(lite.recycleSearchCards).toBe(true);
@@ -29,6 +32,8 @@ describe("le profil de montage", () => {
 
   it("garde en Lite une ligne de grille d'avance : celle que BAS rejoint est montée", () => {
     // Une ligne de six affiches (~494 points) et l'écart qui la précède.
-    expect(mountProfileOf("lite").gridDrawDistance).toBeGreaterThanOrEqual(494 + 52);
+    const lite = mountProfileOf("lite");
+    expect(lite.gridActiveDrawDistance).toBeGreaterThanOrEqual(494 + 52);
+    expect(lite.gridDrawDistance).toBeLessThan(lite.gridActiveDrawDistance);
   });
 });

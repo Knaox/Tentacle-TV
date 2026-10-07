@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStagingPacer, headRelease, initialRelease, LINE_STAGING, nextLineCount, nextRelease, ROW_STAGING, STAGING_PACE, type StagedRow, type StagingTails } from "./rowStaging";
+import { createStagingPacer, headRelease, rowHeadCards, initialRelease, LINE_STAGING, nextLineCount, nextRelease, ROW_STAGING, STAGING_PACE, type StagedRow, type StagingTails } from "./rowStaging";
 
 /** Joue l'échelonnement jusqu'au bout : la suite des parts. */
 function play(rows: StagedRow[], tails: StagingTails = "eager"): string[] {
@@ -56,6 +56,19 @@ describe("le montage échelonné des rangées", () => {
         { rank: 2, total: 20, released: 8 },
       ];
       expect(play(rows, "demanded")).toEqual(["0:10", "0:12", "1:2", "1:4"]);
+    });
+
+    it("ajuste la tête d'une rangée à l'écran et à la carte suivante", () => {
+      expect(rowHeadCards(1744, 380 + 36)).toBe(6);
+      expect(rowHeadCards(1744, 240 + 36)).toBe(8);
+      expect(rowHeadCards(1744, 100)).toBe(ROW_STAGING.headCards);
+      expect(rowHeadCards(0, 416)).toBe(ROW_STAGING.headCards);
+      const rows: StagedRow[] = [
+        { rank: 0, total: 20, released: initialRelease(0, 20, 6), head: 6 },
+        { rank: 1, total: 20, released: initialRelease(1, 20, 6), head: 6 },
+      ];
+      expect(play(rows, "demanded")).toEqual(["1:2", "1:4", "1:6"]);
+      expect(headRelease(20, 6)).toBe(6);
     });
 
     it("ramène une rangée à sa tête, pas en dessous", () => {

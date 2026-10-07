@@ -6,7 +6,7 @@ import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, gridLineReveal } from "@tent
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
-import { useStagedLines } from "./useStagedLines";
+import { useStagedLines, useWidenOnMove } from "./useStagedLines";
 import { mountProfile } from "../../render/mountProfile";
 
 /**
@@ -149,6 +149,8 @@ export const PosterGrid = memo(function PosterGrid({
   // Mode Lite : le premier montage étalé, une ligne par image (`gridStaging`).
   const staging = useStagedLines(lines.length, mountProfile().gridStaging);
   const data = useMemo(() => (staging.shown >= lines.length ? lines : lines.slice(0, staging.shown)), [lines, staging.shown]);
+  const list = useRef<FlashList<Line>>(null);
+  const focusCard = useWidenOnMove(list, cards, columns, onFocusCard);
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<Line>) => (
       <GridLine
@@ -158,15 +160,16 @@ export const PosterGrid = memo(function PosterGrid({
         focusPrefix={focusPrefix}
         onPressCard={onPressCard}
         onLongPressCard={onLongPressCard}
-        onFocusCard={onFocusCard}
+        onFocusCard={focusCard}
       />
     ),
-    [width, focusPrefix, onPressCard, onLongPressCard, onFocusCard],
+    [width, focusPrefix, onPressCard, onLongPressCard, focusCard],
   );
   return (
     // FlashList veut un parent de taille connue : la scène.
     <View style={styles.list}>
       <FlashList
+        ref={list}
         // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
         key={`grid-${columns}`}
         data={data}

@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { ROW_STAGING } from "@tentacle-tv/tv-core";
+import { ROW_STAGING, rowHeadCards } from "@tentacle-tv/tv-core";
 import { cardIndexOf } from "../cards/cardFocusKeys";
 import { MediaCard } from "../cards/MediaCard";
 import { MORPH_OVERFLOW, MorphCard } from "../cards/MorphCard";
@@ -32,6 +32,9 @@ import { useStagedRow } from "./rowStage";
  * rangée qui s'allonge, ou dont la liste change, ne redessine pas les cartes
  * qu'elle a déjà.
  */
+
+/** La largeur des cartes de chaque variante (celle de `MediaCard`). */
+const CARD_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
 
 /** Le vide sous les cartes d'une rangée (sa marge et le bas de sa piste) : rien ne s'y voit au repos. */
 export const MEDIA_ROW_TRAILING = TV_STAGE.row.spacing;
@@ -74,7 +77,9 @@ export const MediaRow = memo(function MediaRow({
   const forced = useForcedFocusKey();
   const track = useRef<ScrollView>(null);
   const rewind = useRowRewindPort();
-  const { shown, demand, retire } = useStagedRow(stageRank, cards.length);
+  // Mode Lite : la tête ajustée à ce que la piste montre (`rowHeadCards`).
+  const head = mountProfile().fitRowHeads && variant !== "morph" ? rowHeadCards(1920 - inset, (cardWidth ?? CARD_WIDTH[variant]) + TV_STAGE.row.gap) : ROW_STAGING.headCards;
+  const { shown, demand, retire } = useStagedRow(stageRank, cards.length, head);
   // La carte qui a le focus dans la rangée, ou null : jamais retirée sous le focus.
   const focusedIndex = useRef<number | null>(null);
   useEffect(
@@ -85,10 +90,10 @@ export const MediaRow = memo(function MediaRow({
         // à l'image suivante — sauf si le focus est (revenu) sur sa queue.
         if (!mountProfile().retireOffscreenRows) return;
         requestAnimationFrame(() => {
-          if (focusedIndex.current === null || focusedIndex.current < ROW_STAGING.headCards) retire();
+          if (focusedIndex.current === null || focusedIndex.current < head) retire();
         });
       }),
-    [rewind, rowKey, retire],
+    [rewind, rowKey, retire, head],
   );
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
   // La piste joue le recul (Android TV) — sauf au banc, dont le focus figé passe par la valeur partagée.

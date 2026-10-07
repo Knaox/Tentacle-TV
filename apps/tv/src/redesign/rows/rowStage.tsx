@@ -32,7 +32,7 @@ interface RowRegistration {
 
 interface RowStager {
   /** Une rangée entre dans la page ; rend son entrée (la demander, la retirer) et son départ. */
-  register(rank: number, total: number, released: number, set: (released: number) => void): RowRegistration;
+  register(rank: number, total: number, head: number, released: number, set: (released: number) => void): RowRegistration;
 }
 
 function createRowStager(tails: StagingTails): RowStager & { dispose(): void } {
@@ -57,8 +57,8 @@ function createRowStager(tails: StagingTails): RowStager & { dispose(): void } {
     schedule();
   };
   return {
-    register(rank, total, released, set) {
-      const entry: Entry = { rank, total, released, set };
+    register(rank, total, head, released, set) {
+      const entry: Entry = { rank, total, head, released, set };
       entries.add(entry);
       schedule();
       return {
@@ -69,10 +69,10 @@ function createRowStager(tails: StagingTails): RowStager & { dispose(): void } {
         },
         retire() {
           entry.demanded = false;
-          const head = headRelease(entry.total);
-          if (entry.released <= head) return;
-          entry.released = head;
-          entry.set(head);
+          const kept = headRelease(entry.total, entry.head);
+          if (entry.released <= kept) return;
+          entry.released = kept;
+          entry.set(kept);
         },
         leave() {
           entries.delete(entry);
@@ -104,23 +104,28 @@ export function RowStageProvider({ enabled = true, children }: { enabled?: boole
  * libéré le reste (des cartes de plus arrivent avec les données, jamais de
  * moins). `demand` (stable) : la rangée a le focus — ce qui lui manque passe
  * devant ; sans effet hors d'une page échelonnée ou une fois tout monté.
+ * `head` : sa tête, quand elle n'est pas `ROW_STAGING.headCards` (mode Lite).
  * `retire` (stable) : la rangée, sortie de l'écran, est remise au début —
  * avec `retireOffscreenRows` (mode Lite), elle revient à sa tête.
  */
-export function useStagedRow(rank: number | undefined, total: number): { shown: number; demand: () => void; retire: () => void } {
+export function useStagedRow(
+  rank: number | undefined,
+  total: number,
+  head: number = ROW_STAGING.headCards,
+): { shown: number; demand: () => void; retire: () => void } {
   const stager = useContext(RowStageContext);
   const staged = stager !== null && rank !== undefined;
   const [released, setReleased] = useState(0);
   // Ce qui est à l'écran ne s'échelonne jamais : une rangée de tête dont les
   // données arrivent après la page montre sa tête tout de suite.
-  const shown = staged ? Math.min(total, Math.max(released, initialRelease(rank, total))) : total;
+  const shown = staged ? Math.min(total, Math.max(released, initialRelease(rank, total, head))) : total;
   const current = useRef(shown);
   current.current = shown;
   const handle = useRef<RowRegistration | null>(null);
   const demanded = useRef(false);
   useLayoutEffect(() => {
     if (!stager || rank === undefined) return undefined;
-    const registration = stager.register(rank, total, current.current, setReleased);
+    const registration = stager.register(rank, total, head, current.current, setReleased);
     handle.current = registration;
     // Une rangée qui revient (plus de cartes) garde sa demande.
     if (demanded.current) registration.demand();
@@ -128,7 +133,7 @@ export function useStagedRow(rank: number | undefined, total: number): { shown: 
       handle.current = null;
       registration.leave();
     };
-  }, [stager, rank, total]);
+  }, [stager, rank, total, head]);
   const demand = useCallback(() => {
     demanded.current = true;
     handle.current?.demand();
