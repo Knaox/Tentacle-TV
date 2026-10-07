@@ -1,31 +1,5 @@
-import {
-  DISPLAY_MODE_RELATIVE_TOLERANCE, contentFrameRate, isPlausibleFrameRate, pickDisplayMode,
-  type DisplayModeInfo, type MediaStream as JfStream,
-} from "@tentacle-tv/shared";
+import type { DisplayModeInfo } from "@tentacle-tv/shared";
 import type { MobilePlatform } from "./types";
-
-export interface DisplayFrameRateInput {
-  platform: MobilePlatform;
-  /** Le réglage d'appareil « Adapter la fréquence de l'écran ». */
-  enabled: boolean;
-  /** Les flux Jellyfin de la source (serveur ou instantané du hors ligne). */
-  streams: readonly JfStream[];
-  /** La cadence que mpv lit du conteneur (`container-fps`), une fois le fichier ouvert. */
-  loadedFps?: number;
-}
-
-/**
- * La cadence que le lecteur avancé demande à l'écran — 0 : rien demander.
- * Android seulement : sur iOS, rien ne change. La cadence de Jellyfin
- * d'abord (exacte, règle partagée `contentFrameRate`), celle de mpv en repli
- * — un fichier dont Jellyfin ne connaît pas la cadence en a toujours une.
- */
-export function displayFrameRate({ platform, enabled, streams, loadedFps }: DisplayFrameRateInput): number {
-  if (platform !== "android" || !enabled) return 0;
-  const fromServer = contentFrameRate(streams);
-  if (fromServer !== undefined) return fromServer;
-  return isPlausibleFrameRate(loadedFps) ? loadedFps : 0;
-}
 
 /** Ce que l'écran dit de lui (`getDisplayModes`, Android) — la forme de `DisplaySnapshot`. */
 export interface ScreenModes {
@@ -35,37 +9,33 @@ export interface ScreenModes {
   matchPreference?: "always" | "seamless" | "never";
 }
 
-/**
- * Le mode que la FENÊTRE demande pendant la lecture, quel que soit le moteur
- * — 0 : ne rien demander. La règle du mode est partagée (`pickDisplayMode`).
- *
- * Deux leçons du téléphone réel (OPPO Find X3 Pro, ColorOS 14, 60/120 Hz) :
- * - le mode est ÉPINGLÉ même quand l'écran y est déjà. L'app tournait à
- *   120 Hz au départ, donc rien n'était demandé — et le système redescendait
- *   à 60 Hz dès que la vidéo jouait, sans personne pour l'en empêcher ;
- * - la préférence système « Adapter la fréquence » ne filtre plus rien : elle
- *   gouverne l'adaptation AUTOMATIQUE au contenu (le vote de surface), pas une
- *   demande explicite de la fenêtre. Le seuil « sans coupure seulement »
- *   écartait le 120 Hz là où 60 ↔ 120 n'est pas annoncé comme sans coupure.
- *   Le réglage de Tentacle est le choix de l'utilisateur.
- */
-export function windowDisplayMode(fps: number, screen: ScreenModes | null): number {
-  if (!(fps > 0) || !screen || screen.currentModeId === undefined) return 0;
-  const current = screen.modes.find((mode) => mode.id === screen.currentModeId);
-  if (current && isExactMultiple(current.refreshRate, fps)) return current.id;
-  return pickDisplayMode(fps, screen.currentModeId, screen.modes)?.id ?? 0;
+export interface FluidDisplayInput {
+  platform: MobilePlatform;
+  /** Le réglage d'appareil « Adapter la fréquence de l'écran ». */
+  enabled: boolean;
+  screen: ScreenModes | null;
 }
 
 /**
- * La fréquence courante sert-elle déjà le film sans pulldown (k = 1..5) ?
- * Alors on la GARDE : un écran à 120 Hz reste à 120 pour un film à 24 i/s
- * (5 × 24), au lieu d'être envoyé à 72. Mesuré sur ColorOS 14 (Find X3 Pro) :
- * la demande de 72 Hz y faisait tomber la vidéo à 60 Hz, quand l'écran
- * laissé à 120 Hz y restait.
+ * Le mode que la lecture garde à l'écran — null : ne rien demander, le
+ * téléphone décide seul. Règle de Damien (07/10), mesurée sur un OPPO
+ * Find X3 Pro (ColorOS 14, 60/72/90/120 Hz) : le système fait tomber toute
+ * vidéo à 60 Hz, et la demande de la cadence du film (72 Hz pour 24 i/s) y
+ * était refusée. Donc :
+ * - réglage ACTIVÉ : l'écran garde sa fréquence la plus haute (120 Hz) pendant
+ *   toute la lecture, dans sa définition courante — fluide pour tout film ;
+ * - réglage DÉSACTIVÉ : rien n'est demandé, le téléphone fait comme pour toute
+ *   vidéo (souvent 60 Hz).
+ * iOS : rien (un écran ProMotion se règle seul).
  */
-function isExactMultiple(refreshRate: number, fps: number): boolean {
-  for (let k = 1; k <= 5; k += 1) {
-    if (Math.abs(refreshRate - k * fps) <= DISPLAY_MODE_RELATIVE_TOLERANCE * k * fps) return true;
+export function fluidDisplayMode({ platform, enabled, screen }: FluidDisplayInput): DisplayModeInfo | null {
+  if (platform !== "android" || !enabled || !screen || screen.currentModeId === undefined) return null;
+  const current = screen.modes.find((mode) => mode.id === screen.currentModeId);
+  if (!current) return null;
+  let best: DisplayModeInfo | null = null;
+  for (const mode of screen.modes) {
+    if (mode.width !== current.width || mode.height !== current.height) continue;
+    if (!best || mode.refreshRate > best.refreshRate) best = mode;
   }
-  return false;
+  return best;
 }
