@@ -1,5 +1,5 @@
 import { runOnJS, runOnUI } from "react-native-reanimated";
-import { countCommit, PERF_SAMPLING, perfLabelOf, type FiberLike } from "@tentacle-tv/tv-core/render";
+import { countCommit, jsStallLabel, PERF_SAMPLING, perfLabelOf, type FiberLike } from "@tentacle-tv/tv-core/render";
 import { navigationRef } from "../../../navigation/navigationRef";
 import { androidTvInput } from "../input";
 import { PERF_ENABLED, perfCommit, perfMark, perfReanimated } from "./perfNative";
@@ -17,6 +17,10 @@ import { PERF_ENABLED, perfCommit, perfMark, perfReanimated } from "./perfNative
  * - les mises à jour de vues que REANIMATED envoie au natif à chaque image
  *   (`_updatePropsPaper`, enveloppé sur son runtime d'interface) : le premier
  *   poste du fil UI pendant une animation.
+ *
+ * - la SONDE du fil JS : un tic attendu toutes les `PERF_SAMPLING.jsProbeMs` ;
+ *   reçu en retard, le retard nomme la fenêtre (`jsStallLabel`, « js≥100 ») —
+ *   le temps où le fil JS ne répondait plus à la télécommande.
  *
  * Éteint (le cas de toute build livrée, sauf propriété posée), rien n'est
  * installé.
@@ -104,8 +108,22 @@ function countReanimatedUpdates(): void {
   }, PERF_SAMPLING.reanimatedReportMs);
 }
 
+/** La sonde du fil JS : chaque tic dit son retard sur l'heure attendue. */
+function probeJsThread(): void {
+  let expected = Date.now() + PERF_SAMPLING.jsProbeMs;
+  const tick = () => {
+    const now = Date.now();
+    const label = jsStallLabel(now - expected);
+    if (label) perfMark(label);
+    expected = now + PERF_SAMPLING.jsProbeMs;
+    setTimeout(tick, PERF_SAMPLING.jsProbeMs);
+  };
+  setTimeout(tick, PERF_SAMPLING.jsProbeMs);
+}
+
 if (PERF_ENABLED) {
   installCommitHook();
+  probeJsThread();
   androidTvInput.observe(({ intent }) => {
     const label = perfLabelOf(intent);
     if (label) perfMark(label);

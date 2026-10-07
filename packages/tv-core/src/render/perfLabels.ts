@@ -4,7 +4,24 @@ import type { RemoteIntent } from "../remote/intents";
  *  sur son runtime d'interface, rapportées au journal tous les `reanimatedReportMs`. */
 export const PERF_SAMPLING = {
   reanimatedReportMs: 200,
+  /** La sonde du fil JS : un tic attendu toutes les `jsProbeMs`. */
+  jsProbeMs: 50,
 } as const;
+
+/** Les paliers d'un blocage du fil JS, du plus long au plus court. */
+const JS_STALL_STEPS = [400, 200, 100, 50] as const;
+
+/**
+ * Le nom d'un BLOCAGE du fil JS dans le journal du mode de mesure : la sonde
+ * attendait son tic toutes les `jsProbeMs` et le reçoit `lateMs` trop tard —
+ * le temps où le fil JS, pris par un rendu, ne répondait plus (le focus du
+ * clavier ne bougeait plus). « js≥100 » : en retard de 100 à 200 ms. `null` :
+ * moins de 50 ms, rien à noter.
+ */
+export function jsStallLabel(lateMs: number): string | null {
+  const step = JS_STALL_STEPS.find((min) => lateMs >= min);
+  return step === undefined ? null : `js≥${step}`;
+}
 
 /**
  * Le nom d'un GESTE dans le journal du mode de mesure (Android TV,

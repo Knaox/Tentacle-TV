@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useSearchDiscover, useSearchEpisodes, useTentacleSearch } from "@tentacle-tv/api-client";
 import { foldForSearch, type MediaItem, type SearchMediaItem, type SearchResponse } from "@tentacle-tv/shared";
 import { searchFirstResultKey, searchSubmitAnswer, type SearchSubmitAnswer } from "@tentacle-tv/tv-core";
@@ -10,6 +10,7 @@ import { useSearchAbsent } from "../vigie/useSearchAbsent";
 import { useSearchGaps, type SearchGap } from "../vigie/useSearchGaps";
 import type { VigieGate } from "../vigie/useVigieGate";
 import type { SearchInput } from "./useSearchInput";
+import { createStableSectionsMemory, stabilizeSections } from "./stableSections";
 
 const RESULTS_LIMIT = 12;
 
@@ -70,12 +71,15 @@ export function useSearchResults(src: SearchModelSources, input: SearchInput, ga
   // même rangée (`useSearchGaps`) — leur affiche, celle de la bibliothèque.
   const posterOf = useCallback((item: SearchMediaItem) => src.card(src.full(item), undefined, "poster").posterUri, [src]);
   const gaps = useSearchGaps(gate, data, posterOf);
+  // Ce qui n'a pas changé depuis la frappe précédente garde son modèle
+  // (`stabilizeSections`) : seules les cartes neuves se dessinent.
+  const memory = useRef(createStableSectionsMemory());
   const sections = useMemo(() => {
     const found = searchSections(src, data, episodeItems ?? []);
     const cards = [...(gaps?.cards ?? []), ...(absent?.cards ?? [])];
-    if (cards.length === 0) return found;
     const { t } = src;
-    return [...found, { key: "absent" as const, title: t("requests:searchRow"), count: t("search:countTitles", { count: cards.length }), cards }];
+    const all = cards.length === 0 ? found : [...found, { key: "absent" as const, title: t("requests:searchRow"), count: t("search:countTitles", { count: cards.length }), cards }];
+    return stabilizeSections(memory.current, all);
   }, [src, data, episodeItems, gaps, absent]);
   const { completion, suggestions } = useMemo(() => searchSuggestions(query, data), [query, data]);
 

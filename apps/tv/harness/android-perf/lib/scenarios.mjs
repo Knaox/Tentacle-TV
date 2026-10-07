@@ -86,6 +86,23 @@ export const SCENARIOS = [
     steps: 3,
   },
   {
+    // Une frappe comme celle d'un utilisateur : chaque lettre CHANGE les
+    // résultats sans jamais les vider (instantané nav-golden, recherche par
+    // sous-chaîne, comme le moteur du serveur : « l » 145 titres, « le » 52,
+    // « les » 18 — 12 au plus par catégorie). Le clavier part
+    // de A (six touches par rangée) : L = BAS + 5 DROITE, E = HAUT + GAUCHE,
+    // S = 3 BAS + 4 GAUCHE. Les déplacements sur le clavier en font partie.
+    id: "recherche-frappe",
+    title: "La recherche : « les » tapé au clavier de l'écran (chaque lettre change les résultats)",
+    setup: [tap("left"), wait(900), tap("up"), wait(700), tap("ok"), wait(3000)],
+    gesture: [
+      tap("down"), wait(300), tap("right", 5, 250), wait(400), tap("ok"), wait(1500),
+      tap("up"), wait(300), tap("left"), wait(400), tap("ok"), wait(1500),
+      tap("down", 3, 250), wait(300), tap("left", 4, 250), wait(400), tap("ok"), wait(2500),
+    ],
+    steps: 3,
+  },
+  {
     id: "lecteur",
     title: "Le lecteur : « Orgueil et Préjugés » (MP4 du banc), OK fait paraître l'habillage, 3 sauts à droite, puis l'habillage s'efface",
     fixtures: ["base/vigie-off", "lecteur/flux-mp4"],

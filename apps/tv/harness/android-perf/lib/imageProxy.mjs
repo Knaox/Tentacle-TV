@@ -116,6 +116,12 @@ export function startImageProxy({ port, target, cacheDir, resize = true, log = (
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://banc");
     note(req.method, url.pathname);
+    // Et sa fin (statut, durée) : une requête qui ne finit pas retient l'une
+    // des cinq connexions qu'OkHttp ouvre au plus par hôte.
+    if (journal) {
+      const started = Date.now();
+      res.on("close", () => note(`← ${res.statusCode} ${Date.now() - started} ms`, url.pathname));
+    }
     if (resize && req.method === "GET" && IMAGE_PATH.test(url.pathname)) {
       serveImage(req, res, url).catch((error) => {
         log(`image ${url.pathname} : ${error.message} — servie telle quelle`);

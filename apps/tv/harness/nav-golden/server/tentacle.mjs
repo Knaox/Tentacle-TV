@@ -7,21 +7,30 @@ import { Readable } from "node:stream";
 import { createVigie } from "../../live-requests/fakeVigie.mjs";
 import { ratingRow } from "./dataset.mjs";
 
-/** Une recherche par le nom, au format de `/api/search` (la réponse capturée si c'est sa requête). */
-function search(data, q) {
+/**
+ * Une recherche par le nom, au format de `/api/search` (la réponse capturée si
+ * c'est sa requête) — comme le moteur du serveur la rend
+ * (`searchService.ts`, `respond`) : les films et séries dont le nom contient
+ * la saisie, trouvés par leur titre (`match`, que l'écran lit : sans lui,
+ * l'écran plantait à l'arrivée des résultats), le meilleur en tête et retiré
+ * de sa catégorie, chaque catégorie bornée à `limit`, les totaux entiers.
+ */
+function search(data, q, limit) {
   const captured = data.snapshot.extras?.search;
   if (captured?.query && captured.query.toLowerCase() === q.toLowerCase()) return captured.response;
-  const term = q.toLowerCase();
+  const term = q.trim().toLowerCase();
   const hits = Object.values(data.snapshot.items).map((entry) => entry.item)
-    .filter((item) => (item.Type === "Movie" || item.Type === "Series") && data.clean(item.Name).toLowerCase().includes(term))
-    .sort((a, b) => data.clean(a.Name).localeCompare(data.clean(b.Name)) || a.Id.localeCompare(b.Id));
-  const movies = hits.filter((item) => item.Type === "Movie").map((item) => ({ item }));
-  const series = hits.filter((item) => item.Type === "Series").map((item) => ({ item }));
+    .filter((item) => (item.Type === "Movie" || item.Type === "Series") && term && data.clean(item.Name).toLowerCase().includes(term))
+    .sort((a, b) => data.clean(a.Name).localeCompare(data.clean(b.Name)) || a.Id.localeCompare(b.Id))
+    .map((item) => ({ item, match: { field: "title" }, score: 1 }));
+  const rest = hits.slice(1);
+  const of = (type, list) => list.filter((hit) => hit.item.Type === type);
   return {
     query: q, ready: true, tookMs: 1, correction: null, partial: false,
-    top: hits[0] ? { kind: "item", hit: { item: hits[0] } } : null,
-    movies, series, collections: [], people: [], genres: [], studios: [],
-    totals: { movies: movies.length, series: series.length, collections: 0, people: 0 },
+    top: hits[0] ? { kind: "item", hit: hits[0] } : null,
+    movies: of("Movie", rest).slice(0, limit), series: of("Series", rest).slice(0, limit), collections: [],
+    people: [], genres: [], studios: [],
+    totals: { movies: of("Movie", hits).length, series: of("Series", hits).length, collections: 0, people: 0 },
   };
 }
 
@@ -76,7 +85,7 @@ export function createTentacle({ data, json, note, clock }) {
     "GET /api/trailers/readiness": (req, res) => json(res, 200, data.snapshot.extras?.trailerReadiness ?? { state: "ready", reasons: [] }),
     "GET /api/trailers/resolve": (req, res) => json(res, data.modes.trailers === "broken" ? 502 : 404, { error: "banc : aucune bande-annonce" }),
     "GET /api/search/discover": (req, res) => json(res, 200, data.snapshot.extras?.searchDiscover ?? { ready: true, genres: [] }),
-    "GET /api/search": (req, res, url) => json(res, 200, search(data, url.searchParams.get("q") ?? "")),
+    "GET /api/search": (req, res, url) => json(res, 200, search(data, url.searchParams.get("q") ?? "", Number(url.searchParams.get("limit") ?? 6))),
     "GET /api/theme": (req, res) => json(res, 200, {}),
   };
 

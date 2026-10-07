@@ -71,9 +71,14 @@ que l'EGL, 12 Mo constants).
 | Bibliothèque : grille tenue | 229 | 70 % | 38 ms | 47 ms | 0 | 141 | 2 975 | 376 Mo | 31 | 145 | 75 |
 | Fiche (entrée, 3 sections, Retour) | 277-309 | 37-39 % | 48-66 ms | 123-151 ms | 1-1,5 (150) | 74 | 1 813 | 340 Mo | 26 | 123 | 78 |
 | Saisons et épisodes (« Bleach ») | 595 | 30 % | 29 ms | 85 ms | 2 (66) | 39 | **3 501** | **462 Mo** | 43 | 174 | **112** |
-| Recherche (3 lettres) | 30 | 30-40 % | 57 ms | 62 ms | 0 | 175 | 2 392 | 321 Mo | 26 | 121 | 57 |
+| Recherche (3 lettres) ⚠ | 30 | 30-40 % | 57 ms | 62 ms | 0 | 175 | 2 392 | 321 Mo | 26 | 121 | 57 |
 | Réglages (onglets, panneau) | 417 | 20 % | 141 ms | 141 ms | 6,5 (100) | 82 | 2 329 | 325 Mo | 21 | 126 | 58 |
 | Habillage du lecteur (MP4) | 140 | 20-23 % | 34 ms | 37 ms | 0 | 7 | 1 889 | 354 Mo | 37 | 126 | 76 |
+
+⚠ **Recherche : mesure à refaire.** La recherche du faux backend rendait ses
+résultats sans `match` : l'écran plantait à leur arrivée, cette ligne mesure
+ce plantage (corrigé le 07/10 ; la frappe mesurée : scénario
+`recherche-frappe`, `docs/tv-navigation/android-perf-shield.md`).
 
 Temps processeur des fils, par geste (ms, moyenne de deux passes) — le fil
 qui domine dit où agir :

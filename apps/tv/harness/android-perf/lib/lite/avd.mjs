@@ -46,6 +46,9 @@ export const LITE_AVDS = {
   // Les AVD de la tâche L7 (non-régression) : mêmes profils, leurs propres consoles.
   Lite_L7_1G: { ramMb: 1024, cores: 2, port: 5690, label: "Android TV 1 Go, 2 cœurs (L7, non-régression)" },
   Lite_L7_2G: { ramMb: 2048, cores: 4, port: 5692, label: "box net+ : 2 Go, 4 cœurs (L7, non-régression)" },
+  // L'AVD de la tâche « recherche fluide » (nav-golden --android) : la mémoire
+  // de la Shield (3 Go), sa propre console.
+  Lite_Rech_3G: { ramMb: 3072, cores: 4, port: 5694, label: "Shield : 3 Go, 4 cœurs (recherche, nav-golden --android)" },
 };
 
 export function liteProfile(name) {

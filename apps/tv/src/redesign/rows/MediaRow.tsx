@@ -46,6 +46,10 @@ export interface MediaRowProps {
   accessory?: React.ReactNode;
   /** Sa place dans une page échelonnée (`rowStage`), de haut en bas. */
   stageRank?: number;
+  /** Les cartes clées par leur PLACE plutôt que par leur titre : une liste
+   *  qui change entière (les résultats d'une frappe) REDESSINE ses cartes
+   *  au lieu de les démonter et d'en monter d'autres. */
+  recycleCards?: boolean;
   onPressCard?: (card: CardModel) => void;
   onLongPressCard?: (card: CardModel) => void;
   onFocusCard?: (card: CardModel) => void;
@@ -60,6 +64,7 @@ export const MediaRow = memo(function MediaRow({
   inset,
   accessory,
   stageRank,
+  recycleCards = false,
   onPressCard,
   onLongPressCard,
   onFocusCard,
@@ -110,7 +115,7 @@ export const MediaRow = memo(function MediaRow({
         <CullingTrack gap={TV_STAGE.row.gap} recede={nativeRecede}>
           {cards.slice(0, shown).map((card, index) => (
             <RowCard
-              key={card.id}
+              key={recycleCards ? index : card.id}
               card={card}
               index={index}
               row={row}

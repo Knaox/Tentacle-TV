@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createStagingPacer, initialRelease, nextRelease, type StagedRow } from "@tentacle-tv/tv-core";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
+import { createStagingPacer, initialRelease, nextRelease, renewedItems, ROW_STAGING, type StagedRow } from "@tentacle-tv/tv-core";
 import { RENDER } from "../render/renderProfile";
 
 /**
@@ -109,6 +109,59 @@ export function useStagedRow(rank: number | undefined, total: number): { shown: 
   const demand = useCallback(() => {
     demanded.current = true;
     handle.current?.demand();
+  }, []);
+  return { shown, demand };
+}
+
+/**
+ * Une rangée dont la liste change ENTIÈRE à chaque réponse (les résultats
+ * d'une frappe), renouvelée par échelons (tv-core `renewedItems`) : à chaque
+ * liste neuve, ce que l'échelonnement monte d'emblée à sa place (`rank`, au
+ * plus `head` cartes : ce que la piste montre) prend tout de suite le nouveau
+ * titre, la tête des rangées suivantes une part par image ; la QUEUE (au-delà
+ * de la tête, hors de l'écran) attend que la rangée soit parcourue (`demand`,
+ * stable : le focus y entre) — une frappe ne pose que ce qui peut se voir.
+ * En attendant, chaque place garde la carte qu'elle montrait (aucune vue
+ * démontée). Hors d'une page échelonnée (Apple TV) : la liste telle quelle.
+ */
+export function useRenewedRow<T>(rank: number | undefined, items: readonly T[], head?: number): { shown: readonly T[]; demand: () => void } {
+  const stager = useContext(RowStageContext);
+  const staged = stager !== null && rank !== undefined;
+  const [, redraw] = useReducer((n: number) => n + 1, 0);
+  // La liste en cours de renouvellement, sa part libérée et sa demande :
+  // remises à zéro à chaque liste neuve (identité — une liste inchangée garde
+  // la sienne).
+  const generation = useRef<{ items: readonly T[] | null; released: number; demanded: boolean }>({ items: null, released: 0, demanded: false });
+  const previous = useRef<readonly T[]>([]);
+  if (generation.current.items !== items) {
+    // Une rangée qui ne montrait rien (les premiers résultats) se remplit par
+    // parts dès la première image : ses cartes ne s'ajoutent pas au montage
+    // de ce qui l'entoure (le meilleur résultat, la page qui change).
+    const initial = !staged ? items.length : previous.current.length === 0 ? 0 : initialRelease(rank, items.length);
+    generation.current = { items, released: staged && head !== undefined && initial > 0 ? Math.min(initial, head) : initial, demanded: false };
+  }
+  const current = generation.current;
+  // Ce que l'échelonnement pose : la tête, puis tout une fois la rangée parcourue.
+  const limit = current.demanded ? items.length : Math.min(items.length, head ?? ROW_STAGING.headCards);
+  const shown = staged ? renewedItems(items, previous.current, current.released) : items;
+  useLayoutEffect(() => {
+    previous.current = shown;
+  });
+  useLayoutEffect(() => {
+    if (!stager || rank === undefined || current.released >= limit) return undefined;
+    const registration = stager.register(rank, limit, current.released, (released) => {
+      if (generation.current !== current) return;
+      current.released = released;
+      redraw();
+    });
+    if (current.demanded) registration.demand();
+    return () => registration.leave();
+  }, [stager, rank, current, limit]);
+  const demand = useCallback(() => {
+    const now = generation.current;
+    if (now.demanded) return;
+    now.demanded = true;
+    redraw();
   }, []);
   return { shown, demand };
 }

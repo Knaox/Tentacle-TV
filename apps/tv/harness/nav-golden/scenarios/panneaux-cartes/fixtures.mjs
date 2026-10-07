@@ -26,7 +26,7 @@ export default {
   "recherche-gto": {
     description: "la recherche « GTO » rend la série GTO (saisons manquantes, `titles.gaps`) — réponse complète, `match` compris",
     apply: (data) => {
-      // La recherche de la base rend ses résultats sans `match`, que l'écran lit : une réponse entière ici.
+      // GTO seul, quelle que soit la saisie qui le contient : une réponse entière ici.
       data.route("GET", /^\/api\/search$/, (req, res, { url, json }) => {
         const query = url.searchParams.get("q") ?? "";
         const series = /gto/i.test(query) ? [byTitle(data.item(GTO))] : [];

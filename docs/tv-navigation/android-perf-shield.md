@@ -144,3 +144,50 @@ Pièges de la Shield, la nuit : elle se rendort entre deux lectures, et son
 adb réseau tombe avec — `startup.mjs` la réveille et rétablit le relais avant
 chaque lecture ; une APK de 160 Mo s'installe rarement d'une traite. Une
 lecture interrompue rouvre la FICHE au démarrage suivant (voulu).
+
+## La recherche : une frappe sans gel (07/10)
+
+Banc `android-perf`, scénario `recherche-frappe` : « les » tapé au clavier
+de l'écran, chaque lettre change les résultats sans les vider (« l » 145
+titres, « le » 52, « les » 18 ; 12 au plus par catégorie). App de mesure sur
+la Shield, faux backend déjà chaud (`bench.mjs serve`, puis
+`run --external`), 4 passes.
+
+| | pire image | p95 | fil UI bloqué | images ratées | vues créées / lettre | CPU JS |
+|---|---|---|---|---|---|---|
+| avant (dev) | 185-192 ms | 150 ms | 100-133 ms, ~5,7 fois | 21-22 % | 472 | 2 830 ms |
+| après | 61 ms | 48,5 ms | ≤ 50 ms, 0,3 fois | 33 % | 142 | 1 800 ms |
+
+Par lettre, avant → après : 1re (les résultats paraissent) 192 → 59 ms,
+2e 150 → 42 ms, 3e 145 → 61 ms.
+
+**Les causes, mesurées.** À chaque réponse : (1) TOUS les modèles de cartes
+étaient reconstruits et les gestionnaires des cartes changeaient d'identité
+(`remember`, `onLongPressCard`) — toute la colonne se redessinait deux fois
+par lettre ; (2) les ~25 cartes, clées par leur titre, étaient démontées et
+d'autres montées (295 à 629 vues) dans une seule image ; (3) même recyclées,
+leurs ~500 mises à jour natives tombaient dans une image (80-115 ms).
+
+**Ce qui a été fait** (Apple TV : rien ne change, le profil de rendu en
+décide) : modèles et gestionnaires stables (`stabilizeList`, tv-core ;
+`stabilizeSections`, `useStableHandler` — les deux plateformes, invisible) ;
+cartes, personnes et pastilles clées par leur PLACE (`recycleResultCards`) ;
+renouvellement par parts (`renewedItems`, `renewalHead`, `useRenewedRow`) :
+ce que la piste montre d'abord, la tête des rangées suivantes une part par
+image, la queue quand le focus entre dans la rangée ; une rangée encore vide
+(les premiers résultats) se remplit par parts. Les résultats paraissent au
+même moment qu'avant : l'anti-rebond (150 ms) n'a pas bougé.
+
+**Ce qui reste.** Les images de 20 à 40 ms pendant le remplissage (une carte
+MONTÉE coûte ~15 ms sur la Shield, deux par part) : plus d'images ratées
+qu'avant (33 % contre 21 %), mais plus aucun gel. Pour descendre sous 10 %,
+il faudrait des cartes plus légères à monter, ou des places montées d'avance
+dès l'ouverture de la recherche.
+
+**Pièges du banc.** La recherche de la BASE du faux backend rendait ses
+résultats sans `match` : l'écran plantait à leur arrivée (la mesure de départ
+L1 « recherche » mesurait ce plantage) — corrigé, elle répond comme
+`searchService.respond`. Avec un faux backend NEUF, l'app n'interroge le
+moteur que ~15 s après la première lettre : `--external`. `PERF_PROXY_LOG`
+dit chaque requête et sa fin. La sonde du fil JS (mode de mesure) nomme les
+fenêtres où il répondait en retard (« js≥100 »).

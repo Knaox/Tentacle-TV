@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { searchRemembers } from "@tentacle-tv/tv-core";
 import { pushRecentSearch, readRecentSearches } from "../../storage/recentSearches";
 
@@ -28,9 +28,15 @@ export function useSearchInput() {
 
   // Mémorisée à la SÉLECTION d'un résultat, pas à la frappe (parité LG) : une
   // requête abandonnée en route n'a rien donné, la ressortir serait un mauvais conseil.
+  // Stable d'une frappe à l'autre (la requête est lue au moment du choix) :
+  // les gestionnaires des cartes qui l'appellent ne changent pas à chaque
+  // lettre, et les cartes mémoïsées ne se redessinent pas.
+  const latest = useRef(debounced);
+  latest.current = debounced;
   const remember = useCallback(() => {
-    if (searchRemembers("result", debounced)) setRecents(pushRecentSearch(debounced));
-  }, [debounced]);
+    const chosen = latest.current;
+    if (searchRemembers("result", chosen)) setRecents(pushRecentSearch(chosen));
+  }, []);
 
   return { query, setQuery, debounced, recents, remember, onKey, onSpace, onDelete, onClear };
 }

@@ -17,6 +17,9 @@ node apps/tv/harness/android-perf/bench.mjs compare avant apres
 # deux versions en ALTERNANCE (A, B, puis B, A) — la seule comparaison fiable
 node apps/tv/harness/android-perf/bench.mjs ab --a <avant.apk> --tag-a avant --b <apres.apk> --tag-b apres --debug-apk <debug.apk> [--rounds 2] [--shots] [--slow] [--no-warmup]
 node apps/tv/harness/android-perf/bench.mjs diff avant apres   # captures : PSNR, SSIM, côte à côte
+# faux backend déjà chaud (la recherche : un faux backend NEUF retarde ses requêtes de ~15 s)
+node apps/tv/harness/android-perf/bench.mjs serve &   # mêmes PERF_PORT / PERF_BACKEND_PORT
+node apps/tv/harness/android-perf/bench.mjs run … --keep-session --external --only recherche-frappe
 ```
 
 **La garde des touches (obligatoire, depuis le 07/10).** Un banc a envoyé
