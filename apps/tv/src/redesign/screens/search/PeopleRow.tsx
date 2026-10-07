@@ -7,6 +7,7 @@ import { useCardFocused } from "../../cards/useCardFocused";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { pressScale, usePressProgress } from "../../motion/pressProgress";
+import { RENDER } from "../../render/renderProfile";
 import { useRecede, useRowFocus, type RowPlace } from "../../motion/useRowRecede";
 import { colors, fonts, text } from "../../theme/tokens";
 import { PersonPortrait } from "./PersonPortrait";
@@ -109,7 +110,8 @@ export const PeopleRow = memo(function PeopleRow({
         contentContainerStyle={[styles.content, { paddingLeft: inset - (CELL - SIZE) / 2, paddingRight: TV_STAGE.safe.x }]}
       >
         {people.map((person, index) => (
-          <Person key={person.id} person={person} index={index} row={row} onOpen={onOpen} onItemFocusChange={onItemFocusChange} />
+          // Android TV : clés par place, une frappe redessine les portraits au lieu de les remonter (`recycleResultCards`).
+          <Person key={RENDER.recycleResultCards ? index : person.id} person={person} index={index} row={row} onOpen={onOpen} onItemFocusChange={onItemFocusChange} />
         ))}
       </ScrollView>
     </View>

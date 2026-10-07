@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
+import { RENDER } from "../../render/renderProfile";
 import { colors, fonts, white } from "../../theme/tokens";
 
 /**
@@ -19,7 +20,9 @@ export const PersonPortrait = memo(function PersonPortrait({
   return (
     <View style={[shape, styles.frame]}>
       {uri ? (
-        <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+        // Android TV (portraits recyclés, `recycleResultCards`) : clée par son
+        // adresse, elle ne garde pas le visage précédent le temps que le sien arrive.
+        <Image key={RENDER.recycleResultCards ? uri : undefined} source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
       ) : (
         <Text style={[styles.initials, { fontSize: Math.round(size * 0.34) }]}>{initials}</Text>
       )}

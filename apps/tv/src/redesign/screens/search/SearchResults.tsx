@@ -114,7 +114,7 @@ export const SearchResults = memo(function SearchResults({
                   <View style={styles.chips}>
                     {section.facets.map((facet, index) => (
                       <Chip
-                        key={`${facet.kind}:${facet.name}`}
+                        key={RENDER.recycleResultCards ? index : `${facet.kind}:${facet.name}`}
                         label={facet.name}
                         detail={facet.detail}
                         focusKey={`facets:${index}`}
