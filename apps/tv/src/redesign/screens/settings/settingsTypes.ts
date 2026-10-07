@@ -8,7 +8,7 @@ import type { IconName } from "../../icons/Icon";
  * tout ce qui dépend du compte, du serveur ou de l'appareil arrive résolu.
  */
 
-export type SettingsTab = "account" | "playback" | "appearance" | "navigation" | "about";
+export type SettingsTab = "account" | "playback" | "appearance" | "navigation" | "about" | "licenses";
 
 export type InterfaceLanguage = "fr" | "en";
 
@@ -102,6 +102,22 @@ export interface SettingsAbout {
   userName: string;
   deviceLabel: string;
   year: number;
+}
+
+/**
+ * L'onglet « Licences » : la mention de l'AGPL et la source de CETTE version,
+ * puis les documents à lire — les composants tiers, chaque texte de licence.
+ */
+export interface SettingsLicenses {
+  statement: string;
+  sourceUrl: string;
+  documents: Array<{ title: string; caption: string }>;
+}
+
+/** Un document ouvert dans le lecteur : son titre, son texte en blocs. */
+export interface LicenseReaderModel {
+  title: string;
+  blocks: string[];
 }
 
 /** Une entrée de la navigation, au réglage « Navigation ». */

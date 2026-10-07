@@ -9,6 +9,7 @@ import type { PlatformTraits } from "./platformTraits";
  * disparaît des Réglages.
  */
 export const PLATFORM_TRAITS: PlatformTraits = {
+  licensePlatform: "androidtv",
   liquidGlass: false,
   playerAnnouncesFirstFrame: true,
   // Le mode Lite des Android TV peu puissantes (`platform/renderTier`).
