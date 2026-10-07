@@ -51,41 +51,7 @@ function searchRoutes(data, { personDelayMs = 0 } = {}) {
   data.route("GET", /^\/api\/search\/episodes$/, (req, res, { url, json }) => json(res, 200, { query: url.searchParams.get("q") ?? "", episodes: [] }));
 }
 
-/**
- * Le MOTEUR de la recherche, comme le serveur le rend (`searchService.ts`,
- * `respond`) : les films et séries dont le nom contient la saisie, trouvés
- * par leur titre (`match`, que l'écran lit), le meilleur en tête et retiré de
- * sa catégorie, chaque catégorie bornée à `limit`, les totaux entiers. La
- * recherche de la base (`server/tentacle.mjs`) rend ses résultats sans
- * `match` ni borne : l'écran plante à leur arrivée.
- */
-function searchEngine(data, q, limit) {
-  const term = q.trim().toLowerCase();
-  const hits = Object.values(data.snapshot.items)
-    .map((entry) => entry.item)
-    .filter((item) => (item.Type === "Movie" || item.Type === "Series") && term && data.clean(item.Name).toLowerCase().includes(term))
-    .sort((a, b) => data.clean(a.Name).localeCompare(data.clean(b.Name)) || a.Id.localeCompare(b.Id))
-    .map((item) => ({ item, match: { field: "title" }, score: 1 }));
-  const top = hits[0] ? { kind: "item", hit: hits[0] } : null;
-  const rest = hits.slice(1);
-  const of = (type, list) => list.filter((hit) => hit.item.Type === type);
-  return {
-    query: q, ready: true, tookMs: 1, correction: null, partial: false, top,
-    movies: of("Movie", rest).slice(0, limit), series: of("Series", rest).slice(0, limit), collections: [],
-    people: [], genres: [], studios: [],
-    totals: { movies: of("Movie", hits).length, series: of("Series", hits).length, collections: 0, people: 0 },
-  };
-}
-
 export default {
-  "moteur-recherche": {
-    description: "la recherche répond comme le moteur du serveur (titres trouvés par leur nom, `match`, bornée à `limit`) ; Parcourir et les épisodes (aucun) comme « recherche »",
-    apply: (data) => {
-      searchRoutes(data);
-      data.route("GET", /^\/api\/search$/, (req, res, { url, json }) =>
-        json(res, 200, searchEngine(data, url.searchParams.get("q") ?? "", Number(url.searchParams.get("limit") ?? 6))));
-    },
-  },
   recherche: {
     description: "Parcourir (personne, genre, studio) et les épisodes de la recherche (aucun)",
     apply: (data) => searchRoutes(data),

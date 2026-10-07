@@ -15,6 +15,8 @@
 //     chauds (images retaillées par le relais, cache disque de l'app)
 //   `--keep-session` (run, ab) : la session du faux backend est déjà écrite
 //     dans l'app (pas de réinstallation de la debug, pas de `pm clear`)
+//   `--external` (run, ab) : le faux backend et son relais tournent déjà
+//     (`serve`, mêmes ports) — un faux backend neuf retarde les recherches
 //   node apps/tv/harness/android-perf/bench.mjs serve [--fixtures a,b]
 //     (le faux backend et son relais seuls, pour explorer ou filmer à la main)
 //   Sur une vraie Shield : ANDROID_SERIAL=<ip>:5555 et
@@ -60,8 +62,15 @@ async function withBench(debugApk, fn) {
   console.log(`appareil : ${device.describe()}`);
   device.pushKeys(keysDex());
   const host = createHostPolicy(flag("slow"), console.log);
-  const backend = await startBackend(BACKEND_PORT);
-  const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
+  // `--external` : le faux backend et son relais tournent déjà (`serve`) —
+  // l'app ne lance aucune recherche tant qu'un faux backend NEUF n'a pas
+  // « chauffé » (mesuré le 07/10 : la frappe n'interrogeait le moteur que
+  // 15 s plus tard), comme `baseline.mjs --external`.
+  const external = flag("external");
+  const backend = external ? { kill: () => {} } : await startBackend(BACKEND_PORT);
+  const proxy = external
+    ? { stats: { log: [] }, close: async () => {} }
+    : await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: !flag("no-resize"), log: console.log });
   try {
     // `--keep-session` : la session du faux backend est déjà dans l'app (une
     // passe précédente) — rien à réinstaller, seul le relais du port à rouvrir.
