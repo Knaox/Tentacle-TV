@@ -23,7 +23,7 @@ import type { EngineSurfaceProps } from "./types";
  * coup — un fichier par piste choisie, pas dix au chargement.
  */
 export function MpvVideoSurface({
-  engineRef, streamUrl, headers, startPositionMs, selectedAudioIndex, selectedSubtitleIndex,
+  engineRef, streamUrl, headers, streams, startPositionMs, selectedAudioIndex, selectedSubtitleIndex,
   externalSubtitles, title, artist, paused, currentTime, isAirPlaying, showLoading, overlayVisible,
   reloadToken, subtitleScale, subtitlePosition, subtitleDelay, audioDelay,
   onLoad, onProgress, onEnd, onError, onBuffering, onPausedChange, onAirPlayRoute, onPipChange,
@@ -33,7 +33,9 @@ export function MpvVideoSurface({
   const [tracks, setTracks] = useState<readonly MpvTrack[]>([]);
   const [loaded, setLoaded] = useState(false);
   /** Réglage « Adapter la fréquence » : la surface demande la même fréquence que la fenêtre. */
-  const frameRate = useFluidRefreshRate();
+  /** La cadence lue par mpv, repli quand Jellyfin ne la connaît pas. */
+  const [loadedFps, setLoadedFps] = useState<number | undefined>(undefined);
+  const frameRate = useFluidRefreshRate(streams, loadedFps);
   /** Externes déjà demandés à mpv, pour ne pas les ajouter deux fois. */
   const requestedRef = useRef<Set<number>>(new Set());
 
@@ -68,6 +70,7 @@ export function MpvVideoSurface({
   // Nouvelle source : l'état des pistes repart de zéro.
   useEffect(() => {
     setLoaded(false);
+    setLoadedFps(undefined);
     setTracks([]);
     requestedRef.current = new Set();
   }, [source]);
@@ -102,6 +105,7 @@ export function MpvVideoSurface({
     const info = event.nativeEvent;
     setTracks(info.tracks);
     setLoaded(true);
+    setLoadedFps(info.fps);
     if (initialExternal) requestedRef.current.add(initialExternal.jellyfinIndex);
     onLoad({
       duration: info.duration,

@@ -10,9 +10,9 @@ export type PlayerVideoSurfaceProps = EngineSurfaceProps;
  * système (`NativeVideoSurface`) et le lecteur avancé (`MpvVideoSurface`).
  * Les écrans ne connaissent pas le moteur : ils passent le même contrat et
  * reçoivent les mêmes événements. Réglage « Adapter la fréquence » : l'écran
- * garde ici sa fréquence la plus haute, pour les deux moteurs (Android).
+ * prend ici son meilleur mode, pour les deux moteurs (Android).
  */
 export function PlayerVideoSurface(props: PlayerVideoSurfaceProps) {
-  useDisplayModeMatch();
+  useDisplayModeMatch(props.streams);
   return props.engine === "mpv" ? <MpvVideoSurface {...props} /> : <NativeVideoSurface {...props} />;
 }

@@ -348,7 +348,7 @@ export default {
   // Mobile Android, lecteur avancé : l'écran calé sur la cadence du film.
   matchScreenFrameRate: "Adapter la fréquence de l'écran",
   matchScreenFrameRateHint:
-    "Pendant la lecture, l'écran garde sa fréquence la plus élevée (120 Hz sur un écran qui le permet) : l'image reste fluide. Désactivé, le téléphone choisit lui-même, souvent 60 Hz.",
+    "Pendant la lecture, l'écran prend son meilleur mode : la cadence exacte du film s'il la propose, sinon sa fréquence la plus élevée (120 Hz sur un écran qui le permet). Désactivé, le téléphone choisit lui-même, souvent 60 Hz.",
   subtitleScale: "Taille des sous-titres",
   subtitleScaleSmall: "Petit",
   subtitleScaleLarge: "Grand",
