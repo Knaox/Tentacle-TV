@@ -15,6 +15,7 @@ describe("le profil de rendu", () => {
       cardArtwork: { landscapeWidth: 640, posterHeight: 480 },
       stagedRows: false,
       recycleResultCards: false,
+      holdUnderPanels: false,
       imageScale: 2,
       spinner: "system",
       cullOffscreen: false,
@@ -42,6 +43,7 @@ describe("le profil de rendu", () => {
     expect(android.haloDrawScale).toBe(RENDER_PROFILES.tvos.haloDrawScale);
     expect(android.stagedRows).toBe(true);
     expect(android.recycleResultCards).toBe(true);
+    expect(android.holdUnderPanels).toBe(true);
     expect(android.imageScale).toBe(1);
     expect(android.spinner).toBe("drawn");
     expect(android.cullOffscreen).toBe(true);

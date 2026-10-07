@@ -7,10 +7,12 @@ import { useLibraryFilters } from "../../hooks/useLibraryFilters";
 import { railNavigate } from "../../navigation/railNavigate";
 import type { RootStackParamList } from "../../navigation/types";
 import { useLibraryGroups, useLibraryLoadReprise } from "../../platform/tvos/screens/library";
+import { RENDER } from "../../redesign/render/renderProfile";
 import { LibraryView } from "../../redesign/screens/library/LibraryView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
+import { useHeldWhile } from "../screen/useHeldWhile";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { gridCatalogParams } from "./gridCatalogParams";
 import { activeFiltersOf, pillsOf, type GenreOption } from "./libraryFilterModel";
@@ -26,6 +28,10 @@ type Params = RootStackParamList["Library"];
  *  demandée d'office — le filtre se pose sur ce qui est chargé, il doit voir
  *  tout le catalogue avant de dire « aucun titre ». */
 const PLATFORM_SCAN_BELOW = 18;
+
+/** Android TV : la page sous une liste de filtres ne suit pas chaque coche
+ *  (profil `holdUnderPanels`) ; l'Apple TV la redessine comme avant. */
+const HOLD_UNDER_SHEET = RENDER.holdUnderPanels;
 
 const goHome = () => railNavigate("Home");
 
@@ -96,22 +102,41 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
 
   const onEndReached = useCallback(() => loadMore(), [loadMore]);
 
+  // Ce que la liste ouverte COUVRE — l'en-tête, la grille, le vide — reste tel
+  // quel jusqu'à la fin de son fondu de sortie : une coche ne redessine que la
+  // liste (et « Voir N titres »), plus la grille cachée dessous. Les mêmes
+  // références : la vue et la grille, mémoïsées, ne se redessinent pas.
+  const under = useHeldWhile(
+    {
+      count: loading ? t("library:loading") : t("library:titles", { count: catalog.total ?? items.length }),
+      pills,
+      active,
+      cards: grid.cards,
+      palette: grid.palette,
+      loading,
+      loadingMore,
+      noResults,
+      status,
+    },
+    HOLD_UNDER_SHEET && sheets.covering,
+  );
+
   return (
     <RedesignScreen screen={screen}>
       <LibraryView
         nav={screen.nav}
         title={title}
-        count={loading ? t("library:loading") : t("library:titles", { count: catalog.total ?? items.length })}
-        pills={pills}
-        activeFilters={active}
+        count={under.count}
+        pills={under.pills}
+        activeFilters={under.active}
         labels={labels}
-        cards={grid.cards}
-        palette={grid.palette}
+        cards={under.cards}
+        palette={under.palette}
         ambient={grid.ambient}
-        loading={loading}
-        loadingMore={loadingMore}
-        noResults={noResults}
-        status={status}
+        loading={under.loading}
+        loadingMore={under.loadingMore}
+        noResults={under.noResults}
+        status={under.status}
         sheet={sheets.sheet}
         onPressPill={bar.onPressPill}
         onRemoveFilter={bar.onRemoveFilter}

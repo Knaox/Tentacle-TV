@@ -18,6 +18,8 @@ export interface LibrarySheets extends Required<FilterSheetHandlers> {
   closeSheet: () => void;
   /** La liste a fini de s'effacer, sa Modal se retire : le focus revient à sa pastille. */
   onSheetExited: () => void;
+  /** Une liste couvre l'écran : de son ouverture à la fin de son fondu de sortie. */
+  covering: boolean;
 }
 
 /**
@@ -34,6 +36,9 @@ export interface LibrarySheets extends Required<FilterSheetHandlers> {
  */
 export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, update: Update, focus: FocusStore, context: SheetContext): LibrarySheets {
   const [open, setOpen] = useState<{ filter: LibraryFilterKey; entry: string } | null>(null);
+  // Couvert jusqu'à la fin du fondu de sortie, pas seulement tant qu'elle est
+  // ouverte : ce qu'elle cachait se met à jour une fois le fondu joué.
+  const [covering, setCovering] = useState(false);
   // Les gestionnaires lisent l'état du moment sans changer d'identité.
   const latest = useRef({ t, filters, context });
   latest.current = { t, filters, context };
@@ -45,7 +50,9 @@ export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, upda
   const openSheet = useCallback((key: LibraryFilterKey) => {
     const { t: tr, filters: f, context: ctx } = latest.current;
     const initial = sheetOf(tr, key, f, ctx);
-    if (initial) setOpen({ filter: key, entry: filterSheetEntryKey(initial) });
+    if (!initial) return;
+    setOpen({ filter: key, entry: filterSheetEntryKey(initial) });
+    setCovering(true);
   }, []);
 
   const openRef = useRef(open);
@@ -61,6 +68,7 @@ export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, upda
   const onSheetExited = useCallback(() => {
     const filter = closedFilter.current;
     closedFilter.current = null;
+    setCovering(false);
     if (filter) returnToPill(filter);
   }, [returnToPill]);
   // Retour, liste ouverte : la refermer (la Modal le reçoit, `onSheetClose`).
@@ -84,6 +92,7 @@ export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, upda
     openSheet,
     closeSheet,
     onSheetExited,
+    covering,
     onSheetOption,
     onSheetClear,
     onSheetApply: closeSheet,
