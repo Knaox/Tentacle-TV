@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, CornerLeftUp, Folder } from "lucide-react";
+import { ChevronRight, CornerLeftUp, Folder, HardDrive } from "lucide-react";
 import type { BrowseResult } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
@@ -9,7 +9,9 @@ import { SetupErrorLine } from "./SetupErrorLine";
 /**
  * Le sélecteur de dossier : le système de fichiers DE JELLYFIN (dans un
  * conteneur, ce n'est pas celui de l'hôte), parcouru par l'API. Un panneau
- * dans le flux de l'écran, pas une fenêtre par-dessus : rien à piéger au clavier.
+ * dans le flux de l'écran, pas une fenêtre par-dessus : rien à piéger au
+ * clavier. Sa racine suit la machine de Jellyfin : `/` sous Linux, les
+ * lecteurs (C:, D:…) sous Windows.
  */
 export function FolderBrowser({ start, onPick, onCancel }: { start: string | null; onPick: (path: string) => void; onCancel: () => void }) {
   const { t } = useTranslation("setupWizard");
@@ -17,6 +19,8 @@ export function FolderBrowser({ start, onPick, onCancel }: { start: string | nul
   const [listing, setListing] = useState<BrowseResult | null>(null);
   const [error, setError] = useState<WizardErrorCode | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const style = listing?.style ?? "posix";
+  const atDrives = listing?.path === null && style === "windows";
 
   useEffect(() => {
     let cancelled = false;
@@ -34,8 +38,8 @@ export function FolderBrowser({ start, onPick, onCancel }: { start: string | nul
   return (
     <div className="space-y-3 rounded-xl border border-[rgba(var(--brand-rgb),0.4)] bg-fill-faint p-4" role="group" aria-label={t("browserTitle")}>
       <p className="text-sm font-semibold text-content-primary">{t("browserTitle")}</p>
-      <p className="text-xs text-content-tertiary">{t("browserHint")}</p>
-      <p className="break-all rounded-lg bg-fill-subtle px-3 py-2 font-mono text-xs text-content-secondary">{listing?.path ?? "/"}</p>
+      <p className="text-xs text-content-tertiary">{t(`pathHint_${style}`)}</p>
+      <p className="break-all rounded-lg bg-fill-subtle px-3 py-2 font-mono text-xs text-content-secondary">{listing?.path ?? t(`browserRoot_${style}`)}</p>
       <SetupErrorLine code={error} onRetry={() => setAttempt((n) => n + 1)} />
       <ul className="max-h-64 divide-y divide-line-subtle overflow-y-auto rounded-lg border border-line-subtle">
         {listing?.parent !== undefined && listing?.path !== null ? (
@@ -49,8 +53,12 @@ export function FolderBrowser({ start, onPick, onCancel }: { start: string | nul
         {listing?.entries.map((entry) => (
           <li key={entry.path}>
             <button type="button" onClick={() => setPath(entry.path)} className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm text-content-primary hover:bg-fill-subtle">
-              <Folder size={16} aria-hidden="true" className="shrink-0 text-content-tertiary" />
-              <span className="min-w-0 flex-1 truncate">{entry.name}</span>
+              {atDrives ? (
+                <HardDrive size={16} aria-hidden="true" className="shrink-0 text-content-tertiary" />
+              ) : (
+                <Folder size={16} aria-hidden="true" className="shrink-0 text-content-tertiary" />
+              )}
+              <span className="min-w-0 flex-1 truncate">{atDrives ? t("browserDrive", { name: entry.name.replace(/[\\/]+$/, "") }) : entry.name}</span>
               <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-content-quaternary" />
             </button>
           </li>

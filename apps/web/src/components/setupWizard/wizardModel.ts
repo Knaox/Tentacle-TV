@@ -115,10 +115,10 @@ export function isValidLibraryName(name: string): boolean {
 }
 
 /**
- * Les bibliothèques proposées : dans la pile complète, « Films » et « Séries »
- * sur les dossiers que le service `init` a créés — sauf celles qui existent
- * déjà. Seulement pour le Jellyfin DE LA PILE : un autre Jellyfin ne voit pas
- * ces dossiers.
+ * Les bibliothèques proposées : « Films » et « Séries » — sauf celles qui
+ * existent déjà. Dans la pile complète, sur les dossiers que le service
+ * `init` a créés ; ailleurs (un autre Jellyfin ne voit pas ces dossiers),
+ * sans dossier : l'administrateur choisit lui-même les siens.
  */
 export function defaultLibraries(
   context: SetupContext | null,
@@ -126,14 +126,19 @@ export function defaultLibraries(
   names: { movies: string; tvshows: string },
   inStack = true,
 ): LibraryPlan[] {
-  const folders = context?.mediaFolders;
-  if (!folders || !inStack) return [];
-  const taken = new Set(existing.flatMap((library) => library.paths));
+  const folders = inStack ? context?.mediaFolders : null;
+  const takenPaths = new Set(existing.flatMap((library) => library.paths));
+  const takenNames = new Set(existing.map((library) => library.name.toLowerCase()));
   const plans: LibraryPlan[] = [
-    { name: names.movies, type: "movies", paths: [folders.movies] },
-    { name: names.tvshows, type: "tvshows", paths: [folders.tvshows] },
+    { name: names.movies, type: "movies", paths: folders ? [folders.movies] : [] },
+    { name: names.tvshows, type: "tvshows", paths: folders ? [folders.tvshows] : [] },
   ];
-  return plans.filter((plan) => !plan.paths.some((path) => taken.has(path)));
+  return plans.filter((plan) => !takenNames.has(plan.name.toLowerCase()) && !plan.paths.some((path) => takenPaths.has(path)));
+}
+
+/** Les bibliothèques sans dossier choisi : le bouton « Continuer » attend. */
+export function plansMissingFolder(plans: readonly LibraryPlan[]): LibraryPlan[] {
+  return plans.filter((plan) => plan.paths.length === 0);
 }
 
 /** Les chemins de l'hôte où déposer les médias (pile complète), d'après le dossier monté et les sous-dossiers. */

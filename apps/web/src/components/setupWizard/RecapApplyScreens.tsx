@@ -31,19 +31,24 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
   // Un Jellyfin déjà configuré : rien n'y est créé, seuls les réglages cochés changent.
   const joined = pathOf(data.context) === "configured";
   const kept = data.existing.map((library) => library.name).join(" · ");
+  const planned = data.plans.map((p) => `${p.name} (${p.paths[0]})`).join(" · ");
+  // Un Jellyfin configuré trouvé vide : ce qui sera créé, ou rien (« Passer »).
+  const keptLine = data.context?.flow.noLibraries
+    ? planned ? t("recapLibrariesCreate", { names: planned }) : t("recapLibrariesSkipped")
+    : kept ? t("recapLibrariesExisting", { names: kept }) : t("recapLibrariesNoneYet");
   const advice = data.advice?.ids ?? [];
   const rows: Array<[string, string]> = joined
     ? [
         [t("recapJellyfin"), jellyfin],
         [t("recapAccount"), data.credentials?.username ?? "—"],
-        [t("recapLibrariesKeptLabel"), kept ? t("recapLibrariesExisting", { names: kept }) : t("recapLibrariesNoneYet")],
+        [t("recapLibrariesKeptLabel"), keptLine],
         [t("recapAdvice"), advice.length ? advice.map((id) => t(`rec_${id}`)).join(" · ") : t("recapNothing")],
       ]
     : [
         [t("recapJellyfin"), jellyfin],
         [t("recapAccount"), data.credentials?.username ?? "—"],
         [t("recapLocale"), `${t(`lang_${data.locale.language}`)} · ${t(`country_${data.locale.country}`)}`],
-        [t("recapLibraries"), data.plans.length ? data.plans.map((p) => `${p.name} (${p.paths[0]})`).join(" · ") : t("recapNothing")],
+        [t("recapLibraries"), planned || t("recapNothing")],
       ];
   return (
     <WizardFrame title={t("recapTitle")} subtitle={t("recapSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>

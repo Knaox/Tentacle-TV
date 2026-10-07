@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SetupContext } from "@tentacle-tv/shared";
-import { codeFromHash, createsLibraries, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, needsDatabase, resumeStep, showsChosenServer, uiCultureOf, wizardLength, wizardSteps } from "./wizardModel";
+import { codeFromHash, createsLibraries, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, needsDatabase, plansMissingFolder, resumeStep, showsChosenServer, uiCultureOf, wizardLength, wizardSteps } from "./wizardModel";
 
 function ctx(over: Partial<SetupContext> = {}): SetupContext {
   return {
@@ -86,11 +86,13 @@ describe("les étapes de l'assistant (le parcours du serveur)", () => {
     expect(showsChosenServer("recap", null)).toBe(false);
   });
 
-  it("un AUTRE Jellyfin que celui de la pile ne se voit pas proposer les dossiers de la pile", () => {
+  it("un AUTRE Jellyfin que celui de la pile ne se voit pas proposer les dossiers de la pile : à lui de choisir les siens", () => {
     const full = ctx({ provisioner: "docker-sibling", mediaFolders: { root: "/media", movies: "/media/films", tvshows: "/media/series" } });
     const names = { movies: "Films", tvshows: "Séries" };
     expect(defaultLibraries(full, [], names)).toHaveLength(2);
-    expect(defaultLibraries(full, [], names, false)).toEqual([]);
+    const other = defaultLibraries(full, [], names, false);
+    expect(other).toEqual([{ name: "Films", type: "movies", paths: [] }, { name: "Séries", type: "tvshows", paths: [] }]);
+    expect(plansMissingFolder(other).map((plan) => plan.name)).toEqual(["Films", "Séries"]);
   });
 });
 
@@ -107,7 +109,8 @@ describe("ce qui est proposé d'office", () => {
     const names = { movies: "Films", tvshows: "Séries" };
     expect(defaultLibraries(ctx(), [], names).map((l) => l.paths[0])).toEqual(["/media/films", "/media/series"]);
     expect(defaultLibraries(ctx(), [{ name: "Films", type: "movies", paths: ["/media/films"] }], names).map((l) => l.name)).toEqual(["Séries"]);
-    expect(defaultLibraries(ctx({ mediaFolders: null }), [], names)).toEqual([]);
+    expect(defaultLibraries(ctx({ mediaFolders: null }), [], names).map((l) => l.paths)).toEqual([[], []]);
+    expect(defaultLibraries(ctx({ mediaFolders: null }), [{ name: "films", type: "movies", paths: ["/x"] }], names).map((l) => l.name)).toEqual(["Séries"]);
   });
 
   it("les chemins de l'hôte où déposer les médias", () => {
