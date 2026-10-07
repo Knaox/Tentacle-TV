@@ -12,8 +12,11 @@ import type { SetupStep } from "./setupFlowContract";
  */
 export const SETUP_DOCS_BASE = "https://tentacletv.app/docs/server/";
 
+/** Les écrans sans page du site (pas encore écrite) : leur « Besoin d'aide ? » n'a pas de lien. */
+export type SetupStepWithoutDoc = "tmdb";
+
 export type SetupDocTopic =
-  | SetupStep
+  | Exclude<SetupStep, SetupStepWithoutDoc>
   | "home"
   | "beforeYouStart"
   | "install"

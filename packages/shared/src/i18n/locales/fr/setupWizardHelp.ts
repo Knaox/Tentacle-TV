@@ -49,6 +49,13 @@ export default {
   help_recommended_restart_q: "Jellyfin va-t-il redémarrer\u00a0?",
   help_recommended_restart_a: "Seulement pour la détection des passages, une fois, et jamais pendant une lecture.",
 
+  help_tmdb_what_q: "À quoi sert TMDB\u00a0?",
+  help_tmdb_what_a: "Jellyfin décrit votre bibliothèque\u00a0; Tentacle interroge en plus The Movie Database pour ce qui la dépasse\u00a0: titres similaires, acteurs, sagas, plateformes de streaming.",
+  help_tmdb_free_q: "Comment obtenir une clé\u00a0?",
+  help_tmdb_free_a: "Créez un compte gratuit sur themoviedb.org, puis, dans ses paramètres, la section API\u00a0: demandez une clé pour un usage personnel et copiez la clé API v3 (32 caractères).",
+  help_tmdb_later_q: "Et si je la pose plus tard\u00a0?",
+  help_tmdb_later_a: "Tentacle fonctionne sans elle. Posez-la quand vous voulez dans Administration › Métadonnées\u00a0: le tableau de bord la rappelle dans ses recommandations, sans autre relance.",
+
   help_recap_what_q: "Que va-t-il se passer\u00a0?",
   help_recap_what_a: "Tentacle fait ce qui est listé, dans l'ordre, puis vous connecte. Rien d'autre.",
   help_recap_clientUrl_q: "L'adresse de Jellyfin pour les applications\u00a0?",

@@ -37,6 +37,8 @@ export default {
   error_setup_in_progress: "Setup is already under way from another device: enter the setup code to take it over.",
   error_jf_sibling_elsewhere: "Jellyfin's internal address leads outside the Docker stack: was the Jellyfin service renamed? Point JELLYFIN_INTERNAL_URL back to the stack's Jellyfin service name.",
   error_step_refused: "This step isn't part of setting up this Jellyfin: go back to the Jellyfin step.",
+  error_tmdb_key_invalid: "TMDB refuses this key. Make sure it's the v3 API key (32 characters), not the v4 token.",
+  error_tmdb_unreachable: "The server can't reach TMDB to check the key. Try again, or set it up later.",
   error_internal: "Something unexpected happened. Try again; if it comes back, check the server's logs.",
   error_network: "The server does not answer: check that it is still running.",
   error_server_outdated: "This Tentacle server is older than this app: open the wizard in a browser (the link in its logs), or update the server.",

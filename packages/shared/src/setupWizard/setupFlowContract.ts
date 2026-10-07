@@ -19,6 +19,12 @@
  *    bibliothèques, entre la connexion et les réglages — en créer y est
  *    FACULTATIF.
  *
+ * Puis, dans les deux, la clé TMDB (`tmdb`) — FACULTATIVE : « Configurer
+ * plus tard » la laisse vide, et l'avis « Aucune clé TMDB » ne relance plus
+ * l'administrateur créé ici (la recommandation du tableau de bord reste).
+ * Un serveur d'avant cet écran ne le déclare pas (`SetupFlowState.tmdb`
+ * absent) : pas d'écran.
+ *
  * Les deux ont la même longueur jusqu'à la connexion : le numéro d'étape est
  * juste avant même le choix. Le Jellyfin configuré trouvé vide en gagne un
  * (l'écran des bibliothèques), dit dès qu'on le sait. Changer de Jellyfin
@@ -38,6 +44,7 @@ export type SetupStep =
   | "libraries"
   | "signIn"
   | "recommended"
+  | "tmdb"
   | "recap"
   | "apply"
   | "remote"
@@ -64,6 +71,18 @@ export interface SetupSelection {
   noLibraries?: boolean;
 }
 
+/** La clé TMDB, telle que le serveur la tient pendant l'installation. Jamais la clé elle-même. */
+export interface SetupTmdbState {
+  /** Une clé est en place : saisie (base) ou fournie par l'environnement. */
+  configured: boolean;
+  /** `env` : la variable `TMDB_API_KEY`, prioritaire — rien à saisir. */
+  source: "env" | "db" | null;
+  /** Ses quatre derniers caractères, pour la reconnaître. */
+  last4: string | null;
+  /** « Configurer plus tard » choisi : à la fin, l'avis `tmdbKey` est masqué pour l'administrateur. */
+  later: boolean;
+}
+
 /** Ce que le serveur tient du parcours (`SetupContext.flow`). */
 export interface SetupFlowState {
   /** La base reste à relier : ni fournie par l'environnement, ni connectée. */
@@ -78,6 +97,8 @@ export interface SetupFlowState {
    * parcours, et en créer y est permis. Absent (serveur d'avant) : non.
    */
   noLibraries?: boolean;
+  /** La clé TMDB. Absent (serveur d'avant l'écran TMDB) : l'écran n'est pas dans le parcours. */
+  tmdb?: SetupTmdbState;
 }
 
 /** Ce qui fixe la liste des écrans. */
@@ -90,6 +111,8 @@ export interface SetupFlowShape {
   path: SetupPath | null;
   /** Jellyfin configuré trouvé sans bibliothèque (`SetupFlowState.noLibraries`). */
   noLibraries?: boolean;
+  /** Le serveur connaît l'écran TMDB (`SetupFlowState.tmdb` présent). */
+  asksTmdb?: boolean;
 }
 
 const PATH_STEPS: Readonly<Record<SetupPath, readonly SetupStep[]>> = {
@@ -104,13 +127,18 @@ function pathSteps(path: SetupPath, noLibraries: boolean | undefined): readonly 
 }
 const TAIL: readonly SetupStep[] = ["recap", "apply", "remote", "done"];
 
+/** La fin du parcours : la clé TMDB (si le serveur la propose), puis le récapitulatif. */
+function tail(shape: SetupFlowShape): SetupStep[] {
+  return [...(shape.asksTmdb ? (["tmdb"] as const) : []), ...TAIL];
+}
+
 function head(shape: SetupFlowShape): SetupStep[] {
   return ["welcome", ...(shape.needsCode ? (["code"] as const) : []), ...(shape.asksDatabase ? (["database"] as const) : []), "jellyfin"];
 }
 
 /** Les écrans du parcours, dans l'ordre. Sans Jellyfin choisi : jusqu'à « Jellyfin » seulement. */
 export function setupFlowSteps(shape: SetupFlowShape): SetupStep[] {
-  return shape.path ? [...head(shape), ...pathSteps(shape.path, shape.noLibraries), ...TAIL] : head(shape);
+  return shape.path ? [...head(shape), ...pathSteps(shape.path, shape.noLibraries), ...tail(shape)] : head(shape);
 }
 
 /**
@@ -119,7 +147,7 @@ export function setupFlowSteps(shape: SetupFlowShape): SetupStep[] {
  */
 export function setupFlowLength(shape: SetupFlowShape): number {
   const middle = shape.path ? pathSteps(shape.path, shape.noLibraries).length : PATH_STEPS.fresh.length;
-  return head(shape).length + middle + TAIL.length;
+  return head(shape).length + middle + tail(shape).length;
 }
 
 /** Le premier écran d'un parcours, juste après le choix du Jellyfin. */
@@ -179,6 +207,7 @@ export function nextStep(steps: readonly SetupStep[], step: SetupStep): SetupSte
  *  - `readLibraries` : lire les bibliothèques existantes ;
  *  - `advice` : les réglages conseillés — Jellyfin déjà configuré seulement ;
  *  - `segments` : la détection des passages ;
+ *  - `tmdb` : enregistrer la clé TMDB (validée par TMDB), ou « Configurer plus tard » ;
  *  - `complete` : finir l'installation.
  */
 export type SetupAction =
@@ -191,6 +220,7 @@ export type SetupAction =
   | "readLibraries"
   | "advice"
   | "segments"
+  | "tmdb"
   | "complete";
 
 /** Le geste appartient-il au parcours en cours ? Le serveur refuse tout le reste (`step_refused`). */
@@ -212,6 +242,7 @@ export function setupActionAllowed(action: SetupAction, state: SetupFlowState): 
     case "verify":
     case "readLibraries":
     case "segments":
+    case "tmdb":
     case "complete":
       return state.linked;
   }
@@ -236,3 +267,10 @@ export interface JellyfinVerifyRequest {
   username: string;
   password: string;
 }
+
+/**
+ * `POST /api/setup/tmdb` — la clé TMDB (v3), validée par TMDB avant d'être
+ * enregistrée (la même vérification que l'administration), ou « Configurer
+ * plus tard ». La réponse est le contexte à jour (`SetupContext`).
+ */
+export type SetupTmdbRequest = { apiKey: string } | { later: true };
