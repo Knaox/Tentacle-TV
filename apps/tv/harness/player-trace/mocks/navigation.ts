@@ -18,3 +18,10 @@ export function usePreventRemove(enabled: boolean, _callback: () => void): void 
     __nav.onChange?.(enabled);
   }, [enabled]);
 }
+
+// Le retour après un changement du mode Lite (`platform/androidtv/renderTier/
+// tierReload.ts`) lit la référence de navigation au chargement : une
+// référence jamais prête suffit, le lecteur ne change jamais de mode.
+export function createNavigationContainerRef<T = unknown>() {
+  return { isReady: () => false, getRootState: () => undefined as T | undefined, navigate: () => undefined };
+}
