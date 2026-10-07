@@ -99,8 +99,9 @@ export function useEntryFocus(
   const navigation = useNavigation();
   useEffect(
     () =>
-      focus.subscribe((key, focused) => {
-        if (!focused) return;
+      focus.subscribe((key, focused, passing) => {
+        // Un focus de PASSAGE (Android) n'est ni l'utilisateur ni du contenu : rien.
+        if (!focused || passing) return;
         const inRail = isNavKey(key);
         if (!inRail) setRailHeld(false);
         // L'ancre d'un chargement tient le focus, elle n'est pas du contenu (tv-core `holdsArrival`).

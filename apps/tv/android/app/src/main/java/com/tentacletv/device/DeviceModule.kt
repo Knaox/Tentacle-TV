@@ -9,6 +9,7 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.UiThreadUtil
+import com.tentacletv.memory.LiteMemory
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -49,7 +50,15 @@ class DeviceModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
   @ReactMethod
   fun report(tier: String, reason: String, detail: String?) {
     store.saveDecision(tier, reason)
+    LiteMemory.apply(tier)
     Log.i(DeviceSignals.TAG, "niveau $tier ($reason${detail?.let { ", $it" } ?: ""}), réglage ${store.mode}")
+  }
+
+  /** Lite : l'interface derrière le lecteur est cachée — les images que plus
+   *  rien n'affiche quittent la mémoire (`LiteMemory.release`). Normal : rien. */
+  @ReactMethod
+  fun releaseHiddenImages(why: String) {
+    LiteMemory.release(why)
   }
 
   /**

@@ -1,9 +1,9 @@
 diff --git a/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt b/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt
 new file mode 100644
-index 0000000..cc56d13
+index 0000000..90a68ec
 --- /dev/null
 +++ b/android/src/main/java/com/swmansion/rnscreens/CoveredScreens.kt
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,157 @@
 +package com.swmansion.rnscreens
 +
 +import android.animation.Animator
@@ -39,6 +39,12 @@ index 0000000..cc56d13
 + * il ne reparaît pas le temps de son retrait.
 + *
 + * Opt-in (`ScreenStack.keepCoveredScreensAttached`) : sans lui, rien ne change.
++ *
++ * `ScreenStack.releaseCoveredScreens` (mode Lite d'Android TV) : caché, il
++ * passe aussi en `INVISIBLE` — ses vues restent attachées, montées, mesurées,
++ * mais ses images ne sont plus « en usage » (Fresco relâche l'image d'une vue
++ * invisible) : la mémoire peut les reprendre. Découvert, il redevient visible
++ * avant son fondu, et ses images se rechargent.
 + */
 +internal class CoveredScreens(
 +    private val stack: ViewGroup,
@@ -93,6 +99,7 @@ index 0000000..cc56d13
 +        val saved = covered.remove(view) ?: return
 +        (view as? ViewGroup)?.descendantFocusability = saved.descendantFocusability
 +        view.importantForAccessibility = saved.importantForAccessibility
++        if (view.visibility == View.INVISIBLE) view.visibility = View.VISIBLE
 +        animateAlpha(view, 1f, fade)
 +    }
 +
@@ -106,6 +113,14 @@ index 0000000..cc56d13
 +        (view as? ViewGroup)?.descendantFocusability = saved.descendantFocusability
 +        view.importantForAccessibility = saved.importantForAccessibility
 +        view.alpha = 1f
++        if (view.visibility == View.INVISIBLE) view.visibility = View.VISIBLE
++    }
++
++    /** Caché (son fondu fini) : en Lite, ses images sont relâchées (`INVISIBLE`). */
++    private fun hidden(view: View) {
++        if (ScreenStack.releaseCoveredScreens && covered.containsKey(view) && running[view] == null) {
++            view.visibility = View.INVISIBLE
++        }
 +    }
 +
 +    private fun animateAlpha(
@@ -119,6 +134,7 @@ index 0000000..cc56d13
 +        if (!fade || view.alpha == to) {
 +            view.alpha = to
 +            stack.invalidate()
++            if (to == 0f) hidden(view)
 +            return
 +        }
 +        if (to == 0f) fadingOut = view
@@ -137,6 +153,7 @@ index 0000000..cc56d13
 +                    if (running[view] === animation) running.remove(view)
 +                    if (fadingOut === view) fadingOut = null
 +                    stack.invalidate()
++                    if (to == 0f) hidden(view)
 +                }
 +            },
 +        )
@@ -276,7 +293,7 @@ index 2b7dcff..0eca8cf 100644
      var screenOrientation: Int? = null
          private set
 diff --git a/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt b/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
-index 9894cd4..a633e5a 100644
+index 9894cd4..ea66e9a 100644
 --- a/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
 +++ b/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt
 @@ -4,6 +4,7 @@ import android.content.Context
@@ -463,7 +480,7 @@ index 9894cd4..a633e5a 100644
          drawingOps.add(
              obtainDrawingOp().apply {
                  this.canvas = canvas
-@@ -374,6 +487,21 @@ class ScreenStack(
+@@ -374,6 +487,29 @@ class ScreenStack(
      companion object {
          const val TAG = "ScreenStack"
  
@@ -481,6 +498,14 @@ index 9894cd4..a633e5a 100644
 +         */
 +        @JvmField
 +        var fadeLikeIos = false
++
++        /**
++         * Tentacle patch : un écran recouvert ET caché passe en `INVISIBLE` —
++         * ses images relâchées, ses vues gardées (`CoveredScreens`). Posé par
++         * le mode Lite d'Android TV (`LiteMemory`) ; faux ailleurs.
++         */
++        @JvmField
++        var releaseCoveredScreens = false
 +
          private fun needsDrawReordering(
              fragmentWrapper: ScreenFragmentWrapper,

@@ -9,4 +9,5 @@ export const PLATFORM_TRAITS: PlatformTraits = {
   // L'AVPlayer ne dit pas sa première image au lecteur : la règle d'avant.
   playerAnnouncesFirstFrame: false,
   renderTierSetting: false,
+  passingFocus: false,
 };

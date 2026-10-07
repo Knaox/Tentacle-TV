@@ -1,4 +1,6 @@
 import type { MediaItem } from "@tentacle-tv/shared";
+import { backdropWidthFor } from "@tentacle-tv/tv-core";
+import { RENDER_TIER } from "../../platform/renderTier";
 import {
   isLogoLegibleOnDark,
   NEUTRAL_PALETTE,
@@ -40,7 +42,7 @@ export function logoUriOf(image: ImageUrl, art: MediaItem | undefined, width = 8
  * fond propre d'un épisode est rare) — même repli que l'écran de chargement
  * actuel.
  */
-export function backdropUriOf(image: ImageUrl, item: MediaItem | undefined, width = 1920): string | undefined {
+export function backdropUriOf(image: ImageUrl, item: MediaItem | undefined, width = backdropWidthFor(RENDER_TIER, 1920)): string | undefined {
   if (!item) return undefined;
   if (item.Type !== "Episode") return item.BackdropImageTags?.length ? image(item.Id, "Backdrop", { width, quality: 80 }) : undefined;
   const parent = item.ParentBackdropImageTags?.length ? (item.ParentBackdropItemId ?? item.SeriesId) : item.SeriesId;

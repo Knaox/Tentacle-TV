@@ -13,4 +13,5 @@ export const PLATFORM_TRAITS: PlatformTraits = {
   playerAnnouncesFirstFrame: true,
   // Le mode Lite des Android TV peu puissantes (`platform/renderTier`).
   renderTierSetting: true,
+  passingFocus: true,
 };

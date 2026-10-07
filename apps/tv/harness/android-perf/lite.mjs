@@ -14,6 +14,8 @@
 //   node lite.mjs parcours compare <dossier-avant> <dossier-après>
 //   node lite.mjs cout run <avd> --apk <release> --debug-apk <debug> [--sets aac,truehd,ass] [--throttle duty:25] [--window 20]
 //        (le coût d'une lecture : son décodé, sous-titres rendus — `lib/lite/playCost.mjs`)
+//   node lite.mjs memoire run <avd> --apk <release> --debug-apk <debug> --tag <nom> [--tours 6] [--lite 1|0] [--heap] [--trim]
+//        (la mémoire dans la durée, vues vivantes / attachées, capture du tas — `lib/lite/memory.mjs`)
 //
 // L'app mesurée est TOUJOURS l'app de mesure (`com.tentacletv.mobile.perf`,
 // construite par `-PtentaclePerfApp=1`) ; ports : relais 3111, faux backend
@@ -36,7 +38,7 @@ const option = (name, fallback = null) => {
 };
 const flag = (name) => rest.includes(`--${name}`);
 /** Les options qui prennent une valeur ; les autres sont des drapeaux. */
-const VALUED = new Set(["apk", "debug-apk", "tag", "throttle", "only", "rounds", "cold", "endurance", "specs", "sets", "window"]);
+const VALUED = new Set(["apk", "debug-apk", "tag", "throttle", "only", "rounds", "cold", "endurance", "specs", "sets", "window", "tours", "lite"]);
 const positional = rest.filter((arg, i) => !arg.startsWith("--") && !(i > 0 && VALUED.has(rest[i - 1].slice(2))));
 
 async function avd() {
@@ -85,12 +87,17 @@ async function main() {
   if (group === "avd") return avd();
   if (group === "throttle") return throttle();
   if (group === "pressure") return pressure();
-  if (group === "setup" || group === "parcours" || group === "cout") {
+  if (group === "setup" || group === "parcours" || group === "cout" || group === "memoire") {
     // L'appareil se choisit AVANT que `device.mjs` ne lise son serial.
     const name = group === "setup" ? command : positional[0];
     if (name && LITE_AVDS[name]) process.env.ANDROID_SERIAL ??= serialOf(name);
     const { runRoute, compareRuns, setupOnly, runPlayCost } = await import("./lib/lite/route.mjs");
     if (group === "cout") return runPlayCost({ avd: name, option });
+    if (group === "memoire") {
+      const route = await import("./lib/lite/route.mjs");
+      const { runMemory } = await import("./lib/lite/memory.mjs");
+      return runMemory({ withLiteBench: route.withLiteBench, avd: name, option, flag, runsDir: route.LITE_RUNS, stamp: route.stamp, playEndurance: route.playEndurance });
+    }
     if (group === "setup") return setupOnly({ apk: option("apk"), debugApk: option("debug-apk") });
     if (command === "run") return runRoute({ avd: name, option, flag });
     if (command === "compare") return compareRuns(positional[0], positional[1]);

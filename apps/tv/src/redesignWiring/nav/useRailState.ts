@@ -34,7 +34,10 @@ export function useRailFocused(focus: FocusStore): boolean {
   const [railFocused, setRailFocused] = useState(false);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const unsubscribe = focus.subscribe((key, focused) => {
+    const unsubscribe = focus.subscribe((key, focused, passing) => {
+      // Un focus de PASSAGE (Android : le premier focalisable, la loupe, le
+      // temps que l'entrée de l'écran s'attache) n'ouvre pas la navigation.
+      if (focused && passing) return;
       if (focused) {
         if (timer) clearTimeout(timer);
         timer = null;

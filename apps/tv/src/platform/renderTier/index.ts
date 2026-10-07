@@ -33,3 +33,7 @@ export function changeRenderTierMode(_mode: RenderTierMode, _screenParams?: Reco
 export function reloadNavigationState(_firstRoute: string): ReloadReturn | undefined {
   return undefined;
 }
+
+/** Lite (Android TV) : vide les images que plus rien n'affiche, une fois l'écran
+ *  posé (le lecteur par-dessus l'interface) ; rien ici. */
+export function useReleaseHiddenImages(_reason: string): void {}

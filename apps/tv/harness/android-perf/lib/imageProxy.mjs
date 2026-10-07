@@ -106,8 +106,16 @@ export function startImageProxy({ port, target, cacheDir, resize = true, log = (
     req.pipe(upstream);
   }
 
+  // `PERF_PROXY_LOG=<fichier>` : chaque requête de l'app, une ligne (heure,
+  // méthode, chemin) — ce que l'app demande AU REPOS (sondes, relectures).
+  const journal = process.env.PERF_PROXY_LOG;
+  const note = (method, target) => {
+    if (journal) fs.appendFileSync(journal, `${Date.now()} ${method} ${target.split("?")[0]}\n`);
+  };
+
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://banc");
+    note(req.method, url.pathname);
     if (resize && req.method === "GET" && IMAGE_PATH.test(url.pathname)) {
       serveImage(req, res, url).catch((error) => {
         log(`image ${url.pathname} : ${error.message} — servie telle quelle`);
@@ -120,6 +128,7 @@ export function startImageProxy({ port, target, cacheDir, resize = true, log = (
 
   // Le WebSocket du faux Tentacle : un tunnel brut après la poignée de main.
   server.on("upgrade", (req, socket, head) => {
+    note("WS", req.url ?? "/");
     const upstream = net.connect(target, "127.0.0.1", () => {
       const lines = [`${req.method} ${req.url} HTTP/${req.httpVersion}`];
       for (let i = 0; i < req.rawHeaders.length; i += 2) lines.push(`${req.rawHeaders[i]}: ${req.rawHeaders[i + 1]}`);

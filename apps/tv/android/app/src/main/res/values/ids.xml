@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Les étiquettes de vue de l'app (`View.setTag(int, …)`) : un objet attaché À
+     la vue, qui vit et meurt avec elle (focus/ViewOwned.kt). -->
+<resources>
+    <item name="tentacle_reveal_follower_vertical" type="id" />
+    <item name="tentacle_reveal_follower_row" type="id" />
+    <item name="tentacle_shown_keeper" type="id" />
+</resources>
