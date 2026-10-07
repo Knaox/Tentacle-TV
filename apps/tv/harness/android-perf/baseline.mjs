@@ -14,6 +14,7 @@
 // Mêmes variables que le banc : ANDROID_SERIAL, PERF_PACKAGE (l'app de mesure
 // sur une vraie Shield), PERF_PORT (le relais ; le faux backend à +10).
 // Résultats : ~/Library/Caches/tentacle-android-perf/baseline/<nom>.json.
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -185,6 +186,16 @@ async function effects() {
             // (adb réseau tombé, accueil pas prêt) perd ce tour-là seulement.
             if (error instanceof ForegroundError) throw error;
             console.log(`\n${variant} ${scenario.id} : ${error.message} — tour perdu`);
+            // L'adb RÉSEAU de la Shield tombe toutes les dix minutes environ :
+            // on le rétablit avant le tour suivant (aucune touche ici).
+            if (device.serial.includes(":")) {
+              try {
+                execFileSync(path.join(process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk"), "platform-tools/adb"), ["connect", device.serial], { stdio: "ignore", timeout: 20_000 });
+              } catch {
+                // le tour suivant le redira
+              }
+              await sleep(3000);
+            }
           }
         }
         console.log(` passe ${round + 1} ${variant} (charge ${loadNow()})`);
