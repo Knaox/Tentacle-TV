@@ -25,6 +25,10 @@ if (requestedNdk) {
 
 allprojects {
   repositories {
+    // Les lecteurs LGPL reconstruits pour Tentacle TV (libmpv-android, décodeur
+    // FFmpeg de Media3) : Firebase étant dans l'APK, aucun lecteur GPL n'y
+    // entre. Recette et licences : maven-local/README.md.
+    maven { url = uri("$rootDir/maven-local") }
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }

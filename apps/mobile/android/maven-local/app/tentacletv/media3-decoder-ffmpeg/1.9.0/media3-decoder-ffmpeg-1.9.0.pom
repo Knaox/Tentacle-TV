@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>app.tentacletv</groupId>
+  <artifactId>media3-decoder-ffmpeg</artifactId>
+  <version>1.9.0</version>
+  <packaging>aar</packaging>
+  <name>AndroidX Media3 FFmpeg decoder (LGPL build for Tentacle TV)</name>
+  <description>androidx/media 1.9.0 libraries/decoder_ffmpeg, built with FFmpeg 6.0 (release/6.0 b4a62c32) without --enable-gpl.</description>
+  <licenses>
+    <license><name>Apache-2.0</name><url>https://www.apache.org/licenses/LICENSE-2.0</url><comments>decoder_ffmpeg Java and JNI code</comments></license>
+    <license><name>LGPL-2.1-or-later</name><url>https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html</url><comments>FFmpeg, statically linked into libffmpegJNI.so</comments></license>
+  </licenses>
+  <dependencies>
+    <dependency><groupId>androidx.media3</groupId><artifactId>media3-decoder</artifactId><version>1.9.0</version><scope>compile</scope></dependency>
+    <dependency><groupId>androidx.media3</groupId><artifactId>media3-exoplayer</artifactId><version>1.9.0</version><scope>compile</scope></dependency>
+  </dependencies>
+</project>
