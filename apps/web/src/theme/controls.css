@@ -289,3 +289,24 @@
   border-color: var(--border-focus);
   box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.3);
 }
+
+/* ── Les listes déroulantes natives (`<select>`) ──
+ *
+ * Sans `color-scheme`, le navigateur dessine le menu d'un `<select>` dans son
+ * thème CLAIR — fond blanc — alors que la page lui donne un texte blanc : des
+ * options blanc sur blanc (l'assistant d'installation, signalé). Le thème de
+ * l'app le déclare donc, et les options reçoivent en plus leur surface : là où
+ * le système ignore `color-scheme` (anciens moteurs), elles restent lisibles. */
+:root {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+select option,
+select optgroup {
+  background-color: var(--surface-3);
+  color: var(--text-primary);
+}
