@@ -38,7 +38,7 @@ Légende : ✅ conforme · 🛠 corrigé sur cette branche · ⚠️ non conform
 
 | Composant | Licence | État |
 |---|---|---|
-| MPVKit (lecteur avancé) — **livré en 1.10.x : binaires GPL du fork Streamyfin** (mpv `-Dgpl=true`, libsmbclient GPL-3, FFmpeg `--enable-nonfree` « nonfree and unredistributable », archive statique) | GPL-3 + nonfree | 🛠 variante LGPL construite par `mpvkit.yml` (mpv `-Dgpl=false`, FFmpeg LGPL v3+, sans Samba ni LuaJIT, sans `--enable-nonfree`) ; garde `mobile.yml` qui refuse un podspec GPL au cran test/store ; **⚠️ Release CI à produire** (voir §7) |
+| MPVKit (lecteur avancé) — **livré en 1.10.x : binaires GPL du fork Streamyfin** (mpv `-Dgpl=true`, libsmbclient GPL-3, FFmpeg `--enable-nonfree` « nonfree and unredistributable », archive statique) | GPL-3 + nonfree | 🛠 variante LGPL construite par `mpvkit.yml` (Release `mpvkit-lgpl-0.41.0-av5`, run 37645796496 : mpv `-Dgpl=false`, FFmpeg « LGPL version 3 or later », sans Samba ni LuaJIT, sans `--enable-nonfree`), reportée dans le podspec ; garde `mobile.yml` qui refuse un podspec GPL dès le cran test (TestFlight = App Store) ; lecture vérifiée au simulateur (7 codecs) |
 | Dépendances de MPVKit (libplacebo, GnuTLS, Nettle, GMP, FriBidi, libbluray, uchardet, libass, FreeType, HarfBuzz, lcms2, dav1d, uavs3d, libdovi, MoltenVK, shaderc, OpenSSL…) | LGPL / permissives | 🛠 listées avec mentions (crédit FreeType) dans l'écran Licences |
 | Module `mpv-player` (dérivé de Streamyfin) | MPL-2.0 | ✅ en-têtes ; ⚠️ 5 fichiers propres sans en-tête, podspec `MpvPlayer` en « MPL-2.0 » seul |
 | React Native, Expo, Hermes, folly, boost, glog, SDWebImage, libwebp, libavif… | MIT / Apache / BSL / BSD | 🛠 listés |
@@ -54,9 +54,9 @@ est celle de VLC, de Streamyfin et d'Infuse ; elle n'a pas été tranchée par u
 
 | Composant | Licence | État |
 |---|---|---|
-| libmpv-android 1.0.0 (mpv GPL-2+, FFmpeg n8.1 `--enable-gpl --enable-version3`) — le POM dit « MIT » : licence des scripts | **GPL-3.0-or-later** | ✅ compatible AGPL (§13) ; 🛠 texte GPL-3 et source dans l'app |
-| Décodeur FFmpeg de Jellyfin pour Media3 1.9.0+1 | GPL-3.0 | idem |
-| **Firebase Messaging + Play services** (propriétaires) dans le MÊME APK que le GPL | propriétaire | **⚠️ risque** : la GPL de mpv / FFmpeg n'autorise pas la combinaison avec une bibliothèque non libre embarquée (pas une « System Library »). Damien ne peut excepter que son propre code (fait : `LICENSE-EXCEPTIONS` §2). **⚖️ juriste.** Correctif propre : libmpv-android reconstruit en LGPL + `decoder_ffmpeg` d'androidx (LGPL/Apache) — voir §7 |
+| libmpv-android 1.0.0 — livré en 1.10.x : mpv GPL-2+, FFmpeg `--enable-gpl --enable-version3` (le POM dit « MIT » : licence des scripts) | GPL-3.0-or-later | 🛠 reconstruit en LGPL (mpv `-Dgpl=false`, FFmpeg sans `--enable-gpl`) : `android/maven-local`, `app.tentacletv:libmpv-lgpl` |
+| Décodeur FFmpeg de Jellyfin pour Media3 1.9.0+1 | GPL-3.0 | 🛠 remplacé par `decoder_ffmpeg` d'androidx/media 1.9.0 construit avec un FFmpeg LGPL (mêmes classes, points d'entrée JNI et décodeurs) |
+| **Firebase Messaging + Play services** (propriétaires) | propriétaire | ✅ ne côtoie plus aucun GPL ; le code de Tentacle s'y lie par `LICENSE-EXCEPTIONS` §2 ; garde `check-android-player-license.mjs` dans `mobile.yml` |
 | Media3 / ExoPlayer, Fresco, React Native, Expo | Apache / MIT | 🛠 listés |
 
 ### Apple TV (App Store) — `apps/tv`
@@ -130,7 +130,7 @@ vers Google, RGPD) — servir les woff2 locaux.
 | LGPL-2.1 / LGPL-3 | FFmpeg, mpv (LGPL), libplacebo, GnuTLS, PrismCore… | ✅ compatibles |
 | Apache-2.0 | Media3, MoltenVK, OpenSSL 3, Prisma, hls.js, folly | ✅ compatible GPL-3/AGPL-3 (pas GPL-2 : sans objet ici) |
 | MPL-2.0 | Streamyfin (module mpv-player), cacert.pem | ✅ fichiers restés MPL, sans clause « Incompatible With Secondary Licenses » |
-| **Propriétaire** | Firebase / Play services (mobile Android) | ⚠️ voir Android ci-dessus |
+| **Propriétaire** | Firebase / Play services (mobile Android) | ✅ plus aucun GPL dans le même APK (lecteurs du mobile reconstruits en LGPL) |
 
 ## 4. Les extensions (plugins) et Vigie
 
@@ -141,11 +141,14 @@ FSF, extension + serveur forment une œuvre combinée. **Décision : pas d'excep
 extension tierce doit donc être sous une licence COMPATIBLE avec l'AGPL : MIT, Apache-2.0,
 BSD, GPL-3, AGPL-3… — seules les extensions propriétaires sont exclues.
 
-**Vigie** (dépôt Tentacle-Plugin-Seer) est public **sans aucune licence**, donc « tous
-droits réservés » par défaut. Damien en étant l'auteur, rien n'est enfreint ; mais pour
-la cohérence et pour que des tiers puissent le redistribuer avec le serveur, **proposition :
-le passer en AGPL-3.0-or-later** (même `LICENSE-EXCEPTIONS` si une partie tourne dans les
-apps des boutiques). Rien n'a été modifié dans ce dépôt.
+**Vigie** (dépôt Tentacle-Plugin-Seer) n'avait **aucun fichier de licence** (GitHub n'en
+détecte pas) ; seul son README disait « MIT ». Damien en étant l'auteur, rien n'était
+enfreint ; pour la cohérence et pour que des tiers puissent le redistribuer avec le
+serveur, **décision : le passer en AGPL-3.0-or-later** (même `LICENSE-EXCEPTIONS` si une partie tourne dans les
+apps des boutiques). **Fait** dans son dépôt, commit LOCAL `da038ab` sur la branche
+`licence/agpl` (worktree `.claude/worktrees/vigie-licence`), non poussé : `LICENSE`,
+`LICENSE-EXCEPTIONS` adapté (le terme de marque couvre aussi « Vigie »), `package.json`,
+README. Les versions jusqu'à la v1.24.0 restent MIT (le README les déclarait MIT).
 
 ## 5. Jellyfin
 
@@ -167,19 +170,23 @@ protégerait mieux la faculté d'accorder les permissions de `LICENSE-EXCEPTIONS
 
 ## 7. Restes
 
-1. **iOS** : publier la Release `mpvkit-lgpl-0.41.0-av5` — le `mpvkit.yml` de `main` ne
-   peut pas réussir (garde déclenchée À RAISON par libsmbclient / LuaJIT emballés) :
-   fusionner les commits `mpvkit.yml` de cette branche sur `main`, relancer, reporter
-   URL + sha256 + `license` dans `apps/mobile/ios/MPVKit.podspec`. La garde de
-   `mobile.yml` bloque iOS au cran test/store jusque-là.
-2. **Android** : libmpv-android en LGPL (mpv `-Dgpl=false`, FFmpeg sans `--enable-gpl`,
-   `--enable-version3` pour mbedTLS) + `decoder_ffmpeg` construit depuis androidx/media,
-   publiés par une Release du dépôt — sinon le GPL côtoie Firebase dans l'APK.
-3. **Windows** : construire `libmpv-2.dll` soi-même à tags épinglés, ou archiver la
-   source exacte ; tant que ce n'est pas fait, la LGPL n'est pas tenue (source introuvable).
-4. **Sources** : à chaque Release (`desktop-v*`, `server-v*`, `mobile-v*`, `tv-v*`), une
-   archive des sources des composants (L)GPL embarqués + manifeste des versions (Homebrew,
-   apt, Alpine). Y compris pour les images serveur et les apps déjà publiées.
+1. **iOS** : fait (Release `mpvkit-lgpl-0.41.0-av5`, podspec, lecture au simulateur).
+   Reste : le plantage AV1 de mpv, PRÉEXISTANT (même signature avec le binaire GPL
+   livré), suivi à part ; un essai sur un vrai iPhone avant le cran store.
+2. **Android** : fait — libmpv-android et le décodeur Media3 en LGPL dans
+   `apps/mobile/android/maven-local` (construits sur un Mac, recette dans son README).
+   Reste : un essai de lecture sur un vrai appareil Android avant le cran store
+   (l'émulateur du banc était hors service).
+3. **Windows** : source de `libmpv-2.dll` documentée et miroitée (mpv `f28cea85c`, FFmpeg
+   `aa483bc42`, recettes `198a40e` / `965bf378`, offre `sources-desktop-*`) ; restent les
+   révisions des autres bibliothèques LGPL liées dans la DLL, introuvables : reconstruire
+   la DLL à révisions épinglées avant la prochaine livraison Windows (le bureau attend).
+4. **Sources** : fait — `sources.yml`, appelé par mobile, tv, desktop et server aux crans
+   test et store, publie la pré-version `sources-<tag>` (code de Tentacle au commit livré +
+   archives amont des composants (L)GPL, liste dans `.github/scripts/lib/source-offer.mjs`).
+   Reste : le relancer à la main pour les livraisons DÉJÀ publiées (server-v1.23.0 et son
+   ffmpeg GPL d'Alpine, desktop-v1.26.0, mobile-v1.10.x, tv-v1.10.x) ; manifeste des
+   versions Homebrew / apt réellement embarquées par le bureau.
 5. **Mac App Store** : fait sur cette branche (`scripts/macosLicenses.mjs`) — à vérifier
    dans le prochain `.pkg` (`Contents/Resources/licenses`).
 6. **Boutiques** : CLUF personnalisé (App Store Connect, Partner Center) qui réserve les

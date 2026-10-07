@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>app.tentacletv</groupId>
+  <artifactId>libmpv-lgpl</artifactId>
+  <version>1.0.0</version>
+  <packaging>aar</packaging>
+  <name>libmpv-android 1.0.0, LGPL build for Tentacle TV</name>
+  <description>jarnedemeulemeester/libmpv-android v1.0.0 rebuilt with mpv -Dgpl=false and FFmpeg 8.1 without --enable-gpl (--enable-version3 for mbedTLS). Same Java package (dev.jdtech.mpv) and JNI bridge as the original.</description>
+  <licenses>
+    <license><name>LGPL-3.0-or-later</name><url>https://www.gnu.org/licenses/lgpl-3.0.html</url><comments>mpv (LGPL-2.1-or-later) and FFmpeg (LGPL-3.0-or-later)</comments></license>
+    <license><name>MIT</name><url>https://opensource.org/license/mit</url><comments>libmpv-android JNI bridge and Java classes</comments></license>
+  </licenses>
+  <dependencies>
+    <dependency><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-stdlib</artifactId><version>2.2.10</version><scope>compile</scope></dependency>
+  </dependencies>
+</project>

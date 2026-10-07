@@ -182,8 +182,11 @@ dependencies {
     // Décodeurs audio FFmpeg pour ExoPlayer (Media3 1.9) : DTS, TrueHD, MLP,
     // ALAC, PCM… — chargé par réflexion (FfmpegAudioRenderer) quand
     // react-native-video demande EXTENSION_RENDERER_MODE_PREFER (patch pnpm).
-    // Maven Central ; ~1,4 Mio par ABI ; GPL v3 (voir THIRD-PARTY-LICENSES.md).
-    implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.9.0+1")
+    // Le module decoder_ffmpeg d'androidx/media 1.9.0, construit avec un FFmpeg
+    // LGPL (maven-local/README.md) — mêmes classes, mêmes points d'entrée JNI,
+    // mêmes décodeurs que l'AAR GPL v3 de Jellyfin qu'il remplace : Firebase
+    // étant dans l'APK, aucun composant GPL ne peut y entrer.
+    implementation("app.tentacletv:media3-decoder-ffmpeg:1.9.0")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

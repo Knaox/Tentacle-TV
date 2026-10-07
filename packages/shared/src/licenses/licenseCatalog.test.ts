@@ -39,8 +39,8 @@ describe("catalogue des composants", () => {
     }
   });
 
-  it("aucun composant GPL sur l'App Store (iPhone, Apple TV)", () => {
-    for (const platform of ["ios", "tvos"] as const) {
+  it("aucun composant GPL sur l'App Store (iPhone, Apple TV), ni sur le mobile Android (Firebase)", () => {
+    for (const platform of ["ios", "tvos", "android"] as const) {
       for (const c of componentsFor(platform)) {
         expect(/(^|[^L])GPL/.test(c.license.replace(/LGPL/g, "")), `${platform} : ${c.name} (${c.license})`).toBe(false);
       }

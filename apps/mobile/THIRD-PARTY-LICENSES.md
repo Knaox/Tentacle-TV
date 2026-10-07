@@ -53,19 +53,26 @@ partagée. Le code complet de l'application est public, chaque version soumise t
 tag de chaque version soumise reste public ; ce fichier et l'écran Licences restent à
 jour ; seule la variante LGPL part vers TestFlight et l'App Store (garde CI).
 
-### Android — libmpv-android et le décodeur FFmpeg de Jellyfin
+### Android — libmpv-android et le décodeur FFmpeg de Media3, en LGPL
+
+L'APK embarque Firebase / Google Play services (notifications), **propriétaires** : la GPL
+de mpv et de FFmpeg n'admet pas d'y être combinée. Jusqu'en 1.10.x, l'APK réunissait
+pourtant libmpv-android (GPL v3) et le décodeur de Jellyfin (GPL v3) avec Firebase —
+**non conforme**. Depuis 1.11.0, les deux lecteurs sont reconstruits SANS composant GPL et
+servis par `android/maven-local` (recette : `android/maven-local/README.md`) ; la garde
+`check-android-player-license.mjs` (`mobile.yml`, crans test et store) refuse tout retour
+d'un artefact GPL à côté de Firebase.
 
 | Composant | Version | Licence | Source |
 |-----------|---------|---------|--------|
-| libmpv-android `dev.jdtech.mpv:libmpv` : mpv 0.41.0 (GPL-2+), FFmpeg n8.1 (`--enable-gpl --enable-version3`), libass 0.17.4, libplacebo 7.360.1, FreeType 2.14.3, HarfBuzz 14.1.0, FriBidi 1.0.16, fontconfig 2.17.1, libunibreak 6.1, libxml2 2.15.2, Lua 5.2.4, mbedTLS 3.6.6 (Apache-2.0), dav1d 1.5.3 — le POM dit « MIT » : licence des scripts | 1.0.0 | **GPL-3.0-or-later** | https://github.com/jarnedemeulemeester/libmpv-android |
-| `org.jellyfin.media3:media3-ffmpeg-decoder` (décodeurs audio ; son FFmpeg 6.0 est LGPL-2.1+) | 1.9.0+1 | **GPL-3.0** | https://github.com/jellyfin/jellyfin-androidx-media |
+| libmpv-android, construction LGPL (`app.tentacletv:libmpv-lgpl`) : mpv 0.41.0 `-Dgpl=false`, FFmpeg n8.1 `--enable-version3` sans `--enable-gpl`, libass 0.17.4, libplacebo 7.360.1, FreeType 2.14.3, HarfBuzz 14.1.0, FriBidi 1.0.16, fontconfig 2.17.1, libunibreak 6.1, libxml2 2.15.2, Lua 5.2.4, mbedTLS 3.6.6 (Apache-2.0), dav1d 1.5.3 ; pont JNI MIT | 1.0.0 | **LGPL-3.0-or-later** | https://github.com/jarnedemeulemeester/libmpv-android |
+| Décodeur FFmpeg de Media3, construction LGPL (`app.tentacletv:media3-decoder-ffmpeg`) : `decoder_ffmpeg` d'androidx/media avec FFmpeg 6.0 sans `--enable-gpl`, décodeurs audio seulement | 1.9.0 | **Apache-2.0 + LGPL-2.1-or-later** | https://github.com/androidx/media |
 | Media3 / ExoPlayer | 1.9.0 | Apache-2.0 | https://github.com/androidx/media |
 | Firebase Cloud Messaging + Google Play services (notifications) | 24.0.1 | Apache-2.0 / **propriétaire** (Android SDK License) | — |
 
-Les composants GPL v3 sont compatibles avec l'AGPL v3 (section 13). **⚠️ Point ouvert :**
-Firebase / Play services (propriétaires) sont dans le MÊME APK que le GPL de mpv et
-FFmpeg ; `LICENSE-EXCEPTIONS` ne peut excepter que le code de Tentacle. Correctif propre :
-libmpv-android reconstruit en LGPL et `decoder_ffmpeg` d'androidx (voir `docs/LICENCES.md`).
+Le code de Tentacle se lie à Firebase par la permission de `LICENSE-EXCEPTIONS` §2 ; les
+composants LGPL l'admettent (bibliothèques remplaçables : AAR et `.so` séparés, sources
+publiées).
 
 ### Certificats racine
 

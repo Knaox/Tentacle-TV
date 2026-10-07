@@ -1,0 +1,66 @@
+# L'offre de sources d'une livraison : le code de Tentacle TV au commit livré
+# et les sources des composants GPL / LGPL embarqués (miroitées, pas un simple
+# lien), dans une Release « sources-<tag> » — une PRÉ-VERSION à part, qui ne
+# touche ni la Release de l'application, ni « latest », ni les manifestes.
+# Liste des composants : .github/scripts/lib/source-offer.mjs.
+#
+# Appelé par mobile.yml, tv.yml, desktop.yml et server.yml aux crans test et
+# store, en parallèle de la livraison (rien n'attend ce job). Relançable à la
+# main pour une livraison passée.
+name: Offre de sources
+
+on:
+  workflow_call:
+    inputs:
+      app: { type: string, required: true }
+      tag: { type: string, required: true }
+      sha: { type: string, required: true }
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "mobile | tv | desktop | server"
+        required: true
+      tag:
+        description: "Tag de la livraison (ex. mobile-v1.11.0)"
+        required: true
+      sha:
+        description: "Commit livré"
+        required: true
+
+jobs:
+  sources:
+    name: Sources ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Rassembler les sources
+        env:
+          APP: ${{ inputs.app }}
+          TAG: ${{ inputs.tag }}
+          SHA: ${{ inputs.sha }}
+        run: node .github/scripts/source-offer.mjs "$APP" "$TAG" "$SHA" out
+
+      - name: Release sources-${{ inputs.tag }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          REL="sources-$TAG"
+          if gh release view "$REL" >/dev/null 2>&1; then
+            gh release upload "$REL" "out/$TAG-sources.tar" out/SOURCES.md --clobber
+          else
+            gh release create "$REL" "out/$TAG-sources.tar" out/SOURCES.md \
+              --target "$SHA" --prerelease --title "Sources — $TAG" --notes-file out/SOURCES.md
+          fi

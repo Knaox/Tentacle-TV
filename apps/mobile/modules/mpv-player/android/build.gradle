@@ -32,6 +32,10 @@ android {
 }
 
 dependencies {
-  // libmpv 0.41 + FFmpeg 8.1 (GPL) + libass + libplacebo + dav1d, Maven Central.
-  implementation 'dev.jdtech.mpv:libmpv:1.0.0'
+  // libmpv 0.41 + FFmpeg 8.1 + libass + libplacebo + dav1d.
+  // libmpv-android 1.0.0 reconstruit en LGPL (mpv -Dgpl=false, FFmpeg sans
+  // --enable-gpl) : Firebase étant dans l'APK, le GPL de l'original n'y entre
+  // pas. Mêmes classes (dev.jdtech.mpv) et même pont JNI ; dépôt Maven local de
+  // l'app (android/maven-local/README.md).
+  implementation 'app.tentacletv:libmpv-lgpl:1.0.0'
 }
