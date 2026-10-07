@@ -6,9 +6,12 @@ import { colors, white } from "../theme/tokens";
 import { useGlassRendering } from "./liquidGlassMode";
 import { NativeGlassView } from "./nativeGlass";
 import { effectOff } from "../render/measuredEffects";
+import { RENDER } from "../render/renderProfile";
 
 // Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
 const GLASS_OFF = effectOff("glass");
+/** Profil Lite (`glass: "flat"`) : un aplat de la même teinte et un bord fin, une seule vue. */
+const FLAT = RENDER.glass === "flat";
 
 /**
  * LA surface de verre de la refonte — une seule brique, un contrat stable.
@@ -21,6 +24,9 @@ const GLASS_OFF = effectOff("glass");
  *   de l'œuvre, un reflet spéculaire en haut, un bord allumé.
  * - Liquid Glass coupé : le verre ENRICHI du bureau (`--glass-tint`) — plus
  *   dense, liseré, reflet. Jamais une surface opaque nue.
+ *
+ * Profil Lite (`glass: "flat"`) : le voile seul, de la même teinte, et un
+ * bord fin — ni reflet dégradé ni liseré allumé (une vue au lieu de quatre).
  *
  * `tone` règle la densité : `regular` (navigation, panneaux), `strong`
  * (feuilles, menus lus longtemps), `clear` (boutons posés sur une image).
@@ -71,13 +77,21 @@ export const GlassSurface = memo(function GlassSurface({
       ) : null}
       {rendering === "native" && NativeGlassView ? (
         <NativeGlassView radius={radius} tone={tone} style={StyleSheet.absoluteFill} />
-      ) : GLASS_OFF ? null : (
+      ) : GLASS_OFF ? null : FLAT ? (
+        <FlatGlass radius={radius} tone={tone} liquid={rendering === "simulated"} />
+      ) : (
         <SimulatedGlass radius={radius} tone={tone} liquid={rendering === "simulated"} />
       )}
       {children}
     </View>
   );
 });
+
+/** Le verre du Lite : l'aplat du voile et son bord, sans reflet. */
+function FlatGlass({ radius, tone, liquid }: { radius: number; tone: GlassTone; liquid: boolean }) {
+  const fill = (liquid ? LIQUID_FILL : ENRICHED_FILL)[tone];
+  return <View style={[StyleSheet.absoluteFill, styles.flat, { borderRadius: radius, backgroundColor: fill }]} />;
+}
 
 /** Le verre dessiné : un voile, un reflet, un bord — pour tvOS < 26 et le
  *  verre enrichi. */
@@ -113,6 +127,7 @@ function SimulatedGlass({ radius, tone, liquid }: { radius: number; tone: GlassT
 
 const styles = StyleSheet.create({
   clip: { overflow: "hidden" },
+  flat: { borderWidth: 1, borderColor: white(0.12) },
   elevated: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 24 },

@@ -7,18 +7,22 @@
  *
  * La « distance » d'un arrêt est sa distance au premier, en RGBA (0 à 1 par
  * canal), rapportée à celle du dernier. Un dégradé qui revient à sa couleur
- * de départ, ou une couleur illisible : l'original, tel quel.
+ * de départ, ou une couleur illisible (un nombre, un nom) : l'original, tel quel.
  */
 
-export interface GradientStops {
-  colors: readonly string[];
+/** Une couleur écrite (chaîne) ; un nombre (couleur déjà convertie) n'est pas lu. */
+export type GradientColor = string | number;
+
+export interface GradientStops<C extends GradientColor = GradientColor> {
+  colors: readonly C[];
   locations?: readonly number[];
 }
 
 type Rgba = [number, number, number, number];
 
 /** `#rgb`, `#rrggbb`, `#rrggbbaa`, `rgb(…)`, `rgba(…)` → RGBA de 0 à 1 ; sinon `null`. */
-export function parseGradientColor(color: string): Rgba | null {
+export function parseGradientColor(color: GradientColor): Rgba | null {
+  if (typeof color !== "string") return null;
   const c = color.trim();
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(c);
   if (hex) {
@@ -44,7 +48,7 @@ function crossing(progress: readonly number[], locations: readonly number[], fra
   return locations[locations.length - 1];
 }
 
-export function twoStopGradient({ colors, locations }: GradientStops): GradientStops {
+export function twoStopGradient<C extends GradientColor>({ colors, locations }: GradientStops<C>): GradientStops<C> {
   if (colors.length <= 2) return { colors, locations };
   const parsed = colors.map(parseGradientColor);
   if (parsed.some((c) => c === null)) return { colors, locations };
