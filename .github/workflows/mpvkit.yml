@@ -61,7 +61,7 @@ jobs:
         working-directory: MPVKit
         run: |
           F=Sources/BuildScripts/XCFrameworkBuild/main.swift
-          sed -i '' 's/"--enable-nonfree", //' "$F"
+          sed -i '' 's/ *"--enable-nonfree",//' "$F"
           if grep -n 'enable-nonfree' "$F"; then
             echo "::error::--enable-nonfree subsiste dans $F"; exit 1
           fi
