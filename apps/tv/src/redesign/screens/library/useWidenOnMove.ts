@@ -1,4 +1,4 @@
-import { useCallback, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { FlashList } from "@shopify/flash-list";
 import { mountProfile } from "../../render/mountProfile";
 
@@ -9,6 +9,8 @@ import { mountProfile } from "../../render/mountProfile";
  * peine, puis, quand le focus descend, la grille garde une ligne entière
  * d'avance — BAS tenu trouve toujours la suivante montée. Au niveau normal
  * (les deux distances égales), le gestionnaire du câblage, tel quel.
+ * L'avance s'élargit PAR PAS (`gridWidenStep` par image, une demi-ligne) :
+ * jamais deux lignes montées dans la même image.
  * L'index des cartes se lit par référence : une page de plus ne redessine
  * pas la grille.
  */
@@ -18,20 +20,32 @@ export function useWidenOnMove<T, C>(
   columns: number,
   onFocusCard: ((card: C) => void) | undefined,
 ): ((card: C) => void) | undefined {
-  const { gridDrawDistance, gridActiveDrawDistance } = mountProfile();
+  const { gridDrawDistance, gridActiveDrawDistance, gridWidenStep } = mountProfile();
   const latest = useRef({ cards, columns, onFocusCard });
   latest.current = { cards, columns, onFocusCard };
+  const frame = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  }, []);
   const widen = useCallback(
     (card: C) => {
       const { cards: current, columns: perLine, onFocusCard: forward } = latest.current;
-      if (current.indexOf(card) >= perLine) {
-        const recycler = list.current?.recyclerlistview_unsafe;
-        // `updateRenderAheadOffset` : l'avance de RecyclerListView, sous FlashList (1.x).
-        if (recycler && recycler.getCurrentRenderAheadOffset() < gridActiveDrawDistance) recycler.updateRenderAheadOffset(gridActiveDrawDistance);
+      if (frame.current === null && current.indexOf(card) >= perLine) {
+        const step = () => {
+          frame.current = null;
+          // `updateRenderAheadOffset` : l'avance de RecyclerListView, sous FlashList (1.x).
+          const recycler = list.current?.recyclerlistview_unsafe;
+          if (!recycler) return;
+          const ahead = recycler.getCurrentRenderAheadOffset();
+          if (ahead >= gridActiveDrawDistance) return;
+          recycler.updateRenderAheadOffset(Math.min(gridActiveDrawDistance, ahead + gridWidenStep));
+          frame.current = requestAnimationFrame(step);
+        };
+        step();
       }
       forward?.(card);
     },
-    [list, gridActiveDrawDistance],
+    [list, gridActiveDrawDistance, gridWidenStep],
   );
   return gridActiveDrawDistance > gridDrawDistance ? widen : onFocusCard;
 }

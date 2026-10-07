@@ -32,8 +32,8 @@ export interface MountProfile {
   /** Les queues des rangées échelonnées : montées en fond (`eager`), ou
    *  seulement quand la rangée est parcourue (`demanded`, `rowStaging`). */
   rowTails: StagingTails;
-  /** La tête d'une rangée ajustée à ce qu'un écran en montre, et la carte
-   *  suivante (`rowHeadCards`) : 6 vignettes 16:9 au lieu de 8. */
+  /** La tête d'une rangée ajustée à ce qu'un écran en montre
+   *  (`rowHeadCards`) : 5 vignettes 16:9 ou 7 affiches au lieu de 8. */
   fitRowHeads: boolean;
   /** Une rangée sortie de l'écran, ramenée au début (`rowRewindPort`),
    *  revient aussi à sa TÊTE : sa queue se démonte, et se remontera si on la
@@ -54,6 +54,8 @@ export interface MountProfile {
    *  moins `gridDrawDistance`) : l'ouverture monte peu, le parcours garde la
    *  ligne suivante montée. */
   gridActiveDrawDistance: number;
+  /** Le pas de cet élargissement, en points par image. */
+  gridWidenStep: number;
   /** La fenêtre de la liste des épisodes d'une saison. */
   episodes: ListWindow;
 }
@@ -68,6 +70,7 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     // Deux lignes d'avance de chaque côté (une ligne de six affiches : ~494 points).
     gridDrawDistance: 1100,
     gridActiveDrawDistance: 1100,
+    gridWidenStep: 1100,
     // Les valeurs de React Native pour le lot (10) : celles d'avant.
     episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
   },
@@ -77,13 +80,15 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     retireOffscreenRows: true,
     stageSearchRows: true,
     recycleSearchCards: true,
-    // L'ouverture : l'écran et ce qui affleure (FlashList s'étend d'abord au
-    // triple : 450 points — la troisième ligne, pas la quatrième).
-    gridDrawDistance: 150,
+    // L'ouverture : l'écran seul (à 0, FlashList ne s'étend pas au triple) —
+    // la première ligne et le haut de la deuxième.
+    gridDrawDistance: 0,
     // Le parcours : une ligne d'avance et son écart (437 à 494 points selon
     // les colonnes) — celle que BAS rejoint est montée, même avant que la
     // page ne défile vers la ligne focalisée.
     gridActiveDrawDistance: 600,
+    // Une demi-ligne par image : ~3 affiches.
+    gridWidenStep: 200,
     // Un écran de vignettes (≈ 3,4) et la suivante ; un écran de chaque côté.
     episodes: { initialNumToRender: 4, windowSize: 3, maxToRenderPerBatch: 2 },
   },

@@ -58,9 +58,9 @@ describe("le montage échelonné des rangées", () => {
       expect(play(rows, "demanded")).toEqual(["0:10", "0:12", "1:2", "1:4"]);
     });
 
-    it("ajuste la tête d'une rangée à l'écran et à la carte suivante", () => {
-      expect(rowHeadCards(1744, 380 + 36)).toBe(6);
-      expect(rowHeadCards(1744, 240 + 36)).toBe(8);
+    it("ajuste la tête d'une rangée à ce que l'écran en montre", () => {
+      expect(rowHeadCards(1744, 380 + 36)).toBe(5);
+      expect(rowHeadCards(1744, 240 + 36)).toBe(7);
       expect(rowHeadCards(1744, 100)).toBe(ROW_STAGING.headCards);
       expect(rowHeadCards(0, 416)).toBe(ROW_STAGING.headCards);
       const rows: StagedRow[] = [

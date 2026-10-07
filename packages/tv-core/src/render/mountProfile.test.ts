@@ -11,6 +11,7 @@ describe("le profil de montage", () => {
       recycleSearchCards: false,
       gridDrawDistance: 1100,
       gridActiveDrawDistance: 1100,
+      gridWidenStep: 1100,
       episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
     });
   });
@@ -33,5 +34,7 @@ describe("le profil de montage", () => {
     const lite = mountProfileOf("lite");
     expect(lite.gridActiveDrawDistance).toBeGreaterThanOrEqual(494 + 52);
     expect(lite.gridDrawDistance).toBeLessThan(lite.gridActiveDrawDistance);
+    // Jamais plus d'une ligne montée dans la même image.
+    expect(lite.gridWidenStep).toBeLessThan(437);
   });
 });

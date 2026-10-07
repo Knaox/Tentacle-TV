@@ -89,14 +89,16 @@ export function headRelease(total: number, head: number = ROW_STAGING.headCards)
 
 /**
  * La tête AJUSTÉE d'une rangée (mode Lite, `fitRowHeads`) : les cartes qu'un
- * écran montre (`viewWidth` points de piste, une carte tous les `stride`), et
- * la suivante — jamais plus que `ROW_STAGING.headCards`. Une rangée de
- * vignettes 16:9 (380 + 36 points, 1 744 de piste) en montre 5 : sa tête en
- * fait 6 ; une rangée d'affiches (240 + 36) en montre 7 : 8.
+ * écran montre, même en partie (`viewWidth` points de piste, une carte tous
+ * les `stride`) — jamais plus que `ROW_STAGING.headCards`. La suivante n'est
+ * pas d'avance : le premier pas à droite fait monter la queue (`demanded`),
+ * deux cartes par image, bien avant que la rangée ne défile. Une rangée de
+ * vignettes 16:9 (380 + 36 points, 1 744 de piste) en montre 5 ; une rangée
+ * d'affiches (240 + 36), 7.
  */
 export function rowHeadCards(viewWidth: number, stride: number): number {
   if (!(stride > 0) || !(viewWidth > 0)) return ROW_STAGING.headCards;
-  return Math.min(ROW_STAGING.headCards, Math.ceil(viewWidth / stride) + 1);
+  return Math.min(ROW_STAGING.headCards, Math.ceil(viewWidth / stride));
 }
 
 /** Ce qu'une rangée monte à son arrivée dans la page. */
