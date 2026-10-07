@@ -39,11 +39,11 @@ beforeEach(() => {
 });
 
 describe("routes de l'accès à distance", () => {
-  it("GET : l'état, les réglages par défaut et le lien public des Services", async () => {
+  it("GET : l'état, les réglages par défaut et le lien public réglé (publié, donc « enabled »)", async () => {
     const res = await (await app()).inject({ method: "GET", url: "/remote-access" });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({
-      settings: { enabled: false, proxy: "none", localUrl: null, routerId: null },
+      settings: { enabled: true, proxy: "none", localUrl: null, routerId: null },
       publicUrl: "https://tv.example.com",
       checkServiceUrl: "https://check.tentacletv.app",
       lastCheck: null,
@@ -58,6 +58,13 @@ describe("routes de l'accès à distance", () => {
     await server.inject({ method: "PUT", url: "/remote-access", payload: { localUrl: "" } });
     expect(h.config.has("remote_access_local_url")).toBe(false);
     expect(h.config.get("remote_access_proxy")).toBe("caddy");
+  });
+
+  it("PUT : l'ancien interrupteur est accepté mais ignoré — ce qui est réglé reste publié", async () => {
+    const res = await (await app()).inject({ method: "PUT", url: "/remote-access", payload: { enabled: false } });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().settings.enabled).toBe(true);
+    expect(h.config.has("remote_access_enabled")).toBe(false);
   });
 
   it.each([

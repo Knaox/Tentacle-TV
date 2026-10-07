@@ -35,18 +35,15 @@ export function derivedPrivateUrl(view: PairingRequestView): string | null {
 }
 
 /**
- * L'adresse que reçoit la TV au jumelage, dans l'ordre :
- *  - accès extérieur ALLUMÉ : le lien public, sinon l'adresse privée réglée ;
- *  - COUPÉ : l'adresse privée réglée, sinon le lien réglé (comme avant) ;
- *  - rien de réglé : l'adresse par laquelle ce client du réseau local nous
- *    joint. Un serveur joignable à la maison n'est jamais « sans adresse ».
+ * L'adresse que reçoit la TV au jumelage, dans l'ordre : le lien public
+ * réglé (comme en 1.23.0), sinon l'adresse privée réglée, sinon celle par
+ * laquelle ce client du réseau local nous joint. Un serveur joignable à la
+ * maison n'est jamais « sans adresse ».
  */
 export function choosePairingUrl(input: {
-  exposed: boolean;
   publicUrl: string | null;
   localUrl: string | null;
   view?: PairingRequestView;
 }): string | null {
-  const configured = input.exposed ? (input.publicUrl ?? input.localUrl) : (input.localUrl ?? input.publicUrl);
-  return configured ?? (input.view ? derivedPrivateUrl(input.view) : null);
+  return input.publicUrl ?? input.localUrl ?? (input.view ? derivedPrivateUrl(input.view) : null);
 }

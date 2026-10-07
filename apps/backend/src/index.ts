@@ -17,7 +17,6 @@ import { initPrisma, hasDatabaseUrl, getDatabaseUrl, getDatabaseUrlSource, recon
 import { ensureDatabaseSchema } from "./services/schemaInit/ensureSchema";
 import { applyPairingEpoch } from "./services/pairingEpoch";
 import { applyAudioAnalysisDefault } from "./services/audioAnalysisDefault";
-import { applyExposureDefault } from "./remoteAccess/exposureDefault";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
 
@@ -346,8 +345,6 @@ async function main() {
       await applyPairingEpoch();
       // L'analyse audio des passages, coupée une fois sur les serveurs d'avant.
       await applyAudioAnalysisDefault();
-      // « Accès depuis l'extérieur » allumé une fois pour qui publiait déjà un lien.
-      await applyExposureDefault();
     } else {
       console.warn("[DB] All connection attempts failed — entering setup mode");
     }

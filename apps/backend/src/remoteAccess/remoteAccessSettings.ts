@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { deleteConfigValue, getConfigValue, setConfigValue } from "../services/configStore";
+import { deleteConfigValue, getConfigValue, getDirectStreamingConfig, getPublicUrl, setConfigValue } from "../services/configStore";
 import type { RemoteAccessSettings, RemoteAccessSettingsPatch, RemoteCheckReport, ReverseProxyKind } from "./remoteAccessContract";
 
 /**
@@ -8,7 +8,6 @@ import type { RemoteAccessSettings, RemoteAccessSettingsPatch, RemoteCheckReport
  * montre encore au retour, sans relancer de test.
  */
 const KEYS = {
-  enabled: "remote_access_enabled",
   proxy: "remote_access_proxy",
   localUrl: "remote_access_local_url",
   routerId: "remote_access_router",
@@ -17,10 +16,17 @@ const KEYS = {
 
 const PROXIES: readonly ReverseProxyKind[] = ["caddy", "traefik", "other", "none"];
 
+/**
+ * `enabled` n'est plus un réglage : il CONSTATE qu'une adresse publique est
+ * réglée (`exposure.ts` publie ce qui l'est). Gardé pour les pages
+ * d'administration qui le lisaient encore ; l'ancienne clé
+ * `remote_access_enabled` n'est plus lue.
+ */
 export function readRemoteAccessSettings(): RemoteAccessSettings {
   const proxy = getConfigValue(KEYS.proxy) as ReverseProxyKind | undefined;
+  const direct = getDirectStreamingConfig();
   return {
-    enabled: getConfigValue(KEYS.enabled) === "true",
+    enabled: getPublicUrl() !== null || (direct.enabled && !!direct.publicUrl),
     proxy: proxy && PROXIES.includes(proxy) ? proxy : "none",
     localUrl: getConfigValue(KEYS.localUrl) || null,
     routerId: getConfigValue(KEYS.routerId) || null,
@@ -32,8 +38,8 @@ async function writeOptional(key: string, value: string | null): Promise<void> {
   else await setConfigValue(key, value);
 }
 
+/** `enabled` est accepté (pages d'avant) mais ignoré : ce qui est réglé est publié. */
 export async function saveRemoteAccessSettings(patch: RemoteAccessSettingsPatch): Promise<RemoteAccessSettings> {
-  if (patch.enabled !== undefined) await setConfigValue(KEYS.enabled, patch.enabled ? "true" : "false");
   if (patch.proxy !== undefined) await setConfigValue(KEYS.proxy, patch.proxy);
   if (patch.localUrl !== undefined) await writeOptional(KEYS.localUrl, patch.localUrl);
   if (patch.routerId !== undefined) await writeOptional(KEYS.routerId, patch.routerId);

@@ -33,20 +33,14 @@ describe("l'adresse déduite de la requête d'un client du réseau local", () =>
 describe("l'adresse donnée à la TV au jumelage", () => {
   const view = lan("192.168.1.20:3000");
 
-  it("accès extérieur allumé : le lien public, sinon l'adresse privée réglée, sinon la déduite", () => {
-    expect(choosePairingUrl({ exposed: true, publicUrl: "https://tv.example.com", localUrl: "http://10.0.0.2:3000", view })).toBe("https://tv.example.com");
-    expect(choosePairingUrl({ exposed: true, publicUrl: null, localUrl: "http://10.0.0.2:3000", view })).toBe("http://10.0.0.2:3000");
-    expect(choosePairingUrl({ exposed: true, publicUrl: null, localUrl: null, view })).toBe("http://192.168.1.20:3000");
-  });
-
-  it("coupé : l'adresse privée réglée, sinon le lien réglé, sinon la déduite", () => {
-    expect(choosePairingUrl({ exposed: false, publicUrl: "https://tv.example.com", localUrl: "http://10.0.0.2:3000", view })).toBe("http://10.0.0.2:3000");
-    expect(choosePairingUrl({ exposed: false, publicUrl: "https://tv.example.com", localUrl: null, view })).toBe("https://tv.example.com");
-    expect(choosePairingUrl({ exposed: false, publicUrl: null, localUrl: null, view })).toBe("http://192.168.1.20:3000");
+  it("le lien public réglé d'abord (comme en 1.23.0), sinon l'adresse privée réglée, sinon la déduite", () => {
+    expect(choosePairingUrl({ publicUrl: "https://tv.example.com", localUrl: "http://10.0.0.2:3000", view })).toBe("https://tv.example.com");
+    expect(choosePairingUrl({ publicUrl: null, localUrl: "http://10.0.0.2:3000", view })).toBe("http://10.0.0.2:3000");
+    expect(choosePairingUrl({ publicUrl: null, localUrl: null, view })).toBe("http://192.168.1.20:3000");
   });
 
   it("rien de réglé ni de déductible : aucune adresse (le client se rabat sur la sienne)", () => {
-    expect(choosePairingUrl({ exposed: false, publicUrl: null, localUrl: null })).toBeNull();
-    expect(choosePairingUrl({ exposed: true, publicUrl: null, localUrl: null, view: lan("localhost:5173") })).toBeNull();
+    expect(choosePairingUrl({ publicUrl: null, localUrl: null })).toBeNull();
+    expect(choosePairingUrl({ publicUrl: null, localUrl: null, view: lan("localhost:5173") })).toBeNull();
   });
 });

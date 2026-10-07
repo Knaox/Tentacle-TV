@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   direct: { enabled: true, publicUrl: "https://jf.example.com" as string | null, privateUrl: "http://192.168.1.20:8096" as string | null },
-  exposed: "true" as string | undefined,
+  publicUrl: "https://tv.example.com" as string | null,
+  // L'interrupteur d'une 1.24.0 d'avant, laissé « coupé » en base : il ne compte plus.
+  legacySwitch: "false" as string | undefined,
 }));
 vi.mock("../services/configStore", () => ({
-  getConfigValue: (key: string) => (key === "remote_access_local_url" ? "http://192.168.1.20:3000" : key === "remote_access_enabled" ? h.exposed : undefined),
+  getConfigValue: (key: string) => (key === "remote_access_local_url" ? "http://192.168.1.20:3000" : key === "remote_access_enabled" ? h.legacySwitch : undefined),
   getDirectStreamingConfig: () => h.direct,
-  getPublicUrl: () => "https://tv.example.com",
+  getPublicUrl: () => h.publicUrl,
 }));
 
 import { directMediaBaseUrl, pairingUrl, publishedPublicUrl } from "./exposure";
@@ -15,7 +17,8 @@ import { serverAddresses } from "./serverAddresses";
 
 beforeEach(() => {
   h.direct = { enabled: true, publicUrl: "https://jf.example.com", privateUrl: "http://192.168.1.20:8096" };
-  h.exposed = "true";
+  h.publicUrl = "https://tv.example.com";
+  h.legacySwitch = "false";
 });
 
 describe("serverAddresses", () => {
@@ -35,26 +38,24 @@ describe("serverAddresses", () => {
     expect(serverAddresses(true)).toMatchObject({ local: { jellyfin: null }, public: { jellyfin: null } });
   });
 
-  it("« Accès depuis l'extérieur » coupé (ou jamais allumé) : rien de public — le local, lui, ne change pas", () => {
-    for (const off of ["false", undefined]) {
-      h.exposed = off;
-      expect(serverAddresses(true)).toEqual({
-        local: { tentacle: "http://192.168.1.20:3000", jellyfin: "http://192.168.1.20:8096" },
-        public: { tentacle: null, jellyfin: null },
-      });
-      expect(publishedPublicUrl()).toBeNull();
-      // Le jumelage d'une TV n'en souffre pas : l'adresse privée de ce serveur lui est donnée.
-      expect(pairingUrl()).toBe("http://192.168.1.20:3000");
+  it("ce qui est réglé est publié, comme en 1.23.0 — même avec l'ancien interrupteur « coupé » en base", () => {
+    for (const legacy of ["false", undefined, "true"]) {
+      h.legacySwitch = legacy;
+      expect(publishedPublicUrl()).toBe("https://tv.example.com");
+      expect(serverAddresses(false).public).toEqual({ tentacle: "https://tv.example.com", jellyfin: "https://jf.example.com" });
+      expect(pairingUrl()).toBe("https://tv.example.com");
     }
-    h.exposed = "true";
-    expect(pairingUrl()).toBe("https://tv.example.com");
+  });
+
+  it("sans lien public : rien de public, et le jumelage d'une TV prend l'adresse privée de ce serveur", () => {
+    h.publicUrl = null;
+    expect(serverAddresses(true).public.tentacle).toBeNull();
+    expect(pairingUrl()).toBe("http://192.168.1.20:3000");
   });
 
   it("le jumelage branché sur les réglages : la requête du client ne sert qu'à défaut", () => {
     const view = { clientIsPrivate: true, protocol: "http", host: "nas.local:3000" };
     expect(pairingUrl(view)).toBe("https://tv.example.com");
-    h.exposed = "false";
-    expect(pairingUrl(view)).toBe("http://192.168.1.20:3000");
   });
 });
 
@@ -70,10 +71,12 @@ describe("l'adresse de lecture directe donnée à un client", () => {
     expect(directMediaBaseUrl(false)).toBeNull();
   });
 
-  it("accès extérieur coupé : la publique n'est jamais donnée, la privée toujours", () => {
-    h.exposed = "false";
-    expect(directMediaBaseUrl(true)).toBe("http://192.168.1.20:8096");
-    expect(directMediaBaseUrl(false)).toBeNull();
+  it("les deux adresses de 1.23.0 donnent exactement ce que 1.23.0 donnait, quel que soit l'ancien interrupteur", () => {
+    for (const legacy of ["false", undefined]) {
+      h.legacySwitch = legacy;
+      expect(directMediaBaseUrl(true)).toBe("http://192.168.1.20:8096");
+      expect(directMediaBaseUrl(false)).toBe("https://jf.example.com");
+    }
   });
 
   it("sans adresse privée ou lecture directe coupée : personne ne lit en direct", () => {
