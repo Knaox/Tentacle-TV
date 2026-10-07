@@ -136,6 +136,9 @@ export * from "./remoteAccess/remoteVerdict";
 export * from "./remoteAccess/proxySnippets";
 export * from "./remoteAccess/routerGuides";
 export * from "./help/remoteAccessGuide";
+// L'adresse du serveur transmise à une TV au jumelage : l'annoncée, sinon celle
+// du client — jamais de lien public exigé.
+export * from "./pairing/pairingServerUrl";
 // La mise à jour du serveur Tentacle : le contrat de /api/admin/server-update
 // (miroir backend), ce que la carte du tableau de bord en dit (à jour,
 // conseillée, obligatoire) et la commande à copier — sans jamais parler à Docker.
