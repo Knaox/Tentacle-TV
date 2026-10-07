@@ -5,10 +5,11 @@ import { discoverJellyfins } from "../discovery/discover";
 import { hostInfo } from "../hostInfo";
 import { apiKeyWorks, authenticate, createTentacleKey, signOut, verifyApiKey } from "../jellyfin/accounts";
 import { clientUrlFor } from "../jellyfin/clientUrlFor";
+import { listLibraries } from "../jellyfin/libraries";
 import { presentsAsBlank, probeTarget } from "../jellyfin/stackTarget";
 import { adoptProvisionalAdmin, applyServerLocale, runJellyfinStartup } from "../jellyfin/startup";
 import { designatesSelection } from "../flow/selectJellyfin";
-import { chosen, noteKeyCreated, requireStep } from "../flow/setupFlow";
+import { chosen, noteKeyCreated, noteLibraryCount, requireStep } from "../flow/setupFlow";
 import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
 import { prepareJellyfin, setupRuntime } from "../setupRuntime";
@@ -139,6 +140,9 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
       else await setClaimAside(siblingUrl);
       await saveJellyfin(probed.url, key, probed.id);
       await rememberChoice(probed.url, siblingUrl, !probed.blank);
+      // Configuré mais sans bibliothèque : l'assistant lui en proposera (facultatif).
+      const count = await listLibraries(probed.url, key).then((found) => found.length, () => null);
+      await noteLibraryCount(count);
     };
 
     if ("apiKey" in body) {

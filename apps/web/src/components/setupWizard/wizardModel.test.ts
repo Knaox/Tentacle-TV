@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SetupContext } from "@tentacle-tv/shared";
-import { codeFromHash, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, needsDatabase, resumeStep, showsChosenServer, uiCultureOf, wizardLength, wizardSteps } from "./wizardModel";
+import { codeFromHash, createsLibraries, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, needsDatabase, resumeStep, showsChosenServer, uiCultureOf, wizardLength, wizardSteps } from "./wizardModel";
 
 function ctx(over: Partial<SetupContext> = {}): SetupContext {
   return {
@@ -63,6 +63,18 @@ describe("les étapes de l'assistant (le parcours du serveur)", () => {
     // Relié, mais le mot de passe n'est plus en mémoire : le premier écran du parcours le redemande.
     expect(resumeStep(withFlow({ databasePending: false, selection: selection("fresh"), linked: true }), false)).toBe("account");
     expect(resumeStep(withFlow({ databasePending: false, selection: selection("configured"), linked: true }), true)).toBe("recommended");
+  });
+
+  it("Jellyfin déjà configuré trouvé SANS bibliothèque : ses bibliothèques, facultatives, entre la connexion et les réglages", () => {
+    const context = withFlow({ databasePending: false, selection: { ...selection("configured"), noLibraries: true }, linked: true, noLibraries: true });
+    const steps = wizardSteps({ needsCode: false, context });
+    expect(steps).toEqual(["welcome", "jellyfin", "signIn", "libraries", "recommended", "recap", "apply", "remote", "done"]);
+    expect(wizardLength({ needsCode: false, context })).toBe(9);
+    expect(resumeStep(context, true)).toBe("libraries");
+    expect(createsLibraries(context)).toBe(true);
+    expect(showsChosenServer("libraries", "configured", true)).toBe(true);
+    // Avec des bibliothèques, rien ne change : on n'en crée pas.
+    expect(createsLibraries(withFlow({ databasePending: false, selection: selection("configured"), linked: true, noLibraries: false }))).toBe(false);
   });
 
   it("le Jellyfin choisi n'est rappelé que sur les écrans de son parcours", () => {

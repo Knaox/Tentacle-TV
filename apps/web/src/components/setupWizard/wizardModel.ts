@@ -35,7 +35,7 @@ export interface WizardShapeInput {
 
 /** La base a son écran quand l'environnement ne la fournit pas — reliée ou non : il fait partie du parcours. */
 export function flowShape({ needsCode, context }: WizardShapeInput): SetupFlowShape {
-  return { needsCode, asksDatabase: !!context && !context.database.fromEnv, path: pathOf(context) };
+  return { needsCode, asksDatabase: !!context && !context.database.fromEnv, path: pathOf(context), noLibraries: context?.flow.noLibraries ?? false };
 }
 
 export function wizardSteps(input: WizardShapeInput): WizardStep[] {
@@ -73,8 +73,13 @@ export function resumeStep(context: SetupContext, hasCredentials: boolean): Wiza
 }
 
 /** Les écrans où le Jellyfin choisi est rappelé en tête : ceux du parcours, jusqu'à l'installation. */
-export function showsChosenServer(step: WizardStep, path: SetupPath | null): boolean {
-  return !!path && (pathOnlySteps(path).includes(step) || step === "recap" || step === "apply");
+export function showsChosenServer(step: WizardStep, path: SetupPath | null, noLibraries = false): boolean {
+  return !!path && (pathOnlySteps(path, noLibraries).includes(step) || step === "recap" || step === "apply");
+}
+
+/** Le Jellyfin choisi n'avait aucune bibliothèque à la connexion (déjà configuré) : en créer est facultatif. */
+export function createsLibraries(context: SetupContext | null): boolean {
+  return pathOf(context) === "fresh" || context?.flow.noLibraries === true;
 }
 
 const LANGUAGES = ["fr", "en", "de", "it", "es", "pt", "nl"] as const;

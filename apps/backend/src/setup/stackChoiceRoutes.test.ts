@@ -119,7 +119,7 @@ describe("pile complète : choisir un autre Jellyfin que celui de la pile", () =
   });
 
   it("rien n'est choisi d'office, même verrouillé : le parcours attend le choix, et le serveur refuse tout le reste", async () => {
-    expect(await flow()).toEqual({ databasePending: false, selection: null, linked: false });
+    expect(await flow()).toEqual({ databasePending: false, selection: null, linked: false, noLibraries: false });
     for (const [url, body] of [
       ["/jellyfin/initialize", { url: stack.url, username: "Damien", password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" }],
       ["/jellyfin/connect", { url: other.url, username: "Damien", password: PASSWORD }],
@@ -135,6 +135,7 @@ describe("pile complète : choisir un autre Jellyfin que celui de la pile", () =
     expect(context.flow).toEqual({
       databasePending: false,
       linked: false,
+      noLibraries: false,
       selection: { url: other.url, serverId: "salon", serverName: "Salon", version: "10.11.11", inStack: false, path: "configured" },
     });
     expect(context.jellyfin.clientUrl).toBe(other.url.replace("127.0.0.1", "localhost"));

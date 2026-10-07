@@ -12,12 +12,17 @@
  *    administrateur est CRÉÉ, puis de vraies bibliothèques JELLYFIN
  *    (`/Library/VirtualFolders`) ;
  *  - `configured` (Jellyfin DÉJÀ configuré) : on se CONNECTE avec son
- *    administrateur, et c'est tout. Aucun compte créé, aucune bibliothèque
- *    créée ni choisie : celles qui existent sont montrées, en lecture seule,
- *    avec les réglages conseillés (facultatifs).
+ *    administrateur. Aucun compte créé ; ses bibliothèques sont montrées, en
+ *    lecture seule, avec les réglages conseillés (facultatifs). Une seule
+ *    exception : un Jellyfin configuré mais SANS AUCUNE bibliothèque à la
+ *    connexion (`noLibraries`, constaté par le serveur) reçoit l'écran des
+ *    bibliothèques, entre la connexion et les réglages — en créer y est
+ *    FACULTATIF.
  *
- * Les deux ont la même longueur : le numéro d'étape est juste avant même le
- * choix. Changer de Jellyfin (retour à « Jellyfin ») recalcule le parcours.
+ * Les deux ont la même longueur jusqu'à la connexion : le numéro d'étape est
+ * juste avant même le choix. Le Jellyfin configuré trouvé vide en gagne un
+ * (l'écran des bibliothèques), dit dès qu'on le sait. Changer de Jellyfin
+ * (retour à « Jellyfin ») recalcule le parcours.
  *
  * MIROIR : recopié octet pour octet dans `apps/backend/src/setup/`, comme les
  * autres fichiers du contrat (`setupWizardMirror.test.ts`). Aucun import.
@@ -51,6 +56,12 @@ export interface SetupSelection {
   /** Le Jellyfin de la pile complète. */
   inStack: boolean;
   path: SetupPath;
+  /**
+   * Déjà configuré, mais SANS AUCUNE bibliothèque quand on s'y est connecté
+   * (constaté par le serveur à la connexion, gardé jusqu'au prochain choix).
+   * Absent : il en avait, ou on ne s'y est pas encore connecté.
+   */
+  noLibraries?: boolean;
 }
 
 /** Ce que le serveur tient du parcours (`SetupContext.flow`). */
@@ -61,6 +72,12 @@ export interface SetupFlowState {
   selection: SetupSelection | null;
   /** Tentacle tient la clé du Jellyfin choisi, au nom du compte administrateur choisi. */
   linked: boolean;
+  /**
+   * Le Jellyfin choisi est déjà configuré, relié, et n'avait AUCUNE
+   * bibliothèque à la connexion : l'écran des bibliothèques est dans son
+   * parcours, et en créer y est permis. Absent (serveur d'avant) : non.
+   */
+  noLibraries?: boolean;
 }
 
 /** Ce qui fixe la liste des écrans. */
@@ -71,12 +88,20 @@ export interface SetupFlowShape {
   asksDatabase: boolean;
   /** `null` : pas encore de Jellyfin choisi. */
   path: SetupPath | null;
+  /** Jellyfin configuré trouvé sans bibliothèque (`SetupFlowState.noLibraries`). */
+  noLibraries?: boolean;
 }
 
 const PATH_STEPS: Readonly<Record<SetupPath, readonly SetupStep[]>> = {
   fresh: ["account", "libraries"],
   configured: ["signIn", "recommended"],
 };
+/** Le Jellyfin configuré mais vide : on propose ses bibliothèques avant les réglages. */
+const CONFIGURED_EMPTY: readonly SetupStep[] = ["signIn", "libraries", "recommended"];
+
+function pathSteps(path: SetupPath, noLibraries: boolean | undefined): readonly SetupStep[] {
+  return path === "configured" && noLibraries ? CONFIGURED_EMPTY : PATH_STEPS[path];
+}
 const TAIL: readonly SetupStep[] = ["recap", "apply", "remote", "done"];
 
 function head(shape: SetupFlowShape): SetupStep[] {
@@ -85,12 +110,16 @@ function head(shape: SetupFlowShape): SetupStep[] {
 
 /** Les écrans du parcours, dans l'ordre. Sans Jellyfin choisi : jusqu'à « Jellyfin » seulement. */
 export function setupFlowSteps(shape: SetupFlowShape): SetupStep[] {
-  return shape.path ? [...head(shape), ...PATH_STEPS[shape.path], ...TAIL] : head(shape);
+  return shape.path ? [...head(shape), ...pathSteps(shape.path, shape.noLibraries), ...TAIL] : head(shape);
 }
 
-/** Le nombre d'écrans, le même pour les deux parcours : connu avant le choix. */
+/**
+ * Le nombre d'écrans : le même pour les deux parcours, connu avant le choix —
+ * un de plus pour le Jellyfin configuré trouvé vide, une fois connecté.
+ */
 export function setupFlowLength(shape: SetupFlowShape): number {
-  return head(shape).length + PATH_STEPS.fresh.length + TAIL.length;
+  const middle = shape.path ? pathSteps(shape.path, shape.noLibraries).length : PATH_STEPS.fresh.length;
+  return head(shape).length + middle + TAIL.length;
 }
 
 /** Le premier écran d'un parcours, juste après le choix du Jellyfin. */
@@ -98,9 +127,9 @@ export function pathEntry(path: SetupPath): SetupStep {
   return PATH_STEPS[path][0];
 }
 
-/** Les écrans propres à un parcours : jamais montrés dans l'autre. */
-export function pathOnlySteps(path: SetupPath): readonly SetupStep[] {
-  return PATH_STEPS[path];
+/** Les écrans propres à un parcours (vide ou non, pour le configuré). */
+export function pathOnlySteps(path: SetupPath, noLibraries?: boolean): readonly SetupStep[] {
+  return pathSteps(path, noLibraries);
 }
 
 /** Le parcours d'un Jellyfin sondé : neuf (ou verrouillé par Tentacle en attendant) ou déjà configuré. */
@@ -113,7 +142,7 @@ export function setupStage(state: SetupFlowState): SetupStep {
   if (state.databasePending) return "database";
   if (!state.selection) return "jellyfin";
   if (!state.linked) return pathEntry(state.selection.path);
-  return PATH_STEPS[state.selection.path][1];
+  return pathSteps(state.selection.path, state.noLibraries)[1];
 }
 
 /** On ne revient pas en arrière depuis ces écrans : ce qu'ils ont fait est fait. */
@@ -145,7 +174,8 @@ export function nextStep(steps: readonly SetupStep[], step: SetupStep): SetupSte
  *  - `initialize` : CRÉER le compte administrateur — Jellyfin neuf seulement ;
  *  - `connect` : se connecter avec l'administrateur existant — Jellyfin déjà configuré seulement ;
  *  - `verify` : revérifier le compte (après un rechargement, le mot de passe n'est plus en mémoire) ;
- *  - `browse`, `createLibraries` : parcourir les dossiers, CRÉER des bibliothèques — Jellyfin neuf seulement ;
+ *  - `browse`, `createLibraries` : parcourir les dossiers, CRÉER des bibliothèques — Jellyfin neuf,
+ *    ou déjà configuré mais trouvé SANS bibliothèque à la connexion (`noLibraries`) ;
  *  - `readLibraries` : lire les bibliothèques existantes ;
  *  - `advice` : les réglages conseillés — Jellyfin déjà configuré seulement ;
  *  - `segments` : la détection des passages ;
@@ -176,7 +206,7 @@ export function setupActionAllowed(action: SetupAction, state: SetupFlowState): 
       return path === "configured";
     case "browse":
     case "createLibraries":
-      return path === "fresh" && state.linked;
+      return state.linked && (path === "fresh" || (path === "configured" && state.noLibraries === true));
     case "advice":
       return path === "configured" && state.linked;
     case "verify":

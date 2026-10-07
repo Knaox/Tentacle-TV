@@ -24,7 +24,8 @@ function isSelection(value: unknown): value is SetupSelection {
     typeof s.version === "string" &&
     typeof s.inStack === "boolean" &&
     typeof s.path === "string" &&
-    PATHS.has(s.path)
+    PATHS.has(s.path) &&
+    (s.noLibraries === undefined || typeof s.noLibraries === "boolean")
   );
 }
 
@@ -60,9 +61,26 @@ export function isLinked(selection: SetupSelection | null): boolean {
 }
 
 export function flowState(): SetupFlowState {
-  if (!hasPrisma()) return { databasePending: true, selection: null, linked: false };
+  if (!hasPrisma()) return { databasePending: true, selection: null, linked: false, noLibraries: false };
   const selection = readSelection();
-  return { databasePending: false, selection, linked: isLinked(selection) };
+  const linked = isLinked(selection);
+  // Seulement un Jellyfin DÉJÀ configuré, relié : le neuf a toujours son écran des bibliothèques.
+  const noLibraries = linked && selection?.path === "configured" && selection.noLibraries === true;
+  return { databasePending: false, selection, linked, noLibraries };
+}
+
+/**
+ * Ce que la connexion a trouvé chez un Jellyfin déjà configuré : aucune
+ * bibliothèque → l'écran des bibliothèques entre dans son parcours. Constaté
+ * à chaque connexion (l'écran de connexion précède toute création), gardé
+ * avec le choix : un autre Jellyfin choisi l'oublie.
+ */
+export async function noteLibraryCount(count: number | null): Promise<void> {
+  const selection = readSelection();
+  if (!selection || selection.path !== "configured") return;
+  const { noLibraries: _previous, ...rest } = selection;
+  // Illisible : on ne propose rien de plus (le parcours d'avant).
+  await saveSelection(count === 0 ? { ...rest, noLibraries: true } : rest);
 }
 
 /**

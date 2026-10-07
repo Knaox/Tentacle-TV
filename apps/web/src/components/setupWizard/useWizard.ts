@@ -63,7 +63,7 @@ export function useWizard(): Wizard {
     };
   }, []);
 
-  const server = showsChosenServer(step, pathOf(data.context)) ? selectionOf(data.context) : null;
+  const server = showsChosenServer(step, pathOf(data.context), data.context?.flow.noLibraries ?? false) ? selectionOf(data.context) : null;
   return {
     step,
     position: Math.max(0, steps.indexOf(step)) + 1,
