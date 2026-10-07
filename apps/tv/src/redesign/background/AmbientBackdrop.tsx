@@ -9,9 +9,12 @@ import { useAmbientOf, type AmbientSource } from "./ambientSource";
 import { RadialLight } from "./RadialLight";
 import { SoftGradient, STAGE_SIZE } from "./SoftGradient";
 import { effectOff } from "../render/measuredEffects";
+import { RENDER } from "../render/renderProfile";
 
 // Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
 const AMBIENT_OFF = effectOff("ambient");
+/** Profil Lite (`ambient: "tint"`) : une seule teinte statique, venue d'en haut. */
+const TINT = RENDER.ambient === "tint";
 
 /**
  * Le fond vivant : l'ENCRE de la scène (`TV_LIGHT.ink` — à peine teintée de
@@ -37,6 +40,12 @@ const AMBIENT_OFF = effectOff("ambient");
  * lisse, et changer de lumière ne redessine plus trois ellipses plein écran
  * sur le fil principal (mesuré au banc : c'était le premier coût d'un pas du
  * focus sur une rangée).
+ *
+ * Profil Lite (`ambient: "tint"`) : ni lumières ni dégradé radial — UNE
+ * teinte de l'œuvre (sa lumière d'en haut, même clarté bornée), en dégradé
+ * vertical à deux arrêts dessiné petit, posée sur l'encre. Quand l'œuvre
+ * change, la nouvelle teinte entre en UN fondu court (`ambient`, bref) ; deux
+ * calques gardés au lieu de cinq.
  *
  * Bord à bord : ce fond ignore la marge de sécurité, seul le contenu la
  * respecte.
@@ -118,14 +127,33 @@ const Lights = memo(function Lights({ palette, intensity }: { palette: ArtworkPa
   );
 });
 
+/** La teinte du Lite : la lumière d'en haut de l'œuvre, de la même force que
+ *  le cœur de la lumière large (`A.key`), éteinte aux deux tiers de l'écran. */
+const Tint = memo(function Tint({ palette, intensity }: { palette: ArtworkPalette; intensity: number }) {
+  const color = boundedLight(palette.glows[1], A.maxLuminance);
+  return (
+    <View style={[StyleSheet.absoluteFill, { opacity: A.key * intensity }]}>
+      <SoftGradient colors={[color, withAlpha(color, 0)]} locations={[0, 0.68]} {...STAGE_SIZE} />
+    </View>
+  );
+});
+
+/** La couleur `#rrggbb` (ou déjà `rgb…`) à l'opacité `alpha`. */
+function withAlpha(color: string, alpha: number): string {
+  const hex = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!hex) return "transparent";
+  const n = parseInt(hex[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
 export const AmbientBackdrop = memo(function AmbientBackdrop({ palette, intensity = 1 }: AmbientBackdropProps) {
-  const layers = useLayerPool(palette.glows.join("-"), palette);
+  const layers = useLayerPool(palette.glows.join("-"), palette, TINT ? 2 : undefined);
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <SoftGradient colors={[colors.bgTop, colors.bgBottom]} {...STAGE_SIZE} />
       {AMBIENT_OFF ? null : layers.map((layer) => (
         <PoolLayerView key={layer.slot} present={layer.present} motion="ambient">
-          <Lights palette={layer.item} intensity={intensity} />
+          {TINT ? <Tint palette={layer.item} intensity={intensity} /> : <Lights palette={layer.item} intensity={intensity} />}
         </PoolLayerView>
       ))}
     </View>
