@@ -73,6 +73,33 @@ Le niveau ne change jamais en cours de session : une constante suffit,
 aucun abonnement. `useRenderTierState()` donne aussi la raison, le réglage et
 le verdict de l'automatique.
 
+La refonte (`apps/tv/src/redesign/`) n'importe pas l'app : son profil de
+rendu relit le niveau dans les constantes de `TentacleDevice` par le MÊME
+calcul pur (tv-core `tierFromDeviceConstants`, aussi employé par
+`platform/androidtv/renderTier`).
+
+## Ce que le niveau change à l'écran (L5a : les effets)
+
+Le profil de rendu Lite (tv-core `render/liteProfile.ts`, `LITE_PROFILE`,
+choisi par `renderProfileFor("androidtv", tier)`) — une variante du profil
+d'Android TV ; les vues lisent ses champs, jamais le niveau :
+
+| Champ | Normal | Lite |
+|---|---|---|
+| `motionStyle` | ressorts et fondus de `TV_MOTION` | `brief` : sans ressort, 150 ms au plus, l'accessoire posé (`liteMotion.ts`) |
+| `cardFocus` | × 1,08, ombre ou lueur, reflet | `outline` : liseré #8B5CF6 de 4 px, à la taille de la carte (`CARD_FOCUS_SCALE` = 1) |
+| `ambient` | trois lumières de l'œuvre | `tint` : une teinte statique venue d'en haut, un fondu de 150 ms |
+| `shadows` | `mask` (masque flouté) | `border` : bord blanc à 10 % |
+| `glass` | voile, reflet, liserés | `flat` : l'aplat de la même teinte, bord fin |
+| `gradients` | tous les arrêts | `twoStop` (`twoStopGradient.ts`) |
+| `pageTransition` | fondu de 320 ms | `cut` |
+| `heroDelayFactor` / `heroTextSwap` | 8 s, texte en fondu | 12 s, texte posé, l'image seule fond |
+
+Les halos (flous) sont gardés : ils ne coûtent rien (masque natif). Apple TV :
+aucun Lite (`renderProfileFor("tvos", …)` rend toujours son profil).
+Différentiel visuel : banc `lite.mjs parcours run … --tier normal|lite --shots
+--only vue-fiche,vue-rail,…`.
+
 ## Débogage et banc
 
 ```bash
