@@ -61,7 +61,16 @@ export const devicePairingRoutes: FastifyPluginAsync = async (app) => {
       return { status: "expired" };
     }
 
-    if (record.status === "device_confirmed" && record.token) {
+    if (record.status === "device_confirmed" && record.token && record.jellyfinUserId && record.username) {
+      // L'appareil naît ICI, quand la TV reçoit son jeton — jamais à la
+      // confirmation du téléphone : une TV qui ne revient pas chercher son
+      // jeton n'entre pas dans la liste des appareils.
+      const name = record.deviceName || "TV";
+      await prisma.pairedDevice.create({
+        data: { name, jellyfinUserId: record.jellyfinUserId, username: record.username, tokenHash: hashToken(record.token) },
+      });
+      // Son propre jeton Jellyfin, jamais celui du confirmateur.
+      provisionOwnJellyfinToken(record.token, { jellyfinUserId: record.jellyfinUserId, name });
       await prisma.pairingCode.delete({ where: { id: record.id } }).catch(() => {});
       return {
         status: "confirmed",
@@ -100,18 +109,8 @@ export const devicePairingRoutes: FastifyPluginAsync = async (app) => {
         deviceId: record.deviceId ?? crypto.randomUUID(),
       });
 
-      const name = record.deviceName || "TV";
-      await prisma.pairedDevice.create({
-        data: {
-          name,
-          jellyfinUserId: user.userId,
-          username: user.username,
-          tokenHash: hashToken(token),
-        },
-      });
-      // Son propre jeton Jellyfin, jamais celui du confirmateur.
-      provisionOwnJellyfinToken(token, { jellyfinUserId: user.userId, name });
-
+      // Pas encore d'appareil : il naît quand la TV vient chercher son jeton
+      // (`GET /device/status/:code`).
       await prisma.pairingCode.update({
         where: { id: record.id },
         data: {

@@ -8,6 +8,7 @@ import { provisionOwnJellyfinToken } from "../services/deviceJellyfinToken";
 import { CODE_TTL_MS, claimSchema, freshPairingCode, generateSchema } from "./pairing/codes";
 import { devicePairingRoutes } from "./pairing/deviceFlow";
 import { pairedDevicesRoutes } from "./pairing/devices";
+import { recordPendingDevice } from "../services/pendingDevicePairing";
 
 /**
  * Le jumelage des téléviseurs. Trois façons de naître — code généré par le
@@ -169,17 +170,19 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
       });
 
-      await getPrisma().pairedDevice.create({
-        data: {
-          name: "TV",
-          jellyfinUserId: user.userId,
-          username: user.username,
-          tokenHash: hashToken(token),
-        },
-      });
+      // Le jeton part chez un intermédiaire (le téléphone, vers le relais ;
+      // la TV par mot de passe) : l'appareil n'existe qu'à la première
+      // requête de la TV qui le porte (`pendingDevicePairing.ts`). Un code de
+      // relais faux ou une TV qui ne le reçoit jamais n'ajoutent rien.
       // Le relais ne transporte pas le nom de la TV : « TV », renommée à sa
       // première requête (`deviceNaming.ts`) — Jellyfin suit à la suivante.
-      provisionOwnJellyfinToken(token, { jellyfinUserId: user.userId, name: "TV" });
+      const owner = { jellyfinUserId: user.userId, username: user.username, name: "TV" };
+      if (!(await recordPendingDevice(token, owner))) {
+        await getPrisma().pairedDevice.create({
+          data: { name: owner.name, jellyfinUserId: owner.jellyfinUserId, username: owner.username, tokenHash: hashToken(token) },
+        });
+        provisionOwnJellyfinToken(token, { jellyfinUserId: user.userId, name: "TV" });
+      }
 
       return { token };
     },

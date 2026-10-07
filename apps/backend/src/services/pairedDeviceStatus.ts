@@ -1,5 +1,6 @@
 import { getPrisma, hasPrisma } from "./db";
 import { hashToken, verifyDeviceToken, type DeviceTokenPayload } from "./jwt";
+import { activatePendingDevice } from "./pendingDevicePairing";
 
 /**
  * « Ce jeton d'appareil est-il encore jumelé ? » — le verdict UNIQUE de toutes
@@ -18,7 +19,9 @@ import { hashToken, verifyDeviceToken, type DeviceTokenPayload } from "./jwt";
  *
  * « Révoqué » est définitif et retenu : une empreinte supprimée ne revient
  * jamais — chaque jumelage signe un jeton neuf, et aucun jeton n'est remis à
- * un appareil avant que sa ligne n'existe.
+ * un appareil avant que sa ligne n'existe. Seule exception : un jeton confié à
+ * un intermédiaire (relais, mot de passe) attend sa TV — sa ligne naît à sa
+ * première requête (`pendingDevicePairing.ts`), jamais avant.
  */
 
 export type PairedDeviceVerdict =
@@ -89,6 +92,7 @@ export async function pairedDeviceStatus(token: string): Promise<PairedDeviceVer
   let found: boolean;
   try {
     found = (await getPrisma().pairedDevice.findUnique({ where: { tokenHash }, select: { id: true } })) !== null;
+    if (!found) found = await activatePendingDevice(token, tokenHash);
   } catch {
     return { status: "unreachable", payload, tokenHash };
   }

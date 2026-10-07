@@ -36,6 +36,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Quand le serveur ne répond pas**, l'écran dit le vrai cas : pas de réseau, serveur Tentacle hors ligne, ou Jellyfin injoignable — plus de « ce n'est pas votre faute »
 - **Les nouveaux films et épisodes apparaissent dans « Derniers ajouts » en quelques secondes**, sur tous les écrans, sans changer de page ; un titre ajouté se trouve aussitôt par la recherche ; nouveau réglage conseillé « Annoncer les ajouts en 5 s » ; page Services plus lisible, le détail sur demande
 - Tentacle TV passe sous licence AGPL-3.0 ; la page Crédits donne chaque composant et le texte complet de sa licence
+- Une TV n'apparaît dans Appareils qu'une fois réellement jumelée : un code faux ou une TV qui ne récupère jamais son jeton n'ajoutent rien
 
 ### EN
 - **New setup wizard**: one question per screen. From your home network it opens without a code; the one-time code, read in the container log, is only asked from elsewhere. The metadata language is chosen with the account
@@ -62,6 +63,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **When the server doesn't answer**, the screen tells the actual case: no network, Tentacle server offline, or Jellyfin unreachable
 - **New movies and episodes show up in "Recently added" within seconds**, on every screen, without changing page; a newly added title is searchable right away; new recommended setting "Announce additions within 5 s"; clearer Services page, details on demand
 - Tentacle TV is now licensed under the AGPL-3.0; the Credits page lists every component and the full text of its license
+- A TV only appears under Devices once it is really paired — a wrong code or a TV that never picks up its token adds nothing
 
 ## [1.23.0]
 ### FR
