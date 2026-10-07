@@ -29,6 +29,7 @@ import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
 import { usePlayerItem } from "../hooks/usePlayerItem";
 import { useTVOsdEntryFocus } from "../hooks/useTVOsdEntryFocus";
 import { PlayerRedesignStage } from "../redesignWiring/player/PlayerRedesignStage";
+import { useReleaseHiddenImages } from "../platform/renderTier";
 import type { PlayerRedesignStageProps } from "../redesignWiring/player/playerStageTypes";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
@@ -235,6 +236,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   const { audioTracksList, subtitleTracksList } = useTVTrackLists(p.streams, p.prism?.audioTracks);
   // Le panneau des épisodes s'ouvre déjà rempli : saisons et saison en cours préchargées.
   useEpisodePanelPrefetch(item, hasStarted);
+  // Lite : l'interface sous le lecteur garde ses vues, pas ses images.
+  useReleaseHiddenImages("lecteur");
 
   // Fermer le panneau Réglages/Qualité (dans l'habillage) : l'état, puis le focus à l'OSD.
   const handleCloseSettings = () => {
