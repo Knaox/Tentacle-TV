@@ -231,6 +231,7 @@ cd ../harness/android-perf
 export ANDROID_SERIAL=<shield>:5555 PERF_PORT=3137 PERF_BACKEND_PORT=3135
 node baseline.mjs screens --apk <release> --debug-apk <debug> --tag shield-ecrans --rounds 2
 # saisons : faux backend DÉJÀ lancé (un neuf sert son catalogue trop lentement)
+node serve.mjs &   # faux backend + relais tenus jusqu'au signal (PERF_PORT, PERF_BACKEND_PORT)
 node baseline.mjs screens --keep-session --external --warmup --tag shield-ecrans-b --only grille,saisons-episodes,reglages
 node baseline.mjs effects --keep-session --external --tag shield-effets --rounds 2 --only focus-rangee,fiche \
   --fx blur,glass,shadows,gradients,ambient,focusScale,motion,pageFade,heroRotation
