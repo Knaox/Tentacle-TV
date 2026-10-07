@@ -80,6 +80,19 @@ const renderAll = (count: number): RowWindowRange => ({
 
 export function useRowWindow({ scrollRef, count, cardWidth, onScreen, overscan = OVERSCAN }: RowWindowOptions) {
   const [range, setRange] = useState<RowWindowRange>(() => renderAll(count));
+  // Le décompte change (un titre arrivé, un parti) : la plage suit DANS LE MÊME
+  // rendu. Recalculée une image plus tard, elle laissait hors de la fenêtre la
+  // dernière carte d'une rangée rendue jusqu'au bout — elle disparaissait sous
+  // les yeux le temps que la nouvelle entre (mesuré au banc : ~250 ms).
+  const [counted, setCounted] = useState(count);
+  if (count !== counted) {
+    setCounted(count);
+    setRange((prev) => {
+      if (prev.end < prev.start) return prev; // fenêtre vide : rien à suivre
+      if (prev.end >= counted - 1) return { ...prev, end: count - 1, padEnd: 0 }; // elle allait au bout : elle y va encore
+      return prev.end > count - 1 ? { ...prev, end: count - 1 } : prev;
+    });
+  }
   /**
    * Index de la carte survolée. Un REF, jamais un état : il n'est lu que dans le
    * rappel qui recalcule la plage, donc le poser ne doit pas provoquer de rendu.
