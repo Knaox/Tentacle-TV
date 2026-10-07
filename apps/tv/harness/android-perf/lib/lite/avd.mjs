@@ -43,6 +43,9 @@ export const LITE_AVDS = {
   Lite_L6_2G: { ramMb: 2048, cores: 4, port: 5662, label: "box net+ : 2 Go, 4 cœurs (L6, mémoire)" },
   // L'AVD de la tâche L5a (effets) : même profil, sa propre console.
   Lite_L5a_2G: { ramMb: 2048, cores: 4, port: 5682, label: "box net+ : 2 Go, 4 cœurs (L5a, effets)" },
+  // L'AVD de la tâche « recherche fluide » (nav-golden --android) : la mémoire
+  // de la Shield (3 Go), sa propre console.
+  Lite_Rech_3G: { ramMb: 3072, cores: 4, port: 5694, label: "Shield : 3 Go, 4 cœurs (recherche, nav-golden --android)" },
 };
 
 export function liteProfile(name) {
