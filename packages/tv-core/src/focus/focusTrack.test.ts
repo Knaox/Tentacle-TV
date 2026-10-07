@@ -58,7 +58,7 @@ describe("isPassingFocus — le focus de passage d'Android", () => {
     expect(isPassingFocus(before, "nav:Search", mounted(["hero:primary", "nav:Search"]))).toBe(true);
   });
 
-  it("tvOS : la perte de l'ancien précède la prise du nouveau — jamais un passage", () => {
+  it("la perte de l'ancien précède la prise du nouveau — pas un passage", () => {
     const before = run([["hero:primary", true], ["hero:primary", false]]);
     expect(isPassingFocus(before, "nav:Search", mounted(["hero:primary", "nav:Search"]))).toBe(false);
   });

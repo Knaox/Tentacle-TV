@@ -11,4 +11,5 @@ import type { PlatformTraits } from "./platformTraits";
 export const PLATFORM_TRAITS: PlatformTraits = {
   liquidGlass: false,
   playerAnnouncesFirstFrame: true,
+  passingFocus: true,
 };

@@ -47,9 +47,11 @@ const MAX_HELD = 4;
  * sa création (l'entrée de l'accueil, le héros) s'attache, puis qu'il lui
  * reprend : ce n'est pas l'utilisateur, la navigation ne s'ouvre pas pour lui.
  *
- * Sur tvOS, l'ancien annonce toujours sa perte AVANT la prise du nouveau : une
- * clé encore tenue au moment d'une prise ne peut être qu'une clé démontée sans
- * perte annoncée, que `isMounted` écarte — jamais un passage.
+ * Une clé tenue mais démontée sans perte annoncée ne fait pas un passage
+ * (`isMounted`). La règle ne vaut que pour une plateforme qui donne de tels
+ * focus (trait `passingFocus` de l'app : Android TV) : sur tvOS, une clé tenue
+ * au moment d'une prise arrive aussi d'une navigation de l'utilisateur
+ * (relevé au banc nav-golden), elle n'y est jamais lue.
  */
 export function isPassingFocus(track: FocusTrack, key: string, isMounted: (key: string) => boolean): boolean {
   return track.held.some((held) => held !== key && isMounted(held));

@@ -12,4 +12,9 @@ export interface PlatformTraits {
    *  mpv) : le lecteur le tient en pause jusque-là, puis lève l'écran de
    *  chargement et la pause d'un même geste (tv-core `startGate`). */
   playerAnnouncesFirstFrame: boolean;
+  /** La plateforme donne des focus DE PASSAGE (tv-core `isPassingFocus`) :
+   *  Android, au premier focalisable, pendant qu'un élément annoncé avant
+   *  d'être attaché s'attache. Ce qui s'ouvre au focus (la navigation) ne
+   *  s'ouvre pas pour eux. tvOS : non — la règle n'y est jamais lue. */
+  passingFocus: boolean;
 }
