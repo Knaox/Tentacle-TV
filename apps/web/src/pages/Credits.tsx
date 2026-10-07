@@ -2,9 +2,17 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PageTransition } from "../components/PageTransition";
 import { externalLinkHandler } from "../lib/openExternal";
+import { isDesktopApp } from "../desktop/bridge";
+import { useDesktopVersion } from "../hooks/useDesktopVersion";
+import { LicensesSection } from "../components/licenses/LicensesSection";
+import { webLicensePlatform } from "../components/licenses/licensePlatform";
 
 export function Credits() {
   const { t } = useTranslation("about");
+  const desktopVersion = useDesktopVersion();
+  const platform = webLicensePlatform();
+  // La version sans suffixe de pré-version : c'est elle que porte le tag.
+  const version = (isDesktopApp() ? desktopVersion : __APP_VERSION_WEB__).replace(/-[a-z]+(\..+)?$/i, "");
 
   const TECH_STACK = useMemo(() => [
     { name: "React", url: "https://react.dev", desc: t("about:techReact") },
@@ -79,6 +87,11 @@ export function Credits() {
       <p className="mt-3 text-sm leading-relaxed text-content-tertiary">
         {t("about:licenseText")}
       </p>
+      {isDesktopApp() ? (
+        <p className="mt-3 text-sm leading-relaxed text-content-tertiary">{t("about:licenseTextDesktop")}</p>
+      ) : null}
+
+      <LicensesSection platform={platform} version={version} />
 
       <p className="mt-12 text-xs text-content-quaternary">
         {t("about:creditsDisclaimer")}
