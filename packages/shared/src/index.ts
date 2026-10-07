@@ -8,6 +8,8 @@ export * from "./utils/cardImage";
 // Le logo d'une œuvre — le sien, sinon celui de sa série — seulement s'il est annoncé.
 export * from "./utils/logoImage";
 export * from "./hero";
+// L'accueil d'un compte sans aucun titre : l'état vide au lieu d'un écran noir.
+export * from "./home";
 export * from "./utils/cardRating";
 export * from "./utils/cardMarkers";
 export * from "./utils/cardMarkerGlyphs";
