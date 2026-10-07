@@ -140,14 +140,18 @@ export const SCENARIOS = [
     steps: 1,
   },
   {
+    // Le rail se POSE avant OK (2 s) : sous la charge, un OK traité en retard
+    // y devient un appui maintenu, qui ouvre le menu de l'entrée (vécu).
     // « Bleach » : 6e affiche d'« Animés », l'une des cinq séries dont
-    // l'instantané garde les saisons. HAUT puis BAS : la première affiche,
-    // que le focus d'entrée soit sur elle ou sur la barre de filtres. Jamais
-    // OK sur un épisode (il lancerait la lecture) : OK sur un ONGLET de saison.
+    // l'instantané garde les saisons. INSTABLE (07/10) : dans le banc, le
+    // focus reste dans la barre de filtres de la grille (BAS ne descend pas
+    // aux affiches), alors qu'à la main le même chemin mène à « Bleach » ; la
+    // passe est alors notée « non mesurée », capture à l'appui. Jamais OK sur
+    // un épisode (il lancerait la lecture) : OK sur un ONGLET de saison.
     id: "saisons-episodes",
     title: "Saisons et épisodes (« Bleach ») : BAS aux onglets puis aux épisodes, 4 épisodes à droite, HAUT, la saison 3 choisie, ses épisodes",
     expectReady: "fiche",
-    setup: [tap("left"), wait(1200), tap("down", 4, 350), wait(900), tap("ok"), wait(6000), tap("up"), wait(900), tap("down"), wait(900), tap("right", 5, 450), wait(900), tap("ok"), wait(5000)],
+    setup: [wait(1500), tap("left"), wait(1500), tap("down", 4, 450), wait(2000), tap("ok"), wait(8000), tap("down"), wait(1500), tap("up"), wait(1500), tap("down"), wait(2000), tap("right", 5, 600), wait(900), tap("ok"), wait(5000)],
     gesture: [tap("down"), wait(1800), tap("down"), wait(1800), tap("right", 4, 600), wait(900), tap("up"), wait(1200), tap("right", 2, 600), wait(600), tap("ok"), wait(2500), tap("down"), wait(1500), tap("right", 3, 600), wait(900)],
     steps: 14,
   },
@@ -156,7 +160,7 @@ export const SCENARIOS = [
     // change aucun réglage, on ne fait que montrer les onglets et parcourir.
     id: "reglages",
     title: "Réglages : les onglets montrés un à un (OK sur l'onglet), puis le panneau Lecture parcouru, sans rien changer",
-    setup: [tap("left"), wait(1500), tap("left"), wait(1200), tap("ok"), wait(4000)],
+    setup: [wait(1500), tap("left"), wait(1500), tap("left"), wait(1200), tap("ok"), wait(4000)],
     gesture: [tap("down"), wait(700), tap("ok"), wait(1500), tap("down"), wait(700), tap("ok"), wait(1500), tap("down"), wait(700), tap("ok"), wait(1500), tap("up", 2, 700), wait(700), tap("ok"), wait(1500), tap("right"), wait(900), tap("down", 4, 700), wait(900), tap("up", 4, 700), wait(700), tap("left"), wait(900)],
     steps: 18,
   },

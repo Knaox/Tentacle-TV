@@ -69,6 +69,10 @@ export function compareLite(a, b) {
   for (const before of a.screens) {
     const after = b.screens.find((s) => s.id === before.id);
     if (!after) continue;
+    if (before.skipped || after.skipped) {
+      lines.push(`| ${before.id} | non mesuré ${before.skipped ? "avant" : "après"} | | | | | | | |`);
+      continue;
+    }
     lines.push(`| ${before.id} | ${delta(jankPct(before), jankPct(after), f1)} | ${delta(gfxMean(before, "slowUiThread"), gfxMean(after, "slowUiThread"))} | ${delta(gfxMean(before, "p90"), gfxMean(after, "p90"))} | ${delta(before.cpu.ui ?? 0, after.cpu.ui ?? 0)} | ${delta(before.cpu.js ?? 0, after.cpu.js ?? 0)} | ${delta(before.cpu.render ?? 0, after.cpu.render ?? 0)} | ${delta(memoryMean(before, "totalPss"), memoryMean(after, "totalPss"), f1)} | ${delta(memoryMean(before, "graphics"), memoryMean(after, "graphics"), f1)} |`);
   }
   return lines.join("\n");

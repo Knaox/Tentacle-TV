@@ -165,12 +165,17 @@ noter la charge** (le parcours la relève à chaque mesure et alerte au-delà de
    (`ui`, `js` = `mqt_js`, `render`, `images`, `gc`…), `dumpsys gfxinfo`
    complet (images, ratées, « Slow UI thread », envoi des bitmaps, centiles)
    et la mémoire après le geste.
+   Une mise en place qui n'aboutit pas (deux fois) : l'écran est noté
+   « NON MESURÉ », avec la capture `<scénario>-echec.png` et les écrans
+   visités ; le parcours continue. Même interrompu, `resume.json` garde ce
+   qui a été mesuré (`aborted` dit pourquoi).
 4. **Endurance** ×`--endurance` : sans relancer, des segments vérifiés (rangées ;
-   fiche par « Plus d'infos » ; Films par le rail, grille tenue, retour à
-   l'accueil), la mémoire après chaque tour — une fuite se lit à la pente.
-   Chaque segment doit finir sur l'écran attendu (et passer par la fiche ou
-   la bibliothèque) : une dérive ARRÊTE l'endurance, jamais de touches à
-   l'aveugle. Trace Perfetto du premier tour avec `--perfetto`.
+   fiche par « Plus d'infos » ; Films par le rail, 6 rangées de la grille,
+   Retour — la page s'était empilée sur l'accueil), la mémoire après chaque
+   tour — une fuite se lit à la pente. Chaque segment doit finir sur l'écran
+   attendu (et passer par la fiche ou la bibliothèque) : une dérive ARRÊTE
+   l'endurance, capture `endurance-derive-tour<n>.png` à l'appui, jamais de
+   touches à l'aveugle. Trace Perfetto du premier tour avec `--perfetto`.
 5. **Pression** (`--pressure`) : `am send-trim-memory` RUNNING_LOW puis
    RUNNING_CRITICAL (mémoire relevée après chacun), puis un mangeur de
    mémoire native (`keys/Hog.java`, 80 % de la mémoire disponible, montée
@@ -197,9 +202,34 @@ adb -s emulator-5642 shell setprop debug.tentacle.media_profile bcm7271   # puis
 adb -s emulator-5642 shell setprop debug.tentacle.media_profile ""        # le vrai profil
 ```
 
+Deux autres valeurs (L3) : `shield` injecte le profil RÉEL de la Shield
+relevé le 06/10 (comparer la box et la Shield sur le même émulateur),
+`survey` écrit le profil réel de l'appareil dans `logcat -s TentacleMedia`
+5 s après le lancement, sans une touche. Sans profil injecté, l'émulateur
+n'a que des décodeurs logiciels, écartés par le relevé : le verdict y vaut
+« refus ».
+
 Hypothèses du profil (à relever sur la vraie box) : HEVC Main / Main 10 4K60,
 VP9 Profile 0 / 2 4K60, H.264 jusqu'en 4K30, pas d'AV1, pas de Dolby Vision ;
 passthrough HDMI AC3 / E-AC3.
+
+## Pièges vécus
+
+- **Un OK traité en retard devient un appui maintenu.** Sous la charge, l'OK
+  sur une entrée du rail a ouvert le menu de l'entrée (Déplacer, Monter,
+  Masquer…) au lieu de la page : laisser le rail se poser (2 s) avant OK.
+  L'injecteur envoie pourtant un appui de 60 ms : c'est l'app, en retard, qui
+  le lit maintenu. Chaque passe repart d'une session et d'un faux backend
+  neufs : rien ne survit d'un geste parti de travers.
+- **L'entrée de la grille varie** (première affiche ou barre de filtres, selon
+  l'arrivée des données) : `saisons-episodes` reste instable (voir son
+  commentaire dans `lib/scenarios.mjs`).
+- **Sous une forte charge du Mac (> 80)**, le détecteur de qemu tue
+  l'émulateur (« detected a hanging thread 'QEMU2 CPU0 thread' ») ; un
+  démarrage à froid peut prendre 8 min. Relancer `avd start`.
+- **Démarrage à froid très variable** : 0,9 à 2,2 s jusqu'à l'accueil prêt à
+  charge 11-40, 6 à 18 s à charge 40-60 dans la passe suivante — toujours
+  lire la charge relevée à côté.
 
 ## Limites — ce que le banc NE prouve PAS
 
