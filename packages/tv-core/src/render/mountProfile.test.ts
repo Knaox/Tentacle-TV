@@ -12,6 +12,7 @@ describe("le profil de montage", () => {
       gridDrawDistance: 1100,
       gridActiveDrawDistance: 1100,
       gridWidenStep: 1100,
+      gridWidenDelayMs: 0,
       episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
     });
   });

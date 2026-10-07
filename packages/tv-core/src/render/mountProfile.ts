@@ -56,6 +56,9 @@ export interface MountProfile {
   gridActiveDrawDistance: number;
   /** Le pas de cet élargissement, en points par image. */
   gridWidenStep: number;
+  /** Le délai, après l'arrivée des titres, au bout duquel l'élargissement
+   *  part de lui-même (l'ouverture de la page passée). */
+  gridWidenDelayMs: number;
   /** La fenêtre de la liste des épisodes d'une saison. */
   episodes: ListWindow;
 }
@@ -71,6 +74,7 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     gridDrawDistance: 1100,
     gridActiveDrawDistance: 1100,
     gridWidenStep: 1100,
+    gridWidenDelayMs: 0,
     // Les valeurs de React Native pour le lot (10) : celles d'avant.
     episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
   },
@@ -89,6 +93,8 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     gridActiveDrawDistance: 600,
     // Une demi-ligne par image : ~3 affiches.
     gridWidenStep: 200,
+    // L'entrée de la page (fondu, premières images) passée.
+    gridWidenDelayMs: 700,
     // Un écran de vignettes (≈ 3,4) et la suivante ; un écran de chaque côté.
     episodes: { initialNumToRender: 4, windowSize: 3, maxToRenderPerBatch: 2 },
   },

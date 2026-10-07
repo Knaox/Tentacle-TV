@@ -6,7 +6,7 @@ import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, gridLineReveal } from "@tent
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
-import { useWidenOnMove } from "./useWidenOnMove";
+import { useGridAhead } from "./useGridAhead";
 import { mountProfile } from "../../render/mountProfile";
 
 /**
@@ -147,7 +147,7 @@ export const PosterGrid = memo(function PosterGrid({
   const width = posterWidth(columns);
   const lines = useLines(cards, columns);
   const list = useRef<FlashList<Line>>(null);
-  const focusCard = useWidenOnMove(list, cards, columns, onFocusCard);
+  const focusCard = useGridAhead(list, cards, columns, onFocusCard);
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<Line>) => (
       <GridLine
