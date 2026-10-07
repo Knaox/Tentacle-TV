@@ -8,24 +8,26 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 ## [1.11.0]
 <!-- Bloc nu : Google Play (500 caractères), qui a la 1.10.3 depuis le 04/10. -->
 ### FR
-- **Appareils et TV** dans le Profil : la TV se jumelle dès le dernier caractère du code
+- **Appareils et TV** dans le Profil : jumelage dès le dernier caractère
 - **L'écran se cale sur la cadence du film**, sans saccade
-- **Jellyfin redémarre ?** La lecture continue, sans rechargement (serveur 1.24.0)
+- **Jellyfin redémarre ?** La lecture continue (serveur 1.24.0)
 - **Qualité réduite plus fine** (HEVC), son d'origine gardé
 - Famille en vert, TV déjumelée retirée aussitôt
 - **Hors ligne** direct, sans fenêtre : un message dit la cause
 - Serveur ancien : rien ne casse, les nouveautés attendent
 - « Là où vous en étiez » pour les titres entamés
+- Le clavier ne recouvre plus les champs
 
 ### EN
-- **Devices and TVs** in Profile: the TV pairs as soon as the code's last character is typed
+- **Devices and TVs** in Profile: pairing on the code's last character
 - **The screen matches the film's frame rate**, no stutter
-- **Jellyfin restarting?** Playback continues, with no reload (server 1.24.0)
+- **Jellyfin restarting?** Playback continues (server 1.24.0)
 - **Sharper reduced quality** (HEVC), original audio kept
 - Family in green, unpaired TV removed at once
 - **Offline** right away, no blocking screen: a message says why
 - Older server: nothing breaks, new features wait
 - "Where you left off" for in-progress titles
+- The keyboard no longer covers text fields
 
 ## [ios-1.11.0]
 <!-- Bloc iOS (App Store Connect, 4000 caractères) : l'App Store part de la 1.10.3, soumise le 04/10. La cadence de l'écran est propre à Android : absente ici. -->
