@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { tentacleSourceUrl } from "@tentacle-tv/shared/licenses";
 import { TentacleLogo } from "@/components/ui/TentacleLogo";
 import { InfoRowTv } from "./InfoRowTv";
 
@@ -116,6 +117,19 @@ export function AboutScreenTv() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* La mention de l'AGPL (copyright, absence de garantie) et l'adresse
+          de la source de CETTE version : condition de la permission des
+          boutiques (LICENSE-EXCEPTIONS) et AGPL §13 pour le code servi. */}
+      <section className="mb-12 max-w-3xl">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.08em] text-content-tertiary">
+          {t("license")}
+        </h2>
+        <p className="text-base leading-relaxed text-content-secondary">{t("tentacleLicense", { version })}</p>
+        <p className="mt-3 text-base text-content-secondary">
+          {t("sourceCode")} — {tentacleSourceUrl("webos", version)}
+        </p>
       </section>
 
       <p className="text-sm text-content-tertiary">
