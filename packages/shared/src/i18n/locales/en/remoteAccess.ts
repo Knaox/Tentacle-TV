@@ -2,15 +2,17 @@
  * Remote access — the admin section and the optional setup wizard step.
  * Keys follow the identifiers of `packages/shared/src/remoteAccess/`.
  */
+import exposure from "./remoteAccessExposure";
+
 export default {
   // ── The page ──────────────────────────────────────────────────────────
   pageTitle: "Remote access",
   pageDescription: "Reach Tentacle away from home, over HTTPS, and check it from the Internet.",
-  switchLabel: "Access from the Internet",
-  enabledHint: "The three steps below guide you, and the test checks from the outside.",
-  disabledHint: "Tentacle stays reachable from your local network only. Turn it on to be guided step by step.",
+  switchLabel: "Access from outside",
+  enabledHint: "The steps below guide you, and the test checks from the outside.",
+  disabledHint: "Off: nothing is published, Tentacle stays reachable from home only. Turn it on to be guided step by step.",
   localHttpNotice: "You are using HTTP on your local network: that's fine here. From the Internet, always go through HTTPS.",
-  stepOf: "Step {{n}} of 3",
+  stepOf: "Step {{n}} of {{total}}",
   loadError: "The remote access settings could not be read.",
   retry: "Try again",
   save: "Save",
@@ -23,17 +25,17 @@ export default {
   sourceLink: "Source",
 
   // ── Step 1: what faces the Internet ───────────────────────────────────
-  step1Title: "What faces the Internet",
-  step1Description: "An HTTPS reverse proxy — yours — sits in front of Tentacle and Jellyfin: automatic certificates, and a single port to open for everything. The Docker stack does not ship one: here is what to put in it.",
+  step1Title: "Do you already have a reverse proxy?",
+  step1Description: "What receives the visits from the Internet: Tentacle itself (“No proxy”, the default), or the HTTPS reverse proxy you already have.",
   recommended: "Recommended",
   proxy_caddy_title: "Caddy",
-  proxy_caddy_body: "Automatic HTTPS in a few Caddyfile lines. The simplest if you have no proxy yet.",
+  proxy_caddy_body: "Your Caddy: automatic HTTPS in a few Caddyfile lines.",
   proxy_traefik_title: "Traefik",
   proxy_traefik_body: "Your Traefik, through its file provider: a routes file to add.",
   proxy_other_title: "Nginx or Nginx Proxy Manager",
   proxy_other_body: "Nginx Proxy Manager, Nginx, or another proxy: an Nginx template to adapt.",
   proxy_none_title: "No proxy",
-  proxy_none_body: "Tentacle's port opened as is: everything travels unencrypted. Not recommended.",
+  proxy_none_body: "The default if you have no reverse proxy: Tentacle's port is opened as is, without HTTPS.",
   domainTentacle: "Tentacle domain",
   domainTentacleHint: "It must point to your public address: a DNS A record, and AAAA if you have IPv6.",
   domainJellyfin: "Jellyfin domain (optional)",
@@ -53,7 +55,7 @@ export default {
   snippetTraefik: "Traefik (file)",
   npmHint: "In Nginx Proxy Manager: one \"Proxy Host\" per domain, to {{target}}, with \"Websockets Support\", a Let's Encrypt certificate and \"Force SSL\". Jellyfin's CORS headers go in the \"Advanced\" tab.",
   nginxCertHint: "Add your ssl_certificate and ssl_certificate_key lines: Nginx Proxy Manager sets them itself.",
-  noneWarning: "Without HTTPS, passwords and session tokens cross the Internet in clear text. Prefer a proxy.",
+  noneWarning: "Without HTTPS, what crosses the Internet is not encrypted. For later: a reverse proxy, or a private network like Tailscale (plan B, below).",
 
   // ── Step 2: the router ports ──────────────────────────────────────────
   step2Title: "Open the router ports",
@@ -171,4 +173,7 @@ export default {
   planBBody: "With an address shared by your provider (CGNAT), or a router without forwarding, a private network such as Tailscale connects your devices to this server without opening anything. Tentacle does not integrate it: every device needs Tailscale, and those that cannot install it have no access.",
   planBGuide: "The guide explains when and how.",
   guideLink: "Read the remote access guide",
+
+  // ── Privé ou public, l'interrupteur, l'adresse publique (remoteAccessExposure.ts) ──
+  ...exposure,
 };

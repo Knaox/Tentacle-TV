@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { RemoteAccessSettingsPatch, RemoteAccessState, RemoteCheckReport } from "@tentacle-tv/shared";
+import type { PublicIpReport, RemoteAccessSettingsPatch, RemoteAccessState, RemoteCheckReport } from "@tentacle-tv/shared";
 import { BACKEND, creds, hdrs } from "../../pages/adminUtils";
 
 /**
@@ -8,6 +8,14 @@ import { BACKEND, creds, hdrs } from "../../pages/adminUtils";
  * `packages/shared/src/remoteAccess/remoteAccessContract.ts`.
  */
 export const REMOTE_ACCESS_KEY = ["admin", "remote-access"] as const;
+export const PUBLIC_IP_KEY = ["admin", "remote-access", "public-ip"] as const;
+
+/** La lecture directe telle que l'écran la règle : `publicUrl: null` efface l'adresse publique (capacité `admin.remoteExposure`). */
+export interface DirectPlayPatch {
+  enabled: boolean;
+  privateUrl?: string;
+  publicUrl: string | null;
+}
 
 export class RemoteAccessError extends Error {
   constructor(
@@ -40,7 +48,13 @@ export const remoteAccessApi = {
   state: () => call<RemoteAccessState>("/remote-access"),
   save: (patch: RemoteAccessSettingsPatch) => call<RemoteAccessState>("/remote-access", "PUT", patch),
   check: () => call<RemoteCheckReport>("/remote-access/check", "POST"),
+  publicIp: () => call<PublicIpReport>("/remote-access/public-ip"),
+  saveDirectPlay: (patch: DirectPlayPatch) => call<{ success: boolean }>("/direct-streaming", "PUT", patch),
 };
+
+/** L'adresse publique détectée — demandée seulement si le serveur sait le faire. */
+export const usePublicIp = (enabled: boolean) =>
+  useQuery({ queryKey: PUBLIC_IP_KEY, queryFn: remoteAccessApi.publicIp, enabled, staleTime: 5 * 60_000, retry: false });
 
 export const useRemoteAccess = () => useQuery({ queryKey: REMOTE_ACCESS_KEY, queryFn: remoteAccessApi.state, staleTime: 0 });
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactNode } from "react";
-import type { RemoteAccessState, RemoteCheckReport } from "@tentacle-tv/shared";
+import type { PublicIpReport, RemoteAccessState, RemoteCheckReport } from "@tentacle-tv/shared";
 
 /**
  * L'accès à distance rendu à plat, comme les autres bancs de composants :
@@ -12,6 +12,8 @@ import type { RemoteAccessState, RemoteCheckReport } from "@tentacle-tv/shared";
 
 const h = vi.hoisted(() => ({
   state: null as unknown as RemoteAccessState,
+  exposure: true,
+  publicIp: { data: undefined as PublicIpReport | undefined, isPending: false },
   check: { data: undefined as RemoteCheckReport | undefined, isPending: false, error: null as unknown, mutate: () => undefined },
 }));
 
@@ -29,7 +31,8 @@ vi.mock("../../pages/adminUtils", () => ({
   hdrs: () => ({}),
 }));
 vi.mock("../admin/services/servicesApi", () => ({ servicesApi: { savePublicUrl: async () => undefined } }));
-vi.mock("../admin/services/servicesModel", () => ({ SERVICES_KEYS: { publicUrl: ["admin", "services", "public-url"] } }));
+vi.mock("../admin/services/servicesModel", () => ({ SERVICES_KEYS: { publicUrl: ["admin", "services", "public-url"], directStreaming: ["admin", "services", "direct"] } }));
+vi.mock("@tentacle-tv/api-client", () => ({ useServerCapability: () => h.exposure }));
 vi.mock("../PageTransition", () => ({ PageTransition: ({ children }: { children: ReactNode }) => <div>{children}</div> }));
 vi.mock("./remoteAccessApi", () => ({
   REMOTE_ACCESS_KEY: ["admin", "remote-access"],
@@ -37,6 +40,8 @@ vi.mock("./remoteAccessApi", () => ({
   useRemoteAccess: () => ({ isPending: false, isError: false, data: h.state, refetch: () => undefined }),
   useSaveRemoteAccess: () => ({ mutateAsync: async () => h.state }),
   useRunRemoteCheck: () => h.check,
+  usePublicIp: () => h.publicIp,
+  remoteAccessApi: { saveDirectPlay: async () => ({ success: true }) },
 }));
 
 vi.stubGlobal("window", { location: { protocol: "http:", hostname: "192.168.1.20", host: "192.168.1.20:3471" } });
@@ -57,23 +62,34 @@ function makeState(over: Partial<RemoteAccessState["settings"]> = {}, rest: Part
     stack: "full",
     checkServiceUrl: "https://check.tentacletv.app",
     lastCheck: null,
+    directPlay: { enabled: true, privateUrl: "http://192.168.1.20:8096", publicUrl: null },
     ...rest,
   };
 }
 
 beforeEach(() => {
   h.state = makeState();
+  h.exposure = true;
+  h.publicIp = { data: { outcome: "found", v4: "203.0.113.5", v6: null, source: "echo", detectedAt: "2026-10-07T10:00:00.000Z" }, isPending: false };
   h.check = { data: undefined, isPending: false, error: null, mutate: () => undefined };
 });
 
 describe("le panneau de l'accès à distance", () => {
-  it("coupé : l'interrupteur et le guide, aucune étape", () => {
+  it("coupé (le défaut) : privé ou public en deux schémas, l'adresse sur le réseau pré-remplie, l'interrupteur — et aucune étape", () => {
     h.state = makeState({ enabled: false });
     const html = renderToStaticMarkup(<RemoteAccessPanel />);
     expect(html).toContain('role="switch"');
     expect(html).toContain('aria-checked="false"');
-    expect(html).toContain("disabledHint");
+    expect(html).toContain("exposureOff");
+    // Les deux schémas, et le réglage en cours dit en toutes lettres (le privé).
+    expect(html.match(/<svg[^>]*role="img"/g)).toHaveLength(2);
+    expect(html.indexOf("modeCurrent")).toBeLessThan(html.indexOf("modePublicTitle"));
+    // L'adresse de ce serveur sur le réseau : celle de la page, modifiable, avec un exemple.
+    expect(html).toContain('value="http://192.168.1.20:3471"');
+    expect(html).toContain("lanExample");
     expect(html).not.toContain("step1Title");
+    expect(html).not.toContain("public-ip");
+    expect(html).toContain("security_default");
     expect(html).toContain('id="guide"');
   });
 
@@ -103,19 +119,54 @@ describe("le panneau de l'accès à distance", () => {
     expect(html).not.toContain("--profile");
   });
 
-  it("sans mandataire : la mise en garde, et le port de Tentacle à rediriger", () => {
-    h.state = makeState({ proxy: "none" });
-    const html = renderToStaticMarkup(<RemoteAccessPanel />);
+  it("sans mandataire (le défaut, en tête, et dit « ni inclus ni installés » pour les autres) : l'adresse publique proposée, les DEUX ports avec leurs numéros", () => {
+    h.state = makeState({ proxy: "none" }, { publicUrl: null, jellyfinHostPort: 47896, hostPort: 47300 });
+    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
+    expect(html).toContain("proxyWhat");
+    expect(html).toContain("proxyNotIncluded");
+    expect(html.indexOf("proxy_none_title")).toBeLessThan(html.indexOf("proxy_caddy_title"));
+    expect(html).toContain("defaultChoice");
     expect(html).toContain("noneWarning");
+    expect(html).toContain("http://203.0.113.5:47300");
+    expect(html).toContain("publicLinkUse");
     expect(html).toContain("purpose_tentacle");
-    expect(html).toContain(">3471<");
+    expect(html).toContain(">47300<");
+    expect(html).toContain(">47896<");
+    // Jellyfin : facultatif tant que la lecture directe hors de la maison est coupée.
+    expect(html).toContain("portOptional");
   });
 
-  it("assistant : les trois étapes seules, sans interrupteur ni guide", () => {
+  it("l'adresse publique détectée ; le test d'ouverture pas encore en ligne : comment vérifier soi-même", () => {
+    h.state = makeState({ proxy: "none" }, { publicUrl: null, lastCheck: { checkedAt: "2026-10-07T10:00:00.000Z", outcome: "service_unavailable", publicIp: { v4: null, v6: null }, items: [] } });
+    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
+    expect(html).toContain(">203.0.113.5<");
+    expect(html).toContain("publicIpDetected");
+    expect(html).toContain('reach_no_service{"url":"http://203.0.113.5:3471"}');
+    expect(html).toContain('modePublicBody{"ip":"203.0.113.5"}');
+  });
+
+  it("la lecture directe hors de la maison : une étape à elle, facultative, coupée tant qu'aucune adresse publique", () => {
+    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
+    expect(html).toContain("directTitle");
+    expect(html).toContain('directHome{"url":"http://192.168.1.20:8096"}');
+    expect(html).toContain("directOff");
+    expect(html).toContain('stepOf{"n":4,"total":4}');
+  });
+
+  it("un serveur sans la capacité : ni adresse publique détectée, ni lecture directe extérieure — trois étapes", () => {
+    h.exposure = false;
+    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
+    expect(html).not.toContain("publicIpTitle");
+    expect(html).not.toContain("directTitle");
+    expect(html).toContain('stepOf{"n":3,"total":3}');
+  });
+
+  it("assistant : le même panneau, interrupteur compris (coupé par défaut), sans le guide", () => {
     h.state = makeState({ enabled: false });
     const html = renderToStaticMarkup(<RemoteAccessPanel variant="wizard" />);
-    expect(html).toContain("step3Title");
-    expect(html).not.toContain('role="switch"');
+    expect(html).toContain('role="switch"');
+    expect(html).toContain('aria-checked="false"');
+    expect(html).not.toContain("step3Title");
     expect(html).not.toContain('id="guide"');
   });
 });

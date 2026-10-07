@@ -10,9 +10,12 @@ describe("planPorts", () => {
     ]);
   });
 
-  it("sans mandataire : le port de Tentacle, et Jellyfin seulement pour la lecture directe publique", () => {
-    expect(planPorts({ proxy: "none", hostPort: 3471, jellyfinHostPort: 8096, directPlayPublic: false }).map((r) => r.external)).toEqual([3471]);
-    expect(planPorts({ proxy: "none", hostPort: 3000, jellyfinHostPort: 8096, directPlayPublic: true }).map((r) => r.external)).toEqual([3000, 8096]);
+  it("sans mandataire : les DEUX ports, avec leurs vrais numéros — Jellyfin facultatif tant que la lecture directe extérieure est coupée", () => {
+    expect(planPorts({ proxy: "none", hostPort: 47300, jellyfinHostPort: 47896, directPlayPublic: false }).map((r) => [r.external, r.target, !!r.optional])).toEqual([
+      [47300, "tentacle", false],
+      [47896, "jellyfin", true],
+    ]);
+    expect(planPorts({ proxy: "none", hostPort: 3000, jellyfinHostPort: 8096, directPlayPublic: true }).map((r) => [r.external, !!r.optional])).toEqual([[3000, false], [8096, false]]);
     expect(planPorts({ proxy: "none", hostPort: 3000, jellyfinHostPort: null, directPlayPublic: true }).map((r) => r.external)).toEqual([3000]);
   });
 });

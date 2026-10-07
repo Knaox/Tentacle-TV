@@ -1,9 +1,6 @@
-import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { lanAddressOf, planPorts, type PortRule, type RemoteAccessState, type RemoteAccessSettingsPatch } from "@tentacle-tv/shared";
-import { Field } from "../admin/services/Field";
-import { cls } from "../../pages/adminUtils";
-import { guessLanUrl, isValidLocalUrl } from "./lanAddress";
+import { guessLanUrl } from "./lanAddress";
 import { RouterGuideCard } from "./RouterGuideCard";
 
 interface PortsStepProps {
@@ -12,72 +9,44 @@ interface PortsStepProps {
 }
 
 /**
- * Étape 2 : l'adresse du serveur sur le réseau local (devinée depuis la page,
- * modifiable), les redirections à créer — un tableau sur ordinateur, des
- * cartes sur téléphone, jamais de défilement de côté — et le guide de la box.
+ * Les redirections à créer sur la box — les DEUX ports avec leurs vrais
+ * numéros sans mandataire (Jellyfin dit facultatif tant que la lecture
+ * directe extérieure est coupée) ; un tableau sur ordinateur, des cartes sur
+ * téléphone, jamais de défilement de côté — et le guide de la box. La cible
+ * est l'adresse de ce serveur sur le réseau (`LanAddressField`).
  */
 export function PortsStep({ state, save }: PortsStepProps) {
   const { t } = useTranslation("remoteAccess");
-  const guessed = useMemo(() => guessLanUrl(), []);
-  const [draft, setDraft] = useState(state.settings.localUrl ?? guessed ?? "");
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "failed">("idle");
-  const dirty = draft.trim().replace(/\/+$/, "") !== (state.settings.localUrl ?? "");
-  const invalid = draft.trim() !== "" && !isValidLocalUrl(draft);
-
   const rules = planPorts({
     proxy: state.settings.proxy,
     hostPort: state.hostPort,
     jellyfinHostPort: state.jellyfinHostPort,
     directPlayPublic: state.jellyfinPublicUrl !== null,
   });
-  const target = lanAddressOf(state.settings.localUrl ?? (isValidLocalUrl(draft) ? draft : null)) ?? t("targetUnknown");
-
-  const submit = async () => {
-    setStatus("saving");
-    try {
-      await save({ localUrl: draft.trim() === "" ? null : draft.trim() });
-      setStatus("saved");
-    } catch {
-      setStatus("failed");
-    }
-  };
+  const target = lanAddressOf(state.settings.localUrl) ?? lanAddressOf(guessLanUrl()) ?? t("targetUnknown");
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-3">
-        <Field
-          label={t("lanAddress")}
-          hint={!state.settings.localUrl && guessed && draft === guessed ? `${t("lanAddressDetected")} ${t("lanAddressHint")}` : t("lanAddressHint")}
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            setStatus("idle");
-          }}
-          error={invalid ? t("lanAddressInvalid") : null}
-          placeholder="http://192.168.1.20:3000"
-          autoComplete="off"
-          spellCheck={false}
-          inputMode="url"
-          className="min-w-0 grow basis-72"
-        />
-        <button type="button" onClick={() => void submit()} disabled={!dirty || invalid || status === "saving"} className={`${cls.bs} mb-[1.625rem]`}>
-          {status === "saving" ? t("saving") : status === "saved" && !dirty ? t("saved") : t("save")}
-        </button>
-      </div>
-      {status === "failed" ? (
-        <p role="alert" className="text-sm text-status-error-fg">
-          {t("saveFailed")}
-        </p>
-      ) : null}
-
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-content-primary">{t("portsTitle")}</h3>
+        <h3 className="mb-1 text-sm font-semibold text-content-primary">{t("portsTitle")}</h3>
+        <p className="mb-3 text-sm leading-relaxed text-content-tertiary">{t("portsIntro")}</p>
         <RulesTable rules={rules} target={target} />
         <RulesCards rules={rules} target={target} />
       </div>
 
       <RouterGuideCard routerId={state.settings.routerId} onChange={(routerId) => void save({ routerId })} />
     </div>
+  );
+}
+
+/** « Jellyfin (lecture directe) », et pour une ligne facultative, quand elle sert. */
+function Purpose({ rule }: { rule: PortRule }) {
+  const { t } = useTranslation("remoteAccess");
+  return (
+    <>
+      {t(`purpose_${rule.purpose}`)}
+      {rule.optional ? <span className="mt-0.5 block text-xs text-content-tertiary">{t("portOptional")}</span> : null}
+    </>
   );
 }
 
@@ -103,7 +72,9 @@ function RulesTable({ rules, target }: { rules: PortRule[]; target: string }) {
             <td className={`${td} font-mono tabular-nums`}>{rule.internal}</td>
             <td className={td}>{rule.protocol}</td>
             <td className={`${td} font-mono`}>{target}</td>
-            <td className={`${td} text-content-secondary`}>{t(`purpose_${rule.purpose}`)}</td>
+            <td className={`${td} text-content-secondary`}>
+              <Purpose rule={rule} />
+            </td>
           </tr>
         ))}
       </tbody>
@@ -117,7 +88,9 @@ function RulesCards({ rules, target }: { rules: PortRule[]; target: string }) {
     <ul className="space-y-2 sm:hidden">
       {rules.map((rule) => (
         <li key={`${rule.external}-${rule.purpose}`} className="rounded-xl border border-line-subtle bg-fill-faint p-3">
-          <p className="text-sm font-semibold text-content-primary">{t(`purpose_${rule.purpose}`)}</p>
+          <p className="text-sm font-semibold text-content-primary">
+            <Purpose rule={rule} />
+          </p>
           <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
             <dt className="text-content-tertiary">{t("colExternal")}</dt>
             <dd className="font-mono tabular-nums text-content-primary">{rule.external}</dd>

@@ -9,15 +9,17 @@
  * Espaces insécables (\u00a0) devant « ? », « : » et « ! », et dans les
  * guillemets (garde-fou : `remoteAccessVocabulary.test.ts`).
  */
+import exposure from "./remoteAccessExposure";
+
 export default {
   // ── La page ───────────────────────────────────────────────────────────
   pageTitle: "Accès à distance",
   pageDescription: "Joindre Tentacle hors de chez vous, en HTTPS, et le vérifier depuis Internet.",
-  switchLabel: "Accès depuis Internet",
-  enabledHint: "Les trois étapes ci-dessous vous accompagnent, et le test vérifie depuis l'extérieur.",
-  disabledHint: "Tentacle reste joignable depuis votre réseau local seulement. Activez pour être guidé pas à pas.",
+  switchLabel: "Accès depuis l'extérieur",
+  enabledHint: "Les étapes ci-dessous vous accompagnent, et le test vérifie depuis l'extérieur.",
+  disabledHint: "Coupé\u00a0: rien n'est publié, Tentacle reste joignable depuis la maison seulement. Allumez pour être guidé pas à pas.",
   localHttpNotice: "Vous êtes en HTTP sur votre réseau local\u00a0: c'est normal ici. Depuis Internet, passez toujours par HTTPS.",
-  stepOf: "Étape {{n}} sur 3",
+  stepOf: "Étape {{n}} sur {{total}}",
   loadError: "Les réglages de l'accès à distance n'ont pas pu être lus.",
   retry: "Réessayer",
   save: "Enregistrer",
@@ -30,17 +32,17 @@ export default {
   sourceLink: "Source",
 
   // ── Étape 1 : ce qui reçoit Internet ──────────────────────────────────
-  step1Title: "Ce qui reçoit Internet",
-  step1Description: "Un mandataire HTTPS — le vôtre — se place devant Tentacle et Jellyfin\u00a0: certificats automatiques, et un seul port à ouvrir pour tout. La pile Docker n'en embarque pas\u00a0: voici quoi y poser.",
+  step1Title: "Avez-vous déjà un mandataire\u00a0?",
+  step1Description: "Ce qui reçoit les visites d'Internet\u00a0: Tentacle lui-même («\u00a0Sans mandataire\u00a0», le choix par défaut), ou le mandataire HTTPS que vous avez déjà.",
   recommended: "Recommandé",
   proxy_caddy_title: "Caddy",
-  proxy_caddy_body: "HTTPS automatique en quelques lignes de Caddyfile. Le plus simple si vous n'avez encore aucun mandataire.",
+  proxy_caddy_body: "Votre Caddy\u00a0: HTTPS automatique en quelques lignes de Caddyfile.",
   proxy_traefik_title: "Traefik",
   proxy_traefik_body: "Votre Traefik, par son fournisseur de fichier\u00a0: un fichier de routes à lui ajouter.",
   proxy_other_title: "Nginx ou Nginx Proxy Manager",
   proxy_other_body: "Nginx Proxy Manager, Nginx, ou un autre mandataire\u00a0: un modèle Nginx à reprendre.",
   proxy_none_title: "Sans mandataire",
-  proxy_none_body: "Le port de Tentacle ouvert tel quel\u00a0: tout passe en clair. Déconseillé.",
+  proxy_none_body: "Le choix par défaut si vous n'avez pas de mandataire\u00a0: le port de Tentacle est ouvert tel quel, sans HTTPS.",
   domainTentacle: "Domaine de Tentacle",
   domainTentacleHint: "Il doit pointer vers votre adresse publique\u00a0: un enregistrement DNS A, et AAAA si vous avez l'IPv6.",
   domainJellyfin: "Domaine de Jellyfin (facultatif)",
@@ -60,7 +62,7 @@ export default {
   snippetTraefik: "Traefik (fichier)",
   npmHint: "Dans Nginx Proxy Manager\u00a0: un «\u00a0Proxy Host\u00a0» par domaine, vers {{target}}, avec «\u00a0Websockets Support\u00a0», un certificat Let's Encrypt et «\u00a0Force SSL\u00a0». Les en-têtes CORS de Jellyfin vont dans l'onglet «\u00a0Advanced\u00a0».",
   nginxCertHint: "Ajoutez vos lignes ssl_certificate et ssl_certificate_key\u00a0: Nginx Proxy Manager les pose lui-même.",
-  noneWarning: "Sans HTTPS, mots de passe et jetons de session traversent Internet en clair. Préférez un mandataire.",
+  noneWarning: "Sans HTTPS, ce qui passe par Internet n'est pas chiffré. Pour plus tard\u00a0: un mandataire, ou un réseau privé comme Tailscale (plan B, plus bas).",
 
   // ── Étape 2 : les ports de la box ─────────────────────────────────────
   step2Title: "Ouvrir les ports de la box",
@@ -178,4 +180,7 @@ export default {
   planBBody: "Avec une adresse partagée par l'opérateur (CGNAT), ou une box sans redirection, un réseau privé comme Tailscale relie vos appareils à ce serveur sans rien ouvrir. Tentacle ne l'intègre pas\u00a0: chaque appareil doit avoir Tailscale, et ceux qui ne peuvent pas l'installer n'y ont pas accès.",
   planBGuide: "Le guide explique quand et comment.",
   guideLink: "Lire le guide de l'accès à distance",
+
+  // ── Privé ou public, l'interrupteur, l'adresse publique (remoteAccessExposure.ts) ──
+  ...exposure,
 };

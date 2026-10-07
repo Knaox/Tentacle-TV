@@ -128,6 +128,7 @@ export * from "./setupWizard/setupDocLinks";
 export * from "./remoteAccess/checkProtocol";
 export * from "./remoteAccess/remoteAccessContract";
 export * from "./remoteAccess/portPlan";
+export * from "./remoteAccess/exposurePlan";
 export * from "./remoteAccess/remoteVerdict";
 export * from "./remoteAccess/proxySnippets";
 export * from "./remoteAccess/routerGuides";

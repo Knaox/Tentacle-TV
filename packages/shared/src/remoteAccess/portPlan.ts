@@ -6,9 +6,10 @@ import type { ReverseProxyKind } from "./remoteAccessContract";
  * - un MANDATAIRE HTTPS (Caddy, Traefik, Nginx Proxy Manager…) : 443, et 80
  *   pour la redirection vers HTTPS et les certificats Let's Encrypt. Jellyfin
  *   passe par lui aussi : rien d'autre à ouvrir ;
- * - AUCUN mandataire : le port de Tentacle sur l'hôte, et celui de Jellyfin
- *   seulement si la lecture directe vise une adresse publique. C'est du HTTP
- *   en clair sur Internet — l'interface le dit en rouge.
+ * - AUCUN mandataire : le port de Tentacle sur l'hôte, ET celui de Jellyfin
+ *   (avec son vrai numéro), marqué facultatif tant que la lecture directe
+ *   hors de la maison n'est pas allumée. C'est du HTTP en clair sur Internet
+ *   — l'interface conseille le HTTPS.
  *
  * Le port extérieur vaut le port intérieur : c'est ce que les guides des box
  * proposent d'office, et ce que le test d'ouverture vérifie.
@@ -23,6 +24,8 @@ export interface PortRule {
   protocol: "TCP";
   target: PortRuleTarget;
   purpose: PortRulePurpose;
+  /** Seulement si la lecture directe hors de la maison est allumée (Jellyfin, sans mandataire). */
+  optional?: boolean;
 }
 
 export interface PortPlanInput {
@@ -31,7 +34,7 @@ export interface PortPlanInput {
   hostPort: number;
   /** Le port de Jellyfin sur l'hôte, s'il est publié. */
   jellyfinHostPort: number | null;
-  /** La lecture directe vise une adresse publique de Jellyfin : il doit se joindre d'Internet. */
+  /** La lecture directe vise une adresse publique de Jellyfin : son port est alors à ouvrir pour de bon. */
   directPlayPublic: boolean;
 }
 
@@ -42,7 +45,7 @@ function rule(port: number, target: PortRuleTarget, purpose: PortRulePurpose): P
 export function planPorts(input: PortPlanInput): PortRule[] {
   if (input.proxy !== "none") return [rule(443, "proxy", "https"), rule(80, "proxy", "http_redirect")];
   const rules = [rule(input.hostPort, "tentacle", "tentacle")];
-  if (input.directPlayPublic && input.jellyfinHostPort) rules.push(rule(input.jellyfinHostPort, "jellyfin", "jellyfin"));
+  if (input.jellyfinHostPort) rules.push({ ...rule(input.jellyfinHostPort, "jellyfin", "jellyfin"), ...(input.directPlayPublic ? {} : { optional: true }) });
   return rules;
 }
 
