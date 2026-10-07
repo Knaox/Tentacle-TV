@@ -5,6 +5,7 @@ import type { PlatformTraits } from "./platformTraits";
  * Android TV. La forme : `platformTraits.ts`.
  */
 export const PLATFORM_TRAITS: PlatformTraits = {
+  licensePlatform: "tvos",
   liquidGlass: true,
   // L'AVPlayer ne dit pas sa première image au lecteur : la règle d'avant.
   playerAnnouncesFirstFrame: false,

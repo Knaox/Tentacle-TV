@@ -11,6 +11,7 @@ import {
   type AppTheme,
 } from "../theme";
 import { GlassCard, Divider, SubtleBackground, FadeIn, IconButton } from "../components/ui";
+import { LicenseNoticeCard } from "./licenses/LicenseNoticeCard";
 
 const TECH_STACK: { name: string; descKey: string }[] = [
   { name: "React Native", descKey: "techReactNative" },
@@ -213,6 +214,7 @@ export function CreditsScreen() {
               </Text>
             </View>
           </GlassCard>
+          <LicenseNoticeCard />
         </FadeIn>
 
         <Text style={{

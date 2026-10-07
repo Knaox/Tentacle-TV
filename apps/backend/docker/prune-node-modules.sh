@@ -24,7 +24,9 @@ prune() {
 
   # Rien de ce qui ne s'exécute pas : cartes de sources, types, sources
   # TypeScript publiées à côté du JavaScript, documentation, tests, exemples.
-  find . -type f \( -name '*.map' -o -name '*.ts' -o -name '*.mts' -o -name '*.cts' \
+  # …sauf les licences et avis (LICENSE.md, license.md…) : MIT, ISC, BSD et
+  # BlueOak exigent que leur texte accompagne chaque copie.
+  find . -type f ! -iname 'licen[cs]e*' ! -iname 'copying*' ! -iname 'notice*' \( -name '*.map' -o -name '*.ts' -o -name '*.mts' -o -name '*.cts' \
     -o -name '*.md' -o -name '*.markdown' -o -iname 'CHANGELOG*' -o -iname 'HISTORY*' \
     -o -name '*.tsbuildinfo' -o -name '.npmignore' -o -name '.eslintrc*' -o -name '.prettierrc*' \
     -o -name '.editorconfig' -o -name 'tsconfig*.json' \) -delete

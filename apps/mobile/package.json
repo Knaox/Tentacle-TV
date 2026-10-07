@@ -1,6 +1,7 @@
 {
   "name": "@tentacle-tv/mobile",
   "version": "1.11.0",
+  "license": "AGPL-3.0-or-later",
   "private": true,
   "main": "./index.js",
   "scripts": {

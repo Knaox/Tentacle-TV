@@ -162,6 +162,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           <Stack.Screen name="support" options={{ presentation: "card" }} />
           <Stack.Screen name="about" options={{ presentation: "card" }} />
           <Stack.Screen name="credits" options={{ presentation: "card" }} />
+          <Stack.Screen name="licenses" options={{ presentation: "card" }} />
+          <Stack.Screen name="license-text" options={{ presentation: "card" }} />
           <Stack.Screen name="profile/[section]" options={{ presentation: "card" }} />
           <Stack.Screen name="family" options={{ presentation: "card" }} />
           <Stack.Screen name="settings/password" options={{ presentation: "card" }} />

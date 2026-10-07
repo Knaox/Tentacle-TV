@@ -207,6 +207,13 @@ jobs:
             echo "play_track=$TRACK"; echo "tag=tv-v$VERSION"
           } >> "$GITHUB_OUTPUT"
 
+      # LA GARDE DE LICENCE Apple TV. PrismCore tire FFmpeg de MPVKit : seul le
+      # produit « MPVKit » (LGPL), à une version vérifiée, part vers TestFlight
+      # et l'App Store — le même binaire (lib/tvos-player-license.mjs).
+      - name: Licence du lecteur Apple TV (MPVKit LGPL)
+        if: steps.plan.outputs.channel != 'build' && steps.plan.outputs.appletv != 'skip'
+        run: node .github/scripts/check-tvos-player-license.mjs
+
       # Le pré-vol ne demande que les notes des cibles LIVRÉES, comme celui de
       # desktop.yml : le bloc nu pour Play (Android TV), « atv- » pour App Store
       # Connect (Apple TV). Une Apple TV livrée seule n'exige donc plus de bloc

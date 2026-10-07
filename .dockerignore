@@ -9,6 +9,8 @@
 !.npmrc
 !tsconfig.base.json
 !versions.json
+!LICENSE
+!LICENSE-EXCEPTIONS
 !compat/jellyfin.json
 !patches/
 !packages/

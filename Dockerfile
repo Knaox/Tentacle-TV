@@ -72,6 +72,9 @@ COPY apps/tv-webos/ apps/tv-webos/
 COPY tsconfig.base.json tsconfig.base.json
 # Source unique des versions (BACKEND_VERSION + versions affichées par le web)
 COPY versions.json versions.json
+# La licence de Tentacle TV (AGPL-3.0-or-later) et ses permissions additionnelles :
+# elles accompagnent l'image (étape « server »).
+COPY LICENSE LICENSE-EXCEPTIONS ./
 # Manifeste de compatibilité Jellyfin : le verdict connu hors ligne, que le
 # serveur remplace par une révision plus récente lue sur GitHub.
 COPY compat/jellyfin.json compat/jellyfin.json
@@ -195,8 +198,10 @@ ENV NODE_ENV=production \
 # les défis JavaScript de YouTube avec le Node du serveur (≥ 22,
 # services/trailers/ytExtract.ts). su-exec : rendre la main à l'utilisateur du
 # serveur après la préparation du volume. tini : un vrai PID 1, qui transmet
-# les signaux et récolte les processus orphelins. ffmpeg et fpcalc (binaires
-# LGPL invoqués, jamais liés au serveur) viennent de l'étape « media-tools ».
+# les signaux et récolte les processus orphelins. ffmpeg (LGPL) et fpcalc
+# (GPL-2.0+ : lié statiquement à FFTW3) viennent de l'étape « media-tools » ;
+# ce sont des PROGRAMMES séparés, jamais liés au serveur
+# (apps/backend/THIRD-PARTY-LICENSES.md).
 RUN apk add --no-cache python3 su-exec tini
 COPY --from=media-tools /opt/media/bin/ffmpeg /opt/media/bin/fpcalc /usr/local/bin/
 
@@ -226,6 +231,10 @@ COPY --from=base /app/apps/web/dist ./apps/web/dist
 COPY --from=base /app/versions.json ./versions.json
 # compat/jellyfin.json à /app : cherché en remontant depuis dist/services/jellyfinCompat
 COPY --from=base /app/compat/jellyfin.json ./compat/jellyfin.json
+# La licence, ses permissions et l'inventaire des composants tiers de l'image.
+COPY --from=base /app/LICENSE /app/LICENSE-EXCEPTIONS /app/apps/backend/THIRD-PARTY-LICENSES.md ./
+LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.source="https://github.com/Knaox/Tentacle-TV"
 COPY --chmod=0755 apps/backend/docker-entrypoint.sh ./apps/backend/docker-entrypoint.sh
 # `tentacle setup token|reset` : seul moyen de rouvrir l'assistant d'installation.
 COPY --chmod=0755 apps/backend/docker/tentacle-cli.sh /usr/local/bin/tentacle

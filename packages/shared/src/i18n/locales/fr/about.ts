@@ -20,7 +20,7 @@ export default {
   technologies: "Technologies",
   compatibleServices: "Services compatibles",
   license: "Licence",
-  licenseText: "Tentacle TV est distribué sous licence MIT. Les bibliothèques tierces utilisées sont soumises à leurs licences respectives (MIT, Apache 2.0, BSD, etc.). Le lecteur desktop embarque mpv et FFmpeg ; les versions Mac App Store et Microsoft Store en utilisent des builds sous licence LGPL v2.1+. Les paquets Linux embarquent FFmpeg sous LGPL v2.1+ et mpv sous GPL v2+ — sa sortie vidéo X11 n'existe pas autrement. Code source disponible sur mpv.io et ffmpeg.org ; la recette de compilation est publiée dans le dépôt.",
+  licenseText: "Tentacle TV est un logiciel libre, distribué sous licence GNU Affero General Public License v3.0 ou ultérieure, avec des permissions additionnelles (boutiques d'applications, bibliothèques de plateforme). Les composants tiers gardent leurs propres licences : leur liste et le texte complet de chacune sont dans « Licences ».",
   creditsDisclaimer: "Cette page est fournie à titre informatif. Les noms et marques appartiennent à leurs propriétaires respectifs.",
   techReact: "Interface utilisateur",
   techTypeScript: "Typage statique",
@@ -35,12 +35,12 @@ export default {
   techExpo: "Application mobile",
   techReactNative: "Framework mobile",
   techExoPlayer: "Lecteur vidéo Android TV (Media3)",
-  techMpv: "Lecteur vidéo desktop (LGPL v2.1+ ; GPL v2+ sous Linux)",
-  techFFmpeg: "Décodage audio/vidéo (LGPL v2.1+)",
+  techMpv: "Lecteur vidéo du bureau (LGPL v2.1+ sur macOS et Windows ; GPL v2+ sous Linux)",
+  techFFmpeg: "Décodage audio/vidéo (LGPL ; GPL v3 dans libmpv-android)",
   techMoltenVK: "Rendu vidéo macOS — Vulkan sur Metal (Apache 2.0)",
   techVoidTV: "Inspiration architecture lecteur Android TV",
   // Le lecteur avancé du mobile (iOS : MPVKit ; Android : libmpv-android).
-  techMpvMobile: "Lecteur avancé du mobile — lit MKV, DTS, TrueHD, ASS et PGS tels quels (LGPL v2.1+)",
+  techMpvMobile: "Lecteur avancé du mobile — lit MKV, DTS, TrueHD, ASS et PGS tels quels (LGPL sur iOS, GPL v3 sur Android)",
   techMpvkit: "Empaquetage de libmpv pour iOS, fork Streamyfin avec sortie vidéo AVFoundation (LGPL v3)",
   techLibass: "Rendu des sous-titres stylés (ISC)",
   techLibplacebo: "Traitement d'image, HDR et tone mapping (LGPL v2.1+)",
@@ -48,11 +48,23 @@ export default {
   techStreamyfin: "Le module natif du lecteur avancé en dérive (MPL-2.0)",
   techLibmpvAndroid: "libmpv pour Android, avec FFmpeg (GPL v3)",
   techMedia3Ffmpeg: "Décodeurs audio FFmpeg pour le lecteur système Android — DTS, TrueHD (GPL v3)",
-  licenseTextMobile:
-    "Le lecteur avancé du mobile embarque libmpv : sur iOS un build LGPL de MPVKit (mpv, FFmpeg, libass, libplacebo, MoltenVK, dav1d, libdovi), sur Android libmpv-android et l'extension FFmpeg de Jellyfin pour Media3, sous GPL v3. Le module qui les pilote dérive de Streamyfin (MPL-2.0). Les sources de ces composants, leurs licences et la recette de construction sont publiés avec le code de Tentacle TV (apps/mobile/THIRD-PARTY-LICENSES.md).",
+  licenseTextMobile: "Le lecteur avancé embarque libmpv : sur iOS, une version LGPL de MPVKit (mpv en LGPL v2.1+, FFmpeg en LGPL v3+, liés statiquement — le code de l'application, publié à chaque version, permet de les relier à une version modifiée) ; sur Android, libmpv-android (mpv et FFmpeg en GPL v3) et le décodeur FFmpeg de Jellyfin pour Media3 (GPL v3). Le module qui les pilote dérive de Streamyfin (MPL-2.0).",
   serviceJellyfin: "Serveur multimédia open-source",
   privacyPolicy: "Politique de confidentialité",
   // « À propos » des téléviseurs : la mention qu'exige l'exception App Store de PrismCore.
-  licenseTextTv:
-    "L'application Apple TV embarque PrismCore (github.com/Wenzlik/PrismCore), sous licence LGPL-2.1-or-later avec exception pour les boutiques d'applications ; le texte de la licence est le fichier LICENSE de ce dépôt. Tentacle TV y apporte une modification du pont audio, publiée sous la même licence dans apps/tv/ios/Vendor/PrismCore. PrismCore s'appuie sur FFmpeg (LGPL v2.1+, ffmpeg.org), fourni par MPVKit (github.com/mpvkit/MPVKit) en bibliothèques liées dynamiquement, et sur libdovi (MIT). Sur Android TV, la lecture repose sur Media3/ExoPlayer (Apache 2.0), libmpv-android et le décodeur FFmpeg de Jellyfin pour Media3 (GPL v3). Détail complet : apps/tv/THIRD-PARTY-LICENSES.md dans le dépôt de Tentacle TV.",
+  licenseTextTv: "Sur Apple TV, la lecture repose sur PrismCore (LGPL v2.1+ avec exception pour les boutiques d'applications ; la copie modifiée est publiée dans apps/tv/ios/Vendor/PrismCore) et sur FFmpeg (LGPL v3+) fourni par MPVKit, liés statiquement. Sur Android TV, elle repose sur Media3/ExoPlayer (Apache 2.0), libmpv-android et le décodeur FFmpeg de Jellyfin pour Media3 (GPL v3). Les textes complets sont dans l'onglet « Licences ».",
+  // L'écran « Licences » : la mention de l'AGPL (copyright, absence de
+  // garantie, source) et les composants tiers, textes complets hors ligne.
+  licensesTitle: "Licences",
+  licensesIntro: "Ce qu'embarque cette application, sous quelle licence, et le texte complet de chaque licence — lisible sans réseau.",
+  tentacleLicense: "Tentacle TV {{version}} — © 2025-2026 Damien Rouge. Logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la GNU Affero General Public License v3.0 ou ultérieure, avec les permissions additionnelles de LICENSE-EXCEPTIONS. Il est fourni SANS AUCUNE GARANTIE. Les versions publiées avant le 7 octobre 2026 restent sous licence MIT.",
+  sourceCode: "Code source",
+  sourceCodeAt: "Code source de cette version : {{url}}",
+  thirdPartyTitle: "Composants tiers",
+  licenseTextsTitle: "Textes des licences",
+  licenseUsedBy_one: "{{count}} composant",
+  licenseUsedBy_other: "{{count}} composants",
+  readLicense: "Lire le texte",
+  closeLicense: "Fermer",
+  licenseTextDesktop: "Le lecteur du bureau embarque mpv et FFmpeg : sur macOS en LGPL v2.1+ (bibliothèques dynamiques, remplaçables), sur Windows en LGPL v3+ (libmpv-2.dll), sous Linux mpv en GPL v2+ — sa sortie vidéo X11 n'existe pas autrement — avec FFmpeg en LGPL v2.1+. La variable d'environnement TENTACLE_MPV_LIB charge une libmpv modifiée.",
 } as const;

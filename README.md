@@ -13,7 +13,7 @@
   <a href="#quick-start-docker"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" /></a>
   <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FKnaox%2FTentacle-TV%2Fmain%2Fversions.json&query=%24.desktop&label=desktop&color=8b5cf6" alt="Desktop version" /></a>
   <a href="#quick-start-docker"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FKnaox%2FTentacle-TV%2Fmain%2Fversions.json&query=%24.server&label=server&color=d946ef" alt="Server version" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-blue" alt="License" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white" alt="Node" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
 </p>
@@ -694,6 +694,16 @@ Bugs and feature requests still go to [GitHub issues](https://github.com/Knaox/T
 
 Contributions are welcome! Please open an [issue](https://github.com/Knaox/Tentacle-TV/issues) or submit a pull request.
 
+By submitting a contribution, you agree that it is licensed under the same terms as Tentacle TV: the GNU AGPL v3.0 or later, together with the additional permission and terms of [`LICENSE-EXCEPTIONS`](LICENSE-EXCEPTIONS).
+
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2025 Knaox
+Copyright (C) 2025-2026 Damien Rouge ("Knaox").
+
+Tentacle TV is free software, licensed under the **[GNU Affero General Public License v3.0 or later](LICENSE)** (`AGPL-3.0-or-later`), with an additional permission for distribution through application stores and an additional term on trademarks — see [`LICENSE-EXCEPTIONS`](LICENSE-EXCEPTIONS).
+
+In short: you may use, study, modify and share Tentacle TV. If you distribute a modified version, **or let people use it over a network** (for example as a hosted service), you must publish its complete source code under the same license.
+
+- **Earlier versions stay MIT.** Every version released before 7 October 2026 (up to `desktop-v1.26.0`, `mobile-v1.10.2`, `tv-v1.10.0`, `server-v1.23.0`, `webos-v1.0.0`) was published under the MIT License, and those copies remain available under it.
+- **Third-party components** keep their own licenses: see [`docs/LICENCES.md`](docs/LICENCES.md) and each app's `THIRD-PARTY-LICENSES.md`.
+- **Name and logo**: "Tentacle TV" and its logos are not covered by the AGPL — see the [trademark policy](TRADEMARK.md).

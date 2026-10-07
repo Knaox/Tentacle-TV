@@ -14,6 +14,8 @@ import { useBackLayer } from "../back/BackScope";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { ChoiceModal } from "./ChoiceModal";
+import { LicenseReaderModal } from "./LicenseReaderModal";
+import { useLicensesSettings } from "./useLicensesSettings";
 import { useNavigationSettings } from "./useNavigationSettings";
 import { useOwnPinReturn } from "./useOwnPinReturn";
 import { useProfileActions } from "./useProfileActions";
@@ -46,6 +48,8 @@ export function SettingsRedesign({ route }: Props) {
   const nav = useNavigationSettings(focus);
   // Android TV : le mode Lite, seul occupant de l'onglet Apparence ; rien sur l'Apple TV.
   const lite = useRenderTierSetting();
+  // L'onglet « Licences » et son lecteur, communs aux deux téléviseurs.
+  const legal = useLicensesSettings(model.about.version);
   // Au retour du pavé de son code PIN, le focus rejoint la section « Code PIN ».
   const onReturn = useOwnPinReturn(profiles.pinOpened);
   const screen = useRedesignScreen({ railKey: "Settings", entryKey: settingsEntryKey(tab), focus, onReturn });
@@ -73,6 +77,8 @@ export function SettingsRedesign({ route }: Props) {
           playback={model.playback}
           about={model.about}
           navigation={nav.navigation}
+          licenses={legal.licenses}
+          onOpenLicense={legal.openLicense}
           choiceList={null}
           glassPreviewUri={preview}
           palette={artwork ? paletteOfItem(artwork) : undefined}
@@ -101,6 +107,7 @@ export function SettingsRedesign({ route }: Props) {
         />
       </TabDestinationProvider>
       <ChoiceModal list={model.choiceList} focus={screen.focus} onChoose={model.onChoose} onClose={model.closeChoices} />
+      <LicenseReaderModal reader={legal.reader} focus={screen.focus} onClose={legal.closeReader} />
     </RedesignScreen>
   );
 }

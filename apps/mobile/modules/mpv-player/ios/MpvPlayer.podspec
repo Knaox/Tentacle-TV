@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.description    = 'Module Expo : vue vidéo libmpv, pistes, sous-titres, image dans l image, Now Playing.'
   s.author         = 'Tentacle TV'
   s.homepage       = 'https://tentacletv.app'
-  s.license        = { :type => 'MPL-2.0' }
+  s.license        = { :type => 'MPL-2.0 AND AGPL-3.0-or-later' }
   s.platforms      = { :ios => '15.1' }
   s.source         = { git: '' }
   s.static_framework = true

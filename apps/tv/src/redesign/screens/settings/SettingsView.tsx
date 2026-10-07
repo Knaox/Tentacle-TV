@@ -15,6 +15,7 @@ import { AboutPanel } from "./AboutPanel";
 import { AccountPanel } from "./AccountPanel";
 import { AppearancePanel } from "./AppearancePanel";
 import { ChoiceSheet } from "./ChoiceSheet";
+import { LicensesPanel } from "./LicensesPanel";
 import { NavigationPanel } from "./NavigationPanel";
 import { PlaybackPanel } from "./PlaybackPanel";
 import { SettingsTabs, TAB_WIDTH, type SettingsTabItem } from "./SettingsTabs";
@@ -26,6 +27,7 @@ import type {
   LibrarySettingKey,
   SettingsAbout,
   SettingsAccount,
+  SettingsLicenses,
   SettingsNavigation,
   SettingsPlayback,
   SettingsRenderTier,
@@ -67,7 +69,8 @@ import type {
  * `settings:lib:<i>:<réglage|reset>`, `settings:tunneling`,
  * `settings:matchFrameRate`, `settings:liquidGlass`, `settings:lite:<auto|on|off>`,
  * `settings:nav:<i>[:visibility]`, `settings:nav:showAll|resetOrder`,
- * `settings:choice:<i>` (liste de choix). Groupes : `settings:tabs` (la
+ * `settings:choice:<i>` (liste de choix), `settings:license:<i>` (onglet Licences),
+ * `settings:licenseBlock:<i>` (lecteur d'un document). Groupes : `settings:tabs` (la
  * colonne des onglets) et `settings:panel` (le panneau) — GAUCHE depuis le
  * panneau revient à l'onglet affiché, DROITE depuis un onglet entre dans le
  * panneau là où on l'avait laissé.
@@ -80,6 +83,8 @@ export interface SettingsViewProps {
   playback: SettingsPlayback;
   about: SettingsAbout;
   navigation?: SettingsNavigation | null;
+  /** L'onglet « Licences » ; absent, l'onglet ne paraît pas. */
+  licenses?: SettingsLicenses | null;
   choiceList?: ChoiceListModel | null;
   /** Un fond d'œuvre pour l'aperçu du verre ; absent → un dégradé. */
   glassPreviewUri?: string;
@@ -117,6 +122,8 @@ export interface SettingsViewProps {
   onShowAllNav?: () => void;
   onResetNavOrder?: () => void;
   onChoose?: (value: string) => void;
+  /** Ouvre un document de l'onglet « Licences » dans le lecteur. */
+  onOpenLicense?: (index: number) => void;
 }
 
 const LEFT = TV_STAGE.contentLeft;
@@ -130,7 +137,7 @@ const PANEL_RADIUS = TV_STAGE.hero.radius;
 const PANEL_INNER = PANEL_WIDTH - PANEL_PAD_X * 2;
 
 export const SettingsView = memo(function SettingsView(props: SettingsViewProps) {
-  const { nav, tab, account, playback, about, navigation, choiceList, palette = NEUTRAL_PALETTE, appearance = true, renderTier } = props;
+  const { nav, tab, account, playback, about, navigation, licenses, choiceList, palette = NEUTRAL_PALETTE, appearance = true, renderTier } = props;
   const { t } = useTranslation(["preferences", "nav", "about"]);
   const liquid = useLiquidGlassEnabled();
   const navTotal = navigation?.entries.length ?? 0;
@@ -157,7 +164,8 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
       icon: "panelLeft" as const,
     }] : []),
     { key: "about", label: t("nav:about"), caption: t("about:version", { version: about.version }), icon: "info" },
-  ], [t, account.name, playback.preset, appearance, renderTier, liquid, navigation, navShown, navTotal, about.version]);
+    ...(licenses ? [{ key: "licenses" as const, label: t("about:licensesTitle"), caption: "GNU AGPL v3", icon: "list" as const }] : []),
+  ], [t, account.name, playback.preset, appearance, renderTier, liquid, navigation, navShown, navTotal, about.version, licenses]);
 
   return (
     <View style={styles.root}>
@@ -221,6 +229,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                 />
               ) : null}
               {tab === "about" ? <AboutPanel about={about} /> : null}
+              {tab === "licenses" && licenses ? <LicensesPanel licenses={licenses} onOpen={props.onOpenLicense} /> : null}
             </FocusSection>
           </ScrollView>
         </FocusGroup>

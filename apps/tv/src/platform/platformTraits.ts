@@ -4,7 +4,12 @@
  * dans `traits.ts` (Apple TV, la base) et `traits.android.ts` ; ceux de la
  * télécommande sont à part, dans sa table (`RemoteBindings.traits`, tv-core).
  */
+import type { LicensePlatform } from "@tentacle-tv/shared/licenses";
+
 export interface PlatformTraits {
+  /** La plateforme de l'inventaire des licences (shared `licenses`) : ce
+   *  qu'embarque CETTE application, et le tag de sa source (`tv-vX.Y.Z`). */
+  licensePlatform: Extract<LicensePlatform, "tvos" | "androidtv">;
   /** Le réglage « Liquid Glass » existe : faux, le verre reste ENRICHI (le
    *  rendu du réglage coupé) et le réglage n'est pas proposé. */
   liquidGlass: boolean;
