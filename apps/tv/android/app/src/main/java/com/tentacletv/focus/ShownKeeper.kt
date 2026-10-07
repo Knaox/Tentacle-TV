@@ -4,8 +4,8 @@ import android.graphics.Rect
 import android.view.View
 import android.view.ViewTreeObserver
 import com.facebook.react.views.scroll.ReactScrollView
+import com.tentacletv.R
 import java.lang.ref.WeakReference
-import java.util.WeakHashMap
 import kotlin.math.abs
 
 /**
@@ -65,8 +65,10 @@ internal class ShownKeeper private constructor(private val page: ReactScrollView
   }
 
   companion object {
-    private val keepers = WeakHashMap<ReactScrollView, ShownKeeper>()
+    // Tenu PAR la page (`ViewOwned`) : le gardien garde sa page, une table
+    // faible qui le tiendrait en valeur ne la lâcherait jamais.
+    private val keepers = ViewOwned<ReactScrollView, ShownKeeper>(R.id.tentacle_shown_keeper) { ShownKeeper(it) }
 
-    fun of(page: ReactScrollView): ShownKeeper = keepers.getOrPut(page) { ShownKeeper(page) }
+    fun of(page: ReactScrollView): ShownKeeper = keepers.of(page)
   }
 }

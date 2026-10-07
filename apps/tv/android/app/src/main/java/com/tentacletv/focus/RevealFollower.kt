@@ -3,7 +3,7 @@ package com.tentacletv.focus
 import android.animation.ValueAnimator
 import android.view.Choreographer
 import android.view.ViewGroup
-import java.util.WeakHashMap
+import com.tentacletv.R
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -175,18 +175,17 @@ internal class RevealFollower private constructor(private val scroll: ViewGroup,
   }
 
   companion object {
-    private val vertical = WeakHashMap<ViewGroup, RevealFollower>()
-    private val rows = WeakHashMap<ViewGroup, RevealFollower>()
+    // Tenus PAR la vue (`ViewOwned`) : un suiveur garde sa vue, une table
+    // faible qui le tiendrait en valeur ne la lâcherait jamais.
+    private val vertical = ViewOwned<ViewGroup, RevealFollower>(R.id.tentacle_reveal_follower_vertical) { RevealFollower(it, false) }
+    private val rows = ViewOwned<ViewGroup, RevealFollower>(R.id.tentacle_reveal_follower_row) { RevealFollower(it, true) }
 
-    fun of(scroll: ViewGroup, horizontal: Boolean): RevealFollower {
-      val map = if (horizontal) rows else vertical
-      return map.getOrPut(scroll) { RevealFollower(scroll, horizontal) }
-    }
+    fun of(scroll: ViewGroup, horizontal: Boolean): RevealFollower = (if (horizontal) rows else vertical).of(scroll)
 
     /** La rafale est finie : tout segment en vol finit sur le ressort. */
     fun settleAll() {
-      for (follower in vertical.values) follower.settle()
-      for (follower in rows.values) follower.settle()
+      vertical.each { it.settle() }
+      rows.each { it.settle() }
     }
   }
 }
