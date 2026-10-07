@@ -16,11 +16,30 @@ export interface BrowseEntry {
   path: string;
 }
 
+/**
+ * La forme des chemins de la machine de JELLYFIN : `posix` (Linux, macOS, un
+ * conteneur — `/media/films`) ou `windows` (lecteurs et `D:\Films`). C'est
+ * elle, pas le système de Tentacle, qui décide de ce que l'écran montre.
+ */
+export type PathStyle = "posix" | "windows";
+
 export interface BrowseResult {
   /** `null` : la racine (les lecteurs, ou `/`). */
   path: string | null;
   parent: string | null;
   entries: BrowseEntry[];
+  /** Absent : un serveur d'avant (on suppose `posix`). */
+  style?: PathStyle;
+}
+
+/** `C:\`, `D:/Films`, `\\nas\partage` : un chemin Windows. */
+export function isWindowsPath(path: string): boolean {
+  return /^[A-Za-z]:([\\/]|$)/.test(path) || path.startsWith("\\\\");
+}
+
+/** La forme des chemins d'après ceux que Jellyfin a rendus (lecteurs, dossier ouvert). */
+export function pathStyleOf(paths: readonly string[]): PathStyle {
+  return paths.some(isWindowsPath) ? "windows" : "posix";
 }
 
 export type LibraryType = "movies" | "tvshows" | "mixed";

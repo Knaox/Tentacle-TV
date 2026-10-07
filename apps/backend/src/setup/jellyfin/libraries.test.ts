@@ -56,10 +56,18 @@ describe("bibliothèques", () => {
     jf.on("GET /Environment/ParentPath", { status: 200, json: "/" });
     jf.on("GET /Environment/Drives", { status: 200, json: [{ Name: "/", Path: "/", Type: "Directory" }] });
     expect(await browseDirectory(jf.url, "cle", "/media")).toEqual({
-      path: "/media", parent: "/", entries: [{ name: "films", path: "/media/films" }, { name: "series", path: "/media/series" }],
+      path: "/media", parent: "/", entries: [{ name: "films", path: "/media/films" }, { name: "series", path: "/media/series" }], style: "posix",
     });
     expect(jf.calls("GET /Environment/DirectoryContents")[0].query.get("includeFiles")).toBe("false");
-    expect(await browseDirectory(jf.url, "cle", null)).toEqual({ path: null, parent: null, entries: [{ name: "/", path: "/" }] });
+    expect(await browseDirectory(jf.url, "cle", null)).toEqual({ path: null, parent: null, entries: [{ name: "/", path: "/" }], style: "posix" });
     await expect(browseDirectory(jf.url, "cle", "/nulle-part")).rejects.toMatchObject({ code: "jf_path_not_found" });
+  });
+
+  it("un Jellyfin sous Windows : ses lecteurs, et la forme de ses chemins le dit", async () => {
+    jf.on("GET /Environment/Drives", { status: 200, json: [{ Name: "C:\\", Path: "C:\\" }, { Name: "D:\\", Path: "D:\\" }] });
+    jf.on("GET /Environment/DirectoryContents", { status: 200, json: [{ Name: "Films", Path: "D:\\Films" }] });
+    jf.on("GET /Environment/ParentPath", { status: 200, json: "" });
+    expect(await browseDirectory(jf.url, "cle", null)).toMatchObject({ entries: [{ path: "C:\\" }, { path: "D:\\" }], style: "windows" });
+    expect(await browseDirectory(jf.url, "cle", "D:\\")).toEqual({ path: "D:\\", parent: null, entries: [{ name: "Films", path: "D:\\Films" }], style: "windows" });
   });
 });

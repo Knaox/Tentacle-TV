@@ -110,7 +110,7 @@ describe("Jellyfin déjà configuré, sans bibliothèque", () => {
   });
 
   it("parcourir ses dossiers et créer de VRAIES bibliothèques Jellyfin y sont permis ; jamais un compte", async () => {
-    expect((await call("GET", "/jellyfin/browse")).json()).toMatchObject({ path: null, parent: null, entries: [{ name: "/", path: "/" }] });
+    expect((await call("GET", "/jellyfin/browse")).json()).toEqual({ path: null, parent: null, entries: [{ name: "/", path: "/" }], style: "posix" });
     expect((await create()).json()).toEqual([{ name: "Films", status: "created" }]);
     expect(empty.calls("POST /Library/VirtualFolders")).toHaveLength(1);
     const init = await call("POST", "/jellyfin/initialize", { url: empty.url, username: "X", password: PASSWORD, uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" });

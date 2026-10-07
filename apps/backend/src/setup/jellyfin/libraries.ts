@@ -1,6 +1,6 @@
 import { jellyfinTokenAuth } from "../../services/jellyfinAuth";
 import { SetupError } from "../setupErrors";
-import type { BrowseEntry, BrowseResult, ExistingLibrary, LibraryOutcome, LibraryPlan } from "../setupLibraryContract";
+import { pathStyleOf, type BrowseEntry, type BrowseResult, type ExistingLibrary, type LibraryOutcome, type LibraryPlan } from "../setupLibraryContract";
 import { jellyfinRequest } from "./guardedFetch";
 
 /**
@@ -45,7 +45,8 @@ export async function browseDirectory(url: string, apiKey: string, path: string 
   if (path === null) {
     const drives = await jellyfinRequest(url, "/Environment/Drives", { authorization });
     if (drives.status !== 200) throw new SetupError("jf_unreachable");
-    return { path: null, parent: null, entries: readEntries(drives.json) };
+    const entries = readEntries(drives.json);
+    return { path: null, parent: null, entries, style: pathStyleOf(entries.map((entry) => entry.path)) };
   }
   const contents = await jellyfinRequest(url, "/Environment/DirectoryContents", {
     query: { path, includeDirectories: true, includeFiles: false },
@@ -58,7 +59,7 @@ export async function browseDirectory(url: string, apiKey: string, path: string 
   // Le parent selon Jellyfin : il sait lire `D:\Films` comme `/media/films`.
   const parentReply = await jellyfinRequest(url, "/Environment/ParentPath", { query: { path }, authorization });
   const parent = typeof parentReply.json === "string" && parentReply.json ? parentReply.json : null;
-  return { path, parent, entries: readEntries(contents.json) };
+  return { path, parent, entries: readEntries(contents.json), style: pathStyleOf([path]) };
 }
 
 async function ensureDirectory(url: string, authorization: string, path: string): Promise<void> {
