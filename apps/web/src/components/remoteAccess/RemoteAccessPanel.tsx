@@ -75,7 +75,7 @@ export function RemoteAccessPanel({ variant = "admin" }: { variant?: "admin" | "
   return (
     <>
       <ExposureModes current={enabled ? "public" : "private"} ip={ip} />
-      <AdminSection title={t("lanAddress")}>
+      <AdminSection>
         <LanAddressField state={state} save={save} />
       </AdminSection>
       <AdminSection>

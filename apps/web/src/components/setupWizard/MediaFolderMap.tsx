@@ -20,9 +20,9 @@ export function MediaFolderMap({ context, inStack, style }: { context: SetupCont
     return (
       <section aria-labelledby="media-map" className="space-y-3 rounded-xl border border-line-subtle bg-fill-faint p-4">
         <h2 id="media-map" className="text-sm font-semibold text-content-primary">{t("mediaMapTitle")}</h2>
-        <div className="grid items-center gap-2 sm:grid-cols-[1fr_auto_1fr]" aria-hidden="true">
+        <div className="grid items-stretch gap-2 sm:grid-cols-[1fr_auto_1fr]" aria-hidden="true">
           <MapBox icon={<Folder size={16} />} label={t("mediaMapInside")} path={folders.root} />
-          <ArrowLeftRight size={16} className="mx-auto rotate-90 text-content-tertiary sm:rotate-0" />
+          <ArrowLeftRight size={16} className="mx-auto rotate-90 self-center text-content-tertiary sm:rotate-0" />
           <MapBox icon={<HardDrive size={16} />} label={t("mediaMapHost")} path={host ?? t("mediaMapHostUnknown")} />
         </div>
         <p className="text-sm leading-relaxed text-content-secondary">

@@ -68,23 +68,23 @@ function PrivateDiagram({ label }: { label: string }) {
   );
 }
 
-/** Un proche, sur Internet, joint la box par l'adresse publique ; la box transmet au serveur. */
+/** Un proche, sur Internet, joint la box par l'adresse publique (écrite sous elle) ; la box transmet au serveur. */
 function PublicDiagram({ label, ip }: { label: string; ip: string }) {
   const { t } = useTranslation("remoteAccess");
   return (
     <svg viewBox="0 0 300 112" role="img" aria-label={label} className="h-auto w-full max-w-[300px]">
-      <rect x="4" y="44" width="20" height="34" rx="4" {...LINE} />
-      <path d="M11 72 h6" {...LINE} />
-      <text x="14" y="98" {...LABEL}>{t("diagramFriend")}</text>
-      <Arrow from={28} to={44} y={62} />
-      <Cloud x={46} y={40} label={t("diagramInternet")} />
-      <Arrow from={108} to={136} y={62} />
-      <text x="122" y="52" {...LABEL} fontSize={10} fontFamily="ui-monospace, monospace">{ip}</text>
-      <rect x="132" y="18" width="166" height="90" rx="12" {...LINE} strokeDasharray="4 4" />
-      <text x="142" y="13" {...LABEL} textAnchor="start" fontWeight={600}>{t("diagramHome")}</text>
-      <BoxNode x={150} y={48} label={t("diagramBox")} />
-      <Arrow from={196} to={222} y={62} />
-      <ServerNode x={228} y={42} label={t("diagramServer")} />
+      <rect x="18" y="44" width="20" height="34" rx="4" {...LINE} />
+      <path d="M25 72 h6" {...LINE} />
+      <text x="28" y="98" {...LABEL}>{t("diagramFriend")}</text>
+      <Arrow from={42} to={56} y={62} />
+      <Cloud x={56} y={40} label={t("diagramInternet")} />
+      <Arrow from={118} to={146} y={62} />
+      <rect x="140" y="18" width="158" height="90" rx="12" {...LINE} strokeDasharray="4 4" />
+      <text x="150" y="13" {...LABEL} textAnchor="start" fontWeight={600}>{t("diagramHome")}</text>
+      <BoxNode x={152} y={48} label={t("diagramBox")} />
+      <text x="174" y="96" {...LABEL} fontSize={10} fontFamily="ui-monospace, monospace">{ip}</text>
+      <Arrow from={198} to={226} y={62} />
+      <ServerNode x={230} y={42} label={t("diagramServer")} />
     </svg>
   );
 }
