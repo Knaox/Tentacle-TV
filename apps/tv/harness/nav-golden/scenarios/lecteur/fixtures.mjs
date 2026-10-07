@@ -87,9 +87,9 @@ const INTRO = { start: 5, end: 590 };
  */
 const L4 = path.join(CACHE, "l4");
 const l4Video = { Codec: "h264", Width: 640, Height: 360, VideoRange: "SDR", VideoRangeType: "SDR", BitRate: 300_000 };
-function l4(name, audio, subtitle = null) {
+function l4(name, audio, subtitle = null, { video = l4Video, seconds = subtitle ? 270 : 240 } = {}) {
   const file = path.join(L4, `l4-${name}.mkv`);
-  const apply = directFile({ file, container: "mkv", type: "video/x-matroska", seconds: subtitle ? 270 : 240, bitrate: 2_000_000, video: l4Video, audio, subtitle });
+  const apply = directFile({ file, container: "mkv", type: "video/x-matroska", seconds, bitrate: (video.BitRate ?? 0) + 256_000, video, audio, subtitle });
   return {
     description: `L4 : « Orgueil et Préjugés » devient l4-${name}.mkv (image légère, ${subtitle ? `sous-titre ${subtitle.Codec} choisi` : `son ${audio.Codec}`})`,
     apply: (data) => {
@@ -116,6 +116,8 @@ export default {
   "flux-l4-aac": l4("aac20", l4Aac),
   "flux-l4-ass": l4("ass", l4Aac, { Codec: "ass", DisplayTitle: "Français - ASS" }),
   "flux-l4-pgs": l4("pgs", l4Aac, { Codec: "PGSSUB", DisplayTitle: "Français - PGS" }),
+  // Une image à ~30 Mb/s (sous le plafond Lite de 50) : ce que le TAMPON d'Exo garde en mémoire.
+  "flux-l4-debit": l4("debit", l4Aac, null, { video: { ...l4Video, BitRate: 30_000_000 }, seconds: 120 }),
   "flux-mp4": fluxMp4,
   "flux-mp4-intro": {
     description: "« flux-mp4 », plus un segment Intro (5 s → 9 min 50) : la reprise montre la pilule « Passer l'intro », au bouton (pas de saut automatique)",

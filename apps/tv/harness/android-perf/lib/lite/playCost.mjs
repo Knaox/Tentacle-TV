@@ -11,10 +11,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { PACKAGE, sleep } from "../device.mjs";
+import { createCapture } from "./capture.mjs";
 import { applyThrottle, hostLoad, qemuPidOf } from "./throttle.mjs";
 
 /** Les jeux mesurables, et ce qu'ils chargent (`nav-golden/scenarios/lecteur/fixtures.mjs`). */
 export const PLAY_COST_SETS = ["aac", "ac3", "eac3", "dts", "truehd", "ass", "pgs"];
+// `debit` (image à ~30 Mb/s) ne se mesure que demandé : il montre le TAMPON d'Exo (tas Java), pas un coût de décodage.
 
 /** Les fils les plus coûteux d'une fenêtre, en ms de processeur par seconde. */
 export function perSecond(before, after, seconds, top = 60) {
@@ -72,9 +74,11 @@ export async function measurePlayCost({ device, applyFixtures, sets, spec, windo
     device.screencap(path.join(dir, `${set}.png`));
     const journal = device.adb(["logcat", "-d", "-s", "ExoPlayerView:W", "MediaCodecInfo:*", "FfmpegLibrary:*"]);
     fs.writeFileSync(path.join(dir, `${set}.logcat.txt`), journal);
-    const row = { set, spec, seconds: Math.round(seconds), hostLoad: load, ...cost, playing: device.pid() !== null };
+    // La mémoire de l'app EN LECTURE : le tampon d'Exo vit dans le tas Java.
+    const memory = createCapture(device.serial, PACKAGE).meminfo();
+    const row = { set, spec, seconds: Math.round(seconds), hostLoad: load, ...cost, memory, playing: device.pid() !== null };
     results.push(row);
-    log(`${set} : ${cost.totalMsPerS} ms/s au total — ${cost.threads.slice(0, 4).map(([n, v]) => `${n} ${v}`).join(", ")} (charge ${load.join(" → ")})`);
+    log(`${set} : ${cost.totalMsPerS} ms/s au total — ${cost.threads.slice(0, 4).map(([n, v]) => `${n} ${v}`).join(", ")} · PSS ${memory.totalPss} Mo (Java ${memory.javaHeap}) (charge ${load.join(" → ")})`);
   }
   device.forceStop();
   return results;

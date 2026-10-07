@@ -100,6 +100,10 @@ def main():
     for name in ["truehd71", "dts51", "eac351", "ac351", "aac20"]:
         ffmpeg("-stream_loop", "3", "-i", "video.mkv", "-stream_loop", "3", "-i", f"{name}.mka",
                "-map", "0:v", "-map", "1:a", "-c", "copy", "-t", "240", f"l4-{name}.mkv")
+    # Une image à ~30 Mb/s (bruit) : ce que le tampon d'Exo garde en mémoire.
+    ffmpeg("-f", "lavfi", "-i", "testsrc2=size=640x360:rate=24000/1001:duration=120", "-f", "lavfi", "-i", NOISE.replace("60", "120"),
+           "-vf", "noise=alls=60:allf=t", "-c:v", "libx264", "-preset", "ultrafast", "-b:v", "30M", "-maxrate", "30M",
+           "-bufsize", "30M", "-g", "48", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "256k", "-ac", "2", "l4-debit.mkv")
     heavy_ass(270)
     heavy_pgs(270)
     # Le WebVTT que Jellyfin sert pour un sous-titre texte (Android TV le charge à côté de la vidéo).
