@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getDirectStreamingConfig, getJellyfinUrl, getPublicUrl } from "../services/configStore";
+import { getJellyfinUrl } from "../services/configStore";
 import { getMaxResumePct } from "../services/jellyfinSystemConfig";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken } from "../services/jwt";
@@ -10,6 +10,7 @@ import { BACKEND_VERSION } from "../services/version";
 import { jellyfinAcceptsLegacyAuth } from "../services/jellyfinLegacyAuth";
 import { familyCapability } from "../services/family/familyConfig";
 import { serverAddresses } from "../remoteAccess/serverAddresses";
+import { directMediaBaseUrl, publishedPublicUrl } from "../remoteAccess/exposure";
 import { declaredServerCapabilities } from "../serverCapabilities/declaredCapabilities";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
@@ -32,7 +33,8 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du
       // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
       // LAN/DNS privé) qui n'est joignable que depuis le réseau interne.
-      publicUrl: getPublicUrl(),
+      // Seulement si l'accès depuis l'extérieur est allumé : coupé, rien de public ne sort.
+      publicUrl: publishedPublicUrl(),
       // Les adresses locales et publiques (Tentacle, Jellyfin) — les locales au seul réseau local.
       addresses: serverAddresses(isPrivateIp(getRealClientIp(request))),
     };
@@ -67,8 +69,11 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null, ...(deviceId && { deviceId }) },
     };
 
-    const cfg = getDirectStreamingConfig();
-    if (!cfg.enabled || !cfg.publicUrl || !cfg.privateUrl) return disabled;
+    // L'adresse privée suffit (réseau local) ; hors de la maison, la publique
+    // seulement si elle est réglée ET publiée — sinon la lecture passe par Tentacle.
+    const clientIp = getRealClientIp(request);
+    const mediaBaseUrl = directMediaBaseUrl(isPrivateIp(clientIp));
+    if (!mediaBaseUrl) return disabled;
 
     // Un client qui ne sait parler à Jellyfin qu'en X-Emby-Token / api_key (les
     // versions d'avant Jellyfin 12) n'a pas le direct si Jellyfin les refuse :
@@ -79,9 +84,6 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       request.log.info("Direct streaming refuse a un client ancien : Jellyfin n'accepte plus l'auth heritee");
       return disabled;
     }
-
-    const clientIp = getRealClientIp(request);
-    const mediaBaseUrl = isPrivateIp(clientIp) ? cfg.privateUrl : cfg.publicUrl;
 
     // Server-side health check: verify Jellyfin is running.
     // Use the internal Jellyfin URL (not mediaBaseUrl) because the backend may

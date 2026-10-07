@@ -1,11 +1,12 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { requirePersonalAdmin } from "../middleware/auth";
-import { getPublicUrl } from "../services/configStore";
+import { getDirectStreamingConfig, getPublicUrl } from "../services/configStore";
 import { readDeployment } from "../setup/deployment";
 import type { RemoteAccessState } from "./remoteAccessContract";
 import { readLastCheck, readRemoteAccessSettings, saveRemoteAccessSettings } from "./remoteAccessSettings";
-import { activeJellyfinPublicUrl, checkServiceUrl, hostPort, jellyfinHostPort, runRemoteCheck } from "./remoteCheck";
+import { detectPublicIp } from "./publicIp";
+import { activeJellyfinPublicUrl, checkServiceUrl, hostPort, jellyfinLanPort, runRemoteCheck } from "./remoteCheck";
 
 /**
  * L'accès à distance (`/api/admin/remote-access`) — enregistré depuis
@@ -41,12 +42,14 @@ const patchSchema = z
 
 function buildState(): RemoteAccessState {
   const deployment = readDeployment();
+  const direct = getDirectStreamingConfig();
   return {
     settings: readRemoteAccessSettings(),
     publicUrl: getPublicUrl(),
     jellyfinPublicUrl: activeJellyfinPublicUrl(),
     hostPort: hostPort(),
-    jellyfinHostPort: jellyfinHostPort(),
+    jellyfinHostPort: jellyfinLanPort(),
+    directPlay: { enabled: direct.enabled, privateUrl: direct.privateUrl, publicUrl: direct.publicUrl },
     deployment: deployment.deployment,
     stack: deployment.stack,
     checkServiceUrl: checkServiceUrl(),
@@ -63,6 +66,9 @@ export const remoteAccessRoutes: FastifyPluginAsync = async (app) => {
     await saveRemoteAccessSettings(parsed.data);
     return buildState();
   });
+
+  /** L'adresse publique, détectée (capacité `admin.remoteExposure`) — au plus une demande toutes les dix minutes. */
+  app.get("/remote-access/public-ip", { preHandler: requirePersonalAdmin, config: { rateLimit: { max: 30, timeWindow: 60_000 } } }, async () => detectPublicIp());
 
   // Chaque test sollicite le service public : peu, et pas en rafale.
   app.post(

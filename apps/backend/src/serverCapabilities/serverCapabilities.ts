@@ -45,6 +45,10 @@ export const SERVER_CAPABILITIES = {
   "admin.segmentPlugins": "1.24.0",
   /** La section d'administration « Accès à distance » (`/api/admin/remote-access`). */
   "admin.remoteAccess": "1.24.0",
+  /** « Accès depuis l'extérieur » qui gouverne ce qui est publié, l'adresse publique
+   *  détectée (`/api/admin/remote-access/public-ip`) et la lecture directe sans
+   *  adresse publique de Jellyfin (l'adresse privée suffit). */
+  "admin.remoteExposure": "1.24.0",
   /** Les titres demandés masqués des recommandations (`GET /api/reco/requested`). */
   "reco.requestedTitles": "1.24.0",
   /** L'état des sessions du tableau de bord décrit par le serveur : « direct »,

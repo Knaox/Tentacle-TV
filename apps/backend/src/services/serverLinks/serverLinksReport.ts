@@ -51,8 +51,8 @@ function draftLinks(draft: ServerLinksDraft): Links {
   return {
     tentacleUrl,
     source: tentacleUrl ? "config" : null,
-    // Le serveur n'allume la lecture directe qu'avec ses deux adresses.
-    enabled: jellyfinPublicUrl !== null && jellyfinPrivateUrl !== null,
+    // L'adresse privée suffit à allumer la lecture directe ; la publique est facultative.
+    enabled: jellyfinPrivateUrl !== null,
     jellyfinPublicUrl,
     jellyfinPrivateUrl,
   };

@@ -104,6 +104,11 @@ describe("lecture directe", () => {
     expect(directOf(report())?.state).toBe("done");
   });
 
+  it("l'adresse publique est FACULTATIVE : la privée seule qui répond, c'est fait ; sans privée, à faire", () => {
+    expect(directOf(report({ direct: { publicUrl: null, publicProbe: null } }))?.state).toBe("done");
+    expect(directOf(report({ direct: { privateUrl: null, privateProbe: null } }))?.state).toBe("todo");
+  });
+
   it("un nom de conteneur Docker en adresse locale : les appareils ne le joignent pas", () => {
     expect(issuesOf(report({ direct: { privateUrl: "http://jellyfin:8096" } }), 1, 1)).toEqual(["internal-host"]);
   });
