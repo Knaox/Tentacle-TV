@@ -1,4 +1,4 @@
-import { resolveRenderTier, type RenderTier, type RenderTierMode, type RenderTierState } from "@tentacle-tv/tv-core";
+import { resolveRenderTier, type ReloadReturn, type RenderTier, type RenderTierMode, type RenderTierState } from "@tentacle-tv/tv-core";
 
 /**
  * Le POINT D'ENTRÉE NEUTRE du niveau de rendu (`normal` / `lite`, tv-core
@@ -29,7 +29,7 @@ export function useRenderTierState(): Readonly<RenderTierState> {
 /** Change le réglage et recharge l'interface (Android TV) ; rien ici. */
 export function changeRenderTierMode(_mode: RenderTierMode, _screenParams?: Record<string, unknown>): void {}
 
-/** Rouvre l'écran quitté par un rechargement (Android TV) ; rien ici. */
-export function RenderTierReturn(): null {
-  return null;
+/** La pile d'écrans à rouvrir après un changement de mode (Android TV) ; rien ici. */
+export function reloadNavigationState(_firstRoute: string): ReloadReturn | undefined {
+  return undefined;
 }

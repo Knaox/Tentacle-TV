@@ -21,10 +21,10 @@ import { LiquidGlassProvider } from "./redesign/glass/liquidGlassMode";
 import { RemoteHintsProvider } from "./redesign/remote/remoteHints";
 import { REMOTE_BINDINGS } from "./platform/input";
 import { PLATFORM_TRAITS } from "./platform/traits";
-import { RenderTierReturn } from "./platform/renderTier";
+import { reloadNavigationState } from "./platform/renderTier";
 import { applyBackendUrl } from "./lib/backendUrls";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
-import { AppNavigator } from "./navigation/AppNavigator";
+import { AppNavigator, initialRouteOf } from "./navigation/AppNavigator";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { BootScreen } from "./components/BootScreen";
@@ -156,6 +156,9 @@ function AppContent() {
   const { isReachable, retry } = useServerReachable(serverUrl);
   const { theme } = useTheme();
   const [playbackShown, setPlaybackShown] = useState(false);
+  // Android TV : la pile d'écrans quittée par un changement du mode Lite, si
+  // l'app repart au même endroit ; sinon (et toujours sur l'Apple TV) rien.
+  const [reloadState] = useState(() => reloadNavigationState(initialRouteOf(storage)));
   const syncNavState = useCallback(() => {
     // Seulement quand la nav est prête : une synchro transitoire
     // (isReady=false) ne dit rien de l'écran affiché.
@@ -196,6 +199,7 @@ function AppContent() {
         {/* Le rail vit dans chaque écran refondu (`NavRail`, prop `nav`). */}
         <NavigationContainer
           ref={navigationRef}
+          initialState={reloadState}
           theme={navTheme}
           onReady={syncNavState}
           onStateChange={syncNavState}
@@ -204,8 +208,6 @@ function AppContent() {
           <OfflineBanner visible={!isReachable && !playbackShown} onRetry={retry} />
           <PairingExpiredBanner />
           <TVSessionMessageHost />
-          {/* Android TV : rouvre l'écran quitté par le changement du mode Lite (rien sur l'Apple TV). */}
-          <RenderTierReturn />
         </NavigationContainer>
       </QualityBadgeHost>
     </>

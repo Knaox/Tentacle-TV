@@ -29,9 +29,13 @@ toujours `normal` et ne lit aucun module natif.
    refaire ; l'ancien score vaut en attendant. Jamais gardé dans une build
    debuggable (ART n'y emploie pas le code précompilé du système : score ~0).
 3. **Le réglage** (`auto` / `on` / `off`) vit dans le natif
-   (`SharedPreferences tentacle_render_tier`). Le changer recharge
-   l'interface (nouveau contexte React, même activité) et rouvre Réglages ›
-   Apparence ; la session reste.
+   (`SharedPreferences tentacle_render_tier`). Le changer REDÉMARRE l'app
+   (activité relancée dans une tâche neuve, processus terminé : caches
+   natifs vidés) et rouvre la pile quittée — Accueil → Réglages › Apparence,
+   le focus sur l'onglet — par l'état initial de la navigation ; la session
+   reste. Recréer seulement le contexte React laissait deux écrans Réglages
+   superposés ; rejouer la pile par `push` laissait le focus à l'accueil
+   recouvert (relevés à l'émulateur).
 
 ## Les seuils
 

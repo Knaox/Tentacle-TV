@@ -1,15 +1,13 @@
-import { useEffect } from "react";
-import { parseReloadReturn, serializeReloadReturn, type RenderTierMode } from "@tentacle-tv/tv-core";
+import { parseReloadReturn, serializeReloadReturn, type ReloadReturn, type RenderTierMode } from "@tentacle-tv/tv-core";
 import { navigationRef } from "../../../navigation/navigationRef";
 import { deviceNative, RETURN_STATE } from "./tierNative";
 
 /**
- * Le changement de mode : un RECHARGEMENT PROPRE de l'interface (décision de
+ * Le changement de mode : un REDÉMARRAGE PROPRE de l'interface (décision de
  * Damien, 07/10 — jamais à chaud). La pile d'écrans en cours (noms et
- * paramètres, tv-core `reloadReturn`) part avec le réglage ; le natif recrée
- * le contexte React ; la session, dans le stockage de l'app, reste.
- * `RenderTierReturn` rouvre ensuite la pile quittée, si l'app redémarre au
- * même endroit (même première route : la même session).
+ * paramètres, tv-core `reloadReturn`) part avec le réglage ; le natif relance
+ * l'app (`DeviceModule.setModeAndReload`) ; la session, dans le stockage de
+ * l'app, reste.
  */
 export function changeRenderTierMode(mode: RenderTierMode, screenParams?: Record<string, unknown>): void {
   if (!deviceNative) return;
@@ -17,27 +15,15 @@ export function changeRenderTierMode(mode: RenderTierMode, screenParams?: Record
   deviceNative.setModeAndReload(mode, serializeReloadReturn(state, screenParams));
 }
 
-/** Combien de fois attendre la navigation prête, et à quel pas. */
-const NAV_RETRY_MS = 200;
-const NAV_RETRIES = 25;
-
-export function RenderTierReturn(): null {
-  useEffect(() => {
-    const saved = parseReloadReturn(RETURN_STATE);
-    if (!saved) return;
-    let tries = 0;
-    const timer = setInterval(() => {
-      tries += 1;
-      if (navigationRef.isReady()) {
-        clearInterval(timer);
-        const current = navigationRef.getRootState();
-        // Une autre première route (session perdue, jumelage) : on n'impose rien.
-        if (current?.routes[0]?.name === saved.routes[0]?.name) navigationRef.resetRoot(saved as Parameters<typeof navigationRef.resetRoot>[0]);
-      } else if (tries >= NAV_RETRIES) {
-        clearInterval(timer);
-      }
-    }, NAV_RETRY_MS);
-    return () => clearInterval(timer);
-  }, []);
-  return null;
+/**
+ * La pile à rouvrir, en ÉTAT INITIAL de la navigation (`App.tsx`) : tous ses
+ * écrans montés d'emblée, seul celui du dessus actif — l'accueil dessous ne
+ * réclame pas le focus. Rejouer la pile par des `push` après le montage
+ * laissait le focus au héros de l'accueil recouvert, qui le réclamait à
+ * l'arrivée de ses données (relevé à l'émulateur). Seulement si l'app repart
+ * au même endroit (`firstRoute` : la même session) ; lue une fois.
+ */
+export function reloadNavigationState(firstRoute: string): ReloadReturn | undefined {
+  const saved = parseReloadReturn(RETURN_STATE);
+  return saved && saved.routes[0]?.name === firstRoute ? saved : undefined;
 }

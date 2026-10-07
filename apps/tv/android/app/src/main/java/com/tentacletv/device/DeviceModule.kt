@@ -1,8 +1,8 @@
 package com.tentacletv.device
 
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.util.Log
-import com.facebook.react.ReactApplication
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -53,18 +53,26 @@ class DeviceModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
   }
 
   /**
-   * Le réglage change : il est écrit, l'écran à rouvrir avec lui, puis
-   * l'interface est RECHARGÉE (un nouveau contexte React, la même activité) —
-   * le niveau se relit avant la première image, comme au lancement. La
-   * session vit dans le stockage de l'app : elle reste.
+   * Le réglage change : il est écrit (synchrone), l'écran à rouvrir avec lui,
+   * puis l'app REDÉMARRE — l'activité relancée dans une tâche neuve, ce
+   * processus terminé. Le niveau se relit avant la première image, comme à
+   * tout lancement, et les caches natifs (images, textures) repartent du
+   * budget du nouveau mode. La session vit dans le stockage de l'app : elle
+   * reste. Recréer seulement le contexte React laissait les vues de l'ancien
+   * à l'écran (écrans recouverts gardés attachés : deux Réglages superposés,
+   * relevé à l'émulateur).
    */
   @ReactMethod
   fun setModeAndReload(mode: String, returnState: String?) {
     if (mode !in MODES) return
     store.saveModeForReload(mode, returnState)
-    Log.i(DeviceSignals.TAG, "réglage → $mode : rechargement de l'interface")
-    val app = reactApplicationContext.applicationContext as? ReactApplication ?: return
-    UiThreadUtil.runOnUiThread { app.reactNativeHost.reactInstanceManager.recreateReactContextInBackground() }
+    val activity = reactApplicationContext.currentActivity ?: return
+    Log.i(DeviceSignals.TAG, "réglage → $mode : redémarrage de l'interface")
+    UiThreadUtil.runOnUiThread {
+      activity.startActivity(Intent(activity, activity.javaClass).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+      activity.finish()
+      Runtime.getRuntime().exit(0)
+    }
   }
 
   /** Le micro-test, tout de suite, sans rien garder : pour le banc. */

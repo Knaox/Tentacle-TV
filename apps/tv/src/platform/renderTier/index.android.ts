@@ -5,4 +5,4 @@ export {
   useRenderTier,
   useRenderTierState,
 } from "../androidtv/renderTier/tierNative";
-export { changeRenderTierMode, RenderTierReturn } from "../androidtv/renderTier/tierReload";
+export { changeRenderTierMode, reloadNavigationState } from "../androidtv/renderTier/tierReload";

@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { tvSessionMode } from "@tentacle-tv/tv-core";
+import { tvSessionMode, type SessionStorage } from "@tentacle-tv/tv-core";
 import { TV_MOTION } from "@tentacle-tv/theme";
 import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
@@ -63,16 +63,21 @@ export function preloadCoreScreens() {
   void import("../screens/FavoritesScreen");
 }
 
+/**
+ * La première route au lancement. Sur TV, pas de page de login : sans token
+ * actif → toujours le jumelage (sa langue se choisit sur son accueil ; plus
+ * de conditions d'utilisation à accepter, sur aucun des deux téléviseurs).
+ * Apple TV passée aux profils (Famille), aucun profil ouvert : « Qui regarde ? ».
+ * Lue aussi par le retour après un changement du mode Lite (`App.tsx`).
+ */
+export function initialRouteOf(storage: SessionStorage): "Profiles" | "Home" | "PairCode" {
+  if (tvSessionMode(storage) === "choosing") return "Profiles";
+  return storage.getItem("tentacle_token") ? "Home" : "PairCode";
+}
+
 export function AppNavigator() {
   const { storage } = useTentacleConfig();
-  const hasToken = !!storage.getItem("tentacle_token");
-  // Apple TV passée aux profils (Famille), aucun profil ouvert : « Qui regarde ? ».
-  const choosing = tvSessionMode(storage) === "choosing";
-
-  // Sur TV, pas de page de login : sans token actif → toujours le jumelage
-  // (sa langue se choisit sur son accueil ; plus de conditions d'utilisation
-  // à accepter, sur aucun des deux téléviseurs).
-  const initialRouteName = choosing ? "Profiles" : hasToken ? "Home" : "PairCode";
+  const initialRouteName = initialRouteOf(storage);
 
   return (
     <Stack.Navigator
