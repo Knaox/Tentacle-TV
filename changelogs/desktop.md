@@ -26,7 +26,7 @@ et Linux reçoivent l'ensemble.
 - **Jumeler une TV** : dès le dernier caractère du code ; une TV déjumelée quitte aussitôt la liste
 - **Accueil** : une carte vue, ou retirée de Ma liste ou des favoris, reste en place tant que le pointeur est sur sa rangée
 - **Affiner** : « Afficher le synopsis » répond de nouveau au clic, et Espace l'ouvre toujours
-- **Administration** (serveur 1.24.0) : « Jellyfin redémarre » au lieu d'une erreur, la détection des passages installée ou réparée en un clic, un guide de l'accès à distance, et des sessions étiquetées juste
+- **Administration** (serveur 1.24.0) : « Jellyfin redémarre » au lieu d'une erreur, la détection des passages installée ou réparée en un clic, l'accès à distance plus clair, et des sessions étiquetées juste
 - La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
 - **Serveur plus ancien : rien ne casse**, ce qui exige un serveur récent reste caché
 
@@ -41,7 +41,7 @@ et Linux reçoivent l'ensemble.
 - **Pairing a TV**: pairing starts as soon as the last character of the code is typed, and an unpaired TV leaves the list right away
 - **Home**: a card you mark as watched, or remove from My List or Favorites, stays put while the pointer is on its row
 - **Refine**: "Show synopsis" responds to clicks again, and Space always opens it
-- **Administration** (server 1.24.0): "Jellyfin is restarting" instead of an error, skip detection installed or repaired in one click, a remote access guide, and accurately labeled sessions
+- **Administration** (server 1.24.0): "Jellyfin is restarting" instead of an error, skip detection installed or repaired in one click, clearer remote access, and accurately labeled sessions
 - The in-progress row is now called "Where you left off"
 - **Older server: nothing breaks**, what needs a recent server stays hidden
 
