@@ -49,6 +49,13 @@ export interface EngineCapabilities {
   audioCodecs: readonly string[];
   /** Canaux audio au plus. */
   maxAudioChannels: number;
+  /**
+   * Le codec de SORTIE quand le serveur convertit le son (le premier de
+   * `AudioCodec`) ; absent : l'AAC, comme partout. Seul le mode Lite d'Android
+   * TV le pose (`liteConvertedAudioEngine` : E-AC3 ou AC3, reçus tels quels
+   * par le téléviseur).
+   */
+  audioOutput?: string;
   segmentContainer: SegmentContainer;
 }
 

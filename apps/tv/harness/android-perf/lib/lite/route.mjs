@@ -17,7 +17,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CACHE, keysDex, startBackend } from "../benchSetup.mjs";
+import { assertPortFree, CACHE, keysDex, startBackend } from "../benchSetup.mjs";
 import { createDevice, PACKAGE, sleep } from "../device.mjs";
 import { startImageProxy } from "../imageProxy.mjs";
 import { createPlayer } from "../play.mjs";
@@ -67,6 +67,7 @@ function stamp() {
 /** Le faux backend, le relais d'images, la session écrite, l'injecteur : ce que tout passage partage. */
 async function withLiteBench({ apk, debugApk, keepSession = false }, fn) {
   if (!PACKAGE.endsWith(".perf")) throw new Error(`le banc Lite ne mesure que l'app de mesure (PERF_PACKAGE=…perf), pas ${PACKAGE}`);
+  assertPortFree(PORT);
   const device = createDevice();
   device.pushKeys(keysDex());
   const backend = await startBackend(BACKEND_PORT);
@@ -93,6 +94,31 @@ export async function setupOnly({ apk, debugApk }) {
       process.on("SIGINT", resolve);
       process.on("SIGTERM", resolve);
     });
+  });
+}
+
+/** Le coût d'une lecture (son décodé, sous-titres rendus), jeu par jeu — `playCost.mjs`. */
+export async function runPlayCost({ avd, option }) {
+  const { measurePlayCost, PLAY_COST_SETS } = await import("./playCost.mjs");
+  const apk = option("apk");
+  const debugApk = option("debug-apk");
+  if (!apk || !debugApk) throw new Error("cout run <avd> --apk <release.apk> --debug-apk <debug.apk> [--sets aac,truehd] [--throttle duty:25] [--window 20]");
+  const sets = option("sets") ? option("sets").split(",") : PLAY_COST_SETS;
+  const spec = option("throttle", "none");
+  const dir = path.join(LITE_RUNS, `${stamp()}-cout-${spec.replace(/[^a-z0-9]/gi, "")}`);
+  fs.mkdirSync(dir, { recursive: true });
+  const log = (line) => {
+    console.log(line);
+    fs.appendFileSync(path.join(dir, "journal.txt"), `${line}\n`);
+  };
+  await withLiteBench({ apk: null, debugApk }, async (device) => {
+    const player = createPlayer({ device, backendPort: BACKEND_PORT, host: { measuring: (fn) => fn() } });
+    await player.prepareApk(apk);
+    const applyFixtures = (sets) => player.applyFixtures(sets);
+    log(`appareil : ${device.describe()} · ${avd ?? device.serial} · freinage ${spec} · charge du Mac ${hostLoad()}`);
+    const results = await measurePlayCost({ device, applyFixtures, sets, spec, windowS: Number(option("window", "20")), dir, log });
+    fs.writeFileSync(path.join(dir, "resume.json"), JSON.stringify({ avd, throttle: spec, date: new Date().toISOString(), results }, null, 1));
+    log(`→ ${dir}`);
   });
 }
 

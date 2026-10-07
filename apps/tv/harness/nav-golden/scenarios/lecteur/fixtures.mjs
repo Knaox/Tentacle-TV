@@ -41,10 +41,11 @@ function serveFile(file, type) {
 }
 
 /** « Orgueil et Préjugés » devient `file`, lu en direct : sa source et ses flux. */
-function directFile({ file, container, type, seconds, bitrate, video, audio }) {
+function directFile({ file, container, type, seconds, bitrate, video, audio, subtitle }) {
   return (data) => {
     if (!fs.existsSync(file)) throw new Error(`vidéo du banc absente (${file}) : voir scenarios/lecteur/README.md`);
     const streams = [{ Index: 0, Type: "Video", IsDefault: true, ...video }, { Index: 1, Type: "Audio", Language: "fre", IsDefault: true, ...audio }];
+    if (subtitle) streams.push({ Index: 2, Type: "Subtitle", Language: "fre", IsExternal: false, IsDefault: true, ...subtitle });
     const source = {
       Id: FILM, Name: "banc", Container: container, Protocol: "File", Path: `/banc/${path.basename(file)}`, Type: "Default",
       Size: fs.statSync(file).size, RunTimeTicks: ticks(seconds), Bitrate: bitrate,
@@ -77,7 +78,46 @@ const fluxMp4 = {
  *  vidéo — la reprise y tombe, où que la lecture précédente se soit arrêtée. */
 const INTRO = { start: 5, end: 590 };
 
+/**
+ * Les jeux de la tâche L4 (coût du son décodé et des sous-titres sur une box
+ * faible) : la même image légère (H.264 640×360, décodée par l'hôte de
+ * l'émulateur) et un son ou un sous-titre LOURD — seul le coût de ce qui se
+ * décode ou se rend sur le processeur de l'appareil se lit. Fichiers dans
+ * `lecteur/l4/` (README, « Jeux L4 »).
+ */
+const L4 = path.join(CACHE, "l4");
+const l4Video = { Codec: "h264", Width: 640, Height: 360, VideoRange: "SDR", VideoRangeType: "SDR", BitRate: 300_000 };
+function l4(name, audio, subtitle = null, { video = l4Video, seconds = subtitle ? 270 : 240 } = {}) {
+  const file = path.join(L4, `l4-${name}.mkv`);
+  const apply = directFile({ file, container: "mkv", type: "video/x-matroska", seconds, bitrate: (video.BitRate ?? 0) + 256_000, video, audio, subtitle });
+  return {
+    description: `L4 : « Orgueil et Préjugés » devient l4-${name}.mkv (image légère, ${subtitle ? `sous-titre ${subtitle.Codec} choisi` : `son ${audio.Codec}`})`,
+    apply: (data) => {
+      apply(data);
+      // Le sous-titre choisi d'office (préférences de pistes résolues par Tentacle).
+      if (subtitle) data.route("POST", /^\/api\/preferences\/.*resolve/, (req, res) => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ audioIndex: 1, subtitleIndex: 2 }));
+      });
+      // Un sous-titre TEXTE se lit, sur Android TV, en WebVTT converti par
+      // Jellyfin (`Subtitles/<i>/Stream.vtt`, chargé à côté de la vidéo) : le
+      // même ASS lourd, converti par ffmpeg comme Jellyfin le fait.
+      if (subtitle?.Codec === "ass") data.route("GET", /\/Subtitles\/\d+\/Stream\.vtt/, serveFile(path.join(L4, "heavy.vtt"), "text/vtt"));
+    },
+  };
+}
+const l4Aac = { Codec: "aac", Channels: 2, SampleRate: 48000, DisplayTitle: "Français - AAC - Stéréo" };
+
 export default {
+  "flux-l4-truehd": l4("truehd71", { Codec: "truehd", Channels: 6, SampleRate: 48000, DisplayTitle: "Français - TrueHD - 5.1" }),
+  "flux-l4-dts": l4("dts51", { Codec: "dts", Channels: 6, SampleRate: 48000, DisplayTitle: "Français - DTS - 5.1" }),
+  "flux-l4-eac3": l4("eac351", { Codec: "eac3", Channels: 6, SampleRate: 48000, DisplayTitle: "Français - Dolby Digital+ - 5.1" }),
+  "flux-l4-ac3": l4("ac351", { Codec: "ac3", Channels: 6, SampleRate: 48000, DisplayTitle: "Français - Dolby Digital - 5.1" }),
+  "flux-l4-aac": l4("aac20", l4Aac),
+  "flux-l4-ass": l4("ass", l4Aac, { Codec: "ass", DisplayTitle: "Français - ASS" }),
+  "flux-l4-pgs": l4("pgs", l4Aac, { Codec: "PGSSUB", DisplayTitle: "Français - PGS" }),
+  // Une image à ~30 Mb/s (sous le plafond Lite de 50) : ce que le TAMPON d'Exo garde en mémoire.
+  "flux-l4-debit": l4("debit", l4Aac, null, { video: { ...l4Video, BitRate: 30_000_000 }, seconds: 120 }),
   "flux-mp4": fluxMp4,
   "flux-mp4-intro": {
     description: "« flux-mp4 », plus un segment Intro (5 s → 9 min 50) : la reprise montre la pilule « Passer l'intro », au bouton (pas de saut automatique)",

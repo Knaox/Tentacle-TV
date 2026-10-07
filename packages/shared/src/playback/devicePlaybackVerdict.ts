@@ -2,6 +2,8 @@ import { BURN_IN_SUBTITLE_CODECS } from "../constants";
 import type { MediaStream } from "../types/media";
 import { hardwareDecoder, type DeviceMediaProfile, type PassthroughEncoding } from "./deviceMediaProfile";
 import { normalizeVideoCodec, transcodeMaxHeight, videoUnsupportedReason, type DeviceVideoSource } from "./deviceVideoSupport";
+import { audioDecodeCostPerMille } from "./audioDecodeCost";
+import type { LitePlaybackPolicy } from "./litePlayback";
 
 /**
  * Comment un fichier se lit sur CET appareil Android TV, par ExoPlayer — le
@@ -42,7 +44,7 @@ export type SubtitlePath = "native" | "text" | "burnIn" | "none";
 export const DEVICE_NOTICES = ["av1Converted"] as const;
 export type DeviceNotice = (typeof DEVICE_NOTICES)[number];
 
-export type AudioSourceInfo = Pick<MediaStream, "Codec" | "Profile" | "Channels" | "DisplayTitle">;
+export type AudioSourceInfo = Pick<MediaStream, "Codec" | "Profile" | "Channels" | "DisplayTitle"> & Partial<Pick<MediaStream, "SampleRate">>;
 export type SubtitleSourceInfo = Pick<MediaStream, "Codec" | "IsExternal">;
 
 export interface DevicePlaybackInput {
@@ -51,6 +53,14 @@ export interface DevicePlaybackInput {
   audio?: AudioSourceInfo | null;
   /** Le sous-titre choisi ; absent : aucun. */
   subtitle?: SubtitleSourceInfo | null;
+  /**
+   * Le mode Lite (`litePlaybackPolicy`, shared) : plafond de débit de la
+   * lecture directe, budget du son décodé. Absent : la règle d'avant, à
+   * l'identique (Shield, mode normal).
+   */
+  lite?: LitePlaybackPolicy | null;
+  /** Débit de l'image (`BitRate` du flux vidéo), en b/s — lu par le plafond Lite. */
+  videoBitrate?: number | null;
 }
 
 export interface DevicePlaybackVerdict {
@@ -62,6 +72,8 @@ export interface DevicePlaybackVerdict {
   notice: DeviceNotice | null;
   /** La définition que le transcodage vise (sortie, décodeur) ; `null` : celle de la source. */
   maxHeight: number | null;
+  /** Le débit que le transcodage vise (plafond Lite) ; `null` : celui du serveur. */
+  maxBitrate: number | null;
 }
 
 const ATMOS = /atmos|joc/i;
@@ -103,10 +115,23 @@ function isImageSubtitle(subtitle: SubtitleSourceInfo): boolean {
   return BURN_IN_SUBTITLE_CODECS.test(subtitle.Codec ?? "");
 }
 
+/**
+ * Le chemin du son en mode Lite : un son DÉCODÉ dont le coût dépasse le
+ * budget (`audioDecodeCost.ts` : TrueHD, DTS-HD MA en 5.1 et plus — ~16 % d'un
+ * cœur d'A53) est converti par le serveur ; le reste, comme avant.
+ */
+function liteAudioPath(path: AudioPath, audio: AudioSourceInfo | null | undefined, lite: LitePlaybackPolicy | null | undefined): AudioPath {
+  if (!lite || path !== "decoded" || !audio) return path;
+  return audioDecodeCostPerMille(audio) > lite.audioDecodeBudget ? "converted" : path;
+}
+
 export function devicePlaybackVerdict(input: DevicePlaybackInput): DevicePlaybackVerdict {
-  const { profile, video, audio, subtitle } = input;
-  const videoReason = video ? videoUnsupportedReason(profile, video) : null;
-  const audioPath = deviceAudioPath(profile, audio);
+  const { profile, video, audio, subtitle, lite } = input;
+  let videoReason: string | null = video ? videoUnsupportedReason(profile, video) : null;
+  // Plafond Lite : une image au-delà du débit permis passe par le serveur.
+  const overBitrate = !!lite && !!input.videoBitrate && input.videoBitrate > lite.directPlayMaxBitrate;
+  if (videoReason === null && overBitrate) videoReason = "VideoBitrateNotSupported";
+  const audioPath = liteAudioPath(deviceAudioPath(profile, audio), audio, lite);
   // Servi par le serveur dès que l'image ou le son ne passent pas tels quels.
   const served = videoReason !== null || audioPath === "converted";
 
@@ -138,5 +163,6 @@ export function devicePlaybackVerdict(input: DevicePlaybackInput): DevicePlaybac
     subtitlePath,
     notice: av1 && method === "Transcode" ? "av1Converted" : null,
     maxHeight: method === "Transcode" && video ? transcodeMaxHeight(profile, video) : null,
+    maxBitrate: method === "Transcode" && overBitrate && lite ? lite.directPlayMaxBitrate : null,
   };
 }

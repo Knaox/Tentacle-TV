@@ -26,6 +26,7 @@ import androidx.media3.exoplayer.text.TextOutput
 import androidx.media3.exoplayer.text.TextRenderer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.video.VideoRendererEventListener
+import com.facebook.react.bridge.ReadableMap
 
 /**
  * La construction du lecteur ExoPlayer — renderers, source, sélecteur de pistes,
@@ -163,11 +164,39 @@ object ExoPlayerFactory {
                 .build()
         }
 
-    /** Tampon : 50 s minimum, 300 s maximum, 2,5 s pour démarrer, 5 s après un re-buffer. */
-    fun createLoadControl(): LoadControl =
-        DefaultLoadControl.Builder()
-            .setBufferDurationsMs(50_000, 300_000, 2_500, 5_000)
+    /**
+     * Tampon : 50 s minimum, 300 s maximum, 2,5 s pour démarrer, 5 s après un
+     * re-buffer — sauf la politique du mode Lite (shared `exoBufferPolicy`),
+     * posée telle quelle : durées et plafond d'octets.
+     */
+    fun createLoadControl(policy: ExoBufferPolicy? = null): LoadControl {
+        if (policy == null) {
+            return DefaultLoadControl.Builder()
+                .setBufferDurationsMs(50_000, 300_000, 2_500, 5_000)
+                .build()
+        }
+        Log.w(TAG, ">>> tampon Lite $policy")
+        return DefaultLoadControl.Builder()
+            .setBufferDurationsMs(policy.minMs, policy.maxMs, policy.startMs, policy.rebufferMs)
+            .apply { if (policy.targetBytes > 0) setTargetBufferBytes(policy.targetBytes) }
             .build()
+    }
+}
+
+/** Le tampon décidé par la règle partagée (`ExoBufferPolicy`, shared `litePlayback.ts`). */
+data class ExoBufferPolicy(val minMs: Int, val maxMs: Int, val startMs: Int, val rebufferMs: Int, val targetBytes: Int) {
+    companion object {
+        /** La prop `bufferPolicy` ; absente ou incomplète : `null`, le tampon d'avant. */
+        fun from(map: ReadableMap?): ExoBufferPolicy? {
+            if (map == null) return null
+            val keys = listOf("minBufferMs", "maxBufferMs", "bufferForPlaybackMs", "bufferForPlaybackAfterRebufferMs")
+            if (keys.any { !map.hasKey(it) || map.isNull(it) }) return null
+            val bytes = if (map.hasKey("targetBufferBytes") && !map.isNull("targetBufferBytes")) map.getDouble("targetBufferBytes").toInt() else 0
+            return ExoBufferPolicy(
+                map.getInt(keys[0]), map.getInt(keys[1]), map.getInt(keys[2]), map.getInt(keys[3]), bytes,
+            )
+        }
+    }
 }
 
 /**

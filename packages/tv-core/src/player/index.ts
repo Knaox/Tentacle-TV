@@ -28,6 +28,7 @@ export * from "./arrowHold";
 export * from "./scrubController";
 export * from "./playerControls";
 export * from "./playerRemote";
+export * from "./mpvDecoderGuard";
 export * from "./touchScrub";
 export * from "./startGate";
 export * from "./playerBack";

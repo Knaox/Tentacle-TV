@@ -35,6 +35,9 @@ export const IMAGE = "system-images;android-31;android-tv;arm64-v8a";
 export const LITE_AVDS = {
   Lite_API31_1G: { ramMb: 1024, cores: 2, port: 5640, label: "Android TV 1 Go (plancher Google), 2 cœurs" },
   Lite_API31_2G: { ramMb: 2048, cores: 4, port: 5642, label: "box net+ : 2 Go, 4 cœurs" },
+  // L'AVD de la tâche L4 (lecture) : le même profil que la box, sa propre
+  // console — deux tâches mesurent en même temps sans se partager un appareil.
+  Lite_L4_2G: { ramMb: 2048, cores: 4, port: 5646, label: "box net+ : 2 Go, 4 cœurs (L4, lecture)" },
 };
 
 export function liteProfile(name) {

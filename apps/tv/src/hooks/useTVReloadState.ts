@@ -56,9 +56,13 @@ export function useTVReloadState(args: {
   const [startTicks, setStartTicks] = useState(0);
   // forceTranscode SCOPÉ à l'item courant : dérivé → se réinitialise AUTOMATIQUEMENT au
   // changement de contenu (aucune course avec l'effet de reset ; pas de contamination N→N+1).
-  const [ftState, setFtState] = useState<{ item: string; on: boolean }>({ item: "", on: false });
+  // `exo` : le repli rendu à ExoPlayer — mpv ne l'a pas décodé en matériel
+  // (Android TV Lite, tv-core `mpvDecoderVerdict`) ; jamais sur l'Apple TV.
+  const [ftState, setFtState] = useState<{ item: string; on: boolean; exo?: boolean }>({ item: "", on: false });
   const forceTranscode = ftState.item === itemId && ftState.on;
+  const servedToExo = forceTranscode && ftState.exo === true;
   const setForceTranscode = useCallback((on: boolean) => setFtState({ item: itemId, on }), [itemId]);
+  const handToExo = useCallback(() => setFtState({ item: itemId, on: true, exo: true }), [itemId]);
 
   useEffect(() => {
     if (defaultAudio !== undefined) {
@@ -96,7 +100,7 @@ export function useTVReloadState(args: {
     softReloadRef,
     reloadFrameSec, setReloadFrameSec,
     startTicks, setStartTicks,
-    forceTranscode, setForceTranscode,
+    forceTranscode, setForceTranscode, servedToExo, handToExo,
     captureReloadTicks,
   };
 }

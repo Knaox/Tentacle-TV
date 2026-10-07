@@ -56,7 +56,11 @@ internal object MpvOptions {
         "osd-level" to "0",
     )
 
-    fun apply(handle: MPVLib, context: Context) {
+    /**
+     * `overrides` : les options du mode Lite (shared `mpvOptionOverrides`),
+     * posées APRÈS les autres — vide en mode normal, rien ne change alors.
+     */
+    fun apply(handle: MPVLib, context: Context, overrides: List<Pair<String, String>> = emptyList()) {
         // Dossier de configuration et fontconfig (nouveau dans libmpv 1.0) dans le
         // stockage interne : l'index des polices persiste entre les lancements au
         // lieu de reparcourir /system/fonts à chaque sous-titre (1 à 2 s, 10 à
@@ -77,10 +81,11 @@ internal object MpvOptions {
         // défaut, pour que les serveurs auto-signés qui marchent aujourd'hui
         // continuent de marcher.
         installCaBundle(context, mpvDir)?.let { handle.setOptionString("tls-ca-file", it.path) }
-        for ((name, value) in BASE_OPTIONS) {
+        for ((name, value) in BASE_OPTIONS + overrides) {
             val status = handle.setOptionString(name, value)
             if (status < 0) Log.w(TAG, "option refusée ($status) : $name=$value")
         }
+        if (overrides.isNotEmpty()) Log.w(TAG, ">>> options Lite $overrides")
     }
 
     /** Le paquet de certificats racine de Mozilla (asset `mpv/cacert.pem`, même

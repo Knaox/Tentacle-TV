@@ -228,7 +228,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   // token frais + reload (useTVDirectStreamRecovery).
   const { handleError } = useTVErrorHandler({
     forceTranscode: p.forceTranscode, captureReloadTicks: p.captureReloadTicks,
-    setVideoError, setForceTranscode: p.setForceTranscode, onMasterRejected: p.onMasterRejected,
+    setVideoError, setForceTranscode: p.setForceTranscode, onMasterRejected: p.onMasterRejected, handToExo: p.handToExo,
     bumpReloadNonce: () => p.setReloadNonce((n) => n + 1), setIsLoading, recovery: { s, p },
   });
 

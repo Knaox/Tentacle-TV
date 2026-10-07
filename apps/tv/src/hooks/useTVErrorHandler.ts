@@ -1,7 +1,7 @@
 import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { playbackErrorsSuppressed } from "@tentacle-tv/api-client";
-import { isAudioTransientError } from "@tentacle-tv/tv-core";
+import { isAudioTransientError, MPV_SOFTWARE_DECODE } from "@tentacle-tv/tv-core";
 import { useAudioErrorRetry } from "./useAudioErrorRetry";
 import { useTVDirectStreamRecovery } from "./useTVDirectStreamRecovery";
 import { isFormatError, usePlaybackRecovery, type RecoverySources } from "./usePlaybackRecovery";
@@ -39,6 +39,8 @@ export function useTVErrorHandler(args: {
   setIsLoading?: (v: boolean) => void;
   /** tvOS/PrismCore : AVPlayer a refusé le master (`PRISM_MASTER_REJECTED`). */
   onMasterRejected?: () => void;
+  /** Android TV Lite : mpv ne décode pas le repli en matériel → ExoPlayer le lit (`MPV_SOFTWARE_DECODE`). */
+  handToExo?: () => void;
   /** Ce que la reprise lit du lecteur (état média et pipeline de flux). */
   recovery?: RecoverySources;
 }) {
@@ -61,6 +63,13 @@ export function useTVErrorHandler(args: {
     if (isAudioTransientError(error)) { onAudioError(error); return; }
     if (onSlowSegment(error)) return;
     if (onSourceLost(error)) return;
+    if (error === MPV_SOFTWARE_DECODE && args.handToExo) {
+      plog("err", "mpv sans décodeur matériel → ExoPlayer lit le repli");
+      captureReloadTicks();
+      setVideoError(null);
+      args.handToExo();
+      return;
+    }
     if (error === "PRISM_MASTER_REJECTED") {
       plog("err", "master PrismCore refusé par AVPlayer → forme muxée");
       if (onMasterRejected) { onMasterRejected(); return; }

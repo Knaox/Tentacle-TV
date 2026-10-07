@@ -79,11 +79,22 @@ class MediaCapabilitiesModule(private val context: ReactApplicationContext) : Re
   }
 
   /** Le nom du profil simulé demandé par le banc, ou `null`. */
-  private fun simulatedName(): String? {
+  private fun simulatedName(): String? = debugProperty(PROPERTY)
+
+  /**
+   * `liteOverride` : le mode Lite FORCÉ par le banc (`debug.tentacle.lite`,
+   * la propriété du niveau de rendu — `1` Lite, `0` normal), lu par la
+   * lecture (`lib/playbackTier`) tant que le niveau de rendu n'y est pas
+   * branché. App de mesure ou construction de développement seulement.
+   */
+  override fun getConstants(): Map<String, Any?> = mapOf("liteOverride" to debugProperty("debug.tentacle.lite"))
+
+  /** Une propriété `debug.*` posée par un banc ; jamais lue dans l'app de l'utilisateur. */
+  private fun debugProperty(name: String): String? {
     val measurementApp = context.packageName.endsWith(".perf") || BuildConfig.DEBUG
     if (!measurementApp) return null
     val value = try {
-      Class.forName("android.os.SystemProperties").getMethod("get", String::class.java).invoke(null, PROPERTY) as? String
+      Class.forName("android.os.SystemProperties").getMethod("get", String::class.java).invoke(null, name) as? String
     } catch (_: Throwable) {
       null
     }

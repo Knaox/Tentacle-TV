@@ -37,11 +37,12 @@ class MpvPlayerView(
     /** `playback-restart` (image ET son prêts) annoncé pour ce fichier. */
     private var startAnnounced = false
     var progressInterval = 1000L
+    /** Les options du mode Lite (prop `optionOverrides`), lues à l'initialisation. */
+    var optionOverrides: List<Pair<String, String>> = emptyList()
     override fun loadState() = mpvLoadState(mpv, lastLoadedUrl != null)
 
     private var videoParamsW = 0
     private var videoParamsH = 0
-
     init { holder.addCallback(this) }
 
     // --- Cycle de vie de la surface ---
@@ -83,7 +84,7 @@ class MpvPlayerView(
         try {
             val appCtx = reactContext.applicationContext
             val handle = MPVLib.create(appCtx)
-            MpvOptions.apply(handle, appCtx)
+            MpvOptions.apply(handle, appCtx, optionOverrides)
             handle.initialize()
             handle.addObserver(this)
             handle.observeProperty("time-pos", MPVLib.MPV_FORMAT_DOUBLE)
@@ -95,6 +96,8 @@ class MpvPlayerView(
             handle.observeProperty("track-list/count", MPVLib.MPV_FORMAT_INT64)
             handle.observeProperty("video-params/w", MPVLib.MPV_FORMAT_INT64)
             handle.observeProperty("video-params/h", MPVLib.MPV_FORMAT_INT64)
+            // Le décodeur vraiment ouvert (`mediacodec`, `mediacodec-copy`, `no`) : la garde du JS (tv-core `mpvDecoderVerdict`).
+            handle.observeProperty("hwdec-current", MPVLib.MPV_FORMAT_STRING)
             mpv = handle
             initialized = true
             Log.w(TAG, ">>> initMpv OK")
@@ -204,7 +207,11 @@ class MpvPlayerView(
 
     override fun eventProperty(property: String) {}
 
-    override fun eventProperty(property: String, value: String) {}
+    override fun eventProperty(property: String, value: String) {
+        if (destroyed || property != "hwdec-current") return
+        Log.w(TAG, ">>> hwdec-current=$value (${videoParamsW}×$videoParamsH)")
+        emitEvent("decoder", Arguments.createMap().apply { putString("hwdec", value); putInt("videoHeight", videoParamsH) })
+    }
 
     override fun eventProperty(property: String, value: Long) {
         if (destroyed) return

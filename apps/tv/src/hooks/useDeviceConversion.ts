@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from "react";
-import { devicePlaybackVerdict, type DeviceMediaProfile, type DevicePlaybackVerdict } from "@tentacle-tv/shared";
+import {
+  devicePlaybackVerdict, litePlaybackPolicy, type DeviceMediaProfile, type DevicePlaybackVerdict, type PlaybackTier,
+} from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { plog } from "../utils/playerDiag";
 
@@ -18,19 +20,25 @@ export interface DeviceConversion extends DevicePlaybackVerdict {
  * avant) ou sur un refus (aucun décodeur H.264 ni HEVC, jamais rencontré :
  * on tente le fichier, comme avant). Le sous-titre n'y entre pas : son
  * incrustation reste l'affaire de `useTVSubtitleControl`, inchangée.
+ *
+ * En mode Lite (`tier`), la règle reçoit sa politique (`litePlaybackPolicy`) :
+ * plafond de débit de la lecture directe, son sans perte converti.
  */
 export function useDeviceConversion(
   profile: DeviceMediaProfile | null,
   streams: readonly JfStream[],
   sourceAudio: JfStream | null,
+  tier: PlaybackTier = "normal",
 ): DeviceConversion | null {
   const video = useMemo(() => streams.find((stream) => stream.Type === "Video") ?? null, [streams]);
   const verdict = useMemo(
-    () => (profile ? devicePlaybackVerdict({ profile, video, audio: sourceAudio }) : null),
-    [profile, video, sourceAudio],
+    () => (profile
+      ? devicePlaybackVerdict({ profile, video, audio: sourceAudio, lite: litePlaybackPolicy(tier), videoBitrate: video?.BitRate ?? null })
+      : null),
+    [profile, video, sourceAudio, tier],
   );
   const served = verdict?.method === "DirectStream" || verdict?.method === "Transcode";
-  const key = served && verdict ? `${verdict.method}|${verdict.reasons.join(",")}|${verdict.maxHeight ?? ""}` : "";
+  const key = served && verdict ? `${verdict.method}|${verdict.reasons.join(",")}|${verdict.maxHeight ?? ""}|${verdict.maxBitrate ?? ""}` : "";
 
   useEffect(() => {
     if (key) plog("caps", `servi par le serveur pour cet appareil : ${key}`);

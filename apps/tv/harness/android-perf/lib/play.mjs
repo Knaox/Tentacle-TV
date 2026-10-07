@@ -103,5 +103,5 @@ export function createPlayer({ device, backendPort, host }) {
     }
   }
 
-  return { playScenario, playChecked, prepareApk, warmup };
+  return { playScenario, playChecked, prepareApk, warmup, applyFixtures };
 }

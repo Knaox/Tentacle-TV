@@ -18,15 +18,18 @@ import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
  */
 export function useTVPlayerRouting(args: {
   forceTranscode: boolean;
+  /** Le repli rendu à ExoPlayer : mpv ne le décodait pas en matériel (Android TV Lite). */
+  servedToExo?: boolean;
   isTranscodingQuality: boolean;
   exoRef: React.RefObject<MPVPlayerHandle | null>;
   mpvRef: React.RefObject<MPVPlayerHandle | null>;
 }) {
-  const { forceTranscode, isTranscodingQuality, exoRef, mpvRef } = args;
+  const { forceTranscode, servedToExo = false, isTranscodingQuality, exoRef, mpvRef } = args;
 
   // ExoPlayer rend directement à la surface (pas de copie mediacodec lag-inducing comme MPV).
-  // Forcé sur MPV uniquement quand un transcode est en cours.
-  const useExoPlayer = !forceTranscode;
+  // Forcé sur MPV uniquement quand un transcode est en cours — sauf si mpv n'a
+  // pas su le décoder en matériel (garde du mode Lite) : Exo lit alors le repli.
+  const useExoPlayer = !forceTranscode || servedToExo;
   const playerRef = useExoPlayer ? exoRef : mpvRef;
 
   // Direct play DEMANDÉ tant qu'aucun transcode n'est imposé (codec ou qualité user).
