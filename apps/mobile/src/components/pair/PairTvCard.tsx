@@ -23,7 +23,8 @@ interface Props {
  * La carte du jumelage d'une TV : les quatre cases du code, validées au
  * dernier caractère, puis le succès ou l'erreur — avec, chaque fois, de quoi
  * repartir. La même dans l'écran `/pair-tv` et en tête d'« Appareils et TV ».
- * Le jumelage exige l'URL publique du serveur ; une panne se dit à part.
+ * Le jumelage exige une adresse du serveur qu'une TV puisse joindre (l'annoncée,
+ * sinon celle de ce téléphone — `usePairingAvailability`) ; une panne se dit à part.
  */
 export function PairTvCard({ allowAnother = false, autoFocus = true }: Props) {
   const { t } = useTranslation("pairing");

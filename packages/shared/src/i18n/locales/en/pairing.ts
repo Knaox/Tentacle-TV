@@ -61,9 +61,10 @@ export default {
   // "Pairing expired" banner (device Jellyfin token dead server-side)
   pairingExpiredBanner: "Pairing expired — reconfirm pairing from your profile to restore progress saving.",
 
-  // Pairing unavailable (public server URL not configured on the backend)
-  pairingUnavailable: "TV pairing is unavailable — this option must be enabled by the administrator.",
-  pairingUnavailableAdmin: "Please first set the “Public Tentacle TV server URL” to enable TV pairing.",
+  // Jumelage indisponible : aucune adresse du serveur qu'une TV puisse joindre
+  // (rien d'annoncé, et ce client parle au serveur par `localhost`).
+  pairingUnavailable: "TV pairing is unavailable: this server has no address a TV can reach. Contact the administrator.",
+  pairingUnavailableAdmin: "This server has no address a TV can reach. Open Tentacle through this machine's local network address, or set the server address.",
   pairingConfigureNow: "Configure now",
 
   // The CLIENT's pairing screen — the one shown after forgetting the device.

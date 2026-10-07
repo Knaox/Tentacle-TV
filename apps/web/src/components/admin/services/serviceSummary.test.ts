@@ -50,7 +50,7 @@ describe("le résumé de la base", () => {
 });
 
 describe("les autres tuiles", () => {
-  it("adresse publique : l'hôte en service, ou le jumelage bloqué", () => {
+  it("adresse publique : l'hôte en service, ou le jumelage au seul réseau local", () => {
     expect(summary.summarizePublicUrl(readPublicUrl({ publicUrl: "", envFallback: "https://tv.example.com/" }))).toMatchObject({ tone: "success", detail: "tv.example.com" });
     expect(summary.summarizePublicUrl(readPublicUrl({}))).toEqual({ tone: "warning", label: "publicUrlMissing", detailKey: "publicUrlPairingBlocked" });
   });

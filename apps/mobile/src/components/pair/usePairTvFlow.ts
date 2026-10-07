@@ -8,22 +8,28 @@ import {
   type PairingEntryStatus,
   type StorageAdapter,
 } from "@tentacle-tv/api-client";
+import { pairingServerUrl } from "@tentacle-tv/shared";
 import { pairingErrorKey } from "../../hooks/usePairingAvailability";
 
 const EMPTY = ["", "", "", ""];
 
-/** L'URL transmise à la TV : l'URL publique du serveur (joignable de l'extérieur), sinon `base`. */
-async function publicServerUrl(base: string): Promise<string> {
+/**
+ * L'URL transmise à la TV (règle partagée `pairingServerUrl`) : celle que le
+ * serveur annonce, sinon `base` — l'URL par laquelle ce téléphone le joint.
+ * `null` : aucune qu'une TV puisse joindre.
+ */
+async function pairingTargetUrl(base: string): Promise<string | null> {
+  let advertised: string | null = null;
   try {
     const res = await fetch(`${base}/api/config`);
     if (res.ok) {
-      const cfg = await res.json();
-      if (cfg?.publicUrl) return cfg.publicUrl as string;
+      const cfg = (await res.json()) as { publicUrl?: unknown } | null;
+      if (typeof cfg?.publicUrl === "string") advertised = cfg.publicUrl;
     }
   } catch {
     /* réseau indisponible — on garde `base` */
   }
-  return base;
+  return pairingServerUrl({ advertised, clientServerUrl: base });
 }
 
 /**
@@ -61,7 +67,8 @@ export function usePairTvFlow(storage: StorageAdapter) {
       const { token } = await tvTokenMut.mutateAsync();
       const base = storage.getItem("tentacle_server_url") ?? "";
       if (!base) throw new Error(te("noServerUrl"));
-      const serverUrl = await publicServerUrl(base);
+      const serverUrl = await pairingTargetUrl(base);
+      if (!serverUrl) throw new Error(te("noServerUrl"));
       const userRaw = storage.getItem("tentacle_user");
       const user = userRaw ? (JSON.parse(userRaw) as { Id: string; Name: string }) : null;
       if (!user?.Id || !user?.Name) throw new Error(te("userInfoNotFound"));

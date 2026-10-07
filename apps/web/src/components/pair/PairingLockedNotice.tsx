@@ -2,9 +2,10 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 /**
- * Affiché quand le jumelage TV est indisponible côté backend (URL publique du
- * serveur non configurée). Message adapté : l'admin obtient un raccourci vers le
- * réglage, l'utilisateur simple est invité à contacter l'administrateur.
+ * Affiché quand aucune adresse du serveur ne peut être donnée à une TV (rien
+ * d'annoncé, et la page est ouverte par `localhost` — `fetchPairingServerUrl`).
+ * Message adapté : l'admin obtient un raccourci vers le réglage, l'utilisateur
+ * simple est invité à contacter l'administrateur.
  */
 export function PairingLockedNotice({ isAdmin }: { isAdmin: boolean }) {
   const { t } = useTranslation("pairing");
