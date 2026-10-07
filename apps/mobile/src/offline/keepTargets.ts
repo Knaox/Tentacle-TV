@@ -49,10 +49,10 @@ export interface KeepOptions {
 }
 
 /**
- * iOS sans la puce AV1 : le libdav1d de MPVKit plante à l'ouverture du
- * décodeur (mesuré au simulateur, quatre fichiers 10 bits) — et hors ligne,
- * aucun serveur ne peut prendre le relais. Pas d'original AV1 sur ces
- * appareils ; à lever avec la règle homologue du routeur (`av1-software`).
+ * iOS sans la puce AV1 : pas d'original AV1 gardé hors ligne — il se lirait en
+ * logiciel, sans serveur pour prendre le relais. Règle homologue du routeur
+ * (`av1-software`). Le plantage du libdav1d de MPVKit qui la motivait aussi
+ * (un doublon de dav1d dans l'app) est corrigé : MPVKit-isolate.sh.
  */
 function withoutAv1(support: PlatformMediaSupport): PlatformMediaSupport {
   return { ...support, videoCodecs: new Set([...support.videoCodecs].filter((codec) => codec !== "av1")) };
