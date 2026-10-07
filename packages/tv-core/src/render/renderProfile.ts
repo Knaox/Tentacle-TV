@@ -2,10 +2,12 @@
  * Le PROFIL DE RENDU d'une plateforme de salon : ce que ses vues dessinent,
  * et comment, pour le même écran. Une table de données, lue une fois au
  * chargement par l'app (`apps/tv/src/redesign/render/renderProfile.ts`) —
- * jamais un `Platform.OS` épars dans les vues. Une future version allégée
- * (« Lite ») sera une ligne de plus, pas une chasse aux conditions.
+ * jamais un `Platform.OS` épars dans les vues. La version allégée d'Android
+ * TV (« Lite ») est une VARIANTE de son profil (`liteProfile.ts`), choisie par
+ * le niveau de rendu de l'appareil : une ligne de plus, pas une chasse aux
+ * conditions.
  *
- * Règle commune : un allègement ne se VOIT pas. L'Apple TV est la référence
+ * Règle commune (hors Lite) : un allègement ne se VOIT pas. L'Apple TV est la référence
  * du rendu ; ce qu'une autre plateforme dessine autrement (une ombre, un
  * gris, un verre) doit rester identique à l'œil nu.
  */
@@ -18,7 +20,9 @@ export type ShadowRendering =
   | "layer"
   /** Un masque flouté UNE fois (vue native `TentacleShadowView`), mis en
    *  cache par géométrie et teinté au dessin : aucun flou par image. */
-  | "mask";
+  | "mask"
+  /** Un bord fin à la place de l'ombre (Lite) : rien ne se floute ni ne déborde. */
+  | "border";
 
 /** Comment `react-native-svg` floute (`FeGaussianBlur`). */
 export type SvgBlurRendering =
@@ -43,6 +47,44 @@ export type LightRendering =
   /** Un dégradé radial évalué par le GPU (vue native `TentacleGlowView`) :
    *  ni bitmap, ni rastérisation quand la couleur change. */
   | "shader";
+
+/** Le style du mouvement (`motion` vrai) : les préréglages tels quels, ou
+ *  BREFS — chaque ressort devient un fondu court, les durées sont bornées et
+ *  ce qui accompagne seulement (une image qui se pose) se pose sans animer
+ *  (`liteMotion`). */
+export type MotionStyle = "full" | "brief";
+
+/** L'habit du focus d'une carte. */
+export type CardFocusRendering =
+  /** Elle grandit (× 1,08), se soulève, son ombre ou sa lueur s'allume, un reflet passe. */
+  | "lift"
+  /** Un liseré d'accent, à sa taille : ni agrandissement, ni ombre, ni reflet. */
+  | "outline";
+
+/** Le fond de la scène. */
+export type AmbientRendering =
+  /** Le fond vivant : trois lumières aux couleurs de l'œuvre, en fondu. */
+  | "lights"
+  /** Une seule teinte de l'œuvre, statique, venue d'en haut : un fondu court
+   *  quand l'œuvre change, rien d'autre. */
+  | "tint";
+
+/** Le verre dessiné (sans verre natif). */
+export type GlassRendering =
+  /** Un voile, un reflet dégradé, un bord et un liseré allumé. */
+  | "layered"
+  /** Un aplat de la même teinte et un bord fin : une seule vue. */
+  | "flat";
+
+/** Les dégradés doux (`SoftGradient`). */
+export type GradientRendering =
+  /** Tous les arrêts écrits. */
+  | "smooth"
+  /** Deux arrêts, calés sur le gros de la variation (`twoStopGradient`). */
+  | "twoStop";
+
+/** Le passage d'un écran à l'autre de la pile. */
+export type PageTransition = "fade" | "cut";
 
 /** Comment se dessine l'indicateur d'activité (`ActivityIndicator`). */
 export type SpinnerRendering =
@@ -95,6 +137,24 @@ export interface RenderProfile {
    *  (`TentacleCullTrack` → `RowRecede`) plutôt que par Reanimated, carte par
    *  carte, sur le fil d'interface. */
   nativeRecede: boolean;
+  /** Le style du mouvement. */
+  motionStyle: MotionStyle;
+  /** L'habit du focus des cartes. */
+  cardFocus: CardFocusRendering;
+  /** Le fond de la scène. */
+  ambient: AmbientRendering;
+  /** Le verre dessiné. */
+  glass: GlassRendering;
+  /** Les dégradés doux. */
+  gradients: GradientRendering;
+  /** Le passage d'un écran à l'autre. */
+  pageTransition: PageTransition;
+  /** L'attente du héros entre deux titres, en multiple de celle de tv-core
+   *  (`heroRotateDelay`). */
+  heroDelayFactor: number;
+  /** Le texte du héros qui tourne s'échange en fondu (faux : posé d'un coup,
+   *  seule l'image fond). */
+  heroTextSwap: boolean;
 }
 
 export interface CardArtworkSize {
@@ -136,6 +196,14 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     spinner: "system",
     cullOffscreen: false,
     nativeRecede: false,
+    motionStyle: "full",
+    cardFocus: "lift",
+    ambient: "lights",
+    glass: "layered",
+    gradients: "smooth",
+    pageTransition: "fade",
+    heroDelayFactor: 1,
+    heroTextSwap: true,
   },
   // Android 11 (Shield TV Pro, Tegra X1+) : ni flou en direct, ni ombre
   // floutée en ancienne architecture — les ombres passent par un masque
@@ -166,6 +234,14 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     // Une vingtaine de cartes reculent à chaque pas vertical : ~4 ms de fil
     // d'interface par image sur la Shield, quand Reanimated les animait.
     nativeRecede: true,
+    motionStyle: "full",
+    cardFocus: "lift",
+    ambient: "lights",
+    glass: "layered",
+    gradients: "smooth",
+    pageTransition: "fade",
+    heroDelayFactor: 1,
+    heroTextSwap: true,
   },
 };
 

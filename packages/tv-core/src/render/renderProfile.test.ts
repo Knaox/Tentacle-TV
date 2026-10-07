@@ -18,6 +18,14 @@ describe("le profil de rendu", () => {
       spinner: "system",
       cullOffscreen: false,
       nativeRecede: false,
+      motionStyle: "full",
+      cardFocus: "lift",
+      ambient: "lights",
+      glass: "layered",
+      gradients: "smooth",
+      pageTransition: "fade",
+      heroDelayFactor: 1,
+      heroTextSwap: true,
     });
   });
 

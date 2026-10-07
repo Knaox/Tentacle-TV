@@ -11,3 +11,6 @@ export * from "./commitCount";
 export * from "./perfLabels";
 export * from "./rowRecede";
 export * from "./rowStaging";
+export * from "./liteProfile";
+export * from "./liteMotion";
+export * from "./twoStopGradient";
