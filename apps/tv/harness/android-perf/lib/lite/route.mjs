@@ -180,16 +180,16 @@ export async function runRoute({ avd, option, flag }) {
       await device.waitReady("accueil", 60_000);
       await sleep(10_000);
       if (coldTrace) result.traces.push(await coldTrace.stop(path.join(dir, "demarrage.pftrace")));
-      result.memory.push(memorySample(capture, "repos"));
+      result.memory.push({ ...memorySample(capture, "repos"), attached: device.viewHierarchy() });
       if (flag("shots")) device.screencap(path.join(dir, "accueil.png"));
-      log(`repos : PSS ${result.memory[0].app.totalPss} Mo (Java ${result.memory[0].app.javaHeap}, natif ${result.memory[0].app.nativeHeap}, graphique ${result.memory[0].app.graphics}) · système dispo ${result.memory[0].system.availableMb} Mo`);
+      log(`repos : vues attachées ${result.memory[0].attached.views} · PSS ${result.memory[0].app.totalPss} Mo (Java ${result.memory[0].app.javaHeap}, natif ${result.memory[0].app.nativeHeap}, graphique ${result.memory[0].app.graphics}) · système dispo ${result.memory[0].system.availableMb} Mo`);
       // 3. Écran par écran.
       for (const scenario of scenarios) {
         const played = [];
         try {
           for (let i = 0; i < rounds; i++) {
             const round = await player.playChecked(scenario);
-            played.push({ ...round, gfxFull: capture.gfx(), memory: capture.meminfo() });
+            played.push({ ...round, gfxFull: capture.gfx(), memory: capture.meminfo(), attached: device.viewHierarchy() });
           }
         } catch (error) {
           // Une mise en place ratée deux fois : l'écran n'est pas mesuré, le
@@ -207,7 +207,7 @@ export async function runRoute({ avd, option, flag }) {
           device.screencap(path.join(dir, `${scenario.id}.png`));
         }
         const summary = summarizeScenario(scenario, played);
-        const screen = { ...summary, gfxFull: played.map((r) => r.gfxFull), memory: played.map((r) => r.memory), rawRounds: played.map(({ records: _records, ...r }) => r) };
+        const screen = { ...summary, gfxFull: played.map((r) => r.gfxFull), memory: played.map((r) => r.memory), attached: played.map((r) => r.attached), rawRounds: played.map(({ records: _records, ...r }) => r) };
         result.screens.push(screen);
         log(describeLite(screen));
       }
