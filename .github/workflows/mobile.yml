@@ -218,6 +218,13 @@ jobs:
             echo "play_track=$TRACK"; echo "tag=mobile-v$VERSION"
           } >> "$GITHUB_OUTPUT"
 
+      # LA GARDE DE LICENCE iOS. Les binaires MPVKit du fork Streamyfin sont
+      # GPL : jamais vers TestFlight ni l'App Store. Seule la Release LGPL de
+      # mpvkit.yml passe (lib/podspec-license.mjs). Le cran build reste libre.
+      - name: Licence du lecteur iOS (MPVKit LGPL)
+        if: steps.plan.outputs.channel != 'build' && steps.plan.outputs.ios != 'skip'
+        run: node .github/scripts/check-podspec-license.mjs apps/mobile/ios/MPVKit.podspec
+
       # LE PRÉ-VOL. Un bloc de changelog manquant donnait jusqu'ici une
       # publication SANS NOTES, en silence : `release-notes.mjs` sort en 0 sans
       # écrire de fichier, et les étapes enchaînaient avec « || true ».
