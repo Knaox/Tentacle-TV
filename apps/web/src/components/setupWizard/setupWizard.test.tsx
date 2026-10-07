@@ -272,7 +272,9 @@ describe("les écrans de l'assistant", () => {
     expect(out).toContain("./media/series");
     expect(out).toContain('role="img"');
     expect(out).toContain("http://192.168.1.20:3471");
-    expect(out.match(/target="_blank"/g)).toHaveLength(8);
+    // Les huit applications, et le guide « ajouter du contenu ».
+    expect(out.match(/target="_blank"/g)).toHaveLength(9);
+    expect(out).toContain("addTiming");
     expect(out).toContain("doneRemote_off");
   });
 
