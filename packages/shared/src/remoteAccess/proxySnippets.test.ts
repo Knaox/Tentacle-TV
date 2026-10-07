@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { caddySnippet, isValidDomain, nginxSnippet, traefikSnippet } from "./proxySnippets";
+import { basePathOf, caddySnippet, isValidBasePath, isValidDomain, nginxSnippet, traefikSnippet } from "./proxySnippets";
 
 const input = { tentacleDomain: "tv.example.com", jellyfinDomain: "jf.example.com", upstreamHost: "192.168.1.20", tentaclePort: 3000, jellyfinPort: 8096 };
 
@@ -50,5 +50,50 @@ describe("le mandataire de l'utilisateur", () => {
     expect(() => caddySnippet({ ...input, upstreamHost: "1.2.3.4\n}" })).toThrow();
     expect(() => nginxSnippet({ ...input, tentaclePort: 70000 })).toThrow();
     expect(() => traefikSnippet({ ...input, jellyfinDomain: "jf" })).toThrow();
+  });
+});
+
+describe("Jellyfin sous un chemin du domaine de Tentacle (même origine)", () => {
+  const sub = { ...input, jellyfinDomain: null, jellyfinPath: "/jellyfin", jellyfinUpstreamHost: "192.168.1.50" };
+
+  it("le chemin d'une adresse, ou rien à la racine", () => {
+    expect(basePathOf("https://tv.example.com/jellyfin/")).toBe("/jellyfin");
+    expect(basePathOf("https://tv.example.com/media/jf")).toBe("/media/jf");
+    expect(basePathOf("https://jf.example.com")).toBeNull();
+    expect(basePathOf("pas une adresse")).toBeNull();
+    expect(isValidBasePath("/jellyfin")).toBe(true);
+    expect(isValidBasePath("/jellyfin/")).toBe(false);
+    expect(isValidBasePath("/jelly fin")).toBe(false);
+    expect(isValidBasePath("/a;b")).toBe(false);
+  });
+
+  it("Caddy : le chemin vers Jellyfin (préfixe gardé), le reste vers Tentacle, aucun en-tête CORS", () => {
+    const out = caddySnippet(sub);
+    expect(out).toContain("redir /jellyfin /jellyfin/");
+    expect(out).toContain("handle /jellyfin/* {\n    reverse_proxy 192.168.1.50:8096\n  }");
+    expect(out).toContain("handle {\n    reverse_proxy 192.168.1.20:3000\n  }");
+    expect(out).not.toContain("Access-Control");
+  });
+
+  it("Nginx : un seul server, la location du chemin sans barre finale au proxy_pass", () => {
+    const out = nginxSnippet(sub);
+    expect(out.match(/server_name/g)).toHaveLength(1);
+    expect(out).toContain("location = /jellyfin { return 302 $scheme://$host/jellyfin/; }");
+    expect(out).toContain("location /jellyfin/ {\n    proxy_pass http://192.168.1.50:8096;");
+    expect(out).toContain("location / {\n    proxy_pass http://192.168.1.20:3000;");
+    expect(out).not.toContain("Access-Control");
+  });
+
+  it("Traefik : PathPrefix sur le domaine de Tentacle", () => {
+    const out = traefikSnippet(sub);
+    expect(out).toContain("rule: Host(`tv.example.com`) && PathPrefix(`/jellyfin`)");
+    expect(out).toContain('servers: [{ url: "http://192.168.1.50:8096" }]');
+    expect(out).not.toContain("jellyfin-cors");
+  });
+
+  it("refuse un chemin qui casserait la configuration, et domaine ET chemin à la fois", () => {
+    expect(() => caddySnippet({ ...sub, jellyfinPath: "/a\n}" })).toThrow();
+    expect(() => nginxSnippet({ ...sub, jellyfinDomain: "jf.example.com" })).toThrow();
+    expect(() => traefikSnippet({ ...sub, jellyfinUpstreamHost: "1.2.3.4\n" })).toThrow();
   });
 });
