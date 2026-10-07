@@ -5,16 +5,21 @@ import type { PublicIpReport, RemoteAccessState, RemoteCheckReport } from "@tent
 
 /**
  * L'accès à distance rendu à plat, comme les autres bancs de composants :
- * interrupteur coupé, les trois étapes selon le mandataire, le rapport du test
- * et les guides des box. `t()` rend la clé (et ses paramètres) ; l'API, la page
- * animée et `adminUtils` (qui démarre l'app par `main.tsx`) sont remplacés.
+ * l'état en tête, le formulaire des adresses prérempli (les clés de 1.23.0),
+ * le guide replié « En savoir plus » et ce qu'il montre une fois ouvert, le
+ * rapport du test et les guides des box. `t()` rend la clé (et ses
+ * paramètres) ; l'API, les requêtes et `adminUtils` (qui démarre l'app par
+ * `main.tsx`) sont remplacés.
  */
 
 const h = vi.hoisted(() => ({
   state: null as unknown as RemoteAccessState,
   exposure: true,
+  publicIpEnabled: null as boolean | null,
   publicIp: { data: undefined as PublicIpReport | undefined, isPending: false },
   check: { data: undefined as RemoteCheckReport | undefined, isPending: false, error: null as unknown, mutate: () => undefined },
+  publicConfig: { publicUrl: "https://poulpy.example.ch", effectiveUrl: "https://poulpy.example.ch", envFallback: "" },
+  direct: { enabled: true, privateUrl: "http://192.168.1.50:8096", publicUrl: "https://poulpy.example.ch/jellyfin" },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -23,12 +28,23 @@ vi.mock("react-i18next", () => ({
     i18n: { language: "fr" },
   }),
 }));
-vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: async () => undefined }) }));
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: async () => undefined }),
+  useMutation: () => ({ mutate: () => undefined, isPending: false }),
+}));
 vi.mock("../../pages/adminUtils", () => ({
   cls: new Proxy({}, { get: (_target, name) => `cls-${String(name)}` }),
   BACKEND: "",
   creds: () => undefined,
   hdrs: () => ({}),
+}));
+vi.mock("../../contexts/ToastContext", () => ({ useToast: () => ({ show: () => undefined }) }));
+vi.mock("../serverLinks/useServerLinks", () => ({ SERVER_LINKS_KEY: ["admin", "server-links"] }));
+vi.mock("../admin/services/useUnsavedGuard", () => ({ useUnsavedGuard: () => undefined }));
+vi.mock("../admin/services/useServicesData", () => ({
+  usePublicUrlConfig: () => ({ data: h.publicConfig, isError: false, isPending: false, refetch: async () => undefined }),
+  useDirectStreamingConfig: () => ({ data: h.direct, isError: false, isPending: false, refetch: async () => undefined }),
+  useExplainFailure: () => () => "échec",
 }));
 vi.mock("../admin/services/servicesApi", () => ({ servicesApi: { savePublicUrl: async () => undefined } }));
 vi.mock("../admin/services/servicesModel", () => ({ SERVICES_KEYS: { publicUrl: ["admin", "services", "public-url"], directStreaming: ["admin", "services", "direct"] } }));
@@ -40,142 +56,179 @@ vi.mock("./remoteAccessApi", () => ({
   useRemoteAccess: () => ({ isPending: false, isError: false, data: h.state, refetch: () => undefined }),
   useSaveRemoteAccess: () => ({ mutateAsync: async () => h.state }),
   useRunRemoteCheck: () => h.check,
-  usePublicIp: () => h.publicIp,
-  remoteAccessApi: { saveDirectPlay: async () => ({ success: true }) },
+  usePublicIp: (enabled: boolean) => {
+    h.publicIpEnabled = enabled;
+    return h.publicIp;
+  },
 }));
 
-vi.stubGlobal("window", { location: { protocol: "http:", hostname: "192.168.1.20", host: "192.168.1.20:3471" } });
+const page = { protocol: "http:", hostname: "192.168.1.20", host: "192.168.1.20:3471", hash: "" };
+vi.stubGlobal("window", { location: page });
 
 const { RemoteAccessPanel } = await import("./RemoteAccessPanel");
 const { CheckResults } = await import("./CheckResults");
 const { RouterGuideCard } = await import("./RouterGuideCard");
-const { guessLanUrl, isLocalHttp, isValidLocalUrl } = await import("./lanAddress");
+const { AddressTestResults } = await import("./AddressTestResults");
+const { guessLanUrl, homeTentacleUrl, hostPortOf, isLocalHttp, isValidLocalUrl, parseHostPort } = await import("./lanAddress");
 
+/** L'état d'un serveur venu de 1.23.0 : Tentacle et Jellyfin sous le même domaine, Jellyfin sur /jellyfin. */
 function makeState(over: Partial<RemoteAccessState["settings"]> = {}, rest: Partial<RemoteAccessState> = {}): RemoteAccessState {
   return {
-    settings: { enabled: true, proxy: "caddy", localUrl: null, routerId: null, ...over },
-    publicUrl: "https://tv.example.com",
-    jellyfinPublicUrl: null,
+    settings: { enabled: true, proxy: "none", localUrl: null, routerId: null, ...over },
+    publicUrl: "https://poulpy.example.ch",
+    jellyfinPublicUrl: "https://poulpy.example.ch/jellyfin",
     hostPort: 3471,
     jellyfinHostPort: 8096,
     deployment: "docker",
-    stack: "full",
+    stack: null,
     checkServiceUrl: "https://check.tentacletv.app",
     lastCheck: null,
-    directPlay: { enabled: true, privateUrl: "http://192.168.1.20:8096", publicUrl: null },
+    directPlay: { enabled: true, privateUrl: "http://192.168.1.50:8096", publicUrl: "https://poulpy.example.ch/jellyfin" },
+    derivedLocalUrl: "http://192.168.1.20:3471",
+    jellyfinCors: { status: "ready", origins: ["https://poulpy.example.ch", "http://192.168.1.20:3471", "tentacle://app", "tauri://localhost"], added: [] },
     ...rest,
   };
 }
 
+const render = (variant?: "admin" | "wizard") => renderToStaticMarkup(<RemoteAccessPanel variant={variant} />).replaceAll("&quot;", '"');
+
 beforeEach(() => {
   h.state = makeState();
   h.exposure = true;
+  h.publicIpEnabled = null;
   h.publicIp = { data: { outcome: "found", v4: "203.0.113.5", v6: null, source: "echo", detectedAt: "2026-10-07T10:00:00.000Z" }, isPending: false };
   h.check = { data: undefined, isPending: false, error: null, mutate: () => undefined };
+  h.publicConfig = { publicUrl: "https://poulpy.example.ch", effectiveUrl: "https://poulpy.example.ch", envFallback: "" };
+  h.direct = { enabled: true, privateUrl: "http://192.168.1.50:8096", publicUrl: "https://poulpy.example.ch/jellyfin" };
+  Object.assign(page, { protocol: "http:", hostname: "192.168.1.20", host: "192.168.1.20:3471", hash: "" });
 });
 
 describe("le panneau de l'accès à distance", () => {
-  it("coupé (le défaut) : privé ou public en deux schémas, l'adresse sur le réseau pré-remplie, l'interrupteur — et aucune étape", () => {
-    h.state = makeState({ enabled: false });
-    const html = renderToStaticMarkup(<RemoteAccessPanel />);
-    expect(html).toContain('role="switch"');
-    expect(html).toContain('aria-checked="false"');
-    expect(html).toContain("exposureOff");
-    // Les deux schémas, et le réglage en cours dit en toutes lettres (le privé).
-    expect(html.match(/<svg[^>]*role="img"/g)).toHaveLength(2);
-    expect(html.indexOf("modeCurrent")).toBeLessThan(html.indexOf("modePublicTitle"));
-    // L'adresse de ce serveur sur le réseau : celle de la page, modifiable, avec un exemple.
-    expect(html).toContain('value="http://192.168.1.20:3471"');
-    expect(html).toContain("lanExample");
-    expect(html).not.toContain("step1Title");
-    expect(html).not.toContain("public-ip");
-    expect(html).toContain("security_default");
-    expect(html).toContain('id="guide"');
+  it("un serveur de 1.23.0, repris tel quel : l'état en tête, le formulaire prérempli, aucun interrupteur d'exposition, aucun mandataire à choisir", () => {
+    const html = render();
+    // L'état : chez soi et dehors, Tentacle et les vidéos.
+    expect(html.indexOf("overviewTitle")).toBeLessThan(html.indexOf("addressesTitle"));
+    expect(html).toContain(">https://poulpy.example.ch/jellyfin<");
+    expect(html).toContain(">http://192.168.1.50:8096<");
+    expect(html).toContain(">http://192.168.1.20:3471<");
+    expect(html).toContain("overviewHttps");
+    // Le formulaire : les trois adresses de 1.23.0, et la lecture directe allumée — le seul interrupteur.
+    expect(html).toContain('value="https://poulpy.example.ch"');
+    expect(html).toContain('value="http://192.168.1.50:8096"');
+    expect(html).toContain('value="https://poulpy.example.ch/jellyfin"');
+    expect(html.match(/role="switch"/g)).toHaveLength(1);
+    expect(html).toContain('aria-checked="true"');
+    // Le mandataire n'est demandé nulle part : il attend dans « En savoir plus », replié.
+    expect(html).toContain("moreLabel");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain("proxy_none_title");
+    expect(html).not.toContain("noneWarning");
+    // L'adresse publique de la box est située : il y a un lien public.
+    expect(h.publicIpEnabled).toBe(true);
+    expect(html).toContain('overviewPublicIp{"ip":"203.0.113.5"}');
   });
 
-  it("Caddy : les trois étapes, et le Caddyfile à poser dans SON mandataire (aucun profil de pile)", () => {
-    h.state = makeState({ localUrl: "http://192.168.1.20:3471" });
-    const html = renderToStaticMarkup(<RemoteAccessPanel />);
-    for (const key of ["step1Title", "step2Title", "step3Title", "planBTitle"]) expect(html).toContain(key);
-    expect(html).toContain("snippetIntro");
-    expect(html).toContain("caddyHint");
-    expect(html).toContain("tv.example.com {\n  reverse_proxy 192.168.1.20:3471\n}");
-    expect(html).not.toContain("--profile");
-    expect(html).not.toContain("TENTACLE_DOMAIN");
-    // Derrière un mandataire : 443 et 80 vers l'adresse devinée depuis la page.
-    expect(html).toContain("purpose_https");
-    expect(html).toContain("192.168.1.20");
-    expect(html).toContain("localHttpNotice");
+  it("le CORS de Jellyfin en mots : ce que Tentacle y inscrit, l'application de bureau en une seule mention", () => {
+    const html = render();
+    expect(html).toContain("cors_ready");
+    expect(html).toContain('corsOrigins{"list":"https://poulpy.example.ch, http://192.168.1.20:3471, corsDesktop"}');
+    h.state = makeState({}, { jellyfinCors: { status: "open", origins: [], added: [] } });
+    expect(render()).toContain("corsOpenBody");
   });
 
-  it("Traefik ou Nginx : l'onglet du mandataire choisi s'ouvre d'abord", () => {
-    h.state = makeState({ proxy: "traefik" });
-    let html = renderToStaticMarkup(<RemoteAccessPanel />);
-    expect(html).toContain("traefikHint");
-    expect(html).toContain("rule: Host(`tv.example.com`)");
+  it("sans lien public : Tentacle ne répond qu'à la maison, et l'adresse de la box n'est pas demandée", () => {
+    h.state = makeState({}, { publicUrl: null });
+    const html = render();
+    expect(html).toContain("overviewNoPublic");
+    expect(html).not.toContain("overviewHttps");
+    expect(h.publicIpEnabled).toBe(false);
+  });
+
+  it("« En savoir plus » ouvert : l'exemple de NPM pour Jellyfin sous /jellyfin, prérempli d'après les adresses réglées", () => {
+    page.hash = "#proxy";
     h.state = makeState({ proxy: "other" });
-    html = renderToStaticMarkup(<RemoteAccessPanel />);
-    expect(html).toContain("npmHint");
-    expect(html).not.toContain("--profile");
+    const html = render();
+    expect(html).toContain('aria-expanded="true"');
+    expect(html).toContain("proxyNotIncluded");
+    // Jellyfin sous un chemin du domaine de Tentacle : le chemin vers Jellyfin, le reste vers Tentacle, sans CORS.
+    expect(html).toMatch(/value="path"[^>]*checked=""|checked=""[^>]*value="path"/);
+    expect(html).toContain("location /jellyfin/ {\n    proxy_pass http://192.168.1.50:8096;");
+    expect(html).toContain("location / {\n    proxy_pass http://192.168.1.20:3471;");
+    expect(html).not.toContain("add_header Access-Control-Allow-Origin");
+    expect(html).toContain('npmHintPath{"domain":"poulpy.example.ch","target":"http://192.168.1.20:3471","path":"/jellyfin","jellyfin":"http://192.168.1.50:8096"}');
+    for (const key of ["portsSectionTitle", "checkSectionTitle", "planBTitle", "security_default"]) expect(html).toContain(key);
   });
 
-  it("sans mandataire (le défaut, en tête, et dit « ni inclus ni installés » pour les autres) : l'adresse publique proposée, les DEUX ports avec leurs numéros", () => {
-    h.state = makeState({ proxy: "none" }, { publicUrl: null, jellyfinHostPort: 47896, hostPort: 47300 });
-    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
-    expect(html).toContain("proxyWhat");
-    expect(html).toContain("proxyNotIncluded");
+  it("Caddy, Jellyfin sur son domaine : les en-têtes CORS de Tentacle sur Jellyfin", () => {
+    page.hash = "#proxy";
+    h.state = makeState({ proxy: "caddy" }, { directPlay: { enabled: true, privateUrl: "http://192.168.1.50:8096", publicUrl: "https://jf.example.com" } });
+    const html = render();
+    expect(html).toContain("caddyHint");
+    expect(html).toContain("poulpy.example.ch {\n  reverse_proxy 192.168.1.20:3471\n}");
+    expect(html).toContain("jf.example.com {\n  reverse_proxy 192.168.1.50:8096 {");
+    expect(html).toContain('header_down Access-Control-Allow-Origin "https://poulpy.example.ch"');
+  });
+
+  it("dans l'application de bureau, l'adresse vue par le mandataire vient du serveur (la page n'a pas d'adresse réseau)", () => {
+    Object.assign(page, { protocol: "tentacle:", hostname: "app", host: "app", hash: "#proxy" });
+    h.state = makeState({ proxy: "traefik" });
+    const html = render();
+    expect(html).toContain('value="192.168.1.20:3471"');
+    expect(html).toContain('servers: [{ url: "http://192.168.1.20:3471" }]');
+    expect(html).toContain("rule: Host(`poulpy.example.ch`) &amp;&amp; PathPrefix(`/jellyfin`)");
+  });
+
+  it("sans mandataire, dans le guide : l'adresse publique proposée, les DEUX ports avec leurs numéros", () => {
+    page.hash = "#ports";
+    h.state = makeState({}, { publicUrl: null, jellyfinPublicUrl: null, directPlay: { enabled: true, privateUrl: "http://192.168.1.50:8096", publicUrl: null }, jellyfinHostPort: 47896, hostPort: 47300 });
+    const html = render();
     expect(html.indexOf("proxy_none_title")).toBeLessThan(html.indexOf("proxy_caddy_title"));
-    expect(html).toContain("defaultChoice");
-    expect(html).toContain("noneWarning");
     expect(html).toContain("http://203.0.113.5:47300");
     expect(html).toContain("publicLinkUse");
-    expect(html).toContain("purpose_tentacle");
     expect(html).toContain(">47300<");
     expect(html).toContain(">47896<");
-    // Jellyfin : facultatif tant que la lecture directe hors de la maison est coupée.
     expect(html).toContain("portOptional");
   });
 
-  it("l'adresse publique détectée ; le test d'ouverture pas encore en ligne : comment vérifier soi-même", () => {
-    h.state = makeState({ proxy: "none" }, { publicUrl: null, lastCheck: { checkedAt: "2026-10-07T10:00:00.000Z", outcome: "service_unavailable", publicIp: { v4: null, v6: null }, items: [] } });
-    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
-    expect(html).toContain(">203.0.113.5<");
-    expect(html).toContain("publicIpDetected");
-    expect(html).toContain('reach_no_service{"url":"http://203.0.113.5:3471"}');
-    expect(html).toContain('modePublicBody{"ip":"203.0.113.5"}');
-  });
-
-  it("le service de test pas encore en ligne : dit d'avance, avant tout test, avec l'adresse à essayer en 4G", () => {
-    h.state = makeState({ proxy: "none" }, { publicUrl: null, lastCheck: null });
-    h.publicIp = { data: { outcome: "found", v4: "203.0.113.5", v6: null, source: "echo", detectedAt: "2026-10-07T10:00:00.000Z", checkService: "offline" }, isPending: false };
-    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
-    expect(html).toContain('reach_no_service{"url":"http://203.0.113.5:3471"}');
-    expect(html).not.toContain("reach_unknown");
-  });
-
-  it("la lecture directe hors de la maison : une étape à elle, facultative, coupée tant qu'aucune adresse publique", () => {
-    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
-    expect(html).toContain("directTitle");
-    expect(html).toContain('directHome{"url":"http://192.168.1.20:8096"}');
-    expect(html).toContain("directOff");
-    expect(html).toContain('stepOf{"n":4,"total":4}');
-  });
-
-  it("un serveur sans la capacité : ni adresse publique détectée, ni lecture directe extérieure — trois étapes", () => {
+  it("un serveur sans la capacité d'exposition : pas d'adresse publique détectée, rien d'autre ne manque", () => {
     h.exposure = false;
-    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
+    page.hash = "#check";
+    const html = render();
+    expect(h.publicIpEnabled).toBe(false);
     expect(html).not.toContain("publicIpTitle");
-    expect(html).not.toContain("directTitle");
-    expect(html).toContain('stepOf{"n":3,"total":3}');
+    expect(html).toContain("checkSectionTitle");
   });
 
-  it("assistant : le même panneau, interrupteur compris (coupé par défaut), sans le guide", () => {
-    h.state = makeState({ enabled: false });
-    const html = renderToStaticMarkup(<RemoteAccessPanel variant="wizard" />);
-    expect(html).toContain('role="switch"');
-    expect(html).toContain('aria-checked="false"');
-    expect(html).not.toContain("step3Title");
+  it("assistant : le lien public seulement — la lecture directe se règle à la fin de l'installation —, sans le guide écrit", () => {
+    const html = render("wizard");
+    expect(html).toContain('value="https://poulpy.example.ch"');
+    expect(html).toContain("wizardJellyfinLater");
+    expect(html).not.toContain('role="switch"');
+    expect(html).not.toContain("addressesTest");
     expect(html).not.toContain('id="guide"');
+    expect(html).toContain("moreLabel");
+  });
+});
+
+describe("le résultat du test des adresses", () => {
+  it("même domaine : pas de CORS ; ce que Tentacle vient d'ajouter est dit ; la publique muette n'est qu'une remarque", () => {
+    const html = renderToStaticMarkup(
+      <AddressTestResults
+        result={{
+          private: { ok: true, version: "10.11.11", error: null, corsOk: true, sameOrigin: false },
+          public: { ok: false, version: null, error: "fetch failed", corsOk: null, sameOrigin: false },
+          cors: { status: "updated", origins: [], added: ["http://192.168.1.20:3471", "tentacle://app"] },
+        }}
+      />,
+    ).replaceAll("&quot;", '"');
+    expect(html).toContain("testCorsOk");
+    expect(html).toContain('testCorsAdded{"list":"http://192.168.1.20:3471, corsDesktop"}');
+    expect(html).toContain('testPublicUnreachable{"error":"fetch failed"}');
+    expect(html).not.toContain("testCorsRefusedBody");
+    const same = renderToStaticMarkup(
+      <AddressTestResults result={{ private: null, public: { ok: true, version: "10.11.11", error: null, corsOk: true, sameOrigin: true }, cors: null }} />,
+    );
+    expect(same).toContain("testSameOrigin");
   });
 });
 
@@ -220,6 +273,25 @@ describe("les guides des box", () => {
 });
 
 describe("l'adresse locale", () => {
+  it("d'où qu'on ouvre la page : réglée, sinon celle que le serveur voit (IP privée), sinon celle de la page", () => {
+    const settings = { enabled: false, proxy: "none" as const, localUrl: null, routerId: null };
+    const desktop = { protocol: "tentacle:", hostname: "app", host: "app" };
+    expect(homeTentacleUrl({ settings: { ...settings, localUrl: "http://10.0.0.2:3000" }, derivedLocalUrl: "http://192.168.1.20:3471" }, desktop)).toBe("http://10.0.0.2:3000");
+    expect(homeTentacleUrl({ settings, derivedLocalUrl: "http://192.168.1.20:3471" }, desktop)).toBe("http://192.168.1.20:3471");
+    expect(homeTentacleUrl({ settings, derivedLocalUrl: "https://poulpy.example.ch" }, desktop)).toBeNull();
+    expect(homeTentacleUrl({ settings, derivedLocalUrl: null }, { protocol: "http:", hostname: "192.168.1.9", host: "192.168.1.9:3000" })).toBe("http://192.168.1.9:3000");
+  });
+
+  it("hôte:port — lu, écrit, port par défaut compris", () => {
+    expect(hostPortOf("http://192.168.1.50:8096/jellyfin")).toBe("192.168.1.50:8096");
+    expect(hostPortOf("https://nas.local")).toBe("nas.local:443");
+    expect(parseHostPort("tentacle:3000")).toEqual({ host: "tentacle", port: 3000 });
+    expect(parseHostPort("[fd00::20]:3000")).toEqual({ host: "[fd00::20]", port: 3000 });
+    expect(parseHostPort("192.168.1.20")).toBeNull();
+    expect(parseHostPort("192.168.1.20:70000")).toBeNull();
+    expect(parseHostPort("1.2.3.4:80\n}")).toBeNull();
+  });
+
   it("devinée depuis une page servie par une adresse privée, et seulement elle", () => {
     expect(guessLanUrl({ protocol: "http:", hostname: "192.168.1.20", host: "192.168.1.20:3471" })).toBe("http://192.168.1.20:3471");
     expect(guessLanUrl({ protocol: "https:", hostname: "tv.example.com", host: "tv.example.com" })).toBeNull();

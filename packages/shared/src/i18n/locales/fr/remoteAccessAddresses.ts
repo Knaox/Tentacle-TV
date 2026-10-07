@@ -1,0 +1,91 @@
+/**
+ * La page « Accès à distance » refondue : l'état en un coup d'œil, le
+ * formulaire des adresses (les seules choses à régler, reprises telles
+ * quelles de 1.23.0), le résultat du test, et le guide replié « En savoir
+ * plus ». Fondu dans l'espace `remoteAccess` (`remoteAccess.ts`). Les clés
+ * `cors_*` suivent `JellyfinCorsReport.status`. Espaces insécables (\u00a0)
+ * devant « ? », « : » et « ! », et dans les guillemets.
+ */
+export default {
+  // ── En un coup d'œil ──────────────────────────────────────────────────
+  overviewTitle: "En un coup d'œil",
+  overviewDescription: "Ce que reçoivent vos applications, selon l'endroit d'où elles se connectent.",
+  overviewHome: "Chez vous",
+  overviewAway: "Hors de chez vous",
+  overviewTentacle: "Tentacle",
+  overviewJellyfin: "Vidéos",
+  overviewHomeTentacle: "L'adresse que vous tapez à la maison",
+  overviewViaTentacle: "Par Tentacle",
+  overviewDirectOff: "Par Tentacle (lecture directe coupée)",
+  overviewNoPublic: "Pas de lien public\u00a0: Tentacle ne répond qu'à la maison.",
+  overviewFromEnv: "variable TENTACLE_PUBLIC_URL",
+  overviewHttps: "HTTPS",
+  overviewHttp: "HTTP non chiffré",
+  overviewDirect: "En direct chez Jellyfin",
+  overviewPublicIp: "Adresse publique de la box\u00a0: {{ip}}",
+  cors_open: "Jellyfin accepte toutes les origines (CORS)",
+  cors_ready: "CORS de Jellyfin à jour",
+  cors_updated: "CORS de Jellyfin mis à jour à l'instant",
+  cors_unreachable: "CORS de Jellyfin non vérifié\u00a0: Jellyfin ne répond pas",
+  cors_not_configured: "CORS de Jellyfin\u00a0: aucun Jellyfin relié",
+  corsOrigins: "Tentacle inscrit lui-même ses adresses dans Jellyfin\u00a0: {{list}}.",
+  corsOpenBody: "Jellyfin accepte déjà toutes les origines\u00a0: Tentacle n'y touche pas.",
+  corsDesktop: "l'application de bureau",
+
+  // ── Les adresses ──────────────────────────────────────────────────────
+  addressesTitle: "Adresses",
+  addressesDescription: "Les seules choses à régler. Tout le reste de cette page en découle.",
+  publicLinkLabel: "Lien public de Tentacle",
+  publicLinkHint: "L'adresse de Tentacle depuis Internet, par exemple https://tentacle.example.com. Vide\u00a0: Tentacle ne répond qu'à la maison.",
+  publicLinkHintEnv: "Vide\u00a0: la variable TENTACLE_PUBLIC_URL s'applique ({{url}}).",
+  directLabel: "Lecture directe",
+  directHint: "Les applications lisent les vidéos chez Jellyfin sans passer par Tentacle\u00a0: plus fluide, et moins de charge pour ce serveur.",
+  jellyfinLanLabel: "Adresse de Jellyfin sur votre réseau",
+  jellyfinLanHint: "Par exemple http://192.168.1.50:8096. Elle suffit pour lire en direct à la maison.",
+  jellyfinPublicLabel: "Adresse publique de Jellyfin (facultatif)",
+  jellyfinPublicHint: "Son propre domaine (https://jellyfin.example.com) ou un chemin de votre lien public (https://tentacle.example.com/jellyfin). Vide\u00a0: hors de chez vous, les vidéos passent par Tentacle.",
+  jellyfinLanRequired: "Donnez l'adresse de Jellyfin sur votre réseau\u00a0: la lecture directe en a besoin.",
+  wizardJellyfinLater: "L'adresse de Jellyfin sur votre réseau est posée à la fin de l'installation\u00a0; la lecture directe hors de chez vous se règle ensuite ici, dans Administration › Accès à distance.",
+  urlInvalid: "Une adresse complète, en http:// ou https://.",
+  mixedContent: "Cette page est en HTTPS\u00a0: un navigateur refusera une adresse en HTTP (contenu mixte). Les applications, elles, la liront.",
+  addressesSaved: "Adresses enregistrées.",
+  addressesCancel: "Annuler",
+  addressesTest: "Tester",
+  addressesTesting: "Test…",
+
+  // ── Le test ───────────────────────────────────────────────────────────
+  testPublic: "Adresse publique de Jellyfin",
+  testPrivate: "Adresse de Jellyfin sur votre réseau",
+  testOk: "Jellyfin {{version}}",
+  testCorsOk: "CORS accepté",
+  testSameOrigin: "Même domaine\u00a0: pas de CORS",
+  testCorsRefused: "CORS refusé",
+  testCorsRefusedBody: "Jellyfin refuse encore l'origine de cette page\u00a0: un mandataire devant lui pose peut-être ses propres en-têtes CORS. Retirez-les, ou laissez passer ceux de Jellyfin.",
+  testPublicUnreachable: "Le serveur n'a pas pu joindre lui-même cette adresse ({{error}}). C'est souvent normal\u00a0: beaucoup de box ne bouclent pas vers leur propre adresse publique. Vérifiez depuis un téléphone en 4G ou 5G, Wi-Fi coupé.",
+  testUnreachable: "Injoignable ({{error}})",
+  testCorsAdded: "Ajoutées à l'instant aux hôtes CORS de Jellyfin\u00a0: {{list}}.",
+
+  // ── En savoir plus ────────────────────────────────────────────────────
+  moreLabel: "En savoir plus\u00a0: mandataire, ports de la box, vérification",
+  moreIntro: "Rien d'obligatoire ici\u00a0: des explications, et des exemples taillés pour votre installation.",
+  howTitle: "Comment ça marche",
+  proxyTitle: "Votre mandataire (facultatif)",
+  proxyDescription: "Seulement si vous en avez un, ou en voulez un\u00a0: choisissez-le, l'exemple de configuration s'affiche.",
+  tentacleUpstream: "Adresse de Tentacle, vue par votre mandataire",
+  tentacleUpstreamHint: "Hôte et port, par exemple 192.168.1.20:{{port}} — ou tentacle:3000 si le mandataire est dans le même réseau Docker.",
+  jellyfinUpstream: "Adresse de Jellyfin, vue par votre mandataire",
+  jellyfinUpstreamHint: "Hôte et port, par exemple 192.168.1.50:8096.",
+  upstreamInvalid: "Un hôte et un port, par exemple 192.168.1.20:3000.",
+  jellyfinMode: "Jellyfin depuis Internet",
+  jellyfinMode_none: "Pas de Jellyfin public",
+  jellyfinMode_domain: "Son propre domaine",
+  jellyfinMode_path: "Un chemin du domaine de Tentacle",
+  jellyfinPath: "Chemin de Jellyfin",
+  jellyfinPathHint: "Par exemple /jellyfin. Dans Jellyfin › Tableau de bord › Réseau, l'«\u00a0URL de base\u00a0» doit être la même.",
+  pathInvalid: "Un chemin comme /jellyfin, sans barre finale.",
+  pathSameOrigin: "Même domaine que Tentacle\u00a0: aucun en-tête CORS à poser pour Jellyfin.",
+  npmHintPath: "Dans Nginx Proxy Manager\u00a0: un «\u00a0Proxy Host\u00a0» pour {{domain}} vers {{target}}, avec «\u00a0Websockets Support\u00a0» et un certificat Let's Encrypt\u00a0; puis, dans l'onglet «\u00a0Custom locations\u00a0», {{path}} vers {{jellyfin}}.",
+  portsSectionTitle: "Les ports de la box",
+  portsSectionDescription: "Seulement si personne ne vous joint encore depuis Internet\u00a0: la box doit renvoyer les visites vers ce serveur (ou vers votre mandataire).",
+  checkSectionTitle: "Vérifier depuis Internet",
+};

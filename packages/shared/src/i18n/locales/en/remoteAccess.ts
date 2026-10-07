@@ -3,16 +3,12 @@
  * Keys follow the identifiers of `packages/shared/src/remoteAccess/`.
  */
 import exposure from "./remoteAccessExposure";
+import addresses from "./remoteAccessAddresses";
 
 export default {
   // ── The page ──────────────────────────────────────────────────────────
   pageTitle: "Remote access",
-  pageDescription: "Reach Tentacle away from home, over HTTPS, and check it from the Internet.",
-  switchLabel: "Access from outside",
-  enabledHint: "The steps below guide you, and the test checks from the outside.",
-  disabledHint: "Off: nothing is published, Tentacle stays reachable from home only. Turn it on to be guided step by step.",
-  localHttpNotice: "You are using HTTP on your local network: that's fine here. From the Internet, always go through HTTPS.",
-  stepOf: "Step {{n}} of {{total}}",
+  pageDescription: "How your apps reach Tentacle and Jellyfin, at home and away.",
   loadError: "The remote access settings could not be read.",
   retry: "Try again",
   save: "Save",
@@ -26,7 +22,6 @@ export default {
 
   // ── Step 1: what faces the Internet ───────────────────────────────────
   step1Title: "Do you already have a reverse proxy?",
-  step1Description: "What receives the visits from the Internet: Tentacle itself (“No proxy”, the default), or the HTTPS reverse proxy you already have.",
   recommended: "Recommended",
   proxy_caddy_title: "Caddy",
   proxy_caddy_body: "Your Caddy: automatic HTTPS in a few Caddyfile lines.",
@@ -58,8 +53,6 @@ export default {
   noneWarning: "Without HTTPS, what crosses the Internet is not encrypted. For later: a reverse proxy, or a private network like Tailscale (plan B, below).",
 
   // ── Step 2: the router ports ──────────────────────────────────────────
-  step2Title: "Open the router ports",
-  step2Description: "Your router receives connections from the Internet: it must forward them to this server.",
   lanAddress: "This server's address on your network",
   lanAddressHint: "Give it a fixed address in the router (DHCP reservation): otherwise the forwarding will one day point to the wrong device.",
   lanAddressDetected: "Detected from this page: check it.",
@@ -103,7 +96,6 @@ export default {
   sharedIpv4_full_stack: "With {{name}}, ask for a fixed full-stack IPv4 in the Espace Abonné: without it, only part of the ports are yours.",
 
   // ── Step 3: the test ──────────────────────────────────────────────────
-  step3Title: "Check from the Internet",
   step3Description: "An external service tries to reach this server the way a phone on 4G would. It only tests this server's address.",
   runCheck: "Run the test",
   rerunCheck: "Run the test again",
@@ -174,6 +166,9 @@ export default {
   planBGuide: "The guide explains when and how.",
   guideLink: "Read the remote access guide",
 
-  // ── Privé ou public, l'interrupteur, l'adresse publique (remoteAccessExposure.ts) ──
+  // ── Privé ou public, l'adresse publique, les ports, la sécurité (remoteAccessExposure.ts) ──
   ...exposure,
+
+  // ── La page refondue : état, adresses, guide replié (remoteAccessAddresses.ts) ──
+  ...addresses,
 };

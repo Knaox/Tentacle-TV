@@ -1,21 +1,25 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  basePathOf,
   caddySnippet,
+  isValidBasePath,
   isValidDomain,
-  lanAddressOf,
   nginxSnippet,
   traefikSnippet,
+  type ProxySnippetInput,
   type RemoteAccessState,
   type ReverseProxyKind,
 } from "@tentacle-tv/shared";
-import { AdminNotice, TabPanel, Tabs } from "../admin/kit";
+import { TabPanel, Tabs } from "../admin/kit";
 import { Field } from "../admin/services/Field";
 import { servicesApi } from "../admin/services/servicesApi";
 import { SERVICES_KEYS } from "../admin/services/servicesModel";
 import { cls } from "../../pages/adminUtils";
 import { CopyBlock } from "./CopyBlock";
+import { homeTentacleUrl, hostPortOf, parseHostPort } from "./lanAddress";
+import { JellyfinModeChoice, type JellyfinMode } from "./JellyfinModeChoice";
 import { REMOTE_ACCESS_KEY } from "./remoteAccessApi";
 
 type SnippetTab = "caddy" | "nginx" | "traefik";
@@ -26,7 +30,7 @@ function defaultTab(proxy: ReverseProxyKind): SnippetTab {
 }
 
 /** Le nom d'hôte d'une adresse déjà réglée, s'il en fait un domaine. */
-function domainOf(url: string | null): string {
+function domainOf(url: string | null | undefined): string {
   if (!url) return "";
   try {
     const host = new URL(url).hostname;
@@ -36,44 +40,67 @@ function domainOf(url: string | null): string {
   }
 }
 
+/** Jellyfin tel qu'il est publié aujourd'hui : son domaine, un chemin du domaine de Tentacle, ou rien. */
+function initialJellyfinMode(jellyfinPublic: string | null, tentacleDomain: string): JellyfinMode {
+  const domain = domainOf(jellyfinPublic);
+  if (!domain) return "none";
+  return domain === tentacleDomain && basePathOf(jellyfinPublic) ? "path" : "domain";
+}
+
 /**
- * La configuration du mandataire de l'utilisateur — les piles livrées n'en
- * embarquent aucun : les domaines, l'adresse de ce serveur vue par le
- * mandataire, puis l'extrait à y poser (Caddyfile, Nginx / Nginx Proxy
- * Manager, Traefik ; l'onglet du mandataire choisi s'ouvre d'abord) et le lien
- * public à régler.
+ * L'exemple de configuration pour le mandataire de l'utilisateur — les piles
+ * livrées n'en embarquent aucun. Tout est prérempli d'après ce qui est réglé
+ * (lien public, adresses de Jellyfin) et reste modifiable : l'adresse de
+ * Tentacle et celle de Jellyfin vues par le mandataire (hôte ET port — dans
+ * l'application de bureau, l'adresse vient du serveur, pas de la page), et
+ * Jellyfin sur son domaine ou sous un chemin du domaine de Tentacle
+ * (`/jellyfin` : même origine, aucun en-tête CORS).
  */
 export function ProxyConfig({ state }: { state: RemoteAccessState }) {
   const { t } = useTranslation("remoteAccess");
   const tabsId = useId();
   const queryClient = useQueryClient();
   const proxy = state.settings.proxy;
+  const jellyfinPublic = state.directPlay?.publicUrl ?? state.jellyfinPublicUrl;
   const [tentacleDomain, setTentacleDomain] = useState(() => domainOf(state.publicUrl));
-  const [jellyfinDomain, setJellyfinDomain] = useState(() => domainOf(state.jellyfinPublicUrl));
-  const [upstream, setUpstream] = useState(() => lanAddressOf(state.settings.localUrl) ?? "");
+  const [mode, setMode] = useState<JellyfinMode>(() => initialJellyfinMode(jellyfinPublic, domainOf(state.publicUrl)));
+  const [jellyfinDomain, setJellyfinDomain] = useState(() => (mode === "domain" ? domainOf(jellyfinPublic) : ""));
+  const [jellyfinPath, setJellyfinPath] = useState(() => basePathOf(jellyfinPublic) ?? "/jellyfin");
+  const [tentacleUpstream, setTentacleUpstream] = useState(() => hostPortOf(homeTentacleUrl(state)) ?? "");
+  const [jellyfinUpstream, setJellyfinUpstream] = useState(() => hostPortOf(state.directPlay?.privateUrl ?? null) ?? "");
   // L'onglet choisi à la main vaut pour CE mandataire ; en changer rouvre le sien.
   const [picked, setPicked] = useState<{ proxy: ReverseProxyKind; tab: SnippetTab } | null>(null);
   const tab = picked && picked.proxy === proxy ? picked.tab : defaultTab(proxy);
   const [publicUrlState, setPublicUrlState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
 
-  const tentacleOk = isValidDomain(tentacleDomain);
-  const jellyfinOk = jellyfinDomain === "" || isValidDomain(jellyfinDomain);
-  const domainsOk = tentacleOk && jellyfinOk;
-  const input = useMemo(
-    () => ({
-      tentacleDomain: tentacleDomain.trim().toLowerCase(),
-      jellyfinDomain: jellyfinDomain.trim() ? jellyfinDomain.trim().toLowerCase() : null,
-      upstreamHost: upstream.trim() || "192.168.1.20",
-      tentaclePort: state.hostPort,
-      jellyfinPort: state.jellyfinHostPort ?? 8096,
-    }),
-    [tentacleDomain, jellyfinDomain, upstream, state.hostPort, state.jellyfinHostPort],
-  );
+  const exampleTentacle = `192.168.1.20:${state.hostPort}`;
+  const exampleJellyfin = `${parseHostPort(tentacleUpstream)?.host ?? "192.168.1.20"}:${state.jellyfinHostPort ?? 8096}`;
+  const tentacleTarget = parseHostPort(tentacleUpstream || exampleTentacle);
+  const jellyfinTarget = parseHostPort(jellyfinUpstream || exampleJellyfin);
+  const domain = tentacleDomain.trim().toLowerCase();
+  const errors = {
+    tentacleDomain: tentacleDomain && !isValidDomain(domain) ? t("domainInvalid") : null,
+    jellyfinDomain: mode === "domain" && jellyfinDomain && !isValidDomain(jellyfinDomain) ? t("domainInvalid") : null,
+    jellyfinPath: mode === "path" && !isValidBasePath(jellyfinPath.trim()) ? t("pathInvalid") : null,
+    tentacleUpstream: tentacleTarget ? null : t("upstreamInvalid"),
+    jellyfinUpstream: mode !== "none" && !jellyfinTarget ? t("upstreamInvalid") : null,
+  };
+  const ready = isValidDomain(domain) && !Object.values(errors).some(Boolean) && (mode !== "domain" || isValidDomain(jellyfinDomain));
 
-  if (proxy === "none") return <AdminNotice tone="error">{t("noneWarning")}</AdminNotice>;
+  const input: ProxySnippetInput | null =
+    ready && tentacleTarget
+      ? {
+          tentacleDomain: domain,
+          jellyfinDomain: mode === "domain" ? jellyfinDomain.trim().toLowerCase() : null,
+          jellyfinPath: mode === "path" ? jellyfinPath.trim() : null,
+          upstreamHost: tentacleTarget.host,
+          tentaclePort: tentacleTarget.port,
+          jellyfinUpstreamHost: jellyfinTarget?.host ?? null,
+          jellyfinPort: jellyfinTarget?.port ?? 8096,
+        }
+      : null;
 
-  const wantedUrl = tentacleOk ? `https://${input.tentacleDomain}` : null;
-
+  const wantedUrl = isValidDomain(domain) ? `https://${domain}` : null;
   const savePublicUrl = async () => {
     if (!wantedUrl) return;
     setPublicUrlState("saving");
@@ -88,50 +115,32 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
       setPublicUrlState("failed");
     }
   };
+  const text = { autoComplete: "off", spellCheck: false } as const;
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field
-          label={t("domainTentacle")}
-          hint={t("domainTentacleHint")}
-          value={tentacleDomain}
-          onChange={(e) => setTentacleDomain(e.target.value)}
-          error={tentacleDomain && !tentacleOk ? t("domainInvalid") : null}
-          placeholder="tentacle.example.com"
-          autoComplete="off"
-          spellCheck={false}
-          inputMode="url"
-        />
-        <Field
-          label={t("domainJellyfin")}
-          hint={t("domainJellyfinHint")}
-          value={jellyfinDomain}
-          onChange={(e) => setJellyfinDomain(e.target.value)}
-          error={!jellyfinOk ? t("domainInvalid") : null}
-          placeholder="jellyfin.example.com"
-          autoComplete="off"
-          spellCheck={false}
-          inputMode="url"
-        />
+      <div className="grid items-start gap-4 md:grid-cols-2">
+        <Field {...text} inputMode="url" label={t("domainTentacle")} hint={t("domainTentacleHint")} value={tentacleDomain} onChange={(e) => setTentacleDomain(e.target.value)} error={errors.tentacleDomain} placeholder="tentacle.example.com" />
+        <Field {...text} label={t("tentacleUpstream")} hint={t("tentacleUpstreamHint", { port: state.hostPort })} value={tentacleUpstream} onChange={(e) => setTentacleUpstream(e.target.value)} error={tentacleUpstream ? errors.tentacleUpstream : null} placeholder={exampleTentacle} />
       </div>
+      <JellyfinModeChoice value={mode} onChange={setMode} />
+      {mode !== "none" ? (
+        <div className="grid items-start gap-4 md:grid-cols-2">
+          {mode === "domain" ? (
+            <Field {...text} inputMode="url" label={t("domainJellyfin")} hint={t("domainJellyfinHint")} value={jellyfinDomain} onChange={(e) => setJellyfinDomain(e.target.value)} error={errors.jellyfinDomain} placeholder="jellyfin.example.com" />
+          ) : (
+            <Field {...text} label={t("jellyfinPath")} hint={`${t("jellyfinPathHint")} ${t("pathSameOrigin")}`} value={jellyfinPath} onChange={(e) => setJellyfinPath(e.target.value)} error={errors.jellyfinPath} placeholder="/jellyfin" />
+          )}
+          <Field {...text} label={t("jellyfinUpstream")} hint={t("jellyfinUpstreamHint")} value={jellyfinUpstream} onChange={(e) => setJellyfinUpstream(e.target.value)} error={jellyfinUpstream ? errors.jellyfinUpstream : null} placeholder={exampleJellyfin} />
+        </div>
+      ) : null}
 
-      {domainsOk ? (
+      {input ? (
         <div className="space-y-4">
           <p className="text-sm leading-relaxed text-content-tertiary">{t("snippetIntro")}</p>
-          <Field
-            label={t("upstreamHost")}
-            hint={t("upstreamHostHint")}
-            value={upstream}
-            onChange={(e) => setUpstream(e.target.value)}
-            placeholder="192.168.1.20"
-            autoComplete="off"
-            spellCheck={false}
-            className="max-w-sm"
-          />
           <Tabs
             idPrefix={tabsId}
-            label={t("step1Title")}
+            label={t("proxyTitle")}
             active={tab}
             onChange={(next) => setPicked({ proxy, tab: next })}
             items={[
@@ -142,7 +151,9 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
           />
           <TabPanel idPrefix={tabsId} id="nginx" active={tab === "nginx"} className="space-y-2">
             <p className="text-sm leading-relaxed text-content-tertiary">
-              {t("npmHint", { target: `http://${input.upstreamHost}:${input.tentaclePort}` })}
+              {input.jellyfinPath
+                ? t("npmHintPath", { domain: input.tentacleDomain, target: `http://${input.upstreamHost}:${input.tentaclePort}`, path: input.jellyfinPath, jellyfin: `http://${input.jellyfinUpstreamHost}:${input.jellyfinPort}` })
+                : t("npmHint", { target: `http://${input.upstreamHost}:${input.tentaclePort}` })}
             </p>
             <CopyBlock label={t("snippetNginx")} code={nginxSnippet(input)} />
             <p className="text-xs text-content-quaternary">{t("nginxCertHint")}</p>
@@ -158,22 +169,16 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-line-subtle pt-4">
-        <p className="mr-auto min-w-0 text-sm text-content-tertiary" aria-live="polite">
-          {publicUrlState === "saved"
-            ? t("publicUrlSaved")
-            : publicUrlState === "failed"
-              ? t("saveFailed")
-              : state.publicUrl
-                ? t("publicUrlCurrent", { url: state.publicUrl })
-                : t("publicUrlNone")}
-        </p>
-        {wantedUrl && wantedUrl !== state.publicUrl ? (
+      {wantedUrl && wantedUrl !== state.publicUrl ? (
+        <div className="flex flex-wrap items-center gap-3 border-t border-line-subtle pt-4">
+          <p className="mr-auto min-w-0 text-sm text-content-tertiary" aria-live="polite">
+            {publicUrlState === "saved" ? t("publicUrlSaved") : publicUrlState === "failed" ? t("saveFailed") : state.publicUrl ? t("publicUrlCurrent", { url: state.publicUrl }) : t("publicUrlNone")}
+          </p>
           <button type="button" onClick={() => void savePublicUrl()} disabled={publicUrlState === "saving"} className={cls.bbrand}>
-            {publicUrlState === "saving" ? t("saving") : t("usePublicUrl", { domain: input.tentacleDomain })}
+            {publicUrlState === "saving" ? t("saving") : t("usePublicUrl", { domain })}
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

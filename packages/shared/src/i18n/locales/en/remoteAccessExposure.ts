@@ -1,8 +1,7 @@
 /**
  * Remote access, in plain words: private or public (two small diagrams),
- * this server's address on the network, the “Access from outside” switch,
- * the detected public address, the two ports to open, direct play away from
- * home (optional) and security. Merged into the `remoteAccess` namespace.
+ * this server's address on the network, the detected public address, the
+ * ports to open and security. Merged into the `remoteAccess` namespace.
  */
 export default {
   modesTitle: "Who can reach Tentacle?",
@@ -23,10 +22,6 @@ export default {
   lanExample: "The one you type at home to open Tentacle, for example {{example}}. Suggested from this page's address: change it if it is wrong.",
   lanUsedFor: "Your devices at home use it, and the router needs it to know where to send visits from the Internet.",
 
-  exposureOff: "Off: nothing is published. Tentacle and Jellyfin only answer at home, through their private address. Everything else works as usual.",
-  exposureOn: "On: the public address set below is given to your apps. You also need to open the ports on your router.",
-  exposureSaveFailed: "The setting was not saved. Try again.",
-
   publicIpTitle: "Your public address",
   publicIpDetected: "Detected automatically.",
   publicIpFromCheck: "Seen by the last port test.",
@@ -45,7 +40,7 @@ export default {
   defaultChoice: "Default",
 
   portsIntro: "On your router, create one forwarding rule per line: visits from the Internet on that port are sent to this server.",
-  portOptional: "Only if you turn on direct play away from home, below.",
+  portOptional: "Only if Jellyfin has a public address (direct play away from home).",
 
   publicLinkTitle: "Tentacle's public address",
   publicLinkSuggested: "The one your family, friends and apps will use away from home:",
@@ -53,20 +48,8 @@ export default {
   publicLinkNoIp: "Once the public address is known, it will be suggested here.",
   publicLinkDynamic: "If your router's public address changes (dynamic address), you will have to update it: a domain name avoids that.",
 
-  directTitle: "Direct play away from home (optional)",
-  directDescription: "Optional: at home, your devices already play directly; away from home, Jellyfin must be opened to the Internet.",
-  directSwitch: "Direct play from outside",
-  directOff: "Off: away from home, videos go through Tentacle. Nothing more to open.",
-  directOn: "On: your apps play straight from Jellyfin, through its public address. Often smoother, but Jellyfin can then be reached from the Internet.",
-  directUrl: "Jellyfin's public address",
-  directUrlHint: "For example {{example}}.",
-  directUrlMissing: "Give Jellyfin's public address, or turn off direct play from outside.",
-  directHome: "At home, your devices already play directly through {{url}}.",
-  directHomeOff: "Direct play at home is turned off (Administration › Services).",
-  directSaved: "Direct play saved.",
-
   securityTitle: "Security",
-  security_default: "Nothing is exposed by default: as long as access from outside is off, nothing is published.",
+  security_default: "Nothing is exposed by default: without a public link or a Jellyfin public address, nothing is published.",
   security_secrets: "No password or token ever appears in an address.",
   security_https: "HTTPS recommended: without a proxy, the connection from outside is not encrypted.",
 };

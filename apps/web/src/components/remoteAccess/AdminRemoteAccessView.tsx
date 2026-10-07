@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { AdminPage } from "../admin/kit";
 import { useHashTarget } from "../admin/services/useHashTarget";
+import { useDirectStreamingConfig, usePublicUrlConfig } from "../admin/services/useServicesData";
 import { RemoteAccessPanel } from "./RemoteAccessPanel";
 import { useRemoteAccess } from "./remoteAccessApi";
 
@@ -12,8 +13,9 @@ import { useRemoteAccess } from "./remoteAccessApi";
  */
 export function AdminRemoteAccessView() {
   const { t } = useTranslation("remoteAccess");
-  // `#guide`, `#check`… mènent à leur section une fois l'état lu.
-  useHashTarget(!useRemoteAccess().isPending);
+  // `#addresses`, `#guide`, `#check`… mènent à leur section une fois l'état et les adresses lus.
+  const ready = [useRemoteAccess(), usePublicUrlConfig(), useDirectStreamingConfig()].every((query) => !query.isPending);
+  useHashTarget(ready);
   return (
     <AdminPage title={t("pageTitle")} description={t("pageDescription")}>
       <RemoteAccessPanel variant="admin" />

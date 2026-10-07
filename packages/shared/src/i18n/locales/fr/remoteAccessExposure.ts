@@ -1,8 +1,7 @@
 /**
  * L'accès à distance, en clair : privé ou public (deux petits schémas),
- * l'adresse de ce serveur sur le réseau, l'interrupteur « Accès depuis
- * l'extérieur », l'adresse publique détectée, les deux ports à ouvrir, la
- * lecture directe hors de la maison (facultative) et la sécurité. Fondu dans
+ * l'adresse de ce serveur sur le réseau, l'adresse publique détectée, les
+ * ports à ouvrir et la sécurité. Fondu dans
  * l'espace `remoteAccess` (`remoteAccess.ts`). Espaces insécables (\u00a0)
  * devant « ? », « : » et « ! ».
  */
@@ -25,10 +24,6 @@ export default {
   lanExample: "Celle que vous tapez à la maison pour ouvrir Tentacle, par exemple {{example}}. Proposée d'après l'adresse de cette page : modifiez-la si elle ne convient pas.",
   lanUsedFor: "Elle sert à vos appareils de la maison, et à la box pour savoir où envoyer les visites d'Internet.",
 
-  exposureOff: "Coupé : rien n'est publié. Tentacle et Jellyfin ne répondent qu'à la maison, par leur adresse privée. Tout le reste marche comme d'habitude.",
-  exposureOn: "Allumé : l'adresse publique réglée plus bas est donnée à vos applications. Il faut aussi ouvrir les ports sur la box.",
-  exposureSaveFailed: "Le réglage n'a pas été enregistré. Réessayez.",
-
   publicIpTitle: "Votre adresse publique",
   publicIpDetected: "Détectée automatiquement.",
   publicIpFromCheck: "Vue par le dernier test d'ouverture.",
@@ -47,7 +42,7 @@ export default {
   defaultChoice: "Par défaut",
 
   portsIntro: "Sur votre box, créez une redirection par ligne : les visites d'Internet sur ce port sont envoyées à ce serveur.",
-  portOptional: "Seulement si vous allumez la lecture directe hors de la maison, plus bas.",
+  portOptional: "Seulement si Jellyfin a une adresse publique (lecture directe hors de chez vous).",
 
   publicLinkTitle: "Adresse publique de Tentacle",
   publicLinkSuggested: "Celle que vos proches et vos applications utiliseront hors de la maison :",
@@ -55,20 +50,8 @@ export default {
   publicLinkNoIp: "Une fois l'adresse publique connue, elle sera proposée ici.",
   publicLinkDynamic: "Si votre box change d'adresse publique (adresse dynamique), il faudra la mettre à jour : un nom de domaine l'évite.",
 
-  directTitle: "Lecture directe hors de la maison (facultatif)",
-  directDescription: "Facultatif\u00a0: à la maison, vos appareils lisent déjà en direct\u00a0; hors de la maison, il faut ouvrir Jellyfin sur Internet.",
-  directSwitch: "Lecture directe depuis l'extérieur",
-  directOff: "Coupée : hors de la maison, les vidéos passent par Tentacle. Rien de plus à ouvrir.",
-  directOn: "Allumée : vos applications lisent directement chez Jellyfin, par son adresse publique. Souvent plus fluide, mais Jellyfin est alors joignable depuis Internet.",
-  directUrl: "Adresse publique de Jellyfin",
-  directUrlHint: "Par exemple {{example}}.",
-  directUrlMissing: "Donnez l'adresse publique de Jellyfin, ou coupez la lecture directe depuis l'extérieur.",
-  directHome: "À la maison, vos appareils lisent déjà en direct par {{url}}.",
-  directHomeOff: "La lecture directe à la maison est coupée (Administration › Services).",
-  directSaved: "Lecture directe enregistrée.",
-
   securityTitle: "Sécurité",
-  security_default: "Rien n'est exposé par défaut : tant que l'accès depuis l'extérieur est coupé, rien n'est publié.",
+  security_default: "Rien n'est exposé par défaut : sans lien public ni adresse publique de Jellyfin, rien n'est publié.",
   security_secrets: "Aucun mot de passe ni jeton n'apparaît dans une adresse.",
   security_https: "HTTPS conseillé : sans mandataire, la connexion depuis l'extérieur n'est pas chiffrée.",
 };

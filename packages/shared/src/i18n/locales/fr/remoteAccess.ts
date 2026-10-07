@@ -10,16 +10,12 @@
  * guillemets (garde-fou : `remoteAccessVocabulary.test.ts`).
  */
 import exposure from "./remoteAccessExposure";
+import addresses from "./remoteAccessAddresses";
 
 export default {
   // ── La page ───────────────────────────────────────────────────────────
   pageTitle: "Accès à distance",
-  pageDescription: "Joindre Tentacle hors de chez vous, en HTTPS, et le vérifier depuis Internet.",
-  switchLabel: "Accès depuis l'extérieur",
-  enabledHint: "Les étapes ci-dessous vous accompagnent, et le test vérifie depuis l'extérieur.",
-  disabledHint: "Coupé\u00a0: rien n'est publié, Tentacle reste joignable depuis la maison seulement. Allumez pour être guidé pas à pas.",
-  localHttpNotice: "Vous êtes en HTTP sur votre réseau local\u00a0: c'est normal ici. Depuis Internet, passez toujours par HTTPS.",
-  stepOf: "Étape {{n}} sur {{total}}",
+  pageDescription: "Comment vos applications joignent Tentacle et Jellyfin, chez vous et en dehors.",
   loadError: "Les réglages de l'accès à distance n'ont pas pu être lus.",
   retry: "Réessayer",
   save: "Enregistrer",
@@ -33,7 +29,6 @@ export default {
 
   // ── Étape 1 : ce qui reçoit Internet ──────────────────────────────────
   step1Title: "Avez-vous déjà un mandataire\u00a0?",
-  step1Description: "Ce qui reçoit les visites d'Internet\u00a0: Tentacle lui-même («\u00a0Sans mandataire\u00a0», le choix par défaut), ou le mandataire HTTPS que vous avez déjà.",
   recommended: "Recommandé",
   proxy_caddy_title: "Caddy",
   proxy_caddy_body: "Votre Caddy\u00a0: HTTPS automatique en quelques lignes de Caddyfile.",
@@ -65,8 +60,6 @@ export default {
   noneWarning: "Sans HTTPS, ce qui passe par Internet n'est pas chiffré. Pour plus tard\u00a0: un mandataire, ou un réseau privé comme Tailscale (plan B, plus bas).",
 
   // ── Étape 2 : les ports de la box ─────────────────────────────────────
-  step2Title: "Ouvrir les ports de la box",
-  step2Description: "La box reçoit les connexions d'Internet\u00a0: elle doit les renvoyer vers ce serveur.",
   lanAddress: "Adresse de ce serveur sur votre réseau",
   lanAddressHint: "Donnez-lui une adresse fixe dans la box (réservation DHCP)\u00a0: sinon, la redirection vise un jour le mauvais appareil.",
   lanAddressDetected: "Détectée depuis cette page\u00a0: vérifiez-la.",
@@ -110,7 +103,6 @@ export default {
   sharedIpv4_full_stack: "Chez {{name}}, demandez une IPv4 fixe full-stack dans l'Espace Abonné\u00a0: sans elle, seule une partie des ports est à vous.",
 
   // ── Étape 3 : le test ─────────────────────────────────────────────────
-  step3Title: "Vérifier depuis Internet",
   step3Description: "Un service externe essaie de joindre ce serveur comme le ferait un téléphone en 4G. Il ne teste que l'adresse de ce serveur.",
   runCheck: "Lancer le test",
   rerunCheck: "Relancer le test",
@@ -181,6 +173,9 @@ export default {
   planBGuide: "Le guide explique quand et comment.",
   guideLink: "Lire le guide de l'accès à distance",
 
-  // ── Privé ou public, l'interrupteur, l'adresse publique (remoteAccessExposure.ts) ──
+  // ── Privé ou public, l'adresse publique, les ports, la sécurité (remoteAccessExposure.ts) ──
   ...exposure,
+
+  // ── La page refondue : état, adresses, guide replié (remoteAccessAddresses.ts) ──
+  ...addresses,
 };

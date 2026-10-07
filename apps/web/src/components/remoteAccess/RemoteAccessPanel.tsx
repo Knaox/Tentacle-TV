@@ -1,47 +1,35 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useServerCapability } from "@tentacle-tv/api-client";
-import { AdminNotice, AdminSection } from "../admin/kit";
+import { AdminSection } from "../admin/kit";
 import { SectionError, SectionSkeleton } from "../admin/services/SectionParts";
-import { ToggleSwitch } from "../settings/ToggleSwitch";
-import { CheckStep } from "./CheckStep";
-import { DirectPlayRemote } from "./DirectPlayRemote";
-import { ExposureModes } from "./ExposureModes";
-import { guessLanUrl, isLocalHttp } from "./lanAddress";
-import { LanAddressField } from "./LanAddressField";
-import { PlanB } from "./PlanB";
-import { PortsStep } from "./PortsStep";
-import { ProxyChoice } from "./ProxyChoice";
-import { ProxyConfig } from "./ProxyConfig";
-import { PublicIpCard } from "./PublicIpCard";
-import { PublicLinkStep } from "./PublicLinkStep";
+import { AddressesForm } from "./AddressesForm";
 import { RemoteAccessGuide } from "./RemoteAccessGuide";
 import { usePublicIp, useRemoteAccess, useSaveRemoteAccess } from "./remoteAccessApi";
-import { SecurityNotes } from "./SecurityNotes";
-import { StepSection } from "./StepSection";
+import { RemoteGuide } from "./RemoteGuide";
+import { RemoteOverview } from "./RemoteOverview";
 
 /**
- * L'accès à distance, de bout en bout — le MÊME composant pour la section
- * d'administration (`variant="admin"`, avec le guide au pied) et pour l'étape
- * facultative de l'assistant d'installation (`"wizard"`). Les mêmes règles
- * des deux côtés :
+ * L'accès à distance — le MÊME composant pour la section d'administration
+ * (`variant="admin"`, avec le guide au pied) et pour l'étape facultative de
+ * l'assistant d'installation (`"wizard"`). Dans l'ordre :
  *
- *  - privé ou public, en deux schémas, et l'adresse de ce serveur sur le
- *    réseau (pré-remplie, modifiable) ;
- *  - « Accès depuis l'extérieur », COUPÉ par défaut : rien n'est publié ;
- *  - allumé : l'adresse publique détectée et sa joignabilité, le mandataire
- *    (facultatif — « Sans mandataire » par défaut), les deux ports de la box,
- *    la lecture directe hors de la maison (facultative), la vérification.
+ *  1. l'état en un coup d'œil, en lecture seule (à la maison, hors de la
+ *     maison ; HTTPS, CORS de Jellyfin, adresse publique de la box) ;
+ *  2. les adresses — les SEULES choses à régler, reprises de 1.23.0 telles
+ *     quelles : ce qui est réglé est publié, aucun interrupteur, aucun
+ *     mandataire à choisir ;
+ *  3. « En savoir plus », replié : mandataire et son exemple, ports de la
+ *     box, vérification depuis Internet, plan B, sécurité.
  */
 export function RemoteAccessPanel({ variant = "admin" }: { variant?: "admin" | "wizard" }) {
-  const { t } = useTranslation("remoteAccess");
   const query = useRemoteAccess();
-  // `mutateAsync` est stable d'un rendu à l'autre : les étapes ne se redessinent pas pour rien.
+  // `mutateAsync` est stable d'un rendu à l'autre : le guide ne se redessine pas pour rien.
   const { mutateAsync: save } = useSaveRemoteAccess();
   const exposure = useServerCapability("admin.remoteExposure");
-  const enabled = query.data?.settings.enabled ?? false;
-  const publicIp = usePublicIp(exposure && enabled);
-  const [switchFailed, setSwitchFailed] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  // L'adresse publique de la box (un service d'écho, au plus toutes les dix
+  // minutes) : seulement s'il y a un lien public à situer, ou le guide ouvert.
+  const publicIp = usePublicIp(exposure && (guideOpen || !!query.data?.publicUrl));
 
   if (query.isPending) {
     return (
@@ -60,73 +48,11 @@ export function RemoteAccessPanel({ variant = "admin" }: { variant?: "admin" | "
 
   const state = query.data;
   const ip = publicIp.data?.v4 ?? publicIp.data?.v6 ?? null;
-  const toggle = async (next: boolean) => {
-    setSwitchFailed(false);
-    // Allumé sans adresse enregistrée : celle de cette page, proposée plus haut, devient la cible de la box.
-    const guessed = next && !state.settings.localUrl ? guessLanUrl() : null;
-    try {
-      await save({ enabled: next, ...(guessed ? { localUrl: guessed } : {}) });
-    } catch {
-      setSwitchFailed(true);
-    }
-  };
-  const total = exposure && state.directPlay ? 4 : 3;
-
   return (
     <>
-      <ExposureModes current={enabled ? "public" : "private"} ip={ip} />
-      <AdminSection>
-        <LanAddressField state={state} save={save} />
-      </AdminSection>
-      <AdminSection>
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-base font-semibold text-content-primary">{t("switchLabel")}</p>
-            <p className="mt-1 text-sm leading-relaxed text-content-tertiary">{enabled ? t("exposureOn") : t("exposureOff")}</p>
-            {switchFailed ? (
-              <p role="alert" className="mt-2 text-sm text-status-error-fg">
-                {t("exposureSaveFailed")}
-              </p>
-            ) : null}
-          </div>
-          <ToggleSwitch checked={enabled} onChange={(next) => void toggle(next)} label={t("switchLabel")} />
-        </div>
-      </AdminSection>
-
-      {enabled ? (
-        <>
-          {isLocalHttp() ? <AdminNotice tone="info">{t("localHttpNotice")}</AdminNotice> : null}
-          {exposure ? (
-            <AdminSection>
-              <PublicIpCard state={state} report={publicIp.data} loading={publicIp.isPending} />
-            </AdminSection>
-          ) : null}
-          <StepSection n={1} total={total} id="proxy" title={t("step1Title")} description={t("step1Description")}>
-            <div className="space-y-5">
-              <div className="space-y-1 text-sm leading-relaxed text-content-secondary">
-                <p>{t("proxyWhat")}</p>
-                <p className="font-medium text-content-primary">{t("proxyNotIncluded")}</p>
-              </div>
-              <ProxyChoice value={state.settings.proxy} onChange={(proxy) => void save({ proxy })} />
-              {state.settings.proxy === "none" ? <PublicLinkStep state={state} publicIp={ip} /> : <ProxyConfig key={state.settings.proxy} state={state} />}
-            </div>
-          </StepSection>
-          <StepSection n={2} total={total} id="ports" title={t("step2Title")} description={t("step2Description")}>
-            <PortsStep state={state} save={save} />
-          </StepSection>
-          {exposure && state.directPlay ? (
-            <StepSection n={3} total={total} id="direct" title={t("directTitle")} description={t("directDescription")}>
-              <DirectPlayRemote key={state.directPlay.publicUrl ?? ""} state={state} directPlay={state.directPlay} publicIp={ip} />
-            </StepSection>
-          ) : null}
-          <StepSection n={total} total={total} id="check" title={t("step3Title")} description={t("step3Description")}>
-            <CheckStep state={state} />
-          </StepSection>
-          <PlanB showGuideLink={variant === "admin"} />
-        </>
-      ) : null}
-
-      <SecurityNotes />
+      <RemoteOverview state={state} publicIp={ip} />
+      <AddressesForm variant={variant} />
+      <RemoteGuide state={state} publicIp={{ report: publicIp.data, loading: publicIp.isPending }} save={save} variant={variant} onOpenChange={setGuideOpen} />
       {variant === "admin" ? <RemoteAccessGuide /> : null}
     </>
   );

@@ -8,6 +8,7 @@
  * page. Sans `fetch` ici : ce module se teste sans monter l'application.
  */
 
+import type { JellyfinCorsReport } from "@tentacle-tv/shared";
 import { ADMIN_KEY_HEALTH_KEY } from "../../../lib/adminKeyHealth";
 
 export type ServiceStatus = "connected" | "error" | "disconnected";
@@ -64,11 +65,15 @@ export interface UrlProbe {
   version: string | null;
   error: string | null;
   corsOk: boolean | null;
+  /** Même origine que la page : aucun CORS n'est nécessaire (serveur 1.24.0 et après). */
+  sameOrigin: boolean;
 }
 
 export interface DirectStreamingTest {
   public: UrlProbe | null;
   private: UrlProbe | null;
+  /** Les CorsHosts de Jellyfin, mis à jour avant la sonde (serveur 1.24.0 et après), sinon `null`. */
+  cors: JellyfinCorsReport | null;
 }
 
 export interface AudioCounters {
@@ -169,12 +174,24 @@ function readProbe(raw: unknown): UrlProbe | null {
     version: text(r.version) || null,
     error: text(r.error) || null,
     corsOk: typeof r.corsOk === "boolean" ? r.corsOk : null,
+    sameOrigin: r.sameOrigin === true,
   };
+}
+
+const CORS_STATUSES: readonly JellyfinCorsReport["status"][] = ["open", "ready", "updated", "unreachable", "not_configured"];
+
+function readCors(raw: unknown): JellyfinCorsReport | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Json;
+  const status = CORS_STATUSES.find((value) => value === r.status);
+  if (!status) return null;
+  const list = (value: unknown) => (Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : []);
+  return { status, origins: list(r.origins), added: list(r.added) };
 }
 
 export function readDirectStreamingTest(raw: unknown): DirectStreamingTest {
   const r = asRecord(raw);
-  return { public: readProbe(r.public), private: readProbe(r.private) };
+  return { public: readProbe(r.public), private: readProbe(r.private), cors: readCors(r.cors) };
 }
 
 export function readAudioAnalysis(raw: unknown): AudioAnalysisStatus {
