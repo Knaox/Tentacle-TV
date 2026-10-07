@@ -39,7 +39,22 @@ export function keysDex() {
   return dex;
 }
 
+/** Un port déjà tenu par un AUTRE banc (une autre session) : jamais le nôtre.
+ *  Incident du 07/10 : le faux backend d'une autre session répondait sur le
+ *  port voulu, nos jeux y sont partis et l'app a lu le sien. */
+export function assertPortFree(port) {
+  let busy = false;
+  try {
+    execFileSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN"], { stdio: "ignore" });
+    busy = true;
+  } catch {
+    // lsof sans résultat : le port est libre
+  }
+  if (busy) throw new Error(`le port ${port} est déjà pris (un autre banc ?) — PERF_PORT déplace le relais et le faux backend`);
+}
+
 export async function startBackend(backendPort) {
+  assertPortFree(backendPort);
   const log = fs.openSync(path.join(CACHE, `backend-${backendPort}.log`), "w");
   const child = spawn(process.execPath, [path.join(HERE, "../nav-golden/server/fakeServer.mjs")], {
     env: { ...process.env, PORT: String(backendPort), SNAPSHOT_DIR: latestSnapshot() },
