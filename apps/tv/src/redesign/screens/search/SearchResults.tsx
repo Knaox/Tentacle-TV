@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import type { CardModel } from "../../cards/cardTypes";
@@ -6,6 +6,7 @@ import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { RENDER } from "../../render/renderProfile";
 import { MediaRow } from "../../rows/MediaRow";
+import { RowStageProvider, useRenewedRow } from "../../rows/rowStage";
 import { text } from "../../theme/tokens";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 import { PeopleRow } from "./PeopleRow";
@@ -63,76 +64,86 @@ export const SearchResults = memo(function SearchResults({
 }: SearchResultsProps) {
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const dim = stale ? styles.stale : null;
+  // La place de chaque rangée de cartes, de haut en bas : son tour quand une
+  // réponse les renouvelle par échelons (Android TV, `useRenewedRow`).
+  const ranks = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const section of sections) if ("cards" in section) out.set(section.key, out.size);
+    return out;
+  }, [sections]);
   return (
-    <ScrollView
-      ref={scrollRef}
-      style={styles.fill}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      onLayout={onViewportLayout}
-    >
-      {notice ? (
-        <View style={[styles.notice, dim]}>
-          <SearchNotice notice={notice} />
-        </View>
-      ) : null}
-      {sections.map((section) => {
-        const layout = sectionLayout(section.key, [section.key]);
-        switch (section.key) {
-          case "top":
-            return (
-              <FocusSection key="top" focusKey="section:top" reveal={ROW_REVEAL} style={[styles.top, dim]} onLayout={layout}>
-                <SearchTopHit
-                  top={section.top}
-                  label={section.label}
-                  width={RESULTS_WIDTH}
-                  tall={sections.length === 1}
-                  onPress={onOpenTop}
-                  onFocusChange={onFocusTop}
+    <RowStageProvider>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.fill}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        onLayout={onViewportLayout}
+      >
+        {notice ? (
+          <View style={[styles.notice, dim]}>
+            <SearchNotice notice={notice} />
+          </View>
+        ) : null}
+        {sections.map((section) => {
+          const layout = sectionLayout(section.key, [section.key]);
+          switch (section.key) {
+            case "top":
+              return (
+                <FocusSection key="top" focusKey="section:top" reveal={ROW_REVEAL} style={[styles.top, dim]} onLayout={layout}>
+                  <SearchTopHit
+                    top={section.top}
+                    label={section.label}
+                    width={RESULTS_WIDTH}
+                    tall={sections.length === 1}
+                    onPress={onOpenTop}
+                    onFocusChange={onFocusTop}
+                  />
+                </FocusSection>
+              );
+            case "people":
+              return (
+                <FocusSection key="people" focusKey="section:people" reveal={ROW_REVEAL} style={dim} onLayout={layout}>
+                  <PeopleRow title={section.title} people={section.people} inset={RESULTS_CLIP} onOpen={onOpenPerson} />
+                </FocusSection>
+              );
+            case "facets":
+              return (
+                <FocusSection key="facets" focusKey="section:facets" reveal={ROW_REVEAL} style={[styles.facets, dim]} onLayout={layout}>
+                  <Text style={text.rowTitle} numberOfLines={1}>{section.title}</Text>
+                  <View style={styles.chips}>
+                    {section.facets.map((facet, index) => (
+                      <Chip
+                        key={`${facet.kind}:${facet.name}`}
+                        label={facet.name}
+                        detail={facet.detail}
+                        focusKey={`facets:${index}`}
+                        onPress={onOpenFacet ? () => onOpenFacet(facet) : undefined}
+                      />
+                    ))}
+                  </View>
+                </FocusSection>
+              );
+            default:
+              return (
+                <ResultRow
+                  key={section.key}
+                  sectionKey={section.key}
+                  rank={ranks.get(section.key)}
+                  title={section.title}
+                  cards={section.cards}
+                  count={section.count}
+                  stale={stale}
+                  onLayout={layout}
+                  onPressCard={onPressCard}
+                  onLongPressCard={onLongPressCard}
+                  onFocusCard={onFocusCard}
                 />
-              </FocusSection>
-            );
-          case "people":
-            return (
-              <FocusSection key="people" focusKey="section:people" reveal={ROW_REVEAL} style={dim} onLayout={layout}>
-                <PeopleRow title={section.title} people={section.people} inset={RESULTS_CLIP} onOpen={onOpenPerson} />
-              </FocusSection>
-            );
-          case "facets":
-            return (
-              <FocusSection key="facets" focusKey="section:facets" reveal={ROW_REVEAL} style={[styles.facets, dim]} onLayout={layout}>
-                <Text style={text.rowTitle} numberOfLines={1}>{section.title}</Text>
-                <View style={styles.chips}>
-                  {section.facets.map((facet, index) => (
-                    <Chip
-                      key={`${facet.kind}:${facet.name}`}
-                      label={facet.name}
-                      detail={facet.detail}
-                      focusKey={`facets:${index}`}
-                      onPress={onOpenFacet ? () => onOpenFacet(facet) : undefined}
-                    />
-                  ))}
-                </View>
-              </FocusSection>
-            );
-          default:
-            return (
-              <ResultRow
-                key={section.key}
-                sectionKey={section.key}
-                title={section.title}
-                cards={section.cards}
-                count={section.count}
-                stale={stale}
-                onLayout={layout}
-                onPressCard={onPressCard}
-                onLongPressCard={onLongPressCard}
-                onFocusCard={onFocusCard}
-              />
-            );
-        }
-      })}
-    </ScrollView>
+              );
+          }
+        })}
+      </ScrollView>
+    </RowStageProvider>
   );
 });
 
@@ -145,6 +156,7 @@ type SectionHandler = (sectionKey: string, card: CardModel) => void;
  */
 const ResultRow = memo(function ResultRow({
   sectionKey,
+  rank,
   title,
   cards,
   count,
@@ -155,6 +167,8 @@ const ResultRow = memo(function ResultRow({
   onFocusCard,
 }: {
   sectionKey: string;
+  /** Sa place parmi les rangées de cartes (renouvellement échelonné). */
+  rank?: number;
   title: string;
   cards: CardModel[];
   count?: string;
@@ -166,14 +180,19 @@ const ResultRow = memo(function ResultRow({
 }) {
   const press = useMemo(() => (onPressCard ? (card: CardModel) => onPressCard(sectionKey, card) : undefined), [onPressCard, sectionKey]);
   const longPress = useMemo(() => (onLongPressCard ? (card: CardModel) => onLongPressCard(sectionKey, card) : undefined), [onLongPressCard, sectionKey]);
-  const focus = useMemo(() => (onFocusCard ? (card: CardModel) => onFocusCard(sectionKey, card) : undefined), [onFocusCard, sectionKey]);
+  // À l'écran d'abord, le reste par échelons ; parcourue, sa suite passe devant.
+  const { shown, demand } = useRenewedRow(rank, cards);
+  const focus = useCallback((card: CardModel) => {
+    demand();
+    onFocusCard?.(sectionKey, card);
+  }, [demand, onFocusCard, sectionKey]);
   const accessory = useMemo(() => (count ? <Text style={styles.count}>{count}</Text> : undefined), [count]);
   return (
     <FocusSection focusKey={`section:${sectionKey}`} reveal={ROW_REVEAL} style={stale ? styles.stale : null} onLayout={onLayout}>
       <MediaRow
         rowKey={sectionKey}
         title={title}
-        cards={cards}
+        cards={shown as CardModel[]}
         variant={sectionKey === "episodes" ? "landscape" : "poster"}
         cardWidth={sectionKey === "episodes" ? 340 : undefined}
         inset={RESULTS_CLIP}

@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createStagingPacer, initialRelease, nextRelease, type StagedRow } from "@tentacle-tv/tv-core";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
+import { createStagingPacer, initialRelease, nextRelease, renewedItems, type StagedRow } from "@tentacle-tv/tv-core";
 import { RENDER } from "../render/renderProfile";
 
 /**
@@ -106,6 +106,54 @@ export function useStagedRow(rank: number | undefined, total: number): { shown: 
       registration.leave();
     };
   }, [stager, rank, total]);
+  const demand = useCallback(() => {
+    demanded.current = true;
+    handle.current?.demand();
+  }, []);
+  return { shown, demand };
+}
+
+/**
+ * Une rangée dont la liste change ENTIÈRE à chaque réponse (les résultats
+ * d'une frappe), renouvelée par échelons (tv-core `renewedItems`) : à chaque
+ * liste neuve, ce que l'échelonnement monte d'emblée à sa place (`rank`)
+ * prend tout de suite le nouveau titre, le reste une part par image — et
+ * garde en attendant la carte qu'il montrait (aucune vue démontée). `demand`
+ * (stable) : la rangée a le focus, la suite passe devant. Hors d'une page
+ * échelonnée (Apple TV) : la liste telle quelle.
+ */
+export function useRenewedRow<T>(rank: number | undefined, items: readonly T[]): { shown: readonly T[]; demand: () => void } {
+  const stager = useContext(RowStageContext);
+  const staged = stager !== null && rank !== undefined;
+  const [, redraw] = useReducer((n: number) => n + 1, 0);
+  // La liste en cours de renouvellement et sa part libérée : remises à zéro à
+  // chaque liste neuve (identité — les listes inchangées gardent la leur).
+  const generation = useRef<{ items: readonly T[] | null; released: number }>({ items: null, released: 0 });
+  if (generation.current.items !== items) {
+    generation.current = { items, released: staged ? initialRelease(rank, items.length) : items.length };
+  }
+  const previous = useRef<readonly T[]>([]);
+  const shown = staged ? renewedItems(items, previous.current, generation.current.released) : items;
+  useLayoutEffect(() => {
+    previous.current = shown;
+  });
+  const handle = useRef<{ demand(): void } | null>(null);
+  const demanded = useRef(false);
+  useLayoutEffect(() => {
+    const current = generation.current;
+    if (!stager || rank === undefined || current.released >= items.length) return undefined;
+    const registration = stager.register(rank, items.length, current.released, (released) => {
+      if (generation.current !== current) return;
+      current.released = released;
+      redraw();
+    });
+    handle.current = registration;
+    if (demanded.current) registration.demand();
+    return () => {
+      handle.current = null;
+      registration.leave();
+    };
+  }, [stager, rank, items]);
   const demand = useCallback(() => {
     demanded.current = true;
     handle.current?.demand();

@@ -15,3 +15,4 @@ export * from "./liteProfile";
 export * from "./liteMotion";
 export * from "./twoStopGradient";
 export * from "./stableList";
+export * from "./rowRenewal";
