@@ -1,33 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAutoSubmitPairingCode, useGenerateTvToken, useRelayConfirm, useDevicePairConfirm } from "@tentacle-tv/api-client";
-import { getBackendBase } from "../lib/backendBase";
+import { fetchPairingServerUrl } from "../lib/pairingServerUrl";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { PairingLockedNotice } from "../components/pair/PairingLockedNotice";
 import { PairedDevicesSection } from "../components/admin/PairedDevicesSection";
 import { ProvisioningCodeSection } from "../components/admin/ProvisioningCodeSection";
 import { MyDevicesSection } from "../components/settings/MyDevicesSection";
-
-/**
- * Résout l'URL serveur à transmettre à la TV au jumelage.
- * Priorité : URL publique du backend (/api/config) → base backend configurée
- * (desktop = tentacle_server_url) → window.location.origin (dernier recours).
- * Évite de graver `tauri://localhost` (desktop) ou une URL LAN/interne dans la TV.
- */
-async function resolvePairingServerUrl(): Promise<string> {
-  const base = getBackendBase();
-  let serverUrl = base || window.location.origin;
-  try {
-    const res = await fetch(`${base}/api/config`);
-    if (res.ok) {
-      const cfg = await res.json();
-      if (cfg?.publicUrl) serverUrl = cfg.publicUrl as string;
-    }
-  } catch {
-    /* réseau indisponible — on garde le fallback */
-  }
-  return serverUrl;
-}
 
 export function PairDevice() {
   const { t } = useTranslation("pairing");
@@ -41,20 +20,15 @@ export function PairDevice() {
   const [errorMsg, setErrorMsg] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // État réel du backend : le jumelage n'est possible que si l'URL publique du
-  // serveur Tentacle TV est définie. null = en cours de vérification.
+  // Le jumelage exige une adresse qu'une TV puisse joindre : celle que le
+  // serveur annonce, sinon celle par laquelle on lui parle (réseau local, sans
+  // lien public). null = en cours de vérification.
   const [available, setAvailable] = useState<boolean | null>(null);
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`${getBackendBase()}/api/config`);
-        const cfg = res.ok ? await res.json() : null;
-        if (!cancelled) setAvailable(!!cfg?.publicUrl);
-      } catch {
-        if (!cancelled) setAvailable(false);
-      }
-    })();
+    void fetchPairingServerUrl().then((url) => {
+      if (!cancelled) setAvailable(url !== null);
+    });
     return () => { cancelled = true; };
   }, []);
 
@@ -118,7 +92,8 @@ export function PairDevice() {
     try {
       const { token } = await tvTokenMut.mutateAsync();
 
-      const serverUrl = await resolvePairingServerUrl();
+      const serverUrl = await fetchPairingServerUrl();
+      if (!serverUrl) throw new Error("No reachable server URL");
       const userRaw = localStorage.getItem("tentacle_user");
       const user = userRaw ? JSON.parse(userRaw) as { Id: string; Name: string } : null;
       if (!user?.Id || !user?.Name) throw new Error("User info not found");

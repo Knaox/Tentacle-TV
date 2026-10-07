@@ -1,33 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAutoSubmitPairingCode, useDevicePairConfirm, useGenerateTvToken, useRelayConfirm } from "@tentacle-tv/api-client";
-import { getBackendBase } from "../../../../lib/backendBase";
+import { fetchPairingServerUrl } from "../../../../lib/pairingServerUrl";
 import { pairErrorKey } from "./pairCode";
 
 export type PairStatus = "idle" | "pairing" | "success" | "error";
 
 /**
- * L'URL serveur transmise à la TV : l'URL publique (/api/config), sinon la base
- * du backend, sinon l'origine. Même règle que `pages/PairDevice.tsx`.
- */
-async function resolvePairingServerUrl(): Promise<string> {
-  const base = getBackendBase();
-  let serverUrl = base || window.location.origin;
-  try {
-    const res = await fetch(`${base}/api/config`);
-    if (res.ok) {
-      const cfg = await res.json();
-      if (cfg?.publicUrl) serverUrl = cfg.publicUrl as string;
-    }
-  } catch {
-    /* réseau indisponible — on garde le repli */
-  }
-  return serverUrl;
-}
-
-/**
  * La logique de jumelage de la page du bureau (`pages/PairDevice.tsx`), sortie
- * en hook pour le miroir : disponibilité (URL publique définie), flux local
+ * en hook pour le miroir : disponibilité (une adresse qu'une TV puisse
+ * joindre — l'annoncée ou la nôtre, `fetchPairingServerUrl`), flux local
  * d'abord, puis le relais public.
  */
 export function usePairFlow() {
@@ -42,15 +24,9 @@ export function usePairFlow() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`${getBackendBase()}/api/config`);
-        const cfg = res.ok ? await res.json() : null;
-        if (!cancelled) setAvailable(!!cfg?.publicUrl);
-      } catch {
-        if (!cancelled) setAvailable(false);
-      }
-    })();
+    void fetchPairingServerUrl().then((url) => {
+      if (!cancelled) setAvailable(url !== null);
+    });
     return () => { cancelled = true; };
   }, []);
 
@@ -71,7 +47,8 @@ export function usePairFlow() {
     }
     try {
       const { token } = await tvTokenMut.mutateAsync();
-      const serverUrl = await resolvePairingServerUrl();
+      const serverUrl = await fetchPairingServerUrl();
+      if (!serverUrl) throw new Error("No reachable server URL");
       const userRaw = localStorage.getItem("tentacle_user");
       const user = userRaw ? (JSON.parse(userRaw) as { Id: string; Name: string }) : null;
       if (!user?.Id || !user?.Name) throw new Error("User info not found");
