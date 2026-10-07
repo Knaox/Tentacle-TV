@@ -52,6 +52,20 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks
 
+      # Le script du fork passe « --enable-nonfree » à FFmpeg dans TOUTES ses
+      # configurations : FFmpeg se déclare alors « nonfree and
+      # unredistributable », même sans aucune bibliothèque non libre liée. On
+      # le retire : aucune n'est liée (gnutls, pas openssl ni fdk-aac), et le
+      # binaire se déclare « LGPL version 3 or later ».
+      - name: Retirer --enable-nonfree de la configuration FFmpeg
+        working-directory: MPVKit
+        run: |
+          F=Sources/BuildScripts/XCFrameworkBuild/main.swift
+          sed -i '' 's/"--enable-nonfree", //' "$F"
+          if grep -n 'enable-nonfree' "$F"; then
+            echo "::error::--enable-nonfree subsiste dans $F"; exit 1
+          fi
+
       # Sans « enable-gpl » : le script du fork passe « -Dgpl=false » à mpv,
       # n'ajoute pas « --enable-gpl » à FFmpeg et n'inclut ni libsmbclient ni
       # LuaJIT. tvOS est construit aussi : le script de combinaison attend les
@@ -64,15 +78,27 @@ jobs:
         working-directory: MPVKit
         run: ./Sources/BuildScripts/create-combined-framework.sh
 
-      # Garde-fou : aucun symbole Samba ni LuaJIT ne doit subsister.
+      # Garde-fou, lu dans le BINAIRE : le xcframework combiné masque ses
+      # symboles internes (`nm -g` n'y voit que mpv_*), on lit donc ses
+      # chaînes. libavutil y grave sa licence (avutil_license) ; Samba et
+      # LuaJIT y laissent leurs noms.
       - name: Vérifier l'absence de composants GPL
         working-directory: MPVKit/dist/MPVKit-combined
         run: |
           unzip -q MPVKit.xcframework.zip -d check
-          BIN=check/MPVKit.xcframework/ios-arm64/MPVKit.framework/MPVKit
-          if nm -g "$BIN" | grep -qiE 'smbc_|lua_'; then
-            echo "::error::symboles GPL (Samba / LuaJIT) présents dans le binaire"; exit 1
-          fi
+          for BIN in check/MPVKit.xcframework/*/MPVKit.framework/MPVKit; do
+            STR=$(strings -a "$BIN")
+            echo "$BIN"; echo "$STR" | grep -E 'license: ' | sort -u
+            if echo "$STR" | grep -qE 'license: (GPL|nonfree)'; then
+              echo "::error::$BIN : FFmpeg se déclare GPL ou nonfree"; exit 1
+            fi
+            if ! echo "$STR" | grep -qE 'license: LGPL'; then
+              echo "::error::$BIN : licence LGPL de FFmpeg introuvable"; exit 1
+            fi
+            if echo "$STR" | grep -qE 'smbc_|libsmbclient|LuaJIT [0-9]'; then
+              echo "::error::$BIN : Samba ou LuaJIT présents"; exit 1
+            fi
+          done
           shasum -a 256 MPVKit.xcframework.zip | tee MPVKit.xcframework.sha256
           du -h MPVKit.xcframework.zip
 
@@ -90,7 +116,7 @@ jobs:
           body: |
             MPVKit.xcframework **LGPL** (iOS + tvOS), fork streamyfin/MPVKit @ `${{ inputs.mpvkit_ref }}`.
 
-            * mpv `-Dgpl=false`, FFmpeg sans `--enable-gpl`, sans libsmbclient ni LuaJIT
+            * mpv `-Dgpl=false`, FFmpeg sans `--enable-gpl` ni `--enable-nonfree` (LGPL v3+), sans libsmbclient ni LuaJIT
             * vo_avfoundation, ao_audiounit, VideoToolbox, libass, libplacebo, dav1d, libdovi
             * À reporter dans `apps/mobile/ios/MPVKit.podspec` (`:http`, `:sha256`) avant toute soumission à l'App Store.
             * Sources et recette : dépôt du fork au commit ci-dessus, et `.github/workflows/mpvkit.yml` de ce dépôt.
