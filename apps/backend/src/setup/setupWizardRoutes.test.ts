@@ -222,6 +222,9 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(state.config.has("setup_jellyfin_selection")).toBe(false);
     // L'adresse des applications : le Jellyfin de la boucle locale prend l'hôte du navigateur.
     expect(state.config.get("jellyfin_private_url")).toBe(jf.url.replace("127.0.0.1", "localhost"));
+    // La lecture directe à la maison est allumée ; rien de public n'est réglé.
+    expect(state.config.get("direct_streaming_enabled")).toBe("true");
+    expect(state.config.has("jellyfin_public_url")).toBe(false);
     expect(state.started).toBe(1);
 
     for (const [method, url] of [["GET", "/host"], ["GET", "/context"], ["POST", "/session"], ["POST", "/jellyfin/probe"], ["POST", "/jellyfin/segments"], ["POST", "/complete"]] as const) {
