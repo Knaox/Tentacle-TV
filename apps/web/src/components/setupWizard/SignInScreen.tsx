@@ -20,7 +20,7 @@ export function SignInScreen({ wizard }: { wizard: Wizard }) {
   const signedIn = linked && !!credentials && !other;
 
   return (
-    <WizardFrame title={t("signInTitle")} subtitle={t("signInSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
+    <WizardFrame help={wizard} title={t("signInTitle")} subtitle={t("signInSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
       <div className="space-y-5">
         <AdminNotice tone="info">{t("signInNothingCreated")}</AdminNotice>
         {signedIn ? (

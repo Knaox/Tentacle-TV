@@ -615,17 +615,37 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   jamais de compte ni de bibliothèque créés sur un Jellyfin déjà configuré, même par un appel direct.
   Changer de Jellyfin oublie l'ancien (sa clé révoquée si l'installation l'a créée) ; `tentacle setup reset`
   efface le choix. Un nouveau geste de l'assistant : une `SetupAction` d'abord, jamais une route sans garde.
+  **Seule exception au « rien de créé »** : un Jellyfin configuré trouvé SANS AUCUNE bibliothèque à la connexion
+  (`noLibraries`, constaté par `connect`, gardé avec le choix) reçoit l'écran des bibliothèques entre connexion et
+  réglages — FACULTATIF (« Passer ») — et `browse` / `createLibraries` y sont permis ; avec des bibliothèques, 409.
+  Les dossiers suivent la machine de JELLYFIN (`BrowseResult.style` : `posix` ou `windows`, lu sur ses lecteurs) ;
+  dans la pile, son `/media` est dit avec le dossier de l'hôte (`TENTACLE_MEDIA_HOST_PATH`, sinon `MEDIA_PATH`).
+- **Aide de l'assistant** : une page du site par étape, adresses STABLES dans
+  `packages/shared/src/setupWizard/setupDocLinks.ts` (le site les tient ; jamais renommées), et « Besoin
+  d'aide ? » repliable au pied de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`).
 - **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, état pur
   `wizardState.ts` (on ne va, n'avance, ne revient que DANS le parcours), chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
   le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
   le parcours que si `codeRequired` ; la langue des métadonnées est sous le compte (plus d'écran à part) —
   pour un Jellyfin neuf seulement. Liste Jellyfin : `JellyfinList` (pile, neufs, déjà configurés).
+- **Interface web désactivable** : `TENTACLE_WEB_UI=off` (commenté dans les trois piles) ou `tentacle web
+  on|off|default|status` (fichier `data/web-ui`, relu toutes les 5 s, qui l'emporte sur la variable) —
+  `static/webUi.ts`. Coupée : 404 pour le client web ; restent `/api` (sockets compris), `/tv`, `/.well-known`,
+  les logos publics, et l'assistant TANT QUE l'installation n'est pas finie. Aucun réglage dans
+  l'administration (elle EST l'interface web) ; aucune capacité (rien de client).
 - **`trustProxy` limité aux voisins** (`services/trustedProxies.ts` : boucle locale, RFC 1918, ULA, réseaux
   Docker, + `TRUSTED_PROXIES`) ; l'adresse réelle d'un client se lit par `getRealClientIp`, jamais
   `request.ip` (compteur de débit, réseau local, journaux). Docker Desktop/colima perdent l'adresse source :
   documenté, pas contourné.
 - **Accès à distance** (`apps/backend/src/remoteAccess/`, section admin `/admin/remote-access` sous
-  `requirePersonalAdmin` — jamais une TV jumelée) : ports, mandataire HTTPS — **aucune pile
+  `requirePersonalAdmin` — jamais une TV jumelée) : « Accès depuis l'extérieur » (`remote_access_enabled`) décide
+  de ce qui est PUBLIÉ (`remoteAccess/exposure.ts`) — coupé par défaut, rien de public ne sort (`addresses.public`,
+  l'adresse publique de la lecture directe) ; `/api/config` → `publicUrl` donne alors l'adresse PRIVÉE (le mobile
+  n'offre le jumelage TV qu'avec elle : couper ne le casse jamais) ; un serveur qui publiait déjà est
+  allumé une fois (`exposureDefault.ts`). La lecture directe n'exige que l'adresse PRIVÉE (l'installation l'allume
+  à la maison) ; la publique est facultative. Adresse publique détectée (`/remote-access/public-ip` : dernier
+  test, sinon Cloudflare `cdn-cgi/trace` en IPv4), les DEUX ports avec leurs vrais numéros ; capacité
+  `admin.remoteExposure`. Le panneau est le même dans l'assistant et l'admin. Ports, mandataire HTTPS — **aucune pile
   n'en embarque** (décision du 2026-10-06 : l'utilisateur a le sien) ; l'admin et la doc donnent les
   extraits à y poser (Caddyfile, Nginx/NPM, Traefik : `remoteAccess/proxySnippets.ts`), test d'ouverture mené **depuis l'extérieur** par le service
   `apps/port-check` (`REMOTE_CHECK_URL`, défaut check.tentacletv.app, `off` le coupe). Le service ne teste

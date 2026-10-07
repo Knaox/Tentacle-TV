@@ -25,7 +25,15 @@ import type { CheckScheme, CheckService, CheckVerdict } from "./checkProtocol";
 export type ReverseProxyKind = "caddy" | "traefik" | "other" | "none";
 
 export interface RemoteAccessSettings {
-  /** L'accès à distance est voulu : la section guide, et la vue d'ensemble en tient compte. */
+  /**
+   * « Accès depuis l'extérieur ». Coupé (le défaut d'une installation neuve) :
+   * RIEN n'est publié — ni le lien public de Tentacle (`addresses.public` ;
+   * `publicUrl`, que le jumelage des TV exige, donne l'adresse PRIVÉE), ni
+   * l'adresse publique de Jellyfin (la lecture hors de la maison passe par
+   * Tentacle) — et aucune autre fonction n'est touchée. Allumé : ce qui est
+   * réglé est publié. Un serveur d'avant qui avait déjà un lien public est
+   * allumé une fois au démarrage (`exposureDefault.ts`) : rien ne change pour lui.
+   */
   enabled: boolean;
   proxy: ReverseProxyKind;
   /** L'adresse de Tentacle sur le réseau local (ex. `http://192.168.1.20:3000`). */
@@ -76,13 +84,45 @@ export interface RemoteAccessState {
   jellyfinPublicUrl: string | null;
   /** Le port de Tentacle sur l'hôte (`TENTACLE_HOST_PORT`) : celui à rediriger sans mandataire. */
   hostPort: number;
-  /** Le port de Jellyfin sur l'hôte, quand la pile le publie (`JELLYFIN_PORT`). */
+  /**
+   * Le port de Jellyfin vu du réseau local : celui que la pile publie
+   * (`JELLYFIN_HOST_PORT`), sinon celui de son adresse privée (lecture
+   * directe) — le second port à ouvrir sur la box, pour la lecture directe.
+   */
   jellyfinHostPort: number | null;
+  /**
+   * La lecture directe telle qu'elle est RÉGLÉE (Services) : l'adresse privée
+   * (réseau local) suffit à l'allumer ; la publique est FACULTATIVE — sans
+   * elle, hors de la maison, la lecture passe par Tentacle. Absent : serveur
+   * d'avant (les deux adresses y étaient exigées).
+   */
+  directPlay?: { enabled: boolean; privateUrl: string | null; publicUrl: string | null };
   deployment: "docker" | "native";
   stack: "full" | "db" | "only" | null;
   /** Le service de test : son adresse, ou `null` s'il est coupé. */
   checkServiceUrl: string | null;
   lastCheck: RemoteCheckReport | null;
+}
+
+/**
+ * `GET /api/admin/remote-access/public-ip` (capacité `admin.remoteExposure`)
+ * — l'adresse publique du serveur, détectée : celle du dernier test
+ * d'ouverture, sinon demandée à un service d'écho (au plus toutes les dix
+ * minutes). `disabled` : les appels vers l'extérieur sont coupés
+ * (`REMOTE_CHECK_URL=off`) ; `unavailable` : rien n'a répondu.
+ */
+export interface PublicIpReport {
+  outcome: "found" | "disabled" | "unavailable";
+  v4: string | null;
+  v6: string | null;
+  source: "check" | "echo" | null;
+  detectedAt: string | null;
+  /**
+   * Le service de test d'ouverture répond-il (`/healthz`) ? `offline` : pas
+   * encore déployé, ou en panne — l'écran le dit avant même un test. Absent :
+   * pas demandé.
+   */
+  checkService?: "online" | "offline";
 }
 
 export type RemoteAccessErrorCode = "invalid_input" | "rate_limited" | "internal";

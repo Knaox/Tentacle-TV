@@ -18,6 +18,7 @@ vi.mock("../services/deviceSessions/deviceAuth", () => ({ pairedJellyfinDeviceId
 vi.mock("../services/jellyfinLegacyAuth", () => ({ jellyfinAcceptsLegacyAuth: async () => true }));
 vi.mock("../services/family/familyConfig", () => ({ familyCapability: () => ({ v: 1, enabled: true, guests: true, guestRequests: false }) }));
 vi.mock("../remoteAccess/serverAddresses", () => ({ serverAddresses: () => ({}) }));
+vi.mock("../remoteAccess/exposure", () => ({ pairingUrl: () => null, directMediaBaseUrl: () => null }));
 
 import { configRoutes } from "./config";
 import { SERVER_CAPABILITY_KEYS } from "../serverCapabilities/serverCapabilities";

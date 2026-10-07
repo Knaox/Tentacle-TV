@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 import type { ReverseProxyKind } from "@tentacle-tv/shared";
 import { StatusPill } from "../admin/kit";
 
-const KINDS: readonly ReverseProxyKind[] = ["caddy", "traefik", "other", "none"];
+/** « Sans mandataire » d'abord : le choix par défaut de qui n'en a pas — les autres ne valent que pour qui en a DÉJÀ un. */
+const KINDS: readonly ReverseProxyKind[] = ["none", "caddy", "traefik", "other"];
 
 /**
  * Ce qui reçoit Internet : quatre cartes à choix unique. De vrais boutons
- * radio (clavier, lecteurs d'écran), la carte entière cliquable ; « Sans
- * mandataire » porte sa mise en garde dès la carte.
+ * radio (clavier, lecteurs d'écran), la carte entière cliquable. « Sans
+ * mandataire » est le défaut ; Caddy, Traefik et Nginx ne sont ni inclus ni
+ * installés par Tentacle — l'écran le dit au-dessus des cartes.
  */
 export const ProxyChoice = memo(function ProxyChoice({ value, onChange }: { value: ReverseProxyKind; onChange: (kind: ReverseProxyKind) => void }) {
   const { t } = useTranslation("remoteAccess");
@@ -37,13 +39,13 @@ export const ProxyChoice = memo(function ProxyChoice({ value, onChange }: { valu
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-content-primary">
                   {t(`proxy_${kind}_title`)}
-                  {kind === "caddy" ? (
+                  {kind === "none" ? (
                     <StatusPill tone="brand" size="sm" dot={false}>
-                      {t("recommended")}
+                      {t("defaultChoice")}
                     </StatusPill>
                   ) : null}
                 </span>
-                <span className={`mt-1 block text-sm leading-relaxed ${kind === "none" ? "text-status-warning-fg" : "text-content-tertiary"}`}>
+                <span className="mt-1 block text-sm leading-relaxed text-content-tertiary">
                   {t(`proxy_${kind}_body`)}
                 </span>
               </span>

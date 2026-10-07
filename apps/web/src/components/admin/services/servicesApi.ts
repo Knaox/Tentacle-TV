@@ -49,7 +49,8 @@ export const servicesApi = {
   saveJellyfin: (body: { url: string; apiKey?: string }) => call("/jellyfin", ignore, "PUT", body),
   saveDatabase: (body: DatabaseFields & { password: string }) => call("/database", ignore, "PUT", body),
   savePublicUrl: (publicUrl: string) => call("/public-url", ignore, "PUT", { publicUrl }),
-  saveDirectStreaming: (body: DirectStreamingConfig) => call("/direct-streaming", ignore, "PUT", body),
+  /** `publicUrl: null` efface l'adresse publique (capacité `admin.remoteExposure`). */
+  saveDirectStreaming: (body: Omit<DirectStreamingConfig, "publicUrl"> & { publicUrl: string | null }) => call("/direct-streaming", ignore, "PUT", body),
   testDirectStreaming: (body: { publicUrl: string; privateUrl: string }) =>
     call("/test-direct-streaming", readDirectStreamingTest, "POST", body),
   setAudioAnalysis: (enabled: boolean) => call("/audio-analysis", ignore, "PUT", { enabled }),

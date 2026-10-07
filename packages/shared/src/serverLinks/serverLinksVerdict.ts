@@ -164,7 +164,8 @@ function directPlayCheck(report: ServerLinksReport): LinkCheck {
     endpoint("jellyfinPublic", publicUrl, publicProbe, publicSide),
     endpoint("jellyfinPrivate", privateUrl, privateProbe, privateSide),
   ];
-  if (!enabled || !publicUrl || !privateUrl) {
+  // L'adresse privée suffit (réseau local) ; la publique, facultative, n'est jugée que si elle est réglée.
+  if (!enabled || !privateUrl) {
     return { id: "directPlay", state: "todo", endpoints, notes: ["direct-disabled"] };
   }
   return {

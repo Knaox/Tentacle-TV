@@ -1,22 +1,32 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FolderOpen, Plus, Trash2 } from "lucide-react";
-import type { LibraryPlan, LibraryType } from "@tentacle-tv/shared";
+import { Plus } from "lucide-react";
+import type { LibraryPlan, PathStyle } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { FolderBrowser } from "./FolderBrowser";
+import { LibraryPlanRow } from "./LibraryPlanRow";
+import { LocaleFields } from "./LocaleFields";
+import { MediaFolderMap } from "./MediaFolderMap";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
-import { defaultLibraries, isValidLibraryName } from "./wizardModel";
+import { defaultLibraries, isValidLibraryName, pathOf, plansMissingFolder } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 
-const TYPES: readonly LibraryType[] = ["movies", "tvshows", "mixed"];
+const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary";
 
 /**
- * Jellyfin NEUF seulement (le parcours `fresh`) : de VRAIES bibliothèques
- * Jellyfin, créées par son API (`/Library/VirtualFolders`) à l'installation —
- * celles qui existent déjà sont lues, celles à créer proposées d'office dans
- * la pile complète (les dossiers que son service `init` a préparés).
+ * De VRAIES bibliothèques Jellyfin, créées par son API
+ * (`/Library/VirtualFolders`) à l'installation :
+ *
+ *  - Jellyfin NEUF (parcours `fresh`) : proposées d'office ;
+ *  - Jellyfin DÉJÀ configuré mais trouvé SANS bibliothèque à la connexion :
+ *    proposées, FACULTATIVES (« Passer ») — la langue des métadonnées est ici,
+ *    puisque l'écran de connexion ne la demande pas.
+ *
+ * « Films » et « Séries » sont proposées : sur les dossiers de la pile pour son
+ * Jellyfin, sinon sans dossier — on choisit les siens dans ce que voit
+ * JELLYFIN (arborescence Linux ou lecteurs Windows, selon sa machine).
  */
 export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
@@ -25,9 +35,12 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
   const [error, setError] = useState<WizardErrorCode | null>(null);
   const [browsing, setBrowsing] = useState<number | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [style, setStyle] = useState<PathStyle>("posix");
   const { patch } = wizard;
   const context = wizard.data.context;
   const existing = wizard.data.existing;
+  const inStack = context?.flow.selection?.inStack ?? false;
+  const optional = pathOf(context) === "configured";
 
   useEffect(() => {
     if (loaded) return;
@@ -35,23 +48,43 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
       .libraries()
       .then((found) => {
         patch({ existing: found });
-        const inStack = context?.flow.selection?.inStack ?? false;
         setPlans(defaultLibraries(context, found, { movies: t("libraryDefaultMovies"), tvshows: t("libraryDefaultShows") }, inStack));
         setLoaded(true);
       })
       .catch((err) => setError(err instanceof SetupApiError ? err.code : "internal"));
-  }, [loaded, attempt, context, patch, t]);
+  }, [loaded, attempt, context, inStack, patch, t]);
+
+  // La machine de Jellyfin : ses lecteurs disent Linux ou Windows (un échec laisse Linux, l'écran reste utilisable).
+  useEffect(() => {
+    let cancelled = false;
+    setupApi
+      .browse()
+      .then((root) => !cancelled && setStyle(root.style ?? "posix"))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const update = (index: number, next: Partial<LibraryPlan>) => setPlans((all) => all.map((plan, i) => (i === index ? { ...plan, ...next } : plan)));
-  const valid = plans.every((plan) => isValidLibraryName(plan.name.trim()) && plan.paths.length > 0);
+  const missing = plansMissingFolder(plans);
+  const valid = plans.every((plan) => isValidLibraryName(plan.name.trim())) && missing.length === 0;
 
-  const proceed = () => {
-    patch({ plans: plans.map((plan) => ({ ...plan, name: plan.name.trim() })) });
+  const proceed = (chosen: LibraryPlan[]) => {
+    patch({ plans: chosen.map((plan) => ({ ...plan, name: plan.name.trim() })), outcomes: null });
     wizard.next();
   };
 
   return (
-    <WizardFrame title={t("librariesTitle")} subtitle={t("librariesSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
+    <WizardFrame
+      help={wizard}
+      title={optional ? t("librariesTitleEmpty") : t("librariesTitle")}
+      subtitle={optional ? t("librariesSubtitleEmpty") : t("librariesSubtitle")}
+      position={wizard.position}
+      total={wizard.total}
+      onBack={wizard.back}
+      server={wizard.server}
+    >
       <div className="space-y-5">
         <SetupErrorLine
           code={error}
@@ -60,6 +93,7 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
             setAttempt((n) => n + 1);
           }}
         />
+        <MediaFolderMap context={context} inStack={inStack} style={style} />
         {existing.length > 0 ? (
           <div>
             <p className="text-xs font-medium text-content-tertiary">{t("librariesExisting")}</p>
@@ -75,13 +109,13 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
         ) : null}
 
         <div className="space-y-3">
-          <p className="text-xs font-medium text-content-tertiary">{t("librariesNew")}</p>
+          <p className="text-xs font-medium text-content-tertiary">{missing.length > 0 ? t("librariesPick") : t("librariesNew")}</p>
           {loaded && plans.length === 0 ? <p className="text-sm text-content-tertiary">{t("librariesNone")}</p> : null}
           {plans.map((plan, index) =>
             browsing === index ? (
               <FolderBrowser
                 key={index}
-                start={plan.paths[0] ?? context?.mediaFolders?.root ?? null}
+                start={plan.paths[0] ?? (inStack ? (context?.mediaFolders?.root ?? null) : null)}
                 onPick={(path) => {
                   update(index, { paths: [path] });
                   setBrowsing(null);
@@ -89,7 +123,7 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
                 onCancel={() => setBrowsing(null)}
               />
             ) : (
-              <PlanRow key={index} plan={plan} onChange={(next) => update(index, next)} onBrowse={() => setBrowsing(index)} onRemove={() => setPlans((all) => all.filter((_, i) => i !== index))} />
+              <LibraryPlanRow key={index} plan={plan} onChange={(next) => update(index, next)} onBrowse={() => setBrowsing(index)} onRemove={() => setPlans((all) => all.filter((_, i) => i !== index))} />
             ),
           )}
           <button
@@ -102,48 +136,24 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
           </button>
         </div>
 
-        <button type="button" onClick={proceed} disabled={!loaded || !valid} className={`${cls.bp} w-full sm:w-auto`}>
-          {t("next")}
-        </button>
+        {optional && plans.length > 0 ? <LocaleFields locale={wizard.data.locale} onChange={(locale) => patch({ locale })} /> : null}
+
+        {loaded && missing.length > 0 ? (
+          <p className="text-sm text-status-warning-fg" aria-live="polite">
+            {missing.length === 1 && missing[0].name.trim() ? t("libraryFolderMissing", { name: missing[0].name.trim() }) : t("libraryFolderMissingUnnamed")}
+          </p>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <button type="button" onClick={() => proceed(plans)} disabled={!loaded || !valid} className={`${cls.bp} w-full sm:w-auto`}>
+            {t("next")}
+          </button>
+          {optional ? (
+            <button type="button" onClick={() => proceed([])} className={linkBtn}>
+              {t("librariesSkip")}
+            </button>
+          ) : null}
+        </div>
       </div>
     </WizardFrame>
-  );
-}
-
-function PlanRow({ plan, onChange, onBrowse, onRemove }: { plan: LibraryPlan; onChange: (next: Partial<LibraryPlan>) => void; onBrowse: () => void; onRemove: () => void }) {
-  const { t } = useTranslation("setupWizard");
-  const nameId = useId();
-  const typeId = useId();
-  const nameInvalid = plan.name !== "" && !isValidLibraryName(plan.name.trim());
-  return (
-    <div className="space-y-3 rounded-xl border border-line-subtle bg-fill-faint p-4">
-      <div className="grid gap-3 sm:grid-cols-[1fr_9rem_auto] sm:items-end">
-        <div>
-          <label htmlFor={nameId} className={cls.lbl}>{t("libraryName")}</label>
-          <input id={nameId} value={plan.name} onChange={(e) => onChange({ name: e.target.value })} aria-invalid={nameInvalid || undefined} className={`${cls.inp} aria-[invalid=true]:border-status-error`} />
-        </div>
-        <div>
-          <label htmlFor={typeId} className={cls.lbl}>{t("libraryType")}</label>
-          <select id={typeId} value={plan.type} onChange={(e) => onChange({ type: e.target.value as LibraryType })} className={`${cls.inp} cursor-pointer`}>
-            {TYPES.map((type) => (
-              <option key={type} value={type}>
-                {t(`type_${type}`)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button type="button" onClick={onRemove} aria-label={t("libraryRemove", { name: plan.name || "…" })} className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-content-tertiary hover:bg-fill-subtle hover:text-status-error-fg">
-          <Trash2 size={16} aria-hidden="true" />
-        </button>
-      </div>
-      {nameInvalid ? <p className="text-xs text-status-error-fg">{t("libraryNameInvalid")}</p> : null}
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="min-w-0 flex-1 break-all font-mono text-xs text-content-secondary">{plan.paths[0] ?? t("libraryFolderNone")}</span>
-        <button type="button" onClick={onBrowse} className={cls.bs}>
-          <FolderOpen size={16} aria-hidden="true" />
-          {t("libraryBrowse")}
-        </button>
-      </div>
-    </div>
   );
 }

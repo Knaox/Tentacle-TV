@@ -46,6 +46,25 @@ export function activeJellyfinPublicUrl(): string | null {
   return direct.enabled ? direct.publicUrl : null;
 }
 
+/** Le port d'une adresse http(s), écrit ou par défaut ; `null` si illisible. */
+function portOf(url: string | null): number | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return Number(parsed.port) || (parsed.protocol === "https:" ? 443 : 80);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Le port de Jellyfin vu du réseau local : celui que la pile publie, sinon
+ * celui de son adresse privée (un Jellyfin hors de la pile, natif ou à côté).
+ */
+export function jellyfinLanPort(env: NodeJS.ProcessEnv = process.env): number | null {
+  return jellyfinHostPort(env) ?? portOf(getDirectStreamingConfig().privateUrl);
+}
+
 function itemsFor(targets: CheckTarget[], family: 4 | 6, fill: (index: number) => Pick<RemoteCheckItem, "verdict" | "httpStatus" | "certificateExpires">): RemoteCheckItem[] {
   return targets.map((t, i) => ({ service: t.service, scheme: t.scheme, port: t.port, host: t.host ?? null, family, ...fill(i) }));
 }

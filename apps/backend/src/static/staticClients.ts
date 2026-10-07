@@ -7,6 +7,8 @@ import {
   isTvClientPath,
   tvClientOpenToAll,
 } from "./tvUserAgent";
+import { isSetupComplete } from "../services/configStore";
+import { isWebUiEnabled, webUiBlocks } from "./webUi";
 
 /**
  * Service des clients construits : le client web à la racine, le client
@@ -29,6 +31,8 @@ export interface StaticClientRoots {
   webPath?: string;
   tvBuildPath?: string;
   tvSourcePath?: string;
+  /** L'interface web ouverte, et l'installation finie (`webUi.ts`) — remplaçables par les tests. */
+  webUi?: () => { enabled: boolean; setupComplete: boolean };
 }
 
 export async function registerStaticClients(
@@ -39,8 +43,11 @@ export async function registerStaticClients(
   // routes des plugins enregistrés ensuite, l'inverse n'étant pas vrai. C'est
   // ce qui le fait porter à la fois sur les fichiers statiques et sur le repli
   // monopage plus bas.
+  const webUi = roots.webUi ?? (() => ({ enabled: isWebUiEnabled(), setupComplete: isSetupComplete() }));
   app.addHook("onRequest", async (request, reply) => {
     const path = request.url.split("?")[0];
+    // L'interface web coupée (`TENTACLE_WEB_UI=off`) : 404, sauf l'API, /tv, /.well-known et l'assistant.
+    if (webUiBlocks(path, webUi())) return reply.status(404).send({ message: "Not found" });
     if (!isTvClientPath(path)) return;
     if (tvClientOpenToAll()) return;
     if (isTvUserAgent(request.headers["user-agent"])) return;

@@ -1,5 +1,5 @@
 import type { FastifyBaseLogger, FastifyPluginAsync } from "fastify";
-import { setAppState, setConfigValue } from "../../services/configStore";
+import { getConfigValue, setAppState, setConfigValue } from "../../services/configStore";
 import { startBackgroundServices } from "../../services/backgroundServices";
 import { injectCorsHosts } from "../../services/jellyfinCors";
 import { buildAuthHeader, deviceIdForOpaque } from "../../services/jellyfinIdentity";
@@ -87,7 +87,12 @@ export const setupCompleteRoute: FastifyPluginAsync = async (app) => {
       const clientUrl =
         body.jellyfinClientUrl?.replace(/\/+$/, "") ??
         clientUrlFor(request, stored.url);
-      if (clientUrl) await setConfigValue("jellyfin_private_url", clientUrl);
+      if (clientUrl) {
+        await setConfigValue("jellyfin_private_url", clientUrl);
+        // La lecture directe à la maison : l'adresse privée suffit. Un choix
+        // déjà fait (base reprise) est respecté ; l'extérieur reste à régler.
+        if (getConfigValue("direct_streaming_enabled") === undefined) await setConfigValue("direct_streaming_enabled", "true");
+      }
       await setConfigValue("admin_jellyfin_id", user.Id);
       await setConfigValue("admin_username", user.Name);
       await setConfigValue("setup_completed", "true");

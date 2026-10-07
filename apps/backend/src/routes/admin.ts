@@ -4,12 +4,8 @@ import { requireAdmin } from "../middleware/auth";
 import {
   setConfigValue,
   getConfigValue,
-  getJellyfinUrl,
-  getJellyfinApiKey,
-  getDirectStreamingConfig,
   getPublicUrl,
 } from "../services/configStore";
-import { corsOriginsToInject, injectCorsHosts } from "../services/jellyfinCors";
 import { adminUsersRoutes } from "./adminUsers";
 import { adminProvisioningRoutes } from "./adminProvisioning";
 import { adminJellyfinKeyRoutes } from "./adminJellyfinKey";
@@ -20,6 +16,7 @@ import { adminJellyfinCompatRoutes } from "./adminJellyfinCompat";
 import { adminJellyfinSetupRoutes } from "./adminJellyfinSetup";
 import { adminSegmentPluginsRoutes } from "./adminSegmentPlugins";
 import { adminServerLinksRoutes } from "./adminServerLinks";
+import { adminDirectStreamingRoutes } from "./adminDirectStreaming";
 import { adminServerUpdateRoutes } from "./adminServerUpdate";
 import { remoteAccessRoutes } from "../remoteAccess/remoteAccessRoutes";
 
@@ -53,6 +50,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   // Détection des passages : installer / réparer les greffons (requireAdmin, puis session personnelle pour lancer).
   await app.register(adminSegmentPluginsRoutes);
 
+  // La lecture directe : ses deux adresses, la publique facultative (hérite de requireAdmin).
+  await app.register(adminDirectStreamingRoutes);
+
   // Liens du serveur : lien public et lecture directe, sondés (hérite de requireAdmin).
   await app.register(adminServerLinksRoutes);
 
@@ -81,57 +81,6 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ message: "URL invalide" });
     }
     await setConfigValue("public_url", parsed.data.publicUrl.replace(/\/$/, ""));
-    return { success: true };
-  });
-
-  /** GET /api/admin/direct-streaming — Read direct streaming settings. */
-  app.get("/direct-streaming", async () => {
-    const cfg = getDirectStreamingConfig();
-    return {
-      enabled: cfg.enabled,
-      publicUrl: cfg.publicUrl ?? "",
-      privateUrl: cfg.privateUrl ?? "",
-    };
-  });
-
-  /** PUT /api/admin/direct-streaming — Update direct streaming settings. */
-  app.put("/direct-streaming", async (request, reply) => {
-    const schema = z.object({
-      enabled: z.boolean(),
-      publicUrl: z.string().url().optional().or(z.literal("")),
-      privateUrl: z.string().url().optional().or(z.literal("")),
-    }).refine(
-      (d) => !d.enabled || (!!d.publicUrl && !!d.privateUrl),
-      { message: "Both publicUrl and privateUrl are required when enabled" }
-    );
-
-    const parsed = schema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ message: parsed.error.issues[0].message });
-    }
-    const body = parsed.data;
-
-    await setConfigValue("direct_streaming_enabled", String(body.enabled));
-    if (body.publicUrl) {
-      await setConfigValue("jellyfin_public_url", body.publicUrl.replace(/\/$/, ""));
-    }
-    if (body.privateUrl) {
-      await setConfigValue("jellyfin_private_url", body.privateUrl.replace(/\/$/, ""));
-    }
-
-    // Injection CORS pour le direct streaming (non-bloquant)
-    const jellyfinUrl = getJellyfinUrl();
-    const apiKey = getJellyfinApiKey();
-    if (jellyfinUrl && apiKey && body.enabled) {
-      const urlsToInject = corsOriginsToInject(request.headers.origin as string | undefined, getPublicUrl());
-      try {
-        const result = await injectCorsHosts(jellyfinUrl, apiKey, urlsToInject, request.log);
-        if (result.added.length) request.log.info({ added: result.added }, "CORS hosts injected");
-      } catch (err) {
-        request.log.warn({ error: err }, "CORS injection failed (non-blocking)");
-      }
-    }
-
     return { success: true };
   });
 

@@ -7,6 +7,7 @@ import { readHostInfo } from "../setup/hostInfo";
 import { SETUP_LOCK_FILE, unsealSetup } from "../setup/setupLock";
 import { forgetClaimant } from "../setup/localAccess/claimant";
 import { discardSetupToken, setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
+import { runWebCommand, WEB_USAGE } from "./webUiCommand";
 
 /**
  * `tentacle` — la commande de la MACHINE. L'assistant ne se rouvre jamais par
@@ -15,6 +16,7 @@ import { discardSetupToken, setupTokenBanner, writeNewSetupToken } from "../setu
  *
  *   tentacle setup token   # un code neuf (installation ouverte)
  *   tentacle setup reset   # rouvrir l'assistant
+ *   tentacle web on|off    # l'interface web (`webUiCommand.ts`)
  *
  * En natif : `node apps/backend/dist/cli/tentacle.js setup …`.
  */
@@ -25,6 +27,7 @@ const USAGE = [
   "                         print a new one-time setup code",
   "  tentacle setup reset   rouvre l'assistant d'installation (puis redémarrer le conteneur)",
   "                         reopen the setup wizard (then restart the container)",
+  ...WEB_USAGE,
 ];
 // Rouvrir l'assistant, c'est aussi repartir du CHOIX du Jellyfin : le choix
 // et le parcours d'avant ne valent plus (`setup/flow/setupFlow.ts`).
@@ -110,6 +113,7 @@ export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.en
     for (const line of USAGE) console.error(line);
     return 2;
   }
+  if (scope === "web") return runWebCommand(action, env);
   if (scope !== "setup" || (action !== "token" && action !== "reset")) {
     const typed = ["tentacle", ...args].join(" ");
     console.error(`Commande inconnue / unknown command : ${typed}`);

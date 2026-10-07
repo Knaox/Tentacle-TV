@@ -104,6 +104,7 @@ export default {
   publicUrlFromEnv: "environment variable",
   publicUrlNone: "No public address: TVs cannot be paired.",
   publicUrlSaved: "Public address saved.",
+  publicUrlExposureNote: "Published only when “Access from outside” is on (Administration › Remote access).",
   publicUrlCleared: "Address cleared.",
 
   // Direct play.
@@ -116,6 +117,10 @@ export default {
   directPublicHint: "Reachable from the Internet, for instance https://jf.example.com.",
   directPrivateLabel: "Jellyfin private URL (local network)",
   directPrivateHint: "Reachable from the local network, for instance http://192.168.1.50:8096.",
+  directPrivateRequired: "The private address is needed to turn on direct play.",
+  directPublicSwitch: "Direct play from outside (optional)",
+  directPublicSwitchHint: "Off: away from home, playback goes through Tentacle. On: Jellyfin must be reachable from the Internet, and “Access from outside” turned on (Remote access).",
+  directPublicMissing: "Give Jellyfin's public address, or turn off direct play from outside.",
   directUrlsRequired: "Both addresses are needed to enable direct play.",
   directMixedContent:
     "HTTP address on an HTTPS site: the browser will block the streams (mixed content). Use an HTTPS address or an HTTPS proxy in front of Jellyfin.",

@@ -32,7 +32,7 @@ describe("le parcours tenu par le serveur", () => {
   it("un Jellyfin resté enregistré d'une installation rouverte : rien n'est choisi, l'étape « Jellyfin » d'abord", () => {
     state.config.set("jellyfin_url", PILE);
     state.config.set("jellyfin_api_key", "cle");
-    expect(flowState()).toEqual({ databasePending: false, selection: null, linked: false });
+    expect(flowState()).toEqual({ databasePending: false, selection: null, linked: false, noLibraries: false });
     expect(() => requireStep("createLibraries")).toThrow("step_refused");
     expect(() => requireStep("initialize")).toThrow("step_refused");
     expect(() => requireStep("complete")).toThrow("step_refused");
@@ -62,7 +62,7 @@ describe("le parcours tenu par le serveur", () => {
 
   it("sans base : rien ne s'enregistre, le refus le dit", () => {
     state.prisma = false;
-    expect(flowState()).toEqual({ databasePending: true, selection: null, linked: false });
+    expect(flowState()).toEqual({ databasePending: true, selection: null, linked: false, noLibraries: false });
     expect(() => requireStep("select")).toThrow("db_unreachable");
   });
 

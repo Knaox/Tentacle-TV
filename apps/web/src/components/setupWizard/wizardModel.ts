@@ -35,7 +35,7 @@ export interface WizardShapeInput {
 
 /** La base a son écran quand l'environnement ne la fournit pas — reliée ou non : il fait partie du parcours. */
 export function flowShape({ needsCode, context }: WizardShapeInput): SetupFlowShape {
-  return { needsCode, asksDatabase: !!context && !context.database.fromEnv, path: pathOf(context) };
+  return { needsCode, asksDatabase: !!context && !context.database.fromEnv, path: pathOf(context), noLibraries: context?.flow.noLibraries ?? false };
 }
 
 export function wizardSteps(input: WizardShapeInput): WizardStep[] {
@@ -73,8 +73,13 @@ export function resumeStep(context: SetupContext, hasCredentials: boolean): Wiza
 }
 
 /** Les écrans où le Jellyfin choisi est rappelé en tête : ceux du parcours, jusqu'à l'installation. */
-export function showsChosenServer(step: WizardStep, path: SetupPath | null): boolean {
-  return !!path && (pathOnlySteps(path).includes(step) || step === "recap" || step === "apply");
+export function showsChosenServer(step: WizardStep, path: SetupPath | null, noLibraries = false): boolean {
+  return !!path && (pathOnlySteps(path, noLibraries).includes(step) || step === "recap" || step === "apply");
+}
+
+/** Le Jellyfin choisi n'avait aucune bibliothèque à la connexion (déjà configuré) : en créer est facultatif. */
+export function createsLibraries(context: SetupContext | null): boolean {
+  return pathOf(context) === "fresh" || context?.flow.noLibraries === true;
 }
 
 const LANGUAGES = ["fr", "en", "de", "it", "es", "pt", "nl"] as const;
@@ -110,10 +115,10 @@ export function isValidLibraryName(name: string): boolean {
 }
 
 /**
- * Les bibliothèques proposées : dans la pile complète, « Films » et « Séries »
- * sur les dossiers que le service `init` a créés — sauf celles qui existent
- * déjà. Seulement pour le Jellyfin DE LA PILE : un autre Jellyfin ne voit pas
- * ces dossiers.
+ * Les bibliothèques proposées : « Films » et « Séries » — sauf celles qui
+ * existent déjà. Dans la pile complète, sur les dossiers que le service
+ * `init` a créés ; ailleurs (un autre Jellyfin ne voit pas ces dossiers),
+ * sans dossier : l'administrateur choisit lui-même les siens.
  */
 export function defaultLibraries(
   context: SetupContext | null,
@@ -121,14 +126,19 @@ export function defaultLibraries(
   names: { movies: string; tvshows: string },
   inStack = true,
 ): LibraryPlan[] {
-  const folders = context?.mediaFolders;
-  if (!folders || !inStack) return [];
-  const taken = new Set(existing.flatMap((library) => library.paths));
+  const folders = inStack ? context?.mediaFolders : null;
+  const takenPaths = new Set(existing.flatMap((library) => library.paths));
+  const takenNames = new Set(existing.map((library) => library.name.toLowerCase()));
   const plans: LibraryPlan[] = [
-    { name: names.movies, type: "movies", paths: [folders.movies] },
-    { name: names.tvshows, type: "tvshows", paths: [folders.tvshows] },
+    { name: names.movies, type: "movies", paths: folders ? [folders.movies] : [] },
+    { name: names.tvshows, type: "tvshows", paths: folders ? [folders.tvshows] : [] },
   ];
-  return plans.filter((plan) => !plan.paths.some((path) => taken.has(path)));
+  return plans.filter((plan) => !takenNames.has(plan.name.toLowerCase()) && !plan.paths.some((path) => takenPaths.has(path)));
+}
+
+/** Les bibliothèques sans dossier choisi : le bouton « Continuer » attend. */
+export function plansMissingFolder(plans: readonly LibraryPlan[]): LibraryPlan[] {
+  return plans.filter((plan) => plan.paths.length === 0);
 }
 
 /** Les chemins de l'hôte où déposer les médias (pile complète), d'après le dossier monté et les sous-dossiers. */

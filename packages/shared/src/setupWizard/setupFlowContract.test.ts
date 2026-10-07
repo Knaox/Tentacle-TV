@@ -24,7 +24,7 @@ const selection = (path: SetupPath, inStack = false): SetupSelection => ({
   inStack,
   path,
 });
-const state = (over: Partial<SetupFlowState> = {}): SetupFlowState => ({ databasePending: false, selection: null, linked: false, ...over });
+const state = (over: Partial<SetupFlowState> = {}): SetupFlowState => ({ databasePending: false, selection: null, linked: false, noLibraries: false, ...over });
 
 /** Les installations : pile complète (base fournie), pile « base » (Jellyfin à côté), natif ou pile « seule » (base à relier), avec ou sans code. */
 const SHAPES: Array<[string, Omit<SetupFlowShape, "path">]> = [
@@ -170,5 +170,43 @@ describe("les gestes que le serveur accepte", () => {
     for (const s of [state(), state({ selection: selection("fresh"), linked: true }), state({ selection: selection("configured"), linked: true })]) {
       expect(setupActionAllowed("select", s)).toBe(true);
     }
+  });
+});
+
+describe("Jellyfin déjà configuré mais SANS bibliothèque (constaté à la connexion)", () => {
+  const empty = (over: Partial<SetupFlowState> = {}) => state({ selection: { ...selection("configured"), noLibraries: true }, linked: true, noLibraries: true, ...over });
+
+  it("ses bibliothèques sont proposées entre la connexion et les réglages conseillés", () => {
+    expect(setupFlowSteps({ needsCode: false, asksDatabase: false, path: "configured", noLibraries: true })).toEqual([
+      "welcome", "jellyfin", "signIn", "libraries", "recommended", "recap", "apply", "remote", "done",
+    ]);
+    // Un écran de plus, dit dès qu'on le sait ; jamais de compte créé.
+    expect(setupFlowLength({ needsCode: false, asksDatabase: false, path: "configured", noLibraries: true })).toBe(9);
+    expect(setupFlowSteps({ needsCode: true, asksDatabase: true, path: "configured", noLibraries: true })).not.toContain("account");
+  });
+
+  it("le neuf n'en dépend pas : `noLibraries` ne change que le parcours configuré", () => {
+    expect(setupFlowSteps({ needsCode: false, asksDatabase: false, path: "fresh", noLibraries: true })).toEqual(
+      setupFlowSteps({ needsCode: false, asksDatabase: false, path: "fresh" }),
+    );
+  });
+
+  it("on y reprend aux bibliothèques ; le retour remonte bibliothèques → connexion → Jellyfin", () => {
+    expect(setupStage(empty())).toBe("libraries");
+    const steps = setupFlowSteps({ needsCode: false, asksDatabase: false, path: "configured", noLibraries: true });
+    expect(previousStep(steps, "recommended")).toBe("libraries");
+    expect(previousStep(steps, "libraries")).toBe("signIn");
+    expect(nextStep(steps, "libraries")).toBe("recommended");
+  });
+
+  it("parcourir et créer des bibliothèques y sont permis — et SEULEMENT dans ce cas, pour un Jellyfin configuré", () => {
+    for (const action of ["browse", "createLibraries"] as const) {
+      expect(setupActionAllowed(action, empty())).toBe(true);
+      // Avec des bibliothèques, pas relié, ou un serveur qui ne le dit pas : refusé (409).
+      expect(setupActionAllowed(action, empty({ noLibraries: false }))).toBe(false);
+      expect(setupActionAllowed(action, empty({ noLibraries: undefined }))).toBe(false);
+      expect(setupActionAllowed(action, empty({ linked: false }))).toBe(false);
+    }
+    expect(setupActionAllowed("initialize", empty())).toBe(false);
   });
 });

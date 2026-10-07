@@ -1,19 +1,20 @@
 import { useTranslation } from "react-i18next";
-import { ExternalLink, FolderInput } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { APP_LINKS, remoteVerdict, type SetupCompleteResponse } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { RemoteAccessPanel } from "../remoteAccess/RemoteAccessPanel";
 import { useRemoteAccess } from "../remoteAccess/remoteAccessApi";
 import { QrCode } from "./QrCode";
 import type { Wizard } from "./useWizard";
-import { hostMediaPaths } from "./wizardModel";
+import { contentFolders } from "./addContentModel";
+import { AddContentTutorial } from "./AddContentTutorial";
 import { WizardFrame } from "./WizardFrame";
 
 /** L'accès à distance, facultatif : le même panneau que dans l'administration. La session est ouverte, ses appels passent. */
 export function RemoteScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   return (
-    <WizardFrame title={t("remoteTitle")} subtitle={t("remoteSubtitle")} position={wizard.position} total={wizard.total} width="full">
+    <WizardFrame help={wizard} title={t("remoteTitle")} subtitle={t("remoteSubtitle")} position={wizard.position} total={wizard.total} width="full">
       <div className="space-y-6">
         <RemoteAccessPanel variant="wizard" />
         <div className="flex flex-wrap gap-3">
@@ -43,32 +44,18 @@ function useRemoteSummary(): { summary: RemoteSummary; publicUrl: string | null;
 export function DoneScreen({ wizard, onFinish }: { wizard: Wizard; onFinish: (session: SetupCompleteResponse) => void }) {
   const { t } = useTranslation("setupWizard");
   const { summary, publicUrl, localUrl } = useRemoteSummary();
-  const paths = hostMediaPaths(wizard.data.context);
+  const { data } = wizard;
+  // Les bibliothèques créées (ou déjà là) : celles que l'installation a vraiment posées.
+  const created = new Set((data.outcomes ?? []).filter((o) => o.status !== "failed").map((o) => o.name));
+  const names = { movies: t("libraryDefaultMovies"), tvshows: t("libraryDefaultShows") };
+  const folders = contentFolders({ context: data.context, plans: data.plans, existing: data.existing, created, names });
   const serverUrl = publicUrl ?? localUrl ?? window.location.origin;
-  const session = wizard.data.session;
+  const session = data.session;
 
   return (
-    <WizardFrame title={t("doneTitle")} subtitle={t("doneSubtitle")} position={wizard.position} total={wizard.total}>
+    <WizardFrame help={wizard} title={t("doneTitle")} subtitle={t("doneSubtitle")} position={wizard.position} total={wizard.total}>
       <div className="space-y-6 text-sm leading-relaxed text-content-secondary">
-        <section aria-labelledby="done-media">
-          <h2 id="done-media" className="flex items-center gap-2 font-semibold text-content-primary">
-            <FolderInput size={16} aria-hidden="true" />
-            {t("doneMediaTitle")}
-          </h2>
-          {paths.length ? (
-            <>
-              <p className="mt-1">{t("doneMediaHost")}</p>
-              <ul className="mt-1.5 space-y-1">
-                {paths.map((path) => (
-                  <li key={path} className="break-all rounded-lg bg-fill-subtle px-3 py-1.5 font-mono text-xs text-content-primary">{path}</li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p className="mt-1">{t("doneMediaGeneric")}</p>
-          )}
-          <p className="mt-2">{t("doneMediaScan")}</p>
-        </section>
+        <AddContentTutorial folders={folders} />
 
         <section aria-labelledby="done-qr" className="flex flex-wrap items-center gap-5">
           <QrCode value={serverUrl} label={t("doneQrAlt", { url: serverUrl })} />
@@ -97,6 +84,12 @@ export function DoneScreen({ wizard, onFinish }: { wizard: Wizard; onFinish: (se
           <h2 id="done-remote" className="font-semibold text-content-primary">{t("doneRemoteTitle")}</h2>
           <p className={`mt-1 ${summary === "exposed" ? "text-status-error-fg" : summary === "secure" ? "text-status-success-fg" : ""}`}>{t(`doneRemote_${summary}`)}</p>
         </section>
+
+        {data.context?.webUi === false ? (
+          <p role="note" className="rounded-xl border border-line-subtle bg-fill-faint px-4 py-3 text-content-secondary">
+            {t("doneWebUiOff")}
+          </p>
+        ) : null}
 
         <button type="button" onClick={() => session && onFinish(session)} disabled={!session} className={`${cls.bp} w-full sm:w-auto`}>
           {t("doneOpen")}

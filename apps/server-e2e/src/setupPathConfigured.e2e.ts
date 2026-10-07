@@ -63,6 +63,10 @@ beforeAll(async () => {
   expect((await call("/jellyfin/select", { url: "" })).status).toBe(200);
   const init = await call("/jellyfin/initialize", { url: "http://jellyfin:8096", username: USER, password: PASSWORD, serverName: "Tentacle", uiCulture: "fr", metadataCountry: "FR", metadataLanguage: "fr" });
   expect(init.status, JSON.stringify(init.body)).toBe(200);
+  // Une bibliothèque aussi : ce banc prouve le parcours d'un Jellyfin configuré qui EN A
+  // (le cas « configuré mais vide » est celui de setupV3.e2e.ts).
+  const library = await call("/jellyfin/libraries", { libraries: [{ name: "Films", type: "movies", paths: ["/media/films"] }], metadataLanguage: "fr", metadataCountry: "FR" });
+  expect(library.status, JSON.stringify(library.body)).toBe(200);
   expect((await call("/complete", { username: USER, password: PASSWORD })).status).toBe(200);
 
   // Puis l'assistant rouvert, comme Damien : la base garde l'adresse et la clé de ce Jellyfin.

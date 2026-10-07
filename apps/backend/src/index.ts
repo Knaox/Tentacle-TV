@@ -8,6 +8,7 @@ import { ZodError } from "zod";
 import websocket from "@fastify/websocket";
 
 import { registerStaticClients } from "./static/staticClients";
+import { readOverrideFile, resolveWebUi } from "./static/webUi";
 import { LOG_REDACT_PATHS, redactUrl } from "./services/logRedaction";
 import { getRealClientIp } from "./services/networkUtils";
 import { challengeRoutes } from "./remoteAccess/challengeRoute";
@@ -16,6 +17,7 @@ import { initPrisma, hasDatabaseUrl, getDatabaseUrl, getDatabaseUrlSource, recon
 import { ensureDatabaseSchema } from "./services/schemaInit/ensureSchema";
 import { applyPairingEpoch } from "./services/pairingEpoch";
 import { applyAudioAnalysisDefault } from "./services/audioAnalysisDefault";
+import { applyExposureDefault } from "./remoteAccess/exposureDefault";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
 
@@ -305,6 +307,10 @@ async function main() {
   await app.register(jellyfinProxyRoutes, { prefix: "/api/jellyfin" });
 
   await registerStaticClients(app);
+  const webUi = resolveWebUi(process.env, readOverrideFile());
+  if (!webUi.enabled) {
+    console.log(`[Web] Interface web coupée (${webUi.source === "cli" ? "tentacle web off" : "TENTACLE_WEB_UI=off"}) : l'API, /tv et les applications restent servies, l'assistant aussi tant que l'installation n'est pas finie. Rallumer : tentacle web on`);
+  }
 
   // ── Initialize database (with retry for Docker Compose / slow DB starts) ──
   const dbUrl = getDatabaseUrl();
@@ -340,6 +346,8 @@ async function main() {
       await applyPairingEpoch();
       // L'analyse audio des passages, coupée une fois sur les serveurs d'avant.
       await applyAudioAnalysisDefault();
+      // « Accès depuis l'extérieur » allumé une fois pour qui publiait déjà un lien.
+      await applyExposureDefault();
     } else {
       console.warn("[DB] All connection attempts failed — entering setup mode");
     }

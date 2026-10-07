@@ -163,7 +163,7 @@ describe("assistant d'installation, de bout en bout", () => {
   });
 
   it("sans Jellyfin choisi : ni compte, ni connexion, ni bibliothèque, ni fin — le choix d'abord", async () => {
-    expect((await call("GET", "/context", { session })).json().flow).toEqual({ databasePending: false, selection: null, linked: false });
+    expect((await call("GET", "/context", { session })).json().flow).toEqual({ databasePending: false, selection: null, linked: false, noLibraries: false });
     for (const [url, body] of [
       ["/jellyfin/initialize", { url: jf.url, username: "Damien", password: ADMIN_PASSWORD, uiCulture: "fr-FR", metadataCountry: "CH", metadataLanguage: "fr" }],
       ["/jellyfin/connect", { url: jf.url, username: "Damien", password: ADMIN_PASSWORD }],
@@ -222,6 +222,9 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(state.config.has("setup_jellyfin_selection")).toBe(false);
     // L'adresse des applications : le Jellyfin de la boucle locale prend l'hôte du navigateur.
     expect(state.config.get("jellyfin_private_url")).toBe(jf.url.replace("127.0.0.1", "localhost"));
+    // La lecture directe à la maison est allumée ; rien de public n'est réglé.
+    expect(state.config.get("direct_streaming_enabled")).toBe("true");
+    expect(state.config.has("jellyfin_public_url")).toBe(false);
     expect(state.started).toBe(1);
 
     for (const [method, url] of [["GET", "/host"], ["GET", "/context"], ["POST", "/session"], ["POST", "/jellyfin/probe"], ["POST", "/jellyfin/segments"], ["POST", "/complete"]] as const) {

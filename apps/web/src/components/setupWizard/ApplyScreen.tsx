@@ -7,7 +7,7 @@ import { runSegmentSetup } from "./applySegments";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
-import { pathOf } from "./wizardModel";
+import { createsLibraries, pathOf } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
 import { SegmentRunView } from "../segmentPlugins/SegmentRunView";
 
@@ -33,7 +33,8 @@ function firstPhase(done: { configured: boolean; segmentsDone: boolean; wantSegm
  * (greffons, redémarrage compris — AVANT les bibliothèques, pour qu'aucun
  * scan ne soit coupé), les bibliothèques, la session. Jellyfin DÉJÀ
  * configuré : SEULEMENT ce qui a été coché (passages, puis réglages), aucune
- * bibliothèque, puis la session. Une étape qui échoue se relance seule, sans
+ * bibliothèque (sauf s'il n'en avait aucune et qu'on en a prévu : elles
+ * d'abord), puis la session. Une étape qui échoue se relance seule, sans
  * refaire ce qui a réussi ; les passages et les réglages ne bloquent jamais.
  */
 export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: (session: SetupCompleteResponse) => void }) {
@@ -41,8 +42,10 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   const client = useJellyfinClient();
   const { data, patch, next } = wizard;
   const joined = pathOf(data.context) === "configured";
+  // Un Jellyfin configuré trouvé vide : ses bibliothèques prévues sont créées, puis les réglages cochés.
+  const withLibraries = createsLibraries(data.context) && (!joined || data.plans.length > 0);
   const wantSegments = !joined || data.advice?.segments === true;
-  const configured = (joined ? data.adviceOutcomes : data.outcomes) !== null;
+  const configured = (!withLibraries || data.outcomes !== null) && (!joined || data.adviceOutcomes !== null);
   const segmentsDone = data.segments !== undefined;
   const [phase, setPhase] = useState<Phase>(() => firstPhase({ configured, segmentsDone, wantSegments }));
   const [segmentRun, setSegmentRun] = useState<SegmentSetupRun | null>(data.segments ?? null);
@@ -59,17 +62,18 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
         setPhase(current);
       }
       if (current === "configure") {
-        if (joined) {
+        if (withLibraries && data.outcomes === null) {
+          const outcomes = data.plans.length
+            ? await setupApi.createLibraries({ libraries: data.plans, metadataLanguage: data.locale.language, metadataCountry: data.locale.country })
+            : [];
+          patch({ outcomes });
+        }
+        if (joined && data.adviceOutcomes === null) {
           const actions = data.advice?.actions ?? [];
           const adviceOutcomes = actions.length
             ? await setupApi.applyAdvice({ actions, language: data.locale.language, country: data.locale.country })
             : [];
           patch({ adviceOutcomes });
-        } else {
-          const outcomes = data.plans.length
-            ? await setupApi.createLibraries({ libraries: data.plans, metadataLanguage: data.locale.language, metadataCountry: data.locale.country })
-            : [];
-          patch({ outcomes });
         }
         current = "session";
         setPhase(current);
@@ -90,7 +94,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
     } catch (err) {
       setError(err instanceof SetupApiError ? err.code : "internal");
     }
-  }, [joined, configured, segmentsDone, wantSegments, data.advice, data.plans, data.locale, data.credentials, data.clientUrl, client, patch, onSession, next]);
+  }, [joined, withLibraries, configured, segmentsDone, wantSegments, data.advice, data.plans, data.outcomes, data.adviceOutcomes, data.locale, data.credentials, data.clientUrl, client, patch, onSession, next]);
 
   useEffect(() => {
     if (started.current) return;
@@ -116,7 +120,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   const adviceOutcomes = data.adviceOutcomes ?? [];
 
   return (
-    <WizardFrame title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total} server={wizard.server}>
+    <WizardFrame help={wizard} title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total} server={wizard.server}>
       <div className="space-y-4" aria-live="polite">
         <ul className="space-y-2">
           {wantSegments ? line(t("segmentPlugins:wizardLine"), segState) : null}
@@ -127,14 +131,14 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
           ) : wantSegments && data.segments === null ? (
             <li className="pl-6 text-xs text-content-tertiary">{t("segmentPlugins:wizardSkipped")}</li>
           ) : null}
-          {line(joined ? t("applyAdvice") : t("applyLibraries"), configState)}
+          {line(joined ? t(withLibraries ? "applyLibrariesAndAdvice" : "applyAdvice") : t("applyLibraries"), configState)}
           {joined && data.adviceOutcomes && adviceOutcomes.length === 0 ? <li className="pl-6 text-xs text-content-tertiary">{t("applyAdviceNone")}</li> : null}
           {adviceOutcomes.map((outcome) => (
             <li key={outcome.action} className={`pl-6 text-xs ${outcome.status === "failed" ? "text-status-error-fg" : "text-content-tertiary"}`}>
               {t(`adviceOutcome_${outcome.status}`, { name: t(ADVICE_TITLE[outcome.action] ?? outcome.action) })}
             </li>
           ))}
-          {(joined ? [] : data.outcomes ?? []).map((outcome) => (
+          {(withLibraries ? (data.outcomes ?? []) : []).map((outcome) => (
             <li key={outcome.name} className={`pl-6 text-xs ${outcome.status === "failed" ? "text-status-error-fg" : "text-content-tertiary"}`}>
               {t(`outcome_${outcome.status}`, { name: outcome.name })}
               {outcome.error ? ` — ${t(`error_${outcome.error}`)}` : ""}
