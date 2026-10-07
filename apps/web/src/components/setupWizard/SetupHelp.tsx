@@ -7,11 +7,13 @@ import { SETUP_HELP, setupDocUrl, setupHelpTopic, type SetupStep } from "@tentac
  * « Besoin d'aide ? » au pied de chaque écran : replié d'office (un
  * `<details>` natif — clavier et lecteurs d'écran sans rien de plus),
  * quelques questions-réponses courtes, puis la page du site qui en dit plus,
- * dans la langue de l'interface.
+ * dans la langue de l'interface — s'il y en a une.
  */
 export const SetupHelp = memo(function SetupHelp({ step, noLibraries }: { step: SetupStep; noLibraries: boolean }) {
   const { t, i18n } = useTranslation("setupWizard");
   const ids = SETUP_HELP[step];
+  // Un écran sans page du site (la clé TMDB) : les questions seules.
+  const topic = setupHelpTopic(step, noLibraries);
   return (
     <details className="group mt-8 rounded-xl border border-line-subtle bg-fill-faint" data-testid="setup-help">
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-4 text-sm font-semibold text-content-secondary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus [&::-webkit-details-marker]:hidden">
@@ -28,15 +30,17 @@ export const SetupHelp = memo(function SetupHelp({ step, noLibraries }: { step: 
             </div>
           ))}
         </dl>
-        <a
-          href={setupDocUrl(setupHelpTopic(step, noLibraries), i18n.language ?? "en")}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary"
-        >
-          {t("helpDoc")}
-          <ExternalLink size={14} aria-hidden="true" />
-        </a>
+        {topic ? (
+          <a
+            href={setupDocUrl(topic, i18n.language ?? "en")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary"
+          >
+            {t("helpDoc")}
+            <ExternalLink size={14} aria-hidden="true" />
+          </a>
+        ) : null}
       </div>
     </details>
   );

@@ -44,7 +44,7 @@ vi.mock("../services/db", () => ({
   }),
 }));
 
-import { hintsConfigKey, registerHintsRoutes } from "./preferences.hints";
+import { dismissAccountHint, hintsConfigKey, registerHintsRoutes } from "./preferences.hints";
 import { DISMISSIBLE_HINTS } from "../help/dismissibleHints";
 import { requireAuth } from "../middleware/auth";
 
@@ -231,5 +231,18 @@ describe("GET/PUT /api/preferences/hints", () => {
     const response = await app.inject({ method: "GET", url: "/api/preferences/hints" });
     expect(response.statusCode).toBe(401);
     await app.close();
+  });
+});
+
+describe("dismissAccountHint (le serveur masque un rappel pour un compte)", () => {
+  it("ajoute le rappel sans toucher aux autres ni à leurs marques ; deux fois, une seule entrée", async () => {
+    await dismissAccountHint("u2", "tmdbKey");
+    expect(config.get(hintsConfigKey("u2"))).toBe('["tmdbKey"]');
+    config.set(hintsConfigKey("u3"), '[{"hint":"serverUpdate","mark":"1.23.0"},"trailerHelp"]');
+    await dismissAccountHint("u3", "tmdbKey");
+    await dismissAccountHint("u3", "tmdbKey");
+    expect(JSON.parse(config.get(hintsConfigKey("u3")) ?? "null")).toEqual(["trailerHelp", { hint: "serverUpdate", mark: "1.23.0" }, "tmdbKey"]);
+    // Masqué par le serveur, il se lit comme un « Ne plus afficher » du compte.
+    expect(spies.sendToUser).not.toHaveBeenCalled();
   });
 });

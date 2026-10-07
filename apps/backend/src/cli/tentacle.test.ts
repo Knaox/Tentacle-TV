@@ -80,7 +80,7 @@ describe("tentacle setup", () => {
     expect(await runCli(["setup", "reset"], {})).toBe(0);
     delete process.env.DATABASE_URL;
     expect(h.deleted).toEqual([
-      ["setup_completed", "admin_jellyfin_id", "admin_username", "setup_jellyfin_selection", "setup_jellyfin_key_created", "setup_jellyfin_joined"],
+      ["setup_completed", "admin_jellyfin_id", "admin_username", "setup_jellyfin_selection", "setup_jellyfin_key_created", "setup_jellyfin_joined", "setup_tmdb_later"],
     ]);
     expect(existsSync(lock)).toBe(false);
     expect(existsSync(token)).toBe(false);

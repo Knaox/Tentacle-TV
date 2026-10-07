@@ -140,7 +140,7 @@ describe("l'étape du serveur (où reprendre)", () => {
 });
 
 describe("les gestes que le serveur accepte", () => {
-  const ALL: SetupAction[] = ["select", "initialize", "connect", "verify", "browse", "createLibraries", "readLibraries", "advice", "segments", "complete"];
+  const ALL: SetupAction[] = ["select", "initialize", "connect", "verify", "browse", "createLibraries", "readLibraries", "advice", "segments", "tmdb", "complete"];
   const allowed = (s: SetupFlowState) => ALL.filter((action) => setupActionAllowed(action, s));
 
   it("base à relier : rien", () => {
@@ -155,14 +155,14 @@ describe("les gestes que le serveur accepte", () => {
   it.each([true, false])("Jellyfin NEUF (pile = %s) : créer le compte, puis les bibliothèques — jamais la connexion ni les réglages", (inStack) => {
     expect(allowed(state({ selection: selection("fresh", inStack) }))).toEqual(["select", "initialize"]);
     expect(allowed(state({ selection: selection("fresh", inStack), linked: true }))).toEqual([
-      "select", "verify", "browse", "createLibraries", "readLibraries", "segments", "complete",
+      "select", "verify", "browse", "createLibraries", "readLibraries", "segments", "tmdb", "complete",
     ]);
   });
 
   it.each([true, false])("Jellyfin DÉJÀ configuré (pile = %s) : jamais créer un compte ni une bibliothèque, même relié", (inStack) => {
     expect(allowed(state({ selection: selection("configured", inStack) }))).toEqual(["select", "connect"]);
     const linked = allowed(state({ selection: selection("configured", inStack), linked: true }));
-    expect(linked).toEqual(["select", "connect", "verify", "readLibraries", "advice", "segments", "complete"]);
+    expect(linked).toEqual(["select", "connect", "verify", "readLibraries", "advice", "segments", "tmdb", "complete"]);
     for (const refused of ["initialize", "browse", "createLibraries"] as const) expect(linked).not.toContain(refused);
   });
 
@@ -208,5 +208,46 @@ describe("Jellyfin déjà configuré mais SANS bibliothèque (constaté à la co
       expect(setupActionAllowed(action, empty({ linked: false }))).toBe(false);
     }
     expect(setupActionAllowed("initialize", empty())).toBe(false);
+  });
+});
+
+describe("la clé TMDB (écran facultatif, dans les deux parcours)", () => {
+  const withTmdb = { needsCode: false, asksDatabase: false, asksTmdb: true } as const;
+
+  it("juste avant le récapitulatif, après les bibliothèques (neuf) ou les réglages conseillés (configuré)", () => {
+    expect(setupFlowSteps({ ...withTmdb, path: "fresh" })).toEqual([
+      "welcome", "jellyfin", "account", "libraries", "tmdb", "recap", "apply", "remote", "done",
+    ]);
+    expect(setupFlowSteps({ ...withTmdb, path: "configured" })).toEqual([
+      "welcome", "jellyfin", "signIn", "recommended", "tmdb", "recap", "apply", "remote", "done",
+    ]);
+    expect(setupFlowSteps({ ...withTmdb, path: "configured", noLibraries: true })).toEqual([
+      "welcome", "jellyfin", "signIn", "libraries", "recommended", "tmdb", "recap", "apply", "remote", "done",
+    ]);
+  });
+
+  it("un écran de plus, annoncé avant même le choix du Jellyfin", () => {
+    const total = setupFlowLength({ ...withTmdb, path: null });
+    expect(total).toBe(setupFlowLength({ needsCode: false, asksDatabase: false, path: null }) + 1);
+    for (const path of ["fresh", "configured"] as const) expect(setupFlowSteps({ ...withTmdb, path })).toHaveLength(total);
+  });
+
+  it("on avance au récapitulatif (clé ou « plus tard ») et on revient à l'écran d'avant", () => {
+    const steps = setupFlowSteps({ ...withTmdb, path: "fresh" });
+    expect(nextStep(steps, "libraries")).toBe("tmdb");
+    expect(nextStep(steps, "tmdb")).toBe("recap");
+    expect(previousStep(steps, "recap")).toBe("tmdb");
+    expect(previousStep(steps, "tmdb")).toBe("libraries");
+  });
+
+  it("un serveur d'avant l'écran (rien de déclaré) : pas d'écran TMDB", () => {
+    for (const path of ["fresh", "configured"] as const) expect(setupFlowSteps({ needsCode: false, asksDatabase: false, path })).not.toContain("tmdb");
+  });
+
+  it("le geste n'est permis qu'une fois relié — jamais avant le compte", () => {
+    expect(setupActionAllowed("tmdb", state())).toBe(false);
+    expect(setupActionAllowed("tmdb", state({ selection: selection("fresh") }))).toBe(false);
+    expect(setupActionAllowed("tmdb", state({ selection: selection("configured"), linked: true }))).toBe(true);
+    expect(setupActionAllowed("tmdb", state({ databasePending: true, selection: selection("fresh"), linked: true }))).toBe(false);
   });
 });

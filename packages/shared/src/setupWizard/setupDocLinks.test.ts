@@ -3,10 +3,14 @@ import { SETUP_DOC_PATHS, setupDocUrl } from "./setupDocLinks";
 import { setupFlowSteps } from "./setupFlowContract";
 
 describe("liens de doc de l'assistant", () => {
-  it("chaque écran des deux parcours a sa page", () => {
-    const shape = { needsCode: true, asksDatabase: true } as const;
+  it("chaque écran des deux parcours a sa page — sauf la clé TMDB, qui n'en a pas encore", () => {
+    const shape = { needsCode: true, asksDatabase: true, asksTmdb: true } as const;
     const steps = new Set([...setupFlowSteps({ ...shape, path: "fresh" }), ...setupFlowSteps({ ...shape, path: "configured", noLibraries: true })]);
-    for (const step of steps) expect(SETUP_DOC_PATHS[step]).toMatch(/^[a-z-]+\/(#[a-z-]+)?$/);
+    expect(steps.has("tmdb")).toBe(true);
+    for (const step of steps) {
+      if (step === "tmdb") expect(SETUP_DOC_PATHS).not.toHaveProperty("tmdb");
+      else expect(SETUP_DOC_PATHS[step]).toMatch(/^[a-z-]+\/(#[a-z-]+)?$/);
+    }
   });
 
   it("la langue de l'interface, l'ancre après la requête", () => {

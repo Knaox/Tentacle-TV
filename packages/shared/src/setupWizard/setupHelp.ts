@@ -16,13 +16,18 @@ export const SETUP_HELP: Readonly<Record<SetupStep, readonly string[]>> = {
   signIn: ["which", "forgot"],
   libraries: ["what", "missing", "windows"],
   recommended: ["all", "restart"],
+  tmdb: ["what", "free", "later"],
   recap: ["what", "clientUrl"],
   apply: ["what", "failed"],
   remote: ["needed", "proxy", "nothing"],
   done: ["missing", "reopen"],
 };
 
-/** La page d'aide d'un écran : celle des bibliothèques d'un Jellyfin configuré vide a son ancre. */
-export function setupHelpTopic(step: SetupStep, noLibraries: boolean): SetupDocTopic {
+/**
+ * La page d'aide d'un écran : celle des bibliothèques d'un Jellyfin configuré
+ * vide a son ancre ; `null` : l'écran n'a pas (encore) de page sur le site.
+ */
+export function setupHelpTopic(step: SetupStep, noLibraries: boolean): SetupDocTopic | null {
+  if (step === "tmdb") return null;
   return step === "libraries" && noLibraries ? "librariesExistingEmpty" : step;
 }

@@ -10,6 +10,7 @@ import flow from "./setupWizardFlow";
 import help from "./setupWizardHelp";
 import finish from "./setupWizardFinish";
 import libraries from "./setupWizardLibraries";
+import tmdb from "./setupWizardTmdb";
 
 export default {
   // ── Le cadre ──────────────────────────────────────────────────────────
@@ -274,6 +275,7 @@ export default {
   ...errors,
   ...flow,
   ...libraries,
+  ...tmdb,
   ...finish,
   ...help,
 };

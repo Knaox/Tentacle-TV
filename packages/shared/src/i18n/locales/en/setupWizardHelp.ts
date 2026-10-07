@@ -49,6 +49,13 @@ export default {
   help_recommended_restart_q: "Will Jellyfin restart?",
   help_recommended_restart_a: "Only for segment detection, once, and never during playback.",
 
+  help_tmdb_what_q: "What is TMDB for?",
+  help_tmdb_what_a: "Jellyfin describes your library; Tentacle also asks The Movie Database about what lies beyond it: similar titles, cast, collections, streaming services.",
+  help_tmdb_free_q: "How do I get a key?",
+  help_tmdb_free_a: "Create a free account on themoviedb.org, then open the API section of its settings: request a key for personal use and copy the v3 API key (32 characters).",
+  help_tmdb_later_q: "What if I add it later?",
+  help_tmdb_later_a: "Tentacle works without it. Add it whenever you like in Administration › Metadata: the dashboard lists it among its recommendations, with no other reminder.",
+
   help_recap_what_q: "What will happen?",
   help_recap_what_a: "Tentacle does what is listed, in order, then signs you in. Nothing else.",
   help_recap_clientUrl_q: "Jellyfin's address for the apps?",

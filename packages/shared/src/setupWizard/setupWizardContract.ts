@@ -70,17 +70,9 @@ export interface SetupHostInfo {
   stack: SetupStack | null;
   /** Le serveur tourne dans un conteneur (Docker, Podman). */
   containerized: boolean;
-  /**
-   * L'identifiant court (12 caractères hexadécimaux) du conteneur, celui
-   * qu'acceptent `docker logs` et `docker exec` quel que soit son nom ;
-   * `null` s'il n'a pas pu être lu.
-   */
+  /** L'identifiant court du conteneur (12 hexadécimaux, pour `docker logs`/`exec`) ; `null` s'il n'a pas pu être lu. */
   containerId: string | null;
-  /**
-   * Ce navigateur devra donner le code d'installation : il n'arrive pas
-   * directement du réseau local, ou l'installation a déjà été réclamée par un
-   * autre (cf. `setupNetworkContract.ts`).
-   */
+  /** Ce navigateur doit donner le code : il n'arrive pas directement du réseau local, ou l'installation est réclamée ailleurs. */
   codeRequired: boolean;
 }
 
@@ -173,6 +165,9 @@ export type SetupErrorCode =
   | "jf_sibling_elsewhere"
   /** Un geste hors du parcours en cours (`setupActionAllowed`) : créer un compte sur un Jellyfin déjà configuré, sauter le choix… */
   | "step_refused"
+  /** La clé TMDB : refusée par TMDB (401), ou TMDB injoignable depuis le serveur (réessayer, ou plus tard). */
+  | "tmdb_key_invalid"
+  | "tmdb_unreachable"
   | "internal";
 
 /** Tout refus de `/api/setup/*` : un code, rien d'autre. */
@@ -199,9 +194,7 @@ export interface SetupDatabaseRequest {
   password: string;
 }
 
-/** La sonde et la découverte de Jellyfin : `setupDiscoveryContract.ts`. */
-
-/** Le choix du Jellyfin et la revérification du compte : `setupFlowContract.ts`. */
+/** Sonde et découverte de Jellyfin : `setupDiscoveryContract.ts` ; choix, revérification et clé TMDB : `setupFlowContract.ts`. */
 
 /** La langue et le pays des métadonnées (et de l'interface de Jellyfin). */
 export interface SetupLocale {

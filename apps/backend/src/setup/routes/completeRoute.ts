@@ -8,6 +8,7 @@ import { signOut } from "../jellyfin/accounts";
 import { clientUrlFor } from "../jellyfin/clientUrlFor";
 import { jellyfinRequest } from "../jellyfin/guardedFetch";
 import { forgetSelection, requireStep } from "../flow/setupFlow";
+import { settleTmdbChoice } from "../flow/tmdbChoice";
 import { SetupError } from "../setupErrors";
 import { requireSetupSession } from "../setupGuard";
 import { sealSetup } from "../setupLock";
@@ -96,6 +97,8 @@ export const setupCompleteRoute: FastifyPluginAsync = async (app) => {
       await setConfigValue("admin_jellyfin_id", user.Id);
       await setConfigValue("admin_username", user.Name);
       await setConfigValue("setup_completed", "true");
+      // « Configurer plus tard » la clé TMDB : l'avis ne relance pas cet administrateur.
+      await settleTmdbChoice(user.Id, request.log);
       await forgetSelection();
       setAppState("running");
       sealSetup();

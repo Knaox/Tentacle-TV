@@ -18,8 +18,12 @@ describe("« Besoin d'aide ? » de l'assistant", () => {
     }
   });
 
-  it("chaque écran renvoie vers sa page du site ; les bibliothèques d'un Jellyfin configuré vide, vers leur ancre", () => {
-    for (const step of Object.keys(SETUP_HELP) as Array<keyof typeof SETUP_HELP>) expect(SETUP_DOC_PATHS[setupHelpTopic(step, false)]).toBeTruthy();
+  it("chaque écran renvoie vers sa page du site ; les bibliothèques d'un Jellyfin configuré vide, vers leur ancre ; la clé TMDB, nulle part", () => {
+    for (const step of Object.keys(SETUP_HELP) as Array<keyof typeof SETUP_HELP>) {
+      const topic = setupHelpTopic(step, false);
+      if (step === "tmdb") expect(topic).toBeNull();
+      else expect(topic && SETUP_DOC_PATHS[topic]).toBeTruthy();
+    }
     expect(setupHelpTopic("libraries", true)).toBe("librariesExistingEmpty");
     expect(setupHelpTopic("remote", true)).toBe("remote");
   });

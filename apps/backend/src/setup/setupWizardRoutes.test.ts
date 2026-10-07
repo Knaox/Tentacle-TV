@@ -163,7 +163,7 @@ describe("assistant d'installation, de bout en bout", () => {
   });
 
   it("sans Jellyfin choisi : ni compte, ni connexion, ni bibliothèque, ni fin — le choix d'abord", async () => {
-    expect((await call("GET", "/context", { session })).json().flow).toEqual({ databasePending: false, selection: null, linked: false, noLibraries: false });
+    expect((await call("GET", "/context", { session })).json().flow).toEqual({ databasePending: false, selection: null, linked: false, noLibraries: false, tmdb: { configured: false, source: null, last4: null, later: false } });
     for (const [url, body] of [
       ["/jellyfin/initialize", { url: jf.url, username: "Damien", password: ADMIN_PASSWORD, uiCulture: "fr-FR", metadataCountry: "CH", metadataLanguage: "fr" }],
       ["/jellyfin/connect", { url: jf.url, username: "Damien", password: ADMIN_PASSWORD }],

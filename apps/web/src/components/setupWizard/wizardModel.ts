@@ -33,9 +33,18 @@ export interface WizardShapeInput {
   context: SetupContext | null;
 }
 
-/** La base a son écran quand l'environnement ne la fournit pas — reliée ou non : il fait partie du parcours. */
+/**
+ * La base a son écran quand l'environnement ne la fournit pas — reliée ou non : il fait partie du parcours.
+ * La clé TMDB, quand le serveur la déclare (un serveur d'avant cet écran ne le servirait pas).
+ */
 export function flowShape({ needsCode, context }: WizardShapeInput): SetupFlowShape {
-  return { needsCode, asksDatabase: !!context && !context.database.fromEnv, path: pathOf(context), noLibraries: context?.flow.noLibraries ?? false };
+  return {
+    needsCode,
+    asksDatabase: !!context && !context.database.fromEnv,
+    path: pathOf(context),
+    noLibraries: context?.flow.noLibraries ?? false,
+    asksTmdb: context?.flow.tmdb !== undefined,
+  };
 }
 
 export function wizardSteps(input: WizardShapeInput): WizardStep[] {

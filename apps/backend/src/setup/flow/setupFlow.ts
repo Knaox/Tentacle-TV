@@ -3,6 +3,7 @@ import { deleteConfigValue, getConfigValue, setConfigValue } from "../../service
 import { SetupError } from "../setupErrors";
 import { setupActionAllowed, type SetupAction, type SetupFlowState, type SetupPath, type SetupSelection } from "../setupFlowContract";
 import { SETUP_KEYS, claimedAdminId, storedJellyfin } from "../setupStore";
+import { tmdbSetupState } from "./tmdbChoice";
 
 /**
  * Le parcours tenu par le SERVEUR : le Jellyfin choisi (`SETUP_KEYS.selection`)
@@ -61,12 +62,14 @@ export function isLinked(selection: SetupSelection | null): boolean {
 }
 
 export function flowState(): SetupFlowState {
-  if (!hasPrisma()) return { databasePending: true, selection: null, linked: false, noLibraries: false };
+  // La clé TMDB est toujours déclarée : l'écran compte dans la longueur du parcours dès l'accueil.
+  const tmdb = tmdbSetupState();
+  if (!hasPrisma()) return { databasePending: true, selection: null, linked: false, noLibraries: false, tmdb };
   const selection = readSelection();
   const linked = isLinked(selection);
   // Seulement un Jellyfin DÉJÀ configuré, relié : le neuf a toujours son écran des bibliothèques.
   const noLibraries = linked && selection?.path === "configured" && selection.noLibraries === true;
-  return { databasePending: false, selection, linked, noLibraries };
+  return { databasePending: false, selection, linked, noLibraries, tmdb };
 }
 
 /**
