@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
-import { createStagingPacer, initialRelease, nextRelease, renewedItems, type StagedRow } from "@tentacle-tv/tv-core";
+import { createStagingPacer, initialRelease, nextRelease, renewedItems, ROW_STAGING, type StagedRow } from "@tentacle-tv/tv-core";
 import { RENDER } from "../render/renderProfile";
 
 /**
@@ -116,50 +116,49 @@ export function useStagedRow(rank: number | undefined, total: number): { shown: 
 /**
  * Une rangée dont la liste change ENTIÈRE à chaque réponse (les résultats
  * d'une frappe), renouvelée par échelons (tv-core `renewedItems`) : à chaque
- * liste neuve, ce que l'échelonnement monte d'emblée à sa place (`rank`)
- * (au plus `head` cartes : ce que la piste montre) prend tout de suite le
- * nouveau titre, le reste une part par image — et
- * garde en attendant la carte qu'il montrait (aucune vue démontée). `demand`
- * (stable) : la rangée a le focus, la suite passe devant. Hors d'une page
- * échelonnée (Apple TV) : la liste telle quelle.
+ * liste neuve, ce que l'échelonnement monte d'emblée à sa place (`rank`, au
+ * plus `head` cartes : ce que la piste montre) prend tout de suite le nouveau
+ * titre, la tête des rangées suivantes une part par image ; la QUEUE (au-delà
+ * de la tête, hors de l'écran) attend que la rangée soit parcourue (`demand`,
+ * stable : le focus y entre) — une frappe ne pose que ce qui peut se voir.
+ * En attendant, chaque place garde la carte qu'elle montrait (aucune vue
+ * démontée). Hors d'une page échelonnée (Apple TV) : la liste telle quelle.
  */
 export function useRenewedRow<T>(rank: number | undefined, items: readonly T[], head?: number): { shown: readonly T[]; demand: () => void } {
   const stager = useContext(RowStageContext);
   const staged = stager !== null && rank !== undefined;
   const [, redraw] = useReducer((n: number) => n + 1, 0);
-  // La liste en cours de renouvellement et sa part libérée : remises à zéro à
-  // chaque liste neuve (identité — les listes inchangées gardent la leur).
-  const generation = useRef<{ items: readonly T[] | null; released: number }>({ items: null, released: 0 });
+  // La liste en cours de renouvellement, sa part libérée et sa demande :
+  // remises à zéro à chaque liste neuve (identité — une liste inchangée garde
+  // la sienne).
+  const generation = useRef<{ items: readonly T[] | null; released: number; demanded: boolean }>({ items: null, released: 0, demanded: false });
   if (generation.current.items !== items) {
-    // `head` : ce que la piste montre (`renewalHead`), si la rangée est de celles montées d'emblée.
     const initial = staged ? initialRelease(rank, items.length) : items.length;
-    generation.current = { items, released: staged && head !== undefined && initial > 0 ? Math.min(initial, head) : initial };
+    generation.current = { items, released: staged && head !== undefined && initial > 0 ? Math.min(initial, head) : initial, demanded: false };
   }
+  const current = generation.current;
+  // Ce que l'échelonnement pose : la tête, puis tout une fois la rangée parcourue.
+  const limit = current.demanded ? items.length : Math.min(items.length, head ?? ROW_STAGING.headCards);
   const previous = useRef<readonly T[]>([]);
-  const shown = staged ? renewedItems(items, previous.current, generation.current.released) : items;
+  const shown = staged ? renewedItems(items, previous.current, current.released) : items;
   useLayoutEffect(() => {
     previous.current = shown;
   });
-  const handle = useRef<{ demand(): void } | null>(null);
-  const demanded = useRef(false);
   useLayoutEffect(() => {
-    const current = generation.current;
-    if (!stager || rank === undefined || current.released >= items.length) return undefined;
-    const registration = stager.register(rank, items.length, current.released, (released) => {
+    if (!stager || rank === undefined || current.released >= limit) return undefined;
+    const registration = stager.register(rank, limit, current.released, (released) => {
       if (generation.current !== current) return;
       current.released = released;
       redraw();
     });
-    handle.current = registration;
-    if (demanded.current) registration.demand();
-    return () => {
-      handle.current = null;
-      registration.leave();
-    };
-  }, [stager, rank, items]);
+    if (current.demanded) registration.demand();
+    return () => registration.leave();
+  }, [stager, rank, current, limit]);
   const demand = useCallback(() => {
-    demanded.current = true;
-    handle.current?.demand();
+    const now = generation.current;
+    if (now.demanded) return;
+    now.demanded = true;
+    redraw();
   }, []);
   return { shown, demand };
 }
