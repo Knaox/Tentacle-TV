@@ -624,9 +624,14 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
   Les dossiers suivent la machine de JELLYFIN (`BrowseResult.style` : `posix` ou `windows`, lu sur ses lecteurs) ;
   dans la pile, son `/media` est dit tel que Jellyfin le voit, « dossier `MEDIA_PATH` » pour l'hôte —
   `TENTACLE_MEDIA_HOST_PATH` n'est plus posé, seul un compose d'avant le donne encore (affichage enrichi).
+  **Clé TMDB** (écran `tmdb`, FACULTATIF, dans les deux parcours juste avant le récapitulatif, seulement si le serveur
+  déclare `flow.tmdb`) : `POST /api/setup/tmdb` (geste `tmdb`, relié) valide la clé par `checkTmdbKey` comme l'admin ;
+  « Configurer plus tard » (`setup_tmdb_later`) masque à `/complete` l'avis `tmdbKey` du COMPTE administrateur
+  (`dismissAccountHint`) s'il n'y a toujours aucune clé — la recommandation `adminTmdbKey` du tableau de bord reste.
 - **Aide de l'assistant** : une page du site par étape, adresses STABLES dans
   `packages/shared/src/setupWizard/setupDocLinks.ts` (le site les tient ; jamais renommées), et « Besoin
-  d'aide ? » repliable au pied de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`).
+  d'aide ? » repliable au pied de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`). Un écran sans page
+  du site (`SetupStepWithoutDoc` : `tmdb`) n'a que ses questions — jamais une adresse inventée.
 - **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, état pur
   `wizardState.ts` (on ne va, n'avance, ne revient que DANS le parcours), chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
   le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
