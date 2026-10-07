@@ -12,7 +12,10 @@ const GH = (repo, ref) => `https://github.com/${repo}/archive/refs/tags/${ref}.t
 const FFMPEG = (v) => `https://ffmpeg.org/releases/ffmpeg-${v}.tar.xz`;
 const PLACEBO = (v) => GH('haasn/libplacebo', `v${v}`);
 const COMMIT = (repo, sha) => `https://github.com/${repo}/archive/${sha}.tar.gz`;
-const APORTS = (pkg) => `https://gitlab.alpinelinux.org/alpine/aports/-/archive/3.24-stable/aports-3.24-stable.tar.gz?path=main/${pkg}`;
+// Le GitLab d'Alpine répond 418 aux runners de GitHub (filtre anti-robots,
+// 2026-10-07) : on prend le miroir GitHub officiel d'aports, l'arbre entier
+// (~14 Mo), où la recette se lit sous main/<paquet>.
+const APORTS = (pkg) => `https://github.com/alpinelinux/aports/archive/refs/heads/3.24-stable.tar.gz#main/${pkg}`;
 
 const C = (name, license, url) => ({ name, license, url });
 
@@ -69,7 +72,7 @@ export const SOURCES = {
     C('FFTW 3.3.10 (lié à fpcalc)', 'GPL-2.0-or-later', 'https://www.fftw.org/fftw-3.3.10.tar.gz'),
     C('BusyBox 1.37.0', 'GPL-2.0-only', 'https://busybox.net/downloads/busybox-1.37.0.tar.bz2'),
     C('BusyBox — recette Alpine 3.24', 'GPL-2.0-only', APORTS('busybox')),
-    C('apk-tools 3.0.8', 'GPL-2.0-only', 'https://gitlab.alpinelinux.org/alpine/apk-tools/-/archive/v3.0.8/apk-tools-v3.0.8.tar.gz'),
+    C('apk-tools 3.0.8', 'GPL-2.0-only', GH('alpinelinux/apk-tools', 'v3.0.8')),
     C('alpine-baselayout — Alpine 3.24', 'GPL-2.0-only', APORTS('alpine-baselayout')),
     C('pax-utils (scanelf) — Alpine 3.24', 'GPL-2.0-only', APORTS('pax-utils')),
     C('GNU Readline 8.3', 'GPL-3.0-or-later', 'https://ftp.gnu.org/gnu/readline/readline-8.3.tar.gz'),
