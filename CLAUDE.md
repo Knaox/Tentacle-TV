@@ -644,8 +644,10 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
 - **Accès à distance** (`apps/backend/src/remoteAccess/`, section admin `/admin/remote-access` sous
   `requirePersonalAdmin` — jamais une TV jumelée) : « Accès depuis l'extérieur » (`remote_access_enabled`) décide
   de ce qui est PUBLIÉ (`remoteAccess/exposure.ts`) — coupé par défaut, rien de public ne sort (`addresses.public`,
-  l'adresse publique de la lecture directe) ; `/api/config` → `publicUrl` donne alors l'adresse PRIVÉE (le mobile
-  n'offre le jumelage TV qu'avec elle : couper ne le casse jamais) ; un serveur qui publiait déjà est
+  l'adresse publique de la lecture directe) ; `/api/config` → `publicUrl` donne alors l'adresse PRIVÉE, sinon celle
+  par laquelle un client du réseau local joint le serveur (`pairingAddress.ts`) ; les clients se rabattent sur
+  l'adresse par laquelle ILS lui parlent (`pairingServerUrl`, shared) — une TV se jumelle en LAN sans aucune URL
+  publique ; un serveur qui publiait déjà est
   allumé une fois (`exposureDefault.ts`). La lecture directe n'exige que l'adresse PRIVÉE (l'installation l'allume
   à la maison) ; la publique est facultative. Adresse publique détectée (`/remote-access/public-ip` : dernier
   test, sinon Cloudflare `cdn-cgi/trace` en IPv4), les DEUX ports avec leurs vrais numéros ; capacité
