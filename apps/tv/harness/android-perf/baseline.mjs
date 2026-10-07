@@ -19,7 +19,7 @@ import os from "node:os";
 import path from "node:path";
 import { CACHE, keysDex, startBackend } from "./lib/benchSetup.mjs";
 import { PACKAGE, createDevice, sleep } from "./lib/device.mjs";
-import { resumedPackage } from "./lib/keyGuard.mjs";
+import { ForegroundError, resumedPackage } from "./lib/keyGuard.mjs";
 import { createHostPolicy } from "./lib/host.mjs";
 import { startImageProxy } from "./lib/imageProxy.mjs";
 import { createPlayer } from "./lib/play.mjs";
@@ -177,14 +177,23 @@ async function effects() {
       for (const variant of round % 2 === 0 ? variants : [...variants].reverse()) {
         device.setFx(variant === "aucun" ? [] : variant.split("+"));
         for (const scenario of scenarios) {
-          played[variant][scenario.id].push(await playWithExtras(device, player, proxy, scenario));
-          process.stdout.write(".");
+          try {
+            played[variant][scenario.id].push(await playWithExtras(device, player, proxy, scenario));
+            process.stdout.write(".");
+          } catch (error) {
+            // La garde des touches ne se rattrape jamais ; un autre échec
+            // (adb réseau tombé, accueil pas prêt) perd ce tour-là seulement.
+            if (error instanceof ForegroundError) throw error;
+            console.log(`\n${variant} ${scenario.id} : ${error.message} — tour perdu`);
+          }
         }
         console.log(` passe ${round + 1} ${variant} (charge ${loadNow()})`);
+        // Enregistré à chaque variante : une passe coupée garde ses tours.
+        save(`${tag}-tours`, { device: device.describe(), kind: "effects-raw", played: Object.fromEntries(Object.entries(played).map(([v, byId]) => [v, Object.fromEntries(Object.entries(byId).map(([id, rs]) => [id, rs.map(({ records: _records, ...r }) => r)]))])) });
       }
     }
     device.setFx([]);
-    const results = Object.fromEntries(variants.map((v) => [v, scenarios.map((s) => {
+    const results = Object.fromEntries(variants.map((v) => [v, scenarios.filter((s) => played[v][s.id].length > 0).map((s) => {
       const rs = played[v][s.id];
       return { ...summarizeScenario(s, rs), ...summarizeExtras(rs), rawRounds: rs.map(({ records: _records, ...r }) => r) };
     })]));
@@ -198,6 +207,7 @@ function printEffects(results) {
   for (const [variant, list] of Object.entries(results)) {
     for (const s of list) {
       const b = base.find((x) => x.id === s.id);
+      if (!b) continue;
       const pct = (n, d) => ((100 * n) / Math.max(1, d)).toFixed(0);
       console.log(`${variant.padEnd(14)} ${s.id.padEnd(14)} ratées ${pct(s.janky, s.frames)} % (réf ${pct(b.janky, b.frames)}) · p95 ${s.worstP95.toFixed(0)} (réf ${b.worstP95.toFixed(0)}) · rendu ${Math.round(s.cpu.render ?? 0)} (réf ${Math.round(b.cpu.render ?? 0)}) · UI ${Math.round(s.cpu.ui ?? 0)} (réf ${Math.round(b.cpu.ui ?? 0)}) · JS ${Math.round(s.cpu.js ?? 0)} · cmd GPU ${Math.round(s.phases.issue)} (réf ${Math.round(b.phases.issue)}) · graphique ${(s.memory.graphics / 1024).toFixed(0)} Mo`);
     }
