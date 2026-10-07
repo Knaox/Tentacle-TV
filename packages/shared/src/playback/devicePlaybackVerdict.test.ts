@@ -93,6 +93,7 @@ describe("matrice de la fiche — BCM7271 (box net+, simulée)", () => {
       subtitlePath: "burnIn",
       notice: "av1Converted",
       maxHeight: 1080,
+      maxBitrate: null,
     });
   });
 });
@@ -217,7 +218,7 @@ describe("verdict — les autres chemins", () => {
 
   it("sans image (musique) ni son : lecture directe, rien à dire", () => {
     expect(devicePlaybackVerdict({ profile: BCM7271_PROFILE })).toEqual({
-      method: "DirectPlay", reasons: [], audioPath: "none", subtitlePath: "none", notice: null, maxHeight: null,
+      method: "DirectPlay", reasons: [], audioPath: "none", subtitlePath: "none", notice: null, maxHeight: null, maxBitrate: null,
     });
   });
 });

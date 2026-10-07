@@ -94,8 +94,10 @@ export function segmentAudioCodecs(engine: EngineCapabilities): string[] {
   const codecs = engine.segmentContainer === "mp4"
     ? engine.audioCodecs.filter((codec) => !NO_COPY_IN_FMP4.has(codec))
     : [...engine.audioCodecs];
-  // L'AAC en tête : c'est le codec de SORTIE quand le son est converti.
-  return ["aac", ...codecs.filter((codec) => codec !== "aac")];
+  // L'AAC en tête : c'est le codec de SORTIE quand le son est converti (sauf
+  // un moteur qui en déclare un autre, `audioOutput` — le mode Lite).
+  const output = engine.audioOutput && codecs.includes(engine.audioOutput) ? engine.audioOutput : "aac";
+  return [output, ...codecs.filter((codec) => codec !== output)];
 }
 
 /**
@@ -127,8 +129,9 @@ export const CODEC_PARAM_MAX = 40;
  */
 export function audioCodecParam(engine: EngineCapabilities, sourceCodec?: string | null): string {
   const all = segmentAudioCodecs(engine);
+  const output = all[0];
   const source = sourceCodec?.toLowerCase();
-  const ordered = source && all.includes(source) ? ["aac", source, ...all.filter((c) => c !== "aac" && c !== source)] : all;
+  const ordered = source && all.includes(source) ? [output, source, ...all.filter((c) => c !== output && c !== source)] : all;
   const kept: string[] = [];
   for (const codec of [...new Set(ordered)]) {
     if ([...kept, codec].join(",").length > CODEC_PARAM_MAX) continue;

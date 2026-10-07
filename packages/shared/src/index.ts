@@ -218,6 +218,7 @@ export * from "./playback/simulatedDeviceProfiles";
 export * from "./playback/deviceEngines";
 export * from "./playback/deviceVideoSupport";
 export * from "./playback/devicePlaybackVerdict";
+export * from "./playback/litePlayback";
 export * from "./playback/playbackSettings";
 export * from "./playback/playbackPresets";
 export * from "./playback/segmentWindow";
