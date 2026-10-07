@@ -21,6 +21,7 @@
 import type { SearchItemKind } from "../../search/searchTypes";
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import { jellyfinAuthHeaders } from "../jellyfinAuth";
+import { adminUserParam } from "../jellyfinLibrary";
 
 export interface CatalogPersonRef {
   id: string;
@@ -180,11 +181,14 @@ export async function fetchCatalogItems(since: Date | null = null): Promise<Cata
   if (!url || !apiKey) return null;
   const items: CatalogItem[] = [];
   const sinceParam = since ? `&MinDateLastSaved=${encodeURIComponent(since.toISOString())}` : "";
+  // Au nom de l'administrateur : sans lui, un titre ajouté depuis le démarrage
+  // de Jellyfin restait introuvable (cf. `adminUserParam`).
+  const userParam = await adminUserParam();
   for (let page = 0; page < PAGES_MAX; page++) {
     const res = await fetch(
       `${url}/Items?Recursive=true&IncludeItemTypes=Movie,Series,BoxSet&Fields=${FIELDS}` +
         `&EnableImageTypes=Primary,Backdrop,Logo,Thumb&ImageTypeLimit=1&EnableUserData=false` +
-        `${sinceParam}&StartIndex=${page * PAGE}&Limit=${PAGE}`,
+        `${sinceParam}${userParam}&StartIndex=${page * PAGE}&Limit=${PAGE}`,
       { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(TIMEOUT_MS) },
     );
     // Une page refusée invalide TOUT le relevé : un index amputé ferait

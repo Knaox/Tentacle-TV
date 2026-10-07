@@ -108,6 +108,18 @@ export async function getAdminUserId(): Promise<string | null> {
 }
 
 /**
+ * `&userId=<admin>` pour une requête `/Items?Recursive=true` faite avec la clé
+ * d'API — vide si l'administrateur n'est pas connu (la requête part comme
+ * avant). Mesuré sur 10.11 (banc du 2026-10-07) : sans lui, tout titre ajouté
+ * depuis le démarrage de Jellyfin manque à la liste, et `MinDateLastSaved` est
+ * ignoré. Avec lui, la liste est complète et le filtre tient.
+ */
+export async function adminUserParam(): Promise<string> {
+  const userId = await getAdminUserId();
+  return userId ? `&userId=${encodeURIComponent(userId)}` : "";
+}
+
+/**
  * TOUS les IDs d'items (Movie/Series/Episode) — paginé, champs minimaux. Sert au
  * NOMMAGE fiable des ajouts par diff (robuste vs date fichier ET WS muet) : le tri
  * par date ne remonte pas un item antidaté, seul l'ensemble des IDs le révèle.

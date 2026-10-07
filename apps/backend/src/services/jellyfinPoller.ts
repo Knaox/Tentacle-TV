@@ -2,6 +2,7 @@ import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
 import { sessionsLive } from "./jellyfinWs";
 import { jellyfinAuthHeaders } from "./jellyfinAuth";
+import { adminUserParam } from "./jellyfinLibrary";
 
 /**
  * Le SECOURS : toutes les 5 min. Le direct passe par les sockets Jellyfin des
@@ -60,7 +61,8 @@ async function poll(): Promise<void> {
     // Note: /Users/{userId}/Items/Latest requiert parentId sur Jellyfin 10.10+
     // On utilise /Items avec tri par DateCreated à la place
     const latest = await jfFetch<{ Items: Array<{ Id: string }> }>(
-      "/Items?SortBy=DateCreated&SortOrder=Descending&Limit=5&Recursive=true&IncludeItemTypes=Movie,Series,Episode",
+      // Au nom de l'administrateur : sans lui, les ajouts récents manquent (cf. `adminUserParam`).
+      `/Items?SortBy=DateCreated&SortOrder=Descending&Limit=5&Recursive=true&IncludeItemTypes=Movie,Series,Episode${await adminUserParam()}`,
     );
     if (latest?.Items) {
       const ids = latest.Items.map((i) => i.Id).join(",");
