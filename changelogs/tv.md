@@ -16,7 +16,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Jellyfin redémarre ?** La lecture continue (serveur 1.24.0)
 - **Qualité réduite plus fine** (HEVC)
 - Retour ferme d'abord la fenêtre du lecteur
-- Recherche sans à-coup
+- Recherche et filtres sans à-coup
 - Plus de plantage au jumelage
 
 ### EN
@@ -28,7 +28,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Jellyfin restarting?** Playback continues (server 1.24.0)
 - **Sharper reduced quality** (HEVC)
 - Back closes the player's open panel first
-- Search no longer stutters as you type
+- Search and filters respond instantly
 - No more crash when pairing
 
 ## [atv-1.10.1]
