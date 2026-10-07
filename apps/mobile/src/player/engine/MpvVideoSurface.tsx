@@ -11,8 +11,7 @@ import {
   type MpvSource,
   type MpvTrack,
 } from "../../../modules/mpv-player";
-import { displayFrameRate } from "./displayFrameRate";
-import { useEngineSettings } from "./engineSettings";
+import { useFluidRefreshRate } from "./useDisplayModeMatch";
 import { engineAudioTracks, mpvAudioId, mpvSubtitleId } from "./trackMapping";
 import type { EngineSurfaceProps } from "./types";
 
@@ -33,13 +32,10 @@ export function MpvVideoSurface({
   const viewRef = useRef<MpvPlayerViewHandle>(null);
   const [tracks, setTracks] = useState<readonly MpvTrack[]>([]);
   const [loaded, setLoaded] = useState(false);
+  /** Réglage « Adapter la fréquence » : la surface demande la même fréquence que la fenêtre. */
   /** La cadence lue par mpv, repli quand Jellyfin ne la connaît pas. */
   const [loadedFps, setLoadedFps] = useState<number | undefined>(undefined);
-  const { matchFrameRate } = useEngineSettings();
-  const frameRate = useMemo(
-    () => displayFrameRate({ platform: Platform.OS === "android" ? "android" : "ios", enabled: matchFrameRate, streams, loadedFps }),
-    [matchFrameRate, streams, loadedFps],
-  );
+  const frameRate = useFluidRefreshRate(streams, loadedFps);
   /** Externes déjà demandés à mpv, pour ne pas les ajouter deux fois. */
   const requestedRef = useRef<Set<number>>(new Set());
 

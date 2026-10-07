@@ -1,70 +1,55 @@
 import { describe, expect, it } from "vitest";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
-import { displayFrameRate, windowDisplayMode } from "./displayFrameRate";
+import { fluidDisplayMode } from "./displayFrameRate";
 
-const film = [{ Type: "Video", Index: 0, RealFrameRate: 23.976 } as JfStream];
-const unknown = [{ Type: "Video", Index: 0 } as JfStream];
+// Les modes relevés sur l'OPPO Find X3 Pro (dumpsys display, 07/10).
+const oppo = [
+  { id: 1, width: 1080, height: 2412, refreshRate: 120 },
+  { id: 2, width: 1080, height: 2412, refreshRate: 60 },
+  { id: 3, width: 1080, height: 2412, refreshRate: 72 },
+  { id: 4, width: 1080, height: 2412, refreshRate: 90 },
+  { id: 5, width: 1440, height: 3216, refreshRate: 60 },
+  { id: 8, width: 1440, height: 3216, refreshRate: 120 },
+];
 
-describe("displayFrameRate", () => {
-  it("Android, réglage allumé : la cadence exacte de Jellyfin", () => {
-    expect(displayFrameRate({ platform: "android", enabled: true, streams: film, loadedFps: 24 })).toBe(23.976);
+describe("fluidDisplayMode", () => {
+  it("réglage activé : la fréquence la plus haute, dans la définition courante", () => {
+    expect(fluidDisplayMode({ platform: "android", enabled: true, screen: { currentModeId: 2, modes: oppo } })?.id).toBe(1);
+    expect(fluidDisplayMode({ platform: "android", enabled: true, screen: { currentModeId: 1, modes: oppo } })?.id).toBe(1);
+    expect(fluidDisplayMode({ platform: "android", enabled: true, screen: { currentModeId: 5, modes: oppo } })?.id).toBe(8);
   });
 
-  it("se replie sur la cadence lue par mpv", () => {
-    expect(displayFrameRate({ platform: "android", enabled: true, streams: unknown, loadedFps: 25 })).toBe(25);
+  it("le meilleur multiple : 24 i/s sur 60/72/90/120 → 120 (5 × 24), jamais 72 ni 90", () => {
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 2, modes: oppo } })?.id).toBe(1);
+    const cinema = [{ id: 1, width: 1080, height: 2400, refreshRate: 24 }, { id: 2, width: 1080, height: 2400, refreshRate: 60 }];
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 2, modes: cinema } })?.id).toBe(1);
+    const max72 = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 72 }];
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 24, screen: { currentModeId: 1, modes: max72 } })?.id).toBe(2);
   });
 
-  it("ne demande rien sans cadence plausible", () => {
-    expect(displayFrameRate({ platform: "android", enabled: true, streams: unknown })).toBe(0);
-    expect(displayFrameRate({ platform: "android", enabled: true, streams: unknown, loadedFps: 1000 })).toBe(0);
+  it("30 i/s : 90 sur un écran 60/90, 60 sur un écran 30/60", () => {
+    const max90 = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 90 }];
+    const max60 = [{ id: 1, width: 1080, height: 2400, refreshRate: 30 }, { id: 2, width: 1080, height: 2400, refreshRate: 60 }];
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 29.97, screen: { currentModeId: 1, modes: max90 } })?.id).toBe(2);
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 30, screen: { currentModeId: 1, modes: max60 } })?.id).toBe(2);
   });
 
-  it("ne demande rien réglage coupé", () => {
-    expect(displayFrameRate({ platform: "android", enabled: false, streams: film, loadedFps: 24 })).toBe(0);
+  it("aucun multiple exact : le multiple le plus proche (le moindre écart), pas le plus haut", () => {
+    const max90 = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 90 }];
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 1, modes: max90 } })?.id).toBe(2);
+    // 25 i/s : 72 et 120 Hz se valent (1,7 ms) → le plus haut des deux ; 60 et 90 écartés.
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 25, screen: { currentModeId: 2, modes: oppo } })?.id).toBe(1);
+    const odd = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 75 }, { id: 3, width: 1080, height: 2400, refreshRate: 90 }];
+    // 75 Hz = 3,125 × 24 (1,7 ms) bat 90 Hz = 3,75 × 24 (2,8 ms).
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 24, screen: { currentModeId: 1, modes: odd } })?.id).toBe(2);
   });
 
-  it("ne change rien sur iOS", () => {
-    expect(displayFrameRate({ platform: "ios", enabled: true, streams: film, loadedFps: 24 })).toBe(0);
-  });
-});
-
-describe("windowDisplayMode", () => {
-  const modes = [
-    { id: 1, width: 1080, height: 2400, refreshRate: 60 },
-    { id: 2, width: 1080, height: 2400, refreshRate: 90 },
-    { id: 3, width: 1080, height: 2400, refreshRate: 120 },
-  ];
-
-  it("24 i/s sur un écran à 60 Hz : la fenêtre demande 120 Hz", () => {
-    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "always" })).toBe(3);
+  it("réglage désactivé : rien n'est demandé, le téléphone décide", () => {
+    expect(fluidDisplayMode({ platform: "android", enabled: false, screen: { currentModeId: 2, modes: oppo } })).toBeNull();
   });
 
-  it("déjà au bon mode : le mode est épinglé quand même (le système redescendrait pendant la vidéo)", () => {
-    expect(windowDisplayMode(23.976, { currentModeId: 3, modes })).toBe(3);
-    expect(windowDisplayMode(30, { currentModeId: 1, modes })).toBe(1);
-  });
-
-  it("la préférence système ne bloque pas une demande explicite de la fenêtre", () => {
-    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "never" })).toBe(3);
-    expect(windowDisplayMode(23.976, { currentModeId: 1, modes, matchPreference: "seamless", seamlessRefreshRates: [] })).toBe(3);
-  });
-
-  it("écran 60/120 Hz en deux définitions (Find X3 Pro) : 120 Hz dans la définition courante", () => {
-    const oppo = [
-      { id: 1, width: 1440, height: 3216, refreshRate: 120 },
-      { id: 2, width: 1440, height: 3216, refreshRate: 60 },
-      { id: 3, width: 1080, height: 2412, refreshRate: 120 },
-      { id: 4, width: 1080, height: 2412, refreshRate: 60 },
-    ];
-    expect(windowDisplayMode(23.976, { currentModeId: 4, modes: oppo })).toBe(3);
-    expect(windowDisplayMode(24, { currentModeId: 1, modes: oppo })).toBe(1);
-    expect(windowDisplayMode(25, { currentModeId: 4, modes: oppo })).toBe(0);
-  });
-
-  it("rien sans cadence, sans écran, ni mode qui convienne", () => {
-    expect(windowDisplayMode(0, { currentModeId: 1, modes })).toBe(0);
-    expect(windowDisplayMode(24, null)).toBe(0);
-    expect(windowDisplayMode(25, { currentModeId: 1, modes })).toBe(0);
-    expect(windowDisplayMode(24, { modes })).toBe(0);
+  it("iOS, ou écran inconnu : rien", () => {
+    expect(fluidDisplayMode({ platform: "ios", enabled: true, screen: { currentModeId: 2, modes: oppo } })).toBeNull();
+    expect(fluidDisplayMode({ platform: "android", enabled: true, screen: null })).toBeNull();
+    expect(fluidDisplayMode({ platform: "android", enabled: true, screen: { modes: oppo } })).toBeNull();
   });
 });
