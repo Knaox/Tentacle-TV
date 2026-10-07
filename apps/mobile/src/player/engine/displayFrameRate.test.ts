@@ -57,6 +57,11 @@ describe("windowDisplayMode", () => {
       { id: 4, width: 1080, height: 2412, refreshRate: 60 },
     ];
     expect(windowDisplayMode(23.976, { currentModeId: 4, modes: oppo })).toBe(3);
+    // Déjà à 120 Hz (5 × 24) : on garde le 120, jamais envoyé à 72.
+    const oppo4 = [...oppo, { id: 9, width: 1080, height: 2412, refreshRate: 72 }];
+    expect(windowDisplayMode(23.976, { currentModeId: 3, modes: oppo4 })).toBe(3);
+    // À 60 Hz (pas un multiple de 24) : le plus petit multiple, 72.
+    expect(windowDisplayMode(23.976, { currentModeId: 4, modes: oppo4 })).toBe(9);
     expect(windowDisplayMode(24, { currentModeId: 1, modes: oppo })).toBe(1);
     expect(windowDisplayMode(25, { currentModeId: 4, modes: oppo })).toBe(0);
   });

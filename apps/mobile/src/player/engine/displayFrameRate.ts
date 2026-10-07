@@ -1,5 +1,5 @@
 import {
-  contentFrameRate, isPlausibleFrameRate, pickDisplayMode,
+  DISPLAY_MODE_RELATIVE_TOLERANCE, contentFrameRate, isPlausibleFrameRate, pickDisplayMode,
   type DisplayModeInfo, type MediaStream as JfStream,
 } from "@tentacle-tv/shared";
 import type { MobilePlatform } from "./types";
@@ -51,5 +51,21 @@ export interface ScreenModes {
  */
 export function windowDisplayMode(fps: number, screen: ScreenModes | null): number {
   if (!(fps > 0) || !screen || screen.currentModeId === undefined) return 0;
+  const current = screen.modes.find((mode) => mode.id === screen.currentModeId);
+  if (current && isExactMultiple(current.refreshRate, fps)) return current.id;
   return pickDisplayMode(fps, screen.currentModeId, screen.modes)?.id ?? 0;
+}
+
+/**
+ * La fréquence courante sert-elle déjà le film sans pulldown (k = 1..5) ?
+ * Alors on la GARDE : un écran à 120 Hz reste à 120 pour un film à 24 i/s
+ * (5 × 24), au lieu d'être envoyé à 72. Mesuré sur ColorOS 14 (Find X3 Pro) :
+ * la demande de 72 Hz y faisait tomber la vidéo à 60 Hz, quand l'écran
+ * laissé à 120 Hz y restait.
+ */
+function isExactMultiple(refreshRate: number, fps: number): boolean {
+  for (let k = 1; k <= 5; k += 1) {
+    if (Math.abs(refreshRate - k * fps) <= DISPLAY_MODE_RELATIVE_TOLERANCE * k * fps) return true;
+  }
+  return false;
 }
