@@ -88,11 +88,14 @@ export const SCENARIOS = [
   {
     // Une frappe comme celle d'un utilisateur : chaque lettre CHANGE les
     // résultats sans jamais les vider (instantané nav-golden, recherche par
-    // sous-chaîne : « l » 145 titres, « le » 52, « les » 18). Le clavier part
+    // sous-chaîne, `ecrans/moteur-recherche` : « l » 145 titres, « le » 52,
+    // « les » 18 — 12 au plus par catégorie). Le clavier part
     // de A (six touches par rangée) : L = BAS + 5 DROITE, E = HAUT + GAUCHE,
     // S = 3 BAS + 4 GAUCHE. Les déplacements sur le clavier en font partie.
     id: "recherche-frappe",
     title: "La recherche : « les » tapé au clavier de l'écran (chaque lettre change les résultats)",
+    // Le moteur du serveur, imité (la recherche de la base plante l'écran).
+    fixtures: ["base/vigie-off", "ecrans/moteur-recherche"],
     setup: [tap("left"), wait(900), tap("up"), wait(700), tap("ok"), wait(3000)],
     gesture: [
       tap("down"), wait(300), tap("right", 5, 250), wait(400), tap("ok"), wait(1500),
