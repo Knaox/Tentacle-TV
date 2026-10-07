@@ -28,8 +28,18 @@ const titles = (screens: Array<{ title: string }>) => screens.map((s) => s.title
 beforeAll(prepare, 12 * 60_000);
 afterAll(teardown);
 
+/**
+ * L'adresse publique montrée par l'écran : TOUJOURS une adresse de
+ * documentation (RFC 5737), jamais la vraie de la machine du banc — les
+ * captures servent à la doc et peuvent être publiées.
+ */
+const DOC_IP = "203.0.113.5";
+
 async function run(prefix: string, body: (journey: Journey) => Promise<void>): Promise<void> {
   const journey = await Journey.open(PROOFS, prefix);
+  await journey.page.route("**/api/admin/remote-access/public-ip", (route) =>
+    route.fulfill({ json: { outcome: "found", v4: DOC_IP, v6: null, source: "echo", detectedAt: new Date().toISOString(), checkService: "offline" } }),
+  );
   try {
     await body(journey);
   } catch (error) {
