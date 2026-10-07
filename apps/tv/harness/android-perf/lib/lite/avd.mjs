@@ -49,6 +49,8 @@ export const LITE_AVDS = {
   // L'AVD de la tâche « recherche fluide » (nav-golden --android) : la mémoire
   // de la Shield (3 Go), sa propre console.
   Lite_Rech_3G: { ramMb: 3072, cores: 4, port: 5694, label: "Shield : 3 Go, 4 cœurs (recherche, nav-golden --android)" },
+  // L'AVD de la tâche « filtres et Lite » (double appui, fond du Lite) : profil de la Shield.
+  Lite_Filtres_3G: { ramMb: 3072, cores: 4, port: 5696, label: "Shield : 3 Go, 4 cœurs (filtres, fond du Lite)" },
 };
 
 export function liteProfile(name) {
