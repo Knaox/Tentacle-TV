@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renewedItems } from "./rowRenewal";
+import { renewalHead, renewedItems } from "./rowRenewal";
 
 describe("le renouvellement échelonné d'une rangée", () => {
   it("montre la nouvelle liste jusqu'à la part libérée, l'ancienne carte après", () => {
@@ -19,5 +19,19 @@ describe("le renouvellement échelonné d'une rangée", () => {
     const next = ["a", "b"];
     expect(renewedItems(next, ["w", "x", "y"], 2)).toBe(next);
     expect(renewedItems(next, [], 5)).toBe(next);
+  });
+});
+
+describe("la tête d'un renouvellement", () => {
+  it("compte les cartes que la piste montre, même en partie", () => {
+    // La colonne des résultats de la recherche : ~1 300 points, des affiches de 240 + 36.
+    expect(renewalHead(1300, 276)).toBe(5);
+    expect(renewalHead(1380, 276)).toBe(5);
+    expect(renewalHead(1381, 276)).toBe(6);
+  });
+
+  it("en garde une au moins", () => {
+    expect(renewalHead(0, 276)).toBe(1);
+    expect(renewalHead(500, 0)).toBe(500);
   });
 });

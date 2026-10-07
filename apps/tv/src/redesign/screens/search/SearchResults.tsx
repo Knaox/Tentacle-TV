@@ -7,6 +7,7 @@ import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection"
 import { RENDER } from "../../render/renderProfile";
 import { MediaRow } from "../../rows/MediaRow";
 import { RowStageProvider, useRenewedRow } from "../../rows/rowStage";
+import { renewalHead } from "@tentacle-tv/tv-core";
 import { text } from "../../theme/tokens";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 import { PeopleRow } from "./PeopleRow";
@@ -14,6 +15,7 @@ import { SearchNotice } from "./SearchNotice";
 import { SearchTopHit } from "./SearchTopHit";
 import {
   RESULTS_CLIP,
+  RESULTS_LEFT,
   RESULTS_WIDTH,
   type SearchFacetModel,
   type SearchNoticeModel,
@@ -35,6 +37,9 @@ import {
 
 const ROW_REVEAL: FocusSectionReveal = { mode: "nearest" };
 
+/** La largeur d'une vignette d'épisode dans les résultats. */
+const EPISODE_WIDTH = 340;
+
 export interface SearchResultsProps {
   notice: SearchNoticeModel | null;
   stale: boolean;
@@ -49,6 +54,11 @@ export interface SearchResultsProps {
 }
 
 const STALE_OPACITY = 0.45;
+
+/** Ce que la piste des résultats montre, d'affiches ou de vignettes d'épisodes (`renewalHead`). */
+const RESULTS_TRACK = 1920 - RESULTS_LEFT;
+const POSTERS_HEAD = renewalHead(RESULTS_TRACK, TV_STAGE.card.poster.width + TV_STAGE.row.gap);
+const EPISODES_HEAD = renewalHead(RESULTS_TRACK, EPISODE_WIDTH + TV_STAGE.row.gap);
 
 export const SearchResults = memo(function SearchResults({
   notice,
@@ -181,7 +191,7 @@ const ResultRow = memo(function ResultRow({
   const press = useMemo(() => (onPressCard ? (card: CardModel) => onPressCard(sectionKey, card) : undefined), [onPressCard, sectionKey]);
   const longPress = useMemo(() => (onLongPressCard ? (card: CardModel) => onLongPressCard(sectionKey, card) : undefined), [onLongPressCard, sectionKey]);
   // À l'écran d'abord, le reste par échelons ; parcourue, sa suite passe devant.
-  const { shown, demand } = useRenewedRow(rank, cards);
+  const { shown, demand } = useRenewedRow(rank, cards, sectionKey === "episodes" ? EPISODES_HEAD : POSTERS_HEAD);
   const focus = useCallback((card: CardModel) => {
     demand();
     onFocusCard?.(sectionKey, card);
@@ -194,7 +204,7 @@ const ResultRow = memo(function ResultRow({
         title={title}
         cards={shown as CardModel[]}
         variant={sectionKey === "episodes" ? "landscape" : "poster"}
-        cardWidth={sectionKey === "episodes" ? 340 : undefined}
+        cardWidth={sectionKey === "episodes" ? EPISODE_WIDTH : undefined}
         inset={RESULTS_CLIP}
         recycleCards={RENDER.recycleResultCards}
         accessory={accessory}

@@ -117,12 +117,13 @@ export function useStagedRow(rank: number | undefined, total: number): { shown: 
  * Une rangée dont la liste change ENTIÈRE à chaque réponse (les résultats
  * d'une frappe), renouvelée par échelons (tv-core `renewedItems`) : à chaque
  * liste neuve, ce que l'échelonnement monte d'emblée à sa place (`rank`)
- * prend tout de suite le nouveau titre, le reste une part par image — et
+ * (au plus `head` cartes : ce que la piste montre) prend tout de suite le
+ * nouveau titre, le reste une part par image — et
  * garde en attendant la carte qu'il montrait (aucune vue démontée). `demand`
  * (stable) : la rangée a le focus, la suite passe devant. Hors d'une page
  * échelonnée (Apple TV) : la liste telle quelle.
  */
-export function useRenewedRow<T>(rank: number | undefined, items: readonly T[]): { shown: readonly T[]; demand: () => void } {
+export function useRenewedRow<T>(rank: number | undefined, items: readonly T[], head?: number): { shown: readonly T[]; demand: () => void } {
   const stager = useContext(RowStageContext);
   const staged = stager !== null && rank !== undefined;
   const [, redraw] = useReducer((n: number) => n + 1, 0);
@@ -130,7 +131,9 @@ export function useRenewedRow<T>(rank: number | undefined, items: readonly T[]):
   // chaque liste neuve (identité — les listes inchangées gardent la leur).
   const generation = useRef<{ items: readonly T[] | null; released: number }>({ items: null, released: 0 });
   if (generation.current.items !== items) {
-    generation.current = { items, released: staged ? initialRelease(rank, items.length) : items.length };
+    // `head` : ce que la piste montre (`renewalHead`), si la rangée est de celles montées d'emblée.
+    const initial = staged ? initialRelease(rank, items.length) : items.length;
+    generation.current = { items, released: staged && head !== undefined && initial > 0 ? Math.min(initial, head) : initial };
   }
   const previous = useRef<readonly T[]>([]);
   const shown = staged ? renewedItems(items, previous.current, generation.current.released) : items;

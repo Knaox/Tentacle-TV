@@ -27,3 +27,13 @@ export function renewedItems<T>(next: readonly T[], shown: readonly T[], release
   for (let i = 0; i < length; i++) out.push(i < released ? next[i] : shown[i]);
   return out;
 }
+
+/**
+ * La TÊTE d'un renouvellement : les cartes que la piste montre, même en
+ * partie (`trackWidth` points, une carte et son écart tous les `cardStride`).
+ * Au-delà, rien ne se voit avant un défilement : la suite attend sa part. Une
+ * au moins.
+ */
+export function renewalHead(trackWidth: number, cardStride: number): number {
+  return Math.max(1, Math.ceil(trackWidth / Math.max(1, cardStride)));
+}
