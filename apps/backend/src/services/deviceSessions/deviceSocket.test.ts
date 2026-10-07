@@ -109,6 +109,19 @@ describe("DeviceSocket", () => {
     expect(events.general.mock.calls).toEqual([["DisplayMessage", { Header: "Admin", Text: "Bonsoir", TimeoutMs: "5000" }]]);
   });
 
+  it("relaie ce que Jellyfin pousse au compte : les ajouts et les « vu », pas le reste", async () => {
+    const account = vi.fn();
+    const { device } = setup({ onAccountEvent: account });
+    device.open();
+    sockets[0]?.accept();
+    await vi.advanceTimersByTimeAsync(0);
+    const added = { ItemsAdded: ["film"], ItemsUpdated: [], ItemsRemoved: [] };
+    sockets[0]?.push({ MessageType: "LibraryChanged", Data: added });
+    sockets[0]?.push({ MessageType: "UserDataChanged", Data: { UserId: "u1" } });
+    sockets[0]?.push({ MessageType: "SyncPlayGroupUpdate", Data: {} });
+    expect(account.mock.calls).toEqual([["LibraryChanged", added], ["UserDataChanged", { UserId: "u1" }]]);
+  });
+
   it("répond au ForceKeepAlive, puis parle toutes les 30 s", async () => {
     const { device } = setup();
     device.open();

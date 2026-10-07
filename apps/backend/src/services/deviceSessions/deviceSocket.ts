@@ -59,6 +59,8 @@ export interface DeviceSocketOptions {
   onLost: () => void;
   onPlaystate: (command: SessionPlaystateCommandDto, seekPositionTicks?: number) => void;
   onGeneralCommand: (name: string, args: Record<string, string>) => void;
+  /** Ce que Jellyfin pousse au COMPTE (`LibraryChanged`, `UserDataChanged`) : relayé aux applications. */
+  onAccountEvent?: (type: "LibraryChanged" | "UserDataChanged", data: unknown) => void;
   createSocket?: (url: string, headers: Record<string, string>) => SocketLike;
 }
 
@@ -199,8 +201,14 @@ export class DeviceSocket {
         this.opts.onGeneralCommand(data.Name, stringArgs(data.Arguments));
         break;
       }
+      // Jellyfin ne les envoie qu'aux sessions d'un compte — celle-ci en est
+      // une : c'est par elle que les ajouts et les « vu » arrivent en direct.
+      case "LibraryChanged":
+      case "UserDataChanged":
+        this.opts.onAccountEvent?.(msg.MessageType, msg.Data);
+        break;
       default:
-        // KeepAlive, UserDataChanged, SyncPlay… : rien à relayer.
+        // KeepAlive, SyncPlay… : rien à relayer.
         break;
     }
   }
