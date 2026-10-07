@@ -158,7 +158,18 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
 
     /** Lancement à froid ; rend le « TotalTime » d'`am start -W` (première image de l'activité). */
     launch() {
-      const out = shell(`am start -W -n ${ACTIVITY}`);
+      // `am start -W` attend la première image : si le processus meurt avant
+      // (tueur de processus d'un AVD à 1 Go, vécu par L7), il ne rend jamais
+      // la main. Borné : passé 2 min, le lancement a échoué, et la garde du
+      // premier plan arrête la passe au tronçon suivant.
+      let out = "";
+      try {
+        out = shell(`am start -W -n ${ACTIVITY}`, { timeout: 120_000 });
+      } catch (error) {
+        if (error.code !== "ETIMEDOUT") throw error;
+        console.log(`✗ lancement : aucune première image en 2 min (${PACKAGE} mort au démarrage ?)`);
+        return NaN;
+      }
       return Number(out.match(/TotalTime:\s*(\d+)/)?.[1] ?? NaN);
     },
 
