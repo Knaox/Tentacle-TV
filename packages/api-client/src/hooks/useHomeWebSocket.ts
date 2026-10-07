@@ -12,7 +12,9 @@ export { setWsBackendUrl } from "../socket/tentacleSocket";
 
 const CAROUSEL_KEYS: Record<string, string[][]> = {
   continue_watching: [["resume-items"], ["next-up"]],
-  recently_added:    [["latest-items"]],
+  // Les bibliothèques aussi : leur décompte dit si l'accueil est vide (`libraryHasNoTitles`),
+  // et le premier titre ajouté doit le faire quitter sans recharger.
+  recently_added:    [["latest-items"], ["libraries"]],
   next_up:           [["next-up"]],
   trending:          [["featured"]],
   // Titres mis de côté : l'arrivée qui les fait entrer dans Ma liste les retire de l'attente.
