@@ -36,6 +36,7 @@ const ICON_TONE: Record<StatusTone, string> = {
 /** Les gestes qui RÈGLENT quelque chose ; les autres (générer, relancer) prolongent un réglage fait. */
 const FIXES: ReadonlySet<SetupActionId> = new Set([
   "enableTrickplay", "enableRealtimeMonitor", "setMetadataLanguage", "installChapterSegments", "refreshMissingMetadata", "enableHevcEncoding",
+  "shortenLibraryUpdateDelay",
 ]);
 
 interface Props {
@@ -81,6 +82,8 @@ export function SetupCheckRow({ check, dashboardUrl, jellyfinVersion, language, 
         return t("refreshMetadata");
       case "enableHevcEncoding":
         return t("hevcApply");
+      case "shortenLibraryUpdateDelay":
+        return t("libraryUpdateApply");
       default:
         return "";
     }

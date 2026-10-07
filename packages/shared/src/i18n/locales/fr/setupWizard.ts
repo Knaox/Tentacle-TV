@@ -205,7 +205,6 @@ export default {
   browserEmpty: "Aucun sous-dossier.",
   browserCancel: "Annuler",
 
-  // ── Récapitulatif et installation ─────────────────────────────────────
   // ── Réglages conseillés (Jellyfin déjà configuré) ─────────────────────
   recTitle: "Réglages conseillés",
   recSubtitle: "Ce Jellyfin est déjà configuré\u00a0: Tentacle n'y crée rien. Voici ce qu'il conseille — tout est facultatif.",
@@ -232,6 +231,8 @@ export default {
   rec_realtimeMonitor_why: "Un film déposé apparaît aussitôt dans Tentacle, sans attendre le prochain scan.",
   rec_hevcEncoding: "Encodage HEVC",
   rec_hevcEncoding_why: "Quand Jellyfin convertit une vidéo, une meilleure image à débit égal. Proposé parce que ce serveur a un encodeur matériel.",
+  rec_libraryUpdateDelay: "Annonce des ajouts",
+  rec_libraryUpdateDelay_why: "Un film ajouté entre dans « Derniers ajouts » en quelques secondes, sur tous les écrans, sans changer de page.",
   recapLibrariesKeptLabel: "Bibliothèques",
   recapLibrariesKept: "Aucune création — {{count}} bibliothèque déjà dans Jellyfin",
   recapLibrariesKept_other: "Aucune création — {{count}} bibliothèques déjà dans Jellyfin",
@@ -240,7 +241,7 @@ export default {
   applyAdviceNone: "Rien de coché\u00a0: rien n'a changé.",
   adviceOutcome_applied: "{{name}}\u00a0: réglé",
   adviceOutcome_failed: "{{name}}\u00a0: pas appliqué — à revoir dans l'administration",
-
+  // ── Récapitulatif et installation ─────────────────────────────────────
   recapTitle: "Récapitulatif",
   recapSubtitle: "Vérifiez, puis lancez l'installation.",
   recapJellyfin: "Jellyfin",

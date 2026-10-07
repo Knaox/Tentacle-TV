@@ -180,6 +180,10 @@ export default {
   hevcOff: "Coupé : les conversions sortent en H.264.",
   hevcNoHardware: "Coupé — sans accélération matérielle, mieux vaut le laisser ainsi.",
   hevcApply: "Autoriser l'encodage HEVC",
+  check_libraryUpdateDelay: "Annonce des ajouts",
+  why_libraryUpdateDelay: "Jellyfin prévient les applications d'un ajout ce délai après le dernier changement. À 5 s, un film ajouté entre dans « Derniers ajouts » presque aussitôt, sur tous les écrans, sans changer de page.",
+  libraryUpdateCurrent: "Les ajouts sont annoncés {{value}} après le dernier changement.",
+  libraryUpdateApply: "Annoncer les ajouts en 5 s",
 
   check_chapterImages: "Images de chapitres",
   why_chapterImages: "Tentacle ne les affiche pas : les laisser coupées épargne le processeur et le disque de Jellyfin.",

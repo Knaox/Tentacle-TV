@@ -69,10 +69,20 @@ describe("bibliothèques concernées", () => {
 });
 
 describe("réglages recommandés", () => {
-  it("rend les neuf réglages, dans l'ordre de la page", () => {
+  it("rend les dix réglages, dans l'ordre de la page", () => {
     expect(evaluateSetup(snapshot()).map((c) => c.id)).toEqual([
-      "metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "hevcEncoding", "chapterImages",
+      "metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "libraryUpdateDelay",
+      "hardwareAcceleration", "hevcEncoding", "chapterImages",
     ]);
+  });
+
+  it("annonce des ajouts : à faire au-delà de 10 s (30 par défaut), le geste la ramène à 5 ; un Jellyfin muet reste inconnu", () => {
+    const delay = (seconds?: unknown) =>
+      check(evaluateSetup(snapshot({ config: { PreferredMetadataLanguage: "fr", MetadataCountryCode: "FR", LibraryUpdateDuration: seconds } })), "libraryUpdateDelay");
+    expect(delay(30)).toMatchObject({ state: "todo", level: "recommended", current: "30 s", action: "shortenLibraryUpdateDelay" });
+    expect(delay(10)).toMatchObject({ state: "done", current: "10 s", action: null });
+    expect(delay(5)).toMatchObject({ state: "done", current: "5 s", action: null });
+    expect(delay(undefined)).toMatchObject({ state: "unknown", current: null, action: null });
   });
 
   it("trickplay : à faire tant qu'une bibliothèque vidéo ne l'a pas, et le geste l'active", () => {
@@ -175,7 +185,7 @@ describe("réglages recommandés", () => {
 
   it("ce que Jellyfin n'a pas rendu est inconnu, sans rien inventer", () => {
     const checks = evaluateSetup(snapshot({ libraries: null, plugins: null, config: null, encoding: null, tasks: null, missingTmdb: null, trailers: null }));
-    expect(checks.filter((c) => c.id !== "chapterImages").map((c) => c.state)).toEqual(Array(8).fill("unknown"));
+    expect(checks.filter((c) => c.id !== "chapterImages").map((c) => c.state)).toEqual(Array(9).fill("unknown"));
     expect(checks.every((c) => c.action === null)).toBe(true);
   });
 });

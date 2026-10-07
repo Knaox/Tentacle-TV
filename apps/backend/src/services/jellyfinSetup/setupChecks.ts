@@ -1,4 +1,10 @@
-import type { SetupCheck, SetupLibrary, SetupState, SetupTask } from "../jellyfinCompat/setupContract";
+import {
+  LIBRARY_UPDATE_DELAY_MAX_OK,
+  type SetupCheck,
+  type SetupLibrary,
+  type SetupState,
+  type SetupTask,
+} from "../jellyfinCompat/setupContract";
 import { segmentPlugins } from "./segmentProviders";
 import type { Loose, SetupSnapshot } from "./setupSnapshot";
 import { trailersCheck, type TrailersContext } from "./trailersCheck";
@@ -206,6 +212,28 @@ function chapterImagesCheck(videos: Loose[] | null): SetupCheck {
   };
 }
 
+/**
+ * L'annonce des ajouts (`LibraryUpdateDuration`, 30 s par défaut) : c'est
+ * après ce délai que Jellyfin dit `LibraryChanged` aux sessions des comptes —
+ * et que les applications Tentacle voient le titre entrer dans « Derniers
+ * ajouts » (`jellyfinUserEvents.ts`). Lu à chaque changement par Jellyfin :
+ * aucun redémarrage. Un Jellyfin qui ne connaît pas le champ : inconnu.
+ */
+function libraryUpdateCheck(snapshot: SetupSnapshot): SetupCheck {
+  const seconds = snapshot.config?.LibraryUpdateDuration;
+  const known = typeof seconds === "number" && Number.isFinite(seconds);
+  const state: SetupState = !known ? "unknown" : seconds <= LIBRARY_UPDATE_DELAY_MAX_OK ? "done" : "todo";
+  return {
+    ...base,
+    id: "libraryUpdateDelay",
+    level: "recommended",
+    state,
+    current: known ? `${seconds} s` : null,
+    action: state === "todo" ? "shortenLibraryUpdateDelay" : null,
+    dashboardPath: DASHBOARD.libraries,
+  };
+}
+
 /** Ce que les réglages lisent hors de Jellyfin : Vigie, et ce que la compatibilité dit des bonus. */
 export type SetupContext = Omit<TrailersContext, "coverage">;
 
@@ -219,6 +247,7 @@ export function evaluateSetup(snapshot: SetupSnapshot, context: SetupContext = {
     libraryFlagCheck("trickplay", "EnableTrickplayImageExtraction", videos, readTask(snapshot.tasks, TASK_KEYS.trickplay)),
     segmentsCheck(snapshot),
     libraryFlagCheck("realtimeMonitor", "EnableRealtimeMonitor", videos, null),
+    libraryUpdateCheck(snapshot),
     hardwareCheck(snapshot),
     hevcCheck(snapshot),
     chapterImagesCheck(videos),

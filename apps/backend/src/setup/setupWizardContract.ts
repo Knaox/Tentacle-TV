@@ -238,7 +238,8 @@ export type JellyfinConnectRequest =
  *
  * Les gestes de l'administration que l'assistant reprend — une liste fermée.
  */
-export type SetupAdviceAction = "setMetadataLanguage" | "enableTrickplay" | "enableRealtimeMonitor" | "enableHevcEncoding";
+export type SetupAdviceAction =
+  "setMetadataLanguage" | "enableTrickplay" | "enableRealtimeMonitor" | "enableHevcEncoding" | "shortenLibraryUpdateDelay";
 
 /** `POST /api/setup/jellyfin/recommended` — SEULEMENT ce que l'administrateur a coché. */
 export interface SetupAdviceRequest {

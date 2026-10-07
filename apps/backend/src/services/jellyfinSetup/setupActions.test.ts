@@ -152,6 +152,24 @@ describe("gestes en un clic", () => {
     expect(await applySetupAction({ action: "enableHevcEncoding" })).toEqual({ ok: false, error: "invalid" });
   });
 
+  it("annonce des ajouts : la configuration entière repart, ramenée à 5 s ; déjà courte, rien ne part", async () => {
+    jf.config = { ...jf.config, LibraryUpdateDuration: 30 };
+    expect(await applySetupAction({ action: "shortenLibraryUpdateDelay" })).toEqual({ ok: true, changed: 1 });
+    expect(jf.config).toEqual({ PreferredMetadataLanguage: "", MetadataCountryCode: "", ServerName: "Maison", MaxResumePct: 90, LibraryUpdateDuration: 5 });
+    const posts = jf.posts.length;
+    expect(await applySetupAction({ action: "shortenLibraryUpdateDelay" })).toEqual({ ok: true, changed: 0 });
+    expect(jf.posts.length).toBe(posts);
+  });
+
+  it("annonce des ajouts que Jellyfin n'enregistre pas, ou champ inconnu : un échec", async () => {
+    jf.config = { ...jf.config, LibraryUpdateDuration: 30 };
+    jf.ignoreWrites = true;
+    expect(await applySetupAction({ action: "shortenLibraryUpdateDelay" })).toMatchObject({ ok: false, error: "not-applied" });
+    jf.ignoreWrites = false;
+    jf.config = { ServerName: "Maison" };
+    expect(await applySetupAction({ action: "shortenLibraryUpdateDelay" })).toMatchObject({ ok: false, error: "invalid" });
+  });
+
   it("greffon officiel de passages : installé par le catalogue, vérifié dans la liste des greffons", async () => {
     expect(await applySetupAction({ action: "installChapterSegments" })).toEqual({ ok: true, changed: 1 });
     expect(jf.posts[0].path).toBe("/Packages/Installed/Chapter%20Segments%20Provider?assemblyGuid=698b6f3314ca49b59d79fc3c0ab941f5");

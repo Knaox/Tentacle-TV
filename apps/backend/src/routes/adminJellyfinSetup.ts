@@ -20,6 +20,7 @@ const applySchema = z.object({
     "scanMediaSegments",
     "refreshMissingMetadata",
     "enableHevcEncoding",
+    "shortenLibraryUpdateDelay",
   ]),
   language: z.string().max(8).optional(),
   country: z.string().max(4).optional(),

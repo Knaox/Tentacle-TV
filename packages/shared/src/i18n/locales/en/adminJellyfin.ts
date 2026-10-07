@@ -180,6 +180,10 @@ export default {
   hevcOff: "Off: conversions come out in H.264.",
   hevcNoHardware: "Off — without hardware acceleration, better leave it that way.",
   hevcApply: "Allow HEVC encoding",
+  check_libraryUpdateDelay: "Announcing new additions",
+  why_libraryUpdateDelay: "Jellyfin tells the apps about an addition this long after the last change. At 5 s, a movie you add shows up in “Recently added” almost at once, on every screen, without changing page.",
+  libraryUpdateCurrent: "Additions are announced {{value}} after the last change.",
+  libraryUpdateApply: "Announce additions within 5 s",
 
   check_chapterImages: "Chapter images",
   why_chapterImages: "Tentacle does not show them: leaving them off spares Jellyfin's processor and disk.",

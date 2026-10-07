@@ -16,7 +16,7 @@ import type { SetupAdviceAction, SetupAdviceOutcome } from "../setupWizardContra
  * fois, chacun relu par Jellyfin ; un échec n'arrête pas les suivants et
  * n'arrête jamais l'installation.
  */
-const ACTIONS = ["setMetadataLanguage", "enableTrickplay", "enableRealtimeMonitor", "enableHevcEncoding"] as const satisfies readonly SetupAdviceAction[];
+const ACTIONS = ["setMetadataLanguage", "enableTrickplay", "enableRealtimeMonitor", "enableHevcEncoding", "shortenLibraryUpdateDelay"] as const satisfies readonly SetupAdviceAction[];
 
 const adviceSchema = z
   .object({
