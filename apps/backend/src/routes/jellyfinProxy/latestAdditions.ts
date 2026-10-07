@@ -13,6 +13,7 @@ import {
 import { latestCardIds, planLatestCards, type LatestCard, type ScannedAddition } from "../../latestAdditions/latestGrouping";
 import { assembleLatestItems, latestResponseBody, type JellyfinItem } from "../../latestAdditions/latestAssembly";
 import { replyFromCache } from "./bufferedReply";
+import { displayMissingEpisodes } from "./missingEpisodesSetting";
 import { requestSignal } from "./clientAbort";
 import { scrubAdminKey } from "./scrubAdminKey";
 
@@ -70,13 +71,15 @@ async function readItems(url: string, headers: Record<string, string>, signal: A
  * la rangée à ce qu'elle a trouvé.
  */
 async function scanLatest(latest: LatestRequest, ctx: LatestContext, signal: AbortSignal): Promise<LatestCard[] | null> {
+  // Les dossiers vides (séries, saisons sans fichier) : montrés seulement si le compte affiche les épisodes manquants.
+  const keepEmptyFolders = await displayMissingEpisodes(ctx.jellyfinUrl, latest.userId, ctx.headers);
   const scanned: ScannedAddition[] = [];
   let plan: LatestCard[] = [];
   for (let page = 0; page < LATEST_SCAN_PAGES; page++) {
     const items = await readItems(`${ctx.jellyfinUrl}/${latestScanPath(latest, page * LATEST_SCAN_PAGE)}`, ctx.headers, signal);
     if (!items) return page === 0 ? null : plan;
     scanned.push(...(items as ScannedAddition[]));
-    plan = planLatestCards(scanned, latest.cards);
+    plan = planLatestCards(scanned, latest.cards, { keepEmptyFolders });
     if (plan.length >= latest.cards || items.length < LATEST_SCAN_PAGE) break;
   }
   return plan;
