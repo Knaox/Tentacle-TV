@@ -31,7 +31,6 @@ class ExoPlayerView(
     }
 
     private val playerView: PlayerView // SurfaceView + SubtitleView (motif VoidTV)
-
     private var player: ExoPlayer? = null
     private var destroyed = false
     private var currentUrl: String? = null
@@ -45,6 +44,8 @@ class ExoPlayerView(
     /** Lecture tunnelisée (réglage d'appareil, éteint par défaut) : lu à la
      *  construction du sélecteur ; un changement vaut pour la lecture suivante. */
     var tunneling = false
+    /** Le tampon du mode Lite (prop `bufferPolicy`), lu à la construction ; `null` : celui d'avant. */
+    var bufferPolicy: ExoBufferPolicy? = null
 
     // Évènements, listener et sondeur : ExoEvents.kt, ExoPlaybackListener.kt.
     private val emitter = ExoEventEmitter(reactContext) { id }
@@ -71,7 +72,6 @@ class ExoPlayerView(
 
     init {
         Log.w(TAG, ">>> CONSTRUCTOR viewId=$id")
-
         // Gonflée sans barre de contrôle (`tentacle_exo_player_frame`) : construite
         // puis masquée, elle coûtait ~40 ms au lancement d'une vidéo (Shield).
         playerView = (LayoutInflater.from(reactContext).inflate(R.layout.tentacle_exo_player, this, false) as PlayerView).apply {
@@ -122,7 +122,7 @@ class ExoPlayerView(
             .setRenderersFactory(ExoPlayerFactory.createRenderersFactory(reactContext, audioPassthrough))
             .setMediaSourceFactory(ExoPlayerFactory.createMediaSourceFactory(reactContext))
             .setTrackSelector(ExoPlayerFactory.createTrackSelector(reactContext, preferredMimeTypes, tunneling))
-            .setLoadControl(ExoPlayerFactory.createLoadControl())
+            .setLoadControl(ExoPlayerFactory.createLoadControl(bufferPolicy))
             .build()
             .also { exo ->
                 exo.setAudioAttributes(ExoPlayerFactory.mediaAudioAttributes, false)

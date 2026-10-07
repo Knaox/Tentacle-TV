@@ -2,6 +2,7 @@ package com.tentacletv.exoplayer
 
 import androidx.media3.common.util.UnstableApi
 import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -53,6 +54,12 @@ class ExoViewManager : SimpleViewManager<ExoPlayerView>() {
     @ReactProp(name = "tunneling", defaultBoolean = false)
     fun setTunneling(view: ExoPlayerView, enabled: Boolean) {
         view.tunneling = enabled
+    }
+
+    /** Le tampon du mode Lite (shared `exoBufferPolicy`) ; absent en mode normal. */
+    @ReactProp(name = "bufferPolicy")
+    fun setBufferPolicy(view: ExoPlayerView, policy: ReadableMap?) {
+        view.bufferPolicy = ExoBufferPolicy.from(policy)
     }
 
     @ReactProp(name = "textTracks")

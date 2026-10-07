@@ -36,6 +36,15 @@ class MpvViewManager : SimpleViewManager<MpvPlayerView>() {
         view.progressInterval = interval.toLong()
     }
 
+    /** Les options du mode Lite (shared `mpvOptionOverrides`) : `[[nom, valeur], …]`, vide en mode normal. */
+    @ReactProp(name = "optionOverrides")
+    fun setOptionOverrides(view: MpvPlayerView, options: ReadableArray?) {
+        view.optionOverrides = (0 until (options?.size() ?: 0)).mapNotNull { i ->
+            val pair = options?.getArray(i) ?: return@mapNotNull null
+            if (pair.size() < 2) null else (pair.getString(0) ?: return@mapNotNull null) to (pair.getString(1) ?: "")
+        }
+    }
+
     override fun getExportedCustomDirectEventTypeConstants(): Map<String, Any> {
         return MapBuilder.of(
             "onMpvEvent",
