@@ -60,7 +60,7 @@ jobs:
       # unredistributable », même sans aucune bibliothèque non libre liée. On
       # le retire : aucune n'est liée (gnutls, pas openssl ni fdk-aac), et le
       # binaire se déclare « LGPL version 3 or later ».
-      - name: Retirer --enable-nonfree de la configuration FFmpeg
+      - name: Configuration du fork (sans --enable-nonfree, sans presse-papiers X11)
         working-directory: MPVKit
         run: |
           F=Sources/BuildScripts/XCFrameworkBuild/main.swift
@@ -68,6 +68,11 @@ jobs:
           if grep -n 'enable-nonfree' "$F"; then
             echo "::error::--enable-nonfree subsiste dans $F"; exit 1
           fi
+          # Le presse-papiers X11 de mpv, détecté s'il trouve libX11 sur le
+          # runner (Homebrew) : des symboles X11 introuvables sur iOS, et
+          # l'app ne se lie plus (mesuré sur un Mac de développement).
+          sed -i '' 's/"-Drubberband=disabled",/"-Drubberband=disabled", "-Dx11-clipboard=disabled",/' "$F"
+          grep -q 'x11-clipboard=disabled' "$F"
 
       # Sans « enable-gpl » : le script du fork passe « -Dgpl=false » à mpv,
       # n'ajoute pas « --enable-gpl » à FFmpeg et n'inclut ni libsmbclient ni
