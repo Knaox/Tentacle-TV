@@ -50,11 +50,10 @@ dans `dumpsys activity top`. Charge du Mac entre 2 et 4.
 | Saisons : pile attachée / PSS / créées | 3 378 / 298 Mo / 454 | **1 940** / 233 Mo / 371 |
 | Fiche de « Bleach » seule | 518 | **438** |
 | Défilement tenu de l'accueil : ratées | 36,7 % | 20,8 % |
-| Recherche : attachées après 3 frappes | 2 328 | 1 352 |
 
 Au niveau normal, la structure est identique avant et après : 1 810 vues au
 repos, 1 715 créées à l'ouverture de « Films », 139 pendant la grille tenue,
-175 par frappe, et les mêmes vues attachées sur chaque écran.
+et les mêmes vues attachées sur chaque écran.
 
 La grille tenue rate plus d'images en Lite après qu'avant : 36 % contre
 25,5 %. C'est le prix du recyclage. Avec 1 100 points d'avance, triplés à
@@ -68,10 +67,48 @@ L'essentiel des vues encore attachées vient des écrans RECOUVERTS (accueil,
 bibliothèque). Ils sont gardés montés pour que le focus revienne au bon
 endroit ; en Lite, L6 les rend invisibles et relâche leurs images.
 
+### Deuxième passe (07/10 après-midi, dev `eb1d3d937` contre L5b)
+
+Faux backend déjà chaud (`--external`), niveau forcé, 2 tours par écran ;
+« page » = les vues du `Screen` affiché seul (`lib/lite/screenViews.mjs`),
+sans la pile recouverte. Charge du Mac 6 à 13 (d'autres sessions mesuraient
+en même temps) : les temps sont bruités, les vues ne le sont pas.
+
+| Lite (AVD 2 Go) | dev | L5b |
+|---|---|---|
+| Démarrage : vues attachées / page / PSS au repos | 1 797 / 1 700 / 236 Mo | **821 / 774** / 194 Mo |
+| Fiche (« Plus d'infos » du héros) : page | 1 698 | **772** |
+| « Films » : page / vues créées à l'ouverture | 1 078 / 1 651 | **656** / 1 100 |
+| Grille tenue : page / vues créées | 1 075 / 187 | 865 / 504 |
+| Saisons (« Bleach ») : page / pile attachée / créées | 518 / 3 378 / 454 | **438 / 1 942** / 371 |
+| Saisons : pire image (A/B, 6 tours chacun) | 87 à 189 ms | **52 à 97 ms** |
+
+Au niveau normal : **les mêmes vues** sur les huit écrans et au repos (1 810
+attachées, page 1 713 ; « Films » 1 116 ; saisons 579).
+
+**La pire image à l'ouverture de « Films »** (un seul geste, ~20 images) est
+dominée par le bruit à cette charge : sur 16 tours valides de chaque côté,
+médiane ~167 ms pour dev et ~188 ms pour L5b, plus de 250 ms 3 fois contre
+5. Aucun écart établi. Une variante sans élargissement minuté donne une
+médiane de 139 ms (8 tours) : l'élargissement n'en est pas la cause. Freiné
+(`duty:25`, charge 2-3) : 358 / 726 ms pour dev, 431 / 394 ms pour L5b.
+
+**Pourquoi « Films » ne descend pas sous 400 vues** : une affiche coûte 18
+vues natives (coquille, légende et ses deux textes, pied, cible, cadre,
+masque, image, marqueurs — pastille, icône SVG en trois vues, texte —,
+filet, liseré Lite en deux vues). La page montre deux lignes de six (216 vues)
+sous 223 vues d'habillage (barre des filtres 78, en-tête et fond ~145). Il
+faudrait alléger la carte elle-même (le liseré monté au seul focus : −2 par
+carte), ce qui sort du montage.
+
+**Freiné, les images ratées saturent** (`duty:25` : 97 à 100 % sur « Films »
+et la grille, dev comme L5b) : l'objectif « < 20 % en grille tenue » ne se
+lit pas sur cet AVD, seulement sur une vraie box.
+
 ## Banc
 
 ```bash
-node lite.mjs parcours run <AVD> … --tier lite|normal   # vues attachées par écran dans le journal et resume.json
+node lite.mjs parcours run <AVD> … --tier lite|normal [--external]   # vues attachées et vues de la page par écran
 ```
 
 Le chemin `saisons-episodes` passe désormais par HAUT puis BAS : selon que le
@@ -80,4 +117,5 @@ première affiche ou sur la barre des filtres, et HAUT puis BAS ramène dans
 les deux cas à la première affiche. Avec un faux backend neuf, la mise en
 place échoue encore : il sert son premier catalogue en plus de 10 s, et la
 grille est vide quand on y arrive. Contournement : un faux backend déjà
-chaud (`lite.mjs setup`) et un pilote gardé.
+chaud — `lite.mjs setup <AVD> …` laissé ouvert, puis `parcours run … --external`
+(mêmes `PERF_PORT` / `PERF_BACKEND_PORT`).
