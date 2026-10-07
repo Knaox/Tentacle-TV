@@ -2,11 +2,13 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { ROW_STAGING } from "@tentacle-tv/tv-core";
 import { cardIndexOf } from "../cards/cardFocusKeys";
 import { MediaCard } from "../cards/MediaCard";
 import { MORPH_OVERFLOW, MorphCard } from "../cards/MorphCard";
 import type { CardModel } from "../cards/cardTypes";
 import { useForcedFocusKey } from "../focus/focusPreview";
+import { mountProfile } from "../render/mountProfile";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
 import { CullingTrack, NATIVE_RECEDE } from "./CullingTrack";
@@ -72,18 +74,31 @@ export const MediaRow = memo(function MediaRow({
   const forced = useForcedFocusKey();
   const track = useRef<ScrollView>(null);
   const rewind = useRowRewindPort();
+  const { shown, demand, retire } = useStagedRow(stageRank, cards.length);
+  // La carte qui a le focus dans la rangée, ou null : jamais retirée sous le focus.
+  const focusedIndex = useRef<number | null>(null);
   useEffect(
-    () => rewind?.register(rowKey, () => track.current?.scrollTo({ x: 0, y: 0, animated: false })),
-    [rewind, rowKey],
+    () =>
+      rewind?.register(rowKey, () => {
+        track.current?.scrollTo({ x: 0, y: 0, animated: false });
+        // Sortie de l'écran (ou page quittée) : elle revient à sa tête (mode Lite),
+        // à l'image suivante — sauf si le focus est (revenu) sur sa queue.
+        if (!mountProfile().retireOffscreenRows) return;
+        requestAnimationFrame(() => {
+          if (focusedIndex.current === null || focusedIndex.current < ROW_STAGING.headCards) retire();
+        });
+      }),
+    [rewind, rowKey, retire],
   );
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
   // La piste joue le recul (Android TV) — sauf au banc, dont le focus figé passe par la valeur partagée.
   const nativeRecede = NATIVE_RECEDE && forced === null;
-  const { shown, demand } = useStagedRow(stageRank, cards.length);
 
   const onItemFocus = useCallback(
     (index: number, focused: boolean, card: CardModel) => {
       onItemFocusChange(index, focused);
+      if (focused) focusedIndex.current = index;
+      else if (focusedIndex.current === index) focusedIndex.current = null;
       if (!focused) return;
       // Parcourue : ce que l'échelonnement ne lui a pas encore monté passe devant.
       demand();

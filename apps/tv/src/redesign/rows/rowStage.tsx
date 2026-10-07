@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
-import { createStagingPacer, initialRelease, nextRelease, renewedItems, ROW_STAGING, type StagedRow } from "@tentacle-tv/tv-core";
+import { createStagingPacer, headRelease, initialRelease, nextRelease, renewedItems, ROW_STAGING, type StagedRow, type StagingTails } from "@tentacle-tv/tv-core";
+import { mountProfile } from "../render/mountProfile";
 import { RENDER } from "../render/renderProfile";
 
 /**
@@ -11,18 +12,30 @@ import { RENDER } from "../render/renderProfile";
  * l'est ; la rangée qui prend le focus passe devant (`demand`).
  *
  * Sans le profil (Apple TV), ou sans fournisseur : tout, tout de suite.
+ *
+ * Le profil de MONTAGE (`mountProfile`, mode Lite) borne ce qui vit hors de
+ * l'écran : les queues ne se montent qu'à la demande (`rowTails`), et une
+ * rangée remise au début revient à sa tête (`retire`).
  */
 
 interface Entry extends StagedRow {
   set: (released: number) => void;
 }
 
-interface RowStager {
-  /** Une rangée entre dans la page ; rend son entrée (la demander) et son départ. */
-  register(rank: number, total: number, released: number, set: (released: number) => void): { demand(): void; leave(): void };
+interface RowRegistration {
+  /** La rangée a le focus : ce qui lui manque passe devant. */
+  demand(): void;
+  /** La rangée est sortie de l'écran, remise au début : elle revient à sa tête. */
+  retire(): void;
+  leave(): void;
 }
 
-function createRowStager(): RowStager & { dispose(): void } {
+interface RowStager {
+  /** Une rangée entre dans la page ; rend son entrée (la demander, la retirer) et son départ. */
+  register(rank: number, total: number, released: number, set: (released: number) => void): RowRegistration;
+}
+
+function createRowStager(tails: StagingTails): RowStager & { dispose(): void } {
   const entries = new Set<Entry>();
   const pacer = createStagingPacer();
   let frame: number | null = null;
@@ -31,7 +44,7 @@ function createRowStager(): RowStager & { dispose(): void } {
   };
   const pump = (now: number) => {
     frame = null;
-    const next = nextRelease([...entries]);
+    const next = nextRelease([...entries], tails);
     if (!next) return;
     if (pacer.frame(now)) {
       for (const entry of entries) {
@@ -54,6 +67,13 @@ function createRowStager(): RowStager & { dispose(): void } {
           entry.demanded = true;
           schedule();
         },
+        retire() {
+          entry.demanded = false;
+          const head = headRelease(entry.total);
+          if (entry.released <= head) return;
+          entry.released = head;
+          entry.set(head);
+        },
         leave() {
           entries.delete(entry);
         },
@@ -69,9 +89,10 @@ function createRowStager(): RowStager & { dispose(): void } {
 
 const RowStageContext = createContext<RowStager | null>(null);
 
-/** L'échelonnement des rangées d'une page — rien là où le profil ne le demande pas. */
-export function RowStageProvider({ children }: { children: ReactNode }) {
-  const stager = useMemo(() => (RENDER.stagedRows ? createRowStager() : null), []);
+/** L'échelonnement des rangées d'une page — rien là où le profil ne le
+ *  demande pas, ni quand la page ne le veut pas (`enabled`). */
+export function RowStageProvider({ enabled = true, children }: { enabled?: boolean; children: ReactNode }) {
+  const stager = useMemo(() => (RENDER.stagedRows && enabled ? createRowStager(mountProfile().rowTails) : null), [enabled]);
   useEffect(() => () => stager?.dispose(), [stager]);
   return <RowStageContext.Provider value={stager}>{children}</RowStageContext.Provider>;
 }
@@ -83,8 +104,10 @@ export function RowStageProvider({ children }: { children: ReactNode }) {
  * libéré le reste (des cartes de plus arrivent avec les données, jamais de
  * moins). `demand` (stable) : la rangée a le focus — ce qui lui manque passe
  * devant ; sans effet hors d'une page échelonnée ou une fois tout monté.
+ * `retire` (stable) : la rangée, sortie de l'écran, est remise au début —
+ * avec `retireOffscreenRows` (mode Lite), elle revient à sa tête.
  */
-export function useStagedRow(rank: number | undefined, total: number): { shown: number; demand: () => void } {
+export function useStagedRow(rank: number | undefined, total: number): { shown: number; demand: () => void; retire: () => void } {
   const stager = useContext(RowStageContext);
   const staged = stager !== null && rank !== undefined;
   const [released, setReleased] = useState(0);
@@ -93,7 +116,7 @@ export function useStagedRow(rank: number | undefined, total: number): { shown: 
   const shown = staged ? Math.min(total, Math.max(released, initialRelease(rank, total))) : total;
   const current = useRef(shown);
   current.current = shown;
-  const handle = useRef<{ demand(): void } | null>(null);
+  const handle = useRef<RowRegistration | null>(null);
   const demanded = useRef(false);
   useLayoutEffect(() => {
     if (!stager || rank === undefined) return undefined;
@@ -110,7 +133,12 @@ export function useStagedRow(rank: number | undefined, total: number): { shown: 
     demanded.current = true;
     handle.current?.demand();
   }, []);
-  return { shown, demand };
+  const retire = useCallback(() => {
+    if (!mountProfile().retireOffscreenRows) return;
+    demanded.current = false;
+    handle.current?.retire();
+  }, []);
+  return { shown, demand, retire };
 }
 
 /**
@@ -149,7 +177,8 @@ export function useRenewedRow<T>(rank: number | undefined, items: readonly T[], 
   });
   useLayoutEffect(() => {
     if (!stager || rank === undefined || current.released >= limit) return undefined;
-    const registration = stager.register(rank, limit, current.released, (released) => {
+    // Sa tête est sa limite : ce que l'échelonnement pose de lui-même.
+    const registration = stager.register(rank, limit, limit, current.released, (released) => {
       if (generation.current !== current) return;
       current.released = released;
       redraw();
