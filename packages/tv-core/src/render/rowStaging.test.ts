@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStagingPacer, headRelease, initialRelease, nextRelease, ROW_STAGING, STAGING_PACE, type StagedRow, type StagingTails } from "./rowStaging";
+import { createStagingPacer, headRelease, initialRelease, LINE_STAGING, nextLineCount, nextRelease, ROW_STAGING, STAGING_PACE, type StagedRow, type StagingTails } from "./rowStaging";
 
 /** Joue l'échelonnement jusqu'au bout : la suite des parts. */
 function play(rows: StagedRow[], tails: StagingTails = "eager"): string[] {
@@ -102,3 +102,14 @@ describe("le montage échelonné des rangées", () => {
   });
 });
 
+
+describe("le montage étalé des lignes d'une grille", () => {
+  it("ajoute une ligne par image, jamais au-delà des données, jamais en arrière", () => {
+    expect(LINE_STAGING.initial).toBe(1);
+    expect(nextLineCount(1, 10)).toBe(2);
+    expect(nextLineCount(9, 10)).toBe(10);
+    expect(nextLineCount(10, 10)).toBe(10);
+    expect(nextLineCount(0, 10)).toBe(2);
+    expect(nextLineCount(12, 10)).toBe(10);
+  });
+});

@@ -7,7 +7,9 @@ describe("le profil de montage", () => {
       rowTails: "eager",
       retireOffscreenRows: false,
       stageSearchRows: false,
+      recycleSearchCards: false,
       gridDrawDistance: 1100,
+      gridStaging: false,
       episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
     });
   });
@@ -18,6 +20,8 @@ describe("le profil de montage", () => {
     expect(lite.rowTails).toBe("demanded");
     expect(lite.retireOffscreenRows).toBe(true);
     expect(lite.stageSearchRows).toBe(true);
+    expect(lite.recycleSearchCards).toBe(true);
+    expect(lite.gridStaging).toBe(true);
     expect(lite.gridDrawDistance).toBeLessThan(normal.gridDrawDistance);
     expect(lite.episodes.windowSize).toBeLessThan(normal.episodes.windowSize);
     expect(lite.episodes.initialNumToRender).toBeLessThan(normal.episodes.initialNumToRender);

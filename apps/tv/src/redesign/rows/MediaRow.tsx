@@ -100,8 +100,11 @@ export const MediaRow = memo(function MediaRow({
       if (focused) focusedIndex.current = index;
       else if (focusedIndex.current === index) focusedIndex.current = null;
       if (!focused) return;
-      // Parcourue : ce que l'échelonnement ne lui a pas encore monté passe devant.
-      demand();
+      // Parcourue : ce que l'échelonnement ne lui a pas encore monté passe
+      // devant. Queues à la demande (mode Lite) : seulement quand le focus
+      // quitte la première carte — la rangée défile ; descendre de rangée en
+      // rangée ne monte aucune queue.
+      if (mountProfile().rowTails === "eager" || index > 0) demand();
       onFocusCard?.(card);
     },
     [onFocusCard, onItemFocusChange, demand],

@@ -39,10 +39,17 @@ export interface MountProfile {
   /** Les rangées de résultats de la recherche montées par échelons, comme
    *  celles de l'accueil (là où le profil de rendu échelonne). */
   stageSearchRows: boolean;
+  /** Les cartes des résultats de la recherche RECYCLÉES d'une frappe à
+   *  l'autre (clées par leur place) : une frappe redessine les cartes au lieu
+   *  d'en monter d'autres (~175 vues natives créées par frappe, mesuré). */
+  recycleSearchCards: boolean;
   /** Ce que la grille d'affiches garde montée au-delà de l'écran, en points,
    *  de chaque côté (`drawDistance` de FlashList : au chargement elle monte
    *  l'écran, puis s'étend jusqu'au triple, puis revient à cette valeur). */
   gridDrawDistance: number;
+  /** Le premier montage de la grille ÉTALÉ : une ligne par image à l'heure
+   *  (`nextLineCount`), au lieu de l'écran entier dans la même image. */
+  gridStaging: boolean;
   /** La fenêtre de la liste des épisodes d'une saison. */
   episodes: ListWindow;
 }
@@ -52,8 +59,10 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     rowTails: "eager",
     retireOffscreenRows: false,
     stageSearchRows: false,
+    recycleSearchCards: false,
     // Deux lignes d'avance de chaque côté (une ligne de six affiches : ~494 points).
     gridDrawDistance: 1100,
+    gridStaging: false,
     // Les valeurs de React Native pour le lot (10) : celles d'avant.
     episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
   },
@@ -61,10 +70,12 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     rowTails: "demanded",
     retireOffscreenRows: true,
     stageSearchRows: true,
+    recycleSearchCards: true,
     // Une ligne d'avance et son écart (494 + 52 points pour six affiches) :
     // celle que BAS rejoint est toujours montée, même avant que la page ne
     // défile vers la ligne focalisée.
     gridDrawDistance: 600,
+    gridStaging: true,
     // Un écran de vignettes (≈ 3,4) et la suivante ; un écran de chaque côté.
     episodes: { initialNumToRender: 4, windowSize: 3, maxToRenderPerBatch: 2 },
   },
