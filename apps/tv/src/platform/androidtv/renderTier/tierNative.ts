@@ -47,8 +47,8 @@ export const RENDER_TIER_STATE: Readonly<RenderTierState> = resolveRenderTier({
 
 export const RENDER_TIER: RenderTier = RENDER_TIER_STATE.tier;
 
-const simulated = override ? " (signaux simulés)" : "";
-deviceNative?.report(RENDER_TIER_STATE.tier, RENDER_TIER_STATE.reason, `${RENDER_TIER_STATE.detail ?? ""}${simulated}`.trim() || null);
+const reportDetail = [RENDER_TIER_STATE.detail, override ? "signaux simulés" : undefined].filter(Boolean).join(" · ");
+deviceNative?.report(RENDER_TIER_STATE.tier, RENDER_TIER_STATE.reason, reportDetail || null);
 
 /** L'écran à rouvrir après un rechargement dû au réglage (une fois). */
 export const RETURN_STATE: string | null = deviceNative?.returnState ?? null;
