@@ -29,6 +29,7 @@ export default {
   doneRemote_exposed: "Joignable depuis Internet, mais en HTTP\u00a0: passez par HTTPS (Administration › Accès à distance).",
   doneRemote_unverified: "Réglé, pas encore vérifié depuis Internet.",
   doneRemote_off: "Accès depuis l'extérieur coupé\u00a0: Tentacle marche à la maison. Administration › Accès à distance quand vous voudrez.",
+  doneWebUiOff: "L'interface web de ce serveur est coupée (TENTACLE_WEB_UI=off)\u00a0: cette page se fermera dès que vous la quitterez. Ensuite, utilisez les applications\u00a0; «\u00a0tentacle web on\u00a0» la rallume.",
   doneOpen: "Ouvrir Tentacle",
 
   // ── Le petit tuto : ajouter du contenu ───────────────────────────────

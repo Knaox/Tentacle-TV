@@ -132,7 +132,23 @@ Variables du serveur, à poser dans `compose.yaml` (`environment:`) pour les cas
 | `DATABASE_URL` ou `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` / `DB_PASSWORD_FILE` | la base, donnée par l'environnement plutôt que par l'assistant |
 | `TENTACLE_PUBLIC_URL` | lien public de repli (celui réglé dans l'administration l'emporte) |
 | `TRUSTED_PROXIES` | mandataires de plus dont `X-Forwarded-For` est cru (IP ou CIDR, séparés par des virgules) — voir [remote-access.md](remote-access.md#mandataires-de-confiance) |
-| `REMOTE_CHECK_URL` | le service de test d'ouverture (`off` pour le couper) |
+| `REMOTE_CHECK_URL` | le service de test d'ouverture et la détection de l'adresse publique (`off` coupe les deux) |
+| `TENTACLE_WEB_UI` | `off` coupe l'interface web — voir plus bas |
+
+## Désactiver l'interface web
+
+Vous n'utilisez que les applications (bureau, mobile, TV) ? Posez `TENTACLE_WEB_UI: "off"` dans `environment:` du
+service `tentacle` (la ligne y est déjà, en commentaire), puis redémarrez le conteneur. Le client web (`/`, ses
+pages et ses fichiers) répond alors 404. Ce qui continue : l'API et ses sockets (`/api/…`, donc toutes les
+applications), le client des TV LG sous `/tv` (une application à part entière, servie par ce serveur),
+`/.well-known/` (le test d'ouverture) — et **l'assistant d'installation, tant que l'installation n'est pas
+finie** : posée avant la fin, l'option ne ferme le web qu'après.
+
+Pour revenir en arrière : remettez `"on"` et redémarrez, ou tapez `tentacle web on` dans la console du conteneur
+(Portainer : **Console** → *Connect* ; ou `docker exec <conteneur> tentacle web on`) — effet sous cinq secondes,
+sans redémarrage. La commande l'emporte sur la variable ; `tentacle web default` suit de nouveau la variable,
+`tentacle web status` dit l'état et d'où il vient. Pas d'interrupteur dans l'administration : elle *est*
+l'interface web, la couper de là vous enfermerait dehors.
 
 ## Podman
 

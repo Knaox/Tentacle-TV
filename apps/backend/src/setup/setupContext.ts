@@ -1,5 +1,6 @@
 import { getDatabaseUrlSource, hasDatabaseUrl, hasPrisma } from "../services/db";
 import type { FastifyRequest } from "fastify";
+import { isWebUiEnabled } from "../static/webUi";
 import { flowState } from "./flow/setupFlow";
 import { clientUrlFor } from "./jellyfin/clientUrlFor";
 import { chosenOverStack, claimedAdminId, joinedConfiguredJellyfin, storedJellyfin } from "./setupStore";
@@ -44,5 +45,6 @@ export function buildSetupContext(request: FastifyRequest): SetupContext {
     os: os ? { id: os.id, name: os.name, family: os.family } : null,
     missingJellyfin: provisioner.missingGuide(),
     secure: request.protocol === "https",
+    webUi: isWebUiEnabled(),
   };
 }

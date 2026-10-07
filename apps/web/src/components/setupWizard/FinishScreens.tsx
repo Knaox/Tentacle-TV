@@ -85,6 +85,12 @@ export function DoneScreen({ wizard, onFinish }: { wizard: Wizard; onFinish: (se
           <p className={`mt-1 ${summary === "exposed" ? "text-status-error-fg" : summary === "secure" ? "text-status-success-fg" : ""}`}>{t(`doneRemote_${summary}`)}</p>
         </section>
 
+        {data.context?.webUi === false ? (
+          <p role="note" className="rounded-xl border border-line-subtle bg-fill-faint px-4 py-3 text-content-secondary">
+            {t("doneWebUiOff")}
+          </p>
+        ) : null}
+
         <button type="button" onClick={() => session && onFinish(session)} disabled={!session} className={`${cls.bp} w-full sm:w-auto`}>
           {t("doneOpen")}
         </button>

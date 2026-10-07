@@ -131,6 +131,12 @@ export interface SetupContext {
   missingJellyfin: MissingJellyfinGuide;
   /** La page a été servie en HTTPS (sinon l'assistant le signale, sans bloquer). */
   secure: boolean;
+  /**
+   * L'interface web reste ouverte une fois l'installation finie. `false` :
+   * `TENTACLE_WEB_UI=off` (ou `tentacle web off`) — l'assistant le dit à la
+   * fin. Absent (serveur d'avant) : ouverte.
+   */
+  webUi?: boolean;
 }
 
 export type SetupErrorCode =

@@ -29,6 +29,7 @@ export default {
   doneRemote_exposed: "Reachable from the Internet, but over HTTP: switch to HTTPS (Administration › Remote access).",
   doneRemote_unverified: "Set up, not checked from the Internet yet.",
   doneRemote_off: "Access from outside is off: Tentacle works at home. Administration › Remote access whenever you like.",
+  doneWebUiOff: "This server's web interface is turned off (TENTACLE_WEB_UI=off): this page closes as soon as you leave it. Then use the apps; “tentacle web on” turns it back on.",
   doneOpen: "Open Tentacle",
 
   // ── The short tutorial: adding content ───────────────────────────────

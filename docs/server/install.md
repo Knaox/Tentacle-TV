@@ -123,7 +123,22 @@ Server variables you may set in `compose.yaml` (`environment:`) for special case
 | `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` / `DB_PASSWORD_FILE` | the database, given by the environment instead of the wizard |
 | `TENTACLE_PUBLIC_URL` | fallback public link (the one set in the administration wins) |
 | `TRUSTED_PROXIES` | extra proxies whose `X-Forwarded-For` is trusted (comma-separated IPs/CIDRs) — see [remote-access.md](remote-access.md#trusted-proxies) |
-| `REMOTE_CHECK_URL` | remote access test service (`off` to disable) |
+| `REMOTE_CHECK_URL` | remote access test service and public address detection (`off` to disable both) |
+| `TENTACLE_WEB_UI` | `off` turns the web interface off — see below |
+
+## Disable the web interface
+
+Only use the apps (desktop, mobile, TV)? Set `TENTACLE_WEB_UI: "off"` in the `tentacle` service's `environment:`
+(the line is already there, commented out), then restart the container. The web client (`/`, its pages and files)
+then answers 404. What keeps working: the API and its sockets (`/api/…`, so every app), the LG TV client under
+`/tv` (an app of its own, served by this server), `/.well-known/` (the remote access test) — and **the setup
+wizard, as long as setup is not finished**: set before the end, the option closes the web only afterwards.
+
+Back on: set it to `"on"` and restart, or type `tentacle web on` in the container's console (Portainer:
+**Console** → *Connect*; or `docker exec <container> tentacle web on`) — it takes effect within five seconds,
+without a restart. The command wins over the variable; `tentacle web default` follows the variable again,
+`tentacle web status` tells the state and where it comes from. There is no switch in the administration: it *is*
+the web interface, turning it off from there would lock you out.
 
 ## Podman
 
