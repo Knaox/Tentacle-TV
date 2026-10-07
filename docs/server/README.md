@@ -38,6 +38,8 @@ Jellyfin is configured for you, your libraries are created, and you are signed i
 
 - **No secret to write.** Database passwords are generated on the first start (`init` service) and live in a
   volume only the database and Tentacle can read.
+- **No media setting for Tentacle.** Only Jellyfin mounts your media folder; Tentacle reads its folders and
+  libraries through Jellyfin's API.
 - **Never root, never the Docker socket.** Tentacle runs as `PUID:PGID` (1000:1000 by default) and does not
   mount `/var/run/docker.sock` — it never drives Docker.
 - **A one-time setup code.** Until setup is done, nobody on your network can claim the server: the wizard asks

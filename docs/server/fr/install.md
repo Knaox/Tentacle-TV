@@ -95,7 +95,8 @@ Une question par écran ; les étapes s'adaptent à la pile détectée.
    (Tentacle crée sa clé d'API lui-même). Aucun compte n'est créé, ni ici, ni plus tard.
 6. **Jellyfin neuf — bibliothèques** : de vraies bibliothèques Jellyfin, créées dans Jellyfin. *tentacle-full*
    propose **Films** (`/media/films`) et **Séries** (`/media/series`) ; parcourez les dossiers de Jellyfin
-   pour en ajouter.
+   pour en ajouter. Ce sont les chemins **de Jellyfin**, lus par son API : Tentacle n'a aucun réglage des
+   médias, dans aucune pile.
    **Jellyfin déjà configuré — réglages conseillés** (aucun écran de bibliothèques) — Tentacle n'y crée **aucune**
    bibliothèque ; il rappelle celles qui existent et propose, tous **facultatifs** et décochables, les
    réglages que le tableau de bord conseille aussi : la détection des passages (Intro Skipper, TheIntroDB,
@@ -117,7 +118,7 @@ Copiez `.env.example` en `.env` à côté de `compose.yaml`, décommentez ce qu'
 
 | Variable | Défaut | |
 |---|---|---|
-| `MEDIA_PATH` | `./media` | *full* : votre dossier des médias sur cette machine (Jellyfin le voit en `/media`) |
+| `MEDIA_PATH` | `./media` | *full* : votre dossier des médias sur cette machine. Seul Jellyfin le monte (il le voit en `/media`) ; `films` et `series` y sont créés au premier démarrage s'ils manquent (service `jellyfin-init`) |
 | `TENTACLE_PORT` | `3000` | le port de Tentacle sur cette machine |
 | `JELLYFIN_PORT` | `8096` | *full* : le port de Jellyfin sur cette machine |
 | `JELLYFIN_DISCOVERY_PORT` | `7359` | *full* : le port UDP de découverte de Jellyfin (à changer si un autre Jellyfin tourne ici) |

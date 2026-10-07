@@ -575,7 +575,10 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
 Doc utilisateur : `docs/server/` (EN) et `docs/server/fr/`. Trois piles prêtes à copier,
 `stacks/tentacle-{full,db,only}/compose.yaml` : **aucun secret écrit** (service `init` → volume
 `tentacle-secrets`, `DB_PASSWORD_FILE`), **jamais le socket Docker**, jamais root (`PUID:PGID`, tini,
-su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration forcée).
+su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration forcée). **Aucun réglage des
+médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` naissent de `jellyfin-init`
+(l'image de Jellyfin, une fois en root) ; Tentacle lit les dossiers par l'API de Jellyfin
+(`stacksContract.test.ts` le tient : aucun service de l'image Tentacle ne monte `/media`).
 
 - **Assistant d'installation** (`/api/setup/*`, `apps/backend/src/setup/`) : **sans code depuis la
   maison** (modèle Jellyfin / Plex, `POST /session/local`, `setup/localAccess/`) — le PREMIER navigateur
@@ -619,7 +622,8 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   (`noLibraries`, constaté par `connect`, gardé avec le choix) reçoit l'écran des bibliothèques entre connexion et
   réglages — FACULTATIF (« Passer ») — et `browse` / `createLibraries` y sont permis ; avec des bibliothèques, 409.
   Les dossiers suivent la machine de JELLYFIN (`BrowseResult.style` : `posix` ou `windows`, lu sur ses lecteurs) ;
-  dans la pile, son `/media` est dit avec le dossier de l'hôte (`TENTACLE_MEDIA_HOST_PATH`, sinon `MEDIA_PATH`).
+  dans la pile, son `/media` est dit tel que Jellyfin le voit, « dossier `MEDIA_PATH` » pour l'hôte —
+  `TENTACLE_MEDIA_HOST_PATH` n'est plus posé, seul un compose d'avant le donne encore (affichage enrichi).
 - **Aide de l'assistant** : une page du site par étape, adresses STABLES dans
   `packages/shared/src/setupWizard/setupDocLinks.ts` (le site les tient ; jamais renommées), et « Besoin
   d'aide ? » repliable au pied de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`).

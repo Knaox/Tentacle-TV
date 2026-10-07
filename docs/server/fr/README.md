@@ -39,6 +39,8 @@ Jellyfin est configuré pour vous, vos bibliothèques sont créées, et vous êt
 
 - **Aucun secret à écrire.** Les mots de passe de la base sont générés au premier démarrage (service `init`)
   et vivent dans un volume que seuls la base et Tentacle lisent.
+- **Aucun réglage des médias pour Tentacle.** Seul Jellyfin monte votre dossier des médias ; Tentacle lit
+  ses dossiers et ses bibliothèques par l'API de Jellyfin.
 - **Jamais root, jamais le socket Docker.** Tentacle tourne sous `PUID:PGID` (1000:1000 par défaut) et ne
   monte pas `/var/run/docker.sock` : il ne pilote jamais Docker.
 - **Un code d'installation à usage unique.** Tant que l'installation n'est pas faite, personne sur votre
