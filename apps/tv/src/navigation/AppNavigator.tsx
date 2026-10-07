@@ -14,9 +14,11 @@ import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { ProfilesScreen } from "../screens/ProfilesScreen";
 import { effectOff } from "../redesign/render/measuredEffects";
+import { RENDER } from "../redesign/render/renderProfile";
 
 // Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
-const PAGE_FADE_OFF = effectOff("pageFade");
+// Profil Lite (`pageTransition: "cut"`) : une coupe nette d'un écran à l'autre.
+const PAGE_FADE_OFF = effectOff("pageFade") || RENDER.pageTransition === "cut";
 
 // Lazy-loaded screens
 const MediaDetailScreen = React.lazy(() => import("../screens/MediaDetailScreen").then(m => ({ default: m.MediaDetailScreen })));

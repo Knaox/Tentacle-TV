@@ -11,6 +11,7 @@ import {
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useRemoteIntents } from "../../platform/input";
 import { effectOff } from "../../redesign/render/measuredEffects";
+import { RENDER } from "../../redesign/render/renderProfile";
 
 // Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
 const HERO_ROTATION_OFF = effectOff("heroRotation");
@@ -56,7 +57,8 @@ export function useHeroRotation({ focus, count, index, shown, onAdvance }: HeroR
   const reduced = useReducedMotion();
   const appActive = useAppActive();
   const active = heroRotationActive({ shown, appActive, count }) && !HERO_ROTATION_OFF;
-  const delay = heroRotateDelay(reduced);
+  // Profil Lite : une fois et demie plus espacée (`heroDelayFactor`).
+  const delay = heroRotateDelay(reduced, RENDER.heroDelayFactor);
 
   // L'état du moment, lu par le minuteur et les gestes sans rien redessiner.
   const live = useRef({ active, delay, onAdvance, holding: false });
