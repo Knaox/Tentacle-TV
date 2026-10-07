@@ -29,6 +29,13 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '15.1'
 
+  # MPVKit isolé : chaque tranche devient un seul objet qui n'exporte que
+  # l'API mpv_*. Sans cela, le pod libdav1d 1.2.0 d'expo-image (libavif)
+  # l'emportait en partie sur le dav1d 1.5.2 de MPVKit à l'édition de liens,
+  # et mpv plantait dès l'ouverture d'un AV1 (mesuré le 2026-10-07). Le texte
+  # du script est lu ici, pour une somme de contrôle stable dans Podfile.lock.
+  s.prepare_command = "set -- MPVKit.xcframework\n" + File.read(File.join(__dir__, 'MPVKit-isolate.sh'))
+
   s.static_framework = true
   s.requires_arc = true
 

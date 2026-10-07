@@ -170,9 +170,11 @@ protégerait mieux la faculté d'accorder les permissions de `LICENSE-EXCEPTIONS
 
 ## 7. Restes
 
-1. **iOS** : fait (Release `mpvkit-lgpl-0.41.0-av5`, podspec, lecture au simulateur).
-   Reste : le plantage AV1 de mpv, PRÉEXISTANT (même signature avec le binaire GPL
-   livré), suivi à part ; un essai sur un vrai iPhone avant le cran store.
+1. **iOS** : fait (Release `mpvkit-lgpl-0.41.0-av5`, podspec, lecture au simulateur). Le
+   plantage AV1 (préexistant) venait d'un DOUBLON de dav1d — le pod d'expo-image (1.2.0)
+   l'emportait en partie sur celui de MPVKit (1.5.2) — et il est corrigé :
+   `apps/mobile/ios/MPVKit-isolate.sh`, joué par CocoaPods, ne laisse sortir de MPVKit que
+   l'API `mpv_*`. Reste : un essai sur un vrai iPhone avant le cran store.
 2. **Android** : fait — libmpv-android et le décodeur Media3 en LGPL dans
    `apps/mobile/android/maven-local` (construits sur un Mac, recette dans son README).
    Reste : un essai de lecture sur un vrai appareil Android avant le cran store

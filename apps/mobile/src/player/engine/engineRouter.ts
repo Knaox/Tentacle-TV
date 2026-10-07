@@ -122,11 +122,10 @@ function decideIos(input: EngineRouterInput, support: PlatformMediaSupport): Eng
   if (isDolbyVisionProfile5(video)) return native("dolby-vision-p5");
   if (input.preferSystemAtmos && isEac3Atmos(audio)) return native("system-atmos");
   const videoCodec = codecOf(video);
-  // AV1 sans la puce : le libdav1d de MPVKit (sans assembleur) plante à
-  // l'ouverture du décodeur — mesuré au simulateur sur quatre fichiers 10 bits,
-  // quel que soit le nombre de fils — et un AV1 logiciel viderait la batterie.
-  // Le lecteur système le demande au serveur ; à lever quand un appareil sans
-  // puce AV1 aura prouvé le contraire.
+  // AV1 sans la puce : un AV1 logiciel viderait la batterie — le lecteur
+  // système le demande au serveur. (Le plantage du libdav1d de MPVKit qui
+  // justifiait aussi cette règle venait d'un DOUBLON de dav1d dans l'app — le
+  // pod d'expo-image — et il est corrigé : MPVKit-isolate.sh, 2026-10-07.)
   if (video && videoCodec === "av1" && !input.av1Hardware) return native("av1-software");
   if (!supportsToken(support.containers, input.container)) return mpv("container");
   if (video && !support.videoCodecs.has(videoCodec) && videoCodec !== "av1") return mpv("video-codec");
