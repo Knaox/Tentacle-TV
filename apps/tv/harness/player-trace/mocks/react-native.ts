@@ -70,7 +70,11 @@ export const DeviceEventEmitter = { emit: (_name: string, evt: unknown) => __rig
 export const AccessibilityInfo = { announceForAccessibility: () => {} };
 export const StyleSheet = { create: <T>(styles: T) => styles, absoluteFill: {} };
 export const UIManager = {};
-// Le module des capacités (`lib/playbackTier.android.ts`) : le banc force le Lite par `__rig.liteOverride`.
+// Le module de l'appareil (`platform/androidtv/renderTier`, que suit `lib/playbackTier.android.ts`) :
+// le banc force le Lite par `__rig.liteOverride`, comme `debug.tentacle.lite` sur un appareil.
 export const NativeModules: Record<string, unknown> = {
-  get TentacleMediaCapabilities() { return { liteOverride: (__rig as { liteOverride?: string }).liteOverride }; },
+  TentacleMediaCapabilities: {},
+  get TentacleDevice() {
+    return { signals: {}, forcedTier: (__rig as { liteOverride?: string }).liteOverride, report: () => {}, setModeAndReload: () => {} };
+  },
 };

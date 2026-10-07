@@ -17,6 +17,7 @@ import { ChoiceModal } from "./ChoiceModal";
 import { useNavigationSettings } from "./useNavigationSettings";
 import { useOwnPinReturn } from "./useOwnPinReturn";
 import { useProfileActions } from "./useProfileActions";
+import { useRenderTierSetting } from "./useRenderTierSetting";
 import { useSettingsModel } from "./useSettingsModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
@@ -43,6 +44,8 @@ export function SettingsRedesign({ route }: Props) {
   const [tab, setTab] = useState<SettingsTab>(route.params?.tab ?? SETTINGS_DEFAULT_TAB);
   const focus = useFocusStore();
   const nav = useNavigationSettings(focus);
+  // Android TV : le mode Lite, seul occupant de l'onglet Apparence ; rien sur l'Apple TV.
+  const lite = useRenderTierSetting();
   // Au retour du pavé de son code PIN, le focus rejoint la section « Code PIN ».
   const onReturn = useOwnPinReturn(profiles.pinOpened);
   const screen = useRedesignScreen({ railKey: "Settings", entryKey: settingsEntryKey(tab), focus, onReturn });
@@ -89,6 +92,8 @@ export function SettingsRedesign({ route }: Props) {
           onSelectScrubDelay={model.onSelectScrubDelay}
           appearance={PLATFORM_TRAITS.liquidGlass}
           onToggleLiquidGlass={PLATFORM_TRAITS.liquidGlass ? model.onToggleLiquidGlass : undefined}
+          renderTier={lite.renderTier}
+          onSelectLiteMode={lite.onSelectLiteMode}
           onMoveNavEntry={nav.onMoveNavEntry}
           onToggleNavEntry={nav.onToggleNavEntry}
           onShowAllNav={nav.onShowAllNav}

@@ -123,3 +123,16 @@ export interface SettingsNavigation {
   /** L'ordre a été changé : « Ordre par défaut » paraît. */
   canResetOrder: boolean;
 }
+
+/**
+ * Le mode Lite (Android TV seulement, trait `renderTierSetting`) : le réglage,
+ * le niveau en vigueur et ce qu'a DÉTECTÉ l'automatique (tv-core
+ * `device/renderTier`), dit en sous-titre.
+ */
+export interface SettingsRenderTier {
+  mode: "auto" | "on" | "off";
+  tier: "normal" | "lite";
+  detected: { tier: "normal" | "lite"; reason: string; detail?: string };
+  /** Une propriété de débogage impose le niveau (`debug.tentacle.lite`). */
+  forced: boolean;
+}

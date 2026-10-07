@@ -28,6 +28,7 @@ import type {
   SettingsAccount,
   SettingsNavigation,
   SettingsPlayback,
+  SettingsRenderTier,
   SettingsTab,
 } from "./settingsTypes";
 
@@ -55,6 +56,8 @@ import type {
  *   `useSetLibraryPreference` (trio complet) ; Retour la remet à `null` ;
  * - Liquid Glass : lu sur `LiquidGlassProvider` (clé `tentacle_liquid_glass`),
  *   `onToggleLiquidGlass` écrit la clé ;
+ * - `renderTier` (Android TV) : le mode Lite (`platform/renderTier`),
+ *   `onSelectLiteMode` l'écrit et recharge l'interface ; absent, rien ;
  * - `navigation` (Apple TV) : les entrées organisables de la barre de gauche
  *   (`NavigationPanel`) ; absent, l'onglet ne paraît pas ;
  * - `about` : `versions.json` (`tv`), serveur, compte, appareil, année.
@@ -62,7 +65,7 @@ import type {
  * Clés de focus : `settings:tab:<onglet>`, `settings:changeServer`,
  * `settings:logout`, `settings:switchProfile`, `settings:manageProfiles`, `settings:preset:<mode>`, `settings:lang:<fr|en>`,
  * `settings:lib:<i>:<réglage|reset>`, `settings:tunneling`,
- * `settings:matchFrameRate`, `settings:liquidGlass`,
+ * `settings:matchFrameRate`, `settings:liquidGlass`, `settings:lite:<auto|on|off>`,
  * `settings:nav:<i>[:visibility]`, `settings:nav:showAll|resetOrder`,
  * `settings:choice:<i>` (liste de choix). Groupes : `settings:tabs` (la
  * colonne des onglets) et `settings:panel` (le panneau) — GAUCHE depuis le
@@ -106,6 +109,9 @@ export interface SettingsViewProps {
   /** Faux : l'onglet Apparence (le réglage Liquid Glass) n'existe pas sur
    *  cette plateforme (trait `liquidGlass`). Absent : il existe. */
   appearance?: boolean;
+  /** Le mode Lite (Android TV) : il fait exister l'onglet Apparence à lui seul. */
+  renderTier?: SettingsRenderTier | null;
+  onSelectLiteMode?: (mode: SettingsRenderTier["mode"]) => void;
   onMoveNavEntry?: (key: string) => void;
   onToggleNavEntry?: (key: string) => void;
   onShowAllNav?: () => void;
@@ -124,7 +130,7 @@ const PANEL_RADIUS = TV_STAGE.hero.radius;
 const PANEL_INNER = PANEL_WIDTH - PANEL_PAD_X * 2;
 
 export const SettingsView = memo(function SettingsView(props: SettingsViewProps) {
-  const { nav, tab, account, playback, about, navigation, choiceList, palette = NEUTRAL_PALETTE, appearance = true } = props;
+  const { nav, tab, account, playback, about, navigation, choiceList, palette = NEUTRAL_PALETTE, appearance = true, renderTier } = props;
   const { t } = useTranslation(["preferences", "nav", "about"]);
   const liquid = useLiquidGlassEnabled();
   const navTotal = navigation?.entries.length ?? 0;
@@ -133,11 +139,14 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
   const tabs = useMemo<SettingsTabItem[]>(() => [
     { key: "account", label: t("preferences:sectionAccount"), caption: account.name, icon: "user" },
     { key: "playback", label: t("preferences:sectionPlayback"), caption: t(`preferences:${PRESET_LABEL_KEYS[playback.preset]}`), icon: "playCircle" },
-    ...(appearance ? [{
+    ...(appearance || renderTier ? [{
       key: "appearance" as const,
       label: t("preferences:sectionAppearance"),
-      // Le verre en cours, nommé : « Liquid Glass » ou « Verre classique ».
-      caption: t(liquid ? "preferences:liquidGlassTitle" : "preferences:glassClassic"),
+      // Le verre en cours, nommé : « Liquid Glass » ou « Verre classique » ;
+      // sans verre réglable (Android TV), le rendu en cours : « Mode Lite » ou « Rendu complet ».
+      caption: appearance
+        ? t(liquid ? "preferences:liquidGlassTitle" : "preferences:glassClassic")
+        : t(renderTier?.tier === "lite" ? "preferences:liteTierLite" : "preferences:liteTierNormal"),
       icon: "sparkles" as const,
     }] : []),
     ...(navigation ? [{
@@ -148,7 +157,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
       icon: "panelLeft" as const,
     }] : []),
     { key: "about", label: t("nav:about"), caption: t("about:version", { version: about.version }), icon: "info" },
-  ], [t, account.name, playback.preset, appearance, liquid, navigation, navShown, navTotal, about.version]);
+  ], [t, account.name, playback.preset, appearance, renderTier, liquid, navigation, navShown, navTotal, about.version]);
 
   return (
     <View style={styles.root}>
@@ -192,8 +201,15 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onSelectScrubDelay={props.onSelectScrubDelay}
                 />
               ) : null}
-              {tab === "appearance" && appearance ? (
-                <AppearancePanel width={PANEL_INNER} previewImageUri={props.glassPreviewUri} onToggleLiquidGlass={props.onToggleLiquidGlass} />
+              {tab === "appearance" && (appearance || renderTier) ? (
+                <AppearancePanel
+                  width={PANEL_INNER}
+                  previewImageUri={props.glassPreviewUri}
+                  onToggleLiquidGlass={props.onToggleLiquidGlass}
+                  liquidGlass={appearance}
+                  renderTier={renderTier}
+                  onSelectLiteMode={props.onSelectLiteMode}
+                />
               ) : null}
               {tab === "navigation" && navigation ? (
                 <NavigationPanel
