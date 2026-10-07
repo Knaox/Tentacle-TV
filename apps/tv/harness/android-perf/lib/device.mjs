@@ -174,7 +174,14 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
     },
 
     pid() {
-      return shell(`pidof ${PACKAGE}`).trim().split(/\s+/)[0] || null;
+      // `pidof` sort en erreur (statut 1) quand le processus n'existe pas :
+      // l'app tuée (AVD à 1 Go) se constate, elle ne fait pas tomber le banc.
+      try {
+        return shell(`pidof ${PACKAGE}`).trim().split(/\s+/)[0] || null;
+      } catch (error) {
+        if (error.status === 1) return null;
+        throw error;
+      }
     },
 
     /** L'app de mesure au premier plan, ou une `ForegroundError` (`keyGuard.mjs`). */
