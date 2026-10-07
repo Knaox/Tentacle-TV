@@ -58,7 +58,7 @@ export const APPLE_MEDIA: readonly ThirdPartyComponent[] = [
   { name: "HarfBuzz", version: null, license: "MIT", texts: ["MIT"], notice: "Copyright © the HarfBuzz authors.", source: "https://github.com/harfbuzz/harfbuzz", platforms: APPLE_PLAYERS },
   { name: "Little CMS 2", version: "2.17", license: "MIT", texts: ["MIT"], notice: "Copyright © Marti Maria Saguer.", source: "https://github.com/mm2/Little-CMS", platforms: APPLE_PLAYERS },
   { name: "libunibreak", version: null, license: "Zlib", texts: ["Zlib"], notice: "Copyright © Wu Yongwei and contributors.", source: "https://github.com/adah1972/libunibreak", platforms: APPLE_PLAYERS },
-  { name: "dav1d", version: "1.5.3", license: "BSD-2-Clause", texts: ["BSD-2-Clause"], notice: "Copyright © VideoLAN and dav1d authors.", source: "https://code.videolan.org/videolan/dav1d", platforms: APPLE_PLAYERS },
+  { name: "dav1d", version: "1.5", license: "BSD-2-Clause", texts: ["BSD-2-Clause"], notice: "Copyright © VideoLAN and dav1d authors.", source: "https://code.videolan.org/videolan/dav1d", platforms: APPLE_PLAYERS },
   { name: "uavs3d", version: "1.2.1", license: "BSD-3-Clause", texts: ["BSD-3-Clause"], notice: "Copyright © the uavs3d project authors.", source: "https://github.com/uavs3/uavs3d", platforms: APPLE_PLAYERS },
   { name: "libdovi (dovi_tool)", version: "3.3.2", license: "MIT", texts: ["MIT"], notice: "Copyright © quietvoid.", source: "https://github.com/quietvoid/dovi_tool", platforms: APPLE_PLAYERS },
   { name: "MoltenVK", version: "1.4.2", license: "Apache-2.0", texts: ["Apache-2.0"], notice: "Copyright © The Brenwill Workshop Ltd. and The Khronos Group Inc.", source: "https://github.com/KhronosGroup/MoltenVK", platforms: APPLE_PLAYERS },

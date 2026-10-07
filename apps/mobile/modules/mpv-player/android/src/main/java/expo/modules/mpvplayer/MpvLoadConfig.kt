@@ -1,3 +1,5 @@
+// Code propre de Tentacle TV, non dérivé de Streamyfin (contrairement à ses
+// voisins MPL-2.0). SPDX-License-Identifier: AGPL-3.0-or-later
 package expo.modules.mpvplayer
 
 /** Un sous-titre externe à ajouter (`sub-add`) une fois le fichier chargé. */

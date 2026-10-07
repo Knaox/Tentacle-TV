@@ -1,101 +1,98 @@
 # Licences tierces — Tentacle TV Mobile
 
-Tentacle TV (application) est distribué sous licence **MIT**.
+Tentacle TV est distribué sous **GNU AGPL v3.0 ou ultérieure** (`LICENSE`), avec
+les permissions additionnelles de `LICENSE-EXCEPTIONS` (boutiques d'applications ;
+bibliothèques de plateforme non libres comme Firebase, pour le seul code de Tentacle).
+Source de chaque version : tag `mobile-vX.Y.Z` de https://github.com/Knaox/Tentacle-TV.
+Les versions publiées avant le 2026-10-07 restent sous licence MIT.
+
+**Crédits › Licences** dans l'app : la mention de l'AGPL, la source de la version, les
+composants embarqués (selon iOS ou Android) et le texte complet de chaque licence, hors
+ligne (catalogue : `packages/shared/src/licenses/`). Inventaire général : `docs/LICENCES.md`.
 
 ## Lecteur avancé (libmpv)
 
-L'application mobile embarque **libmpv** pour lire tel quel ce que le lecteur
-système ne lit pas (MKV, DTS, TrueHD, Opus, ASS stylé, PGS, codecs anciens…).
-Le lecteur système (AVPlayer sur iOS, ExoPlayer sur Android) reste le premier
-choix là où il gagne.
+L'application embarque **libmpv** pour lire tel quel ce que le lecteur système ne lit
+pas (MKV, DTS, TrueHD, Opus, ASS stylé, PGS, codecs anciens…). Le lecteur système
+(AVPlayer sur iOS, ExoPlayer sur Android) reste le premier choix là où il gagne.
 
 ### iOS — MPVKit
 
-| Version | Licence des binaires | Usage |
-|---------|----------------------|-------|
-| Binaires du fork Streamyfin `0.41.0-av5` (`apps/mobile/ios/MPVKit.podspec`) | **GPL v3** (mpv avec composants GPL, libsmbclient) | Développement et TestFlight **seulement** |
-| Variante LGPL construite par `.github/workflows/mpvkit.yml` | **LGPL v2.1+ / LGPL v3** (mpv `-Dgpl=false`, FFmpeg sans `--enable-gpl`, sans smbclient) | **Obligatoire avant toute soumission à l'App Store** |
+| Versions | Binaires | Licence |
+|----------|----------|---------|
+| ≤ 1.10.x (livrées) | fork Streamyfin `0.41.0-av5` tel quel : mpv `-Dgpl=true`, **libsmbclient**, LuaJIT, FFmpeg `--enable-nonfree` (« nonfree and unredistributable »), archive statique | **GPL v3** — incompatible avec l'App Store : **non conforme** |
+| ≥ 1.11.0 | variante construite par `.github/workflows/mpvkit.yml` : mpv `-Dgpl=false`, FFmpeg n8.1 **sans** `--enable-gpl` ni `--enable-nonfree`, libsmbclient et LuaJIT **retirés** avant la combinaison | **LGPL** — mpv LGPL-2.1+, FFmpeg **LGPL-3.0+** (`--enable-version3`, GMP) |
 
-Avant soumission : lancer `mpvkit.yml` (dispatch manuel), reporter l'URL et la
-somme SHA-256 de la Release `mpvkit-lgpl-<version>` dans
-`apps/mobile/ios/MPVKit.podspec` (`:http`, `:sha256`, `version`, `license`).
+La garde `check-podspec-license.mjs` (job `prepare` de `mobile.yml`) **refuse** toute
+livraison iOS au cran test ou store si `ios/MPVKit.podspec` déclare une licence GPL ou
+si sa source n'est pas une Release `mpvkit-lgpl-*` de ce dépôt. Le `mpvkit.yml` vérifie
+dans le binaire (chaînes gravées par libavutil, traces de Samba et LuaJIT) qu'il est LGPL.
 
-Composants de MPVKit (liste du script de construction du fork, `Sources/BuildScripts/XCFrameworkBuild/main.swift`) :
+Composants de la variante LGPL (script du fork, `Sources/BuildScripts/XCFrameworkBuild/main.swift`) :
 
 | Composant | Licence | Source |
 |-----------|---------|--------|
-| mpv 0.41 (+ `vo_avfoundation` du fork) | LGPL v2.1+ (`-Dgpl=false`) | https://github.com/mpv-player/mpv — fork : https://github.com/streamyfin/MPVKit |
-| FFmpeg 8.1 | LGPL v2.1+ (sans `--enable-gpl`) | https://ffmpeg.org |
-| libass | ISC | https://github.com/libass/libass |
-| libplacebo 7 | LGPL v2.1+ | https://code.videolan.org/videolan/libplacebo |
-| MoltenVK, Vulkan headers, shaderc | Apache 2.0 | https://github.com/KhronosGroup |
-| dav1d (construit **sans assembleur**) | BSD-2 | https://code.videolan.org/videolan/dav1d |
-| libdovi | MIT | https://github.com/quietvoid/dovi_tool |
-| uavs3d | BSD-3 | https://github.com/uavs3/uavs3d |
-| FreeType | FTL (BSD-like) | https://freetype.org |
-| HarfBuzz | MIT | https://github.com/harfbuzz/harfbuzz |
-| FriBidi | LGPL v2.1+ | https://github.com/fribidi/fribidi |
-| libunibreak | Zlib | https://github.com/adah1972/libunibreak |
-| Little CMS 2 | MIT | https://github.com/mm2/Little-CMS |
-| uchardet | MPL 1.1 / GPL / LGPL (triple) | https://www.freedesktop.org/wiki/Software/uchardet |
-| GnuTLS, Nettle, GMP | LGPL v2.1+ / LGPL v3 (GMP : LGPL v3 ou GPL v2) | https://www.gnutls.org |
-| OpenSSL | Apache 2.0 | https://www.openssl.org |
-| libbluray | LGPL v2.1+ | https://www.videolan.org/developers/libbluray.html |
-| libsmbclient (Samba) | **GPL v3 — build GPL seulement**, absent de la variante LGPL | https://www.samba.org |
-| LuaJIT | MIT — build GPL seulement ; aucun script n'est chargé | https://luajit.org |
-| MPVKit (empaquetage, scripts) | LGPL v3 | https://github.com/mpvkit/MPVKit |
+| mpv 0.41 (+ `vo_avfoundation` du fork) | LGPL-2.1+ (`-Dgpl=false`) | https://github.com/mpv-player/mpv — fork : https://github.com/streamyfin/MPVKit |
+| FFmpeg n8.1 | LGPL-3.0+ | https://ffmpeg.org |
+| libplacebo 7.360.1, FriBidi, GnuTLS 3.8.11, libbluray 1.4.0 | LGPL-2.1+ | code.videolan.org, github.com/fribidi, gnutls.org |
+| GMP, Nettle | LGPL-3.0+ (ou GPL-2+, non retenue) | gmplib.org |
+| uchardet | MPL-1.1 / GPL-2+ / LGPL-2.1+ — utilisé sous LGPL | freedesktop.org |
+| libass 0.17.4 | ISC | github.com/libass/libass |
+| FreeType | FTL (mention de crédit dans l'écran Licences) | freetype.org |
+| HarfBuzz, Little CMS 2.17, libdovi 3.3.2 | MIT | — |
+| dav1d 1.5.2 (sans assembleur), uavs3d 1.2.1 | BSD-2 / BSD-3 | — |
+| libunibreak | zlib | — |
+| MoltenVK, Vulkan, shaderc 2025.5, OpenSSL 3.3.5 | Apache-2.0 | github.com/KhronosGroup, openssl.org |
+| MPVKit (empaquetage, scripts) | LGPL-3.0 | https://github.com/mpvkit/MPVKit |
 
-Conformité LGPL : les sources des versions utilisées et la recette de
-compilation sont publiques (dépôts ci-dessus, workflow `mpvkit.yml` versionné
-ici) ; la mention figure dans « À propos › Crédits » de l'application.
-
-**Liaison statique — tranché (2026-09-20).** Le xcframework est statique et le
-reste. La LGPL (v2.1 §6 a, v3 §4 d 0) exige qu'un utilisateur puisse
-**relier** l'application avec une version modifiée de la bibliothèque ; elle
-n'impose pas une bibliothèque partagée. Tentacle TV est publié sous MIT, code
-complet sur GitHub, chaque version livrée étant taguée (`mobile-vX.Y.Z`) :
-quiconque peut reconstruire l'application depuis ses sources avec un autre
-MPVKit. C'est le « code de l'application » en forme source que la licence
-demande. Trois obligations en découlent, et rien d'autre : le tag de chaque
-version soumise reste public ; ce fichier et les crédits restent à jour ; la
-variante LGPL (`mpvkit.yml`) est celle du paquet soumis à l'App Store.
+**Liaison statique — tranché (2026-09-20).** Le xcframework est statique et le reste.
+La LGPL (v2.1 §6 a, v3 §4 d 0) exige qu'un utilisateur puisse **relier** l'application
+avec une version modifiée de la bibliothèque ; elle n'impose pas une bibliothèque
+partagée. Le code complet de l'application est public, chaque version soumise taguée
+(`mobile-vX.Y.Z`) : quiconque peut la reconstruire avec un autre MPVKit. Obligations : le
+tag de chaque version soumise reste public ; ce fichier et l'écran Licences restent à
+jour ; seule la variante LGPL part vers TestFlight et l'App Store (garde CI).
 
 ### Android — libmpv-android et le décodeur FFmpeg de Jellyfin
 
-| Composant | Licence | Source |
-|-----------|---------|--------|
-| libmpv-android 1.0.0 (`dev.jdtech.mpv:libmpv`) : mpv 0.41, FFmpeg 8.1 (`--enable-gpl --enable-version3`), libass, fontconfig, dav1d | **GPL v3** | https://github.com/jarnedemeulemeester/libmpv-android |
-| `org.jellyfin.media3:media3-ffmpeg-decoder` 1.9.0+1 (extension audio FFmpeg pour Media3/ExoPlayer) | **GPL v3** | https://github.com/jellyfin/jellyfin-androidx-media |
+| Composant | Version | Licence | Source |
+|-----------|---------|---------|--------|
+| libmpv-android `dev.jdtech.mpv:libmpv` : mpv 0.41.0 (GPL-2+), FFmpeg n8.1 (`--enable-gpl --enable-version3`), libass 0.17.4, libplacebo 7.360.1, FreeType 2.14.3, HarfBuzz 14.1.0, FriBidi 1.0.16, fontconfig 2.17.1, libunibreak 6.1, libxml2 2.15.2, Lua 5.2.4, mbedTLS 3.6.6 (Apache-2.0), dav1d 1.5.3 — le POM dit « MIT » : licence des scripts | 1.0.0 | **GPL-3.0-or-later** | https://github.com/jarnedemeulemeester/libmpv-android |
+| `org.jellyfin.media3:media3-ffmpeg-decoder` (décodeurs audio ; son FFmpeg 6.0 est LGPL-2.1+) | 1.9.0+1 | **GPL-3.0** | https://github.com/jellyfin/jellyfin-androidx-media |
+| Media3 / ExoPlayer | 1.9.0 | Apache-2.0 | https://github.com/androidx/media |
+| Firebase Cloud Messaging + Google Play services (notifications) | 24.0.1 | Apache-2.0 / **propriétaire** (Android SDK License) | — |
 
-Ces composants GPL sont compatibles avec la licence MIT de l'application,
-dont les sources sont publiées ; Google Play n'y oppose aucune règle.
+Les composants GPL v3 sont compatibles avec l'AGPL v3 (section 13). **⚠️ Point ouvert :**
+Firebase / Play services (propriétaires) sont dans le MÊME APK que le GPL de mpv et
+FFmpeg ; `LICENSE-EXCEPTIONS` ne peut excepter que le code de Tentacle. Correctif propre :
+libmpv-android reconstruit en LGPL et `decoder_ffmpeg` d'androidx (voir `docs/LICENCES.md`).
 
-### Android — certificats racine
+### Certificats racine
 
-`apps/mobile/modules/mpv-player/android/src/main/assets/mpv/cacert.pem` : le
-paquet de certificats racine de Mozilla, extrait par curl
-(https://curl.se/docs/caextract.html), **Mozilla Public License 2.0**. Le FFmpeg de
-libmpv-android parle mbedTLS, qui ne lit aucun magasin système : sans ce
-fichier (`tls-ca-file`), tout https échouerait dans le lecteur avancé. Copie du
-21 septembre 2026 ; à rafraîchir à chaque mise à jour du lecteur.
+`modules/mpv-player/ios/Resources/mpv/cacert.pem` (servi aussi à Android par
+`assets.srcDirs`) : le paquet de certificats racine de Mozilla, extrait par curl
+(https://curl.se/docs/caextract.html), **MPL-2.0**. Le FFmpeg de libmpv-android parle
+mbedTLS, qui ne lit aucun magasin système : sans ce fichier (`tls-ca-file`), tout https
+échouerait dans le lecteur avancé.
 
 ## Module natif dérivé de Streamyfin (MPL-2.0)
 
-Le module `apps/mobile/modules/mpv-player` (Swift, Kotlin, TypeScript) est
-dérivé du module `mpv-player` de **Streamyfin** — https://github.com/streamyfin/streamyfin,
-révision `4faddc5f` du 2026-09-12 — publié sous **Mozilla Public License 2.0**.
-Chaque fichier dérivé conserve cette licence (en-tête d'attribution) ; les
-modifications y restent sous MPL-2.0. Texte de la licence :
-https://mozilla.org/MPL/2.0/.
+`modules/mpv-player` (Swift, Kotlin, TypeScript) dérive du module `mpv-player` de
+**Streamyfin** — https://github.com/streamyfin/streamyfin, révision `4faddc5f` du
+2026-09-12 — sous **Mozilla Public License 2.0**. Chaque fichier dérivé garde cette
+licence (en-tête d'attribution) ; ses modifications restent sous MPL-2.0. Les fichiers
+propres du module (`DisplayModeBridge.kt`, `DisplayRefreshMatcher.kt`, `MpvLoadConfig.kt`,
+`MpvLogger.kt`, `ios/MpvLoadConfig.swift`) sont sous AGPL-3.0-or-later.
 
-## Police embarquée
+## Polices et icônes
 
-`Noto Sans Regular` (`modules/mpv-player/ios/Fonts/NotoSans-Regular.ttf`),
-police latine de repli des sous-titres du lecteur avancé — **SIL Open Font
-License 1.1** (`Fonts/OFL.txt`).
+Inter v3.019 (`@expo-google-fonts/inter`) et Noto Sans Regular v2.015
+(`modules/mpv-player/ios/Fonts/NotoSans-Regular.ttf`, repli des sous-titres) — **SIL Open
+Font License 1.1**, texte dans l'écran Licences et `Fonts/OFL.txt`. Feather
+(`@expo/vector-icons`, MIT), Lucide (`lucide-react-native`, ISC).
 
 ## Autres dépendances
 
-react-native-video (MIT), Media3/ExoPlayer (Apache 2.0) et les dépendances
-JavaScript de l'application sont sous licences permissives ; voir le
-`package.json` de chaque paquet.
+React Native 0.81, Expo 54, Hermes, react-native-video, Fresco, SDWebImage (MIT) ; folly
+(Apache-2.0), boost (BSL-1.0), glog, double-conversion, SocketRocket, libwebp (BSD-3),
+libavif (BSD-2) ; voir l'écran Licences et le `package.json` de chaque paquet.

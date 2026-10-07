@@ -1,6 +1,10 @@
 /**
  * Les pictogrammes de la refonte : grille 24, trait 2, extrémités rondes —
  * le dessin des maquettes tvOS (famille Lucide). Données seulement.
+ *
+ * Plusieurs tracés sont ceux de Lucide (https://lucide.dev) — ISC License,
+ * Copyright (c) Lucide Contributors ; portions Copyright (c) 2013-2023 Cole
+ * Bemis (Feather, MIT License). Textes complets : Réglages › Licences.
  */
 
 export interface IconShape {

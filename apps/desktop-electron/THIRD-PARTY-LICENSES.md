@@ -1,48 +1,48 @@
 # Licences tierces — Tentacle TV Desktop
 
-Tentacle TV (application) est distribué sous licence **MIT**.
+Tentacle TV est distribué sous **GNU AGPL v3.0 ou ultérieure** (`LICENSE`), avec
+les permissions additionnelles de `LICENSE-EXCEPTIONS` (boutiques d'applications,
+bibliothèques de plateforme). Source de chaque version : tag `desktop-vX.Y.Z` de
+https://github.com/Knaox/Tentacle-TV. Les versions publiées avant le 2026-10-07
+restent sous licence MIT.
 
-## Lecteur vidéo embarqué (mpv + FFmpeg)
+L'écran **Crédits › Licences** de l'application liste chaque composant embarqué
+avec sa mention et ouvre le texte complet de chaque licence, hors ligne (catalogue :
+`packages/shared/src/licenses/components/desktop.ts`). Inventaire général :
+`docs/LICENCES.md`.
 
-L'application desktop embarque **mpv** et **FFmpeg** pour la lecture vidéo.
+## Lecteur vidéo — mpv et FFmpeg, par système
 
-| Build | Licence des binaires mpv/FFmpeg |
-|-------|----------------------------------|
-| **Mac App Store** | **LGPL v2.1+** — build sans composants GPL (`-Dgpl=false` pour mpv, FFmpeg sans `--enable-gpl`, **sans** x264/x265). |
-| Windows (Microsoft Store) / Linux | mpv/FFmpeg tels que fournis par le système / le plugin (peuvent être GPL). |
+| Canal | Ce qui est livré | Licence effective | Source / recette |
+|-------|------------------|-------------------|------------------|
+| **Mac App Store** | mpv **0.40.0** `-Dgpl=false -Drubberband=disabled` + FFmpeg **n7.1.1** `--disable-gpl --disable-nonfree`, en **bibliothèques dynamiques séparées** (`Contents/Frameworks`) | **LGPL-2.1-or-later** — vérifié dans l'app installée (« libavutil license: LGPL version 2.1 or later ») | `scripts/build-mpv-lgpl-macos.sh` ; dépendances Homebrew (libplacebo, FriBidi, GLib, gettext, Graphite2, dav1d, libass, FreeType, HarfBuzz, lcms2, libpng, libjpeg-turbo, PCRE2, libX11/xcb, shaderc, chargeur Vulkan, **MoltenVK**) |
+| **Microsoft Store** | `lib/mpv/libmpv-2.dll`, binaire **tiers** de zhongfly/mpv-winbuild (variante LGPL) : mpv master 0.41.0-233, FFmpeg 8.x `--enable-version3` + OpenSSL 3, tout lié statiquement dans la DLL | **LGPL-3.0-or-later** (et non v2.1+ comme on l'écrivait) | https://github.com/zhongfly/mpv-winbuild — ⚠️ build non reproductible, plus téléchargeable (voir « Restes ») |
+| **Linux** (Releases GitHub) | mpv **0.41.0** `-Dgpl=true` — la sortie vidéo X11 n'existe pas autrement — avec FFmpeg **n7.1.1** LGPL lié dedans, + bibliothèques apt d'Ubuntu 22.04 dans `resources/lib` | **GPL-2.0-or-later** (GPL-3 une fois combiné ; compatible AGPL-3) | `scripts/build-mpv-linux.sh` |
 
-### Conformité LGPL (build Mac App Store)
+Aucune bibliothèque GPL-2.0-only, aucun encodeur GPL (x264, x265), aucun composant
+`nonfree`. Liaison dynamique : la libmpv livrée est remplaçable, et la variable
+d'environnement `TENTACLE_MPV_LIB` charge une libmpv modifiée (LGPL : « relier »).
 
-Conformément à la LGPL v2.1+ :
+## Electron et le reste
 
-- mpv et FFmpeg sont liés **dynamiquement** (dylibs séparées dans `Tentacle TV.app/Contents/Frameworks/`), ce qui permet à l'utilisateur de **remplacer/relier** ces bibliothèques.
-- Le **code source** des versions utilisées est disponible publiquement :
-  - mpv — https://mpv.io / https://github.com/mpv-player/mpv (tag du build : voir `scripts/build-mpv-lgpl-macos.sh`)
-  - FFmpeg — https://ffmpeg.org / https://github.com/FFmpeg/FFmpeg (tag du build : voir `scripts/build-mpv-lgpl-macos.sh`)
-- La recette de compilation LGPL exacte est versionnée : `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh`.
+| Composant | Version | Licence |
+|-----------|---------|---------|
+| Electron (+ Chromium et son FFmpeg, avis dans `LICENSES.chromium.html`) | 43.2.0 | MIT (+ licences de Chromium) |
+| koffi | 3.1.2 | MIT (koffi 1.x était AGPL : ne pas rétrograder) |
+| zod | 3.25 | MIT |
+| MoltenVK, chargeur Vulkan, shaderc | Homebrew | Apache-2.0 (licence et avis dans l'écran Licences) |
+| FreeType | — | FTL — « Portions of this software are copyright © The FreeType Project (www.freetype.org). All rights reserved. » |
+| libjpeg-turbo (macOS) | — | IJG + BSD-3 + zlib — « This software is based in part on the work of the Independent JPEG Group. » |
+| Client web (React, hls.js, Inter…) | — | voir `apps/web/THIRD-PARTY-LICENSES.md` |
 
-> Note : x264 et x265 (encodeurs, GPL) ne sont **pas** inclus. Un lecteur ne fait que **décoder** ;
-> le décodage H.264/HEVC/AV1/VP9 est assuré par les décodeurs LGPL de FFmpeg + VideoToolbox (Apple).
+## Restes (non conformes à ce jour)
 
-## Pilote graphique embarqué (MoltenVK) — macOS
-
-Le paquet **Mac App Store** embarque également **MoltenVK**, sous licence
-**Apache 2.0**, dans `Tentacle TV.app/Contents/Frameworks/` (`libMoltenVK.dylib`,
-déclaré par `MoltenVK_icd.json`).
-
-- Source : https://github.com/KhronosGroup/MoltenVK — version livrée : celle de la
-  formule Homebrew `molten-vk` au moment du build (voir
-  `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh`).
-- Rôle : mpv rend l'image par `gpu-context=macvk`, c'est-à-dire Vulkan traduit
-  vers Metal. `libvulkan.1.dylib` n'est que le chargeur ; sans ce pilote il
-  n'énumère aucun périphérique, et l'application n'affiche aucune image dans le
-  bac à sable — les chemins système où il le chercherait sinon y sont
-  inaccessibles.
-- La licence Apache 2.0 exige la conservation de l'avis de copyright et du fichier
-  `NOTICE` : tous deux accompagnent la distribution amont référencée ci-dessus.
-
-## Autres dépendances
-
-Les bibliothèques liées par FFmpeg/mpv dans le build LGPL (dav1d, libass, FreeType,
-HarfBuzz, FriBidi, fontconfig, etc.) sont sous licences permissives ou LGPL
-(BSD/MIT/ISC/LGPL). Aucune dépendance GPL n'est incluse dans le build Mac App Store.
+- **Windows** : la source exacte de `libmpv-2.dll` n'est plus disponible ; construire
+  la DLL soi-même à tags épinglés, ou archiver sa source avec chaque Release.
+- **Mac App Store** : `LICENSE` d'Electron et `LICENSES.chromium.html` sont posés à
+  côté du `.app` puis non emballés (`package-macos.mjs`, `flat()`) ; les poser dans
+  `Contents/Resources` avant la signature.
+- **Sources** : joindre à chaque Release `desktop-vX.Y.Z` les sources de la chaîne mpv
+  et le manifeste des versions Homebrew / apt réellement embarquées.
+- `lib/mpv/libmpv.dylib` (mpv Homebrew **GPL**, jamais chargée) et `libmpv-wrapper.*`
+  sont distribués par le dépôt sans source : à retirer.

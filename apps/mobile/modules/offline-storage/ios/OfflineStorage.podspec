@@ -5,7 +5,7 @@ Pod::Spec.new do |s|
   s.description    = 'Pose l attribut isExcludedFromBackup sur le dossier des titres hors ligne.'
   s.author         = 'Tentacle TV'
   s.homepage       = 'https://tentacletv.app'
-  s.license        = { :type => 'MIT' }
+  s.license        = { :type => 'AGPL-3.0-or-later' }
   s.platforms      = { :ios => '15.1', :tvos => '15.1' }
   s.source         = { git: '' }
   s.static_framework = true
