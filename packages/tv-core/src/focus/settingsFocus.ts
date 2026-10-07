@@ -31,6 +31,15 @@ export function settingsChoiceEntryIndex(values: readonly string[], selected: st
   return Math.max(0, values.findIndex((value) => value === selected));
 }
 
+/** Réglages › Licences : la ligne d'un document (`settings:license:<i>`). */
+export const settingsLicenseKey = (index: number): string => `settings:license:${index}`;
+
+/**
+ * Le lecteur d'un document : ses blocs de texte, focalisables pour que le
+ * défilement suive HAUT / BAS ; il s'ouvre sur le premier.
+ */
+export const settingsLicenseBlockKey = (index: number): string => `settings:licenseBlock:${index}`;
+
 /** Réglages › Navigation : les lignes `settings:nav:<case>`, dans l'ordre affiché. */
 export const NAV_SETTINGS_ROW_PREFIX = "settings:nav:";
 export const navSettingsRowKey = (slot: number): string => `${NAV_SETTINGS_ROW_PREFIX}${slot}`;

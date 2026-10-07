@@ -2,3 +2,4 @@
 // Les textes complets : `@tentacle-tv/shared/licenses/texts` (à la demande).
 export * from "./licenseTypes";
 export * from "./licenseCatalog";
+export * from "./licenseChunks";

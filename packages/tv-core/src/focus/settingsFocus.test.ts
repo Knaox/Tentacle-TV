@@ -6,6 +6,8 @@ import {
   navSettingsRowKey,
   settingsChoiceEntryIndex,
   settingsChoiceKey,
+  settingsLicenseBlockKey,
+  settingsLicenseKey,
   settingsEntryKey,
   settingsPinReturnKey,
 } from "./settingsFocus";
@@ -23,6 +25,8 @@ describe("liste de choix", () => {
     expect(settingsChoiceEntryIndex(["fr", "en"], "de")).toBe(0);
     expect(settingsChoiceEntryIndex(["fr", "en"], undefined)).toBe(0);
     expect(settingsChoiceKey(2)).toBe("settings:choice:2");
+    expect(settingsLicenseKey(0)).toBe("settings:license:0");
+    expect(settingsLicenseBlockKey(3)).toBe("settings:licenseBlock:3");
   });
 });
 

@@ -74,6 +74,17 @@ jobs:
         working-directory: MPVKit
         run: make build platform=ios,isimulator,tvos,tvsimulator version="${MPVKIT_REF}"
 
+      # Le script du fork TÉLÉCHARGE libsmbclient (GPL v3) et LuaJIT dans tous
+      # les cas, et create-combined-framework.sh les emballe dans le
+      # xcframework même quand rien ne les appelle (mesuré le 2026-10-07 :
+      # la garde ci-dessous les a trouvés dans le premier build LGPL). On les
+      # retire avant de combiner.
+      - name: Retirer libsmbclient et LuaJIT avant la combinaison
+        working-directory: MPVKit
+        run: |
+          rm -rf dist/libsmbclient dist/libsmbclient-* dist/libluajit dist/libluajit-*
+          ls dist
+
       - name: MPVKit.xcframework combiné (symboles internes masqués)
         working-directory: MPVKit
         run: ./Sources/BuildScripts/create-combined-framework.sh
