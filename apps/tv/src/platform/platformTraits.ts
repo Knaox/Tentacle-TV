@@ -16,4 +16,9 @@ export interface PlatformTraits {
    *  Android TV seulement : le niveau de rendu de l'Apple TV est toujours
    *  « normal » (`platform/renderTier`). */
   renderTierSetting: boolean;
+  /** La plateforme donne des focus DE PASSAGE (tv-core `isPassingFocus`) :
+   *  Android, au premier focalisable, pendant qu'un élément annoncé avant
+   *  d'être attaché s'attache. Ce qui s'ouvre au focus (la navigation) ne
+   *  s'ouvre pas pour eux. tvOS : non — la règle n'y est jamais lue. */
+  passingFocus: boolean;
 }

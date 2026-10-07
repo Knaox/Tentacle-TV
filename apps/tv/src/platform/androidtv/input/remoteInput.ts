@@ -41,11 +41,20 @@ export const androidTvInput = createRemoteInput(ANDROIDTV_BINDINGS);
 
 const backTakers = createBackTakers();
 
-/** Inscrit un preneur du Retour (le dernier inscrit répond le premier) ; rend de quoi le retirer. */
-export const takeBack = backTakers.add;
+/**
+ * Inscrit un preneur du Retour (le dernier inscrit répond le premier) ; rend
+ * de quoi le retirer. Chaque inscription — chaque écran qui se monte —
+ * remet l'écouteur de `BackHandler` en tête (`installBack`).
+ */
+export function takeBack(taker: () => boolean): () => void {
+  const remove = backTakers.add(taker);
+  installBack();
+  return remove;
+}
 
 let keySubscription: { remove(): void } | null = null;
 let backSubscription: { remove(): void } | null = null;
+let backInstallPending = false;
 
 /** La lecture se souvient des touches enfoncées : un enfoncement redit est une répétition (`repeat`). */
 const read = createAndroidTvReader();
@@ -68,14 +77,25 @@ export function receiveBack(): boolean {
 /**
  * L'écouteur de `BackHandler` doit répondre AVANT celui du navigateur
  * (`useBackButton` de react-navigation, inscrit à la pose du conteneur) :
- * `BackHandler` interroge le DERNIER inscrit d'abord. Les effets d'un premier
- * rendu passent enfants d'abord, conteneur ensuite : on s'inscrit donc une
- * fois le rendu en cours terminé, puis on ne bouge plus.
+ * `BackHandler` interroge le DERNIER inscrit d'abord. Les effets d'un rendu
+ * passent enfants d'abord, conteneur ensuite : on s'inscrit donc une fois le
+ * rendu en cours terminé.
+ *
+ * Et on s'y RÉINSCRIT à chaque nouveau preneur. Quitter l'app par Retour ne
+ * finit que l'activité : le contexte JS survit, et à la réouverture un NOUVEAU
+ * conteneur réinscrit son écouteur, en tête, par-dessus le nôtre, inscrit une
+ * fois pour toutes. Il dépilait alors lui-même la page devant, avant toute
+ * couche : Retour dans la feuille du lecteur QUITTAIT la lecture (retour
+ * d'essai, Shield ; reproduit à l'émulateur : sortie par Retour, réouverture,
+ * feuille « Pistes », Retour → l'accueil).
  */
 function installBack(): void {
-  if (backSubscription || !ANDROIDTV_REMOTE_SUPPORTED) return;
+  if (backInstallPending || !ANDROIDTV_REMOTE_SUPPORTED) return;
+  backInstallPending = true;
   setTimeout(() => {
-    backSubscription ??= BackHandler.addEventListener("hardwareBackPress", receiveBack);
+    backInstallPending = false;
+    backSubscription?.remove();
+    backSubscription = BackHandler.addEventListener("hardwareBackPress", receiveBack);
   }, 0);
 }
 
@@ -91,9 +111,6 @@ function sync(needed: boolean): void {
 }
 
 androidTvInput.onDemand(sync);
-backTakers.onDemand((needed) => {
-  if (needed) installBack();
-});
 
 /** Même nom que sur Apple TV (Menu y est le Retour) : Retour, rendu par une source à part. */
 export function receiveMenu(): IntentEvent | null {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_FOCUS_TRACK, trackFocus, type FocusTrack } from "./focusTrack";
+import { EMPTY_FOCUS_TRACK, isPassingFocus, trackFocus, type FocusTrack } from "./focusTrack";
 
 const run = (events: Array<[string, boolean]>, from: FocusTrack = EMPTY_FOCUS_TRACK) =>
   events.reduce((track, [key, focused]) => trackFocus(track, key, focused), from);
@@ -47,5 +47,33 @@ describe("trackFocus — le suivi du focus d'un écran", () => {
   it("une perte jamais annoncée ne s'accumule pas au-delà de quatre clés", () => {
     const track = run([["a", true], ["b", true], ["c", true], ["d", true], ["e", true]]);
     expect(track.held).toEqual(["b", "c", "d", "e"]);
+  });
+});
+
+describe("isPassingFocus — le focus de passage d'Android", () => {
+  const mounted = (keys: string[]) => (key: string) => keys.includes(key);
+
+  it("Android : le rail pris pendant que le héros, monté, tient encore le focus — un passage", () => {
+    const before = run([["home:loading", true], ["home:loading", false], ["hero:primary", true]]);
+    expect(isPassingFocus(before, "nav:Search", mounted(["hero:primary", "nav:Search"]))).toBe(true);
+  });
+
+  it("la perte de l'ancien précède la prise du nouveau — pas un passage", () => {
+    const before = run([["hero:primary", true], ["hero:primary", false]]);
+    expect(isPassingFocus(before, "nav:Search", mounted(["hero:primary", "nav:Search"]))).toBe(false);
+  });
+
+  it("une clé tenue mais DÉMONTÉE sans perte annoncée ne fait pas un passage", () => {
+    const before = run([["hero:primary", true]]);
+    expect(isPassingFocus(before, "nav:Search", mounted(["nav:Search"]))).toBe(false);
+  });
+
+  it("la même clé reprise n'est pas un passage", () => {
+    const before = run([["hero:primary", true]]);
+    expect(isPassingFocus(before, "hero:primary", mounted(["hero:primary"]))).toBe(false);
+  });
+
+  it("aucun focus avant : pas un passage", () => {
+    expect(isPassingFocus(EMPTY_FOCUS_TRACK, "nav:Search", () => true)).toBe(false);
   });
 });
