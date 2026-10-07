@@ -78,12 +78,12 @@ function PublicDiagram({ label, ip }: { label: string; ip: string }) {
       <text x="28" y="98" {...LABEL}>{t("diagramFriend")}</text>
       <Arrow from={42} to={56} y={62} />
       <Cloud x={56} y={40} label={t("diagramInternet")} />
-      <Arrow from={118} to={146} y={62} />
-      <rect x="140" y="18" width="158" height="90" rx="12" {...LINE} strokeDasharray="4 4" />
-      <text x="150" y="13" {...LABEL} textAnchor="start" fontWeight={600}>{t("diagramHome")}</text>
-      <BoxNode x={152} y={48} label={t("diagramBox")} />
-      <text x="174" y="96" {...LABEL} fontSize={10} fontFamily="ui-monospace, monospace">{ip}</text>
-      <Arrow from={198} to={226} y={62} />
+      <Arrow from={118} to={144} y={62} />
+      <rect x="122" y="18" width="176" height="90" rx="12" {...LINE} strokeDasharray="4 4" />
+      <text x="132" y="13" {...LABEL} textAnchor="start" fontWeight={600}>{t("diagramHome")}</text>
+      <BoxNode x={148} y={48} label={t("diagramBox")} />
+      <text x="170" y="96" {...LABEL} fontSize={9} fontFamily="ui-monospace, monospace">{ip}</text>
+      <Arrow from={194} to={226} y={62} />
       <ServerNode x={230} y={42} label={t("diagramServer")} />
     </svg>
   );
