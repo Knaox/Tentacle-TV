@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const fetchMock = vi.fn();
+const fetchMock = vi.hoisted(() => vi.fn());
 vi.mock("undici", async (original) => ({ ...(await original<typeof import("undici")>()), fetch: (...args: unknown[]) => fetchMock(...args) }));
 
-const { displayMissingEpisodes, resetMissingEpisodesCache } = await import("./missingEpisodesSetting");
+import { displayMissingEpisodes, resetMissingEpisodesCache } from "./missingEpisodesSetting";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const HEADERS = { Authorization: 'MediaBrowser Token="t"' };
