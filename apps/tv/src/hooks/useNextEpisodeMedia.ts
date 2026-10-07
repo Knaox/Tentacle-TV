@@ -1,5 +1,7 @@
 import { useEpisodeNavigation, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { backdropWidthFor } from "@tentacle-tv/tv-core";
+import { RENDER_TIER } from "../platform/renderTier";
 
 /**
  * Ce qu'il faut MONTRER de l'épisode suivant — titres et images, rien d'autre.
@@ -47,7 +49,7 @@ export function useNextEpisodeMedia(item: MediaItem | undefined): NextEpisodeMed
     ? client.getImageUrl(
       nextEpisode.SeriesId ?? nextEpisode.ParentBackdropItemId ?? nextEpisode.Id,
       "Backdrop",
-      { width: 1920, quality: 85 },
+      { width: backdropWidthFor(RENDER_TIER, 1920), quality: 85 },
     )
     : undefined;
   const nextEpisodeThumbUrl = nextEpisode?.Id
