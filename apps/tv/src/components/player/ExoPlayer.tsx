@@ -4,6 +4,7 @@ import {
   useImperativeHandle,
   useRef,
 } from "react";
+import { exoBufferPolicy, type ExoBufferPolicy } from "@tentacle-tv/shared";
 import {
   requireNativeComponent,
   UIManager,
@@ -12,6 +13,10 @@ import {
 } from "react-native";
 import type { MpvTrack, MPVPlayerHandle, ExoTextTrack } from "./playerTypes";
 import { useExoMatchFrameRate, useExoTunneling } from "../../lib/exoSettings";
+import { PLAYBACK_TIER } from "../../lib/playbackTier";
+
+/** Le tampon du mode Lite (shared `exoBufferPolicy`) ; `undefined` en mode normal : le natif garde le sien. */
+const BUFFER_POLICY = exoBufferPolicy(PLAYBACK_TIER) ?? undefined;
 
 // Re-export types — ExoPlayer uses the same track/handle interface
 export type { MpvTrack as ExoTrack, MPVPlayerHandle as ExoPlayerHandle };
@@ -70,6 +75,7 @@ const NativeExoView = requireNativeComponent<{
   audioPassthrough: boolean;
   frameRate?: number;
   tunneling: boolean;
+  bufferPolicy?: Readonly<ExoBufferPolicy>;
   textTracks?: ExoTextTrack[];
   onExoEvent: (event: ExoEvent) => void;
   style?: ViewStyle;
@@ -143,6 +149,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
         audioPassthrough={audioPassthrough}
         frameRate={matchFrameRate ? frameRate : 0}
         tunneling={tunneling}
+        bufferPolicy={BUFFER_POLICY}
         textTracks={textTracks}
         onExoEvent={handleEvent}
         style={style}

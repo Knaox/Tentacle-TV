@@ -71,7 +71,7 @@ export function usePlayerStreamPipeline(args: {
   });
   const {
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
-    startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
+    startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks, servedToExo, handToExo,
   } = reload;
 
   // Cap automatique selon le débit mesuré : traité comme un choix de qualité
@@ -100,7 +100,7 @@ export function usePlayerStreamPipeline(args: {
 
   // Routage lecteur (ExoPlayer surface vs MPV) + dérivés de mode de lecture.
   const { useExoPlayer, playerRef, requestedDirectPlay, isDirectStream } = useTVPlayerRouting({
-    forceTranscode, isTranscodingQuality: transcodingQuality,
+    forceTranscode, servedToExo, isTranscodingQuality: transcodingQuality,
     exoRef: refs.exoRef, mpvRef: refs.mpvRef,
   });
 
@@ -133,7 +133,7 @@ export function usePlayerStreamPipeline(args: {
   const stream = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
-    forceTranscode, isTranscodingQuality: transcodingQuality,
+    forceTranscode, servedToExo, isTranscodingQuality: transcodingQuality,
     maxBitrate: effectiveMaxBitrate, maxHeight: effectiveMaxHeight,
     isDirectPlay: requestedDirectPlay,
     reloadNonce, ready: (!!item || itemFailed) && !cap.pending, // l'épisode suivant attend sa mesure
@@ -271,7 +271,7 @@ export function usePlayerStreamPipeline(args: {
     autoCapReason: cap.active ? { measuredBps: cap.measuredBps, sourceBps: cap.sourceBps } : undefined,
     sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration, frameRate,
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
-    startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
+    startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks, handToExo,
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
     startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed, onMasterRejected,

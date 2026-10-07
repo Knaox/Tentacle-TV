@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
-  BURN_IN_SUBTITLE_CODECS, SAFE_FALLBACK_ENGINE, TICKS_PER_SECOND, exoPlayerEngineFor, mpvEngineFor,
+  BURN_IN_SUBTITLE_CODECS, SAFE_FALLBACK_ENGINE, TICKS_PER_SECOND, exoPlayerEngineFor, liteConvertedAudioEngine, mpvEngineFor,
+  transcodeMaxHeight,
 } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { useDeviceMediaProfile } from "../lib/deviceMediaProfile";
+import { usePlaybackTier } from "../lib/playbackTier";
 import { randomSessionId } from "../utils/playerHelpers";
 import { useDeviceConversion } from "./useDeviceConversion";
 import type { PrismStart } from "../utils/prismCoreStart";
@@ -40,6 +42,8 @@ export function useTVStreamUrl(args: {
    *  post-chargement sur un HLS en transcodage n'est plus nécessaire). */
   startSeconds?: number;
   forceTranscode: boolean;
+  /** Le repli rendu à ExoPlayer (mpv sans décodeur matériel, mode Lite) : le flux sûr, H.264 + AAC. */
+  servedToExo?: boolean;
   isTranscodingQuality: boolean;
   maxBitrate?: number;
   maxHeight?: number;
@@ -55,8 +59,9 @@ export function useTVStreamUrl(args: {
   const {
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, isDirectPlay,
-    reloadNonce, ready,
+    reloadNonce, ready, servedToExo = false,
   } = args;
+  const tier = usePlaybackTier();
   const client = useJellyfinClient();
   const device = useDeviceMediaProfile();
   const exoEngine = useMemo(() => exoPlayerEngineFor(device.profile), [device.profile]);
@@ -88,13 +93,25 @@ export function useTVStreamUrl(args: {
   };
 
   // Ce que l'appareil ne lit pas tel quel : le serveur le sert (shared `devicePlaybackVerdict`).
-  const conversion = useDeviceConversion(device.profile, streams, sourceAudio);
+  const conversion = useDeviceConversion(device.profile, streams, sourceAudio, tier);
+  // Lite : un son converti part dans un codec que la sortie HDMI reçoit tel quel
+  // (E-AC3, AC3 : shared `liteConvertedAudioEngine`) ; le repli ne dépasse pas
+  // l'écran (mpv ne recopie jamais une image 4K, tv-core `mpvDecoderVerdict`).
+  const conversionEngine = useMemo(
+    () => (tier === "lite" && device.profile && conversion?.audioPath === "converted"
+      ? liteConvertedAudioEngine(exoEngine, device.profile.audio.passthrough) : exoEngine),
+    [tier, device.profile, conversion?.audioPath, exoEngine],
+  );
+  const fallbackMaxHeight = useMemo(() => {
+    const video = streams.find((s) => s.Type === "Video");
+    return tier === "lite" && device.profile && video ? transcodeMaxHeight(device.profile, video) : null;
+  }, [tier, device.profile, streams]);
   const directPlay = isDirectPlay && !conversion;
 
   const playSessionId = useMemo(() => {
     if (directPlay) return undefined;
     return randomSessionId();
-  }, [audioIndex, burnInIndex, startTicks, directPlay, forceTranscode, isTranscodingQuality, restartAt?.mark, conversion?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [audioIndex, burnInIndex, startTicks, directPlay, forceTranscode, servedToExo, isTranscodingQuality, restartAt?.mark, conversion?.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
     if (!itemId || !ready || device.pending) return null;
@@ -117,28 +134,32 @@ export function useTVStreamUrl(args: {
       // Un sous-titre image à incruster : c'est mpv qui lira, avec tout ce qu'il
       // décode. Après une erreur : le repli sûr, H.264 + AAC — on ne retente pas
       // une copie qui vient peut-être d'échouer.
+      // Rendu à ExoPlayer (mode Lite, mpv sans décodeur matériel) : le flux sûr.
       const burnIn = burnInIndex != null && burnInIndex >= 0;
       return mark(client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, maxBitrate: 8_000_000,
+        maxHeight: fallbackMaxHeight ?? undefined,
         startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
         transcodeReasons: [burnIn ? "SubtitleCodecNotSupported" : "DirectPlayError"],
-        engine: burnIn ? mpvEngine : SAFE_FALLBACK_ENGINE, sourceAudio,
+        engine: burnIn && !servedToExo ? mpvEngine : SAFE_FALLBACK_ENGINE, sourceAudio,
       }));
     }
     if (conversion) {
       // Sans palier ni repli : ExoPlayer lit ce que le serveur sert — l'image
       // copiée quand elle se décode, sinon réencodée (HEVC d'abord), à la
       // définition de l'écran au plus ; la raison dite à Jellyfin.
+      // Le plafond Lite (débit d'image) en fait un palier : débit et définition de l'écran.
       return mark(client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, useProgressiveRemux: false,
         startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
-        transcodeReasons: conversion.reasons, engine: exoEngine, sourceAudio, outputMaxHeight: conversion.maxHeight,
+        maxBitrate: conversion.maxBitrate ?? undefined, maxHeight: conversion.maxBitrate ? conversion.maxHeight ?? undefined : undefined,
+        transcodeReasons: conversion.reasons, engine: conversionEngine, sourceAudio, outputMaxHeight: conversion.maxHeight,
       }));
     }
     return mark(client.getStreamUrl(itemId, {
       mediaSourceId, directPlay: true, playSessionId, sourceVideoCodec,
     }));
-  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce, ready, restartAt, device.pending, exoEngine, mpvEngine, conversion?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, servedToExo, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce, ready, restartAt, device.pending, exoEngine, mpvEngine, conversion?.key, conversionEngine, fallbackMaxHeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // `isDirectPlay` est décidé côté client sur Android (profil de l'appareil compris), renvoyé pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
