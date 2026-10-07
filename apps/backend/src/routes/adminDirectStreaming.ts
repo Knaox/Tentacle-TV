@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { deleteConfigValue, getDirectStreamingConfig, getPublicUrl, setConfigValue } from "../services/configStore";
 import { originOf } from "../services/jellyfinCors";
-import { syncJellyfinCors } from "../services/jellyfinCorsSync";
+import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
 
 /**
  * La lecture directe (`/api/admin/direct-streaming`, sous `requireAdmin`) :
@@ -14,8 +14,6 @@ import { syncJellyfinCors } from "../services/jellyfinCorsSync";
  * Les `CorsHosts` de Jellyfin suivent seuls (`jellyfinCorsSync.ts`) : à
  * l'enregistrement et AVANT chaque test, nos origines y sont inscrites.
  */
-
-const originHeader = (value: unknown): string | undefined => (typeof value === "string" && value ? value : undefined);
 
 interface UrlProbe {
   ok: boolean;
@@ -88,7 +86,7 @@ export const adminDirectStreamingRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Nos origines dans les CorsHosts de Jellyfin (jamais bloquant).
-    await syncJellyfinCors({ requestOrigin: originHeader(request.headers.origin), trustRequestOrigin: true, logger: request.log });
+    await syncJellyfinCors({ requestOrigin: requestPageOrigin(request), trustRequestOrigin: true, logger: request.log });
     return { success: true };
   });
 
@@ -103,7 +101,7 @@ export const adminDirectStreamingRoutes: FastifyPluginAsync = async (app) => {
       privateUrl: z.string().url().optional().or(z.literal("")),
     }).parse(request.body);
 
-    const pageOrigin = originHeader(request.headers.origin);
+    const pageOrigin = requestPageOrigin(request);
     const cors = await syncJellyfinCors({ requestOrigin: pageOrigin, trustRequestOrigin: true, logger: request.log });
     const testOrigin = originOf(pageOrigin) ?? originOf(getPublicUrl());
 

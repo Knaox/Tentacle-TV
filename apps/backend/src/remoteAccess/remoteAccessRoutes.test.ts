@@ -18,6 +18,7 @@ vi.mock("../services/configStore", () => ({
 }));
 vi.mock("../services/jellyfinCorsSync", () => ({
   syncJellyfinCors: async () => ({ status: "ready", origins: ["https://tv.example.com"], added: [] }),
+  requestPageOrigin: () => undefined,
 }));
 vi.mock("./remoteCheck", async (original) => ({
   ...(await original<typeof import("./remoteCheck")>()),

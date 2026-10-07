@@ -22,7 +22,7 @@ vi.mock("./jellyfinCors", async (original) => ({
   },
 }));
 
-import { isHomeOrigin, syncJellyfinCors, tentacleCorsOrigins } from "./jellyfinCorsSync";
+import { isHomeOrigin, requestPageOrigin, syncJellyfinCors, tentacleCorsOrigins } from "./jellyfinCorsSync";
 
 beforeEach(() => {
   h.config.clear();
@@ -59,5 +59,11 @@ describe("les origines de Tentacle pour Jellyfin", () => {
     expect(await syncJellyfinCors()).toMatchObject({ status: "updated", added: ["https://tv.example.com"] });
     h.fail = true;
     expect(await syncJellyfinCors()).toMatchObject({ status: "unreachable", added: [] });
+  });
+
+  it("l'origine de la page : l'en-tête Origin, sinon l'adresse par laquelle la requête arrive (un GET de même origine n'a pas d'Origin)", () => {
+    expect(requestPageOrigin({ headers: { origin: "tentacle://app" }, protocol: "http", host: "192.168.1.20:3000" })).toBe("tentacle://app");
+    expect(requestPageOrigin({ headers: {}, protocol: "http", host: "192.168.1.20:3000" })).toBe("http://192.168.1.20:3000");
+    expect(requestPageOrigin({ headers: {}, protocol: "https" })).toBeUndefined();
   });
 });

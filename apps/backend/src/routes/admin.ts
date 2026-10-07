@@ -19,7 +19,7 @@ import { adminServerLinksRoutes } from "./adminServerLinks";
 import { adminDirectStreamingRoutes } from "./adminDirectStreaming";
 import { adminServerUpdateRoutes } from "./adminServerUpdate";
 import { remoteAccessRoutes } from "../remoteAccess/remoteAccessRoutes";
-import { syncJellyfinCors } from "../services/jellyfinCorsSync";
+import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
 
 export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAdmin);
@@ -83,8 +83,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     }
     await setConfigValue("public_url", parsed.data.publicUrl.replace(/\/$/, ""));
     // Le nouveau lien public entre dans les CorsHosts de Jellyfin (jamais bloquant).
-    const origin = typeof request.headers.origin === "string" ? request.headers.origin : undefined;
-    await syncJellyfinCors({ requestOrigin: origin, trustRequestOrigin: true, logger: request.log });
+    await syncJellyfinCors({ requestOrigin: requestPageOrigin(request), trustRequestOrigin: true, logger: request.log });
     return { success: true };
   });
 };

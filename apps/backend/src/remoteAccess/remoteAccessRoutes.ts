@@ -2,7 +2,7 @@ import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { requirePersonalAdmin } from "../middleware/auth";
 import { getDirectStreamingConfig, getPublicUrl } from "../services/configStore";
-import { syncJellyfinCors } from "../services/jellyfinCorsSync";
+import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
 import { getRealClientIp, isPrivateIp } from "../services/networkUtils";
 import { readDeployment } from "../setup/deployment";
 import type { RemoteAccessState } from "./remoteAccessContract";
@@ -43,17 +43,13 @@ const patchSchema = z
   })
   .strict();
 
-/** L'origine de la page de l'administrateur (`Origin`), s'il y en a une. */
-const pageOrigin = (request: FastifyRequest): string | undefined =>
-  typeof request.headers.origin === "string" && request.headers.origin ? request.headers.origin : undefined;
-
 /**
  * L'état, et deux constats propres à la requête : l'adresse locale par
  * laquelle elle nous joint, et les CorsHosts de Jellyfin — vérifiés, et
  * complétés de nos origines (celle de cette page comprise) s'il en manque.
  */
 async function buildState(request: FastifyRequest): Promise<RemoteAccessState> {
-  const jellyfinCors = await syncJellyfinCors({ requestOrigin: pageOrigin(request), trustRequestOrigin: true, logger: request.log });
+  const jellyfinCors = await syncJellyfinCors({ requestOrigin: requestPageOrigin(request), trustRequestOrigin: true, logger: request.log });
   const derivedLocalUrl = derivedPrivateUrl({ clientIsPrivate: isPrivateIp(getRealClientIp(request)), protocol: request.protocol, host: request.host });
   const deployment = readDeployment();
   const direct = getDirectStreamingConfig();

@@ -60,16 +60,29 @@ interface SyncOptions {
   logger?: { info: (...args: unknown[]) => void; warn: (...args: unknown[]) => void };
 }
 
+/**
+ * L'origine de la page qui fait la requête : l'en-tête `Origin` s'il y en a
+ * un, sinon l'adresse par laquelle la requête nous joint — un navigateur
+ * n'envoie pas `Origin` sur un GET de même origine, et la page servie par
+ * Tentacle a alors cette origine-là.
+ */
+export function requestPageOrigin(request: { headers: Record<string, string | string[] | undefined>; protocol: string; host?: string }): string | undefined {
+  const header = request.headers.origin;
+  if (typeof header === "string" && header) return header;
+  return request.host ? `${request.protocol}://${request.host}` : undefined;
+}
+
 let queue: Promise<unknown> = Promise.resolve();
 
 async function runSync(options: SyncOptions): Promise<CorsSyncReport> {
-  const origin = options.requestOrigin ? originOf(options.requestOrigin) : null;
-  const extra = origin && (options.trustRequestOrigin || isHomeOrigin(origin)) ? [origin] : [];
-  const origins = tentacleCorsOrigins({ publicUrl: getPublicUrl(), localUrl: getConfigValue(LOCAL_URL_KEY) ?? null, extra });
-  const jellyfinUrl = getJellyfinUrl();
-  const apiKey = getJellyfinApiKey();
-  if (!jellyfinUrl || !apiKey) return { status: "not_configured", origins, added: [] };
+  let origins: string[] = [];
   try {
+    const origin = options.requestOrigin ? originOf(options.requestOrigin) : null;
+    const extra = origin && (options.trustRequestOrigin || isHomeOrigin(origin)) ? [origin] : [];
+    origins = tentacleCorsOrigins({ publicUrl: getPublicUrl(), localUrl: getConfigValue(LOCAL_URL_KEY) ?? null, extra });
+    const jellyfinUrl = getJellyfinUrl();
+    const apiKey = getJellyfinApiKey();
+    if (!jellyfinUrl || !apiKey) return { status: "not_configured", origins, added: [] };
     const result = await injectCorsHosts(jellyfinUrl, apiKey, origins, options.logger);
     if (result.added.length) console.log(`[cors] origines ajoutées aux CorsHosts de Jellyfin : ${result.added.join(", ")}`);
     return { status: result.open ? "open" : result.added.length ? "updated" : "ready", origins, added: result.added };

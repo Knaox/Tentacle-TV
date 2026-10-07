@@ -11,6 +11,7 @@ import { authAccountRoutes } from "./authAccount";
 import { authRefreshRoutes } from "./authRefresh";
 import { clearSessionCookie, setSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
+import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
 
 /** Session : ouverture, sortie d'impersonation, fermeture. Le cycle de vie du
  *  compte vit dans `authAccount.ts`, la revalidation dans `authRefresh.ts` et le
@@ -84,6 +85,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
       // Set httpOnly cookie for web clients (XSS-proof token storage)
       setSessionCookie(reply, data.AccessToken);
+      // L'adresse de la maison par laquelle on se connecte entre dans les CorsHosts
+      // de Jellyfin (une origine publique inconnue, jamais) : sans attendre.
+      void syncJellyfinCors({ requestOrigin: requestPageOrigin(request) });
 
       return {
         AccessToken: data.AccessToken,
