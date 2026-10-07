@@ -9,7 +9,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 <!-- Bloc nu : Google Play (500 caractères), qui a la 1.10.3 depuis le 04/10. -->
 ### FR
 - **Appareils et TV** dans le Profil : jumelage dès le dernier caractère
-- **L'écran se cale sur la cadence du film**, sans saccade
+- **L'écran suit la cadence du film**, selon le téléphone
 - **Jellyfin redémarre ?** La lecture continue (serveur 1.24.0)
 - **Qualité réduite plus fine** (HEVC), son d'origine gardé
 - Famille en vert, TV déjumelée retirée aussitôt
@@ -20,7 +20,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 
 ### EN
 - **Devices and TVs** in Profile: pairing on the code's last character
-- **The screen matches the film's frame rate**, no stutter
+- **The screen follows the film's frame rate**, phone permitting
 - **Jellyfin restarting?** Playback continues (server 1.24.0)
 - **Sharper reduced quality** (HEVC), original audio kept
 - Family in green, unpaired TV removed at once
