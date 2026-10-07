@@ -55,7 +55,13 @@ export const SOURCES = {
     C('FFmpeg 7.1.1 (macOS, Linux)', 'LGPL-2.1-or-later', FFMPEG('7.1.1')),
     C('libplacebo 7.360.1', 'LGPL-2.1-or-later', PLACEBO('7.360.1')),
     C('FriBidi 1.0.16', 'LGPL-2.1-or-later', GH('fribidi/fribidi', 'v1.0.16')),
-    C('mpv-winbuild-cmake (recette de libmpv-2.dll, Windows)', 'GPL-3.0', 'https://github.com/shinchiro/mpv-winbuild-cmake/archive/refs/heads/master.tar.gz'),
+    // Windows — libmpv-2.dll (zhongfly/mpv-winbuild, variante LGPL, construite
+    // le 2026-02-27) : révisions lues dans la DLL et dans l'historique des
+    // recettes à cette date.
+    C('mpv f28cea85c (libmpv-2.dll, Windows)', 'LGPL-2.1-or-later', COMMIT('mpv-player/mpv', 'f28cea85c')),
+    C('FFmpeg N-123068-gaa483bc42 (libmpv-2.dll, Windows)', 'LGPL-3.0-or-later', COMMIT('FFmpeg/FFmpeg', 'aa483bc42')),
+    C('mpv-winbuild-cmake 965bf378 (recette de la DLL)', 'GPL-3.0', COMMIT('shinchiro/mpv-winbuild-cmake', '965bf378a50d7f59a933aff790ed2d3c807fe545')),
+    C('zhongfly/mpv-winbuild 198a40e (variante LGPL de la recette)', 'MIT', COMMIT('zhongfly/mpv-winbuild', '198a40e88b6e5d2ddbfb6b5561b67445aa523413')),
   ],
   server: [
     C('FFmpeg 8.1.2 (programme ffmpeg)', 'LGPL-2.1-or-later', FFMPEG('8.1.2')),

@@ -41,8 +41,13 @@ d'environnement `TENTACLE_MPV_LIB` charge une libmpv modifiée (LGPL : « relier
 
 ## Restes (non conformes à ce jour)
 
-- **Windows** : la source exacte de `libmpv-2.dll` n'est plus disponible ; construire
-  la DLL soi-même à tags épinglés, ou archiver sa source avec chaque Release.
+- **Windows** : la source de `libmpv-2.dll` est désormais documentée et miroitée par
+  l'offre de sources (`sources-desktop-vX.Y.Z`) : mpv `f28cea85c` (v0.41.0-233) et FFmpeg
+  `aa483bc42` (N-123068), lus dans la DLL ; recette zhongfly/mpv-winbuild `198a40e` sur
+  shinchiro/mpv-winbuild-cmake `965bf378` (construite le 27 février 2026). Les révisions des
+  AUTRES bibliothèques LGPL liées dans la DLL (libplacebo, FriBidi, libbluray, uchardet,
+  LAME) ne sont pas gravées dans le binaire : seule une DLL reconstruite à révisions
+  épinglées fermera ce point avant la prochaine livraison Windows.
 - **Sources** : joindre à chaque Release `desktop-vX.Y.Z` les sources de la chaîne mpv
   et le manifeste des versions Homebrew / apt réellement embarquées.
 - `lib/mpv/libmpv.dylib` (mpv Homebrew **GPL**, jamais chargée) et `libmpv-wrapper.*`

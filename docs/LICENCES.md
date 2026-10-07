@@ -175,8 +175,10 @@ protégerait mieux la faculté d'accorder les permissions de `LICENSE-EXCEPTIONS
 2. **Android** : libmpv-android en LGPL (mpv `-Dgpl=false`, FFmpeg sans `--enable-gpl`,
    `--enable-version3` pour mbedTLS) + `decoder_ffmpeg` construit depuis androidx/media,
    publiés par une Release du dépôt — sinon le GPL côtoie Firebase dans l'APK.
-3. **Windows** : construire `libmpv-2.dll` soi-même à tags épinglés, ou archiver la
-   source exacte ; tant que ce n'est pas fait, la LGPL n'est pas tenue (source introuvable).
+3. **Windows** : source de `libmpv-2.dll` documentée et miroitée (mpv `f28cea85c`, FFmpeg
+   `aa483bc42`, recettes `198a40e` / `965bf378`, offre `sources-desktop-*`) ; restent les
+   révisions des autres bibliothèques LGPL liées dans la DLL, introuvables : reconstruire
+   la DLL à révisions épinglées avant la prochaine livraison Windows (le bureau attend).
 4. **Sources** : fait — `sources.yml`, appelé par mobile, tv, desktop et server aux crans
    test et store, publie la pré-version `sources-<tag>` (code de Tentacle au commit livré +
    archives amont des composants (L)GPL, liste dans `.github/scripts/lib/source-offer.mjs`).
