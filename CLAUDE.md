@@ -647,14 +647,22 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
   `request.ip` (compteur de débit, réseau local, journaux). Docker Desktop/colima perdent l'adresse source :
   documenté, pas contourné.
 - **Accès à distance** (`apps/backend/src/remoteAccess/`, section admin `/admin/remote-access` sous
-  `requirePersonalAdmin` — jamais une TV jumelée) : « Accès depuis l'extérieur » (`remote_access_enabled`) décide
-  de ce qui est PUBLIÉ (`remoteAccess/exposure.ts`) — coupé par défaut, rien de public ne sort (`addresses.public`,
-  l'adresse publique de la lecture directe) ; `/api/config` → `publicUrl` donne alors l'adresse PRIVÉE, sinon celle
-  par laquelle un client du réseau local joint le serveur (`pairingAddress.ts`) ; les clients se rabattent sur
-  l'adresse par laquelle ILS lui parlent (`pairingServerUrl`, shared) — une TV se jumelle en LAN sans aucune URL
-  publique ; un serveur qui publiait déjà est
-  allumé une fois (`exposureDefault.ts`). La lecture directe n'exige que l'adresse PRIVÉE (l'installation l'allume
-  à la maison) ; la publique est facultative. Adresse publique détectée (`/remote-access/public-ip` : dernier
+  `requirePersonalAdmin` — jamais une TV jumelée) : **ce qui est réglé est publié**, comme en 1.23.0
+  (`remoteAccess/exposure.ts`) — plus d'interrupteur (il retenait les adresses d'un serveur venu de 1.23.0 :
+  accès à distance cassé, corrigé avant toute livraison de 1.24.0 ; `settings.enabled` n'est plus qu'un constat).
+  Les adresses restent les clés et les routes de 1.23.0 (`public_url`, `jellyfin_private_url`,
+  `jellyfin_public_url`, `/api/admin/public-url`, `/api/admin/direct-streaming`) : la page s'ouvre sur l'état en
+  lecture seule, puis UN formulaire d'adresses prérempli ; mandataire, ports, test sont repliés dans « En savoir
+  plus », jamais exigés. Face à un serveur qui déclare `admin.remoteAccess`, Services n'en garde qu'un renvoi
+  (`#publicurl`, `#directstreaming` y mènent). `/api/config` → `publicUrl` : le lien public, sinon l'adresse
+  privée réglée, sinon celle par laquelle un client du réseau local joint le serveur (`pairingAddress.ts`) ; les
+  clients se rabattent sur l'adresse par laquelle ILS lui parlent (`pairingServerUrl`, shared). La lecture
+  directe n'exige que l'adresse PRIVÉE (l'installation l'allume à la maison) ; la publique est facultative.
+  **CorsHosts de Jellyfin tenus seuls** (`services/jellyfinCorsSync.ts`) : nos origines (lien public, adresse
+  locale, page de l'admin, `tentacle://app`) au démarrage, au retour de Jellyfin, à chaque enregistrement, avant
+  chaque test ; une liste vide ou avec `*` n'est JAMAIS touchée (Jellyfin y accepte tout ; y écrire la fermerait).
+  Le CORS de Tentacle accepte en plus de `CORS_ORIGINS` ses adresses réglées et sa propre origine
+  (`services/tentacleCors.ts`). Adresse publique détectée (`/remote-access/public-ip` : dernier
   test, sinon Cloudflare `cdn-cgi/trace` en IPv4), les DEUX ports avec leurs vrais numéros ; capacité
   `admin.remoteExposure`. Le panneau est le même dans l'assistant et l'admin. Ports, mandataire HTTPS — **aucune pile
   n'en embarque** (décision du 2026-10-06 : l'utilisateur a le sien) ; l'admin et la doc donnent les

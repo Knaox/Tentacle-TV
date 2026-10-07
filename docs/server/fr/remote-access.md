@@ -13,15 +13,22 @@ le même panneau, les mêmes règles aux deux endroits.
 - **Public** : vos proches le joignent de chez eux, par l'adresse publique de votre box (affichée, détectée
   automatiquement).
 
-L'interrupteur **Accès depuis l'extérieur** décide. **Coupé, rien n'est publié** : ni le lien public de Tentacle
-ni l'adresse publique de Jellyfin ne sont donnés aux applications (le jumelage des TV reçoit l'adresse privée du
-serveur : il continue de marcher), et la lecture hors de la maison passe par Tentacle ; rien d'autre ne change. Un serveur qui publiait déjà un lien public avant cette version est allumé
-une fois, au démarrage : rien ne change pour lui. L'adresse publique est celle vue par le dernier test
-d'ouverture, sinon demandée à la page `cdn-cgi/trace` de Cloudflare (IPv4, sans compte, au plus toutes les dix
-minutes) ; `REMOTE_CHECK_URL=off` coupe les deux.
+**Ce qui est réglé est publié**, comme en 1.23.0 : le lien public de Tentacle et l'adresse publique de Jellyfin
+sont donnés aux applications dès qu'ils sont réglés ; sans lien public, Tentacle ne répond qu'à la maison (le
+jumelage des TV reçoit l'adresse privée du serveur : il continue de marcher). La page s'ouvre sur l'état, en
+lecture seule — ce que reçoivent les applications chez vous et hors de chez vous —, puis sur les **adresses**, les
+seules choses à régler : lien public, lecture directe, adresse de Jellyfin sur le réseau et adresse publique de
+Jellyfin. Un serveur venu d'une version précédente les retrouve préremplies, sans rien à refaire. Tout le reste
+(mandataire, ports, test) est replié dans **En savoir plus** : rien n'y est obligatoire.
 
-Ensuite : ce qui reçoit Internet, les ports de la box, la lecture directe hors de la maison (facultative), et un
-test mené **depuis l'extérieur**.
+L'adresse publique de la box est celle vue par le dernier test d'ouverture, sinon demandée à la page
+`cdn-cgi/trace` de Cloudflare (IPv4, sans compte, au plus toutes les dix minutes) ; `REMOTE_CHECK_URL=off` coupe
+les deux.
+
+**CORS** : Tentacle inscrit lui-même ses adresses (lien public, adresse locale, page de l'administrateur,
+application de bureau) dans les hôtes CORS de Jellyfin — au démarrage, au retour de Jellyfin, à chaque
+enregistrement et avant chaque test. Une liste vide ou qui contient `*` n'est jamais touchée : Jellyfin y accepte
+déjà toutes les origines. Rien à faire de ce côté.
 
 **Lecture directe** : l'adresse privée de Jellyfin suffit à l'allumer (l'installation l'allume à la maison). Son
 **adresse publique est facultative** : sans elle, hors de la maison, la lecture passe par Tentacle — seul le
@@ -53,6 +60,11 @@ peut viser les services par leur nom : `tentacle:3000` et `jellyfin:8096`.
 
 Sur Jellyfin, le mandataire pose **les en-têtes CORS de Tentacle à la place de ceux de Jellyfin** (jamais les
 deux : un `Access-Control-Allow-Origin` en double fait tout refuser par le navigateur).
+
+**Jellyfin sous un chemin du domaine de Tentacle** (`https://tentacle.exemple.fr/jellyfin`) : un seul site, le
+chemin vers Jellyfin, le reste vers Tentacle — et **aucun en-tête CORS**, la même origine n'en a pas besoin. Dans
+Jellyfin › Tableau de bord › Réseau, réglez l'« URL de base » sur le même chemin. La page écrit cet exemple aussi
+(« Un chemin du domaine de Tentacle »), avec l'adresse de Jellyfin sur le réseau si ce n'est pas celle de Tentacle.
 
 ### Caddy
 

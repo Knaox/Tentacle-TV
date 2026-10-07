@@ -76,23 +76,21 @@ describe("A — le Jellyfin de la pile, configuré mais VIDE (le cas de Damien)"
       await page.getByText(/À créer dans Jellyfin.*Films \(\/media\/films\).*Séries \(\/media\/series\)/).waitFor({ timeout: 30_000 });
       await install(journey);
 
-      // ── Privé, par défaut ──────────────────────────────────────────────
-      const exposure = page.getByRole("switch", { name: "Accès depuis l'extérieur" });
-      expect(await exposure.getAttribute("aria-checked")).toBe("false");
+      // ── Rien de publié tant qu'aucun lien public n'est réglé ; aucun interrupteur ──
+      await page.getByRole("textbox", { name: "Lien public de Tentacle" }).waitFor();
+      expect(await page.getByRole("switch").count()).toBe(0);
+      await page.getByText(/^Pas de lien public/).waitFor();
+
+      // ── « En savoir plus » : le mandataire, l'adresse publique, les deux ports ──
+      await journey.button(/^En savoir plus/).click();
       expect(await page.getByRole("textbox", { name: "Adresse de ce serveur sur votre réseau" }).inputValue()).toBe(`http://${ip}:${P.tentacle}`);
       expect(await page.locator('svg[role="img"]').count()).toBe(2);
-      expect(await page.getByText("Votre adresse publique", { exact: true }).count()).toBe(0);
-
-      // ── Public ─────────────────────────────────────────────────────────
-      await exposure.click();
       await page.getByText("Votre adresse publique", { exact: true }).waitFor();
       await page.getByTestId("public-ip").or(page.getByText(/Impossible de la détecter/)).first().waitFor({ timeout: 60_000 });
       for (const port of [String(P.tentacle), String(P.jellyfin)]) await page.getByRole("cell", { name: port, exact: true }).first().waitFor();
       await page.getByText(/ni inclus ni installés|NI inclus NI installés/).waitFor();
       await page.waitForTimeout(500);
       await page.screenshot({ path: join(PROOFS, "a-vide-acces-public.png"), fullPage: true });
-      await exposure.click();
-      await page.getByText(/^Coupé\s*: rien n'est publié/).waitFor();
       await journey.button("Continuer").click();
 
       await journey.at("Et maintenant ?");
@@ -179,28 +177,29 @@ describe("C — un Jellyfin neuf, puis l'administration et l'interface web", () 
 
       // ── L'administration : le même panneau, les mêmes règles ───────────
       await page.goto(`http://${ip}:${P.tentacle}/admin/remote-access`);
-      const exposure = page.getByRole("switch", { name: "Accès depuis l'extérieur" });
-      await exposure.waitFor({ timeout: 60_000 });
+      const link = page.getByRole("textbox", { name: "Lien public de Tentacle" });
+      await link.waitFor({ timeout: 60_000 });
       await page.screenshot({ path: join(PROOFS, "d-admin-acces-prive.png"), fullPage: true });
-      await exposure.click();
+      await journey.button(/^En savoir plus/).click();
       await page.getByText("Votre adresse publique", { exact: true }).waitFor();
       const detected = page.getByTestId("public-ip");
       if (await detected.waitFor({ timeout: 60_000 }).then(() => true, () => false)) {
         const publicIp = (await detected.innerText()).trim();
         await journey.button("Utiliser cette adresse").click();
         await waitFor(async () => (await config()).publicUrl === `http://${publicIp}:${P.tentacle}`);
+        await waitFor(async () => (await link.inputValue()) === `http://${publicIp}:${P.tentacle}`);
       }
       await page.waitForTimeout(500);
       await page.screenshot({ path: join(PROOFS, "d-admin-acces-public.png"), fullPage: true });
-      await exposure.click();
-      // Coupé : plus rien de public ; le jumelage des TV garde l'adresse PRIVÉE de ce serveur.
-      await waitFor(async () => {
-        const now = await config();
-        return now.publicUrl === `http://${ip}:${P.tentacle}` && now.addresses?.public.tentacle === null;
-      });
+      // Effacé : plus rien de public — ce qui est réglé est publié, rien de plus.
+      await link.fill("");
+      await page.locator("#addresses").getByRole("button", { name: "Enregistrer", exact: true }).click();
+      await waitFor(async () => (await config()).addresses?.public.tentacle === null);
+      // L'ancienne ancre des Services mène au formulaire des adresses.
       await page.goto(`http://${ip}:${P.tentacle}/admin/services#directstreaming`);
-      await page.getByText("Lecture directe depuis l'extérieur (facultatif)").waitFor({ timeout: 60_000 });
-      await page.screenshot({ path: join(PROOFS, "d-admin-services.png"), fullPage: true });
+      await page.waitForURL(/\/admin\/remote-access#addresses$/, { timeout: 60_000 });
+      await page.getByText("Adresse publique de Jellyfin (facultatif)").waitFor({ timeout: 60_000 });
+      await page.screenshot({ path: join(PROOFS, "d-admin-adresses.png"), fullPage: true });
     });
     const state = await jellyfinState(fresh.url, await fresh.token(USER, PASSWORD));
     expect(state.libraries.map((l) => l.name).sort()).toEqual(["Films", "Séries"]);
