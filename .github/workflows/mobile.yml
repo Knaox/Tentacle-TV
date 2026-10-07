@@ -225,6 +225,13 @@ jobs:
         if: steps.plan.outputs.channel != 'build' && steps.plan.outputs.ios != 'skip'
         run: node .github/scripts/check-podspec-license.mjs apps/mobile/ios/MPVKit.podspec
 
+      # LA GARDE DE LICENCE Android. Firebase (propriétaire) est dans l'APK :
+      # aucun lecteur GPL ne peut l'y côtoyer, et les AAR de android/maven-local
+      # doivent se déclarer LGPL (lib/android-player-license.mjs).
+      - name: Licence des lecteurs Android (pas de GPL à côté de Firebase)
+        if: steps.plan.outputs.channel != 'build' && steps.plan.outputs.android != 'skip'
+        run: node .github/scripts/check-android-player-license.mjs mobile
+
       # LE PRÉ-VOL. Un bloc de changelog manquant donnait jusqu'ici une
       # publication SANS NOTES, en silence : `release-notes.mjs` sort en 0 sans
       # écrire de fichier, et les étapes enchaînaient avec « || true ».

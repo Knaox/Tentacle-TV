@@ -214,6 +214,13 @@ jobs:
         if: steps.plan.outputs.channel != 'build' && steps.plan.outputs.appletv != 'skip'
         run: node .github/scripts/check-tvos-player-license.mjs
 
+      # LA GARDE DE LICENCE Android TV : du GPL (libmpv-android, décodeur de
+      # Jellyfin) est licite tant qu'aucune bibliothèque propriétaire (Firebase,
+      # Play services) n'entre dans l'APK (lib/android-player-license.mjs).
+      - name: Licence des lecteurs Android TV (pas de GPL à côté de Firebase)
+        if: steps.plan.outputs.channel != 'build' && steps.plan.outputs.androidtv != 'skip'
+        run: node .github/scripts/check-android-player-license.mjs tv
+
       # Le pré-vol ne demande que les notes des cibles LIVRÉES, comme celui de
       # desktop.yml : le bloc nu pour Play (Android TV), « atv- » pour App Store
       # Connect (Apple TV). Une Apple TV livrée seule n'exige donc plus de bloc
