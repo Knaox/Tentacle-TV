@@ -14,6 +14,8 @@
  * Module pur : l'ordre et le rythme des parts, l'horloge donnée, sans React.
  */
 
+import { renewalHead } from "./rowRenewal";
+
 export const ROW_STAGING = {
   /** Les rangées montées d'emblée : la première, à l'écran sous le héros. La
    *  deuxième (sous le bord, à deux BAS) vient à l'image suivante — la
@@ -94,11 +96,12 @@ export function headRelease(total: number, head: number = ROW_STAGING.headCards)
  * pas d'avance : le premier pas à droite fait monter la queue (`demanded`),
  * deux cartes par image, bien avant que la rangée ne défile. Une rangée de
  * vignettes 16:9 (380 + 36 points, 1 744 de piste) en montre 5 ; une rangée
- * d'affiches (240 + 36), 7.
+ * d'affiches (240 + 36), 7. Le compte est celui de la tête d'un
+ * renouvellement (`renewalHead`, recherche) : un seul calcul.
  */
 export function rowHeadCards(viewWidth: number, stride: number): number {
   if (!(stride > 0) || !(viewWidth > 0)) return ROW_STAGING.headCards;
-  return Math.min(ROW_STAGING.headCards, Math.ceil(viewWidth / stride));
+  return Math.min(ROW_STAGING.headCards, renewalHead(viewWidth, stride));
 }
 
 /** Ce qu'une rangée monte à son arrivée dans la page. */
