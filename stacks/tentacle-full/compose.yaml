@@ -119,7 +119,8 @@ services:
 
   # Public access over HTTPS: put YOUR reverse proxy (Caddy, Nginx Proxy
   # Manager, Traefik…) in front of ports 3000 and 8096. What to put in it:
-  # docs/server/remote-access.md, or Administration › Remote access.
+  # https://tentacletv.app/docs/server/remote-access/, or Administration ›
+  # Remote access.
 
 volumes:
   tentacle-secrets:

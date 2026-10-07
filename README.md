@@ -66,9 +66,12 @@ it; the wizard's code screen shows this container's ID and the commands for each
 Open `http://<your-server>:3000`, enter the setup code, and answer the wizard's questions one at a time:
 Jellyfin is configured for you, your libraries are created, remote access is guided and tested from the
 outside. No stack ships a reverse proxy: for HTTPS from the Internet, Tentacle goes behind **yours** (Nginx
-Proxy Manager, Caddy, Traefik…), and the admin page writes what to put in it. Full guide:
-**[docs/server](docs/server/README.md)** ([français](docs/server/fr/README.md)) — install, remote access (port
-forwarding, your reverse proxy, CGNAT), GPU, operations, troubleshooting.
+Proxy Manager, Caddy, Traefik…), and the admin page writes what to put in it.
+
+**Step-by-step guide, with screenshots, in English and French: <https://tentacletv.app/docs/server/>** —
+every screen of the wizard, adding content, remote access (port forwarding, your reverse proxy, CGNAT),
+troubleshooting and FAQ. Reference pages for maintainers: [docs/server](docs/server/README.md)
+([français](docs/server/fr/README.md)).
 
 > The previous [`docker-compose.yml`](docker-compose.yml) and [`docker-compose.external.yml`](docker-compose.external.yml)
 > keep working with the new image; moving to a stack is optional
