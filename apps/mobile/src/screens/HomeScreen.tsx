@@ -9,7 +9,7 @@ import {
   useWatchlist,
   useHomeWebSocket, usePreferencesLive, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
-import { describeProblem, latestAdditionsDetailQuery, type MediaItem } from "@tentacle-tv/shared";
+import { describeProblem, latestAdditionsDetailQuery, libraryHasNoTitles, type MediaItem } from "@tentacle-tv/shared";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
 import { useHeroMetrics } from "@/components/heroMetrics";
@@ -18,6 +18,7 @@ import { useHomeHero } from "@/components/home/useHomeHero";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { HomeRow } from "@/components/home/homeRowRegistry";
+import { HomeEmptyLibrary } from "@/components/home/HomeEmptyLibrary";
 import type { HomeRowActions, HomeRowData } from "@/components/home/homeRowRegistry";
 import { useHomeRows } from "@/components/home/useHomeRows";
 import { CardDensityProvider } from "@/contexts/CardDensityContext";
@@ -76,6 +77,8 @@ export function HomeScreen() {
   const filterChipRowKey = useRecoFilterChipRow(rows);
 
   const isLoading = featured.isLoading || resume.isLoading;
+  // Aucun titre : l'état vide, dans le défilement (tirer pour rafraîchir reste là).
+  const empty = libraryHasNoTitles(libraries.data) && !resume.data?.length;
 
   const handleRefresh = useCallback(() => Promise.all([
     featured.refetch(),
@@ -169,8 +172,10 @@ export function HomeScreen() {
           />
         }
       >
+        {empty ? <HomeEmptyLibrary onRecheck={() => void libraries.refetch()} /> : null}
+
         {/* Le bandeau : le mode du compte, la reprise en repli — jamais vide. */}
-        {heroLoading ? <SkeletonHero /> : heroSlides.length > 0 && <HeroBanner slides={heroSlides} inView={hero.inView} />}
+        {empty ? null : heroLoading ? <SkeletonHero /> : heroSlides.length > 0 && <HeroBanner slides={heroSlides} inView={hero.inView} />}
 
         {/* Les rangées, dans l'ordre du compte (mise en page partagée avec le
             web et la TV) ; chaque clé se rend depuis le registre. */}
