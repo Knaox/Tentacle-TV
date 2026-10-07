@@ -36,7 +36,8 @@ export default {
   databaseRestart: "Redémarrage requis",
   publicUrlSet: "Définie",
   publicUrlMissing: "Non définie",
-  publicUrlPairingBlocked: "Jumelage TV bloqué",
+  // Clé gardée (i18n) : le jumelage n'est plus bloqué, il reste à la maison.
+  publicUrlPairingBlocked: "Jumelage TV : réseau local seulement",
   directOn: "Activée",
   directOff: "Désactivée",
   audioOn: "Active",
@@ -97,13 +98,13 @@ export default {
   // Adresse publique.
   publicUrlTitle: "Adresse publique",
   publicUrlDescription:
-    "L'adresse par laquelle les appareils joignent ce serveur depuis Internet — le domaine derrière Cloudflare, par exemple. Les téléviseurs la reçoivent au jumelage : sans elle, le jumelage TV est bloqué.",
+    "L'adresse par laquelle les appareils joignent ce serveur depuis Internet — le domaine derrière Cloudflare, par exemple. Les téléviseurs la reçoivent au jumelage : sans elle, ils reçoivent l'adresse du serveur sur le réseau local, et ne le joignent que de la maison.",
   publicUrlLabel: "URL publique du serveur Tentacle TV",
   publicUrlHint: "Par exemple https://tentacle.example.com.",
   publicUrlHintEnv: "Laisser vide pour utiliser la variable d'environnement TENTACLE_PUBLIC_URL ({{url}}).",
   publicUrlInEffect: "En service : {{url}}",
   publicUrlFromEnv: "variable d'environnement",
-  publicUrlNone: "Aucune adresse publique : les téléviseurs ne peuvent pas être jumelés.",
+  publicUrlNone: "Aucune adresse publique : les téléviseurs se jumellent sur le réseau local seulement.",
   publicUrlSaved: "Adresse publique enregistrée.",
   publicUrlCleared: "Adresse effacée.",
   publicUrlExposureNote: "Publiée seulement quand « Accès depuis l'extérieur » est allumé (Administration › Accès à distance).",

@@ -61,9 +61,10 @@ export default {
   // Bandeau « jumelage expiré » (token Jellyfin de l'appareil mort côté serveur)
   pairingExpiredBanner: "Jumelage expiré — reconfirmez le jumelage depuis votre profil pour réactiver la sauvegarde de progression.",
 
-  // Jumelage indisponible (URL publique du serveur non configurée côté backend)
-  pairingUnavailable: "Jumeler TV est indisponible, cette option doit être activée par l'administrateur.",
-  pairingUnavailableAdmin: "Veuillez d'abord renseigner « URL publique du serveur Tentacle TV » pour activer le jumelage TV.",
+  // Jumelage indisponible : aucune adresse du serveur qu'une TV puisse joindre
+  // (rien d'annoncé, et ce client parle au serveur par `localhost`).
+  pairingUnavailable: "Le jumelage d'une TV est indisponible : ce serveur n'a aucune adresse qu'une TV puisse joindre. Contactez l'administrateur.",
+  pairingUnavailableAdmin: "Aucune adresse de ce serveur qu'une TV puisse joindre. Ouvrez Tentacle par l'adresse de cette machine sur le réseau local, ou renseignez l'adresse du serveur.",
   pairingConfigureNow: "Configurer maintenant",
 
   // L'écran de jumelage du CLIENT — celui qu'on voit après avoir oublié

@@ -35,7 +35,8 @@ export default {
   databaseRestart: "Restart required",
   publicUrlSet: "Set",
   publicUrlMissing: "Not set",
-  publicUrlPairingBlocked: "TV pairing blocked",
+  // Clé gardée (i18n) : le jumelage n'est plus bloqué, il reste à la maison.
+  publicUrlPairingBlocked: "TV pairing: local network only",
   directOn: "On",
   directOff: "Off",
   audioOn: "On",
@@ -96,13 +97,13 @@ export default {
   // Public address.
   publicUrlTitle: "Public address",
   publicUrlDescription:
-    "The address devices use to reach this server from the Internet — the domain behind Cloudflare, for instance. TVs receive it when pairing: without it, TV pairing is blocked.",
+    "The address devices use to reach this server from the Internet — the domain behind Cloudflare, for instance. TVs receive it when pairing: without it, they receive the server's local network address, and only reach it from home.",
   publicUrlLabel: "Tentacle TV server public URL",
   publicUrlHint: "For instance https://tentacle.example.com.",
   publicUrlHintEnv: "Leave empty to use the TENTACLE_PUBLIC_URL environment variable ({{url}}).",
   publicUrlInEffect: "In service: {{url}}",
   publicUrlFromEnv: "environment variable",
-  publicUrlNone: "No public address: TVs cannot be paired.",
+  publicUrlNone: "No public address: TVs pair on the local network only.",
   publicUrlSaved: "Public address saved.",
   publicUrlExposureNote: "Published only when “Access from outside” is on (Administration › Remote access).",
   publicUrlCleared: "Address cleared.",
