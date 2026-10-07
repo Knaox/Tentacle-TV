@@ -74,9 +74,10 @@ export type AmbientFollow =
   /** L'œuvre qui a le FOCUS : chaque pas d'une carte à l'autre change la
    *  lumière, en fondu. */
   | "focus"
-  /** L'œuvre de l'ÉCRAN (le héros, la fiche, la première carte) : le focus
-   *  qui passe d'une carte à l'autre ne change rien au fond. */
-  | "screen";
+  /** Rien : une seule lumière, la même sur tous les écrans, posée sans
+   *  fondu — ni le focus, ni un chargement, ni l'arrivée des affiches, ni le
+   *  passage d'un écran à l'autre ne la changent. */
+  | "fixed";
 
 /** Le verre dessiné (sans verre natif). */
 export type GlassRendering =
@@ -164,7 +165,7 @@ export interface RenderProfile {
   cardFocus: CardFocusRendering;
   /** Le fond de la scène. */
   ambient: AmbientRendering;
-  /** Ce que le fond suit : la carte focalisée, ou l'écran. */
+  /** Ce que le fond suit : la carte focalisée, ou rien (fond fixe). */
   ambientFollow: AmbientFollow;
   /** Le verre dessiné. */
   glass: GlassRendering;

@@ -20,10 +20,10 @@ export interface AmbientSource {
 const noSubscription = () => () => {};
 const nothing = () => null;
 
-/** Le profil Lite (`ambientFollow: "screen"`) : le fond garde la lumière de
- *  l'écran, le focus n'y change rien — ni teinte d'une carte à l'autre, ni
- *  rendu du fond (ou de la vue qui le lit) à chaque pas. Fixe pour la vie du
- *  JS : l'ordre des crochets ne change pas. */
+/** Le profil Lite (`ambientFollow: "fixed"`) : le focus ne change rien au
+ *  fond — ni teinte d'une carte à l'autre, ni rendu du fond (ou de la vue qui
+ *  le lit) à chaque pas. Fixe pour la vie du JS : l'ordre des crochets ne
+ *  change pas. */
 const FOLLOWS_FOCUS = RENDER.ambientFollow === "focus";
 
 /** La lumière de `source`, sinon `fallback` ; sans source, `fallback`. */

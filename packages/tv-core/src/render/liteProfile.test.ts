@@ -35,7 +35,7 @@ describe("le profil Lite", () => {
       motionStyle: "brief",
       cardFocus: "outline",
       ambient: "tint",
-      ambientFollow: "screen",
+      ambientFollow: "fixed",
       shadows: "border",
       glass: "flat",
       gradients: "twoStop",

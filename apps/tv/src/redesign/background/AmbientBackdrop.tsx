@@ -2,7 +2,7 @@ import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { TV_LIGHT } from "@tentacle-tv/theme";
-import { boundedLight, type ArtworkPalette } from "../color/artworkPalette";
+import { boundedLight, NEUTRAL_PALETTE, type ArtworkPalette } from "../color/artworkPalette";
 import { PoolLayerView, useLayerPool } from "../motion/LayerStack";
 import { colors } from "../theme/tokens";
 import { useAmbientOf, type AmbientSource } from "./ambientSource";
@@ -15,6 +15,8 @@ import { RENDER } from "../render/renderProfile";
 const AMBIENT_OFF = effectOff("ambient");
 /** Profil Lite (`ambient: "tint"`) : une seule teinte statique, venue d'en haut. */
 const TINT = RENDER.ambient === "tint";
+/** Profil Lite (`ambientFollow: "fixed"`) : le fond ne suit rien. */
+const FIXED = RENDER.ambientFollow === "fixed";
 
 /**
  * Le fond vivant : l'ENCRE de la scène (`TV_LIGHT.ink` — à peine teintée de
@@ -41,11 +43,13 @@ const TINT = RENDER.ambient === "tint";
  * sur le fil principal (mesuré au banc : c'était le premier coût d'un pas du
  * focus sur une rangée).
  *
- * Profil Lite (`ambient: "tint"`) : ni lumières ni dégradé radial — UNE
- * teinte de l'œuvre (sa lumière d'en haut, même clarté bornée), en dégradé
- * vertical à deux arrêts dessiné petit, posée sur l'encre. Quand l'œuvre
- * change, la nouvelle teinte entre en UN fondu court (`ambient`, bref) ; deux
- * calques gardés au lieu de cinq.
+ * Profil Lite (`ambient: "tint"`, `ambientFollow: "fixed"`) : ni lumières
+ * ni dégradé radial — UNE teinte, en dégradé vertical à deux arrêts dessiné
+ * petit, posée sur l'encre. Elle est FIXE : la lumière neutre (celle du
+ * démarrage), à la même force sur tous les écrans, posée sans fondu. Ni le
+ * focus, ni un chargement (squelette → contenu), ni l'arrivée des affiches
+ * d'une bibliothèque, ni un nouvel écran ne la changent : chacun de ces
+ * passages faisait un éclair de 150 ms (essais sur la Shield, 2026-10-07).
  *
  * Bord à bord : ce fond ignore la marge de sécurité, seul le contenu la
  * respecte.
@@ -147,11 +151,15 @@ function withAlpha(color: string, alpha: number): string {
 }
 
 export const AmbientBackdrop = memo(function AmbientBackdrop({ palette, intensity = 1 }: AmbientBackdropProps) {
-  const layers = useLayerPool(palette.glows.join("-"), palette, TINT ? 2 : undefined);
+  // Fixe : la réserve garde la lumière neutre, aucun changement à suivre.
+  const followed = FIXED ? NEUTRAL_PALETTE : palette;
+  const layers = useLayerPool(followed.glows.join("-"), followed, TINT ? 2 : undefined);
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <SoftGradient colors={[colors.bgTop, colors.bgBottom]} {...STAGE_SIZE} />
-      {AMBIENT_OFF ? null : layers.map((layer) => (
+      {AMBIENT_OFF ? null : FIXED ? (
+        <Tint palette={NEUTRAL_PALETTE} intensity={1} />
+      ) : layers.map((layer) => (
         <PoolLayerView key={layer.slot} present={layer.present} motion="ambient">
           {TINT ? <Tint palette={layer.item} intensity={intensity} /> : <Lights palette={layer.item} intensity={intensity} />}
         </PoolLayerView>
@@ -164,8 +172,8 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ palette, intensit
  * Le fond vivant d'un écran dont la lumière SUIT LE FOCUS sans le redessiner :
  * celle de `source` (la carte focalisée, `ambientSource`), sinon `palette`
  * (le héros, la première carte). Sans source : `AmbientBackdrop` tel quel.
- * Profil Lite (`ambientFollow: "screen"`) : la source est ignorée, le fond
- * garde la lumière de l'écran (`useAmbientOf`).
+ * Profil Lite (`ambientFollow: "fixed"`) : la source est ignorée
+ * (`useAmbientOf`), et le fond ne suit rien.
  */
 export const LiveAmbientBackdrop = memo(function LiveAmbientBackdrop({
   source,
