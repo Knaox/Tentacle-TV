@@ -66,6 +66,16 @@ describe("catalogue des composants", () => {
     expect(licenseTextsFor("ios")).not.toContain("PrismCore");
   });
 
+  it("mobile : aucun texte lisible ne contient le mot interdit (règle des relecteurs d'Apple)", () => {
+    const forbidden = /t[ée]l[ée]charg|download/i;
+    for (const platform of ["ios", "android"] as const) {
+      for (const id of licenseTextsFor(platform)) expect(forbidden.test(LICENSE_TEXTS[id]), id).toBe(false);
+      for (const c of componentsFor(platform)) {
+        expect(forbidden.test([c.name, c.notice, c.note, c.source].join(" ")), c.name).toBe(false);
+      }
+    }
+  });
+
   it("FreeType porte sa mention de crédit obligatoire là où il est embarqué", () => {
     for (const c of THIRD_PARTY_COMPONENTS.filter((x) => x.license === "FTL")) {
       expect(c.notice).toContain("The FreeType Project");
