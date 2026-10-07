@@ -9,24 +9,26 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 <!-- Bloc nu : Android TV (Google Play, 500 caractères) — première livraison de la refonte, donc 1.10.0 + 1.10.1 résumés. Complété le 06/10 : panne de Jellyfin et qualité réduite. -->
 ### FR
 - **Android TV redessinée**, comme l'Apple TV : verre, grand bandeau, grand panneau sur OK maintenu
-- **Profils de la famille** avec code PIN (serveur 1.23.0)
+- **Profils de la famille** avec code PIN
 - **La lecture démarre d'un seul tenant**, image et son ensemble
 - **Rangées sans sursaut**, accueil d'un seul fondu
 - **Le bandeau suit votre réglage**, comme sur mobile
 - **Jellyfin redémarre ?** La lecture continue (serveur 1.24.0)
 - **Qualité réduite plus fine** (HEVC)
-- Retour ferme d'abord la fenêtre ouverte du lecteur
+- Retour ferme d'abord la fenêtre du lecteur
+- Recherche sans à-coup
 - Plus de plantage au jumelage
 
 ### EN
 - **Android TV redesigned**, like Apple TV: glass, large banner, large panel on held OK
-- **Family profiles** with PIN (server 1.23.0)
+- **Family profiles** with PIN
 - **Playback starts in one go**, picture and sound together
 - **Rows without jumps**, Home in a single fade
 - **The banner follows your setting**, as on mobile
 - **Jellyfin restarting?** Playback continues (server 1.24.0)
 - **Sharper reduced quality** (HEVC)
 - Back closes the player's open panel first
+- Search no longer stutters as you type
 - No more crash when pairing
 
 ## [atv-1.10.1]
