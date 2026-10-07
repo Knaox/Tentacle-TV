@@ -168,7 +168,7 @@ export async function runRoute({ avd, option, flag }) {
           continue;
         }
         const summary = summarizeScenario(scenario, played);
-        const screen = { ...summary, gfxFull: played.map((r) => r.gfxFull), memory: played.map((r) => r.memory), rawRounds: played.map(({ records, ...r }) => r) };
+        const screen = { ...summary, gfxFull: played.map((r) => r.gfxFull), memory: played.map((r) => r.memory), rawRounds: played.map(({ records: _records, ...r }) => r) };
         result.screens.push(screen);
         log(describeLite(screen));
       }
