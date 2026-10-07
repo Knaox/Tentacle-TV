@@ -60,6 +60,7 @@ qui a redémarré. Toute séquence passe désormais par la garde
   appui et sort sans rien envoyer (code 3) sinon ;
 - au moindre doute : `ForegroundError`, arrêt net, plus aucune touche — ni
   l'échauffement ni une passe rejouée ne la rattrapent ;
+- un geste à la main pendant une passe passe AUSSI par elle : `node keys.mjs <capture.png|-> tap:21 tap:23` (touches gardées, puis capture) ;
 - jamais Accueil, Marche, Menu, Paramètres, Veille, Applis récentes
   (codes 3, 26, 82, 176, 223, 187).
 
