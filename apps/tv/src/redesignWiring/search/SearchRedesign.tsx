@@ -11,6 +11,7 @@ import {
   type SearchCardKind,
 } from "@tentacle-tv/tv-core";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
+import { useStableHandler } from "../../hooks/useStableHandler";
 import type { RootStackParamList } from "../../navigation/types";
 import { useSearchDictation, useSearchGroups, useSearchKeyboard } from "../../platform/searchInput";
 import type { CardModel } from "../../redesign/cards/cardTypes";
@@ -97,7 +98,9 @@ export function SearchRedesign() {
 
   const content = results.content;
   const top = content.kind === "results" ? content.sections.find((section) => section.key === "top") : undefined;
-  const onOpenTop = useCallback(() => {
+  // Les gestes des résultats lisent la DERNIÈRE réponse mais gardent leur
+  // identité (`useStableHandler`) : une frappe ne redessine pas les cartes.
+  const onOpenTop = useStableHandler(() => {
     if (!top || top.key !== "top") return;
     if (searchTopPress(top.top.kind) === "browse") {
       if (top.top.kind === "person") openBrowse({ kind: "person", id: top.top.id, name: top.top.name });
@@ -105,7 +108,7 @@ export function SearchRedesign() {
     }
     remember();
     navigation.navigate("MediaDetail", { itemId: top.top.id });
-  }, [top, openBrowse, remember, navigation]);
+  });
 
   // Une vignette d'épisode LIT, une affiche ouvre sa fiche (le modèle des
   // cartes) ; un titre « À demander » se demande — une série incomplète par
@@ -113,7 +116,7 @@ export function SearchRedesign() {
   const { itemOf, absentOf, gapOf } = results;
   const open = requests?.open;
   const hold = requests?.hold;
-  const onPressCard = useCallback((section: string, card: CardModel) => {
+  const onPressCard = useStableHandler((section: string, card: CardModel) => {
     remember();
     const press = cardPressOf({ surface: "search", card: searchCardKindOf(section, false) });
     if (press === "request") {
@@ -123,8 +126,8 @@ export function SearchRedesign() {
       if (title) open?.(title);
     } else if (press === "play") navigation.navigate("Player", { itemId: card.id });
     else navigation.navigate("MediaDetail", { itemId: card.id });
-  }, [remember, navigation, absentOf, gapOf, open, requests, t]);
-  const onLongPressCard = useCallback((section: string, card: CardModel) => {
+  });
+  const onLongPressCard = useStableHandler((section: string, card: CardModel) => {
     // Une série incomplète est un titre de la bibliothèque : son panneau.
     const gap = section === "absent" ? gapOf(card.id) : undefined;
     const series = gap ? itemOf(gap.seriesId) : undefined;
@@ -138,7 +141,7 @@ export function SearchRedesign() {
     if (!item || panel?.kind !== "media") return;
     if (panel.variant === "landscape") openLandscape(item);
     else openPoster(item);
-  }, [itemOf, absentOf, gapOf, hold, openLandscape, openPoster]);
+  });
 
   const onOpenPerson = useCallback((person: SearchPersonModel) => openBrowse({ kind: "person", id: person.id, name: person.name }), [openBrowse]);
   const onOpenFacet = useCallback((facet: SearchFacetModel) => openBrowse({ kind: facet.kind, name: facet.name }), [openBrowse]);
