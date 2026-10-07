@@ -42,7 +42,7 @@ export function createPlayer({ device, backendPort, host }) {
     device.keys(...(scenario.setup ?? []));
     await device.waitQuiet(1200);
     if (scenario.expectReady && !device.perfRecords().some((record) => record.ready === scenario.expectReady)) {
-      throw new SetupError(`la mise en place n'a pas mené à « ${scenario.expectReady} »`);
+      throw new SetupError(`la mise en place n'a pas mené à « ${scenario.expectReady} » (écrans : ${device.screens().join(" → ") || "aucun"})`);
     }
     if (shotFile) device.screencap(shotFile);
     device.clearLog();

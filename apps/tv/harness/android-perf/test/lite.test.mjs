@@ -101,7 +101,7 @@ test("le tableau avant / après : écarts relatifs, et l'alerte de charge", () =
     tag, device: "émulateur", throttle: "none", maxHostLoad: load,
     cold: [{ launchMs: 1000, readyMs: 4000 }],
     memory: [{ app: { totalPss: pss, javaHeap: 20, nativeHeap: 100, graphics: 0 } }],
-    endurance: [{ app: { totalPss: pss + 10 } }],
+    endurance: [{ label: "tour 0", app: { totalPss: pss + 10 } }],
     screens: [{ id: "grille", cpu: { ui: 100, js: 50, render: 30 }, gfxFull: [{ frames: 100, jankyLegacy: 10, slowUiThread: 2, p90: 30 }], memory: [{ totalPss: pss, graphics: 0 }] }],
   });
   const table = compareLite(run("avant", 200, 12), run("apres", 150, 45));
@@ -109,4 +109,5 @@ test("le tableau avant / après : écarts relatifs, et l'alerte de charge", () =
   assert.match(table, /au-delà de 30/);
   assert.match(table, /\| grille \| 10,0 → 10,0 \(\+0 %\)/);
   assert.match(table, /Repos — totalPss \(Mo\) \| 200,0 → 150,0 \(-25 %\)/);
+  assert.match(table, /Endurance, tour 0 — PSS \(Mo\) \| 210,0 → 160,0/);
 });

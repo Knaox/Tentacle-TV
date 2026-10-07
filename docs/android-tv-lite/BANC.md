@@ -165,12 +165,17 @@ noter la charge** (le parcours la relève à chaque mesure et alerte au-delà de
    (`ui`, `js` = `mqt_js`, `render`, `images`, `gc`…), `dumpsys gfxinfo`
    complet (images, ratées, « Slow UI thread », envoi des bitmaps, centiles)
    et la mémoire après le geste.
+   Une mise en place qui n'aboutit pas (deux fois) : l'écran est noté
+   « NON MESURÉ », avec la capture `<scénario>-echec.png` et les écrans
+   visités ; le parcours continue. Même interrompu, `resume.json` garde ce
+   qui a été mesuré (`aborted` dit pourquoi).
 4. **Endurance** ×`--endurance` : sans relancer, des segments vérifiés (rangées ;
-   fiche par « Plus d'infos » ; Films par le rail, grille tenue, retour à
-   l'accueil), la mémoire après chaque tour — une fuite se lit à la pente.
-   Chaque segment doit finir sur l'écran attendu (et passer par la fiche ou
-   la bibliothèque) : une dérive ARRÊTE l'endurance, jamais de touches à
-   l'aveugle. Trace Perfetto du premier tour avec `--perfetto`.
+   fiche par « Plus d'infos » ; Films par le rail, 6 rangées de la grille,
+   Retour — la page s'était empilée sur l'accueil), la mémoire après chaque
+   tour — une fuite se lit à la pente. Chaque segment doit finir sur l'écran
+   attendu (et passer par la fiche ou la bibliothèque) : une dérive ARRÊTE
+   l'endurance, capture `endurance-derive-tour<n>.png` à l'appui, jamais de
+   touches à l'aveugle. Trace Perfetto du premier tour avec `--perfetto`.
 5. **Pression** (`--pressure`) : `am send-trim-memory` RUNNING_LOW puis
    RUNNING_CRITICAL (mémoire relevée après chacun), puis un mangeur de
    mémoire native (`keys/Hog.java`, 80 % de la mémoire disponible, montée
@@ -183,7 +188,44 @@ CPU UI / JS / rendu, PSS et graphique — chaque écart en %.
 **Images ratées.** Sur Android 12+, `Janky frames` se lit sur la chronologie
 de SurfaceFlinger : 0 à l'émulateur (mesuré, contre 99 % en « legacy »). Le
 banc prend la définition **legacy** (image au-delà de l'intervalle), la seule
-comparable entre l'API 31 de l'émulateur et une box en Android 9 à 11.
+comparable entre l'API 31 de l'émulateur et une box en Android 9 à 11. **À
+l'émulateur elle sature** (92 à 99 % sur presque tous les écrans : la phase
+d'échange de l'émulation dépasse l'intervalle) : y lire plutôt le **p90**, le
+**travail processeur par image** et le **CPU par fil** (UI, JS, rendu), qui
+bougent avec ce qui change vraiment. Les ratées redeviennent lisibles sur un
+vrai appareil.
+
+## Exemple de sortie (07/10, `Lite_API31_2G`, sans freinage puis `duty:25`)
+
+Passe de référence (charge du Mac 8-23) : démarrage à froid 1,5-1,6 s
+jusqu'à l'accueil prêt (première image 364-429 ms) ; repos PSS 235 Mo (Java
+16, natif 118) ; endurance 280 → 299 → 352 Mo en 3 tours, **vues montées
+2 142 → 3 374 → 4 718** (à creuser : L4) ; pression : RUNNING_CRITICAL
+ramène 347 → 332 Mo, l'app survit à 464 Mo de mémoire native prise à côté.
+Une ligne d'écran :
+
+```
+focus-rangee — Focus d'une carte : 6 pas à droite puis 6 à gauche sur « Reprendre » (charge du Mac ≤ 19,2)
+  407 images, 404,0 ratées (99,3 %), 115,0 graves · p95 pire 38,0 ms · pire image 55,8 ms
+  travail processeur (fil UI + sync) par image : > 2 ms 394,0 · > 4 ms 265,0 · > 8 ms 54,0 · > intervalle 10,0
+  Reanimated : 2 777 vues mises à jour en 436 images (6,4 par image)
+  React par pas : 6,2 validations, 163 composants, 17 vues créées, 56 mises à jour
+  CPU (ms) : render 2 682 · ui 1 167 · js 448 · modules 312 · other 283 · gc 53
+  gfxinfo : 407 images, ratées 92,4 % · fil UI lent 0 · … · p50/p90/p99 19/26/34 ms
+  mémoire après : PSS 231,8 Mo · Java 19,7 · natif 110,3 · graphique 0,0 · vues 1 837
+```
+
+`parcours compare` contre une passe `duty:25` (extrait) :
+
+| Écran | Images ratées (%) | p90 (ms) | CPU UI (ms) | CPU JS (ms) | CPU rendu (ms) |
+|---|---|---|---|---|---|
+| focus-rangee | 92,4 → 99,6 | 26 → 105 | 1 167 → 3 856 | 448 → 2 272 | 2 682 → 6 501 |
+| fiche | 48,7 → 99,0 | 26 → 150 | 1 047 → 3 093 | 534 → 2 430 | 1 533 → 3 429 |
+| grille | 99,5 → 99,1 | 36 → 200 | 1 988 → 3 775 | 891 → 2 211 | 2 086 → 3 041 |
+
+Le freinage rend le banc sensible (accueil prêt 1,6 → 5,4 s) ; les temps CPU
+gonflent aussi parce que le processus est suspendu en plein travail : ne
+comparer que deux passes sous le même freinage.
 
 ## Profil de capacités simulé (BCM7271)
 
@@ -197,9 +239,34 @@ adb -s emulator-5642 shell setprop debug.tentacle.media_profile bcm7271   # puis
 adb -s emulator-5642 shell setprop debug.tentacle.media_profile ""        # le vrai profil
 ```
 
+Deux autres valeurs (L3) : `shield` injecte le profil RÉEL de la Shield
+relevé le 06/10 (comparer la box et la Shield sur le même émulateur),
+`survey` écrit le profil réel de l'appareil dans `logcat -s TentacleMedia`
+5 s après le lancement, sans une touche. Sans profil injecté, l'émulateur
+n'a que des décodeurs logiciels, écartés par le relevé : le verdict y vaut
+« refus ».
+
 Hypothèses du profil (à relever sur la vraie box) : HEVC Main / Main 10 4K60,
 VP9 Profile 0 / 2 4K60, H.264 jusqu'en 4K30, pas d'AV1, pas de Dolby Vision ;
 passthrough HDMI AC3 / E-AC3.
+
+## Pièges vécus
+
+- **Un OK traité en retard devient un appui maintenu.** Sous la charge, l'OK
+  sur une entrée du rail a ouvert le menu de l'entrée (Déplacer, Monter,
+  Masquer…) au lieu de la page : laisser le rail se poser (2 s) avant OK.
+  L'injecteur envoie pourtant un appui de 60 ms : c'est l'app, en retard, qui
+  le lit maintenu. Chaque passe repart d'une session et d'un faux backend
+  neufs : rien ne survit d'un geste parti de travers.
+- **L'entrée de la grille varie** (première affiche ou barre de filtres, selon
+  l'arrivée des données) : `saisons-episodes` reste instable (voir son
+  commentaire dans `lib/scenarios.mjs`).
+- **Sous une forte charge du Mac (> 80)**, le détecteur de qemu tue
+  l'émulateur (« detected a hanging thread 'QEMU2 CPU0 thread' ») ; un
+  démarrage à froid peut prendre 8 min. Relancer `avd start`.
+- **Démarrage à froid très variable** : 0,9 à 2,2 s jusqu'à l'accueil prêt à
+  charge 11-40, 6 à 18 s à charge 40-60 dans la passe suivante — toujours
+  lire la charge relevée à côté.
 
 ## Limites — ce que le banc NE prouve PAS
 

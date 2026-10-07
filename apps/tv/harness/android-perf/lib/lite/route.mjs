@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import { assertPortFree, CACHE, keysDex, startBackend } from "../benchSetup.mjs";
 import { createDevice, PACKAGE, sleep } from "../device.mjs";
 import { startImageProxy } from "../imageProxy.mjs";
-import { createPlayer } from "../play.mjs";
+import { createPlayer, SetupError } from "../play.mjs";
 import { summarizeScenario } from "../report.mjs";
 import { scenariosOf } from "../scenarios.mjs";
 import { createCapture, startPerfetto } from "./capture.mjs";
@@ -49,13 +49,15 @@ export const LITE_ROUTE = ["focus-rangee", "accueil-pas", "rail", "page-films", 
  *   bouton, quel que soit le départ) puis GAUCHE : « Plus d'infos » ; OK, 3
  *   sections, Retour ;
  * - Films : Retour sur l'accueil ouvre le rail sur « Accueil » ; Films est
- *   5 crans plus bas ; la grille tenue, Retour (le rail, sur « Films »),
- *   5 crans plus haut, OK : l'accueil.
+ *   5 crans plus bas ; 6 rangées de la grille vers le bas puis vers le haut
+ *   (des pas comptés : après une tenue, la grille n'est pas revenue en haut et
+ *   la suite dérive — vécu), puis Retour : l'accueil (la page ouverte par
+ *   le rail s'est EMPILÉE sur l'accueil — capture de la dérive).
  */
 export const ENDURANCE_SEGMENTS = [
   { id: "rangees", expect: "Home", keys: ["tap:20", "wait:900", "tap:22x5@500", "wait:600", "tap:21x5@500", "wait:600", "hold:20:2500", "wait:900", "hold:19:3500", "wait:1200"] },
   { id: "fiche", expect: "Home", through: "MediaDetail", keys: ["tap:22x3@450", "wait:600", "tap:21", "wait:700", "tap:23", "wait:3500", "tap:20x3@700", "wait:900", "tap:4", "wait:2500"] },
-  { id: "films", expect: "Home", through: "Library", keys: ["wait:1500", "tap:4", "wait:1800", "tap:20x5@350", "wait:900", "tap:23", "wait:4500", "hold:20:2500", "wait:900", "hold:19:3500", "wait:900", "tap:4", "wait:1500", "tap:19x5@350", "wait:900", "tap:23", "wait:3500"] },
+  { id: "films", expect: "Home", through: "Library", keys: ["wait:1500", "tap:4", "wait:1800", "tap:20x5@450", "wait:2000", "tap:23", "wait:4500", "tap:20x6@450", "wait:900", "tap:19x6@450", "wait:1500", "tap:4", "wait:3500"] },
 ];
 
 function stamp() {
@@ -175,12 +177,24 @@ export async function runRoute({ avd, option, flag }) {
       // 3. Écran par écran.
       for (const scenario of scenarios) {
         const played = [];
-        for (let i = 0; i < rounds; i++) {
-          const round = await player.playChecked(scenario);
-          played.push({ ...round, gfxFull: capture.gfx(), memory: capture.meminfo() });
+        try {
+          for (let i = 0; i < rounds; i++) {
+            const round = await player.playChecked(scenario);
+            played.push({ ...round, gfxFull: capture.gfx(), memory: capture.meminfo() });
+          }
+        } catch (error) {
+          // Une mise en place ratée deux fois : l'écran n'est pas mesuré, le
+          // parcours continue. Toute autre erreur (la garde des touches
+          // comprise) arrête tout.
+          if (!(error instanceof SetupError)) throw error;
+          // La capture de l'écran où la mise en place s'est arrêtée.
+          device.screencap(path.join(dir, `${scenario.id}-echec.png`));
+          result.screens.push({ id: scenario.id, title: scenario.title, skipped: error.message });
+          log(`${scenario.id} — NON MESURÉ : ${error.message}`);
+          continue;
         }
         const summary = summarizeScenario(scenario, played);
-        const screen = { ...summary, gfxFull: played.map((r) => r.gfxFull), memory: played.map((r) => r.memory), rawRounds: played.map(({ records, ...r }) => r) };
+        const screen = { ...summary, gfxFull: played.map((r) => r.gfxFull), memory: played.map((r) => r.memory), rawRounds: played.map(({ records: _records, ...r }) => r) };
         result.screens.push(screen);
         log(describeLite(screen));
       }
@@ -200,6 +214,7 @@ export async function runRoute({ avd, option, flag }) {
           break;
         }
         if (drift) {
+          device.screencap(path.join(dir, `endurance-derive-tour${loop}.png`));
           log(`endurance : dérive au tour ${loop} — ${drift} ; arrêt de l'endurance`);
           result.endurance.push({ label: `tour ${loop}`, drift });
           break;
@@ -210,14 +225,19 @@ export async function runRoute({ avd, option, flag }) {
       }
       // 5. Pression mémoire.
       if (flag("pressure")) result.pressure = await applyPressure(device, capture, log);
+    } catch (error) {
+      result.aborted = error.message;
+      log(`✗ parcours interrompu : ${error.message}`);
+      throw error;
     } finally {
       lift();
+      // Même interrompu, ce qui a été mesuré est gardé (`aborted` le dit).
+      result.images = proxy.stats;
+      result.maxHostLoad = Math.max(0, ...result.cold.flatMap((c) => c.hostLoad ?? []), ...result.screens.map((s) => s.hostLoad ?? 0));
+      fs.writeFileSync(path.join(dir, "resume.json"), JSON.stringify(result, null, 1));
+      if (result.maxHostLoad > MAX_HOST_LOAD) log(`⚠ charge du Mac jusqu'à ${result.maxHostLoad} (> ${MAX_HOST_LOAD}) : passe à refaire avant de comparer`);
+      log(`→ ${dir}`);
     }
-    result.images = proxy.stats;
-    result.maxHostLoad = Math.max(...result.cold.flatMap((c) => c.hostLoad ?? []), ...result.screens.map((s) => s.hostLoad ?? 0));
-    fs.writeFileSync(path.join(dir, "resume.json"), JSON.stringify(result, null, 1));
-    if (result.maxHostLoad > MAX_HOST_LOAD) log(`⚠ charge du Mac jusqu'à ${result.maxHostLoad} (> ${MAX_HOST_LOAD}) : passe à refaire avant de comparer`);
-    log(`→ ${dir}`);
   });
 }
 

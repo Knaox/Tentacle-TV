@@ -58,8 +58,11 @@ export function compareLite(a, b) {
   for (const key of ["totalPss", "javaHeap", "nativeHeap", "graphics"]) {
     lines.push(`| Repos — ${key} (Mo) | ${delta(a.memory[0]?.app[key] ?? null, b.memory[0]?.app[key] ?? null, f1)} |`);
   }
-  const lastOf = (run) => [...run.endurance].reverse().find((e) => e.app) ?? null;
-  lines.push(`| Fin d'endurance — PSS (Mo) | ${delta(lastOf(a)?.app.totalPss ?? null, lastOf(b)?.app.totalPss ?? null, f1)} |`);
+  // Le dernier tour mesuré des DEUX côtés : 3 tours contre 1 ne se comparent pas.
+  const tours = (run) => run.endurance.filter((e) => e.app);
+  const common = Math.min(tours(a).length, tours(b).length) - 1;
+  const at = (run) => (common >= 0 ? tours(run)[common].app.totalPss : null);
+  lines.push(`| Endurance, ${common >= 0 ? tours(a)[common].label : "—"} — PSS (Mo) | ${delta(at(a), at(b), f1)} |`);
   lines.push(`| App morte en endurance | ${a.endurance.some((e) => e.died) ? "oui" : "non"} → ${b.endurance.some((e) => e.died) ? "oui" : "non"} |`);
   lines.push("", "## Écrans", "", "| Écran | Images ratées (%) | Fil UI lent | p90 (ms) | CPU UI (ms) | CPU JS (ms) | CPU rendu (ms) | PSS après (Mo) | Graphique (Mo) |", "|---|---|---|---|---|---|---|---|---|");
   const jankPct = (s) => {
@@ -69,6 +72,10 @@ export function compareLite(a, b) {
   for (const before of a.screens) {
     const after = b.screens.find((s) => s.id === before.id);
     if (!after) continue;
+    if (before.skipped || after.skipped) {
+      lines.push(`| ${before.id} | non mesuré ${before.skipped ? "avant" : "après"} | | | | | | | |`);
+      continue;
+    }
     lines.push(`| ${before.id} | ${delta(jankPct(before), jankPct(after), f1)} | ${delta(gfxMean(before, "slowUiThread"), gfxMean(after, "slowUiThread"))} | ${delta(gfxMean(before, "p90"), gfxMean(after, "p90"))} | ${delta(before.cpu.ui ?? 0, after.cpu.ui ?? 0)} | ${delta(before.cpu.js ?? 0, after.cpu.js ?? 0)} | ${delta(before.cpu.render ?? 0, after.cpu.render ?? 0)} | ${delta(memoryMean(before, "totalPss"), memoryMean(after, "totalPss"), f1)} | ${delta(memoryMean(before, "graphics"), memoryMean(after, "graphics"), f1)} |`);
   }
   return lines.join("\n");

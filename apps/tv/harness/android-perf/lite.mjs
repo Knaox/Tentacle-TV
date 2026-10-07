@@ -95,8 +95,9 @@ async function main() {
     if (command === "run") return runRoute({ avd: name, option, flag });
     if (command === "compare") return compareRuns(positional[0], positional[1]);
   }
-  console.error("usage : lite.mjs avd|throttle|pressure|setup|parcours — voir l'en-tête du fichier");
-  process.exit(2);
+  const help = group === "--help" || group === "-h" || group === "help";
+  (help ? console.log : console.error)("usage : lite.mjs avd|throttle|pressure|setup|parcours|cout — voir l'en-tête du fichier");
+  process.exit(help ? 0 : 2);
 }
 
 main().catch((error) => {
