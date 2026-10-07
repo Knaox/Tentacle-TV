@@ -1,6 +1,7 @@
 {
   "name": "@tentacle-tv/port-check",
   "version": "1.0.0",
+  "license": "AGPL-3.0-or-later",
   "private": true,
   "description": "Le service de test d'ouverture des serveurs Tentacle (check.tentacletv.app). Jamais déployé par la CI.",
   "scripts": {

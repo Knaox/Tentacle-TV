@@ -1,6 +1,7 @@
 {
   "name": "@tentacle-tv/tv",
   "version": "1.10.1",
+  "license": "AGPL-3.0-or-later",
   "private": true,
   "scripts": {
     "start": "react-native start",

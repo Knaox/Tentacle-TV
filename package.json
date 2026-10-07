@@ -2,6 +2,7 @@
   "name": "tentacle-tv",
   "private": true,
   "version": "1.0.0-beta",
+  "license": "AGPL-3.0-or-later",
   "description": "Premium multi-platform media client",
   "scripts": {
     "dev:web": "pnpm --filter @tentacle-tv/web dev",
