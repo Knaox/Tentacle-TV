@@ -2,6 +2,8 @@ import { Easing, withSpring, withTiming, type AnimationCallback } from "react-na
 import { TV_MOTION, type TvSpring } from "@tentacle-tv/theme";
 import { RENDER } from "../render/renderProfile";
 import { withSteadyTiming } from "./steadyTiming";
+// effectOff : interrupteur de MESURE (lot Lite), app de mesure seulement.
+import { effectOff } from "../render/measuredEffects";
 
 /**
  * Le mouvement de la refonte, joué sur le fil d'interface : un préréglage dit
@@ -14,7 +16,7 @@ import { withSteadyTiming } from "./steadyTiming";
  */
 
 /** Vrai quand le profil de rendu de l'appareil joue le mouvement. */
-export const MOTION_ENABLED: boolean = RENDER.motion;
+export const MOTION_ENABLED: boolean = RENDER.motion && !effectOff("motion");
 /** Les fondus suivent les images rendues (`steadyTiming`, Android TV). */
 const STEADY: boolean = RENDER.steadyMotion;
 

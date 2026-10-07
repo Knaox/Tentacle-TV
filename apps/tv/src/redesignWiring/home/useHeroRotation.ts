@@ -10,6 +10,10 @@ import {
 } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useRemoteIntents } from "../../platform/input";
+import { effectOff } from "../../redesign/render/measuredEffects";
+
+// Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
+const HERO_ROTATION_OFF = effectOff("heroRotation");
 
 /**
  * La rotation du héros de l'accueil, façon app TV d'Apple : il avance SEUL,
@@ -51,7 +55,7 @@ function useAppActive(): boolean {
 export function useHeroRotation({ focus, count, index, shown, onAdvance }: HeroRotation): void {
   const reduced = useReducedMotion();
   const appActive = useAppActive();
-  const active = heroRotationActive({ shown, appActive, count });
+  const active = heroRotationActive({ shown, appActive, count }) && !HERO_ROTATION_OFF;
   const delay = heroRotateDelay(reduced);
 
   // L'état du moment, lu par le minuteur et les gestes sans rien redessiner.

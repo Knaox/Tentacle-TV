@@ -13,6 +13,10 @@ import { BackScope } from "../redesignWiring/back/BackScope";
 import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { ProfilesScreen } from "../screens/ProfilesScreen";
+import { effectOff } from "../redesign/render/measuredEffects";
+
+// Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
+const PAGE_FADE_OFF = effectOff("pageFade");
 
 // Lazy-loaded screens
 const MediaDetailScreen = React.lazy(() => import("../screens/MediaDetailScreen").then(m => ({ default: m.MediaDetailScreen })));
@@ -75,7 +79,7 @@ export function AppNavigator() {
       initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
-        animation: "fade",
+        animation: PAGE_FADE_OFF ? "none" : "fade",
         animationDuration: FADE_MS,
         contentStyle: { backgroundColor: Colors.bgDeep },
         statusBarHidden: true,

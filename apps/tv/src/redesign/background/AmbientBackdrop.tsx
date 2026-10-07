@@ -8,6 +8,10 @@ import { colors } from "../theme/tokens";
 import { useAmbientOf, type AmbientSource } from "./ambientSource";
 import { RadialLight } from "./RadialLight";
 import { SoftGradient, STAGE_SIZE } from "./SoftGradient";
+import { effectOff } from "../render/measuredEffects";
+
+// Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
+const AMBIENT_OFF = effectOff("ambient");
 
 /**
  * Le fond vivant : l'ENCRE de la scène (`TV_LIGHT.ink` — à peine teintée de
@@ -119,7 +123,7 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ palette, intensit
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <SoftGradient colors={[colors.bgTop, colors.bgBottom]} {...STAGE_SIZE} />
-      {layers.map((layer) => (
+      {AMBIENT_OFF ? null : layers.map((layer) => (
         <PoolLayerView key={layer.slot} present={layer.present} motion="ambient">
           <Lights palette={layer.item} intensity={intensity} />
         </PoolLayerView>

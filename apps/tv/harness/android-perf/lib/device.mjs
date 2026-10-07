@@ -22,8 +22,58 @@ export const KEY = { up: 19, down: 20, left: 21, right: 22, ok: 23, back: 4, pla
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Rétablit un appareil en adb réseau : un « offline » reste offline tant
+ *  qu'on ne le déconnecte pas ; on attend qu'il se redise « device » (30 s au
+ *  plus). Aucune touche. */
+/** Les `adb reverse` posés par appareil : une reconnexion les perd (ils
+ *  vivent avec la connexion) — sans eux, l'app ne joint plus le faux backend. */
+const REVERSES = new Map();
+
+export function rememberReverse(serial, port) {
+  if (!REVERSES.has(serial)) REVERSES.set(serial, new Set());
+  REVERSES.get(serial).add(port);
+}
+
+export function reconnectNetwork(serial) {
+  const quiet = { stdio: "ignore", timeout: 20_000 };
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      execFileSync(ADB, ["disconnect", serial], quiet);
+    } catch {
+      // déjà déconnecté
+    }
+    try {
+      execFileSync(ADB, ["connect", serial], quiet);
+      const state = execFileSync(ADB, ["-s", serial, "get-state"], { encoding: "utf8", timeout: 10_000 }).trim();
+      if (state === "device") {
+        for (const port of REVERSES.get(serial) ?? []) execFileSync(ADB, ["-s", serial, "reverse", `tcp:${port}`, `tcp:${port}`], quiet);
+        return true;
+      }
+    } catch {
+      // pas encore revenu
+    }
+    execFileSync("sleep", ["5"]);
+  }
+  return false;
+}
+
 export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-5584") {
-  const adb = (args, options = {}) => execFileSync(ADB, ["-s", serial, ...args], { encoding: "utf8", maxBuffer: 256 << 20, ...options });
+  const run = (args, options = {}) => execFileSync(ADB, ["-s", serial, ...args], { encoding: "utf8", maxBuffer: 256 << 20, ...options });
+  /** Un appareil en adb RÉSEAU (la Shield) se déconnecte de temps à autre
+   *  (relance du serveur adb par une autre session, Wi-Fi) : rétabli, et la
+   *  commande rejouée UNE fois — jamais celle de l'injecteur de touches, qu'on
+   *  ne rejoue pas à l'aveugle. */
+  const adb = (args, options = {}) => {
+    try {
+      return run(args, options);
+    } catch (error) {
+      const text = `${error.stderr ?? ""}${error.message ?? ""}`;
+      const lost = /offline|not found|device '.*' not found|closed|no devices/.test(text);
+      if (!serial.includes(":") || !lost || args.join(" ").includes("app_process")) throw error;
+      reconnectNetwork(serial);
+      return run(args, options);
+    }
+  };
   const shell = (command, options) => adb(["shell", command], options);
   /** Ce qui EFFACE ou remplace (installation, `pm clear`, session écrite) ne
    *  vise que l'app de mesure : l'app et le jumelage de l'utilisateur ne se
@@ -83,6 +133,7 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
       shell(`cat ${remote} | run-as ${PACKAGE} sh -c 'cat > databases/RKStorage'`);
       shell(`rm -f ${remote}`);
       adb(["reverse", `tcp:${port}`, `tcp:${port}`]);
+      rememberReverse(serial, port);
     },
 
     /** Le code compilé d'avance par le profil de l'APK (Baseline Profile),
@@ -223,6 +274,45 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
         cpu[name] = (cpu[name] ?? 0) + Number(ns);
       }
       return cpu;
+    },
+
+    /** La mémoire du processus (`dumpsys meminfo`, « App Summary », en Ko) :
+     *  PSS total, tas Java, natif (bitmaps compris depuis Android 8), graphique
+     *  (textures, tampons GL), code, pile, système. */
+    memory() {
+      const text = shell(`dumpsys meminfo ${PACKAGE}`);
+      const num = (re) => Number(text.match(re)?.[1] ?? NaN);
+      return {
+        pss: num(/TOTAL PSS:\s+(\d+)/) || num(/TOTAL:\s+(\d+)/),
+        rss: num(/TOTAL RSS:\s+(\d+)/),
+        java: num(/Java Heap:\s+(\d+)/),
+        native: num(/Native Heap:\s+(\d+)/),
+        graphics: num(/Graphics:\s+(\d+)/),
+        code: num(/Code:\s+(\d+)/),
+        stack: num(/Stack:\s+(\d+)/),
+        privateOther: num(/Private Other:\s+(\d+)/),
+        system: num(/System:\s+(\d+)/),
+        views: num(/^\s*Views:\s+(\d+)/m),
+        // La mémoire du GPU, ligne par ligne : la Shield (Tegra) range ses
+        // textures dans « Other mtrack », que le résumé « Graphics » ne compte pas.
+        eglMtrack: num(/^\s*EGL mtrack\s+(\d+)/m) || 0,
+        glMtrack: num(/^\s*GL mtrack\s+(\d+)/m) || 0,
+        otherMtrack: num(/^\s*Other mtrack\s+(\d+)/m) || 0,
+      };
+    },
+
+    /** Les vues natives attachées et le poids de leurs listes d'affichage
+     *  (`dumpsys gfxinfo`, « View hierarchy »), fenêtre par fenêtre. */
+    viewHierarchy() {
+      const text = shell(`dumpsys gfxinfo ${PACKAGE}`);
+      const windows = [...text.matchAll(/(\d+) views, ([\d.,]+) kB of (?:display lists|render nodes)/g)].map((m) => ({ views: Number(m[1]), kb: Number(m[2].replace(",", ".")) }));
+      return { views: windows.reduce((n, w) => n + w.views, 0), displayListKb: windows.reduce((n, w) => n + w.kb, 0), windows: windows.length };
+    },
+
+    /** Les effets coupés au PROCHAIN lancement (`debug.tentacle.fx`, lue par
+     *  l'app de MESURE seulement) : liste séparée par des virgules, vide = aucun. */
+    setFx(names) {
+      shell(`setprop debug.tentacle.fx '${names.length ? names.join(",") : "none"}'`);
     },
 
     screencap(file) {

@@ -43,7 +43,7 @@ const CACHE = path.join(os.homedir(), "Library/Caches/tentacle-android-perf");
 const RUNS = path.join(CACHE, "runs");
 /** Le port du relais (celui que l'app appelle) et celui du faux backend, derrière. */
 const PORT = Number(process.env.PERF_PORT ?? 3107);
-const BACKEND_PORT = PORT + 10;
+const BACKEND_PORT = Number(process.env.PERF_BACKEND_PORT ?? PORT + 10);
 
 const [command, ...rest] = process.argv.slice(2);
 const option = (name, fallback = null) => {

@@ -23,7 +23,10 @@ class PerfModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   override fun getName(): String = "TentaclePerf"
 
-  override fun getConstants(): Map<String, Any> = mapOf("enabled" to PerfConfig.enabled)
+  override fun getConstants(): Map<String, Any> = mapOf(
+    "enabled" to PerfConfig.enabled,
+    "effectsOff" to PerfConfig.effectsOff(reactApplicationContext.packageName).joinToString(","),
+  )
 
   /** Une marque : le geste, l'écran, un écran prêt (`FrameWindows`). */
   @ReactMethod

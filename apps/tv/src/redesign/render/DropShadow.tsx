@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { dropShadowOf, shadowExtent } from "@tentacle-tv/tv-core";
 import { RENDER } from "./renderProfile";
+// effectOff : interrupteur de MESURE (lot Lite), app de mesure seulement.
+import { effectOff } from "./measuredEffects";
 
 /**
  * L'ombre portée d'une vue, sur une plateforme qui ne dessine pas ses styles
@@ -54,7 +56,7 @@ type NativeShadowProps = ViewProps & ShadowMask;
 const VIEW_NAME = "TentacleShadowView";
 
 const NativeShadow: HostComponent<NativeShadowProps> | null =
-  RENDER.shadows === "mask" && UIManager.getViewManagerConfig(VIEW_NAME) != null
+  !effectOff("shadows") && RENDER.shadows === "mask" && UIManager.getViewManagerConfig(VIEW_NAME) != null
     ? requireNativeComponent<NativeShadowProps>(VIEW_NAME)
     : null;
 

@@ -9,6 +9,10 @@ import { RECEDE_FRAME_ID, useRecede, type RowPlace } from "../motion/useRowReced
 import { colors, white } from "../theme/tokens";
 import { dressingStyles, FadingRestShadow, FocusRaised, FocusSheen, useFocusDressing } from "./CardFocusDressing";
 import { DropShadow } from "../render/DropShadow";
+import { effectOff } from "../render/measuredEffects";
+
+// Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
+const FOCUS_SCALE_OFF = effectOff("focusScale");
 
 /**
  * Le cadre d'une carte et son focus façon Apple TV — SANS contour :
@@ -39,7 +43,8 @@ import { DropShadow } from "../render/DropShadow";
  *  et l'appui (OK enfoncé), qui l'enfonce d'un cran. */
 function cardLift(progress: number, press: number): [{ translateY: number }, { scale: number }] {
   "worklet";
-  return [{ translateY: -4 * progress }, { scale: (1 + (TV_STAGE.focus.cardScale - 1) * progress) * pressScale(press) }];
+  const lifted = FOCUS_SCALE_OFF ? 0 : progress;
+  return [{ translateY: -4 * lifted }, { scale: (1 + (TV_STAGE.focus.cardScale - 1) * lifted) * pressScale(press) }];
 }
 
 /** Le point fixe de l'agrandissement : le haut dans une rangée, le centre dans une grille. */
@@ -142,7 +147,8 @@ function FrameBody({
     opacity: 1 - (1 - TV_STAGE.focus.recede) * (recede ? recede.value : dim.value),
   }));
   // Soulèvement, reflet et fondu de l'ombre : au focus, le temps du retour.
-  const [dressed, settle] = useFocusDressing(focused);
+  const [dressedOn, settle] = useFocusDressing(focused);
+  const dressed = dressedOn && !FOCUS_SCALE_OFF;
   const shape = { width, height, borderRadius: radius };
   return (
     <Animated.View nativeID={nativeID} style={[shape, cardOrigin(origin), lift, fade]}>
