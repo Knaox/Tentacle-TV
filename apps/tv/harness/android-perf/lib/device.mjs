@@ -23,7 +23,26 @@ export const KEY = { up: 19, down: 20, left: 21, right: 22, ok: 23, back: 4, pla
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-5584") {
-  const adb = (args, options = {}) => execFileSync(ADB, ["-s", serial, ...args], { encoding: "utf8", maxBuffer: 256 << 20, ...options });
+  const run = (args, options = {}) => execFileSync(ADB, ["-s", serial, ...args], { encoding: "utf8", maxBuffer: 256 << 20, ...options });
+  /** Un appareil en adb RÉSEAU (la Shield) se déconnecte de temps à autre
+   *  (relance du serveur adb par une autre session, Wi-Fi) : rétabli, et la
+   *  commande rejouée UNE fois — jamais celle de l'injecteur de touches, qu'on
+   *  ne rejoue pas à l'aveugle. */
+  const adb = (args, options = {}) => {
+    try {
+      return run(args, options);
+    } catch (error) {
+      const text = `${error.stderr ?? ""}${error.message ?? ""}`;
+      const lost = /offline|not found|device '.*' not found|closed|no devices/.test(text);
+      if (!serial.includes(":") || !lost || args.join(" ").includes("app_process")) throw error;
+      try {
+        execFileSync(ADB, ["connect", serial], { stdio: "ignore", timeout: 20_000 });
+      } catch {
+        // la reprise dira si l'appareil est revenu
+      }
+      return run(args, options);
+    }
+  };
   const shell = (command, options) => adb(["shell", command], options);
   /** Ce qui EFFACE ou remplace (installation, `pm clear`, session écrite) ne
    *  vise que l'app de mesure : l'app et le jumelage de l'utilisateur ne se
