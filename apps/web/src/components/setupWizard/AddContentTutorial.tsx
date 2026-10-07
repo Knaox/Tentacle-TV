@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Clapperboard, ExternalLink, Folder, ScanSearch, Tv } from "lucide-react";
+import { Clapperboard, ExternalLink, Folder, ScanSearch, Tv } from "lucide-react";
 import { setupDocUrl } from "@tentacle-tv/shared";
 import type { ContentFolder } from "./addContentModel";
 
@@ -16,8 +16,8 @@ const STEPS = [
  * bibliothèques, dits du point de vue du serveur), un schéma en quatre temps
  * — dossier, film, analyse par Jellyfin, le titre dans Tentacle —, combien de
  * temps prend l'analyse et comment la relancer. Le schéma est une liste
- * ordonnée : lue dans l'ordre par un lecteur d'écran, en ligne sur un écran
- * large, en colonne sur un téléphone.
+ * ordonnée, numérotée : lue dans l'ordre par un lecteur d'écran, en deux
+ * colonnes dans la carte, en une sur un téléphone.
  */
 export const AddContentTutorial = memo(function AddContentTutorial({ folders }: { folders: readonly ContentFolder[] }) {
   const { t, i18n } = useTranslation("setupWizard");
@@ -40,17 +40,17 @@ export const AddContentTutorial = memo(function AddContentTutorial({ folders }: 
           ))}
         </ul>
       ) : null}
-      <ol aria-label={t("addSchemaLabel")} className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+      <ol aria-label={t("addSchemaLabel")} className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
         {STEPS.map((step, index) => (
-          <li key={step.title} className="flex min-w-0 flex-col items-stretch gap-2 sm:flex-1 sm:flex-row sm:items-center">
-            {index > 0 ? <ChevronRight size={16} aria-hidden="true" className="mx-auto shrink-0 rotate-90 text-content-quaternary sm:rotate-0" /> : null}
-            <div className="flex min-w-0 flex-1 items-center gap-3 self-stretch rounded-xl border border-line-subtle bg-fill-faint px-3 py-2.5 sm:flex-col sm:justify-center sm:text-center">
-              <step.icon size={22} aria-hidden="true" className="shrink-0 text-[var(--brand)]" />
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-content-primary">{t(step.title)}</span>
-                <span className="block text-xs text-content-tertiary">{t(step.body)}</span>
-              </span>
-            </div>
+          <li key={step.title} className="flex min-w-0 items-center gap-3 rounded-xl border border-line-subtle bg-fill-faint px-3 py-2.5">
+            <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fill-subtle text-xs font-semibold tabular-nums text-content-secondary">
+              {index + 1}
+            </span>
+            <step.icon size={20} aria-hidden="true" className="shrink-0 text-[var(--brand)]" />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-content-primary">{t(step.title)}</span>
+              <span className="block text-xs text-content-tertiary">{t(step.body)}</span>
+            </span>
           </li>
         ))}
       </ol>
