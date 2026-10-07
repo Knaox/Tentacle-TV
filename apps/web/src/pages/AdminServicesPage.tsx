@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
+import { ServerCapabilityGate } from "@tentacle-tv/api-client";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { AdminPage } from "../components/admin/kit";
 import { ServicesSummary } from "../components/admin/services/ServicesSummary";
@@ -11,6 +12,7 @@ import { useJellyfinSetup } from "../components/admin/jellyfin/jellyfinAdminApi"
 import { DatabaseSection } from "../components/admin/services/DatabaseSection";
 import { PublicUrlSection } from "../components/admin/services/PublicUrlSection";
 import { DirectStreamingSection } from "../components/admin/services/DirectStreamingSection";
+import { AddressesMovedSection } from "../components/admin/services/AddressesMovedSection";
 import { SegmentDetectionSection } from "../components/admin/services/SegmentDetectionSection";
 import { DangerZoneSection } from "../components/admin/services/DangerZoneSection";
 import {
@@ -29,7 +31,8 @@ import { AdminRemoteAccessView } from "../components/remoteAccess/AdminRemoteAcc
  * connexions du serveur en tête, puis une section par service — Jellyfin et
  * sa compatibilité (`#compat` : installé, dernier publié, fonctionnalité par
  * fonctionnalité), ses réglages conseillés (`#jellyfin-setup`, la liste
- * complète), base, adresse publique, lecture directe, détection des
+ * complète), base, adresse publique et lecture directe (un renvoi vers
+ * « Accès à distance » quand le serveur les y règle), détection des
  * passages — et la réinitialisation à part, dans sa zone de danger.
  *
  * Les ancres (`#jellyfin`, `#publicurl`…) mènent à leur section et à son
@@ -68,8 +71,18 @@ function ServicesContent() {
       <JellyfinCompatSection variant="services" />
       <SetupChecklist />
       <DatabaseSection />
-      <PublicUrlSection />
-      <DirectStreamingSection />
+      {/* Le lien public et la lecture directe vivent dans « Accès à distance » quand le serveur le sait. */}
+      <ServerCapabilityGate
+        capability="admin.remoteAccess"
+        fallback={
+          <>
+            <PublicUrlSection />
+            <DirectStreamingSection />
+          </>
+        }
+      >
+        <AddressesMovedSection />
+      </ServerCapabilityGate>
       <SegmentDetectionSection />
       <DangerZoneSection />
     </AdminPage>

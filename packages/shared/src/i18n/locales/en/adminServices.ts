@@ -105,10 +105,14 @@ export default {
   publicUrlFromEnv: "environment variable",
   publicUrlNone: "No public address: TVs pair on the local network only.",
   publicUrlSaved: "Public address saved.",
-  publicUrlExposureNote: "Published only when “Access from outside” is on (Administration › Remote access).",
   publicUrlCleared: "Address cleared.",
 
   // Direct play.
+  // Addresses moved to "Remote access" (server 1.24.0 and later).
+  movedTitle: "Addresses and direct play",
+  movedBody: "The public link, the Jellyfin addresses and direct play are now set in Remote access, along with everything that follows from them.",
+  movedLink: "Open Remote access",
+
   directTitle: "Direct play",
   directDescription:
     "Apps read videos and images from Jellyfin without going through the Tentacle server. Each device gets the address that suits it: the private one on the local network, the public one elsewhere.",
@@ -120,7 +124,7 @@ export default {
   directPrivateHint: "Reachable from the local network, for instance http://192.168.1.50:8096.",
   directPrivateRequired: "The private address is needed to turn on direct play.",
   directPublicSwitch: "Direct play from outside (optional)",
-  directPublicSwitchHint: "Off: away from home, playback goes through Tentacle. On: Jellyfin must be reachable from the Internet, and “Access from outside” turned on (Remote access).",
+  directPublicSwitchHint: "Off: away from home, playback goes through Tentacle. On: Jellyfin must be reachable from the Internet.",
   directPublicMissing: "Give Jellyfin's public address, or turn off direct play from outside.",
   directUrlsRequired: "Both addresses are needed to enable direct play.",
   directMixedContent:
