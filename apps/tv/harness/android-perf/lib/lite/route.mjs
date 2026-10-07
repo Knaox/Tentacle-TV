@@ -25,6 +25,7 @@ import { summarizeScenario } from "../report.mjs";
 import { scenariosOf } from "../scenarios.mjs";
 import { createCapture, startPerfetto } from "./capture.mjs";
 import { compareLite, describeLite } from "./liteReport.mjs";
+import { attachedNow } from "./screenViews.mjs";
 import { pushHog, startHog, trimMemory } from "./pressure.mjs";
 import { applyThrottle, hostLoad, qemuPidOf } from "./throttle.mjs";
 
@@ -70,13 +71,18 @@ export function stamp() {
 }
 
 /** Le faux backend, le relais d'images, la session écrite, l'injecteur : ce que tout passage partage. */
-export async function withLiteBench({ apk, debugApk, keepSession = false }, fn) {
+export async function withLiteBench({ apk, debugApk, keepSession = false, external = false }, fn) {
   if (!PACKAGE.endsWith(".perf")) throw new Error(`le banc Lite ne mesure que l'app de mesure (PERF_PACKAGE=…perf), pas ${PACKAGE}`);
-  assertPortFree(PORT);
+  // `external` : le faux backend et le relais tournent déjà (`lite.mjs setup`,
+  // chaud) — un faux backend NEUF sert son premier catalogue en plus de 10 s,
+  // et la mise en place des saisons y échoue (L1). Pas de relevé d'images.
+  if (!external) assertPortFree(PORT);
   const device = createDevice();
   device.pushKeys(keysDex());
-  const backend = await startBackend(BACKEND_PORT);
-  const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: true, log: () => {} });
+  const backend = external ? { kill: () => {} } : await startBackend(BACKEND_PORT);
+  const proxy = external
+    ? { stats: { log: [] }, close: async () => {} }
+    : await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: true, log: () => {} });
   try {
     if (keepSession) device.adb(["reverse", `tcp:${PORT}`, `tcp:${PORT}`]);
     else await device.writeSession({ debugApk, port: PORT });
@@ -153,7 +159,7 @@ export async function runRoute({ avd, option, flag }) {
     fs.appendFileSync(path.join(dir, "journal.txt"), `${line}\n`);
   };
 
-  await withLiteBench({ apk: null, debugApk }, async (device, proxy) => {
+  await withLiteBench({ apk: null, debugApk, external: flag("external") }, async (device, proxy) => {
     const capture = createCapture(device.serial, PACKAGE);
     const player = createPlayer({ device, backendPort: BACKEND_PORT, host: { measuring: (fn) => fn() } });
     // Avant l'installation et l'échauffement : chaque lancement lit le niveau forcé.
@@ -180,16 +186,16 @@ export async function runRoute({ avd, option, flag }) {
       await device.waitReady("accueil", 60_000);
       await sleep(10_000);
       if (coldTrace) result.traces.push(await coldTrace.stop(path.join(dir, "demarrage.pftrace")));
-      result.memory.push({ ...memorySample(capture, "repos"), attached: device.viewHierarchy() });
+      result.memory.push({ ...memorySample(capture, "repos"), attached: attachedNow(device, PACKAGE) });
       if (flag("shots")) device.screencap(path.join(dir, "accueil.png"));
-      log(`repos : vues attachées ${result.memory[0].attached.views} · PSS ${result.memory[0].app.totalPss} Mo (Java ${result.memory[0].app.javaHeap}, natif ${result.memory[0].app.nativeHeap}, graphique ${result.memory[0].app.graphics}) · système dispo ${result.memory[0].system.availableMb} Mo`);
+      log(`repos : vues attachées ${result.memory[0].attached.views} (page ${result.memory[0].attached.screen}) · PSS ${result.memory[0].app.totalPss} Mo (Java ${result.memory[0].app.javaHeap}, natif ${result.memory[0].app.nativeHeap}, graphique ${result.memory[0].app.graphics}) · système dispo ${result.memory[0].system.availableMb} Mo`);
       // 3. Écran par écran.
       for (const scenario of scenarios) {
         const played = [];
         try {
           for (let i = 0; i < rounds; i++) {
             const round = await player.playChecked(scenario);
-            played.push({ ...round, gfxFull: capture.gfx(), memory: capture.meminfo(), attached: device.viewHierarchy() });
+            played.push({ ...round, gfxFull: capture.gfx(), memory: capture.meminfo(), attached: attachedNow(device, PACKAGE) });
           }
         } catch (error) {
           // Une mise en place ratée deux fois : l'écran n'est pas mesuré, le

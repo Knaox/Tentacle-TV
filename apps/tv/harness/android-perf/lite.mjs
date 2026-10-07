@@ -10,7 +10,7 @@
 //   node lite.mjs pressure trim <avd> <NIVEAU>  · pressure hog <avd> <Mo> <s>  · pressure apps <avd>
 //   node lite.mjs setup <avd> --apk <release> --debug-apk <debug>   (session écrite, faux backend jusqu'à Ctrl+C)
 //   node lite.mjs parcours run <avd> --apk <release> --debug-apk <debug> --tag <nom>
-//        [--throttle duty:25] [--only id,id] [--rounds 2] [--cold 3] [--endurance 3] [--perfetto] [--pressure] [--no-warmup]
+//        [--throttle duty:25] [--only id,id] [--rounds 2] [--cold 3] [--endurance 3] [--perfetto] [--pressure] [--no-warmup] [--external]
 //   node lite.mjs parcours compare <dossier-avant> <dossier-après>
 //   node lite.mjs cout run <avd> --apk <release> --debug-apk <debug> [--sets aac,truehd,ass] [--throttle duty:25] [--window 20]
 //        (le coût d'une lecture : son décodé, sous-titres rendus — `lib/lite/playCost.mjs`)

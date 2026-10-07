@@ -23,8 +23,8 @@ export function memoryMean(screen, key) {
 }
 
 /** Les vues natives ATTACHÉES après le geste (`dumpsys gfxinfo`), moyenne des passes. */
-export function attachedMean(screen) {
-  return mean((screen.attached ?? []).map((a) => a?.views));
+export function attachedMean(screen, key = "views") {
+  return mean((screen.attached ?? []).map((a) => a?.[key]));
 }
 
 /** Un écran : la ligne du banc, plus gfxinfo complet (fil UI) et la mémoire après le geste. */
@@ -33,7 +33,7 @@ export function describeLite(screen) {
   return [
     describe(screen),
     `  gfxinfo : ${f0(gfxMean(screen, "frames"))} images, ratées ${ratio(mean((screen.gfxFull ?? []).map(jankyOf)), gfxMean(screen, "frames"))} · fil UI lent ${f0(gfxMean(screen, "slowUiThread"))} · envoi bitmaps lent ${f0(gfxMean(screen, "slowBitmapUploads"))} · commandes de dessin lentes ${f0(gfxMean(screen, "slowDrawCommands"))} · p50/p90/p99 ${f0(gfxMean(screen, "p50"))}/${f0(gfxMean(screen, "p90"))}/${f0(gfxMean(screen, "p99"))} ms`,
-    `  mémoire après : PSS ${f1(memoryMean(screen, "totalPss"))} Mo · Java ${f1(memoryMean(screen, "javaHeap"))} · natif ${f1(memoryMean(screen, "nativeHeap"))} · graphique ${f1(memoryMean(screen, "graphics"))} · vues ${f0(memoryMean(screen, "views"))} (attachées ${f0(attachedMean(screen))})`,
+    `  mémoire après : PSS ${f1(memoryMean(screen, "totalPss"))} Mo · Java ${f1(memoryMean(screen, "javaHeap"))} · natif ${f1(memoryMean(screen, "nativeHeap"))} · graphique ${f1(memoryMean(screen, "graphics"))} · vues ${f0(memoryMean(screen, "views"))} (attachées ${f0(attachedMean(screen))}, page ${f0(attachedMean(screen, "screen"))})`,
   ].join("\n");
 }
 
@@ -61,6 +61,7 @@ export function compareLite(a, b) {
     `| Accueil prêt (ms) | ${delta(mean(a.cold.map((c) => c.readyMs)), mean(b.cold.map((c) => c.readyMs)))} |`,
   ];
   lines.push(`| Repos — vues attachées | ${delta(a.memory[0]?.attached?.views ?? null, b.memory[0]?.attached?.views ?? null)} |`);
+  lines.push(`| Repos — vues de la page | ${delta(a.memory[0]?.attached?.screen ?? null, b.memory[0]?.attached?.screen ?? null)} |`);
   for (const key of ["totalPss", "javaHeap", "nativeHeap", "graphics"]) {
     lines.push(`| Repos — ${key} (Mo) | ${delta(a.memory[0]?.app[key] ?? null, b.memory[0]?.app[key] ?? null, f1)} |`);
   }
@@ -70,7 +71,7 @@ export function compareLite(a, b) {
   const at = (run) => (common >= 0 ? tours(run)[common].app.totalPss : null);
   lines.push(`| Endurance, ${common >= 0 ? tours(a)[common].label : "—"} — PSS (Mo) | ${delta(at(a), at(b), f1)} |`);
   lines.push(`| App morte en endurance | ${a.endurance.some((e) => e.died) ? "oui" : "non"} → ${b.endurance.some((e) => e.died) ? "oui" : "non"} |`);
-  lines.push("", "## Écrans", "", "| Écran | Images ratées (%) | Fil UI lent | p90 (ms) | CPU UI (ms) | CPU JS (ms) | CPU rendu (ms) | PSS après (Mo) | Graphique (Mo) | Vues attachées |", "|---|---|---|---|---|---|---|---|---|---|");
+  lines.push("", "## Écrans", "", "| Écran | Images ratées (%) | Fil UI lent | p90 (ms) | CPU UI (ms) | CPU JS (ms) | CPU rendu (ms) | PSS après (Mo) | Graphique (Mo) | Vues attachées | Vues de la page |", "|---|---|---|---|---|---|---|---|---|---|---|");
   const jankPct = (s) => {
     const frames = gfxMean(s, "frames");
     return frames ? (100 * mean((s.gfxFull ?? []).map(jankyOf))) / frames : null;
@@ -82,7 +83,7 @@ export function compareLite(a, b) {
       lines.push(`| ${before.id} | non mesuré ${before.skipped ? "avant" : "après"} | | | | | | | | |`);
       continue;
     }
-    lines.push(`| ${before.id} | ${delta(jankPct(before), jankPct(after), f1)} | ${delta(gfxMean(before, "slowUiThread"), gfxMean(after, "slowUiThread"))} | ${delta(gfxMean(before, "p90"), gfxMean(after, "p90"))} | ${delta(before.cpu.ui ?? 0, after.cpu.ui ?? 0)} | ${delta(before.cpu.js ?? 0, after.cpu.js ?? 0)} | ${delta(before.cpu.render ?? 0, after.cpu.render ?? 0)} | ${delta(memoryMean(before, "totalPss"), memoryMean(after, "totalPss"), f1)} | ${delta(memoryMean(before, "graphics"), memoryMean(after, "graphics"), f1)} | ${delta(attachedMean(before), attachedMean(after))} |`);
+    lines.push(`| ${before.id} | ${delta(jankPct(before), jankPct(after), f1)} | ${delta(gfxMean(before, "slowUiThread"), gfxMean(after, "slowUiThread"))} | ${delta(gfxMean(before, "p90"), gfxMean(after, "p90"))} | ${delta(before.cpu.ui ?? 0, after.cpu.ui ?? 0)} | ${delta(before.cpu.js ?? 0, after.cpu.js ?? 0)} | ${delta(before.cpu.render ?? 0, after.cpu.render ?? 0)} | ${delta(memoryMean(before, "totalPss"), memoryMean(after, "totalPss"), f1)} | ${delta(memoryMean(before, "graphics"), memoryMean(after, "graphics"), f1)} | ${delta(attachedMean(before), attachedMean(after))} | ${delta(attachedMean(before, "screen"), attachedMean(after, "screen"))} |`);
   }
   return lines.join("\n");
 }
