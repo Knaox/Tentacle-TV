@@ -9,7 +9,10 @@ import { join } from "path";
  *
  * - les secrets de la base, générés UNE fois dans le volume `tentacle-secrets`
  *   (aucun mot de passe dans le compose : il se copie-colle tel quel) ;
- * - les dossiers des médias (`films`, `series`), s'ils manquent.
+ * - les dossiers des médias (`films`, `series`), s'ils manquent — seulement
+ *   pour un compose d'AVANT qui monte encore `/media` ici. Les piles actuelles
+ *   ne donnent plus les médias à Tentacle : c'est `jellyfin-init` (l'image de
+ *   Jellyfin) qui crée ces dossiers. Sans `/media` monté, rien n'est fait.
  *
  * Rien pour les volumes de Jellyfin : son image les crée en 777 et Docker
  * reporte ces droits sur un volume neuf — Jellyfin y écrit sous n'importe quel

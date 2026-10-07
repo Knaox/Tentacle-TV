@@ -10,8 +10,10 @@
 #  Nothing to edit: the database passwords are generated on first start, in
 #  a volume only the database and Tentacle can read. Your movies go in
 #  ./media/films and your shows in ./media/series (created on first start,
-#  next to this file). Optional settings (media folder, ports, time zone,
-#  user…): a .env file next to this one — see .env.example.
+#  next to this file). Only Jellyfin mounts the media folder: Tentacle needs
+#  no media setting, it reads Jellyfin's folders through Jellyfin's API.
+#  Optional settings (media folder, ports, time zone, user…): a .env file
+#  next to this one — see .env.example.
 #
 #  Linux is the supported host for this stack. On Windows and macOS, the
 #  Jellyfin project supports a NATIVE install only: use the "tentacle-db"
@@ -19,17 +21,29 @@
 # ══════════════════════════════════════════════════════════════════════════
 
 services:
-  # Prepares what must exist before the first start, then exits: database
-  # secrets, and the films / series folders (owned by PUID:PGID).
+  # Generates the database secrets on first start, then exits.
   init:
     image: ghcr.io/knaox/tentacle-tv:${TENTACLE_VERSION:-latest}
     command: ["init"]
     restart: "no"
+    volumes:
+      - tentacle-secrets:/run/tentacle-secrets
+
+  # Creates the films and series folders in your media folder when they are
+  # missing (owned by PUID:PGID; what exists is never touched), then exits.
+  # Jellyfin's own image, run once as root: Docker creates a missing media
+  # folder as root, and Jellyfin itself runs as PUID:PGID.
+  jellyfin-init:
+    image: jellyfin/jellyfin:12
+    restart: "no"
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - for d in films series; do [ -d "/media/$$d" ] || { mkdir -p "/media/$$d" && chown "$$PUID:$$PGID" "/media/$$d" && echo "created /media/$$d"; }; done
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
     volumes:
-      - tentacle-secrets:/run/tentacle-secrets
       - ${MEDIA_PATH:-./media}:/media:z
 
   db:
@@ -60,7 +74,7 @@ services:
     restart: unless-stopped
     user: "${PUID:-1000}:${PGID:-1000}"
     depends_on:
-      init:
+      jellyfin-init:
         condition: service_completed_successfully
     environment:
       TZ: ${TZ:-Europe/Paris}
@@ -107,7 +121,6 @@ services:
       DB_HOST: db
       DB_PASSWORD_FILE: /run/tentacle-secrets/db_password
       JELLYFIN_INTERNAL_URL: http://jellyfin:8096
-      TENTACLE_MEDIA_HOST_PATH: ${MEDIA_PATH:-./media}
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
       TZ: ${TZ:-Europe/Paris}

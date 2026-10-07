@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest";
 import { readDeployment, suggestedJellyfinUrl } from "./deployment";
 
 describe("installation lue dans l'environnement", () => {
-  it("pile complète : le Jellyfin voisin, ses médias sous /media", () => {
+  it("pile complète : le Jellyfin voisin, ses médias sous /media — sans AUCUN réglage des médias pour Tentacle", () => {
     const d = readDeployment({
       TENTACLE_DEPLOYMENT: "docker",
       TENTACLE_STACK: "full",
       JELLYFIN_INTERNAL_URL: "http://jellyfin:8096/",
-      TENTACLE_MEDIA_HOST_PATH: "./media",
       JELLYFIN_HOST_PORT: "47896",
     });
     expect(d).toEqual({
@@ -16,13 +15,22 @@ describe("installation lue dans l'environnement", () => {
       provisioner: "docker-sibling",
       siblingUrl: "http://jellyfin:8096",
       mediaFolders: { root: "/media", movies: "/media/films", tvshows: "/media/series" },
-      mediaHostPath: "./media",
+      mediaHostPath: null,
       jellyfinHostPort: 47896,
     });
     expect(suggestedJellyfinUrl(d)).toBe("http://jellyfin:8096");
   });
 
-  it("les sous-dossiers suivent ceux du service init", () => {
+  it("un compose d'avant qui donne encore le dossier de l'hôte enrichit l'affichage", () => {
+    const d = readDeployment({
+      TENTACLE_DEPLOYMENT: "docker", TENTACLE_STACK: "full", JELLYFIN_INTERNAL_URL: "http://jellyfin:8096",
+      TENTACLE_MEDIA_HOST_PATH: "./media",
+    });
+    expect(d.mediaHostPath).toBe("./media");
+    expect(d.mediaFolders).toEqual({ root: "/media", movies: "/media/films", tvshows: "/media/series" });
+  });
+
+  it("les sous-dossiers suivent ceux de jellyfin-init", () => {
     const d = readDeployment({
       TENTACLE_DEPLOYMENT: "docker", TENTACLE_STACK: "full", JELLYFIN_INTERNAL_URL: "http://jellyfin:8096",
       TENTACLE_MEDIA_SUBDIRS: "movies, shows",

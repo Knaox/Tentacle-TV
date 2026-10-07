@@ -118,11 +118,11 @@ export interface SetupContext {
    * serveur refuse tout geste qui n'en fait pas partie.
    */
   flow: SetupFlowState;
-  /** Le dossier des médias sur l'hôte, tel que le compose le monte (`./media`). */
+  /** Le dossier des médias sur l'hôte, si un VIEUX compose le donne encore (sinon `null` : le chemin de Jellyfin). */
   mediaHostPath: string | null;
   /**
-   * Pile complète : les dossiers que le service `init` a créés, vus par
-   * Jellyfin (`/media/films`, `/media/series`) — les bibliothèques proposées.
+   * Pile complète : les dossiers que `jellyfin-init` crée, vus par Jellyfin
+   * (`/media/films`, `/media/series`) — les bibliothèques proposées.
    */
   mediaFolders: { root: string; movies: string; tvshows: string } | null;
   /** En natif : le système, pour la bonne commande d'installation de Jellyfin. */

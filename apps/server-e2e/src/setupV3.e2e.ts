@@ -4,7 +4,7 @@ import { jellyfinToken } from "./jellyfin";
 import { jellyfinState } from "./jellyfinSetupProbe";
 import { Journey } from "./setupJourney";
 import { fetchWithin } from "./stack";
-import { fresh, install, lanIp, MEDIA, openToChoice, P, PASSWORD, prepare, PROOFS, reopen, salon, shootHelp, signIn, stack, stackJellyfin, teardown, USER } from "./v3Bench";
+import { fresh, install, lanIp, openToChoice, P, PASSWORD, prepare, PROOFS, reopen, salon, shootHelp, signIn, stack, stackJellyfin, teardown, USER } from "./v3Bench";
 
 /**
  * L'assistant v3, au navigateur, sur une pile « comme sous Portainer » ouverte
@@ -12,7 +12,7 @@ import { fresh, install, lanIp, MEDIA, openToChoice, P, PASSWORD, prepare, PROOF
  *
  *  A. celui de la pile, configuré par un premier essai mais SANS bibliothèque
  *     (le cas de Damien) : l'écran des bibliothèques, facultatif, avec le
- *     `/media` de Jellyfin et son dossier sur le serveur ; elles sont créées.
+ *     `/media` de Jellyfin (tel qu'il le voit) ; elles sont créées.
  *     L'accès à distance : privé par défaut, puis public (adresse détectée,
  *     les deux ports), puis de nouveau privé ; le tuto de la fin ;
  *  B. « Salon », configuré AVEC des bibliothèques : lues, jamais créées ;
@@ -60,7 +60,8 @@ describe("A — le Jellyfin de la pile, configuré mais VIDE (le cas de Damien)"
       await signIn(journey);
 
       await journey.at("Ce Jellyfin n'a encore aucune bibliothèque");
-      await page.getByText(new RegExp(`sur votre serveur, le dossier ${MEDIA.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}\\.`)).waitFor();
+      // La pile ne donne plus le dossier de l'hôte à Tentacle : la carte dit MEDIA_PATH.
+      await page.getByText(/est le dossier MEDIA_PATH de votre fichier compose/).waitFor();
       for (const path of ["/media/films", "/media/series"]) await page.getByText(path, { exact: true }).waitFor();
       await journey.button("Passer — ne rien créer").waitFor();
       await shootHelp(journey, "bibliotheques");
@@ -95,7 +96,7 @@ describe("A — le Jellyfin de la pile, configuré mais VIDE (le cas de Damien)"
       await journey.button("Continuer").click();
 
       await journey.at("Et maintenant ?");
-      await page.getByTestId("add-content-folders").getByText(`${MEDIA}/films`).waitFor();
+      await page.getByTestId("add-content-folders").getByText("/media/films", { exact: true }).waitFor();
       await shootHelp(journey, "fin");
       const screens = await journey.save();
       await journey.button("Ouvrir Tentacle").click();

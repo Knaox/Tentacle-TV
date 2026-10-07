@@ -91,6 +91,7 @@ One question per screen; the steps adapt to the stack it detects.
    creates its API key itself). No account is created, neither here nor later.
 6. **New Jellyfin — libraries**: real Jellyfin libraries, created in Jellyfin. *tentacle-full* proposes
    **Movies** (`/media/films`) and **Shows** (`/media/series`); browse Jellyfin's folders to add others.
+   These are **Jellyfin's** paths, read through its API: Tentacle has no media setting, in any stack.
    **Already set up Jellyfin — recommended settings** (no libraries screen) — Tentacle creates **no** library; it lists the
    existing ones and offers, all **optional** and untickable, the settings the dashboard recommends too:
    skip detection (Intro Skipper, TheIntroDB, SkipMe.db), metadata language, seek bar previews, real-time
@@ -108,7 +109,7 @@ Copy `.env.example` to `.env` next to `compose.yaml`, uncomment what you need, t
 
 | Variable | Default | |
 |---|---|---|
-| `MEDIA_PATH` | `./media` | *full*: your media folder on this machine (Jellyfin sees it as `/media`) |
+| `MEDIA_PATH` | `./media` | *full*: your media folder on this machine. Only Jellyfin mounts it (it sees it as `/media`); `films` and `series` are created in it on first start if missing (`jellyfin-init` service) |
 | `TENTACLE_PORT` | `3000` | Tentacle's port on this machine |
 | `JELLYFIN_PORT` | `8096` | *full*: Jellyfin's port on this machine |
 | `JELLYFIN_DISCOVERY_PORT` | `7359` | *full*: Jellyfin's UDP discovery port (change it if another Jellyfin runs here) |
