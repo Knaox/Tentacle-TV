@@ -3,7 +3,7 @@
  * l'adresse de ce serveur sur le réseau, l'interrupteur « Accès depuis
  * l'extérieur », l'adresse publique détectée, les deux ports à ouvrir, la
  * lecture directe hors de la maison (facultative) et la sécurité. Fondu dans
- * l'espace `remoteAccess` (`remoteAccess.ts`). Espaces insécables ( )
+ * l'espace `remoteAccess` (`remoteAccess.ts`). Espaces insécables (\u00a0)
  * devant « ? », « : » et « ! ».
  */
 export default {
