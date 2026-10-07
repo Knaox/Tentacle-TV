@@ -29,6 +29,9 @@ internal class LiteJpegDecoder : ImageDecoder {
     DefaultImageDecoder(null, null, null, ImagePipelineFactory.getInstance().platformDecoder)
   }
 
+  /** Dit une fois au journal que le décodage économe est en service. */
+  @Volatile private var logged = false
+
   override fun decode(
     encodedImage: EncodedImage,
     length: Int,
@@ -42,6 +45,10 @@ internal class LiteJpegDecoder : ImageDecoder {
       } else {
         options
       }
+    if (chosen !== options && !logged) {
+      logged = true
+      android.util.Log.i(LiteMemory.TAG, "mémoire : petits JPEG décodés en RGB_565 (${encodedImage.width}×${encodedImage.height})")
+    }
     // L'espace colorimétrique : celui des options, comme le chemin d'origine
     // (`enableEncodedImageColorSpaceUsage` reste à faux dans cette app).
     return delegate.decodeJpeg(encodedImage, length, qualityInfo, chosen, options.colorSpace)

@@ -75,17 +75,46 @@ object LiteMemory {
     val releasing = level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN ||
       level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW ||
       level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL
-    if (releasing) release("onTrimMemory $level")
+    if (!releasing) return
+    release("onTrimMemory $level")
+    collect()
+  }
+
+  private const val COLLECT_EVERY_MS = 5_000L
+  @Volatile private var lastCollect = 0L
+
+  /**
+   * Un ramassage Java, au plus toutes les 5 s, sous la pression du système :
+   * ce que le natif retient pour des objets Java déjà morts (nœuds de rendu
+   * des vues démontées, nœuds de mise en page, tampons) n'est rendu qu'après
+   * leur ramassage — et le petit tas Java d'une app Lite n'en déclenche pas de
+   * lui-même. Mesuré à l'émulateur (AVD 2 Go, Lite, `memoire run --trim`) :
+   * voir `docs/android-tv-lite/MEMOIRE.md`.
+   */
+  private fun collect() {
+    val now = android.os.SystemClock.uptimeMillis()
+    if (now - lastCollect < COLLECT_EVERY_MS) return
+    lastCollect = now
+    Runtime.getRuntime().gc()
   }
 
   /** Vide les caches mémoire de Fresco (ce qui est affiché reste) ; Lite seulement. */
   fun release(why: String) {
     if (!lite) return
     try {
+      val before = describeCache()
       ImagePipelineFactory.getInstance().imagePipeline.clearMemoryCaches()
-      Log.i(TAG, "mémoire : caches d'images vidés ($why)")
+      Log.i(TAG, "mémoire : caches d'images vidés ($why) — avant $before, après ${describeCache()}")
     } catch (error: Throwable) {
       // Fresco pas encore initialisé : rien à vider.
     }
+  }
+
+  /** L'état du cache des images décodées, pour le journal (`adb logcat -s TentacleLite`). */
+  private fun describeCache(): String {
+    val cache = ImagePipelineFactory.getInstance().bitmapCountingMemoryCache
+    val mb = { bytes: Int -> "%.1f".format(bytes / 1048576f) }
+    return "${cache.count} images, ${mb(cache.sizeInBytes)} Mo dont ${mb(cache.inUseSizeInBytes)} en usage " +
+      "(plafond ${mb(cache.memoryCacheParams.maxCacheSize)})"
   }
 }

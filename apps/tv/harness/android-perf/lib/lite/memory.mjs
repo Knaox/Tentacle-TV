@@ -81,6 +81,7 @@ export async function runMemory({ withLiteBench, avd, option, flag, runsDir, sta
       await device.waitReady("accueil", 90_000);
       await sleep(10_000);
       result.samples.push(sample(device, capture, "repos"));
+      fs.writeFileSync(path.join(dir, "meminfo-repos.txt"), device.shell(`dumpsys meminfo ${PACKAGE}`));
       log(describe(result.samples.at(-1)));
       for (let loop = 1; loop <= loops; loop++) {
         const drift = await playEndurance(device);
@@ -97,6 +98,7 @@ export async function runMemory({ withLiteBench, avd, option, flag, runsDir, sta
         }
         await sleep(3000);
         result.samples.push(sample(device, capture, `tour ${loop}`));
+        fs.writeFileSync(path.join(dir, `meminfo-tour${loop}.txt`), device.shell(`dumpsys meminfo ${PACKAGE}`));
         log(describe(result.samples.at(-1)));
       }
       if (flag("trim") && device.pid()) {
