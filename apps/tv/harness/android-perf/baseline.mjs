@@ -57,8 +57,14 @@ async function withBench(fn) {
   console.log(`appareil : ${device.describe()} — charge du Mac ${loadNow()}`);
   device.pushKeys(keysDex());
   const host = createHostPolicy(false);
-  const backend = await startBackend(BACKEND_PORT);
-  const proxy = await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: true, log: console.log });
+  // `--external` : le faux backend et le relais tournent déjà (un faux
+  // backend neuf sert son premier catalogue lentement, et la mise en place
+  // des saisons y partait de la barre des filtres) ; pas de relevé d'images.
+  const external = flag("external");
+  const backend = external ? { kill: () => {} } : await startBackend(BACKEND_PORT);
+  const proxy = external
+    ? { stats: { log: [] }, close: async () => {} }
+    : await startImageProxy({ port: PORT, target: BACKEND_PORT, cacheDir: path.join(CACHE, "images"), resize: true, log: console.log });
   const player = createPlayer({ device, backendPort: BACKEND_PORT, host });
   try {
     if (flag("keep-session")) {
@@ -132,6 +138,11 @@ async function screens() {
   const scenarios = scenariosOf(option("only") ?? Object.values(SCREENS).flat().join(","));
   await withBench(async (device, player, proxy) => {
     const results = [];
+    // `--warmup` : chaque scénario joué une fois sans mesure. Un faux backend
+    // neuf met plus de 10 s à servir son premier catalogue (« Chargement du
+    // catalogue… » sur la Shield) : la mise en place des saisons partait
+    // alors de la barre des filtres.
+    if (flag("warmup")) await player.warmup(scenarios);
     // La première passe de chaque scénario est la seule où les images ne sont
     // pas encore dans le cache disque de l'app : les images DÉCODÉES se lisent là.
     for (const scenario of scenarios) {
