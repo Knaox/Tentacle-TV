@@ -41,6 +41,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Hors ligne** : l'application y passe directement, sans fenêtre bloquante ; un message temporaire dit si l'appareil n'a pas de réseau, si le serveur Tentacle est hors ligne ou si Jellyfin est injoignable
 - La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
 - **Les nouveaux ajouts arrivent en direct** sur l'accueil, et les rangées se mettent à jour sans recharger toutes leurs affiches
+- Nouvel écran Crédits › Licences : la licence de l'app et le texte complet de chaque composant, même hors ligne
 
 ### EN
 - **"Devices and TVs" now has its own spot in Profile, right under Account**: one tap and you type the TV's code; your paired devices follow, ready to revoke
@@ -52,6 +53,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - The in-progress row is now called "Where you left off"
 - **Offline**: the app goes straight to offline mode, with no blocking screen; a short message says whether the device has no network, the Tentacle server is offline, or Jellyfin can't be reached
 - **New additions arrive live** on Home, and rows update without reloading all their posters
+- New Credits › Licenses screen: the app's license and the full text of every component, even offline
 
 ## [1.10.3]
 <!-- Bloc nu : Google Play (500 caractères), qui a déjà la 1.10.2. L'App Store, resté à la 1.8.2, a son bloc ios-. -->

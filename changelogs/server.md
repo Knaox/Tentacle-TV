@@ -35,6 +35,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **La grande bannière de l'accueil ne reste plus noire** quand le titre choisi pour elle a disparu de Jellyfin : elle montre vos reprises ou la sélection du serveur. Un titre sans image de fond en reçoit une autre du même film ou de la même série — sur TMDB si la clé est configurée, sinon parmi les images de Jellyfin — avant l'affiche
 - **Quand le serveur ne répond pas**, l'écran dit le vrai cas : pas de réseau, serveur Tentacle hors ligne, ou Jellyfin injoignable — plus de « ce n'est pas votre faute »
 - **Les nouveaux films et épisodes apparaissent dans « Derniers ajouts » en quelques secondes**, sur tous les écrans, sans changer de page ; un titre ajouté se trouve aussitôt par la recherche ; nouveau réglage conseillé « Annoncer les ajouts en 5 s » ; page Services plus lisible, le détail sur demande
+- Tentacle TV passe sous licence AGPL-3.0 ; la page Crédits donne chaque composant et le texte complet de sa licence
 
 ### EN
 - **New setup wizard**: one question per screen. From your home network it opens without a code; the one-time code, read in the container log, is only asked from elsewhere. The metadata language is chosen with the account
@@ -60,6 +61,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **The large home banner no longer stays black** when the title picked for it is gone from Jellyfin: it shows your titles to resume or the server's picks. A title with no background image gets another one of the same movie or series — from TMDB when a key is set, otherwise among Jellyfin's images — before the poster
 - **When the server doesn't answer**, the screen tells the actual case: no network, Tentacle server offline, or Jellyfin unreachable
 - **New movies and episodes show up in "Recently added" within seconds**, on every screen, without changing page; a newly added title is searchable right away; new recommended setting "Announce additions within 5 s"; clearer Services page, details on demand
+- Tentacle TV is now licensed under the AGPL-3.0; the Credits page lists every component and the full text of its license
 
 ## [1.23.0]
 ### FR
