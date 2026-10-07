@@ -1,8 +1,11 @@
 # Construit la variante LGPL de MPVKit (fork Streamyfin, sortie vidéo
 # AVFoundation) : mpv « -Dgpl=false », FFmpeg sans « --enable-gpl », sans
-# libsmbclient ni LuaJIT. C'est le binaire OBLIGATOIRE pour une soumission
-# à l'App Store — les binaires du tag du fork sont GPL (dev et TestFlight
-# seulement). Lancement MANUEL uniquement ; jamais déclenché par un tag.
+# libsmbclient ni LuaJIT. C'est le binaire OBLIGATOIRE de TOUT ce qui sort
+# de la machine : TestFlight et App Store reçoivent le MÊME binaire (on teste
+# ce qu'on livre ; `promote` reprend au cran store le build déjà testé). Les
+# binaires du tag du fork sont GPL : un essai local, rien d'autre — la garde
+# de mobile.yml refuse un podspec GPL dès le cran test. Lancement MANUEL
+# uniquement ; jamais déclenché par un tag.
 #
 # Après un run réussi : reporter l'URL et la somme SHA-256 de la Release
 # « mpvkit-lgpl-<version> » dans apps/mobile/ios/MPVKit.podspec (version,
