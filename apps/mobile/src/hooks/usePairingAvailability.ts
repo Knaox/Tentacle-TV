@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
+import { pairingServerUrl } from "@tentacle-tv/shared";
 
 /**
- * Le jumelage d'une TV n'est possible que si l'URL publique du serveur est
- * définie (`/api/config` → `publicUrl`). `available` : `null` pendant la
+ * Le jumelage d'une TV n'est possible qu'avec une adresse qu'elle puisse
+ * joindre : celle que le serveur annonce (`/api/config` → `publicUrl`), sinon
+ * l'URL du serveur réglée sur ce téléphone (règle partagée `pairingServerUrl`)
+ * — jamais de lien public exigé. `available` : `null` pendant la
  * vérification. Une PANNE (serveur muet, réseau) n'est pas « jumelage
  * indisponible » : elle remonte dans `error`, avec de quoi réessayer.
  */
@@ -25,7 +28,8 @@ export function usePairingAvailability(storage: Pick<StorageAdapter, "getItem">)
         const res = base ? await fetch(`${base}/api/config`) : null;
         if (res && !res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
         const cfg = res ? await res.json() : null;
-        if (!cancelled) setAvailable(!!cfg?.publicUrl);
+        const advertised = typeof cfg?.publicUrl === "string" ? cfg.publicUrl : null;
+        if (!cancelled) setAvailable(pairingServerUrl({ advertised, clientServerUrl: base }) !== null);
       } catch (err) {
         if (!cancelled) setError(err);
       }
