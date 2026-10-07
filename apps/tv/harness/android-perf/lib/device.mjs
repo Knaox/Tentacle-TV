@@ -22,6 +22,29 @@ export const KEY = { up: 19, down: 20, left: 21, right: 22, ok: 23, back: 4, pla
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Rétablit un appareil en adb réseau : un « offline » reste offline tant
+ *  qu'on ne le déconnecte pas ; on attend qu'il se redise « device » (30 s au
+ *  plus). Aucune touche. */
+export function reconnectNetwork(serial) {
+  const quiet = { stdio: "ignore", timeout: 20_000 };
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      execFileSync(ADB, ["disconnect", serial], quiet);
+    } catch {
+      // déjà déconnecté
+    }
+    try {
+      execFileSync(ADB, ["connect", serial], quiet);
+      const state = execFileSync(ADB, ["-s", serial, "get-state"], { encoding: "utf8", timeout: 10_000 }).trim();
+      if (state === "device") return true;
+    } catch {
+      // pas encore revenu
+    }
+    execFileSync("sleep", ["5"]);
+  }
+  return false;
+}
+
 export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-5584") {
   const run = (args, options = {}) => execFileSync(ADB, ["-s", serial, ...args], { encoding: "utf8", maxBuffer: 256 << 20, ...options });
   /** Un appareil en adb RÉSEAU (la Shield) se déconnecte de temps à autre
@@ -35,11 +58,7 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
       const text = `${error.stderr ?? ""}${error.message ?? ""}`;
       const lost = /offline|not found|device '.*' not found|closed|no devices/.test(text);
       if (!serial.includes(":") || !lost || args.join(" ").includes("app_process")) throw error;
-      try {
-        execFileSync(ADB, ["connect", serial], { stdio: "ignore", timeout: 20_000 });
-      } catch {
-        // la reprise dira si l'appareil est revenu
-      }
+      reconnectNetwork(serial);
       return run(args, options);
     }
   };

@@ -14,12 +14,11 @@
 // Mêmes variables que le banc : ANDROID_SERIAL, PERF_PACKAGE (l'app de mesure
 // sur une vraie Shield), PERF_PORT (le relais ; le faux backend à +10).
 // Résultats : ~/Library/Caches/tentacle-android-perf/baseline/<nom>.json.
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { CACHE, keysDex, startBackend } from "./lib/benchSetup.mjs";
-import { PACKAGE, createDevice, sleep } from "./lib/device.mjs";
+import { PACKAGE, createDevice, reconnectNetwork, sleep } from "./lib/device.mjs";
 import { ForegroundError, resumedPackage } from "./lib/keyGuard.mjs";
 import { createHostPolicy } from "./lib/host.mjs";
 import { startImageProxy } from "./lib/imageProxy.mjs";
@@ -91,12 +90,7 @@ async function withBench(fn) {
 /** L'adb RÉSEAU de la Shield tombe toutes les dix minutes environ : le
  *  rétablir (aucune touche). Sans effet sur un émulateur. */
 function reconnect(device) {
-  if (!device.serial.includes(":")) return;
-  try {
-    execFileSync(path.join(process.env.ANDROID_HOME ?? path.join(os.homedir(), "Library/Android/sdk"), "platform-tools/adb"), ["connect", device.serial], { stdio: "ignore", timeout: 20_000 });
-  } catch {
-    // le tour suivant le redira
-  }
+  if (device.serial.includes(":")) reconnectNetwork(device.serial);
 }
 
 /** Les images servies entre deux instants : nombre, octets transférés, et
@@ -187,7 +181,13 @@ async function effects() {
     const played = Object.fromEntries(variants.map((v) => [v, Object.fromEntries(scenarios.map((s) => [s.id, []]))]));
     for (let round = 0; round < rounds; round++) {
       for (const variant of round % 2 === 0 ? variants : [...variants].reverse()) {
-        device.setFx(variant === "aucun" ? [] : variant.split("+"));
+        try {
+          device.setFx(variant === "aucun" ? [] : variant.split("+"));
+        } catch (error) {
+          console.log(`\n${variant} : ${error.message} — variante sautée pour ce tour`);
+          reconnect(device);
+          continue;
+        }
         for (const scenario of scenarios) {
           try {
             played[variant][scenario.id].push(await playWithExtras(device, player, proxy, scenario));
