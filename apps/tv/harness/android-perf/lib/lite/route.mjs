@@ -29,7 +29,7 @@ import { pushHog, startHog, trimMemory } from "./pressure.mjs";
 import { applyThrottle, hostLoad, qemuPidOf } from "./throttle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const LITE_RUNS = path.join(CACHE, "lite");
+export const LITE_RUNS = path.join(CACHE, "lite");
 const PORT = Number(process.env.PERF_PORT ?? 3111);
 const BACKEND_PORT = Number(process.env.PERF_BACKEND_PORT ?? PORT + 10);
 /** Au-delà, une passe ne se compare plus : on la refait (consigne du lot). */
@@ -60,14 +60,14 @@ export const ENDURANCE_SEGMENTS = [
   { id: "films", expect: "Home", through: "Library", keys: ["wait:1500", "tap:4", "wait:1800", "tap:20x5@450", "wait:2000", "tap:23", "wait:4500", "tap:20x6@450", "wait:900", "tap:19x6@450", "wait:1500", "tap:4", "wait:3500"] },
 ];
 
-function stamp() {
+export function stamp() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
 }
 
 /** Le faux backend, le relais d'images, la session écrite, l'injecteur : ce que tout passage partage. */
-async function withLiteBench({ apk, debugApk, keepSession = false }, fn) {
+export async function withLiteBench({ apk, debugApk, keepSession = false }, fn) {
   if (!PACKAGE.endsWith(".perf")) throw new Error(`le banc Lite ne mesure que l'app de mesure (PERF_PACKAGE=…perf), pas ${PACKAGE}`);
   assertPortFree(PORT);
   const device = createDevice();
