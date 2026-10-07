@@ -84,7 +84,15 @@ export async function runMemory({ withLiteBench, avd, option, flag, runsDir, sta
       fs.writeFileSync(path.join(dir, "meminfo-repos.txt"), device.shell(`dumpsys meminfo ${PACKAGE}`));
       log(describe(result.samples.at(-1)));
       for (let loop = 1; loop <= loops; loop++) {
-        const drift = await playEndurance(device);
+        // L'app tuée en plein geste : la garde des touches s'arrête net
+        // (`ForegroundError`) — c'est une mort, pas une panne du banc.
+        let drift = null;
+        try {
+          drift = await playEndurance(device);
+        } catch (error) {
+          if (device.pid()) throw error;
+          log(`garde des touches : ${error.message}`);
+        }
         if (!device.pid()) {
           result.died = loop;
           log(`l'app est MORTE au tour ${loop} — morts relevées : ${JSON.stringify(capture.lmkKills().slice(-5))}`);
