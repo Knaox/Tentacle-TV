@@ -141,6 +141,7 @@ export default {
   plugin_chapterSegments: "Turns named chapters into segments, no analysis.",
   plugin_introDb: "Community timestamp database, no local analysis.",
   plugin_skipmeDb: "Shared timestamp database, complementing Intro Skipper.",
+  segmentsLearnMore: "How it works",
   segmentsScanHelp:
     "They stack: each reports what it knows, the most precise wins. “Install / repair” adds their repositories, installs them, restarts Jellyfin when needed (never while someone is watching, unless you ask) and sets them up. An offline repository blocks nothing: just run it again later.",
   // Server without "Install / repair" (before 1.24.0): the sentence without the action.

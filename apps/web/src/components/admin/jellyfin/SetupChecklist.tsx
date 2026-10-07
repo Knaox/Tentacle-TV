@@ -12,8 +12,9 @@ import { setupProgress } from "./setupPresentation";
  * permet sans risque, sinon la bonne page de son tableau de bord.
  *
  * La liste COMPLÈTE vit dans Services (`#jellyfin-setup`) — ce qui est fait
- * et ses gestes de suite (générer, relancer) compris. La vue d'ensemble n'en
- * montre que ce qui reste à faire, dans la recommandation « Jellyfin ».
+ * et ses gestes de suite (générer, relancer) compris, replié derrière « Voir
+ * les N réglages déjà en place ». La vue d'ensemble n'en montre que ce qui
+ * reste à faire, dans la recommandation « Jellyfin ».
  * Jellyfin n'est jamais redémarré d'ici.
  */
 export const JELLYFIN_SETUP_ANCHOR = "jellyfin-setup";
@@ -47,7 +48,7 @@ export function SetupChecklist() {
               </AdminNotice>
             </div>
           )}
-          <SetupRows report={report} checks={report.checks} />
+          <SetupRows report={report} checks={report.checks} foldSettled />
         </>
       ) : (
         <div className="p-5">

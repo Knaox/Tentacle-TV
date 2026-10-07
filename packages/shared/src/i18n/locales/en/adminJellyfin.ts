@@ -74,6 +74,10 @@ export default {
   probeNone: "Nothing to probe",
   featureSince: "New in Jellyfin {{version}}",
   featuresEmpty: "The reference does not describe any feature yet.",
+  featuresFlagged: "Worth a look",
+  featuresNoProblem: "Nothing to report: no Tentacle feature is failing on your Jellyfin version.",
+  featuresShowAll_one: "Show the feature",
+  featuresShowAll_other: "Show all {{count}} features",
   sameAsInstalled: "Same version as the installed one.",
 
   // Recommended settings
@@ -82,6 +86,8 @@ export default {
   setupProgress: "{{done}} of {{total}} done",
   setupProgressLabel: "Settings done",
   setupAllDone: "Everything is set.",
+  setupShowSettled_one: "Show the setting already in place",
+  setupShowSettled_other: "Show the {{count}} settings already in place",
   restartPendingTitle: "Jellyfin needs a restart",
   restartPendingBody: "An installed plugin only becomes active at Jellyfin's next restart. Nothing is restarted from here: ongoing playback would be cut.",
   openDashboard: "Open the Jellyfin dashboard",

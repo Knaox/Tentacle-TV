@@ -6,6 +6,7 @@
  *   StatusPill                   la puce d'état (point + mot)
  *   StatTile                     la tuile de chiffre, lien vers sa section
  *   AdminNotice                  l'encadré d'information teinté
+ *   ShowMore                     « Voir plus » : le détail replié derrière un bouton
  *   Tabs / TabPanel + useUrlTab  les onglets accessibles, gardés dans l'adresse
  *   UserAvatar                   l'avatar d'un compte Jellyfin
  *
@@ -17,6 +18,7 @@ export { AdminSection, type AdminSectionProps } from "./AdminSection";
 export { StatusPill, type StatusPillProps, type StatusTone } from "./StatusPill";
 export { StatTile, type StatTileProps, type StatTone } from "./StatTile";
 export { AdminNotice, type AdminNoticeProps, type NoticeTone } from "./AdminNotice";
+export { ShowMore, type ShowMoreProps } from "./ShowMore";
 export { Tabs, TabPanel, type TabItem } from "../../ui/Tabs";
 export { useUrlTab } from "../../../hooks/useUrlTab";
 export { UserAvatar } from "../../ui/UserAvatar";

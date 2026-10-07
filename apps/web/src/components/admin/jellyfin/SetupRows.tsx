@@ -4,6 +4,7 @@ import type { JellyfinSetupReport, SetupActionId, SetupCheck } from "@tentacle-t
 import { useToast } from "../../../contexts/ToastContext";
 import { JellyfinAdminError, useSetupApply } from "./jellyfinAdminApi";
 import { SetupCheckRow } from "./SetupCheckRow";
+import { ShowMore } from "../kit/ShowMore";
 import { applyErrorKey, languageChoice } from "./setupPresentation";
 
 /**
@@ -13,8 +14,13 @@ import { applyErrorKey, languageChoice } from "./setupPresentation";
  * qui reste à faire. Un geste à la fois (le serveur le refuse de toute
  * façon), l'état relu arrive avec la réponse : la ligne passe à « Fait »
  * sans rechargement.
+ *
+ * `foldSettled` : ce qui est en place (fait, inutile ici) attend « Voir les
+ * N réglages déjà en place » — la liste montre d'abord ce qui reste à faire.
  */
-export function SetupRows({ report, checks }: { report: JellyfinSetupReport; checks: readonly SetupCheck[] }) {
+const SETTLED: ReadonlySet<SetupCheck["state"]> = new Set(["done", "not-needed"]);
+
+export function SetupRows({ report, checks, foldSettled = false }: { report: JellyfinSetupReport; checks: readonly SetupCheck[]; foldSettled?: boolean }) {
   const { t, i18n } = useTranslation("adminJellyfin");
   const { show } = useToast();
   const apply = useSetupApply();
@@ -42,20 +48,29 @@ export function SetupRows({ report, checks }: { report: JellyfinSetupReport; che
     }
   }, [apply, language, show, t]);
 
+  const row = (check: SetupCheck) => (
+    <SetupCheckRow
+      key={check.id}
+      check={check}
+      dashboardUrl={report.dashboardUrl}
+      jellyfinVersion={report.jellyfinVersion}
+      language={language}
+      running={running}
+      failed={failed}
+      onApply={(action) => void onApply(action)}
+    />
+  );
+  const open = foldSettled ? checks.filter((check) => !SETTLED.has(check.state)) : checks;
+  const settled = foldSettled ? checks.filter((check) => SETTLED.has(check.state)) : [];
+
   return (
-    <ul className="divide-y divide-line-subtle">
-      {checks.map((check) => (
-        <SetupCheckRow
-          key={check.id}
-          check={check}
-          dashboardUrl={report.dashboardUrl}
-          jellyfinVersion={report.jellyfinVersion}
-          language={language}
-          running={running}
-          failed={failed}
-          onApply={(action) => void onApply(action)}
-        />
-      ))}
-    </ul>
+    <>
+      {open.length > 0 && <ul className="divide-y divide-line-subtle">{open.map(row)}</ul>}
+      {settled.length > 0 && (
+        <ShowMore label={t("setupShowSettled", { count: settled.length })} className={`px-3 py-2 ${open.length > 0 ? "border-t border-line-subtle" : ""}`}>
+          <ul className="-mx-3 divide-y divide-line-subtle">{settled.map(row)}</ul>
+        </ShowMore>
+      )}
+    </>
   );
 }

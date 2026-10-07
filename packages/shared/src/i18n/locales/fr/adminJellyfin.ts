@@ -74,6 +74,10 @@ export default {
   probeNone: "Rien à sonder",
   featureSince: "Nouveauté de Jellyfin {{version}}",
   featuresEmpty: "Aucune fonctionnalité n'est encore décrite par le référentiel.",
+  featuresFlagged: "À surveiller",
+  featuresNoProblem: "Rien à signaler : aucune fonctionnalité de Tentacle n'est en défaut sur votre version de Jellyfin.",
+  featuresShowAll_one: "Voir la fonctionnalité",
+  featuresShowAll_other: "Voir les {{count}} fonctionnalités",
   sameAsInstalled: "Même version que l'installée.",
 
   // Les réglages recommandés
@@ -82,6 +86,8 @@ export default {
   setupProgress: "{{done}} sur {{total}} faits",
   setupProgressLabel: "Réglages faits",
   setupAllDone: "Tout est réglé.",
+  setupShowSettled_one: "Voir le réglage déjà en place",
+  setupShowSettled_other: "Voir les {{count}} réglages déjà en place",
   restartPendingTitle: "Jellyfin doit redémarrer",
   restartPendingBody: "Un greffon installé ne sera actif qu'au prochain redémarrage de Jellyfin. Rien n'est redémarré d'ici : les lectures en cours seraient coupées.",
   openDashboard: "Ouvrir le tableau de bord de Jellyfin",
