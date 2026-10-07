@@ -6,6 +6,7 @@ import { PlaybackReporter } from "./playbackReporter";
 import { parseSessionMessage } from "./protocolParse";
 import { SessionRegistry, type ChannelConnection, type ConnectionView } from "./registry";
 import { resolveDeviceAuth } from "./tokenResolver";
+import { relayLibraryChanged, relayUserDataChanged } from "../jellyfinUserEvents";
 
 /**
  * Le canal de session, branché : le registre et ses vraies dépendances, et ce
@@ -27,6 +28,8 @@ const registry = new SessionRegistry({
       onLost: handlers.onLost,
       onPlaystate: handlers.onPlaystate,
       onGeneralCommand: handlers.onGeneralCommand,
+      // Les ajouts et les « vu » du compte, en direct (cf. `jellyfinUserEvents.ts`).
+      onAccountEvent: (type, data) => (type === "LibraryChanged" ? relayLibraryChanged(data) : relayUserDataChanged(data)),
     }),
   createReporter: (auth) => new PlaybackReporter(jellyfinCaller(auth)),
   jellyfinHealth,

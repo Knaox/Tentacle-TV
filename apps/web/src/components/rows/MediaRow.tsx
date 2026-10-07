@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { rowItemKeys, type MediaItem } from "@tentacle-tv/shared";
 import { useHeldRowItems } from "@tentacle-tv/api-client";
 import { PosterCard } from "../cards/PosterCard";
 import { EpisodeCard } from "../cards/EpisodeCard";
@@ -10,6 +10,7 @@ import { RowScrollControls } from "./RowScrollControls";
 import { useRowScroll } from "./useRowScroll";
 import { useRowCardWidth } from "./useRowCardWidth";
 import { useRowWindow } from "./useRowWindow";
+import { useRowArrivals } from "./useRowArrivals";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
@@ -85,6 +86,10 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
     onScreen: rowOnScreen,
   });
   const { range } = track;
+  // Une clé par TITRE (cf. `rowItemKeys`) : un ajout en tête ne remonte plus
+  // toute la rangée, il y entre (`useRowArrivals`).
+  const keys = useMemo(() => rowItemKeys(items.map(mediaKey)), [items]);
+  useRowArrivals(scrollRef, keys, range);
   /**
    * La cascade d'entrée ne joue qu'UNE fois par rangée.
    *
@@ -212,17 +217,16 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
                 <div aria-hidden style={{ width: range.padStart, flexShrink: 0 }} />
               )}
 
-              {/* key composite : Jellyfin peut renvoyer le même item deux fois dans
-                  un carrousel (ex. doublon de bibliothèque) — un Id seul provoque
-                  des clés dupliquées React (enfants omis/dupliqués). L'index est
-                  celui de la LISTE, pas de la fenêtre : c'est ce qui garde les clés
-                  stables quand la fenêtre glisse. */}
+              {/* Clé du TITRE, jamais de sa place : Jellyfin peut renvoyer le
+                  même item deux fois (doublon de bibliothèque), `rowItemKeys` lui
+                  donne alors `id~2`. La clé par index faisait tout remonter à
+                  chaque ajout en tête — la rangée clignotait, sans images. */}
               {items.slice(range.start, range.end + 1).map((item, offset) => {
                 const i = range.start + offset;
                 const entrance = stagger.current ? Math.min(i * 40, 400) : null;
                 return variant === "episode" ? (
                   <EpisodeCard
-                    key={`${item.Id}-${i}`}
+                    key={keys[i]}
                     item={item}
                     index={i}
                     width={cardWidth}
@@ -231,7 +235,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
                   />
                 ) : (
                   <PosterCard
-                    key={`${item.Id}-${i}`}
+                    key={keys[i]}
                     item={item}
                     index={i}
                     posterImageMode={posterImageMode}

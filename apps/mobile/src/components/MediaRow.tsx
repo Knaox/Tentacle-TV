@@ -1,6 +1,6 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { rowItemKeys, type MediaItem } from "@tentacle-tv/shared";
 import { spacing, useThemedStyles, type AppTheme } from "@/theme";
 import { RowHeader } from "@/components/RowHeader";
 import { SeriesRatingScope } from "@/contexts/SeriesRatingContext";
@@ -22,6 +22,12 @@ interface Props {
 export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeAll }: Props) {
   const st = useThemedStyles(makeStyles);
   const railWindow = useRailWindow();
+  // Une clé par TITRE, jamais par place (`rowItemKeys`, shared) : un ajout en
+  // tête ne remonte plus toute la rangée. Deux runs d'une même série dans
+  // « Derniers ajouts » partagent leur SeriesId (cf. groupLatestByRuns) : le
+  // second reçoit `id~2`.
+  const keys = useMemo(() => rowItemKeys(data.map((item) => item.Id)), [data]);
+  const keyOf = useCallback((_item: MediaItem, index: number) => keys[index], [keys]);
   const renderFlatItem = useCallback(
     ({ item }: { item: MediaItem }) => <View>{renderItem(item)}</View>,
     [renderItem],
@@ -34,9 +40,7 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
         <FlatList
           horizontal
           data={data}
-          // Id seul ne suffit pas : deux runs d'une même série dans « Derniers
-          // ajouts » partagent le même SeriesId (cf. groupLatestByRuns).
-          keyExtractor={(item, index) => `${item.Id}:${index}`}
+          keyExtractor={keyOf}
           renderItem={renderFlatItem}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={st.list}

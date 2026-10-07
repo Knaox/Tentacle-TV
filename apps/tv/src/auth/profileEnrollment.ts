@@ -1,4 +1,4 @@
-import { enrollTvProfiles, resetSocketSession, setPreferencesToken } from "@tentacle-tv/api-client";
+import { enrollTvProfiles, resetSocketSession, resumeSocketSession, setPreferencesToken } from "@tentacle-tv/api-client";
 import type { FamilyCapability } from "@tentacle-tv/shared";
 import {
   TV_ENROLL_PENDING_KEY,
@@ -73,13 +73,23 @@ export async function enrollNow(context: UnpairContext): Promise<EnrollOutcome> 
     return "enrolled";
   } catch (error) {
     const refusal = refusalOfError(error);
-    if (refusal.kind === "offline") return "offline";
+    if (refusal.kind === "offline") {
+      // Sans réponse, la session d'avant reste celle de la TV : sa socket
+      // reprend. Si l'échange avait abouti, le serveur la dira « révoquée » et
+      // la garde de session rejoue l'échange avant d'y croire (`sessionFlow`).
+      resumeSocketSession(token);
+      return "offline";
+    }
     // Un refus net : le serveur n'a rien appliqué, il n'y a rien à rejouer.
     storage.removeItem(TV_ENROLL_PENDING_KEY);
     if (refusal.kind === "unpaired") {
       unpairDevice(context, "revoked");
       return "unpaired";
     }
+    // Le jeton d'avant vaut toujours : sa socket reprend. Fermée pour
+    // l'échange, elle restait close jusqu'au relancement de l'app — plus de
+    // direct ni de télécommande (mesuré au banc, Apple TV).
+    resumeSocketSession(token);
     return "failed";
   }
 }

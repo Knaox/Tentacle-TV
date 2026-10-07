@@ -128,7 +128,13 @@ function connect(): void {
     } else if (msg.type === "auth_error") {
       const reason = (msg as { reason?: string }).reason;
       console.warn("[TentacleSocket] Auth failed:", reason);
-      if (reason !== "server_unreachable") {
+      // « timeout » n'est pas un refus : la socket s'est ouverte SANS jeton (un
+      // consommateur arrivé entre deux sessions de la TV, quand le jeton est un
+      // instant vide) et le serveur a cessé d'attendre. Elle se rouvre et
+      // présente le jeton connu. Prise pour un refus, elle restait fermée
+      // jusqu'au relancement de l'app : plus aucun ajout en direct (mesuré au
+      // banc, Apple TV, après l'échange des profils).
+      if (reason !== "server_unreachable" && reason !== "timeout") {
         authClosed = true;
         ws?.close();
       }
@@ -183,7 +189,16 @@ function teardown(): void {
  *  `token` : auth par message (desktop/mobile/TV) ; undefined = cookie (web).
  *  Renvoie la fonction de release (idempotente). */
 export function acquireSocket(token?: string | null): () => void {
-  if (token != null) authToken = token;
+  if (token != null) {
+    const fresh = token !== authToken;
+    authToken = token;
+    // Ouverte mais pas encore authentifiée (ouverte sans jeton, cf. `auth_error`
+    // « timeout ») : le jeton part tout de suite, sans attendre que le serveur
+    // abandonne.
+    if (fresh && ws?.readyState === WebSocket.OPEN && status !== "open") {
+      ws.send(JSON.stringify({ type: "auth", token }));
+    }
+  }
   refCount += 1;
   if (lingerTimer) { clearTimeout(lingerTimer); lingerTimer = null; }
   // Un précédent échec d'auth ne condamne pas les acquisitions suivantes
@@ -218,6 +233,18 @@ export function resetSocketSession(): void {
   authClosed = false;
   if (lingerTimer) { clearTimeout(lingerTimer); lingerTimer = null; }
   teardown();
+}
+
+/**
+ * La session n'a finalement PAS changé (Apple TV : l'échange des profils n'a
+ * pas abouti) : la connexion fermée par `resetSocketSession` reprend avec ce
+ * jeton, pour les consommateurs qui la tiennent encore — eux ne la reprendront
+ * pas, leur jeton n'ayant pas bougé. Sans consommateur, rien ne s'ouvre.
+ */
+export function resumeSocketSession(token: string): void {
+  authToken = token;
+  authClosed = false;
+  if (refCount > 0 && !ws && !reconnectTimer) connect();
 }
 
 /** Envoie un message (false si le socket n'est pas ouvert). */

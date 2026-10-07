@@ -5,6 +5,7 @@ import { getAllCachedMeta } from "../tmdb/metaCache";
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import type { SignalItem } from "./signals";
 import { jellyfinAuthHeaders } from "../jellyfinAuth";
+import { adminUserParam } from "../jellyfinLibrary";
 
 // Le job quotidien écrit la table facet_idf ; les lectures passent par ce
 // cache mémoire, rechargé après chaque recalcul. Une facette inconnue vaut
@@ -38,11 +39,13 @@ async function scanLibraryFacets(): Promise<Array<Set<string>>> {
   if (!url || !apiKey) return [];
 
   const docs: Array<Set<string>> = [];
+  // Au nom de l'administrateur : sans lui, les titres ajoutés depuis le démarrage de Jellyfin manquent (cf. `adminUserParam`).
+  const userParam = await adminUserParam();
   for (let page = 0; page < PAGES_MAX; page++) {
     const res = await fetch(
       `${url}/Items?Recursive=true&IncludeItemTypes=Movie,Series&EnableImages=false` +
         `&EnableUserData=false&Fields=Genres,Studios,ProductionYear,ProviderIds` +
-        `&StartIndex=${page * PAGE}&Limit=${PAGE}`,
+        `${userParam}&StartIndex=${page * PAGE}&Limit=${PAGE}`,
       { headers: jellyfinAuthHeaders(apiKey) }
     );
     if (!res.ok) break;

@@ -2,8 +2,14 @@ import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
 import { sessionsLive } from "./jellyfinWs";
 import { jellyfinAuthHeaders } from "./jellyfinAuth";
+import { adminUserParam } from "./jellyfinLibrary";
 
-const POLL_INTERVAL = 300_000; // 5 min (fallback — le WebSocket Jellyfin gère le temps réel)
+/**
+ * Le SECOURS : toutes les 5 min. Le direct passe par les sockets Jellyfin des
+ * appareils, ouvertes au nom de chaque utilisateur (`jellyfinUserEvents.ts`) ;
+ * ce relevé ne sert plus qu'aux applications d'avant le canal de session.
+ */
+const POLL_INTERVAL = 300_000; // 5 min
 let timer: ReturnType<typeof setInterval> | null = null;
 
 // In-memory snapshots for change detection
@@ -55,14 +61,14 @@ async function poll(): Promise<void> {
     // Note: /Users/{userId}/Items/Latest requiert parentId sur Jellyfin 10.10+
     // On utilise /Items avec tri par DateCreated à la place
     const latest = await jfFetch<{ Items: Array<{ Id: string }> }>(
-      "/Items?SortBy=DateCreated&SortOrder=Descending&Limit=5&Recursive=true&IncludeItemTypes=Movie,Series,Episode",
+      // Au nom de l'administrateur : sans lui, les ajouts récents manquent (cf. `adminUserParam`).
+      `/Items?SortBy=DateCreated&SortOrder=Descending&Limit=5&Recursive=true&IncludeItemTypes=Movie,Series,Episode${await adminUserParam()}`,
     );
     if (latest?.Items) {
       const ids = latest.Items.map((i) => i.Id).join(",");
-      if (lastLatestIds !== null && ids !== lastLatestIds) {
-        broadcastAll("recently_added");
-        broadcastAll("featured");
-      }
+      // Jamais « featured » : c'est un tirage au hasard, la bannière changeait
+      // sous les yeux à chaque ajout.
+      if (lastLatestIds !== null && ids !== lastLatestIds) broadcastAll("recently_added");
       lastLatestIds = ids;
     }
 

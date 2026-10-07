@@ -74,6 +74,10 @@ export default {
   probeNone: "Rien à sonder",
   featureSince: "Nouveauté de Jellyfin {{version}}",
   featuresEmpty: "Aucune fonctionnalité n'est encore décrite par le référentiel.",
+  featuresFlagged: "À surveiller",
+  featuresNoProblem: "Rien à signaler : aucune fonctionnalité de Tentacle n'est en défaut sur votre version de Jellyfin.",
+  featuresShowAll_one: "Voir la fonctionnalité",
+  featuresShowAll_other: "Voir les {{count}} fonctionnalités",
   sameAsInstalled: "Même version que l'installée.",
 
   // Les réglages recommandés
@@ -82,6 +86,8 @@ export default {
   setupProgress: "{{done}} sur {{total}} faits",
   setupProgressLabel: "Réglages faits",
   setupAllDone: "Tout est réglé.",
+  setupShowSettled_one: "Voir le réglage déjà en place",
+  setupShowSettled_other: "Voir les {{count}} réglages déjà en place",
   restartPendingTitle: "Jellyfin doit redémarrer",
   restartPendingBody: "Un greffon installé ne sera actif qu'au prochain redémarrage de Jellyfin. Rien n'est redémarré d'ici : les lectures en cours seraient coupées.",
   openDashboard: "Ouvrir le tableau de bord de Jellyfin",
@@ -180,6 +186,10 @@ export default {
   hevcOff: "Coupé : les conversions sortent en H.264.",
   hevcNoHardware: "Coupé — sans accélération matérielle, mieux vaut le laisser ainsi.",
   hevcApply: "Autoriser l'encodage HEVC",
+  check_libraryUpdateDelay: "Annonce des ajouts",
+  why_libraryUpdateDelay: "Jellyfin prévient les applications d'un ajout ce délai après le dernier changement. À 5 s, un film ajouté entre dans « Derniers ajouts » presque aussitôt, sur tous les écrans, sans changer de page.",
+  libraryUpdateCurrent: "Les ajouts sont annoncés {{value}} après le dernier changement.",
+  libraryUpdateApply: "Annoncer les ajouts en 5 s",
 
   check_chapterImages: "Images de chapitres",
   why_chapterImages: "Tentacle ne les affiche pas : les laisser coupées épargne le processeur et le disque de Jellyfin.",

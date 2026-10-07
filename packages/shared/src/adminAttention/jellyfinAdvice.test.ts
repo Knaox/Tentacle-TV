@@ -24,6 +24,7 @@ const fresh: SetupCheck[] = [
   }),
   check("segmentsProvider", "todo", { plugins: [plugin("Intro Skipper", "active"), plugin("TheIntroDB", "missing"), plugin("SkipMe.db", "disabled")] }),
   check("realtimeMonitor", "todo", { action: "enableRealtimeMonitor", libraries: [{ id: "a", name: "Films", enabled: false }] }),
+  check("libraryUpdateDelay", "todo", { action: "shortenLibraryUpdateDelay", current: "30 s" }),
   check("hardwareAcceleration", "todo", {}, "optional"),
   check("hevcEncoding", "todo", { action: "enableHevcEncoding", current: "off" }),
   check("chapterImages", "not-needed", {}, "optional"),
@@ -37,6 +38,7 @@ describe("les réglages conseillés d'un Jellyfin déjà configuré", () => {
       ["metadataLanguage", "setMetadataLanguage", true],
       ["trickplay", "enableTrickplay", true],
       ["realtimeMonitor", "enableRealtimeMonitor", true],
+      ["libraryUpdateDelay", "shortenLibraryUpdateDelay", true],
       ["hevcEncoding", "enableHevcEncoding", true],
     ]);
     // Rien sans geste (TMDB, bandes-annonces), rien de facultatif (accélération matérielle).
@@ -48,6 +50,8 @@ describe("les réglages conseillés d'un Jellyfin déjà configuré", () => {
     expect(byId.metadataLanguage).toMatchObject({ current: null, recommended: "fr · FR", targets: [] });
     expect(byId.trickplay).toMatchObject({ current: "off", recommended: "on", targets: ["Séries"] });
     expect(byId.hevcEncoding).toMatchObject({ current: "off", recommended: "on" });
+    // L'annonce des ajouts se dit en secondes, pas en marche / arrêt.
+    expect(byId.libraryUpdateDelay).toMatchObject({ current: "30 s", recommended: "5 s" });
     expect(byId.segmentsProvider).toMatchObject({ current: null, recommended: null, targets: ["TheIntroDB", "SkipMe.db"] });
   });
 
@@ -82,6 +86,6 @@ describe("les réglages conseillés d'un Jellyfin déjà configuré", () => {
       expect(items).toContain(`setup:${advice.id}`);
     }
     expect(attention.recommendations.some((entry) => entry.id === "segmentPlugins")).toBe(true);
-    expect(fresh.filter(isJellyfinTodo).map((c) => c.id)).toEqual(["metadataTmdb", "metadataLanguage", "trailers", "trickplay", "realtimeMonitor", "hevcEncoding"]);
+    expect(fresh.filter(isJellyfinTodo).map((c) => c.id)).toEqual(["metadataTmdb", "metadataLanguage", "trailers", "trickplay", "realtimeMonitor", "libraryUpdateDelay", "hevcEncoding"]);
   });
 });

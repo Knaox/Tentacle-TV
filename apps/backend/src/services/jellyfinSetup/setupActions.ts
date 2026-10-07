@@ -1,5 +1,5 @@
 import { jellyfinAdminFetch, type JellyfinFailure } from "../jellyfinAdminFetch";
-import type { SetupApplyRequest } from "../jellyfinCompat/setupContract";
+import { LIBRARY_UPDATE_DELAY_TARGET, type SetupApplyRequest } from "../jellyfinCompat/setupContract";
 import { CHAPTER_SEGMENTS } from "./segmentProviders";
 import { TASK_KEYS, isVideoLibrary } from "./setupChecks";
 import { forgetTrailerCoverage } from "./trailerCoverage";
@@ -99,6 +99,27 @@ async function enableHevcEncoding(): Promise<ApplyOutcome> {
   return isRecord(after.data) && after.data.AllowHevcEncoding === true ? { ok: true, changed: 1 } : fail("not-applied");
 }
 
+/**
+ * L'annonce des ajouts ramenée à 5 s (`LibraryUpdateDuration`) : même règle
+ * que la langue — la configuration relue, UN champ changé, renvoyée entière,
+ * puis relue. Déjà plus court : rien n'est touché.
+ */
+async function shortenLibraryUpdateDelay(): Promise<ApplyOutcome> {
+  const current = await jellyfinAdminFetch("/System/Configuration");
+  if (!current.ok) return fail(current.failure);
+  if (!isRecord(current.data) || typeof current.data.LibraryUpdateDuration !== "number") return fail("invalid");
+  if (current.data.LibraryUpdateDuration <= LIBRARY_UPDATE_DELAY_TARGET) return { ok: true, changed: 0 };
+  const res = await jellyfinAdminFetch("/System/Configuration", {
+    method: "POST",
+    body: { ...current.data, LibraryUpdateDuration: LIBRARY_UPDATE_DELAY_TARGET },
+    expectEmpty: true,
+  });
+  if (!res.ok) return fail(res.failure);
+  const after = await jellyfinAdminFetch("/System/Configuration");
+  if (!after.ok) return fail(after.failure);
+  return isRecord(after.data) && after.data.LibraryUpdateDuration === LIBRARY_UPDATE_DELAY_TARGET ? { ok: true, changed: 1 } : fail("not-applied");
+}
+
 /** Le greffon officiel de passages par chapitres — au catalogue que Jellyfin configure par défaut. */
 async function installChapterSegments(): Promise<ApplyOutcome> {
   const name = encodeURIComponent(CHAPTER_SEGMENTS.packageName);
@@ -171,6 +192,8 @@ export async function applySetupAction(request: SetupApplyRequest): Promise<Appl
         return await refreshMissingMetadata();
       case "enableHevcEncoding":
         return await enableHevcEncoding();
+      case "shortenLibraryUpdateDelay":
+        return await shortenLibraryUpdateDelay();
       default:
         return fail("bad-request");
     }

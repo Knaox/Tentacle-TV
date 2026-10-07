@@ -27,6 +27,7 @@ import { traceBody, traceFailure, traceHeaders } from "./jellyfinProxy/streamTra
 import { requestSignal } from "./jellyfinProxy/clientAbort";
 import { serveLatestAdditions } from "./jellyfinProxy/latestAdditions";
 import { matchLatestRequest } from "../latestAdditions/latestRequest";
+import { proxyErrorLevel } from "./jellyfinProxy/errorLogLevel";
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
   app.all("/*", async (request, reply) => {
@@ -189,8 +190,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // Log Jellyfin error responses for debugging — without buffering the
       // whole body, which would force the entire (potentially multi-MB) error
       // payload into RAM and add 200-500 ms of latency on every 4xx/5xx.
+      // La photo absente d'un compte n'est pas une erreur (cf. `proxyErrorLevel`).
       if (response.status >= 400) {
-        request.log.warn(
+        request.log[proxyErrorLevel(response.status, wildcardPath)](
           { status: response.status, path: wildcardPath, method: request.method },
           "Jellyfin error",
         );

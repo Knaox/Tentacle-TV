@@ -74,6 +74,10 @@ export default {
   probeNone: "Nothing to probe",
   featureSince: "New in Jellyfin {{version}}",
   featuresEmpty: "The reference does not describe any feature yet.",
+  featuresFlagged: "Worth a look",
+  featuresNoProblem: "Nothing to report: no Tentacle feature is failing on your Jellyfin version.",
+  featuresShowAll_one: "Show the feature",
+  featuresShowAll_other: "Show all {{count}} features",
   sameAsInstalled: "Same version as the installed one.",
 
   // Recommended settings
@@ -82,6 +86,8 @@ export default {
   setupProgress: "{{done}} of {{total}} done",
   setupProgressLabel: "Settings done",
   setupAllDone: "Everything is set.",
+  setupShowSettled_one: "Show the setting already in place",
+  setupShowSettled_other: "Show the {{count}} settings already in place",
   restartPendingTitle: "Jellyfin needs a restart",
   restartPendingBody: "An installed plugin only becomes active at Jellyfin's next restart. Nothing is restarted from here: ongoing playback would be cut.",
   openDashboard: "Open the Jellyfin dashboard",
@@ -180,6 +186,10 @@ export default {
   hevcOff: "Off: conversions come out in H.264.",
   hevcNoHardware: "Off — without hardware acceleration, better leave it that way.",
   hevcApply: "Allow HEVC encoding",
+  check_libraryUpdateDelay: "Announcing new additions",
+  why_libraryUpdateDelay: "Jellyfin tells the apps about an addition this long after the last change. At 5 s, a movie you add shows up in “Recently added” almost at once, on every screen, without changing page.",
+  libraryUpdateCurrent: "Additions are announced {{value}} after the last change.",
+  libraryUpdateApply: "Announce additions within 5 s",
 
   check_chapterImages: "Chapter images",
   why_chapterImages: "Tentacle does not show them: leaving them off spares Jellyfin's processor and disk.",

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { cacheAvatarFrom, getCachedAvatar } from "../offline/avatarCache";
 import { useConnectivity } from "../offline/useConnectivity";
@@ -15,6 +16,12 @@ import { useConnectivity } from "../offline/useConnectivity";
  * une app qui reste pourtant utilisable sur son contenu téléchargé. La copie est
  * rafraîchie à chaque passage en ligne, donc elle suit les changements de photo
  * faits depuis n'importe quel client.
+ *
+ * La photo ne se demande que si le compte EN A UNE : son étiquette
+ * (`PrimaryImageTag`, relue par `Users/Me`, d'abord prise dans la session) dit
+ * si elle existe, et porte son adresse — une photo changée ailleurs change
+ * d'adresse. Sans étiquette, l'initiale tout de suite : plus de requête vouée au
+ * 404 à chaque page (les seuls avertissements du serveur, au banc).
  */
 
 // Version module-level : bump après upload → tous les composants abonnés
@@ -34,10 +41,29 @@ async function fileToJellyfinBase64(file: File): Promise<{ base64: string; mime:
   return { base64: dataUrl.slice(dataUrl.indexOf(",") + 1), mime: "image/jpeg" };
 }
 
+/** L'étiquette de la photo dans la session (`tentacle_user`) ; `undefined` : inconnue. */
+function sessionImageTag(): string | null | undefined {
+  try {
+    const user = JSON.parse(localStorage.getItem("tentacle_user") ?? "null") as { PrimaryImageTag?: string } | null;
+    return user ? user.PrimaryImageTag ?? null : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function useAvatarUpload() {
   const client = useJellyfinClient();
+  const queryClient = useQueryClient();
   const userId = useUserId();
   const connectivity = useConnectivity();
+  // `null` : le compte n'a pas de photo ; `undefined` : on ne sait pas encore.
+  const { data: imageTag } = useQuery({
+    queryKey: ["account-image-tag", userId],
+    queryFn: () => client.fetch<{ PrimaryImageTag?: string }>("/Users/Me").then((user) => user.PrimaryImageTag ?? null),
+    enabled: !!userId && connectivity.state === "online",
+    placeholderData: sessionImageTag,
+    staleTime: 10 * 60_000,
+  });
   const [uploading, setUploading] = useState(false);
   const [cachedUrl, setCachedUrl] = useState<string | null>(null);
   const [, forceRender] = useState(0);
@@ -48,8 +74,9 @@ export function useAvatarUpload() {
     return () => { versionListeners.delete(listener); };
   }, []);
 
-  const remoteUrl = userId
-    ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=160&quality=90${avatarVersion ? `&v=${avatarVersion}` : ""}`
+  const tagParam = imageTag ? `&tag=${encodeURIComponent(imageTag)}` : "";
+  const remoteUrl = userId && imageTag !== null
+    ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=160&quality=90${tagParam}${avatarVersion ? `&v=${avatarVersion}` : ""}`
     : null;
 
   // Copie locale relue au montage : elle doit être prête AVANT une éventuelle
@@ -83,8 +110,11 @@ export function useAvatarUpload() {
    * première dans la liste au rendu suivant, et les deux se relancent en boucle.
    */
   const [dead, setDead] = useState<ReadonlySet<string>>(() => new Set());
-  const avatarSrc =
-    [avatarUrl, cachedUrl].find((url): url is string => !!url && !dead.has(url)) ?? null;
+  // En ligne et sans photo : l'initiale, pas une ancienne copie locale (photo retirée ailleurs).
+  const noPhoto = connectivity.state === "online" && imageTag === null;
+  const avatarSrc = noPhoto
+    ? null
+    : [avatarUrl, cachedUrl].find((url): url is string => !!url && !dead.has(url)) ?? null;
   const onAvatarError = useCallback(() => {
     if (avatarSrc) setDead((prev) => new Set(prev).add(avatarSrc));
   }, [avatarSrc]);
@@ -108,13 +138,15 @@ export function useAvatarUpload() {
       if (!res.ok) throw new Error(`avatar upload ${res.status}`);
       avatarVersion = Date.now();
       for (const l of [...versionListeners]) l();
+      // La nouvelle étiquette : la photo existe désormais, et change d'adresse.
+      void queryClient.invalidateQueries({ queryKey: ["account-image-tag"] });
       return true;
     } catch {
       return false;
     } finally {
       setUploading(false);
     }
-  }, [client, userId]);
+  }, [client, queryClient, userId]);
 
   return { avatarUrl, avatarSrc, onAvatarError, avatarVersion, uploading, upload, userId };
 }

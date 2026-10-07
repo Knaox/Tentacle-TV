@@ -12,6 +12,8 @@ export * from "./utils/cardRating";
 export * from "./utils/cardMarkers";
 export * from "./utils/cardMarkerGlyphs";
 export * from "./utils/cardOverlay";
+// Les arrivées dans une rangée : clés stables par titre, ce qui entre et ce qui glisse.
+export * from "./utils/rowArrivals";
 export * from "./utils/externalCardOverlay";
 export * from "./utils/mediaQuality";
 // Les badges de qualité d'un titre (4K, Dolby Vision, Dolby Atmos) — Apple TV.

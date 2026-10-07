@@ -19,7 +19,8 @@ export type SetupCheckId =
   | "realtimeMonitor"
   | "hardwareAcceleration"
   | "hevcEncoding"
-  | "chapterImages";
+  | "chapterImages"
+  | "libraryUpdateDelay";
 
 /** Ce que coûte de s'en passer : un pan de Tentacle, un confort, ou rien de visible. */
 export type SetupLevel = "essential" | "recommended" | "optional";
@@ -41,7 +42,17 @@ export type SetupActionId =
   | "generateTrickplay"
   | "scanMediaSegments"
   | "refreshMissingMetadata"
-  | "enableHevcEncoding";
+  | "enableHevcEncoding"
+  | "shortenLibraryUpdateDelay";
+
+/**
+ * L'annonce des ajouts (`LibraryUpdateDuration`) : Jellyfin retient
+ * `LibraryChanged` ce nombre de secondes après le dernier changement — 30 par
+ * défaut. Les applications Tentacle voient un ajout entrer dans « Derniers
+ * ajouts » à cette échéance ; on conseille 5 s. Jusqu'à 10 s, c'est réglé.
+ */
+export const LIBRARY_UPDATE_DELAY_TARGET = 5;
+export const LIBRARY_UPDATE_DELAY_MAX_OK = 10;
 
 /** Une bibliothèque de films, de séries ou mixte, et ce réglage chez elle. */
 export interface SetupLibrary {

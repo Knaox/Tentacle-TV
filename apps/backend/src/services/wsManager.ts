@@ -42,26 +42,51 @@ const connections = new Map<string, Set<WebSocket>>();
  *  correspond à aucun pairedDevice, donc ils ne sont jamais ciblés. */
 const deviceSockets = new Map<string, Set<WebSocket>>();
 
-/** Debounce: max 1 event per (userId, carousel) per 5 seconds */
+/**
+ * Au plus une annonce par (compte, rangée) toutes les 5 s — mais jamais une
+ * annonce PERDUE : celle qui tombe dans la fenêtre part à sa fin, une seule
+ * fois, quel que soit le nombre de celles qu'elle absorbe. Avant, elle était
+ * jetée : un titre arrivé, puis son affiche trois secondes plus tard, et la
+ * rangée gardait la carte sans image jusqu'au changement de page.
+ */
 const DEBOUNCE_MS = 5_000;
 const lastEmit = new Map<string, number>();
+const trailing = new Map<string, ReturnType<typeof setTimeout>>();
 
-function shouldEmit(userId: string, carousel: string): boolean {
+/** Émet tout de suite, ou programme l'émission de fin de fenêtre. `emit` relit
+ *  les connexions au moment de partir : une socket fermée entre-temps n'est pas visée. */
+function emitDebounced(userId: string, carousel: string, emit: () => void): void {
   const key = `${userId}:${carousel}`;
   const now = Date.now();
   const last = lastEmit.get(key) ?? 0;
-  if (now - last < DEBOUNCE_MS) return false;
-  lastEmit.set(key, now);
-  return true;
+  if (now - last >= DEBOUNCE_MS) {
+    lastEmit.set(key, now);
+    emit();
+    return;
+  }
+  if (trailing.has(key)) return;
+  trailing.set(key, setTimeout(() => {
+    trailing.delete(key);
+    lastEmit.set(key, Date.now());
+    emit();
+  }, DEBOUNCE_MS - (now - last)));
 }
 
 /** Periodically clean stale debounce entries (every 5 min) */
 setInterval(() => {
   const cutoff = Date.now() - 60_000;
   for (const [key, ts] of lastEmit) {
-    if (ts < cutoff) lastEmit.delete(key);
+    if (ts < cutoff && !trailing.has(key)) lastEmit.delete(key);
   }
 }, 5 * 60_000);
+
+/** L'annonce d'une rangée à toutes les connexions d'un compte, telles qu'elles sont à l'instant. */
+function emitCarousel(userId: string, carousel: CarouselId): void {
+  const set = connections.get(userId);
+  if (!set) return;
+  const msg: WsServerMessage = { type: "home:update", carousel, action: "refresh" };
+  for (const ws of set) send(ws, msg);
+}
 
 function send(ws: WebSocket, msg: WsServerMessage): void {
   if (ws.readyState === 1 /* OPEN */) {
@@ -175,11 +200,8 @@ export function closeDeviceSockets(tokenHash: string, code: number, reason: stri
  *  refetch déclenché par le client retomberait sur une réponse cachée stale. */
 export function broadcastToUser(userId: string, carousel: CarouselId): void {
   invalidateByCarousel(carousel);
-  if (!shouldEmit(userId, carousel)) return;
-  const set = connections.get(userId);
-  if (!set) return;
-  const msg: WsServerMessage = { type: "home:update", carousel, action: "refresh" };
-  for (const ws of set) send(ws, msg);
+  if (!connections.has(userId)) return;
+  emitDebounced(userId, carousel, () => emitCarousel(userId, carousel));
 }
 
 /** Send a carousel refresh event to all connected users.
@@ -187,10 +209,8 @@ export function broadcastToUser(userId: string, carousel: CarouselId): void {
  *  ne pas leur servir une version stale). */
 export function broadcastAll(carousel: CarouselId): void {
   invalidateByCarousel(carousel);
-  for (const [userId, set] of connections) {
-    if (!shouldEmit(userId, carousel)) continue;
-    const msg: WsServerMessage = { type: "home:update", carousel, action: "refresh" };
-    for (const ws of set) send(ws, msg);
+  for (const userId of connections.keys()) {
+    emitDebounced(userId, carousel, () => emitCarousel(userId, carousel));
   }
 }
 

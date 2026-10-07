@@ -88,4 +88,81 @@ describe("tentacleSocket", () => {
     expect(second.sent[0]).toBe(JSON.stringify({ type: "auth", token: "jeton-profil-b" }));
     after();
   });
+
+  it("ouverte sans jeton (entre deux sessions), elle présente celui qui arrive ensuite", () => {
+    socket.setWsBackendUrl("http://backend.test");
+    const early = socket.acquireSocket(undefined); // un consommateur, le jeton encore vide
+    const ws = FakeWebSocket.instances[0];
+    ws.readyState = FakeWebSocket.OPEN;
+    ws.onopen?.();
+    expect(ws.sent.filter((m) => m.includes('"auth"'))).toEqual([]);
+    const late = socket.acquireSocket("jeton-profil");
+    expect(ws.sent).toContain(JSON.stringify({ type: "auth", token: "jeton-profil" }));
+    expect(FakeWebSocket.instances).toHaveLength(1);
+    early();
+    late();
+  });
+
+  it("le serveur a cessé d'attendre (« timeout ») : ce n'est pas un refus, elle se rouvre avec le jeton", () => {
+    vi.useFakeTimers();
+    socket.setWsBackendUrl("http://backend.test");
+    const release = socket.acquireSocket("jeton");
+    const first = FakeWebSocket.instances[0];
+    first.readyState = FakeWebSocket.OPEN;
+    first.onopen?.();
+    first.onmessage?.({ data: JSON.stringify({ type: "auth_error", reason: "timeout" }) });
+    expect(first.closed).toBe(false);
+    first.onclose?.();
+    expect(socket.getSocketStatus()).toBe("closed");
+    vi.advanceTimersByTime(1_000);
+    const second = FakeWebSocket.instances[1];
+    expect(second).toBeDefined();
+    second.readyState = FakeWebSocket.OPEN;
+    second.onopen?.();
+    expect(second.sent[0]).toBe(JSON.stringify({ type: "auth", token: "jeton" }));
+    release();
+    vi.useRealTimers();
+  });
+
+  it("un vrai refus (jeton invalide) reste un refus : pas de reconnexion", () => {
+    vi.useFakeTimers();
+    socket.setWsBackendUrl("http://backend.test");
+    const release = socket.acquireSocket("jeton-perime");
+    const first = FakeWebSocket.instances[0];
+    first.readyState = FakeWebSocket.OPEN;
+    first.onopen?.();
+    first.onmessage?.({ data: JSON.stringify({ type: "auth_error", reason: "invalid_token" }) });
+    expect(first.closed).toBe(true);
+    first.onclose?.();
+    expect(socket.getSocketStatus()).toBe("authError");
+    vi.advanceTimersByTime(60_000);
+    expect(FakeWebSocket.instances).toHaveLength(1);
+    release();
+    vi.useRealTimers();
+  });
+
+  it("une session qui n'a finalement pas changé reprend sa connexion avec le même jeton", () => {
+    socket.setWsBackendUrl("http://backend.test");
+    const held = socket.acquireSocket("jeton-jumelage");
+    const first = FakeWebSocket.instances[0];
+    first.readyState = FakeWebSocket.OPEN;
+    first.onopen?.();
+
+    socket.resetSocketSession(); // l'échange commence : plus rien avec ce jeton
+    expect(FakeWebSocket.instances).toHaveLength(1);
+
+    socket.resumeSocketSession("jeton-jumelage"); // l'échange n'a pas abouti
+    const second = FakeWebSocket.instances[1];
+    expect(second).toBeDefined();
+    second.readyState = FakeWebSocket.OPEN;
+    second.onopen?.();
+    expect(second.sent[0]).toBe(JSON.stringify({ type: "auth", token: "jeton-jumelage" }));
+    held();
+  });
+
+  it("sans consommateur, la reprise n'ouvre rien", () => {
+    socket.setWsBackendUrl("http://backend.test");
+    socket.resumeSocketSession("jeton");
+    expect(FakeWebSocket.instances).toHaveLength(0);
+  });
 });

@@ -20,6 +20,7 @@ const ADVICE_TITLE: Record<string, string> = {
   enableTrickplay: "rec_trickplay",
   enableRealtimeMonitor: "rec_realtimeMonitor",
   enableHevcEncoding: "rec_hevcEncoding",
+  shortenLibraryUpdateDelay: "rec_libraryUpdateDelay",
 };
 
 /** Où reprendre : ce qui est fait n'est pas refait. */

@@ -89,3 +89,39 @@ describe("sendToUser", () => {
     expect(ws.getConnectionCount()).toBe(0);
   });
 });
+
+describe("broadcastAll — anti-rebond à la traîne", () => {
+  const UPDATE = JSON.stringify({ type: "home:update", carousel: "recently_added", action: "refresh" });
+
+  it("la deuxième annonce de la fenêtre n'est pas perdue : elle part à sa fin, une seule fois", () => {
+    const tv = socket();
+    ws.addConnection("u3", tv as never, "hash-tv");
+    ws.broadcastAll("recently_added"); // le titre arrive
+    expect(tv.send).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(2_000);
+    ws.broadcastAll("recently_added"); // son affiche, deux secondes plus tard
+    ws.broadcastAll("recently_added"); // et son nom : absorbé par la même
+    expect(tv.send).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(3_000);
+    expect(tv.send).toHaveBeenCalledTimes(2);
+    expect(tv.send).toHaveBeenLastCalledWith(UPDATE);
+    vi.advanceTimersByTime(10_000);
+    expect(tv.send).toHaveBeenCalledTimes(2);
+    ws.removeConnection("u3", tv as never, "hash-tv");
+  });
+
+  it("l'annonce différée vise les connexions du moment où elle part", () => {
+    const phone = socket();
+    const tablet = socket();
+    ws.addConnection("u4", phone as never, "hash-p");
+    ws.broadcastAll("next_up");
+    vi.advanceTimersByTime(1_000);
+    ws.broadcastAll("next_up");
+    ws.addConnection("u4", tablet as never, "hash-t"); // ouverte pendant la fenêtre
+    vi.advanceTimersByTime(4_000);
+    expect(phone.send).toHaveBeenCalledTimes(2);
+    expect(tablet.send).toHaveBeenCalledTimes(1);
+    ws.removeConnection("u4", phone as never, "hash-p");
+    ws.removeConnection("u4", tablet as never, "hash-t");
+  });
+});

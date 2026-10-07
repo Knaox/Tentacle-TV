@@ -16,6 +16,8 @@ vi.mock("react-router-dom", () => ({
     <a href={to} {...rest}>{children}</a>
   ),
 }));
+// « Voir plus » lit ses mots par i18next : chargé en vrai, il tire lui aussi une seconde copie de React.
+vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock("../../PageTransition", () => ({
   PageTransition: ({ children, className }: { children: ReactNode; className?: string }) => (
     <div className={className}>{children}</div>
@@ -27,6 +29,7 @@ const { AdminPage, AdminPageHeader } = await import("./AdminPage");
 const { AdminSection } = await import("./AdminSection");
 const { StatTile } = await import("./StatTile");
 const { StatusPill } = await import("./StatusPill");
+const { ShowMore } = await import("./ShowMore");
 
 const html = (node: ReactElement) => renderToStaticMarkup(node);
 const noop = () => undefined;
@@ -132,5 +135,22 @@ describe("la puce d'état", () => {
 
   it("sans point quand on le demande", () => {
     expect(html(<StatusPill tone="neutral" dot={false}>v10.10</StatusPill>)).not.toContain('aria-hidden="true"');
+  });
+});
+
+describe("« Voir plus »", () => {
+  it("replié : le bouton dit ce qu'on va voir, le détail n'est pas monté", () => {
+    const out = html(<ShowMore label="Voir les 29 fonctionnalités"><p>détail</p></ShowMore>);
+    expect(out).toContain('aria-expanded="false"');
+    expect(out).toContain("Voir les 29 fonctionnalités");
+    expect(out).not.toContain("détail");
+    expect(out).toMatch(/<div id="[^"]+" hidden="">/);
+  });
+
+  it("déplié d'emblée (une ancre le vise) : le détail, puis « Voir moins »", () => {
+    const out = html(<ShowMore label="Voir tout" defaultOpen><p>détail</p></ShowMore>);
+    expect(out).toContain('aria-expanded="true"');
+    expect(out).toContain("<p>détail</p>");
+    expect(out).toContain("showLess");
   });
 });

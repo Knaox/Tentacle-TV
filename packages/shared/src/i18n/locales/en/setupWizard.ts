@@ -232,6 +232,8 @@ export default {
   rec_realtimeMonitor_why: "A movie you drop in shows up in Tentacle right away, without waiting for the next scan.",
   rec_hevcEncoding: "HEVC encoding",
   rec_hevcEncoding_why: "When Jellyfin converts a video, a better picture at the same bitrate. Offered because this server has a hardware encoder.",
+  rec_libraryUpdateDelay: "Announcing new additions",
+  rec_libraryUpdateDelay_why: "A movie you add shows up in “Recently added” within seconds, on every screen, without changing page.",
   recapLibrariesKeptLabel: "Libraries",
   recapLibrariesKept: "Nothing created — {{count}} library already in Jellyfin",
   recapLibrariesKept_other: "Nothing created — {{count}} libraries already in Jellyfin",

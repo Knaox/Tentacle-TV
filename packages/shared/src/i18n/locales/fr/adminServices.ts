@@ -147,6 +147,7 @@ export default {
   plugin_chapterSegments: "Convertit les chapitres nommés en passages, sans analyse.",
   plugin_introDb: "Base communautaire de repères, sans analyse locale.",
   plugin_skipmeDb: "Base partagée de repères, en complément d'Intro Skipper.",
+  segmentsLearnMore: "Comment ça marche",
   segmentsScanHelp:
     "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte. « Installer / réparer » ajoute leurs dépôts, les installe, redémarre Jellyfin s'il le faut (jamais pendant qu'on regarde, sauf si vous le demandez) et les règle. Un dépôt hors ligne n'empêche rien : le geste se refait plus tard.",
   // Serveur sans « Installer / réparer » (d'avant 1.24.0) : la phrase sans le geste.

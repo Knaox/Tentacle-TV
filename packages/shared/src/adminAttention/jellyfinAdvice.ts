@@ -1,4 +1,4 @@
-import type { SetupActionId, SetupCheck, SetupCheckId } from "../jellyfinCompat/setupContract";
+import { LIBRARY_UPDATE_DELAY_TARGET, type SetupActionId, type SetupCheck, type SetupCheckId } from "../jellyfinCompat/setupContract";
 import type { SetupAdviceAction } from "../setupWizard/setupWizardContract";
 
 /**
@@ -25,7 +25,9 @@ export function isJellyfinTodo(check: Pick<SetupCheck, "id" | "level" | "state">
 }
 
 /** Les gestes de l'administration qui RÈGLENT un réglage sans risque, repris tels quels par l'assistant. */
-export const ADVICE_ACTIONS: readonly SetupAdviceAction[] = ["setMetadataLanguage", "enableTrickplay", "enableRealtimeMonitor", "enableHevcEncoding"];
+export const ADVICE_ACTIONS: readonly SetupAdviceAction[] = [
+  "setMetadataLanguage", "enableTrickplay", "enableRealtimeMonitor", "enableHevcEncoding", "shortenLibraryUpdateDelay",
+];
 const SAFE_FIXES: ReadonlySet<SetupActionId> = new Set(ADVICE_ACTIONS);
 
 const isAdviceAction = (action: SetupActionId): action is SetupAdviceAction => SAFE_FIXES.has(action);
@@ -52,7 +54,7 @@ export interface AdviceLocale {
 }
 
 /** L'ordre de l'écran : ce qui se voit le plus dans Tentacle d'abord. */
-const ORDER: readonly SetupCheckId[] = ["segmentsProvider", "metadataLanguage", "trickplay", "realtimeMonitor", "hevcEncoding"];
+const ORDER: readonly SetupCheckId[] = ["segmentsProvider", "metadataLanguage", "trickplay", "realtimeMonitor", "libraryUpdateDelay", "hevcEncoding"];
 
 export const localeValue = (locale: AdviceLocale): string => `${locale.language} · ${locale.country}`;
 
@@ -73,6 +75,10 @@ function adviceFor(check: SetupCheck, locale: AdviceLocale): JellyfinAdvice | nu
   }
   if (!isJellyfinTodo(check) || !check.action || !isAdviceAction(check.action)) return null;
   const targets = (check.libraries ?? []).filter((library) => !library.enabled).map((library) => library.name);
+  // L'annonce des ajouts se dit en secondes (« 30 s » → « 5 s »), pas en marche / arrêt.
+  if (check.id === "libraryUpdateDelay") {
+    return { id: check.id, gesture: check.action, current: check.current, recommended: `${LIBRARY_UPDATE_DELAY_TARGET} s`, preselected: true, targets };
+  }
   return { id: check.id, gesture: check.action, current: check.current ?? "off", recommended: "on", preselected: true, targets };
 }
 
