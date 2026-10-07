@@ -20,39 +20,45 @@ export interface FluidDisplayInput {
 
 /**
  * Le mode que la lecture demande à l'écran — null : ne rien demander, le
- * téléphone décide seul. Règle de Damien (07/10) : le MEILLEUR MULTIPLE que
- * l'écran sait faire, dans sa définition courante.
- * - le plus grand multiple EXACT de la cadence du film (k = 1..5) : un film à
- *   24 i/s → 120 Hz (5 × 24), sinon 72, 48 ou 24 ; 30 i/s → 120, 90 ou 60 ;
- * - aucun multiple exact (24 i/s sur un écran 60/90) : la fréquence la plus
- *   haute, la plus fluide.
- * Mesuré sur un OPPO Find X3 Pro (ColorOS 14, 60/72/90/120 Hz) : sans
- * demande, toute vidéo y tombe à 60 Hz, et 72 Hz y était refusé — 120 Hz y
- * est le meilleur multiple de 24. Réglage DÉSACTIVÉ : rien n'est demandé.
- * iOS : rien (un écran ProMotion se règle seul).
+ * téléphone décide seul. Règle de Damien (07/10) : le MEILLEUR MULTIPLE de la
+ * cadence du film que l'écran sait faire, dans sa définition courante.
+ *
+ * « Meilleur » se mesure : l'écart de chaque image à l'écran, en temps —
+ * |fréquence ÷ cadence − multiple entier le plus proche| ÷ fréquence. Un
+ * multiple exact vaut 0 ; à égalité, la fréquence la plus haute. D'où :
+ * 24 i/s → 120 Hz (5 × 24) plutôt que 72 ; 30 i/s → 120, 90 ou 60 ; sans
+ * multiple exact, le plus proche : 24 i/s sur un écran 60/90 → 90 (2,8 ms
+ * contre 8,3), 25 i/s sur 60/72/90/120 → 120 (1,7 ms, comme 72). Cadence
+ * inconnue : la fréquence la plus haute.
+ *
+ * Mesuré sur un OPPO Find X3 Pro (ColorOS 14) : sans demande, toute vidéo y
+ * tombe à 60 Hz, et 72 Hz y était refusé. Réglage DÉSACTIVÉ : rien n'est
+ * demandé. iOS : rien (un écran ProMotion se règle seul).
  */
 export function fluidDisplayMode({ platform, enabled, screen, fps = 0 }: FluidDisplayInput): DisplayModeInfo | null {
   if (platform !== "android" || !enabled || !screen || screen.currentModeId === undefined) return null;
   const current = screen.modes.find((mode) => mode.id === screen.currentModeId);
   if (!current) return null;
-  const candidates = screen.modes.filter((mode) => mode.width === current.width && mode.height === current.height);
-  const multiples = fps > 0 ? candidates.filter((mode) => isExactMultiple(mode.refreshRate, fps)) : [];
-  return highest(multiples.length > 0 ? multiples : candidates);
-}
-
-const MAX_MULTIPLE = 5;
-
-function isExactMultiple(refreshRate: number, fps: number): boolean {
-  for (let k = 1; k <= MAX_MULTIPLE; k += 1) {
-    if (Math.abs(refreshRate - k * fps) <= DISPLAY_MODE_RELATIVE_TOLERANCE * k * fps) return true;
-  }
-  return false;
-}
-
-function highest(modes: readonly DisplayModeInfo[]): DisplayModeInfo | null {
   let best: DisplayModeInfo | null = null;
-  for (const mode of modes) {
-    if (!best || mode.refreshRate > best.refreshRate) best = mode;
+  let bestGap = Number.POSITIVE_INFINITY;
+  for (const mode of screen.modes) {
+    if (mode.width !== current.width || mode.height !== current.height) continue;
+    const gap = fps > 0 ? cadenceGap(mode.refreshRate, fps) : 0;
+    if (gap < bestGap - GAP_EPSILON || (Math.abs(gap - bestGap) <= GAP_EPSILON && mode.refreshRate > (best?.refreshRate ?? 0))) {
+      best = mode;
+      bestGap = gap;
+    }
   }
   return best;
+}
+
+/** Deux écarts à moins de 0,05 ms l'un de l'autre se valent. */
+const GAP_EPSILON = 0.05;
+
+/** L'écart d'une image à l'écran, en millisecondes (0 : multiple exact). */
+function cadenceGap(refreshRate: number, fps: number): number {
+  const ratio = refreshRate / fps;
+  const k = Math.max(1, Math.round(ratio));
+  if (Math.abs(refreshRate - k * fps) <= DISPLAY_MODE_RELATIVE_TOLERANCE * k * fps) return 0;
+  return (Math.abs(ratio - k) / refreshRate) * 1000;
 }

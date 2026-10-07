@@ -33,10 +33,14 @@ describe("fluidDisplayMode", () => {
     expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 30, screen: { currentModeId: 1, modes: max60 } })?.id).toBe(2);
   });
 
-  it("aucun multiple exact (24 i/s sur 60/90, 25 i/s sur 60/120) : la fréquence la plus haute", () => {
+  it("aucun multiple exact : le multiple le plus proche (le moindre écart), pas le plus haut", () => {
     const max90 = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 90 }];
     expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 23.976, screen: { currentModeId: 1, modes: max90 } })?.id).toBe(2);
+    // 25 i/s : 72 et 120 Hz se valent (1,7 ms) → le plus haut des deux ; 60 et 90 écartés.
     expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 25, screen: { currentModeId: 2, modes: oppo } })?.id).toBe(1);
+    const odd = [{ id: 1, width: 1080, height: 2400, refreshRate: 60 }, { id: 2, width: 1080, height: 2400, refreshRate: 75 }, { id: 3, width: 1080, height: 2400, refreshRate: 90 }];
+    // 75 Hz = 3,125 × 24 (1,7 ms) bat 90 Hz = 3,75 × 24 (2,8 ms).
+    expect(fluidDisplayMode({ platform: "android", enabled: true, fps: 24, screen: { currentModeId: 1, modes: odd } })?.id).toBe(2);
   });
 
   it("réglage désactivé : rien n'est demandé, le téléphone décide", () => {
