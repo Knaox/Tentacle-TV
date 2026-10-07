@@ -38,6 +38,8 @@ export const LITE_AVDS = {
   // L'AVD de la tâche L4 (lecture) : le même profil que la box, sa propre
   // console — deux tâches mesurent en même temps sans se partager un appareil.
   Lite_L4_2G: { ramMb: 2048, cores: 4, port: 5646, label: "box net+ : 2 Go, 4 cœurs (L4, lecture)" },
+  // L'AVD de la tâche L5a (effets) : même profil, sa propre console.
+  Lite_L5a_2G: { ramMb: 2048, cores: 4, port: 5682, label: "box net+ : 2 Go, 4 cœurs (L5a, effets)" },
 };
 
 export function liteProfile(name) {

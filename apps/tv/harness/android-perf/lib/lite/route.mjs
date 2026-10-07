@@ -117,7 +117,8 @@ export async function runPlayCost({ avd, option }) {
     const player = createPlayer({ device, backendPort: BACKEND_PORT, host: { measuring: (fn) => fn() } });
     await player.prepareApk(apk);
     const applyFixtures = (sets) => player.applyFixtures(sets);
-    log(`appareil : ${device.describe()} · ${avd ?? device.serial} · freinage ${spec} · charge du Mac ${hostLoad()}`);
+    if (tier) device.setTier(tier);
+    log(`appareil : ${device.describe()} · ${avd ?? device.serial} · freinage ${spec} · niveau ${tier ?? "auto"} · charge du Mac ${hostLoad()}`);
     const results = await measurePlayCost({ device, applyFixtures, sets, spec, windowS: Number(option("window", "20")), dir, log });
     fs.writeFileSync(path.join(dir, "resume.json"), JSON.stringify({ avd, throttle: spec, date: new Date().toISOString(), results }, null, 1));
     log(`→ ${dir}`);
@@ -138,6 +139,9 @@ export async function runRoute({ avd, option, flag }) {
   const coldRuns = Number(option("cold", "3"));
   const loops = Number(option("endurance", "3"));
   const spec = option("throttle", "none");
+  // `--tier lite|normal` : le niveau de rendu forcé pendant la passe (L5a) ;
+  // `--shots` : une capture de chaque écran après son geste (différentiel visuel).
+  const tier = option("tier", null);
   const ids = option("only") ? option("only").split(",") : LITE_ROUTE;
   const scenarios = scenariosOf(ids.join(","));
   const dir = path.join(LITE_RUNS, `${stamp()}-${tag}`);
@@ -155,7 +159,7 @@ export async function runRoute({ avd, option, flag }) {
     if (!flag("no-warmup")) await player.warmup(scenarios);
     // Le freinage ne couvre que la MESURE : l'installation et l'échauffement restent rapides.
     const lift = device.serial.startsWith("emulator-") ? applyThrottle(qemuPidOf(device.serial), spec) : () => {};
-    const result = { tag, avd, device: device.describe(), throttle: spec, date: new Date().toISOString(), apk, cold: [], memory: [], screens: [], endurance: [], pressure: null, traces: [] };
+    const result = { tag, tier, avd, device: device.describe(), throttle: spec, date: new Date().toISOString(), apk, cold: [], memory: [], screens: [], endurance: [], pressure: null, traces: [] };
     try {
       // 1. Démarrage à froid.
       const cold = scenariosOf("demarrage")[0];
@@ -173,6 +177,7 @@ export async function runRoute({ avd, option, flag }) {
       await sleep(10_000);
       if (coldTrace) result.traces.push(await coldTrace.stop(path.join(dir, "demarrage.pftrace")));
       result.memory.push(memorySample(capture, "repos"));
+      if (flag("shots")) device.screencap(path.join(dir, "accueil.png"));
       log(`repos : PSS ${result.memory[0].app.totalPss} Mo (Java ${result.memory[0].app.javaHeap}, natif ${result.memory[0].app.nativeHeap}, graphique ${result.memory[0].app.graphics}) · système dispo ${result.memory[0].system.availableMb} Mo`);
       // 3. Écran par écran.
       for (const scenario of scenarios) {
@@ -192,6 +197,10 @@ export async function runRoute({ avd, option, flag }) {
           result.screens.push({ id: scenario.id, title: scenario.title, skipped: error.message });
           log(`${scenario.id} — NON MESURÉ : ${error.message}`);
           continue;
+        }
+        if (flag("shots")) {
+          await sleep(1500);
+          device.screencap(path.join(dir, `${scenario.id}.png`));
         }
         const summary = summarizeScenario(scenario, played);
         const screen = { ...summary, gfxFull: played.map((r) => r.gfxFull), memory: played.map((r) => r.memory), rawRounds: played.map(({ records: _records, ...r }) => r) };
@@ -231,6 +240,7 @@ export async function runRoute({ avd, option, flag }) {
       throw error;
     } finally {
       lift();
+      if (tier) device.setTier("auto");
       // Même interrompu, ce qui a été mesuré est gardé (`aborted` le dit).
       result.images = proxy.stats;
       result.maxHostLoad = Math.max(0, ...result.cold.flatMap((c) => c.hostLoad ?? []), ...result.screens.map((s) => s.hostLoad ?? 0));
