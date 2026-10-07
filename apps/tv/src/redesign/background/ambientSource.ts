@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { ArtworkPalette } from "../color/artworkPalette";
+import { RENDER } from "../render/renderProfile";
 
 /**
  * La lumière de ce qui a le FOCUS, tenue hors du rendu de l'écran : une carte
@@ -19,8 +20,15 @@ export interface AmbientSource {
 const noSubscription = () => () => {};
 const nothing = () => null;
 
+/** Le profil Lite (`ambientFollow: "fixed"`) : le focus ne change rien au
+ *  fond — ni teinte d'une carte à l'autre, ni rendu du fond (ou de la vue qui
+ *  le lit) à chaque pas. Fixe pour la vie du JS : l'ordre des crochets ne
+ *  change pas. */
+const FOLLOWS_FOCUS = RENDER.ambientFollow === "focus";
+
 /** La lumière de `source`, sinon `fallback` ; sans source, `fallback`. */
 export function useAmbientOf(source: AmbientSource | undefined, fallback: ArtworkPalette): ArtworkPalette {
-  const focused = useSyncExternalStore(source?.subscribe ?? noSubscription, source?.get ?? nothing);
+  const followed = FOLLOWS_FOCUS ? source : undefined;
+  const focused = useSyncExternalStore(followed?.subscribe ?? noSubscription, followed?.get ?? nothing);
   return focused ?? fallback;
 }

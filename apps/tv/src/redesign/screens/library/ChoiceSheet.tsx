@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { FilterSheet } from "./FilterSheet";
 import type { ChoiceSheetModel, FilterSheetHandlers } from "./libraryTypes";
@@ -25,6 +25,8 @@ export const ChoiceSheet = memo(function ChoiceSheet({
   onSheetClear,
   onSheetApply,
 }: { sheet: ChoiceSheetModel } & FilterSheetHandlers) {
+  const filter = sheet.filter;
+  const select = useCallback((id: string) => onSheetOption?.(filter, id), [onSheetOption, filter]);
   const width = PANEL_WIDTH[sheet.columns];
   const inner = width - SHEET_PADDING * 2;
   const columnWidth = Math.floor((inner - COLUMN_GAP * (sheet.columns - 1)) / sheet.columns);
@@ -44,7 +46,8 @@ export const ChoiceSheet = memo(function ChoiceSheet({
           mode={sheet.multiple ? "check" : "radio"}
           width={columnWidth}
           focusKey={`sheet:option:${index}`}
-          onPress={onSheetOption ? () => onSheetOption(sheet.filter, option.id) : undefined}
+          value={option.id}
+          onSelect={onSheetOption ? select : undefined}
         />
       ))}
     </View>

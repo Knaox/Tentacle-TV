@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts } from "../../theme/tokens";
 import { FilterSheet } from "./FilterSheet";
@@ -25,7 +25,9 @@ export const SortSheet = memo(function SortSheet({
   onSheetClear,
   onSheetApply,
 }: { sheet: SortSheetModel } & FilterSheetHandlers) {
-  const pick = (id: string) => (onSheetOption ? () => onSheetOption(sheet.filter, id) : undefined);
+  const filter = sheet.filter;
+  const select = useCallback((id: string) => onSheetOption?.(filter, id), [onSheetOption, filter]);
+  const pick = onSheetOption ? select : undefined;
   return (
     <FilterSheet
       title={sheet.title}
@@ -47,7 +49,8 @@ export const SortSheet = memo(function SortSheet({
               mode="radio"
               width={LEFT}
               focusKey={`sheet:option:${index}`}
-              onPress={pick(option.id)}
+              value={option.id}
+              onSelect={pick}
             />
           ))}
         </View>
@@ -62,7 +65,8 @@ export const SortSheet = memo(function SortSheet({
               mode="radio"
               width={RIGHT}
               focusKey={`sheet:order:${index}`}
-              onPress={pick(option.id)}
+              value={option.id}
+              onSelect={pick}
             />
           ))}
         </View>

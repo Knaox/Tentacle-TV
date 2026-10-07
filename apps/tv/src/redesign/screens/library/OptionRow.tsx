@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { FocusTarget } from "../../focus/FocusTarget";
@@ -23,17 +23,27 @@ export interface OptionRowProps {
   width: number;
   focusKey?: string;
   onPress?: () => void;
+  /** L'option que la ligne représente, rendue à `onSelect` : un gestionnaire
+   *  STABLE pour toute la liste, au lieu d'une fermeture neuve par ligne à
+   *  chaque rendu — une coche ne redessine que les lignes qui changent. */
+  value?: string;
+  onSelect?: (value: string) => void;
 }
 
 export const OPTION_ROW_HEIGHT = 72;
 const RADIUS = 22;
 
 export const OptionRow = memo(function OptionRow(props: OptionRowProps) {
+  const { value, onSelect, onPress } = props;
+  const select = useCallback(() => {
+    if (onSelect && value !== undefined) onSelect(value);
+    else onPress?.();
+  }, [value, onSelect, onPress]);
   return (
     <FocusTarget
       focusKey={props.focusKey}
       form="row"
-      onPress={props.onPress}
+      onPress={onSelect || onPress ? select : undefined}
       accessibilityLabel={props.label}
       style={{ width: props.width }}
     >

@@ -88,7 +88,8 @@ d'Android TV ; les vues lisent ses champs, jamais le niveau :
 |---|---|---|
 | `motionStyle` | ressorts et fondus de `TV_MOTION` | `brief` : sans ressort, 150 ms au plus, l'accessoire posé (`liteMotion.ts`) |
 | `cardFocus` | × 1,08, ombre ou lueur, reflet | `outline` : liseré #8B5CF6 de 4 px, à la taille de la carte (`CARD_FOCUS_SCALE` = 1) |
-| `ambient` | trois lumières de l'œuvre | `tint` : une teinte statique venue d'en haut, un fondu de 150 ms |
+| `ambient` | trois lumières de l'œuvre | `tint` : une teinte venue d'en haut, deux arrêts |
+| `ambientFollow` | `focus` : la lumière suit la carte focalisée | `fixed` : la lumière neutre, la même partout, posée sans fondu — ni le focus, ni un chargement, ni l'arrivée des affiches ne la changent (chaque changement faisait un éclair de 150 ms, essais Shield du 07/10) |
 | `shadows` | `mask` (masque flouté) | `border` : bord blanc à 10 % |
 | `glass` | voile, reflet, liserés | `flat` : l'aplat de la même teinte, bord fin |
 | `gradients` | tous les arrêts | `twoStop` (`twoStopGradient.ts`) |

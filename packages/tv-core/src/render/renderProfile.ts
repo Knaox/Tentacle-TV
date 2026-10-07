@@ -69,6 +69,16 @@ export type AmbientRendering =
    *  quand l'œuvre change, rien d'autre. */
   | "tint";
 
+/** Ce dont le fond prend la couleur. */
+export type AmbientFollow =
+  /** L'œuvre qui a le FOCUS : chaque pas d'une carte à l'autre change la
+   *  lumière, en fondu. */
+  | "focus"
+  /** Rien : une seule lumière, la même sur tous les écrans, posée sans
+   *  fondu — ni le focus, ni un chargement, ni l'arrivée des affiches, ni le
+   *  passage d'un écran à l'autre ne la changent. */
+  | "fixed";
+
 /** Le verre dessiné (sans verre natif). */
 export type GlassRendering =
   /** Un voile, un reflet dégradé, un bord et un liseré allumé. */
@@ -128,6 +138,13 @@ export interface RenderProfile {
    *  se redessinent avec le titre suivant au lieu d'être démontées et
    *  d'autres montées. Faux : clées par leur titre. */
   recycleResultCards: boolean;
+  /** Ce qu'une liste en surimpression COUVRE (la grille sous les filtres)
+   *  reste tel quel tant qu'elle est là, et se met à jour une fois effacée :
+   *  chaque coche ne redessine que la liste. Mesuré sur la Shield : une coche
+   *  refaisait toute la grille cachée (2 600 composants, fil JS bloqué
+   *  jusqu'à 400 ms) — la coche tardait, et un second OK s'ajoutait au
+   *  premier. Faux : le dessous suit chaque geste. */
+  holdUnderPanels: boolean;
   /** Les pixels de l'interface par point : l'échelle à laquelle se demandent
    *  les images taillées « au double des points » (fiche, panneau, portraits).
    *  2 sur l'Apple TV 4K ; 1 sur Android TV, rendue en 1080p. */
@@ -148,6 +165,8 @@ export interface RenderProfile {
   cardFocus: CardFocusRendering;
   /** Le fond de la scène. */
   ambient: AmbientRendering;
+  /** Ce que le fond suit : la carte focalisée, ou rien (fond fixe). */
+  ambientFollow: AmbientFollow;
   /** Le verre dessiné. */
   glass: GlassRendering;
   /** Les dégradés doux. */
@@ -198,6 +217,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     cardArtwork: CARD_ARTWORK.tvos,
     stagedRows: false,
     recycleResultCards: false,
+    holdUnderPanels: false,
     imageScale: 2,
     spinner: "system",
     cullOffscreen: false,
@@ -205,6 +225,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     motionStyle: "full",
     cardFocus: "lift",
     ambient: "lights",
+    ambientFollow: "focus",
     glass: "layered",
     gradients: "smooth",
     pageTransition: "fade",
@@ -232,6 +253,8 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     // Une frappe remplace ~25 cartes : les monter retenait le fil UI de la
     // Shield 100 à 150 ms (275 vues créées, banc « recherche-frappe »).
     recycleResultCards: true,
+    // Une coche dans une liste de filtres refaisait la grille cachée dessous.
+    holdUnderPanels: true,
     imageScale: 1,
     // L'indicateur système d'Android est un autre dessin (un arc Material) :
     // celui de l'Apple TV, redessiné (`activitySpinner`).
@@ -246,6 +269,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     motionStyle: "full",
     cardFocus: "lift",
     ambient: "lights",
+    ambientFollow: "focus",
     glass: "layered",
     gradients: "smooth",
     pageTransition: "fade",
