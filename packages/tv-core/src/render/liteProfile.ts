@@ -12,7 +12,7 @@ import { RENDER_PROFILES, type RenderPlatform, type RenderProfile } from "./rend
  * |---|---|---|
  * | Mouvement (26 % → 3 % coupé) | ressorts, fondus longs | fondus brefs, sans ressort (`liteMotion`) |
  * | Focus d'une carte (26 → 9,5 %) | × 1,08, ombre ou lueur, reflet | liseré d'accent |
- * | Fond vivant (26 → 18 %) | trois lumières | une teinte statique, un fondu court |
+ * | Fond vivant (26 → 18 %) | trois lumières, qui suivent le focus | une teinte de l'ÉCRAN, fixe d'une carte à l'autre |
  * | Ombres (26 → 18 %) | masque flouté | bord fin |
  * | Verre (26 → 19 %) | voile, reflet, liserés | aplat, bord fin |
  * | Dégradés (26 → 19 %) | tous les arrêts | deux arrêts |
@@ -27,6 +27,11 @@ export const LITE_PROFILE: Readonly<RenderProfile> = {
   motionStyle: "brief",
   cardFocus: "outline",
   ambient: "tint",
+  // Une teinte qui changeait à CHAQUE carte, en un fondu de 150 ms, se lisait
+  // comme un clignotement du fond (retour d'essai, Shield, 2026-10-07) : en
+  // Lite, le fond garde la couleur de l'écran — et un pas du focus ne
+  // redessine plus rien derrière les cartes.
+  ambientFollow: "screen",
   shadows: "border",
   glass: "flat",
   gradients: "twoStop",

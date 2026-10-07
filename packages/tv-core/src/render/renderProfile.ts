@@ -69,6 +69,15 @@ export type AmbientRendering =
    *  quand l'œuvre change, rien d'autre. */
   | "tint";
 
+/** Ce dont le fond prend la couleur. */
+export type AmbientFollow =
+  /** L'œuvre qui a le FOCUS : chaque pas d'une carte à l'autre change la
+   *  lumière, en fondu. */
+  | "focus"
+  /** L'œuvre de l'ÉCRAN (le héros, la fiche, la première carte) : le focus
+   *  qui passe d'une carte à l'autre ne change rien au fond. */
+  | "screen";
+
 /** Le verre dessiné (sans verre natif). */
 export type GlassRendering =
   /** Un voile, un reflet dégradé, un bord et un liseré allumé. */
@@ -148,6 +157,8 @@ export interface RenderProfile {
   cardFocus: CardFocusRendering;
   /** Le fond de la scène. */
   ambient: AmbientRendering;
+  /** Ce que le fond suit : la carte focalisée, ou l'écran. */
+  ambientFollow: AmbientFollow;
   /** Le verre dessiné. */
   glass: GlassRendering;
   /** Les dégradés doux. */
@@ -205,6 +216,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     motionStyle: "full",
     cardFocus: "lift",
     ambient: "lights",
+    ambientFollow: "focus",
     glass: "layered",
     gradients: "smooth",
     pageTransition: "fade",
@@ -246,6 +258,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     motionStyle: "full",
     cardFocus: "lift",
     ambient: "lights",
+    ambientFollow: "focus",
     glass: "layered",
     gradients: "smooth",
     pageTransition: "fade",

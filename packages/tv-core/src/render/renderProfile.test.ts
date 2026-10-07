@@ -22,6 +22,7 @@ describe("le profil de rendu", () => {
       motionStyle: "full",
       cardFocus: "lift",
       ambient: "lights",
+      ambientFollow: "focus",
       glass: "layered",
       gradients: "smooth",
       pageTransition: "fade",

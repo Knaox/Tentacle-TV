@@ -164,6 +164,8 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ palette, intensit
  * Le fond vivant d'un écran dont la lumière SUIT LE FOCUS sans le redessiner :
  * celle de `source` (la carte focalisée, `ambientSource`), sinon `palette`
  * (le héros, la première carte). Sans source : `AmbientBackdrop` tel quel.
+ * Profil Lite (`ambientFollow: "screen"`) : la source est ignorée, le fond
+ * garde la lumière de l'écran (`useAmbientOf`).
  */
 export const LiveAmbientBackdrop = memo(function LiveAmbientBackdrop({
   source,
