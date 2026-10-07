@@ -8,12 +8,15 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./theme": "./src/theme/index.ts"
+    "./theme": "./src/theme/index.ts",
+    "./licenses": "./src/licenses/index.ts",
+    "./licenses/texts": "./src/licenses/texts.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:licenses": "node scripts/generate-license-texts.mjs"
   },
   "dependencies": {
     "i18next": "^25.8.13",
