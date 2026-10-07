@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { SubtleBackground, IconButton } from "@/components/ui";
+import { SubtleBackground, IconButton, KeyboardAvoidingArea } from "@/components/ui";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { backOrHome } from "@/utils/backOrHome";
 import {
@@ -44,17 +44,19 @@ export function SettingsScaffold({ title, children, maxWidth = 720, trailing }: 
           {trailing === undefined ? <ConnectivityPill variant="inline" /> : trailing}
         </View>
 
-        <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: contentPadding,
-            paddingBottom: insets.bottom + spacing.xxl,
-          }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-          indicatorStyle={Platform.OS === "ios" ? "white" : "default"}
-        >
-          {children}
-        </ScrollView>
+        <KeyboardAvoidingArea ios={false}>
+          <ScrollView
+            contentContainerStyle={{
+              paddingHorizontal: contentPadding,
+              paddingBottom: insets.bottom + spacing.xxl,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+            indicatorStyle={Platform.OS === "ios" ? "white" : "default"}
+          >
+            {children}
+          </ScrollView>
+        </KeyboardAvoidingArea>
       </View>
     </SubtleBackground>
   );

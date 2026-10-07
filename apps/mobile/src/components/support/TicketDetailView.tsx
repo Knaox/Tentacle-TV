@@ -4,8 +4,7 @@ import {
   Text,
   TextInput,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
+  
   Pressable,
   ActivityIndicator,
 } from "react-native";
@@ -13,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import { SubtleBackground, Badge, IconButton } from "../ui";
+import { SubtleBackground, Badge, IconButton, KeyboardAvoidingArea } from "../ui";
 import { FONT_FAMILY, RADIUS, useContentPadding, useTheme, withAlpha } from "../../theme";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { STATUS_BADGE, useTicketApi, type TicketDetail, type TicketMessage } from "./ticketTypes";
@@ -76,7 +75,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
 
   return (
     <SubtleBackground ambient>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingArea>
         <View style={{
           paddingTop: Math.max(insets.top, 24) + 12,
           paddingHorizontal: contentPad,
@@ -219,7 +218,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
             </Text>
           </View>
         )}
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingArea>
     </SubtleBackground>
   );
 }

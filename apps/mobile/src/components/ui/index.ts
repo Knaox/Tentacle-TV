@@ -17,3 +17,4 @@ export { GradientOverlay } from "./GradientOverlay";
 export { FadeIn } from "./FadeIn";
 export { SubtleBackground } from "./SubtleBackground";
 export { BottomSheet } from "./BottomSheet";
+export { KeyboardAvoidingArea } from "./KeyboardAvoidingArea";
