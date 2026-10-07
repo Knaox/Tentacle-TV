@@ -17,6 +17,18 @@ export function publishedPublicUrl(): string | null {
   return isExposed() ? getPublicUrl() : null;
 }
 
+/**
+ * L'adresse que `/api/config` → `publicUrl` donne aux clients d'avant : le
+ * mobile n'offre le jumelage d'une TV que si elle existe, et la TV la grave.
+ * Coupé, c'est l'adresse PRIVÉE de ce serveur (celle qu'une TV de la maison
+ * joint), et à défaut le lien réglé — jamais rien de moins qu'avant : couper
+ * l'accès extérieur ne casse pas le jumelage.
+ */
+export function pairingUrl(): string | null {
+  if (isExposed()) return getPublicUrl();
+  return readRemoteAccessSettings().localUrl ?? getPublicUrl();
+}
+
 /** L'adresse publique de Jellyfin, si la lecture directe s'en sert ET que l'accès extérieur est allumé. */
 export function publishedJellyfinPublicUrl(): string | null {
   const direct = getDirectStreamingConfig();

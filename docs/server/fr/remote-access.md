@@ -14,8 +14,8 @@ le même panneau, les mêmes règles aux deux endroits.
   automatiquement).
 
 L'interrupteur **Accès depuis l'extérieur** décide. **Coupé, rien n'est publié** : ni le lien public de Tentacle
-ni l'adresse publique de Jellyfin ne sont donnés aux applications, et la lecture hors de la maison passe par
-Tentacle ; rien d'autre ne change. Un serveur qui publiait déjà un lien public avant cette version est allumé
+ni l'adresse publique de Jellyfin ne sont donnés aux applications (le jumelage des TV reçoit l'adresse privée du
+serveur : il continue de marcher), et la lecture hors de la maison passe par Tentacle ; rien d'autre ne change. Un serveur qui publiait déjà un lien public avant cette version est allumé
 une fois, au démarrage : rien ne change pour lui. L'adresse publique est celle vue par le dernier test
 d'ouverture, sinon demandée à la page `cdn-cgi/trace` de Cloudflare (IPv4, sans compte, au plus toutes les dix
 minutes) ; `REMOTE_CHECK_URL=off` coupe les deux.

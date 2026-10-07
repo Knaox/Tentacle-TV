@@ -27,7 +27,8 @@ export type ReverseProxyKind = "caddy" | "traefik" | "other" | "none";
 export interface RemoteAccessSettings {
   /**
    * « Accès depuis l'extérieur ». Coupé (le défaut d'une installation neuve) :
-   * RIEN n'est publié — ni le lien public de Tentacle (`/api/config`), ni
+   * RIEN n'est publié — ni le lien public de Tentacle (`addresses.public` ;
+   * `publicUrl`, que le jumelage des TV exige, donne l'adresse PRIVÉE), ni
    * l'adresse publique de Jellyfin (la lecture hors de la maison passe par
    * Tentacle) — et aucune autre fonction n'est touchée. Allumé : ce qui est
    * réglé est publié. Un serveur d'avant qui avait déjà un lien public est

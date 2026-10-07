@@ -10,7 +10,7 @@ import { BACKEND_VERSION } from "../services/version";
 import { jellyfinAcceptsLegacyAuth } from "../services/jellyfinLegacyAuth";
 import { familyCapability } from "../services/family/familyConfig";
 import { serverAddresses } from "../remoteAccess/serverAddresses";
-import { directMediaBaseUrl, publishedPublicUrl } from "../remoteAccess/exposure";
+import { directMediaBaseUrl, pairingUrl } from "../remoteAccess/exposure";
 import { declaredServerCapabilities } from "../serverCapabilities/declaredCapabilities";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
@@ -33,8 +33,9 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du
       // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
       // LAN/DNS privé) qui n'est joignable que depuis le réseau interne.
-      // Seulement si l'accès depuis l'extérieur est allumé : coupé, rien de public ne sort.
-      publicUrl: publishedPublicUrl(),
+      // Coupé (« Accès depuis l'extérieur »), l'adresse privée de ce serveur : le
+      // jumelage reste possible, et la TV grave une adresse qu'elle joint (`exposure.ts`).
+      publicUrl: pairingUrl(),
       // Les adresses locales et publiques (Tentacle, Jellyfin) — les locales au seul réseau local.
       addresses: serverAddresses(isPrivateIp(getRealClientIp(request))),
     };

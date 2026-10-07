@@ -639,8 +639,9 @@ su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration f
   documenté, pas contourné.
 - **Accès à distance** (`apps/backend/src/remoteAccess/`, section admin `/admin/remote-access` sous
   `requirePersonalAdmin` — jamais une TV jumelée) : « Accès depuis l'extérieur » (`remote_access_enabled`) décide
-  de ce qui est PUBLIÉ (`remoteAccess/exposure.ts`) — coupé par défaut, rien de public ne sort (`/api/config` →
-  `publicUrl`, `addresses.public`, l'adresse publique de la lecture directe) ; un serveur qui publiait déjà est
+  de ce qui est PUBLIÉ (`remoteAccess/exposure.ts`) — coupé par défaut, rien de public ne sort (`addresses.public`,
+  l'adresse publique de la lecture directe) ; `/api/config` → `publicUrl` donne alors l'adresse PRIVÉE (le mobile
+  n'offre le jumelage TV qu'avec elle : couper ne le casse jamais) ; un serveur qui publiait déjà est
   allumé une fois (`exposureDefault.ts`). La lecture directe n'exige que l'adresse PRIVÉE (l'installation l'allume
   à la maison) ; la publique est facultative. Adresse publique détectée (`/remote-access/public-ip` : dernier
   test, sinon Cloudflare `cdn-cgi/trace` en IPv4), les DEUX ports avec leurs vrais numéros ; capacité

@@ -14,8 +14,8 @@ and the same rules in both places.
   detected automatically).
 
 The **Access from outside** switch decides. **Off, nothing is published**: neither Tentacle's public link nor
-Jellyfin's public address is given to the apps, and playback away from home goes through Tentacle; nothing else
-changes. A server that already published a public link before this version is switched on once, at startup, so
+Jellyfin's public address is given to the apps (TV pairing gets the server's private address instead, so it keeps
+working), and playback away from home goes through Tentacle; nothing else changes. A server that already published a public link before this version is switched on once, at startup, so
 nothing changes for it. Its public address is the one seen by the last port test, otherwise asked to
 Cloudflare's `cdn-cgi/trace` page (IPv4, no account, at most every ten minutes); `REMOTE_CHECK_URL=off` turns
 both off.

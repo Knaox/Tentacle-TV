@@ -182,7 +182,11 @@ describe("C — un Jellyfin neuf, puis l'administration et l'interface web", () 
       await page.waitForTimeout(500);
       await page.screenshot({ path: join(PROOFS, "d-admin-acces-public.png"), fullPage: true });
       await exposure.click();
-      await waitFor(async () => (await config()).publicUrl === null);
+      // Coupé : plus rien de public ; le jumelage des TV garde l'adresse PRIVÉE de ce serveur.
+      await waitFor(async () => {
+        const now = await config();
+        return now.publicUrl === `http://${ip}:${P.tentacle}` && now.addresses?.public.tentacle === null;
+      });
       await page.goto(`http://${ip}:${P.tentacle}/admin/services#directstreaming`);
       await page.getByText("Lecture directe depuis l'extérieur (facultatif)").waitFor({ timeout: 60_000 });
       await page.screenshot({ path: join(PROOFS, "d-admin-services.png"), fullPage: true });
@@ -202,8 +206,13 @@ describe("C — un Jellyfin neuf, puis l'administration et l'interface web", () 
   });
 });
 
-async function config(): Promise<{ publicUrl: string | null }> {
-  return (await fetchWithin(stack.url("/api/config"))).json() as Promise<{ publicUrl: string | null }>;
+interface Config {
+  publicUrl: string | null;
+  addresses?: { public: { tentacle: string | null } };
+}
+
+async function config(): Promise<Config> {
+  return (await fetchWithin(stack.url("/api/config"))).json() as Promise<Config>;
 }
 
 async function waitFor(probe: () => Promise<boolean>, ms = 30_000): Promise<void> {

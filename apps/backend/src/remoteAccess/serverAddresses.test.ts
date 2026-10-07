@@ -10,7 +10,7 @@ vi.mock("../services/configStore", () => ({
   getPublicUrl: () => "https://tv.example.com",
 }));
 
-import { directMediaBaseUrl, publishedPublicUrl } from "./exposure";
+import { directMediaBaseUrl, pairingUrl, publishedPublicUrl } from "./exposure";
 import { serverAddresses } from "./serverAddresses";
 
 beforeEach(() => {
@@ -43,7 +43,11 @@ describe("serverAddresses", () => {
         public: { tentacle: null, jellyfin: null },
       });
       expect(publishedPublicUrl()).toBeNull();
+      // Le jumelage d'une TV n'en souffre pas : l'adresse privée de ce serveur lui est donnée.
+      expect(pairingUrl()).toBe("http://192.168.1.20:3000");
     }
+    h.exposed = "true";
+    expect(pairingUrl()).toBe("https://tv.example.com");
   });
 });
 
