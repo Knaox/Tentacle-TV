@@ -145,6 +145,14 @@ describe("le panneau de l'accès à distance", () => {
     expect(html).toContain('modePublicBody{"ip":"203.0.113.5"}');
   });
 
+  it("le service de test pas encore en ligne : dit d'avance, avant tout test, avec l'adresse à essayer en 4G", () => {
+    h.state = makeState({ proxy: "none" }, { publicUrl: null, lastCheck: null });
+    h.publicIp = { data: { outcome: "found", v4: "203.0.113.5", v6: null, source: "echo", detectedAt: "2026-10-07T10:00:00.000Z", checkService: "offline" }, isPending: false };
+    const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
+    expect(html).toContain('reach_no_service{"url":"http://203.0.113.5:3471"}');
+    expect(html).not.toContain("reach_unknown");
+  });
+
   it("la lecture directe hors de la maison : une étape à elle, facultative, coupée tant qu'aucune adresse publique", () => {
     const html = renderToStaticMarkup(<RemoteAccessPanel />).replaceAll("&quot;", '"');
     expect(html).toContain("directTitle");

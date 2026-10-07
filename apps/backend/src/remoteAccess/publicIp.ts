@@ -16,6 +16,11 @@ const CACHE_MS = 10 * 60_000;
 const TIMEOUT_MS = 5_000;
 
 export type EchoFetcher = (url: string) => Promise<string | null>;
+/** Le service de test répond-il ? (`GET /healthz`, cinq secondes au plus) */
+export type HealthProbe = (serviceUrl: string) => Promise<boolean>;
+
+const probeHealth: HealthProbe = (serviceUrl) =>
+  fetch(new URL("/healthz", serviceUrl), { signal: AbortSignal.timeout(TIMEOUT_MS) }).then((res) => res.ok, () => false);
 
 /** Une demande en IPv4 : c'est l'adresse que la box redirige. Le corps est court (< 1 Ko). */
 const fetchEcho: EchoFetcher = (url) =>
@@ -46,18 +51,26 @@ export function resetPublicIpCache(): void {
   cached = null;
 }
 
-export async function detectPublicIp(fetcher: EchoFetcher = fetchEcho, now: () => number = Date.now): Promise<PublicIpReport> {
+export async function detectPublicIp(fetcher: EchoFetcher = fetchEcho, now: () => number = Date.now, health: HealthProbe = probeHealth): Promise<PublicIpReport> {
   const none = { v4: null, v6: null, source: null, detectedAt: null };
-  if (!checkServiceUrl()) return { outcome: "disabled", ...none };
-  const last = readLastCheck();
-  if (last?.outcome === "done" && (last.publicIp.v4 || last.publicIp.v6)) {
-    return { outcome: "found", v4: last.publicIp.v4, v6: last.publicIp.v6, source: "check", detectedAt: last.checkedAt };
-  }
+  const serviceUrl = checkServiceUrl();
+  if (!serviceUrl) return { outcome: "disabled", ...none };
   if (cached && now() - cached.at < CACHE_MS) return cached.report;
-  const v4 = parseTrace((await fetcher(ECHO_URL)) ?? "");
-  const report: PublicIpReport = v4
-    ? { outcome: "found", v4, v6: null, source: "echo", detectedAt: new Date(now()).toISOString() }
-    : { outcome: "unavailable", ...none };
+  const last = readLastCheck();
+  const fromCheck = last?.outcome === "done" && (last.publicIp.v4 || last.publicIp.v6) ? last : null;
+  const [online, echo] = await Promise.all([health(serviceUrl), fromCheck ? Promise.resolve(null) : fetcher(ECHO_URL)]);
+  const checkService = online ? ("online" as const) : ("offline" as const);
+  const v4 = parseTrace(echo ?? "");
+  const report: PublicIpReport = fromCheck
+    ? { outcome: "found", v4: fromCheck.publicIp.v4, v6: fromCheck.publicIp.v6, source: "check", detectedAt: fromCheck.checkedAt, checkService }
+    : v4
+      ? { outcome: "found", v4, v6: null, source: "echo", detectedAt: new Date(now()).toISOString(), checkService }
+      : { outcome: "unavailable", ...none, checkService };
   cached = { at: now(), report };
   return report;
+}
+
+/** Un test vient de tourner : la prochaine lecture repart de son rapport. */
+export function forgetPublicIp(): void {
+  cached = null;
 }

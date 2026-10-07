@@ -116,6 +116,12 @@ export interface PublicIpReport {
   v6: string | null;
   source: "check" | "echo" | null;
   detectedAt: string | null;
+  /**
+   * Le service de test d'ouverture répond-il (`/healthz`) ? `offline` : pas
+   * encore déployé, ou en panne — l'écran le dit avant même un test. Absent :
+   * pas demandé.
+   */
+  checkService?: "online" | "offline";
 }
 
 export type RemoteAccessErrorCode = "invalid_input" | "rate_limited" | "internal";

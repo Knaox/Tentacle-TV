@@ -19,7 +19,8 @@ const TONE = {
 export const PublicIpCard = memo(function PublicIpCard({ state, report, loading }: { state: RemoteAccessState; report: PublicIpReport | undefined; loading: boolean }) {
   const { t } = useTranslation("remoteAccess");
   const ip = report?.v4 ?? report?.v6 ?? null;
-  const reach = reachabilityOf(state.lastCheck, state.checkServiceUrl !== null);
+  const online = report?.checkService === undefined ? undefined : report.checkService === "online";
+  const reach = reachabilityOf(state.lastCheck, state.checkServiceUrl !== null, online);
   const tryUrl = state.publicUrl ?? (ip ? `http://${ip.includes(":") ? `[${ip}]` : ip}:${state.hostPort}` : null);
   const reachText =
     reach === "no_service" ? (tryUrl ? t("reach_no_service", { url: tryUrl }) : t("reach_no_service_generic")) : t(`reach_${reach}`);

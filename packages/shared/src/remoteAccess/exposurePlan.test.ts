@@ -18,6 +18,10 @@ describe("joignable depuis Internet ?", () => {
     expect(reachabilityOf(report({ items: [item("open")] }), true)).toBe("open");
     expect(reachabilityOf(report({ items: [item("timeout")] }), true)).toBe("closed");
     expect(reachabilityOf(report({ items: [item("open")] }), false)).toBe("disabled");
+    // Le service de test ne répond pas : dit d'avance ; un test réussi auparavant reste vrai.
+    expect(reachabilityOf(null, true, false)).toBe("no_service");
+    expect(reachabilityOf(report({ items: [item("open")] }), true, false)).toBe("open");
+    expect(reachabilityOf(null, true, true)).toBe("unknown");
   });
 });
 

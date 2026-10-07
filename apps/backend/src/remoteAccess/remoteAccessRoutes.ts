@@ -5,7 +5,7 @@ import { getDirectStreamingConfig, getPublicUrl } from "../services/configStore"
 import { readDeployment } from "../setup/deployment";
 import type { RemoteAccessState } from "./remoteAccessContract";
 import { readLastCheck, readRemoteAccessSettings, saveRemoteAccessSettings } from "./remoteAccessSettings";
-import { detectPublicIp } from "./publicIp";
+import { detectPublicIp, forgetPublicIp } from "./publicIp";
 import { activeJellyfinPublicUrl, checkServiceUrl, hostPort, jellyfinLanPort, runRemoteCheck } from "./remoteCheck";
 
 /**
@@ -74,6 +74,11 @@ export const remoteAccessRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     "/remote-access/check",
     { preHandler: requirePersonalAdmin, config: { rateLimit: { max: 6, timeWindow: 10 * 60_000 } } },
-    async () => runRemoteCheck(),
+    async () => {
+      const report = await runRemoteCheck();
+      // L'adresse publique et l'état du service se relisent dans ce rapport.
+      forgetPublicIp();
+      return report;
+    },
   );
 };

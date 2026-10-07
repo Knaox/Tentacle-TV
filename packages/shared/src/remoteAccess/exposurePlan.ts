@@ -12,8 +12,10 @@ import { remoteVerdict } from "./remoteVerdict";
 /** Joignable depuis Internet ? `no_service` : le test automatique n'est pas en ligne. */
 export type RemoteReachability = "open" | "closed" | "unknown" | "no_service" | "disabled";
 
-export function reachabilityOf(report: RemoteCheckReport | null, checkServiceEnabled: boolean): RemoteReachability {
+export function reachabilityOf(report: RemoteCheckReport | null, checkServiceEnabled: boolean, checkServiceOnline?: boolean): RemoteReachability {
   if (!checkServiceEnabled) return "disabled";
+  // Le service ne répond pas (pas encore déployé) : on le dit tout de suite, sans attendre un test.
+  if (checkServiceOnline === false && report?.outcome !== "done") return "no_service";
   if (!report) return "unknown";
   if (report.outcome === "service_unavailable") return "no_service";
   if (report.outcome !== "done") return "unknown";
