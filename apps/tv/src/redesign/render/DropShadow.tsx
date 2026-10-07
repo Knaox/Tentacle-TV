@@ -2,6 +2,7 @@ import { memo } from "react";
 import {
   StyleSheet,
   UIManager,
+  View,
   processColor,
   requireNativeComponent,
   type ColorValue,
@@ -30,6 +31,10 @@ import { effectOff } from "./measuredEffects";
  * jamais par-dessus son fond. Le
  * parent ne doit pas rogner (`overflow: "hidden"`) : sur Apple TV non plus,
  * une vue qui rogne ne projette pas d'ombre.
+ *
+ * Profil Lite (`shadows: "border"`) : à la place de l'ombre, un BORD FIN
+ * (blanc à 10 %) sur le contour de la vue qui projetterait — rien ne se
+ * floute, rien ne déborde.
  *
  * `coverage` : l'opacité de ce qui projette. `CALayer` tire l'ombre de
  * l'alpha de la vue ; par défaut, celui de son fond (`backgroundColor`), 1
@@ -91,7 +96,17 @@ export interface DropShadowProps {
   coverage?: number;
 }
 
-export const DropShadow = NativeShadow ? memo(function DropShadow({ of, coverage }: DropShadowProps) {
+/** Lite : le bord fin qui remplace l'ombre, sur le contour (arrondi compris). */
+const BorderShadow = memo(function BorderShadow({ of }: DropShadowProps) {
+  const flat = StyleSheet.flatten(of) ?? {};
+  if (!flat.shadowColor || flat.shadowOpacity === 0) return null;
+  const radius = typeof flat.borderRadius === "number" ? flat.borderRadius : 0;
+  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.border, { borderRadius: radius }]} />;
+});
+
+const styles = StyleSheet.create({ border: { borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.1)" } });
+
+export const DropShadow = RENDER.shadows === "border" ? BorderShadow : NativeShadow ? memo(function DropShadow({ of, coverage }: DropShadowProps) {
   const Shadow = NativeShadow as HostComponent<NativeShadowProps>;
   const mask = maskOf(of, coverage);
   if (!mask) return null;

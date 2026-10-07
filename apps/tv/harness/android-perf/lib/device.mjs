@@ -315,6 +315,12 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
       shell(`setprop debug.tentacle.fx '${names.length ? names.join(",") : "none"}'`);
     },
 
+    /** Le niveau de rendu forcé au PROCHAIN lancement (`debug.tentacle.lite`,
+     *  L2) : `lite`, `normal`, ou `auto` (la propriété vidée : la détection). */
+    setTier(tier) {
+      shell(`setprop debug.tentacle.lite '${tier === "lite" ? 1 : tier === "normal" ? 0 : ""}'`);
+    },
+
     screencap(file) {
       fs.writeFileSync(file, execFileSync(ADB, ["-s", serial, "exec-out", "screencap", "-p"], { maxBuffer: 64 << 20 }));
     },

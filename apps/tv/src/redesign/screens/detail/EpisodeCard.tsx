@@ -17,6 +17,7 @@ import { Reveal } from "../../motion/Reveal";
 import type { RowPlace } from "../../motion/useRowRecede";
 import { colors, fonts, white } from "../../theme/tokens";
 import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
+import { CARD_FOCUS_SCALE } from "../../cards/cardFocus";
 
 /**
  * La grande vignette d'un épisode (460 × 259) : son image, la marque « vu »
@@ -54,7 +55,7 @@ const BADGE_KEY: Record<EpisodeBadge, string> = {
 };
 
 /** Ce que la carte descend au focus : l'agrandissement de son image, vu du pied. */
-const CAPTION_SHIFT = EPISODE_CARD.height * (TV_STAGE.focus.cardScale - 1);
+const CAPTION_SHIFT = EPISODE_CARD.height * (CARD_FOCUS_SCALE - 1);
 
 function Caption({ episode, focused, holdHint }: { episode: EpisodeModel; focused: boolean; holdHint: boolean }) {
   const { t } = useTranslation();

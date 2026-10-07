@@ -15,6 +15,7 @@ import { useRowFocus } from "../../motion/useRowRecede";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { ExtraModel } from "./detailTypes";
+import { CARD_FOCUS_SCALE } from "../../cards/cardFocus";
 
 /**
  * Les extras : bandes-annonces locales, bonus, vidéos distantes — dans
@@ -28,7 +29,7 @@ import type { ExtraModel } from "./detailTypes";
  */
 
 const { width: W, height: H, radius: R } = TV_STAGE.card.landscape;
-const SHIFT = H * (TV_STAGE.focus.cardScale - 1);
+const SHIFT = H * (CARD_FOCUS_SCALE - 1);
 
 function Caption({ extra, focused }: { extra: ExtraModel; focused: boolean }) {
   const { t } = useTranslation();

@@ -138,7 +138,7 @@ export const ArtworkHalo = memo(function ArtworkHalo({
   return (
     <View pointerEvents="none" style={[{ position: "absolute", left: -margin, top: -margin, width: w, height: h }, style]}>
       {layers.map((layer) => (
-        <PoolLayerView key={layer.slot} present={layer.present} motion="hero">
+        <PoolLayerView key={layer.slot} present={layer.present} motion="heroHalo">
           {HaloMask ? (
             <HaloMask glows={layer.item} blur={blur} radius={radius + spread} inset={margin - spread} opacity={opacity} />
           ) : (

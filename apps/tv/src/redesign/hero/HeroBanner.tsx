@@ -12,6 +12,7 @@ import { Icon, type IconName } from "../icons/Icon";
 import { Reveal } from "../motion/Reveal";
 import { useCrossfade } from "../motion/useCrossfade";
 import { useSwap } from "../motion/useSwap";
+import { RENDER } from "../render/renderProfile";
 import { colors, fonts, scrim, text, white } from "../theme/tokens";
 import { MetaLine, type MetaItem } from "./MetaLine";
 import { TitleArt } from "./TitleArt";
@@ -87,6 +88,11 @@ const INSET = 72;
 const ACTIONS_HEIGHT = 68;
 const DOT = 8;
 const TITLE_WIDTH = 760;
+/** L'échange du texte quand le héros tourne : en fondu, ou posé d'un coup
+ *  (profil Lite, `heroTextSwap` faux — seule l'image fond). */
+const TEXT_SWAP = RENDER.heroTextSwap
+  ? { outMs: TV_MOTION.crossfade.heroTextOutMs, inMs: TV_MOTION.crossfade.heroTextInMs }
+  : { outMs: 0, inMs: 0 };
 /** Ce que le texte d'un héros qui arrive monte, en points. */
 const TEXT_RISE = 10;
 
@@ -118,7 +124,7 @@ export const HeroBanner = memo(function HeroBanner({
     [onFocusChange],
   );
   const backdrops = useCrossfade(`${hero.id}|${hero.backdropUri ?? ""}`, hero.backdropUri, "hero", "dissolve");
-  const { shown, progress } = useSwap(hero.id, hero, TV_MOTION.crossfade.heroTextOutMs, TV_MOTION.crossfade.heroTextInMs);
+  const { shown, progress } = useSwap(hero.id, hero, TEXT_SWAP.outMs, TEXT_SWAP.inMs);
   const arrive = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateY: TEXT_RISE * (1 - progress.value) }] }));
   return (
     <View style={{ width, height }}>

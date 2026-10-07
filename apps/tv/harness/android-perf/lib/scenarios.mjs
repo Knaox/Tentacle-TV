@@ -172,10 +172,57 @@ export const SCENARIOS = [
     gesture: [hold("down", 4000), wait(1500), hold("up", 4000)],
     steps: 2,
   },
+  // Les VUES du différentiel visuel normal → Lite (L5a, `--shots`) : un geste
+  // court qui finit sur l'écran à montrer, capturé 1,5 s après.
+  {
+    id: "vue-fiche",
+    title: "Vue : la fiche (« Plus d'infos » du héros)",
+    setup: [tap("right"), wait(1500)],
+    gesture: [tap("ok"), wait(4500)],
+    steps: 1,
+  },
+  {
+    id: "vue-fiche-bas",
+    title: "Vue : la fiche, une section plus bas",
+    setup: [tap("right"), wait(1500)],
+    gesture: [tap("ok"), wait(4000), tap("down"), wait(1800)],
+    steps: 2,
+  },
+  {
+    id: "vue-rail",
+    title: "Vue : le rail déplié",
+    setup: [tap("down"), wait(2500)],
+    gesture: [tap("left"), wait(1500)],
+    steps: 1,
+  },
+  {
+    id: "vue-reglages",
+    title: "Vue : Réglages, le panneau du deuxième onglet (sans rien changer)",
+    setup: [wait(1500), tap("left"), wait(1500), tap("left"), wait(1200), tap("ok"), wait(4000)],
+    gesture: [tap("down"), wait(700), tap("ok"), wait(1500), tap("right"), wait(1200)],
+    steps: 3,
+  },
+  {
+    id: "vue-saisons",
+    title: "Vue : les saisons et épisodes (« Bleach »)",
+    expectReady: "fiche",
+    setup: [wait(1500), tap("left"), wait(1500), tap("down", 4, 450), wait(2000), tap("ok"), wait(8000), tap("down"), wait(1500), tap("up"), wait(1500), tap("down"), wait(2000), tap("right", 5, 600), wait(900), tap("ok"), wait(5000)],
+    gesture: [tap("down"), wait(1800), tap("down"), wait(1800)],
+    steps: 2,
+  },
+  {
+    id: "vue-lecteur",
+    title: "Vue : l'habillage du lecteur",
+    fixtures: ["base/vigie-off", "lecteur/flux-mp4"],
+    setup: [tap("down"), wait(1500), tap("ok"), wait(7000)],
+    gesture: [tap("ok"), wait(600)],
+    steps: 1,
+  },
 ];
 
 export function scenariosOf(only) {
-  if (!only) return SCENARIOS;
+  // Les vues du différentiel (`vue-*`) ne se jouent que nommées.
+  if (!only) return SCENARIOS.filter((scenario) => !scenario.id.startsWith("vue-"));
   const wanted = new Set(only.split(","));
   const chosen = SCENARIOS.filter((scenario) => wanted.has(scenario.id));
   if (chosen.length !== wanted.size) throw new Error(`scénario inconnu : ${[...wanted].filter((id) => !SCENARIOS.some((s) => s.id === id)).join(", ")}`);

@@ -1,10 +1,14 @@
 import { memo } from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import LinearGradient, { type LinearGradientProps } from "react-native-linear-gradient";
+import { twoStopGradient } from "@tentacle-tv/tv-core";
 import { effectOff } from "../render/measuredEffects";
+import { RENDER } from "../render/renderProfile";
 
 // Interrupteur de MESURE (lot Lite) : l'app de mesure seulement, jamais l'app livrée.
 const GRADIENTS_OFF = effectOff("gradients");
+/** Profil Lite (`gradients: "twoStop"`) : deux arrêts, calés sur la variation de l'original. */
+const TWO_STOP = RENDER.gradients === "twoStop";
 
 /**
  * Un dégradé dessiné PETIT, puis agrandi par le GPU. `react-native-linear-
@@ -19,6 +23,9 @@ const GRADIENTS_OFF = effectOff("gradients");
  * en quatre pixels. Le dessin déborde d'un pixel de chaque côté, rogné :
  * agrandi, son bord se fondait dans ce qu'il recouvre (la première ligne du
  * reflet d'une carte, plus terne — mesuré).
+ *
+ * Profil Lite : le même dégradé ramené à DEUX arrêts (tv-core
+ * `twoStopGradient`) — même départ, même arrivée, variation au même endroit.
  *
  * `width` × `height` : la surface couverte, connue (la scène, le cadre d'une
  * carte) ; posé en absolu dans son parent, comme un `absoluteFill`.
@@ -57,6 +64,7 @@ export const SoftGradient = memo(function SoftGradient({
   ...gradient
 }: SoftGradientProps) {
   if (GRADIENTS_OFF) return null;
+  const stops = TWO_STOP ? twoStopGradient(gradient) : gradient;
   const w = start.x === end.x ? FLAT : Math.max(FLAT, Math.ceil(width * resolution));
   const h = start.y === end.y ? FLAT : Math.max(FLAT, Math.ceil(height * resolution));
   const drawn = { width: w + 2 * MARGIN, height: h + 2 * MARGIN };
@@ -70,7 +78,8 @@ export const SoftGradient = memo(function SoftGradient({
   return (
     <View pointerEvents="none" style={[{ position: "absolute", left: 0, top: 0, width, height, overflow: "hidden" }, style]}>
       <LinearGradient
-        {...gradient}
+        colors={stops.colors as string[]}
+        locations={stops.locations as number[] | undefined}
         start={{ x: inDrawing(start.x, w), y: inDrawing(start.y, h) }}
         end={{ x: inDrawing(end.x, w), y: inDrawing(end.y, h) }}
         style={drawing}

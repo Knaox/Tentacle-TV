@@ -30,9 +30,10 @@ export const HERO_MAX_ITEMS = 5;
 /** Un titre toutes les 8 s. */
 export const HERO_ROTATE_MS = 8_000;
 
-/** L'attente entre deux titres : deux fois plus longue en mouvement réduit. */
-export function heroRotateDelay(reducedMotion: boolean): number {
-  return reducedMotion ? HERO_ROTATE_MS * 2 : HERO_ROTATE_MS;
+/** L'attente entre deux titres : deux fois plus longue en mouvement réduit ;
+ *  `factor`, celui du profil de rendu (`heroDelayFactor` : 1,5 en Lite). */
+export function heroRotateDelay(reducedMotion: boolean, factor = 1): number {
+  return (reducedMotion ? HERO_ROTATE_MS * 2 : HERO_ROTATE_MS) * factor;
 }
 
 export interface HeroRotationConditions {

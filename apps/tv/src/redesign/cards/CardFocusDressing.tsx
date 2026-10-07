@@ -1,10 +1,10 @@
 import { memo, useCallback, useRef, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Animated, { runOnJS, useAnimatedReaction, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_LIGHT } from "@tentacle-tv/theme";
 import { SoftGradient } from "../background/SoftGradient";
 import { DropShadow } from "../render/DropShadow";
-import { white } from "../theme/tokens";
+import { colors, white } from "../theme/tokens";
 
 /**
  * L'HABIT du focus d'une carte (`CardFrame`) : le soulèvement (grande ombre,
@@ -101,7 +101,37 @@ export const FadingRestShadow = memo(function FadingRestShadow({ progress, radiu
   );
 });
 
+/**
+ * Le focus du profil Lite : un liseré d'accent (#8B5CF6) à la taille de la
+ * carte, posé PAR-DESSUS l'image (sur Android seulement : l'Apple TV n'a pas
+ * de Lite), en fondu bref. Monté une fois avec la carte : une vue, une
+ * opacité sur le fil d'interface, aucun montage au focus. Doublé d'un filet
+ * sombre à l'intérieur, il se lit sur une image claire comme sur une sombre.
+ */
+export const FocusOutline = memo(function FocusOutline({ progress, radius }: { progress: SharedValue<number>; radius: number }) {
+  const shown = useAnimatedStyle(() => ({ opacity: progress.value }));
+  return (
+    <Animated.View pointerEvents="none" style={[dressingStyles.outline, { borderRadius: radius + OUTLINE_GAP }, shown]}>
+      <View style={[StyleSheet.absoluteFill, dressingStyles.outlineInner, { borderRadius: radius + OUTLINE_GAP - OUTLINE }]} />
+    </Animated.View>
+  );
+});
+
+/** L'épaisseur du liseré, et ce qu'il déborde de la carte. */
+const OUTLINE = 4;
+const OUTLINE_GAP = 2;
+
 export const dressingStyles = StyleSheet.create({
+  outline: {
+    position: "absolute",
+    left: -OUTLINE_GAP,
+    top: -OUTLINE_GAP,
+    right: -OUTLINE_GAP,
+    bottom: -OUTLINE_GAP,
+    borderWidth: OUTLINE,
+    borderColor: colors.accentDeep,
+  },
+  outlineInner: { borderWidth: 1, borderColor: "rgba(0, 0, 0, 0.45)" },
   shadowRest: {
     backgroundColor: "#000",
     shadowColor: "#000",

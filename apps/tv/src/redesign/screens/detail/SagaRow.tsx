@@ -13,6 +13,7 @@ import { useRowFocus } from "../../motion/useRowRecede";
 import { colors, fonts } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { SagaEntryModel } from "./detailTypes";
+import { CARD_FOCUS_SCALE } from "../../cards/cardFocus";
 
 /**
  * La saga d'un film, dans l'ordre de TMDB : les affiches des volets de la
@@ -31,7 +32,7 @@ import type { SagaEntryModel } from "./detailTypes";
 
 const { width: W } = TV_STAGE.card.poster;
 const H = Math.round(W * 1.5);
-const SHIFT = H * (TV_STAGE.focus.cardScale - 1);
+const SHIFT = H * (CARD_FOCUS_SCALE - 1);
 
 function Caption({ entry, focused, hold = false }: { entry: SagaEntryModel; focused: boolean; hold?: boolean }) {
   const p = useFocusProgress(focused);

@@ -41,6 +41,8 @@ export const LITE_AVDS = {
   // Les AVD de la tâche L6 (mémoire) : mêmes profils, leurs propres consoles.
   Lite_L6_1G: { ramMb: 1024, cores: 2, port: 5660, label: "Android TV 1 Go, 2 cœurs (L6, mémoire)" },
   Lite_L6_2G: { ramMb: 2048, cores: 4, port: 5662, label: "box net+ : 2 Go, 4 cœurs (L6, mémoire)" },
+  // L'AVD de la tâche L5a (effets) : même profil, sa propre console.
+  Lite_L5a_2G: { ramMb: 2048, cores: 4, port: 5682, label: "box net+ : 2 Go, 4 cœurs (L5a, effets)" },
 };
 
 export function liteProfile(name) {
