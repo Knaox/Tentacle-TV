@@ -1,6 +1,8 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
 import { resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
+import { backdropWidthFor } from "@tentacle-tv/tv-core";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { RENDER_TIER } from "../../platform/renderTier";
 import { isLogoLegibleOnDark } from "../../redesign/color/artworkPalette";
 import { blurHashOf } from "../cards/cardArtwork";
 import { FOCUS_ZOOM, imagePixels } from "../cards/imagePixels";
@@ -14,7 +16,8 @@ import { FOCUS_ZOOM, imagePixels } from "../cards/imagePixels";
  * chaîne sur une fiche pauvre.
  */
 
-const BACKDROP_WIDTH = 1920;
+/** Lite : 960 (`backdropWidthFor`, tv-core) — un fond sous ses voiles. */
+const BACKDROP_WIDTH = backdropWidthFor(RENDER_TIER, 1920);
 /** Le logo tient dans 680 × 210 points. */
 const LOGO_HEIGHT = imagePixels(210);
 /** La vignette d'épisode : 460 points de large, agrandie au focus. */

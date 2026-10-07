@@ -49,6 +49,11 @@ internal class RenderTierStore(context: Context) {
       .apply()
   }
 
+  /** Le niveau décidé au lancement précédent (le budget mémoire part de lui
+   *  avant que le JS ne décide : `memory/LiteMemory`). */
+  val lastTier: String?
+    get() = prefs.getString(KEY_LAST_TIER, null)
+
   fun saveDecision(tier: String, reason: String) {
     prefs.edit().putString(KEY_LAST_TIER, tier).putString(KEY_LAST_REASON, reason).apply()
   }

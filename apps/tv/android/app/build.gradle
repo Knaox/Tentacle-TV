@@ -118,6 +118,13 @@ if (project.hasProperty('tentaclePerfApp')) {
 } else if (project.hasProperty('tentacleProfileable')) {
     android.sourceSets.release.manifest.srcFile 'src/profileable/AndroidManifest.xml'
 }
+// - `-PtentacleHeapDump=1` (avec `-PtentaclePerfApp=1`) : l'app de mesure
+//   DÉBOGABLE, le seul moyen d'en capturer le tas Java (`am dumpheap`, banc
+//   Lite `memoire run --heap`). Pour l'analyse de la mémoire seulement : ART
+//   y tourne plus lentement, rien ne s'y mesure en temps.
+if (project.hasProperty('tentaclePerfApp') && project.hasProperty('tentacleHeapDump')) {
+    android.buildTypes.release.debuggable = true
+}
 
 dependencies {
     implementation("com.facebook.react:react-android")

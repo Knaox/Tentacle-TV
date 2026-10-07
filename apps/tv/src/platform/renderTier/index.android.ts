@@ -6,3 +6,4 @@ export {
   useRenderTierState,
 } from "../androidtv/renderTier/tierNative";
 export { changeRenderTierMode, reloadNavigationState } from "../androidtv/renderTier/tierReload";
+export { useReleaseHiddenImages } from "../androidtv/renderTier/tierMemory";

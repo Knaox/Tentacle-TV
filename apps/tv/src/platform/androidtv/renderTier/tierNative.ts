@@ -31,6 +31,7 @@ interface DeviceNativeModule {
   returnState?: string;
   report(tier: string, reason: string, detail: string | null): void;
   setModeAndReload(mode: string, returnState: string | null): void;
+  releaseHiddenImages?(why: string): void;
 }
 
 export const deviceNative = NativeModules.TentacleDevice as DeviceNativeModule | undefined;
