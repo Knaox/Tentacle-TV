@@ -235,6 +235,18 @@ export function resetSocketSession(): void {
   teardown();
 }
 
+/**
+ * La session n'a finalement PAS changé (Apple TV : l'échange des profils n'a
+ * pas abouti) : la connexion fermée par `resetSocketSession` reprend avec ce
+ * jeton, pour les consommateurs qui la tiennent encore — eux ne la reprendront
+ * pas, leur jeton n'ayant pas bougé. Sans consommateur, rien ne s'ouvre.
+ */
+export function resumeSocketSession(token: string): void {
+  authToken = token;
+  authClosed = false;
+  if (refCount > 0 && !ws && !reconnectTimer) connect();
+}
+
 /** Envoie un message (false si le socket n'est pas ouvert). */
 export function sendSocketMessage(msg: WsClientMessage): boolean {
   if (ws?.readyState !== WebSocket.OPEN) return false;

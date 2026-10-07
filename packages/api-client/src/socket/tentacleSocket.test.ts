@@ -140,4 +140,29 @@ describe("tentacleSocket", () => {
     release();
     vi.useRealTimers();
   });
+
+  it("une session qui n'a finalement pas changé reprend sa connexion avec le même jeton", () => {
+    socket.setWsBackendUrl("http://backend.test");
+    const held = socket.acquireSocket("jeton-jumelage");
+    const first = FakeWebSocket.instances[0];
+    first.readyState = FakeWebSocket.OPEN;
+    first.onopen?.();
+
+    socket.resetSocketSession(); // l'échange commence : plus rien avec ce jeton
+    expect(FakeWebSocket.instances).toHaveLength(1);
+
+    socket.resumeSocketSession("jeton-jumelage"); // l'échange n'a pas abouti
+    const second = FakeWebSocket.instances[1];
+    expect(second).toBeDefined();
+    second.readyState = FakeWebSocket.OPEN;
+    second.onopen?.();
+    expect(second.sent[0]).toBe(JSON.stringify({ type: "auth", token: "jeton-jumelage" }));
+    held();
+  });
+
+  it("sans consommateur, la reprise n'ouvre rien", () => {
+    socket.setWsBackendUrl("http://backend.test");
+    socket.resumeSocketSession("jeton");
+    expect(FakeWebSocket.instances).toHaveLength(0);
+  });
 });
