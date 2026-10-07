@@ -1,7 +1,6 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import Fastify from "fastify";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
-import { tmpdir } from "os";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 
 /**
@@ -10,12 +9,17 @@ import { join } from "path";
  * publics restent ; l'assistant reste tant que l'installation n'est pas
  * finie ; la commande `tentacle web` l'emporte sur la variable et la rallume.
  */
-const DATA = mkdtempSync(join(tmpdir(), "tentacle-webui-"));
-vi.mock("../services/dataDir", () => ({ DATA_ROOT: DATA }));
+vi.mock("../services/dataDir", async () => {
+  const { mkdtempSync } = await import("fs");
+  const { tmpdir } = await import("os");
+  const { join } = await import("path");
+  return { DATA_ROOT: mkdtempSync(join(tmpdir(), "tentacle-webui-")) };
+});
 
-const { parseWebUiSwitch, resolveWebUi, webUiBlocks, WEB_UI_OVERRIDE_FILE, readOverrideFile } = await import("./webUi");
-const { registerStaticClients } = await import("./staticClients");
-const { runWebCommand } = await import("../cli/webUiCommand");
+import { parseWebUiSwitch, readOverrideFile, resolveWebUi, webUiBlocks, WEB_UI_OVERRIDE_FILE } from "./webUi";
+import { registerStaticClients } from "./staticClients";
+import { runWebCommand } from "../cli/webUiCommand";
+import { DATA_ROOT as DATA } from "../services/dataDir";
 
 const WEB = join(DATA, "web");
 const TV = join(DATA, "tv");

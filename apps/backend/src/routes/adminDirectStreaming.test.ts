@@ -4,7 +4,7 @@
  * vide (clients d'avant) la laisse telle quelle.
  */
 import Fastify from "fastify";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({ config: new Map<string, string>() }));
 vi.mock("../services/configStore", () => ({
@@ -24,7 +24,9 @@ vi.mock("../services/configStore", () => ({
 import { adminDirectStreamingRoutes } from "./adminDirectStreaming";
 
 const app = Fastify();
-await app.register(adminDirectStreamingRoutes);
+beforeAll(async () => {
+  await app.register(adminDirectStreamingRoutes);
+});
 const put = (payload: object) => app.inject({ method: "PUT", url: "/direct-streaming", payload });
 
 beforeEach(() => h.config.clear());
