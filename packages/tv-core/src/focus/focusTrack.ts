@@ -39,6 +39,22 @@ export const EMPTY_FOCUS_TRACK: FocusTrack = Object.freeze({ current: null, last
 /** Au plus autant de clés tenues : une perte jamais annoncée ne s'accumule pas. */
 const MAX_HELD = 4;
 
+/**
+ * Une prise de focus DE PASSAGE : annoncée alors qu'une AUTRE clé, encore
+ * montée, tient le focus sans en avoir annoncé la perte (`held` du suivi
+ * d'AVANT cette prise). C'est le focus qu'Android donne un instant au premier
+ * focalisable de la fenêtre — la loupe du rail — pendant que l'élément posé à
+ * sa création (l'entrée de l'accueil, le héros) s'attache, puis qu'il lui
+ * reprend : ce n'est pas l'utilisateur, la navigation ne s'ouvre pas pour lui.
+ *
+ * Sur tvOS, l'ancien annonce toujours sa perte AVANT la prise du nouveau : une
+ * clé encore tenue au moment d'une prise ne peut être qu'une clé démontée sans
+ * perte annoncée, que `isMounted` écarte — jamais un passage.
+ */
+export function isPassingFocus(track: FocusTrack, key: string, isMounted: (key: string) => boolean): boolean {
+  return track.held.some((held) => held !== key && isMounted(held));
+}
+
 /** Le suivi après la prise (`focused`) ou la perte du focus par `key`. */
 export function trackFocus(track: FocusTrack, key: string, focused: boolean): FocusTrack {
   if (focused) {

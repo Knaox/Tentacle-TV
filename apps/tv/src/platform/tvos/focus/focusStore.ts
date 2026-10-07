@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { findNodeHandle, type View } from "react-native";
-import { EMPTY_FOCUS_TRACK, trackFocus, type FocusTrack } from "@tentacle-tv/tv-core";
+import { EMPTY_FOCUS_TRACK, isPassingFocus, trackFocus, type FocusTrack } from "@tentacle-tv/tv-core";
 import type { FocusBinder, FocusBinding } from "../../../redesign/focus/focusBinding";
 import { claimTvFocus } from "../../../hooks/useTvFocusClaim";
 import { SECTION_NEIGHBORS } from "./sectionNeighbors";
@@ -29,7 +29,13 @@ import { DISABLED_TARGET, targetEffects } from "./targetEffects";
  * (`sectionNeighbors.ts`) : figées avec la liaison.
  */
 
-export type FocusListener = (focusKey: string, focused: boolean) => void;
+/**
+ * `passing` : une prise DE PASSAGE (tv-core `isPassingFocus`) — Android la
+ * donne un instant au premier focalisable pendant qu'un élément déjà annoncé
+ * s'attache ; jamais sur tvOS. Ce qui s'ouvre au focus (la navigation) ne
+ * s'ouvre pas pour elle.
+ */
+export type FocusListener = (focusKey: string, focused: boolean, passing: boolean) => void;
 export type NodeListener = (focusKey: string, node: View | null) => void;
 
 /** Ce que l'intégration peut ajouter à une clé : props natives, garde anti-clic
@@ -98,8 +104,9 @@ export function createFocusStore(): FocusStore {
   };
 
   const changed = (key: string, focused: boolean) => {
+    const passing = focused && isPassingFocus(track, key, (held) => nodes.has(held));
     track = trackFocus(track, key, focused);
-    for (const listener of [...listeners]) listener(key, focused);
+    for (const listener of [...listeners]) listener(key, focused, passing);
   };
 
   const binder: FocusBinder = (key, form) => {
