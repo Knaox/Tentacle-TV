@@ -7,8 +7,6 @@ describe("le profil de montage", () => {
       rowTails: "eager",
       fitRowHeads: false,
       retireOffscreenRows: false,
-      stageSearchRows: false,
-      recycleSearchCards: false,
       gridDrawDistance: 1100,
       gridActiveDrawDistance: 1100,
       gridWidenStep: 1100,
@@ -23,8 +21,6 @@ describe("le profil de montage", () => {
     expect(lite.rowTails).toBe("demanded");
     expect(lite.fitRowHeads).toBe(true);
     expect(lite.retireOffscreenRows).toBe(true);
-    expect(lite.stageSearchRows).toBe(true);
-    expect(lite.recycleSearchCards).toBe(true);
     expect(lite.gridDrawDistance).toBeLessThan(normal.gridDrawDistance);
     expect(lite.episodes.windowSize).toBeLessThan(normal.episodes.windowSize);
     expect(lite.episodes.initialNumToRender).toBeLessThan(normal.episodes.initialNumToRender);

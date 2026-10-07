@@ -89,10 +89,9 @@ function createRowStager(tails: StagingTails): RowStager & { dispose(): void } {
 
 const RowStageContext = createContext<RowStager | null>(null);
 
-/** L'échelonnement des rangées d'une page — rien là où le profil ne le
- *  demande pas, ni quand la page ne le veut pas (`enabled`). */
-export function RowStageProvider({ enabled = true, children }: { enabled?: boolean; children: ReactNode }) {
-  const stager = useMemo(() => (RENDER.stagedRows && enabled ? createRowStager(mountProfile().rowTails) : null), [enabled]);
+/** L'échelonnement des rangées d'une page — rien là où le profil ne le demande pas. */
+export function RowStageProvider({ children }: { children: ReactNode }) {
+  const stager = useMemo(() => (RENDER.stagedRows ? createRowStager(mountProfile().rowTails) : null), []);
   useEffect(() => () => stager?.dispose(), [stager]);
   return <RowStageContext.Provider value={stager}>{children}</RowStageContext.Provider>;
 }

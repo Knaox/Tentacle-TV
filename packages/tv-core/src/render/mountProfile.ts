@@ -2,7 +2,7 @@
  * Le PROFIL DE MONTAGE d'un niveau de rendu (`device/renderTier`) : combien
  * une page monte de vues natives, et quand. Le pendant du profil de rendu
  * (`renderProfile`, ce que les vues DESSINENT) pour ce qui se MONTE : les
- * rangées des pages (accueil, « Pour vous », fiche, recherche), la grille
+ * rangées des pages (accueil, « Pour vous », fiche), la grille
  * des bibliothèques, les épisodes d'une saison.
  *
  * Règle commune : le montage ne se VOIT pas. Une carte hors de l'écran n'est
@@ -39,13 +39,6 @@ export interface MountProfile {
    *  revient aussi à sa TÊTE : sa queue se démonte, et se remontera si on la
    *  parcourt de nouveau. */
   retireOffscreenRows: boolean;
-  /** Les rangées de résultats de la recherche montées par échelons, comme
-   *  celles de l'accueil (là où le profil de rendu échelonne). */
-  stageSearchRows: boolean;
-  /** Les cartes des résultats de la recherche RECYCLÉES d'une frappe à
-   *  l'autre (clées par leur place) : une frappe redessine les cartes au lieu
-   *  d'en monter d'autres (~175 vues natives créées par frappe, mesuré). */
-  recycleSearchCards: boolean;
   /** Ce que la grille d'affiches garde montée au-delà de l'écran, en points,
    *  de chaque côté (`drawDistance` de FlashList : au chargement elle monte
    *  l'écran, puis s'étend jusqu'au triple, puis revient à cette valeur). */
@@ -68,8 +61,6 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     rowTails: "eager",
     fitRowHeads: false,
     retireOffscreenRows: false,
-    stageSearchRows: false,
-    recycleSearchCards: false,
     // Deux lignes d'avance de chaque côté (une ligne de six affiches : ~494 points).
     gridDrawDistance: 1100,
     gridActiveDrawDistance: 1100,
@@ -82,8 +73,6 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     rowTails: "demanded",
     fitRowHeads: true,
     retireOffscreenRows: true,
-    stageSearchRows: true,
-    recycleSearchCards: true,
     // L'ouverture : l'écran seul (à 0, FlashList ne s'étend pas au triple) —
     // la première ligne et le haut de la deuxième.
     gridDrawDistance: 0,

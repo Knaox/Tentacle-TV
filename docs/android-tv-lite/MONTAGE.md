@@ -17,7 +17,6 @@ hors de la vue.
 | Rangées | `redesign/rows/rowStage.tsx`, `MediaRow.tsx` | têtes, queues à la demande, retour à la tête |
 | Grille | `redesign/screens/library/PosterGrid.tsx`, `useGridAhead.ts` | avance de FlashList à l'ouverture, puis élargie |
 | Épisodes | `redesign/screens/detail/EpisodeRail.tsx` | fenêtre de la FlatList |
-| Recherche | `redesign/screens/search/SearchResults.tsx` | rangées échelonnées, cartes recyclées |
 
 ## Les règles du Lite
 
@@ -26,7 +25,6 @@ hors de la vue.
 | `rowTails` | `eager` | `demanded` | La queue d'une rangée (au-delà de la tête) ne se monte que quand le focus quitte sa PREMIÈRE carte, deux cartes par image. Descendre de rangée en rangée ne monte aucune queue. |
 | `fitRowHeads` | non (8) | oui | La tête est ce que l'écran montre, même en partie : 5 vignettes 16:9, 7 affiches. |
 | `retireOffscreenRows` | non | oui | Une rangée remise au début (`rowRewindPort` : sortie de l'écran, page quittée) revient à sa tête, à l'image suivante, jamais sous le focus. |
-| `stageSearchRows`, `recycleSearchCards` | non | oui | Les résultats sont échelonnés comme l'accueil ; leurs cartes sont clées par leur place, donc une frappe redessine au lieu de remonter. |
 | `gridDrawDistance` | 1 100 | 0 | « Films » s'ouvre sur l'écran seul. À 0, FlashList ne s'étend pas au triple. |
 | `gridActiveDrawDistance` / `gridWidenStep` / `gridWidenDelayMs` | 1 100 / — / — | 600 / 200 / 700 | 700 ms après l'arrivée des titres, ou au premier pas hors de la première ligne, l'avance passe à une ligne entière, par demi-ligne et par image. Avec BAS tenu, la ligne suivante est donc toujours montée. |
 | `episodes` | 6 / 5 / 10 | 4 / 3 / 2 | `initialNumToRender` / `windowSize` / `maxToRenderPerBatch` de la liste des épisodes. |
