@@ -2,10 +2,36 @@
 
 *English version: [../remote-access.md](../remote-access.md).*
 
-Tentacle vous guide dans **Administration › Accès à distance** (et dans l'étape facultative de l'assistant).
-Trois étapes : ce qui reçoit Internet, les ports de la box, et un test mené **depuis l'extérieur**.
+Tentacle vous guide dans **Administration › Accès à distance** (et dans l'étape facultative de l'assistant) —
+le même panneau, les mêmes règles aux deux endroits.
+
+## Privé ou public
+
+- **Privé** (le défaut) : seuls les appareils de la maison joignent Tentacle, par son adresse privée —
+  *l'adresse de ce serveur sur votre réseau*, par exemple `http://192.168.1.20:3000`, proposée d'après l'adresse
+  par laquelle vous avez ouvert la page.
+- **Public** : vos proches le joignent de chez eux, par l'adresse publique de votre box (affichée, détectée
+  automatiquement).
+
+L'interrupteur **Accès depuis l'extérieur** décide. **Coupé, rien n'est publié** : ni le lien public de Tentacle
+ni l'adresse publique de Jellyfin ne sont donnés aux applications, et la lecture hors de la maison passe par
+Tentacle ; rien d'autre ne change. Un serveur qui publiait déjà un lien public avant cette version est allumé
+une fois, au démarrage : rien ne change pour lui. L'adresse publique est celle vue par le dernier test
+d'ouverture, sinon demandée à la page `cdn-cgi/trace` de Cloudflare (IPv4, sans compte, au plus toutes les dix
+minutes) ; `REMOTE_CHECK_URL=off` coupe les deux.
+
+Ensuite : ce qui reçoit Internet, les ports de la box, la lecture directe hors de la maison (facultative), et un
+test mené **depuis l'extérieur**.
+
+**Lecture directe** : l'adresse privée de Jellyfin suffit à l'allumer (l'installation l'allume à la maison). Son
+**adresse publique est facultative** : sans elle, hors de la maison, la lecture passe par Tentacle — seul le
+port de Tentacle est à ouvrir.
 
 ## 1. Un mandataire HTTPS devant (conseillé)
+
+**Facultatif.** Caddy, Traefik et Nginx ne sont **ni inclus ni installés** par Tentacle : n'en choisissez un que
+si vous l'avez déjà ; sinon, gardez « Sans mandataire » (le défaut). Un mandataire est un programme qui reçoit les
+visites d'Internet et les transmet à Tentacle en ajoutant le HTTPS.
 
 Les piles Docker **n'embarquent pas de mandataire** : vous en avez sans doute déjà un (Nginx Proxy Manager,
 Caddy, Traefik…), et Tentacle se range simplement derrière. Si vous n'en avez pas encore, Caddy est le plus
@@ -147,7 +173,7 @@ bord › Réseau), sinon toutes les connexions semblent venir du mandataire. Pou
 
 | Derrière un mandataire | Sans mandataire |
 |---|---|
-| **443** (HTTPS) et **80** (redirection vers HTTPS, renouvellement des certificats) → la machine du mandataire | le port de Tentacle (`TENTACLE_PORT`, 3000) → cette machine ; celui de Jellyfin (8096) seulement pour la lecture directe |
+| **443** (HTTPS) et **80** (redirection vers HTTPS, renouvellement des certificats) → la machine du mandataire | le port de Tentacle (`TENTACLE_PORT`, 3000) → cette machine ; celui de Jellyfin (`JELLYFIN_PORT`, 8096) seulement pour la lecture directe hors de la maison — le panneau donne les deux avec leurs vrais numéros |
 
 Donnez au serveur une **adresse fixe** dans la box (réservation DHCP). La page d'administration renvoie aux
 guides officiels de Swisscom, Sunrise, Salt, Free, Orange et Bouygues (vérifiés le 2026-10-06 ; le site de SFR

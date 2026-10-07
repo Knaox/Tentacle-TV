@@ -2,10 +2,36 @@
 
 *Version française : [fr/remote-access.md](fr/remote-access.md).*
 
-Tentacle guides you in **Administration › Remote access** (and in the optional wizard step). Three steps:
-what faces the Internet, the router ports, and a test run **from the outside**.
+Tentacle guides you in **Administration › Remote access** (and in the optional wizard step) — the same panel
+and the same rules in both places.
+
+## Private or public
+
+- **Private** (the default): only the devices at home reach Tentacle, through its private address — *this
+  server's address on your network*, for example `http://192.168.1.20:3000`, suggested from the address you
+  opened the page with.
+- **Public**: your family and friends reach it from their place, through your router's public address (shown,
+  detected automatically).
+
+The **Access from outside** switch decides. **Off, nothing is published**: neither Tentacle's public link nor
+Jellyfin's public address is given to the apps, and playback away from home goes through Tentacle; nothing else
+changes. A server that already published a public link before this version is switched on once, at startup, so
+nothing changes for it. Its public address is the one seen by the last port test, otherwise asked to
+Cloudflare's `cdn-cgi/trace` page (IPv4, no account, at most every ten minutes); `REMOTE_CHECK_URL=off` turns
+both off.
+
+Then: what faces the Internet, the router ports, direct play away from home (optional), and a test run **from
+the outside**.
+
+**Direct play**: the private address of Jellyfin is enough to turn it on (setup turns it on at home). Its
+**public address is optional**: without it, away from home, playback goes through Tentacle — only Tentacle's
+port needs opening.
 
 ## 1. Put an HTTPS reverse proxy in front (recommended)
+
+**Optional.** Caddy, Traefik and Nginx are **neither included nor installed** by Tentacle: only pick one if you
+already have it; otherwise keep "No proxy" (the default). A reverse proxy is a program that receives visits from
+the Internet and passes them to Tentacle, adding HTTPS.
 
 The Docker stacks **do not ship a reverse proxy**: you probably already have one (Nginx Proxy Manager, Caddy,
 Traefik…), and Tentacle simply goes behind it. If you have none yet, Caddy is the simplest to install (a system
@@ -146,7 +172,7 @@ every connection seems to come from the proxy. For Tentacle, see [Trusted proxie
 
 | Behind a proxy | Without a proxy |
 |---|---|
-| **443** (HTTPS) and **80** (redirect to HTTPS, certificate renewals) → the proxy's machine | Tentacle's port (`TENTACLE_PORT`, 3000) → this machine; Jellyfin's (8096) only for direct play |
+| **443** (HTTPS) and **80** (redirect to HTTPS, certificate renewals) → the proxy's machine | Tentacle's port (`TENTACLE_PORT`, 3000) → this machine; Jellyfin's (`JELLYFIN_PORT`, 8096) only for direct play away from home — the panel shows both with their real numbers |
 
 Give the server a **fixed address** in the router (DHCP reservation). The admin page links to the official
 guides of Swisscom, Sunrise, Salt, Free, Orange and Bouygues (checked on 2026-10-06; SFR's site could not be
