@@ -117,8 +117,7 @@ export async function runPlayCost({ avd, option }) {
     const player = createPlayer({ device, backendPort: BACKEND_PORT, host: { measuring: (fn) => fn() } });
     await player.prepareApk(apk);
     const applyFixtures = (sets) => player.applyFixtures(sets);
-    if (tier) device.setTier(tier);
-    log(`appareil : ${device.describe()} · ${avd ?? device.serial} · freinage ${spec} · niveau ${tier ?? "auto"} · charge du Mac ${hostLoad()}`);
+    log(`appareil : ${device.describe()} · ${avd ?? device.serial} · freinage ${spec} · charge du Mac ${hostLoad()}`);
     const results = await measurePlayCost({ device, applyFixtures, sets, spec, windowS: Number(option("window", "20")), dir, log });
     fs.writeFileSync(path.join(dir, "resume.json"), JSON.stringify({ avd, throttle: spec, date: new Date().toISOString(), results }, null, 1));
     log(`→ ${dir}`);
@@ -154,7 +153,9 @@ export async function runRoute({ avd, option, flag }) {
   await withLiteBench({ apk: null, debugApk }, async (device, proxy) => {
     const capture = createCapture(device.serial, PACKAGE);
     const player = createPlayer({ device, backendPort: BACKEND_PORT, host: { measuring: (fn) => fn() } });
-    log(`appareil : ${device.describe()} · ${avd ?? device.serial} · freinage ${spec} · charge du Mac ${hostLoad()}`);
+    // Avant l'installation et l'échauffement : chaque lancement lit le niveau forcé.
+    if (tier) device.setTier(tier);
+    log(`appareil : ${device.describe()} · ${avd ?? device.serial} · freinage ${spec} · niveau ${tier ?? "auto"} · charge du Mac ${hostLoad()}`);
     await player.prepareApk(apk);
     if (!flag("no-warmup")) await player.warmup(scenarios);
     // Le freinage ne couvre que la MESURE : l'installation et l'échauffement restent rapides.
