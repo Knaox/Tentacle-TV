@@ -25,6 +25,15 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /** Rétablit un appareil en adb réseau : un « offline » reste offline tant
  *  qu'on ne le déconnecte pas ; on attend qu'il se redise « device » (30 s au
  *  plus). Aucune touche. */
+/** Les `adb reverse` posés par appareil : une reconnexion les perd (ils
+ *  vivent avec la connexion) — sans eux, l'app ne joint plus le faux backend. */
+const REVERSES = new Map();
+
+export function rememberReverse(serial, port) {
+  if (!REVERSES.has(serial)) REVERSES.set(serial, new Set());
+  REVERSES.get(serial).add(port);
+}
+
 export function reconnectNetwork(serial) {
   const quiet = { stdio: "ignore", timeout: 20_000 };
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -36,7 +45,10 @@ export function reconnectNetwork(serial) {
     try {
       execFileSync(ADB, ["connect", serial], quiet);
       const state = execFileSync(ADB, ["-s", serial, "get-state"], { encoding: "utf8", timeout: 10_000 }).trim();
-      if (state === "device") return true;
+      if (state === "device") {
+        for (const port of REVERSES.get(serial) ?? []) execFileSync(ADB, ["-s", serial, "reverse", `tcp:${port}`, `tcp:${port}`], quiet);
+        return true;
+      }
     } catch {
       // pas encore revenu
     }
@@ -121,6 +133,7 @@ export function createDevice(serial = process.env.ANDROID_SERIAL ?? "emulator-55
       shell(`cat ${remote} | run-as ${PACKAGE} sh -c 'cat > databases/RKStorage'`);
       shell(`rm -f ${remote}`);
       adb(["reverse", `tcp:${port}`, `tcp:${port}`]);
+      rememberReverse(serial, port);
     },
 
     /** Le code compilé d'avance par le profil de l'APK (Baseline Profile),

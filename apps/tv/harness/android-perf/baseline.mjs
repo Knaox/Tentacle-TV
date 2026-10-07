@@ -18,7 +18,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { CACHE, keysDex, startBackend } from "./lib/benchSetup.mjs";
-import { PACKAGE, createDevice, reconnectNetwork, sleep } from "./lib/device.mjs";
+import { PACKAGE, createDevice, reconnectNetwork, rememberReverse, sleep } from "./lib/device.mjs";
 import { ForegroundError, resumedPackage } from "./lib/keyGuard.mjs";
 import { createHostPolicy } from "./lib/host.mjs";
 import { startImageProxy } from "./lib/imageProxy.mjs";
@@ -69,6 +69,7 @@ async function withBench(fn) {
   try {
     if (flag("keep-session")) {
       device.adb(["reverse", `tcp:${PORT}`, `tcp:${PORT}`]);
+      rememberReverse(device.serial, PORT);
       if (option("apk")) await player.prepareApk(option("apk"));
       else device.setPerf(true);
     } else {
