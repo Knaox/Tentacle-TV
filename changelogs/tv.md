@@ -48,6 +48,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - L'écran de jumelage indique où saisir le code sur le téléphone : Profil › Appareils et TV
 - La rangée des titres entamés s'appelle « Là où vous en étiez »
 - **Hors ligne** : l'écran distingue l'absence de réseau d'un serveur Tentacle hors ligne, et l'accueil dit quand Jellyfin est injoignable
+- **Les nouveaux ajouts arrivent en direct sur l'accueil**, même après le passage aux profils
 
 ### EN
 - **"Skip Intro" and "Skip Credits" accept a click** even when your finger slides slightly on the touch surface: no more accidental seeking
@@ -64,6 +65,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - The pairing screen tells you where to type the code on your phone: Profile › Devices and TVs
 - The in-progress row is now called "Where you left off"
 - **Offline**: the offline screen tells a missing network apart from an offline Tentacle server, and the home screen says when Jellyfin can't be reached
+- **New additions arrive live on Home**, even after switching to profiles
 
 ## [atv-1.10.0]
 <!-- Bloc Apple TV (TestFlight et App Store Connect, 4000 caractères). Pas de bloc nu : Android TV ne part pas en 1.10.0, et le pré-vol ne lui demande ses notes que s'il est livré. Réécrit pour le second TestFlight 1.10.0 (retours d'essai), sans les fonctions des extensions. -->

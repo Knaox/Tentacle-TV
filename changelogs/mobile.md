@@ -40,6 +40,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Famille** : rejoindre une famille ou changer son code PIN s'annonce par une coche verte, et non plus par un triangle rouge
 - **Hors ligne** : l'application y passe directement, sans fenêtre bloquante ; un message temporaire dit si l'appareil n'a pas de réseau, si le serveur Tentacle est hors ligne ou si Jellyfin est injoignable
 - La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
+- **Les nouveaux ajouts arrivent en direct** sur l'accueil, et les rangées se mettent à jour sans recharger toutes leurs affiches
 
 ### EN
 - **"Devices and TVs" now has its own spot in Profile, right under Account**: one tap and you type the TV's code; your paired devices follow, ready to revoke
@@ -50,6 +51,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Family**: joining a family or changing your PIN now shows a green check, no longer a red triangle
 - The in-progress row is now called "Where you left off"
 - **Offline**: the app goes straight to offline mode, with no blocking screen; a short message says whether the device has no network, the Tentacle server is offline, or Jellyfin can't be reached
+- **New additions arrive live** on Home, and rows update without reloading all their posters
 
 ## [1.10.3]
 <!-- Bloc nu : Google Play (500 caractères), qui a déjà la 1.10.2. L'App Store, resté à la 1.8.2, a son bloc ios-. -->
