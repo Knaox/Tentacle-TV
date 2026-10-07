@@ -10,8 +10,10 @@ import type { CheckScheme, CheckService, CheckVerdict } from "./checkProtocol";
  * qu'un plan B documenté, pour qui ne peut rien ouvrir (CGNAT) : aucune
  * intégration ici.
  *
- * Les adresses publiques elles-mêmes restent celles des Services (`public_url`
- * et l'adresse publique de Jellyfin) : ce contrat les lit, il ne les double pas.
+ * Les adresses publiques elles-mêmes restent les clés de 1.23.0 (`public_url`,
+ * `jellyfin_public_url`, `jellyfin_private_url`), lues et écrites par leurs
+ * routes d'avant (`/api/admin/public-url`, `/api/admin/direct-streaming`) :
+ * ce contrat les lit, il ne les double pas. Ce qui est réglé est publié.
  *
  * MIROIR : recopié octet pour octet dans `apps/backend/src/remoteAccess/`, à
  * côté de `checkProtocol.ts`. On le modifie ICI, puis :
@@ -26,17 +28,14 @@ export type ReverseProxyKind = "caddy" | "traefik" | "other" | "none";
 
 export interface RemoteAccessSettings {
   /**
-   * « Accès depuis l'extérieur ». Coupé (le défaut d'une installation neuve) :
-   * RIEN n'est publié — ni le lien public de Tentacle (`addresses.public` ;
-   * `publicUrl`, que le jumelage des TV exige, donne l'adresse PRIVÉE), ni
-   * l'adresse publique de Jellyfin (la lecture hors de la maison passe par
-   * Tentacle) — et aucune autre fonction n'est touchée. Allumé : ce qui est
-   * réglé est publié. Un serveur d'avant qui avait déjà un lien public est
-   * allumé une fois au démarrage (`exposureDefault.ts`) : rien ne change pour lui.
+   * CONSTAT, plus un réglage : une adresse publique est réglée (le lien de
+   * Tentacle, ou celle de Jellyfin pour la lecture directe), donc publiée —
+   * comme en 1.23.0. Envoyé dans un `PUT`, il est accepté et ignoré (les pages
+   * d'administration de la première 1.24.0 avaient un interrupteur).
    */
   enabled: boolean;
   proxy: ReverseProxyKind;
-  /** L'adresse de Tentacle sur le réseau local (ex. `http://192.168.1.20:3000`). */
+  /** L'adresse de Tentacle sur le réseau local (ex. `http://192.168.1.20:3000`), réglée. */
   localUrl: string | null;
   /** La box choisie dans les guides (`routerGuides.ts`), pour la rouvrir telle quelle. */
   routerId: string | null;
@@ -102,6 +101,28 @@ export interface RemoteAccessState {
   /** Le service de test : son adresse, ou `null` s'il est coupé. */
   checkServiceUrl: string | null;
   lastCheck: RemoteCheckReport | null;
+  /**
+   * L'adresse de Tentacle par laquelle CETTE requête l'a joint, si elle vient
+   * du réseau local — utile là où l'adresse de la page ne dit rien (application
+   * de bureau, page ouverte par un domaine). Absent : serveur d'avant.
+   */
+  derivedLocalUrl?: string | null;
+  /** Les CorsHosts de Jellyfin, vérifiés (et complétés) à la lecture de cet état. Absent : serveur d'avant. */
+  jellyfinCors?: JellyfinCorsReport;
+}
+
+/**
+ * Les `CorsHosts` de Jellyfin, tenus à jour par Tentacle : `open`, Jellyfin
+ * accepte toutes les origines (liste vide ou `*`, jamais touchée) ; `ready`,
+ * les nôtres y étaient ; `updated`, ajoutées à l'instant ; `unreachable`,
+ * Jellyfin n'a pas répondu ; `not_configured`, pas de Jellyfin relié.
+ */
+export interface JellyfinCorsReport {
+  status: "open" | "ready" | "updated" | "unreachable" | "not_configured";
+  /** Les origines de Tentacle que Jellyfin doit accepter. */
+  origins: string[];
+  /** Celles que ce passage vient d'ajouter. */
+  added: string[];
 }
 
 /**

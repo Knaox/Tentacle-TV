@@ -16,6 +16,9 @@ vi.mock("../services/configStore", () => ({
   getPublicUrl: () => "https://tv.example.com",
   getJellyfinUrl: () => undefined,
 }));
+vi.mock("../services/jellyfinCorsSync", () => ({
+  syncJellyfinCors: async () => ({ status: "ready", origins: ["https://tv.example.com"], added: [] }),
+}));
 vi.mock("./remoteCheck", async (original) => ({
   ...(await original<typeof import("./remoteCheck")>()),
   runRemoteCheck: async () => {
@@ -47,6 +50,7 @@ describe("routes de l'accès à distance", () => {
       publicUrl: "https://tv.example.com",
       checkServiceUrl: "https://check.tentacletv.app",
       lastCheck: null,
+      jellyfinCors: { status: "ready", origins: ["https://tv.example.com"], added: [] },
     });
   });
 

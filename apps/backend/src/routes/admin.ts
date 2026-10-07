@@ -19,6 +19,7 @@ import { adminServerLinksRoutes } from "./adminServerLinks";
 import { adminDirectStreamingRoutes } from "./adminDirectStreaming";
 import { adminServerUpdateRoutes } from "./adminServerUpdate";
 import { remoteAccessRoutes } from "../remoteAccess/remoteAccessRoutes";
+import { syncJellyfinCors } from "../services/jellyfinCorsSync";
 
 export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAdmin);
@@ -81,46 +82,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ message: "URL invalide" });
     }
     await setConfigValue("public_url", parsed.data.publicUrl.replace(/\/$/, ""));
+    // Le nouveau lien public entre dans les CorsHosts de Jellyfin (jamais bloquant).
+    const origin = typeof request.headers.origin === "string" ? request.headers.origin : undefined;
+    await syncJellyfinCors({ requestOrigin: origin, trustRequestOrigin: true, logger: request.log });
     return { success: true };
-  });
-
-  /** POST /api/admin/test-direct-streaming — Test connectivity to Jellyfin URLs from the server. */
-  app.post("/test-direct-streaming", async (request) => {
-    const body = z.object({
-      publicUrl: z.string().url().optional().or(z.literal("")),
-      privateUrl: z.string().url().optional().or(z.literal("")),
-    }).parse(request.body);
-
-    // Origin header to send so Jellyfin returns CORS headers (server-to-server fetch has no Origin by default)
-    const testOrigin = (request.headers.origin as string) || getPublicUrl() || "";
-
-    const test = async (url: string): Promise<{ ok: boolean; version?: string; error?: string; corsOk?: boolean }> => {
-      if (!url) return { ok: false, error: "URL vide" };
-      try {
-        const headers: Record<string, string> = {};
-        if (testOrigin) headers["Origin"] = testOrigin;
-        const res = await fetch(`${url.replace(/\/$/, "")}/System/Info/Public`, {
-          headers,
-          signal: AbortSignal.timeout(5000),
-        });
-        if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
-        const info = await res.json();
-
-        // Check if Jellyfin sends CORS headers (required for browser direct streaming)
-        const acao = res.headers.get("access-control-allow-origin");
-        const corsOk = acao === "*" || (!!acao && acao.length > 0);
-
-        return { ok: true, version: info.Version, corsOk };
-      } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : "Unreachable" };
-      }
-    };
-
-    const [pub, priv] = await Promise.all([
-      body.publicUrl ? test(body.publicUrl) : Promise.resolve(null),
-      body.privateUrl ? test(body.privateUrl) : Promise.resolve(null),
-    ]);
-
-    return { public: pub, private: priv };
   });
 };

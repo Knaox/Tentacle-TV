@@ -1,14 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import {
-  deleteConfigValue,
-  getDirectStreamingConfig,
-  getJellyfinApiKey,
-  getJellyfinUrl,
-  getPublicUrl,
-  setConfigValue,
-} from "../services/configStore";
-import { corsOriginsToInject, injectCorsHosts } from "../services/jellyfinCors";
+import { deleteConfigValue, getDirectStreamingConfig, getPublicUrl, setConfigValue } from "../services/configStore";
+import { originOf } from "../services/jellyfinCors";
+import { syncJellyfinCors } from "../services/jellyfinCorsSync";
 
 /**
  * La lecture directe (`/api/admin/direct-streaming`, sous `requireAdmin`) :
@@ -16,7 +10,41 @@ import { corsOriginsToInject, injectCorsHosts } from "../services/jellyfinCors";
  * PRIVÉE (réseau local) suffit à l'allumer ; la PUBLIQUE est facultative —
  * sans elle, hors de la maison, la lecture passe par Tentacle. Les mêmes
  * règles que l'étape « Accès à distance » de l'assistant.
+ *
+ * Les `CorsHosts` de Jellyfin suivent seuls (`jellyfinCorsSync.ts`) : à
+ * l'enregistrement et AVANT chaque test, nos origines y sont inscrites.
  */
+
+const originHeader = (value: unknown): string | undefined => (typeof value === "string" && value ? value : undefined);
+
+interface UrlProbe {
+  ok: boolean;
+  version?: string;
+  error?: string;
+  corsOk?: boolean;
+  /** Même origine que la page : un navigateur n'a besoin d'aucun CORS. */
+  sameOrigin?: boolean;
+}
+
+/** Jellyfin répond-il à cette adresse, et accepte-t-il l'origine donnée (CORS) ? */
+async function probe(url: string, origin: string | null): Promise<UrlProbe> {
+  if (!url) return { ok: false, error: "URL vide" };
+  try {
+    const res = await fetch(`${url.replace(/\/$/, "")}/System/Info/Public`, {
+      // Un appel de serveur à serveur n'a pas d'en-tête Origin : on pose celui de la page.
+      headers: origin ? { Origin: origin } : {},
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const info = (await res.json()) as { Version?: string };
+    const sameOrigin = origin !== null && originOf(url) === origin;
+    const acao = res.headers.get("access-control-allow-origin");
+    return { ok: true, version: info.Version, sameOrigin, corsOk: sameOrigin || (!!acao && acao.length > 0) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Unreachable" };
+  }
+}
+
 export const adminDirectStreamingRoutes: FastifyPluginAsync = async (app) => {
   /** GET /api/admin/direct-streaming — Read direct streaming settings. */
   app.get("/direct-streaming", async () => {
@@ -59,19 +87,31 @@ export const adminDirectStreamingRoutes: FastifyPluginAsync = async (app) => {
       await setConfigValue("jellyfin_private_url", body.privateUrl.replace(/\/$/, ""));
     }
 
-    // Injection CORS pour le direct streaming (non-bloquant)
-    const jellyfinUrl = getJellyfinUrl();
-    const apiKey = getJellyfinApiKey();
-    if (jellyfinUrl && apiKey && body.enabled) {
-      const urlsToInject = corsOriginsToInject(request.headers.origin as string | undefined, getPublicUrl());
-      try {
-        const result = await injectCorsHosts(jellyfinUrl, apiKey, urlsToInject, request.log);
-        if (result.added.length) request.log.info({ added: result.added }, "CORS hosts injected");
-      } catch (err) {
-        request.log.warn({ error: err }, "CORS injection failed (non-blocking)");
-      }
-    }
-
+    // Nos origines dans les CorsHosts de Jellyfin (jamais bloquant).
+    await syncJellyfinCors({ requestOrigin: originHeader(request.headers.origin), trustRequestOrigin: true, logger: request.log });
     return { success: true };
+  });
+
+  /**
+   * POST /api/admin/test-direct-streaming — Jellyfin répond-il aux adresses
+   * données, et accepte-t-il l'origine de cette page ? Les CorsHosts sont mis
+   * à jour AVANT la sonde : un CORS qui manquait est réparé, pas signalé.
+   */
+  app.post("/test-direct-streaming", async (request) => {
+    const body = z.object({
+      publicUrl: z.string().url().optional().or(z.literal("")),
+      privateUrl: z.string().url().optional().or(z.literal("")),
+    }).parse(request.body);
+
+    const pageOrigin = originHeader(request.headers.origin);
+    const cors = await syncJellyfinCors({ requestOrigin: pageOrigin, trustRequestOrigin: true, logger: request.log });
+    const testOrigin = originOf(pageOrigin) ?? originOf(getPublicUrl());
+
+    const [pub, priv] = await Promise.all([
+      body.publicUrl ? probe(body.publicUrl, testOrigin) : Promise.resolve(null),
+      body.privateUrl ? probe(body.privateUrl, testOrigin) : Promise.resolve(null),
+    ]);
+
+    return { public: pub, private: priv, cors };
   });
 };
