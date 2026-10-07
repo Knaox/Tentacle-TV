@@ -122,6 +122,7 @@ describe("le panneau de l'accès à distance", () => {
     expect(html).toContain("moreLabel");
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toContain("proxy_none_title");
+    expect(html).not.toContain('id="guide"');
     expect(html).not.toContain("noneWarning");
     // L'adresse publique de la box est située : il y a un lien public.
     expect(h.publicIpEnabled).toBe(true);
@@ -157,6 +158,8 @@ describe("le panneau de l'accès à distance", () => {
     expect(html).not.toContain("add_header Access-Control-Allow-Origin");
     expect(html).toContain('npmHintPath{"domain":"poulpy.example.ch","target":"http://192.168.1.20:3471","path":"/jellyfin","jellyfin":"http://192.168.1.50:8096"}');
     for (const key of ["portsSectionTitle", "checkSectionTitle", "planBTitle", "security_default"]) expect(html).toContain(key);
+    // Le guide écrit, dans l'administration, est rangé là aussi.
+    expect(html).toContain('id="guide"');
   });
 
   it("Caddy, Jellyfin sur son domaine : les en-têtes CORS de Tentacle sur Jellyfin", () => {

@@ -3,14 +3,13 @@ import { useServerCapability } from "@tentacle-tv/api-client";
 import { AdminSection } from "../admin/kit";
 import { SectionError, SectionSkeleton } from "../admin/services/SectionParts";
 import { AddressesForm } from "./AddressesForm";
-import { RemoteAccessGuide } from "./RemoteAccessGuide";
 import { usePublicIp, useRemoteAccess, useSaveRemoteAccess } from "./remoteAccessApi";
 import { RemoteGuide } from "./RemoteGuide";
 import { RemoteOverview } from "./RemoteOverview";
 
 /**
  * L'accès à distance — le MÊME composant pour la section d'administration
- * (`variant="admin"`, avec le guide au pied) et pour l'étape facultative de
+ * (`variant="admin"`, guide écrit compris) et pour l'étape facultative de
  * l'assistant d'installation (`"wizard"`). Dans l'ordre :
  *
  *  1. l'état en un coup d'œil, en lecture seule (à la maison, hors de la
@@ -19,7 +18,7 @@ import { RemoteOverview } from "./RemoteOverview";
  *     quelles : ce qui est réglé est publié, aucun interrupteur, aucun
  *     mandataire à choisir ;
  *  3. « En savoir plus », replié : mandataire et son exemple, ports de la
- *     box, vérification depuis Internet, plan B, sécurité.
+ *     box, vérification depuis Internet, plan B, sécurité, guide écrit.
  */
 export function RemoteAccessPanel({ variant = "admin" }: { variant?: "admin" | "wizard" }) {
   const query = useRemoteAccess();
@@ -53,7 +52,6 @@ export function RemoteAccessPanel({ variant = "admin" }: { variant?: "admin" | "
       <RemoteOverview state={state} publicIp={ip} />
       <AddressesForm variant={variant} />
       <RemoteGuide state={state} publicIp={{ report: publicIp.data, loading: publicIp.isPending }} save={save} variant={variant} onOpenChange={setGuideOpen} />
-      {variant === "admin" ? <RemoteAccessGuide /> : null}
     </>
   );
 }

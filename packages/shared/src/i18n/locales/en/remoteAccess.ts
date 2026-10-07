@@ -20,7 +20,7 @@ export default {
   copyFailed: "Copy failed: select the text.",
   sourceLink: "Source",
 
-  // ── Step 1: what faces the Internet ───────────────────────────────────
+  // ── The proxy: what faces the Internet ───────────────────────────────────
   step1Title: "Do you already have a reverse proxy?",
   recommended: "Recommended",
   proxy_caddy_title: "Caddy",
@@ -42,7 +42,7 @@ export default {
   publicUrlNone: "No public link is set yet: it is the address apps and invitations receive.",
   upstreamHost: "This server's address, as your proxy sees it",
   upstreamHostHint: "Its address on the local network, the one the proxy's machine reaches: a fixed address, preferably.",
-  snippetIntro: "To put in your proxy: one site per domain, websockets included. Its Let's Encrypt certificates arrive on their own once the router's ports 80 and 443 are forwarded to it (step 2).",
+  snippetIntro: "To put in your proxy: one site per domain, websockets included. Its Let's Encrypt certificates arrive on their own once the router's ports 80 and 443 are forwarded to it (see “Router ports”).",
   caddyHint: "Add this to your Caddyfile, then reload Caddy: it gets and renews the certificates on its own.",
   traefikHint: "A routes file for Traefik's file provider. Replace websecure and letsencrypt with the names of your HTTPS entry point and certificate resolver.",
   snippetCaddy: "Caddy",
@@ -52,7 +52,7 @@ export default {
   nginxCertHint: "Add your ssl_certificate and ssl_certificate_key lines: Nginx Proxy Manager sets them itself.",
   noneWarning: "Without HTTPS, what crosses the Internet is not encrypted. For later: a reverse proxy, or a private network like Tailscale (plan B, below).",
 
-  // ── Step 2: the router ports ──────────────────────────────────────────
+  // ── Router ports ──────────────────────────────────────────
   lanAddress: "This server's address on your network",
   lanAddressHint: "Give it a fixed address in the router (DHCP reservation): otherwise the forwarding will one day point to the wrong device.",
   lanAddressDetected: "Detected from this page: check it.",
@@ -95,7 +95,7 @@ export default {
   sharedIpv4_paid_option: "With {{name}}, a public IPv4 is a paid option: without it, no IPv4 forwarding.",
   sharedIpv4_full_stack: "With {{name}}, ask for a fixed full-stack IPv4 in the Espace Abonné: without it, only part of the ports are yours.",
 
-  // ── Step 3: the test ──────────────────────────────────────────────────
+  // ── The test ──────────────────────────────────────────────────
   step3Description: "An external service tries to reach this server the way a phone on 4G would. It only tests this server's address.",
   runCheck: "Run the test",
   rerunCheck: "Run the test again",
@@ -116,7 +116,7 @@ export default {
   state_unreachable: "Unreachable",
   state_not_checked: "Not tested",
   stateBody_secure: "All set: you can be reached from the Internet, over HTTPS.",
-  stateBody_exposed_http: "You can be reached from the Internet WITHOUT encryption: passwords and tokens travel in clear text. Put an HTTPS proxy in front (step 1).",
+  stateBody_exposed_http: "You can be reached from the Internet WITHOUT encryption: passwords and tokens travel in clear text. Put an HTTPS proxy in front (see “Your reverse proxy”).",
   stateBody_attention: "It answers, but something is off.",
   stateBody_unreachable: "Nobody reaches it from the Internet.",
   stateBody_not_checked: "Run the test to find out.",
@@ -139,7 +139,7 @@ export default {
   verdict_not_testable: "Cannot be tested from this server",
   certExpires: "certificate valid until {{date}}",
   causesTitle: "Likely cause",
-  cause_port_not_forwarded: "Nothing answers: the forwarding rule is missing in the router, or a firewall blocks it. Check step 2.",
+  cause_port_not_forwarded: "Nothing answers: the forwarding rule is missing in the router, or a firewall blocks it. Check “Router ports”.",
   cause_wrong_target: "The router forwards to another device, or nothing listens on that port. Check the destination address and the internal port.",
   cause_other_service: "Another server answers at this address: the forwarding targets the wrong device, or the domain points elsewhere.",
   cause_proxy_upstream: "The proxy answers, but it cannot reach Tentacle or Jellyfin: check its target.",

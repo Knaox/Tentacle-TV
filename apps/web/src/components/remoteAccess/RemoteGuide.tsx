@@ -2,7 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 import { useServerCapability } from "@tentacle-tv/api-client";
-import type { PublicIpReport, RemoteAccessSettingsPatch, RemoteAccessState } from "@tentacle-tv/shared";
+import { REMOTE_ACCESS_GUIDE_ANCHOR, type PublicIpReport, type RemoteAccessSettingsPatch, type RemoteAccessState } from "@tentacle-tv/shared";
 import { AdminSection } from "../admin/kit";
 import { CheckStep } from "./CheckStep";
 import { ExposureModes } from "./ExposureModes";
@@ -13,10 +13,11 @@ import { ProxyChoice } from "./ProxyChoice";
 import { ProxyConfig } from "./ProxyConfig";
 import { PublicIpCard } from "./PublicIpCard";
 import { PublicLinkStep } from "./PublicLinkStep";
+import { RemoteAccessGuide } from "./RemoteAccessGuide";
 import { SecurityNotes } from "./SecurityNotes";
 
-/** Les ancres qui visent ce qu'il contient l'ouvrent d'emblée (`/admin/remote-access#proxy`). (`#guide` est le guide écrit, au pied.) */
-const GUIDE_ANCHORS = new Set(["#learn-more", "#proxy", "#ports", "#check"]);
+/** Les ancres qui visent ce qu'il contient l'ouvrent d'emblée (`/admin/remote-access#proxy`, `#guide` : le guide écrit). */
+const GUIDE_ANCHORS = new Set(["#learn-more", "#proxy", "#ports", "#check", `#${REMOTE_ACCESS_GUIDE_ANCHOR}`]);
 
 interface RemoteGuideProps {
   state: RemoteAccessState;
@@ -29,7 +30,8 @@ interface RemoteGuideProps {
 /**
  * « En savoir plus » : tout ce qui n'est PAS à régler — comment ça marche, le
  * mandataire (choisi seulement pour obtenir son exemple de configuration), les
- * ports de la box, la vérification depuis Internet, le plan B et la sécurité.
+ * ports de la box, la vérification depuis Internet, le plan B, la sécurité —
+ * et, dans l'administration, le guide écrit.
  * Replié par défaut et monté à la demande : rien n'y est exigé, rien n'y
  * coûte tant qu'on ne l'ouvre pas.
  */
@@ -85,6 +87,7 @@ export function RemoteGuide({ state, publicIp, save, variant, onOpenChange }: Re
             </AdminSection>
             <PlanB showGuideLink={variant === "admin"} />
             <SecurityNotes />
+            {variant === "admin" ? <RemoteAccessGuide /> : null}
           </>
         ) : null}
       </div>

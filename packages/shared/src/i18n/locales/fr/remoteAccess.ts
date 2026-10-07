@@ -27,7 +27,7 @@ export default {
   copyFailed: "Copie impossible\u00a0: sélectionnez le texte.",
   sourceLink: "Source",
 
-  // ── Étape 1 : ce qui reçoit Internet ──────────────────────────────────
+  // ── Le mandataire : ce qui reçoit Internet ──────────────────────────────────
   step1Title: "Avez-vous déjà un mandataire\u00a0?",
   recommended: "Recommandé",
   proxy_caddy_title: "Caddy",
@@ -49,7 +49,7 @@ export default {
   publicUrlNone: "Aucun lien public n'est encore réglé\u00a0: c'est l'adresse que reçoivent les applications et les invitations.",
   upstreamHost: "Adresse de ce serveur, vue par votre mandataire",
   upstreamHostHint: "Son adresse sur le réseau local, celle que la machine du mandataire joint\u00a0: une adresse fixe, de préférence.",
-  snippetIntro: "À poser dans votre mandataire\u00a0: un site par domaine, websockets compris. Ses certificats Let's Encrypt arrivent seuls dès que les ports 80 et 443 de la box sont redirigés vers lui (étape 2).",
+  snippetIntro: "À poser dans votre mandataire\u00a0: un site par domaine, websockets compris. Ses certificats Let's Encrypt arrivent seuls dès que les ports 80 et 443 de la box sont redirigés vers lui (voir «\u00a0Les ports de la box\u00a0»).",
   caddyHint: "À ajouter à votre Caddyfile, puis rechargez Caddy\u00a0: il obtient et renouvelle seul les certificats.",
   traefikHint: "Un fichier de routes pour le fournisseur de fichier de Traefik. Remplacez websecure et letsencrypt par les noms de votre point d'entrée HTTPS et de votre résolveur de certificats.",
   snippetCaddy: "Caddy",
@@ -59,7 +59,7 @@ export default {
   nginxCertHint: "Ajoutez vos lignes ssl_certificate et ssl_certificate_key\u00a0: Nginx Proxy Manager les pose lui-même.",
   noneWarning: "Sans HTTPS, ce qui passe par Internet n'est pas chiffré. Pour plus tard\u00a0: un mandataire, ou un réseau privé comme Tailscale (plan B, plus bas).",
 
-  // ── Étape 2 : les ports de la box ─────────────────────────────────────
+  // ── Les ports de la box ─────────────────────────────────────
   lanAddress: "Adresse de ce serveur sur votre réseau",
   lanAddressHint: "Donnez-lui une adresse fixe dans la box (réservation DHCP)\u00a0: sinon, la redirection vise un jour le mauvais appareil.",
   lanAddressDetected: "Détectée depuis cette page\u00a0: vérifiez-la.",
@@ -102,7 +102,7 @@ export default {
   sharedIpv4_paid_option: "Chez {{name}}, l'IPv4 publique est une option payante\u00a0: sans elle, aucune redirection IPv4.",
   sharedIpv4_full_stack: "Chez {{name}}, demandez une IPv4 fixe full-stack dans l'Espace Abonné\u00a0: sans elle, seule une partie des ports est à vous.",
 
-  // ── Étape 3 : le test ─────────────────────────────────────────────────
+  // ── Le test ─────────────────────────────────────────────────
   step3Description: "Un service externe essaie de joindre ce serveur comme le ferait un téléphone en 4G. Il ne teste que l'adresse de ce serveur.",
   runCheck: "Lancer le test",
   rerunCheck: "Relancer le test",
@@ -123,7 +123,7 @@ export default {
   state_unreachable: "Injoignable",
   state_not_checked: "Pas testé",
   stateBody_secure: "Tout est en place\u00a0: on vous joint depuis Internet, en HTTPS.",
-  stateBody_exposed_http: "On vous joint depuis Internet SANS chiffrement\u00a0: mots de passe et jetons passent en clair. Mettez un mandataire HTTPS devant (étape 1).",
+  stateBody_exposed_http: "On vous joint depuis Internet SANS chiffrement\u00a0: mots de passe et jetons passent en clair. Mettez un mandataire HTTPS devant (voir «\u00a0Votre mandataire\u00a0»).",
   stateBody_attention: "Il répond, mais quelque chose cloche.",
   stateBody_unreachable: "Personne ne le joint depuis Internet.",
   stateBody_not_checked: "Lancez le test pour savoir.",
@@ -146,7 +146,7 @@ export default {
   verdict_not_testable: "Non testable depuis ce serveur",
   certExpires: "certificat valable jusqu'au {{date}}",
   causesTitle: "Cause probable",
-  cause_port_not_forwarded: "Rien ne répond\u00a0: la redirection manque dans la box, ou un pare-feu bloque. Vérifiez l'étape 2.",
+  cause_port_not_forwarded: "Rien ne répond\u00a0: la redirection manque dans la box, ou un pare-feu bloque. Vérifiez «\u00a0Les ports de la box\u00a0».",
   cause_wrong_target: "La box renvoie vers un autre appareil, ou rien n'écoute sur ce port. Vérifiez l'adresse de destination et le port interne.",
   cause_other_service: "Un autre serveur répond à cette adresse\u00a0: la redirection vise le mauvais appareil, ou le domaine pointe ailleurs.",
   cause_proxy_upstream: "Le mandataire répond, mais il ne joint pas Tentacle ou Jellyfin\u00a0: vérifiez sa cible.",
