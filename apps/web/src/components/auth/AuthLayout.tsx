@@ -31,10 +31,10 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ title, subtitle, children, footer, header, width = "default" }: AuthLayoutProps) {
   const { t } = useTranslation("auth");
-  const cardWidth = width === "full" ? "max-w-3xl" : width === "wide" ? "max-w-lg" : "max-w-[26rem]";
+  const cardWidth = width === "full" ? "max-w-3xl" : width === "wide" ? "max-w-lg lg:max-w-xl" : "max-w-[26rem]";
 
   return (
-    <div className="relative isolate flex min-h-dvh flex-col overflow-x-hidden bg-surface-0">
+    <div className="relative isolate flex min-h-dvh flex-col overflow-x-clip bg-surface-0">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
@@ -51,20 +51,27 @@ export function AuthLayout({ title, subtitle, children, footer, header, width = 
         <LanguageToggle />
       </div>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 items-center justify-center gap-16 px-4 pb-10 pt-4 sm:px-6 lg:justify-between lg:px-12">
-        <section aria-hidden className="hidden max-w-md flex-1 animate-fade-slide-up lg:block">
-          <HeroMark />
-          <p className="mt-8 text-5xl font-extrabold leading-[1.05] tracking-tight text-content-primary">
-            {t("tentacle")}
-          </p>
-          <p className="mt-4 text-lg leading-relaxed text-content-secondary">{t("brandTagline")}</p>
-          <div
-            className="mt-8 h-1 w-24 rounded-full"
-            style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
-          />
+      <main className="mx-auto flex w-full max-w-6xl flex-1 justify-center gap-16 px-4 pb-10 pt-4 sm:px-6 lg:justify-between lg:px-12">
+        {/* La marque COLLE à l'écran : sur une carte plus haute que la fenêtre
+            (écrans de l'assistant), elle restait centrée sur toute la hauteur
+            de la page — au milieu d'une zone qu'on fait défiler. Elle tient
+            désormais la hauteur de la fenêtre, centrée dedans, et suit le
+            défilement ; sur une carte courte, rien ne change. */}
+        <section aria-hidden className="hidden max-w-md flex-1 lg:block">
+          <div className="sticky top-0 flex h-full max-h-dvh flex-col justify-center animate-fade-slide-up">
+            <HeroMark />
+            <p className="mt-8 text-5xl font-extrabold leading-[1.05] tracking-tight text-content-primary">
+              {t("tentacle")}
+            </p>
+            <p className="mt-4 text-lg leading-relaxed text-content-secondary">{t("brandTagline")}</p>
+            <div
+              className="mt-8 h-1 w-24 rounded-full"
+              style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
+            />
+          </div>
         </section>
 
-        <div className={`w-full ${cardWidth} animate-fade-slide-up`}>
+        <div className={`w-full ${cardWidth} self-center animate-fade-slide-up`}>
           <div className="mb-6 flex flex-col items-center text-center lg:hidden">
             <TentacleLogo size="lg" variant="glow" />
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-content-tertiary">
