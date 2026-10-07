@@ -21,7 +21,8 @@ import { EASE, MOTION_ENABLED } from "./motion";
 export const SWAP_FLOOR = 0.02;
 export function useSwap<T>(key: string, item: T, outMs: number, inMs: number): { shown: T; progress: SharedValue<number> } {
   const reduced = useReducedMotion();
-  const instant = reduced || !MOTION_ENABLED;
+  // Deux durées nulles : posé d'un coup (le texte du héros en Lite).
+  const instant = reduced || !MOTION_ENABLED || (outMs <= 0 && inMs <= 0);
   const [shown, setShown] = useState<{ key: string; item: T }>({ key, item });
   const progress = useSharedValue(1);
   const latest = useRef({ key, item });

@@ -1,5 +1,6 @@
 import { Easing, withSpring, withTiming, type AnimationCallback } from "react-native-reanimated";
 import { TV_MOTION, type TvSpring } from "@tentacle-tv/theme";
+import { BRIEF_MAX_MS, briefLegMs } from "@tentacle-tv/tv-core";
 import { RENDER } from "../render/renderProfile";
 import { withSteadyTiming } from "./steadyTiming";
 // effectOff : interrupteur de MESURE (lot Lite), app de mesure seulement.
@@ -19,6 +20,9 @@ import { effectOff } from "../render/measuredEffects";
 export const MOTION_ENABLED: boolean = RENDER.motion && !effectOff("motion");
 /** Les fondus suivent les images rendues (`steadyTiming`, Android TV). */
 const STEADY: boolean = RENDER.steadyMotion;
+/** Le mouvement BREF du profil Lite (tv-core `liteMotion`) : aucun ressort,
+ *  150 ms au plus, ce qui accompagne seulement posé d'un coup. */
+const BRIEF: boolean = RENDER.motionStyle === "brief";
 
 const bezier = ([x1, y1, x2, y2]: readonly [number, number, number, number]) => Easing.bezier(x1, y1, x2, y2);
 
@@ -70,6 +74,8 @@ const PRESETS = {
   ambient: { enter: timing(TV_MOTION.crossfade.ambientMs, EASE.inOut), exit: timing(TV_MOTION.crossfade.ambientMs, EASE.inOut) },
   /** L'image du héros qui tourne. */
   hero: { enter: timing(TV_MOTION.crossfade.heroMs, EASE.inOut), exit: timing(TV_MOTION.crossfade.heroMs, EASE.inOut) },
+  /** Le halo du héros qui tourne : avec l'image (posé d'un coup en Lite). */
+  heroHalo: { enter: timing(TV_MOTION.crossfade.heroMs, EASE.inOut), exit: timing(TV_MOTION.crossfade.heroMs, EASE.inOut) },
   /** Le contenu d'un écran poussé qui arrive (l'en-tête d'une fiche). */
   page: { enter: timing(TV_MOTION.page.enterMs, EASE.out), exit: timing(TV_MOTION.reveal.outMs, EASE.in) },
   /** Une grande image qui se pose : elle recule lentement à sa place. */
@@ -95,6 +101,13 @@ const PRESETS = {
 } as const;
 
 export type MotionPreset = keyof typeof PRESETS;
+
+/** Les mêmes préréglages en bref (Lite), en nombres : un worklet les lit
+ *  sans appeler tv-core depuis le fil d'interface. */
+const BRIEF_LEGS = Object.fromEntries(
+  (Object.keys(PRESETS) as MotionPreset[]).map((name) => [name, { enter: briefLegMs(name, 1), exit: briefLegMs(name, 0) }]),
+) as Record<MotionPreset, { enter: number; exit: number }>;
+
 /** Un préréglage, ou une durée : une courbe de sortie douce dans les deux sens
  *  (le comportement d'avant les préréglages, pour un interrupteur, un curseur). */
 export type Motion = MotionPreset | number;
@@ -113,6 +126,15 @@ export function motionTo(target: number, motion: Motion, instant = false, done?:
   }
   const timed = (duration: number, easing: (typeof EASE)[keyof typeof EASE]) =>
     STEADY ? withSteadyTiming(target, { duration, easing }, done) : withTiming(target, { duration, easing }, done);
+  if (BRIEF) {
+    const brief = typeof motion === "number" ? null : BRIEF_LEGS[motion];
+    const ms = brief ? (target === 0 ? brief.exit : brief.enter) : Math.min(Math.max(0, motion as number), BRIEF_MAX_MS);
+    if (ms <= 0) {
+      if (done) done(true);
+      return target;
+    }
+    return timed(ms, target === 0 ? EASE.in : EASE.out);
+  }
   if (typeof motion === "number") return timed(motion, EASE.out);
   const leg = target === 0 ? PRESETS[motion].exit : PRESETS[motion].enter;
   // Un ressort borne déjà le pas de son intégration (Reanimated : 64 ms).
