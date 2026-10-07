@@ -54,9 +54,6 @@ export interface MountProfile {
    *  moins `gridDrawDistance`) : l'ouverture monte peu, le parcours garde la
    *  ligne suivante montée. */
   gridActiveDrawDistance: number;
-  /** Le premier montage de la grille ÉTALÉ : une ligne par image à l'heure
-   *  (`nextLineCount`), au lieu de l'écran entier dans la même image. */
-  gridStaging: boolean;
   /** La fenêtre de la liste des épisodes d'une saison. */
   episodes: ListWindow;
 }
@@ -71,7 +68,6 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     // Deux lignes d'avance de chaque côté (une ligne de six affiches : ~494 points).
     gridDrawDistance: 1100,
     gridActiveDrawDistance: 1100,
-    gridStaging: false,
     // Les valeurs de React Native pour le lot (10) : celles d'avant.
     episodes: { initialNumToRender: 6, windowSize: 5, maxToRenderPerBatch: 10 },
   },
@@ -88,7 +84,6 @@ export const MOUNT_PROFILES: Readonly<Record<RenderTier, Readonly<MountProfile>>
     // les colonnes) — celle que BAS rejoint est montée, même avant que la
     // page ne défile vers la ligne focalisée.
     gridActiveDrawDistance: 600,
-    gridStaging: true,
     // Un écran de vignettes (≈ 3,4) et la suivante ; un écran de chaque côté.
     episodes: { initialNumToRender: 4, windowSize: 3, maxToRenderPerBatch: 2 },
   },

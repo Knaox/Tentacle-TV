@@ -142,22 +142,3 @@ export function nextRelease(rows: readonly StagedRow[], tails: StagingTails = "e
   if (tail) return { rank: tail.rank, released: Math.min(tail.total, tail.released + ROW_STAGING.chunk) };
   return null;
 }
-
-/**
- * Le montage ÉTALÉ d'une liste de LIGNES (la grille d'affiches, mode Lite :
- * `gridStaging` du profil de montage) : la première ligne d'emblée, puis UNE
- * ligne de plus par image à l'heure (`createStagingPacer`), jusqu'à toutes.
- * Une fois la liste montée entière, elle suit ses données (les pages
- * suivantes) sans plus rien retenir. `shown` ne recule jamais.
- */
-export const LINE_STAGING = {
-  /** Les lignes rendues au premier montage. */
-  initial: 1,
-  /** Les lignes ajoutées par image à l'heure. */
-  step: 1,
-} as const;
-
-/** Les lignes rendues après une image de plus : `shown` + `step`, au plus `total`. */
-export function nextLineCount(shown: number, total: number): number {
-  return Math.min(total, Math.max(shown, LINE_STAGING.initial) + LINE_STAGING.step);
-}

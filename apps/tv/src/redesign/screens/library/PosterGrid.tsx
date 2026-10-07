@@ -6,7 +6,7 @@ import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, gridLineReveal } from "@tent
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
-import { useStagedLines, useWidenOnMove } from "./useStagedLines";
+import { useWidenOnMove } from "./useWidenOnMove";
 import { mountProfile } from "../../render/mountProfile";
 
 /**
@@ -146,9 +146,6 @@ export const PosterGrid = memo(function PosterGrid({
 }: PosterGridProps) {
   const width = posterWidth(columns);
   const lines = useLines(cards, columns);
-  // Mode Lite : le premier montage étalé, une ligne par image (`gridStaging`).
-  const staging = useStagedLines(lines.length, mountProfile().gridStaging);
-  const data = useMemo(() => (staging.shown >= lines.length ? lines : lines.slice(0, staging.shown)), [lines, staging.shown]);
   const list = useRef<FlashList<Line>>(null);
   const focusCard = useWidenOnMove(list, cards, columns, onFocusCard);
   const renderItem = useCallback(
@@ -172,7 +169,7 @@ export const PosterGrid = memo(function PosterGrid({
         ref={list}
         // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
         key={`grid-${columns}`}
-        data={data}
+        data={lines}
         keyExtractor={lineKey}
         renderItem={renderItem}
         estimatedItemSize={lineStride(width)}
@@ -194,7 +191,7 @@ export const PosterGrid = memo(function PosterGrid({
         // battement du défilement rapide. Mesuré au profileur : le premier
         // poste du fil d'interface en défilement rapide.
         overrideProps={SCROLL_PROPS}
-        onEndReached={staging.done ? onEndReached : undefined}
+        onEndReached={onEndReached}
         // La page suivante part à trois écrans de la fin : quand le focus
         // dévale (flèche maintenue, glisser vif), elle est là avant lui.
         onEndReachedThreshold={GRID_END_REACHED_SCREENS}
