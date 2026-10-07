@@ -4,6 +4,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import type { CardModel } from "../../cards/cardTypes";
 import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { RENDER } from "../../render/renderProfile";
 import { MediaRow } from "../../rows/MediaRow";
 import { text } from "../../theme/tokens";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
@@ -176,6 +177,7 @@ const ResultRow = memo(function ResultRow({
         variant={sectionKey === "episodes" ? "landscape" : "poster"}
         cardWidth={sectionKey === "episodes" ? 340 : undefined}
         inset={RESULTS_CLIP}
+        recycleCards={RENDER.recycleResultCards}
         accessory={accessory}
         onPressCard={press}
         onLongPressCard={longPress}

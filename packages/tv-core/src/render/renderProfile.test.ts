@@ -14,6 +14,7 @@ describe("le profil de rendu", () => {
       svgBlur: "points",
       cardArtwork: { landscapeWidth: 640, posterHeight: 480 },
       stagedRows: false,
+      recycleResultCards: false,
       imageScale: 2,
       spinner: "system",
       cullOffscreen: false,
@@ -39,6 +40,7 @@ describe("le profil de rendu", () => {
     expect(android.lights).toBe("shader");
     expect(android.haloDrawScale).toBe(RENDER_PROFILES.tvos.haloDrawScale);
     expect(android.stagedRows).toBe(true);
+    expect(android.recycleResultCards).toBe(true);
     expect(android.imageScale).toBe(1);
     expect(android.spinner).toBe("drawn");
     expect(android.cullOffscreen).toBe(true);

@@ -123,6 +123,11 @@ export interface RenderProfile {
   /** Les rangées d'une page montées par ÉCHELONS (`rowStaging`) : l'écran
    *  d'abord, le reste une part par image. Faux : tout d'un bloc. */
   stagedRows: boolean;
+  /** Les cartes d'une liste qui change ENTIÈRE à chaque réponse (les
+   *  résultats d'une frappe) gardent leurs vues : clées par leur PLACE, elles
+   *  se redessinent avec le titre suivant au lieu d'être démontées et
+   *  d'autres montées. Faux : clées par leur titre. */
+  recycleResultCards: boolean;
   /** Les pixels de l'interface par point : l'échelle à laquelle se demandent
    *  les images taillées « au double des points » (fiche, panneau, portraits).
    *  2 sur l'Apple TV 4K ; 1 sur Android TV, rendue en 1080p. */
@@ -192,6 +197,7 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     svgBlur: "points",
     cardArtwork: CARD_ARTWORK.tvos,
     stagedRows: false,
+    recycleResultCards: false,
     imageScale: 2,
     spinner: "system",
     cullOffscreen: false,
@@ -223,6 +229,9 @@ export const RENDER_PROFILES: Readonly<Record<RenderPlatform, Readonly<RenderPro
     cardArtwork: CARD_ARTWORK.androidtv,
     // Le fil UI de la Shield ne crée pas 2 400 vues dans une image (`rowStaging`).
     stagedRows: true,
+    // Une frappe remplace ~25 cartes : les monter retenait le fil UI de la
+    // Shield 100 à 150 ms (275 vues créées, banc « recherche-frappe »).
+    recycleResultCards: true,
     imageScale: 1,
     // L'indicateur système d'Android est un autre dessin (un arc Material) :
     // celui de l'Apple TV, redessiné (`activitySpinner`).
