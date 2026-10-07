@@ -42,7 +42,7 @@ const MEM = ` App Summary
          AppContexts:        5           Activities:        1`;
 
 test("les AVD Lite : RAM et cœurs d'une box faible, consoles à part", () => {
-  assert.deepEqual(Object.keys(LITE_AVDS), ["Lite_API31_1G", "Lite_API31_2G", "Lite_L4_2G", "Lite_L6_1G", "Lite_L6_2G", "Lite_L5a_2G", "Lite_L7_1G", "Lite_L7_2G", "Lite_Rech_3G"]);
+  assert.deepEqual(Object.keys(LITE_AVDS), ["Lite_API31_1G", "Lite_API31_2G", "Lite_L4_2G", "Lite_L6_1G", "Lite_L6_2G", "Lite_L5a_2G", "Lite_L7_1G", "Lite_L7_2G", "Lite_Rech_3G", "Lite_L5b_2G"]);
   assert.equal(serialOf("Lite_API31_2G"), "emulator-5642");
   assert.throws(() => serialOf("TentacleTV_TV"), /inconnu du banc Lite/);
   const overrides = configOverrides(LITE_AVDS.Lite_API31_1G);
