@@ -21,7 +21,8 @@ vi.mock("../../setup/hostInfo", () => ({ hostInfo: () => ({ containerized: true 
 vi.mock("../cache/deferredCacheCopy", () => ({ cacheCopyState: () => ({ phase: "done" }), cacheCopyPercent: () => 100 }));
 vi.mock("../postMigration", () => ({ sourceDivergence: () => ({ status: "same" }) }));
 
-const { databaseMigrationSummary } = await import("./migrationSummary");
+// Importé après les vi.mock (vitest les remonte en tête du fichier).
+import { databaseMigrationSummary } from "./migrationSummary";
 
 describe("le résumé de la migration : retirer MariaDB", () => {
   beforeEach(() => {
