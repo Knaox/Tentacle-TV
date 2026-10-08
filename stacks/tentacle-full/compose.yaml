@@ -15,10 +15,14 @@
 #  Optional settings (media folder, ports, time zone, user…): a .env file
 #  next to this one — see .env.example.
 #
-#  UPGRADING from a stack that has a "db" service (before 1.25)? Do NOT copy
+#  UPDATING a stack from before 1.25 (it has a "db" service)? Do NOT copy
 #  this file yet: keep yours, update the image, and let Tentacle migrate its
-#  MariaDB database by itself. Remove the "db" service only once the dashboard
-#  says "MariaDB is no longer needed" — https://tentacletv.app/docs/server/sqlite-migration/
+#  MariaDB database by itself. Then, once the dashboard says "MariaDB is no
+#  longer needed", put this file in place of yours, in the SAME folder: the
+#  tentacle-data and jellyfin-* volumes are kept as they are. A Portainer
+#  stack that follows this repository got this file already: the page below
+#  says how to let it migrate first.
+#  https://tentacletv.app/docs/server/sqlite-migration/
 #
 #  Linux is the supported host for this stack. On Windows and macOS, the
 #  Jellyfin project supports a NATIVE install only: use the "tentacle-only"
@@ -103,10 +107,6 @@ services:
       - "${TENTACLE_PORT:-3000}:3000"
     volumes:
       - tentacle-data:/app/apps/backend/data
-      # Kept during the move to SQLite (1.25), nothing is written in it any
-      # more: an installation that had a MariaDB is recognized by it, and never
-      # restarts on an empty database if its "db" service was removed too early.
-      - tentacle-secrets:/run/tentacle-secrets:ro
 
   # Public access over HTTPS: put YOUR reverse proxy (Caddy, Nginx Proxy
   # Manager, Traefik…) in front of ports 3000 and 8096. What to put in it:
@@ -114,7 +114,6 @@ services:
   # Remote access.
 
 volumes:
-  tentacle-secrets:
   tentacle-data:
   jellyfin-config:
   jellyfin-cache:

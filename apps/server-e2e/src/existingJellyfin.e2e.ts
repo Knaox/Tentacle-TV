@@ -8,7 +8,7 @@ import { errorOf, SetupClient } from "./setupClient";
 import { docker, Stack, waitFor } from "./stack";
 
 /**
- * Pile « avec base » devant un Jellyfin DÉJÀ configuré (10.11 et 12.1),
+ * Pile « seule » (Tentacle, sa base SQLite) devant un Jellyfin DÉJÀ configuré (10.11 et 12.1),
  * l'assistant mené par HTTP comme le fait l'interface — et sa sécurité :
  * pas de session, code rejoué, force brute, adresses interdites, mauvaise
  * clé, Jellyfin arrêté en chemin, aucun secret qui ressorte, fermé à la fin.
@@ -31,7 +31,7 @@ TAGS.forEach((tag, index) => {
   const ports = { tentacle: 3482 + index * 10, jellyfin: 8982 + index * 10, redirector: 3592 + index * 10 };
   const password = randomBytes(12).toString("base64url");
   const stack = new Stack({
-    stack: "db",
+    stack: "only",
     project: `wiz-e2e-db${safe}`,
     env: { TENTACLE_PORT: String(ports.tentacle) },
     override: "services:\n  tentacle:\n    environment:\n      REMOTE_CHECK_URL: \"off\"\n",

@@ -113,9 +113,9 @@ describe("pile complète, Jellyfin 12 neuf", () => {
   });
 });
 
-describe("Jellyfin 10.11 existant, pile avec base", () => {
+describe("Jellyfin 10.11 existant, pile seule", () => {
   const ports = { tentacle: 3521, jellyfin: 9021 };
-  const stack = new Stack({ stack: "db", project: "pass-e2e-db1011", env: { TENTACLE_PORT: String(ports.tentacle) }, override: OVERRIDE });
+  const stack = new Stack({ stack: "only", project: "pass-e2e-db1011", env: { TENTACLE_PORT: String(ports.tentacle) }, override: OVERRIDE });
   const jellyfin = new DisposableJellyfin("pass-e2e-jf1011", ports.jellyfin, "10.11", join(stack.dir, "jellyfin-media"));
   const client = new SetupClient(stack.url(""));
 

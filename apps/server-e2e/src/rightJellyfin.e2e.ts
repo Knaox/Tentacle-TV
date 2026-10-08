@@ -65,7 +65,7 @@ afterAll(async () => {
 
 describe("pile Portainer : le bon Jellyfin, la bonne adresse, sans code depuis la maison", () => {
   it("premier essai, pile « base » : sans code depuis la maison, le code ailleurs, le premier garde la place", async () => {
-    stack = new Stack({ stack: "db", project: PROJECT, env: { TENTACLE_PORT: String(PORTS.tentacle) }, override });
+    stack = new Stack({ stack: "only", project: PROJECT, env: { TENTACLE_PORT: String(PORTS.tentacle) }, override });
     await stack.up();
     await Promise.all([owner.start(), neighbour.start()]);
     const host = `${await owner.address()}:3000`;

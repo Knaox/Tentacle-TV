@@ -1,21 +1,31 @@
 # ══════════════════════════════════════════════════════════════════════════
-#  Tentacle TV — Tentacle ALONE, for an existing Jellyfin
+#  Tentacle TV — Tentacle ALONE, for an EXISTING Jellyfin
 # ══════════════════════════════════════════════════════════════════════════
-#  For those who already run Jellyfin, e.g. on a NAS. No database to set up:
-#  Tentacle keeps its data in a file (SQLite) of the tentacle-data volume.
+#  For a Jellyfin that already runs elsewhere: a NAS, another container, or
+#  a native install (the only supported way on Windows and macOS).
 #
-#  1. Put this file in an empty folder as compose.yaml, then run:
-#       docker compose up -d          (Podman: podman compose up -d)
-#  2. Open  http://<this-machine>:3000  and follow the setup wizard. From your
+#  1. Put this file in an empty folder (e.g. ~/tentacle) as compose.yaml.
+#  2. Run:  docker compose up -d        (Podman: podman compose up -d)
+#  3. Open  http://<this-machine>:3000  and follow the setup wizard. From your
 #     home network, no code; from elsewhere it asks for one, printed in
 #     Tentacle's log (Portainer: the container's Logs).
-#     It then picks your Jellyfin and its administrator.
+#     It then lists the Jellyfin servers it finds; pick yours.
 #
-#  UPGRADING an installation that uses your own MariaDB or MySQL (before
-#  1.25)? Keep its settings (DB_* variables, DATABASE_URL, or the database
-#  chosen in the old wizard) until the dashboard confirms the migration:
-#  Tentacle copies that database by itself, read-only, then says how to
-#  remove it. https://tentacletv.app/docs/server/sqlite-migration/
+#  Nothing to edit, no database to install: Tentacle keeps its data in a file
+#  (SQLite) of the tentacle-data volume. Optional settings: a .env file next
+#  to this one — see .env.example.
+#
+#  Jellyfin on THIS machine? Tentacle runs in a container: "localhost" is
+#  Tentacle itself. The wizard lists the Jellyfin servers it finds; one on
+#  this machine is reached through host.docker.internal (set up below).
+#
+#  UPDATING from before 1.25, with a MariaDB or MySQL ("tentacle-db" stack,
+#  DB_* variables, DATABASE_URL, or the database chosen in the old wizard)?
+#  Keep your file and its database until the dashboard says "MariaDB is no
+#  longer needed": Tentacle copies that database by itself, read-only, then
+#  says how to remove it. Then put this file in place of yours, in the SAME
+#  folder: the tentacle-data volume is kept as it is.
+#  https://tentacletv.app/docs/server/sqlite-migration/
 # ══════════════════════════════════════════════════════════════════════════
 
 services:
@@ -36,7 +46,7 @@ services:
     ports:
       - "${TENTACLE_PORT:-3000}:3000"
     extra_hosts:
-      - "host.docker.internal:host-gateway" # reaches a Jellyfin (or an old database) on this machine
+      - "host.docker.internal:host-gateway" # reaches a Jellyfin on this machine
     volumes:
       - tentacle-data:/app/apps/backend/data
 
