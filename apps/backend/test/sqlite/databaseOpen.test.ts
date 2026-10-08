@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+import { existsSync, rmSync } from "fs";
 import { join } from "path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
@@ -34,6 +34,8 @@ import { prismaSqliteUrl } from "../../src/services/database/sqlitePath";
 
 afterAll(async () => {
   if (hasPrisma()) await getPrisma().$disconnect();
+  // Le dossier jetable du banc : sans ce ménage, chaque passage laissait une base dans /tmp.
+  rmSync(DATA_ROOT, { recursive: true, force: true });
 });
 
 describe("ouverture de la base par le serveur", () => {
