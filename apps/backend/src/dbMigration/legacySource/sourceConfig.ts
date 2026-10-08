@@ -44,6 +44,14 @@ export interface SourceConnectionOptions {
   socketTimeout: number;
   socketPath?: string;
   ssl?: { rejectUnauthorized: boolean; ca?: Buffer; pfx?: Buffer; passphrase?: string };
+  /**
+   * MySQL 8 authentifie par défaut en `caching_sha2_password` : sans TLS, l'échange
+   * complet chiffre le mot de passe avec la clé publique du serveur, qu'il faut donc
+   * lui demander. Prisma (la 1.24) le faisait ; sans cela, toute source MySQL 8 sans
+   * TLS échouait en « source injoignable » (mesuré au banc, MySQL 8.4). MariaDB n'a
+   * pas ce mode et ignore l'option ; avec TLS, le canal chiffré suffit.
+   */
+  allowPublicKeyRetrieval: boolean;
 }
 
 /** Une URL MariaDB/MySQL — une URL `file:` (SQLite) n'est pas une source. */
@@ -73,6 +81,7 @@ export function connectionOptions(url: string, readFile: (path: string) => Buffe
     connectTimeout: params.has("connect_timeout") ? seconds("connect_timeout", params.get("connect_timeout")!) : 10_000,
     // Une coupure réseau en pleine copie se voit en une minute au plus.
     socketTimeout: params.has("socket_timeout") ? seconds("socket_timeout", params.get("socket_timeout")!) : 60_000,
+    allowPublicKeyRetrieval: true,
   };
   if (params.get("socket")) options.socketPath = params.get("socket")!;
   const accept = params.get("sslaccept");

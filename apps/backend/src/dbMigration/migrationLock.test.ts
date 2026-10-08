@@ -1,74 +1,86 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { spawn, type ChildProcess } from "child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import { join } from "path";
-import { lockHolder, processStartTicks, tryAcquireLock } from "./migrationLock";
+import { join, resolve } from "path";
+import { tryAcquireLock } from "./migrationLock";
 
 /**
- * Le verrou de migration après un arrêt brutal. Trouvé au banc : dans un conteneur, le
- * serveur redémarré a le MÊME PID que celui qu'on a tué (2, sous tini) ; avec le PID seul,
- * il lisait son propre numéro dans le verrou laissé et ne migrait plus jamais.
+ * Le verrou de migration est celui du NOYAU (une base SQLite tenue en BEGIN EXCLUSIVE),
+ * jamais un PID : trouvé au banc (le serveur d'un conteneur a toujours le PID 2), et à
+ * l'audit (deux conteneurs sur un même volume, une reprise de verrou périmé en course).
+ * Des processus RÉELS, pas des simulations.
  */
+const BACKEND = resolve(__dirname, "../..");
 let dir: string;
 let lockPath: string;
-let other: ChildProcess | null = null;
+const children: ChildProcess[] = [];
+
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "tentacle-lock-"));
   lockPath = join(dir, "db-migration.lock");
 });
 afterEach(() => {
-  other?.kill();
-  other = null;
+  for (const child of children.splice(0)) child.kill("SIGKILL");
   rmSync(dir, { recursive: true, force: true });
 });
 
-function liveOtherProcess(): number {
-  other = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)"], { stdio: "ignore" });
-  return other.pid!;
+/** Un copieur dans son propre processus ; rend sa première ligne (« acquired » ou « busy »). */
+function copier(holdMs: number): Promise<{ child: ChildProcess; said: string }> {
+  const child = spawn(process.execPath, ["--import", "tsx", "test/lockHolderChild.ts", lockPath, String(holdMs)], { cwd: BACKEND, stdio: ["ignore", "pipe", "ignore"] });
+  children.push(child);
+  return new Promise((resolvePromise, reject) => {
+    let out = "";
+    child.stdout!.on("data", (chunk) => {
+      out += String(chunk);
+      if (out.includes("\n")) resolvePromise({ child, said: out.trim() });
+    });
+    child.on("exit", (code) => (out.includes("\n") ? undefined : reject(new Error(`copieur arrêté (code ${code}) sans rien dire`))));
+  });
 }
+const exited = (child: ChildProcess) => new Promise<void>((r) => (child.exitCode !== null || child.signalCode !== null ? r() : child.on("exit", () => r())));
 
-describe("le verrou de migration", () => {
-  it("laissé par la vie d'AVANT du conteneur, au même PID que le serveur redémarré : repris", () => {
-    writeFileSync(lockPath, `${process.pid} 12345\n`);
+describe("le verrou de migration (noyau)", () => {
+  it("tenu par un autre copieur VIVANT — même PID ou non, peu importe : le second n'obtient rien tant que le premier vit", async () => {
+    const first = await copier(60_000);
+    expect(first.said).toBe("acquired");
+    expect(tryAcquireLock(lockPath)).toBeNull();
+    const second = await copier(60_000);
+    expect(second.said).toBe("busy");
+  }, 30_000);
+
+  it("un copieur tué par SIGKILL (docker kill, coupure) : le noyau rend le verrou, la reprise le prend", async () => {
+    const first = await copier(60_000);
+    expect(first.said).toBe("acquired");
+    first.child.kill("SIGKILL");
+    await exited(first.child);
     const lock = tryAcquireLock(lockPath);
     expect(lock).not.toBeNull();
-    expect(readFileSync(lockPath, "utf-8").trim().split(" ")[0]).toBe(String(process.pid));
     lock!.release();
-    expect(existsSync(lockPath)).toBe(false);
-  });
+  }, 30_000);
 
-  it("au format d'avant (PID seul), même PID : repris aussi", () => {
-    writeFileSync(lockPath, `${process.pid}\n`);
-    expect(tryAcquireLock(lockPath)).not.toBeNull();
-  });
+  it("deux copieurs réels lancés ensemble : un seul copie", async () => {
+    const both = await Promise.all([copier(3_000), copier(3_000)]);
+    expect(both.map((c) => c.said).sort()).toEqual(["acquired", "busy"]);
+  }, 30_000);
 
-  it("tenu par un AUTRE processus vivant (la CLI) : refusé, et son PID est dit", () => {
-    const pid = liveOtherProcess();
-    const ticks = processStartTicks(pid);
-    writeFileSync(lockPath, `${pid} ${ticks ?? ""}`.trim() + "\n");
-    expect(tryAcquireLock(lockPath)).toBeNull();
-    expect(lockHolder(lockPath)).toBe(pid);
-  });
-
-  it.skipIf(process.platform !== "linux")("un PID vivant mais REPRIS par un autre processus (heure de démarrage différente) : repris", () => {
-    const pid = liveOtherProcess();
-    writeFileSync(lockPath, `${pid} 1\n`);
-    expect(lockHolder(lockPath)).toBeNull();
-    expect(tryAcquireLock(lockPath)).not.toBeNull();
-  });
-
-  it("d'un processus mort : repris", () => {
-    writeFileSync(lockPath, "999999 1\n");
-    expect(tryAcquireLock(lockPath)).not.toBeNull();
-  });
-
-  it("déjà tenu par CE processus : un second essai attend son tour", () => {
+  it("dans le même processus : un second essai attend son tour, puis passe une fois le verrou rendu", () => {
     const lock = tryAcquireLock(lockPath);
     expect(lock).not.toBeNull();
     expect(tryAcquireLock(lockPath)).toBeNull();
-    expect(lockHolder(lockPath)).toBe(process.pid);
     lock!.release();
-    expect(tryAcquireLock(lockPath)).not.toBeNull();
+    const again = tryAcquireLock(lockPath);
+    expect(again).not.toBeNull();
+    again!.release();
+  });
+
+  it("un verrou d'une version de développement (un PID en texte) : remplacé ; un lien symbolique : refusé", () => {
+    writeFileSync(lockPath, "2 12345\n");
+    const lock = tryAcquireLock(lockPath);
+    expect(lock).not.toBeNull();
+    lock!.release();
+    const link = join(dir, "lien.lock");
+    symlinkSync(lockPath, link);
+    expect(() => tryAcquireLock(link)).toThrow();
   });
 });
