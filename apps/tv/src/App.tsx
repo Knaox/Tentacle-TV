@@ -29,6 +29,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { BootScreen } from "./components/BootScreen";
 import { useServerReachable } from "./hooks/useServerReachable";
+import { MigrationCurtain, MigrationRedesign, useMigrationScreen } from "./redesignWiring/overlays/MigrationRedesign";
 import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow } from "./auth/sessionFlow";
 import { wakeRevocationDrain } from "./auth/revocationQueue";
@@ -146,6 +147,9 @@ const sessionServerUrl = (): string | null =>
  *  panne dure. */
 const PLAYBACK_ROUTES = new Set(["Player", "Trailer"]);
 
+/** Le serveur retenu, session ou jumelage en cours : la porte de la migration le relit. */
+const currentServerUrl = (): string | null => storage.getItem("tentacle_server_url");
+
 function AppContent() {
   // L'URL serveur peut changer en cours de session : déconnexion (supprimée du
   // storage) ou re-jumelage (nouvelle URL). On la relit à chaque changement de
@@ -156,6 +160,8 @@ function AppContent() {
   const { isReachable, retry } = useServerReachable(serverUrl);
   const { theme } = useTheme();
   const [playbackShown, setPlaybackShown] = useState(false);
+  // La base du serveur en migration : un écran d'attente, jamais le voile hors ligne.
+  const migration = useMigrationScreen({ serverUrl: currentServerUrl, playbackShown, onResume: retry });
   // Android TV : la pile d'écrans quittée par un changement du mode Lite, si
   // l'app repart au même endroit ; sinon (et toujours sur l'Apple TV) rien.
   const [reloadState] = useState(() => reloadNavigationState(initialRouteOf(storage)));
@@ -204,8 +210,11 @@ function AppContent() {
           onReady={syncNavState}
           onStateChange={syncNavState}
         >
-          <AppNavigator />
-          <OfflineBanner visible={!isReachable && !playbackShown} onRetry={retry} />
+          <MigrationCurtain hidden={migration.decision.hideScreens}>
+            <AppNavigator />
+          </MigrationCurtain>
+          <OfflineBanner visible={!isReachable && !playbackShown && migration.decision.offlineVeilAllowed} onRetry={retry} />
+          <MigrationRedesign state={migration} />
           <PairingExpiredBanner />
           <TVSessionMessageHost />
         </NavigationContainer>

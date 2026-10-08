@@ -10,6 +10,10 @@
  * La vérification part quand même en tâche de fond et corrige l'état si le
  * serveur a été réinitialisé entre-temps (retour au wizard).
  *
+ * Base du serveur en migration (503 du mode maintenance, serveur 1.25) : ni
+ * panne ni assistant — l'écran d'attente couvre l'app (`DatabaseMigrationGate`)
+ * et la question se repose toutes les 2 s, jusqu'à une vraie réponse.
+ *
  * Web : comportement inchangé (5 tentatives espacées puis OfflineBanner). Le
  * repli hors ligne desktop n'y existe pas — un démarrage optimiste y ferait
  * clignoter l'app avant la bannière, ce qui serait pire que le spinner.
@@ -17,11 +21,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { isDesktopApp } from "../desktop/bridge";
+import { reportMaintenanceResponse } from "@tentacle-tv/api-client";
 import { reportPossibleOutage } from "../offline/connectivityStore";
 
 const SETUP_DONE_KEY = "tentacle_setup_done";
 const DESKTOP_TIMEOUT_MS = 4000;
 const RETRY_DELAY_MS = 2000;
+/** Base du serveur en migration : la question se repose à ce rythme, sans compter d'essai. */
+const MIGRATION_RECHECK_MS = 2000;
+const MIGRATING = Symbol("migrating");
 
 const readSetupDone = (): boolean => {
   try {
@@ -74,12 +82,20 @@ export function useSetupStatus(needsServerUrl: boolean): SetupStatus {
         ? setTimeout(() => controller.abort(), DESKTOP_TIMEOUT_MS)
         : null;
       fetch(`${base}/api/setup/status`, isDesktopApp() ? { signal: controller.signal } : undefined)
-        .then((r) => {
+        .then(async (r) => {
+          // La base du serveur en migration : il répond, rien n'est tranché —
+          // l'écran d'attente couvre l'app, la question se repose ensuite.
+          if (await reportMaintenanceResponse(r)) return MIGRATING;
           if (r.status >= 500) throw new Error(`backend ${r.status}`);
           return r.json();
         })
         .then((data) => {
           if (cancelled) return;
+          if (data === MIGRATING) {
+            setBackendDown(false);
+            setTimeout(() => { if (!cancelled) check(); }, MIGRATION_RECHECK_MS);
+            return;
+          }
           // Vérité serveur : elle prime toujours sur le démarrage optimiste.
           const running = data.state === "running";
           writeSetupDone(running);

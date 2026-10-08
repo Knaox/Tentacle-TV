@@ -1,4 +1,4 @@
-import type { useJellyfinClient } from "@tentacle-tv/api-client";
+import { reportMaintenanceResponse, type useJellyfinClient } from "@tentacle-tv/api-client";
 import type { Culprit } from "@tentacle-tv/tv-core";
 import { nativePlayerHeaders } from "./nativePlayerHeaders";
 
@@ -16,7 +16,8 @@ export interface StreamPathProbe {
 /**
  * Le chemin que prend le flux répond-il ? Le MÊME que celui du lecteur :
  * Jellyfin en direct quand le streaming direct est actif, sinon le proxy de
- * Tentacle — et la même authentification que le lecteur natif.
+ * Tentacle — et la même authentification que le lecteur natif. Par le proxy,
+ * un 503 du mode maintenance (base du serveur en migration) accuse Tentacle.
  *
  * `System/Info/Public` : la plus légère des réponses de Jellyfin, sans
  * session, autorisée par le proxy. Par le proxy, un 502/504 dit que Tentacle
@@ -33,7 +34,12 @@ export async function probeStreamPath(client: ReturnType<typeof useJellyfinClien
       headers: nativePlayerHeaders(client),
       signal: controller.signal,
     });
-    return (await jellyfinServes(res)) ? { ok: true, culprit: null } : { ok: false, culprit: "media" };
+    if (await jellyfinServes(res)) return { ok: true, culprit: null };
+    // Le proxy fermé le temps de la migration de la base (503 du mode
+    // maintenance) : c'est Tentacle qui manque, jamais Jellyfin en panne. Seul
+    // le proxy de Tentacle peut le dire : un Jellyfin joint en direct, jamais.
+    const maintenance = !direct && (await reportMaintenanceResponse(res));
+    return { ok: false, culprit: maintenance ? "tentacle" : "media" };
   } catch {
     return { ok: false, culprit: direct ? "media" : "tentacle" };
   } finally {

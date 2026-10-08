@@ -4,10 +4,12 @@
  * absent et la feuille des saisons (`titles/`), les listes de choix et de
  * filtres des écrans y partagent le verrou d'entrée, le cycle et le Retour
  * d'un panneau ; les surimpressions (voile hors ligne, erreur d'un écran),
- * leur focus ; les surimpressions et les réglages, la confirmation à double
+ * leur focus ; l'écran d'attente de la migration de la base, sa décision ;
+ * les surimpressions et les réglages, la confirmation à double
  * appui.
  */
 export * from "./choiceEntry";
 export * from "./confirmPress";
+export * from "./migrationScreen";
 export * from "./overlayFocus";
 export * from "./panelLifecycle";

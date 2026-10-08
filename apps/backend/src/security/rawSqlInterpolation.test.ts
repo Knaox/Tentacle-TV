@@ -52,7 +52,7 @@ const REVIEWED: Record<string, Record<string, string>> = {
     'names.join(", ")': "colonnes cibles passées par quoteIdent juste au-dessus",
   },
   "dbMigration/legacySource/mariadbReader.ts": {
-    select: "colonnes passées par quoteId ; le fuseau de CONVERT_TZ par conn.escape",
+    select: "colonnes passées par quoteId ; le fuseau de CONVERT_TZ en paramètre lié",
     order: "colonnes de clé passées par quoteId",
     clause: "afterKey : colonnes par quoteId, valeurs en marques ?",
   },

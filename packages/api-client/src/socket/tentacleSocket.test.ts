@@ -165,4 +165,29 @@ describe("tentacleSocket", () => {
     socket.resumeSocketSession("jeton");
     expect(FakeWebSocket.instances).toHaveLength(0);
   });
+
+  it("le retour du serveur (reconnectSocketNow) rouvre une socket fermée, jamais après un refus d'authentification", () => {
+    socket.setWsBackendUrl("http://backend.test");
+    const release = socket.acquireSocket("jeton");
+    const first = FakeWebSocket.instances[0];
+    first.readyState = FakeWebSocket.OPEN;
+    first.onopen?.();
+    first.onclose?.(); // le serveur part migrer sa base
+    expect(socket.getSocketStatus()).toBe("closed");
+    socket.reconnectSocketNow();
+    expect(FakeWebSocket.instances).toHaveLength(2);
+
+    const second = FakeWebSocket.instances[1];
+    second.readyState = FakeWebSocket.OPEN;
+    second.onopen?.();
+    second.onmessage?.({ data: JSON.stringify({ type: "auth_error", reason: "invalid" }) });
+    second.onclose?.();
+    expect(socket.getSocketStatus()).toBe("authError");
+    socket.reconnectSocketNow();
+    expect(FakeWebSocket.instances).toHaveLength(2); // le jeton refusé ne se représente pas
+    release();
+    const again = socket.acquireSocket("jeton-neuf");
+    expect(FakeWebSocket.instances).toHaveLength(3);
+    again();
+  });
 });

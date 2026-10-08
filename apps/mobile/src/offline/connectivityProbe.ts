@@ -11,6 +11,7 @@
  * finissent par arriver.
  */
 
+import { reportDatabaseState } from "@tentacle-tv/api-client";
 import type { OfflineReason, ProbeMeasure } from "@tentacle-tv/offline-core";
 
 export type { OfflineReason } from "@tentacle-tv/offline-core";
@@ -31,6 +32,10 @@ export async function runProbe(base: string): Promise<ProbeResult> {
     const backendRes = await fetch(`${base}/api/health`, { signal: controller.signal });
     const latencyMs = Date.now() - startedAt;
     if (!backendRes.ok) return { ok: false, reason: "backend", latencyMs: null };
+    // La base du serveur en migration : il RÉPOND — ni bascule hors ligne, ni
+    // message de connectivité ; l'écran d'attente le dit (`DatabaseMigrationHost`).
+    // Le proxy Jellyfin, fermé le temps de la copie, n'est pas sondé.
+    if (reportDatabaseState(await backendRes.json().catch(() => null))) return { ok: true, reason: null, latencyMs };
     try {
       const jellyfinRes = await fetch(`${base}/api/jellyfin/System/Info/Public`, {
         signal: controller.signal,

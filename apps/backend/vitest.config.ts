@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { TEST_DATA_DIR } from "./test/isolatedDataDir";
 
 /**
  * Le seul écart aux défauts de vitest : le délai d'un test.
@@ -11,6 +12,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     testTimeout: 20_000,
+    // Jamais le vrai `apps/backend/data` (test/isolatedDataDir.ts).
+    globalSetup: ["./test/isolatedDataDir.ts"],
     // Prisma Client charge `apps/backend/.env` dans `process.env` dès qu'il est
     // instancié (le client généré en garde le chemin), et il n'écrase jamais
     // une variable déjà posée. Sur un poste de dev, ce fichier porte de VRAIES
@@ -21,7 +24,7 @@ export default defineConfig({
       [
         "DATABASE_URL", "DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD", "DB_PASSWORD_FILE",
         "TMDB_API_KEY", "JELLYFIN_URL", "JELLYFIN_ADMIN_API_KEY", "JWT_SECRET", "RELAY_ADMIN_SECRET",
-      ].map((name) => [name, ""]),
+      ].map((name) => [name, ""]).concat([["TENTACLE_DATA_DIR", TEST_DATA_DIR]]),
     ),
   },
 });
