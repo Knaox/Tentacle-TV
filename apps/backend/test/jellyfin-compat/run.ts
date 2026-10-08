@@ -5,12 +5,12 @@
  *
  * Lance l'image officielle `jellyfin/jellyfin:<version>` dans Docker, lui
  * fabrique une médiathèque synthétique, la prépare comme un administrateur,
- * démarre le VRAI backend Tentacle sur une MariaDB jetable, puis fait tourner
+ * démarre le VRAI backend Tentacle sur une base SQLite jetable, puis fait tourner
  * les suites (`suites/*.compat.ts`) — api-client et backend — contre elle.
  * Écrit `compat/reports/jellyfin-<version exacte>.json` et inscrit le verdict
  * dans `compat/jellyfin.json`. Détruit tout ce qu'elle a créé, sauf `--keep`.
  *
- * Options : --port 18096 · --db-port 18099 · --backend-port 3031 ·
+ * Options : --port 18096 · --backend-port 3031 ·
  * --prefix tentacle-jf-compat · --legacy-auth off|on|default (off : comme un
  * Jellyfin 12 neuf ; l'option est coupée partout où elle existe) · --reuse ·
  * --keep · --no-manifest · --minimum 10.10.0 · --run-dir <dossier> ·
@@ -22,7 +22,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { BACKEND_DIR } from "../notif-e2e/benchEnv";
-import { databaseUrl, seedBackendConfig, startBackend, startDatabase, stopDatabase } from "./backendEnv";
+import { seedBackendConfig, startBackend, startDatabase } from "./backendEnv";
 import { CONTEXT_ENV, type CompatContext } from "./context";
 import { assertDockerReady } from "./docker";
 import { prepareInstance, removeInstance } from "./instance";
@@ -66,7 +66,6 @@ async function main(): Promise<number> {
   if (!tag) throw new Error("--version manquant (ex. --version 12.1)");
   const prefix = String(args.prefix ?? "tentacle-jf-compat");
   const port = Number(args.port ?? 18096);
-  const db = { name: `${prefix}-db`, port: Number(args["db-port"] ?? 18099) };
   const backendPort = Number(args["backend-port"] ?? 3031);
   const image = String(args.image ?? `jellyfin/jellyfin:${tag}`);
   const runDir = resolve(String(args["run-dir"] ?? join(tmpdir(), "tentacle-jf-compat", tag)));
@@ -82,10 +81,10 @@ async function main(): Promise<number> {
 
   let backend: Awaited<ReturnType<typeof startBackend>> | null = null;
   try {
-    const dbUrl = await startDatabase(db, log);
-    const jwtSecret = await seedBackendConfig(dbUrl, { jellyfinUrl: instance.url, apiKey: instance.apiKey, adminUserId: instance.admin.id });
+    const db = startDatabase(runDir, log);
+    const jwtSecret = seedBackendConfig(db, { jellyfinUrl: instance.url, apiKey: instance.apiKey, adminUserId: instance.admin.id });
     log(`Backend Tentacle sur :${backendPort} (journal : ${join(runDir, "backend.log")})…`);
-    backend = await startBackend({ port: backendPort, dbUrl, runDir });
+    backend = await startBackend({ port: backendPort, db, runDir });
 
     const context: CompatContext = {
       jellyfin: {
@@ -98,7 +97,7 @@ async function main(): Promise<number> {
       user2: await tentacleLogin(backend.url, USER2_NAME, instance.userIds.user2),
       libraries: instance.libraries,
       fixtures: instance.fixtures,
-      backend: { url: backend.url, jwtSecret, databaseUrl: databaseUrl(db) },
+      backend: { url: backend.url, jwtSecret, databaseUrl: db.url },
       recordFile: join(runDir, "records.jsonl"),
       openapiFile: join(runDir, "openapi.json"),
     };
@@ -126,11 +125,10 @@ async function main(): Promise<number> {
   } finally {
     await backend?.stop();
     if (!keep) {
-      stopDatabase(db);
       removeInstance(prefix, tag);
       log("Conteneurs et volumes de l'instance supprimés (--keep pour les garder).");
     } else {
-      log(`Gardés : ${instance.container} (${instance.url}), ${db.name}. Backend arrêté.`);
+      log(`Gardés : ${instance.container} (${instance.url}), base ${join(runDir, "backend-data")}. Backend arrêté.`);
     }
   }
 }

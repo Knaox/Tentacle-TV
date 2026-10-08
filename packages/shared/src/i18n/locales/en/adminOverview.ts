@@ -62,9 +62,9 @@ export default {
   "entry_jellyfinKeyRejected_no-rights_details": "Create an API key from a Jellyfin administrator account, then save it in Services.",
   entry_jellyfinKeyRejected_action: "Replace the key",
 
-  entry_databaseDown_title: "The database does not respond",
+  entry_databaseDown_title: "The database does not open",
   entry_databaseDown_body: "Tentacle can no longer save or read back what it keeps: preferences, ratings, invitations.",
-  entry_databaseDown_details: "Check that the database is running and that Tentacle can reach it.",
+  entry_databaseDown_details: "The server log says why (disk full, data folder permissions…). The “Database” card shows the file.",
   entry_databaseDown_action: "See the database",
 
   entry_jellyfinIncompatible_title: "Unsupported Jellyfin version",

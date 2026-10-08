@@ -8,7 +8,7 @@
 # `@prisma/client/runtime/library.js` et son moteur « library » — pas les
 # compilateurs de requêtes des autres bases (postgres, sqlserver, sqlite,
 # cockroach…), ni les variantes edge/wasm, ni la CLI et son moteur de schéma
-# (le schéma se pose par le client, services/schemaInit).
+# (le schéma se pose par le serveur, services/database/migrator.ts).
 set -eu
 
 prune() {

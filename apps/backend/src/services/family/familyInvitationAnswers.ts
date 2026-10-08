@@ -131,6 +131,8 @@ export async function expireInvitation(invitation: InvitationRow, now: number): 
 export async function expireDueInvitations(now: number): Promise<number> {
   const due = await getPrisma().familyInvitation.findMany({
     where: { status: "pending", expiresAt: { lte: new Date(now) } },
+    // Les plus anciennes d'abord : un lot borné ne doit pas laisser traîner les mêmes.
+    orderBy: { expiresAt: "asc" },
     take: 200,
   });
   for (const invitation of due) await expireInvitation(invitation, now);

@@ -16,7 +16,7 @@
     // conséquence — elle sert seulement à ne pas exclure ce qu'on veut typer.
     "rootDir": "."
   },
-  "include": ["src", "test"],
+  "include": ["src", "test", "scripts"],
   // La suite de compatibilité a son contrôle à elle (test/jellyfin-compat/tsconfig.json).
   "exclude": ["node_modules", "dist", "test/jellyfin-compat"]
 }

@@ -19,7 +19,6 @@ export default {
   retry: "Try again",
   step_welcome: "Welcome",
   step_code: "Code",
-  step_database: "Database",
   step_jellyfin: "Jellyfin",
   step_account: "Account",
   step_locale: "Language",
@@ -78,17 +77,6 @@ export default {
   codeHelp_nasExamples: "Synology: Container Manager → Container → Tentacle → Details → Log (Action → Open terminal). Unraid: Docker tab, container icon → Logs or Console.",
   codeHelp_nativeIntro: "The code is in the server's output: the terminal that started it, or the service's log. For a new code, from Tentacle's folder:",
   codeHelp_lookFor: "Look for the line:",
-
-  // ── The database ──────────────────────────────────────────────────────
-  dbTitle: "The database",
-  dbSubtitle: "Tentacle keeps its settings in MariaDB (or MySQL). Give it a database and an account that can create tables in it.",
-  dbHost: "Host",
-  dbHostHint: "From Docker, \"localhost\" is Tentacle itself: use host.docker.internal or the machine's address.",
-  dbPort: "Port",
-  dbName: "Database name",
-  dbUser: "Account",
-  dbPassword: "Password",
-  dbSubmit: "Connect the database",
 
   // ── Jellyfin ──────────────────────────────────────────────────────────
   jfTitle: "Jellyfin",

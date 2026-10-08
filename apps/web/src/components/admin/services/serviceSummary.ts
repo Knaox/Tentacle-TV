@@ -45,13 +45,19 @@ export function summarizeJellyfin(jellyfin: JellyfinService, key: AdminKeyState 
 }
 
 export function summarizeDatabase(database: DatabaseService): Summary {
-  const version = formatDatabaseVersion(database.version) || undefined;
+  const version = formatDatabaseVersion(database.version, database.engine) || undefined;
   if (database.status === "connected") {
-    return database.pendingRestart
-      ? { tone: "warning", label: "databaseRestart", detail: version }
-      : { tone: "success", label: "databaseConnected", detail: version };
+    if (database.pendingRestart) return { tone: "warning", label: "databaseRestart", detail: version };
+    // Sur un partage réseau, SQLite peut se corrompre : la tuile le signale, la carte dit quoi faire.
+    if (database.storage === "network") return { tone: "warning", label: "databaseOnNetwork", detail: version };
+    return { tone: "success", label: "databaseConnected", detail: version };
   }
-  if (database.status === "error") return { tone: "error", label: "databaseDown", detail: database.fields?.host };
+  if (database.status === "error") {
+    // Un fichier ne « répond » pas : il s'ouvre ou non. MariaDB (serveur d'avant 1.25) : son hôte.
+    return database.engine === null
+      ? { tone: "error", label: "databaseDown", detail: database.fields?.host }
+      : { tone: "error", label: "databaseWontOpen" };
+  }
   return { tone: "error", label: "databaseNotConfigured" };
 }
 
@@ -74,8 +80,18 @@ export function summarizeAudio(audio: AudioAnalysisStatus): Summary {
     : { tone: "neutral", label: "audioOff" };
 }
 
-/** « 11.4.4-MariaDB-ubu2404 » → « MariaDB 11.4.4 » ; « 8.0.36 » → « MySQL 8.0.36 ». */
-export function formatDatabaseVersion(raw: string): string {
+/** Le nom du moteur, tel qu'on l'écrit : « sqlite » → « SQLite » ; un moteur inconnu, tel quel. */
+export function databaseEngineName(engine: string): string {
+  return engine.toLowerCase() === "sqlite" ? "SQLite" : engine;
+}
+
+/**
+ * Le moteur et sa version : « 3.46.0 » de SQLite → « SQLite 3.46.0 ». Sans
+ * moteur déclaré (serveur d'avant 1.25, MariaDB) : « 11.4.4-MariaDB-ubu2404 »
+ * → « MariaDB 11.4.4 » ; « 8.0.36 » → « MySQL 8.0.36 ».
+ */
+export function formatDatabaseVersion(raw: string, engine: string | null = null): string {
+  if (engine !== null) return raw ? `${databaseEngineName(engine)} ${raw}` : "";
   const numbers = raw.match(/^\d+(?:\.\d+){0,2}/)?.[0];
   if (!numbers) return raw;
   return /mariadb/i.test(raw) ? `MariaDB ${numbers}` : `MySQL ${numbers}`;
@@ -118,6 +134,17 @@ export function matchesConfirmation(input: string, expected: string): boolean {
 /** Des octets en mégaoctets, dans l'unité de la langue (« 14,5 Mo », « 14.5 MB »). */
 export function formatMegabytes(bytes: number, locale: string): string {
   return new Intl.NumberFormat(locale, { style: "unit", unit: "megabyte", maximumFractionDigits: 1 }).format(bytes / 1e6);
+}
+
+const BYTE_UNITS = [["gigabyte", 1e9], ["megabyte", 1e6], ["kilobyte", 1e3]] as const;
+
+/** Une taille dans l'unité qui lui va, à la mode de la langue : « 512 octets », « 48,3 ko », « 14,5 Mo », « 1,2 Go ». */
+export function formatBytes(bytes: number, locale: string): string {
+  const size = Math.max(0, bytes);
+  const unit = BYTE_UNITS.find(([, scale]) => size >= scale);
+  // Sous le kilo, le mot entier : l'abréviation anglaise du singulier (« 512 byte ») se lit mal.
+  if (!unit) return new Intl.NumberFormat(locale, { style: "unit", unit: "byte", unitDisplay: "long" }).format(size);
+  return new Intl.NumberFormat(locale, { style: "unit", unit: unit[0], maximumFractionDigits: 1 }).format(size / unit[1]);
 }
 
 /** Une durée en secondes, au plus deux unités : « 16 s », « 2 min 5 s », « 1 h 3 min ». */

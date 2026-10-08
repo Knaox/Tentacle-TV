@@ -33,6 +33,8 @@ export async function buildCommunityRow(
   const goodRatings = await prisma.userRating.findMany({
     where: { jellyfinUserId: userId, deletedAt: null, score: { gte: 8 } },
     select: { mediaType: true, tmdbId: true },
+    // `take` sans ordre : SQLite et MariaDB ne rendent pas les mêmes 40.
+    orderBy: { id: "asc" },
     take: 40,
   });
   for (const r of goodRatings) {

@@ -1,39 +1,37 @@
 /**
- * L'environnement du banc : une base MySQL à lui (recréée à chaque passage),
- * un dossier de données à lui où le VRAI plugin Vigie du dépôt est installé
- * et pointé sur le faux Jellyseerr, et le VRAI backend lancé par tsx, dont
- * le journal est capté ligne à ligne.
+ * L'environnement du banc : un dossier de données à lui où vivent sa base
+ * SQLite (recréée à chaque passage) et le VRAI plugin Vigie du dépôt, pointé
+ * sur le faux Jellyseerr, et le VRAI backend lancé par tsx, dont le journal
+ * est capté ligne à ligne.
  */
 
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync, createWriteStream } from "node:fs";
 import { join, resolve } from "node:path";
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+import { applyCoreMigrations } from "../../src/services/database/migrator";
+import { coreDatabasePath, prismaSqliteUrl } from "../../src/services/database/sqlitePath";
 
 export const BACKEND_DIR = resolve(__dirname, "../..");
 const REPO_PLUGIN_DIR = join(BACKEND_DIR, "data/plugins/seer");
-export const BENCH_DB = "tentacle_notif_bench";
-const ADMIN_URL = process.env.BENCH_MYSQL_ADMIN_URL ?? "mysql://root@localhost:3306/mysql";
-export const BENCH_DB_URL = ADMIN_URL.replace(/\/[^/]*$/, `/${BENCH_DB}`);
 
-/** Base recréée à vide, schéma du cœur posé (db push : aucune table de plugin n'existe encore). */
-export async function resetDatabase(): Promise<void> {
-  const admin = new PrismaClient({ datasourceUrl: ADMIN_URL });
-  try {
-    await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS \`${BENCH_DB}\``);
-    await admin.$executeRawUnsafe(
-      `CREATE DATABASE \`${BENCH_DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
-    );
-  } finally {
-    await admin.$disconnect();
-  }
-  const push = spawnSync("npx", ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"], {
-    cwd: BACKEND_DIR,
-    env: { ...process.env, DATABASE_URL: BENCH_DB_URL },
-    encoding: "utf8",
-  });
-  if (push.status !== 0) throw new Error(`prisma db push a échoué :\n${push.stdout}\n${push.stderr}`);
+/**
+ * Base recréée à vide dans le dossier du banc, migrations du cœur appliquées
+ * (aucune table de plugin n'existe encore). Rend l'URL du client Prisma du
+ * banc — un AUTRE processus que le backend : SQLite en WAL l'accepte.
+ */
+export function resetDatabase(dataDir: string): string {
+  const path = coreDatabasePath(dataDir);
+  for (const suffix of ["", "-wal", "-shm"]) rmSync(`${path}${suffix}`, { force: true });
+  applyCoreMigrations(path);
+  return prismaSqliteUrl(path);
 }
+
+/**
+ * L'environnement du backend du banc : jamais la base de la machine. Une
+ * `DATABASE_URL` ou des `DB_*` hérités désigneraient une MariaDB à migrer.
+ */
+export const NO_LEGACY_DATABASE = { DATABASE_URL: "", DB_HOST: "" } as const;
 
 /** Le backend démarre « configuré » : setup fait, Jellyfin = le faux. */
 export async function seedConfig(prisma: PrismaClient, jellyfinUrl: string, apiKey: string): Promise<void> {

@@ -2,19 +2,25 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// La base est un fichier SQLite du dossier de données (`data/tentacle.db`) ;
+// le serveur en tire l'URL lui-même (services/database/sqlitePath.ts) et
+// n'utilise jamais celle-ci, qui ne sert qu'aux outils Prisma en développement.
+// Le schéma se pose par les migrations versionnées de `migrations-sqlite/`
+// (docs/sqlite/DECISION.md) — jamais `prisma db push` : il supprimerait les
+// tables des extensions.
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:../data/tentacle.db"
 }
 
 model InviteKey {
   id          String    @id @default(cuid())
-  key         String    @unique @db.VarChar(32)
+  key         String    @unique
   maxUses     Int       @default(1)
   currentUses Int       @default(0)
   createdAt   DateTime  @default(now())
   expiresAt   DateTime?
-  createdBy   String?   @db.VarChar(255)
+  createdBy   String?
   usages      InviteUsage[]
 
   @@index([key])
@@ -25,8 +31,8 @@ model InviteUsage {
   id            String    @id @default(cuid())
   inviteKeyId   String
   inviteKey     InviteKey @relation(fields: [inviteKeyId], references: [id])
-  jellyfinUserId String   @db.VarChar(255)
-  username      String    @db.VarChar(255)
+  jellyfinUserId String
+  username      String
   usedAt        DateTime  @default(now())
 
   @@map("invite_usages")
@@ -34,13 +40,13 @@ model InviteUsage {
 
 model SupportTicket {
   id              String    @id @default(cuid())
-  jellyfinUserId  String    @db.VarChar(255)
-  username        String    @db.VarChar(255)
-  subject         String    @db.VarChar(300)
-  category        String    @default("general") @db.VarChar(30) // general | bug | feature | account
-  status          String    @default("open") @db.VarChar(20)     // open | in_progress | resolved | closed
-  mediaItemId     String?   @db.VarChar(255)  // Jellyfin item ID (episode/movie)
-  mediaItemName   String?   @db.VarChar(500)  // e.g. "Breaking Bad — S1E3 — ...And the Bag's in the River"
+  jellyfinUserId  String
+  username        String
+  subject         String
+  category        String    @default("general") // general | bug | feature | account
+  status          String    @default("open")     // open | in_progress | resolved | closed
+  mediaItemId     String?    // Jellyfin item ID (episode/movie)
+  mediaItemName   String?    // e.g. "Breaking Bad — S1E3 — ...And the Bag's in the River"
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   messages        TicketMessage[]
@@ -54,10 +60,10 @@ model TicketMessage {
   id              String    @id @default(cuid())
   ticketId        String
   ticket          SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  jellyfinUserId  String    @db.VarChar(255)
-  username        String    @db.VarChar(255)
+  jellyfinUserId  String
+  username        String
   isAdmin         Boolean   @default(false)
-  body            String    @db.Text
+  body            String
   createdAt       DateTime  @default(now())
 
   @@index([ticketId])
@@ -68,11 +74,11 @@ model TicketMessage {
 // les autres sont purgées au-delà de 30 jours (services/notificationPurge.ts).
 model Notification {
   id              String    @id @default(cuid())
-  jellyfinUserId  String    @db.VarChar(255)
-  type            String    @db.VarChar(30)  // ticket_reply | ticket_status | request_status
-  title           String    @db.VarChar(300)
-  body            String?   @db.Text
-  refId           String?   @db.VarChar(255) // ticket or request ID
+  jellyfinUserId  String
+  type            String     // ticket_reply | ticket_status | request_status
+  title           String
+  body            String?
+  refId           String?   // ticket or request ID
   read            Boolean   @default(false)
   createdAt       DateTime  @default(now())
   pushedAt        DateTime? // horodatage de livraison push (null = pas encore poussée)
@@ -87,9 +93,9 @@ model Notification {
 // « DeviceNotRegistered ». Indépendant du jumelage TV (PairedDevice).
 model PushDevice {
   id              String   @id @default(cuid())
-  jellyfinUserId  String   @db.VarChar(255)
-  expoPushToken   String   @unique @db.VarChar(255)
-  platform        String   @db.VarChar(10) // ios | android
+  jellyfinUserId  String
+  expoPushToken   String   @unique
+  platform        String   // ios | android
   lastSeen        DateTime @default(now())
   createdAt       DateTime @default(now())
 
@@ -105,7 +111,7 @@ model PushDevice {
 // conversation directe. Une ligne absente vaut les défauts de chaque clé
 // (services/pushPreferences.ts), pas « tout off ».
 model NotificationPreference {
-  jellyfinUserId  String   @id @db.VarChar(255)
+  jellyfinUserId  String   @id
   libraryAdded    Boolean  @default(false)
   seerAvailable   Boolean  @default(true)
   tickets         Boolean  @default(true)
@@ -118,11 +124,11 @@ model NotificationPreference {
 
 model LibraryPreference {
   id              String  @id @default(cuid())
-  jellyfinUserId  String  @db.VarChar(255)
-  libraryId       String  @db.VarChar(255)
-  audioLang       String? @db.VarChar(10)   // ISO 639-2/B code
-  subtitleLang    String? @db.VarChar(10)
-  subtitleMode    String  @default("none") @db.VarChar(20) // "none" | "always" | "forced" | "signs"
+  jellyfinUserId  String
+  libraryId       String
+  audioLang       String?   // ISO 639-2/B code
+  subtitleLang    String?
+  subtitleMode    String  @default("none") // "none" | "always" | "forced" | "signs"
 
   @@unique([jellyfinUserId, libraryId])
   @@index([jellyfinUserId])
@@ -143,14 +149,14 @@ model LibraryPreference {
 // liste des bibliothèques.
 model ItemTrackPreference {
   id              String   @id @default(cuid())
-  jellyfinUserId  String   @db.VarChar(255)
-  itemId          String   @db.VarChar(255)
+  jellyfinUserId  String
+  itemId          String
   // Des LANGUES, jamais des index de piste : ceux des pistes externes sont
   // décalés de +1000 côté lecture locale, et ceux de Jellyfin changent entre
   // lecture directe et transcodage.
-  audioLang       String?  @db.VarChar(10)
-  subtitleLang    String?  @db.VarChar(10)
-  subtitleMode    String   @default("none") @db.VarChar(20) // "none" | "always" | "forced" | "signs"
+  audioLang       String?
+  subtitleLang    String?
+  subtitleMode    String   @default("none") // "none" | "always" | "forced" | "signs"
   updatedAt       DateTime @updatedAt
 
   @@unique([jellyfinUserId, itemId])
@@ -159,8 +165,8 @@ model ItemTrackPreference {
 }
 
 model ServerConfig {
-  key   String @id @db.VarChar(100)
-  value String @db.Text
+  key   String @id
+  value String
 
   @@map("server_config")
 }
@@ -172,9 +178,9 @@ model ServerConfig {
 // ne connaît pas le plugin, juste le claim.
 model ContentClaim {
   tmdbId          Int
-  jellyfinUserId  String   @db.VarChar(255)
-  mediaType       String   @db.VarChar(10)  // movie | tv
-  title           String   @db.VarChar(500) // titre normalisé (match épisodes par nom de série)
+  jellyfinUserId  String
+  mediaType       String    // movie | tv
+  title           String   // titre normalisé (match épisodes par nom de série)
   expiresAt       DateTime
 
   @@id([tmdbId, jellyfinUserId])
@@ -191,8 +197,8 @@ model ContentClaim {
 // temps de reconnaître un fichier REMPLACÉ (mise à niveau, déplacement) d'une
 // vraie nouveauté. Voir services/libraryPresence.ts.
 model LibraryKnownId {
-  itemId      String    @id @db.VarChar(64)
-  contentKey  String?   @db.VarChar(191)
+  itemId      String    @id
+  contentKey  String?
   removedAt   DateTime?
 
   @@index([contentKey])
@@ -207,8 +213,8 @@ model LibraryKnownId {
 // enregistrées ensemble (neutralise la résolution TMDB tardive). Purge 30 j.
 // Voir services/announcedRegistry.ts pour le format des clés.
 model AnnouncedContent {
-  contentKey      String   @db.VarChar(191)
-  jellyfinUserId  String   @db.VarChar(255)
+  contentKey      String
+  jellyfinUserId  String
   notifiedAt      DateTime @default(now())
 
   @@id([contentKey, jellyfinUserId])
@@ -224,8 +230,8 @@ model AnnouncedContent {
 // Une série retirée À LA MAIN n'a jamais de ligne ici.
 // Voir services/watchlistAutoRetired.ts et routes/watchlist.ts.
 model WatchlistAutoRetired {
-  seriesId       String   @db.VarChar(64)
-  jellyfinUserId String   @db.VarChar(255)
+  seriesId       String
+  jellyfinUserId String
   retiredAt      DateTime @default(now())
 
   @@id([seriesId, jellyfinUserId])
@@ -242,11 +248,11 @@ model WatchlistAutoRetired {
 // voir services/watchlistPending.ts. Clé TMDB : c'est la seule identité d'un
 // titre absent. mediaType au vocabulaire TMDB (« movie » | « tv »).
 model WatchlistPending {
-  jellyfinUserId String   @db.VarChar(255)
-  mediaType      String   @db.VarChar(10)
+  jellyfinUserId String
+  mediaType      String
   tmdbId         Int
   /// « watchlist » | « favorite » (cf. PendingFlag).
-  flag           String   @default("watchlist") @db.VarChar(12)
+  flag           String   @default("watchlist")
   createdAt      DateTime @default(now())
 
   @@id([jellyfinUserId, mediaType, tmdbId, flag])
@@ -256,14 +262,14 @@ model WatchlistPending {
 
 model PairingCode {
   id                    String    @id @default(cuid())
-  code                  String    @unique @db.VarChar(4)
-  status                String    @default("pending") @db.VarChar(20)
-  deviceName            String?   @db.VarChar(100)
-  deviceId              String?   @db.VarChar(255)
-  jellyfinUserId        String?   @db.VarChar(255)
-  username              String?   @db.VarChar(255)
-  token                 String?   @db.Text
-  jellyfinAccessToken   String?   @db.Text
+  code                  String    @unique
+  status                String    @default("pending")
+  deviceName            String?
+  deviceId              String?
+  jellyfinUserId        String?
+  username              String?
+  token                 String?
+  jellyfinAccessToken   String?
   createdAt             DateTime  @default(now())
   expiresAt             DateTime
 
@@ -279,13 +285,13 @@ model PairingCode {
 // Transport via le relay Cloudflare (entrée pré-confirmée persistante).
 model ProvisioningCode {
   id                    String    @id @default(cuid())
-  code                  String    @unique @db.VarChar(32)
+  code                  String    @unique
   enabled               Boolean   @default(false)
   expiresAt             DateTime?
-  jellyfinUserId        String?   @db.VarChar(255)
-  username              String?   @db.VarChar(255)
-  jellyfinAccessToken   String?   @db.Text
-  token                 String?   @db.Text
+  jellyfinUserId        String?
+  username              String?
+  jellyfinAccessToken   String?
+  token                 String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -294,31 +300,31 @@ model ProvisioningCode {
 
 model PairedDevice {
   id                    String    @id @default(cuid())
-  name                  String    @db.VarChar(100)
-  jellyfinUserId        String    @db.VarChar(255)
-  username              String    @db.VarChar(255)
-  tokenHash             String    @unique @db.VarChar(64)
-  jellyfinAccessToken   String?   @db.Text
+  name                  String
+  jellyfinUserId        String
+  username              String
+  tokenHash             String    @unique
+  jellyfinAccessToken   String?
   /// L'appareil Jellyfin dont `jellyfinAccessToken` est le jeton PROPRE, frappé
   /// pour cette TV (Quick Connect). Nul : jumelage d'avant — jeton copié d'un
   /// autre appareil du compte, jamais rendu, remplacé au contact suivant.
-  jellyfinDeviceId      String?   @db.VarChar(255)
+  jellyfinDeviceId      String?
   lastSeen              DateTime  @default(now())
   createdAt             DateTime  @default(now())
   /// La Famille (docs/FAMILLE.md). Une SESSION DE PROFIL d'une TV est une
   /// ligne enfant : `parentId` = le jumelage de la TV, `jellyfinUserId` = le
   /// compte du profil, son propre jeton Jellyfin. Nul : un jumelage de TV.
-  parentId              String?   @db.VarChar(191)
+  parentId              String?
   /// Session de profil : `owner` | `member` | `guest`.
-  profileKind           String?   @db.VarChar(10)
+  profileKind           String?
   /// Jumelage passé aux profils : son jeton (échangé) ne vaut plus session —
   /// il liste les profils et en ouvre un, rien d'autre.
   profilesSince         DateTime?
   /// L'empreinte du jeton d'avant l'échange, tant que le nouveau n'a pas
   /// servi : une réponse perdue se rejoue, une seule fois.
-  legacyTokenHash       String?   @db.VarChar(64)
+  legacyTokenHash       String?
   /// « Rester sur ce profil » : le profil que cette TV rouvre sans PIN.
-  stickyProfileId       String?   @db.VarChar(255)
+  stickyProfileId       String?
   /// Session du propriétaire : « Gérer les profils » ouvert jusqu'à (PIN).
   manageUntil           DateTime?
 
@@ -333,10 +339,10 @@ model PairedDevice {
 /// sauf un invité —, une famille au plus.
 model Family {
   id          String   @id @default(cuid())
-  ownerUserId String   @unique @db.VarChar(255)
+  ownerUserId String   @unique
   /// Dernier nom connu du propriétaire : l'affiche, la cloche, les sessions.
-  ownerName   String   @db.VarChar(255)
-  ownerColor  String?  @db.VarChar(16)
+  ownerName   String
+  ownerColor  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -349,16 +355,16 @@ model Family {
 /// `guest` (compte Jellyfin créé par Tentacle, caché, mot de passe jeté).
 model FamilyMember {
   id           String   @id @default(cuid())
-  familyId     String   @db.VarChar(191)
-  userId       String   @db.VarChar(255)
-  kind         String   @db.VarChar(10)
-  displayName  String   @db.VarChar(100)
-  color        String?  @db.VarChar(16)
+  familyId     String
+  userId       String
+  kind         String
+  displayName  String
+  color        String?
   /// Invité : le nom de son compte Jellyfin (« Lea - invite de Damien »).
-  jellyfinName String?  @db.VarChar(255)
+  jellyfinName String?
   /// Invité (v2) : le compte qui l'a créé — le propriétaire, ou un membre
   /// autorisé. Null pour une ligne d'avant la v2 (créée par le propriétaire).
-  createdBy       String?  @db.VarChar(255)
+  createdBy       String?
   /// Membre (v2) : le propriétaire lui permet de créer des invités. Coupé par défaut.
   canCreateGuests Boolean  @default(false)
   /// Invité (v2) : « peut demander » — les extensions, à son propre nom. Coupé par défaut.
@@ -374,13 +380,13 @@ model FamilyMember {
 /// Les invitations : identifiant aléatoire de 128 bits (jamais un cuid —
 /// personne ne doit pouvoir le deviner), sept jours de validité.
 model FamilyInvitation {
-  id            String    @id @db.VarChar(64)
-  familyId      String    @db.VarChar(191)
-  ownerUserId   String    @db.VarChar(255)
-  inviteeUserId String    @db.VarChar(255)
-  inviteeName   String    @db.VarChar(255)
+  id            String    @id
+  familyId      String
+  ownerUserId   String
+  inviteeUserId String
+  inviteeName   String
   /// pending | accepted | declined | cancelled | expired
-  status        String    @default("pending") @db.VarChar(12)
+  status        String    @default("pending")
   createdAt     DateTime  @default(now())
   expiresAt     DateTime
   respondedAt   DateTime?
@@ -396,8 +402,8 @@ model FamilyInvitation {
 /// Le code PIN d'un profil (quatre chiffres) — propriétaire, membre ou invité :
 /// haché lentement (scrypt, sel propre), jamais rendu, jamais envoyé à une TV.
 model ProfilePin {
-  userId    String   @id @db.VarChar(255)
-  pinHash   String   @db.VarChar(255)
+  userId    String   @id
+  pinHash   String
   updatedAt DateTime @updatedAt
 
   @@map("profile_pins")
@@ -407,7 +413,7 @@ model ProfilePin {
 /// ne remet pas le compteur à zéro) : cinq, puis un blocage de plus en plus
 /// long (`family/familyRules.ts`). Une réussite efface.
 model ProfilePinAttempt {
-  userId      String    @id @db.VarChar(255)
+  userId      String    @id
   failures    Int       @default(0)
   lockCount   Int       @default(0)
   lockedUntil DateTime?
@@ -426,12 +432,12 @@ model ProfilePinAttempt {
 /// rejoué après chaque échec, au démarrage et à chaque balayage.
 model GuestAccountCleanup {
   id             String   @id @default(cuid())
-  jellyfinUserId String   @unique @db.VarChar(255)
+  jellyfinUserId String   @unique
   /// Le nom du compte invité, pour le journal ; null s'il n'est pas connu.
-  jellyfinName   String?  @db.VarChar(255)
-  reason         String   @db.VarChar(20)
+  jellyfinName   String?
+  reason         String
   attempts       Int      @default(0)
-  lastError      String?  @db.VarChar(255)
+  lastError      String?
   nextAttemptAt  DateTime @default(now())
   createdAt      DateTime @default(now())
 
@@ -441,9 +447,9 @@ model GuestAccountCleanup {
 
 model PairedDeviceCleanup {
   id                    String    @id @default(cuid())
-  jellyfinDeviceId      String    @unique @db.VarChar(255)
-  tokenHash             String    @db.VarChar(64)
-  reason                String    @db.VarChar(20)
+  jellyfinDeviceId      String    @unique
+  tokenHash             String
+  reason                String
   attempts              Int       @default(0)
   nextAttemptAt         DateTime  @default(now())
   createdAt             DateTime  @default(now())
@@ -455,18 +461,17 @@ model PairedDeviceCleanup {
 // Lien de partage d'une liste — 1 lien actif par (propriétaire, liste).
 // Le lien est Live : à l'ouverture, le backend relit la liste Jellyfin du
 // propriétaire (via la clé admin), aucun item n'est stocké ici.
-// `kind` est arrivé avec le partage des favoris : les bases d'avant reçoivent
-// la colonne et la bascule d'index unique par core-init.sql (additif).
+// `kind` est arrivé avec le partage des favoris (colonne et index unique).
 // `options` est arrivé avec le partage des statistiques : les réglages du lien,
 // en JSON (la période partagée et le fuseau du propriétaire), lus par
 // services/share/statsShareOptions.ts ; NULL pour une liste.
 model ShareLink {
   id            String   @id @default(cuid())
-  token         String   @unique @db.VarChar(32)
-  ownerUserId   String   @db.VarChar(255)
-  ownerUsername String   @db.VarChar(255)
-  kind          String   @default("watchlist") @db.VarChar(20) // "watchlist" | "likes" | "stats"
-  options       String?  @db.Text
+  token         String   @unique
+  ownerUserId   String
+  ownerUsername String
+  kind          String   @default("watchlist") // "watchlist" | "likes" | "stats"
+  options       String?
   createdAt     DateTime @default(now())
 
   @@unique([ownerUserId, kind])
@@ -482,26 +487,24 @@ model ShareLink {
 // jamais extrapolé : une coupure du backend laisse un trou, elle n'invente rien.
 //
 // `clientName`, `deviceName` et `runtimeSeconds` sont là dès le départ bien que
-// rien ne les affiche encore — en production le schéma est appliqué par des
-// `CREATE TABLE IF NOT EXISTS` (core-init.sql), qui n'ajoutent JAMAIS une
-// colonne à une table déjà créée.
+// rien ne les affiche encore.
 model WatchSegment {
   id             String    @id @default(cuid())
-  jellyfinUserId String    @db.VarChar(255)
-  sessionKey     String    @db.VarChar(191)
-  itemId         String    @db.VarChar(64)
-  itemType       String    @db.VarChar(20)
-  itemName       String    @db.VarChar(500)
-  seriesId       String?   @db.VarChar(64)
-  seriesName     String?   @db.VarChar(500)
-  clientName     String?   @db.VarChar(100)
-  deviceName     String?   @db.VarChar(191)
+  jellyfinUserId String
+  sessionKey     String
+  itemId         String
+  itemType       String
+  itemName       String
+  seriesId       String?
+  seriesName     String?
+  clientName     String?
+  deviceName     String?
   seconds        Int       @default(0)
   runtimeSeconds Int?
   /// Langue de la piste audio lue (ISO 639-1), relevée dans `/Sessions` —
   /// ce que le spectateur ENTEND. NULL : segment d'avant le relevé, ou piste
   /// inconnue (plusieurs pistes et aucun index rapporté).
-  audioLang      String?   @db.VarChar(12)
+  audioLang      String?
   startedAt      DateTime
   lastSeenAt     DateTime
   closedAt       DateTime?
@@ -518,8 +521,8 @@ model WatchSegment {
 // fois. Sans lui, un `pnpm dev` oublié sur la même base doublerait
 // silencieusement tous les chiffres.
 model WatchTimeLease {
-  id        String   @id @db.VarChar(32)
-  owner     String   @db.VarChar(64)
+  id        String   @id
+  owner     String
   expiresAt DateTime
 
   @@map("watch_time_lease")
@@ -533,29 +536,27 @@ model WatchTimeLease {
 // Nommé PlaybackSettings et non PlaybackSegment* : WatchSegment (temps de
 // visionnage, ci-dessus) existe déjà et n'a rien à voir.
 //
-// Colonnes TYPÉES, et TOUTES posées dès la première création : en production
-// le schéma est appliqué par des `CREATE TABLE IF NOT EXISTS` (core-init.sql),
-// qui n'ajoutent JAMAIS une colonne à une table déjà créée. Le contrat côté
-// code vit dans src/playback/playbackSettings.ts (miroir de shared).
+// Colonnes TYPÉES. Le contrat côté code vit dans src/playback/playbackSettings.ts
+// (miroir de shared).
 model PlaybackSettings {
   id                   String   @id @default(cuid())
-  jellyfinUserId       String   @unique @db.VarChar(255)
+  jellyfinUserId       String   @unique
 
-  introAction          String   @default("auto") @db.VarChar(10)
+  introAction          String   @default("auto")
   introCountdown       Boolean  @default(true)
   introDelayMs         Int      @default(5000)
-  outroAction          String   @default("button") @db.VarChar(10)
+  outroAction          String   @default("button")
   outroCountdown       Boolean  @default(true)
   outroDelayMs         Int      @default(5000)
   /// Générique de fin d'un FILM — réglé à part de celui des épisodes, où la
   /// fiche « à suivre » occupe déjà le générique (`playbackSettings.ts`).
-  outroFilmAction      String   @default("auto") @db.VarChar(10)
+  outroFilmAction      String   @default("auto")
   outroFilmCountdown   Boolean  @default(true)
   outroFilmDelayMs     Int      @default(5000)
-  recapAction          String   @default("button") @db.VarChar(10)
+  recapAction          String   @default("button")
   recapCountdown       Boolean  @default(true)
   recapDelayMs         Int      @default(5000)
-  previewAction        String   @default("auto") @db.VarChar(10)
+  previewAction        String   @default("auto")
   previewCountdown     Boolean  @default(true)
   previewDelayMs       Int      @default(5000)
 
@@ -568,7 +569,7 @@ model PlaybackSettings {
   /// L'affiche PLEIN ÉCRAN de fin d'épisode — indépendante de `nextCard` :
   /// refuser la fiche du générique n'éteint pas l'affiche de fin.
   nextFinalCard        Boolean  @default(true)
-  nextTrigger          String   @default("outroStart") @db.VarChar(16)
+  nextTrigger          String   @default("outroStart")
   /// CONSERVÉE : un serveur d'avant la démarre en NOT NULL. Plus lue.
   nextBeforeEndSeconds Int      @default(45)
 
@@ -576,11 +577,10 @@ model PlaybackSettings {
   /// Les règles sont un JSON — un tableau de longueur variable n'a pas sa
   /// place en colonnes, et rien ne les interroge en SQL.
   beforeEndEnabled     Boolean  @default(true)
-  beforeEndMode        String   @default("percent") @db.VarChar(8)
+  beforeEndMode        String   @default("percent")
   beforeEndValue       Int      @default(98)
-  /// NULLABLE : une colonne TEXT ne porte pas de défaut partout, et
-  /// `core-init.sql` l'ajoute en `DEFAULT NULL`. Null = aucune règle.
-  beforeEndRules       String?  @db.Text
+  /// NULLABLE : null = aucune règle.
+  beforeEndRules       String?
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -597,14 +597,14 @@ model PlaybackSettings {
 /// lignes sans verdict et les versions périmées sont purgées au démarrage.
 /// `runtimeMs` est le témoin du fichier : une durée différente, un autre fichier.
 model MediaFrameAnalysis {
-  itemId    String   @id @db.VarChar(64)
+  itemId    String   @id
   /// Version de l'algorithme (`TAIL_ANALYSIS_VERSION`) : la faire monter
   /// périme toutes les lignes sans avoir à les effacer.
   version   Int
   runtimeMs Int
   /// Le verdict sérialisé (`TailVerdict`). Nullable pour les lignes d'avant ;
   /// on n'en écrit plus de nulles.
-  verdict   String?  @db.Text
+  verdict   String?
   createdAt DateTime @default(now())
 
   @@map("media_frame_analysis")
@@ -616,11 +616,11 @@ model MediaFrameAnalysis {
 /// trouvé — le « rien » refroidit en mémoire, les lignes vides d'avant sont
 /// purgées au démarrage.
 model MediaAudioAnalysis {
-  itemId    String   @id @db.VarChar(64)
+  itemId    String   @id
   /// Version des règles du verdict (`AUDIO_ANALYSIS_VERSION`).
   version   Int
   runtimeMs Int
-  verdict   String?  @db.Text
+  verdict   String?
   createdAt DateTime @default(now())
 
   @@map("media_audio_analysis")
@@ -628,28 +628,26 @@ model MediaAudioAnalysis {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Moteur de recommandation. Doctrine commune à tous les modèles ci-dessous :
-// - aucun enum, aucun Json — unions en VarChar commenté, JSON en Text/MediumText ;
-// - identité média = (mediaType, tmdbId), la clé canonique de Vigie ("movie:603") ;
-// - chaque modèle a son bloc dans core-init.sql : en production le schéma
-//   n'arrive QUE par ce fichier (incident item_track_preferences).
+// - aucun enum, aucun Json — unions en String commenté, JSON en String ;
+// - identité média = (mediaType, tmdbId), la clé canonique de Vigie ("movie:603").
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Note explicite d'un titre, sur 10 (1 = une demi-étoile, jamais 0).
-// `seasonNumber`/`episodeNumber` valent 0 hors épisode : MySQL admet plusieurs
-// NULL dans un index unique, 0 rend l'unicité réelle.
+// `seasonNumber`/`episodeNumber` valent 0 hors épisode : un index unique admet
+// plusieurs NULL, 0 rend l'unicité réelle.
 // La note est écrite ici IMMÉDIATEMENT ; la sync TMDB est asynchrone
 // (services/reco/syncWorkers.ts) et `syncStatus` en reflète l'état — l'UI ne
 // bloque jamais dessus, une note posée hors ligne part à la reconnexion.
 model UserRating {
   id              String    @id @default(cuid())
-  jellyfinUserId  String    @db.VarChar(255)
-  mediaType       String    @db.VarChar(10) // "movie" | "series" | "episode"
+  jellyfinUserId  String
+  mediaType       String    // "movie" | "series" | "episode"
   tmdbId          Int
-  jellyfinItemId  String?   @db.VarChar(64)
+  jellyfinItemId  String?
   seasonNumber    Int       @default(0)
   episodeNumber   Int       @default(0)
   score           Int // 1..10
-  syncStatus      String    @default("pending") @db.VarChar(16) // "pending" | "synced" | "failed" | "disabled" | "delete_pending"
+  syncStatus      String    @default("pending") // "pending" | "synced" | "failed" | "disabled" | "delete_pending"
   syncAttempts    Int       @default(0)
   nextSyncAt      DateTime?
   tmdbSyncedAt    DateTime?
@@ -661,7 +659,7 @@ model UserRating {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // `map:` : le nom que Prisma génèrerait dépasse les 64 caractères de MySQL.
+  // `map:` : nom figé depuis MariaDB (64 caractères au plus), repris tel quel.
   @@unique([jellyfinUserId, mediaType, tmdbId, seasonNumber, episodeNumber], map: "user_ratings_identity_key")
   @@index([jellyfinUserId])
   @@index([syncStatus, nextSyncAt])
@@ -673,8 +671,8 @@ model UserRating {
 // RESTE IsFavorite chez Jellyfin — la vue unifiée vit dans services/reco.
 model UserLike {
   id             String   @id @default(cuid())
-  jellyfinUserId String   @db.VarChar(255)
-  mediaType      String   @db.VarChar(10) // "movie" | "series"
+  jellyfinUserId String
+  mediaType      String   // "movie" | "series"
   tmdbId         Int
   createdAt      DateTime @default(now())
 
@@ -686,11 +684,11 @@ model UserLike {
 // Profil de goût : vecteur de facettes pondérées, construit par
 // services/reco/profileBuilder.ts (incrémental, poké par le WS Jellyfin).
 // `facets` est un JSON { "genre:18": poids, "kw:time-travel": … } — rien ne
-// l'interroge en SQL ; MediumText car un gros historique dépasse les 64 Ko.
+// l'interroge en SQL ; un gros historique dépasse les 64 Ko.
 model TasteProfile {
   id             String   @id @default(cuid())
-  jellyfinUserId String   @unique @db.VarChar(255)
-  facets         String   @db.MediumText
+  jellyfinUserId String   @unique
+  facets         String
   signalCount    Int      @default(0)
   ratingMean     Float    @default(0)
   ratingStdDev   Float    @default(0)
@@ -700,11 +698,11 @@ model TasteProfile {
   animeShare     Float    @default(0)
   /// Ancres du goût : JSON des titres pondérés d'où dérive tout le classement
   /// (services/reco/anchors.ts). NULL = profil d'avant les ancres.
-  anchors        String?  @db.MediumText
+  anchors        String?
   /// Potentiels : JSON des titres seulement dans Ma liste — ni vus, ni aimés,
   /// ni notés — qui ne pèsent pas dans le goût (services/reco/potentials.ts).
   /// NULL = profil d'avant les potentiels (version < 5).
-  potentials     String?  @db.MediumText
+  potentials     String?
   schemaVersion  Int      @default(1)
   computedAt     DateTime @default(now())
 
@@ -715,7 +713,7 @@ model TasteProfile {
 // typées, TOUTES posées dès la première création (doctrine PlaybackSettings).
 model RecoSettings {
   id                 String   @id @default(cuid())
-  jellyfinUserId     String   @unique @db.VarChar(255)
+  jellyfinUserId     String   @unique
   personalized       Boolean  @default(true)
   includeVigie       Boolean  @default(true)
   community          Boolean  @default(true)
@@ -729,7 +727,7 @@ model RecoSettings {
   /// PRINCIPAUX (« [283,415] », douze au plus). Persisté ici pour suivre le
   /// compte d'un appareil à l'autre — et pour que le serveur précalcule la
   /// page de ce filtre en fond.
-  providerFilter     String   @default("[]") @db.VarChar(255)
+  providerFilter     String   @default("[]")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -738,12 +736,12 @@ model RecoSettings {
 
 // Cache des rangées calculées : la page LIT ce cache ; la génération est un job
 // asynchrone (services/reco/generationJob.ts), jamais dans la requête HTTP.
-// MediumText : une rangée porte des dizaines d'items avec leur ScoreBreakdown.
+// Gros texte : une rangée porte des dizaines d'items avec leur ScoreBreakdown.
 model RecommendationCache {
   id             String   @id @default(cuid())
-  jellyfinUserId String   @db.VarChar(255)
-  rowKey         String   @db.VarChar(64) // "forYou" | "inLibrary" | "anime" | "discover" | "becauseYouLiked:<n>" | "community" | "exploration"
-  payload        String   @db.MediumText
+  jellyfinUserId String
+  rowKey         String   // "forYou" | "inLibrary" | "anime" | "discover" | "becauseYouLiked:<n>" | "community" | "exploration"
+  payload        String
   generatedAt    DateTime @default(now())
   expiresAt      DateTime
 
@@ -755,9 +753,9 @@ model RecommendationCache {
 // « Ne plus me proposer » : exclusion DÉFINITIVE d'un titre des recommandations.
 model RecommendationFeedback {
   id             String   @id @default(cuid())
-  jellyfinUserId String   @db.VarChar(255)
-  itemKey        String   @db.VarChar(32) // "movie:603"
-  action         String   @db.VarChar(20) // "dismissed" | "not_interested" | "already_seen"
+  jellyfinUserId String
+  itemKey        String   // "movie:603"
+  action         String   // "dismissed" | "not_interested" | "already_seen"
   createdAt      DateTime @default(now())
 
   @@unique([jellyfinUserId, itemKey])
@@ -769,11 +767,11 @@ model RecommendationFeedback {
 // stockée = accueil historique (défauts servis en 200, migration silencieuse).
 model HomeLayout {
   id              String   @id @default(cuid())
-  jellyfinUserId  String   @unique @db.VarChar(255)
-  heroMode        String   @default("reco") @db.VarChar(20) // "resume" | "random" | "reco" | "fixed"
-  heroFixedItemId String?  @db.VarChar(64)
-  rows            String   @db.Text
-  cardDensity     String   @default("normal") @db.VarChar(10) // "compact" | "normal" | "large"
+  jellyfinUserId  String   @unique
+  heroMode        String   @default("reco") // "resume" | "random" | "reco" | "fixed"
+  heroFixedItemId String?
+  rows            String
+  cardDensity     String   @default("normal") // "compact" | "normal" | "large"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -783,9 +781,9 @@ model HomeLayout {
 // Compte externe lié : guest session TMDB (notes anonymes).
 model ExternalAccount {
   id             String    @id @default(cuid())
-  jellyfinUserId String    @db.VarChar(255)
-  provider       String    @db.VarChar(20) // "tmdb_guest"
-  guestSessionId String?   @db.VarChar(64)
+  jellyfinUserId String
+  provider       String    // "tmdb_guest"
+  guestSessionId String?
   expiresAt      DateTime?
   createdAt      DateTime  @default(now())
 
@@ -799,8 +797,8 @@ model ExternalAccount {
 // familial, une paire issue d'un seul compte révèle ce que ce compte regarde.
 // Le job filtre en amont ET rowBuilder refiltre en aval.
 model ItemCooccurrence {
-  itemAKey   String   @db.VarChar(32)
-  itemBKey   String   @db.VarChar(32)
+  itemAKey   String
+  itemBKey   String
   score      Float
   userCount  Int
   computedAt DateTime @default(now())
@@ -814,7 +812,7 @@ model ItemCooccurrence {
 // bibliothèque + titres notés. Sans lui, « Drame » écraserait tout et le moteur
 // recommanderait de la bouillie.
 model FacetIdf {
-  facetKey   String   @id @db.VarChar(191)
+  facetKey   String   @id
   docCount   Int
   idf        Float
   computedAt DateTime @default(now())
@@ -826,9 +824,9 @@ model FacetIdf {
 // appel via append_to_response). Un cache, jamais une source : vider la table
 // ne coûte que des re-fetchs.
 model TmdbMetaCache {
-  mediaType String   @db.VarChar(10) // "movie" | "tv"
+  mediaType String   // "movie" | "tv"
   tmdbId    Int
-  payload   String   @db.MediumText
+  payload   String
   fetchedAt DateTime @default(now())
   expiresAt DateTime
 
@@ -842,11 +840,11 @@ model TmdbMetaCache {
 // service ne dépend jamais de TMDB.
 model UserLikedPerson {
   id             String   @id @default(cuid())
-  jellyfinUserId String   @db.VarChar(255)
+  jellyfinUserId String
   /// id TMDB de la personne
   personId       Int
-  name           String   @db.VarChar(255)
-  profilePath    String?  @db.VarChar(255)
+  name           String
+  profilePath    String?
   createdAt      DateTime @default(now())
 
   @@unique([jellyfinUserId, personId])
@@ -860,10 +858,10 @@ model UserLikedPerson {
 // le titre revient dans la pile après un délai (services/swipe/swipeStore.ts).
 model UserSwipe {
   id             String   @id @default(cuid())
-  jellyfinUserId String   @db.VarChar(255)
-  mediaType      String   @db.VarChar(10) // "movie" | "tv"
+  jellyfinUserId String
+  mediaType      String   // "movie" | "tv"
   tmdbId         Int
-  verdict        String   @db.VarChar(12) // "like" | "superlike" | "dislike" | "skip"
+  verdict        String   // "like" | "superlike" | "dislike" | "skip"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

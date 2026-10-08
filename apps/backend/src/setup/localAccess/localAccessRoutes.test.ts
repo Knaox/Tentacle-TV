@@ -24,9 +24,7 @@ vi.mock("../../services/configStore", () => ({
 }));
 vi.mock("../../services/db", () => ({
   hasPrisma: () => false,
-  hasDatabaseUrl: () => true,
-  getDatabaseUrlSource: () => "env",
-  reconnectPrisma: async () => false,
+  retryDatabaseOpen: async () => false,
 }));
 
 import { DATA_ROOT } from "../../services/dataDir";

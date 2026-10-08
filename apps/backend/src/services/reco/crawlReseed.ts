@@ -27,6 +27,7 @@ export function requestCrawlerReseed(reason: "boot" | "region"): void {
       const accounts = await prisma.recommendationCache.findMany({
         where: { rowKey: POOL_ROW_KEY },
         select: { jellyfinUserId: true },
+        orderBy: { id: "asc" },
       });
       let pools = 0;
       for (const { jellyfinUserId } of accounts) {

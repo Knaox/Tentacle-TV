@@ -1,4 +1,4 @@
-import { getDatabaseUrlSource, hasDatabaseUrl, hasPrisma } from "../services/db";
+import { hasPrisma } from "../services/db";
 import type { FastifyRequest } from "fastify";
 import { isWebUiEnabled } from "../static/webUi";
 import { flowState } from "./flow/setupFlow";
@@ -24,10 +24,13 @@ export function buildSetupContext(request: FastifyRequest): SetupContext {
     deployment: deployment.deployment,
     stack: deployment.stack,
     provisioner: provisioner.kind,
+    // Pour l'assistant d'avant 1.25, encore livré dans le bureau : « fournie
+    // par l'environnement » lui fait sauter l'étape « base de données ».
+    // SQLite n'a rien à configurer.
     database: {
-      configured: hasDatabaseUrl(),
+      configured: true,
       connected: hasPrisma(),
-      fromEnv: getDatabaseUrlSource() === "env",
+      fromEnv: true,
     },
     jellyfin: {
       url: stored?.url ?? null,

@@ -29,7 +29,7 @@ vi.mock("../services/configStore", () => ({
   setAppState: (value: string) => void (state.appState = value),
   isSetupComplete: () => state.config.get("setup_completed") === "true",
 }));
-vi.mock("../services/db", () => ({ hasPrisma: () => true, hasDatabaseUrl: () => true, getDatabaseUrlSource: () => "env" }));
+vi.mock("../services/db", () => ({ hasPrisma: () => true }));
 vi.mock("../services/jellyfinWs", () => ({ restartJellyfinWs: () => undefined }));
 vi.mock("../services/jellyfinCors", () => ({ injectCorsHosts: async () => ({ added: [] }) }));
 vi.mock("../services/backgroundServices", () => ({ startBackgroundServices: () => undefined }));

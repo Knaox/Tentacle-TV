@@ -8,18 +8,20 @@ import {
 } from "./downloadBandwidth/caps";
 
 export type AppState =
-  | "setup_db"       // No database connection
+  // La base ne s'ouvre pas, ou une MariaDB attend sa migration vers SQLite.
+  // Rien à saisir : plus d'étape « base de données » depuis SQLite.
+  | "database_unavailable"
   | "setup_jellyfin" // DB OK but Jellyfin not configured
   | "setup_admin"    // Jellyfin OK but no admin user
   | "running";       // Fully configured
 
-let appState: AppState = "setup_db";
+let appState: AppState = "database_unavailable";
 const cache = new Map<string, string>();
 
 /** Detect the current app state by reading DB config. */
 export async function detectAppState(): Promise<AppState> {
   if (!hasPrisma()) {
-    appState = "setup_db";
+    appState = "database_unavailable";
     return appState;
   }
 
@@ -42,8 +44,8 @@ export async function detectAppState(): Promise<AppState> {
     appState = "setup_admin";
     return appState;
   } catch {
-    // Table doesn't exist yet — need to run migrations
-    appState = "setup_db";
+    // La base répond mal (disque, fichier abîmé) : rien n'est servi.
+    appState = "database_unavailable";
     return appState;
   }
 }

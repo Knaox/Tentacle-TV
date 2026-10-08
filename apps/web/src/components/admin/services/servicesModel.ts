@@ -25,6 +25,7 @@ export interface JellyfinService {
   httpStatus: number | null;
 }
 
+/** La connexion MariaDB d'un serveur d'avant 1.25 — montrée, jamais modifiable d'ici. */
 export interface DatabaseFields {
   host: string;
   port: number;
@@ -32,12 +33,29 @@ export interface DatabaseFields {
   user: string;
 }
 
+/** Où vit le fichier de la base : `network`, un partage réseau où SQLite peut se corrompre. */
+export type DatabaseStorage = "local" | "network" | "unknown";
+
+/**
+ * La base du serveur. Depuis 1.25, un fichier SQLite que rien ne règle :
+ * moteur, chemin, taille, état. Un serveur d'avant ne dit pas son moteur
+ * (`engine: null`) : il est sur MariaDB, décrit par `fields`.
+ */
 export interface DatabaseService {
   status: ServiceStatus;
   version: string;
-  /** Qui décide de la connexion au redémarrage ; `null` : inconnu ou aucune base. */
-  source: "env" | "file" | null;
+  /** `sqlite` aujourd'hui ; `null` : serveur d'avant 1.25, sur MariaDB. */
+  engine: string | null;
+  /** Le fichier de la base (SQLite) ; vide sur un serveur d'avant. */
+  path: string;
+  /** Le fichier et son journal, en octets ; `null` : inconnu. */
+  sizeBytes: number | null;
+  storage: DatabaseStorage;
+  /** Pourquoi la base ne s'ouvre pas, tel que le serveur le dit ; `null` : rien à dire. */
+  error: string | null;
+  /** Serveur d'avant 1.25 : une autre connexion MariaDB attend le redémarrage. */
   pendingRestart: boolean;
+  /** Serveur d'avant 1.25 : la connexion MariaDB en service. */
   fields: DatabaseFields | null;
 }
 
@@ -122,10 +140,31 @@ export const asRecord = (value: unknown): Json => (value && typeof value === "ob
 const status = (value: unknown): ServiceStatus =>
   value === "connected" || value === "error" ? value : "disconnected";
 
+function readDatabase(db: Json): DatabaseService {
+  const engine = text(db.engine) || null;
+  const fields = asRecord(db.fields);
+  const size = db.sizeBytes;
+  return {
+    status: status(db.status),
+    version: text(db.version),
+    engine,
+    path: text(db.path),
+    sizeBytes: typeof size === "number" && Number.isFinite(size) && size >= 0 ? size : null,
+    storage: db.storage === "local" || db.storage === "network" ? db.storage : "unknown",
+    error: text(db.error) || null,
+    // Seulement sur MariaDB : un serveur SQLite garde ces champs pour l'admin d'avant 1.25.
+    pendingRestart: engine === null && db.pendingRestart === true,
+    fields: engine === null && text(fields.host) ? {
+      host: text(fields.host),
+      port: count(fields.port) || 3306,
+      database: text(fields.database),
+      user: text(fields.user),
+    } : null,
+  };
+}
+
 export function readServices(raw: unknown): ServicesStatus {
   const jf = asRecord(asRecord(raw).jellyfin);
-  const db = asRecord(asRecord(raw).database);
-  const fields = asRecord(db.fields);
   const failure = text(jf.error);
   return {
     jellyfin: {
@@ -137,20 +176,7 @@ export function readServices(raw: unknown): ServicesStatus {
       error: failure === "jellyfin-unreachable" || failure === "jellyfin-invalid" || failure === "jellyfin-rejected" ? failure : null,
       httpStatus: typeof jf.httpStatus === "number" ? jf.httpStatus : null,
     },
-    database: {
-      status: status(db.status),
-      version: text(db.version),
-      // `fromEnv` seul ne vaut rien : les serveurs d'avant `source` le disaient
-      // vrai sur toute image Docker. Sans `source`, on ne sait pas.
-      source: db.source === "env" || db.source === "file" ? db.source : null,
-      pendingRestart: db.pendingRestart === true,
-      fields: text(fields.host) ? {
-        host: text(fields.host),
-        port: count(fields.port) || 3306,
-        database: text(fields.database),
-        user: text(fields.user),
-      } : null,
-    },
+    database: readDatabase(asRecord(asRecord(raw).database)),
   };
 }
 
