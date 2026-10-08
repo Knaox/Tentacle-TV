@@ -48,8 +48,9 @@ export interface SourceConnectionOptions {
    * MySQL 8 authentifie par défaut en `caching_sha2_password` : sans TLS, l'échange
    * complet chiffre le mot de passe avec la clé publique du serveur, qu'il faut donc
    * lui demander. Prisma (la 1.24) le faisait ; sans cela, toute source MySQL 8 sans
-   * TLS échouait en « source injoignable » (mesuré au banc, MySQL 8.4). MariaDB n'a
-   * pas ce mode et ignore l'option ; avec TLS, le canal chiffré suffit.
+   * TLS échouait en « source injoignable » (mesuré au banc, MySQL 8.4). Seulement SANS
+   * TLS : dès qu'il est demandé, le canal chiffré suffit et aucune clé ne se demande
+   * (un intermédiaire ne peut pas en glisser une). MariaDB n'a pas ce mode.
    */
   allowPublicKeyRetrieval: boolean;
 }
@@ -101,7 +102,13 @@ export function connectionOptions(url: string, readFile: (path: string) => Buffe
       throw new SourceConfigError("un fichier de certificat de la base (sslcert / sslidentity) est illisible");
     }
   }
+  options.allowPublicKeyRetrieval = !options.ssl;
   return options;
+}
+
+/** `sslaccept=accept_invalid_certs` : honoré comme le faisait Prisma, mais dit au journal. */
+export function tlsWithoutVerification(url: string): boolean {
+  return new URL(url.trim().replace(/^mariadb:/i, "mysql:")).searchParams.get("sslaccept") === "accept_invalid_certs";
 }
 
 /** Les paramètres ignorés (réglages de pool) : dits une fois au journal. */

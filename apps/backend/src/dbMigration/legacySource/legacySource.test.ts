@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { afterKey } from "./mariadbReader";
-import { connectionOptions, describeSource, ignoredParams, isMariadbUrl, SourceConfigError } from "./sourceConfig";
+import { connectionOptions, describeSource, ignoredParams, isMariadbUrl, SourceConfigError, tlsWithoutVerification } from "./sourceConfig";
 import { sourceZoneForConversion, zonePolicy } from "./timeZones";
 
 describe("source MariaDB : l'URL relue comme la 1.24 la donnait à Prisma", () => {
@@ -27,6 +27,18 @@ describe("source MariaDB : l'URL relue comme la 1.24 la donnait à Prisma", () =
 
   it("MySQL 8 (caching_sha2_password, sans TLS) : la clé publique du serveur se demande, comme le faisait Prisma", () => {
     expect(connectionOptions("mysql://root:pw@mysql8:3306/tentacle", files).allowPublicKeyRetrieval).toBe(true);
+  });
+
+  it("TLS demandé (sslaccept, sslcert ou sslidentity) : JAMAIS de clé demandée — le canal chiffré suffit", () => {
+    for (const query of ["sslaccept=strict", "sslcert=/certs/ca.pem", "sslidentity=/id.p12&sslpassword=pw", "sslaccept=accept_invalid_certs"]) {
+      expect(connectionOptions(`mysql://u:p@db/t?${query}`, files).allowPublicKeyRetrieval, query).toBe(false);
+    }
+  });
+
+  it("un TLS sans vérification du certificat se reconnaît, pour être dit au journal", () => {
+    expect(tlsWithoutVerification("mysql://u:p@db/t?sslaccept=accept_invalid_certs")).toBe(true);
+    expect(tlsWithoutVerification("mysql://u:p@db/t?sslaccept=strict")).toBe(false);
+    expect(tlsWithoutVerification("mysql://u:p@db/t")).toBe(false);
   });
 
   it("la moindre demande de TLS le rend OBLIGATOIRE, certificat relu, jamais de repli en clair", () => {

@@ -2,7 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { existsSync } from "fs";
 import { dirname } from "path";
 import { MariadbReader } from "./legacySource/mariadbReader";
-import { describeSource, ignoredParams, SourceConfigError, sourceIdentity } from "./legacySource/sourceConfig";
+import { describeSource, ignoredParams, SourceConfigError, sourceIdentity, tlsWithoutVerification } from "./legacySource/sourceConfig";
 import type { CoreModel } from "./copy/coreModels";
 import { copyAll, type CopyAllResult } from "./copy/copyAll";
 import { failureOf, MigrationFailure } from "./migrationErrors";
@@ -67,6 +67,7 @@ export async function runMigration(deps: RunMigrationDeps): Promise<MigrationOut
   let db: DatabaseSync | null = null;
   try {
     deps.log(`[db-migration] Source ${describeSource(deps.sourceUrl)} (${reader.serverVersion}), lecture seule sur un instantané`);
+    if (tlsWithoutVerification(deps.sourceUrl)) deps.log("[db-migration] TLS sans vérification du certificat (sslaccept=accept_invalid_certs), comme le faisait la 1.24");
     // L'installation finie de la source le reste : avant TOUT le reste (S3).
     if ((await reader.configValue("setup_completed")) === "true") deps.sealSetup();
 

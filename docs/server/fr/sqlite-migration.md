@@ -131,6 +131,10 @@ l'ancienne base n'est pas touchée.
   SQLite reste arrêtée, avec un message clair, jusqu'à sa mise à jour.
 - **Les fuseaux horaires** : les dates écrites par MariaDB dans son propre fuseau sont converties en UTC.
 - **Partages réseau** : gardez le dossier de données sur un disque local ; sur NFS ou SMB, SQLite peut s'abîmer.
+- **Une base sur une AUTRE machine, sans TLS** : pendant la copie, ses données traversent le réseau en clair.
+  Ajoutez `sslaccept=strict` à son adresse (avec `sslcert` au besoin), ou faites tourner Tentacle sur la même
+  machine que la base le temps de la migration. TLS demandé, la connexion est toujours chiffrée, jamais en
+  clair à sa place.
 
 ## Vérifier que vos données sont sur SQLite
 
