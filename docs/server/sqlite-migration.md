@@ -20,7 +20,7 @@ Tentacle finds your data. Remove them only once the dashboard says so (see below
    migration fails.
 2. Meanwhile, the web, the desktop and mobile apps, the TVs show **"Database migration in progress"**, with
    the progress and the estimated time left. It usually takes a few seconds: about 3 on a real database,
-   about 8 on a simulated slow NAS (table below).
+   8 to 9 on a simulated slow NAS (table below).
    Apps that are not up to date just see the server restarting for those seconds.
 3. Before switching, everything is **checked**: rows per table, a checksum per column, and a sample read
    the way the server will read it. Only then is the new database put in place.
@@ -30,7 +30,7 @@ Tentacle finds your data. Remove them only once the dashboard says so (see below
 
 | Measured on a real database (50 tables, 114,000 rows, 850 MB, 92 % of it a cache) | Fast machine | Slow NAS (simulated: ½ core, disk at 30 MB/s and 400 IOPS) |
 |---|---|---|
-| Interruption seen by the apps (everything but the TMDB cache, checks included) | ~3 s | ~8 s |
+| Interruption seen by the apps (everything but the TMDB cache, checks included) | ~3 s | 8-9 s |
 | TMDB cache, in the background, server already running | ~25 s | ~1 min |
 
 ## Removing MariaDB

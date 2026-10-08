@@ -22,7 +22,7 @@ bord le dit (voir plus bas).
    jamais modifiée, pas même si la migration échoue.
 2. Pendant ce temps, le web, les applications de bureau et mobiles, les téléviseurs affichent **« Migration de
    la base de données en cours »**, avec l'avancement et le temps restant estimé. Cela prend d'ordinaire
-   quelques secondes : 3 environ sur une vraie base, 8 environ sur un NAS lent simulé (tableau ci-dessous).
+   quelques secondes : 3 environ sur une vraie base, 8 à 9 sur un NAS lent simulé (tableau ci-dessous).
    Les applications pas encore à jour voient seulement le serveur redémarrer pendant ces secondes.
 3. Avant la bascule, tout est **vérifié** : les lignes de chaque table, une somme de contrôle par colonne, et
    un échantillon relu comme le serveur le lira. La nouvelle base n'est mise en place qu'ensuite.
@@ -33,7 +33,7 @@ bord le dit (voir plus bas).
 
 | Mesuré sur une vraie base (50 tables, 114 000 lignes, 850 Mo dont 92 % de cache) | Machine rapide | NAS lent simulé (½ cœur, disque à 30 Mo/s et 400 IOPS) |
 |---|---|---|
-| Interruption vue par les applications (tout sauf le cache TMDB, vérifications comprises) | ~3 s | ~8 s |
+| Interruption vue par les applications (tout sauf le cache TMDB, vérifications comprises) | ~3 s | 8-9 s |
 | Cache TMDB, en fond, serveur déjà en service | ~25 s | ~1 min |
 
 ## Retirer MariaDB
