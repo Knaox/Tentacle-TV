@@ -9,7 +9,7 @@ import { BACKEND_VERSION } from "../services/version";
 import { sealSetup } from "../setup/setupLock";
 import { coreModels } from "./copy/coreModels";
 import { MigrationFailure } from "./migrationErrors";
-import { lockHolder, tryAcquireLock } from "./migrationLock";
+import { tryAcquireLock } from "./migrationLock";
 import { migrateUntilDone, writeStatusFile } from "./migrationLoop";
 import { emptySourceReport } from "./migrationReport";
 import { sourceIdentity } from "./legacySource/sourceConfig";
@@ -64,7 +64,7 @@ function markEmptySource(finalPath: string, url: string, startedAt: number): voi
 export async function migrateOnce(url: string, paths = migrationPaths()): Promise<MigrationOutcome> {
   const lock = tryAcquireLock(paths.lock);
   if (!lock) {
-    throw new MigrationFailure("unknown", `une autre migration est en cours (processus ${lockHolder(paths.lock) ?? "?"})`);
+    throw new MigrationFailure("unknown", "une autre migration est en cours (un autre processus ou conteneur tient le verrou)");
   }
   try {
     // La CLI a pu finir pendant notre attente : la base est née, rien à refaire.
