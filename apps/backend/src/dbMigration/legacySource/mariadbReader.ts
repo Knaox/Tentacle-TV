@@ -76,6 +76,16 @@ export class MariadbReader {
     return readSourceSchema((sql, params) => this.rows(sql, params));
   }
 
+  /** Une clé de `server_config` de la source, ou `null` (table absente comprise). */
+  async configValue(key: string): Promise<string | null> {
+    const table = await this.rows(
+      "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'server_config'",
+    );
+    if (table.length === 0) return null;
+    const rows = await this.rows("SELECT `value` FROM `server_config` WHERE `key` = ?", [key]);
+    return rows.length ? String(rows[0][0]) : null;
+  }
+
   /** Nombre exact de lignes, dans l'instantané. */
   async count(table: string): Promise<number> {
     const [[n]] = (await this.rows(`SELECT COUNT(*) FROM ${quoteId(table)}`)) as [[bigint | number]];
