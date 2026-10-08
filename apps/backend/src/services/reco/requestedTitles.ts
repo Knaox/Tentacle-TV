@@ -39,9 +39,16 @@ export function requestedTitleKey(title: RequestedTitle): string | null {
 export async function hideRequestedTitle(userId: string, title: RequestedTitle): Promise<boolean> {
   const itemKey = requestedTitleKey(title);
   if (!userId || !itemKey) return false;
-  const { count } = await getPrisma().recommendationFeedback.createMany({
-    data: [{ jellyfinUserId: userId, itemKey, action: REQUESTED_ACTION }],
-    skipDuplicates: true,
+  // Un retour déjà posé (quel qu'il soit) reste tel quel : SQLite n'a pas
+  // `skipDuplicates`, on regarde avant, dans la même transaction.
+  const count = await getPrisma().$transaction(async (tx) => {
+    const known = await tx.recommendationFeedback.findUnique({
+      where: { jellyfinUserId_itemKey: { jellyfinUserId: userId, itemKey } },
+      select: { id: true },
+    });
+    if (known) return 0;
+    await tx.recommendationFeedback.create({ data: { jellyfinUserId: userId, itemKey, action: REQUESTED_ACTION } });
+    return 1;
   });
   // L'exclusion vaut dès la page suivante ; la reconstruction recomble la place.
   if (count > 0) pokePage(userId, "feedback");

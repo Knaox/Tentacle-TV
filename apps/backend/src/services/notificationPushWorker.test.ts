@@ -27,9 +27,10 @@ const store = {
 };
 const sendToUser = vi.fn(async (_userId: string, _payload: { title: string; body: string }) => ({ sent: 1, invalid: 0 }));
 
-vi.mock("./db", () => ({
-  hasPrisma: () => true,
-  getPrisma: () => ({
+vi.mock("./db", () => {
+  const db = {
+    // Une seule connexion en SQLite : la transaction reçoit le même client.
+    $transaction: async (run: (tx: unknown) => Promise<unknown>) => run(db),
     notification: {
       findMany: async () => store.notifications.filter((n) => n.pushedAt === null),
       updateMany: async (args: { where: { id: { in: string[] } } }) => {
@@ -67,8 +68,9 @@ vi.mock("./db", () => ({
         return { count: args.data.length };
       },
     },
-  }),
-}));
+  };
+  return { hasPrisma: () => true, getPrisma: () => db };
+});
 
 vi.mock("./pushService", () => ({
   sendToUser: (userId: string, payload: { title: string; body: string }) => sendToUser(userId, payload),
