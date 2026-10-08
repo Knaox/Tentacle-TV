@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { setPreferencesToken, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { checkServerDatabase, reportDatabaseState, setPreferencesToken, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { RelayStatusResponse } from "@tentacle-tv/api-client";
 import { uiLanguage, verifyServer } from "@tentacle-tv/shared";
 import type { PairingLanguage, ServerError, ServerErrorKey } from "../redesign/screens/pairing/pairingTypes";
@@ -102,7 +102,11 @@ export function usePairingFlow(onPaired: () => void, { afterServer = "code" }: P
     // réseau peut revenir — mais ne retient pas non plus le succès.
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
-    await fetch(`${data.serverUrl}/api/health`, { signal: controller.signal }).catch(() => undefined);
+    await fetch(`${data.serverUrl}/api/health`, { signal: controller.signal })
+      // Une base en migration n'est pas une panne : l'écran d'attente le dira.
+      .then((res) => res.json())
+      .then(reportDatabaseState)
+      .catch(() => undefined);
     clearTimeout(timeout);
     storage.setItem("tentacle_server_url", data.serverUrl);
     applyBackendUrl(data.serverUrl);
@@ -118,6 +122,9 @@ export function usePairingFlow(onPaired: () => void, { afterServer = "code" }: P
     try {
       const result = await verifyServer(serverUrl);
       if (result.success) {
+        // Le serveur répond : une base en migration se dit par l'écran d'attente,
+        // pas par une erreur de connexion à l'étape suivante.
+        void checkServerDatabase(result.url).catch(() => undefined);
         storage.setItem("tentacle_server_url", result.url);
         applyBackendUrl(result.url);
         jellyfinClient.setBaseUrl(`${result.url}/api/jellyfin`);
