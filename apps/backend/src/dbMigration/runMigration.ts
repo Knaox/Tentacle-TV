@@ -44,6 +44,7 @@ export interface RunMigrationDeps {
 
 export type MigrationOutcome =
   | { kind: "empty" } // la source n'a jamais été installée : rien à reprendre
+  | { kind: "already" } // un autre copieur (la CLI) a fini pendant l'attente
   | { kind: "migrated"; report: MigrationReport };
 
 export async function runMigration(deps: RunMigrationDeps): Promise<MigrationOutcome> {

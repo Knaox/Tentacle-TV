@@ -75,3 +75,25 @@ export function parseReport(json: string | null | undefined): MigrationReport | 
     return null;
   }
 }
+
+/** Le rapport d'une source SANS aucune table du cœur (installation jamais faite) : rien n'a été copié. */
+export function emptySourceReport(serverVersion: string, startedAt: number, finishedAt: number): MigrationReport & { emptySource: true } {
+  return {
+    version: REPORT_VERSION,
+    serverVersion,
+    startedAt,
+    finishedAt,
+    durationMs: finishedAt - startedAt,
+    source: { engine: "mariadb", version: "", bytes: 0, zoneConverted: false },
+    disk: { requiredBytes: 0, freeBytes: 0 },
+    rowsWritten: 0,
+    tables: [],
+    retired: [],
+    refused: [],
+    deferred: [],
+    zeroDates: {},
+    foreignKeyOrphans: {},
+    familyOrphansDropped: 0,
+    emptySource: true,
+  };
+}
