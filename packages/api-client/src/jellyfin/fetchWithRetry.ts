@@ -1,5 +1,6 @@
 import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
 import { isOfflineHinted, reportNetworkSuspect, requestTimeoutMs } from "../net/requestPolicy";
+import { reportMaintenanceResponse } from "../databaseMigration/migrationSignal";
 import { JellyfinError } from "./types";
 
 export interface FetchWithRetryOptions {
@@ -95,6 +96,9 @@ export async function fetchWithRetry<T>(
       networkError = null;
       // "Backend restarting" codes — retry silently
       if (response.status === 502 || response.status === 503 || response.status === 504) {
+        // La base du serveur en migration (503 du mode maintenance) : l'écran
+        // d'attente prend le relais, inutile de dérouler l'échelle.
+        if (await reportMaintenanceResponse(response)) break;
         if (attempt < RETRY_DELAYS_MS.length) {
           await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
           continue;
