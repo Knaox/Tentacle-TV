@@ -10,7 +10,10 @@ import { isPrivateAddress } from "../localAccess/privateAddress";
  *  - l'hôte du navigateur : la machine que l'administrateur vient de joindre
  *    (le plus souvent, celle qui porte aussi Jellyfin) ;
  *  - la passerelle du conteneur : l'hôte Docker vu du réseau en pont ;
- *  - `host.docker.internal` / `host.containers.internal`, s'ils se résolvent ;
+ *  - `host.docker.internal` / `host.containers.internal`, s'ils se résolvent —
+ *    par leur adresse privée (Docker), ou par leur NOM quand ils mènent au
+ *    lien local de Podman sans racine (169.254.1.2, `hostGateway.ts`) : la
+ *    garde de connexion ne l'accepte que sous ce nom ;
  *  - en natif, la machine elle-même.
  *
  * Seulement des adresses privées (RFC 1918, ULA, boucle locale en natif), ou
@@ -26,7 +29,14 @@ export interface CandidateInput {
   gateway: string | null;
   native: boolean;
   /** Les noms de l'hôte Docker, résolus (adresses vides : inconnus). */
-  dockerHostAddresses: string[];
+  dockerHosts: DockerHostName[];
+}
+
+export interface DockerHostName {
+  name: string;
+  addresses: string[];
+  /** Toutes ses adresses sont le lien local de l'hôte écrit par le moteur (`isHostGatewayException`). */
+  viaHostGateway: boolean;
 }
 
 function bare(host: string): string {
@@ -53,7 +63,17 @@ export function candidateHosts(input: CandidateInput): string[] {
     if (isIP(browser) === 0 || classifyAddress(browser) === "ok" || (input.native && classifyAddress(browser) === "loopback")) add(browser);
   }
   if (input.gateway && isScannableIp(input.gateway, input.native)) add(input.gateway);
-  for (const address of input.dockerHostAddresses) if (isScannableIp(address, input.native)) add(address);
+  const gatewaysSeen = new Set<string>();
+  for (const host of input.dockerHosts) {
+    if (host.viaHostGateway) {
+      // Podman écrit les deux noms vers la même adresse : un seul suffit.
+      const key = [...host.addresses].sort().join(",");
+      if (!gatewaysSeen.has(key)) add(host.name);
+      gatewaysSeen.add(key);
+      continue;
+    }
+    for (const address of host.addresses) if (isScannableIp(address, input.native)) add(address);
+  }
   if (input.native) add("127.0.0.1");
   return hosts;
 }
