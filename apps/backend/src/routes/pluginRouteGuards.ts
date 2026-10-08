@@ -1,7 +1,7 @@
-import { existsSync, readFileSync } from "fs";
-import { resolve } from "path";
-import { DATA_DIR, isValidPluginId, type InstalledPlugin } from "../services/pluginManager";
+import { isValidPluginId, type InstalledPlugin } from "../services/pluginManager";
+import { pluginHasServerModule } from "../services/pluginServerModule";
 import { pluginBackendDiag } from "../services/pluginBackendLoader";
+import { storageRefusal, type StorageRefusalReason } from "../services/pluginStorage/gate";
 
 /**
  * Gardes communes aux routes d'administration des plugins (`plugins.ts` et
@@ -17,40 +17,28 @@ export function isValidRouteId(id: string): boolean {
   return isValidPluginId(id);
 }
 
-/**
- * Check if a plugin has a server module. If so, the process needs to restart
- * because Fastify cannot register routes after the server is already listening.
- */
-export function pluginHasServerModule(pluginId: string): boolean {
-  if (!isValidPluginId(pluginId)) return false;
-  const pluginDir = resolve(DATA_DIR, pluginId);
-  const manifestPath = resolve(pluginDir, "plugin.json");
-  if (existsSync(manifestPath)) {
-    try {
-      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
-      if (manifest.server) return true;
-    } catch { /* ignore */ }
-  }
-  // Les mêmes emplacements que le chargeur (`pluginBackendLoader.ts`) : un
-  // module qu'il charge doit aussi déclencher le redémarrage qui le charge.
-  return existsSync(resolve(pluginDir, "server", "index.js"))
-    || existsSync(resolve(pluginDir, "server", "index.mjs"))
-    || existsSync(resolve(pluginDir, "server.js"));
-}
+// Déplacé dans les services (le chargeur et la garde de stockage le lisent aussi).
+export { pluginHasServerModule } from "../services/pluginServerModule";
 
 /**
  * Ce que fait le module serveur d'un plugin DANS CE PROCESSUS :
  * - `running` : chargé au démarrage, ses routes répondent ;
- * - `failed` : le chargement a échoué (`detail` dit pourquoi) ;
+ * - `failed` : le chargement a échoué (`detail` dit pourquoi), ou ce serveur
+ *   le refuse (`refusal` : extension pas déclarée compatible SQLite) ;
  * - `idle` : des fichiers serveur, mais rien de chargé — plugin désactivé au
  *   démarrage, ou activé depuis ;
  * - `none` : pas de module serveur.
  */
 export type ServerModuleState = "none" | "running" | "failed" | "idle";
 
-export function serverModuleState(pluginId: string): { state: ServerModuleState; detail?: string } {
+export function serverModuleState(
+  pluginId: string,
+): { state: ServerModuleState; detail?: string; refusal?: StorageRefusalReason } {
   const boot = pluginBackendDiag.loadResults.find((r) => r.pluginId === pluginId);
   if (boot?.status === "loaded") return { state: "running" };
+  // Refusée par ce serveur : « en échec » pour les interfaces d'avant, `refusal` dit pourquoi aux nouvelles.
+  const refusal = storageRefusal(pluginId);
+  if (refusal) return { state: "failed", detail: boot?.detail, refusal };
   if (boot?.status === "error" || boot?.status === "bad_export") return { state: "failed", detail: boot.detail };
   return { state: pluginHasServerModule(pluginId) ? "idle" : "none" };
 }

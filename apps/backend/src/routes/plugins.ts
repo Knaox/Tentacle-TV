@@ -8,6 +8,7 @@ import {
   assertPathUnderDataDir,
   DATA_DIR,
 } from "../services/pluginManager";
+import { storageRefusal } from "../services/pluginStorage/gate";
 import { readTabMeta, type PluginTabMeta } from "./pluginTabMeta";
 import { readSearchMeta, type PluginSearchMeta } from "./pluginSearchMeta";
 import { readTitlesMeta, type PluginTitlesMeta } from "./pluginTitlesMeta";
@@ -57,7 +58,9 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get("/active", { preHandler: requireAuth }, async () => {
-    return getInstalled().filter((p) => p.enabled && isValidPluginId(p.pluginId)).map((p) => {
+    // Une extension que ce serveur refuse (pluginStorage/gate.ts) n'existe pas pour les clients : jamais à moitié.
+    const active = getInstalled().filter((p) => p.enabled && isValidPluginId(p.pluginId) && !storageRefusal(p.pluginId));
+    return active.map((p) => {
       const pluginDir = resolve(DATA_DIR, p.pluginId);
       let navItems: unknown[] = [];
       // L'onglet mobile de l'extension (icône, libellés) — cf. pluginTabMeta.
