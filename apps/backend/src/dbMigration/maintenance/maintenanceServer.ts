@@ -5,7 +5,6 @@ import rateLimit from "@fastify/rate-limit";
 import { parseCorsOrigins, tentacleCorsDelegator } from "../../services/tentacleCors";
 import { isTrustedProxy } from "../../services/trustedProxies";
 import { rateLimitKey, rateLimitMax } from "../../services/rateLimitPolicy";
-import { LOG_REDACT_PATHS } from "../../services/logRedaction";
 import { maintenanceBody } from "../migrationState";
 import { waitingPageHtml } from "./waitingPage";
 import { waitingLang } from "./waitingPageText";
@@ -33,7 +32,6 @@ export interface MaintenanceServerOptions {
   host: string;
   healthBody: (request: FastifyRequest) => Record<string, unknown>;
   configBody: (request: FastifyRequest) => Record<string, unknown>;
-  logger?: boolean;
 }
 
 export function migratingReply(reply: FastifyReply) {
@@ -43,11 +41,13 @@ export function migratingReply(reply: FastifyReply) {
 
 export async function buildMaintenanceServer(options: MaintenanceServerOptions): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: options.logger === false ? false : { redact: { paths: LOG_REDACT_PATHS, censor: "[redacted]" } },
-    // Aucune requête au journal : les clients sondent l'écran d'attente toutes les quelques
+    // AUCUN journal de Fastify : les clients sondent l'écran d'attente toutes les quelques
     // secondes (les lignes [db-migration] s'y noyaient, mesuré au banc), et une URL d'ancien
     // client peut porter un jeton (segments HLS) que le serveur normal masque, pas celui-ci.
-    disableRequestLogging: true,
+    // Ce que l'administrateur doit lire passe par console.log ([db-migration]). Ni
+    // `disableRequestLogging` (déprécié par Fastify 5.12, celui de l'image) ni un sérialiseur :
+    // pas de journal du tout, sur toutes les versions.
+    logger: false,
     trustProxy: (address: string) => isTrustedProxy(address),
   });
   await app.register(helmet, {

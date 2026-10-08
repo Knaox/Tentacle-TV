@@ -69,7 +69,7 @@ describe("démarrage avec une migration en attente — pas de bascule à chaud (
     await migrateBeforeBoot(
       {
         startMaintenance: async () => {
-          app = await buildMaintenanceServer({ port: 0, host: "127.0.0.1", healthBody: maintenanceHealthBody, configBody: maintenanceConfigBody, logger: false });
+          app = await buildMaintenanceServer({ port: 0, host: "127.0.0.1", healthBody: maintenanceHealthBody, configBody: maintenanceConfigBody });
           return () => app!.close();
         },
         run,

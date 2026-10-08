@@ -18,7 +18,7 @@ beforeAll(async () => {
   migrationStarted(Date.now() - 5_000);
   migrationProgressed({ tablesDone: 1, tablesTotal: 10, bytesDone: 1, bytesTotal: 10 });
   app = await buildMaintenanceServer({
-    port: 0, host: "127.0.0.1", healthBody: maintenanceHealthBody, configBody: maintenanceConfigBody, logger: false,
+    port: 0, host: "127.0.0.1", healthBody: maintenanceHealthBody, configBody: maintenanceConfigBody,
   });
   await app.ready();
 });
