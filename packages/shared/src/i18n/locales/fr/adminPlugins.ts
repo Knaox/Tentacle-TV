@@ -173,6 +173,8 @@ export default {
   errorBusy: "une autre opération est déjà en cours sur ce plugin.",
   errorAlreadyInstalled: "ce plugin est déjà installé.",
   errorVersionGone: "cette version n'est plus publiée par la source — actualisez le catalogue.",
+  errorServerTooOld: "cette version exige un serveur Tentacle plus récent — mettez d'abord le serveur à jour.",
+  requiresServer: "Exige Tentacle {{version}}",
   errorSourceExists: "cette source est déjà dans la liste.",
   errorNoChecksum: "la source ne publie pas d'empreinte SHA-256 pour cette version : son intégrité ne peut pas être vérifiée.",
   errorChecksumMismatch: "l'archive reçue ne correspond pas à son empreinte — elle a pu être altérée. Rien n'a été installé.",

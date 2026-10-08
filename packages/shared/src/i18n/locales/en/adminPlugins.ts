@@ -173,6 +173,8 @@ export default {
   errorBusy: "another operation is already running for this plugin.",
   errorAlreadyInstalled: "this plugin is already installed.",
   errorVersionGone: "the source no longer publishes this version — refresh the catalog.",
+  errorServerTooOld: "this version needs a newer Tentacle server — update the server first.",
+  requiresServer: "Requires Tentacle {{version}}",
   errorSourceExists: "this source is already in the list.",
   errorNoChecksum: "the source publishes no SHA-256 checksum for this version: its integrity can't be verified.",
   errorChecksumMismatch: "the archive doesn't match its checksum — it may have been tampered with. Nothing was installed.",

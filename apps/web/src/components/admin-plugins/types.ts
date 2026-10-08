@@ -58,6 +58,10 @@ export interface MarketplacePlugin {
   /** Notes de la version publiée (Markdown, blocs `### FR` / `### EN`) — serveur 1.19.3+. */
   changelog?: string;
   releaseDate?: string;
+  /** La version de Tentacle qu'exige la version proposée. */
+  minAppVersion?: string;
+  /** Aucune version publiée ne convient à ce serveur (1.25.0+) : elle ne s'installe pas. */
+  incompatible?: boolean;
 }
 
 /** La dernière lecture du registre d'une source (serveur 1.19.3+). */
