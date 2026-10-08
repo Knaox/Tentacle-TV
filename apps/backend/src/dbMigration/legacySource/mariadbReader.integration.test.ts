@@ -4,20 +4,23 @@ import { MariadbReader } from "./mariadbReader";
 import { connectionOptions } from "./sourceConfig";
 import { extensionPlan, type PlanContext } from "../copy/tablePlans";
 import { convertRow } from "../copy/tableCopy";
+import { scratchDatabaseUrl } from "../../../test/mariadbScratch";
 
 /**
  * Contre une VRAIE MariaDB jetable réglée sur Europe/Paris, seulement si on la donne :
  *   TENTACLE_TEST_MARIADB_TZ_URL=mysql://root:…@127.0.0.1:47430/sqlmig pnpm vitest run mariadbReader
  * (par exemple `podman run -e TZ=Europe/Paris -e MARIADB_ROOT_PASSWORD=… -e MARIADB_DATABASE=sqlmig
- * -p 127.0.0.1:47430:3306 mariadb:11.8`). Le test y crée ses tables : la base doit être sacrifiable.
+ * -p 127.0.0.1:47430:3306 mariadb:11.8`). Le test y crée SA base (`<base>_reader`) : le serveur doit être sacrifiable.
  */
-const url = process.env.TENTACLE_TEST_MARIADB_TZ_URL;
+const baseUrl = process.env.TENTACLE_TEST_MARIADB_TZ_URL;
+let url: string;
 
-describe.skipIf(!url)("lecteur MariaDB, sur une source en heure de Paris", () => {
+describe.skipIf(!baseUrl)("lecteur MariaDB, sur une source en heure de Paris", () => {
   let reader: MariadbReader;
 
   beforeAll(async () => {
-    const conn = await mariadb.createConnection({ ...connectionOptions(url!), multipleStatements: true });
+    url = await scratchDatabaseUrl(baseUrl!, "reader");
+    const conn = await mariadb.createConnection({ ...connectionOptions(url), multipleStatements: true });
     // Ce qu'écrivait Vigie : NOW() dans le fuseau de la session (Paris), et une date JS liée (UTC).
     await conn.query(`DROP TABLE IF EXISTS seer_cleanup_queue, seer_tmdb_cache;
       CREATE TABLE seer_cleanup_queue (id VARCHAR(36) PRIMARY KEY, next_retry_at DATETIME NOT NULL, created_at DATETIME NOT NULL);
@@ -26,7 +29,7 @@ describe.skipIf(!url)("lecteur MariaDB, sur une source en heure de Paris", () =>
       INSERT INTO seer_cleanup_queue VALUES ('hiver', '2026-01-15 12:00:00', '2026-01-15 12:00:00'), ('ete', '2026-07-15 12:00:00', '2026-07-15 12:00:00');
       INSERT INTO seer_tmdb_cache VALUES ('movie', 1, '2026-07-15 10:00:00', '2026-07-15 12:00:00');`);
     await conn.end();
-    reader = await MariadbReader.open(url!);
+    reader = await MariadbReader.open(url);
   });
   afterAll(async () => {
     await reader?.close();

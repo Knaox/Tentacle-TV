@@ -8,21 +8,24 @@ import { applyCoreMigrations } from "../../services/database/migrator";
 import { openSqlite } from "../../services/database/nodeSqlite";
 import { runCacheCopy } from "./cacheCopyRun";
 import { CACHE_CURSOR_KEY, CACHE_DONE_KEY, type CacheChildMessage } from "./cacheCopyProtocol";
+import { scratchDatabaseUrl } from "../../../test/mariadbScratch";
 
 /**
  * La copie de fond du cache TMDB contre une VRAIE MariaDB jetable, seulement si
- * on la donne (la même que le test du lecteur) :
+ * on la donne (la même que le test du lecteur), dans SA base (`<base>_cache`) :
  *   TENTACLE_TEST_MARIADB_TZ_URL=mysql://root:…@127.0.0.1:47430/sqlmig pnpm vitest run cacheCopyRun
  */
-const url = process.env.TENTACLE_TEST_MARIADB_TZ_URL;
+const baseUrl = process.env.TENTACLE_TEST_MARIADB_TZ_URL;
+let url: string;
 const ROWS = 23;
 
-describe.skipIf(!url)("copie de fond du cache TMDB : reprise, ligne vivante, marqueur", () => {
+describe.skipIf(!baseUrl)("copie de fond du cache TMDB : reprise, ligne vivante, marqueur", () => {
   const dir = mkdtempSync(join(tmpdir(), "tentacle-cachecopy-"));
   const path = join(dir, "tentacle.db");
 
   beforeAll(async () => {
-    const conn = await mariadb.createConnection({ ...connectionOptions(url!), multipleStatements: true });
+    url = await scratchDatabaseUrl(baseUrl!, "cache");
+    const conn = await mariadb.createConnection({ ...connectionOptions(url), multipleStatements: true });
     await conn.query(`DROP TABLE IF EXISTS tmdb_meta_cache;
       CREATE TABLE tmdb_meta_cache (mediaType VARCHAR(10) NOT NULL, tmdbId INT NOT NULL, payload MEDIUMTEXT NOT NULL,
         fetchedAt DATETIME(3) NOT NULL, expiresAt DATETIME(3) NOT NULL, PRIMARY KEY (mediaType, tmdbId));`);
@@ -42,7 +45,7 @@ describe.skipIf(!url)("copie de fond du cache TMDB : reprise, ligne vivante, mar
   });
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-  const config = () => ({ path, url: url!, tables: ["tmdb_meta_cache"], batchRows: 5, pauseMs: 0 });
+  const config = () => ({ path, url: url, tables: ["tmdb_meta_cache"], batchRows: 5, pauseMs: 0 });
 
   it("une coupure en plein milieu laisse un curseur, pas de marqueur ; la reprise finit juste après", async () => {
     let lots = 0;
