@@ -18,6 +18,7 @@ import { getDatabaseFilePath, initPrisma, retryDatabaseOpen } from "./services/d
 import { legacySourceState } from "./services/database/legacySource";
 import { migrateBeforeBoot } from "./dbMigration/bootMigration";
 import { consumeRemigrationRequest, startPostMigrationTasks } from "./dbMigration/postMigration";
+import { holdOrphanedInstallation, orphanedLegacyInstallation } from "./dbMigration/orphanedSource";
 import { startMigrationMaintenance } from "./dbMigration/maintenance/startMigrationMaintenance";
 import { databaseStorage } from "./services/database/storageMount";
 import { applyPairingEpoch } from "./services/pairingEpoch";
@@ -94,6 +95,8 @@ async function main() {
   // et se ferme à la bascule. Le démarrage normal reprend ici, sur la base née.
   consumeRemigrationRequest();
   if (legacySourceState() === "pending") await migrateBeforeBoot({ startMaintenance: () => startMigrationMaintenance(PORT, HOST) });
+  // Une installation qui AVAIT une MariaDB, plus configurée : jamais une base vide à sa place.
+  else if (orphanedLegacyInstallation()) await holdOrphanedInstallation(() => startMigrationMaintenance(PORT, HOST));
 
   const app = Fastify({
     logger: {

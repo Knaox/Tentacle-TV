@@ -42,7 +42,8 @@ function show(db){
 var p=db.progress||{done:0,total:0,percent:0,etaSeconds:null};
 if(db.state==="failed"){box.className="failed";el("t").textContent=T.failedTitle;el("b").textContent=T.failedBody;
 var why=T.reasons[db.reason]||T.reasons.other;el("why").textContent=why;el("why").className="";
-el("retry").textContent=db.retryInSeconds>0?fmt(T.retryIn,{time:clock(db.retryInSeconds)}):T.retryNow;el("retry").className="";
+if(typeof db.retryInSeconds!=="number"){el("retry").className="hidden";}
+else{el("retry").textContent=db.retryInSeconds>0?fmt(T.retryIn,{time:clock(db.retryInSeconds)}):T.retryNow;el("retry").className="";}
 el("back").className="small";el("row").className="hidden";el("eta").className="hidden";return;}
 box.className="";el("t").textContent=T.title;el("b").textContent=T.body;
 el("why").className="hidden";el("retry").className="hidden";el("back").className="hidden";el("row").className="row";el("eta").className="small";
