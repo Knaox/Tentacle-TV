@@ -35,10 +35,10 @@ export class MariadbReader {
   ) {}
 
   /** Ouvre la connexion et fige l'instantané. Lève si la base est injoignable. */
-  static async open(url: string, timeoutMs = 10_000): Promise<MariadbReader> {
+  static async open(url: string): Promise<MariadbReader> {
     const conn = await mariadb.createConnection({
+      // Délais de connexion ET de lecture bornés ; TLS exigé s'il était demandé.
       ...connectionOptions(url),
-      connectTimeout: timeoutMs,
       // Les dates restent du TEXTE tel que MariaDB l'a rangé : aucune conversion
       // de fuseau par le pilote (Prisma écrit l'UTC dans des DATETIME nus).
       dateStrings: true,
@@ -55,16 +55,17 @@ export class MariadbReader {
     try {
       // Le fuseau des `NOW()` d'avant, PUIS la lecture en UTC : un TIMESTAMP (rangé
       // en UTC par MariaDB) ressort alors exact, un DATETIME tel qu'il fut écrit.
-      const [[sessionZone, systemZone]] = (await conn.query({
-        sql: "SELECT @@session.time_zone, @@system_time_zone",
+      const [[sessionZone, systemZone, offsetMinutes]] = (await conn.query({
+        sql: "SELECT @@session.time_zone, @@system_time_zone, TIMESTAMPDIFF(MINUTE, UTC_TIMESTAMP(), NOW())",
         rowsAsArray: true,
-      })) as [[string, string]];
+      })) as [[string, string, number | bigint]];
+      const zone = await usableZone(conn, sourceZoneForConversion(String(sessionZone), String(systemZone ?? "")), Number(offsetMinutes));
       await conn.query("SET time_zone = '+00:00'");
       await conn.query("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
       await conn.query("SET SESSION TRANSACTION READ ONLY");
       await conn.query("START TRANSACTION WITH CONSISTENT SNAPSHOT");
       const [[version]] = (await conn.query({ sql: "SELECT VERSION()", rowsAsArray: true })) as [[string]];
-      return new MariadbReader(conn, version, sourceZoneForConversion(String(sessionZone), String(systemZone ?? "")));
+      return new MariadbReader(conn, version, zone);
     } catch (err) {
       await conn.end().catch(() => conn.destroy());
       throw err;
@@ -136,6 +137,22 @@ export class MariadbReader {
       await this.conn.end().catch(() => this.conn.destroy());
     }
   }
+}
+
+/**
+ * Un fuseau que `CONVERT_TZ` connaît vraiment : un fuseau NOMMÉ exige les tables
+ * de fuseaux (souvent absentes de MySQL) — sans elles, `CONVERT_TZ` rend NULL.
+ * Repli : le décalage d'aujourd'hui en chiffres (`+02:00`), sans l'heure d'été
+ * d'une date d'une autre saison — dit au journal par l'orchestrateur.
+ */
+async function usableZone(conn: mariadb.Connection, zone: string | null, offsetMinutes: number): Promise<string | null> {
+  if (zone === null) return null;
+  const [[probe]] = (await conn.query({ sql: "SELECT CONVERT_TZ('2026-01-15 12:00:00', ?, '+00:00')", rowsAsArray: true }, [zone])) as [[unknown]];
+  if (probe !== null && probe !== undefined) return zone;
+  if (offsetMinutes === 0) return null;
+  const sign = offsetMinutes < 0 ? "-" : "+";
+  const abs = Math.abs(offsetMinutes);
+  return `${sign}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(2, "0")}`;
 }
 
 export function quoteId(name: string): string {

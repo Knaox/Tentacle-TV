@@ -2,7 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { existsSync } from "fs";
 import { dirname } from "path";
 import { MariadbReader } from "./legacySource/mariadbReader";
-import { describeSource } from "./legacySource/sourceConfig";
+import { describeSource, ignoredParams, SourceConfigError } from "./legacySource/sourceConfig";
 import type { CoreModel } from "./copy/coreModels";
 import { copyAll, type CopyAllResult } from "./copy/copyAll";
 import { failureOf, MigrationFailure } from "./migrationErrors";
@@ -58,8 +58,12 @@ export async function runMigration(deps: RunMigrationDeps): Promise<MigrationOut
   try {
     reader = await MariadbReader.open(deps.sourceUrl);
   } catch (err) {
+    if (err instanceof SourceConfigError) throw new MigrationFailure("source_config", err.message);
     throw failureOf(err, "source_unreachable");
   }
+  const ignored = ignoredParams(deps.sourceUrl);
+  if (ignored.length) deps.log(`[db-migration] Paramètres de pool ignorés pour la lecture : ${ignored.join(", ")}`);
+  if (reader.sourceZone) deps.log(`[db-migration] Source dans le fuseau « ${reader.sourceZone} » : ses dates « session » sont converties en UTC`);
   let db: DatabaseSync | null = null;
   try {
     deps.log(`[db-migration] Source ${describeSource(deps.sourceUrl)} (${reader.serverVersion}), lecture seule sur un instantané`);
