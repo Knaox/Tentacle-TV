@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { detectAppState, getAppState } from "../../services/configStore";
-import { getDatabaseUrlSource, hasDatabaseUrl, hasPrisma, reconnectPrisma } from "../../services/db";
+import { hasPrisma, retryDatabaseOpen } from "../../services/db";
 import { hostInfo } from "../hostInfo";
 import { buildSetupContext } from "../setupContext";
 import { SetupError } from "../setupErrors";
@@ -22,17 +22,15 @@ export const setupSessionRoutes: FastifyPluginAsync = async (app) => {
    */
   app.get("/status", async (): Promise<SetupStatusResponse> => {
     let state = getAppState();
-    // Base revenue après un démarrage sans elle : on s'y reconnecte ici aussi.
-    // Jamais une connexion déjà ouverte : l'assistant s'en sert peut-être en
-    // ce moment même.
-    if (state !== "running" && hasDatabaseUrl()) {
-      if (!hasPrisma()) await reconnectPrisma();
-      if (hasPrisma()) state = await detectAppState();
-    }
+    // Base qui ne s'ouvrait pas au démarrage : on réessaie ici aussi, au plus
+    // toutes les 10 s (route publique), jamais à côté d'une MariaDB qui attend
+    // sa migration (`retryDatabaseOpen`).
+    if (state !== "running" && (await retryDatabaseOpen())) state = await detectAppState();
     return {
       state,
-      hasDbUrl: hasDatabaseUrl(),
-      dbFromEnv: getDatabaseUrlSource() === "env",
+      // Gardés pour les clients livrés : la base n'a plus rien à configurer.
+      hasDbUrl: true,
+      dbFromEnv: true,
       dbConnected: hasPrisma(),
       setupOpen: !isSetupClosed(),
     };

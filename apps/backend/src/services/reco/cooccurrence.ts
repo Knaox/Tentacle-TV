@@ -46,6 +46,8 @@ export async function runCooccurrenceJob(): Promise<CooccurrenceStats> {
   const grouped = await prisma.watchSegment.groupBy({
     by: ["jellyfinUserId", "itemId", "seriesId"],
     _sum: { seconds: true },
+    // Les tris qui suivent n'ont pas de départage : un ordre stable en entrée.
+    orderBy: [{ jellyfinUserId: "asc" }, { itemId: "asc" }, { seriesId: "asc" }],
   });
 
   const perUserSeconds = new Map<string, Map<string, number>>();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SetupContext } from "@tentacle-tv/shared";
-import { codeFromHash, createsLibraries, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, needsDatabase, plansMissingFolder, resumeStep, showsChosenServer, uiCultureOf, wizardLength, wizardSteps } from "./wizardModel";
+import { codeFromHash, createsLibraries, defaultLibraries, defaultLocale, hostMediaPaths, isValidLibraryName, plansMissingFolder, resumeStep, showsChosenServer, uiCultureOf, wizardLength, wizardSteps } from "./wizardModel";
 
 function ctx(over: Partial<SetupContext> = {}): SetupContext {
   return {
@@ -43,16 +43,15 @@ describe("les étapes de l'assistant (le parcours du serveur)", () => {
     expect(steps).toHaveLength(wizardLength({ needsCode: true, context }));
   });
 
-  it("la base a son écran quand l'environnement ne la donne pas, même une fois reliée", () => {
+  it("la base n'a jamais d'écran — même face à un serveur d'avant 1.25 qui la dit reliée à la main", () => {
     const db = { configured: true, connected: true, fromEnv: false };
-    expect(wizardSteps({ needsCode: false, context: ctx({ database: db }) })).toEqual(["welcome", "database", "jellyfin"]);
-    expect(needsDatabase(ctx({ database: db }))).toBe(false);
-    expect(needsDatabase(ctx({ database: { configured: false, connected: false, fromEnv: false } }))).toBe(true);
-    expect(needsDatabase(null)).toBe(false);
+    expect(wizardSteps({ needsCode: false, context: ctx({ database: db }) })).toEqual(["welcome", "jellyfin"]);
+    expect(wizardLength({ needsCode: false, context: ctx({ database: db }) })).toBe(8);
   });
 
   it("reprise : là où en est le SERVEUR — un Jellyfin resté enregistré ne saute jamais le choix", () => {
-    expect(resumeStep(withFlow({ databasePending: true, selection: null, linked: false }), false)).toBe("database");
+    // Base fermée : l'accueil, rien d'autre (aucun geste n'est permis).
+    expect(resumeStep(withFlow({ databasePending: true, selection: null, linked: false }), false)).toBe("welcome");
     // Le cas vécu : un Jellyfin relié par un essai d'avant, aucun choix fait dans CETTE installation.
     const leftover = withFlow({ databasePending: false, selection: null, linked: false }, {
       jellyfin: { url: "http://jellyfin:8096", suggestedUrl: "http://jellyfin:8096", configured: true, claimed: false, joined: false, clientUrl: null },

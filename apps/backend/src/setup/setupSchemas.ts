@@ -4,7 +4,7 @@ import { isValidJellyfinUsername } from "./jellyfin/startup";
 /**
  * Les corps acceptés par l'assistant — stricts : un champ inconnu est un
  * refus (`invalid_input`), pas un champ ignoré. Les bornes tiennent les
- * valeurs dans ce que Jellyfin et MariaDB acceptent.
+ * valeurs dans ce que Jellyfin accepte.
  */
 const url = z.string().trim().min(1).max(2048);
 /** Un compte EXISTANT : le serveur ne juge pas son mot de passe, Jellyfin le fait. */
@@ -19,16 +19,6 @@ const metadataCountry = z.string().regex(/^[A-Z]{2}$/);
 const metadataLanguage = z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/);
 
 export const sessionSchema = z.object({ token: z.string().max(64) }).strict();
-
-export const databaseSchema = z
-  .object({
-    host: z.string().trim().min(1).max(253).regex(/^[A-Za-z0-9._:[\]-]+$/),
-    port: z.number().int().min(1).max(65535),
-    database: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_$-]+$/),
-    user: z.string().trim().min(1).max(80),
-    password: z.string().min(1).max(256),
-  })
-  .strict();
 
 export const probeSchema = z.object({ url }).strict();
 

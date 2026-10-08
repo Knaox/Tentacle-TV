@@ -8,3 +8,12 @@ import crypto from "crypto";
 export function generateShareToken(): string {
   return crypto.randomBytes(8).toString("hex");
 }
+
+/**
+ * Le jeton tel qu'il est stocké (hexadécimal minuscule), quelle que soit la
+ * casse de l'URL retapée : SQLite compare à la lettre, MariaDB ignorait la
+ * casse (docs/sqlite/DECISION.md § 9).
+ */
+export function normalizeShareToken(token: string): string {
+  return token.trim().toLowerCase();
+}

@@ -14,10 +14,8 @@
     "bench:notifications": "tsx test/notif-e2e/run.ts",
     "test:jellyfin-compat": "tsx test/jellyfin-compat/run.ts",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
+    "db:migration": "tsx scripts/new-sqlite-migration.ts",
     "db:studio": "prisma studio",
-    "db:schema-sql": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script -o prisma/schema-full.sql",
     "build:shared-deps": "node scripts/build-shared-deps.js"
   },
   "dependencies": {

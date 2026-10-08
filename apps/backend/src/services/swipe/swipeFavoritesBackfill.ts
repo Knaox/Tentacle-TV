@@ -26,9 +26,17 @@ export async function backfillSwipeFavorites(): Promise<number> {
       select: { jellyfinUserId: true, mediaType: true, tmdbId: true },
     });
     if (likes.length > 0) {
-      await prisma.watchlistPending.createMany({
-        data: likes.map((like) => ({ ...like, flag: "favorite" })),
-        skipDuplicates: true,
+      // SQLite n'a pas `skipDuplicates` : les cœurs déjà en attente restent tels quels.
+      await prisma.$transaction(async (tx) => {
+        const pending = await tx.watchlistPending.findMany({
+          where: { flag: "favorite" },
+          select: { jellyfinUserId: true, mediaType: true, tmdbId: true },
+        });
+        const key = (row: { jellyfinUserId: string; mediaType: string; tmdbId: number }) =>
+          `${row.jellyfinUserId}|${row.mediaType}|${row.tmdbId}`;
+        const seen = new Set(pending.map(key));
+        const fresh = likes.filter((like) => !seen.has(key(like)));
+        if (fresh.length > 0) await tx.watchlistPending.createMany({ data: fresh.map((like) => ({ ...like, flag: "favorite" })) });
       });
     }
     const stamp = new Date().toISOString();

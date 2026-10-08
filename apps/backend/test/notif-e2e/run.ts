@@ -7,18 +7,17 @@
  *   → purge → et, pour finir, la coupure des push en dev.
  *
  * Lancer depuis apps/backend :  pnpm exec tsx test/notif-e2e/run.ts
- * Prérequis : MySQL local (root sans mot de passe, ou BENCH_MYSQL_ADMIN_URL),
- * plugin Vigie déployé dans data/plugins/seer. Compter une quinzaine de
+ * Prérequis : plugin Vigie déployé dans data/plugins/seer, COMPATIBLE SQLite. Compter une quinzaine de
  * minutes : les délais sont les vrais (attente de calme, synchro du plugin).
- * La base `tentacle_notif_bench` est recréée à chaque passage ; le journal du
- * backend reste dans $BENCH_DIR/backend.log pour l'enquête.
+ * La base SQLite du banc ($BENCH_DIR/data/tentacle.db) est recréée à chaque
+ * passage ; le journal du backend reste dans $BENCH_DIR/backend.log.
  */
 
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PrismaClient } from "@prisma/client";
-import { BENCH_DB_URL, BackendProcess, prepareDataDir, resetDatabase, seedConfig, waitFor } from "./benchEnv";
+import { BackendProcess, NO_LEGACY_DATABASE, prepareDataDir, resetDatabase, seedConfig, waitFor } from "./benchEnv";
 import { Checks } from "./checks";
 import { FakeExpo } from "./fakeExpo";
 import { ADMIN_API_KEY, FakeJellyfin } from "./fakeJellyfin";
@@ -44,8 +43,9 @@ async function main(): Promise<void> {
   for (const it of BASELINE) jf.items.set(it.Id, it);
 
   console.log(`Banc : Jellyfin ${jfUrl} · Jellyseerr ${seerrUrl} · Expo ${expoUrl} · backend :${PORT}`);
-  await resetDatabase();
-  const prisma = new PrismaClient({ datasourceUrl: BENCH_DB_URL });
+  // Le dossier d'abord (il est vidé), la base ensuite, dedans.
+  prepareDataDir(join(benchDir, "data"), seerrUrl, SEERR_API_KEY);
+  const prisma = new PrismaClient({ datasourceUrl: resetDatabase(join(benchDir, "data")) });
   await seedConfig(prisma, jfUrl, ADMIN_API_KEY);
   // La cloche de Carol : une notification de 40 jours (à purger), une de 10 (à garder).
   for (const [title, age] of [["Vieux ticket", 40], ["Ticket récent", 10]] as const) {
@@ -53,10 +53,9 @@ async function main(): Promise<void> {
       data: { jellyfinUserId: CAROL.Id, type: "ticket_status", title, body: "resolved", createdAt: new Date(Date.now() - age * DAY), pushedAt: new Date() },
     });
   }
-  prepareDataDir(join(benchDir, "data"), seerrUrl, SEERR_API_KEY);
 
   const env: Record<string, string> = {
-    DATABASE_URL: BENCH_DB_URL,
+    ...NO_LEGACY_DATABASE,
     JWT_SECRET: "banc-notifications-secret-de-test-0123456789",
     TENTACLE_DATA_DIR: join(benchDir, "data"),
     TENTACLE_DEV_PUSH: "1",

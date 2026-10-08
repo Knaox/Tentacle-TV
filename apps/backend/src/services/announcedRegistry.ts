@@ -201,14 +201,23 @@ export async function recentlyAnnounced(
   return new Set(rows.map((r) => r.contentKey));
 }
 
-/** Enregistre les clés d'un envoi effectif (createMany skipDuplicates). */
+/**
+ * Enregistre les clés d'un envoi effectif ; une clé déjà enregistrée garde sa
+ * date. SQLite n'a pas `skipDuplicates` : on écarte celles qui existent, dans
+ * la même transaction (une seule connexion : rien ne s'intercale).
+ */
 export async function recordAnnounced(jellyfinUserId: string, keys: string[]): Promise<void> {
   const unique = [...new Set(keys)];
   if (unique.length === 0) return;
-  const prisma = getPrisma();
-  await prisma.announcedContent.createMany({
-    data: unique.map((contentKey) => ({ contentKey, jellyfinUserId })),
-    skipDuplicates: true,
+  await getPrisma().$transaction(async (tx) => {
+    const known = await tx.announcedContent.findMany({
+      where: { jellyfinUserId, contentKey: { in: unique } },
+      select: { contentKey: true },
+    });
+    const seen = new Set(known.map((row) => row.contentKey));
+    const fresh = unique.filter((contentKey) => !seen.has(contentKey));
+    if (fresh.length === 0) return;
+    await tx.announcedContent.createMany({ data: fresh.map((contentKey) => ({ contentKey, jellyfinUserId })) });
   });
 }
 

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import type { SetupCompleteResponse } from "@tentacle-tv/shared";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { AccountScreen } from "./AccountScreen";
-import { DatabaseScreen } from "./DatabaseScreen";
 import { DoneScreen, RemoteScreen } from "./FinishScreens";
 import { CodeScreen, WelcomeScreen } from "./IntroScreens";
 import { JellyfinScreen } from "./JellyfinScreen";
@@ -55,8 +54,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       return <WelcomeScreen wizard={wizard} />;
     case "code":
       return <CodeScreen wizard={wizard} />;
-    case "database":
-      return <DatabaseScreen wizard={wizard} />;
     case "jellyfin":
       return <JellyfinScreen wizard={wizard} />;
     case "account":

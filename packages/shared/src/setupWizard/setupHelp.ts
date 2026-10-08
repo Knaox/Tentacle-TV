@@ -10,7 +10,6 @@ import type { SetupStep } from "./setupFlowContract";
 export const SETUP_HELP: Readonly<Record<SetupStep, readonly string[]>> = {
   welcome: ["what", "time"],
   code: ["where", "why"],
-  database: ["which", "fails"],
   jellyfin: ["kinds", "missing"],
   account: ["which", "stored"],
   signIn: ["which", "forgot"],

@@ -1,15 +1,8 @@
 import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey, setConfigValue, setAppState } from "../services/configStore";
-import {
-  getPrisma,
-  getDatabaseUrl,
-  saveDatabaseUrl,
-  getActiveDatabaseUrl,
-  getDatabaseUrlSource,
-  probeDatabase,
-} from "../services/db";
-import { parseDatabaseUrl } from "../services/databaseInfo";
+import { getPrisma } from "../services/db";
+import { databaseStatus } from "../services/database/databaseStatus";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { jellyfinHealth } from "../services/jellyfinHealth";
 import { invalidateAdminKeyHealth } from "../services/jellyfinKeyHealth";
@@ -32,14 +25,6 @@ const jellyfinConfigSchema = z.object({
   // Absente ou vide : la clé déjà enregistrée. Elle ne redescend jamais au
   // navigateur — changer l'URL ou retester ne demande plus de la retaper.
   apiKey: z.string().optional(),
-});
-
-const dbConfigSchema = z.object({
-  host: z.string().min(1),
-  port: z.number().int().min(1).max(65535).default(3306),
-  database: z.string().min(1),
-  user: z.string().min(1),
-  password: z.string().min(1),
 });
 
 type ServiceError =
@@ -126,26 +111,6 @@ async function jellyfinStatus() {
   };
 }
 
-async function databaseStatus() {
-  const configured = getDatabaseUrl();
-  const active = getActiveDatabaseUrl();
-  const source = getDatabaseUrlSource();
-  const probe = await probeDatabase();
-  // La connexion OUVERTE, pas celle qui attend le redémarrage : c'est elle
-  // que la sonde vient de mesurer.
-  const described = active ?? configured;
-  const fields = described ? parseDatabaseUrl(described) : null;
-  return {
-    status: probe.ok ? "connected" : configured ? "error" : "disconnected",
-    version: probe.ok ? probe.version : "",
-    source,
-    // Gardé pour les clients d'avant `source` ; il dit désormais la même chose.
-    fromEnv: source === "env",
-    pendingRestart: !!active && !!configured && configured !== active,
-    ...(fields ? { fields } : {}),
-  };
-}
-
 export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
   /** GET /api/admin/services — Jellyfin et la base, sondés à chaque appel. */
   app.get("/services", async () => {
@@ -182,16 +147,6 @@ export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
     return { success: true, version: probe.version, serverName: probe.serverName };
   });
 
-  /** PUT /api/admin/database — Update database connection (requires restart). */
-  app.put("/database", async (request, reply) => {
-    const parsed = dbConfigSchema.safeParse(request.body);
-    if (!parsed.success) return fail(reply, "invalid-body");
-    const body = parsed.data;
-    const url = `mysql://${encodeURIComponent(body.user)}:${encodeURIComponent(body.password)}@${body.host}:${body.port}/${body.database}`;
-    saveDatabaseUrl(url);
-    return { success: true, message: "Configuration sauvegardée. Redémarrez le serveur pour appliquer." };
-  });
-
   /** POST /api/admin/reset-server — Wipe all config and reset to setup mode. */
   app.post("/reset-server", async (_request, reply) => {
     try {
@@ -199,7 +154,7 @@ export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
       // Wipe all server config rows
       await prisma.serverConfig.deleteMany({});
       // Reset in-memory state to setup mode
-      setAppState(process.env.DATABASE_URL ? "setup_jellyfin" : "setup_db");
+      setAppState("setup_jellyfin");
       return { success: true, message: "Serveur réinitialisé. Rechargez la page." };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur";

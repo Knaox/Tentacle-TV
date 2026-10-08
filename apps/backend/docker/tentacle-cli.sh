@@ -1,5 +1,5 @@
 #!/bin/sh
-# `tentacle` — la commande de la machine (`tentacle setup token|reset`).
+# `tentacle` — la commande de la machine (`tentacle setup token|reset`, `tentacle db query`).
 #
 # `docker exec`, la console de Portainer ou d'un NAS entrent en root : la commande repasse au compte du
 # serveur (PUID:PGID), sinon le code qu'elle écrit dans le volume serait

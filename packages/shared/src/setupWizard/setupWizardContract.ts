@@ -50,7 +50,13 @@ export type MissingJellyfinGuide =
 
 /** `GET /api/setup/status` — public : les clients livrés en lisent `state`. */
 export interface SetupStatusResponse {
-  state: "setup_db" | "setup_jellyfin" | "setup_admin" | "running";
+  state: "database_unavailable" | "setup_jellyfin" | "setup_admin" | "running";
+  /**
+   * Gardés pour les clients livrés : depuis SQLite (1.25), la base n'est plus
+   * à relier — `hasDbUrl` et `dbFromEnv` valent toujours vrai (l'assistant
+   * d'avant 1.25 saute ainsi son étape « base »), `dbConnected` dit si elle
+   * s'ouvre.
+   */
   hasDbUrl: boolean;
   dbFromEnv: boolean;
   dbConnected: boolean;
@@ -81,6 +87,12 @@ export interface SetupContext {
   deployment: SetupDeployment;
   stack: SetupStack | null;
   provisioner: ProvisionerKind;
+  /**
+   * Gardé pour les clients livrés : depuis SQLite (1.25), la base n'est plus
+   * à relier — `configured` et `fromEnv` valent toujours vrai (l'assistant
+   * d'avant 1.25 saute ainsi son étape « base »), `connected` dit si elle
+   * s'ouvre. L'assistant d'aujourd'hui ne le lit plus.
+   */
   database: { configured: boolean; connected: boolean; fromEnv: boolean };
   jellyfin: {
     /** L'adresse par laquelle le SERVEUR joint Jellyfin, si elle est enregistrée. */
@@ -139,11 +151,8 @@ export type SetupErrorCode =
   | "invalid_token"
   | "rate_limited"
   | "invalid_input"
+  /** La base du serveur ne s'ouvre pas : aucun geste de l'assistant n'est possible. */
   | "db_unreachable"
-  | "db_auth_failed"
-  | "db_unknown_database"
-  | "db_schema_failed"
-  | "db_managed_by_stack"
   | "jf_invalid_url"
   | "jf_forbidden_address"
   | "jf_localhost_in_docker"
@@ -183,15 +192,6 @@ export interface SetupSessionRequest {
 /** La session de l'assistant, à renvoyer dans l'en-tête `X-Tentacle-Setup` de chaque appel. */
 export interface SetupSessionResponse {
   session: string;
-}
-
-/** `POST /api/setup/database` (pile « seule » ou natif) — jamais renvoyé, jamais journalisé. */
-export interface SetupDatabaseRequest {
-  host: string;
-  port: number;
-  database: string;
-  user: string;
-  password: string;
 }
 
 /** Sonde et découverte de Jellyfin : `setupDiscoveryContract.ts` ; choix, revérification et clé TMDB : `setupFlowContract.ts`. */

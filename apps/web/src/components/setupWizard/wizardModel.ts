@@ -20,8 +20,8 @@ import {
  * du parcours en cours, dans l'ordre, et n'en montre aucun autre.
  *
  * Une question par écran. Le code n'est demandé qu'à un navigateur qui
- * n'arrive pas directement du réseau local ; la base n'est demandée que si la
- * pile ne la fournit pas ; le choix du Jellyfin n'est JAMAIS sauté. Jellyfin
+ * n'arrive pas directement du réseau local ; la base n'a pas d'écran (SQLite,
+ * rien à relier) ; le choix du Jellyfin n'est JAMAIS sauté. Jellyfin
  * neuf : le compte est CRÉÉ, puis les bibliothèques. Jellyfin déjà
  * configuré : on s'y CONNECTE, puis les réglages conseillés — rien n'y est créé.
  */
@@ -33,14 +33,10 @@ export interface WizardShapeInput {
   context: SetupContext | null;
 }
 
-/**
- * La base a son écran quand l'environnement ne la fournit pas — reliée ou non : il fait partie du parcours.
- * La clé TMDB, quand le serveur la déclare (un serveur d'avant cet écran ne le servirait pas).
- */
+/** La clé TMDB a son écran quand le serveur la déclare (un serveur d'avant cet écran ne le servirait pas). */
 export function flowShape({ needsCode, context }: WizardShapeInput): SetupFlowShape {
   return {
     needsCode,
-    asksDatabase: !!context && !context.database.fromEnv,
     path: pathOf(context),
     noLibraries: context?.flow.noLibraries ?? false,
     asksTmdb: context?.flow.tmdb !== undefined,
@@ -62,11 +58,6 @@ export function pathOf(context: SetupContext | null): SetupPath | null {
 
 export function selectionOf(context: SetupContext | null): SetupSelection | null {
   return context?.flow.selection ?? null;
-}
-
-/** La base est à demander : pas fournie par l'environnement, et pas encore reliée. */
-export function needsDatabase(context: SetupContext | null): boolean {
-  return !!context && !context.database.fromEnv && !context.database.connected;
 }
 
 /**

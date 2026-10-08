@@ -77,8 +77,6 @@ pnpm-debug.log*
 
 # Prisma
 apps/backend/prisma/*.db
-# Généré depuis schema.prisma (`pnpm db:schema-sql`, fait au build de l'image)
-apps/backend/prisma/schema-full.sql
 
 # Backend runtime data (contains DB credentials)
 apps/backend/data/

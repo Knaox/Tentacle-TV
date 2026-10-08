@@ -21,7 +21,8 @@ function generateLongCode(): string {
 /** Récupère (ou crée) la ligne singleton du code de provisionnement. */
 async function getOrCreateRow() {
   const prisma = getPrisma();
-  const existing = await prisma.provisioningCode.findFirst();
+  // Singleton de fait : si deux lignes existaient, toujours la même (la plus ancienne).
+  const existing = await prisma.provisioningCode.findFirst({ orderBy: { id: "asc" } });
   if (existing) return existing;
   return prisma.provisioningCode.create({ data: { code: generateLongCode() } });
 }
