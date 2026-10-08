@@ -34,8 +34,17 @@ export const MIGRATION_REPORT_KEY = "sqlite_migration_report";
  */
 export type LegacySourceState = "none" | "pending" | "migrated" | "never_migrated";
 
+/**
+ * Le fichier de l'ancien assistant. Jamais écrit : seulement lu, et nommé dans
+ * la marche à suivre de l'administration, qui dit de le SUPPRIMER une fois la
+ * migration confirmée (il désignerait sinon une source pour toujours).
+ */
+export function legacyConfigFile(dataRoot: string = DATA_ROOT): string {
+  return resolve(dataRoot, "database.json");
+}
+
 function urlFromConfigFile(dataRoot: string): string | null {
-  const file = resolve(dataRoot, "database.json");
+  const file = legacyConfigFile(dataRoot);
   if (!existsSync(file)) return null;
   try {
     const url = (JSON.parse(readFileSync(file, "utf-8")) as { url?: unknown }).url;
@@ -49,6 +58,15 @@ function urlFromConfigFile(dataRoot: string): string | null {
 export function legacyMariadbUrl(env: DatabaseEnv = process.env, dataRoot: string = DATA_ROOT): string | null {
   const url = databaseUrlFromEnv(env) ?? urlFromConfigFile(dataRoot);
   return url && LEGACY_SCHEME.test(url) ? url : null;
+}
+
+/**
+ * D'où vient la source : l'environnement de la pile (`DATABASE_URL`, `DB_*`) ou
+ * le fichier de l'ancien assistant ; `null` sans source. L'environnement l'emporte.
+ */
+export function legacySourceOrigin(env: DatabaseEnv = process.env, dataRoot: string = DATA_ROOT): "env" | "file" | null {
+  if (!legacyMariadbUrl(env, dataRoot)) return null;
+  return databaseUrlFromEnv(env) ? "env" : "file";
 }
 
 /** Les marques d'une `tentacle.db` existante, lues en lecture seule ; un fichier vide n'en a aucune. */

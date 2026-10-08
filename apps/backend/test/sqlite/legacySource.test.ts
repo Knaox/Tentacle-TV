@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import { afterAll, describe, expect, it } from "vitest";
-import { inspectLegacySource, legacyMariadbUrl, MIGRATION_REPORT_KEY } from "../../src/services/database/legacySource";
+import { inspectLegacySource, legacyConfigFile, legacyMariadbUrl, legacySourceOrigin, MIGRATION_REPORT_KEY } from "../../src/services/database/legacySource";
 import { applyCoreMigrations } from "../../src/services/database/migrator";
 import { openSqlite } from "../../src/services/database/nodeSqlite";
 import { tempDatabaseDir } from "./tempDatabase";
@@ -38,6 +38,16 @@ describe("source MariaDB d'avant 1.25", () => {
     expect(legacyMariadbUrl({ DATABASE_URL: "file:./x.db" }, dir)).toBeNull();
     writeFileSync(join(dir, "database.json"), JSON.stringify({ url: "mysql://u:p@nas:3307/t" }));
     expect(legacyMariadbUrl({}, dir)).toBe("mysql://u:p@nas:3307/t");
+  });
+
+  it("son origine — l'environnement l'emporte sur le fichier de l'ancien assistant —, pour dire QUOI retirer", () => {
+    const dir = dataDir();
+    expect(legacySourceOrigin({}, dir)).toBeNull();
+    expect(legacySourceOrigin(MARIADB, dir)).toBe("env");
+    writeFileSync(join(dir, "database.json"), JSON.stringify({ url: "mysql://u:p@nas:3307/t" }));
+    expect(legacySourceOrigin({}, dir)).toBe("file");
+    expect(legacySourceOrigin(MARIADB, dir)).toBe("env");
+    expect(legacyConfigFile(dir)).toBe(join(dir, "database.json"));
   });
 
   it("aucune MariaDB : SQLite est la seule base", () => {

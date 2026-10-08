@@ -26,7 +26,19 @@ export interface DatabaseMigrationSummary {
   };
   cache: { phase: "none" | "running" | "done" | "stopped"; percent: number };
   sourceCheck: null | { status: "none" | "unreachable" | "same" } | { status: "changed"; why: "identity" | "data" | "was_empty" };
-  removal: { kind: string; stack: string | null; dbService: string | null; database: string; containerized: boolean; dropCommand: string | null };
+  removal: {
+    kind: string;
+    stack: string | null;
+    /** La pile d'aujourd'hui qui remplace une pile officielle d'avant ; absent d'un serveur qui ne le dit pas. */
+    newStack?: string | null;
+    dbService: string | null;
+    origin?: "env" | "file" | null;
+    database: string;
+    containerized: boolean;
+    dropCommand: string | null;
+    /** Supprimer le fichier de l'ancien assistant, quand c'est lui qui désigne la source. */
+    forgetCommand?: string | null;
+  };
 }
 
 export const DATABASE_MIGRATION_KEY = ["admin", "database-migration"] as const;

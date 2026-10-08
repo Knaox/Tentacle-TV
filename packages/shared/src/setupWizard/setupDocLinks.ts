@@ -32,7 +32,8 @@ export type SetupDocTopic =
   | "disableWebUi"
   | "troubleshooting"
   | "faq"
-  | "gpu";
+  | "gpu"
+  | "sqliteMigration";
 
 /** Le chemin sous la base, ancre comprise. Une valeur publiée ne change plus. */
 export const SETUP_DOC_PATHS: Readonly<Record<SetupDocTopic, string>> = {
@@ -63,6 +64,7 @@ export const SETUP_DOC_PATHS: Readonly<Record<SetupDocTopic, string>> = {
   troubleshooting: "troubleshooting/",
   faq: "faq/",
   gpu: "gpu/",
+  sqliteMigration: "sqlite-migration/",
 };
 
 /** L'adresse d'une page, dans la langue de l'interface (`fr` ou `en`, sinon `en`). */
