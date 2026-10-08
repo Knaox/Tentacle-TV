@@ -38,13 +38,15 @@ afterEach(() => {
 });
 
 describe("porte de l'écran d'attente de la migration", () => {
-  it("migration en cours : la configuration est RELUE avant de décider, puis l'écran suit la progression", async () => {
-    const { gate, deps } = harness({ capable: true, health: [{ ok: true, body: migrating(40) }] });
+  it("migration en cours : configuration RELUE et /api/health du serveur relu avant de montrer, puis l'écran suit la progression", async () => {
+    const { gate, deps } = harness({ capable: true, health: [{ ok: true, body: migrating(25) }, { ok: true, body: migrating(40) }] });
     reportDatabaseState(migrating(10));
-    expect(gate.read()).toBeNull(); // rien avant la relecture de /api/config
+    expect(gate.read()).toBeNull(); // rien avant la relecture de /api/config et la confirmation
     await flush();
     expect(deps.refetchConfig).toHaveBeenCalledTimes(1);
-    expect(gate.read()).toMatchObject({ kind: "migrating", percent: 10 });
+    expect(deps.fetchHealth).toHaveBeenCalledTimes(1);
+    // Ce que montre l'écran vient du serveur Tentacle, pas du signe déposé.
+    expect(gate.read()).toMatchObject({ kind: "migrating", percent: 25 });
     await vi.advanceTimersByTimeAsync(2000);
     expect(gate.read()).toMatchObject({ kind: "migrating", percent: 40 });
     expect(deps.onResume).not.toHaveBeenCalled();
@@ -96,13 +98,34 @@ describe("porte de l'écran d'attente de la migration", () => {
     gate.dispose();
   });
 
+  it("un signe que le serveur Tentacle ne confirme pas (/api/health « ready ») : rien à l'écran, aucune reprise", async () => {
+    const { gate, deps } = harness({ capable: true, health: [{ ok: true, body: ready }] });
+    reportDatabaseState(migrating(10)); // un 503 « migrating » venu d'ailleurs
+    await flush();
+    expect(gate.read()).toBeNull();
+    expect(readDatabaseMigration()).toBeNull();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(deps.onResume).not.toHaveBeenCalled();
+    expect(deps.fetchHealth).toHaveBeenCalledTimes(1); // aucune relecture en boucle
+    gate.dispose();
+  });
+
+  it("serveur Tentacle muet à la confirmation : rien à l'écran (la règle de panne garde la main)", async () => {
+    const { gate, deps } = harness({ capable: true, health: [null] });
+    reportDatabaseState(migrating(10));
+    await flush();
+    expect(gate.read()).toBeNull();
+    expect(deps.onResume).not.toHaveBeenCalled();
+    gate.dispose();
+  });
+
   it("un serveur d'avant 1.25 ne dit rien de sa base : aucun signe déposé", () => {
     expect(reportDatabaseState({ status: "ok", bootId: "x" })).toBe(false);
     expect(readDatabaseMigration()).toBeNull();
   });
 
   it("une vraie panne reste une panne : serveur muet → l'écran s'efface, sans reprise", async () => {
-    const { gate, deps } = harness({ capable: true, health: [null] });
+    const { gate, deps } = harness({ capable: true, health: [{ ok: true, body: migrating(10) }, null] });
     reportDatabaseState(migrating(10));
     await flush();
     expect(gate.read()).not.toBeNull();
@@ -113,7 +136,7 @@ describe("porte de l'écran d'attente de la migration", () => {
   });
 
   it("la courte bascule vers le vrai serveur (quelques secondes muet) ne coupe pas l'écran", async () => {
-    const { gate, deps } = harness({ capable: true, health: [null, null, null, { ok: true, body: ready }] });
+    const { gate, deps } = harness({ capable: true, health: [{ ok: true, body: migrating(99) }, null, null, null, { ok: true, body: ready }] });
     reportDatabaseState(migrating(99));
     await flush();
     await vi.advanceTimersByTimeAsync(2000 * 3);
@@ -142,7 +165,8 @@ describe("la socket qui tombe fait relire /api/health une fois", () => {
     drop();
     drop(); // une rafale de chutes : une seule relecture
     await flush();
-    expect(fetchHealth).toHaveBeenCalledTimes(1);
+    // Une relecture pour la chute (rafale comprise), une pour confirmer avant de montrer.
+    expect(fetchHealth).toHaveBeenCalledTimes(2);
     expect(gate.read()).toMatchObject({ kind: "migrating", percent: 5 });
     gate.dispose();
     clearDatabaseMigration();

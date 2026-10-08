@@ -36,8 +36,10 @@ export async function probeStreamPath(client: ReturnType<typeof useJellyfinClien
     });
     if (await jellyfinServes(res)) return { ok: true, culprit: null };
     // Le proxy fermé le temps de la migration de la base (503 du mode
-    // maintenance) : c'est Tentacle qui manque, jamais Jellyfin en panne.
-    return { ok: false, culprit: (await reportMaintenanceResponse(res)) ? "tentacle" : "media" };
+    // maintenance) : c'est Tentacle qui manque, jamais Jellyfin en panne. Seul
+    // le proxy de Tentacle peut le dire : un Jellyfin joint en direct, jamais.
+    const maintenance = !direct && (await reportMaintenanceResponse(res));
+    return { ok: false, culprit: maintenance ? "tentacle" : "media" };
   } catch {
     return { ok: false, culprit: direct ? "media" : "tentacle" };
   } finally {
