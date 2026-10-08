@@ -81,6 +81,16 @@ describe("le câblage du service", () => {
     expect(await status(app, "/tv/", "Mozilla/5.0 (Web0S; Linux/SmartTV) WebAppManager")).toBe(200);
   });
 
+  it("coupée : un 404 au corps vide (la page du navigateur) ; une route d'API inconnue garde son JSON", async () => {
+    const app = await server({ enabled: false, setupComplete: true });
+    for (const url of ["/", "/settings"]) {
+      const response = await app.inject({ method: "GET", url });
+      expect([url, response.statusCode, response.body, response.headers["content-type"]]).toEqual([url, 404, "", undefined]);
+    }
+    const api = await app.inject({ method: "GET", url: "/api/inconnue" });
+    expect([api.statusCode, api.json()]).toEqual([404, { message: "Not found" }]);
+  });
+
   it("coupée AVANT la fin de l'installation : l'assistant reste servi", async () => {
     const app = await server({ enabled: false, setupComplete: false });
     expect(await status(app, "/")).toBe(200);

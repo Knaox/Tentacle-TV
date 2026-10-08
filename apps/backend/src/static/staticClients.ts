@@ -1,7 +1,7 @@
 import { resolve, sep } from "path";
 import { existsSync } from "fs";
 import fastifyStatic from "@fastify/static";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import {
   isTvUserAgent,
   isTvClientPath,
@@ -26,6 +26,17 @@ import { isWebUiEnabled, webUiBlocks } from "./webUi";
  * dit franchement — mais l'assurance qu'un ordinateur ne se retrouve pas dans
  * une interface de salon.
  */
+/**
+ * Le 404 d'une PAGE : corps vide. Chrome, Edge et les autres Chromium
+ * affichent alors leur propre page (« Cette page est introuvable — HTTP ERROR
+ * 404 ») ; un corps, même `{"message":"Not found"}`, s'affiche tel quel, comme
+ * le texte d'une page. Firefox et Safari montrent une page blanche. L'API
+ * garde son JSON : ce sont les applications qui la lisent.
+ */
+function pageNotFound(reply: FastifyReply) {
+  return reply.status(404).send();
+}
+
 /** Racines de service, remplaçables par les tests (répertoires éphémères). */
 export interface StaticClientRoots {
   webPath?: string;
@@ -47,13 +58,13 @@ export async function registerStaticClients(
   app.addHook("onRequest", async (request, reply) => {
     const path = request.url.split("?")[0];
     // L'interface web coupée (`TENTACLE_WEB_UI=off`) : 404, sauf l'API, /tv, /.well-known et l'assistant.
-    if (webUiBlocks(path, webUi())) return reply.status(404).send({ message: "Not found" });
+    if (webUiBlocks(path, webUi())) return pageNotFound(reply);
     if (!isTvClientPath(path)) return;
     if (tvClientOpenToAll()) return;
     if (isTvUserAgent(request.headers["user-agent"])) return;
     // 404 et non 403 : l'adresse ne doit pas se confirmer elle-même à qui la
     // cherche. Un navigateur de bureau y voit une page qui n'existe pas.
-    return reply.status(404).send({ message: "Not found" });
+    return pageNotFound(reply);
   });
 
   const webPath = roots.webPath ?? resolve(__dirname, "../../../web/dist");
@@ -110,9 +121,7 @@ export async function registerStaticClients(
     if (tvPresent && (path === "/tv" || path.startsWith("/tv/"))) {
       return reply.sendFile("index.html", tvPath);
     }
-    if (!webPresent) {
-      return reply.status(404).send({ message: "Not found" });
-    }
+    if (!webPresent) return pageNotFound(reply);
     // Une page de partage est publique, pas publiée : qui a le lien la voit,
     // aucun moteur de recherche ne l'indexe ni ne suit ses liens.
     if (path.startsWith("/share/")) reply.header("x-robots-tag", "noindex, nofollow");

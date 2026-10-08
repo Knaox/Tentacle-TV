@@ -81,8 +81,10 @@ describe("en production, /tv n'est servi qu'à un téléviseur", () => {
       url: path,
       headers: { "user-agent": DESKTOP_AGENT },
     });
-    // 404 et non 403 : l'adresse ne se confirme pas elle-même.
+    // 404 et non 403 : l'adresse ne se confirme pas elle-même. Corps vide :
+    // le navigateur affiche sa propre page « introuvable ».
     expect(response.statusCode).toBe(404);
+    expect(response.body).toBe("");
     await app.close();
   });
 
