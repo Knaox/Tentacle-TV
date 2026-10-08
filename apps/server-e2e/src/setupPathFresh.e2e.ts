@@ -8,7 +8,7 @@ import { REPO, Stack } from "./stack";
 
 /**
  * Le parcours « Jellyfin NEUF », au navigateur, SANS Jellyfin dans la pile
- * (pile « base »), à côté d'un Jellyfin déjà configuré (« Salon ») :
+ * (pile « seule »), à côté d'un Jellyfin déjà configuré (« Salon ») :
  *
  *  - rien de coché d'office ; « Salon » choisi d'abord : la connexion et ses
  *    réglages conseillés ;

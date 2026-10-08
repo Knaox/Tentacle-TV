@@ -1,31 +1,27 @@
-import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from "fs";
-import { refuseSymlink } from "./migrationFiles";
+import { unlinkSync } from "fs";
+import type { DatabaseSync } from "node:sqlite";
+import { openSqlite } from "../services/database/nodeSqlite";
+import { createPrivateFile, refuseSymlink } from "./migrationFiles";
 
 /**
  * UN SEUL copieur à la fois : le serveur (mode maintenance) ou la CLI
- * (`tentacle db migrate`, lancée sur une installation native serveur arrêté).
- * Un fichier créé en exclusif (`wx`, 0600) porte le PID du détenteur et l'heure
- * de démarrage de ce processus ; un détenteur mort (arrêt brutal) ne bloque
- * personne : son verrou est repris.
+ * (`tentacle db migrate`). Le verrou est celui du NOYAU, pas un PID : le fichier
+ * `data/db-migration.lock` est une petite base SQLite que le copieur ouvre et tient
+ * en `BEGIN EXCLUSIVE` toute la copie durant. Un concurrent l'ouvre, sans attente
+ * (`busy_timeout = 0`), et reçoit SQLITE_BUSY : « un copieur vit ».
  *
- * Le PID seul ne suffit pas (trouvé au banc, arrêt brutal en pleine copie) : dans
- * un conteneur, le serveur a TOUJOURS le même PID (2, sous tini). Après un
- * `docker kill`, le serveur redémarré lisait le PID du verrou laissé… le sien, se
- * croyait devancé par « une autre migration », et ne migrait plus jamais. D'où :
- * - le PID du processus courant, quand celui-ci ne tient pas le verrou, est
- *   celui d'une vie d'avant : verrou périmé ;
- * - un PID vivant dont l'heure de démarrage diffère de celle notée a été repris
- *   par un autre processus : verrou périmé.
- *
- * Sous Docker, la CLI tourne par `docker exec` dans le même espace de PID que
- * le serveur : elle voit qu'il vit, et lui demande un essai au lieu de copier.
+ * Pourquoi pas un PID (trouvé au banc, puis à l'audit) : dans un conteneur le serveur
+ * a TOUJOURS le PID 2 ; deux conteneurs sur le même volume (mise à jour « start-first »,
+ * deux piles qui partagent un volume) ont tous deux ce PID ; et la reprise d'un verrou
+ * périmé est une course. Le verrou du noyau (fcntl) :
+ * - est rendu par le noyau à la mort du processus (kill -9, docker kill) — rien à
+ *   reprendre, donc plus de course ;
+ * - vaut d'un espace de PID à l'autre sur le même noyau, et sous Windows comme sous macOS.
+ * Le fichier d'état (`migrationLoop.ts`) garde le PID et le battement, pour la CLI.
  */
 export interface MigrationLock {
   release(): void;
 }
-
-/** Les verrous que CE processus tient (chemin → oui). */
-const held = new Set<string>();
 
 export function processAlive(pid: number): boolean {
   if (!Number.isInteger(pid) || pid <= 0) return false;
@@ -38,65 +34,51 @@ export function processAlive(pid: number): boolean {
   }
 }
 
-/** L'heure de démarrage d'un processus (Linux : `/proc/<pid>/stat`, champ 22), ou `null` ailleurs. */
-export function processStartTicks(pid: number): string | null {
+function sqliteCode(err: unknown): string {
+  const e = err as { code?: unknown; errstr?: unknown; message?: unknown };
+  return `${String(e?.code ?? "")} ${String(e?.errstr ?? "")} ${String(e?.message ?? "")}`;
+}
+
+function takeExclusive(path: string): DatabaseSync | "busy" {
+  createPrivateFile(path);
+  const db = openSqlite(path, { foreignKeys: false });
   try {
-    const stat = readFileSync(`/proc/${pid}/stat`, "utf-8");
-    // Le nom du programme (champ 2) peut contenir des espaces : on repart après sa parenthèse.
-    const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(" ");
-    return fields[19] ?? null;
-  } catch {
-    return null;
+    db.exec("PRAGMA busy_timeout = 0");
+    db.exec("BEGIN EXCLUSIVE");
+    return db;
+  } catch (err) {
+    db.close();
+    if (/SQLITE_BUSY|SQLITE_LOCKED|database is locked/i.test(sqliteCode(err))) return "busy";
+    throw err;
   }
 }
 
-/** Le PID du détenteur VIVANT du verrou, ou `null` (absent, mort, ou d'une vie d'avant). */
-export function lockHolder(path: string, self = process.pid): number | null {
-  try {
-    const [pidText, ticks] = readFileSync(path, "utf-8").trim().split(/\s+/);
-    const pid = Number(pidText);
-    if (pid === self) return held.has(path) ? pid : null;
-    if (!processAlive(pid)) return null;
-    // Un verrou d'avant ce correctif (PID seul) : prudence, le détenteur est tenu pour vivant.
-    if (ticks) {
-      const now = processStartTicks(pid);
-      if (now !== null && now !== ticks) return null;
-    }
-    return pid;
-  } catch {
-    return null;
-  }
-}
-
-export function tryAcquireLock(path: string, pid = process.pid): MigrationLock | null {
+/** Le verrou, ou `null` si un autre copieur (processus ou conteneur) le tient. */
+export function tryAcquireLock(path: string): MigrationLock | null {
   refuseSymlink(path);
-  if (held.has(path)) return null;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const fd = openSync(path, "wx", 0o600);
-      writeSync(fd, `${pid} ${processStartTicks(pid) ?? ""}`.trim() + "\n");
-      closeSync(fd);
-      held.add(path);
-      return {
-        release: () => {
-          held.delete(path);
-          try {
-            if (readFileSync(path, "utf-8").trim().split(/\s+/)[0] === String(pid)) unlinkSync(path);
-          } catch {
-            /* déjà rendu */
-          }
-        },
-      };
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
-      if (lockHolder(path, pid) !== null) return null;
-      // Détenteur mort, ou d'une vie d'avant : le verrou est repris.
-      try {
-        unlinkSync(path);
-      } catch {
-        /* repris par un autre entre-temps */
-      }
-    }
+  let taken: DatabaseSync | "busy";
+  try {
+    taken = takeExclusive(path);
+  } catch (err) {
+    // Un verrou d'une version de développement (un PID en texte) : ce n'est pas une
+    // base, personne ne peut le tenir au sens du noyau — il est remplacé, une fois.
+    if (!/SQLITE_NOTADB|not a database|file is not a database/i.test(sqliteCode(err))) throw err;
+    unlinkSync(path);
+    taken = takeExclusive(path);
   }
-  return null;
+  if (taken === "busy") return null;
+  const db = taken;
+  let released = false;
+  return {
+    release: () => {
+      if (released) return;
+      released = true;
+      try {
+        db.exec("ROLLBACK");
+      } catch {
+        /* rien d'écrit dans la transaction : rien à annuler */
+      }
+      db.close();
+    },
+  };
 }

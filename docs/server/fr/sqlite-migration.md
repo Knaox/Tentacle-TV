@@ -22,8 +22,8 @@ bord le dit (voir plus bas).
    jamais modifiée, pas même si la migration échoue.
 2. Pendant ce temps, le web, les applications de bureau et mobiles, les téléviseurs affichent **« Migration de
    la base de données en cours »**, avec l'avancement et le temps restant estimé. Cela prend d'ordinaire
-   quelques secondes ; sur un NAS lent, une minute ou deux. Les applications pas encore à jour voient
-   seulement le serveur redémarrer pendant ces secondes.
+   quelques secondes : 3 environ sur une vraie base, 8 environ sur un NAS lent simulé (tableau ci-dessous).
+   Les applications pas encore à jour voient seulement le serveur redémarrer pendant ces secondes.
 3. Avant la bascule, tout est **vérifié** : les lignes de chaque table, une somme de contrôle par colonne, et
    un échantillon relu comme le serveur le lira. La nouvelle base n'est mise en place qu'ensuite.
 4. Tentacle démarre sur SQLite. Son cache des fiches TMDB suit **en fond**, copié depuis MariaDB (aucun appel
@@ -31,10 +31,10 @@ bord le dit (voir plus bas).
 5. Le tableau de bord dit alors **« MariaDB n'est plus nécessaire »**, avec la marche à suivre pour votre
    installation.
 
-| Mesuré (vraie base : 50 tables, 114 000 lignes, 800 Mo dont 92 % de cache) | Machine rapide | NAS lent (simulé) |
+| Mesuré sur une vraie base (50 tables, 114 000 lignes, 850 Mo dont 92 % de cache) | Machine rapide | NAS lent simulé (½ cœur, disque à 30 Mo/s et 400 IOPS) |
 |---|---|---|
-| Interruption (tout sauf le cache TMDB, vérifications comprises) | ~3 s | ~1 min au plus |
-| Cache TMDB, en fond, serveur déjà en service | ~4 s | ~2,5 min |
+| Interruption vue par les applications (tout sauf le cache TMDB, vérifications comprises) | ~3 s | ~8 s |
+| Cache TMDB, en fond, serveur déjà en service | ~25 s | ~1 min |
 
 ## Retirer MariaDB
 
@@ -131,6 +131,10 @@ l'ancienne base n'est pas touchée.
   SQLite reste arrêtée, avec un message clair, jusqu'à sa mise à jour.
 - **Les fuseaux horaires** : les dates écrites par MariaDB dans son propre fuseau sont converties en UTC.
 - **Partages réseau** : gardez le dossier de données sur un disque local ; sur NFS ou SMB, SQLite peut s'abîmer.
+- **Une base sur une AUTRE machine, sans TLS** : pendant la copie, ses données traversent le réseau en clair.
+  Ajoutez `sslaccept=strict` à son adresse (avec `sslcert` au besoin), ou faites tourner Tentacle sur la même
+  machine que la base le temps de la migration. TLS demandé, la connexion est toujours chiffrée, jamais en
+  clair à sa place.
 
 ## Vérifier que vos données sont sur SQLite
 

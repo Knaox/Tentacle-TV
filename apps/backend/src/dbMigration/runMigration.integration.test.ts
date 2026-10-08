@@ -43,6 +43,7 @@ describe.skipIf(!baseUrl)("la migration entière, contrôle par Prisma compris",
 
   it("copie, vérifie, fait relire par Prisma (clés de la migration comprises), puis bascule", async () => {
     const lines: string[] = [];
+    let expected: Record<string, number> = {};
     const outcome = await runMigration({
       sourceUrl: url,
       finalPath,
@@ -50,13 +51,18 @@ describe.skipIf(!baseUrl)("la migration entière, contrôle par Prisma compris",
       openTarget: (path, options) => openSqlite(path, { foreignKeys: options.foreignKeys }),
       models: coreModels(),
       sealSetup: () => undefined,
-      apiSample: (path, expected) => runApiSample(path, expected, ["--import", "tsx"]),
+      apiSample: (path, counts) => {
+        expected = counts;
+        return runApiSample(path, counts, ["--import", "tsx"]);
+      },
       deferred: DEFERRED_TABLES,
       caches: CACHE_TABLES,
       serverVersion: "1.25.0",
       log: (line) => lines.push(line),
     });
     expect(outcome.kind, lines.join("\n")).toBe("migrated");
+    // Établi sans relire le brouillon : les 3 lignes copiées + EXACTEMENT les 2 clés de la migration.
+    expect(expected.server_config).toBe(5);
     expect(existsSync(finalPath)).toBe(true);
     expect(existsSync(`${finalPath}.migrating`)).toBe(false);
     const db = openSqlite(finalPath, { readOnly: true });

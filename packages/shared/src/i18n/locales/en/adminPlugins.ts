@@ -29,6 +29,7 @@ export default {
   installedOn: "installed {{date}}",
   toggleLabel: "Enable \"{{name}}\"",
   stateEnabled: "Enabled",
+  stateNeedsUpdate: "Needs update",
   stateDisabled: "Disabled",
   serverModuleRunning: "Server module",
   serverModuleIdle: "Server module stopped",

@@ -2,13 +2,12 @@ import type { DatabaseSync } from "node:sqlite";
 import { existsSync } from "fs";
 import { dirname } from "path";
 import { MariadbReader } from "./legacySource/mariadbReader";
-import { describeSource, ignoredParams, SourceConfigError, sourceIdentity } from "./legacySource/sourceConfig";
+import { describeSource, ignoredParams, SourceConfigError, sourceIdentity, tlsWithoutVerification } from "./legacySource/sourceConfig";
 import type { CoreModel } from "./copy/coreModels";
 import { copyAll, type CopyAllResult } from "./copy/copyAll";
 import { failureOf, MigrationFailure } from "./migrationErrors";
 import * as files from "./migrationFiles";
 import { MIGRATION_REPORT_KEY } from "./transforms/legacyRows";
-import { quoteIdent } from "./legacySource/extensionDdl";
 import { verifyTarget } from "./verify/verifyTarget";
 import { buildReport, type MigrationReport, SOURCE_FINGERPRINT_KEY } from "./migrationReport";
 
@@ -68,6 +67,7 @@ export async function runMigration(deps: RunMigrationDeps): Promise<MigrationOut
   let db: DatabaseSync | null = null;
   try {
     deps.log(`[db-migration] Source ${describeSource(deps.sourceUrl)} (${reader.serverVersion}), lecture seule sur un instantané`);
+    if (tlsWithoutVerification(deps.sourceUrl)) deps.log("[db-migration] TLS sans vérification du certificat (sslaccept=accept_invalid_certs), comme le faisait la 1.24");
     // L'installation finie de la source le reste : avant TOUT le reste (S3).
     if ((await reader.configValue("setup_completed")) === "true") deps.sealSetup();
 
@@ -112,17 +112,22 @@ export async function runMigration(deps: RunMigrationDeps): Promise<MigrationOut
       deps, copy, verification, startedAt, finishedAt: now(), identity: sourceIdentity(deps.sourceUrl),
       sourceVersion: reader.serverVersion, sourceBytes, free, zoneConverted: reader.sourceZone !== null,
     });
+    // Les clés de la migration qui manquaient encore (une source ne les porte jamais : la
+    // migration n'écrit pas dans MariaDB ; mais si l'une était là, elle serait remplacée).
+    const migrationKeys = [SOURCE_FINGERPRINT_KEY, MIGRATION_REPORT_KEY];
+    const present = Number(
+      (db.prepare(`SELECT COUNT(*) AS n FROM "server_config" WHERE "key" IN (?, ?)`).get(...migrationKeys) as { n: number | bigint }).n,
+    );
     const upsert = db.prepare(`INSERT INTO "server_config" ("key", "value") VALUES (?, ?) ON CONFLICT("key") DO UPDATE SET "value" = excluded."value"`);
     upsert.run(SOURCE_FINGERPRINT_KEY, JSON.stringify(copy.fingerprint));
     upsert.run(MIGRATION_REPORT_KEY, JSON.stringify(report));
-    // Ce que Prisma doit relire : le brouillon TEL QU'IL EST — la copie, déjà vérifiée
-    // contre la source, plus les clés que la migration vient d'y poser (server_config).
-    // Les comptes de la copie seuls y voyaient deux lignes de trop : échec à chaque essai.
-    const target = db;
+    // Ce que Prisma doit relire, établi SANS relire le brouillon : les lignes de la copie
+    // (vérifiées contre la source) plus EXACTEMENT les clés posées ci-dessus. L'enfant
+    // revérifie ainsi que rien d'autre n'est apparu entre la vérification et la bascule
+    // (le banc a vu l'oubli de ces clés : échec à chaque essai).
+    const added = migrationKeys.length - present;
     const counts = Object.fromEntries(
-      report.tables
-        .filter((t) => t.kind === "core")
-        .map((t) => [t.table, Number((target.prepare(`SELECT COUNT(*) AS n FROM ${quoteIdent(t.table)}`).get() as { n: number | bigint }).n)]),
+      report.tables.filter((t) => t.kind === "core").map((t) => [t.table, t.rowsWritten + (t.table === "server_config" ? added : 0)]),
     );
     db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     db.close();

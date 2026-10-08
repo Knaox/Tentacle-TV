@@ -21,7 +21,20 @@ describe("l'état des services", () => {
       }),
     ).toEqual({
       jellyfin: { state: "connected", version: "10.10.7" },
-      database: { state: "connected", version: "11.4.4" },
+      database: { state: "connected", version: "MariaDB 11.4.4" },
+    });
+  });
+
+  it("la base est nommée par son moteur : « SQLite 3.46.0 », jamais une version seule", () => {
+    const health = readServicesHealth({
+      jellyfin: { status: "connected", version: "10.11.0" },
+      database: { status: "connected", version: "3.46.0", engine: "sqlite", path: "/data/tentacle.db", sizeBytes: 4096 },
+    });
+    expect(health?.database).toEqual({ state: "connected", version: "SQLite 3.46.0" });
+    // Base qui ne s'ouvre pas : pas de version, la puce dit la panne.
+    expect(readServicesHealth({ jellyfin: { status: "connected" }, database: { status: "error", version: "", engine: "sqlite" } })?.database).toEqual({
+      state: "error",
+      version: null,
     });
   });
 
