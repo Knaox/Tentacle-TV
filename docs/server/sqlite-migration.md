@@ -125,6 +125,9 @@ old database is not touched.
   stopped, with a clear message, until it is updated.
 - **Time zones**: dates written by MariaDB in its own time zone are converted to UTC.
 - **Network shares**: keep the data folder on a local disk; SQLite can get corrupted on NFS or SMB.
+- **A database on ANOTHER machine, without TLS**: during the copy, its data crosses the network in clear.
+  Add `sslaccept=strict` to its address (with `sslcert` if needed), or run Tentacle on the same machine as
+  the database for the migration. With TLS asked, the connection is always encrypted, never in clear instead.
 
 ## Checking that your data is on SQLite
 
