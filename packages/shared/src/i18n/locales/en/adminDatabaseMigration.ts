@@ -19,6 +19,7 @@ export default {
   remigrateConfirm: "The server will restart to migrate again, with the waiting screen during the copy.",
   remigrateFailed: "The request did not go through. Try again in a moment.",
   guideWarning: "Remove MariaDB (and its DB_* or DATABASE_URL variables) only after this confirmation from the dashboard — which is the case now.",
+  tabsLabel: "Your installation",
   tab_officialStack: "Official stack",
   tab_compose: "Docker Compose",
   tab_portainer: "Portainer",

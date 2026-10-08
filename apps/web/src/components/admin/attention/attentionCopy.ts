@@ -25,11 +25,14 @@ export const ENTRY_ACTION: Record<EntryId, EntryAction> = {
   jellyfinIncompatible: { kind: "link", to: "/admin/services#compat", label: "entry_jellyfinIncompatible_action" },
   serverUpdateRequired: { kind: "anchor", target: "server-update", label: "entry_serverUpdateRequired_action" },
   extensionsRefused: { kind: "link", to: "/admin/plugins", label: "entry_extensionsRefused_action" },
+  databaseSourceChanged: { kind: "link", to: "/admin/services#database", label: "entry_databaseSourceChanged_action" },
+  databaseNeverMigrated: { kind: "link", to: "/admin/services#database", label: "entry_databaseNeverMigrated_action" },
   publicUrl: { kind: "link", to: "/admin/services#publicurl", label: "configure" },
   tmdbKey: { kind: "link", to: "/admin/metadata", label: "configure" },
   jellyfin: { kind: "toggle", label: "entry_jellyfin_action", hideLabel: "entry_jellyfin_hideAction" },
   segmentPlugins: { kind: "link", to: "/admin/services#segments", label: "entry_segmentPlugins_action" },
   directPlay: { kind: "link", to: "/admin/services#directstreaming", label: "configure" },
+  removeMariadb: { kind: "toggle", label: "entry_removeMariadb_action", hideLabel: "entry_removeMariadb_hideAction" },
 };
 
 /** Les clés d'une partie de l'entrée (`title`, `body`, `details`), la plus précise d'abord. */
@@ -46,6 +49,8 @@ const TEXT_DETAILS: ReadonlySet<EntryId> = new Set<EntryId>([
   "jellyfinIncompatible",
   "serverUpdateRequired",
   "extensionsRefused",
+  "databaseSourceChanged",
+  "databaseNeverMigrated",
   "tmdbKey",
 ]);
 

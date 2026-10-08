@@ -7,6 +7,7 @@ import { JELLYFIN_SETUP_ANCHOR } from "../jellyfin/SetupChecklist";
 import { SetupRows } from "../jellyfin/SetupRows";
 import { LinkEndpointLine } from "../../serverLinks/LinkEndpointLine";
 import { detailsKind, entryKeys, type EntryId } from "./attentionCopy";
+import { RemovalGuide } from "../services/RemovalGuide";
 import type { AttentionContext } from "./useAdminAttention";
 
 /**
@@ -55,6 +56,7 @@ export function EntryDetails({ id, variant, items, context, values }: Props) {
       </div>
     );
   }
+  if (id === "removeMariadb") return context.databaseMigration ? <RemovalGuide summary={context.databaseMigration} /> : null;
   return id === "jellyfin" ? <JellyfinDetails items={items} context={context} /> : null;
 }
 

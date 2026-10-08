@@ -20,6 +20,7 @@ export default {
   remigrateConfirm: "Le serveur va redémarrer pour migrer à nouveau, avec l'écran d'attente pendant la copie.",
   remigrateFailed: "La demande n'a pas abouti. Réessayez dans un instant.",
   guideWarning: "Ne retirez MariaDB (ni ses variables DB_* ou DATABASE_URL) qu'après cette confirmation du tableau de bord — c'est le cas maintenant.",
+  tabsLabel: "Votre installation",
   tab_officialStack: "Pile officielle",
   tab_compose: "Docker Compose",
   tab_portainer: "Portainer",
