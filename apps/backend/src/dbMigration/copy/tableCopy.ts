@@ -13,6 +13,7 @@ import { quoteIdent } from "../legacySource/extensionDdl";
  */
 export interface TargetStatement {
   run(...params: unknown[]): unknown;
+  all(...params: unknown[]): unknown[];
 }
 export interface CopyTarget {
   exec(sql: string): void;
@@ -38,6 +39,14 @@ export interface TablePlan {
   transformRow?: (row: Record<string, unknown>) => Record<string, unknown> | null;
 }
 
+/** Ce que la vérification observe pendant la copie (empreinte de la source, sommes attendues). */
+export interface CopyObservers {
+  /** Chaque ligne LUE, telle que la source l'a rendue. */
+  raw?: (row: SourceRow) => void;
+  /** Chaque ligne ÉCRITE, dans l'ordre des colonnes du plan. */
+  written?: (values: unknown[]) => void;
+}
+
 export interface CopyProgress {
   table: string;
   rowsDone: number;
@@ -61,6 +70,7 @@ export async function copyTable(
   plan: TablePlan,
   target: CopyTarget,
   onProgress?: (p: CopyProgress) => void,
+  observers: CopyObservers = {},
 ): Promise<CopyResult> {
   const started = Date.now();
   const names = plan.columns.map((c) => quoteIdent(c.target));
@@ -82,10 +92,13 @@ export async function copyTable(
     target.exec("BEGIN IMMEDIATE");
     try {
       for (const raw of rows) {
+        observers.raw?.(raw);
         const row = convertRow(plan, raw);
         const kept = plan.transformRow ? plan.transformRow(row) : row;
         if (!kept) continue;
-        insert.run(...plan.columns.map((c) => kept[c.target] as never));
+        const values = plan.columns.map((c) => kept[c.target]);
+        insert.run(...(values as never[]));
+        observers.written?.(values);
         rowsWritten++;
       }
       target.exec("COMMIT");
@@ -102,7 +115,7 @@ export async function copyTable(
   return { table: plan.target, rowsRead, rowsWritten, ms: Date.now() - started };
 }
 
-function convertRow(plan: TablePlan, raw: SourceRow): Record<string, unknown> {
+export function convertRow(plan: TablePlan, raw: SourceRow): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   for (const c of plan.columns) {
     row[c.target] = c.convert(c.sourceIndex === null ? undefined : raw[c.sourceIndex], raw);
