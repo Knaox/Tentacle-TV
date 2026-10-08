@@ -15,11 +15,27 @@ import { migrationFailed } from "./migrationState";
  * reste sur l'écran d'attente, motif `source_missing`, jusqu'à ce que la pile
  * rende sa base le temps de la migration.
  *
- * Les preuves : le secret `db_password` d'une pile officielle d'avant (le volume
- * des secrets reste monté dans les nouvelles piles, le temps de la transition)
- * ou une installation scellée (`data/setup-complete`, depuis 1.24.0).
+ * Les preuves : le secret `db_password` d'une pile officielle d'avant, si son
+ * volume est encore monté, ou l'un des MARQUEURS qu'un serveur d'avant laisse
+ * dans son dossier de données (`LEGACY_DATA_MARKERS`).
  */
 export const SECRETS_DIR = process.env.TENTACLE_SECRETS_DIR || "/run/tentacle-secrets";
+
+/**
+ * Ce qu'un serveur d'AVANT 1.25 laisse dans son dossier de données, et qu'une
+ * 1.25 neuve ne crée qu'APRÈS `tentacle.db` (la base s'ouvre avant tout le reste,
+ * et aucun module n'écrit à l'import) :
+ * - `setup-complete` — l'installation scellée (1.24.0 la pose dès son démarrage) ;
+ * - `compat/`, `update/` — les versions de Jellyfin et du serveur, relues au
+ *   premier tableau de bord ;
+ * - `plugins/` — une extension installée ou une source ajoutée ;
+ * - `tools/` — yt-dlp, à la première bande-annonce relayée.
+ * Aucun n'est garanti seul ; ensemble, ils couvrent l'installation ≤ 1.23 qui a
+ * servi, qu'aucun `setup-complete` ne trahirait. N'en sont PAS : `shared-deps/`
+ * (l'entrypoint le recrée à CHAQUE démarrage, avant le serveur), ni ce que la CLI
+ * peut poser avant le premier démarrage (`web-ui`, `setup-token.txt`).
+ */
+export const LEGACY_DATA_MARKERS = ["setup-complete", "compat", "update", "plugins", "tools"] as const;
 
 /**
  * La porte de sortie, choisie à la machine (`tentacle db start-fresh --confirm`) :
@@ -36,7 +52,8 @@ export function orphanedLegacyInstallation(
   if (legacyUrl) return false;
   if (existsSync(coreDatabasePath(dataRoot))) return false;
   if (existsSync(join(dataRoot, FRESH_START_FILE))) return false;
-  return existsSync(join(secretsDir, "db_password")) || existsSync(join(dataRoot, "setup-complete"));
+  if (existsSync(join(secretsDir, "db_password"))) return true;
+  return LEGACY_DATA_MARKERS.some((name) => existsSync(join(dataRoot, name)));
 }
 
 /**
