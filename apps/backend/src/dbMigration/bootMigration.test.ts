@@ -100,8 +100,12 @@ describe("démarrage avec une migration en attente — pas de bascule à chaud (
 
 it("le fichier d'état de la migration naît en 0600", () => {
   const dir = mkdtempSync(join(tmpdir(), "tentacle-status-"));
-  const file = join(dir, "status.json");
-  writeStatusFile(file, { state: "migrating", attempt: 1, updatedAt: 0, percent: 0 });
-  expect(statSync(file).mode & 0o777).toBe(0o600);
-  rmSync(dir, { recursive: true, force: true });
+  // Effacé même si l'assertion échoue : sans finally, un échec laissait le dossier dans /tmp.
+  try {
+    const file = join(dir, "status.json");
+    writeStatusFile(file, { state: "migrating", attempt: 1, updatedAt: 0, percent: 0 });
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
