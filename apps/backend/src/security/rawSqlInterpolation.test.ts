@@ -6,13 +6,15 @@ import { describe, expect, it } from "vitest";
 /**
  * Garde de non-régression contre l'injection SQL (audit du chantier SQLite).
  *
- * Tout appel `$queryRawUnsafe` / `$executeRawUnsafe` du backend, et tout
- * `Prisma.raw(…)`, est relu dans l'arbre syntaxique :
+ * Tout appel `$queryRawUnsafe` / `$executeRawUnsafe` du backend, tout
+ * `Prisma.raw(…)`, et tout gabarit passé à `node:sqlite` ou au pilote MariaDB
+ * de la migration, est relu dans l'arbre syntaxique :
  * - une chaîne littérale passe toujours ;
  * - un gabarit `…${x}…` ne passe que si CHAQUE interpolation est une
- *   construction de marques `?` (`liste.map(() => "?").join(…)`) ou figure
- *   dans la liste ci-dessous, avec sa justification ;
- * - un texte venu d'une variable ne passe que s'il figure dans la liste.
+ *   construction de marques `?` (`liste.map(() => "?").join(…)`), un
+ *   identifiant cité (`quoteIdent`, `quoteId`, `assertIdentifier`), une
+ *   constante en MAJUSCULES, ou figure dans la liste ci-dessous, justifiée ;
+ * - un texte venu d'une variable (Prisma brut) ne passe que s'il y figure.
  *
  * Une valeur ne s'interpole JAMAIS : elle passe en paramètre lié. Un nouvel
  * appel qui interpole fait échouer ce test : on le relit, puis on l'ajoute ici
@@ -37,12 +39,37 @@ const REVIEWED: Record<string, Record<string, string>> = {
   "services/pluginStorage/prismaExecutor.ts": {
     sql: "texte SQL de l'extension, valeurs liées à part",
   },
+  // La migration MariaDB → SQLite (1.25) : noms lus dans information_schema,
+  // donc NON fiables, toujours cités (`quoteIdent` / `quoteId`) avant d'entrer.
+  "dbMigration/copy/tableCopy.ts": {
+    "plan.verb": "type fermé : \"INSERT\" | \"INSERT OR IGNORE\"",
+    'names.join(", ")': "colonnes cibles passées par quoteIdent juste au-dessus",
+  },
+  "dbMigration/legacySource/mariadbReader.ts": {
+    select: "colonnes passées par quoteId ; le fuseau de CONVERT_TZ par conn.escape",
+    order: "colonnes de clé passées par quoteId",
+    clause: "afterKey : colonnes par quoteId, valeurs en marques ?",
+  },
 };
 
 /** Une interpolation qui ne produit que des marques `?` (et des séparateurs). */
 const PLACEHOLDER_BUILDER = /^[\w.]+\.map\(\s*\(\)\s*=>\s*["'`](?:\?|\(\?(?:,\s*\?)*\))["'`]\s*\)\.join\(\s*["'`][,\s]*["'`]\s*\)$/;
 
+/**
+ * Un identifiant CITÉ par une aide qui double le guillemet (`quoteIdent`,
+ * `quoteId`) ou refuse tout ce qui n'est pas un nom simple (`assertIdentifier`),
+ * seul ou sur une liste jointe ; ou une constante du module (MAJUSCULES).
+ */
+const QUOTED_IDENTIFIER = /^(?:(?:quoteIdent|quoteId|assertIdentifier)\([\w.[\]]+\)|[\w.]+\.map\((?:quoteIdent|quoteId|assertIdentifier)\)\.join\(\s*["'`][,\s]*["'`]\s*\)|[A-Z][A-Z0-9_]*)$/;
+
 const RAW_METHODS = new Set(["$queryRawUnsafe", "$executeRawUnsafe"]);
+
+/**
+ * Les autres portes du SQL : `node:sqlite` (`prepare`, `exec`) et le pilote
+ * MariaDB de la migration (`query`, `rows`, `execute`). Leurs noms sont communs
+ * (`RegExp.exec`…) : seul un GABARIT y est relu, jamais une variable.
+ */
+const TEMPLATE_SINKS = new Set(["prepare", "exec", "query", "execute", "rows"]);
 
 interface RawSqlFinding {
   file: string;
@@ -59,14 +86,16 @@ function listSources(dir: string): string[] {
   });
 }
 
-function isRawCall(node: ts.Node): node is ts.CallExpression {
-  if (!ts.isCallExpression(node)) return false;
+type SinkKind = "raw" | "template" | null;
+
+function sinkKind(node: ts.Node): SinkKind {
+  if (!ts.isCallExpression(node)) return null;
   const callee = node.expression;
-  if (ts.isPropertyAccessExpression(callee)) {
-    if (RAW_METHODS.has(callee.name.text)) return true;
-    return callee.name.text === "raw" && ts.isIdentifier(callee.expression) && callee.expression.text === "Prisma";
-  }
-  return false;
+  if (!ts.isPropertyAccessExpression(callee)) return null;
+  const name = callee.name.text;
+  if (RAW_METHODS.has(name)) return "raw";
+  if (name === "raw" && ts.isIdentifier(callee.expression) && callee.expression.text === "Prisma") return "raw";
+  return TEMPLATE_SINKS.has(name) ? "template" : null;
 }
 
 /** Les expressions qu'un appel brut fait entrer dans le texte SQL. */
@@ -81,8 +110,11 @@ function scanSource(file: string, text: string): RawSqlFinding[] {
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2022, true);
   const findings: RawSqlFinding[] = [];
   const visit = (node: ts.Node) => {
-    if (isRawCall(node) && node.arguments.length > 0) {
-      for (const expression of interpolatedExpressions(node.arguments[0], sf)) {
+    const kind = sinkKind(node);
+    if (kind && ts.isCallExpression(node) && node.arguments.length > 0) {
+      const first = node.arguments[0];
+      const expressions = kind === "raw" || ts.isTemplateExpression(first) ? interpolatedExpressions(first, sf) : [];
+      for (const expression of expressions) {
         const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
         findings.push({ file, line, expression: expression.replace(/\s+/g, " ") });
       }
@@ -95,7 +127,10 @@ function scanSource(file: string, text: string): RawSqlFinding[] {
 }
 
 function unreviewed(findings: RawSqlFinding[]): RawSqlFinding[] {
-  return findings.filter((f) => !PLACEHOLDER_BUILDER.test(f.expression) && !(f.expression in (REVIEWED[f.file] ?? {})));
+  return findings.filter((f) =>
+    !PLACEHOLDER_BUILDER.test(f.expression)
+    && !QUOTED_IDENTIFIER.test(f.expression)
+    && !(f.expression in (REVIEWED[f.file] ?? {})));
 }
 
 describe("SQL brut du backend — aucune valeur interpolée", () => {
@@ -127,5 +162,17 @@ describe("SQL brut du backend — aucune valeur interpolée", () => {
     const bad = "x.$executeRawUnsafe(`INSERT INTO t VALUES ${rows.map((r) => `('${r}')`).join(\", \")}`)";
     expect(unreviewed(scanSource("a.ts", ok))).toEqual([]);
     expect(unreviewed(scanSource("b.ts", bad))).toHaveLength(1);
+  });
+
+  it("node:sqlite et le pilote MariaDB : identifiants cités admis, valeurs refusées", () => {
+    const code = [
+      "db.prepare(`INSERT INTO ${quoteIdent(t)} (${cols.map(quoteIdent).join(\", \")}) VALUES (?)`);",
+      "db.exec(`PRAGMA journal_mode = WAL`);",
+      "db.exec(`DELETE FROM ${TABLE} WHERE k = '${key}'`);",
+      "conn.query(`SELECT * FROM ${quoteId(t)} WHERE id = ${id}`);",
+      "pattern.exec(text);",
+      "db.exec(migration.sql);",
+    ].join("\n");
+    expect(unreviewed(scanSource("c.ts", code)).map((f) => f.expression)).toEqual(["key", "id"]);
   });
 });
