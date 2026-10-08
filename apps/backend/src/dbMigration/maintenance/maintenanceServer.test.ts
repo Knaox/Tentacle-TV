@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildMaintenanceServer } from "./maintenanceServer";
 import { maintenanceConfigBody, maintenanceHealthBody } from "./maintenanceBodies";
@@ -13,7 +13,7 @@ let app: FastifyInstance;
 beforeAll(async () => {
   migrationStarted(Date.now() - 5000);
   migrationProgressed({ tablesDone: 3, tablesTotal: 49, bytesDone: 10, bytesTotal: 100 });
-  app = await buildMaintenanceServer({ port: 0, host: "127.0.0.1", healthBody: maintenanceHealthBody, configBody: maintenanceConfigBody, logger: false });
+  app = await buildMaintenanceServer({ port: 0, host: "127.0.0.1", healthBody: maintenanceHealthBody, configBody: maintenanceConfigBody });
 });
 afterAll(async () => {
   await app.close();
@@ -61,8 +61,23 @@ describe("mode maintenance : ni socket, ni extension, ni route du cœur (S5b)", 
     expect(res.json()).toMatchObject({ state: "migrating", progress: { done: 3, total: 49, percent: 10 } });
   });
 
-  it("aucune requête au journal : ni bruit sous les sondages, ni URL d'ancien client (jeton de segment HLS)", () => {
-    expect(app.initialConfig.disableRequestLogging).toBe(true);
+  it("rien au journal, pas même une URL d'ancien client portant un jeton : GET, POST hors /api, erreur", async () => {
+    const written: string[] = [];
+    const capture = (chunk: unknown) => {
+      written.push(String(chunk));
+      return true;
+    };
+    const out = vi.spyOn(process.stdout, "write").mockImplementation(capture);
+    const err = vi.spyOn(process.stderr, "write").mockImplementation(capture);
+    try {
+      await call("GET", "/videos/abc/hls1/main/0.ts?api_key=jeton-secret-de-test");
+      await call("POST", "/hors-api?api_key=jeton-secret-de-test");
+      await app.inject({ method: "GET", url: "/api/health?api_key=jeton-secret-de-test", headers: { "content-type": "application/json" }, payload: "{non json" });
+    } finally {
+      out.mockRestore();
+      err.mockRestore();
+    }
+    expect(written.join("")).not.toMatch(/jeton-secret-de-test|api_key|hors-api|hls1/);
   });
 
   it("/api/health : 200, l'état de la base en nombres", async () => {
