@@ -98,20 +98,30 @@ export class MariadbReader {
    * décalage : l'instantané garantit le même ordre d'une page à l'autre.
    */
   async page(table: SourceTable, columns: SelectColumn[], cursor: PageCursor, size: number, offset = 0): Promise<SourceRow[]> {
+    // Le fuseau d'une colonne « session » est un paramètre LIÉ, jamais du texte collé.
+    const zoneParams: unknown[] = [];
     const select = columns
-      .map((c) => (c.fromZone ? `CONVERT_TZ(${quoteId(c.name)}, ${this.conn.escape(c.fromZone)}, '+00:00')` : quoteId(c.name)))
+      .map((c) => {
+        if (!c.fromZone) return quoteId(c.name);
+        zoneParams.push(c.fromZone);
+        return `CONVERT_TZ(${quoteId(c.name)}, ?, '+00:00')`;
+      })
       .join(", ");
     const keys = table.keyColumns;
     if (keys.length === 0) {
       const order = table.columns.map((c) => quoteId(c.name)).join(", ");
-      return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} ORDER BY ${order} LIMIT ? OFFSET ?`, [size, offset]);
+      return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} ORDER BY ${order} LIMIT ? OFFSET ?`, [...zoneParams, size, offset]);
     }
     const order = keys.map(quoteId).join(", ");
     if (!cursor.after) {
-      return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} ORDER BY ${order} LIMIT ?`, [size]);
+      return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} ORDER BY ${order} LIMIT ?`, [...zoneParams, size]);
     }
     const { clause, params } = afterKey(keys, cursor.after);
-    return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} WHERE ${clause} ORDER BY ${order} LIMIT ?`, [...params, size]);
+    return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} WHERE ${clause} ORDER BY ${order} LIMIT ?`, [
+      ...zoneParams,
+      ...params,
+      size,
+    ]);
   }
 
   /** Requête de lecture brute (lignes en tableaux). Jamais exposée hors de ce module. */
