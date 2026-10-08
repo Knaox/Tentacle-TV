@@ -119,10 +119,23 @@ COPY --from=tv-client-build /app/apps/tv-webos/client/dist /
 # ── Les dépendances de production du serveur, seules, élaguées ──────────────
 # Le serveur ne dépend d'aucun paquet de l'espace de travail : son
 # `package.json` suffit. `pnpm deploy` en tire ses dépendances de production
-# aux versions exactes du verrou — un `install --filter` en mode « hoisted »
-# ramenait le verrou ENTIER (700 paquets, react-native et expo compris). Sans
-# les pairs facultatifs de @prisma/client (la CLI prisma, typescript) ; et les
+# — un `install --filter` en mode « hoisted » ramenait le verrou ENTIER
+# (700 paquets, react-native et expo compris).
+#
+# AUX VERSIONS DU VERROU, et seulement à elles. `--legacy` ne lisait PAS le
+# verrou (« prohibits to read or write a lockfile ») : il résolvait tout à neuf
+# depuis le registre, donc deux builds du même commit différaient — relevé du
+# 2026-10-08, fastify 5.12.5 au lieu de 5.7.4, undici 7 au lieu du 6 demandé.
+# Le deploy « partagé » de pnpm 10 installe le verrou tel quel, mais exige
+# `inject-workspace-packages` — posé ici seulement : il changerait les liens de
+# tout l'espace de travail en développement. Il ne refuse pourtant pas un
+# verrou périmé (une dépendance ajoutée au package.json serait ignorée en
+# silence) : check-lockfile-deps.mjs le refuse, et compare chaque paquet
+# installé au verrou. Les pairs facultatifs de @prisma/client (CLI prisma,
+# typescript), que le verrou porte, sont retirés par ce même contrôle :
+# `auto-install-peers=false` contredirait le verrou, et pnpm refuserait. Les
 # patchs, qui ne visent que le mobile et la TV, sont tolérés sans emploi.
+#
 # Le client Prisma vient de l'étape de construction, déjà généré ; l'élagage
 # (docker/prune-node-modules.sh) ne garde que ce que Node charge. Les modules
 # serveur des plugins (Vigie) n'importent que des modules intégrés de Node :
@@ -134,8 +147,10 @@ RUN corepack enable && corepack install
 COPY pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY patches/ patches/
-RUN pnpm --filter @tentacle-tv/backend deploy --prod --legacy --ignore-scripts \
-      --config.allow-unused-patches=true --config.auto-install-peers=false /deploy
+RUN pnpm --filter @tentacle-tv/backend deploy --prod --frozen-lockfile --ignore-scripts \
+      --config.inject-workspace-packages=true --config.allow-unused-patches=true /deploy
+COPY apps/backend/docker/check-lockfile-deps.mjs /tmp/check-lockfile-deps.mjs
+RUN node /tmp/check-lockfile-deps.mjs --drop-optional-peers pnpm-lock.yaml apps/backend /deploy/node_modules
 COPY --from=base /app/node_modules/.prisma/client /deploy/node_modules/.prisma/client
 COPY apps/backend/docker/prune-node-modules.sh /tmp/prune-node-modules.sh
 RUN sh /tmp/prune-node-modules.sh /deploy/node_modules
