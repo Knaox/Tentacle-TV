@@ -13,6 +13,9 @@ docker compose up -d
 decide. The administration's overview shows the running version, the latest published one, and the command
 to copy — Tentacle never drives Docker itself.
 
+**Updating to 1.25 from an earlier version** moves the database from MariaDB to SQLite, by itself: a waiting
+screen shows meanwhile, then the dashboard tells you how to remove MariaDB — [sqlite-migration.md](sqlite-migration.md).
+
 ## Logs
 
 ```bash
@@ -50,31 +53,38 @@ The volumes hold everything:
 
 | Volume | Content |
 |---|---|
-| `tentacle-db` | Tentacle's database (settings, accounts' data, statistics) |
-| `tentacle-data` | Tentacle's data folder (plugins, caches) |
-| `tentacle-secrets` | the generated database passwords |
+| `tentacle-data` | Tentacle's data folder: **its database `tentacle.db`** (settings, accounts' data, statistics, extensions' data), plugins, caches |
 | `jellyfin-config` | *full*: Jellyfin's configuration |
+| `tentacle-db`, `tentacle-secrets` | before 1.25: the old MariaDB database and its passwords. Keep them until the dashboard says "MariaDB is no longer needed" ([sqlite-migration.md](sqlite-migration.md)) |
 
-A database dump:
+The database is one file. For a consistent copy, stop Tentacle for a moment (SQLite is written in WAL mode:
+copy `tentacle.db` and, if present, `tentacle.db-wal` together):
 
 ```bash
-docker compose exec db sh -c 'mariadb-dump -u tentacle -p"$(cat /run/tentacle-secrets/db_password)" tentacle' > tentacle.sql
+docker compose stop tentacle
+docker compose cp tentacle:/app/apps/backend/data/tentacle.db ./tentacle-backup.db
+docker compose start tentacle
 ```
 
-## Migrating from the old `docker-compose.yml`
+To restore: stop Tentacle, put the file back as `data/tentacle.db` (and remove `tentacle.db-wal` / `-shm`),
+start it. The file holds the server's secrets (JWT secret, Jellyfin and TMDB keys): keep the copy private.
 
-The repository's old `docker-compose.yml` (and `docker-compose.external.yml`) **keep working** with the new
-image: `DATABASE_URL` is still read, and the image fixes the ownership of an old data volume on start (it runs
-as `PUID:PGID` from then on). Nothing forces you to move.
+## Moving from an older compose file
 
-To move to a new stack anyway (generated secrets, healthchecks, optional Jellyfin and HTTPS proxy):
+Since 1.25 the repository ships **two** stacks, `tentacle-full` and `tentacle-only`, without a database.
+`stacks/tentacle-db`, the root `docker-compose.yml` and `docker-compose.external.yml` are gone. **Your copy
+keeps working** with the new image: its MariaDB (or the database chosen in the old wizard) is migrated to
+SQLite by itself on the first start of 1.25 ([sqlite-migration.md](sqlite-migration.md)), and the image fixes
+the ownership of an old data volume on start (it runs as `PUID:PGID` from then on).
 
-1. Dump the old database:
-   `docker compose exec db mariadb-dump -u root -p"$MYSQL_ROOT_PASSWORD" tentacle_db > tentacle.sql`
-2. Stop the old stack (`docker compose down`, **without** `-v`), and keep its folder.
-3. In a new folder, start **tentacle-db** (or *tentacle-full*) once: `docker compose up -d`.
-4. Import the dump:
-   `docker compose exec -T db sh -c 'mariadb -u tentacle -p"$(cat /run/tentacle-secrets/db_password)" tentacle' < tentacle.sql`
-5. Copy the old data volume's content (`tentacle-data`) into the new one, then `docker compose restart tentacle`.
+To move to a current stack, **after** the dashboard says "MariaDB is no longer needed":
 
-The server sees an installed database and keeps its setup closed.
+1. In the **same folder**, put `tentacle-full` (with Jellyfin) or `tentacle-only` (Tentacle alone) in place of
+   your file (`curl -fsSLo compose.yaml …`, see [install.md](install.md)); delete an old `docker-compose.yml`
+   left next to it. Carry over your own changes (ports, GPU, `TENTACLE_WEB_UI`…); your `.env` stays valid.
+2. `docker compose up -d --remove-orphans`: the old `db`, `init` (or `web`) containers are removed. The data
+   volume keeps its name (`<folder>_tentacle-data`): Tentacle restarts on its `tentacle.db`, setup closed.
+3. Later, only once you are sure: `docker volume rm` the old database volume (`<folder>_tentacle-db`, or
+   `<folder>_tentacle-db-data` for the old root `docker-compose.yml`) and `<folder>_tentacle-secrets`.
+
+The dashboard's *MariaDB is no longer needed* card gives these steps for the installation it detects.

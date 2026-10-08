@@ -154,3 +154,6 @@ CLAUDE.md
 # une documentation du dépôt. Consigne du 27.08 — il ne se commite jamais. Il
 # l'avait été par deux commits du début de la branche, d'où ce retrait.
 REPRISE-LINUX-ELECTRON.md
+
+# `pnpm docker:*` monte stacks/tentacle-full : son dossier des médias par défaut (./media) naît à côté du compose.
+stacks/*/media/

@@ -28,6 +28,8 @@ describe("liens de doc de l'assistant", () => {
       remote: "remote-access/",
       addContent: "add-content/",
       disableWebUi: "install/#disable-web-ui",
+      // La page que le site publie pour la 1.25 : l'administration y renvoie.
+      sqliteMigration: "sqlite-migration/",
     });
   });
 });

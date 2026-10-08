@@ -16,6 +16,11 @@ import type { MigrationOutcome } from "./runMigration";
  */
 export const RETRY_DELAYS_MS = [30_000, 60_000, 120_000, 300_000, 600_000, 900_000];
 
+/** Le battement du fichier d'état pendant l'attente d'un essai : la CLI juge un serveur vivant à sa fraîcheur. */
+export const STATUS_HEARTBEAT_MS = 10_000;
+/** Au-delà, un fichier d'état n'atteste plus d'un serveur vivant (un PID réutilisé ne trompe plus la CLI). */
+export const STATUS_STALE_MS = 2 * 60_000;
+
 export interface MigrationStatusFile {
   state: "migrating" | "failed" | "done";
   /** Le processus qui mène les essais : la CLI lui demande un essai s'il vit, sinon migre elle-même. */
@@ -50,12 +55,17 @@ export interface LoopOptions {
   now?: () => number;
 }
 
-/** Attend `ms`, ou moins si le déclencheur apparaît (il est alors consommé). */
-async function waitForRetry(ms: number, options: LoopOptions): Promise<"timeout" | "trigger"> {
+/** Attend `ms`, ou moins si le déclencheur apparaît (il est alors consommé) ; bat toutes les 10 s. */
+async function waitForRetry(ms: number, options: LoopOptions, heartbeat: () => void): Promise<"timeout" | "trigger"> {
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? ((d: number) => new Promise<void>((r) => setTimeout(r, d)));
   const until = now() + ms;
+  let beat = now();
   while (now() < until) {
+    if (now() - beat >= STATUS_HEARTBEAT_MS) {
+      beat = now();
+      heartbeat();
+    }
     if (existsSync(options.triggerFile)) {
       try {
         unlinkSync(options.triggerFile);
@@ -95,7 +105,7 @@ export async function migrateUntilDone(run: () => Promise<MigrationOutcome>, opt
         `[db-migration] Essai ${attempt} sans succès (${failure.reason}) : ${failure.detail}. MariaDB est intacte. ` +
           `Nouvel essai dans ${Math.round(delay / 1000)} s (ou tout de suite : tentacle db migrate).`,
       );
-      writeStatusFile(options.statusFile, {
+      const failed: MigrationStatusFile = {
         state: "failed",
         attempt,
         updatedAt: now(),
@@ -103,8 +113,9 @@ export async function migrateUntilDone(run: () => Promise<MigrationOutcome>, opt
         reason: failure.reason,
         detail: failure.detail,
         retryAt,
-      });
-      await waitForRetry(delay, options);
+      };
+      writeStatusFile(options.statusFile, failed);
+      await waitForRetry(delay, options, () => writeStatusFile(options.statusFile, { ...failed, updatedAt: now() }));
     }
   }
 }

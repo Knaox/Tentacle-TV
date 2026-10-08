@@ -21,7 +21,7 @@ const at = { host: `${BROWSER_HOST}:${PORT}` };
 const configured = new DisposableJellyfin("asst-jf-configured", 8096, "12.1", MEDIA);
 const blank = new DisposableJellyfin("asst-jf-blank", 8097, "12.1", MEDIA);
 const stack = new Stack({
-  stack: "db",
+  stack: "only",
   project: "asst-db",
   env: { TENTACLE_PORT: String(PORT) },
   override: 'services:\n  tentacle:\n    environment:\n      REMOTE_CHECK_URL: "off"\n',

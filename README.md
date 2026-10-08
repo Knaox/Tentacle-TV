@@ -41,17 +41,16 @@
 
 ## Quick Start (Docker)
 
-**One file, one command: Tentacle, its MariaDB database and Jellyfin, ready together.** A setup wizard then
-configures everything from your browser.
+**One file, one command: Tentacle and Jellyfin, ready together.** A setup wizard then configures everything
+from your browser.
 
-You only need Docker (or Podman). Pick one of three ready-to-copy stacks — **nothing to edit, no password to
-write**: the database secrets are generated on the first start.
+You only need Docker (or Podman). Pick one of two ready-to-copy stacks — **nothing to edit, no password to
+write, no database to install**: Tentacle keeps its data in a file (SQLite) of its volume.
 
 | Stack | Contains | For |
 |---|---|---|
-| [`stacks/tentacle-full`](stacks/tentacle-full/compose.yaml) (recommended) | Tentacle, MariaDB, **Jellyfin** | starting from scratch |
-| [`stacks/tentacle-db`](stacks/tentacle-db/compose.yaml) | Tentacle, MariaDB | a Jellyfin that already runs elsewhere |
-| [`stacks/tentacle-only`](stacks/tentacle-only/compose.yaml) | Tentacle | existing MariaDB/MySQL and Jellyfin |
+| [`stacks/tentacle-full`](stacks/tentacle-full/compose.yaml) (recommended) | Tentacle, **Jellyfin** | starting from scratch |
+| [`stacks/tentacle-only`](stacks/tentacle-only/compose.yaml) | Tentacle | a Jellyfin that already runs elsewhere |
 
 ```bash
 mkdir tentacle && cd tentacle
@@ -73,9 +72,9 @@ every screen of the wizard, adding content, remote access (port forwarding, your
 troubleshooting and FAQ. Reference pages for maintainers: [docs/server](docs/server/README.md)
 ([français](docs/server/fr/README.md)).
 
-> The previous [`docker-compose.yml`](docker-compose.yml) and [`docker-compose.external.yml`](docker-compose.external.yml)
-> keep working with the new image; moving to a stack is optional
-> ([migration](docs/server/operations.md#migrating-from-the-old-docker-composeyml)).
+> **Updating from before 1.25** (a stack or a `docker-compose.yml` with a MariaDB or MySQL)? Keep your file as it
+> is and update the image: Tentacle migrates its database to SQLite by itself, then the dashboard says how to
+> remove MariaDB — [sqlite-migration](docs/server/sqlite-migration.md).
 
 ### Update
 
@@ -147,7 +146,7 @@ If you pin a version (`TENTACLE_VERSION=v1.23.0`, or `ghcr.io/knaox/tentacle-tv:
 - SHA256 verification and version compatibility checks
 
 ### Administration
-- Guided setup wizard (database, Jellyfin connection, admin account)
+- Guided setup wizard (Jellyfin connection, admin account, libraries) — no database to set up
 - Invite system to control user access
 - Built-in support tickets
 - TV pairing via 4-digit code
@@ -451,12 +450,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Environment Variables
 
-None is required with the stacks: the database comes from the stack (or the setup wizard), Jellyfin from the
-wizard. Full list in [docs/server/install.md](docs/server/install.md#settings-env).
+None is required with the stacks: the data is a file of the data volume (`data/tentacle.db`), Jellyfin comes
+from the wizard. Full list in [docs/server/install.md](docs/server/install.md#settings-env).
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL`, or `DB_HOST` · `DB_PORT` · `DB_NAME` · `DB_USER` · `DB_PASSWORD` / `DB_PASSWORD_FILE` | The database, given by the environment instead of the wizard | — |
+| `DATABASE_URL`, or `DB_HOST` · `DB_PORT` · `DB_NAME` · `DB_USER` · `DB_PASSWORD` / `DB_PASSWORD_FILE` | An installation from before 1.25 only: its MariaDB, read ONCE by the migration to SQLite, then removed ([sqlite-migration](docs/server/sqlite-migration.md)) | — |
 | `PORT` | Server listening port | `3000` |
 | `HOST` | Server bind address | `0.0.0.0` |
 | `PUID` / `PGID` | Account the server runs as (the image starts as root only to fix the data folder's ownership) | `1000` |
@@ -477,10 +476,11 @@ wizard. Full list in [docs/server/install.md](docs/server/install.md#settings-en
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) >= 20
+- [Node.js](https://nodejs.org/) >= 22.13 (`node:sqlite`, used by the backend, without a flag)
 - [pnpm](https://pnpm.io/) >= 9
-- [MariaDB](https://mariadb.org/) 11+ (or Docker)
-- [Rust](https://www.rust-lang.org/) (only needed for desktop builds)
+
+No database server: the backend keeps its data in `apps/backend/data/tentacle.db` (SQLite), created and kept
+up to date by the server itself on start.
 
 ### 1. Clone and Install
 
@@ -490,52 +490,28 @@ cd Tentacle-TV
 pnpm install
 ```
 
-### 2. Set Up the Database
-
-**Option A — Docker (recommended):**
-
-```bash
-docker run -d \
-  --name tentacle-db \
-  -e MYSQL_ROOT_PASSWORD=root \
-  -e MYSQL_DATABASE=tentacle \
-  -e MYSQL_USER=tentacle \
-  -e MYSQL_PASSWORD=tentacle \
-  -p 3306:3306 \
-  mariadb:11
-```
-
-**Option B — Local MariaDB:**
-
-Create a database and user manually, then note the connection string.
-
-### 3. Configure the Backend
+### 2. Configure the Backend
 
 ```bash
 cp apps/backend/.env.example apps/backend/.env
 ```
 
-Edit `apps/backend/.env`:
+Edit `apps/backend/.env` if needed — nothing is required for a local run:
 
 ```env
-DATABASE_URL="mysql://tentacle:tentacle@127.0.0.1:3306/tentacle"
-JWT_SECRET=any_random_string_for_dev
 PORT=3001
 CORS_ORIGIN=http://localhost:5173
 ```
 
-> Use `127.0.0.1` instead of `localhost` for MariaDB connections — MySQL interprets `localhost` as a Unix socket, which may fail with Docker.
-
-### 4. Initialize Prisma
+### 3. Generate the Prisma Client
 
 ```bash
 cd apps/backend
-pnpm db:generate   # Generate Prisma client
-pnpm db:push       # Sync schema to database
+pnpm db:generate   # Generate the Prisma client (never `prisma db push`)
 cd ../..
 ```
 
-### 5. Build Plugin Dependencies
+### 4. Build Plugin Dependencies
 
 ```bash
 cd apps/backend
@@ -545,7 +521,7 @@ cd ../..
 
 > This step is required for the plugin system to work. Without it, plugin pages will fail to load with a 404 on `tailwind.js`.
 
-### 6. Start Development Servers
+### 5. Start Development Servers
 
 Run both in separate terminals:
 
@@ -566,15 +542,15 @@ pnpm dev:desktop
 pnpm lint           # ESLint across all packages
 pnpm typecheck      # TypeScript --noEmit across all packages
 
-# Database management (run from apps/backend/)
-pnpm db:migrate     # Run Prisma migrations
+# Database (run from apps/backend/) — SQLite, data/tentacle.db
+pnpm db:generate    # Regenerate the Prisma client after a schema change
 pnpm db:studio      # Open Prisma Studio GUI
 
 # Docker shortcuts
-pnpm docker:up      # Start containers
-pnpm docker:down    # Stop containers
-pnpm docker:logs    # Tail container logs
-pnpm docker:rebuild # Rebuild and restart
+pnpm docker:up      # Start stacks/tentacle-full (project tentacle-dev, published image)
+pnpm docker:down    # Stop it
+pnpm docker:logs    # Tail its logs
+pnpm docker:rebuild # Build the image from this repository (:local) and start the stack on it
 pnpm docker:reset   # Full teardown + rebuild (deletes data!)
 ```
 
@@ -585,7 +561,7 @@ pnpm docker:reset   # Full teardown + rebuild (deletes data!)
 ```
 apps/
   web/             React 19 + Vite 6 + Tailwind CSS (main web client)
-  backend/         Fastify 5 + Prisma 6 + MariaDB (API server)
+  backend/         Fastify 5 + Prisma 6 + SQLite (API server)
   desktop-electron/ Electron (same web build for Windows, macOS and Linux)
   mobile/          Expo 52 + React Native (iOS + Android)
   tv/              React Native for Android TV (ExoPlayer/Media3)
@@ -605,7 +581,7 @@ docs/              Plugin registry documentation
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────────┐
-│   Web App   │────▶│   Backend   │────▶│    MariaDB      │
+│   Web App   │────▶│   Backend   │────▶│     SQLite      │
 │  (React 19) │     │ (Fastify 5) │     │  (Prisma ORM)   │
 └─────────────┘     └──────┬──────┘     └─────────────────┘
                            │
@@ -672,7 +648,7 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 |-------|------------|
 | Web Frontend | React 19, Vite 6, Tailwind CSS 3, Framer Motion 11 |
 | Desktop | Electron (Windows, macOS, Linux), native mpv player via koffi |
-| Backend | Fastify 5, Prisma 6, MariaDB 11 |
+| Backend | Fastify 5, Prisma 6, SQLite |
 | API Client | TanStack Query v5 |
 | Language | TypeScript 5.7 (strict mode) |
 | Video | hls.js 1.6 + HTML5 `<video>` (web), mpv (desktop), ExoPlayer/Media3 1.8 (TV) |

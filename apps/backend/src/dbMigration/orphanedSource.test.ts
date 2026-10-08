@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { orphanedLegacyInstallation } from "./orphanedSource";
+import { LEGACY_DATA_MARKERS, orphanedLegacyInstallation } from "./orphanedSource";
 import { migrationFailed, migrationFinished, publicDatabaseState } from "./migrationState";
 
 let root: string;
@@ -35,9 +35,41 @@ describe("une installation qui avait une MariaDB, plus configurée — jamais un
     expect(orphanedLegacyInstallation(null, data, secrets)).toBe(true);
   });
 
+  it("un volume d'une 1.23 sans source (ni scellé, ni secret) : orpheline, quel que soit le marqueur laissé", () => {
+    const leftByOldServer: Record<string, string> = {
+      compat: "compat/jellyfin.json",
+      update: "update/server-latest.json",
+      plugins: "plugins/installed.json",
+      tools: "tools/yt-dlp",
+    };
+    for (const [marker, file] of Object.entries(leftByOldServer)) {
+      const volume = join(root, `v-${marker}`);
+      mkdirSync(join(volume, marker), { recursive: true });
+      writeFileSync(join(volume, file), "{}");
+      expect(orphanedLegacyInstallation(null, volume, secrets), marker).toBe(true);
+    }
+    expect(Object.keys(leftByOldServer).every((m) => (LEGACY_DATA_MARKERS as readonly string[]).includes(m))).toBe(true);
+  });
+
+  it("une installation neuve n'est JAMAIS prise pour orpheline : ce que l'entrypoint et la CLI posent avant la base n'en est pas un marqueur", () => {
+    mkdirSync(join(data, "shared-deps"));
+    writeFileSync(join(data, "shared-deps", "shared-deps.js"), "");
+    writeFileSync(join(data, "web-ui"), "off\n");
+    writeFileSync(join(data, "setup-token.txt"), "ABCD\n");
+    expect(orphanedLegacyInstallation(null, data, secrets)).toBe(false);
+  });
+
+  it("start-fresh posé : plus jamais orpheline, marqueurs ou pas", () => {
+    for (const marker of LEGACY_DATA_MARKERS) mkdirSync(join(data, marker));
+    expect(orphanedLegacyInstallation(null, data, secrets)).toBe(true);
+    writeFileSync(join(data, "db-fresh-start"), "");
+    expect(orphanedLegacyInstallation(null, data, secrets)).toBe(false);
+  });
+
   it("une source configurée (la migration s'en charge) ou une tentacle.db déjà là : pas orpheline", () => {
     writeFileSync(join(secrets, "db_password"), "x");
     expect(orphanedLegacyInstallation("mysql://u:p@db/t", data, secrets)).toBe(false);
+    for (const marker of LEGACY_DATA_MARKERS) mkdirSync(join(data, marker));
     writeFileSync(join(data, "tentacle.db"), "");
     expect(orphanedLegacyInstallation(null, data, secrets)).toBe(false);
   });

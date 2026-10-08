@@ -18,3 +18,7 @@ process.once("message", (config: CacheChildConfig) => {
     })
     .finally(() => process.disconnect?.());
 });
+
+// Le serveur qui l'a lancé disparaît (arrêt, redémarrage, remigration) : on s'arrête
+// aussitôt, jamais un orphelin qui écrirait encore dans une base (ou un .bak).
+process.on("disconnect", () => process.exit(0));

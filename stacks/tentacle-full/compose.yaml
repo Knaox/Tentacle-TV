@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════
-#  Tentacle TV — FULL stack (recommended): Tentacle + database + Jellyfin
+#  Tentacle TV — FULL stack (recommended): Tentacle + Jellyfin
 # ══════════════════════════════════════════════════════════════════════════
 #  1. Put this file in an empty folder (e.g. ~/tentacle) as compose.yaml.
 #  2. Run:  docker compose up -d        (Podman: podman compose up -d)
@@ -7,28 +7,29 @@
 #     home network, no code; from elsewhere it asks for one, printed in
 #     Tentacle's log (Portainer: the container's Logs).
 #
-#  Nothing to edit: the database passwords are generated on first start, in
-#  a volume only the database and Tentacle can read. Your movies go in
+#  Nothing to edit, no database to install: Tentacle keeps its data in a file
+#  (SQLite) of the tentacle-data volume. Your movies go in
 #  ./media/films and your shows in ./media/series (created on first start,
 #  next to this file). Only Jellyfin mounts the media folder: Tentacle needs
 #  no media setting, it reads Jellyfin's folders through Jellyfin's API.
 #  Optional settings (media folder, ports, time zone, user…): a .env file
 #  next to this one — see .env.example.
 #
+#  UPDATING a stack from before 1.25 (it has a "db" service)? Do NOT copy
+#  this file yet: keep yours, update the image, and let Tentacle migrate its
+#  MariaDB database by itself. Then, once the dashboard says "MariaDB is no
+#  longer needed", put this file in place of yours, in the SAME folder: the
+#  tentacle-data and jellyfin-* volumes are kept as they are. A Portainer
+#  stack that follows this repository got this file already: the page below
+#  says how to let it migrate first.
+#  https://tentacletv.app/docs/server/sqlite-migration/
+#
 #  Linux is the supported host for this stack. On Windows and macOS, the
-#  Jellyfin project supports a NATIVE install only: use the "tentacle-db"
+#  Jellyfin project supports a NATIVE install only: use the "tentacle-only"
 #  stack with a native Jellyfin instead.
 # ══════════════════════════════════════════════════════════════════════════
 
 services:
-  # Generates the database secrets on first start, then exits.
-  init:
-    image: ghcr.io/knaox/tentacle-tv:${TENTACLE_VERSION:-latest}
-    command: ["init"]
-    restart: "no"
-    volumes:
-      - tentacle-secrets:/run/tentacle-secrets
-
   # Creates the films and series folders in your media folder when they are
   # missing (owned by PUID:PGID; what exists is never touched), then exits.
   # Jellyfin's own image, run once as root: Docker creates a missing media
@@ -45,29 +46,6 @@ services:
       PGID: ${PGID:-1000}
     volumes:
       - ${MEDIA_PATH:-./media}:/media:z
-
-  db:
-    image: mariadb:11.8
-    restart: unless-stopped
-    depends_on:
-      init:
-        condition: service_completed_successfully
-    environment:
-      MARIADB_DATABASE: tentacle
-      MARIADB_USER: tentacle
-      MARIADB_PASSWORD_FILE: /run/tentacle-secrets/db_password
-      MARIADB_ROOT_PASSWORD_FILE: /run/tentacle-secrets/db_root_password
-      MARIADB_AUTO_UPGRADE: "1"
-    volumes:
-      - tentacle-db:/var/lib/mysql
-      - tentacle-secrets:/run/tentacle-secrets:ro
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    # No published port: only Tentacle talks to the database.
 
   jellyfin:
     image: jellyfin/jellyfin:12
@@ -110,16 +88,12 @@ services:
     image: ghcr.io/knaox/tentacle-tv:${TENTACLE_VERSION:-latest}
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
       jellyfin:
         condition: service_started
     environment:
       TENTACLE_STACK: full
       TENTACLE_HOST_PORT: ${TENTACLE_PORT:-3000} # the setup link printed in the logs
       JELLYFIN_HOST_PORT: ${JELLYFIN_PORT:-8096} # the port to forward for direct play from outside
-      DB_HOST: db
-      DB_PASSWORD_FILE: /run/tentacle-secrets/db_password
       JELLYFIN_INTERNAL_URL: http://jellyfin:8096
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
@@ -133,7 +107,6 @@ services:
       - "${TENTACLE_PORT:-3000}:3000"
     volumes:
       - tentacle-data:/app/apps/backend/data
-      - tentacle-secrets:/run/tentacle-secrets:ro
 
   # Public access over HTTPS: put YOUR reverse proxy (Caddy, Nginx Proxy
   # Manager, Traefik…) in front of ports 3000 and 8096. What to put in it:
@@ -141,8 +114,6 @@ services:
   # Remote access.
 
 volumes:
-  tentacle-secrets:
-  tentacle-db:
   tentacle-data:
   jellyfin-config:
   jellyfin-cache:

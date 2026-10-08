@@ -22,7 +22,7 @@ const COMPOSE = (process.env.E2E_COMPOSE ?? "docker compose").split(" ").filter(
 const IMAGE_TAG = process.env.E2E_TENTACLE_VERSION ?? "latest";
 
 export interface StackOptions {
-  stack: "full" | "db" | "only";
+  stack: "full" | "only";
   project: string;
   /** Les variables du `.env` de la pile (ports, domaines…). */
   env: Record<string, string>;

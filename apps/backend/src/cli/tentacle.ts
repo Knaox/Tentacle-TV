@@ -8,6 +8,7 @@ import { forgetClaimant } from "../setup/localAccess/claimant";
 import { discardSetupToken, setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
 import { DB_USAGE, runDbCommand } from "./dbQueryCommand";
 import { DB_MIGRATE_USAGE, runDbMigrateCommand } from "./dbMigrateCommand";
+import { DB_START_FRESH_USAGE, runDbStartFresh } from "./dbStartFreshCommand";
 import { runWebCommand, WEB_USAGE } from "./webUiCommand";
 
 /**
@@ -33,6 +34,7 @@ const USAGE = [
   ...WEB_USAGE,
   ...DB_USAGE,
   ...DB_MIGRATE_USAGE,
+  ...DB_START_FRESH_USAGE,
 ];
 // Rouvrir l'assistant, c'est aussi repartir du CHOIX du Jellyfin : le choix
 // et le parcours d'avant ne valent plus (`setup/flow/setupFlow.ts`).
@@ -115,6 +117,7 @@ export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.en
   if (scope === "web") return runWebCommand(action, env);
   // La requête garde sa casse : seuls les mots de la commande sont normalisés.
   if (scope === "db" && action === "migrate") return runDbMigrateCommand();
+  if (scope === "db" && action === "start-fresh") return runDbStartFresh(normalizeArgs(args).slice(2));
   if (scope === "db") return runDbCommand(action, args.slice(args.length - normalizeArgs(args).length + 2));
   if (scope !== "setup" || (action !== "token" && action !== "reset")) {
     const typed = ["tentacle", ...args].join(" ");

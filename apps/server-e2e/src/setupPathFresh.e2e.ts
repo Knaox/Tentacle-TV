@@ -29,7 +29,7 @@ const OFF = 'services:\n  tentacle:\n    environment:\n      REMOTE_CHECK_URL: "
 
 const salon = new DisposableJellyfin("ap-jf-salon", 8096, "12.1", MEDIA);
 const fresh = new DisposableJellyfin("ap-jf-neuf", 8097, "12.1", MEDIA);
-const stack = new Stack({ stack: "db", project: "ap-db", env: { TENTACLE_PORT: "47321" }, override: OFF });
+const stack = new Stack({ stack: "only", project: "ap-db", env: { TENTACLE_PORT: "47321" }, override: OFF });
 const before = { salonLibraries: [] as string[] };
 
 beforeAll(async () => {

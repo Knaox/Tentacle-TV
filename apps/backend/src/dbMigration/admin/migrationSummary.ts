@@ -1,12 +1,19 @@
 import { getPrisma } from "../../services/db";
-import { legacyMariadbUrl, legacySourceState, MIGRATION_REPORT_KEY, type LegacySourceState } from "../../services/database/legacySource";
+import {
+  legacyConfigFile,
+  legacyMariadbUrl,
+  legacySourceOrigin,
+  legacySourceState,
+  MIGRATION_REPORT_KEY,
+  type LegacySourceState,
+} from "../../services/database/legacySource";
 import { hostInfo } from "../../setup/hostInfo";
 import { cacheCopyPercent, cacheCopyState, type CacheCopyPhase } from "../cache/deferredCacheCopy";
 import { sourceIdentity, type SourceIdentity } from "../legacySource/sourceConfig";
 import { parseReport } from "../migrationReport";
 import { sourceDivergence } from "../postMigration";
 import type { SourceCheck } from "../verify/sourceDivergence";
-import { dropDatabaseCommand, removalGuide, type RemovalGuide } from "./removalGuide";
+import { dropDatabaseCommand, forgetSourceCommand, removalGuide, type RemovalGuide } from "./removalGuide";
 
 /**
  * Ce que la carte « Base de données » et le tableau de bord de l'admin disent de
@@ -34,7 +41,12 @@ export interface DatabaseMigrationSummary {
   cache: { phase: CacheCopyPhase; percent: number };
   /** Le contrôle de l'ancienne base depuis la migration (§ 3.10) ; `null` : pas encore fait. */
   sourceCheck: SourceCheck | null;
-  removal: RemovalGuide & { dropCommand: string | null };
+  /**
+   * Les commandes viennent toujours du serveur, prêtes à COPIER (jamais
+   * exécutées) : `forgetCommand` seulement quand le fichier de l'ancien
+   * assistant désigne la source — l'environnement, lui, se retire du compose.
+   */
+  removal: RemovalGuide & { dropCommand: string; forgetCommand: string | null };
 }
 
 export async function databaseMigrationSummary(): Promise<DatabaseMigrationSummary> {
@@ -42,7 +54,8 @@ export async function databaseMigrationSummary(): Promise<DatabaseMigrationSumma
   const row = await getPrisma().serverConfig.findUnique({ where: { key: MIGRATION_REPORT_KEY } });
   const report = parseReport(row?.value);
   const identity = report?.source.identity ?? (url ? sourceIdentity(url) : null);
-  const guide = removalGuide(process.env, identity, hostInfo().containerized);
+  const origin = legacySourceOrigin();
+  const guide = removalGuide(process.env, identity, hostInfo().containerized, origin);
   const cache = cacheCopyState();
   return {
     legacy: legacySourceState(),
@@ -62,6 +75,11 @@ export async function databaseMigrationSummary(): Promise<DatabaseMigrationSumma
     },
     cache: { phase: cache.phase, percent: cacheCopyPercent(cache) },
     sourceCheck: sourceDivergence(),
-    removal: { ...guide, dropCommand: guide.kind === "external" ? dropDatabaseCommand(guide.database) : null },
+    // Toujours rendue, échappée ici (backtick doublé) : le web n'en construit jamais.
+    removal: {
+      ...guide,
+      dropCommand: dropDatabaseCommand(guide.database),
+      forgetCommand: origin === "file" ? forgetSourceCommand(legacyConfigFile()) : null,
+    },
   };
 }
