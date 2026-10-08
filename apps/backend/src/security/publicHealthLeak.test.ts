@@ -10,7 +10,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
  * l'audit du chantier SQLite : la configuration de la base n'y paraît jamais —
  * ni l'URL et le mot de passe de l'ancienne MariaDB, ni le chemin du fichier
  * SQLite, de sa copie en cours ou de sa sauvegarde. Le champ `database` venu
- * avec 1.25 n'y dit que le moteur, l'état et la progression, en nombres.
+ * avec 1.25 n'y dit que le moteur, l'état, la progression en nombres, et le
+ * motif d'un échec en un mot d'une liste fermée.
  */
 
 const SECRET = "Pw-audit-7f3c9e";
@@ -56,11 +57,13 @@ describe("/api/health — rien de la configuration de la base", () => {
     expect(text).not.toMatch(/"file:/);
   });
 
-  it("le champ `database`, s'il est là, ne dit que moteur, état et progression", () => {
+  it("le champ `database`, s'il est là, ne dit que moteur, état, progression et motif", () => {
     const database = body.database as Record<string, unknown> | undefined;
     if (database === undefined) return;
-    expect(Object.keys(database).every((key) => ["engine", "state", "progress"].includes(key))).toBe(true);
-    for (const key of ["engine", "state"] as const) {
+    const allowed = ["engine", "state", "progress", "reason", "retryInSeconds"];
+    expect(Object.keys(database).filter((key) => !allowed.includes(key))).toEqual([]);
+    if (database.retryInSeconds !== undefined) expect(typeof database.retryInSeconds).toBe("number");
+    for (const key of ["engine", "state", "reason"] as const) {
       if (database[key] === undefined) continue;
       // Un mot-clé court, jamais un chemin ni un message d'erreur.
       expect(String(database[key])).toMatch(/^[a-z][a-zA-Z0-9_-]{0,31}$/);
