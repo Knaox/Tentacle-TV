@@ -1,5 +1,7 @@
 import type { DatabaseMigrationView } from "@tentacle-tv/shared";
-import { clearDatabaseMigration, publishDatabaseMigration, readDatabaseMigration, subscribeDatabaseMigration } from "./migrationSignal";
+import {
+  clearDatabaseMigration, publishDatabaseMigration, readDatabaseMigration, reportDatabaseState, subscribeDatabaseMigration,
+} from "./migrationSignal";
 import { startMigrationPoller, type HealthSample, type MigrationPoller } from "./migrationPoller";
 
 /**
@@ -15,6 +17,9 @@ import { startMigrationPoller, type HealthSample, type MigrationPoller } from ".
  *   Base prête → `onResume` (requêtes invalidées, socket reconnectée — jamais
  *   le compte). Serveur muet trop longtemps → l'écran s'efface, la règle de
  *   panne de la plateforme reprend la main.
+ * - La socket qui tombe (le serveur redémarre pour migrer) fait relire
+ *   `/api/health` une fois : une session inactive voit l'écran sans attendre
+ *   sa prochaine requête.
  */
 export interface MigrationGateDeps {
   /** Relit `/api/config` (la requête `["app-config"]`). */
@@ -23,8 +28,13 @@ export interface MigrationGateDeps {
   hasCapability: () => boolean;
   fetchHealth: () => Promise<HealthSample | null>;
   onResume: () => void;
+  /** Abonne au « serveur perdu de vue » (la socket qui se ferme) ; rend le désabonnement. */
+  watchServerDrop?: (onDrop: () => void) => () => void;
   pollIntervalMs?: number;
 }
+
+/** Une relecture sur chute de socket au plus toutes les… (la reconnexion recule de 1 à 30 s). */
+const DROP_CHECK_SPACING_MS = 2000;
 
 export interface MigrationGate {
   /** La vue à montrer, `null` : rien. */
@@ -103,7 +113,21 @@ export function createMigrationGate(deps: MigrationGateDeps): MigrationGate {
       });
   };
 
+  let lastDropCheckAt = 0;
+  const onServerDrop = (): void => {
+    const now = Date.now();
+    if (disposed || phase !== "idle" || now - lastDropCheckAt < DROP_CHECK_SPACING_MS) return;
+    lastDropCheckAt = now;
+    void deps
+      .fetchHealth()
+      .then((sample) => {
+        if (!disposed && sample?.ok) reportDatabaseState(sample.body);
+      })
+      .catch(() => undefined);
+  };
+
   const unsubscribe = subscribeDatabaseMigration(onSignal);
+  const unwatchDrop = deps.watchServerDrop?.(onServerDrop);
   onSignal();
 
   return {
@@ -117,6 +141,7 @@ export function createMigrationGate(deps: MigrationGateDeps): MigrationGate {
     dispose: () => {
       disposed = true;
       unsubscribe();
+      unwatchDrop?.();
       stopPolling();
     },
   };

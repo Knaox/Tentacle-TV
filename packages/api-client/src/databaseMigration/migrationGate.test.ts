@@ -113,6 +113,42 @@ describe("porte de l'écran d'attente de la migration", () => {
   });
 });
 
+describe("la socket qui tombe fait relire /api/health une fois", () => {
+  it("une session inactive voit l'écran dès la chute de la socket ; une base prête ne dépose rien", async () => {
+    let drop: () => void = () => undefined;
+    const fetchHealth = vi.fn(async (): Promise<HealthSample> => ({ ok: true, body: migrating(5) }));
+    const gate = createMigrationGate({
+      refetchConfig: async () => undefined,
+      hasCapability: () => true,
+      fetchHealth,
+      onResume: () => undefined,
+      watchServerDrop: (onDrop) => {
+        drop = onDrop;
+        return () => undefined;
+      },
+    });
+    drop();
+    drop(); // une rafale de chutes : une seule relecture
+    await flush();
+    expect(fetchHealth).toHaveBeenCalledTimes(1);
+    expect(gate.read()).toMatchObject({ kind: "migrating", percent: 5 });
+    gate.dispose();
+    clearDatabaseMigration();
+
+    fetchHealth.mockResolvedValue({ ok: true, body: ready });
+    const quiet = createMigrationGate({
+      refetchConfig: async () => undefined, hasCapability: () => true, fetchHealth, onResume: () => undefined,
+      watchServerDrop: (onDrop) => { drop = onDrop; return () => undefined; },
+    });
+    await vi.advanceTimersByTimeAsync(3000);
+    drop();
+    await flush();
+    expect(quiet.read()).toBeNull();
+    expect(readDatabaseMigration()).toBeNull();
+    quiet.dispose();
+  });
+});
+
 describe("signal : le 503 du mode maintenance", () => {
   const response = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { resolveServerCapabilities, type DatabaseMigrationView } from "@tentacle-tv/shared";
 import { appConfigQuery } from "../hooks/useConfig";
-import { reconnectSocketNow } from "../socket/tentacleSocket";
+import { onSocketStatus, reconnectSocketNow } from "../socket/tentacleSocket";
 import { createMigrationGate, type MigrationGate } from "./migrationGate";
 import { fetchHealthSample } from "./migrationPoller";
 
@@ -38,6 +38,9 @@ export function useDatabaseMigrationGate(options: DatabaseMigrationGateOptions):
       hasCapability: () =>
         resolveServerCapabilities(queryClient.getQueryData(appConfigQuery().queryKey)).has("server.databaseMigration"),
       fetchHealth: fetchHealthSample(backendUrl),
+      watchServerDrop: (onDrop) => onSocketStatus((status) => {
+        if (status === "closed") onDrop();
+      }),
       onResume: () => {
         void queryClient.invalidateQueries();
         reconnectSocketNow();
