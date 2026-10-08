@@ -4,15 +4,19 @@
  * `[db-migration]` et au rapport — des noms de tables et des comptes, jamais une
  * valeur de ligne (audit S9).
  */
-export type MigrationFailureReason =
-  | "source_unreachable" // MariaDB injoignable ou identifiants refusés
-  | "source_config" // un paramètre de l'URL de la base que la copie ne sait pas honorer
-  | "source_too_old" // base d'avant la 1.4.0 : passer d'abord par la 1.24
-  | "disk_space" // pas assez de place dans le dossier de données
-  | "unsafe_path" // un lien symbolique là où la base doit être un fichier
-  | "copy_failed" // une table n'a pas pu être copiée
-  | "verification_failed" // la base copiée ne concorde pas avec la source
-  | "unknown";
+export const MIGRATION_FAILURE_REASONS = [
+  "source_unreachable", // MariaDB injoignable ou identifiants refusés
+  "source_config", // un paramètre de l'URL de la base que la copie ne sait pas honorer
+  "source_too_old", // base d'avant la 1.4.0 : passer d'abord par la 1.24
+  "disk_space", // pas assez de place dans le dossier de données
+  "unsafe_path", // un lien symbolique là où la base doit être un fichier
+  "copy_failed", // une table n'a pas pu être copiée
+  "verification_failed", // la base copiée ne concorde pas avec la source
+  "unknown",
+] as const;
+
+/** Liste FERMÉE, la même que `DATABASE_MIGRATION_REASONS` des clients (test miroir). */
+export type MigrationFailureReason = (typeof MIGRATION_FAILURE_REASONS)[number];
 
 export class MigrationFailure extends Error {
   constructor(

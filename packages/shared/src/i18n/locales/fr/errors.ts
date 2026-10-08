@@ -130,4 +130,24 @@ export default {
   connectivityJellyfinTitle: "Jellyfin n'est pas joignable",
   connectivityJellyfinHint: "Le serveur Tentacle est connecté, mais Jellyfin n'est pas joignable pour le moment. Contactez votre administrateur.",
   connectivityOfflineMode: "Tentacle passe en mode hors ligne : ce qui est sur cet appareil reste lisible.",
+  // La migration de la base (serveur 1.25) : l'écran d'attente, jamais une panne
+  // (`databaseMigration/databaseMigrationView.ts`). Les mêmes phrases que la page
+  // d'attente du serveur (`dbMigration/maintenance/waitingPageText.ts`, backend).
+  dbMigrationTitle: "Migration de la base de données en cours",
+  dbMigrationBody: "Tentacle passe à une base plus légère. L'opération peut prendre quelques minutes.",
+  dbMigrationTables: "{{done}} tables sur {{total}}",
+  dbMigrationEtaMinutes: "Environ {{minutes}} min restantes",
+  dbMigrationEtaSoon: "Moins d'une minute restante",
+  dbMigrationEtaUnknown: "Estimation du temps restant…",
+  dbMigrationFooter: "Cet écran se met à jour tout seul : Tentacle revient dès la fin.",
+  dbMigrationFailedTitle: "La migration n'a pas abouti",
+  dbMigrationFailedBody: "Vos données sont intactes : l'ancienne base n'a pas été modifiée.",
+  dbMigrationRetryIn: "Nouvel essai automatique dans {{time}}.",
+  dbMigrationRetryNow: "Nouvel essai en cours…",
+  dbMigrationRollback: "Revenir à la version précédente : redéployez l'image d'avant (par exemple ghcr.io/knaox/tentacle-tv:v1.24.0). Elle repart sur votre base intacte.",
+  dbMigrationReasonUnreachable: "L'ancienne base ne répond pas. Vérifiez qu'elle est démarrée et joignable par Tentacle.",
+  dbMigrationReasonConfig: "Un réglage de connexion à l'ancienne base n'est pas compris. Le journal du serveur dit lequel.",
+  dbMigrationReasonTooOld: "Cette installation est trop ancienne pour passer directement à cette version : installez d'abord la version 1.24, démarrez-la une fois, puis revenez à celle-ci.",
+  dbMigrationReasonDiskSpace: "Il n'y a pas assez de place sur le disque du serveur. Libérez de l'espace : le prochain essai repartira.",
+  dbMigrationReasonOther: "Le journal du serveur (lignes [db-migration]) dit pourquoi.",
 } as const;
