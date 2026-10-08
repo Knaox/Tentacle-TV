@@ -50,6 +50,7 @@ import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import { HostTitleBar } from "./desktop/HostTitleBar";
 import { AppErrorBoundary } from "./components/problems/AppErrorBoundary";
+import { DatabaseMigrationGate } from "./databaseMigration/DatabaseMigrationGate";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -265,6 +266,8 @@ function renderApp() {
                 <AppErrorBoundary>
                   <App />
                 </AppErrorBoundary>
+                {/* La migration de la base du serveur : au-dessus de tout, hors de l'application. */}
+                <DatabaseMigrationGate backendUrl={backendUrl} />
               </HistoryRouter>
             </PluginProvider>
           </JellyfinClientContext.Provider>
