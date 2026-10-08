@@ -13,6 +13,10 @@ docker compose up -d
 jour que quand vous le décidez. La vue d'ensemble de l'administration montre la version en service, la
 dernière publiée et la commande à copier — Tentacle ne pilote jamais Docker lui-même.
 
+**La mise à jour vers la 1.25 depuis une version d'avant** fait passer la base de MariaDB à SQLite, d'elle-même :
+un écran d'attente s'affiche pendant ce temps, puis le tableau de bord dit comment retirer MariaDB —
+[sqlite-migration.md](sqlite-migration.md).
+
 ## Journaux
 
 ```bash
@@ -52,33 +56,37 @@ Les volumes portent tout :
 
 | Volume | Contenu |
 |---|---|
-| `tentacle-db` | la base de Tentacle (réglages, données des comptes, statistiques) |
-| `tentacle-data` | le dossier de données de Tentacle (extensions, caches) |
-| `tentacle-secrets` | les mots de passe générés de la base |
+| `tentacle-data` | le dossier de données de Tentacle : **sa base `tentacle.db`** (réglages, données des comptes, statistiques, données des extensions), extensions, caches |
 | `jellyfin-config` | *full* : la configuration de Jellyfin |
+| `tentacle-db`, `tentacle-secrets` | avant la 1.25 : l'ancienne base MariaDB et ses mots de passe. À garder jusqu'à ce que le tableau de bord dise « MariaDB n'est plus nécessaire » ([sqlite-migration.md](sqlite-migration.md)) |
 
-Une copie de la base :
+La base est un fichier. Pour une copie cohérente, arrêtez Tentacle un instant (SQLite écrit en mode WAL :
+copiez ensemble `tentacle.db` et, s'il existe, `tentacle.db-wal`) :
 
 ```bash
-docker compose exec db sh -c 'mariadb-dump -u tentacle -p"$(cat /run/tentacle-secrets/db_password)" tentacle' > tentacle.sql
+docker compose stop tentacle
+docker compose cp tentacle:/app/apps/backend/data/tentacle.db ./tentacle-sauvegarde.db
+docker compose start tentacle
 ```
+
+Pour la remettre : arrêtez Tentacle, reposez le fichier en `data/tentacle.db` (et retirez `tentacle.db-wal` /
+`-shm`), redémarrez. Le fichier porte les secrets du serveur (secret JWT, clés Jellyfin et TMDB) : gardez la
+copie à l'abri.
 
 ## Migrer depuis l'ancien `docker-compose.yml`
 
 L'ancien `docker-compose.yml` du dépôt (et `docker-compose.external.yml`) **continue de marcher** avec la
-nouvelle image : `DATABASE_URL` est toujours lu, et l'image rend à son propriétaire un ancien volume de données
-au démarrage (elle tourne ensuite sous `PUID:PGID`). Rien ne vous oblige à bouger.
+nouvelle image : sa MariaDB est migrée vers SQLite d'elle-même au premier démarrage de la 1.25
+([sqlite-migration.md](sqlite-migration.md)), et l'image rend à son propriétaire un ancien volume de données au
+démarrage (elle tourne ensuite sous `PUID:PGID`). Rien ne vous oblige à bouger.
 
-Pour passer quand même à une pile neuve (secrets générés, contrôles de santé, Jellyfin et mandataire HTTPS en
-option) :
+Pour passer quand même à une pile neuve, **après** que le tableau de bord a dit « MariaDB n'est plus
+nécessaire » :
 
-1. Copiez l'ancienne base :
-   `docker compose exec db mariadb-dump -u root -p"$MYSQL_ROOT_PASSWORD" tentacle_db > tentacle.sql`
-2. Arrêtez l'ancienne pile (`docker compose down`, **sans** `-v`), et gardez son dossier.
-3. Dans un nouveau dossier, démarrez une fois **tentacle-db** (ou *tentacle-full*) : `docker compose up -d`.
-4. Importez la copie :
-   `docker compose exec -T db sh -c 'mariadb -u tentacle -p"$(cat /run/tentacle-secrets/db_password)" tentacle' < tentacle.sql`
-5. Recopiez le contenu de l'ancien volume de données (`tentacle-data`) dans le nouveau, puis
-   `docker compose restart tentacle`.
+1. Arrêtez l'ancienne pile (`docker compose down`, **sans** `-v`), et gardez son dossier.
+2. Dans un nouveau dossier, prenez **tentacle-full** ou **tentacle-only**, et démarrez-la une fois :
+   `docker compose up -d`.
+3. Arrêtez-la, recopiez le contenu de l'ancien volume de données (`tentacle-data`, qui porte maintenant
+   `tentacle.db`) dans le nouveau, puis `docker compose up -d`.
 
-Le serveur trouve une base installée et garde son assistant fermé.
+Le serveur trouve sa base installée et garde son assistant fermé.

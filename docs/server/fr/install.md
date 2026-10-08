@@ -6,9 +6,14 @@
 
 | Pile | Contient | À choisir quand |
 |---|---|---|
-| **tentacle-full** (conseillée) | Tentacle, sa base, **Jellyfin** | vous partez de zéro, ou voulez tout au même endroit |
-| **tentacle-db** | Tentacle et sa base | Jellyfin tourne déjà ailleurs (NAS, autre conteneur, installation native) |
-| **tentacle-only** | Tentacle seul | vous avez déjà MariaDB/MySQL et Jellyfin |
+| **tentacle-full** (conseillée) | Tentacle et **Jellyfin** | vous partez de zéro, ou voulez tout au même endroit |
+| **tentacle-only** | Tentacle seul | Jellyfin tourne déjà ailleurs (NAS, autre conteneur, installation native) |
+| **tentacle-db** (ancienne) | Tentacle et une MariaDB | seulement pour les installations qui l'utilisent déjà : depuis la 1.25, Tentacle n'a plus besoin de serveur de base de données |
+
+Aucune base à installer, dans aucune pile : depuis la 1.25, Tentacle garde ses données dans **un fichier**,
+`data/tentacle.db` (SQLite), de son volume de données — voir [Base de données](#base-de-données). Vous mettez à
+jour une installation qui utilisait MariaDB ou MySQL ? Ne changez rien, Tentacle la migre de lui-même :
+[sqlite-migration.md](sqlite-migration.md).
 
 Chaque pile est un seul `compose.yaml`, prêt à copier, avec un `.env.example` commenté à côté. **Rien n'est
 obligatoire dans `.env`** : chaque valeur a un défaut qui marche. Aucune pile n'embarque de mandataire : pour
@@ -16,9 +21,8 @@ le HTTPS depuis Internet, placez Tentacle derrière le vôtre ([remote-access.md
 
 ```bash
 mkdir tentacle && cd tentacle
-# UNE des trois :
+# UNE des deux :
 curl -fsSLo compose.yaml https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/stacks/tentacle-full/compose.yaml
-curl -fsSLo compose.yaml https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/stacks/tentacle-db/compose.yaml
 curl -fsSLo compose.yaml https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/stacks/tentacle-only/compose.yaml
 docker compose up -d
 ```
@@ -70,9 +74,7 @@ Une question par écran ; les étapes s'adaptent à la pile détectée.
 
 1. **Bienvenue** — la langue, puis **Commencer**.
 2. **Code d'installation** — seulement si l'assistant le demande (voir plus haut).
-3. **Base de données** — *tentacle-only* seulement : hôte, port, base, compte. Depuis Docker, `localhost` est
-   Tentacle lui-même : utilisez `host.docker.internal` ou l'adresse de la machine.
-4. **Jellyfin** — la liste de **tous** les Jellyfin trouvés (découverte UDP de Jellyfin, puis la machine
+3. **Jellyfin** — la liste de **tous** les Jellyfin trouvés (découverte UDP de Jellyfin, puis la machine
    d'où l'assistant est ouvert et la passerelle du conteneur, sur les ports courants), rangés en **Neufs** et
    **Déjà configurés**, chacun avec son nom, son adresse, son port et sa version. Depuis un réseau Docker en
    pont, la découverte ne voit que cette machine : un Jellyfin sur un autre appareil se donne à la main.
@@ -89,11 +91,11 @@ Une question par écran ; les étapes s'adaptent à la pile détectée.
    écran (« Jellyfin “Salon” · déjà configuré »). Revenir à cette étape pour en choisir un autre recalcule
    le parcours ; ce qui avait été préparé pour l'autre est oublié (un compte déjà créé sur un Jellyfin y
    reste).
-5. **Jellyfin neuf — votre compte administrateur** : vous le créez (il l'est aussi de Tentacle), avec la
+4. **Jellyfin neuf — votre compte administrateur** : vous le créez (il l'est aussi de Tentacle), avec la
    langue et le pays des métadonnées (proposés d'après le navigateur).
    **Jellyfin déjà configuré — connexion** : vous vous connectez avec un compte administrateur qui EXISTE
    (Tentacle crée sa clé d'API lui-même). Aucun compte n'est créé, ni ici, ni plus tard.
-6. **Jellyfin neuf — bibliothèques** : de vraies bibliothèques Jellyfin, créées dans Jellyfin. *tentacle-full*
+5. **Jellyfin neuf — bibliothèques** : de vraies bibliothèques Jellyfin, créées dans Jellyfin. *tentacle-full*
    propose **Films** (`/media/films`) et **Séries** (`/media/series`) ; parcourez les dossiers de Jellyfin
    pour en ajouter. Ce sont les chemins **de Jellyfin**, lus par son API : Tentacle n'a aucun réglage des
    médias, dans aucune pile.
@@ -104,12 +106,12 @@ Une question par écran ; les étapes s'adaptent à la pile détectée.
    réel, l'encodage HEVC (seulement avec un encodeur matériel). Chacun montre « actuellement → conseillé » ;
    ce que vous avez réglé autrement n'est jamais coché d'office. Seul ce qui est coché est appliqué ;
    **Passer** ne change rien.
-7. **Récapitulatif**, avec **l'adresse de Jellyfin pour les applications** (lecture directe à la maison) :
+6. **Récapitulatif**, avec **l'adresse de Jellyfin pour les applications** (lecture directe à la maison) :
    construite avec l'adresse par laquelle vous avez ouvert l'assistant et le port publié de Jellyfin
    (`JELLYFIN_PORT`), jamais un nom Docker. Modifiez-la au besoin. Puis **installation** (chaque étape ratée
    se relance seule).
-8. **Accès à distance** (facultatif) — le HTTPS par votre propre mandataire : voir [remote-access.md](remote-access.md).
-9. **Et maintenant ?** — où déposer vos fichiers, les applications de chaque plateforme, un QR code pour
+7. **Accès à distance** (facultatif) — le HTTPS par votre propre mandataire : voir [remote-access.md](remote-access.md).
+8. **Et maintenant ?** — où déposer vos fichiers, les applications de chaque plateforme, un QR code pour
     ouvrir le serveur.
 
 ## Réglages (`.env`)
@@ -130,11 +132,23 @@ Variables du serveur, à poser dans `compose.yaml` (`environment:`) pour les cas
 
 | Variable | |
 |---|---|
-| `DATABASE_URL` ou `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` / `DB_PASSWORD_FILE` | la base, donnée par l'environnement plutôt que par l'assistant |
+| `DATABASE_URL` ou `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` / `DB_PASSWORD_FILE` | **avant la 1.25 seulement** : l'ancienne base MariaDB/MySQL, que le serveur ne fait que LIRE pour la migrer ([sqlite-migration.md](sqlite-migration.md)). À retirer une fois que le tableau de bord dit « MariaDB n'est plus nécessaire » |
 | `TENTACLE_PUBLIC_URL` | lien public de repli (celui réglé dans l'administration l'emporte) |
 | `TRUSTED_PROXIES` | mandataires de plus dont `X-Forwarded-For` est cru (IP ou CIDR, séparés par des virgules) — voir [remote-access.md](remote-access.md#mandataires-de-confiance) |
 | `REMOTE_CHECK_URL` | le service de test d'ouverture et la détection de l'adresse publique (`off` coupe les deux) |
 | `TENTACLE_WEB_UI` | `off` coupe l'interface web — voir plus bas |
+
+## Base de données
+
+Tentacle garde tout (réglages, données des comptes, statistiques, données des extensions) dans
+`data/tentacle.db`, un fichier SQLite de son volume de données (`tentacle-data` dans les piles, monté sur
+`/app/apps/backend/data`). Rien à configurer. La carte *Services › Base de données* de l'administration en dit
+le moteur, le fichier, la taille et l'état.
+
+- **Sauvegarder** : copier le fichier — voir [operations.md](operations.md#sauvegarder).
+- **Gardez le dossier de données sur un disque local.** Sur un partage réseau (NFS, SMB/CIFS…), SQLite peut
+  s'abîmer : Tentacle le détecte et prévient, au journal et sur la carte *Base de données*, sans bloquer.
+- **La lire** depuis la console du conteneur, en lecture seule : `tentacle db query "SELECT key FROM server_config"`.
 
 ## Désactiver l'interface web
 

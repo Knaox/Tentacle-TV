@@ -16,6 +16,7 @@ cover every case; a guided setup wizard does the rest in the browser.
 | to reach my server away from home, over HTTPS | [remote-access.md](remote-access.md) |
 | hardware transcoding (Intel, AMD, NVIDIA) | [gpu.md](gpu.md) |
 | to update, back up, reopen the wizard, or migrate from the old compose file | [operations.md](operations.md) |
+| what happens to my MariaDB database in 1.25, and how to remove it afterwards | [sqlite-migration.md](sqlite-migration.md) |
 | to fix something that doesn't work | [troubleshooting.md](troubleshooting.md) |
 | to run the remote access test service (maintainers) | [port-check.md](port-check.md) |
 
@@ -36,8 +37,9 @@ Jellyfin is configured for you, your libraries are created, and you are signed i
 
 ## What the stacks guarantee
 
-- **No secret to write.** Database passwords are generated on the first start (`init` service) and live in a
-  volume only the database and Tentacle can read.
+- **No database to install, no secret to write.** Since 1.25 Tentacle keeps its data in one SQLite file of
+  its data volume (`data/tentacle.db`); an installation that used MariaDB is migrated by itself
+  ([sqlite-migration.md](sqlite-migration.md)).
 - **No media setting for Tentacle.** Only Jellyfin mounts your media folder; Tentacle reads its folders and
   libraries through Jellyfin's API.
 - **Never root, never the Docker socket.** Tentacle runs as `PUID:PGID` (1000:1000 by default) and does not
