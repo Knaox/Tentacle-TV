@@ -44,6 +44,10 @@ export function migratingReply(reply: FastifyReply) {
 export async function buildMaintenanceServer(options: MaintenanceServerOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: options.logger === false ? false : { redact: { paths: LOG_REDACT_PATHS, censor: "[redacted]" } },
+    // Aucune requête au journal : les clients sondent l'écran d'attente toutes les quelques
+    // secondes (les lignes [db-migration] s'y noyaient, mesuré au banc), et une URL d'ancien
+    // client peut porter un jeton (segments HLS) que le serveur normal masque, pas celui-ci.
+    disableRequestLogging: true,
     trustProxy: (address: string) => isTrustedProxy(address),
   });
   await app.register(helmet, {

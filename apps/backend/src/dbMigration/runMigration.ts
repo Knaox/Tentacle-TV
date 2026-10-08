@@ -8,6 +8,7 @@ import { copyAll, type CopyAllResult } from "./copy/copyAll";
 import { failureOf, MigrationFailure } from "./migrationErrors";
 import * as files from "./migrationFiles";
 import { MIGRATION_REPORT_KEY } from "./transforms/legacyRows";
+import { quoteIdent } from "./legacySource/extensionDdl";
 import { verifyTarget } from "./verify/verifyTarget";
 import { buildReport, type MigrationReport, SOURCE_FINGERPRINT_KEY } from "./migrationReport";
 
@@ -114,11 +115,19 @@ export async function runMigration(deps: RunMigrationDeps): Promise<MigrationOut
     const upsert = db.prepare(`INSERT INTO "server_config" ("key", "value") VALUES (?, ?) ON CONFLICT("key") DO UPDATE SET "value" = excluded."value"`);
     upsert.run(SOURCE_FINGERPRINT_KEY, JSON.stringify(copy.fingerprint));
     upsert.run(MIGRATION_REPORT_KEY, JSON.stringify(report));
+    // Ce que Prisma doit relire : le brouillon TEL QU'IL EST — la copie, déjà vérifiée
+    // contre la source, plus les clés que la migration vient d'y poser (server_config).
+    // Les comptes de la copie seuls y voyaient deux lignes de trop : échec à chaque essai.
+    const target = db;
+    const counts = Object.fromEntries(
+      report.tables
+        .filter((t) => t.kind === "core")
+        .map((t) => [t.table, Number((target.prepare(`SELECT COUNT(*) AS n FROM ${quoteIdent(t.table)}`).get() as { n: number | bigint }).n)]),
+    );
     db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     db.close();
     db = null;
 
-    const counts = Object.fromEntries(report.tables.filter((t) => t.kind === "core").map((t) => [t.table, t.rowsWritten]));
     await deps.apiSample(draft, counts);
 
     files.syncFile(draft);

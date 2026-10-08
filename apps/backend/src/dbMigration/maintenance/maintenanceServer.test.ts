@@ -61,6 +61,10 @@ describe("mode maintenance : ni socket, ni extension, ni route du cœur (S5b)", 
     expect(res.json()).toMatchObject({ state: "migrating", progress: { done: 3, total: 49, percent: 10 } });
   });
 
+  it("aucune requête au journal : ni bruit sous les sondages, ni URL d'ancien client (jeton de segment HLS)", () => {
+    expect(app.initialConfig.disableRequestLogging).toBe(true);
+  });
+
   it("/api/health : 200, l'état de la base en nombres", async () => {
     const res = await call("GET", "/api/health");
     expect(res.statusCode).toBe(200);
