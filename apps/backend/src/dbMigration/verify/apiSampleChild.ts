@@ -59,3 +59,7 @@ main().catch((err: unknown) => {
   const code = (err as { code?: unknown })?.code;
   reply({ ok: false, problems: [`Prisma n'a pas pu lire le brouillon${typeof code === "string" ? ` (${code})` : ""}`] });
 });
+
+// Le serveur qui l'a lancé disparaît (arrêt, redémarrage, remigration) : on s'arrête
+// aussitôt, jamais un orphelin qui écrirait encore dans une base (ou un .bak).
+process.on("disconnect", () => process.exit(0));
