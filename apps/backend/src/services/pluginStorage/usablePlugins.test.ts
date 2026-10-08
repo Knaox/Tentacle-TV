@@ -9,7 +9,7 @@
 import Fastify from "fastify";
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../dataDir", async () => {
   const { tmpdir } = await import("os");
@@ -22,6 +22,7 @@ vi.mock("../../middleware/auth", () => ({
 }));
 
 import { DATA_DIR, saveInstalled } from "../pluginManager";
+import { DATA_ROOT } from "../dataDir";
 import { getSeerrConfig } from "../seerConfig";
 import { forgetRequestExtension, hasRequestExtension } from "../pluginRequests";
 import { isPluginUsable, usablePlugins } from "./gate";
@@ -88,3 +89,6 @@ describe("déclarée compatible, elle revient partout", () => {
     expect(getSeerrConfig()).toBeNull();
   });
 });
+
+// Le dossier jetable entier, pas seulement plugins/ : sinon un dossier par lancement reste dans /tmp.
+afterAll(() => rmSync(DATA_ROOT, { recursive: true, force: true }));

@@ -7,7 +7,7 @@
 import Fastify from "fastify";
 import { mkdirSync, rmSync } from "fs";
 import { ZodError } from "zod";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../services/dataDir", async () => {
   const { tmpdir } = await import("os");
@@ -16,6 +16,7 @@ vi.mock("../services/dataDir", async () => {
 });
 
 import { DATA_DIR, clearCache, getSources, saveCustomSources, saveInstalled } from "../services/pluginManager";
+import { DATA_ROOT } from "../services/dataDir";
 import { registerPluginSourceRoutes } from "./pluginSources";
 
 const OFFICIAL_URL = getSources()[0].url;
@@ -155,3 +156,6 @@ describe("POST /sources", () => {
     expect((await call("POST", "/sources", { url: OFFICIAL_URL })).statusCode).toBe(409);
   });
 });
+
+// Le dossier jetable entier, pas seulement plugins/ : sinon un dossier par lancement reste dans /tmp.
+afterAll(() => rmSync(DATA_ROOT, { recursive: true, force: true }));
