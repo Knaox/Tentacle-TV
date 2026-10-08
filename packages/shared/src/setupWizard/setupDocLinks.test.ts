@@ -4,7 +4,7 @@ import { setupFlowSteps } from "./setupFlowContract";
 
 describe("liens de doc de l'assistant", () => {
   it("chaque écran des deux parcours a sa page — sauf la clé TMDB, qui n'en a pas encore", () => {
-    const shape = { needsCode: true, asksDatabase: true, asksTmdb: true } as const;
+    const shape = { needsCode: true, asksTmdb: true } as const;
     const steps = new Set([...setupFlowSteps({ ...shape, path: "fresh" }), ...setupFlowSteps({ ...shape, path: "configured", noLibraries: true })]);
     expect(steps.has("tmdb")).toBe(true);
     for (const step of steps) {

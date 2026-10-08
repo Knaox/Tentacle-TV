@@ -10,7 +10,7 @@ import type { SetupErrorCode } from "../setupWizard/setupWizardContract";
  */
 const CODES: Record<SetupErrorCode, true> = {
   setup_closed: true, session_required: true, code_required: true, setup_in_progress: true, invalid_token: true, rate_limited: true, invalid_input: true,
-  db_unreachable: true, db_auth_failed: true, db_unknown_database: true, db_schema_failed: true, db_managed_by_stack: true,
+  db_unreachable: true,
   jf_invalid_url: true, jf_forbidden_address: true, jf_localhost_in_docker: true, jf_unreachable: true, jf_timeout: true,
   jf_tls_invalid: true, jf_not_jellyfin: true, jf_incompatible_version: true, jf_not_blank: true, jf_bad_credentials: true,
   jf_not_admin: true, jf_api_key_invalid: true, jf_api_key_failed: true, jf_startup_failed: true, jf_path_not_found: true,

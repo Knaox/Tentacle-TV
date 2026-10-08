@@ -16,7 +16,6 @@ import {
   type SetupCompleteRequest,
   type SetupCompleteResponse,
   type SetupContext,
-  type SetupDatabaseRequest,
   type SetupErrorCode,
   type SetupHostInfo,
   type SetupSessionResponse,
@@ -46,7 +45,7 @@ export class SetupApiError extends Error {
 
 const KNOWN: ReadonlySet<string> = new Set<SetupErrorCode>([
   "setup_closed", "session_required", "code_required", "setup_in_progress", "invalid_token", "rate_limited", "invalid_input",
-  "db_unreachable", "db_auth_failed", "db_unknown_database", "db_schema_failed", "db_managed_by_stack",
+  "db_unreachable",
   "jf_invalid_url", "jf_forbidden_address", "jf_localhost_in_docker", "jf_unreachable", "jf_timeout",
   "jf_tls_invalid", "jf_not_jellyfin", "jf_incompatible_version", "jf_not_blank", "jf_bad_credentials",
   "jf_not_admin", "jf_api_key_invalid", "jf_api_key_failed", "jf_startup_failed", "jf_path_not_found",
@@ -149,7 +148,6 @@ export const setupApi = {
     if (!context || typeof context.flow !== "object" || context.flow === null) throw new SetupApiError("server_outdated");
     return context;
   },
-  database: (body: SetupDatabaseRequest) => call<{ success: true }>("/database", { method: "POST", body }),
   probe: (url: string) => call<JellyfinProbeResult>("/jellyfin/probe", { method: "POST", body: { url } }),
   discover: () => call<JellyfinDiscoveryResponse>("/jellyfin/discover"),
   prepare: () => call<unknown>("/jellyfin/prepare", { method: "POST" }),
