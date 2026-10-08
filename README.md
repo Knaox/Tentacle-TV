@@ -698,7 +698,7 @@ By submitting a contribution, you agree that it is licensed under the same terms
 
 ## License
 
-Copyright (C) 2025-2026 Damien Rouge ("Knaox").
+Copyright (C) 2026 Damien Rouge ("Knaox").
 
 Tentacle TV is free software, licensed under the **[GNU Affero General Public License v3.0 or later](LICENSE)** (`AGPL-3.0-or-later`), with an additional permission for distribution through application stores and an additional term on trademarks — see [`LICENSE-EXCEPTIONS`](LICENSE-EXCEPTIONS).
 

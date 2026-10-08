@@ -57,7 +57,7 @@ export default {
   // garantie, source) et les composants tiers, textes complets hors ligne.
   licensesTitle: "Licences",
   licensesIntro: "Ce qu'embarque cette application, sous quelle licence, et le texte complet de chaque licence — lisible sans réseau.",
-  tentacleLicense: "Tentacle TV {{version}} — © 2025-2026 Damien Rouge. Logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la GNU Affero General Public License v3.0 ou ultérieure, avec les permissions additionnelles de LICENSE-EXCEPTIONS. Il est fourni SANS AUCUNE GARANTIE. Les versions publiées avant le 7 octobre 2026 restent sous licence MIT.",
+  tentacleLicense: "Tentacle TV {{version}} — © 2026 Damien Rouge. Logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la GNU Affero General Public License v3.0 ou ultérieure, avec les permissions additionnelles de LICENSE-EXCEPTIONS. Il est fourni SANS AUCUNE GARANTIE. Les versions publiées avant le 7 octobre 2026 restent sous licence MIT.",
   sourceCode: "Code source",
   sourceCodeAt: "Code source de cette version : {{url}}",
   thirdPartyTitle: "Composants tiers",
