@@ -54,6 +54,10 @@ export const SERVER_CAPABILITIES = {
   /** L'état des sessions du tableau de bord décrit par le serveur : « direct »,
    *  « En analyse », limite de débit de l'appareil (`transcodeMemory`). */
   "admin.sessionStates": "1.24.0",
+  /** Le passage de MariaDB à SQLite dit aux clients : `/api/health` › `database`
+   *  (`migrating`, `failed`) et les 503 `{ state: "migrating" }` du mode maintenance —
+   *  l'écran d'attente, jamais une panne. */
+  "server.databaseMigration": "1.25.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
