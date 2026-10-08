@@ -50,6 +50,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
   const official = source?.official ?? plugin.sourceId === "official";
   const installedOn = formatDate(plugin.installedAt, i18n.language);
   const failed = plugin.serverModule?.state === "failed";
+  const refused = plugin.serverModule?.refusal === "sqliteUnsupported";
 
   return (
     <article
@@ -105,7 +106,12 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
 
       {entry?.description && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-content-tertiary">{entry.description}</p>}
 
-      {failed && (
+      {refused ? (
+        <div className="mt-3 rounded-lg bg-status-error-bg px-3 py-2 text-xs text-status-error-fg">
+          <p className="font-semibold">{t("storageRefusedTitle")}</p>
+          <p className="mt-0.5 text-content-secondary">{t("storageRefusedBody")}</p>
+        </div>
+      ) : failed && (
         <div className="mt-3 rounded-lg bg-status-error-bg px-3 py-2 text-xs text-status-error-fg">
           <p className="font-semibold">{t("serverModuleFailedTitle")}</p>
           {plugin.serverModule?.detail && (

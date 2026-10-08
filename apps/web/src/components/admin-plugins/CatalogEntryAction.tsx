@@ -36,6 +36,10 @@ export function CatalogEntryAction({ entry, installed, update }: CatalogEntryAct
   if (installed) {
     return <StatusPill tone="success">{t("installedVersion", { version: installed.version })}</StatusPill>;
   }
+  // Le serveur la refuserait (409) : on le dit au lieu d'offrir le geste.
+  if (entry.incompatible) {
+    return <StatusPill tone="warning">{t("requiresServer", { version: entry.minAppVersion ?? "?" })}</StatusPill>;
+  }
   return (
     <InstallButton
       name={entry.name}

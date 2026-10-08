@@ -15,6 +15,7 @@ import {
 // Télécharger, vérifier, extraire : le seul endroit où du code venu d'ailleurs
 // est écrit sur le disque du serveur. Séparé pour être lu d'un seul tenant.
 import { downloadPlugin, extractPlugin, removePluginFiles } from "../services/pluginInstall";
+import { requiresNewerServer } from "../services/pluginVersionPick";
 import {
   BOOT_ID,
   beginPluginOperation,
@@ -93,7 +94,12 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
       if (!source) return reply.status(404).send({ message: "Source not found" });
 
       const registryPlugins = await fetchRegistryCached(source.id, source.url);
-      const reg = registryPlugins.find((p) => p.pluginId === body.pluginId && p.version === body.version);
+      const listed = registryPlugins.find((p) => p.pluginId === body.pluginId);
+      // Une version qui exige un serveur plus récent ne s'installe pas (pluginVersionPick.ts).
+      const tooNew = listed?.newerRequires?.version === body.version ? listed.newerRequires.minTentacleVersion
+        : listed?.version === body.version && listed.incompatible ? listed.minAppVersion : undefined;
+      if (tooNew) return reply.status(409).send(requiresNewerServer(tooNew));
+      const reg = listed?.version === body.version ? listed : undefined;
       // Une version que la source ne publie plus (catalogue relu entre-temps)
       // enregistrait jusqu'ici un plugin SANS fichiers, sous son identifiant.
       if (!reg) return reply.status(404).send({ message: "This plugin version is no longer published by the source" });
@@ -175,6 +181,10 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
       const entries = await fetchRegistryCached(source.id, source.url);
       const latest = entries.find((e) => e.pluginId === current.pluginId);
       if (!latest) return reply.status(404).send({ message: "Plugin not found in source" });
+      // Rien de publié que ce serveur puisse prendre : on le dit, on ne pose rien.
+      if (latest.incompatible && latest.minAppVersion && isNewerVersion(latest.version, current.version)) {
+        return reply.status(409).send(requiresNewerServer(latest.minAppVersion));
+      }
       if (!isNewerVersion(latest.version, current.version)) {
         return { message: "Already up to date", plugin: current, ...restartInfo(false) };
       }

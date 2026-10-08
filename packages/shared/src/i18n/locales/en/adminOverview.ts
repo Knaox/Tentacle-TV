@@ -77,6 +77,11 @@ export default {
   entry_serverUpdateRequired_details: "This server runs {{current}}. The command to copy is in the “Tentacle server” card.",
   entry_serverUpdateRequired_action: "See the update",
 
+  entry_extensionsRefused_title: "Extension to update: {{names}}",
+  entry_extensionsRefused_body: "It isn't compatible with this server's database: it stays stopped, and its pages and features are missing for every account.",
+  entry_extensionsRefused_details: "Its data is intact. Update it from the Extensions page: it will start again with its data.",
+  entry_extensionsRefused_action: "See extensions",
+
   entry_publicUrl_missing_title: "Give Tentacle a public address",
   entry_publicUrl_missing_body: "Without it, nothing reaches it away from home: not the apps, not TV pairing, not shared links.",
   "entry_publicUrl_not-https_title": "Serve Tentacle over HTTPS",

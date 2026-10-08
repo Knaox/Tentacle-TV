@@ -2,6 +2,8 @@ import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs";
 import { resolve, sep } from "path";
 import { DATA_ROOT } from "./dataDir";
 import { isNewerVersion } from "./semver";
+import { pickVersion } from "./pluginVersionPick";
+import { BACKEND_VERSION } from "./version";
 
 // ── Types ──
 
@@ -19,6 +21,13 @@ export interface RegistryPlugin {
   repo?: string;
   platforms?: string[];
   minAppVersion?: string;
+  /**
+   * La version proposée exige un serveur plus récent que celui-ci (aucune
+   * version publiée ne lui convient) : elle s'affiche, elle ne s'installe pas.
+   */
+  incompatible?: boolean;
+  /** Une version plus récente existe, mais exige ce serveur-là (`minTentacleVersion`). */
+  newerRequires?: { version: string; minTentacleVersion: string };
   /** Notes de la dernière version, telles que le registre les publie (Markdown, blocs `### FR` / `### EN`). */
   changelog?: string;
   releaseDate?: string;
@@ -74,7 +83,7 @@ interface RawRegistryVersion {
   version: string; downloadUrl?: string; checksum?: string; minTentacleVersion?: string;
   changelog?: string; releaseDate?: string;
 }
-interface RawRegistryEntry {
+export interface RawRegistryEntry {
   id?: string; pluginId?: string; name: string; description?: string; author?: string;
   latestVersion?: string; versions?: RawRegistryVersion[];
   icon?: string; tags?: string[]; category?: string; repo?: string; platforms?: string[];
@@ -172,19 +181,26 @@ export function clearCache(sourceId?: string): void {
   else registryCache.clear();
 }
 
-function normalizePlugins(raw: RawRegistryEntry[]): RegistryPlugin[] {
+/**
+ * Une entrée par extension, à la version que CE serveur peut prendre : la plus
+ * récente de `versions[]` dont `minTentacleVersion` ne dépasse pas sa version
+ * (pluginVersionPick.ts). Aucune ne convient : la version annoncée, marquée
+ * `incompatible`. Sans `versions`, les champs de premier niveau, compatibles.
+ */
+export function normalizePlugins(raw: RawRegistryEntry[], serverVersion: string = BACKEND_VERSION): RegistryPlugin[] {
   return raw.map((entry) => {
-    const hasVersions = entry.versions && entry.versions.length > 0;
-    // La version annoncée (`latestVersion`) porte SON archive et SON empreinte :
-    // prendre la première de la liste les désaccordait dès que l'ordre différait.
-    const latest = hasVersions
-      ? entry.versions!.find((v) => v.version === entry.latestVersion) ?? entry.versions![0]
-      : undefined;
+    const versions = entry.versions ?? [];
+    const hasVersions = versions.length > 0;
+    const { chosen, tooNew } = pickVersion(versions, serverVersion);
+    // Rien de compatible : la version annoncée, comme avant, mais marquée. La
+    // version annoncée (`latestVersion`) porte SON archive et SON empreinte.
+    const announced = versions.find((v) => v.version === entry.latestVersion) ?? versions[0];
+    const latest = hasVersions ? chosen ?? announced : undefined;
     return {
       pluginId: entry.pluginId || entry.id || entry.name,
       name: entry.name,
       description: entry.description || "",
-      version: (hasVersions ? entry.latestVersion || latest!.version : entry.version) || "0.0.0",
+      version: (hasVersions ? latest!.version : entry.version) || "0.0.0",
       author: entry.author || "",
       downloadUrl: (latest?.downloadUrl || entry.downloadUrl) || undefined,
       checksum: (latest?.checksum || entry.checksum) || undefined,
@@ -192,6 +208,10 @@ function normalizePlugins(raw: RawRegistryEntry[]): RegistryPlugin[] {
       tags: entry.tags, category: entry.category, repo: entry.repo,
       platforms: entry.platforms,
       minAppVersion: latest?.minTentacleVersion,
+      ...(hasVersions && !chosen ? { incompatible: true } : {}),
+      ...(tooNew?.minTentacleVersion && tooNew !== latest
+        ? { newerRequires: { version: tooNew.version, minTentacleVersion: tooNew.minTentacleVersion } }
+        : {}),
       changelog: typeof latest?.changelog === "string" ? latest.changelog : undefined,
       releaseDate: typeof latest?.releaseDate === "string" ? latest.releaseDate : undefined,
     };
@@ -265,7 +285,7 @@ export function enrichPlugins(
       installedVersion: inst?.version,
       // Seulement depuis la source d'installation : c'est elle que la mise à
       // jour lit. Une autre source qui publie plus récent ne se pose pas.
-      updateAvailable: !!inst && inst.sourceId === source.id && isNewerVersion(p.version, inst.version),
+      updateAvailable: !!inst && inst.sourceId === source.id && !p.incompatible && isNewerVersion(p.version, inst.version),
     };
   });
 }

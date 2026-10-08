@@ -18,6 +18,7 @@ describe("describePluginError", () => {
     expect(reason(409, "Another operation is already running for this plugin")).toBe("busy");
     expect(reason(409, "Plugin already installed")).toBe("alreadyInstalled");
     expect(reason(404, "This plugin version is no longer published by the source")).toBe("versionGone");
+    expect(reason(409, "This plugin version requires a newer Tentacle server (1.26.0 or later)")).toBe("serverTooOld");
     expect(reason(409, "Source already exists")).toBe("sourceExists");
     expect(reason(500, "No SHA-256 checksum published for this plugin version: integrity cannot be verified")).toBe("noChecksum");
     expect(reason(500, "Checksum verification failed: file may be corrupted or tampered")).toBe("checksumMismatch");

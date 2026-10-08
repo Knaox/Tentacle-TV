@@ -72,3 +72,18 @@ const KEY_CHECK: Record<AdminKeyState, AdminKeyCheck> = {
 export function readAdminKeyCheck(state: AdminKeyState | null | undefined): AdminKeyCheck | null {
   return state ? KEY_CHECK[state] : null;
 }
+
+/**
+ * `GET /api/plugins` (extensions installées) : celles que ce serveur refuse de
+ * charger, nommées « Vigie 1.24.1 ». Un serveur d'avant 1.25.0 n'en refuse
+ * aucune (pas de `refusal`) : liste vide.
+ */
+export function readRefusedExtensions(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) return null;
+  return raw.flatMap((plugin) => {
+    if (!isRecord(plugin) || plugin.enabled !== true || !isRecord(plugin.serverModule)) return [];
+    if (plugin.serverModule.refusal !== "sqliteUnsupported") return [];
+    const name = typeof plugin.name === "string" ? plugin.name : String(plugin.pluginId ?? "?");
+    return [typeof plugin.version === "string" ? `${name} ${plugin.version}` : name];
+  });
+}

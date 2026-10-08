@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
   ChevronDown, ChevronRight, CircleArrowUp, Database, Eye, EyeOff, Globe, KeyRound, LockOpen,
-  OctagonAlert, ServerOff, SkipForward, SlidersHorizontal, Sparkles, Unplug, Zap, type LucideIcon,
+  OctagonAlert, Puzzle, ServerOff, SkipForward, SlidersHorizontal, Sparkles, Unplug, Zap, type LucideIcon,
 } from "lucide-react";
 import { useHintSupported, useSetHintDismissed } from "@tentacle-tv/api-client";
 import type { DismissibleHint } from "@tentacle-tv/shared";
@@ -26,6 +26,7 @@ const ICON: Record<EntryId, LucideIcon> = {
   databaseDown: Database,
   jellyfinIncompatible: OctagonAlert,
   serverUpdateRequired: CircleArrowUp,
+  extensionsRefused: Puzzle,
   publicUrl: Globe,
   tmdbKey: Sparkles,
   jellyfin: SlidersHorizontal,
@@ -67,6 +68,7 @@ export const AttentionEntry = memo(function AttentionEntry({ id, variant, items,
     required: context.serverRequired ?? "?",
     current: context.serverCurrent ?? "?",
     url: context.jellyfinUrl ?? "?",
+    names: items.join(", "),
   };
   const title = t(entryKeys(id, variant, "title"), values);
   const Icon = id === "publicUrl" && variant === "not-https" ? LockOpen : ICON[id];

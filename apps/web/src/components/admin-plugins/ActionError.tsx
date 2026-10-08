@@ -31,6 +31,7 @@ const REASON: Record<PluginErrorReason, string> = {
   busy: "errorBusy",
   alreadyInstalled: "errorAlreadyInstalled",
   versionGone: "errorVersionGone",
+  serverTooOld: "errorServerTooOld",
   sourceExists: "errorSourceExists",
   noChecksum: "errorNoChecksum",
   checksumMismatch: "errorChecksumMismatch",

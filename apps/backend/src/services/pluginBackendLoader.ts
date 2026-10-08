@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { resolve } from "path";
 import { existsSync, readFileSync, readdirSync } from "fs";
 import { getInstalled, DATA_DIR } from "./pluginManager";
+import { serverModuleCandidates } from "./pluginServerModule";
+import { storageRefusal } from "./pluginStorage/gate";
 
 /** Diagnostic info collected during loading (exposed via /api/health) */
 export const pluginBackendDiag: {
@@ -35,6 +37,12 @@ export interface PluginBackendContext {
   recommendations: {
     titleRequested: (userId: string, title: { mediaType: "movie" | "tv"; tmdbId: number }) => Promise<void>;
   };
+  /**
+   * L'interface de stockage portable MariaDB / SQLite (services/pluginStorage).
+   * Venue avec 1.25.0 : une extension l'emploie si elle la trouve, sinon elle
+   * est sur MariaDB et garde `getPrisma()`.
+   */
+  storage: import("./pluginStorage/types").PluginStorage;
 }
 
 export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
@@ -67,13 +75,13 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
 
     // Check plugin.json for a declared server module
     const manifestPath = resolve(pluginDir, "plugin.json");
-    let declaredServer: string | null = null;
+    let declaredServer: string | null = null; // relatif au dossier de l'extension
     if (existsSync(manifestPath)) {
       try {
         const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
         if (manifest.server) {
-          declaredServer = resolve(pluginDir, manifest.server);
-          console.log(`[PluginBackend]   plugin.json declares server: "${manifest.server}" → ${declaredServer}`);
+          declaredServer = manifest.server;
+          console.log(`[PluginBackend]   plugin.json declares server: "${manifest.server}"`);
         }
       } catch (e) {
         console.warn(`[PluginBackend]   Failed to parse plugin.json:`, e);
@@ -82,12 +90,7 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
       console.log(`[PluginBackend]   No plugin.json at ${manifestPath}`);
     }
 
-    const serverPaths = [
-      ...(declaredServer ? [declaredServer] : []),
-      resolve(pluginDir, "server", "index.js"),
-      resolve(pluginDir, "server", "index.mjs"),
-      resolve(pluginDir, "server.js"),
-    ];
+    const serverPaths = serverModuleCandidates(plugin.pluginId, declaredServer);
 
     const serverPath = serverPaths.find((p) => existsSync(p));
     if (!serverPath) {
@@ -98,6 +101,14 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
     }
 
     console.log(`[PluginBackend]   Server module found: ${serverPath}`);
+
+    // Sur SQLite, une extension qui ne déclare pas savoir y tourner ne se charge pas (pluginStorage/gate.ts).
+    if (storageRefusal(plugin.pluginId) === "sqliteUnsupported") {
+      const detail = "Extension not declared compatible with SQLite (plugin.json → storage.sqlite) — not loaded";
+      console.error(`[PluginBackend] ${plugin.pluginId}: ${detail}`);
+      pluginBackendDiag.loadResults.push({ pluginId: plugin.pluginId, status: "storage_unsupported", detail });
+      continue;
+    }
 
     try {
       const importUrl = `file://${serverPath.replace(/\\/g, "/")}`;
@@ -121,12 +132,14 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
       const { getPrisma } = await import("./db");
       const { requireAuth, requireAdmin } = await import("../middleware/auth");
       const { hideRequestedTitle } = await import("./reco/requestedTitles");
+      const { createHostPluginStorage } = await import("./pluginStorage/hostStorage");
 
       const ctx: PluginBackendContext = {
         pluginId: plugin.pluginId,
         getPrisma,
         requireAuth,
         requireAdmin,
+        storage: createHostPluginStorage(plugin.pluginId),
         recommendations: {
           // Jamais une panne pour l'extension : la demande est faite, le masquage est un plus.
           titleRequested: async (userId, title) => {
