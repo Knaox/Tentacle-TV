@@ -179,10 +179,12 @@ describe("PUT /jellyfin", () => {
 });
 
 describe("PUT /database", () => {
-  it("SQLite n'a rien à configurer : un refus que l'admin d'avant 1.25 affiche tel quel", async () => {
+  it("n'existe plus : la base SQLite n'a rien à configurer, aucune route n'écrit sa connexion", async () => {
     const payload = { host: "nas", port: 3307, database: "tentacle", user: "admin", password: "secret" };
-    const { status, body } = await call("PUT", "/database", payload);
-    expect(status).toBe(400);
-    expect(body).toEqual({ error: "database-managed", message: "La base est intégrée au serveur (SQLite) : rien à configurer." });
+    const app = Fastify();
+    await app.register(adminServicesRoutes, { prefix: "/api/admin" });
+    const res = await app.inject({ method: "PUT", url: "/api/admin/database", payload });
+    await app.close();
+    expect(res.statusCode).toBe(404);
   });
 });

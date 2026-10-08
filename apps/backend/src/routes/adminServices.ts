@@ -32,8 +32,7 @@ type ServiceError =
   | "jellyfin-key-missing"
   | "jellyfin-unreachable"
   | "jellyfin-invalid"
-  | "jellyfin-rejected"
-  | "database-managed";
+  | "jellyfin-rejected";
 
 type JellyfinProbe =
   | { ok: true; version: string; serverName: string }
@@ -47,7 +46,6 @@ function legacyMessage(error: ServiceError, httpStatus?: number): string {
     case "jellyfin-unreachable": return "Impossible de contacter Jellyfin";
     case "jellyfin-invalid": return "Ce serveur ne répond pas comme Jellyfin";
     case "jellyfin-rejected": return `Jellyfin a répondu ${httpStatus ?? "une erreur"}`;
-    case "database-managed": return "La base est intégrée au serveur (SQLite) : rien à configurer.";
   }
 }
 
@@ -148,13 +146,6 @@ export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
     if (!probe.ok) return fail(reply, probe.error, probe.error === "jellyfin-rejected" ? probe.httpStatus : undefined);
     return { success: true, version: probe.version, serverName: probe.serverName };
   });
-
-  /**
-   * PUT /api/admin/database — l'admin d'avant 1.25 (encore livrée dans le
-   * bureau) y enregistrait une connexion MariaDB. SQLite n'a rien à
-   * configurer : un refus qu'elle affiche tel quel.
-   */
-  app.put("/database", async (_request, reply) => fail(reply, "database-managed"));
 
   /** POST /api/admin/reset-server — Wipe all config and reset to setup mode. */
   app.post("/reset-server", async (_request, reply) => {
