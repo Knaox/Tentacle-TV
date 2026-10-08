@@ -51,13 +51,14 @@ export function HealthCard({ className }: { className?: string }) {
             icon={<Clapperboard size={18} />}
             name={t("homeJellyfin")}
             state={data?.jellyfin.state}
-            version={data?.jellyfin.version ?? null}
+            detail={data?.jellyfin.version ? t("homeVersion", { version: data.jellyfin.version }) : null}
           />
           <ServiceRow
             icon={<Database size={18} />}
             name={t("homeDatabase")}
             state={data?.database.state}
-            version={data?.database.version ?? null}
+            // Le moteur dit avec sa version (« SQLite 3.46.0 ») : « Version 3.46.0 » ne disait pas lequel.
+            detail={data?.database.version ?? null}
           />
         </div>
       )}
@@ -69,13 +70,14 @@ function ServiceRow({
   icon,
   name,
   state,
-  version,
+  detail,
 }: {
   icon: ReactNode;
   name: string;
   /** `undefined` : la sonde n'a pas encore répondu. */
   state: HealthState | undefined;
-  version: string | null;
+  /** Sous la puce : la version, déjà formulée. */
+  detail: string | null;
 }) {
   const { t } = useTranslation("admin");
   // La puce sous le nom, pas à sa droite : la carte partage sa largeur entre
@@ -98,7 +100,7 @@ function ServiceRow({
               {t(LABEL_KEY[state])}
             </StatusPill>
           )}
-          {version ? <span className="text-xs text-content-tertiary">{t("homeVersion", { version })}</span> : null}
+          {detail ? <span className="text-xs text-content-tertiary">{detail}</span> : null}
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@
  * faire tomber l'accueil.
  */
 
+import { formatDatabaseVersion } from "../services/serviceSummary";
+
 type Loose = Record<string, unknown>;
 
 const isRecord = (value: unknown): value is Loose => typeof value === "object" && value !== null;
@@ -18,6 +20,7 @@ export type HealthState = "connected" | "error" | "not_configured" | "unknown";
 
 export interface ServicesHealth {
   jellyfin: { state: HealthState; version: string | null };
+  /** `version` y porte le moteur : « SQLite 3.46.0 », « MariaDB 11.4.4 » (serveur d'avant 1.25). */
   database: { state: HealthState; version: string | null };
 }
 
@@ -40,17 +43,23 @@ function healthState(raw: unknown): HealthState {
   }
 }
 
-/** « 11.4.4-MariaDB-ubu2404 » → « 11.4.4 » ; une version Jellyfin passe telle quelle. */
+/** Une version Jellyfin, sans suffixe de distribution. */
 function shortVersion(raw: unknown): string | null {
   if (typeof raw !== "string" || raw.trim() === "") return null;
   return raw.trim().split("-")[0];
+}
+
+/** La base nommée par son moteur — le même libellé que la carte « Base de données ». */
+function databaseVersion(raw: Loose): string | null {
+  if (typeof raw.version !== "string" || raw.version.trim() === "") return null;
+  return formatDatabaseVersion(raw.version.trim(), typeof raw.engine === "string" ? raw.engine : null) || null;
 }
 
 export function readServicesHealth(raw: unknown): ServicesHealth | null {
   if (!isRecord(raw) || !isRecord(raw.jellyfin) || !isRecord(raw.database)) return null;
   return {
     jellyfin: { state: healthState(raw.jellyfin.status), version: shortVersion(raw.jellyfin.version) },
-    database: { state: healthState(raw.database.status), version: shortVersion(raw.database.version) },
+    database: { state: healthState(raw.database.status), version: databaseVersion(raw.database) },
   };
 }
 
