@@ -49,7 +49,7 @@ export function writeStatsShareOptions(options: StatsShareOptions): string {
 }
 
 /**
- * La colonne `options` manque : la base n'a pas encore reçu core-init.sql
+ * La colonne `options` manque : la base n'a pas reçu sa migration
  * (P2022, colonne inconnue). Le partage des statistiques le dit par un 503 ;
  * les listes, qui ne la lisent jamais, continuent de marcher.
  */
