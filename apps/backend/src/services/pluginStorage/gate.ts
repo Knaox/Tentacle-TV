@@ -1,4 +1,4 @@
-import { getInstalled, isValidPluginId } from "../pluginManager";
+import { getInstalled, isValidPluginId, type InstalledPlugin } from "../pluginManager";
 import { pluginHasServerModule, readPluginManifest } from "../pluginServerModule";
 
 /**
@@ -44,4 +44,20 @@ export function refusedPlugins(): RefusedPlugin[] {
     const reason = storageRefusal(plugin.pluginId);
     return reason ? [{ pluginId: plugin.pluginId, name: plugin.name, version: plugin.version, reason }] : [];
   });
+}
+
+/**
+ * LA règle d'une extension qui sert : installée, activée, d'identifiant
+ * valide, et pas refusée par ce serveur. Tout ce qui, dans le cœur, décide
+ * qu'une extension « est là » (liste servie aux clients, demandes de titres,
+ * rangées et recommandations de Vigie, bundle) passe par elle — jamais par une
+ * lecture directe de installed.json.
+ */
+export function isPluginUsable(plugin: Pick<InstalledPlugin, "pluginId" | "enabled">): boolean {
+  return plugin.enabled === true && isValidPluginId(plugin.pluginId) && storageRefusal(plugin.pluginId) === null;
+}
+
+/** Les extensions qui servent, dans l'ordre de installed.json. */
+export function usablePlugins(): InstalledPlugin[] {
+  return getInstalled().filter(isPluginUsable);
 }

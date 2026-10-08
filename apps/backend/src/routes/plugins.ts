@@ -8,7 +8,7 @@ import {
   assertPathUnderDataDir,
   DATA_DIR,
 } from "../services/pluginManager";
-import { storageRefusal } from "../services/pluginStorage/gate";
+import { isPluginUsable, usablePlugins } from "../services/pluginStorage/gate";
 import { readTabMeta, type PluginTabMeta } from "./pluginTabMeta";
 import { readSearchMeta, type PluginSearchMeta } from "./pluginSearchMeta";
 import { readTitlesMeta, type PluginTitlesMeta } from "./pluginTitlesMeta";
@@ -59,7 +59,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/active", { preHandler: requireAuth }, async () => {
     // Une extension que ce serveur refuse (pluginStorage/gate.ts) n'existe pas pour les clients : jamais à moitié.
-    const active = getInstalled().filter((p) => p.enabled && isValidPluginId(p.pluginId) && !storageRefusal(p.pluginId));
+    const active = usablePlugins();
     return active.map((p) => {
       const pluginDir = resolve(DATA_DIR, p.pluginId);
       let navItems: unknown[] = [];
@@ -100,6 +100,13 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     const { pluginId } = request.params as { pluginId: string };
     if (!isValidPluginId(pluginId)) {
       return reply.status(400).send({ message: "Invalid plugin ID" });
+    }
+    // Le code d'une extension qui ne sert pas (désactivée, refusée par ce
+    // serveur) n'est pas servi : les clients ne le demandent que d'après
+    // /active — jamais à moitié (pluginStorage/gate.ts).
+    const installed = getInstalled().find((p) => p.pluginId === pluginId);
+    if (!installed || !isPluginUsable(installed)) {
+      return reply.status(404).send({ message: "Bundle not found" });
     }
     const bundlePath = resolve(DATA_DIR, pluginId, "dist", `plugin-${pluginId}.iife.js`);
     assertPathUnderDataDir(bundlePath);

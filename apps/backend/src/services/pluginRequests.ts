@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 import { readTitlesMeta } from "../routes/pluginTitlesMeta";
-import { DATA_DIR, getInstalled, isValidPluginId } from "./pluginManager";
-import { storageRefusal } from "./pluginStorage/gate";
+import { DATA_DIR } from "./pluginManager";
+import { usablePlugins } from "./pluginStorage/gate";
 
 /**
  * Une extension sait-elle DEMANDER un titre ? Générique — aucune extension
@@ -28,11 +28,8 @@ function declaresRequest(pluginId: string): boolean {
 
 export function hasRequestExtension(now: number = Date.now()): boolean {
   if (cache && now - cache.at < TTL_MS) return cache.value;
-  const value = getInstalled().some(
+  const value = usablePlugins().some(
     (plugin) =>
-      plugin.enabled &&
-      isValidPluginId(plugin.pluginId) &&
-      !storageRefusal(plugin.pluginId) &&
       (plugin.config as Record<string, unknown> | undefined)?.enabled === true &&
       declaresRequest(plugin.pluginId),
   );
