@@ -4,7 +4,7 @@ import {
   DB_MIGRATION_COPY, DB_MIGRATION_REASON_KEYS, dbMigrationEta, dbMigrationRetryClock, type DatabaseMigrationView,
 } from "@tentacle-tv/shared";
 import { TentacleLogo } from "@/components/TentacleLogo";
-import { useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { useThemedStyles, type AppTheme } from "@/theme";
 
 /**
  * L'écran d'attente de la migration de la base (serveur 1.25), mobile : plein
@@ -45,7 +45,7 @@ export function DatabaseMigrationScreen({ view }: { view: DatabaseMigrationView 
           <>
             <Text style={styles.title} accessibilityRole="header">{t(DB_MIGRATION_COPY.failedTitle)}</Text>
             <Text style={styles.body}>{t(DB_MIGRATION_COPY.failedBody)}</Text>
-            <Text style={styles.small}>{t(DB_MIGRATION_REASON_KEYS[view.reason])}</Text>
+            <Text style={[styles.small, styles.reason]}>{t(DB_MIGRATION_REASON_KEYS[view.reason])}</Text>
             {/* Sans nouvel essai automatique (`retryInSeconds: null`), rien n'en est dit. */}
             {view.retryInSeconds !== null ? (
               <Text style={styles.eta}>
@@ -66,7 +66,8 @@ const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     overlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: withAlpha(t.colors.surface.s0, 0.97, t.colors.overlay.scrimHeavy),
+      // Opaque : l'écran remplace l'application le temps de la migration.
+      backgroundColor: t.colors.surface.s0,
       justifyContent: "center",
       alignItems: "center",
       zIndex: 1000,
@@ -82,6 +83,7 @@ const makeStyles = (t: AppTheme) =>
     row: { alignSelf: "stretch", flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
     percent: { color: t.colors.text.secondary, fontSize: 12, fontWeight: "600", fontVariant: ["tabular-nums"] },
     small: { color: t.colors.text.tertiary, fontSize: 12, lineHeight: 17, textAlign: "center", fontVariant: ["tabular-nums"] },
+    reason: { marginTop: 14 },
     eta: { color: t.colors.text.secondary, fontSize: 14, fontWeight: "600", marginTop: 16, textAlign: "center" },
     footer: { color: t.colors.text.quaternary, fontSize: 12, lineHeight: 17, marginTop: 28, textAlign: "center" },
   });
