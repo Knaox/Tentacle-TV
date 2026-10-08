@@ -8,7 +8,7 @@ export type ZonePolicy = "utc" | "session";
 
 /** Tables du cœur écrites par une extension avec `NOW()` : le cœur ne fait que les lire. */
 const SESSION_IN_CORE: Record<string, string[]> = {
-  content_claims: ["createdAt", "expiresAt"],
+  content_claims: ["expiresAt"],
 };
 
 /** Colonnes d'extension écrites en UTC (une `Date` JS liée par Prisma). */

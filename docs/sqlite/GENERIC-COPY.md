@@ -69,13 +69,15 @@ La copie lit le fuseau de la source, puis lit en UTC (`SET time_zone = '+00:00'`
 | Colonnes | Fuseau |
 |---|---|
 | Tables du cœur (Prisma) | UTC |
-| `content_claims.createdAt`, `content_claims.expiresAt` (table du cœur écrite par Vigie avec `NOW()`) | session |
+| `content_claims.expiresAt` (table du cœur écrite par Vigie avec `DATE_ADD(NOW(3), …)` ; depuis Vigie 1.25, en millisecondes calculées en JavaScript) | session |
 | `seer_user_settings.jellyseerr_last_sync`, `seer_tmdb_cache.expires_at` (Date JS liée) | UTC |
 | Toute autre colonne de date d'une table `seer_*`, y compris les colonnes écrites des deux façons (`seer_requests.sent_at`, `completed_at`, `seer_cleanup_queue.next_retry_at`) | session |
 | Table d'une extension inconnue | session (le SQL brut écrit `NOW()`) |
 
 Source en UTC (le cas des piles Docker et de la production mesurée) : aucune conversion, valeurs
-identiques. Le rapport dit le fuseau lu et les colonnes converties.
+identiques. Le rapport dit si une conversion a eu lieu. `CONVERT_TZ` ne convertit pas une date hors de
+la plage de `TIMESTAMP` (après 2038 avant MariaDB 11.5) : elle garde alors son heure locale — au plus
+quelques heures d'écart sur une échéance lointaine.
 
 ## Ce que la copie refuse
 

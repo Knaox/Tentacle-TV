@@ -64,6 +64,7 @@ describe("fuseau de la source (GENERIC-COPY.md)", () => {
   it("cœur en UTC sauf content_claims ; extensions en « session » sauf les dates JS de Vigie", () => {
     expect(zonePolicy("notifications", "createdAt", true)).toBe("utc");
     expect(zonePolicy("content_claims", "expiresAt", true)).toBe("session");
+    expect(zonePolicy("content_claims", "tmdbId", true)).toBe("utc");
     expect(zonePolicy("seer_requests", "created_at", false)).toBe("session");
     expect(zonePolicy("seer_requests", "sent_at", false)).toBe("session");
     expect(zonePolicy("seer_tmdb_cache", "expires_at", false)).toBe("utc");
