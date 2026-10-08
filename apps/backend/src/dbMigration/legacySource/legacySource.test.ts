@@ -21,7 +21,12 @@ describe("source MariaDB : l'URL relue comme la 1.24 la donnait à Prisma", () =
       database: "ma base",
       connectTimeout: 10_000,
       socketTimeout: 60_000,
+      allowPublicKeyRetrieval: true,
     });
+  });
+
+  it("MySQL 8 (caching_sha2_password, sans TLS) : la clé publique du serveur se demande, comme le faisait Prisma", () => {
+    expect(connectionOptions("mysql://root:pw@mysql8:3306/tentacle", files).allowPublicKeyRetrieval).toBe(true);
   });
 
   it("la moindre demande de TLS le rend OBLIGATOIRE, certificat relu, jamais de repli en clair", () => {
