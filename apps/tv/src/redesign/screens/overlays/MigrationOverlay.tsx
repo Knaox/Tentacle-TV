@@ -65,11 +65,14 @@ function Failed({ view, t }: { view: Extract<DatabaseMigrationView, { kind: "fai
       <Text style={styles.title}>{t(DB_MIGRATION_COPY.failedTitle)}</Text>
       <Text style={styles.message}>{t(DB_MIGRATION_COPY.failedBody)}</Text>
       <Text style={styles.reason}>{t(DB_MIGRATION_REASON_KEYS[view.reason])}</Text>
-      <Text style={styles.eta}>
-        {view.retryInSeconds > 0
-          ? t(DB_MIGRATION_COPY.retryIn, { time: dbMigrationRetryClock(view.retryInSeconds) })
-          : t(DB_MIGRATION_COPY.retryNow)}
-      </Text>
+      {/* Sans nouvel essai automatique (`retryInSeconds: null`), rien n'en est dit. */}
+      {view.retryInSeconds !== null ? (
+        <Text style={styles.eta}>
+          {view.retryInSeconds > 0
+            ? t(DB_MIGRATION_COPY.retryIn, { time: dbMigrationRetryClock(view.retryInSeconds) })
+            : t(DB_MIGRATION_COPY.retryNow)}
+        </Text>
+      ) : null}
       <Text style={styles.footer}>{t(DB_MIGRATION_COPY.rollback)}</Text>
     </>
   );

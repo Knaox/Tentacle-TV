@@ -37,6 +37,12 @@ describe("sonde mobile pendant la migration de la base", () => {
     expect(readDatabaseMigration()).toMatchObject({ kind: "failed", reason: "source_too_old" });
   });
 
+  it("ancienne base absente (`source_missing`) : joignable, motif sans prochain essai", async () => {
+    serve(() => json(200, { status: "ok", database: { state: "failed", reason: "source_missing" } }), () => json(503, {}));
+    expect(await runProbe("http://srv")).toMatchObject({ ok: true });
+    expect(readDatabaseMigration()).toEqual({ kind: "failed", reason: "source_missing", retryInSeconds: null, percent: 0 });
+  });
+
   it("base prête, ou serveur 1.24 sans `database` : la sonde ordinaire, Jellyfin compris", async () => {
     const calls = serve(() => json(200, { status: "ok" }), () => json(200, { Id: "jf" }));
     expect(await runProbe("http://srv")).toMatchObject({ ok: true });

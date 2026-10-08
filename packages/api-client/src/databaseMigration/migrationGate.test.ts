@@ -60,6 +60,18 @@ describe("porte de l'écran d'attente de la migration", () => {
     gate.dispose();
   });
 
+  it("ancienne base absente (`source_missing`) : l'écran reste, sans aucun prochain essai à dire", async () => {
+    const missing = { database: { engine: "sqlite", state: "failed", reason: "source_missing", progress: { percent: 0 } } };
+    const { gate, deps } = harness({ capable: true, health: [{ ok: true, body: missing }] });
+    reportDatabaseState(missing);
+    await flush();
+    expect(gate.read()).toEqual({ kind: "failed", reason: "source_missing", retryInSeconds: null, percent: 0 });
+    await vi.advanceTimersByTimeAsync(20_000); // l'écran reste, la relecture continue
+    expect(gate.read()).toMatchObject({ reason: "source_missing" });
+    expect(deps.onResume).not.toHaveBeenCalled();
+    gate.dispose();
+  });
+
   it("base prête : l'écran s'efface et la plateforme reprend (requêtes, socket), une seule fois", async () => {
     const { gate, deps } = harness({ capable: true, health: [{ ok: true, body: migrating(90) }, { ok: true, body: ready }] });
     reportDatabaseState(migrating(80));
