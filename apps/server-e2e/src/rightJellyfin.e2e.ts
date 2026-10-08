@@ -8,8 +8,8 @@ import { REPO, Stack, waitFor } from "./stack";
 /**
  * La pile Portainer de Damien, rejouée : Tentacle sur 47300, son Jellyfin
  * publié sur 47896, et à côté DEUX autres Jellyfin — un déjà configuré sur
- * 8096, un vierge sur 8097. Une base reprise d'un premier essai (pile « base »
- * reliée au Jellyfin de 8096, mêmes noms de volumes) : l'assistant doit
+ * 8096, un vierge sur 8097. Une base reprise d'un premier essai (pile « seule »
+ * reliée au Jellyfin de 8096, même volume tentacle-data) : l'assistant doit
  * retenir le Jellyfin de SA pile, donner aux applications l'adresse publiée,
  * s'ouvrir sans code depuis le réseau local et le demander ailleurs.
  *
@@ -64,7 +64,7 @@ afterAll(async () => {
 });
 
 describe("pile Portainer : le bon Jellyfin, la bonne adresse, sans code depuis la maison", () => {
-  it("premier essai, pile « base » : sans code depuis la maison, le code ailleurs, le premier garde la place", async () => {
+  it("premier essai, pile « seule » : sans code depuis la maison, le code ailleurs, le premier garde la place", async () => {
     stack = new Stack({ stack: "only", project: PROJECT, env: { TENTACLE_PORT: String(PORTS.tentacle) }, override });
     await stack.up();
     await Promise.all([owner.start(), neighbour.start()]);
