@@ -12,6 +12,7 @@ import { adminJellyfinKeyRoutes } from "./adminJellyfinKey";
 import { adminWatchTimeRoutes } from "./adminWatchTime";
 import { adminSessionsRoutes } from "./adminSessions";
 import { adminServicesRoutes } from "./adminServices";
+import { adminDatabaseMigrationRoutes } from "./adminDatabaseMigration";
 import { adminJellyfinCompatRoutes } from "./adminJellyfinCompat";
 import { adminJellyfinSetupRoutes } from "./adminJellyfinSetup";
 import { adminSegmentPluginsRoutes } from "./adminSegmentPlugins";
@@ -41,6 +42,8 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Jellyfin, base de données, réinitialisation (hérite de requireAdmin).
   await app.register(adminServicesRoutes);
+  // La migration MariaDB → SQLite : résumé et remigration à la demande (hérite de requireAdmin).
+  await app.register(adminDatabaseMigrationRoutes);
 
   // Compatibilité de Jellyfin : installé, dernier publié, sondes (hérite de requireAdmin).
   await app.register(adminJellyfinCompatRoutes);

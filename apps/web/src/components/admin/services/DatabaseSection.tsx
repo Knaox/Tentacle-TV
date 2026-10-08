@@ -4,6 +4,7 @@ import { SectionBadges, SectionError, SectionSkeleton } from "./SectionParts";
 import type { DatabaseService } from "./servicesModel";
 import { databaseEngineName, formatBytes, formatDatabaseVersion, summarizeDatabase } from "./serviceSummary";
 import { useServicesStatus } from "./useServicesData";
+import { MigrationPanel } from "./MigrationPanel";
 
 /**
  * La base du serveur, en lecture seule. Depuis 1.25, un fichier SQLite dans
@@ -88,6 +89,7 @@ function SqliteFacts({ database }: { database: DatabaseService }) {
       {database.storage === "network" && (
         <AdminNotice tone="warning" title={t("databaseNetworkTitle")}>{t("databaseNetwork")}</AdminNotice>
       )}
+      <MigrationPanel />
     </div>
   );
 }

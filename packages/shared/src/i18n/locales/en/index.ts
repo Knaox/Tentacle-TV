@@ -43,6 +43,7 @@ import setupWizard from "./setupWizard";
 import segmentPlugins from "./segmentPlugins";
 import requests from "./requests";
 import adminOverview from "./adminOverview";
+import adminDatabaseMigration from "./adminDatabaseMigration";
 import notices from "./notices";
 import family from "./family";
 import familyWeb from "./familyWeb";
@@ -67,6 +68,7 @@ export default {
   segmentPlugins,
   requests,
   adminOverview,
+  adminDatabaseMigration,
   notices,
   family,
   familyWeb,

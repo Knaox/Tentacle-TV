@@ -2,7 +2,7 @@ import { memo, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
-  ChevronDown, ChevronRight, CircleArrowUp, Database, Eye, EyeOff, Globe, KeyRound, LockOpen,
+  ChevronDown, ChevronRight, CircleArrowUp, Database, DatabaseZap, Eye, EyeOff, Globe, HardDriveDownload, KeyRound, LockOpen,
   OctagonAlert, Puzzle, ServerOff, SkipForward, SlidersHorizontal, Sparkles, Unplug, Zap, type LucideIcon,
 } from "lucide-react";
 import { useHintSupported, useSetHintDismissed } from "@tentacle-tv/api-client";
@@ -27,11 +27,14 @@ const ICON: Record<EntryId, LucideIcon> = {
   jellyfinIncompatible: OctagonAlert,
   serverUpdateRequired: CircleArrowUp,
   extensionsRefused: Puzzle,
+  databaseSourceChanged: DatabaseZap,
+  databaseNeverMigrated: DatabaseZap,
   publicUrl: Globe,
   tmdbKey: Sparkles,
   jellyfin: SlidersHorizontal,
   segmentPlugins: SkipForward,
   directPlay: Zap,
+  removeMariadb: HardDriveDownload,
 };
 
 const TILE = {

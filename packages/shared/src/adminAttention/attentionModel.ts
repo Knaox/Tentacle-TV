@@ -34,9 +34,11 @@ export type BlockingId =
   | "databaseDown"
   | "jellyfinIncompatible"
   | "serverUpdateRequired"
-  | "extensionsRefused";
+  | "extensionsRefused"
+  | "databaseSourceChanged"
+  | "databaseNeverMigrated";
 
-export type RecommendationId = "publicUrl" | "tmdbKey" | "jellyfin" | "segmentPlugins" | "directPlay";
+export type RecommendationId = "publicUrl" | "tmdbKey" | "jellyfin" | "segmentPlugins" | "directPlay" | "removeMariadb";
 
 /** Le rappel qui masque chaque recommandation — des clés à elles, distinctes des fenêtres des clients. */
 export const RECOMMENDATION_HINTS: Record<RecommendationId, DismissibleHint> = {
@@ -45,10 +47,30 @@ export const RECOMMENDATION_HINTS: Record<RecommendationId, DismissibleHint> = {
   jellyfin: "adminJellyfin",
   segmentPlugins: "adminSegmentPlugins",
   directPlay: "adminDirectPlay",
+  removeMariadb: "adminRemoveMariadb",
 };
 
 /** L'ordre de lecture : la sécurité, puis ce que voient tous les comptes, puis le confort. */
-const RECOMMENDATION_ORDER: readonly RecommendationId[] = ["publicUrl", "tmdbKey", "jellyfin", "segmentPlugins", "directPlay"];
+const RECOMMENDATION_ORDER: readonly RecommendationId[] = ["publicUrl", "tmdbKey", "jellyfin", "segmentPlugins", "directPlay", "removeMariadb"];
+
+/**
+ * La migration MariaDB → SQLite (serveur 1.25), vue du tableau de bord : un
+ * résumé de `GET /api/admin/database/migration`. « À régler » : une ancienne base
+ * qui a CHANGÉ depuis la migration (§ 3.10), ou une base installée sans jamais
+ * avoir été migrée face à une MariaDB configurée. Recommandation (masquable) :
+ * retirer MariaDB — seulement une fois la migration ET la copie du cache finies,
+ * et tant que l'ancienne base est encore configurée.
+ */
+export interface DatabaseMigrationAttention {
+  legacy: "none" | "pending" | "migrated" | "never_migrated";
+  sourceConfigured: boolean;
+  /** Le contrôle de l'ancienne base : `null` tant qu'il n'a rien trouvé (ou pas encore eu lieu). */
+  sourceChanged: "identity" | "data" | "was_empty" | null;
+  /** Rien n'est plus copié en fond depuis MariaDB (cache TMDB fini, ou rien à copier). */
+  cacheDone: boolean;
+  /** L'installation détectée, pour la marche à suivre (`official-stack`, `compose-service`, `external`, `unknown`). */
+  removal: string;
+}
 
 export type JellyfinLink =
   | { state: "connected" }
@@ -88,6 +110,8 @@ export interface AttentionSources {
    * renvoie vers un geste que le serveur n'a pas.
    */
   capabilities: ReadonlySet<ServerCapability>;
+  /** La migration de la base ; absent ou `null` : serveur d'avant 1.25 (capacité `server.databaseMigration`). */
+  databaseMigration?: Source<DatabaseMigrationAttention>;
   /** Masquée par le compte ? `undefined` : pas encore lu — la recommandation attend. */
   dismissed: Partial<Record<RecommendationId, boolean>>;
 }
@@ -144,6 +168,9 @@ function blockingEntries(s: AttentionSources): BlockingEntry[] {
   if (s.serverUpdate === "mandatory") entries.push({ id: "serverUpdateRequired", variant: null });
   const refused = s.refusedExtensions ?? [];
   if (refused.length > 0) entries.push({ id: "extensionsRefused", variant: null, items: [...refused] });
+  const migration = s.databaseMigration;
+  if (migration?.legacy === "never_migrated") entries.push({ id: "databaseNeverMigrated", variant: null });
+  if (migration?.sourceChanged) entries.push({ id: "databaseSourceChanged", variant: migration.sourceChanged });
   return entries.map((entry) => ({ ...entry, items: entry.items ?? [] }));
 }
 
@@ -205,6 +232,10 @@ function candidates(s: AttentionSources): Map<RecommendationId, { variant: strin
   if (segments) found.set("segmentPlugins", segments);
   const directPlay = usable ? linkEntry(s.links?.find((check) => check.id === "directPlay")) : null;
   if (directPlay) found.set("directPlay", directPlay);
+  const m = s.databaseMigration;
+  if (m && m.legacy === "migrated" && m.sourceConfigured && m.cacheDone && !m.sourceChanged) {
+    found.set("removeMariadb", { variant: m.removal, items: [] });
+  }
   return found;
 }
 
@@ -227,6 +258,8 @@ export function buildAdminAttention(s: AttentionSources): AdminAttention {
   const sources = [
     s.jellyfin, s.adminKey, s.databaseDown, s.tmdbConfigured, s.links, s.jellyfinSetup, s.jellyfinVersion, s.serverUpdate,
     s.refusedExtensions,
+    // Absente d'un appelant d'avant la migration : rien à attendre.
+    ...("databaseMigration" in s ? [s.databaseMigration] : []),
   ];
   return { settled: !waiting && sources.every((source) => source !== undefined), blocking, recommendations, hidden };
 }

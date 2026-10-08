@@ -38,13 +38,16 @@
  *   réglages conseillés de Jellyfin, greffons de passages). Une
  *   recommandation masquée se retrouve sous « N recommandations masquées ».
  *   Distinctes des fenêtres des clients : masquer l'une ne masque pas l'autre.
+ * - `adminRemoveMariadb` : « MariaDB n'est plus nécessaire » — la recommandation
+ *   du tableau de bord après la migration vers SQLite (serveur 1.25), avec la
+ *   marche à suivre selon l'installation.
  * - `autoQuality` : « Qualité réduite » sur le lecteur — pourquoi la qualité
  *   baisse en Auto (`notices/qualityDropNotice.ts`). Masqué, le message ne
  *   paraît plus ; la raison reste lisible dans le menu Qualité.
  */
 export const DISMISSIBLE_HINTS = [
   "trailerHelp", "serverUpdate", "tmdbKey", "adminPublicUrl", "adminDirectPlay", "adminTmdbKey", "adminJellyfin",
-  "autoQuality", "adminSegmentPlugins",
+  "autoQuality", "adminSegmentPlugins", "adminRemoveMariadb",
 ] as const;
 
 export type DismissibleHint = (typeof DISMISSIBLE_HINTS)[number];

@@ -13,6 +13,8 @@ const h = vi.hoisted(() => ({ raw: {} as object }));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { resolvedLanguage: "fr", language: "fr" } }),
 }));
+// Le panneau de migration a son test (migrationPanel.test.tsx) ; ici, la carte seule.
+vi.mock("./MigrationPanel", () => ({ MigrationPanel: () => null }));
 vi.mock("./useServicesData", () => ({
   useServicesStatus: () => ({ data: readServices({ database: h.raw }), isError: false, refetch: async () => undefined }),
 }));
