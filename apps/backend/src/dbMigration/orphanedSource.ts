@@ -38,7 +38,7 @@ export function orphanedLegacyInstallation(
  */
 export async function holdOrphanedInstallation(startMaintenance: () => Promise<unknown>, log: (line: string) => void = console.log): Promise<never> {
   log(
-    "[db-migration] ⚠️ Cette installation utilisait une base MariaDB, qui n'est plus configurée (ni DATABASE_URL, ni DB_HOST, ni data/database.json). " +
+    "[db-migration] ⚠️ Cette installation utilisait une base MariaDB, qui n'est plus configurée (ni DATABASE_URL, ni DB_HOST, ni le fichier de l'ancien assistant). " +
       "Ses données y sont toujours : remettez le service de la base et ses variables le temps de la migration, puis redémarrez. Aucune base vide n'est créée.",
   );
   migrationFailed("source_missing", null);
