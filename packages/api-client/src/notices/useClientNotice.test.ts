@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DISMISSIBLE_HINTS, SERVER_CAPABILITY_KEYS } from "@tentacle-tv/shared";
+import { DISMISSIBLE_HINTS, SERVER_CAPABILITY_KEYS, newestMissingSince } from "@tentacle-tv/shared";
 import { noticeContent } from "./noticeContent";
 import { clientNoticeOf, type ClientNoticeData } from "./useClientNotice";
 
@@ -11,6 +11,8 @@ import { clientNoticeOf, type ClientNoticeData } from "./useClientNotice";
  * suivantes.
  */
 const known = [...DISMISSIBLE_HINTS];
+/** La nouveauté la plus récente de la liste : elle bouge à chaque clé ajoutée, le test non. */
+const NEWEST = newestMissingSince(new Set())!;
 const base: ClientNoticeData = {
   hints: { dismissed: [], marks: {}, known },
   tmdbConfigured: false,
@@ -47,9 +49,9 @@ describe("l'avertissement surgissant des clients", () => {
   it("à l'exigence, une nouveauté qui attend le serveur : l'invitation, après TMDB, masquable jusqu'aux suivantes", () => {
     const current = { ...admin, serverVersion: "1.23.0" };
     const older = { ...base, tmdbConfigured: true, capabilities: new Set<never>() };
-    expect(clientNoticeOf(current, older)).toMatchObject({ id: "serverNews", canDismiss: true, mark: "1.24.0" });
+    expect(clientNoticeOf(current, older)).toMatchObject({ id: "serverNews", canDismiss: true, mark: NEWEST });
     expect(clientNoticeOf(current, { ...older, tmdbConfigured: false })?.id).toBe("tmdbKey");
-    expect(clientNoticeOf(current, { ...older, hints: { dismissed: ["serverUpdate"], marks: { serverUpdate: "1.24.0" }, known } })).toBeNull();
+    expect(clientNoticeOf(current, { ...older, hints: { dismissed: ["serverUpdate"], marks: { serverUpdate: NEWEST }, known } })).toBeNull();
     // Les capacités pas encore lues : rien, plutôt qu'une invitation qui disparaît aussitôt.
     expect(clientNoticeOf(current, { ...older, capabilities: undefined })).toBeNull();
     // Un serveur à jour : rien à proposer.
