@@ -10,7 +10,7 @@
 | "In Docker, localhost means Tentacle itself" | Give Jellyfin's real address: `http://host.docker.internal:8096` (Jellyfin on the same machine) or `http://192.168.x.y:8096`. |
 | "Nobody answers at this address" | Is Jellyfin running? Right port? From a container, a firewall on the host may block it. |
 | "This Jellyfin version is not supported" | Update Jellyfin (10.10 at least; 10.11 and 12 are tested). |
-| "Database migration in progress" stays on screen | The 1.25 is copying the old MariaDB database: it takes seconds to a few minutes. The screen shows the progress and comes back by itself. Details: [sqlite-migration.md](sqlite-migration.md). |
+| "Database migration in progress" stays on screen | The 1.25 is copying the old MariaDB database: a few seconds (about ten on a slow NAS). The screen shows the progress and comes back by itself. Details: [sqlite-migration.md](sqlite-migration.md). |
 | "The migration did not complete" | Your data is intact (MariaDB is only read). The screen says why; the log's `[db-migration]` lines say exactly what. Fix it, then retry at once with `tentacle db migrate` (or wait for the automatic retry). Going back to the previous image always works: [sqlite-migration.md](sqlite-migration.md#going-back). |
 | "This installation used a MariaDB database that is no longer configured" | The stack lost its `db` service or `DB_*` variables before the migration: put them back for the migration, then restart. A Portainer stack deployed from the repository: point it at the tag `server-v1.24.0` meanwhile. [sqlite-migration.md](sqlite-migration.md#mariadb-removed-too-early) |
 | "The database is on a network share" | SQLite can get corrupted on NFS/SMB: move the data folder (`tentacle-data`) to a local disk. |
