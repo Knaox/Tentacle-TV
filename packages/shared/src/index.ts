@@ -96,6 +96,7 @@ export * from "./notices/adminKeyHealth";
 export * from "./player/qualityDrop";
 export * from "./player/jellyfinOutageCopy";
 export * from "./connectivity/connectivityCase";
+export * from "./databaseMigration/databaseMigrationView";
 export * from "./player/jellyfinReturn";
 export * from "./notices/qualityDropNotice";
 // Le saut pendant un transcodage : les sauts rapides regroupés en un seul

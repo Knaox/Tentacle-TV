@@ -130,4 +130,24 @@ export default {
   connectivityJellyfinTitle: "Jellyfin can't be reached",
   connectivityJellyfinHint: "The Tentacle server is connected, but Jellyfin can't be reached right now. Contact your administrator.",
   connectivityOfflineMode: "Tentacle switches to offline mode: what's on this device stays playable.",
+  // The database migration (server 1.25): the waiting screen, never an outage
+  // (`databaseMigration/databaseMigrationView.ts`). Same sentences as the server's
+  // waiting page (`dbMigration/maintenance/waitingPageText.ts`, backend).
+  dbMigrationTitle: "Database migration in progress",
+  dbMigrationBody: "Tentacle is moving to a lighter database. This can take a few minutes.",
+  dbMigrationTables: "{{done}} of {{total}} tables",
+  dbMigrationEtaMinutes: "About {{minutes}} min left",
+  dbMigrationEtaSoon: "Less than a minute left",
+  dbMigrationEtaUnknown: "Estimating the time left…",
+  dbMigrationFooter: "This screen updates by itself: Tentacle comes back as soon as it is done.",
+  dbMigrationFailedTitle: "The migration did not complete",
+  dbMigrationFailedBody: "Your data is intact: the old database was not modified.",
+  dbMigrationRetryIn: "Automatic retry in {{time}}.",
+  dbMigrationRetryNow: "Retrying now…",
+  dbMigrationRollback: "To go back to the previous version: redeploy the previous image (for example ghcr.io/knaox/tentacle-tv:v1.24.0). It starts again on your intact database.",
+  dbMigrationReasonUnreachable: "The old database does not answer. Check that it is running and that Tentacle can reach it.",
+  dbMigrationReasonConfig: "A connection setting of the old database is not understood. The server log says which one.",
+  dbMigrationReasonTooOld: "This installation is too old to move straight to this version: install version 1.24 first, start it once, then come back to this one.",
+  dbMigrationReasonDiskSpace: "There is not enough space on the server's disk. Free some space: the next attempt will start again.",
+  dbMigrationReasonOther: "The server log ([db-migration] lines) says why.",
 } as const;
