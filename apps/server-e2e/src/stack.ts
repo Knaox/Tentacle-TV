@@ -97,9 +97,25 @@ export class Stack {
     await this.compose("down", "--remove-orphans");
   }
 
-  /** Une requête dans la base de la pile (compte `tentacle`, mot de passe du volume de secrets). */
+  /**
+   * Une requête dans la base SQLite de la pile (`data/tentacle.db` du conteneur
+   * Tentacle). Une lecture passe par `tentacle db query` (lecture seule, sans
+   * en-tête, colonnes séparées par des tabulations — la sortie de `mariadb -N`) ;
+   * une écriture (préparer un scénario) par `node:sqlite`, sous le compte du
+   * serveur : un `-wal` créé par root lui serait illisible. La requête passe en
+   * argument, jamais recollée dans une ligne de shell.
+   */
   async sql(query: string): Promise<string> {
-    return this.exec("db", "sh", "-c", `mariadb -N -utentacle -p"$(cat /run/tentacle-secrets/db_password)" tentacle -e "${query.replace(/[`"$\\]/g, "\\$&")}"`);
+    if (/^\s*(SELECT|WITH|PRAGMA)\b/i.test(query)) return this.exec("tentacle", "tentacle", "db", "query", "--no-header", query);
+    const write = [
+      'const { DatabaseSync } = require("node:sqlite");',
+      "const db = new DatabaseSync(process.argv[1]);",
+      'db.exec("PRAGMA busy_timeout = 15000");',
+      "db.exec(process.argv[2]);",
+      "db.close();",
+    ].join(" ");
+    const shell = 'exec su-exec "${PUID:-1000}:${PGID:-1000}" node -e "$1" "${TENTACLE_DATA_DIR:-/app/apps/backend/data}/tentacle.db" "$2"';
+    return this.exec("tentacle", "sh", "-c", shell, "sh", write, query);
   }
 
   async down(): Promise<void> {
