@@ -4,6 +4,7 @@ import { isDateTimeColumn, mariadbDateTimeToMs, toSqliteValue } from "../legacyS
 import { zonePolicy } from "../legacySource/timeZones";
 import type { ColumnPlan, TablePlan } from "./tableCopy";
 import type { CoreField, CoreModel } from "./coreModels";
+import { MigrationFailure } from "../migrationErrors";
 
 /**
  * Les PLANS de copie : pour chaque colonne de la cible, d'où vient la valeur et
@@ -75,7 +76,11 @@ function fallbackCore(field: CoreField, model: CoreModel, read: SelectColumn[], 
     return (_v, raw) => (created >= 0 && raw[created] ? zeroCounted(ctx, `${model.table}.createdAt`, true, String(raw[created])) : ctx.startedAt);
   }
   if (!field.required) return () => null;
-  throw new Error(`colonne requise absente de la source sans défaut : ${model.table}.${field.column}`);
+  // Sans valeur possible : refusé, mais seulement s'il y a une ligne à écrire —
+  // une table vide d'une source ancienne se copie (vide) sans encombre.
+  return () => {
+    throw new MigrationFailure("copy_failed", `colonne requise absente de la source sans défaut : ${model.table}.${field.column}`);
+  };
 }
 
 export function corePlan(model: CoreModel, source: SourceTable, ctx: PlanContext): CorePlan {
