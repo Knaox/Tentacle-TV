@@ -12,6 +12,7 @@ import { MigrationFailure } from "./migrationErrors";
 import { lockHolder, tryAcquireLock } from "./migrationLock";
 import { migrateUntilDone, writeStatusFile } from "./migrationLoop";
 import { emptySourceReport } from "./migrationReport";
+import { sourceIdentity } from "./legacySource/sourceConfig";
 import { migrationProgressed, publicDatabaseState } from "./migrationState";
 import { runMigration, type MigrationOutcome } from "./runMigration";
 import { runApiSample } from "./verify/apiSample";
@@ -46,13 +47,13 @@ export function migrationPaths(dataRoot: string = DATA_ROOT) {
 const log = (line: string) => console.log(line);
 
 /** Une source sans aucune table du cœur : base neuve, et la preuve qu'il n'y avait rien à reprendre. */
-function markEmptySource(finalPath: string, startedAt: number): void {
+function markEmptySource(finalPath: string, url: string, startedAt: number): void {
   applyCoreMigrations(finalPath);
   const db = openSqlite(finalPath);
   try {
     db.prepare(`INSERT INTO "server_config" ("key", "value") VALUES (?, ?) ON CONFLICT("key") DO UPDATE SET "value" = excluded."value"`).run(
       MIGRATION_REPORT_KEY,
-      JSON.stringify(emptySourceReport(BACKEND_VERSION, startedAt, Date.now())),
+      JSON.stringify(emptySourceReport(BACKEND_VERSION, sourceIdentity(url), startedAt, Date.now())),
     );
   } finally {
     db.close();
@@ -91,7 +92,7 @@ export async function migrateOnce(url: string, paths = migrationPaths()): Promis
       },
       log,
     });
-    if (outcome.kind === "empty") markEmptySource(paths.final, startedAt);
+    if (outcome.kind === "empty") markEmptySource(paths.final, url, startedAt);
     return outcome;
   } finally {
     lock.release();

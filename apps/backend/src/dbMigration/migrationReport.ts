@@ -1,4 +1,5 @@
 import type { CopyAllResult, TableReport } from "./copy/copyAll";
+import type { SourceIdentity } from "./legacySource/sourceConfig";
 import type { TargetVerification } from "./verify/verifyTarget";
 
 /**
@@ -17,7 +18,9 @@ export interface MigrationReport {
   startedAt: number;
   finishedAt: number;
   durationMs: number;
-  source: { engine: "mariadb"; version: string; bytes: number; zoneConverted: boolean };
+  source: { engine: "mariadb"; version: string; bytes: number; zoneConverted: boolean; identity: SourceIdentity };
+  /** La source n'avait aucune table du cœur : installation neuve, rien de repris. */
+  sourceEmpty?: true;
   disk: { requiredBytes: number; freeBytes: number };
   rowsWritten: number;
   tables: TableReport[];
@@ -34,6 +37,7 @@ export interface MigrationReport {
 
 interface BuildInput {
   deps: { serverVersion: string };
+  identity: SourceIdentity;
   copy: CopyAllResult;
   verification: TargetVerification;
   startedAt: number;
@@ -52,7 +56,13 @@ export function buildReport(input: BuildInput): MigrationReport {
     startedAt: input.startedAt,
     finishedAt: input.finishedAt,
     durationMs: input.finishedAt - input.startedAt,
-    source: { engine: "mariadb", version: input.sourceVersion, bytes: input.sourceBytes, zoneConverted: !!input.zoneConverted },
+    source: {
+      engine: "mariadb",
+      version: input.sourceVersion,
+      bytes: input.sourceBytes,
+      zoneConverted: !!input.zoneConverted,
+      identity: input.identity,
+    },
     disk: { requiredBytes: Math.ceil(input.sourceBytes * 1.1) + 100 * 1024 * 1024, freeBytes: input.free },
     rowsWritten: copy.tables.reduce((n, t) => n + t.rowsWritten, 0),
     tables: copy.tables,
@@ -77,14 +87,14 @@ export function parseReport(json: string | null | undefined): MigrationReport | 
 }
 
 /** Le rapport d'une source SANS aucune table du cœur (installation jamais faite) : rien n'a été copié. */
-export function emptySourceReport(serverVersion: string, startedAt: number, finishedAt: number): MigrationReport & { emptySource: true } {
+export function emptySourceReport(serverVersion: string, identity: SourceIdentity, startedAt: number, finishedAt: number): MigrationReport {
   return {
     version: REPORT_VERSION,
     serverVersion,
     startedAt,
     finishedAt,
     durationMs: finishedAt - startedAt,
-    source: { engine: "mariadb", version: "", bytes: 0, zoneConverted: false },
+    source: { engine: "mariadb", version: "", bytes: 0, zoneConverted: false, identity },
     disk: { requiredBytes: 0, freeBytes: 0 },
     rowsWritten: 0,
     tables: [],
@@ -94,6 +104,6 @@ export function emptySourceReport(serverVersion: string, startedAt: number, fini
     zeroDates: {},
     foreignKeyOrphans: {},
     familyOrphansDropped: 0,
-    emptySource: true,
+    sourceEmpty: true,
   };
 }

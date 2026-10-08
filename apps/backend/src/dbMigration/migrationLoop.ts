@@ -1,7 +1,7 @@
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { failureOf, type MigrationFailureReason } from "./migrationErrors";
 import { migrationFailed, migrationFinished, migrationStarted, publicDatabaseState } from "./migrationState";
-import { restrictToOwner } from "./migrationFiles";
+import { refuseSymlink, restrictToOwner } from "./migrationFiles";
 import type { MigrationOutcome } from "./runMigration";
 
 /**
@@ -30,6 +30,7 @@ export interface MigrationStatusFile {
 
 export function writeStatusFile(path: string, status: MigrationStatusFile): void {
   try {
+    refuseSymlink(path);
     writeFileSync(path, `${JSON.stringify(status)}\n`, { mode: 0o600 });
     restrictToOwner(path);
   } catch {

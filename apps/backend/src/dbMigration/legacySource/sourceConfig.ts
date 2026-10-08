@@ -108,3 +108,28 @@ export function describeSource(url: string): string {
   const where = u.searchParams.get("socket") ? `socket ${u.searchParams.get("socket")}` : `${u.hostname}:${u.port || 3306}`;
   return `${where}/${decodeURIComponent(u.pathname.replace(/^\//, ""))}${tls}`;
 }
+
+/**
+ * L'IDENTITÉ d'une source : où elle est (hôte ou socket, port, nom de base),
+ * jamais qui s'y connecte. Gardée dans le rapport de migration : une source
+ * configurée qui n'est plus celle-là se signale au démarrage.
+ */
+export interface SourceIdentity {
+  host: string;
+  port: number;
+  database: string;
+}
+
+export function sourceIdentity(url: string): SourceIdentity {
+  const u = new URL(url.trim().replace(/^mariadb:/i, "mysql:"));
+  const socket = u.searchParams.get("socket");
+  return {
+    host: socket ? `socket:${socket}` : u.hostname.toLowerCase(),
+    port: Number(u.port || 3306),
+    database: decodeURIComponent(u.pathname.replace(/^\//, "")),
+  };
+}
+
+export function sameIdentity(a: SourceIdentity | null | undefined, b: SourceIdentity | null | undefined): boolean {
+  return !!a && !!b && a.host === b.host && a.port === b.port && a.database === b.database;
+}

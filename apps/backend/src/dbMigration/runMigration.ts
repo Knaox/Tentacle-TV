@@ -2,7 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { existsSync } from "fs";
 import { dirname } from "path";
 import { MariadbReader } from "./legacySource/mariadbReader";
-import { describeSource, ignoredParams, SourceConfigError } from "./legacySource/sourceConfig";
+import { describeSource, ignoredParams, SourceConfigError, sourceIdentity } from "./legacySource/sourceConfig";
 import type { CoreModel } from "./copy/coreModels";
 import { copyAll, type CopyAllResult } from "./copy/copyAll";
 import { failureOf, MigrationFailure } from "./migrationErrors";
@@ -108,7 +108,7 @@ export async function runMigration(deps: RunMigrationDeps): Promise<MigrationOut
     }
     const verification = verifyTarget(db, copy.expected);
     const report = buildReport({
-      deps, copy, verification, startedAt, finishedAt: now(),
+      deps, copy, verification, startedAt, finishedAt: now(), identity: sourceIdentity(deps.sourceUrl),
       sourceVersion: reader.serverVersion, sourceBytes, free, zoneConverted: reader.sourceZone !== null,
     });
     const upsert = db.prepare(`INSERT INTO "server_config" ("key", "value") VALUES (?, ?) ON CONFLICT("key") DO UPDATE SET "value" = excluded."value"`);
