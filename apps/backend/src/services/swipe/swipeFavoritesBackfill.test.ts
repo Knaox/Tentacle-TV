@@ -14,9 +14,10 @@ const pending: Array<Record<string, unknown>> = [];
 const sweep = vi.fn(async () => 0);
 
 vi.mock("../watchlistPending", () => ({ sweepPendingWatchlist: () => sweep() }));
-vi.mock("../db", () => ({
-  hasPrisma: () => true,
-  getPrisma: () => ({
+vi.mock("../db", () => {
+  const db = {
+    // Une seule connexion en SQLite : la transaction reçoit le même client.
+    $transaction: async (run: (tx: unknown) => Promise<unknown>) => run(db),
     serverConfig: {
       findUnique: async (args: { where: { key: string } }) =>
         config.has(args.where.key) ? { key: args.where.key, value: config.get(args.where.key) } : null,
@@ -31,13 +32,15 @@ vi.mock("../db", () => ({
           .map(({ jellyfinUserId, mediaType, tmdbId }) => ({ jellyfinUserId, mediaType, tmdbId })),
     },
     watchlistPending: {
+      findMany: async (args: { where: { flag: string } }) => pending.filter((row) => row.flag === args.where.flag),
       createMany: async (args: { data: Array<Record<string, unknown>> }) => {
         pending.push(...args.data);
         return { count: args.data.length };
       },
     },
-  }),
-}));
+  };
+  return { hasPrisma: () => true, getPrisma: () => db };
+});
 
 import { SWIPE_FAVORITES_BACKFILL_KEY, backfillSwipeFavorites } from "./swipeFavoritesBackfill";
 
@@ -74,6 +77,16 @@ describe("rattrapage des likes d'Affiner", () => {
     expect(await backfillSwipeFavorites()).toBe(0);
     expect(pending).toEqual([]);
     expect(sweep).not.toHaveBeenCalled();
+  });
+
+  it("un cœur déjà en attente n'est pas posé deux fois", async () => {
+    pending.push({ jellyfinUserId: "u1", mediaType: "movie", tmdbId: 603, flag: "favorite" });
+    swipes.push(
+      { jellyfinUserId: "u1", mediaType: "movie", tmdbId: 603, verdict: "like" },
+      { jellyfinUserId: "u1", mediaType: "movie", tmdbId: 604, verdict: "like" },
+    );
+    await backfillSwipeFavorites();
+    expect(pending.map((row) => row.tmdbId)).toEqual([603, 604]);
   });
 
   it("sans like, pose la marque et ne balaie pas", async () => {

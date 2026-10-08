@@ -14,8 +14,9 @@ import { LOG_REDACT_PATHS, redactUrl } from "./services/logRedaction";
 import { getRealClientIp } from "./services/networkUtils";
 import { challengeRoutes } from "./remoteAccess/challengeRoute";
 import { isTrustedProxy } from "./services/trustedProxies";
-import { initPrisma, hasDatabaseUrl, getDatabaseUrl, getDatabaseUrlSource, reconnectPrisma } from "./services/db";
-import { ensureDatabaseSchema } from "./services/schemaInit/ensureSchema";
+import { getDatabaseFilePath, initPrisma, retryDatabaseOpen } from "./services/db";
+import { legacySourceState } from "./services/database/legacySource";
+import { databaseStorage } from "./services/database/storageMount";
 import { applyPairingEpoch } from "./services/pairingEpoch";
 import { applyAudioAnalysisDefault } from "./services/audioAnalysisDefault";
 import { detectAppState, getAppState } from "./services/configStore";
@@ -180,10 +181,7 @@ async function main() {
   await app.register(themeRoutes, { prefix: "/api/theme" });
 
   // ── Setup guard: block most API routes until setup is complete ──
-  let lastRecoveryAttempt = 0;
-  // Le schéma (core-init.sql, et tout le schéma sur une base vierge) se pose une
-  // fois par processus, dès que la base répond — au démarrage ou à la reprise.
-  let schemaReady = false;
+  let lastStateCheck = 0;
   app.addHook("onRequest", async (request, reply) => {
     const url = request.url;
     // Always allow: setup, health, theme (read-only public), websocket, static files
@@ -192,16 +190,15 @@ async function main() {
     }
     let state = getAppState();
     if (state !== "running") {
-      // Try auto-recovery (at most once per 10s to avoid hammering)
+      // État relu au plus toutes les 10 s ; une base qui ne s'ouvrait pas est
+      // réessayée, jamais à côté d'une MariaDB qui attend sa migration
+      // (`retryDatabaseOpen`).
       const now = Date.now();
-      if (now - lastRecoveryAttempt > 10_000 && hasDatabaseUrl()) {
-        lastRecoveryAttempt = now;
+      if (now - lastStateCheck > 10_000) {
+        lastStateCheck = now;
         try {
-          const ok = await reconnectPrisma();
+          const ok = await retryDatabaseOpen(now);
           if (ok) {
-            // Base injoignable au démarrage : son schéma n'a pas encore été vérifié.
-            const url = getDatabaseUrl();
-            if (!schemaReady && url) schemaReady = await ensureDatabaseSchema(url);
             state = await detectAppState();
             if (state === "running") {
               console.log("[Guard] Auto-recovery succeeded — state is now running");
@@ -214,7 +211,7 @@ async function main() {
       }
       if (state !== "running") {
         return reply.status(503).send({
-          message: "Setup required",
+          message: state === "database_unavailable" ? "Database unavailable" : "Setup required",
           setupState: state,
         });
       }
@@ -286,28 +283,23 @@ async function main() {
     console.log(`[Web] Interface web coupée (${webUi.source === "cli" ? "tentacle web off" : "TENTACLE_WEB_UI=off"}) : l'API, /tv et les applications restent servies, l'assistant aussi tant que l'installation n'est pas finie. Rallumer : tentacle web on`);
   }
 
-  // ── Initialize database (with retry for Docker Compose / slow DB starts) ──
-  const dbUrl = getDatabaseUrl();
-  // L'environnement, c'est DATABASE_URL ou les variables DB_* des piles Docker.
-  const dbSource = getDatabaseUrlSource() === "env" ? "env" : dbUrl ? "file (data/database.json)" : "none";
-  console.log(`[DB] DATABASE_URL source: ${dbSource}`);
-  if (dbUrl) {
-    // Log masked URL for debugging
-    const masked = dbUrl.replace(/:([^@]+)@/, ":***@");
-    console.log(`[DB] URL: ${masked}`);
-  }
-
-  if (dbUrl) {
-    let connected = false;
-    for (let attempt = 1; attempt <= 5; attempt++) {
-      connected = await initPrisma();
-      if (connected) break;
-      console.warn(`[DB] Connection attempt ${attempt}/5 failed — retrying in 2s`);
-      await new Promise((r) => setTimeout(r, 2000));
+  // ── La base : un fichier SQLite du dossier de données, rien à configurer ──
+  // Une MariaDB d'avant 1.25 attend sa migration : on ne crée pas de base vide
+  // à côté (elle passerait pour la nôtre, et la migration n'aurait plus lieu).
+  // Relevé AVANT toute ouverture par Prisma (il lit tentacle.db par node:sqlite).
+  const legacy = legacySourceState();
+  if (legacy === "pending") {
+    console.warn("[db] Une base MariaDB est configurée et n'a pas encore été migrée vers SQLite : ses données attendent leur migration. MariaDB n'est pas modifiée.");
+  } else {
+    if (legacy === "never_migrated") {
+      console.warn("[db] Une base MariaDB est configurée mais n'a jamais été migrée : data/tentacle.db a été installée sans elle. Rien n'est fait automatiquement.");
     }
+    const connected = await initPrisma();
     if (connected) {
-      console.log("[DB] Connected successfully");
-      schemaReady = await ensureDatabaseSchema(dbUrl);
+      console.log(`[db] SQLite ouverte : ${getDatabaseFilePath()}`);
+      if (databaseStorage(getDatabaseFilePath()) === "network") {
+        console.warn("[db] ⚠️ La base est sur un partage réseau (NFS, SMB…) : SQLite peut s'y corrompre. Placez le dossier de données sur un disque local.");
+      }
       await detectAppState();
       // Identifiant d'installation résolu au démarrage : `mediaBrowserAuthHeader`
       // le lit de façon synchrone. Échec non bloquant — il sera réessayé au
@@ -321,10 +313,8 @@ async function main() {
       // L'analyse audio des passages, coupée une fois sur les serveurs d'avant.
       await applyAudioAnalysisDefault();
     } else {
-      console.warn("[DB] All connection attempts failed — entering setup mode");
+      console.warn("[db] Base indisponible : seuls l'assistant et /api/health répondent");
     }
-  } else {
-    console.log("[DB] No DATABASE_URL (env or data/database.json) — entering setup mode");
   }
 
   const state = getAppState();

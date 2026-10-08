@@ -12,8 +12,14 @@ import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 /** Cycle de vie du compte : création par invitation, suppression, demande de
  *  réinitialisation. Séparé de `auth.ts`, qui ne garde que la session. */
 
-const registerSchema = z.object({
-  inviteKey: z.string().min(1),
+/**
+ * La clé d'invitation est générée en hexadécimal MINUSCULE ; saisie à la main
+ * (le miroir mobile la tape en majuscules), elle arrive dans n'importe quelle
+ * casse. MariaDB l'ignorait (`utf8mb4_unicode_ci`), SQLite non : on la
+ * ramène à sa forme à l'entrée (docs/sqlite/DECISION.md § 9).
+ */
+export const registerSchema = z.object({
+  inviteKey: z.string().trim().min(1).toLowerCase(),
   username: z.string().min(3).max(50),
   password: z.string().min(6),
 });

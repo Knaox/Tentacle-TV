@@ -17,11 +17,6 @@ export default {
   help_code_why_q: "Why a code?",
   help_code_why_a: "You are not opening the wizard from your local network: the code proves you control the server.",
 
-  help_database_which_q: "Which database?",
-  help_database_which_a: "MariaDB (or MySQL 8). The “full” and “with database” stacks provide it: this screen is only for the “Tentacle only” stack or an install without Docker.",
-  help_database_fails_q: "The connection fails",
-  help_database_fails_a: "Check the address (not localhost from a container), port 3306, the user, its password, and that the database exists.",
-
   help_jellyfin_kinds_q: "New or already set up?",
   help_jellyfin_kinds_a: "New: Tentacle creates its administrator account and libraries. Already set up: you sign in with the existing account, and Tentacle creates nothing (except libraries if it has none, if you want).",
   help_jellyfin_missing_q: "My Jellyfin is not in the list",

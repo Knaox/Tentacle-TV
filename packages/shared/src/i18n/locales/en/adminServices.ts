@@ -33,6 +33,8 @@ export default {
   databaseDown: "Not responding",
   databaseNotConfigured: "Not configured",
   databaseRestart: "Restart required",
+  databaseWontOpen: "Won't open",
+  databaseOnNetwork: "Network share",
   publicUrlSet: "Set",
   publicUrlMissing: "Not set",
   // Clé gardée (i18n) : le jumelage n'est plus bloqué, il reste à la maison.
@@ -71,28 +73,28 @@ export default {
   errorGeneric: "The operation failed.",
   urlInvalid: "Invalid address: it starts with http:// or https://.",
 
-  // Database.
+  // Database: an SQLite file, nothing to set up (server 1.25 and later).
   databaseTitle: "Database",
   databaseDescription:
+    "The file where the server keeps its configuration, paired devices, tickets and preferences. Nothing to set up: it lives in the server's data folder.",
+  databaseEngine: "Engine",
+  databaseVersion: "Version",
+  databaseSize: "Size",
+  databasePath: "File",
+  databaseErrorTitle: "The server can't open the database",
+  databaseErrorLogs: "The server's logs say why.",
+  databaseNetworkTitle: "The database is on a network share",
+  databaseNetwork:
+    "Tentacle's data folder is on a network share (NFS, SMB…), where SQLite can get corrupted. Move it to a local disk of the machine running the server.",
+  // A server before 1.25, on MariaDB: its connection, shown without a form.
+  databaseDescriptionMariaDb:
     "The MariaDB database where the server keeps its configuration, paired devices, tickets and preferences.",
   databaseHost: "Host",
   databasePort: "Port",
   databaseName: "Database",
   databaseUser: "User",
-  databasePassword: "Password",
-  databaseVersion: "Version",
-  databaseSourceEnv:
-    "Set by the DATABASE_URL environment variable — docker-compose or a system service. That is where it changes, before restarting the server: changed here, it would be overwritten at the next start.",
-  databaseSourceFile: "Saved by the server, in data/database.json.",
   databasePending:
     "Another connection is saved: it takes effect at the next server restart. This one stays in service until then.",
-  databaseEdit: "Change the connection",
-  databaseEditSummary: "To move the database to another MariaDB server.",
-  databaseRestartNote:
-    "The new connection takes effect at the next server restart. Nothing is copied between databases: the new one must already hold the data.",
-  databasePasswordHint: "Asked for on every change: it never leaves the server.",
-  databasePortInvalid: "A port between 1 and 65535.",
-  databaseSaved: "Connection saved — restart the server to apply it.",
 
   // Public address.
   publicUrlTitle: "Public address",

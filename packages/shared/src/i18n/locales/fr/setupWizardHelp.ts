@@ -17,11 +17,6 @@ export default {
   help_code_why_q: "Pourquoi un code\u00a0?",
   help_code_why_a: "Vous n'ouvrez pas l'assistant depuis votre réseau local\u00a0: le code prouve que vous avez la main sur le serveur.",
 
-  help_database_which_q: "Quelle base de données\u00a0?",
-  help_database_which_a: "MariaDB (ou MySQL\u00a08). Les piles «\u00a0complète\u00a0» et «\u00a0avec base\u00a0» la fournissent\u00a0: cet écran ne sert qu'à la pile «\u00a0Tentacle seul\u00a0» ou à une installation sans Docker.",
-  help_database_fails_q: "La connexion échoue",
-  help_database_fails_a: "Vérifiez l'adresse (pas localhost depuis un conteneur), le port 3306, l'utilisateur, son mot de passe, et que la base existe.",
-
   help_jellyfin_kinds_q: "Neuf ou déjà configuré\u00a0?",
   help_jellyfin_kinds_a: "Neuf\u00a0: Tentacle crée son compte administrateur et ses bibliothèques. Déjà configuré\u00a0: vous vous connectez avec le compte qui existe, et Tentacle ne crée rien (sauf des bibliothèques s'il n'en a aucune, si vous le voulez).",
   help_jellyfin_missing_q: "Mon Jellyfin n'est pas dans la liste",

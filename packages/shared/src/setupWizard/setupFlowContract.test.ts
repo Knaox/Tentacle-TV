@@ -26,23 +26,21 @@ const selection = (path: SetupPath, inStack = false): SetupSelection => ({
 });
 const state = (over: Partial<SetupFlowState> = {}): SetupFlowState => ({ databasePending: false, selection: null, linked: false, noLibraries: false, ...over });
 
-/** Les installations : pile complète (base fournie), pile « base » (Jellyfin à côté), natif ou pile « seule » (base à relier), avec ou sans code. */
+/** Les installations : depuis le réseau local, ou avec le code. La base n'a plus d'écran (SQLite, 1.25) : rien à relier. */
 const SHAPES: Array<[string, Omit<SetupFlowShape, "path">]> = [
-  ["pile complète, réseau local", { needsCode: false, asksDatabase: false }],
-  ["pile complète, code", { needsCode: true, asksDatabase: false }],
-  ["sans pile (base à relier), réseau local", { needsCode: false, asksDatabase: true }],
-  ["sans pile (base à relier), code", { needsCode: true, asksDatabase: true }],
+  ["réseau local", { needsCode: false }],
+  ["code", { needsCode: true }],
 ];
 
 describe("les écrans de chaque parcours", () => {
   it("Jellyfin NEUF : compte créé, puis bibliothèques — jamais la connexion ni les réglages conseillés", () => {
-    expect(setupFlowSteps({ needsCode: false, asksDatabase: false, path: "fresh" })).toEqual([
+    expect(setupFlowSteps({ needsCode: false, path: "fresh" })).toEqual([
       "welcome", "jellyfin", "account", "libraries", "recap", "apply", "remote", "done",
     ]);
   });
 
   it("Jellyfin DÉJÀ configuré : connexion, puis réglages conseillés — jamais de compte créé ni de bibliothèques", () => {
-    expect(setupFlowSteps({ needsCode: false, asksDatabase: false, path: "configured" })).toEqual([
+    expect(setupFlowSteps({ needsCode: false, path: "configured" })).toEqual([
       "welcome", "jellyfin", "signIn", "recommended", "recap", "apply", "remote", "done",
     ]);
   });
@@ -53,7 +51,7 @@ describe("les écrans de chaque parcours", () => {
       expect(steps).toContain("jellyfin");
       expect(steps.filter((s) => s === "jellyfin")).toHaveLength(1);
       expect(steps.includes("code")).toBe(shape.needsCode);
-      expect(steps.includes("database")).toBe(shape.asksDatabase);
+      expect(steps).not.toContain("database");
       if (path) expect(steps[steps.indexOf("jellyfin") + 1]).toBe(pathEntry(path));
     }
   });
@@ -67,8 +65,8 @@ describe("les écrans de chaque parcours", () => {
   });
 
   it("aucun écran n'appartient aux deux parcours entre « Jellyfin » et le récapitulatif", () => {
-    const fresh = setupFlowSteps({ needsCode: true, asksDatabase: true, path: "fresh" });
-    const configured = setupFlowSteps({ needsCode: true, asksDatabase: true, path: "configured" });
+    const fresh = setupFlowSteps({ needsCode: true, path: "fresh" });
+    const configured = setupFlowSteps({ needsCode: true, path: "configured" });
     for (const step of ["account", "libraries"] as const) expect(configured).not.toContain(step);
     for (const step of ["signIn", "recommended"] as const) expect(fresh).not.toContain(step);
   });
@@ -90,8 +88,7 @@ describe("le retour en arrière ne remonte que dans le parcours", () => {
     for (const path of ["fresh", "configured"] as const) {
       const steps = setupFlowSteps({ ...shape, path });
       const back = walkBack(steps, "recap");
-      const first = shape.asksDatabase ? "database" : "jellyfin";
-      expect(back).toEqual(steps.slice(steps.indexOf(first), steps.indexOf("recap") + 1).reverse());
+      expect(back).toEqual(steps.slice(steps.indexOf("jellyfin"), steps.indexOf("recap") + 1).reverse());
       expect(back).not.toContain("welcome");
       expect(back).not.toContain("code");
       const other = path === "fresh" ? ["signIn", "recommended"] : ["account", "libraries"];
@@ -100,25 +97,24 @@ describe("le retour en arrière ne remonte que dans le parcours", () => {
   });
 
   it("du code à l'accueil, oui ; une fois la session ouverte, plus de retour vers elles", () => {
-    const steps = setupFlowSteps({ needsCode: true, asksDatabase: false, path: null });
+    const steps = setupFlowSteps({ needsCode: true, path: null });
     expect(previousStep(steps, "code")).toBe("welcome");
     expect(previousStep(steps, "jellyfin")).toBeNull();
-    expect(previousStep(setupFlowSteps({ needsCode: false, asksDatabase: true, path: null }), "database")).toBeNull();
   });
 
   it("aucun retour depuis l'accueil, l'installation, l'accès à distance ni la fin", () => {
-    const steps = setupFlowSteps({ needsCode: true, asksDatabase: true, path: "fresh" });
+    const steps = setupFlowSteps({ needsCode: true, path: "fresh" });
     for (const step of ["welcome", "apply", "remote", "done"] as const) expect(previousStep(steps, step)).toBeNull();
   });
 
   it("un écran d'un autre parcours n'a ni avant ni après", () => {
-    const steps = setupFlowSteps({ needsCode: false, asksDatabase: false, path: "configured" });
+    const steps = setupFlowSteps({ needsCode: false, path: "configured" });
     expect(previousStep(steps, "libraries")).toBeNull();
     expect(nextStep(steps, "account")).toBeNull();
   });
 
   it("l'écran d'après suit l'ordre, et s'arrête à la fin", () => {
-    const steps = setupFlowSteps({ needsCode: false, asksDatabase: false, path: "fresh" });
+    const steps = setupFlowSteps({ needsCode: false, path: "fresh" });
     expect(nextStep(steps, "jellyfin")).toBe("account");
     expect(nextStep(steps, "libraries")).toBe("recap");
     expect(nextStep(steps, "done")).toBeNull();
@@ -126,8 +122,8 @@ describe("le retour en arrière ne remonte que dans le parcours", () => {
 });
 
 describe("l'étape du serveur (où reprendre)", () => {
-  it("la base d'abord, puis TOUJOURS le choix du Jellyfin", () => {
-    expect(setupStage(state({ databasePending: true, selection: selection("configured"), linked: true }))).toBe("database");
+  it("base fermée : l'accueil, rien d'autre ; sinon TOUJOURS le choix du Jellyfin", () => {
+    expect(setupStage(state({ databasePending: true, selection: selection("configured"), linked: true }))).toBe("welcome");
     expect(setupStage(state())).toBe("jellyfin");
   });
 
@@ -143,7 +139,7 @@ describe("les gestes que le serveur accepte", () => {
   const ALL: SetupAction[] = ["select", "initialize", "connect", "verify", "browse", "createLibraries", "readLibraries", "advice", "segments", "tmdb", "complete"];
   const allowed = (s: SetupFlowState) => ALL.filter((action) => setupActionAllowed(action, s));
 
-  it("base à relier : rien", () => {
+  it("base fermée : rien", () => {
     expect(allowed(state({ databasePending: true }))).toEqual([]);
     expect(allowed(state({ databasePending: true, selection: selection("fresh"), linked: true }))).toEqual([]);
   });
@@ -177,23 +173,23 @@ describe("Jellyfin déjà configuré mais SANS bibliothèque (constaté à la co
   const empty = (over: Partial<SetupFlowState> = {}) => state({ selection: { ...selection("configured"), noLibraries: true }, linked: true, noLibraries: true, ...over });
 
   it("ses bibliothèques sont proposées entre la connexion et les réglages conseillés", () => {
-    expect(setupFlowSteps({ needsCode: false, asksDatabase: false, path: "configured", noLibraries: true })).toEqual([
+    expect(setupFlowSteps({ needsCode: false, path: "configured", noLibraries: true })).toEqual([
       "welcome", "jellyfin", "signIn", "libraries", "recommended", "recap", "apply", "remote", "done",
     ]);
     // Un écran de plus, dit dès qu'on le sait ; jamais de compte créé.
-    expect(setupFlowLength({ needsCode: false, asksDatabase: false, path: "configured", noLibraries: true })).toBe(9);
-    expect(setupFlowSteps({ needsCode: true, asksDatabase: true, path: "configured", noLibraries: true })).not.toContain("account");
+    expect(setupFlowLength({ needsCode: false, path: "configured", noLibraries: true })).toBe(9);
+    expect(setupFlowSteps({ needsCode: true, path: "configured", noLibraries: true })).not.toContain("account");
   });
 
   it("le neuf n'en dépend pas : `noLibraries` ne change que le parcours configuré", () => {
-    expect(setupFlowSteps({ needsCode: false, asksDatabase: false, path: "fresh", noLibraries: true })).toEqual(
-      setupFlowSteps({ needsCode: false, asksDatabase: false, path: "fresh" }),
+    expect(setupFlowSteps({ needsCode: false, path: "fresh", noLibraries: true })).toEqual(
+      setupFlowSteps({ needsCode: false, path: "fresh" }),
     );
   });
 
   it("on y reprend aux bibliothèques ; le retour remonte bibliothèques → connexion → Jellyfin", () => {
     expect(setupStage(empty())).toBe("libraries");
-    const steps = setupFlowSteps({ needsCode: false, asksDatabase: false, path: "configured", noLibraries: true });
+    const steps = setupFlowSteps({ needsCode: false, path: "configured", noLibraries: true });
     expect(previousStep(steps, "recommended")).toBe("libraries");
     expect(previousStep(steps, "libraries")).toBe("signIn");
     expect(nextStep(steps, "libraries")).toBe("recommended");
@@ -212,7 +208,7 @@ describe("Jellyfin déjà configuré mais SANS bibliothèque (constaté à la co
 });
 
 describe("la clé TMDB (écran facultatif, dans les deux parcours)", () => {
-  const withTmdb = { needsCode: false, asksDatabase: false, asksTmdb: true } as const;
+  const withTmdb = { needsCode: false, asksTmdb: true } as const;
 
   it("juste avant le récapitulatif, après les bibliothèques (neuf) ou les réglages conseillés (configuré)", () => {
     expect(setupFlowSteps({ ...withTmdb, path: "fresh" })).toEqual([
@@ -228,7 +224,7 @@ describe("la clé TMDB (écran facultatif, dans les deux parcours)", () => {
 
   it("un écran de plus, annoncé avant même le choix du Jellyfin", () => {
     const total = setupFlowLength({ ...withTmdb, path: null });
-    expect(total).toBe(setupFlowLength({ needsCode: false, asksDatabase: false, path: null }) + 1);
+    expect(total).toBe(setupFlowLength({ needsCode: false, path: null }) + 1);
     for (const path of ["fresh", "configured"] as const) expect(setupFlowSteps({ ...withTmdb, path })).toHaveLength(total);
   });
 
@@ -241,7 +237,7 @@ describe("la clé TMDB (écran facultatif, dans les deux parcours)", () => {
   });
 
   it("un serveur d'avant l'écran (rien de déclaré) : pas d'écran TMDB", () => {
-    for (const path of ["fresh", "configured"] as const) expect(setupFlowSteps({ needsCode: false, asksDatabase: false, path })).not.toContain("tmdb");
+    for (const path of ["fresh", "configured"] as const) expect(setupFlowSteps({ needsCode: false, path })).not.toContain("tmdb");
   });
 
   it("le geste n'est permis qu'une fois relié — jamais avant le compte", () => {

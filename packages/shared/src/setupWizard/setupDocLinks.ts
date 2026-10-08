@@ -41,7 +41,6 @@ export const SETUP_DOC_PATHS: Readonly<Record<SetupDocTopic, string>> = {
   install: "install/",
   welcome: "setup-code/",
   code: "setup-code/",
-  database: "database/",
   jellyfin: "choose-jellyfin/",
   account: "account/",
   signIn: "account/#sign-in",

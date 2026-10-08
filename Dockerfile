@@ -89,12 +89,11 @@ RUN pnpm build
 WORKDIR /app/apps/backend
 ARG KLIPY_API_KEY=""
 RUN KLIPY_API_KEY="$KLIPY_API_KEY" node scripts/bake-klipy-key.mjs
-# Le client Prisma, le serveur compilé sans ses cartes de sources, et le
-# schéma complet en SQL qu'une base vierge reçoit au premier démarrage
-# (services/schemaInit) : la CLI Prisma ne part plus dans l'image.
+# Le client Prisma et le serveur compilé sans ses cartes de sources. La base
+# SQLite se pose par les migrations commitées (prisma/migrations-sqlite),
+# appliquées par le serveur lui-même : la CLI Prisma ne part pas dans l'image.
 RUN pnpm exec prisma generate \
   && pnpm build \
-  && pnpm db:schema-sql \
   && find dist -name '*.map' -delete
 # shared-deps.js : les dépendances communes des plugins (bac à sable)
 RUN node scripts/build-shared-deps.js
@@ -222,7 +221,10 @@ WORKDIR /app
 COPY --from=prod-deps /deploy/node_modules ./node_modules
 COPY --from=base /app/apps/backend/package.json ./apps/backend/package.json
 COPY --from=base /app/apps/backend/dist ./apps/backend/dist
-COPY --from=base /app/apps/backend/prisma/core-init.sql /app/apps/backend/prisma/schema-full.sql ./apps/backend/prisma/
+# Les migrations SQLite du cœur (services/database/migrator.ts). core-init.sql
+# reste, le temps que la migration depuis MariaDB en ait besoin.
+COPY --from=base /app/apps/backend/prisma/migrations-sqlite ./apps/backend/prisma/migrations-sqlite
+COPY --from=base /app/apps/backend/prisma/core-init.sql ./apps/backend/prisma/
 # Les dépendances partagées des plugins : l'entrypoint les recopie à chaque
 # démarrage dans le volume, pour qu'une mise à jour de l'image les apporte.
 COPY --from=base /app/apps/backend/data/shared-deps /app/shared-deps-seed

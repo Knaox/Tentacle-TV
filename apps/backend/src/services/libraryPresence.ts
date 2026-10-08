@@ -101,10 +101,17 @@ export async function recordArrivals(entries: Array<{ itemId: string; contentKey
   const prisma = getPrisma();
   for (let i = 0; i < entries.length; i += DB_CHUNK) {
     const chunk = entries.slice(i, i + DB_CHUNK);
-    await prisma.libraryKnownId.createMany({ data: chunk, skipDuplicates: true });
-    await prisma.libraryKnownId.updateMany({
-      where: { itemId: { in: chunk.map((e) => e.itemId) }, removedAt: { not: null } },
-      data: { removedAt: null },
+    const ids = chunk.map((e) => e.itemId);
+    // SQLite n'a pas `skipDuplicates` : une ligne connue garde la sienne.
+    await prisma.$transaction(async (tx) => {
+      const known = await tx.libraryKnownId.findMany({ where: { itemId: { in: ids } }, select: { itemId: true } });
+      const seen = new Set(known.map((row) => row.itemId));
+      const fresh = [...new Map(chunk.filter((e) => !seen.has(e.itemId)).map((e) => [e.itemId, e])).values()];
+      if (fresh.length > 0) await tx.libraryKnownId.createMany({ data: fresh });
+      await tx.libraryKnownId.updateMany({
+        where: { itemId: { in: ids }, removedAt: { not: null } },
+        data: { removedAt: null },
+      });
     });
   }
 }

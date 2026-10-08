@@ -1,8 +1,7 @@
 /**
- * La révocation face à MariaDB 11 (isolation par instantané) : une ligne de
- * jumelage qui bouge pendant la transaction (`lastSeen`, ou le jeton Jellyfin
- * posé juste après le jumelage) la fait refuser (1020). La révocation relit
- * et rejoue : la TV est bel et bien déjumelée, jamais laissée dans la liste.
+ * La révocation face à une écriture qui n'a pas pu passer (conflit P2034,
+ * verrou tenu par un autre processus) : la révocation relit et rejoue, la TV
+ * est bel et bien déjumelée, jamais laissée dans la liste.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";

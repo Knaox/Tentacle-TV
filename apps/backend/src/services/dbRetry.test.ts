@@ -1,26 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
 import { isWriteConflict, retryOnWriteConflict } from "./dbRetry";
 
-/** L'erreur que Prisma rend sur le refus de MariaDB 11 (vue en vrai, Jellyfin 12.1 compat). */
-const mariadb1020 = Object.assign(
-  new Error(
-    "Invalid `tx.pairedDevice.update()` invocation: Error occurred during query execution: " +
-      'MysqlError { code: 1020, message: "Record has changed since last read in table \'paired_devices\'; try restarting transaction" }',
-  ),
-  { name: "PrismaClientUnknownRequestError" },
-);
+/** Ce que Prisma rend quand un autre processus tient le verrou au-delà du busy_timeout (mesuré). */
+const busy = Object.assign(new Error("Socket timeout (the database failed to respond to a query within the configured timeout)."), {
+  code: "P1008",
+});
 
-describe("conflit d'écriture", () => {
-  it("reconnaît le refus 1020 de MariaDB, l'interblocage, et P2034", () => {
-    expect(isWriteConflict(mariadb1020)).toBe(true);
-    expect(isWriteConflict(new Error("Deadlock found when trying to get lock; try restarting transaction"))).toBe(true);
+describe("écriture qui n'a pas pu passer (SQLite)", () => {
+  it("reconnaît l'attente du verrou, de la file, et SQLITE_BUSY ; jamais une autre erreur", () => {
+    expect(isWriteConflict(busy)).toBe(true);
+    expect(isWriteConflict(Object.assign(new Error("Transaction API error: Unable to start a transaction in the given time."), { code: "P2028" }))).toBe(true);
+    expect(isWriteConflict(Object.assign(new Error("Transaction already closed: A query cannot be executed on an expired transaction."), { code: "P2028" }))).toBe(false);
+    expect(isWriteConflict(Object.assign(new Error("Timed out fetching a new connection from the connection pool."), { code: "P2024" }))).toBe(true);
     expect(isWriteConflict(Object.assign(new Error("Transaction failed"), { code: "P2034" }))).toBe(true);
+    expect(isWriteConflict(new Error("SqliteError: database is locked"))).toBe(true);
     expect(isWriteConflict(Object.assign(new Error("contrainte unique"), { code: "P2002" }))).toBe(false);
     expect(isWriteConflict(new Error("Jellyfin muet"))).toBe(false);
   });
 
-  it("relit et rejoue la tâche entière sur un conflit", async () => {
-    const task = vi.fn().mockRejectedValueOnce(mariadb1020).mockResolvedValueOnce("échangée");
+  it("relit et rejoue la tâche entière", async () => {
+    const task = vi.fn().mockRejectedValueOnce(busy).mockResolvedValueOnce("échangée");
     await expect(retryOnWriteConflict(task)).resolves.toBe("échangée");
     expect(task).toHaveBeenCalledTimes(2);
   });
@@ -29,8 +28,8 @@ describe("conflit d'écriture", () => {
     const other = vi.fn().mockRejectedValue(new Error("Jellyfin muet"));
     await expect(retryOnWriteConflict(other)).rejects.toThrow("Jellyfin muet");
     expect(other).toHaveBeenCalledTimes(1);
-    const always = vi.fn().mockRejectedValue(mariadb1020);
-    await expect(retryOnWriteConflict(always, 3)).rejects.toBe(mariadb1020);
+    const always = vi.fn().mockRejectedValue(busy);
+    await expect(retryOnWriteConflict(always, 3)).rejects.toBe(busy);
     expect(always).toHaveBeenCalledTimes(3);
   });
 });
