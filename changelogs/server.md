@@ -10,6 +10,27 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.25.0]
+### FR
+- **Plus aucune base de données à installer** : Tentacle garde toutes ses données dans un seul fichier SQLite, `data/tentacle.db`, dans son volume de données. Un conteneur de moins, et une sauvegarde, c'est copier un fichier
+- **Deux piles Docker** : `tentacle-full` (Tentacle et Jellyfin) et `tentacle-only` (Tentacle seul), sans base ni mot de passe. L'ancienne pile `tentacle-db` et les `docker-compose.yml` de la racine du dépôt sont retirés : votre copie continue de marcher
+- **Migration automatique depuis MariaDB ou MySQL** : au premier démarrage, Tentacle recopie l'ancienne base en lecture seule — elle n'est jamais modifiée — et vérifie tout (lignes, sommes de contrôle, relecture) avant de basculer. Pendant ces quelques secondes, les applications à jour affichent « Migration de la base de données en cours » avec l'avancement ; les autres voient seulement le serveur redémarrer. Le cache des fiches TMDB suit en fond, sans un appel à TMDB
+- **Mettez à jour l'image sans toucher à votre fichier compose** : le tableau de bord dit ensuite « MariaDB n'est plus nécessaire », avec la marche à suivre pour votre installation, ligne par ligne
+- **Si la migration n'aboutit pas**, rien n'est basculé et l'ancienne base reste intacte : un écran sobre dit pourquoi, Tentacle réessaie seul, et `tentacle db migrate` relance tout de suite avec un rapport lisible. Revenir à l'image 1.24 marche toujours ; si l'ancienne base a changé entre-temps, le tableau de bord le dit et propose « Migrer à nouveau »
+- **Une base retirée trop tôt n'est jamais remplacée par une base vide** : Tentacle garde l'assistant fermé et attend qu'on la lui rende, le temps de la migration
+- Les extensions migrent leurs données avec le reste ; une extension pas encore prête pour SQLite reste arrêtée, avec un message clair, jusqu'à sa mise à jour
+- `tentacle db query` lit la base en lecture seule, depuis la console du conteneur
+
+### EN
+- **No database to install any more**: Tentacle keeps all its data in a single SQLite file, `data/tentacle.db`, in its data volume. One container less, and a backup is a file copy
+- **Two Docker stacks**: `tentacle-full` (Tentacle and Jellyfin) and `tentacle-only` (Tentacle alone), with no database and no password. The old `tentacle-db` stack and the `docker-compose.yml` files at the repository root are gone: your copy keeps working
+- **Automatic migration from MariaDB or MySQL**: on its first start, Tentacle copies the old database read-only — it is never modified — and checks everything (rows, checksums, a read-back) before switching. During those few seconds, up-to-date apps show "Database migration in progress" with the progress; older ones only see the server restarting. The TMDB title cache follows in the background, without a single call to TMDB
+- **Update the image without touching your compose file**: the dashboard then says "MariaDB is no longer needed", with the steps for your installation, line by line
+- **If the migration does not complete**, nothing is switched and the old database stays intact: a plain screen says why, Tentacle retries by itself, and `tentacle db migrate` retries at once with a readable report. Going back to the 1.24 image always works; if the old database changed meanwhile, the dashboard says so and offers "Migrate again"
+- **A database removed too early is never replaced by an empty one**: Tentacle keeps the setup wizard closed and waits for it to come back, for the migration
+- Extensions migrate their data with the rest; an extension not ready for SQLite yet stays stopped, with a clear message, until it is updated
+- `tentacle db query` reads the database read-only, from the container's console
+
 ## [1.24.0]
 ### FR
 - **Nouvel assistant d'installation** : une question par écran. Depuis votre réseau local, il s'ouvre sans code ; le code à usage unique, lu dans le journal du conteneur, n'est plus exigé qu'ailleurs. La langue des métadonnées se choisit avec le compte
