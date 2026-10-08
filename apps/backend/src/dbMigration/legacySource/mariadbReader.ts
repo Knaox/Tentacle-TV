@@ -1,0 +1,138 @@
+import * as mariadb from "mariadb";
+import { connectionOptions } from "./sourceConfig";
+import { readSourceSchema, type SourceTable } from "./sourceSchema";
+import { sourceZoneForConversion } from "./timeZones";
+
+/**
+ * Le LECTEUR de l'ancienne base. Une seule connexion, en lecture seule, sur un
+ * instantané cohérent : toutes les tables sont lues au même instant, et toute
+ * écriture serait refusée par MariaDB elle-même (« MariaDB n'est JAMAIS
+ * modifiée », même par erreur, même en cas d'échec).
+ *
+ * Les tables se lisent par PAGES sur leur clé primaire (curseur `> dernière
+ * clé`), jamais un `SELECT *` d'une table entière en mémoire : `tmdb_meta_cache`
+ * pèse à lui seul plus de 700 Mo sur une vraie installation.
+ */
+export type SourceRow = unknown[];
+
+/** Une colonne à lire : son nom, et le fuseau d'où la convertir en UTC (colonne « session »). */
+export interface SelectColumn {
+  name: string;
+  fromZone?: string | null;
+}
+
+export interface PageCursor {
+  /** Valeurs de la clé de la dernière ligne lue, dans l'ordre de `keyColumns`. */
+  after: unknown[] | null;
+}
+
+export class MariadbReader {
+  private constructor(
+    private readonly conn: mariadb.Connection,
+    readonly serverVersion: string,
+    /** Fuseau des `NOW()` de la source pour `CONVERT_TZ`, `null` si UTC (GENERIC-COPY.md). */
+    readonly sourceZone: string | null,
+  ) {}
+
+  /** Ouvre la connexion et fige l'instantané. Lève si la base est injoignable. */
+  static async open(url: string, timeoutMs = 10_000): Promise<MariadbReader> {
+    const conn = await mariadb.createConnection({
+      ...connectionOptions(url),
+      connectTimeout: timeoutMs,
+      // Les dates restent du TEXTE tel que MariaDB l'a rangé : aucune conversion
+      // de fuseau par le pilote (Prisma écrit l'UTC dans des DATETIME nus).
+      dateStrings: true,
+      // Aucun nombre ne se perd : BIGINT et DECIMAL arrivent exacts, convertis ensuite.
+      bigIntAsNumber: false,
+      decimalAsNumber: false,
+      // Le JSON (`seasons` de Vigie) reste le TEXTE rangé, octet pour octet.
+      autoJsonMap: false,
+      rowsAsArray: true,
+      multipleStatements: false,
+      // Une erreur du pilote ne recopie jamais au journal les valeurs d'une page (clés).
+      logParam: false,
+    });
+    try {
+      // Le fuseau des `NOW()` d'avant, PUIS la lecture en UTC : un TIMESTAMP (rangé
+      // en UTC par MariaDB) ressort alors exact, un DATETIME tel qu'il fut écrit.
+      const [[sessionZone, systemZone]] = (await conn.query({
+        sql: "SELECT @@session.time_zone, @@system_time_zone",
+        rowsAsArray: true,
+      })) as [[string, string]];
+      await conn.query("SET time_zone = '+00:00'");
+      await conn.query("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+      await conn.query("SET SESSION TRANSACTION READ ONLY");
+      await conn.query("START TRANSACTION WITH CONSISTENT SNAPSHOT");
+      const [[version]] = (await conn.query({ sql: "SELECT VERSION()", rowsAsArray: true })) as [[string]];
+      return new MariadbReader(conn, version, sourceZoneForConversion(String(sessionZone), String(systemZone ?? "")));
+    } catch (err) {
+      await conn.end().catch(() => conn.destroy());
+      throw err;
+    }
+  }
+
+  /** Les tables de la base, leurs colonnes, clés et index (`information_schema`). */
+  tables(): Promise<SourceTable[]> {
+    return readSourceSchema((sql, params) => this.rows(sql, params));
+  }
+
+  /** Nombre exact de lignes, dans l'instantané. */
+  async count(table: string): Promise<number> {
+    const [[n]] = (await this.rows(`SELECT COUNT(*) FROM ${quoteId(table)}`)) as [[bigint | number]];
+    return Number(n);
+  }
+
+  /**
+   * Une page de `table` triée sur `keyColumns`, après le curseur. Une table sans
+   * clé (une extension maladroite) se lit triée sur TOUTES ses colonnes, par
+   * décalage : l'instantané garantit le même ordre d'une page à l'autre.
+   */
+  async page(table: SourceTable, columns: SelectColumn[], cursor: PageCursor, size: number, offset = 0): Promise<SourceRow[]> {
+    const select = columns
+      .map((c) => (c.fromZone ? `CONVERT_TZ(${quoteId(c.name)}, ${this.conn.escape(c.fromZone)}, '+00:00')` : quoteId(c.name)))
+      .join(", ");
+    const keys = table.keyColumns;
+    if (keys.length === 0) {
+      const order = table.columns.map((c) => quoteId(c.name)).join(", ");
+      return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} ORDER BY ${order} LIMIT ? OFFSET ?`, [size, offset]);
+    }
+    const order = keys.map(quoteId).join(", ");
+    if (!cursor.after) {
+      return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} ORDER BY ${order} LIMIT ?`, [size]);
+    }
+    const { clause, params } = afterKey(keys, cursor.after);
+    return this.rows(`SELECT ${select} FROM ${quoteId(table.name)} WHERE ${clause} ORDER BY ${order} LIMIT ?`, [...params, size]);
+  }
+
+  /** Requête de lecture brute (lignes en tableaux). Jamais exposée hors de ce module. */
+  private async rows(sql: string, params: unknown[] = []): Promise<SourceRow[]> {
+    return (await this.conn.query({ sql, rowsAsArray: true }, params)) as SourceRow[];
+  }
+
+  async close(): Promise<void> {
+    try {
+      await this.conn.query("ROLLBACK");
+    } finally {
+      await this.conn.end().catch(() => this.conn.destroy());
+    }
+  }
+}
+
+export function quoteId(name: string): string {
+  return `\`${name.replace(/`/g, "``")}\``;
+}
+
+/**
+ * `(a, b) > (x, y)` écrit en `a > x OR (a = x AND b > y)` : MariaDB n'emploie pas
+ * toujours l'index pour un constructeur de ligne, il l'emploie pour cette forme.
+ */
+export function afterKey(keys: string[], after: unknown[]): { clause: string; params: unknown[] } {
+  const ors: string[] = [];
+  const params: unknown[] = [];
+  keys.forEach((key, i) => {
+    const eq = keys.slice(0, i).map((k) => `${quoteId(k)} = ?`);
+    ors.push(`(${[...eq, `${quoteId(key)} > ?`].join(" AND ")})`);
+    params.push(...after.slice(0, i), after[i]);
+  });
+  return { clause: ors.join(" OR "), params };
+}
