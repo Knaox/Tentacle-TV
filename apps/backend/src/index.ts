@@ -16,6 +16,8 @@ import { challengeRoutes } from "./remoteAccess/challengeRoute";
 import { isTrustedProxy } from "./services/trustedProxies";
 import { getDatabaseFilePath, initPrisma, retryDatabaseOpen } from "./services/db";
 import { legacySourceState } from "./services/database/legacySource";
+import { migrateBeforeBoot } from "./dbMigration/bootMigration";
+import { startMigrationMaintenance } from "./dbMigration/maintenance/startMigrationMaintenance";
 import { databaseStorage } from "./services/database/storageMount";
 import { applyPairingEpoch } from "./services/pairingEpoch";
 import { applyAudioAnalysisDefault } from "./services/audioAnalysisDefault";
@@ -86,6 +88,11 @@ const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
 
 async function main() {
+  // Une MariaDB d'avant 1.25 attend sa migration : un serveur de MAINTENANCE à
+  // part la mène (écran d'attente ; ni Prisma, ni route du cœur, ni extension)
+  // et se ferme à la bascule. Le démarrage normal reprend ici, sur la base née.
+  if (legacySourceState() === "pending") await migrateBeforeBoot({ startMaintenance: () => startMigrationMaintenance(PORT, HOST) });
+
   const app = Fastify({
     logger: {
       // Ni jeton, ni mot de passe, ni clé — où qu'un appel de journal les mette.

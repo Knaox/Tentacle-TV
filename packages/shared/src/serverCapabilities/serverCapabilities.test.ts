@@ -21,7 +21,10 @@ describe("capacités du serveur", () => {
 
   it("sans déclaration, une version qui atteint `since` a la clé (serveurs d'avant la liste)", () => {
     const caps = resolveServerCapabilities({ version: "v1.24.0" });
-    expect(caps.size).toBe(SERVER_CAPABILITY_KEYS.length);
+    expect([...caps]).toEqual(SERVER_CAPABILITY_KEYS.filter((key) => SERVER_CAPABILITIES[key] === "1.24.0"));
+    // Une clé venue plus tard (1.25.0 : la migration de la base) n'y est pas.
+    expect(caps.has("server.databaseMigration")).toBe(false);
+    expect(resolveServerCapabilities({ version: "1.25.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 
   it("pas de réponse, réponse illisible : aucune capacité, jamais d'erreur", () => {
@@ -35,7 +38,8 @@ describe("capacités du serveur", () => {
   it("ce qui manque, et la version qui l'apporte", () => {
     const none = resolveServerCapabilities({ version: "1.23.0" });
     expect(missingServerCapabilities(none)).toEqual(SERVER_CAPABILITY_KEYS);
-    expect(newestMissingSince(none)).toBe("1.24.0");
+    // La plus récente des versions qui apportent ce qui manque.
+    expect(newestMissingSince(none)).toBe("1.25.0");
     const all = resolveServerCapabilities({ capabilities: SERVER_CAPABILITY_KEYS });
     expect(missingServerCapabilities(all)).toEqual([]);
     expect(newestMissingSince(all)).toBeNull();
