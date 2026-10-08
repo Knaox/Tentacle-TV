@@ -38,6 +38,8 @@ export default {
   serverModuleHint: "This plugin runs code on the server: installing, updating or uninstalling it restarts the server.",
   restartRequiredHint: "The server module only follows this setting at the next server restart.",
   serverModuleFailedTitle: "The server module didn't start",
+  storageRefusedTitle: "Stopped: not yet compatible with this server's database",
+  storageRefusedBody: "This version doesn't declare SQLite support. It stays stopped and its data is intact: update it.",
   updateTo: "Update to v{{version}}",
   updating: "Updating…",
   updated: "Up to date",

@@ -38,6 +38,8 @@ export default {
   serverModuleHint: "Ce plugin fait tourner du code sur le serveur : l'installer, le mettre à jour ou le désinstaller redémarre le serveur.",
   restartRequiredHint: "Le module serveur ne suit l'activation qu'au prochain redémarrage du serveur.",
   serverModuleFailedTitle: "Le module serveur n'a pas démarré",
+  storageRefusedTitle: "Arrêtée : pas encore compatible avec la base de ce serveur",
+  storageRefusedBody: "Cette version ne se déclare pas compatible avec SQLite. Elle reste arrêtée, ses données sont intactes : mettez-la à jour.",
   updateTo: "Mettre à jour vers v{{version}}",
   updating: "Mise à jour…",
   updated: "À jour",

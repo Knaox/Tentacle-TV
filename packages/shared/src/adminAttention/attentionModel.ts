@@ -12,7 +12,8 @@ import type { ServerCapability } from "../serverCapabilities/serverCapabilities"
  *
  * - À RÉGLER : ce qui est cassé (Jellyfin pas relié ou injoignable, clé
  *   d'administration absente ou refusée, base en panne, version de Jellyfin
- *   incompatible, mise à jour du serveur obligatoire). Jamais masquable.
+ *   incompatible, mise à jour du serveur obligatoire, extension que ce
+ *   serveur refuse de charger). Jamais masquable.
  * - RECOMMANDATIONS : ce qui rendrait Tentacle meilleur (lien public et
  *   HTTPS, clé TMDB, réglages conseillés de Jellyfin, détection des
  *   passages, lecture directe).
@@ -32,7 +33,8 @@ export type BlockingId =
   | "jellyfinKeyRejected"
   | "databaseDown"
   | "jellyfinIncompatible"
-  | "serverUpdateRequired";
+  | "serverUpdateRequired"
+  | "extensionsRefused";
 
 export type RecommendationId = "publicUrl" | "tmdbKey" | "jellyfin" | "segmentPlugins" | "directPlay";
 
@@ -74,6 +76,12 @@ export interface AttentionSources {
   jellyfinVersion: Source<CompatStatus>;
   serverUpdate: Source<ServerUpdateStatus>;
   /**
+   * Les extensions activées que ce serveur refuse de charger (« Vigie 1.24.1 ») :
+   * sur SQLite, une extension qui ne s'y déclare pas compatible. `null` : un
+   * serveur d'avant, qui n'en refuse aucune.
+   */
+  refusedExtensions: Source<readonly string[]>;
+  /**
    * Ce que le serveur sait faire (`serverCapabilities.ts`). Sans
    * `admin.segmentPlugins` (serveur d'avant 1.24.0), les greffons de passages
    * restent un point de l'entrée « Jellyfin », comme alors : aucune entrée ne
@@ -88,6 +96,8 @@ export interface BlockingEntry {
   id: BlockingId;
   /** La cause précise, pour le texte (« key », « revoked »…) ; `null` : une seule cause possible. */
   variant: string | null;
+  /** Ce que l'entrée nomme (les extensions refusées) ; vide le plus souvent. */
+  items: string[];
 }
 
 export interface RecommendationEntry {
@@ -113,7 +123,7 @@ function jellyfinUsable(s: AttentionSources): boolean {
 }
 
 function blockingEntries(s: AttentionSources): BlockingEntry[] {
-  const entries: BlockingEntry[] = [];
+  const entries: Array<Omit<BlockingEntry, "items"> & { items?: string[] }> = [];
   const jellyfin = s.jellyfin;
   if (jellyfin?.state === "not-configured") {
     const missing = new Set(jellyfin.missing);
@@ -132,7 +142,9 @@ function blockingEntries(s: AttentionSources): BlockingEntry[] {
   if (s.databaseDown === true) entries.push({ id: "databaseDown", variant: null });
   if (jellyfinUsable(s) && s.jellyfinVersion === "incompatible") entries.push({ id: "jellyfinIncompatible", variant: null });
   if (s.serverUpdate === "mandatory") entries.push({ id: "serverUpdateRequired", variant: null });
-  return entries;
+  const refused = s.refusedExtensions ?? [];
+  if (refused.length > 0) entries.push({ id: "extensionsRefused", variant: null, items: [...refused] });
+  return entries.map((entry) => ({ ...entry, items: entry.items ?? [] }));
 }
 
 /** Le souci qui donne son titre à une adresse — le plus grave d'abord. */
@@ -212,6 +224,9 @@ export function buildAdminAttention(s: AttentionSources): AdminAttention {
     }
     (dismissed ? hidden : recommendations).push({ id, hint: RECOMMENDATION_HINTS[id], ...entry });
   }
-  const sources = [s.jellyfin, s.adminKey, s.databaseDown, s.tmdbConfigured, s.links, s.jellyfinSetup, s.jellyfinVersion, s.serverUpdate];
+  const sources = [
+    s.jellyfin, s.adminKey, s.databaseDown, s.tmdbConfigured, s.links, s.jellyfinSetup, s.jellyfinVersion, s.serverUpdate,
+    s.refusedExtensions,
+  ];
   return { settled: !waiting && sources.every((source) => source !== undefined), blocking, recommendations, hidden };
 }

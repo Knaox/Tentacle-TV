@@ -7,7 +7,6 @@ import { AttentionEntry } from "./AttentionEntry";
 import type { AttentionContext } from "./useAdminAttention";
 
 /** Une entrée à régler n'a pas de sous-points : la même liste vide, pour que `memo` tienne. */
-const NO_ITEMS: readonly string[] = [];
 
 /**
  * Les deux familles de la vue d'ensemble, dans cet ordre : À RÉGLER (jamais
@@ -46,7 +45,7 @@ export function AttentionPanel({ attention, context }: { attention: AdminAttenti
         >
           <ul className="divide-y divide-line-subtle">
             {attention.blocking.map((entry) => (
-              <AttentionEntry key={entry.id} id={entry.id} variant={entry.variant} items={NO_ITEMS} family="blocking" context={context} />
+              <AttentionEntry key={entry.id} id={entry.id} variant={entry.variant} items={entry.items} family="blocking" context={context} />
             ))}
           </ul>
         </AdminSection>
