@@ -201,6 +201,14 @@ node scripts/package-macos.mjs --lib ./lib/mpv --arch arm64
   Une dépendance de production ajoutée au serveur y entre d'elle-même ; un
   fichier dont elle aurait besoin à l'exécution et que l'élagage retire
   (`docs/`, `test/`, `*.ts`…) se rétablit dans ce script.
+- **Dépendances = verrou, au paquet près** : `pnpm deploy` SANS `--legacy`
+  (qui ignorait `pnpm-lock.yaml` et résolvait au registre : fastify 5.12 au lieu
+  de 5.7, undici 7 au lieu de 6, relevé du 2026-10-08), puis
+  `apps/backend/docker/check-lockfile-deps.mjs`, qui fait échouer le build si un
+  paquet installé s'écarte du verrou ou si le verrou est périmé — « Verrou
+  périmé » : `pnpm install`, commiter `pnpm-lock.yaml`. Le même contrôle se
+  rejoue sur une image livrée (`node check-lockfile-deps.mjs pnpm-lock.yaml
+  apps/backend <node_modules extrait>`).
 
 ### Doc d'installation utilisateur (Android TV / Shield)
 
