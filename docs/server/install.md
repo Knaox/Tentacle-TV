@@ -8,11 +8,12 @@
 |---|---|---|
 | **tentacle-full** (recommended) | Tentacle and **Jellyfin** | you start from scratch, or want everything in one place |
 | **tentacle-only** | Tentacle alone | Jellyfin already runs elsewhere (NAS, another container, native install) |
-| **tentacle-db** (legacy) | Tentacle and a MariaDB | only for installations that already use it: since 1.25 Tentacle needs no database server |
 
-No database to install, in any stack: since 1.25 Tentacle keeps its data in **one file**,
-`data/tentacle.db` (SQLite), in its data volume — see [Database](#database). Upgrading an installation that
-used MariaDB or MySQL? Change nothing, Tentacle migrates it by itself: [sqlite-migration.md](sqlite-migration.md).
+No database to install, in either stack: since 1.25 Tentacle keeps its data in **one file**,
+`data/tentacle.db` (SQLite), in its data volume — see [Database](#database). Updating an installation that
+used MariaDB or MySQL (the old `tentacle-db` stack, a stack with a `db` service, `DATABASE_URL`…)? **Keep your
+current file** — do not take these stacks yet — and update the image: Tentacle migrates its data by itself,
+then the dashboard says when and how to move: [sqlite-migration.md](sqlite-migration.md).
 
 Each stack is a single `compose.yaml`, ready to copy, with a commented `.env.example` next to it. **Nothing is
 mandatory in `.env`**: every value has a working default. No stack ships a reverse proxy: for HTTPS

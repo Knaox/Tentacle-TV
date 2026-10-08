@@ -6,7 +6,7 @@
 > de l'assistant d'installation y a sa page (le « Besoin d'aide ? » de l'assistant l'ouvre). Les pages
 > ci-dessous servent de référence aux mainteneurs et aux installations avancées.
 
-Tentacle est un serveur qu'on héberge soi-même, à côté de Jellyfin (ou avec lui). Trois piles Docker Compose
+Tentacle est un serveur qu'on héberge soi-même, à côté de Jellyfin (ou avec lui). Deux piles Docker Compose
 couvrent tous les cas ; un assistant guidé fait le reste dans le navigateur.
 
 | Je veux… | Lire |

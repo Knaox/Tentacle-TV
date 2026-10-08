@@ -8,12 +8,13 @@
 |---|---|---|
 | **tentacle-full** (conseillée) | Tentacle et **Jellyfin** | vous partez de zéro, ou voulez tout au même endroit |
 | **tentacle-only** | Tentacle seul | Jellyfin tourne déjà ailleurs (NAS, autre conteneur, installation native) |
-| **tentacle-db** (ancienne) | Tentacle et une MariaDB | seulement pour les installations qui l'utilisent déjà : depuis la 1.25, Tentacle n'a plus besoin de serveur de base de données |
 
-Aucune base à installer, dans aucune pile : depuis la 1.25, Tentacle garde ses données dans **un fichier**,
-`data/tentacle.db` (SQLite), de son volume de données — voir [Base de données](#base-de-données). Vous mettez à
-jour une installation qui utilisait MariaDB ou MySQL ? Ne changez rien, Tentacle la migre de lui-même :
-[sqlite-migration.md](sqlite-migration.md).
+Aucune base à installer, dans aucune des deux piles : depuis la 1.25, Tentacle garde ses données dans **un
+fichier**, `data/tentacle.db` (SQLite), de son volume de données — voir [Base de données](#base-de-données). Vous
+mettez à jour une installation qui utilisait MariaDB ou MySQL (l'ancienne pile `tentacle-db`, une pile avec un
+service `db`, `DATABASE_URL`…) ? **Gardez votre fichier actuel** — ne prenez pas encore ces piles — et mettez
+l'image à jour : Tentacle migre ses données de lui-même, puis le tableau de bord dit quand et comment passer
+à la nouvelle pile : [sqlite-migration.md](sqlite-migration.md).
 
 Chaque pile est un seul `compose.yaml`, prêt à copier, avec un `.env.example` commenté à côté. **Rien n'est
 obligatoire dans `.env`** : chaque valeur a un défaut qui marche. Aucune pile n'embarque de mandataire : pour

@@ -73,20 +73,28 @@ Pour la remettre : arrêtez Tentacle, reposez le fichier en `data/tentacle.db` (
 `-shm`), redémarrez. Le fichier porte les secrets du serveur (secret JWT, clés Jellyfin et TMDB) : gardez la
 copie à l'abri.
 
-## Migrer depuis l'ancien `docker-compose.yml`
+## Passer d'un ancien fichier compose
 
-L'ancien `docker-compose.yml` du dépôt (et `docker-compose.external.yml`) **continue de marcher** avec la
-nouvelle image : sa MariaDB est migrée vers SQLite d'elle-même au premier démarrage de la 1.25
+Depuis la 1.25, le dépôt livre **deux** piles, `tentacle-full` et `tentacle-only`, sans base de données.
+`stacks/tentacle-db`, le `docker-compose.yml` et le `docker-compose.external.yml` de la racine n'y sont plus.
+**Votre copie continue de marcher** avec la nouvelle image : sa MariaDB (ou la base choisie dans l'ancien
+assistant) est migrée vers SQLite d'elle-même au premier démarrage de la 1.25
 ([sqlite-migration.md](sqlite-migration.md)), et l'image rend à son propriétaire un ancien volume de données au
-démarrage (elle tourne ensuite sous `PUID:PGID`). Rien ne vous oblige à bouger.
+démarrage (elle tourne ensuite sous `PUID:PGID`).
 
-Pour passer quand même à une pile neuve, **après** que le tableau de bord a dit « MariaDB n'est plus
+Pour passer à une pile d'aujourd'hui, **après** que le tableau de bord a dit « MariaDB n'est plus
 nécessaire » :
 
-1. Arrêtez l'ancienne pile (`docker compose down`, **sans** `-v`), et gardez son dossier.
-2. Dans un nouveau dossier, prenez **tentacle-full** ou **tentacle-only**, et démarrez-la une fois :
-   `docker compose up -d`.
-3. Arrêtez-la, recopiez le contenu de l'ancien volume de données (`tentacle-data`, qui porte maintenant
-   `tentacle.db`) dans le nouveau, puis `docker compose up -d`.
+1. Dans le **même dossier**, mettez `tentacle-full` (avec Jellyfin) ou `tentacle-only` (Tentacle seul) à la place
+   de votre fichier (`curl -fsSLo compose.yaml …`, voir [install.md](install.md)) ; supprimez un ancien
+   `docker-compose.yml` resté à côté. Reportez vos propres modifications (ports, GPU, `TENTACLE_WEB_UI`…) ;
+   votre `.env` reste valable.
+2. `docker compose up -d --remove-orphans` : les anciens conteneurs `db`, `init` (ou `web`) sont retirés. Le
+   volume de données garde son nom (`<dossier>_tentacle-data`) : Tentacle redémarre sur sa `tentacle.db`,
+   assistant fermé.
+3. Plus tard, seulement quand vous êtes sûr : `docker volume rm` l'ancien volume de la base
+   (`<dossier>_tentacle-db`, ou `<dossier>_tentacle-db-data` pour l'ancien `docker-compose.yml` de la racine) et
+   `<dossier>_tentacle-secrets`.
 
-Le serveur trouve sa base installée et garde son assistant fermé.
+La carte « MariaDB n'est plus nécessaire » du tableau de bord donne ces étapes pour l'installation qu'elle
+détecte.

@@ -6,7 +6,7 @@
 > setup wizard has its page there (the wizard's “Need help?” links open it). The pages below are the
 > reference for maintainers and advanced setups.
 
-Tentacle is a server you host yourself, next to (or together with) Jellyfin. Three Docker Compose stacks
+Tentacle is a server you host yourself, next to (or together with) Jellyfin. Two Docker Compose stacks
 cover every case; a guided setup wizard does the rest in the browser.
 
 | I want… | Read |

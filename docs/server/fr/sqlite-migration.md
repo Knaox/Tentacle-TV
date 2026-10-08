@@ -44,20 +44,33 @@ n'être encore que dans MariaDB.
 Le tableau de bord donne la marche à suivre pour l'installation qu'il détecte (sans jamais parler à Docker),
 les autres à côté :
 
-- **Pile officielle** (`tentacle-full`, `tentacle-db`) : prenez la nouvelle
-  [`stacks/tentacle-full`](../../../stacks/tentacle-full/compose.yaml) (ou
-  [`tentacle-only`](../../../stacks/tentacle-only/compose.yaml)), sans service `db`, puis
-  `docker compose up -d --remove-orphans`. Gardez le volume de la base quelque temps, puis supprimez-le
-  (`docker volume ls`, `docker volume rm <nom>`).
-- **Docker Compose** : retirez le service `db` et, dans le service Tentacle, les variables `DB_*` /
-  `DATABASE_URL`, puis `docker compose up -d --remove-orphans`.
-- **Portainer** : *Stacks* → votre pile → *Editor* : retirez le service `db` et les variables, *Update the
-  stack*. Plus tard : *Volumes* → le volume de la base → *Remove*.
+- **Pile officielle d'avant la 1.25** (`tentacle-full` ou `tentacle-db`, avec leur service `db`), deux voies :
+  - la plus simple : dans le même dossier, remplacez `compose.yaml` par la
+    [`tentacle-full`](../../../stacks/tentacle-full/compose.yaml) d'aujourd'hui (elle remplace `tentacle-full`) ou
+    par [`tentacle-only`](../../../stacks/tentacle-only/compose.yaml) (elle remplace `tentacle-db`) ; reportez vos
+    propres modifications (ports, GPU…), votre `.env` reste valable ;
+  - ou retirez les lignes vous-même : les services `db` et `init`, `db` dans le `depends_on` de `tentacle`,
+    `DB_HOST` et `DB_PASSWORD_FILE`, le montage `tentacle-secrets`, et les volumes `tentacle-db` et
+    `tentacle-secrets` en bas du fichier.
+
+  Puis `docker compose up -d --remove-orphans` : les conteneurs `db` et `init` sont arrêtés et retirés ; les
+  données restent dans leur volume. Plus tard, **seulement quand vous êtes sûr**, `docker volume rm
+  <projet>_tentacle-db <projet>_tentacle-secrets` les supprime pour de bon (`docker volume ls` donne les noms ;
+  `<projet>` est d'ordinaire le nom du dossier). Un `depends_on` oublié fait refuser le démarrage par Compose,
+  avec `service "tentacle" depends on undefined service "db": invalid compose project` : retirez-le.
+- **Docker Compose** : retirez le service `db`, son entrée dans `depends_on` et, dans le service Tentacle, les
+  variables `DB_*` / `DATABASE_URL`, puis `docker compose up -d --remove-orphans`.
+- **Portainer** : *Stacks* → votre pile → *Editor* : collez la nouvelle pile, ou retirez le service `db` et les
+  variables ; *Update the stack* en cochant **Prune services** (sans lui, le conteneur de la base continue de
+  tourner). Une pile reliée au dépôt : remettez sa référence sur `refs/heads/main`, *Pull and redeploy*. Plus
+  tard : *Volumes* → le volume de la base → *Remove*.
 - **Synology** (Container Manager), **Unraid**, **CasaOS** : la même chose, dans leur interface.
-- **Base externe** (une MariaDB sur une autre machine, un NAS) : retirez les variables (ou
-  `data/database.json`), redémarrez Tentacle ; puis, quand vous le souhaitez, supprimez la base Tentacle de ce
-  serveur avec la commande `DROP DATABASE` que donne le tableau de bord — Tentacle n'exécute jamais rien sur
-  l'ancienne base.
+- **Base choisie dans l'ancien assistant** (`tentacle-only` d'avant la 1.25, et les installations sans
+  variables `DB_*`) : elle est désignée par un fichier du dossier de données ; le tableau de bord donne la
+  commande qui le supprime, à lancer dans la console du conteneur, puis redémarrez Tentacle.
+- **Base externe** (une MariaDB sur une autre machine, un NAS) : retirez les variables (ou ce fichier),
+  redémarrez Tentacle ; puis, quand vous le souhaitez, supprimez la base Tentacle de ce serveur avec la commande
+  `DROP DATABASE` que donne le tableau de bord — Tentacle n'exécute jamais rien sur l'ancienne base.
 
 ## Si la migration n'aboutit pas
 
@@ -90,8 +103,18 @@ qui a été écrit depuis la première migration est remplacé par l'état de Ma
 
 Une pile passée au nouveau compose avant la migration (plus de service `db`, plus de variables `DB_*`) ne peut
 pas être migrée : plutôt que de démarrer sur une base vide, Tentacle reste sur l'écran d'attente et dit
-*« Cette installation utilisait une base MariaDB qui n'est plus configurée »*. Remettez le service de la base
-et ses variables, redémarrez, laissez la migration se faire, puis retirez-les.
+*« Cette installation utilisait une base MariaDB qui n'est plus configurée »*. Il reconnaît une telle
+installation à ce qu'elle a laissé dans son dossier de données, même sans être jamais passée par la 1.24.
+Remettez le service de la base et ses variables, redémarrez, laissez la migration se faire, puis retirez-les.
+
+- **Pile Portainer déployée depuis ce dépôt** (*Repository*) : elle reçoit la nouvelle `tentacle-full` dès sa
+  publication, avant d'avoir migré. Mettez sa référence sur l'étiquette **`refs/tags/server-v1.24.0`** et
+  redéployez : l'ancienne pile revient, sa MariaDB avec elle, et l'image actuelle migre. Quand le tableau de
+  bord dit « MariaDB n'est plus nécessaire », remettez la référence sur `refs/heads/main` et redéployez.
+- **À la main** : les anciens fichiers restent sous cette étiquette —
+  [`tentacle-full`](https://github.com/Knaox/Tentacle-TV/blob/server-v1.24.0/stacks/tentacle-full/compose.yaml),
+  [`tentacle-db`](https://github.com/Knaox/Tentacle-TV/blob/server-v1.24.0/stacks/tentacle-db/compose.yaml).
+  Remettez le vôtre dans le même dossier le temps de la migration, puis revenez au nouveau.
 
 Cette base est perdue pour de bon, ou vous voulez vraiment repartir de zéro ? Dans la console du conteneur :
 `tentacle db start-fresh --confirm`, puis redémarrez. Une installation neuve démarre (l'assistant s'ouvre) ;
