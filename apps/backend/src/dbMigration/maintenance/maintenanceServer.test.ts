@@ -88,3 +88,29 @@ describe("état public d'un échec : rien hors de la liste fermée", () => {
     expect(Object.values(db.progress).every((v) => typeof v === "number" || v === null)).toBe(true);
   });
 });
+
+describe("la page d'attente minimale (toute navigation, même interface web coupée)", () => {
+  it.each(["/", "/tv/", "/library/123", "/admin"])("GET %s → la page d'attente, et rien de l'interface normale", async (url) => {
+    const previous = process.env.TENTACLE_WEB_UI;
+    process.env.TENTACLE_WEB_UI = "off";
+    try {
+      const res = await app.inject({ method: "GET", url, headers: { "accept-language": "fr-FR,fr;q=0.9" } });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers["content-type"]).toMatch(/text\/html/);
+      expect(res.headers["cache-control"]).toBe("no-store");
+      expect(res.body).toContain("Migration de la base de données en cours");
+      // Aucune ressource de l'application, aucun script externe : une page autonome.
+      expect(res.body).not.toMatch(/<script[^>]+src=|<link[^>]+href=/);
+      expect(res.body).toContain("/api/health");
+    } finally {
+      if (previous === undefined) delete process.env.TENTACLE_WEB_UI;
+      else process.env.TENTACLE_WEB_UI = previous;
+    }
+  });
+
+  it("en anglais pour un navigateur qui ne demande pas le français", async () => {
+    const res = await app.inject({ method: "GET", url: "/", headers: { "accept-language": "en-US,en" } });
+    expect(res.body).toContain("Database migration in progress");
+    expect(res.body).toContain('lang="en"');
+  });
+});

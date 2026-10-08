@@ -7,6 +7,8 @@ import { isTrustedProxy } from "../../services/trustedProxies";
 import { rateLimitKey, rateLimitMax } from "../../services/rateLimitPolicy";
 import { LOG_REDACT_PATHS } from "../../services/logRedaction";
 import { maintenanceBody } from "../migrationState";
+import { waitingPageHtml } from "./waitingPage";
+import { waitingLang } from "./waitingPageText";
 
 /**
  * Le serveur de MAINTENANCE, pendant la migration de la base : une instance
@@ -16,7 +18,9 @@ import { maintenanceBody } from "../migrationState";
  * Prisma, routes, extensions — une seule fois). Pas de bascule à chaud.
  *
  * Ouverts : `/api/health` (avec `database`), `/api/config` (tiré du code, sans
- * base) et les fichiers statiques (le client web y lit l'écran d'attente).
+ * base) et, pour toute navigation (`/`, `/tv`…), la page d'attente MINIMALE
+ * (`waitingPage.ts`) — rien de l'interface normale, même interface web coupée,
+ * et seulement pendant la migration.
  * Tout le reste de `/api/*` répond 503 `{ state: "migrating", … }` : les routes
  * du cœur, les extensions, `/api/ws`, et TOUT `/api/setup/*` — l'assistant ne
  * s'ouvre jamais pendant une migration (audit S3), pas même au voisin du réseau
@@ -29,8 +33,6 @@ export interface MaintenanceServerOptions {
   host: string;
   healthBody: (request: FastifyRequest) => Record<string, unknown>;
   configBody: (request: FastifyRequest) => Record<string, unknown>;
-  /** Le client web et `/tv` (`registerStaticClients`), absents des tests. */
-  registerStatic?: (app: FastifyInstance) => Promise<void>;
   logger?: boolean;
 }
 
@@ -79,7 +81,14 @@ export async function buildMaintenanceServer(options: MaintenanceServerOptions):
     url: "/api/*",
     handler: async (_request, reply) => migratingReply(reply),
   });
-  if (options.registerStatic) await options.registerStatic(app);
+  // Toute navigation : la page d'attente (200, jamais en cache — un mandataire
+  // pourrait remplacer une page 503 par la sienne).
+  app.get("/*", async (request, reply) =>
+    reply
+      .type("text/html; charset=utf-8")
+      .header("cache-control", "no-store")
+      .send(waitingPageHtml(waitingLang(request.headers["accept-language"]))),
+  );
   return app;
 }
 
