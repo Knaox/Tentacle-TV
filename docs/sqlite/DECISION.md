@@ -151,8 +151,10 @@ FUSE réseau corrompent la base. Au démarrage, le serveur lit le type du systè
 dossier de données (`/proc/self/mountinfo`, préfixe le plus long ; chemin UNC `\\` sous
 Windows) et AVERTIT sans bloquer : journal `[db]` et carte « Base de données » de l'admin
 (`storage: "network"`). Types signalés : `nfs`, `nfs4`, `cifs`, `smb3`, `smbfs`, `9p`,
-`fuse.sshfs`, `fuse.rclone`, `ceph`, `glusterfs`, `davfs`. Unraid (`fuse.shfs`) n'est PAS
-signalé (Jellyfin y vit aussi) : documenté seulement.
+`fuse.sshfs`, `fuse.rclone`, `ceph` (CephFS), `fuse.ceph-fuse`, `glusterfs`, `davfs`. Le jugement
+porte sur le TYPE, jamais sur le périphérique : un disque BLOC distant (Ceph RBD `/dev/rbd*`,
+iSCSI — cas réel : un LXC Proxmox sur RBD) formaté en ext4, xfs, btrfs ou zfs est local et
+n'avertit pas. Unraid (`fuse.shfs`) n'est PAS signalé (Jellyfin y vit aussi) : documenté seulement.
 
 ## 8. Règles pour les autres tâches
 
