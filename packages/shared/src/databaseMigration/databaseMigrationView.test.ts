@@ -33,6 +33,8 @@ describe("écran d'attente de la migration de la base", () => {
     expect(databaseMigrationOf({ database: { state: "failed", reason: "disk_space", retryInSeconds: 30, progress: { percent: 5 } } }))
       .toEqual({ kind: "failed", reason: "disk_space", retryInSeconds: 30, percent: 5 });
     expect(databaseMigrationOf({ database: { state: "failed", reason: "<script>" } })).toMatchObject({ reason: "unknown" });
+    // Pas de nouvel essai automatique (MariaDB plus configurée) : rien à en dire.
+    expect(databaseMigrationOf({ database: { state: "failed", reason: "source_missing" } })).toMatchObject({ reason: "source_missing", retryInSeconds: null });
   });
 
   it("rien à montrer : base prête, serveur d'avant 1.25, réponse illisible", () => {

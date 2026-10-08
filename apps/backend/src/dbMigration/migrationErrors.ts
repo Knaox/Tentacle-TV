@@ -8,6 +8,7 @@ export const MIGRATION_FAILURE_REASONS = [
   "source_unreachable", // MariaDB injoignable ou identifiants refusés
   "source_config", // un paramètre de l'URL de la base que la copie ne sait pas honorer
   "source_too_old", // base d'avant la 1.4.0 : passer d'abord par la 1.24
+  "source_missing", // l'installation avait une MariaDB, plus configurée (pile mise à jour trop tôt)
   "disk_space", // pas assez de place dans le dossier de données
   "unsafe_path", // un lien symbolique là où la base doit être un fichier
   "copy_failed", // une table n'a pas pu être copiée

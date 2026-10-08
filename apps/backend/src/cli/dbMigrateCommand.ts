@@ -7,6 +7,7 @@ import type { MigrationStatusFile } from "../dbMigration/migrationLoop";
 import { failureOf } from "../dbMigration/migrationErrors";
 import { parseReport, type MigrationReport } from "../dbMigration/migrationReport";
 import { refuseSymlink } from "../dbMigration/migrationFiles";
+import { orphanedLegacyInstallation } from "../dbMigration/orphanedSource";
 
 /**
  * `tentacle db migrate` — la migration MariaDB → SQLite, tout de suite, avec un
@@ -93,6 +94,13 @@ function finishWithReport(finalPath: string): number {
 export async function runDbMigrateCommand(paths = migrationPaths()): Promise<number> {
   const url = legacyMariadbUrl();
   if (!url) {
+    if (orphanedLegacyInstallation(null)) {
+      say(
+        "Cette installation utilisait une base MariaDB, qui n'est plus configurée : remettez le service de la base et ses variables (DB_HOST, DB_PASSWORD_FILE ou DATABASE_URL) le temps de la migration, puis redémarrez.",
+        "This installation used a MariaDB database that is no longer configured: put the database service and its variables back for the migration, then restart.",
+      );
+      return 1;
+    }
     say("Aucune ancienne base MariaDB configurée : rien à migrer.", "No old MariaDB database configured: nothing to migrate.");
     return 0;
   }

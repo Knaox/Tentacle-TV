@@ -148,6 +148,7 @@ export default {
   dbMigrationReasonUnreachable: "The old database does not answer. Check that it is running and that Tentacle can reach it.",
   dbMigrationReasonConfig: "A connection setting of the old database is not understood. The server log says which one.",
   dbMigrationReasonTooOld: "This installation is too old to move straight to this version: install version 1.24 first, start it once, then come back to this one.",
+  dbMigrationReasonMissing: "This installation used a MariaDB database that is no longer configured: its data is still there. Put the database service and its variables (DB_HOST, DB_PASSWORD_FILE or DATABASE_URL) back for the migration, then restart Tentacle.",
   dbMigrationReasonDiskSpace: "There is not enough space on the server's disk. Free some space: the next attempt will start again.",
   dbMigrationReasonOther: "The server log ([db-migration] lines) says why.",
 } as const;
