@@ -90,6 +90,9 @@ TAGS.forEach((tag, index) => {
       expect(redirected.status).not.toBe(200);
       expect(errorOf(redirected)).toMatch(/^(jf_not_jellyfin|jf_forbidden_address)$/);
       expect(errorOf(await probe(`http://${HOST_ADDRESS}:8999`))).toMatch(/^(jf_unreachable|jf_timeout)$/);
+      // Podman sans racine : l'hôte est 169.254.1.2 (lien local), accepté sous son NOM seulement — tapée, l'adresse reste refusée.
+      const hostIp = (await stack.exec("tentacle", "getent", "hosts", HOST_ADDRESS)).trim().split(/\s+/)[0] ?? "";
+      if (hostIp.startsWith("169.254.")) expect(errorOf(await probe(`http://${hostIp}:${ports.jellyfin}`))).toBe("jf_forbidden_address");
     });
 
     it("Jellyfin configuré : sondé, puis rejoint par le compte (mauvais mot de passe et mauvaise clé refusés)", async () => {
