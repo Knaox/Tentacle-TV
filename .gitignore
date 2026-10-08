@@ -21,6 +21,9 @@ scripts/
 !apps/desktop-electron/scripts/
 !.github/scripts/
 !apps/tv/ios/scripts/
+# Le générateur des textes de licence (`pnpm --filter @tentacle-tv/shared
+# generate:licenses`) : sans cette exception il n'était jamais entré au dépôt.
+!packages/shared/scripts/
 .next/
 .expo/
 *.tsbuildinfo
