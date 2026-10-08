@@ -1,0 +1,74 @@
+import { mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import Fastify from "fastify";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+/**
+ * `GET /api/health` répond SANS authentification, à n'importe qui sur le
+ * réseau (mobile, TV, suivi de redémarrage). Garde de non-régression de
+ * l'audit du chantier SQLite : la configuration de la base n'y paraît jamais —
+ * ni l'URL et le mot de passe de l'ancienne MariaDB, ni le chemin du fichier
+ * SQLite, de sa copie en cours ou de sa sauvegarde. Le champ `database` venu
+ * avec 1.25 n'y dit que le moteur, l'état et la progression, en nombres.
+ */
+
+const SECRET = "Pw-audit-7f3c9e";
+const SOURCE_URL = `mysql://tentacle:${SECRET}@db-audit:3306/tentacle`;
+let dataDir = "";
+let body: Record<string, unknown> = {};
+let text = "";
+
+beforeAll(async () => {
+  dataDir = mkdtempSync(join(tmpdir(), "health-audit-"));
+  vi.stubEnv("TENTACLE_DATA_DIR", dataDir);
+  vi.stubEnv("DATABASE_URL", SOURCE_URL);
+  vi.stubEnv("DB_HOST", "db-audit");
+  vi.stubEnv("DB_PASSWORD", SECRET);
+  vi.resetModules();
+  const { healthRoutes } = await import("../routes/health");
+  const app = Fastify();
+  await app.register(healthRoutes, { prefix: "/api" });
+  const res = await app.inject({ method: "GET", url: "/api/health" });
+  text = res.body;
+  body = res.json() as Record<string, unknown>;
+  await app.close();
+});
+
+afterAll(() => {
+  vi.unstubAllEnvs();
+  rmSync(dataDir, { recursive: true, force: true });
+});
+
+describe("/api/health — rien de la configuration de la base", () => {
+  it("répond", () => {
+    expect(body.status).toBe("ok");
+  });
+
+  it("ni mot de passe, ni URL, ni hôte de la base source", () => {
+    expect(text).not.toContain(SECRET);
+    expect(text).not.toMatch(/(mysql|mariadb):\/\//i);
+    expect(text).not.toContain("db-audit");
+  });
+
+  it("ni fichier de base, ni copie, ni sauvegarde, ni configuration de base", () => {
+    expect(text).not.toMatch(/tentacle\.db|\.migrating|\.bak\b|database\.json|db_password/i);
+    expect(text).not.toMatch(/"file:/);
+  });
+
+  it("le champ `database`, s'il est là, ne dit que moteur, état et progression", () => {
+    const database = body.database as Record<string, unknown> | undefined;
+    if (database === undefined) return;
+    expect(Object.keys(database).every((key) => ["engine", "state", "progress"].includes(key))).toBe(true);
+    for (const key of ["engine", "state"] as const) {
+      if (database[key] === undefined) continue;
+      // Un mot-clé court, jamais un chemin ni un message d'erreur.
+      expect(String(database[key])).toMatch(/^[a-z][a-zA-Z0-9_-]{0,31}$/);
+    }
+    const progress = database.progress;
+    if (progress === undefined || progress === null) return;
+    // Des NOMBRES seulement : aucun nom de table (d'une extension inconnue, par exemple).
+    const values = typeof progress === "object" ? Object.values(progress as object) : [progress];
+    expect(values.every((value) => typeof value === "number" || value === null)).toBe(true);
+  });
+});
