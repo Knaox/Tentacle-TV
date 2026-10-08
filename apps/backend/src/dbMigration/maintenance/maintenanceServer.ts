@@ -45,8 +45,8 @@ export async function buildMaintenanceServer(options: MaintenanceServerOptions):
     // secondes (les lignes [db-migration] s'y noyaient, mesuré au banc), et une URL d'ancien
     // client peut porter un jeton (segments HLS) que le serveur normal masque, pas celui-ci.
     // Ce que l'administrateur doit lire passe par console.log ([db-migration]). Ni
-    // `disableRequestLogging` (déprécié par Fastify 5.12, celui de l'image) ni un sérialiseur :
-    // pas de journal du tout, sur toutes les versions.
+    // `disableRequestLogging` (déprécié par les Fastify plus récents que celui du verrou) ni un
+    // sérialiseur : pas de journal du tout, quelle que soit la version.
     logger: false,
     trustProxy: (address: string) => isTrustedProxy(address),
   });
