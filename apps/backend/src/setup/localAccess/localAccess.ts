@@ -1,4 +1,5 @@
 import type { FastifyRequest } from "fastify";
+import { networkInterfaces } from "os";
 import { getRealClientIp } from "../../services/networkUtils";
 import { readDefaultGateway } from "../discovery/candidates";
 import { hostInfo } from "../hostInfo";
@@ -26,14 +27,21 @@ export function clientAddress(request: FastifyRequest): string {
   return bareIp(getRealClientIp(request));
 }
 
+/** Les adresses propres du conteneur (rootlessport y fait arriver tout le monde) ; hors boucle locale. */
+function containerAddresses(): string[] {
+  return Object.values(networkInterfaces()).flatMap((entries) => (entries ?? []).filter((entry) => !entry.internal).map((entry) => entry.address));
+}
+
 export function setupAccessFor(request: FastifyRequest): SetupAccess {
   const address = clientAddress(request);
+  const containerized = hostInfo().containerized;
   const verdict = judgeClient({
     peer: request.socket?.remoteAddress,
     realIp: address,
     headers: request.headers,
     browserHost: request.hostname,
-    gateway: hostInfo().containerized ? readDefaultGateway() : null,
+    gateway: containerized ? readDefaultGateway() : null,
+    ownAddresses: containerized ? containerAddresses() : [],
   });
   if (verdict !== "local") return { address, verdict, refusal: "code_required" };
   const claimant = claimantAddress();

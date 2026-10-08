@@ -8,7 +8,14 @@ import { bareIp, isPrivateAddress } from "./privateAddress";
  *
  *  1. l'adresse réelle est connue. Elle ne l'est pas quand la connexion vient
  *     de la PASSERELLE du conteneur : Docker Desktop, colima, le relais IPv6
- *     de Docker (userland-proxy) y font passer TOUT le monde, Internet compris ;
+ *     de Docker (userland-proxy) y font passer TOUT le monde, Internet compris.
+ *     Ni quand elle vient de l'adresse PROPRE du conteneur : rootlessport
+ *     (Podman sans racine, réseau de pont — celui des piles compose) y fait
+ *     arriver toute connexion publiée, du réseau local comme d'Internet
+ *     (mesuré le 2026-10-08, Podman 5.8.7 : 10.89.x.2 vu pour l'hôte et le
+ *     réseau local). La même adresse vient aussi, sous pasta ou en réseau
+ *     de l'hôte, de la machine elle-même : le code lui est demandé aussi —
+ *     on ne sait pas distinguer, donc on ne croit pas ;
  *  2. un en-tête de relais (`X-Forwarded-For`…) n'est cru que d'un mandataire
  *     voisin de confiance (`trustedProxies.ts`) — sinon c'est un client qui
  *     se dit local ;
@@ -31,6 +38,8 @@ export interface ClientFacts {
   browserHost: string | undefined;
   /** La passerelle du conteneur, si le serveur tourne dans un conteneur. */
   gateway: string | null;
+  /** Les adresses du conteneur hors boucle locale, s'il tourne dans un conteneur ; vide sinon. */
+  ownAddresses: readonly string[];
 }
 
 const FORWARDING_HEADERS = ["x-forwarded-for", "forwarded", "x-real-ip", "cf-connecting-ip", "true-client-ip"];
@@ -49,6 +58,7 @@ export function judgeClient(facts: ClientFacts): ClientVerdict {
   const peer = facts.peer ? bareIp(facts.peer) : "";
   if (!peer) return "unknown";
   if (facts.gateway && peer === facts.gateway) return "unknown";
+  if (facts.ownAddresses.some((own) => bareIp(own) === peer)) return "unknown";
   const forwarded = FORWARDING_HEADERS.some((name) => facts.headers[name] !== undefined);
   if (forwarded && !isTrustedProxy(peer)) return "unknown";
   const client = forwarded ? bareIp(facts.realIp) : peer;

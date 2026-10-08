@@ -7,6 +7,7 @@ const facts = (over: Partial<ClientFacts> = {}): ClientFacts => ({
   headers: {},
   browserHost: "172.16.1.30",
   gateway: "172.18.0.1",
+  ownAddresses: ["172.18.0.5"],
   ...over,
 });
 
@@ -29,6 +30,19 @@ describe("qui arrive directement du réseau local", () => {
     expect(judgeClient(facts({ peer: "172.18.0.1", realIp: "172.18.0.1" }))).toBe("unknown");
     // Même avec un en-tête de relais : par la passerelle, Internet pourrait le poser lui-même.
     expect(judgeClient(facts({ peer: "172.18.0.1", realIp: "192.168.1.5", headers: { "x-forwarded-for": "192.168.1.5" } }))).toBe("unknown");
+  });
+
+  it("l'adresse propre du conteneur (rootlessport de Podman sans racine) masque l'adresse : inconnue", () => {
+    // Relevé le 2026-10-08 : réseau de pont de Podman, l'hôte comme le réseau local arrivent de 10.89.3.2.
+    const podman = { gateway: "10.89.3.1", ownAddresses: ["10.89.3.2", "fe80::34ec:6dff:feaa:7b38"] };
+    expect(judgeClient(facts({ ...podman, peer: "::ffff:10.89.3.2", realIp: "10.89.3.2" }))).toBe("unknown");
+    // Un en-tête de relais n'y change rien : Internet pourrait le poser lui-même.
+    expect(judgeClient(facts({ ...podman, peer: "10.89.3.2", realIp: "192.168.1.5", headers: { "x-forwarded-for": "192.168.1.5" } }))).toBe("unknown");
+    expect(judgeClient(facts({ ...podman, peer: "fe80::34ec:6dff:feaa:7b38%eth0", realIp: "fe80::34ec:6dff:feaa:7b38" }))).toBe("unknown");
+    // Un voisin du même réseau de pont garde son adresse : local.
+    expect(judgeClient(facts({ ...podman, peer: "10.89.3.7", realIp: "10.89.3.7" }))).toBe("local");
+    // Hors conteneur, aucune adresse propre n'est écartée.
+    expect(judgeClient(facts({ gateway: null, ownAddresses: [], peer: "192.168.1.5", realIp: "192.168.1.5" }))).toBe("local");
   });
 
   it("un mandataire voisin de confiance qui transmet une adresse privée : local ; publique : le code", () => {
