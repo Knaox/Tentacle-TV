@@ -17,9 +17,10 @@ function childEntry(): string {
   return existsSync(js) ? js : resolve(__dirname, "apiSampleChild.ts");
 }
 
-export function runApiSample(path: string, expected: Record<string, number>): Promise<void> {
+/** `execArgv` : le chargeur de l'enfant — celui du processus courant, sauf un test qui lance le `.ts` sous tsx. */
+export function runApiSample(path: string, expected: Record<string, number>, execArgv: string[] = process.execArgv): Promise<void> {
   return new Promise((resolvePromise, reject) => {
-    const child = fork(childEntry(), [path, JSON.stringify(expected)], { stdio: ["ignore", "ignore", "pipe", "ipc"] });
+    const child = fork(childEntry(), [path, JSON.stringify(expected)], { stdio: ["ignore", "ignore", "pipe", "ipc"], execArgv });
     let settled = false;
     const done = (err?: MigrationFailure) => {
       if (settled) return;
