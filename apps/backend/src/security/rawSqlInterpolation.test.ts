@@ -39,6 +39,12 @@ const REVIEWED: Record<string, Record<string, string>> = {
   "services/pluginStorage/prismaExecutor.ts": {
     sql: "texte SQL de l'extension, valeurs liées à part",
   },
+  // `tentacle db query` : SA raison d'être est d'exécuter le SQL tapé à la
+  // console. Ce texte n'est compilé que sous `EXPLAIN` pour en refuser toute
+  // écriture (refuseNonRead), sur une base ouverte en lecture seule.
+  "cli/dbQueryCommand.ts": {
+    source: "la requête de l'administrateur, compilée sous EXPLAIN pour refuser toute écriture",
+  },
   // La migration MariaDB → SQLite (1.25) : noms lus dans information_schema,
   // donc NON fiables, toujours cités (`quoteIdent` / `quoteId`) avant d'entrer.
   "dbMigration/copy/tableCopy.ts": {
