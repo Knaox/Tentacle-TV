@@ -8,7 +8,7 @@ import Fastify from "fastify";
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { randomUUID } from "crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../services/dataDir", async () => {
   const { tmpdir } = await import("os");
@@ -52,6 +52,7 @@ vi.mock("../services/pluginInstall", async () => {
 });
 
 import { DATA_DIR, clearCache, getInstalled, saveInstalled, type InstalledPlugin } from "../services/pluginManager";
+import { DATA_ROOT } from "../services/dataDir";
 import { registerPluginInstalledRoutes } from "./pluginInstalled";
 
 const version = (v: string, min: string) => ({
@@ -131,3 +132,6 @@ describe("une version trop récente pour ce serveur", () => {
     expect(getInstalled()[0].version).toBe("1.24.1");
   });
 });
+
+// Le dossier jetable entier, pas seulement plugins/ : sinon un dossier par lancement reste dans /tmp.
+afterAll(() => rmSync(DATA_ROOT, { recursive: true, force: true }));

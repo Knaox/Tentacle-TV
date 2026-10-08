@@ -8,7 +8,7 @@ import Fastify from "fastify";
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { randomUUID } from "crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../services/dataDir", async () => {
   const { tmpdir } = await import("os");
@@ -50,6 +50,7 @@ vi.mock("../services/pluginInstall", async () => {
 });
 
 import { DATA_DIR, clearCache, getInstalled, saveInstalled, type InstalledPlugin } from "../services/pluginManager";
+import { DATA_ROOT } from "../services/dataDir";
 import { pluginBackendDiag } from "../services/pluginBackendLoader";
 import { registerPluginInstalledRoutes } from "./pluginInstalled";
 
@@ -254,3 +255,6 @@ describe("PUT /:id/toggle et POST /restart", () => {
     expect(restart.reasons).toHaveLength(1);
   });
 });
+
+// Le dossier jetable entier, pas seulement plugins/ : sinon un dossier par lancement reste dans /tmp.
+afterAll(() => rmSync(DATA_ROOT, { recursive: true, force: true }));
