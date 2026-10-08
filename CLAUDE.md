@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It features a React web client, a desktop app (Electron on Windows, macOS and Linux, driving a native mpv through koffi), an Expo mobile app, an Android TV app, and a Fastify backend with MariaDB. The project is written primarily in French (comments, context docs, commit messages).
+Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It features a React web client, a desktop app (Electron on Windows, macOS and Linux, driving a native mpv through koffi), an Expo mobile app, an Android TV app, and a Fastify backend with SQLite (one file, `data/tentacle.db`; MariaDB is only READ, once, to migrate older servers). The project is written primarily in French (comments, context docs, commit messages).
 
 ## Commands
 
@@ -24,17 +24,16 @@ pnpm build:backend    # Production backend build (tsc → dist/)
 pnpm lint             # ESLint across all packages
 pnpm typecheck        # TypeScript --noEmit across all packages
 
-# Database (run from apps/backend/)
+# Database (run from apps/backend/) — SQLite, never `prisma db push`
 pnpm db:generate      # prisma generate
-pnpm db:push          # prisma db push (sync schema to DB)
-pnpm db:migrate       # prisma migrate dev
+pnpm db:migration <nom>  # writes the next prisma/migrations-sqlite/NNNN_<nom>.sql (after a schema.prisma change)
 pnpm db:studio        # Prisma Studio GUI
 
 # Plugins (run from apps/backend/)
 pnpm build:shared-deps  # Download tailwind.js + bundle shared-deps.js (required for plugins)
 
 # Docker
-pnpm docker:up        # Start MariaDB + Tentacle containers
+pnpm docker:up        # Start the root docker-compose.yml (legacy: MariaDB + Tentacle)
 pnpm docker:reset     # Full teardown + rebuild (volumes included)
 pnpm docker:logs      # Tail container logs
 
@@ -191,7 +190,7 @@ apps/web/        → React 19 + Vite 6 + Tailwind CSS (main web client)
 apps/desktop-electron/ → Electron (Windows, macOS, Linux — same web build, same libmpv)
 apps/mobile/     → Expo 52 + React Native 0.76 (iOS/Android)
 apps/tv/         → React Native (react-native-tvos) for Apple TV and Android TV
-apps/backend/    → Fastify 5 + Prisma 6 + MariaDB
+apps/backend/    → Fastify 5 + Prisma 6 + SQLite
 
 packages/shared/      → Types, i18n translations, constants (used by all)
 packages/api-client/  → Jellyfin API client + TanStack Query hooks
@@ -212,7 +211,7 @@ packages/plugins-api/ → Plugin system interfaces
 - **Auth**: JWT-based (`middleware/auth.ts`), tokens via `services/jwt.ts`
 - **Routes**: `routes/` — setup, auth, config, demo, health, invites, jellyfin (proxy), notifications, pair, plugins, preferences, admin, tickets, update
 - **Services**: `services/` — db.ts (Prisma), jellyfin.ts, configStore.ts, pluginManager.ts
-- **Database**: MariaDB via Prisma ORM, schema at `prisma/schema.prisma`
+- **Database**: SQLite via Prisma ORM (`data/tentacle.db`), schema at `prisma/schema.prisma`, versioned migrations in `prisma/migrations-sqlite/` — see « Base de données » below
 
 ### Frontend (apps/web/src/)
 
@@ -570,12 +569,61 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
 - Un nouveau geste de la Famille : une entrée dans `FAMILY_ROUTES` d'abord,
   jamais une route à part.
 
+## Base de données — SQLite, et la migration depuis MariaDB (1.25)
+
+**Une seule base : `data/tentacle.db`**, SQLite, dans le volume de données — rien à configurer, plus d'étape
+« base de données » (`docs/sqlite/DECISION.md`). Prisma en moteur natif à UNE connexion ; dates en INTEGER
+millisecondes UTC (jamais du texte, `CURRENT_TIMESTAMP` interdit en SQL brut) ; migrations versionnées
+(`prisma/migrations-sqlite/`, exécuteur `services/database/migrator.ts` par `node:sqlite`, Prisma fermé).
+**Jamais `node:sqlite` sur `tentacle.db` pendant que Prisma l'a ouverte dans le même processus** (les verrous
+ne se voient pas) : au démarrage avant Prisma, ou dans un AUTRE processus. Casse normalisée à l'entrée (pas de
+`COLLATE NOCASE`). Jamais `prisma db push`.
+
+**MariaDB n'est plus qu'une SOURCE, lue une fois, jamais modifiée** (`apps/backend/src/dbMigration/`, qui
+partira avec elle dans 2 ou 3 versions) :
+
+- **Déclenchement** : le socle dit « en attente » (`legacySourceState()` : MariaDB configurée par `DATABASE_URL`,
+  `DB_*` ou le fichier de l'ancien assistant, et pas de `tentacle.db` installée). En tête de `main()`, un
+  serveur de MAINTENANCE À PART (`maintenance/`) : ni Prisma, ni route du cœur, ni extension ; `/api/health`
+  (`database` additif, nombres et motif d'une liste FERMÉE seulement) et `/api/config` sans base, 503
+  `{ state: "migrating" }` partout ailleurs — `/api/setup/*` compris (status en 503, jamais « ouvert »),
+  `/api/ws`, `/api/plugins/*` — et une page d'attente minimale autonome (FR/EN, ES5, `/tv` compris, même web
+  coupé). À la réussite il se ferme, puis le démarrage normal : Prisma, routes, extensions, UNE fois. Jamais
+  de bascule à chaud.
+- **La copie** : connexion READ ONLY + instantané cohérent (pilote `mariadb`, `logParam:false`), colonnes lues
+  dans `information_schema`, pages sur la clé primaire ; URL relue comme la 1.24 la donnait à Prisma (TLS
+  demandé = TLS exigé ; paramètre inconnu = échec clair) ; fuseau de la source lu, colonnes « session »
+  converties (`CONVERT_TZ`). Cœur selon le DMMF, Famille v1→v2 et purges de `core-init.sql` rejouées en TS,
+  tables d'extension recopiées ENTIÈRES (forme exacte : `docs/sqlite/GENERIC-COPY.md`, qui fait foi pour
+  Vigie), tables non reconnues copiées par précaution, collisions de noms refusées. Installation scellée
+  d'après la source AVANT tout ; brouillon `tentacle.db.migrating` 0600 ; vérification (sommes par colonne,
+  clés étrangères, contrôle « API » par Prisma dans un processus ENFANT) ; rapport
+  (`server_config[sqlite_migration_report]` : noms, comptes, durées — jamais une valeur) ; fsync, renommage.
+- **Coupure** : tout sauf `tmdb_meta_cache` (≈ 0,1 s de données, quelques secondes en tout) ; ce cache (~99 %
+  du volume) est copié APRÈS la bascule par un processus enfant (lots courts, `INSERT OR IGNORE`, reprise,
+  marqueur de fin), la reco l'attend 30 min au plus.
+- **Échec** : MariaDB intacte, écran d'échec public sobre (motif sans détail), essais de 30 s à 15 min,
+  `tentacle db migrate` (essai immédiat, rapport), journal `[db-migration]`. Source d'avant la 1.4.0 :
+  passer par la 1.24.
+- **Après** : divergence de la source contrôlée au démarrage (§ 3.10 : autre base, données changées, source
+  vide remplie → « À régler », rien d'automatique, « Migrer à nouveau » = marqueur + redémarrage contrôlé,
+  base actuelle en `.bak`) ; base installée jamais migrée face à une MariaDB → « À régler » ; « MariaDB n'est
+  plus nécessaire » (recommandation masquable `adminRemoveMariadb`) après la migration ET le cache, avec la
+  marche à suivre par installation (sans Docker ; `DROP DATABASE` rendu par le serveur, à copier).
+- **MariaDB retirée trop tôt** (secret `db_password` ou installation scellée, sans source ni base) : jamais une
+  base vide — écran d'attente `source_missing` ; sortie volontaire : `tentacle db start-fresh --confirm`.
+- Banc réel : `apps/server-e2e/sqlite-bench/` (dump de production NEUTRALISÉ, jamais l'original ; réseau
+  `--internal`). Doc utilisateur : `docs/server/sqlite-migration.md` (et `fr/`).
+
 ## Serveur — installation, piles, accès à distance (v2)
 
 Doc utilisateur : `docs/server/` (EN) et `docs/server/fr/`. Trois piles prêtes à copier,
-`stacks/tentacle-{full,db,only}/compose.yaml` : **aucun secret écrit** (service `init` → volume
-`tentacle-secrets`, `DB_PASSWORD_FILE`), **jamais le socket Docker**, jamais root (`PUID:PGID`, tini,
-su-exec). Les anciens `docker-compose*.yml` restent valables (aucune migration forcée). **Aucun réglage des
+`stacks/tentacle-{full,db,only}/compose.yaml` : **aucune base à installer** depuis la 1.25 (SQLite : `full`
+sans service `db` ni `init`, `only` sans `CREATE DATABASE`, `db` marquée ANCIENNE, gardée le temps de la
+transition), **aucun secret écrit**, **jamais le socket Docker**, jamais root (`PUID:PGID`, tini, su-exec).
+`full` garde le volume `tentacle-secrets` monté, sans plus rien y générer : son `db_password` d'avant est la
+preuve d'une ancienne MariaDB (cf. « Base de données »). Les anciens `docker-compose*.yml` restent valables :
+leur MariaDB est migrée d'elle-même. **Aucun réglage des
 médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` naissent de `jellyfin-init`
 (l'image de Jellyfin, une fois en root) ; Tentacle lit les dossiers par l'API de Jellyfin
 (`stacksContract.test.ts` le tient : aucun service de l'image Tentacle ne monte `/media`).
@@ -966,7 +1014,7 @@ un **build de production** (le compteur d'images de `dev/` tient une boucle
 | Web | React 19, Vite 6, Tailwind 3, Framer Motion 11 |
 | Desktop | Electron 43 (Windows, macOS, Linux), libmpv via koffi |
 | Mobile | React Native 0.76, Expo 52, NativeWind 4 |
-| Backend | Fastify 5, Prisma 6, MariaDB 11 |
+| Backend | Fastify 5, Prisma 6, SQLite (moteur natif de Prisma, une connexion) |
 | Data | TanStack Query v5 |
 | Video | hls.js 1.6 + HTML5 `<video>` (web), react-native-video (mobile/TV) |
 | i18n | i18next + react-i18next (FR/EN) |
