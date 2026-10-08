@@ -29,6 +29,7 @@ export default {
   installedOn: "installé le {{date}}",
   toggleLabel: "Activer « {{name}} »",
   stateEnabled: "Actif",
+  stateNeedsUpdate: "À mettre à jour",
   stateDisabled: "Désactivé",
   serverModuleRunning: "Module serveur",
   serverModuleIdle: "Module serveur arrêté",
