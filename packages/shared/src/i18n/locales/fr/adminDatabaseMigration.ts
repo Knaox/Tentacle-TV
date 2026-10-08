@@ -15,7 +15,7 @@ export default {
   retired: "Anciennes tables laissées dans MariaDB : {{names}}",
   refused: "Tables refusées (laissées dans MariaDB) : {{names}}",
   remigrateTitle: "Nouvelle migration",
-  remigrateBody: "Repartir de l'ancienne base MariaDB : la base actuelle de ce serveur est gardée de côté (fichier .bak), rien n'est effacé.",
+  remigrateBody: "Repartir de l'ancienne base MariaDB. TOUT ce qui a été écrit depuis la migration (notes, titres vus, réglages, appareils jumelés…) part dans la copie de secours (fichier .bak) et sera REMPLACÉ par l'état de MariaDB. Rien n'est effacé : la copie de secours reste sur le serveur.",
   remigrateButton: "Migrer à nouveau",
   remigrateConfirm: "Le serveur va redémarrer pour migrer à nouveau, avec l'écran d'attente pendant la copie.",
   remigrateFailed: "La demande n'a pas abouti. Réessayez dans un instant.",

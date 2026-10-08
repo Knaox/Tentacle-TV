@@ -34,7 +34,7 @@ export interface DatabaseMigrationSummary {
   cache: { phase: CacheCopyPhase; percent: number };
   /** Le contrôle de l'ancienne base depuis la migration (§ 3.10) ; `null` : pas encore fait. */
   sourceCheck: SourceCheck | null;
-  removal: RemovalGuide & { dropCommand: string | null };
+  removal: RemovalGuide & { dropCommand: string };
 }
 
 export async function databaseMigrationSummary(): Promise<DatabaseMigrationSummary> {
@@ -62,6 +62,7 @@ export async function databaseMigrationSummary(): Promise<DatabaseMigrationSumma
     },
     cache: { phase: cache.phase, percent: cacheCopyPercent(cache) },
     sourceCheck: sourceDivergence(),
-    removal: { ...guide, dropCommand: guide.kind === "external" ? dropDatabaseCommand(guide.database) : null },
+    // Toujours rendue, échappée ici (backtick doublé) : le web n'en construit jamais.
+    removal: { ...guide, dropCommand: dropDatabaseCommand(guide.database) },
   };
 }

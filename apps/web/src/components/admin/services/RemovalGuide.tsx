@@ -28,7 +28,6 @@ export const RemovalGuide = memo(function RemovalGuide({ summary }: { summary: D
   const tabs = ORDER[summary.removal.kind] ?? ORDER.unknown;
   const [active, setActive] = useState<Tab>(tabs[0]);
   const service = summary.removal.dbService ?? "db";
-  const drop = summary.removal.dropCommand ?? `DROP DATABASE \`${summary.removal.database}\`;`;
 
   return (
     <div className="max-w-3xl space-y-3">
@@ -36,7 +35,8 @@ export const RemovalGuide = memo(function RemovalGuide({ summary }: { summary: D
       <Tabs idPrefix={idPrefix} label={t("tabsLabel")} items={tabs.map((id) => ({ id, label: t(`tab_${id}`) }))} active={active} onChange={setActive} />
       <div role="tabpanel" id={panelDomId(idPrefix, active)} aria-labelledby={tabDomId(idPrefix, active)} className="space-y-3">
         <p className="text-sm leading-relaxed text-content-secondary">{t(`guide_${active}`, { service })}</p>
-        {active === "external" ? <CopyBlock label="SQL" code={drop} /> : null}
+        {/* La commande vient du serveur, échappée par lui ; le web n'en construit jamais. */}
+        {active === "external" && summary.removal.dropCommand ? <CopyBlock label="SQL" code={summary.removal.dropCommand} /> : null}
       </div>
     </div>
   );

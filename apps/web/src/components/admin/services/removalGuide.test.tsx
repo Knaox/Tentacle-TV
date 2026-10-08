@@ -34,6 +34,14 @@ describe("la marche à suivre pour retirer MariaDB", () => {
     expect(out).toContain("DROP DATABASE `tentacle`;");
   });
 
+  it("la commande est celle du SERVEUR, échappée par lui (backtick doublé) ; le web n'en construit jamais", () => {
+    const named = { ...summary("external", "DROP DATABASE `ma``base`;"), removal: { ...summary("external").removal, database: "ma`base", dropCommand: "DROP DATABASE `ma``base`;" } };
+    expect(renderToStaticMarkup(<RemovalGuide summary={named} />)).toContain("DROP DATABASE `ma``base`;");
+    const without = { ...summary("external"), removal: { ...summary("external").removal, database: "ma`base", dropCommand: null } };
+    const out = renderToStaticMarkup(<RemovalGuide summary={without} />);
+    expect(out).not.toContain("DROP DATABASE");
+  });
+
   it("service de la pile : Compose d'abord, le nom du service dans la phrase", () => {
     const out = renderToStaticMarkup(<RemovalGuide summary={summary("compose-service")} />);
     expect(out).toContain('guide_compose{&quot;service&quot;:&quot;mariadb&quot;}');

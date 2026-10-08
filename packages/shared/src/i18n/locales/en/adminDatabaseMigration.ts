@@ -14,7 +14,7 @@ export default {
   retired: "Old tables left in MariaDB: {{names}}",
   refused: "Refused tables (left in MariaDB): {{names}}",
   remigrateTitle: "New migration",
-  remigrateBody: "Start again from the old MariaDB database: this server's current database is kept aside (.bak file), nothing is erased.",
+  remigrateBody: "Start again from the old MariaDB database. EVERYTHING written since the migration (ratings, watched titles, settings, paired devices…) goes into the backup copy (.bak file) and will be REPLACED by MariaDB's state. Nothing is erased: the backup copy stays on the server.",
   remigrateButton: "Migrate again",
   remigrateConfirm: "The server will restart to migrate again, with the waiting screen during the copy.",
   remigrateFailed: "The request did not go through. Try again in a moment.",
