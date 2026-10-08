@@ -6,7 +6,10 @@ import { readFileSync } from "fs";
  * fiables). On avertit, sans bloquer (docs/sqlite/DECISION.md § 7).
  *
  * Linux : le point de montage le plus long qui contient le chemin, lu dans
- * `/proc/self/mountinfo`. Windows : un chemin UNC (`\\serveur\partage`).
+ * `/proc/self/mountinfo`, jugé sur son TYPE de système de fichiers, jamais sur
+ * son périphérique : un disque bloc distant (Ceph RBD `/dev/rbd*`, iSCSI)
+ * formaté en ext4/xfs/btrfs/zfs est local pour SQLite ; CephFS (`ceph`) ne
+ * l'est pas. Windows : un chemin UNC (`\\serveur\partage`).
  * Ailleurs, ou illisible : « inconnu », jamais une fausse alerte.
  */
 export type DatabaseStorage = "local" | "network" | "unknown";
@@ -21,6 +24,7 @@ const NETWORK_TYPES = new Set([
   "fuse.sshfs",
   "fuse.rclone",
   "ceph",
+  "fuse.ceph-fuse",
   "glusterfs",
   "fuse.glusterfs",
   "davfs",
