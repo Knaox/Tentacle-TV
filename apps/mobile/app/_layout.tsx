@@ -14,6 +14,7 @@ import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { AuthRedirect } from "@/auth/AuthRedirect";
 import { OfflineShell } from "@/offline/OfflineShell";
 import { SessionMessageHost } from "@/session/SessionMessageHost";
+import { DatabaseMigrationHost } from "@/databaseMigration/DatabaseMigrationHost";
 import { NoticeHost } from "@/notices/NoticeHost";
 import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
 import { FamilyInvitationHost } from "@/family/FamilyInvitationHost";
@@ -192,6 +193,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       {serverUrl && !showLoading ? <FamilyInvitationHost /> : null}
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
       <SessionMessageHost />
+      {/* La migration de la base du serveur : au-dessus de tout, jamais un « hors ligne ». */}
+      {!showLoading ? <DatabaseMigrationHost serverUrl={serverUrl} /> : null}
       {showLoading && (
         <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
           <BrandSpinner size="large" />

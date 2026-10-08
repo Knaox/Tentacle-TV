@@ -247,6 +247,15 @@ export function resumeSocketSession(token: string): void {
   if (refCount > 0 && !ws && !reconnectTimer) connect();
 }
 
+/** Le serveur est revenu (fin de la migration de sa base) : la reconnexion part
+ *  TOUT DE SUITE, sans attendre un recul monté jusqu'à 30 s pendant l'attente. */
+export function reconnectSocketNow(): void {
+  backoff = INITIAL_BACKOFF;
+  if (refCount <= 0 || ws) return;
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  connect();
+}
+
 /** Envoie un message (false si le socket n'est pas ouvert). */
 export function sendSocketMessage(msg: WsClientMessage): boolean {
   if (ws?.readyState !== WebSocket.OPEN) return false;

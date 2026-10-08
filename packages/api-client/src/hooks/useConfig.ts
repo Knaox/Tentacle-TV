@@ -30,8 +30,10 @@ const defaultConfig: AppConfig = {
   features: { downloads: false, demo: false },
 };
 
-export function useAppConfig() {
-  return useQuery({
+/** La requête `["app-config", serveur]` : `useAppConfig`, et la relecture
+ *  forcée de la porte de la migration (`fetchQuery`, même clé, même cache). */
+export function appConfigQuery() {
+  return {
     // Par serveur : un changement de serveur ne garde pas les capacités de l'autre
     // (les invalidations sur `["app-config"]` couvrent toutes les entrées).
     queryKey: ["app-config", _backendBase],
@@ -42,7 +44,11 @@ export function useAppConfig() {
     },
     staleTime: 5 * 60_000, // refresh every 5 min
     retry: false,
-  });
+  } as const;
+}
+
+export function useAppConfig() {
+  return useQuery(appConfigQuery());
 }
 
 export interface AutoplayConfig {

@@ -327,6 +327,12 @@ dans le compte des réglages (T7, `AccountPanel`) :
   (`screenError:retry`), jamais sur la croix ; HAUT mène à la croix
   (`screenError:back`, `useBackFocus` — T4), BAS en revient ; sans pile, pas
   de croix ; à la racine de l'app, Réessayer seul.
+- **Écran de migration de la base** (`MigrationRedesign`, serveur 1.25) : rien
+  de focalisable ; les écrans de l'application passent sans vue native
+  (`MigrationCurtain`, `display: none`) — rien n'y prend le focus, la pile
+  revient intacte ; il cède au lecteur ; Menu n'est jamais pris, Retour quitte
+  sur Android TV (`useExitOnBack`) ; le voile hors ligne se tait tant qu'une
+  migration est dite. Décision : tv-core `decideMigrationScreen`.
 - **Avis brefs** (`showNotice`), bandeau du jumelage expiré, messages de
   l'administrateur : jamais focalisables.
 - **`StatusPanel`** : chargement / erreur / vide ; `status:primary`,
@@ -414,6 +420,7 @@ d'`onLongPress` (donc pas d'indication « Maintenir OK »). `useTVCardActions`
 | `panelBackLayers(panel, closing)` (`BackLayerSpec<"close">[]`), `panelPresented(entry)`, `closesAtOnce(panel, presented)`, `MODAL_GAP_MS` | le cycle et le Retour d'un panneau |
 | `confirmPress(armed, action)`, `confirmBlur(armed, action)` | la confirmation à double appui (T7 l'applique dans `AccountPanel`) |
 | `OFFLINE_VEIL`, `OFFLINE_VEIL_KEYS`, `OFFLINE_VEIL_FOCUS`, `SCREEN_ERROR_FOCUS` | le focus du voile hors ligne et de l'erreur d'un écran |
+| `decideMigrationScreen(input)`, `MIGRATION_SCREEN_FOCUS` | l'écran de migration de la base : montré, écrans cachés, voile hors ligne permis, Retour qui quitte |
 
 **La feuille des saisons** — `titles/seasonsSheet.ts` : `SEASONS_ALL_KEY`,
 `seasonFocusKey`, `SEASONS_APPLY_KEY`, `SEASONS_FOOTER_GROUP`,

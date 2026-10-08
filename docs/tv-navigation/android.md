@@ -27,6 +27,8 @@ le Retour, les panneaux et chaque écran — l'état, les écarts, les décision
   avant le relâchement : avalé) n'existe pas : Android décide au relâchement.
 - Voile hors ligne (monté hors des écrans) : Retour quitte, comme Menu y
   remonte à UIKit (`useExitOnBack`, sans effet sur tvOS).
+- Écran de migration de la base (monté hors des écrans) : de même, Retour
+  quitte (`useExitOnBack`).
 - Preuve : `apps/tv/harness/back-trace` — variante « Android refondu », mêmes
   effets qu'iOS appui par appui (`node apps/tv/harness/back-trace/bench.mjs verify`).
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import { reportDatabaseState } from "@tentacle-tv/api-client";
 import type { ConnectivityReason } from "@tentacle-tv/shared";
 import { probeDeviceNetwork } from "./deviceNetworkProbe";
 import { publishServerReachability, registerServerProbe } from "./serverReachability";
@@ -54,7 +55,11 @@ export function useServerReachable(serverUrl: string | null) {
     const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
     try {
       const res = await fetch(`${serverUrl}/api/health`, { signal: controller.signal });
-      return res.ok ? null : "backend";
+      if (!res.ok) return "backend";
+      // La base du serveur en migration : il RÉPOND — ce n'est pas une panne,
+      // l'écran d'attente le dit (`MigrationRedesign`).
+      reportDatabaseState(await res.json().catch(() => null));
+      return null;
     } catch {
       if (!(await probeDeviceNetwork())) return "network";
       return controller.signal.aborted ? "timeout" : "backend";

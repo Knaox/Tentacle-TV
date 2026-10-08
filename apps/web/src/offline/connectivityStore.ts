@@ -9,6 +9,8 @@
  * Sondes : `GET /api/health` (backend) puis `GET /api/jellyfin/System/Info/Public`
  * (Jellyfin via proxy). Un 503 Jellyfin = « non configuré » (wizard) et ne
  * bascule PAS hors ligne — sémantique reprise de l'ancien useServerReachable.
+ * Une base en migration (`database` de `/api/health`) non plus : le serveur
+ * répond, l'écran d'attente le dit.
  *
  * Le mode hors ligne MANUEL est persisté par appareil dans `localStorage`
  * (même famille de réglages que `tentacle_theme_mode`) : disponible avant
@@ -29,7 +31,7 @@ import {
   type LinkQuality,
   type OfflineReason,
 } from "@tentacle-tv/offline-core";
-import { setNetworkSuspectListener, setOfflineHintSupplier } from "@tentacle-tv/api-client";
+import { reportDatabaseState, setNetworkSuspectListener, setOfflineHintSupplier } from "@tentacle-tv/api-client";
 import { isTauri } from "../hooks/mpvRuntime";
 import { backendUrl } from "../main";
 
@@ -153,6 +155,10 @@ async function runProbe(latencyOnly: boolean): Promise<ProbeResult> {
     const backendRes = await fetch(`${backendUrl}/api/health`, { signal: controller.signal });
     const latencyMs = Date.now() - startedAt;
     if (!backendRes.ok) return { ok: false, reason: "backend", latencyMs: null };
+    // La base du serveur en migration : il RÉPOND, ce n'est pas une panne —
+    // l'écran d'attente le dit (`DatabaseMigrationGate`), le proxy Jellyfin,
+    // fermé le temps de la copie, n'est pas sondé.
+    if (reportDatabaseState(await backendRes.json().catch(() => null))) return { ok: true, reason: null, latencyMs };
     if (latencyOnly) return { ok: true, reason: null, latencyMs };
     try {
       const jellyfinRes = await fetch(`${backendUrl}/api/jellyfin/System/Info/Public`, {

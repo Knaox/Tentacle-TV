@@ -4,13 +4,22 @@ export { useAuth } from "../hooks/useAuth";
 export { useUserId, notifyUserChange } from "../hooks/useUserId";
 
 // App config & feature flags
-export { useAppConfig, useAutoplayConfig, setConfigBackendUrl, type AppConfig, type AppFeatures, type AutoplayConfig } from "../hooks/useConfig";
+export { useAppConfig, appConfigQuery, useAutoplayConfig, setConfigBackendUrl, type AppConfig, type AppFeatures, type AutoplayConfig } from "../hooks/useConfig";
 
 // Les capacités du serveur : la seule porte d'une fonction qui dépend du serveur
 export {
   useServerCapabilities, useServerCapability, ServerCapabilityGate,
   type ServerCapabilitiesState, type ServerCapabilityGateProps,
 } from "../hooks/useServerCapabilities";
+
+// L'écran d'attente de la migration de la base (serveur 1.25) : le signal que
+// les sondes déposent, la décision commune et sa porte React
+export {
+  reportDatabaseState, reportMaintenanceResponse, clearDatabaseMigration, readDatabaseMigration, subscribeDatabaseMigration,
+} from "../databaseMigration/migrationSignal";
+export { createMigrationGate, type MigrationGate, type MigrationGateDeps } from "../databaseMigration/migrationGate";
+export { checkServerDatabase } from "../databaseMigration/migrationPoller";
+export { useDatabaseMigrationGate, type DatabaseMigrationGateOptions } from "../databaseMigration/useDatabaseMigrationGate";
 
 // Direct streaming config
 export {

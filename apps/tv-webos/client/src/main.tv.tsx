@@ -42,6 +42,7 @@ import { installPlayerKeys } from "./playback/playerKeys";
 import { installSessionRemoteOsd } from "./playback/sessionRemoteOsd";
 import { SessionChannelTv } from "./session/SessionChannelTv";
 import { ScreenErrorBoundaryTv } from "./ui/screens/ScreenErrorBoundaryTv";
+import { DatabaseMigrationGateTv } from "./ui/screens/DatabaseMigrationGateTv";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
 // classes — puis ce que le téléviseur change par-dessus. Importées ici plutôt
 // que chaînées par `@import` : la racine de Vite est `client/`, et un `@import`
@@ -287,6 +288,8 @@ createRoot(document.getElementById("root")!).render(
                 <App />
               </ScreenErrorBoundaryTv>
             </BrowserRouter>
+            {/* La migration de la base du serveur, dans une session ouverte : au-dessus de tout. */}
+            <DatabaseMigrationGateTv />
           </JellyfinClientContext.Provider>
         </TentacleConfigContext.Provider>
       </ThemeProvider>
