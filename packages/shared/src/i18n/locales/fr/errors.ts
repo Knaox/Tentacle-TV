@@ -148,6 +148,7 @@ export default {
   dbMigrationReasonUnreachable: "L'ancienne base ne répond pas. Vérifiez qu'elle est démarrée et joignable par Tentacle.",
   dbMigrationReasonConfig: "Un réglage de connexion à l'ancienne base n'est pas compris. Le journal du serveur dit lequel.",
   dbMigrationReasonTooOld: "Cette installation est trop ancienne pour passer directement à cette version : installez d'abord la version 1.24, démarrez-la une fois, puis revenez à celle-ci.",
+  dbMigrationReasonMissing: "Cette installation utilisait une base MariaDB qui n'est plus configurée : ses données y sont toujours. Remettez le service de la base et ses variables (DB_HOST, DB_PASSWORD_FILE ou DATABASE_URL) le temps de la migration, puis redémarrez Tentacle.",
   dbMigrationReasonDiskSpace: "Il n'y a pas assez de place sur le disque du serveur. Libérez de l'espace : le prochain essai repartira.",
   dbMigrationReasonOther: "Le journal du serveur (lignes [db-migration]) dit pourquoi.",
 } as const;

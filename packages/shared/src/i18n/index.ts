@@ -20,6 +20,7 @@ const NAMESPACES = [
   "setupWizard",
   "requests",
   "adminOverview",
+  "adminDatabaseMigration",
   "notices",
   "family",
   "familyWeb",

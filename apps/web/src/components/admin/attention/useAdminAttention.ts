@@ -15,6 +15,7 @@ import { useServerUpdate } from "../serverUpdate/serverUpdateApi";
 import { useKeyHealth } from "../services/useServicesData";
 import { useServerLinks } from "../../serverLinks/useServerLinks";
 import { readAdminKeyCheck } from "./attentionSources";
+import { migrationAttention, useDatabaseMigration, type DatabaseMigrationSummary } from "../services/databaseMigrationApi";
 
 /**
  * Ce qui demande l'attention, lu sur les routes existantes — les MÊMES
@@ -42,6 +43,8 @@ export interface AttentionContext {
   setup: JellyfinSetupReport | null;
   /** L'état de Jellyfin et de la base n'a pas pu se lire. */
   servicesFailed: boolean;
+  /** La migration de la base (serveur 1.25) : la marche à suivre pour retirer MariaDB. */
+  databaseMigration: DatabaseMigrationSummary | null;
 }
 
 export function useAdminAttention(): { attention: AdminAttention; context: AttentionContext } {
@@ -59,7 +62,9 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
   const jellyfin = useIsHintDismissed("adminJellyfin");
   const segmentPlugins = useIsHintDismissed("adminSegmentPlugins");
   const directPlay = useIsHintDismissed("adminDirectPlay");
-  const hintsKnown = [publicUrl, tmdbKey, jellyfin, segmentPlugins, directPlay].every((value) => value !== undefined);
+  const removeMariadb = useIsHintDismissed("adminRemoveMariadb");
+  const migration = useDatabaseMigration();
+  const hintsKnown = [publicUrl, tmdbKey, jellyfin, segmentPlugins, directPlay, removeMariadb].every((value) => value !== undefined);
   const [hintsGraceOver, setHintsGraceOver] = useState(false);
   useEffect(() => {
     if (hintsKnown) return;
@@ -68,8 +73,11 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
   }, [hintsKnown]);
   const dismissed = useMemo(() => {
     const or = (value: boolean | undefined) => value ?? (hintsGraceOver ? false : undefined);
-    return { publicUrl: or(publicUrl), tmdbKey: or(tmdbKey), jellyfin: or(jellyfin), segmentPlugins: or(segmentPlugins), directPlay: or(directPlay) };
-  }, [publicUrl, tmdbKey, jellyfin, segmentPlugins, directPlay, hintsGraceOver]);
+    return {
+      publicUrl: or(publicUrl), tmdbKey: or(tmdbKey), jellyfin: or(jellyfin), segmentPlugins: or(segmentPlugins),
+      directPlay: or(directPlay), removeMariadb: or(removeMariadb),
+    };
+  }, [publicUrl, tmdbKey, jellyfin, segmentPlugins, directPlay, removeMariadb, hintsGraceOver]);
 
   const checks = useMemo(() => (links.data ? evaluateServerLinks(links.data) : null), [links.data]);
   const report = update.data;
@@ -98,11 +106,12 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
       jellyfinVersion: compat.isPending ? undefined : (installed?.status ?? null),
       serverUpdate: update.isPending ? undefined : (verdict?.status ?? null),
       refusedExtensions: refused.loading ? undefined : refused.data,
+      databaseMigration: migrationAttention(migration.data),
       capabilities,
       dismissed,
     }),
     [services.loading, services.data, refused.loading, refused.data, key.isPending, key.data, metadata.isPending, metadata.data, links.isPending, checks,
-      setup.isPending, setupReport, compat.isPending, installed, update.isPending, verdict, capabilities, dismissed],
+      setup.isPending, setupReport, compat.isPending, installed, update.isPending, verdict, migration.data, capabilities, dismissed],
   );
 
   const context = useMemo<AttentionContext>(
@@ -114,8 +123,9 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
       links: checks,
       setup: setupReport,
       servicesFailed: !services.loading && services.data === null,
+      databaseMigration: migration.data ?? null,
     }),
-    [services.loading, services.data, installed, report, verdict, checks, setupReport],
+    [services.loading, services.data, installed, report, verdict, checks, setupReport, migration.data],
   );
   return { attention, context };
 }

@@ -17,6 +17,8 @@ import { isTrustedProxy } from "./services/trustedProxies";
 import { getDatabaseFilePath, initPrisma, retryDatabaseOpen } from "./services/db";
 import { legacySourceState } from "./services/database/legacySource";
 import { migrateBeforeBoot } from "./dbMigration/bootMigration";
+import { consumeRemigrationRequest, startPostMigrationTasks } from "./dbMigration/postMigration";
+import { holdOrphanedInstallation, orphanedLegacyInstallation } from "./dbMigration/orphanedSource";
 import { startMigrationMaintenance } from "./dbMigration/maintenance/startMigrationMaintenance";
 import { databaseStorage } from "./services/database/storageMount";
 import { applyPairingEpoch } from "./services/pairingEpoch";
@@ -91,7 +93,10 @@ async function main() {
   // Une MariaDB d'avant 1.25 attend sa migration : un serveur de MAINTENANCE à
   // part la mène (écran d'attente ; ni Prisma, ni route du cœur, ni extension)
   // et se ferme à la bascule. Le démarrage normal reprend ici, sur la base née.
+  consumeRemigrationRequest();
   if (legacySourceState() === "pending") await migrateBeforeBoot({ startMaintenance: () => startMigrationMaintenance(PORT, HOST) });
+  // Une installation qui AVAIT une MariaDB, plus configurée : jamais une base vide à sa place.
+  else if (orphanedLegacyInstallation()) await holdOrphanedInstallation(() => startMigrationMaintenance(PORT, HOST));
 
   const app = Fastify({
     logger: {
@@ -336,6 +341,8 @@ async function main() {
 
   // Start background workers only when fully configured
   if (state === "running") {
+    // Une base née d'une migration : le cache TMDB copié en fond, l'ancienne base contrôlée.
+    startPostMigrationTasks();
     startBackgroundServices();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);

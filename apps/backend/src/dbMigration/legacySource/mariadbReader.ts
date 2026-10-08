@@ -87,6 +87,14 @@ export class MariadbReader {
     return rows.length ? String(rows[0][0]) : null;
   }
 
+  /** Lignes déjà parcourues jusqu'au curseur (clé ≤ curseur) : la reprise d'une copie de fond. */
+  async countBefore(table: SourceTable, after: unknown[]): Promise<number> {
+    if (table.keyColumns.length === 0) return 0;
+    const { clause, params } = afterKey(table.keyColumns, after);
+    const [[n]] = (await this.rows(`SELECT COUNT(*) FROM ${quoteId(table.name)} WHERE NOT (${clause})`, params)) as [[bigint | number]];
+    return Number(n);
+  }
+
   /** Nombre exact de lignes, dans l'instantané. */
   async count(table: string): Promise<number> {
     const [[n]] = (await this.rows(`SELECT COUNT(*) FROM ${quoteId(table)}`)) as [[bigint | number]];

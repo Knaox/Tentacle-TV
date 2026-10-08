@@ -27,7 +27,7 @@ export interface PublicDatabaseState {
   progress?: PublicProgress;
   /** Échec seulement : de quoi choisir la phrase de l'écran (ex. passer d'abord par la 1.24). */
   reason?: MigrationFailureReason;
-  /** Échec seulement : le prochain essai automatique, en secondes. */
+  /** Échec seulement : le prochain essai automatique, en secondes — absent quand il n'y en a pas (`source_missing`). */
   retryInSeconds?: number;
 }
 
@@ -39,7 +39,8 @@ interface InternalState {
   bytesDone: number;
   bytesTotal: number;
   reason?: MigrationFailureReason;
-  retryAt?: number;
+  /** `null` : pas de nouvel essai automatique (seul un redémarrage de la pile corrigée change la donne). */
+  retryAt?: number | null;
 }
 
 let current: InternalState = { state: "ready", startedAt: 0, tablesDone: 0, tablesTotal: 0, bytesDone: 0, bytesTotal: 0 };
@@ -58,7 +59,7 @@ export function migrationProgressed(p: { tablesDone: number; tablesTotal: number
   current = { ...current, ...p };
 }
 
-export function migrationFailed(reason: MigrationFailureReason, retryAt: number): void {
+export function migrationFailed(reason: MigrationFailureReason, retryAt: number | null): void {
   current = { ...current, state: "failed", reason, retryAt };
 }
 
@@ -85,7 +86,9 @@ export function publicDatabaseState(now = Date.now()): PublicDatabaseState {
     state: "failed",
     progress,
     reason: current.reason ?? "unknown",
-    retryInSeconds: Math.max(0, Math.round(((current.retryAt ?? now) - now) / 1000)),
+    ...(current.retryAt === null || current.retryAt === undefined
+      ? {}
+      : { retryInSeconds: Math.max(0, Math.round((current.retryAt - now) / 1000)) }),
   };
 }
 

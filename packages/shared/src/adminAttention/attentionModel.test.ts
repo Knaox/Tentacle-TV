@@ -40,7 +40,7 @@ describe("ce qui demande l'attention de l'administrateur", () => {
 
   it("chaque recommandation se masque par un rappel de la liste fermée", () => {
     for (const hint of Object.values(RECOMMENDATION_HINTS)) expect(DISMISSIBLE_HINTS).toContain(hint);
-    expect(new Set(Object.values(RECOMMENDATION_HINTS)).size).toBe(5);
+    expect(new Set(Object.values(RECOMMENDATION_HINTS)).size).toBe(Object.keys(RECOMMENDATION_HINTS).length);
   });
 
   it("HTTP seulement : une recommandation, avec son souci", () => {

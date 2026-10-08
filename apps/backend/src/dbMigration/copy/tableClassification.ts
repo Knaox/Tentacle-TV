@@ -21,6 +21,17 @@ export const RETIRED_CORE_TABLES = new Set([
   "_prisma_migrations", // une base de développement passée par `prisma migrate dev`
 ]);
 
+/**
+ * Les tables d'extensions CONNUES (Vigie). Toute autre table hors cœur — une
+ * extension inconnue, ou une autre application qui partage la base — est
+ * recopiée quand même, PAR PRÉCAUTION, et le rapport la dit « non reconnue ».
+ */
+export const KNOWN_EXTENSION_PREFIXES = ["seer_"];
+
+export function isRecognizedExtension(table: string): boolean {
+  return KNOWN_EXTENSION_PREFIXES.some((prefix) => table.startsWith(prefix));
+}
+
 /** Tables que l'HÔTE tient lui-même : elles naissent vides, jamais recopiées d'une source. */
 export const HOST_BOOKKEEPING_TABLES = new Set(["core_migrations", "plugin_migrations"]);
 
