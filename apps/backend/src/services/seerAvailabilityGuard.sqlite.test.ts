@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openTestDatabase, type TestDatabase } from "./pluginStorage/sqliteTestExecutor";
+import { resolveSeerContent } from "./seerAvailabilityGuard";
 
 /*
  * Le cœur lit `seer_requests` (table de Vigie) par l'identifiant d'une
@@ -10,20 +11,21 @@ import { openTestDatabase, type TestDatabase } from "./pluginStorage/sqliteTestE
  * table absente retombe sur les claims, sans erreur.
  */
 
-let db: TestDatabase;
+const holder = vi.hoisted(() => ({ db: null as TestDatabase | null }));
 
 vi.mock("./db", () => ({
   getPrisma: () => ({
-    $queryRawUnsafe: async (sql: string, ...params: unknown[]) => db.prepare(sql).all(...params),
+    $queryRawUnsafe: async (sql: string, ...params: unknown[]) => holder.db!.prepare(sql).all(...params),
   }),
 }));
 
-const { resolveSeerContent } = await import("./seerAvailabilityGuard");
-
 const UUID = "3f0c2a9e-6b1d-4c8e-9f3a-2b7d5e1c0a44";
+
+let db: TestDatabase;
 
 beforeEach(() => {
   db = openTestDatabase();
+  holder.db = db;
 });
 afterEach(() => db.close());
 

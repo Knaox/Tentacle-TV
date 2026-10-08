@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { declaresSqliteSupport, refusedPlugins, storageRefusal } from "./gate";
 
 /*
  * La garde, FERMÉE : une extension à module serveur qui ne déclare pas
@@ -6,8 +7,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * identifiant invalide vaut refus.
  */
 
-const manifests = new Map<string, Record<string, unknown> | null>();
-const serverModules = new Set<string>();
+const { manifests, serverModules } = vi.hoisted(() => ({
+  manifests: new Map<string, Record<string, unknown> | null>(),
+  serverModules: new Set<string>(),
+}));
 
 vi.mock("../pluginServerModule", () => ({
   readPluginManifest: (id: string) => manifests.get(id) ?? null,
@@ -23,7 +26,6 @@ vi.mock("../pluginManager", () => ({
   ],
 }));
 
-const { declaresSqliteSupport, refusedPlugins, storageRefusal } = await import("./gate");
 
 beforeEach(() => {
   manifests.clear();
