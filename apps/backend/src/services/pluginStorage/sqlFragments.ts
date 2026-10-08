@@ -1,31 +1,23 @@
-import type { IntervalUnit, StorageDialect, StorageSql, UpsertSpec } from "./types";
+import type { IntervalUnit, StorageSql, UpsertSpec } from "./types";
 
 /**
- * Les tournures non portables, écrites pour chaque moteur.
+ * Les tournures qu'une extension doit écrire comme le cœur (DECISION.md § 2) :
+ * une date est un INTEGER, millisecondes epoch UTC — jamais `CURRENT_TIMESTAMP`,
+ * `datetime('now')` ni une chaîne : en SQLite un TEXT est toujours plus grand
+ * qu'un INTEGER, une date en texte fausserait toute comparaison.
  *
- * MariaDB garde la main sur son horloge (`NOW(3)`), comme avant : les lignes
- * déjà écrites par `CURRENT_TIMESTAMP` sont dans SON fuseau, une date calculée
- * ici en UTC les décalerait. SQLite n'a pas de fuseau : l'instant se calcule
- * en JavaScript et s'écrit LITTÉRAL, au format que la base garde — un nombre
- * ou une chaîne fabriqués ici, jamais une entrée de l'utilisateur.
- *
- * Le début du jour suit le fuseau du SERVEUR des deux côtés : « maintenant,
- * moins le temps écoulé depuis minuit (heure locale du processus) ». MariaDB
- * le calcule sur sa propre horloge, quel que soit son fuseau.
+ * « Maintenant » se lit sur l'horloge de SQLite (`unixepoch('subsec')`,
+ * SQLite ≥ 3.42). Le début du jour suit le fuseau du SERVEUR : il se calcule
+ * ici et s'écrit en entier littéral — un nombre fabriqué ici, jamais une entrée.
  */
 
-/** Comment SQLite garde une date — figé par la note de décision du socle. */
-export type DateStorageFormat = "iso8601" | "epoch-ms";
+const NOW_MS = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";
 
 const UNIT_MS: Record<IntervalUnit, number> = {
   second: 1_000,
   minute: 60_000,
   hour: 3_600_000,
   day: 86_400_000,
-};
-
-const MYSQL_UNIT: Record<IntervalUnit, string> = {
-  second: "SECOND", minute: "MINUTE", hour: "HOUR", day: "DAY",
 };
 
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -36,20 +28,11 @@ export function assertIdentifier(name: string): string {
   return name;
 }
 
-/** Millisecondes écoulées depuis minuit, heure locale du processus. */
-export function msSinceLocalMidnight(now: Date): number {
+/** Minuit du jour de `now`, heure locale du processus (changements d'heure compris). */
+export function localMidnight(now: Date): Date {
   const midnight = new Date(now);
   midnight.setHours(0, 0, 0, 0);
-  return now.getTime() - midnight.getTime();
-}
-
-export function formatDate(date: Date, format: DateStorageFormat): string | number {
-  return format === "epoch-ms" ? date.getTime() : date.toISOString();
-}
-
-function sqliteLiteral(date: Date, format: DateStorageFormat): string {
-  const value = formatDate(date, format);
-  return typeof value === "number" ? String(value) : `'${value}'`;
+  return midnight;
 }
 
 function integer(amount: number): number {
@@ -57,52 +40,48 @@ function integer(amount: number): number {
   return Math.trunc(amount);
 }
 
-function upsertSql(dialect: StorageDialect, spec: UpsertSpec): string {
+function upsertSql(spec: UpsertSpec, now: string): string {
   const table = assertIdentifier(spec.table);
   const columns = spec.columns.map(assertIdentifier);
-  const insert = `INSERT INTO ${table} (${columns.join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`;
-  const proposed = (col: string) => (dialect === "mysql" ? `VALUES(${col})` : `excluded.${col}`);
-  const sets = spec.update.map((entry) => {
-    const [col, expr] = typeof entry === "string" ? [entry, `{new:${entry}}`] : entry;
-    const resolved = expr.replace(/\{new:([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, name: string) => proposed(name));
-    return `${assertIdentifier(col)} = ${resolved}`;
-  });
-  if (dialect === "mysql") {
-    // Sans mise à jour, MariaDB réaffecte la clé à elle-même : l'équivalent de « ignorer ».
-    const fallback = `${assertIdentifier(spec.conflict[0] ?? columns[0])} = ${assertIdentifier(spec.conflict[0] ?? columns[0])}`;
-    return `${insert} ON DUPLICATE KEY UPDATE ${sets.length > 0 ? sets.join(", ") : fallback}`;
-  }
+  const rows = Math.max(1, Math.trunc(spec.rows ?? 1));
+  const tuple = `(${columns.map(() => "?").join(", ")})`;
+  const insert = `INSERT INTO ${table} (${columns.join(", ")}) VALUES ${Array.from({ length: rows }, () => tuple).join(", ")}`;
   if (spec.conflict.length === 0) throw new Error(`[pluginStorage] upsert sur ${table} sans clé de conflit`);
   const target = spec.conflict.map(assertIdentifier).join(", ");
+  const sets = spec.update.map((entry) => {
+    if (typeof entry === "string") return `${assertIdentifier(entry)} = excluded.${entry}`;
+    const [col, expr] = entry;
+    if (expr !== "now") throw new Error(`[pluginStorage] expression d'upsert refusée : ${JSON.stringify(expr)}`);
+    return `${assertIdentifier(col)} = ${now}`;
+  });
   return sets.length > 0
     ? `${insert} ON CONFLICT(${target}) DO UPDATE SET ${sets.join(", ")}`
     : `${insert} ON CONFLICT(${target}) DO NOTHING`;
 }
 
-export function createStorageSql(
-  dialect: StorageDialect,
-  format: DateStorageFormat,
-  clock: () => Date = () => new Date(),
-): StorageSql {
-  if (dialect === "mysql") {
-    return {
-      now: () => "NOW(3)",
-      shiftedNow: (amount, unit) => `DATE_ADD(NOW(3), INTERVAL ${integer(amount)} ${MYSQL_UNIT[unit]})`,
-      startOfToday: () => `DATE_SUB(NOW(3), INTERVAL ${msSinceLocalMidnight(clock()) * 1000} MICROSECOND)`,
-      upsert: (spec) => upsertSql(dialect, spec),
-      insertIgnore: () => "INSERT IGNORE",
-      dateParam: (date) => date,
-    };
-  }
+/** Une date relue : entier (ms), `Date`, ou texte d'une base d'avant ; `null` si illisible. */
+export function readDate(value: unknown): Date | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (typeof value === "number" || typeof value === "bigint") return new Date(Number(value));
+  if (typeof value !== "string") return null;
+  if (/^\d+$/.test(value)) return new Date(Number(value));
+  // 'AAAA-MM-JJ HH:MM:SS' sans fuseau : UTC, comme l'écrivaient MariaDB et SQLite.
+  const text = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(value) && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value)
+    ? `${value.replace(" ", "T")}Z`
+    : value;
+  const date = new Date(text);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function createStorageSql(clock: () => Date = () => new Date()): StorageSql {
   return {
-    now: () => sqliteLiteral(clock(), format),
-    shiftedNow: (amount, unit) => sqliteLiteral(new Date(clock().getTime() + integer(amount) * UNIT_MS[unit]), format),
-    startOfToday: () => {
-      const now = clock();
-      return sqliteLiteral(new Date(now.getTime() - msSinceLocalMidnight(now)), format);
-    },
-    upsert: (spec) => upsertSql(dialect, spec),
+    now: () => NOW_MS,
+    shiftedNow: (amount, unit) => `(${NOW_MS} + ${integer(amount) * UNIT_MS[unit]})`,
+    startOfToday: () => String(localMidnight(clock()).getTime()),
+    upsert: (spec) => upsertSql(spec, NOW_MS),
     insertIgnore: () => "INSERT OR IGNORE",
-    dateParam: (date) => formatDate(date, format),
+    dateParam: (date) => date.getTime(),
+    readDate,
   };
 }

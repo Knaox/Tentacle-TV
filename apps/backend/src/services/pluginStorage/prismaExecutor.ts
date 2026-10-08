@@ -3,13 +3,11 @@ import type { RawExecutor } from "./createPluginStorage";
 
 /**
  * L'interface de stockage sur le client Prisma du cœur : SQL brut, paramètres
- * `?` (les deux moteurs les comprennent), transaction interactive courte.
+ * `?`, transaction interactive courte (la connexion est unique : pendant
+ * qu'elle tourne, les autres requêtes du processus attendent leur tour).
  */
 
 type RawClient = Pick<PrismaClient, "$queryRawUnsafe" | "$executeRawUnsafe">;
-
-/** Une transaction ne se prolonge pas : au-delà, elle bloquerait les autres écritures. */
-const TRANSACTION_TIMEOUT_MS = 10_000;
 
 function over(client: RawClient, open: ((fn: (tx: RawClient) => Promise<unknown>) => Promise<unknown>) | null): RawExecutor {
   const executor: RawExecutor = {
@@ -23,5 +21,6 @@ function over(client: RawClient, open: ((fn: (tx: RawClient) => Promise<unknown>
 }
 
 export function prismaExecutor(prisma: PrismaClient): RawExecutor {
-  return over(prisma, (fn) => prisma.$transaction((tx) => fn(tx), { timeout: TRANSACTION_TIMEOUT_MS }));
+  // Délais du client (`transactionOptions`, DECISION.md § 4) : une transaction ne se prolonge pas.
+  return over(prisma, (fn) => prisma.$transaction((tx) => fn(tx)));
 }

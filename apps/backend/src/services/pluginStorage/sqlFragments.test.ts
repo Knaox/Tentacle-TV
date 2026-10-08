@@ -1,65 +1,56 @@
 import { describe, expect, it, vi } from "vitest";
-import { createStorageSql, msSinceLocalMidnight } from "./sqlFragments";
+import { createStorageSql, localMidnight, readDate } from "./sqlFragments";
 import { isSqliteBusy, withBusyRetry } from "./busyRetry";
 
 const clock = () => new Date("2026-10-08T14:30:00.250Z");
+const sql = createStorageSql(clock);
 
-describe("tournures MariaDB : le comportement d'avant", () => {
-  const sql = createStorageSql("mysql", "iso8601", clock);
-
-  it("l'horloge reste celle de la base", () => {
-    expect(sql.now()).toBe("NOW(3)");
-    expect(sql.shiftedNow(-7, "day")).toBe("DATE_ADD(NOW(3), INTERVAL -7 DAY)");
-  });
-
-  it("le début du jour suit le fuseau du serveur, pas celui de la base", () => {
-    const micros = msSinceLocalMidnight(clock()) * 1000;
-    expect(sql.startOfToday()).toBe(`DATE_SUB(NOW(3), INTERVAL ${micros} MICROSECOND)`);
-  });
-
-  it("upsert par ON DUPLICATE KEY UPDATE", () => {
-    expect(sql.upsert({ table: "t", columns: ["k", "v"], conflict: ["k"], update: ["v"] }))
-      .toBe("INSERT INTO t (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)");
-    expect(sql.upsert({ table: "t", columns: ["k", "v"], conflict: ["k"], update: [] }))
-      .toBe("INSERT INTO t (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE k = k");
-    expect(sql.insertIgnore()).toBe("INSERT IGNORE");
-  });
-});
-
-describe("tournures SQLite : l'instant calculé ici, au format de la base", () => {
-  it("ISO 8601", () => {
-    const sql = createStorageSql("sqlite", "iso8601", clock);
-    expect(sql.now()).toBe("'2026-10-08T14:30:00.250Z'");
-    expect(sql.shiftedNow(-1, "hour")).toBe("'2026-10-08T13:30:00.250Z'");
-    expect(sql.dateParam(clock())).toBe("2026-10-08T14:30:00.250Z");
-  });
-
-  it("millisecondes epoch", () => {
-    const sql = createStorageSql("sqlite", "epoch-ms", clock);
-    expect(sql.now()).toBe(String(clock().getTime()));
-    expect(sql.shiftedNow(2, "minute")).toBe(String(clock().getTime() + 120_000));
+describe("tournures SQLite : des dates en millisecondes entières", () => {
+  it("maintenant et l'intervalle se calculent sur l'horloge de la base", () => {
+    expect(sql.now()).toBe("CAST(unixepoch('subsec') * 1000 AS INTEGER)");
+    expect(sql.shiftedNow(-1, "hour")).toBe("(CAST(unixepoch('subsec') * 1000 AS INTEGER) + -3600000)");
+    expect(sql.dateParam(clock())).toBe(clock().getTime());
+    expect(() => sql.shiftedNow(Number.NaN, "day")).toThrow(/intervalle invalide/);
   });
 
   it("le début du jour est minuit, heure du serveur", () => {
-    const sql = createStorageSql("sqlite", "epoch-ms", clock);
     const start = new Date(Number(sql.startOfToday()));
     expect([start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds()]).toEqual([0, 0, 0, 0]);
     expect(start.getDate()).toBe(clock().getDate());
+    expect(localMidnight(clock()).getTime()).toBe(start.getTime());
   });
 
-  it("upsert par ON CONFLICT, et refus d'un nom douteux", () => {
-    const sql = createStorageSql("sqlite", "iso8601", clock);
-    expect(sql.upsert({ table: "t", columns: ["k", "v"], conflict: ["k"], update: [["v", "v + {new:v}"]] }))
-      .toBe("INSERT INTO t (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = v + excluded.v");
+  it("upsert : ON CONFLICT, une liste fermée d'expressions, et refus d'un nom douteux", () => {
+    expect(sql.upsert({ table: "t", columns: ["k", "v"], conflict: ["k"], update: ["v", ["at", "now"]] }))
+      .toBe("INSERT INTO t (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v, at = CAST(unixepoch('subsec') * 1000 AS INTEGER)");
+    expect(sql.upsert({ table: "t", columns: ["k"], rows: 2, conflict: ["k"], update: [] }))
+      .toBe("INSERT INTO t (k) VALUES (?), (?) ON CONFLICT(k) DO NOTHING");
     expect(() => sql.upsert({ table: "t;--", columns: ["k"], conflict: ["k"], update: [] })).toThrow(/identifiant refusé/);
-    expect(() => sql.shiftedNow(Number.NaN, "day")).toThrow(/intervalle invalide/);
+    expect(() => sql.upsert({ table: "t", columns: ["k"], conflict: ["k"], update: [["k", "1; DROP" as "now"]] }))
+      .toThrow(/expression d'upsert refusée/);
+    expect(() => sql.upsert({ table: "t", columns: ["k"], conflict: [], update: [] })).toThrow(/sans clé de conflit/);
+    expect(sql.insertIgnore()).toBe("INSERT OR IGNORE");
+  });
+
+  it("relit une date sous toutes ses formes passées", () => {
+    const ms = Date.UTC(2026, 9, 8, 12, 0, 0);
+    expect(readDate(ms)?.getTime()).toBe(ms);
+    expect(readDate(BigInt(ms))?.getTime()).toBe(ms);
+    expect(readDate(String(ms))?.getTime()).toBe(ms);
+    expect(readDate(new Date(ms))?.getTime()).toBe(ms);
+    expect(readDate("2026-10-08 12:00:00")?.getTime()).toBe(ms);
+    expect(readDate("2026-10-08T12:00:00.000Z")?.getTime()).toBe(ms);
+    expect(readDate(null)).toBeNull();
+    expect(readDate("pas une date")).toBeNull();
   });
 });
 
-describe("reprise sur SQLITE_BUSY", () => {
-  it("reconnaît la base occupée, et rien d'autre", () => {
+describe("reprise quand la base est occupée", () => {
+  it("reconnaît la base occupée et l'attente du pool, et rien d'autre", () => {
     expect(isSqliteBusy({ code: "SQLITE_BUSY" })).toBe(true);
+    for (const code of ["P1008", "P2024", "P2028", "P2034"]) expect(isSqliteBusy({ code })).toBe(true);
     expect(isSqliteBusy(new Error("SqliteFailure: database is locked"))).toBe(true);
+    expect(isSqliteBusy({ code: "P2002", message: "Unique constraint failed" })).toBe(false);
     expect(isSqliteBusy(new Error("UNIQUE constraint failed"))).toBe(false);
   });
 

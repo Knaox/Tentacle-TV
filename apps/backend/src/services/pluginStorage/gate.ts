@@ -1,20 +1,18 @@
 import { getInstalled, isValidPluginId } from "../pluginManager";
 import { pluginHasServerModule, readPluginManifest } from "../pluginServerModule";
-import { currentStorageDialect } from "./hostStorage";
-import type { StorageDialect } from "./types";
 
 /**
- * Sur un serveur SQLite, une extension dont le module serveur ne DÉCLARE pas
- * savoir y tourner n'est PAS chargée — ni ses routes, ni ses pages, ni ce
- * qu'elle annonce aux clients : jamais à moitié. L'administration le dit
- * (carte de l'extension, « À régler »), jamais en silence.
+ * Le serveur ne sert que depuis SQLite : une extension dont le module serveur
+ * ne DÉCLARE pas savoir y tourner n'est PAS chargée — ni ses routes, ni ses
+ * pages, ni ce qu'elle annonce aux clients : jamais à moitié. L'administration
+ * le dit (carte de l'extension, « À régler »), jamais en silence.
  *
  * La déclaration, dans `plugin.json` : `"storage": { "sqlite": true }`. Une
  * extension sans module serveur ne touche pas la base : rien à déclarer.
- * Sur MariaDB, rien ne change : toute extension se charge comme avant.
  *
- * Un ancien Vigie (sonde « SELECT puis DROP » au démarrage) ne déclare rien :
- * il ne tournera jamais sur SQLite.
+ * Règle FERMÉE : aucune détection de moteur, rien qui puisse la rouvrir par
+ * défaut. Un ancien Vigie (sonde « SELECT puis DROP » au démarrage) ne déclare
+ * rien : il ne tourne jamais ici. Un identifiant invalide vaut refus.
  */
 
 export type StorageRefusalReason = "sqliteUnsupported";
@@ -26,11 +24,8 @@ export function declaresSqliteSupport(manifest: unknown): boolean {
 }
 
 /** Pourquoi l'extension ne se charge pas sur ce serveur, `null` si elle se charge. */
-export function storageRefusal(
-  pluginId: string,
-  dialect: StorageDialect = currentStorageDialect(),
-): StorageRefusalReason | null {
-  if (dialect !== "sqlite" || !isValidPluginId(pluginId)) return null;
+export function storageRefusal(pluginId: string): StorageRefusalReason | null {
+  if (!isValidPluginId(pluginId)) return "sqliteUnsupported";
   if (!pluginHasServerModule(pluginId)) return null;
   return declaresSqliteSupport(readPluginManifest(pluginId)) ? null : "sqliteUnsupported";
 }
@@ -43,11 +38,10 @@ export interface RefusedPlugin {
 }
 
 /** Les extensions ACTIVÉES que ce serveur refuse de charger. */
-export function refusedPlugins(dialect: StorageDialect = currentStorageDialect()): RefusedPlugin[] {
-  if (dialect !== "sqlite") return [];
+export function refusedPlugins(): RefusedPlugin[] {
   return getInstalled().flatMap((plugin) => {
     if (!plugin.enabled) return [];
-    const reason = storageRefusal(plugin.pluginId, dialect);
+    const reason = storageRefusal(plugin.pluginId);
     return reason ? [{ pluginId: plugin.pluginId, name: plugin.name, version: plugin.version, reason }] : [];
   });
 }

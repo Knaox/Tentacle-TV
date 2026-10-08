@@ -1,55 +1,61 @@
 /**
  * L'interface de stockage que l'hôte prête à une extension (`ctx.storage`).
  *
- * Elle s'ajoute à `getPrisma()`, gardé pour les extensions d'avant : une
- * extension qui la trouve écrit un SQL qui tourne sur les DEUX moteurs, en ne
- * passant par ces aides que pour les seules tournures non portables (upsert,
- * maintenant, intervalle, début du jour). Une extension qui ne la trouve pas
- * (serveur ≤ 1.24) est sur MariaDB et garde son comportement d'avant.
+ * Le serveur ne sert que depuis SQLite (docs/sqlite/DECISION.md) : une
+ * extension y écrit un SQL SQLite, et ne passe par ces aides que pour ce qui
+ * doit rester d'accord avec le cœur — les dates, toujours un INTEGER en
+ * millisecondes epoch UTC (le format que Prisma relit et compare), et les
+ * upserts. `getPrisma()` reste prêté, pour les modèles du cœur.
  *
  * Les noms de ce fichier traversent la frontière d'un module chargé à
  * l'exécution : ils ne se renomment pas, ils s'ajoutent.
  */
 
-export type StorageDialect = "sqlite" | "mysql";
+export type StorageDialect = "sqlite";
 
 export type IntervalUnit = "second" | "minute" | "hour" | "day";
 
-/** Une colonne d'un upsert dont la valeur, en cas de conflit, se recalcule. */
+/**
+ * Ce qu'un upsert pose sur conflit — une liste FERMÉE, jamais du SQL libre :
+ * une colonne seule reprend la valeur proposée (`excluded.col`) ;
+ * `[col, "now"]` y écrit l'instant présent.
+ */
+export type UpsertUpdate = string | readonly [string, "now"];
+
 export interface UpsertSpec {
   table: string;
   /** Colonnes insérées, dans l'ordre des paramètres `?`. */
   columns: readonly string[];
-  /** La clé (primaire ou unique) qui fait le conflit. Exigée par SQLite. */
+  /** Nombre de lignes insérées d'un coup (1 par défaut) : `columns.length × rows` paramètres. */
+  rows?: number;
+  /** La clé (primaire ou unique) qui fait le conflit. */
   conflict: readonly string[];
-  /**
-   * Ce qui change sur conflit : une colonne seule reprend la valeur proposée ;
-   * un couple `[colonne, expression]` pose l'expression, où `{new:col}` désigne
-   * la valeur proposée (`VALUES(col)` / `excluded.col`). Vide : on ignore.
-   */
-  update: ReadonlyArray<string | readonly [string, string]>;
+  /** Ce qui change sur conflit ; vide : la ligne en place est gardée telle quelle. */
+  update: readonly UpsertUpdate[];
 }
 
-/** Les tournures que les deux moteurs n'écrivent pas pareil. */
+/** Les tournures que le cœur et les extensions doivent écrire pareil. */
 export interface StorageSql {
-  /** Instant présent, à écrire dans une colonne de date. */
+  /** Instant présent, en SQL (millisecondes epoch, INTEGER). */
   now(): string;
-  /** Instant présent décalé de `amount` unités (négatif : dans le passé). */
+  /** Instant présent décalé de `amount` unités (négatif : dans le passé), en SQL. */
   shiftedNow(amount: number, unit: IntervalUnit): string;
   /**
-   * Minuit du jour en cours dans le FUSEAU DU SERVEUR (pas celui de la base) :
-   * un quota journalier ne dépend plus de l'horloge de MariaDB ni de l'UTC de SQLite.
+   * Minuit du jour en cours dans le FUSEAU DU SERVEUR, en SQL : un quota
+   * journalier suit l'heure de la maison, pas l'UTC de la base.
    */
   startOfToday(): string;
-  /** `INSERT … ON DUPLICATE KEY UPDATE` / `INSERT … ON CONFLICT DO UPDATE`. */
+  /** `INSERT … ON CONFLICT(…) DO UPDATE SET …` (ou `DO NOTHING`). */
   upsert(spec: UpsertSpec): string;
-  /** `INSERT IGNORE` / `INSERT OR IGNORE` — à faire suivre de ` INTO t …`. */
+  /** `INSERT OR IGNORE` — à faire suivre de ` INTO t …`. */
   insertIgnore(): string;
-  /** Une date JS au format que la base garde (à passer en paramètre `?`). */
-  dateParam(date: Date): unknown;
+  /** Une date JS au format de la base, à lier en paramètre `?`. */
+  dateParam(date: Date): number;
+  /** Une date relue (entier, `Date`, ou texte d'une base ancienne) ; `null` si illisible. */
+  readDate(value: unknown): Date | null;
 }
 
-/** Une migration d'extension : idempotente de préférence, jamais destructrice. */
+/** Une migration d'extension : jamais destructrice de ce qui sert encore. */
 export interface PluginMigration {
   /** 1, 2, 3… : appliquées dans l'ordre, une seule fois chacune. */
   version: number;
@@ -72,7 +78,10 @@ export interface PluginStorageQueries {
 export interface PluginStorage extends PluginStorageQueries {
   /** Version de l'interface : 1. Une aide nouvelle se teste avant usage. */
   readonly version: 1;
-  /** Transaction courte, reprise d'elle-même si la base est occupée. */
+  /**
+   * Transaction COURTE, reprise d'elle-même si la base est occupée. Jamais
+   * d'appel réseau dedans : la base n'a qu'une connexion, tout attendrait.
+   */
   transaction<T>(fn: (tx: PluginStorageQueries) => Promise<T>): Promise<T>;
   /** Applique les migrations pas encore passées ; rend les versions appliquées. */
   migrate(migrations: readonly PluginMigration[]): Promise<number[]>;

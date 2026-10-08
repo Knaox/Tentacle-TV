@@ -1,20 +1,22 @@
 /**
- * Reprise quand SQLite est occupé. Le mode WAL laisse lire pendant une
- * écriture, mais deux écritures se suivent : au-delà de `busy_timeout`, la
- * seconde reçoit SQLITE_BUSY. Les extensions écrivent en parallèle dans le
- * même processus (worker de Vigie, écritures de fond) : une erreur passagère
- * ne doit jamais remonter jusqu'à elles.
+ * Reprise quand SQLite est occupé. Le serveur n'a qu'une connexion : dans le
+ * processus, les requêtes font la queue ; une attente trop longue, ou un autre
+ * processus qui tient le verrou (la CLI), rend une erreur passagère qui ne doit
+ * jamais remonter jusqu'à une extension (worker de Vigie, écritures de fond).
  *
- * Les messages varient selon la couche (moteur de Prisma, adaptateur, pilote
- * natif) : on reconnaît le code SQLite et ses formulations, rien d'autre.
+ * Ce qui se rejoue (DECISION.md § 5) : P1008 (`busy_timeout` dépassé : un
+ * autre processus tient le verrou), P2028 et P2024 (attente du pool de la
+ * connexion unique), P2034, et le code SQLite lui-même. Rien d'autre : une
+ * unicité violée (P2002) ou une erreur de syntaxe ne se rejouent jamais.
  */
 
+const RETRYABLE_PRISMA_CODES = new Set(["P1008", "P2024", "P2028", "P2034"]);
 const BUSY_PATTERNS = [/SQLITE_BUSY/i, /SQLITE_LOCKED/i, /database is locked/i, /database table is locked/i, /DatabaseBusy/];
 
 export function isSqliteBusy(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
   const { code, message } = err as { code?: unknown; message?: unknown };
-  if (typeof code === "string" && /^SQLITE_(BUSY|LOCKED)/.test(code)) return true;
+  if (typeof code === "string" && (/^SQLITE_(BUSY|LOCKED)/.test(code) || RETRYABLE_PRISMA_CODES.has(code))) return true;
   return typeof message === "string" && BUSY_PATTERNS.some((pattern) => pattern.test(message));
 }
 

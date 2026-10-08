@@ -66,7 +66,7 @@ function seed(pluginId: string, v: string): InstalledPlugin {
   };
   saveInstalled([...getInstalled(), plugin]);
   mkdirSync(join(DATA_DIR, pluginId), { recursive: true });
-  writeFileSync(join(DATA_DIR, pluginId, "plugin.json"), JSON.stringify({ server: "server/index.mjs" }));
+  writeFileSync(join(DATA_DIR, pluginId, "plugin.json"), JSON.stringify({ server: "server/index.mjs", storage: { sqlite: true } }));
   return plugin;
 }
 

@@ -3,8 +3,7 @@
 -- Pourquoi ce fichier au lieu de `prisma db push` ?
 -- `prisma db push` synchronise TOUTE la base sur schema.prisma et SUPPRIME les
 -- tables qui n'y sont pas declarees. Or les tables du plugin Seer
--- (seer_requests, seer_cleanup_queue, seer_user_settings, seer_tmdb_cache,
--- seer_search_titles, seer_search_meta) sont creees et gerees
+-- (seer_requests, seer_cleanup_queue, seer_user_settings) sont creees et gerees
 -- par le plugin lui-meme (raw SQL, colonnes snake_case) et ne sont volontairement
 -- PAS dans schema.prisma. Un db push les droperait (ou echouerait sur les donnees).
 --
@@ -844,14 +843,3 @@ DELETE FROM `server_config` WHERE `key` IN (
   'theme_active_name', 'theme_active_tokens_override', 'theme_active_css_source',
   'theme_active_css_content', 'theme_active_css_url', 'theme_active_css_hash'
 );
-
--- 1.25 : les migrations versionnées des extensions (interface de stockage,
--- services/pluginStorage/migrations.ts). L'hôte n'y fait que noter les versions
--- passées ; les tables de l'extension restent les siennes.
-CREATE TABLE IF NOT EXISTS `plugin_migrations` (
-  `pluginId` varchar(191) NOT NULL,
-  `version` int(11) NOT NULL,
-  `name` varchar(191) NOT NULL,
-  `appliedAt` datetime(3) NOT NULL,
-  PRIMARY KEY (`pluginId`, `version`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

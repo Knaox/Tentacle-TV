@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /*
- * La garde : sur SQLite, une extension à module serveur qui ne déclare pas
- * `storage.sqlite` ne se charge pas ; sur MariaDB, tout se charge comme avant.
+ * La garde, FERMÉE : une extension à module serveur qui ne déclare pas
+ * `storage.sqlite` ne se charge pas, sans détection de moteur ; un
+ * identifiant invalide vaut refus.
  */
 
 const manifests = new Map<string, Record<string, unknown> | null>();
@@ -21,7 +22,6 @@ vi.mock("../pluginManager", () => ({
     { pluginId: "off", name: "Éteinte", version: "1.0.0", enabled: false },
   ],
 }));
-vi.mock("./hostStorage", () => ({ currentStorageDialect: () => "sqlite" }));
 
 const { declaresSqliteSupport, refusedPlugins, storageRefusal } = await import("./gate");
 
@@ -44,20 +44,20 @@ describe("déclaration au manifeste", () => {
   });
 });
 
-describe("refus sur SQLite", () => {
+describe("refus", () => {
   it("refuse un module serveur non déclaré, laisse passer le déclaré et les pages seules", () => {
     expect(storageRefusal("seer")).toBe("sqliteUnsupported");
     expect(storageRefusal("ready")).toBeNull();
     expect(storageRefusal("pages")).toBeNull();
   });
 
-  it("MariaDB : rien n'est refusé", () => {
-    expect(storageRefusal("seer", "mysql")).toBeNull();
-    expect(refusedPlugins("mysql")).toEqual([]);
+  it("un identifiant invalide vaut refus, jamais un passage", () => {
+    expect(storageRefusal("../seer")).toBe("sqliteUnsupported");
+    expect(storageRefusal("")).toBe("sqliteUnsupported");
   });
 
   it("liste les extensions ACTIVÉES refusées, et elles seules", () => {
-    expect(refusedPlugins("sqlite")).toEqual([
+    expect(refusedPlugins()).toEqual([
       { pluginId: "seer", name: "Vigie", version: "1.24.1", reason: "sqliteUnsupported" },
     ]);
   });

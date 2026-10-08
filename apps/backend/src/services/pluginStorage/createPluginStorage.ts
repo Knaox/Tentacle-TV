@@ -1,7 +1,7 @@
 import { withBusyRetry, type BusyRetryOptions } from "./busyRetry";
-import { assertIdentifier, createStorageSql, type DateStorageFormat } from "./sqlFragments";
+import { assertIdentifier, createStorageSql } from "./sqlFragments";
 import { runPluginMigrations } from "./migrations";
-import type { PluginStorage, PluginStorageQueries, StorageDialect } from "./types";
+import type { PluginStorage, PluginStorageQueries } from "./types";
 
 /**
  * Ce que l'interface attend de la base : deux appels bruts et une transaction.
@@ -16,8 +16,6 @@ export interface RawExecutor {
 
 export interface PluginStorageOptions {
   pluginId: string;
-  dialect: StorageDialect;
-  dateFormat: DateStorageFormat;
   executor: RawExecutor;
   clock?: () => Date;
   retry?: BusyRetryOptions;
@@ -34,7 +32,6 @@ export function normalizeRow(row: Record<string, unknown>): Record<string, unkno
 
 function queriesOver(
   executor: RawExecutor,
-  dialect: StorageDialect,
   sql: PluginStorageQueries["sql"],
   retry: BusyRetryOptions | undefined,
   inTransaction: boolean,
@@ -44,18 +41,11 @@ function queriesOver(
   const query = async <T>(text: string, ...params: unknown[]) =>
     (await guarded(() => executor.query(text, params))).map(normalizeRow) as T[];
   const columns = async (table: string): Promise<string[]> => {
-    const name = assertIdentifier(table);
-    const rows = dialect === "mysql"
-      ? await query<{ name: string }>(
-        "SELECT COLUMN_NAME AS name FROM information_schema.COLUMNS"
-          + " WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION",
-        name,
-      )
-      : await query<{ name: string }>("SELECT name FROM pragma_table_info(?) ORDER BY cid", name);
+    const rows = await query<{ name: string }>("SELECT name FROM pragma_table_info(?) ORDER BY cid", assertIdentifier(table));
     return rows.map((row) => String(row.name));
   };
   return {
-    dialect,
+    dialect: "sqlite",
     sql,
     query,
     execute: (text, ...params) => guarded(() => executor.execute(text, params)),
@@ -65,11 +55,11 @@ function queriesOver(
 }
 
 export function createPluginStorage(options: PluginStorageOptions): PluginStorage {
-  const { executor, dialect, retry } = options;
-  const sql = createStorageSql(dialect, options.dateFormat, options.clock);
-  const base = queriesOver(executor, dialect, sql, retry, false);
+  const { executor, retry } = options;
+  const sql = createStorageSql(options.clock);
+  const base = queriesOver(executor, sql, retry, false);
   const transaction: PluginStorage["transaction"] = (fn) =>
-    withBusyRetry(() => executor.transaction((tx) => fn(queriesOver(tx, dialect, sql, retry, true))), retry);
+    withBusyRetry(() => executor.transaction((tx) => fn(queriesOver(tx, sql, retry, true))), retry);
   const storage: PluginStorage = {
     ...base,
     version: 1,

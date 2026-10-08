@@ -5,10 +5,8 @@ import type { PluginMigration, PluginStorage, PluginStorageQueries } from "./typ
  * `plugin_migrations` (une ligne par extension et par version passée).
  *
  * - Chacune ne passe qu'une fois ; une version déjà notée n'est jamais rejouée.
- * - Sur SQLite, la migration et sa trace partent dans la MÊME transaction :
- *   une migration qui échoue ne laisse rien à moitié. MariaDB valide d'office
- *   chaque ordre DDL : la trace suit la migration, qui doit donc être
- *   idempotente (IF NOT EXISTS, colonne cherchée avant d'être ajoutée).
+ * - La migration et sa trace partent dans la MÊME transaction (SQLite tient
+ *   le DDL en transaction) : une migration qui échoue ne laisse rien à moitié.
  * - Une table venue d'ailleurs (copie de la migration MariaDB → SQLite, base
  *   d'avant cette interface) n'a aucune trace : la première migration la
  *   RECONNAÎT et la complète, elle ne la recrée pas.
@@ -69,15 +67,10 @@ async function applyPending(
   for (const migration of sorted) {
     if (done.has(migration.version)) continue;
     try {
-      if (storage.dialect === "sqlite") {
-        await storage.transaction(async (tx) => {
-          await migration.up(tx);
-          await record(tx, pluginId, migration);
-        });
-      } else {
-        await migration.up(storage);
-        await record(storage, pluginId, migration);
-      }
+      await storage.transaction(async (tx) => {
+        await migration.up(tx);
+        await record(tx, pluginId, migration);
+      });
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       throw new Error(`[pluginStorage] ${pluginId} : migration ${migration.version} (${migration.name}) en échec — ${detail}`, { cause: err });

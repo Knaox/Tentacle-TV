@@ -15,7 +15,7 @@ beforeEach(() => {
   db = openTestDatabase();
   db.exec(PLUGIN_MIGRATIONS_DDL);
   storage = createPluginStorage({
-    pluginId: "demo", dialect: "sqlite", dateFormat: "iso8601", executor: sqliteExecutor(db),
+    pluginId: "demo", executor: sqliteExecutor(db),
   });
 });
 afterEach(() => db.close());
@@ -40,12 +40,14 @@ describe("requêtes", () => {
   it("upsert : insère, puis met à jour sur conflit", async () => {
     await storage.migrate([createTable]);
     const upsert = storage.sql.upsert({
-      table: "demo_items", columns: ["id", "hits", "label"], conflict: ["id"],
-      update: [["hits", "hits + {new:hits}"], "label"],
+      table: "demo_items", columns: ["id", "hits", "label"], conflict: ["id"], update: ["hits", "label"],
     });
     await storage.execute(upsert, "a", 1, "un");
     await storage.execute(upsert, "a", 2, "deux");
-    expect(await storage.query("SELECT id, hits, label FROM demo_items")).toEqual([{ id: "a", hits: 3, label: "deux" }]);
+    expect(await storage.query("SELECT id, hits, label FROM demo_items")).toEqual([{ id: "a", hits: 2, label: "deux" }]);
+    const many = storage.sql.upsert({ table: "demo_items", columns: ["id", "label"], rows: 2, conflict: ["id"], update: ["label"] });
+    await storage.execute(many, "a", "trois", "b", "bé");
+    expect(await storage.query("SELECT id, label FROM demo_items ORDER BY id")).toEqual([{ id: "a", label: "trois" }, { id: "b", label: "bé" }]);
   });
 
   it("insertIgnore laisse la ligne en place", async () => {
@@ -69,6 +71,43 @@ describe("requêtes", () => {
       throw new Error("panne");
     })).rejects.toThrow("panne");
     expect(await storage.query("SELECT id FROM demo_items")).toEqual([]);
+  });
+});
+
+describe("dates : un INTEGER en millisecondes, que Prisma relit et compare", () => {
+  const dated: PluginMigration = {
+    version: 1, name: "dates",
+    up: async (s) => { await s.execute("CREATE TABLE demo_dates (id TEXT PRIMARY KEY, at DATETIME NOT NULL)"); },
+  };
+
+  it("maintenant, décalé, lié : toujours un entier, et les comparaisons tiennent", async () => {
+    await storage.migrate([dated]);
+    const before = Date.now();
+    await storage.execute(`INSERT INTO demo_dates (id, at) VALUES ('now', ${storage.sql.now()})`);
+    await storage.execute(`INSERT INTO demo_dates (id, at) VALUES ('past', ${storage.sql.shiftedNow(-2, "day")})`);
+    await storage.execute("INSERT INTO demo_dates (id, at) VALUES ('bound', ?)", storage.sql.dateParam(new Date(before - 1_000)));
+    const rows = await storage.query<{ id: string; at: number; kind: string }>(
+      "SELECT id, at, typeof(at) AS kind FROM demo_dates ORDER BY at",
+    );
+    expect(rows.map((r) => r.kind)).toEqual(["integer", "integer", "integer"]);
+    expect(rows.map((r) => r.id)).toEqual(["past", "bound", "now"]);
+    expect(Math.abs(rows[2].at - before)).toBeLessThan(5_000);
+    const recent = await storage.query(`SELECT id FROM demo_dates WHERE at >= ${storage.sql.startOfToday()} ORDER BY id`);
+    expect(recent).toEqual([{ id: "bound" }, { id: "now" }]);
+  });
+
+  it("upsert : « maintenant » sur conflit, et relecture d'une date", async () => {
+    await storage.migrate([dated]);
+    const upsert = storage.sql.upsert({ table: "demo_dates", columns: ["id", "at"], conflict: ["id"], update: [["at", "now"]] });
+    await storage.execute(upsert, "x", 0);
+    await storage.execute(upsert, "x", 0);
+    const [row] = await storage.query<{ at: number }>("SELECT at FROM demo_dates");
+    expect(storage.sql.readDate(row.at)!.getTime()).toBeGreaterThan(0);
+  });
+
+  it("une trace de migration est datée en entier", async () => {
+    await storage.migrate([dated]);
+    expect(await storage.query("SELECT typeof(appliedAt) AS kind FROM plugin_migrations")).toEqual([{ kind: "integer" }]);
   });
 });
 
@@ -100,7 +139,7 @@ describe("migrations versionnées", () => {
   it("les traces sont propres à chaque extension", async () => {
     await storage.migrate([createTable]);
     const other = createPluginStorage({
-      pluginId: "autre", dialect: "sqlite", dateFormat: "iso8601", executor: sqliteExecutor(db),
+      pluginId: "autre", executor: sqliteExecutor(db),
     });
     expect(await other.migrate([createTable])).toEqual([1]);
   });
