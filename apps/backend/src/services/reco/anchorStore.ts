@@ -75,6 +75,8 @@ export async function measuredViewings(userId: string): Promise<Map<string, Meas
   const rows = await getPrisma().watchSegment.findMany({
     where: { jellyfinUserId: userId, itemType: "Movie" },
     select: { itemId: true, seconds: true, runtimeSeconds: true, startedAt: true },
+    // La durée retenue est la DERNIÈRE vue : dans l'ordre du temps.
+    orderBy: { startedAt: "asc" },
   });
   const byItem = new Map<string, Map<string, number>>();
   for (const row of rows) {
