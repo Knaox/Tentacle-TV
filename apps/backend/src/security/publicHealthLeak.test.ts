@@ -19,6 +19,7 @@ const SOURCE_URL = `mysql://tentacle:${SECRET}@db-audit:3306/tentacle`;
 let dataDir = "";
 let body: Record<string, unknown> = {};
 let text = "";
+let fetchHealth: () => Promise<{ text: string; body: Record<string, unknown> }>;
 
 beforeAll(async () => {
   dataDir = mkdtempSync(join(tmpdir(), "health-audit-"));
@@ -28,12 +29,17 @@ beforeAll(async () => {
   vi.stubEnv("DB_PASSWORD", SECRET);
   vi.resetModules();
   const { healthRoutes } = await import("../routes/health");
-  const app = Fastify();
-  await app.register(healthRoutes, { prefix: "/api" });
-  const res = await app.inject({ method: "GET", url: "/api/health" });
-  text = res.body;
-  body = res.json() as Record<string, unknown>;
-  await app.close();
+  const { pluginBackendDiag } = await import("../services/pluginBackendLoader");
+  // Un module d'extension en échec dont l'erreur cite un chemin et la source : rien ne doit en sortir.
+  pluginBackendDiag.loadResults.push({ pluginId: "audit", status: "error", detail: `${dataDir}/plugins/audit — ${SOURCE_URL}` });
+  fetchHealth = async () => {
+    const app = Fastify();
+    await app.register(healthRoutes, { prefix: "/api" });
+    const res = await app.inject({ method: "GET", url: "/api/health" });
+    await app.close();
+    return { text: res.body, body: res.json() as Record<string, unknown> };
+  };
+  ({ text, body } = await fetchHealth());
 });
 
 afterAll(() => {
@@ -55,6 +61,34 @@ describe("/api/health — rien de la configuration de la base", () => {
   it("ni fichier de base, ni copie, ni sauvegarde, ni configuration de base", () => {
     expect(text).not.toMatch(/tentacle\.db|\.migrating|\.bak\b|database\.json|db_password/i);
     expect(text).not.toMatch(/"file:/);
+  });
+
+  it("ni dossier de données, ni liste des extensions, ni détail d'échec pour un anonyme", () => {
+    expect(text).not.toContain(dataDir);
+    const diag = body.pluginBackends as Record<string, unknown>;
+    expect(Object.keys(diag)).toEqual(["loadResults"]);
+    expect(diag.loadResults).toContainEqual({ pluginId: "audit", status: "error" });
+  });
+
+  it("pendant une migration en cours puis en échec : toujours rien que des mots-clés et des nombres", async () => {
+    const state = await import("../dbMigration/migrationState");
+    try {
+      state.migrationStarted(Date.now() - 10_000);
+      state.migrationProgressed({ tablesDone: 7, tablesTotal: 50, bytesDone: 40, bytesTotal: 100 });
+      const migrating = await fetchHealth();
+      state.migrationFailed("source_unreachable", Date.now() + 30_000);
+      const failed = await fetchHealth();
+      for (const next of [migrating, failed]) {
+        expect(next.text).not.toContain(SECRET);
+        expect(next.text).not.toContain(dataDir);
+        expect(next.text).not.toMatch(/tentacle\.db|\.migrating|seer_|server_config/);
+        const database = next.body.database as Record<string, unknown>;
+        expect(["migrating", "failed"]).toContain(database.state);
+        expect(Object.values(database.progress as object).every((v) => typeof v === "number" || v === null)).toBe(true);
+      }
+    } finally {
+      state.migrationFinished();
+    }
   });
 
   it("le champ `database`, s'il est là, ne dit que moteur, état, progression et motif", () => {
