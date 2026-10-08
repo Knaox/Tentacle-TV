@@ -27,7 +27,10 @@ have access to the machine.
    code is asked.
 3. **Not through the container's gateway.** Docker Desktop, colima, and Docker's IPv6 relay make *every*
    connection — Internet included — look like it comes from the gateway, a private address. Tentacle can't
-   tell who is behind it, so it asks for the code.
+   tell who is behind it, so it asks for the code. Same with **rootless Podman** on a bridge network (the
+   Compose stacks): its port forwarder, rootlessport, makes every connection come from the container's *own*
+   address. A browser on the server machine itself may arrive that way too (pasta, host network): it gets the
+   code as well — from inside the container, the two can't be told apart.
 4. **The address typed in the browser is local too**: a private IP, a name without a dot, or `.local`,
    `.lan`, `.home`, `.home.arpa`, `.internal`… A public domain name means you're going through the Internet
    or a proxy — even a proxy that forgot to forward your address won't pass the Internet off as home.
@@ -39,6 +42,7 @@ have access to the machine.
 | Someone on the Internet finds the open wizard (port forwarded too early) | public address → code |
 | They forge `X-Forwarded-For: 192.168.1.5` | only neighbour proxies are believed |
 | They come through Docker Desktop's gateway | gateway = unknown address → code |
+| They come through rootless Podman's port forwarder (and forge `Host` or `X-Forwarded-For`) | the container's own address = unknown → code |
 | A misconfigured proxy forwards no address | the public domain name in the browser → code |
 | A second device on your network tries to take over a setup in progress | the claimant's address is kept (in the data volume, survives a restart) → code |
 | A setup session leaks (screenshot, log) | each session is bound to the address that opened it |
@@ -46,7 +50,7 @@ have access to the machine.
 | Someone guesses the code | 60 bits, 5 tries per minute per address, a new code after 10 wrong ones |
 | The wizard used after setup | closed for good: every route answers 404 |
 | A tampered browser (or a direct API call) skips a step: creates an account or a library on a Jellyfin that was already set up, skips choosing the Jellyfin | the **server** holds the path (`setupFlowContract.ts`): the chosen Jellyfin, probed by the server, decides it; any step outside it is refused (`step_refused`) |
-| The wizard turned against your network (SSRF) | Jellyfin is only looked for at private addresses or the one your browser typed, while setup is open, with a session; link-local and cloud metadata are refused at connection time |
+| The wizard turned against your network (SSRF) | Jellyfin is only looked for at private addresses or the one your browser typed, while setup is open, with a session; link-local and cloud metadata are refused at connection time. One exception: `host.docker.internal` / `host.containers.internal` typed **by name** and leading to the link-local address the container engine wrote in `/etc/hosts` (rootless Podman: 169.254.1.2) — never an address typed as such, never 169.254.169.0/24 or 169.254.170.0/24 |
 
 ## The trade-off we accepted
 

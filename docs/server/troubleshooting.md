@@ -17,6 +17,7 @@
 | Libraries: "This folder does not exist for Jellyfin" | Paths are **Jellyfin's**: in a container, your media folder is `/media`. |
 | Remote access test: "service unavailable" | The test service does not answer (or `REMOTE_CHECK_URL=off`): it says nothing about your setup. |
 | Everything looks "local" behind Docker Desktop | Docker Desktop/colima hide visitors' addresses: see [remote-access.md](remote-access.md#trusted-proxies). |
+| Rootless Podman: the wizard asks for a code at home | Expected: rootlessport hides your browser's address. Read the code in the log (`podman logs <container>`). |
 | The video stays black / stutters in transcoding | See [gpu.md](gpu.md); check Jellyfin's transcoding settings. |
 
 Logs first: the Tentacle container's (Portainer: *Logs*; `docker logs --tail 200 <container>`; Compose: `docker compose logs --tail 200 tentacle`), then Jellyfin's.

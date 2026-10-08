@@ -170,7 +170,16 @@ l'interface web, la couper de là vous enfermerait dehors.
 
 Les piles marchent avec `podman compose` (ou `podman-compose`). Le volume des médias porte `:z` pour SELinux.
 Sans root : ajoutez `userns_mode: keep-id` aux services `jellyfin` et `tentacle` pour que les fichiers restent
-à vous. Transcodage matériel avec Podman : voir [gpu.md](gpu.md#podman).
+à vous. Sans root, deux choses changent par rapport à Docker :
+
+- **L'assistant demande toujours son code** : le relais de ports de Podman (rootlessport) cache l'adresse de
+  votre navigateur, Tentacle ne distingue plus la maison d'Internet ([setup-security.md](setup-security.md)).
+- **Un Jellyfin sur la même machine** (pile `tentacle-only`) reste `http://host.docker.internal:8096`. Podman
+  fait mener ce nom à `169.254.1.2`, une adresse de lien local que l'assistant refuse d'ordinaire (les clouds y
+  rangent leurs métadonnées) ; elle est acceptée sous ce nom seulement, parce que Podman l'a écrite dans le
+  `/etc/hosts` du conteneur. Taper `169.254.1.2` elle-même est refusé.
+
+Transcodage matériel avec Podman : voir [gpu.md](gpu.md#podman).
 
 ## Sans Docker
 

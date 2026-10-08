@@ -158,6 +158,15 @@ the web interface, turning it off from there would lock you out.
 
 The stacks work with `podman compose` (or `podman-compose`). The media volume carries `:z` for SELinux.
 Rootless: add `userns_mode: keep-id` to the `jellyfin` and `tentacle` services so files keep your ownership.
+Rootless, two things differ from Docker:
+
+- **The setup wizard always asks for its code**: Podman's port forwarder (rootlessport) hides your browser's
+  address, so Tentacle can't tell your home network from the Internet ([setup-security.md](setup-security.md)).
+- **A Jellyfin on the same machine** (`tentacle-only` stack) is still `http://host.docker.internal:8096`.
+  Podman points that name at `169.254.1.2`, a link-local address the wizard otherwise refuses (it is where
+  clouds keep their metadata); it is accepted under that name only, because Podman wrote it in the
+  container's `/etc/hosts`. Typing `169.254.1.2` itself is refused.
+
 Hardware transcoding with Podman: see [gpu.md](gpu.md#podman).
 
 ## Without Docker

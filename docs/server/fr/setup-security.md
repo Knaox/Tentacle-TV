@@ -28,7 +28,10 @@ main sur la machine.
    ignoré, et le code demandé.
 3. **Pas par la passerelle du conteneur.** Docker Desktop, colima et le relais IPv6 de Docker font paraître
    *toutes* les connexions — Internet compris — comme venant de la passerelle, une adresse privée. Tentacle
-   ne peut pas savoir qui est derrière : il demande le code.
+   ne peut pas savoir qui est derrière : il demande le code. De même avec **Podman sans root** sur un réseau
+   de pont (les piles Compose) : son relais de ports, rootlessport, fait venir toute connexion de l'adresse
+   *propre* du conteneur. Un navigateur de la machine du serveur peut arriver ainsi lui aussi (pasta, réseau
+   de l'hôte) : il reçoit aussi le code — de l'intérieur du conteneur, on ne sait pas les distinguer.
 4. **L'adresse tapée dans le navigateur est locale elle aussi** : une IP privée, un nom sans point, ou
    `.local`, `.lan`, `.home`, `.home.arpa`, `.internal`… Un nom de domaine public veut dire qu'on passe par
    Internet ou par un mandataire — même un mandataire qui oublierait de transmettre l'adresse ne fait pas
@@ -41,6 +44,7 @@ main sur la machine.
 | Quelqu'un sur Internet trouve l'assistant ouvert (port redirigé trop tôt) | adresse publique → code |
 | Il forge `X-Forwarded-For: 192.168.1.5` | seuls les mandataires voisins sont crus |
 | Il passe par la passerelle de Docker Desktop | passerelle = adresse inconnue → code |
+| Il passe par le relais de ports de Podman sans root (et forge `Host` ou `X-Forwarded-For`) | adresse propre du conteneur = inconnue → code |
 | Un mandataire mal réglé ne transmet aucune adresse | le domaine public tapé dans le navigateur → code |
 | Un second appareil du réseau veut prendre la place d'une installation en cours | l'adresse du réclamant est gardée (volume de données, survit à un redémarrage) → code |
 | Une session de l'assistant fuit (capture, journal) | chaque session est liée à l'adresse qui l'a ouverte |
@@ -48,7 +52,7 @@ main sur la machine.
 | Quelqu'un devine le code | 60 bits, 5 essais par minute et par adresse, un code neuf après 10 faux |
 | L'assistant utilisé après l'installation | fermé pour toujours : toutes ses routes répondent 404 |
 | Un navigateur trafiqué (ou un appel direct à l'API) saute une étape : crée un compte ou une bibliothèque sur un Jellyfin déjà configuré, saute le choix du Jellyfin | le **serveur** tient le parcours (`setupFlowContract.ts`) : le Jellyfin choisi, sondé par le serveur, le décide ; tout geste hors parcours est refusé (`step_refused`) |
-| L'assistant tourné contre votre réseau (SSRF) | Jellyfin n'est cherché qu'aux adresses privées ou à celle que le navigateur a tapée, installation ouverte, avec une session ; lien local et métadonnées des clouds refusés à la connexion |
+| L'assistant tourné contre votre réseau (SSRF) | Jellyfin n'est cherché qu'aux adresses privées ou à celle que le navigateur a tapée, installation ouverte, avec une session ; lien local et métadonnées des clouds refusés à la connexion. Une exception : `host.docker.internal` / `host.containers.internal` tapé **par son nom** et menant à l'adresse de lien local que le moteur de conteneurs a écrite dans `/etc/hosts` (Podman sans root : 169.254.1.2) — jamais une adresse tapée telle quelle, jamais 169.254.169.0/24 ni 169.254.170.0/24 |
 
 ## Le compromis assumé
 
