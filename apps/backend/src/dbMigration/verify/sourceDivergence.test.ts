@@ -13,7 +13,7 @@ function reportFor(url: string, extra: Partial<MigrationReport> = {}): Migration
   return {
     version: 1, serverVersion: "1.25.0", startedAt: 0, finishedAt: 0, durationMs: 0,
     source: { engine: "mariadb", version: "", bytes: 0, zoneConverted: false, identity: sourceIdentity(url) },
-    disk: { requiredBytes: 0, freeBytes: 0 }, rowsWritten: 0, tables: [], retired: [], refused: [], deferred: [],
+    disk: { requiredBytes: 0, freeBytes: 0 }, rowsWritten: 0, tables: [], retired: [], unrecognized: [], refused: [], deferred: [],
     zeroDates: {}, foreignKeyOrphans: {}, familyOrphansDropped: 0, ...extra,
   };
 }

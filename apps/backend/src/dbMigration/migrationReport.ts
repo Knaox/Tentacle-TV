@@ -1,5 +1,6 @@
 import type { CopyAllResult, TableReport } from "./copy/copyAll";
 import type { SourceIdentity } from "./legacySource/sourceConfig";
+import { isRecognizedExtension } from "./copy/tableClassification";
 import type { TargetVerification } from "./verify/verifyTarget";
 
 /**
@@ -26,6 +27,8 @@ export interface MigrationReport {
   tables: TableReport[];
   /** Anciennes tables du cœur, laissées dans MariaDB. */
   retired: string[];
+  /** Hors cœur et hors extensions connues (base partagée, extension inconnue) : copiées par précaution. */
+  unrecognized: string[];
   /** Tables refusées (collision de nom, casse), laissées dans MariaDB. */
   refused: Array<{ table: string; reason: string }>;
   /** Copiées après la bascule, en fond (le cache TMDB). */
@@ -67,6 +70,7 @@ export function buildReport(input: BuildInput): MigrationReport {
     rowsWritten: copy.tables.reduce((n, t) => n + t.rowsWritten, 0),
     tables: copy.tables,
     retired: copy.fates.filter((f) => f.fate === "retired").map((f) => f.name),
+    unrecognized: copy.tables.filter((t) => t.kind === "extension" && !isRecognizedExtension(t.table)).map((t) => t.table),
     refused: copy.fates.flatMap((f) => (f.fate === "refused" ? [{ table: f.name, reason: f.reason }] : [])),
     deferred: copy.deferred,
     zeroDates: copy.zeroDates,
@@ -99,6 +103,7 @@ export function emptySourceReport(serverVersion: string, identity: SourceIdentit
     rowsWritten: 0,
     tables: [],
     retired: [],
+    unrecognized: [],
     refused: [],
     deferred: [],
     zeroDates: {},

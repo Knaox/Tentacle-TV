@@ -18,6 +18,8 @@ export const RETRY_DELAYS_MS = [30_000, 60_000, 120_000, 300_000, 600_000, 900_0
 
 export interface MigrationStatusFile {
   state: "migrating" | "failed" | "done";
+  /** Le processus qui mène les essais : la CLI lui demande un essai s'il vit, sinon migre elle-même. */
+  pid?: number;
   attempt: number;
   updatedAt: number;
   percent: number;
@@ -31,7 +33,7 @@ export interface MigrationStatusFile {
 export function writeStatusFile(path: string, status: MigrationStatusFile): void {
   try {
     refuseSymlink(path);
-    writeFileSync(path, `${JSON.stringify(status)}\n`, { mode: 0o600 });
+    writeFileSync(path, `${JSON.stringify({ pid: process.pid, ...status })}\n`, { mode: 0o600 });
     restrictToOwner(path);
   } catch {
     /* le fichier d'état n'est qu'une aide à la CLI */

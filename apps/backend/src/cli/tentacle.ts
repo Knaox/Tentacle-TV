@@ -7,6 +7,7 @@ import { SETUP_LOCK_FILE, unsealSetup } from "../setup/setupLock";
 import { forgetClaimant } from "../setup/localAccess/claimant";
 import { discardSetupToken, setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
 import { DB_USAGE, runDbCommand } from "./dbQueryCommand";
+import { DB_MIGRATE_USAGE, runDbMigrateCommand } from "./dbMigrateCommand";
 import { runWebCommand, WEB_USAGE } from "./webUiCommand";
 
 /**
@@ -18,6 +19,7 @@ import { runWebCommand, WEB_USAGE } from "./webUiCommand";
  *   tentacle setup reset   # rouvrir l'assistant
  *   tentacle web on|off    # l'interface web (`webUiCommand.ts`)
  *   tentacle db query …    # lire la base, en lecture seule (`dbQueryCommand.ts`)
+ *   tentacle db migrate    # migrer l'ancienne base MariaDB, tout de suite (`dbMigrateCommand.ts`)
  *
  * En natif : `node apps/backend/dist/cli/tentacle.js setup …`.
  */
@@ -30,6 +32,7 @@ const USAGE = [
   "                         reopen the setup wizard (then restart the container)",
   ...WEB_USAGE,
   ...DB_USAGE,
+  ...DB_MIGRATE_USAGE,
 ];
 // Rouvrir l'assistant, c'est aussi repartir du CHOIX du Jellyfin : le choix
 // et le parcours d'avant ne valent plus (`setup/flow/setupFlow.ts`).
@@ -111,6 +114,7 @@ export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.en
   }
   if (scope === "web") return runWebCommand(action, env);
   // La requête garde sa casse : seuls les mots de la commande sont normalisés.
+  if (scope === "db" && action === "migrate") return runDbMigrateCommand();
   if (scope === "db") return runDbCommand(action, args.slice(args.length - normalizeArgs(args).length + 2));
   if (scope !== "setup" || (action !== "token" && action !== "reset")) {
     const typed = ["tentacle", ...args].join(" ");
