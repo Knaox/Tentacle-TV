@@ -248,8 +248,11 @@ export function resumeSocketSession(token: string): void {
 }
 
 /** Le serveur est revenu (fin de la migration de sa base) : la reconnexion part
- *  TOUT DE SUITE, sans attendre un recul monté jusqu'à 30 s pendant l'attente. */
+ *  TOUT DE SUITE, sans attendre un recul monté jusqu'à 30 s pendant l'attente.
+ *  Jamais après un refus d'authentification : le jeton refusé ne se représente
+ *  pas — seul un nouveau `acquireSocket(jeton)` rouvre. */
 export function reconnectSocketNow(): void {
+  if (status === "authError") return;
   backoff = INITIAL_BACKOFF;
   if (refCount <= 0 || ws) return;
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }

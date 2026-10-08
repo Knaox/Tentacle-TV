@@ -12,6 +12,9 @@ import {
   type StreamUrlOptions,
 } from "./jellyfin/urlBuilder";
 import { fetchWithRetry, type FetchWithRetryState } from "./jellyfin/fetchWithRetry";
+
+/** La base du proxy du serveur Tentacle (`<serveur>/api/jellyfin`) ; ailleurs, un Jellyfin joint en direct. */
+const TENTACLE_PROXY_PATH = /\/api\/jellyfin$/;
 import { DirectStreamingControl } from "./jellyfin/directStreaming";
 
 // Re-exports for backward-compatible public API.
@@ -236,6 +239,7 @@ export class JellyfinClient {
         isLoggingIn: this._isLoggingIn,
         noAuthExpiry: opts?.noAuthExpiry,
         language: this.language,
+        tentacleProxy: TENTACLE_PROXY_PATH.test(this.baseUrl),
       },
       this.fetchState,
     );

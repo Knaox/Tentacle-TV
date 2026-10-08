@@ -1,4 +1,4 @@
-import type { DatabaseMigrationView } from "@tentacle-tv/shared";
+import { databaseMigrationOf, type DatabaseMigrationView } from "@tentacle-tv/shared";
 import {
   clearDatabaseMigration, publishDatabaseMigration, readDatabaseMigration, reportDatabaseState, subscribeDatabaseMigration,
 } from "./migrationSignal";
@@ -13,6 +13,9 @@ import { startMigrationPoller, type HealthSample, type MigrationPoller } from ".
  *   avant de décider : celle du cache peut venir du serveur d'avant la mise à
  *   jour (1.24, qui ne déclare rien). Rien ne s'affiche avant sa réponse.
  * - Capacité absente : le signe est effacé, jamais d'écran.
+ * - L'écran ne paraît qu'une fois CONFIRMÉ par le `/api/health` du serveur
+ *   Tentacle (migration en cours ou en échec) : un signe venu d'ailleurs
+ *   (un hôte qui rendrait un 503 « migrating ») est effacé sans écran ni reprise.
  * - Pendant l'écran, `/api/health` est relu toutes les 2 s (`migrationPoller`).
  *   Base prête → `onResume` (requêtes invalidées, socket reconnectée — jamais
  *   le compte). Serveur muet trop longtemps → l'écran s'efface, la règle de
@@ -104,13 +107,28 @@ export function createMigrationGate(deps: MigrationGateDeps): MigrationGate {
           phase = "idle";
           return;
         }
-        if (deps.hasCapability()) show();
-        else {
+        if (!deps.hasCapability()) {
           // Un serveur qui ne déclare pas la capacité : jamais d'écran.
           phase = "idle";
           clearDatabaseMigration();
+          return;
         }
+        return confirmWithServer();
       });
+  };
+
+  /** Le serveur Tentacle lui-même doit dire migration ou échec ; sinon, rien. */
+  const confirmWithServer = async (): Promise<void> => {
+    const sample = await deps.fetchHealth().catch(() => null);
+    if (disposed || phase !== "checking") return;
+    const view = sample?.ok ? databaseMigrationOf(sample.body) : null;
+    if (!view) {
+      phase = "idle";
+      clearDatabaseMigration();
+      return;
+    }
+    publishDatabaseMigration(view);
+    show();
   };
 
   let lastDropCheckAt = 0;
