@@ -21,6 +21,13 @@ import { migrationFailed } from "./migrationState";
  */
 export const SECRETS_DIR = process.env.TENTACLE_SECRETS_DIR || "/run/tentacle-secrets";
 
+/**
+ * La porte de sortie, choisie à la machine (`tentacle db start-fresh --confirm`) :
+ * l'ancienne base est perdue pour de bon, ou volontairement abandonnée — on
+ * repart d'une installation neuve. Jamais par HTTP.
+ */
+export const FRESH_START_FILE = "db-fresh-start";
+
 export function orphanedLegacyInstallation(
   legacyUrl: string | null = legacyMariadbUrl(),
   dataRoot: string = DATA_ROOT,
@@ -28,6 +35,7 @@ export function orphanedLegacyInstallation(
 ): boolean {
   if (legacyUrl) return false;
   if (existsSync(coreDatabasePath(dataRoot))) return false;
+  if (existsSync(join(dataRoot, FRESH_START_FILE))) return false;
   return existsSync(join(secretsDir, "db_password")) || existsSync(join(dataRoot, "setup-complete"));
 }
 
