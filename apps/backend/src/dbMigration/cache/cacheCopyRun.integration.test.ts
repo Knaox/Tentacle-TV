@@ -20,10 +20,14 @@ let url: string;
 const ROWS = 23;
 
 describe.skipIf(!baseUrl)("copie de fond du cache TMDB : reprise, ligne vivante, marqueur", () => {
-  const dir = mkdtempSync(join(tmpdir(), "tentacle-cachecopy-"));
-  const path = join(dir, "tentacle.db");
+  // Le dossier jetable naît dans beforeAll, jamais au corps du describe : Vitest exécute ce
+  // corps même quand la suite est sautée (sans MariaDB), et son afterAll ne tourne alors pas.
+  let dir = "";
+  let path = "";
 
   beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), "tentacle-cachecopy-"));
+    path = join(dir, "tentacle.db");
     url = await scratchDatabaseUrl(baseUrl!, "cache");
     const conn = await mariadb.createConnection({ ...connectionOptions(url), multipleStatements: true });
     await conn.query(`DROP TABLE IF EXISTS tmdb_meta_cache;
@@ -43,7 +47,9 @@ describe.skipIf(!baseUrl)("copie de fond du cache TMDB : reprise, ligne vivante,
     db.prepare(`INSERT INTO "tmdb_meta_cache" ("mediaType","tmdbId","payload","fetchedAt","expiresAt") VALUES ('tv', 4, '{"live":true}', 1, 2)`).run();
     db.close();
   });
-  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  afterAll(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
 
   const config = () => ({ path, url: url, tables: ["tmdb_meta_cache"], batchRows: 5, pauseMs: 0 });
 

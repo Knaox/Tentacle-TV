@@ -24,11 +24,15 @@ import { scratchDatabaseUrl } from "../../test/mariadbScratch";
 const baseUrl = process.env.TENTACLE_TEST_MARIADB_TZ_URL;
 
 describe.skipIf(!baseUrl)("la migration entière, contrôle par Prisma compris", () => {
-  const dir = mkdtempSync(join(tmpdir(), "tentacle-runmigration-"));
-  const finalPath = join(dir, "tentacle.db");
+  // Le dossier jetable naît dans beforeAll, jamais au corps du describe : Vitest exécute ce
+  // corps même quand la suite est sautée (sans MariaDB), et son afterAll ne tourne alors pas.
+  let dir = "";
+  let finalPath = "";
   let url: string;
 
   beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), "tentacle-runmigration-"));
+    finalPath = join(dir, "tentacle.db");
     url = await scratchDatabaseUrl(baseUrl!, "orchestrator");
     const conn = await mariadb.createConnection({ ...connectionOptions(url), multipleStatements: true });
     await conn.query(`CREATE TABLE server_config (\`key\` VARCHAR(191) PRIMARY KEY, \`value\` TEXT NOT NULL);
@@ -39,7 +43,9 @@ describe.skipIf(!baseUrl)("la migration entière, contrôle par Prisma compris",
       INSERT INTO seer_user_settings VALUES ('u1', '2026-10-01 10:00:00'), ('u2', NULL);`);
     await conn.end();
   });
-  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  afterAll(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
 
   it("copie, vérifie, fait relire par Prisma (clés de la migration comprises), puis bascule", async () => {
     const lines: string[] = [];
