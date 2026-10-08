@@ -78,6 +78,20 @@ describe("les piles Docker livrées", () => {
     expect(jellyfin).toMatch(/jellyfin-init:\s*\n\s*condition: service_completed_successfully/);
   });
 
+  it("1.25 : la pile complète n'a plus de base à côté, et garde le volume des secrets (preuve d'une ancienne MariaDB)", () => {
+    const blocks = serviceBlocks(code(read("stacks/tentacle-full/compose.yaml")));
+    expect(blocks.some((block) => /image:\s*mariadb/.test(block))).toBe(false);
+    expect(blocks.some((block) => block.startsWith("db:") || block.startsWith("init:"))).toBe(false);
+    const tentacle = blocks.find((block) => block.startsWith("tentacle:"))!;
+    expect(tentacle).not.toMatch(/DB_HOST|DB_PASSWORD_FILE|DATABASE_URL/);
+    expect(tentacle).toMatch(/tentacle-secrets:\/run\/tentacle-secrets:ro/);
+  });
+
+  it("1.25 : la pile seule ne fait plus créer de base ; la pile avec base se dit « ancienne »", () => {
+    expect(read("stacks/tentacle-only/compose.yaml")).not.toMatch(/CREATE DATABASE|GRANT ALL/i);
+    expect(read("stacks/tentacle-db/compose.yaml")).toMatch(/LEGACY STACK \(before 1\.25\)/);
+  });
+
   it("le Dockerfile ne parle pas de socket Docker", () => {
     expect(code(read("Dockerfile"))).not.toContain("docker.sock");
   });

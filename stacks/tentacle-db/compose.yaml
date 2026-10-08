@@ -1,5 +1,11 @@
 # ══════════════════════════════════════════════════════════════════════════
 #  Tentacle TV — stack with its database, for an EXISTING Jellyfin
+#  ⚠️  LEGACY STACK (before 1.25). Since 1.25 Tentacle keeps its data in a
+#  file (SQLite) and needs no database: for a NEW installation, use
+#  stacks/tentacle-only instead. Already running this stack? Change nothing:
+#  update the image, Tentacle migrates this MariaDB by itself (it is only
+#  read, never modified), then the dashboard tells you how to remove the "db"
+#  service — not before. https://tentacletv.app/docs/server/sqlite-migration/
 # ══════════════════════════════════════════════════════════════════════════
 #  For a Jellyfin that already runs elsewhere: a NAS, another container, or
 #  a native install (the only supported way on Windows and macOS).

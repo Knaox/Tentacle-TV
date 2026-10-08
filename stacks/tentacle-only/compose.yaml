@@ -1,21 +1,21 @@
 # ══════════════════════════════════════════════════════════════════════════
-#  Tentacle TV — Tentacle ALONE, with your own database and Jellyfin
+#  Tentacle TV — Tentacle ALONE, for an existing Jellyfin
 # ══════════════════════════════════════════════════════════════════════════
-#  For those who already run MariaDB (or MySQL) and Jellyfin, e.g. on a NAS.
+#  For those who already run Jellyfin, e.g. on a NAS. No database to set up:
+#  Tentacle keeps its data in a file (SQLite) of the tentacle-data volume.
 #
-#  1. Create an empty database and a user for Tentacle on your server, e.g.:
-#       CREATE DATABASE tentacle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-#       CREATE USER 'tentacle'@'%' IDENTIFIED BY '<a long random password>';
-#       GRANT ALL PRIVILEGES ON tentacle.* TO 'tentacle'@'%';
-#  2. Put this file in an empty folder as compose.yaml, then run:
+#  1. Put this file in an empty folder as compose.yaml, then run:
 #       docker compose up -d          (Podman: podman compose up -d)
-#  3. Open  http://<this-machine>:3000  and follow the setup wizard. From your
+#  2. Open  http://<this-machine>:3000  and follow the setup wizard. From your
 #     home network, no code; from elsewhere it asks for one, printed in
 #     Tentacle's log (Portainer: the container's Logs).
-#     It then asks for your database, picks your Jellyfin and its administrator.
+#     It then picks your Jellyfin and its administrator.
 #
-#  Nothing to edit in this file: the database is given to the wizard, which
-#  keeps it in the tentacle-data volume (never in this file).
+#  UPGRADING an installation that uses your own MariaDB or MySQL (before
+#  1.25)? Keep its settings (DB_* variables, DATABASE_URL, or the database
+#  chosen in the old wizard) until the dashboard confirms the migration:
+#  Tentacle copies that database by itself, read-only, then says how to
+#  remove it. https://tentacletv.app/docs/server/sqlite-migration/
 # ══════════════════════════════════════════════════════════════════════════
 
 services:
@@ -36,7 +36,7 @@ services:
     ports:
       - "${TENTACLE_PORT:-3000}:3000"
     extra_hosts:
-      - "host.docker.internal:host-gateway" # reaches a database or Jellyfin on this machine
+      - "host.docker.internal:host-gateway" # reaches a Jellyfin (or an old database) on this machine
     volumes:
       - tentacle-data:/app/apps/backend/data
 
