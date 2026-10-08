@@ -3,11 +3,12 @@ import { openSqlite } from "../services/database/nodeSqlite";
 import { inspectLegacySource, legacyMariadbUrl, MIGRATION_REPORT_KEY } from "../services/database/legacySource";
 import { migrateOnce, migrationPaths } from "../dbMigration/bootMigration";
 import { processAlive } from "../dbMigration/migrationLock";
-import type { MigrationStatusFile } from "../dbMigration/migrationLoop";
+import { STATUS_STALE_MS, type MigrationStatusFile } from "../dbMigration/migrationLoop";
 import { failureOf } from "../dbMigration/migrationErrors";
 import { parseReport, type MigrationReport } from "../dbMigration/migrationReport";
 import { refuseSymlink } from "../dbMigration/migrationFiles";
-import { orphanedLegacyInstallation } from "../dbMigration/orphanedSource";
+import { orphanedLegacyInstallation, SECRETS_DIR } from "../dbMigration/orphanedSource";
+import { dirname } from "path";
 
 /**
  * `tentacle db migrate` — la migration MariaDB → SQLite, tout de suite, avec un
@@ -91,10 +92,15 @@ function finishWithReport(finalPath: string): number {
   return 0;
 }
 
-export async function runDbMigrateCommand(paths = migrationPaths()): Promise<number> {
-  const url = legacyMariadbUrl();
+/** Le serveur mène les essais : son PID vit ET son fichier d'état bat encore (un PID réutilisé ne suffit pas). */
+export function serverAlive(status: MigrationStatusFile | null, now = Date.now()): boolean {
+  return !!status?.pid && status.pid !== process.pid && processAlive(status.pid) && now - status.updatedAt < STATUS_STALE_MS;
+}
+
+export async function runDbMigrateCommand(paths = migrationPaths(), secretsDir: string = SECRETS_DIR): Promise<number> {
+  const url = legacyMariadbUrl(process.env, dirname(paths.final));
   if (!url) {
-    if (orphanedLegacyInstallation(null)) {
+    if (orphanedLegacyInstallation(null, dirname(paths.final), secretsDir)) {
       say(
         "Cette installation utilisait une base MariaDB, qui n'est plus configurée : remettez le service de la base et ses variables (DB_HOST, DB_PASSWORD_FILE ou DATABASE_URL) le temps de la migration, puis redémarrez.",
         "This installation used a MariaDB database that is no longer configured: put the database service and its variables back for the migration, then restart.",
@@ -104,7 +110,7 @@ export async function runDbMigrateCommand(paths = migrationPaths()): Promise<num
     say("Aucune ancienne base MariaDB configurée : rien à migrer.", "No old MariaDB database configured: nothing to migrate.");
     return 0;
   }
-  const state = inspectLegacySource();
+  const state = inspectLegacySource(process.env, dirname(paths.final));
   if (state === "migrated") {
     say("La base est déjà migrée.", "The database is already migrated.");
     return finishWithReport(paths.final);
@@ -117,7 +123,7 @@ export async function runDbMigrateCommand(paths = migrationPaths()): Promise<num
     return 1;
   }
   const status = readStatus(paths.status);
-  if (status?.pid && status.pid !== process.pid && processAlive(status.pid)) return askServer(paths, status);
+  if (serverAlive(status)) return askServer(paths, status!);
   say("Migration en cours (le serveur est arrêté : la commande migre elle-même)…", "Migrating (the server is stopped: the command migrates by itself)…");
   try {
     const outcome = await migrateOnce(url, paths);
