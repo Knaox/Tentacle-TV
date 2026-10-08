@@ -4,7 +4,7 @@
 > disque btrfs). Banc jetable hors dépôt : 44 modèles du `schema.prisma` réel passés en
 > `provider = "sqlite"`, DDL tiré de `prisma migrate diff`. Aucune donnée réelle n'y entre.
 > Ce qui est FIGÉ ici le sera par des tests sur une vraie base, livrés avec le socle
-> (`apps/backend/src/services/database/*.test.ts`) : chaque section nomme le sien.
+> (`apps/backend/test/sqlite/*.test.ts`) : chaque section nomme le sien.
 
 ## 1. Accès à SQLite : le moteur natif de Prisma, UNE connexion
 
@@ -73,8 +73,11 @@ millisecondes (janvier 1970). **Un seul format, donc, et partout :**
   toujours ses colonnes de date**, et un test le vérifie pour le cœur.
 - Lecture brute : `$queryRaw` rend une `Date` pour une colonne déclarée `DATETIME` et un
   `bigint` pour un `COUNT(*)` ou un entier calculé → `Number()` avant de répondre.
+  ⚠️ Mesuré : une expression SANS type déclaré prend le type de sa PREMIÈRE ligne — si
+  celle-ci est NULL, les suivantes reviennent en TEXTE (`"1791460825769"`). Tout ce qu'un
+  SQL brut calcule passe donc par `Number()` / `String()` explicites.
 
-Test qui fige : `sqliteDates.test.ts` (vraie base) — `typeof` = `integer` après chaque forme
+Test qui fige : `test/sqlite/sqliteDates.test.ts` (vraie base) — `typeof` = `integer` après chaque forme
 d'écriture, et la comparaison liée.
 
 ## 3. Schéma et mises à niveau : des migrations versionnées, sans CLI
