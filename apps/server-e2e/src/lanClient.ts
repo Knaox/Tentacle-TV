@@ -4,8 +4,9 @@ import { docker } from "./stack";
 /**
  * Un appareil « du réseau local », simulé par un conteneur posé sur le réseau
  * de la pile : il joint Tentacle DIRECTEMENT, depuis sa propre adresse privée.
- * Depuis le Mac, colima (comme Docker Desktop) fait passer chaque connexion par
- * la passerelle de la pile : l'adresse réelle s'y perd, et le code est demandé.
+ * Depuis l'hôte, l'adresse réelle se perd — colima et Docker Desktop font
+ * passer chaque connexion par la passerelle de la pile, rootlessport (Podman
+ * sans racine) par l'adresse du conteneur lui-même — et le code est demandé.
  *
  * Avec `forwardedFor`, le même conteneur joue un mandataire voisin de confiance
  * (Caddy, NPM…) qui transmet l'adresse de son client.
@@ -69,8 +70,8 @@ export class LanDevice {
 }
 
 /**
- * Le même appel, depuis le Mac (par la redirection de ports de colima : la
- * passerelle de la pile), avec l'hôte qu'un navigateur aurait tapé. `fetch`
+ * Le même appel, depuis l'hôte (par la redirection de ports du moteur), avec
+ * l'hôte qu'un navigateur aurait tapé. `fetch`
  * ne laisse pas poser `Host` : `http.request`, si.
  */
 export function hostCall(port: number, req: LanRequest): Promise<LanReply> {

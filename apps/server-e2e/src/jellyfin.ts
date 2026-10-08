@@ -21,7 +21,8 @@ export class DisposableJellyfin {
 
   async start(): Promise<void> {
     await docker("rm", "-f", "-v", this.name).catch(() => undefined);
-    await docker("run", "-d", "--name", this.name, "-p", `${this.port}:8096`, "-v", `${this.media}:/media`, `jellyfin/jellyfin:${this.tag}`);
+    // `:z` comme les piles : sous SELinux (Fedora, Bazzite…), un montage sans étiquette est illisible au conteneur.
+    await docker("run", "-d", "--name", this.name, "-p", `${this.port}:8096`, "-v", `${this.media}:/media:z`, `jellyfin/jellyfin:${this.tag}`);
     await waitFor(`Jellyfin ${this.tag}`, async () => {
       const info = (await (await fetchWithin(`${this.url}/System/Info/Public`)).json()) as { Id?: string };
       return info.Id ? info : null;

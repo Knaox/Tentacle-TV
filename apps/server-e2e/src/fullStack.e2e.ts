@@ -6,6 +6,7 @@ import { launchChrome } from "./browser";
 import { authHeader, jellyfinToken } from "./jellyfin";
 import { SetupClient } from "./setupClient";
 import { docker, fetchWithin, Stack, waitFor } from "./stack";
+import { requireHostCode } from "./benchHost";
 
 /**
  * Pile complète, Jellyfin vierge : l'assistant mené au navigateur, du code des
@@ -38,6 +39,7 @@ describe("pile complète, Jellyfin vierge — l'assistant au navigateur", () => 
     const page = await (await browser.newContext({ locale: "fr-FR" })).newPage();
     try {
       const button = (name: string | RegExp) => page.getByRole("button", { name, exact: typeof name === "string" });
+      await requireHostCode(stack.port, `127.0.0.1:${stack.port}`);
       await page.goto(stack.url(`/setup#code=${code}`));
       await button("Commencer").click();
       expect(await page.getByLabel("Code d'installation").inputValue()).toBe(code);

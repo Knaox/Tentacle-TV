@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { caddySnippet, traefikSnippet, type ProxySnippetInput } from "../../../packages/shared/src/remoteAccess/proxySnippets";
 import { httpCall, httpsCall } from "./https";
 import { Stack, waitFor } from "./stack";
+import { HOST_ADDRESS } from "./benchHost";
 
 /**
  * Le mandataire de l'UTILISATEUR devant la pile complète — les piles livrées
@@ -21,7 +22,7 @@ const TENTACLE = "tentacle.localtest.me";
 const JELLYFIN = "jellyfin.localtest.me";
 const ORIGIN = `https://${TENTACLE}`;
 const SERVER_ENV = "services:\n  tentacle:\n    environment:\n      REMOTE_CHECK_URL: \"off\"\n";
-const UPSTREAM = "host.docker.internal";
+const UPSTREAM = HOST_ADDRESS;
 
 /** Le Caddyfile de l'administration, avec l'autorité interne sur chaque site. */
 function caddyfile(input: ProxySnippetInput): string {

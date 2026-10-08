@@ -6,6 +6,7 @@ import { authHeader, DisposableJellyfin, jellyfinToken } from "./jellyfin";
 import { hostCall } from "./lanClient";
 import { configureExisting, jellyfinState } from "./jellyfinSetupProbe";
 import { REPO, Stack, waitFor } from "./stack";
+import { requireHostCode } from "./benchHost";
 
 /**
  * L'étape Jellyfin liste TOUS les Jellyfin, neufs et déjà configurés
@@ -88,6 +89,7 @@ describe("A. pile complète : la liste, puis un Jellyfin DÉJÀ configuré", () 
     const page = await (await browser.newContext({ locale: "fr-FR", viewport: { width: 1100, height: 1300 } })).newPage();
     const button = (name: string | RegExp) => page.getByRole("button", { name, exact: typeof name === "string" });
     try {
+      await requireHostCode(stackA.port, `127.0.0.1:${stackA.port}`);
       await page.goto(stackA.url(`/setup#code=${code}`));
       await button("Commencer").click();
       await button("Valider le code").click();
