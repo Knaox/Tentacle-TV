@@ -12,6 +12,9 @@ export function ServerModulePill({ plugin }: { plugin: InstalledPlugin }) {
   const { t } = useTranslation("adminPlugins");
   const state = plugin.serverModule?.state;
   if (!state || state === "none") return null;
+  // Refusée par ce serveur : l'état de la carte (« À mettre à jour ») et son
+  // encadré le disent déjà ; une pastille « en échec » de plus brouillerait.
+  if (plugin.serverModule?.refusal) return null;
   if (state === "failed") {
     return <StatusPill tone="error" size="sm" title={t("serverModuleHint")}>{t("serverModuleFailed")}</StatusPill>;
   }

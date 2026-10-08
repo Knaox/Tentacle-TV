@@ -9,6 +9,7 @@ import { PluginIcon } from "./PluginIcon";
 import { UninstallButton, UpdateButton } from "./PluginActionButtons";
 import { ServerModulePill } from "./ServerModulePill";
 import { navIconName } from "./pluginCatalog";
+import { statePill } from "./cardState";
 import type { PluginActionState } from "./usePluginActions";
 import type { InstalledPlugin, MarketplacePlugin, PluginSource } from "./types";
 
@@ -51,6 +52,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
   const installedOn = formatDate(plugin.installedAt, i18n.language);
   const failed = plugin.serverModule?.state === "failed";
   const refused = plugin.serverModule?.refusal === "sqliteUnsupported";
+  const pill = statePill(enabled, refused);
 
   return (
     <article
@@ -85,9 +87,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
             />
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <StatusPill tone={enabled ? "success" : "neutral"} size="sm">
-              {enabled ? t("stateEnabled") : t("stateDisabled")}
-            </StatusPill>
+            <StatusPill tone={pill.tone} size="sm">{t(pill.label)}</StatusPill>
             {update && <StatusPill tone="brand" size="sm">{t("updateAvailable", { version: update })}</StatusPill>}
             <ServerModulePill plugin={plugin} />
             {official ? (
