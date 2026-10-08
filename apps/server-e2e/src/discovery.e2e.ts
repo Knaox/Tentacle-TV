@@ -6,7 +6,7 @@ import { hostCall } from "./lanClient";
 import { REPO, Stack } from "./stack";
 
 /**
- * Pile « base » (sans Jellyfin) sur une machine qui en porte deux : un déjà
+ * Pile « seule » (sans Jellyfin) sur une machine qui en porte deux : un déjà
  * configuré sur 8096, un vierge sur 8097. L'assistant les liste, chacun une
  * fois, le vierge d'abord, et l'adresse donnée aux applications est celle du
  * navigateur — jamais l'IP Docker de la passerelle par laquelle il les a vus.
