@@ -28,11 +28,7 @@ vi.mock("../services/configStore", () => ({
 }));
 vi.mock("../services/db", () => ({
   hasPrisma: () => true,
-  hasDatabaseUrl: () => true,
-  getDatabaseUrlSource: () => "env",
-  reconnectPrisma: async () => true,
-  reinitPrisma: async () => true,
-  saveDatabaseUrl: () => undefined,
+  retryDatabaseOpen: async () => true,
 }));
 vi.mock("../services/jellyfinWs", () => ({ restartJellyfinWs: () => undefined }));
 vi.mock("../services/jellyfinCors", () => ({ injectCorsHosts: async () => ({ added: [] }) }));
@@ -156,10 +152,11 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(res.json()).toEqual({ error: "invalid_input" });
   });
 
-  it("la base d'une pile ne se change pas par l'assistant", async () => {
+  it("plus d'étape « base de données » : la route n'existe plus, rien ne s'écrit", async () => {
     const res = await call("POST", "/database", { session, body: { host: "db", port: 3306, database: "x", user: "u", password: "p" } });
-    expect(res.statusCode).toBe(409);
-    expect(res.json()).toEqual({ error: "db_managed_by_stack" });
+    expect(res.statusCode).toBe(404);
+    // L'assistant d'avant 1.25 (encore dans le bureau) saute son étape : base « fournie ».
+    expect((await call("GET", "/context", { session })).json().database).toEqual({ configured: true, connected: true, fromEnv: true });
   });
 
   it("sans Jellyfin choisi : ni compte, ni connexion, ni bibliothèque, ni fin — le choix d'abord", async () => {

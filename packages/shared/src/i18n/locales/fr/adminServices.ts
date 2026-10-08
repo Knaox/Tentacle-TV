@@ -34,6 +34,8 @@ export default {
   databaseDown: "Ne répond pas",
   databaseNotConfigured: "Non configurée",
   databaseRestart: "Redémarrage requis",
+  databaseWontOpen: "Ne s'ouvre pas",
+  databaseOnNetwork: "Partage réseau",
   publicUrlSet: "Définie",
   publicUrlMissing: "Non définie",
   // Clé gardée (i18n) : le jumelage n'est plus bloqué, il reste à la maison.
@@ -72,28 +74,28 @@ export default {
   errorGeneric: "L'opération a échoué.",
   urlInvalid: "Adresse invalide : elle commence par http:// ou https://.",
 
-  // Base de données.
+  // Base de données : un fichier SQLite, rien à régler (serveur 1.25 et après).
   databaseTitle: "Base de données",
   databaseDescription:
+    "Le fichier où le serveur garde sa configuration, les appareils jumelés, les tickets et les préférences. Rien à régler : il vit dans le dossier de données du serveur.",
+  databaseEngine: "Moteur",
+  databaseVersion: "Version",
+  databaseSize: "Taille",
+  databasePath: "Fichier",
+  databaseErrorTitle: "Le serveur n'arrive pas à ouvrir la base",
+  databaseErrorLogs: "Les journaux du serveur disent pourquoi.",
+  databaseNetworkTitle: "La base est sur un partage réseau",
+  databaseNetwork:
+    "Le dossier de données de Tentacle est sur un partage réseau (NFS, SMB…), où SQLite peut se corrompre. Placez-le sur un disque local de la machine qui fait tourner le serveur.",
+  // Un serveur d'avant 1.25, sur MariaDB : sa connexion, montrée sans formulaire.
+  databaseDescriptionMariaDb:
     "La base MariaDB où le serveur garde sa configuration, les appareils jumelés, les tickets et les préférences.",
   databaseHost: "Hôte",
   databasePort: "Port",
   databaseName: "Base",
   databaseUser: "Utilisateur",
-  databasePassword: "Mot de passe",
-  databaseVersion: "Version",
-  databaseSourceEnv:
-    "Fixée par la variable d'environnement DATABASE_URL — docker-compose ou service système. C'est là qu'elle se modifie, avant de redémarrer le serveur : changée ici, elle serait écrasée au démarrage suivant.",
-  databaseSourceFile: "Enregistrée par le serveur, dans data/database.json.",
   databasePending:
     "Une autre connexion est enregistrée : elle prendra effet au prochain redémarrage du serveur. Celle-ci reste en service d'ici là.",
-  databaseEdit: "Modifier la connexion",
-  databaseEditSummary: "Pour déplacer la base vers un autre serveur MariaDB.",
-  databaseRestartNote:
-    "La nouvelle connexion prend effet au prochain redémarrage du serveur. Rien n'est copié d'une base à l'autre : la nouvelle doit déjà contenir les données.",
-  databasePasswordHint: "Redemandé à chaque modification : il ne quitte jamais le serveur.",
-  databasePortInvalid: "Un port entre 1 et 65535.",
-  databaseSaved: "Connexion enregistrée — redémarrez le serveur pour l'appliquer.",
 
   // Adresse publique.
   publicUrlTitle: "Adresse publique",

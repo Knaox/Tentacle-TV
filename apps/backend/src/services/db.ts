@@ -1,105 +1,81 @@
-import { PrismaClient } from "@prisma/client";
-import { chmodSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { resolve } from "path";
-import { DATA_ROOT } from "./dataDir";
-import { resolveDatabaseUrlSource, type DatabaseUrlSource } from "./databaseInfo";
-import { databaseUrlFromEnv } from "./databaseEnv";
+import type { PrismaClient } from "@prisma/client";
+import { mariadbMigrationPending } from "./database/legacySource";
+import { applyCoreMigrations } from "./database/migrator";
+import { connectSqlitePrisma } from "./database/prismaClient";
+import { coreDatabasePath, prismaSqliteUrl } from "./database/sqlitePath";
 
-const DATA_DIR = DATA_ROOT;
-const DB_CONFIG_FILE = resolve(DATA_DIR, "database.json");
+/**
+ * La base du serveur : un fichier SQLite du dossier de données
+ * (`data/tentacle.db`), rien à configurer (docs/sqlite/DECISION.md).
+ *
+ * Ouverture en deux temps, dans cet ordre et une fois par processus : les
+ * migrations du cœur par `node:sqlite`, Prisma FERMÉ (`applyCoreMigrations`),
+ * puis le client Prisma à une seule connexion.
+ */
 
 let prisma: PrismaClient | null = null;
-/** L'URL de la connexion ouverte : une modification ne l'atteint qu'au redémarrage. */
-let activeUrl: string | null = null;
+/** L'ouverture en cours : des appels simultanés l'attendent au lieu d'ouvrir un second client. */
+let opening: Promise<boolean> | null = null;
+/** Migrations appliquées dans CE processus : jamais rejouées une fois Prisma ouvert. */
+let migrated = false;
+let lastOpenError: string | null = null;
 
-function readConfigFileUrl(): string | null {
-  if (!existsSync(DB_CONFIG_FILE)) return null;
-  try {
-    const config = JSON.parse(readFileSync(DB_CONFIG_FILE, "utf-8"));
-    return config.url || null;
-  } catch {
-    return null;
-  }
+/** Le moteur de la base — à lire au lieu de le deviner par une URL (extensions). */
+export function databaseEngine(): "sqlite" {
+  return "sqlite";
 }
 
-// L'environnement et le fichier TELS QU'AU DÉMARRAGE : `saveDatabaseUrl`
-// réécrit les deux à chaud (cf. `resolveDatabaseUrlSource`). L'environnement,
-// c'est `DATABASE_URL` ou les variables `DB_*` des piles Docker (databaseEnv.ts).
-const bootEnvUrl = databaseUrlFromEnv(process.env);
-const bootFileUrl = readConfigFileUrl();
-// Le fichier porte le mot de passe de la base : lisible du seul compte du
-// serveur. Une version d'avant l'écrivait lisible de tous (0644).
-if (bootFileUrl) restrictToOwner(DB_CONFIG_FILE);
-
-function restrictToOwner(file: string): void {
-  try {
-    chmodSync(file, 0o600);
-  } catch {
-    /* fichier d'un autre propriétaire : le serveur le lit quand même */
-  }
+/** Le chemin du fichier de la base. */
+export function getDatabaseFilePath(): string {
+  return coreDatabasePath();
 }
 
-/** L'URL de la base : l'environnement d'abord, sinon `data/database.json`. */
-export function getDatabaseUrl(): string | null {
-  return databaseUrlFromEnv(process.env) || readConfigFileUrl();
-}
-
-/** Qui décide de la connexion au prochain démarrage : l'environnement ou `data/database.json`. */
-export function getDatabaseUrlSource(): DatabaseUrlSource | null {
-  return resolveDatabaseUrlSource(bootEnvUrl, bootFileUrl, getDatabaseUrl());
-}
-
-/** L'URL sur laquelle Prisma est connecté — `null` sans connexion. */
-export function getActiveDatabaseUrl(): string | null {
-  return prisma ? activeUrl : null;
+/** Pourquoi la dernière ouverture a échoué — `null` si elle a réussi ou n'a pas eu lieu. */
+export function databaseOpenError(): string | null {
+  return lastOpenError;
 }
 
 /**
- * Garde l'URL pour les démarrages suivants, dans `data/database.json` (0600).
- * Plus d'écriture de `apps/backend/.env` : le serveur ne le lit pas, et dans
- * l'image il n'est pas inscriptible (une pile d'erreur à chaque installation).
+ * Ouvre la base : la crée au besoin, applique ses migrations, connecte Prisma.
+ * `true` si la base est prête. Un échec (disque plein, droits, migration
+ * refusée) est journalisé et laisse le serveur sans base, jamais arrêté.
+ *
+ * En vol unique : la garde et `/api/setup/status` peuvent l'appeler en même
+ * temps ; deux clients ouverts, ce serait deux connexions sur le fichier (les
+ * P1008 que la connexion unique évite) et un client perdu.
  */
-export function saveDatabaseUrl(url: string): void {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(DB_CONFIG_FILE, JSON.stringify({ url }), { encoding: "utf-8", mode: 0o600 });
-  // `mode` ne vaut qu'à la création du fichier.
-  restrictToOwner(DB_CONFIG_FILE);
-  // Le processus en cours la lit aussi (getDatabaseUrl), jusqu'au redémarrage.
-  process.env.DATABASE_URL = url;
-}
-
-/** True when DATABASE_URL is available from env or config file. */
-export function hasDatabaseUrl(): boolean {
-  return !!getDatabaseUrl();
-}
-
-/** Initialize the PrismaClient. Returns true on success. */
-export async function initPrisma(url?: string): Promise<boolean> {
-  const dbUrl = url || getDatabaseUrl();
-  if (!dbUrl) return false;
-
-  try {
-    prisma = new PrismaClient({
-      datasources: { db: { url: dbUrl } },
+export function initPrisma(): Promise<boolean> {
+  if (prisma) return Promise.resolve(true);
+  if (!opening) {
+    opening = openDatabase().finally(() => {
+      opening = null;
     });
-    await prisma.$connect();
-    activeUrl = dbUrl;
+  }
+  return opening;
+}
+
+async function openDatabase(): Promise<boolean> {
+  const path = coreDatabasePath();
+  try {
+    // Un chemin qui couperait l'URL de Prisma est refusé AVANT de créer quoi que ce soit.
+    prismaSqliteUrl(path);
+    if (!migrated) {
+      const report = applyCoreMigrations(path);
+      migrated = true;
+      if (report.applied.length > 0) console.log(`[db] Migrations appliquées : ${report.applied.join(", ")}`);
+      if (report.unknown.length > 0) {
+        console.warn(`[db] Base migrée par une version plus récente (${report.unknown.join(", ")}) : le serveur démarre quand même`);
+      }
+    }
+    prisma = await connectSqlitePrisma(path);
+    lastOpenError = null;
     return true;
   } catch (err) {
-    console.error("[DB] Connection failed:", err);
+    lastOpenError = err instanceof Error ? err.message : String(err);
+    console.error(`[db] Ouverture de ${path} impossible : ${lastOpenError}`);
     prisma = null;
-    activeUrl = null;
     return false;
   }
-}
-
-/** Re-initialize PrismaClient with a new URL. */
-export async function reinitPrisma(url: string): Promise<boolean> {
-  if (prisma) {
-    await prisma.$disconnect().catch(() => {});
-    prisma = null;
-  }
-  return initPrisma(url);
 }
 
 /** Get the singleton PrismaClient. Throws if not initialized. */
@@ -113,27 +89,32 @@ export function hasPrisma(): boolean {
   return prisma !== null;
 }
 
-/** Disconnect and reconnect (handles stale connections). */
-export async function reconnectPrisma(): Promise<boolean> {
-  if (prisma) {
-    await prisma.$disconnect().catch(() => {});
-    prisma = null;
-  }
+/** Une nouvelle tentative au plus toutes les 10 s : `/api/setup/status` est public. */
+export const OPEN_RETRY_INTERVAL_MS = 10_000;
+let lastRetry = 0;
+
+/**
+ * La base ne s'ouvrait pas (disque plein, droits) : on réessaie, au plus
+ * toutes les 10 s — la garde de l'API et `/api/setup/status` passent par ici.
+ * Jamais quand une MariaDB attend sa migration : ce serait créer une base vide.
+ */
+export function retryDatabaseOpen(now = Date.now()): Promise<boolean> {
+  if (prisma) return Promise.resolve(true);
+  if (opening) return opening;
+  if (mariadbMigrationPending() || now - lastRetry < OPEN_RETRY_INTERVAL_MS) return Promise.resolve(false);
+  lastRetry = now;
   return initPrisma();
 }
 
 export type DatabaseProbe = { ok: true; version: string } | { ok: false };
 
-/**
- * La base répond-elle, et laquelle est-ce : `SELECT VERSION()`, borné. Qu'une
- * URL soit configurée ne disait ni l'un ni l'autre.
- */
+/** La base répond-elle, et en quelle version de SQLite : borné. */
 export async function probeDatabase(timeoutMs = 3000): Promise<DatabaseProbe> {
   if (!prisma) return { ok: false };
   let timer: NodeJS.Timeout | undefined;
   try {
     const rows = await Promise.race([
-      prisma.$queryRaw<Array<{ version: string }>>`SELECT VERSION() AS version`,
+      prisma.$queryRaw<Array<{ version: string }>>`SELECT sqlite_version() AS version`,
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error("timeout")), timeoutMs);
       }),

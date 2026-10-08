@@ -82,6 +82,8 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
     prisma.watchlistPending.findMany({
       where: { jellyfinUserId: userId, flag: "watchlist" },
       select: { mediaType: true, tmdbId: true },
+      // Les potentiels sont tronqués (`POTENTIALS_MAX`) : un ordre stable, celui de la clé.
+      orderBy: [{ mediaType: "asc" }, { tmdbId: "asc" }],
     }),
     fetchUserSignals(userId),
     measuredViewings(userId).catch(() => new Map()),

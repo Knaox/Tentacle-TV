@@ -65,7 +65,8 @@ async function reviewAccountId(): Promise<string | null> {
   if (reviewCache && reviewCache.expiresAt > now) return reviewCache.userId;
   if (!hasPrisma()) return null;
   try {
-    const row = await getPrisma().provisioningCode.findFirst({ select: { jellyfinUserId: true } });
+    // La même ligne que l'admin du provisionnement (`adminProvisioning.ts`).
+    const row = await getPrisma().provisioningCode.findFirst({ select: { jellyfinUserId: true }, orderBy: { id: "asc" } });
     reviewCache = { userId: row?.jellyfinUserId ?? null, expiresAt: now + REVIEW_TTL_MS };
   } catch {
     // Base muette : on garde la dernière réponse connue, sinon personne.

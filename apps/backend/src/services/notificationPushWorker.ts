@@ -89,9 +89,12 @@ export async function deliverPendingNotifications(): Promise<void> {
 
     // Claims des utilisateurs du lot — IDENTIFICATION du contenu (titre → tmdb)
     // pour les clés du registre, pas suppression : on n'exclut pas les expirés.
+    // Ordre explicite : `resolveSeerContent` prend le PREMIER claim au même
+    // titre ; MariaDB les rendait par clé, SQLite par ordre d'insertion.
     const claims = await prisma.contentClaim.findMany({
       where: { jellyfinUserId: { in: userIds } },
       select: { jellyfinUserId: true, tmdbId: true, title: true, mediaType: true },
+      orderBy: [{ tmdbId: "asc" }, { jellyfinUserId: "asc" }],
     });
     const claimsByUser = new Map<string, typeof claims>();
     for (const c of claims) {

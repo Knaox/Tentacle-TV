@@ -2,9 +2,9 @@
  * Découpe un script SQL (MariaDB/MySQL) en instructions, comme le ferait le
  * client `mysql` : un `;` hors chaîne et hors commentaire termine l'instruction.
  *
- * Écrit pour `prisma/core-init.sql`, rejoué à chaque démarrage par le client
- * Prisma (`coreSchema.ts`) depuis que la CLI n'est plus dans l'image. Les
- * commentaires disparaissent : un `;` dans un commentaire ne coupe rien, pas
+ * Écrit pour `prisma/core-init.sql` (le schéma MariaDB d'avant SQLite) ; ne
+ * sert plus qu'à LIRE une source MariaDB pendant sa migration, et partira
+ * avec elle (docs/sqlite/DECISION.md § 3). Les commentaires disparaissent : un `;` dans un commentaire ne coupe rien, pas
  * plus qu'un `;` entre apostrophes, guillemets ou accents graves.
  */
 type State = "code" | "single" | "double" | "backtick" | "line" | "block";

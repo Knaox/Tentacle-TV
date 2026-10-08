@@ -87,6 +87,8 @@ export async function attachPortraits(
   const rows = await getPrisma().tmdbMetaCache.findMany({
     where: { OR: [...refs.values()] },
     select: { payload: true },
+    // Le premier portrait d'une personne l'emporte : un ordre stable, celui de la clé.
+    orderBy: [{ mediaType: "asc" }, { tmdbId: "asc" }],
   });
   const portraits = new Map<number, string>();
   for (const row of rows) {

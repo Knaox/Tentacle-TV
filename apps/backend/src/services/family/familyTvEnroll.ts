@@ -89,8 +89,8 @@ export async function enrollTv(token: string): Promise<TvEnrollResponse> {
   if (!device || device.scope === "profile") throw pairingRequired(false);
   const presented = hashToken(token);
   // Juste après un jumelage, le serveur écrit de lui-même le jeton Jellyfin de
-  // la TV sur CETTE ligne : MariaDB 11 refuse alors la transaction (1020). On
-  // relit et on rejoue — l'appareil qu'il vient de poser part au journal.
+  // la TV sur CETTE ligne. L'échange relit dans sa transaction, et se rejoue si
+  // l'écriture n'a pas pu passer (`dbRetry.ts`) — l'appareil posé part au journal.
   const { row, pairingToken } = await retryOnWriteConflict(() => exchange(presented));
 
   // Le jeton d'avant (ou le jeton de jumelage d'un échange perdu) ne vaut plus rien.

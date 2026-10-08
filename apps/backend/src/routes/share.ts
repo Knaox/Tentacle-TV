@@ -6,7 +6,7 @@ import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { getUserWatchlist, getItemDetail } from "../services/jellyfin";
 import { getLikedListItems } from "../services/shareLists";
-import { generateShareToken } from "../services/shareToken";
+import { generateShareToken, normalizeShareToken } from "../services/shareToken";
 import { registerStatsOwnerRoutes, replySharedStats, sharedStatsShowsTitle } from "./shareStats";
 
 /**
@@ -82,7 +82,7 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
   //    likes (favoris + hors bibliothèque avec affiche TMDB) ou stats (les
   //    statistiques du propriétaire, passées à la liste blanche). ──
   app.get("/:token", { config: PUBLIC_RATE_LIMIT }, async (request, reply) => {
-    const { token } = request.params as { token: string };
+    const token = normalizeShareToken((request.params as { token: string }).token);
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });
@@ -115,7 +115,8 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
   //    parmi les titres que montrent les statistiques partagées (pas
   //    d'énumération de la bibliothèque via un token). ──
   app.get("/:token/item/:itemId", { config: PUBLIC_RATE_LIMIT }, async (request, reply) => {
-    const { token, itemId } = request.params as { token: string; itemId: string };
+    const { itemId } = request.params as { token: string; itemId: string };
+    const token = normalizeShareToken((request.params as { token: string }).token);
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });

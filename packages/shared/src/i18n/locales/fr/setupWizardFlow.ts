@@ -28,7 +28,6 @@ export default {
   signInDone: "Connecté à ce Jellyfin en tant que “{{name}}”.",
   signInOther: "Utiliser un autre compte",
 
-  dbDone: "La base de données est reliée.",
   recapLibrariesExisting: "Aucune création — déjà dans Jellyfin\u00a0: {{names}}",
   recapLibrariesNoneYet: "Aucune création — ce Jellyfin n'a pas encore de bibliothèque",
 };

@@ -28,6 +28,8 @@ export const adminWatchTimeRoutes: FastifyPluginAsync = async (app) => {
         where: { startedAt: { gte: dayStart } },
         _sum: { seconds: true },
         _count: { _all: true },
+        // MariaDB triait un GROUP BY par ses colonnes ; SQLite non.
+        orderBy: { jellyfinUserId: "asc" },
       }),
       prisma.watchSegment.findMany({
         orderBy: { lastSeenAt: "desc" },

@@ -87,10 +87,9 @@ export async function revokePairedDevice(
     }
   }
 
-  // MariaDB 11 (isolation par instantané) refuse la transaction si la ligne a
-  // bougé depuis sa lecture — `lastSeen`, ou le jeton Jellyfin que le serveur
-  // pose juste après un jumelage (erreur 1020) : la TV restait alors jumelée.
-  // On RELIT dans la transaction, et on rejoue le tout (`dbRetry.ts`).
+  // On RELIT dans la transaction (la ligne bouge : `lastSeen`, le jeton
+  // Jellyfin posé juste après un jumelage), et on rejoue le tout si
+  // l'écriture n'a pas pu passer (`dbRetry.ts`) : la TV ne reste jamais jumelée.
   const jellyfinDeviceId = await retryOnWriteConflict(() =>
     prisma.$transaction(async (tx) => {
       const fresh = await tx.pairedDevice.findUnique({ where: { id: device.id }, select: { jellyfinDeviceId: true } });

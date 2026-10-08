@@ -8,10 +8,10 @@
 # directement en non-root (`--user`, Podman sans root), il saute cette marche.
 #
 # Ce que faisait l'ancienne version et qui n'est plus là :
-#  - l'URL de la base lue dans data/database.json : le serveur la lit lui-même ;
+#  - l'URL de la base lue dans data/database.json : la base est data/tentacle.db ;
 #  - `npx prisma generate` à chaque démarrage : le client est généré au build ;
-#  - `npx prisma db execute core-init.sql` : le serveur pose son schéma par le
-#    client Prisma (services/schemaInit) — la CLI n'est plus dans l'image.
+#  - `npx prisma db execute core-init.sql` : le serveur pose lui-même le schéma
+#    de sa base SQLite (services/database/migrator.ts) — pas de CLI dans l'image.
 set -eu
 
 DATA_DIR="${TENTACLE_DATA_DIR:-/app/apps/backend/data}"

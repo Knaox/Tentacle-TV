@@ -9,7 +9,6 @@ import {
   readPublicUrl,
   readServices,
   text,
-  type DatabaseFields,
   type DirectStreamingConfig,
 } from "./servicesModel";
 
@@ -47,7 +46,6 @@ export const servicesApi = {
   testJellyfin: (body: { url: string; apiKey?: string }) =>
     call("/test-jellyfin", (raw) => ({ version: text(asRecord(raw).version), serverName: text(asRecord(raw).serverName) }), "POST", body),
   saveJellyfin: (body: { url: string; apiKey?: string }) => call("/jellyfin", ignore, "PUT", body),
-  saveDatabase: (body: DatabaseFields & { password: string }) => call("/database", ignore, "PUT", body),
   savePublicUrl: (publicUrl: string) => call("/public-url", ignore, "PUT", { publicUrl }),
   /** `publicUrl: null` efface l'adresse publique (capacité `admin.remoteExposure`). */
   saveDirectStreaming: (body: Omit<DirectStreamingConfig, "publicUrl"> & { publicUrl: string | null }) => call("/direct-streaming", ignore, "PUT", body),

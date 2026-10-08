@@ -62,9 +62,9 @@ export default {
   "entry_jellyfinKeyRejected_no-rights_details": "Créez une clé d'API depuis un compte administrateur de Jellyfin, puis enregistrez-la dans Services.",
   entry_jellyfinKeyRejected_action: "Remplacer la clé",
 
-  entry_databaseDown_title: "La base de données ne répond pas",
+  entry_databaseDown_title: "La base de données ne s'ouvre pas",
   entry_databaseDown_body: "Tentacle ne peut plus enregistrer ni relire ce qu'il garde : préférences, notes, invitations.",
-  entry_databaseDown_details: "Vérifiez que la base tourne et que Tentacle peut la joindre.",
+  entry_databaseDown_details: "Le journal du serveur dit pourquoi (disque plein, droits du dossier de données…). La carte « Base de données » donne le fichier.",
   entry_databaseDown_action: "Voir la base",
 
   entry_jellyfinIncompatible_title: "Version de Jellyfin non prise en charge",

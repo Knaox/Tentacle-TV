@@ -34,18 +34,49 @@ describe("le résumé de Jellyfin", () => {
 });
 
 describe("le résumé de la base", () => {
-  const database = (patch: object) => readServices({ database: { status: "connected", version: "11.4.4-MariaDB-ubu2404", ...patch } }).database;
+  const sqlite = (patch: object) => readServices({
+    database: { status: "connected", version: "3.46.0", engine: "sqlite", path: "/app/apps/backend/data/tentacle.db", sizeBytes: 14_500_000, storage: "local", ...patch },
+  }).database;
+  /** Un serveur d'avant 1.25 : MariaDB, sans moteur déclaré. */
+  const mariadb = (patch: object) => readServices({ database: { status: "connected", version: "11.4.4-MariaDB-ubu2404", ...patch } }).database;
 
-  it("connectée, avec le nom et la version du moteur", () => {
-    expect(summary.summarizeDatabase(database({}))).toEqual({ tone: "success", label: "databaseConnected", detail: "MariaDB 11.4.4" });
+  it("SQLite connectée : le moteur et sa version", () => {
+    expect(summary.summarizeDatabase(sqlite({}))).toEqual({ tone: "success", label: "databaseConnected", detail: "SQLite 3.46.0" });
   });
 
-  it("une autre connexion attend le redémarrage", () => {
-    expect(summary.summarizeDatabase(database({ pendingRestart: true })).label).toBe("databaseRestart");
+  it("SQLite sur un partage réseau : un avertissement, pas « connectée »", () => {
+    expect(summary.summarizeDatabase(sqlite({ storage: "network" }))).toEqual({ tone: "warning", label: "databaseOnNetwork", detail: "SQLite 3.46.0" });
   });
 
-  it("ne répond pas", () => {
-    expect(summary.summarizeDatabase(database({ status: "error", fields: { host: "db" } }))).toEqual({ tone: "error", label: "databaseDown", detail: "db" });
+  it("SQLite qui ne s'ouvre pas : un fichier ne « répond » pas, il s'ouvre ou non", () => {
+    expect(summary.summarizeDatabase(sqlite({ status: "error", version: "", error: "unable to open database file" })))
+      .toEqual({ tone: "error", label: "databaseWontOpen" });
+  });
+
+  it("un serveur SQLite garde les champs de l'admin d'avant 1.25 : ils ne valent rien ici", () => {
+    const database = sqlite({ source: "env", fromEnv: true, pendingRestart: true, fields: { host: "db" } });
+    expect(database.pendingRestart).toBe(false);
+    expect(database.fields).toBeNull();
+  });
+
+  it("serveur d'avant 1.25 (MariaDB) : connectée, avec le nom et la version du moteur", () => {
+    const database = mariadb({});
+    expect(database.engine).toBeNull();
+    expect(summary.summarizeDatabase(database)).toEqual({ tone: "success", label: "databaseConnected", detail: "MariaDB 11.4.4" });
+  });
+
+  it("serveur d'avant 1.25 : une autre connexion attend le redémarrage", () => {
+    expect(summary.summarizeDatabase(mariadb({ pendingRestart: true })).label).toBe("databaseRestart");
+  });
+
+  it("serveur d'avant 1.25 : ne répond pas, avec son hôte", () => {
+    expect(summary.summarizeDatabase(mariadb({ status: "error", fields: { host: "db" } }))).toEqual({ tone: "error", label: "databaseDown", detail: "db" });
+  });
+
+  it("des valeurs étranges ne font rien tomber : stockage inconnu, taille absente", () => {
+    const database = sqlite({ storage: "nas", sizeBytes: "beaucoup" });
+    expect(database.storage).toBe("unknown");
+    expect(database.sizeBytes).toBeNull();
   });
 });
 
@@ -62,10 +93,11 @@ describe("les autres tuiles", () => {
 });
 
 describe("ce qu'un serveur plus ancien ne dit pas", () => {
-  it("clé présente inconnue, source de la base inconnue — même avec l'ancien fromEnv", () => {
+  it("clé présente inconnue, moteur de la base inconnu (MariaDB) — même avec l'ancien fromEnv", () => {
     const status = readServices({ jellyfin: { status: "connected" }, database: { status: "connected", fromEnv: true, fields: { host: "db", port: 3306, database: "t", user: "u" } } });
     expect(status.jellyfin.apiKeyConfigured).toBeNull();
-    expect(status.database.source).toBeNull();
+    expect(status.database.engine).toBeNull();
+    expect(status.database.sizeBytes).toBeNull();
     expect(status.database.pendingRestart).toBe(false);
     expect(status.database.fields?.host).toBe("db");
   });
@@ -99,8 +131,19 @@ describe("les petites règles", () => {
   });
 
   it("les versions de base de données", () => {
+    expect(summary.formatDatabaseVersion("3.46.0", "sqlite")).toBe("SQLite 3.46.0");
+    expect(summary.formatDatabaseVersion("", "sqlite")).toBe("");
     expect(summary.formatDatabaseVersion("8.0.36")).toBe("MySQL 8.0.36");
     expect(summary.formatDatabaseVersion("inconnue")).toBe("inconnue");
+  });
+
+  it("les tailles, dans l'unité qui leur va et celle de la langue", () => {
+    expect(plain(summary.formatBytes(512, "fr"))).toBe("512 octets");
+    expect(plain(summary.formatBytes(512, "en"))).toBe("512 bytes");
+    expect(plain(summary.formatBytes(48_300, "fr"))).toBe("48,3 ko");
+    expect(plain(summary.formatBytes(14_500_000, "fr"))).toBe("14,5 Mo");
+    expect(plain(summary.formatBytes(14_500_000, "en"))).toBe("14.5 MB");
+    expect(plain(summary.formatBytes(1_200_000_000, "fr"))).toBe("1,2 Go");
   });
 
   it("les durées, en deux unités au plus", () => {

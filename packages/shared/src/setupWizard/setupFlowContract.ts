@@ -38,7 +38,6 @@
 export type SetupStep =
   | "welcome"
   | "code"
-  | "database"
   | "jellyfin"
   | "account"
   | "libraries"
@@ -85,7 +84,13 @@ export interface SetupTmdbState {
 
 /** Ce que le serveur tient du parcours (`SetupContext.flow`). */
 export interface SetupFlowState {
-  /** La base reste à relier : ni fournie par l'environnement, ni connectée. */
+  /**
+   * Vrai : la base du serveur ne s'ouvre pas (indisponible, ou MariaDB en
+   * attente de migration vers SQLite) — aucun geste n'est permis, et
+   * l'assistant reste à l'accueil (`setupStage` → `welcome`). Depuis SQLite
+   * (1.25), il n'y a plus de base à relier : plus d'écran pour elle. Champ
+   * GARDÉ sur le réseau : les assistants d'avant 1.25 le lisent.
+   */
   databasePending: boolean;
   /** `null` : aucun Jellyfin choisi — l'étape « Jellyfin » est la prochaine. */
   selection: SetupSelection | null;
@@ -105,8 +110,6 @@ export interface SetupFlowState {
 export interface SetupFlowShape {
   /** Ce navigateur doit donner le code d'installation. */
   needsCode: boolean;
-  /** La base n'est pas fournie par l'environnement : son écran est dans le parcours. */
-  asksDatabase: boolean;
   /** `null` : pas encore de Jellyfin choisi. */
   path: SetupPath | null;
   /** Jellyfin configuré trouvé sans bibliothèque (`SetupFlowState.noLibraries`). */
@@ -133,7 +136,7 @@ function tail(shape: SetupFlowShape): SetupStep[] {
 }
 
 function head(shape: SetupFlowShape): SetupStep[] {
-  return ["welcome", ...(shape.needsCode ? (["code"] as const) : []), ...(shape.asksDatabase ? (["database"] as const) : []), "jellyfin"];
+  return ["welcome", ...(shape.needsCode ? (["code"] as const) : []), "jellyfin"];
 }
 
 /** Les écrans du parcours, dans l'ordre. Sans Jellyfin choisi : jusqu'à « Jellyfin » seulement. */
@@ -165,9 +168,9 @@ export function pathForServer(server: { blank: boolean }): SetupPath {
   return server.blank ? "fresh" : "configured";
 }
 
-/** L'étape où en est le serveur : où reprendre l'installation. */
+/** L'étape où en est le serveur : où reprendre l'installation. Base fermée : l'accueil, rien d'autre. */
 export function setupStage(state: SetupFlowState): SetupStep {
-  if (state.databasePending) return "database";
+  if (state.databasePending) return "welcome";
   if (!state.selection) return "jellyfin";
   if (!state.linked) return pathEntry(state.selection.path);
   return pathSteps(state.selection.path, state.noLibraries)[1];

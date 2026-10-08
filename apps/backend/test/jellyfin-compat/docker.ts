@@ -1,7 +1,7 @@
 /**
  * Le pilotage de Docker pour la suite de compatibilité : un Jellyfin OFFICIEL
- * (`jellyfin/jellyfin:<version>`) et une MariaDB 11 jetables, des volumes
- * nommés, rien d'autre.
+ * (`jellyfin/jellyfin:<version>`) jetable, des volumes nommés, rien d'autre
+ * (la base du backend est un fichier SQLite du passage).
  *
  * Volumes nommés plutôt que dossiers montés : sous colima, seul le dossier
  * personnel est partagé avec la VM — un dossier temporaire du Mac n'y existe
@@ -84,34 +84,6 @@ export function startJellyfin(spec: JellyfinSpec): void {
     "-v", `${spec.mediaVolume}:/media:ro`,
     spec.image,
   ]);
-}
-
-export interface MariaDbSpec {
-  name: string;
-  port: number;
-  database: string;
-  user: string;
-  password: string;
-}
-
-/** La base du backend : une MariaDB 11 à part, comme la production. */
-export function startMariaDb(spec: MariaDbSpec): void {
-  docker([
-    "run", "-d",
-    "--name", spec.name,
-    "--label", "tentacle.jellyfin-compat=1",
-    "-p", `127.0.0.1:${spec.port}:3306`,
-    "-e", `MARIADB_ROOT_PASSWORD=${spec.password}`,
-    "-e", `MARIADB_DATABASE=${spec.database}`,
-    "-e", `MARIADB_USER=${spec.user}`,
-    "-e", `MARIADB_PASSWORD=${spec.password}`,
-    "mariadb:11",
-  ]);
-}
-
-/** La base accepte-t-elle des requêtes ? (script fourni par l'image officielle.) */
-export function mariaDbReady(name: string): boolean {
-  return docker(["exec", name, "healthcheck.sh", "--connect", "--innodb_initialized"], { allowFail: true }).code === 0;
 }
 
 /**

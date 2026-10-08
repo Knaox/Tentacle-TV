@@ -6,7 +6,8 @@ import { initialData, wizardReducer, type WizardAction, type WizardState } from 
  * Les transitions de l'assistant côté client : on ne va, on n'avance et on ne
  * revient que DANS le parcours que le serveur a fixé ; changer de Jellyfin
  * repart du premier écran du nouveau parcours et oublie ce qui valait pour
- * l'ancien. Pile complète (base fournie) et sans pile (base à relier).
+ * l'ancien. Pile complète, et serveur d'avant 1.25 en pile « seule » (base
+ * reliée à la main, `fromEnv` faux) : la base n'a plus d'écran, ni l'un ni l'autre.
  */
 const SALON = { url: "http://192.168.1.20:8096", serverId: "salon", serverName: "Salon", version: "10.11.11", inStack: false, path: "configured" as const };
 const PILE = { url: "http://jellyfin:8096", serverId: "pile", serverName: "Tentacle", version: "12.1.0", inStack: true, path: "fresh" as const };
@@ -40,13 +41,11 @@ function walkBack(state: WizardState): string[] {
 
 describe.each([
   ["pile complète", true],
-  ["sans pile (base à relier)", false],
+  ["serveur d'avant 1.25, pile « seule »", false],
 ])("%s", (_name, fromEnv) => {
-  const first = fromEnv ? "jellyfin" : "database";
-
   it("la session ouverte, aucun Jellyfin choisi : l'écran « Jellyfin », et rien au-delà ne s'atteint", () => {
-    const entered = run(start(), { type: "enter", context: context({}, fromEnv), step: first });
-    expect(entered.step).toBe(first);
+    const entered = run(start(), { type: "enter", context: context({}, fromEnv), step: "jellyfin" });
+    expect(entered.step).toBe("jellyfin");
     const atJellyfin = run(entered, { type: "go", step: "jellyfin" });
     expect(atJellyfin.step).toBe("jellyfin");
     for (const target of ["account", "libraries", "signIn", "recommended", "recap"] as const) {
@@ -60,7 +59,7 @@ describe.each([
     expect(state.step).toBe("account");
     state = run(state, { type: "patch", data: { context: context({ selection: PILE, linked: true }, fromEnv) } }, { type: "next" }, { type: "next" });
     expect(state.step).toBe("recap");
-    expect(walkBack(state)).toEqual(["recap", "libraries", "account", "jellyfin", ...(fromEnv ? [] : ["database"])]);
+    expect(walkBack(state)).toEqual(["recap", "libraries", "account", "jellyfin"]);
     expect(run(state, { type: "go", step: "signIn" }).step).toBe("recap");
     expect(run(state, { type: "go", step: "recommended" }).step).toBe("recap");
   });
@@ -70,7 +69,7 @@ describe.each([
     expect(state.step).toBe("signIn");
     state = run(state, { type: "patch", data: { context: context({ selection: SALON, linked: true }, fromEnv) } }, { type: "next" }, { type: "next" });
     expect(state.step).toBe("recap");
-    expect(walkBack(state)).toEqual(["recap", "recommended", "signIn", "jellyfin", ...(fromEnv ? [] : ["database"])]);
+    expect(walkBack(state)).toEqual(["recap", "recommended", "signIn", "jellyfin"]);
     for (const target of ["account", "libraries"] as const) expect(run(state, { type: "go", step: target }).step).toBe("recap");
   });
 
