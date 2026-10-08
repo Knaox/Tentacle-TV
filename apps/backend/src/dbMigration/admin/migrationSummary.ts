@@ -16,7 +16,7 @@ import { dropDatabaseCommand, removalGuide, type RemovalGuide } from "./removalG
  */
 export interface DatabaseMigrationSummary {
   legacy: LegacySourceState;
-  /** Une ancienne base est encore désignée par l'environnement ou `database.json`. */
+  /** Une ancienne base est encore désignée par l'environnement ou le fichier de l'ancien assistant. */
   sourceConfigured: boolean;
   report: null | {
     finishedAt: number;

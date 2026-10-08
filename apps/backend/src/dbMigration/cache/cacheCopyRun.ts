@@ -45,9 +45,10 @@ export async function runCacheCopy(config: CacheChildConfig, send: (message: Cac
       if (!source) continue;
       const model = models.get(name);
       const plan = model ? corePlan(model, source, ctx) : extensionPlan(source, ctx);
-      const columns = plan.columns.map((c) => quoteIdent(c.target));
+      // Noms de la table CIBLE, cités : aucune valeur n'entre dans le texte.
+      const targets = plan.columns.map((c) => c.target);
       const insert = db.prepare(
-        `INSERT OR IGNORE INTO ${quoteIdent(name)} (${columns.join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`,
+        `INSERT OR IGNORE INTO ${quoteIdent(name)} (${targets.map(quoteIdent).join(", ")}) VALUES (${targets.map(() => "?").join(", ")})`,
       );
       const keys = source.keyColumns.map((k) => plan.sourceColumns.findIndex((c) => c.name === k && !c.fromZone));
       const total = await reader.count(name);

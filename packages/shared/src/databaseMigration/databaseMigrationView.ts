@@ -18,6 +18,7 @@ export const DATABASE_MIGRATION_REASONS = [
   "source_unreachable",
   "source_config",
   "source_too_old",
+  "source_missing",
   "disk_space",
   "unsafe_path",
   "copy_failed",
@@ -29,7 +30,8 @@ export type DatabaseMigrationReason = (typeof DATABASE_MIGRATION_REASONS)[number
 
 export type DatabaseMigrationView =
   | { kind: "migrating"; percent: number; done: number; total: number; etaSeconds: number | null }
-  | { kind: "failed"; reason: DatabaseMigrationReason; retryInSeconds: number; percent: number };
+  /** `retryInSeconds: null` : pas de nouvel essai automatique (`source_missing`) — ne rien en dire. */
+  | { kind: "failed"; reason: DatabaseMigrationReason; retryInSeconds: number | null; percent: number };
 
 const num = (v: unknown, fallback = 0): number => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
 
@@ -53,7 +55,10 @@ export function databaseMigrationOf(body: unknown): DatabaseMigrationView | null
     const eta = p.etaSeconds === null || p.etaSeconds === undefined ? null : Math.max(0, num(p.etaSeconds));
     return { kind: "migrating", percent, done: num(p.done), total: num(p.total), etaSeconds: eta };
   }
-  if (d.state === "failed") return { kind: "failed", reason: reasonOf(d.reason), retryInSeconds: Math.max(0, num(d.retryInSeconds)), percent };
+  if (d.state === "failed") {
+    const retry = typeof d.retryInSeconds === "number" && Number.isFinite(d.retryInSeconds) ? Math.max(0, d.retryInSeconds) : null;
+    return { kind: "failed", reason: reasonOf(d.reason), retryInSeconds: retry, percent };
+  }
   return null;
 }
 
@@ -83,6 +88,7 @@ export const DB_MIGRATION_REASON_KEYS: Record<DatabaseMigrationReason, string> =
   source_unreachable: "errors:dbMigrationReasonUnreachable",
   source_config: "errors:dbMigrationReasonConfig",
   source_too_old: "errors:dbMigrationReasonTooOld",
+  source_missing: "errors:dbMigrationReasonMissing",
   disk_space: "errors:dbMigrationReasonDiskSpace",
   unsafe_path: "errors:dbMigrationReasonOther",
   copy_failed: "errors:dbMigrationReasonOther",
