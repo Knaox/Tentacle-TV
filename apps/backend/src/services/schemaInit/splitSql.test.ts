@@ -30,10 +30,10 @@ describe("découpage d'un script SQL", () => {
     expect(splitSqlStatements("SELECT 1--1;")).toEqual(["SELECT 1--1"]);
   });
 
-  it("découpe le vrai core-init.sql en 143 instructions, sans commentaire résiduel", () => {
+  it("découpe le vrai core-init.sql en 144 instructions, sans commentaire résiduel", () => {
     const file = resolve(__dirname, "../../../prisma/core-init.sql");
     const statements = splitSqlStatements(readFileSync(file, "utf-8"));
-    expect(statements).toHaveLength(143);
+    expect(statements).toHaveLength(144);
     for (const statement of statements) {
       expect(statement.trimStart().startsWith("--")).toBe(false);
       expect(statement.endsWith(";")).toBe(false);
