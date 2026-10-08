@@ -1,33 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { afterKey } from "./mariadbReader";
-import { connectionOptions, describeSource, isMariadbUrl, resolveLegacySource } from "./sourceConfig";
+import { connectionOptions, describeSource, isMariadbUrl } from "./sourceConfig";
 import { sourceZoneForConversion, zonePolicy } from "./timeZones";
 
-describe("source MariaDB : configuration", () => {
-  const noFile = () => {
-    throw new Error("absent");
-  };
-
-  it("DATABASE_URL en mysql:// d'abord, une URL file: n'est pas une source", () => {
-    expect(resolveLegacySource({ DATABASE_URL: "mysql://u:p@db:3306/t" }, "/nulle-part", noFile)).toEqual({
-      url: "mysql://u:p@db:3306/t",
-      origin: "env-url",
-    });
-    expect(resolveLegacySource({ DATABASE_URL: "file:/data/tentacle.db" }, "/nulle-part", noFile)).toBeNull();
+describe("source MariaDB : connexion", () => {
+  it("une URL file: n'est pas une source ; mysql:// et mariadb:// le sont", () => {
+    expect(isMariadbUrl("file:/data/tentacle.db")).toBe(false);
+    expect(isMariadbUrl("mysql://u:p@db:3306/t")).toBe(true);
     expect(isMariadbUrl("mariadb://h/x")).toBe(true);
   });
 
-  it("les variables DB_* des piles, mot de passe lu dans son fichier (sans le saut de ligne)", () => {
-    const src = resolveLegacySource({ DB_HOST: "db", DB_PASSWORD_FILE: "/run/secrets/pw" }, "/x", (p) => {
-      expect(p).toBe("/run/secrets/pw");
-      return "s3cr:et@\n";
+  it("paramètres du pilote, mot de passe décodé", () => {
+    expect(connectionOptions("mysql://tentacle:s3cr%3Aet%40@db/tentacle")).toEqual({
+      host: "db",
+      port: 3306,
+      user: "tentacle",
+      password: "s3cr:et@",
+      database: "tentacle",
     });
-    expect(src?.origin).toBe("env-vars");
-    expect(connectionOptions(src!.url)).toEqual({ host: "db", port: 3306, user: "tentacle", password: "s3cr:et@", database: "tentacle" });
-  });
-
-  it("un mot de passe illisible ne donne pas de source (rien de tenté à l'aveugle)", () => {
-    expect(resolveLegacySource({ DB_HOST: "db", DB_PASSWORD_FILE: "/absent" }, "/nulle-part", noFile)).toBeNull();
   });
 
   it("le journal ne dit que l'hôte, le port et la base — jamais l'utilisateur ni le mot de passe", () => {
