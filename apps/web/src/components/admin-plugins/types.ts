@@ -26,7 +26,8 @@ export interface InstalledPlugin {
   }>;
   // Serveur 1.19.3 et plus — absents d'un serveur plus ancien, et l'interface
   // se tait alors sur le redémarrage plutôt que de le deviner.
-  serverModule?: { state: ServerModuleState; detail?: string };
+  /** `refusal` : ce serveur refuse de charger le module (SQLite non déclaré, serveur 1.25.0 et après). */
+  serverModule?: { state: ServerModuleState; detail?: string; refusal?: "sqliteUnsupported" };
   /** L'activation attend un redémarrage : module à démarrer, ou à arrêter. */
   restartRequired?: boolean;
   /** Les gestes qui redémarreront le serveur. */
@@ -57,6 +58,10 @@ export interface MarketplacePlugin {
   /** Notes de la version publiée (Markdown, blocs `### FR` / `### EN`) — serveur 1.19.3+. */
   changelog?: string;
   releaseDate?: string;
+  /** La version de Tentacle qu'exige la version proposée. */
+  minAppVersion?: string;
+  /** Aucune version publiée ne convient à ce serveur (1.25.0+) : elle ne s'installe pas. */
+  incompatible?: boolean;
 }
 
 /** La dernière lecture du registre d'une source (serveur 1.19.3+). */

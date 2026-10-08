@@ -77,6 +77,11 @@ export default {
   entry_serverUpdateRequired_details: "Ce serveur est en {{current}}. La commande à copier est dans la carte « Serveur Tentacle ».",
   entry_serverUpdateRequired_action: "Voir la mise à jour",
 
+  entry_extensionsRefused_title: "Extension à mettre à jour : {{names}}",
+  entry_extensionsRefused_body: "Elle n'est pas compatible avec la base de données de ce serveur : elle reste arrêtée, ses pages et ses fonctions sont absentes pour tous les comptes.",
+  entry_extensionsRefused_details: "Ses données sont intactes. Mettez-la à jour depuis la page Extensions : elle redémarrera avec ses données.",
+  entry_extensionsRefused_action: "Voir les extensions",
+
   entry_publicUrl_missing_title: "Donner une adresse publique à Tentacle",
   entry_publicUrl_missing_body: "Sans elle, rien ne se joint hors de chez vous : ni les applications, ni le jumelage d'un téléviseur, ni les liens partagés.",
   "entry_publicUrl_not-https_title": "Servir Tentacle en HTTPS",

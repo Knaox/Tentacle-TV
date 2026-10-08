@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAllTickets } from "@tentacle-tv/api-client";
 import { BACKEND, creds, hdrs } from "../../../pages/adminUtils";
 import { useAdminSessions } from "../../../hooks/useAdminSessions";
-import { readServicesAttention } from "../attention/attentionSources";
+import { readRefusedExtensions, readServicesAttention } from "../attention/attentionSources";
 import {
   readServicesHealth,
   summarizeAccounts,
@@ -64,6 +64,11 @@ export function useServicesHealth() {
 /** La même lecture (le cache garde la réponse brute), résumée pour « À régler ». */
 export function useServicesAttention() {
   return part(useOverviewRead("services", "/api/admin/services", readServicesAttention));
+}
+
+/** Les extensions que le serveur refuse de charger — la lecture de la tuile des plugins, résumée pour « À régler ». */
+export function useRefusedExtensions() {
+  return part(useOverviewRead("plugins", "/api/plugins", readRefusedExtensions));
 }
 
 export function useAccountsSummary() {

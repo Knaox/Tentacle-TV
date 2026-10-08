@@ -16,6 +16,7 @@ const healthy: AttentionSources = {
   jellyfinSetup: { restartPending: false, checks: [{ id: "trickplay", level: "recommended", state: "done" }] },
   jellyfinVersion: "compatible",
   serverUpdate: "up-to-date",
+  refusedExtensions: [],
   capabilities: new Set(SERVER_CAPABILITY_KEYS),
   dismissed: { publicUrl: false, tmdbKey: false, jellyfin: false, segmentPlugins: false, directPlay: false },
 };
@@ -69,23 +70,23 @@ describe("ce qui demande l'attention de l'administrateur", () => {
       links: [done("publicUrl"), { id: "directPlay", state: "todo", endpoints: [], notes: ["direct-disabled"] }],
       tmdbConfigured: false,
     });
-    expect(attention.blocking).toEqual([{ id: "jellyfinNotConfigured", variant: "key" }]);
+    expect(attention.blocking).toEqual([{ id: "jellyfinNotConfigured", variant: "key", items: [] }]);
     // La clé TMDB ne dépend pas de Jellyfin : elle reste ; les réglages et la lecture directe attendent.
     expect(attention.recommendations.map((entry) => entry.id)).toEqual(["tmdbKey"]);
   });
 
   it("clé refusée, Jellyfin injoignable, adresse et clé absentes : la cause précise", () => {
-    expect(buildAdminAttention({ ...healthy, adminKey: "no-rights" }).blocking).toEqual([{ id: "jellyfinKeyRejected", variant: "no-rights" }]);
+    expect(buildAdminAttention({ ...healthy, adminKey: "no-rights" }).blocking).toEqual([{ id: "jellyfinKeyRejected", variant: "no-rights", items: [] }]);
     expect(buildAdminAttention({ ...healthy, jellyfin: { state: "rejected", reason: "revoked" } }).blocking)
-      .toEqual([{ id: "jellyfinKeyRejected", variant: "revoked" }]);
-    expect(buildAdminAttention({ ...healthy, jellyfin: { state: "unreachable" } }).blocking).toEqual([{ id: "jellyfinUnreachable", variant: null }]);
+      .toEqual([{ id: "jellyfinKeyRejected", variant: "revoked", items: [] }]);
+    expect(buildAdminAttention({ ...healthy, jellyfin: { state: "unreachable" } }).blocking).toEqual([{ id: "jellyfinUnreachable", variant: null, items: [] }]);
     // L'état en direct (`server:jellyfin`) : un redémarrage se dit, « arrêté » garde la phrase générique.
     const variantOf = (health: "restarting" | "shutting-down" | "starting" | "down") =>
       buildAdminAttention({ ...healthy, jellyfin: { state: "unreachable", health } }).blocking[0]?.variant;
     expect([variantOf("restarting"), variantOf("shutting-down"), variantOf("starting"), variantOf("down")])
       .toEqual(["restarting", "shuttingDown", "starting", null]);
     expect(buildAdminAttention({ ...healthy, jellyfin: { state: "not-configured", missing: ["url", "key"] } }).blocking)
-      .toEqual([{ id: "jellyfinNotConfigured", variant: "both" }]);
+      .toEqual([{ id: "jellyfinNotConfigured", variant: "both", items: [] }]);
   });
 
   it("les réglages de Jellyfin : UNE entrée groupée, l'essentiel en tête de ses variantes", () => {
@@ -128,6 +129,13 @@ describe("ce qui demande l'attention de l'administrateur", () => {
     expect(attention.recommendations.map((entry) => `${entry.id}:${String(entry.variant)}`)).toEqual([
       "publicUrl:not-https", "tmdbKey:null", "directPlay:off",
     ]);
+  });
+
+  it("une extension refusée par ce serveur se dit, nommée ; un serveur d'avant n'en dit rien", () => {
+    const attention = buildAdminAttention({ ...healthy, refusedExtensions: ["Vigie 1.24.1"] });
+    expect(attention.blocking).toEqual([{ id: "extensionsRefused", variant: null, items: ["Vigie 1.24.1"] }]);
+    expect(buildAdminAttention({ ...healthy, refusedExtensions: null }).blocking).toEqual([]);
+    expect(buildAdminAttention({ ...healthy, refusedExtensions: undefined }).settled).toBe(false);
   });
 
   it("greffons de passages manquants : une entrée à eux, pas dans les réglages groupés", () => {

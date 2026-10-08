@@ -1,11 +1,4 @@
-import { resolve } from "path";
-import { existsSync, readFileSync } from "fs";
-import { DATA_DIR } from "./pluginManager";
-
-// Chemin résolu par pluginManager (source unique) : une résolution locale à
-// base de __dirname pointe à côté du data/ réel dès qu'on se trompe d'un
-// niveau, et le repli silencieux sur null masque complètement l'erreur.
-const INSTALLED_PATH = resolve(DATA_DIR, "installed.json");
+import { usablePlugins } from "./pluginStorage/gate";
 
 export interface SeerrConfig {
   url: string;
@@ -13,25 +6,26 @@ export interface SeerrConfig {
 }
 
 /**
- * Configuration Jellyseerr du plugin Vigie (`seer`), lue dans installed.json.
- * Null si le plugin est absent ou non configuré — TOUT consommateur doit
- * dégrader proprement (pas d'erreur, pas de rangée vide criarde) : le cœur ne
- * dépend jamais durement d'un plugin.
+ * Configuration Jellyseerr du plugin Vigie (`seer`), lue dans installed.json
+ * par la règle commune des extensions. Null si le plugin est absent, refusé
+ * ou non configuré — TOUT consommateur doit dégrader proprement (pas
+ * d'erreur, pas de rangée vide criarde) : le cœur ne dépend jamais durement
+ * d'un plugin.
  */
 export function getSeerrConfig(): SeerrConfig | null {
   try {
-    if (!existsSync(INSTALLED_PATH)) return null;
-    const installed = JSON.parse(readFileSync(INSTALLED_PATH, "utf-8"));
-    const seer = installed.find(
-      (p: { pluginId?: string; enabled?: boolean; config?: { enabled?: boolean } }) => p.pluginId === "seer",
-    );
-    // Plugin coupé ou intégration désactivée par l'admin : même dégradation
-    // que le client (les routes /discover ne sont enregistrées que si
-    // config.enabled) — sinon le serveur sert des rangées Vigie dont la
-    // navigation n'existe plus côté SPA.
-    if (seer?.enabled !== true || seer?.config?.enabled !== true) return null;
-    const url = seer?.config?.url as string;
-    const apiKey = seer?.config?.apiKey as string;
+    // La règle commune (pluginStorage/gate.ts) : installée, activée, et pas
+    // refusée par ce serveur — sans elle, le cœur servait des rangées et des
+    // recommandations de Vigie pendant que Vigie, refusée, n'existait plus.
+    const seer = usablePlugins().find((p) => p.pluginId === "seer");
+    // Intégration désactivée par l'admin : même dégradation que le client
+    // (les routes /discover ne sont enregistrées que si config.enabled) —
+    // sinon le serveur sert des rangées Vigie dont la navigation n'existe
+    // plus côté SPA.
+    const config = seer?.config as { enabled?: unknown; url?: unknown; apiKey?: unknown } | undefined;
+    if (config?.enabled !== true) return null;
+    const url = typeof config.url === "string" ? config.url : "";
+    const apiKey = typeof config.apiKey === "string" ? config.apiKey : "";
     if (!url || !apiKey) return null;
     return { url: url.replace(/\/$/, ""), apiKey };
   } catch {

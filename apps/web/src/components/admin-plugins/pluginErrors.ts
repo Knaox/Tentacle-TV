@@ -24,6 +24,7 @@ export type PluginErrorReason =
   | "busy"
   | "alreadyInstalled"
   | "versionGone"
+  | "serverTooOld"
   | "sourceExists"
   | "noChecksum"
   | "checksumMismatch"
@@ -50,6 +51,7 @@ export function describePluginError(error: unknown): PluginErrorDescription {
   if (/already running/i.test(detail)) return { reason: "busy" };
   if (/already installed/i.test(detail)) return { reason: "alreadyInstalled" };
   if (/no longer published/i.test(detail)) return { reason: "versionGone" };
+  if (/requires a newer Tentacle server/i.test(detail)) return { reason: "serverTooOld", detail };
   if (/source already exists/i.test(detail)) return { reason: "sourceExists" };
   if (/no sha-256 checksum/i.test(detail)) return { reason: "noChecksum" };
   if (/checksum verification failed/i.test(detail)) return { reason: "checksumMismatch" };

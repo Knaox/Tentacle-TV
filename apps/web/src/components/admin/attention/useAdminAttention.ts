@@ -9,7 +9,7 @@ import {
   type LinkCheck,
 } from "@tentacle-tv/shared";
 import { MIN_SERVER_VERSION } from "../../../hooks/useServerCompat";
-import { useServicesAttention } from "../home/overviewApi";
+import { useRefusedExtensions, useServicesAttention } from "../home/overviewApi";
 import { useJellyfinCompat, useJellyfinSetup } from "../jellyfin/jellyfinAdminApi";
 import { useServerUpdate } from "../serverUpdate/serverUpdateApi";
 import { useKeyHealth } from "../services/useServicesData";
@@ -46,6 +46,7 @@ export interface AttentionContext {
 
 export function useAdminAttention(): { attention: AdminAttention; context: AttentionContext } {
   const services = useServicesAttention();
+  const refused = useRefusedExtensions();
   const key = useKeyHealth();
   const metadata = useAdminMetadataStatus({ enabled: true });
   const links = useServerLinks();
@@ -96,10 +97,11 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
       jellyfinSetup: setup.isPending ? undefined : setupReport,
       jellyfinVersion: compat.isPending ? undefined : (installed?.status ?? null),
       serverUpdate: update.isPending ? undefined : (verdict?.status ?? null),
+      refusedExtensions: refused.loading ? undefined : refused.data,
       capabilities,
       dismissed,
     }),
-    [services.loading, services.data, key.isPending, key.data, metadata.isPending, metadata.data, links.isPending, checks,
+    [services.loading, services.data, refused.loading, refused.data, key.isPending, key.data, metadata.isPending, metadata.data, links.isPending, checks,
       setup.isPending, setupReport, compat.isPending, installed, update.isPending, verdict, capabilities, dismissed],
   );
 

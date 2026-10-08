@@ -24,6 +24,7 @@ export const ENTRY_ACTION: Record<EntryId, EntryAction> = {
   databaseDown: { kind: "link", to: "/admin/services#database", label: "entry_databaseDown_action" },
   jellyfinIncompatible: { kind: "link", to: "/admin/services#compat", label: "entry_jellyfinIncompatible_action" },
   serverUpdateRequired: { kind: "anchor", target: "server-update", label: "entry_serverUpdateRequired_action" },
+  extensionsRefused: { kind: "link", to: "/admin/plugins", label: "entry_extensionsRefused_action" },
   publicUrl: { kind: "link", to: "/admin/services#publicurl", label: "configure" },
   tmdbKey: { kind: "link", to: "/admin/metadata", label: "configure" },
   jellyfin: { kind: "toggle", label: "entry_jellyfin_action", hideLabel: "entry_jellyfin_hideAction" },
@@ -44,6 +45,7 @@ const TEXT_DETAILS: ReadonlySet<EntryId> = new Set<EntryId>([
   "databaseDown",
   "jellyfinIncompatible",
   "serverUpdateRequired",
+  "extensionsRefused",
   "tmdbKey",
 ]);
 

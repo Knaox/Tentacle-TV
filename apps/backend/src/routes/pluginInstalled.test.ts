@@ -40,7 +40,7 @@ vi.mock("../services/pluginInstall", async () => {
     extractPlugin: async (_file: string, pluginId: string) => {
       const dir = path.join(DATA_DIR, pluginId);
       fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(path.join(dir, "plugin.json"), JSON.stringify(archive.withServer ? { server: "server/index.mjs" } : {}));
+      fs.writeFileSync(path.join(dir, "plugin.json"), JSON.stringify(archive.withServer ? { server: "server/index.mjs", storage: { sqlite: true } } : {}));
       return dir;
     },
     removePluginFiles: (pluginId: string) => {
@@ -72,7 +72,7 @@ function seed(pluginId: string, opts: { enabled?: boolean; version?: string; ser
   };
   saveInstalled([...getInstalled(), plugin]);
   mkdirSync(join(DATA_DIR, pluginId), { recursive: true });
-  writeFileSync(join(DATA_DIR, pluginId, "plugin.json"), JSON.stringify(opts.server ? { server: "server/index.mjs" } : {}));
+  writeFileSync(join(DATA_DIR, pluginId, "plugin.json"), JSON.stringify(opts.server ? { server: "server/index.mjs", storage: { sqlite: true } } : {}));
   return plugin;
 }
 
@@ -130,6 +130,14 @@ describe("GET / — ce que la liste annonce", () => {
       restartRequired: false,
       restartsOn: { uninstall: true },
     });
+  });
+
+  it("une extension qui ne se déclare pas compatible SQLite est refusée, et l'administration le sait", async () => {
+    const old = seed("seer", { server: true, version: "1.24.1" });
+    writeFileSync(join(DATA_DIR, old.pluginId, "plugin.json"), JSON.stringify({ server: "server/index.mjs" }));
+    pluginBackendDiag.loadResults = [{ pluginId: "seer", status: "storage_unsupported", detail: "not loaded" }];
+    const [entry] = (await call("GET", "/")).json() as Array<Record<string, unknown>>;
+    expect(entry).toMatchObject({ serverModule: { state: "failed", refusal: "sqliteUnsupported" }, restartRequired: false });
   });
 });
 

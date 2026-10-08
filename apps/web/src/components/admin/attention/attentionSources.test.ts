@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readAdminKeyCheck, readServicesAttention } from "./attentionSources";
+import { readAdminKeyCheck, readRefusedExtensions, readServicesAttention } from "./attentionSources";
 
 const db = { status: "connected" };
 
@@ -41,5 +41,16 @@ describe("la clé d'administration", () => {
     expect(readAdminKeyCheck("sansDroits")).toBe("no-rights");
     expect(readAdminKeyCheck("ok")).toBe("ok");
     expect(readAdminKeyCheck(null)).toBeNull();
+  });
+});
+
+describe("les extensions que le serveur refuse, résumées pour « À régler »", () => {
+  it("nomme les activées refusées, ignore le reste et un serveur d'avant", () => {
+    const refused = { enabled: true, name: "Vigie", version: "1.24.1", serverModule: { state: "failed", refusal: "sqliteUnsupported" } };
+    const disabled = { ...refused, enabled: false };
+    const running = { enabled: true, name: "Autre", version: "1.0.0", serverModule: { state: "running" } };
+    const before = { enabled: true, name: "Ancienne", version: "1.0.0" };
+    expect(readRefusedExtensions([refused, disabled, running, before])).toEqual(["Vigie 1.24.1"]);
+    expect(readRefusedExtensions({ error: "x" })).toBeNull();
   });
 });

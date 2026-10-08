@@ -870,8 +870,22 @@ model UserSwipe {
   @@map("user_swipes")
 }
 
-// NB : les tables du plugin Seer (seer_requests, seer_cleanup_queue,
-// seer_user_settings) ne sont volontairement PAS déclarées ici. Elles sont
-// créées et migrées par le plugin lui-même (raw SQL, colonnes snake_case).
-// Le core ne doit pas tenter de les gérer via prisma db push — voir
-// docker-entrypoint.sh (db push ciblé core uniquement).
+// Les migrations VERSIONNÉES des extensions, passées par l'interface de
+// stockage (services/pluginStorage/migrations.ts) : une ligne par extension et
+// par version appliquée. L'hôte ne fait qu'y noter ; les tables de l'extension
+// restent les siennes. Lue et écrite en SQL brut, des deux moteurs.
+model PluginMigration {
+  pluginId  String
+  version   Int
+  name      String
+  appliedAt DateTime
+
+  @@id([pluginId, version])
+  @@map("plugin_migrations")
+}
+
+// NB : les tables de l'extension Vigie (seer_requests, seer_cleanup_queue,
+// seer_user_settings, seer_tmdb_cache, seer_search_titles, seer_search_meta)
+// ne sont volontairement PAS déclarées ici. Elles sont créées et migrées par
+// l'extension elle-même (SQL brut, colonnes snake_case, migrations notées dans
+// plugin_migrations). Le cœur ne les gère jamais : jamais de prisma db push.
