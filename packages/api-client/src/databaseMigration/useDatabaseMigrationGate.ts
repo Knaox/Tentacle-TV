@@ -17,8 +17,10 @@ import { fetchHealthSample } from "./migrationPoller";
  * son jeton ne sont jamais touchés.
  */
 export interface DatabaseMigrationGateOptions {
-  /** L'adresse du serveur Tentacle (`""` : même origine, web) ; `null` : aucune (pas de session). */
-  backendUrl: string | null;
+  /** L'adresse du serveur Tentacle (`""` : même origine, web) ; `null` : aucune.
+   *  Une fonction est relue à chaque lecture de `/api/health` (TV : le serveur
+   *  choisi au jumelage, sans nouveau rendu). */
+  backendUrl: string | null | (() => string | null);
   /** Ce que la plateforme fait de plus au retour (relancer sa sonde…). */
   onResume?: () => void;
 }
@@ -37,7 +39,7 @@ export function useDatabaseMigrationGate(options: DatabaseMigrationGateOptions):
       refetchConfig: () => queryClient.fetchQuery({ ...appConfigQuery(), staleTime: 0 }),
       hasCapability: () =>
         resolveServerCapabilities(queryClient.getQueryData(appConfigQuery().queryKey)).has("server.databaseMigration"),
-      fetchHealth: fetchHealthSample(backendUrl),
+      fetchHealth: typeof backendUrl === "function" ? lazyHealth(backendUrl) : fetchHealthSample(backendUrl),
       watchServerDrop: (onDrop) => onSocketStatus((status) => {
         if (status === "closed") onDrop();
       }),
@@ -55,6 +57,14 @@ export function useDatabaseMigrationGate(options: DatabaseMigrationGateOptions):
   }, [backendUrl, queryClient]);
 
   return useSyncExternalStore(gate?.subscribe ?? noSubscribe, gate?.read ?? nothing, gate?.read ?? nothing);
+}
+
+/** `/api/health` du serveur courant ; aucun serveur : aucune réponse. */
+function lazyHealth(url: () => string | null) {
+  return () => {
+    const base = url();
+    return base === null ? Promise.resolve(null) : fetchHealthSample(base)();
+  };
 }
 
 const noSubscribe = () => () => undefined;

@@ -1,4 +1,5 @@
 import { DB_MIGRATION_POLL_MS, databaseMigrationOf, type DatabaseMigrationView } from "@tentacle-tv/shared";
+import { reportDatabaseState } from "./migrationSignal";
 
 /**
  * La relecture de `/api/health` pendant l'écran d'attente : toutes les 2 s,
@@ -112,4 +113,14 @@ export function fetchHealthSample(backendUrl: string): () => Promise<HealthSampl
       clearTimeout(timeout);
     }
   };
+}
+
+/**
+ * UNE lecture de `/api/health`, son état de base déposé (`migrationSignal`) :
+ * pour un serveur qu'on vient de choisir (jumelage), avant toute requête qui
+ * buterait sur le mode maintenance. Vrai si la base n'est pas prête.
+ */
+export async function checkServerDatabase(backendUrl: string): Promise<boolean> {
+  const sample = await fetchHealthSample(backendUrl)();
+  return !!sample?.ok && reportDatabaseState(sample.body);
 }

@@ -18,6 +18,7 @@ export {
   reportDatabaseState, reportMaintenanceResponse, clearDatabaseMigration, readDatabaseMigration, subscribeDatabaseMigration,
 } from "../databaseMigration/migrationSignal";
 export { createMigrationGate, type MigrationGate, type MigrationGateDeps } from "../databaseMigration/migrationGate";
+export { checkServerDatabase } from "../databaseMigration/migrationPoller";
 export { useDatabaseMigrationGate, type DatabaseMigrationGateOptions } from "../databaseMigration/useDatabaseMigrationGate";
 
 // Direct streaming config
