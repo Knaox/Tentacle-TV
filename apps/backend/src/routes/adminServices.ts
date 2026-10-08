@@ -1,15 +1,8 @@
 import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey, setConfigValue, setAppState } from "../services/configStore";
-import {
-  getPrisma,
-  getDatabaseUrl,
-  saveDatabaseUrl,
-  getActiveDatabaseUrl,
-  getDatabaseUrlSource,
-  probeDatabase,
-} from "../services/db";
-import { parseDatabaseUrl } from "../services/databaseInfo";
+import { getPrisma } from "../services/db";
+import { databaseStatus } from "../services/database/databaseStatus";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { jellyfinHealth } from "../services/jellyfinHealth";
 import { invalidateAdminKeyHealth } from "../services/jellyfinKeyHealth";
@@ -34,20 +27,13 @@ const jellyfinConfigSchema = z.object({
   apiKey: z.string().optional(),
 });
 
-const dbConfigSchema = z.object({
-  host: z.string().min(1),
-  port: z.number().int().min(1).max(65535).default(3306),
-  database: z.string().min(1),
-  user: z.string().min(1),
-  password: z.string().min(1),
-});
-
 type ServiceError =
   | "invalid-body"
   | "jellyfin-key-missing"
   | "jellyfin-unreachable"
   | "jellyfin-invalid"
-  | "jellyfin-rejected";
+  | "jellyfin-rejected"
+  | "database-managed";
 
 type JellyfinProbe =
   | { ok: true; version: string; serverName: string }
@@ -61,6 +47,7 @@ function legacyMessage(error: ServiceError, httpStatus?: number): string {
     case "jellyfin-unreachable": return "Impossible de contacter Jellyfin";
     case "jellyfin-invalid": return "Ce serveur ne répond pas comme Jellyfin";
     case "jellyfin-rejected": return `Jellyfin a répondu ${httpStatus ?? "une erreur"}`;
+    case "database-managed": return "La base est intégrée au serveur (SQLite) : rien à configurer.";
   }
 }
 
@@ -126,26 +113,6 @@ async function jellyfinStatus() {
   };
 }
 
-async function databaseStatus() {
-  const configured = getDatabaseUrl();
-  const active = getActiveDatabaseUrl();
-  const source = getDatabaseUrlSource();
-  const probe = await probeDatabase();
-  // La connexion OUVERTE, pas celle qui attend le redémarrage : c'est elle
-  // que la sonde vient de mesurer.
-  const described = active ?? configured;
-  const fields = described ? parseDatabaseUrl(described) : null;
-  return {
-    status: probe.ok ? "connected" : configured ? "error" : "disconnected",
-    version: probe.ok ? probe.version : "",
-    source,
-    // Gardé pour les clients d'avant `source` ; il dit désormais la même chose.
-    fromEnv: source === "env",
-    pendingRestart: !!active && !!configured && configured !== active,
-    ...(fields ? { fields } : {}),
-  };
-}
-
 export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
   /** GET /api/admin/services — Jellyfin et la base, sondés à chaque appel. */
   app.get("/services", async () => {
@@ -182,15 +149,12 @@ export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
     return { success: true, version: probe.version, serverName: probe.serverName };
   });
 
-  /** PUT /api/admin/database — Update database connection (requires restart). */
-  app.put("/database", async (request, reply) => {
-    const parsed = dbConfigSchema.safeParse(request.body);
-    if (!parsed.success) return fail(reply, "invalid-body");
-    const body = parsed.data;
-    const url = `mysql://${encodeURIComponent(body.user)}:${encodeURIComponent(body.password)}@${body.host}:${body.port}/${body.database}`;
-    saveDatabaseUrl(url);
-    return { success: true, message: "Configuration sauvegardée. Redémarrez le serveur pour appliquer." };
-  });
+  /**
+   * PUT /api/admin/database — l'admin d'avant 1.25 (encore livrée dans le
+   * bureau) y enregistrait une connexion MariaDB. SQLite n'a rien à
+   * configurer : un refus qu'elle affiche tel quel.
+   */
+  app.put("/database", async (_request, reply) => fail(reply, "database-managed"));
 
   /** POST /api/admin/reset-server — Wipe all config and reset to setup mode. */
   app.post("/reset-server", async (_request, reply) => {
@@ -199,7 +163,7 @@ export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
       // Wipe all server config rows
       await prisma.serverConfig.deleteMany({});
       // Reset in-memory state to setup mode
-      setAppState(process.env.DATABASE_URL ? "setup_jellyfin" : "setup_db");
+      setAppState("setup_jellyfin");
       return { success: true, message: "Serveur réinitialisé. Rechargez la page." };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur";

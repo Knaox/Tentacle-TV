@@ -50,7 +50,7 @@ export type MissingJellyfinGuide =
 
 /** `GET /api/setup/status` — public : les clients livrés en lisent `state`. */
 export interface SetupStatusResponse {
-  state: "setup_db" | "setup_jellyfin" | "setup_admin" | "running";
+  state: "database_unavailable" | "setup_jellyfin" | "setup_admin" | "running";
   hasDbUrl: boolean;
   dbFromEnv: boolean;
   dbConnected: boolean;

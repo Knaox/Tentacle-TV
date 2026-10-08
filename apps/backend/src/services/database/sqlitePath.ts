@@ -25,7 +25,11 @@ export function coreDatabasePath(dataRoot: string = DATA_ROOT): string {
  *   connexion — l'attente quand un AUTRE processus tient le verrou.
  *
  * Sous Windows, le chemin passe en barres obliques : le moteur lit une URL.
+ * Un `?` ou un `#` dans le chemin couperait l'URL (et ses paramètres) : refusé.
  */
 export function prismaSqliteUrl(path: string): string {
+  if (/[?#]/.test(path)) {
+    throw new Error(`[db] Le chemin de la base contient « ? » ou « # » (${path}) : choisissez un TENTACLE_DATA_DIR sans ces caractères`);
+  }
   return `file:${path.replace(/\\/g, "/")}?connection_limit=1&socket_timeout=15`;
 }

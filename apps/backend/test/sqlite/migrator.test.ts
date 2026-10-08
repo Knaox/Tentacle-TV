@@ -1,4 +1,4 @@
-import { statSync } from "fs";
+import { chmodSync, existsSync, statSync, symlinkSync, writeFileSync } from "fs";
 import { afterAll, describe, expect, it } from "vitest";
 import {
   applyCoreMigrations,
@@ -100,7 +100,24 @@ describe("exécuteur des migrations du cœur", () => {
     const db = openSqlite(path);
     db.exec("CREATE TABLE IF NOT EXISTS t (x)");
     expect(statSync(`${path}-wal`).mode & 0o777).toBe(0o600);
+    expect(statSync(`${path}-shm`).mode & 0o777).toBe(0o600);
     db.close();
+    // Une base d'avant, lisible de tous, y est ramenée.
+    chmodSync(path, 0o644);
+    applyCoreMigrations(path);
+    expect(statSync(path).mode & 0o777).toBe(0o600);
+  });
+
+  it.skipIf(process.platform === "win32")("refuse un lien symbolique à la place de la base ou de son journal", () => {
+    const target = temp.use("ailleurs.db");
+    writeFileSync(target, "");
+    const path = temp.use();
+    symlinkSync(target, path);
+    expect(() => applyCoreMigrations(path)).toThrow(/lien symbolique/);
+    const other = temp.use();
+    symlinkSync(target, `${other}-wal`);
+    expect(() => applyCoreMigrations(other)).toThrow(/lien symbolique/);
+    expect(existsSync(other)).toBe(false);
   });
 
   it("aucune migration commitée ne nomme une table hors du cœur", () => {

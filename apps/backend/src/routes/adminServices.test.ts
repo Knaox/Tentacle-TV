@@ -1,6 +1,6 @@
 /**
  * Les routes de la page admin « Services » : l'état sondé de Jellyfin et de la
- * base, l'essai et l'enregistrement de Jellyfin sans retaper la clé, et les
+ * base SQLite, l'essai et l'enregistrement de Jellyfin sans retaper la clé, et les
  * échecs qui portent un code traduisible.
  */
 
@@ -8,16 +8,9 @@ import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 
-type Probe = { ok: true; version: string } | { ok: false };
-
 const state = vi.hoisted(() => ({
   config: new Map<string, string>(),
-  db: {
-    configured: null as string | null,
-    active: null as string | null,
-    source: null as "env" | "file" | null,
-    probe: { ok: false } as Probe,
-  },
+  db: {} as Record<string, unknown>,
   restarts: 0,
   invalidations: 0,
 }));
@@ -34,14 +27,9 @@ vi.mock("../services/db", () => ({
   getPrisma: () => {
     throw new Error("pas de prisma dans ce banc");
   },
-  getDatabaseUrl: () => state.db.configured,
-  getActiveDatabaseUrl: () => state.db.active,
-  getDatabaseUrlSource: () => state.db.source,
-  probeDatabase: async () => state.db.probe,
-  saveDatabaseUrl: (url: string) => {
-    state.db.configured = url;
-  },
 }));
+// La carte de la base est éprouvée sur une vraie base (test/sqlite/databaseStatus.test.ts).
+vi.mock("../services/database/databaseStatus", () => ({ databaseStatus: async () => state.db }));
 vi.mock("../services/jellyfinWs", () => ({
   restartJellyfinWs: () => {
     state.restarts += 1;
@@ -55,7 +43,10 @@ vi.mock("../services/jellyfinKeyHealth", () => ({
 
 import { adminServicesRoutes } from "./adminServices";
 
-const ACTIVE_DB = "mysql://tentacle:secret@db:3306/tentacle";
+const SQLITE_STATUS = {
+  status: "connected", version: "3.46.0", engine: "sqlite", path: "/data/tentacle.db", sizeBytes: 4096, storage: "local",
+  source: "env", fromEnv: true, pendingRestart: false,
+};
 
 /** Un Jellyfin simulé : « bonne-cle » acceptée ; down.test muet ; html.test n'est pas un Jellyfin. */
 const jellyfin = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -70,7 +61,7 @@ const jellyfin = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 
 beforeEach(() => {
   state.config.clear();
-  state.db = { configured: ACTIVE_DB, active: ACTIVE_DB, source: "file", probe: { ok: true, version: "11.4.4-MariaDB" } };
+  state.db = { ...SQLITE_STATUS };
   state.restarts = 0;
   state.invalidations = 0;
   jellyfin.mockClear();
@@ -93,7 +84,7 @@ async function call(method: "GET" | "POST" | "PUT", url: string, payload?: objec
 const lastKeySent = () => modernJellyfinToken(jellyfin.mock.calls.at(-1)?.[1]?.headers);
 
 describe("GET /services", () => {
-  it("sonde Jellyfin et la base : versions, nom du serveur, clé présente, origine de la connexion", async () => {
+  it("sonde Jellyfin et la base : versions, nom du serveur, clé présente, fichier de la base", async () => {
     state.config.set("jellyfin_url", "http://jf.test");
     state.config.set("jellyfin_api_key", "bonne-cle");
     const { status, body } = await call("GET", "/services");
@@ -101,20 +92,16 @@ describe("GET /services", () => {
     expect(body.jellyfin).toEqual({
       url: "http://jf.test", apiKeyConfigured: true, status: "connected", version: "10.10.7", serverName: "Poulpy",
     });
-    expect(body.database).toEqual({
-      status: "connected", version: "11.4.4-MariaDB", source: "file", fromEnv: false, pendingRestart: false,
-      fields: { host: "db", port: 3306, database: "tentacle", user: "tentacle" },
-    });
+    expect(body.database).toEqual(SQLITE_STATUS);
   });
 
   it("dit la clé refusée, et une base qui ne répond plus", async () => {
     state.config.set("jellyfin_url", "http://jf.test");
     state.config.set("jellyfin_api_key", "cle-revoquee");
-    state.db.probe = { ok: false };
+    state.db = { ...SQLITE_STATUS, status: "error", version: "" };
     const { body } = await call("GET", "/services");
     expect(body.jellyfin).toMatchObject({ status: "error", error: "jellyfin-rejected", httpStatus: 401 });
     expect(body.database.status).toBe("error");
-    expect(body.database.version).toBe("");
   });
 
   it("Jellyfin qui démarre (503) : injoignable, jamais « clé refusée »", async () => {
@@ -131,14 +118,6 @@ describe("GET /services", () => {
     const { body } = await call("GET", "/services");
     expect(body.jellyfin).toMatchObject({ status: "disconnected", apiKeyConfigured: false });
     expect(jellyfin).not.toHaveBeenCalled();
-  });
-
-  it("décrit la connexion OUVERTE et signale celle qui attend le redémarrage", async () => {
-    state.db.configured = "mysql://autre:pass@nas:3307/tentacle2";
-    state.db.source = "env";
-    const { body } = await call("GET", "/services");
-    expect(body.database).toMatchObject({ pendingRestart: true, source: "env", fromEnv: true });
-    expect(body.database.fields.host).toBe("db");
   });
 });
 
@@ -200,16 +179,10 @@ describe("PUT /jellyfin", () => {
 });
 
 describe("PUT /database", () => {
-  it("enregistre l'URL, identifiants encodés", async () => {
-    const payload = { host: "nas", port: 3307, database: "tentacle", user: "ad@min", password: "p@ss:w/rd" };
-    const { status } = await call("PUT", "/database", payload);
-    expect(status).toBe(200);
-    expect(state.db.configured).toBe("mysql://ad%40min:p%40ss%3Aw%2Frd@nas:3307/tentacle");
-  });
-
-  it("refuse un corps incomplet avec un code", async () => {
-    const { status, body } = await call("PUT", "/database", { host: "nas" });
+  it("SQLite n'a rien à configurer : un refus que l'admin d'avant 1.25 affiche tel quel", async () => {
+    const payload = { host: "nas", port: 3307, database: "tentacle", user: "admin", password: "secret" };
+    const { status, body } = await call("PUT", "/database", payload);
     expect(status).toBe(400);
-    expect(body.error).toBe("invalid-body");
+    expect(body).toEqual({ error: "database-managed", message: "La base est intégrée au serveur (SQLite) : rien à configurer." });
   });
 });

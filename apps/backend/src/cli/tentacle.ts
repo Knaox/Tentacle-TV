@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client";
-import { existsSync, readFileSync } from "fs";
-import { resolve } from "path";
-import { DATA_ROOT } from "../services/dataDir";
-import { databaseUrlFromEnv } from "../services/databaseEnv";
+import type { PrismaClient } from "@prisma/client";
+import { existsSync } from "fs";
+import { connectSqlitePrisma } from "../services/database/prismaClient";
+import { coreDatabasePath } from "../services/database/sqlitePath";
 import { readHostInfo } from "../setup/hostInfo";
 import { SETUP_LOCK_FILE, unsealSetup } from "../setup/setupLock";
 import { forgetClaimant } from "../setup/localAccess/claimant";
@@ -70,22 +69,15 @@ export function normalizeArgs(args: string[]): string[] {
   return args.slice(start).map((arg) => arg.toLowerCase());
 }
 
-function databaseUrl(): string | null {
-  const fromEnv = databaseUrlFromEnv(process.env);
-  if (fromEnv) return fromEnv;
-  const file = resolve(DATA_ROOT, "database.json");
-  if (!existsSync(file)) return null;
-  try {
-    return (JSON.parse(readFileSync(file, "utf-8")) as { url?: string }).url ?? null;
-  } catch {
-    return null;
-  }
-}
-
+/**
+ * La base du serveur, ouverte depuis CE processus (la console du conteneur) :
+ * SQLite en WAL accepte un second processus. Jamais créée ici — absente,
+ * c'est « rien à faire » (installation neuve, ou MariaDB pas encore migrée).
+ */
 async function withDatabase<T>(run: (prisma: PrismaClient) => Promise<T>): Promise<T | null> {
-  const url = databaseUrl();
-  if (!url) return null;
-  const prisma = new PrismaClient({ datasources: { db: { url } } });
+  const path = coreDatabasePath();
+  if (!existsSync(path)) return null;
+  const prisma = await connectSqlitePrisma(path);
   try {
     return await run(prisma);
   } finally {
@@ -136,7 +128,7 @@ export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.en
 
   const cleared = await withDatabase((prisma) => prisma.serverConfig.deleteMany({ where: { key: { in: SETUP_FLAGS } } }));
   if (cleared === null) {
-    console.error("Base de données introuvable (DB_* ou data/database.json) — rien n'a été changé.");
+    console.error("Base de données introuvable (data/tentacle.db) — rien n'a été changé.");
     return 1;
   }
   unsealSetup();

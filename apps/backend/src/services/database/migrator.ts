@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync } from "fs";
+import { chmodSync, closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import type { DatabaseSync } from "node:sqlite";
 import { openSqlite } from "./nodeSqlite";
@@ -95,10 +95,24 @@ function applyOne(db: DatabaseSync, migration: CoreMigration): void {
  * d'avant, plus ouvert, y est ramené. `-wal` et `-shm` prennent le mode du
  * fichier principal à leur création ; ceux qui existent déjà sont ramenés
  * aussi. Jamais `process.umask` : il changerait tout le volume.
+ *
+ * Un lien symbolique à la place d'un de ces fichiers est REFUSÉ : `open` et
+ * `chmod` le suivraient, vers un fichier que le serveur n'a pas à toucher.
  */
 export function restrictDatabaseFiles(path: string): void {
+  const files = [path, `${path}-wal`, `${path}-shm`];
+  for (const file of files) {
+    const link = (() => {
+      try {
+        return lstatSync(file).isSymbolicLink();
+      } catch {
+        return false; // absent
+      }
+    })();
+    if (link) throw new Error(`[db] ${file} est un lien symbolique : refusé (la base doit être un fichier du dossier de données)`);
+  }
   if (!existsSync(path)) closeSync(openSync(path, "a", 0o600));
-  for (const file of [path, `${path}-wal`, `${path}-shm`]) {
+  for (const file of files) {
     if (!existsSync(file)) continue;
     try {
       chmodSync(file, 0o600);
