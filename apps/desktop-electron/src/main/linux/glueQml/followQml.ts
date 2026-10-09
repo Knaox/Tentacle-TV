@@ -12,8 +12,11 @@ export const FOLLOW_QML = `
     function glue() {
         if (root.video === null) return;
         if (root.pip !== null) {
+            // La vidéo DANS le cadre du PiP : le liseré de la page recouvre ses
+            // coins carrés, l'ombre déborde autour (pip/pipFrame.ts).
             var p = root.pip.frameGeometry;
-            root.video.frameGeometry = Qt.rect(p.x, p.y, p.width, p.height);
+            var i = __PIP_INSET__;
+            root.video.frameGeometry = Qt.rect(p.x + i, p.y + i, p.width - 2 * i, p.height - 2 * i);
             // Ancré, l'ordre tient par les contraintes : relever la paire la
             // ferait passer devant une fenêtre qui recouvre l'application.
             if (root.floating()) {

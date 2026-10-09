@@ -28,6 +28,13 @@
  * - une taille changée par la coquille (molette) grandit depuis le haut-gauche
  *   côté client : on garde fixe le coin le plus proche du bord de l'écran.
  *
+ * # Le cadre (pip/pipFrame.ts)
+ *
+ * La fenêtre PiP déborde de la vidéo d'un liseré et d'une ombre : la vidéo est
+ * collée À L'INTÉRIEUR (`followQml.ts`), et les marges se comptent au cadre
+ * visible — l'ombre déborde. Glisser et redimensionner sont des gestes que la
+ * page annonce et que la colle exécute (`pipGestureQml.ts`).
+ *
  * ⚠️ Une chaîne à accents graves : JAMAIS d'accent grave ni de dollar suivi
  * d'une accolade dans le QML, commentaires compris. Et aucune fonction nommée
  * comme le signal qu'une propriété engendre (`pip` → `pipChanged`) : le
@@ -36,9 +43,13 @@
  */
 
 export const PIP_QML = `
+    // Le mode, lu dans le titre sans le geste en cours (« <titre> [<geste>] »).
     function modeOf(w) {
-        if (w.captionNormal === __PIP_FLOATING__) return "floating";
-        if (w.captionNormal === __PIP_DOCKED__) return "docked";
+        var c = w.captionNormal;
+        var k = c.indexOf(__PIP_GESTURE_OPEN__);
+        if (k >= 0) c = c.substring(0, k);
+        if (c === __PIP_FLOATING__) return "floating";
+        if (c === __PIP_DOCKED__) return "docked";
         return "";
     }
     function floating() { return root.pip !== null && root.pipMode === "floating"; }
@@ -48,12 +59,13 @@ export const PIP_QML = `
         try { a = Kwin.Workspace.clientArea(2, output, Kwin.Workspace.currentDesktop); } catch (e) { a = null; }
         return a === null ? output.geometry : a;
     }
-    // Le coin du PiP. La TAILLE est celle que la coquille a donnée à la fenêtre.
+    // Le coin du PiP, son cadre VISIBLE à la marge du bord : l'ombre déborde.
+    // La TAILLE est celle que la coquille a donnée à la fenêtre.
     function placePip() {
         if (root.pip === null || root.host === null) return;
         var s = root.pip.frameGeometry;
         var a = root.floating() ? root.workArea(root.host.output) : root.host.clientGeometry;
-        var m = __PIP_MARGIN__;
+        var m = __PIP_MARGIN__ - __PIP_SHADOW__;
         root.pipRect = Qt.rect(a.x + a.width - s.width - m, a.y + a.height - s.height - m, s.width, s.height);
         root.pip.frameGeometry = root.pipRect;
     }
@@ -63,20 +75,22 @@ export const PIP_QML = `
         var before = root.pipRect;
         root.pipRect = Qt.rect(g.x, g.y, g.width, g.height);
         var resized = before !== null && (before.width !== g.width || before.height !== g.height);
-        if (resized && !root.pip.move && !root.pip.resize) {
+        // Un geste de la page place lui-même la fenêtre (pipGestureQml.ts).
+        if (resized && root.pipGesture === "" && !root.pip.move && !root.pip.resize) {
             if (!root.floating()) {
                 root.placePip();
                 return;
             }
-            // Le coin le plus proche du bord de l'écran reste fixe, et le PiP ne
-            // déborde jamais de la zone utile.
+            // Le coin le plus proche du bord de l'écran reste fixe, et le cadre
+            // visible ne déborde jamais de la zone utile — l'ombre, si.
             var a = root.workArea(root.pip.output);
+            var sh = __PIP_SHADOW__;
             var right = before.x + before.width / 2 > a.x + a.width / 2;
             var bottom = before.y + before.height / 2 > a.y + a.height / 2;
             var x = right ? before.x + before.width - g.width : before.x;
             var y = bottom ? before.y + before.height - g.height : before.y;
-            x = Math.max(a.x, Math.min(x, a.x + a.width - g.width));
-            y = Math.max(a.y, Math.min(y, a.y + a.height - g.height));
+            x = Math.max(a.x - sh, Math.min(x, a.x + a.width - g.width + sh));
+            y = Math.max(a.y - sh, Math.min(y, a.y + a.height - g.height + sh));
             if (x !== g.x || y !== g.y) {
                 root.pipRect = Qt.rect(x, y, g.width, g.height);
                 root.pip.frameGeometry = root.pipRect;
@@ -113,6 +127,7 @@ export const PIP_QML = `
         // Une bascule vers « flottant » laisse le PiP où il est ; tout le reste
         // le range dans son coin.
         if (fresh || mode === "docked") root.placePip();
+        root.followGesture();
         // Le PiP naît actif : l'utilisateur, lui, continue dans l'application.
         if (fresh && w.active && root.host !== null && !root.host.minimized) Kwin.Workspace.activeWindow = root.host;
         console.warn("[tentacle-colle] PiP " + (fresh ? "adopté" : "basculé") + " — " + mode);
@@ -126,13 +141,14 @@ export const PIP_QML = `
             var w = ws[i];
             if (w.pid !== __PID__ || root.isVideo(w) || w === root.host) continue;
             if (w === root.pip && root.modeOf(w) === "") { root.pipClosed(); continue; }
-            if (w === root.pip && root.modeOf(w) === root.pipMode) continue;
+            if (w === root.pip && root.modeOf(w) === root.pipMode) { root.followGesture(); continue; }
             root.adoptPip(w);
         }
     }
     function pipClosed() {
         var p = root.pip;
         if (p === null) return;
+        root.endGesture();
         root.pip = null;
         root.pipMode = "";
         root.pipRect = null;

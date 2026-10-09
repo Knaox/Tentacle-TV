@@ -45,7 +45,8 @@ vi.mock("./kwinScripting", () => ({
 }));
 
 import { KwinGlue, glueTemplate } from "./kwinGlue";
-import { PIP_CAPTIONS, PIP_MARGIN } from "../pip/pipCaptions";
+import { PIP_CAPTIONS, PIP_MARGIN, pipCaption } from "../pip/pipCaptions";
+import { PIP_FRAME, PIP_INSET } from "../pip/pipFrame";
 
 beforeEach(() => {
   bridge.filePaths.length = 0;
@@ -225,8 +226,12 @@ describe("gabaritColle", () => {
 describe("gabaritColle — le PiP", () => {
   it("reconnaît la fenêtre PiP à son titre, inliné en littéral JSON — et l'écoute changer", () => {
     const qml = glueTemplate(1);
-    expect(qml).toContain(`w.captionNormal === ${JSON.stringify(PIP_CAPTIONS.floating)}`);
-    expect(qml).toContain(`w.captionNormal === ${JSON.stringify(PIP_CAPTIONS.docked)}`);
+    const modeOf = qml.slice(qml.indexOf("function modeOf(w)"), qml.indexOf("function floating()"));
+    expect(modeOf).toContain(`if (c === ${JSON.stringify(PIP_CAPTIONS.floating)}) return "floating";`);
+    expect(modeOf).toContain(`if (c === ${JSON.stringify(PIP_CAPTIONS.docked)}) return "docked";`);
+    // Le geste en cours, accolé au titre, ne change pas le mode.
+    expect(modeOf).toContain(`var k = c.indexOf(${JSON.stringify(" [")});`);
+    expect(pipCaption("floating", "move")).toBe(`${PIP_CAPTIONS.floating} [move]`);
     // Le titre bascule le mode, et peut arriver après la fenêtre.
     expect(qml).toContain("w.captionNormalChanged.connect(root.captionChanged)");
   });
@@ -235,6 +240,9 @@ describe("gabaritColle — le PiP", () => {
     const qml = glueTemplate(1);
     const glue = qml.slice(qml.indexOf("function glue()"), qml.indexOf("function wantedConstraints()"));
     expect(glue).toContain("var p = root.pip.frameGeometry;");
+    // DANS le cadre : le liseré de la page recouvre les coins carrés de mpv.
+    expect(glue).toContain(`var i = ${String(PIP_INSET)};`);
+    expect(glue).toContain("root.video.frameGeometry = Qt.rect(p.x + i, p.y + i, p.width - 2 * i, p.height - 2 * i);");
     // Ancré, relever la paire la ferait passer devant une fenêtre qui recouvre l'application.
     expect(glue).toContain("if (root.floating()) {");
   });
@@ -261,10 +269,12 @@ describe("gabaritColle — le PiP", () => {
 
   it("se range au coin bas-droit — de l'écran s'il flotte, de la zone client s'il est ancré", () => {
     const qml = glueTemplate(1);
-    expect(qml).toContain(`var m = ${String(PIP_MARGIN)};`);
+    // La marge se compte au cadre VISIBLE : l'ombre déborde.
+    expect(qml).toContain(`var m = ${String(PIP_MARGIN)} - ${String(PIP_FRAME.shadow)};`);
     expect(qml).toContain("root.floating() ? root.workArea(root.host.output) : root.host.clientGeometry");
-    // Une taille changée garde fixe le coin le plus proche du bord, jamais pendant un geste de KWin.
-    expect(qml).toContain("if (resized && !root.pip.move && !root.pip.resize) {");
+    // Une taille changée garde fixe le coin le plus proche du bord, jamais
+    // pendant un geste — de KWin ou de la page, qui place la fenêtre lui-même.
+    expect(qml).toContain('if (resized && root.pipGesture === "" && !root.pip.move && !root.pip.resize) {');
   });
 
   it("rend la main au PiP flottant quand la vidéo est activée", () => {
@@ -274,6 +284,41 @@ describe("gabaritColle — le PiP", () => {
     expect(body.indexOf("Kwin.Workspace.activeWindow = root.pip")).toBeLessThan(
       body.indexOf("Kwin.Workspace.activeWindow = root.host"),
     );
+  });
+
+  it("suit le geste annoncé dans le titre, et seulement lui", () => {
+    const qml = glueTemplate(1);
+    const gestureOf = qml.slice(qml.indexOf("function gestureOf(w)"), qml.indexOf("function endGesture()"));
+    expect(gestureOf).toContain(`var open = ${JSON.stringify(" [")};`);
+    expect(gestureOf).toContain(`var close = ${JSON.stringify("]")};`);
+    // Le titre suivi : le geste commence, change ou cesse avec lui.
+    expect(qml).toContain("if (w === root.pip && root.modeOf(w) === root.pipMode) { root.followGesture(); continue; }");
+    const follow = qml.slice(qml.indexOf("function followGesture()"), qml.indexOf("function followCursor()"));
+    expect(follow).toContain("Kwin.Workspace.cursorPosChanged.connect(root.followCursor);");
+    // Ancré, le PiP est le coin de l'application : il ne se glisse pas.
+    expect(follow).toContain('(gesture.indexOf("move") === 0 && !root.floating())');
+    // Glisser garde le point saisi sous le curseur.
+    expect(follow).toContain("if (isFinite(gx) && isFinite(gy)) c = Qt.point(g.x + gx, g.y + gy);");
+    expect(pipCaption("floating", "move", { x: 162.4, y: 101.6 })).toBe(`${PIP_CAPTIONS.floating} [move 162 102]`);
+    expect(pipCaption("docked", "top-left", { x: 3, y: 4 })).toBe(`${PIP_CAPTIONS.docked} [top-left]`);
+    // Un PiP fermé emporte son geste, et le greffon décroché aussi : un
+    // gestionnaire de Workspace survit au greffon qui l'a posé.
+    const closed = qml.slice(qml.indexOf("function pipClosed()"));
+    expect(closed).toContain("root.endGesture();");
+    const release = qml.slice(qml.indexOf("function release()"), qml.indexOf("var ws = Kwin.Workspace.windows;", qml.indexOf("function release()")));
+    expect(release).toContain("root.endGesture();");
+    const end = qml.slice(qml.indexOf("function endGesture()"), qml.indexOf("function followGesture()"));
+    expect(end).toContain("Kwin.Workspace.cursorPosChanged.disconnect(root.followCursor);");
+  });
+
+  it("glisser garde le cadre visible dans la zone utile de l'écran sous le curseur ; tirer un coin garde le coin opposé", () => {
+    const qml = glueTemplate(1);
+    const drag = qml.slice(qml.indexOf("function dragPip(s, cursor)"), qml.indexOf("function stretchPip("));
+    expect(drag).toContain("Kwin.Workspace.screenAt(cursor)");
+    expect(drag).toContain(`var sh = ${String(PIP_FRAME.shadow)};`);
+    const stretch = qml.slice(qml.indexOf("function stretchPip("));
+    expect(stretch).toContain("root.pipRect = Qt.rect(left ? s.x + s.width - w : s.x, top ? s.y + s.height - h : s.y, w, h);");
+    expect(stretch).toContain("var aspect = w0 / h0;");
   });
 
   it("aucune fonction ne porte le nom du signal qu'engendre une propriété — le composant ne se chargerait pas", () => {

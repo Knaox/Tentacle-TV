@@ -19,20 +19,25 @@
  * greffon (autre origine, même webContents) ne peut donc pas ouvrir une
  * fenêtre que la colle prendrait pour le PiP.
  *
- * # Ce que le banc du 09.10.2026 a mesuré
+ * # La taille, le cadre, les gestes
+ *
+ * La page donne la taille de la VIDÉO ; la fenêtre la déborde du cadre
+ * (`pipFrame.ts` : liseré et ombre), et la colle place mpv à l'intérieur.
  *
  * Electron 43 ne donne AUCUNE marge de redimensionnement à une fenêtre
  * transparente sans cadre sous Linux (`ElectronFrameViewLayoutLinux` : insets
- * nuls pour une fenêtre translucide). La taille change donc par la page (la
- * molette, `pip_resize`), et la colle garde fixe le coin le plus proche du
- * bord. Le glisser, lui, passe par `app-region: drag` : il marche sous Wayland,
- * la fenêtre suit la souris d'un écran à l'autre.
+ * nuls pour une fenêtre translucide), et `app-region: drag` prive la page de la
+ * souris (banc du 09.10.2026). Glisser et redimensionner sont donc des GESTES
+ * que la page annonce (`pip_gesture`) et que la colle exécute en suivant le
+ * curseur — par le titre, la seule voie de la coquille vers la colle.
+ * La molette, elle, change la taille par la page (`pip_resize`).
  */
 
 import type { BrowserWindow, WebContents } from "electron";
 import { windowIconPath } from "../appIcon";
 import { lockNavigation } from "../security";
-import { PIP_CAPTIONS, type PipMode } from "./pipCaptions";
+import { pipCaption, type PipGesture, type PipMode, type PipPoint } from "./pipCaptions";
+import { PIP_INSET, PIP_MIN_HEIGHT, PIP_MIN_WIDTH, pipWindowSize } from "./pipFrame";
 
 /** Le nom de cadre que la page donne à `window.open` — et qu'elle seule connaît. */
 export const PIP_FRAME_NAME = "tentacle-pip";
@@ -40,12 +45,9 @@ export const PIP_FRAME_NAME = "tentacle-pip";
 /** Le délai dans lequel la page doit ouvrir la fenêtre annoncée. */
 const ARM_DELAY_MS = 3000;
 
-/** En deçà, les boutons du PiP ne tiennent plus. */
-export const PIP_MIN_WIDTH = 256;
-export const PIP_MIN_HEIGHT = 144;
-
 interface Armed {
   mode: PipMode;
+  /** La taille de la VIDÉO. */
   width: number;
   height: number;
   until: number;
@@ -53,8 +55,10 @@ interface Armed {
 
 let armed: Armed | null = null;
 let pip: BrowserWindow | null = null;
+/** Le mode de la fenêtre ouverte : le titre d'un geste le reprend. */
+let pipMode: PipMode = "floating";
 
-/** La page annonce l'ouverture : la prochaine fenêtre PiP sera acceptée. */
+/** La page annonce l'ouverture (taille de la VIDÉO) : la prochaine fenêtre PiP sera acceptée. */
 export function armPip(mode: PipMode, width: number, height: number): void {
   armed = { mode, width, height, until: Date.now() + ARM_DELAY_MS };
 }
@@ -71,14 +75,16 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
     return { action: "deny" };
   }
   const icon = windowIconPath();
+  const size = pipWindowSize(wanted.width, wanted.height);
+  pipMode = wanted.mode;
   return {
     action: "allow",
     overrideBrowserWindowOptions: {
-      width: wanted.width,
-      height: wanted.height,
-      minWidth: PIP_MIN_WIDTH,
-      minHeight: PIP_MIN_HEIGHT,
-      title: PIP_CAPTIONS[wanted.mode],
+      width: size.width,
+      height: size.height,
+      minWidth: PIP_MIN_WIDTH + 2 * PIP_INSET,
+      minHeight: PIP_MIN_HEIGHT + 2 * PIP_INSET,
+      title: pipCaption(wanted.mode, null),
       ...(icon === null ? {} : { icon }),
       // Transparente À LA CONSTRUCTION, comme la fenêtre principale
       // (`linux/window.ts`) : posée après, la page peindrait du noir sur mpv.
@@ -86,6 +92,10 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
       backgroundColor: "#00000000",
       frame: false,
       hasShadow: false,
+      // La colle la redimensionne aux poignées : une fenêtre non redimensionnable
+      // a, sous Linux, sa taille minimale ÉGALE à sa maximale, et KWin
+      // refuserait. Aucun double-clic n'agrandit pour autant : faute de zone
+      // `app-region: drag`, Chromium n'en reçoit aucun sur un « titre ».
       resizable: true,
       minimizable: false,
       maximizable: false,
@@ -125,19 +135,32 @@ export function installPipWindow(contents: WebContents): void {
   });
 }
 
-/** Bascule le mode : un autre titre (la colle suit), et la taille qui va avec. */
+/** Bascule le mode : un autre titre (la colle suit), et la taille de vidéo qui va avec. */
 export function setPipMode(mode: PipMode, width?: number, height?: number): boolean {
   if (pip === null || pip.isDestroyed()) return false;
-  pip.setTitle(PIP_CAPTIONS[mode]);
+  pipMode = mode;
+  pip.setTitle(pipCaption(mode, null));
   pip.setAlwaysOnTop(mode === "floating");
   if (width !== undefined && height !== undefined) resizePip(width, height);
   return true;
 }
 
-/** La nouvelle taille ; la colle garde fixe le coin le plus proche du bord. */
+/** La nouvelle taille de VIDÉO ; la colle garde fixe le coin le plus proche du bord. */
 export function resizePip(width: number, height: number): boolean {
   if (pip === null || pip.isDestroyed()) return false;
-  pip.setSize(Math.max(PIP_MIN_WIDTH, Math.round(width)), Math.max(PIP_MIN_HEIGHT, Math.round(height)));
+  const size = pipWindowSize(width, height);
+  pip.setSize(size.width, size.height);
+  return true;
+}
+
+/**
+ * Le geste que la page commence (ou finit, `null`) : la colle le lit dans le
+ * titre et suit le curseur tant qu'il y est. `grab` : le point saisi, pour
+ * glisser.
+ */
+export function setPipGesture(gesture: PipGesture | null, grab?: PipPoint): boolean {
+  if (pip === null || pip.isDestroyed()) return false;
+  pip.setTitle(pipCaption(pipMode, gesture, grab));
   return true;
 }
 

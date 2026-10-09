@@ -1,8 +1,10 @@
 /**
  * Le PiP, côté commandes : la page ANNONCE la fenêtre qu'elle va ouvrir
- * (`pip_open`), en change le mode (`pip_mode`) ou la taille (`pip_resize`).
- * L'ouverture et la fermeture, elles, sont les siennes (`window.open`,
- * `close()`) — voir `pip/pipWindow.ts`.
+ * (`pip_open`, qui lui rend le cadre à dessiner), en change le mode
+ * (`pip_mode`) ou la taille de vidéo (`pip_resize`), et annonce le geste —
+ * glisser, tirer un coin — que la colle exécute (`pip_gesture`). L'ouverture
+ * et la fermeture, elles, sont les siennes (`window.open`, `close()`) — voir
+ * `pip/pipWindow.ts`.
  *
  * Enregistrées là où le PiP marche SEULEMENT — Wayland avec la colle KWin, la
  * seule voie pour coller la vidéo à une petite fenêtre : les capacités
@@ -11,7 +13,9 @@
 
 import { z } from "zod";
 import { linuxMontage, linuxWindowing } from "../linux/session";
-import { armPip, resizePip, setPipMode } from "../pip/pipWindow";
+import { PIP_GESTURES } from "../pip/pipCaptions";
+import { PIP_FRAME } from "../pip/pipFrame";
+import { armPip, resizePip, setPipGesture, setPipMode } from "../pip/pipWindow";
 import { CommandRegistry } from "./registry";
 
 const SIZE = z.number().int().min(64).max(8192);
@@ -19,6 +23,12 @@ const MODE = z.enum(["floating", "docked"]);
 const OPEN = z.object({ mode: MODE, width: SIZE, height: SIZE });
 const SWITCH = z.object({ mode: MODE, width: SIZE.optional(), height: SIZE.optional() });
 const RESIZE = z.object({ width: SIZE, height: SIZE });
+const COORDINATE = z.number().finite().min(-8192).max(8192);
+const GESTURE = z.object({
+  gesture: z.enum(PIP_GESTURES).nullable(),
+  /** Le point saisi, pour glisser. */
+  grab: z.object({ x: COORDINATE, y: COORDINATE }).optional(),
+});
 
 /** Le PiP est-il possible dans ce montage ? */
 export function pipSupported(): boolean {
@@ -32,7 +42,7 @@ export function registerPipCommands(registry: CommandRegistry): void {
       schema: OPEN,
       run: ({ mode, width, height }) => {
         armPip(mode, width, height);
-        return true;
+        return PIP_FRAME;
       },
     })
     .add("pip_mode", {
@@ -42,5 +52,9 @@ export function registerPipCommands(registry: CommandRegistry): void {
     .add("pip_resize", {
       schema: RESIZE,
       run: ({ width, height }) => resizePip(width, height),
+    })
+    .add("pip_gesture", {
+      schema: GESTURE,
+      run: ({ gesture, grab }) => setPipGesture(gesture, grab),
     });
 }

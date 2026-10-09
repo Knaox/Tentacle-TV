@@ -11,6 +11,7 @@ vi.mock("electron", () => ({ app: { getAppPath: () => "/x", isPackaged: false },
 vi.mock("../appIcon", () => ({ windowIconPath: () => null }));
 
 import { PIP_CAPTIONS } from "./pipCaptions";
+import { PIP_INSET } from "./pipFrame";
 import { PIP_FRAME_NAME, armPip, closePip, pipWindowOpen } from "./pipWindow";
 
 const asked = (frameName: string, url = "about:blank") => ({ frameName, url }) as Electron.HandlerDetails;
@@ -36,8 +37,9 @@ describe("pipWindowOpen", () => {
     expect(response?.action).toBe("allow");
     const options = response?.action === "allow" ? response.overrideBrowserWindowOptions : undefined;
     expect(options).toMatchObject({
-      width: 480,
-      height: 270,
+      // La vidéo, et le cadre de chaque côté (liseré et ombre).
+      width: 480 + 2 * PIP_INSET,
+      height: 270 + 2 * PIP_INSET,
       title: PIP_CAPTIONS.floating,
       transparent: true,
       frame: false,

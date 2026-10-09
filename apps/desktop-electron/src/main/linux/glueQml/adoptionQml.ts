@@ -73,6 +73,9 @@ export const ADOPTION_QML = `
     // au-dessus du bureau entier — et l'hôte, absent du sélecteur.
     function release() {
         try { root.minimizeLater.stop(); } catch (e) { }
+        // Un geste en cours suit Workspace.cursorPosChanged : décroché en plein
+        // geste, ce gestionnaire survivrait au greffon (banc du 09.10.2026).
+        root.endGesture();
         // Une contrainte survit au greffon qui l'a posée : on les lève toutes.
         for (var c = 0; c < root.constraints.length; c++) {
             try { Kwin.Workspace.unconstrain(root.constraints[c][0], root.constraints[c][1]); } catch (e) { }

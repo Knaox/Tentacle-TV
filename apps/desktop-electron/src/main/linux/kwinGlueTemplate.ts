@@ -2,8 +2,9 @@
  * Le QML de la colle KWin — extrait de `kwinGlue.ts`, qui en dit le pourquoi
  * (moteur déclaratif, dossier neuf, types qualifiés, gestionnaires morts).
  * Ici, ce que la colle SUIT, geste par geste. Le QML s'assemble de fragments
- * (`glueQml/`) : ce que la vidéo tient de l'hôte (`followQml.ts`), l'adoption
- * des fenêtres et le lâcher (`adoptionQml.ts`). Ses identifiants sont en
+ * (`glueQml/`) : ce que la vidéo tient de l'hôte (`followQml.ts`), la fenêtre
+ * PiP (`pipQml.ts`) et ses gestes (`pipGestureQml.ts`), l'adoption des
+ * fenêtres et le lâcher (`adoptionQml.ts`). Ses identifiants sont en
  * anglais depuis le 09.10.2026 — les relevés plus anciens de
  * docs/LINUX-FENETRE-VIDEO.md disent `racine`, `hote`, `coller`,
  * `reprendreActivation`, `prendre`, `lacher` pour `root`, `host`, `glue`,
@@ -63,9 +64,11 @@
  * l'hôte : KWin lui applique alors sa règle, à elle aussi.
  */
 
-import { PIP_CAPTIONS, PIP_MARGIN } from "../pip/pipCaptions";
+import { PIP_CAPTIONS, PIP_GESTURE_CLOSE, PIP_GESTURE_OPEN, PIP_MARGIN } from "../pip/pipCaptions";
+import { PIP_FRAME, PIP_INSET, PIP_MAX_SHARE, PIP_MIN_HEIGHT, PIP_MIN_WIDTH } from "../pip/pipFrame";
 import { ADOPTION_QML } from "./glueQml/adoptionQml";
 import { FOLLOW_QML } from "./glueQml/followQml";
+import { PIP_GESTURE_QML } from "./glueQml/pipGestureQml";
 import { PIP_QML } from "./glueQml/pipQml";
 
 const HEAD = `import QtQml as Qml
@@ -76,10 +79,14 @@ Qml.QtObject {
     property var host: null
     property var video: null
     // La fenêtre PiP (glueQml/pipQml.ts), son mode, sa dernière géométrie
-    // connue, et les contraintes d'empilement posées (paires dessous, dessus).
+    // connue, le geste en cours et sa géométrie de départ
+    // (glueQml/pipGestureQml.ts), et les contraintes d'empilement posées
+    // (paires dessous, dessus).
     property var pip: null
     property string pipMode: ""
     property var pipRect: null
+    property string pipGesture: ""
+    property var gestureStart: null
     property var constraints: []
     // Rattrapage du PREMIER coller : l'écriture de géométrie est asynchrone
     // et windowAdded précède le mappage effectif — la copie posée à l'adoption
@@ -104,7 +111,7 @@ Qml.QtObject {
         return w.resourceClass === "mpv" || w.resourceClass === __VIDEO_CLASS__;
     }`;
 
-const TEMPLATE = `${HEAD}${FOLLOW_QML}${PIP_QML}${ADOPTION_QML}}
+const TEMPLATE = `${HEAD}${FOLLOW_QML}${PIP_QML}${PIP_GESTURE_QML}${ADOPTION_QML}}
 `;
 
 /**
@@ -118,5 +125,13 @@ export function glueTemplate(pid: number, videoClass: string | null = null): str
     .replaceAll("__VIDEO_CLASS__", JSON.stringify(videoClass ?? "mpv"))
     .replaceAll("__PIP_FLOATING__", JSON.stringify(PIP_CAPTIONS.floating))
     .replaceAll("__PIP_DOCKED__", JSON.stringify(PIP_CAPTIONS.docked))
-    .replaceAll("__PIP_MARGIN__", String(PIP_MARGIN));
+    .replaceAll("__PIP_GESTURE_OPEN__", JSON.stringify(PIP_GESTURE_OPEN))
+    .replaceAll("__PIP_GESTURE_CLOSE__", JSON.stringify(PIP_GESTURE_CLOSE))
+    .replaceAll("__PIP_MARGIN__", String(PIP_MARGIN))
+    .replaceAll("__PIP_SHADOW__", String(PIP_FRAME.shadow))
+    .replaceAll("__PIP_INSET__", String(PIP_INSET))
+    .replaceAll("__PIP_MIN_WIDTH__", String(PIP_MIN_WIDTH))
+    .replaceAll("__PIP_MIN_HEIGHT__", String(PIP_MIN_HEIGHT))
+    .replaceAll("__PIP_SHARE_FLOATING__", String(PIP_MAX_SHARE.floating))
+    .replaceAll("__PIP_SHARE_DOCKED__", String(PIP_MAX_SHARE.docked));
 }
