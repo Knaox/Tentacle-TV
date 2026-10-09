@@ -40,12 +40,12 @@ export const ProblemPanel = memo(function ProblemPanel({ model, tone, align = "s
   const hintColor = player ? PLAYER.textSecondary : theme.colors.text.secondary;
 
   return (
-    <View style={[st.root, centered && st.centered]}>
+    <View style={[st.root, centered && st.rootCentered]}>
       <View
         accessible
         accessibilityRole="alert"
         accessibilityLabel={text.announcement}
-        style={[st.head, centered && st.centered]}
+        style={[st.head, centered && st.headCentered]}
       >
         {showIcon ? (
           <View style={[st.chip, { backgroundColor: chipBg }]}>
@@ -101,14 +101,23 @@ export const ProblemPanel = memo(function ProblemPanel({ model, tone, align = "s
   );
 });
 
+/*
+ * Les textes prennent TOUTE la largeur de la colonne (`alignSelf: stretch`) et
+ * se centrent par `textAlign` — jamais une boîte rétrécie à leur mesure : dans
+ * une colonne centrée, chaque texte valait exactement sa largeur mesurée, et le
+ * moindre écart entre la mesure et le dessin (Inter grasse, interlettrage
+ * négatif) coupait la fin du titre — « This page couldn't lo ». Seule la
+ * pastille de l'icône se centre comme une boîte.
+ */
 const st = StyleSheet.create({
   root: { alignSelf: "stretch", maxWidth: 560, gap: spacing.md },
-  centered: { alignItems: "center", alignSelf: "center" },
-  head: { gap: spacing.sm, alignItems: "flex-start" },
+  rootCentered: { alignSelf: "center", width: "100%" },
+  head: { gap: spacing.sm, alignItems: "flex-start", alignSelf: "stretch" },
+  headCentered: { alignItems: "center" },
   chip: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: 2 },
-  title: { fontSize: 22, lineHeight: 28, fontFamily: FONT_FAMILY.bold, letterSpacing: -0.3 },
-  reason: { fontSize: 16, lineHeight: 23, fontFamily: FONT_FAMILY.medium },
-  hint: { fontSize: 14, lineHeight: 20, fontFamily: FONT_FAMILY.regular },
+  title: { alignSelf: "stretch", fontSize: 22, lineHeight: 28, fontFamily: FONT_FAMILY.bold, letterSpacing: -0.3 },
+  reason: { alignSelf: "stretch", fontSize: 16, lineHeight: 23, fontFamily: FONT_FAMILY.medium },
+  hint: { alignSelf: "stretch", fontSize: 14, lineHeight: 20, fontFamily: FONT_FAMILY.regular },
   textCenter: { textAlign: "center" },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.xs },
   actionsCentered: { justifyContent: "center" },
