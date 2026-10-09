@@ -102,11 +102,20 @@ describe("chargerScriptDeclaratif", () => {
 });
 
 describe("lancerScript", () => {
-  it("vise /Scripting/Script<id> et rend le succès", async () => {
-    fake.responses.push({ error: null, output: "()\n" });
+  it("vise /Scripting/Script<id>, PUIS lance tout script chargé non lancé", async () => {
+    fake.responses.push({ error: null, output: "()\n" }, { error: null, output: "()\n" });
     expect(await runScript(4)).toBe(true);
     expect(fake.commands[0]).toContain("/Scripting/Script4");
-    fake.responses.push({ error: new Error("mort"), output: "" });
+    // L'identifiant peut être celui d'un AUTRE script vivant (KWin le
+    // réattribue après un déchargement) : `start` lance le nôtre quand même.
+    expect(fake.commands[1]).toContain("org.kde.kwin.Scripting.start");
+    expect(fake.commands[1]).toContain("/Scripting");
+  });
+
+  it("l'identifiant volé ne fait pas échouer la pose, le bus muet si", async () => {
+    fake.responses.push({ error: new Error("objet absent"), output: "" }, { error: null, output: "()\n" });
+    expect(await runScript(2)).toBe(true);
+    fake.responses.push({ error: new Error("mort"), output: "" }, { error: new Error("mort"), output: "" });
     expect(await runScript(4)).toBe(false);
   });
 });

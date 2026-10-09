@@ -113,9 +113,23 @@ export async function loadDeclarativeScript(
   return id < 0 ? null : id;
 }
 
-/** Instancie le script chargé — c'est `run` qui exécute le QML. */
+/**
+ * Instancie le script chargé — c'est `run` qui exécute le QML.
+ *
+ * ⚠️ L'identifiant ne désigne pas toujours NOTRE script. KWin le calcule comme
+ * `scripts.size()` au chargement (`scripting.cpp`, 6.7.5) : après un
+ * déchargement — le ménage des colles mortes en fait au démarrage —, il est
+ * RÉATTRIBUÉ, alors que le script vivant qui le porte garde son objet D-Bus
+ * `/Scripting/Script<id>`. L'enregistrement du nouveau échoue en silence, et
+ * `run` réveille l'ancien, déjà lancé : sans effet. Vu sur la session réelle le
+ * 09.10.2026 — un script chargé sous l'identifiant 2 ne s'exécutait jamais.
+ *
+ * `Scripting.start` lance ensuite tout script chargé et pas encore lancé — le
+ * nôtre, quel que soit son identifiant ; sur un script déjà lancé, `run` ne
+ * fait rien. C'est l'appel que KWin fait lui-même à son démarrage.
+ */
 export async function runScript(id: number): Promise<boolean> {
-  const output = await gdbus([
+  const direct = await gdbus([
     "call",
     "--session",
     "--dest",
@@ -125,7 +139,8 @@ export async function runScript(id: number): Promise<boolean> {
     "--method",
     "org.kde.kwin.Script.run",
   ]);
-  return output !== null;
+  const pending = await gdbus(["call", ...SCRIPTING_TARGET, "org.kde.kwin.Scripting.start"]);
+  return direct !== null || pending !== null;
 }
 
 /**
