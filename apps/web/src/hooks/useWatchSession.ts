@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemAncestors, useJellyfinClient, useEpisodeNavigation } from "@tentacle-tv/api-client";
 import { ticksToSeconds, TICKS_PER_SECOND, extractSourceQuality, pickMediaSource, VERSION_QUERY_PARAM } from "@tentacle-tv/shared";
@@ -21,11 +21,11 @@ import { useServerTrackPrefs } from "./useServerTrackPrefs";
 import { usePlaybackOfflineMode } from "../offline/useOfflineMode";
 import { useLocalEpisodeNavigation } from "../downloads/useLocalEpisodeNavigation";
 import { wtLog } from "../watchTogether/wtLog";
+import { usePlayerNavigate } from "../pictureInPicture/pictureInPictureContext";
 
 const DBG = "[Tentacle:Player]";
 
-// Déplacé dans packages/shared (réutilisé par la TV) — import + ré-export
-// (utilisé aussi en interne dans ce fichier).
+// Déplacé dans packages/shared (réutilisé par la TV) — import + ré-export (utilisé aussi ici).
 import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 export { BURN_IN_SUBTITLE_CODECS };
 
@@ -48,7 +48,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
   const { t } = useTranslation("player");
   const { itemId } = useParams<{ itemId: string }>();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = usePlayerNavigate(); // pendant le PiP, l'épisode suivant y reste
   const client = useJellyfinClient();
   // Résolution de la source locale AVANT toute requête serveur : en lecture
   // locale (fichier téléchargé), AUCUNE query réseau ne doit partir — zéro

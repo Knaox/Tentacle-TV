@@ -18,6 +18,8 @@ import { SessionMessageHost } from "./components/session/SessionMessageHost";
 import { OmniboxHost } from "./components/search/OmniboxHost";
 import { SeasonRequestProvider } from "./components/seasons/SeasonRequestProvider";
 import { isDesktopApp } from "./desktop/bridge";
+import { supportsPictureInPicture } from "./desktop/capabilities";
+import { PlayerStage } from "./pictureInPicture/PlayerStage";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
@@ -78,6 +80,7 @@ export function App() {
   const activePluginsMeta = useActivePluginsMeta();
   const refreshPlugins = useRefreshPlugins();
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
+  const playerOnStage = supportsPictureInPicture(); // le lecteur hors des routes, pour le PiP
   // Mode Hors ligne (desktop) : navigation réduite au contenu local — les
   // sections serveur ne sont pas rendues, elles redirigent vers le catalogue.
   const offlineMode = useOfflineMode();
@@ -134,8 +137,8 @@ export function App() {
           <Route path="/share/:token" element={<SharePage />} />
           <Route path="/share/:token/:itemId" element={<SharedItemDetail />} />
 
-          {/* Protected — immersive (no sidebar/tabbar) */}
-          <Route path="/watch/:itemId" element={guard(<Watch />)} />
+          {/* Protected — immersive. Avec le PiP, `PlayerStage` rend le lecteur hors des routes. */}
+          <Route path="/watch/:itemId" element={guard(playerOnStage ? <></> : <Watch />)} />
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
           {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
           <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />
@@ -279,6 +282,7 @@ export function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+      {authed && playerOnStage && <PlayerStage />}
       <StartupOverlays authed={authed} />
       {/* La recherche de toute l'application (⌘K, « / », la barre) — au-dessus
           des pages avec ou sans navigation, jamais pendant la lecture. */}

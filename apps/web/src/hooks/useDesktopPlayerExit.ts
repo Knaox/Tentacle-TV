@@ -12,6 +12,7 @@ import { useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { invoke } from "../desktop/bridge";
+import { usePictureInPicture } from "../pictureInPicture/pictureInPictureContext";
 
 interface UseDesktopPlayerExitArgs {
   itemId?: string;
@@ -19,6 +20,9 @@ interface UseDesktopPlayerExitArgs {
 
 export function useDesktopPlayerExit({ itemId }: UseDesktopPlayerExitArgs) {
   const navigate = useNavigate();
+  // Pendant le PiP, sortir du lecteur, c'est fermer le PiP : jamais toucher à
+  // la page que l'utilisateur parcourt.
+  const pip = usePictureInPicture();
 
   /**
    * Ferme la session plein écran côté natif. Le natif ne défait le plein écran
@@ -30,24 +34,25 @@ export function useDesktopPlayerExit({ itemId }: UseDesktopPlayerExitArgs) {
   }, []);
 
   const goBack = useCallback(async () => {
+    if (pip.active) { pip.close(); return; }
     await leaveFullscreenScope();
     // La fiche qu'on retrouve ne doit pas rejouer son entrée (cf.
     // `markPlayerExit`) — posé juste avant la navigation, la marque est fraîche.
     markPlayerExit();
     navigate(-1);
-  }, [navigate, leaveFullscreenScope]);
+  }, [navigate, leaveFullscreenScope, pip]);
 
   // Retour à la fiche (films, fin de série) — même fermeture de session.
   // Sans identifiant de média, le retour arrière fait office de fiche.
   const goToDetail = useCallback(async () => {
-    if (!itemId) {
+    if (!itemId || pip.active) {
       await goBack();
       return;
     }
     await leaveFullscreenScope();
     markPlayerExit();
     navigate(`/media/${itemId}`, { replace: true });
-  }, [navigate, itemId, leaveFullscreenScope, goBack]);
+  }, [navigate, itemId, leaveFullscreenScope, goBack, pip.active]);
 
   useEffect(() => {
     return () => {

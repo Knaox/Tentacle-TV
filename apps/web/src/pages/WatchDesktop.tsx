@@ -28,6 +28,7 @@ import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
 import { useNextEpisodeArtwork } from "../hooks/useNextEpisodeArtwork";
+import { usePictureInPicture } from "../pictureInPicture/pictureInPictureContext";
 import { useDesktopTrackHandlers } from "../hooks/useDesktopTrackHandlers";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
@@ -66,13 +67,15 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     await queryClient.refetchQueries({ queryKey: ["local-source"] });
     setMediaMissing(false);
   }, [queryClient]);
+  const pip = usePictureInPicture();
   const handleMediaBack = useCallback(async () => {
+    if (pip.active) { pip.close(); return; }
     // Les trois gestes de useDesktopAutoNext.goBack — le lecteur est démonté,
     // son hook n'est plus là pour les faire.
     try { await invoke("player_fullscreen_leave"); } catch { /* on navigue quand même */ }
     markPlayerExit();
     navigate(-1);
-  }, [navigate]);
+  }, [navigate, pip]);
 
   const { reportStart, updatePosition, reportSeek: _reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
@@ -175,6 +178,10 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     if (isLocalPlayback) { onFallbackToWeb?.(); return; }
     playback.report(desktopPlaybackReport(failure), { started: failure.started, fallback: onFallbackToWeb });
   }, [isLocalPlayback, onFallbackToWeb, playback.report]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Un problème pendant le PiP se dit dans le lecteur : on y revient.
+  const pipProblem = pip.active && (playback.problem !== null || mediaMissing);
+  useEffect(() => { if (pipProblem) pip.expand(); }, [pipProblem]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Titre et épisode : DTO serveur, sinon méta locale (démarrage 100 % hors ligne).
   const { title, epSubtitle } = playbackTitles(item, localSource);

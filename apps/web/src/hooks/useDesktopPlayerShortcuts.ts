@@ -17,11 +17,15 @@ interface Options {
   hasPreviousEpisode?: boolean;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
+  /** Faux pendant le PiP : la page parcourt l'application, le clavier est à elle. */
+  enabled?: boolean;
+  /** Réduire la lecture dans le PiP — là où il existe (touche I, comme le mini-lecteur de YouTube). */
+  onReduce?: () => void;
 }
 
 export function useDesktopPlayerShortcuts({
   seekRelative, togglePause, goBack, toggleFullscreen, fullscreenRef,
-  hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode,
+  hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, enabled = true, onReduce,
 }: Options): { skipFlash: SkipFlash | null; skipBy: (delta: number) => void } {
   const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
   const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -41,6 +45,7 @@ export function useDesktopPlayerShortcuts({
   }, [seekRelative]);
 
   useEffect(() => {
+    if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePause(); }
       if (e.code === "Escape") {
@@ -52,10 +57,11 @@ export function useDesktopPlayerShortcuts({
       if (e.code === "KeyF") toggleFullscreen();
       if (e.code === "KeyN" && hasNextEpisode) onNextEpisode?.();
       if (e.code === "KeyP" && hasPreviousEpisode) onPreviousEpisode?.();
+      if (e.code === "KeyI") onReduce?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, goBack, skipBy, toggleFullscreen, fullscreenRef, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
+  }, [enabled, togglePause, goBack, skipBy, toggleFullscreen, fullscreenRef, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, onReduce]);
 
   return { skipFlash, skipBy };
 }

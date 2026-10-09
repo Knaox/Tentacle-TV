@@ -48,6 +48,15 @@ export function supportsSmtc(): boolean {
   return hasNativeCommand("smtc_init");
 }
 
+/**
+ * Le PiP : réduire la lecture dans une petite fenêtre et continuer dans
+ * l'application. Linux sous Wayland avec la colle KWin seulement — la seule
+ * voie pour coller la vidéo de mpv à une petite fenêtre (`ipc/pip.ts`).
+ */
+export function supportsPictureInPicture(): boolean {
+  return hasNativeCommand("pip_open");
+}
+
 /** Le choix de session graphique Wayland/X11 — coquille Linux seulement. */
 export function supportsLinuxSession(): boolean {
   return hasNativeCommand("linux_session_get");

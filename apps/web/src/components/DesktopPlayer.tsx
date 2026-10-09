@@ -6,6 +6,8 @@ import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { useDesktopSkip } from "../hooks/useDesktopSkip";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import { useDesktopFailureRouting } from "../hooks/useDesktopFailureRouting";
+import { usePictureInPicture } from "../pictureInPicture/pictureInPictureContext";
+import { PlayerPipPortal } from "../pictureInPicture/PlayerPipPortal";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import { useLocalMediaProbe } from "../hooks/useLocalMediaProbe";
 import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
@@ -85,6 +87,9 @@ export function DesktopPlayer({
   const offsetDetectedForSrc = useRef("");
   const fullscreenRef = useRef(state.fullscreen);
   fullscreenRef.current = state.fullscreen;
+  // Le PiP (Linux) : réduire garde la lecture, la page reparcourt l'application.
+  const pip = usePictureInPicture();
+  const reduce = pip.supported ? () => pip.reduce({ restoreFullscreen: fullscreenRef.current }) : undefined;
   // Glissement de la seekbar en cours : la détection de discontinuité se tait
   // (un glissement n'est pas un seek à rapporter — le relâchement, si).
   const draggingRef = useRef(false);
@@ -115,10 +120,10 @@ export function DesktopPlayer({
   });
 
   // Fond de page transparent pendant la lecture, une fois la surface native prête.
-  useTransparentPageDuringPlayback(ready);
+  useTransparentPageDuringPlayback(ready && !pip.active);
 
   // Pédagogie du plein écran Wayland (une fois, et seulement où il est imposé).
-  useWaylandFullscreenNotice(ready);
+  useWaylandFullscreenNotice(ready && !pip.active);
 
   // Chargement de la source + détection PTS + report de progression
   const { sourceChanging } = useMpvSource({
@@ -175,7 +180,7 @@ export function DesktopPlayer({
 
   // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
   const { skipFlash, skipBy } = useDesktopPlayerShortcuts({
-    seekRelative: skipRelativeOrEnd, togglePause, goBack, toggleFullscreen, fullscreenRef,
+    seekRelative: skipRelativeOrEnd, togglePause, goBack, toggleFullscreen, fullscreenRef, enabled: !pip.active, onReduce: reduce,
     hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode,
   });
 
@@ -259,6 +264,7 @@ export function DesktopPlayer({
       />
 
       <SkipBadge flash={skipFlash} />
+      <PlayerPipPortal paused={state.paused} position={actualPos} duration={dur} title={subtitle ? `${title} · ${subtitle}` : title} onTogglePause={togglePause} onSkip={skipBy} />
       <QualityDropNotice drop={qualityDrop ?? null} started={hasStarted} itemId={itemId} />
 
       {/* Le badge de chaque bascule lecture/pause (espace, bouton, télécommande média). */}
@@ -283,7 +289,7 @@ export function DesktopPlayer({
         showSettings={showSettings} showEpisodes={showEpisodes}
         setShowSettings={setShowSettings} setShowEpisodes={setShowEpisodes}
         closePanels={{ settings: () => setShowSettings(false), episodes: () => setShowEpisodes(false) }}
-        goBack={goBack} togglePause={togglePause} skipBy={skipBy}
+        goBack={goBack} onReduce={reduce} togglePause={togglePause} skipBy={skipBy}
         toggleMute={toggleMute} setVolume={setVolume} setSpeed={setSpeed} toggleFullscreen={toggleFullscreen}
         handleAudioChange={handleAudioChange} handleSubtitleChange={handleSubtitleChange}
         onQualityChange={chooseQuality} applyToSeries={applyToSeries}

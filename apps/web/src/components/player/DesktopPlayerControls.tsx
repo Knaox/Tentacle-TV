@@ -17,6 +17,7 @@ import type { MediaItem, QualityDrop, QualityKey, QualityPreset, SourceQuality }
 import type { MpvState } from "../../hooks/useDesktopPlayer";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
 import { rangeFill } from "../../lib/rangeFill";
+import { ReduceIcon } from "../../pictureInPicture/pipIcons";
 
 interface DesktopPlayerControlsProps {
   visible: boolean;
@@ -58,6 +59,8 @@ interface DesktopPlayerControlsProps {
   setShowEpisodes: (fn: (p: boolean) => boolean) => void;
   closePanels: { settings: () => void; episodes: () => void };
   goBack: () => void;
+  /** Réduire la lecture dans le PiP — absent là où il n'existe pas. */
+  onReduce?: () => void;
   togglePause: () => void;
   skipBy: (delta: number) => void;
   toggleMute: () => void;
@@ -98,7 +101,7 @@ export function DesktopPlayerControls({
   hasSettings, hasNextEpisode, hasPreviousEpisode,
   dur, actualPos, displayProgress, bufProg, seekbar,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
-  goBack, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
+  goBack, onReduce, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
   handleAudioChange, handleSubtitleChange, onQualityChange, applyToSeries,
   onNextEpisode, onPreviousEpisode,
 }: DesktopPlayerControlsProps) {
@@ -144,6 +147,11 @@ export function DesktopPlayerControls({
         <div className={`bg-gradient-to-b ${WITHOUT_ALPHA ? "from-black/70" : "from-black/45"} to-transparent px-6 pb-10 pt-5`}>
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
+            {onReduce && (
+              <button onClick={() => onReduce()} className="rounded-full p-2 text-white hover:bg-white/10" title={`${t("player:pip.reduce")} (I)`} aria-label={t("player:pip.reduce")}>
+                <ReduceIcon />
+              </button>
+            )}
             <div>
               <h2 className="text-lg font-semibold text-white">{title}</h2>
               {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}

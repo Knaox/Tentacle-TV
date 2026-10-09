@@ -198,6 +198,19 @@ export default {
     longHint: "Your position is saved: playback will resume as soon as it's back.",
     retry: "Try again",
   },
+  // Le PiP du bureau (Linux, `apps/web/src/pictureInPicture/`) : réduire la
+  // lecture dans une petite fenêtre et continuer dans l'application.
+  pip: {
+    reduce: "Minimize video",
+    expand: "Back to the player",
+    close: "Close video",
+    dock: "Dock in the app",
+    undock: "Detach to the desktop",
+    play: "Play",
+    pause: "Pause",
+    back10: "Back 10 seconds",
+    forward30: "Forward 30 seconds",
+  },
   // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
   // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).
   deviceNotice: {
