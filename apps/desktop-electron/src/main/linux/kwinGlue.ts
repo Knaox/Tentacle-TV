@@ -68,11 +68,11 @@
  *
  * Décrocher un greffon détruit son instance QML, mais PAS ce qu'elle a
  * connecté : KWin garde les gestionnaires posés sur ses fenêtres et sur
- * `Workspace.windowAdded`, et les rappelle avec `racine` déjà null. Relevé au
+ * `Workspace.windowAdded`, et les rappelle avec `root` déjà null. Relevé au
  * journal du compositeur le 17.09.2026 : « TypeError: Cannot read property
  * 'hote' of null » à chaque évènement de fenêtre, N fois — N poses depuis le
- * lancement, jamais décrémenté. `lacher()` défait donc, à la destruction, tout
- * ce que `prendre()` a noué ; les fermetures sont NOMMÉES pour cela, une
+ * lancement, jamais décrémenté. `release()` défait donc, à la destruction, tout
+ * ce que `take()` a noué ; les fermetures sont NOMMÉES pour cela, une
  * fonction anonyme ne se déconnectant pas.
  *
  * # Un greffon NOMMÉ, `tentacle-colle-<pid>`

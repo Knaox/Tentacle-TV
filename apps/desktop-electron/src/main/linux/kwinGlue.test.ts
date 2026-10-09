@@ -67,8 +67,8 @@ describe("gabaritColle", () => {
   it("copie la géométrie et tient la paire par raiseWindow", () => {
     const qml = glueTemplate(1);
     expect(qml).toContain("Qt.rect(g.x, g.y, g.width, g.height)");
-    expect(qml).toContain("Kwin.Workspace.raiseWindow(racine.video)");
-    expect(qml).toContain("Kwin.Workspace.raiseWindow(racine.hote)");
+    expect(qml).toContain("Kwin.Workspace.raiseWindow(root.video)");
+    expect(qml).toContain("Kwin.Workspace.raiseWindow(root.host)");
   });
 
   it("qualifie TOUS ses types, l'objet attaché Component compris", () => {
@@ -90,12 +90,12 @@ describe("gabaritColle", () => {
     // Le panneau du bureau passe devant une fenêtre ordinaire : en plein écran,
     // il s'intercalait entre mpv et notre fenêtre transparente, donc se voyait.
     expect(qml).toContain(
-      "racine.video.keepAbove = racine.hote.keepAbove || (racine.hote.fullScreen && racine.hote.active)",
+      "root.video.keepAbove = root.host.keepAbove || (root.host.fullScreen && root.host.active)",
     );
-    expect(qml).toContain("w.fullScreenChanged.connect(racine.suivreCouche)");
+    expect(qml).toContain("w.fullScreenChanged.connect(root.followLayer)");
     // Sans la condition d'activation, un hôte plein écran qui perd le focus
     // retombe en couche normale et la vidéo recouvrirait TOUT le bureau.
-    expect(qml).not.toContain("racine.video.keepAbove = true");
+    expect(qml).not.toContain("root.video.keepAbove = true");
   });
 
   it("passe la vidéo en plein écran AVEC l'hôte — la règle de KWin vaut écran par écran", () => {
@@ -103,84 +103,84 @@ describe("gabaritColle", () => {
     // KWin garde un plein écran en couche « active » tant que la fenêtre active
     // est sur un AUTRE écran : la vidéo doit y être soumise elle aussi, sinon le
     // panneau et les notifications s'intercalent (banc du 09.10.2026).
-    expect(qml).toContain("racine.video.fullScreen = racine.hote.fullScreen;");
+    expect(qml).toContain("root.video.fullScreen = root.host.fullScreen;");
     // Plein écran, la géométrie est celle de l'écran : on ne la recopie pas.
-    expect(qml).toContain("if (!racine.video.fullScreen) {");
+    expect(qml).toContain("if (!root.video.fullScreen) {");
     // La sortie est accusée par mpv APRÈS celle de l'hôte : on recolle alors.
-    expect(qml).toContain("w.fullScreenChanged.connect(racine.videoPleinEcran)");
-    expect(qml).toContain("racine.video.fullScreenChanged.disconnect(racine.videoPleinEcran)");
+    expect(qml).toContain("w.fullScreenChanged.connect(root.videoFullScreenChanged)");
+    expect(qml).toContain("root.video.fullScreenChanged.disconnect(root.videoFullScreenChanged)");
     // Décrochée, la colle rend la vidéo fenêtrée.
-    expect(qml).toContain("racine.video.fullScreen = false;");
+    expect(qml).toContain("root.video.fullScreen = false;");
   });
 
-  it("défait à la destruction TOUT ce que prendre() a noué — les gestionnaires morts", () => {
+  it("défait à la destruction TOUT ce que take() a noué — les gestionnaires morts", () => {
     const qml = glueTemplate(1);
     // 2 827 « TypeError: Cannot read property 'hote' of null » au journal de
     // KWin en sept jours (17.09.2026) : les connexions survivaient à l'instance.
-    expect(qml).toContain("Qml.Component.onDestruction: racine.lacher()");
-    expect(qml).toContain("Kwin.Workspace.windowAdded.disconnect(racine.prendre)");
-    expect(qml).toContain("racine.hote.frameGeometryChanged.disconnect(racine.coller)");
-    expect(qml).toContain("racine.hote.activeChanged.disconnect(racine.suivreCouche)");
-    expect(qml).toContain("racine.hote.closed.disconnect(racine.hoteFerme)");
-    expect(qml).toContain("racine.video.closed.disconnect(racine.videoFermee)");
-    expect(qml).toContain("racine.video.activeChanged.disconnect(racine.reprendreActivation)");
-    expect(qml).toContain("racine.video.minimizedChanged.disconnect(racine.suivreMinimiseVideo)");
-    expect(qml).toContain("racine.video.captionNormalChanged.disconnect(racine.suivreSelecteur)");
-    expect(qml).toContain("racine.hote.keepAboveChanged.disconnect(racine.suivreCouche)");
-    expect(qml).toContain("racine.hote.keepBelowChanged.disconnect(racine.suivreCouche)");
-    expect(qml).toContain("racine.hote.minimizedChanged.disconnect(racine.suivreMinimise)");
-    expect(qml).toContain("racine.hote.desktopsChanged.disconnect(racine.suivreBureaux)");
-    expect(qml).toContain("racine.hote.activitiesChanged.disconnect(racine.suivreActivites)");
+    expect(qml).toContain("Qml.Component.onDestruction: root.release()");
+    expect(qml).toContain("Kwin.Workspace.windowAdded.disconnect(root.take)");
+    expect(qml).toContain("root.host.frameGeometryChanged.disconnect(root.glue)");
+    expect(qml).toContain("root.host.activeChanged.disconnect(root.followLayer)");
+    expect(qml).toContain("root.host.closed.disconnect(root.hostClosed)");
+    expect(qml).toContain("root.video.closed.disconnect(root.videoClosed)");
+    expect(qml).toContain("root.video.activeChanged.disconnect(root.reclaimActivation)");
+    expect(qml).toContain("root.video.minimizedChanged.disconnect(root.followVideoMinimized)");
+    expect(qml).toContain("root.video.captionNormalChanged.disconnect(root.followSwitcher)");
+    expect(qml).toContain("root.host.keepAboveChanged.disconnect(root.followLayer)");
+    expect(qml).toContain("root.host.keepBelowChanged.disconnect(root.followLayer)");
+    expect(qml).toContain("root.host.minimizedChanged.disconnect(root.followMinimized)");
+    expect(qml).toContain("root.host.desktopsChanged.disconnect(root.followDesktops)");
+    expect(qml).toContain("root.host.activitiesChanged.disconnect(root.followActivities)");
     // Chaque connexion a sa déconnexion : même nombre des deux côtés.
-    expect(qml.match(/\.connect\(racine\./g)?.length).toBe(qml.match(/\.disconnect\(racine\./g)?.length);
+    expect(qml.match(/\.connect\(root\./g)?.length).toBe(qml.match(/\.disconnect\(root\./g)?.length);
     // Une fermeture anonyme ne se déconnecte pas : plus aucune dans le gabarit.
     expect(qml).not.toContain("connect(function");
     // Et la couche est rendue AVANT de lâcher la fenêtre.
-    expect(qml).toContain("racine.video.keepAbove = false;");
+    expect(qml).toContain("root.video.keepAbove = false;");
   });
 
   it("ne rend JAMAIS l'activation à un hôte réduit — la réduction s'annulait elle-même", () => {
     const qml = glueTemplate(1);
     // KWin passe le focus à mpv PENDANT la réduction de l'hôte, et
     // activateWindow dé-réduit ce qu'il active (sources de KWin 6.7).
-    const body = qml.slice(qml.indexOf("function reprendreActivation()"), qml.indexOf("function reduireAvecHote()"));
-    expect(body.indexOf("if (racine.hote.minimized)")).toBeGreaterThan(-1);
-    expect(body.indexOf("if (racine.hote.minimized)")).toBeLessThan(
-      body.indexOf("Kwin.Workspace.activeWindow = racine.hote"),
+    const body = qml.slice(qml.indexOf("function reclaimActivation()"), qml.indexOf("function minimizeWithHost()"));
+    expect(body.indexOf("if (root.host.minimized)")).toBeGreaterThan(-1);
+    expect(body.indexOf("if (root.host.minimized)")).toBeLessThan(
+      body.indexOf("Kwin.Workspace.activeWindow = root.host"),
     );
     // La vidéo est réduite un tour de boucle plus tard, hors de la pile de KWin.
-    expect(body).toContain("racine.reduction.restart()");
+    expect(body).toContain("root.minimizeLater.restart()");
     expect(qml).toContain("interval: 0");
-    expect(qml).toContain("racine.video.minimized = true");
+    expect(qml).toContain("root.video.minimized = true");
   });
 
   it("la vidéo rendue à l'écran ramène l'hôte ; l'hôte réduit emmène la vidéo", () => {
     const qml = glueTemplate(1);
-    expect(qml).toContain("w.minimizedChanged.connect(racine.suivreMinimiseVideo)");
-    expect(qml).toContain("if (!racine.video.minimized && racine.hote.minimized) racine.hote.minimized = false");
-    expect(qml).toContain("w.minimizedChanged.connect(racine.suivreMinimise)");
-    expect(qml).toContain("racine.video.minimized = racine.hote.minimized");
+    expect(qml).toContain("w.minimizedChanged.connect(root.followVideoMinimized)");
+    expect(qml).toContain("if (!root.video.minimized && root.host.minimized) root.host.minimized = false");
+    expect(qml).toContain("w.minimizedChanged.connect(root.followMinimized)");
+    expect(qml).toContain("root.video.minimized = root.host.minimized");
   });
 
   it("suit les bureaux virtuels et les activités de l'hôte", () => {
     const qml = glueTemplate(1);
-    expect(qml).toContain("racine.video.desktops = racine.hote.desktops");
-    expect(qml).toContain("racine.video.activities = racine.hote.activities");
-    expect(qml).toContain("w.desktopsChanged.connect(racine.suivreBureaux)");
-    expect(qml).toContain("w.activitiesChanged.connect(racine.suivreActivites)");
+    expect(qml).toContain("root.video.desktops = root.host.desktops");
+    expect(qml).toContain("root.video.activities = root.host.activities");
+    expect(qml).toContain("w.desktopsChanged.connect(root.followDesktops)");
+    expect(qml).toContain("w.activitiesChanged.connect(root.followActivities)");
   });
 
   it("Alt+Tab : la vidéo représente l'application pendant la lecture, l'hôte sinon", () => {
     const qml = glueTemplate(1);
     // La vignette du sélecteur ne rend qu'UNE fenêtre : celle de l'hôte est
     // transparente là où la vidéo se trouve.
-    expect(qml).toContain('var lecture = racine.video !== null && racine.video.captionNormal !== "";');
-    expect(qml).toContain("racine.video.skipSwitcher = !lecture;");
-    expect(qml).toContain("racine.hote.skipSwitcher = lecture;");
-    expect(qml).toContain("w.captionNormalChanged.connect(racine.suivreSelecteur)");
+    expect(qml).toContain('var playing = root.video !== null && root.video.captionNormal !== "";');
+    expect(qml).toContain("root.video.skipSwitcher = !playing;");
+    expect(qml).toContain("root.host.skipSwitcher = playing;");
+    expect(qml).toContain("w.captionNormalChanged.connect(root.followSwitcher)");
     // La vidéo fermée rend sa place à l'hôte, la colle décrochée aussi.
-    expect(qml).toMatch(/function videoFermee\(\) \{\s+racine\.video = null;\s+racine\.suivreSelecteur\(\);/);
-    expect(qml).toContain("racine.hote.skipSwitcher = false;");
+    expect(qml).toMatch(/function videoClosed\(\) \{\s+root\.video = null;\s+root\.followSwitcher\(\);/);
+    expect(qml).toContain("root.host.skipSwitcher = false;");
   });
 
   it("reconnaît la vidéo par son app-id, inliné en littéral JSON — « mpv » reste accepté", () => {
@@ -205,7 +205,7 @@ describe("gabaritColle", () => {
     // La minuterie one-shot, redémarrée à l'adoption de la fenêtre vidéo.
     expect(qml).toContain("Qml.Timer");
     expect(qml).toContain("repeat: false");
-    expect(qml).toContain("racine.rattrapage.restart()");
+    expect(qml).toContain("root.catchUp.restart()");
     // Connecter frameGeometryChanged de la VIDÉO bouclerait : notre écriture
     // déclencherait le signal écouté. Seule la connexion de l'HÔTE existe.
     expect(qml.match(/frameGeometryChanged\.connect/g)?.length).toBe(1);
