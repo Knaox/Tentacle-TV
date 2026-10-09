@@ -973,7 +973,12 @@ qui le fait survivre à la navigation ; une navigation demandée par le lecteur 
 `usePlayerNavigate` (pendant le PiP, l'épisode suivant y reste, toute autre sortie le
 ferme). La fenêtre PiP est ouverte par la page (`window.open`, portail React) et
 fabriquée par la coquille ; la colle la reconnaît à son TITRE (`pip/pipCaptions.ts`,
-jamais traduit). La vidéo passe en plein écran AVEC l'hôte (règle « plein écran actif »
+jamais traduit). **Jamais `app-region: drag` dans le PiP** : Electron n'y transmet plus
+RIEN à la page (ni survol, ni molette, ni double-clic) — glisser et tirer un coin sont
+des gestes que la page annonce dans ce titre et que la colle exécute en suivant le
+curseur (`glueQml/pipGestureQml.ts`). La vidéo est collée DANS le cadre de la fenêtre PiP
+(`pip/pipFrame.ts` : liseré opaque qui arrondit les coins de mpv, marge d'ombre).
+La vidéo passe en plein écran AVEC l'hôte (règle « plein écran actif »
 de KWin, écran par écran) ; un script KWin se lance par `run` PUIS `Scripting.start`
 (KWin réattribue les identifiants). Détail : `docs/LINUX-FENETRE-VIDEO.md`, « Le PiP ».
 

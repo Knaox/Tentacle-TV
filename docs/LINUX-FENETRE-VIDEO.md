@@ -866,7 +866,7 @@ souris factice (cf. « Le plein écran et l'écran voisin ») :
 | Geste | Résultat |
 |---|---|
 | PiP flottant | 480×270 au coin bas-droit (marge 20, panneau exclu), `keepAbove`, hôte toujours actif |
-| glisser (`app-region: drag`) jusque sur l'écran 2 | la vidéo suit au pixel |
+| glisser jusque sur l'écran 2 | la vidéo suit au pixel (`app-region: drag` alors — abandonné le jour même, voir « deuxième passe ») |
 | PiP flottant sur une application PLEIN ÉCRAN active | visible : `Workspace.constrain` (6.5+) tient hôte < vidéo < PiP à travers les couches |
 | PiP ancré | suit les déplacements, se réduit avec l'application, reste devant elle quand elle est ACTIVE (contraintes) |
 | bascule ancré ↔ flottant | sur place, par le titre |
@@ -878,7 +878,7 @@ Trois impasses, mesurées :
 - **Aucun bord de redimensionnement.** Une fenêtre Electron 43 sans cadre ET translucide
   n'a aucune marge (`ElectronFrameViewLayoutLinux` : insets nuls) — le coin déplace au
   lieu de redimensionner. D'où la molette (±10 %, ratio de l'image gardé, largeur
-  retenue), et le Méta+clic droit natif de KDE.
+  retenue), puis les coins tirés de la deuxième passe.
 - **`Workspace.slotWindowResize`** démarre un redimensionnement « clavier » qui TÉLÉPORTE
   le curseur au coin bas-droit (`performWindowOperation`) : inutilisable pour une poignée.
 - **Une fonction QML nommée comme le signal d'une propriété** (`pipChanged` pour
@@ -909,13 +909,51 @@ script chargé et pas encore lancé, le nôtre quel que soit son identifiant.
   plein écran de l'application → vidéo en couche active avec l'hôte, barre des tâches
   dessous ; PiP au coin bas-droit de l'écran de droite ; retour au lecteur plein écran.
 
+### Le cadre, le survol, les gestes — deuxième passe (09.10.2026)
+
+Retour de l'utilisateur sur la première : « la fenêtre est carrée, moche, sans
+encadrement, et je dois survoler le bouton pour voir les contrôles ». Mesuré au banc avec
+la souris factice — elle émet bien des mouvements (`pointer_motion_absolute`) ; c'est sa
+DISPARITION en fin de commande qui envoie un `mouseout` à la page, donc la garder vivante
+pendant une capture. Fenêtre de test transparente sans cadre :
+
+| Ce qu'on fait | Ce que la page reçoit |
+|---|---|
+| bouger au-dessus d'une zone `app-region: drag` | RIEN — ni `mousemove`, ni molette |
+| passer d'un bouton (`no-drag`) à la zone de glisser | `mouseout` sans `relatedTarget`, comme une sortie de la fenêtre |
+| double-cliquer la zone de glisser | rien — et la fenêtre s'AGRANDIT en plein écran, même `maximizable: false` (non implémenté sous Linux) |
+| `setShape` (zone de saisie réduite) | aucun effet sous Wayland : la marge transparente capte toujours la souris |
+| bouton tenu, curseur hors de la fenêtre | `pointermove` en coordonnées négatives (capture, prise implicite) |
+
+D'où le montage actuel :
+
+- **Plus aucune zone `app-region: drag`.** La page garde toute la souris : survol,
+  sortie, molette, double-clic (retour au lecteur) marchent partout. Glisser et tirer un
+  coin sont des GESTES qu'elle annonce dans le titre (`<titre> [move 162 102]`,
+  `<titre> [top-left]` — `pip/pipCaptions.ts`) ; la colle les exécute en suivant
+  `Workspace.cursorPosChanged`, que KWin met à jour pendant que la page tient le bouton
+  (`linux/glueQml/pipGestureQml.ts`). Glisser porte le point saisi : sans lui, la
+  fenêtre partait avec ~20 points de retard (seuil de 4 points + aller-retour vers la
+  colle). Banc : glisser de (−600, −400) → PiP déplacé de (−600, −400) exactement ; coin
+  haut-gauche tiré de (−160, −90) → vidéo 480×270 → 640×360, coin bas-droit fixe ;
+  ancré, le glisser est refusé et seul le coin haut-gauche agit.
+- **Le cadre** (`pip/pipFrame.ts`) : la fenêtre PiP déborde de la vidéo d'un liseré
+  OPAQUE de 4 points, qui recouvre les coins carrés de mpv et dessine un arrondi de 13
+  (au plus `liseré / (1 − 1/√2)` : au-delà, la pointe du coin de mpv dépasse), et d'une
+  marge transparente de 14 points pour l'ombre. La colle place mpv à 18 points du bord ;
+  les marges de placement se comptent au cadre VISIBLE. `pip_open` rend ces valeurs à la
+  page : une seule source.
+- **Un gestionnaire de `Workspace` survit au script qui l'a posé** : une sonde déchargée
+  pendant qu'elle suivait le curseur continuait d'écrire « Cannot read property … of
+  null » à chaque mouvement. `release()` finit donc tout geste en cours.
+
 ### Ce qui reste
 
 - **Le HDR**, invérifiable ici : les sorties du KWin virtuel n'en ont pas, l'écran de
   droite est SDR. Rien ne change pour mpv (même instance, `target-colorspace-hint`) ; à
   vérifier sur l'écran HDR : retour au lecteur en plein écran → `[hdr] contenu pq →
   sortie pq/bt.2020`, et le PiP glissé d'un écran SDR à l'écran HDR.
-- Le glisser et le survol à la VRAIE souris (la souris factice n'émet pas de `frame` sans
-  clic) : Chromium les livre sur une zone `app-region: drag` — vu au banc pendant un
-  glisser —, à confirmer à la main.
+- Les gestes à la VRAIE souris : la souris factice passe par KWin comme une vraie
+  (survol, sortie, glisser, coin, double-clic vérifiés), mais pas une main — sensation du
+  glisser et du coin à juger sur la session réelle.
 - X11, GNOME, Windows et macOS : pas de PiP (commandes non enregistrées, bouton absent).
