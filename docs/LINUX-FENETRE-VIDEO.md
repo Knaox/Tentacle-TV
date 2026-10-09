@@ -831,3 +831,91 @@ au-dessus du panneau). Fenêtre activée sur le MÊME écran : les deux retomben
 toute fenêtre plein écran inactive. Piège mesuré au passage : la vidéo sort du plein
 écran quand mpv l'a ACCUSÉ, après l'hôte — le recollage se fait donc sur son propre
 `fullScreenChanged`, sinon elle gardait la taille de l'écran.
+
+## Le PiP — réduire la lecture et continuer dans l'application (09.10.2026)
+
+Demande : « un petit bouton en haut à gauche pour réduire la vidéo et continuer à
+naviguer ; la vidéo en bas à droite ; une fenêtre qu'on bouge dans tout l'OS — ou
+gardée dans l'application, il faudra tester les deux ». Linux seulement pour l'instant.
+
+### Le montage
+
+- **Une petite fenêtre PiP**, transparente et sans cadre, que la colle KWin reconnaît
+  à son TITRE (`pip/pipCaptions.ts`) et à laquelle elle colle mpv à la place de l'hôte
+  (`linux/glueQml/pipQml.ts`). Le titre porte aussi le mode, et le changer le bascule :
+  la seule voie de la coquille vers la colle, sans aller-retour D-Bus.
+- **Ouverte par la page** (`window.open`), fabriquée par la coquille (`pip/pipWindow.ts`,
+  filtre `window.open` armé par `pip_open`, à usage unique) : la page y rend les
+  contrôles par un portail React — mêmes traductions, gestes du lecteur appelés
+  directement, aucun relais IPC.
+- **Le lecteur hors des routes** (`apps/web/src/pictureInPicture/PlayerStage.tsx`) :
+  sous `/watch/:itemId`, il mourait à la première navigation. Rendu par ses propres
+  `Routes` — la route courante quand on y est, celle que la session PiP garde sinon —,
+  React garde l'instance : mpv ne s'arrête jamais. Monté seulement là où `pip_open`
+  existe (Wayland + colle KWin) ; ailleurs, la route rend le lecteur comme avant.
+- **Les deux pistes, gardées toutes les deux** : flottant (défaut — au-dessus de tout,
+  sur tous les bureaux, coin bas-droit de la zone utile de l'écran à la marge du PiP
+  natif de KDE, 20 px) et ancré (coin bas-droit de la zone client de l'application,
+  qu'il suit). Un bouton du PiP passe de l'un à l'autre ; le mode est retenu.
+
+### Ce que le banc a fixé
+
+KWin virtuel à deux écrans, plasmashell imbriqué, mini-app Electron + libmpv du dépôt,
+souris factice (cf. « Le plein écran et l'écran voisin ») :
+
+| Geste | Résultat |
+|---|---|
+| PiP flottant | 480×270 au coin bas-droit (marge 20, panneau exclu), `keepAbove`, hôte toujours actif |
+| glisser (`app-region: drag`) jusque sur l'écran 2 | la vidéo suit au pixel |
+| PiP flottant sur une application PLEIN ÉCRAN active | visible : `Workspace.constrain` (6.5+) tient hôte < vidéo < PiP à travers les couches |
+| PiP ancré | suit les déplacements, se réduit avec l'application, reste devant elle quand elle est ACTIVE (contraintes) |
+| bascule ancré ↔ flottant | sur place, par le titre |
+| taille changée par la coquille | grandit depuis le haut-gauche côté client ; la colle garde fixe le coin le plus proche du bord, rabattu dans la zone utile |
+| retour au lecteur | géométrie exacte, plein écran rendu s'il l'était |
+
+Trois impasses, mesurées :
+
+- **Aucun bord de redimensionnement.** Une fenêtre Electron 43 sans cadre ET translucide
+  n'a aucune marge (`ElectronFrameViewLayoutLinux` : insets nuls) — le coin déplace au
+  lieu de redimensionner. D'où la molette (±10 %, ratio de l'image gardé, largeur
+  retenue), et le Méta+clic droit natif de KDE.
+- **`Workspace.slotWindowResize`** démarre un redimensionnement « clavier » qui TÉLÉPORTE
+  le curseur au coin bas-droit (`performWindowOperation`) : inutilisable pour une poignée.
+- **Une fonction QML nommée comme le signal d'une propriété** (`pipChanged` pour
+  `property var pip`) : « Duplicate method name », le composant entier ne se charge pas.
+
+### L'identifiant de script réattribué — un défaut de la colle elle-même
+
+Vu sur la session réelle : une sonde chargée sous l'identifiant 2 ne s'exécutait jamais.
+KWin 6.7.5 donne à un script `scripts.size()` comme identifiant (`scripting.cpp`) ;
+après un déchargement — le ménage des colles mortes en fait au démarrage —, il est
+réattribué alors que le script vivant qui le porte garde `/Scripting/Script<id>` :
+l'enregistrement D-Bus du nouveau échoue en silence, et `run` réveille l'ancien, déjà
+lancé. La colle pouvait ainsi ne jamais s'exécuter (« colle SANS EFFET après une seconde
+pose »). `runScript` appelle désormais `Scripting.start` après `run` : il lance tout
+script chargé et pas encore lancé, le nôtre quel que soit son identifiant.
+
+### Dans l'application
+
+- **KWin virtuel**, application de développement, backend JETABLE (sa SQLite migrée de
+  la MariaDB de test, lue seulement ; jeton d'appareil du compte de test inscrit dans
+  cette copie), pilotage CDP : réduire (bouton, touche I) → accueil + PiP ; survol ;
+  pause et reprise par les boutons ; molette 480 → 581 px, coin bas-droit fixe ;
+  navigation (favoris, fiche — « Reste 17 min » suit la lecture) ; mode ancré 538×303 ;
+  épisode suivant enchaîné DANS le PiP ; retour au lecteur, plein écran rendu ;
+  fermeture par le bureau (comme Alt+F4) → lecture arrêtée, page intacte.
+- **Session réelle, écran de droite**, un jeu actif sur l'écran principal : aucun vol de
+  focus (KWin n'active une fenêtre neuve que sur jeton d'activation, `mayActivate`) ;
+  plein écran de l'application → vidéo en couche active avec l'hôte, barre des tâches
+  dessous ; PiP au coin bas-droit de l'écran de droite ; retour au lecteur plein écran.
+
+### Ce qui reste
+
+- **Le HDR**, invérifiable ici : les sorties du KWin virtuel n'en ont pas, l'écran de
+  droite est SDR. Rien ne change pour mpv (même instance, `target-colorspace-hint`) ; à
+  vérifier sur l'écran HDR : retour au lecteur en plein écran → `[hdr] contenu pq →
+  sortie pq/bt.2020`, et le PiP glissé d'un écran SDR à l'écran HDR.
+- Le glisser et le survol à la VRAIE souris (la souris factice n'émet pas de `frame` sans
+  clic) : Chromium les livre sur une zone `app-region: drag` — vu au banc pendant un
+  glisser —, à confirmer à la main.
+- X11, GNOME, Windows et macOS : pas de PiP (commandes non enregistrées, bouton absent).

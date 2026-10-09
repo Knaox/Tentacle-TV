@@ -967,6 +967,16 @@ Cinq conséquences à ne pas défaire :
   principal le temps du montage vidéo (`mpvProperties.ts`). Mesures :
   `docs/LINUX-FENETRE-VIDEO.md`, « Le démarrage, mesuré » et « deuxième passe ».
 
+**Le PiP (Linux, colle KWin)** : là où la coquille expose `pip_open`, le lecteur est
+rendu par `PlayerStage` HORS des routes (la route `/watch` n'y rend rien) — c'est ce
+qui le fait survivre à la navigation ; une navigation demandée par le lecteur passe par
+`usePlayerNavigate` (pendant le PiP, l'épisode suivant y reste, toute autre sortie le
+ferme). La fenêtre PiP est ouverte par la page (`window.open`, portail React) et
+fabriquée par la coquille ; la colle la reconnaît à son TITRE (`pip/pipCaptions.ts`,
+jamais traduit). La vidéo passe en plein écran AVEC l'hôte (règle « plein écran actif »
+de KWin, écran par écran) ; un script KWin se lance par `run` PUIS `Scripting.start`
+(KWin réattribue les identifiants). Détail : `docs/LINUX-FENETRE-VIDEO.md`, « Le PiP ».
+
 Le verdict HDR se lit sur le COUPLE `video-params` / `video-target-params`, jamais
 sur l'un des deux : sur un écran laissé en HDR, un contenu SDR sort lui aussi en
 PQ. Relevé complet : `docs/LINUX-FENETRE-VIDEO.md`.
