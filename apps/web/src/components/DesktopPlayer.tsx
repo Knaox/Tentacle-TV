@@ -5,6 +5,7 @@ import { useDesktopLoadingOverlay } from "../hooks/useDesktopLoadingOverlay";
 import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { useDesktopSkip } from "../hooks/useDesktopSkip";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
+import { useDesktopFailureRouting } from "../hooks/useDesktopFailureRouting";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import { useLocalMediaProbe } from "../hooks/useLocalMediaProbe";
 import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
@@ -229,15 +230,8 @@ export function DesktopPlayer({
     onPlayStateChange, onBufferingChange,
   });
 
-  // La bascule de secours est un setState du PARENT : elle part d'un effet,
-  // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode
-  // strict (« setState during render »). L'erreur de MÉDIA prend sa propre
-  // porte : écran dédié chez le parent, mpv épargné.
-  useEffect(() => {
-    if (!failure) return;
-    if (failure.kind === "media" && onMediaMissing) { onMediaMissing(); return; }
-    if (onFallbackToWeb) onFallbackToWeb(failure);
-  }, [failure, onFallbackToWeb, onMediaMissing]);
+  // Bascule de secours ou écran « fichier introuvable », décidés chez le parent.
+  useDesktopFailureRouting(failure, onMediaMissing, onFallbackToWeb);
 
   // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).
   if (failure && (failure.kind === "media" ? onMediaMissing : onFallbackToWeb)) return null;
