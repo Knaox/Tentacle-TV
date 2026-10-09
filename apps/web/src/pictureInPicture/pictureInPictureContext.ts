@@ -9,6 +9,13 @@
 import { createContext, useCallback, useContext } from "react";
 import { useNavigate, type NavigateOptions } from "react-router-dom";
 import type { PipMode } from "./pictureInPictureStore";
+import type { PipFrame } from "./pipGeometry";
+
+/**
+ * Un geste sur la fenêtre PiP — la glisser, tirer un coin —, que la colle KWin
+ * exécute en suivant le curseur (`pip/pipCaptions.ts` côté coquille).
+ */
+export type PipGesture = "move" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 export interface PictureInPicture {
   /** Le PiP existe dans cette coquille (Linux, colle KWin). */
@@ -18,6 +25,8 @@ export interface PictureInPicture {
   mode: PipMode;
   /** Où le lecteur rend les contrôles du PiP (portail) — null tant que la fenêtre n'est pas ouverte. */
   container: HTMLElement | null;
+  /** Le cadre à dessiner autour de la vidéo, tel que la coquille l'a posé. */
+  frame: PipFrame;
   /** Réduit la lecture dans le PiP et rend la page d'où l'on venait. */
   reduce: (options: { restoreFullscreen: boolean }) => void;
   /** Revient au lecteur, plein écran rendu s'il l'était. */
@@ -27,6 +36,11 @@ export interface PictureInPicture {
   setMode: (mode: PipMode) => void;
   /** Un cran de taille (molette) : > 1 agrandit. */
   resizeBy: (factor: number) => void;
+  /**
+   * Le geste commence (bouton enfoncé, déjà bougé) ou finit (`null`). Glisser
+   * donne le point saisi, depuis le coin haut-gauche de la fenêtre PiP.
+   */
+  gesture: (gesture: PipGesture | null, grab?: { x: number; y: number }) => void;
   /**
    * Une navigation demandée par le lecteur pendant le PiP : un autre épisode y
    * reste, tout le reste le ferme — la page parcourue n'est jamais touchée.
@@ -41,11 +55,13 @@ const OUTSIDE: PictureInPicture = {
   active: false,
   mode: "floating",
   container: null,
+  frame: { shadow: 0, bezel: 0 },
   reduce: nothing,
   expand: nothing,
   close: nothing,
   setMode: nothing,
   resizeBy: nothing,
+  gesture: nothing,
   navigateInPip: nothing,
 };
 

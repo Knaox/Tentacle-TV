@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { PIP_MIN_HEIGHT, PIP_MIN_WIDTH, initialPipSize, pipAspect, scalePipSize } from "./pipGeometry";
+import {
+  PIP_MIN_HEIGHT, PIP_MIN_WIDTH, initialPipSize, parsePipFrame, pipAspect, pipFrameRadii, pipVideoSize, scalePipSize,
+} from "./pipGeometry";
 
 /**
  * La taille du PiP : les bornes du PiP natif de KDE (le quart de l'écran), le
@@ -57,5 +59,31 @@ describe("scalePipSize", () => {
 
   it("jamais en deçà de ce que les boutons demandent", () => {
     expect(scalePipSize({ width: 260, height: 146 }, 1 / 1.1, 16 / 9, "floating", 1920, 1280)).toEqual({ width: PIP_MIN_WIDTH, height: PIP_MIN_HEIGHT });
+  });
+});
+
+describe("le cadre", () => {
+  it("lit le cadre rendu par la coquille, et retombe sur la vidéo bord à bord sinon", () => {
+    expect(parsePipFrame({ shadow: 14, bezel: 4 })).toEqual({ shadow: 14, bezel: 4 });
+    // Une coquille d'avant le cadre répondait `true`.
+    expect(parsePipFrame(true)).toEqual({ shadow: 0, bezel: 0 });
+    expect(parsePipFrame({ shadow: -1, bezel: 4 })).toEqual({ shadow: 0, bezel: 0 });
+    expect(parsePipFrame({ shadow: 14 })).toEqual({ shadow: 0, bezel: 0 });
+  });
+
+  it("l'arrondi du liseré recouvre toujours la pointe du coin carré de mpv", () => {
+    for (const bezel of [0, 1, 3, 4, 5, 8]) {
+      const { outer, inner } = pipFrameRadii({ shadow: 14, bezel });
+      // La flèche d'un quart de cercle de rayon `outer` tient dans le liseré.
+      expect(outer * (1 - Math.SQRT1_2)).toBeLessThanOrEqual(bezel);
+      expect(inner).toBe(Math.max(0, outer - bezel));
+    }
+    expect(pipFrameRadii({ shadow: 14, bezel: 4 })).toEqual({ outer: 13, inner: 9 });
+    expect(pipFrameRadii({ shadow: 14, bezel: 0 })).toEqual({ outer: 0, inner: 0 });
+  });
+
+  it("la vidéo, c'est la fenêtre moins le cadre de chaque côté", () => {
+    expect(pipVideoSize(516, 306, { shadow: 14, bezel: 4 })).toEqual({ width: 480, height: 270 });
+    expect(pipVideoSize(480, 270, { shadow: 0, bezel: 0 })).toEqual({ width: 480, height: 270 });
   });
 });

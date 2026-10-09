@@ -1,7 +1,7 @@
 import { useEffect, type MutableRefObject } from "react";
 import { invoke } from "../desktop/bridge";
 import type { PipMode } from "./pictureInPictureStore";
-import type { PipSize } from "./pipGeometry";
+import { parsePipFrame, pipVideoSize, type PipFrame, type PipSize } from "./pipGeometry";
 
 /**
  * La fenêtre PiP, ouverte par la page elle-même.
@@ -15,7 +15,9 @@ import type { PipSize } from "./pipGeometry";
  * thème, rien d'autre.
  *
  * Ouverte une fois par session PiP — un changement de mode passe par
- * `pip_mode` (le titre, que la colle suit), jamais par une réouverture.
+ * `pip_mode` (le titre, que la colle suit), jamais par une réouverture. La
+ * coquille rend à l'ouverture le cadre qu'elle a posé autour de la vidéo
+ * (`pip_open`) ; la taille suit ensuite la fenêtre — un coin tiré, la molette.
  */
 
 /** Le nom que la coquille attend — `PIP_FRAME_NAME`, `pip/pipWindow.ts`. */
@@ -26,9 +28,12 @@ const CLOSED_POLL_MS = 500;
 
 interface PipWindowProps {
   mode: PipMode;
+  /** La taille de la VIDÉO : la coquille y ajoute le cadre. */
   size: PipSize;
-  /** Le conteneur du portail, puis `null` à la fermeture. */
-  onContainer: (container: HTMLElement | null) => void;
+  /** Le conteneur du portail et le cadre à y dessiner, puis `null` à la fermeture. */
+  onContainer: (container: HTMLElement | null, frame: PipFrame) => void;
+  /** La vidéo a changé de taille — un coin tiré, la molette. */
+  onResized: (size: PipSize) => void;
   /** La fenêtre a disparu sans nous (fermée par le bureau) — ou n'a pas pu naître. */
   onLost: () => void;
   windowRef: MutableRefObject<Window | null>;
@@ -58,26 +63,35 @@ function prepareDocument(child: Window): HTMLElement {
   return root;
 }
 
-export function PipWindow({ mode, size, onContainer, onLost, windowRef }: PipWindowProps) {
+export function PipWindow({ mode, size, onContainer, onResized, onLost, windowRef }: PipWindowProps) {
   useEffect(() => {
     let disposed = false;
     let child: Window | null = null;
     let poll: number | undefined;
     void (async () => {
+      let frame: PipFrame;
       try {
-        await invoke("pip_open", { mode, width: size.width, height: size.height });
+        frame = parsePipFrame(await invoke<unknown>("pip_open", { mode, width: size.width, height: size.height }));
       } catch {
         if (!disposed) onLost();
         return;
       }
       if (disposed) return;
-      child = window.open("about:blank", PIP_FRAME_NAME, `width=${String(size.width)},height=${String(size.height)}`);
+      const inset = 2 * (frame.shadow + frame.bezel);
+      child = window.open(
+        "about:blank", PIP_FRAME_NAME,
+        `width=${String(size.width + inset)},height=${String(size.height + inset)}`,
+      );
       if (child === null) {
         onLost();
         return;
       }
-      windowRef.current = child;
-      onContainer(prepareDocument(child));
+      const opened = child;
+      windowRef.current = opened;
+      opened.addEventListener("resize", () => {
+        onResized(pipVideoSize(opened.innerWidth, opened.innerHeight, frame));
+      });
+      onContainer(prepareDocument(opened), frame);
       poll = window.setInterval(() => {
         if (child?.closed !== true || disposed) return;
         disposed = true;
@@ -88,7 +102,7 @@ export function PipWindow({ mode, size, onContainer, onLost, windowRef }: PipWin
     return () => {
       disposed = true;
       window.clearInterval(poll);
-      onContainer(null);
+      onContainer(null, { shadow: 0, bezel: 0 });
       windowRef.current = null;
       child?.close();
     };

@@ -4,14 +4,14 @@ import { Watch } from "../lazyPages";
 import { invoke } from "../desktop/bridge";
 import { getMpvApi } from "../hooks/mpvRuntime";
 import { markPlayerExit } from "../components/detail/detailTransition";
-import { PictureInPictureContext, type PictureInPicture } from "./pictureInPictureContext";
+import { PictureInPictureContext, type PictureInPicture, type PipGesture } from "./pictureInPictureContext";
 import { PipWindow } from "./PipWindow";
 import {
   endPipSession, getPipSession, preferredPipMode, rememberPipMode, startPipSession,
   updatePipSession, usePipSession, watchLocation, type PipMode,
 } from "./pictureInPictureStore";
 import {
-  initialPipSize, pipAspect, rememberedPipWidth, rememberPipWidth, scalePipSize, type PipSize,
+  initialPipSize, pipAspect, rememberedPipWidth, rememberPipWidth, scalePipSize, type PipFrame, type PipSize,
 } from "./pipGeometry";
 
 /**
@@ -54,6 +54,7 @@ export function PlayerStage() {
   const onWatch = location.pathname.startsWith("/watch/");
   const active = session !== null && !onWatch;
   const [container, setContainer] = useState<HTMLElement | null>(null);
+  const [frame, setFrame] = useState<PipFrame>({ shadow: 0, bezel: 0 });
   const childRef = useRef<Window | null>(null);
   const sizeRef = useRef<PipSize | null>(null);
   const aspectRef = useRef(16 / 9);
@@ -124,8 +125,25 @@ export function PlayerStage() {
     const next = scalePipSize(size, factor, aspectRef.current, current.mode, screenWidthOf(childRef.current), window.innerWidth);
     if (next.width === size.width) return;
     sizeRef.current = next;
-    if (current.mode === "floating") rememberPipWidth(next.width);
+    // La largeur retenue suit la fenêtre (`onResized`).
     void invoke("pip_resize", { width: next.width, height: next.height }).catch(() => {});
+  }, []);
+
+  const gesture = useCallback((next: PipGesture | null, grab?: { x: number; y: number }) => {
+    void invoke("pip_gesture", grab === undefined ? { gesture: next } : { gesture: next, grab }).catch(() => {});
+  }, []);
+
+  const onContainer = useCallback((next: HTMLElement | null, nextFrame: PipFrame) => {
+    setContainer(next);
+    setFrame(nextFrame);
+  }, []);
+
+  // La fenêtre a changé de taille — un coin tiré, la molette, une bascule de
+  // mode : la molette repart de là, et un PiP flottant la retient.
+  const onResized = useCallback((size: PipSize) => {
+    if (size.width <= 0 || size.height <= 0) return;
+    sizeRef.current = size;
+    if (getPipSession()?.mode === "floating") rememberPipWidth(size.width);
   }, []);
 
   const navigateInPip = useCallback((to: string | -1, options?: NavigateOptions) => {
@@ -142,13 +160,15 @@ export function PlayerStage() {
     active,
     mode: session?.mode ?? preferredPipMode(),
     container,
+    frame,
     reduce: (options) => { void reduce(options); },
     expand: () => { void expand(); },
     close,
     setMode,
     resizeBy,
+    gesture,
     navigateInPip,
-  }), [active, session?.mode, container, reduce, expand, close, setMode, resizeBy, navigateInPip]);
+  }), [active, session?.mode, container, frame, reduce, expand, close, setMode, resizeBy, gesture, navigateInPip]);
 
   const playerLocation = onWatch ? location : session?.location ?? null;
   if (playerLocation === null) return null;
@@ -161,7 +181,7 @@ export function PlayerStage() {
       {active && session !== null && sizeRef.current !== null && (
         <PipWindow
           mode={session.mode} size={sizeRef.current}
-          onContainer={setContainer} onLost={onLost} windowRef={childRef}
+          onContainer={onContainer} onResized={onResized} onLost={onLost} windowRef={childRef}
         />
       )}
     </PictureInPictureContext.Provider>

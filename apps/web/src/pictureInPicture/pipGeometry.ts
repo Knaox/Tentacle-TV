@@ -1,10 +1,12 @@
 /**
- * La taille du PiP — règles pures, sans fenêtre ni mpv.
+ * La taille et le cadre du PiP — règles pures, sans fenêtre ni mpv.
  *
  * Electron ne donne aucune marge de redimensionnement à une fenêtre
  * transparente sans cadre sous Linux (banc du 09.10.2026) : la taille change
- * à la molette, par crans, le ratio de l'image gardé, et la colle KWin garde
- * fixe le coin le plus proche du bord de l'écran.
+ * en tirant un coin (geste que la colle KWin exécute, ratio gardé) ou à la
+ * molette, par crans — la colle garde alors fixe le coin le plus proche du
+ * bord de l'écran. Toutes les tailles sont celles de la VIDÉO : la coquille y
+ * ajoute le cadre (`PipFrame`).
  */
 
 import type { PipMode } from "./pictureInPictureStore";
@@ -20,6 +22,46 @@ export const PIP_MIN_HEIGHT = 144;
 
 /** Un cran de molette. */
 export const PIP_WHEEL_STEP = 1.1;
+
+/**
+ * Le cadre que la coquille dessine autour de la vidéo, rendu par `pip_open`
+ * (`pip/pipFrame.ts` côté coquille) : un liseré opaque qui recouvre les coins
+ * carrés de mpv, et une marge transparente pour l'ombre.
+ */
+export interface PipFrame {
+  shadow: number;
+  bezel: number;
+}
+
+/** Sans réponse lisible de la coquille : ni ombre ni liseré, la vidéo bord à bord. */
+const NO_FRAME: PipFrame = { shadow: 0, bezel: 0 };
+
+export function parsePipFrame(raw: unknown): PipFrame {
+  if (typeof raw !== "object" || raw === null) return NO_FRAME;
+  const { shadow, bezel } = raw as Record<string, unknown>;
+  const valid = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 64;
+  return valid(shadow) && valid(bezel) ? { shadow, bezel } : NO_FRAME;
+}
+
+/** Le rayon des coins, au-delà duquel le dessin cesse d'être un arrondi. */
+const MAX_RADIUS = 16;
+
+/**
+ * Les rayons du cadre : extérieur (le liseré) et intérieur (la vidéo). Le plus
+ * grand arrondi dont le liseré recouvre encore la pointe du coin carré de mpv —
+ * la flèche d'un quart de cercle vaut `r (1 - 1/√2)`, elle ne doit pas
+ * dépasser l'épaisseur du liseré.
+ */
+export function pipFrameRadii(frame: PipFrame): { outer: number; inner: number } {
+  const outer = Math.min(MAX_RADIUS, Math.floor(frame.bezel / (1 - Math.SQRT1_2)));
+  return { outer, inner: Math.max(0, outer - frame.bezel) };
+}
+
+/** La taille de la vidéo dans une fenêtre PiP de cette taille. */
+export function pipVideoSize(windowWidth: number, windowHeight: number, frame: PipFrame): PipSize {
+  const inset = 2 * (frame.shadow + frame.bezel);
+  return { width: Math.max(0, windowWidth - inset), height: Math.max(0, windowHeight - inset) };
+}
 
 /** Le ratio de l'image, ramené à ce qu'un PiP peut montrer — 16:9 sans réponse de mpv. */
 export function pipAspect(raw: number | null | undefined): number {
