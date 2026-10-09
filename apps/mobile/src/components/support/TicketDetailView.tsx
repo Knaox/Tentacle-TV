@@ -18,6 +18,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { STATUS_BADGE, useTicketApi, type TicketDetail, type TicketMessage } from "./ticketTypes";
 import { TicketStatusPicker } from "./TicketStatusPicker";
 import { TicketCloseButton } from "./TicketCloseButton";
+import { MessageBody } from "./MessageBody";
 
 interface Props {
   ticketId: string;
@@ -257,14 +258,16 @@ function MessageBubble({ msg }: { msg: TicketMessage }) {
           {new Date(msg.createdAt).toLocaleString()}
         </Text>
       </View>
-      <Text style={{
-        fontSize: 14,
-        fontFamily: FONT_FAMILY.regular,
-        color: withAlpha(colors.text.primary, 0.9, colors.text.secondary),
-        lineHeight: 21,
-      }}>
-        {msg.body}
-      </Text>
+      {/* Sélectionnable, avec « Traduire » du système (MessageBody). */}
+      <MessageBody
+        body={msg.body}
+        style={{
+          fontSize: 14,
+          fontFamily: FONT_FAMILY.regular,
+          color: withAlpha(colors.text.primary, 0.9, colors.text.secondary),
+          lineHeight: 21,
+        }}
+      />
     </View>
   );
 }

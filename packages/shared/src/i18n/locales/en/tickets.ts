@@ -55,4 +55,5 @@ export default {
   select: "Select",
   messagesCount_one: "{{count}} message",
   messagesCount_other: "{{count}} messages",
+  translateHint: "In another language — long-press the message to translate it",
 } as const;

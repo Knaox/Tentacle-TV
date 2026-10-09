@@ -83,6 +83,7 @@ export * from "./help/dismissibleHints";
 // déclarée par `/api/config` (miroir backend) — un client ne montre rien d'autre.
 export * from "./serverCapabilities/serverCapabilities";
 export * from "./help/trailerHint";
+export * from "./tickets/messageLanguage";
 // Les avertissements surgissants des clients : leur politique (gravité,
 // public, effacement seul, « Ne plus afficher » du compte, un seul à la fois)
 // et la règle « serveur à mettre à jour » — masquée jusqu'à la prochaine
