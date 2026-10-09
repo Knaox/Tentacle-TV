@@ -17,6 +17,8 @@ import { sessionShown } from "./linux/sessionRescue";
 import { lockNavigation } from "./security";
 import { toggle as toggleWindowFullscreen, isFullscreen } from "./fullscreen";
 import { closePlayerSession, openPlayerSession } from "./playerFullscreenSession";
+import { pipSupported } from "./ipc/pip";
+import { closePip, installPipWindow, pipWindowOpen } from "./pip/pipWindow";
 
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 800;
@@ -176,7 +178,13 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     },
   });
 
-  lockNavigation(win.webContents);
+  // Le PiP est la seule fenêtre que la page ouvre elle-même — là où il existe.
+  if (pipSupported()) {
+    lockNavigation(win.webContents, pipWindowOpen);
+    installPipWindow(win.webContents);
+  } else {
+    lockNavigation(win.webContents);
+  }
 
   // En DÉVELOPPEMENT seulement, on relaie la console du rendu et les échecs de
   // chargement dans le terminal. Sans ça, une violation de CSP ou un module
@@ -227,6 +235,8 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
 
   win.on("closed", () => {
     mainWindow = null;
+    // Le PiP vit de la page de cette fenêtre : il part avec elle.
+    closePip();
   });
 
   mainWindow = win;

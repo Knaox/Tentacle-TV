@@ -88,7 +88,10 @@ export function restrictPermissions(): void {
  * autre destination part dans le navigateur du système, jamais dans
  * l'application.
  */
-export function lockNavigation(contents: WebContents): void {
+export function lockNavigation(
+  contents: WebContents,
+  allowWindow?: (details: Electron.HandlerDetails) => Electron.WindowOpenHandlerResponse | null,
+): void {
   contents.on("will-navigate", (event, url) => {
     // `isAppOrigin`, jamais `URL.origin` : ce dernier vaut `"null"` sous Node
     // pour notre schéma, ce qui faisait passer CHAQUE navigation interne pour
@@ -100,8 +103,12 @@ export function lockNavigation(contents: WebContents): void {
     }
   });
 
-  contents.setWindowOpenHandler(({ url }) => {
-    void openExternalSafely(url);
+  contents.setWindowOpenHandler((details) => {
+    // La seule fenêtre que la page ouvre elle-même : le PiP, armé et nommé
+    // (`pip/pipWindow.ts`). Tout le reste part à l'extérieur, ou nulle part.
+    const decided = allowWindow?.(details) ?? null;
+    if (decided !== null) return decided;
+    void openExternalSafely(details.url);
     return { action: "deny" };
   });
 
