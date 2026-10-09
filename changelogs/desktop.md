@@ -13,6 +13,20 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.28.0]
+<!-- Numéro PROPOSÉ (chantier PiP du 09/10/2026), à renommer si la livraison en prend un autre. Tout est Linux (KDE) : si la version part aussi vers le Mac App Store ou le Microsoft Store sans autre changement, leur donner des blocs mac-/win- propres. -->
+### FR
+- **Picture-in-picture (Linux, KDE)** : le bouton en haut à gauche du lecteur, ou la touche I, réduit la vidéo dans une petite fenêtre en bas à droite, au-dessus de tout, que vous déplacez d'un écran à l'autre pendant que vous parcourez l'application — ou rangée dans le coin de l'application
+- **Dans le picture-in-picture** : revenir au lecteur (le plein écran revient s'il était là), pause, -10 / +30 s, fermer ; la molette change sa taille, et l'épisode suivant s'y enchaîne
+- **Plein écran (Linux, KDE)** : la barre des tâches et les notifications ne passent plus par-dessus la vidéo quand vous cliquez sur une fenêtre d'un autre écran
+- **Linux (KDE)** : la vidéo ne reste plus parfois détachée de la fenêtre au lancement d'une lecture
+
+### EN
+- **Picture-in-picture (Linux, KDE)**: the button at the top left of the player, or the I key, shrinks the video into a small window at the bottom right, on top of everything, which you can move from one screen to another while you browse the app — or dock it in the app's corner
+- **In picture-in-picture**: back to the player (fullscreen returns if it was on), pause, -10 / +30 s, close; the mouse wheel changes its size, and the next episode plays right there
+- **Fullscreen (Linux, KDE)**: the taskbar and notifications no longer show over the video when you click a window on another screen
+- **Linux (KDE)**: the video no longer sometimes stays detached from the window when playback starts
+
 ## [1.27.0]
 <!-- Bloc nu : les trois canaux (Mac App Store, Microsoft Store 1500 caractères, Linux) partent tous de la 1.26.0, livrée le 04/10. La panne de Jellyfin et l'administration exigent le serveur 1.24.0 (état de Jellyfin dit par le serveur, routes des passages et de l'accès à distance). -->
 ### FR
