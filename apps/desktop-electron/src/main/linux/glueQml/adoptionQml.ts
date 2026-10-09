@@ -20,8 +20,12 @@ export const ADOPTION_QML = `
     function videoClosed() {
         root.video = null;
         root.followSwitcher();
+        root.constraints = [];
     }
-    function hostClosed() { root.host = null; }
+    function hostClosed() {
+        root.forgetConstraints(root.host);
+        root.host = null;
+    }
     function take(w) {
         if (w.pid !== __PID__) return;
         if (root.isVideo(w)) {
@@ -40,10 +44,17 @@ export const ADOPTION_QML = `
             root.catchUp.restart();
             return;
         }
-        if (root.host !== null) return;
         if (w.caption.indexOf("Developer Tools") === 0) return;
+        // Toute autre fenêtre de l'application peut DEVENIR le PiP : son titre
+        // le dit, et il peut arriver après elle.
+        w.captionNormalChanged.connect(root.captionChanged);
+        if (root.modeOf(w) !== "") {
+            root.adoptPip(w);
+            return;
+        }
+        if (root.host !== null) return;
         root.host = w;
-        w.frameGeometryChanged.connect(root.glue);
+        w.frameGeometryChanged.connect(root.hostMoved);
         w.activeChanged.connect(root.followLayer);
         try { w.fullScreenChanged.connect(root.followLayer); } catch (e) { }
         try { w.keepAboveChanged.connect(root.followLayer); } catch (e) { }
@@ -62,6 +73,16 @@ export const ADOPTION_QML = `
     // au-dessus du bureau entier — et l'hôte, absent du sélecteur.
     function release() {
         try { root.minimizeLater.stop(); } catch (e) { }
+        // Une contrainte survit au greffon qui l'a posée : on les lève toutes.
+        for (var c = 0; c < root.constraints.length; c++) {
+            try { Kwin.Workspace.unconstrain(root.constraints[c][0], root.constraints[c][1]); } catch (e) { }
+        }
+        root.constraints = [];
+        if (root.pip !== null) {
+            root.pip.frameGeometryChanged.disconnect(root.pipMoved);
+            try { root.pip.minimizedChanged.disconnect(root.followPipMinimized); } catch (e) { }
+            root.pip.closed.disconnect(root.pipClosed);
+        }
         if (root.video !== null) {
             root.video.keepAbove = false;
             root.video.keepBelow = false;
@@ -75,7 +96,7 @@ export const ADOPTION_QML = `
         }
         if (root.host !== null) {
             root.host.skipSwitcher = false;
-            root.host.frameGeometryChanged.disconnect(root.glue);
+            root.host.frameGeometryChanged.disconnect(root.hostMoved);
             root.host.activeChanged.disconnect(root.followLayer);
             try { root.host.fullScreenChanged.disconnect(root.followLayer); } catch (e) { }
             try { root.host.keepAboveChanged.disconnect(root.followLayer); } catch (e) { }
@@ -85,6 +106,11 @@ export const ADOPTION_QML = `
             try { root.host.activitiesChanged.disconnect(root.followActivities); } catch (e) { }
             root.host.closed.disconnect(root.hostClosed);
         }
+        var ws = Kwin.Workspace.windows;
+        for (var i = 0; i < ws.length; i++) {
+            if (ws[i].pid !== __PID__ || root.isVideo(ws[i])) continue;
+            try { ws[i].captionNormalChanged.disconnect(root.captionChanged); } catch (e) { }
+        }
         Kwin.Workspace.windowAdded.disconnect(root.take);
     }
     Qml.Component.onDestruction: root.release()
@@ -93,6 +119,6 @@ export const ADOPTION_QML = `
         for (var i = 0; i < ws.length; i++) root.take(ws[i]);
         Kwin.Workspace.windowAdded.connect(root.take);
         console.warn("[tentacle-colle] posée — pid __PID__, hote="
-            + (root.host !== null) + ", video=" + (root.video !== null));
+            + (root.host !== null) + ", video=" + (root.video !== null) + ", pip=" + (root.pip !== null));
     }
 `;

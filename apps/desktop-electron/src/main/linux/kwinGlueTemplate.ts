@@ -63,8 +63,10 @@
  * l'hôte : KWin lui applique alors sa règle, à elle aussi.
  */
 
+import { PIP_CAPTIONS, PIP_MARGIN } from "../pip/pipCaptions";
 import { ADOPTION_QML } from "./glueQml/adoptionQml";
 import { FOLLOW_QML } from "./glueQml/followQml";
+import { PIP_QML } from "./glueQml/pipQml";
 
 const HEAD = `import QtQml as Qml
 import org.kde.kwin as Kwin
@@ -73,6 +75,12 @@ Qml.QtObject {
     id: root
     property var host: null
     property var video: null
+    // La fenêtre PiP (glueQml/pipQml.ts), son mode, sa dernière géométrie
+    // connue, et les contraintes d'empilement posées (paires dessous, dessus).
+    property var pip: null
+    property string pipMode: ""
+    property var pipRect: null
+    property var constraints: []
     // Rattrapage du PREMIER coller : l'écriture de géométrie est asynchrone
     // et windowAdded précède le mappage effectif — la copie posée à l'adoption
     // peut être perdue, et sans elle mpv reste à sa taille de naissance
@@ -96,7 +104,7 @@ Qml.QtObject {
         return w.resourceClass === "mpv" || w.resourceClass === __VIDEO_CLASS__;
     }`;
 
-const TEMPLATE = `${HEAD}${FOLLOW_QML}${ADOPTION_QML}}
+const TEMPLATE = `${HEAD}${FOLLOW_QML}${PIP_QML}${ADOPTION_QML}}
 `;
 
 /**
@@ -106,8 +114,9 @@ const TEMPLATE = `${HEAD}${FOLLOW_QML}${ADOPTION_QML}}
  * contenir espaces et guillemets, que le QML doit lire tels quels.
  */
 export function glueTemplate(pid: number, videoClass: string | null = null): string {
-  return TEMPLATE.replaceAll("__PID__", String(pid)).replaceAll(
-    "__VIDEO_CLASS__",
-    JSON.stringify(videoClass ?? "mpv"),
-  );
+  return TEMPLATE.replaceAll("__PID__", String(pid))
+    .replaceAll("__VIDEO_CLASS__", JSON.stringify(videoClass ?? "mpv"))
+    .replaceAll("__PIP_FLOATING__", JSON.stringify(PIP_CAPTIONS.floating))
+    .replaceAll("__PIP_DOCKED__", JSON.stringify(PIP_CAPTIONS.docked))
+    .replaceAll("__PIP_MARGIN__", String(PIP_MARGIN));
 }

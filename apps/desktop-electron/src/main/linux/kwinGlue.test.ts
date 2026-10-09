@@ -45,6 +45,7 @@ vi.mock("./kwinScripting", () => ({
 }));
 
 import { KwinGlue, glueTemplate } from "./kwinGlue";
+import { PIP_CAPTIONS, PIP_MARGIN } from "../pip/pipCaptions";
 
 beforeEach(() => {
   bridge.filePaths.length = 0;
@@ -119,7 +120,7 @@ describe("gabaritColle", () => {
     // KWin en sept jours (17.09.2026) : les connexions survivaient à l'instance.
     expect(qml).toContain("Qml.Component.onDestruction: root.release()");
     expect(qml).toContain("Kwin.Workspace.windowAdded.disconnect(root.take)");
-    expect(qml).toContain("root.host.frameGeometryChanged.disconnect(root.glue)");
+    expect(qml).toContain("root.host.frameGeometryChanged.disconnect(root.hostMoved)");
     expect(qml).toContain("root.host.activeChanged.disconnect(root.followLayer)");
     expect(qml).toContain("root.host.closed.disconnect(root.hostClosed)");
     expect(qml).toContain("root.video.closed.disconnect(root.videoClosed)");
@@ -131,8 +132,10 @@ describe("gabaritColle", () => {
     expect(qml).toContain("root.host.minimizedChanged.disconnect(root.followMinimized)");
     expect(qml).toContain("root.host.desktopsChanged.disconnect(root.followDesktops)");
     expect(qml).toContain("root.host.activitiesChanged.disconnect(root.followActivities)");
-    // Chaque connexion a sa déconnexion : même nombre des deux côtés.
-    expect(qml.match(/\.connect\(root\./g)?.length).toBe(qml.match(/\.disconnect\(root\./g)?.length);
+    // Chaque connexion a sa déconnexion — le même signal et le même gestionnaire.
+    const pairs = (verb: string) =>
+      new Set([...qml.matchAll(new RegExp(`\\.(\\w+)\\.${verb}\\(root\\.(\\w+)\\)`, "g"))].map((m) => `${m[1]}→${m[2]}`));
+    expect([...pairs("connect")].sort()).toEqual([...pairs("disconnect")].sort());
     // Une fermeture anonyme ne se déconnecte pas : plus aucune dans le gabarit.
     expect(qml).not.toContain("connect(function");
     // Et la couche est rendue AVANT de lâcher la fenêtre.
@@ -165,7 +168,8 @@ describe("gabaritColle", () => {
   it("suit les bureaux virtuels et les activités de l'hôte", () => {
     const qml = glueTemplate(1);
     expect(qml).toContain("root.video.desktops = root.host.desktops");
-    expect(qml).toContain("root.video.activities = root.host.activities");
+    expect(qml).toContain("var activities = root.floating() ? [] : root.host.activities;");
+    expect(qml).toContain("root.video.activities = activities;");
     expect(qml).toContain("w.desktopsChanged.connect(root.followDesktops)");
     expect(qml).toContain("w.activitiesChanged.connect(root.followActivities)");
   });
@@ -174,7 +178,8 @@ describe("gabaritColle", () => {
     const qml = glueTemplate(1);
     // La vignette du sélecteur ne rend qu'UNE fenêtre : celle de l'hôte est
     // transparente là où la vidéo se trouve.
-    expect(qml).toContain('var playing = root.video !== null && root.video.captionNormal !== "";');
+    // En PiP, l'hôte redevient une fenêtre d'application ordinaire.
+    expect(qml).toContain('var playing = root.video !== null && root.video.captionNormal !== "" && root.pip === null;');
     expect(qml).toContain("root.video.skipSwitcher = !playing;");
     expect(qml).toContain("root.host.skipSwitcher = playing;");
     expect(qml).toContain("w.captionNormalChanged.connect(root.followSwitcher)");
@@ -207,8 +212,77 @@ describe("gabaritColle", () => {
     expect(qml).toContain("repeat: false");
     expect(qml).toContain("root.catchUp.restart()");
     // Connecter frameGeometryChanged de la VIDÉO bouclerait : notre écriture
-    // déclencherait le signal écouté. Seule la connexion de l'HÔTE existe.
-    expect(qml.match(/frameGeometryChanged\.connect/g)?.length).toBe(1);
+    // déclencherait le signal écouté. Seuls l'HÔTE et le PiP sont écoutés.
+    expect([...qml.matchAll(/frameGeometryChanged\.connect\(root\.(\w+)\)/g)].map((m) => m[1]).sort()).toEqual([
+      "hostMoved",
+      "pipMoved",
+    ]);
+    const videoBranch = qml.slice(qml.indexOf("if (root.isVideo(w)) {"), qml.indexOf("root.catchUp.restart()"));
+    expect(videoBranch).not.toContain("frameGeometryChanged");
+  });
+});
+
+describe("gabaritColle — le PiP", () => {
+  it("reconnaît la fenêtre PiP à son titre, inliné en littéral JSON — et l'écoute changer", () => {
+    const qml = glueTemplate(1);
+    expect(qml).toContain(`w.captionNormal === ${JSON.stringify(PIP_CAPTIONS.floating)}`);
+    expect(qml).toContain(`w.captionNormal === ${JSON.stringify(PIP_CAPTIONS.docked)}`);
+    // Le titre bascule le mode, et peut arriver après la fenêtre.
+    expect(qml).toContain("w.captionNormalChanged.connect(root.captionChanged)");
+  });
+
+  it("la vidéo suit le PiP à la place de l'hôte, et ne relève la paire que flottante", () => {
+    const qml = glueTemplate(1);
+    const glue = qml.slice(qml.indexOf("function glue()"), qml.indexOf("function wantedConstraints()"));
+    expect(glue).toContain("var p = root.pip.frameGeometry;");
+    // Ancré, relever la paire la ferait passer devant une fenêtre qui recouvre l'application.
+    expect(glue).toContain("if (root.floating()) {");
+  });
+
+  it("tient hôte < vidéo < PiP par les contraintes de KWin, et les lève au lâcher", () => {
+    const qml = glueTemplate(1);
+    expect(qml).toContain("return [[root.host, root.video], [root.video, root.pip]];");
+    // Sans PiP : jamais l'interface sous la vidéo.
+    expect(qml).toContain("return [[root.video, root.host]];");
+    // Avant KWin 6.5, la fonction n'existe pas : l'appel est gardé.
+    expect(qml).toContain("try { Kwin.Workspace.constrain(wanted[k][0], wanted[k][1]); kept.push(wanted[k]); } catch (e) { }");
+    const release = qml.slice(qml.indexOf("function release()"));
+    expect(release).toContain("Kwin.Workspace.unconstrain(root.constraints[c][0], root.constraints[c][1])");
+  });
+
+  it("flottant : au-dessus de tout, sur tous les bureaux, épargné par la réduction de l'application", () => {
+    const qml = glueTemplate(1);
+    expect(qml).toContain("root.pip.keepAbove = root.floating() || root.host.keepAbove;");
+    expect(qml).toContain("root.video.keepAbove = root.pip.keepAbove;");
+    expect(qml).toContain("root.pip.onAllDesktops = true;");
+    const minimize = qml.slice(qml.indexOf("function minimizeWithHost()"), qml.indexOf("function followMinimized()"));
+    expect(minimize).toContain("root.floating()");
+  });
+
+  it("se range au coin bas-droit — de l'écran s'il flotte, de la zone client s'il est ancré", () => {
+    const qml = glueTemplate(1);
+    expect(qml).toContain(`var m = ${String(PIP_MARGIN)};`);
+    expect(qml).toContain("root.floating() ? root.workArea(root.host.output) : root.host.clientGeometry");
+    // Une taille changée garde fixe le coin le plus proche du bord, jamais pendant un geste de KWin.
+    expect(qml).toContain("if (resized && !root.pip.move && !root.pip.resize) {");
+  });
+
+  it("rend la main au PiP flottant quand la vidéo est activée", () => {
+    const qml = glueTemplate(1);
+    const body = qml.slice(qml.indexOf("function reclaimActivation()"), qml.indexOf("function minimizeWithHost()"));
+    expect(body.indexOf("Kwin.Workspace.activeWindow = root.pip")).toBeGreaterThan(-1);
+    expect(body.indexOf("Kwin.Workspace.activeWindow = root.pip")).toBeLessThan(
+      body.indexOf("Kwin.Workspace.activeWindow = root.host"),
+    );
+  });
+
+  it("aucune fonction ne porte le nom du signal qu'engendre une propriété — le composant ne se chargerait pas", () => {
+    const qml = glueTemplate(1);
+    // « Duplicate method name: invalid override of property change signal » au
+    // journal de KWin, et plus de colle du tout (banc du 09.10.2026).
+    const properties = [...qml.matchAll(/^\s*property \w+ (\w+):/gm)].map((m) => m[1] ?? "");
+    expect(properties).toContain("pip");
+    for (const name of properties) expect(qml).not.toContain(`function ${name}Changed(`);
   });
 });
 
