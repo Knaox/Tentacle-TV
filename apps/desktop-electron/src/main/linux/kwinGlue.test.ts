@@ -98,6 +98,21 @@ describe("gabaritColle", () => {
     expect(qml).not.toContain("racine.video.keepAbove = true");
   });
 
+  it("passe la vidéo en plein écran AVEC l'hôte — la règle de KWin vaut écran par écran", () => {
+    const qml = glueTemplate(1);
+    // KWin garde un plein écran en couche « active » tant que la fenêtre active
+    // est sur un AUTRE écran : la vidéo doit y être soumise elle aussi, sinon le
+    // panneau et les notifications s'intercalent (banc du 09.10.2026).
+    expect(qml).toContain("racine.video.fullScreen = racine.hote.fullScreen;");
+    // Plein écran, la géométrie est celle de l'écran : on ne la recopie pas.
+    expect(qml).toContain("if (!racine.video.fullScreen) {");
+    // La sortie est accusée par mpv APRÈS celle de l'hôte : on recolle alors.
+    expect(qml).toContain("w.fullScreenChanged.connect(racine.videoPleinEcran)");
+    expect(qml).toContain("racine.video.fullScreenChanged.disconnect(racine.videoPleinEcran)");
+    // Décrochée, la colle rend la vidéo fenêtrée.
+    expect(qml).toContain("racine.video.fullScreen = false;");
+  });
+
   it("défait à la destruction TOUT ce que prendre() a noué — les gestionnaires morts", () => {
     const qml = glueTemplate(1);
     // 2 827 « TypeError: Cannot read property 'hote' of null » au journal de

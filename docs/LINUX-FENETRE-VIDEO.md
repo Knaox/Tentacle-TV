@@ -790,3 +790,44 @@ image, contre 553-1 039 ms sans. Vaut pour les trois systèmes.
   préférences) ; fiche → « Lire », 40 ms seulement : la fiche a déjà tout.
 - Les montages sans parking (X11, GNOME en plein écran forcé) : seule la file de
   calcul coupée les accélère.
+
+## Le plein écran et l'écran voisin (09.10.2026)
+
+Symptôme rapporté : « en plein écran, si je clique sur une autre fenêtre, la barre
+des tâches s'affiche toute seule par-dessus la vidéo, et les notifications aussi ».
+Tant que l'application reste active, rien ne passe devant.
+
+### La règle de KWin, lue dans ses sources (6.7.5)
+
+`Window::isActiveFullScreen` garde une fenêtre plein écran dans la couche ACTIVE
+(au-dessus des panneaux et des notifications) quand elle est la fenêtre active —
+**ou quand la fenêtre active est sur un AUTRE écran** (`!ac->isOnOutput(output())`).
+La colle, elle, ne montait la vidéo (`keepAbove`) que si l'hôte était actif. Un clic
+sur l'écran voisin laissait donc l'hôte transparent en haut, et faisait retomber la
+vidéo en couche normale : le panneau (couche « au-dessus ») et les notifications
+(couche « notification ») se voyaient au travers. Et pourquoi seulement après ce
+clic : Plasma coupe les notifications tant que la fenêtre ACTIVE est plein écran
+(`DoNotDisturb/WhenFullscreen`, vrai par défaut, `libnotificationmanager/fullscreentracker.cpp`).
+
+### Le banc
+
+KWin virtuel à DEUX écrans (`--output-count 2`), un plasmashell imbriqué (vrais
+panneaux, vraies notifications), une libmpv du dépôt chargée par koffi dans une mini-app
+Electron, une souris factice (`org_kde_kwin_fake_input`, permise dans CE compositeur
+seulement par `KWIN_WAYLAND_NO_PERMISSION_CHECKS=1`) : rien sur la session de
+l'utilisateur. Banc gardé hors dépôt, `~/.cache/tentacle-test/pip/`.
+
+| Vidéo plein écran sur l'écran 1, clic sur une fenêtre de l'écran 2 | vidéo | panneau | notification | écran 1 |
+|---|---|---|---|---|
+| ancienne colle | couche 2 | couche 3, **devant** | couche 4, **devant** | 88,3 % de vidéo, le panneau et la bulle visibles |
+| colle corrigée | couche 5 | dessous | dessous | 93,9 % de vidéo + 5,6 % de repères de la page = 99,5 % |
+
+### Le correctif
+
+La vidéo passe en plein écran AVEC l'hôte (`video.fullScreen = hote.fullScreen`) :
+KWin lui applique alors sa propre règle, écran par écran — exactement celle d'une
+application plein écran ordinaire. Hôte actif : rien ne change (vidéo `keepAbove`,
+au-dessus du panneau). Fenêtre activée sur le MÊME écran : les deux retombent, comme
+toute fenêtre plein écran inactive. Piège mesuré au passage : la vidéo sort du plein
+écran quand mpv l'a ACCUSÉ, après l'hôte — le recollage se fait donc sur son propre
+`fullScreenChanged`, sinon elle gardait la taille de l'écran.

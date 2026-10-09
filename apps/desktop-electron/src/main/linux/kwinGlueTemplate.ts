@@ -43,6 +43,18 @@
  * elle était née quand on envoyait la fenêtre ailleurs, et un hôte « toujours
  * au-dessus » (ou en dessous) laissait d'autres fenêtres s'intercaler entre
  * lui et la vidéo — visibles à travers sa transparence.
+ *
+ * # Le plein écran, partagé avec la vidéo (09.10.2026)
+ *
+ * Symptôme rapporté : « en plein écran, dès que je clique sur une autre
+ * fenêtre, la barre des tâches et les notifications passent par-dessus la
+ * vidéo ». KWin garde une fenêtre plein écran en couche « active » tant que la
+ * fenêtre ACTIVE est sur un AUTRE écran (`Window::isActiveFullScreen`, KWin
+ * 6.7.5) ; la vidéo, elle, ne tenait sa couche que de l'activation de l'hôte —
+ * elle retombait sous le panneau et sous les notifications, que l'hôte
+ * transparent laissait voir. Reproduit au banc (KWin virtuel à deux écrans,
+ * plasmashell imbriqué), corrigé en passant la vidéo en plein écran avec
+ * l'hôte : KWin lui applique alors sa règle, à elle aussi.
  */
 
 const TEMPLATE = `import QtQml as Qml
@@ -76,8 +88,11 @@ Qml.QtObject {
     }
     function coller() {
         if (racine.hote === null || racine.video === null) return;
-        var g = racine.hote.frameGeometry;
-        racine.video.frameGeometry = Qt.rect(g.x, g.y, g.width, g.height);
+        // Plein écran, la vidéo a la géométrie de l'écran, imposée par KWin.
+        if (!racine.video.fullScreen) {
+            var g = racine.hote.frameGeometry;
+            racine.video.frameGeometry = Qt.rect(g.x, g.y, g.width, g.height);
+        }
         Kwin.Workspace.raiseWindow(racine.video);
         Kwin.Workspace.raiseWindow(racine.hote);
     }
@@ -91,8 +106,16 @@ Qml.QtObject {
     // recouvrirait l'interface — et tout le reste du bureau. Un hôte que
     // l'utilisateur garde lui-même au-dessus (ou en dessous) emmène la vidéo
     // dans sa couche : sans quoi une autre fenêtre s'intercale entre les deux.
+    //
+    // Et la vidéo passe en plein écran AVEC l'hôte (09.10.2026). KWin garde un
+    // plein écran en couche « active » tant que la fenêtre active est sur un
+    // AUTRE écran (Window::isActiveFullScreen) : un clic sur l'écran voisin
+    // laissait l'hôte en haut, la vidéo retombait sous le panneau et sous les
+    // notifications — visibles à travers l'hôte. Plein écran elle aussi, la
+    // vidéo reçoit la même règle de KWin, écran par écran.
     function suivreCouche() {
         if (racine.hote === null || racine.video === null) return;
+        racine.video.fullScreen = racine.hote.fullScreen;
         racine.video.keepAbove = racine.hote.keepAbove || (racine.hote.fullScreen && racine.hote.active);
         racine.video.keepBelow = !racine.video.keepAbove && racine.hote.keepBelow;
         if (racine.hote.active) racine.coller();
@@ -149,6 +172,13 @@ Qml.QtObject {
         racine.suivreSelecteur();
         racine.coller();
     }
+    // La vidéo sort du plein écran quand mpv l'a ACCUSÉ — après la sortie de
+    // l'hôte, dont le recollage est donc passé trop tôt (mesuré au banc : la
+    // vidéo restait à la taille de l'écran). On recolle à ce moment-là.
+    function videoPleinEcran() {
+        if (racine.video === null || racine.video.fullScreen) return;
+        racine.coller();
+    }
     // Nommées, et non anonymes : disconnect() exige la même référence.
     function videoFermee() {
         racine.video = null;
@@ -168,6 +198,7 @@ Qml.QtObject {
             w.activeChanged.connect(racine.reprendreActivation);
             try { w.minimizedChanged.connect(racine.suivreMinimiseVideo); } catch (e) { }
             try { w.captionNormalChanged.connect(racine.suivreSelecteur); } catch (e) { }
+            try { w.fullScreenChanged.connect(racine.videoPleinEcran); } catch (e) { }
             racine.synchroniser();
             racine.rattrapage.restart();
             return;
@@ -197,11 +228,13 @@ Qml.QtObject {
         if (racine.video !== null) {
             racine.video.keepAbove = false;
             racine.video.keepBelow = false;
+            racine.video.fullScreen = false;
             racine.video.skipSwitcher = true;
             racine.video.closed.disconnect(racine.videoFermee);
             racine.video.activeChanged.disconnect(racine.reprendreActivation);
             try { racine.video.minimizedChanged.disconnect(racine.suivreMinimiseVideo); } catch (e) { }
             try { racine.video.captionNormalChanged.disconnect(racine.suivreSelecteur); } catch (e) { }
+            try { racine.video.fullScreenChanged.disconnect(racine.videoPleinEcran); } catch (e) { }
         }
         if (racine.hote !== null) {
             racine.hote.skipSwitcher = false;
