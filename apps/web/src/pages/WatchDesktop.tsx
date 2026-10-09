@@ -6,7 +6,6 @@ import { usePlaybackReporting } from "@tentacle-tv/api-client";
 import { formatEpisodeCode, TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
-import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { MediaMissingScreen } from "../components/player/MediaMissingScreen";
@@ -17,7 +16,7 @@ import { desktopPlaybackReport, type PlaybackFailure } from "../hooks/playbackFa
 import { playbackTitles } from "../hooks/watchSessionMedia";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { invoke } from "../desktop/bridge";
-import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
+import { useWatchSession } from "../hooks/useWatchSession";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
 import { useGroupIntroSkip } from "../watchTogether/introSkipRefusal";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
@@ -29,6 +28,7 @@ import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
 import { useNextEpisodeArtwork } from "../hooks/useNextEpisodeArtwork";
+import { useDesktopTrackHandlers } from "../hooks/useDesktopTrackHandlers";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
@@ -146,48 +146,11 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   // À la sortie : la fiche relue, et « vu » décidé APRÈS l'arrêt signalé (cf. le hook).
   useWatchStopCleanup({ itemId, item, positionRef, lastStopPromiseRef });
 
-  const handleAudioChange = useCallback(async (idx: number) => {
-    audioOverrideRef.current = true;
-    // In transcode mode (quality override), kill old ffmpeg before URL rebuild
-    if (qualityKey !== "original") {
-      await killTranscode();
-      const ticks = getPositionTicks();
-      if (ticks > 0) setStartTicks(ticks);
-    }
-    setAudioIndex(idx);
-  }, [qualityKey, killTranscode, getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef]);
-
-  const handleSubtitleChange = useCallback(async (idx: number | null) => {
-    subtitleOverrideRef.current = true;
-    // In direct play, mpv handles all subtitle types natively — just update state
-    if (isDirectPlay) { setSubtitleIndex(idx); return; }
-    // In transcode mode, bitmap subtitles need server burn-in
-    if (idx != null) {
-      const sub = streams.find((s: JfStream) => s.Type === "Subtitle" && s.Index === idx);
-      if (BURN_IN_SUBTITLE_CODECS.test(sub?.Codec ?? "")) {
-        await killTranscode();
-        const ticks = getPositionTicks();
-        if (ticks > 0) setStartTicks(ticks);
-        setBurnInSubtitleIndex(idx);
-        setSubtitleIndex(idx);
-        return;
-      }
-    }
-    if (burnInSubtitleIndex != null) {
-      await killTranscode();
-      const ticks = getPositionTicks();
-      if (ticks > 0) setStartTicks(ticks);
-      setBurnInSubtitleIndex(undefined);
-    }
-    setSubtitleIndex(idx);
-  }, [isDirectPlay, streams, killTranscode, getPositionTicks, burnInSubtitleIndex, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex]);
-
-  const handleQualityChange = useCallback(async (key: QualityKey) => {
-    await killTranscode();
-    const ticks = getPositionTicks();
-    if (ticks > 0) setStartTicks(ticks);
-    setQualityKey(key);
-  }, [killTranscode, getPositionTicks, setQualityKey, setStartTicks]);
+  const { handleAudioChange, handleSubtitleChange, handleQualityChange } = useDesktopTrackHandlers({
+    qualityKey, isDirectPlay, streams, burnInSubtitleIndex, killTranscode, getPositionTicks,
+    setStartTicks, setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setQualityKey,
+    audioOverrideRef, subtitleOverrideRef,
+  });
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
