@@ -7,7 +7,7 @@ import { markPlayerExit } from "../components/detail/detailTransition";
 import { PictureInPictureContext, type PictureInPicture, type PipGesture } from "./pictureInPictureContext";
 import { PipWindow } from "./PipWindow";
 import {
-  endPipSession, getPipSession, preferredPipMode, rememberPipMode, startPipSession,
+  DEFAULT_PIP_MODE, endPipSession, getPipSession, startPipSession,
   updatePipSession, usePipSession, watchLocation, type PipMode,
 } from "./pictureInPictureStore";
 import {
@@ -71,7 +71,7 @@ export function PlayerStage() {
 
   const reduce = useCallback(async ({ restoreFullscreen }: { restoreFullscreen: boolean }) => {
     if (!location.pathname.startsWith("/watch/") || getPipSession() !== null) return;
-    const mode = preferredPipMode();
+    const mode = DEFAULT_PIP_MODE;
     const raw = await getMpvApi()?.getProperty("video-params/aspect", "double").catch(() => null);
     aspectRef.current = pipAspect(raw);
     sizeRef.current = initialPipSize(
@@ -111,7 +111,6 @@ export function PlayerStage() {
   }, []);
 
   const setMode = useCallback((mode: PipMode) => {
-    rememberPipMode(mode);
     const size = initialPipSize(
       mode, aspectRef.current, screenWidthOf(childRef.current), window.innerWidth,
       mode === "floating" ? rememberedPipWidth() : null,
@@ -161,7 +160,7 @@ export function PlayerStage() {
   const value = useMemo<PictureInPicture>(() => ({
     supported: true,
     active,
-    mode: session?.mode ?? preferredPipMode(),
+    mode: session?.mode ?? DEFAULT_PIP_MODE,
     container,
     frame,
     reduce: (options) => { void reduce(options); },

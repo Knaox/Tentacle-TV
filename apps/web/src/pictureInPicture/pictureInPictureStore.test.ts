@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  endPipSession, getPipSession, preferredPipMode, rememberPipMode, startPipSession, updatePipSession, watchLocation,
+  DEFAULT_PIP_MODE, endPipSession, getPipSession, startPipSession, updatePipSession, watchLocation,
 } from "./pictureInPictureStore";
 
 /**
@@ -46,10 +46,9 @@ describe("session PiP", () => {
   });
 });
 
-describe("mode retenu", () => {
-  it("flottant par défaut, puis celui choisi la dernière fois", () => {
-    expect(preferredPipMode()).toBe("floating");
-    rememberPipMode("docked");
-    expect(preferredPipMode()).toBe("docked");
+describe("mode de départ", () => {
+  it("toujours ancré, quel que soit le dernier mode choisi", () => {
+    localStorage.setItem("tentacle_pip_mode", "floating");
+    expect(DEFAULT_PIP_MODE).toBe("docked");
   });
 });
