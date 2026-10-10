@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
-import { easeOut } from "../theme/motion";
+import { easeOut, duration } from "../theme/motion";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -25,7 +25,7 @@ export function PageTransition({ children, className, skip = false }: PageTransi
       // animation ni frame intermédiaire.
       initial={skip ? false : reduced ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.995 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={reduced ? { duration: 0 } : { duration: 0.3, ease: easeOut }}
+      transition={reduced ? { duration: 0 } : { duration: duration.slow, ease: easeOut }}
       className={className}
     >
       {children}

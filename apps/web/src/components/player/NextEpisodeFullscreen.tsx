@@ -34,6 +34,7 @@ import type { EndCardRating } from "@tentacle-tv/api-client";
 import { videoShadow } from "../../lib/videoShadow";
 import { EndCardRatingRow } from "./EndCardRatingRow";
 import { Sweep, Veil } from "./overlayPill";
+import { duration, exitDuration } from "../../theme/motion";
 
 interface NextEpisodeFullscreenProps {
   /**
@@ -121,8 +122,8 @@ export function NextEpisodeFullscreen({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.18 } }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      exit={{ opacity: 0, transition: { duration: exitDuration(duration.slow) } }}
+      transition={{ duration: duration.slow, ease: "easeOut" }}
       className="absolute inset-0 z-40 overflow-hidden"
       onClick={(e) => e.stopPropagation()}
       role="dialog"
@@ -190,7 +191,7 @@ export function NextEpisodeFullscreen({
         className="absolute inset-x-0 bottom-0 z-[1] flex flex-col gap-6 p-8 sm:flex-row sm:items-end sm:p-12 lg:p-16"
         initial={reduce ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: EASE_OUT, delay: reduce ? 0 : 0.08 }}
+        transition={{ duration: duration.slow, ease: EASE_OUT, delay: reduce ? 0 : 0.08 }}
       >
         {/* Vignette de l'épisode suivant — nue : la pilule porte déjà le geste,
             une pastille « play » par-dessus le disait une seconde fois. */}

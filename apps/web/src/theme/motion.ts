@@ -7,6 +7,8 @@ const prefersReducedMotion = (): boolean => {
 
 export const easeOut = [0.22, 1, 0.36, 1] as const;
 export const easeInOut = [0.65, 0, 0.35, 1] as const;
+/** Accélération d'une SORTIE (modale, menu, panneau) : la surface part sans s'attarder. */
+export const easeIn = [0.4, 0, 1, 1] as const;
 
 /** Ressort « press » — réponse vive des contrôles (hover/tap), ~180 ms perçus. */
 export const springPress: Transition = { type: "spring", stiffness: 420, damping: 28, mass: 0.6 };

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SplashOctopus } from "./SplashOctopus";
+import { duration } from "../theme/motion";
 
 interface PlayerTransitionProps {
   children: ReactNode;
@@ -11,6 +12,11 @@ interface PlayerTransitionProps {
 }
 
 export type SplashPhase = "enter" | "clap" | "splash" | "exit";
+
+/** Tenue du poulpe à l'écran avant que le splash ne s'efface. */
+const SPLASH_HOLD_MS = 600;
+/** Le lecteur démarre quand le fondu de sortie du splash est fini. */
+const SPLASH_DONE_MS = SPLASH_HOLD_MS + duration.page * 1000;
 
 /**
  * Animation d'intro poulpe pirate : apparition → révélation du lecteur vidéo.
@@ -38,8 +44,8 @@ export function PlayerTransition({ children, transparent = false, onComplete }: 
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase("exit"), 600);
-    const t2 = setTimeout(() => { if (!skippedRef.current) onComplete?.(); }, 1000);
+    const t1 = setTimeout(() => setPhase("exit"), SPLASH_HOLD_MS);
+    const t2 = setTimeout(() => { if (!skippedRef.current) onComplete?.(); }, SPLASH_DONE_MS);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -53,14 +59,14 @@ export function PlayerTransition({ children, transparent = false, onComplete }: 
             key="splash-overlay"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black"
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: duration.page }}
           >
             {/* Poulpe pirate animé */}
             <motion.div
               className="relative z-10"
               initial={{ scale: 0, opacity: 0, y: 0 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: "backOut" }}
+              transition={{ duration: duration.slow, ease: "backOut" }}
             >
               <SplashOctopus phase={phase} size={180} />
             </motion.div>
@@ -70,7 +76,7 @@ export function PlayerTransition({ children, transparent = false, onComplete }: 
               className="absolute bottom-1/3 text-lg font-semibold tracking-widest text-white/60"
               initial={{ opacity: 0 }}
               animate={{ opacity: phase === "enter" ? 1 : 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: duration.slow }}
             >
               TENTACLE
             </motion.span>

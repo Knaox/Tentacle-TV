@@ -5,6 +5,7 @@ import { useQualityDropNotice } from "@tentacle-tv/api-client";
 import { QUALITY_DROP_NOTICE_MS, type QualityDrop } from "@tentacle-tv/shared";
 import { NoticeCard } from "../notices/NoticeCard";
 import { useMessageCountdown } from "../session/useMessageCountdown";
+import { duration, exitDuration } from "../../theme/motion";
 
 interface Props {
   drop: QualityDrop | null;
@@ -75,8 +76,8 @@ function Timed({ onDone, children }: {
     <motion.div
       initial={{ opacity: 0, y: reduced ? 0 : -12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: reduced ? 0 : -8, transition: { duration: 0.14 } }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
+      exit={{ opacity: 0, y: reduced ? 0 : -8, transition: { duration: exitDuration(duration.base) } }}
+      transition={{ duration: duration.base, ease: "easeOut" }}
       className="pointer-events-auto w-[min(26rem,100%)]"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}

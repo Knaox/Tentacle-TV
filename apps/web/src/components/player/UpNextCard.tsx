@@ -44,6 +44,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { videoShadow } from "../../lib/videoShadow";
 import { Sweep, Veil } from "./overlayPill";
+import { duration, exitDuration } from "../../theme/motion";
 
 interface UpNextCardProps {
   /**
@@ -118,8 +119,8 @@ export function UpNextCard({
       // posée gagnerait.
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: controlsVisible ? -80 : 0 }}
-      exit={{ opacity: 0, y: 8, transition: { duration: 0.16, ease: EASE_OUT } }}
-      transition={{ duration: 0.2, ease: EASE_OUT }}
+      exit={{ opacity: 0, y: 8, transition: { duration: exitDuration(duration.base), ease: EASE_OUT } }}
+      transition={{ duration: duration.base, ease: EASE_OUT }}
       className="absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] overflow-hidden sm:bottom-6 sm:right-6"
       onClick={(e) => { e.stopPropagation(); }}
       style={{

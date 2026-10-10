@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { onSessionMessage, type SessionMessage } from "@tentacle-tv/api-client";
 import { useMessageCountdown, type MessageCountdown } from "./useMessageCountdown";
 import { useFullscreenPortalTarget } from "../../hooks/useFullscreenPortalTarget";
+import { duration, exitDuration } from "../../theme/motion";
 
 /**
  * Les messages que l'administrateur envoie à cette session — depuis le tableau
@@ -89,8 +90,8 @@ const MessageBanner = memo(function MessageBanner({
       layout={!reduced}
       initial={{ opacity: 0, y: reduced ? 0 : -12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: reduced ? 0 : -8, transition: { duration: 0.14 } }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
+      exit={{ opacity: 0, y: reduced ? 0 : -8, transition: { duration: exitDuration(duration.base) } }}
+      transition={{ duration: duration.base, ease: "easeOut" }}
       className="pointer-events-auto w-[min(28rem,100%)]"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}

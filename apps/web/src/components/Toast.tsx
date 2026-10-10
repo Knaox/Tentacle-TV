@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useMessageCountdown } from "./session/useMessageCountdown";
+import { duration, exitDuration } from "../theme/motion";
 
 interface ToastProps {
   id: number;
@@ -48,8 +49,8 @@ export const Toast = memo(function Toast({ id, type, title, message, onDismiss }
     <motion.div
       initial={{ opacity: 0, x: reduced ? 0 : 50 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: reduced ? 0 : 50, transition: { duration: 0.14 } }}
-      transition={{ duration: 0.2 }}
+      exit={{ opacity: 0, x: reduced ? 0 : 50, transition: { duration: exitDuration(duration.base) } }}
+      transition={{ duration: duration.base }}
       role={type === "error" ? "alert" : "status"}
       /* `backdrop-blur-md` en classe et non en style en ligne : un attribut
          `style` échappe à la passe de verre du portage téléviseur, où un flou

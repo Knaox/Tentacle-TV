@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
 
 interface ModalProps {
   open: boolean;
@@ -26,13 +27,13 @@ const PANEL_VARIANTS = {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { duration: 0.24, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { duration: duration.base, ease: easeOut },
   },
   exit: {
     opacity: 0,
     scale: 0.96,
     y: 8,
-    transition: { duration: 0.15, ease: [0.4, 0, 1, 1] as const },
+    transition: { duration: exitDuration(duration.base), ease: easeIn },
   },
 };
 
@@ -41,8 +42,8 @@ const PANEL_VARIANTS = {
 // un objet recréé à chaque rendu relancerait l'animation.
 const PANEL_VARIANTS_REDUCED = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0.12 } },
-  exit: { opacity: 0, transition: { duration: 0.08 } },
+  show: { opacity: 1, transition: { duration: duration.fast } },
+  exit: { opacity: 0, transition: { duration: exitDuration(duration.fast) } },
 };
 
 const FOCUSABLE_SELECTOR =
