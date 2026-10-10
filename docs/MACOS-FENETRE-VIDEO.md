@@ -150,3 +150,38 @@ Chromium délègue `<video>` à un overlay CoreAnimation en scanout direct (« p
 consumption during fullscreen video playback was halved », VideoNG) ; mpv n'a aucun VO
 équivalent sur macOS. L'objectif réaliste est « comme Tauri et IINA », pas « comme
 QuickTime ».
+
+## Le PiP (10.10.2026)
+
+Le PiP du bureau, né sous Linux (`docs/LINUX-FENETRE-VIDEO.md`, « Le PiP »), passe sur
+macOS au montage `fenetre` seulement. La page ne change pas : même fenêtre ouverte par
+`window.open`, même portail, mêmes commandes (`pip_open`, `pip_mode`, `pip_resize`,
+`pip_gesture`). Deux choses diffèrent, et ce sont celles que KWin faisait :
+
+- **la vidéo change de PARENT** (`video/macosPipParent.ts`). La fenêtre Metal de mpv
+  quitte la fenêtre principale (`removeChildWindow:`) et s'attache sous la fenêtre PiP
+  (`addChildWindow:ordered:NSWindowBelow`), calée dans son cadre moins le liseré et
+  l'ombre (`pip/pipFrame.ts`) ; au `close` du PiP — tant que sa `NSWindow` existe —, le
+  geste inverse. mpv n'en sait rien : même instance, même sortie vidéo, même couche
+  Metal. Dans le PiP, le liseré de mpv est retiré comme en plein écran (`macosSeam.ts`) :
+  les coins carrés sont recouverts par ceux que dessine la page.
+- **la coquille place le PiP et suit ses gestes** (`pip/pipShell.ts`, règles portées de
+  la colle dans `pip/pipPlacement.ts`) : flottant au coin bas-droit de la zone utile,
+  niveau « floating », sur tous les bureaux (`skipTransformProcessType`, sinon l'icône du
+  Dock clignote) ; ancré, fenêtre FILLE de l'application ; glisser et coins en suivant le
+  curseur le temps du geste. Fenêtre non redimensionnable par le système (ses bords ne
+  gardent pas le ratio), `acceptFirstMouse` (le premier clic va au bouton).
+
+Mesuré au banc (Electron du worktree, profil jetable, dégradé PQ `max-cll=10000,4000`,
+pilotage CDP par `pip_open` + `window.open`) :
+
+| | |
+|---|---|
+| headroom EDR | 6,73 avant, pendant et après le PiP |
+| lecture | continue : 18,4 → 22,8 s dans le PiP, 38,6 → 43,0 s au retour |
+| calage | 480×270 dans le PiP, 1280×778 au retour, `calee=oui` ; image vue à 76 % non noirs |
+| placement | cadre visible à 20 points du coin, flottant comme ancré ; molette au coin fixe ; bascule vers flottant sur place |
+| glisser | le point saisi reste sous le curseur, la vidéo suit |
+
+Pas sur Intel (montage `gl`) : la vidéo y est une vue DANS notre fenêtre — la déplacer
+demanderait un second contexte de rendu.
