@@ -27,6 +27,7 @@ import type { PipGesture, PipMode, PipPoint } from "./pipCaptions";
 import { PIP_INSET, PIP_MAX_SHARE, pipWindowSize } from "./pipFrame";
 import { PIP_GROW_MS, PIP_RESIZE_MS, PIP_SHRINK_MS, easeOutCubic, interpolateBox, pictureIn, windowAround } from "./pipMotion";
 import { PipDocking } from "./pipDocking";
+import { followHostVisibility } from "./pipHostVisibility";
 import { installResizeGuard } from "./pipResizeGuard";
 import { cornerPlacement, dragTo, resizeInPlace, stretchFrom, type Box, type PipCorner } from "./pipPlacement";
 
@@ -74,6 +75,8 @@ export class PipShell {
   private docking: PipDocking | null = null;
   /** Le redimensionnement par le système — `pipResizeGuard.ts`. */
   private readonly unguard: () => void;
+  /** Windows : le PiP revient avec l'application — `pipHostVisibility.ts`. */
+  private readonly unfollow: () => void;
   /** Le coin où le PiP se pose à son entrée — `enter`. */
   private readonly rest: Box;
 
@@ -99,6 +102,10 @@ export class PipShell {
       mode: () => this.mode,
       dockArea: () => this.host.getContentBounds(),
       maxVideoWidth: () => this.maxVideoWidth(),
+    });
+    this.unfollow = followHostVisibility(pip, host, () => {
+      this.applyMode();
+      if (this.mode === "docked") this.place();
     });
     this.rest = cornerPlacement(pip.getBounds(), this.cornerArea());
     this.setBounds(reducedMotion() ? this.rest : windowAround(pictureIn(this.playerArea(), aspect)));
@@ -172,6 +179,7 @@ export class PipShell {
     this.docking?.stop();
     this.docking = null;
     this.unguard();
+    this.unfollow();
     if (this.host.isDestroyed()) return;
     this.host.off("resize", this.hostChanged);
     this.host.off("move", this.hostChanged);
@@ -264,6 +272,9 @@ export class PipShell {
     this.docking?.stop();
     this.docking = null;
     if (this.mode === "floating") {
+      // Windows : détaché, le PiP n'a plus de propriétaire — jamais caché avec
+      // la fenêtre principale (`pipHostVisibility.ts`).
+      if (process.platform === "win32") this.pip.setParentWindow(null);
       this.pip.setAlwaysOnTop(true, "floating");
       this.pip.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
       return;
