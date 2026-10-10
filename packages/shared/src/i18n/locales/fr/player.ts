@@ -203,10 +203,10 @@ export default {
     longHint: "Votre position est gardée : la lecture reprendra dès son retour.",
     retry: "Réessayer",
   },
-  // Le PiP du bureau (Linux, `apps/web/src/pictureInPicture/`) : réduire la
-  // lecture dans une petite fenêtre et continuer dans l'application.
+  // Le PiP du bureau (Linux, macOS — `apps/web/src/pictureInPicture/`) :
+  // réduire la lecture dans une petite fenêtre et continuer dans l'application.
   pip: {
-    reduce: "Réduire la vidéo",
+    reduce: "Lecture en incrustation",
     expand: "Revenir au lecteur",
     close: "Fermer la vidéo",
     dock: "Ranger dans l'application",

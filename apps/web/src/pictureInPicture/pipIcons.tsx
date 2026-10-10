@@ -5,7 +5,7 @@
 
 const STROKE = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
-/** Réduire la lecture : un écran, et la petite fenêtre dans son coin. */
+/** Le picto PiP standard : un écran, et la petite fenêtre pleine dans son coin. */
 export function ReduceIcon() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" {...STROKE} aria-hidden="true">

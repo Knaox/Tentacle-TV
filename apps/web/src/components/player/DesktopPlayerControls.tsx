@@ -147,11 +147,6 @@ export function DesktopPlayerControls({
         <div className={`bg-gradient-to-b ${WITHOUT_ALPHA ? "from-black/70" : "from-black/45"} to-transparent px-6 pb-10 pt-5`}>
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
-            {onReduce && (
-              <button onClick={() => onReduce()} className="rounded-full p-2 text-white hover:bg-white/10" title={`${t("player:pip.reduce")} (I)`} aria-label={t("player:pip.reduce")}>
-                <ReduceIcon />
-              </button>
-            )}
             <div>
               <h2 className="text-lg font-semibold text-white">{title}</h2>
               {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}
@@ -258,6 +253,14 @@ export function DesktopPlayerControls({
               )}
               {hasSettings && (
                 <button onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }} className="rounded-full p-2 hover:bg-white/10"><GearIcon /></button>
+              )}
+              {/* Le PiP juste avant le plein écran — la place qu'il a chez YouTube,
+                  Netflix, Apple TV ou IINA (retour de Damien : plus de second
+                  bouton en haut à gauche, qui ne garde que « Quitter »). */}
+              {onReduce && (
+                <button onClick={() => onReduce()} className="rounded-full p-2 text-white hover:bg-white/10" title={`${t("player:pip.reduce")} (I)`} aria-label={t("player:pip.reduce")}>
+                  <ReduceIcon />
+                </button>
               )}
               <button onClick={() => toggleFullscreen()} className="rounded-full p-2 hover:bg-white/10" title="(F)">
                 {state.fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
