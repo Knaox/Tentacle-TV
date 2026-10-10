@@ -26,6 +26,7 @@ import { bannerInset } from "../macosTitleBar";
 import type { PipGesture, PipMode, PipPoint } from "./pipCaptions";
 import { PIP_INSET, PIP_MAX_SHARE, pipWindowSize } from "./pipFrame";
 import { PIP_GROW_MS, PIP_RESIZE_MS, PIP_SHRINK_MS, easeOutCubic, interpolateBox, pictureIn, windowAround } from "./pipMotion";
+import { PipBounds, sameBox } from "./pipBounds";
 import { PipDocking } from "./pipDocking";
 import { followHostVisibility } from "./pipHostVisibility";
 import { installResizeGuard } from "./pipResizeGuard";
@@ -63,10 +64,6 @@ interface Gesture {
   origin: PipPoint;
 }
 
-function sameBox(a: Box, b: Box): boolean {
-  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
-}
-
 export class PipShell {
   private gesture: Gesture | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -77,6 +74,10 @@ export class PipShell {
   private readonly unguard: () => void;
   /** Windows : le PiP revient avec l'application — `pipHostVisibility.ts`. */
   private readonly unfollow: () => void;
+  /** La taille voulue, et la pose du cadre — `pipBounds.ts`. */
+  private readonly bounds: PipBounds;
+  /** Fin d'un redimensionnement par les bords du système : la taille choisie. */
+  private readonly resized = (): void => this.bounds.rememberCurrent();
   /** Le coin où le PiP se pose à son entrée — `enter`. */
   private readonly rest: Box;
 
@@ -95,6 +96,8 @@ export class PipShell {
     private mode: PipMode,
     aspect: number,
   ) {
+    this.bounds = new PipBounds(pip);
+    pip.on("resized", this.resized);
     host.on("resize", this.hostChanged);
     host.on("move", this.hostChanged);
     this.applyMode();
@@ -107,8 +110,8 @@ export class PipShell {
       this.applyMode();
       if (this.mode === "docked") this.place();
     });
-    this.rest = cornerPlacement(pip.getBounds(), this.cornerArea());
-    this.setBounds(reducedMotion() ? this.rest : windowAround(pictureIn(this.playerArea(), aspect)));
+    this.rest = cornerPlacement(this.bounds.size, this.cornerArea());
+    this.bounds.set(reducedMotion() ? this.rest : windowAround(pictureIn(this.playerArea(), aspect)));
   }
 
   /** Le PiP montré : l'image glisse du lecteur à son coin. */
@@ -148,6 +151,7 @@ export class PipShell {
   resize(width: number, height: number): void {
     if (this.pip.isDestroyed()) return;
     const size = pipWindowSize(width, height);
+    this.bounds.remember(size);
     const target =
       this.mode === "docked"
         ? cornerPlacement(size, this.cornerArea())
@@ -180,6 +184,7 @@ export class PipShell {
     this.docking = null;
     this.unguard();
     this.unfollow();
+    if (!this.pip.isDestroyed()) this.pip.off("resized", this.resized);
     if (this.host.isDestroyed()) return;
     this.host.off("resize", this.hostChanged);
     this.host.off("move", this.hostChanged);
@@ -191,16 +196,18 @@ export class PipShell {
     const cursor = screen.getCursorScreenPoint();
     if (gesture.kind === "move") {
       const area = screen.getDisplayNearestPoint(cursor).workArea;
-      return this.setBounds(dragTo(gesture.start, gesture.grab, cursor, area));
+      return this.bounds.set(dragTo(gesture.start, gesture.grab, cursor, area));
     }
     const dx = cursor.x - gesture.origin.x;
     const dy = cursor.y - gesture.origin.y;
-    this.setBounds(stretchFrom(gesture.start, gesture.kind as PipCorner, dx, dy, this.maxVideoWidth()));
+    this.bounds.set(stretchFrom(gesture.start, gesture.kind as PipCorner, dx, dy, this.maxVideoWidth()));
   }
 
   private endGesture(): void {
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null;
+    // Un coin tiré : la taille où la main l'a laissé devient la taille voulue.
+    if (this.gesture !== null && this.gesture.kind !== "move") this.bounds.rememberCurrent();
     this.gesture = null;
   }
 
@@ -213,7 +220,7 @@ export class PipShell {
   /** Le PiP dans son coin : celui de l'écran de l'application, ou de l'application. */
   private place(size?: { width: number; height: number }): void {
     if (this.pip.isDestroyed() || this.host.isDestroyed()) return;
-    this.setBounds(cornerPlacement(size ?? this.pip.getBounds(), this.cornerArea()));
+    this.bounds.set(cornerPlacement(size ?? this.bounds.size, this.cornerArea()));
   }
 
   private cornerArea(): Box {
@@ -233,7 +240,7 @@ export class PipShell {
     if (this.pip.isDestroyed()) return Promise.resolve();
     const from = this.pip.getBounds();
     if (reducedMotion() || sameBox(from, to)) {
-      this.setBounds(to);
+      this.bounds.set(to);
       return Promise.resolve();
     }
     let elapsed = 0;
@@ -245,7 +252,7 @@ export class PipShell {
         elapsed += Math.min(now - last, MAX_STEP_MS);
         last = now;
         const t = Math.min(1, elapsed / duration);
-        this.setBounds(interpolateBox(from, to, easeOutCubic(t)));
+        this.bounds.set(interpolateBox(from, to, easeOutCubic(t)));
         if (t >= 1) this.stopAnimation();
       };
       this.animation = { timer: setInterval(step, FRAME_MS), done };
@@ -287,10 +294,5 @@ export class PipShell {
 
   private displayOf(box: Box): Electron.Display {
     return screen.getDisplayMatching(box);
-  }
-
-  private setBounds(box: Box): void {
-    if (this.pip.isDestroyed() || sameBox(this.pip.getBounds(), box)) return;
-    this.pip.setBounds(box);
   }
 }
