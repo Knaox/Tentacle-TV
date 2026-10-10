@@ -27,27 +27,16 @@ import { watchEdr, forgetEdr } from "./macosEdr";
 import { videoLevel, videoTarget, applyFrame } from "./macosFrame";
 import { bannerInset } from "../macosTitleBar";
 import { describeMontage, stateAtDiscovery } from "./macosSurfaceDiag";
+import { AlignClock } from "./macosAlignClock";
 import type { VideoSurface } from "./surface";
-
-/** Un recalage par image suffit — voir `scheduleAlign`. */
-const ALIGN_MS = 16;
-/**
- * Et une VEILLE : les évènements d'Electron ne suffisent pas.
- *
- * ⚠️ macOS repositionne la fenêtre de mpv de son propre chef, sans qu'aucun
- * `resize`, `move` ni `enter-full-screen` ne parvienne à Electron — mesuré de
- * l'extérieur, 110 ms après un calage parfait. Une réaction aux évènements ne
- * peut PAS l'attraper. Coût : deux lectures de rectangle par tick, en lecture.
- */
-const WATCHDOG_MS = 100;
 
 export class MacosSurface implements VideoSurface {
   /** La `NSWindow` d'Electron, obtenue depuis sa `NSView` racine. */
   private readonly parent: unknown;
   private mpvWindow: unknown = null;
   private search: (() => void) | null = null;
-  private alignTimer: ReturnType<typeof setTimeout> | null = null;
-  private wakeLock: ReturnType<typeof setInterval> | null = null;
+  /** Le recalage par image et la veille — voir `macosAlignClock.ts`. */
+  private readonly clock = new AlignClock(() => this.align());
   private attached = false;
 
   /** Numéro de la fenêtre retenue, pour la reconnaître ensuite. */
@@ -64,7 +53,7 @@ export class MacosSurface implements VideoSurface {
   );
 
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
-  private readonly follow = (): void => this.scheduleAlign();
+  private readonly follow = (): void => this.clock.schedule();
 
   /**
    * ⚠️ Le plein écran ne se contente PAS d'un recalage : macOS emmène la fenêtre
@@ -74,7 +63,7 @@ export class MacosSurface implements VideoSurface {
    */
   private readonly fullscreenTransition = (): void => {
     this.reattach();
-    this.scheduleAlign();
+    this.clock.schedule();
     // Le liseré une fois qu'AppKit se sera posé ; `schedule` se réarme au besoin.
     this.seam.schedule();
     // Une seconde fois APRÈS l'animation : `enter-full-screen` arrive quand
@@ -125,9 +114,7 @@ export class MacosSurface implements VideoSurface {
     // AVANT toute intervention — voir `etatALaDecouverte`, qui dit pourquoi cette
     // ligne a tranché ce que rien d'autre ne distinguait.
     trace(`etat a la decouverte — ${stateAtDiscovery(this.mpvWindow)}`);
-    // La veille ne démarre qu'ICI : tant que la fenêtre n'existe pas, il n'y a
-    // rien à surveiller, et elle s'arrête avec la lecture (`detach`).
-    if (this.wakeLock === null) this.wakeLock = setInterval(() => this.align(), WATCHDOG_MS);
+    this.clock.watch();
     attachBelowPage(this.parent, this.mpvWindow);
     watchEdr(this.mpvWindow, "fenetre video attachee");
     this.align();
@@ -238,10 +225,10 @@ export class MacosSurface implements VideoSurface {
   }
 
   detach(): void {
-    this.stopSearch();
-    if (this.alignTimer !== null) clearTimeout(this.alignTimer);
-    this.alignTimer = null;
-    this.stopWatchdog();
+    this.search?.();
+    this.search = null;
+    this.clock.stop();
+    forgetEdr();
     if (this.mpvWindow !== null) {
       neverThrow("detachement de la fenetre video", () => {
         // ⚠️ HORS DE L'ÉCRAN D'ABORD, et ce n'est pas une précaution de style.
@@ -272,29 +259,9 @@ export class MacosSurface implements VideoSurface {
     }
   }
 
-  /**
-   * Un recalage par image, pas un par évènement : attraper un bord de fenêtre à
-   * la souris tire des dizaines de `resize` par seconde. Front descendant — le
-   * premier évènement arme le minuteur, les suivants sont absorbés, et le calage
-   * a lieu juste après le dernier.
-   */
-  private scheduleAlign(): void {
-    if (this.alignTimer !== null) return;
-    this.alignTimer = setTimeout(() => {
-      this.alignTimer = null;
-      this.align();
-    }, ALIGN_MS);
-  }
-
   /** Désarme la veille et oublie le dernier headroom vu. Idempotent. */
   private stopWatchdog(): void {
-    if (this.wakeLock !== null) clearInterval(this.wakeLock);
-    this.wakeLock = null;
+    this.clock.stopWatch();
     forgetEdr();
-  }
-
-  private stopSearch(): void {
-    this.search?.();
-    this.search = null;
   }
 }
