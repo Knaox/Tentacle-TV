@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
+import { AnimatedRoutes } from "./components/routeTransition/AnimatedRoutes";
 import { StartupOverlays } from "./components/StartupOverlays";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ServerSetup } from "./pages/ServerSetup";
@@ -128,7 +129,7 @@ export function App() {
       {/* Les messages de l'administrateur à cette session — au-dessus de tout, lecteur compris. */}
       <SessionMessageHost />
       <Suspense fallback={<PageSpinner />}>
-        <Routes>
+        <AnimatedRoutes>
           {/* Public */}
           <Route path="/login" element={<ByFormFactor desktop={<Login />} mirror={<MirrorLogin />} />} />
           {/* Le lien de l'assistant (journaux du serveur) : une fois l'installation faite, l'accueil. */}
@@ -280,7 +281,7 @@ export function App() {
 
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
+        </AnimatedRoutes>
       </Suspense>
       {authed && playerOnStage && <PlayerStage />}
       <StartupOverlays authed={authed} />
