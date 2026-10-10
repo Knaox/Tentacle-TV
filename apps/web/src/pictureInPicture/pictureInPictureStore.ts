@@ -23,6 +23,13 @@ export interface PipSession {
   mode: PipMode;
   /** Le lecteur était plein écran quand on l'a réduit : on le lui rendra. */
   restoreFullscreen: boolean;
+  /** Le retour au lecteur est en cours : sa route est la page à montrer (`usePageLocation`). */
+  returning?: boolean;
+  /**
+   * La route gardée vient d'une lecture lancée PENDANT le PiP — jamais une page
+   * à montrer, même une fois la session mise à jour (`usePageLocation`).
+   */
+  launched?: boolean;
 }
 
 let session: PipSession | null = null;
