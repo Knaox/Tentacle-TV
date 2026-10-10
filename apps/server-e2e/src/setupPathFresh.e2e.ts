@@ -5,6 +5,7 @@ import { DisposableJellyfin } from "./jellyfin";
 import { configureExisting, jellyfinState } from "./jellyfinSetupProbe";
 import { expected, Journey } from "./setupJourney";
 import { REPO, Stack } from "./stack";
+import { requireHostCode } from "./benchHost";
 
 /**
  * Le parcours « Jellyfin NEUF », au navigateur, SANS Jellyfin dans la pile
@@ -54,6 +55,7 @@ describe("parcours « neuf », sans Jellyfin dans la pile, après avoir changé 
     const refused = { status: 409, body: { error: "step_refused" } };
     const radio = (name: RegExp) => page.getByRole("radio", { name });
     try {
+      await requireHostCode(stack.port, `127.0.0.1:${stack.port}`);
       await page.goto(stack.url(`/setup#code=${await stack.setupCode()}`));
       await journey.at("Bienvenue sur Tentacle");
       await journey.button("Commencer").click();

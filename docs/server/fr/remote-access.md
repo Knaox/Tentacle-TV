@@ -245,7 +245,11 @@ tromper.
 
 **Docker Desktop (Windows, macOS) et colima** ne transmettent pas aux conteneurs l'adresse réelle des
 visiteurs : tout semble venir de la passerelle Docker, et chaque client paraît « local ». Pour un accès depuis
-Internet, préférez une machine Linux ou un NAS.
+Internet, préférez une machine Linux ou un NAS. **Podman sans root** sur un réseau de pont (les piles Compose)
+fait de même par son relais de ports, rootlessport : chaque visiteur semble venir de l'adresse propre du
+conteneur. L'assistant d'installation demande alors toujours son code ; pour le reste, placez un mandataire
+devant (il voit la vraie adresse et la transmet), ou publiez les ports par le réseau `pasta` de Podman, qui
+garde l'adresse source.
 
 ## Bonnes pratiques
 

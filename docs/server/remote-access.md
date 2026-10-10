@@ -240,7 +240,10 @@ limit and the "local network" detection (bitrate caps, private Jellyfin address)
 
 **Docker Desktop (Windows, macOS) and colima** do not pass visitors' real addresses to containers: everything
 seems to come from the Docker gateway, so every client looks "local". For access from the Internet, prefer a
-Linux machine or a NAS.
+Linux machine or a NAS. **Rootless Podman** on a bridge network (the Compose stacks) does the same through its
+port forwarder, rootlessport: every visitor seems to come from the container's own address. The setup wizard
+then always asks for its code; for the rest, put a reverse proxy in front (it sees the real address and
+forwards it), or publish the ports with Podman's `pasta` network, which keeps the source address.
 
 ## Good practices
 

@@ -21,6 +21,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - Les extensions migrent leurs données avec le reste ; une extension pas encore prête pour SQLite reste arrêtée, avec un message clair, jusqu'à sa mise à jour
 - `tentacle db query` lit la base en lecture seule, depuis la console du conteneur
 - **Interface web coupée** (`TENTACLE_WEB_UI=off`) : une page refusée affiche la vraie page « introuvable » du navigateur, au lieu d'un texte « Not found » brut
+- **Podman sans root** : un Jellyfin sur la même machine se joint de nouveau par `http://host.docker.internal:8096` (l'assistant refusait l'adresse que Podman donne à ce nom) et la découverte le trouve. L'assistant y demande désormais toujours son code : le relais de ports de Podman cache l'adresse du navigateur, et laissait passer Internet pour le réseau local
 
 ### EN
 - **No database to install any more**: Tentacle keeps all its data in a single SQLite file, `data/tentacle.db`, in its data volume. One container less, and a backup is a file copy
@@ -32,6 +33,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - Extensions migrate their data with the rest; an extension not ready for SQLite yet stays stopped, with a clear message, until it is updated
 - `tentacle db query` reads the database read-only, from the container's console
 - **Web interface turned off** (`TENTACLE_WEB_UI=off`): a refused page shows the browser's own "not found" page, instead of a raw "Not found" text
+- **Rootless Podman**: a Jellyfin on the same machine is reachable again at `http://host.docker.internal:8096` (the wizard refused the address Podman gives that name) and discovery finds it. The wizard now always asks for its code there: Podman's port forwarder hides the browser's address, and let the Internet pass for the home network
 
 ## [1.24.0]
 ### FR

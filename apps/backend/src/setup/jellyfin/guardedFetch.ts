@@ -4,6 +4,7 @@ import { Agent, buildConnector, fetch, type Response } from "undici";
 import { SetupError } from "../setupErrors";
 import type { SetupErrorCode } from "../setupWizardContract";
 import { classifyAddress } from "./addressGuard";
+import { isHostGatewayException, readHostsFile } from "./hostGateway";
 
 /**
  * Le seul chemin par lequel l'assistant parle à un Jellyfin dont l'adresse
@@ -36,29 +37,39 @@ export function loopbackAllowed(): boolean {
   return allowLoopback;
 }
 
-function refusal(ip: string): BlockedAddressError | null {
+/**
+ * `hostname` : le nom RÉSOLU, absent pour une IP littérale. Seul un nom de
+ * l'hôte Docker / Podman peut lever un refus de lien local (`hostGateway.ts`).
+ */
+function refusal(ip: string, hostname?: string, hostsFile: () => string | null = readHostsFile): BlockedAddressError | null {
   const verdict = classifyAddress(ip);
-  if (verdict === "forbidden") return new BlockedAddressError(false);
+  if (verdict === "forbidden") {
+    return hostname && isHostGatewayException(hostname, ip, hostsFile()) ? null : new BlockedAddressError(false);
+  }
   if (verdict === "loopback" && !allowLoopback) return new BlockedAddressError(true);
   return null;
 }
 
 type LookupCallback = (err: NodeJS.ErrnoException | null, address: string | LookupAddress[], family?: number) => void;
 
+type ResolveAll = (hostname: string, options: LookupAllOptions, callback: (err: NodeJS.ErrnoException | null, addresses: LookupAddress[]) => void) => void;
+
 /** La résolution de nom, filtrée : une adresse refusée n'est jamais proposée à la connexion. */
-function guardedLookup(hostname: string, options: LookupOneOptions | LookupAllOptions, callback: LookupCallback): void {
-  lookup(hostname, { ...options, all: true }, (err, addresses) => {
-    if (err) return callback(err, []);
-    const allowed = addresses.filter((entry) => !refusal(entry.address));
-    if (allowed.length === 0) return callback(refusal(addresses[0]?.address ?? "") ?? new BlockedAddressError(false), []);
-    if ((options as LookupAllOptions).all) return callback(null, allowed);
-    callback(null, allowed[0].address, allowed[0].family);
-  });
+export function createGuardedLookup(resolve: ResolveAll = lookup, hostsFile: () => string | null = readHostsFile) {
+  return (hostname: string, options: LookupOneOptions | LookupAllOptions, callback: LookupCallback): void => {
+    resolve(hostname, { ...options, all: true }, (err, addresses) => {
+      if (err) return callback(err, []);
+      const allowed = addresses.filter((entry) => !refusal(entry.address, hostname, hostsFile));
+      if (allowed.length === 0) return callback(refusal(addresses[0]?.address ?? "") ?? new BlockedAddressError(false), []);
+      if ((options as LookupAllOptions).all) return callback(null, allowed);
+      callback(null, allowed[0].address, allowed[0].family);
+    });
+  };
 }
 
 function guardedAgent(): Agent {
   if (agent) return agent;
-  const connector = buildConnector({ timeout: 5_000, lookup: guardedLookup });
+  const connector = buildConnector({ timeout: 5_000, lookup: createGuardedLookup() });
   agent = new Agent({
     connect: (options, callback) => {
       const host = options.hostname.replace(/^\[(.*)\]$/, "$1");

@@ -6,6 +6,7 @@ import { configureExisting, jellyfinState } from "./jellyfinSetupProbe";
 import { hostCall } from "./lanClient";
 import { expected, Journey } from "./setupJourney";
 import { REPO, Stack, fetchWithin, waitFor } from "./stack";
+import { requireHostCode } from "./benchHost";
 
 /**
  * Le parcours « Jellyfin DÉJÀ configuré », au navigateur, sur la pile vécue
@@ -88,6 +89,7 @@ describe("parcours « déjà configuré » (la pile de Damien)", () => {
     const { page } = journey;
     const refused = { status: 409, body: { error: "step_refused" } };
     try {
+      await requireHostCode(stack.port, `127.0.0.1:${stack.port}`);
       await page.goto(stack.url(`/setup#code=${await stack.setupCode()}`));
       await journey.at("Bienvenue sur Tentacle");
       await journey.button("Commencer").click();

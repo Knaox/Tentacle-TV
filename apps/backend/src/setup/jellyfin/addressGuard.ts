@@ -9,7 +9,9 @@ import { isIP } from "net";
  *  - `loopback` : la machine elle-même. Accepté en natif (Jellyfin à côté),
  *    refusé dans Docker : `localhost` y désigne le conteneur de Tentacle ;
  *  - `forbidden` : jamais — non spécifiée, lien local (169.254/16 : les
- *    métadonnées des clouds), multidiffusion, réservée, diffusion.
+ *    métadonnées des clouds), multidiffusion, réservée, diffusion. Une seule
+ *    exception, décidée à la connexion et jamais ici : le nom de l'hôte sous
+ *    Podman sans racine (`hostGateway.ts`).
  */
 export type AddressClass = "ok" | "loopback" | "forbidden";
 

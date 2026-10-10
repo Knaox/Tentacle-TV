@@ -4,9 +4,10 @@ import { networkInterfaces } from "os";
 import type { Deployment } from "../deployment";
 import { clientJellyfinUrl } from "../jellyfin/clientUrl";
 import { probeJellyfin, type ProbedJellyfin } from "../jellyfin/probe";
+import { HOST_GATEWAY_NAMES, isHostGatewayException, readHostsFile } from "../jellyfin/hostGateway";
 import { assertStackSibling } from "../jellyfin/stackTarget";
 import type { DiscoveredJellyfin, DiscoverySource, JellyfinDiscoveryResponse } from "../setupDiscoveryContract";
-import { candidateHosts, formatHost, isScannableIp, readDefaultGateway, SCAN_PORTS } from "./candidates";
+import { candidateHosts, formatHost, isScannableIp, readDefaultGateway, SCAN_PORTS, type DockerHostName } from "./candidates";
 import { discoverByUdp, type UdpResult } from "./udpDiscovery";
 
 /**
@@ -26,14 +27,14 @@ export interface DiscoveryDeps {
   udp: (unicast: string[]) => Promise<UdpResult>;
   probe: (url: string) => Promise<ProbedJellyfin>;
   gateway: () => string | null;
-  dockerHostAddresses: () => Promise<string[]>;
+  dockerHosts: () => Promise<DockerHostName[]>;
   /** Les adresses du conteneur : celle du navigateur parmi elles → réseau de l'hôte, pas de pont. */
   ownAddresses: () => string[];
   /** Pile complète : le nom interne mène-t-il bien au réseau de la pile ? */
   checkSibling: (url: string) => Promise<void>;
 }
 
-async function resolvePrivate(name: string): Promise<string[]> {
+async function resolveAll(name: string): Promise<string[]> {
   try {
     return (await lookup(name, { all: true })).map((entry) => entry.address);
   } catch {
@@ -41,11 +42,22 @@ async function resolvePrivate(name: string): Promise<string[]> {
   }
 }
 
+async function resolveDockerHosts(): Promise<DockerHostName[]> {
+  const hostsFile = readHostsFile();
+  return Promise.all(
+    HOST_GATEWAY_NAMES.map(async (name) => {
+      const addresses = await resolveAll(name);
+      const viaHostGateway = addresses.length > 0 && addresses.every((address) => isHostGatewayException(name, address, hostsFile));
+      return { name, addresses, viaHostGateway };
+    }),
+  );
+}
+
 const systemDeps: DiscoveryDeps = {
   udp: (unicast) => discoverByUdp({ unicast }),
   probe: (url) => probeJellyfin(url, PROBE_TIMEOUT_MS),
   gateway: readDefaultGateway,
-  dockerHostAddresses: async () => [...(await resolvePrivate("host.docker.internal")), ...(await resolvePrivate("host.containers.internal"))],
+  dockerHosts: resolveDockerHosts,
   ownAddresses: () => Object.values(networkInterfaces()).flatMap((entries) => (entries ?? []).map((entry) => entry.address)),
   checkSibling: (url) => assertStackSibling(url),
 };
@@ -118,7 +130,7 @@ export async function discoverJellyfins(input: DiscoverInput, deps: DiscoveryDep
   const stack = deployment.siblingUrl ? await stackEntry(deployment.siblingUrl, deps) : [];
 
   const native = deployment.deployment === "native";
-  const hosts = candidateHosts({ browserHost, gateway: deps.gateway(), native, dockerHostAddresses: await deps.dockerHostAddresses() });
+  const hosts = candidateHosts({ browserHost, gateway: deps.gateway(), native, dockerHosts: await deps.dockerHosts() });
   const scanTargets: Target[] = hosts.flatMap((host) =>
     SCAN_PORTS.map((port) => ({ url: `${port === 8920 ? "https" : "http"}://${formatHost(host)}:${port}`, source: "scan" as const })),
   );

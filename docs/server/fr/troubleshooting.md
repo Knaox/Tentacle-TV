@@ -17,6 +17,7 @@
 | Bibliothèques : « Ce dossier n'existe pas pour Jellyfin » | Les chemins sont ceux **de Jellyfin** : dans un conteneur, votre dossier des médias est `/media`. |
 | Test d'ouverture : « service indisponible » | Le service de test ne répond pas (ou `REMOTE_CHECK_URL=off`) : cela ne dit rien de votre installation. |
 | Tout paraît « local » derrière Docker Desktop | Docker Desktop et colima cachent l'adresse des visiteurs : voir [remote-access.md](remote-access.md#mandataires-de-confiance). |
+| Podman sans root : l'assistant demande un code à la maison | Normal : rootlessport cache l'adresse de votre navigateur. Lisez le code dans le journal (`podman logs <conteneur>`). |
 | La vidéo reste noire ou saccade en transcodage | Voir [gpu.md](gpu.md) ; vérifiez les réglages de transcodage de Jellyfin. |
 
 Les journaux d'abord : celui du conteneur Tentacle (Portainer : *Logs* ; `docker logs --tail 200 <conteneur>` ; Compose : `docker compose logs --tail 200 tentacle`), puis celui de Jellyfin.

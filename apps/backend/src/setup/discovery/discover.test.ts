@@ -28,7 +28,7 @@ function deps(over: Partial<DiscoveryDeps> = {}): DiscoveryDeps & { probed: stri
       return { url, id: s.id, version: "10.11.11", serverName: s.name, blank: s.blank, compatible: true };
     },
     gateway: () => "172.18.0.1",
-    dockerHostAddresses: async () => [],
+    dockerHosts: async () => [],
     ownAddresses: () => ["127.0.0.1", "172.18.0.5"],
     checkSibling: async () => undefined,
     ...over,
@@ -89,5 +89,21 @@ describe("la découverte des Jellyfin", () => {
     ]);
     expect(result.servers[0]).toMatchObject({ source: "stack", clientUrl: "http://172.16.1.30:47896" });
     expect(result.servers[1].clientUrl).toBe("http://172.16.1.30:8097");
+  });
+
+  it("Podman sans racine : le Jellyfin de la machine, joint par host.docker.internal, et donné aux applications par l'hôte du navigateur", async () => {
+    const d = deps({
+      gateway: () => null,
+      udp: async () => ({ outcome: "silent", candidates: [] }),
+      dockerHosts: async () => [{ name: "host.docker.internal", addresses: ["169.254.1.2"], viaHostGateway: true }],
+      probe: async (url) => {
+        d.probed.push(url);
+        if (url !== "http://host.docker.internal:8096") throw new SetupError("jf_unreachable");
+        return { url, id: "podman", version: "10.11.11", serverName: "Bazzite", blank: false, compatible: true };
+      },
+    });
+    const result = await discoverJellyfins({ deployment: dbStack, browserHost: "localhost", containerized: true }, d);
+    expect(d.probed.some((url) => url.includes("169.254"))).toBe(false);
+    expect(result.servers.map((s) => [s.url, s.clientUrl])).toEqual([["http://host.docker.internal:8096", "http://localhost:8096"]]);
   });
 });

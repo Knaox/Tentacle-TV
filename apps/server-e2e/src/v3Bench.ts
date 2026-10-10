@@ -1,8 +1,10 @@
-import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect } from "vitest";
+import { lanIp, requireHostCode } from "./benchHost";
 import { DisposableJellyfin } from "./jellyfin";
+
+export { lanIp };
 import { configureExisting } from "./jellyfinSetupProbe";
 import { hostCall } from "./lanClient";
 import type { Journey } from "./setupJourney";
@@ -10,7 +12,8 @@ import { REPO, Stack, waitFor } from "./stack";
 
 /**
  * Le banc de l'assistant v3 : une pile complète « comme sous Portainer »
- * (Tentacle 47330, son Jellyfin 47910), ouverte par l'IP LOCALE du Mac — comme
+ * (Tentacle 47330, son Jellyfin 47910), ouverte par l'IP LOCALE de la machine
+ * (`lanIp`, `benchHost.ts`) — comme
  * Damien ouvre http://172.16.1.30:47300 — et deux Jellyfin à côté : « Salon »,
  * déjà configuré AVEC des bibliothèques (47920), et un neuf (47921). Le Jellyfin
  * de la pile est d'abord configuré SANS bibliothèque par un premier essai :
@@ -22,19 +25,6 @@ export const P = { tentacle: 47330, jellyfin: 47910, discovery: 47366, salon: 80
 export const MEDIA = join(REPO, "apps/server-e2e/.runs/av3-media");
 const OTHERS = join(REPO, "apps/server-e2e/.runs/av3-jellyfins");
 export const PROOFS = process.env.E2E_PROOF_DIR ?? join(REPO, "apps/server-e2e/.runs/av3-proofs");
-
-/** L'adresse du Mac sur le réseau de la maison : c'est par elle qu'on ouvre l'assistant. */
-export function lanIp(): string {
-  for (const iface of ["en0", "en1"]) {
-    try {
-      const ip = execFileSync("ipconfig", ["getifaddr", iface], { encoding: "utf8" }).trim();
-      if (ip) return ip;
-    } catch {
-      // interface absente : la suivante
-    }
-  }
-  throw new Error("aucune adresse locale (en0, en1)");
-}
 
 export const salon = new DisposableJellyfin("av3-jf-salon", P.salon, "12.1", OTHERS);
 export const fresh = new DisposableJellyfin("av3-jf-neuf", P.fresh, "12.1", OTHERS);
@@ -75,8 +65,9 @@ export async function teardown(): Promise<void> {
   await fresh.remove();
 }
 
-/** L'assistant ouvert par l'IP locale du Mac : accueil, code, jusqu'au choix du Jellyfin. */
+/** L'assistant ouvert par l'IP locale de la machine : accueil, code, jusqu'au choix du Jellyfin. */
 export async function openToChoice(journey: Journey, ip: string): Promise<void> {
+  await requireHostCode(P.tentacle, `${ip}:${P.tentacle}`);
   await journey.page.goto(`http://${ip}:${P.tentacle}/setup#code=${await stack.setupCode()}`);
   await journey.at("Bienvenue sur Tentacle");
   await journey.button("Commencer").click();

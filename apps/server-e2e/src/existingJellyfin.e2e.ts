@@ -6,6 +6,7 @@ import { DisposableJellyfin } from "./jellyfin";
 import { jellyfinState } from "./jellyfinSetupProbe";
 import { errorOf, SetupClient } from "./setupClient";
 import { docker, Stack, waitFor } from "./stack";
+import { HOST_ADDRESS } from "./benchHost";
 
 /**
  * Pile « seule » (Tentacle, sa base SQLite) devant un Jellyfin DÉJÀ configuré (10.11 et 12.1),
@@ -23,7 +24,7 @@ async function startRedirector(name: string, port: number, dir: string): Promise
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "default.conf"), "server { listen 80; location / { return 302 http://169.254.169.254/latest/meta-data/; } }\n");
   await docker("rm", "-f", name).catch(() => undefined);
-  await docker("run", "-d", "--name", name, "-p", `${port}:80`, "-v", `${join(dir, "default.conf")}:/etc/nginx/conf.d/default.conf:ro`, "nginx:alpine");
+  await docker("run", "-d", "--name", name, "-p", `${port}:80`, "-v", `${join(dir, "default.conf")}:/etc/nginx/conf.d/default.conf:ro,z`, "nginx:alpine");
 }
 
 TAGS.forEach((tag, index) => {
@@ -38,7 +39,7 @@ TAGS.forEach((tag, index) => {
   });
   const jellyfin = new DisposableJellyfin(`wiz-e2e-jf${safe}`, ports.jellyfin, tag, join(stack.dir, "jellyfin-media"));
   const redirector = `wiz-e2e-redirect${safe}`;
-  const jellyfinUrl = `http://host.docker.internal:${ports.jellyfin}`;
+  const jellyfinUrl = `http://${HOST_ADDRESS}:${ports.jellyfin}`;
   const client = new SetupClient(stack.url(""));
 
   describe(`Jellyfin ${tag} existant — assistant et sécurité`, () => {
@@ -85,10 +86,13 @@ TAGS.forEach((tag, index) => {
       expect(errorOf(await probe("http://169.254.169.254/latest/meta-data/"))).toBe("jf_forbidden_address");
       expect(errorOf(await probe("file:///etc/passwd"))).toMatch(/^(jf_invalid_url|invalid_input)$/);
       expect(errorOf(await probe("http://localhost:8096"))).toBe("jf_localhost_in_docker");
-      const redirected = await probe(`http://host.docker.internal:${ports.redirector}`);
+      const redirected = await probe(`http://${HOST_ADDRESS}:${ports.redirector}`);
       expect(redirected.status).not.toBe(200);
       expect(errorOf(redirected)).toMatch(/^(jf_not_jellyfin|jf_forbidden_address)$/);
-      expect(errorOf(await probe("http://host.docker.internal:8999"))).toMatch(/^(jf_unreachable|jf_timeout)$/);
+      expect(errorOf(await probe(`http://${HOST_ADDRESS}:8999`))).toMatch(/^(jf_unreachable|jf_timeout)$/);
+      // Podman sans racine : l'hôte est 169.254.1.2 (lien local), accepté sous son NOM seulement — tapée, l'adresse reste refusée.
+      const hostIp = (await stack.exec("tentacle", "getent", "hosts", HOST_ADDRESS)).trim().split(/\s+/)[0] ?? "";
+      if (hostIp.startsWith("169.254.")) expect(errorOf(await probe(`http://${hostIp}:${ports.jellyfin}`))).toBe("jf_forbidden_address");
     });
 
     it("Jellyfin configuré : sondé, puis rejoint par le compte (mauvais mot de passe et mauvaise clé refusés)", async () => {
