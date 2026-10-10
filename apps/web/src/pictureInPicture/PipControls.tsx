@@ -2,6 +2,7 @@ import { useEffect, type CSSProperties } from "react";
 import { usePictureInPicture } from "./pictureInPictureContext";
 import { PipChrome } from "./PipChrome";
 import { pipFrameRadii, pipWheelFactor } from "./pipGeometry";
+import { PipLoadingView, useLingeringLoading, type PipLoading } from "./PipLoadingView";
 import { PipOverlay } from "./PipOverlay";
 import { usePipPointer, type PipCorner } from "./usePipPointer";
 import { usePipResizing } from "./usePipResizing";
@@ -18,6 +19,10 @@ import { usePipResizing } from "./usePipResizing";
  * ancré, il ne se déplace pas — il est le coin de l'application —, et seul son
  * coin haut-gauche, tourné vers elle, change sa taille. Le double-clic ramène
  * au lecteur, la molette change la taille, Espace met en pause.
+ *
+ * Pendant le chargement d'une lecture (`loading`), la vue de chargement couvre
+ * la vidéo (`PipLoadingView`) ; seuls « revenir au lecteur » et « fermer »
+ * restent, au survol. Elle s'efface en fondu quand l'image arrive.
  */
 
 interface PipControlsProps {
@@ -28,6 +33,8 @@ interface PipControlsProps {
   title: string;
   onTogglePause: () => void;
   onSkip: (delta: number) => void;
+  /** Une lecture se charge : ce qu'elle montre en attendant, sinon `null`. */
+  loading?: PipLoading | null;
 }
 
 const ALL_CORNERS: readonly PipCorner[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
@@ -52,12 +59,13 @@ function gripStyle(corner: PipCorner, size: number): CSSProperties {
 }
 
 export function PipControls(props: PipControlsProps) {
-  const { paused, onTogglePause } = props;
+  const { paused, onTogglePause, loading = null } = props;
+  const waiting = useLingeringLoading(loading);
   const pip = usePictureInPicture();
   const view = pip.container?.ownerDocument.defaultView ?? null;
   const docked = pip.mode === "docked";
   const { hovered, gesture, surface, grip, onControl } = usePipPointer(view, !docked, pip.gesture);
-  const visible = hovered || paused || gesture !== null;
+  const visible = hovered || (paused && loading === null) || gesture !== null;
   // Pendant un changement de taille, ni cadre ni contrôles : la vidéo suit
   // le cadre avec une image de retard (`usePipResizing`).
   const resizing = usePipResizing(view);
@@ -72,12 +80,12 @@ export function PipControls(props: PipControlsProps) {
   useEffect(() => {
     if (view === null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== "Space") return;
+      if (e.code !== "Space" || loading !== null) return;
       e.preventDefault();
       onTogglePause();
     };
     const onAppKey = (e: KeyboardEvent) => {
-      if (e.code !== "Space" || e.repeat) return;
+      if (e.code !== "Space" || e.repeat || loading !== null) return;
       const active = document.activeElement;
       if (active !== null && active !== document.body) return;
       e.preventDefault();
@@ -89,7 +97,7 @@ export function PipControls(props: PipControlsProps) {
       view.removeEventListener("keydown", onKey);
       window.removeEventListener("keydown", onAppKey);
     };
-  }, [view, onTogglePause]);
+  }, [view, onTogglePause, loading]);
 
   return (
     <div
@@ -106,8 +114,9 @@ export function PipControls(props: PipControlsProps) {
         onDoubleClick={(e) => { if (!onControl(e.target)) pip.expand(); }}
       >
         <div className="absolute overflow-hidden" style={{ inset: frame.bezel, borderRadius: radii.inner }}>
+          {waiting.shown !== null && <PipLoadingView loading={waiting.shown} leaving={waiting.leaving} />}
           <div className={`absolute inset-0 ${masked}`}>
-            <PipOverlay {...props} visible={visible} />
+            <PipOverlay {...props} visible={visible} loading={loading !== null} />
           </div>
         </div>
       </div>

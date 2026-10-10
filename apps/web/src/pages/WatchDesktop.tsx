@@ -8,6 +8,7 @@ import { useConnectivity } from "../offline/useConnectivity";
 import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
+import { PipLoadingPortal, pipTitle } from "../pictureInPicture/PlayerPipPortal";
 import { MediaMissingScreen } from "../components/player/MediaMissingScreen";
 import { PlaybackProblemScreen } from "../components/problems/PlaybackProblemScreen";
 import { desktopStreamLost, useWebPlaybackProblem } from "../hooks/useWebPlaybackProblem";
@@ -201,13 +202,17 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   }
   if (waitForServerItem || !streamUrl || playback.diagnosing) {
     return (
-      <PlayerLoadingScreen
-        posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle}
-        // `handleMediaBack` quitte AUSSI le plein écran natif — le lecteur mpv
-        // n'est pas monté pour le faire, et on laisserait la fenêtre sans
-        // habillage sur le bureau.
-        onCancel={() => { void handleMediaBack(); }}
-      />
+      <>
+        <PlayerLoadingScreen
+          posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle}
+          // `handleMediaBack` quitte AUSSI le plein écran natif — le lecteur mpv
+          // n'est pas monté pour le faire, et on laisserait la fenêtre sans
+          // habillage sur le bureau.
+          onCancel={() => { void handleMediaBack(); }}
+        />
+        {/* Une lecture lancée pendant le PiP s'y charge : jamais le noir de mpv. */}
+        <PipLoadingPortal posterUrl={posterUrl} title={pipTitle(title, epSubtitle)} />
+      </>
     );
   }
 

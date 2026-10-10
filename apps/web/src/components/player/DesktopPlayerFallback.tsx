@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { PlaybackFailure } from "../../hooks/playbackFailure";
+import { PipLoadingPortal } from "../../pictureInPicture/PlayerPipPortal";
 import { LoadingBackButton } from "./PlayerLoadingScreen";
 
 /**
@@ -33,7 +34,7 @@ export function DesktopPlayerError({ failure, onBack }: { failure: PlaybackFailu
   );
 }
 
-export function DesktopPlayerLoading({ posterUrl, onBack }: { posterUrl?: string; onBack: () => void }) {
+export function DesktopPlayerLoading({ posterUrl, pipTitle, onBack }: { posterUrl?: string; pipTitle?: string; onBack: () => void }) {
   return (
     <div className="relative flex h-screen w-screen items-center justify-center bg-black">
       {posterUrl && <img src={posterUrl} className="absolute inset-0 h-full w-full object-cover" alt="" />}
@@ -46,6 +47,8 @@ export function DesktopPlayerLoading({ posterUrl, onBack }: { posterUrl?: string
       {/* La pilule de la page d'attente, reprise au même endroit — sinon la
           sortie s'effaçait à l'instant où le lecteur se montait. */}
       <LoadingBackButton onClick={onBack} />
+      {/* En PiP, la page est cachée : le chargement se montre dans sa fenêtre. */}
+      <PipLoadingPortal posterUrl={posterUrl} title={pipTitle} />
     </div>
   );
 }

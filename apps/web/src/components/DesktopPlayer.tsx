@@ -7,7 +7,7 @@ import { useDesktopSkip } from "../hooks/useDesktopSkip";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import { useDesktopFailureRouting } from "../hooks/useDesktopFailureRouting";
 import { usePictureInPicture } from "../pictureInPicture/pictureInPictureContext";
-import { PlayerPipPortal } from "../pictureInPicture/PlayerPipPortal";
+import { PlayerPipPortal, usePipLoading } from "../pictureInPicture/PlayerPipPortal";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import { useLocalMediaProbe } from "../hooks/useLocalMediaProbe";
 import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
@@ -220,9 +220,9 @@ export function DesktopPlayer({
     onNextEpisode, onEndOfPlayback: () => { void goToDetail(); },
     onAutoNextDismiss, inGroupSession, onUserSeek: reportUserSeek,
   });
-
-  // Écran de chargement et réserve avant l'image (cf. hook dédié).
+  // Écran de chargement et réserve avant l'image (cf. hook dédié) — dans le PiP aussi.
   const { prebuffering, showLoadingOverlay, onQualityChange: chooseQuality } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause, src, currentQuality, onQualityChange });
+  const { fullTitle, pipLoading } = usePipLoading(showLoadingOverlay, posterUrl, title, subtitle);
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause.
   // `wt:cancelAutoNext` = un membre a refusé l'enchaînement — même sémantique
@@ -241,7 +241,7 @@ export function DesktopPlayer({
   // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).
   if (failure && (failure.kind === "media" ? onMediaMissing : onFallbackToWeb)) return null;
   if (failure) return <DesktopPlayerError failure={failure} onBack={goBack} />;
-  if (!ready) return <DesktopPlayerLoading posterUrl={posterUrl} onBack={goBack} />;
+  if (!ready) return <DesktopPlayerLoading posterUrl={posterUrl} pipTitle={fullTitle} onBack={goBack} />;
 
   return (
     // cursor-none : souris immobile → l'OSD se cache ET le curseur disparaît (revient au moindre mouvement).
@@ -264,7 +264,7 @@ export function DesktopPlayer({
       />
 
       <SkipBadge flash={skipFlash} />
-      <PlayerPipPortal paused={state.paused} position={actualPos} duration={dur} title={subtitle ? `${title} · ${subtitle}` : title} onTogglePause={togglePause} onSkip={skipBy} />
+      <PlayerPipPortal paused={state.paused} position={actualPos} duration={dur} title={fullTitle ?? ""} onTogglePause={togglePause} onSkip={skipBy} loading={pipLoading} />
       <QualityDropNotice drop={qualityDrop ?? null} started={hasStarted} itemId={itemId} />
 
       {/* Le badge de chaque bascule lecture/pause (espace, bouton, télécommande média). */}

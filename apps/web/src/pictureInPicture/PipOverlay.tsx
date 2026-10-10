@@ -26,6 +26,8 @@ interface PipOverlayProps {
   title: string;
   onTogglePause: () => void;
   onSkip: (delta: number) => void;
+  /** Une lecture se charge : ni lecture, ni sauts, ni temps — la vue de chargement les remplace. */
+  loading?: boolean;
 }
 
 function PipButton({ label, onClick, children, variant = "chrome" }: {
@@ -49,7 +51,7 @@ function PipButton({ label, onClick, children, variant = "chrome" }: {
   );
 }
 
-export function PipOverlay({ visible, paused, position, duration, title, onTogglePause, onSkip }: PipOverlayProps) {
+export function PipOverlay({ visible, paused, position, duration, title, onTogglePause, onSkip, loading = false }: PipOverlayProps) {
   const { t } = useTranslation("player");
   const pip = usePictureInPicture();
   const docked = pip.mode === "docked";
@@ -60,7 +62,7 @@ export function PipOverlay({ visible, paused, position, duration, title, onToggl
     <>
       <div aria-hidden="true" className={`pointer-events-none absolute inset-0 ${fade}`}>
         <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/60 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/75 to-transparent" />
+        {!loading && <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/75 to-transparent" />}
       </div>
       {/* Au clavier (Tab), un bouton focalisé garde les contrôles visibles. */}
       <div className={`absolute inset-0 focus-within:pointer-events-auto focus-within:opacity-100 ${fade}`}>
@@ -76,30 +78,30 @@ export function PipOverlay({ visible, paused, position, duration, title, onToggl
           </PipButton>
           <PipButton label={t("pip.close")} onClick={pip.close}><CloseIcon /></PipButton>
         </div>
-        <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-center gap-4">
+        {!loading && <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-center gap-4">
           <PipButton variant="skip" label={t("pip.back10")} onClick={() => onSkip(-10)}>-10</PipButton>
           <PipButton variant="play" label={paused ? t("pip.play") : t("pip.pause")} onClick={onTogglePause}>
             {paused ? <PlayIcon /> : <PauseIcon />}
           </PipButton>
           <PipButton variant="skip" label={t("pip.forward30")} onClick={() => onSkip(30)}>+30</PipButton>
-        </div>
-        <div className="pointer-events-none absolute inset-x-3 bottom-2.5 flex items-baseline gap-2">
+        </div>}
+        {!loading && <div className="pointer-events-none absolute inset-x-3 bottom-2.5 flex items-baseline gap-2">
           <p className="min-w-0 flex-1 truncate text-xs font-medium text-white/90">{title}</p>
           {duration > 0 && (
             <span className="shrink-0 text-xs tabular-nums text-white/75">
               {formatDuration(position)} / {formatDuration(duration)}
             </span>
           )}
-        </div>
+        </div>}
       </div>
       {/* La progression, au bas de l'image, arrondie par les coins de la vidéo. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]">
+      {!loading && <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]">
         <div className={`absolute inset-0 bg-black/50 ${fade}`} />
         <div
           className="absolute inset-0 origin-left"
           style={{ transform: `scaleX(${String(progress)})`, background: "var(--progress-fill)" }}
         />
-      </div>
+      </div>}
     </>
   );
 }
