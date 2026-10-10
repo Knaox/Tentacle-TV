@@ -21,12 +21,13 @@ import { setPlayerSurfaceTransparent } from "../window";
 import { neverThrow, trace } from "./native";
 import { fromHandle, msg, type Rect } from "./objc";
 import { windowGone, watchMpvWindow, mpvLeftovers } from "./macosWindowWatch";
-import { attachBelowPage, reorderBelowPage } from "./macosChildWindow";
+import { attachBelowPage, moveBelow, reorderBelowPage } from "./macosChildWindow";
 import { SETTLE_MS, createSeam } from "./macosSeam";
 import { watchEdr, forgetEdr } from "./macosEdr";
 import { videoLevel, videoTarget, applyFrame } from "./macosFrame";
 import { bannerInset } from "../macosTitleBar";
 import { describeMontage, stateAtDiscovery } from "./macosSurfaceDiag";
+import { MacosPipParent } from "./macosPipParent";
 import { AlignClock } from "./macosAlignClock";
 import type { VideoSurface } from "./surface";
 
@@ -49,11 +50,16 @@ export class MacosSurface implements VideoSurface {
   private readonly seam = createSeam(() =>
     this.mpvWindow === null || this.host.isDestroyed()
       ? null
-      : { window: this.mpvWindow, fullscreen: this.host.isFullScreen() },
+      : // Dans le PiP aussi : le liseré cerne le haut de l'image, et ses coins
+        // arrondis ne coïncident pas avec ceux que dessine la page.
+        { window: this.mpvWindow, fullscreen: this.host.isFullScreen() || this.pip.ns !== null },
   );
 
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
   private readonly follow = (): void => this.clock.schedule();
+
+  /** Le PiP, où la fenêtre de mpv change de parent — voir `macosPipParent.ts`. */
+  private readonly pip = new MacosPipParent((from, to) => this.moveTo(from, to), this.follow);
 
   /**
    * ⚠️ Le plein écran ne se contente PAS d'un recalage : macOS emmène la fenêtre
@@ -98,6 +104,7 @@ export class MacosSurface implements VideoSurface {
     this.host.on("enter-full-screen", this.fullscreenTransition);
     this.host.on("leave-full-screen", this.fullscreenTransition);
 
+    this.pip.start();
     this.search = watchMpvWindow(leftovers, (window, number) => {
       this.mpvWindow = window;
       this.number = number;
@@ -115,7 +122,7 @@ export class MacosSurface implements VideoSurface {
     // ligne a tranché ce que rien d'autre ne distinguait.
     trace(`etat a la decouverte — ${stateAtDiscovery(this.mpvWindow)}`);
     this.clock.watch();
-    attachBelowPage(this.parent, this.mpvWindow);
+    attachBelowPage(this.parentWindow(), this.mpvWindow);
     watchEdr(this.mpvWindow, "fenetre video attachee");
     this.align();
     // ⚠️ `addChildWindow:` juste au-dessus provoque l'affichage initial, donc la
@@ -144,10 +151,10 @@ export class MacosSurface implements VideoSurface {
   private reattach(): void {
     if (this.mpvWindow === null) return;
     neverThrow("reattachement de la fenetre video", () => {
-      reorderBelowPage(this.parent, this.mpvWindow);
+      reorderBelowPage(this.parentWindow(), this.mpvWindow);
       // `poserCadre` et NON `align` : `align` vérifie l'ordre et rappellerait
       // cette fonction — la boucle serait sans fin si l'ordre résistait.
-      applyFrame(this.mpvWindow, this.target(), videoLevel(this.host, this.parent));
+      applyFrame(this.mpvWindow, this.target(), this.level());
     });
   }
 
@@ -178,11 +185,34 @@ export class MacosSurface implements VideoSurface {
     // lui, reste : `setFrame:` et `setLevel:` ne lèvent pas, et macOS déplace la
     // fenêtre sans prévenir.
     neverThrow("calage de la fenetre video", () => {
-      applyFrame(this.mpvWindow, this.target(), videoLevel(this.host, this.parent));
+      applyFrame(this.mpvWindow, this.target(), this.level());
     });
   }
 
+  /** Le PiP s'ouvre ou se ferme : la vidéo change de parent, mpv n'en sait rien. */
+  private moveTo(from: unknown, to: unknown): void {
+    if (this.mpvWindow === null) return;
+    neverThrow("changement de parent de la fenetre video", () => {
+      moveBelow(from ?? this.parent, to ?? this.parent, this.mpvWindow);
+      applyFrame(this.mpvWindow, this.target(), this.level());
+    });
+    trace(`fenetre video ${to === null ? "rendue a la page" : "dans le PiP"} — ${this.geometrie()}`);
+    watchEdr(this.mpvWindow, to === null ? "retour du PiP" : "PiP");
+    this.seam.schedule();
+  }
+
+  /** La fenêtre sous laquelle vit la vidéo : le PiP s'il est ouvert, la nôtre sinon. */
+  private parentWindow(): unknown {
+    return this.pip.ns ?? this.parent;
+  }
+
+  private level(): number {
+    return this.pip.level() ?? videoLevel(this.host, this.parent);
+  }
+
   private target(): Rect {
+    const pip = this.pip.target();
+    if (pip !== null) return pip;
     // Le bandeau d'hôte est peint par la page, et la vidéo doit lui laisser sa
     // place — sinon elle passe DESSOUS, et une bande opaque mange le haut de
     // l'image au lieu de la border. Nul en plein écran, où la page le démonte.
@@ -202,7 +232,7 @@ export class MacosSurface implements VideoSurface {
   /** L'état du montage, pour le rapport — voir `macosSurfaceDiag.ts`. */
   geometrie(): string {
     if (this.mpvWindow === null) return "surface non attachee";
-    return describeMontage(this.host, this.parent, this.mpvWindow, this.target());
+    return describeMontage(this.host, this.parentWindow(), this.mpvWindow, this.target());
   }
 
   /** La fenêtre de mpv, pour la sonde EDR — l'écran qui la porte est celui qui compte. */
@@ -245,11 +275,12 @@ export class MacosSurface implements VideoSurface {
         // fenêtre quitte l'écran sans être détruite, et mpv la détruira ensuite
         // comme il l'a toujours fait.
         msg.orderOut(this.mpvWindow);
-        msg.removeChildWindow(this.parent, this.mpvWindow);
+        msg.removeChildWindow(this.parentWindow(), this.mpvWindow);
       });
       this.mpvWindow = null;
     }
     this.seam.forget();
+    this.pip.stop();
     if (this.attached) {
       this.host.off("resize", this.follow);
       this.host.off("move", this.follow);

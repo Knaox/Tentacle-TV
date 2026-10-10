@@ -37,6 +37,7 @@ import type { BrowserWindow, WebContents } from "electron";
 import { windowIconPath } from "../appIcon";
 import { lockNavigation } from "../security";
 import { pipCaption, type PipGesture, type PipMode, type PipPoint } from "./pipCaptions";
+import { setPipWindow } from "./pipHost";
 import { PIP_INSET, PIP_MIN_HEIGHT, PIP_MIN_WIDTH, pipWindowSize } from "./pipFrame";
 
 /** Le nom de cadre que la page donne à `window.open` — et qu'elle seule connaît. */
@@ -114,6 +115,7 @@ export function installPipWindow(contents: WebContents): void {
   contents.on("did-create-window", (child, details) => {
     if (details.frameName !== PIP_FRAME_NAME) return;
     pip = child;
+    setPipWindow(child);
     const caption = child.getTitle();
     // Le titre est l'identifiant de la colle : jamais celui de la page.
     child.on("page-title-updated", (event) => event.preventDefault());
@@ -129,8 +131,12 @@ export function installPipWindow(contents: WebContents): void {
     };
     child.once("ready-to-show", show);
     setTimeout(show, 500);
+    // À `close` et non `closed` : la fenêtre de mpv doit rejoindre la nôtre
+    // tant que la `NSWindow` du PiP existe encore (macOS).
+    child.once("close", () => setPipWindow(null));
     child.on("closed", () => {
       if (pip === child) pip = null;
+      setPipWindow(null);
     });
   });
 }
