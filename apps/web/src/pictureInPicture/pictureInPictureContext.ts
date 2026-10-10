@@ -45,6 +45,8 @@ export interface PictureInPicture {
   /**
    * Une navigation demandée par le lecteur pendant le PiP : un autre épisode y
    * reste, tout le reste le ferme — la page parcourue n'est jamais touchée.
+   * (Une lecture lancée par l'APPLICATION pendant le PiP s'y joue aussi :
+   * `PlayerStage`.)
    */
   navigateInPip: (to: string | -1, options?: NavigateOptions) => void;
 }

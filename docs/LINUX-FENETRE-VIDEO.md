@@ -967,7 +967,8 @@ bouton dans la barre du bas, juste avant le plein écran (« Lecture en incrusta
 point) ; la page ne quitte le lecteur qu'une fois la fenêtre PiP à l'écran, et au retour
 le lecteur reparaît SOUS le PiP avant sa fermeture ; cadre et contrôles effacés pendant
 un changement de taille ; molette proportionnelle (douce au pavé tactile) ; poignées
-élargies vers l'intérieur.
+élargies vers l'intérieur ; une lecture lancée pendant le PiP (fiche, carte) s'y joue,
+le PiP reste ouvert — comme sur YouTube.
 
 Ce que Linux n'a PAS : les animations d'entrée, de retour et de molette. C'est la colle
 qui place la fenêtre PiP (un client Wayland ne place pas ses fenêtres) ; `pip_restore`

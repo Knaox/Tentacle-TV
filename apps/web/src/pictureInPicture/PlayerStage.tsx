@@ -1,4 +1,4 @@
-import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Route, Routes, useLocation, useNavigate, type Location, type NavigateOptions } from "react-router-dom";
 import { Watch } from "../lazyPages";
 import { invoke } from "../desktop/bridge";
@@ -55,25 +55,38 @@ export function PlayerStage() {
   const navigate = useNavigate();
   const session = usePipSession();
   const onWatch = location.pathname.startsWith("/watch/");
-  const active = session !== null && !onWatch;
+  // Fermée par nous pour revenir au lecteur : ce n'est pas une perte.
+  const expandingRef = useRef(false);
+  /**
+   * Une lecture lancée PENDANT le PiP — une fiche, une carte, une autre
+   * lecture — s'y joue, et le PiP reste ouvert, comme sur YouTube (retour de
+   * Damien) : une route du lecteur neuve qui n'est ni celle que le PiP garde,
+   * ni le retour au lecteur. Le lecteur ne se montre pas en grand pour autant.
+   */
+  const launching = session !== null && onWatch && location.key !== session.location.key && !expandingRef.current;
+  const active = session !== null && (!onWatch || launching);
+  // La dernière page parcourue hors du lecteur : celle qu'une lecture lancée
+  // pendant le PiP rend aussitôt.
+  const lastPageRef = useRef<Location | null>(null);
+  useEffect(() => { if (!onWatch) lastPageRef.current = location; }, [onWatch, location]);
   const [container, setContainer] = useState<HTMLElement | null>(null);
   const [frame, setFrame] = useState<PipFrame>({ shadow: 0, bezel: 0 });
   const childRef = useRef<Window | null>(null);
   const sizeRef = useRef<PipSize | null>(null);
   const aspectRef = useRef(16 / 9);
-  // Fermée par nous pour revenir au lecteur : ce n'est pas une perte.
-  const expandingRef = useRef(false);
   // Réduire : la page ne quitte le lecteur qu'une fois la vidéo dans le PiP.
   const leavingRef = useRef(false);
 
-  // Une lecture demandée par la page — un autre titre, ou le retour au lecteur —
-  // prend le pas sur le PiP. Pas la route qu'il garde : la session naît sur
-  // elle, juste avant que `navigate(-1)` ne la quitte.
-  const sessionKey = session?.location.key ?? null;
-  // Pas pendant le retour au lecteur : le PiP s'y ferme lui-même (`expand`).
-  useEffect(() => {
-    if (onWatch && sessionKey !== null && location.key !== sessionKey && !expandingRef.current) endPipSession();
-  }, [onWatch, sessionKey, location.key]);
+  // La lecture lancée passe au PiP, et la page rend AVANT d'être peinte celle
+  // qu'on parcourait (`replace` : synchrone, là où `navigate(-1)` laisserait
+  // voir une image de la route du lecteur, vide hors du PiP).
+  useLayoutEffect(() => {
+    if (!launching) return;
+    updatePipSession({ location });
+    const back = lastPageRef.current;
+    if (back !== null) void navigate(pathOf(back), { replace: true, state: back.state });
+    else void navigate(-1);
+  }, [launching, location, navigate]);
 
   /**
    * Quitter le lecteur, une fois la fenêtre PiP à l'écran — la vidéo y est
@@ -195,6 +208,8 @@ export function PlayerStage() {
     navigateInPip,
   }), [active, session?.mode, container, frame, reduce, expand, close, setMode, resizeBy, gesture, navigateInPip]);
 
+  // Pendant `launching`, `location` est déjà la lecture lancée : le lecteur
+  // la charge DANS le PiP, la même instance — comme un épisode suivant.
   const playerLocation = onWatch ? location : session?.location ?? null;
   if (playerLocation === null) return null;
   return (
