@@ -971,7 +971,9 @@ Cinq conséquences à ne pas défaire :
 rendu par `PlayerStage` HORS des routes (la route `/watch` n'y rend rien) — c'est ce
 qui le fait survivre à la navigation ; une navigation demandée par le lecteur passe par
 `usePlayerNavigate` (pendant le PiP, l'épisode suivant y reste, toute autre sortie le
-ferme). La fenêtre PiP est ouverte par la page (`window.open`, portail React) et
+ferme) ; une lecture lancée depuis l'application PENDANT le PiP — fiche, carte, autre
+titre — s'y joue et le PiP reste ouvert, comme sur YouTube (`PlayerStage` : la page rend
+aussitôt celle qu'on parcourait). Seuls « Quitter » et le retour au lecteur le ferment. La fenêtre PiP est ouverte par la page (`window.open`, portail React) et
 fabriquée par la coquille ; la colle la reconnaît à son TITRE (`pip/pipCaptions.ts`,
 jamais traduit). **Jamais `app-region: drag` dans le PiP** : Electron n'y transmet plus
 RIEN à la page (ni survol, ni molette, ni double-clic) — glisser et tirer un coin sont
