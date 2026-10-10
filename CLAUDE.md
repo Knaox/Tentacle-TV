@@ -1003,6 +1003,10 @@ nôtre à la fenêtre PiP et retour (`video/macosPipParent.ts`), sans que mpv le
 et lecture gardés. La coquille y fait ce que la colle fait sous Linux — placement, modes,
 gestes suivis au curseur (`pip/pipShell.ts`, règles communes `pip/pipPlacement.ts`) ; le
 chemin Linux (titre lu par la colle) ne change pas. Relevé : même fichier, « Le PiP ».
+**Windows** : la fenêtre fille de mpv change de parent par `SetParent` (`video/videoWindow.ts`) —
+mpv suit seul son nouveau parent (crochet sur le thread de sa fenêtre parente) ; PiP sans
+cadre dessiné (`pipFrame.ts` : fenêtre rendue transparente à l'exécution, jamais fabriquée
+`transparent`), ancré = fenêtre POSSÉDÉE (`setParentWindow`).
 
 ### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
 
