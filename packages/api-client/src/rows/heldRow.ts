@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Une rangée TENUE ne bouge pas sous le curseur — LA règle de toutes les
@@ -11,9 +11,15 @@ import { useMemo, useState } from "react";
  * second clic tomberait sur elle.
  *
  * Les cartes gardées se rendent avec leur DERNIÈRE version quand la liste
- * l'a encore (progression, marqueurs) ; une carte qu'elle a perdue garde
- * celle de la photographie. Ce qui arrive pendant le survol attend le lâcher.
+ * l'a encore (progression, marqueurs) ; une carte qu'elle a perdue garde la
+ * dernière version qu'on lui a vue (`lastSeen`), à défaut celle de la
+ * photographie. Ce qui arrive pendant le survol attend le lâcher.
  * `drop` : ce qui part quand même tout de suite (« Ne plus me proposer »).
+ *
+ * Pourquoi `lastSeen` : « vu » dans Reprendre patche la liste (la carte passe
+ * à vu tout de suite), puis la liste redemandée au serveur ne la contient
+ * plus. Rendue avec la photographie, la carte REDEVENAIT non vue sous le
+ * curseur jusqu'au lâcher — le clic semblait n'avoir rien fait.
  */
 export function heldRowView<T>(
   items: readonly T[],
@@ -21,12 +27,15 @@ export function heldRowView<T>(
   held: boolean,
   keyOf: (item: T) => string,
   drop?: (item: T) => boolean,
+  lastSeen?: ReadonlyMap<string, T>,
 ): readonly T[] {
   if (!held) return items;
   const source = frozen ?? items;
   const latest = new Map<string, T>();
   for (const item of items) if (!latest.has(keyOf(item))) latest.set(keyOf(item), item);
-  return source.filter((item) => !drop?.(item)).map((item) => latest.get(keyOf(item)) ?? item);
+  return source
+    .filter((item) => !drop?.(item))
+    .map((item) => latest.get(keyOf(item)) ?? lastSeen?.get(keyOf(item)) ?? item);
 }
 
 /** La photographie de la rangée tant qu'elle est tenue ; `null` sinon. */
@@ -42,5 +51,16 @@ export function useRowSnapshot<T>(items: readonly T[], held: boolean): readonly 
 /** Les cartes à rendre d'une rangée, tenue (`held`) ou non. `keyOf` : stable (hors du rendu). */
 export function useHeldRowItems<T>(items: readonly T[], held: boolean, keyOf: (item: T) => string): readonly T[] {
   const frozen = useRowSnapshot(items, held);
-  return useMemo(() => heldRowView(items, frozen, held, keyOf), [items, frozen, held, keyOf]);
+  // La dernière version rendue de chaque carte, le temps du survol. Notée
+  // APRÈS le rendu (effet) : jamais d'état, donc rien à faire converger.
+  const lastSeen = useRef(new Map<string, T>());
+  useLayoutEffect(() => {
+    if (!held) {
+      lastSeen.current.clear();
+      return;
+    }
+    for (const item of items) lastSeen.current.set(keyOf(item), item);
+  }, [items, held, keyOf]);
+  const seen = lastSeen.current;
+  return useMemo(() => heldRowView(items, frozen, held, keyOf, undefined, seen), [items, frozen, held, keyOf, seen]);
 }
