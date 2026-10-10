@@ -20,8 +20,24 @@ export interface PipSize {
 export const PIP_MIN_WIDTH = 256;
 export const PIP_MIN_HEIGHT = 144;
 
-/** Un cran de molette. */
+/** Un cran de molette de souris (~100 pixels de défilement) : 10 %. */
 export const PIP_WHEEL_STEP = 1.1;
+
+/** Un geste de défilement, en pixels (`deltaMode` 1 : des lignes). */
+const LINE_PX = 40;
+
+/**
+ * Le facteur de taille d'un évènement de molette, PROPORTIONNEL au défilement :
+ * un cran de souris vaut 10 %, un pavé tactile — des dizaines de petits pas —
+ * agrandit d'un mouvement continu au lieu de sauter de 10 % à chaque pas. Un
+ * pincement (Chromium le rend en molette avec Ctrl) va trois fois plus vite.
+ */
+export function pipWheelFactor(deltaY: number, deltaMode: number, pinch: boolean): number {
+  const pixels = deltaMode === 1 ? deltaY * LINE_PX : deltaY;
+  const rate = (Math.log(PIP_WHEEL_STEP) / 100) * (pinch ? 3 : 1);
+  const factor = Math.exp(-pixels * rate);
+  return Math.min(Math.max(factor, 1 / PIP_WHEEL_STEP), PIP_WHEEL_STEP);
+}
 
 /**
  * Le cadre que la coquille dessine autour de la vidéo, rendu par `pip_open`

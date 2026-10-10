@@ -23,7 +23,13 @@ export interface PipFrame {
   bezel: number;
 }
 
-export const PIP_FRAME: PipFrame = { shadow: 14, bezel: 4 };
+/**
+ * Hors Linux, une marge de 4 seulement : le PiP s'y redimensionne par le
+ * système (`pipResizeGuard.ts`), dont la zone ne mord que ~8 points au coin et
+ * ~4 au bord depuis le bord de la FENÊTRE — avec 14, elle tombait tout entière
+ * dans l'ombre, hors du cadre visible.
+ */
+export const PIP_FRAME: PipFrame = process.platform === "linux" ? { shadow: 14, bezel: 4 } : { shadow: 4, bezel: 4 };
 
 /** De la fenêtre PiP à la vidéo, de chaque côté. */
 export const PIP_INSET = PIP_FRAME.shadow + PIP_FRAME.bezel;

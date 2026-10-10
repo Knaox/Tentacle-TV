@@ -103,9 +103,9 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
       // a, sous Linux, sa taille minimale ÉGALE à sa maximale, et KWin
       // refuserait. Aucun double-clic n'agrandit pour autant : faute de zone
       // `app-region: drag`, Chromium n'en reçoit aucun sur un « titre ».
-      // Ailleurs, la coquille la redimensionne seule (`setBounds`) : les bords
-      // du système, eux, ne garderaient pas le ratio de l'image.
-      resizable: !shellDrivesPip(),
+      // Ailleurs, le système la redimensionne, ratio et bornes tenus par la
+      // coquille (`pipResizeGuard.ts`) : son curseur paraît sans clic.
+      resizable: true,
       // macOS : le premier clic sur le PiP, application inactive, va au bouton
       // visé — sans cela il ne ferait qu'activer la fenêtre.
       acceptFirstMouse: true,

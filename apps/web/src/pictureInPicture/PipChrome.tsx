@@ -14,8 +14,15 @@ import { pipFrameRadii, type PipFrame } from "./pipGeometry";
  * filet prend le dégradé de la marque, en fondu d'OPACITÉ seulement.
  */
 
-/** L'ombre tient dans la marge de 14 px (`pip/pipFrame.ts`) : rien de coupé net au bord de la fenêtre. */
-const SHADOW = "0 6px 14px -4px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.45)";
+/**
+ * L'ombre tient dans la marge (`pip/pipFrame.ts`) : rien de coupé net au bord
+ * de la fenêtre. 14 px sous Linux ; 4 ailleurs, où le système tient le bord
+ * pour le redimensionnement — une ombre serrée.
+ */
+function shadowFor(margin: number): string {
+  if (margin >= 12) return "0 6px 14px -4px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.45)";
+  return `0 1px ${String(Math.max(1, margin - 1))}px rgba(0, 0, 0, 0.5)`;
+}
 const BEZEL = "linear-gradient(180deg, #1c1828 0%, #0c0a12 100%)";
 
 /**
@@ -38,7 +45,7 @@ export const PipChrome = memo(function PipChrome({ frame, lit }: { frame: PipFra
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">
       {/* L'ombre : son propre fond est transparent, elle ne peint que dehors. */}
-      <div className="absolute" style={{ ...box, boxShadow: SHADOW }} />
+      <div className="absolute" style={{ ...box, boxShadow: shadowFor(frame.shadow) }} />
       <div className="absolute" style={{ ...box, ...ring(frame.bezel, BEZEL) }} />
       <div className="absolute" style={{ ...box, boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.06)" }} />
       <div

@@ -18,7 +18,7 @@
  */
 
 import type { BrowserWindow } from "electron";
-import { currentPipWindow, onPipWindowChange } from "../pip/pipHost";
+import { currentPipWindow, onPipRestacked, onPipWindowChange } from "../pip/pipHost";
 import { PIP_INSET } from "../pip/pipFrame";
 import { fromHandle, msg, type Rect } from "./objc";
 
@@ -36,6 +36,7 @@ interface PipParent {
 export class MacosPipParent {
   private pip: PipParent | null = null;
   private unsubscribe: (() => void) | null = null;
+  private unsubscribeRestack: (() => void) | null = null;
 
   constructor(
     private readonly moved: (from: unknown, to: unknown) => void,
@@ -46,12 +47,15 @@ export class MacosPipParent {
   start(): void {
     if (this.unsubscribe !== null) return;
     this.unsubscribe = onPipWindowChange((window) => this.adopt(window));
+    this.unsubscribeRestack = onPipRestacked(this.follow);
     this.adopt(currentPipWindow());
   }
 
   stop(): void {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.unsubscribeRestack?.();
+    this.unsubscribeRestack = null;
     this.release();
     this.pip = null;
   }

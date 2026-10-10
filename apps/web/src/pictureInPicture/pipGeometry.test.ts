@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  PIP_MIN_HEIGHT, PIP_MIN_WIDTH, initialPipSize, parsePipFrame, pipAspect, pipFrameRadii, pipVideoSize, scalePipSize,
+  PIP_MIN_HEIGHT, PIP_MIN_WIDTH, initialPipSize, parsePipFrame, pipAspect, pipFrameRadii, pipVideoSize, pipWheelFactor, scalePipSize,
 } from "./pipGeometry";
 
 /**
@@ -85,5 +85,23 @@ describe("le cadre", () => {
   it("la vidéo, c'est la fenêtre moins le cadre de chaque côté", () => {
     expect(pipVideoSize(516, 306, { shadow: 14, bezel: 4 })).toEqual({ width: 480, height: 270 });
     expect(pipVideoSize(480, 270, { shadow: 0, bezel: 0 })).toEqual({ width: 480, height: 270 });
+  });
+});
+
+describe("pipWheelFactor", () => {
+  it("un cran de souris vaut 10 %, dans les deux sens", () => {
+    expect(pipWheelFactor(-100, 0, false)).toBeCloseTo(1.1, 5);
+    expect(pipWheelFactor(100, 0, false)).toBeCloseTo(1 / 1.1, 5);
+  });
+
+  it("un pas de pavé tactile reste petit — le mouvement est continu", () => {
+    const factor = pipWheelFactor(-4, 0, false);
+    expect(factor).toBeGreaterThan(1);
+    expect(factor).toBeLessThan(1.005);
+  });
+
+  it("des lignes comptent comme 40 pixels, et rien ne dépasse un cran", () => {
+    expect(pipWheelFactor(-3, 1, false)).toBeCloseTo(1.1, 5);
+    expect(pipWheelFactor(-30, 0, true)).toBeGreaterThan(pipWheelFactor(-30, 0, false));
   });
 });

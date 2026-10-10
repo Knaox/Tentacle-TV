@@ -9,8 +9,9 @@
  *
  * - flottant : coin bas-droit de la zone utile de l'écran de l'application,
  *   au-dessus des autres fenêtres, sur tous les bureaux — plein écran compris ;
- * - ancré : coin bas-droit de la zone de contenu de l'application, fenêtre
- *   FILLE de celle-ci — elle la suit, reste devant elle, se réduit avec elle ;
+ * - ancré : coin bas-droit de la zone de contenu de l'application ; il la
+ *   suit, reste devant elle, se réduit avec elle — sans en être une fenêtre
+ *   fille, qui perdrait la souris (`pipDocking.ts`) ;
  * - glisser, tirer un coin : la page annonce le geste (`pip_gesture`) et tient
  *   le bouton ; la coquille suit le curseur le temps du geste, une image sur
  *   deux à 120 Hz — rien entre deux gestes.
@@ -25,6 +26,8 @@ import { bannerInset } from "../macosTitleBar";
 import type { PipGesture, PipMode, PipPoint } from "./pipCaptions";
 import { PIP_INSET, PIP_MAX_SHARE, pipWindowSize } from "./pipFrame";
 import { PIP_GROW_MS, PIP_SHRINK_MS, easeOutCubic, interpolateBox, pictureIn, windowAround } from "./pipMotion";
+import { PipDocking } from "./pipDocking";
+import { installResizeGuard } from "./pipResizeGuard";
 import { cornerPlacement, dragTo, resizeInPlace, stretchFrom, type Box, type PipCorner } from "./pipPlacement";
 
 /** Le curseur suivi pendant un geste, et le pas d'une animation — une image à 60 Hz. */
@@ -61,6 +64,10 @@ export class PipShell {
   private gesture: Gesture | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private animation: { timer: ReturnType<typeof setInterval>; done: () => void } | null = null;
+  /** Ancré : devant l'application, avec elle — `pipDocking.ts`. */
+  private docking: PipDocking | null = null;
+  /** Le redimensionnement par le système — `pipResizeGuard.ts`. */
+  private readonly unguard: () => void;
   /** Le coin où le PiP se pose à son entrée — `enter`. */
   private readonly rest: Box;
 
@@ -82,6 +89,11 @@ export class PipShell {
     host.on("resize", this.hostChanged);
     host.on("move", this.hostChanged);
     this.applyMode();
+    this.unguard = installResizeGuard(pip, aspect, {
+      mode: () => this.mode,
+      dockArea: () => this.host.getContentBounds(),
+      maxVideoWidth: () => this.maxVideoWidth(),
+    });
     this.rest = cornerPlacement(pip.getBounds(), this.cornerArea());
     this.setBounds(reducedMotion() ? this.rest : windowAround(pictureIn(this.playerArea(), aspect)));
   }
@@ -144,6 +156,9 @@ export class PipShell {
   dispose(): void {
     this.endGesture();
     this.stopAnimation();
+    this.docking?.stop();
+    this.docking = null;
+    this.unguard();
     if (this.host.isDestroyed()) return;
     this.host.off("resize", this.hostChanged);
     this.host.off("move", this.hostChanged);
@@ -225,19 +240,21 @@ export class PipShell {
    * Flottant : au-dessus des fenêtres ordinaires, sur tous les bureaux, plein
    * écran compris. `skipTransformProcessType` : sans lui, Electron fait passer
    * l'application en « agent » le temps du geste — l'icône du Dock clignote.
-   * Ancré : fille de l'application, qu'elle suit et devant qui elle reste.
+   * Ancré : devant l'application seulement, qu'il suit — `pipDocking.ts`.
    */
   private applyMode(): void {
     if (this.pip.isDestroyed()) return;
+    this.docking?.stop();
+    this.docking = null;
     if (this.mode === "floating") {
-      this.pip.setParentWindow(null);
       this.pip.setAlwaysOnTop(true, "floating");
       this.pip.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
       return;
     }
     this.pip.setVisibleOnAllWorkspaces(false, { skipTransformProcessType: true });
-    this.pip.setAlwaysOnTop(false);
-    if (!this.host.isDestroyed()) this.pip.setParentWindow(this.host);
+    if (this.host.isDestroyed()) return;
+    this.docking = new PipDocking(this.pip, this.host);
+    this.docking.start();
   }
 
   private displayOf(box: Box): Electron.Display {

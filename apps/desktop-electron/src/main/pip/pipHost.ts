@@ -36,3 +36,20 @@ export function onPipWindowChange(listener: Listener): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
+
+const restackListeners = new Set<() => void>();
+
+/**
+ * Le PiP a changé de niveau (`pipDocking.ts`) : la fenêtre de mpv, sa fille,
+ * doit le reprendre tout de suite — la veille ne le ferait qu'un dixième de
+ * seconde plus tard, et la vidéo flotterait un instant devant une autre
+ * application.
+ */
+export function notifyPipRestacked(): void {
+  for (const listener of restackListeners) listener();
+}
+
+export function onPipRestacked(listener: () => void): () => void {
+  restackListeners.add(listener);
+  return () => restackListeners.delete(listener);
+}
