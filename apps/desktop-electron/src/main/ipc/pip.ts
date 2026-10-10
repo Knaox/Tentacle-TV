@@ -11,7 +11,8 @@
  * - Linux, Wayland avec la colle KWin, qui colle mpv à la fenêtre PiP ;
  * - macOS au montage « fenêtre » (Apple Silicon) : la fenêtre Metal de mpv
  *   change de parent (`video/macosPipParent.ts`). Pas le montage GL d'Intel,
- *   où la vidéo est une vue DANS notre fenêtre — elle ne se déplace pas.
+ *   où la vidéo est une vue DANS notre fenêtre — elle ne se déplace pas ;
+ * - Windows : la fenêtre fille de mpv change de parent (`video/videoWindow.ts`).
  */
 
 import { z } from "zod";
@@ -37,6 +38,7 @@ const GESTURE = z.object({
 /** Le PiP est-il possible dans ce montage ? */
 export function pipSupported(): boolean {
   if (process.platform === "darwin") return decideMacosMontage(process.arch, process.env) === "fenetre";
+  if (process.platform === "win32") return true;
   return process.platform === "linux" && linuxMontage() === "wayland" && linuxWindowing() === "libre";
 }
 

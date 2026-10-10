@@ -25,11 +25,13 @@
  */
 
 import type { BrowserWindow } from "electron";
+import { currentPipWindow, onPipWindowChange } from "../pip/pipHost";
 import {
   alignBelow,
   disarm,
   nativeHandle,
   neverThrow,
+  reparent,
   trace,
   findMpvWindow,
 } from "./win32";
@@ -60,6 +62,9 @@ export class VideoWindow {
   private search: ReturnType<typeof setInterval> | null = null;
   private attached = false;
   private alignTimer: ReturnType<typeof setTimeout> | null = null;
+  /** La fenêtre PiP, quand la vidéo y est — sinon `null`, la nôtre. */
+  private pip: { window: BrowserWindow; hwnd: bigint } | null = null;
+  private unwatchPip: (() => void) | null = null;
 
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
   private readonly follow = (): void => this.scheduleAlign();
@@ -83,6 +88,9 @@ export class VideoWindow {
     this.host.on("resize", this.follow);
     this.host.on("enter-full-screen", this.follow);
     this.host.on("leave-full-screen", this.follow);
+    // Le PiP — déjà ouvert peut-être (épisode suivant enchaîné dedans).
+    this.unwatchPip = onPipWindowChange((window) => this.movePip(window));
+    this.pip = this.pipOf(currentPipWindow());
 
     let tries = 0;
     this.search = setInterval(() => {
@@ -91,6 +99,9 @@ export class VideoWindow {
         if (found) {
           this.stopSearch();
           this.mpvHwnd = found;
+          // mpv crée sa fenêtre sous la nôtre (`--wid`) : en plein PiP, elle
+          // rejoint aussitôt la fenêtre PiP.
+          if (this.pip !== null) neverThrow("fenetre video vers le PiP", () => reparent(found, this.pip!.hwnd));
           this.align();
           trace(`fenetre mpv trouvee, desarmement ${this.harden() ? "ok" : "REFUSE"}`);
         } else if (++tries > POLL_MAX) {
@@ -111,7 +122,28 @@ export class VideoWindow {
   align(): void {
     if (!this.mpvHwnd) return;
     // Le calage part aussi d'un minuteur : la garde vaut pour les deux chemins.
-    neverThrow("calage de la fenetre video", () => alignBelow(this.mpvHwnd, this.parent));
+    neverThrow("calage de la fenetre video", () => alignBelow(this.mpvHwnd, this.pip?.hwnd ?? this.parent));
+  }
+
+  /**
+   * Le PiP s'ouvre ou se ferme (à son `close`, quand sa fenêtre existe
+   * encore) : la fenêtre de mpv change de parent — même instance, même sortie
+   * vidéo. Le PiP n'a ni liseré ni ombre dessinés sous Windows
+   * (`pip/pipFrame.ts`) : la vidéo occupe tout son rectangle client, ce que
+   * mpv tient de lui-même (`reparent`).
+   */
+  private movePip(window: BrowserWindow | null): void {
+    this.pip?.window.off("resize", this.follow);
+    this.pip = this.pipOf(window);
+    this.pip?.window.on("resize", this.follow);
+    if (!this.mpvHwnd) return;
+    const to = this.pip?.hwnd ?? this.parent;
+    neverThrow("changement de parent de la fenetre video", () => reparent(this.mpvHwnd, to));
+    trace(`fenetre video ${this.pip === null ? "rendue a la page" : "dans le PiP"}`);
+  }
+
+  private pipOf(window: BrowserWindow | null): { window: BrowserWindow; hwnd: bigint } | null {
+    return window === null || window.isDestroyed() ? null : { window, hwnd: nativeHandle(window) };
   }
 
   /** Désarme la fenêtre vidéo. `false` si elle n'est pas encore connue. */
@@ -131,6 +163,10 @@ export class VideoWindow {
       this.host.off("leave-full-screen", this.follow);
       this.attached = false;
     }
+    this.unwatchPip?.();
+    this.unwatchPip = null;
+    if (this.pip !== null && !this.pip.window.isDestroyed()) this.pip.window.off("resize", this.follow);
+    this.pip = null;
     this.mpvHwnd = 0n;
   }
 

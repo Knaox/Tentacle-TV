@@ -44,6 +44,8 @@ import { PIP_INSET, PIP_MIN_HEIGHT, PIP_MIN_WIDTH, pipWindowSize } from "./pipFr
 /** Le nom de cadre que la page donne à `window.open` — et qu'elle seule connaît. */
 export const PIP_FRAME_NAME = "tentacle-pip";
 
+const WINDOWS = process.platform === "win32";
+
 /** Le délai dans lequel la page doit ouvrir la fenêtre annoncée. */
 const ARM_DELAY_MS = 3000;
 
@@ -95,10 +97,16 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
       ...(icon === null ? {} : { icon }),
       // Transparente À LA CONSTRUCTION, comme la fenêtre principale
       // (`linux/window.ts`) : posée après, la page peindrait du noir sur mpv.
-      transparent: true,
-      backgroundColor: "#00000000",
+      // Sauf sous Windows, comme la fenêtre principale là aussi : le drapeau y
+      // retire les bords et le redimensionnement ; la surface de Chromium y
+      // devient transparente par `setBackgroundColor`, À L'EXÉCUTION
+      // (`installPipWindow`), et la vidéo — fenêtre FILLE — se voit dessous.
+      transparent: !WINDOWS,
+      backgroundColor: WINDOWS ? "#000000" : "#00000000",
       frame: false,
-      hasShadow: false,
+      // L'ombre d'une fenêtre transparente coûte le GPU sur macOS (CLAUDE.md,
+      // « Coût GPU ») ; sous Windows, c'est celle du système, avec ses coins.
+      hasShadow: WINDOWS,
       // La colle la redimensionne aux poignées : une fenêtre non redimensionnable
       // a, sous Linux, sa taille minimale ÉGALE à sa maximale, et KWin
       // refuserait. Aucun double-clic n'agrandit pour autant : faute de zone
@@ -131,6 +139,7 @@ export function installPipWindow(contents: WebContents): void {
     child.on("page-title-updated", (event) => event.preventDefault());
     child.setTitle(caption);
     lockNavigation(child.webContents);
+    if (WINDOWS) child.setBackgroundColor("#00000000");
     const host = BrowserWindow.fromWebContents(contents);
     // Placé AVANT d'être montré, et avant que la vidéo n'y passe : jamais un
     // PiP — ni une image — qui saute de place.

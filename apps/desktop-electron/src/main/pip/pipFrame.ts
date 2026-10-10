@@ -24,12 +24,24 @@ export interface PipFrame {
 }
 
 /**
- * Hors Linux, une marge de 4 seulement : le PiP s'y redimensionne par le
- * système (`pipResizeGuard.ts`), dont la zone ne mord que ~8 points au coin et
- * ~4 au bord depuis le bord de la FENÊTRE — avec 14, elle tombait tout entière
- * dans l'ombre, hors du cadre visible.
+ * macOS : une marge de 4 seulement — le PiP s'y redimensionne par le système
+ * (`pipResizeGuard.ts`), dont la zone ne mord que ~8 points au coin et ~4 au
+ * bord depuis le bord de la FENÊTRE ; avec 14, elle tombait tout entière dans
+ * l'ombre, hors du cadre visible.
+ *
+ * Windows : RIEN. La fenêtre PiP n'y est pas transparente — une fenêtre
+ * fabriquée `transparent` y perd ses bords (cf. `window.ts`) —, la page ne
+ * peut donc rien dessiner AUTOUR de la vidéo : ce qu'elle ne couvre pas serait
+ * noir, pas le bureau. Coins arrondis, ombre et bords de redimensionnement
+ * sont ceux du système (Windows 11), et mpv occupe tout le rectangle client —
+ * ce qu'il tient de lui-même (`video/win32.ts`, `reparent`).
  */
-export const PIP_FRAME: PipFrame = process.platform === "linux" ? { shadow: 14, bezel: 4 } : { shadow: 4, bezel: 4 };
+export const PIP_FRAME: PipFrame =
+  process.platform === "linux"
+    ? { shadow: 14, bezel: 4 }
+    : process.platform === "win32"
+      ? { shadow: 0, bezel: 0 }
+      : { shadow: 4, bezel: 4 };
 
 /** De la fenêtre PiP à la vidéo, de chaque côté. */
 export const PIP_INSET = PIP_FRAME.shadow + PIP_FRAME.bezel;

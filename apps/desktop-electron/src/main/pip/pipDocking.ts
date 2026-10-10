@@ -20,7 +20,14 @@
  * - fenêtre principale réduite ou masquée : le PiP aussi ; il revient avec
  *   elle. La position, elle, suit déjà ses déplacements (`pipShell.ts`).
  *
- * # Le curseur relayé, application inactive
+ * # Sous Windows : fenêtre POSSÉDÉE
+ *
+ * Rien de tout cela : une fenêtre possédée (`setParentWindow`, le
+ * « propriétaire » de Win32) reste devant sa propriétaire, se réduit avec
+ * elle, et reçoit la souris comme toute autre — Windows livre les mouvements à
+ * la fenêtre sous le curseur, active ou non.
+ *
+ * # Le curseur relayé, application inactive (macOS)
  *
  * Au niveau normal, application inactive, macOS ne livre plus au PiP qu'UN
  * mouvement à l'entrée (mesuré ; la molette, elle, arrive) — au niveau
@@ -61,6 +68,11 @@ export class PipDocking {
   ) {}
 
   start(): void {
+    if (process.platform === "win32") {
+      this.pip.setAlwaysOnTop(false);
+      this.pip.setParentWindow(this.host);
+      return;
+    }
     for (const window of [this.host, this.pip]) {
       window.on("focus", this.sync);
       window.on("blur", this.sync);
@@ -77,6 +89,10 @@ export class PipDocking {
   }
 
   stop(): void {
+    if (process.platform === "win32") {
+      if (!this.pip.isDestroyed()) this.pip.setParentWindow(null);
+      return;
+    }
     this.stopRelay();
     app.off("did-become-active", this.sync);
     app.off("did-resign-active", this.sync);
