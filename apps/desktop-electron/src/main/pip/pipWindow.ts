@@ -129,6 +129,24 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
   };
 }
 
+/**
+ * macOS : un clic dans le PiP lui donne le focus — et le premier clic suivant
+ * dans la fenêtre principale ne servait plus qu'à la réactiver, sans rien
+ * faire (retour de Damien). Le focus revient donc aussitôt à la fenêtre
+ * principale : le PiP reçoit ses clics, glissers et bords sans l'avoir
+ * (`acceptFirstMouse`), et l'application répond du premier coup. Jamais si
+ * elle est réduite, cachée ou sur un autre bureau — la ramener changerait de
+ * bureau. Windows et Linux livrent le premier clic d'une fenêtre inactive :
+ * rien à faire.
+ */
+function returnFocus(host: BrowserWindow): void {
+  if (host.isDestroyed() || host.isMinimized() || !host.isVisible() || host.isFocused()) return;
+  // Import paresseux : `macosSpace.ts` charge le runtime Objective-C.
+  void import("../video/macosSpace").then(({ onActiveSpace }) => {
+    if (!host.isDestroyed() && !host.isFocused() && onActiveSpace(host)) host.focus();
+  });
+}
+
 /** Branche la fabrication sur la fenêtre principale. */
 export function installPipWindow(contents: WebContents): void {
   contents.on("did-create-window", (child, details) => {
@@ -144,6 +162,7 @@ export function installPipWindow(contents: WebContents): void {
     // Placé AVANT d'être montré, et avant que la vidéo n'y passe : jamais un
     // PiP — ni une image — qui saute de place.
     if (shellDrivesPip() && host !== null) shell = new PipShell(child, host, pipMode, pipAspect);
+    if (process.platform === "darwin" && host !== null) child.on("focus", () => setImmediate(() => returnFocus(host)));
     setPipWindow(child);
     // Montrée sans prendre le focus : l'utilisateur continue dans l'application
     // (la colle rend de toute façon l'activation à l'hôte).

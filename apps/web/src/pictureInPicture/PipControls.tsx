@@ -65,7 +65,10 @@ export function PipControls(props: PipControlsProps) {
   const { frame } = pip;
   const radii = pipFrameRadii(frame);
 
-  // Le clavier de la fenêtre PiP : Espace met en pause, comme dans le lecteur.
+  // Espace met en pause, comme dans le lecteur — dans la fenêtre PiP, et dans
+  // l'application : sur macOS, le PiP rend le focus à la fenêtre principale
+  // dès qu'on l'a cliqué (`pip/pipWindow.ts`, retour de Damien). Là, seulement
+  // quand rien n'y a le focus : Espace y active un bouton, s'écrit dans un champ.
   useEffect(() => {
     if (view === null) return;
     const onKey = (e: KeyboardEvent) => {
@@ -73,8 +76,19 @@ export function PipControls(props: PipControlsProps) {
       e.preventDefault();
       onTogglePause();
     };
+    const onAppKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.repeat) return;
+      const active = document.activeElement;
+      if (active !== null && active !== document.body) return;
+      e.preventDefault();
+      onTogglePause();
+    };
     view.addEventListener("keydown", onKey);
-    return () => view.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onAppKey);
+    return () => {
+      view.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onAppKey);
+    };
   }, [view, onTogglePause]);
 
   return (
