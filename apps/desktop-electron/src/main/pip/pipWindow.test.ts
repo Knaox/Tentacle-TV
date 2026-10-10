@@ -10,7 +10,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("electron", () => ({ app: { getAppPath: () => "/x", isPackaged: false }, shell: {}, session: {} }));
 vi.mock("../appIcon", () => ({ windowIconPath: () => null }));
 
-import { PIP_CAPTIONS } from "./pipCaptions";
+import { PIP_CAPTIONS, pipCommandCaption } from "./pipCaptions";
+import { PIP_SHRINK_MS } from "./pipMotion";
 import { PIP_INSET } from "./pipFrame";
 import { PIP_FRAME_NAME, armPip, closePip, pipWindowOpen } from "./pipWindow";
 
@@ -31,7 +32,7 @@ describe("pipWindowOpen", () => {
     expect(pipWindowOpen(asked(PIP_FRAME_NAME))).toEqual({ action: "deny" });
   });
 
-  it("accepte l'annoncée UNE fois, transparente, sans cadre, sous le titre de la colle", () => {
+  it("accepte l'annoncée UNE fois, transparente, sans cadre, sous le titre de la colle — qui en anime l'entrée", () => {
     armPip("floating", 480, 270);
     const response = pipWindowOpen(asked(PIP_FRAME_NAME));
     expect(response?.action).toBe("allow");
@@ -40,7 +41,8 @@ describe("pipWindowOpen", () => {
       // La vidéo, et le cadre de chaque côté (liseré et ombre).
       width: 480 + 2 * PIP_INSET,
       height: 270 + 2 * PIP_INSET,
-      title: PIP_CAPTIONS.floating,
+      // Sous Linux, la colle lit dans le titre de naissance l'entrée à animer.
+      title: pipCommandCaption("floating", { kind: "enter", ms: PIP_SHRINK_MS }),
       transparent: true,
       frame: false,
       skipTaskbar: true,
@@ -54,7 +56,7 @@ describe("pipWindowOpen", () => {
     armPip("docked", 358, 201);
     const response = pipWindowOpen(asked(PIP_FRAME_NAME));
     const options = response?.action === "allow" ? response.overrideBrowserWindowOptions : undefined;
-    expect(options?.title).toBe(PIP_CAPTIONS.docked);
+    expect(options?.title?.startsWith(`${PIP_CAPTIONS.docked} [enter `)).toBe(true);
     expect(options?.alwaysOnTop).toBe(false);
   });
 

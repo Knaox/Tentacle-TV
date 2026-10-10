@@ -25,7 +25,7 @@ import { screen, systemPreferences, type BrowserWindow } from "electron";
 import { bannerInset } from "../macosTitleBar";
 import type { PipGesture, PipMode, PipPoint } from "./pipCaptions";
 import { PIP_INSET, PIP_MAX_SHARE, pipWindowSize } from "./pipFrame";
-import { PIP_GROW_MS, PIP_RESIZE_MS, PIP_SHRINK_MS, easeOutCubic, interpolateBox, pictureIn, windowAround } from "./pipMotion";
+import { PIP_GROW_MS, PIP_MAX_STEP_MS, PIP_RESIZE_MS, PIP_SHRINK_MS, easeOutCubic, interpolateBox, pictureIn, windowAround } from "./pipMotion";
 import { PipBounds, sameBox } from "./pipBounds";
 import { PipDocking } from "./pipDocking";
 import { followHostVisibility } from "./pipHostVisibility";
@@ -34,15 +34,9 @@ import { cornerPlacement, dragTo, resizeInPlace, stretchFrom, type Box, type Pip
 
 /** Le curseur suivi pendant un geste, et le pas d'une animation — une image à 60 Hz. */
 const FRAME_MS = 16;
-/**
- * Un pas d'animation n'avance jamais de plus de deux images : après un trou du
- * thread principal (l'apparition du PiP en coûte ~60 ms), l'animation REPREND
- * où elle en était au lieu de sauter d'un quart de sa course (mesuré).
- */
-const MAX_STEP_MS = 2 * FRAME_MS + 2;
 
 /** Le réglage « Réduire les animations » du système : le PiP saute alors à sa place. */
-function reducedMotion(): boolean {
+export function reducedMotion(): boolean {
   try {
     return systemPreferences.getAnimationSettings().prefersReducedMotion;
   } catch {
@@ -249,7 +243,7 @@ export class PipShell {
       const step = (): void => {
         if (this.pip.isDestroyed()) return this.stopAnimation();
         const now = Date.now();
-        elapsed += Math.min(now - last, MAX_STEP_MS);
+        elapsed += Math.min(now - last, PIP_MAX_STEP_MS);
         last = now;
         const t = Math.min(1, elapsed / duration);
         this.bounds.set(interpolateBox(from, to, easeOutCubic(t)));

@@ -64,11 +64,13 @@
  * l'hôte : KWin lui applique alors sa règle, à elle aussi.
  */
 
-import { PIP_CAPTIONS, PIP_GESTURE_CLOSE, PIP_GESTURE_OPEN, PIP_MARGIN } from "../pip/pipCaptions";
+import { PIP_MAX_STEP_MS } from "../pip/pipMotion";
+import { PIP_CAPTIONS, PIP_COMMAND_KINDS, PIP_GESTURE_CLOSE, PIP_GESTURE_OPEN, PIP_MARGIN } from "../pip/pipCaptions";
 import { PIP_FRAME, PIP_INSET, PIP_MAX_SHARE, PIP_MIN_HEIGHT, PIP_MIN_WIDTH } from "../pip/pipFrame";
 import { ADOPTION_QML } from "./glueQml/adoptionQml";
 import { FOLLOW_QML } from "./glueQml/followQml";
 import { PIP_GESTURE_QML } from "./glueQml/pipGestureQml";
+import { PIP_MOTION_QML } from "./glueQml/pipMotionQml";
 import { PIP_QML } from "./glueQml/pipQml";
 
 const HEAD = `import QtQml as Qml
@@ -88,6 +90,21 @@ Qml.QtObject {
     property string pipGesture: ""
     property var gestureStart: null
     property var constraints: []
+    // Le mouvement animé du PiP en cours, et le dernier joué
+    // (glueQml/pipMotionQml.ts) : une image à 60 Hz, puis un temps de
+    // tassement où une taille livrée en retard ne recale rien.
+    property var anim: null
+    property string pipCommand: ""
+    property var motionTick: Qml.Timer {
+        interval: 16
+        repeat: true
+        onTriggered: root.stepPipMotion()
+    }
+    property var motionSettle: Qml.Timer {
+        interval: 300
+        repeat: false
+        onTriggered: root.anim = null
+    }
     // Rattrapage du PREMIER coller : l'écriture de géométrie est asynchrone
     // et windowAdded précède le mappage effectif — la copie posée à l'adoption
     // peut être perdue, et sans elle mpv reste à sa taille de naissance
@@ -111,7 +128,7 @@ Qml.QtObject {
         return w.resourceClass === "mpv" || w.resourceClass === __VIDEO_CLASS__;
     }`;
 
-const TEMPLATE = `${HEAD}${FOLLOW_QML}${PIP_QML}${PIP_GESTURE_QML}${ADOPTION_QML}}
+const TEMPLATE = `${HEAD}${FOLLOW_QML}${PIP_QML}${PIP_GESTURE_QML}${PIP_MOTION_QML}${ADOPTION_QML}}
 `;
 
 /**
@@ -127,6 +144,8 @@ export function glueTemplate(pid: number, videoClass: string | null = null): str
     .replaceAll("__PIP_DOCKED__", JSON.stringify(PIP_CAPTIONS.docked))
     .replaceAll("__PIP_GESTURE_OPEN__", JSON.stringify(PIP_GESTURE_OPEN))
     .replaceAll("__PIP_GESTURE_CLOSE__", JSON.stringify(PIP_GESTURE_CLOSE))
+    .replaceAll("__PIP_COMMAND_KINDS__", JSON.stringify(PIP_COMMAND_KINDS))
+    .replaceAll("__PIP_MAX_STEP__", String(PIP_MAX_STEP_MS))
     .replaceAll("__PIP_MARGIN__", String(PIP_MARGIN))
     .replaceAll("__PIP_SHADOW__", String(PIP_FRAME.shadow))
     .replaceAll("__PIP_INSET__", String(PIP_INSET))

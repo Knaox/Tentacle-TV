@@ -43,10 +43,19 @@ export const PIP_GESTURE_QML = `
         root.gestureStart = null;
     }
     // Le titre du PiP a changé de geste : on commence à suivre le curseur, ou on cesse.
+    // Un mouvement animé (« enter », « restore », « size ») n'est pas un
+    // geste : la colle le joue une fois (pipMotionQml.ts).
     function followGesture() {
         var gesture = root.pip === null ? "" : root.gestureOf(root.pip);
+        if (root.isCommand(gesture)) {
+            root.endGesture();
+            root.runCommand(gesture);
+            return;
+        }
+        root.pipCommand = "";
         if (gesture === root.pipGesture) return;
         root.endGesture();
+        if (gesture !== "") root.stopPipMotion();
         // Ancré, le PiP est le coin de l'application : il ne se glisse pas.
         if (gesture === "" || (gesture.indexOf("move") === 0 && !root.floating())) return;
         var g = root.pip.frameGeometry;

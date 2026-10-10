@@ -13,8 +13,10 @@ export const FOLLOW_QML = `
         if (root.video === null) return;
         if (root.pip !== null) {
             // La vidéo DANS le cadre du PiP : le liseré de la page recouvre ses
-            // coins carrés, l'ombre déborde autour (pip/pipFrame.ts).
-            var p = root.pip.frameGeometry;
+            // coins carrés, l'ombre déborde autour (pip/pipFrame.ts). La
+            // géométrie DEMANDÉE : sous Wayland, la confirmée arrive en retard
+            // — l'image sautait au coin avant l'entrée animée.
+            var p = root.currentPipRect();
             var i = __PIP_INSET__;
             root.video.frameGeometry = Qt.rect(p.x + i, p.y + i, p.width - 2 * i, p.height - 2 * i);
             // Ancré, l'ordre tient par les contraintes : relever la paire la

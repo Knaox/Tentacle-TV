@@ -52,6 +52,31 @@ export function pipCaption(mode: PipMode, gesture: PipGesture | null, grab?: Pip
 }
 
 /**
+ * Les mouvements que la colle ANIME sous Linux — ceux que la coquille anime
+ * elle-même ailleurs (`pipShell.ts`, `pipMotion.ts`) : l'entrée (l'image
+ * glisse du lecteur à son coin), le retour au lecteur, une nouvelle taille
+ * (molette). Portés par le même titre que les gestes, entre crochets, avec
+ * leur durée : 0 = la place d'un coup (« Réduire les animations »).
+ * `size` donne la taille de la FENÊTRE (cadre compris).
+ */
+export type PipCommand =
+  | { kind: "enter"; ms: number }
+  | { kind: "restore"; ms: number }
+  | { kind: "size"; width: number; height: number; ms: number };
+
+/** Le premier mot d'un mouvement, pour la colle : tout le reste est un geste. */
+export const PIP_COMMAND_KINDS = ["enter", "restore", "size"] as const;
+
+export function pipCommandCaption(mode: PipMode, command: PipCommand): string {
+  const ms = String(Math.max(0, Math.round(command.ms)));
+  const body =
+    command.kind === "size"
+      ? `size ${String(Math.round(command.width))} ${String(Math.round(command.height))} ${ms}`
+      : `${command.kind} ${ms}`;
+  return `${PIP_CAPTIONS[mode]}${PIP_GESTURE_OPEN}${body}${PIP_GESTURE_CLOSE}`;
+}
+
+/**
  * La marge du PiP au bord de l'écran (flottant) ou de l'application (ancré),
  * en points logiques, mesurée au cadre VISIBLE (ombre exclue) : celle du PiP
  * natif de KDE (`PictureInPictureMargin`, 20 par défaut dans kwin.kcfg).

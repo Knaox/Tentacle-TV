@@ -45,7 +45,7 @@ vi.mock("./kwinScripting", () => ({
 }));
 
 import { KwinGlue, glueTemplate } from "./kwinGlue";
-import { PIP_CAPTIONS, PIP_MARGIN, pipCaption } from "../pip/pipCaptions";
+import { PIP_CAPTIONS, PIP_MARGIN, pipCaption, pipCommandCaption } from "../pip/pipCaptions";
 import { PIP_FRAME, PIP_INSET } from "../pip/pipFrame";
 
 beforeEach(() => {
@@ -239,7 +239,7 @@ describe("gabaritColle — le PiP", () => {
   it("la vidéo suit le PiP à la place de l'hôte, et ne relève la paire que flottante", () => {
     const qml = glueTemplate(1);
     const glue = qml.slice(qml.indexOf("function glue()"), qml.indexOf("function wantedConstraints()"));
-    expect(glue).toContain("var p = root.pip.frameGeometry;");
+    expect(glue).toContain("var p = root.currentPipRect();");
     // DANS le cadre : le liseré de la page recouvre les coins carrés de mpv.
     expect(glue).toContain(`var i = ${String(PIP_INSET)};`);
     expect(glue).toContain("root.video.frameGeometry = Qt.rect(p.x + i, p.y + i, p.width - 2 * i, p.height - 2 * i);");
@@ -274,7 +274,7 @@ describe("gabaritColle — le PiP", () => {
     expect(qml).toContain("root.floating() ? root.workArea(root.host.output) : root.host.clientGeometry");
     // Une taille changée garde fixe le coin le plus proche du bord, jamais
     // pendant un geste — de KWin ou de la page, qui place la fenêtre lui-même.
-    expect(qml).toContain('if (resized && root.pipGesture === "" && !root.pip.move && !root.pip.resize) {');
+    expect(qml).toContain('if (resized && root.pipGesture === "" && root.anim === null && !root.pip.move && !root.pip.resize) {');
   });
 
   it("rend la main au PiP flottant quand la vidéo est activée", () => {
@@ -319,6 +319,25 @@ describe("gabaritColle — le PiP", () => {
     const stretch = qml.slice(qml.indexOf("function stretchPip("));
     expect(stretch).toContain("root.pipRect = Qt.rect(left ? s.x + s.width - w : s.x, top ? s.y + s.height - h : s.y, w, h);");
     expect(stretch).toContain("var aspect = w0 / h0;");
+  });
+
+  it("anime l'entrée, le retour et la molette comme la coquille ailleurs — commandés par le titre", () => {
+    const qml = glueTemplate(1);
+    expect(pipCommandCaption("floating", { kind: "enter", ms: 280 })).toBe(`${PIP_CAPTIONS.floating} [enter 280]`);
+    expect(pipCommandCaption("docked", { kind: "size", width: 400.4, height: 230, ms: 120 })).toBe(
+      `${PIP_CAPTIONS.docked} [size 400 230 120]`,
+    );
+    // Un mouvement n'est pas un geste : il ne suit pas le curseur.
+    const follow = qml.slice(qml.indexOf("function followGesture()"), qml.indexOf("function followCursor()"));
+    expect(follow.indexOf("root.runCommand(gesture);")).toBeLessThan(follow.indexOf("cursorPosChanged.connect"));
+    expect(qml).toContain('return ["enter","restore","size"].indexOf(kind) >= 0;');
+    // L'entrée part de l'image du lecteur, la courbe décélère, les pas sont bornés.
+    expect(qml).toContain("var from = root.pictureRect();");
+    expect(qml).toContain("var e = 1 - Math.pow(1 - t, 3);");
+    expect(qml).toContain("a.elapsed += Math.min(now - a.last, 34);");
+    // Fermé, le PiP emporte son animation.
+    const closed = qml.slice(qml.indexOf("function pipClosed()"));
+    expect(closed).toContain("root.stopPipMotion();");
   });
 
   it("aucune fonction ne porte le nom du signal qu'engendre une propriété — le composant ne se chargerait pas", () => {

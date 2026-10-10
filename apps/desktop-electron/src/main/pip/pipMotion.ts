@@ -19,6 +19,14 @@ export const PIP_GROW_MS = 220;
 /** Un cran de molette : la taille y glisse, sans traîner derrière la main. */
 export const PIP_RESIZE_MS = 120;
 
+/**
+ * Un pas d'animation n'avance jamais de plus de deux images (à 60 Hz) : après
+ * un trou du thread principal (l'apparition du PiP en coûte ~60 ms),
+ * l'animation REPREND où elle en était au lieu de sauter d'un quart de sa
+ * course (mesuré). La coquille et la colle KWin la tiennent toutes deux.
+ */
+export const PIP_MAX_STEP_MS = 34;
+
 /** Décélération franche — l'image « se pose » (ease-out cubique). */
 export function easeOutCubic(t: number): number {
   const clamped = Math.min(Math.max(t, 0), 1);

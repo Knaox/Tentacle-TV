@@ -980,6 +980,10 @@ RIEN à la page (ni survol, ni molette, ni double-clic) — glisser et tirer un 
 des gestes que la page annonce dans ce titre et que la colle exécute en suivant le
 curseur (`glueQml/pipGestureQml.ts`). La vidéo est collée DANS le cadre de la fenêtre PiP
 (`pip/pipFrame.ts` : liseré opaque qui arrondit les coins de mpv, marge d'ombre).
+Les mouvements ANIMÉS (entrée depuis l'image du lecteur, retour, molette) sont joués par la colle
+(`glueQml/pipMotionQml.ts`), demandés par le même titre (`[enter 280]`, `[restore 220]`, `[size L H 120]`),
+sur les règles de `pip/pipMotion.ts` que la coquille applique ailleurs ; ils partent de la géométrie DEMANDÉE
+(`pipRect`), jamais de `frameGeometry` relue — sous Wayland elle arrive en retard.
 La vidéo passe en plein écran AVEC l'hôte (règle « plein écran actif »
 de KWin, écran par écran) ; un script KWin se lance par `run` PUIS `Scripting.start`
 (KWin réattribue les identifiants). Détail : `docs/LINUX-FENETRE-VIDEO.md`, « Le PiP ».

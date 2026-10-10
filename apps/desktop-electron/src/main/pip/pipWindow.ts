@@ -36,9 +36,10 @@
 import { BrowserWindow, type WebContents } from "electron";
 import { windowIconPath } from "../appIcon";
 import { lockNavigation } from "../security";
-import { pipCaption, type PipGesture, type PipMode, type PipPoint } from "./pipCaptions";
+import { pipCaption, pipCommandCaption, type PipGesture, type PipMode, type PipPoint } from "./pipCaptions";
 import { setPipWindow } from "./pipHost";
-import { PipShell, shellDrivesPip } from "./pipShell";
+import { PIP_GROW_MS, PIP_RESIZE_MS, PIP_SHRINK_MS } from "./pipMotion";
+import { PipShell, reducedMotion, shellDrivesPip } from "./pipShell";
 import { PIP_INSET, PIP_MIN_HEIGHT, PIP_MIN_WIDTH, pipWindowSize } from "./pipFrame";
 
 /** Le nom de cadre que la page donne à `window.open` — et qu'elle seule connaît. */
@@ -93,7 +94,11 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
       height: size.height,
       minWidth: PIP_MIN_WIDTH + 2 * PIP_INSET,
       minHeight: PIP_MIN_HEIGHT + 2 * PIP_INSET,
-      title: pipCaption(wanted.mode, null),
+      // Sous Linux, le titre de naissance demande aussi à la colle l'entrée
+      // animée : l'image glisse du lecteur à son coin (`pipMotionQml.ts`).
+      title: shellDrivesPip() || reducedMotion()
+        ? pipCaption(wanted.mode, null)
+        : pipCommandCaption(wanted.mode, { kind: "enter", ms: PIP_SHRINK_MS }),
       ...(icon === null ? {} : { icon }),
       // Transparente À LA CONSTRUCTION, comme la fenêtre principale
       // (`linux/window.ts`) : posée après, la page peindrait du noir sur mpv.
@@ -217,8 +222,10 @@ export function resizePip(width: number, height: number): boolean {
     shell.resize(width, height);
     return true;
   }
+  // La colle glisse jusqu'à la nouvelle taille, comme la coquille ailleurs.
   const size = pipWindowSize(width, height);
-  pip.setSize(size.width, size.height);
+  const ms = reducedMotion() ? 0 : PIP_RESIZE_MS;
+  pip.setTitle(pipCommandCaption(pipMode, { kind: "size", width: size.width, height: size.height, ms }));
   return true;
 }
 
@@ -251,13 +258,22 @@ export function closePipWindow(): boolean {
   return true;
 }
 
+/** Le temps laissé à la colle, après la course, pour poser la dernière image. */
+const RESTORE_SETTLE_MS = 40;
+
 /**
- * Le retour au lecteur : la coquille ramène l'image à sa place dans le lecteur
- * avant que la page ne ferme le PiP. Rien à faire sous Linux (la colle).
+ * Le retour au lecteur : l'image regagne sa place dans le lecteur avant que la
+ * page ne ferme le PiP — menée par la coquille, ou sous Linux par la colle,
+ * qui lit la demande dans le titre ; la course a une durée fixe, attendue ici.
  */
 export async function restorePip(): Promise<boolean> {
-  if (shell === null) return false;
-  await shell.restore();
+  if (shell !== null) {
+    await shell.restore();
+    return true;
+  }
+  if (pip === null || pip.isDestroyed() || reducedMotion()) return false;
+  pip.setTitle(pipCommandCaption(pipMode, { kind: "restore", ms: PIP_GROW_MS }));
+  await new Promise((done) => setTimeout(done, PIP_GROW_MS + RESTORE_SETTLE_MS));
   return true;
 }
 

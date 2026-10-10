@@ -64,10 +64,28 @@ export const PIP_QML = `
     function placePip() {
         if (root.pip === null || root.host === null) return;
         var s = root.pip.frameGeometry;
+        root.pipRect = root.cornerRect(s.width, s.height);
+        root.pip.frameGeometry = root.pipRect;
+    }
+    function cornerRect(width, height) {
+        if (root.host === null) return null;
         var a = root.floating() ? root.workArea(root.host.output) : root.host.clientGeometry;
         var m = __PIP_MARGIN__ - __PIP_SHADOW__;
-        root.pipRect = Qt.rect(a.x + a.width - s.width - m, a.y + a.height - s.height - m, s.width, s.height);
-        root.pip.frameGeometry = root.pipRect;
+        return Qt.rect(a.x + a.width - width - m, a.y + a.height - height - m, width, height);
+    }
+    // Une nouvelle taille, flottant : le coin le plus proche du bord de l'écran
+    // reste fixe, et le cadre visible ne déborde jamais de la zone utile —
+    // l'ombre, si.
+    function anchoredRect(before, width, height) {
+        var a = root.workArea(root.pip.output);
+        var sh = __PIP_SHADOW__;
+        var right = before.x + before.width / 2 > a.x + a.width / 2;
+        var bottom = before.y + before.height / 2 > a.y + a.height / 2;
+        var x = right ? before.x + before.width - width : before.x;
+        var y = bottom ? before.y + before.height - height : before.y;
+        x = Math.max(a.x - sh, Math.min(x, a.x + a.width - width + sh));
+        y = Math.max(a.y - sh, Math.min(y, a.y + a.height - height + sh));
+        return Qt.rect(x, y, width, height);
     }
     function pipMoved() {
         if (root.pip === null) return;
@@ -75,24 +93,16 @@ export const PIP_QML = `
         var before = root.pipRect;
         root.pipRect = Qt.rect(g.x, g.y, g.width, g.height);
         var resized = before !== null && (before.width !== g.width || before.height !== g.height);
-        // Un geste de la page place lui-même la fenêtre (pipGestureQml.ts).
-        if (resized && root.pipGesture === "" && !root.pip.move && !root.pip.resize) {
+        // Un geste de la page, un mouvement animé (pipMotionQml.ts) placent
+        // eux-mêmes la fenêtre.
+        if (resized && root.pipGesture === "" && root.anim === null && !root.pip.move && !root.pip.resize) {
             if (!root.floating()) {
                 root.placePip();
                 return;
             }
-            // Le coin le plus proche du bord de l'écran reste fixe, et le cadre
-            // visible ne déborde jamais de la zone utile — l'ombre, si.
-            var a = root.workArea(root.pip.output);
-            var sh = __PIP_SHADOW__;
-            var right = before.x + before.width / 2 > a.x + a.width / 2;
-            var bottom = before.y + before.height / 2 > a.y + a.height / 2;
-            var x = right ? before.x + before.width - g.width : before.x;
-            var y = bottom ? before.y + before.height - g.height : before.y;
-            x = Math.max(a.x - sh, Math.min(x, a.x + a.width - g.width + sh));
-            y = Math.max(a.y - sh, Math.min(y, a.y + a.height - g.height + sh));
-            if (x !== g.x || y !== g.y) {
-                root.pipRect = Qt.rect(x, y, g.width, g.height);
+            var r = root.anchoredRect(before, g.width, g.height);
+            if (r.x !== g.x || r.y !== g.y) {
+                root.pipRect = r;
                 root.pip.frameGeometry = root.pipRect;
                 return;
             }
@@ -100,7 +110,7 @@ export const PIP_QML = `
         root.glue();
     }
     function hostMoved() {
-        if (root.pip !== null && !root.floating()) root.placePip();
+        if (root.pip !== null && !root.floating() && root.anim === null) root.placePip();
         root.glue();
     }
     // Flottant, la vidéo suit la réduction du PiP (un raccourci de KWin est la
@@ -149,6 +159,8 @@ export const PIP_QML = `
         var p = root.pip;
         if (p === null) return;
         root.endGesture();
+        root.stopPipMotion();
+        root.pipCommand = "";
         root.pip = null;
         root.pipMode = "";
         root.pipRect = null;
