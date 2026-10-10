@@ -168,9 +168,40 @@ macOS au montage `fenetre` seulement. La page ne change pas : même fenêtre ouv
 - **la coquille place le PiP et suit ses gestes** (`pip/pipShell.ts`, règles portées de
   la colle dans `pip/pipPlacement.ts`) : flottant au coin bas-droit de la zone utile,
   niveau « floating », sur tous les bureaux (`skipTransformProcessType`, sinon l'icône du
-  Dock clignote) ; ancré, fenêtre FILLE de l'application ; glisser et coins en suivant le
-  curseur le temps du geste. Fenêtre non redimensionnable par le système (ses bords ne
-  gardent pas le ratio), `acceptFirstMouse` (le premier clic va au bouton).
+  Dock clignote) ; ancré — le mode de DÉPART, toujours — au coin de l'application ;
+  glisser en suivant le curseur le temps du geste ; `acceptFirstMouse` (le premier clic
+  va au bouton).
+
+### Deuxième passe — retours de Damien (10.10.2026)
+
+Banc : faux serveur Jellyfin (Node, film HDR de 30 min), vrai lecteur, souris RÉELLE
+simulée par CoreGraphics (`CGEventPost`, l'outil a l'accès d'accessibilité), curseur
+système relevé par `NSCursor.currentSystem`, écran filmé à 60 i/s (`screencapture -v`).
+
+- **Ancré ≠ fenêtre fille.** Fille de la fenêtre principale, la fenêtre PiP ne recevait
+  qu'UN `mousemove` puis un `mouseout` : ni survol ni molette, app active ou non. Elle
+  est désormais autonome (`pip/pipDocking.ts`) : niveau « floating » tant que l'app est
+  active, normal et posée juste au-dessus de sa fenêtre sinon — suivi par
+  `did-become-active` / `did-resign-active` : AUCUNE fenêtre ne reçoit `blur` quand une
+  autre app passe devant (mesuré). Cachée avec la fenêtre principale.
+- **App inactive, niveau normal** : macOS ne livre plus qu'un mouvement à l'entrée (la
+  molette, si). Le processus principal relaie alors le curseur (`sendInputEvent`, 30 Hz,
+  seulement dans ce cas). Au niveau « floating », tout arrive.
+- **Coins** : les poignées de la page n'ont de curseur que fenêtre « key » — la flèche
+  restait au survol d'un coin. Le PiP se redimensionne par le SYSTÈME
+  (`pip/pipResizeGuard.ts` : `setAspectRatio` + taille d'appoint, bornes, coin d'ancrage
+  gardé par `will-resize`). Zone native mesurée : ~8 points au coin, ~4 au bord, depuis
+  le bord de la fenêtre — d'où une marge d'ombre de 4 points hors Linux (`pipFrame.ts`).
+  Curseur diagonal sans clic quand l'app est active ; inactive, la flèche (macOS ne
+  laisse pas une app en arrière-plan changer le curseur), mais le premier glisser agit.
+- **Fluidité** : la page ne quitte plus le lecteur avant que le PiP soit à l'écran (la
+  vidéo restait ~180 ms cachée sous la page opaque) ; au retour, le lecteur reparaît
+  SOUS le PiP avant sa fermeture ; `NSWindowAnimationBehaviorNone` (zoom d'apparition,
+  rétrécissement de 250 ms à la fermeture) ; un pas d'animation n'avance que de deux
+  images après un trou ; et le cadre de la page s'efface pendant tout changement de
+  taille — la fenêtre de mpv garde une à deux images de retard (le système montre
+  l'image précédente tant que mpv n'en a pas peint une nouvelle), filmé : un liseré plus
+  petit que l'image à chaque pas.
 
 Mesuré au banc (Electron du worktree, profil jetable, dégradé PQ `max-cll=10000,4000`,
 pilotage CDP par `pip_open` + `window.open`) :
