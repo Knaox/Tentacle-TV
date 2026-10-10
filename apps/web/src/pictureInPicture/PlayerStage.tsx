@@ -91,7 +91,7 @@ export function PlayerStage() {
   useLayoutEffect(() => {
     if (!launching) return;
     launchedKeyRef.current = location.key;
-    updatePipSession({ location });
+    updatePipSession({ location, launched: true });
     const back = lastPageRef.current;
     if (back !== null) void navigate(pathOf(back), { replace: true, state: back.state });
     else void navigate(-1);
@@ -133,6 +133,7 @@ export function PlayerStage() {
     const current = getPipSession();
     if (current === null) return;
     expandingRef.current = true;
+    updatePipSession({ returning: true });
     // L'image regagne d'abord sa place dans le lecteur (la coquille l'anime ;
     // rien sous Linux, où la commande rend la main aussitôt).
     try { await invoke("pip_restore"); } catch { /* retour sans animation */ }

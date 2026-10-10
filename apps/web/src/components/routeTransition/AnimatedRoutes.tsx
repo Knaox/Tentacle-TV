@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Routes, useLocation } from "react-router-dom";
+import { Routes } from "react-router-dom";
 import { useMirror } from "../../mirror/useFormFactor";
+import { usePageLocation } from "../../pictureInPicture/usePageLocation";
 import { RouteExit, type RouteExitCustom } from "./RouteExit";
 import { routeGroupKey } from "./routeKeys";
 
@@ -18,7 +19,8 @@ import { routeGroupKey } from "./routeKeys";
  * miroir, qui a sa propre grammaire de navigation.
  */
 export function AnimatedRoutes({ children }: { children: ReactNode }) {
-  const location = useLocation();
+  // Pas `useLocation` : une lecture lancée pendant le PiP ne quitte pas la page.
+  const location = usePageLocation();
   const mirror = useMirror();
   const group = routeGroupKey(location.pathname);
   const instant = mirror || group === "watch";
