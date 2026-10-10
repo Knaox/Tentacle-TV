@@ -44,7 +44,15 @@ export default {
   sceneFamilyMember: "Ana",
   sceneFamilyGuest: "Lea",
 
-  // 1.25.0
+  // 1.28.0
+  v1_28_0_pip_title: "Picture-in-picture",
+  v1_28_0_pip_body: "The button next to fullscreen, or the I key, shrinks the video into a corner while you keep browsing Tentacle. Hover it to control playback, pull a corner or turn the mouse wheel to resize it, and undock it to keep it on top of everything. On macOS (Apple silicon), Windows and Linux (KDE).",
+  v1_28_0_pipLaunch_title: "Play something else, stay on the page",
+  v1_28_0_pipLaunch_body: "Start a movie or an episode during picture-in-picture: it loads and plays right there, and the page you're on doesn't move. The next episode plays there too.",
+  v1_28_0_watched_title: "“Watched” checks under your cursor",
+  v1_28_0_watched_body: "On Home, “Watched” checks the moment you click it, and the card stays put while your mouse is on the row: it only leaves once the pointer moves away.",
+
+  // 1.26.0
   v1_26_0_family_title: "Family",
   v1_26_0_family_body: "In Settings › Family, invite accounts from your server or add guest profiles for your Apple TVs, each with an optional PIN. The family is shared: every member sees all of it, and you decide who can create guests, and which guests can request movies — in their own name.",
   v1_26_0_familyInvite_title: "Family invitations",

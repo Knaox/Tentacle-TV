@@ -16,7 +16,7 @@ et Linux reçoivent l'ensemble.
 ## [1.28.0]
 ### FR
 - **Lecture en incrustation** : le bouton à côté du plein écran, ou la touche I, réduit la vidéo dans une petite fenêtre rangée dans le coin de l'application, et vous continuez à parcourir Tentacle — sur macOS (puces Apple), Windows et Linux (KDE)
-- **Dans l'incrustation** : les contrôles paraissent au survol — pause, -10 / +30 s, retour au lecteur (ou double-clic), fermer ; tirez un coin ou tournez la molette pour la redimensionner, détachez-la pour la garder au-dessus de tout, et l'épisode suivant s'y enchaîne
+- **Dans l'incrustation** : les contrôles paraissent au survol — pause, -10 / +30 s, retour au lecteur (ou double-clic), fermer ; tirez un coin ou tournez la molette pour la redimensionner, détachez-la pour la garder au-dessus de tout ; l'épisode suivant, comme toute lecture lancée depuis l'application, s'y charge et s'y joue
 - **Navigation** : les pages se quittent en fondu au lieu de disparaître d'un coup
 - **Accueil** : « Vu » se coche dès le clic sur une carte, qui ne quitte sa rangée qu'une fois la souris partie
 - **Plein écran (Linux, KDE)** : la barre des tâches et les notifications ne passent plus par-dessus la vidéo quand vous cliquez sur une fenêtre d'un autre écran
@@ -25,7 +25,7 @@ et Linux reçoivent l'ensemble.
 
 ### EN
 - **Picture-in-picture**: the button next to fullscreen, or the I key, shrinks the video into a small window docked in the app's corner while you keep browsing Tentacle — on macOS (Apple silicon), Windows and Linux (KDE)
-- **In picture-in-picture**: the controls show on hover — pause, -10 / +30 s, back to the player (or double-click), close; pull a corner or turn the mouse wheel to resize it, undock it to keep it on top of everything, and the next episode plays right there
+- **In picture-in-picture**: the controls show on hover — pause, -10 / +30 s, back to the player (or double-click), close; pull a corner or turn the mouse wheel to resize it, undock it to keep it on top of everything; the next episode, like anything you start from the app, loads and plays right there
 - **Navigation**: pages now fade out instead of vanishing at once
 - **Home**: “Watched” checks the moment you click it on a card, which only leaves its row once your mouse moves away
 - **Fullscreen (Linux, KDE)**: the taskbar and notifications no longer show over the video when you click a window on another screen

@@ -48,7 +48,15 @@ export default {
   sceneFamilyMember: "Ana",
   sceneFamilyGuest: "Léa",
 
-  // 1.25.0
+  // 1.28.0
+  v1_28_0_pip_title: "La lecture en incrustation",
+  v1_28_0_pip_body: "Le bouton à côté du plein écran, ou la touche I, réduit la vidéo dans un coin : vous continuez à parcourir Tentacle. Survolez-la pour la piloter, tirez un coin ou tournez la molette pour la redimensionner, détachez-la pour la garder au-dessus de tout. Sur macOS (puces Apple), Windows et Linux (KDE).",
+  v1_28_0_pipLaunch_title: "Une autre lecture, sans quitter la page",
+  v1_28_0_pipLaunch_body: "Lancez un film ou un épisode pendant l'incrustation : il s'y charge et s'y joue, et la page où vous êtes ne bouge pas. L'épisode suivant s'y enchaîne aussi.",
+  v1_28_0_watched_title: "« Vu » se coche sous le curseur",
+  v1_28_0_watched_body: "Sur l'accueil, « Vu » se coche dès le clic, et la carte reste à sa place tant que la souris est sur la rangée : elle ne s'en va qu'une fois le pointeur parti.",
+
+  // 1.26.0
   v1_26_0_family_title: "La Famille",
   v1_26_0_family_body: "Dans Réglages › Famille, invitez des comptes du serveur ou ajoutez des profils invités pour vos Apple TV, chacun avec son code PIN facultatif. La famille est partagée : chaque membre la voit en entier, et vous décidez qui peut créer des invités, et quels invités peuvent demander des films — à leur propre nom.",
   v1_26_0_familyInvite_title: "Les invitations à rejoindre une famille",
