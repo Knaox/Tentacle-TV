@@ -61,6 +61,8 @@ let pip: BrowserWindow | null = null;
 let shell: PipShell | null = null;
 /** Le mode de la fenêtre ouverte : le titre d'un geste le reprend. */
 let pipMode: PipMode = "floating";
+/** Le ratio de la vidéo annoncée : le PiP naît sur l'image du lecteur (`pipShell.ts`). */
+let pipAspect = 16 / 9;
 
 /** La page annonce l'ouverture (taille de la VIDÉO) : la prochaine fenêtre PiP sera acceptée. */
 export function armPip(mode: PipMode, width: number, height: number): void {
@@ -81,6 +83,7 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
   const icon = windowIconPath();
   const size = pipWindowSize(wanted.width, wanted.height);
   pipMode = wanted.mode;
+  pipAspect = wanted.width / wanted.height;
   return {
     action: "allow",
     overrideBrowserWindowOptions: {
@@ -123,15 +126,16 @@ export function installPipWindow(contents: WebContents): void {
   contents.on("did-create-window", (child, details) => {
     if (details.frameName !== PIP_FRAME_NAME) return;
     pip = child;
-    setPipWindow(child);
     const caption = child.getTitle();
     // Le titre est l'identifiant de la colle : jamais celui de la page.
     child.on("page-title-updated", (event) => event.preventDefault());
     child.setTitle(caption);
     lockNavigation(child.webContents);
     const host = BrowserWindow.fromWebContents(contents);
-    // Placé AVANT d'être montré : jamais un PiP qui saute de place.
-    if (shellDrivesPip() && host !== null) shell = new PipShell(child, host, pipMode);
+    // Placé AVANT d'être montré, et avant que la vidéo n'y passe : jamais un
+    // PiP — ni une image — qui saute de place.
+    if (shellDrivesPip() && host !== null) shell = new PipShell(child, host, pipMode, pipAspect);
+    setPipWindow(child);
     // Montrée sans prendre le focus : l'utilisateur continue dans l'application
     // (la colle rend de toute façon l'activation à l'hôte).
     let shown = false;
@@ -139,6 +143,7 @@ export function installPipWindow(contents: WebContents): void {
       if (shown || child.isDestroyed()) return;
       shown = true;
       child.showInactive();
+      shell?.enter();
     };
     child.once("ready-to-show", show);
     setTimeout(show, 500);
@@ -194,6 +199,16 @@ export function setPipGesture(gesture: PipGesture | null, grab?: PipPoint): bool
     return true;
   }
   pip.setTitle(pipCaption(pipMode, gesture, grab));
+  return true;
+}
+
+/**
+ * Le retour au lecteur : la coquille ramène l'image à sa place dans le lecteur
+ * avant que la page ne ferme le PiP. Rien à faire sous Linux (la colle).
+ */
+export async function restorePip(): Promise<boolean> {
+  if (shell === null) return false;
+  await shell.restore();
   return true;
 }
 

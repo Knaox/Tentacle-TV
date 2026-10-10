@@ -114,13 +114,15 @@ export const COMMANDS = [
   "download_update",
   "install_linux_update",
 
-  // Le PiP (Linux, colle KWin) : la page annonce la fenêtre qu'elle ouvre, en
-  // change le mode ou la taille, annonce le geste que la colle exécute — voir
-  // `ipc/pip.ts` et `pip/pipWindow.ts`.
+  // Le PiP (Linux et sa colle KWin, macOS) : la page annonce la fenêtre qu'elle
+  // ouvre, en change le mode ou la taille, annonce le geste que la colle ou la
+  // coquille exécute, demande le retour animé au lecteur — voir `ipc/pip.ts`
+  // et `pip/pipWindow.ts`.
   "pip_open",
   "pip_mode",
   "pip_resize",
   "pip_gesture",
+  "pip_restore",
 
   // Greffons — dépôt du document à servir sous son origine dédiée.
   // Propre à Electron : Tauri monte les greffons en `srcdoc`, la question de

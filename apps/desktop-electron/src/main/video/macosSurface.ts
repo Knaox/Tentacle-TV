@@ -58,8 +58,8 @@ export class MacosSurface implements VideoSurface {
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
   private readonly follow = (): void => this.clock.schedule();
 
-  /** Le PiP, où la fenêtre de mpv change de parent — voir `macosPipParent.ts`. */
-  private readonly pip = new MacosPipParent((from, to) => this.moveTo(from, to), this.follow);
+  /** Le PiP (`macosPipParent.ts`) : recalée SUR-LE-CHAMP, il s'anime image par image. */
+  private readonly pip = new MacosPipParent((from, to) => this.moveTo(from, to), () => this.align());
 
   /**
    * ⚠️ Le plein écran ne se contente PAS d'un recalage : macOS emmène la fenêtre

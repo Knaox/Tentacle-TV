@@ -18,7 +18,7 @@ import { z } from "zod";
 import { linuxMontage, linuxWindowing } from "../linux/session";
 import { PIP_GESTURES } from "../pip/pipCaptions";
 import { PIP_FRAME } from "../pip/pipFrame";
-import { armPip, resizePip, setPipGesture, setPipMode } from "../pip/pipWindow";
+import { armPip, resizePip, restorePip, setPipGesture, setPipMode } from "../pip/pipWindow";
 import { decideMacosMontage } from "../video/macosMontage";
 import { CommandRegistry } from "./registry";
 
@@ -61,5 +61,10 @@ export function registerPipCommands(registry: CommandRegistry): void {
     .add("pip_gesture", {
       schema: GESTURE,
       run: ({ gesture, grab }) => setPipGesture(gesture, grab),
+    })
+    // Rend la main une fois l'image revenue à sa place dans le lecteur.
+    .add("pip_restore", {
+      schema: z.object({}).passthrough(),
+      run: () => restorePip(),
     });
 }

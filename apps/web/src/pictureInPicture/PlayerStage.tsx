@@ -90,9 +90,12 @@ export function PlayerStage() {
   const expand = useCallback(async () => {
     const current = getPipSession();
     if (current === null) return;
-    // La fenêtre PiP d'abord : la vidéo revient sous l'application encore opaque,
-    // jamais un instant de bureau vu au travers.
     expandingRef.current = true;
+    // L'image regagne d'abord sa place dans le lecteur (la coquille l'anime ;
+    // rien sous Linux, où la commande rend la main aussitôt).
+    try { await invoke("pip_restore"); } catch { /* retour sans animation */ }
+    // La fenêtre PiP ensuite : la vidéo revient sous l'application encore opaque,
+    // jamais un instant de bureau vu au travers.
     childRef.current?.close();
     try {
       const fullscreen = await invoke<boolean>("player_fullscreen_enter");
