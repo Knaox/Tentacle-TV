@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { focusableIn } from "./Modal";
+import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
 
 export type SheetPlacement = "right" | "bottom";
 
@@ -128,8 +129,8 @@ export function Sheet({
         <motion.div
           className="fixed inset-0 z-[90]"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.18 } }}
-          exit={{ opacity: 0, transition: { duration: 0.12 } }}
+          animate={{ opacity: 1, transition: { duration: duration.fast } }}
+          exit={{ opacity: 0, transition: { duration: exitDuration(duration.fast) } }}
           onClick={onClose}
           role="presentation"
           // Scrim de sheet : reste sombre dans les deux thèmes (standard iOS) — ne pas migrer.
@@ -156,8 +157,8 @@ export function Sheet({
               overflowY: "auto",
             }}
             initial={initialOffset}
-            animate={{ ...settledOffset, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }}
-            exit={{ ...initialOffset, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
+            animate={{ ...settledOffset, transition: { duration: duration.slow, ease: easeOut } }}
+            exit={{ ...initialOffset, transition: { duration: exitDuration(duration.slow), ease: easeIn } }}
             onClick={(e) => e.stopPropagation()}
           >
             {children}

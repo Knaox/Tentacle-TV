@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { TopNav } from "./nav/TopNav";
 import { TopNavMobile } from "./nav/TopNavMobile";
 import { MobileTabBar } from "./MobileTabBar";
@@ -8,6 +8,7 @@ import { NoticeHost } from "./notices/NoticeHost";
 import { useLeaderboardOpen, closeLeaderboard } from "./easterEggs/logoEggStore";
 import { useMirror } from "../mirror/useFormFactor";
 import { FamilyInvitationHost } from "../family/FamilyInvitationHost";
+import { AnimatedOutlet } from "./routeTransition/AnimatedOutlet";
 
 /** Chargée à la demande : le bureau ne télécharge rien du miroir. */
 const MirrorLayout = lazy(() => import("../mirror/shell/MirrorLayout").then((m) => ({ default: m.MirrorLayout })));
@@ -74,7 +75,7 @@ function DesktopLayout() {
           paddingRight: "env(safe-area-inset-right, 0px)",
         } : undefined}
       >
-        <Outlet />
+        <AnimatedOutlet />
       </div>
 
       {/* Les avertissements surgissants (serveur, clé admin, TMDB), sous l'en-tête. */}

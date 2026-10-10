@@ -24,7 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { inlineCompletion } from "@tentacle-tv/shared";
 import { useIsMobile } from "../../../hooks/useIsMobile";
-import { easeOut } from "../../../theme/motion";
+import { easeOut, duration } from "../../../theme/motion";
 import { optionPath, stepIndex } from "../omniboxModel";
 import { pushRecentSearch } from "../recentSearches";
 import { useSeasonRequest } from "../../seasons/SeasonRequestProvider";
@@ -161,7 +161,7 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
         className="absolute inset-0 bg-[rgba(var(--scrim-page-rgb),0.62)] backdrop-blur-[6px]"
         initial={reduced ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.16, ease: easeOut }}
+        transition={{ duration: duration.fast, ease: easeOut }}
         onMouseDown={onClose}
       />
       <div
@@ -177,7 +177,7 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
             : "pointer-events-auto flex max-h-[min(78vh,720px)] w-full max-w-[760px] flex-col overflow-hidden rounded-[20px] border border-line-subtle bg-surface-modal shadow-[var(--shadow-modal)]"}
           initial={reduced ? false : { opacity: 0, y: -10, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.2, ease: easeOut }}
+          transition={{ duration: duration.base, ease: easeOut }}
         >
           <OmniboxInput
             ref={inputRef}

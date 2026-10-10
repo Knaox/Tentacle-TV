@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
 
 export type DropdownPlacement = "bottom-end" | "bottom-start" | "top-end" | "top-start";
 
@@ -24,13 +25,13 @@ const VARIANTS = {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { duration: 0.15, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { duration: duration.fast, ease: easeOut },
   },
   exit: {
     opacity: 0,
     scale: 0.97,
     y: -4,
-    transition: { duration: 0.1, ease: [0.4, 0, 1, 1] as const },
+    transition: { duration: exitDuration(duration.fast), ease: easeIn },
   },
 };
 

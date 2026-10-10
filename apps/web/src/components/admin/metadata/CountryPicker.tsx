@@ -6,6 +6,7 @@ import { cls } from "../../../pages/adminUtils";
 import { CountryFlag } from "./CountryFlag";
 import { useCountryFlags } from "./countryFlags";
 import { filterCountryOptions, type CountryOption } from "./countryOptions";
+import { duration, easeOut } from "../../../theme/motion";
 
 interface CountryPickerProps {
   value: string;
@@ -136,7 +137,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
         <motion.div
           initial={reduce ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: duration.fast, ease: easeOut }}
           // Fond à 95 % d'opacité : un flou d'arrière-plan n'y verrait rien.
           className="absolute inset-x-0 top-full z-50 mt-2 origin-top overflow-hidden rounded-xl border border-line-subtle bg-surface-dropdown"
           style={{ boxShadow: "var(--shadow-dropdown)" }}

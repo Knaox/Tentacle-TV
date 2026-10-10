@@ -13,6 +13,7 @@ import { MIN_SERVER_VERSION, useServerCompat } from "../../hooks/useServerCompat
 import { useMessageCountdown } from "../session/useMessageCountdown";
 import { getUserInfo } from "../userMenu/menuItems";
 import { NoticeCard, type NoticeCardAction, type NoticeIcon } from "./NoticeCard";
+import { duration, exitDuration } from "../../theme/motion";
 
 /** Une fois masqué pour de bon : la phrase qui le dit, et « Annuler ». */
 interface Confirmation {
@@ -136,8 +137,8 @@ const Banner = memo(function Banner({ severity, icon, title, lines, primary, sec
     <motion.div
       initial={{ opacity: 0, y: reduced ? 0 : -12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: reduced ? 0 : -8, transition: { duration: 0.14 } }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
+      exit={{ opacity: 0, y: reduced ? 0 : -8, transition: { duration: exitDuration(duration.base) } }}
+      transition={{ duration: duration.base, ease: "easeOut" }}
       className="pointer-events-auto w-[min(28rem,100%)]"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}

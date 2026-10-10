@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJellyfinClient, type JellyfinClient } from "@tentacle-tv/api-client";
 import type { DetailImageRef } from "@tentacle-tv/shared";
-import { easeOut } from "../../theme/motion";
+import { easeOut, duration, exitDuration } from "../../theme/motion";
 import { swipeDelta, useImageViewerControls } from "./useImageViewerControls";
 
 interface DetailImageViewerProps {
@@ -73,8 +73,8 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
           style={{ background: "rgba(4, 3, 8, 0.96)" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.16 } }}
-          transition={{ duration: 0.24, ease: easeOut }}
+          exit={{ opacity: 0, transition: { duration: exitDuration(duration.base) } }}
+          transition={{ duration: duration.base, ease: easeOut }}
           onTouchStart={(e) => { touchX.current = e.touches[0]?.clientX ?? null; }}
           onTouchEnd={(e) => {
             if (touchX.current === null) return;
@@ -115,8 +115,8 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
                 onLoad={() => setLoaded(src)}
                 initial={{ opacity: 0, scale: 0.97 }}
                 animate={{ opacity: loaded === src ? 1 : 0.35, scale: 1 }}
-                exit={{ opacity: 0, transition: { duration: 0.14 } }}
-                transition={{ duration: 0.28, ease: easeOut }}
+                exit={{ opacity: 0, transition: { duration: exitDuration(duration.base) } }}
+                transition={{ duration: duration.base, ease: easeOut }}
                 className="max-h-full max-w-full rounded-[var(--radius-lg)] object-contain shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
                 /* tv-compat-ok: une <img> chargée garde son ratio naturel ; seule la réservation avant chargement se perd */
                 style={{ aspectRatio: String(current.aspect) }}
