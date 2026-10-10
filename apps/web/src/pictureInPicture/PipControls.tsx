@@ -4,6 +4,7 @@ import { PipChrome } from "./PipChrome";
 import { pipFrameRadii, pipWheelFactor } from "./pipGeometry";
 import { PipOverlay } from "./PipOverlay";
 import { usePipPointer, type PipCorner } from "./usePipPointer";
+import { usePipResizing } from "./usePipResizing";
 
 /**
  * Les contrôles du PiP, rendus par le lecteur DANS la fenêtre PiP (portail).
@@ -57,6 +58,10 @@ export function PipControls(props: PipControlsProps) {
   const docked = pip.mode === "docked";
   const { hovered, gesture, surface, grip, onControl } = usePipPointer(view, !docked, pip.gesture);
   const visible = hovered || paused || gesture !== null;
+  // Pendant un changement de taille, ni cadre ni contrôles : la vidéo suit
+  // le cadre avec une image de retard (`usePipResizing`).
+  const resizing = usePipResizing(view);
+  const masked = `transition-opacity ${resizing ? "opacity-0 duration-0" : "opacity-100 duration-150"}`;
   const { frame } = pip;
   const radii = pipFrameRadii(frame);
 
@@ -78,14 +83,18 @@ export function PipControls(props: PipControlsProps) {
       style={gesture === "move" ? { cursor: "grabbing" } : undefined}
       onWheel={(e) => pip.resizeBy(pipWheelFactor(e.deltaY, e.deltaMode, e.ctrlKey))}
     >
-      <PipChrome frame={frame} lit={visible} />
+      <div className={`pointer-events-none absolute inset-0 ${masked}`}>
+        <PipChrome frame={frame} lit={visible} />
+      </div>
       <div
         className="absolute" style={{ inset: frame.shadow }}
         {...surface}
         onDoubleClick={(e) => { if (!onControl(e.target)) pip.expand(); }}
       >
         <div className="absolute overflow-hidden" style={{ inset: frame.bezel, borderRadius: radii.inner }}>
-          <PipOverlay {...props} visible={visible} />
+          <div className={`absolute inset-0 ${masked}`}>
+            <PipOverlay {...props} visible={visible} />
+          </div>
         </div>
       </div>
       {(docked ? DOCKED_CORNERS : ALL_CORNERS).map((corner) => (

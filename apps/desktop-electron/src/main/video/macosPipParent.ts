@@ -22,6 +22,9 @@ import { currentPipWindow, onPipRestacked, onPipWindowChange } from "../pip/pipH
 import { PIP_INSET } from "../pip/pipFrame";
 import { fromHandle, msg, type Rect } from "./objc";
 
+/** `NSWindowAnimationBehaviorNone`. */
+const NO_ANIMATION = 2;
+
 interface PipParent {
   window: BrowserWindow;
   /** Sa `NSWindow`. */
@@ -91,6 +94,12 @@ export class MacosPipParent {
         ? null
         : { window, ns: msg.get(fromHandle(window.getNativeWindowHandle()), "window") };
     if (this.pip !== null) {
+      // Ni zoom à l'apparition ni rétrécissement à la fermeture : macOS les
+      // donne aux fenêtres flottantes, et c'est la coquille qui anime le PiP
+      // (`pip/pipMotion.ts`). Mesuré : la fenêtre grossissait de 8 points avant
+      // l'animation, et son cadre vide rétrécissait 250 ms au-dessus du
+      // lecteur après le retour de la vidéo.
+      msg.setInt(this.pip.ns, "setAnimationBehavior:", NO_ANIMATION);
       this.pip.window.on("resize", this.follow);
       this.pip.window.on("move", this.follow);
     }

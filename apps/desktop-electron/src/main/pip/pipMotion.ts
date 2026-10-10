@@ -16,6 +16,8 @@ import type { Box } from "./pipPlacement";
 export const PIP_SHRINK_MS = 280;
 /** Agrandir : plus court — on attend le lecteur, pas le geste. */
 export const PIP_GROW_MS = 220;
+/** Un cran de molette : la taille y glisse, sans traîner derrière la main. */
+export const PIP_RESIZE_MS = 120;
 
 /** Décélération franche — l'image « se pose » (ease-out cubique). */
 export function easeOutCubic(t: number): number {

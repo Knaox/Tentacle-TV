@@ -25,13 +25,19 @@ import { screen, systemPreferences, type BrowserWindow } from "electron";
 import { bannerInset } from "../macosTitleBar";
 import type { PipGesture, PipMode, PipPoint } from "./pipCaptions";
 import { PIP_INSET, PIP_MAX_SHARE, pipWindowSize } from "./pipFrame";
-import { PIP_GROW_MS, PIP_SHRINK_MS, easeOutCubic, interpolateBox, pictureIn, windowAround } from "./pipMotion";
+import { PIP_GROW_MS, PIP_RESIZE_MS, PIP_SHRINK_MS, easeOutCubic, interpolateBox, pictureIn, windowAround } from "./pipMotion";
 import { PipDocking } from "./pipDocking";
 import { installResizeGuard } from "./pipResizeGuard";
 import { cornerPlacement, dragTo, resizeInPlace, stretchFrom, type Box, type PipCorner } from "./pipPlacement";
 
 /** Le curseur suivi pendant un geste, et le pas d'une animation — une image à 60 Hz. */
 const FRAME_MS = 16;
+/**
+ * Un pas d'animation n'avance jamais de plus de deux images : après un trou du
+ * thread principal (l'apparition du PiP en coûte ~60 ms), l'animation REPREND
+ * où elle en était au lieu de sauter d'un quart de sa course (mesuré).
+ */
+const MAX_STEP_MS = 2 * FRAME_MS + 2;
 
 /** Le réglage « Réduire les animations » du système : le PiP saute alors à sa place. */
 function reducedMotion(): boolean {
@@ -127,12 +133,19 @@ export class PipShell {
     else if (mode === "docked") this.place();
   }
 
-  /** Une nouvelle taille de VIDÉO (molette) : le coin le plus proche du bord reste fixe. */
+  /**
+   * Une nouvelle taille de VIDÉO (molette) : le coin le plus proche du bord
+   * reste fixe, et la taille y GLISSE — un cran de 10 % sautait d'un coup.
+   * Chaque cran repart de là où en est le précédent.
+   */
   resize(width: number, height: number): void {
     if (this.pip.isDestroyed()) return;
     const size = pipWindowSize(width, height);
-    if (this.mode === "docked") return this.place(size);
-    this.setBounds(resizeInPlace(this.pip.getBounds(), size, this.displayOf(this.pip.getBounds()).workArea));
+    const target =
+      this.mode === "docked"
+        ? cornerPlacement(size, this.cornerArea())
+        : resizeInPlace(this.pip.getBounds(), size, this.displayOf(this.pip.getBounds()).workArea);
+    void this.animate(target, PIP_RESIZE_MS);
   }
 
   /** Le geste que la page commence — ou finit (`null`). */
@@ -215,11 +228,15 @@ export class PipShell {
       this.setBounds(to);
       return Promise.resolve();
     }
-    const start = Date.now();
+    let elapsed = 0;
+    let last = Date.now();
     return new Promise((done) => {
       const step = (): void => {
         if (this.pip.isDestroyed()) return this.stopAnimation();
-        const t = Math.min(1, (Date.now() - start) / duration);
+        const now = Date.now();
+        elapsed += Math.min(now - last, MAX_STEP_MS);
+        last = now;
+        const t = Math.min(1, elapsed / duration);
         this.setBounds(interpolateBox(from, to, easeOutCubic(t)));
         if (t >= 1) this.stopAnimation();
       };

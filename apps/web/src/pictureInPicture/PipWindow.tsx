@@ -36,6 +36,11 @@ interface PipWindowProps {
   onResized: (size: PipSize) => void;
   /** La fenêtre a disparu sans nous (fermée par le bureau) — ou n'a pas pu naître. */
   onLost: () => void;
+  /**
+   * La fenêtre est À L'ÉCRAN — la vidéo y est déjà passée (la coquille la
+   * déplace avant de la montrer) : la page peut quitter le lecteur.
+   */
+  onShown: () => void;
   windowRef: MutableRefObject<Window | null>;
 }
 
@@ -63,11 +68,25 @@ function prepareDocument(child: Window): HTMLElement {
   return root;
 }
 
-export function PipWindow({ mode, size, onContainer, onResized, onLost, windowRef }: PipWindowProps) {
+/** Appelle `shown` une fois, quand le document de la fenêtre devient visible. */
+function whenVisible(child: Window, shown: () => void): () => void {
+  const doc = child.document;
+  const check = () => {
+    if (doc.visibilityState !== "visible") return;
+    doc.removeEventListener("visibilitychange", check);
+    shown();
+  };
+  doc.addEventListener("visibilitychange", check);
+  check();
+  return () => doc.removeEventListener("visibilitychange", check);
+}
+
+export function PipWindow({ mode, size, onContainer, onResized, onLost, onShown, windowRef }: PipWindowProps) {
   useEffect(() => {
     let disposed = false;
     let child: Window | null = null;
     let poll: number | undefined;
+    let unwatch: (() => void) | undefined;
     void (async () => {
       let frame: PipFrame;
       try {
@@ -92,6 +111,7 @@ export function PipWindow({ mode, size, onContainer, onResized, onLost, windowRe
         onResized(pipVideoSize(opened.innerWidth, opened.innerHeight, frame));
       });
       onContainer(prepareDocument(opened), frame);
+      unwatch = whenVisible(opened, onShown);
       poll = window.setInterval(() => {
         if (child?.closed !== true || disposed) return;
         disposed = true;
@@ -102,6 +122,7 @@ export function PipWindow({ mode, size, onContainer, onResized, onLost, windowRe
     return () => {
       disposed = true;
       window.clearInterval(poll);
+      unwatch?.();
       onContainer(null, { shadow: 0, bezel: 0 });
       windowRef.current = null;
       child?.close();
