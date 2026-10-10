@@ -123,6 +123,7 @@ export const COMMANDS = [
   "pip_resize",
   "pip_gesture",
   "pip_restore",
+  "pip_close",
 
   // Greffons — dépôt du document à servir sous son origine dédiée.
   // Propre à Electron : Tauri monte les greffons en `srcdoc`, la question de

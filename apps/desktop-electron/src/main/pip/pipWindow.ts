@@ -159,6 +159,13 @@ export function installPipWindow(contents: WebContents): void {
     // À `close` et non `closed` : la fenêtre de mpv doit rejoindre la nôtre
     // tant que la `NSWindow` du PiP existe encore (macOS).
     child.once("close", () => {
+      // Le PiP avait le focus (un clic dessus, « revenir au lecteur ») : il
+      // revient à la fenêtre principale. Sans cela, macOS ne le rend à
+      // personne — la page du lecteur ne recevait plus qu'UN mouvement de
+      // souris, et ses contrôles ne répondaient qu'après un clic (banc du
+      // 10.10.2026). Jamais si l'application est en arrière-plan : on ne vole
+      // pas le premier plan. Sous Linux, la colle rend l'activation elle-même.
+      if (shell !== null && host !== null && !host.isDestroyed() && child.isFocused()) host.focus();
       shell?.dispose();
       shell = null;
       setPipWindow(null);
@@ -208,6 +215,20 @@ export function setPipGesture(gesture: PipGesture | null, grab?: PipPoint): bool
     return true;
   }
   pip.setTitle(pipCaption(pipMode, gesture, grab));
+  return true;
+}
+
+/**
+ * La page ferme le PiP — par la coquille, jamais par `window.close()`.
+ *
+ * ⚠️ Fermée depuis la page qui l'a ouverte, la fenêtre n'émet PAS `close`,
+ * seulement `closed` (mesuré) : la vidéo ne regagnait la fenêtre principale
+ * qu'une fois la fenêtre native du PiP détruite, et le focus n'était rendu à
+ * personne. Fermée ici, elle émet `close` d'abord (`installPipWindow`).
+ */
+export function closePipWindow(): boolean {
+  if (pip === null || pip.isDestroyed()) return false;
+  pip.close();
   return true;
 }
 

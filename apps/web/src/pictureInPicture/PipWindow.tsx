@@ -125,7 +125,10 @@ export function PipWindow({ mode, size, onContainer, onResized, onLost, onShown,
       unwatch?.();
       onContainer(null, { shadow: 0, bezel: 0 });
       windowRef.current = null;
-      child?.close();
+      // Par la coquille : fermée d'ici, la fenêtre n'émettrait que `closed`
+      // (`pip/pipWindow.ts`, `closePipWindow`) ; `close()` reste le filet.
+      const closing = child;
+      if (closing !== null && !closing.closed) void invoke<boolean>("pip_close").then((done) => { if (!done) closing.close(); }, () => closing.close());
     };
     // Une fenêtre par session : le mode et la taille changent par la coquille.
     // eslint-disable-next-line react-hooks/exhaustive-deps

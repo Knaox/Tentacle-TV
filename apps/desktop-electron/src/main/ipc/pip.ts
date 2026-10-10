@@ -19,7 +19,7 @@ import { z } from "zod";
 import { linuxMontage, linuxWindowing } from "../linux/session";
 import { PIP_GESTURES } from "../pip/pipCaptions";
 import { PIP_FRAME } from "../pip/pipFrame";
-import { armPip, resizePip, restorePip, setPipGesture, setPipMode } from "../pip/pipWindow";
+import { armPip, closePipWindow, resizePip, restorePip, setPipGesture, setPipMode } from "../pip/pipWindow";
 import { decideMacosMontage } from "../video/macosMontage";
 import { CommandRegistry } from "./registry";
 
@@ -68,5 +68,10 @@ export function registerPipCommands(registry: CommandRegistry): void {
     .add("pip_restore", {
       schema: z.object({}).passthrough(),
       run: () => restorePip(),
+    })
+    // La page ferme le PiP par ici : `close` est alors émis (`closePipWindow`).
+    .add("pip_close", {
+      schema: z.object({}).passthrough(),
+      run: () => closePipWindow(),
     });
 }
