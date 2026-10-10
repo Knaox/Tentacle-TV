@@ -63,3 +63,29 @@ describe("l'état d'une carte d'une rangée tenue", () => {
     expect(view[1].UserData[flag]).toBe(true);
   });
 });
+
+describe("une carte que la liste perd pendant le survol", () => {
+  interface Media { Id: string; UserData: { Played: boolean } }
+  const media = (Id: string, Played = false): Media => ({ Id, UserData: { Played } });
+  const key = (m: Media) => m.Id;
+  const frozen = [media("a"), media("b")];
+
+  it("garde la dernière version vue — « vu » reste coché jusqu'au lâcher", () => {
+    // Le patch optimiste l'a montrée vue, puis la liste redemandée l'a perdue.
+    const lastSeen = new Map([["b", media("b", true)]]);
+    const view = heldRowView([media("a")], frozen, true, key, undefined, lastSeen);
+    expect(view.map(key)).toEqual(["a", "b"]);
+    expect(view[1].UserData.Played).toBe(true);
+  });
+
+  it("sans version vue, celle de la photographie", () => {
+    const view = heldRowView([media("a")], frozen, true, key, undefined, new Map());
+    expect(view[1].UserData.Played).toBe(false);
+  });
+
+  it("la liste l'emporte sur la version vue quand elle a encore la carte", () => {
+    const lastSeen = new Map([["b", media("b", true)]]);
+    const view = heldRowView([media("a"), media("b")], frozen, true, key, undefined, lastSeen);
+    expect(view[1].UserData.Played).toBe(false);
+  });
+});
