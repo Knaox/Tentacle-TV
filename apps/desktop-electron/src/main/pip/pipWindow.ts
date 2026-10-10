@@ -33,14 +33,18 @@
  * La molette, elle, change la taille par la page (`pip_resize`).
  */
 
-import type { BrowserWindow, WebContents } from "electron";
+import { BrowserWindow, type WebContents } from "electron";
 import { windowIconPath } from "../appIcon";
 import { lockNavigation } from "../security";
 import { pipCaption, type PipGesture, type PipMode, type PipPoint } from "./pipCaptions";
+import { setPipWindow } from "./pipHost";
+import { PipShell, shellDrivesPip } from "./pipShell";
 import { PIP_INSET, PIP_MIN_HEIGHT, PIP_MIN_WIDTH, pipWindowSize } from "./pipFrame";
 
 /** Le nom de cadre que la page donne à `window.open` — et qu'elle seule connaît. */
 export const PIP_FRAME_NAME = "tentacle-pip";
+
+const WINDOWS = process.platform === "win32";
 
 /** Le délai dans lequel la page doit ouvrir la fenêtre annoncée. */
 const ARM_DELAY_MS = 3000;
@@ -55,8 +59,12 @@ interface Armed {
 
 let armed: Armed | null = null;
 let pip: BrowserWindow | null = null;
+/** Hors Linux, la coquille place le PiP et suit ses gestes — `pipShell.ts`. */
+let shell: PipShell | null = null;
 /** Le mode de la fenêtre ouverte : le titre d'un geste le reprend. */
 let pipMode: PipMode = "floating";
+/** Le ratio de la vidéo annoncée : le PiP naît sur l'image du lecteur (`pipShell.ts`). */
+let pipAspect = 16 / 9;
 
 /** La page annonce l'ouverture (taille de la VIDÉO) : la prochaine fenêtre PiP sera acceptée. */
 export function armPip(mode: PipMode, width: number, height: number): void {
@@ -77,6 +85,7 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
   const icon = windowIconPath();
   const size = pipWindowSize(wanted.width, wanted.height);
   pipMode = wanted.mode;
+  pipAspect = wanted.width / wanted.height;
   return {
     action: "allow",
     overrideBrowserWindowOptions: {
@@ -88,15 +97,26 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
       ...(icon === null ? {} : { icon }),
       // Transparente À LA CONSTRUCTION, comme la fenêtre principale
       // (`linux/window.ts`) : posée après, la page peindrait du noir sur mpv.
-      transparent: true,
-      backgroundColor: "#00000000",
+      // Sauf sous Windows, comme la fenêtre principale là aussi : le drapeau y
+      // retire les bords et le redimensionnement ; la surface de Chromium y
+      // devient transparente par `setBackgroundColor`, À L'EXÉCUTION
+      // (`installPipWindow`), et la vidéo — fenêtre FILLE — se voit dessous.
+      transparent: !WINDOWS,
+      backgroundColor: WINDOWS ? "#000000" : "#00000000",
       frame: false,
-      hasShadow: false,
+      // L'ombre d'une fenêtre transparente coûte le GPU sur macOS (CLAUDE.md,
+      // « Coût GPU ») ; sous Windows, c'est celle du système, avec ses coins.
+      hasShadow: WINDOWS,
       // La colle la redimensionne aux poignées : une fenêtre non redimensionnable
       // a, sous Linux, sa taille minimale ÉGALE à sa maximale, et KWin
       // refuserait. Aucun double-clic n'agrandit pour autant : faute de zone
       // `app-region: drag`, Chromium n'en reçoit aucun sur un « titre ».
+      // Ailleurs, le système la redimensionne, ratio et bornes tenus par la
+      // coquille (`pipResizeGuard.ts`) : son curseur paraît sans clic.
       resizable: true,
+      // macOS : le premier clic sur le PiP, application inactive, va au bouton
+      // visé — sans cela il ne ferait qu'activer la fenêtre.
+      acceptFirstMouse: true,
       minimizable: false,
       maximizable: false,
       fullscreenable: false,
@@ -119,6 +139,12 @@ export function installPipWindow(contents: WebContents): void {
     child.on("page-title-updated", (event) => event.preventDefault());
     child.setTitle(caption);
     lockNavigation(child.webContents);
+    if (WINDOWS) child.setBackgroundColor("#00000000");
+    const host = BrowserWindow.fromWebContents(contents);
+    // Placé AVANT d'être montré, et avant que la vidéo n'y passe : jamais un
+    // PiP — ni une image — qui saute de place.
+    if (shellDrivesPip() && host !== null) shell = new PipShell(child, host, pipMode, pipAspect);
+    setPipWindow(child);
     // Montrée sans prendre le focus : l'utilisateur continue dans l'application
     // (la colle rend de toute façon l'activation à l'hôte).
     let shown = false;
@@ -126,11 +152,20 @@ export function installPipWindow(contents: WebContents): void {
       if (shown || child.isDestroyed()) return;
       shown = true;
       child.showInactive();
+      shell?.enter();
     };
     child.once("ready-to-show", show);
     setTimeout(show, 500);
+    // À `close` et non `closed` : la fenêtre de mpv doit rejoindre la nôtre
+    // tant que la `NSWindow` du PiP existe encore (macOS).
+    child.once("close", () => {
+      shell?.dispose();
+      shell = null;
+      setPipWindow(null);
+    });
     child.on("closed", () => {
       if (pip === child) pip = null;
+      setPipWindow(null);
     });
   });
 }
@@ -140,6 +175,10 @@ export function setPipMode(mode: PipMode, width?: number, height?: number): bool
   if (pip === null || pip.isDestroyed()) return false;
   pipMode = mode;
   pip.setTitle(pipCaption(mode, null));
+  if (shell !== null) {
+    shell.setMode(mode, width, height);
+    return true;
+  }
   pip.setAlwaysOnTop(mode === "floating");
   if (width !== undefined && height !== undefined) resizePip(width, height);
   return true;
@@ -148,6 +187,10 @@ export function setPipMode(mode: PipMode, width?: number, height?: number): bool
 /** La nouvelle taille de VIDÉO ; la colle garde fixe le coin le plus proche du bord. */
 export function resizePip(width: number, height: number): boolean {
   if (pip === null || pip.isDestroyed()) return false;
+  if (shell !== null) {
+    shell.resize(width, height);
+    return true;
+  }
   const size = pipWindowSize(width, height);
   pip.setSize(size.width, size.height);
   return true;
@@ -160,13 +203,29 @@ export function resizePip(width: number, height: number): boolean {
  */
 export function setPipGesture(gesture: PipGesture | null, grab?: PipPoint): boolean {
   if (pip === null || pip.isDestroyed()) return false;
+  if (shell !== null) {
+    shell.setGesture(gesture, grab);
+    return true;
+  }
   pip.setTitle(pipCaption(pipMode, gesture, grab));
+  return true;
+}
+
+/**
+ * Le retour au lecteur : la coquille ramène l'image à sa place dans le lecteur
+ * avant que la page ne ferme le PiP. Rien à faire sous Linux (la colle).
+ */
+export async function restorePip(): Promise<boolean> {
+  if (shell === null) return false;
+  await shell.restore();
   return true;
 }
 
 /** La fenêtre principale se ferme : le PiP, qui vit de sa page, avec elle. */
 export function closePip(): void {
   if (pip !== null && !pip.isDestroyed()) pip.close();
+  shell?.dispose();
+  shell = null;
   pip = null;
   armed = null;
 }

@@ -956,4 +956,22 @@ D'où le montage actuel :
 - Les gestes à la VRAIE souris : la souris factice passe par KWin comme une vraie
   (survol, sortie, glisser, coin, double-clic vérifiés), mais pas une main — sensation du
   glisser et du coin à juger sur la session réelle.
-- X11, GNOME, Windows et macOS : pas de PiP (commandes non enregistrées, bouton absent).
+- X11 et GNOME : pas de PiP (commandes non enregistrées, bouton absent). macOS (Apple
+  Silicon) et Windows l'ont depuis le 10.10.2026 — voir ci-dessous.
+
+### Ce que macOS et Windows ont changé pour Linux aussi (10.10.2026)
+
+La page du PiP est la même partout ; ces retours de Damien valent donc sous Linux :
+bouton dans la barre du bas, juste avant le plein écran (« Lecture en incrustation
+(I) ») ; PiP TOUJOURS ancré au départ ; liseré neutre (presque noir, deux filets d'un
+point) ; la page ne quitte le lecteur qu'une fois la fenêtre PiP à l'écran, et au retour
+le lecteur reparaît SOUS le PiP avant sa fermeture ; cadre et contrôles effacés pendant
+un changement de taille ; molette proportionnelle (douce au pavé tactile) ; poignées
+élargies vers l'intérieur.
+
+Ce que Linux n'a PAS : les animations d'entrée, de retour et de molette. C'est la colle
+qui place la fenêtre PiP (un client Wayland ne place pas ses fenêtres) ; `pip_restore`
+y rend la main aussitôt. Les porter demanderait d'animer `frameGeometry` dans le QML de
+la colle — à mesurer sur KDE. Le cadre effacé pendant un redimensionnement ne servait
+qu'à masquer le retard de mpv sur macOS et Windows ; sous KWin, qui déplace les deux
+fenêtres dans la même image, il n'est que cohérence.

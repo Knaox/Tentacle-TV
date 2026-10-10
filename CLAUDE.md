@@ -998,6 +998,15 @@ chauffait (mpv#12675 : import zéro-copie en échec, donc décodage logiciel en
 silence) pour un HDR qu'aucun écran Intel intégré n'affiche. `hwdec` macOS est
 une liste (`videotoolbox,videotoolbox-copy`) : jamais de repli logiciel silencieux.
 Aucun réglage exposé — un seul mode. Relevé : `docs/MACOS-FENETRE-VIDEO.md`.
+**Le PiP (Apple Silicon seulement)** : la fenêtre Metal de mpv CHANGE DE PARENT — de la
+nôtre à la fenêtre PiP et retour (`video/macosPipParent.ts`), sans que mpv le sache : HDR
+et lecture gardés. La coquille y fait ce que la colle fait sous Linux — placement, modes,
+gestes suivis au curseur (`pip/pipShell.ts`, règles communes `pip/pipPlacement.ts`) ; le
+chemin Linux (titre lu par la colle) ne change pas. Relevé : même fichier, « Le PiP ».
+**Windows** : la fenêtre fille de mpv change de parent par `SetParent` (`video/videoWindow.ts`) —
+mpv suit seul son nouveau parent (crochet sur le thread de sa fenêtre parente) ; PiP sans
+cadre dessiné (`pipFrame.ts` : fenêtre rendue transparente à l'exécution, jamais fabriquée
+`transparent`), ancré = fenêtre POSSÉDÉE (`setParentWindow`).
 
 ### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
 

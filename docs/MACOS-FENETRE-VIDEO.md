@@ -150,3 +150,69 @@ Chromium délègue `<video>` à un overlay CoreAnimation en scanout direct (« p
 consumption during fullscreen video playback was halved », VideoNG) ; mpv n'a aucun VO
 équivalent sur macOS. L'objectif réaliste est « comme Tauri et IINA », pas « comme
 QuickTime ».
+
+## Le PiP (10.10.2026)
+
+Le PiP du bureau, né sous Linux (`docs/LINUX-FENETRE-VIDEO.md`, « Le PiP »), passe sur
+macOS au montage `fenetre` seulement. La page ne change pas : même fenêtre ouverte par
+`window.open`, même portail, mêmes commandes (`pip_open`, `pip_mode`, `pip_resize`,
+`pip_gesture`). Deux choses diffèrent, et ce sont celles que KWin faisait :
+
+- **la vidéo change de PARENT** (`video/macosPipParent.ts`). La fenêtre Metal de mpv
+  quitte la fenêtre principale (`removeChildWindow:`) et s'attache sous la fenêtre PiP
+  (`addChildWindow:ordered:NSWindowBelow`), calée dans son cadre moins le liseré et
+  l'ombre (`pip/pipFrame.ts`) ; au `close` du PiP — tant que sa `NSWindow` existe —, le
+  geste inverse. mpv n'en sait rien : même instance, même sortie vidéo, même couche
+  Metal. Dans le PiP, le liseré de mpv est retiré comme en plein écran (`macosSeam.ts`) :
+  les coins carrés sont recouverts par ceux que dessine la page.
+- **la coquille place le PiP et suit ses gestes** (`pip/pipShell.ts`, règles portées de
+  la colle dans `pip/pipPlacement.ts`) : flottant au coin bas-droit de la zone utile,
+  niveau « floating », sur tous les bureaux (`skipTransformProcessType`, sinon l'icône du
+  Dock clignote) ; ancré — le mode de DÉPART, toujours — au coin de l'application ;
+  glisser en suivant le curseur le temps du geste ; `acceptFirstMouse` (le premier clic
+  va au bouton).
+
+### Deuxième passe — retours de Damien (10.10.2026)
+
+Banc : faux serveur Jellyfin (Node, film HDR de 30 min), vrai lecteur, souris RÉELLE
+simulée par CoreGraphics (`CGEventPost`, l'outil a l'accès d'accessibilité), curseur
+système relevé par `NSCursor.currentSystem`, écran filmé à 60 i/s (`screencapture -v`).
+
+- **Ancré ≠ fenêtre fille.** Fille de la fenêtre principale, la fenêtre PiP ne recevait
+  qu'UN `mousemove` puis un `mouseout` : ni survol ni molette, app active ou non. Elle
+  est désormais autonome (`pip/pipDocking.ts`) : niveau « floating » tant que l'app est
+  active, normal et posée juste au-dessus de sa fenêtre sinon — suivi par
+  `did-become-active` / `did-resign-active` : AUCUNE fenêtre ne reçoit `blur` quand une
+  autre app passe devant (mesuré). Cachée avec la fenêtre principale.
+- **App inactive, niveau normal** : macOS ne livre plus qu'un mouvement à l'entrée (la
+  molette, si). Le processus principal relaie alors le curseur (`sendInputEvent`, 30 Hz,
+  seulement dans ce cas). Au niveau « floating », tout arrive.
+- **Coins** : les poignées de la page n'ont de curseur que fenêtre « key » — la flèche
+  restait au survol d'un coin. Le PiP se redimensionne par le SYSTÈME
+  (`pip/pipResizeGuard.ts` : `setAspectRatio` + taille d'appoint, bornes, coin d'ancrage
+  gardé par `will-resize`). Zone native mesurée : ~8 points au coin, ~4 au bord, depuis
+  le bord de la fenêtre — d'où une marge d'ombre de 4 points hors Linux (`pipFrame.ts`).
+  Curseur diagonal sans clic quand l'app est active ; inactive, la flèche (macOS ne
+  laisse pas une app en arrière-plan changer le curseur), mais le premier glisser agit.
+- **Fluidité** : la page ne quitte plus le lecteur avant que le PiP soit à l'écran (la
+  vidéo restait ~180 ms cachée sous la page opaque) ; au retour, le lecteur reparaît
+  SOUS le PiP avant sa fermeture ; `NSWindowAnimationBehaviorNone` (zoom d'apparition,
+  rétrécissement de 250 ms à la fermeture) ; un pas d'animation n'avance que de deux
+  images après un trou ; et le cadre de la page s'efface pendant tout changement de
+  taille — la fenêtre de mpv garde une à deux images de retard (le système montre
+  l'image précédente tant que mpv n'en a pas peint une nouvelle), filmé : un liseré plus
+  petit que l'image à chaque pas.
+
+Mesuré au banc (Electron du worktree, profil jetable, dégradé PQ `max-cll=10000,4000`,
+pilotage CDP par `pip_open` + `window.open`) :
+
+| | |
+|---|---|
+| headroom EDR | 6,73 avant, pendant et après le PiP |
+| lecture | continue : 18,4 → 22,8 s dans le PiP, 38,6 → 43,0 s au retour |
+| calage | 480×270 dans le PiP, 1280×778 au retour, `calee=oui` ; image vue à 76 % non noirs |
+| placement | cadre visible à 20 points du coin, flottant comme ancré ; molette au coin fixe ; bascule vers flottant sur place |
+| glisser | le point saisi reste sous le curseur, la vidéo suit |
+
+Pas sur Intel (montage `gl`) : la vidéo y est une vue DANS notre fenêtre — la déplacer
+demanderait un second contexte de rendu.

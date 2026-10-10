@@ -37,6 +37,7 @@ const SetWindowPos = user32.func(
   "int SetWindowPos(uint64 hWnd, uint64 after, int X, int Y, int cx, int cy, uint32 flags)",
 );
 const GetClientRect = user32.func("int GetClientRect(uint64 hWnd, _Out_ RECT* r)");
+const SetParent = user32.func("uint64 SetParent(uint64 child, uint64 parent)");
 const GetWindowLongPtrW = user32.func("int64 GetWindowLongPtrW(uint64 hWnd, int index)");
 const SetWindowLongPtrW = user32.func(
   "int64 SetWindowLongPtrW(uint64 hWnd, int index, int64 value)",
@@ -104,6 +105,25 @@ export function alignBelow(hwnd: bigint, parent: bigint): void {
   const r = { left: 0, top: 0, right: 0, bottom: 0 };
   if (!GetClientRect(parent, r)) return;
   SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, r.right - r.left, r.bottom - r.top, SWP_ALIGN);
+}
+
+/**
+ * Change la fenêtre de mpv de parent — le PiP (`videoWindow.ts`), puis retour.
+ *
+ * mpv installe un crochet `WH_CALLWNDPROC` sur le thread de sa fenêtre parente
+ * (`install_parent_hook`, w32_common.c, 0.40) : à chaque `WM_WINDOWPOSCHANGED`
+ * d'une fenêtre de ce thread, il cherche SA fenêtre parmi les filles de
+ * celle-ci et la cale sur tout son rectangle client. Le PiP vivant sur le même
+ * thread que la fenêtre principale, mpv suit donc son NOUVEAU parent de
+ * lui-même ; `alignBelow` ne fait que le premier calage, et l'ordre.
+ *
+ * ⚠️ Synchrone, contrairement au calage : Windows n'a pas de `SetParent`
+ * asynchrone. Le thread de mpv pompe ses messages en continu ; c'est un geste
+ * par passage en PiP, pas des dizaines par seconde.
+ */
+export function reparent(hwnd: bigint, parent: bigint): void {
+  SetParent(hwnd, parent);
+  alignBelow(hwnd, parent);
 }
 
 /**

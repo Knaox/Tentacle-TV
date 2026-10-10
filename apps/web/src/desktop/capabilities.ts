@@ -50,8 +50,9 @@ export function supportsSmtc(): boolean {
 
 /**
  * Le PiP : réduire la lecture dans une petite fenêtre et continuer dans
- * l'application. Linux sous Wayland avec la colle KWin seulement — la seule
- * voie pour coller la vidéo de mpv à une petite fenêtre (`ipc/pip.ts`).
+ * l'application. Là où la coquille sait mettre la vidéo de mpv dans une petite
+ * fenêtre — Linux sous Wayland avec la colle KWin, macOS Apple Silicon
+ * (`ipc/pip.ts`).
  */
 export function supportsPictureInPicture(): boolean {
   return hasNativeCommand("pip_open");

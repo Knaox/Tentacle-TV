@@ -7,7 +7,7 @@ import { markPlayerExit } from "../components/detail/detailTransition";
 import { PictureInPictureContext, type PictureInPicture, type PipGesture } from "./pictureInPictureContext";
 import { PipWindow } from "./PipWindow";
 import {
-  endPipSession, getPipSession, preferredPipMode, rememberPipMode, startPipSession,
+  DEFAULT_PIP_MODE, endPipSession, getPipSession, startPipSession,
   updatePipSession, usePipSession, watchLocation, type PipMode,
 } from "./pictureInPictureStore";
 import {
@@ -24,7 +24,7 @@ import {
  * élément au même endroit, React garde l'instance, la lecture ne s'interrompt
  * pas. Les routes de l'application, elles, ne rendent plus rien sur `/watch`.
  *
- * Montée seulement là où le PiP existe (Linux, colle KWin — `supportsPictureInPicture`) :
+ * Montée seulement là où le PiP existe (`supportsPictureInPicture`) :
  * ailleurs, la route rend le lecteur comme avant.
  */
 
@@ -43,6 +43,9 @@ function screenWidthOf(child: Window | null): number {
   return child?.screen.availWidth ?? window.screen.availWidth;
 }
 
+/** Réduire : la page quitte le lecteur au plus tard après ce délai. */
+const LEAVE_FALLBACK_MS = 1200;
+
 function pathOf(location: Location): string {
   return `${location.pathname}${location.search}${location.hash}`;
 }
@@ -60,18 +63,34 @@ export function PlayerStage() {
   const aspectRef = useRef(16 / 9);
   // Fermée par nous pour revenir au lecteur : ce n'est pas une perte.
   const expandingRef = useRef(false);
+  // Réduire : la page ne quitte le lecteur qu'une fois la vidéo dans le PiP.
+  const leavingRef = useRef(false);
 
   // Une lecture demandée par la page — un autre titre, ou le retour au lecteur —
   // prend le pas sur le PiP. Pas la route qu'il garde : la session naît sur
   // elle, juste avant que `navigate(-1)` ne la quitte.
   const sessionKey = session?.location.key ?? null;
+  // Pas pendant le retour au lecteur : le PiP s'y ferme lui-même (`expand`).
   useEffect(() => {
-    if (onWatch && sessionKey !== null && location.key !== sessionKey) endPipSession();
+    if (onWatch && sessionKey !== null && location.key !== sessionKey && !expandingRef.current) endPipSession();
   }, [onWatch, sessionKey, location.key]);
+
+  /**
+   * Quitter le lecteur, une fois la fenêtre PiP à l'écran — la vidéo y est
+   * alors, au même endroit : la page d'avant paraît dessous pendant qu'elle
+   * glisse à son coin. Avant, la page partait la première, et la vidéo restait
+   * cachée sous elle ~180 ms, le temps que le PiP naisse (mesuré).
+   */
+  const leavePlayer = useCallback(() => {
+    if (!leavingRef.current) return;
+    leavingRef.current = false;
+    markPlayerExit();
+    void navigate(-1);
+  }, [navigate]);
 
   const reduce = useCallback(async ({ restoreFullscreen }: { restoreFullscreen: boolean }) => {
     if (!location.pathname.startsWith("/watch/") || getPipSession() !== null) return;
-    const mode = preferredPipMode();
+    const mode = DEFAULT_PIP_MODE;
     const raw = await getMpvApi()?.getProperty("video-params/aspect", "double").catch(() => null);
     aspectRef.current = pipAspect(raw);
     sizeRef.current = initialPipSize(
@@ -82,23 +101,30 @@ export function PlayerStage() {
     try { await invoke("player_fullscreen_leave"); } catch { /* on réduit quand même */ }
     expandingRef.current = false;
     // La session AVANT la navigation : quand la route quitte /watch, le lecteur reste monté.
+    leavingRef.current = true;
     startPipSession({ location, mode, restoreFullscreen });
-    markPlayerExit();
-    void navigate(-1);
-  }, [location, navigate]);
+    // Filet : une fenêtre qui ne se montrerait pas ne retient pas l'utilisateur.
+    window.setTimeout(leavePlayer, LEAVE_FALLBACK_MS);
+  }, [location, leavePlayer]);
 
   const expand = useCallback(async () => {
     const current = getPipSession();
     if (current === null) return;
-    // La fenêtre PiP d'abord : la vidéo revient sous l'application encore opaque,
-    // jamais un instant de bureau vu au travers.
     expandingRef.current = true;
-    childRef.current?.close();
-    try {
-      const fullscreen = await invoke<boolean>("player_fullscreen_enter");
-      if (current.restoreFullscreen && !fullscreen) await invoke("toggle_fullscreen");
-    } catch { /* le lecteur revient fenêtré */ }
+    // L'image regagne d'abord sa place dans le lecteur (la coquille l'anime ;
+    // rien sous Linux, où la commande rend la main aussitôt).
+    try { await invoke("pip_restore"); } catch { /* retour sans animation */ }
+    let fullscreen = false;
+    try { fullscreen = await invoke<boolean>("player_fullscreen_enter"); } catch { /* fenêtré */ }
+    // Le lecteur reparaît SOUS le PiP, qui garde l'image au même endroit ; le
+    // PiP ne se ferme qu'une fois la page du lecteur peinte (deux images) —
+    // jamais la vidéo rendue à une page encore opaque.
     void navigate(pathOf(current.location), { state: current.location.state });
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      endPipSession();
+      expandingRef.current = false;
+      if (current.restoreFullscreen && !fullscreen) void invoke("toggle_fullscreen").catch(() => {});
+    }));
   }, [navigate]);
 
   const close = useCallback(() => { endPipSession(); }, []);
@@ -108,7 +134,6 @@ export function PlayerStage() {
   }, []);
 
   const setMode = useCallback((mode: PipMode) => {
-    rememberPipMode(mode);
     const size = initialPipSize(
       mode, aspectRef.current, screenWidthOf(childRef.current), window.innerWidth,
       mode === "floating" ? rememberedPipWidth() : null,
@@ -158,7 +183,7 @@ export function PlayerStage() {
   const value = useMemo<PictureInPicture>(() => ({
     supported: true,
     active,
-    mode: session?.mode ?? preferredPipMode(),
+    mode: session?.mode ?? DEFAULT_PIP_MODE,
     container,
     frame,
     reduce: (options) => { void reduce(options); },
@@ -178,10 +203,11 @@ export function PlayerStage() {
       <div style={{ display: active ? "none" : "contents" }}>
         <PlayerRoutes location={playerLocation} />
       </div>
-      {active && session !== null && sizeRef.current !== null && (
+      {/* Dès la session : la fenêtre naît pendant que le lecteur est encore là. */}
+      {session !== null && sizeRef.current !== null && (
         <PipWindow
           mode={session.mode} size={sizeRef.current}
-          onContainer={onContainer} onResized={onResized} onLost={onLost} windowRef={childRef}
+          onContainer={onContainer} onResized={onResized} onLost={onLost} onShown={leavePlayer} windowRef={childRef}
         />
       )}
     </PictureInPictureContext.Provider>

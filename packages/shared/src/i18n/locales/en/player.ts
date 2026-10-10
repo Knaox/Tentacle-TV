@@ -198,10 +198,10 @@ export default {
     longHint: "Your position is saved: playback will resume as soon as it's back.",
     retry: "Try again",
   },
-  // Le PiP du bureau (Linux, `apps/web/src/pictureInPicture/`) : réduire la
-  // lecture dans une petite fenêtre et continuer dans l'application.
+  // Le PiP du bureau (Linux, macOS — `apps/web/src/pictureInPicture/`) :
+  // réduire la lecture dans une petite fenêtre et continuer dans l'application.
   pip: {
-    reduce: "Minimize video",
+    reduce: "Picture in picture",
     expand: "Back to the player",
     close: "Close video",
     dock: "Dock in the app",

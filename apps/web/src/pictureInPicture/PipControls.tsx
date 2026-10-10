@@ -1,15 +1,16 @@
 import { useEffect, type CSSProperties } from "react";
 import { usePictureInPicture } from "./pictureInPictureContext";
 import { PipChrome } from "./PipChrome";
-import { PIP_WHEEL_STEP, pipFrameRadii } from "./pipGeometry";
+import { pipFrameRadii, pipWheelFactor } from "./pipGeometry";
 import { PipOverlay } from "./PipOverlay";
 import { usePipPointer, type PipCorner } from "./usePipPointer";
+import { usePipResizing } from "./usePipResizing";
 
 /**
  * Les contrôles du PiP, rendus par le lecteur DANS la fenêtre PiP (portail).
  *
  * La fenêtre est transparente : la vidéo est la fenêtre de mpv, juste dessous,
- * collée par KWin à l'intérieur du cadre. De l'extérieur vers l'intérieur : la
+ * collée par KWin (ou par la coquille, sur macOS) à l'intérieur du cadre. De l'extérieur vers l'intérieur : la
  * marge de l'ombre (dont les coins sont les poignées de taille), le liseré
  * (`PipChrome`), puis la vidéo et ce qui s'y pose au survol (`PipOverlay`).
  *
@@ -32,8 +33,12 @@ interface PipControlsProps {
 const ALL_CORNERS: readonly PipCorner[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
 const DOCKED_CORNERS: readonly PipCorner[] = ["top-left"];
 
-/** Au-delà du cadre, la poignée mord un peu sur l'image : le coin, arrondi, n'y montre que le liseré. */
-const GRIP_REACH = 8;
+/**
+ * Au-delà du cadre, la poignée mord sur l'image : une zone large, facile à
+ * attraper (retour de Damien). Sur macOS, le système en tient en plus le bord
+ * extérieur (`pip/pipResizeGuard.ts`), où son curseur paraît sans clic.
+ */
+const GRIP_REACH = 22;
 
 function gripStyle(corner: PipCorner, size: number): CSSProperties {
   const [vertical, horizontal] = corner.split("-");
@@ -53,6 +58,10 @@ export function PipControls(props: PipControlsProps) {
   const docked = pip.mode === "docked";
   const { hovered, gesture, surface, grip, onControl } = usePipPointer(view, !docked, pip.gesture);
   const visible = hovered || paused || gesture !== null;
+  // Pendant un changement de taille, ni cadre ni contrôles : la vidéo suit
+  // le cadre avec une image de retard (`usePipResizing`).
+  const resizing = usePipResizing(view);
+  const masked = `transition-opacity ${resizing ? "opacity-0 duration-0" : "opacity-100 duration-150"}`;
   const { frame } = pip;
   const radii = pipFrameRadii(frame);
 
@@ -72,16 +81,20 @@ export function PipControls(props: PipControlsProps) {
     <div
       className="absolute inset-0 select-none text-white"
       style={gesture === "move" ? { cursor: "grabbing" } : undefined}
-      onWheel={(e) => pip.resizeBy(e.deltaY < 0 ? PIP_WHEEL_STEP : 1 / PIP_WHEEL_STEP)}
+      onWheel={(e) => pip.resizeBy(pipWheelFactor(e.deltaY, e.deltaMode, e.ctrlKey))}
     >
-      <PipChrome frame={frame} lit={visible} />
+      <div className={`pointer-events-none absolute inset-0 ${masked}`}>
+        <PipChrome frame={frame} lit={visible} />
+      </div>
       <div
         className="absolute" style={{ inset: frame.shadow }}
         {...surface}
         onDoubleClick={(e) => { if (!onControl(e.target)) pip.expand(); }}
       >
         <div className="absolute overflow-hidden" style={{ inset: frame.bezel, borderRadius: radii.inner }}>
-          <PipOverlay {...props} visible={visible} />
+          <div className={`absolute inset-0 ${masked}`}>
+            <PipOverlay {...props} visible={visible} />
+          </div>
         </div>
       </div>
       {(docked ? DOCKED_CORNERS : ALL_CORNERS).map((corner) => (

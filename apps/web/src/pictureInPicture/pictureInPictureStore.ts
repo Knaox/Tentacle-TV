@@ -7,8 +7,8 @@
  * dit à `PlayerStage` de garder le lecteur monté. Un `useState` monté sous la
  * route mourrait avec elle.
  *
- * Linux seulement pour l'instant (colle KWin) : ailleurs, rien n'appelle
- * `startPipSession`, la session reste vide.
+ * Là où le PiP existe seulement (`supportsPictureInPicture`) : ailleurs, rien
+ * n'appelle `startPipSession`, la session reste vide.
  */
 
 import { useSyncExternalStore } from "react";
@@ -79,21 +79,10 @@ export function watchLocation(path: string, state: unknown = null): Location {
   };
 }
 
-/** Le mode choisi la dernière fois, repris à la prochaine réduction. */
-const MODE_KEY = "tentacle_pip_mode";
-
-export function preferredPipMode(): PipMode {
-  try {
-    return localStorage.getItem(MODE_KEY) === "docked" ? "docked" : "floating";
-  } catch {
-    return "floating";
-  }
-}
-
-export function rememberPipMode(mode: PipMode): void {
-  try {
-    localStorage.setItem(MODE_KEY, mode);
-  } catch {
-    /* stockage indisponible : le mode par défaut reviendra */
-  }
-}
+/**
+ * Le mode d'une réduction : TOUJOURS ancré, dans le coin de l'application
+ * (décision de Damien, 2026-10-10) — le flottant ne s'obtient que par le
+ * bouton du PiP, le temps de cette session. L'ancienne clé `tentacle_pip_mode`
+ * n'est plus lue.
+ */
+export const DEFAULT_PIP_MODE: PipMode = "docked";

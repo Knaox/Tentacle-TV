@@ -132,3 +132,16 @@ export function reorderBelowPage(parent: unknown, window: unknown): void {
   msg.removeChildWindow(parent, window);
   msg.addChildWindow(parent, window, NSWindowBelow);
 }
+
+/**
+ * Change la fenêtre de mpv de parent : sous `to`, qu'elle quitte `from`.
+ *
+ * Le PiP (`macosPipParent.ts`) : la fenêtre passe de la nôtre à la fenêtre PiP,
+ * puis revient. Rien d'autre ne change — ni son comportement, ni son opacité,
+ * ni sa visibilité : `removeChildWindow:` ne la retire pas de l'écran, et
+ * `addChildWindow:` aligne son niveau sur celui du nouveau parent.
+ */
+export function moveBelow(from: unknown, to: unknown, window: unknown): void {
+  if (from !== to) msg.removeChildWindow(from, window);
+  msg.addChildWindow(to, window, NSWindowBelow);
+}
