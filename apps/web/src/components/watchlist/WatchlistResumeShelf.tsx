@@ -1,11 +1,9 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { useHeldRowItems } from "@tentacle-tv/api-client";
+import { useHeldMediaRowItems } from "@tentacle-tv/api-client";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { WatchlistResumeTile } from "./WatchlistResumeTile";
-
-const mediaKey = (item: MediaItem) => item.Id;
 
 interface WatchlistResumeShelfProps {
   items: MediaItem[];
@@ -32,7 +30,7 @@ export const WatchlistResumeShelf = memo(function WatchlistResumeShelf({
   const [hovered, setHovered] = useState(false);
   const leave = useCallback(() => setHovered(false), []);
   useHoverGuard(rowRef, hovered, leave);
-  const items = useHeldRowItems(served, hovered, mediaKey);
+  const items = useHeldMediaRowItems(served, hovered);
   if (items.length === 0) return null;
 
   return (

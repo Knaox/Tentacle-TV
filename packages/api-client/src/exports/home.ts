@@ -29,5 +29,7 @@ export {
 // Une rangée survolée ne bouge pas sous le curseur : ce qu'un geste de carte
 // retire part au LÂCHER (cf. rows/heldRow — la règle de toutes les rangées)
 export { useHeldRowItems, useRowSnapshot, heldRowView } from "../rows/heldRow";
+// … et pour des titres Jellyfin, une carte perdue garde l'état que le cache dit (rows/heldMediaRow)
+export { useHeldMediaRowItems } from "../rows/heldMediaRow";
 // Les images de repli de la bannière d'accueil (cf. hooks/useHeroArtwork)
 export { useHeroArtwork, useHeroArtworkUrls, fetchHeroArtwork } from "../hooks/useHeroArtwork";

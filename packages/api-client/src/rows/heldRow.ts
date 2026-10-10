@@ -27,7 +27,7 @@ export function heldRowView<T>(
   held: boolean,
   keyOf: (item: T) => string,
   drop?: (item: T) => boolean,
-  lastSeen?: ReadonlyMap<string, T>,
+  lastSeen?: Pick<ReadonlyMap<string, T>, "get">,
 ): readonly T[] {
   if (!held) return items;
   const source = frozen ?? items;
@@ -48,11 +48,12 @@ export function useRowSnapshot<T>(items: readonly T[], held: boolean): readonly 
   return held ? (frozen ?? items) : null;
 }
 
-/** Les cartes à rendre d'une rangée, tenue (`held`) ou non. `keyOf` : stable (hors du rendu). */
-export function useHeldRowItems<T>(items: readonly T[], held: boolean, keyOf: (item: T) => string): readonly T[] {
-  const frozen = useRowSnapshot(items, held);
-  // La dernière version rendue de chaque carte, le temps du survol. Notée
-  // APRÈS le rendu (effet) : jamais d'état, donc rien à faire converger.
+/**
+ * La dernière version rendue de chaque carte, le temps du survol. Notée APRÈS
+ * le rendu (effet) : jamais d'état, donc rien à faire converger. La même Map
+ * pour toute la vie de la rangée — vidée au lâcher.
+ */
+export function useLastSeen<T>(items: readonly T[], held: boolean, keyOf: (item: T) => string): Map<string, T> {
   const lastSeen = useRef(new Map<string, T>());
   useLayoutEffect(() => {
     if (!held) {
@@ -61,6 +62,15 @@ export function useHeldRowItems<T>(items: readonly T[], held: boolean, keyOf: (i
     }
     for (const item of items) lastSeen.current.set(keyOf(item), item);
   }, [items, held, keyOf]);
-  const seen = lastSeen.current;
+  return lastSeen.current;
+}
+
+/**
+ * Les cartes à rendre d'une rangée, tenue (`held`) ou non. `keyOf` : stable (hors du rendu).
+ * Des titres Jellyfin : `useHeldMediaRowItems`, qui lit aussi le cache.
+ */
+export function useHeldRowItems<T>(items: readonly T[], held: boolean, keyOf: (item: T) => string): readonly T[] {
+  const frozen = useRowSnapshot(items, held);
+  const seen = useLastSeen(items, held, keyOf);
   return useMemo(() => heldRowView(items, frozen, held, keyOf, undefined, seen), [items, frozen, held, keyOf, seen]);
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { rowItemKeys, type MediaItem } from "@tentacle-tv/shared";
-import { useHeldRowItems } from "@tentacle-tv/api-client";
+import { useHeldMediaRowItems } from "@tentacle-tv/api-client";
 import { PosterCard } from "../cards/PosterCard";
 import { EpisodeCard } from "../cards/EpisodeCard";
 import type { PosterImageMode } from "@tentacle-tv/shared";
@@ -78,7 +78,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
   // La page défile sous un curseur immobile : la rangée n'est plus survolée,
   // elle se relâche (cf. RecoRow).
   useHoverGuard(rowRef, controls.hovered, controls.onMouseLeave);
-  const items = useHeldRowItems(served, controls.hovered, mediaKey);
+  const items = useHeldMediaRowItems(served, controls.hovered);
   const track = useRowWindow({
     scrollRef,
     count: items.length,
