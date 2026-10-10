@@ -6,7 +6,7 @@ import { pipFrameRadii, type PipFrame } from "./pipGeometry";
  * reçoive la souris.
  *
  * La vidéo est la fenêtre de mpv, collée SOUS celle-ci, à `shadow + bezel` de
- * son bord (la colle KWin) : ses coins sont carrés, et rien ne rend le bureau
+ * son bord (la colle KWin, ou la coquille sur macOS) : ses coins sont carrés, et rien ne rend le bureau
  * à travers une fenêtre opaque. Le liseré, OPAQUE, les recouvre et dessine
  * l'arrondi — percé au centre d'un trou arrondi où la vidéo se voit. L'ombre
  * vit dans la marge transparente autour : du noir, la seule couleur que cette
@@ -21,7 +21,7 @@ const BEZEL = "linear-gradient(180deg, #1c1828 0%, #0c0a12 100%)";
 /**
  * Un anneau : le fond peint sur la marge intérieure seulement, le contenu
  * percé — sa boîte de contenu garde l'arrondi, réduit de l'épaisseur. Le
- * Chromium d'Electron (la seule cible : Linux) connaît `mask-composite`.
+ * Chromium d'Electron (la seule cible) connaît `mask-composite`.
  */
 function ring(width: number, background: string): CSSProperties {
   return {

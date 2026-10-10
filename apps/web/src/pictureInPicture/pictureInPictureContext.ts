@@ -13,12 +13,13 @@ import type { PipFrame } from "./pipGeometry";
 
 /**
  * Un geste sur la fenêtre PiP — la glisser, tirer un coin —, que la colle KWin
- * exécute en suivant le curseur (`pip/pipCaptions.ts` côté coquille).
+ * (Linux) ou la coquille (macOS) exécute en suivant le curseur
+ * (`pip/pipCaptions.ts`, `pip/pipShell.ts` côté coquille).
  */
 export type PipGesture = "move" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 export interface PictureInPicture {
-  /** Le PiP existe dans cette coquille (Linux, colle KWin). */
+  /** Le PiP existe dans cette coquille (Linux et sa colle KWin, macOS Apple Silicon). */
   supported: boolean;
   /** Le lecteur joue dans le PiP : la page parcourt l'application. */
   active: boolean;

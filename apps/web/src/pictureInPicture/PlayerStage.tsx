@@ -24,7 +24,7 @@ import {
  * élément au même endroit, React garde l'instance, la lecture ne s'interrompt
  * pas. Les routes de l'application, elles, ne rendent plus rien sur `/watch`.
  *
- * Montée seulement là où le PiP existe (Linux, colle KWin — `supportsPictureInPicture`) :
+ * Montée seulement là où le PiP existe (`supportsPictureInPicture`) :
  * ailleurs, la route rend le lecteur comme avant.
  */
 

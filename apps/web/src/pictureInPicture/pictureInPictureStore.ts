@@ -7,8 +7,8 @@
  * dit à `PlayerStage` de garder le lecteur monté. Un `useState` monté sous la
  * route mourrait avec elle.
  *
- * Linux seulement pour l'instant (colle KWin) : ailleurs, rien n'appelle
- * `startPipSession`, la session reste vide.
+ * Là où le PiP existe seulement (`supportsPictureInPicture`) : ailleurs, rien
+ * n'appelle `startPipSession`, la session reste vide.
  */
 
 import { useSyncExternalStore } from "react";

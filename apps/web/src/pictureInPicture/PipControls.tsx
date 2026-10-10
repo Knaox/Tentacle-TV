@@ -9,7 +9,7 @@ import { usePipPointer, type PipCorner } from "./usePipPointer";
  * Les contrôles du PiP, rendus par le lecteur DANS la fenêtre PiP (portail).
  *
  * La fenêtre est transparente : la vidéo est la fenêtre de mpv, juste dessous,
- * collée par KWin à l'intérieur du cadre. De l'extérieur vers l'intérieur : la
+ * collée par KWin (ou par la coquille, sur macOS) à l'intérieur du cadre. De l'extérieur vers l'intérieur : la
  * marge de l'ombre (dont les coins sont les poignées de taille), le liseré
  * (`PipChrome`), puis la vidéo et ce qui s'y pose au survol (`PipOverlay`).
  *
