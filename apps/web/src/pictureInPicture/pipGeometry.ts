@@ -101,9 +101,11 @@ function fit(width: number, aspect: number, max: number): PipSize {
 }
 
 /**
- * La taille de départ. Flottant : la dernière largeur choisie, sinon le quart
- * de l'écran — les bornes du PiP natif de KDE — entre 320 et 640 points.
- * Ancré : 28 % de la fenêtre de l'application, 320 points au moins.
+ * La taille de départ : la largeur que l'utilisateur a choisie, dans les deux
+ * modes — le PiP est le même, ancré ou détaché (retour de Damien). Sans
+ * choix : flottant, le quart de l'écran — les bornes du PiP natif de KDE —
+ * entre 320 et 640 points ; ancré, 28 % de la fenêtre, 320 points au moins.
+ * Toujours bornée par le mode (`maxWidth`).
  */
 export function initialPipSize(
   mode: PipMode,
@@ -113,9 +115,8 @@ export function initialPipSize(
   rememberedWidth: number | null,
 ): PipSize {
   const base =
-    mode === "docked"
-      ? Math.max(320, windowWidth * 0.28)
-      : rememberedWidth ?? Math.min(Math.max(screenWidth * 0.25, 320), 640);
+    rememberedWidth ??
+    (mode === "docked" ? Math.max(320, windowWidth * 0.28) : Math.min(Math.max(screenWidth * 0.25, 320), 640));
   return fit(base, aspect, maxWidth(mode, screenWidth, windowWidth));
 }
 
@@ -131,21 +132,33 @@ export function scalePipSize(
   return fit(current.width * factor, aspect, maxWidth(mode, screenWidth, windowWidth));
 }
 
-/** La largeur choisie à la molette, reprise au prochain PiP flottant. */
-const WIDTH_KEY = "tentacle_pip_width";
+/**
+ * La largeur de vidéo que l'utilisateur a choisie — molette, coin tiré, bords
+ * du système —, reprise au prochain PiP et quand il change de mode.
+ *
+ * ⚠️ L'ancienne clé `tentacle_pip_width` n'est plus lue : elle retenait aussi
+ * la taille du LECTEUR, celle que le PiP flottant traverse en y revenant
+ * (animation de la coquille) — le PiP suivant naissait à 60 % de l'écran.
+ * Effacée à la première largeur choisie.
+ */
+const WIDTH_KEY = "tentacle_pip_video_width";
+const LEGACY_WIDTH_KEY = "tentacle_pip_width";
 
 export function rememberedPipWidth(): number | null {
   try {
-    const raw = Number(localStorage.getItem(WIDTH_KEY));
-    return Number.isFinite(raw) && raw >= PIP_MIN_WIDTH ? raw : null;
+    const raw = localStorage.getItem(WIDTH_KEY);
+    const width = raw === null ? Number.NaN : Number(raw);
+    return Number.isFinite(width) && width >= PIP_MIN_WIDTH ? width : null;
   } catch {
     return null;
   }
 }
 
 export function rememberPipWidth(width: number): void {
+  if (!Number.isFinite(width) || width < PIP_MIN_WIDTH) return;
   try {
     localStorage.setItem(WIDTH_KEY, String(Math.round(width)));
+    localStorage.removeItem(LEGACY_WIDTH_KEY);
   } catch {
     /* stockage indisponible : la taille par défaut reviendra */
   }

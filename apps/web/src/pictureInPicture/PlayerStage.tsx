@@ -46,6 +46,13 @@ function screenWidthOf(child: Window | null): number {
 /** Réduire : la page quitte le lecteur au plus tard après ce délai. */
 const LEAVE_FALLBACK_MS = 1200;
 
+/**
+ * Après une naissance ou une bascule de mode, la coquille anime encore la
+ * fenêtre (280 ms au plus, `pipMotion.ts`) : ces tailles-là ne sont pas un
+ * choix de l'utilisateur, rien n'est retenu avant ce délai.
+ */
+const PIP_SETTLE_MS = 700;
+
 function pathOf(location: Location): string {
   return `${location.pathname}${location.search}${location.hash}`;
 }
@@ -84,6 +91,14 @@ export function PlayerStage() {
   const returnRef = useRef<{ restoreFullscreen: boolean } | null>(null);
   // Réduire : la page ne quitte le lecteur qu'une fois la vidéo dans le PiP.
   const leavingRef = useRef(false);
+  /**
+   * Jusqu'à cet instant (`performance.now()`), la taille du PiP change par
+   * nous — naissance, bascule de mode, retour au lecteur — et ne se retient
+   * pas. Le retour au lecteur faisait grandir le PiP flottant jusqu'au
+   * lecteur : sa taille devenait « la largeur choisie », et le PiP suivant
+   * naissait à 60 % de l'écran (retour de Damien).
+   */
+  const settleUntilRef = useRef(Number.POSITIVE_INFINITY);
 
   // La lecture lancée passe au PiP, et la page rend AVANT d'être peinte celle
   // qu'on parcourait (`replace` : synchrone, là où `navigate(-1)` laisserait
@@ -110,15 +125,19 @@ export function PlayerStage() {
     void navigate(-1);
   }, [navigate]);
 
+  // Le PiP à l'écran : il gagne son coin, puis sa taille est celle de l'utilisateur.
+  const onShown = useCallback(() => {
+    settleUntilRef.current = performance.now() + PIP_SETTLE_MS;
+    leavePlayer();
+  }, [leavePlayer]);
+
   const reduce = useCallback(async ({ restoreFullscreen }: { restoreFullscreen: boolean }) => {
     if (!location.pathname.startsWith("/watch/") || getPipSession() !== null) return;
     const mode = DEFAULT_PIP_MODE;
     const raw = await getMpvApi()?.getProperty("video-params/aspect", "double").catch(() => null);
     aspectRef.current = pipAspect(raw);
-    sizeRef.current = initialPipSize(
-      mode, aspectRef.current, window.screen.availWidth, window.innerWidth,
-      mode === "floating" ? rememberedPipWidth() : null,
-    );
+    sizeRef.current = initialPipSize(mode, aspectRef.current, window.screen.availWidth, window.innerWidth, rememberedPipWidth());
+    settleUntilRef.current = Number.POSITIVE_INFINITY;
     // Le plein écran posé par le film est rendu : on parcourt l'application.
     try { await invoke("player_fullscreen_leave"); } catch { /* on réduit quand même */ }
     expandingRef.current = false;
@@ -133,6 +152,7 @@ export function PlayerStage() {
     const current = getPipSession();
     if (current === null) return;
     expandingRef.current = true;
+    settleUntilRef.current = Number.POSITIVE_INFINITY;
     updatePipSession({ returning: true });
     // L'image regagne d'abord sa place dans le lecteur (la coquille l'anime ;
     // rien sous Linux, où la commande rend la main aussitôt).
@@ -176,12 +196,14 @@ export function PlayerStage() {
     if (!expandingRef.current) endPipSession();
   }, []);
 
+  // Détaché ou rangé, le PiP garde sa taille : celle choisie, sinon l'actuelle.
   const setMode = useCallback((mode: PipMode) => {
     const size = initialPipSize(
       mode, aspectRef.current, screenWidthOf(childRef.current), window.innerWidth,
-      mode === "floating" ? rememberedPipWidth() : null,
+      rememberedPipWidth() ?? sizeRef.current?.width ?? null,
     );
     sizeRef.current = size;
+    settleUntilRef.current = performance.now() + PIP_SETTLE_MS;
     void invoke("pip_mode", { mode, width: size.width, height: size.height }).catch(() => {});
     updatePipSession({ mode });
   }, []);
@@ -193,7 +215,7 @@ export function PlayerStage() {
     const next = scalePipSize(size, factor, aspectRef.current, current.mode, screenWidthOf(childRef.current), window.innerWidth);
     if (next.width === size.width) return;
     sizeRef.current = next;
-    // La largeur retenue suit la fenêtre (`onResized`).
+    rememberPipWidth(next.width);
     void invoke("pip_resize", { width: next.width, height: next.height }).catch(() => {});
   }, []);
 
@@ -206,12 +228,14 @@ export function PlayerStage() {
     setFrame(nextFrame);
   }, []);
 
-  // La fenêtre a changé de taille — un coin tiré, la molette, une bascule de
-  // mode : la molette repart de là, et un PiP flottant la retient.
+  // La fenêtre a changé de taille — un coin tiré, les bords du système, la
+  // molette, une animation de la coquille : la molette repart de là, et la
+  // taille se retient pour le prochain PiP si c'est l'utilisateur qui l'a
+  // choisie (`settleUntilRef`), dans les deux modes.
   const onResized = useCallback((size: PipSize) => {
     if (size.width <= 0 || size.height <= 0) return;
     sizeRef.current = size;
-    if (getPipSession()?.mode === "floating") rememberPipWidth(size.width);
+    if (getPipSession() !== null && performance.now() >= settleUntilRef.current) rememberPipWidth(size.width);
   }, []);
 
   const navigateInPip = useCallback((to: string | -1, options?: NavigateOptions) => {
@@ -252,7 +276,7 @@ export function PlayerStage() {
       {session !== null && sizeRef.current !== null && (
         <PipWindow
           mode={session.mode} size={sizeRef.current}
-          onContainer={onContainer} onResized={onResized} onLost={onLost} onShown={leavePlayer} windowRef={childRef}
+          onContainer={onContainer} onResized={onResized} onLost={onLost} onShown={onShown} windowRef={childRef}
         />
       )}
     </PictureInPictureContext.Provider>

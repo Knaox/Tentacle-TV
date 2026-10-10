@@ -31,13 +31,21 @@ describe("initialPipSize", () => {
     expect(initialPipSize("floating", 16 / 9, 1024, 900, null).width).toBe(320);
   });
 
-  it("flottant : la largeur choisie à la molette revient", () => {
-    expect(initialPipSize("floating", 16 / 9, 1920, 1280, 560)).toEqual({ width: 560, height: 315 });
-  });
-
   it("ancré : 28 % de la fenêtre, 320 points au moins", () => {
     expect(initialPipSize("docked", 16 / 9, 1920, 1280, null)).toEqual({ width: 358, height: 201 });
     expect(initialPipSize("docked", 16 / 9, 1920, 900, null).width).toBe(320);
+  });
+
+  it("la largeur choisie revient, ancré comme détaché", () => {
+    expect(initialPipSize("floating", 16 / 9, 1920, 1280, 560)).toEqual({ width: 560, height: 315 });
+    expect(initialPipSize("docked", 16 / 9, 1920, 1280, 480)).toEqual({ width: 480, height: 270 });
+  });
+
+  it("une largeur choisie reste bornée par le mode — jamais un PiP démesuré", () => {
+    // Choisie sur un écran plus grand : 60 % de celui-ci au plus.
+    expect(initialPipSize("floating", 16 / 9, 1920, 1280, 1900).width).toBe(1152);
+    // Rangé dans une fenêtre plus étroite : 45 % de la fenêtre au plus.
+    expect(initialPipSize("docked", 16 / 9, 1920, 1000, 800).width).toBe(450);
   });
 
   it("une image très large ne descend jamais sous la hauteur minimale", () => {
