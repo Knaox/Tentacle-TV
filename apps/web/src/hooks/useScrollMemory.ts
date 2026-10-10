@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { usePageLocation } from "../pictureInPicture/usePageLocation";
 
 const scrollPositions = new Map<string, number>();
 
@@ -43,9 +43,16 @@ const opensAtTop = (pathname: string): boolean =>
  * navigateur désigne l'écran : elle change à l'instant même de la navigation,
  * avant que quoi que ce soit ne soit démonté, et ce qui défile ensuite
  * appartient déjà à l'écran suivant.
+ *
+ * **L'adresse de la PAGE, pas celle du routeur** (`usePageLocation`) : une
+ * lecture lancée pendant le PiP passe un instant par `/watch/…` avant que la
+ * page parcourue ne revienne. Lue sur le routeur, ce passage remettait le
+ * défilement à zéro (aucune position pour le lecteur), puis l'accueil — qui
+ * s'ouvre toujours en haut — y restait : la page remontait sous les yeux à
+ * chaque titre lancé (retour de Damien). La page, elle, n'a pas bougé.
  */
 export function useScrollMemory() {
-  const { pathname } = useLocation();
+  const { pathname } = usePageLocation();
 
   useEffect(() => {
     if (opensAtTop(pathname)) {
