@@ -42,3 +42,4 @@ export * from "./trailerControls";
 export * from "./trailerBack";
 export * from "./trailerPanels";
 export * from "./trailerStream";
+export * from "./trailerSubtitleMemory";
