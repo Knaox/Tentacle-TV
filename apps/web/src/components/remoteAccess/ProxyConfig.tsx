@@ -7,6 +7,7 @@ import {
   isValidBasePath,
   isValidDomain,
   nginxSnippet,
+  packagedHelpKey,
   traefikSnippet,
   type ProxySnippetInput,
   type RemoteAccessState,
@@ -121,7 +122,7 @@ export function ProxyConfig({ state }: { state: RemoteAccessState }) {
     <div className="space-y-5">
       <div className="grid items-start gap-4 md:grid-cols-2">
         <Field {...text} inputMode="url" label={t("domainTentacle")} hint={t("domainTentacleHint")} value={tentacleDomain} onChange={(e) => setTentacleDomain(e.target.value)} error={errors.tentacleDomain} placeholder="tentacle.example.com" />
-        <Field {...text} label={t("tentacleUpstream")} hint={t("tentacleUpstreamHint", { port: state.hostPort })} value={tentacleUpstream} onChange={(e) => setTentacleUpstream(e.target.value)} error={tentacleUpstream ? errors.tentacleUpstream : null} placeholder={exampleTentacle} />
+        <Field {...text} label={t("tentacleUpstream")} hint={t(packagedHelpKey("remoteAccess", "tentacleUpstreamHint", state.packaging), { port: state.hostPort })} value={tentacleUpstream} onChange={(e) => setTentacleUpstream(e.target.value)} error={tentacleUpstream ? errors.tentacleUpstream : null} placeholder={exampleTentacle} />
       </div>
       <JellyfinModeChoice value={mode} onChange={setMode} />
       {mode !== "none" ? (
