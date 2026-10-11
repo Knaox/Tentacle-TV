@@ -30,9 +30,10 @@ import type { TrailerTracks } from "../../screens/trailer/types";
  * et ce que fait un choix : tv-core (`player/trailerPanels.ts`) ; ici, la
  * capacité du serveur, les libellés et l'état.
  *
- * - Garde : `trailers.player`. Un serveur d'avant ne déclare rien → aucun
- *   bouton, aucun sous-titre, aucune qualité demandés au moteur — avancer et
- *   reculer restent, sans un mot d'erreur.
+ * - Garde : `trailers.player` pour les BOUTONS. Un serveur d'avant ne
+ *   déclare rien → aucun bouton ; il n'offre ni pistes ni paliers, donc rien
+ *   n'est demandé au moteur (tv-core `trailerEngineRequest`, lu sur l'offre)
+ *   — avancer et reculer restent, sans un mot d'erreur.
  * - Le sous-titre choisi se RETIENT pour les bandes-annonces suivantes, par
  *   profil (tv-core `trailerSubtitleMemory`, clé du compte affiché).
  * - La qualité démarre à la PLUS HAUTE offerte (tv-core
@@ -124,8 +125,12 @@ export function useTrailerTracks(): TrailerTracksState {
   const openPanel = useCallback((next: TrailerPanel) => setOpen(next), []);
   const close = useCallback(() => setOpen(null), []);
 
-  // Un serveur d'avant n'a rien offert : rien n'est demandé au moteur.
-  const request = trailerEngineRequest({ playerCapable: capable, subtitle, quality });
+  // Rien n'est demandé hors de l'offre du flux : un serveur d'avant n'offre rien.
+  const request = trailerEngineRequest({
+    offered: { subtitles: tracks.subtitles.map((s) => s.lang), qualities: heights },
+    subtitle,
+    quality,
+  });
   return {
     tools,
     subtitle: request.subtitle,

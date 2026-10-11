@@ -5,8 +5,9 @@ import { trailerNeighbor, TRAILER_TIMELINE_KEY } from "./trailerFocus";
 import { TRAILER_CLOSE_KEY } from "./trailerChrome";
 
 describe("serveur sans `trailers.player` (d'avant le lecteur simplifié)", () => {
-  it("rien n'est demandé au moteur, même un choix retenu", () => {
-    expect(trailerEngineRequest({ playerCapable: false, subtitle: "fr", quality: 720 })).toEqual({ subtitle: null, quality: null });
+  it("rien n'est offert, rien n'est demandé au moteur — même un choix retenu", () => {
+    const offered = { subtitles: [], qualities: [] };
+    expect(trailerEngineRequest({ offered, subtitle: "fr", quality: 720 })).toEqual({ subtitle: null, quality: null });
   });
 
   it("la barre seule : ni bouton, ↑ mène à la croix — avancer et reculer restent", () => {
@@ -17,9 +18,11 @@ describe("serveur sans `trailers.player` (d'avant le lecteur simplifié)", () =>
     expect(trailerNeighbor(TRAILER_TIMELINE_KEY, "droite", view)).toBe("stay");
   });
 
-  it("avec la capacité, le choix part tel quel", () => {
-    expect(trailerEngineRequest({ playerCapable: true, subtitle: "fr", quality: 720 })).toEqual({ subtitle: "fr", quality: 720 });
-    expect(trailerEngineRequest({ playerCapable: true, subtitle: null, quality: null })).toEqual({ subtitle: null, quality: null });
+  it("parmi l'offre, le choix part tel quel ; hors de l'offre, rien", () => {
+    const offered = { subtitles: ["fr", "en-US"], qualities: [1080, 720] };
+    expect(trailerEngineRequest({ offered, subtitle: "fr", quality: 720 })).toEqual({ subtitle: "fr", quality: 720 });
+    expect(trailerEngineRequest({ offered, subtitle: null, quality: null })).toEqual({ subtitle: null, quality: null });
+    expect(trailerEngineRequest({ offered, subtitle: "de", quality: 480 })).toEqual({ subtitle: null, quality: null });
   });
 });
 

@@ -2,10 +2,13 @@ import { trailerQualityHeights } from "./trailerPanels";
 
 /**
  * Ce que la bande-annonce DEMANDE au moteur : la langue des sous-titres et la
- * hauteur choisies — seulement si le serveur déclare `trailers.player`. Un
- * serveur d'avant n'offre ni pistes ni paliers : rien n'est demandé (Auto,
- * aucun sous-titre), même si un choix retenu traîne sur le téléviseur —
- * avancer et reculer restent, sans un mot d'erreur. Module pur.
+ * hauteur choisies — seulement parmi ce que le flux OFFRE. Un serveur d'avant
+ * (sans `trailers.player`) n'offre ni pistes ni paliers : rien n'est demandé
+ * (Auto, aucun sous-titre), même si un choix retenu traîne sur le téléviseur —
+ * avancer et reculer restent, sans un mot d'erreur. Lu sur l'offre, pas sur
+ * la capacité : la configuration en cache peut ne la dire qu'après coup
+ * (mesuré au banc : la source Auto partait, puis la bonne 100 ms plus tard).
+ * Les BOUTONS, eux, restent gardés par la capacité (`trailerTools`). Module pur.
  */
 export interface TrailerEngineRequest {
   /** La langue de la piste à afficher ; `null` : aucune. */
@@ -14,9 +17,14 @@ export interface TrailerEngineRequest {
   quality: number | null;
 }
 
-export function trailerEngineRequest(input: { playerCapable: boolean } & TrailerEngineRequest): TrailerEngineRequest {
-  if (!input.playerCapable) return { subtitle: null, quality: null };
-  return { subtitle: input.subtitle, quality: input.quality };
+export function trailerEngineRequest(input: {
+  offered: { subtitles: readonly string[]; qualities: readonly number[] };
+} & TrailerEngineRequest): TrailerEngineRequest {
+  const { offered } = input;
+  return {
+    subtitle: input.subtitle !== null && offered.subtitles.includes(input.subtitle) ? input.subtitle : null,
+    quality: input.quality !== null && offered.qualities.includes(input.quality) ? input.quality : null,
+  };
 }
 
 /**
