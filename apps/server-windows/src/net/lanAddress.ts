@@ -51,6 +51,15 @@ export function pickLanAddress(routeAddress: string | null, nics: InterfaceTable
   return [...candidates].sort((x, y) => rank(x) - rank(y))[0] ?? null;
 }
 
+/** Le nom de la carte qui porte une adresse (le profil réseau se lit par ce nom). */
+export function interfaceOf(address: string | null, nics: InterfaceTable): string | null {
+  if (address === null) return null;
+  for (const [name, entries] of Object.entries(nics)) {
+    if (entries?.some((entry) => entry.address === address)) return name;
+  }
+  return null;
+}
+
 /** L'adresse source de la route par défaut ; `null` sans réseau. */
 export function defaultRouteAddress(): Promise<string | null> {
   return new Promise((resolve) => {
