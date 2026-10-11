@@ -43,6 +43,7 @@ function readText(path: string): string | null {
 
 export function createJellyfinHost(options: JellyfinHostOptions): HostServices {
   const run = systemToolRunner(options.systemRoot);
+  const start = () => startJellyfin({ run, exists: existsSync, openWithExplorer: explorerOpener(options.systemRoot) });
   const installer = new JellyfinInstaller({
     arm64: options.arm64,
     enabled: options.installerEnabled,
@@ -54,6 +55,11 @@ export function createJellyfinHost(options: JellyfinHostOptions): HostServices {
     ensureFolder: (path) => mkdirSync(path, { recursive: true }),
     remove: (path) => rmSync(path, { force: true }),
     log: options.log,
+    // L'installateur ne lance pas Jellyfin : on le démarre, sinon l'administrateur reste devant un Jellyfin éteint.
+    afterInstall: async () => {
+      const result = await start();
+      return result.started ? "Jellyfin démarré" : `Jellyfin non démarré (${result.reason})`;
+    },
   });
   const picker = new FolderPicker(options.execPath, options.hostScript, options.log);
   const env = { ...(options.env.ProgramData ? { ProgramData: options.env.ProgramData } : {}), ...(options.env.LOCALAPPDATA ? { LOCALAPPDATA: options.env.LOCALAPPDATA } : {}) };
@@ -69,7 +75,7 @@ export function createJellyfinHost(options: JellyfinHostOptions): HostServices {
       }),
     install: () => installer.install(),
     installStatus: () => installer.status(),
-    start: () => startJellyfin({ run, exists: existsSync, openWithExplorer: explorerOpener(options.systemRoot) }),
+    start,
     pickFolder: (params) => picker.pick(params, HOST_METHOD_TIMEOUTS_MS["dialog.pickFolder"]),
     log: options.log,
   });

@@ -151,6 +151,24 @@ describe("installation guidée", () => {
     expect(deps.removed).toEqual(deps.launched);
   });
 
+  it("installé : Jellyfin est démarré avant de dire « fini » ; un échec du démarrage ne fait pas échouer l'installation", async () => {
+    const order: string[] = [];
+    const ok = new JellyfinInstaller(installerDeps({ afterInstall: async () => (order.push("start"), "Jellyfin démarré"), remove: () => order.push("remove") }));
+    ok.install();
+    await settle(ok);
+    expect(ok.status().phase).toBe("done");
+    expect(order).toEqual(["start", "remove"]);
+    const failing = new JellyfinInstaller(installerDeps({ afterInstall: async () => Promise.reject(new Error("explorer")) }));
+    failing.install();
+    await settle(failing);
+    expect(failing.status().phase).toBe("done");
+    const cancelled = installerDeps({ launch: async () => ({ ok: true, exitCode: 2 }), afterInstall: async () => (order.push("never"), "") });
+    const stopped = new JellyfinInstaller(cancelled);
+    stopped.install();
+    await settle(stopped);
+    expect(order).not.toContain("never");
+  });
+
   it("élévation refusée, installateur fermé, empreinte fausse : chacun sa cause", async () => {
     const cases: [Partial<InstallerDeps>, string][] = [
       [{ launch: async () => ({ ok: false, reason: "cancelled", error: 1223 }) }, "cancelled"],

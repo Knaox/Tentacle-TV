@@ -27,10 +27,10 @@ describe("« Démarrer Jellyfin »", () => {
     expect(d.opened).toEqual(["C:\\Program Files\\Jellyfin\\Server\\jellyfin-windows-tray\\Jellyfin.Windows.Tray.exe"]);
   });
 
-  it("un service n'est jamais démarré par nous", async () => {
+  it("un service n'est jamais démarré par nous : on ouvre Services", async () => {
     const d = deps({ service: true, registry: REG_SIMPLE });
     expect(await startJellyfin(d)).toEqual({ started: false, reason: "service" });
-    expect(d.opened).toEqual([]);
+    expect(d.opened).toEqual(["services.msc"]);
   });
 
   it("rien d'installé, lanceur absent, lancement refusé", async () => {

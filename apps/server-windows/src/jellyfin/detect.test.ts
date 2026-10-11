@@ -71,6 +71,11 @@ describe("détection de Jellyfin", () => {
     expect(found).toMatchObject({ state: "stopped", mode: "tray", version: "12.1.0", url: "http://127.0.0.1:8920/jf", port: 8920, canStart: true });
   });
 
+  it("ServiceAccountType illisible mais lanceur présent, sans service : on sait le démarrer", async () => {
+    const noAccount = { ...INSTALLED, "HKLM\\SOFTWARE\\WOW6432Node\\Jellyfin\\Server": REG_SERVER.replace(/.*ServiceAccountType.*\n/, "") };
+    expect(await detectJellyfin(deps({ reg: noAccount }))).toMatchObject({ state: "stopped", mode: null, canStart: true });
+  });
+
   it("le lanceur absent : pas de « Démarrer »", async () => {
     expect(await detectJellyfin(deps({ reg: INSTALLED, exists: () => false }))).toMatchObject({ state: "stopped", canStart: false });
   });

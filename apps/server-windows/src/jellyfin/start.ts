@@ -10,7 +10,8 @@
  * un Windows installé (diagnostic § 6.4).
  *
  * Un SERVICE n'est jamais démarré par nous : il exige une élévation, que
- * Tentacle ne demande jamais de lui-même. L'assistant renvoie vers Services.
+ * Tentacle ne demande jamais de lui-même. On ouvre Services (`services.msc`,
+ * par l'Explorateur) et l'assistant dit quoi y faire.
  */
 import { execFile } from "node:child_process";
 import { join } from "node:path";
@@ -25,12 +26,21 @@ export interface StartDeps {
   openWithExplorer: (path: string) => Promise<boolean>;
 }
 
+/** La console Services de Windows, où l'administrateur démarre lui-même le service. */
+export const SERVICES_CONSOLE = "services.msc";
+
 export async function startJellyfin(deps: StartDeps): Promise<JellyfinStartResult> {
   const service = parseServiceState(await deps.run("sc", ["query", JELLYFIN_SERVICE]));
-  if (service !== "absent") return { started: false, reason: "service" };
+  if (service !== "absent") {
+    await deps.openWithExplorer(SERVICES_CONSOLE);
+    return { started: false, reason: "service" };
+  }
   const registry = await readJellyfinRegistry(deps.run);
   if (!registry?.installFolder) return { started: false, reason: "not_installed" };
-  if (registry.mode === "service") return { started: false, reason: "service" };
+  if (registry.mode === "service") {
+    await deps.openWithExplorer(SERVICES_CONSOLE);
+    return { started: false, reason: "service" };
+  }
   const launcher = trayLauncher(registry.installFolder);
   if (!deps.exists(launcher)) return { started: false, reason: "launcher_missing" };
   return (await deps.openWithExplorer(launcher)) ? { started: true } : { started: false, reason: "failed" };

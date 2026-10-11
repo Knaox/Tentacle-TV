@@ -8,7 +8,9 @@
  *  3. l'empreinte et la taille, lues sur l'origine (`repo.ts`) ;
  *  4. le téléchargement vérifié (`download.ts`) — bloquant ;
  *  5. l'installateur officiel lancé en interactif, élevé, hors du paquet ;
- *  6. fini : le fichier est effacé ; l'assistant refait la détection.
+ *  6. installé : Jellyfin est DÉMARRÉ d'office (installation simple — son
+ *     installateur ne le lance pas), puis le fichier est effacé et
+ *     l'assistant refait la détection.
  *
  * Tout échec renvoie vers la page officielle, puis la détection. Tentacle ne
  * met jamais Jellyfin à jour : une installation déjà là n'est pas touchée
@@ -35,6 +37,12 @@ export interface InstallerDeps {
   ensureFolder: (path: string) => void;
   remove: (path: string) => void;
   log: (line: string) => void;
+  /**
+   * Juste après un installateur sorti en 0 : démarrer Jellyfin (installation
+   * simple). Rend une ligne de journal ; un échec ne fait pas échouer
+   * l'installation — l'assistant garde « Démarrer Jellyfin ».
+   */
+  afterInstall?: () => Promise<string>;
 }
 
 /** NSIS rend 1 quand l'utilisateur ferme l'installateur ; 2 quand il l'abandonne en cours. */
@@ -114,8 +122,12 @@ export class JellyfinInstaller {
         this.fail(NSIS_CANCELLED.has(launched.exitCode) ? "cancelled" : "installer_failed", picked.version);
         return;
       }
-      this.current = { ...this.current, phase: "done" };
       this.deps.log("installateur de Jellyfin terminé");
+      if (this.deps.afterInstall) {
+        const line = await this.deps.afterInstall().catch((error: unknown) => `démarrage impossible : ${error instanceof Error ? error.message : String(error)}`);
+        this.deps.log(`après l'installation : ${line}`);
+      }
+      this.current = { ...this.current, phase: "done" };
     } finally {
       this.deps.remove(file);
     }

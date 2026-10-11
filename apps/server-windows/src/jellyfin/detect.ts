@@ -55,7 +55,8 @@ export async function detectJellyfin(deps: DetectDeps): Promise<JellyfinLocalDet
     version: answer?.version ?? registry?.version ?? null,
     url,
     port,
-    canStart: state === "stopped" && mode === "tray" && launcher !== null && deps.exists(launcher),
+    // Pas un service, et le lanceur est là : même sans `ServiceAccountType` lisible, on sait le démarrer.
+    canStart: state === "stopped" && mode !== "service" && launcher !== null && deps.exists(launcher),
     installer: offer,
     installing,
   };
