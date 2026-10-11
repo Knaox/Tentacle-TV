@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import type { LibraryPlan, PathStyle } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
+import { ExplorerPick } from "./ExplorerPick";
 import { FolderBrowser } from "./FolderBrowser";
 import { LibraryPlanRow } from "./LibraryPlanRow";
 import { LocaleFields } from "./LocaleFields";
@@ -26,7 +27,8 @@ const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline
  *
  * « Films » et « Séries » sont proposées : sur les dossiers de la pile pour son
  * Jellyfin, sinon sans dossier — on choisit les siens dans ce que voit
- * JELLYFIN (arborescence Linux ou lecteurs Windows, selon sa machine).
+ * JELLYFIN (arborescence Linux ou lecteurs Windows, selon sa machine). Dans
+ * l'app Windows, depuis le PC même, la boîte de l'Explorateur en plus.
  */
 export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
@@ -41,6 +43,8 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
   const existing = wizard.data.existing;
   const inStack = context?.flow.selection?.inStack ?? false;
   const optional = pathOf(context) === "configured";
+  // App Windows, navigateur sur le PC même : la boîte de l'Explorateur, en plus du parcours par Jellyfin.
+  const explorer = context?.appHost?.pickFolder === true;
 
   useEffect(() => {
     if (loaded) return;
@@ -123,7 +127,18 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
                 onCancel={() => setBrowsing(null)}
               />
             ) : (
-              <LibraryPlanRow key={index} plan={plan} onChange={(next) => update(index, next)} onBrowse={() => setBrowsing(index)} onRemove={() => setPlans((all) => all.filter((_, i) => i !== index))} />
+              <LibraryPlanRow
+                key={index}
+                plan={plan}
+                onChange={(next) => update(index, next)}
+                onBrowse={() => setBrowsing(index)}
+                onRemove={() => setPlans((all) => all.filter((_, i) => i !== index))}
+                explorer={
+                  explorer ? (
+                    <ExplorerPick name={plan.name} current={plan.paths[0] ?? null} primary={!plan.paths[0]} onPick={(path) => update(index, { paths: [path] })} />
+                  ) : undefined
+                }
+              />
             ),
           )}
           <button

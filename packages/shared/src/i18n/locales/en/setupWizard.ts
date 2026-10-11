@@ -8,6 +8,7 @@ import help from "./setupWizardHelp";
 import finish from "./setupWizardFinish";
 import libraries from "./setupWizardLibraries";
 import tmdb from "./setupWizardTmdb";
+import windowsApp from "./setupWizardWindowsApp";
 
 export default {
   // ── The frame ─────────────────────────────────────────────────────────
@@ -262,6 +263,7 @@ export default {
   ...flow,
   ...libraries,
   ...tmdb,
+  ...windowsApp,
   ...finish,
   ...help,
 };

@@ -13,7 +13,13 @@ export function JellyfinScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   const provisioner = wizard.data.context?.provisioner ?? "existing-instance";
   const subtitle =
-    provisioner === "docker-sibling" ? t("jfSubtitleSibling") : provisioner === "native-host" ? t("jfSubtitleNative") : t("jfSubtitleExisting");
+    provisioner === "docker-sibling"
+      ? t("jfSubtitleSibling")
+      : provisioner === "native-host"
+        ? t("jfSubtitleNative")
+        : provisioner === "managed-by-tentacle"
+          ? t("jfSubtitleWindowsApp")
+          : t("jfSubtitleExisting");
   return (
     <WizardFrame help={wizard} title={t("jfTitle")} subtitle={subtitle} position={wizard.position} total={wizard.total} onBack={wizard.back}>
       <JellyfinPicker wizard={wizard} />

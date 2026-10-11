@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { FolderOpen, Trash2 } from "lucide-react";
 import type { LibraryPlan, LibraryType } from "@tentacle-tv/shared";
@@ -10,9 +10,10 @@ const TYPES: readonly LibraryType[] = ["movies", "tvshows", "mixed"];
 /**
  * Une bibliothèque à créer : son nom, son type, son dossier. Sans dossier,
  * le bouton « Choisir le dossier » passe au premier plan — c'est la seule
- * chose qui manque.
+ * chose qui manque. Dans l'app Windows, sur le PC même, `explorer` (la boîte
+ * de l'Explorateur) prend le premier plan ; le parcours par Jellyfin reste.
  */
-export function LibraryPlanRow({ plan, onChange, onBrowse, onRemove }: { plan: LibraryPlan; onChange: (next: Partial<LibraryPlan>) => void; onBrowse: () => void; onRemove: () => void }) {
+export function LibraryPlanRow({ plan, onChange, onBrowse, onRemove, explorer }: { plan: LibraryPlan; onChange: (next: Partial<LibraryPlan>) => void; onBrowse: () => void; onRemove: () => void; explorer?: ReactNode }) {
   const { t } = useTranslation("setupWizard");
   const nameId = useId();
   const typeId = useId();
@@ -42,11 +43,12 @@ export function LibraryPlanRow({ plan, onChange, onBrowse, onRemove }: { plan: L
       {nameInvalid ? <p className="text-xs text-status-error-fg">{t("libraryNameInvalid")}</p> : null}
       <div className="flex flex-wrap items-center gap-3">
         <span className={`min-w-0 flex-1 break-all font-mono text-xs ${folder ? "text-content-secondary" : "text-status-warning-fg"}`}>{folder ?? t("libraryFolderNone")}</span>
-        <button type="button" onClick={onBrowse} className={folder ? cls.bs : cls.bbrand}>
+        <button type="button" onClick={onBrowse} className={folder || explorer ? cls.bs : cls.bbrand}>
           <FolderOpen size={16} aria-hidden="true" />
-          {folder ? t("libraryBrowse") : t("libraryChooseFolder")}
+          {explorer ? t("libraryBrowseJellyfin") : folder ? t("libraryBrowse") : t("libraryChooseFolder")}
         </button>
       </div>
+      {explorer}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { AdminNotice } from "../admin/kit";
 import { Field } from "../admin/services/Field";
 import { cls } from "../../pages/adminUtils";
 import { JellyfinList } from "./JellyfinList";
+import { LocalJellyfin } from "./LocalJellyfin";
 import { mergeServers, recommendedUrl, sameServer, serverState, withManual, withSelection } from "./jellyfinChoice";
 import { MissingJellyfin } from "./MissingJellyfin";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
@@ -24,12 +25,15 @@ const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline
  * « Conseillé » (celui de la pile, sinon le neuf), et le choix reste un geste
  * de l'administrateur. Le serveur sonde le Jellyfin choisi et en tire le
  * parcours (`/jellyfin/select`). Une adresse saisie à la main rejoint la liste.
+ * App Windows : le Jellyfin de CE PC en tête (`LocalJellyfin` : le démarrer,
+ * l'installer), qui rejoint la liste dès qu'il répond.
  */
 export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   const context = wizard.data.context;
   const selection = context?.flow.selection ?? null;
-  const native = context?.provisioner === "native-host";
+  const native = context?.provisioner === "native-host" || context?.provisioner === "managed-by-tentacle";
+  const appHost = context?.appHost?.jellyfin === true;
   const stackUrl = context?.provisioner === "docker-sibling" ? context.jellyfin.suggestedUrl : null;
   const stackProbe = useStackProbe(stackUrl, null);
   const [discovery, setDiscovery] = useState<JellyfinDiscoveryResponse | null>(null);
@@ -72,6 +76,15 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
     return () => clearTimeout(timer);
   }, [native, empty, searching, search]);
 
+  // Le Jellyfin de ce PC vient de répondre (démarré, installé) : il rejoint la liste, sans être choisi d'office.
+  const addLocal = useCallback(
+    (url: string) => {
+      setupApi.probe(url).then((probe) => setManual((prev) => withManual(prev, probe)), () => undefined);
+      void search();
+    },
+    [search],
+  );
+
   const checkManual = async (event: FormEvent) => {
     event.preventDefault();
     setChecking(true);
@@ -109,6 +122,7 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
 
   return (
     <div className="space-y-4">
+      {appHost ? <LocalJellyfin onFound={addLocal} /> : null}
       {searching && servers.length === 0 && !stackStarting ? (
         <div className="space-y-2" aria-live="polite">
           <p className="text-sm text-content-tertiary">{t("jfSearching")}</p>
@@ -158,7 +172,7 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
       ) : null}
 
       <SetupErrorLine code={error} />
-      {empty && context && !stackUrl ? <MissingJellyfin guide={context.missingJellyfin} waiting={native} /> : null}
+      {empty && context && !stackUrl && !appHost ? <MissingJellyfin guide={context.missingJellyfin} waiting={native} /> : null}
 
       <p className="text-sm text-content-secondary" aria-live="polite">
         {state === "blank" ? t("jfNextBlank") : state === "configured" ? t("jfNextConfigured") : t("jfPickFirst")}
