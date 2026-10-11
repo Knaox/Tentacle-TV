@@ -2,10 +2,10 @@ import type { PrismaClient } from "@prisma/client";
 import { existsSync } from "fs";
 import { connectSqlitePrisma } from "../services/database/prismaClient";
 import { coreDatabasePath } from "../services/database/sqlitePath";
-import { readHostInfo } from "../setup/hostInfo";
+import { readHostInfo, type MachineInfo } from "../setup/hostInfo";
 import { SETUP_LOCK_FILE, unsealSetup } from "../setup/setupLock";
 import { forgetClaimant } from "../setup/localAccess/claimant";
-import { discardSetupToken, setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
+import { discardSetupToken, setupCodeHome, setupTokenBanner, writeNewSetupToken } from "../setup/setupToken";
 import { DB_USAGE, runDbCommand } from "./dbQueryCommand";
 import { DB_MIGRATE_USAGE, runDbMigrateCommand } from "./dbMigrateCommand";
 import { DB_START_FRESH_USAGE, runDbStartFresh } from "./dbStartFreshCommand";
@@ -22,7 +22,8 @@ import { runWebCommand, WEB_USAGE } from "./webUiCommand";
  *   tentacle db query …    # lire la base, en lecture seule (`dbQueryCommand.ts`)
  *   tentacle db migrate    # migrer l'ancienne base MariaDB, tout de suite (`dbMigrateCommand.ts`)
  *
- * En natif : `node apps/backend/dist/cli/tentacle.js setup …`.
+ * En natif : `node apps/backend/dist/cli/tentacle.js setup …`. Dans l'app
+ * Windows : `tentacle setup …`, l'alias que le paquet pose sur le PATH.
  */
 const USAGE = [
   "Tentacle — commandes du serveur / server commands",
@@ -49,11 +50,21 @@ const SETUP_FLAGS = [
 ];
 const HELP = new Set(["help", "-h", "--help"]);
 
-/** Le redémarrage à faire après `reset`, avec l'identifiant du conteneur quand il se lit. */
-function resetDone(): string[] {
-  const { containerized, containerId } = readHostInfo();
-  const target = containerId ?? "<container>";
-  const how = containerized
+/**
+ * Le redémarrage à faire après `reset`, avec l'identifiant du conteneur quand
+ * il se lit. L'app Windows : le menu de son icône redémarre le serveur et
+ * donne le code.
+ */
+export function resetDone(info: MachineInfo = readHostInfo()): string[] {
+  const target = info.containerId ?? "<container>";
+  const home = setupCodeHome(info);
+  if (home === "windows-app") {
+    return [
+      "Assistant rouvert. Icône Tentacle Server (zone de notification) > Redémarrer le serveur, puis > Code d'installation.",
+      "Wizard reopened. Tentacle Server icon (notification area) > Restart server, then > Setup code.",
+    ];
+  }
+  const how = home === "container"
     ? [
         "  Portainer, NAS : « Restart », puis « Logs » / « Journal » du conteneur Tentacle.",
         `  Ligne de commande / command line : docker restart ${target} && docker logs ${target}`,
@@ -100,7 +111,7 @@ async function setupCompleted(): Promise<boolean> {
 }
 
 function printToken(port: string): void {
-  for (const line of setupTokenBanner(writeNewSetupToken(), port, readHostInfo().containerized)) console.log(line);
+  for (const line of setupTokenBanner(writeNewSetupToken(), port, setupCodeHome(readHostInfo()))) console.log(line);
 }
 
 export async function runCli(args: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
