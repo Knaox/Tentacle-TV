@@ -1,4 +1,5 @@
 import { closeSync, existsSync, openSync, readSync } from "fs";
+import { win32 } from "path";
 
 /**
  * Les outils externes du serveur et où les trouver. Les DÉFAUTS sont ceux de
@@ -50,4 +51,16 @@ export function isZipapp(file: string): boolean {
  */
 export function ytDlpInvocation(command: string, env: ToolEnv = process.env): { file: string; args: string[] } {
   return existsSync(command) && isZipapp(command) ? { file: pythonCommand(env), args: [command] } : { file: command, args: [] };
+}
+
+/**
+ * Le `tar` des extensions. Sous Windows, celui du système (bsdtar,
+ * `System32\tar.exe`) par son chemin ABSOLU : par le nom, un tar de Git ou de
+ * MSYS placé plus tôt dans le PATH serait pris, et il comprend « C: » comme un
+ * hôte distant. Ailleurs, `tar` du PATH, comme toujours.
+ */
+export function tarCommand(env: { SystemRoot?: string } = process.env, platform: NodeJS.Platform = process.platform): string {
+  if (platform !== "win32") return "tar";
+  const systemTar = win32.join(env.SystemRoot?.trim() || "C:\\Windows", "System32", "tar.exe");
+  return existsSync(systemTar) ? systemTar : "tar";
 }

@@ -24,8 +24,8 @@ describe("protocole hôte ↔ serveur", () => {
     expect(parseServerMessage({ type: "tentacle:request", id: "", method: "pickFolder" })).toBeNull();
     expect(parseServerMessage({ type: "tentacle:response", id: "2", ok: false, error: "boom" }))
       .toEqual({ type: "tentacle:response", id: "2", ok: false, error: "failed" });
-    expect(parseHostMessage({ type: "tentacle:response", id: "3", ok: true, result: { path: "D:\Films" } }))
-      .toEqual({ type: "tentacle:response", id: "3", ok: true, result: { path: "D:\Films" } });
+    expect(parseHostMessage({ type: "tentacle:response", id: "3", ok: true, result: { path: "D:\\Films" } }))
+      .toEqual({ type: "tentacle:response", id: "3", ok: true, result: { path: "D:\\Films" } });
   });
 
   it("un échec de démarrage hors liste devient « unexpected »", () => {
