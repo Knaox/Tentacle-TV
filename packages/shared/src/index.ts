@@ -154,6 +154,7 @@ export * from "./serverUpdate/updateCommands";
 // Le protocole IPC entre l'hôte qui supervise le serveur (app Windows) et le
 // serveur : messages, codes de sortie, bornes de l'arrêt (miroir backend).
 export * from "./serverHost/hostProtocol";
+export * from "./serverHost/hostMethods";
 // Le tableau de bord d'administration : ce qui est À RÉGLER (bloquant, jamais
 // masquable) et les RECOMMANDATIONS (masquables par compte), en logique pure.
 export * from "./adminAttention/attentionModel";

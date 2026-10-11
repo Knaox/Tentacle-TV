@@ -54,6 +54,29 @@ export type StartupFailure = (typeof STARTUP_FAILURES)[number];
 export const SERVER_METHODS = ["status"] as const;
 export type ServerMethod = (typeof SERVER_METHODS)[number];
 
+/**
+ * Les gestes que l'HÔTE sert au serveur (`tentacle:request` du serveur vers
+ * l'hôte), annoncés un par un dans `host-hello.methods` : le serveur ne
+ * demande que ce que l'hôte a annoncé. Paramètres et réponses :
+ * `hostMethods.ts` (même dossier, même miroir).
+ *
+ * - `jellyfin.detect` : le Jellyfin de cette machine (registre, `network.xml`,
+ *   service, processus, puis `/System/Info/Public`) ;
+ * - `jellyfin.install` : l'installation guidée (téléchargement vérifié, puis
+ *   l'installateur officiel lancé en interactif), en fond ;
+ * - `jellyfin.installStatus` : où en est cette installation ;
+ * - `jellyfin.start` : lancer Jellyfin installé en mode simple (son lanceur) ;
+ * - `dialog.pickFolder` : la boîte « Choisir un dossier » de l'Explorateur.
+ */
+export const HOST_METHODS = [
+  "jellyfin.detect",
+  "jellyfin.install",
+  "jellyfin.installStatus",
+  "jellyfin.start",
+  "dialog.pickFolder",
+] as const;
+export type HostMethod = (typeof HOST_METHODS)[number];
+
 /** Réponse de `status` : de quoi choisir un « moment calme » (mise à jour du Store). */
 export interface ServerStatus {
   bootId: string;

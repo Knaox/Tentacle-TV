@@ -1,10 +1,10 @@
 /**
- * Le verrou du miroir du protocole hôte ↔ serveur : ce fichier DOIT être
- * l'octet pour octet celui de `packages/shared/src/serverHost/hostProtocol.ts`
- * (l'hôte Windows lit shared, le serveur ne dépend pas de shared). On modifie
+ * Le verrou du miroir du protocole hôte ↔ serveur : ces fichiers DOIVENT être
+ * l'octet pour octet ceux de `packages/shared/src/serverHost/` (l'hôte
+ * Windows lit shared, le serveur ne dépend pas de shared). On modifie
  * là-bas, on recopie ici :
  *
- *   cp packages/shared/src/serverHost/hostProtocol.ts apps/backend/src/serverHost/
+ *   cp packages/shared/src/serverHost/host{Protocol,Methods}.ts apps/backend/src/serverHost/
  */
 
 import { existsSync, readFileSync } from "fs";
@@ -22,9 +22,9 @@ function repoRoot(): string {
 }
 
 describe("miroir du protocole hôte ↔ serveur", () => {
-  it("hostProtocol.ts est identique octet pour octet à celui de shared", () => {
+  it.each(["hostProtocol.ts", "hostMethods.ts"])("%s est identique octet pour octet à celui de shared", (file) => {
     const root = repoRoot();
-    expect(readFileSync(join(root, "apps/backend/src/serverHost/hostProtocol.ts"), "utf8"))
-      .toBe(readFileSync(join(root, "packages/shared/src/serverHost/hostProtocol.ts"), "utf8"));
+    expect(readFileSync(join(root, "apps/backend/src/serverHost", file), "utf8"))
+      .toBe(readFileSync(join(root, "packages/shared/src/serverHost", file), "utf8"));
   });
 });
