@@ -75,6 +75,7 @@ export default {
   stepUpdateTitle: "Keep Tentacle up to date",
   stepUpdateJellyfin12: "Jellyfin 12 changed how apps connect to it: with a Tentacle server that's too old, nothing gets through anymore, trailers included.",
   stepUpdateAppleTv: "On Apple TV, YouTube trailers are played thanks to the yt-dlp tool in Tentacle's Docker image. YouTube changes often: an up-to-date image gets them working again.",
+  stepUpdateAppleTv_windowsApp: "On Apple TV, YouTube trailers are played thanks to the yt-dlp tool, which Tentacle Server updates by itself every day. YouTube changes often: if they stop working, let the Microsoft Store update the app.",
 
   // ── Liens ──────────────────────────────────────────────────────────────
   linkJellyfinLibraries: "Jellyfin libraries",

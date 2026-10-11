@@ -71,6 +71,7 @@ export default {
   proxyDescription: "Only if you have one, or want one: pick it and the example configuration shows up.",
   tentacleUpstream: "Tentacle's address, as your proxy sees it",
   tentacleUpstreamHint: "Host and port, for example 192.168.1.20:{{port}} — or tentacle:3000 if the proxy is on the same Docker network.",
+  tentacleUpstreamHint_windowsApp: "Host and port, for example 192.168.1.20:{{port}} — or localhost:{{port}} if the proxy runs on this PC.",
   jellyfinUpstream: "Jellyfin's address, as your proxy sees it",
   jellyfinUpstreamHint: "Host and port, for example 192.168.1.50:8096.",
   upstreamInvalid: "A host and a port, for example 192.168.1.20:3000.",

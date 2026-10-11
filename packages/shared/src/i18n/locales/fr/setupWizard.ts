@@ -11,6 +11,7 @@ import help from "./setupWizardHelp";
 import finish from "./setupWizardFinish";
 import libraries from "./setupWizardLibraries";
 import tmdb from "./setupWizardTmdb";
+import windows from "./setupWizardWindows";
 
 export default {
   // ── Le cadre ──────────────────────────────────────────────────────────
@@ -266,4 +267,5 @@ export default {
   ...tmdb,
   ...finish,
   ...help,
+  ...windows,
 };
