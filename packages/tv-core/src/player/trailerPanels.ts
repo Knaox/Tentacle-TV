@@ -40,12 +40,12 @@ export interface TrailerOption {
 }
 
 /** Une piste de sous-titres proposée par le serveur (la vue en tire le libellé). */
-export interface TrailerSubtitleTrack {
+export interface TrailerSubtitleChoice {
   id: string;
 }
 
 /** « Désactivés », puis les pistes dans l'ordre du serveur ; `selectedId` nul : désactivés. */
-export function trailerSubtitleOptions(tracks: readonly TrailerSubtitleTrack[], selectedId: string | null): TrailerOption[] {
+export function trailerSubtitleOptions(tracks: readonly TrailerSubtitleChoice[], selectedId: string | null): TrailerOption[] {
   const known = tracks.some((t) => t.id === selectedId);
   return [
     { key: TRAILER_SUBTITLES_OFF, selected: !known },
