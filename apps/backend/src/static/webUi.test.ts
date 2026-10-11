@@ -5,8 +5,9 @@ import { join } from "path";
 
 /**
  * L'interface web désactivable (`TENTACLE_WEB_UI=off`) : le client web répond
- * 404 une fois l'installation finie ; l'API, /tv, /.well-known et les logos
- * publics restent ; l'assistant reste tant que l'installation n'est pas
+ * 404 une fois l'installation finie ; l'API, /tv, /.well-known, les logos
+ * publics et la page relais des bandes-annonces du bureau (`/yt-embed.html`)
+ * restent ; l'assistant reste tant que l'installation n'est pas
  * finie ; la commande `tentacle web` l'emporte sur la variable et la rallume.
  */
 vi.mock("../services/dataDir", async () => {
@@ -29,6 +30,7 @@ mkdirSync(TV);
 writeFileSync(join(WEB, "index.html"), "<!DOCTYPE html><title>web</title>");
 writeFileSync(join(WEB, "assets", "app.js"), "1");
 writeFileSync(join(WEB, "tentacle-logo-pirate.svg"), "<svg/>");
+writeFileSync(join(WEB, "yt-embed.html"), "<!DOCTYPE html><title>relais</title>");
 writeFileSync(join(TV, "index.html"), "<!DOCTYPE html><title>tv</title>");
 
 afterAll(() => rmSync(DATA, { recursive: true, force: true }));
@@ -47,11 +49,13 @@ describe("la règle", () => {
     expect(resolveWebUi({ TENTACLE_WEB_UI: "on" }, "off")).toEqual({ enabled: false, source: "cli" });
   });
 
-  it("ce qui reste servi, coupée et installée : l'API, /tv, /.well-known, les logos publics", () => {
+  it("ce qui reste servi, coupée et installée : l'API, /tv, /.well-known, les logos publics, le relais des bandes-annonces", () => {
     const off = { enabled: false, setupComplete: true };
-    for (const path of ["/", "/index.html", "/assets/app.js", "/settings", "/share/abc", "/setup"]) expect(webUiBlocks(path, off)).toBe(true);
-    for (const path of ["/api/config", "/api/ws", "/api", "/tv", "/tv/", "/tv/lecture/42", "/.well-known/tentacle-check/ab", "/tentacle-logo-pirate.svg"]) {
-      expect(webUiBlocks(path, off)).toBe(false);
+    for (const path of ["/", "/index.html", "/assets/app.js", "/settings", "/share/abc", "/setup", "/yt-embed.htmlx", "/yt-embed.html/"]) {
+      expect([path, webUiBlocks(path, off)]).toEqual([path, true]);
+    }
+    for (const path of ["/api/config", "/api/ws", "/api", "/tv", "/tv/", "/tv/lecture/42", "/.well-known/tentacle-check/ab", "/tentacle-logo-pirate.svg", "/yt-embed.html"]) {
+      expect([path, webUiBlocks(path, off)]).toEqual([path, false]);
     }
   });
 
@@ -79,6 +83,15 @@ describe("le câblage du service", () => {
     expect(await status(app, "/api/config")).toBe(200);
     expect(await status(app, "/tentacle-logo-pirate.svg")).toBe(200);
     expect(await status(app, "/tv/", "Mozilla/5.0 (Web0S; Linux/SmartTV) WebAppManager")).toBe(200);
+  });
+
+  it("coupée et installée : le bureau lit encore ses bandes-annonces — la page relais est servie, le web non", async () => {
+    const app = await server({ enabled: false, setupComplete: true });
+    const relay = await app.inject({ method: "GET", url: "/yt-embed.html?v=dQw4w9WgXcQ" });
+    expect([relay.statusCode, relay.body]).toEqual([200, "<!DOCTYPE html><title>relais</title>"]);
+    // Un chemin voisin ne passe pas par la brèche jusqu'à la page du web.
+    const neighbour = await app.inject({ method: "GET", url: "/yt-embed.htmlx" });
+    expect([neighbour.statusCode, neighbour.body]).toEqual([404, ""]);
   });
 
   it("coupée : un 404 au corps vide (la page du navigateur) ; une route d'API inconnue garde son JSON", async () => {
