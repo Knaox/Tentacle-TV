@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import type { TrailerGuideLinkContext, TrailerGuideStep } from "@tentacle-tv/shared";
+import { packagedHelpKeys, type SetupPackaging, type TrailerGuideLinkContext, type TrailerGuideStep } from "@tentacle-tv/shared";
 import { GuideLinks } from "./GuideLinks";
 
 /** Le corps de texte du guide : 15 px, interligne généreux, sans dépasser ~70 signes. */
@@ -17,14 +17,17 @@ export const GuideStep = memo(function GuideStep({
   number,
   ctx,
   touch = false,
+  packaging = null,
 }: {
   step: TrailerGuideStep;
   number: number;
   ctx: TrailerGuideLinkContext;
   touch?: boolean;
+  /** La livraison du serveur : l'app Windows a ses phrases (`packagedHelp.ts`). */
+  packaging?: SetupPackaging | null;
 }) {
   const { t } = useTranslation("trailerHelp");
-  const [first, ...rest] = step.paragraphKeys;
+  const [first, ...rest] = packagedHelpKeys("trailerHelp", step.paragraphKeys, packaging);
 
   return (
     <li className="flex gap-4 rounded-2xl border border-line-subtle bg-fill-faint p-4 sm:p-5">
