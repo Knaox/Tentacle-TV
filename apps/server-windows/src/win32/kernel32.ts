@@ -49,6 +49,8 @@ const CloseHandle = kernel32.func("int CloseHandle(void *handle)");
 const WaitForSingleObject = kernel32.func("uint32 WaitForSingleObject(void *handle, uint32 milliseconds)");
 const GetUserDefaultUILanguage = kernel32.func("uint16 GetUserDefaultUILanguage()");
 const GetCurrentPackageFullName = kernel32.func("long GetCurrentPackageFullName(_Inout_ uint32 *length, char16_t *name)");
+const GetCurrentProcess = kernel32.func("void *GetCurrentProcess()");
+const IsWow64Process2 = kernel32.func("int IsWow64Process2(void *process, _Out_ uint16 *processMachine, _Out_ uint16 *nativeMachine)");
 
 const JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9;
 const JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
@@ -56,6 +58,7 @@ const PROCESS_TERMINATE = 0x0001;
 const PROCESS_SET_QUOTA = 0x0100;
 const SYNCHRONIZE = 0x00100000;
 const APPMODEL_ERROR_NO_PACKAGE = 15700;
+const IMAGE_FILE_MACHINE_ARM64 = 0xaa64;
 
 /**
  * L'objet Job du serveur, `KILL_ON_JOB_CLOSE` : le rôle de tini. Les enfants
@@ -117,4 +120,15 @@ export function userInterfaceLangId(): number {
 export function hasPackageIdentity(): boolean {
   const length = [0];
   return (GetCurrentPackageFullName(length, null) as number) !== APPMODEL_ERROR_NO_PACKAGE;
+}
+
+/**
+ * La machine est-elle ARM64 ? Lu au système (`IsWow64Process2`), pas dans
+ * `process.arch` : notre Node x64 émulé sur ARM64 se croirait sur x64.
+ */
+export function nativeMachineIsArm64(): boolean {
+  const processMachine = [0];
+  const nativeMachine = [0];
+  if (!IsWow64Process2(GetCurrentProcess(), processMachine, nativeMachine)) return false;
+  return nativeMachine[0] === IMAGE_FILE_MACHINE_ARM64;
 }
