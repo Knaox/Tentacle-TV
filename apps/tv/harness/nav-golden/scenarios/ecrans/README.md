@@ -81,8 +81,25 @@ s'arme puis se désarme), aucun identifiant réel tapé au jumelage.
 | `collections.json` | Ma liste et Favoris | CO-1, CO-2 |
 | `reglages.json` | réglages, atteints par le rail (GAUCHE, GAUCHE, OK) | RG-1 à RG-12 |
 | `jumelage.json` | jumelage | JU-1 à JU-7 — la connexion refusée part par « Se connecter » (constat 5 : le Retour tapé par l'agent ne valide pas le clavier sécurisé) |
-| `bande-annonce.json` | bande-annonce | BA-1, BA-3, BA-4 (BA-2, le chrome en lecture : test unitaire, aucune bande-annonce ne se lit au banc) |
+| `bande-annonce.json` | bande-annonce indisponible | BA-1, BA-3, BA-4 |
+| `bande-annonce-lecteur.json` | bande-annonce LISIBLE (jeux `bande-annonce-lisible`, `bande-annonce-ancien-serveur`) | BA-1, BA-2, BA-4 à BA-9 — la durée du chrome, le saut et le maintien en détail : tests unitaires de tv-core (`player/trailer*.test.ts`) |
 | `vigie.json` | « demander » hors feuilles | VI-1, VI-2, FI-9, FI-10 |
+
+## La bande-annonce lisible
+
+`bande-annonce-lisible` (`trailerFixtures.mjs`) répond à `/api/trailers/resolve`
+comme un serveur qui déclare `trailers.player` : un maître HLS, une variante par
+hauteur (1080 à 360, le même flux), deux pistes de sous-titres WebVTT (`fr`,
+`en-US`) ; `/api/config` déclare la capacité. `bande-annonce-ancien-serveur` :
+le même flux, sans choix ni capacité. Le flux se tire une fois par machine de
+la vidéo du domaine lecteur (`scenarios/lecteur/README.md`) :
+
+```bash
+C=~/Library/Caches/tentacle-nav-golden/bande-annonce; mkdir -p "$C" && ffmpeg -loglevel error -y -i ~/Library/Caches/tentacle-nav-golden/lecteur/banc-600s.mp4 -t 150 -c copy -hls_time 6 -hls_playlist_type vod -hls_segment_filename "$C/seg-%03d.ts" -f hls "$C/media.m3u8" && printf 'WEBVTT\n\n00:00:00.000 --> 00:02:30.000\nBanc : sous-titre de la bande-annonce\n' > "$C/sub.vtt"
+```
+
+`bande-annonce-lecteur.json` n'a pas de `reference` : il s'enregistre sur le
+commit qui branche le lecteur simplifié (`record --at <rév> ecrans/bande-annonce-lecteur`).
 
 Hors banc (un appui ne sait pas les montrer) : le glisser du pavé, la dictée,
 le clavier système sur l'appareil — passage sur l'Apple TV « Chambre ».

@@ -25,7 +25,8 @@ scénario par scénario, la trace des couches inscrites une à une
 
 Scénarios : accueil à la racine (rail, Réglages, sortie), page du rail
 au-dessus de l'accueil, fiche poussée (panneau, recul), étagère poussée avec
-rail, lecteur (menu > habillage > page), rang égal (le plus récemment activé,
+rail, lecteur (menu > habillage > page), bande-annonce (défilement, panneau,
+chrome, page — règle BA-7), rang égal (le plus récemment activé,
 mise à jour sans changer de rang), jumelage à la racine, appui pris puis
 couche désactivée avant le relâchement (relevé B3), couche démontée.
 

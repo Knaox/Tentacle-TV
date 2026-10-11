@@ -201,6 +201,22 @@ const SCENARIOS: Record<string, Scenario> = {
       { press: "rien à l'écran" },
     ],
   },
+  // La bande-annonce (règle BA-7, tv-core `trailerBackLayers`) : défilement,
+  // panneau, chrome, page — les couches du lecteur, dans le même ordre.
+  "bande-annonce": {
+    route: "Trailer",
+    canGoBack: true,
+    steps: [
+      { render: [L("transient", "menu", false), L("panel", "menu", true), L("chrome", "overlay", true), L("page", "page", true)] },
+      { press: "panneau ouvert" },
+      { render: [L("transient", "menu", false), L("panel", "menu", false), L("chrome", "overlay", true), L("page", "page", true)] },
+      { press: "chrome à l'écran" },
+      { render: [L("transient", "menu", false), L("panel", "menu", false), L("chrome", "overlay", false), L("page", "page", true)] },
+      { press: "rien à l'écran" },
+      { render: [L("transient", "menu", true), L("panel", "menu", false), L("chrome", "overlay", false), L("page", "page", true)] },
+      { press: "défilement ouvert" },
+    ],
+  },
   "rang-egal": {
     route: "Home",
     canGoBack: false,

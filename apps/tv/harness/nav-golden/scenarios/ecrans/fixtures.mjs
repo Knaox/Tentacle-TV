@@ -3,6 +3,8 @@
 // jumelage) et les états d'écran à provoquer (une fiche en erreur ou lente,
 // une page lente, des Favoris vides, une grande bibliothèque). Voir README.md.
 
+import trailerFixtures from "./trailerFixtures.mjs";
+
 const FILM = "fcfbd7a81518be2f40de85b0d1ccd46f"; // Les Évadés
 const FILMS = "db4c1708cbb5dd1676284a40f2950aba"; // la bibliothèque « Films »
 
@@ -52,6 +54,7 @@ function searchRoutes(data, { personDelayMs = 0 } = {}) {
 }
 
 export default {
+  ...trailerFixtures,
   recherche: {
     description: "Parcourir (personne, genre, studio) et les épisodes de la recherche (aucun)",
     apply: (data) => searchRoutes(data),
