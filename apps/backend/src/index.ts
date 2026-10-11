@@ -14,7 +14,7 @@ import { LOG_REDACT_PATHS, redactUrl } from "./services/logRedaction";
 import { getRealClientIp } from "./services/networkUtils";
 import { challengeRoutes } from "./remoteAccess/challengeRoute";
 import { isTrustedProxy } from "./services/trustedProxies";
-import { closeDatabase, getDatabaseFilePath, initPrisma, retryDatabaseOpen } from "./services/db";
+import { getDatabaseFilePath, initPrisma, retryDatabaseOpen } from "./services/db";
 import { legacySourceState } from "./services/database/legacySource";
 import { migrateBeforeBoot } from "./dbMigration/bootMigration";
 import { consumeRemigrationRequest, startPostMigrationTasks } from "./dbMigration/postMigration";
@@ -81,8 +81,8 @@ import { stopSearchJobs } from "./services/search/jobs";
 import { stopWatchTime } from "./services/watchTime/collector";
 import { startBackgroundServices } from "./services/backgroundServices";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
-import { listenForShutdownSignals, serverShutdown } from "./services/lifecycle/serverShutdown";
-import { SERVER_EXIT_CODES } from "./serverHost/hostProtocol";
+import { serverShutdown } from "./services/lifecycle/serverShutdown";
+import { announceReady, beginServerLifecycle, failStartup, startupFailureOf } from "./serverHost/serverLifecycle";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 import { registerBodyParsers } from "./services/bodyParsers";
 import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
@@ -91,10 +91,9 @@ const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
 
 async function main() {
-  // L'arrêt unique (signal, hôte Windows, redémarrage d'extension), posé AVANT
-  // tout : un arrêt pendant la migration depuis MariaDB est propre lui aussi.
-  serverShutdown.register({ closeDatabase });
-  listenForShutdownSignals(serverShutdown, SERVER_EXIT_CODES.STOPPED);
+  // AVANT tout : l'arrêt unique (signaux, hôte Windows) et le verrou d'instance —
+  // un second serveur sur ces données sort ici, sans avoir rien touché.
+  if (!(await beginServerLifecycle())) return;
 
   // Une MariaDB d'avant 1.25 attend sa migration : un serveur de MAINTENANCE à
   // part la mène (écran d'attente ; ni Prisma, ni route du cœur, ni extension)
@@ -369,9 +368,8 @@ async function main() {
 
   await app.listen({ port: PORT, host: HOST });
   console.log(`Tentacle running on http://localhost:${PORT} (state: ${state})`);
+  announceReady(PORT);
 }
 
-main().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
+// Port pris ou autre échec : l'hôte Windows le sait, la base est fermée proprement.
+main().catch((err) => failStartup(startupFailureOf(err), err instanceof Error ? err.message : String(err)));

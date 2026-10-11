@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { SERVER_EXIT_CODES } from "../serverHost/hostProtocol";
 import { serverShutdown } from "./lifecycle/serverShutdown";
+import { notifyHost } from "../serverHost/hostChannel";
 
 /**
  * Le redémarrage du serveur qu'impose le module serveur d'un plugin.
@@ -88,6 +89,7 @@ export function createRestartCoordinator(
 // L'arrêt propre rend les baux (temps de visionnage, tâches planifiées) : le
 // processus suivant reprend aussitôt au lieu d'attendre leur expiration.
 const coordinator = createRestartCoordinator((reason) => {
+  void notifyHost({ type: "tentacle:restarting", detail: reason });
   void serverShutdown.run(SERVER_EXIT_CODES.RESTART, reason);
 });
 

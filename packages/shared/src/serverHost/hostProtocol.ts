@@ -57,7 +57,7 @@ export type ServerMethod = (typeof SERVER_METHODS)[number];
 /** Réponse de `status` : de quoi choisir un « moment calme » (mise à jour du Store). */
 export interface ServerStatus {
   bootId: string;
-  /** `running`, `setup_required`, `database_unavailable`… (état du serveur). */
+  /** `running`, `setup_jellyfin`, `setup_admin` ou `database_unavailable` (état du serveur). */
   appState: string;
   /** Une lecture en cours sur Jellyfin ; `null` si on ne sait pas (Jellyfin muet, pas relié). */
   playbackActive: boolean | null;
