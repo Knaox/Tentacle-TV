@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseVttCues } from "./vtt";
+import { cueAt, parseVttCues } from "./vtt";
 
 /** Construit un VTT minimal d'une cue et retourne la cue parsée. */
 function firstCue(body: string, settings = "") {
@@ -94,5 +94,22 @@ describe("parseVttCues", () => {
     const c = parseVttCues("WEBVTT\n\n01:05.500 --> 01:07.000\nCourt\n")[0];
     expect(c.start).toBeCloseTo(65.5);
     expect(c.end).toBeCloseTo(67);
+  });
+});
+
+describe("cueAt", () => {
+  const cues = parseVttCues("WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nA\n\n00:00:05.000 --> 00:00:06.000\nB\n");
+
+  it("rend la réplique de l'instant, bornes comprises, et la même à chaque appel", () => {
+    expect(cueAt(cues, 1)).toBe(cues[0]);
+    expect(cueAt(cues, 2)).toBe(cues[0]);
+    expect(cueAt(cues, 5.5)).toBe(cues[1]);
+  });
+
+  it("rien entre deux répliques, avant, après, ni sans répliques", () => {
+    expect(cueAt(cues, 3)).toBeNull();
+    expect(cueAt(cues, 0)).toBeNull();
+    expect(cueAt(cues, 9)).toBeNull();
+    expect(cueAt([], 1)).toBeNull();
   });
 });
