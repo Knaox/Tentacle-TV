@@ -21,9 +21,11 @@ export interface OverlayAutoHide {
  * L'extinction de l'habillage du lecteur. Module pur : la visibilité sort par
  * `onVisible` (le lecteur en tient l'état), minuteurs injectés.
  */
-export function createOverlayAutoHide({ onVisible, timers }: {
+export function createOverlayAutoHide({ onVisible, timers, hideMs = OVERLAY_HIDE_MS }: {
   onVisible: (visible: boolean) => void;
   timers: PlayerTimers;
+  /** Le délai d'extinction (la bande-annonce a le sien, `TRAILER_IDLE_MS`). */
+  hideMs?: number;
 }): OverlayAutoHide {
   let timer: unknown = null;
   const cancelTimer = () => {
@@ -38,7 +40,7 @@ export function createOverlayAutoHide({ onVisible, timers }: {
         timer = timers.setTimeout(() => {
           timer = null;
           onVisible(false);
-        }, OVERLAY_HIDE_MS);
+        }, hideMs);
       }
     },
     hide() {

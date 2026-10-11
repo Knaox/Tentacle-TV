@@ -37,3 +37,7 @@ export * from "./playerFocus";
 export * from "./osdReveal";
 export * from "./troublePanel";
 export * from "./trailerChrome";
+export * from "./trailerFocus";
+export * from "./trailerControls";
+export * from "./trailerBack";
+export * from "./trailerPanels";
