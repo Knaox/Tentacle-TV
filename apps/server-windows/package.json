@@ -10,7 +10,8 @@
     "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node22 --external:koffi --outfile=dist/main.js",
     "start": "node dist/main.js",
     "assemble": "node scripts/assemble.mts",
-    "pack": "node scripts/pack.mts",
+    "pack:msix": "node scripts/pack.mts",
+    "sign:dev": "node scripts/signDev.mts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
     "lint": "eslint src/"

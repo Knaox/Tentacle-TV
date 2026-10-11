@@ -2,7 +2,7 @@
  * `makeappx pack` d'un dossier assemblé (`assemble.mts`), NON signé : le Store
  * signe lui-même ; un essai en VM signe à part (`msix/vm/`).
  *
- *   pnpm --filter @tentacle-tv/server-windows pack -- --dir <dossier> --msix <fichier.msix>
+ *   pnpm --filter @tentacle-tv/server-windows pack:msix -- --dir <dossier> --msix <fichier.msix>
  *
  * makeappx vient du SDK Windows le plus récent installé ; sans SDK, rien ne se
  * fait (le message dit lequel installer). La validation SÉMANTIQUE du
