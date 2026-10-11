@@ -11,6 +11,7 @@
 
 import { execFile } from "child_process";
 import { ytDlpCommand } from "../ytDlp";
+import { ytDlpInvocation } from "../tools/toolPaths";
 import { workerExtract } from "./ytWorker";
 import { clientPasses, isPermanentFailure, pickTrailerSource, type TrailerSource, type YtFormat } from "./trailerSource";
 
@@ -85,8 +86,10 @@ function runCli(ytId: string, clients: string[], timeoutMs: number): Promise<Pas
     "--socket-timeout", "10",
     watchUrl(ytId),
   ];
+  // Un zipapp passe par l'interpréteur (`toolPaths.ts`) : Windows n'exécute pas un shebang.
+  const invocation = ytDlpInvocation(ytDlpCommand());
   return new Promise((resolve) => {
-    execFile(ytDlpCommand(), args, { timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+    execFile(invocation.file, [...invocation.args, ...args], { timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err && withEjs && (err as { code?: unknown }).code === 2) {
         ejsSupported = false;
         return resolve(runCli(ytId, clients, timeoutMs));

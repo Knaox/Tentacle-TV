@@ -13,8 +13,9 @@
 /* ------------------------------------------------------------------ */
 
 import { spawn, type ChildProcessWithoutNullStreams } from "child_process";
-import { closeSync, existsSync, openSync, readSync, statSync } from "fs";
+import { existsSync, statSync } from "fs";
 import { delimiter, isAbsolute, join } from "path";
+import { isZipapp, pythonCommand } from "../tools/toolPaths";
 import { WORKER_SCRIPT } from "./ytWorkerScript";
 
 export interface WorkerOutcome {
@@ -51,22 +52,6 @@ function resolveCommand(command: string): string | null {
   return null;
 }
 
-/** Le zipapp officiel : une ligne `#!…python3`, puis l'archive (`PK\x03\x04`). */
-export function isZipapp(file: string): boolean {
-  let fd: number | null = null;
-  try {
-    fd = openSync(file, "r");
-    const head = Buffer.alloc(256);
-    const read = readSync(fd, head, 0, head.length, 0);
-    const text = head.subarray(0, read);
-    const newline = text.indexOf(0x0a);
-    return text.subarray(0, 2).toString() === "#!" && newline > 0 && text.subarray(newline + 1, newline + 5).toString("latin1") === "PK\x03\x04";
-  } catch {
-    return false;
-  } finally {
-    if (fd !== null) closeSync(fd);
-  }
-}
 
 interface Live {
   proc: ChildProcessWithoutNullStreams;
@@ -139,7 +124,7 @@ export async function workerExtract(
   command: string,
   request: { url: string; clients: string[]; ejs: boolean },
   timeoutMs: number,
-  python = "python3",
+  python = pythonCommand(),
 ): Promise<WorkerResult> {
   if (Date.now() < failedUntil) return { status: "unavailable" };
   const file = resolveCommand(command);
