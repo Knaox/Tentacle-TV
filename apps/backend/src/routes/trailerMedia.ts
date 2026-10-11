@@ -22,8 +22,8 @@ const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 const KEY_RE = /^[\w-]{1,16}$/;
 /** `master.m3u8` (« Auto »), ou `master-720.m3u8` : le maître réduit à une qualité. */
 const MASTER_RE = /^master(?:-(\d{3,4}))?\.m3u8$/;
-/** Une piste de sous-titres : `m-en-US.vtt`, `a-en.vtt`, `t-fr.vtt` (trailerSubtitles.ts). */
-const SUBTITLE_RE = /^([mat]-[a-zA-Z0-9-]{2,24})\.vtt$/;
+/** Une piste de sous-titres : `m-en-US.vtt`, `a-en.vtt` (trailerSubtitles.ts). */
+const SUBTITLE_RE = /^([ma]-[a-zA-Z0-9-]{2,24})\.vtt$/;
 const HLS_MIME = "application/vnd.apple.mpegurl";
 
 /** Un segment de quelques secondes arrive en bien moins ; un MP4 entier peut prendre son temps. */

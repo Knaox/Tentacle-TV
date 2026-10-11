@@ -30,14 +30,14 @@ const VF: YtCaptions = {
 describe("collectSubtitleCandidates", () => {
   it("prend la piste posée avant la reconnaissance vocale de la même langue, en json3", () => {
     const tracks = collectSubtitleCandidates(OPPENHEIMER);
-    expect(tracks.map((t) => [t.key, t.auto, t.translated])).toEqual([["m-en", false, false], ["t-fr", true, true]]);
+    expect(tracks.map((t) => [t.key, t.auto])).toEqual([["m-en", false]]);
     expect(tracks[0].format).toBe("json3");
     expect(tracks[0].url).toContain("fmt=json3");
   });
 
-  it("garde la reconnaissance vocale d'origine sous son nom, et sa traduction vers une langue de l'interface", () => {
+  it("garde la reconnaissance vocale d'origine sous son nom, jamais ses traductions (refusées en 429)", () => {
     const tracks = collectSubtitleCandidates(VF);
-    expect(tracks.map((t) => [t.key, t.label])).toEqual([["a-fr", "French"], ["t-en", "English"]]);
+    expect(tracks.map((t) => [t.key, t.label, t.auto])).toEqual([["a-fr", "French", true]]);
   });
 
   it("écarte le fil de discussion, les URL hors timedtext (HLS de visionos) et les langues illisibles", () => {
@@ -48,7 +48,6 @@ describe("collectSubtitleCandidates", () => {
         "en-US": [{ ext: "vtt", url: "https://manifest.googlevideo.com/api/manifest/hls_timedtext_playlist/x" }],
         de: [{ ext: "vtt", url: `${td("de")}&fmt=vtt`, name: "German" }],
       },
-      // Une « traduction » sans reconnaissance vocale d'origine n'existe pas : rien.
       automatic_captions: { fr: track("en", "French", "&tlang=fr") },
     });
     expect(tracks.map((t) => [t.key, t.format])).toEqual([["m-de", "vtt"]]);
@@ -61,17 +60,14 @@ describe("collectSubtitleCandidates", () => {
 });
 
 describe("orderSubtitles", () => {
-  it("met la langue de l'interface en tête, l'anglais ensuite", () => {
-    const tracks = collectSubtitleCandidates(OPPENHEIMER);
-    expect(orderSubtitles(tracks, "fr").map((t) => t.lang)).toEqual(["fr", "en"]);
-    expect(orderSubtitles(tracks, "fr-FR").map((t) => t.lang)).toEqual(["fr", "en"]);
-  });
-
-  it("n'offre une traduction automatique que vers l'interface ou l'anglais", () => {
-    const tracks = collectSubtitleCandidates(OPPENHEIMER);
-    expect(orderSubtitles(tracks, "en").map((t) => t.key)).toEqual(["m-en"]);
-    expect(orderSubtitles(tracks, undefined).map((t) => t.key)).toEqual(["m-en"]);
-    expect(orderSubtitles(collectSubtitleCandidates(VF), "fr").map((t) => t.key)).toEqual(["a-fr", "t-en"]);
+  it("met la langue de l'interface en tête, l'anglais ensuite, une piste posée avant l'automatique", () => {
+    const tracks = collectSubtitleCandidates({
+      subtitles: { de: track("de", "German"), "en-US": track("en-US", "English"), "fr-FR": track("fr-FR", "French") },
+      automatic_captions: { "es-orig": track("es", "Spanish (Original)", "&kind=asr") },
+    });
+    expect(orderSubtitles(tracks, "fr").map((t) => t.lang)).toEqual(["fr-FR", "en-US", "de", "es"]);
+    expect(orderSubtitles(tracks, "fr-CA").map((t) => t.lang)).toEqual(["fr-FR", "en-US", "de", "es"]);
+    expect(orderSubtitles(tracks, undefined).map((t) => t.lang)).toEqual(["en-US", "de", "fr-FR", "es"]);
   });
 
   it("une piste posée avant une automatique, et une liste bornée", () => {

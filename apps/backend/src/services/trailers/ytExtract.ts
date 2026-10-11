@@ -13,7 +13,7 @@ import { execFile } from "child_process";
 import { ytDlpCommand } from "../ytDlp";
 import { workerExtract } from "./ytWorker";
 import { clientPasses, isPermanentFailure, pickTrailerSource, type TrailerSource, type YtFormat } from "./trailerSource";
-import { TRANSLATED_LANGS, collectSubtitleCandidates, type SubtitleCandidate, type YtCaptions } from "./trailerSubtitles";
+import { collectSubtitleCandidates, type SubtitleCandidate, type YtCaptions } from "./trailerSubtitles";
 
 /**
  * Les défis JavaScript de YouTube (« EJS ») : `visionos` s'en passe, mais
@@ -68,7 +68,7 @@ const watchUrl = (ytId: string) => `https://www.youtube.com/watch?v=${ytId}`;
 
 /** Une passe : par l'ouvrier gardé chaud quand il le peut, sinon en lançant yt-dlp. */
 async function runPass(ytId: string, clients: string[], timeoutMs: number): Promise<PassOutcome | null> {
-  const request = { url: watchUrl(ytId), clients, ejs: ejsSupported, autoLangs: TRANSLATED_LANGS };
+  const request = { url: watchUrl(ytId), clients, ejs: ejsSupported };
   const viaWorker = await workerExtract(ytDlpCommand(), request, timeoutMs);
   if (viaWorker.status === "done") {
     const { formats, stderr, subtitles, automatic_captions } = viaWorker.outcome;

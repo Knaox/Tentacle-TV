@@ -8,14 +8,13 @@
 /*  par ligne JSON, chacune dans son fil. En texte et non en fichier : */
 /*  `tsc` ne recopie que du TypeScript dans `dist/`.                   */
 /*                                                                     */
-/*  Entrée  : {"id", "url", "clients": [...], "ejs": bool,             */
-/*             "autoLangs": [...]}                                     */
+/*  Entrée  : {"id", "url", "clients": [...], "ejs": bool}             */
 /*  Sortie  : {"ready": true, "version"} au démarrage, puis            */
 /*            {"id", "formats": [...], "subtitles", "automatic_captions",*/
 /*            "stderr"} par extraction — les seuls champs dont le      */
 /*            choix du flux et des pistes a besoin (trailerSubtitles : */
-/*            les sous-titres automatiques réduits à l'origine et aux  */
-/*            langues demandées, au lieu de ~150 traductions).         */
+/*            les sous-titres automatiques réduits à la reconnaissance */
+/*            vocale d'origine, au lieu de ~150 traductions).          */
 /* ------------------------------------------------------------------ */
 
 export const WORKER_SCRIPT = String.raw`
@@ -70,7 +69,6 @@ def extract(req):
     formats = []
     subtitles = {}
     automatic = {}
-    auto_langs = set(req.get("autoLangs") or [])
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(req["url"], download=False)
@@ -81,7 +79,7 @@ def extract(req):
                 kept["http_headers"] = {"User-Agent": ua}
             formats.append(kept)
         subtitles = captions(info.get("subtitles"), lambda lang: lang != "live_chat")
-        automatic = captions(info.get("automatic_captions"), lambda lang: lang.endswith("-orig") or lang in auto_langs)
+        automatic = captions(info.get("automatic_captions"), lambda lang: lang.endswith("-orig"))
     except Exception as exc:
         errors.lines.append("ERROR: " + str(exc))
     send({"id": req["id"], "formats": formats, "subtitles": subtitles, "automatic_captions": automatic,

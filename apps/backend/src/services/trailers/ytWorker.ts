@@ -145,7 +145,7 @@ function start(zipapp: string, signature: string, python: string): Live {
 /** Une passe d'extraction par l'ouvrier (cf. `WorkerResult`). */
 export async function workerExtract(
   command: string,
-  request: { url: string; clients: string[]; ejs: boolean; autoLangs?: readonly string[] },
+  request: { url: string; clients: string[]; ejs: boolean },
   timeoutMs: number,
   python = "python3",
 ): Promise<WorkerResult> {

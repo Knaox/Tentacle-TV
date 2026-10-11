@@ -34,8 +34,8 @@ const hls = (gen: number): ExtractionResult => ({
   clients: ["visionos"],
   source: { kind: "hls", masterUrl: masterUrl(gen), headers: {}, expiresAt: FUTURE * 1000, heights: [1080, 720] },
   subtitles: [
-    { key: "m-en", lang: "en", label: "English", auto: false, translated: false, url: timedtext(gen, "en"), format: "json3" },
-    { key: "t-fr", lang: "fr", label: "French", auto: true, translated: true, url: timedtext(gen, "fr"), format: "json3" },
+    { key: "m-en", lang: "en", label: "English", auto: false, url: timedtext(gen, "en"), format: "json3" },
+    { key: "a-fr", lang: "fr", label: "French", auto: true, url: timedtext(gen, "fr"), format: "json3" },
   ],
 });
 
@@ -93,8 +93,8 @@ describe("/api/trailers/resolve", () => {
     // Les ajouts du lecteur (capacité `trailers.player`) : une qualité par hauteur, les pistes relayées.
     expect(body.qualities.map((q: { height: number }) => q.height)).toEqual([1080, 720]);
     expect(body.qualities[1].path).toMatch(new RegExp(`^/api/trailers/hls/${ID}/master-720\\.m3u8\\?t=`));
-    // Sans langue d'interface, l'anglais ; une traduction automatique vers une autre langue n'est pas offerte.
-    expect(body.subtitles.map((s: { lang: string; auto: boolean }) => [s.lang, s.auto])).toEqual([["en", false]]);
+    // Sans langue d'interface, l'anglais en tête.
+    expect(body.subtitles.map((s: { lang: string; auto: boolean }) => [s.lang, s.auto])).toEqual([["en", false], ["fr", true]]);
     expect(body.subtitles[0].path).toMatch(new RegExp(`^/api/trailers/subs/${ID}/m-en\\.vtt\\?t=`));
   });
 
@@ -192,7 +192,7 @@ describe("flux relayés", () => {
     expect(vtt.body).toBe("WEBVTT\n\n00:00:01.000 --> 00:00:02.500\nHello &lt;there&gt;\n");
     // Une piste que la vidéo n'offre pas, ou que YouTube ne sert plus : 404, jamais une erreur.
     expect((await app.inject({ url: `/api/trailers/subs/${ID}/m-de.vtt?t=${token}` })).statusCode).toBe(404);
-    expect((await app.inject({ url: `/api/trailers/subs/${ID}/t-fr.vtt?t=${token}` })).statusCode).toBe(404);
+    expect((await app.inject({ url: `/api/trailers/subs/${ID}/a-fr.vtt?t=${token}` })).statusCode).toBe(404);
   });
 
   it("relisent un segment refusé après une nouvelle extraction", async () => {
