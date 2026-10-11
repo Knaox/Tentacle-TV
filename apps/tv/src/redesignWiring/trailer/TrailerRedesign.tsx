@@ -73,7 +73,7 @@ export function TrailerRedesign({ route, navigation }: Props) {
     closePanel: tracks.close,
     leave: close,
   });
-  const { onPanelExited } = useTrailerFocus(store, { state, tools: tracks.tools, chromeShown: playback.chromeShown, panel }, tracks.panelEntry);
+  const { onPanelExited, bridges } = useTrailerFocus(store, { state, tools: tracks.tools, chromeShown: playback.chromeShown, panel }, tracks.panelEntry);
   const { press } = playback;
   // Chaque appui passe par la règle de tv-core (`trailerSelectAction`), sous la garde du défilement.
   const presses = useMemo(() => ({
@@ -102,7 +102,7 @@ export function TrailerRedesign({ route, navigation }: Props) {
   ) : undefined;
 
   return (
-    <TrailerFocusScope store={store}>
+    <TrailerFocusScope bridges={bridges}>
       <TrailerView
         state={state}
         title={name || item?.Name || ""}

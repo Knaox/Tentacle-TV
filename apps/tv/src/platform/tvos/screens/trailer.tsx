@@ -9,11 +9,9 @@ import {
   trailerFocusable,
   trailerFocusClaim,
   trailerLeavesAfter,
-  trailerNeighbor,
   trailerPanelCloseKey,
   trailerPanelReturnKey,
   trailerRemoteSteps,
-  type Direction,
   type PlayerRemoteHandlers,
   type TrailerFocusView,
   type TrailerPanel,
@@ -25,6 +23,8 @@ import { TrapFocusGuide } from "../focus/focusGuides";
 import { setFocusLocked } from "../focus/focusLocks";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
 import { createSheetBackGroup, PlayerFocusStateProvider } from "../player/playerFocusContainers";
+import { TRAILER_BRIDGES, TrailerBridgeProvider, type TrailerBridgeScope } from "./trailerBridges";
+import { applyTrailerNeighbors } from "./trailerNeighbors";
 
 /**
  * L'applicateur de la BANDE-ANNONCE (lecteur simplifié), Apple TV et Android
@@ -33,8 +33,9 @@ import { createSheetBackGroup, PlayerFocusStateProvider } from "../player/player
  * poser :
  * - ce qui se focalise (`trailerFocusable`) : le verrou de la plateforme
  *   (`isTVSelectable` sur tvOS, `tvFocusable` sur Android) ;
- * - les voisins (`trailerNeighbor`) : `nextFocus*` du nœud focalisé, « rester »
- *   pointant sur lui-même — ←/→ sur la barre appartiennent à la vidéo ;
+ * - les voisins (`trailerNeighbor`) : les PONTS armés selon le focus
+ *   (`trailerBridges.tsx`, tvOS), `nextFocus*` sur Android
+ *   (`trailerNeighbors.android.ts`) ;
  * - les réclamations : l'entrée, une cible devenue infocalisable, l'option
  *   retenue d'un panneau, le bouton qui l'a ouvert quand il s'est effacé ;
  * - les panneaux : la feuille retient le focus, sa marge mène à sa croix ;
@@ -44,12 +45,6 @@ import { createSheetBackGroup, PlayerFocusStateProvider } from "../player/player
 
 const TARGETS = [TRAILER_CLOSE_KEY, TRAILER_SUBTITLES_KEY, TRAILER_QUALITY_KEY, TRAILER_TIMELINE_KEY] as const;
 const TOOLS: readonly string[] = [TRAILER_SUBTITLES_KEY, TRAILER_QUALITY_KEY];
-const NEIGHBOR_PROPS: ReadonlyArray<readonly [Direction, string]> = [
-  ["haut", "nextFocusUp"],
-  ["bas", "nextFocusDown"],
-  ["gauche", "nextFocusLeft"],
-  ["droite", "nextFocusRight"],
-];
 const PANELS: readonly TrailerPanel[] = ["subtitles", "quality"];
 // Les marges des feuilles, une par panneau, créées une fois (le port veut un conteneur stable).
 const SHEET_BACK = {
@@ -57,9 +52,7 @@ const SHEET_BACK = {
   quality: createSheetBackGroup(trailerPanelCloseKey("quality")),
 } as const;
 
-type Settable = { setNativeProps?: (props: object) => void };
-
-/** Le magasin de focus de l'écran, ses panneaux liés avant le premier rendu. */
+/** Le magasin de focus de l'écran, ses panneaux et ses ponts liés avant le premier rendu. */
 export function useTrailerFocusStore(): FocusStore {
   const store = useFocusStore();
   useState(() => {
@@ -68,18 +61,21 @@ export function useTrailerFocusStore(): FocusStore {
       store.bind(`${prefix}:panel`, { container: TrapFocusGuide });
       store.bind(`${prefix}:back`, { container: SHEET_BACK[panel] });
     }
+    for (const [key, container] of Object.entries(TRAILER_BRIDGES)) store.bind(key, { container });
   });
   return store;
 }
 
 const NO_ISLAND = { islandTrap: false, islandExit: false, activeSeasonIndex: 0 };
 
-/** Le port du focus de l'écran, et l'état que lisent les marges des feuilles. */
-export function TrailerFocusScope({ store, children }: { store: FocusStore; children: ReactNode }) {
-  const [state] = useState(() => ({ store, ...NO_ISLAND }));
+/** Le port du focus de l'écran, l'état que lisent les marges des feuilles et les ponts. */
+export function TrailerFocusScope({ bridges, children }: { bridges: TrailerBridgeScope; children: ReactNode }) {
+  const [state] = useState(() => ({ store: bridges.store, ...NO_ISLAND }));
   return (
     <PlayerFocusStateProvider value={state}>
-      <FocusBindingProvider bind={store.binder}>{children}</FocusBindingProvider>
+      <TrailerBridgeProvider value={bridges}>
+        <FocusBindingProvider bind={bridges.store.binder}>{children}</FocusBindingProvider>
+      </TrailerBridgeProvider>
     </PlayerFocusStateProvider>
   );
 }
@@ -87,10 +83,14 @@ export function TrailerFocusScope({ store, children }: { store: FocusStore; chil
 /**
  * Le focus de l'écran : verrous, voisins, réclamations. `panelEntry` :
  * l'option qui prend le focus à l'ouverture d'un panneau. Rend
- * `onPanelExited`, à donner à la vue : le panneau refermé a fini de
- * s'effacer, le focus revient à son bouton.
+ * `onPanelExited` (à donner à la vue : le panneau refermé a fini de
+ * s'effacer, le focus revient à son bouton) et ce que lisent les ponts.
  */
-export function useTrailerFocus(store: FocusStore, view: TrailerFocusView, panelEntry: string | null): { onPanelExited: () => void } {
+export function useTrailerFocus(
+  store: FocusStore,
+  view: TrailerFocusView,
+  panelEntry: string | null,
+): { onPanelExited: () => void; bridges: TrailerBridgeScope } {
   const viewRef = useRef(view);
   viewRef.current = view;
   const lastTool = useRef<string | null>(null);
@@ -102,34 +102,47 @@ export function useTrailerFocus(store: FocusStore, view: TrailerFocusView, panel
     openPanel.current = view.panel;
   }
 
+  const [bridges] = useState((): TrailerBridgeScope & { notify: () => void } => {
+    const listeners = new Set<() => void>();
+    return {
+      store,
+      readView: () => viewRef.current,
+      readLastTool: () => lastTool.current,
+      subscribe: (listener) => {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+      notify: () => listeners.forEach((listener) => listener()),
+    };
+  });
+
   const aim = useCallback((key: string) => {
-    const node = store.node(key) as Settable | null;
-    if (!node || !(TARGETS as readonly string[]).includes(key)) return;
-    const props: Record<string, number | null> = {};
-    for (const [direction, prop] of NEIGHBOR_PROPS) {
-      const target = trailerNeighbor(key, direction, viewRef.current, lastTool.current);
-      props[prop] = store.handle(target === "stay" ? key : target);
-    }
-    node.setNativeProps?.(props);
+    if ((TARGETS as readonly string[]).includes(key)) applyTrailerNeighbors(store, key, viewRef.current, lastTool.current);
   }, [store]);
 
   useEffect(() => store.subscribe((key, focused) => {
     if (!focused) return;
-    if (TOOLS.includes(key)) lastTool.current = key;
+    if (TOOLS.includes(key) && lastTool.current !== key) {
+      lastTool.current = key;
+      bridges.notify();
+    }
     aim(key);
-  }), [store, aim]);
+  }), [store, aim, bridges]);
 
   const { state, chromeShown, panel } = view;
   const { subtitles, quality } = view.tools;
   useEffect(() => {
     const current = viewRef.current;
     for (const key of TARGETS) setFocusLocked(store, key, !trailerFocusable(key, current));
+    bridges.notify();
     const focused = store.focusedKey();
     if (focused) aim(focused);
     if (closing.current !== null) return undefined;
     const claim = trailerFocusClaim(current, focused);
     return claim ? store.claim(claim) : undefined;
-  }, [store, aim, state, chromeShown, panel, subtitles, quality]);
+  }, [store, aim, bridges, state, chromeShown, panel, subtitles, quality]);
 
   useEffect(() => (panelEntry ? store.claim(panelEntry) : undefined), [store, panelEntry]);
 
@@ -143,7 +156,7 @@ export function useTrailerFocus(store: FocusStore, view: TrailerFocusView, panel
     if (key) store.claim(key);
   }, [store]);
 
-  return { onPanelExited };
+  return { onPanelExited, bridges };
 }
 
 /**

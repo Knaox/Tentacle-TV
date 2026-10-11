@@ -3,7 +3,8 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { BACK_TOP, BackButton } from "../../controls/BackButton";
+import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
@@ -47,7 +48,9 @@ import type { SubtitleCue, TrailerPanelModel, TrailerTimeline, TrailerTools } fr
  *   refermé, il s'efface d'un bloc (`handoff`), puis `onPanelExited` — le
  *   moment de rendre le focus au bouton qui l'avait ouvert ;
  * - `subtitle` : la réplique à l'écran (`SubtitleLayer` du grand lecteur).
- * Clés : `trailerTypes.ts`.
+ * Clés : `trailerTypes.ts`. Groupe `trailer:bridge-close` : une bande vide
+ * sous la croix, le pont que l'intégration arme quand la croix a le focus
+ * (BAS → le premier bouton) ; rien ne s'y voit.
  */
 
 export interface TrailerViewProps {
@@ -166,6 +169,7 @@ export const TrailerView = memo(function TrailerView(props: TrailerViewProps) {
         </View>
       ) : null}
 
+      {playing ? <FocusGroup focusKey="trailer:bridge-close" style={styles.closeBridge} pointerEvents="none" /> : null}
       <Animated.View style={[styles.back, croix]}>
         <BackButton focusKey={TRAILER_CLOSE_KEY} onPress={props.onClose} />
       </Animated.View>
@@ -210,4 +214,6 @@ const styles = StyleSheet.create({
   panel: { width: 900, alignItems: "center", gap: 18, paddingHorizontal: 64, paddingVertical: 52, backgroundColor: "rgba(12, 12, 16, 0.78)" },
   badge: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 255, 255, 0.1)", marginBottom: 6 },
   back: { position: "absolute", top: BACK_TOP, left: TV_STAGE.safe.x },
+  // Sous la croix, de sa largeur, jusqu'au-dessus du titre : ne chevauche aucune cible.
+  closeBridge: { position: "absolute", top: BACK_TOP + BACK_BUTTON_SIZE + 8, left: TV_STAGE.safe.x, width: BACK_BUTTON_SIZE, height: 560 },
 });

@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reani
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
@@ -31,6 +32,10 @@ import type { TrailerTimeline, TrailerTools } from "./trailerTypes";
  * La barre (de simples vues) reste montée en lecture, à l'opacité plancher
  * (`SWAP_FLOOR` : tvOS tiendrait pour caché le focus qu'elle garde). Rien ne
  * dessine PAR-DESSUS une cible : le voile et le titre sont posés avant elles.
+ *
+ * `trailer:bridge-timeline` : une bande vide entre les pilules et la barre —
+ * le pont que l'intégration arme quand la barre a le focus (HAUT → le dernier
+ * bouton visité) ; rien ne s'y voit.
  */
 
 export interface TrailerChromeLabels {
@@ -93,6 +98,7 @@ export const TrailerChrome = memo(function TrailerChrome({
         </Animated.View>
         <Tools tools={tools} labels={labels} shown={controlsShown} onOpenSubtitles={onOpenSubtitles} onOpenQuality={onOpenQuality} />
       </View>
+      <FocusGroup focusKey="trailer:bridge-timeline" style={styles.bridge} pointerEvents="none" />
       <Animated.View style={[styles.timeline, floored]} pointerEvents="box-none">
         <FocusTarget focusKey={TRAILER_TIMELINE_KEY} onPress={onPressTimeline} accessibilityLabel={labels.timeline}>
           {(focused) => <TimelineBody timeline={timeline} focused={focused} scrubTarget={scrubTarget} />}
@@ -163,6 +169,8 @@ const styles = StyleSheet.create({
   base: { borderRadius: 34, backgroundColor: SOFT_BASE },
   timeline: { position: "absolute", left: SAFE.x, top: TIMELINE_TOP, width: TIMELINE_WIDTH },
   timelineBox: { width: TIMELINE_WIDTH, height: TIMELINE_ROW },
+  // Entre le bas des pilules et la plaque de la barre : ne chevauche aucune cible.
+  bridge: { position: "absolute", left: SAFE.x, width: TIMELINE_WIDTH, top: TIMELINE_TOP - ROW_GAP + 6, height: ROW_GAP - PLATE_PAD.y - 10 },
   // La plaque du focus déborde de la rangée : la frise ne bouge pas d'un point.
   plate: {
     position: "absolute",

@@ -137,7 +137,7 @@ function TroubleScreenGroup(props: FocusGroupContainerProps) {
  * le guide retombé en simple vue devient alors FOCALISABLE (mesuré : « haut »
  * depuis les commandes posait le focus sur la frise elle-même, invisible).
  */
-function BridgeGuide({ destinations, style, pointerEvents, children }: FocusGroupContainerProps & { destinations: FocusDestination[] }) {
+export function BridgeGuide({ destinations, style, pointerEvents, children }: FocusGroupContainerProps & { destinations: FocusDestination[] }) {
   return (
     <TVFocusGuideView
       destinations={destinations}
