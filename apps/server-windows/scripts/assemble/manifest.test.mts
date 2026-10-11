@@ -42,6 +42,13 @@ describe("manifeste MSIX", () => {
     expect(manifest).toContain(`Alias="${constant("cli/cliMode.ts", "CLI_ALIAS")}"`);
   });
 
+  it("relance l'hôte après une mise à jour avec les mêmes paramètres que le manifeste", () => {
+    const declared = /export const HOST_BOOTSTRAP =\s*"((?:[^"\\]|\\.)*)";/.exec(source("update/restart.ts"))?.[1];
+    expect(declared).toBeDefined();
+    const restart = JSON.parse(`"${declared ?? ""}"`) as string;
+    expect(manifest).toContain(`uap10:Parameters="${restart.replace(/"/g, "&quot;")}"`);
+  });
+
   it("ouvre le pare-feu à notre exe seul, sans port, hors réseau public", () => {
     expect(manifest).toContain(`<desktop2:FirewallRules Executable="${SERVER_EXE}">`);
     const rules = manifest.match(/<desktop2:Rule [^>]*\/>/g) ?? [];

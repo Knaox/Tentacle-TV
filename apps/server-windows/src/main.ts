@@ -31,6 +31,7 @@ import { isPortFree, suggestPorts } from "./net/ports";
 import { startupRegistration } from "./startup/startupRegistration";
 import { runCommand } from "./startup/runKey";
 import { Supervisor } from "./supervisor/supervisor";
+import { createHostUpdate } from "./update/hostUpdate";
 import { WindowsJob, hasPackageIdentity, userInterfaceLangId, waitProcessBlocking } from "./win32/kernel32";
 import { showPopupMenu } from "./win32/popupMenu";
 import { confirm, programDataFolder, shellOpen, showError, showInfo } from "./win32/shell";
@@ -169,6 +170,20 @@ async function main(): Promise<void> {
     process.exit(code);
   };
 
+  const packaged = hasPackageIdentity();
+  // Le Store ne met jamais à jour un paquet qui tourne : l'hôte s'en charge.
+  const update = packaged
+    ? createHostUpdate({
+        strings,
+        dataDir: data.root,
+        supervisor,
+        startServer: () => controller?.startServer() ?? Promise.resolve(),
+        window: () => tray.handle,
+        notify: (title, text, level) => tray.notify(title, text, level),
+        log,
+      })
+    : null;
+
   controller = new HostController({
     strings,
     dataDir: data.root,
@@ -185,7 +200,7 @@ async function main(): Promise<void> {
     },
     supervisor: () => supervisor,
     startup: await startupRegistration({
-      packaged: hasPackageIdentity(),
+      packaged,
       systemRoot,
       command: runCommand(process.execPath, __filename, app.root),
     }),
@@ -200,6 +215,7 @@ async function main(): Promise<void> {
     deleteData: () => deleteDataFolder(data),
     publicNetwork: () => publicNetwork(systemRoot),
     exit,
+    ...(update !== null ? { update: { pending: () => update.updatePending, installNow: () => update.installNow() } } : {}),
   });
 
   tray.show(`${strings.appName} : ${strings.stateStarting}`);

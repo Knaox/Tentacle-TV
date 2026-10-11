@@ -47,6 +47,8 @@ export interface HostDeps {
   deleteData: () => boolean;
   publicNetwork: () => Promise<boolean>;
   exit: (code: number) => void;
+  /** La mise à jour par le Store ; absente hors paquet. */
+  update?: { pending(): boolean; installNow(): Promise<void> };
 }
 
 export class HostController {
@@ -101,6 +103,7 @@ export class HostController {
       startup,
       freePorts,
       hasSetupCode: this.deps.setupCode() !== null,
+      updatePending: this.deps.update?.pending() ?? false,
     });
     const command = this.deps.ui.showMenu(entries, x, y);
     if (command !== null) await this.run(command, startup);
@@ -130,6 +133,9 @@ export class HostController {
       case "restart":
         await this.deps.supervisor().stop("restart");
         return this.startServer();
+      case "install-update":
+        this.deps.log("installation de la mise à jour demandée depuis le menu");
+        return this.deps.update?.installNow();
       case "delete-data":
         return this.deleteData();
       case "quit":
