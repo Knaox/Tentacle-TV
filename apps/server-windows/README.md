@@ -35,6 +35,11 @@ efface.
 | Démarrer avec Windows : `StartupTask` dans le paquet (`TaskId="TentacleServerStartup"`), clé `Run` hors paquet | `startup/` |
 | Icône, menu FR/EN, notifications, fermeture de session | `win32/`, `tray/`, `i18n/` |
 | Réseau en profil « Public » signalé une fois | `net/networkProfile.ts` |
+| Jellyfin de la machine : registre, `network.xml`, service, processus, puis `/System/Info/Public` (`jellyfin.detect`) | `jellyfin/detect.ts` |
+| « Démarrer Jellyfin » : le lanceur de l'installation simple, par l'Explorateur ; un service n'est jamais démarré par nous | `jellyfin/start.ts` |
+| Installation guidée : version notée `ok` dans `compat/jellyfin.json`, SHA-256 et taille lus sur l'origine, installateur officiel lancé en interactif, élevé, hors du paquet | `jellyfin/installer/`, `win32/elevatedLaunch.ts` |
+| Boîte « Choisir un dossier » de l'Explorateur, dans un processus à part (`--pick-folder`) ; un lecteur mappé est rendu avec son chemin réseau | `dialog/` |
+| Les gestes servis au serveur (`HOST_METHODS`, annoncés dans `host-hello`) | `host/hostServices.ts`, `jellyfin/jellyfinHost.ts` |
 
 ## Pour le paquet MSIX (fil D)
 
@@ -46,6 +51,11 @@ efface.
   `<racine>\tools\yt-dlp` : l'hôte pose `TENTACLE_PYTHON` et
   `TENTACLE_YTDLP_PINNED` dès qu'ils existent.
 - La semence des shared-deps : `<racine>\shared-deps-seed`, comme l'image.
+- `apps/server-windows/host-options.json` (facultatif) : `{ "jellyfinInstaller": false }`
+  coupe l'installation guidée de Jellyfin si le Store la refuse (règle 10.1.5) ;
+  l'assistant ne garde alors que « ouvrir jellyfin.org, puis détecter ».
+- Le manifeste `compat/jellyfin.json` à la racine, comme l'image : l'hôte y lit
+  la version de Jellyfin à installer (ou dans les données, s'il y est plus récent).
 
 ## Pas encore là
 

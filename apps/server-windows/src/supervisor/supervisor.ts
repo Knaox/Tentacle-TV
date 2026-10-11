@@ -7,6 +7,7 @@
  * `onState`, à chaque changement.
  */
 import { SERVER_EXIT_CODES, SHUTDOWN_TIMINGS, type ServerToHostMessage, type ShutdownReason } from "../protocol";
+import type { HostServeResult } from "../host/hostServices";
 import { RestartPolicy, type BlockedCause } from "./restartPolicy";
 import { ServerProcess, type ExitInfo, type LaunchSpec, type ProcessJob } from "./serverProcess";
 
@@ -23,6 +24,8 @@ export interface SupervisorOptions {
   log: (line: string) => void;
   output: (chunk: string) => void;
   onState: (state: ServerState) => void;
+  /** Les gestes demandés par le serveur ; sans eux, `unknown_method`. */
+  serve?: (method: string, params: unknown) => Promise<HostServeResult>;
   /** Un serveur qui tient sans planter ce temps-là efface l'ardoise des plantages. */
   stableAfterMs?: number;
 }
@@ -61,6 +64,7 @@ export class Supervisor {
       onMessage: (message) => this.onMessage(message, spec.port),
       onReadyByHealth: () => this.onRunning(spec.port, "", null),
       onExit: (info) => this.onExit(launched, info),
+      onRequest: (method, params) => this.options.serve?.(method, params) ?? Promise.resolve({ ok: false, error: "unknown_method" }),
     });
     this.current = launched;
     launched.start();
