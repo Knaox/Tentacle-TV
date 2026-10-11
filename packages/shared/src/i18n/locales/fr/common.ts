@@ -125,7 +125,7 @@ export default {
   trailerQualityHeight: "{{height}}p",
   trailerNoteTitle: "Bon à savoir",
   trailerSubtitlesNote: "Votre choix est retenu pour les prochaines bandes-annonces de ce téléviseur.",
-  trailerQualityNote: "« Auto » adapte la qualité à votre connexion. Une qualité choisie vaut pour cette bande-annonce seulement.",
+  trailerQualityNote: "Chaque bande-annonce démarre dans la meilleure qualité. « Auto » l'adapte à votre connexion.",
   // Le genre d'un extra, sous sa tuile — et son titre quand Jellyfin ne lui a
   // donné que son genre (« Trailer 2 ») : cf. `extras/extraLabels.ts`.
   extraKindTrailer: "Bande-annonce",

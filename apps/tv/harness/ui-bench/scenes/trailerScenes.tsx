@@ -35,8 +35,8 @@ const SUBTITLES_PANEL: TrailerPanelModel = {
 const QUALITY_PANEL: TrailerPanelModel = {
   kind: "quality",
   options: [
-    { key: "auto", label: "Auto", selected: true },
-    ...[1080, 720, 480, 360].map((height) => ({ key: String(height), label: `${height}p`, selected: false })),
+    { key: "auto", label: "Auto", selected: false },
+    ...[1080, 720, 480, 360].map((height) => ({ key: String(height), label: `${height}p`, selected: height === 1080 })),
   ],
 };
 
@@ -74,7 +74,7 @@ export const TRAILER_SCENES: BenchScene[] = [
   scene("saut", "Saut de +30 s", ["trailer:timeline"], { state: "playing", timeline: TIMELINE, tools: TOOLS, seekFlash: { forward: true, label: "+30 s" } }),
   scene("pause", "En pause", ["trailer:timeline"], { state: "playing", timeline: TIMELINE, tools: TOOLS, paused: true }),
   scene("sous-titres", "Panneau des sous-titres", ["trailerSubtitles:list:fr", "trailerSubtitles:close"], { state: "playing", timeline: TIMELINE, tools: TOOLS, panel: SUBTITLES_PANEL }),
-  scene("qualite", "Panneau de la qualité", ["trailerQuality:list:auto", "trailerQuality:close"], { state: "playing", timeline: TIMELINE, tools: TOOLS, panel: QUALITY_PANEL }),
+  scene("qualite", "Panneau de la qualité", ["trailerQuality:list:1080", "trailerQuality:close"], { state: "playing", timeline: TIMELINE, tools: TOOLS, panel: QUALITY_PANEL }),
   // Le flux ne suit plus : la roue sur la dernière image.
   scene("attente", "Lecture qui attend le réseau", ["trailer:timeline"], { state: "playing", timeline: TIMELINE, tools: TOOLS, chromeShown: false, waiting: true }),
   scene("chargement", "Chargement", ["trailer:close"], { state: "loading" }),

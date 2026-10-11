@@ -121,7 +121,7 @@ export default {
   trailerQualityHeight: "{{height}}p",
   trailerNoteTitle: "Good to know",
   trailerSubtitlesNote: "Your choice is remembered for the next trailers on this TV.",
-  trailerQualityNote: "“Auto” adapts the quality to your connection. A chosen quality applies to this trailer only.",
+  trailerQualityNote: "Every trailer starts in the best quality. “Auto” adapts it to your connection.",
   extraKindTrailer: "Trailer",
   extraKindTeaser: "Teaser",
   extraKindBehindTheScenes: "Behind the scenes",

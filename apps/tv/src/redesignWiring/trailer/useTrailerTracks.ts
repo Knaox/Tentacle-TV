@@ -7,6 +7,7 @@ import {
   TRAILER_SUBTITLES_OFF,
   trailerChoose,
   trailerEngineRequest,
+  trailerInitialQuality,
   trailerPanelEntryKey,
   trailerQualityHeights,
   trailerQualityOptions,
@@ -33,8 +34,11 @@ import type { TrailerTracks } from "../../screens/trailer/types";
  *   bouton, aucun sous-titre, aucune qualité demandés au moteur — avancer et
  *   reculer restent, sans un mot d'erreur.
  * - Le sous-titre choisi se RETIENT pour les bandes-annonces suivantes, par
- *   profil (tv-core `trailerSubtitleMemory`, clé du compte affiché) ; la
- *   qualité vaut pour celle-ci seulement (« Auto » à chaque ouverture).
+ *   profil (tv-core `trailerSubtitleMemory`, clé du compte affiché).
+ * - La qualité démarre à la PLUS HAUTE offerte (tv-core
+ *   `trailerInitialQuality`), posée avec les pistes : la première source du
+ *   moteur est déjà ce palier, sans second chargement. Un choix vaut pour
+ *   cette bande-annonce seulement.
  */
 
 const NO_TRACKS: TrailerTracks = { qualities: [], subtitles: [] };
@@ -70,6 +74,8 @@ export function useTrailerTracks(): TrailerTracksState {
 
   const onTracks = useCallback((next: TrailerTracks) => {
     setTracks(next);
+    // Dans le même lot que la résolution : la source initiale est déjà la bonne.
+    setQuality(trailerInitialQuality(next.qualities.map((q) => q.height)));
     setSubtitle(trailerRememberedSubtitle(next.subtitles, memoryKey ? storage.getItem(memoryKey) : null));
   }, [storage, memoryKey]);
 
