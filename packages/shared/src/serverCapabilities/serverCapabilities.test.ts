@@ -44,7 +44,7 @@ describe("capacités du serveur", () => {
     const none = resolveServerCapabilities({ version: "1.23.0" });
     expect(missingServerCapabilities(none)).toEqual(SERVER_CAPABILITY_KEYS);
     // La plus récente des versions qui apportent ce qui manque.
-    expect(newestMissingSince(none)).toBe("1.26.0");
+    expect(newestMissingSince(none)).toBe("1.27.0");
     const all = resolveServerCapabilities({ capabilities: SERVER_CAPABILITY_KEYS });
     expect(missingServerCapabilities(all)).toEqual([]);
     expect(newestMissingSince(all)).toBeNull();
