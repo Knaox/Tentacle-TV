@@ -17,7 +17,7 @@
 //
 // Env (facultatifs, l'image est publique) : REGISTRY_USER, REGISTRY_TOKEN.
 import { appendFileSync, readFileSync } from 'node:fs';
-import { randomBytes } from 'node:crypto';
+import { setOutput as output } from './lib/github-output.mjs';
 import { createRegistryClient } from './lib/registry.mjs';
 import { PlanError, planServerImage } from './lib/server-image.mjs';
 
@@ -32,18 +32,6 @@ const registry = createRegistryClient({
   username: process.env.REGISTRY_USER,
   password: process.env.REGISTRY_TOKEN,
 });
-
-/** Une sortie de job, multi-ligne si besoin (syntaxe à délimiteur de GitHub). */
-function output(name, value) {
-  if (!process.env.GITHUB_OUTPUT) return;
-  const text = String(value ?? '');
-  if (!text.includes('\n')) {
-    appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${text}\n`);
-    return;
-  }
-  const delimiter = `EOF_${randomBytes(8).toString('hex')}`;
-  appendFileSync(process.env.GITHUB_OUTPUT, `${name}<<${delimiter}\n${text}\n${delimiter}\n`);
-}
 
 function stepSummary(plan) {
   if (!process.env.GITHUB_STEP_SUMMARY) return;
