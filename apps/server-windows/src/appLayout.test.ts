@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { appLayout, argValue, resolveAppRoot } from "./appLayout";
+import { appLayout, argValue, manifestVersion, resolveAppRoot } from "./appLayout";
 import { refreshSharedDeps } from "./data/sharedDeps";
 
 describe("racine de l'application", () => {
@@ -33,6 +33,18 @@ describe("appLayout et shared-deps", () => {
     expect(layout.sharedDepsSeed).toBe(join(root, "shared-deps-seed"));
     expect(layout.serverEntry).toBe(join(root, "apps", "backend", "dist", "index.js"));
     expect(layout.python).toBeNull();
+    expect(layout.cliEntry).toBe(join(root, "apps", "backend", "dist", "cli", "tentacle.js"));
+    expect(layout.packageVersion).toBeNull();
+  });
+
+  it("lit sa version dans le manifeste du paquet, sans le 4e champ", () => {
+    root = mkdtempSync(join(tmpdir(), "host-manifest-"));
+    writeFileSync(
+      join(root, "AppxManifest.xml"),
+      '<?xml version="1.0"?><Package><Identity Name="A.B" Publisher="CN=x" Version="1.4.2.0" /><Dependencies Version="9.9.9.9"/></Package>',
+    );
+    expect(appLayout(root).packageVersion).toBe("1.4.2");
+    expect(manifestVersion("<Package/>")).toBeNull();
   });
 
   it("recopie les fichiers de premier niveau de la semence", () => {

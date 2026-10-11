@@ -13,9 +13,11 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { networkInterfaces } from "node:os";
-import { appLayout, resolveAppRoot } from "./appLayout";
+import { appLayout, resolveAppRoot, type AppLayout } from "./appLayout";
+import { cliArguments, isCliInvocation } from "./cli/cliMode";
+import { runCli } from "./cli/runCli";
 import { deleteDataFolder, prepareDataFolder } from "./data/dataFolder";
-import { dataLayout } from "./data/dataLayout";
+import { dataLayout, type DataLayout } from "./data/dataLayout";
 import { readHostState, writeHostState } from "./data/hostState";
 import { refreshSharedDeps } from "./data/sharedDeps";
 import { buildServerEnv } from "./env/serverEnv";
@@ -33,8 +35,32 @@ import { WindowsJob, hasPackageIdentity, userInterfaceLangId, waitProcessBlockin
 import { showPopupMenu } from "./win32/popupMenu";
 import { confirm, programDataFolder, shellOpen, showError, showInfo } from "./win32/shell";
 import { TrayWindow } from "./win32/trayWindow";
+import { attachParentConsole, stdoutRedirected } from "./win32/console";
 
-const HOST_VERSION = "0.0.0";
+/** La commande `tentacle` (alias du paquet) : rien de l'hôte ne démarre. */
+async function runCommandLine(app: AppLayout, data: DataLayout): Promise<number> {
+  return runCli(
+    {
+      execPath: process.execPath,
+      entry: app.cliEntry,
+      cwd: app.backendDir,
+      args: cliArguments(process.argv),
+      env: buildServerEnv({
+        source: process.env,
+        port: readHostState(data.hostState).port,
+        dataDir: data.root,
+        cacheDir: data.cache,
+        ...(app.python !== null ? { python: app.python, extraPath: [app.root + "\\python"] } : {}),
+        ...(app.ytDlp !== null ? { ytDlpPinned: app.ytDlp } : {}),
+      }),
+    },
+    {
+      stdoutRedirected,
+      attachParentConsole,
+      showOutput: (text, failed) => (failed ? showError : showInfo)("tentacle", text),
+    },
+  );
+}
 
 function readSetupCode(tokenFile: string, completeFile: string): string | null {
   if (existsSync(completeFile)) return null;
@@ -57,6 +83,10 @@ async function main(): Promise<void> {
   const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
   const app = appLayout(resolveAppRoot(process.argv, process.env, __dirname));
   const data = dataLayout(programDataFolder(process.env.ProgramData));
+  if (isCliInvocation(process.argv, process.argv0)) {
+    process.exit(await runCommandLine(app, data));
+  }
+  const hostVersion = app.packageVersion ?? "dev";
 
   // Avant tout le reste : une seconde instance passe la main et s'en va.
   let controller: HostController | null = null;
@@ -78,7 +108,7 @@ async function main(): Promise<void> {
 
   const logs = new LogFiles(data.logs);
   const log = (line: string): void => logs.host(line);
-  log(`hôte ${HOST_VERSION} — Node ${process.version}, racine ${app.root}, données ${data.root}${prepared.created ? " (créées)" : ""}`);
+  log(`hôte ${hostVersion} — Node ${process.version}, racine ${app.root}, données ${data.root}${prepared.created ? " (créées)" : ""}`);
   process.on("uncaughtException", (error) => log(`erreur non rattrapée : ${error.stack ?? error.message}`));
   process.on("unhandledRejection", (reason) => log(`promesse rejetée : ${String(reason)}`));
 
@@ -107,7 +137,7 @@ async function main(): Promise<void> {
           ...(app.ytDlp !== null ? { ytDlpPinned: app.ytDlp } : {}),
         }),
         port,
-        hostVersion: HOST_VERSION,
+        hostVersion,
         hostMethods: [],
       };
     },

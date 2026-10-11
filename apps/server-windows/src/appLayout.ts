@@ -9,7 +9,7 @@
  * que `--app-root <dossier>` ou `TENTACLE_APP_ROOT` remplacent pour essayer
  * l'hôte contre un autre arbre.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 export interface AppLayout {
@@ -17,6 +17,10 @@ export interface AppLayout {
   /** `apps/backend` : le `WORKDIR` de l'image, `cwd` du serveur. */
   backendDir: string;
   serverEntry: string;
+  /** La commande `tentacle` du serveur (`cli/tentacle.js`), lancée par l'alias. */
+  cliEntry: string;
+  /** La version du paquet MSIX (`AppxManifest.xml`), `null` hors paquet. */
+  packageVersion: string | null;
   /** Les dépendances partagées des extensions, recopiées à chaque démarrage. */
   sharedDepsSeed: string | null;
   /** L'icône de la zone de notification ; `null` → icône générique de Windows. */
@@ -40,12 +44,29 @@ export function resolveAppRoot(argv: readonly string[], env: NodeJS.ProcessEnv, 
   return resolve(argValue(argv, "--app-root") ?? env.TENTACLE_APP_ROOT ?? join(hostDir, "..", "..", ".."));
 }
 
+/** `Identity/@Version` du manifeste, sans le 4e champ (toujours 0 pour le Store). */
+export function manifestVersion(manifest: string): string | null {
+  const identity = /<Identity\b[^>]*>/.exec(manifest)?.[0] ?? "";
+  const version = /\bVersion="(\d+\.\d+\.\d+)\.\d+"/.exec(identity)?.[1];
+  return version ?? null;
+}
+
+function packageVersion(root: string): string | null {
+  try {
+    return manifestVersion(readFileSync(join(root, "AppxManifest.xml"), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 export function appLayout(root: string): AppLayout {
   const backendDir = join(root, "apps", "backend");
   return {
     root,
     backendDir,
     serverEntry: join(backendDir, "dist", "index.js"),
+    cliEntry: join(backendDir, "dist", "cli", "tentacle.js"),
+    packageVersion: packageVersion(root),
     // Le paquet suit l'image (`/app/shared-deps-seed`) ; le dépôt, `pnpm build:shared-deps`.
     sharedDepsSeed: firstExisting([join(root, "shared-deps-seed"), join(backendDir, "data", "shared-deps")]),
     // Le paquet porte la sienne (fil D, tirée de `brand/`) ; le dépôt prend celle du bureau.
