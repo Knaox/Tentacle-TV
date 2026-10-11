@@ -37,6 +37,18 @@ describe("l'adresse de Jellyfin donnée aux applications", () => {
     expect(clientJellyfinUrl({ deployment: other, browserHost: "172.16.1.30", jellyfinUrl: "http://172.18.0.1:8097", gateway: "172.18.0.1" })).toBe("http://172.16.1.30:8097");
   });
 
+  it("navigateur sur la machine même (l'app Windows, localhost) : l'adresse principale de la machine", () => {
+    expect(clientJellyfinUrl({ deployment: other, browserHost: "localhost", jellyfinUrl: "http://127.0.0.1:8096", lanAddress: "192.168.1.42" }))
+      .toBe("http://192.168.1.42:8096");
+    expect(clientJellyfinUrl({ deployment: other, browserHost: "127.0.0.1", jellyfinUrl: "http://localhost:8096", lanAddress: "192.168.1.42" }))
+      .toBe("http://192.168.1.42:8096");
+    // Sans adresse principale (dans un conteneur), rien ne change : localhost reste ce qu'il était.
+    expect(clientJellyfinUrl({ deployment: other, browserHost: "localhost", jellyfinUrl: "http://127.0.0.1:8096" })).toBe("http://localhost:8096");
+    // Un navigateur d'une autre machine garde son hôte.
+    expect(clientJellyfinUrl({ deployment: other, browserHost: "172.16.1.30", jellyfinUrl: "http://127.0.0.1:8096", lanAddress: "192.168.1.42" }))
+      .toBe("http://172.16.1.30:8096");
+  });
+
   it("un hôte de navigateur douteux n'entre pas dans l'adresse", () => {
     expect(clientJellyfinUrl({ deployment: full, browserHost: "evil/path" })).toBeNull();
     expect(clientJellyfinUrl({ deployment: other, jellyfinUrl: "http://127.0.0.1:8096", browserHost: undefined })).toBeNull();

@@ -1,3 +1,4 @@
+import { isLoopbackName } from "../setup/jellyfin/addressGuard";
 import { isServerOnlyHost } from "../setup/jellyfin/clientUrl";
 
 /**
@@ -11,6 +12,12 @@ export interface PairingRequestView {
   protocol: string;
   /** L'hôte de la requête, PORT COMPRIS (`request.host`). */
   host: string | undefined;
+  /**
+   * L'adresse principale de la machine, hors conteneur seulement : un client
+   * sur la machine même (`localhost`, l'app Windows) en tire l'adresse que la
+   * maison joint, au lieu de rien.
+   */
+  lanAddress?: string | null;
 }
 
 /**
@@ -29,7 +36,8 @@ export function derivedPrivateUrl(view: PairingRequestView): string | null {
   } catch {
     return null;
   }
-  if (isServerOnlyHost(url.hostname)) return null;
+  if (view.lanAddress && isLoopbackName(url.hostname)) url.hostname = view.lanAddress;
+  else if (isServerOnlyHost(url.hostname)) return null;
   // `origin` rend l'hôte en minuscules et retire un port par défaut.
   return url.origin;
 }

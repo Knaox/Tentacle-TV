@@ -22,6 +22,11 @@ describe("l'adresse déduite de la requête d'un client du réseau local", () =>
     }
   });
 
+  it("un client sur la machine même (localhost) reçoit l'adresse principale, port gardé", () => {
+    expect(derivedPrivateUrl({ clientIsPrivate: true, protocol: "http", host: "localhost:3000", lanAddress: "192.168.1.42" })).toBe("http://192.168.1.42:3000");
+    expect(derivedPrivateUrl({ clientIsPrivate: true, protocol: "http", host: "localhost:3000" })).toBeNull();
+  });
+
   it("rien pour un client d'Internet, un hôte absent ou illisible", () => {
     expect(derivedPrivateUrl({ clientIsPrivate: false, protocol: "http", host: "192.168.1.20:3000" })).toBeNull();
     expect(derivedPrivateUrl(lan(undefined))).toBeNull();
