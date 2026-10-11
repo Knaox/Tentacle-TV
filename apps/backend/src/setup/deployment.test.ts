@@ -62,11 +62,12 @@ describe("installation lue dans l'environnement", () => {
     expect(suggestedJellyfinUrl(d)).toBe("http://127.0.0.1:8096");
   });
 
-  it("l'app Windows : native, Jellyfin cherché sur la machine, livrée en app", () => {
+  it("l'app Windows : native, Jellyfin tenu par son hôte (détecté, installé, démarré), livrée en app", () => {
     const d = readDeployment({ TENTACLE_DEPLOYMENT: "windows-app" });
     expect(d.deployment).toBe("native");
     expect(d.packaging).toBe("windows-app");
-    expect(d.provisioner).toBe("native-host");
+    expect(d.provisioner).toBe("managed-by-tentacle");
+    expect(suggestedJellyfinUrl(d)).toBe("http://127.0.0.1:8096");
     expect(readDeployment({ TENTACLE_DEPLOYMENT: "docker" }).packaging).toBeNull();
   });
 
@@ -76,7 +77,7 @@ describe("installation lue dans l'environnement", () => {
     expect(d.siblingUrl).toBeNull();
   });
 
-  it("aucun environnement ne choisit « géré par Tentacle » (réservé)", () => {
+  it("seule l'app Windows choisit « géré par Tentacle »", () => {
     for (const env of [{}, { TENTACLE_DEPLOYMENT: "docker" }, { TENTACLE_DEPLOYMENT: "managed-by-tentacle" }]) {
       expect(readDeployment(env).provisioner).not.toBe("managed-by-tentacle");
     }

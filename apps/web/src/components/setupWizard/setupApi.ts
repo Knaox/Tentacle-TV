@@ -18,6 +18,11 @@ import {
   type SetupContext,
   type SetupErrorCode,
   type SetupHostInfo,
+  type SetupJellyfinInstall,
+  type SetupJellyfinStart,
+  type SetupLocalJellyfin,
+  type SetupPickFolderRequest,
+  type SetupPickFolderResponse,
   type SetupSessionResponse,
   type SetupTmdbRequest,
 } from "@tentacle-tv/shared";
@@ -49,7 +54,7 @@ const KNOWN: ReadonlySet<string> = new Set<SetupErrorCode>([
   "jf_invalid_url", "jf_forbidden_address", "jf_localhost_in_docker", "jf_unreachable", "jf_timeout",
   "jf_tls_invalid", "jf_not_jellyfin", "jf_incompatible_version", "jf_not_blank", "jf_bad_credentials",
   "jf_not_admin", "jf_api_key_invalid", "jf_api_key_failed", "jf_startup_failed", "jf_path_not_found",
-  "jf_library_failed", "jf_not_configured", "jf_claim_pending", "jf_sibling_elsewhere", "step_refused", "internal",
+  "jf_library_failed", "jf_not_configured", "jf_claim_pending", "jf_sibling_elsewhere", "step_refused", "host_unavailable", "internal",
   "tmdb_key_invalid", "tmdb_unreachable",
 ]);
 
@@ -167,6 +172,13 @@ export const setupApi = {
   recommended: () => call<JellyfinSetupReport>("/jellyfin/recommended"),
   /** Seulement ce qui a été coché ; une issue par geste. */
   applyAdvice: (body: SetupAdviceRequest) => call<SetupAdviceOutcome[]>("/jellyfin/recommended", { method: "POST", body }),
+  /** L'app Windows : le Jellyfin de ce PC, son installation guidée, son démarrage (`setupAppHostContract.ts`). */
+  localJellyfin: () => call<SetupLocalJellyfin>("/jellyfin/local"),
+  installJellyfin: () => call<SetupJellyfinInstall>("/jellyfin/install", { method: "POST" }),
+  installStatus: () => call<SetupJellyfinInstall>("/jellyfin/install"),
+  startJellyfin: () => call<SetupJellyfinStart>("/jellyfin/start", { method: "POST" }),
+  /** L'app Windows, navigateur sur le PC même : la boîte de l'Explorateur, puis l'avis de Jellyfin. */
+  pickFolder: (body: SetupPickFolderRequest) => call<SetupPickFolderResponse>("/jellyfin/pick-folder", { method: "POST", body }),
   /** La clé TMDB (validée par TMDB avant d'être gardée), ou « plus tard » : le contexte à jour. */
   tmdb: (body: SetupTmdbRequest) => call<SetupContext>("/tmdb", { method: "POST", body }),
   async complete(body: SetupCompleteRequest): Promise<SetupCompleteResponse> {

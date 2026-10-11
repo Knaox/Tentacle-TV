@@ -19,6 +19,7 @@ import {
   type ShutdownReason,
   type StartupFailure,
 } from "../protocol";
+import type { HostServeResult } from "../host/hostServices";
 
 export interface LaunchSpec {
   execPath: string;
@@ -27,7 +28,7 @@ export interface LaunchSpec {
   env: Record<string, string>;
   port: number;
   hostVersion: string;
-  /** Les méthodes que l'hôte sert au serveur (aucune en v1 ; fil C). */
+  /** Les méthodes que l'hôte sert au serveur (`HOST_METHODS`), annoncées dans `host-hello`. */
   hostMethods: readonly string[];
 }
 
@@ -46,6 +47,8 @@ export interface ProcessCallbacks {
   onMessage(message: ServerToHostMessage): void;
   onReadyByHealth(): void;
   onExit(info: ExitInfo): void;
+  /** Un geste demandé par le serveur (`tentacle:request`) ; la réponse repart au même `id`. */
+  onRequest(method: string, params: unknown): Promise<HostServeResult>;
 }
 
 /** Sans `tentacle:ready` (serveur d'avant le protocole), on sonde `/api/health`. */
@@ -177,8 +180,10 @@ export class ServerProcess {
       return;
     }
     if (message.type === "tentacle:request") {
-      // Aucune méthode servie en v1 : dire au serveur que l'hôte ne la connaît pas.
-      this.send({ type: "tentacle:response", id: message.id, ok: false, error: "unknown_method" });
+      const { id } = message;
+      void this.callbacks.onRequest(message.method, message.params).then((answer) => {
+        this.send(answer.ok ? { type: "tentacle:response", id, ok: true, result: answer.result } : { type: "tentacle:response", id, ok: false, error: answer.error });
+      });
       return;
     }
     this.callbacks.onMessage(message);

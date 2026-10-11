@@ -13,15 +13,19 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { networkInterfaces } from "node:os";
+import { join } from "node:path";
 import { appLayout, resolveAppRoot } from "./appLayout";
 import { deleteDataFolder, prepareDataFolder } from "./data/dataFolder";
 import { dataLayout } from "./data/dataLayout";
 import { readHostState, writeHostState } from "./data/hostState";
 import { refreshSharedDeps } from "./data/sharedDeps";
+import { PICK_FOLDER_FLAG, runPickFolderChild } from "./dialog/pickFolderProcess";
 import { buildServerEnv } from "./env/serverEnv";
 import { HostController } from "./host/hostController";
+import { readHostOptions } from "./hostOptions";
 import { STRINGS, format, languageFromLangId } from "./i18n/strings";
 import { acquireInstance } from "./instance/singleInstance";
+import { createJellyfinHost, installerFolder } from "./jellyfin/jellyfinHost";
 import { LogFiles } from "./logging/logFiles";
 import { defaultRouteAddress, interfaceOf, pickLanAddress, serverUrl } from "./net/lanAddress";
 import { isPublic, readProfiles } from "./net/networkProfile";
@@ -29,7 +33,7 @@ import { isPortFree, suggestPorts } from "./net/ports";
 import { startupRegistration } from "./startup/startupRegistration";
 import { runCommand } from "./startup/runKey";
 import { Supervisor } from "./supervisor/supervisor";
-import { WindowsJob, hasPackageIdentity, userInterfaceLangId, waitProcessBlocking } from "./win32/kernel32";
+import { WindowsJob, hasPackageIdentity, nativeMachineIsArm64, userInterfaceLangId, waitProcessBlocking } from "./win32/kernel32";
 import { showPopupMenu } from "./win32/popupMenu";
 import { confirm, programDataFolder, shellOpen, showError, showInfo } from "./win32/shell";
 import { TrayWindow } from "./win32/trayWindow";
@@ -90,6 +94,18 @@ async function main(): Promise<void> {
   const copied = refreshSharedDeps(app.sharedDepsSeed, data.sharedDeps);
   log(copied === null ? "shared-deps : aucune semence" : `shared-deps : ${copied} fichier(s) recopié(s)`);
 
+  const jellyfinHost = createJellyfinHost({
+    systemRoot,
+    env: process.env,
+    manifests: [app.jellyfinCompat, join(data.root, "compat", "jellyfin.json")],
+    installerEnabled: readHostOptions(app.hostOptions).jellyfinInstaller,
+    arm64: nativeMachineIsArm64(),
+    downloadFolder: installerFolder(data.cache),
+    execPath: process.execPath,
+    hostScript: __filename,
+    log,
+  });
+
   const job = new WindowsJob(log);
   const supervisor = new Supervisor({
     spec: () => {
@@ -108,9 +124,10 @@ async function main(): Promise<void> {
         }),
         port,
         hostVersion: HOST_VERSION,
-        hostMethods: [],
+        hostMethods: jellyfinHost.methods,
       };
     },
+    serve: (method, params) => jellyfinHost.handle(method, params),
     job,
     log,
     output: (chunk) => logs.server(chunk),
@@ -177,7 +194,9 @@ async function main(): Promise<void> {
   await controller.startServer();
 }
 
-main().catch((error: unknown) => {
+// La boîte « Choisir un dossier » tourne dans son propre processus (`dialog/`) : ni instance unique, ni serveur.
+const entry = process.argv.includes(PICK_FOLDER_FLAG) ? runPickFolderChild(process.argv[process.argv.indexOf(PICK_FOLDER_FLAG) + 1]) : main();
+entry.catch((error: unknown) => {
   const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
   try {
     showError("Tentacle Server", message);

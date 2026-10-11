@@ -24,7 +24,10 @@ describe("capacités du serveur", () => {
     expect([...caps]).toEqual(SERVER_CAPABILITY_KEYS.filter((key) => SERVER_CAPABILITIES[key] === "1.24.0"));
     // Une clé venue plus tard (1.25.0 : la migration de la base) n'y est pas.
     expect(caps.has("server.databaseMigration")).toBe(false);
-    expect(resolveServerCapabilities({ version: "1.25.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
+    // Celles de l'app Windows (1.26.0) non plus.
+    const upTo125 = SERVER_CAPABILITY_KEYS.filter((key) => SERVER_CAPABILITIES[key] !== "1.26.0");
+    expect(resolveServerCapabilities({ version: "1.25.0" }).size).toBe(upTo125.length);
+    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 
   it("pas de réponse, réponse illisible : aucune capacité, jamais d'erreur", () => {
@@ -39,7 +42,7 @@ describe("capacités du serveur", () => {
     const none = resolveServerCapabilities({ version: "1.23.0" });
     expect(missingServerCapabilities(none)).toEqual(SERVER_CAPABILITY_KEYS);
     // La plus récente des versions qui apportent ce qui manque.
-    expect(newestMissingSince(none)).toBe("1.25.0");
+    expect(newestMissingSince(none)).toBe("1.26.0");
     const all = resolveServerCapabilities({ capabilities: SERVER_CAPABILITY_KEYS });
     expect(missingServerCapabilities(all)).toEqual([]);
     expect(newestMissingSince(all)).toBeNull();

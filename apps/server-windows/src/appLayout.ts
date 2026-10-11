@@ -24,6 +24,10 @@ export interface AppLayout {
   /** Python embarquable et zipapp yt-dlp du paquet (absents hors paquet). */
   python: string | null;
   ytDlp: string | null;
+  /** Le manifeste de compatibilité Jellyfin (`compat/jellyfin.json`), comme dans l'image. */
+  jellyfinCompat: string;
+  /** Les réglages de l'app posés par le paquet (`host-options.json`, facultatif). */
+  hostOptions: string;
 }
 
 function firstExisting(paths: readonly string[]): string | null {
@@ -55,5 +59,7 @@ export function appLayout(root: string): AppLayout {
     ]),
     python: firstExisting([join(root, "python", "python.exe")]),
     ytDlp: firstExisting([join(root, "tools", "yt-dlp")]),
+    jellyfinCompat: join(root, "compat", "jellyfin.json"),
+    hostOptions: join(root, "apps", "server-windows", "host-options.json"),
   };
 }

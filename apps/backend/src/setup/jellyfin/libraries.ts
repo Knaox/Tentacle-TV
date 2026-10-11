@@ -72,6 +72,21 @@ async function ensureDirectory(url: string, authorization: string, path: string)
   if (reply.status < 200 || reply.status >= 300) throw new SetupError("jf_library_failed");
 }
 
+/**
+ * Jellyfin voit-il ce dossier ? `ValidatePath` répond avec SON compte : un
+ * lecteur mappé (`Z:`) est invisible pour un Jellyfin en service. Une panne
+ * de Jellyfin n'est pas un « non » : elle remonte.
+ */
+export async function folderVisible(url: string, apiKey: string, path: string): Promise<boolean> {
+  try {
+    await ensureDirectory(url, auth(apiKey), path);
+    return true;
+  } catch (err) {
+    if (err instanceof SetupError && err.code === "jf_path_not_found") return false;
+    throw err;
+  }
+}
+
 export interface LibraryLocale {
   metadataLanguage: string;
   metadataCountry: string;

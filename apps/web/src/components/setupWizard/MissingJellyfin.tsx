@@ -23,7 +23,7 @@ export function MissingJellyfin({ guide, waiting }: { guide: MissingJellyfinGuid
             <ExternalLink size={14} aria-hidden="true" />
           </a>
         </>
-      ) : guide.kind === "docs" ? (
+      ) : guide.kind === "docs" || guide.kind === "install" ? (
         <p>
           {t("jfMissingDocs")}{" "}
           <a href={guide.docsUrl} target="_blank" rel="noopener noreferrer" className={linkCls}>

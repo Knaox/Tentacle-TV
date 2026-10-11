@@ -58,6 +58,12 @@ export const SERVER_CAPABILITIES = {
    *  (`migrating`, `failed`) et les 503 `{ state: "migrating" }` du mode maintenance —
    *  l'écran d'attente, jamais une panne. */
   "server.databaseMigration": "1.25.0",
+  /** L'app Windows : le Jellyfin de la machine détecté, installé (installateur officiel vérifié)
+   *  et démarré par son hôte depuis l'assistant (`/api/setup/jellyfin/local`, `/install`, `/start`). */
+  "setup.jellyfinInstall": "1.26.0",
+  /** L'app Windows : la boîte « Choisir un dossier » de l'Explorateur pour les bibliothèques
+   *  (`/api/setup/jellyfin/pick-folder`), depuis un navigateur sur la machine même. */
+  "setup.folderPicker": "1.26.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

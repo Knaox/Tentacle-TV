@@ -1,6 +1,8 @@
 import { hasPrisma } from "../services/db";
 import type { FastifyRequest } from "fastify";
 import { isWebUiEnabled } from "../static/webUi";
+import { appHostServes } from "./appHost/appHostCalls";
+import { requestFromThisMachine } from "./appHost/thisMachine";
 import { flowState } from "./flow/setupFlow";
 import { clientUrlFor } from "./jellyfin/clientUrlFor";
 import { chosenOverStack, claimedAdminId, joinedConfiguredJellyfin, storedJellyfin } from "./setupStore";
@@ -50,5 +52,9 @@ export function buildSetupContext(request: FastifyRequest): SetupContext {
     missingJellyfin: provisioner.missingGuide(),
     secure: request.protocol === "https",
     webUi: isWebUiEnabled(),
+    // L'app Windows : ce que son hôte fait pour CE navigateur (la boîte de dossier, sur la machine même).
+    ...(deployment.packaging === "windows-app"
+      ? { appHost: { jellyfin: appHostServes("jellyfin.detect"), pickFolder: appHostServes("dialog.pickFolder") && requestFromThisMachine(request) } }
+      : {}),
   };
 }
