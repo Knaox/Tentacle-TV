@@ -37,6 +37,12 @@ RULES = [
     # depuis Tahoe — sur les versions d'avant, le carré restait carré.
     ("apps/desktop-electron/msix/Assets/*.png", "app-icon-rounded.svg"),
     ("apps/desktop-electron/icons/*.png", "app-icon-rounded.svg"),
+    # ── Tentacle Server pour Windows (paquet MSIX) ───────────────────────────
+    # Mêmes sources et mêmes gabarits que le bureau : la même marque, posée par
+    # le même Store. Aucun logo de Jellyfin, nulle part (charte de Jellyfin).
+    ("apps/server-windows/msix/Assets/Wide310x150Logo.png", "banner-wide.svg"),
+    ("apps/server-windows/msix/Assets/SplashScreen.png", "banner-wide.svg"),
+    ("apps/server-windows/msix/Assets/*.png", "app-icon-rounded.svg"),
     # ── Mobile ───────────────────────────────────────────────────────────────
     ("apps/mobile/assets/adaptive-icon.png", "app-icon-foreground.svg"),
     ("apps/mobile/assets/splash-icon.png", "logo-plain.svg"),
@@ -154,11 +160,14 @@ def main():
     # Eux aussi suivent le filtre : sans lui, régénérer les seules images de
     # l'Apple TV réécrivait l'icône du bureau (un bruit binaire de plus).
     icns = ROOT / "apps/desktop-electron/icons/icon.icns"
-    ico = ROOT / "apps/desktop-electron/icons/icon.ico"
     if WRITE and icns.exists() and selected(icns):
         build_icns(BRAND / "app-icon-macos.svg", icns)
         print(f"  icns reconstruit : {icns.relative_to(ROOT)}")
-    if WRITE and ico.exists() and selected(ico):
+    # L'icône du bureau, et celle de la zone de notification de Tentacle Server
+    # (lue par l'hôte, `appLayout.ts`) : même source, mêmes tailles.
+    for ico in (ROOT / "apps/desktop-electron/icons/icon.ico", ROOT / "apps/server-windows/assets/tray.ico"):
+        if not (WRITE and ico.exists() and selected(ico)):
+            continue
         pngs = []
         for size in (16, 24, 32, 48, 64, 128, 256):
             out = BRAND / f"ico-{size}.png"
