@@ -109,6 +109,36 @@ describe("le câblage du service", () => {
     expect(await status(app, "/")).toBe(200);
     expect(await status(app, "/setup")).toBe(200);
   });
+
+  it("coupée et installée : le lien d'invitation mène à la page autonome du serveur, jamais en cache", async () => {
+    const app = await server({ enabled: false, setupComplete: true });
+    const res = await app.inject({ method: "GET", url: "/register?invite=3f2a9c01be44d7e6", headers: { "accept-language": "fr-FR,fr;q=0.9" } });
+    expect([res.statusCode, res.headers["content-type"], res.headers["cache-control"], res.headers["x-robots-tag"]])
+      .toEqual([200, "text/html; charset=utf-8", "no-store", "noindex, nofollow"]);
+    expect(res.body).toContain('value="3f2a9c01be44d7e6"');
+    expect(res.body).toContain("Rejoindre Tentacle TV");
+    expect(res.body).not.toContain("<title>web</title>");
+    // Le nonce de la politique est celui des scripts de la page, et change à chaque réponse.
+    const nonce = /script-src 'nonce-([^']+)'/.exec(String(res.headers["content-security-policy"]))?.[1];
+    expect(res.body).toContain(`<script nonce="${nonce}">`);
+    const again = await app.inject({ method: "GET", url: "/register" });
+    expect(again.headers["content-security-policy"]).not.toBe(res.headers["content-security-policy"]);
+  });
+
+  it("coupée et installée : rien d'autre que la page elle-même — ni ses voisins, ni un envoi", async () => {
+    const app = await server({ enabled: false, setupComplete: true });
+    for (const [method, url] of [["POST", "/register"], ["GET", "/register/"], ["GET", "/registerx"], ["GET", "/register/abc"]] as const) {
+      const res = await app.inject({ method, url });
+      expect([method, url, res.statusCode, res.body]).toEqual([method, url, 404, ""]);
+    }
+  });
+
+  it("allumée, ou pendant l'installation : `/register` reste la page du client web", async () => {
+    for (const state of [{ enabled: true, setupComplete: true }, { enabled: false, setupComplete: false }]) {
+      const res = await (await server(state)).inject({ method: "GET", url: "/register?invite=3f2a9c01be44d7e6" });
+      expect([state, res.statusCode, res.body]).toEqual([state, 200, "<!DOCTYPE html><title>web</title>"]);
+    }
+  });
 });
 
 describe("tentacle web on|off|default|status", () => {

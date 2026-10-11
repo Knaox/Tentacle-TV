@@ -9,6 +9,7 @@ import {
 } from "./tvUserAgent";
 import { isSetupComplete } from "../services/configStore";
 import { isWebUiEnabled, webUiBlocks } from "./webUi";
+import { INVITE_PAGE_PATH, sendInvitePage } from "./invitePage";
 
 /**
  * Service des clients construits : le client web à la racine, le client
@@ -58,7 +59,11 @@ export async function registerStaticClients(
   app.addHook("onRequest", async (request, reply) => {
     const path = request.url.split("?")[0];
     // L'interface web coupée (`TENTACLE_WEB_UI=off`) : 404, sauf l'API, /tv, /.well-known et l'assistant.
-    if (webUiBlocks(path, webUi())) return pageNotFound(reply);
+    // Le lien d'invitation mène alors à la page autonome du serveur, sans rien du client web.
+    if (webUiBlocks(path, webUi())) {
+      if (path === INVITE_PAGE_PATH && request.method === "GET") return sendInvitePage(request, reply);
+      return pageNotFound(reply);
+    }
     if (!isTvClientPath(path)) return;
     if (tvClientOpenToAll()) return;
     if (isTvUserAgent(request.headers["user-agent"])) return;

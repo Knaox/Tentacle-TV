@@ -18,6 +18,10 @@ import { DATA_ROOT } from "../services/dataDir";
  *  - TOUT le client tant que l'installation n'est pas finie : l'assistant en
  *    est une page. Posée avant la fin, l'option ne ferme le web qu'après.
  *
+ * Et à la place du 404, le lien d'invitation (`/register?invite=…`) reçoit la
+ * page d'invitation autonome du serveur (`invitePage.ts`) : l'invité crée son
+ * compte sans le client web.
+ *
  * Retour en arrière : `TENTACLE_WEB_UI=on` et un redémarrage, ou
  * `tentacle web on` dans le conteneur (un fichier de `data/`, relu toutes les
  * cinq secondes : sans redémarrage). La commande l'emporte sur la variable ;
