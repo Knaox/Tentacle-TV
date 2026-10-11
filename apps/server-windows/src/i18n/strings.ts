@@ -45,6 +45,12 @@ export interface Strings {
   startupDisabledByUser: string;
   startupDisabledByPolicy: string;
   startupUnavailable: string;
+  // Mise à jour par le Microsoft Store.
+  installUpdate: string;
+  updateAvailableTitle: string;
+  updateAvailableBody: string;
+  updateFailedBody: string;
+  updateRestartBody: string;
 }
 
 const fr: Strings = {
@@ -92,6 +98,14 @@ const fr: Strings = {
     "Le démarrage avec Windows a été coupé dans les Paramètres de Windows. Réactivez Tentacle Server dans Paramètres > Applications > Démarrage.",
   startupDisabledByPolicy: "Le démarrage avec Windows est bloqué par une stratégie de ce PC.",
   startupUnavailable: "Le démarrage avec Windows n'a pas pu être modifié. Le détail est dans le journal.",
+  installUpdate: "Installer la mise à jour",
+  updateAvailableTitle: "Mise à jour disponible",
+  updateAvailableBody:
+    "Une nouvelle version de Tentacle Server est prête. Choisissez « Installer la mise à jour » dans le menu de l'icône Tentacle : le serveur s'arrêtera le temps de l'installation.",
+  updateFailedBody:
+    "La mise à jour de Tentacle Server n'a pas pu être installée. Le serveur est reparti dans sa version actuelle ; le détail est dans le journal.",
+  updateRestartBody:
+    "La mise à jour de Tentacle Server s'appliquera à son prochain démarrage. Pour l'appliquer maintenant, choisissez « Quitter », puis relancez Tentacle Server depuis le menu Démarrer.",
 };
 
 const en: Strings = {
@@ -136,6 +150,14 @@ const en: Strings = {
     "Starting with Windows was turned off in Windows Settings. Turn Tentacle Server back on in Settings > Apps > Startup.",
   startupDisabledByPolicy: "Starting with Windows is blocked by a policy on this PC.",
   startupUnavailable: "Starting with Windows could not be changed. Details are in the log.",
+  installUpdate: "Install update",
+  updateAvailableTitle: "Update available",
+  updateAvailableBody:
+    "A new version of Tentacle Server is ready. Choose \"Install update\" from the Tentacle icon menu: the server will stop while it installs.",
+  updateFailedBody:
+    "The Tentacle Server update could not be installed. The server is running its current version again; details are in the log.",
+  updateRestartBody:
+    "The Tentacle Server update will apply the next time it starts. To apply it now, choose \"Quit\", then start Tentacle Server again from the Start menu.",
 };
 
 export const STRINGS: Readonly<Record<Language, Strings>> = { fr, en };

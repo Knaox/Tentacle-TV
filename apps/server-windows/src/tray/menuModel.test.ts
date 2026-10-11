@@ -20,6 +20,14 @@ function texts(entries: readonly MenuEntry[]): string[] {
 }
 
 describe("buildMenu", () => {
+  it("propose d'installer une mise à jour du Store qui attend un geste, juste sous l'administration", () => {
+    const entries = buildMenu({ ...base, updatePending: true });
+    expect(texts(entries).slice(2, 4)).toEqual(["Ouvrir l'administration", "Installer la mise à jour"]);
+    const install = entries.find((entry) => entry.kind === "item" && entry.command.kind === "install-update");
+    expect(install).toBeDefined();
+    expect(texts(buildMenu(base))).not.toContain("Installer la mise à jour");
+  });
+
   it("dit l'état, puis l'administration, les réglages, et les gestes lourds en bas", () => {
     expect(texts(buildMenu(base))).toEqual([
       "En marche, port 3000",

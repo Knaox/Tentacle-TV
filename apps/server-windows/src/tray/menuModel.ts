@@ -24,6 +24,7 @@ export type MenuCommand =
   | { kind: "setup-code" }
   | { kind: "open-log" }
   | { kind: "restart" }
+  | { kind: "install-update" }
   | { kind: "delete-data" }
   | { kind: "quit" };
 
@@ -42,6 +43,8 @@ export interface MenuInput {
   freePorts: readonly number[];
   /** `setup-token.txt` existe et l'installation n'est pas finie. */
   hasSetupCode: boolean;
+  /** Une mise à jour du Store attend un geste (`update/updateCoordinator.ts`). */
+  updatePending?: boolean;
 }
 
 export function stateLabel(strings: Strings, state: ServerState, port: number): string {
@@ -98,6 +101,7 @@ export function buildMenu(input: MenuInput): MenuEntry[] {
     item(strings.openAdmin, { kind: "open-admin" }, { enabled: running, isDefault: true }),
   ];
   if (input.hasSetupCode) entries.push(item(strings.setupCode, { kind: "setup-code" }));
+  if (input.updatePending === true) entries.push(item(strings.installUpdate, { kind: "install-update" }));
   entries.push(
     { kind: "separator" },
     item(strings.startWithWindows, { kind: "toggle-startup" }, {
