@@ -178,7 +178,7 @@ qui le migre vers les intentions :
 | La prise du pan | `lib/tvPanGesture.ts` | `TVEventControl` | T1 — FAIT : `platform/tvos/input/panGesture.ts` ; réexportation RETIRÉE |
 | « Au-delà du bord » | `redesignWiring/remote/useBeyondEdge.ts` (accueil : `useHomeHero`) | glissers et appuis simples vers un bord | T3 (règle), T7 (accueil) |
 | Rotation du héros | `redesignWiring/home/useHeroRotation.ts` | tout geste ; un maintien la suspend | T7 |
-| Réveil de la bande-annonce | `redesignWiring/trailer/TrailerRedesign.tsx` | tout geste | T7 |
+| Réveil de la bande-annonce | `redesignWiring/trailer/useTrailerPlayback.ts` (contrôles du grand lecteur) | les gestes du lecteur (`trailerRemoteSteps`) | lot BA |
 | Lecture/Pause dans la feuille des saisons | `redesignWiring/vigie/SeasonsSheetRedesign.tsx` | `playPause` simple | T6 |
 | Menu dans une modale | `redesign/motion/FadingModal.tsx`, `redesignWiring/sheet/ActionSheetRedesign.tsx`, `redesignWiring/vigie/*Sheet*`, `RequestsPanel.tsx`, `settings/ChoiceModal.tsx`, `nav/NavMenuModal.tsx` | `onRequestClose` | T6 (feuilles), T4 (rail), T7 (réglages) |
 | Portée du Retour | `redesignWiring/back/BackScope.tsx` + `components/focus/MenuPressInterceptor.ios.tsx` | Menu, décidé d'avance | T4 |

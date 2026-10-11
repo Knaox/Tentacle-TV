@@ -600,7 +600,10 @@ premier plan, titre qui avance) ne sont pas de la navigation.
 ## 10. La bande-annonce (`Trailer`)
 
 **Fichiers** — `redesignWiring/trailer/` (`TrailerRedesign`,
-`useIdleChrome`) ; vue `redesign/screens/trailer/TrailerView.tsx`.
+`useTrailerPlayback` : contrôles et Retour ; `useTrailerTracks` : sous-titres,
+qualité, capacité) ; vue `redesign/screens/trailer/` (`TrailerView`,
+`TrailerChrome`, `TrailerPanelSheet`) ; applicateur
+`platform/tvos/screens/trailer.tsx`, commun à Apple TV et Android TV.
 
 Un lecteur ULTRA simplifié (lot BA, 2026-10-11) : avancer / reculer, la
 pause, les sous-titres et la qualité — rien d'autre (ni épisodes, ni
@@ -715,7 +718,7 @@ compter une attente dont la durée vient de tv-core. Le câblage
 | JU-1, JU-4 | `focus/pairingFocus` | `screens/pairing.ts` |
 | JU-6 | `session/loginForm` | la vue `LoginStep` ; l'ouverture native du clavier : `screens/pairing.ts` (`openPairingKeyboard`, fourni par `KeyboardOpenerProvider`) |
 | JU-7 | `nav/screenBack` (`pairingBackAction`) | `PairingRedesign` (une couche « page », `useBackLayer`) |
-| BA-1 à BA-9 | `player/trailerChrome`, `trailerFocus`, `trailerControls` (sur `playerControls`), `trailerBack` (sur `playerBack`), `trailerPanels` (sur `sheetEntryKey`) | `screens/trailer.ts` (et son jumeau Android) |
+| BA-1 à BA-9 | `player/trailerChrome`, `trailerFocus`, `trailerControls` (sur `playerControls`), `trailerBack` (sur `playerBack`), `trailerPanels` (sur `sheetEntryKey`) | `screens/trailer.tsx` (commun à Apple TV et Android TV) |
 | VI-1 à VI-4 | `titles/absentActions` ; `MODAL_GAP_MS` : `panels/panelLifecycle` (T6) | `useTitleRequests`, `useSeriesGapTabs`, `openSearchGap` |
 
 Disparus : `redesignWiring/detail/useDetailGuides.ts`,

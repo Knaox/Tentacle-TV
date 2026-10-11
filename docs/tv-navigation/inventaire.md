@@ -393,9 +393,11 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 #### `platform/tvos/screens/settings.tsx`
 - L2, 36, 38, 40 · TVFocusGuideView, destinations · **ADAPTATEUR** · FAIT (69adb7511) : le guide des onglets ; la destination (l'onglet affiché) vient de tv-core
 
-#### `platform/tvos/screens/trailer.ts`
-- L24 · `native: { hasTVPreferredFocus }` · **ADAPTATEUR** · FAIT (e9ced567c) : la croix est l'entrée
-- L36, 44, 65 · setTimeout · **ADAPTATEUR** · FAIT : chrome au repos et retour seul à la fiche ; durées de tv-core (`player/trailerChrome`)
+#### `platform/tvos/screens/trailer.tsx`
+- verrous (`setFocusLocked`), `nextFocus*` (`setNativeProps`), réclamations (`store.claim`) · **ADAPTATEUR** · FAIT (lot BA) : les règles de tv-core `player/trailerFocus` (focalisable, voisins, entrée, retour au bouton d'un panneau), sur le magasin de focus de l'écran
+- guides des panneaux (`TrapFocusGuide`, `createSheetBackGroup`) · **ADAPTATEUR** · FAIT (lot BA) : les feuilles du grand lecteur
+- `useRemoteIntents` · **ADAPTATEUR** · FAIT (lot BA) : la table `trailerRemoteSteps` vers les contrôles du grand lecteur (`createTrailerControls`)
+- setTimeout · **ADAPTATEUR** · FAIT : retour seul à la fiche ; durée de tv-core (`player/trailerChrome`)
 
 #### `redesign/screens/detail/CastRow.tsx`
 - L9, 120, 134 · FocusSection · **VUE** · section déclarative
@@ -471,7 +473,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 #### `redesignWiring/trailer/TrailerRedesign.tsx`
 - L3, 57 · useIsFocused · **RESTE** · « écran devant »
-- L60 · goBack · **RESTE** · fermer la bande-annonce = reculer (pile) ; entrée, chrome au repos et retour seul à la fiche : tv-core `player/trailerChrome`, appliqués par `platform/tvos/screens/trailer` (e9ced567c)
+- goBack · **RESTE** · fermer la bande-annonce = reculer (pile) ; entrée, focus, chrome et Retour en couches : tv-core `player/trailer*`, appliqués par `platform/tvos/screens/trailer.tsx` (lot BA)
 
 #### `redesignWiring/vigie/useTitleRequests.tsx`
 - L176 · setTimeout(`MODAL_GAP_MS`) · **MIXTE** · « Demander » depuis le grand panneau : le fermer puis rejouer OK — règle dans tv-core (`titles/absentActions`, 98df4f171) ; les 320 ms viennent d'UIKit (bug 6 des panneaux : jamais annulé, non corrigé)
@@ -692,7 +694,7 @@ Ils restent natifs : ce sont l'adaptateur, côté UIKit.
 - `redesignWiring/search/useSystemKeyboard.ts:42` `focus.claim(FIRST_KEY)` (Menu ferme le clavier → 1re touche) ; `:63-65 focus.subscribe` (la barre refocalisée signale que le clavier est parti) ; `:68 focus.claim(FIELD_KEY)` ; `:84 navigation.addListener("transitionEnd")`.
 - `redesignWiring/settings/settingsFocus.tsx:46-47` `focus.bind(…, { container: TabsGuide | AutoFocusGuide })` ; `:52-62 useActiveTabDestination` (destination = onglet affiché) ; `:86, 88, 97 setFocusLocked` ; `:101 focus.subscribe`.
 - `redesignWiring/settings/SettingsRedesign.tsx:37` l'entrée est l'onglet affiché.
-- `redesignWiring/trailer/TrailerRedesign.tsx:42, 89` binder ad hoc `bindClose` passé à `FocusBindingProvider` : props natives posées hors du magasin de focus.
+- ~~`redesignWiring/trailer/TrailerRedesign.tsx` binder ad hoc~~ — corrigé (lot BA) : le magasin de focus de l'écran (`useTrailerFocusStore`).
 
 ## Annexe F — bugs relevés, NON corrigés (règle du lot)
 
@@ -737,7 +739,7 @@ fait). « À vérifier » : déduit du code, pas reproduit.
 5. `useTVRemote` hors du bus, glissers ignorés — useSearchSubmit.ts:85-89 : encore un abonnement hors bus ; `onAnyPress` ignore swipe* et pan → un glisser après le départ du clavier n'annule pas l'atterrissage, une réponse dans les 3 s peut encore arracher le focus.
 6. Réclamation perdue sans bruit — useSystemKeyboard.ts:50-60 : le faux nœud expose toujours `setNativeProps` → `claimTvFocus` ne renonce jamais et contourne l'attente de montage de `focus.claim` : 1er résultat pas encore monté → réclamation perdue.
 7. Prop inerte — TrailerWebView.ios.tsx:96 `focusable={false}` est Android seulement ; la Video n'est sourde que parce que RCTVideo n'est pas focalisable de nature (commentaire L22-24 trompeur).
-8. Binder ad hoc hors magasin — TrailerRedesign.tsx:41-42, 89 : `hasTVPreferredFocus: true` à demeure, sans le cycle vers faux ; aucune observation onFocus/onBlur.
+8. ~~Binder ad hoc hors magasin — TrailerRedesign.tsx~~ — corrigé (lot BA) : l'écran passe par son magasin de focus et réclame son entrée.
 9. Une vue qui décide — LibraryView.tsx:188 : le repli `onSheetClose ?? onSheetApply ?? noop` fait que Menu APPLIQUE faute de fermer.
 10. Effets natifs pendant le rendu — settingsFocus.tsx:85-90 : `useChoiceEntry` pose ses verrous (bind + setNativeProps) pendant le rendu.
 11. Re-rendus pour le banc — useForcedFocusReveal.ts:47, 57 : `setLayoutTick` redessine Accueil, Pour vous et recherche à chaque mise en page de section, pour un outil réservé au banc.
