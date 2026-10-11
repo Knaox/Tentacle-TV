@@ -17,13 +17,18 @@
 /** La page officielle de téléchargement : le repli de toute installation guidée impossible. */
 export const JELLYFIN_WINDOWS_DOWNLOAD_URL = "https://jellyfin.org/downloads/windows";
 
-/** Combien le serveur attend chaque geste. La boîte de dialogue attend l'utilisateur. */
+/**
+ * Combien le serveur attend chaque geste. La boîte de dialogue attend
+ * l'utilisateur, mais pas plus que la requête HTTP qui la porte ne vit
+ * (5 min par défaut dans Node) : passé ce délai, l'hôte la ferme comme une
+ * annulation.
+ */
 export const HOST_METHOD_TIMEOUTS_MS = {
   "jellyfin.detect": 15_000,
   "jellyfin.install": 15_000,
   "jellyfin.installStatus": 5_000,
   "jellyfin.start": 15_000,
-  "dialog.pickFolder": 15 * 60_000,
+  "dialog.pickFolder": 4 * 60_000,
 } as const;
 
 // ── jellyfin.detect ─────────────────────────────────────────────────────────

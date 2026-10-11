@@ -33,6 +33,7 @@ export default {
   error_setup_in_progress: "Une installation est déjà en cours depuis un autre appareil\u00a0: entrez le code d'installation pour la reprendre.",
   error_jf_sibling_elsewhere: "L'adresse interne de Jellyfin mène hors de la pile Docker\u00a0: le service Jellyfin a-t-il été renommé\u00a0? Rétablissez JELLYFIN_INTERNAL_URL sur le nom du service Jellyfin de la pile.",
   error_step_refused: "Cette étape ne fait pas partie de l'installation de ce Jellyfin\u00a0: revenez à l'étape Jellyfin.",
+  error_host_unavailable: "Ce geste n'est possible que dans l'app Tentacle Server pour Windows, depuis le PC où elle est installée.",
   error_tmdb_key_invalid: "TMDB refuse cette clé. Vérifiez que c'est bien la clé API v3 (32 caractères), pas le jeton v4.",
   error_tmdb_unreachable: "Le serveur n'arrive pas à joindre TMDB pour vérifier la clé. Réessayez, ou configurez-la plus tard.",
   error_internal: "Une erreur inattendue est survenue. Réessayez ; si elle revient, consultez les journaux du serveur.",

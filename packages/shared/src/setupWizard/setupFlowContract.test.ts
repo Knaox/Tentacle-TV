@@ -247,3 +247,19 @@ describe("la clé TMDB (écran facultatif, dans les deux parcours)", () => {
     expect(setupActionAllowed("tmdb", state({ databasePending: true, selection: selection("fresh"), linked: true }))).toBe(false);
   });
 });
+
+describe("les gestes de l'app Windows (son hôte)", () => {
+  it("détecter, installer, démarrer Jellyfin : comme le choix, à toute étape — jamais base fermée", () => {
+    for (const action of ["detectJellyfin", "installJellyfin", "startJellyfin"] as const) {
+      expect(setupActionAllowed(action, state())).toBe(true);
+      expect(setupActionAllowed(action, state({ selection: selection("configured"), linked: true }))).toBe(true);
+      expect(setupActionAllowed(action, state({ databasePending: true }))).toBe(false);
+    }
+  });
+
+  it("la boîte « Choisir un dossier » : là seulement où l'on parcourt les dossiers", () => {
+    expect(setupActionAllowed("pickFolder", state({ selection: selection("fresh"), linked: true }))).toBe(true);
+    expect(setupActionAllowed("pickFolder", state({ selection: selection("fresh") }))).toBe(false);
+    expect(setupActionAllowed("pickFolder", state({ selection: selection("configured"), linked: true }))).toBe(false);
+  });
+});
