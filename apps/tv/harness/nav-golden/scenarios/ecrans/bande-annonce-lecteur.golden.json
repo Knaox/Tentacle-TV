@@ -3,8 +3,8 @@
   "domain": "ecrans",
   "suite": "bande-annonce-lecteur",
   "reference": {
-    "sha": "9ae63d9c5766968a98336d0c99eed941d3404977",
-    "label": "référence 9ae63d9c5"
+    "sha": "04c680dd8c3e7ef9bd5c3b15988a8216007a1b0e",
+    "label": "référence 04c680dd8"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-11T15:02:30.069Z",
+  "recordedAt": "2026-10-11T15:16:20.591Z",
   "scenarios": {
     "ba-lec-01": {
-      "hash": "16cf23840216",
-      "durationMs": 41579,
+      "hash": "883782387920",
+      "durationMs": 37686,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
@@ -74,33 +74,6 @@
         },
         {
           "do": "select",
-          "app": "foreground",
-          "focus": "trailer:subtitles",
-          "label": "Sous-titres",
-          "frame": [
-            1347,
-            874,
-            252,
-            68
-          ],
-          "groups": [],
-          "route": "Trailer",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
-            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
-            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail",
-            "Trailer"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "wait:1",
           "app": "foreground",
           "focus": "trailer:subtitles",
           "label": "Sous-titres",
