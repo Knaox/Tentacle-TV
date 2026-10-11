@@ -19,6 +19,8 @@ scripts/
 # Le mobile aussi : le pilote de l'inspecteur Hermes (scripts/dev-hook.mjs).
 !apps/mobile/scripts/
 !apps/desktop-electron/scripts/
+# L'assemblage et l'empaquetage du paquet MSIX de Tentacle Server.
+!apps/server-windows/scripts/
 !.github/scripts/
 !apps/tv/ios/scripts/
 # Le générateur des textes de licence (`pnpm --filter @tentacle-tv/shared
