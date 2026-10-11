@@ -12,6 +12,7 @@ import {
   trailerPanelCloseKey,
   trailerPanelReturnKey,
   trailerRemoteSteps,
+  trailerStartClaim,
   type PlayerRemoteHandlers,
   type TrailerFocusView,
   type TrailerPanel,
@@ -36,7 +37,8 @@ import { applyTrailerNeighbors } from "./trailerNeighbors";
  * - les voisins (`trailerNeighbor`) : les PONTS armés selon le focus
  *   (`trailerBridges.tsx`, tvOS), `nextFocus*` sur Android
  *   (`trailerNeighbors.android.ts`) ;
- * - les réclamations : l'entrée, une cible devenue infocalisable, l'option
+ * - les réclamations : l'entrée (la croix au chargement, puis le premier
+ *   bouton dès que la lecture commence), une cible devenue infocalisable, l'option
  *   retenue d'un panneau, le bouton qui l'a ouvert quand il s'est effacé ;
  * - les panneaux : la feuille retient le focus, sa marge mène à sa croix ;
  * - la télécommande : l'entrée unique, par la table des contrôles ;
@@ -94,6 +96,8 @@ export function useTrailerFocus(
   const viewRef = useRef(view);
   viewRef.current = view;
   const lastTool = useRef<string | null>(null);
+  // L'état au dernier passage des réclamations : la lecture qui commence réclame l'entrée.
+  const previousState = useRef<TrailerState | null>(null);
   // Un panneau refermé garde le focus le temps de s'effacer : rien ne se réclame avant.
   const closing = useRef<TrailerPanel | null>(null);
   const openPanel = useRef<TrailerPanel | null>(view.panel);
@@ -139,8 +143,10 @@ export function useTrailerFocus(
     bridges.notify();
     const focused = store.focusedKey();
     if (focused) aim(focused);
+    const previous = previousState.current;
+    previousState.current = current.state;
     if (closing.current !== null) return undefined;
-    const claim = trailerFocusClaim(current, focused);
+    const claim = trailerStartClaim(previous, current) ?? trailerFocusClaim(current, focused);
     return claim ? store.claim(claim) : undefined;
   }, [store, aim, bridges, state, chromeShown, panel, subtitles, quality]);
 

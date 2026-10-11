@@ -6,7 +6,7 @@
   "scenarios": [
     {
       "id": "ba-lec-01",
-      "title": "Bande-annonce lisible : entrée sur la barre ; chrome estompé, ↑ le rallume sans bouger ; le tour des cibles ; Menu masque puis quitte",
+      "title": "Bande-annonce lisible : premier focus sur le premier bouton (la croix au chargement seulement) ; chrome estompé, la barre ; ↑ le rallume sans bouger ; le tour des cibles ; Menu masque puis quitte",
       "rules": ["BA-1", "BA-2", "BA-7", "BA-9", "BA-4"],
       "start": {
         "fixtures": ["base/vigie-off", "ecrans/bande-annonce-lisible"],
@@ -16,7 +16,8 @@
       "steps": [
         { "do": "right", "expect": { "focus": "detail:trailer" } },
         { "do": "select", "settleMs": 300, "expect": { "route": "Trailer" } },
-        { "do": "wait:6", "expect": { "route": "Trailer", "focus": "trailer:timeline" }, "why": "en lecture, l'entrée est la barre ; 3 s plus tard le chrome s'est estompé" },
+        { "do": "wait:1", "expect": { "route": "Trailer", "focus": "trailer:subtitles" }, "why": "la lecture lancée, le premier focus est le premier bouton ; la croix ne l'a qu'au chargement" },
+        { "do": "wait:5", "expect": { "route": "Trailer", "focus": "trailer:timeline" }, "why": "3 s sans geste : le chrome s'estompe, la barre reprend le focus" },
         { "do": "up", "expect": { "focus": "trailer:timeline" }, "why": "chrome estompé : ↑ le rallume, rien d'autre n'est focalisable" },
         { "do": "up", "expect": { "focus": "trailer:subtitles" } },
         { "do": "right", "expect": { "focus": "trailer:quality" } },

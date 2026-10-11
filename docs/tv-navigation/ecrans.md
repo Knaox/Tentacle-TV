@@ -620,8 +620,12 @@ panneaux par la feuille `PlayerSheet` et `sheetEntryKey`.
 
 - **BA-1** Cibles (`trailerTargets`) : en lecture, la croix, les boutons
   présents, la barre ; hors lecture (chargement, indisponible), la croix
-  seule. Entrée (`trailerEntryKey`, réclamée à chaque changement) : la BARRE
-  en lecture, la croix sinon. Les boutons n'existent que si le serveur
+  seule. Le PREMIER focus (`trailerEntryKey`, réclamé à chaque changement,
+  et au lancement de la lecture, `trailerStartClaim`) : la croix pendant le
+  chargement, ou quand rien d'autre n'est à cibler (indisponible) ; sinon le
+  premier élément hors croix — le premier bouton, sinon la barre ; la barre
+  quand le chrome est estompé (choix de Damien, 2026-10-11). La croix reste
+  atteignable. Les boutons n'existent que si le serveur
   déclare `trailers.player` ET qu'il y a à choisir — une langue de
   sous-titres au moins, deux hauteurs au moins (`trailerTools`). Sans la
   capacité : la croix et la barre, avancer et reculer marchent.
