@@ -2,7 +2,7 @@ import { randomInt, timingSafeEqual } from "crypto";
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { DATA_ROOT } from "../services/dataDir";
-import { SETUP_TOKEN_LENGTH } from "./setupWizardContract";
+import { SETUP_TOKEN_LENGTH, type SetupHostInfo } from "./setupWizardContract";
 
 /**
  * Le code d'installation : qui le lit dans les journaux du serveur (ou dans
@@ -84,21 +84,40 @@ export function discardSetupToken(file = SETUP_TOKEN_FILE): void {
 export const NATIVE_CLI = "node apps/backend/dist/cli/tentacle.js";
 
 /**
+ * Où trouver un code neuf : la console du conteneur, la commande native, ou
+ * l'app Windows (l'icône de la zone de notification, et l'alias `tentacle`
+ * que le paquet pose sur le PATH).
+ */
+export type SetupCodeHome = "container" | "native" | "windows-app";
+
+export function setupCodeHome(info: Pick<SetupHostInfo, "containerized" | "packaging">): SetupCodeHome {
+  if (info.packaging === "windows-app") return "windows-app";
+  return info.containerized ? "container" : "native";
+}
+
+const RENEW: Readonly<Record<SetupCodeHome, readonly string[]>> = {
+  container: [
+    "  Single use. New code: `tentacle setup token` in this container's console.",
+    "  Usage unique. Code neuf : `tentacle setup token` dans la console de ce conteneur.",
+  ],
+  native: [
+    `  Single use. New code: \`${NATIVE_CLI} setup token\``,
+    `  Usage unique. Code neuf : \`${NATIVE_CLI} setup token\``,
+  ],
+  "windows-app": [
+    "  Single use. Tentacle Server icon (notification area) > Setup code; new code: `tentacle setup token`.",
+    "  Usage unique. Icône Tentacle Server (zone de notification) > Code d'installation ; code neuf : `tentacle setup token`.",
+  ],
+};
+
+/**
  * Le bandeau des journaux : le code, et le lien qui le pré-remplit (fragment,
  * jamais envoyé au serveur). Rien n'y suppose `docker compose` ni un nom de
  * service : le journal se lit dans Portainer, `docker logs`, un NAS…
  */
-export function setupTokenBanner(token: string, port: string | number, containerized = true): string[] {
+export function setupTokenBanner(token: string, port: string | number, home: SetupCodeHome = "container"): string[] {
   const code = formatSetupToken(token);
-  const renew = containerized
-    ? [
-        "  Single use. New code: `tentacle setup token` in this container's console.",
-        "  Usage unique. Code neuf : `tentacle setup token` dans la console de ce conteneur.",
-      ]
-    : [
-        `  Single use. New code: \`${NATIVE_CLI} setup token\``,
-        `  Usage unique. Code neuf : \`${NATIVE_CLI} setup token\``,
-      ];
+  const renew = RENEW[home];
   return [
     "══════════════════════════════════════════════════════════════",
     `  Tentacle — setup code / code d'installation : ${code}`,

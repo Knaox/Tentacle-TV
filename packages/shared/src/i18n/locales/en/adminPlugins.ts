@@ -132,6 +132,7 @@ export default {
   elapsedSeconds: "{{count}} s",
   restartStuckTitle: "The server still isn't answering",
   restartStuckBody: "Without a supervisor (Docker, systemd…), it won't come back by itself: restart it. This page keeps watching for it.",
+  restartStuckBody_windowsApp: "Tentacle Server usually brings it back by itself. If it doesn't: Tentacle Server icon in the notification area › Restart server (“Open log” tells why). This page keeps watching for it.",
   stopWatching: "Stop watching",
   restartDone: "Server restarted",
   restartDoneBody: "Plugins and their pages are up to date.",
@@ -143,6 +144,7 @@ export default {
   restartRequesting: "Restarting…",
   restartConfirmTitle: "Restart the server?",
   restartConfirmBody: "Playback on Tentacle stops for a few seconds. The server must be brought back by its supervisor (Docker, for instance): without one, it stays down.",
+  restartConfirmBody_windowsApp: "Playback on Tentacle stops for a few seconds: Tentacle Server brings the server back by itself.",
   // ── Summary, refresh, confirmations ──
   summaryUpdates_one: "1 update available",
   summaryUpdates_other: "{{count}} updates available",

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RotateCw } from "lucide-react";
+import { packagedHelpKey } from "@tentacle-tv/shared";
 import { useNowTick } from "../../hooks/useAdminSessions";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { AdminNotice } from "../admin/kit";
+import { useServerPackaging } from "../admin/serverUpdate/useServerPackaging";
 import { ActionPill } from "../admin/sessions/ActionPill";
 import { ActionError } from "./ActionError";
 import { usePluginAdmin } from "./PluginAdminContext";
@@ -16,7 +18,8 @@ import type { InstalledPlugin } from "./types";
  *   redémarrage — lesquels, et le bouton, au moment que l'administrateur
  *   choisit (il interrompt les lectures) ;
  * - EN COURS : depuis combien de temps, et la page qui se remettra à jour ;
- * - TROP LONG : sans superviseur (Docker…), le serveur ne repart pas seul ;
+ * - TROP LONG : sans superviseur (Docker…), le serveur ne repart pas seul
+ *   (l'app Windows le relance, la phrase renvoie à son icône) ;
  * - REVENU : avec les modules serveur qui n'ont pas démarré, s'il y en a.
  *
  * Le compteur de secondes est tenu hors de l'annonce (`aria-hidden`) : une
@@ -25,6 +28,8 @@ import type { InstalledPlugin } from "./types";
 export function ServerRestartPanel({ installed }: { installed: InstalledPlugin[] | undefined }) {
   const { t } = useTranslation(["adminPlugins", "common"]);
   const { restart, actions, locked } = usePluginAdmin();
+  // L'app Windows relance seule son serveur : pas de « superviseur (Docker…) » à évoquer.
+  const packaging = useServerPackaging();
   const [confirming, setConfirming] = useState(false);
   const { phase } = restart;
   const now = useNowTick(phase.kind === "waiting");
@@ -45,7 +50,7 @@ export function ServerRestartPanel({ installed }: { installed: InstalledPlugin[]
           title={<>{t("restartStuckTitle")}{elapsed}</>}
           action={<ActionPill size="sm" label={t("stopWatching")} onClick={restart.dismiss} />}
         >
-          {t("restartStuckBody")}
+          {t(packagedHelpKey("adminPlugins", "restartStuckBody", packaging))}
         </AdminNotice>
       );
     }
@@ -123,7 +128,7 @@ export function ServerRestartPanel({ installed }: { installed: InstalledPlugin[]
       <ConfirmDialog
         open={confirming}
         title={t("restartConfirmTitle")}
-        message={t("restartConfirmBody")}
+        message={t(packagedHelpKey("adminPlugins", "restartConfirmBody", packaging))}
         confirmLabel={t("restartNow")}
         cancelLabel={t("common:cancel")}
         onConfirm={() => {

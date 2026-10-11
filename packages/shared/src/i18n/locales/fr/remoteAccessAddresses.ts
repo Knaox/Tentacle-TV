@@ -73,6 +73,7 @@ export default {
   proxyDescription: "Seulement si vous en avez un, ou en voulez un\u00a0: choisissez-le, l'exemple de configuration s'affiche.",
   tentacleUpstream: "Adresse de Tentacle, vue par votre mandataire",
   tentacleUpstreamHint: "Hôte et port, par exemple 192.168.1.20:{{port}} — ou tentacle:3000 si le mandataire est dans le même réseau Docker.",
+  tentacleUpstreamHint_windowsApp: "Hôte et port, par exemple 192.168.1.20:{{port}} — ou localhost:{{port}} si le mandataire tourne sur ce PC.",
   jellyfinUpstream: "Adresse de Jellyfin, vue par votre mandataire",
   jellyfinUpstreamHint: "Hôte et port, par exemple 192.168.1.50:8096.",
   upstreamInvalid: "Un hôte et un port, par exemple 192.168.1.20:3000.",

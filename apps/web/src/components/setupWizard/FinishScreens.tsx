@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
-import { APP_LINKS, remoteVerdict, type SetupCompleteResponse } from "@tentacle-tv/shared";
+import { APP_LINKS, packagedHelpKey, remoteVerdict, type SetupCompleteResponse } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { RemoteAccessPanel } from "../remoteAccess/RemoteAccessPanel";
 import { useRemoteAccess } from "../remoteAccess/remoteAccessApi";
@@ -87,7 +87,7 @@ export function DoneScreen({ wizard, onFinish }: { wizard: Wizard; onFinish: (se
 
         {data.context?.webUi === false ? (
           <p role="note" className="rounded-xl border border-line-subtle bg-fill-faint px-4 py-3 text-content-secondary">
-            {t("doneWebUiOff")}
+            {t(packagedHelpKey("setupWizard", "doneWebUiOff", data.context?.packaging))}
           </p>
         ) : null}
 

@@ -1,7 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { packagedHelpKey } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";
 import { ToggleSwitch } from "../../settings/ToggleSwitch";
+import { useServerPackaging } from "../serverUpdate/useServerPackaging";
 import { SectionError, SectionSkeleton } from "./SectionParts";
 import { servicesApi } from "./servicesApi";
 import { SERVICES_KEYS, type AudioAnalysisStatus } from "./servicesModel";
@@ -18,6 +20,7 @@ import { useAudioAnalysis, useExplainFailure } from "./useServicesData";
 export function AudioAnalysisPanel() {
   const { t } = useTranslation("adminServices");
   const query = useAudioAnalysis();
+  const packaging = useServerPackaging();
   const audio = query.data;
 
   return (
@@ -26,7 +29,7 @@ export function AudioAnalysisPanel() {
         <>
           <AudioToggle audio={audio} />
           {audio.tool === null ? (
-            <p className="text-xs leading-relaxed text-status-warning-fg">{t("audioUnavailable")}</p>
+            <p className="text-xs leading-relaxed text-status-warning-fg">{t(packagedHelpKey("adminServices", "audioUnavailable", packaging))}</p>
           ) : (
             <AudioCounters audio={audio} />
           )}

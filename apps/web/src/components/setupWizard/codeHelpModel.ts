@@ -9,8 +9,12 @@ import type { SetupHostInfo } from "@tentacle-tv/shared";
  *
  * `host` : `undefined` tant que la réponse n'est pas venue, `null` si elle ne
  * viendra pas (serveur d'avant la route) — on montre alors tous les chemins.
+ *
+ * L'app Windows (`packaging: "windows-app"`) a SON onglet, seul : l'icône de
+ * la zone de notification donne le code, l'alias `tentacle` en écrit un neuf.
+ * Un serveur qui ne dit rien de sa livraison garde les onglets d'avant.
  */
-export type CodeHelpTab = "docker" | "portainer" | "compose" | "nas" | "native";
+export type CodeHelpTab = "docker" | "portainer" | "compose" | "nas" | "native" | "windows";
 
 /** Le nom du service dans les piles officielles (`stacks/tentacle-*`). */
 export const COMPOSE_SERVICE = "tentacle";
@@ -19,14 +23,17 @@ export const NATIVE_TOKEN_COMMAND = "node apps/backend/dist/cli/tentacle.js setu
 
 const CONTAINER_TABS: readonly CodeHelpTab[] = ["docker", "portainer", "compose", "nas"];
 const ALL_TABS: readonly CodeHelpTab[] = [...CONTAINER_TABS, "native"];
+const WINDOWS_TABS: readonly CodeHelpTab[] = ["windows"];
 
 export function codeHelpTabs(host: SetupHostInfo | null | undefined): readonly CodeHelpTab[] {
   if (!host) return ALL_TABS;
+  if (host.packaging === "windows-app") return WINDOWS_TABS;
   return host.containerized ? CONTAINER_TABS : ["native"];
 }
 
 /** L'onglet le plus probable : la ligne de commande si l'identifiant est connu, sinon Compose. */
 export function initialCodeHelpTab(host: SetupHostInfo | null | undefined): CodeHelpTab {
+  if (host?.packaging === "windows-app") return "windows";
   if (host && !host.containerized) return "native";
   return host?.containerId ? "docker" : "compose";
 }

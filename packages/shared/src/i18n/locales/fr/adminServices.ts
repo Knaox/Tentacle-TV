@@ -56,6 +56,7 @@ export default {
   jellyfinUrlLabel: "Adresse du serveur Jellyfin",
   jellyfinUrlHint:
     "Telle que le serveur Tentacle la joint : http://localhost:8096, ou http://jellyfin:8096 entre conteneurs Docker.",
+  jellyfinUrlHint_windowsApp: "Telle que le serveur Tentacle la joint : http://localhost:8096 si Jellyfin tourne sur ce PC, sinon l'adresse de sa machine.",
   jellyfinKeyLabel: "Clé API d'administration",
   jellyfinKeyHint: "Créée dans Jellyfin › Tableau de bord › Clés API. Elle ne quitte jamais le serveur Tentacle.",
   jellyfinKeyKeep: "Clé enregistrée — laisser vide pour la garder",
@@ -167,6 +168,8 @@ export default {
   audioTool: "Outil d'empreinte sur ce serveur : {{tool}}.",
   audioUnavailable:
     "Aucun outil d'empreinte sur ce serveur (fpcalc, ou ffmpeg avec chromaprint) : la comparaison des épisodes voisins est inactive. L'image Docker officielle l'embarque.",
+  audioUnavailable_windowsApp:
+    "Aucun outil d'empreinte sur ce serveur (fpcalc, ou ffmpeg avec chromaprint) : la comparaison des épisodes voisins est inactive. Tentacle Server pour Windows n'en embarque pas.",
   audioSince: "Depuis le démarrage du serveur",
   audioJobs: "Analyses",
   audioWindows: "Extraits transcodés",

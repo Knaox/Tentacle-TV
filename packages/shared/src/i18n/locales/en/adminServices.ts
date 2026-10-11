@@ -55,6 +55,7 @@ export default {
   jellyfinUrlLabel: "Jellyfin server address",
   jellyfinUrlHint:
     "As the Tentacle server reaches it: http://localhost:8096, or http://jellyfin:8096 between Docker containers.",
+  jellyfinUrlHint_windowsApp: "As the Tentacle server reaches it: http://localhost:8096 if Jellyfin runs on this PC, otherwise its machine's address.",
   jellyfinKeyLabel: "Admin API key",
   jellyfinKeyHint: "Created in Jellyfin › Dashboard › API Keys. It never leaves the Tentacle server.",
   jellyfinKeyKeep: "Key saved — leave empty to keep it",
@@ -166,6 +167,8 @@ export default {
   audioTool: "Fingerprint tool on this server: {{tool}}.",
   audioUnavailable:
     "No fingerprint tool on this server (fpcalc, or ffmpeg with chromaprint): comparing season neighbours is inactive. The official Docker image ships it.",
+  audioUnavailable_windowsApp:
+    "No fingerprint tool on this server (fpcalc, or ffmpeg with chromaprint): comparing season neighbours is inactive. Tentacle Server for Windows does not ship one.",
   audioSince: "Since the server started",
   audioJobs: "Analyses",
   audioWindows: "Clips transcoded",

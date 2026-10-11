@@ -1,4 +1,4 @@
-import { compareServerVersions, parseServerVersion } from "./serverUpdateContract";
+import { compareServerVersions, parseServerVersion, type ServerInstall } from "./serverUpdateContract";
 
 /**
  * Ce que la carte « Serveur Tentacle » dit de la version en service — une
@@ -9,9 +9,13 @@ import { compareServerVersions, parseServerVersion } from "./serverUpdateContrac
  * - `advised` : une plus récente est publiée — mise à jour conseillée ;
  * - `mandatory` : un client connu exige plus que la version en service ;
  * - `ahead` : plus récente que la dernière publiée (développement, cran test) ;
- * - `unknown` : la dernière publiée n'est pas connue, et rien n'exige plus.
+ * - `unknown` : la dernière publiée n'est pas connue, et rien n'exige plus ;
+ * - `automatic` : le Microsoft Store met le serveur à jour (l'app Windows,
+ *   canal `microsoft-store`) — rien n'est « conseillé » d'après les tags de
+ *   l'image, qui n'arrivent pas au Store le même jour. Seul `mandatory` y
+ *   reste, quand un client exige plus.
  */
-export type ServerUpdateStatus = "up-to-date" | "advised" | "mandatory" | "ahead" | "unknown";
+export type ServerUpdateStatus = "up-to-date" | "advised" | "mandatory" | "ahead" | "unknown" | "automatic";
 
 export interface ServerUpdateVerdict {
   status: ServerUpdateStatus;
@@ -35,6 +39,8 @@ export interface ServerUpdateInput {
    * ce client-là le sait.
    */
   clientMinimum: string | null;
+  /** Par où arrivent les mises à jour (`ServerInstall.channel`) ; absent : image, ou installation à la main. */
+  channel?: ServerInstall["channel"];
 }
 
 export function resolveServerUpdate(input: ServerUpdateInput): ServerUpdateVerdict {
@@ -53,6 +59,7 @@ export function resolveServerUpdate(input: ServerUpdateInput): ServerUpdateVerdi
   );
 
   if (required !== null) return { status: "mandatory", required };
+  if (input.channel === "microsoft-store") return { status: "automatic", required: null };
   if (latest === null) return { status: "unknown", required: null };
   const order = compareServerVersions(input.current, latest);
   return { status: order < 0 ? "advised" : order === 0 ? "up-to-date" : "ahead", required: null };

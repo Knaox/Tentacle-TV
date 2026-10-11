@@ -143,6 +143,7 @@ export * from "./remoteAccess/remoteVerdict";
 export * from "./remoteAccess/proxySnippets";
 export * from "./remoteAccess/routerGuides";
 export * from "./help/remoteAccessGuide";
+export * from "./help/packagedHelp";
 // L'adresse du serveur transmise à une TV au jumelage : l'annoncée, sinon celle
 // du client — jamais de lien public exigé.
 export * from "./pairing/pairingServerUrl";

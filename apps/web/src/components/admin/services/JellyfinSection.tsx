@@ -2,9 +2,11 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { KeyRound } from "lucide-react";
+import { packagedHelpKey } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";
 import { cls } from "../../../pages/adminUtils";
 import { AdminSection } from "../kit";
+import { useServerPackaging } from "../serverUpdate/useServerPackaging";
 import { Field } from "./Field";
 import { ResultLine, SectionBadges, SectionError, SectionFooter, SectionSkeleton } from "./SectionParts";
 import { servicesApi } from "./servicesApi";
@@ -104,6 +106,7 @@ interface FormProps {
 
 function JellyfinForm({ frame, jellyfin, keyState, summary }: FormProps) {
   const { t } = useTranslation("adminServices");
+  const packaging = useServerPackaging();
   const { show } = useToast();
   const queryClient = useQueryClient();
   const explain = useExplainFailure();
@@ -176,7 +179,7 @@ function JellyfinForm({ frame, jellyfin, keyState, summary }: FormProps) {
             value={url}
             onChange={(event) => edit(() => setUrl(event.target.value))}
             error={urlError}
-            hint={t("jellyfinUrlHint")}
+            hint={t(packagedHelpKey("adminServices", "jellyfinUrlHint", packaging))}
           />
           <Field
             label={t("jellyfinKeyLabel")}

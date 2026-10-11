@@ -124,7 +124,7 @@ export function CodeScreen({ wizard }: { wizard: Wizard }) {
   };
 
   return (
-    <WizardFrame help={wizard} title={t("codeTitle")} subtitle={t("codeSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
+    <WizardFrame help={{ ...wizard, packaging: host?.packaging }} title={t("codeTitle")} subtitle={t("codeSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back}>
       <form onSubmit={(e) => void submit(e)} className="space-y-5">
         {wizard.data.codeReason === "setup_in_progress" ? <AdminNotice tone="info">{t("codeInProgress")}</AdminNotice> : null}
         <Field

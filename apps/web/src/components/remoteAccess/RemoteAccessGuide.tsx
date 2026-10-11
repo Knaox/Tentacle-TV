@@ -1,14 +1,22 @@
 import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
-import { REMOTE_ACCESS_DOCS, REMOTE_ACCESS_GUIDE, REMOTE_ACCESS_GUIDE_ANCHOR, remoteAccessDocLabelKey } from "@tentacle-tv/shared";
+import {
+  REMOTE_ACCESS_DOCS,
+  REMOTE_ACCESS_GUIDE,
+  REMOTE_ACCESS_GUIDE_ANCHOR,
+  packagedHelpKeys,
+  remoteAccessDocLabelKey,
+  type SetupPackaging,
+} from "@tentacle-tv/shared";
 import { AdminSection } from "../admin/kit";
 
 /**
  * Le guide de l'accès à distance, au pied de la section (`#guide`) : la
  * structure vient du modèle partagé (`help/remoteAccessGuide.ts`), les mots
- * de l'espace `remoteAccessHelp`. Une colonne de lecture bornée.
+ * de l'espace `remoteAccessHelp`. Une colonne de lecture bornée. L'app
+ * Windows a ses phrases (`packagedHelp.ts`) : rien sur Docker Desktop.
  */
-export function RemoteAccessGuide() {
+export function RemoteAccessGuide({ packaging }: { packaging?: SetupPackaging }) {
   const { t } = useTranslation("remoteAccessHelp");
   return (
     <AdminSection id={REMOTE_ACCESS_GUIDE_ANCHOR} title={t("guideTitle")} description={t("guideIntro")}>
@@ -19,7 +27,7 @@ export function RemoteAccessGuide() {
               {t(section.titleKey)}
             </h3>
             <div className="mt-2 space-y-2.5 text-sm leading-relaxed text-content-secondary">
-              {section.paragraphKeys.map((key) => (
+              {packagedHelpKeys("remoteAccessHelp", section.paragraphKeys, packaging).map((key) => (
                 <p key={key}>{t(key)}</p>
               ))}
             </div>

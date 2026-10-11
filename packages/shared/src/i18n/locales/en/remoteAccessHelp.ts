@@ -9,6 +9,7 @@ export default {
   choose_title: "Which way to choose?",
   choose_p1: "The safest and simplest: an HTTPS reverse proxy in front of Tentacle and Jellyfin, with the router's ports 80 and 443 forwarded to it. Certificates renew on their own.",
   choose_p2: "Tentacle's Docker stack does not ship a proxy: keep yours (Nginx Proxy Manager, Caddy, Traefik), or install Caddy if you have none. “Learn more”, on the page, gives what to put in it.",
+  choose_p2_windowsApp: "Tentacle Server does not ship a proxy: keep yours (Nginx Proxy Manager, Caddy, Traefik), or install Caddy if you have none. “Learn more”, on the page, gives what to put in it.",
   choose_p3: "Opening Tentacle's port directly works too, but then everything travels in clear text: avoid it, except for a quick test.",
   choose_p4: "If nothing can be opened (address shared by your provider, locked router), plan B is a private network such as Tailscale.",
   ports_title: "Ports, CGNAT and IPv6",

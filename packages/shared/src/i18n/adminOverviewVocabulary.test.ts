@@ -16,7 +16,7 @@ const ENTRIES: Record<string, readonly (string | null)[]> = {
   jellyfinKeyRejected: ["revoked", "no-rights"],
   databaseDown: [null],
   jellyfinIncompatible: [null],
-  serverUpdateRequired: [null],
+  serverUpdateRequired: [null, "store"],
   publicUrl: ["missing", "not-https", "not-public", "internal-host", "other-server", "unverified"],
   tmdbKey: [null],
   segmentPlugins: [null, "restart"],
@@ -43,7 +43,7 @@ describe("vocabulaire de la vue d'ensemble", () => {
   });
 
   it("chaque état de la carte du serveur a son mot", () => {
-    for (const status of ["up-to-date", "advised", "mandatory", "ahead", "unknown"]) expect(has(`serverState_${status}`)).toBe(true);
+    for (const status of ["up-to-date", "advised", "mandatory", "ahead", "unknown", "automatic"]) expect(has(`serverState_${status}`)).toBe(true);
     for (const error of ["unreachable", "rate-limited", "invalid", "off"]) expect(has(`serverCheckError_${error}`)).toBe(true);
   });
 

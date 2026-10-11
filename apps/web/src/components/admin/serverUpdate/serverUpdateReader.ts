@@ -39,6 +39,8 @@ function readInstall(raw: unknown): ServerInstall {
     runtime,
     repository: typeof install.repository === "string" && install.repository ? install.repository : SERVER_IMAGE_REPOSITORY,
     tag: typeof install.tag === "string" && install.tag ? install.tag : null,
+    // L'app Windows : le Microsoft Store la met à jour. Toute autre valeur est ignorée.
+    ...(install.channel === "microsoft-store" ? { channel: "microsoft-store" as const } : {}),
   };
 }
 

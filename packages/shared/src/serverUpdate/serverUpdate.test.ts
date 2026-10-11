@@ -56,11 +56,30 @@ describe("ce que la carte dit de la version en service", () => {
     expect(resolveServerUpdate({ ...base, current: "1.23.0" }).status).toBe("ahead");
     expect(resolveServerUpdate({ ...base, latest: null }).status).toBe("unknown");
   });
+
+  it("l'app Windows : le Store s'en charge, rien n'est conseillé d'après les tags de l'image", () => {
+    const store = { ...base, channel: "microsoft-store" as const };
+    expect(resolveServerUpdate({ ...store, latest: "1.22.4" })).toEqual({ status: "automatic", required: null });
+    expect(resolveServerUpdate({ ...store, latest: null }).status).toBe("automatic");
+    expect(resolveServerUpdate({ ...store, current: "1.23.0" }).status).toBe("automatic");
+  });
+
+  it("l'app Windows sous le minimum d'un client : l'alerte obligatoire reste", () => {
+    const store = { ...base, channel: "microsoft-store" as const };
+    expect(resolveServerUpdate({ ...store, latest: "1.23.0", requiredByClients: "1.23.0" }))
+      .toEqual({ status: "mandatory", required: "1.23.0" });
+    expect(resolveServerUpdate({ ...store, latest: null, clientMinimum: "1.23.0" }))
+      .toEqual({ status: "mandatory", required: "1.23.0" });
+  });
 });
 
 describe("la commande à copier", () => {
   it("hors conteneur : aucune commande", () => {
     expect(buildUpdateCommands({ runtime: "none", repository: SERVER_IMAGE_REPOSITORY, tag: null }, "1.22.4")).toBeNull();
+  });
+
+  it("l'app Windows : aucune commande, le Microsoft Store la met à jour", () => {
+    expect(buildUpdateCommands({ runtime: "none", repository: SERVER_IMAGE_REPOSITORY, tag: null, channel: "microsoft-store" }, "1.22.4")).toBeNull();
   });
 
   it("étiquette inconnue : compose tel quel, et l'image officielle en :latest", () => {

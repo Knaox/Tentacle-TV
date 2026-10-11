@@ -132,6 +132,7 @@ export default {
   elapsedSeconds: "{{count}} s",
   restartStuckTitle: "Le serveur ne répond toujours pas",
   restartStuckBody: "Sans superviseur (Docker, systemd…), il ne repart pas de lui-même : relancez-le. La page guette son retour.",
+  restartStuckBody_windowsApp: "Tentacle Server le relance d'habitude de lui-même. S'il ne revient pas : icône Tentacle Server de la zone de notification › Redémarrer le serveur (« Ouvrir le journal » dit pourquoi). La page guette son retour.",
   stopWatching: "Ne plus suivre",
   restartDone: "Serveur redémarré",
   restartDoneBody: "Les plugins et leurs pages sont à jour.",
@@ -143,6 +144,7 @@ export default {
   restartRequesting: "Redémarrage…",
   restartConfirmTitle: "Redémarrer le serveur ?",
   restartConfirmBody: "Les lectures en cours sur Tentacle s'interrompent quelques secondes. Le serveur doit être relancé par son superviseur (Docker, par exemple) : sans lui, il reste arrêté.",
+  restartConfirmBody_windowsApp: "Les lectures en cours sur Tentacle s'interrompent quelques secondes : Tentacle Server relance le serveur de lui-même.",
   // ── Résumé, actualisation, confirmations ──
   summaryUpdates_one: "{{count}} mise à jour disponible",
   summaryUpdates_other: "{{count}} mises à jour disponibles",
