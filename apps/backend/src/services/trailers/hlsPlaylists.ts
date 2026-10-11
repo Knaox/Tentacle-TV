@@ -123,13 +123,26 @@ export function startVariant(variants: MasterVariant[]): MasterVariant {
   return fitting[fitting.length - 1] ?? byBandwidth[0];
 }
 
-/** Le maître servi au téléviseur : la variante de départ en tête, les autres par débit croissant. */
-export function renderMaster(master: RelayMaster, uriFor: (key: string) => string): string {
-  const start = startVariant(master.variants);
-  const rest = master.variants.filter((v) => v !== start).sort((a, b) => a.bandwidth - b.bandwidth);
+/**
+ * Le maître servi au téléviseur : la variante de départ en tête, les autres
+ * par débit croissant. Avec `height`, le maître RÉDUIT à cette qualité — ses
+ * variantes de cette hauteur seules (la plus riche en tête), et leur audio :
+ * le lecteur ne peut plus en changer. Une hauteur absente rend le maître
+ * entier (« Auto ») plutôt qu'un maître vide.
+ */
+export function renderMaster(master: RelayMaster, uriFor: (key: string) => string, height?: number): string {
+  const fixed = height ? master.variants.filter((v) => v.height === height).sort((a, b) => b.bandwidth - a.bandwidth) : [];
+  let variants: MasterVariant[];
+  if (fixed.length) {
+    variants = fixed;
+  } else {
+    const start = startVariant(master.variants);
+    variants = [start, ...master.variants.filter((v) => v !== start).sort((a, b) => a.bandwidth - b.bandwidth)];
+  }
+  const groups = new Set(variants.map((v) => v.audioGroup));
   const out = ["#EXTM3U", ...master.header];
-  for (const a of master.audio) out.push(a.line.replace(/URI="[^"]*"/, `URI="${uriFor(a.key)}"`));
-  for (const v of [start, ...rest]) out.push(v.inf, uriFor(v.key));
+  for (const a of master.audio) if (groups.has(a.group)) out.push(a.line.replace(/URI="[^"]*"/, `URI="${uriFor(a.key)}"`));
+  for (const v of variants) out.push(v.inf, uriFor(v.key));
   return `${out.join("\n")}\n`;
 }
 

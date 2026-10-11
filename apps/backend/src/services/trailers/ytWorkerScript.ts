@@ -10,8 +10,11 @@
 /*                                                                     */
 /*  Entrée  : {"id", "url", "clients": [...], "ejs": bool}             */
 /*  Sortie  : {"ready": true, "version"} au démarrage, puis            */
-/*            {"id", "formats": [...], "stderr"} par extraction —      */
-/*            les seuls champs dont le choix du flux a besoin.         */
+/*            {"id", "formats": [...], "subtitles", "automatic_captions",*/
+/*            "stderr"} par extraction — les seuls champs dont le      */
+/*            choix du flux et des pistes a besoin (trailerSubtitles : */
+/*            les sous-titres automatiques réduits à la reconnaissance */
+/*            vocale d'origine, au lieu de ~150 traductions).          */
 /* ------------------------------------------------------------------ */
 
 export const WORKER_SCRIPT = String.raw`
@@ -39,6 +42,19 @@ class Errors:
     def error(self, msg):
         self.lines.append(msg)
 
+CAPTION_EXTS = ("json3", "vtt")
+
+def captions(tracks, keep):
+    out = {}
+    for lang, entries in (tracks or {}).items():
+        if not keep(lang):
+            continue
+        kept = [{k: e[k] for k in ("ext", "url", "name") if e.get(k) is not None}
+                for e in entries or [] if e.get("ext") in CAPTION_EXTS and "/api/timedtext" in (e.get("url") or "")]
+        if kept:
+            out[lang] = kept
+    return out
+
 def extract(req):
     errors = Errors()
     opts = {
@@ -51,6 +67,8 @@ def extract(req):
         if NODE:
             opts["js_runtimes"] = {"node": {"path": NODE}}
     formats = []
+    subtitles = {}
+    automatic = {}
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(req["url"], download=False)
@@ -60,9 +78,12 @@ def extract(req):
             if ua:
                 kept["http_headers"] = {"User-Agent": ua}
             formats.append(kept)
+        subtitles = captions(info.get("subtitles"), lambda lang: lang != "live_chat")
+        automatic = captions(info.get("automatic_captions"), lambda lang: lang.endswith("-orig"))
     except Exception as exc:
         errors.lines.append("ERROR: " + str(exc))
-    send({"id": req["id"], "formats": formats, "stderr": "\n".join(errors.lines)})
+    send({"id": req["id"], "formats": formats, "subtitles": subtitles, "automatic_captions": automatic,
+          "stderr": "\n".join(errors.lines)})
 
 send({"ready": True, "version": yt_dlp.version.__version__})
 for raw in sys.stdin:

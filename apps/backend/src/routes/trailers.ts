@@ -16,6 +16,7 @@ import { requireAuth } from "../middleware/auth";
 import { startYtDlpUpdates } from "../services/ytDlp";
 import { prepareTrailer, resolveTrailer } from "../services/trailers/trailerRelay";
 import { signRelayToken } from "../services/trailers/relayToken";
+import { orderSubtitles } from "../services/trailers/trailerSubtitles";
 
 /** Même contrainte que parseYouTubeId (@tentacle-tv/shared) : 11 caractères. */
 const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
@@ -41,11 +42,18 @@ export async function trailerRoutes(app: FastifyInstance) {
   startYtDlpUpdates();
 
   /**
-   * GET /api/trailers/resolve?ytId=<11 chars>
-   * → 200 { url, path, mimeType, expiresAt }  le flux RELAYÉ par ce serveur :
+   * GET /api/trailers/resolve?ytId=<11 chars>[&lang=fr]
+   * → 200 { url, path, mimeType, expiresAt, qualities, subtitles }  le flux
+   *        RELAYÉ par ce serveur :
    *        `path` à poser derrière l'adresse que le client connaît (la TV) ;
    *        `url`, la même en absolu, pour les versions qui l'attendent
-   *        (adresse vue par la requête — `trustProxy` honore X-Forwarded-*)
+   *        (adresse vue par la requête — `trustProxy` honore X-Forwarded-*) ;
+   *        `qualities` [{ height, path }] : un maître réduit à chaque hauteur
+   *        (`path` seul vaut « Auto ») — vide pour un MP4 ;
+   *        `subtitles` [{ lang, label, auto, path }] : les pistes de YouTube,
+   *        relayées en WebVTT, la langue `lang` (l'interface) puis l'anglais
+   *        en tête. Additifs (capacité `trailers.player`) : un client d'avant
+   *        ne lit que `url` / `path`.
    * → 400 { error: "invalid ytId" }
    * → 404 { error: "unavailable" }  aucun flux lisible (retenu une minute,
    *        une heure si la vidéo est retirée ou privée)
@@ -64,11 +72,17 @@ export async function trailerRoutes(app: FastifyInstance) {
     const path = resolved.kind === "hls"
       ? `/api/trailers/hls/${ytId}/master.m3u8?t=${token}`
       : `/api/trailers/file/${ytId}.mp4?t=${token}`;
+    const { lang } = request.query as { lang?: string };
+    const uiLang = typeof lang === "string" && /^[a-zA-Z]{2,3}(-[\w]{2,8})?$/.test(lang) ? lang : undefined;
     return {
       url: `${request.protocol}://${request.host}${path}`,
       path,
       mimeType: resolved.kind === "hls" ? HLS_MIME : "video/mp4",
       expiresAt: resolved.validUntil,
+      qualities: resolved.heights.map((height) => ({ height, path: `/api/trailers/hls/${ytId}/master-${height}.m3u8?t=${token}` })),
+      subtitles: orderSubtitles(resolved.subtitles, uiLang).map((s) => ({
+        lang: s.lang, label: s.label, auto: s.auto, path: `/api/trailers/subs/${ytId}/${s.key}.vtt?t=${token}`,
+      })),
     };
   });
 

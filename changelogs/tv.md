@@ -5,6 +5,34 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
+## [1.10.2]
+<!-- Bloc nu : Android TV (Google Play, 500 caractères). Depuis la 1.10.1 : le lecteur de bande-annonce simplifié, l'écran de la migration de la base. -->
+### FR
+- **Bandes-annonces : un vrai lecteur**, tout simple — avancer, reculer, pause
+- **Sous-titres et qualité** au choix (serveur 1.26.0)
+- Lancée dans la meilleure qualité, le sous-titre choisi est retenu
+- Mise à jour du serveur : un écran d'attente le temps de la migration
+
+### EN
+- **Trailers: a real player**, kept simple — forward, back, pause
+- **Subtitles and quality** to choose (server 1.26.0)
+- Starts in the best quality; your subtitle choice is remembered
+- Server update: a waiting screen while the database migrates
+
+## [atv-1.10.2]
+<!-- Bloc Apple TV (App Store Connect, 4000 caractères) : depuis la 1.10.1. -->
+### FR
+- **Les bandes-annonces ont un vrai lecteur**, réduit à l'essentiel : avancer et reculer à la télécommande, pause, une barre de temps
+- **Sous-titres et qualité au choix**, dans deux panneaux simples (avec un serveur Tentacle 1.26.0 ou plus récent)
+- **La bande-annonce démarre dans la meilleure qualité disponible**, et le sous-titre choisi est retenu pour les suivantes, profil par profil
+- **Pendant la mise à jour du serveur**, l'Apple TV affiche un écran d'attente le temps que la base soit migrée, au lieu d'une erreur
+
+### EN
+- **Trailers get a real player**, down to the essentials: skip forward and back with the remote, pause, a timeline
+- **Choose subtitles and quality** in two simple panels (with Tentacle server 1.26.0 or later)
+- **Trailers start in the best available quality**, and your subtitle choice is remembered for the next ones, profile by profile
+- **While the server updates**, Apple TV shows a waiting screen during the database migration instead of an error
+
 ## [1.10.1]
 <!-- Bloc nu : Android TV (Google Play, 500 caractères) — première livraison de la refonte, donc 1.10.0 + 1.10.1 résumés. Complété le 06/10 : panne de Jellyfin et qualité réduite. -->
 ### FR

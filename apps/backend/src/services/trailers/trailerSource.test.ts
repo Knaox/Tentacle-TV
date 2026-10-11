@@ -24,7 +24,18 @@ const KIDS_STABLE: YtFormat[] = [
 describe("pickTrailerSource", () => {
   it("prend le maître HLS du client visionos, pas un format isolé", () => {
     const source = pickTrailerSource(VISIONOS, NOW);
-    expect(source).toEqual({ kind: "hls", masterUrl: MASTER, headers: UA, expiresAt: 1790970374 * 1000 });
+    expect(source).toEqual({ kind: "hls", masterUrl: MASTER, headers: UA, expiresAt: 1790970374 * 1000, heights: [1080, 720] });
+  });
+
+  it("offre les hauteurs H.264 de CE maître, de 360p à 1080p (ni VP9, ni format isolé, ni 144p)", () => {
+    const formats: YtFormat[] = [
+      ...VISIONOS,
+      { format_id: "229", protocol: "m3u8_native", ext: "mp4", vcodec: "avc1.4D4015", acodec: "none", height: 240, manifest_url: MASTER },
+      { format_id: "230", protocol: "m3u8_native", ext: "mp4", vcodec: "avc1.4D401E", acodec: "none", height: 360, manifest_url: MASTER },
+      { format_id: "x", protocol: "m3u8_native", ext: "mp4", vcodec: "avc1.4D401E", acodec: "none", height: 480, manifest_url: `${MASTER}?autre` },
+    ];
+    const source = pickTrailerSource(formats, NOW);
+    expect(source?.kind === "hls" && source.heights).toEqual([1080, 720, 360]);
   });
 
   it("prend le maître muxé des clients web (91 à 96) avant le format 18", () => {

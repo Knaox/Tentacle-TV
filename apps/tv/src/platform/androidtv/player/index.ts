@@ -12,6 +12,6 @@
  * `isTVSelectable`), et les guides vides (`focus/guideFocusable`, commun à tous les guides).
  */
 export { PlayerBackground } from "../../tvos/player/PlayerBackground";
-export { PLAYER_GROUP_CONTAINERS, PlayerFocusStateProvider, type PlayerFocusState } from "../../tvos/player/playerFocusContainers";
+export { createSheetBackGroup, PLAYER_GROUP_CONTAINERS, PlayerFocusStateProvider, type PlayerFocusState } from "../../tvos/player/playerFocusContainers";
 export { END_EXIT_LOCK, withExitLock, withPreferredFocus } from "./playerFocusBindings";
 

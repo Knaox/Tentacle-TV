@@ -1,3 +1,7 @@
+import { parseTrailerResolve, type TrailerStream } from "@tentacle-tv/tv-core";
+
+export type { TrailerStream };
+
 /**
  * La résolution d'une bande-annonce YouTube en un flux qu'AVPlayer sait lire
  * (Apple TV) : `GET /api/trailers/resolve` du serveur, qui l'extrait (yt-dlp)
@@ -24,38 +28,35 @@
  */
 export const RESOLVE_TIMEOUT_MS = 45_000;
 
-const HLS_MIME = "application/vnd.apple.mpegurl";
-
-export interface TrailerStream {
-  url: string;
-  /** `m3u8` pour un manifeste HLS : une URL sans extension reconnue ne dirait rien au lecteur. */
-  type?: "m3u8";
-}
-
-/** Le flux, ou la raison de son absence — pour les traces et le compte rendu, jamais pour l'écran. */
+/**
+ * Le flux (Auto, et avec `trailers.player` ses qualités et ses pistes de
+ * sous-titres — `parseTrailerResolve`, tv-core), ou la raison de son absence —
+ * pour les traces et le compte rendu, jamais pour l'écran.
+ */
 export type ResolveResult = { ok: true; stream: TrailerStream } | { ok: false; reason: string };
 
 const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}` });
 
-async function request(serverUrl: string, token: string, ytId: string): Promise<ResolveResult> {
+async function request(serverUrl: string, token: string, ytId: string, lang: string): Promise<ResolveResult> {
   try {
-    const res = await fetch(`${serverUrl}/api/trailers/resolve?ytId=${encodeURIComponent(ytId)}`, { headers: authHeaders(token) });
+    // `lang` ne fait que trier les sous-titres (l'interface en tête) ; un serveur d'avant l'ignore.
+    const query = `ytId=${encodeURIComponent(ytId)}&lang=${encodeURIComponent(lang)}`;
+    const res = await fetch(`${serverUrl}/api/trailers/resolve?${query}`, { headers: authHeaders(token) });
     if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` };
-    const data = (await res.json()) as { url?: unknown; path?: unknown; mimeType?: unknown };
-    const url = typeof data.path === "string" && data.path.startsWith("/") ? `${serverUrl}${data.path}` : data.url;
-    if (typeof url !== "string" || !url.startsWith("http")) return { ok: false, reason: "réponse sans flux" };
-    return { ok: true, stream: { url, type: data.mimeType === HLS_MIME ? "m3u8" : undefined } };
+    const stream = parseTrailerResolve(await res.json(), serverUrl);
+    if (!stream) return { ok: false, reason: "réponse sans flux" };
+    return { ok: true, stream };
   } catch (err) {
     return { ok: false, reason: `réseau : ${String(err)}` };
   }
 }
 
-export function resolveTrailerStream(serverUrl: string, token: string, ytId: string): Promise<ResolveResult> {
+export function resolveTrailerStream(serverUrl: string, token: string, ytId: string, lang = "en"): Promise<ResolveResult> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<ResolveResult>((resolve) => {
     timer = setTimeout(() => resolve({ ok: false, reason: `pas de réponse en ${RESOLVE_TIMEOUT_MS / 1000} s` }), RESOLVE_TIMEOUT_MS);
   });
-  return Promise.race([request(serverUrl, token, ytId), timeout]).finally(() => clearTimeout(timer));
+  return Promise.race([request(serverUrl, token, ytId, lang), timeout]).finally(() => clearTimeout(timer));
 }
 
 /**

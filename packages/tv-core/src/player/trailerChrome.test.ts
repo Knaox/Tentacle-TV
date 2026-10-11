@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { RemoteIntent } from "../remote/intents";
 import {
-  TRAILER_CHROME_ON_IDLE,
   TRAILER_CLOSE_KEY,
   TRAILER_IDLE_MS,
   TRAILER_UNAVAILABLE_RETURN_MS,
-  trailerChromeOnPlaying,
-  trailerChromeOnWake,
+  trailerChromeShown,
   trailerLeavesAfter,
   trailerState,
-  trailerWakes,
 } from "./trailerChrome";
 
 describe("l'écran de bande-annonce", () => {
@@ -26,33 +22,8 @@ describe("l'écran de bande-annonce", () => {
 });
 
 describe("le chrome au repos", () => {
-  it("s'estompe trois secondes après le début de la lecture, sans geste", () => {
+  it("s'estompe trois secondes après le dernier geste (les contrôles : `trailerControls.test.ts`)", () => {
     expect(TRAILER_IDLE_MS).toBe(3000);
-    expect(trailerChromeOnPlaying(true)).toEqual({ dimmed: false, timer: "arm" });
-    expect(TRAILER_CHROME_ON_IDLE).toEqual({ dimmed: true, timer: "keep" });
-  });
-
-  it("ne s'estompe jamais hors lecture", () => {
-    expect(trailerChromeOnPlaying(false)).toEqual({ dimmed: false, timer: "cancel" });
-    expect(trailerChromeOnWake(false)).toEqual({ dimmed: false, timer: "keep" });
-  });
-
-  it("un geste le rallume et relance l'attente", () => {
-    expect(trailerChromeOnWake(true)).toEqual({ dimmed: false, timer: "arm" });
-  });
-
-  it("tout geste compte — appui, maintien, glisser, doigt sur le pavé —, sauf Retour", () => {
-    const wakes: RemoteIntent[] = [
-      { type: "move", direction: "bas" },
-      { type: "select" },
-      { type: "playPause" },
-      { type: "hold", key: "select", phase: "start" },
-      { type: "swipe", direction: "gauche" },
-      { type: "drag", phase: "move", x: 1, y: 2, vx: 0, vy: 0 },
-      { type: "page", direction: "haut" },
-    ];
-    for (const intent of wakes) expect(trailerWakes(intent)).toBe(true);
-    expect(trailerWakes({ type: "retour" })).toBe(false);
   });
 });
 
@@ -63,5 +34,18 @@ describe("indisponible", () => {
     expect(trailerLeavesAfter("unavailable", false)).toBeNull();
     expect(trailerLeavesAfter("playing", true)).toBeNull();
     expect(trailerLeavesAfter("loading", true)).toBeNull();
+  });
+});
+
+describe("ce qui est à l'écran", () => {
+  it("hors lecture : le chrome, toujours ; pas de barre (rien à parcourir)", () => {
+    expect(trailerChromeShown("loading", false, false)).toEqual({ chrome: true, timeline: false });
+    expect(trailerChromeShown("unavailable", false, false)).toEqual({ chrome: true, timeline: false });
+  });
+
+  it("en lecture : le chrome suit les contrôles ; pendant un défilement, la barre reste seule", () => {
+    expect(trailerChromeShown("playing", true, false)).toEqual({ chrome: true, timeline: true });
+    expect(trailerChromeShown("playing", false, false)).toEqual({ chrome: false, timeline: false });
+    expect(trailerChromeShown("playing", false, true)).toEqual({ chrome: false, timeline: true });
   });
 });

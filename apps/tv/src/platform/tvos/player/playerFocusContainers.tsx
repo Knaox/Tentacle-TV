@@ -137,7 +137,7 @@ function TroubleScreenGroup(props: FocusGroupContainerProps) {
  * le guide retombé en simple vue devient alors FOCALISABLE (mesuré : « haut »
  * depuis les commandes posait le focus sur la frise elle-même, invisible).
  */
-function BridgeGuide({ destinations, style, pointerEvents, children }: FocusGroupContainerProps & { destinations: FocusDestination[] }) {
+export function BridgeGuide({ destinations, style, pointerEvents, children }: FocusGroupContainerProps & { destinations: FocusDestination[] }) {
   return (
     <TVFocusGuideView
       destinations={destinations}
@@ -231,6 +231,19 @@ function TracksBackGroup(props: FocusGroupContainerProps) {
 function SettingsBackGroup(props: FocusGroupContainerProps) {
   const { store } = usePlayerFocusState();
   return <BridgeGuide {...props} destinations={useStoreDestination(store, "settings:close")} />;
+}
+
+/**
+ * La marge d'une feuille à UNE colonne (`PlayerSheet`) — les panneaux de la
+ * bande-annonce : GAUCHE depuis toute la colonne y entre et rejoint sa croix,
+ * comme « Pistes » et « Réglages ». À créer au niveau du module (le port veut
+ * un conteneur stable).
+ */
+export function createSheetBackGroup(closeKey: string): ComponentType<FocusGroupContainerProps> {
+  return function SheetBackGroup(props: FocusGroupContainerProps) {
+    const { store } = usePlayerFocusState();
+    return <BridgeGuide {...props} destinations={useStoreDestination(store, closeKey)} />;
+  };
 }
 
 function SeasonsGroup(props: FocusGroupContainerProps) {

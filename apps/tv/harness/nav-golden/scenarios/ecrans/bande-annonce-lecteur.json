@@ -1,0 +1,105 @@
+{
+  "domain": "ecrans",
+  "reference": "04c680dd8",
+  "defaults": {
+    "settleMs": 1000
+  },
+  "scenarios": [
+    {
+      "id": "ba-lec-01",
+      "title": "Bande-annonce lisible : premier focus sur le premier bouton (la croix au chargement seulement) ; chrome estompé, la barre ; ↑ le rallume sans bouger ; le tour des cibles ; Menu masque puis quitte",
+      "rules": ["BA-1", "BA-2", "BA-7", "BA-9", "BA-4"],
+      "start": {
+        "fixtures": ["base/vigie-off", "ecrans/bande-annonce-lisible"],
+        "route": { "name": "MediaDetail", "params": { "itemId": "8691fdd93af7c11da75013ecc6a67ac0" } },
+        "keys": ["wait:5"]
+      },
+      "steps": [
+        { "do": "right", "expect": { "focus": "detail:trailer" } },
+        { "do": "select", "settleMs": 1500, "expect": { "route": "Trailer", "focus": "trailer:subtitles" }, "why": "la lecture lancée, le premier focus est le premier bouton ; la croix ne l'a qu'au chargement (relevé à 1,5 s : l'APK debug d'Android charge plus lentement)" },
+        { "do": "wait:5", "expect": { "route": "Trailer", "focus": "trailer:timeline" }, "why": "3 s sans geste : le chrome s'estompe, la barre reprend le focus" },
+        { "do": "up", "expect": { "focus": "trailer:timeline" }, "why": "chrome estompé : ↑ le rallume, rien d'autre n'est focalisable" },
+        { "do": "up", "expect": { "focus": "trailer:subtitles" } },
+        { "do": "right", "expect": { "focus": "trailer:quality" } },
+        { "do": "right", "expect": { "focus": "trailer:quality" }, "why": "le dernier bouton : on reste" },
+        { "do": "up", "expect": { "focus": "trailer:close" } },
+        { "do": "down", "expect": { "focus": "trailer:subtitles" }, "why": "↓ depuis la croix : le premier bouton" },
+        { "do": "down", "expect": { "focus": "trailer:timeline" } },
+        { "do": "up", "expect": { "focus": "trailer:subtitles" }, "why": "le dernier bouton visité" },
+        { "do": "menu", "expect": { "route": "Trailer", "focus": "trailer:timeline" }, "why": "chrome à l'écran : Menu le masque, le focus revient à la barre" },
+        { "do": "menu", "settleMs": 600, "expect": { "route": "MediaDetail", "focus": "detail:trailer" } }
+      ]
+    },
+    {
+      "id": "ba-lec-02",
+      "title": "Bande-annonce lisible : les panneaux s'ouvrent sur l'option retenue (la qualité : la plus haute au lancement) ; un choix ferme et rend le focus au bouton ; Menu ferme le panneau",
+      "rules": ["BA-7", "BA-8"],
+      "start": {
+        "fixtures": ["base/vigie-off", "ecrans/bande-annonce-lisible"],
+        "route": { "name": "MediaDetail", "params": { "itemId": "8691fdd93af7c11da75013ecc6a67ac0" } },
+        "keys": ["wait:5", "right", "select", "wait:6", "up"]
+      },
+      "steps": [
+        { "do": "up", "expect": { "focus": "trailer:subtitles" } },
+        { "do": "select", "expect": { "focus": "trailerSubtitles:list:off" } },
+        { "do": "down", "expect": { "focus": "trailerSubtitles:list:fr" } },
+        { "do": "select", "expect": { "focus": "trailer:subtitles" }, "why": "un choix ferme le panneau (une feuille du lecteur, pas une Modal : le focus le dit)" },
+        { "do": "select", "expect": { "focus": "trailerSubtitles:list:fr" }, "why": "rouvert sur la langue retenue" },
+        { "do": "menu", "expect": { "focus": "trailer:subtitles" } },
+        { "do": "right", "expect": { "focus": "trailer:quality" } },
+        { "do": "select", "expect": { "focus": "trailerQuality:list:1080" }, "why": "la bande-annonce démarre à la qualité la plus haute : c'est l'option retenue" },
+        { "do": "up", "expect": { "focus": "trailerQuality:list:auto" } },
+        { "do": "menu", "expect": { "route": "Trailer", "focus": "trailer:quality" }, "why": "Menu ferme sans choisir" },
+        { "do": "select", "expect": { "focus": "trailerQuality:list:1080" }, "why": "rien n'a été choisi : toujours la plus haute" },
+        { "do": "down", "expect": { "focus": "trailerQuality:list:720" } },
+        { "do": "select", "expect": { "focus": "trailer:quality" } },
+        { "do": "select", "expect": { "focus": "trailerQuality:list:720" } },
+        { "do": "menu", "expect": { "focus": "trailer:quality" } },
+        { "do": "menu", "expect": { "route": "Trailer", "focus": "trailer:timeline" } },
+        { "do": "menu", "settleMs": 600, "expect": { "route": "MediaDetail", "focus": "detail:trailer" } }
+      ]
+    },
+    {
+      "id": "ba-lec-03",
+      "title": "Bande-annonce lisible : OK puis OK — le premier montre le chrome, le second met en pause ; en pause, le chrome ne s'estompe pas",
+      "rules": ["BA-2", "BA-6"],
+      "start": {
+        "fixtures": ["base/vigie-off", "ecrans/bande-annonce-lisible"],
+        "route": { "name": "MediaDetail", "params": { "itemId": "8691fdd93af7c11da75013ecc6a67ac0" } },
+        "keys": ["wait:5", "right", "select", "wait:6"]
+      },
+      "steps": [
+        { "do": "select", "expect": { "route": "Trailer", "focus": "trailer:timeline" }, "why": "chrome estompé : OK le montre" },
+        { "do": "select", "expect": { "focus": "trailer:timeline" }, "why": "chrome affiché : OK met en pause" },
+        { "do": "wait:5", "expect": { "focus": "trailer:timeline" } },
+        { "do": "up", "expect": { "focus": "trailer:subtitles" }, "why": "en pause, le chrome est resté : ↑ atteint les boutons" },
+        { "do": "down", "expect": { "focus": "trailer:timeline" } },
+        { "do": "play", "expect": { "focus": "trailer:timeline" }, "why": "Lecture/Pause relance" },
+        { "do": "wait:5", "expect": { "focus": "trailer:timeline" } },
+        { "do": "menu", "settleMs": 600, "expect": { "route": "MediaDetail", "focus": "detail:trailer" }, "why": "chrome estompé : Menu quitte d'un coup" }
+      ]
+    },
+    {
+      "id": "ba-lec-04",
+      "title": "Serveur sans `trailers.player` : ni sous-titres ni qualité ; la croix et la barre, avancer et reculer restent",
+      "rules": ["BA-1", "BA-5", "BA-7", "BA-9"],
+      "start": {
+        "fixtures": ["base/vigie-off", "ecrans/bande-annonce-ancien-serveur"],
+        "route": { "name": "MediaDetail", "params": { "itemId": "8691fdd93af7c11da75013ecc6a67ac0" } },
+        "keys": ["wait:5", "right", "select", "wait:6"]
+      },
+      "steps": [
+        { "do": "up", "expect": { "route": "Trailer", "focus": "trailer:timeline" } },
+        { "do": "up", "expect": { "focus": "trailer:close" }, "why": "aucun bouton : ↑ depuis la barre mène à la croix" },
+        { "do": "right", "expect": { "focus": "trailer:close" } },
+        { "do": "down", "expect": { "focus": "trailer:timeline" } },
+        { "do": "right", "expect": { "focus": "trailer:timeline" }, "why": "→ saute dans la vidéo, le focus reste" },
+        { "do": "left", "expect": { "focus": "trailer:timeline" } },
+        { "do": "holdright:1.5", "expect": { "focus": "trailer:timeline" }, "why": "le maintien ouvre le défilement, la barre seule à l'écran" },
+        { "do": "menu", "expect": { "route": "Trailer", "focus": "trailer:timeline" }, "why": "défilement ouvert : Menu l'annule, on reste" },
+        { "do": "up", "expect": { "focus": "trailer:close" }, "why": "le chrome est revenu à la sortie du défilement" },
+        { "do": "select", "settleMs": 600, "expect": { "route": "MediaDetail", "focus": "detail:trailer" }, "why": "OK sur la croix" }
+      ]
+    }
+  ]
+}

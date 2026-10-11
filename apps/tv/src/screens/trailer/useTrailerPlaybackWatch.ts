@@ -19,9 +19,15 @@ import type { OnLoadData, OnProgressData, OnVideoErrorData } from "react-native-
  *   sinon.
  * - En arrière-plan, AVPlayer se met en pause et reprend au retour : la garde
  *   aussi.
+ * - En pause (`setPaused`), le temps n'avance pas et c'est voulu : aucune
+ *   attente, aucun échec, jusqu'à la reprise.
+ * - Un saut ou un changement de qualité (`expectJump`) déplace le temps : la
+ *   garde repart de la position visée, sans compter le recul comme un arrêt.
+ *   Le rechargement d'une qualité garde la première image acquise : jamais
+ *   un second « chargement ».
  *
- * Rend les gestionnaires à poser sur `<Video>`, stables ; aucun rendu à
- * chaque tic de progression.
+ * Rend les gestionnaires à poser sur `<Video>` (`handlers`) et les deux
+ * avertissements, stables ; aucun rendu à chaque tic de progression.
  */
 
 export const START_TIMEOUT_MS = 15_000;
@@ -31,6 +37,11 @@ export const WAIT_SHOW_MS = 1_000;
 const END_SLACK_S = 2;
 /** Un temps qui avance de moins ne compte pas (bruit de l'horloge). */
 const MIN_ADVANCE_S = 0.05;
+/**
+ * Après un saut, le lecteur reprend un peu AVANT la cible (début du segment,
+ * image clé) : le temps compte dès qu'il dépasse la cible moins cette marge.
+ */
+const JUMP_SLACK_S = 1;
 
 export interface PlaybackWatchCallbacks {
   /** La première image est à l'écran. */
@@ -46,13 +57,14 @@ interface WatchState {
   started: boolean;
   done: boolean;
   waiting: boolean;
+  paused: boolean;
   position: number;
   duration: number;
 }
 
 type Timer = ReturnType<typeof setTimeout> | null;
 
-const fresh = (): WatchState => ({ started: false, done: false, waiting: false, position: 0, duration: 0 });
+const fresh = (paused = false): WatchState => ({ started: false, done: false, waiting: false, paused, position: 0, duration: 0 });
 
 export function useTrailerPlaybackWatch(streamUrl: string | null, callbacks: PlaybackWatchCallbacks) {
   const latest = useRef(callbacks);
@@ -92,6 +104,11 @@ export function useTrailerPlaybackWatch(streamUrl: string | null, callbacks: Pla
       timers.current.verdict = setTimeout(() => finish(`aucune image en ${START_TIMEOUT_MS / 1000} s`), START_TIMEOUT_MS);
       return;
     }
+    // En pause, rien n'est attendu : la reprise réarme.
+    if (s.paused) {
+      setWaiting(false);
+      return;
+    }
     timers.current.wait = setTimeout(() => setWaiting(true), WAIT_SHOW_MS);
     timers.current.verdict = setTimeout(() => {
       const atEnd = s.duration > 0 && s.position >= s.duration - END_SLACK_S;
@@ -99,10 +116,10 @@ export function useTrailerPlaybackWatch(streamUrl: string | null, callbacks: Pla
     }, STALL_TIMEOUT_MS);
   }, [clear, finish, setWaiting]);
 
-  // Un flux neuf : tout recommence.
+  // Un flux neuf : tout recommence (la pause demandée reste).
   useEffect(() => {
     setWaiting(false);
-    state.current = fresh();
+    state.current = fresh(state.current.paused);
     if (!streamUrl) return clear;
     arm();
     const sub = AppState.addEventListener("change", (next) => (next === "active" ? arm() : clear()));
@@ -120,7 +137,22 @@ export function useTrailerPlaybackWatch(streamUrl: string | null, callbacks: Pla
     latest.current.onStarted();
   }, [arm]);
 
-  return useMemo(
+  const setPaused = useCallback((paused: boolean) => {
+    const s = state.current;
+    if (s.paused === paused) return;
+    s.paused = paused;
+    if (!s.done && s.started) arm();
+  }, [arm]);
+
+  /** Le temps va sauter à `target` (secondes) : un saut, ou le rechargement d'une autre qualité. */
+  const expectJump = useCallback((target: number) => {
+    const s = state.current;
+    if (s.done) return;
+    s.position = Math.max(0, target - JUMP_SLACK_S);
+    if (s.started) arm();
+  }, [arm]);
+
+  const handlers = useMemo(
     () => ({
       onLoad: (data: OnLoadData) => {
         state.current.duration = data.duration;
@@ -145,4 +177,6 @@ export function useTrailerPlaybackWatch(streamUrl: string | null, callbacks: Pla
     }),
     [start, arm, finish, setWaiting],
   );
+
+  return useMemo(() => ({ handlers, setPaused, expectJump }), [handlers, setPaused, expectJump]);
 }

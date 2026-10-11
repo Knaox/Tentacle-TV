@@ -75,3 +75,22 @@ export function parseVttCues(vtt: string): SubtitleCue[] {
   cues.sort((a, b) => a.start - b.start);
   return cues;
 }
+
+/**
+ * La réplique à l'écran à l'instant `t` (secondes), ou `null` — recherche
+ * dichotomique dans des cues triées (`parseVttCues`). Rend l'objet du tableau
+ * lui-même : son identité ne change pas tant que la même réplique reste, et
+ * un calque peut ne se redessiner qu'au changement.
+ */
+export function cueAt(cues: readonly SubtitleCue[], t: number): SubtitleCue | null {
+  let lo = 0;
+  let hi = cues.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const cue = cues[mid];
+    if (t < cue.start) hi = mid - 1;
+    else if (t > cue.end) lo = mid + 1;
+    else return cue;
+  }
+  return null;
+}

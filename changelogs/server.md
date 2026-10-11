@@ -10,6 +10,15 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.26.0]
+### FR
+- **Bandes-annonces sur Apple TV et Android TV : qualité et sous-titres.** Le serveur propose désormais chaque définition de la bande-annonce (de 360p à 1080p) et ses sous-titres, relayés comme la vidéo : les téléviseurs à jour (TV 1.10.2) les offrent dans leur nouveau lecteur simplifié. Les sous-titres sont ceux de YouTube : la piste posée par la chaîne, sinon la transcription automatique de la langue d'origine — jamais une traduction automatique, que YouTube refuse à un serveur
+- Une TV d'avant ne voit rien changer ; une TV à jour face à un serveur plus ancien garde avancer, reculer et pause, sans qualité ni sous-titres
+
+### EN
+- **Trailers on Apple TV and Android TV: quality and subtitles.** The server now offers every resolution of a trailer (360p to 1080p) and its subtitles, relayed like the video: up-to-date TVs (TV 1.10.2) offer them in their new simplified player. Subtitles are YouTube's: the track set by the channel, otherwise the automatic transcript in the original language — never an automatic translation, which YouTube refuses to servers
+- An older TV sees no change; an up-to-date TV on an older server keeps forward, back and pause, without quality or subtitles
+
 ## [1.25.1]
 ### FR
 - **Bandes-annonces de l'application de bureau** : sur un serveur dont l'interface web est coupée (`TENTACLE_WEB_UI=off`), une bande-annonce s'ouvrait sur une page blanche. Elle se lit de nouveau : la page qui relaie le lecteur YouTube aux applications reste servie, interface web coupée ou non

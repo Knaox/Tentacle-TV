@@ -24,10 +24,12 @@ describe("capacités du serveur", () => {
     expect([...caps]).toEqual(SERVER_CAPABILITY_KEYS.filter((key) => SERVER_CAPABILITIES[key] === "1.24.0"));
     // Une clé venue plus tard (1.25.0 : la migration de la base) n'y est pas.
     expect(caps.has("server.databaseMigration")).toBe(false);
-    // Celles de l'app Windows (1.26.0) non plus.
-    const upTo125 = SERVER_CAPABILITY_KEYS.filter((key) => SERVER_CAPABILITIES[key] !== "1.26.0");
-    expect(resolveServerCapabilities({ version: "1.25.0" }).size).toBe(upTo125.length);
-    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
+    expect(resolveServerCapabilities({ version: "1.25.0" }).has("server.databaseMigration")).toBe(true);
+    expect(resolveServerCapabilities({ version: "1.25.0" }).has("trailers.player")).toBe(false);
+    // Celles de l'app Windows (1.27.0) n'y sont pas encore en 1.26.0.
+    const upTo126 = SERVER_CAPABILITY_KEYS.filter((key) => SERVER_CAPABILITIES[key] !== "1.27.0");
+    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(upTo126.length);
+    expect(resolveServerCapabilities({ version: "1.27.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 
   it("pas de réponse, réponse illisible : aucune capacité, jamais d'erreur", () => {

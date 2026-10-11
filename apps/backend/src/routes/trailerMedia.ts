@@ -16,9 +16,14 @@ import { verifyRelayToken } from "../services/trailers/relayToken";
 import {
   TOKEN_SLOT, fetchUpstream, masterTemplate, mediaTemplate, progressiveTarget, segmentTarget,
 } from "../services/trailers/trailerRelay";
+import { subtitleVtt } from "../services/trailers/trailerSubtitleRelay";
 
 const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 const KEY_RE = /^[\w-]{1,16}$/;
+/** `master.m3u8` (« Auto »), ou `master-720.m3u8` : le maître réduit à une qualité. */
+const MASTER_RE = /^master(?:-(\d{3,4}))?\.m3u8$/;
+/** Une piste de sous-titres : `m-en-US.vtt`, `a-en.vtt` (trailerSubtitles.ts). */
+const SUBTITLE_RE = /^([ma]-[a-zA-Z0-9-]{2,24})\.vtt$/;
 const HLS_MIME = "application/vnd.apple.mpegurl";
 
 /** Un segment de quelques secondes arrive en bien moins ; un MP4 entier peut prendre son temps. */
@@ -59,10 +64,25 @@ function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string)
 }
 
 export async function trailerMediaRoutes(app: FastifyInstance) {
-  app.get<{ Params: Params }>("/hls/:ytId/master.m3u8", async (request, reply) => {
+  app.get<{ Params: Params }>("/hls/:ytId/:name", async (request, reply) => {
     const access = authorize(request.params.ytId, request, reply);
     if (!access) return reply;
-    return sendPlaylist(reply, await masterTemplate(access.ytId), access.token);
+    const match = MASTER_RE.exec(request.params.name ?? "");
+    if (!match) return reply.status(404).send({ error: "unknown" });
+    const height = match[1] ? Number(match[1]) : undefined;
+    return sendPlaylist(reply, await masterTemplate(access.ytId, height), access.token);
+  });
+
+  app.get<{ Params: Params }>("/subs/:ytId/:name", async (request, reply) => {
+    const access = authorize(request.params.ytId, request, reply);
+    if (!access) return reply;
+    const key = SUBTITLE_RE.exec(request.params.name ?? "")?.[1];
+    if (!key) return reply.status(404).send({ error: "unknown" });
+    const vtt = await subtitleVtt(access.ytId, key);
+    if (vtt === null) return reply.status(404).send({ error: "unavailable" });
+    reply.header("Cache-Control", "private, max-age=3600");
+    reply.type("text/vtt; charset=utf-8");
+    return reply.send(vtt);
   });
 
   app.get<{ Params: Params }>("/hls/:ytId/p/:name", async (request, reply) => {

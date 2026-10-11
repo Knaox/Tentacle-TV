@@ -600,19 +600,82 @@ premier plan, titre qui avance) ne sont pas de la navigation.
 ## 10. La bande-annonce (`Trailer`)
 
 **Fichiers** — `redesignWiring/trailer/` (`TrailerRedesign`,
-`useIdleChrome`) ; vue `redesign/screens/trailer/TrailerView.tsx`.
+`useTrailerPlayback` : contrôles et Retour ; `useTrailerTracks` : sous-titres,
+qualité, capacité) ; vue `redesign/screens/trailer/` (`TrailerView`,
+`TrailerChrome`, `TrailerPanelSheet`) ; applicateur
+`platform/tvos/screens/trailer.tsx`, commun à Apple TV et Android TV.
 
-- **BA-1** Une seule cible : la croix `trailer:close`, l'entrée
-  (`hasTVPreferredFocus`, seule action), toujours focalisée.
-- **BA-2** Le chrome s'estompe 3 s après le début de la LECTURE (rien ne
-  s'estompe en chargement ni en indisponible) ; le MOINDRE évènement de la
-  télécommande (appui, glisser, pan — `useRemoteEvents`, écran devant
-  seulement) le rallume et relance les 3 s.
+Un lecteur ULTRA simplifié (lot BA, 2026-10-11) : avancer / reculer, la
+pause, les sous-titres et la qualité — rien d'autre (ni épisodes, ni
+vitesses). Ses règles REPRENNENT celles du grand lecteur (§ lecteur,
+`docs/tv-navigation/lecteur.md`), jamais une copie : `createTrailerControls`
+EST `createPlayerControls`, le Retour passe par `createPlayerBack`, les
+panneaux par la feuille `PlayerSheet` et `sheetEntryKey`.
+
+```
+ [×]                                         trailer:close
+                    [Sous-titres] [Qualité]   trailer:subtitles, trailer:quality
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   trailer:timeline
+```
+
+- **BA-1** Cibles (`trailerTargets`) : en lecture, la croix, les boutons
+  présents, la barre ; hors lecture (chargement, indisponible), la croix
+  seule. Le PREMIER focus (`trailerEntryKey`, réclamé à chaque changement,
+  et au lancement de la lecture, `trailerStartClaim`) : la croix pendant le
+  chargement, ou quand rien d'autre n'est à cibler (indisponible) ; sinon le
+  premier élément hors croix — le premier bouton, sinon la barre ; la barre
+  quand le chrome est estompé (choix de Damien, 2026-10-11). La croix reste
+  atteignable. Les boutons n'existent que si le serveur
+  déclare `trailers.player` ET qu'il y a à choisir — une langue de
+  sous-titres au moins, deux hauteurs au moins (`trailerTools`). Sans la
+  capacité : la croix et la barre, avancer et reculer marchent.
+- **BA-2** Le chrome (croix, titre, boutons, barre) s'estompe 3 s
+  (`TRAILER_IDLE_MS`) après le dernier geste, en LECTURE seulement : jamais en
+  chargement ni indisponible (`trailerChromeShown`), jamais en pause ni
+  panneau ouvert. Le rallument : ↑ / ↓, OK sur la barre, Lecture/Pause, un
+  toucher du pavé ; un saut chrome affiché le garde affiché. Chrome estompé,
+  la BARRE seule est focalisable (`trailerFocusable`) et le focus y revient
+  (`trailerFocusClaim`) ; pendant un défilement, la barre reste seule.
 - **BA-3** Indisponible : la fiche est rendue d'elle-même au bout de 4 s
   (écran devant) ; la fin de la vidéo aussi (`onEnded`). OK sur la croix :
-  `goBack`. Retour : page poussée → recule (`BackScope`).
+  `goBack`.
 - **BA-4** Revenue, la fiche rend le focus à `detail:trailer` (FI-2 : dernière
   clé de contenu).
+- **BA-5** Avancer / reculer — barre focalisée, chrome affiché OU estompé :
+  un appui ← / → saute de −10 / +30 s, cumulé depuis la dernière cible (le
+  badge le dit) ; le MAINTIEN ouvre le défilement et accélère (×1 → ×8), le
+  décompte relance la lecture ; ⏩ / ⏪ (Android) et le glisser du pavé
+  (tvOS) font de même. Un bouton focalisé : les flèches naviguent.
+- **BA-6** La pause, sur les deux plateformes : Lecture/Pause bascule et
+  rallume ; OK sur la barre — chrome estompé, montre ; affiché, met en pause
+  (« OK puis OK », `trailerSelectAction`). L'évènement global d'OK sur la
+  barre ne rallume rien (`trailerRemoteSteps`) : seul l'appui de l'élément
+  décide, quel que soit l'ordre d'arrivée. Défilement ouvert, OK le valide.
+- **BA-7** Retour, en couches (`trailerBackLayers`, celles du grand
+  lecteur) : défilement ouvert → annulé (puis 600 ms de grâce) ; panneau
+  ouvert → fermé ; chrome à l'écran en lecture → masqué ; sinon (rien
+  d'affiché, chargement, indisponible) → la fiche. Dans les 3 premières
+  secondes, il faut donc deux Retour pour quitter — comme le grand lecteur.
+- **BA-8** Panneaux (`trailerPanels`) : sous-titres (« Désactivés », puis les
+  langues), qualité (« Auto », puis les hauteurs décroissantes). La
+  bande-annonce DÉMARRE à la qualité la plus haute offerte
+  (`trailerInitialQuality`, pas « Auto », jamais retenue d'une bande-annonce à
+  l'autre) ; le sous-titre choisi, lui, se retient par profil
+  (`trailerSubtitleMemory`). Ils
+  s'ouvrent sur l'option retenue (`trailerPanelEntryKey`) ; un choix FERME le
+  panneau (`trailerChoose` : il ne s'applique que s'il change quelque chose)
+  et le focus revient à son bouton (`trailerPanelReturnKey`). Clés de
+  `PlayerSheet` : `trailerSubtitles:close`, `trailerSubtitles:list:<clé>`,
+  de même `trailerQuality:*`.
+- **BA-9** Voisins (`trailerNeighbor`, des ponts) : ↑ depuis la barre → le
+  dernier bouton visité, sinon le premier, sinon la croix ; ← / → sur la
+  barre restent (la vidéo) ; entre les boutons, à l'horizontale ; ↑ depuis
+  un bouton → la croix, ↓ → la barre ; ↓ depuis la croix → le premier
+  bouton, sinon la barre. Une cible infocalisable n'est jamais un voisin.
+  Apple TV : `nextFocus*` n'est pas honoré sur cet écran (mesuré) — deux
+  ponts armés selon le focus (`trailer:bridge-close` sous la croix,
+  `trailer:bridge-timeline` entre les boutons et la barre,
+  `platform/tvos/screens/trailerBridges.tsx`) ; Android : `nextFocus*`.
 
 ---
 
@@ -667,7 +730,7 @@ compter une attente dont la durée vient de tv-core. Le câblage
 | JU-1, JU-4 | `focus/pairingFocus` | `screens/pairing.ts` |
 | JU-6 | `session/loginForm` | la vue `LoginStep` ; l'ouverture native du clavier : `screens/pairing.ts` (`openPairingKeyboard`, fourni par `KeyboardOpenerProvider`) |
 | JU-7 | `nav/screenBack` (`pairingBackAction`) | `PairingRedesign` (une couche « page », `useBackLayer`) |
-| BA-1 à BA-3 | `player/trailerChrome` (dont `trailerWakes` : toute intention SAUF Retour) | `screens/trailer.ts` |
+| BA-1 à BA-9 | `player/trailerChrome`, `trailerFocus`, `trailerControls` (sur `playerControls`), `trailerBack` (sur `playerBack`), `trailerPanels` (sur `sheetEntryKey`) | `screens/trailer.tsx` (commun à Apple TV et Android TV) |
 | VI-1 à VI-4 | `titles/absentActions` ; `MODAL_GAP_MS` : `panels/panelLifecycle` (T6) | `useTitleRequests`, `useSeriesGapTabs`, `openSearchGap` |
 
 Disparus : `redesignWiring/detail/useDetailGuides.ts`,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useJellyfinClient, withDirectApiKey } from "@tentacle-tv/api-client";
-import { BURN_IN_SUBTITLE_CODECS, parseVttCues } from "@tentacle-tv/shared";
+import { BURN_IN_SUBTITLE_CODECS, cueAt, parseVttCues } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, SubtitleCue } from "@tentacle-tv/shared";
 
 /**
@@ -65,15 +65,7 @@ export function useTVSubtitles(args: {
       // Interpolation : le progress natif n'arrive qu'à ~1 Hz
       const elapsed = pausedStateRef.current ? 0 : (Date.now() - lastProgressTime.current) / 1000;
       const t = displayTimeRef.current + Math.min(Math.max(elapsed, 0), 2);
-      let lo = 0, hi = cues.length - 1;
-      let found: SubtitleCue | null = null;
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        const c = cues[mid];
-        if (t < c.start) hi = mid - 1;
-        else if (t > c.end) lo = mid + 1;
-        else { found = c; break; }
-      }
+      const found = cueAt(cues, t);
       setCue((prev) => (prev === found ? prev : found));
     }, 250);
     return () => clearInterval(interval);

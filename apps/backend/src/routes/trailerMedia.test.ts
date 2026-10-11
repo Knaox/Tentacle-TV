@@ -28,17 +28,27 @@ import { resetTrailerRelay } from "../services/trailers/trailerRelay";
 const ID = "Way9Dexny3w";
 const FUTURE = Math.floor(Date.now() / 1000) + 6 * 3600;
 const masterUrl = (gen: number) => `https://manifest.googlevideo.test/api/manifest/hls_variant/expire/${FUTURE}/gen/${gen}/index.m3u8`;
+const timedtext = (gen: number, lang: string) => `https://www.youtube.com/api/timedtext?v=${ID}&gen=${gen}&lang=${lang}&fmt=json3`;
 const hls = (gen: number): ExtractionResult => ({
   ok: true,
   clients: ["visionos"],
-  source: { kind: "hls", masterUrl: masterUrl(gen), headers: {}, expiresAt: FUTURE * 1000 },
+  source: { kind: "hls", masterUrl: masterUrl(gen), headers: {}, expiresAt: FUTURE * 1000, heights: [1080, 720] },
+  subtitles: [
+    { key: "m-en", lang: "en", label: "English", auto: false, url: timedtext(gen, "en"), format: "json3" },
+    { key: "a-fr", lang: "fr", label: "French", auto: true, url: timedtext(gen, "fr"), format: "json3" },
+  ],
 });
 
 /** googlevideo factice, génération `gen` : les URL d'une extraction précédente répondent 403. */
 function googlevideo(gen: number) {
   const gv = `https://rr.googlevideo.test/gen/${gen}`;
   const pages: Record<string, string> = {
-    [masterUrl(gen)]: `#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=997206,CODECS="avc1.4D401F,mp4a.40.2",RESOLUTION=1280x720\n${gv}/itag/95/v.m3u8\n`,
+    [masterUrl(gen)]: [
+      "#EXTM3U",
+      `#EXT-X-STREAM-INF:BANDWIDTH=997206,CODECS="avc1.4D401F,mp4a.40.2",RESOLUTION=1280x720\n${gv}/itag/95/v.m3u8`,
+      `#EXT-X-STREAM-INF:BANDWIDTH=3295980,CODECS="avc1.640028,mp4a.40.2",RESOLUTION=1920x1080\n${gv}/itag/96/v.m3u8`,
+    ].join("\n"),
+    [timedtext(gen, "en")]: JSON.stringify({ events: [{ tStartMs: 1000, dDurationMs: 1500, segs: [{ utf8: "Hello <there>" }] }] }),
     [`${gv}/itag/95/v.m3u8`]: `#EXTM3U\n#EXT-X-TARGETDURATION:5\n#EXTINF:5,\n${gv}/itag/95/sq/0.ts\n#EXT-X-ENDLIST\n`,
   };
   return vi.fn(async (url: string) => {
@@ -79,6 +89,26 @@ describe("/api/trailers/resolve", () => {
     expect(body.path).toMatch(new RegExp(`^/api/trailers/hls/${ID}/master\\.m3u8\\?t=[\\w.-]+$`));
     expect(body.url).toBe(`http://tv.test:3000${body.path}`);
     expect(JSON.stringify(body)).not.toContain("googlevideo");
+    expect(JSON.stringify(body)).not.toContain("youtube.com");
+    // Les ajouts du lecteur (capacité `trailers.player`) : une qualité par hauteur, les pistes relayées.
+    expect(body.qualities.map((q: { height: number }) => q.height)).toEqual([1080, 720]);
+    expect(body.qualities[1].path).toMatch(new RegExp(`^/api/trailers/hls/${ID}/master-720\\.m3u8\\?t=`));
+    // Sans langue d'interface, l'anglais en tête.
+    expect(body.subtitles.map((s: { lang: string; auto: boolean }) => [s.lang, s.auto])).toEqual([["en", false], ["fr", true]]);
+    expect(body.subtitles[0].path).toMatch(new RegExp(`^/api/trailers/subs/${ID}/m-en\\.vtt\\?t=`));
+  });
+
+  it("met la langue de l'interface en tête des sous-titres ; un MP4 n'a pas de qualités", async () => {
+    const withTracks = hls(1);
+    extractTrailerSource.mockResolvedValue({
+      ok: true, clients: ["web_embedded"], subtitles: withTracks.ok ? withTracks.subtitles : [],
+      source: { kind: "progressive", url: "https://rr.googlevideo.test/f.mp4", headers: {}, expiresAt: FUTURE * 1000 },
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("mp4")));
+    const app = await server();
+    const body = (await app.inject({ url: `/api/trailers/resolve?ytId=${ID}&lang=fr`, headers: { authorization: "Bearer ok" } })).json();
+    expect(body.qualities).toEqual([]);
+    expect(body.subtitles.map((s: { lang: string }) => s.lang)).toEqual(["fr", "en"]);
   });
 
   it("dit « indisponible » sans flux, et prépare sans attendre", async () => {
@@ -134,6 +164,35 @@ describe("flux relayés", () => {
     expect(segment.statusCode).toBe(200);
     expect(segment.headers["content-type"]).toBe("video/mp2t");
     expect([...segment.rawPayload]).toEqual([0x47, 1, 2, 3]);
+  });
+
+  it("servent le maître réduit à une qualité, et « Auto » pour une hauteur inconnue", async () => {
+    extractTrailerSource.mockResolvedValue(hls(1));
+    vi.stubGlobal("fetch", googlevideo(1));
+    const app = await server();
+    const token = new URL(await resolved(app), "http://x").searchParams.get("t");
+    const fixed = await app.inject({ url: `/api/trailers/hls/${ID}/master-1080.m3u8?t=${token}` });
+    expect(fixed.statusCode).toBe(200);
+    expect(fixed.body).toContain(`p/96.m3u8?t=${token}`);
+    expect(fixed.body).not.toContain("p/95.m3u8");
+    const unknown = await app.inject({ url: `/api/trailers/hls/${ID}/master-480.m3u8?t=${token}` });
+    expect(unknown.body).toContain("p/95.m3u8");
+    expect((await app.inject({ url: `/api/trailers/hls/${ID}/other.m3u8?t=${token}` })).statusCode).toBe(404);
+  });
+
+  it("servent les sous-titres en WebVTT, sous le même jeton", async () => {
+    extractTrailerSource.mockResolvedValue(hls(1));
+    vi.stubGlobal("fetch", googlevideo(1));
+    const app = await server();
+    const token = new URL(await resolved(app), "http://x").searchParams.get("t");
+    expect((await app.inject({ url: `/api/trailers/subs/${ID}/m-en.vtt` })).statusCode).toBe(403);
+    const vtt = await app.inject({ url: `/api/trailers/subs/${ID}/m-en.vtt?t=${token}` });
+    expect(vtt.statusCode).toBe(200);
+    expect(vtt.headers["content-type"]).toContain("text/vtt");
+    expect(vtt.body).toBe("WEBVTT\n\n00:00:01.000 --> 00:00:02.500\nHello &lt;there&gt;\n");
+    // Une piste que la vidéo n'offre pas, ou que YouTube ne sert plus : 404, jamais une erreur.
+    expect((await app.inject({ url: `/api/trailers/subs/${ID}/m-de.vtt?t=${token}` })).statusCode).toBe(404);
+    expect((await app.inject({ url: `/api/trailers/subs/${ID}/a-fr.vtt?t=${token}` })).statusCode).toBe(404);
   });
 
   it("relisent un segment refusé après une nouvelle extraction", async () => {

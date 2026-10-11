@@ -29,11 +29,20 @@ export interface YtFormat {
 }
 
 export type TrailerSource =
-  | { kind: "hls"; masterUrl: string; headers: Record<string, string>; expiresAt: number }
+  | {
+      kind: "hls";
+      masterUrl: string;
+      headers: Record<string, string>;
+      expiresAt: number;
+      /** Les hauteurs H.264 du maître, de la plus haute à la plus basse : les qualités au choix. */
+      heights: number[];
+    }
   | { kind: "progressive"; url: string; headers: Record<string, string>; expiresAt: number };
 
 /** Au-delà, un flux n'apporte rien à une bande-annonce et coûte au relais. */
 const MAX_HEIGHT = 1080;
+/** En deçà, une qualité n'a rien à faire sur un téléviseur : elle n'est pas proposée (« Auto » la garde). */
+export const MIN_QUALITY_HEIGHT = 360;
 
 const isH264 = (codec: string | null | undefined) => !!codec && /^avc[13]\./i.test(codec);
 const isAac = (codec: string | null | undefined) => !!codec && /^mp4a\./i.test(codec);
@@ -68,7 +77,15 @@ export function pickTrailerSource(formats: readonly YtFormat[], now = Date.now()
   const bestMaster = [...masters.entries()].sort((a, b) => b[1].height - a[1].height)[0];
   if (bestMaster) {
     const [masterUrl, { format }] = bestMaster;
-    return { kind: "hls", masterUrl, headers: headersOf(format), expiresAt: parseExpiry(masterUrl, now) };
+    const heights = new Set<number>();
+    for (const f of usable) {
+      const h = f.height ?? 0;
+      if (f.manifest_url === masterUrl && isH264(f.vcodec) && h >= MIN_QUALITY_HEIGHT && h <= MAX_HEIGHT) heights.add(h);
+    }
+    return {
+      kind: "hls", masterUrl, headers: headersOf(format), expiresAt: parseExpiry(masterUrl, now),
+      heights: [...heights].sort((a, b) => b - a),
+    };
   }
 
   // 2. Le progressif muxé H.264 + AAC le plus haut, jusqu'à 1080p.

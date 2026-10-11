@@ -225,6 +225,84 @@
           "interceptor": null
         }
       ],
+      "bande-annonce": [
+        {
+          "render": [
+            "transient:menu:off",
+            "panel:menu:on",
+            "chrome:overlay:on",
+            "page:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "panneau ouvert",
+          "to": "app",
+          "effects": [
+            "layer:panel"
+          ]
+        },
+        {
+          "render": [
+            "transient:menu:off",
+            "panel:menu:off",
+            "chrome:overlay:on",
+            "page:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "chrome à l'écran",
+          "to": "app",
+          "effects": [
+            "layer:chrome"
+          ]
+        },
+        {
+          "render": [
+            "transient:menu:off",
+            "panel:menu:off",
+            "chrome:overlay:off",
+            "page:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "rien à l'écran",
+          "to": "app",
+          "effects": [
+            "layer:page"
+          ]
+        },
+        {
+          "render": [
+            "transient:menu:on",
+            "panel:menu:off",
+            "chrome:overlay:off",
+            "page:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "défilement ouvert",
+          "to": "app",
+          "effects": [
+            "layer:transient"
+          ]
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
       "rang-egal": [
         {
           "render": [
@@ -623,6 +701,68 @@
         },
         {
           "press": "rien à l'écran",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "bande-annonce": [
+        {
+          "render": [
+            "transient:menu:off",
+            "panel:menu:on",
+            "chrome:overlay:on",
+            "page:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "panneau ouvert",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "transient:menu:off",
+            "panel:menu:off",
+            "chrome:overlay:on",
+            "page:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "chrome à l'écran",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "transient:menu:off",
+            "panel:menu:off",
+            "chrome:overlay:off",
+            "page:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "rien à l'écran",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "transient:menu:on",
+            "panel:menu:off",
+            "chrome:overlay:off",
+            "page:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "défilement ouvert",
           "to": "platform",
           "effects": []
         },

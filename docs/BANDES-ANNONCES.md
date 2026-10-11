@@ -170,11 +170,70 @@ images dans les deux cas (jeton PO, sans rapport avec le moteur). Le maître
 
 ## Les autres plateformes
 
-Web, bureau, mobile, Android TV et LG lisent le lecteur YouTube embarqué :
-rien ne change pour eux, leurs tests restent verts. Le relais leur est
+Web, bureau, mobile et LG lisent le lecteur YouTube embarqué : rien ne
+change pour eux, leurs tests restent verts. Android TV lit désormais le
+relais, comme l'Apple TV (même `TrailerWebView`, ExoPlayer). Le relais leur est
 ouvert s'il le faut un jour — par exemple pour lire dans l'app, sur le
 bureau macOS, ce que la WebView y refuse (Referer retiré, erreur 153) et
 qu'on ouvre aujourd'hui dans le navigateur.
+
+## Le lecteur simplifié : qualités et sous-titres (2026-10-11)
+
+Sur les deux téléviseurs, la bande-annonce devient un lecteur réduit à
+l'essentiel : sous-titres ou non, qualité, avancer / reculer. Le serveur le
+déclare par la capacité `trailers.player` ; sans elle, avancer et reculer
+marchent (purement client), qualité et sous-titres n'existent pas.
+
+**`GET /api/trailers/resolve?ytId=…&lang=fr`** garde son contrat et ajoute :
+
+- `qualities: [{ height, path }]` — un maître RÉDUIT à chaque hauteur H.264
+  du maître (`master-720.m3u8`, mêmes listes et segments relayés, même
+  jeton), de 360p à 1080p ; « Auto » reste `path`. Un MP4 de repli : `[]`.
+- `subtitles: [{ lang, label, auto, path }]` — les pistes de YouTube,
+  relayées en WebVTT (`/api/trailers/subs/<ytId>/<clé>.vtt`, même jeton) :
+  les pistes posées par la chaîne, puis la reconnaissance vocale d'origine
+  si aucune piste posée ne parle sa langue. `lang` (l'interface) puis
+  l'anglais en tête, six au plus, `lang` unique dans la liste.
+
+Le serveur relit `youtube.com/api/timedtext` — ces URL ne sont pas liées à
+l'adresse IP (`ip=0.0.0.0`) — au format `json3`, et le convertit lui-même
+(`timedText.ts`) : le `vtt` de YouTube pour sa reconnaissance vocale fait
+défiler deux lignes, chacune deux fois, minutée mot à mot ; converti, une
+réplique à la fois, chacune finie quand la suivante paraît. Le téléviseur
+dessine les répliques en calque (`SubtitleLayer`, parseur partagé) :
+AVPlayer ne sait pas ajouter de piste texte à un maître HLS.
+
+**Mesuré** (yt-dlp 2026.08.19, client `visionos`, 14 bandes-annonces : Dune 2,
+Oppenheimer, Inception, Interstellar, Breaking Bad, Jumanji 2, Anniversary,
+La Femme de ménage, Bugonia, Harry Potter (VF), Avengers : Doomsday, Dragons,
+Dying for Sex, Adults (VOST)) :
+
+| | Bandes-annonces |
+|---|---|
+| H.264 jusqu'en 1080p (qualités 1080 · 720 · 480 · 360, ou 1080 · 720 · 360) | 12 / 14 |
+| Plafonnées à 720p (720 · 480 · 360) | 2 / 14 (Breaking Bad, Inception) |
+| Pistes posées par la chaîne (toujours l'anglais) | 3 / 14 |
+| Reconnaissance vocale d'origine (`fr` pour une VF, `en` sinon) | 10 / 14 |
+| Au moins une piste | 11 / 14 |
+| Aucune piste | 3 / 14 (Breaking Bad, Jumanji, Interstellar) |
+
+Une VOST de YouTube porte en général ses sous-titres français DANS l'image ;
+sa piste est l'anglais reconnu. Une VF n'offre que le français reconnu.
+
+À travers le relais (10 d'entre elles, de ce poste) : extraction 1,4 à 2,2 s
+(ligne de commande), une piste WebVTT en 68 à 109 ms, 27 à 51 répliques.
+
+**Jamais les traductions automatiques** (`tlang`, ~150 langues) : YouTube
+les refuse en **429** à un serveur (5 sur 5 ce jour-là), quand la piste
+d'origine passe. Une option qui échouerait à coup sûr n'est pas offerte.
+
+**Côté TV** (`apps/tv/src/screens/trailer/`) : `TrailerWebView` reste le
+lecteur, commandable par des props facultatives (`quality`, `subtitle`,
+`paused`, `onTracks`, `onProgress`, `onCue`) et `ref.seekTo`. Une autre
+qualité recharge le flux à la même position (`startPosition` natif), la
+première image déjà acquise : pas de second chargement. Le chien de garde
+connaît la pause et le saut ; les tics qui disent encore l'ancienne position
+après un saut sont ignorés (5 s au plus).
 
 ## Ce qui reste fragile, et comment le surveiller
 

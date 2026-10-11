@@ -104,18 +104,20 @@ export interface PlayerControls {
  */
 export function createPlayerControls(
   host: PlayerControlsHost,
-  { profile, timers, initialPanelOpen, readCountdownPolicy }: {
+  { profile, timers, initialPanelOpen, readCountdownPolicy, overlayHideMs }: {
     profile: ScrubInputProfile;
     timers: PlayerTimers;
     initialPanelOpen: boolean;
     readCountdownPolicy?: () => ScrubCountdownPolicy;
+    /** Le délai d'extinction de l'habillage ; défaut `OVERLAY_HIDE_MS`. */
+    overlayHideMs?: number;
   },
 ): PlayerControls {
   let lastPressAt = 0;
   /** Un appui directionnel déjà servi ne rallume pas l'habillage (`anyPress`). */
   let skipAnyPress = false;
 
-  const autoHide = createOverlayAutoHide({ onVisible: host.onOverlayVisible, timers });
+  const autoHide = createOverlayAutoHide({ onVisible: host.onOverlayVisible, timers, hideMs: overlayHideMs });
   const revealOverlay = () => autoHide.reveal({ paused: host.readPaused(), panelOpen: host.isPanelOpen() });
   const badge = createSkipFlash({ onChange: host.onSkipFlash, timers });
 

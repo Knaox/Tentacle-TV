@@ -13,17 +13,24 @@ import { Agent, fetch as undiciFetch } from "undici";
 import { parseMaster, renderMaster, rewriteMedia, startVariant, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
 import { extractTrailerSource } from "./ytExtract";
 import type { TrailerSource } from "./trailerSource";
+import type { SubtitleCandidate } from "./trailerSubtitles";
 
 /** Le jeton est posé au moment de servir : les textes gardés n'en portent que la place. */
 export const TOKEN_SLOT = "{{t}}";
 
-interface Entry {
+export interface Entry {
   source: TrailerSource;
+  /** Les pistes de sous-titres offertes (trailerSubtitles.ts), relayées par trailerSubtitleRelay.ts. */
+  subtitles: SubtitleCandidate[];
+  /** Les WebVTT déjà convertis, par clé de piste. */
+  subtitleTexts: Map<string, string>;
   validUntil: number;
   extractedAt: number;
   lastUsed: number;
   master?: RelayMaster;
   masterText?: string;
+  /** Les maîtres réduits à une qualité (gabarits à jeton), par hauteur. */
+  fixedMasters: Map<number, string>;
   media: Map<string, RelayMedia>;
   /** Les lectures amont en vol : deux demandes de la même liste en partagent une. */
   loading: Map<string, Promise<unknown>>;
@@ -78,7 +85,10 @@ async function extract(ytId: string): Promise<Entry | null> {
   }
   misses.delete(ytId);
   const now = Date.now();
-  const entry: Entry = { source: result.source, validUntil: result.source.expiresAt - EXPIRY_MARGIN_MS, extractedAt: now, lastUsed: now, media: new Map(), loading: new Map() };
+  const entry: Entry = {
+    source: result.source, subtitles: result.subtitles, subtitleTexts: new Map(), fixedMasters: new Map(),
+    validUntil: result.source.expiresAt - EXPIRY_MARGIN_MS, extractedAt: now, lastUsed: now, media: new Map(), loading: new Map(),
+  };
   entries.set(ytId, entry);
   evict();
   console.log(`[trailers] ${ytId} : ${result.source.kind} via ${result.clients.join(",")} en ${Date.now() - started} ms`);
@@ -105,10 +115,20 @@ export function resolveEntry(ytId: string, { fresh = false } = {}): Promise<Entr
   return task;
 }
 
-/** L'état d'une vidéo pour qui la lance : son genre et l'échéance de ses URL. */
-export async function resolveTrailer(ytId: string): Promise<{ kind: TrailerSource["kind"]; validUntil: number } | null> {
+export interface ResolvedTrailer {
+  kind: TrailerSource["kind"];
+  validUntil: number;
+  /** Les qualités au choix (hauteurs H.264 du maître) ; vide pour un MP4. */
+  heights: number[];
+  subtitles: SubtitleCandidate[];
+}
+
+/** L'état d'une vidéo pour qui la lance : son genre, l'échéance de ses URL, ses qualités et ses pistes. */
+export async function resolveTrailer(ytId: string): Promise<ResolvedTrailer | null> {
   const entry = await resolveEntry(ytId);
-  return entry && { kind: entry.source.kind, validUntil: entry.validUntil };
+  if (!entry) return null;
+  const heights = entry.source.kind === "hls" ? entry.source.heights : [];
+  return { kind: entry.source.kind, validUntil: entry.validUntil, heights, subtitles: entry.subtitles };
 }
 
 /** Lit une ressource amont ; `refused` pour une URL que googlevideo ne sert plus. */
@@ -162,12 +182,26 @@ function loadMaster(entry: Entry): Promise<RelayMaster | null> {
   });
 }
 
-/** Le maître relayé (gabarit à jeton), avec une reprise si l'URL amont est morte. */
-export async function masterTemplate(ytId: string): Promise<string | null> {
+/** Le maître réduit à `height` (gabarit à jeton), gardé avec la vidéo. */
+function fixedMaster(entry: Entry, master: RelayMaster, height: number): string {
+  let text = entry.fixedMasters.get(height);
+  if (!text) {
+    text = renderMaster(master, (key) => `p/${key}.m3u8?t=${TOKEN_SLOT}`, height);
+    entry.fixedMasters.set(height, text);
+  }
+  return text;
+}
+
+/**
+ * Le maître relayé (gabarit à jeton), avec une reprise si l'URL amont est
+ * morte. Avec `height`, le maître réduit à cette qualité.
+ */
+export async function masterTemplate(ytId: string, height?: number): Promise<string | null> {
   for (const fresh of [false, true]) {
     const entry = await resolveEntry(ytId, { fresh });
     if (!entry) return null;
-    if (await loadMaster(entry)) return entry.masterText ?? null;
+    const master = await loadMaster(entry);
+    if (master) return height ? fixedMaster(entry, master, height) : entry.masterText ?? null;
     if (entry.source.kind !== "hls") return null;
   }
   return null;
