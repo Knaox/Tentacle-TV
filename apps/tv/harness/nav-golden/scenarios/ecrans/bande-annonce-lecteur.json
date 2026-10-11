@@ -1,5 +1,6 @@
 {
   "domain": "ecrans",
+  "reference": "9ae63d9c5",
   "defaults": {
     "settleMs": 1000
   },

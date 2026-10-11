@@ -98,8 +98,9 @@ la vidéo du domaine lecteur (`scenarios/lecteur/README.md`) :
 C=~/Library/Caches/tentacle-nav-golden/bande-annonce; mkdir -p "$C" && ffmpeg -loglevel error -y -i ~/Library/Caches/tentacle-nav-golden/lecteur/banc-600s.mp4 -t 150 -c copy -hls_time 6 -hls_playlist_type vod -hls_segment_filename "$C/seg-%03d.ts" -f hls "$C/media.m3u8" && printf 'WEBVTT\n\n00:00:00.000 --> 00:02:30.000\nBanc : sous-titre de la bande-annonce\n' > "$C/sub.vtt"
 ```
 
-`bande-annonce-lecteur.json` n'a pas de `reference` : il s'enregistre sur le
-commit qui branche le lecteur simplifié (`record --at <rév> ecrans/bande-annonce-lecteur`).
+`bande-annonce-lecteur.json` a pour référence `9ae63d9c5`, le commit qui
+branche le lecteur simplifié (enregistrée sur un clone de « Apple TV 4K (at
+1080p) »).
 
 Hors banc (un appui ne sait pas les montrer) : le glisser du pavé, la dictée,
 le clavier système sur l'appareil — passage sur l'Apple TV « Chambre ».
