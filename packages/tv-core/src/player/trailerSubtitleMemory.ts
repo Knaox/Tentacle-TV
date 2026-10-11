@@ -8,7 +8,18 @@ import { TRAILER_SUBTITLES_OFF } from "./trailerPanels";
  * (`fr` pour `fr-CA`) — sinon rien. Jamais de sous-titres imposés : sans
  * choix retenu, ils restent désactivés. Module pur ; la plateforme lit et
  * écrit la valeur.
+ *
+ * Un goût de la PERSONNE : rangé par compte (`tentacle_trailer_subtitle:<id>`),
+ * chaque profil de la Famille garde le sien sur la même TV.
  */
+
+/** Le préfixe de la clé de stockage — traversé par une chaîne : jamais renommé. */
+export const TRAILER_SUBTITLE_KEY_PREFIX = "tentacle_trailer_subtitle:";
+
+/** La clé du compte affiché. */
+export function trailerSubtitleKey(userId: string): string {
+  return `${TRAILER_SUBTITLE_KEY_PREFIX}${userId}`;
+}
 
 /** Ce qui se garde : la clé d'option choisie (`off`, ou la langue d'une piste). */
 export function trailerSubtitleMemoryOf(optionKey: string): string {

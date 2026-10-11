@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { ACCOUNT_STORAGE_KEYS, PROFILE_STORAGE_KEYS } from "./unpairJournal";
 import { SCRUB_COUNTDOWN_KEY_PREFIX } from "../player/scrubCountdownSettings";
+import { TRAILER_SUBTITLE_KEY_PREFIX } from "../player/trailerSubtitleMemory";
 
 /**
  * L'ISOLATION des profils de la Famille (Apple TV), clé par clé : chaque clé
@@ -34,7 +35,7 @@ const DEVICE_KEYS: Record<string, string> = {
 };
 
 /** Rangées par identifiant de profil : chacune n'appartient qu'à lui. */
-const PER_PROFILE_PREFIXES = [SCRUB_COUNTDOWN_KEY_PREFIX];
+const PER_PROFILE_PREFIXES = [SCRUB_COUNTDOWN_KEY_PREFIX, TRAILER_SUBTITLE_KEY_PREFIX];
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
