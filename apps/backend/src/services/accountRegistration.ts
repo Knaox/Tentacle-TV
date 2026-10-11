@@ -15,7 +15,8 @@ export type AccountCreationRefusal = "username_taken" | "username_invalid" | "ac
 
 export type AccountCreation =
   | { ok: true; user: { Id: string; Name: string } }
-  | { ok: false; refusal: AccountCreationRefusal; detail?: string };
+  /** `orphanId` : un compte sans mot de passe que Jellyfin n'a pas laissé retirer — à dire au journal. */
+  | { ok: false; refusal: AccountCreationRefusal; detail?: string; orphanId?: string };
 
 /** Le nom est-il déjà celui d'un compte ? `null` : la liste n'a pas pu être lue. */
 async function usernameTaken(jellyfinUrl: string, apiKey: string, username: string): Promise<boolean | null> {
@@ -27,6 +28,28 @@ async function usernameTaken(jellyfinUrl: string, apiKey: string, username: stri
     return users.some((user) => user.Name?.toUpperCase() === wanted);
   } catch {
     return null;
+  }
+}
+
+async function setPassword(jellyfinUrl: string, apiKey: string, userId: string, password: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${jellyfinUrl}/Users/Password?userId=${userId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...jellyfinAuthHeaders(apiKey) },
+      body: JSON.stringify({ NewPw: password, ResetPassword: false }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function removeUser(jellyfinUrl: string, apiKey: string, userId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${jellyfinUrl}/Users/${userId}`, { method: "DELETE", headers: jellyfinAuthHeaders(apiKey) });
+    return res.ok || res.status === 404;
+  } catch {
+    return false;
   }
 }
 
@@ -52,11 +75,12 @@ export async function createJellyfinAccount(
     }
     const user = (await createRes.json()) as { Id: string; Name: string };
 
-    await fetch(`${jellyfinUrl}/Users/Password?userId=${user.Id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...jellyfinAuthHeaders(apiKey) },
-      body: JSON.stringify({ NewPw: password, ResetPassword: false }),
-    });
+    // Créé SANS mot de passe, un compte Jellyfin s'ouvre avec un mot de passe vide : si le
+    // mot de passe ne se pose pas, le compte ne reste pas.
+    if (!(await setPassword(jellyfinUrl, apiKey, user.Id, password))) {
+      const removed = await removeUser(jellyfinUrl, apiKey, user.Id);
+      return { ok: false, refusal: "account_creation_failed", detail: "Jellyfin n'a pas pris le mot de passe du compte", ...(removed ? {} : { orphanId: user.Id }) };
+    }
     return { ok: true, user };
   } catch (err) {
     return { ok: false, refusal: "account_creation_failed", detail: err instanceof Error ? err.message : undefined };

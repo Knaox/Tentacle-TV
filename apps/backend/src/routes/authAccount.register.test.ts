@@ -49,11 +49,22 @@ import { authAccountRoutes } from "./authAccount";
 /** Le Jellyfin bouchonné : ses comptes, et ce qu'il refuse comme 10.11.11. */
 let jellyfinUsers: string[] = [];
 let usersListBroken = false;
-const calls: Array<{ path: string; body: unknown }> = [];
+let passwordStep: "ok" | "refused" | "unreachable" = "ok";
+let deleteRefused = false;
+const calls: Array<{ path: string; body: unknown; method?: string }> = [];
 
 function jellyfin(url: string, init?: RequestInit): Response {
   const path = new URL(url).pathname + new URL(url).search;
-  calls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+  calls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : undefined, ...(init?.method === "DELETE" ? { method: "DELETE" } : {}) });
+  if (init?.method === "DELETE") {
+    if (deleteRefused) return new Response("", { status: 500 });
+    jellyfinUsers = jellyfinUsers.filter((_, index) => `/Users/a${index + 1}` !== path);
+    return new Response(null, { status: 204 });
+  }
+  if (path.startsWith("/Users/Password")) {
+    if (passwordStep === "unreachable") throw new TypeError("fetch failed");
+    return new Response(null, { status: passwordStep === "ok" ? 204 : 500 });
+  }
   if (path === "/Users/New") {
     const name = (JSON.parse(String(init?.body)) as { Name: string }).Name;
     const refused = /[^\p{L}\p{N} .\-_'@+]/u.test(name) || name !== name.trim();
@@ -67,12 +78,14 @@ function jellyfin(url: string, init?: RequestInit): Response {
   if (path === "/Users") {
     return usersListBroken ? new Response("", { status: 500 }) : Response.json(jellyfinUsers.map((Name) => ({ Name })));
   }
-  if (path.startsWith("/Users/Password")) return new Response(null, { status: 204 });
   return new Response("", { status: 404 });
 }
 
+/** Ce que la route écrit au journal (avertissements et au-delà). */
+const logged: string[] = [];
+
 async function server() {
-  const app = Fastify();
+  const app = Fastify({ logger: { level: "warn", stream: { write: (line: string) => void logged.push(line) } } });
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ZodError) return reply.status(400).send({ message: "Validation error" });
     return reply.status(500).send({ message: "Internal server error" });
@@ -92,8 +105,11 @@ beforeEach(() => {
   invites.clear();
   usages.length = 0;
   calls.length = 0;
+  logged.length = 0;
   jellyfinConfigured = true;
   usersListBroken = false;
+  passwordStep = "ok";
+  deleteRefused = false;
   jellyfinUsers = ["Admin"];
   invites.set("i1", { id: "i1", key: "abc123", maxUses: 2, currentUses: 0, expiresAt: null });
   invites.set("i2", { id: "i2", key: "used00", maxUses: 1, currentUses: 1, expiresAt: null });
@@ -149,5 +165,25 @@ describe("le nom choisi", () => {
       { path: "/Users/Password?userId=a2", body: { NewPw: "secret1", ResetPassword: false } },
     ]);
     expect([invites.get("i1")!.currentUses, usages]).toEqual([1, [{ inviteKeyId: "i1", jellyfinUserId: "a2", username: "élodie o'brien" }]]);
+  });
+});
+
+describe("le mot de passe du compte", () => {
+  it.each(["refused", "unreachable"] as const)("Jellyfin ne le prend pas (%s) : le compte, sans mot de passe, est retiré", async (step) => {
+    passwordStep = step;
+    const res = await register({ inviteKey: "abc123", username: "bob", password: "secret1" });
+    expect([res.status, res.body.code]).toEqual([500, "account_creation_failed"]);
+    expect(calls.filter((call) => call.method === "DELETE").map((call) => call.path)).toEqual(["/Users/a2"]);
+    expect([jellyfinUsers, invites.get("i1")!.currentUses, usages]).toEqual([["Admin"], 0, []]);
+    expect(logged).toEqual([]);
+  });
+
+  it("et s'il ne se laisse pas retirer, le journal le dit avec son identifiant", async () => {
+    passwordStep = "refused";
+    deleteRefused = true;
+    const res = await register({ inviteKey: "abc123", username: "bob", password: "secret1" });
+    expect([res.status, res.body.code]).toEqual([500, "account_creation_failed"]);
+    expect(logged.join("")).toContain('"jellyfinUserId":"a2"');
+    expect(invites.get("i1")!.currentUses).toBe(0);
   });
 });

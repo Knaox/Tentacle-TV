@@ -82,6 +82,9 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
     if (!created.ok) {
       if (created.refusal === "username_taken") return refuse(reply, 409, "username_taken", "Ce nom d'utilisateur est déjà pris");
       if (created.refusal === "username_invalid") return refuse(reply, 400, "username_invalid", USERNAME_RULE);
+      if (created.orphanId) {
+        request.log.warn({ jellyfinUserId: created.orphanId }, "[register] compte Jellyfin créé sans mot de passe, et que Jellyfin n'a pas laissé retirer : à supprimer dans Jellyfin");
+      }
       return refuse(reply, 500, "account_creation_failed", created.detail || "Échec de création du compte");
     }
     const jellyfinUser = created.user;
