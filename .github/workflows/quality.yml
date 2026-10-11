@@ -16,7 +16,7 @@
 # ferait naître ce workflow rouge et l'apprendrait à être ignoré. Le typecheck
 # est le seul gate de qualité tant que ce n'est pas réparé.
 #
-# ⚠️ IL GARDE LES LIVRAISONS. Les cinq workflows de livraison refusent de partir
+# ⚠️ IL GARDE LES LIVRAISONS. Les six workflows de livraison refusent de partir
 # si ce workflow n'est pas vert sur le commit visé (`.github/actions/
 # require-quality`). C'est le filet de la garde locale : le crochet `pre-push`
 # refuse le push avant qu'il parte, celle-ci rattrape un `--no-verify` ou une

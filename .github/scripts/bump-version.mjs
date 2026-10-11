@@ -24,6 +24,10 @@ const KEYS = {
   tv: 'apps/tv/package.json',
   webos: 'apps/tv-webos/package.json',
   server: 'apps/backend/package.json',
+  // L'app Windows a SA version (celle du paquet MSIX, X.Y.Z.0), distincte de
+  // celle du serveur qu'elle embarque (`server`). Tant que le paquet de l'hôte
+  // n'existe pas dans l'arbre, seul versions.json est écrit (patch → null).
+  serverWindows: 'apps/server-windows/package.json',
   minServer: null, // exigence, pas une version livrée : aucun paquet ne la porte
 };
 

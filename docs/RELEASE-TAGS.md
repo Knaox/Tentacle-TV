@@ -22,8 +22,8 @@ Avant le clic, elle affiche deux choses qui décident de tout :
   dédiées (`changelogs/server-webos.md`), celles de l'image reconstruite.
 
 > ⚠️ Son vocabulaire est celui des entrées de workflow (`targets`, `channel`,
-> `version`, `promote`) ; `webos.yml` et `server.yml` n'ont ni `targets` ni
-> `promote`. Une entrée que le workflow ne déclare pas fait **refuser** le
+> `version`, `promote`) ; `webos.yml`, `server.yml` et `server-windows.yml` n'ont
+> ni `targets` ni `promote`. Une entrée que le workflow ne déclare pas fait **refuser** le
 > déclenchement (422 « Unexpected inputs provided ») ; une entrée déclarée que
 > la page n'envoie plus prend son défaut **en silence**.
 
@@ -34,8 +34,8 @@ Sans jeton, la page affiche la commande `gh workflow run` équivalente.
 | `channel` | Ce qui se passe |
 |-----------|-----------------|
 | `build` | Artefacts du run. **Rien ne part nulle part.** |
-| `test` | Play : piste FERMÉE en `completed` (plus de draft à promouvoir) · Apple : TestFlight distribué au groupe externe + examen bêta demandé · Linux : Release en **pré-version**, manifeste non patché · serveur : `:vX.Y.Z` seul, `:latest` intact · webOS : Release versionnée + image `:vS-webos-X.Y.Z`, `webos-latest` et `:latest` intacts · Windows : artefact seulement (le Microsoft Store n'a pas de canal de test). |
-| `store` | Play : **production, 100 %** · Apple : **examen soumis**, `releaseType: AFTER_APPROVAL` — en vente dès l'approbation · Microsoft Store : soumission immédiate · Linux : Release publiée + manifeste d'auto-update · serveur : `:latest` + Release · webOS : `webos-latest` basculé, `:latest` aussi (nouveau client `/tv`) + Release `server-vS-webos-X.Y.Z`. |
+| `test` | Play : piste FERMÉE en `completed` (plus de draft à promouvoir) · Apple : TestFlight distribué au groupe externe + examen bêta demandé · Linux : Release en **pré-version**, manifeste non patché · serveur : `:vX.Y.Z` seul, `:latest` intact · webOS : Release versionnée + image `:vS-webos-X.Y.Z`, `webos-latest` et `:latest` intacts · Windows (bureau) : artefact seulement · Tentacle Server pour Windows : VOL de paquet du Store (groupe de testeurs), fiche publique intacte. |
+| `store` | Play : **production, 100 %** · Apple : **examen soumis**, `releaseType: AFTER_APPROVAL` — en vente dès l'approbation · Microsoft Store (bureau, Tentacle Server pour Windows) : soumission immédiate · Linux : Release publiée + manifeste d'auto-update · serveur : `:latest` + Release · webOS : `webos-latest` basculé, `:latest` aussi (nouveau client `/tv`) + Release `server-vS-webos-X.Y.Z`. |
 
 `promote` (le défaut au cran store) reprend **le binaire déjà testé** : le
 versionCode servi par la piste fermée passe en production, la version App Store
@@ -44,7 +44,7 @@ une version pleine. Rien n'est reconstruit, donc rien ne change entre ce qui a
 été testé et ce qui est publié. **Windows fait exception** — le Microsoft Store
 veut le paquet à chaque soumission.
 
-## Les cinq workflows
+## Les six workflows
 
 | Workflow | `targets` | Destinations |
 |----------|-----------|--------------|
@@ -53,6 +53,7 @@ veut le paquet à chaque soumission.
 | `tv.yml` | `androidtv` `appletv` | Play (MÊME fiche que le mobile, form factor TV) · App Store tvOS |
 | `webos.yml` | — (pas d'entrée) | Release GitHub — adresse permanente `webos-latest` · image serveur reconstruite avec le client LG |
 | `server.yml` | — (image seule, pas d'entrée) | `ghcr.io/knaox/tentacle-tv` + Release `server-vX.Y.Z` |
+| `server-windows.yml` | — (pas d'entrée) | Microsoft Store « Tentacle Server » (MSIX) : vol de paquet au cran test, fiche au cran store. Version : `versions.json` → `serverWindows` ; le serveur embarqué doit déjà être publié (`:vS`), et en service (`:latest`) au cran store. Détail : CLAUDE.md, « Tentacle Server pour Windows » |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
 cran `store`. C'est la CI qui les pose quand on demande une version : elle écrit

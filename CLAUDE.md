@@ -49,7 +49,8 @@ gh workflow run server.yml -f channel=store   # le serveur, par exemple
 ## Livraison (CI)
 
 **Source unique des versions : `versions.json` (racine)** — champs `desktop`,
-`tv`, `webos`, `mobile`, `server`, `minServer` (version serveur minimale exigée
+`tv`, `webos`, `mobile`, `server`, `serverWindows` (l'app Tentacle Server pour
+Windows — SA version, jamais celle du serveur qu'elle embarque), `minServer` (version serveur minimale exigée
 par les clients — avertissement bloquant `useServerCompat.ts` ; au-dessus, les
 nouveautés se règlent par les CAPACITÉS du serveur, cf. plus bas). On change la version
 À UN SEUL ENDROIT, et c'est la CI qui l'écrit : `.github/scripts/bump-version.mjs`
@@ -65,8 +66,8 @@ cibles, un cran, éventuellement une version, et on clique. Elle affiche avant l
 clic l'état du contrôle qualité et la taille des notes de version par store.
 
 ⚠️ **Son vocabulaire est celui des entrées de workflow** (`targets`, `channel`,
-`version`, `promote`) — et `webos.yml` comme `server.yml` n'ont NI `targets` NI
-`promote` (`noTargets` / `noPromote` dans la page). Une entrée qu'un workflow ne
+`version`, `promote`) — et `webos.yml`, `server.yml` et `server-windows.yml` n'ont
+NI `targets` NI `promote` (`noTargets` / `noPromote` dans la page). Une entrée qu'un workflow ne
 déclare pas fait REFUSER le déclenchement (422 « Unexpected inputs provided ») ;
 une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
 
@@ -75,8 +76,8 @@ une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
 | `channel` | Ce qui se passe |
 |-----------|-----------------|
 | `build` | Construit et archive les artefacts. **Rien ne part nulle part.** |
-| `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`, image en `:vS-webos-X.Y.Z` sans bouger `:latest`. **Publié, sans aucun geste ensuite.** |
-| `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé (par le serveur OU par webOS). **En ligne, sans un clic de plus.** |
+| `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`, image en `:vS-webos-X.Y.Z` sans bouger `:latest` · Tentacle Server pour Windows dans un VOL de paquet du Store. **Publié, sans aucun geste ensuite.** |
+| `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store (bureau, Tentacle Server pour Windows) · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé (par le serveur OU par webOS). **En ligne, sans un clic de plus.** |
 
 **Le cran `dev` (serveur seulement)** : l'image de la branche `dev`, pour qui
 veut l'éprouver avant une livraison — `ghcr.io/knaox/tentacle-tv:dev` et
@@ -92,7 +93,7 @@ paquet à chaque soumission. Une cible sans RIEN de testé pour cette version se
 construit : `prepare` le vérifie avant le moindre job (`promote-probe.mjs`), au
 lieu de laisser la reprise échouer pendant que Windows part seul au Store.
 
-### Les cinq workflows
+### Les six workflows
 
 | Workflow | Cibles (`targets`) |
 |----------|--------------------|
@@ -101,11 +102,12 @@ lieu de laisser la reprise échouer pendant que Windows part seul au Store.
 | `tv.yml` | `androidtv` · `appletv` |
 | `webos.yml` | aucune entrée `targets` — l'IPK ET le client servi sous `/tv` |
 | `server.yml` | aucune entrée `targets` — l'image Docker EST le serveur |
+| `server-windows.yml` | aucune entrée `targets` — le paquet MSIX de Tentacle Server pour Windows |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
-cran `store` ; c'est la CI qui les pose quand on demande une version. Un sixième
+cran `store` ; c'est la CI qui les pose quand on demande une version. Un septième
 fichier, `server-image.yml`, ne se lance pas seul : c'est le workflow
-RÉUTILISABLE qui construit et publie l'image Docker pour les deux derniers.
+RÉUTILISABLE qui construit et publie l'image Docker pour `webos.yml` et `server.yml`.
 
 ### Le serveur et le client LG — deux moitiés, deux livraisons
 
@@ -141,6 +143,29 @@ Gardes propres à ce couple :
 - Revers : un build `apps/tv-webos` cassé ne bloque plus le serveur, et ne se voit
   qu'à la livraison webOS — le cran `build` de `webos.yml` le vérifie.
 
+### Tentacle Server pour Windows — un serveur déjà livré, dans un paquet du Store
+
+`server-windows.yml` livre l'APP (`versions.json` → `serverWindows`, paquet
+`X.Y.Z.0`, tag `server-windows-vX.Y.Z`, notes `changelogs/server-windows.md`
+— 1 500 caractères par langue) ; le serveur qu'elle embarque reste celui de
+`server`, livré par `server.yml`. Décision : `lib/server-windows.mjs`, testée hors
+ligne, rejouée par `node .github/scripts/server-windows-plan.mjs plan --channel
+store --sha $(git rev-parse HEAD)`.
+
+- **Les gardes de webOS** : `:vS` doit exister ; au cran store, `:latest` doit
+  DÉJÀ être ce serveur ; `minServer` ne dépasse pas `server`. Pré-vol AVANT le bump.
+- **Le client LG n'est jamais celui du commit** : extrait de `:latest` s'il sert
+  ce serveur, sinon de `:vS` (empreinte épinglée, `docker create` + `cp`). Le
+  serveur, lui, se construit depuis le commit (moteur Prisma de Windows) ; un
+  écart avec le commit qui a publié `:vS` avertit, sans bloquer.
+- **Cran test = un VOL de paquet** (`msstore-submit.mjs` + `FLIGHT_ID`), jamais
+  la fiche. Variables du dépôt `SERVER_WINDOWS_STORE_ID` et
+  `SERVER_WINDOWS_FLIGHT_ID` ; absentes, test et store refusent avant le bump,
+  le cran build reste possible. Mêmes secrets `PARTNER_*` que le bureau.
+- **L'assemblage** est `pnpm --filter @tentacle-tv/server-windows assemble --
+  --out <dossier> --version X.Y.Z.0 --tv-client <dossier>` : un dossier prêt
+  pour `makeappx pack /nv`, manifeste versionné compris (le workflow le vérifie).
+
 ### Ce qui garde les livraisons
 
 - **`.githooks/pre-push`** refuse un push dont le typecheck ou les tests
@@ -160,7 +185,7 @@ Gardes propres à ce couple :
 
 ### Changelogs
 
-`changelogs/{desktop,tv,server,mobile,webos}.md`, blocs `## [X.Y.Z]` avec
+`changelogs/{desktop,tv,server,mobile,webos,server-windows}.md`, blocs `## [X.Y.Z]` avec
 `### FR` / `### EN`. Limites appliquées (`lib/changelog.mjs`) : ASC 4000,
 MS Store 1500, Play 500 **caractères Unicode**. Les blocs par canal
 `## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu pour ces cibles-là.
