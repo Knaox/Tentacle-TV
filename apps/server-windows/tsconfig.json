@@ -1,0 +1,27 @@
+// Contrôle de types SEUL, tests compris : l'hôte est regroupé par esbuild
+// (`build`), qui ne vérifie aucun type. Un fichier, une sortie (`dist/main.js`),
+// koffi à côté — le protocole du fil A est pris dans `packages/shared` par un
+// chemin relatif (`src/protocol.ts`), sans typer tout `shared` avec nos options.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

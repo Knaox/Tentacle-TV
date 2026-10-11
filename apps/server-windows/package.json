@@ -1,0 +1,25 @@
+{
+  "name": "@tentacle-tv/server-windows",
+  "version": "0.0.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "description": "Tentacle Server pour Windows : l'hôte qui pose l'environnement, supervise le serveur et tient l'icône de la zone de notification",
+  "type": "commonjs",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node22 --external:koffi --outfile=dist/main.js",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "koffi": "^3.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0",
+    "esbuild": "^0.27.3"
+  }
+}
