@@ -190,3 +190,6 @@ Tentacle tourne aussi en natif (`node apps/backend/dist/index.js` depuis une com
 la machine, l'assistant donne la commande officielle d'installation de Jellyfin (Debian/Ubuntu) ou son guide
 officiel, puis attend que Jellyfin réponde sur `http://127.0.0.1:8096`. Les piles Docker restent la voie
 prise en charge.
+
+Sur un PC Windows, l'app **Tentacle Server** du Microsoft Store fait tourner le même serveur sans Docker et
+sans compilation : [windows.md](windows.md).

@@ -12,6 +12,7 @@ couvrent tous les cas ; un assistant guidé fait le reste dans le navigateur.
 | Je veux… | Lire |
 |---|---|
 | installer Tentacle (et Jellyfin, si je n'en ai pas encore) | [install.md](install.md) |
+| faire tourner Tentacle sur un PC Windows sans Docker (app du Microsoft Store) | [windows.md](windows.md) |
 | qui peut ouvrir l'assistant d'installation, et pourquoi (modèle de menace) | [setup-security.md](setup-security.md) |
 | joindre mon serveur hors de chez moi, en HTTPS | [remote-access.md](remote-access.md) |
 | le transcodage matériel (Intel, AMD, NVIDIA) | [gpu.md](gpu.md) |

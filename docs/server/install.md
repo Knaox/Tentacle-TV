@@ -177,3 +177,6 @@ Hardware transcoding with Podman: see [gpu.md](gpu.md#podman).
 Tentacle also runs natively (`node apps/backend/dist/index.js` from a build). With no Jellyfin on the
 machine, the wizard shows Jellyfin's official install command (Debian/Ubuntu) or its official guide, then
 waits for Jellyfin to answer on `http://127.0.0.1:8096`. The Docker stacks remain the supported path.
+
+On a Windows PC, the **Tentacle Server** app of the Microsoft Store runs the same server without Docker and
+without a build: [windows.md](windows.md).
