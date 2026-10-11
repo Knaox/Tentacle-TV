@@ -112,6 +112,8 @@ describe("options", () => {
     expect(options.version).toBe("1.0.0.0");
     expect(options.tvClient).toBe(resolve("tv"));
     expect(options.skipBuild).toBe(false);
+    expect(options.jellyfinInstaller).toBe(true);
+    expect(parseAssembleArgs(["--out", "o", "--version", "1.0.0.0", "--no-jellyfin-installer"], repo).jellyfinInstaller).toBe(false);
     expect(options.identity.publisher).toBe("CN=Tentacle Server Dev");
   });
 

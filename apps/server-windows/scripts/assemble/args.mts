@@ -4,11 +4,14 @@
  *   pnpm --filter @tentacle-tv/server-windows assemble -- \
  *     --out <dossier> --version X.Y.Z.0 [--tv-client <dossier>]
  *     [--identity-name <nom> --publisher "CN=…" --publisher-display-name <nom>]
- *     [--cache <dossier>] [--skip-build]
+ *     [--cache <dossier>] [--skip-build] [--no-jellyfin-installer]
  *
  * Sans `--tv-client`, le client LG se construit depuis les sources (essai
  * local) ; la CI passe celui de l'image en service, comme `server.yml`.
  * `--skip-build` reprend ce qui est déjà construit dans le dépôt.
+ * `--no-jellyfin-installer` pose `host-options.json` qui coupe l'installation
+ * guidée de Jellyfin (si le Store la refuse, règle 10.1.5) : le paquet est en
+ * lecture seule, c'est donc à l'assemblage que ce choix se fait.
  */
 import { resolve } from "node:path";
 import { DEV_IDENTITY, checkIdentity, checkPackageVersion, type PackageIdentity } from "./manifest.mts";
@@ -19,11 +22,12 @@ export interface AssembleOptions {
   tvClient: string | null;
   cacheDir: string;
   skipBuild: boolean;
+  jellyfinInstaller: boolean;
   identity: PackageIdentity;
 }
 
 const VALUED = new Set(["--out", "--version", "--tv-client", "--cache", "--identity-name", "--publisher", "--publisher-display-name"]);
-const FLAGS = new Set(["--skip-build"]);
+const FLAGS = new Set(["--skip-build", "--no-jellyfin-installer"]);
 
 export function parseAssembleArgs(argv: readonly string[], repo: string): AssembleOptions {
   const values = new Map<string, string>();
@@ -53,6 +57,7 @@ export function parseAssembleArgs(argv: readonly string[], repo: string): Assemb
     tvClient: tvClient === undefined ? null : resolve(tvClient),
     cacheDir: resolve(values.get("--cache") ?? resolve(repo, "apps", "server-windows", "scratch", "cache")),
     skipBuild: flags.has("--skip-build"),
+    jellyfinInstaller: !flags.has("--no-jellyfin-installer"),
     identity: checkIdentity({
       name: values.get("--identity-name") ?? DEV_IDENTITY.name,
       publisher: values.get("--publisher") ?? DEV_IDENTITY.publisher,

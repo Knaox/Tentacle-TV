@@ -50,6 +50,11 @@ async function main(): Promise<void> {
   for (const step of [...SERVER_COPIES, ...HOST_COPIES]) copyStep(repo, root, step);
   copyTvClient(options.tvClient ?? join(repo, "apps", "tv-webos", "client", "dist"), root);
   copyKoffi(join(repo, "node_modules"), join(root, "apps", "server-windows", "node_modules"));
+  // Absent, l'installation guidée de Jellyfin est permise (`src/hostOptions.ts`).
+  if (!options.jellyfinInstaller) {
+    writeFileSync(join(root, "apps", "server-windows", "host-options.json"), `${JSON.stringify({ jellyfinInstaller: false })}\n`);
+    log("installation guidée de Jellyfin coupée (host-options.json)");
+  }
 
   const dockerfile = readFileSync(join(repo, "Dockerfile"), "utf8");
   await installNode(root, options.cacheDir, log);

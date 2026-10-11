@@ -124,7 +124,17 @@ jobs:
           CHANNEL: ${{ steps.channel.outputs.channel }}
           SERVER_WINDOWS_STORE_ID: ${{ vars.SERVER_WINDOWS_STORE_ID }}
           SERVER_WINDOWS_FLIGHT_ID: ${{ vars.SERVER_WINDOWS_FLIGHT_ID }}
-        run: node .github/scripts/server-windows-plan.mjs store --channel "$CHANNEL"
+          # L'identité réservée dans Partner Center (Identité du produit) : sans
+          # elle, le paquet porterait l'identité de développement, refusée par le Store.
+          IDENTITY_NAME: ${{ vars.SERVER_WINDOWS_IDENTITY_NAME }}
+          PUBLISHER: ${{ vars.SERVER_WINDOWS_PUBLISHER }}
+          PUBLISHER_DISPLAY_NAME: ${{ vars.SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME }}
+        run: |
+          node .github/scripts/server-windows-plan.mjs store --channel "$CHANNEL"
+          if [ "$CHANNEL" != "build" ] && { [ -z "$IDENTITY_NAME" ] || [ -z "$PUBLISHER" ] || [ -z "$PUBLISHER_DISPLAY_NAME" ]; }; then
+            echo "::error::Variables SERVER_WINDOWS_IDENTITY_NAME, SERVER_WINDOWS_PUBLISHER et SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME requises au cran $CHANNEL (Partner Center › Identité du produit)."
+            exit 1
+          fi
 
       - name: Pré-vol du serveur embarqué
         env:
@@ -255,26 +265,28 @@ jobs:
       # `makeappx pack /nv` (AppxManifest.xml versionné compris), le client LG
       # reçu posé sous /tv. Tant qu'il n'existe pas, on le dit au lieu
       # d'échouer sur un « No projects matched the filters ».
-      - name: Vérifier que le script d'assemblage existe
-        shell: pwsh
-        run: |
-          $pkg = "apps/server-windows/package.json"
-          $assemble = $null
-          if (Test-Path $pkg) { $assemble = (Get-Content $pkg -Raw | ConvertFrom-Json).scripts.assemble }
-          if (-not $assemble) {
-            Write-Host "::error::Le script d'assemblage de l'app Windows n'existe pas encore (« assemble » dans $pkg)."
-            Write-Host "Attendu : pnpm --filter @tentacle-tv/server-windows assemble -- --out <dossier> --version X.Y.Z.0 --tv-client <dossier>"
-            exit 1
-          }
-
+      # Identité de Partner Center aux crans test et store (exigée par le
+      # pré-vol) ; au cran build, celle de développement. `off` dans
+      # SERVER_WINDOWS_JELLYFIN_INSTALLER coupe l'installation guidée de
+      # Jellyfin (règle 10.1.5 du Store), sans toucher au code.
       - name: Assembler le paquet
         shell: pwsh
+        env:
+          IDENTITY_NAME: ${{ vars.SERVER_WINDOWS_IDENTITY_NAME }}
+          PUBLISHER: ${{ vars.SERVER_WINDOWS_PUBLISHER }}
+          PUBLISHER_DISPLAY_NAME: ${{ vars.SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME }}
+          JELLYFIN_INSTALLER: ${{ vars.SERVER_WINDOWS_JELLYFIN_INSTALLER }}
         run: |
           $ver = "${{ needs.prepare.outputs.msix-version }}"
           $stage = Join-Path $env:RUNNER_TEMP "msixstage"
           $client = Join-Path $env:RUNNER_TEMP "tv-client"
           Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
-          pnpm --filter @tentacle-tv/server-windows assemble -- --out $stage --version $ver --tv-client $client
+          $extra = @()
+          if ($env:IDENTITY_NAME) {
+            $extra += @("--identity-name", $env:IDENTITY_NAME, "--publisher", $env:PUBLISHER, "--publisher-display-name", $env:PUBLISHER_DISPLAY_NAME)
+          }
+          if ($env:JELLYFIN_INSTALLER -eq "off") { $extra += "--no-jellyfin-installer" }
+          pnpm --filter @tentacle-tv/server-windows assemble -- --out $stage --version $ver --tv-client $client @extra
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           # Ce que le Store lira : un manifeste qui ne dit pas la version du run

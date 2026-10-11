@@ -160,11 +160,19 @@ store --sha $(git rev-parse HEAD)`.
   écart avec le commit qui a publié `:vS` avertit, sans bloquer.
 - **Cran test = un VOL de paquet** (`msstore-submit.mjs` + `FLIGHT_ID`), jamais
   la fiche. Variables du dépôt `SERVER_WINDOWS_STORE_ID` et
-  `SERVER_WINDOWS_FLIGHT_ID` ; absentes, test et store refusent avant le bump,
-  le cran build reste possible. Mêmes secrets `PARTNER_*` que le bureau.
+  `SERVER_WINDOWS_FLIGHT_ID`, plus l'identité de Partner Center
+  (`SERVER_WINDOWS_IDENTITY_NAME`, `SERVER_WINDOWS_PUBLISHER`,
+  `SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME`) ; absentes, test et store refusent
+  avant le bump, le cran build reste possible (identité de développement).
+  Mêmes secrets `PARTNER_*` que le bureau.
 - **L'assemblage** est `pnpm --filter @tentacle-tv/server-windows assemble --
   --out <dossier> --version X.Y.Z.0 --tv-client <dossier>` : un dossier prêt
   pour `makeappx pack /nv`, manifeste versionné compris (le workflow le vérifie).
+  `SERVER_WINDOWS_JELLYFIN_INSTALLER=off` (variable du dépôt) passe
+  `--no-jellyfin-installer` : le paquet ne propose plus d'installer Jellyfin,
+  seulement jellyfin.org puis la détection (si le Store refuse, règle 10.1.5).
+- **MinVersion 19041** (Windows 10 2004) : l'hôte est lancé par
+  `uap10:Parameters`, qui n'existe pas avant.
 
 ### Ce qui garde les livraisons
 
