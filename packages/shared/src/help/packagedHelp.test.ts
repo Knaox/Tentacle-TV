@@ -38,8 +38,8 @@ describe("les aides de l'app Windows", () => {
       for (const [key, treatment] of Object.entries(WINDOWS_APP_HELP[namespace])) {
         if (treatment !== "variant") continue;
         for (const locale of [fr, en]) {
-          const words: Record<string, string> = locale[namespace];
-          expect(words[`${key}${WINDOWS_APP_SUFFIX}`]).not.toMatch(/docker|portainer|conteneur|container|TENTACLE_WEB_UI/i);
+          const words: Record<string, unknown> = locale[namespace];
+          expect(String(words[`${key}${WINDOWS_APP_SUFFIX}`])).not.toMatch(/docker|portainer|conteneur|container|TENTACLE_WEB_UI/i);
         }
       }
     }
