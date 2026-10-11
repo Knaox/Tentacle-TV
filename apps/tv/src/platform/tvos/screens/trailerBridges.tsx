@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import type { FocusDestination } from "react-native";
+import { View, type FocusDestination } from "react-native";
 import {
   TRAILER_CLOSE_KEY,
   TRAILER_TIMELINE_KEY,
@@ -18,7 +18,9 @@ import { BridgeGuide } from "../player/playerFocusContainers";
  * et `nextFocus*` n'y est pas honoré. Deux guides, chacun avec un SENS lu sur
  * le focus, comme la frise du grand lecteur : armé seulement quand SA cible
  * de départ a le focus, il renvoie au voisin que tv-core désigne ; désarmé,
- * il n'est plus rien (`BridgeGuide`).
+ * il n'est PLUS UN GUIDE : une simple vue. Un guide sans destination garde
+ * son `UIFocusGuide` et intercepte encore (mesuré : ↑ depuis « Qualité »
+ * butait sur le pont de la croix, vide, au lieu d'atteindre la croix).
  * - `trailer:bridge-close`, sous la croix : BAS → le premier bouton ;
  * - `trailer:bridge-timeline`, entre les boutons et la barre : HAUT → le
  *   dernier bouton visité, sinon le premier, sinon la croix.
@@ -59,12 +61,18 @@ function useArmedDestination(from: string, direction: Direction): FocusDestinati
   return destinations;
 }
 
+/** Armé : le pont du lecteur ; désarmé : une vue, que le moteur de focus ignore. */
+function ArmedBridge({ destinations, ...props }: FocusGroupContainerProps & { destinations: FocusDestination[] }) {
+  if (destinations.length === 0) return <View style={props.style} pointerEvents={props.pointerEvents}>{props.children}</View>;
+  return <BridgeGuide {...props} destinations={destinations} />;
+}
+
 function CloseBridge(props: FocusGroupContainerProps) {
-  return <BridgeGuide {...props} destinations={useArmedDestination(TRAILER_CLOSE_KEY, "bas")} />;
+  return <ArmedBridge {...props} destinations={useArmedDestination(TRAILER_CLOSE_KEY, "bas")} />;
 }
 
 function TimelineBridge(props: FocusGroupContainerProps) {
-  return <BridgeGuide {...props} destinations={useArmedDestination(TRAILER_TIMELINE_KEY, "haut")} />;
+  return <ArmedBridge {...props} destinations={useArmedDestination(TRAILER_TIMELINE_KEY, "haut")} />;
 }
 
 /** Les groupes que l'écran lie, et leur guide. */
