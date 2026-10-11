@@ -58,6 +58,10 @@ export const SERVER_CAPABILITIES = {
    *  (`migrating`, `failed`) et les 503 `{ state: "migrating" }` du mode maintenance —
    *  l'écran d'attente, jamais une panne. */
   "server.databaseMigration": "1.25.0",
+  /** Le lecteur de bande-annonce des téléviseurs : `GET /api/trailers/resolve` rend
+   *  aussi `qualities` (un maître relayé par hauteur) et `subtitles` (les pistes de
+   *  YouTube, relayées en WebVTT). Sans elle, ni qualité ni sous-titres à l'écran. */
+  "trailers.player": "1.26.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
