@@ -22,7 +22,7 @@ import { buildServerEnv } from "./env/serverEnv";
 import { HostController } from "./host/hostController";
 import { STRINGS, format, languageFromLangId } from "./i18n/strings";
 import { acquireInstance } from "./instance/singleInstance";
-import { LogFiles } from "./logs/logFiles";
+import { LogFiles } from "./logging/logFiles";
 import { defaultRouteAddress, interfaceOf, pickLanAddress, serverUrl } from "./net/lanAddress";
 import { isPublic, readProfiles } from "./net/networkProfile";
 import { isPortFree, suggestPorts } from "./net/ports";
