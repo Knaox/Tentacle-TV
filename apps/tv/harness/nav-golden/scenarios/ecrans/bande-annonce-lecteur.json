@@ -16,8 +16,7 @@
       },
       "steps": [
         { "do": "right", "expect": { "focus": "detail:trailer" } },
-        { "do": "select", "settleMs": 300, "expect": { "route": "Trailer" } },
-        { "do": "wait:1", "expect": { "route": "Trailer", "focus": "trailer:subtitles" }, "why": "la lecture lancée, le premier focus est le premier bouton ; la croix ne l'a qu'au chargement" },
+        { "do": "select", "settleMs": 1500, "expect": { "route": "Trailer", "focus": "trailer:subtitles" }, "why": "la lecture lancée, le premier focus est le premier bouton ; la croix ne l'a qu'au chargement (relevé à 1,5 s : l'APK debug d'Android charge plus lentement)" },
         { "do": "wait:5", "expect": { "route": "Trailer", "focus": "trailer:timeline" }, "why": "3 s sans geste : le chrome s'estompe, la barre reprend le focus" },
         { "do": "up", "expect": { "focus": "trailer:timeline" }, "why": "chrome estompé : ↑ le rallume, rien d'autre n'est focalisable" },
         { "do": "up", "expect": { "focus": "trailer:subtitles" } },
