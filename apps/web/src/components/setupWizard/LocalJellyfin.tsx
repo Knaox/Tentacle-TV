@@ -30,7 +30,7 @@ function OfficialPage({ url }: { url: string }) {
 export function LocalJellyfin({ onFound }: { onFound: (url: string) => void }) {
   const { t } = useTranslation("setupWizard");
   const host = useLocalJellyfin(onFound);
-  const view = localJellyfinView(host.local, host.install);
+  const view = localJellyfinView(host.local, host.install, host.starting);
   const docsUrl = host.local?.docsUrl ?? JELLYFIN_WINDOWS_DOWNLOAD_URL;
   if (view.kind === "running") return null;
 
@@ -38,20 +38,30 @@ export function LocalJellyfin({ onFound }: { onFound: (url: string) => void }) {
     <section className={panelCls} aria-live="polite">
       {view.kind === "checking" ? <p className="text-content-tertiary">{t("localChecking")}</p> : null}
 
+      {view.kind === "starting" ? (
+        <>
+          <p className="font-semibold text-content-primary">{t("localStarting")}</p>
+          <p>{t("localStartWaiting")}</p>
+        </>
+      ) : null}
       {view.kind === "stoppedTray" ? (
         <>
           <p className="font-semibold text-content-primary">{t("localStoppedTray")}</p>
-          {host.starting ? (
-            <p>{t("localStartWaiting")}</p>
-          ) : (
-            <button type="button" onClick={() => void host.start()} disabled={host.busy} className={cls.bp}>
-              {host.busy ? t("localStarting") : t("localStart")}
-            </button>
-          )}
-          {host.startRefusal === "service" ? <p>{t("localStoppedService")}</p> : host.startRefusal ? <p>{t("localStartFailed")}</p> : null}
+          <p>{t("localStartHint")}</p>
+          <button type="button" onClick={() => void host.start()} disabled={host.busy} className={cls.bp}>
+            {host.busy ? t("localStarting") : t("localStart")}
+          </button>
+          {host.startRefusal ? <p>{t("localStartFailed")}</p> : null}
         </>
       ) : null}
-      {view.kind === "stoppedService" ? <p>{t("localStoppedService")}</p> : null}
+      {view.kind === "stoppedService" ? (
+        <>
+          <p>{t("localStoppedService")}</p>
+          <button type="button" onClick={() => void host.start()} disabled={host.busy} className={cls.bs}>
+            {t("localOpenServices")}
+          </button>
+        </>
+      ) : null}
       {view.kind === "stoppedUnknown" ? <p>{t("localStoppedUnknown")}</p> : null}
 
       {view.kind === "installOffer" ? (

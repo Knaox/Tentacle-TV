@@ -28,6 +28,13 @@ describe("le Jellyfin de ce PC, vu par l'assistant", () => {
     expect(localJellyfinView(null, null)).toEqual({ kind: "checking" });
   });
 
+  it("installation finie : un Jellyfin arrêté n'est jamais masqué — on attend son démarrage, puis le bouton revient", () => {
+    const stopped = local({ state: "stopped", mode: "tray", canStart: true });
+    expect(localJellyfinView(stopped, install({ phase: "done" }), true)).toEqual({ kind: "starting" });
+    expect(localJellyfinView(stopped, install({ phase: "done" }), false)).toEqual({ kind: "stoppedTray" });
+    expect(localJellyfinView(local({ state: "stopped", mode: "service" }), install({ phase: "done" }), true)).toEqual({ kind: "stoppedService" });
+  });
+
   it("l'installation en cours, finie ou en échec prend la place de l'offre", () => {
     expect(localJellyfinView(local(), install({ phase: "installing" }))).toEqual({ kind: "installing", message: { key: "install_installing" } });
     expect(localJellyfinView(local(), install({ phase: "done" }))).toEqual({ kind: "installing", message: { key: "install_done" } });

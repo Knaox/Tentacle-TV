@@ -8,11 +8,13 @@ const INSTALL_POLL_MS = 1_500;
 const WAIT_POLL_MS = 3_000;
 /** Rien en cours (Jellyfin à installer à la main, ou arrêté) : on regarde de temps en temps s'il est venu. */
 const IDLE_POLL_MS = 15_000;
+/** Jellyfin met quelques secondes à répondre ; passé ce délai, « Démarrer Jellyfin » revient à l'écran. */
+const START_GRACE_MS = 90_000;
 
 export interface LocalJellyfin {
   local: SetupLocalJellyfin | null;
   install: SetupJellyfinInstall | null;
-  /** « Démarrer Jellyfin » a été demandé : on attend qu'il réponde. */
+  /** Un démarrage a été demandé (par l'hôte après l'installation, ou par le bouton) : on attend qu'il réponde. */
   starting: boolean;
   startRefusal: Extract<SetupJellyfinStart, { started: false }>["reason"] | null;
   error: WizardErrorCode | null;
@@ -55,6 +57,17 @@ export function useLocalJellyfin(onFound: (url: string) => void): LocalJellyfin 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // L'hôte démarre Jellyfin juste après son installation : on l'attend, sans proposer un second démarrage.
+  const installDone = install?.phase === "done";
+  useEffect(() => {
+    if (installDone) setStarting(true);
+  }, [installDone]);
+  useEffect(() => {
+    if (!starting) return;
+    const timer = setTimeout(() => setStarting(false), START_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, [starting]);
 
   useEffect(() => {
     if (local?.state !== "running") return;

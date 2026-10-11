@@ -8,7 +8,9 @@ export default {
   jfSubtitleWindowsApp: "Tentacle cherche Jellyfin sur ce PC et sur votre réseau.",
   localChecking: "Recherche de Jellyfin sur ce PC…",
   localStoppedTray: "Jellyfin est installé sur ce PC, mais il est arrêté.",
+  localStartHint: "Jellyfin doit tourner pour que Tentacle s'y relie. Une fois démarré, il repartira tout seul à chaque ouverture de session Windows.",
   localStart: "Démarrer Jellyfin",
+  localOpenServices: "Ouvrir Services",
   localStarting: "Démarrage de Jellyfin…",
   localStartWaiting: "Jellyfin démarre. Tentacle le cherche toutes les quelques secondes.",
   localStoppedService:

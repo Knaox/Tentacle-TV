@@ -2,12 +2,16 @@ import type { SetupJellyfinInstall, SetupJellyfinInstallFailure, SetupLocalJelly
 
 /**
  * Ce que l'écran « Jellyfin » de l'app Windows dit du Jellyfin de CE PC — une
- * règle pure, testée : l'état détecté par l'hôte, puis l'installation guidée
- * quand elle est en cours ou vient de finir.
+ * règle pure, testée : l'installation guidée tant qu'elle tourne, puis l'état
+ * détecté par l'hôte. Une installation FINIE ne masque jamais un Jellyfin
+ * arrêté : son installateur ne le lance pas (l'hôte le démarre, et sinon
+ * « Démarrer Jellyfin » reste à l'écran).
  */
 export type LocalJellyfinView =
   | { kind: "checking" }
   | { kind: "running"; url: string }
+  /** Un démarrage vient d'être demandé (après l'installation, ou par le bouton) : on attend qu'il réponde. */
+  | { kind: "starting" }
   /** Installation simple arrêtée : « Démarrer Jellyfin ». */
   | { kind: "stoppedTray" }
   /** Un service arrêté : à démarrer dans Services, jamais par nous. */
@@ -42,15 +46,18 @@ export function installMessage(install: SetupJellyfinInstall): InstallMessage {
   return { key: `install_${install.phase === "idle" ? "resolving" : install.phase}` };
 }
 
-export function localJellyfinView(local: SetupLocalJellyfin | null, install: SetupJellyfinInstall | null): LocalJellyfinView {
+export function localJellyfinView(local: SetupLocalJellyfin | null, install: SetupJellyfinInstall | null, starting = false): LocalJellyfinView {
   if (local?.state === "running") return { kind: "running", url: local.url };
-  if (install && (installRunning(install) || install.phase === "done")) return { kind: "installing", message: installMessage(install) };
+  if (install && installRunning(install)) return { kind: "installing", message: installMessage(install) };
   if (install?.phase === "failed" && install.failure) return { kind: "installFailed", failure: install.failure };
   if (local === null) return { kind: "checking" };
   if (local.installing) return { kind: "installing", message: { key: "install_resolving" } };
   if (local.state === "stopped") {
     if (local.mode === "service") return { kind: "stoppedService" };
+    if (starting) return { kind: "starting" };
     return local.canStart ? { kind: "stoppedTray" } : { kind: "stoppedUnknown" };
   }
+  // Installé à l'instant, pas encore vu par la détection.
+  if (install?.phase === "done") return { kind: "installing", message: installMessage(install) };
   return local.installer === "available" ? { kind: "installOffer" } : { kind: "manual", reason: local.installer };
 }
