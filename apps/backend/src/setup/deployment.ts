@@ -77,13 +77,15 @@ export function readDeployment(env: DeploymentEnv = process.env): Deployment {
   const stack = stackValue && STACKS.includes(stackValue) ? stackValue : null;
   const siblingUrl = deployment === "docker" && stack === "full" ? cleanUrl(env.JELLYFIN_INTERNAL_URL) : null;
 
-  // ManagedByTentacle est réservé à la future app d'installation : rien ne
-  // l'annonce encore, et aucun environnement ne doit pouvoir le choisir.
+  // L'app Windows seule tient le Jellyfin de sa machine (son hôte le détecte,
+  // l'installe, le démarre) ; aucune autre valeur de l'environnement n'y mène.
   const provisioner: ProvisionerKind = siblingUrl
     ? "docker-sibling"
-    : deployment === "native"
-      ? "native-host"
-      : "existing-instance";
+    : packaging === "windows-app"
+      ? "managed-by-tentacle"
+      : deployment === "native"
+        ? "native-host"
+        : "existing-instance";
 
   return {
     deployment,
