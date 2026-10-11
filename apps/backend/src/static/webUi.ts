@@ -11,8 +11,16 @@ import { DATA_ROOT } from "../services/dataDir";
  *  - `/.well-known/*` — le défi du test d'ouverture ;
  *  - les logos publics (`/tentacle-logo*`), chargés par URL par les
  *    extensions, y compris dans les applications ;
+ *  - `/yt-embed.html`, la page relais des bandes-annonces YouTube : le
+ *    bureau la charge dans son iframe (son origine `tentacle://app` ne donne
+ *    aucun referrer, YouTube refuse l'embed direct). Coupée avec le web, la
+ *    1.25.0 rendait une bande-annonce blanche sur le bureau ;
  *  - TOUT le client tant que l'installation n'est pas finie : l'assistant en
  *    est une page. Posée avant la fin, l'option ne ferme le web qu'après.
+ *
+ * Et à la place du 404, le lien d'invitation (`/register?invite=…`) reçoit la
+ * page d'invitation autonome du serveur (`invitePage.ts`) : l'invité crée son
+ * compte sans le client web.
  *
  * Retour en arrière : `TENTACLE_WEB_UI=on` et un redémarrage, ou
  * `tentacle web on` dans le conteneur (un fichier de `data/`, relu toutes les
@@ -73,10 +81,12 @@ export function resetWebUiCache(): void {
 }
 
 const ALWAYS_SERVED = ["/api/", "/tv/", "/.well-known/", "/tentacle-logo"];
+/** Chemins exacts, et non des préfixes : `/yt-embed.htmlx` tomberait sinon sur la page du web. */
+const ALWAYS_SERVED_FILES = ["/api", "/tv", "/yt-embed.html"];
 
 /** Ce chemin est-il refusé (404) ? Seulement le client web, seulement une fois l'installation finie. */
 export function webUiBlocks(path: string, state: { enabled: boolean; setupComplete: boolean }): boolean {
   if (state.enabled || !state.setupComplete) return false;
-  if (path === "/api" || path === "/tv") return false;
+  if (ALWAYS_SERVED_FILES.includes(path)) return false;
   return !ALWAYS_SERVED.some((prefix) => path.startsWith(prefix));
 }

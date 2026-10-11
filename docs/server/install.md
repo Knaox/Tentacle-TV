@@ -145,8 +145,11 @@ nothing to configure. The administration's *Services › Database* card shows it
 Only use the apps (desktop, mobile, TV)? Set `TENTACLE_WEB_UI: "off"` in the `tentacle` service's `environment:`
 (the line is already there, commented out), then restart the container. The web client (`/`, its pages and files)
 then answers 404. What keeps working: the API and its sockets (`/api/…`, so every app), the LG TV client under
-`/tv` (an app of its own, served by this server), `/.well-known/` (the remote access test) — and **the setup
+`/tv` (an app of its own, served by this server), `/.well-known/` (the remote access test), the page the desktop
+app plays trailers through (`/yt-embed.html`) — and **the setup
 wizard, as long as setup is not finished**: set before the end, the option closes the web only afterwards.
+Invitation links keep working: they open a small sign-up page of the server, where your guest creates their
+account, then signs in from the apps.
 
 Back on: set it to `"on"` and restart, or type `tentacle web on` in the container's console (Portainer:
 **Console** → *Connect*; or `docker exec <container> tentacle web on`) — it takes effect within five seconds,

@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
@@ -8,6 +8,7 @@ import { forgetFamilyAccount } from "../services/family/familyMembers";
 import { isFamilyGuest } from "../services/family/familyGuestMarkers";
 import { clearSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
+import { createJellyfinAccount, type AccountCreationRefusal } from "../services/accountRegistration";
 
 /** Cycle de vie du compte : création par invitation, suppression, demande de
  *  réinitialisation. Séparé de `auth.ts`, qui ne garde que la session. */
@@ -16,15 +17,37 @@ import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
  * La clé d'invitation est générée en hexadécimal MINUSCULE ; saisie à la main
  * (le miroir mobile la tape en majuscules), elle arrive dans n'importe quelle
  * casse. MariaDB l'ignorait (`utf8mb4_unicode_ci`), SQLite non : on la
- * ramène à sa forme à l'entrée (docs/sqlite/DECISION.md § 9).
+ * ramène à sa forme à l'entrée (docs/sqlite/DECISION.md § 9). Le nom perd ses
+ * espaces de bord (souvent posés par un clavier de téléphone) : Jellyfin le
+ * refuserait pour eux seuls.
  */
 export const registerSchema = z.object({
   inviteKey: z.string().trim().min(1).toLowerCase(),
-  username: z.string().min(3).max(50),
+  username: z.string().trim().min(3).max(50),
   password: z.string().min(6),
 });
 
 const resetRequestSchema = z.object({ username: z.string().min(1) });
+
+/**
+ * Les refus de l'inscription, nommés : `code` dit lequel, `message` reste — les
+ * clients livrés l'affichent tel quel. La page d'invitation du serveur
+ * (`static/invitePage.ts`, interface web coupée) les dit dans la langue du
+ * navigateur. Les codes traversent le réseau : ils ne se renomment pas.
+ */
+export type RegisterRefusalCode =
+  | "invite_invalid"
+  | "invite_exhausted"
+  | "invite_expired"
+  | "jellyfin_unconfigured"
+  | AccountCreationRefusal;
+
+/** La règle de Jellyfin pour un nom (`services/accountRegistration.ts`), dite aux clients livrés. */
+const USERNAME_RULE = "Ce nom d'utilisateur n'est pas accepté : lettres, chiffres, espaces et . - _ ' @ + seulement";
+
+function refuse(reply: FastifyReply, status: number, code: RegisterRefusalCode, message: string) {
+  return reply.status(status).send({ message, code });
+}
 
 export const authAccountRoutes: FastifyPluginAsync = async (app) => {
   /** POST /api/auth/register — Create a Jellyfin user with an invite key. */
@@ -35,7 +58,7 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
     const apiKey = getJellyfinApiKey();
 
     if (!jellyfinUrl || !apiKey) {
-      return reply.status(503).send({ message: "Jellyfin non configuré" });
+      return refuse(reply, 503, "jellyfin_unconfigured", "Jellyfin non configuré");
     }
 
     // 1. Validate invite key
@@ -44,35 +67,27 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
     });
 
     if (!invite) {
-      return reply.status(400).send({ message: "Clé d'invitation invalide" });
+      return refuse(reply, 400, "invite_invalid", "Clé d'invitation invalide");
     }
     if (invite.currentUses >= invite.maxUses) {
-      return reply.status(400).send({ message: "Clé d'invitation épuisée" });
+      return refuse(reply, 400, "invite_exhausted", "Clé d'invitation épuisée");
     }
     if (invite.expiresAt && invite.expiresAt < new Date()) {
-      return reply.status(400).send({ message: "Clé d'invitation expirée" });
+      return refuse(reply, 400, "invite_expired", "Clé d'invitation expirée");
     }
 
-    // 2. Create user on Jellyfin
-    let jellyfinUser: { Id: string; Name: string };
-    try {
-      const createRes = await fetch(`${jellyfinUrl}/Users/New`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...jellyfinAuthHeaders(apiKey) },
-        body: JSON.stringify({ Name: body.username }),
-      });
-      if (!createRes.ok) throw new Error(await createRes.text());
-      jellyfinUser = await createRes.json();
-
-      await fetch(`${jellyfinUrl}/Users/Password?userId=${jellyfinUser.Id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...jellyfinAuthHeaders(apiKey) },
-        body: JSON.stringify({ NewPw: body.password, ResetPassword: false }),
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Échec de création du compte";
-      return reply.status(500).send({ message: msg });
+    // 2. Create user on Jellyfin — un nom pris ou refusé est un refus à corriger, pas une panne
+    // du serveur (le mobile n'en disait qu'« erreur du serveur »).
+    const created = await createJellyfinAccount(jellyfinUrl, apiKey, body.username, body.password);
+    if (!created.ok) {
+      if (created.refusal === "username_taken") return refuse(reply, 409, "username_taken", "Ce nom d'utilisateur est déjà pris");
+      if (created.refusal === "username_invalid") return refuse(reply, 400, "username_invalid", USERNAME_RULE);
+      if (created.orphanId) {
+        request.log.warn({ jellyfinUserId: created.orphanId }, "[register] compte Jellyfin créé sans mot de passe, et que Jellyfin n'a pas laissé retirer : à supprimer dans Jellyfin");
+      }
+      return refuse(reply, 500, "account_creation_failed", created.detail || "Échec de création du compte");
     }
+    const jellyfinUser = created.user;
 
     // 3. Mark invite key as used
     await prisma.$transaction([

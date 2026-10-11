@@ -10,7 +10,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("electron", () => ({ app: { getAppPath: () => "/x", isPackaged: false }, shell: {}, session: {} }));
 vi.mock("../appIcon", () => ({ windowIconPath: () => null }));
 
-import { PIP_CAPTIONS, pipCommandCaption } from "./pipCaptions";
+// Qui mène le PiP dépend du système (`shellDrivesPip`) : la colle sous Linux, qui lit la commande
+// dans le titre de naissance ; la coquille sous macOS et Windows, au titre nu. Fixé ici, le test dit
+// la même chose sur tout poste — il échouait sur un Mac, quand la CI (Linux) le voyait vert.
+const system = vi.hoisted(() => ({ shellDrivesPip: false }));
+vi.mock("./pipShell", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./pipShell")>()),
+  shellDrivesPip: () => system.shellDrivesPip,
+  reducedMotion: () => false,
+}));
+
+import { PIP_CAPTIONS, pipCaption, pipCommandCaption } from "./pipCaptions";
 import { PIP_SHRINK_MS } from "./pipMotion";
 import { PIP_INSET } from "./pipFrame";
 import { PIP_FRAME_NAME, armPip, closePip, pipWindowOpen } from "./pipWindow";
@@ -20,6 +30,7 @@ const asked = (frameName: string, url = "about:blank") => ({ frameName, url }) a
 beforeEach(() => {
   vi.useRealTimers();
   closePip();
+  system.shellDrivesPip = false;
 });
 
 describe("pipWindowOpen", () => {
@@ -58,6 +69,14 @@ describe("pipWindowOpen", () => {
     const options = response?.action === "allow" ? response.overrideBrowserWindowOptions : undefined;
     expect(options?.title?.startsWith(`${PIP_CAPTIONS.docked} [enter `)).toBe(true);
     expect(options?.alwaysOnTop).toBe(false);
+  });
+
+  it("sous macOS et Windows, la coquille mène le PiP : le titre de naissance reste nu", () => {
+    system.shellDrivesPip = true;
+    armPip("floating", 480, 270);
+    const response = pipWindowOpen(asked(PIP_FRAME_NAME));
+    const options = response?.action === "allow" ? response.overrideBrowserWindowOptions : undefined;
+    expect(options?.title).toBe(pipCaption("floating", null));
   });
 
   it("refuse une autre adresse qu'about:blank, et une annonce périmée", () => {

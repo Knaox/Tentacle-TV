@@ -10,6 +10,25 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.25.1]
+### FR
+- **Bandes-annonces de l'application de bureau** : sur un serveur dont l'interface web est coupée (`TENTACLE_WEB_UI=off`), une bande-annonce s'ouvrait sur une page blanche. Elle se lit de nouveau : la page qui relaie le lecteur YouTube aux applications reste servie, interface web coupée ou non
+- **Invitations, interface web coupée** : le lien d'invitation menait à une page introuvable. Il ouvre désormais une petite page d'inscription du serveur, en français ou en anglais : l'invité y crée son compte, puis se connecte depuis les applications, avec l'adresse du serveur qu'elle lui donne
+- **Inscription** : un nom d'utilisateur déjà pris, ou refusé par Jellyfin, est dit comme tel au lieu d'une erreur du serveur ; les espaces au début ou à la fin du nom sont retirés
+- **Sécurité** : si Jellyfin ne prend pas le mot de passe d'un nouveau compte, le compte est retiré au lieu de rester ouvert sans mot de passe
+- **Navigation** : les pages se quittent en fondu au lieu de disparaître d'un coup
+- **Accueil** : « Vu » se coche dès le clic sur une carte, qui ne quitte sa rangée qu'une fois la souris partie
+- **Podman sans root** : un Jellyfin sur la même machine se joint de nouveau par `http://host.docker.internal:8096` (l'assistant refusait l'adresse que Podman donne à ce nom) et la découverte le trouve. L'assistant y demande désormais toujours son code : le relais de ports de Podman cache l'adresse du navigateur, et laissait passer Internet pour le réseau local
+
+### EN
+- **Trailers in the desktop app**: on a server whose web interface is turned off (`TENTACLE_WEB_UI=off`), a trailer opened on a blank page. It plays again: the page that relays the YouTube player to the apps stays served, web interface on or off
+- **Invitations, web interface turned off**: the invitation link led to a "not found" page. It now opens a small sign-up page of the server, in English or French: the guest creates their account there, then signs in from the apps, with the server address the page gives them
+- **Sign-up**: a username that is already taken, or refused by Jellyfin, is said as such instead of a server error; spaces at the start or end of the name are removed
+- **Security**: if Jellyfin does not take the password of a new account, the account is removed instead of staying open without a password
+- **Navigation**: pages now fade out instead of vanishing at once
+- **Home**: “Watched” checks the moment you click it on a card, which only leaves its row once your mouse moves away
+- **Rootless Podman**: a Jellyfin on the same machine is reachable again at `http://host.docker.internal:8096` (the wizard refused the address Podman gives that name) and discovery finds it. The wizard now always asks for its code there: Podman's port forwarder hides the browser's address, and let the Internet pass for the home network
+
 ## [1.25.0]
 ### FR
 - **Plus aucune base de données à installer** : Tentacle garde toutes ses données dans un seul fichier SQLite, `data/tentacle.db`, dans son volume de données. Un conteneur de moins, et une sauvegarde, c'est copier un fichier
@@ -21,7 +40,6 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - Les extensions migrent leurs données avec le reste ; une extension pas encore prête pour SQLite reste arrêtée, avec un message clair, jusqu'à sa mise à jour
 - `tentacle db query` lit la base en lecture seule, depuis la console du conteneur
 - **Interface web coupée** (`TENTACLE_WEB_UI=off`) : une page refusée affiche la vraie page « introuvable » du navigateur, au lieu d'un texte « Not found » brut
-- **Podman sans root** : un Jellyfin sur la même machine se joint de nouveau par `http://host.docker.internal:8096` (l'assistant refusait l'adresse que Podman donne à ce nom) et la découverte le trouve. L'assistant y demande désormais toujours son code : le relais de ports de Podman cache l'adresse du navigateur, et laissait passer Internet pour le réseau local
 
 ### EN
 - **No database to install any more**: Tentacle keeps all its data in a single SQLite file, `data/tentacle.db`, in its data volume. One container less, and a backup is a file copy
@@ -33,7 +51,6 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - Extensions migrate their data with the rest; an extension not ready for SQLite yet stays stopped, with a clear message, until it is updated
 - `tentacle db query` reads the database read-only, from the container's console
 - **Web interface turned off** (`TENTACLE_WEB_UI=off`): a refused page shows the browser's own "not found" page, instead of a raw "Not found" text
-- **Rootless Podman**: a Jellyfin on the same machine is reachable again at `http://host.docker.internal:8096` (the wizard refused the address Podman gives that name) and discovery finds it. The wizard now always asks for its code there: Podman's port forwarder hides the browser's address, and let the Internet pass for the home network
 
 ## [1.24.0]
 ### FR
