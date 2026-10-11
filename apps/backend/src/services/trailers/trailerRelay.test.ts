@@ -14,7 +14,8 @@ const masterUrl = (generation: number) => `https://manifest.googlevideo.test/api
 const hls = (generation = 1): ExtractionResult => ({
   ok: true,
   clients: ["visionos"],
-  source: { kind: "hls", masterUrl: masterUrl(generation), headers: {}, expiresAt: FUTURE * 1000 },
+  source: { kind: "hls", masterUrl: masterUrl(generation), headers: {}, expiresAt: FUTURE * 1000, heights: [1080, 720] },
+  subtitles: [],
 });
 
 /** Un googlevideo factice : un maître (720p + 1080p, audio à part), leurs listes, des segments. */

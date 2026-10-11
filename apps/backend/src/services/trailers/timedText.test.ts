@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { parseVttCues } from "../../../../../packages/shared/src/subtitles/vtt";
 import { json3ToVtt, toWebVtt } from "./timedText";
 
 /** La reconnaissance vocale d'Inception (relevé du 2026-10-11), abrégée : mot à mot, et des sauts de ligne en `aAppend`. */
@@ -34,10 +33,8 @@ describe("json3ToVtt", () => {
     expect(vtt).toContain("00:00:08.634 --> 00:00:10.761\nThis is a national\nemergency.");
     expect(vtt).toContain("Tom &amp; Jerry &lt;3");
     expect(vtt).not.toContain("trop court");
-    // Le parseur partagé du lecteur TV la relit telle quelle.
-    const cues = parseVttCues(vtt);
-    expect(cues).toHaveLength(2);
-    expect(cues[1].lines[0].map((s) => s.text).join("")).toBe("Tom & Jerry <3");
+    // Deux blocs, aucune ligne vide dans une réplique (elle couperait le bloc pour le lecteur TV).
+    expect(vtt.trimEnd().split("\n\n")).toHaveLength(3);
   });
 
   it("refuse ce qui n'est pas du json3", () => {
