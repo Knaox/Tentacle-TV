@@ -1,0 +1,1482 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "bande-annonce-lecteur",
+  "reference": {
+    "sha": "9ae63d9c5766968a98336d0c99eed941d3404977",
+    "label": "référence 9ae63d9c5"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "4b8ee41532bf84ed",
+  "device": {
+    "kind": "simulateur",
+    "name": "ba-t3",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-11T15:02:30.069Z",
+  "scenarios": {
+    "ba-lec-01": {
+      "hash": "16cf23840216",
+      "durationMs": 41579,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Lecture",
+        "frame": [
+          120,
+          674,
+          207,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:5",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "trailer:quality",
+          "label": "Qualité",
+          "frame": [
+            1623,
+            874,
+            201,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "trailer:quality",
+          "label": "Qualité",
+          "frame": [
+            1623,
+            874,
+            201,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:close",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "ba-lec-02": {
+      "hash": "be0ae34c2335",
+      "durationMs": 49192,
+      "start": {
+        "app": "foreground",
+        "focus": "trailer:timeline",
+        "label": "Position dans la bande-annonce",
+        "frame": [
+          96,
+          976,
+          1728,
+          40
+        ],
+        "groups": [],
+        "route": "Trailer",
+        "params": {
+          "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+          "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+          "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail",
+          "Trailer"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailerSubtitles:list:off",
+          "label": "Désactivés",
+          "frame": [
+            200,
+            468,
+            782,
+            68
+          ],
+          "groups": [
+            "trailerSubtitles:panel"
+          ],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "trailerSubtitles:list:fr",
+          "label": "French",
+          "frame": [
+            200,
+            544,
+            782,
+            95
+          ],
+          "groups": [
+            "trailerSubtitles:panel"
+          ],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailerSubtitles:list:fr",
+          "label": "French",
+          "frame": [
+            200,
+            544,
+            782,
+            95
+          ],
+          "groups": [
+            "trailerSubtitles:panel"
+          ],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "trailer:quality",
+          "label": "Qualité",
+          "frame": [
+            1623,
+            874,
+            201,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailerQuality:list:1080",
+          "label": "1080p",
+          "frame": [
+            200,
+            544,
+            782,
+            68
+          ],
+          "groups": [
+            "trailerQuality:panel"
+          ],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailerQuality:list:auto",
+          "label": "Auto",
+          "frame": [
+            200,
+            468,
+            782,
+            68
+          ],
+          "groups": [
+            "trailerQuality:panel"
+          ],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "trailer:quality",
+          "label": "Qualité",
+          "frame": [
+            1623,
+            874,
+            201,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailerQuality:list:1080",
+          "label": "1080p",
+          "frame": [
+            200,
+            544,
+            782,
+            68
+          ],
+          "groups": [
+            "trailerQuality:panel"
+          ],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "trailerQuality:list:720",
+          "label": "720p",
+          "frame": [
+            200,
+            620,
+            782,
+            68
+          ],
+          "groups": [
+            "trailerQuality:panel"
+          ],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:quality",
+          "label": "Qualité",
+          "frame": [
+            1623,
+            874,
+            201,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailerQuality:list:720",
+          "label": "720p",
+          "frame": [
+            200,
+            620,
+            782,
+            68
+          ],
+          "groups": [
+            "trailerQuality:panel"
+          ],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "trailer:quality",
+          "label": "Qualité",
+          "frame": [
+            1623,
+            874,
+            201,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "ba-lec-03": {
+      "hash": "db0c44460c69",
+      "durationMs": 46133,
+      "start": {
+        "app": "foreground",
+        "focus": "trailer:timeline",
+        "label": "Position dans la bande-annonce",
+        "frame": [
+          96,
+          976,
+          1728,
+          40
+        ],
+        "groups": [],
+        "route": "Trailer",
+        "params": {
+          "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+          "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+          "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail",
+          "Trailer"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:5",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:subtitles",
+          "label": "Sous-titres",
+          "frame": [
+            1347,
+            874,
+            252,
+            68
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "play",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:5",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "ba-lec-04": {
+      "hash": "143262087203",
+      "durationMs": 40950,
+      "start": {
+        "app": "foreground",
+        "focus": "trailer:timeline",
+        "label": "Position dans la bande-annonce",
+        "frame": [
+          96,
+          976,
+          1728,
+          40
+        ],
+        "groups": [],
+        "route": "Trailer",
+        "params": {
+          "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+          "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+          "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail",
+          "Trailer"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:close",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "trailer:close",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "holdright:1.5",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "trailer:close",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}
