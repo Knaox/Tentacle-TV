@@ -131,6 +131,13 @@ describe("ce qui demande l'attention de l'administrateur", () => {
     ]);
   });
 
+  it("mise à jour obligatoire de l'app Windows : la variante Store ; un serveur qui ne dit rien, la commande", () => {
+    const store = buildAdminAttention({ ...healthy, serverUpdate: "mandatory", serverUpdateChannel: "microsoft-store" });
+    expect(store.blocking).toEqual([{ id: "serverUpdateRequired", variant: "store", items: [] }]);
+    expect(buildAdminAttention({ ...healthy, serverUpdate: "mandatory" }).blocking).toEqual([{ id: "serverUpdateRequired", variant: null, items: [] }]);
+    expect(buildAdminAttention({ ...healthy, serverUpdate: "automatic", serverUpdateChannel: "microsoft-store" }).blocking).toEqual([]);
+  });
+
   it("une extension refusée par ce serveur se dit, nommée ; un serveur d'avant n'en dit rien", () => {
     const attention = buildAdminAttention({ ...healthy, refusedExtensions: ["Vigie 1.24.1"] });
     expect(attention.blocking).toEqual([{ id: "extensionsRefused", variant: null, items: ["Vigie 1.24.1"] }]);

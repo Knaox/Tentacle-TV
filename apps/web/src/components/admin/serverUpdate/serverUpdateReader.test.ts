@@ -43,6 +43,12 @@ describe("la réponse de la carte « Serveur Tentacle »", () => {
     expect(read?.error).toBeNull();
   });
 
+  it("l'app Windows : le canal du Microsoft Store passe ; une autre valeur est ignorée", () => {
+    const store = { runtime: "none", repository: "ghcr.io/knaox/tentacle-tv", tag: null, channel: "microsoft-store" };
+    expect(readServerUpdateReport({ ...REPORT, install: store })?.install).toEqual(store);
+    expect(readServerUpdateReport({ ...REPORT, install: { ...store, channel: "winget" } })?.install).not.toHaveProperty("channel");
+  });
+
   it("une version illisible ne fait pas une publication, ni une exigence", () => {
     const read = readServerUpdateReport({ ...REPORT, latest: { ...REPORT.latest, version: "1.22" }, requiredByClients: "bientôt" });
     expect(read?.latest).toBeNull();

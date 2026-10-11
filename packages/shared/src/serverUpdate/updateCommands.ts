@@ -4,7 +4,8 @@ import { SERVER_IMAGE_REPOSITORY, type ServerInstall } from "./serverUpdateContr
  * La commande qui met le serveur à jour, à copier en un geste — la plus juste
  * possible avec ce que le serveur sait de lui-même SANS parler à Docker : le
  * moteur (docker, podman), l'image, et l'étiquette seulement si l'installation
- * la déclare (`TENTACLE_IMAGE`). Hors conteneur : aucune commande, l'info seule.
+ * la déclare (`TENTACLE_IMAGE`). Hors conteneur : aucune commande, l'info seule ;
+ * l'app Windows non plus : le Microsoft Store la met à jour (`channel`).
  *
  * Deux variantes, parce que le serveur ne peut pas savoir laquelle a servi :
  * - `docker compose`, à lancer dans le dossier du fichier compose — le mode
@@ -40,7 +41,7 @@ function versionTag(version: string, like: string): string {
 }
 
 export function buildUpdateCommands(install: ServerInstall, latest: string | null): ServerUpdateCommands | null {
-  if (install.runtime === "none") return null;
+  if (install.runtime === "none" || install.channel === "microsoft-store") return null;
   const cli = install.runtime === "podman" ? "podman" : "docker";
   const repository = install.repository.trim() || SERVER_IMAGE_REPOSITORY;
   const declared = install.tag?.trim() || null;

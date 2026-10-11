@@ -2,6 +2,7 @@ import type { DismissibleHint } from "../help/dismissibleHints";
 import type { CompatStatus } from "../jellyfinCompat/compatVerdict";
 import type { SetupCheckId, SetupLevel, SetupState } from "../jellyfinCompat/setupContract";
 import type { LinkCheck, LinkIssue } from "../serverLinks/serverLinksVerdict";
+import type { ServerInstall } from "../serverUpdate/serverUpdateContract";
 import type { ServerUpdateStatus } from "../serverUpdate/serverUpdateStatus";
 import { isJellyfinTodo, SEGMENTS_CHECK } from "./jellyfinAdvice";
 import type { ServerCapability } from "../serverCapabilities/serverCapabilities";
@@ -97,6 +98,8 @@ export interface AttentionSources {
   /** Le verdict de la version de Jellyfin installée. */
   jellyfinVersion: Source<CompatStatus>;
   serverUpdate: Source<ServerUpdateStatus>;
+  /** `microsoft-store` : l'app Windows, mise à jour par le Store (variante `store` de l'entrée, sans commande). */
+  serverUpdateChannel?: ServerInstall["channel"] | null;
   /**
    * Les extensions activées que ce serveur refuse de charger (« Vigie 1.24.1 ») :
    * sur SQLite, une extension qui ne s'y déclare pas compatible. `null` : un
@@ -165,7 +168,9 @@ function blockingEntries(s: AttentionSources): BlockingEntry[] {
   }
   if (s.databaseDown === true) entries.push({ id: "databaseDown", variant: null });
   if (jellyfinUsable(s) && s.jellyfinVersion === "incompatible") entries.push({ id: "jellyfinIncompatible", variant: null });
-  if (s.serverUpdate === "mandatory") entries.push({ id: "serverUpdateRequired", variant: null });
+  if (s.serverUpdate === "mandatory") {
+    entries.push({ id: "serverUpdateRequired", variant: s.serverUpdateChannel === "microsoft-store" ? "store" : null });
+  }
   const refused = s.refusedExtensions ?? [];
   if (refused.length > 0) entries.push({ id: "extensionsRefused", variant: null, items: [...refused] });
   const migration = s.databaseMigration;
