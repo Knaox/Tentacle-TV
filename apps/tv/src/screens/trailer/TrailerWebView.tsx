@@ -107,8 +107,14 @@ function TrailerPlayer(props: TrailerPlayerProps, ref: React.Ref<TrailerPlayerHa
       if (result.ok) {
         const resolved = result.stream;
         plog("trailer", `flux ${resolved.type ?? "progressif"} résolu pour ${ytId} en ${Date.now() - openedAt.current} ms (${resolved.qualities.length} qualités, ${resolved.subtitles.length} pistes)`);
-        setStream(resolved);
+        // Les pistes AVANT le flux : l'écran y pose sa qualité de lancement
+        // (la plus haute) et ses sous-titres, et la première source en tient
+        // déjà compte. Dans l'ordre inverse, l'ancienne architecture de React
+        // Native (aucun regroupement hors évènement) rendait le flux avant la
+        // qualité : Auto chargé, puis la qualité de lancement — un second
+        // chargement (mesuré au banc).
         latest.current.onTracks?.({ qualities: resolved.qualities, subtitles: resolved.subtitles });
+        setStream(resolved);
       } else {
         report({ ok: false, reason: `résolution : ${result.reason}` });
         onError();
