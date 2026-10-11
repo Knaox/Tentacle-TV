@@ -653,7 +653,11 @@ panneaux par la feuille `PlayerSheet` et `sheetEntryKey`.
   d'affiché, chargement, indisponible) → la fiche. Dans les 3 premières
   secondes, il faut donc deux Retour pour quitter — comme le grand lecteur.
 - **BA-8** Panneaux (`trailerPanels`) : sous-titres (« Désactivés », puis les
-  langues), qualité (« Auto », puis les hauteurs décroissantes). Ils
+  langues), qualité (« Auto », puis les hauteurs décroissantes). La
+  bande-annonce DÉMARRE à la qualité la plus haute offerte
+  (`trailerInitialQuality`, pas « Auto », jamais retenue d'une bande-annonce à
+  l'autre) ; le sous-titre choisi, lui, se retient par profil
+  (`trailerSubtitleMemory`). Ils
   s'ouvrent sur l'option retenue (`trailerPanelEntryKey`) ; un choix FERME le
   panneau (`trailerChoose` : il ne s'applique que s'il change quelque chose)
   et le focus revient à son bouton (`trailerPanelReturnKey`). Clés de
@@ -664,6 +668,10 @@ panneaux par la feuille `PlayerSheet` et `sheetEntryKey`.
   barre restent (la vidéo) ; entre les boutons, à l'horizontale ; ↑ depuis
   un bouton → la croix, ↓ → la barre ; ↓ depuis la croix → le premier
   bouton, sinon la barre. Une cible infocalisable n'est jamais un voisin.
+  Apple TV : `nextFocus*` n'est pas honoré sur cet écran (mesuré) — deux
+  ponts armés selon le focus (`trailer:bridge-close` sous la croix,
+  `trailer:bridge-timeline` entre les boutons et la barre,
+  `platform/tvos/screens/trailerBridges.tsx`) ; Android : `nextFocus*`.
 
 ---
 
