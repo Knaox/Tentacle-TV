@@ -10,7 +10,7 @@ import { readLastCheck, readRemoteAccessSettings, saveRemoteAccessSettings } fro
 import { detectPublicIp, forgetPublicIp } from "./publicIp";
 import { activeJellyfinPublicUrl, checkServiceUrl, hostPort, jellyfinLanPort, runRemoteCheck } from "./remoteCheck";
 import { derivedPrivateUrl } from "./pairingAddress";
-import { hostLanAddress } from "../setup/jellyfin/clientUrlFor";
+import { hostLanAddress } from "../setup/jellyfin/hostLanAddress";
 
 /**
  * L'accès à distance (`/api/admin/remote-access`) — enregistré depuis

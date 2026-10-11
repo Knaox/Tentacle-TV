@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { hostLanAddress } from "../setup/jellyfin/clientUrlFor";
+import { hostLanAddress } from "../setup/jellyfin/hostLanAddress";
 import { getJellyfinUrl } from "../services/configStore";
 import { getMaxResumePct } from "../services/jellyfinSystemConfig";
 import { requireAuth } from "../middleware/auth";
