@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { View, type FocusDestination } from "react-native";
 import {
   TRAILER_CLOSE_KEY,
+  TRAILER_QUALITY_KEY,
+  TRAILER_SUBTITLES_KEY,
   TRAILER_TIMELINE_KEY,
   trailerNeighbor,
   type Direction,
@@ -22,11 +24,14 @@ import { BridgeGuide } from "../player/playerFocusContainers";
  * son `UIFocusGuide` et intercepte encore (mesuré : ↑ depuis « Qualité »
  * butait sur le pont de la croix, vide, au lieu d'atteindre la croix).
  * - `trailer:bridge-close`, sous la croix : BAS → le premier bouton ;
+ * - `trailer:bridge-tools`, au-dessus des boutons : HAUT → la croix (la
+ *   géométrie ne la trouve pas, loin à gauche — mesuré) ;
  * - `trailer:bridge-timeline`, entre les boutons et la barre : HAUT → le
  *   dernier bouton visité, sinon le premier, sinon la croix.
  */
 
 export const TRAILER_CLOSE_BRIDGE = "trailer:bridge-close";
+export const TRAILER_TOOLS_BRIDGE = "trailer:bridge-tools";
 export const TRAILER_TIMELINE_BRIDGE = "trailer:bridge-timeline";
 
 /** Ce que les ponts lisent de l'écran, et le signal de ses changements. */
@@ -41,14 +46,16 @@ export interface TrailerBridgeScope {
 const BridgeContext = createContext<TrailerBridgeScope | null>(null);
 export const TrailerBridgeProvider = BridgeContext.Provider;
 
-/** La destination du pont : le voisin de `from` vers `direction`, tant que `from` a le focus. */
-function useArmedDestination(from: string, direction: Direction): FocusDestination[] {
+/** La destination du pont : le voisin de la cible focalisée vers `direction`, tant que c'est l'une de `from`. */
+function useArmedDestination(from: readonly string[], direction: Direction): FocusDestination[] {
   const scope = useContext(BridgeContext);
   const [destinations, setDestinations] = useState<FocusDestination[]>([]);
   const aim = useCallback(() => {
     if (!scope) return;
-    const armed = scope.store.focusedKey() === from;
-    const target = armed ? trailerNeighbor(from, direction, scope.readView(), scope.readLastTool()) : "stay";
+    const focused = scope.store.focusedKey();
+    const target = focused !== null && from.includes(focused)
+      ? trailerNeighbor(focused, direction, scope.readView(), scope.readLastTool())
+      : "stay";
     const node = target === "stay" ? null : (scope.store.node(target) as FocusDestination | null);
     setDestinations((prev) => (node ? (prev[0] === node ? prev : [node]) : prev.length ? [] : prev));
   }, [scope, from, direction]);
@@ -67,16 +74,25 @@ function ArmedBridge({ destinations, ...props }: FocusGroupContainerProps & { de
   return <BridgeGuide {...props} destinations={destinations} />;
 }
 
+const FROM_CLOSE = [TRAILER_CLOSE_KEY];
+const FROM_TOOLS = [TRAILER_SUBTITLES_KEY, TRAILER_QUALITY_KEY];
+const FROM_TIMELINE = [TRAILER_TIMELINE_KEY];
+
 function CloseBridge(props: FocusGroupContainerProps) {
-  return <ArmedBridge {...props} destinations={useArmedDestination(TRAILER_CLOSE_KEY, "bas")} />;
+  return <ArmedBridge {...props} destinations={useArmedDestination(FROM_CLOSE, "bas")} />;
+}
+
+function ToolsBridge(props: FocusGroupContainerProps) {
+  return <ArmedBridge {...props} destinations={useArmedDestination(FROM_TOOLS, "haut")} />;
 }
 
 function TimelineBridge(props: FocusGroupContainerProps) {
-  return <ArmedBridge {...props} destinations={useArmedDestination(TRAILER_TIMELINE_KEY, "haut")} />;
+  return <ArmedBridge {...props} destinations={useArmedDestination(FROM_TIMELINE, "haut")} />;
 }
 
 /** Les groupes que l'écran lie, et leur guide. */
 export const TRAILER_BRIDGES = {
   [TRAILER_CLOSE_BRIDGE]: CloseBridge,
+  [TRAILER_TOOLS_BRIDGE]: ToolsBridge,
   [TRAILER_TIMELINE_BRIDGE]: TimelineBridge,
 } as const;

@@ -33,9 +33,11 @@ import type { TrailerTimeline, TrailerTools } from "./trailerTypes";
  * (`SWAP_FLOOR` : tvOS tiendrait pour caché le focus qu'elle garde). Rien ne
  * dessine PAR-DESSUS une cible : le voile et le titre sont posés avant elles.
  *
- * `trailer:bridge-timeline` : une bande vide entre les pilules et la barre —
- * le pont que l'intégration arme quand la barre a le focus (HAUT → le dernier
- * bouton visité) ; rien ne s'y voit.
+ * Deux bandes vides, des ponts que l'intégration arme selon le focus (rien
+ * ne s'y voit) : `trailer:bridge-timeline`, entre les pilules et la barre
+ * (HAUT depuis la barre → le dernier bouton visité), et
+ * `trailer:bridge-tools`, au-dessus des pilules (HAUT depuis un bouton → la
+ * croix).
  */
 
 export interface TrailerChromeLabels {
@@ -122,6 +124,7 @@ function Tools({ tools, labels, shown, onOpenSubtitles, onOpenQuality }: {
   if (!presence.mounted) return null;
   return (
     <View style={styles.tools}>
+      <FocusGroup focusKey="trailer:bridge-tools" style={styles.toolsBridge} pointerEvents="none" />
       <Animated.View style={[styles.toolsRow, appear]}>
         {tools.subtitles ? (
           <View style={[styles.base, backing]}>
@@ -165,6 +168,8 @@ const styles = StyleSheet.create({
   kicker: { ...text.kicker, color: colors.accentLight, marginBottom: 10 },
   title: { ...fonts.bold, fontSize: 44, lineHeight: 52, color: colors.text },
   tools: { flexShrink: 0 },
+  // Au-dessus des pilules, de leur largeur, sans les toucher (leur soulèvement au focus compris).
+  toolsBridge: { position: "absolute", left: 0, right: 0, bottom: "100%", marginBottom: 18, height: 12 },
   toolsRow: { flexDirection: "row", alignItems: "center", gap: 24 },
   base: { borderRadius: 34, backgroundColor: SOFT_BASE },
   timeline: { position: "absolute", left: SAFE.x, top: TIMELINE_TOP, width: TIMELINE_WIDTH },
