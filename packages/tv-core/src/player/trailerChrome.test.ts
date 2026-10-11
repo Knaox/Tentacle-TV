@@ -7,6 +7,7 @@ import {
   TRAILER_UNAVAILABLE_RETURN_MS,
   trailerChromeOnPlaying,
   trailerChromeOnWake,
+  trailerChromeShown,
   trailerLeavesAfter,
   trailerState,
   trailerWakes,
@@ -63,5 +64,18 @@ describe("indisponible", () => {
     expect(trailerLeavesAfter("unavailable", false)).toBeNull();
     expect(trailerLeavesAfter("playing", true)).toBeNull();
     expect(trailerLeavesAfter("loading", true)).toBeNull();
+  });
+});
+
+describe("ce qui est à l'écran", () => {
+  it("hors lecture : le chrome, toujours ; pas de barre (rien à parcourir)", () => {
+    expect(trailerChromeShown("loading", false, false)).toEqual({ chrome: true, timeline: false });
+    expect(trailerChromeShown("unavailable", false, false)).toEqual({ chrome: true, timeline: false });
+  });
+
+  it("en lecture : le chrome suit les contrôles ; pendant un défilement, la barre reste seule", () => {
+    expect(trailerChromeShown("playing", true, false)).toEqual({ chrome: true, timeline: true });
+    expect(trailerChromeShown("playing", false, false)).toEqual({ chrome: false, timeline: false });
+    expect(trailerChromeShown("playing", false, true)).toEqual({ chrome: false, timeline: true });
   });
 });
