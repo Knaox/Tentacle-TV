@@ -705,7 +705,10 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
   `static/webUi.ts`. Coupée : 404 pour le client web ; restent `/api` (sockets compris), `/tv`, `/.well-known`,
   les logos publics, `/yt-embed.html` (relais YouTube des bandes-annonces du BUREAU : coupé en 1.25.0, page
   blanche) et l'assistant TANT QUE l'installation n'est pas finie. Un fichier du web qu'une APPLICATION charge
-  s'ajoute à cette liste. Aucun réglage dans l'administration (elle EST l'interface web) ; aucune capacité.
+  s'ajoute à cette liste. Le lien d'invitation (`/register?invite=…`) reçoit alors la page d'inscription
+  AUTONOME du serveur (`static/invitePage.ts` : FR/EN, ES5, nonce, rien du client web) ; chaque refus de
+  `POST /api/auth/register` y est dit par son `code` (`RegisterRefusalCode`). Aucun réglage dans
+  l'administration (elle EST l'interface web) ; aucune capacité.
 - **`trustProxy` limité aux voisins** (`services/trustedProxies.ts` : boucle locale, RFC 1918, ULA, réseaux
   Docker, + `TRUSTED_PROXIES`) ; l'adresse réelle d'un client se lit par `getRealClientIp`, jamais
   `request.ip` (compteur de débit, réseau local, journaux). Docker Desktop/colima perdent l'adresse source :

@@ -159,7 +159,9 @@ pages et ses fichiers) répond alors 404. Ce qui continue : l'API et ses sockets
 applications), le client des TV LG sous `/tv` (une application à part entière, servie par ce serveur),
 `/.well-known/` (le test d'ouverture), la page par laquelle l'application de bureau lit les bandes-annonces
 (`/yt-embed.html`) — et **l'assistant d'installation, tant que l'installation n'est pas
-finie** : posée avant la fin, l'option ne ferme le web qu'après.
+finie** : posée avant la fin, l'option ne ferme le web qu'après. Les liens d'invitation marchent toujours : ils
+ouvrent une petite page d'inscription du serveur, où votre invité crée son compte, puis se connecte depuis les
+applications.
 
 Pour revenir en arrière : remettez `"on"` et redémarrez, ou tapez `tentacle web on` dans la console du conteneur
 (Portainer : **Console** → *Connect* ; ou `docker exec <conteneur> tentacle web on`) — effet sous cinq secondes,

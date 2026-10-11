@@ -148,6 +148,8 @@ then answers 404. What keeps working: the API and its sockets (`/api/…`, so ev
 `/tv` (an app of its own, served by this server), `/.well-known/` (the remote access test), the page the desktop
 app plays trailers through (`/yt-embed.html`) — and **the setup
 wizard, as long as setup is not finished**: set before the end, the option closes the web only afterwards.
+Invitation links keep working: they open a small sign-up page of the server, where your guest creates their
+account, then signs in from the apps.
 
 Back on: set it to `"on"` and restart, or type `tentacle web on` in the container's console (Portainer:
 **Console** → *Connect*; or `docker exec <container> tentacle web on`) — it takes effect within five seconds,
