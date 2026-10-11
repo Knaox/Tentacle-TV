@@ -13,6 +13,7 @@ import { execFile } from "child_process";
 import { ytDlpCommand } from "../ytDlp";
 import { workerExtract } from "./ytWorker";
 import { clientPasses, isPermanentFailure, pickTrailerSource, type TrailerSource, type YtFormat } from "./trailerSource";
+import { TRANSLATED_LANGS, collectSubtitleCandidates, type SubtitleCandidate, type YtCaptions } from "./trailerSubtitles";
 
 /**
  * Les défis JavaScript de YouTube (« EJS ») : `visionos` s'en passe, mais
@@ -57,6 +58,7 @@ async function withSlot<T>(task: () => Promise<T>): Promise<T> {
 
 interface PassOutcome {
   formats: YtFormat[];
+  captions?: YtCaptions;
   stderr: string;
   /** La passe a épuisé son temps : yt-dlp n'a rien conclu. */
   timedOut?: boolean;
@@ -66,8 +68,12 @@ const watchUrl = (ytId: string) => `https://www.youtube.com/watch?v=${ytId}`;
 
 /** Une passe : par l'ouvrier gardé chaud quand il le peut, sinon en lançant yt-dlp. */
 async function runPass(ytId: string, clients: string[], timeoutMs: number): Promise<PassOutcome | null> {
-  const viaWorker = await workerExtract(ytDlpCommand(), { url: watchUrl(ytId), clients, ejs: ejsSupported }, timeoutMs);
-  if (viaWorker.status === "done") return { formats: viaWorker.outcome.formats as YtFormat[], stderr: viaWorker.outcome.stderr };
+  const request = { url: watchUrl(ytId), clients, ejs: ejsSupported, autoLangs: TRANSLATED_LANGS };
+  const viaWorker = await workerExtract(ytDlpCommand(), request, timeoutMs);
+  if (viaWorker.status === "done") {
+    const { formats, stderr, subtitles, automatic_captions } = viaWorker.outcome;
+    return { formats: formats as YtFormat[], captions: { subtitles, automatic_captions } as YtCaptions, stderr };
+  }
   if (viaWorker.status === "failed") return { formats: [], stderr: `ERROR: ${viaWorker.reason}`, timedOut: true };
   return runCli(ytId, clients, timeoutMs);
 }
@@ -93,8 +99,9 @@ function runCli(ytId: string, clients: string[], timeoutMs: number): Promise<Pas
       }
       if (err?.killed) return resolve({ formats: [], stderr: `ERROR: yt-dlp sans réponse en ${timeoutMs / 1000} s`, timedOut: true });
       try {
-        const info = JSON.parse(stdout) as { formats?: YtFormat[] };
-        resolve({ formats: info.formats ?? [], stderr });
+        const info = JSON.parse(stdout) as { formats?: YtFormat[] } & YtCaptions;
+        const captions = { subtitles: info.subtitles, automatic_captions: info.automatic_captions };
+        resolve({ formats: info.formats ?? [], captions, stderr });
       } catch {
         resolve(err ? { formats: [], stderr: `${stderr}\n${err.message}` } : null);
       }
@@ -102,8 +109,16 @@ function runCli(ytId: string, clients: string[], timeoutMs: number): Promise<Pas
   });
 }
 
+function safeCandidates(captions: YtCaptions | undefined): SubtitleCandidate[] {
+  try {
+    return captions ? collectSubtitleCandidates(captions) : [];
+  } catch {
+    return [];
+  }
+}
+
 export type ExtractionResult =
-  | { ok: true; source: TrailerSource; clients: string[] }
+  | { ok: true; source: TrailerSource; subtitles: SubtitleCandidate[]; clients: string[] }
   | { ok: false; permanent: boolean; timedOut: boolean; reason: string };
 
 /** Extrait le meilleur flux de `ytId`, passe après passe ; la première qui rend un flux gagne. */
@@ -116,7 +131,8 @@ export function extractTrailerSource(ytId: string): Promise<ExtractionResult> {
       if (remaining < MIN_PASS_MS) break;
       const outcome = await runPass(ytId, clients, remaining);
       const source = outcome && pickTrailerSource(outcome.formats);
-      if (source) return { ok: true, source, clients };
+      // Une piste illisible ne coûte jamais la bande-annonce : sans sous-titres, simplement.
+      if (source) return { ok: true, source, subtitles: safeCandidates(outcome.captions), clients };
       const lastError = outcome?.stderr.split("\n").filter((l) => l.startsWith("ERROR")).pop();
       reason = lastError ?? `${clients.join(",")} : ${outcome ? `${outcome.formats.length} formats, aucun lisible` : "sortie illisible"}`;
       // Le temps est épuisé : une autre passe ne ferait pas mieux.

@@ -19,6 +19,9 @@ import { WORKER_SCRIPT } from "./ytWorkerScript";
 
 export interface WorkerOutcome {
   formats: Array<Record<string, unknown>>;
+  /** Les pistes de sous-titres, déjà réduites par l'ouvrier (cf. ytWorkerScript.ts). */
+  subtitles?: Record<string, unknown>;
+  automatic_captions?: Record<string, unknown>;
   stderr: string;
 }
 
@@ -115,7 +118,12 @@ function start(zipapp: string, signature: string, python: string): Live {
           console.log(`[trailers] ouvrier yt-dlp ${message.version} prêt`);
           resolveReady(true);
         } else if (typeof message.id === "number") {
-          worker.pending.get(message.id)?.({ formats: message.formats ?? [], stderr: message.stderr ?? "" });
+          worker.pending.get(message.id)?.({
+            formats: message.formats ?? [],
+            subtitles: message.subtitles,
+            automatic_captions: message.automatic_captions,
+            stderr: message.stderr ?? "",
+          });
           worker.pending.delete(message.id);
         }
       }
@@ -137,7 +145,7 @@ function start(zipapp: string, signature: string, python: string): Live {
 /** Une passe d'extraction par l'ouvrier (cf. `WorkerResult`). */
 export async function workerExtract(
   command: string,
-  request: { url: string; clients: string[]; ejs: boolean },
+  request: { url: string; clients: string[]; ejs: boolean; autoLangs?: readonly string[] },
   timeoutMs: number,
   python = "python3",
 ): Promise<WorkerResult> {

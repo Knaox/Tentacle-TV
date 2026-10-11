@@ -77,6 +77,24 @@ describe("renderMaster", () => {
     expect(text).not.toContain("googlevideo");
   });
 
+  it("réduit le maître à une qualité : ses variantes, et l'audio qu'elles emploient seulement", () => {
+    const master = parseMaster(VISIONOS_MASTER, BASE)!;
+    const text = renderMaster(master, (key) => `p/${key}.m3u8`, 1080);
+    expect(text.split("\n").filter((l) => l.startsWith("p/"))).toEqual(["p/270.m3u8"]);
+    expect(text).toContain('URI="p/234.m3u8"');
+    expect(text).not.toContain('GROUP-ID="233"');
+    expect(text).toContain("RESOLUTION=1920x1080");
+    const low = renderMaster(master, (key) => `p/${key}.m3u8`, 240);
+    expect(low.split("\n").filter((l) => l.startsWith("p/"))).toEqual(["p/229.m3u8"]);
+    expect(low).not.toContain('GROUP-ID="234"');
+  });
+
+  it("rend le maître entier pour une hauteur qu'il n'a pas (« Auto », jamais un maître vide)", () => {
+    const master = parseMaster(VISIONOS_MASTER, BASE)!;
+    const auto = renderMaster(master, (key) => `p/${key}.m3u8`);
+    expect(renderMaster(master, (key) => `p/${key}.m3u8`, 480)).toBe(auto);
+  });
+
   it("part de la plus basse quand rien ne tient sous la 720p", () => {
     const master = parseMaster(MUXED_MASTER.replace("256x144", "1920x1080"), BASE)!;
     expect(startVariant(master.variants).key).toBe("91");
