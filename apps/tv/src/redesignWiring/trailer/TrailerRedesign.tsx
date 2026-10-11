@@ -81,7 +81,7 @@ export function TrailerRedesign({ route, navigation }: Props) {
         title={name || item?.Name || ""}
         backdropUri={item ? detailBackdropUri(client, item) : undefined}
         video={video}
-        chromeDimmed={dimmed}
+        chromeShown={!dimmed}
         waiting={waiting}
         unavailableReason={ytId ? "youtube" : "unsupported"}
         onClose={close}
