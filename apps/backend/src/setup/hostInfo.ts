@@ -55,6 +55,7 @@ export function readHostInfo(probe: HostProbe = systemProbe()): MachineInfo {
     deployment.deployment === "docker" || probe.exists("/.dockerenv") || probe.exists("/run/.containerenv");
   return {
     deployment: deployment.deployment,
+    ...(deployment.packaging ? { packaging: deployment.packaging } : {}),
     stack: deployment.stack,
     containerized,
     containerId: containerized ? containerIdFrom(probe) : null,

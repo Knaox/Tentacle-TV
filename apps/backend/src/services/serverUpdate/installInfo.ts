@@ -9,6 +9,8 @@ import { SERVER_IMAGE_REPOSITORY, type ServerInstall } from "./serverUpdateContr
  * - Le moteur : Docker pose `/.dockerenv` dans tout conteneur, Podman
  *   `/run/.containerenv`. `TENTACLE_INSTALL_RUNTIME` (docker, podman, none)
  *   force la réponse là où ces marques manquent (Kubernetes, LXC…).
+ * - L'app Windows (`TENTACLE_DEPLOYMENT=windows-app`) : aucune image, le
+ *   Microsoft Store la met à jour (`channel`).
  * - L'image : l'officielle, sauf déclaration `TENTACLE_IMAGE`. Son étiquette
  *   n'est connue QUE par cette déclaration — une même image porte `:latest`
  *   et `:vX.Y.Z`, rien en elle ne dit laquelle a été tirée.
@@ -59,5 +61,6 @@ export function readInstall(
     runtime: detectRuntime(env, exists),
     repository: declared?.repository ?? SERVER_IMAGE_REPOSITORY,
     tag: declared?.tag ?? null,
+    ...(env.TENTACLE_DEPLOYMENT === "windows-app" ? { channel: "microsoft-store" as const } : {}),
   };
 }

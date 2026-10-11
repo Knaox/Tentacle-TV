@@ -61,6 +61,7 @@ async function buildState(request: FastifyRequest): Promise<RemoteAccessState> {
     jellyfinHostPort: jellyfinLanPort(),
     directPlay: { enabled: direct.enabled, privateUrl: direct.privateUrl, publicUrl: direct.publicUrl },
     deployment: deployment.deployment,
+    ...(deployment.packaging ? { packaging: deployment.packaging } : {}),
     stack: deployment.stack,
     checkServiceUrl: checkServiceUrl(),
     lastCheck: readLastCheck(),

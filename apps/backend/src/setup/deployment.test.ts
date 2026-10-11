@@ -11,6 +11,7 @@ describe("installation lue dans l'environnement", () => {
     });
     expect(d).toEqual({
       deployment: "docker",
+      packaging: null,
       stack: "full",
       provisioner: "docker-sibling",
       siblingUrl: "http://jellyfin:8096",
@@ -59,6 +60,14 @@ describe("installation lue dans l'environnement", () => {
     expect(d.deployment).toBe("native");
     expect(d.provisioner).toBe("native-host");
     expect(suggestedJellyfinUrl(d)).toBe("http://127.0.0.1:8096");
+  });
+
+  it("l'app Windows : native, Jellyfin cherché sur la machine, livrée en app", () => {
+    const d = readDeployment({ TENTACLE_DEPLOYMENT: "windows-app" });
+    expect(d.deployment).toBe("native");
+    expect(d.packaging).toBe("windows-app");
+    expect(d.provisioner).toBe("native-host");
+    expect(readDeployment({ TENTACLE_DEPLOYMENT: "docker" }).packaging).toBeNull();
   });
 
   it("une pile inconnue ou une adresse de voisin hors pile complète sont ignorées", () => {

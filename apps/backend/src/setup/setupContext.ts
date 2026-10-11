@@ -22,6 +22,7 @@ export function buildSetupContext(request: FastifyRequest): SetupContext {
   const flow = flowState();
   return {
     deployment: deployment.deployment,
+    ...(deployment.packaging ? { packaging: deployment.packaging } : {}),
     stack: deployment.stack,
     provisioner: provisioner.kind,
     // Pour l'assistant d'avant 1.25, encore livré dans le bureau : « fournie

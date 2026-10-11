@@ -46,5 +46,11 @@ describe("le serveur se décrit, sans parler à Docker", () => {
   it("natif : pas de conteneur, et le nom de la machine n'est jamais pris pour un identifiant", () => {
     const info = readHostInfo(probe({ env: { HOSTNAME: "abcdef012345" } }));
     expect(info).toEqual({ deployment: "native", stack: null, containerized: false, containerId: null });
+    expect("packaging" in info).toBe(false);
+  });
+
+  it("l'app Windows se dit telle, sans conteneur", () => {
+    const info = readHostInfo(probe({ env: { TENTACLE_DEPLOYMENT: "windows-app" } }));
+    expect(info).toEqual({ deployment: "native", packaging: "windows-app", stack: null, containerized: false, containerId: null });
   });
 });
