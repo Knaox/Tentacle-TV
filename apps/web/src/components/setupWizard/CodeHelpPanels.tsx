@@ -7,6 +7,7 @@ import { COMPOSE_SERVICE, NATIVE_TOKEN_COMMAND, TOKEN_COMMAND, type CodeHelpComm
  * Le contenu de chaque onglet de « Où trouver le code ? » : des étapes
  * numérotées pour les interfaces (Portainer, NAS), des commandes à copier pour
  * le terminal. Les mots restent ceux d'un utilisateur qui ne connaît pas Docker.
+ * L'app Windows : l'icône de la zone de notification, puis l'alias `tentacle`.
  */
 interface PanelProps {
   tab: CodeHelpTab;
@@ -79,6 +80,18 @@ export function CodeHelpPanel({ tab, commands, containerId }: PanelProps) {
         <div className="space-y-3">
           <p>{t("codeHelp_nativeIntro")}</p>
           <CopyBlock label={t("codeWhereNew")} code={NATIVE_TOKEN_COMMAND} />
+        </div>
+      );
+    case "windows":
+      // L'app Windows : l'icône d'abord, la commande (alias de l'app) en secours.
+      return (
+        <div className="space-y-3">
+          <Steps>
+            <li>{t("codeHelp_windowsStep1")}</li>
+            <li>{t("codeHelp_windowsStep2")}</li>
+          </Steps>
+          <p>{t("codeHelp_windowsConsole")}</p>
+          <CopyBlock label={t("codeWhereNew")} code={TOKEN_COMMAND} />
         </div>
       );
   }

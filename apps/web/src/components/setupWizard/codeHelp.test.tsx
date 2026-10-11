@@ -21,6 +21,7 @@ const { codeHelpCommands, codeHelpTabs, initialCodeHelpTab } = await import("./c
 
 const ID = "3f9c2a7b1d4e";
 const docker = (over: Partial<SetupHostInfo> = {}): SetupHostInfo => ({ deployment: "docker", stack: "full", containerized: true, containerId: ID, codeRequired: true, ...over });
+const windowsApp: SetupHostInfo = { deployment: "native", packaging: "windows-app", stack: null, containerized: false, containerId: null, codeRequired: true };
 const decode = (html: string) => html.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
 const panel = (tab: Parameters<typeof CodeHelpPanel>[0]["tab"], containerId: string | null = ID) =>
   decode(renderToStaticMarkup(<CodeHelpPanel tab={tab} commands={codeHelpCommands(containerId, "<conteneur>")} containerId={containerId} />));
@@ -41,6 +42,38 @@ describe("le choix des onglets", () => {
     const native: SetupHostInfo = { deployment: "native", stack: null, containerized: false, containerId: null, codeRequired: true };
     expect(codeHelpTabs(native)).toEqual(["native"]);
     expect(initialCodeHelpTab(native)).toBe("native");
+  });
+
+  it("l'app Windows : son onglet seul, ni Docker ni « Sans Docker »", () => {
+    expect(codeHelpTabs(windowsApp)).toEqual(["windows"]);
+    expect(initialCodeHelpTab(windowsApp)).toBe("windows");
+  });
+});
+
+describe("l'app Windows", () => {
+  it("l'icône de la zone de notification, puis l'alias tentacle en secours", () => {
+    const out = panel("windows", null);
+    expect(out.match(/<li>/g)).toHaveLength(2);
+    expect(out).toContain("codeHelp_windowsStep1");
+    expect(out).toContain("codeHelp_windowsStep2");
+    expect(out).toContain("<code>tentacle setup token</code>");
+    expect(out).not.toMatch(/docker|node apps/);
+  });
+
+  it("l'écran rendu : l'onglet Windows ouvert, le fichier de ProgramData, aucun identifiant de conteneur", () => {
+    const out = decode(renderToStaticMarkup(<CodeHelp host={windowsApp} defaultOpen />));
+    expect(out).toMatch(/aria-selected="true"[^>]*>codeHelp_tab_windows/);
+    expect(out).toContain("codeHelp_intro_windowsApp");
+    expect(out).toContain("codeWhereFile_windowsApp");
+    expect(out).not.toContain("codeHelp_containerId");
+    expect(out).not.toContain("codeHelp_tab_native");
+  });
+
+  it("un serveur qui ne dit rien de sa livraison garde l'intro et le fichier d'avant", () => {
+    const out = decode(renderToStaticMarkup(<CodeHelp host={docker()} defaultOpen />));
+    expect(out).toContain(">codeHelp_intro<");
+    expect(out).toContain(">codeWhereFile<");
+    expect(out).not.toContain("_windowsApp");
   });
 });
 

@@ -1,6 +1,6 @@
 import { memo, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { SetupHostInfo } from "@tentacle-tv/shared";
+import { packagedHelpKey, type SetupHostInfo } from "@tentacle-tv/shared";
 import { TabPanel, Tabs } from "../ui/Tabs";
 import { codeHelpCommands, codeHelpTabs, initialCodeHelpTab, type CodeHelpTab } from "./codeHelpModel";
 import { CodeHelpPanel, CodeLineHint } from "./CodeHelpPanels";
@@ -31,7 +31,7 @@ export const CodeHelp = memo(function CodeHelp({ host, defaultOpen }: CodeHelpPr
     <details open={defaultOpen} className="rounded-xl border border-line-subtle bg-fill-faint px-4 py-3 text-sm leading-relaxed text-content-secondary">
       <summary className="min-h-11 cursor-pointer py-2.5 font-semibold text-content-primary">{t("codeWhereTitle")}</summary>
       <div className="space-y-4 pb-1">
-        <p>{t("codeHelp_intro")}</p>
+        <p>{t(packagedHelpKey("setupWizard", "codeHelp_intro", host?.packaging))}</p>
         {containerId ? (
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span>{t("codeHelp_containerId")}</span>
@@ -48,7 +48,7 @@ export const CodeHelp = memo(function CodeHelp({ host, defaultOpen }: CodeHelpPr
         ))}
         <div className="space-y-2 border-t border-line-subtle pt-3 text-xs text-content-tertiary">
           <CodeLineHint />
-          <p>{t("codeWhereFile")}</p>
+          <p>{t(packagedHelpKey("setupWizard", "codeWhereFile", host?.packaging))}</p>
         </div>
       </div>
     </details>
