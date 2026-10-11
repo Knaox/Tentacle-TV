@@ -119,7 +119,7 @@ Règles de la fiche, à ne pas défaire :
 | Site web | `https://tentacletv.app/docs/server/windows/` |
 | Contact du support | `https://tentacletv.app/support` |
 | Politique de confidentialité | la même URL que l'app de bureau (à reprendre de sa fiche) |
-| Configuration requise | Windows 10 version 1809 ou plus récent, x64 ; Jellyfin 10.10 ou plus récent ; réseau local |
+| Configuration requise | Windows 10 version 2004 (build 19041) ou plus récent, x64 ; Jellyfin 10.10 ou plus récent ; réseau local |
 | Copyright | © Tentacle TV |
 | « Quoi de neuf » | bloc `## [X.Y.Z]` de `changelogs/server-windows.md` (fil E), 1 500 caractères par langue |
 | Âge (questionnaire IARC) | aucun contenu fourni par l'app ; contenu choisi par l'utilisateur sur son propre serveur |

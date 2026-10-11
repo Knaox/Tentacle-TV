@@ -18,7 +18,7 @@ l'assistant d'installation le trouve, ou propose de l'installer depuis jellyfin.
 
 | | |
 |---|---|
-| Windows | Windows 10 version 1809 ou plus récent, Windows 11 (x64). Windows Server : voir [plus bas](#windows-server-et-arm64) |
+| Windows | Windows 10 version 2004 (build 19041) ou plus récent, Windows 11 (x64). Windows Server : voir [plus bas](#windows-server-et-arm64) |
 | Compte | n'importe quel compte Windows ; Tentacle lui-même n'exige aucun droit d'administrateur |
 | Réseau | le réseau du PC en **Privé** (voir [Pare-feu et réseau](#pare-feu-et-réseau)) |
 | Disque | environ 150 Mo pour l'app ; vos médias restent où ils sont |
@@ -181,7 +181,7 @@ C'est Jellyfin qui lit vos fichiers : les chemins s'écrivent **tels que Jellyfi
 `E:\Séries`.
 
 - Assistant ouvert sur ce PC : **Parcourir avec l'Explorateur** ouvre le sélecteur de dossiers de Windows
-  *(à confirmer : livré avec l'étape Jellyfin)*. Depuis un autre appareil, l'assistant parcourt les dossiers
+  *(à confirmer sur un paquet installé)*. Depuis un autre appareil, l'assistant parcourt les dossiers
   de Jellyfin.
 - **Lecteurs réseau** : une lettre comme `Z:` n'existe que dans votre session ; Jellyfin (surtout en service)
   ne la voit pas. Écrivez le chemin réseau : `\\NAS\partage\Films`. Jellyfin installé en mode simple utilise
@@ -203,7 +203,7 @@ et les lignes de l'app elle-même, marquées `[hôte]`. Joignez-le quand vous de
 
 ## La commande `tentacle`
 
-*(À confirmer : la commande n'est pas encore livrée.)* L'app ajoute une commande `tentacle` à Windows (un
+L'app ajoute une commande `tentacle` à Windows (un
 alias d'exécution d'application), pour les rares cas que le menu ne couvre pas. Dans PowerShell ou le
 Terminal Windows :
 
@@ -231,8 +231,8 @@ d'application**, activez *tentacle.exe*.
 ## Limites de la première version
 
 - Démarrage à l'ouverture de session, pas à l'allumage (voir plus haut).
-- Pas d'*analyse audio* pour la détection des passages : elle exige ffmpeg, que l'app ne porte pas ; elle
-  n'est proposée que si le ffmpeg de Jellyfin est trouvé sur le PC *(à confirmer)*. La détection par les
+- Pas d'*analyse audio* pour la détection des passages : elle exige ffmpeg, que l'app ne porte pas : elle
+  n'est pas proposée dans cette version. La détection par les
   trois greffons de Jellyfin marche.
 - Le transcodage matériel est l'affaire de Jellyfin : **Jellyfin › Tableau de bord › Lecture › Transcodage**
   (Intel QSV, NVIDIA NVENC, AMD AMF). [gpu.md](gpu.md) vaut pour Docker.

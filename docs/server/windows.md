@@ -17,7 +17,7 @@ finds it, or offers to install it from jellyfin.org with your agreement.
 
 | | |
 |---|---|
-| Windows | Windows 10 version 1809 or later, Windows 11 (x64). Windows Server: see [below](#windows-server-and-arm64) |
+| Windows | Windows 10 version 2004 (build 19041) or later, Windows 11 (x64). Windows Server: see [below](#windows-server-and-arm64) |
 | Account | any Windows account; no administrator rights are needed for Tentacle itself |
 | Network | the PC's network set to **Private** (see [Firewall and network](#firewall-and-network)) |
 | Disk | about 150 MB for the app; your media stay where they are |
@@ -166,8 +166,8 @@ Tentacle never updates, stops or uninstalls Jellyfin: Jellyfin updates itself th
 
 Jellyfin reads your files, so paths are written **as Jellyfin sees them**: `D:\Films`, `E:\Séries`.
 
-- With the wizard opened on this PC, **Browse with File Explorer** opens Windows' folder picker *(to confirm:
-  delivered with the Jellyfin step)*. From another device, the wizard browses Jellyfin's folders instead.
+- With the wizard opened on this PC, **Browse with File Explorer** opens Windows' folder picker *(to confirm on an
+  installed package)*. From another device, the wizard browses Jellyfin's folders instead.
 - **Network drives**: a letter like `Z:` exists only in your own session; Jellyfin (above all as a service)
   does not see it. Write the network path instead: `\\NAS\share\Films`. Jellyfin installed in the basic mode
   uses your account and its saved credentials; as a service, it runs as *Network Service*, which needs the
@@ -188,7 +188,7 @@ app's own lines, marked `[hôte]`. Attach it when you ask for help.
 
 ## The `tentacle` command
 
-*(To confirm: the command is not delivered yet.)* The app adds a `tentacle` command to Windows (an app
+The app adds a `tentacle` command to Windows (an app
 execution alias), for the rare cases the menu does not cover. In PowerShell or Windows Terminal:
 
 ```powershell
@@ -213,8 +213,8 @@ not exist: **Settings › Apps › Advanced app settings › App execution alias
 ## Limits of the first version
 
 - Starts at sign-in, not at power-on (see above).
-- No *audio analysis* for skip detection: it needs ffmpeg, which the app does not carry; it is offered only
-  if Jellyfin's ffmpeg is found on the PC *(to confirm)*. Detection by the three Jellyfin plugins works.
+- No *audio analysis* for skip detection: it needs ffmpeg, which the app does not carry, so it is not
+  offered in this version. Detection by the three Jellyfin plugins works.
 - Hardware transcoding is Jellyfin's business: **Jellyfin › Dashboard › Playback › Transcoding** (Intel QSV,
   NVIDIA NVENC, AMD AMF). [gpu.md](gpu.md) is for Docker.
 
