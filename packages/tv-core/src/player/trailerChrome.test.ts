@@ -1,16 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { RemoteIntent } from "../remote/intents";
 import {
-  TRAILER_CHROME_ON_IDLE,
   TRAILER_CLOSE_KEY,
   TRAILER_IDLE_MS,
   TRAILER_UNAVAILABLE_RETURN_MS,
-  trailerChromeOnPlaying,
-  trailerChromeOnWake,
   trailerChromeShown,
   trailerLeavesAfter,
   trailerState,
-  trailerWakes,
 } from "./trailerChrome";
 
 describe("l'écran de bande-annonce", () => {
@@ -27,33 +22,8 @@ describe("l'écran de bande-annonce", () => {
 });
 
 describe("le chrome au repos", () => {
-  it("s'estompe trois secondes après le début de la lecture, sans geste", () => {
+  it("s'estompe trois secondes après le dernier geste (les contrôles : `trailerControls.test.ts`)", () => {
     expect(TRAILER_IDLE_MS).toBe(3000);
-    expect(trailerChromeOnPlaying(true)).toEqual({ dimmed: false, timer: "arm" });
-    expect(TRAILER_CHROME_ON_IDLE).toEqual({ dimmed: true, timer: "keep" });
-  });
-
-  it("ne s'estompe jamais hors lecture", () => {
-    expect(trailerChromeOnPlaying(false)).toEqual({ dimmed: false, timer: "cancel" });
-    expect(trailerChromeOnWake(false)).toEqual({ dimmed: false, timer: "keep" });
-  });
-
-  it("un geste le rallume et relance l'attente", () => {
-    expect(trailerChromeOnWake(true)).toEqual({ dimmed: false, timer: "arm" });
-  });
-
-  it("tout geste compte — appui, maintien, glisser, doigt sur le pavé —, sauf Retour", () => {
-    const wakes: RemoteIntent[] = [
-      { type: "move", direction: "bas" },
-      { type: "select" },
-      { type: "playPause" },
-      { type: "hold", key: "select", phase: "start" },
-      { type: "swipe", direction: "gauche" },
-      { type: "drag", phase: "move", x: 1, y: 2, vx: 0, vy: 0 },
-      { type: "page", direction: "haut" },
-    ];
-    for (const intent of wakes) expect(trailerWakes(intent)).toBe(true);
-    expect(trailerWakes({ type: "retour" })).toBe(false);
   });
 });
 
