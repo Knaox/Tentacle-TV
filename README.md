@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://ko-fi.com/knaox_"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white" alt="Support on Ko-fi" /></a>
   <a href="https://discord.gg/FRse3yMhnc"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
   <a href="#quick-start-docker"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" /></a>
   <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FKnaox%2FTentacle-TV%2Fmain%2Fversions.json&query=%24.desktop&label=desktop&color=8b5cf6" alt="Desktop version" /></a>
@@ -657,6 +658,16 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 | CI/CD | GitHub Actions (Docker build on push to main) |
 
 ---
+
+## Support the project
+
+<p align="center">
+  <a href="https://ko-fi.com/knaox_"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support Tentacle TV on Ko-fi" height="36" /></a>
+</p>
+
+Tentacle TV is free, open source and ad-free — no subscription, no tracking, nothing behind a paywall. If it has earned a place on your screens, a coffee on **[Ko-fi](https://ko-fi.com/knaox_)** helps cover the app store fees, the test devices and the services the apps rely on. One-off or monthly, always optional: every app stays free either way.
+
+Tentacle TV est libre, gratuit et sans publicité — pas d'abonnement, pas de pistage, rien derrière un mur payant. S'il a trouvé sa place sur vos écrans, un café sur **[Ko-fi](https://ko-fi.com/knaox_)** aide à couvrir les frais des boutiques, les appareils de test et les services dont les applications ont besoin. Ponctuel ou mensuel, toujours facultatif : les applications restent gratuites dans tous les cas.
 
 ## Community
 
