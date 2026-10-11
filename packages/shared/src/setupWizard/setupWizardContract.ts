@@ -18,18 +18,10 @@
  */
 
 import type { SetupFlowState } from "./setupFlowContract";
+import type { SetupPackaging } from "./setupPackagingContract";
 
 /** Comment le serveur tourne : dans l'image Docker, ou installé sur la machine. */
 export type SetupDeployment = "docker" | "native";
-
-/**
- * Comment le serveur est LIVRÉ, en plus de `deployment` : `windows-app`, l'app
- * Microsoft Store « Tentacle Server » (un Node embarqué : `deployment` y vaut
- * `native`, ce qui reste vrai). Champ ADDITIF, jamais une valeur de plus dans
- * `SetupDeployment` : un client livré ignore ce qu'il ne connaît pas. Absent :
- * image Docker ou installation à la main.
- */
-export type SetupPackaging = "windows-app";
 
 /** La pile Docker choisie (`TENTACLE_STACK`) : elle dit ce qui existe déjà. */
 export type SetupStack = "full" | "db" | "only";
@@ -82,7 +74,6 @@ export interface SetupStatusResponse {
  */
 export interface SetupHostInfo {
   deployment: SetupDeployment;
-  /** `windows-app` : l'écran du code renvoie à l'icône de l'app, pas à un journal. Absent : autre livraison, ou serveur d'avant. */
   packaging?: SetupPackaging;
   stack: SetupStack | null;
   /** Le serveur tourne dans un conteneur (Docker, Podman). */
@@ -96,7 +87,6 @@ export interface SetupHostInfo {
 /** `GET /api/setup/context` — ce dont l'assistant a besoin pour choisir ses étapes. */
 export interface SetupContext {
   deployment: SetupDeployment;
-  /** `windows-app` : l'app Windows (aides et textes propres). Absent : autre livraison, ou serveur d'avant. */
   packaging?: SetupPackaging;
   stack: SetupStack | null;
   provisioner: ProvisionerKind;

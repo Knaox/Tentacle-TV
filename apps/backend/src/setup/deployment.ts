@@ -1,4 +1,5 @@
-import type { ProvisionerKind, SetupDeployment, SetupPackaging, SetupStack } from "./setupWizardContract";
+import type { ProvisionerKind, SetupDeployment, SetupStack } from "./setupWizardContract";
+import type { SetupPackaging } from "./setupPackagingContract";
 
 /**
  * Comment ce serveur a été installé — lu dans l'environnement, jamais deviné

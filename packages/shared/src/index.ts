@@ -127,6 +127,7 @@ export * from "./setupWizard/setupWizardContract";
 export * from "./setupWizard/setupDiscoveryContract";
 export * from "./setupWizard/setupFlowContract";
 export * from "./setupWizard/setupLibraryContract";
+export * from "./setupWizard/setupPackagingContract";
 export * from "./setupWizard/appLinks";
 export * from "./setupWizard/setupDocLinks";
 export * from "./setupWizard/setupHelp";
