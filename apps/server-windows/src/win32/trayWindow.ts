@@ -109,6 +109,11 @@ export class TrayWindow {
     return this.hwnd;
   }
 
+  /** L'Explorateur a accepté l'icône (faux sans barre des tâches, ex. session de service). */
+  get visible(): boolean {
+    return this.added;
+  }
+
   dispose(): void {
     if (this.pump !== null) clearInterval(this.pump);
     this.pump = null;

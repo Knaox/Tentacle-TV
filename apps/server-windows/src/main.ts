@@ -173,6 +173,7 @@ async function main(): Promise<void> {
   });
 
   tray.show(`${strings.appName} : ${strings.stateStarting}`);
+  log(`icône de la zone de notification : ${tray.visible ? "posée" : "refusée par l'Explorateur"}`);
   await controller.startServer();
 }
 
