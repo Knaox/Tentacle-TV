@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TRAILER_CLOSE_KEY } from "./trailerChrome";
 import {
   TRAILER_QUALITY_KEY, TRAILER_SUBTITLES_KEY, TRAILER_TIMELINE_KEY,
-  trailerEntryKey, trailerFocusable, trailerFocusClaim, trailerNeighbor, trailerPanelReturnKey, trailerTargets,
+  trailerEntryKey, trailerFocusable, trailerFocusClaim, trailerNeighbor, trailerPanelReturnKey, trailerStartClaim, trailerTargets,
   type TrailerFocusView,
 } from "./trailerFocus";
 
@@ -29,10 +29,25 @@ describe("les cibles et l'entrée", () => {
     expect(trailerTargets(view({ state: "unavailable" }))).toEqual([TRAILER_CLOSE_KEY]);
   });
 
-  it("l'entrée : la barre en lecture, la croix sinon", () => {
-    expect(trailerEntryKey("playing")).toBe(TRAILER_TIMELINE_KEY);
-    expect(trailerEntryKey("loading")).toBe(TRAILER_CLOSE_KEY);
-    expect(trailerEntryKey("unavailable")).toBe(TRAILER_CLOSE_KEY);
+  it("le premier focus : la croix au chargement ou sans rien d'autre ; en lecture le premier bouton, sinon la barre", () => {
+    expect(trailerEntryKey(view({ state: "loading" }))).toBe(TRAILER_CLOSE_KEY);
+    expect(trailerEntryKey(view({ state: "unavailable" }))).toBe(TRAILER_CLOSE_KEY);
+    expect(trailerEntryKey(view())).toBe(TRAILER_SUBTITLES_KEY);
+    expect(trailerEntryKey(view({ tools: { subtitles: false, quality: true } }))).toBe(TRAILER_QUALITY_KEY);
+    expect(trailerEntryKey(view({ tools: NONE }))).toBe(TRAILER_TIMELINE_KEY);
+    expect(trailerEntryKey(view({ chromeShown: false }))).toBe(TRAILER_TIMELINE_KEY);
+  });
+
+  it("la lecture commence : l'entrée se réclame, même depuis la croix du chargement (qui reste atteignable)", () => {
+    expect(trailerStartClaim("loading", view())).toBe(TRAILER_SUBTITLES_KEY);
+    expect(trailerStartClaim(null, view({ tools: NONE }))).toBe(TRAILER_TIMELINE_KEY);
+    expect(trailerFocusable(TRAILER_CLOSE_KEY, view())).toBe(true);
+  });
+
+  it("rien à réclamer pendant la lecture, hors lecture, ou panneau ouvert", () => {
+    expect(trailerStartClaim("playing", view())).toBeNull();
+    expect(trailerStartClaim("loading", view({ state: "unavailable" }))).toBeNull();
+    expect(trailerStartClaim("loading", view({ panel: "quality" }))).toBeNull();
   });
 });
 
@@ -61,7 +76,7 @@ describe("les réclamations", () => {
   });
 
   it("un focus perdu ou sur une cible disparue : l'entrée ; un focus valable reste", () => {
-    expect(trailerFocusClaim(view(), null)).toBe(TRAILER_TIMELINE_KEY);
+    expect(trailerFocusClaim(view(), null)).toBe(TRAILER_SUBTITLES_KEY);
     expect(trailerFocusClaim(view({ state: "unavailable" }), TRAILER_TIMELINE_KEY)).toBe(TRAILER_CLOSE_KEY);
     expect(trailerFocusClaim(view({ tools: NONE }), TRAILER_QUALITY_KEY)).toBe(TRAILER_TIMELINE_KEY);
     expect(trailerFocusClaim(view(), TRAILER_QUALITY_KEY)).toBeNull();

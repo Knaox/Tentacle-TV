@@ -14,9 +14,14 @@ import type { TrailerPanel, TrailerTools } from "./trailerPanels";
  *  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   ← trailer:timeline (la barre)
  * ```
  *
- * - En lecture, l'entrée est la BARRE : ←/→ y avancent et reculent
- *   (`trailerControls.ts`), OK y met en pause ; ailleurs (chargement,
- *   « indisponible »), la croix, seule cible.
+ * - Le PREMIER focus : la croix pendant le chargement, ou quand rien d'autre
+ *   n'est à cibler (« indisponible ») ; sinon le premier élément hors croix —
+ *   le premier bouton (sous-titres, sinon qualité), sinon la barre ; la barre
+ *   quand le chrome est estompé (choix de Damien, 2026-10-11). La croix reste
+ *   atteignable. La lecture qui commence RÉCLAME cette entrée
+ *   (`trailerStartClaim`) : la croix du chargement garderait sinon un focus
+ *   valable. Sur la barre, ←/→ avancent et reculent (`trailerControls.ts`),
+ *   OK met en pause.
  * - Chrome estompé, seule la barre reste focalisable — le focus y revient
  *   (`trailerFocusClaim`) : à la réapparition, le premier OK montre, le
  *   second met en pause (la règle « OK puis OK » du grand lecteur, la même
@@ -71,9 +76,25 @@ export function trailerTargets(view: Pick<TrailerFocusView, "state" | "tools">):
   return [TRAILER_CLOSE_KEY, ...trailerToolKeys(view.tools), TRAILER_TIMELINE_KEY];
 }
 
-/** L'entrée : la barre en lecture, la croix sinon. */
-export function trailerEntryKey(state: TrailerState): TrailerTargetKey {
-  return state === "playing" ? TRAILER_TIMELINE_KEY : TRAILER_CLOSE_KEY;
+/**
+ * L'entrée : hors lecture, la croix (rien d'autre à cibler) ; en lecture, le
+ * premier élément hors croix — le premier bouton, sinon la barre ; la barre
+ * quand le chrome est estompé.
+ */
+export function trailerEntryKey(view: Pick<TrailerFocusView, "state" | "tools" | "chromeShown">): TrailerTargetKey {
+  if (view.state !== "playing") return TRAILER_CLOSE_KEY;
+  if (!view.chromeShown) return TRAILER_TIMELINE_KEY;
+  return trailerToolKeys(view.tools)[0] ?? TRAILER_TIMELINE_KEY;
+}
+
+/**
+ * La lecture COMMENCE (l'état précédent n'était pas la lecture) : l'entrée se
+ * réclame, même si la croix du chargement garde un focus valable. Sinon,
+ * `null`. Panneau ouvert : la feuille a la main.
+ */
+export function trailerStartClaim(previous: TrailerState | null, view: TrailerFocusView): TrailerTargetKey | null {
+  if (previous === "playing" || view.state !== "playing" || view.panel !== null) return null;
+  return trailerEntryKey(view);
 }
 
 /**
@@ -96,7 +117,7 @@ export function trailerFocusable(key: string, view: TrailerFocusView): boolean {
 export function trailerFocusClaim(view: TrailerFocusView, focusedKey: string | null): TrailerTargetKey | null {
   if (view.panel !== null) return null;
   if (focusedKey !== null && trailerFocusable(focusedKey, view)) return null;
-  return trailerEntryKey(view.state);
+  return trailerEntryKey(view);
 }
 
 /** Où va le focus quand un panneau se referme : son bouton, si le chrome est là. */
