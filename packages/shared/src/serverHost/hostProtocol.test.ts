@@ -36,6 +36,6 @@ describe("protocole hôte ↔ serveur", () => {
 
   it("les codes de sortie et l'arrêt borné tiennent dans la grâce de l'hôte", () => {
     expect(SERVER_EXIT_CODES).toEqual({ STOPPED: 0, FAILED: 1, RESTART: 75 });
-    expect(SHUTDOWN_TIMINGS.httpCloseMs + SHUTDOWN_TIMINGS.databaseCloseMs).toBeLessThan(SHUTDOWN_TIMINGS.hostGraceMs);
+    expect(SHUTDOWN_TIMINGS.backgroundStopMs + SHUTDOWN_TIMINGS.httpCloseMs + SHUTDOWN_TIMINGS.databaseCloseMs).toBeLessThan(SHUTDOWN_TIMINGS.hostGraceMs);
   });
 });

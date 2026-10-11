@@ -1,11 +1,15 @@
 import { randomUUID } from "crypto";
+import { SERVER_EXIT_CODES } from "../serverHost/hostProtocol";
+import { serverShutdown } from "./lifecycle/serverShutdown";
 
 /**
  * Le redémarrage du serveur qu'impose le module serveur d'un plugin.
  *
  * Fastify n'enregistre plus de routes une fois à l'écoute : charger, recharger
  * ou décharger le module serveur d'un plugin demande de relancer le processus,
- * que le superviseur (Docker, `restart: unless-stopped`) remet debout. Sans
+ * que le superviseur remet debout : Docker (`restart: unless-stopped`, sur tout
+ * code) ou l'hôte Windows, qui ne relance QUE sur la sortie 75 (« relance-moi »,
+ * `SERVER_EXIT_CODES.RESTART`) — une sortie 0 y veut dire « arrêté ». Sans
  * superviseur, le serveur reste arrêté — l'interface d'administration le dit.
  *
  * Trois garanties que l'ancien `setTimeout(process.exit, 1000)` n'offrait pas :
@@ -25,15 +29,12 @@ export interface RestartTimings {
   exitDelayMs: number;
   /** Plafond d'attente des opérations en vol : téléchargement (60 s) + extraction (30 s). */
   maxWaitMs: number;
-  /** Plafond de l'arrêt propre : un flux vidéo en cours ne doit pas le retenir. */
-  shutdownTimeoutMs: number;
   pollMs: number;
 }
 
 const DEFAULT_TIMINGS: RestartTimings = {
   exitDelayMs: 1000,
   maxWaitMs: 120_000,
-  shutdownTimeoutMs: 3000,
   pollMs: 250,
 };
 
@@ -43,31 +44,18 @@ export interface RestartCoordinator {
   beginOperation: () => () => void;
   /** Idempotent : un second appel ne programme rien de plus. */
   request: (reason: string) => void;
-  /** L'arrêt propre du serveur (`app.close()`), tenté avant de sortir. */
-  setShutdown: (shutdown: () => Promise<unknown>) => void;
 }
 
+/**
+ * `restart` reçoit la raison et fait l'arrêt propre puis la sortie 75 — l'arrêt
+ * unique du serveur (`lifecycle/serverShutdown.ts`), borné étape par étape.
+ */
 export function createRestartCoordinator(
-  exit: () => void,
+  restart: (reason: string) => void,
   timings: RestartTimings = DEFAULT_TIMINGS,
 ): RestartCoordinator {
   let inFlight = 0;
   let pending = false;
-  let shutdown: (() => Promise<unknown>) | null = null;
-
-  const finish = async () => {
-    // L'arrêt propre rend les baux (collecteur de temps de visionnage, tâches
-    // planifiées) : le processus suivant reprend aussitôt au lieu d'attendre
-    // leur expiration. Borné, parce qu'une connexion qui ne se ferme pas ne
-    // doit pas empêcher le redémarrage qu'on vient d'annoncer.
-    if (shutdown) {
-      await Promise.race([
-        shutdown().catch(() => undefined),
-        new Promise((resolve) => setTimeout(resolve, timings.shutdownTimeoutMs)),
-      ]);
-    }
-    exit();
-  };
 
   return {
     isPending: () => pending,
@@ -90,19 +78,19 @@ export function createRestartCoordinator(
           setTimeout(tick, timings.pollMs);
           return;
         }
-        void finish();
+        restart(reason);
       };
       setTimeout(tick, timings.exitDelayMs);
-    },
-    setShutdown: (fn) => {
-      shutdown = fn;
     },
   };
 }
 
-const coordinator = createRestartCoordinator(() => process.exit(0));
+// L'arrêt propre rend les baux (temps de visionnage, tâches planifiées) : le
+// processus suivant reprend aussitôt au lieu d'attendre leur expiration.
+const coordinator = createRestartCoordinator((reason) => {
+  void serverShutdown.run(SERVER_EXIT_CODES.RESTART, reason);
+});
 
 export const isRestartPending = coordinator.isPending;
 export const beginPluginOperation = coordinator.beginOperation;
 export const requestServerRestart = coordinator.request;
-export const setRestartShutdown = coordinator.setShutdown;

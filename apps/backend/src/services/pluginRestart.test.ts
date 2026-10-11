@@ -1,13 +1,13 @@
 /**
  * Le redémarrage d'un module serveur de plugin : il laisse partir la réponse,
- * n'interrompt pas une opération en vol, ne se programme qu'une fois, et ne
- * se laisse pas retenir par un arrêt propre qui traîne.
+ * n'interrompt pas une opération en vol et ne se programme qu'une fois. L'arrêt
+ * propre borné qui suit est celui du serveur (`lifecycle/serverShutdown.test.ts`).
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createRestartCoordinator, type RestartTimings } from "./pluginRestart";
 
-const TIMINGS: RestartTimings = { exitDelayMs: 1000, maxWaitMs: 10_000, shutdownTimeoutMs: 3000, pollMs: 250 };
+const TIMINGS: RestartTimings = { exitDelayMs: 1000, maxWaitMs: 10_000, pollMs: 250 };
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -29,6 +29,7 @@ describe("createRestartCoordinator", () => {
     expect(exit).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(exit).toHaveBeenCalledTimes(1);
+    expect(exit).toHaveBeenCalledWith("installé");
   });
 
   it("attend la fin d'une opération en vol avant de sortir", async () => {
@@ -72,38 +73,5 @@ describe("createRestartCoordinator", () => {
     await vi.advanceTimersByTimeAsync(5000);
     // La seconde opération court toujours : rien ne sort.
     expect(exit).not.toHaveBeenCalled();
-  });
-
-  it("tente l'arrêt propre avant de sortir", async () => {
-    const order: string[] = [];
-    const restart = createRestartCoordinator(() => order.push("exit"), TIMINGS);
-    restart.setShutdown(async () => {
-      order.push("shutdown");
-    });
-    restart.request("installé");
-    await vi.advanceTimersByTimeAsync(TIMINGS.exitDelayMs);
-    expect(order).toEqual(["shutdown", "exit"]);
-  });
-
-  it("un arrêt propre qui ne rend pas la main ne retient pas le redémarrage", async () => {
-    const exit = vi.fn();
-    const restart = createRestartCoordinator(exit, TIMINGS);
-    restart.setShutdown(() => new Promise(() => {}));
-    restart.request("installé");
-    await vi.advanceTimersByTimeAsync(TIMINGS.exitDelayMs + TIMINGS.shutdownTimeoutMs - 1);
-    expect(exit).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1);
-    expect(exit).toHaveBeenCalledTimes(1);
-  });
-
-  it("un arrêt propre en échec n'empêche pas la sortie", async () => {
-    const exit = vi.fn();
-    const restart = createRestartCoordinator(exit, TIMINGS);
-    restart.setShutdown(async () => {
-      throw new Error("close failed");
-    });
-    restart.request("installé");
-    await vi.advanceTimersByTimeAsync(TIMINGS.exitDelayMs);
-    expect(exit).toHaveBeenCalledTimes(1);
   });
 });

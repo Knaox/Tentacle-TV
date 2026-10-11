@@ -32,6 +32,8 @@ export const SERVER_EXIT_CODES = { STOPPED: 0, FAILED: 1, RESTART: 75 } as const
 
 /** Bornes de l'arrêt propre. L'hôte attend `hostGraceMs`, puis termine l'objet Job. */
 export const SHUTDOWN_TIMINGS = {
+  /** Tâches de fond : reco, recherche, temps de visionnage (son bail rendu). */
+  backgroundStopMs: 2000,
   /** Fermeture HTTP : un flux vidéo relayé ne doit pas retenir l'arrêt. */
   httpCloseMs: 3000,
   /** Point de contrôle du WAL puis déconnexion de Prisma. */
