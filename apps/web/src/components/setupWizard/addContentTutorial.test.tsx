@@ -39,4 +39,17 @@ describe("« Besoin d'aide ? »", async () => {
   it("les bibliothèques d'un Jellyfin configuré vide : l'ancre de leur cas", () => {
     expect(renderToStaticMarkup(<SetupHelp step="libraries" noLibraries />)).toContain("libraries/?lang=fr#existing-jellyfin-without-libraries");
   });
+
+  it("l'app Windows : les réponses qui supposent Docker prennent leur variante, les autres restent", () => {
+    const code = renderToStaticMarkup(<SetupHelp step="code" noLibraries={false} packaging="windows-app" />);
+    expect(code).toContain("help_code_where_a_windowsApp");
+    expect(code).toContain(">help_code_why_a<");
+    expect(renderToStaticMarkup(<SetupHelp step="done" noLibraries={false} packaging="windows-app" />)).toContain("help_done_reopen_a_windowsApp");
+  });
+
+  it("un serveur qui ne dit rien de sa livraison : les réponses d'avant", () => {
+    const code = renderToStaticMarkup(<SetupHelp step="code" noLibraries={false} />);
+    expect(code).toContain(">help_code_where_a<");
+    expect(code).not.toContain("_windowsApp");
+  });
 });

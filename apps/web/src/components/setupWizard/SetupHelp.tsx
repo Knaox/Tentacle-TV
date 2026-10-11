@@ -1,15 +1,24 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, CircleHelp, ExternalLink } from "lucide-react";
-import { SETUP_HELP, setupDocUrl, setupHelpTopic, type SetupStep } from "@tentacle-tv/shared";
+import { SETUP_HELP, packagedHelpKey, setupDocUrl, setupHelpTopic, type SetupPackaging, type SetupStep } from "@tentacle-tv/shared";
 
 /**
  * « Besoin d'aide ? » au pied de chaque écran : replié d'office (un
  * `<details>` natif — clavier et lecteurs d'écran sans rien de plus),
  * quelques questions-réponses courtes, puis la page du site qui en dit plus,
- * dans la langue de l'interface — s'il y en a une.
+ * dans la langue de l'interface — s'il y en a une. Les réponses qui supposent
+ * Docker ont leur variante pour l'app Windows (`packagedHelp.ts`).
  */
-export const SetupHelp = memo(function SetupHelp({ step, noLibraries }: { step: SetupStep; noLibraries: boolean }) {
+export const SetupHelp = memo(function SetupHelp({
+  step,
+  noLibraries,
+  packaging = null,
+}: {
+  step: SetupStep;
+  noLibraries: boolean;
+  packaging?: SetupPackaging | null;
+}) {
   const { t, i18n } = useTranslation("setupWizard");
   const ids = SETUP_HELP[step];
   // Un écran sans page du site (la clé TMDB) : les questions seules.
@@ -26,7 +35,7 @@ export const SetupHelp = memo(function SetupHelp({ step, noLibraries }: { step: 
           {ids.map((id) => (
             <div key={id}>
               <dt className="text-sm font-semibold text-content-primary">{t(`help_${step}_${id}_q`)}</dt>
-              <dd className="mt-0.5 text-sm leading-relaxed text-content-secondary">{t(`help_${step}_${id}_a`)}</dd>
+              <dd className="mt-0.5 text-sm leading-relaxed text-content-secondary">{t(packagedHelpKey("setupWizard", `help_${step}_${id}_a`, packaging))}</dd>
             </div>
           ))}
         </dl>
