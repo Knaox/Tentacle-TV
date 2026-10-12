@@ -11,6 +11,7 @@ import tmdb from "./setupWizardTmdb";
 import windowsApp from "./setupWizardWindowsApp";
 import windows from "./setupWizardWindows";
 import frame from "./setupWizardFrame";
+import jellyfinStep from "./setupWizardJellyfinStep";
 
 export default {
   // ── The frame ─────────────────────────────────────────────────────────
@@ -270,4 +271,5 @@ export default {
   ...help,
   ...windows,
   ...frame,
+  ...jellyfinStep,
 };

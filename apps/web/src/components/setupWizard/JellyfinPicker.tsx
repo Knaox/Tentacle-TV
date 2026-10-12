@@ -6,13 +6,17 @@ import { AdminNotice } from "../admin/kit";
 import { Field } from "../admin/services/Field";
 import { cls } from "../../pages/adminUtils";
 import { JellyfinList } from "./JellyfinList";
+import { JellyfinStepAside } from "./JellyfinStepAside";
 import { LocalJellyfin } from "./LocalJellyfin";
 import { mergeServers, recommendedUrl, sameServer, serverState, withManual, withSelection } from "./jellyfinChoice";
+import { jellyfinStepStatus, localInstallBusy, manualFormOpen, manualUrlExample, showNoneFound } from "./jellyfinStepModel";
+import { localJellyfinView } from "./localJellyfinModel";
 import { MissingJellyfin } from "./MissingJellyfin";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import { SetupWaiting } from "./SetupWaiting";
 import type { Wizard } from "./useWizard";
+import { useLocalJellyfin } from "./useLocalJellyfin";
 import { STACK_WAITING, useStackProbe } from "./useStackProbe";
 import { WizardFrame } from "./WizardFrame";
 
@@ -87,6 +91,11 @@ export function JellyfinPicker({ wizard, title, subtitle }: { wizard: Wizard; ti
     },
     [search],
   );
+  // Le Jellyfin de ce PC est suivi ici : son état décide aussi du pied, de la gauche et de ce qui se tait.
+  const host = useLocalJellyfin(addLocal, appHost);
+  const local = appHost ? localJellyfinView(host.local, host.install, { starting: host.starting }) : null;
+  const installBusy = localInstallBusy(local);
+  const urlExample = manualUrlExample(context);
 
   const checkManual = async (event: FormEvent) => {
     event.preventDefault();
@@ -123,24 +132,25 @@ export function JellyfinPicker({ wizard, title, subtitle }: { wizard: Wizard; ti
     }
   };
 
-  // À gauche, ce que le choix entraîne (et ses mises en garde) ; dans le pied, seulement ce qui manque pour continuer.
-  const aside = state ? (
-    <>
-      <p aria-live="polite" className="text-content-primary">
-        {state === "blank" ? t("jfNextBlank") : t("jfNextConfigured")}
-      </p>
-      {chosen?.inStack && state === "configured" ? <AdminNotice tone="warning">{t("jfStackConfigured")}</AdminNotice> : null}
-      {switching && selection ? <AdminNotice tone="info">{t("jfChangeNotice", { name: selection.serverName || t("jfUnnamed") })}</AdminNotice> : null}
-    </>
-  ) : undefined;
+  // À gauche, jamais vide : l'installation en trois étapes, ce que le choix entraîne, ou les deux sortes de Jellyfin.
+  // Dans le pied, seulement ce qui manque VRAIMENT pour continuer (règle pure, `jellyfinStepModel`).
+  const footer = jellyfinStepStatus({
+    chosen: !!state,
+    local,
+    serverCount: servers.length,
+    searching,
+    stackStarting,
+    installGuide: !!context && !stackUrl,
+  });
+  const formOpen = manualFormOpen(manualOpen, empty, local);
 
   return (
     <WizardFrame
       wizard={wizard}
       title={title}
       subtitle={subtitle}
-      aside={aside}
-      status={state ? null : t("jfPickFirst")}
+      aside={<JellyfinStepAside chosen={chosen} state={state} previous={switching ? selection : null} local={local} />}
+      status={footer === null ? null : footer === "pickFirst" ? t("jfPickFirst") : t(`jfStatus_${footer}`)}
       primary={{
         label: !chosen ? t("jfPickContinue") : chosen.blank ? t("jfUseBlank") : t("jfUseConfigured"),
         onClick: () => void confirm(),
@@ -150,36 +160,39 @@ export function JellyfinPicker({ wizard, title, subtitle }: { wizard: Wizard; ti
       }}
     >
       <div className="space-y-4">
-        {appHost ? <LocalJellyfin onFound={addLocal} /> : null}
-        {searching && servers.length === 0 && !stackStarting ? <SetupWaiting title={t("jfSearching")} /> : null}
+        {local ? <LocalJellyfin host={host} view={local} /> : null}
+        {/* Pendant une installation guidée, la recherche de fond se tait : le panneau dit déjà ce qui se passe. */}
+        {searching && servers.length === 0 && !stackStarting && !installBusy ? <SetupWaiting title={t("jfSearching")} /> : null}
 
         <JellyfinList servers={servers} selected={picked} recommended={recommendedUrl(servers)} onSelect={setPicked} stackStarting={stackStarting} />
         {searching && (servers.length > 0 || stackStarting) ? <SetupWaiting variant="inline" title={t("jfSearchingOthers")} /> : null}
 
-        {empty ? <p className="text-sm text-content-secondary">{t("jfNoneFound")}</p> : null}
+        {showNoneFound(empty, local) ? <p className="text-sm text-content-secondary">{t("jfNoneFound")}</p> : null}
         {discovery?.bridged && discovery.udp !== "answered" ? <AdminNotice tone="info">{t("jfBridgedNote")}</AdminNotice> : null}
         {stackProbe.error && !STACK_WAITING.has(stackProbe.error) ? <SetupErrorLine code={stackProbe.error} onRetry={stackProbe.retry} /> : null}
 
         <div className="flex flex-wrap items-center gap-2 border-t border-line-subtle pt-3">
-          <button type="button" onClick={() => void search()} disabled={searching} className={`${linkBtn} gap-1.5`}>
-            <RefreshCw size={14} aria-hidden="true" className={searching ? "motion-safe:animate-spin" : ""} />
-            {searching ? t("jfSearchingShort") : t("jfRescan")}
-          </button>
-          {!manualOpen && !empty ? (
+          {installBusy ? null : (
+            <button type="button" onClick={() => void search()} disabled={searching} className={`${linkBtn} gap-1.5`}>
+              <RefreshCw size={14} aria-hidden="true" className={searching ? "motion-safe:animate-spin" : ""} />
+              {searching ? t("jfSearchingShort") : t("jfRescan")}
+            </button>
+          )}
+          {!formOpen ? (
             <button type="button" onClick={() => setManualOpen(true)} className={linkBtn}>
-              {t("jfManual")}
+              {installBusy ? t("jfManualElsewhere") : t("jfManual")}
             </button>
           ) : null}
         </div>
 
-        {manualOpen || empty ? (
+        {formOpen ? (
           <form onSubmit={(e) => void checkManual(e)} className="flex flex-wrap items-end gap-3">
             <Field
               label={t("jfUrl")}
-              hint={t("jfUrlHint")}
+              hint={t(urlExample.hintKey)}
               value={manualUrl}
               onChange={(e) => setManualUrl(e.target.value)}
-              placeholder="http://192.168.1.20:8096"
+              placeholder={urlExample.placeholder}
               inputMode="url"
               autoComplete="off"
               spellCheck={false}

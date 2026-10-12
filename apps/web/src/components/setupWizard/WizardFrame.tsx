@@ -33,14 +33,34 @@ export interface WizardFrameProps {
   /** Une phrase dans le pied, près des boutons : ce qui manque pour continuer, ou ce qui va se passer. */
   status?: ReactNode;
   /**
-   * `split` (défaut) : l'explication à gauche, l'action à droite ; `wide` :
-   * le titre en tête et le contenu sur toute la largeur (accès à distance).
+   * `split` (défaut) : l'explication à gauche, l'action à droite — et, sans
+   * rien à mettre à gauche (`aside` absent), UNE colonne centrée : le titre,
+   * le panneau, l'aide, plutôt qu'une colonne vide sur toute la hauteur ;
+   * `wide` : le titre en tête et le contenu sur toute la largeur (accès à distance).
    */
   layout?: "split" | "wide";
   /** Le contenu apporte ses propres encadrés : pas de panneau autour. */
   bare?: boolean;
   children: ReactNode;
 }
+
+/** Où va chaque bloc du corps, selon la mise en page (classes Tailwind écrites en entier : le JIT les lit telles quelles). */
+const PLACEMENT = {
+  split: {
+    grid: "max-w-[92rem] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr]",
+    head: "lg:col-start-1 lg:row-start-1",
+    panel: "lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start",
+    help: "lg:col-start-1 lg:row-start-2 lg:self-start",
+  },
+  // Rien à gauche : une colonne centrée, dans l'ordre de lecture (titre, panneau, aide).
+  single: { grid: "max-w-3xl", head: "", panel: "", help: "" },
+  wide: {
+    grid: "max-w-[92rem] lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]",
+    head: "lg:col-start-1 lg:row-start-1",
+    panel: "lg:col-span-2 lg:row-start-2",
+    help: "lg:col-start-2 lg:row-start-1 lg:self-start",
+  },
+} as const;
 
 /** Les propriétés du cadre que l'écran fixe, quand un formulaire enfant décide des boutons (`CredentialsForm`, `TmdbKeyEntry`). */
 export type WizardFrameBase = Omit<WizardFrameProps, "children" | "primary" | "secondary" | "status">;
@@ -67,6 +87,7 @@ export function WizardFrame({ wizard, title, subtitle, hideProgress, helpPackagi
     if (!active || active === document.body) heading.current?.focus({ preventScroll: true });
   }, []);
   const wide = layout === "wide";
+  const place = PLACEMENT[wide ? "wide" : aside ? "split" : "single"];
   const help = (
     <SetupHelp
       step={wizard.step}
@@ -90,11 +111,9 @@ export function WizardFrame({ wizard, title, subtitle, hideProgress, helpPackagi
 
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div
-          className={`mx-auto grid w-full max-w-[92rem] gap-x-14 gap-y-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10 xl:gap-x-20 ${
-            wide ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]" : "lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr]"
-          }`}
+          className={`mx-auto grid w-full gap-x-14 gap-y-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10 xl:gap-x-20 ${place.grid}`}
         >
-          <section aria-labelledby="wizard-title" className="min-w-0 animate-fade-slide-up lg:col-start-1 lg:row-start-1">
+          <section aria-labelledby="wizard-title" className={`min-w-0 animate-fade-slide-up ${place.head}`}>
             {hideProgress ? null : (
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--brand-light)] tabular-nums">
                 {t("progress", { n: wizard.position, total: wizard.total })}
@@ -109,14 +128,14 @@ export function WizardFrame({ wizard, title, subtitle, hideProgress, helpPackagi
           </section>
 
           <div
-            className={`min-w-0 animate-fade-slide-up ${wide ? "lg:col-span-2 lg:row-start-2" : "lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start"} ${
+            className={`min-w-0 animate-fade-slide-up ${place.panel} ${
               bare ? "" : "rounded-2xl border border-line-subtle bg-fill-subtle p-5 shadow-[var(--elev-3)] sm:p-7"
             }`}
           >
             {children}
           </div>
 
-          <div className={`min-w-0 ${wide ? "lg:col-start-2 lg:row-start-1 lg:self-start" : "lg:col-start-1 lg:row-start-2 lg:self-start"}`}>{help}</div>
+          <div className={`min-w-0 ${place.help}`}>{help}</div>
         </div>
       </main>
 

@@ -71,6 +71,17 @@ describe("le cadre de l'assistant", () => {
     expect(out).toContain('aria-valuenow="4"');
   });
 
+  it("rien à gauche : une seule colonne centrée ; une explication : deux colonnes", () => {
+    const single = html(<WizardFrame wizard={state()} title="Titre">contenu</WizardFrame>);
+    expect(single).toContain("max-w-3xl");
+    expect(single).not.toContain("lg:grid-cols-");
+    const split = html(<WizardFrame wizard={state()} title="Titre" aside={<p>pourquoi</p>}>contenu</WizardFrame>);
+    expect(split).toContain("lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]");
+    expect(split).toContain("pourquoi");
+    const wide = html(<WizardFrame wizard={state()} title="Titre" layout="wide">contenu</WizardFrame>);
+    expect(wide).toContain("lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]");
+  });
+
   it("la progression inconnue (accueil) n'est pas dite", () => {
     const out = html(<WizardFrame wizard={state({ step: "welcome", position: 1 })} title="Titre" hideProgress>contenu</WizardFrame>);
     expect(out).not.toContain("progress{");
