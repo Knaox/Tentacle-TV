@@ -98,6 +98,15 @@ export function AnimatePresence(
 }
 
 /**
+ * Toujours vrai : `AnimatePresence` ci-dessus démonte ses enfants sans
+ * différer, il n'existe donc aucun instant où un composant encore monté
+ * serait « en train de sortir » (`RouteExit` le lit).
+ */
+export function useIsPresent(): boolean {
+  return true;
+}
+
+/**
  * Faux sur un téléviseur : le système n'expose pas de préférence de mouvement
  * réduit, et les branches « sans animation » d'`apps/web` sautent parfois un
  * changement d'état que le shim ne rejouerait pas. Renvoyer faux garde le
