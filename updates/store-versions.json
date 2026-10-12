@@ -37,28 +37,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.28.0",
-    "tag": "desktop-v1.28.0",
+    "version": "1.28.1",
+    "tag": "desktop-v1.28.1",
     "notes": {
-      "fr": "• Lecture en incrustation : le bouton à côté du plein écran, ou la touche I, réduit la vidéo dans une petite fenêtre rangée dans le coin de l'application, et vous continuez à parcourir Tentacle — sur macOS (puces Apple), Windows et Linux (KDE)\n• Dans l'incrustation : les contrôles paraissent au survol — pause, -10 / +30 s, retour au lecteur (ou double-clic), fermer ; tirez un coin ou tournez la molette pour la redimensionner, détachez-la pour la garder au-dessus de tout ; l'épisode suivant, comme toute lecture lancée depuis l'application, s'y charge et s'y joue\n• Navigation : les pages se quittent en fondu au lieu de disparaître d'un coup\n• Accueil : « Vu » se coche dès le clic sur une carte, qui ne quitte sa rangée qu'une fois la souris partie\n• Plein écran (Linux, KDE) : la barre des tâches et les notifications ne passent plus par-dessus la vidéo quand vous cliquez sur une fenêtre d'un autre écran\n• Linux (KDE) : la vidéo ne reste plus parfois détachée de la fenêtre au lancement d'une lecture\n• Mise à jour du serveur : pendant la migration de sa base de données, un écran d'attente remplace les erreurs",
-      "en": "• Picture-in-picture: the button next to fullscreen, or the I key, shrinks the video into a small window docked in the app's corner while you keep browsing Tentacle — on macOS (Apple silicon), Windows and Linux (KDE)\n• In picture-in-picture: the controls show on hover — pause, -10 / +30 s, back to the player (or double-click), close; pull a corner or turn the mouse wheel to resize it, undock it to keep it on top of everything; the next episode, like anything you start from the app, loads and plays right there\n• Navigation: pages now fade out instead of vanishing at once\n• Home: “Watched” checks the moment you click it on a card, which only leaves its row once your mouse moves away\n• Fullscreen (Linux, KDE): the taskbar and notifications no longer show over the video when you click a window on another screen\n• Linux (KDE): the video no longer sometimes stays detached from the window when playback starts\n• Server update: while its database is being migrated, a waiting screen replaces the errors"
+      "fr": "• Quitter une vidéo l'arrête vraiment : le son et l'image ne continuent plus en fond sur la fiche après le retour\n• Le bouton « Lecture » répond à tous les coups : une page en train de se fermer ne retient plus le clic\n• Un titre sans images ni résumé s'ouvre normalement : sa fiche ne reste plus vide, une affiche de remplacement s'affiche et la lecture est possible tout de suite\n• Une série dont les épisodes n'ont pas de numéro de saison garde son bouton « Lecture »\n• Métadonnées manquantes : un message explique qu'elles viennent de Jellyfin ; l'administrateur peut lancer « Réanalyser maintenant », et la fiche se met à jour seule (serveur 1.27.0)\n• Windows : une mise à jour réussie par le Microsoft Store n'est plus signalée comme un échec",
+      "en": "• Leaving a video really stops it: sound and picture no longer keep playing behind the details page after you go back\n• The “Play” button always responds: a page that is closing no longer swallows the click\n• A title without images or overview opens normally: its page no longer stays blank, a placeholder poster shows and playback works right away\n• A series whose episodes have no season number keeps its “Play” button\n• Missing metadata: a message explains that it comes from Jellyfin; the administrator can run “Rescan now”, and the page updates by itself (server 1.27.0)\n• Windows: a successful Microsoft Store update is no longer reported as a failure"
     },
     "assets": {
       "appimage": {
-        "name": "tentacle-tv_1.28.0_x86_64.AppImage",
-        "sha256": "65990fa25f1286f37c4e0d8876b1a0297466e3c13202557448d42f6623fd5d4f"
+        "name": "tentacle-tv_1.28.1_x86_64.AppImage",
+        "sha256": "a73c357faf410af3bd865b663fe44cf725d90bd4702dace6af5a52235ce057b5"
       },
       "deb": {
-        "name": "tentacle-tv_1.28.0_amd64.deb",
-        "sha256": "1affe08659a127a150ce492d9404eb231ebb56757044902cf2ad32835d286727"
+        "name": "tentacle-tv_1.28.1_amd64.deb",
+        "sha256": "2cc227edc3e1cf3b9b133db1beec4aeed9b13c278430c7feffcdf127f35db62c"
       },
       "rpm": {
-        "name": "tentacle-tv_1.28.0_x86_64.rpm",
-        "sha256": "644a7e678687fcaa4c02c5c03dd33c65e80f280c1273348f9f7aeb1206fdd30b"
+        "name": "tentacle-tv_1.28.1_x86_64.rpm",
+        "sha256": "235e9a4e9efd7fd37cb2d6643c3aa5205a5732f5dd45a2ec612d183f32b7eeb9"
       },
       "pacman": {
-        "name": "tentacle-tv_1.28.0_x64.pkg.tar.zst",
-        "sha256": "e200611d9fdde530fa8a14a1044b8e3db420d6f6fdc7c2f822a83ffbbe04697e"
+        "name": "tentacle-tv_1.28.1_x64.pkg.tar.zst",
+        "sha256": "ac21e3a3f1501c612a407dc3d6b62f1ce3be7b6af2dde462e4b0296be255d64c"
       }
     }
   }
