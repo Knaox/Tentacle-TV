@@ -70,6 +70,11 @@ def _logo(art, with_hat, title):
             f'<g mask="url(#mServer)"><g transform="translate({SHIFT} 0)">{body}</g></g>{mark}</svg>\n')
 
 
+def logo(art):
+    """Le logo du serveur, avec chapeau : la pièce que d'autres compositions posent (`store.py`)."""
+    return _logo(art, True, "")
+
+
 # Le logo que l'hôte charge lui-même (écran de démarrage, fenêtres) : chemin
 # STABLE, recopié dans le paquet par `scripts/assemble/layout.mts`.
 HOST_LOGO = "apps/server-windows/assets/logo.svg"

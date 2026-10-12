@@ -23,7 +23,7 @@ import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from geometry import (arm_spine, tapered, suckers, mirror_pts, spire_gap, width_at,
                       squircle_path, save)
-import tvos, server
+import tvos, server, store
 
 BRAND = pathlib.Path(__file__).parent
 OUT = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else BRAND
@@ -246,6 +246,7 @@ ART = {"GRADS": GRADS, "BODY": BODY, "HAT_G": HAT_G, "FRONT_G": FRONT_G, "NOTE":
 TVOS_COUNT = tvos.write(OUT, ART)
 # ── Tentacle Server pour Windows : la mascotte et son badge « serveur » ─────
 SERVER_COUNT = server.write(OUT, ART, None if PREVIEW else ROOT)
+STORE_COUNT = store.write(OUT, ART)  # fiche Microsoft Store du serveur (store.py)
 
 # ── Modules TypeScript : un SEUL contenu pour web, TV et mobile — les bras
 #    étant des formes pleines, `pathLength` et les dasharray ont disparu, et
@@ -306,6 +307,6 @@ if not PREVIEW:
         else:
             print(f"  (ignoré, dossier absent : {target})")
 
-print(f"{7 + len(COMPOSITIONS) + TVOS_COUNT + SERVER_COUNT} SVG — {len(CUPS)} ventouses, "
+print(f"{7 + len(COMPOSITIONS) + TVOS_COUNT + SERVER_COUNT + STORE_COUNT} SVG — {len(CUPS)} ventouses, "
       f"{len(FRONT_DS) + len(BACK_DS)} bras"
       + (" (aperçu : modules TS non écrits)" if PREVIEW else " + 3 modules TS"))

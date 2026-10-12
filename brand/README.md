@@ -16,6 +16,7 @@ Source unique de vérité pour le logo. Tout PNG/ICNS/ICO/WEBP du dépôt est
 | `banner-topshelf.svg` · `banner-topshelf-wide.svg` | Le Top Shelf Apple TV : la nuit et la lumière de l'icône, la mascotte au centre. |
 | `launch-logo.svg` | Le logo de l'écran de lancement Apple TV : la mascotte du démarrage (`BootView`) dans sa lueur — ils se retouchent ensemble. |
 | `logo-server.svg` · `logo-server-nohat.svg` | Le logo de **Tentacle Server pour Windows** : la même mascotte, et un badge « serveur » (deux unités de baie) détouré en bas à droite. Composé dans `server.py` ; sans chapeau sous 24 px. Recopié chez l'hôte : `apps/server-windows/assets/logo.svg`. |
+| `store-server-poster.svg` · `store-server-tile.svg` | La fiche **Microsoft Store** de Tentacle Server : affiche 9:16 (logo principal Windows 10/11, Xbox) et zone 1:1. Le logo du serveur sur la nuit de la marque, fond OPAQUE plein bord, marge large (le Store recadre et arrondit) ; le nom « Tentacle Server » sur l'affiche, en courbes Inter (`wordmark.py`). Composés dans `store.py`, rasterisés dans `store/server/` (720×1080, 1440×2160, 1080×1080, 2160×2160, sans alpha). |
 
 ## Régénérer
 
@@ -49,6 +50,11 @@ Les binaires (PNG, WEBP, ICO, ICNS) :
 python3 brand/generate-icons.py --write              # tout
 python3 brand/generate-icons.py --write msix server-windows/assets   # Windows seulement
 ```
+
+Les visuels du Store du serveur : `python3 brand/generate-icons.py --write brand/store/server`.
+Leur nom est composé en courbes depuis Inter (`node_modules/@fontsource-variable/inter`, donc après
+`pnpm install`) : il faut `pip install fonttools brotli uharfbuzz`. Sans eux, `generate-svg.py` garde
+les deux SVG en place et le dit.
 
 Il faut Pillow et un moteur SVG : `rsvg-convert` (brew install librsvg) ou,
 sous Windows où librsvg ne s'installe pas, `resvg-py` (pip install resvg-py).

@@ -28,7 +28,7 @@ sauter l'icône du Dock EN SILENCE quand le script tournait sous Linux.
 """
 import io, pathlib, shutil, struct, subprocess, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-import windows
+import windows, store
 
 try:
     from PIL import Image
@@ -230,6 +230,19 @@ def main():
         if WRITE:
             target.parent.mkdir(parents=True, exist_ok=True)
             render(windows.framed(read_svg(source), measured_bbox(source), w, h, fill), target, w, h)
+    # La fiche Microsoft Store du serveur (`store.py`) : CRÉÉS d'après la
+    # table, aplatis sur le fond — le Store les veut opaques, sans alpha.
+    for name, source, w, h in store.TARGETS:
+        target = ROOT / store.OUT_DIR / name
+        if not selected(target):
+            continue
+        done.append((target.relative_to(ROOT), source, w, h))
+        if WRITE:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            rgba = Image.open(io.BytesIO(svg_bytes(read_svg(source), w, h))).convert("RGBA")
+            flat = Image.new("RGB", (w, h), store.OPAQUE)
+            flat.paste(rgba, mask=rgba.getchannel("A"))
+            flat.save(target, "PNG", optimize=True)
     stale = [f for folder in windows.PACKAGES for f in sorted((ROOT / folder).glob("*"))
              if f not in wanted and selected(f)]
 
