@@ -2,16 +2,21 @@
 // — et, pour quiconque veut le savoir AVANT de lancer, ce qu'elle ferait.
 //
 //   node .github/scripts/server-windows-plan.mjs plan --channel build|test|store \
-//     --sha <sha> [--image ghcr.io/knaox/tentacle-tv] [--versions versions.json]
+//     --sha <sha> [--version X.Y.Z] [--image ghcr.io/knaox/tentacle-tv] [--versions versions.json]
 //   node .github/scripts/server-windows-plan.mjs store --channel build|test|store
+//   node .github/scripts/server-windows-plan.mjs follow-up --channel <cran> --windows true|false
 //
-// `plan` lit versions.json (server, serverWindows, minServer) au commit extrait,
+// `plan` lit versions.json (server, minServer) au commit extrait — la version de
+// l'app EST celle du serveur ; `--version`, si donné, doit lui être égale —,
 // interroge le registre en LECTURE SEULE (`:latest` et `:v<server>`), compare
 // le serveur de l'arbre à celui qu'a publié « :v<server> » (git diff), puis
 // écrit la décision dans $GITHUB_OUTPUT (et en JSON sur la sortie standard).
 //
 // `store` dit où part la soumission d'après SERVER_WINDOWS_STORE_ID et
 // SERVER_WINDOWS_FLIGHT_ID (variables du dépôt) : rien, un vol, la fiche.
+//
+// `follow-up` dit si server.yml doit enchaîner l'app Windows (entrée `windows`),
+// et refuse les crans où ce n'est pas possible (build, dev).
 //
 // Une décision impossible sort en 1 avec une annotation qui dit quoi faire.
 // Env facultatifs (l'image est publique) : REGISTRY_USER, REGISTRY_TOKEN.
@@ -20,7 +25,7 @@ import { execFileSync } from 'node:child_process';
 import { setOutput } from './lib/github-output.mjs';
 import { createRegistryClient } from './lib/registry.mjs';
 import { LABELS, PlanError } from './lib/server-image.mjs';
-import { SERVER_PATHS, planWindowsPackage, storeTarget } from './lib/server-windows.mjs';
+import { SERVER_PATHS, planWindowsPackage, storeTarget, windowsFollowUp } from './lib/server-windows.mjs';
 
 const DEFAULT_IMAGE = 'ghcr.io/knaox/tentacle-tv';
 const [command, ...rest] = process.argv.slice(2);
@@ -75,7 +80,7 @@ async function plan() {
     image,
     sha,
     serverVersion: versions.server,
-    windowsVersion: versions.serverWindows,
+    expectedVersion: flag('version', '') ?? '',
     minServer: versions.minServer,
   }, { production, base, drift: revision ? serverDrift(revision, sha) : null });
 
@@ -109,9 +114,16 @@ function store() {
       : `Soumission PUBLIQUE de ${target.storeId}.`);
 }
 
-const commands = { plan, store };
+function followUp() {
+  const go = windowsFollowUp({ channel: flag('channel'), windows: flag('windows') === 'true' });
+  setOutput('windows', go);
+  console.error(go ? 'L\'app Windows suivra, au même cran et à la même version.' : 'L\'app Windows ne suit pas ce run.');
+}
+
+const commands = { plan, store, 'follow-up': followUp };
 if (!commands[command]) {
-  console.error('usage : server-windows-plan.mjs plan --channel build|test|store --sha <sha> | store --channel <cran>');
+  console.error('usage : server-windows-plan.mjs plan --channel build|test|store --sha <sha> [--version X.Y.Z] '
+    + '| store --channel <cran> | follow-up --channel <cran> --windows true|false');
   process.exit(1);
 }
 try {

@@ -94,13 +94,11 @@ test('un workflow ou des notes de version ne sont pas neutres : leur propre run 
   assert.equal(findQualityTarget(notes, (c) => (c === verified ? 1 : 0)), notes);
 });
 
-test('le bump de l\'app Windows hérite, son package.json compris', () => {
-  write('apps/server-windows/package.json', { name: '@tentacle-tv/server-windows', version: '1.0.0', private: true });
+test('l\'app Windows n\'a plus de bump à elle : une clé serverWindows n\'est plus neutre', () => {
   const verified = commit('feat(serveur-windows) : l\'hôte, contrôlé');
   write('versions.json', { ...VERSIONS, serverWindows: '1.0.1' });
-  write('apps/server-windows/package.json', { name: '@tentacle-tv/server-windows', version: '1.0.1', private: true });
-  const bump = commit('release(server-windows) : v1.0.1');
-  assert.equal(findQualityTarget(bump, (c) => (c === verified ? 1 : 0)), verified);
+  const stray = commit('chore : serverWindows réintroduite');
+  assert.equal(findQualityTarget(stray, (c) => (c === verified ? 1 : 0)), stray);
 });
 
 test('un run présent l\'emporte toujours, même rouge : on n\'hérite jamais par-dessus', () => {

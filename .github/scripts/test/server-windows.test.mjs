@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { LABELS, PlanError, liveServerVersion } from '../lib/server-image.mjs';
-import { planWindowsPackage, storeTarget, windowsTag } from '../lib/server-windows.mjs';
+import { planWindowsPackage, storeTarget, windowsFollowUp, windowsTag } from '../lib/server-windows.mjs';
 
 const IMAGE = 'ghcr.io/knaox/tentacle-tv';
 const SHA = 'a'.repeat(40);
@@ -20,15 +20,38 @@ const latestSame = { digest: D_LATEST, labels: { [LABELS.version]: '1.25.1', [LA
 const latestOther = { digest: D_LATEST, labels: { [LABELS.version]: '1.25.0', [LABELS.client]: '1.1.0' } };
 
 const params = (channel, extra = {}) => ({
-  channel, image: IMAGE, sha: SHA, serverVersion: '1.25.1', windowsVersion: '1.0.0', minServer: '1.23.0', ...extra,
+  channel, image: IMAGE, sha: SHA, serverVersion: '1.25.1', minServer: '1.23.0', ...extra,
 });
 
-test('version du paquet : X.Y.Z.0, et le tag de l\'app, jamais celui du serveur', () => {
+test('la version de l\'app EST celle du serveur : paquet S.0, tag server-windows-vS', () => {
   const plan = planWindowsPackage(params('build'), { production: latestSame, base, drift: [] });
-  assert.equal(plan.msixVersion, '1.0.0.0');
-  assert.equal(plan.tag, 'server-windows-v1.0.0');
-  assert.equal(windowsTag('2.3.4'), 'server-windows-v2.3.4');
   assert.equal(plan.serverVersion, '1.25.1');
+  assert.equal(plan.windowsVersion, '1.25.1');
+  assert.equal(plan.msixVersion, '1.25.1.0');
+  assert.equal(plan.tag, 'server-windows-v1.25.1');
+  assert.equal(windowsTag('2.3.4'), 'server-windows-v2.3.4');
+});
+
+test('une version demandée doit être celle du serveur : rien ne se bumpe ici', () => {
+  const same = planWindowsPackage(params('test', { expectedVersion: '1.25.1' }), { production: latestSame, base, drift: [] });
+  assert.equal(same.msixVersion, '1.25.1.0');
+  assert.equal(planWindowsPackage(params('test', { expectedVersion: '' }), { production: latestSame, base, drift: [] })
+    .windowsVersion, '1.25.1');
+  assert.throws(() => planWindowsPackage(params('test', { expectedVersion: '1.27.0' }), { production: latestSame, base }),
+    (e) => e instanceof PlanError && /1\.27\.0/.test(e.message) && /server vaut 1\.25\.1/.test(e.message));
+  assert.throws(() => planWindowsPackage(params('test', { expectedVersion: 'v1.25' }), { production: latestSame, base }),
+    (e) => e instanceof PlanError && /illisible/.test(e.message));
+});
+
+test('server.yml n\'enchaîne l\'app Windows qu\'aux crans test et store', () => {
+  assert.equal(windowsFollowUp({ channel: 'test', windows: true }), true);
+  assert.equal(windowsFollowUp({ channel: 'store', windows: true }), true);
+  for (const channel of ['build', 'test', 'store', 'dev', '']) {
+    assert.equal(windowsFollowUp({ channel, windows: false }), false);
+  }
+  assert.throws(() => windowsFollowUp({ channel: 'build', windows: true }), (e) => e instanceof PlanError && /build/.test(e.message));
+  assert.throws(() => windowsFollowUp({ channel: 'dev', windows: true }), (e) => e instanceof PlanError && /:dev/.test(e.message));
+  assert.throws(() => windowsFollowUp({ channel: '', windows: true }), PlanError);
 });
 
 test('le client LG est celui en service quand la production sert ce serveur, épinglé', () => {
@@ -73,8 +96,8 @@ test('un serveur jamais publié, ou plus ancien que minServer, ne part à aucun 
 
 test('ni cran dev, ni version illisible', () => {
   assert.throws(() => planWindowsPackage(params('dev'), { production: latestSame, base }), PlanError);
-  assert.throws(() => planWindowsPackage(params('test', { windowsVersion: undefined }), { production: latestSame, base }),
-    (e) => /serverWindows/.test(e.message));
+  assert.throws(() => planWindowsPackage(params('test', { serverVersion: undefined }), { production: latestSame, base }),
+    (e) => /versions\.json → server illisible/.test(e.message));
   assert.throws(() => planWindowsPackage(params('test', { sha: 'abc' }), { production: latestSame, base }), PlanError);
 });
 

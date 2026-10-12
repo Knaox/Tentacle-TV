@@ -4,13 +4,23 @@
 # Windows, sans Docker : un hôte (apps/server-windows) qui supervise le
 # serveur, et le serveur lui-même, assemblés en un paquet MSIX.
 #
-# DEUX VERSIONS, À NE PAS CONFONDRE :
-#   • celle de l'APP — versions.json → serverWindows (SOURCE UNIQUE), qui
-#     devient la version du paquet (X.Y.Z.0 : le Store réserve le 4e champ) et
-#     que le Store exige STRICTEMENT croissante d'une soumission à l'autre ;
-#   • celle du SERVEUR EMBARQUÉ — versions.json → server, livrée par server.yml.
-# L'entrée `version` du dispatch BUMPE la première (bump-version.mjs, clé
-# serverWindows), jamais la seconde.
+# UNE SEULE VERSION (décision du 2026-10-12) : celle de l'app EST celle du
+# serveur qu'elle embarque, versions.json → server. Paquet S.0 (le Store
+# réserve le 4e champ et exige un paquet STRICTEMENT croissant), tag
+# `server-windows-vS`, notes `## [S]` de changelogs/server-windows.md. Seule
+# exception, la 1.0.0, construite à la main hors workflow ; tout serveur livré
+# depuis (≥ 1.27.0) la dépasse. CE WORKFLOW NE BUMPE RIEN : la version, c'est
+# server.yml qui l'écrit. L'entrée `version` n'est qu'une garde (« je livre
+# bien S ») : un écart avec versions.json → server au commit figé refuse.
+#
+# DEUX FAÇONS DE LE LANCER :
+#   • seul, depuis la page de déploiement (relivrer l'app sur le serveur déjà
+#     livré) : `channel` et `version` ;
+#   • enchaîné par server.yml (entrée `windows`), en fin de run réussi, au MÊME
+#     cran et à la MÊME version, avec en plus `sha` : le commit figé du run
+#     serveur (son bump). Les gardes ci-dessous passent alors d'elles-mêmes,
+#     server.yml venant de publier « :vS » (et de basculer `:latest` au cran
+#     store).
 #
 # LE PAQUET EMBARQUE UN SERVEUR DÉJÀ LIVRÉ, avec les mêmes règles que webOS :
 #   • au cran store, refus si l'image en service (`:latest`) n'est pas DÉJÀ le
@@ -35,12 +45,13 @@
 #             fiche publique ne bouge pas.
 #   • store — soumission publique (variable SERVER_WINDOWS_STORE_ID), notes
 #             FR/EN depuis changelogs/server-windows.md, publication dès la
-#             certification. Le tag `server-windows-vX.Y.Z` vaut ce cran.
+#             certification. Le tag `server-windows-vS` vaut ce cran ; il est
+#             posé en fin de run (s'il manque) sur le commit livré.
 # Le Microsoft Store exige le paquet à chaque soumission : rien ne se « promeut »,
 # le cran store reconstruit toujours.
 #
-# Les variables du dépôt manquent ? Les crans test et store s'arrêtent AVANT le
-# bump, en le disant ; le cran build reste possible. Secrets : les PARTNER_* du
+# Les variables du dépôt manquent ? Les crans test et store s'arrêtent avant le
+# moindre build, en le disant ; le cran build reste possible. Secrets : les PARTNER_* du
 # bureau (même compte Partner Center).
 
 name: Release Server Windows
@@ -56,7 +67,13 @@ on:
         options: [build, test, store]
         default: test
       version:
-        description: "Version X.Y.Z de l'app à livrer (vide = versions.json inchangé)"
+        description: "Version X.Y.Z attendue = celle du serveur (versions.json → server). Rien n'est bumpé ; vide = celle de versions.json"
+        type: string
+        default: ""
+      # Posé par server.yml seulement (la page de déploiement ne l'envoie pas) :
+      # le commit figé du run serveur. Vide = le commit du déclenchement.
+      sha:
+        description: "Commit à livrer (posé par server.yml ; vide = celui du déclenchement)"
         type: string
         default: ""
 
@@ -78,8 +95,9 @@ jobs:
     name: Préparer la livraison
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Rien n'est écrit dans le dépôt ici (plus de bump) : lecture seule.
     permissions:
-      contents: write
+      contents: read
       actions: read
       packages: read
     outputs:
@@ -88,6 +106,7 @@ jobs:
       version: ${{ steps.plan.outputs.windows-version }}
       msix-version: ${{ steps.plan.outputs.msix-version }}
       server-version: ${{ steps.plan.outputs.server-version }}
+      tag: ${{ steps.plan.outputs.tag }}
       submit: ${{ steps.store.outputs.submit }}
       store-id: ${{ steps.store.outputs.store-id }}
       flight-id: ${{ steps.store.outputs.flight-id }}
@@ -96,9 +115,29 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Le commit livré : celui que server.yml a figé (son bump) s'il l'envoie,
+      # sinon celui du déclenchement. Il doit appartenir à la branche lancée —
+      # jamais un commit étranger, ni un SHA abrégé.
+      - name: Commit figé
+        id: sha
+        env:
+          WANTED: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          SHA="${WANTED:-$GITHUB_SHA}"
+          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Entrée « sha » illisible : « ${SHA} » (40 caractères hexadécimaux attendus)."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$SHA" HEAD 2>/dev/null; then
+            echo "::error::Le commit ${SHA} n'appartient pas à ${GITHUB_REF_NAME} : rien ne part."
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
       - uses: ./.github/actions/require-quality
         with:
-          sha: ${{ github.sha }}
+          sha: ${{ steps.sha.outputs.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
@@ -115,9 +154,8 @@ jobs:
           echo "Cran : $CHANNEL"
           echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
-      # AVANT le bump, comme tout ce qui suit jusqu'à lui : une variable qui
-      # manque, un serveur jamais publié ou une production sur un autre serveur
-      # n'ont pas à laisser derrière eux un commit de version.
+      # Avant le moindre build : une variable qui manque, un serveur jamais
+      # publié ou une production sur un autre serveur arrêtent le run ici.
       - name: Pré-vol du Store (où part la soumission)
         id: store
         env:
@@ -136,64 +174,31 @@ jobs:
             exit 1
           fi
 
-      - name: Pré-vol du serveur embarqué
-        env:
-          CHANNEL: ${{ steps.channel.outputs.channel }}
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          node .github/scripts/server-windows-plan.mjs plan \
-            --channel "$CHANNEL" --sha "$GITHUB_SHA" --image "$IMAGE" > /dev/null
-
-      - name: Bump versions.json (si une version est demandée)
-        id: bump
-        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
-        env:
-          WANTED: ${{ inputs.version }}
-        run: node .github/scripts/bump-version.mjs serverWindows "$WANTED"
-
-      - uses: ./.github/actions/push-main
-        id: pushed
-        if: steps.bump.outputs.changed == 'true'
-        with:
-          paths: ${{ steps.bump.outputs.files }}
-          message: "release(server-windows) : v${{ inputs.version }}"
-
-      - name: Poser le tag server-windows-v*
-        if: steps.pushed.outputs.committed == 'true'
-        env:
-          TAG: server-windows-v${{ inputs.version }}
-        run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "::warning::le tag $TAG existe déjà — on le laisse en place."
-          else
-            git tag "$TAG" "${{ steps.pushed.outputs.sha }}"
-            git push origin "$TAG"
-          fi
-
-      # Le plan définitif, au commit figé (celui du bump s'il y en a un).
+      # Le plan, au commit figé. Aucun bump : la version est celle du serveur
+      # (versions.json → server à ce commit) ; `version`, si donnée, doit
+      # l'égaler — le plan refuse sinon.
       - name: Plan du run
         id: plan
         env:
-          BUMPED_SHA: ${{ steps.pushed.outputs.sha }}
+          SHA: ${{ steps.sha.outputs.sha }}
           CHANNEL: ${{ steps.channel.outputs.channel }}
+          WANTED: ${{ inputs.version }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          SHA="${BUMPED_SHA:-$GITHUB_SHA}"
           git checkout --quiet "$SHA"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           node .github/scripts/server-windows-plan.mjs plan \
-            --channel "$CHANNEL" --sha "$SHA" --image "$IMAGE" > plan.json
+            --channel "$CHANNEL" --sha "$SHA" --version "${WANTED:-}" --image "$IMAGE" > plan.json
           VERSION=$(jq -r .windowsVersion plan.json)
           # Garde-fou : sur un tag, les deux doivent coïncider. La source reste
           # versions.json — le tag n'est qu'un déclencheur, jamais l'autorité.
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ "$GITHUB_REF_NAME" != "server-windows-v$VERSION" ]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} ≠ server-windows-v${VERSION} (versions.json → serverWindows). Mets à jour versions.json (source unique) ou corrige le tag."
+            echo "::error::Tag ${GITHUB_REF_NAME} ≠ server-windows-v${VERSION} (versions.json → server : l'app suit le serveur). Corrige le tag, ou livre d'abord ce serveur."
             exit 1
           fi
-          echo "Server Windows ${VERSION} — cran ${CHANNEL} · sha ${SHA}"
+          echo "Server Windows ${VERSION} (= serveur) — cran ${CHANNEL} · sha ${SHA}"
 
       - name: Pré-vol des notes de version
         if: steps.channel.outputs.channel != 'build'
@@ -373,3 +378,33 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           CHANGELOG: changelogs/server-windows.md
         run: node .github/scripts/msstore-submit.mjs
+
+  # ── Le tag de l'app, au cran store, une fois la soumission partie ──────────
+  # Plus de bump ici : le tag `server-windows-vS` se pose sur le commit livré
+  # (s'il manque — une relivraison de la même version le laisse en place). Un
+  # tag poussé avec GITHUB_TOKEN ne relance aucun workflow.
+  tag:
+    name: Tag server-windows-v*
+    needs: [prepare, windows]
+    if: needs.prepare.outputs.channel == 'store' && needs.prepare.outputs.submit == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+
+      - name: Poser le tag
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::notice::le tag $TAG existe déjà — on le laisse en place."
+          else
+            git tag "$TAG" "$SHA"
+            git push origin "$TAG"
+          fi

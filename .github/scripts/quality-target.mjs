@@ -40,9 +40,8 @@ const NEUTRAL = new Map([
   // Les clés qu'écrit bump-version.mjs — SAUF `desktop` : registry.test.ts
   // (web) exige une entrée de nouveautés pour cette version-là, un bump
   // desktop peut donc le faire tomber. Celui-là attend un vrai contrôle.
-  // `serverWindows` n'est lue que par server-windows.yml, jamais par un build
-  // ni un test de l'arbre (vérifié le 2026-10-11, à son introduction).
-  ['versions.json', ['mobile', 'tv', 'webos', 'server', 'serverWindows', 'minServer']],
+  // (Plus de `serverWindows` : l'app Windows suit `server` depuis le 2026-10-12.)
+  ['versions.json', ['mobile', 'tv', 'webos', 'server', 'minServer']],
   // Les package.json qu'aligne bump-version.mjs (sa table KEYS), champ
   // `version` seul : un bump qui toucherait une dépendance n'est plus neutre.
   ['apps/desktop-electron/package.json', ['version']],
@@ -50,7 +49,6 @@ const NEUTRAL = new Map([
   ['apps/tv/package.json', ['version']],
   ['apps/tv-webos/package.json', ['version']],
   ['apps/backend/package.json', ['version']],
-  ['apps/server-windows/package.json', ['version']],
 ]);
 
 // Au-delà, on renonce : trente commits sans run de qualité d'affilée, c'est

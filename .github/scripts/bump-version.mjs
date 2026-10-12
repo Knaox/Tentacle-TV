@@ -23,11 +23,10 @@ const KEYS = {
   mobile: 'apps/mobile/package.json',
   tv: 'apps/tv/package.json',
   webos: 'apps/tv-webos/package.json',
+  // `server` vaut AUSSI pour l'app Tentacle Server pour Windows (paquet S.0) :
+  // plus de clé `serverWindows` depuis le 2026-10-12, l'app suit le serveur.
+  // L'hôte lit sa version dans son manifeste MSIX, jamais dans un package.json.
   server: 'apps/backend/package.json',
-  // L'app Windows a SA version (celle du paquet MSIX, X.Y.Z.0), distincte de
-  // celle du serveur qu'elle embarque (`server`). Tant que le paquet de l'hôte
-  // n'existe pas dans l'arbre, seul versions.json est écrit (patch → null).
-  serverWindows: 'apps/server-windows/package.json',
   minServer: null, // exigence, pas une version livrée : aucun paquet ne la porte
 };
 

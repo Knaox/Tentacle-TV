@@ -3,8 +3,14 @@
 // registre, l'écart des sources et les variables du dépôt arrivent en
 // paramètres, et la décision se rejoue hors CI (test/server-windows.test.mjs).
 //
-// LE PAQUET EMBARQUE LE SERVEUR, IL NE LE LIVRE PAS. L'app a SA version
-// (versions.json → serverWindows, celle du MSIX) ; le serveur qu'elle porte est
+// LA VERSION DE L'APP EST CELLE DU SERVEUR (décision du 2026-10-12). Plus de
+// ligne à part : versions.json → server donne le paquet (S → MSIX S.0), le tag
+// `server-windows-vS` et le bloc `## [S]` de changelogs/server-windows.md. Seule
+// exception, la 1.0.0, construite à la main hors workflow : tout serveur livré
+// depuis (≥ 1.27.0) la dépasse, et le Store exige un paquet strictement croissant.
+// Ce workflow ne bumpe donc RIEN : la version, c'est server.yml qui l'écrit.
+//
+// LE PAQUET EMBARQUE LE SERVEUR, IL NE LE LIVRE PAS. Le serveur qu'il porte est
 // celui de versions.json → server, construit depuis le commit figé (le moteur
 // Prisma de Windows ne vient d'aucune image). Deux règles en découlent, les
 // mêmes que celles de webOS face au serveur :
@@ -36,8 +42,9 @@ const DRIFT_SHOWN = 5;
  * @param {'build'|'test'|'store'} p.channel
  * @param {string} p.image          ex. ghcr.io/knaox/tentacle-tv
  * @param {string} p.sha            commit figé du run
- * @param {string} p.serverVersion  versions.json → server
- * @param {string} p.windowsVersion versions.json → serverWindows
+ * @param {string} p.serverVersion  versions.json → server — ET la version de l'app
+ * @param {string} [p.expectedVersion] la version demandée au lancement (entrée
+ *   `version`, ou celle que server.yml vient de livrer) ; vide = celle de versions.json
  * @param {string} p.minServer      versions.json → minServer
  * @param {object} facts
  * @param {{digest:string, labels:object}|null} facts.production  `:latest`
@@ -51,13 +58,20 @@ export function planWindowsPackage(p, { production, base, drift = null }) {
   }
   if (!p.image) throw new PlanError('image manquante.');
   if (!SHA_RE.test(p.sha ?? '')) throw new PlanError(`SHA figé illisible : « ${p.sha} ».`);
-  if (!isVersion(p.windowsVersion)) {
-    throw new PlanError(`versions.json → serverWindows illisible : « ${p.windowsVersion} ».`);
-  }
   if (!isVersion(p.serverVersion)) throw new PlanError(`versions.json → server illisible : « ${p.serverVersion} ».`);
   if (!isVersion(p.minServer)) throw new PlanError(`versions.json → minServer illisible : « ${p.minServer} ».`);
   const S = p.serverVersion;
-  const W = p.windowsVersion;
+  // Rien ne se bumpe ici : la version demandée doit ÊTRE celle du serveur au
+  // commit figé. Un écart, c'est un serveur pas encore livré, ou une faute de frappe.
+  if (p.expectedVersion) {
+    if (!isVersion(p.expectedVersion)) throw new PlanError(`version demandée illisible : « ${p.expectedVersion} ».`);
+    if (p.expectedVersion !== S) {
+      throw new PlanError(`Version demandée ${p.expectedVersion}, mais versions.json → server vaut ${S} à ce commit : `
+        + 'la version de l\'app Windows EST celle du serveur, et ce workflow ne bumpe rien. Livre d\'abord le serveur '
+        + `${p.expectedVersion} (server.yml, case « windows » pour enchaîner), ou laisse « version » vide.`);
+    }
+  }
+  const W = S;
 
   // Le client web du paquet est compilé avec cette exigence : servi par un
   // serveur plus ancien, il afficherait lui-même « Serveur à mettre à jour ».
@@ -121,7 +135,7 @@ export function planWindowsPackage(p, { production, base, drift = null }) {
     clientFrom,
     clientVersion,
     serverRevision,
-    summary: `app ${W} (MSIX ${W}.0) · serveur ${S} construit depuis ${short(p.sha)} · client LG `
+    summary: `app ${W} (MSIX ${W}.0) = serveur ${S}, construit depuis ${short(p.sha)} · client LG `
       + `${clientVersion || 'non étiqueté'} repris de :${clientFrom} (${source.digest.slice(7, 19)})`,
     notices,
   };
@@ -152,4 +166,24 @@ export function storeTarget({ channel, storeId = '', flightId = '' }) {
     throw new PlanError(`SERVER_WINDOWS_FLIGHT_ID illisible : « ${flightId} ».`);
   }
   return { storeId, flightId };
+}
+
+/**
+ * server.yml peut enchaîner l'app Windows (entrée `windows`), au MÊME cran et à
+ * la MÊME version. Seulement aux crans test et store : au cran build, l'image
+ * n'est pas publiée (« :vS » manquerait) ; au cran dev, jamais — `:dev` n'est
+ * pas une livraison. Refusé AVANT le bump, plutôt qu'un run Windows qui
+ * échouerait après la livraison du serveur.
+ * @returns {boolean} true = déclencher server-windows.yml en fin de run
+ */
+export function windowsFollowUp({ channel, windows }) {
+  if (!windows) return false;
+  if (channel === 'test' || channel === 'store') return true;
+  if (channel === 'build') {
+    throw new PlanError('« windows » au cran build : l\'image du serveur n\'est pas publiée, l\'app Windows n\'aurait '
+      + 'aucun « :vS » à embarquer. Décoche « windows », ou construis l\'app seule (server-windows.yml, cran build) '
+      + 'sur un serveur déjà publié.');
+  }
+  throw new PlanError(`« windows » au cran ${channel || 'dev'} : l'app Windows ne suit que les livraisons test et store `
+    + 'du serveur, jamais l\'image :dev.');
 }

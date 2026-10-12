@@ -6,11 +6,16 @@ Tentacle sur un PC Windows, sans Docker. Lu par
 (limite du Microsoft Store : 1 500 caractères PAR LANGUE, coupés à la puce au
 delà — le pré-vol dit de combien).
 
-Blocs `## [X.Y.Z]` avec `### FR` / `### EN`, où **X.Y.Z est la version de
-l'app** (`versions.json` → `serverWindows`), jamais celle du serveur qu'elle
-embarque (`versions.json` → `server`) : les deux avancent chacune à son pas.
-Un bloc de `changelogs/server.md` ne vaut donc pas ici. Exigé par le pré-vol de
-`server-windows.yml` aux crans test et store, avant le moindre build.
+Blocs `## [X.Y.Z]` avec `### FR` / `### EN`, où **X.Y.Z est la version du
+SERVEUR** (`versions.json` → `server`) : depuis le 2026-10-12, la version de
+l'app EST celle du serveur qu'elle embarque (paquet `X.Y.Z.0`). Seule
+exception, la 1.0.0 ci-dessous, construite à la main hors workflow ; la suivante
+sera celle du premier serveur livré avec l'app (1.27.0 ou au-delà). Le bloc dit
+ce qui change POUR L'APP WINDOWS (l'hôte, l'icône, et ce que le serveur apporte
+à ses utilisateurs) : un bloc de `changelogs/server.md` ne vaut pas ici, il
+faut les DEUX quand `server.yml` enchaîne l'app (entrée `windows`). Exigé par le
+pré-vol de `server-windows.yml` — et par celui de `server.yml` quand il
+l'enchaîne — aux crans test et store, avant le moindre build.
 
 ## [1.0.0]
 ### FR
