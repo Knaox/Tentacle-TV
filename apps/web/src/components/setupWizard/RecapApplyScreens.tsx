@@ -1,13 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { cls } from "../../pages/adminUtils";
 import { Field } from "../admin/services/Field";
 import { hostAndPort, isValidClientUrl } from "./jellyfinChoice";
 import type { Wizard } from "./useWizard";
 import { pathOf, selectionOf } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
-
-const primary = `${cls.bp} w-full sm:w-auto`;
 
 /**
  * Tout ce qui va être fait, et l'adresse de Jellyfin que recevront les
@@ -17,6 +14,7 @@ const primary = `${cls.bp} w-full sm:w-auto`;
 export function RecapScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   const { data } = wizard;
+  const formId = useId();
   const [clientUrl, setClientUrl] = useState(data.clientUrl);
   const invalid = clientUrl.trim() !== "" && !isValidClientUrl(clientUrl);
   const selection = selectionOf(data.context);
@@ -58,22 +56,28 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
         ...tmdbRow,
       ];
   return (
-    <WizardFrame help={wizard} title={t("recapTitle")} subtitle={t("recapSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
-      <dl className="divide-y divide-line-subtle rounded-xl border border-line-subtle">
+    <WizardFrame
+      wizard={wizard}
+      title={t("recapTitle")}
+      subtitle={t("recapSubtitle")}
+      primary={{ label: t("recapApply"), form: formId, disabled: invalid }}
+    >
+      <dl className="divide-y divide-line-subtle overflow-hidden rounded-xl border border-line-subtle bg-fill-faint">
         {rows.map(([label, value]) => (
-          <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-[9rem_1fr]">
-            <dt className="text-xs font-medium text-content-tertiary">{label}</dt>
+          <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr] sm:gap-4">
+            <dt className="text-xs font-semibold text-content-tertiary sm:pt-0.5">{label}</dt>
             <dd className="break-words text-sm text-content-primary">{value}</dd>
           </div>
         ))}
       </dl>
       <form
+        id={formId}
         onSubmit={(e: FormEvent) => {
           e.preventDefault();
           wizard.patch({ clientUrl: clientUrl.trim().replace(/\/+$/, "") });
           wizard.next();
         }}
-        className="mt-6 space-y-6"
+        className="mt-6"
       >
         <Field
           label={t("recapClientUrl")}
@@ -86,9 +90,6 @@ export function RecapScreen({ wizard }: { wizard: Wizard }) {
           autoComplete="off"
           spellCheck={false}
         />
-        <button type="submit" disabled={invalid} className={primary}>
-          {t("recapApply")}
-        </button>
       </form>
     </WizardFrame>
   );

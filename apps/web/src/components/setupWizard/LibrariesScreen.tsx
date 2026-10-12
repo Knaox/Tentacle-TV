@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import type { LibraryPlan, PathStyle } from "@tentacle-tv/shared";
-import { cls } from "../../pages/adminUtils";
 import { ExplorerPick } from "./ExplorerPick";
 import { FolderBrowser } from "./FolderBrowser";
 import { LibraryPlanRow } from "./LibraryPlanRow";
@@ -10,11 +9,10 @@ import { LocaleFields } from "./LocaleFields";
 import { MediaFolderMap } from "./MediaFolderMap";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
+import { SetupWaiting } from "./SetupWaiting";
 import type { Wizard } from "./useWizard";
 import { defaultLibraries, isValidLibraryName, pathOf, plansMissingFolder } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
-
-const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary";
 
 /**
  * De VRAIES bibliothèques Jellyfin, créées par son API
@@ -28,7 +26,8 @@ const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline
  * « Films » et « Séries » sont proposées : sur les dossiers de la pile pour son
  * Jellyfin, sinon sans dossier — on choisit les siens dans ce que voit
  * JELLYFIN (arborescence Linux ou lecteurs Windows, selon sa machine). Dans
- * l'app Windows, depuis le PC même, la boîte de l'Explorateur en plus.
+ * l'app Windows, depuis le PC même, la boîte de l'Explorateur en plus. Où
+ * déposer ses fichiers est dit à gauche, les bibliothèques à créer à droite.
  */
 export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
@@ -79,15 +78,40 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
     wizard.next();
   };
 
+  const aside = (
+    <>
+      <MediaFolderMap context={context} inStack={inStack} style={style} />
+      {existing.length > 0 ? (
+        <div>
+          <p className="text-xs font-semibold text-content-tertiary">{t("librariesExisting")}</p>
+          <ul className="mt-2 space-y-1.5">
+            {existing.map((library) => (
+              <li key={library.name} className="text-sm text-content-secondary">
+                <span className="font-semibold text-content-primary">{library.name}</span>{" "}
+                <span className="break-all font-mono text-xs text-content-tertiary">{library.paths.join(", ")}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </>
+  );
+  const missingLine =
+    loaded && missing.length > 0 ? (
+      <span className="text-status-warning-fg">
+        {missing.length === 1 && missing[0].name.trim() ? t("libraryFolderMissing", { name: missing[0].name.trim() }) : t("libraryFolderMissingUnnamed")}
+      </span>
+    ) : null;
+
   return (
     <WizardFrame
-      help={wizard}
+      wizard={wizard}
       title={optional ? t("librariesTitleEmpty") : t("librariesTitle")}
       subtitle={optional ? t("librariesSubtitleEmpty") : t("librariesSubtitle")}
-      position={wizard.position}
-      total={wizard.total}
-      onBack={wizard.back}
-      server={wizard.server}
+      aside={aside}
+      status={missingLine}
+      primary={{ label: t("next"), onClick: () => proceed(plans), disabled: !loaded || !valid }}
+      secondary={optional ? [{ label: t("librariesSkip"), onClick: () => proceed([]) }] : undefined}
     >
       <div className="space-y-5">
         <SetupErrorLine
@@ -97,77 +121,54 @@ export function LibrariesScreen({ wizard }: { wizard: Wizard }) {
             setAttempt((n) => n + 1);
           }}
         />
-        <MediaFolderMap context={context} inStack={inStack} style={style} />
-        {existing.length > 0 ? (
-          <div>
-            <p className="text-xs font-medium text-content-tertiary">{t("librariesExisting")}</p>
-            <ul className="mt-2 space-y-1.5">
-              {existing.map((library) => (
-                <li key={library.name} className="text-sm text-content-secondary">
-                  <span className="font-semibold text-content-primary">{library.name}</span>{" "}
-                  <span className="break-all font-mono text-xs text-content-tertiary">{library.paths.join(", ")}</span>
-                </li>
-              ))}
-            </ul>
+        {!loaded && !error ? <SetupWaiting title={t("loading")} /> : null}
+
+        {loaded ? (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-content-tertiary">{missing.length > 0 ? t("librariesPick") : t("librariesNew")}</p>
+            {plans.length === 0 ? <p className="text-sm text-content-tertiary">{t("librariesNone")}</p> : null}
+            {plans.map((plan, index) =>
+              browsing === index ? (
+                <FolderBrowser
+                  key={index}
+                  start={plan.paths[0] ?? (inStack ? (context?.mediaFolders?.root ?? null) : null)}
+                  onPick={(path) => {
+                    update(index, { paths: [path] });
+                    setBrowsing(null);
+                  }}
+                  onCancel={() => setBrowsing(null)}
+                />
+              ) : (
+                <LibraryPlanRow
+                  key={index}
+                  plan={plan}
+                  onChange={(next) => update(index, next)}
+                  onBrowse={() => setBrowsing(index)}
+                  onRemove={() => setPlans((all) => all.filter((_, i) => i !== index))}
+                  explorer={
+                    explorer ? (
+                      <ExplorerPick name={plan.name} current={plan.paths[0] ?? null} primary={!plan.paths[0]} onPick={(path) => update(index, { paths: [path] })} />
+                    ) : undefined
+                  }
+                />
+              ),
+            )}
+            <button
+              type="button"
+              onClick={() => setPlans((all) => [...all, { name: "", type: "movies", paths: [] }])}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-subtle px-4 text-sm font-semibold text-content-secondary transition-colors hover:bg-fill-faint hover:text-content-primary"
+            >
+              <Plus size={16} aria-hidden="true" />
+              {t("libraryAdd")}
+            </button>
           </div>
         ) : null}
 
-        <div className="space-y-3">
-          <p className="text-xs font-medium text-content-tertiary">{missing.length > 0 ? t("librariesPick") : t("librariesNew")}</p>
-          {loaded && plans.length === 0 ? <p className="text-sm text-content-tertiary">{t("librariesNone")}</p> : null}
-          {plans.map((plan, index) =>
-            browsing === index ? (
-              <FolderBrowser
-                key={index}
-                start={plan.paths[0] ?? (inStack ? (context?.mediaFolders?.root ?? null) : null)}
-                onPick={(path) => {
-                  update(index, { paths: [path] });
-                  setBrowsing(null);
-                }}
-                onCancel={() => setBrowsing(null)}
-              />
-            ) : (
-              <LibraryPlanRow
-                key={index}
-                plan={plan}
-                onChange={(next) => update(index, next)}
-                onBrowse={() => setBrowsing(index)}
-                onRemove={() => setPlans((all) => all.filter((_, i) => i !== index))}
-                explorer={
-                  explorer ? (
-                    <ExplorerPick name={plan.name} current={plan.paths[0] ?? null} primary={!plan.paths[0]} onPick={(path) => update(index, { paths: [path] })} />
-                  ) : undefined
-                }
-              />
-            ),
-          )}
-          <button
-            type="button"
-            onClick={() => setPlans((all) => [...all, { name: "", type: "movies", paths: [] }])}
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-content-secondary hover:text-content-primary"
-          >
-            <Plus size={16} aria-hidden="true" />
-            {t("libraryAdd")}
-          </button>
-        </div>
-
-        {optional && plans.length > 0 ? <LocaleFields locale={wizard.data.locale} onChange={(locale) => patch({ locale })} /> : null}
-
-        {loaded && missing.length > 0 ? (
-          <p className="text-sm text-status-warning-fg" aria-live="polite">
-            {missing.length === 1 && missing[0].name.trim() ? t("libraryFolderMissing", { name: missing[0].name.trim() }) : t("libraryFolderMissingUnnamed")}
-          </p>
+        {optional && plans.length > 0 ? (
+          <div className="border-t border-line-subtle pt-5">
+            <LocaleFields locale={wizard.data.locale} onChange={(locale) => patch({ locale })} />
+          </div>
         ) : null}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <button type="button" onClick={() => proceed(plans)} disabled={!loaded || !valid} className={`${cls.bp} w-full sm:w-auto`}>
-            {t("next")}
-          </button>
-          {optional ? (
-            <button type="button" onClick={() => proceed([])} className={linkBtn}>
-              {t("librariesSkip")}
-            </button>
-          ) : null}
-        </div>
       </div>
     </WizardFrame>
   );

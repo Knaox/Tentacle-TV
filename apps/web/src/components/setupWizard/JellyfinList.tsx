@@ -1,9 +1,9 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { LoaderCircle } from "lucide-react";
 import type { JellyfinProbeResult } from "@tentacle-tv/shared";
 import { groupServers } from "./jellyfinChoice";
 import { JellyfinOption } from "./JellyfinOption";
+import { SetupWaiting } from "./SetupWaiting";
 
 interface Props {
   servers: readonly JellyfinProbeResult[];
@@ -38,7 +38,7 @@ export function JellyfinList({ servers, selected, recommended, onSelect, stackSt
   const section = (key: "fresh" | "configured" | "incompatible", list: JellyfinProbeResult[]) =>
     list.length > 0 ? (
       <div className="space-y-2">
-        <p className="text-xs font-medium text-content-tertiary">{t(`jfGroup_${key}`)}</p>
+        <p className="text-xs font-semibold text-content-tertiary">{t(`jfGroup_${key}`)}</p>
         {list.map(option)}
       </div>
     ) : null;
@@ -47,12 +47,7 @@ export function JellyfinList({ servers, selected, recommended, onSelect, stackSt
   return (
     <div role="radiogroup" aria-label={t("jfListLabel")} className="space-y-4">
       {groups.stack ? option(groups.stack) : null}
-      {stackStarting && !groups.stack ? (
-        <div className="flex min-h-14 items-center gap-3 rounded-xl border border-dashed border-line-subtle px-4 py-3 text-sm text-content-tertiary" aria-live="polite">
-          <LoaderCircle size={16} aria-hidden="true" className="shrink-0 motion-safe:animate-spin" />
-          {t("jfStackStarting")}
-        </div>
-      ) : null}
+      {stackStarting && !groups.stack ? <SetupWaiting title={t("jfStackStarting")} /> : null}
       {section("fresh", groups.fresh)}
       {section("configured", groups.configured)}
       {section("incompatible", groups.incompatible)}

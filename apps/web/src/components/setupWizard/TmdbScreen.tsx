@@ -2,10 +2,10 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import type { SetupContext } from "@tentacle-tv/shared";
-import { DoneLine, linkBtn, primary } from "./AccountParts";
+import { DoneLine } from "./AccountParts";
 import { TmdbKeyEntry } from "./TmdbKeyEntry";
 import type { Wizard } from "./useWizard";
-import { WizardFrame } from "./WizardFrame";
+import { WizardFrame, type WizardFrameBase } from "./WizardFrame";
 
 /** Ce que la clé apporte vraiment (recommandations, sagas, plateformes, affiches hors bibliothèque). */
 const BENEFITS = ["reco", "sagas", "providers", "artwork"] as const;
@@ -16,7 +16,8 @@ const BENEFITS = ["reco", "sagas", "providers", "artwork"] as const;
  * gardée ; « Configurer plus tard » ne pose rien, et l'avis « Aucune clé
  * TMDB » ne relancera pas cet administrateur (le tableau de bord la garde
  * dans ses recommandations). Une clé déjà là — saisie avant un retour en
- * arrière, ou fournie par `TMDB_API_KEY` — se dit, sans rien redemander.
+ * arrière, ou fournie par `TMDB_API_KEY` — se dit, sans rien redemander. Ce
+ * qu'elle apporte est dit à gauche, la saisie à droite.
  */
 export function TmdbScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
@@ -34,39 +35,36 @@ export function TmdbScreen({ wizard }: { wizard: Wizard }) {
     [patch, next],
   );
 
+  const frame: WizardFrameBase = { wizard, title: t("tmdbTitle"), subtitle: t("tmdbSubtitle"), aside: <TmdbBenefits /> };
+  if (fromEnv || saved) {
+    return (
+      <WizardFrame
+        {...frame}
+        primary={{ label: t("next"), onClick: next, autoFocus: true }}
+        secondary={fromEnv ? undefined : [{ label: t("tmdbReplace"), onClick: () => setReplacing(true) }]}
+      >
+        <DoneLine>{t(fromEnv ? "tmdbFromEnv" : "tmdbSaved", { last4: tmdb?.last4 ?? "" })}</DoneLine>
+      </WizardFrame>
+    );
+  }
+  return <TmdbKeyEntry frame={frame} onDone={onDone} />;
+}
+
+/** Ce que la clé apporte, et ce qui marche sans elle. */
+function TmdbBenefits() {
+  const { t } = useTranslation("setupWizard");
   return (
-    <WizardFrame help={wizard} title={t("tmdbTitle")} subtitle={t("tmdbSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
-      <div className="space-y-6">
-        <div className="space-y-3">
-          <p className="text-xs font-medium text-content-tertiary">{t("tmdbBenefitsLabel")}</p>
-          <ul className="space-y-2">
-            {BENEFITS.map((id) => (
-              <li key={id} className="flex items-start gap-2.5 text-sm leading-relaxed text-content-secondary">
-                <Check size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-brand-light" />
-                <span>{t(`tmdbBenefit_${id}`)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-sm leading-relaxed text-content-tertiary">{t("tmdbWithout")}</p>
-        </div>
-        {fromEnv || saved ? (
-          <>
-            <DoneLine>{t(fromEnv ? "tmdbFromEnv" : "tmdbSaved", { last4: tmdb?.last4 ?? "" })}</DoneLine>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <button type="button" onClick={next} className={primary} autoFocus>
-                {t("next")}
-              </button>
-              {fromEnv ? null : (
-                <button type="button" onClick={() => setReplacing(true)} className={linkBtn}>
-                  {t("tmdbReplace")}
-                </button>
-              )}
-            </div>
-          </>
-        ) : (
-          <TmdbKeyEntry onDone={onDone} />
-        )}
-      </div>
-    </WizardFrame>
+    <>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-content-tertiary">{t("tmdbBenefitsLabel")}</h2>
+      <ul className="space-y-2.5">
+        {BENEFITS.map((id) => (
+          <li key={id} className="flex items-start gap-2.5">
+            <Check size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--brand-light)]" />
+            <span>{t(`tmdbBenefit_${id}`)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-content-tertiary">{t("tmdbWithout")}</p>
+    </>
   );
 }

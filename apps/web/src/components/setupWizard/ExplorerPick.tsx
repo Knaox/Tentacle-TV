@@ -5,6 +5,7 @@ import { AdminNotice } from "../admin/kit";
 import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
+import { SetupWaiting } from "./SetupWaiting";
 
 type Notice = { kind: "mapped"; path: string; unc: string } | { kind: "notFound"; path: string };
 
@@ -43,7 +44,7 @@ export function ExplorerPick({ name, current, primary, onPick }: { name: string;
         <FolderOpen size={16} aria-hidden="true" />
         {t("explorerPick")}
       </button>
-      {picking ? <p className="text-xs text-content-tertiary" aria-live="polite">{t("explorerPicking")}</p> : null}
+      {picking ? <SetupWaiting variant="inline" title={t("explorerPicking")} /> : null}
       {notice?.kind === "mapped" ? (
         <AdminNotice
           tone="warning"

@@ -1,20 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { jellyfinAdvice, type ExistingLibrary, type JellyfinAdvice, type JellyfinSetupReport } from "@tentacle-tv/shared";
-import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
+import { SetupWaiting } from "./SetupWaiting";
 import type { AdviceChoice, Wizard } from "./useWizard";
 import { WizardFrame } from "./WizardFrame";
-
-const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary";
 
 /**
  * Un Jellyfin DÉJÀ configuré : Tentacle n'y crée rien (ses bibliothèques
  * sont seulement rappelées) et propose ses réglages conseillés — la règle du
  * tableau de bord (`jellyfinAdvice`), les gestes de l'administration. Tous
  * facultatifs, décochables ; ce que l'administrateur a réglé autrement est
- * montré sans être coché ; « Passer » ne change rien.
+ * montré sans être coché ; « Passer » ne change rien. Ils sont nombreux :
+ * en grille, sur toute la largeur de l'écran.
  */
 export function RecommendedScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
@@ -64,41 +63,38 @@ export function RecommendedScreen({ wizard }: { wizard: Wizard }) {
   const unreadable = report?.error != null;
 
   return (
-    <WizardFrame help={wizard} title={t("recTitle")} subtitle={t("recSubtitle")} position={wizard.position} total={wizard.total} onBack={wizard.back} server={wizard.server}>
-      <div className="space-y-5">
-        <p className="text-sm text-content-secondary">
+    <WizardFrame
+      wizard={wizard}
+      title={t("recTitle")}
+      subtitle={t("recSubtitle")}
+      layout="wide"
+      aside={
+        <p>
           {libraries === null
             ? t("loading")
             : libraries.length > 0
               ? t("recLibraries", { names: libraries.map((library) => library.name).join(" · ") })
               : t("recLibrariesNone")}
         </p>
+      }
+      primary={{ label: t("next"), onClick: () => save(selected), disabled: loading }}
+      secondary={[{ label: t("recSkip"), onClick: () => save(new Set()) }]}
+    >
+      <div className="space-y-4">
         <SetupErrorLine code={error} onRetry={() => setAttempt((n) => n + 1)} />
-        {loading ? (
-          <div className="space-y-2" aria-live="polite">
-            {[0, 1, 2].map((row) => (
-              <div key={row} className="h-16 rounded-xl border border-line-subtle bg-fill-faint motion-safe:animate-pulse" />
-            ))}
-          </div>
-        ) : null}
+        {loading ? <SetupWaiting title={t("loading")} /> : null}
         {unreadable ? <p className="text-sm text-content-secondary">{t("recUnreadable")}</p> : null}
         {report && !unreadable && advice.length === 0 ? <p className="text-sm text-content-secondary">{t("recNothing")}</p> : null}
         {advice.length > 0 ? (
-          <fieldset className="space-y-2">
-            <legend className="mb-2 text-xs font-medium text-content-tertiary">{t("recLegend")}</legend>
-            {advice.map((item) => (
-              <AdviceRow key={item.id} advice={item} checked={selected.has(item.id)} onToggle={() => toggle(item.id)} />
-            ))}
+          <fieldset>
+            <legend className="mb-3 text-xs font-semibold text-content-tertiary">{t("recLegend")}</legend>
+            <div className="grid gap-2 lg:grid-cols-2">
+              {advice.map((item) => (
+                <AdviceRow key={item.id} advice={item} checked={selected.has(item.id)} onToggle={() => toggle(item.id)} />
+              ))}
+            </div>
           </fieldset>
         ) : null}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <button type="button" onClick={() => save(selected)} disabled={loading} className={`${cls.bp} w-full sm:w-auto`}>
-            {t("next")}
-          </button>
-          <button type="button" onClick={() => save(new Set())} className={linkBtn}>
-            {t("recSkip")}
-          </button>
-        </div>
       </div>
     </WizardFrame>
   );
@@ -117,10 +113,10 @@ export function AdviceRow({ advice, checked, onToggle }: { advice: JellyfinAdvic
   return (
     <label
       className={`flex min-h-14 cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors duration-200 ${
-        checked ? "border-purple-400/50 bg-purple-500/10" : "border-line-subtle hover:bg-fill-faint"
+        checked ? "border-[rgba(var(--brand-rgb),0.6)] bg-[var(--brand-soft)] ring-1 ring-[rgba(var(--brand-rgb),0.35)]" : "border-line-subtle hover:bg-fill-faint"
       }`}
     >
-      <input type="checkbox" checked={checked} onChange={onToggle} className="mt-1 h-4 w-4 shrink-0 accent-purple-400" />
+      <input type="checkbox" checked={checked} onChange={onToggle} className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand)]" />
       <span className="min-w-0 flex-1 space-y-0.5">
         <span className="block font-semibold text-content-primary">{t(`rec_${advice.id}`)}</span>
         <span className="block text-sm text-content-secondary">{t(`rec_${advice.id}_why`)}</span>

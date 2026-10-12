@@ -13,6 +13,7 @@ import libraries from "./setupWizardLibraries";
 import tmdb from "./setupWizardTmdb";
 import windowsApp from "./setupWizardWindowsApp";
 import windows from "./setupWizardWindows";
+import frame from "./setupWizardFrame";
 
 export default {
   // ── Le cadre ──────────────────────────────────────────────────────────
@@ -270,4 +271,5 @@ export default {
   ...finish,
   ...help,
   ...windows,
+  ...frame,
 };
