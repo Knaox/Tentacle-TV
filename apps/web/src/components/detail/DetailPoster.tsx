@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
+import { useBrokenImage } from "../../hooks/useBrokenImage";
+import { DetailPosterFallback } from "./DetailArtworkFallback";
 
 interface DetailPosterProps {
   item: MediaItem;
@@ -70,16 +72,24 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
    * de toute façon les rectangles identiques.
    */
   useLayoutEffect(() => {
-    if (hasImage) publish();
+    publish();
   }, [hasImage, publish]);
 
-  if (!hasImage) return null;
-
   const isEpisode = item.Type === "Episode";
-  const url = imageUrl ?? client.getImageUrl(item.Id, "Primary", {
-    ...(isEpisode ? { width: 832 } : { height: 600 }),
-    quality: 90,
-  });
+  const url = !hasImage
+    ? null
+    : imageUrl ?? client.getImageUrl(item.Id, "Primary", {
+      ...(isEpisode ? { width: 832 } : { height: 600 }),
+      quality: 90,
+      // Adressée par son tag : une affiche arrivée après une analyse change
+      // d'adresse, l'échec d'avant ne la masque pas (`useBrokenImage`).
+      ...(item.ImageTags?.Primary ? { tag: item.ImageTags.Primary } : {}),
+    });
+  // Sans affiche — ou une affiche annoncée qui ne se charge pas —, le visuel
+  // de repli prend sa place : la scène garde sa composition, et le calque
+  // d'ouverture une cible où se poser.
+  const { broken, reportFailure } = useBrokenImage(url);
+  const showImage = url !== null && !broken;
 
   return (
     // Entrée en OPACITÉ seule, jamais en `y`/`scale`. Une transformation
@@ -118,14 +128,19 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
         className="block w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--border-focus)] disabled:cursor-default"
       >
         {/* Le zoom au survol vit sur l'IMAGE, jamais sur la boîte mesurée. */}
-        <img
-          src={url}
-          alt={item.Name}
-          draggable={false}
-          onLoad={publish}
-          className={`w-full object-cover transition-transform duration-300 ease-out group-hover/poster:scale-[1.03] ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
-        />
-        <span aria-hidden className="pointer-events-none absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover/poster:opacity-100">
+        {showImage ? (
+          <img
+            src={url}
+            alt={item.Name}
+            draggable={false}
+            onLoad={publish}
+            onError={reportFailure}
+            className={`w-full object-cover transition-transform duration-300 ease-out group-hover/poster:scale-[1.03] ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
+          />
+        ) : (
+          <DetailPosterFallback title={item.Name} wide={isEpisode} />
+        )}
+        <span aria-hidden className={`pointer-events-none absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover/poster:opacity-100 ${onOpen ? "" : "hidden"}`}>
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
         </span>
       </button>

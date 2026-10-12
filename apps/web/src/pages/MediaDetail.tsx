@@ -124,6 +124,7 @@ export function MediaDetail() {
       origin={origin}
       backdropUrl={backdropUrl}
       target={target}
+      settled={!!item}
       onDone={handleOverlayDone}
     />
   );
