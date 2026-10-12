@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { motion, useIsPresent, useReducedMotion, type Variants } from "framer-motion";
+import { motion, PresenceContext, useIsPresent, useReducedMotion, type Variants } from "framer-motion";
 import { pageTransition } from "../../theme/motion";
+import { usePagePresence } from "./pagePresence";
 
 /** Transmis par `AnimatePresence custom` : la sortie en cours doit-elle être sèche ? */
 export interface RouteExitCustom {
@@ -42,11 +43,16 @@ interface RouteExitProps {
  * sous la barre) reste DANS l'enveloppe. Laissée fuir à travers, elle cesserait
  * de le faire une fois l'enveloppe épinglée — un bloc fixe ne fusionne pas ses
  * marges — et la page sauterait de 68 px.
+ *
+ * **La sortie n'attend que l'enveloppe.** Le contenu voit une présence à lui
+ * (`pagePresence`) : rien de ce qu'il anime ne peut retenir la page quittée —
+ * ni, par elle, le lecteur qu'on vient de quitter.
  */
 export function RouteExit({ children, instant = false }: RouteExitProps) {
   const isPresent = useIsPresent();
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
+  const inside = usePagePresence();
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -73,7 +79,7 @@ export function RouteExit({ children, instant = false }: RouteExitProps) {
       animate="visible"
       exit="exit"
     >
-      {children}
+      <PresenceContext.Provider value={inside}>{children}</PresenceContext.Provider>
     </motion.div>
   );
 }
