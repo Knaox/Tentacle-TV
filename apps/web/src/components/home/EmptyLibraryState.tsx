@@ -2,6 +2,7 @@ import { memo, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, RefreshCw } from "lucide-react";
+import { libraryRescanErrorCode, useLibraryRescan, useServerCapability } from "@tentacle-tv/api-client";
 import { setupDocUrl } from "@tentacle-tv/shared";
 import { TentacleSvg } from "../ui/TentacleSvg";
 import { getUserInfo } from "../userMenu/menuItems";
@@ -10,23 +11,37 @@ import { getUserInfo } from "../userMenu/menuItems";
  * L'accueil d'un compte sans AUCUN titre (`libraryHasNoTitles`) : avant, la
  * bannière et les rangées ne rendaient rien et l'écran restait noir. Ici, ce
  * qui se passe et quoi faire — l'administrateur a le guide pour
- * ajouter du contenu, les autres le simple constat. « Vérifier à nouveau » relit
- * les bibliothèques ; un ajout le fait aussi tout seul (socket de l'accueil).
+ * ajouter du contenu, les autres le simple constat.
+ *
+ * Le bouton : « Vérifier à nouveau » relisait seulement les bibliothèques —
+ * il ne demandait RIEN à Jellyfin, et un fichier déposé attendait sa
+ * prochaine analyse planifiée. Pour un administrateur, face à un serveur qui
+ * sait le faire (`admin.libraryRescan`), c'est désormais « Réanalyser
+ * maintenant » : une vraie analyse de toutes les bibliothèques, par la clé
+ * d'administration du serveur. Les titres entrent ensuite seuls (socket de
+ * l'accueil). Les autres comptes gardent la relecture.
  *
  * Coût GPU : halo et ombre FIXES, aucune animation infinie.
  */
 export const EmptyLibraryState = memo(function EmptyLibraryState() {
-  const { t, i18n } = useTranslation("common");
+  const { t, i18n } = useTranslation(["common", "metadataHint"]);
   const queryClient = useQueryClient();
   const isAdmin = getUserInfo().isAdmin;
+  const canScan = useServerCapability("admin.libraryRescan") && isAdmin;
+  const rescan = useLibraryRescan();
   const [checking, setChecking] = useState(false);
 
   const recheck = useCallback(() => {
+    if (canScan) {
+      rescan.mutate(undefined);
+      return;
+    }
     setChecking(true);
     void queryClient
       .refetchQueries({ queryKey: ["libraries"] })
       .finally(() => setChecking(false));
-  }, [queryClient]);
+  }, [canScan, rescan, queryClient]);
+  const busy = checking || rescan.isPending;
 
   return (
     <section
@@ -65,13 +80,18 @@ export const EmptyLibraryState = memo(function EmptyLibraryState() {
           <button
             type="button"
             onClick={recheck}
-            disabled={checking}
+            disabled={busy || rescan.isSuccess}
             className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary transition-colors hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <RefreshCw size={16} aria-hidden="true" className={checking ? "animate-spin motion-reduce:animate-none" : undefined} />
-            {t("emptyHomeRefresh")}
+            <RefreshCw size={16} aria-hidden="true" className={busy ? "animate-spin motion-reduce:animate-none" : undefined} />
+            {canScan ? t("metadataHint:rescan") : t("emptyHomeRefresh")}
           </button>
         </div>
+        <p aria-live="polite" className="mt-4 min-h-[1.25rem] max-w-md text-sm text-content-tertiary">
+          {rescan.isSuccess
+            ? t("metadataHint:rescanLibrariesStarted")
+            : rescan.isError ? t(`metadataHint:rescanError_${libraryRescanErrorCode(rescan.error)}`) : null}
+        </p>
 
       </div>
     </section>

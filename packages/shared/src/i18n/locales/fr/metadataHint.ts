@@ -14,6 +14,8 @@ export default {
   rescan: "Réanalyser maintenant",
   rescanning: "Lancement de l'analyse…",
   rescanStarted: "Analyse lancée — les images arrivent d'ici quelques minutes. La fiche se mettra à jour toute seule.",
+  // L'accueil vide d'un administrateur : l'analyse de TOUTES les bibliothèques.
+  rescanLibrariesStarted: "Analyse lancée — les titres apparaissent ici dès que Jellyfin les a trouvés.",
   // Le conseil de l'administrateur : où Jellyfin cherche, et quoi vérifier.
   adminTip: "Jellyfin cherche images et résumés sur TMDB, par son greffon TMDb, d'après le nom du dossier (« Titre (année) »). Greffon coupé, nom méconnaissable ou Jellyfin sans accès à Internet : il ne trouve rien.",
   adminTipJellyfin: "Vérifier les réglages de Jellyfin",

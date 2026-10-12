@@ -12,6 +12,7 @@ export default {
   rescan: "Rescan now",
   rescanning: "Starting the scan…",
   rescanStarted: "Scan started — artwork should arrive within a few minutes. This page will update by itself.",
+  rescanLibrariesStarted: "Scan started — titles show up here as soon as Jellyfin finds them.",
   adminTip: "Jellyfin looks up artwork and descriptions on TMDB, through its TMDb plugin, from the folder name (\"Title (year)\"). If the plugin is off, the name isn't recognized or Jellyfin can't reach the Internet, it finds nothing.",
   adminTipJellyfin: "Check Jellyfin's settings",
   adminTipTmdbKey: "Add Tentacle's TMDB key",
