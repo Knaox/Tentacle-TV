@@ -15,6 +15,7 @@ Source unique de vérité pour le logo. Tout PNG/ICNS/ICO/WEBP du dépôt est
 | `tvos-back.svg` · `tvos-light.svg` · `tvos-body.svg` · `tvos-front.svg` | Les quatre COUCHES de l'icône Apple TV (400×240 ; l'App Store la prend à 1280×768), de l'arrière vers l'avant : fond, lumière de la marque, poulpe, bras avant. Composées dans `tvos.py`. |
 | `banner-topshelf.svg` · `banner-topshelf-wide.svg` | Le Top Shelf Apple TV : la nuit et la lumière de l'icône, la mascotte au centre. |
 | `launch-logo.svg` | Le logo de l'écran de lancement Apple TV : la mascotte du démarrage (`BootView`) dans sa lueur — ils se retouchent ensemble. |
+| `logo-server.svg` · `logo-server-nohat.svg` | Le logo de **Tentacle Server pour Windows** : la même mascotte, et un badge « serveur » (deux unités de baie) détouré en bas à droite. Composé dans `server.py` ; sans chapeau sous 24 px. Recopié chez l'hôte : `apps/server-windows/assets/logo.svg`. |
 
 ## Régénérer
 
@@ -25,7 +26,7 @@ python3 brand/generate-svg.py brand
 ```
 
 Le script écrit `apps/web/src/components/ui/tentacleArmPaths.generated.ts` en
-même temps que les SVG. Les bras sont des spirales échantillonnées : elles ne
+même temps que les SVG (et `apps/server-windows/assets/logo.svg`). Les bras sont des spirales échantillonnées : elles ne
 s'écrivent pas à la main, et deux copies auraient fini par diverger. Après
 régénération, recopier les fichiers publics :
 
@@ -42,7 +43,31 @@ visage et chapeau. Le composant web existe séparément du fichier statique parc
 que lui seul résout les variables CSS : une couleur de marque redéfinie par un
 administrateur doit se propager au logo.
 
-## Quatre règles apprises à leurs frais
+Les binaires (PNG, WEBP, ICO, ICNS) :
+
+```bash
+python3 brand/generate-icons.py --write              # tout
+python3 brand/generate-icons.py --write msix server-windows/assets   # Windows seulement
+```
+
+Il faut Pillow et un moteur SVG : `rsvg-convert` (brew install librsvg) ou,
+sous Windows où librsvg ne s'installe pas, `resvg-py` (pip install resvg-py).
+
+## Windows : les paquets MSIX et leur `resources.pri`
+
+`windows.py` tient la table des visuels des DEUX paquets (bureau, Tentacle
+Server) : chaque visuel du manifeste à 100, 125, 150, 200 et 400 %, et
+l'icône de la liste (`Square44x44Logo`) à ses 14 tailles cibles, chacune en
+trois habits — sur plaque, `altform-unplated` (thème sombre),
+`altform-lightunplated` (thème clair). Ils sont CRÉÉS d'après la table, la
+mascotte seule sur transparent, recadrée en vectoriel autour de son
+encombrement mesuré : 92 % du cadre sans plaque, 78 % sur plaque, 62 % pour
+les tuiles et l'écran de lancement. Le manifeste garde les noms nus
+(`Assets\Square44x44Logo.png`) : c'est `resources.pri`
+(`.github/scripts/msix-resources.mjs`, lancé par les deux assemblages) qui les
+résout vers leurs variantes.
+
+## Cinq règles apprises à leurs frais
 
 - **Huit bras, pas sept.** Deux sont dressés en antennes : il en faut donc six en
   dessous. La première version n'en posait que cinq.
@@ -57,8 +82,19 @@ administrateur doit se propager au logo.
   Android masquent l'icône eux-mêmes et exigent donc un carré plein ;
   Windows, Linux, et macOS d'avant Tahoe posent l'image TELLE QUELLE — un carré
   plein y reste un carré dans la barre des tâches. D'où `app-icon-rounded.svg`
-  et son gabarit macOS, et la règle de `generate-icons.py` : les cibles de
-  `apps/desktop-electron/` en dérivent, tout le reste garde le carré.
+  et son gabarit macOS, et la règle de `generate-icons.py` : les icônes de
+  l'exécutable (`apps/desktop-electron/icons/`) en dérivent, les boutiques
+  mobiles gardent le carré, et les paquets MSIX n'en prennent aucun (règle
+  suivante).
+
+- **Windows pose sur une plaque ce qu'il ne trouve pas « unplated ».** Sans
+  `Square44x44Logo.targetsize-*_altform-unplated.png` (et sa version
+  `lightunplated`) DANS `resources.pri`, la barre des tâches, Démarrer et la
+  recherche posent l'icône réduite sur une plaque à la couleur d'accent. Le
+  carré à coins continus des deux paquets y débordait d'une bordure bleue —
+  relevé sur le Store en 2026-10. Un visuel MSIX est donc la mascotte seule,
+  sur transparent, sans aucune plaque peinte ; une tuile garde au moins 16 %
+  de marge. Sans l'index, même présentes, les variantes sont invisibles.
 
 - **Le nom des fichiers publics ne change pas.** `tentacle-logo-pirate.svg` est
   chargé par URL depuis les iframes de plugins — y compris des plugins déjà

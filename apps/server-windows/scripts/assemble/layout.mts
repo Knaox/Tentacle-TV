@@ -32,10 +32,17 @@ export const SERVER_COPIES: readonly CopyStep[] = [
   { from: "apps/backend/THIRD-PARTY-LICENSES.md", to: "THIRD-PARTY-LICENSES.md" },
 ];
 
-/** L'hôte : son bundle et l'icône de la zone de notification (`appLayout.ts`). */
+/**
+ * L'hôte : son bundle, l'icône de la zone de notification (`appLayout.ts`) et
+ * le logo qu'il affiche lui-même — chemins STABLES, tirés de `brand/`
+ * (`generate-svg.py`, `generate-icons.py`), jamais retouchés à la main.
+ */
 export const HOST_COPIES: readonly CopyStep[] = [
   { from: "apps/server-windows/dist/main.js", to: "apps/server-windows/dist/main.js" },
   { from: "apps/server-windows/assets/tray.ico", to: "apps/server-windows/assets/tray.ico" },
+  { from: "apps/server-windows/assets/logo.svg", to: "apps/server-windows/assets/logo.svg" },
+  { from: "apps/server-windows/assets/logo.png", to: "apps/server-windows/assets/logo.png" },
+  { from: "apps/server-windows/assets/logo@2x.png", to: "apps/server-windows/assets/logo@2x.png" },
 ];
 
 /** Où `staticClients.ts` cherche le client LG, depuis `apps/backend/dist/static`. */

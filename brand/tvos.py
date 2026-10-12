@@ -26,6 +26,8 @@ neuf extrêmes) : la mascotte occupe 74 % de la hauteur de la tuile au repos,
 l'encombrement des glyphes d'Apple, et son tricorne garde encore 11 % de marge
 au pire de l'inclinaison.
 """
+from geometry import save
+
 
 # Le cadre de l'icône, en points. L'App Store la prend à 1280×768 : même
 # rapport, `generate-icons.py` rasterise chaque couche à la taille de sa cible.
@@ -133,5 +135,5 @@ def write(out, art):
     """
     files = {**_icon_layers(art), **_top_shelf(art), **_launch(art)}
     for name, text in files.items():
-        (out / name).write_text(text)
+        save(out / name, text)
     return len(files)

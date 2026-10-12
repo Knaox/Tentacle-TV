@@ -71,8 +71,26 @@ pnpm --filter @tentacle-tv/server-windows pack:msix -- --dir <dossier> --msix <f
 - `msix/Package.appxmanifest` : le modèle. Un exe empaqueté démarre dans
   System32 : l'hôte est retrouvé depuis `process.execPath` (`-e`), d'où
   `uap10:Parameters` et MinVersion 19041.
-- Icônes : `brand/generate-icons.py --write server-windows` (tuiles et
-  `assets/tray.ico`), jamais retouchées à la main.
+- Icônes : le logo DÉDIÉ du serveur (`brand/logo-server.svg` : la mascotte
+  et son badge « serveur »), décliné par `brand/generate-svg.py` puis
+  `brand/generate-icons.py --write server-windows`, jamais retouché à la main.
+  `msix/Assets/` porte les visuels QUALIFIÉS (`.scale-*`, `.targetsize-*`,
+  `altform-unplated` / `lightunplated`, table `brand/windows.py`), que
+  l'assemblage indexe dans `resources.pri` (`.github/scripts/msix-resources.mjs`) :
+  sans cet index, Windows pose l'icône sur une plaque à la couleur d'accent.
+- **Chemins stables de l'hôte** (dépôt ET paquet, sous la racine) — à
+  référencer tels quels, ils ne se renomment pas :
+
+  | Chemin | Contenu |
+  |---|---|
+  | `apps/server-windows/assets/tray.ico` | zone de notification : 16, 20, 24, 32, 40, 48, 64, 256 px |
+  | `apps/server-windows/assets/logo.svg` | le logo, vectoriel, fond transparent (viewBox 240) |
+  | `apps/server-windows/assets/logo.png` | le logo, 256 × 256, fond transparent |
+  | `apps/server-windows/assets/logo@2x.png` | le logo, 512 × 512, fond transparent |
+
+  Depuis l'hôte : `join(root, "apps", "server-windows", "assets", …)`, comme
+  `appLayout.ts` le fait pour `tray.ico` ; `layout.mts` (`HOST_COPIES`) les
+  recopie dans le paquet.
 - Essai : en VM seulement, `msix/vm/README.md`.
 
 ## La commande `tentacle`

@@ -37,6 +37,13 @@
 
   <Applications>
     <Application Id="TentacleTV" Executable="Tentacle TV.exe" EntryPoint="Windows.FullTrustApplication">
+      <!-- Visuels QUALIFIÉS (brand/windows.py, `generate-icons.py`) : chaque nom
+           ci-dessous désigne ses variantes .scale-100 à 400, et l'icône de la liste
+           ses .targetsize-16 à 256 en trois habits (plaque, altform-unplated,
+           altform-lightunplated), résolus par resources.pri
+           (.github/scripts/msix-resources.mjs). La mascotte seule sur
+           transparent : aucune plaque peinte, et BackgroundColor transparent
+           laisse aux tuiles de Windows 10 la couleur du thème. -->
       <uap:VisualElements
         DisplayName="Tentacle TV"
         Description="Client multimedia pour serveur multimedia auto-heberge"
