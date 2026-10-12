@@ -26,9 +26,9 @@ Server app of the Microsoft Store needs no Docker » / « Sur un PC Windows ? L'
 Store se passe de Docker », lien vers `/docs/server/windows/`. Sur `/install/` (auto-hébergement), un bouton
 Microsoft Store quand l'identifiant Store sera connu.
 
-**Rien dans l'app ne pointe encore vers cette page.** Si l'assistant doit y renvoyer, il faudra une clé
-`windows` dans `SETUP_DOC_PATHS` (`packages/shared/src/setupWizard/setupDocLinks.ts`) — à décider avec le fil
-qui fait les textes par plateforme (A2).
+**L'app y renvoie** par la clé `windows` de `SETUP_DOC_PATHS`
+(`packages/shared/src/setupWizard/setupDocLinks.ts`) : dans l'app Windows, le « Besoin d'aide ? » de l'accueil
+et de l'écran du code ouvre cette page plutôt que `setup-code/`, qui parle de Docker (`setupHelpTopic`).
 
 ## Chapeau
 

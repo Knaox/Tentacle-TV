@@ -44,6 +44,7 @@ describe("« Besoin d'aide ? »", async () => {
     const code = renderToStaticMarkup(<SetupHelp step="code" noLibraries={false} packaging="windows-app" />);
     expect(code).toContain("help_code_where_a_windowsApp");
     expect(code).toContain(">help_code_why_a<");
+    expect(code).toContain("https://tentacletv.app/docs/server/windows/?lang=fr");
     expect(renderToStaticMarkup(<SetupHelp step="done" noLibraries={false} packaging="windows-app" />)).toContain("help_done_reopen_a_windowsApp");
   });
 
@@ -51,5 +52,6 @@ describe("« Besoin d'aide ? »", async () => {
     const code = renderToStaticMarkup(<SetupHelp step="code" noLibraries={false} />);
     expect(code).toContain(">help_code_where_a<");
     expect(code).not.toContain("_windowsApp");
+    expect(code).toContain("https://tentacletv.app/docs/server/setup-code/?lang=fr");
   });
 });

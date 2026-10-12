@@ -27,4 +27,13 @@ describe("« Besoin d'aide ? » de l'assistant", () => {
     expect(setupHelpTopic("libraries", true)).toBe("librariesExistingEmpty");
     expect(setupHelpTopic("remote", true)).toBe("remote");
   });
+
+  it("l'app Windows : l'accueil et le code renvoient à sa page ; les autres écrans gardent la leur", () => {
+    expect(setupHelpTopic("welcome", false, "windows-app")).toBe("windows");
+    expect(setupHelpTopic("code", false, "windows-app")).toBe("windows");
+    expect(setupHelpTopic("code", false, null)).toBe("code");
+    expect(setupHelpTopic("jellyfin", false, "windows-app")).toBe("jellyfin");
+    expect(setupHelpTopic("libraries", true, "windows-app")).toBe("librariesExistingEmpty");
+    expect(setupHelpTopic("tmdb", false, "windows-app")).toBeNull();
+  });
 });

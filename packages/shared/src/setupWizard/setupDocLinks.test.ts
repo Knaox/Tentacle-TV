@@ -30,6 +30,9 @@ describe("liens de doc de l'assistant", () => {
       disableWebUi: "install/#disable-web-ui",
       // La page que le site publie pour la 1.25 : l'administration y renvoie.
       sqliteMigration: "sqlite-migration/",
+      // Le site web de la fiche Microsoft Store de Tentacle Server.
+      windows: "windows/",
     });
+    expect(setupDocUrl("windows", "fr")).toBe("https://tentacletv.app/docs/server/windows/?lang=fr");
   });
 });

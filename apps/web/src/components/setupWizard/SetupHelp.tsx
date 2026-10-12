@@ -8,7 +8,8 @@ import { SETUP_HELP, packagedHelpKey, setupDocUrl, setupHelpTopic, type SetupPac
  * `<details>` natif — clavier et lecteurs d'écran sans rien de plus),
  * quelques questions-réponses courtes, puis la page du site qui en dit plus,
  * dans la langue de l'interface — s'il y en a une. Les réponses qui supposent
- * Docker ont leur variante pour l'app Windows (`packagedHelp.ts`).
+ * Docker ont leur variante pour l'app Windows (`packagedHelp.ts`), et
+ * l'accueil et le code y renvoient à la page de l'app (`setupHelpTopic`).
  */
 export const SetupHelp = memo(function SetupHelp({
   step,
@@ -22,7 +23,7 @@ export const SetupHelp = memo(function SetupHelp({
   const { t, i18n } = useTranslation("setupWizard");
   const ids = SETUP_HELP[step];
   // Un écran sans page du site (la clé TMDB) : les questions seules.
-  const topic = setupHelpTopic(step, noLibraries);
+  const topic = setupHelpTopic(step, noLibraries, packaging);
   return (
     <details className="group rounded-xl border border-line-subtle bg-fill-faint" data-testid="setup-help">
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-4 text-sm font-semibold text-content-secondary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus [&::-webkit-details-marker]:hidden">

@@ -20,6 +20,7 @@ export type SetupDocTopic =
   | "home"
   | "beforeYouStart"
   | "install"
+  | "windows"
   | "librariesExistingEmpty"
   | "librariesFolders"
   | "librariesDockerFolder"
@@ -40,6 +41,9 @@ export const SETUP_DOC_PATHS: Readonly<Record<SetupDocTopic, string>> = {
   home: "",
   beforeYouStart: "before-you-start/",
   install: "install/",
+  // Tentacle Server pour Windows (l'app du Microsoft Store) : aussi le site
+  // web de sa fiche Store (docs/server/windows-store-listing.md).
+  windows: "windows/",
   welcome: "setup-code/",
   code: "setup-code/",
   jellyfin: "choose-jellyfin/",

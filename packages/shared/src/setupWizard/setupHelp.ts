@@ -1,5 +1,6 @@
 import type { SetupDocTopic } from "./setupDocLinks";
 import type { SetupStep } from "./setupFlowContract";
+import type { SetupPackaging } from "./setupPackagingContract";
 
 /**
  * « Besoin d'aide ? », repliable, au pied de chaque écran de l'assistant :
@@ -25,8 +26,12 @@ export const SETUP_HELP: Readonly<Record<SetupStep, readonly string[]>> = {
 /**
  * La page d'aide d'un écran : celle des bibliothèques d'un Jellyfin configuré
  * vide a son ancre ; `null` : l'écran n'a pas (encore) de page sur le site.
+ * Dans l'app Windows, l'accueil et le code renvoient à la page de l'app (le
+ * premier lancement, l'icône et son « Code d'installation ») plutôt qu'à
+ * celle du code, qui parle de Docker.
  */
-export function setupHelpTopic(step: SetupStep, noLibraries: boolean): SetupDocTopic | null {
+export function setupHelpTopic(step: SetupStep, noLibraries: boolean, packaging: SetupPackaging | null = null): SetupDocTopic | null {
   if (step === "tmdb") return null;
+  if (packaging === "windows-app" && (step === "welcome" || step === "code")) return "windows";
   return step === "libraries" && noLibraries ? "librariesExistingEmpty" : step;
 }

@@ -850,7 +850,8 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
 - **Aide de l'assistant** : une page du site par étape, adresses STABLES dans
   `packages/shared/src/setupWizard/setupDocLinks.ts` (le site les tient ; jamais renommées), et « Besoin
   d'aide ? » repliable sous l'explication de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`). Un écran sans page
-  du site (`SetupStepWithoutDoc` : `tmdb`) n'a que ses questions — jamais une adresse inventée.
+  du site (`SetupStepWithoutDoc` : `tmdb`) n'a que ses questions — jamais une adresse inventée. Dans l'app Windows,
+  l'accueil et le code renvoient à `windows/` (la page de l'app, aussi site web de sa fiche Store).
 - **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, état pur
   `wizardState.ts` (on ne va, n'avance, ne revient que DANS le parcours), chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
   le client LG, qui ne la porte pas : cette porte y est substituée (écran « Indisponible ») et sa feuille ne
