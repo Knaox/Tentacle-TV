@@ -7,8 +7,9 @@
  *
  * Ordre : construire → dépendances de production (verrou, moteur Windows,
  * élagage) → `/app` à l'identique de l'image → l'hôte et koffi → l'exe, Python,
- * yt-dlp → manifeste et tuiles → poids.
+ * yt-dlp → manifeste, tuiles et leur index (`resources.pri`) → poids.
  */
+import { execFileSync } from "node:child_process";
 import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -68,6 +69,11 @@ async function main(): Promise<void> {
   for (const name of readdirSync(join(appDir, "msix", "Assets"))) {
     copyFileSync(join(appDir, "msix", "Assets", name), join(root, "Assets", name));
   }
+  // Les visuels sont qualifiés (`.scale-200`, `.targetsize-24_altform-unplated`) :
+  // sans leur index, Windows ne les voit pas et pose l'icône sur une plaque.
+  execFileSync(process.execPath, [join(repo, ".github", "scripts", "msix-resources.mjs"), "--stage", root], {
+    stdio: "inherit",
+  });
 
   const size = measure(root);
   log(`poids installé : ${megabytes(size.total)} en ${size.files} fichiers`);
