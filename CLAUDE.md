@@ -318,8 +318,8 @@ déclaration. **Jamais un `if (version >= x)`**, jamais un 404 interprété en
 `brand/` est la source unique. Rien de ce qui en dérive ne se retouche à la main :
 
 ```bash
-python3 brand/generate-svg.py brand      # les 19 SVG + 3 modules TS
-python3 brand/generate-icons.py --write  # les 90 binaires (aperçu sans --write ;
+python3 brand/generate-svg.py brand      # les 21 SVG + 3 modules TS
+python3 brand/generate-icons.py --write  # les binaires (aperçu sans --write ;
                                          #  un mot en plus = filtre de chemin)
 pnpm --filter @tentacle-tv/tv-webos icons  # webOS, à part — voir plus bas
 ```
@@ -331,7 +331,16 @@ pnpm --filter @tentacle-tv/tv-webos icons  # webOS, à part — voir plus bas
 divergé. Côté natif les `dasharray` sont en unités RÉELLES de tracé :
 `pathLength` n'existe que dans le rendu web de react-native-svg.
 
-Quatre pièges déjà payés :
+Cinq pièges déjà payés :
+
+- **Windows (MSIX) : jamais un visuel sans ses variantes `unplated`, jamais
+  sans `resources.pri`.** Sans elles, Windows pose l'icône réduite sur une
+  plaque à la couleur d'accent — la « bordure » relevée sur le Store
+  (2026-10). Les deux paquets (bureau, Tentacle Server) reçoivent la mascotte
+  seule sur transparent, à toutes les échelles et tailles cibles
+  (`brand/windows.py`) ; l'assemblage construit l'index
+  (`.github/scripts/msix-resources.mjs`). Tentacle Server a son PROPRE logo
+  (`logo-server.svg` : la mascotte + un badge « serveur », `brand/server.py`).
 
 - **webOS a son propre script** (`apps/tv-webos/scripts/icons.mjs`) et
   `generate-icons.py` l'ignore volontairement : il faut un maître de 5200 px
