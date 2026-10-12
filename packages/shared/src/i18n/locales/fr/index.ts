@@ -49,6 +49,7 @@ import family from "./family";
 import familyWeb from "./familyWeb";
 import familyTv from "./familyTv";
 import familyMobile from "./familyMobile";
+import metadataHint from "./metadataHint";
 
 export default {
   common, auth, player, admin,
@@ -74,4 +75,5 @@ export default {
   familyWeb,
   familyTv,
   familyMobile,
+  metadataHint,
 };
