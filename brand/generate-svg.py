@@ -22,7 +22,7 @@ identiques.
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from geometry import (arm_spine, tapered, suckers, mirror_pts, spire_gap, width_at,
-                      squircle_path)
+                      squircle_path, save)
 import tvos
 
 BRAND = pathlib.Path(__file__).parent
@@ -121,9 +121,9 @@ FRONT_G = (
 HEAD_TAG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img">'
 NOTE = "<!-- GÉNÉRÉ par brand/generate-svg.py — ne pas éditer à la main. -->"
 
-(OUT / "logo-color.svg").write_text(
+save(OUT / "logo-color.svg",
     f'{HEAD_TAG}<title>Tentacle TV</title>{NOTE}<defs>{GRADS}</defs>{BODY}{HAT_G}{FRONT_G}</svg>\n')
-(OUT / "logo-color-nohat.svg").write_text(
+save(OUT / "logo-color-nohat.svg",
     f'{HEAD_TAG}<title>Tentacle TV — sans chapeau</title>{NOTE}<defs>{GRADS}</defs>{BODY}{FRONT_G}</svg>\n')
 
 # ── Monochrome : détails creusés au masque. L'écran devient un trou (son
@@ -154,7 +154,7 @@ MONO_BODY = ("".join(f'<path d="{d}"/>' for d in BACK_DS)
              + screen_rect(fill="currentColor")
              + f'<path d="{HAT}" transform="{HAT_TM}"/>'
              + "".join(f'<path d="{d}"/>' for d in FRONT_DS))
-(OUT / "logo-mono.svg").write_text(
+save(OUT / "logo-mono.svg",
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" color="#FFFFFF" role="img">'
     f'<title>Tentacle TV — monochrome</title>{NOTE}<defs>{CLIP_ARMS}{MASK}</defs>'
     f'<g mask="url(#mCut)" fill="currentColor">{MONO_BODY}</g></svg>\n')
@@ -191,15 +191,15 @@ def squircle_bg(span):
     d = squircle_path(1024, span)
     return f'<path d="{d}" fill="url(#bg)"/><path d="{d}" fill="url(#halo)"/>'
 
-(OUT / "app-icon-color.svg").write_text(color_icon(1024, SQUARE, " — icône d'application"))
+save(OUT / "app-icon-color.svg", color_icon(1024, SQUARE, " — icône d'application"))
 # Les deux icônes de BUREAU. Windows et Linux posent l'image telle quelle : le
 # squircle y remplit le cadre. macOS, lui, a un gabarit — 824 sur 1024 — et une
 # icône qui remplirait son cadre toucherait ses voisines dans le Dock.
-(OUT / "app-icon-rounded.svg").write_text(
+save(OUT / "app-icon-rounded.svg",
     color_icon(1024, squircle_bg(1024), " — icône de bureau"))
-(OUT / "app-icon-macos.svg").write_text(
+save(OUT / "app-icon-macos.svg",
     color_icon(824, squircle_bg(824), " — icône macOS"))
-(OUT / "app-icon-mono.svg").write_text(
+save(OUT / "app-icon-mono.svg",
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img">'
     f"<title>Tentacle TV — icône d'application (mono)</title>{NOTE}<defs>{CLIP_ARMS}{MASK}"
     '<linearGradient id="bgm" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">'
@@ -239,7 +239,7 @@ COMPOSITIONS = {
     "logo-plain.svg": (1024, 1024, 0.92, False, True, " — logo seul"),
 }
 for name, (w, h, ratio, bg, hat, title) in COMPOSITIONS.items():
-    (OUT / name).write_text(compose(w, h, ratio, bg, hat, title))
+    save(OUT / name, compose(w, h, ratio, bg, hat, title))
 
 # ── Apple TV : l'icône en couches, le Top Shelf, le logo de lancement ───────
 TVOS_COUNT = tvos.write(OUT, {"GRADS": GRADS, "BODY": BODY, "HAT_G": HAT_G,
@@ -300,7 +300,7 @@ if not PREVIEW:
                    "apps/mobile/src/components/tentacleArt.generated.ts"):
         path = ROOT / target
         if path.parent.exists():
-            path.write_text(TS)
+            save(path, TS)
         else:
             print(f"  (ignoré, dossier absent : {target})")
 

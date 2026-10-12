@@ -15,6 +15,14 @@ valait que pour le trait.
 """
 import math
 
+def save(path, text):
+    """
+    Écrit un fichier généré en UTF-8 et en fins de ligne LF, quel que soit le
+    système : `write_text` suit la page de code locale (cp1252 sous Windows),
+    et les « — » et « É » des titres y sortaient illisibles pour librsvg.
+    """
+    path.write_bytes(text.encode("utf-8"))
+
 def bez(p0, p1, p2, p3, t):
     u = 1 - t
     return (u*u*u*p0[0] + 3*u*u*t*p1[0] + 3*u*t*t*p2[0] + t*t*t*p3[0],
