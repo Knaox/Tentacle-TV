@@ -41,11 +41,16 @@ export async function fetchSeriesWatchState(
   const data = (await client.fetch(`/Shows/${seriesId}/Episodes?${params}`)) as { Items?: unknown } | null;
   if (!data || !Array.isArray(data.Items)) throw new Error(`Episodes ${seriesId} : réponse sans Items`);
 
+  // Seule la saison 0 DÉCLARÉE est écartée. Un épisode sans numéro de saison
+  // (titre que Jellyfin n'a pas identifié) reste jouable : l'écarter vidait la
+  // liste, que `getNextEpisode` lit comme « série terminée » — plus de bouton
+  // « Lecture » sur la fiche. Il se range après les saisons numérotées.
+  const seasonOf = (ep: MediaItem): number => ep.ParentIndexNumber ?? Number.MAX_SAFE_INTEGER;
   const episodes = (data.Items as MediaItem[])
-    .filter((ep) => (ep.ParentIndexNumber ?? 0) > 0)
+    .filter((ep) => ep.ParentIndexNumber !== 0)
     .sort((a, b) => {
-      const sa = a.ParentIndexNumber ?? 0;
-      const sb = b.ParentIndexNumber ?? 0;
+      const sa = seasonOf(a);
+      const sb = seasonOf(b);
       if (sa !== sb) return sa - sb;
       return (a.IndexNumber ?? 0) - (b.IndexNumber ?? 0);
     });
