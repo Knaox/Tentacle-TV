@@ -17,9 +17,14 @@ export const RUN_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
 export const APPROVED_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
 export const VALUE_NAME = "Tentacle Server";
 
-/** La commande enregistrée : le même Node, le même hôte, la même racine. */
+/**
+ * La commande enregistrée : le même Node, le même hôte, la même racine — et
+ * `--autostart`, qui dit à l'hôte qu'il part avec la session (pas d'écran de
+ * démarrage s'il n'a rien à dire). Une entrée d'avant, sans lui, reste lue
+ * comme « activée ».
+ */
 export function runCommand(execPath: string, hostScript: string, appRoot: string): string {
-  return `"${execPath}" "${hostScript}" --app-root "${appRoot}"`;
+  return `"${execPath}" "${hostScript}" --app-root "${appRoot}" --autostart`;
 }
 
 /** Lit la donnée d'une ligne `reg query` : `    Nom    REG_TYPE    donnée`. */

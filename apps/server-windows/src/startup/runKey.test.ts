@@ -21,6 +21,6 @@ describe("clé Run", () => {
   });
 
   it("met les chemins entre guillemets", () => {
-    expect(runCommand("C:\\n\\node.exe", "C:\\h\\main.js", "C:\\r oot")).toBe('"C:\\n\\node.exe" "C:\\h\\main.js" --app-root "C:\\r oot"');
+    expect(runCommand("C:\\n\\node.exe", "C:\\h\\main.js", "C:\\r oot")).toBe('"C:\\n\\node.exe" "C:\\h\\main.js" --app-root "C:\\r oot" --autostart');
   });
 });

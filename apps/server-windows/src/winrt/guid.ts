@@ -11,6 +11,8 @@ export const IID = {
   asyncInfo: "00000036-0000-0000-C000-000000000046",
   /** `windows.applicationmodel.h`. */
   startupTaskStatics: "ee5b60bd-a148-41a7-b26e-e8b88a1e62f8",
+  /** `windows.applicationmodel.h` : `IAppInstanceStatics` (fente 7 : `GetActivatedEventArgs`). */
+  appInstanceStatics: "9d11e77f-9ea6-47af-a6ec-46784c5ba254",
   /** `IInitializeWithWindow`, `shobjidl_core.h`. */
   initializeWithWindow: "3E68D4BD-7135-4D10-8018-9FB6D9F33FA1",
   /** `windows.services.store.h` : `IStoreContextStatics`. */
