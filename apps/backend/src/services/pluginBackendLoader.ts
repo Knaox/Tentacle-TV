@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { resolve } from "path";
+import { pathToFileURL } from "url";
 import { existsSync, readFileSync, readdirSync } from "fs";
 import { getInstalled, DATA_DIR } from "./pluginManager";
 import { serverModuleCandidates } from "./pluginServerModule";
@@ -111,7 +112,8 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
     }
 
     try {
-      const importUrl = `file://${serverPath.replace(/\\/g, "/")}`;
+      // `pathToFileURL` : `file:///C:/…` sous Windows, espaces, `%` et `#` encodés.
+      const importUrl = pathToFileURL(serverPath).href;
       console.log(`[PluginBackend]   Importing: ${importUrl}`);
       // Use Function constructor to preserve real import() — TypeScript CJS
       // compilation transforms `import()` to `require()`, which cannot handle

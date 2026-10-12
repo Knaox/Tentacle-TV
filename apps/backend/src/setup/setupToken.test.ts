@@ -8,6 +8,7 @@ import {
   generateSetupToken,
   normalizeSetupToken,
   readSetupToken,
+  setupCodeHome,
   setupTokenBanner,
   setupTokensMatch,
   writeNewSetupToken,
@@ -64,8 +65,22 @@ describe("code d'installation", () => {
   });
 
   it("hors conteneur, le bandeau donne la commande native", () => {
-    const lines = setupTokenBanner("ABCDEFGHJKMN", 3000, false).join("\n");
+    const lines = setupTokenBanner("ABCDEFGHJKMN", 3000, "native").join("\n");
     expect(lines).toContain("node apps/backend/dist/cli/tentacle.js setup token");
     expect(lines).not.toContain("conteneur");
+  });
+
+  it("l'app Windows : l'icône de la zone de notification, et l'alias tentacle", () => {
+    const lines = setupTokenBanner("ABCDEFGHJKMN", 3000, "windows-app").join("\n");
+    expect(lines).toContain(":3000/setup#code=ABCD-EFGH-JKMN");
+    expect(lines).toContain("Code d'installation");
+    expect(lines).toContain("`tentacle setup token`");
+    expect(lines).not.toMatch(/conteneur|container|node apps/);
+  });
+
+  it("où trouver un code neuf : l'app Windows d'abord, puis conteneur ou natif", () => {
+    expect(setupCodeHome({ containerized: false, packaging: "windows-app" })).toBe("windows-app");
+    expect(setupCodeHome({ containerized: true })).toBe("container");
+    expect(setupCodeHome({ containerized: false })).toBe("native");
   });
 });

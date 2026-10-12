@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { hostLanAddress } from "../setup/jellyfin/hostLanAddress";
 import { getJellyfinUrl } from "../services/configStore";
 import { getMaxResumePct } from "../services/jellyfinSystemConfig";
 import { requireAuth } from "../middleware/auth";
@@ -37,7 +38,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
       // Coupé (« Accès depuis l'extérieur »), l'adresse privée de ce serveur ; rien
       // de réglé, celle par laquelle ce client du réseau local nous joint : le
       // jumelage reste possible, et la TV grave une adresse qu'elle joint (`exposure.ts`).
-      publicUrl: pairingUrl({ clientIsPrivate, protocol: request.protocol, host: request.host }),
+      publicUrl: pairingUrl({ clientIsPrivate, protocol: request.protocol, host: request.host, lanAddress: hostLanAddress() }),
       // Les adresses locales et publiques (Tentacle, Jellyfin) — les locales au seul réseau local.
       addresses: serverAddresses(clientIsPrivate),
     };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoUpdateEnabled, tagFromLocation, zipappChecksum } from "./ytDlp";
+import { autoUpdateEnabled, compareTags, tagFromLocation, versionedCopies, zipappChecksum } from "./ytDlp";
 
 describe("autoUpdateEnabled", () => {
   it("tourne en production quand l'image porte l'épinglé", () => {
@@ -39,5 +39,17 @@ describe("zipappChecksum", () => {
   it("refuse une somme absente ou mal formée", () => {
     expect(zipappChecksum("abc  yt-dlp")).toBeNull();
     expect(zipappChecksum("")).toBeNull();
+  });
+});
+
+describe("une copie par version", () => {
+  it("la plus récente d'abord, les noms étrangers ignorés", () => {
+    expect(versionedCopies(["yt-dlp", "yt-dlp-2026.08.19", "yt-dlp-2026.10.02", "yt-dlp-2026.10.02.1", "yt-dlp-next", "notes.txt"]))
+      .toEqual(["yt-dlp-2026.10.02.1", "yt-dlp-2026.10.02", "yt-dlp-2026.08.19"]);
+  });
+
+  it("compare les étiquettes en nombres, pas en texte", () => {
+    expect(compareTags("2026.10.02", "2026.9.30")).toBeGreaterThan(0);
+    expect(compareTags("2026.08.19", "2026.08.19")).toBe(0);
   });
 });

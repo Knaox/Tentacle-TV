@@ -9,6 +9,7 @@ import {
 import { attachHlsTimeline } from "./hlsTimelineAttach";
 import { hlsSessionStart } from "./hlsTimeline";
 import { watchHlsErrors } from "./hlsErrorRecovery";
+import { useVideoRelease } from "./videoRelease";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -55,6 +56,7 @@ export function useVideoSource({
   onDirectPlayNonFiable, onFailure,
 }: UseVideoSourceOptions) {
   const hlsRef = useRef<Hls | null>(null);
+  const holdSource = useVideoRelease(hlsRef); // à la sortie, le flux est LÂCHÉ (cf. `releaseVideoSource`)
   // Base d'horodatage du conteneur apprise sur CE média (session partie du
   // segment 0) — un rechargement en cours de film ne peut pas la mesurer seul.
   const hlsPtsBaseRef = useRef<number | null>(null);
@@ -88,6 +90,7 @@ export function useVideoSource({
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+    holdSource(v);
 
     const isSourceChange = hasStartedRef.current;
     const isHlsUrl = src.includes(".m3u8");
@@ -289,7 +292,7 @@ export function useVideoSource({
     };
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => () => { hlsRef.current?.destroy(); clearInterval(seekStallTimer.current); }, []);
+  useEffect(() => () => { clearInterval(seekStallTimer.current); }, []);
 
   return { loading, setLoading, showPlayButton, setShowPlayButton };
 }

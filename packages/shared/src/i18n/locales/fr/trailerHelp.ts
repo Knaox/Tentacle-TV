@@ -82,6 +82,7 @@ export default {
   stepUpdateTitle: "Gardez Tentacle à jour",
   stepUpdateJellyfin12: "Jellyfin 12 a changé la façon dont les applications s'y connectent\u00a0: avec un serveur Tentacle trop ancien, plus rien ne passe, bandes-annonces comprises.",
   stepUpdateAppleTv: "Sur l'Apple TV, les bandes-annonces YouTube sont lues grâce à l'outil yt-dlp de l'image Docker de Tentacle. YouTube change souvent\u00a0: une image à jour les remet en route.",
+  stepUpdateAppleTv_windowsApp: "Sur l'Apple TV, les bandes-annonces YouTube sont lues grâce à l'outil yt-dlp, que Tentacle Server met à jour de lui-même chaque jour. YouTube change souvent\u00a0: si elles ne passent plus, laissez le Microsoft Store mettre l'app à jour.",
 
   // ── Liens ──────────────────────────────────────────────────────────────
   linkJellyfinLibraries: "Médiathèques de Jellyfin",

@@ -63,6 +63,8 @@ export interface DetailViewProps extends Omit<DetailSectionsProps, "onSectionLay
   /** La lumière de l'œuvre, pour le fond vivant sous l'image. */
   palette: ArtworkPalette;
   showTrailerHint?: boolean;
+  /** Le titre manque de métadonnées (`lacksMetadata`) : la phrase de l'en-tête. */
+  showMetadataHint?: boolean;
   /** Erreur : le panneau remplace la fiche. */
   error?: { title: string; message?: string } | null;
 }
@@ -81,6 +83,7 @@ export const DetailView = memo(function DetailView({
   backdropUri,
   palette,
   showTrailerHint,
+  showMetadataHint,
   error,
   onPlay,
   onTrailer,
@@ -146,6 +149,7 @@ export const DetailView = memo(function DetailView({
               header={header}
               actions={actions}
               showTrailerHint={showTrailerHint}
+              showMetadataHint={showMetadataHint}
               onPlay={onPlay}
               onTrailer={onTrailer}
               onToggleWatchlist={onToggleWatchlist}

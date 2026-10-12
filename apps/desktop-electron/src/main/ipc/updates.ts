@@ -24,6 +24,7 @@
 
 import { shell } from "electron";
 import { z } from "zod";
+import { opensStorePage } from "../msixInstallState";
 import { sendToPage } from "../pageEvents";
 import { nativeHandle } from "../video/native";
 import { getMainWindow } from "../window";
@@ -124,13 +125,20 @@ export function registerUpdateCommands(registry: CommandRegistry): void {
           await msix().downloadAndInstallMsixUpdate(nativeHandle(win));
           sendToPage("msix-update-progress", { progress: 1, indeterminate: false });
         } catch (error) {
+          // Refus, batterie faible, Wi-Fi exigé : l'utilisateur peut agir, et
+          // la page le lui dit. Rouvrir le Store après un refus passerait outre.
+          const code = error instanceof Error ? error.message : String(error);
+          if (!opensStorePage(code)) {
+            console.warn(`[maj] installation non aboutie (${code})`);
+            throw error;
+          }
           // Repli : la page de mises à jour du Store. L'utilisateur obtient sa
           // mise à jour dans tous les cas — seul le chemin change.
           console.warn(`[maj] installation directe impossible (${String(error)}), ouverture du Store`);
           await shell.openExternal(UPDATES_PAGE);
           // On lève quand même : la page ne doit PAS enchaîner sur un
           // redémarrage, puisque rien n'a encore été installé.
-          throw new Error("store-page-opened");
+          throw new Error("store-page-opened", { cause: error });
         }
       },
     });

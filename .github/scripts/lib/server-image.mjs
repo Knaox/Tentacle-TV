@@ -48,6 +48,17 @@ const SHA_RE = /^[0-9a-f]{40}$/;
 export const webosTag = (server, webos) => `v${server}-webos-${webos}`;
 
 /**
+ * Le serveur que sert l'image en service (`production`), '' s'il ne se dit pas.
+ * Une image étiquetée dit son serveur ; une image d'avant les labels se
+ * reconnaît à son empreinte, identique à celle de « :vS » (`base`) — server.yml
+ * pose les deux étiquettes d'un même geste.
+ */
+export function liveServerVersion(production, base, serverVersion) {
+  if (!production) return '';
+  return production.labels?.[LABELS.version] || (base && production.digest === base.digest ? serverVersion : '');
+}
+
+/**
  * @param {object} p
  * @param {'server'|'webos'} p.mode
  * @param {'build'|'test'|'store'} p.channel
@@ -161,10 +172,7 @@ function planWebos(p, production, base) {
     if (!production) {
       throw new PlanError(`Aucune image « ${p.image}:latest » : impossible de vérifier quel serveur est en service.`);
     }
-    // Une image étiquetée dit son serveur ; une image d'avant les labels se
-    // reconnaît à son empreinte, identique à celle de « :vS » (server.yml pose
-    // les deux étiquettes d'un même geste).
-    const live = production.labels?.[LABELS.version] || (production.digest === base.digest ? S : '');
+    const live = liveServerVersion(production, base, S);
     if (live !== S) {
       throw new PlanError(`L'image en service (:latest) est le serveur ${live || 'inconnu'}, pas ${S} : livrer webOS au `
         + `cran store y mettrait le serveur ${S} en service à sa place. Livre d'abord le serveur ${S} au cran store `

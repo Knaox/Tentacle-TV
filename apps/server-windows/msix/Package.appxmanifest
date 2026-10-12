@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Manifeste MSIX de Tentacle Server (app Win32 full-trust empaquetée).
+
+  MODÈLE : `scripts/assemble/manifest.mjs` remplace les jetons {{…}} (identité
+  en paramètres tant que le Store n'a pas réservé la sienne ; version X.Y.Z.0,
+  le 4e champ reste 0 pour le Store) et écrit `AppxManifest.xml` à la racine du
+  paquet. Le test `manifest.test.ts` relit ce fichier : le TaskId, l'alias et le
+  chemin de l'hôte y sont tenus.
+
+  L'exe est le `node.exe` officiel renommé, en sous-système GUI. Un exe empaqueté
+  démarre avec System32 pour dossier courant : l'hôte n'est donc jamais donné
+  par un chemin relatif, mais retrouvé depuis `process.execPath` (`-e`), ce qui
+  vaut aussi pour l'alias et la tâche de démarrage. `uap10:Parameters` n'existe
+  qu'à partir de Windows 10 2004 (19041) : d'où ce MinVersion, et non 17763,
+  où l'exe se lancerait sans script et ressortirait aussitôt.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:uap11="http://schemas.microsoft.com/appx/manifest/uap/windows10/11"
+  xmlns:uap17="http://schemas.microsoft.com/appx/manifest/uap/windows10/17"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop2="http://schemas.microsoft.com/appx/manifest/desktop/windows10/2"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap3 uap10 uap11 uap17 desktop desktop2 rescap">
+
+  <Identity
+    Name="{{IDENTITY_NAME}}"
+    Publisher="{{PUBLISHER}}"
+    Version="{{VERSION}}"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Tentacle Server</DisplayName>
+    <PublisherDisplayName>{{PUBLISHER_DISPLAY_NAME}}</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <!-- Filet seulement (Windows 11 24H2 et plus) : l'hôte pilote lui-même la
+         mise à jour à un moment calme (`update/`). Sans lui, le Store refuse
+         de mettre à jour un paquet qui tourne. -->
+    <uap17:UpdateWhileInUse>defer</uap17:UpdateWhileInUse>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="fr-FR" />
+    <Resource Language="en-US" />
+  </Resources>
+
+  <Applications>
+    <Application
+      Id="TentacleServer"
+      Executable="Tentacle Server.exe"
+      EntryPoint="Windows.FullTrustApplication"
+      uap10:Parameters="-e &quot;require(require('path').join(require('path').dirname(process.execPath),'apps','server-windows','dist','main.js'))&quot; --">
+      <!-- Visuels QUALIFIÉS (brand/windows.py, `generate-icons.py`) : chaque nom
+           ci-dessous désigne ses variantes .scale-100 à 400, et l'icône de la liste
+           ses .targetsize-16 à 256 en trois habits (plaque, altform-unplated,
+           altform-lightunplated), résolus par resources.pri
+           (.github/scripts/msix-resources.mjs). La mascotte seule sur
+           transparent : aucune plaque peinte, et BackgroundColor transparent
+           laisse aux tuiles de Windows 10 la couleur du thème. -->
+      <uap:VisualElements
+        DisplayName="Tentacle Server"
+        Description="Tentacle Server"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Wide310x150Logo.png"
+          Square71x71Logo="Assets\Square71x71Logo.png"
+          Square310x310Logo="Assets\Square310x310Logo.png" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- À l'ouverture de session, pas à l'allumage. Sans ImmediateRegistration :
+             l'utilisateur garde la main (Paramètres > Applications > Démarrage). -->
+        <desktop:Extension
+          Category="windows.startupTask"
+          Executable="Tentacle Server.exe"
+          EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="TentacleServerStartup" Enabled="true" DisplayName="Tentacle Server" />
+        </desktop:Extension>
+        <!-- `tentacle setup token|reset`, `tentacle web on|off`… : le même exe,
+             l'hôte en mode ligne de commande (marqueur « cli » en fin de
+             paramètres, `src/cli/`). Jamais deux tirets d'affilée dans un
+             commentaire XML : makeappx refuse le manifeste. -->
+        <uap3:Extension
+          Category="windows.appExecutionAlias"
+          Executable="Tentacle Server.exe"
+          EntryPoint="Windows.FullTrustApplication"
+          uap10:Parameters="-e &quot;require(require('path').join(require('path').dirname(process.execPath),'apps','server-windows','dist','main.js'))&quot; -- --cli"
+          uap11:Subsystem="console">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="tentacle.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Extensions>
+    <!-- Sans port : un port changé par l'utilisateur reste ouvert. Limitée à notre
+         exe et aux réseaux privés ou de domaine : un Wi-Fi public reste fermé.
+         UDP pour la découverte des appareils. -->
+    <desktop2:Extension Category="windows.firewallRules">
+      <desktop2:FirewallRules Executable="Tentacle Server.exe">
+        <desktop2:Rule Direction="in" IPProtocol="TCP" Profile="domainAndPrivate" />
+        <desktop2:Rule Direction="in" IPProtocol="UDP" Profile="domainAndPrivate" />
+      </desktop2:FirewallRules>
+    </desktop2:Extension>
+  </Extensions>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

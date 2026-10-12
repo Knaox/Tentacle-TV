@@ -97,6 +97,8 @@ export interface DiscoverInput {
   browserHost: string | undefined;
   containerized: boolean;
   gateway?: string | null;
+  /** L'adresse principale de la machine, hors conteneur : elle remplace un navigateur en `localhost` dans `clientUrl`. */
+  lanAddress?: string | null;
   /** Le Jellyfin de la pile est verrouillé par Tentacle : neuf pour l'administrateur. */
   claimed?: boolean;
 }
@@ -124,7 +126,7 @@ export async function discoverJellyfins(input: DiscoverInput, deps: DiscoveryDep
       inStack,
       compatible: server.compatible,
       source: server.source,
-      clientUrl: clientJellyfinUrl({ deployment, browserHost, jellyfinUrl: server.url, gateway: input.gateway }),
+      clientUrl: clientJellyfinUrl({ deployment, browserHost, jellyfinUrl: server.url, gateway: input.gateway, lanAddress: input.lanAddress }),
     };
   };
   const stack = deployment.siblingUrl ? await stackEntry(deployment.siblingUrl, deps) : [];

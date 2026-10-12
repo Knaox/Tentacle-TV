@@ -49,7 +49,8 @@ gh workflow run server.yml -f channel=store   # le serveur, par exemple
 ## Livraison (CI)
 
 **Source unique des versions : `versions.json` (racine)** — champs `desktop`,
-`tv`, `webos`, `mobile`, `server`, `minServer` (version serveur minimale exigée
+`tv`, `webos`, `mobile`, `server` (qui est AUSSI la version de l'app Tentacle
+Server pour Windows : plus de clé `serverWindows` depuis le 2026-10-12), `minServer` (version serveur minimale exigée
 par les clients — avertissement bloquant `useServerCompat.ts` ; au-dessus, les
 nouveautés se règlent par les CAPACITÉS du serveur, cf. plus bas). On change la version
 À UN SEUL ENDROIT, et c'est la CI qui l'écrit : `.github/scripts/bump-version.mjs`
@@ -65,18 +66,21 @@ cibles, un cran, éventuellement une version, et on clique. Elle affiche avant l
 clic l'état du contrôle qualité et la taille des notes de version par store.
 
 ⚠️ **Son vocabulaire est celui des entrées de workflow** (`targets`, `channel`,
-`version`, `promote`) — et `webos.yml` comme `server.yml` n'ont NI `targets` NI
-`promote` (`noTargets` / `noPromote` dans la page). Une entrée qu'un workflow ne
+`version`, `promote`) — et `webos.yml`, `server.yml` et `server-windows.yml` n'ont
+NI `targets` NI `promote` (`noTargets` / `noPromote` dans la page). Une entrée qu'un workflow ne
 déclare pas fait REFUSER le déclenchement (422 « Unexpected inputs provided ») ;
 une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
+`server.yml` déclare en plus `windows` (booléen, case « Livrer aussi Tentacle
+Server pour Windows » de la page : un seul run, image Docker + paquet Windows) ;
+`server-windows.yml` déclare aussi `sha`, que la page n'envoie jamais.
 
 ### Les trois crans
 
 | `channel` | Ce qui se passe |
 |-----------|-----------------|
 | `build` | Construit et archive les artefacts. **Rien ne part nulle part.** |
-| `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`, image en `:vS-webos-X.Y.Z` sans bouger `:latest`. **Publié, sans aucun geste ensuite.** |
-| `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé (par le serveur OU par webOS). **En ligne, sans un clic de plus.** |
+| `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`, image en `:vS-webos-X.Y.Z` sans bouger `:latest` · Tentacle Server pour Windows dans un VOL de paquet du Store. **Publié, sans aucun geste ensuite.** |
+| `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store (bureau, Tentacle Server pour Windows) · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé (par le serveur OU par webOS). **En ligne, sans un clic de plus.** |
 
 **Le cran `dev` (serveur seulement)** : l'image de la branche `dev`, pour qui
 veut l'éprouver avant une livraison — `ghcr.io/knaox/tentacle-tv:dev` et
@@ -92,7 +96,7 @@ paquet à chaque soumission. Une cible sans RIEN de testé pour cette version se
 construit : `prepare` le vérifie avant le moindre job (`promote-probe.mjs`), au
 lieu de laisser la reprise échouer pendant que Windows part seul au Store.
 
-### Les cinq workflows
+### Les six workflows
 
 | Workflow | Cibles (`targets`) |
 |----------|--------------------|
@@ -100,12 +104,13 @@ lieu de laisser la reprise échouer pendant que Windows part seul au Store.
 | `mobile.yml` | `android` · `ios` |
 | `tv.yml` | `androidtv` · `appletv` |
 | `webos.yml` | aucune entrée `targets` — l'IPK ET le client servi sous `/tv` |
-| `server.yml` | aucune entrée `targets` — l'image Docker EST le serveur |
+| `server.yml` | aucune entrée `targets` — l'image Docker EST le serveur ; `windows` y ajoute le paquet Windows, dans le même run |
+| `server-windows.yml` | aucune entrée `targets` — le paquet MSIX de Tentacle Server pour Windows ; aussi RÉUTILISABLE (`workflow_call`, appelé par `server.yml`) |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
-cran `store` ; c'est la CI qui les pose quand on demande une version. Un sixième
+cran `store` ; c'est la CI qui les pose quand on demande une version. Un septième
 fichier, `server-image.yml`, ne se lance pas seul : c'est le workflow
-RÉUTILISABLE qui construit et publie l'image Docker pour les deux derniers.
+RÉUTILISABLE qui construit et publie l'image Docker pour `webos.yml` et `server.yml`.
 
 ### Le serveur et le client LG — deux moitiés, deux livraisons
 
@@ -141,6 +146,60 @@ Gardes propres à ce couple :
 - Revers : un build `apps/tv-webos` cassé ne bloque plus le serveur, et ne se voit
   qu'à la livraison webOS — le cran `build` de `webos.yml` le vérifie.
 
+### Tentacle Server pour Windows — un serveur déjà livré, dans un paquet du Store
+
+**La version de l'app EST celle du serveur** (décision du 2026-10-12) :
+`versions.json` → `server`, paquet `X.Y.Z.0`, tag `server-windows-vX.Y.Z`
+(posé en fin de run au cran store), notes = CELLES DU SERVEUR, bloc
+`## [X.Y.Z]` de `changelogs/server.md` (`WINDOWS_NOTES`), mesuré contre les
+1 500 caractères par langue du Store — plus de fichier à part (voir
+« Changelogs »). Plus de clé `serverWindows`. Seule exception, la **1.0.0**, construite à la main hors
+workflow (paquet `1.0.0.0`) : tout serveur livré depuis la dépasse, et le Store
+exige un paquet strictement croissant. **`server-windows.yml` ne bumpe rien** :
+son entrée `version` n'est qu'une garde (≠ `server` au commit figé → refus).
+Décision : `lib/server-windows.mjs`, testée hors ligne, rejouée par
+`node .github/scripts/server-windows-plan.mjs plan --channel store --sha $(git
+rev-parse HEAD) [--version X.Y.Z]`.
+
+- **Un seul run : image Docker + paquet Windows.** `server.yml` avec l'entrée
+  **`windows`** (case de la page) : au cran test ou store SEULEMENT (refusé
+  avant le bump au cran build ; une poussée sur `dev` n'a pas d'entrée), il joue
+  le pré-vol de l'app (variables, bloc `## [S]`), publie l'image, puis — image
+  publiée, `:latest` basculé au cran store — APPELLE `server-windows.yml` comme
+  un job (`workflow_call`, `secrets: inherit`, sur le modèle de
+  `server-image.yml`) au même cran, à la même version, avec `sha` = son commit
+  figé (le bump) : pas de second bump. Le job d'appel donne `contents: write`
+  (tag), `actions: read`, `packages: read` — plafond des jobs appelés.
+  Appelé, `github.*` est celui de server.yml (jamais le bump) : seul
+  `inputs.sha` fait foi, aucune condition sur `github.event_name`, et la
+  concurrence (`release-server-windows`) est au niveau du JOB qui soumet.
+- **Relivrer l'app seule** : `server-windows.yml` garde `workflow_dispatch`
+  (page : `channel`, `version`) et le tag `server-windows-v*`, sur le serveur
+  déjà livré.
+- **Les gardes de webOS** : `:vS` doit exister ; au cran store, `:latest` doit
+  DÉJÀ être ce serveur ; `minServer` ne dépasse pas `server`. Pré-vol avant le
+  moindre build.
+- **Le client LG n'est jamais celui du commit** : extrait de `:latest` s'il sert
+  ce serveur, sinon de `:vS` (empreinte épinglée, `docker create` + `cp`). Le
+  serveur, lui, se construit depuis le commit (moteur Prisma de Windows) ; un
+  écart avec le commit qui a publié `:vS` avertit, sans bloquer.
+- **Cran test = un VOL de paquet** (`msstore-submit.mjs` + `FLIGHT_ID`), jamais
+  la fiche. Variables du dépôt `SERVER_WINDOWS_STORE_ID` et
+  `SERVER_WINDOWS_FLIGHT_ID`, plus l'identité de Partner Center
+  (`SERVER_WINDOWS_IDENTITY_NAME`, `SERVER_WINDOWS_PUBLISHER`,
+  `SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME`) ; absentes, test et store refusent
+  avant le moindre build (et `server.yml` avant son bump si `windows` est
+  coché), le cran build reste possible (identité de développement).
+  Mêmes secrets `PARTNER_*` que le bureau.
+- **L'assemblage** est `pnpm --filter @tentacle-tv/server-windows assemble --
+  --out <dossier> --version X.Y.Z.0 --tv-client <dossier>` : un dossier prêt
+  pour `makeappx pack /nv`, manifeste versionné compris (le workflow le vérifie).
+  `SERVER_WINDOWS_JELLYFIN_INSTALLER=off` (variable du dépôt) passe
+  `--no-jellyfin-installer` : le paquet ne propose plus d'installer Jellyfin,
+  seulement jellyfin.org puis la détection (si le Store refuse, règle 10.1.5).
+- **MinVersion 19041** (Windows 10 2004) : l'hôte est lancé par
+  `uap10:Parameters`, qui n'existe pas avant.
+
 ### Ce qui garde les livraisons
 
 - **`.githooks/pre-push`** refuse un push dont le typecheck ou les tests
@@ -160,11 +219,20 @@ Gardes propres à ce couple :
 
 ### Changelogs
 
-`changelogs/{desktop,tv,server,mobile,webos}.md`, blocs `## [X.Y.Z]` avec
+`changelogs/{desktop,tv,server,mobile,webos,server-webos}.md`, blocs `## [X.Y.Z]` avec
 `### FR` / `### EN`. Limites appliquées (`lib/changelog.mjs`) : ASC 4000,
 MS Store 1500, Play 500 **caractères Unicode**. Les blocs par canal
-`## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu pour ces cibles-là.
-`CHANGELOG.md` racine = archive pure.
+`## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu pour ces cibles-là
+(bureau seulement). `CHANGELOG.md` racine = archive pure.
+
+**Tentacle Server pour Windows n'a PAS de changelog à lui** (décision du
+2026-10-12) : ses « Nouveautés » sont LES MÊMES que celles du serveur, le bloc
+nu `## [S]` de `changelogs/server.md` — jamais de `## [win-S]` dans ce fichier,
+un seul texte. Quand l'app est livrée (`server.yml` + `windows`, ou
+`server-windows.yml` seul), le pré-vol mesure ce bloc contre la limite du
+Microsoft Store (1 500 par langue) et dit de combien la coupe à la puce va
+mordre ; un bloc qui dépasse avertit, il ne bloque pas. Le texte de la 1.0.0
+(soumise à la main) vit dans `docs/server/windows-store-listing.md`.
 
 **Une livraison webOS demande DEUX blocs de la même version webOS** :
 `changelogs/webos.md` (Releases webOS : coquille et client) et
@@ -285,8 +353,8 @@ déclaration. **Jamais un `if (version >= x)`**, jamais un 404 interprété en
 `brand/` est la source unique. Rien de ce qui en dérive ne se retouche à la main :
 
 ```bash
-python3 brand/generate-svg.py brand      # les 19 SVG + 3 modules TS
-python3 brand/generate-icons.py --write  # les 90 binaires (aperçu sans --write ;
+python3 brand/generate-svg.py brand      # les 21 SVG + 3 modules TS
+python3 brand/generate-icons.py --write  # les binaires (aperçu sans --write ;
                                          #  un mot en plus = filtre de chemin)
 pnpm --filter @tentacle-tv/tv-webos icons  # webOS, à part — voir plus bas
 ```
@@ -298,7 +366,16 @@ pnpm --filter @tentacle-tv/tv-webos icons  # webOS, à part — voir plus bas
 divergé. Côté natif les `dasharray` sont en unités RÉELLES de tracé :
 `pathLength` n'existe que dans le rendu web de react-native-svg.
 
-Quatre pièges déjà payés :
+Cinq pièges déjà payés :
+
+- **Windows (MSIX) : jamais un visuel sans ses variantes `unplated`, jamais
+  sans `resources.pri`.** Sans elles, Windows pose l'icône réduite sur une
+  plaque à la couleur d'accent — la « bordure » relevée sur le Store
+  (2026-10). Les deux paquets (bureau, Tentacle Server) reçoivent la mascotte
+  seule sur transparent, à toutes les échelles et tailles cibles
+  (`brand/windows.py`) ; l'assemblage construit l'index
+  (`.github/scripts/msix-resources.mjs`). Tentacle Server a son PROPRE logo
+  (`logo-server.svg` : la mascotte + un badge « serveur », `brand/server.py`).
 
 - **webOS a son propre script** (`apps/tv-webos/scripts/icons.mjs`) et
   `generate-icons.py` l'ignore volontairement : il faut un maître de 5200 px
@@ -693,13 +770,20 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
   (`dismissAccountHint`) s'il n'y a toujours aucune clé — la recommandation `adminTmdbKey` du tableau de bord reste.
 - **Aide de l'assistant** : une page du site par étape, adresses STABLES dans
   `packages/shared/src/setupWizard/setupDocLinks.ts` (le site les tient ; jamais renommées), et « Besoin
-  d'aide ? » repliable au pied de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`). Un écran sans page
+  d'aide ? » repliable sous l'explication de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`). Un écran sans page
   du site (`SetupStepWithoutDoc` : `tmdb`) n'a que ses questions — jamais une adresse inventée.
 - **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, état pur
   `wizardState.ts` (on ne va, n'avance, ne revient que DANS le parcours), chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
   le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
   le parcours que si `codeRequired` ; la langue des métadonnées est sous le compte (plus d'écran à part) —
   pour un Jellyfin neuf seulement. Liste Jellyfin : `JellyfinList` (pile, neufs, déjà configurés).
+  **Un seul cadre, PLEINE PAGE** (`WizardFrame`) : en-tête (les cinq grandes étapes de `wizardPhases.ts`, la
+  progression, la langue), l'explication à gauche et l'action dans un panneau à droite (`layout="wide"` pour
+  une grille : réglages conseillés, accès à distance ; une colonne sur un téléphone), un pied FIXE — « Retour »
+  et UNE action principale, toujours visibles. Seul le corps défile. Un formulaire garde ses champs dans le
+  panneau et son bouton au pied, relié par l'attribut `form` (Entrée l'envoie) ; jamais un bouton d'envoi
+  dans le panneau. Toute attente passe par `SetupWaiting` (anneau, phrase, barre si l'on sait mesurer),
+  tout refus par `SetupErrorLine` — jamais un squelette ni un « … » recopiés.
 - **Interface web désactivable** : `TENTACLE_WEB_UI=off` (commenté dans les deux piles) ou `tentacle web
   on|off|default|status` (fichier `data/web-ui`, relu toutes les 5 s, qui l'emporte sur la variable) —
   `static/webUi.ts`. Coupée : 404 pour le client web ; restent `/api` (sockets compris), `/tv`, `/.well-known`,

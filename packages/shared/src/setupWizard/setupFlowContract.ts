@@ -211,7 +211,10 @@ export function nextStep(steps: readonly SetupStep[], step: SetupStep): SetupSte
  *  - `advice` : les réglages conseillés — Jellyfin déjà configuré seulement ;
  *  - `segments` : la détection des passages ;
  *  - `tmdb` : enregistrer la clé TMDB (validée par TMDB), ou « Configurer plus tard » ;
- *  - `complete` : finir l'installation.
+ *  - `complete` : finir l'installation ;
+ *  - `detectJellyfin`, `installJellyfin`, `startJellyfin` : l'app Windows, au choix du
+ *    Jellyfin — le détecter sur la machine, l'installer (installateur officiel), le démarrer ;
+ *  - `pickFolder` : l'app Windows, la boîte « Choisir un dossier » — là où l'on parcourt.
  */
 export type SetupAction =
   | "select"
@@ -224,7 +227,11 @@ export type SetupAction =
   | "advice"
   | "segments"
   | "tmdb"
-  | "complete";
+  | "complete"
+  | "detectJellyfin"
+  | "installJellyfin"
+  | "startJellyfin"
+  | "pickFolder";
 
 /** Le geste appartient-il au parcours en cours ? Le serveur refuse tout le reste (`step_refused`). */
 export function setupActionAllowed(action: SetupAction, state: SetupFlowState): boolean {
@@ -232,6 +239,9 @@ export function setupActionAllowed(action: SetupAction, state: SetupFlowState): 
   const path = state.selection?.path ?? null;
   switch (action) {
     case "select":
+    case "detectJellyfin":
+    case "installJellyfin":
+    case "startJellyfin":
       return true;
     case "initialize":
       return path === "fresh" && !state.linked;
@@ -239,6 +249,7 @@ export function setupActionAllowed(action: SetupAction, state: SetupFlowState): 
       return path === "configured";
     case "browse":
     case "createLibraries":
+    case "pickFolder":
       return state.linked && (path === "fresh" || (path === "configured" && state.noLibraries === true));
     case "advice":
       return path === "configured" && state.linked;

@@ -12,7 +12,8 @@ import { DATA_ROOT } from "../services/dataDir";
 import { applyCoreMigrations } from "../services/database/migrator";
 import { openSqlite } from "../services/database/nodeSqlite";
 import { coreDatabasePath } from "../services/database/sqlitePath";
-import { normalizeArgs, runCli } from "./tentacle";
+import type { MachineInfo } from "../setup/hostInfo";
+import { normalizeArgs, resetDone, runCli } from "./tentacle";
 
 const lock = join(DATA_ROOT, "setup-complete");
 const token = join(DATA_ROOT, "setup-token.txt");
@@ -100,5 +101,28 @@ describe("tentacle setup", () => {
     expect(await runCli(["setup", "reset"], {})).toBe(1);
     expect(existsSync(lock)).toBe(true);
     expect(existsSync(database)).toBe(false);
+  });
+});
+
+describe("après reset : où redémarrer", () => {
+  const machine = (over: Partial<MachineInfo>): MachineInfo => ({ deployment: "docker", stack: "full", containerized: true, containerId: "3f9c2a7b1d4e", ...over });
+
+  it("conteneur : Portainer, NAS, et la commande qui vise son identifiant", () => {
+    const lines = resetDone(machine({})).join("\n");
+    expect(lines).toContain("docker restart 3f9c2a7b1d4e && docker logs 3f9c2a7b1d4e");
+  });
+
+  it("natif : redémarrer, sans un mot de Docker", () => {
+    const lines = resetDone(machine({ deployment: "native", stack: null, containerized: false, containerId: null })).join("\n");
+    expect(lines).toContain("Redémarrez le serveur");
+    expect(lines).not.toMatch(/docker|Portainer/i);
+  });
+
+  it("l'app Windows : le menu de l'icône, ni Docker ni journal à fouiller", () => {
+    const lines = resetDone(machine({ deployment: "native", packaging: "windows-app", stack: null, containerized: false, containerId: null })).join("\n");
+    expect(lines).toContain("Redémarrer le serveur");
+    expect(lines).toContain("Code d'installation");
+    expect(lines).toContain("Restart server");
+    expect(lines).not.toMatch(/docker|Portainer|conteneur|container/i);
   });
 });

@@ -105,4 +105,16 @@ describe("l'écran des bibliothèques", () => {
     expect(unknown).toContain('mediaMapDockerUnknown{"inside":"/media"}');
     expect(unknown).toContain("mediaMapHostUnknown");
   });
+
+  it("app Windows, navigateur sur le PC même : « Parcourir avec l'Explorateur » au premier plan, le parcours par Jellyfin reste", () => {
+    const windows = { deployment: "native" as const, stack: null, provisioner: "managed-by-tentacle" as const, mediaFolders: null };
+    const local = html(<LibrariesScreen wizard={wizard({ context: context("fresh", false, { ...windows, appHost: { jellyfin: true, pickFolder: true } }), plans: noFolder })} />);
+    expect(local).toContain("explorerPick");
+    expect(local).toContain("libraryBrowseJellyfin");
+    expect(local).toMatch(/class="cls-bbrand"[^>]*>.*?explorerPick/);
+    // Un autre navigateur (ou un serveur hors de l'app) : le parcours par Jellyfin seul, comme avant.
+    const remote = html(<LibrariesScreen wizard={wizard({ context: context("fresh", false, { ...windows, appHost: { jellyfin: true, pickFolder: false } }), plans: noFolder })} />);
+    expect(remote).not.toContain("explorerPick");
+    expect(remote).toContain("libraryChooseFolder");
+  });
 });

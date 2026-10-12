@@ -1,8 +1,10 @@
 import type { ProvisionerKind, SetupDeployment, SetupStack } from "./setupWizardContract";
+import type { SetupPackaging } from "./setupPackagingContract";
 
 /**
  * Comment ce serveur a été installé — lu dans l'environnement, jamais deviné
- * en fouillant la machine. L'image pose `TENTACLE_DEPLOYMENT=docker` ; chaque
+ * en fouillant la machine. L'image pose `TENTACLE_DEPLOYMENT=docker`, l'app
+ * Windows `TENTACLE_DEPLOYMENT=windows-app` (natif, livré en app) ; chaque
  * pile compose pose `TENTACLE_STACK` et, pour la pile complète, l'adresse de
  * son Jellyfin voisin.
  *
@@ -27,6 +29,8 @@ export interface DeploymentEnv {
 
 export interface Deployment {
   deployment: SetupDeployment;
+  /** `windows-app` : l'app Microsoft Store ; `deployment` y vaut `native`. */
+  packaging: SetupPackaging | null;
   stack: SetupStack | null;
   provisioner: ProvisionerKind;
   /** Le Jellyfin voisin de la pile complète, joint par le réseau de la pile. */
@@ -68,20 +72,24 @@ function portOf(value: string | undefined): number | null {
 
 export function readDeployment(env: DeploymentEnv = process.env): Deployment {
   const deployment: SetupDeployment = env.TENTACLE_DEPLOYMENT === "docker" ? "docker" : "native";
+  const packaging: SetupPackaging | null = env.TENTACLE_DEPLOYMENT === "windows-app" ? "windows-app" : null;
   const stackValue = env.TENTACLE_STACK?.trim() as SetupStack | undefined;
   const stack = stackValue && STACKS.includes(stackValue) ? stackValue : null;
   const siblingUrl = deployment === "docker" && stack === "full" ? cleanUrl(env.JELLYFIN_INTERNAL_URL) : null;
 
-  // ManagedByTentacle est réservé à la future app d'installation : rien ne
-  // l'annonce encore, et aucun environnement ne doit pouvoir le choisir.
+  // L'app Windows seule tient le Jellyfin de sa machine (son hôte le détecte,
+  // l'installe, le démarre) ; aucune autre valeur de l'environnement n'y mène.
   const provisioner: ProvisionerKind = siblingUrl
     ? "docker-sibling"
-    : deployment === "native"
-      ? "native-host"
-      : "existing-instance";
+    : packaging === "windows-app"
+      ? "managed-by-tentacle"
+      : deployment === "native"
+        ? "native-host"
+        : "existing-instance";
 
   return {
     deployment,
+    packaging,
     stack,
     provisioner,
     siblingUrl,

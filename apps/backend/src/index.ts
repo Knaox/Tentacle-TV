@@ -81,7 +81,8 @@ import { stopSearchJobs } from "./services/search/jobs";
 import { stopWatchTime } from "./services/watchTime/collector";
 import { startBackgroundServices } from "./services/backgroundServices";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
-import { setRestartShutdown } from "./services/pluginRestart";
+import { serverShutdown } from "./services/lifecycle/serverShutdown";
+import { announceProgress, announceReady, beginServerLifecycle, failStartup, startupFailureOf } from "./serverHost/serverLifecycle";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 import { registerBodyParsers } from "./services/bodyParsers";
 import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
@@ -90,6 +91,10 @@ const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
 
 async function main() {
+  // AVANT tout : l'arrêt unique (signaux, hôte Windows) et le verrou d'instance —
+  // un second serveur sur ces données sort ici, sans avoir rien touché.
+  if (!(await beginServerLifecycle())) return;
+
   // Une MariaDB d'avant 1.25 attend sa migration : un serveur de MAINTENANCE à
   // part la mène (écran d'attente ; ni Prisma, ni route du cœur, ni extension)
   // et se ferme à la bascule. Le démarrage normal reprend ici, sur la base née.
@@ -98,6 +103,7 @@ async function main() {
   // Une installation qui AVAIT une MariaDB, plus configurée : jamais une base vide à sa place.
   else if (orphanedLegacyInstallation()) await holdOrphanedInstallation(() => startMigrationMaintenance(PORT, HOST));
 
+  announceProgress("server");
   const app = Fastify({
     logger: {
       // Ni jeton, ni mot de passe, ni clé — où qu'un appel de journal les mette.
@@ -299,6 +305,7 @@ async function main() {
   // Une MariaDB d'avant 1.25 attend sa migration : on ne crée pas de base vide
   // à côté (elle passerait pour la nôtre, et la migration n'aurait plus lieu).
   // Relevé AVANT toute ouverture par Prisma (il lit tentacle.db par node:sqlite).
+  announceProgress("database");
   const legacy = legacySourceState();
   if (legacy === "pending") {
     console.warn("[db] Une base MariaDB est configurée et n'a pas encore été migrée vers SQLite : ses données attendent leur migration. MariaDB n'est pas modifiée.");
@@ -344,33 +351,28 @@ async function main() {
     // Une base née d'une migration : le cache TMDB copié en fond, l'ancienne base contrôlée.
     startPostMigrationTasks();
     startBackgroundServices();
+    announceProgress("extensions");
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }
 
-  // Premier arrêt propre du projet, et il ne sert qu'à ça : le collecteur de
-  // temps écrit à chaque relevé, donc au pire quinze secondes sont en jeu — mais
-  // rendre son bail permet à un redémarrage de reprendre la mesure aussitôt, au
-  // lieu d'attendre l'expiration.
-  app.addHook("onClose", async () => {
-    stopRecoJobs();
-    stopSearchJobs();
-    await stopWatchTime();
+  // L'arrêt propre, borné étape par étape (`lifecycle/serverShutdown.ts`) : les
+  // tâches de fond D'ABORD — le collecteur de temps rend son bail, un redémarrage
+  // reprend la mesure aussitôt —, puis le HTTP (un flux relayé ne le retient
+  // plus), puis la base. Le redémarrage d'une extension passe par le même.
+  serverShutdown.register({
+    stopBackgroundWork: async () => {
+      stopRecoJobs();
+      stopSearchJobs();
+      await stopWatchTime();
+    },
+    closeHttp: () => app.close(),
   });
-  for (const signal of ["SIGTERM", "SIGINT"] as const) {
-    process.once(signal, () => {
-      void app.close().then(() => process.exit(0));
-    });
-  }
-  // Le redémarrage qu'impose un module serveur de plugin passe par le même
-  // arrêt propre, borné (cf. pluginRestart.ts).
-  setRestartShutdown(() => app.close());
 
   await app.listen({ port: PORT, host: HOST });
   console.log(`Tentacle running on http://localhost:${PORT} (state: ${state})`);
+  announceReady(PORT);
 }
 
-main().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
+// Port pris ou autre échec : l'hôte Windows le sait, la base est fermée proprement.
+main().catch((err) => failStartup(startupFailureOf(err), err instanceof Error ? err.message : String(err)));

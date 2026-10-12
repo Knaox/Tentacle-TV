@@ -5,6 +5,7 @@ import { invoke, listen, relaunch, supportsAppUpdates } from "../desktop/bridge"
 import { APP_STORE_ID, appStoreUrlFor, checkAppStoreUpdate, checkMsixUpdate } from "../lib/updateCheckers";
 import { checkLinuxUpdate, downloadLinuxUpdate, applyLinuxUpdate, type LinuxUpdateFound } from "../lib/linuxUpdate";
 import { defaultUpdateInfo, type UpdateInfo, type UpdatePhase } from "../lib/updateTypes";
+import { updateErrorLabel } from "../lib/updateErrorLabel";
 import {
   isSimulatingUpdate, runSimulatedInstall, simulatedChannel, simulatedUpdate, stopSimulatingUpdate,
   updateDebugEnabled,
@@ -212,28 +213,3 @@ export function useAutoUpdate() {
 
   return { ...info, installUpdate, dismiss };
 }
-
-/**
- * Codes d'erreur de la coquille → clé i18n, ou message brut en dernier recours.
- *
- * La coquille lève des codes techniques (`store-page-opened`,
- * `install-state-3`…) et la modale les affichait TELS QUELS : l'utilisateur
- * lisait « Error: store-page-opened » dans sa langue de personne.
- */
-function updateErrorLabel(err: unknown): string {
-  const raw = err instanceof Error ? err.message : String(err);
-  const code = raw.replace(/^Error:\s*/, "");
-  return UPDATE_ERROR_KEYS[code] ?? (UPDATE_ERROR_KEYS[code.replace(/-\d+$/, "-*")] ?? raw);
-}
-
-/** Codes connus. La modale traduit ce qui commence par `notifications:`. */
-const UPDATE_ERROR_KEYS: Record<string, string> = {
-  "store-page-opened": "notifications:updateStorePageOpened",
-  "store-unavailable": "notifications:updateStoreUnavailable",
-  "no-update": "notifications:updateNoLongerAvailable",
-  "iterable-unavailable": "notifications:updateStoreUnavailable",
-  "install-refused": "notifications:updateInstallRefused",
-  "install-failed": "notifications:updateInstallRefused",
-  "install-state-*": "notifications:updateInstallRefused",
-  "aucune fenetre pour la boite de dialogue du Store": "notifications:updateStoreUnavailable",
-};

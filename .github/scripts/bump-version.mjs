@@ -23,6 +23,9 @@ const KEYS = {
   mobile: 'apps/mobile/package.json',
   tv: 'apps/tv/package.json',
   webos: 'apps/tv-webos/package.json',
+  // `server` vaut AUSSI pour l'app Tentacle Server pour Windows (paquet S.0) :
+  // plus de clé `serverWindows` depuis le 2026-10-12, l'app suit le serveur.
+  // L'hôte lit sa version dans son manifeste MSIX, jamais dans un package.json.
   server: 'apps/backend/package.json',
   minServer: null, // exigence, pas une version livrée : aucun paquet ne la porte
 };

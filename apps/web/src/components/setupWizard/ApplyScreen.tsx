@@ -6,6 +6,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { runSegmentSetup } from "./applySegments";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
+import { SetupWaiting } from "./SetupWaiting";
 import type { Wizard } from "./useWizard";
 import { createsLibraries, pathOf } from "./wizardModel";
 import { WizardFrame } from "./WizardFrame";
@@ -37,6 +38,8 @@ function firstPhase(done: { configured: boolean; segmentsDone: boolean; wantSegm
  * bibliothèque (sauf s'il n'en avait aucune et qu'on en a prévu : elles
  * d'abord), puis la session. Une étape qui échoue se relance seule, sans
  * refaire ce qui a réussi ; les passages et les réglages ne bloquent jamais.
+ * En tête, l'attente partagée : l'étape en cours et ce qui est fait ; un échec
+ * la remplace, et « Réessayer » prend la place de l'action principale.
  */
 export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: (session: SetupCompleteResponse) => void }) {
   const { t } = useTranslation(["setupWizard", "segmentPlugins"]);
@@ -104,7 +107,7 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   }, [run]);
 
   const line = (label: string, state: LineState) => (
-    <li className="flex items-center gap-2 text-sm">
+    <li className="flex items-center gap-3 text-sm">
       {state === "ok" ? (
         <CircleCheck size={16} aria-hidden="true" className="text-status-success-fg" />
       ) : state === "error" ? (
@@ -119,35 +122,46 @@ export function ApplyScreen({ wizard, onSession }: { wizard: Wizard; onSession: 
   const configState: LineState = phase === "segments" ? "pending" : phase === "configure" ? (error ? "error" : "running") : "ok";
   const sessionState: LineState = phase === "segments" || phase === "configure" ? "pending" : phase === "session" ? (error ? "error" : "running") : "ok";
   const adviceOutcomes = data.adviceOutcomes ?? [];
+  const configLabel = joined ? t(withLibraries ? "applyLibrariesAndAdvice" : "applyAdvice") : t("applyLibraries");
+  // L'attente dit l'étape en cours, et la barre ce qui est fait (une détection des passages ratée ne bloque rien : elle compte).
+  const lines = (wantSegments ? 1 : 0) + 2;
+  const settled = (wantSegments && phase !== "segments" ? 1 : 0) + (configState === "ok" ? 1 : 0) + (sessionState === "ok" ? 1 : 0);
+  const runningLabel = phase === "segments" ? t("segmentPlugins:wizardLine") : phase === "configure" ? configLabel : t("applySession");
 
   return (
-    <WizardFrame help={wizard} title={t("applyTitle")} subtitle={t("applySubtitle")} position={wizard.position} total={wizard.total} server={wizard.server}>
-      <div className="space-y-4" aria-live="polite">
-        <ul className="space-y-2">
+    <WizardFrame
+      wizard={wizard}
+      title={t("applyTitle")}
+      subtitle={t("applySubtitle")}
+      status={error ? null : t("applyKeepOpen")}
+      primary={error ? { label: t("retry"), onClick: () => void run() } : undefined}
+    >
+      <div className="space-y-5">
+        {error ? <SetupErrorLine code={error} /> : <SetupWaiting title={runningLabel} progress={settled / lines} />}
+        <ul className="space-y-2.5" aria-live="polite">
           {wantSegments ? line(t("segmentPlugins:wizardLine"), segState) : null}
           {wantSegments && segmentRun ? (
-            <li className="pl-6">
+            <li className="pl-7">
               <SegmentRunView run={segmentRun} />
             </li>
           ) : wantSegments && data.segments === null ? (
-            <li className="pl-6 text-xs text-content-tertiary">{t("segmentPlugins:wizardSkipped")}</li>
+            <li className="pl-7 text-xs text-content-tertiary">{t("segmentPlugins:wizardSkipped")}</li>
           ) : null}
-          {line(joined ? t(withLibraries ? "applyLibrariesAndAdvice" : "applyAdvice") : t("applyLibraries"), configState)}
-          {joined && data.adviceOutcomes && adviceOutcomes.length === 0 ? <li className="pl-6 text-xs text-content-tertiary">{t("applyAdviceNone")}</li> : null}
+          {line(configLabel, configState)}
+          {joined && data.adviceOutcomes && adviceOutcomes.length === 0 ? <li className="pl-7 text-xs text-content-tertiary">{t("applyAdviceNone")}</li> : null}
           {adviceOutcomes.map((outcome) => (
-            <li key={outcome.action} className={`pl-6 text-xs ${outcome.status === "failed" ? "text-status-error-fg" : "text-content-tertiary"}`}>
+            <li key={outcome.action} className={`pl-7 text-xs ${outcome.status === "failed" ? "text-status-error-fg" : "text-content-tertiary"}`}>
               {t(`adviceOutcome_${outcome.status}`, { name: t(ADVICE_TITLE[outcome.action] ?? outcome.action) })}
             </li>
           ))}
           {(withLibraries ? (data.outcomes ?? []) : []).map((outcome) => (
-            <li key={outcome.name} className={`pl-6 text-xs ${outcome.status === "failed" ? "text-status-error-fg" : "text-content-tertiary"}`}>
+            <li key={outcome.name} className={`pl-7 text-xs ${outcome.status === "failed" ? "text-status-error-fg" : "text-content-tertiary"}`}>
               {t(`outcome_${outcome.status}`, { name: outcome.name })}
               {outcome.error ? ` — ${t(`error_${outcome.error}`)}` : ""}
             </li>
           ))}
           {line(t("applySession"), sessionState)}
         </ul>
-        <SetupErrorLine code={error} onRetry={() => void run()} />
       </div>
     </WizardFrame>
   );

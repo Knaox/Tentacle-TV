@@ -3,6 +3,7 @@ import { readDefaultGateway } from "../discovery/candidates";
 import { hostInfo } from "../hostInfo";
 import { setupRuntime } from "../setupRuntime";
 import { clientJellyfinUrl } from "./clientUrl";
+import { hostLanAddress } from "./hostLanAddress";
 
 /** `clientJellyfinUrl` pour la requête en cours : son hôte, l'installation, la passerelle du conteneur. */
 export function clientUrlFor(request: FastifyRequest, jellyfinUrl: string | null): string | null {
@@ -11,5 +12,6 @@ export function clientUrlFor(request: FastifyRequest, jellyfinUrl: string | null
     browserHost: request.hostname,
     jellyfinUrl,
     gateway: hostInfo().containerized ? readDefaultGateway() : null,
+    lanAddress: hostLanAddress(),
   });
 }

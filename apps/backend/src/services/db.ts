@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { mariadbMigrationPending } from "./database/legacySource";
 import { applyCoreMigrations } from "./database/migrator";
-import { connectSqlitePrisma } from "./database/prismaClient";
+import { closeSqlitePrisma, connectSqlitePrisma } from "./database/prismaClient";
 import { coreDatabasePath, prismaSqliteUrl } from "./database/sqlitePath";
 
 /**
@@ -19,6 +19,8 @@ let opening: Promise<boolean> | null = null;
 /** Migrations appliquées dans CE processus : jamais rejouées une fois Prisma ouvert. */
 let migrated = false;
 let lastOpenError: string | null = null;
+/** Fermée pour l'arrêt : plus aucune ouverture, même par la garde qui réessaie. */
+let closed = false;
 
 /** Le moteur de la base — à lire au lieu de le deviner par une URL (extensions). */
 export function databaseEngine(): "sqlite" {
@@ -46,6 +48,7 @@ export function databaseOpenError(): string | null {
  */
 export function initPrisma(): Promise<boolean> {
   if (prisma) return Promise.resolve(true);
+  if (closed) return Promise.resolve(false);
   if (!opening) {
     opening = openDatabase().finally(() => {
       opening = null;
@@ -104,6 +107,19 @@ export function retryDatabaseOpen(now = Date.now()): Promise<boolean> {
   if (mariadbMigrationPending() || now - lastRetry < OPEN_RETRY_INTERVAL_MS) return Promise.resolve(false);
   lastRetry = now;
   return initPrisma();
+}
+
+/**
+ * La base fermée à l'arrêt du serveur, en DERNIER (après les tâches de fond et
+ * le HTTP) : journal vidé, connexion rendue (`closeSqlitePrisma`). Une ouverture
+ * en cours est attendue d'abord ; ensuite plus rien ne rouvre la base.
+ */
+export async function closeDatabase(): Promise<void> {
+  closed = true;
+  if (opening) await opening.catch(() => false);
+  const client = prisma;
+  prisma = null;
+  if (client) await closeSqlitePrisma(client);
 }
 
 export type DatabaseProbe = { ok: true; version: string } | { ok: false };

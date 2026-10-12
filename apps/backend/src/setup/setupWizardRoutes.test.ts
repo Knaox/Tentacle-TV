@@ -36,6 +36,9 @@ vi.mock("../services/segmentPlugins/segmentSetupJob", () => ({
   startSegmentSetup: async (request: unknown) => void state.segments.push(request),
   segmentSetupStatus: () => ({ phase: "repositories", running: true }),
 }));
+// Le serveur du test tourne hors conteneur, le navigateur sur localhost : l'adresse
+// principale de la machine (figée ici) remplace la boucle locale chez les appareils.
+vi.mock("./jellyfin/hostLanAddress", () => ({ hostLanAddress: () => "192.168.1.42" }));
 vi.mock("../services/backgroundServices", () => ({ startBackgroundServices: () => void (state.started += 1) }));
 vi.mock("../services/jellyfinIdentity", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../services/jellyfinIdentity")>()),
@@ -176,7 +179,7 @@ describe("assistant d'installation, de bout en bout", () => {
     const probe = await call("POST", "/jellyfin/probe", { session, body: { url: jf.url } });
     expect(probe.json()).toEqual({
       url: jf.url, serverId: expect.any(String), version: "10.11.11", serverName: "jellyfin", blank: true, inStack: false, compatible: true,
-      clientUrl: jf.url.replace("127.0.0.1", "localhost"),
+      clientUrl: jf.url.replace("127.0.0.1", "192.168.1.42"),
     });
     const chosen = (await call("POST", "/jellyfin/select", { session, body: { url: jf.url } })).json();
     expect(chosen.flow).toMatchObject({ linked: false, selection: { url: jf.url, inStack: false, path: "fresh" } });
@@ -217,8 +220,9 @@ describe("assistant d'installation, de bout en bout", () => {
     expect(done.cookies.find((c) => c.name === "tentacle_token")).toMatchObject({ httpOnly: true, sameSite: "Strict" });
     expect(state.config.get("setup_completed")).toBe("true");
     expect(state.config.has("setup_jellyfin_selection")).toBe(false);
-    // L'adresse des applications : le Jellyfin de la boucle locale prend l'hôte du navigateur.
-    expect(state.config.get("jellyfin_private_url")).toBe(jf.url.replace("127.0.0.1", "localhost"));
+    // L'adresse des applications : le Jellyfin de la boucle locale prend l'hôte du
+    // navigateur — ici localhost, sur la machine même : l'adresse principale à sa place.
+    expect(state.config.get("jellyfin_private_url")).toBe(jf.url.replace("127.0.0.1", "192.168.1.42"));
     // La lecture directe à la maison est allumée ; rien de public n'est réglé.
     expect(state.config.get("direct_streaming_enabled")).toBe("true");
     expect(state.config.has("jellyfin_public_url")).toBe(false);

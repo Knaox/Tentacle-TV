@@ -34,10 +34,10 @@ export function JellyfinOption({
   return (
     <label
       className={`flex min-h-14 items-start gap-3 rounded-xl border px-4 py-3 transition-colors duration-200 ${
-        checked ? "border-purple-400/50 bg-purple-500/10" : "border-line-subtle hover:bg-fill-faint"
+        checked ? "border-[rgba(var(--brand-rgb),0.6)] bg-[var(--brand-soft)] ring-1 ring-[rgba(var(--brand-rgb),0.35)]" : "border-line-subtle hover:bg-fill-faint"
       } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
     >
-      <input type="radio" name={name} value={server.url} checked={checked} disabled={disabled} onChange={onSelect} className="mt-1 h-4 w-4 shrink-0 accent-purple-400" />
+      <input type="radio" name={name} value={server.url} checked={checked} disabled={disabled} onChange={onSelect} className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand)]" />
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-content-primary">{server.serverName || t("jfUnnamed")}</span>

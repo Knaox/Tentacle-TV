@@ -4,7 +4,7 @@ import { SetupError } from "../setupErrors";
 import { discoverJellyfins, type DiscoveryDeps } from "./discover";
 
 const dbStack: Deployment = {
-  deployment: "docker", stack: "db", provisioner: "existing-instance", siblingUrl: null,
+  deployment: "docker", packaging: null, stack: "db", provisioner: "existing-instance", siblingUrl: null,
   mediaFolders: null, mediaHostPath: null, jellyfinHostPort: null,
 };
 

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { TRAILER_GUIDE_STEPS, type TrailerGuideLinkContext } from "@tentacle-tv/shared";
+import { useServerPackaging } from "../admin/serverUpdate/useServerPackaging";
 import { GUIDE_PARAGRAPH, GuideStep } from "./GuideStep";
 
 /**
@@ -11,6 +12,8 @@ import { GUIDE_PARAGRAPH, GuideStep } from "./GuideStep";
  */
 export const GuideAdmin = memo(function GuideAdmin({ ctx, touch = false }: { ctx: TrailerGuideLinkContext; touch?: boolean }) {
   const { t } = useTranslation("trailerHelp");
+  // La livraison ne se lit que pour un administrateur (route d'administration).
+  const packaging = useServerPackaging({ enabled: ctx.isAdmin });
   return (
     <section id="admin" aria-labelledby="guide-admin-title" className="scroll-mt-24">
       <h2 id="guide-admin-title" className="text-heading-1 text-content-primary">
@@ -19,7 +22,7 @@ export const GuideAdmin = memo(function GuideAdmin({ ctx, touch = false }: { ctx
       <p className={GUIDE_PARAGRAPH}>{t("adminLead")}</p>
       <ol className="mt-5 space-y-3">
         {TRAILER_GUIDE_STEPS.map((step, index) => (
-          <GuideStep key={step.id} step={step} number={index + 1} ctx={ctx} touch={touch} />
+          <GuideStep key={step.id} step={step} number={index + 1} ctx={ctx} touch={touch} packaging={packaging} />
         ))}
       </ol>
     </section>

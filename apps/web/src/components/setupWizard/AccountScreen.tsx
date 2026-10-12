@@ -1,13 +1,13 @@
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Field } from "../admin/services/Field";
-import { CredentialsForm, DoneLine, primary } from "./AccountParts";
+import { CredentialsForm, DoneLine } from "./AccountParts";
 import { LocaleFields } from "./LocaleFields";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
 import type { Wizard } from "./useWizard";
 import { uiCultureOf } from "./wizardModel";
-import { WizardFrame } from "./WizardFrame";
+import { WizardFrame, type WizardFrameBase } from "./WizardFrame";
 
 /**
  * Jellyfin NEUF seulement (le parcours `fresh`) : le compte administrateur est
@@ -20,36 +20,23 @@ import { WizardFrame } from "./WizardFrame";
 export function AccountScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
   const linked = wizard.data.context?.flow.linked ?? false;
-  return (
-    <WizardFrame
-      help={wizard}
-      title={t("accountTitleCreate")}
-      subtitle={t("accountSubtitleCreate")}
-      position={wizard.position}
-      total={wizard.total}
-      onBack={wizard.back}
-      server={wizard.server}
-    >
-      {linked ? <AccountCreated wizard={wizard} /> : <CreateAccountForm wizard={wizard} />}
-    </WizardFrame>
-  );
+  const frame: WizardFrameBase = { wizard, title: t("accountTitleCreate"), subtitle: t("accountSubtitleCreate") };
+  return linked ? <AccountCreated wizard={wizard} frame={frame} /> : <CreateAccountForm wizard={wizard} frame={frame} />;
 }
 
-function AccountCreated({ wizard }: { wizard: Wizard }) {
+function AccountCreated({ wizard, frame }: { wizard: Wizard; frame: WizardFrameBase }) {
   const { t } = useTranslation("setupWizard");
   const credentials = wizard.data.credentials;
   if (credentials) {
     return (
-      <div className="space-y-5">
+      <WizardFrame {...frame} primary={{ label: t("next"), onClick: wizard.next, autoFocus: true }}>
         <DoneLine>{t("accountDone", { name: credentials.username })}</DoneLine>
-        <button type="button" onClick={wizard.next} className={primary} autoFocus>
-          {t("next")}
-        </button>
-      </div>
+      </WizardFrame>
     );
   }
   return (
     <CredentialsForm
+      frame={frame}
       submitLabel={t("accountVerify")}
       onSubmit={async (entered) => {
         try {
@@ -68,8 +55,9 @@ function AccountCreated({ wizard }: { wizard: Wizard }) {
   );
 }
 
-function CreateAccountForm({ wizard }: { wizard: Wizard }) {
+function CreateAccountForm({ wizard, frame }: { wizard: Wizard; frame: WizardFrameBase }) {
   const { t } = useTranslation("setupWizard");
+  const formId = useId();
   const selection = wizard.data.context?.flow.selection ?? null;
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -108,32 +96,35 @@ function CreateAccountForm({ wizard }: { wizard: Wizard }) {
   };
 
   return (
-    <form onSubmit={(e) => void submit(e)} className="space-y-4">
-      <Field label={t("accountUsername")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" spellCheck={false} required autoFocus />
-      <Field
-        label={t("accountPassword")}
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="new-password"
-        hint={t("accountPasswordHint")}
-        error={short ? t("accountPasswordShort") : null}
-        required
-      />
-      <Field
-        label={t("accountPasswordConfirm")}
-        type="password"
-        value={confirm}
-        onChange={(e) => setConfirm(e.target.value)}
-        autoComplete="new-password"
-        error={mismatch ? t("accountPasswordMismatch") : null}
-        required
-      />
-      <LocaleFields locale={locale} onChange={setLocale} />
-      <SetupErrorLine code={error} />
-      <button type="submit" disabled={pending || !canSubmit} className={primary}>
-        {pending ? t("working") : t("localePrepare")}
-      </button>
-    </form>
+    <WizardFrame {...frame} primary={{ label: t("localePrepare"), form: formId, pending, disabled: !canSubmit }}>
+      <form id={formId} onSubmit={(e) => void submit(e)} className="space-y-5">
+        <Field label={t("accountUsername")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" spellCheck={false} required autoFocus />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label={t("accountPassword")}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            hint={t("accountPasswordHint")}
+            error={short ? t("accountPasswordShort") : null}
+            required
+          />
+          <Field
+            label={t("accountPasswordConfirm")}
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            autoComplete="new-password"
+            error={mismatch ? t("accountPasswordMismatch") : null}
+            required
+          />
+        </div>
+        <div className="border-t border-line-subtle pt-5">
+          <LocaleFields locale={locale} onChange={setLocale} />
+        </div>
+        <SetupErrorLine code={error} />
+      </form>
+    </WizardFrame>
   );
 }

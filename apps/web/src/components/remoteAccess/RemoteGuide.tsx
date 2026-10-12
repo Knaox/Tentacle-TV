@@ -87,7 +87,7 @@ export function RemoteGuide({ state, publicIp, save, variant, onOpenChange }: Re
             </AdminSection>
             <PlanB showGuideLink={variant === "admin"} />
             <SecurityNotes />
-            {variant === "admin" ? <RemoteAccessGuide /> : null}
+            {variant === "admin" ? <RemoteAccessGuide packaging={state.packaging} /> : null}
           </>
         ) : null}
       </div>

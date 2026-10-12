@@ -17,6 +17,10 @@ import { isLoopbackName } from "./addressGuard";
  *    le serveur (boucle locale, `host.docker.internal`, nom Docker sans point,
  *    passerelle du conteneur) — l'hôte y est remplacé par celui du
  *    navigateur, le port gardé.
+ *  - le navigateur sur la machine même du serveur (`localhost`, l'app
+ *    Windows qui ouvre l'assistant) et le serveur hors conteneur : son hôte
+ *    n'est joignable de personne d'autre, l'adresse principale de la machine
+ *    (`lanAddress`) le remplace.
  *
  * Proposée seulement : l'administrateur la revoit au récapitulatif.
  */
@@ -28,6 +32,8 @@ export interface ClientUrlInput {
   jellyfinUrl?: string | null;
   /** La passerelle du conteneur : l'hôte Docker vu du pont, injoignable d'un téléphone. */
   gateway?: string | null;
+  /** L'adresse principale de la machine (`primaryLanAddress`), seulement hors conteneur. */
+  lanAddress?: string | null;
 }
 
 /** Un hôte que seul le serveur sait joindre. */
@@ -45,8 +51,13 @@ export function cleanBrowserHost(raw: string | undefined): string | null {
   return /^[a-z0-9.-]+$/.test(host) ? host : null;
 }
 
+/** L'hôte du navigateur, ou l'adresse principale de la machine s'il n'est que la boucle locale. */
+export function reachableBrowserHost(browserHost: string | undefined, lanAddress: string | null | undefined): string | undefined {
+  return browserHost && lanAddress && isLoopbackName(browserHost) ? lanAddress : browserHost;
+}
+
 export function clientJellyfinUrl(input: ClientUrlInput): string | null {
-  const browser = cleanBrowserHost(input.browserHost);
+  const browser = cleanBrowserHost(reachableBrowserHost(input.browserHost, input.lanAddress));
   const sibling = input.deployment.siblingUrl;
   if (sibling && (!input.jellyfinUrl || input.jellyfinUrl === sibling)) {
     const port = input.deployment.jellyfinHostPort;

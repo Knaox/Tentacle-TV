@@ -62,6 +62,15 @@ export const SERVER_CAPABILITIES = {
    *  aussi `qualities` (un maître relayé par hauteur) et `subtitles` (les pistes de
    *  YouTube, relayées en WebVTT). Sans elle, ni qualité ni sous-titres à l'écran. */
   "trailers.player": "1.26.0",
+  /** L'app Windows : le Jellyfin de la machine détecté, installé (installateur officiel vérifié)
+   *  et démarré par son hôte depuis l'assistant (`/api/setup/jellyfin/local`, `/install`, `/start`). */
+  "setup.jellyfinInstall": "1.27.0",
+  /** L'app Windows : la boîte « Choisir un dossier » de l'Explorateur pour les bibliothèques
+   *  (`/api/setup/jellyfin/pick-folder`), depuis un navigateur sur la machine même. */
+  "setup.folderPicker": "1.27.0",
+  /** « Réanalyser maintenant » : une vraie analyse demandée à Jellyfin par la clé d'administration
+   *  (`POST /api/admin/library/rescan` — un titre, ou toutes les bibliothèques). */
+  "admin.libraryRescan": "1.27.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

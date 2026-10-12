@@ -42,3 +42,11 @@ describe("l'image déclarée (TENTACLE_IMAGE)", () => {
       .toEqual({ runtime: "docker", repository: "ghcr.io/knaox/tentacle-tv", tag: "v1.22.3" });
   });
 });
+
+describe("l'app Windows", () => {
+  it("se met à jour par le Microsoft Store, sans moteur de conteneur", () => {
+    expect(readInstall({ TENTACLE_DEPLOYMENT: "windows-app" }, () => false))
+      .toEqual({ runtime: "none", repository: "ghcr.io/knaox/tentacle-tv", tag: null, channel: "microsoft-store" });
+    expect("channel" in readInstall({}, () => false)).toBe(false);
+  });
+});

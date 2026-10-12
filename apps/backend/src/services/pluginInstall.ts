@@ -15,6 +15,7 @@ import { existsSync, mkdirSync, rmSync, createWriteStream } from "fs";
 import { dirname, join, relative, resolve, sep } from "path";
 import { pipeline } from "stream/promises";
 import { assertPathUnderDataDir, DATA_DIR, isValidPluginId } from "./pluginManager";
+import { tarCommand } from "./tools/toolPaths";
 import {
   unsafeMember,
   membersFromListing,
@@ -90,7 +91,10 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
   if (existsSync(destDir)) rmSync(destDir, { recursive: true, force: true });
   mkdirSync(destDir, { recursive: true });
 
-  const { execSync } = await import("child_process");
+  const { execFileSync } = await import("child_process");
+  // Sans shell (`execFileSync`) : ni `cmd.exe` ni guillemets à échapper, et le
+  // tar du système par son chemin sous Windows (`tarCommand`).
+  const tar = tarCommand();
   // Chemins RELATIFS + cwd : aucun « C: » dans les arguments, donc compatible
   // avec les DEUX saveurs de tar sans aucune option — GNU tar (Linux/Docker),
   // qui prendrait « C: » pour un hôte distant, ET bsdtar (Windows/System32),
@@ -105,7 +109,7 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
   // `pluginArchiveGuard.ts` : il se teste, et il se comporte pareil avec GNU tar
   // et bsdtar, là où des drapeaux de sécurité propres à l'une casseraient
   // l'autre (voir juste au-dessus).
-  const listing = execSync(`tar -tzf "${rel(archivePath)}"`, {
+  const listing = execFileSync(tar, ["-tzf", rel(archivePath)], {
     cwd, stdio: "pipe", timeout: 30_000, encoding: "utf8",
   });
   const unsafe = unsafeMember(membersFromListing(listing));
@@ -114,7 +118,7 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
     throw new Error(`Refused plugin archive: ${unsafe}`);
   }
 
-  execSync(`tar -xzf "${rel(archivePath)}" -C "${rel(destDir)}"`, {
+  execFileSync(tar, ["-xzf", rel(archivePath), "-C", rel(destDir)], {
     cwd, stdio: "pipe", timeout: 30_000,
   });
   rmSync(archivePath, { force: true });

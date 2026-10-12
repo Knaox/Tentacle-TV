@@ -9,6 +9,11 @@
 # compilateurs de requêtes des autres bases (postgres, sqlserver, sqlite,
 # cockroach…), ni les variantes edge/wasm, ni la CLI et son moteur de schéma
 # (le schéma se pose par le serveur, services/database/migrator.ts).
+#
+# Le moteur se nomme `libquery_engine-<cible>.so.node` sous Linux et macOS, mais
+# `query_engine-windows.dll.node` sous Windows, SANS « lib » : l'app Windows
+# (Tentacle Server) passe par ce même élagage, et le perdait. Sans effet sur
+# l'image, qui n'a pas de moteur Windows.
 set -eu
 
 prune() {
@@ -19,7 +24,7 @@ prune() {
   if [ -d .prisma/client ]; then
     find .prisma/client -maxdepth 1 -type f \
       ! -name 'index.js' ! -name 'default.js' ! -name 'package.json' \
-      ! -name 'schema.prisma' ! -name 'libquery_engine-*' -delete
+      ! -name 'schema.prisma' ! -name 'libquery_engine-*' ! -name 'query_engine-*.dll.node' -delete
   fi
 
   # Rien de ce qui ne s'exécute pas : cartes de sources, types, sources

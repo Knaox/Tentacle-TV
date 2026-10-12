@@ -40,9 +40,10 @@ async function call(path: string, method: "GET" | "POST"): Promise<ServerUpdateR
   return report;
 }
 
-export function useServerUpdate({ watching = false }: { watching?: boolean } = {}) {
+export function useServerUpdate({ watching = false, enabled = true }: { watching?: boolean; enabled?: boolean } = {}) {
   return useQuery({
     queryKey: SERVER_UPDATE_KEY,
+    enabled,
     queryFn: () => call("/server-update", "GET"),
     staleTime: 60_000,
     refetchOnWindowFocus: true,

@@ -26,7 +26,10 @@ describe("capacités du serveur", () => {
     expect(caps.has("server.databaseMigration")).toBe(false);
     expect(resolveServerCapabilities({ version: "1.25.0" }).has("server.databaseMigration")).toBe(true);
     expect(resolveServerCapabilities({ version: "1.25.0" }).has("trailers.player")).toBe(false);
-    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
+    // Celles de l'app Windows (1.27.0) n'y sont pas encore en 1.26.0.
+    const upTo126 = SERVER_CAPABILITY_KEYS.filter((key) => SERVER_CAPABILITIES[key] !== "1.27.0");
+    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(upTo126.length);
+    expect(resolveServerCapabilities({ version: "1.27.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 
   it("pas de réponse, réponse illisible : aucune capacité, jamais d'erreur", () => {
@@ -41,7 +44,7 @@ describe("capacités du serveur", () => {
     const none = resolveServerCapabilities({ version: "1.23.0" });
     expect(missingServerCapabilities(none)).toEqual(SERVER_CAPABILITY_KEYS);
     // La plus récente des versions qui apportent ce qui manque.
-    expect(newestMissingSince(none)).toBe("1.26.0");
+    expect(newestMissingSince(none)).toBe("1.27.0");
     const all = resolveServerCapabilities({ capabilities: SERVER_CAPABILITY_KEYS });
     expect(missingServerCapabilities(all)).toEqual([]);
     expect(newestMissingSince(all)).toBeNull();

@@ -83,6 +83,11 @@ export * from "./help/dismissibleHints";
 // déclarée par `/api/config` (miroir backend) — un client ne montre rien d'autre.
 export * from "./serverCapabilities/serverCapabilities";
 export * from "./help/trailerHint";
+// Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
+// fiches — et « Réanalyser maintenant » (contrat de /api/admin/library/rescan,
+// miroir backend).
+export * from "./metadata/missingMetadata";
+export * from "./library/libraryRescanContract";
 export * from "./tickets/messageLanguage";
 // Les avertissements surgissants des clients : leur politique (gravité,
 // public, effacement seul, « Ne plus afficher » du compte, un seul à la fois)
@@ -127,6 +132,8 @@ export * from "./setupWizard/setupWizardContract";
 export * from "./setupWizard/setupDiscoveryContract";
 export * from "./setupWizard/setupFlowContract";
 export * from "./setupWizard/setupLibraryContract";
+export * from "./setupWizard/setupPackagingContract";
+export * from "./setupWizard/setupAppHostContract";
 export * from "./setupWizard/appLinks";
 export * from "./setupWizard/setupDocLinks";
 export * from "./setupWizard/setupHelp";
@@ -141,6 +148,7 @@ export * from "./remoteAccess/remoteVerdict";
 export * from "./remoteAccess/proxySnippets";
 export * from "./remoteAccess/routerGuides";
 export * from "./help/remoteAccessGuide";
+export * from "./help/packagedHelp";
 // L'adresse du serveur transmise à une TV au jumelage : l'annoncée, sinon celle
 // du client — jamais de lien public exigé.
 export * from "./pairing/pairingServerUrl";
@@ -150,6 +158,10 @@ export * from "./pairing/pairingServerUrl";
 export * from "./serverUpdate/serverUpdateContract";
 export * from "./serverUpdate/serverUpdateStatus";
 export * from "./serverUpdate/updateCommands";
+// Le protocole IPC entre l'hôte qui supervise le serveur (app Windows) et le
+// serveur : messages, codes de sortie, bornes de l'arrêt (miroir backend).
+export * from "./serverHost/hostProtocol";
+export * from "./serverHost/hostMethods";
 // Le tableau de bord d'administration : ce qui est À RÉGLER (bloquant, jamais
 // masquable) et les RECOMMANDATIONS (masquables par compte), en logique pure.
 export * from "./adminAttention/attentionModel";

@@ -14,6 +14,7 @@ export default {
   choose_title: "Quel chemin choisir\u00a0?",
   choose_p1: "Le plus sûr et le plus simple\u00a0: un mandataire HTTPS devant Tentacle et Jellyfin, avec les ports 80 et 443 de la box redirigés vers lui. Les certificats se renouvellent seuls.",
   choose_p2: "La pile Docker de Tentacle n'embarque pas de mandataire\u00a0: gardez le vôtre (Nginx Proxy Manager, Caddy, Traefik), ou installez Caddy si vous n'en avez pas. «\u00a0En savoir plus\u00a0», sur la page, donne ce qu'il faut y poser.",
+  choose_p2_windowsApp: "Tentacle Server n'embarque pas de mandataire\u00a0: gardez le vôtre (Nginx Proxy Manager, Caddy, Traefik), ou installez Caddy si vous n'en avez pas. «\u00a0En savoir plus\u00a0», sur la page, donne ce qu'il faut y poser.",
   choose_p3: "Ouvrir directement le port de Tentacle marche aussi, mais tout passe alors en clair\u00a0: à éviter, sauf pour un essai.",
   choose_p4: "Si rien ne peut s'ouvrir (adresse partagée par l'opérateur, box verrouillée), le plan B est un réseau privé comme Tailscale.",
   ports_title: "Ports, CGNAT et IPv6",

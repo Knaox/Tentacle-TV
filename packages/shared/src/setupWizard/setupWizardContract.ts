@@ -17,7 +17,9 @@
  * sinon entre les fichiers du contrat (recopiés ensemble).
  */
 
+import type { SetupContextAppHost, SetupInstallGuide } from "./setupAppHostContract";
 import type { SetupFlowState } from "./setupFlowContract";
+import type { SetupPackaging } from "./setupPackagingContract";
 
 /** Comment le serveur tourne : dans l'image Docker, ou installé sur la machine. */
 export type SetupDeployment = "docker" | "native";
@@ -26,8 +28,8 @@ export type SetupDeployment = "docker" | "native";
 export type SetupStack = "full" | "db" | "only";
 
 /**
- * D'où vient Jellyfin. `managed-by-tentacle` est RÉSERVÉ à la future app
- * d'installation (Windows, Linux) : aucun serveur ne l'annonce encore.
+ * D'où vient Jellyfin. `managed-by-tentacle` : l'app Windows, dont l'hôte
+ * détecte, installe et démarre Jellyfin (`setupAppHostContract.ts`).
  */
 export type ProvisionerKind = "existing-instance" | "docker-sibling" | "native-host" | "managed-by-tentacle";
 
@@ -39,14 +41,13 @@ export type ProvisionerKind = "existing-instance" | "docker-sibling" | "native-h
 export type HostOsFamily = "debian" | "linux" | "macos" | "windows";
 
 /**
- * Ce que l'assistant propose quand il n'y a PAS de Jellyfin. L'assistant
- * n'installe rien : il montre la commande officielle (Debian, Ubuntu), la
- * documentation officielle (autres systèmes), ou la pile Docker complète.
- */
+ * Sans Jellyfin : la commande officielle (Debian, Ubuntu), sa documentation, la pile Docker
+ * complète — ou, dans l'app Windows seulement, l'installation guidée (`SetupInstallGuide`). */
 export type MissingJellyfinGuide =
   | { kind: "command"; os: string; command: string; docsUrl: string }
   | { kind: "docs"; os: string | null; family: HostOsFamily | null; docsUrl: string }
-  | { kind: "compose"; stack: "tentacle-full"; docsUrl: string };
+  | { kind: "compose"; stack: "tentacle-full"; docsUrl: string }
+  | SetupInstallGuide;
 
 /** `GET /api/setup/status` — public : les clients livrés en lisent `state`. */
 export interface SetupStatusResponse {
@@ -73,6 +74,7 @@ export interface SetupStatusResponse {
  */
 export interface SetupHostInfo {
   deployment: SetupDeployment;
+  packaging?: SetupPackaging;
   stack: SetupStack | null;
   /** Le serveur tourne dans un conteneur (Docker, Podman). */
   containerized: boolean;
@@ -83,8 +85,9 @@ export interface SetupHostInfo {
 }
 
 /** `GET /api/setup/context` — ce dont l'assistant a besoin pour choisir ses étapes. */
-export interface SetupContext {
+export interface SetupContext extends SetupContextAppHost {
   deployment: SetupDeployment;
+  packaging?: SetupPackaging;
   stack: SetupStack | null;
   provisioner: ProvisionerKind;
   /**
@@ -174,6 +177,7 @@ export type SetupErrorCode =
   | "jf_sibling_elsewhere"
   /** Un geste hors du parcours en cours (`setupActionAllowed`) : créer un compte sur un Jellyfin déjà configuré, sauter le choix… */
   | "step_refused"
+  | "host_unavailable"
   /** La clé TMDB : refusée par TMDB (401), ou TMDB injoignable depuis le serveur (réessayer, ou plus tard). */
   | "tmdb_key_invalid"
   | "tmdb_unreachable"

@@ -6,13 +6,14 @@ import {
   useItemTrailer,
   useJellyfinClient,
   useMediaItem,
+  useMetadataArrival,
   useSeriesWatchState,
   useTrailerHint,
   type CardRatingTarget,
   type CardToggles,
   type ItemTrailer,
 } from "@tentacle-tv/api-client";
-import type { MediaItem, NextEpisodeResult } from "@tentacle-tv/shared";
+import { lacksMetadata, type MediaItem, type NextEpisodeResult } from "@tentacle-tv/shared";
 import { useTVUserScore } from "../../components/cards/actions/useTVUserScore";
 import { useTrailerPreparation } from "../../screens/trailer/useTrailerPreparation";
 import type { DetailViewProps } from "../../redesign/screens/detail/DetailView";
@@ -47,6 +48,7 @@ export type DetailModelProps = Pick<
   | "backdropUri"
   | "palette"
   | "showTrailerHint"
+  | "showMetadataHint"
   | "error"
   | "episodes"
   | "cast"
@@ -92,6 +94,9 @@ export function useDetailModel(itemId: string, gate: VigieGate | null, openSeaso
   // fois les listes arrivées : celle de TMDB peut faire passer la VF devant.
   useTrailerPreparation(trailer.settled && trailer.target?.kind === "remote" ? trailer.target.trailer.Url : undefined);
   const hint = useTrailerHint({ itemType: item?.Type, trailerVisible: trailer.visible, trailerSettled: trailer.settled });
+  // Titre que Jellyfin n'a pas trouvé : la phrase de l'en-tête, et la fiche
+  // qui se relit seule à l'annonce de Jellyfin (socket ouvert par l'accueil).
+  useMetadataArrival(item);
   // Un visage vide tant que l'item se charge : les hooks s'appellent toujours.
   const toggles = useCardToggles(item ?? PLACEHOLDER);
   const rating = useCardRatingTarget(item ?? null, { scope: "item", enabled: !!item });
@@ -142,6 +147,7 @@ export function useDetailModel(itemId: string, gate: VigieGate | null, openSeaso
       // La lumière de l'œuvre ; celle de sa série pour un épisode sans image.
       palette: paletteOfItem(item, series),
       showTrailerHint: hint.show,
+      showMetadataHint: lacksMetadata(item),
       error,
       episodes: episodes.model,
       cast,

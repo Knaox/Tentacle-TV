@@ -5,6 +5,7 @@ import type { BrowseResult } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
+import { SetupWaiting } from "./SetupWaiting";
 
 /**
  * Le sélecteur de dossier : le système de fichiers DE JELLYFIN (dans un
@@ -63,6 +64,11 @@ export function FolderBrowser({ start, onPick, onCancel }: { start: string | nul
             </button>
           </li>
         ))}
+        {!listing && !error ? (
+          <li className="px-3 py-3">
+            <SetupWaiting variant="inline" title={t("loading")} />
+          </li>
+        ) : null}
         {listing && listing.entries.length === 0 ? <li className="px-3 py-3 text-sm text-content-tertiary">{t("browserEmpty")}</li> : null}
       </ul>
       <div className="flex flex-wrap gap-3">

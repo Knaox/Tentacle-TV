@@ -18,6 +18,9 @@
  */
 const OUTSIDE_SHELL = new Set(["login", "register", "share", "watch", "media", "person", "offline"]);
 
+/** La clé du lecteur (`/watch/…`) : rendu hors de la présence des pages (`AnimatedRoutes`). */
+export const PLAYER_GROUP = "watch";
+
 const segments = (pathname: string): string[] => pathname.split("/").filter(Boolean);
 
 /**

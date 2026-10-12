@@ -1,0 +1,442 @@
+# Tentacle TV — TENTACLE SERVER POUR WINDOWS (paquet MSIX, Microsoft Store)
+#
+# L'app du Microsoft Store qui fait tourner le serveur Tentacle sur un PC
+# Windows, sans Docker : un hôte (apps/server-windows) qui supervise le
+# serveur, et le serveur lui-même, assemblés en un paquet MSIX.
+#
+# UNE SEULE VERSION (décision du 2026-10-12) : celle de l'app EST celle du
+# serveur qu'elle embarque, versions.json → server. Paquet S.0 (le Store
+# réserve le 4e champ et exige un paquet STRICTEMENT croissant), tag
+# `server-windows-vS`, notes = celles du serveur (`## [S]` de
+# changelogs/server.md). Seule
+# exception, la 1.0.0, construite à la main hors workflow ; tout serveur livré
+# depuis (≥ 1.27.0) la dépasse. CE WORKFLOW NE BUMPE RIEN : la version, c'est
+# server.yml qui l'écrit. L'entrée `version` n'est qu'une garde (« je livre
+# bien S ») : un écart avec versions.json → server au commit figé refuse.
+#
+# DEUX FAÇONS DE LE LANCER :
+#   • APPELÉ par server.yml (`workflow_call`, entrée `windows` du serveur) :
+#     UN SEUL RUN, image Docker + paquet Windows. Le job d'appel attend la
+#     publication de l'image (et la bascule de `:latest` au cran store), puis
+#     passe le MÊME cran, la MÊME version et le MÊME commit figé (`sha`, son
+#     bump) : pas de second bump. Les gardes ci-dessous passent d'elles-mêmes.
+#   • seul (`workflow_dispatch`, depuis la page de déploiement, ou un tag
+#     `server-windows-v*`) : relivrer l'app sur le serveur déjà livré, avec
+#     `channel` et `version`.
+# PIÈGES DE L'APPEL : `github.*` est celui de l'APPELANT (évènement
+# workflow_dispatch de server.yml, sa branche, son commit de départ — jamais le
+# bump) ; d'où le commit figé lu dans `inputs.sha`, et aucune condition sur
+# `github.event_name`. La concurrence se tient au niveau du JOB qui soumet,
+# jamais du workflow (elle s'ajouterait à celle de l'appelant).
+#
+# LE PAQUET EMBARQUE UN SERVEUR DÉJÀ LIVRÉ, avec les mêmes règles que webOS :
+#   • au cran store, refus si l'image en service (`:latest`) n'est pas DÉJÀ le
+#     serveur de versions.json — sinon le Store le servirait à tous avant
+#     Docker ; « :v<server> » doit exister à tous les crans ;
+#   • le client LG servi sous /tv n'est jamais celui du commit : il est extrait
+#     de l'image en service quand elle sert ce serveur, sinon de « :v<server> »
+#     (épinglée par empreinte, docker create + docker cp), et voyage en artefact.
+# Le serveur, lui, est construit depuis le commit figé : le moteur Prisma de
+# Windows ne vient d'aucune image. Un écart avec le commit qui a publié
+# « :v<server> » est signalé dans le run, sans bloquer.
+# La décision vit dans .github/scripts/lib/server-windows.mjs, testée hors
+# ligne, et se rejoue avant de lancer :
+#   node .github/scripts/server-windows-plan.mjs plan --channel store --sha $(git rev-parse HEAD)
+#
+# TROIS CRANS, choisis au lancement (`channel`) — ni `targets` ni `promote` :
+#   • build — le paquet et, si le runner a le kit, le rapport de certification
+#             en artefacts. Rien n'est soumis.
+#   • test  — soumission à un VOL de paquet (groupe de testeurs du Partner
+#             Center, variable SERVER_WINDOWS_FLIGHT_ID) : seul moyen
+#             d'éprouver l'installation et la mise à jour PAR LE STORE. La
+#             fiche publique ne bouge pas.
+#   • store — soumission publique (variable SERVER_WINDOWS_STORE_ID), notes
+#             FR/EN = CELLES DU SERVEUR, bloc `## [S]` de changelogs/server.md
+#             (un seul texte, jamais de bloc `## [win-S]`), coupées à la puce
+#             au-delà de 1 500 caractères par langue, publication dès la
+#             certification. Le tag `server-windows-vS` vaut ce cran ; il est
+#             posé en fin de run (s'il manque) sur le commit livré.
+# Le Microsoft Store exige le paquet à chaque soumission : rien ne se « promeut »,
+# le cran store reconstruit toujours.
+#
+# Les variables du dépôt manquent ? Les crans test et store s'arrêtent avant le
+# moindre build, en le disant ; le cran build reste possible. Secrets : les PARTNER_* du
+# bureau (même compte Partner Center).
+
+name: Release Server Windows
+
+on:
+  push:
+    tags: ["server-windows-v*"]
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Jusqu'où aller"
+        type: choice
+        options: [build, test, store]
+        default: test
+      version:
+        description: "Version X.Y.Z attendue = celle du serveur (versions.json → server). Rien n'est bumpé ; vide = celle de versions.json"
+        type: string
+        default: ""
+      # La page de déploiement ne l'envoie pas : vide = le commit du déclenchement.
+      sha:
+        description: "Commit à livrer (vide = celui du déclenchement)"
+        type: string
+        default: ""
+  # server.yml, entrée `windows` : le même run que l'image Docker.
+  workflow_call:
+    inputs:
+      channel:
+        description: "test | store (server.yml n'appelle qu'à ces crans)"
+        type: string
+        required: true
+      version:
+        description: "La version que le run serveur vient de livrer (garde)"
+        type: string
+        required: true
+      sha:
+        description: "Le commit figé par le prepare de server.yml (son bump)"
+        type: string
+        required: true
+
+env:
+  IMAGE: ghcr.io/knaox/tentacle-tv
+  # Le nom du paquet DANS le zip envoyé au Store, et celui de l'artefact.
+  MSIX_NAME: TentacleServer.msix
+  TV_CLIENT_ARTIFACT: server-windows-tv-client
+
+jobs:
+  # ── Ce qui rend tout le reste reproductible (voir desktop.yml, même forme) ──
+  prepare:
+    name: Préparer la livraison
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Rien n'est écrit dans le dépôt ici (plus de bump) : lecture seule.
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    outputs:
+      sha: ${{ steps.plan.outputs.sha }}
+      channel: ${{ steps.channel.outputs.channel }}
+      version: ${{ steps.plan.outputs.windows-version }}
+      msix-version: ${{ steps.plan.outputs.msix-version }}
+      server-version: ${{ steps.plan.outputs.server-version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      submit: ${{ steps.store.outputs.submit }}
+      store-id: ${{ steps.store.outputs.store-id }}
+      flight-id: ${{ steps.store.outputs.flight-id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Le commit livré : celui que server.yml a figé (son bump) s'il l'envoie,
+      # sinon celui du déclenchement. Il doit appartenir à la branche lancée
+      # OU à main (le bump y est poussé APRÈS le départ du run : il n'est pas
+      # un ancêtre du commit de départ) — jamais un commit étranger, ni un SHA
+      # abrégé. fetch-depth 0 a rapatrié toutes les branches.
+      - name: Commit figé
+        id: sha
+        env:
+          WANTED: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          SHA="${WANTED:-$GITHUB_SHA}"
+          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Entrée « sha » illisible : « ${SHA} » (40 caractères hexadécimaux attendus)."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$SHA" HEAD 2>/dev/null \
+             && ! git merge-base --is-ancestor "$SHA" origin/main 2>/dev/null; then
+            echo "::error::Le commit ${SHA} n'appartient ni à ${GITHUB_REF_NAME} ni à main : rien ne part."
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/actions/require-quality
+        with:
+          sha: ${{ steps.sha.outputs.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Un tag veut dire « livrer », donc le cran le plus haut.
+      - name: Cran du run
+        id: channel
+        env:
+          WANTED: ${{ inputs.channel }}
+        run: |
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then CHANNEL=store; else CHANNEL="$WANTED"; fi
+          echo "Cran : $CHANNEL"
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+
+      # Avant le moindre build : une variable qui manque, un serveur jamais
+      # publié ou une production sur un autre serveur arrêtent le run ici.
+      - name: Pré-vol du Store (où part la soumission)
+        id: store
+        env:
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+          SERVER_WINDOWS_STORE_ID: ${{ vars.SERVER_WINDOWS_STORE_ID }}
+          SERVER_WINDOWS_FLIGHT_ID: ${{ vars.SERVER_WINDOWS_FLIGHT_ID }}
+          # L'identité réservée dans Partner Center (Identité du produit) : sans
+          # elle, le paquet porterait l'identité de développement, refusée par le Store.
+          IDENTITY_NAME: ${{ vars.SERVER_WINDOWS_IDENTITY_NAME }}
+          PUBLISHER: ${{ vars.SERVER_WINDOWS_PUBLISHER }}
+          PUBLISHER_DISPLAY_NAME: ${{ vars.SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME }}
+        run: |
+          node .github/scripts/server-windows-plan.mjs store --channel "$CHANNEL"
+          if [ "$CHANNEL" != "build" ] && { [ -z "$IDENTITY_NAME" ] || [ -z "$PUBLISHER" ] || [ -z "$PUBLISHER_DISPLAY_NAME" ]; }; then
+            echo "::error::Variables SERVER_WINDOWS_IDENTITY_NAME, SERVER_WINDOWS_PUBLISHER et SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME requises au cran $CHANNEL (Partner Center › Identité du produit)."
+            exit 1
+          fi
+
+      # Le plan, au commit figé. Aucun bump : la version est celle du serveur
+      # (versions.json → server à ce commit) ; `version`, si donnée, doit
+      # l'égaler — le plan refuse sinon.
+      - name: Plan du run
+        id: plan
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+          WANTED: ${{ inputs.version }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git checkout --quiet "$SHA"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          node .github/scripts/server-windows-plan.mjs plan \
+            --channel "$CHANNEL" --sha "$SHA" --version "${WANTED:-}" --image "$IMAGE" > plan.json
+          VERSION=$(jq -r .windowsVersion plan.json)
+          # Garde-fou : sur un tag, les deux doivent coïncider. La source reste
+          # versions.json — le tag n'est qu'un déclencheur, jamais l'autorité.
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ "$GITHUB_REF_NAME" != "server-windows-v$VERSION" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} ≠ server-windows-v${VERSION} (versions.json → server : l'app suit le serveur). Corrige le tag, ou livre d'abord ce serveur."
+            exit 1
+          fi
+          echo "Server Windows ${VERSION} (= serveur) — cran ${CHANNEL} · sha ${SHA}"
+
+      # Les notes du SERVEUR (lib/server-windows.mjs → WINDOWS_NOTES), mesurées
+      # contre la limite du Microsoft Store : au-delà, un avertissement dit de
+      # combien la coupe à la puce va mordre.
+      - name: Pré-vol des notes de version
+        if: steps.channel.outputs.channel != 'build'
+        run: |
+          node .github/scripts/check-changelog.mjs \
+            --changelog changelogs/server.md --version "${{ steps.plan.outputs.windows-version }}" \
+            --check msstore
+
+      # Le client LG, tel que l'image le sert : ni reconstruit, ni pris du
+      # commit. Il est le même pour toutes les architectures (HTML et JS) : la
+      # variante amd64 suffit.
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraire le client LG de l'image publiée
+        env:
+          CLIENT_IMAGE: ${{ steps.plan.outputs.client-image }}
+        run: |
+          set -euo pipefail
+          CID=$(docker create --platform linux/amd64 "$CLIENT_IMAGE")
+          mkdir -p tv-client
+          docker cp "$CID:/app/apps/tv-webos/client/dist/." tv-client/
+          docker rm "$CID" > /dev/null
+          if [ ! -f tv-client/index.html ]; then
+            echo "::error::L'image ${CLIENT_IMAGE} ne porte pas de client LG (index.html absent) : rien ne part."
+            exit 1
+          fi
+          du -sh tv-client
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.TV_CLIENT_ARTIFACT }}
+          path: tv-client
+          if-no-files-found: error
+          retention-days: 5
+
+  # ── Le paquet MSIX, puis la soumission ─────────────────────────────────────
+  windows:
+    name: MSIX + soumission Store
+    needs: prepare
+    runs-on: windows-latest
+    timeout-minutes: 90
+    # Pas d'annulation : deux runs soumettraient au même produit, et le second
+    # supprimerait la soumission pendante du premier. Au niveau du JOB : appelé
+    # par server.yml, un groupe de workflow s'ajouterait au sien.
+    concurrency:
+      group: release-server-windows
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+
+      # 24 : le serveur exige `node:sqlite`, et l'assemblage tourne sous ce
+      # Node-là (celui qu'il embarque est épinglé par le script lui-même).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies (monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.TV_CLIENT_ARTIFACT }}
+          path: ${{ runner.temp }}/tv-client
+
+      # Le contrat du script d'assemblage : un dossier prêt pour
+      # `makeappx pack /nv` (AppxManifest.xml versionné compris), le client LG
+      # reçu posé sous /tv. Tant qu'il n'existe pas, on le dit au lieu
+      # d'échouer sur un « No projects matched the filters ».
+      # Identité de Partner Center aux crans test et store (exigée par le
+      # pré-vol) ; au cran build, celle de développement. `off` dans
+      # SERVER_WINDOWS_JELLYFIN_INSTALLER coupe l'installation guidée de
+      # Jellyfin (règle 10.1.5 du Store), sans toucher au code.
+      - name: Assembler le paquet
+        shell: pwsh
+        env:
+          IDENTITY_NAME: ${{ vars.SERVER_WINDOWS_IDENTITY_NAME }}
+          PUBLISHER: ${{ vars.SERVER_WINDOWS_PUBLISHER }}
+          PUBLISHER_DISPLAY_NAME: ${{ vars.SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME }}
+          JELLYFIN_INSTALLER: ${{ vars.SERVER_WINDOWS_JELLYFIN_INSTALLER }}
+        run: |
+          $ver = "${{ needs.prepare.outputs.msix-version }}"
+          $stage = Join-Path $env:RUNNER_TEMP "msixstage"
+          $client = Join-Path $env:RUNNER_TEMP "tv-client"
+          Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
+          $extra = @()
+          if ($env:IDENTITY_NAME) {
+            $extra += @("--identity-name", $env:IDENTITY_NAME, "--publisher", $env:PUBLISHER, "--publisher-display-name", $env:PUBLISHER_DISPLAY_NAME)
+          }
+          if ($env:JELLYFIN_INSTALLER -eq "off") { $extra += "--no-jellyfin-installer" }
+          pnpm --filter @tentacle-tv/server-windows assemble -- --out $stage --version $ver --tv-client $client @extra
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Ce que le Store lira : un manifeste qui ne dit pas la version du run
+          # partirait sous un autre numéro, ou serait refusé.
+          $manifest = Join-Path $stage "AppxManifest.xml"
+          if (-not (Test-Path $manifest)) { throw "AppxManifest.xml absent de $stage" }
+          $identity = ([xml](Get-Content $manifest -Raw)).Package.Identity
+          if ($identity.Version -ne $ver) { throw "Version du manifeste $($identity.Version) ≠ $ver" }
+          Write-Host "Paquet assemblé : $($identity.Name) $($identity.Version)"
+          "STAGE=$stage" >> $env:GITHUB_ENV
+
+      - name: Pack MSIX (makeappx, non signé)
+        shell: pwsh
+        run: |
+          $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                 Where-Object { $_.Name -match '^10\.' } | Sort-Object Name -Descending | Select-Object -First 1
+          $makeappx = Join-Path $sdk.FullName "x64\makeappx.exe"
+          Write-Host "makeappx: $makeappx"
+          $out = Join-Path $env:RUNNER_TEMP $env:MSIX_NAME
+          & $makeappx pack /d "$env:STAGE" /p $out /nv /o
+          if (-not (Test-Path $out)) { throw "MSIX non produit" }
+          "MSIX_PATH=$out" >> $env:GITHUB_ENV
+
+      - name: Upload MSIX (secours / installation à la main)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-server-windows-msix
+          path: ${{ env.MSIX_PATH }}
+          if-no-files-found: error
+
+      # Le kit de certification de Windows (WACK), s'il est sur le runner : le
+      # même examen que le Store, en avance. Indicatif, jamais bloquant — il
+      # installe le paquet pour l'éprouver, et un paquet non signé peut l'en
+      # empêcher ; le rapport dit alors pourquoi.
+      - name: Kit de certification (si présent)
+        continue-on-error: true
+        timeout-minutes: 30
+        shell: pwsh
+        run: |
+          $appcert = "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\appcert.exe"
+          if (-not (Test-Path $appcert)) {
+            Write-Host "::notice::Kit de certification absent du runner : pas de rapport."
+            exit 0
+          }
+          $report = Join-Path $env:RUNNER_TEMP "wack\rapport-certification.xml"
+          New-Item -ItemType Directory -Force (Split-Path $report) | Out-Null
+          "WACK_REPORT=$report" >> $env:GITHUB_ENV
+          & $appcert reset
+          & $appcert test -appxpackagepath "$env:MSIX_PATH" -reportoutputpath $report
+          if (Test-Path $report) {
+            $result = ([xml](Get-Content $report -Raw)).REPORT.OVERALL_RESULT
+            Write-Host "Kit de certification : $result"
+            if ($result -ne "PASS") { Write-Host "::warning::Kit de certification : $result (voir l'artefact du rapport)." }
+          }
+
+      - name: Upload du rapport de certification
+        if: always() && env.WACK_REPORT != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: tentacle-server-windows-certification
+          path: ${{ env.WACK_REPORT }}
+          if-no-files-found: warn
+
+      - name: Zip MSIX (payload d'upload API)
+        if: needs.prepare.outputs.submit == 'true'
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP "TentacleServer-msix.zip"
+          Compress-Archive -Path $env:MSIX_PATH -DestinationPath $zip -Force
+          "PACKAGE_ZIP=$zip" >> $env:GITHUB_ENV
+
+      # Cran test : le vol de paquet (FLIGHT_ID), sans notes — un vol n'a pas de
+      # fiche. Cran store : la fiche publique, « Nouveautés » FR/EN comprises.
+      - name: Soumettre au Microsoft Store
+        if: needs.prepare.outputs.submit == 'true'
+        env:
+          PARTNER_TENANT_ID: ${{ secrets.PARTNER_TENANT_ID }}
+          PARTNER_CLIENT_ID: ${{ secrets.PARTNER_CLIENT_ID }}
+          PARTNER_CLIENT_SECRET: ${{ secrets.PARTNER_CLIENT_SECRET }}
+          STORE_ID: ${{ needs.prepare.outputs.store-id }}
+          FLIGHT_ID: ${{ needs.prepare.outputs.flight-id }}
+          PACKAGE_ZIP: ${{ env.PACKAGE_ZIP }}
+          PACKAGE_FILE_NAME: ${{ env.MSIX_NAME }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          # Les notes du serveur, bloc nu ## [S] : CHANNEL vide, aucun bloc
+          # par canal (## [win-S]) n'est cherché — un seul texte.
+          CHANGELOG: changelogs/server.md
+          CHANNEL: ""
+        run: node .github/scripts/msstore-submit.mjs
+
+  # ── Le tag de l'app, au cran store, une fois la soumission partie ──────────
+  # Plus de bump ici : le tag `server-windows-vS` se pose sur le commit livré
+  # (s'il manque — une relivraison de la même version le laisse en place). Un
+  # tag poussé avec GITHUB_TOKEN ne relance aucun workflow.
+  tag:
+    name: Tag server-windows-v*
+    needs: [prepare, windows]
+    if: needs.prepare.outputs.channel == 'store' && needs.prepare.outputs.submit == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+
+      - name: Poser le tag
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::notice::le tag $TAG existe déjà — on le laisse en place."
+          else
+            git tag "$TAG" "$SHA"
+            git push origin "$TAG"
+          fi

@@ -5,6 +5,7 @@ import { discoverJellyfins } from "../discovery/discover";
 import { hostInfo } from "../hostInfo";
 import { apiKeyWorks, authenticate, createTentacleKey, signOut, verifyApiKey } from "../jellyfin/accounts";
 import { clientUrlFor } from "../jellyfin/clientUrlFor";
+import { hostLanAddress } from "../jellyfin/hostLanAddress";
 import { listLibraries } from "../jellyfin/libraries";
 import { presentsAsBlank, probeTarget } from "../jellyfin/stackTarget";
 import { adoptProvisionalAdmin, applyServerLocale, runJellyfinStartup } from "../jellyfin/startup";
@@ -71,6 +72,7 @@ export const setupJellyfinRoutes: FastifyPluginAsync = async (app) => {
       browserHost: request.hostname,
       containerized: hostInfo().containerized,
       gateway: hostInfo().containerized ? readDefaultGateway() : null,
+      lanAddress: hostLanAddress(),
       claimed: claimedAdminId() !== null,
     }),
   );

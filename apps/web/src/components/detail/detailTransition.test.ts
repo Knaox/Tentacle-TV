@@ -10,7 +10,15 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { arrivesFromPlugin, markPluginNavigation } from "./detailTransition";
+import {
+  arrivesFromPlugin,
+  captureDetailOrigin,
+  consumeDetailOrigin,
+  markPluginNavigation,
+  OPENING_LANDED_GUARD_MS,
+  OPENING_TARGETLESS_GUARD_MS,
+  openingGuardDelay,
+} from "./detailTransition";
 
 /** Doit rester égal à `MAX_AGE_MS` du module. */
 const WINDOW_MS = 1200;
@@ -44,5 +52,35 @@ describe("navigation demandée par un greffon", () => {
     markPluginNavigation();
     vi.advanceTimersByTime(WINDOW_MS + 1);
     expect(arrivesFromPlugin()).toBe(false);
+  });
+});
+
+/**
+ * Le calque d'ouverture d'une fiche dont le titre n'a AUCUNE image (Jellyfin
+ * n'a rien trouvé) : il attendait une affiche à viser qui ne venait jamais et
+ * couvrait la page pour toujours — écran vide, ni « Lecture » ni épisodes.
+ */
+describe("calque d'ouverture d'un titre sans image", () => {
+  const visual = { getBoundingClientRect: () => ({ top: 10, left: 20, width: 200, height: 300 }) } as unknown as HTMLElement;
+
+  it("une carte sans image ne pose aucune origine : rien à faire voler", () => {
+    captureDetailOrigin(visual, "serie", "");
+    expect(consumeDetailOrigin("serie")).toBeNull();
+    captureDetailOrigin(visual, "serie", "/affiche.jpg");
+    expect(consumeDetailOrigin("serie")?.imageUrl).toBe("/affiche.jpg");
+  });
+
+  it("tant que la fiche n'est pas là, le calque occupe l'attente", () => {
+    expect(openingGuardDelay({ playing: true, hasTarget: false, settled: false })).toBeNull();
+  });
+
+  it("la fiche rendue SANS visuel à viser : le calque s'efface presque aussitôt", () => {
+    expect(openingGuardDelay({ playing: true, hasTarget: false, settled: true })).toBe(OPENING_TARGETLESS_GUARD_MS);
+    expect(OPENING_TARGETLESS_GUARD_MS).toBeLessThan(OPENING_LANDED_GUARD_MS);
+  });
+
+  it("avec un visuel : le garde-fou habituel, et rien quand le calque est fini", () => {
+    expect(openingGuardDelay({ playing: true, hasTarget: true, settled: true })).toBe(OPENING_LANDED_GUARD_MS);
+    expect(openingGuardDelay({ playing: false, hasTarget: false, settled: true })).toBeNull();
   });
 });

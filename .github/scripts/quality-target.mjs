@@ -40,6 +40,7 @@ const NEUTRAL = new Map([
   // Les clés qu'écrit bump-version.mjs — SAUF `desktop` : registry.test.ts
   // (web) exige une entrée de nouveautés pour cette version-là, un bump
   // desktop peut donc le faire tomber. Celui-là attend un vrai contrôle.
+  // (Plus de `serverWindows` : l'app Windows suit `server` depuis le 2026-10-12.)
   ['versions.json', ['mobile', 'tv', 'webos', 'server', 'minServer']],
   // Les package.json qu'aligne bump-version.mjs (sa table KEYS), champ
   // `version` seul : un bump qui toucherait une dépendance n'est plus neutre.

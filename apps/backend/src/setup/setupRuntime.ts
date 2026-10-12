@@ -7,7 +7,7 @@ import { configureJellyfinGuard } from "./jellyfin/guardedFetch";
 import { provisionerFor, type JellyfinProvisioner } from "./provisioners";
 import type { ClaimOutcome } from "./provisioners/siblingClaim";
 import { isSetupClosed, sealSetup } from "./setupLock";
-import { discardSetupToken, readSetupToken, setupTokenBanner, writeNewSetupToken } from "./setupToken";
+import { discardSetupToken, readSetupToken, setupCodeHome, setupTokenBanner, writeNewSetupToken } from "./setupToken";
 
 /**
  * Ce que l'assistant sait de l'installation, lu UNE fois par processus, et ce
@@ -33,7 +33,7 @@ export function setupRuntime(): SetupRuntime {
 }
 
 function announceNewToken(): void {
-  for (const line of setupTokenBanner(writeNewSetupToken(), bannerPort, hostInfo().containerized)) console.log(line);
+  for (const line of setupTokenBanner(writeNewSetupToken(), bannerPort, setupCodeHome(hostInfo()))) console.log(line);
 }
 
 let claim: Promise<ClaimOutcome | null> | null = null;

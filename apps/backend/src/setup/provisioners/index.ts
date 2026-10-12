@@ -1,20 +1,25 @@
 import type { ProvisionerKind, MissingJellyfinGuide } from "../setupWizardContract";
 import { suggestedJellyfinUrl, type Deployment } from "../deployment";
 import { missingJellyfinGuide, type HostOs } from "../hostOs";
+import { appHostServes, detectLocalJellyfin, detectedJellyfinUrl } from "../appHost/appHostCalls";
+import { JELLYFIN_WINDOWS_DOWNLOAD_URL } from "../../serverHost/hostMethods";
 import { claimSiblingJellyfin, type ClaimOutcome } from "./siblingClaim";
 
 /**
  * D'où vient Jellyfin — un seul assistant pour tous les cas, une seule
- * interface. Aucun ne lance Jellyfin lui-même : l'installation revient à la
- * pile Docker ou à la commande officielle ; le provisionneur dit où le
- * chercher, ce qu'il prépare seul au démarrage, et quoi proposer s'il manque.
+ * interface. Le SERVEUR ne lance jamais Jellyfin lui-même : la pile Docker,
+ * la commande officielle ou l'hôte de l'app Windows s'en chargent ; le
+ * provisionneur dit où le chercher, ce qu'il prépare seul au démarrage, et
+ * quoi proposer s'il manque.
  *
  *  - `existing-instance` : un Jellyfin déjà là, ailleurs (piles « base » et
  *    « seule », ou l'ancien compose) ;
  *  - `docker-sibling` : le Jellyfin de la pile complète, verrouillé au démarrage ;
  *  - `native-host` : Tentacle installé sur la machine, Jellyfin à côté ;
- *  - `managed-by-tentacle` : RÉSERVÉ à la future app d'installation (Windows,
- *    Linux), qui installera Jellyfin elle-même. Rien ne le choisit encore.
+ *  - `managed-by-tentacle` : l'app Windows « Tentacle Server » — son hôte
+ *    détecte le Jellyfin de la machine (le port lu dans sa configuration
+ *    devient l'adresse proposée), l'installe avec l'accord de
+ *    l'administrateur, et le démarre (`appHost/`).
  */
 export interface JellyfinProvisioner {
   readonly kind: ProvisionerKind;
@@ -22,7 +27,7 @@ export interface JellyfinProvisioner {
   readonly suggestedUrl: string | null;
   /** Ce qui se fait seul au démarrage, installation ouverte ; `null` : rien. */
   prepare(): Promise<ClaimOutcome | null>;
-  /** Sans Jellyfin : la commande, la documentation ou la pile complète. */
+  /** Sans Jellyfin : la commande, la documentation, la pile complète ou l'installation guidée. */
   missingGuide(): MissingJellyfinGuide;
 }
 
@@ -50,9 +55,25 @@ export function nativeHost(deployment: Deployment, os: HostOs | null): JellyfinP
   return { ...existingInstance(deployment, os), kind: "native-host" };
 }
 
-/** Réservé : la future app d'installation le fournira. */
-export function managedByTentacle(): JellyfinProvisioner {
-  throw new Error("managed-by-tentacle : réservé à la future app d'installation");
+/**
+ * L'app Windows : l'adresse proposée est celle que l'hôte a DÉTECTÉE (au
+ * démarrage, puis à chaque détection de l'assistant), sinon celle d'une
+ * installation native. Sans hôte qui sache installer : la documentation, comme
+ * pour une installation à la main.
+ */
+export function managedByTentacle(deployment: Deployment, os: HostOs | null): JellyfinProvisioner {
+  return {
+    kind: "managed-by-tentacle",
+    get suggestedUrl() {
+      return detectedJellyfinUrl() ?? suggestedJellyfinUrl(deployment);
+    },
+    prepare: async () => {
+      if (appHostServes("jellyfin.detect")) await detectLocalJellyfin().catch(() => undefined);
+      return null;
+    },
+    missingGuide: () =>
+      appHostServes("jellyfin.install") ? { kind: "install", docsUrl: JELLYFIN_WINDOWS_DOWNLOAD_URL } : missingJellyfinGuide(deployment, os),
+  };
 }
 
 export function provisionerFor(deployment: Deployment, os: HostOs | null): JellyfinProvisioner {
@@ -62,7 +83,7 @@ export function provisionerFor(deployment: Deployment, os: HostOs | null): Jelly
     case "native-host":
       return nativeHost(deployment, os);
     case "managed-by-tentacle":
-      return managedByTentacle();
+      return managedByTentacle(deployment, os);
     default:
       return existingInstance(deployment, os);
   }

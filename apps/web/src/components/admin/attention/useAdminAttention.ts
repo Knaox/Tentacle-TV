@@ -88,6 +88,7 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
         latest: report.latest?.version ?? null,
         requiredByClients: report.requiredByClients,
         clientMinimum: MIN_SERVER_VERSION,
+        channel: report.install.channel,
       })
       : null,
     [report],
@@ -105,13 +106,14 @@ export function useAdminAttention(): { attention: AdminAttention; context: Atten
       jellyfinSetup: setup.isPending ? undefined : setupReport,
       jellyfinVersion: compat.isPending ? undefined : (installed?.status ?? null),
       serverUpdate: update.isPending ? undefined : (verdict?.status ?? null),
+      serverUpdateChannel: report?.install.channel ?? null,
       refusedExtensions: refused.loading ? undefined : refused.data,
       databaseMigration: migrationAttention(migration.data),
       capabilities,
       dismissed,
     }),
     [services.loading, services.data, refused.loading, refused.data, key.isPending, key.data, metadata.isPending, metadata.data, links.isPending, checks,
-      setup.isPending, setupReport, compat.isPending, installed, update.isPending, verdict, migration.data, capabilities, dismissed],
+      setup.isPending, setupReport, compat.isPending, installed, update.isPending, verdict, report, migration.data, capabilities, dismissed],
   );
 
   const context = useMemo<AttentionContext>(

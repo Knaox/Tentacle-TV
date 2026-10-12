@@ -97,6 +97,8 @@ export interface RemoteAccessState {
    */
   directPlay?: { enabled: boolean; privateUrl: string | null; publicUrl: string | null };
   deployment: "docker" | "native";
+  /** `windows-app` : l'app Windows (Node à même la machine, pare-feu Windows). Absent : autre livraison, ou serveur d'avant. */
+  packaging?: "windows-app";
   stack: "full" | "db" | "only" | null;
   /** Le service de test : son adresse, ou `null` s'il est coupé. */
   checkServiceUrl: string | null;

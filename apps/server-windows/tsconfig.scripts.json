@@ -1,0 +1,25 @@
+// Contrôle de types des scripts d'assemblage et d'empaquetage. Node 24 les
+// exécute TELS QUELS (types effacés, `.mts` = ESM) : rien que de la syntaxe
+// effaçable — ni enum, ni propriétés de paramètres, ni namespace.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["scripts/**/*.mts"]
+}

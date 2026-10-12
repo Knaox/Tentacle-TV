@@ -94,6 +94,13 @@ test('un workflow ou des notes de version ne sont pas neutres : leur propre run 
   assert.equal(findQualityTarget(notes, (c) => (c === verified ? 1 : 0)), notes);
 });
 
+test('l\'app Windows n\'a plus de bump à elle : une clé serverWindows n\'est plus neutre', () => {
+  const verified = commit('feat(serveur-windows) : l\'hôte, contrôlé');
+  write('versions.json', { ...VERSIONS, serverWindows: '1.0.1' });
+  const stray = commit('chore : serverWindows réintroduite');
+  assert.equal(findQualityTarget(stray, (c) => (c === verified ? 1 : 0)), stray);
+});
+
 test('un run présent l\'emporte toujours, même rouge : on n\'hérite jamais par-dessus', () => {
   commit('fix : contrôlé');
   write('versions.json', { ...VERSIONS, webos: '1.3.0' });

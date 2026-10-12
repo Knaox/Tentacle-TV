@@ -29,6 +29,8 @@ const STATUS: Partial<Record<SetupErrorCode, number>> = {
   jf_claim_pending: 409,
   // Un geste hors du parcours en cours : l'état de l'installation l'interdit.
   step_refused: 409,
+  // Le geste exige l'hôte de l'app Windows (ou un navigateur sur la machine même).
+  host_unavailable: 409,
   // TMDB ne répond pas : la clé n'est pas en cause (même code que l'administration).
   tmdb_unreachable: 502,
   internal: 500,

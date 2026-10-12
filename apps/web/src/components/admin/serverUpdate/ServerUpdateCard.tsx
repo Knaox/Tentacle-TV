@@ -25,6 +25,10 @@ import { useWatchedServerUpdate, type WatchOutcome } from "./useRestartWatch";
  * La mise à jour ne passe PAS par ici : aucun accès à Docker (décision du
  * 2026-10-03). La carte donne la commande à copier, puis constate d'elle-même
  * le serveur revenu (`useWatchedServerUpdate`).
+ *
+ * L'app Windows (canal `microsoft-store`) : « Mises à jour automatiques »,
+ * sans commande ni « conseillée » tirée des tags de l'image ; seule une
+ * exigence d'un client (obligatoire) se dit, avec le chemin du Store.
  */
 
 export const SERVER_UPDATE_ANCHOR = "server-update";
@@ -35,6 +39,7 @@ const TONE: Record<ServerUpdateStatus, StatusTone> = {
   mandatory: "error",
   ahead: "neutral",
   unknown: "neutral",
+  automatic: "success",
 };
 
 const ICON_TONE: Record<StatusTone, string> = {
@@ -102,8 +107,10 @@ function ReportBody({ report, outcome, onCopied }: { report: ServerUpdateReport;
     latest: latest?.version ?? null,
     requiredByClients: report.requiredByClients,
     clientMinimum: MIN_SERVER_VERSION,
+    channel: report.install.channel,
   });
   const status = verdict.status;
+  const store = report.install.channel === "microsoft-store";
   const offerUpdate = status === "advised" || status === "mandatory";
   const target = latest?.version ?? verdict.required;
   const commands = offerUpdate ? buildUpdateCommands(report.install, target) : null;
@@ -118,6 +125,8 @@ function ReportBody({ report, outcome, onCopied }: { report: ServerUpdateReport;
         return t("serverMandatory", { required: verdict.required });
       case "ahead":
         return t("serverAhead");
+      case "automatic":
+        return t("serverAutomatic");
       default:
         return latest ? latestLine() : null;
     }
@@ -143,13 +152,13 @@ function ReportBody({ report, outcome, onCopied }: { report: ServerUpdateReport;
             <StatusPill tone={TONE[status]}>{t(`serverState_${status}`)}</StatusPill>
           </div>
           {sentence ? <p className="mt-1 max-w-3xl text-sm leading-relaxed text-content-secondary">{sentence}</p> : null}
-          {status === "mandatory" && latest ? <p className="mt-0.5 text-sm text-content-tertiary">{latestLine()}</p> : null}
+          {status === "mandatory" && latest && !store ? <p className="mt-0.5 text-sm text-content-tertiary">{latestLine()}</p> : null}
         </div>
       </div>
 
       {outcome ? <OutcomeLine outcome={outcome} /> : null}
 
-      {offerUpdate && highlights.length > 0 && latest ? (
+      {offerUpdate && !store && highlights.length > 0 && latest ? (
         <div className="mt-4">
           <h3 className="text-sm font-semibold text-content-primary">{t("serverWhatsNew", { version: latest.version })}</h3>
           <ul className="mt-2 max-w-3xl space-y-1.5">
@@ -175,7 +184,12 @@ function ReportBody({ report, outcome, onCopied }: { report: ServerUpdateReport;
         </div>
       ) : null}
 
-      {offerUpdate ? (
+      {offerUpdate && store ? (
+        <div className="mt-4 border-t border-line-subtle pt-4">
+          <h3 className="text-sm font-semibold text-content-primary">{t("updateTitle")}</h3>
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-content-secondary">{t("updateStore")}</p>
+        </div>
+      ) : offerUpdate ? (
         commands ? (
           <UpdateCommand commands={commands} current={report.current} target={target} onCopied={onCopied} />
         ) : (
@@ -185,7 +199,8 @@ function ReportBody({ report, outcome, onCopied }: { report: ServerUpdateReport;
 
       <p className="mt-4 text-xs leading-relaxed text-content-quaternary">
         {report.checkedAt ? t("serverCheckedAt", { date: formatMoment(report.checkedAt, i18n.language) }) : null}
-        {report.error ? <span className="block text-content-tertiary">{t(`serverCheckError_${report.error}`)}</span> : null}
+        {/* L'app Windows ne suit pas GitHub : ses erreurs n'ont rien à lui dire. */}
+        {report.error && !store ? <span className="block text-content-tertiary">{t(`serverCheckError_${report.error}`)}</span> : null}
       </p>
     </div>
   );

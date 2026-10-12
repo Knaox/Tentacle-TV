@@ -10,6 +10,7 @@ import { readLastCheck, readRemoteAccessSettings, saveRemoteAccessSettings } fro
 import { detectPublicIp, forgetPublicIp } from "./publicIp";
 import { activeJellyfinPublicUrl, checkServiceUrl, hostPort, jellyfinLanPort, runRemoteCheck } from "./remoteCheck";
 import { derivedPrivateUrl } from "./pairingAddress";
+import { hostLanAddress } from "../setup/jellyfin/hostLanAddress";
 
 /**
  * L'accès à distance (`/api/admin/remote-access`) — enregistré depuis
@@ -50,7 +51,9 @@ const patchSchema = z
  */
 async function buildState(request: FastifyRequest): Promise<RemoteAccessState> {
   const jellyfinCors = await syncJellyfinCors({ requestOrigin: requestPageOrigin(request), trustRequestOrigin: true, logger: request.log });
-  const derivedLocalUrl = derivedPrivateUrl({ clientIsPrivate: isPrivateIp(getRealClientIp(request)), protocol: request.protocol, host: request.host });
+  const derivedLocalUrl = derivedPrivateUrl({
+    clientIsPrivate: isPrivateIp(getRealClientIp(request)), protocol: request.protocol, host: request.host, lanAddress: hostLanAddress(),
+  });
   const deployment = readDeployment();
   const direct = getDirectStreamingConfig();
   return {
@@ -61,6 +64,7 @@ async function buildState(request: FastifyRequest): Promise<RemoteAccessState> {
     jellyfinHostPort: jellyfinLanPort(),
     directPlay: { enabled: direct.enabled, privateUrl: direct.privateUrl, publicUrl: direct.publicUrl },
     deployment: deployment.deployment,
+    ...(deployment.packaging ? { packaging: deployment.packaging } : {}),
     stack: deployment.stack,
     checkServiceUrl: checkServiceUrl(),
     lastCheck: readLastCheck(),

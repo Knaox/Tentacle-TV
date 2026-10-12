@@ -34,6 +34,9 @@ export default {
   updateStoreUnavailable: "Le Microsoft Store n'a pas répondu. Réessayez plus tard, ou mettez à jour depuis le Store.",
   updateNoLongerAvailable: "La mise à jour n'est plus en attente — vous êtes peut-être déjà à jour.",
   updateInstallRefused: "L'installation n'a pas abouti. Elle peut être reprise depuis le Microsoft Store.",
+  updateInstallCanceled: "Mise à jour annulée. Vous pourrez la relancer quand vous voudrez.",
+  updateLowBattery: "Batterie trop faible : branchez l'ordinateur, puis relancez la mise à jour.",
+  updateWifiRequired: "Le Microsoft Store demande une connexion Wi-Fi pour cette mise à jour. Connectez-vous à un Wi-Fi, puis relancez-la.",
   // Nouvelle pop-up : phrase du canal en sous-titre, ligne des versions (aria),
   // encart d'erreur. Les noms des canaux sont des noms propres, en dur.
   updateReadyAppStore: "Une nouvelle version vous attend sur l'App Store.",

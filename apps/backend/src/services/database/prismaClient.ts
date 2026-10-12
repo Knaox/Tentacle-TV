@@ -32,3 +32,20 @@ export async function connectSqlitePrisma(path: string): Promise<PrismaClient> {
     throw error;
   }
 }
+
+/**
+ * Ferme le client à l'arrêt du serveur. Le WAL n'est vidé dans la base qu'à
+ * la fermeture de la DERNIÈRE connexion — la nôtre, qui ne se fermait jamais :
+ * `-wal` et `-shm` restaient, et une copie du seul `tentacle.db` était
+ * incohérente. Le point de contrôle `TRUNCATE` recopie tout et remet le
+ * journal à zéro, puis la connexion se ferme. Un échec du point de contrôle
+ * (base occupée) n'empêche jamais la fermeture : SQLite rejouera le WAL.
+ */
+export async function closeSqlitePrisma(client: PrismaClient, log: (line: string) => void = (line) => console.warn(line)): Promise<void> {
+  try {
+    await client.$queryRawUnsafe("PRAGMA wal_checkpoint(TRUNCATE)");
+  } catch (error) {
+    log(`[db] Point de contrôle du journal impossible à l'arrêt : ${error instanceof Error ? error.message : String(error)}`);
+  }
+  await client.$disconnect().catch(() => undefined);
+}

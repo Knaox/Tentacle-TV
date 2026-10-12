@@ -8,7 +8,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { isZipapp, stopYtWorker, workerExtract } from "./ytWorker";
+import { isZipapp } from "../tools/toolPaths";
+import { stopYtWorker, workerExtract } from "./ytWorker";
 
 const hasPython = (() => {
   try {

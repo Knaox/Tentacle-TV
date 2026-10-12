@@ -46,6 +46,12 @@ export interface ServerInstall {
    * porte `:latest` ET `:vX.Y.Z`, rien en elle ne dit laquelle a été tirée.
    */
   tag: string | null;
+  /**
+   * Par où arrivent les mises à jour quand ce n'est pas une image :
+   * `microsoft-store`, l'app Windows « Tentacle Server », que le Store met à
+   * jour (aucune commande à copier). Absent : image, ou installation à la main.
+   */
+  channel?: "microsoft-store";
 }
 
 /** Pourquoi la dernière publication n'est pas connue (ou plus à jour). */

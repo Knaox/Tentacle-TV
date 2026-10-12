@@ -51,7 +51,10 @@ export function captureDetailOrigin(
   radius = 12,
   covered = false,
 ): void {
-  if (!element) {
+  // Une carte SANS image (titre que Jellyfin n'a pas trouvé) n'a rien à faire
+  // voler : le calque aurait promené un cadre vide, puis attendu une affiche
+  // qui ne vient pas. La fiche s'ouvre alors par sa propre entrée.
+  if (!element || !imageUrl) {
     pending = null;
     return;
   }
@@ -160,6 +163,29 @@ export function skipsEntrance(origin: DetailOrigin | null): boolean {
     || arrivesFromPlayer()
     || arrivesFromPlugin()
     || (typeof window !== "undefined" && window.location.pathname === landingPath);
+}
+
+/** Le visuel se pose : au-delà, le calque s'efface quoi qu'il arrive (cf. `DetailOpenOverlay`). */
+export const OPENING_LANDED_GUARD_MS = 1000;
+/**
+ * La fiche est là mais n'a PAS de visuel à viser (aucune affiche, ou une
+ * affiche qui ne se mesure pas) : le calque s'efface sur place, presque tout
+ * de suite. Le délai laisse passer la mesure de `DetailPoster`, qui arrive
+ * dans le même passage de mise en page que la fiche.
+ */
+export const OPENING_TARGETLESS_GUARD_MS = 250;
+
+/**
+ * Quand le calque d'ouverture doit-il s'effacer de lui-même ? `null` : pas
+ * encore — la fiche n'est pas là (requête lente : c'est là que le calque
+ * occupe l'attente). Une fois la fiche rendue, il s'efface TOUJOURS, cible ou
+ * pas : sans cette règle, une fiche sans affiche (titre sans images) gardait
+ * l'écran couvert pour toujours — page vide, ni « Lecture » ni rien.
+ */
+export function openingGuardDelay(state: { playing: boolean; hasTarget: boolean; settled: boolean }): number | null {
+  if (!state.playing) return null;
+  if (state.hasTarget) return OPENING_LANDED_GUARD_MS;
+  return state.settled ? OPENING_TARGETLESS_GUARD_MS : null;
 }
 
 /**

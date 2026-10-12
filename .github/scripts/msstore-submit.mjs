@@ -11,15 +11,20 @@
 //   STORE_ID (applicationId, ex. 9NKHL0T84245), PACKAGE_ZIP (chemin du zip),
 //   PACKAGE_FILE_NAME (nom du .msix DANS le zip), VERSION (x.y.z).
 // Env optionnels : CHANNEL (défaut win), CHANGELOG (défaut CHANGELOG.md),
-//   SUBMIT_TIMEOUT_MINUTES (30), POLL_SECONDS (30).
+//   SUBMIT_TIMEOUT_MINUTES (30), POLL_SECONDS (30),
+//   FLIGHT_ID — soumet au VOL de paquet de cet ID (groupe de testeurs) au lieu
+//   de la fiche publique : mêmes étapes sous `/flights/<id>`, sans notes (un
+//   vol n'a pas de fiche). Voir lib/msstore-submission.mjs.
 import fs from 'node:fs';
 import { loadNotes } from './lib/changelog.mjs';
+import { prepareSubmission, submissionTarget } from './lib/msstore-submission.mjs';
 
 const {
   PARTNER_TENANT_ID, PARTNER_CLIENT_ID, PARTNER_CLIENT_SECRET,
   STORE_ID, PACKAGE_ZIP, PACKAGE_FILE_NAME, VERSION,
-  CHANNEL = 'win', CHANGELOG = 'CHANGELOG.md',
+  CHANNEL = 'win', CHANGELOG = 'CHANGELOG.md', FLIGHT_ID = '',
 } = process.env;
+const TARGET = submissionTarget({ flightId: FLIGHT_ID.trim() });
 const TIMEOUT_MS = Number(process.env.SUBMIT_TIMEOUT_MINUTES ?? 30) * 60_000;
 const POLL_MS = Number(process.env.POLL_SECONDS ?? 30) * 1000;
 
@@ -92,40 +97,33 @@ async function main() {
   // 2) Soumission pendante ? On la supprime (même comportement que le CLI).
   //    Si elle est déjà en certification, le DELETE échoue → on s'arrête au
   //    lieu d'annuler une certification en cours à l'aveugle.
-  const app = await api('GET');
-  const pending = app.pendingApplicationSubmission;
+  const P = TARGET.path; // '' pour la fiche publique, '/flights/<id>' pour un vol
+  console.log(`[msstore] cible : ${TARGET.label}.`);
+  const app = await api('GET', P);
+  const pending = app[TARGET.pendingKey];
   if (pending?.id) {
     console.log(`[msstore] soumission pendante ${pending.id} — suppression…`);
     try {
-      await api('DELETE', `/submissions/${pending.id}`);
+      await api('DELETE', `${P}/submissions/${pending.id}`);
     } catch (e) {
       fail(`suppression de la soumission pendante impossible (probablement en certification — à gérer dans le Partner Center) : ${e.message}`);
     }
   }
 
   // 3) Nouvelle soumission = clone de la dernière publiée (listings inclus).
-  const sub = await api('POST', '/submissions');
+  const sub = await api('POST', `${P}/submissions`);
   console.log(`[msstore] soumission ${sub.id} créée (clone de la publiée).`);
 
   // 4) Mutation minimale du clone (PUT remplace l'objet ENTIER → on renvoie le
   //    clone intégral, mutations comprises : trailers/pricing préservés).
-  const notes = loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, format: 'msstore' });
-  if (notes) {
-    for (const [lang, text] of [['fr-fr', notes.fr], ['en-us', notes.en]]) {
-      if (!text) continue;
-      const listing = sub.listings?.[lang]?.baseListing;
-      if (!listing) { console.warn(`[msstore] listing ${lang} absent du Store — notes ${lang} ignorées.`); continue; }
-      listing.releaseNotes = text;
-      console.log(`[msstore] « Nouveautés » ${lang} posées (${text.length} car.).`);
-    }
-  } else {
-    console.warn(`[msstore] pas de bloc CHANGELOG « ## [${CHANNEL}-${VERSION}] » — publication SANS notes.`);
+  const notes = TARGET.notes
+    ? loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, format: 'msstore' })
+    : null;
+  for (const line of prepareSubmission(sub, TARGET, { notes, packageFileName: PACKAGE_FILE_NAME })) {
+    (line.level === 'warn' ? console.warn : console.log)(`[msstore] ${line.text}`);
   }
-  for (const p of sub.applicationPackages ?? []) p.fileStatus = 'PendingDelete';
-  sub.applicationPackages = [...(sub.applicationPackages ?? []), { fileName: PACKAGE_FILE_NAME, fileStatus: 'PendingUpload' }];
-  sub.targetPublishMode = 'Immediate'; // publication auto (comportement msstore publish conservé)
 
-  await api('PUT', `/submissions/${sub.id}`, sub);
+  await api('PUT', `${P}/submissions/${sub.id}`, sub);
   console.log('[msstore] soumission mise à jour (package + notes).');
 
   // 5) Upload du zip vers Azure Blob (SAS). Gotcha documenté : les « + » du SAS
@@ -141,13 +139,13 @@ async function main() {
   console.log(`[msstore] package uploadé (${(zip.length / 1024 / 1024).toFixed(1)} Mo).`);
 
   // 6) Commit + polling du statut.
-  await api('POST', `/submissions/${sub.id}/commit`);
+  await api('POST', `${P}/submissions/${sub.id}/commit`);
   console.log('[msstore] commit lancé — polling du statut…');
 
   const deadline = Date.now() + TIMEOUT_MS;
   for (;;) {
     await sleep(POLL_MS);
-    const st = await api('GET', `/submissions/${sub.id}/status`);
+    const st = await api('GET', `${P}/submissions/${sub.id}/status`);
     const status = st.status ?? 'inconnu';
     if (ACCEPTED_STATUSES.has(status)) {
       console.log(`[msstore] soumission acceptée (statut : ${status}) — certification/publication automatiques côté Store. ✓`);
