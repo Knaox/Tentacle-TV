@@ -34,7 +34,7 @@
     ProcessorArchitecture="x64" />
 
   <Properties>
-    <DisplayName>Tentacle Server</DisplayName>
+    <DisplayName>Tentacle-TV Server</DisplayName>
     <PublisherDisplayName>{{PUBLISHER_DISPLAY_NAME}}</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
     <!-- Filet seulement (Windows 11 24H2 et plus) : l'hôte pilote lui-même la
@@ -66,7 +66,7 @@
            transparent : aucune plaque peinte, et BackgroundColor transparent
            laisse aux tuiles de Windows 10 la couleur du thème. -->
       <uap:VisualElements
-        DisplayName="Tentacle Server"
+        DisplayName="Tentacle-TV Server"
         Description="Tentacle Server"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
@@ -84,7 +84,7 @@
           Category="windows.startupTask"
           Executable="Tentacle Server.exe"
           EntryPoint="Windows.FullTrustApplication">
-          <desktop:StartupTask TaskId="TentacleServerStartup" Enabled="true" DisplayName="Tentacle Server" />
+          <desktop:StartupTask TaskId="TentacleServerStartup" Enabled="true" DisplayName="Tentacle-TV Server" />
         </desktop:Extension>
         <!-- `tentacle setup token|reset`, `tentacle web on|off`… : le même exe,
              l'hôte en mode ligne de commande (marqueur « cli » en fin de
