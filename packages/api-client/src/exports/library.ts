@@ -19,7 +19,7 @@ export { useSearchItems } from "../hooks/useSearchItems";
 // « Réanalyser maintenant » (admin, capacité `admin.libraryRescan`) et la fiche
 // d'un titre sans métadonnées qui se met à jour seule à leur arrivée.
 export {
-  useLibraryRescan, useMetadataArrival, libraryRescanErrorCode, metadataArrivalKeys, RESCAN_FOLLOW_UP_MS,
+  useLibraryRescan, useMetadataArrival, libraryRescanErrorCode, metadataArrivalKeys, rescanTargetOf, RESCAN_FOLLOW_UP_MS,
 } from "../hooks/useLibraryRescan";
 // Le moteur de recherche du serveur Tentacle (web, bureau et mobile), et ce
 // que les plugins trouvent hors de la bibliothèque.

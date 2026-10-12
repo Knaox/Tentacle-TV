@@ -36,6 +36,15 @@ function refreshItem(qc: QueryClient, item: RescanItem): void {
   for (const queryKey of metadataArrivalKeys(item)) void qc.invalidateQueries({ queryKey });
 }
 
+/**
+ * Ce que l'on fait analyser depuis une fiche : un épisode ou une saison passe
+ * par SA SÉRIE — c'est elle que Jellyfin identifie, ses enfants suivent (le
+ * rafraîchissement d'un dossier descend dans ses enfants).
+ */
+export function rescanTargetOf(item: RescanItem): string {
+  return (item.Type === "Episode" || item.Type === "Season") && item.SeriesId ? item.SeriesId : item.Id;
+}
+
 /** Le code d'un refus, lu dans le corps que `tentacleApiFetch` garde comme message. */
 export function libraryRescanErrorCode(err: unknown): LibraryRescanError {
   if (!(err instanceof TentacleApiError)) return "unreachable";
@@ -54,9 +63,9 @@ export function libraryRescanErrorCode(err: unknown): LibraryRescanError {
 export const RESCAN_FOLLOW_UP_MS: readonly number[] = [20_000, 60_000, 180_000];
 
 /**
- * POST /api/admin/library/rescan — un titre (`item`), ou toutes les
- * bibliothèques (sans argument). Rend « lancée » ; la fiche se met à jour
- * quand Jellyfin a fini.
+ * POST /api/admin/library/rescan — le titre d'une fiche (`item`, cf.
+ * `rescanTargetOf`), ou toutes les bibliothèques (sans argument). Rend
+ * « lancée » ; la fiche se met à jour quand Jellyfin a fini.
  */
 export function useLibraryRescan() {
   const qc = useQueryClient();
@@ -64,7 +73,7 @@ export function useLibraryRescan() {
     mutationFn: (item?: RescanItem) =>
       tentacleApiFetch<LibraryRescanStarted>(`/api/admin${LIBRARY_RESCAN_PATH}`, {
         method: "POST",
-        body: JSON.stringify(item ? { itemId: item.Id } : {}),
+        body: JSON.stringify(item ? { itemId: rescanTargetOf(item) } : {}),
       }),
     onSuccess: (_started, item) => {
       if (!item) {

@@ -10,6 +10,7 @@ import { DetailScoreline } from "../components/detail/DetailScoreline";
 import { DetailImageViewer } from "../components/detail/DetailImageViewer";
 import { DetailMetadata } from "../components/detail/DetailMetadata";
 import { DetailOverview } from "../components/detail/DetailOverview";
+import { MetadataHint } from "../components/detail/MetadataHint";
 import { DetailActions } from "../components/detail/DetailActions";
 import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailOpenOverlay";
@@ -192,6 +193,8 @@ export function MediaDetail() {
               <DetailScoreline item={item} communityRating={episodeCommunityRating} />
               <DetailMetadata item={item} />
               <DetailOverview item={item} />
+              {/* Titre que Jellyfin n'a pas trouvé : le dire, sans rien bloquer. */}
+              <MetadataHint item={item} />
               <DetailActions item={item} collectionCount={collectionItems?.length} />
             </DetailTextColumn>
           </motion.div>

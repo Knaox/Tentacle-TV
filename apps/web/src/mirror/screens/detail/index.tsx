@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useMediaItem, useSeriesWatchState, useSimilarItems } from "@tentacle-tv/api-client";
+import { useMediaItem, useSeriesWatchState, useSimilarItems } from "@tentacle-tv/api-client";
 import { DETAIL_SEASON_PARAM, detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { DetailImageViewer } from "../../../components/detail/DetailImageViewer";
 import { DetailPlaceholder } from "../../../components/detail/DetailPlaceholder";
@@ -9,6 +9,7 @@ import { CardSheetProvider } from "../../cards/CardSheetProvider";
 import { useViewport } from "../../useFormFactor";
 import { DETAIL_MAX_WIDTH } from "../../responsive";
 import { BackButton } from "./BackButton";
+import { DetailBackdrop } from "./DetailBackdrop";
 import { DetailBody } from "./DetailBody";
 import { DetailHeader } from "./DetailHeader";
 import { DetailSkeleton } from "./DetailSkeleton";
@@ -45,7 +46,6 @@ export function MirrorMediaDetail() {
 function DetailScreen({ itemId }: { itemId: string }) {
   const { width, height, formFactor, landscape } = useViewport();
   const geo = detailGeometry(width, height, formFactor === "tablet", landscape);
-  const client = useJellyfinClient();
   const { t } = useTranslation("media");
   const hostRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -71,7 +71,6 @@ function DetailScreen({ itemId }: { itemId: string }) {
   // Un échec n'est pas une attente : il se dit, avec sa cause (cf. DetailPlaceholder).
   if (!item) return isError ? <DetailPlaceholder failed error={error} retrying={isFetching} onRetry={() => void refetch()} /> : <DetailSkeleton />;
 
-  const backdrop = client.getImageUrl(item.ParentBackdropItemId ?? item.Id, "Backdrop", { width: 1200, quality: 85 });
   const isSeries = item.Type === "Series";
   const episodeListSeriesId = isSeries ? item.Id : isEpisode ? item.SeriesId : undefined;
   const seriesResumeEp = isSeries && seriesWatchState && seriesWatchState.type !== "completed" ? seriesWatchState.episode : undefined;
@@ -111,7 +110,7 @@ function DetailScreen({ itemId }: { itemId: string }) {
   if (geo.twoCol) {
     return (
       <div className="fixed inset-0 overflow-hidden bg-surface-0">
-        <img src={backdrop} alt="" decoding="async" draggable={false} className="absolute inset-0 h-full w-full object-cover" />
+        <DetailBackdrop item={item} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0" style={{ background: "color-mix(in srgb, var(--surface-0-tint) 86%, transparent)" }} />
         {/* Le retour ne défile pas : fixe, plus grand et bordé sur iPad. */}
         <div className="absolute left-4 z-10" style={{ top: `calc(${TOP_INSET} + 8px)` }}>
@@ -157,7 +156,7 @@ function DetailScreen({ itemId }: { itemId: string }) {
             className="absolute inset-0 block cursor-zoom-in disabled:cursor-default"
           >
             <span className="mirror-detail-parallax absolute inset-0 block">
-              <img src={backdrop} alt="" decoding="async" draggable={false} className="mirror-detail-kenburns h-full w-full object-cover" style={{ objectPosition: "center 30%" }} />
+              <DetailBackdrop item={item} className="mirror-detail-kenburns h-full w-full object-cover" style={{ objectPosition: "center 30%" }} />
             </span>
           </button>
           {/* Voile haut « soft » vers le fond de page, 120 + zone sûre. */}

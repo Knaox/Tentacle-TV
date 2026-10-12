@@ -12,6 +12,7 @@ import { ExtrasSection } from "./ExtrasSection";
 import { LicenseAttribution } from "./LicenseAttribution";
 import { DetailFacts } from "./DetailFacts";
 import { SagaRow } from "./SagaRow";
+import { MetadataHint } from "../../../components/detail/MetadataHint";
 
 interface Props {
   item: MediaItem;
@@ -50,6 +51,11 @@ export const DetailBody = memo(function DetailBody({ item, parentSeries, similar
       )}
 
       {item.Overview && <Overview text={item.Overview} />}
+
+      {/* Titre que Jellyfin n'a pas trouvé : le dire, sans rien bloquer. */}
+      <div className="px-4" style={{ maxWidth: CONTENT_MAX_WIDTH }}>
+        <MetadataHint item={item} tone="page" />
+      </div>
 
       {/* Collection (BoxSet) : son contenu, navigable (cf. l'app). */}
       {collectionItems && collectionItems.length > 0 && (

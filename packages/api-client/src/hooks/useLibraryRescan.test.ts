@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { libraryRescanErrorCode, metadataArrivalKeys } from "./useLibraryRescan";
+import { libraryRescanErrorCode, metadataArrivalKeys, rescanTargetOf } from "./useLibraryRescan";
 import { TentacleApiError } from "./usePreferences";
 
 /**
@@ -22,6 +22,19 @@ describe("metadataArrivalKeys", () => {
 
   it("un film : sa fiche seule", () => {
     expect(metadataArrivalKeys({ Id: "m", Type: "Movie" })).toEqual([["item", "m"]]);
+  });
+});
+
+describe("rescanTargetOf", () => {
+  it("un épisode ou une saison font analyser leur série, que Jellyfin identifie", () => {
+    expect(rescanTargetOf({ Id: "e", Type: "Episode", SeriesId: "s" })).toBe("s");
+    expect(rescanTargetOf({ Id: "k", Type: "Season", SeriesId: "s" })).toBe("s");
+  });
+
+  it("un film, une série, ou un épisode orphelin : lui-même", () => {
+    expect(rescanTargetOf({ Id: "m", Type: "Movie" })).toBe("m");
+    expect(rescanTargetOf({ Id: "s", Type: "Series" })).toBe("s");
+    expect(rescanTargetOf({ Id: "e", Type: "Episode" })).toBe("e");
   });
 });
 
