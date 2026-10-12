@@ -4,7 +4,7 @@ import { ChevronDown, CircleHelp, ExternalLink } from "lucide-react";
 import { SETUP_HELP, packagedHelpKey, setupDocUrl, setupHelpTopic, type SetupPackaging, type SetupStep } from "@tentacle-tv/shared";
 
 /**
- * « Besoin d'aide ? » au pied de chaque écran : replié d'office (un
+ * « Besoin d'aide ? » sous l'explication de chaque écran (sous le contenu sur un téléphone) : replié d'office (un
  * `<details>` natif — clavier et lecteurs d'écran sans rien de plus),
  * quelques questions-réponses courtes, puis la page du site qui en dit plus,
  * dans la langue de l'interface — s'il y en a une. Les réponses qui supposent
@@ -24,7 +24,7 @@ export const SetupHelp = memo(function SetupHelp({
   // Un écran sans page du site (la clé TMDB) : les questions seules.
   const topic = setupHelpTopic(step, noLibraries);
   return (
-    <details className="group mt-8 rounded-xl border border-line-subtle bg-fill-faint" data-testid="setup-help">
+    <details className="group rounded-xl border border-line-subtle bg-fill-faint" data-testid="setup-help">
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-4 text-sm font-semibold text-content-secondary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus [&::-webkit-details-marker]:hidden">
         <CircleHelp size={16} aria-hidden="true" className="text-content-tertiary" />
         <span className="flex-1">{t("helpToggle")}</span>

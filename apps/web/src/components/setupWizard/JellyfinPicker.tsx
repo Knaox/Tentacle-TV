@@ -11,12 +11,14 @@ import { mergeServers, recommendedUrl, sameServer, serverState, withManual, with
 import { MissingJellyfin } from "./MissingJellyfin";
 import { setupApi, SetupApiError, type WizardErrorCode } from "./setupApi";
 import { SetupErrorLine } from "./SetupErrorLine";
+import { SetupWaiting } from "./SetupWaiting";
 import type { Wizard } from "./useWizard";
 import { STACK_WAITING, useStackProbe } from "./useStackProbe";
+import { WizardFrame } from "./WizardFrame";
 
 /** En natif, tant que rien ne répond (Jellyfin en cours d'installation) : une nouvelle recherche de temps en temps. */
 const NATIVE_RETRY_MS = 15_000;
-const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content-primary";
+const linkBtn = "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary disabled:opacity-60";
 
 /**
  * TOUS les Jellyfin joignables, listés par le serveur (`/jellyfin/discover`),
@@ -26,9 +28,10 @@ const linkBtn = "min-h-11 text-sm font-semibold text-content-secondary underline
  * de l'administrateur. Le serveur sonde le Jellyfin choisi et en tire le
  * parcours (`/jellyfin/select`). Une adresse saisie à la main rejoint la liste.
  * App Windows : le Jellyfin de CE PC en tête (`LocalJellyfin` : le démarrer,
- * l'installer), qui rejoint la liste dès qu'il répond.
+ * l'installer), qui rejoint la liste dès qu'il répond. L'écran entier : c'est
+ * le choix qui décide du bouton « Continuer » du pied.
  */
-export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
+export function JellyfinPicker({ wizard, title, subtitle }: { wizard: Wizard; title: string; subtitle: string }) {
   const { t } = useTranslation("setupWizard");
   const context = wizard.data.context;
   const selection = context?.flow.selection ?? null;
@@ -120,68 +123,78 @@ export function JellyfinPicker({ wizard }: { wizard: Wizard }) {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {appHost ? <LocalJellyfin onFound={addLocal} /> : null}
-      {searching && servers.length === 0 && !stackStarting ? (
-        <div className="space-y-2" aria-live="polite">
-          <p className="text-sm text-content-tertiary">{t("jfSearching")}</p>
-          {[0, 1].map((row) => (
-            <div key={row} className="h-14 rounded-xl border border-line-subtle bg-fill-faint motion-safe:animate-pulse" />
-          ))}
-        </div>
-      ) : null}
-
-      <JellyfinList servers={servers} selected={picked} recommended={recommendedUrl(servers)} onSelect={setPicked} stackStarting={stackStarting} />
-      {searching && (servers.length > 0 || stackStarting) ? <p className="text-xs text-content-tertiary" aria-live="polite">{t("jfSearchingOthers")}</p> : null}
-
-      {empty ? <p className="text-sm text-content-secondary">{t("jfNoneFound")}</p> : null}
-      {discovery?.bridged && discovery.udp !== "answered" ? <AdminNotice tone="info">{t("jfBridgedNote")}</AdminNotice> : null}
-      {stackProbe.error && !STACK_WAITING.has(stackProbe.error) ? <SetupErrorLine code={stackProbe.error} onRetry={stackProbe.retry} /> : null}
-
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        <button type="button" onClick={() => void search()} disabled={searching} className={`${linkBtn} inline-flex items-center gap-1.5`}>
-          <RefreshCw size={14} aria-hidden="true" className={searching ? "motion-safe:animate-spin" : ""} />
-          {searching ? t("jfSearchingShort") : t("jfRescan")}
-        </button>
-        {!manualOpen && !empty ? (
-          <button type="button" onClick={() => setManualOpen(true)} className={linkBtn}>
-            {t("jfManual")}
-          </button>
-        ) : null}
-      </div>
-
-      {manualOpen || empty ? (
-        <form onSubmit={(e) => void checkManual(e)} className="flex flex-wrap items-end gap-3">
-          <Field
-            label={t("jfUrl")}
-            hint={t("jfUrlHint")}
-            value={manualUrl}
-            onChange={(e) => setManualUrl(e.target.value)}
-            placeholder="http://192.168.1.20:8096"
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-            className="min-w-0 grow basis-72"
-            required
-          />
-          <button type="submit" disabled={checking || !manualUrl.trim()} className={`${cls.bs} mb-[1.625rem]`}>
-            {checking ? t("jfChecking") : t("jfCheck")}
-          </button>
-        </form>
-      ) : null}
-
-      <SetupErrorLine code={error} />
-      {empty && context && !stackUrl && !appHost ? <MissingJellyfin guide={context.missingJellyfin} waiting={native} /> : null}
-
-      <p className="text-sm text-content-secondary" aria-live="polite">
-        {state === "blank" ? t("jfNextBlank") : state === "configured" ? t("jfNextConfigured") : t("jfPickFirst")}
+  // À gauche, ce que le choix entraîne (et ses mises en garde) ; dans le pied, seulement ce qui manque pour continuer.
+  const aside = state ? (
+    <>
+      <p aria-live="polite" className="text-content-primary">
+        {state === "blank" ? t("jfNextBlank") : t("jfNextConfigured")}
       </p>
       {chosen?.inStack && state === "configured" ? <AdminNotice tone="warning">{t("jfStackConfigured")}</AdminNotice> : null}
       {switching && selection ? <AdminNotice tone="info">{t("jfChangeNotice", { name: selection.serverName || t("jfUnnamed") })}</AdminNotice> : null}
-      <button type="button" onClick={() => void confirm()} disabled={!chosen || selecting} className={`${cls.bp} w-full sm:w-auto`}>
-        {selecting ? t("jfSelecting") : !chosen ? t("jfPickContinue") : chosen.blank ? t("jfUseBlank") : t("jfUseConfigured")}
-      </button>
-    </div>
+    </>
+  ) : undefined;
+
+  return (
+    <WizardFrame
+      wizard={wizard}
+      title={title}
+      subtitle={subtitle}
+      aside={aside}
+      status={state ? null : t("jfPickFirst")}
+      primary={{
+        label: !chosen ? t("jfPickContinue") : chosen.blank ? t("jfUseBlank") : t("jfUseConfigured"),
+        onClick: () => void confirm(),
+        disabled: !chosen,
+        pending: selecting,
+        pendingLabel: t("jfSelecting"),
+      }}
+    >
+      <div className="space-y-4">
+        {appHost ? <LocalJellyfin onFound={addLocal} /> : null}
+        {searching && servers.length === 0 && !stackStarting ? <SetupWaiting title={t("jfSearching")} /> : null}
+
+        <JellyfinList servers={servers} selected={picked} recommended={recommendedUrl(servers)} onSelect={setPicked} stackStarting={stackStarting} />
+        {searching && (servers.length > 0 || stackStarting) ? <SetupWaiting variant="inline" title={t("jfSearchingOthers")} /> : null}
+
+        {empty ? <p className="text-sm text-content-secondary">{t("jfNoneFound")}</p> : null}
+        {discovery?.bridged && discovery.udp !== "answered" ? <AdminNotice tone="info">{t("jfBridgedNote")}</AdminNotice> : null}
+        {stackProbe.error && !STACK_WAITING.has(stackProbe.error) ? <SetupErrorLine code={stackProbe.error} onRetry={stackProbe.retry} /> : null}
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-line-subtle pt-3">
+          <button type="button" onClick={() => void search()} disabled={searching} className={`${linkBtn} gap-1.5`}>
+            <RefreshCw size={14} aria-hidden="true" className={searching ? "motion-safe:animate-spin" : ""} />
+            {searching ? t("jfSearchingShort") : t("jfRescan")}
+          </button>
+          {!manualOpen && !empty ? (
+            <button type="button" onClick={() => setManualOpen(true)} className={linkBtn}>
+              {t("jfManual")}
+            </button>
+          ) : null}
+        </div>
+
+        {manualOpen || empty ? (
+          <form onSubmit={(e) => void checkManual(e)} className="flex flex-wrap items-end gap-3">
+            <Field
+              label={t("jfUrl")}
+              hint={t("jfUrlHint")}
+              value={manualUrl}
+              onChange={(e) => setManualUrl(e.target.value)}
+              placeholder="http://192.168.1.20:8096"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              className="min-w-0 grow basis-72"
+              required
+            />
+            <button type="submit" disabled={checking || !manualUrl.trim()} className={`${cls.bs} mb-[1.625rem]`}>
+              {checking ? t("jfChecking") : t("jfCheck")}
+            </button>
+          </form>
+        ) : null}
+
+        <SetupErrorLine code={error} />
+        {empty && context && !stackUrl && !appHost ? <MissingJellyfin guide={context.missingJellyfin} waiting={native} /> : null}
+      </div>
+    </WizardFrame>
   );
 }
