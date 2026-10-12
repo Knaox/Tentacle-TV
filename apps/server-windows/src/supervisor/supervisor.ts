@@ -6,13 +6,14 @@
  * `RestartPolicy` (protocole du fil A, § 4). L'état se publie à l'icône par
  * `onState`, à chaque changement.
  */
-import { SERVER_EXIT_CODES, SHUTDOWN_TIMINGS, type ServerToHostMessage, type ShutdownReason } from "../protocol";
+import { SERVER_EXIT_CODES, SHUTDOWN_TIMINGS, type ServerToHostMessage, type ShutdownReason, type StartupStage } from "../protocol";
 import type { HostServeResult } from "../host/hostServices";
 import { RestartPolicy, type BlockedCause } from "./restartPolicy";
 import { ServerProcess, type ExitInfo, type LaunchSpec, type ProcessJob } from "./serverProcess";
 
 export type ServerState =
-  | { kind: "starting" }
+  /** `stage` : la dernière étape annoncée par le serveur (`tentacle:progress`) ; absente avant la première. */
+  | { kind: "starting"; stage?: StartupStage }
   | { kind: "running"; port: number; version: string; appState: string | null }
   | { kind: "stopped" }
   | { kind: "blocked"; cause: BlockedCause };
@@ -100,6 +101,10 @@ export class Supervisor {
         return;
       case "tentacle:restarting":
         this.options.log(`redémarrage demandé par le serveur : ${message.detail}`);
+        return;
+      case "tentacle:progress":
+        // Une étape tardive (après `ready`, ou d'un serveur déjà arrêté) ne fait pas reculer l'état.
+        if (this.state.kind === "starting") this.setState({ kind: "starting", stage: message.stage });
         return;
       default:
         return;

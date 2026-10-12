@@ -15,6 +15,7 @@ export {
   HOST_PROTOCOL_VERSION,
   SERVER_EXIT_CODES,
   SHUTDOWN_TIMINGS,
+  STARTUP_STAGES,
   parseServerMessage,
 } from "../../../packages/shared/src/serverHost/hostProtocol";
 export type {
@@ -25,6 +26,7 @@ export type {
   ServerToHostMessage,
   ShutdownReason,
   StartupFailure,
+  StartupStage,
 } from "../../../packages/shared/src/serverHost/hostProtocol";
 export { HOST_METHOD_TIMEOUTS_MS, JELLYFIN_WINDOWS_DOWNLOAD_URL, parsePickFolderParams } from "../../../packages/shared/src/serverHost/hostMethods";
 export type {

@@ -21,6 +21,7 @@ process.on("message", (m) => {
   if (m && m.type === "tentacle:shutdown" && mode !== "deaf") { console.log("bye " + m.reason); process.exit(0); }
   if (m && m.type === "tentacle:request") send({ type: "tentacle:response", id: m.id, ok: true, result: { appState: "running" } });
 });
+send({ type: "tentacle:progress", stage: "database" });
 send({ type: "tentacle:ready", protocol: 1, bootId: "b", version: "9.9.9", port: Number(process.env.PORT), appState: "setup_admin" });
 setInterval(() => {}, 1000);
 `;
@@ -88,6 +89,7 @@ describe("Supervisor", () => {
     const { states, output, job } = setup("normal");
     supervisor?.start();
     await waitFor(() => states.some((s) => s.kind === "running"));
+    expect(states).toContainEqual({ kind: "starting", stage: "database" });
     expect(states.find((s) => s.kind === "running")).toEqual({ kind: "running", port: 3999, version: "9.9.9", appState: "setup_admin" });
     const reply = await supervisor?.process?.request("status", undefined, 5_000);
     expect(reply).toMatchObject({ type: "tentacle:response", ok: true });

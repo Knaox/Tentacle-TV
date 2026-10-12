@@ -49,6 +49,11 @@ export interface HostDeps {
   exit: (code: number) => void;
   /** La mise à jour par le Store ; absente hors paquet. */
   update?: { pending(): boolean; installNow(): Promise<void> };
+  /**
+   * L'état AFFICHÉ (port pris compris), pour l'écran de démarrage ;
+   * `wizardOpening` : ce démarrage ouvre l'assistant dans le navigateur.
+   */
+  onDisplayState?: (state: ServerState, wizardOpening: boolean) => void;
 }
 
 export class HostController {
@@ -64,6 +69,11 @@ export class HostController {
 
   get port(): number {
     return this.state.port;
+  }
+
+  /** La question « Lancer au démarrage de Windows ? » a reçu sa réponse (écran de démarrage ou menu). */
+  get startupAsked(): boolean {
+    return this.state.startupAsked;
   }
 
   displayState(): ServerState {
@@ -87,7 +97,21 @@ export class HostController {
     this.deps.ui.setTooltip(tooltip(this.deps.strings, shown, this.state.port));
     if (shown.kind === "blocked") this.notifyBlocked(shown.cause);
     else this.lastNotified = "";
-    if (shown.kind === "running") void this.onRunning(shown.appState);
+    const wizardOpening = shown.kind === "running" && this.claimWizard(shown.appState);
+    this.deps.onDisplayState?.(shown, wizardOpening);
+    if (shown.kind === "running") void this.onRunning(wizardOpening);
+  }
+
+  /** Réponse de l'écran de démarrage : réglée comme par le menu, et plus jamais redemandée. */
+  async answerStartup(enabled: boolean): Promise<void> {
+    const current = await this.deps.startup.read().catch((): StartupState => "unavailable");
+    const on = current === "enabled" || current === "enabled-by-policy";
+    if (on === enabled) {
+      this.persist({ ...this.state, startupAsked: true });
+      this.deps.log(`démarrage avec Windows : ${current}, gardé`);
+      return;
+    }
+    await this.toggleStartup(current);
   }
 
   /** Clic sur l'icône. */
@@ -127,12 +151,9 @@ export class HostController {
         return;
       }
       case "open-log":
-        this.deps.log("journal ouvert depuis le menu");
-        this.deps.ui.open(this.deps.logFile());
-        return;
+        return this.openLog();
       case "restart":
-        await this.deps.supervisor().stop("restart");
-        return this.startServer();
+        return this.restartServer();
       case "install-update":
         this.deps.log("installation de la mise à jour demandée depuis le menu");
         return this.deps.update?.installNow();
@@ -143,19 +164,36 @@ export class HostController {
     }
   }
 
+  openLog(): void {
+    this.deps.log("journal ouvert");
+    this.deps.ui.open(this.deps.logFile());
+  }
+
+  async restartServer(): Promise<void> {
+    await this.deps.supervisor().stop("restart");
+    return this.startServer();
+  }
+
   async quit(): Promise<void> {
     this.deps.log("Quitter");
     await this.deps.supervisor().stop("quit");
     this.deps.exit(0);
   }
 
-  private async onRunning(appState: string | null): Promise<void> {
-    if (!this.state.wizardOpened) {
-      this.persist({ ...this.state, wizardOpened: true });
-      const pending = appState !== null ? appState.startsWith("setup") : this.deps.setupPending();
-      // L'assistant s'ouvre UNE fois, au premier démarrage, sur l'adresse locale.
-      if (pending) this.deps.ui.open(await this.deps.serverUrl(this.state.port, "/"));
-    }
+  /**
+   * L'assistant s'ouvre UNE fois, au premier démarrage réussi d'une
+   * installation pas finie : `true` si c'est maintenant (l'écran de démarrage
+   * le dit), et ce n'est plus jamais le cas ensuite.
+   */
+  private claimWizard(appState: string | null): boolean {
+    if (this.state.wizardOpened) return false;
+    this.persist({ ...this.state, wizardOpened: true });
+    return appState !== null ? appState.startsWith("setup") : this.deps.setupPending();
+  }
+
+  private async onRunning(openWizard: boolean): Promise<void> {
+    // Sur l'adresse locale, jamais `localhost` (un téléphone ne la joindrait pas).
+    if (openWizard) this.deps.ui.open(await this.deps.serverUrl(this.state.port, "/"));
     if (!this.networkChecked) {
       this.networkChecked = true;
       if (await this.deps.publicNetwork()) {
@@ -182,11 +220,14 @@ export class HostController {
   private async toggleStartup(current: StartupState): Promise<void> {
     const s = this.deps.strings;
     if (current === "disabled-by-user") {
+      if (!this.state.startupAsked) this.persist({ ...this.state, startupAsked: true });
       this.deps.ui.info(s.startupDisabledByUser);
       this.deps.ui.open("ms-settings:startupapps");
       return;
     }
     const wanted = current !== "enabled";
+    // Réglé à la main : la question de l'écran de démarrage n'a plus lieu d'être.
+    if (!this.state.startupAsked) this.persist({ ...this.state, startupAsked: true });
     const result = await this.deps.startup.set(wanted).catch((): StartupState => "unavailable");
     this.deps.log(`démarrage avec Windows : ${current} → ${result}`);
     if (result === "disabled-by-user") this.deps.ui.info(s.startupDisabledByUser);

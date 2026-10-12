@@ -1,6 +1,7 @@
 /**
  * L'état propre à l'hôte, dans `host.json` du dossier de données : le port
- * choisi, et si l'assistant a déjà été ouvert une fois.
+ * choisi, si l'assistant a déjà été ouvert une fois, et si la question
+ * « Lancer au démarrage de Windows ? » a reçu sa réponse.
  *
  * Lecture TOLÉRANTE : un fichier abîmé ou d'une autre version rend les
  * défauts champ par champ, jamais une erreur au démarrage.
@@ -12,9 +13,15 @@ export interface HostState {
   port: number;
   /** L'assistant ne s'ouvre qu'UNE fois, au premier démarrage réussi. */
   wizardOpened: boolean;
+  /**
+   * L'utilisateur a répondu à « Lancer Tentacle Server au démarrage de
+   * Windows ? » (écran de démarrage) ou réglé ce point dans le menu de
+   * l'icône : on ne le lui demande plus.
+   */
+  startupAsked: boolean;
 }
 
-export const DEFAULT_STATE: HostState = { port: DEFAULT_PORT, wizardOpened: false };
+export const DEFAULT_STATE: HostState = { port: DEFAULT_PORT, wizardOpened: false, startupAsked: false };
 
 export function parseHostState(raw: unknown): HostState {
   if (typeof raw !== "object" || raw === null) return { ...DEFAULT_STATE };
@@ -22,6 +29,7 @@ export function parseHostState(raw: unknown): HostState {
   return {
     port: isValidPort(record.port) ? record.port : DEFAULT_STATE.port,
     wizardOpened: record.wizardOpened === true,
+    startupAsked: record.startupAsked === true,
   };
 }
 

@@ -46,15 +46,16 @@ describe("host.json", () => {
   it("rend les défauts champ par champ pour un fichier abîmé", () => {
     expect(parseHostState(null)).toEqual(DEFAULT_STATE);
     expect(parseHostState({ port: 80, wizardOpened: "oui" })).toEqual(DEFAULT_STATE);
-    expect(parseHostState({ port: 8080 })).toEqual({ port: 8080, wizardOpened: false });
+    expect(parseHostState({ port: 8080 })).toEqual({ port: 8080, wizardOpened: false, startupAsked: false });
+    expect(parseHostState({ port: 8080, startupAsked: true })).toMatchObject({ startupAsked: true });
   });
 
   it("relit ce qu'il a écrit, et tolère un JSON cassé", () => {
     dir = mkdtempSync(join(tmpdir(), "host-state-"));
     const file = join(dir, "host.json");
     expect(readHostState(file)).toEqual(DEFAULT_STATE);
-    writeHostState(file, { port: 8090, wizardOpened: true });
-    expect(readHostState(file)).toEqual({ port: 8090, wizardOpened: true });
+    writeHostState(file, { port: 8090, wizardOpened: true, startupAsked: true });
+    expect(readHostState(file)).toEqual({ port: 8090, wizardOpened: true, startupAsked: true });
     writeFileSync(file, "{ cassé");
     expect(readHostState(file)).toEqual(DEFAULT_STATE);
     expect(readFileSync(file, "utf8")).toBe("{ cassé");
