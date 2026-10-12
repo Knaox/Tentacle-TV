@@ -34,6 +34,8 @@ type Props = Pick<
   header: DetailHeaderModel;
   actions?: DetailActionsModel;
   showTrailerHint?: boolean;
+  /** Titre que Jellyfin n'a pas trouvé : une phrase, rien de focalisable. */
+  showMetadataHint?: boolean;
   onFocusChange?: (focused: boolean) => void;
 };
 
@@ -62,6 +64,7 @@ export const DetailHeader = memo(function DetailHeader({
   header,
   actions,
   showTrailerHint,
+  showMetadataHint,
   onFocusChange,
   onOpenSeries,
   ...callbacks
@@ -103,6 +106,8 @@ export const DetailHeader = memo(function DetailHeader({
       ) : null}
       {header.synopsis ? <Text style={styles.synopsis} numberOfLines={showTrailerHint ? 3 : 4}>{header.synopsis}</Text> : null}
       {showTrailerHint ? <Text style={styles.hint} numberOfLines={2}>{t("trailerHelp:hintTv")}</Text> : null}
+      {/* Une TV jumelée n'administre pas Jellyfin : la phrase seule, sans bouton. */}
+      {showMetadataHint ? <Text style={styles.hint} numberOfLines={3}>{t("metadataHint:bodyTv")}</Text> : null}
     </Animated.View>
   );
 });
