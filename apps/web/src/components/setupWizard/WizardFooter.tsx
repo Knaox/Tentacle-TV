@@ -41,7 +41,7 @@ export function WizardFooter({ onBack, primary, secondary = [], status }: Wizard
   const { t } = useTranslation("setupWizard");
   return (
     <footer className="shrink-0 border-t border-line-subtle bg-[var(--surface-toolbar)] pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3">
-      <div className="mx-auto flex w-full max-w-[92rem] flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-6 lg:px-10">
+      <div className="mx-auto flex min-h-11 w-full max-w-[92rem] flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-6 lg:px-10">
         {status ? (
           <div aria-live="polite" className="order-first w-full text-sm leading-snug text-content-tertiary sm:order-none sm:w-auto sm:flex-1 sm:text-right">
             {status}

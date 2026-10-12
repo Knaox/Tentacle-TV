@@ -129,8 +129,9 @@ function WelcomePlan() {
 }
 
 /**
- * Le code d'installation : le champ dans le panneau, « Où le trouver ? » (un
- * onglet par façon de lire le journal du serveur) à gauche.
+ * Le code d'installation : le champ, puis « Où le trouver ? » (un onglet par
+ * façon de lire le journal du serveur) — dans le panneau, où ses commandes
+ * ont la largeur.
  */
 export function CodeScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
@@ -169,7 +170,6 @@ export function CodeScreen({ wizard }: { wizard: Wizard }) {
       title={t("codeTitle")}
       subtitle={t("codeSubtitle")}
       helpPackaging={host?.packaging}
-      aside={<CodeHelp host={host} defaultOpen={!prefilled} />}
       primary={{ label: t("codeSubmit"), form: formId, pending, disabled: code.trim().length < 12 }}
     >
       <form id={formId} onSubmit={(e) => void submit(e)} className="space-y-5">
@@ -189,6 +189,9 @@ export function CodeScreen({ wizard }: { wizard: Wizard }) {
         />
         <SetupErrorLine code={error} />
       </form>
+      <div className="mt-6">
+        <CodeHelp host={host} defaultOpen={!prefilled} />
+      </div>
     </WizardFrame>
   );
 }

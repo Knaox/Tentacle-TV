@@ -12,7 +12,8 @@ import { WizardFrame } from "./WizardFrame";
  * sont seulement rappelées) et propose ses réglages conseillés — la règle du
  * tableau de bord (`jellyfinAdvice`), les gestes de l'administration. Tous
  * facultatifs, décochables ; ce que l'administrateur a réglé autrement est
- * montré sans être coché ; « Passer » ne change rien.
+ * montré sans être coché ; « Passer » ne change rien. Ils sont nombreux :
+ * en grille, sur toute la largeur de l'écran.
  */
 export function RecommendedScreen({ wizard }: { wizard: Wizard }) {
   const { t } = useTranslation("setupWizard");
@@ -66,6 +67,7 @@ export function RecommendedScreen({ wizard }: { wizard: Wizard }) {
       wizard={wizard}
       title={t("recTitle")}
       subtitle={t("recSubtitle")}
+      layout="wide"
       aside={
         <p>
           {libraries === null
@@ -86,7 +88,7 @@ export function RecommendedScreen({ wizard }: { wizard: Wizard }) {
         {advice.length > 0 ? (
           <fieldset>
             <legend className="mb-3 text-xs font-semibold text-content-tertiary">{t("recLegend")}</legend>
-            <div className="grid gap-2 2xl:grid-cols-2">
+            <div className="grid gap-2 lg:grid-cols-2">
               {advice.map((item) => (
                 <AdviceRow key={item.id} advice={item} checked={selected.has(item.id)} onToggle={() => toggle(item.id)} />
               ))}

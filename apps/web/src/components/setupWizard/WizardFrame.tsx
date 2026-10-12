@@ -100,7 +100,7 @@ export function WizardFrame({ wizard, title, subtitle, hideProgress, helpPackagi
                 {t("progress", { n: wizard.position, total: wizard.total })}
               </p>
             )}
-            <h1 id="wizard-title" ref={heading} tabIndex={-1} className="mt-2 text-balance text-3xl font-extrabold tracking-tight text-content-primary focus:outline-none lg:text-4xl">
+            <h1 id="wizard-title" ref={heading} tabIndex={-1} className="mt-2 text-pretty text-3xl font-extrabold tracking-tight text-content-primary focus:outline-none lg:text-4xl">
               {title}
             </h1>
             {subtitle ? <p className="mt-3 max-w-prose text-base leading-relaxed text-content-secondary">{subtitle}</p> : null}
