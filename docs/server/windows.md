@@ -9,8 +9,8 @@ app that lives in the notification area, starts with your Windows session and is
 It needs **Jellyfin**, the free media server, on the same PC or elsewhere on your network: the setup wizard
 finds it, or offers to install it from jellyfin.org with your agreement.
 
-> The app has its own version number (from 1.0.0); the Tentacle server it carries has its own too, shown in
-> *Administration › Overview*. Lines marked *(to confirm)* describe behaviour that has not been tested on an
+> The app's first version is 1.0.0; after that, its number is the one of the Tentacle server it carries
+> (shown in *Administration › Overview*): app 1.28.0 ships server 1.28.0. Lines marked *(to confirm)* describe behaviour that has not been tested on an
 > installed package yet.
 
 ## Requirements

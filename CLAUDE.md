@@ -49,8 +49,8 @@ gh workflow run server.yml -f channel=store   # le serveur, par exemple
 ## Livraison (CI)
 
 **Source unique des versions : `versions.json` (racine)** — champs `desktop`,
-`tv`, `webos`, `mobile`, `server`, `serverWindows` (l'app Tentacle Server pour
-Windows — SA version, jamais celle du serveur qu'elle embarque), `minServer` (version serveur minimale exigée
+`tv`, `webos`, `mobile`, `server` (qui est AUSSI la version de l'app Tentacle
+Server pour Windows : plus de clé `serverWindows` depuis le 2026-10-12), `minServer` (version serveur minimale exigée
 par les clients — avertissement bloquant `useServerCompat.ts` ; au-dessus, les
 nouveautés se règlent par les CAPACITÉS du serveur, cf. plus bas). On change la version
 À UN SEUL ENDROIT, et c'est la CI qui l'écrit : `.github/scripts/bump-version.mjs`
@@ -70,6 +70,9 @@ clic l'état du contrôle qualité et la taille des notes de version par store.
 NI `targets` NI `promote` (`noTargets` / `noPromote` dans la page). Une entrée qu'un workflow ne
 déclare pas fait REFUSER le déclenchement (422 « Unexpected inputs provided ») ;
 une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
+`server.yml` déclare en plus `windows` (booléen, case « Livrer aussi Tentacle
+Server pour Windows » de la page) ; `server-windows.yml` déclare `sha`, que
+seul `server.yml` envoie.
 
 ### Les trois crans
 
@@ -145,15 +148,31 @@ Gardes propres à ce couple :
 
 ### Tentacle Server pour Windows — un serveur déjà livré, dans un paquet du Store
 
-`server-windows.yml` livre l'APP (`versions.json` → `serverWindows`, paquet
-`X.Y.Z.0`, tag `server-windows-vX.Y.Z`, notes `changelogs/server-windows.md`
-— 1 500 caractères par langue) ; le serveur qu'elle embarque reste celui de
-`server`, livré par `server.yml`. Décision : `lib/server-windows.mjs`, testée hors
-ligne, rejouée par `node .github/scripts/server-windows-plan.mjs plan --channel
-store --sha $(git rev-parse HEAD)`.
+**La version de l'app EST celle du serveur** (décision du 2026-10-12) :
+`versions.json` → `server`, paquet `X.Y.Z.0`, tag `server-windows-vX.Y.Z`
+(posé en fin de run au cran store), notes `## [X.Y.Z]` de
+`changelogs/server-windows.md` — 1 500 caractères par langue, ce qui change
+POUR L'APP, à écrire en plus du bloc de `server.md`. Plus de clé
+`serverWindows`. Seule exception, la **1.0.0**, construite à la main hors
+workflow (paquet `1.0.0.0`) : tout serveur livré depuis la dépasse, et le Store
+exige un paquet strictement croissant. **`server-windows.yml` ne bumpe rien** :
+son entrée `version` n'est qu'une garde (≠ `server` au commit figé → refus).
+Décision : `lib/server-windows.mjs`, testée hors ligne, rejouée par
+`node .github/scripts/server-windows-plan.mjs plan --channel store --sha $(git
+rev-parse HEAD) [--version X.Y.Z]`.
 
+- **Deux façons de livrer l'app.** (1) `server.yml` avec l'entrée **`windows`**
+  (case de la page) : au cran test ou store SEULEMENT (refusé avant le bump au
+  cran build, et une poussée sur `dev` n'a pas d'entrée), il joue le pré-vol de
+  l'app (variables, bloc `## [S]`), livre le serveur, puis — image publiée,
+  `:latest` basculé au cran store — déclenche `server-windows.yml` au même cran
+  et à la même version avec `sha` = son commit figé (le bump), par
+  `gh workflow run` et le `GITHUB_TOKEN` (`actions: write` : un
+  `workflow_dispatch` du jeton lance bien un run). (2) `server-windows.yml` seul
+  (page : `channel`, `version`) relivre l'app sur le serveur déjà livré.
 - **Les gardes de webOS** : `:vS` doit exister ; au cran store, `:latest` doit
-  DÉJÀ être ce serveur ; `minServer` ne dépasse pas `server`. Pré-vol AVANT le bump.
+  DÉJÀ être ce serveur ; `minServer` ne dépasse pas `server`. Pré-vol avant le
+  moindre build.
 - **Le client LG n'est jamais celui du commit** : extrait de `:latest` s'il sert
   ce serveur, sinon de `:vS` (empreinte épinglée, `docker create` + `cp`). Le
   serveur, lui, se construit depuis le commit (moteur Prisma de Windows) ; un
@@ -163,7 +182,8 @@ store --sha $(git rev-parse HEAD)`.
   `SERVER_WINDOWS_FLIGHT_ID`, plus l'identité de Partner Center
   (`SERVER_WINDOWS_IDENTITY_NAME`, `SERVER_WINDOWS_PUBLISHER`,
   `SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME`) ; absentes, test et store refusent
-  avant le bump, le cran build reste possible (identité de développement).
+  avant le moindre build (et `server.yml` avant son bump si `windows` est
+  coché), le cran build reste possible (identité de développement).
   Mêmes secrets `PARTNER_*` que le bureau.
 - **L'assemblage** est `pnpm --filter @tentacle-tv/server-windows assemble --
   --out <dossier> --version X.Y.Z.0 --tv-client <dossier>` : un dossier prêt

@@ -49,6 +49,17 @@ pnpm --filter @tentacle-tv/server-windows assemble -- --out <dossier> --version 
 pnpm --filter @tentacle-tv/server-windows pack:msix -- --dir <dossier> --msix <fichier.msix>
 ```
 
+- **La version du paquet est celle du SERVEUR** (`versions.json` → `server`,
+  paquet `X.Y.Z.0`), décision du 2026-10-12 : il n'y a plus de clé
+  `serverWindows`, et le `version` de ce `package.json` n'est pas lu (l'hôte
+  lit la sienne dans `AppxManifest.xml`). Seule exception, la 1.0.0 — paquet
+  `1.0.0.0`, assemblé à la main hors workflow. Ensuite, la CI : `server.yml`
+  avec la case `windows` (crans test et store) enchaîne `server-windows.yml` au
+  même cran et à la même version ; `server-windows.yml` seul relivre l'app sur
+  le serveur déjà livré, sans rien bumper. Notes : bloc `## [X.Y.Z]` (version
+  du serveur) de `changelogs/server-windows.md`. Détail : CLAUDE.md,
+  « Tentacle Server pour Windows ».
+
 - L'icône de la zone de notification est cherchée dans
   `apps/server-windows/assets/tray.ico` (généré depuis `brand/`), sinon celle
   du bureau (dépôt), sinon l'icône générique de Windows.

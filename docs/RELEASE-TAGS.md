@@ -52,8 +52,8 @@ veut le paquet à chaque soumission.
 | `mobile.yml` | `android` `ios` | Play `com.tentacletv.mobile` · App Store `com.tentacle.mobile` |
 | `tv.yml` | `androidtv` `appletv` | Play (MÊME fiche que le mobile, form factor TV) · App Store tvOS |
 | `webos.yml` | — (pas d'entrée) | Release GitHub — adresse permanente `webos-latest` · image serveur reconstruite avec le client LG |
-| `server.yml` | — (image seule, pas d'entrée) | `ghcr.io/knaox/tentacle-tv` + Release `server-vX.Y.Z` |
-| `server-windows.yml` | — (pas d'entrée) | Microsoft Store « Tentacle Server » (MSIX) : vol de paquet au cran test, fiche au cran store. Version : `versions.json` → `serverWindows` ; le serveur embarqué doit déjà être publié (`:vS`), et en service (`:latest`) au cran store. Détail : CLAUDE.md, « Tentacle Server pour Windows » |
+| `server.yml` | — (image seule, pas d'entrée) | `ghcr.io/knaox/tentacle-tv` + Release `server-vX.Y.Z` · entrée `windows` (booléen, crans test et store) : enchaîne `server-windows.yml` au même cran et à la même version |
+| `server-windows.yml` | — (pas d'entrée) | Microsoft Store « Tentacle Server » (MSIX) : vol de paquet au cran test, fiche au cran store. Version : celle du SERVEUR (`versions.json` → `server`, paquet `X.Y.Z.0`), jamais bumpée par ce workflow ; `server.yml` l'enchaîne avec son entrée `windows` (crans test et store) ; le serveur embarqué doit déjà être publié (`:vS`), et en service (`:latest`) au cran store. Détail : CLAUDE.md, « Tentacle Server pour Windows » |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
 cran `store`. C'est la CI qui les pose quand on demande une version : elle écrit
