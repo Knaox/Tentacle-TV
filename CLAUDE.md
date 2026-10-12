@@ -726,13 +726,20 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
   (`dismissAccountHint`) s'il n'y a toujours aucune clé — la recommandation `adminTmdbKey` du tableau de bord reste.
 - **Aide de l'assistant** : une page du site par étape, adresses STABLES dans
   `packages/shared/src/setupWizard/setupDocLinks.ts` (le site les tient ; jamais renommées), et « Besoin
-  d'aide ? » repliable au pied de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`). Un écran sans page
+  d'aide ? » repliable sous l'explication de chaque écran (`setupHelp.ts`, clés `help_<étape>_<id>_q|a`). Un écran sans page
   du site (`SetupStepWithoutDoc` : `tmdb`) n'a que ses questions — jamais une adresse inventée.
 - **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, état pur
   `wizardState.ts` (on ne va, n'avance, ne revient que DANS le parcours), chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
   le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
   le parcours que si `codeRequired` ; la langue des métadonnées est sous le compte (plus d'écran à part) —
   pour un Jellyfin neuf seulement. Liste Jellyfin : `JellyfinList` (pile, neufs, déjà configurés).
+  **Un seul cadre, PLEINE PAGE** (`WizardFrame`) : en-tête (les cinq grandes étapes de `wizardPhases.ts`, la
+  progression, la langue), l'explication à gauche et l'action dans un panneau à droite (`layout="wide"` pour
+  une grille : réglages conseillés, accès à distance ; une colonne sur un téléphone), un pied FIXE — « Retour »
+  et UNE action principale, toujours visibles. Seul le corps défile. Un formulaire garde ses champs dans le
+  panneau et son bouton au pied, relié par l'attribut `form` (Entrée l'envoie) ; jamais un bouton d'envoi
+  dans le panneau. Toute attente passe par `SetupWaiting` (anneau, phrase, barre si l'on sait mesurer),
+  tout refus par `SetupErrorLine` — jamais un squelette ni un « … » recopiés.
 - **Interface web désactivable** : `TENTACLE_WEB_UI=off` (commenté dans les deux piles) ou `tentacle web
   on|off|default|status` (fichier `data/web-ui`, relu toutes les 5 s, qui l'emporte sur la variable) —
   `static/webUi.ts`. Coupée : 404 pour le client web ; restent `/api` (sockets compris), `/tv`, `/.well-known`,
