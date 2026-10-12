@@ -35,6 +35,12 @@
 # apps/backend/package.json, commite et pousse — `minServer` reste à la main,
 # c'est une exigence et non une livraison.
 #
+# CETTE VERSION EST AUSSI CELLE DE TENTACLE SERVER POUR WINDOWS (décision du
+# 2026-10-12) : l'entrée `windows` (crans test et store) enchaîne, en fin de
+# run réussi, server-windows.yml au même cran et à la même version, sur le
+# commit figé de ce run — paquet S.0. Son pré-vol (variables du Store, bloc
+# ## [S] de changelogs/server-windows.md) se joue ici, AVANT le bump.
+#
 # Notes de la Release : changelogs/server.md (bloc « ## [X.Y.Z] », ### FR/### EN),
 # EXIGÉ par le pré-vol de `prepare` — un bloc manquant ne donne plus une Release
 # au corps vide, il arrête le run avant le build.
@@ -53,6 +59,13 @@ on:
         description: "Version X.Y.Z à livrer (vide = versions.json inchangé)"
         type: string
         default: ""
+      # Enchaîner Tentacle Server pour Windows (server-windows.yml) en fin de
+      # run réussi, au même cran et à la même version. Crans test et store
+      # seulement ; jamais par une poussée sur dev (aucune entrée).
+      windows:
+        description: "Livrer aussi Tentacle Server pour Windows (même cran, même version — test et store seulement)"
+        type: boolean
+        default: false
   # Le cran dev, et lui seul : ce qui change l'image du serveur, sur `dev`.
   push:
     branches: [dev]
@@ -93,6 +106,7 @@ jobs:
       version: ${{ steps.plan.outputs.version }}
       # Une poussée sur dev n'a pas d'entrées : c'est le cran dev.
       channel: ${{ inputs.channel || 'dev' }}
+      windows: ${{ steps.windows.outputs.windows }}
     steps:
       - name: Le cran dev ne bumpe jamais
         if: inputs.channel == 'dev' && inputs.version != ''
@@ -112,6 +126,40 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      # L'app Windows enchaînée ? Seulement aux crans test et store — refusé
+      # ici, AVANT le bump, plutôt qu'un run Windows qui échouerait après la
+      # livraison du serveur. Une poussée sur dev n'a pas d'entrées : jamais.
+      - name: Enchaîner Tentacle Server pour Windows ?
+        id: windows
+        env:
+          CHANNEL: ${{ inputs.channel || 'dev' }}
+          WINDOWS: ${{ inputs.windows || false }}
+        run: node .github/scripts/server-windows-plan.mjs follow-up --channel "$CHANNEL" --windows "$WINDOWS"
+
+      # Ce que server-windows.yml exigera, vérifié dès maintenant : où part la
+      # soumission, l'identité de Partner Center, et le bloc ## [S] de
+      # changelogs/server-windows.md (S = la version que ce run va livrer).
+      - name: Pré-vol de l'app Windows
+        if: steps.windows.outputs.windows == 'true'
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          WANTED: ${{ inputs.version }}
+          SERVER_WINDOWS_STORE_ID: ${{ vars.SERVER_WINDOWS_STORE_ID }}
+          SERVER_WINDOWS_FLIGHT_ID: ${{ vars.SERVER_WINDOWS_FLIGHT_ID }}
+          IDENTITY_NAME: ${{ vars.SERVER_WINDOWS_IDENTITY_NAME }}
+          PUBLISHER: ${{ vars.SERVER_WINDOWS_PUBLISHER }}
+          PUBLISHER_DISPLAY_NAME: ${{ vars.SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME }}
+        run: |
+          set -euo pipefail
+          node .github/scripts/server-windows-plan.mjs store --channel "$CHANNEL"
+          if [ -z "$IDENTITY_NAME" ] || [ -z "$PUBLISHER" ] || [ -z "$PUBLISHER_DISPLAY_NAME" ]; then
+            echo "::error::Variables SERVER_WINDOWS_IDENTITY_NAME, SERVER_WINDOWS_PUBLISHER et SERVER_WINDOWS_PUBLISHER_DISPLAY_NAME requises pour livrer l'app Windows (Partner Center › Identité du produit)."
+            exit 1
+          fi
+          VERSION="${WANTED:-$(jq -r .server versions.json)}"
+          node .github/scripts/check-changelog.mjs \
+            --changelog changelogs/server-windows.md --version "$VERSION" --check msstore
 
       - name: Bump versions.json (si une version est demandée)
         id: bump
@@ -178,3 +226,41 @@ jobs:
       app: server
       tag: server-v${{ needs.prepare.outputs.version }}
       sha: ${{ needs.prepare.outputs.sha }}
+
+  # ── Tentacle Server pour Windows, enchaîné (entrée `windows`) ──────────────
+  # Une fois l'image publiée — et `:latest` basculé au cran store —, le paquet
+  # du Store suit, au MÊME cran et à la MÊME version : celle du serveur, que ce
+  # run vient d'écrire (pas de bump côté Windows). server-windows.yml reçoit le
+  # commit figé de ce run (`sha`, celui du bump) ; ses gardes (« :vS » existe,
+  # `:latest` = ce serveur au cran store) passent donc d'elles-mêmes.
+  # GITHUB_TOKEN PEUT déclencher un workflow_dispatch (c'est l'exception à « un
+  # évènement du jeton ne lance aucun workflow ») : `actions: write` suffit.
+  windows:
+    name: Enchaîner l'app Windows
+    needs: [prepare, image]
+    if: needs.prepare.outputs.windows == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+    steps:
+      - name: Déclencher server-windows.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANNEL: ${{ needs.prepare.outputs.channel }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          set -euo pipefail
+          # Le bump est poussé sur main (action push-main) : son commit ne se
+          # trouve que là. Sans bump, la branche lancée.
+          REF="$GITHUB_REF_NAME"
+          if [ "$SHA" != "$GITHUB_SHA" ]; then REF=main; fi
+          gh workflow run server-windows.yml --repo "$GITHUB_REPOSITORY" --ref "$REF" \
+            -f channel="$CHANNEL" -f version="$VERSION" -f sha="$SHA"
+          echo "Tentacle Server pour Windows ${VERSION} lancé au cran ${CHANNEL} (commit ${SHA:0:8})."
+          {
+            echo "### Tentacle Server pour Windows"
+            echo ""
+            echo "Lancé au cran \`${CHANNEL}\`, version \`${VERSION}\` (commit \`${SHA:0:8}\`) : voir le workflow « Release Server Windows »."
+          } >> "$GITHUB_STEP_SUMMARY"
