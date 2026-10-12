@@ -10,6 +10,23 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.27.0]
+### FR
+- **Tentacle Server pour Windows** : le serveur de cette version est aussi celui de la nouvelle application du Microsoft Store, qui l'installe sur un PC sans Docker
+- **Assistant d'installation repensé** : il occupe toute la page, une étape par écran, avec moins de défilement ; sous Windows, il propose d'installer Jellyfin et suit son installation jusqu'au démarrage
+- **Un titre sans images ni résumé s'ouvre normalement** : sa fiche ne reste plus vide, une affiche de remplacement s'affiche et la lecture est possible tout de suite
+- **« Réanalyser maintenant »** : un message explique que les métadonnées viennent de Jellyfin, et l'administrateur peut relancer une vraie analyse du titre ou des bibliothèques ; la fiche se met à jour seule
+- **Quitter une vidéo l'arrête vraiment** : le son et l'image ne continuent plus en fond sur la fiche, et le bouton « Lecture » répond à tous les coups
+- Une série dont les épisodes n'ont pas de numéro de saison garde son bouton « Lecture »
+
+### EN
+- **Tentacle Server for Windows**: this server release is also the one inside the new Microsoft Store app, which installs it on a PC without Docker
+- **Redesigned setup wizard**: it fills the whole page, one step per screen, with less scrolling; on Windows, it offers to install Jellyfin and follows its installation until it starts
+- **A title without images or overview opens normally**: its page no longer stays blank, a placeholder poster shows and playback works right away
+- **“Rescan now”**: a message explains that metadata comes from Jellyfin, and the administrator can run a real scan of the title or the libraries; the page updates by itself
+- **Leaving a video really stops it**: sound and picture no longer keep playing behind the details page, and the “Play” button always responds
+- A series whose episodes have no season number keeps its “Play” button
+
 ## [1.26.0]
 ### FR
 - **Bandes-annonces sur Apple TV et Android TV : qualité et sous-titres.** Le serveur propose désormais chaque définition de la bande-annonce (de 360p à 1080p) et ses sous-titres, relayés comme la vidéo : les téléviseurs à jour (TV 1.10.2) les offrent dans leur nouveau lecteur simplifié. Les sous-titres sont ceux de YouTube : la piste posée par la chaîne, sinon la transcription automatique de la langue d'origine — jamais une traduction automatique, que YouTube refuse à un serveur
