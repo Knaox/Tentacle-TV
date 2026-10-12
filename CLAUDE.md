@@ -71,8 +71,8 @@ NI `targets` NI `promote` (`noTargets` / `noPromote` dans la page). Une entrée 
 déclare pas fait REFUSER le déclenchement (422 « Unexpected inputs provided ») ;
 une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
 `server.yml` déclare en plus `windows` (booléen, case « Livrer aussi Tentacle
-Server pour Windows » de la page) ; `server-windows.yml` déclare `sha`, que
-seul `server.yml` envoie.
+Server pour Windows » de la page : un seul run, image Docker + paquet Windows) ;
+`server-windows.yml` déclare aussi `sha`, que la page n'envoie jamais.
 
 ### Les trois crans
 
@@ -104,8 +104,8 @@ lieu de laisser la reprise échouer pendant que Windows part seul au Store.
 | `mobile.yml` | `android` · `ios` |
 | `tv.yml` | `androidtv` · `appletv` |
 | `webos.yml` | aucune entrée `targets` — l'IPK ET le client servi sous `/tv` |
-| `server.yml` | aucune entrée `targets` — l'image Docker EST le serveur |
-| `server-windows.yml` | aucune entrée `targets` — le paquet MSIX de Tentacle Server pour Windows |
+| `server.yml` | aucune entrée `targets` — l'image Docker EST le serveur ; `windows` y ajoute le paquet Windows, dans le même run |
+| `server-windows.yml` | aucune entrée `targets` — le paquet MSIX de Tentacle Server pour Windows ; aussi RÉUTILISABLE (`workflow_call`, appelé par `server.yml`) |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
 cran `store` ; c'est la CI qui les pose quand on demande une version. Un septième
@@ -161,15 +161,21 @@ Décision : `lib/server-windows.mjs`, testée hors ligne, rejouée par
 `node .github/scripts/server-windows-plan.mjs plan --channel store --sha $(git
 rev-parse HEAD) [--version X.Y.Z]`.
 
-- **Deux façons de livrer l'app.** (1) `server.yml` avec l'entrée **`windows`**
-  (case de la page) : au cran test ou store SEULEMENT (refusé avant le bump au
-  cran build, et une poussée sur `dev` n'a pas d'entrée), il joue le pré-vol de
-  l'app (variables, bloc `## [S]`), livre le serveur, puis — image publiée,
-  `:latest` basculé au cran store — déclenche `server-windows.yml` au même cran
-  et à la même version avec `sha` = son commit figé (le bump), par
-  `gh workflow run` et le `GITHUB_TOKEN` (`actions: write` : un
-  `workflow_dispatch` du jeton lance bien un run). (2) `server-windows.yml` seul
-  (page : `channel`, `version`) relivre l'app sur le serveur déjà livré.
+- **Un seul run : image Docker + paquet Windows.** `server.yml` avec l'entrée
+  **`windows`** (case de la page) : au cran test ou store SEULEMENT (refusé
+  avant le bump au cran build ; une poussée sur `dev` n'a pas d'entrée), il joue
+  le pré-vol de l'app (variables, bloc `## [S]`), publie l'image, puis — image
+  publiée, `:latest` basculé au cran store — APPELLE `server-windows.yml` comme
+  un job (`workflow_call`, `secrets: inherit`, sur le modèle de
+  `server-image.yml`) au même cran, à la même version, avec `sha` = son commit
+  figé (le bump) : pas de second bump. Le job d'appel donne `contents: write`
+  (tag), `actions: read`, `packages: read` — plafond des jobs appelés.
+  Appelé, `github.*` est celui de server.yml (jamais le bump) : seul
+  `inputs.sha` fait foi, aucune condition sur `github.event_name`, et la
+  concurrence (`release-server-windows`) est au niveau du JOB qui soumet.
+- **Relivrer l'app seule** : `server-windows.yml` garde `workflow_dispatch`
+  (page : `channel`, `version`) et le tag `server-windows-v*`, sur le serveur
+  déjà livré.
 - **Les gardes de webOS** : `:vS` doit exister ; au cran store, `:latest` doit
   DÉJÀ être ce serveur ; `minServer` ne dépasse pas `server`. Pré-vol avant le
   moindre build.

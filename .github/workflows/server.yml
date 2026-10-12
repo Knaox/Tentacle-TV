@@ -36,9 +36,10 @@
 # c'est une exigence et non une livraison.
 #
 # CETTE VERSION EST AUSSI CELLE DE TENTACLE SERVER POUR WINDOWS (décision du
-# 2026-10-12) : l'entrée `windows` (crans test et store) enchaîne, en fin de
-# run réussi, server-windows.yml au même cran et à la même version, sur le
-# commit figé de ce run — paquet S.0. Son pré-vol (variables du Store, bloc
+# 2026-10-12) : avec l'entrée `windows` (crans test et store), UN SEUL RUN livre
+# l'image Docker PUIS le paquet Windows — server-windows.yml appelé comme un job
+# (workflow_call), au même cran, à la même version, sur le commit figé de ce
+# run — paquet S.0. Son pré-vol (variables du Store, bloc
 # ## [S] de changelogs/server-windows.md) se joue ici, AVANT le bump.
 #
 # Notes de la Release : changelogs/server.md (bloc « ## [X.Y.Z] », ### FR/### EN),
@@ -227,40 +228,28 @@ jobs:
       tag: server-v${{ needs.prepare.outputs.version }}
       sha: ${{ needs.prepare.outputs.sha }}
 
-  # ── Tentacle Server pour Windows, enchaîné (entrée `windows`) ──────────────
-  # Une fois l'image publiée — et `:latest` basculé au cran store —, le paquet
-  # du Store suit, au MÊME cran et à la MÊME version : celle du serveur, que ce
-  # run vient d'écrire (pas de bump côté Windows). server-windows.yml reçoit le
-  # commit figé de ce run (`sha`, celui du bump) ; ses gardes (« :vS » existe,
-  # `:latest` = ce serveur au cran store) passent donc d'elles-mêmes.
-  # GITHUB_TOKEN PEUT déclencher un workflow_dispatch (c'est l'exception à « un
-  # évènement du jeton ne lance aucun workflow ») : `actions: write` suffit.
+  # ── Tentacle Server pour Windows, dans le MÊME run (entrée `windows`) ──────
+  # Un seul run : image Docker + paquet Windows. Une fois l'image publiée — et
+  # `:latest` basculé au cran store (le job `image` comprend la bascule et la
+  # Release) —, server-windows.yml est APPELÉ comme un job (workflow_call) au
+  # MÊME cran, à la MÊME version (celle que ce run vient d'écrire), sur le MÊME
+  # commit figé : pas de second bump. Ses gardes (« :vS » existe, `:latest` = ce
+  # serveur au cran store) passent donc d'elles-mêmes. Le cran dev ne l'appelle
+  # jamais (`follow-up` le refuse ; une poussée sur dev n'a pas d'entrée).
+  # Les permissions données ici bornent celles des jobs appelés : contents
+  # write pour le tag server-windows-vS, actions read pour la garde qualité,
+  # packages read pour le registre.
   windows:
-    name: Enchaîner l'app Windows
+    name: Tentacle Server pour Windows
     needs: [prepare, image]
     if: needs.prepare.outputs.windows == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    uses: ./.github/workflows/server-windows.yml
     permissions:
-      actions: write
-    steps:
-      - name: Déclencher server-windows.yml
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHANNEL: ${{ needs.prepare.outputs.channel }}
-          VERSION: ${{ needs.prepare.outputs.version }}
-          SHA: ${{ needs.prepare.outputs.sha }}
-        run: |
-          set -euo pipefail
-          # Le bump est poussé sur main (action push-main) : son commit ne se
-          # trouve que là. Sans bump, la branche lancée.
-          REF="$GITHUB_REF_NAME"
-          if [ "$SHA" != "$GITHUB_SHA" ]; then REF=main; fi
-          gh workflow run server-windows.yml --repo "$GITHUB_REPOSITORY" --ref "$REF" \
-            -f channel="$CHANNEL" -f version="$VERSION" -f sha="$SHA"
-          echo "Tentacle Server pour Windows ${VERSION} lancé au cran ${CHANNEL} (commit ${SHA:0:8})."
-          {
-            echo "### Tentacle Server pour Windows"
-            echo ""
-            echo "Lancé au cran \`${CHANNEL}\`, version \`${VERSION}\` (commit \`${SHA:0:8}\`) : voir le workflow « Release Server Windows »."
-          } >> "$GITHUB_STEP_SUMMARY"
+      contents: write
+      actions: read
+      packages: read
+    with:
+      channel: ${{ needs.prepare.outputs.channel }}
+      version: ${{ needs.prepare.outputs.version }}
+      sha: ${{ needs.prepare.outputs.sha }}
+    secrets: inherit

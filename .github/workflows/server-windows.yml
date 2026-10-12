@@ -14,13 +14,19 @@
 # bien S ») : un écart avec versions.json → server au commit figé refuse.
 #
 # DEUX FAÇONS DE LE LANCER :
-#   • seul, depuis la page de déploiement (relivrer l'app sur le serveur déjà
-#     livré) : `channel` et `version` ;
-#   • enchaîné par server.yml (entrée `windows`), en fin de run réussi, au MÊME
-#     cran et à la MÊME version, avec en plus `sha` : le commit figé du run
-#     serveur (son bump). Les gardes ci-dessous passent alors d'elles-mêmes,
-#     server.yml venant de publier « :vS » (et de basculer `:latest` au cran
-#     store).
+#   • APPELÉ par server.yml (`workflow_call`, entrée `windows` du serveur) :
+#     UN SEUL RUN, image Docker + paquet Windows. Le job d'appel attend la
+#     publication de l'image (et la bascule de `:latest` au cran store), puis
+#     passe le MÊME cran, la MÊME version et le MÊME commit figé (`sha`, son
+#     bump) : pas de second bump. Les gardes ci-dessous passent d'elles-mêmes.
+#   • seul (`workflow_dispatch`, depuis la page de déploiement, ou un tag
+#     `server-windows-v*`) : relivrer l'app sur le serveur déjà livré, avec
+#     `channel` et `version`.
+# PIÈGES DE L'APPEL : `github.*` est celui de l'APPELANT (évènement
+# workflow_dispatch de server.yml, sa branche, son commit de départ — jamais le
+# bump) ; d'où le commit figé lu dans `inputs.sha`, et aucune condition sur
+# `github.event_name`. La concurrence se tient au niveau du JOB qui soumet,
+# jamais du workflow (elle s'ajouterait à celle de l'appelant).
 #
 # LE PAQUET EMBARQUE UN SERVEUR DÉJÀ LIVRÉ, avec les mêmes règles que webOS :
 #   • au cran store, refus si l'image en service (`:latest`) n'est pas DÉJÀ le
@@ -70,18 +76,26 @@ on:
         description: "Version X.Y.Z attendue = celle du serveur (versions.json → server). Rien n'est bumpé ; vide = celle de versions.json"
         type: string
         default: ""
-      # Posé par server.yml seulement (la page de déploiement ne l'envoie pas) :
-      # le commit figé du run serveur. Vide = le commit du déclenchement.
+      # La page de déploiement ne l'envoie pas : vide = le commit du déclenchement.
       sha:
-        description: "Commit à livrer (posé par server.yml ; vide = celui du déclenchement)"
+        description: "Commit à livrer (vide = celui du déclenchement)"
         type: string
         default: ""
-
-# Pas d'annulation : deux runs soumettraient au même produit, et le second
-# supprimerait la soumission pendante du premier.
-concurrency:
-  group: release-server-windows
-  cancel-in-progress: false
+  # server.yml, entrée `windows` : le même run que l'image Docker.
+  workflow_call:
+    inputs:
+      channel:
+        description: "test | store (server.yml n'appelle qu'à ces crans)"
+        type: string
+        required: true
+      version:
+        description: "La version que le run serveur vient de livrer (garde)"
+        type: string
+        required: true
+      sha:
+        description: "Le commit figé par le prepare de server.yml (son bump)"
+        type: string
+        required: true
 
 env:
   IMAGE: ghcr.io/knaox/tentacle-tv
@@ -116,8 +130,10 @@ jobs:
           fetch-depth: 0
 
       # Le commit livré : celui que server.yml a figé (son bump) s'il l'envoie,
-      # sinon celui du déclenchement. Il doit appartenir à la branche lancée —
-      # jamais un commit étranger, ni un SHA abrégé.
+      # sinon celui du déclenchement. Il doit appartenir à la branche lancée
+      # OU à main (le bump y est poussé APRÈS le départ du run : il n'est pas
+      # un ancêtre du commit de départ) — jamais un commit étranger, ni un SHA
+      # abrégé. fetch-depth 0 a rapatrié toutes les branches.
       - name: Commit figé
         id: sha
         env:
@@ -129,8 +145,9 @@ jobs:
             echo "::error::Entrée « sha » illisible : « ${SHA} » (40 caractères hexadécimaux attendus)."
             exit 1
           fi
-          if ! git merge-base --is-ancestor "$SHA" HEAD 2>/dev/null; then
-            echo "::error::Le commit ${SHA} n'appartient pas à ${GITHUB_REF_NAME} : rien ne part."
+          if ! git merge-base --is-ancestor "$SHA" HEAD 2>/dev/null \
+             && ! git merge-base --is-ancestor "$SHA" origin/main 2>/dev/null; then
+            echo "::error::Le commit ${SHA} n'appartient ni à ${GITHUB_REF_NAME} ni à main : rien ne part."
             exit 1
           fi
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
@@ -245,6 +262,12 @@ jobs:
     needs: prepare
     runs-on: windows-latest
     timeout-minutes: 90
+    # Pas d'annulation : deux runs soumettraient au même produit, et le second
+    # supprimerait la soumission pendante du premier. Au niveau du JOB : appelé
+    # par server.yml, un groupe de workflow s'ajouterait au sien.
+    concurrency:
+      group: release-server-windows
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:

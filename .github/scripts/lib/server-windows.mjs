@@ -174,7 +174,8 @@ export function storeTarget({ channel, storeId = '', flightId = '' }) {
  * n'est pas publiée (« :vS » manquerait) ; au cran dev, jamais — `:dev` n'est
  * pas une livraison. Refusé AVANT le bump, plutôt qu'un run Windows qui
  * échouerait après la livraison du serveur.
- * @returns {boolean} true = déclencher server-windows.yml en fin de run
+ * @returns {boolean} true = appeler server-windows.yml (workflow_call) dans le
+ *   même run, une fois l'image publiée
  */
 export function windowsFollowUp({ channel, windows }) {
   if (!windows) return false;

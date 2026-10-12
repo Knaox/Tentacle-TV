@@ -54,8 +54,9 @@ pnpm --filter @tentacle-tv/server-windows pack:msix -- --dir <dossier> --msix <f
   `serverWindows`, et le `version` de ce `package.json` n'est pas lu (l'hôte
   lit la sienne dans `AppxManifest.xml`). Seule exception, la 1.0.0 — paquet
   `1.0.0.0`, assemblé à la main hors workflow. Ensuite, la CI : `server.yml`
-  avec la case `windows` (crans test et store) enchaîne `server-windows.yml` au
-  même cran et à la même version ; `server-windows.yml` seul relivre l'app sur
+  avec la case `windows` (crans test et store) livre, DANS LE MÊME RUN, l'image
+  Docker puis le paquet (`server-windows.yml` appelé comme un job), au même
+  cran et à la même version ; `server-windows.yml` seul relivre l'app sur
   le serveur déjà livré, sans rien bumper. Notes : bloc `## [X.Y.Z]` (version
   du serveur) de `changelogs/server-windows.md`. Détail : CLAUDE.md,
   « Tentacle Server pour Windows ».
