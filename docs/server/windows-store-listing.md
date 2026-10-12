@@ -176,20 +176,27 @@ yt-dlp par Python embarquable, règle de pare-feu sans port, sélecteur de dossi
 
 ## Captures et visuels à faire
 
-Captures de bureau, 1920 × 1080 (le Store accepte de 1366 × 768 à 3840 × 2160), une série FR et une série EN,
-navigateur sans favoris ni extensions, **aucun logo de Jellyfin visible** (onglets compris).
+Tout est rangé, avec le champ de Partner Center de chaque fichier, dans
+[`store-assets/README.md`](store-assets/README.md). Captures de bureau 1920 × 1080 (le Store accepte de
+1366 × 768 à 3840 × 2160), une série FR et une série EN, **aucun logo de Jellyfin visible** (onglets compris).
 
-| # | Capture | À montrer |
+Visuels de la fiche — FAITS, tirés de `brand/` (`store.py`, `generate-icons.py --write brand/store/server`),
+jamais retouchés à la main : affiche 9:16 en 720 × 1080 et 1440 × 2160, zone 1:1 en 1080 × 1080 et
+2160 × 2160, dans `brand/store/server/`.
+
+| # | Capture | État |
 |---|---|---|
-| 1 | Tableau de bord de l'administration | serveur en marche, « Mise à jour par le Microsoft Store » sur la carte du serveur |
-| 2 | Icône et son menu | le menu ouvert au-dessus de la barre des tâches, état « En marche, port 3000 » |
-| 3 | Assistant, étape Jellyfin | la liste des Jellyfin et le bouton « Installer Jellyfin » |
-| 4 | Assistant, bibliothèques | le sélecteur de dossiers de l'Explorateur sur `D:\Films` |
-| 5 | Accès à distance | le panneau de l'administration, adresses réglées |
-| 6 | Le résultat | l'accueil de Tentacle TV sur le bureau ou une TV, bibliothèque de démonstration libre de droits |
-
-Visuels de la fiche : logo carré 300 × 300 et illustrations du Store, tirés de `brand/` par
-`brand/generate-icons.py` (cible du paquet ajoutée par le fil D), jamais retouchés à la main.
+| 1 | Assistant, accueil | faite (`store-assets/{fr,en}/01-welcome.png`) |
+| 2 | Assistant, étape Jellyfin : « Télécharger et installer Jellyfin » | faite (`02-jellyfin.png`) |
+| 3 | Installation de Jellyfin suivie en trois étapes | faite (`03-jellyfin-install.png`) |
+| 4 | Jellyfin installé, dans la liste | faite (`04-jellyfin-ready.png`) |
+| 5 | Bibliothèques, choisies avec l'Explorateur (`D:\Films`) | faite (`05-libraries.png`) |
+| 6 | Récapitulatif | faite (`06-recap.png`) |
+| 7 | Icône et son menu, « En marche, port 3000 » | à prendre dans la VM (marche à suivre dans le README) |
+| 8 | Écran de démarrage | à prendre dans la VM (idem) |
+| 9 | Tableau de bord, « Mise à jour par le Microsoft Store » | à prendre dans la VM, app installée |
+| 10 | Accès à distance, adresses réglées | à prendre dans la VM, app installée |
+| 11 | Le résultat : l'accueil de Tentacle TV | bibliothèque libre de droits seulement |
 
 ## Reste à confirmer
 
