@@ -34,6 +34,12 @@ describe("protocole hôte ↔ serveur", () => {
       .toEqual({ type: "tentacle:startup-failed", reason: "port_in_use", detail: "3000" });
   });
 
+  it("une étape du démarrage se lit ; une étape inconnue est ignorée", () => {
+    expect(parseServerMessage({ type: "tentacle:progress", stage: "database" })).toEqual({ type: "tentacle:progress", stage: "database" });
+    expect(parseServerMessage({ type: "tentacle:progress", stage: "coffee" })).toBeNull();
+    expect(parseServerMessage({ type: "tentacle:progress" })).toBeNull();
+  });
+
   it("les codes de sortie et l'arrêt borné tiennent dans la grâce de l'hôte", () => {
     expect(SERVER_EXIT_CODES).toEqual({ STOPPED: 0, FAILED: 1, RESTART: 75 });
     expect(SHUTDOWN_TIMINGS.backgroundStopMs + SHUTDOWN_TIMINGS.httpCloseMs + SHUTDOWN_TIMINGS.databaseCloseMs).toBeLessThan(SHUTDOWN_TIMINGS.hostGraceMs);

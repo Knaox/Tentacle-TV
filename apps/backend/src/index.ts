@@ -82,7 +82,7 @@ import { stopWatchTime } from "./services/watchTime/collector";
 import { startBackgroundServices } from "./services/backgroundServices";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { serverShutdown } from "./services/lifecycle/serverShutdown";
-import { announceReady, beginServerLifecycle, failStartup, startupFailureOf } from "./serverHost/serverLifecycle";
+import { announceProgress, announceReady, beginServerLifecycle, failStartup, startupFailureOf } from "./serverHost/serverLifecycle";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 import { registerBodyParsers } from "./services/bodyParsers";
 import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
@@ -103,6 +103,7 @@ async function main() {
   // Une installation qui AVAIT une MariaDB, plus configurée : jamais une base vide à sa place.
   else if (orphanedLegacyInstallation()) await holdOrphanedInstallation(() => startMigrationMaintenance(PORT, HOST));
 
+  announceProgress("server");
   const app = Fastify({
     logger: {
       // Ni jeton, ni mot de passe, ni clé — où qu'un appel de journal les mette.
@@ -304,6 +305,7 @@ async function main() {
   // Une MariaDB d'avant 1.25 attend sa migration : on ne crée pas de base vide
   // à côté (elle passerait pour la nôtre, et la migration n'aurait plus lieu).
   // Relevé AVANT toute ouverture par Prisma (il lit tentacle.db par node:sqlite).
+  announceProgress("database");
   const legacy = legacySourceState();
   if (legacy === "pending") {
     console.warn("[db] Une base MariaDB est configurée et n'a pas encore été migrée vers SQLite : ses données attendent leur migration. MariaDB n'est pas modifiée.");
@@ -349,6 +351,7 @@ async function main() {
     // Une base née d'une migration : le cache TMDB copié en fond, l'ancienne base contrôlée.
     startPostMigrationTasks();
     startBackgroundServices();
+    announceProgress("extensions");
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }
