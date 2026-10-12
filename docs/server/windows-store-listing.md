@@ -121,8 +121,37 @@ Règles de la fiche, à ne pas défaire :
 | Politique de confidentialité | la même URL que l'app de bureau (à reprendre de sa fiche) |
 | Configuration requise | Windows 10 version 2004 (build 19041) ou plus récent, x64 ; Jellyfin 10.10 ou plus récent ; réseau local |
 | Copyright | © Tentacle TV |
-| « Quoi de neuf » | bloc `## [X.Y.Z]` de `changelogs/server-windows.md` (fil E), 1 500 caractères par langue |
+| « Quoi de neuf » | 1.0.0 : la section ci-dessous, collée à la main. Ensuite : LES MÊMES notes que le serveur, bloc `## [X.Y.Z]` de `changelogs/server.md` (aucun fichier à part, aucun bloc `## [win-…]`), 1 500 caractères par langue, coupées à la puce au-delà — le pré-vol dit de combien |
 | Âge (questionnaire IARC) | aucun contenu fourni par l'app ; contenu choisi par l'utilisateur sur son propre serveur |
+
+## Quoi de neuf de la 1.0.0
+
+La première soumission est faite à la main (paquet `1.0.0.0`, hors workflow) :
+ces deux textes se collent dans « Quoi de neuf dans cette version » de la
+fiche, FR puis EN. Ils viennent de l'ancien `changelogs/server-windows.md`,
+retiré le 2026-10-12 : à partir de la version suivante, l'app porte la version
+du serveur et publie ses notes (`changelogs/server.md`).
+
+### FR
+- **Tentacle Server arrive sur Windows** : le serveur Tentacle s'installe depuis le Microsoft Store, sans Docker ni ligne de commande
+- **Une icône dans la zone de notification** pour ouvrir l'administration, lire le journal, redémarrer ou quitter le serveur
+- **Démarre avec Windows**, à l'ouverture de session — une case du menu, que les Paramètres de Windows gardent sous votre contrôle
+- **Un écran de démarrage dès le lancement** : l'étape en cours, puis l'assistant — et une seule question, lancer Tentacle Server avec Windows
+- **L'assistant d'installation s'ouvre au premier lancement** : il trouve Jellyfin sur ce PC, l'installe et le démarre au besoin, et vous guide jusqu'à vos bibliothèques
+- **Vos données sont gardées** dans `C:\ProgramData\Tentacle Server` : une désinstallation ne les efface pas, et une réinstallation reprend le serveur tel quel
+- Nécessite Jellyfin, serveur multimédia gratuit, installé sur ce PC ou sur une autre machine du réseau
+
+### EN
+- **Tentacle Server comes to Windows**: install the Tentacle server from the Microsoft Store, no Docker and no command line
+- **A notification area icon** to open the dashboard, read the log, restart or quit the server
+- **Starts with Windows**, at sign-in — one menu checkbox, kept under your control in Windows Settings
+- **A startup screen as soon as it launches**: the current step, then the wizard — and a single question, start Tentacle Server with Windows
+- **The setup wizard opens on first launch**: it finds Jellyfin on this PC, installs and starts it if needed, and walks you to your libraries
+- **Your data is kept** in `C:\ProgramData\Tentacle Server`: uninstalling does not erase it, and reinstalling picks the server up as it was
+- Requires Jellyfin, the free media server, installed on this PC or on another machine on your network
+
+> Le Store affiche du texte brut : retirer les `**` et les `` ` `` au collage
+> (c'est ce que fait la CI pour les versions suivantes, `toPlainText`).
 
 ## Notes de certification (Options de soumission › Notes pour la certification)
 

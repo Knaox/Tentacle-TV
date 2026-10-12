@@ -5,7 +5,8 @@
 //
 // LA VERSION DE L'APP EST CELLE DU SERVEUR (décision du 2026-10-12). Plus de
 // ligne à part : versions.json → server donne le paquet (S → MSIX S.0), le tag
-// `server-windows-vS` et le bloc `## [S]` de changelogs/server-windows.md. Seule
+// `server-windows-vS` et les notes — le bloc `## [S]` de changelogs/server.md,
+// LE MÊME texte que la Release du serveur (WINDOWS_NOTES). Seule
 // exception, la 1.0.0, construite à la main hors workflow : tout serveur livré
 // depuis (≥ 1.27.0) la dépasse, et le Store exige un paquet strictement croissant.
 // Ce workflow ne bumpe donc RIEN : la version, c'est server.yml qui l'écrit.
@@ -29,6 +30,14 @@ export const TV_CLIENT_PATH = '/app/apps/tv-webos/client/dist';
 
 /** Ce qui, dans l'arbre, devient le serveur embarqué (comparé à « :vS »). */
 export const SERVER_PATHS = ['apps/backend', 'apps/web', 'packages', 'compat'];
+
+/**
+ * Les « Nouveautés » de la fiche : celles du SERVEUR, bloc nu `## [S]`, jamais
+ * un fichier à part ni un bloc par canal (`## [win-S]`) — un seul texte, mesuré
+ * contre la limite du Microsoft Store (1 500 caractères par langue, coupé à la
+ * puce au-delà, check-changelog.mjs dit de combien).
+ */
+export const WINDOWS_NOTES = 'changelogs/server.md';
 
 /** Le tag qu'une livraison de l'app pose et accepte comme déclencheur. */
 export const windowsTag = (version) => `server-windows-v${version}`;

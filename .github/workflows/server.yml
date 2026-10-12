@@ -39,8 +39,9 @@
 # 2026-10-12) : avec l'entrée `windows` (crans test et store), UN SEUL RUN livre
 # l'image Docker PUIS le paquet Windows — server-windows.yml appelé comme un job
 # (workflow_call), au même cran, à la même version, sur le commit figé de ce
-# run — paquet S.0. Son pré-vol (variables du Store, bloc
-# ## [S] de changelogs/server-windows.md) se joue ici, AVANT le bump.
+# run — paquet S.0. Ses notes sont CELLES DU SERVEUR (même bloc ## [S] de
+# changelogs/server.md, mesuré aussi contre la limite du Microsoft Store). Son
+# pré-vol (variables du Store, ce bloc) se joue ici, AVANT le bump.
 #
 # Notes de la Release : changelogs/server.md (bloc « ## [X.Y.Z] », ### FR/### EN),
 # EXIGÉ par le pré-vol de `prepare` — un bloc manquant ne donne plus une Release
@@ -60,9 +61,9 @@ on:
         description: "Version X.Y.Z à livrer (vide = versions.json inchangé)"
         type: string
         default: ""
-      # Enchaîner Tentacle Server pour Windows (server-windows.yml) en fin de
-      # run réussi, au même cran et à la même version. Crans test et store
-      # seulement ; jamais par une poussée sur dev (aucune entrée).
+      # Livrer AUSSI Tentacle Server pour Windows dans ce run (server-windows.yml
+      # appelé après l'image), au même cran, à la même version, avec les mêmes
+      # notes. Crans test et store seulement ; jamais par une poussée sur dev.
       windows:
         description: "Livrer aussi Tentacle Server pour Windows (même cran, même version — test et store seulement)"
         type: boolean
@@ -140,7 +141,10 @@ jobs:
 
       # Ce que server-windows.yml exigera, vérifié dès maintenant : où part la
       # soumission, l'identité de Partner Center, et le bloc ## [S] de
-      # changelogs/server-windows.md (S = la version que ce run va livrer).
+      # changelogs/server.md (S = la version que ce run va livrer) mesuré contre
+      # la limite du Microsoft Store — l'app publie LES MÊMES notes que le
+      # serveur ; au-delà de 1 500 caractères par langue, un avertissement dit
+      # de combien la coupe à la puce va mordre.
       - name: Pré-vol de l'app Windows
         if: steps.windows.outputs.windows == 'true'
         env:
@@ -160,7 +164,7 @@ jobs:
           fi
           VERSION="${WANTED:-$(jq -r .server versions.json)}"
           node .github/scripts/check-changelog.mjs \
-            --changelog changelogs/server-windows.md --version "$VERSION" --check msstore
+            --changelog changelogs/server.md --version "$VERSION" --check msstore
 
       - name: Bump versions.json (si une version est demandée)
         id: bump

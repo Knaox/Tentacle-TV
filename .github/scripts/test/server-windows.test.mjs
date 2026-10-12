@@ -3,8 +3,10 @@
 // la main, sur le modèle de server-image.test.mjs.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { LABELS, PlanError, liveServerVersion } from '../lib/server-image.mjs';
-import { planWindowsPackage, storeTarget, windowsFollowUp, windowsTag } from '../lib/server-windows.mjs';
+import { WINDOWS_NOTES, planWindowsPackage, storeTarget, windowsFollowUp, windowsTag } from '../lib/server-windows.mjs';
 
 const IMAGE = 'ghcr.io/knaox/tentacle-tv';
 const SHA = 'a'.repeat(40);
@@ -136,4 +138,43 @@ test('soumission : une variable absente ou illisible arrête le run et dit laque
     (e) => /SERVER_WINDOWS_FLIGHT_ID n'est pas posée/.test(e.message));
   assert.throws(() => storeTarget({ channel: 'test', storeId: '9NABCDEF1234', flightId: 'a b' }), /illisible/);
   assert.throws(() => storeTarget({ channel: 'dev', storeId: '9NABCDEF1234' }), PlanError);
+});
+
+// ── Le câblage des workflows : un seul run, les notes du serveur ────────────
+// Lu en texte (zéro dépendance ici, pas de parseur YAML) : ce sont les
+// invariants que la décision de Damien (2026-10-12) ne doit jamais perdre.
+const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+const read = (path) => readFileSync(`${ROOT}${path}`, 'utf8');
+
+test('les notes de l\'app Windows sont celles du serveur, un seul texte', () => {
+  assert.equal(WINDOWS_NOTES, 'changelogs/server.md');
+  assert.equal(existsSync(`${ROOT}changelogs/server-windows.md`), false, 'plus de changelog à part pour l\'app');
+  assert.doesNotMatch(read('changelogs/server.md'), /^##\s*\[win-/m, 'aucun bloc par canal dans server.md');
+  for (const wf of ['server.yml', 'server-windows.yml']) {
+    const yml = read(`.github/workflows/${wf}`);
+    assert.doesNotMatch(yml, /changelogs\/server-windows\.md/, `${wf} ne lit plus changelogs/server-windows.md`);
+    assert.match(yml, /--changelog changelogs\/server\.md --version "[^"]+"[\s\\]*--check msstore/,
+      `${wf} mesure les notes du serveur contre la limite du Microsoft Store`);
+  }
+  assert.match(read('.github/workflows/server-windows.yml'), /CHANGELOG: changelogs\/server\.md\n\s*CHANNEL: ""/);
+});
+
+test('un seul run : server.yml APPELLE server-windows.yml après l\'image, sans dispatch', () => {
+  const server = read('.github/workflows/server.yml');
+  const job = server.slice(server.indexOf('\n  windows:\n'));
+  assert.match(job, /needs: \[prepare, image\]/);
+  assert.match(job, /if: needs\.prepare\.outputs\.windows == 'true'/);
+  assert.match(job, /uses: \.\/\.github\/workflows\/server-windows\.yml/);
+  assert.match(job, /secrets: inherit/);
+  assert.match(job, /sha: \$\{\{ needs\.prepare\.outputs\.sha \}\}/);
+  assert.doesNotMatch(server, /gh workflow run|actions: write/);
+
+  const windows = read('.github/workflows/server-windows.yml');
+  const call = windows.slice(windows.indexOf('  workflow_call:'), windows.indexOf('\njobs:'));
+  for (const input of ['channel', 'version', 'sha']) assert.match(call, new RegExp(`\n      ${input}:\n`));
+  assert.match(windows, /\n  workflow_dispatch:\n/, 'relivrer l\'app seule reste possible');
+  // Appelé, une concurrence de WORKFLOW s'ajouterait à celle de server.yml.
+  assert.doesNotMatch(windows, /^concurrency:/m);
+  // Plus de bump : la version, c'est server.yml qui l'écrit.
+  assert.doesNotMatch(windows, /bump-version\.mjs|push-main/);
 });

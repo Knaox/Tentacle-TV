@@ -7,7 +7,8 @@
 # UNE SEULE VERSION (décision du 2026-10-12) : celle de l'app EST celle du
 # serveur qu'elle embarque, versions.json → server. Paquet S.0 (le Store
 # réserve le 4e champ et exige un paquet STRICTEMENT croissant), tag
-# `server-windows-vS`, notes `## [S]` de changelogs/server-windows.md. Seule
+# `server-windows-vS`, notes = celles du serveur (`## [S]` de
+# changelogs/server.md). Seule
 # exception, la 1.0.0, construite à la main hors workflow ; tout serveur livré
 # depuis (≥ 1.27.0) la dépasse. CE WORKFLOW NE BUMPE RIEN : la version, c'est
 # server.yml qui l'écrit. L'entrée `version` n'est qu'une garde (« je livre
@@ -50,7 +51,9 @@
 #             d'éprouver l'installation et la mise à jour PAR LE STORE. La
 #             fiche publique ne bouge pas.
 #   • store — soumission publique (variable SERVER_WINDOWS_STORE_ID), notes
-#             FR/EN depuis changelogs/server-windows.md, publication dès la
+#             FR/EN = CELLES DU SERVEUR, bloc `## [S]` de changelogs/server.md
+#             (un seul texte, jamais de bloc `## [win-S]`), coupées à la puce
+#             au-delà de 1 500 caractères par langue, publication dès la
 #             certification. Le tag `server-windows-vS` vaut ce cran ; il est
 #             posé en fin de run (s'il manque) sur le commit livré.
 # Le Microsoft Store exige le paquet à chaque soumission : rien ne se « promeut »,
@@ -217,11 +220,14 @@ jobs:
           fi
           echo "Server Windows ${VERSION} (= serveur) — cran ${CHANNEL} · sha ${SHA}"
 
+      # Les notes du SERVEUR (lib/server-windows.mjs → WINDOWS_NOTES), mesurées
+      # contre la limite du Microsoft Store : au-delà, un avertissement dit de
+      # combien la coupe à la puce va mordre.
       - name: Pré-vol des notes de version
         if: steps.channel.outputs.channel != 'build'
         run: |
           node .github/scripts/check-changelog.mjs \
-            --changelog changelogs/server-windows.md --version "${{ steps.plan.outputs.windows-version }}" \
+            --changelog changelogs/server.md --version "${{ steps.plan.outputs.windows-version }}" \
             --check msstore
 
       # Le client LG, tel que l'image le sert : ni reconstruit, ni pris du
@@ -399,7 +405,10 @@ jobs:
           PACKAGE_ZIP: ${{ env.PACKAGE_ZIP }}
           PACKAGE_FILE_NAME: ${{ env.MSIX_NAME }}
           VERSION: ${{ needs.prepare.outputs.version }}
-          CHANGELOG: changelogs/server-windows.md
+          # Les notes du serveur, bloc nu ## [S] : CHANNEL vide, aucun bloc
+          # par canal (## [win-S]) n'est cherché — un seul texte.
+          CHANGELOG: changelogs/server.md
+          CHANNEL: ""
         run: node .github/scripts/msstore-submit.mjs
 
   # ── Le tag de l'app, au cran store, une fois la soumission partie ──────────

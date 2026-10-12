@@ -57,8 +57,9 @@ pnpm --filter @tentacle-tv/server-windows pack:msix -- --dir <dossier> --msix <f
   avec la case `windows` (crans test et store) livre, DANS LE MÊME RUN, l'image
   Docker puis le paquet (`server-windows.yml` appelé comme un job), au même
   cran et à la même version ; `server-windows.yml` seul relivre l'app sur
-  le serveur déjà livré, sans rien bumper. Notes : bloc `## [X.Y.Z]` (version
-  du serveur) de `changelogs/server-windows.md`. Détail : CLAUDE.md,
+  le serveur déjà livré, sans rien bumper. Notes : LES MÊMES que le serveur,
+  bloc `## [X.Y.Z]` de `changelogs/server.md` (celles de la 1.0.0 :
+  `docs/server/windows-store-listing.md`). Détail : CLAUDE.md,
   « Tentacle Server pour Windows ».
 
 - L'icône de la zone de notification est cherchée dans

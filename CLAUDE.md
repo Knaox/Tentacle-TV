@@ -150,10 +150,10 @@ Gardes propres à ce couple :
 
 **La version de l'app EST celle du serveur** (décision du 2026-10-12) :
 `versions.json` → `server`, paquet `X.Y.Z.0`, tag `server-windows-vX.Y.Z`
-(posé en fin de run au cran store), notes `## [X.Y.Z]` de
-`changelogs/server-windows.md` — 1 500 caractères par langue, ce qui change
-POUR L'APP, à écrire en plus du bloc de `server.md`. Plus de clé
-`serverWindows`. Seule exception, la **1.0.0**, construite à la main hors
+(posé en fin de run au cran store), notes = CELLES DU SERVEUR, bloc
+`## [X.Y.Z]` de `changelogs/server.md` (`WINDOWS_NOTES`), mesuré contre les
+1 500 caractères par langue du Store — plus de fichier à part (voir
+« Changelogs »). Plus de clé `serverWindows`. Seule exception, la **1.0.0**, construite à la main hors
 workflow (paquet `1.0.0.0`) : tout serveur livré depuis la dépasse, et le Store
 exige un paquet strictement croissant. **`server-windows.yml` ne bumpe rien** :
 son entrée `version` n'est qu'une garde (≠ `server` au commit figé → refus).
@@ -219,11 +219,20 @@ rev-parse HEAD) [--version X.Y.Z]`.
 
 ### Changelogs
 
-`changelogs/{desktop,tv,server,mobile,webos,server-windows}.md`, blocs `## [X.Y.Z]` avec
+`changelogs/{desktop,tv,server,mobile,webos,server-webos}.md`, blocs `## [X.Y.Z]` avec
 `### FR` / `### EN`. Limites appliquées (`lib/changelog.mjs`) : ASC 4000,
 MS Store 1500, Play 500 **caractères Unicode**. Les blocs par canal
-`## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu pour ces cibles-là.
-`CHANGELOG.md` racine = archive pure.
+`## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu pour ces cibles-là
+(bureau seulement). `CHANGELOG.md` racine = archive pure.
+
+**Tentacle Server pour Windows n'a PAS de changelog à lui** (décision du
+2026-10-12) : ses « Nouveautés » sont LES MÊMES que celles du serveur, le bloc
+nu `## [S]` de `changelogs/server.md` — jamais de `## [win-S]` dans ce fichier,
+un seul texte. Quand l'app est livrée (`server.yml` + `windows`, ou
+`server-windows.yml` seul), le pré-vol mesure ce bloc contre la limite du
+Microsoft Store (1 500 par langue) et dit de combien la coupe à la puce va
+mordre ; un bloc qui dépasse avertit, il ne bloque pas. Le texte de la 1.0.0
+(soumise à la main) vit dans `docs/server/windows-store-listing.md`.
 
 **Une livraison webOS demande DEUX blocs de la même version webOS** :
 `changelogs/webos.md` (Releases webOS : coquille et client) et
