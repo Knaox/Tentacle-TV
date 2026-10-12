@@ -11,7 +11,11 @@
  * Une installation par ZIP n'écrit rien au registre : le processus et la
  * sonde HTTP la rattrapent (`detect.ts`).
  */
-import { join } from "node:path";
+import { win32 } from "node:path";
+
+// Des chemins de Windows, quel que soit le système qui exécute (les tests
+// tournent aussi sous Linux, dans quality.yml) : toujours le séparateur « \ ».
+const { join } = win32;
 import type { JellyfinLocalMode } from "../protocol";
 import { parseRegKey, type ToolRunner } from "./systemTools";
 
