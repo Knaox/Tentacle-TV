@@ -3,6 +3,7 @@ import { LIBRARY_UPDATE_DELAY_TARGET, type SetupApplyRequest } from "../jellyfin
 import { CHAPTER_SEGMENTS } from "./segmentProviders";
 import { TASK_KEYS, isVideoLibrary } from "./setupChecks";
 import { forgetTrailerCoverage } from "./trailerCoverage";
+import { ITEM_REFRESH_QUERY } from "../../library/libraryRescanContract";
 import type { Loose } from "./setupSnapshot";
 
 /**
@@ -149,18 +150,21 @@ async function runTask(key: string): Promise<ApplyOutcome> {
 /**
  * « Rechercher les métadonnées manquantes », comme le propose le tableau de
  * bord de Jellyfin : chaque bibliothèque vidéo relue en profondeur, SANS rien
- * remplacer de ce qui existe (`ReplaceAllMetadata=false`) — seuls les champs
- * vides se remplissent, bandes-annonces comprises. Jellyfin met le travail en
- * file ; son avancement se lit dans `RefreshStatus`.
+ * remplacer de ce qui existe (`ReplaceAll…=false`) — seuls les champs vides
+ * se remplissent, bandes-annonces comprises. Les IMAGES aussi en
+ * `FullRefresh`, comme Jellyfin lui-même : en `Default`, ses fournisseurs
+ * d'images en ligne ne sont pas interrogés pour un titre déjà analysé, et
+ * l'affiche qui manquait ne venait jamais. Même requête que « Réanalyser
+ * maintenant » (`ITEM_REFRESH_QUERY`). Jellyfin met le travail en file ; son
+ * avancement se lit dans `RefreshStatus`.
  */
 async function refreshMissingMetadata(): Promise<ApplyOutcome> {
   const libraries = await videoLibraries();
   if (typeof libraries === "string") return fail(libraries);
-  const query = "Recursive=true&MetadataRefreshMode=FullRefresh&ImageRefreshMode=Default&ReplaceAllMetadata=false&ReplaceAllImages=false";
   let queued = 0;
   for (const library of libraries) {
     if (typeof library.ItemId !== "string") continue;
-    const res = await jellyfinAdminFetch(`/Items/${encodeURIComponent(library.ItemId)}/Refresh?${query}`, { method: "POST", expectEmpty: true });
+    const res = await jellyfinAdminFetch(`/Items/${encodeURIComponent(library.ItemId)}/Refresh?${ITEM_REFRESH_QUERY}`, { method: "POST", expectEmpty: true });
     if (!res.ok) return fail(res.failure);
     queued += 1;
   }

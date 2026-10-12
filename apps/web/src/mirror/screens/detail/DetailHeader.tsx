@@ -8,6 +8,7 @@ import { PlayCtaButton } from "./PlayCtaButton";
 import { StageBlock } from "./StageBlock";
 import { TrailerPill } from "./TrailerPill";
 import { TrailerHintMirror } from "./TrailerHintMirror";
+import { DetailPosterFallback } from "../../../components/detail/DetailArtworkFallback";
 import { playCta, PLAY_MAX_WIDTH, type DetailGeometry } from "./detailMetrics";
 
 type SeriesWatchState = { type: string; episode?: MediaItem } | undefined;
@@ -70,6 +71,8 @@ export const DetailHeader = memo(function DetailHeader({ item, geo, seriesWatchS
 
   const isEpisode = item.Type === "Episode";
   const posterId = isEpisode ? (item.SeriesId ?? item.Id) : item.Id;
+  // L'affiche de la série d'un épisode : annoncée par `SeriesPrimaryImageTag`.
+  const hasPoster = Boolean(isEpisode ? item.SeriesPrimaryImageTag : item.ImageTags?.Primary);
   const poster = client.getImageUrl(posterId, "Primary", { height: 500, quality: 90 });
   return (
     <div className="px-4">
@@ -81,8 +84,11 @@ export const DetailHeader = memo(function DetailHeader({ item, geo, seriesWatchS
         className="mirror-detail-in-poster mirror-detail-fade-press group relative block shrink-0 overflow-hidden rounded-xl bg-surface-2"
         style={{ width: geo.posterW, height: geo.posterH, boxShadow: "0 18px 36px -8px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb),0.12)" }}
       >
-        {!posterBroken && (
+        {!posterBroken && hasPoster ? (
           <img src={poster} alt="" decoding="async" draggable={false} onError={() => setPosterBroken(true)} className="h-full w-full object-cover" />
+        ) : (
+          // Sans affiche : le repli de marque du bureau, jamais une case grise.
+          <DetailPosterFallback title={isEpisode ? (item.SeriesName ?? item.Name) : item.Name} wide={false} />
         )}
         <span aria-hidden className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white">
           <Maximize2 size={13} />

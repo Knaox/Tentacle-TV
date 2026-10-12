@@ -16,6 +16,11 @@ export { useLibraryLanguages } from "../hooks/useLibraryLanguages";
 export { parseLibraryLanguages, libraryLanguagesPath, languageValues, type LanguageOption, type LibraryLanguages } from "../hooks/libraryLanguages";
 export { useIncludedInCollections, includedInPath, fetchIncludedInCollections } from "../hooks/useIncludedInCollections";
 export { useSearchItems } from "../hooks/useSearchItems";
+// « Réanalyser maintenant » (admin, capacité `admin.libraryRescan`) et la fiche
+// d'un titre sans métadonnées qui se met à jour seule à leur arrivée.
+export {
+  useLibraryRescan, useMetadataArrival, libraryRescanErrorCode, metadataArrivalKeys, rescanTargetOf, RESCAN_FOLLOW_UP_MS,
+} from "../hooks/useLibraryRescan";
 // Le moteur de recherche du serveur Tentacle (web, bureau et mobile), et ce
 // que les plugins trouvent hors de la bibliothèque.
 export {

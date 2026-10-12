@@ -19,6 +19,7 @@ import { adminSegmentPluginsRoutes } from "./adminSegmentPlugins";
 import { adminServerLinksRoutes } from "./adminServerLinks";
 import { adminDirectStreamingRoutes } from "./adminDirectStreaming";
 import { adminServerUpdateRoutes } from "./adminServerUpdate";
+import { adminLibraryRescanRoutes } from "./adminLibraryRescan";
 import { remoteAccessRoutes } from "../remoteAccess/remoteAccessRoutes";
 import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
 
@@ -65,6 +66,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Accès à distance : réglages et test d'ouverture (requireAdmin, puis session personnelle seulement).
   await app.register(remoteAccessRoutes);
+
+  // « Réanalyser maintenant » : une vraie analyse de Jellyfin (requireAdmin, puis session personnelle).
+  await app.register(adminLibraryRescanRoutes);
 
   /** GET /api/admin/public-url — Read the public server URL (DB value + env fallback). */
   app.get("/public-url", async () => {

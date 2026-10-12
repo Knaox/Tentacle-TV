@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DETAIL_STAGE_BOX, DETAIL_STAGE_FOCUS, DETAIL_STAGE_LAYERS } from "./detailStageGeometry";
-import type { DetailOrigin } from "./detailTransition";
+import { openingGuardDelay, type DetailOrigin } from "./detailTransition";
+import { DetailStageFallback } from "./DetailArtworkFallback";
 
 export interface TargetRect {
   top: number;
@@ -17,6 +18,11 @@ interface DetailOpenOverlayProps {
   backdropUrl: string | null;
   /** Place finale du visuel, mesurée par `DetailPoster`. */
   target: TargetRect | null;
+  /**
+   * La fiche est rendue (requête revenue). Sans cible mesurée dans la foulée
+   * — titre sans affiche —, le calque s'efface sur place au lieu d'attendre.
+   */
+  settled?: boolean;
   onDone: () => void;
 }
 
@@ -44,15 +50,13 @@ const TRAVEL_WAIT_RATIO = 0.4;
 const DECOR_S = 0.44;
 /** Décélération franche puis arrivée qui se pose, sans le moindre rebond. */
 const SETTLE = [0.16, 1, 0.3, 1] as const;
-/**
- * Sécurité : si la fiche ne se mesure jamais, on n'immobilise pas l'écran.
- *
- * Le compte à rebours part de la première MESURE reçue, pas du montage. Le vol
- * ne peut démarrer qu'une fois la requête revenue et le visuel de la fiche
- * placé : sur une requête lente, un garde-fou lancé au montage coupait le calque
- * avant même que le vol ait commencé.
+/*
+ * Sécurité : le calque ne garde JAMAIS l'écran (`openingGuardDelay`). Le
+ * compte à rebours part de la première MESURE reçue — ou, sans mesure, de
+ * l'arrivée de la fiche —, jamais du montage : sur une requête lente, un
+ * garde-fou lancé au montage coupait le calque avant même que le vol ait
+ * commencé.
  */
-const FALLBACK_MS = 1000;
 
 /**
  * Ouverture de la fiche média — transition d'élément partagé (FLIP).
@@ -72,7 +76,7 @@ const FALLBACK_MS = 1000;
  * Repli : sans cible mesurée (média sans affiche, fiche lente), le visuel
  * s'efface sur place en fondu — jamais de blocage.
  */
-export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: DetailOpenOverlayProps) {
+export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false, onDone }: DetailOpenOverlayProps) {
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(false);
   /**
@@ -122,14 +126,17 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
     setPlaying(true);
   }, [origin, reduced, onDone]);
 
-  // Garde-fou armé à la première cible — c'est de là que part le vol. Armé au
-  // montage, il expirait pendant l'attente de la requête sur les fiches lentes,
-  // exactement là où la transition a le plus de raisons d'exister.
+  // Garde-fou armé à la première cible — c'est de là que part le vol —, ou à
+  // l'arrivée d'une fiche qui n'a rien à viser (titre sans affiche : le calque
+  // couvrait la page pour toujours). Armé au montage, il expirait pendant
+  // l'attente de la requête, là où la transition a le plus de raisons d'exister.
+  const hasTarget = target !== null;
   useEffect(() => {
-    if (!playing || !target) return;
+    const delay = openingGuardDelay({ playing, hasTarget, settled });
+    if (delay === null) return;
     clearTimeout(guardRef.current);
-    guardRef.current = setTimeout(() => setPlaying(false), FALLBACK_MS);
-  }, [playing, target]);
+    guardRef.current = setTimeout(() => setPlaying(false), delay);
+  }, [playing, hasTarget, settled]);
 
   // Nettoyage au démontage SEULEMENT : purger le garde-fou à chaque passage de
   // l'effet le supprimerait dès le premier rendu suivant l'ouverture.
@@ -215,6 +222,8 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
                 />
               </motion.div>
             )}
+            {/* Sans décor, le repli de la scène : le même, pour une sortie invisible. */}
+            {!backdropUrl && <DetailStageFallback />}
             {/* Mêmes voiles, même ordre que la scène (`DETAIL_STAGE_LAYERS`) :
                 une liste unique, sinon le décor saute à l'effacement. */}
             {DETAIL_STAGE_LAYERS.map((layer) => (

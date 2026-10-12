@@ -2,12 +2,11 @@ import { useCallback, useMemo, useState } from "react";
 import { View, ScrollView, RefreshControl, Pressable, useWindowDimensions, StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
-import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggleWatchlist, useWatchedToggle, useSeriesWatchState } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useFavorite, useToggleWatchlist, useWatchedToggle, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { spacing, DETAIL_MAX_WIDTH, useResponsive, useTheme, withAlpha } from "../theme";
 import { GradientOverlay, IconButton } from "../components/ui";
 import { DetailSkeleton } from "../components/detail/DetailSkeleton";
@@ -19,6 +18,7 @@ import { DetailBody } from "../components/detail/DetailBody";
 import { DetailStageBlock } from "../components/detail/DetailStageBlock";
 import { DetailImageViewer } from "../components/detail/DetailImageViewer";
 import { StageFocus } from "../components/detail/StageFocus";
+import { DetailBackdropImage } from "../components/detail/DetailArtFallback";
 import { useMediaDetailAnimations } from "../hooks/useMediaDetailAnimations";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 
@@ -45,7 +45,6 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
   const POSTER_H = Math.round(POSTER_W * 1.5);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const client = useJellyfinClient();
   const { data: item, error: itemError, refetch, isRefetching } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
   const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
@@ -85,7 +84,9 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
     return <DetailSkeleton top={insets.top} />;
   }
 
-  const backdrop = client.getImageUrl(item.ParentBackdropItemId ?? item.Id, "Backdrop", { width: 1200, quality: 85 });
+  // Le décor : le premier de la galerie (le sien, sinon celui de la série) ;
+  // aucun → le repli de marque, sans demander une image vouée au 404.
+  const decor = gallery.find((image) => image.kind === "backdrop");
   const isSeries = item.Type === "Series";
   // Liste saisons/épisodes : série (son id) ou épisode (série parente).
   const episodeListSeriesId = isSeries ? item.Id : isEpisode ? item.SeriesId : undefined;
@@ -128,7 +129,7 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
   if (twoCol) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
-        <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFill} contentFit="cover" transition={400} />
+        <View style={StyleSheet.absoluteFill}><DetailBackdropImage decor={decor} /></View>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(theme.colors.surface.s0Tint, 0.86, theme.colors.overlay.scrimHeavy) }]} />
         {backBtn}
         <View style={{ flex: 1, flexDirection: "row", width: "100%", maxWidth: 1180, alignSelf: "center", paddingTop: Math.max(insets.top, 24) + 8 }}>
@@ -164,7 +165,7 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
           <Pressable style={StyleSheet.absoluteFill} onPress={openImages} disabled={!openImages}
             accessibilityRole="imagebutton" accessibilityLabel={t("media:detailViewImages")}>
             <Animated.View style={[StyleSheet.absoluteFillObject, anims.backdropStyle]}>
-              <Image source={{ uri: backdrop }} style={{ width: "100%", height: "100%" }} contentFit="cover" contentPosition={{ top: "30%", left: "50%" }} transition={400} />
+              <DetailBackdropImage decor={decor} />
             </Animated.View>
           </Pressable>
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>

@@ -83,6 +83,11 @@ export * from "./help/dismissibleHints";
 // déclarée par `/api/config` (miroir backend) — un client ne montre rien d'autre.
 export * from "./serverCapabilities/serverCapabilities";
 export * from "./help/trailerHint";
+// Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
+// fiches — et « Réanalyser maintenant » (contrat de /api/admin/library/rescan,
+// miroir backend).
+export * from "./metadata/missingMetadata";
+export * from "./library/libraryRescanContract";
 export * from "./tickets/messageLanguage";
 // Les avertissements surgissants des clients : leur politique (gravité,
 // public, effacement seul, « Ne plus afficher » du compte, un seul à la fois)

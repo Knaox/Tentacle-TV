@@ -8,6 +8,7 @@ import { AmbilightLayer } from "../hero/AmbilightLayer";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
+import { DetailStageFallback } from "./DetailArtworkFallback";
 import {
   DETAIL_STAGE_BOX,
   DETAIL_STAGE_FOCUS,
@@ -91,6 +92,9 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
             onError={reportFailure}
           />
         )}
+        {/* Pas de décor (titre sans images, ou image en échec) : le repli de
+            marque, jamais un aplat vide. */}
+        {(!backdropUrl || broken) && <DetailStageFallback />}
         {DETAIL_STAGE_LAYERS.map((layer) => (
           <div key={layer.background} className={layer.className} style={{ background: layer.background }} aria-hidden />
         ))}

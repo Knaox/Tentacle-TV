@@ -12,6 +12,7 @@ import { DetailPlayCta } from "./DetailPlayCta";
 import { DetailStageBlock } from "./DetailStageBlock";
 import { DetailTrailerButton } from "./DetailTrailerButton";
 import { DetailVersionPicker } from "./DetailVersionPicker";
+import { DetailPosterFallback } from "./DetailArtFallback";
 import { detailPlayCta } from "./computeBadges";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../../constants/featureFlags";
 import type { useMediaDetailAnimations } from "../../hooks/useMediaDetailAnimations";
@@ -52,6 +53,7 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
   // La version à lire : seulement quand « Lecture » lit CE titre (pas l'épisode
   // à suivre d'une série) ; le lecteur la lit dans l'adresse.
   const [version, setVersion] = useState<string | null>(null);
+  const [posterFailed, setPosterFailed] = useState<string | null>(null);
   const playsItem = cta.targetId === item.Id;
   const watchPath = playsItem && version ? `/watch/${cta.targetId}?${VERSION_QUERY_PARAM}=${encodeURIComponent(version)}` : `/watch/${cta.targetId}`;
 
@@ -83,16 +85,24 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
 
   const posterId = isEpisode ? (item.SeriesId ?? item.Id) : item.Id;
   const poster = client.getImageUrl(posterId, "Primary", { height: 500, quality: 90 });
+  // L'affiche annoncée (celle de la série pour un épisode) ; sinon, ou en
+  // échec, le repli de marque — jamais une case grise.
+  const hasPoster = Boolean(isEpisode ? item.SeriesPrimaryImageTag : item.ImageTags?.Primary) && posterFailed !== poster;
   return (
     <View style={{ paddingHorizontal: spacing.lg }}>
       <Pressable onPress={onOpenPoster} disabled={!onOpenPoster} accessibilityRole="imagebutton" accessibilityLabel={tm("detailOpenPoster")}>
         <Animated.View style={[{ width: posterW, height: posterH }, ENABLE_SHARED_POSTER_TRANSITION ? undefined : anims.posterStyle]}>
-          <Animated.Image
-            source={{ uri: poster }}
-            style={{ width: posterW, height: posterH, borderRadius: RADIUS.lg, backgroundColor: theme.colors.surface.s2, shadowColor: "#000", shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.55, shadowRadius: 22 }}
-            resizeMode="cover"
-            {...(ENABLE_SHARED_POSTER_TRANSITION ? { sharedTransitionTag: `poster-${posterId}` } : {})}
-          />
+          {hasPoster ? (
+            <Animated.Image
+              source={{ uri: poster }}
+              style={{ width: posterW, height: posterH, borderRadius: RADIUS.lg, backgroundColor: theme.colors.surface.s2, shadowColor: "#000", shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.55, shadowRadius: 22 }}
+              resizeMode="cover"
+              onError={() => setPosterFailed(poster)}
+              {...(ENABLE_SHARED_POSTER_TRANSITION ? { sharedTransitionTag: `poster-${posterId}` } : {})}
+            />
+          ) : (
+            <DetailPosterFallback title={isEpisode ? (item.SeriesName ?? item.Name) : item.Name} width={posterW} height={posterH} radius={RADIUS.lg} />
+          )}
           <View style={{ position: "absolute", right: 8, bottom: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center" }}>
             <Feather name="maximize-2" size={13} color="#FFFFFF" />
           </View>

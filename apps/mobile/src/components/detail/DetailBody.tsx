@@ -17,6 +17,7 @@ import { CastRow } from "../CastRow";
 import { MobileExtrasSection } from "./MobileExtrasSection";
 import { DetailRating } from "./DetailRating";
 import { DetailTail } from "./DetailTail";
+import { DetailMetadataHint } from "./DetailMetadataHint";
 import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 import { useOpenMedia } from "@/hooks/useOpenMedia";
 
@@ -96,6 +97,9 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
           )}
         </View>
       )}
+
+      {/* Titre que Jellyfin n'a pas trouvé : le dire, sans rien bloquer. */}
+      <DetailMetadataHint item={item} />
 
       {/* Collection (BoxSet) : son contenu, navigable — sans lui, la fiche d'une
           collection n'avait ni lecture ni rien à ouvrir. */}
