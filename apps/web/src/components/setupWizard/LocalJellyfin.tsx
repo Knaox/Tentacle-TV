@@ -1,13 +1,15 @@
 import { useTranslation } from "react-i18next";
-import { ExternalLink } from "lucide-react";
+import { CircleCheck, ExternalLink, LoaderCircle } from "lucide-react";
 import { JELLYFIN_WINDOWS_DOWNLOAD_URL } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
-import { localJellyfinView } from "./localJellyfinModel";
+import { JellyfinInstallProgress } from "./JellyfinInstallProgress";
+import { localJellyfinView, type LocalJellyfinView } from "./localJellyfinModel";
 import { SetupErrorLine } from "./SetupErrorLine";
-import { useLocalJellyfin } from "./useLocalJellyfin";
+import { useLocalJellyfin, type LocalJellyfin as LocalJellyfinHost } from "./useLocalJellyfin";
 
 const linkCls = "inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80";
-const panelCls = "space-y-3 rounded-xl border border-line-subtle bg-fill-faint p-4 text-sm leading-relaxed text-content-secondary";
+const panelCls = "space-y-3 rounded-xl border bg-fill-faint p-4 text-sm leading-relaxed text-content-secondary";
+const titleCls = "font-semibold text-content-primary";
 
 function OfficialPage({ url }: { url: string }) {
   const { t } = useTranslation("setupWizard");
@@ -19,54 +21,82 @@ function OfficialPage({ url }: { url: string }) {
   );
 }
 
-/**
- * L'app Windows : le Jellyfin de CE PC, dit en clair au-dessus de la liste.
- * Arrêté, « Démarrer Jellyfin » (installation simple) ou le renvoi vers
- * Services ; absent, l'installation guidée — l'installateur officiel,
- * téléchargé et vérifié par l'app, avec le conseil « Installation simple » —
- * ou la page officielle quand elle n'est pas possible. Dès qu'il répond, il
- * rejoint la liste (`onFound`) et ce panneau se tait.
- */
-export function LocalJellyfin({ onFound }: { onFound: (url: string) => void }) {
+/** « Démarrer Jellyfin » (installation simple arrêtée) ; `afterInstall` : il vient d'être installé et se tait encore. */
+function StoppedTray({ host, afterInstall }: { host: LocalJellyfinHost; afterInstall: boolean }) {
   const { t } = useTranslation("setupWizard");
-  const host = useLocalJellyfin(onFound);
-  const view = localJellyfinView(host.local, host.install, host.starting);
-  const docsUrl = host.local?.docsUrl ?? JELLYFIN_WINDOWS_DOWNLOAD_URL;
-  if (view.kind === "running") return null;
-
   return (
-    <section className={panelCls} aria-live="polite">
-      {view.kind === "checking" ? <p className="text-content-tertiary">{t("localChecking")}</p> : null}
+    <>
+      <p className={titleCls}>{t(afterInstall ? "installLateTitle" : "localStoppedTray")}</p>
+      <p>{t("localStartHint")}</p>
+      <button type="button" onClick={() => void host.start()} disabled={host.busy} className={cls.bp}>
+        {host.busy ? t("localStarting") : t("localStart")}
+      </button>
+      {host.startRefusal ? <p>{t("localStartFailed")}</p> : null}
+    </>
+  );
+}
 
-      {view.kind === "starting" ? (
-        <>
-          <p className="font-semibold text-content-primary">{t("localStarting")}</p>
-          <p>{t("localStartWaiting")}</p>
-        </>
+/** Relancer l'installation guidée, et la page officielle en repli. */
+function RetryRow({ host, docsUrl, retry }: { host: LocalJellyfinHost; docsUrl: string; retry: boolean }) {
+  const { t } = useTranslation("setupWizard");
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      {retry ? (
+        <button type="button" onClick={() => void host.startInstall()} disabled={host.busy} className={cls.bs}>
+          {t("installRetry")}
+        </button>
       ) : null}
-      {view.kind === "stoppedTray" ? (
-        <>
-          <p className="font-semibold text-content-primary">{t("localStoppedTray")}</p>
-          <p>{t("localStartHint")}</p>
-          <button type="button" onClick={() => void host.start()} disabled={host.busy} className={cls.bp}>
-            {host.busy ? t("localStarting") : t("localStart")}
-          </button>
-          {host.startRefusal ? <p>{t("localStartFailed")}</p> : null}
-        </>
-      ) : null}
-      {view.kind === "stoppedService" ? (
+      <OfficialPage url={docsUrl} />
+    </div>
+  );
+}
+
+function ViewBody({ view, host, docsUrl }: { view: LocalJellyfinView; host: LocalJellyfinHost; docsUrl: string }) {
+  const { t } = useTranslation("setupWizard");
+  switch (view.kind) {
+    case "running":
+      return null;
+    case "checking":
+      return <p className="text-content-tertiary">{t("localChecking")}</p>;
+    case "ready":
+      return (
+        <div className="flex items-start gap-3">
+          <CircleCheck size={22} aria-hidden="true" className="mt-0.5 shrink-0 text-status-success-fg" />
+          <div className="space-y-1">
+            <p className={`text-base ${titleCls}`}>{t("installReadyTitle")}</p>
+            <p>{t("installReadyBody")}</p>
+          </div>
+        </div>
+      );
+    case "install":
+      return <JellyfinInstallProgress progress={view.progress} />;
+    case "starting":
+      return (
+        <div className="flex items-start gap-3">
+          <LoaderCircle size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--brand-light)] motion-safe:animate-spin" />
+          <div className="space-y-1">
+            <p className={titleCls}>{t("localStarting")}</p>
+            <p>{t("localStartWaiting")}</p>
+          </div>
+        </div>
+      );
+    case "stoppedTray":
+      return <StoppedTray host={host} afterInstall={view.afterInstall} />;
+    case "stoppedService":
+      return (
         <>
           <p>{t("localStoppedService")}</p>
           <button type="button" onClick={() => void host.start()} disabled={host.busy} className={cls.bs}>
             {t("localOpenServices")}
           </button>
         </>
-      ) : null}
-      {view.kind === "stoppedUnknown" ? <p>{t("localStoppedUnknown")}</p> : null}
-
-      {view.kind === "installOffer" ? (
+      );
+    case "stoppedUnknown":
+      return <p>{t("localStoppedUnknown")}</p>;
+    case "installOffer":
+      return (
         <>
-          <p className="font-semibold text-content-primary">{t("installTitle")}</p>
+          <p className={titleCls}>{t("installTitle")}</p>
           <p>{t("installIntro")}</p>
           <p className="text-content-primary">{t("installAdvice")}</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -76,38 +106,61 @@ export function LocalJellyfin({ onFound }: { onFound: (url: string) => void }) {
             <OfficialPage url={docsUrl} />
           </div>
         </>
-      ) : null}
-
-      {view.kind === "installing" ? (
+      );
+    case "installFailed": {
+      const cancelled = view.failure === "cancelled";
+      return (
         <>
-          <p className="font-semibold text-content-primary">{t("installTitle")}</p>
-          <p>{t(view.message.key, view.message.values)}</p>
-          {view.message.key === "install_installing" ? <p className="text-content-primary">{t("installAdvice")}</p> : null}
-        </>
-      ) : null}
-
-      {view.kind === "installFailed" ? (
-        <>
+          {cancelled ? <p className={titleCls}>{t("installCancelledTitle")}</p> : null}
           <p>{t(`installFailed_${view.failure}`)}</p>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            {view.failure === "unsupported_arch" || view.failure === "disabled" ? null : (
-              <button type="button" onClick={() => void host.startInstall()} disabled={host.busy} className={cls.bs}>
-                {t("installRetry")}
-              </button>
-            )}
-            <OfficialPage url={docsUrl} />
-          </div>
+          {cancelled ? <p className="text-xs text-content-tertiary">{t("installCancelledFound")}</p> : null}
+          <RetryRow host={host} docsUrl={docsUrl} retry={view.failure !== "unsupported_arch" && view.failure !== "disabled"} />
         </>
-      ) : null}
-
-      {view.kind === "manual" ? (
+      );
+    }
+    case "installedNotFound":
+      return (
+        <>
+          <p className={titleCls}>{t("installNotFoundTitle")}</p>
+          <p>{t("installNotFoundBody")}</p>
+          <RetryRow host={host} docsUrl={docsUrl} retry />
+        </>
+      );
+    case "manual":
+      return (
         <>
           <p>{t(`installFailed_${view.reason}`)}</p>
           <OfficialPage url={docsUrl} />
           <p className="text-xs text-content-tertiary">{t("jfMissingWaiting")}</p>
         </>
-      ) : null}
+      );
+  }
+}
 
+/** Un état qui demande l'attention (installation en cours, prêt) se voit : bordure de marque. */
+function emphasized(view: LocalJellyfinView): boolean {
+  return view.kind === "install" || view.kind === "ready" || view.kind === "starting";
+}
+
+/**
+ * L'app Windows : le Jellyfin de CE PC, dit en clair au-dessus de la liste.
+ * Arrêté, « Démarrer Jellyfin » (installation simple) ou le renvoi vers
+ * Services ; absent, l'installation guidée — l'installateur officiel,
+ * téléchargé et vérifié par l'app, suivi en trois étapes jusqu'au démarrage
+ * (`JellyfinInstallProgress`) — ou la page officielle quand elle n'est pas
+ * possible. Dès qu'il répond, il rejoint la liste (`onFound`) ; installé ici,
+ * le panneau le dit d'abord, sinon il se tait.
+ */
+export function LocalJellyfin({ onFound }: { onFound: (url: string) => void }) {
+  const host = useLocalJellyfin(onFound);
+  const view = localJellyfinView(host.local, host.install, { starting: host.starting });
+  const docsUrl = host.local?.docsUrl ?? JELLYFIN_WINDOWS_DOWNLOAD_URL;
+  if (view.kind === "running") return null;
+  const border = emphasized(view) ? "border-[rgba(var(--brand-rgb),0.45)]" : "border-line-subtle";
+
+  return (
+    <section className={`${panelCls} ${border}`} aria-live="polite">
+      <ViewBody view={view} host={host} docsUrl={docsUrl} />
       <SetupErrorLine code={host.error} onRetry={() => void host.refresh()} />
     </section>
   );
