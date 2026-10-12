@@ -66,7 +66,8 @@ const fake = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       return json([{ Key: "RefreshTrickplayImages", Id: "trick" }, { Key: "TaskExtractMediaSegments", Id: "seg" }, { Key: "RefreshLibrary", Id: "scan" }]);
     default:
       if (method === "POST" && /^\/Items\/[^/]+\/Refresh$/.test(url.pathname)) {
-        jf.started.push(`refresh:${url.pathname.split("/")[2]}?${url.search.includes("ReplaceAllMetadata=false") ? "sans-remplacer" : "REMPLACE"}`);
+        const keeps = url.searchParams.get("ReplaceAllMetadata") === "false" && url.searchParams.get("ReplaceAllImages") === "false";
+        jf.started.push(`refresh:${url.pathname.split("/")[2]}?${keeps ? "sans-remplacer" : "REMPLACE"}:images-${url.searchParams.get("ImageRefreshMode")}`);
         return empty();
       }
       if (method === "POST" && url.pathname.startsWith("/ScheduledTasks/Running/")) {
@@ -182,9 +183,11 @@ describe("gestes en un clic", () => {
     expect(await applySetupAction({ action: "RefreshLibrary" as never })).toEqual({ ok: false, error: "bad-request" });
   });
 
-  it("métadonnées manquantes : chaque bibliothèque VIDÉO relue, sans rien remplacer", async () => {
+  it("métadonnées manquantes : chaque bibliothèque VIDÉO relue, images comprises, sans rien remplacer", async () => {
     expect(await applySetupAction({ action: "refreshMissingMetadata" })).toEqual({ ok: true, changed: 2 });
-    expect(jf.started).toEqual(["refresh:films?sans-remplacer", "refresh:series?sans-remplacer"]);
+    // `FullRefresh` pour les images : en `Default`, Jellyfin n'interroge pas ses
+    // fournisseurs en ligne pour un titre déjà analysé — l'affiche manquante ne venait jamais.
+    expect(jf.started).toEqual(["refresh:films?sans-remplacer:images-FullRefresh", "refresh:series?sans-remplacer:images-FullRefresh"]);
   });
 
   it("sans Jellyfin configuré : rien ne part", async () => {
