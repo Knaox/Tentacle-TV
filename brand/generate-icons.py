@@ -268,15 +268,15 @@ def main():
         build_ico([(s, rounded) for s in (16, 24, 32, 48, 64, 128, 256)], ico)
         print(f"  ico reconstruit : {ico.relative_to(ROOT)}")
     # La zone de notification de Tentacle Server (`appLayout.ts`) : son logo,
-    # sur transparent, sans chapeau aux petites tailles.
+    # sur transparent, AVEC son chapeau à toutes les tailles (choix de Damien,
+    # 2026-10-12 : c'est lui qui fait reconnaître l'icône près de l'horloge).
     tray, sizes = windows.TRAY
     tray = ROOT / tray
     if WRITE and selected(tray):
-        logo, nohat = windows.PACKAGES["apps/server-windows/msix/Assets"]
+        logo, _nohat = windows.PACKAGES["apps/server-windows/msix/Assets"]
         frames = []
         for s in sizes:
-            source = nohat if s <= windows.NOHAT_BELOW else logo
-            frames.append((s, windows.framed(read_svg(source), measured_bbox(source), s, s, windows.FILL_ICON)))
+            frames.append((s, windows.framed(read_svg(logo), measured_bbox(logo), s, s, windows.FILL_ICON)))
         build_ico(frames, tray)
         print(f"  ico reconstruit : {tray.relative_to(ROOT)}")
 
