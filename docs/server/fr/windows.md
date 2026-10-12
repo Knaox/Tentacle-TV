@@ -10,8 +10,8 @@ met à jour par le Store.
 Il lui faut **Jellyfin**, le serveur multimédia gratuit, sur le même PC ou ailleurs sur votre réseau :
 l'assistant d'installation le trouve, ou propose de l'installer depuis jellyfin.org avec votre accord.
 
-> L'app a son propre numéro de version (à partir de 1.0.0) ; le serveur Tentacle qu'elle porte a le sien,
-> affiché dans *Administration › Vue d'ensemble*. Les lignes marquées *(à confirmer)* décrivent un
+> La première version de l'app est la 1.0.0 ; ensuite, son numéro est celui du serveur Tentacle qu'elle
+> porte (affiché dans *Administration › Vue d'ensemble*) : l'app 1.28.0 embarque le serveur 1.28.0. Les lignes marquées *(à confirmer)* décrivent un
 > comportement pas encore éprouvé sur un paquet installé.
 
 ## Ce qu'il faut
