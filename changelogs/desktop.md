@@ -13,6 +13,24 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.28.1]
+<!-- Bloc nu : correctifs mineurs, les trois canaux partent de la 1.28.0. « Réanalyser maintenant » exige le serveur 1.27.0 (capacité admin.libraryRescan) ; caché face à un serveur plus ancien. -->
+### FR
+- **Quitter une vidéo l'arrête vraiment** : le son et l'image ne continuent plus en fond sur la fiche après le retour
+- **Le bouton « Lecture » répond à tous les coups** : une page en train de se fermer ne retient plus le clic
+- **Un titre sans images ni résumé s'ouvre normalement** : sa fiche ne reste plus vide, une affiche de remplacement s'affiche et la lecture est possible tout de suite
+- **Une série dont les épisodes n'ont pas de numéro de saison** garde son bouton « Lecture »
+- **Métadonnées manquantes** : un message explique qu'elles viennent de Jellyfin ; l'administrateur peut lancer « Réanalyser maintenant », et la fiche se met à jour seule (serveur 1.27.0)
+- **Windows** : une mise à jour réussie par le Microsoft Store n'est plus signalée comme un échec
+
+### EN
+- **Leaving a video really stops it**: sound and picture no longer keep playing behind the details page after you go back
+- **The “Play” button always responds**: a page that is closing no longer swallows the click
+- **A title without images or overview opens normally**: its page no longer stays blank, a placeholder poster shows and playback works right away
+- **A series whose episodes have no season number** keeps its “Play” button
+- **Missing metadata**: a message explains that it comes from Jellyfin; the administrator can run “Rescan now”, and the page updates by itself (server 1.27.0)
+- **Windows**: a successful Microsoft Store update is no longer reported as a failure
+
 ## [1.28.0]
 ### FR
 - **Lecture en incrustation** : le bouton à côté du plein écran, ou la touche I, réduit la vidéo dans une petite fenêtre rangée dans le coin de l'application, et vous continuez à parcourir Tentacle — sur macOS (puces Apple), Windows et Linux (KDE)
