@@ -22,9 +22,11 @@ class FakeSupervisor implements SupervisorLike {
 }
 
 function harness(options: { freePort?: boolean; confirm?: boolean; state?: HostState; startup?: StartupState; pick?: MenuCommand } = {}) {
+  const shown: [string, boolean][] = [];
+  const startupSets: boolean[] = [];
   const supervisor = new FakeSupervisor();
   const events: string[] = [];
-  let saved: HostState = options.state ?? { port: 3000, wizardOpened: false };
+  let saved: HostState = options.state ?? { port: 3000, wizardOpened: false, startupAsked: false };
   let menu: readonly MenuEntry[] = [];
   const deps: HostDeps = {
     strings: STRINGS.fr,
@@ -47,7 +49,10 @@ function harness(options: { freePort?: boolean; confirm?: boolean; state?: HostS
     supervisor: () => supervisor,
     startup: {
       read: async () => options.startup ?? "disabled",
-      set: async (enabled) => (enabled ? "enabled" : "disabled"),
+      set: async (enabled) => {
+        startupSets.push(enabled);
+        return enabled ? "enabled" : "disabled";
+      },
     },
     log: () => undefined,
     logFile: () => "C:\\log.log",
@@ -63,8 +68,9 @@ function harness(options: { freePort?: boolean; confirm?: boolean; state?: HostS
     },
     publicNetwork: async () => false,
     exit: (code) => events.push(`exit:${code}`),
+    onDisplayState: (state, wizardOpening) => shown.push([state.kind, wizardOpening]),
   };
-  return { controller: new HostController(deps), supervisor, events, saved: () => saved, menu: () => menu };
+  return { controller: new HostController(deps), supervisor, events, saved: () => saved, menu: () => menu, shown, startupSets };
 }
 
 const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
@@ -143,5 +149,34 @@ describe("HostController", () => {
     const h = harness();
     await h.controller.openAdmin();
     expect(h.events).toContain("open:http://192.168.1.20:3000/admin");
+  });
+
+  it("dit à l'écran de démarrage que CE lancement ouvre l'assistant, une seule fois", async () => {
+    const h = harness();
+    h.controller.onServerState({ kind: "starting", stage: "database" });
+    h.controller.onServerState({ kind: "running", port: 3000, version: "1", appState: "setup_jellyfin" });
+    h.controller.onServerState({ kind: "running", port: 3000, version: "1", appState: "setup_jellyfin" });
+    await flush();
+    expect(h.shown).toEqual([["starting", false], ["running", true], ["running", false]]);
+  });
+
+  it("répond à la question du démarrage : réglé si besoin, et plus jamais redemandé", async () => {
+    const off = harness({ startup: "disabled" });
+    await off.controller.answerStartup(true);
+    expect(off.startupSets).toEqual([true]);
+    expect(off.saved().startupAsked).toBe(true);
+
+    const already = harness({ startup: "enabled" });
+    await already.controller.answerStartup(true);
+    expect(already.startupSets).toEqual([]);
+    expect(already.saved().startupAsked).toBe(true);
+    expect(already.controller.startupAsked).toBe(true);
+  });
+
+  it("un réglage par le menu vaut réponse à la question", async () => {
+    const h = harness({ startup: "enabled", pick: { kind: "toggle-startup" } });
+    await h.controller.openMenu(0, 0);
+    expect(h.startupSets).toEqual([false]);
+    expect(h.saved().startupAsked).toBe(true);
   });
 });

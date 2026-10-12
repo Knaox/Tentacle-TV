@@ -50,6 +50,17 @@ export type ShutdownReason = (typeof SHUTDOWN_REASONS)[number];
 export const STARTUP_FAILURES = ["port_in_use", "already_running", "data_dir_unwritable", "unexpected"] as const;
 export type StartupFailure = (typeof STARTUP_FAILURES)[number];
 
+/**
+ * Où en est le démarrage, AVANT `tentacle:ready` (`tentacle:progress`), dans
+ * l'ordre où le serveur les traverse : `server` (routes et clients statiques),
+ * `database` (ouverture de SQLite et ses migrations), `extensions` (le code
+ * serveur des extensions). Liste FERMÉE ; une étape inconnue est ignorée par
+ * l'hôte, qui garde la précédente. L'écran de démarrage de l'app Windows la
+ * dit en mots.
+ */
+export const STARTUP_STAGES = ["server", "database", "extensions"] as const;
+export type StartupStage = (typeof STARTUP_STAGES)[number];
+
 /** Les questions que l'hôte peut poser au serveur (`tentacle:request`). */
 export const SERVER_METHODS = ["status"] as const;
 export type ServerMethod = (typeof SERVER_METHODS)[number];
@@ -134,6 +145,12 @@ export interface RestartingMessage {
   detail: string;
 }
 
+/** Une étape du démarrage commence (additif : un hôte d'avant l'ignore). */
+export interface ProgressMessage {
+  type: "tentacle:progress";
+  stage: StartupStage;
+}
+
 // ── Les deux sens : question et réponse ─────────────────────────────────────
 
 export interface RequestMessage {
@@ -152,7 +169,13 @@ export type ResponseMessage =
 export type HostProtocolError = "unknown_method" | "invalid_params" | "failed" | "timeout";
 
 export type HostToServerMessage = HostHelloMessage | ShutdownMessage | RequestMessage | ResponseMessage;
-export type ServerToHostMessage = ReadyMessage | StartupFailedMessage | RestartingMessage | RequestMessage | ResponseMessage;
+export type ServerToHostMessage =
+  | ReadyMessage
+  | StartupFailedMessage
+  | RestartingMessage
+  | ProgressMessage
+  | RequestMessage
+  | ResponseMessage;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -203,6 +226,10 @@ export function parseServerMessage(raw: unknown): ServerToHostMessage | null {
     }
     case "tentacle:restarting":
       return { type: raw.type, detail: typeof raw.detail === "string" ? raw.detail : "" };
+    case "tentacle:progress": {
+      const stage = STARTUP_STAGES.find((s) => s === raw.stage);
+      return stage === undefined ? null : { type: raw.type, stage };
+    }
     case "tentacle:request":
       return parseRequest(raw);
     case "tentacle:response":

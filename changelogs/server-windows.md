@@ -17,7 +17,8 @@ Un bloc de `changelogs/server.md` ne vaut donc pas ici. Exigé par le pré-vol d
 - **Tentacle Server arrive sur Windows** : le serveur Tentacle s'installe depuis le Microsoft Store, sans Docker ni ligne de commande
 - **Une icône dans la zone de notification** pour ouvrir l'administration, lire le journal, redémarrer ou quitter le serveur
 - **Démarre avec Windows**, à l'ouverture de session — une case du menu, que les Paramètres de Windows gardent sous votre contrôle
-- **L'assistant d'installation s'ouvre au premier lancement** : il trouve Jellyfin sur ce PC et vous guide jusqu'à vos bibliothèques
+- **Un écran de démarrage dès le lancement** : l'étape en cours, puis l'assistant — et une seule question, lancer Tentacle Server avec Windows
+- **L'assistant d'installation s'ouvre au premier lancement** : il trouve Jellyfin sur ce PC, l'installe et le démarre au besoin, et vous guide jusqu'à vos bibliothèques
 - **Vos données sont gardées** dans `C:\ProgramData\Tentacle Server` : une désinstallation ne les efface pas, et une réinstallation reprend le serveur tel quel
 - Nécessite Jellyfin, serveur multimédia gratuit, installé sur ce PC ou sur une autre machine du réseau
 
@@ -25,6 +26,7 @@ Un bloc de `changelogs/server.md` ne vaut donc pas ici. Exigé par le pré-vol d
 - **Tentacle Server comes to Windows**: install the Tentacle server from the Microsoft Store, no Docker and no command line
 - **A notification area icon** to open the dashboard, read the log, restart or quit the server
 - **Starts with Windows**, at sign-in — one menu checkbox, kept under your control in Windows Settings
-- **The setup wizard opens on first launch**: it finds Jellyfin on this PC and walks you to your libraries
+- **A startup screen as soon as it launches**: the current step, then the wizard — and a single question, start Tentacle Server with Windows
+- **The setup wizard opens on first launch**: it finds Jellyfin on this PC, installs and starts it if needed, and walks you to your libraries
 - **Your data is kept** in `C:\ProgramData\Tentacle Server`: uninstalling does not erase it, and reinstalling picks the server up as it was
 - Requires Jellyfin, the free media server, installed on this PC or on another machine on your network

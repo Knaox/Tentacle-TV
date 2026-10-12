@@ -37,10 +37,38 @@ export default {
   installFailed_network: "Downloading Jellyfin failed. Check the Internet connection and try again, or download it from jellyfin.org.",
   installFailed_checksum:
     "The downloaded installer does not match the one Jellyfin publishes: it was deleted, and nothing was run. Try again, or download it from jellyfin.org.",
-  installFailed_cancelled: "Installing Jellyfin was cancelled. You can start it again.",
+  installFailed_cancelled:
+    "The Jellyfin installer was closed before the end, or the approval Windows asked for was declined. You can start the installation again.",
   installFailed_blocked:
     "Windows blocked the Jellyfin installer (Smart App Control, or a rule on this PC). Download it from jellyfin.org and run it yourself, then come back here.",
   installFailed_installer_failed: "The Jellyfin installer stopped on an error. Try again, or download it from jellyfin.org.",
+
+  // The guided install, step by step (`JellyfinInstallProgress.tsx`).
+  installStepsLabel: "Jellyfin installation steps",
+  installStepDownload: "Download the official installer",
+  installStepInstaller: "Install Jellyfin (in the installer window)",
+  installStepStart: "Start Jellyfin",
+  installStepDone: "done",
+  installStepActive: "in progress",
+  installStageDownloadTitle: "Preparing the Jellyfin installation…",
+  installStageDownloadLead: "Tentacle is downloading the official installer from jellyfin.org and checking that it is intact. Nothing to do yet.",
+  installStageInstallerTitle: "Installing Jellyfin",
+  installStageInstallerLead:
+    "Follow the installer open on your screen. Tentacle will detect Jellyfin and start it automatically: no need to come back here before it finishes.",
+  installTipConsent: "Windows asks for your approval first: answer \"Yes\".",
+  installTipHidden: "Can't see the installer? It may be behind this window: look for its icon in the taskbar.",
+  installTipClosed: "If you close it before the end, you can start the installation again from here.",
+  installStageStartTitle: "Starting Jellyfin…",
+  installStageStartLead: "Jellyfin is installed. Tentacle started it and is waiting for it to answer: a few seconds, rarely more than a minute.",
+  installDownloadProgress: "Downloading the installer",
+  installReadyTitle: "Jellyfin is installed and running.",
+  installReadyBody: "It appears in the list below: pick it, then continue.",
+  installCancelledTitle: "The Jellyfin installation did not finish.",
+  installCancelledFound: "If you finished the installation anyway, Tentacle will find Jellyfin on its own in a few seconds.",
+  installLateTitle: "Jellyfin is installed, but it is not answering yet.",
+  installNotFoundTitle: "Tentacle cannot find Jellyfin yet.",
+  installNotFoundBody:
+    "The installer finished, but Jellyfin does not show up on this PC. If it is installed, start it from the Start menu: Tentacle will find it. Otherwise, start the installation again.",
 
   explorerPick: "Browse with File Explorer",
   explorerPicking: "Choose the folder in the File Explorer window…",

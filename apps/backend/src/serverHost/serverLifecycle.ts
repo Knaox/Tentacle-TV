@@ -5,7 +5,7 @@ import { acquireServerLock } from "../services/lifecycle/serverLock";
 import { BOOT_ID } from "../services/pluginRestart";
 import { BACKEND_VERSION } from "../services/version";
 import { notifyHost, startHostChannel } from "./hostChannel";
-import { HOST_PROTOCOL_VERSION, SERVER_EXIT_CODES, type StartupFailure } from "./hostProtocol";
+import { HOST_PROTOCOL_VERSION, SERVER_EXIT_CODES, type StartupFailure, type StartupStage } from "./hostProtocol";
 import { serverStatus } from "./serverStatus";
 
 /**
@@ -34,6 +34,14 @@ export async function beginServerLifecycle(): Promise<boolean> {
   }
   serverShutdown.register({ releaseLock: lock.release });
   return true;
+}
+
+/**
+ * Une étape du démarrage commence : l'écran de démarrage de l'app Windows la
+ * dit (« Préparation de la base… »). Sans hôte, rien ne part.
+ */
+export function announceProgress(stage: StartupStage): void {
+  void notifyHost({ type: "tentacle:progress", stage });
 }
 
 /** À l'écoute : l'hôte le sait (et ouvre l'assistant à la première installation). */

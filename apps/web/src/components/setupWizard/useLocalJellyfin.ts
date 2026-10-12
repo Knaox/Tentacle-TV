@@ -79,10 +79,12 @@ export function useLocalJellyfin(onFound: (url: string) => void): LocalJellyfin 
 
   // L'installation avance : son état ; finie, ou un démarrage demandé : la détection, plus souvent,
   // jusqu'à ce qu'il réponde ; sinon, de temps en temps (installé à la main, démarré dans Services).
-  const running = installRunning(install);
+  // Une page rechargée pendant l'installation la reprend (`local.installing`), et un installateur
+  // fermé n'arrête pas la recherche : l'administrateur a peut-être fini malgré tout.
+  const running = installRunning(install) || (install === null && local?.installing === true);
   const known = local !== null;
   const answered = local?.state === "running";
-  const waiting = starting || install?.phase === "done";
+  const waiting = starting || install?.phase === "done" || (install?.phase === "failed" && install.failure === "cancelled");
   useEffect(() => {
     if (!known || answered) return;
     const timer = setInterval(() => {

@@ -34,7 +34,13 @@ winget install --source msstore "Tentacle Server"
 
 ## Premier lancement
 
-1. Ouvrez **Tentacle Server** depuis le menu Démarrer (le bouton **Ouvrir** du Store fait de même).
+1. Ouvrez **Tentacle Server** depuis le menu Démarrer (le bouton **Ouvrir** du Store fait de même). Un
+   **écran de démarrage** paraît aussitôt : le logo, l'étape en cours (*Démarrage du serveur*, *Préparation de
+   la base de données*…) et une barre de progression. Le premier démarrage peut prendre une minute.
+   Il pose aussi, une seule fois : **« Lancer Tentacle Server au démarrage de Windows ? »** — *Oui* ou *Non*,
+   modifiable ensuite par **Démarrer avec Windows** dans le menu de l'icône. Il se ferme de lui-même quand le
+   serveur répond ; s'il n'a pas pu démarrer, il dit pourquoi, avec **Réessayer** et **Ouvrir le journal**.
+   Fermé à la croix, le serveur continue : l'icône prend le relais.
 2. L'icône de Tentacle paraît dans la **zone de notification**, près de l'horloge. Windows peut la ranger sous
    la flèche **^** : faites-la glisser sur la barre des tâches pour la garder en vue.
 3. Votre navigateur ouvre l'assistant d'installation **une seule fois**, sur l'adresse réseau de ce PC (par
@@ -69,8 +75,9 @@ Relancer Tentacle Server pendant qu'il tourne ne fait qu'ouvrir l'administration
 
 ## Démarrer avec Windows
 
-L'app s'inscrit comme application de démarrage : après son premier lancement, Tentacle démarre **à chaque
-ouverture de votre session Windows**, sans rien ouvrir. Il ne démarre **pas** quand le PC s'allume sans que
+L'app s'inscrit comme application de démarrage ; l'écran du premier lancement vous demande si vous le voulez.
+Activé, Tentacle démarre **à chaque ouverture de votre session Windows**, sans rien ouvrir (l'écran de
+démarrage ne paraît alors que s'il a quelque chose à dire : installation pas finie, question sans réponse). Il ne démarre **pas** quand le PC s'allume sans que
 personne n'ouvre de session : une app du Store ne peut pas être un service Windows.
 
 - Coupez-le ou rallumez-le par **Démarrer avec Windows** dans le menu de l'icône, ou dans **Paramètres ›
@@ -167,7 +174,10 @@ réseau.
   `repo.jellyfin.org` (la plus récente version stable éprouvée par Tentacle), vérifie son empreinte SHA-256 et
   sa taille, puis le lance **avec votre accord**. Windows demande l'accord d'un administrateur : c'est
   l'installateur de Jellyfin, pas Tentacle. Choisissez l'installation **simple** (pas le service), celle que
-  Jellyfin recommande et qui voit vos lecteurs réseau. Revenez ensuite à l'assistant : Jellyfin est détecté.
+  Jellyfin recommande et qui voit vos lecteurs réseau. L'assistant suit l'installation en trois étapes
+  (téléchargement, installateur ouvert à l'écran, démarrage) : quand l'installateur se ferme, Tentacle
+  **démarre Jellyfin** et le détecte seul, puis dit « Jellyfin est installé et démarré ». Installateur fermé
+  avant la fin : **Réessayer** le relance (et si l'installation avait abouti, Jellyfin est trouvé quand même).
 - **Si le téléchargement, la vérification ou le lancement échoue** (le contrôle intelligent des applications
   peut bloquer l'installateur de Jellyfin, qui n'est pas signé), ou sur un PC ARM64 : l'assistant ouvre
   **jellyfin.org/downloads/windows** ; installez Jellyfin vous-même, l'assistant le détecte dès qu'il répond.

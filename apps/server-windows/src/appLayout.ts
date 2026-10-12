@@ -25,6 +25,8 @@ export interface AppLayout {
   sharedDepsSeed: string | null;
   /** L'icône de la zone de notification ; `null` → icône générique de Windows. */
   trayIcon: string | null;
+  /** Le logo de l'écran de démarrage : la grande tuile du paquet ; `null` → l'écran s'en passe. */
+  splashLogo: string | null;
   /** Python embarquable et zipapp yt-dlp du paquet (absents hors paquet). */
   python: string | null;
   ytDlp: string | null;
@@ -77,6 +79,11 @@ export function appLayout(root: string): AppLayout {
     trayIcon: firstExisting([
       join(root, "apps", "server-windows", "assets", "tray.ico"),
       join(root, "apps", "desktop-electron", "icons", "icon.ico"),
+    ]),
+    // Les tuiles du paquet sont à sa racine (`Assets\`) ; hors paquet, celles du dépôt (fil des icônes).
+    splashLogo: firstExisting([
+      join(root, "Assets", "Square310x310Logo.png"),
+      join(root, "apps", "server-windows", "msix", "Assets", "Square310x310Logo.png"),
     ]),
     python: firstExisting([join(root, "python", "python.exe")]),
     ytDlp: firstExisting([join(root, "tools", "yt-dlp")]),

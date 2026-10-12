@@ -25,6 +25,7 @@ import { PICK_FOLDER_FLAG, runPickFolderChild } from "./dialog/pickFolderProcess
 import { buildServerEnv } from "./env/serverEnv";
 import { HostController } from "./host/hostController";
 import { readHostOptions } from "./hostOptions";
+import { SPLASH_STRINGS } from "./i18n/splashStrings";
 import { STRINGS, format, languageFromLangId } from "./i18n/strings";
 import { acquireInstance } from "./instance/singleInstance";
 import { createJellyfinHost, installerFolder } from "./jellyfin/jellyfinHost";
@@ -32,6 +33,9 @@ import { LogFiles } from "./logging/logFiles";
 import { defaultRouteAddress, interfaceOf, pickLanAddress, serverUrl } from "./net/lanAddress";
 import { isPublic, readProfiles } from "./net/networkProfile";
 import { isPortFree, suggestPorts } from "./net/ports";
+import { openSplash } from "./splash/openSplash";
+import { SplashController } from "./splash/splashController";
+import { launchedAtLogon } from "./startup/launchKind";
 import { startupRegistration } from "./startup/startupRegistration";
 import { runCommand } from "./startup/runKey";
 import { Supervisor } from "./supervisor/supervisor";
@@ -84,7 +88,8 @@ async function publicNetwork(systemRoot: string): Promise<boolean> {
 }
 
 async function main(): Promise<void> {
-  const strings = STRINGS[languageFromLangId(userInterfaceLangId())];
+  const language = languageFromLangId(userInterfaceLangId());
+  const strings = STRINGS[language];
   const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
   const app = appLayout(resolveAppRoot(process.argv, process.env, __dirname));
   const data = dataLayout(programDataFolder(process.env.ProgramData));
@@ -100,8 +105,25 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  // L'écran de démarrage, AVANT tout ce qui prend du temps (droits du dossier,
+  // shared-deps, serveur) : l'utilisateur voit tout de suite que ça démarre.
+  const packaged = hasPackageIdentity();
+  const early = readHostState(data.hostState);
+  const setupPending = !existsSync(data.setupComplete);
+  let splash: SplashController | null = null;
+  const splashWindow = openSplash({
+    atLogon: launchedAtLogon(process.argv, packaged),
+    setupPending,
+    startupAsked: early.startupAsked,
+    logo: app.splashLogo,
+    icon: app.trayIcon,
+    context: { strings, splash: SPLASH_STRINGS[language], dataDir: data.root, port: early.port },
+    onAction: (id) => void splash?.onAction(id),
+  });
+
   const prepared = await prepareDataFolder(data, systemRoot);
   if (!prepared.ok) {
+    splashWindow.window?.close();
     showError(
       strings.appName,
       prepared.reason === "other_account"
@@ -114,11 +136,13 @@ async function main(): Promise<void> {
   const logs = new LogFiles(data.logs);
   const log = (line: string): void => logs.host(line);
   log(`hôte ${hostVersion} — Node ${process.version}, racine ${app.root}, données ${data.root}${prepared.created ? " (créées)" : ""}`);
+  log(`écran de démarrage : ${splashWindow.outcome}`);
   process.on("uncaughtException", (error) => log(`erreur non rattrapée : ${error.stack ?? error.message}`));
   process.on("unhandledRejection", (reason) => log(`promesse rejetée : ${String(reason)}`));
 
   if (!existsSync(app.serverEntry)) {
     log(`serveur introuvable : ${app.serverEntry}`);
+    splashWindow.window?.close();
     showError(strings.appName, format(strings.dataFolderFailed, { dir: app.serverEntry, detail: "dist/index.js" }));
     process.exit(1);
   }
@@ -182,12 +206,12 @@ async function main(): Promise<void> {
     strings.appName,
   );
   const exit = (code: number): void => {
+    splash?.close();
     tray.dispose();
     instance.server.close();
     process.exit(code);
   };
 
-  const packaged = hasPackageIdentity();
   // Le Store ne met jamais à jour un paquet qui tourne : l'hôte s'en charge.
   const update = packaged
     ? createHostUpdate({
@@ -201,6 +225,7 @@ async function main(): Promise<void> {
       })
     : null;
 
+  const startup = await startupRegistration({ packaged, systemRoot, command: runCommand(process.execPath, __filename, app.root) });
   controller = new HostController({
     strings,
     dataDir: data.root,
@@ -216,11 +241,7 @@ async function main(): Promise<void> {
       confirm: (text) => confirm(strings.appName, text),
     },
     supervisor: () => supervisor,
-    startup: await startupRegistration({
-      packaged,
-      systemRoot,
-      command: runCommand(process.execPath, __filename, app.root),
-    }),
+    startup,
     log,
     logFile: () => logs.currentFile(),
     isPortFree,
@@ -233,7 +254,23 @@ async function main(): Promise<void> {
     publicNetwork: () => publicNetwork(systemRoot),
     exit,
     ...(update !== null ? { update: { pending: () => update.updatePending, installNow: () => update.installNow() } } : {}),
+    onDisplayState: (state, wizardOpening) => splash?.onServerState(state, wizardOpening),
   });
+  const host = controller;
+  if (splashWindow.window !== null) {
+    splash = new SplashController({
+      surface: splashWindow.window,
+      context: { strings, splash: SPLASH_STRINGS[language], dataDir: data.root, port: host.port },
+      setupPending,
+      readStartup: () => startup.read(),
+      startupAsked: () => host.startupAsked,
+      answerStartup: (enabled) => host.answerStartup(enabled),
+      openLog: () => host.openLog(),
+      retry: () => host.restartServer(),
+      log,
+    });
+    void splash.start();
+  }
 
   tray.show(`${strings.appName} : ${strings.stateStarting}`);
   log(`icône de la zone de notification : ${tray.visible ? "posée" : "refusée par l'Explorateur"}`);
