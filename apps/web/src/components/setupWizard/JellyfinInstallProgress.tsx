@@ -1,12 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Check, LoaderCircle } from "lucide-react";
-import { INSTALL_STAGES, stageStatus, type InstallProgress, type InstallStage } from "./localJellyfinModel";
-
-const STEP_LABEL: Readonly<Record<InstallStage, string>> = {
-  download: "installStepDownload",
-  installer: "installStepInstaller",
-  start: "installStepStart",
-};
+import { LoaderCircle } from "lucide-react";
+import type { InstallProgress, InstallStage } from "./localJellyfinModel";
 
 const STAGE_TITLE: Readonly<Record<InstallStage, string>> = {
   download: "installStageDownloadTitle",
@@ -23,21 +17,12 @@ const STAGE_LEAD: Readonly<Record<InstallStage, string>> = {
 /** Le dégradé de marque, comme les autres barres de l'assistant. */
 const BAR_STYLE = { background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" } as const;
 
-function StepIcon({ status }: { status: "done" | "active" | "pending" }) {
-  if (status === "done") return <Check size={16} aria-hidden="true" className="text-status-success-fg" />;
-  if (status === "active") return <LoaderCircle size={16} aria-hidden="true" className="text-[var(--brand-light)] motion-safe:animate-spin" />;
-  return <span aria-hidden="true" className="block size-2.5 rounded-full border border-line-strong" />;
-}
-
 /**
- * L'installation guidée de Jellyfin, impossible à manquer : une phrase en
- * grand qui dit ce qui se passe et ce qu'on attend de l'administrateur, les
- * trois étapes (faites, en cours, à venir), la progression du téléchargement,
- * et — pendant que l'installateur est ouvert — ce qui bloque d'habitude
- * (l'accord de Windows, une fenêtre cachée, une fermeture trop tôt).
- *
- * Un état d'attente, dans le panneau du Jellyfin de ce PC : la mise en page de
- * l'écran reste celle de l'assistant (`WizardFrame`).
+ * L'ÉTAT de l'installation guidée de Jellyfin, dans le panneau de droite :
+ * une phrase en grand qui dit ce qui se passe et ce qu'on attend de
+ * l'administrateur, et la progression du téléchargement. Les trois étapes et
+ * les consignes (l'accord de Windows, une fenêtre cachée, une fermeture trop
+ * tôt) sont à gauche (`JellyfinInstallSteps`) : la droite garde l'état.
  */
 export function JellyfinInstallProgress({ progress }: { progress: InstallProgress }) {
   const { t } = useTranslation("setupWizard");
@@ -51,23 +36,6 @@ export function JellyfinInstallProgress({ progress }: { progress: InstallProgres
           <p>{t(STAGE_LEAD[stage])}</p>
         </div>
       </div>
-
-      <ol className="space-y-2" aria-label={t("installStepsLabel")}>
-        {INSTALL_STAGES.map((step) => {
-          const status = stageStatus(stage, step);
-          return (
-            <li key={step} className="flex items-center gap-3" aria-current={status === "active" ? "step" : undefined}>
-              <span className="flex size-5 shrink-0 items-center justify-center">
-                <StepIcon status={status} />
-              </span>
-              <span className={status === "pending" ? "text-content-tertiary" : status === "active" ? "font-semibold text-content-primary" : ""}>
-                {t(STEP_LABEL[step])}
-                {status === "pending" ? null : <span className="sr-only"> — {t(status === "done" ? "installStepDone" : "installStepActive")}</span>}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
 
       {stage === "download" ? (
         <div className="space-y-1.5">
@@ -85,15 +53,6 @@ export function JellyfinInstallProgress({ progress }: { progress: InstallProgres
             </div>
           ) : null}
         </div>
-      ) : null}
-
-      {stage === "installer" ? (
-        <ul className="list-disc space-y-1 pl-5 marker:text-[var(--brand-light)]">
-          <li>{t("installTipConsent")}</li>
-          <li className="text-content-primary">{t("installAdvice")}</li>
-          <li>{t("installTipHidden")}</li>
-          <li>{t("installTipClosed")}</li>
-        </ul>
       ) : null}
     </div>
   );

@@ -3,9 +3,9 @@ import { CircleCheck, ExternalLink, LoaderCircle } from "lucide-react";
 import { JELLYFIN_WINDOWS_DOWNLOAD_URL } from "@tentacle-tv/shared";
 import { cls } from "../../pages/adminUtils";
 import { JellyfinInstallProgress } from "./JellyfinInstallProgress";
-import { localJellyfinView, type LocalJellyfinView } from "./localJellyfinModel";
+import type { LocalJellyfinView } from "./localJellyfinModel";
 import { SetupErrorLine } from "./SetupErrorLine";
-import { useLocalJellyfin, type LocalJellyfin as LocalJellyfinHost } from "./useLocalJellyfin";
+import type { LocalJellyfin as LocalJellyfinHost } from "./useLocalJellyfin";
 
 const linkCls = "inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-content-primary underline underline-offset-4 hover:opacity-80";
 const panelCls = "space-y-3 rounded-xl border bg-fill-faint p-4 text-sm leading-relaxed text-content-secondary";
@@ -98,7 +98,6 @@ function ViewBody({ view, host, docsUrl }: { view: LocalJellyfinView; host: Loca
         <>
           <p className={titleCls}>{t("installTitle")}</p>
           <p>{t("installIntro")}</p>
-          <p className="text-content-primary">{t("installAdvice")}</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <button type="button" onClick={() => void host.startInstall()} disabled={host.busy} className={cls.bp}>
               {t("installButton")}
@@ -146,14 +145,13 @@ function emphasized(view: LocalJellyfinView): boolean {
  * L'app Windows : le Jellyfin de CE PC, dit en clair au-dessus de la liste.
  * Arrêté, « Démarrer Jellyfin » (installation simple) ou le renvoi vers
  * Services ; absent, l'installation guidée — l'installateur officiel,
- * téléchargé et vérifié par l'app, suivi en trois étapes jusqu'au démarrage
- * (`JellyfinInstallProgress`) — ou la page officielle quand elle n'est pas
- * possible. Dès qu'il répond, il rejoint la liste (`onFound`) ; installé ici,
- * le panneau le dit d'abord, sinon il se tait.
+ * téléchargé et vérifié par l'app, dont l'ÉTAT se dit ici
+ * (`JellyfinInstallProgress`) et les étapes à gauche (`JellyfinInstallSteps`)
+ * — ou la page officielle quand elle n'est pas possible. L'hôte est suivi par
+ * l'écran (`useLocalJellyfin`, qui en tire aussi le pied et ce qui se tait) ;
+ * installé ici, le panneau le dit d'abord, sinon il se tait.
  */
-export function LocalJellyfin({ onFound }: { onFound: (url: string) => void }) {
-  const host = useLocalJellyfin(onFound);
-  const view = localJellyfinView(host.local, host.install, { starting: host.starting });
+export function LocalJellyfin({ host, view }: { host: LocalJellyfinHost; view: LocalJellyfinView }) {
   const docsUrl = host.local?.docsUrl ?? JELLYFIN_WINDOWS_DOWNLOAD_URL;
   if (view.kind === "running") return null;
   const border = emphasized(view) ? "border-[rgba(var(--brand-rgb),0.45)]" : "border-line-subtle";

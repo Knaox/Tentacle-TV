@@ -28,9 +28,10 @@ export interface LocalJellyfin {
  * Le Jellyfin de ce PC (app Windows) : la détection de l'hôte, l'installation
  * guidée suivie pas à pas, « Démarrer Jellyfin » — puis, dès qu'il répond,
  * `onFound` avec son adresse (une fois par adresse), pour qu'il rejoigne la
- * liste. Rien ne tourne tant que l'écran n'est pas monté.
+ * liste. Rien ne tourne tant que l'écran n'est pas monté, ni sans hôte qui
+ * gère Jellyfin (`enabled` faux : l'état reste vide, aucune requête).
  */
-export function useLocalJellyfin(onFound: (url: string) => void): LocalJellyfin {
+export function useLocalJellyfin(onFound: (url: string) => void, enabled = true): LocalJellyfin {
   const [local, setLocal] = useState<SetupLocalJellyfin | null>(null);
   const [install, setInstall] = useState<SetupJellyfinInstall | null>(null);
   const [starting, setStarting] = useState(false);
@@ -55,8 +56,8 @@ export function useLocalJellyfin(onFound: (url: string) => void): LocalJellyfin 
   const refresh = useCallback(() => guard(async () => setLocal(await setupApi.localJellyfin())), [guard]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (enabled) void refresh();
+  }, [refresh, enabled]);
 
   // L'hôte démarre Jellyfin juste après son installation : on l'attend, sans proposer un second démarrage.
   const installDone = install?.phase === "done";
