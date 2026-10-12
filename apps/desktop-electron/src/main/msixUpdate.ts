@@ -37,6 +37,7 @@ import {
   type ComPtr,
 } from "./winrt/com";
 import { IID, IITERABLE_STORE_PACKAGE_UPDATE_SIGNATURE, parameterizedIid } from "./winrt/guid";
+import { msixInstallError } from "./msixInstallState";
 
 const CLASS_NAME = "Windows.Services.Store.StoreContext";
 
@@ -78,9 +79,6 @@ const SLOT_INITIALIZE = 3;
 /** `IAsyncOperation<T>::GetResults`, puis celui de la variante à progression. */
 const SLOT_RESULTS = 8;
 const SLOT_RESULTS_WITH_PROGRESS = 10;
-
-/** `StorePackageUpdateState::Completed`. */
-const STATE_DONE = 0;
 
 /** La recherche est rapide ; l'installation passe par le Store et l'utilisateur. */
 const SEARCH_DELAY_MS = 30_000;
@@ -203,8 +201,9 @@ async function startInstall(context: ComPtr, iterable: ComPtr): Promise<void> {
     try {
       const state = callForInt32(result, SLOT_OVERALL_STATE);
       // `GetResults` peut réussir alors que l'installation a échoué : refus de
-      // l'utilisateur, réseau, batterie faible.
-      if (state !== STATE_DONE) throw new Error(`install-state-${String(state)}`);
+      // l'utilisateur, réseau, batterie faible. Le verdict : `msixInstallState`.
+      const error = msixInstallError(state);
+      if (error !== null) throw new Error(error);
     } finally {
       release(result);
     }
