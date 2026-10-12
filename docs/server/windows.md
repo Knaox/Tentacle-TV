@@ -32,7 +32,12 @@ winget install --source msstore "Tentacle Server"
 
 ## First launch
 
-1. Open **Tentacle Server** from the Start menu (the Store's **Open** button does the same).
+1. Open **Tentacle Server** from the Start menu (the Store's **Open** button does the same). A **startup
+   screen** appears right away: the logo, the current step (*Starting the server*, *Preparing the database*…)
+   and a progress bar. The first start can take a minute. It also asks, once: **"Start Tentacle Server when
+   Windows starts?"** — *Yes* or *No*, which you can change later with **Start with Windows** in the icon's
+   menu. It closes by itself when the server answers; if the server could not start, it says why, with **Try
+   again** and **Open log**. Closed with its cross, the server keeps going: the icon takes over.
 2. The Tentacle icon appears in the **notification area**, next to the clock. Windows may hide it under the
    **^** arrow: drag it onto the taskbar to keep it in sight.
 3. Your browser opens the setup wizard **once**, on this PC's network address (e.g.
@@ -65,8 +70,9 @@ Launching Tentacle Server again while it runs only opens the administration: the
 
 ## Start with Windows
 
-The app registers itself as a startup app: after its first launch, Tentacle starts **each time you sign in to
-Windows**, without opening anything. It does **not** start when the PC is switched on and nobody signs in:
+The app registers itself as a startup app; the first-launch screen asks whether you want it. When on, Tentacle
+starts **each time you sign in to Windows**, without opening anything (the startup screen then only appears
+when it has something to say: setup not finished, question not answered). It does **not** start when the PC is switched on and nobody signs in:
 a Store app cannot be a Windows service.
 
 - Turn it off or on with **Start with Windows** in the icon's menu, or in **Settings › Apps › Startup**. If
@@ -155,7 +161,10 @@ keys, its configured port, then its answer) and lists every Jellyfin it finds on
   (the most recent stable version Tentacle has tested), checks its SHA-256 fingerprint and size, then starts
   it **with your agreement**. Windows asks for an administrator's approval: that is Jellyfin's installer, not
   Tentacle. Choose the **basic** install (not the service), which Jellyfin recommends and which sees your
-  network drives. Then come back to the wizard: Jellyfin is detected.
+  network drives. The wizard follows the installation in three steps (download, installer open on screen,
+  start): when the installer closes, Tentacle **starts Jellyfin** and detects it by itself, then says
+  "Jellyfin is installed and running". Installer closed before the end: **Try again** starts it again (and if
+  the installation had gone through, Jellyfin is found anyway).
 - **If the download, the check or the launch fails** (Smart App Control can block Jellyfin's installer, which
   is not signed), or on an ARM64 PC: the wizard opens **jellyfin.org/downloads/windows**; install Jellyfin
   yourself, the wizard detects it when it answers.

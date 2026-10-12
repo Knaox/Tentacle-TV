@@ -33,6 +33,7 @@ efface.
 | Assistant ouvert UNE fois, dans le navigateur par défaut, sur l'adresse locale (jamais `localhost`) | `net/lanAddress.ts`, `host/` |
 | Journaux `logs\server-AAAA-MM-JJ.log`, sept jours | `logging/` |
 | Démarrer avec Windows : `StartupTask` dans le paquet (`TaskId="TentacleServerStartup"`), clé `Run` hors paquet | `startup/` |
+| Écran de démarrage (~100 ms après le lancement) : logo, étapes annoncées par le serveur (`tentacle:progress`), échec avec « Réessayer » et le journal, question « Lancer au démarrage de Windows ? » posée une fois (`host.json` → `startupAsked`) ; au démarrage de session (`--autostart`, `ActivationKind.StartupTask`), seulement s'il reste quelque chose à dire | `splash/`, `win32/splashWindow.ts`, `win32/gdiplus.ts`, `startup/launchKind.ts` |
 | Icône, menu FR/EN, notifications, fermeture de session | `win32/`, `tray/`, `i18n/` |
 | Réseau en profil « Public » signalé une fois | `net/networkProfile.ts` |
 | Jellyfin de la machine : registre, `network.xml`, service, processus, puis `/System/Info/Public` (`jellyfin.detect`) | `jellyfin/detect.ts` |
