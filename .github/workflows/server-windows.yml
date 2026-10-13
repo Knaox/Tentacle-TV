@@ -136,7 +136,9 @@ jobs:
       # sinon celui du déclenchement. Il doit appartenir à la branche lancée
       # OU à main (le bump y est poussé APRÈS le départ du run : il n'est pas
       # un ancêtre du commit de départ) — jamais un commit étranger, ni un SHA
-      # abrégé. fetch-depth 0 a rapatrié toutes les branches.
+      # abrégé. fetch-depth 0 ne suffit pas : checkout réécrit la branche
+      # lancée (origin/main au cran store) sur le commit de DÉPART, d'avant le
+      # bump — on relit donc les vraies pointes avant de juger.
       - name: Commit figé
         id: sha
         env:
@@ -147,6 +149,16 @@ jobs:
           if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::Entrée « sha » illisible : « ${SHA} » (40 caractères hexadécimaux attendus)."
             exit 1
+          fi
+          REFS=("+refs/heads/main:refs/remotes/origin/main")
+          if [ "${GITHUB_REF_TYPE:-}" = "branch" ] && [ "$GITHUB_REF_NAME" != "main" ]; then
+            REFS+=("+refs/heads/${GITHUB_REF_NAME}:refs/remotes/origin/${GITHUB_REF_NAME}")
+          fi
+          git fetch --no-tags --quiet origin "${REFS[@]}"
+          if [ "${GITHUB_REF_TYPE:-}" = "branch" ] \
+             && git merge-base --is-ancestor "$SHA" "origin/${GITHUB_REF_NAME}" 2>/dev/null; then
+            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           if ! git merge-base --is-ancestor "$SHA" HEAD 2>/dev/null \
              && ! git merge-base --is-ancestor "$SHA" origin/main 2>/dev/null; then
