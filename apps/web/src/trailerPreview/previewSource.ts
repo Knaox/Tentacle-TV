@@ -108,8 +108,8 @@ export interface PreviewSourceSession {
   release(): void;
 }
 
-/** Après `loadeddata`, au plus ce délai pour qu'une image soit présentée (élément invisible : jamais). */
-const FRAME_PRESENTED_FALLBACK_MS = 200;
+/** Après `loadeddata`, au plus ce délai si les images d'animation ne passent pas (page bridée). */
+const FRAME_PRESENTED_FALLBACK_MS = 100;
 
 /**
  * Pose `stream` sur `video` et rend la session. `loadHls` : injecté par les
@@ -124,7 +124,7 @@ export function attachPreviewSource(
   let released = false;
   let ready = false;
   let hls: Hls | null = null;
-  let frameCallback: number | null = null;
+  let frameRequest: number | null = null;
   let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   video.muted = true;
@@ -140,17 +140,18 @@ export function attachPreviewSource(
     if (fallbackTimer !== null) clearTimeout(fallbackTimer);
     handlers.onReady();
   };
-  // `loadeddata` : la première image est décodée. `requestVideoFrameCallback` dit
-  // quand elle est PRÉSENTÉE ; une vidéo cachée par `display: none` n'en présente
-  // aucune, d'où le repli à 200 ms.
+  // `loadeddata` : la première image est décodée ; deux images d'animation plus
+  // tard, elle est composée. PAS `requestVideoFrameCallback` : il attend l'image
+  // SUIVANTE, qui ne vient jamais d'une vidéo en pause — mesuré dans Electron,
+  // à toute opacité ; on payait les 200 ms de repli à chaque aperçu.
   const onLoadedData = () => {
     if (ready) return;
-    if (typeof video.requestVideoFrameCallback === "function") {
-      frameCallback = video.requestVideoFrameCallback(() => markReady());
-      fallbackTimer = setTimeout(markReady, FRAME_PRESENTED_FALLBACK_MS);
-    } else {
-      markReady();
+    if (typeof requestAnimationFrame === "function") {
+      frameRequest = requestAnimationFrame(() => {
+        frameRequest = requestAnimationFrame(() => markReady());
+      });
     }
+    fallbackTimer = setTimeout(markReady, FRAME_PRESENTED_FALLBACK_MS);
   };
   video.addEventListener("loadeddata", onLoadedData);
   video.addEventListener("error", fail);
@@ -198,9 +199,7 @@ export function attachPreviewSource(
       video.removeEventListener("loadeddata", onLoadedData);
       video.removeEventListener("error", fail);
       if (fallbackTimer !== null) clearTimeout(fallbackTimer);
-      if (frameCallback !== null && typeof video.cancelVideoFrameCallback === "function") {
-        video.cancelVideoFrameCallback(frameCallback);
-      }
+      if (frameRequest !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(frameRequest);
       // Rien ne doit plus consommer : hls.js détruit, l'élément vidé de sa source.
       hls?.destroy();
       hls = null;

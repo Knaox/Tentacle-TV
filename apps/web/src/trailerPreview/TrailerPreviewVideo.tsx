@@ -16,8 +16,8 @@ import type { TrailerPreviewVideoProps } from "./previewTypes";
  * hls.js est détruit et l'élément vidé : rien ne consomme une fois caché.
  *
  * ⚠️ Pendant le chargement, cacher la mini-carte par l'OPACITÉ, jamais par
- * `display: none` : une vidéo non rendue ne présente pas sa première image (le
- * moteur se rabat alors sur un délai fixe).
+ * `display: none` : une vidéo non rendue ne compose pas sa première image, qui
+ * n'arriverait à l'écran qu'au moment de se montrer.
  */
 export const TrailerPreviewVideo = memo(function TrailerPreviewVideo(props: TrailerPreviewVideoProps) {
   const { stream, muted, playing, volume, cycle, hold = false, className, style } = props;

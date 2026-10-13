@@ -18,7 +18,6 @@ class FakeVideo {
   paused = true;
   readonly listeners = new Map<string, Set<Listener>>();
   readonly calls: string[] = [];
-  frameCallback: (() => void) | null = null;
   constructor(private readonly native: string = "") {}
   canPlayType(type: string) {
     return type === "video/mp4" || type === this.native ? "maybe" : "";
@@ -32,13 +31,6 @@ class FakeVideo {
   }
   emit(type: string) {
     for (const listener of this.listeners.get(type) ?? []) listener();
-  }
-  requestVideoFrameCallback(callback: () => void) {
-    this.frameCallback = callback;
-    return 7;
-  }
-  cancelVideoFrameCallback() {
-    this.calls.push("cancelFrame");
   }
   pause() {
     this.calls.push("pause");
@@ -116,25 +108,36 @@ describe("attachPreviewSource — HLS par hls.js", () => {
     expect(video.calls).not.toContain("play");
   });
 
-  it("prête à la première image PRÉSENTÉE, sinon au repli", async () => {
+  it("prête deux images d'animation après la première image décodée, sinon au repli", async () => {
     vi.useFakeTimers();
+    const frames: Array<() => void> = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: () => void) => frames.push(callback));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
     try {
       const video = new FakeVideo();
       const onReady = vi.fn();
       attachPreviewSource(video as never, HLS, { onReady, onError: vi.fn() }, async () => fakeHlsClass().HlsClass);
       video.emit("loadeddata");
+      frames.shift()?.();
       expect(onReady).not.toHaveBeenCalled();
-      video.frameCallback?.();
+      frames.shift()?.();
+      expect(onReady).toHaveBeenCalledTimes(1);
+      // Le repli ne la redit pas.
+      vi.advanceTimersByTime(200);
       expect(onReady).toHaveBeenCalledTimes(1);
 
-      const hidden = new FakeVideo();
-      const onHiddenReady = vi.fn();
-      attachPreviewSource(hidden as never, HLS, { onReady: onHiddenReady, onError: vi.fn() }, async () => fakeHlsClass().HlsClass);
-      hidden.emit("loadeddata");
-      vi.advanceTimersByTime(200);
-      expect(onHiddenReady).toHaveBeenCalledTimes(1);
+      // Images d'animation bridées (page en arrière-plan) : le repli, à 100 ms.
+      const throttled = new FakeVideo();
+      const onThrottledReady = vi.fn();
+      attachPreviewSource(throttled as never, HLS, { onReady: onThrottledReady, onError: vi.fn() }, async () => fakeHlsClass().HlsClass);
+      throttled.emit("loadeddata");
+      vi.advanceTimersByTime(99);
+      expect(onThrottledReady).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(onThrottledReady).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
+      vi.unstubAllGlobals();
     }
   });
 
@@ -151,19 +154,29 @@ describe("attachPreviewSource — HLS par hls.js", () => {
   });
 
   it("à la sortie : hls.js détruit, l'élément vidé, plus aucun rappel", async () => {
-    const video = new FakeVideo();
-    const { HlsClass, instances } = fakeHlsClass();
-    const onReady = vi.fn();
-    const session = attachPreviewSource(video as never, HLS, { onReady, onError: vi.fn() }, async () => HlsClass);
-    await flush();
-    video.emit("loadeddata");
-    session.release();
-    expect(instances[0].calls).toContain("destroy");
-    expect(video.calls).toEqual(expect.arrayContaining(["cancelFrame", "pause", "removeAttribute:src", "load"]));
-    video.frameCallback?.();
-    video.emit("loadeddata");
-    expect(onReady).not.toHaveBeenCalled();
-    expect([...video.listeners.values()].every((set) => set.size === 0)).toBe(true);
+    const frames: Array<() => void> = [];
+    const cancelFrame = vi.fn();
+    vi.stubGlobal("requestAnimationFrame", (callback: () => void) => frames.push(callback));
+    vi.stubGlobal("cancelAnimationFrame", cancelFrame);
+    try {
+      const video = new FakeVideo();
+      const { HlsClass, instances } = fakeHlsClass();
+      const onReady = vi.fn();
+      const session = attachPreviewSource(video as never, HLS, { onReady, onError: vi.fn() }, async () => HlsClass);
+      await flush();
+      video.emit("loadeddata");
+      session.release();
+      expect(instances[0].calls).toContain("destroy");
+      expect(cancelFrame).toHaveBeenCalled();
+      expect(video.calls).toEqual(expect.arrayContaining(["pause", "removeAttribute:src", "load"]));
+      frames.splice(0).forEach((frame) => frame());
+      frames.splice(0).forEach((frame) => frame());
+      video.emit("loadeddata");
+      expect(onReady).not.toHaveBeenCalled();
+      expect([...video.listeners.values()].every((set) => set.size === 0)).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("une sortie avant le chargement de hls.js ne crée rien", async () => {
