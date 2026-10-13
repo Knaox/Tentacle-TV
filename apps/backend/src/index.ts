@@ -57,6 +57,7 @@ import { heroArtworkRoutes } from "./routes/heroArtwork";
 import { trailerRoutes } from "./routes/trailers";
 import { trailerMediaRoutes } from "./routes/trailerMedia";
 import { trailerReadinessRoutes } from "./routes/trailerReadiness";
+import { trailerPreviewRoutes } from "./routes/trailerPreview";
 import { gifRoutes } from "./routes/gifs";
 import { themeRoutes } from "./routes/theme";
 import { wsRoutes } from "./routes/ws";
@@ -266,6 +267,8 @@ async function main() {
   await app.register(trailerMediaRoutes, { prefix: "/api/trailers" });
   // Le diagnostic des bandes-annonces, résumé pour tout compte connecté.
   await app.register(trailerReadinessRoutes, { prefix: "/api/trailers" });
+  // L'aperçu au survol d'une carte : une bande-annonce choisie, vérifiée, relayée.
+  await app.register(trailerPreviewRoutes, { prefix: "/api/trailers" });
   await app.register(gifRoutes, { prefix: "/api/gifs" });
   await app.register(wsRoutes, { prefix: "/api/ws" });
   await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
