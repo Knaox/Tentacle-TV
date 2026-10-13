@@ -30,11 +30,17 @@ export async function closeProfileSessions(parentId: string, reason: FamilyProfi
 }
 
 export async function startProfileSession(
-  parent: { id: string; name: string },
+  parent: { id: string; name: string; platform?: string | null },
   profile: { userId: string; name: string; kind: FamilyProfileKind },
 ): Promise<string> {
   await closeProfileSessions(parent.id, "replaced");
-  const token = await signProfileSessionToken({ userId: profile.userId, username: profile.name, pairingId: parent.id });
+  const token = await signProfileSessionToken({
+    userId: profile.userId,
+    username: profile.name,
+    pairingId: parent.id,
+    // Un hôte hors TV (le bureau) : la plateforme est signée avec le jeton.
+    ...(parent.platform && { platform: parent.platform }),
+  });
   await getPrisma().pairedDevice.create({
     data: {
       name: parent.name,

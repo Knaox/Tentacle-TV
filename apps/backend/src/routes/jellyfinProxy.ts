@@ -19,6 +19,7 @@ import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
 import { readsInFull, replyFromCache, sendBuffered } from "./jellyfinProxy/bufferedReply";
 import { readIncomingAuth } from "./jellyfinProxy/incomingAuth";
 import { deviceRefusal } from "./jellyfinProxy/deviceGuard";
+import { scopedToDeviceUser } from "./jellyfinProxy/deviceUserScope";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
 import { resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
@@ -78,6 +79,11 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       if (refusal) {
         request.log.warn({ path: wildcardPath, method: request.method }, refusal);
         return reply.status(403).send({ error: "Forbidden" });
+      }
+      // Une session de profil du bureau : sans `userId`, Jellyfin répondrait
+      // pour la clé prêtée — bornée ici à SON compte (cf. deviceUserScope).
+      if (device.payload.scope === "profile" && device.payload.platform) {
+        targetUrl = buildTargetUrl(jellyfinUrl, route.path, scopedToDeviceUser(route.path, route.query, device.payload.userId));
       }
     }
 

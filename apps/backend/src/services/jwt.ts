@@ -14,6 +14,10 @@ export interface DeviceTokenPayload {
   scope?: "profile";
   /** Session de profil : le jumelage de la TV dont elle dépend. */
   pairingId?: string;
+  /** Session de profil d'un appareil hors TV (la Famille sur le bureau) : sa
+   *  plateforme (`desktop`), signée avec le jeton — le proxy y borne au compte
+   *  les requêtes sans utilisateur (`deviceUserScope.ts`). Absente : une TV. */
+  platform?: string;
 }
 
 /**
@@ -121,9 +125,10 @@ export async function verifyDeviceToken(token: string): Promise<DeviceTokenPaylo
   }
 }
 
-/** Une session de profil de TV : un jeton d'appareil au nom du profil, qui
- *  passe toutes les portes comme un jumelage — sans aucun droit d'administration. */
-export function signProfileSessionToken(input: { userId: string; username: string; pairingId: string }): Promise<string> {
+/** Une session de profil (TV, ou bureau : `platform`) : un jeton d'appareil au
+ *  nom du profil, qui passe toutes les portes comme un jumelage — sans aucun
+ *  droit d'administration. */
+export function signProfileSessionToken(input: { userId: string; username: string; pairingId: string; platform?: string }): Promise<string> {
   return signDeviceToken({ ...input, isAdmin: false, deviceId: crypto.randomUUID(), scope: "profile" });
 }
 

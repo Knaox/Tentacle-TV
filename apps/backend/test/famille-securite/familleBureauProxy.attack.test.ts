@@ -115,6 +115,18 @@ describe("SEC-F-50 : la session de profil du bureau ne parle que pour SON compte
     expect(h.hits.length).toBe(before);
   });
 
+  it("une requête SANS utilisateur ne lit jamais pour la clé prêtée : elle est bornée à SON compte", async () => {
+    const { zoe, token } = await guestOnDesktop();
+    for (const path of ["Items?Recursive=true&IncludeItemTypes=Movie", `Items/${ITEM}`, "Shows/NextUp?Limit=5", "Search/Hints?searchTerm=a"]) {
+      expect((await proxy("GET", path, token)).statusCode, path).toBe(200);
+      const sent = new URL(`http://jf${h.hits.at(-1)!.url}`);
+      expect(sent.searchParams.get("userId"), path).toBe(zoe);
+    }
+    // Un flux ou une image ne nomment aucun compte : rien n'y est ajouté.
+    await proxy("GET", `Items/${ITEM}/Images/Primary`, token);
+    expect(h.hits.at(-1)!.url).not.toContain("userId");
+  });
+
   it("n'écrit que ce qu'écrit un appareil, et pour lui seul : jamais un titre, jamais chez un autre", async () => {
     const { zoe, token } = await guestOnDesktop();
     expect((await proxy("POST", `Users/${zoe}/FavoriteItems/${ITEM}`, token)).statusCode).toBe(200);
