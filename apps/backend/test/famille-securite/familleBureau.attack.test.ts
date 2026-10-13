@@ -29,6 +29,7 @@ import { fakeJellyfinUsersFetch } from "../fakeJellyfinUsers";
 import { IDS, enroll, openProfile, pairTv, resetCaches, seedUsers } from "../familyHarness";
 import { buildPickerApp, door, pick, pickSession, pickerProfiles, seedFamily, sender } from "../familyPickerHarness";
 import { signImpersonationToken } from "../../src/services/jwt";
+import { requireAdmin, requirePersonalAdmin } from "../../src/middleware/auth";
 
 let app: FastifyInstance;
 let tokens: ReturnType<typeof seedUsers>;
@@ -36,7 +37,11 @@ let send: ReturnType<typeof sender>;
 
 beforeAll(async () => {
   vi.stubGlobal("fetch", (input: string | URL, init?: RequestInit) => h.fetch!(input, init));
-  app = await buildPickerApp();
+  app = await buildPickerApp(async (instance) => {
+    // Des portes témoins d'administration : `requireAdmin`, et la session personnelle d'un administrateur.
+    instance.get("/api/admin/witness", { preHandler: [requireAdmin] }, async () => ({ ok: true }));
+    instance.get("/api/admin/witness-personal", { preHandler: [requirePersonalAdmin] }, async () => ({ ok: true }));
+  });
   send = sender(app);
 });
 afterAll(async () => {
@@ -128,6 +133,10 @@ describe("SEC-F-46/47 : la session de profil du bureau regarde, et rien d'autre"
     }
     expect((await send("GET", "/api/admin/family", owner)).statusCode).toBe(403);
     expect((await send("PUT", "/api/admin/family", owner, { families: false })).statusCode).toBe(403);
+    // Damien est administrateur de Jellyfin : son profil, ouvert sur un bureau, ne l'est pas.
+    expect((await send("GET", "/api/admin/witness", tokens.damien)).statusCode).toBe(200);
+    expect((await send("GET", "/api/admin/witness", owner)).statusCode).toBe(403);
+    expect((await send("GET", "/api/admin/witness-personal", owner)).statusCode).toBe(403);
     expect((await door(app, owner)).user).toMatchObject({ userId: IDS.damien, isAdmin: false });
   });
 
