@@ -20,8 +20,8 @@ import {
   parseTrailerPreviewQuery, type TrailerPreview, type TrailerPreviewRefusal, type TrailerPreviewRefusalBody,
 } from "../trailers/trailerPreview";
 
-function refuse(reply: FastifyReply, status: 400 | 404 | 429, error: TrailerPreviewRefusal) {
-  const body: TrailerPreviewRefusalBody = { error };
+function refuse(reply: FastifyReply, status: 400 | 404 | 429, error: TrailerPreviewRefusal, retryAfterS?: number) {
+  const body: TrailerPreviewRefusalBody = retryAfterS === undefined ? { error } : { error, retryAfterS };
   return reply.status(status).send(body);
 }
 
@@ -41,8 +41,9 @@ export const trailerPreviewRoutes: FastifyPluginAsync = async (app) => {
 
     const outcome = await decidePreview(lookup.title, query.lang, userId);
     if (outcome.kind === "limited") {
+      // L'en-tête (exposé au CORS) et le corps disent la même chose : un client lit l'un ou l'autre.
       reply.header("Retry-After", String(outcome.retryAfterS));
-      return refuse(reply, 429, "rate_limited");
+      return refuse(reply, 429, "rate_limited", outcome.retryAfterS);
     }
     if (outcome.kind === "refused") return refuse(reply, 404, outcome.error);
 

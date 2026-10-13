@@ -87,6 +87,12 @@ export type TrailerPreviewRefusal = "invalid_request" | "no_trailer" | "unavaila
 
 export interface TrailerPreviewRefusalBody {
   error: TrailerPreviewRefusal;
+  /**
+   * 429 seulement : dans combien de secondes redemander — la valeur de
+   * `Retry-After`, recopiée dans le corps pour un client qui ne lit pas
+   * l'en-tête. Additif : un serveur d'avant ne l'envoie pas.
+   */
+  retryAfterS?: number;
 }
 
 /**

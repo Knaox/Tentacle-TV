@@ -71,6 +71,7 @@ describe("aperçu de bande-annonce › la réponse", () => {
     expect(isTrailerPreview({ ...preview, path: "https://youtube.com/watch?v=Way9Dexny3w" })).toBe(false);
     expect(isTrailerPreview({ ...preview, mimeType: "text/html" })).toBe(false);
     expect(isTrailerPreview({ error: "no_trailer" })).toBe(false);
+    expect(isTrailerPreview({ error: "rate_limited", retryAfterS: 5 })).toBe(false);
     expect(isTrailerPreview(null)).toBe(false);
   });
 });

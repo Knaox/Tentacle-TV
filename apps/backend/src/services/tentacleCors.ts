@@ -38,7 +38,15 @@ export function isAllowedOrigin(origin: string | undefined, ctx: CorsContext): b
   return [ctx.self, ctx.publicUrl, ctx.localUrl].some((url) => originOf(url) === normalized);
 }
 
-/** Les options de `@fastify/cors`, décidées requête par requête. */
+/**
+ * Les en-têtes de réponse qu'une page d'une AUTRE origine peut lire. Hors
+ * de la liste sûre du navigateur, `headers.get()` rend `null` : le bureau
+ * (`tentacle://app`) ne savait pas dans combien de temps redemander un aperçu
+ * refusé (429) ni quand revenir pendant une migration (503).
+ */
+export const EXPOSED_RESPONSE_HEADERS = ["Retry-After"];
+
+/** Les options de `@fastify/cors`, décidées requête par requête — serveur principal comme serveur de maintenance. */
 export function tentacleCorsDelegator(listed: readonly string[]) {
   return (request: FastifyRequest, callback: (error: Error | null, options?: FastifyCorsOptions) => void): void => {
     const origin = typeof request.headers.origin === "string" ? request.headers.origin : undefined;
@@ -48,6 +56,6 @@ export function tentacleCorsDelegator(listed: readonly string[]) {
       publicUrl: getPublicUrl(),
       localUrl: getConfigValue(LOCAL_URL_KEY) ?? null,
     });
-    callback(null, { origin: allowed, credentials: true });
+    callback(null, { origin: allowed, credentials: true, exposedHeaders: EXPOSED_RESPONSE_HEADERS });
   };
 }

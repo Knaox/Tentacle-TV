@@ -260,8 +260,9 @@ octet pour octet dans `apps/backend/src/trailers/` (avec la liste,
   meilleure en tête ; `expiresAt` borne le jeton et les URL amont.
 - Refus `{ error }`, tous « rien à montrer » : 404 `no_trailer` (aucune
   bande-annonce, titre invisible pour ce compte, collection, personne…),
-  404 `unavailable` (aucune ne se lit), 429 `rate_limited` (avec
-  `Retry-After`), 400 `invalid_request`.
+  404 `unavailable` (aucune ne se lit), 429 `rate_limited` (le délai dans
+  `Retry-After` — exposé au CORS, que le bureau lise l'en-tête — et dans le
+  corps, `retryAfterS`), 400 `invalid_request`.
 
 **Le choix** (`services/trailers/preview/`) : un titre de la bibliothèque est
 lu AU NOM du compte (clé d'administration + `userId` : Jellyfin rend 404 pour

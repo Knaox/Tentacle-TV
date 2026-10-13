@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { isAllowedOrigin, parseCorsOrigins, type CorsContext } from "./tentacleCors";
+import cors from "@fastify/cors";
+import Fastify from "fastify";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./configStore", () => ({ getPublicUrl: () => null, getConfigValue: () => undefined }));
+
+import { isAllowedOrigin, parseCorsOrigins, tentacleCorsDelegator, type CorsContext } from "./tentacleCors";
 
 const ctx = (over: Partial<CorsContext> = {}): CorsContext => ({
   listed: ["https://ancien.example.com"],
@@ -29,5 +34,20 @@ describe("le CORS de Tentacle", () => {
   it("une origine étrangère est refusée", () => {
     expect(isAllowedOrigin("https://evil.example", ctx())).toBe(false);
     expect(isAllowedOrigin("null", ctx())).toBe(false);
+  });
+
+  it("le bureau lit `Retry-After` (429, 503 de migration) — CORS ouvert ou restreint ; une origine refusée, rien", async () => {
+    for (const listed of [[], ["https://ancien.example.com"]]) {
+      const app = Fastify();
+      await app.register(cors, { delegator: tentacleCorsDelegator(listed) });
+      app.get("/x", async (_request, reply) => reply.status(429).header("Retry-After", "5").send({ error: "rate_limited" }));
+      const res = await app.inject({ url: "/x", headers: { origin: "tentacle://app" } });
+      expect([res.headers["access-control-allow-origin"], res.headers["access-control-expose-headers"]]).toEqual(["tentacle://app", "Retry-After"]);
+    }
+    const app = Fastify();
+    await app.register(cors, { delegator: tentacleCorsDelegator(["https://ancien.example.com"]) });
+    app.get("/x", async () => ({ ok: true }));
+    const refused = await app.inject({ url: "/x", headers: { origin: "https://evil.example" } });
+    expect(refused.headers["access-control-allow-origin"]).toBeUndefined();
   });
 });
