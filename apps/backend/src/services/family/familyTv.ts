@@ -1,7 +1,4 @@
 import { getPrisma } from "../db";
-import { provisionOwnJellyfinToken } from "../deviceJellyfinToken";
-import { revokePairedDevice } from "../deviceRevocation";
-import { hashToken, signProfileSessionToken } from "../jwt";
 import { FAMILY_CONTRACT_VERSION, FAMILY_MANAGE_UNLOCK_MS, type FamilyProfileKind, type FamilySwitches } from "../../family/familyContract";
 import type { ManageUnlockResponse, OpenTvSessionBody, TvProfileDto, TvProfilesDto, TvSessionDto } from "../../family/familyTvContract";
 import { familyRightsOf } from "../../family/familyRights";
@@ -10,6 +7,7 @@ import { getFamilySwitches, isReviewAccount } from "./familyConfig";
 import { FamilyFailure, iso } from "./familyErrors";
 import { withFamilyLock } from "./familyLock";
 import { checkProfilePin, lockedProfiles, profilesWithPin } from "./familyPins";
+import { startProfileSession } from "./familyProfileSession";
 import { familyOf, familyProfiles, fold, jellyfinUserMap, memberKind, profileColor, type MemberRow } from "./familyStore";
 import type { PairingRow } from "./familyTvEnroll";
 import { syncGuestPolicy } from "./guestAccounts";
@@ -44,10 +42,18 @@ export async function tvEntries(account: string, switches: FamilySwitches): Prom
   return { entries, familyOwner: mine.family.ownerUserId };
 }
 
-export async function listTvProfiles(pairing: PairingRow, now: number): Promise<TvProfilesDto> {
+/**
+ * Les profils que « Qui regarde ? » montre pour ce compte — sur sa TV, ou sur
+ * son bureau (`familyPicker.ts`) : la même règle partout. `accountName` sert
+ * si ni Jellyfin ni la famille ne nomment le compte.
+ */
+export async function visibleProfiles(
+  account: string,
+  accountName: string,
+  now: number,
+): Promise<{ switches: FamilySwitches; profiles: TvProfileDto[] }> {
   const switches = getFamilySwitches();
   const users = await jellyfinUserMap();
-  const account = pairing.jellyfinUserId;
   const { entries, familyOwner } = await tvEntries(account, switches);
   // Un compte désactivé (ou disparu) dans Jellyfin ne s'ouvre plus ; celui de la TV reste.
   const visible = entries.filter((entry) => {
@@ -64,7 +70,7 @@ export async function listTvProfiles(pairing: PairingRow, now: number): Promise<
     return {
       userId: entry.userId,
       kind: entry.kind,
-      name: guest ? entry.row?.displayName ?? "" : jellyfinName ?? entry.row?.displayName ?? pairing.username,
+      name: guest ? entry.row?.displayName ?? "" : jellyfinName ?? entry.row?.displayName ?? accountName,
       color: profileColor(entry.row?.color ?? null, entry.userId),
       hasPin: pins.has(entry.userId),
       imageTag: guest ? null : users?.get(fold(entry.userId))?.imageTag ?? null,
@@ -78,6 +84,12 @@ export async function listTvProfiles(pairing: PairingRow, now: number): Promise<
           : familyRightsOf(entry.kind === "member" ? "member" : "owner", { createGuests: entry.row?.canCreateGuests === true }, switches),
     };
   });
+  return { switches, profiles };
+}
+
+export async function listTvProfiles(pairing: PairingRow, now: number): Promise<TvProfilesDto> {
+  const account = pairing.jellyfinUserId;
+  const { switches, profiles } = await visibleProfiles(account, pairing.username, now);
   const pairedBy = { userId: account, name: profiles.find((profile) => sameUserId(profile.userId, account))?.name ?? pairing.username };
   const sticky = profiles.find((profile) => pairing.stickyProfileId && sameUserId(profile.userId, pairing.stickyProfileId));
   return {
@@ -102,10 +114,10 @@ export async function tvManageRole(userId: string, pairingAccount: string): Prom
   return entry.kind === "member" ? "memberTv" : "ownerTv";
 }
 
-/** Pourquoi un profil n'est pas ouvrable sur cette TV. */
-async function unavailable(pairing: PairingRow, profileId: string): Promise<FamilyFailure> {
+/** Pourquoi un profil n'est pas ouvrable sur l'appareil de ce compte (sa TV, son bureau). */
+export async function unavailableFor(account: string, profileId: string): Promise<FamilyFailure> {
   const switches = getFamilySwitches();
-  const mine = await familyOf(pairing.jellyfinUserId);
+  const mine = await familyOf(account);
   const row = mine ? (await familyProfiles(mine.family.id)).find((entry) => sameUserId(entry.userId, profileId)) : undefined;
   if (row && !switches.families) return new FamilyFailure("family.disabled", "Familles coupées par l'administration");
   if (row?.kind === "guest" && !switches.guests) return new FamilyFailure("family.guests_disabled", "Profils invités coupés par l'administration");
@@ -116,7 +128,7 @@ export async function openTvSession(pairing: PairingRow, body: OpenTvSessionBody
   return withFamilyLock(`tv:${pairing.id}`, async () => {
     const listing = await listTvProfiles(pairing, now);
     const profile = listing.profiles.find((entry) => sameUserId(entry.userId, body.profileId));
-    if (!profile) throw await unavailable(pairing, body.profileId);
+    if (!profile) throw await unavailableFor(pairing.jellyfinUserId, body.profileId);
     if (profile.lockedUntil) {
       throw new FamilyFailure("family.pin_locked", "Profil bloqué : trop d'essais", { lockedUntil: profile.lockedUntil });
     }
@@ -125,29 +137,13 @@ export async function openTvSession(pairing: PairingRow, body: OpenTvSessionBody
     // L'invité suit la politique de SON créateur, quelle que soit la TV qui l'ouvre.
     if (profile.kind === "guest") void syncGuestPolicy(profile.userId, profile.createdBy ?? pairing.jellyfinUserId);
 
-    const prisma = getPrisma();
     // Une seule session de profil par TV : la précédente se ferme.
-    const previous = await prisma.pairedDevice.findMany({ where: { parentId: pairing.id }, select: { id: true } });
-    for (const session of previous) await revokePairedDevice({ id: session.id }, "family", { profileEnd: "replaced" });
-
-    const token = await signProfileSessionToken({ userId: profile.userId, username: profile.name, pairingId: pairing.id });
-    await prisma.pairedDevice.create({
-      data: {
-        name: pairing.name,
-        jellyfinUserId: profile.userId,
-        username: profile.name,
-        tokenHash: hashToken(token),
-        parentId: pairing.id,
-        profileKind: profile.kind,
-      },
-    });
+    const token = await startProfileSession(pairing, profile);
     const remember = body.remember === true;
-    await prisma.pairedDevice.update({
+    await getPrisma().pairedDevice.update({
       where: { id: pairing.id },
       data: { stickyProfileId: remember ? profile.userId : null, lastSeen: new Date(now) },
     });
-    // Son propre jeton Jellyfin (Quick Connect), sur l'identifiant de CETTE session.
-    provisionOwnJellyfinToken(token, { jellyfinUserId: profile.userId, name: pairing.name });
     console.log(`[family] Session de profil ouverte sur la TV ${pairing.id} (${profile.kind})`);
     return { token, user: { id: profile.userId, name: profile.name }, profile, remembered: remember };
   });
