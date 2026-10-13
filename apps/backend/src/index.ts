@@ -50,6 +50,7 @@ import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
 import { familyRoutes } from "./routes/family/familyRoutes";
 import { adminFamilyRoutes, familyTvRoutes } from "./routes/family/familyTvRoutes";
+import { familyPickerRoutes } from "./routes/family/familyPickerRoutes";
 import { shareRoutes } from "./routes/share";
 import { tmdbRoutes } from "./routes/tmdb";
 import { heroArtworkRoutes } from "./routes/heroArtwork";
@@ -255,6 +256,7 @@ async function main() {
   // La Famille (docs/FAMILLE.md) : routes et appelants tirés du contrat.
   await app.register(familyRoutes, { prefix: "/api/family" });
   await app.register(familyTvRoutes, { prefix: "/api/family" });
+  await app.register(familyPickerRoutes, { prefix: "/api/family" });
   await app.register(adminFamilyRoutes, { prefix: "/api/admin" });
   await app.register(shareRoutes, { prefix: "/api/share" });
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });

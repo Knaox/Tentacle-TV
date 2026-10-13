@@ -57,9 +57,10 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
       // déjumelage, elle doit dire l'état du serveur à l'instant.
       reply.header("Cache-Control", "private, no-store");
       const user = (request as unknown as { user: JellyfinUser }).user;
-      // Les jumelages seulement : une session de profil n'est pas un appareil.
+      // Les jumelages seulement : une session de profil n'est pas un appareil,
+      // l'hôte de profils d'un bureau non plus (sa session est celle du compte).
       const devices = await getPrisma().pairedDevice.findMany({
-        where: { jellyfinUserId: user.userId, parentId: null },
+        where: { jellyfinUserId: user.userId, parentId: null, platform: null },
         orderBy: { createdAt: "desc" },
       });
       return devices.map(toView);
@@ -76,7 +77,7 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrisma();
 
       const device = await prisma.pairedDevice.findUnique({ where: { id } });
-      if (!device || device.jellyfinUserId !== user.userId || device.parentId) {
+      if (!device || device.jellyfinUserId !== user.userId || device.parentId || device.platform) {
         return reply.status(404).send({ message: "Appareil introuvable" });
       }
 
@@ -90,7 +91,7 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
   app.get("/devices", { preHandler: [requireAdmin] }, async (_request, reply) => {
     reply.header("Cache-Control", "private, no-store");
     const devices = await getPrisma().pairedDevice.findMany({
-      where: { parentId: null },
+      where: { parentId: null, platform: null },
       orderBy: { createdAt: "desc" },
     });
     return devices.map(toView);

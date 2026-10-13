@@ -10,6 +10,7 @@ import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
 import { BACKEND_VERSION } from "../services/version";
 import { jellyfinAcceptsLegacyAuth } from "../services/jellyfinLegacyAuth";
 import { familyCapability } from "../services/family/familyConfig";
+import { isPickerProfileSession } from "../services/family/familyPickerHosts";
 import { serverAddresses } from "../remoteAccess/serverAddresses";
 import { directMediaBaseUrl, pairingUrl } from "../remoteAccess/exposure";
 import { declaredServerCapabilities } from "../serverCapabilities/declaredCapabilities";
@@ -72,6 +73,15 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
     const disabled = {
       directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null, ...(deviceId && { deviceId }) },
     };
+
+    // Une session de profil du BUREAU ne reçoit JAMAIS de jeton Jellyfin : la
+    // personne au clavier repartirait avec un vrai jeton du compte du profil
+    // (celui d'un administrateur, ouvert sans PIN par un membre…). Tout passe
+    // par Tentacle et ses gardes (docs/FAMILLE.md, « Le bureau »). Base muette :
+    // pas de jeton non plus.
+    if (payload?.scope === "profile" && (await isPickerProfileSession(payload.pairingId).catch(() => true))) {
+      return disabled;
+    }
 
     // L'adresse privée suffit (réseau local) ; hors de la maison, la publique
     // seulement si elle est réglée ET publiée — sinon la lecture passe par Tentacle.

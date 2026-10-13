@@ -3,6 +3,7 @@ import { getJellyfinUsers, invalidateJellyfinUsers } from "../watchTogether/user
 import { getFamilySwitches } from "./familyConfig";
 import { expireDueInvitations } from "./familyInvitationAnswers";
 import { forgetFamilyAccount } from "./familyMembers";
+import { sweepIdlePickerHosts } from "./familyPickerHosts";
 import { endProfileEverywhere, endSessions } from "./familySessions";
 import { fold } from "./familyStore";
 import { tvEntries } from "./familyTv";
@@ -19,7 +20,10 @@ import { sweepGuestAccounts } from "./guestAccountCleanup";
  * - un compte désactivé dans Jellyfin perd ses sessions de profil ;
  * - une session de profil qu'aucune TV ne devrait plus montrer (familles
  *   fusionnées par la migration v2, profil sorti de la famille de la TV
- *   pendant que le serveur dormait) est coupée, son « Rester » oublié.
+ *   pendant que le serveur dormait) est coupée, son « Rester » oublié ;
+ * - l'hôte de profils d'un bureau que sa session personnelle n'a plus
+ *   présenté depuis trente jours part, ses sessions de profil avec
+ *   (`familyPickerHosts.ts`).
  *
  * Prudence : Jellyfin muet ou liste vide → rien n'est conclu ; un profil né
  * après la lecture de la liste attend le passage suivant.
@@ -92,6 +96,8 @@ export async function sweepFamily(now: number = Date.now()): Promise<void> {
     if (expired > 0) console.log(`[family] ${expired} invitation(s) échue(s)`);
     await forgetVanishedAccounts(now);
     await endStaleProfileSessions();
+    const idle = await sweepIdlePickerHosts(now);
+    if (idle > 0) console.log(`[family] ${idle} hôte(s) de profils abandonné(s) fermé(s)`);
   } catch (error) {
     console.log(`[family] balayage interrompu : ${(error as Error)?.message ?? error}`);
   }

@@ -6,6 +6,7 @@ import { PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../pairedDeviceStatus";
 import type { FamilyCaller, FamilyRouteSpec } from "../../family/familyRoutes";
 import { FamilyFailure, sendFamilyFailure } from "./familyErrors";
 import { hasPin } from "./familyPins";
+import { isPickerProfileSession } from "./familyPickerHosts";
 import { tvManageRole } from "./familyTv";
 
 /**
@@ -17,7 +18,8 @@ import { tvManageRole } from "./familyTv";
  * - `ownerTv` / `memberTv` : la session de profil du propriétaire de la
  *   famille / d'un membre, sur une TV de la famille, « Gérer les profils »
  *   ouvert par SON PIN (ouvert d'office s'il n'en a pas) ;
- * - `tvProfile` : une session de profil, quel qu'en soit le profil ;
+ * - `tvProfile` : une session de profil d'une TV, quel qu'en soit le profil
+ *   — jamais celle d'un bureau, qui n'est aucun appelant ;
  * - `tvPairing` / `tvLegacy` : les jetons de jumelage, jugés par leur route ;
  * - `admin` : un administrateur EN SESSION PERSONNELLE.
  *
@@ -108,6 +110,15 @@ export function familyGuard(spec: FamilyRouteSpec) {
       }
     }
     if (session === "tvProfile") {
+      // Une session de profil du BUREAU regarde : aucune route de la Famille
+      // ne lui répond, pas même celles des TV (docs/FAMILLE.md, « Le bureau »).
+      let desktop: boolean;
+      try {
+        desktop = await isPickerProfileSession(result.user.pairingId);
+      } catch {
+        return reply.status(503).send({ message: "Base de données indisponible" });
+      }
+      if (desktop) return sendFamilyFailure(reply, forbidden());
       if (callers.has("tvProfile")) return actor("tvProfile");
       if (callers.has("ownerTv") || callers.has("memberTv")) {
         const { role, open } = await manageVerdict(token, userId, Date.now());

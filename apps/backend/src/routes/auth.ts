@@ -5,6 +5,7 @@ import { getPrisma, hasPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import { hashToken, verifyDeviceToken, verifyImpersonationToken } from "../services/jwt";
 import { revokePairedDevice } from "../services/deviceRevocation";
+import { endPickerHost } from "../services/family/familyPickerHosts";
 import { buildAuthHeader, deviceIdForOpaque } from "../services/jellyfinIdentity";
 import { authPasswordRoutes } from "./authPassword";
 import { authAccountRoutes } from "./authAccount";
@@ -143,6 +144,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       await revokePairedDevice({ tokenHash: hashToken(token) }, "self");
       return { success: true };
     }
+
+    // La Famille sur le bureau : se déconnecter du compte sur cet appareil
+    // coupe ses sessions de profil (son hôte), avant la réponse.
+    if (token) await endPickerHost(token).catch(() => false);
 
     if (jellyfinUrl && token) {
       // Un jumelage d'AVANT gardait une copie du token Jellyfin du navigateur

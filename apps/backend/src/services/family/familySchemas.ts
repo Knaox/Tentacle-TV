@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FAMILY_PROFILE_COLORS } from "../../family/familyContract";
+import { FAMILY_PICKER_PLATFORMS } from "../../family/familyPickerContract";
 
 /**
  * Les corps et paramètres des routes de la Famille, validés à l'entrée — la
@@ -52,6 +53,21 @@ export const openTvSessionBodySchema = z.object({
 });
 
 export const manageUnlockBodySchema = z.object({ pin: z.string().max(16).optional() });
+
+/** « Qui regarde ? » hors des TV : une plateforme de la liste FERMÉE. */
+const pickerPlatformSchema = z.enum(FAMILY_PICKER_PLATFORMS);
+
+export const pickerQuerySchema = z.object({ platform: pickerPlatformSchema });
+
+/** Le nom d'appareil est nettoyé par le service (`pickerDeviceName`) ; ici, la taille seulement. */
+export const pickProfileBodySchema = z.object({
+  platform: pickerPlatformSchema,
+  profileId: userIdSchema,
+  pin: z.string().max(16).optional(),
+  deviceName: z.string().max(200).optional(),
+});
+
+export const setPickerPreferenceBodySchema = z.object({ platform: pickerPlatformSchema, atLaunch: z.boolean() });
 
 export const adminSwitchesBodySchema = z.object({
   families: z.boolean().optional(),
