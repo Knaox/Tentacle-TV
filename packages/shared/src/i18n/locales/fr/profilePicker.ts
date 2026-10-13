@@ -10,7 +10,6 @@ export default {
   loading: "Chargement des profils…",
   opening: "Ouverture du profil {{name}}…",
   manageProfiles: "Gérer les profils",
-  guest: "Invité",
   hasPin: "Protégé par un code PIN",
   lockedUntil: "Bloqué jusqu'à {{time}}",
   loadFailed: "Impossible de lire les profils de la famille.",
@@ -41,15 +40,12 @@ export default {
   },
   switcher: {
     title: "Changer de profil",
-    current: "Profil actuel",
     switching: "Changement de profil…",
-    ownProfile: "Revenir à mon profil",
   },
   session: {
     guestBadge: "Profil invité",
     memberBadge: "Profil de la famille",
     ended: "La session de ce profil a pris fin.",
-    restricted: "Revenez à votre propre profil pour y accéder.",
   },
   launchSetting: {
     section: "Sur vos ordinateurs",

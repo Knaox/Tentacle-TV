@@ -7,7 +7,6 @@ export default {
   loading: "Loading profiles…",
   opening: "Opening {{name}}…",
   manageProfiles: "Manage profiles",
-  guest: "Guest",
   hasPin: "Protected by a PIN",
   lockedUntil: "Locked until {{time}}",
   loadFailed: "The family's profiles couldn't be loaded.",
@@ -38,15 +37,12 @@ export default {
   },
   switcher: {
     title: "Switch profile",
-    current: "Current profile",
     switching: "Switching profiles…",
-    ownProfile: "Back to my profile",
   },
   session: {
     guestBadge: "Guest profile",
     memberBadge: "Family profile",
     ended: "This profile's session has ended.",
-    restricted: "Switch back to your own profile to use this.",
   },
   launchSetting: {
     section: "On your computers",
