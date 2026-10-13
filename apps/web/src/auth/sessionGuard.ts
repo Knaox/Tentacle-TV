@@ -3,6 +3,7 @@ import type { JellyfinClient, StorageAdapter } from "@tentacle-tv/api-client";
 import { notifyUserChange } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../lib/backendBase";
 import { setSessionExpired } from "./sessionState";
+import { endProfileSession } from "./profileEnded";
 
 /**
  * Vitalité de la session web. Extrait de `main.tsx`.
@@ -75,6 +76,10 @@ export function installSessionGuard({ client, storage, queryClient }: SessionGua
   /** Purge locale. Pas de navigation impérative : le garde de routes d'App.tsx
    *  redirige de lui-même dès que `tentacle_user` disparaît. */
   const endSession = () => {
+    // Bureau, session d'un PROFIL : c'est elle qui a pris fin, pas le compte —
+    // retour à « Qui regarde ? » derrière la session personnelle, jamais la
+    // déconnexion (`profileEnded.ts`).
+    if (endProfileSession("ended")) return;
     client.setAccessToken(null);
     storage.removeItem("tentacle_token");
     storage.removeItem("tentacle_user");

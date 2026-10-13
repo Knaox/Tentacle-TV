@@ -21,6 +21,8 @@ import { SeasonRequestProvider } from "./components/seasons/SeasonRequestProvide
 import { isDesktopApp } from "./desktop/bridge";
 import { supportsPictureInPicture } from "./desktop/capabilities";
 import { PlayerStage } from "./pictureInPicture/PlayerStage";
+import { PageSpinner } from "./components/PageSpinner";
+import { useProfileLaunchGate } from "./profiles/launch/useProfileLaunchGate";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
@@ -50,14 +52,6 @@ import {
   MirrorWatchlist,
 } from "./mirror/screens";
 
-function PageSpinner() {
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-    </div>
-  );
-}
-
 /* -- Reactive auth state — dérivée de la source unique `tentacle_user` exposée
    par useUserId(). La notification est explicite (voir useAuth / onAuthExpired /
    ServerSetup) et NON via un monkey-patch de localStorage.setItem : WebKit /
@@ -82,6 +76,8 @@ export function App() {
   const refreshPlugins = useRefreshPlugins();
   const guard = (el: React.ReactElement) => authed ? el : <Navigate to="/login" replace />;
   const playerOnStage = supportsPictureInPicture(); // le lecteur hors des routes, pour le PiP
+  // Bureau : « Qui regarde ? » à l'ouverture, AVANT tout le reste (rien ne consomme derrière).
+  const profileGate = useProfileLaunchGate(authed && !needsServerUrl);
   // Mode Hors ligne (desktop) : navigation réduite au contenu local — les
   // sections serveur ne sont pas rendues, elles redirigent vers le catalogue.
   const offlineMode = useOfflineMode();
@@ -119,6 +115,8 @@ export function App() {
       />
     );
   }
+
+  if (profileGate) return profileGate;
 
   return (
     <ToastProvider>

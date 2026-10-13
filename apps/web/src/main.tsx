@@ -52,6 +52,7 @@ import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import { HostTitleBar } from "./desktop/HostTitleBar";
 import { AppErrorBoundary } from "./components/problems/AppErrorBoundary";
 import { DatabaseMigrationGate } from "./databaseMigration/DatabaseMigrationGate";
+import { ProfileArrival } from "./profiles/switch/ProfileArrival";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -267,6 +268,8 @@ function renderApp() {
       <ThemeProvider>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={jellyfinClient}>
+            {/* Bureau : le rideau d'arrivée d'une bascule de profil, déjà là au premier rendu. */}
+            <ProfileArrival />
             <PluginProvider backendUrl={backendUrl}>
               <HistoryRouter history={appHistory}>
                 <AppErrorBoundary>

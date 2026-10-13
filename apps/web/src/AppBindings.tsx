@@ -8,6 +8,7 @@ import {
   primeBitrateMeasure,
 } from "@tentacle-tv/api-client";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
+import { ProfileSessionBinding } from "./auth/ProfileSessionBinding";
 import { MutationFailureBinding } from "./components/notices/MutationFailureBinding";
 import { RecoLiveBinding } from "./components/reco/RecoLiveBinding";
 import { PreferencesLiveBinding } from "./components/reco/PreferencesLiveBinding";
@@ -75,6 +76,8 @@ export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
           naissance de sa sortie vidéo (desktop/playerWarmup.ts). */}
       {authed && <PlayerWarmupBinding />}
       {authed && <ImpersonationBanner />}
+      {/* Bureau : la session d'un profil de la Famille — sa fin, son identité Jellyfin. */}
+      {authed && <ProfileSessionBinding />}
       {/* Un geste de carte qui échoue (favori, Ma liste, vu, note) le dit. */}
       {authed && <MutationFailureBinding />}
       {/* Fil temps réel des recommandations : la page en cache se rafraîchit

@@ -17,4 +17,10 @@ export const SESSION_FILES: Record<string, string> = {
   // survit au rechargement du mode « serveur absent au démarrage », et
   // révocation dès le retour du serveur. Même rendu que le web.
   [resolve(WEB, "components/OfflineBanner.tsx")]: resolve(CLIENT, "ui/screens/OfflineBannerTv.tsx"),
+
+  // « Qui regarde ? » à l'ouverture du BUREAU : la LG n'a pas de profils de la
+  // Famille, sa porte ne rend jamais rien. C'est la seule porte du dossier
+  // `profiles/` d'`apps/web` dans le graphe du téléviseur — il quitte donc
+  // aussi la feuille (`EXCLUDED_WEB_DIRECTORIES`).
+  [resolve(WEB, "profiles/launch/useProfileLaunchGate.tsx")]: resolve(CLIENT, "shims/noProfileLaunchGate.ts"),
 };

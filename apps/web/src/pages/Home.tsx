@@ -29,6 +29,7 @@ import { CardDensityProvider } from "../contexts/CardDensityContext";
 import { useRecoFilter } from "../hooks/useRecoFilter";
 import { libraryHasNoTitles, pickHeroMedia, type MediaItem } from "@tentacle-tv/shared";
 import { EmptyLibraryState } from "../components/home/EmptyLibraryState";
+import { endProfileSession } from "../auth/profileEnded";
 
 /** Une source en échec : rien (identité stable — la bannière ne se refait pas). */
 const NO_ITEMS: MediaItem[] = [];
@@ -48,6 +49,8 @@ export function Home() {
   // purge immédiate de la session locale. Inerte sur navigateur desktop — le
   // serveur ne cible que les sockets d'appareils jumelés (TV webOS notamment).
   const onSessionRevoked = useCallback(() => {
+    // Bureau, session d'un profil : « Qui regarde ? », jamais la déconnexion du compte.
+    if (endProfileSession("revoked")) return;
     client.setAccessToken(null);
     localStorage.removeItem("tentacle_token");
     localStorage.removeItem("tentacle_user");
