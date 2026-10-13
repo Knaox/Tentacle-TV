@@ -157,6 +157,12 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "hooks/useHoverGuard.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
   [resolve(WEB, "hooks/useHoverMount.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
 
+  // L'aperçu de bande-annonce au survol : un téléviseur ne survole pas, et son
+  // décodeur n'accueille pas hls.js. L'index du moteur et sa liaison de racine
+  // deviennent inertes — aucune requête, aucune vidéo, le moteur hors du bundle.
+  [resolve(WEB, "trailerPreview/index.ts")]: resolve(CLIENT, "shims/trailerPreview.ts"),
+  [resolve(WEB, "trailerPreview/TrailerPreviewBinding.tsx")]: resolve(CLIENT, "shims/trailerPreview.ts"),
+
   // Les deux calques d'élévation de `.media-tile` sont pilotés par l'ATTRIBUT
   // `data-hovered`, hors de portée de toute passe CSS, et le lift est un
   // `transform` en style en ligne. Le cadre étant le point de passage unique de

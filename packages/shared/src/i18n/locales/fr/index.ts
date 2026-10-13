@@ -36,6 +36,7 @@ import stats from "./stats";
 import statsShare from "./statsShare";
 import statsPublic from "./statsPublic";
 import trailerHelp from "./trailerHelp";
+import trailerPreview from "./trailerPreview";
 import serverLinks from "./serverLinks";
 import remoteAccess from "./remoteAccess";
 import remoteAccessHelp from "./remoteAccessHelp";
@@ -62,6 +63,7 @@ export default {
   statsShare,
   statsPublic,
   trailerHelp,
+  trailerPreview,
   serverLinks,
   remoteAccess,
   remoteAccessHelp,

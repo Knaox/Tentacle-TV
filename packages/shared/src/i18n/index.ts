@@ -14,6 +14,7 @@ const NAMESPACES = [
   "statsShare",
   "statsPublic",
   "trailerHelp",
+  "trailerPreview",
   "serverLinks",
   "remoteAccess",
   "remoteAccessHelp",

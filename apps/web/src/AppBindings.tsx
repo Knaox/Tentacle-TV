@@ -21,6 +21,7 @@ import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
 import { DownloadsEvents } from "./downloads/DownloadsEvents";
 import { DownloadRequestHost } from "./downloads/DownloadRequestHost";
 import { PlayerWarmupBinding } from "./desktop/PlayerWarmupBinding";
+import { TrailerPreviewBinding } from "./trailerPreview/TrailerPreviewBinding";
 import { SoakHarness } from "./dev/soakPlayer";
 import { AutoWatchHarness } from "./dev/autoWatch";
 import { FrameMeter, frameMeterEnabled } from "./dev/FrameMeter";
@@ -88,6 +89,9 @@ export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
       {/* Préchargement de la page Recommandations en temps mort : arriver sur
           la page ne montre ni spinner ni squelette. */}
       {authed && <RecoPrefetchBoot />}
+      {/* L'aperçu de bande-annonce au survol : connectivité et gabarit lus une
+          fois pour toutes les cartes (trailerPreview/previewEnvironment.ts). */}
+      {authed && <TrailerPreviewBinding />}
       <ScrollMemoryWrapper />
       {/* Banc de torture du lecteur (dev only) : tentacleSoak("<itemId>", 200) */}
       {import.meta.env.DEV && <SoakHarness />}

@@ -268,6 +268,9 @@ export * from "./serverConnection";
 export { initI18n, detectLanguage, uiLanguage, i18n } from "./i18n";
 export * from "./data/media-licenses";
 export * from "./theme";
+// L'aperçu de bande-annonce au survol : ses temps, son sujet, sa machine
+// d'états et l'arbitre « un seul à la fois » — le modèle pur du moteur web.
+export * from "./trailers/preview";
 export * from "./trailers";
 // Les extras d'un titre : genre et titre lisibles, tuiles d'une rangée, cible
 // du bouton « Bande-annonce » (la locale d'abord) — toutes plateformes.

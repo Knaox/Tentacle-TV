@@ -39,3 +39,12 @@ export { useLocalTrailers, useSpecialFeatures } from "../hooks/useTrailers";
 export { useItemExtras, type ExtrasOwner, type ItemExtras } from "../hooks/useItemExtras";
 export { useRemoteTrailers, useRemoteTrailersState, type RemoteTrailersOwner } from "../hooks/useRemoteTrailers";
 export { useItemTrailer, type ItemTrailer } from "../hooks/useItemTrailer";
+// L'aperçu de bande-annonce au survol d'une carte : la bande-annonce choisie et
+// vérifiée par le serveur (`/api/trailers/preview`, capacité `trailers.preview`).
+export {
+  useTrailerPreviewStream, type TrailerPreviewStreamState,
+} from "../trailers/useTrailerPreviewStream";
+export {
+  fetchTrailerPreviewStream, trailerPreviewQueryKey, trailerPreviewResultTtl,
+  type TrailerPreviewStreamResult,
+} from "../trailers/trailerPreviewStream";
