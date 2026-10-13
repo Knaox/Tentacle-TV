@@ -75,11 +75,14 @@ async function endStaleProfileSessions(): Promise<void> {
   const stale: Array<{ id: string }> = [];
   const orphans: Array<{ id: string }> = [];
   for (const session of sessions) {
-    const account = accountOf.get(session.parentId ?? "");
     // Son appareil n'existe plus (une course entre un choix et une
     // déconnexion, un plantage) : une session sans appareil ne vit pas.
-    if (!account) orphans.push({ id: session.id });
-    else if (!(await visibleOn(account)).has(fold(session.jellyfinUserId))) stale.push({ id: session.id });
+    if (!accountOf.has(session.parentId ?? "")) {
+      orphans.push({ id: session.id });
+      continue;
+    }
+    const account = accountOf.get(session.parentId ?? "");
+    if (account && !(await visibleOn(account)).has(fold(session.jellyfinUserId))) stale.push({ id: session.id });
   }
   if (stale.length) console.log(`[family] ${await endSessions(stale, "family_changed")} session(s) de profil hors de la famille de leur TV coupée(s)`);
   if (orphans.length) console.log(`[family] ${await endSessions(orphans, "unpaired")} session(s) de profil sans appareil coupée(s)`);

@@ -139,12 +139,14 @@ export function endPickerHost(personalToken: string): Promise<boolean> {
   });
 }
 
-/** Cette session de profil vient-elle d'un hôte hors TV (un bureau) ? Base
- *  muette : l'appelant décide (lève). */
+/** Cette session de profil vient-elle d'un hôte hors TV (un bureau) — ou
+ *  d'un appareil qui n'existe plus (le balayage la coupera) ? Dans les deux
+ *  cas, elle ne fait que regarder : on ferme. Base muette : l'appelant
+ *  décide (lève). */
 export async function isPickerProfileSession(pairingId: string | undefined): Promise<boolean> {
   if (!pairingId) return false;
   const parent = await getPrisma().pairedDevice.findUnique({ where: { id: pairingId }, select: { platform: true, parentId: true } });
-  return !!parent && !parent.parentId && !!parent.platform;
+  return !parent || !!parent.parentId || !!parent.platform;
 }
 
 /** Le balayage : les hôtes abandonnés depuis `PICKER_HOST_IDLE_MS`, révoqués

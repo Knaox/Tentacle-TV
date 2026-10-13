@@ -160,6 +160,8 @@ describe("le balayage et les listes d'appareils", () => {
     const host = hosts()[0];
     h.state!.db.data.pairedDevice.splice(h.state!.db.data.pairedDevice.indexOf(host), 1);
     expect((await door(app, token)).status).toBe(200);
+    // Sans appareil, elle n'est appelante de rien — pas même de la Famille d'une TV.
+    expect((await send("PUT", "/api/family/pin", token, { pin: "1111" })).json().code).toBe("family.personal_session_required");
     await sweepFamily();
     expect(await door(app, token)).toMatchObject({ status: 401, ended: true });
     expect(reasons()).toEqual(["unpaired"]);
