@@ -1,0 +1,210 @@
+{
+  "id": "blockbusters",
+  "label": "Fan de blockbusters (Marvel, Star Wars, DC)",
+  "history": [
+    {
+      "key": "movie:24428",
+      "title": "Avengers",
+      "signal": "loved",
+      "daysAgo": 900
+    },
+    {
+      "key": "movie:299534",
+      "title": "Avengers : Endgame",
+      "signal": "loved",
+      "daysAgo": 700
+    },
+    {
+      "key": "movie:299536",
+      "title": "Avengers : Infinity War",
+      "signal": "loved",
+      "daysAgo": 720
+    },
+    {
+      "key": "movie:1726",
+      "title": "Iron Man",
+      "signal": "watched",
+      "daysAgo": 1000
+    },
+    {
+      "key": "movie:118340",
+      "title": "Les Gardiens de la Galaxie",
+      "signal": "loved",
+      "daysAgo": 800
+    },
+    {
+      "key": "movie:284054",
+      "title": "Black Panther",
+      "signal": "loved",
+      "daysAgo": 500
+    },
+    {
+      "key": "movie:293660",
+      "title": "Deadpool",
+      "signal": "watched",
+      "daysAgo": 650
+    },
+    {
+      "key": "movie:10195",
+      "title": "Thor",
+      "signal": "watched",
+      "daysAgo": 950
+    },
+    {
+      "key": "movie:1771",
+      "title": "Captain America : First Avenger",
+      "signal": "watched",
+      "daysAgo": 940
+    },
+    {
+      "key": "movie:414906",
+      "title": "The Batman",
+      "signal": "loved",
+      "daysAgo": 1100
+    },
+    {
+      "key": "movie:49521",
+      "title": "Man of Steel",
+      "signal": "watched",
+      "daysAgo": 600
+    },
+    {
+      "key": "movie:361743",
+      "title": "Top Gun : Maverick",
+      "signal": "loved",
+      "daysAgo": 300
+    },
+    {
+      "key": "movie:19995",
+      "title": "Avatar",
+      "signal": "watched",
+      "daysAgo": 1200
+    },
+    {
+      "key": "movie:438631",
+      "title": "Dune",
+      "signal": "loved",
+      "daysAgo": 400
+    },
+    {
+      "key": "movie:693134",
+      "title": "Dune : Deuxième partie",
+      "signal": "loved",
+      "daysAgo": 200
+    },
+    {
+      "key": "movie:385128",
+      "title": "Fast & Furious 9",
+      "signal": "watched",
+      "daysAgo": 350
+    },
+    {
+      "key": "movie:575265",
+      "title": "Mission : Impossible - The Final Reckoning",
+      "signal": "watched",
+      "daysAgo": 100
+    },
+    {
+      "key": "tv:76479",
+      "title": "The Boys",
+      "signal": "loved",
+      "daysAgo": 150
+    },
+    {
+      "key": "tv:95557",
+      "title": "Invincible",
+      "signal": "watched",
+      "daysAgo": 120
+    },
+    {
+      "key": "tv:61889",
+      "title": "Marvel's Daredevil",
+      "signal": "watched",
+      "daysAgo": 800
+    },
+    {
+      "key": "tv:1399",
+      "title": "Game of Thrones",
+      "signal": "loved",
+      "daysAgo": 1000
+    },
+    {
+      "key": "tv:94997",
+      "title": "House of the Dragon",
+      "signal": "watched",
+      "daysAgo": 250
+    },
+    {
+      "key": "tv:106379",
+      "title": "Fallout",
+      "signal": "loved",
+      "daysAgo": 90
+    },
+    {
+      "key": "tv:66732",
+      "title": "Stranger Things",
+      "signal": "watched",
+      "daysAgo": 400
+    }
+  ],
+  "expected": [
+    {
+      "key": "tv:83867",
+      "title": "Andor"
+    },
+    {
+      "key": "tv:84958",
+      "title": "Loki"
+    },
+    {
+      "key": "movie:447365",
+      "title": "Les Gardiens de la Galaxie : Volume 3"
+    },
+    {
+      "key": "movie:617126",
+      "title": "Les 4 Fantastiques : Premiers Pas"
+    },
+    {
+      "key": "movie:1061474",
+      "title": "Superman"
+    },
+    {
+      "key": "movie:533535",
+      "title": "Deadpool & Wolverine"
+    },
+    {
+      "key": "movie:76600",
+      "title": "Avatar : La Voie de l'eau"
+    },
+    {
+      "key": "movie:822119",
+      "title": "Captain America : Brave New World"
+    },
+    {
+      "key": "tv:202555",
+      "title": "Daredevil: Born Again"
+    },
+    {
+      "key": "movie:505642",
+      "title": "Black Panther : Wakanda Forever"
+    }
+  ],
+  "avoid": [
+    {
+      "key": "movie:159824",
+      "title": "Hôtel Transylvanie 2"
+    },
+    {
+      "key": "tv:42671",
+      "title": "Elfen Lied"
+    },
+    {
+      "key": "movie:260514",
+      "title": "Cars 3"
+    }
+  ],
+  "avoidUniverses": [
+    "anime",
+    "kidsAnimation"
+  ]
+}

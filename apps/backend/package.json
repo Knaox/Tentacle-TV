@@ -12,6 +12,7 @@
     "lint": "eslint src/",
     "test": "vitest run",
     "bench:notifications": "tsx test/notif-e2e/run.ts",
+    "bench:reco": "tsx --env-file=.env test/reco-bench/run.ts",
     "test:jellyfin-compat": "tsx test/jellyfin-compat/run.ts",
     "db:generate": "prisma generate",
     "db:migration": "tsx scripts/new-sqlite-migration.ts",

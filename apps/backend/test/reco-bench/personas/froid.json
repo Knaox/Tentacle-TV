@@ -1,0 +1,40 @@
+{
+  "id": "froid",
+  "label": "Démarrage à froid (3 titres)",
+  "history": [
+    {
+      "key": "movie:120",
+      "title": "Le Seigneur des anneaux : La Communauté de l'anneau",
+      "signal": "watched",
+      "daysAgo": 30
+    },
+    {
+      "key": "movie:98",
+      "title": "Gladiator",
+      "signal": "watched",
+      "daysAgo": 20
+    },
+    {
+      "key": "movie:197",
+      "title": "Braveheart",
+      "signal": "loved",
+      "daysAgo": 10
+    }
+  ],
+  "expected": [
+    {
+      "key": "movie:121",
+      "title": "Le Seigneur des anneaux : Les Deux Tours"
+    },
+    {
+      "key": "movie:122",
+      "title": "Le Seigneur des anneaux : Le Retour du roi"
+    },
+    {
+      "key": "movie:49051",
+      "title": "Le Hobbit : Un voyage inattendu"
+    }
+  ],
+  "avoid": [],
+  "avoidUniverses": []
+}

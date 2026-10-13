@@ -1,0 +1,131 @@
+{
+  "id": "anime",
+  "label": "Fan d'animés",
+  "history": [
+    {
+      "key": "tv:31911",
+      "title": "Fullmetal Alchemist: Brotherhood",
+      "signal": "loved",
+      "daysAgo": 900
+    },
+    {
+      "key": "tv:46298",
+      "title": "Hunter x Hunter (2011)",
+      "signal": "loved",
+      "daysAgo": 700
+    },
+    {
+      "key": "tv:120089",
+      "title": "Spy x Family",
+      "signal": "loved",
+      "daysAgo": 300
+    },
+    {
+      "key": "movie:372058",
+      "title": "Your Name.",
+      "signal": "loved",
+      "daysAgo": 500
+    },
+    {
+      "key": "tv:53052",
+      "title": "Shin Sekai Yori",
+      "signal": "loved",
+      "daysAgo": 800
+    },
+    {
+      "key": "tv:204635",
+      "title": "Du mouvement de la Terre",
+      "signal": "loved",
+      "daysAgo": 120
+    },
+    {
+      "key": "tv:207347",
+      "title": "Blue Box",
+      "signal": "loved",
+      "daysAgo": 90
+    },
+    {
+      "key": "movie:378108",
+      "title": "Dans un recoin de ce monde",
+      "signal": "loved",
+      "daysAgo": 400
+    },
+    {
+      "key": "tv:127532",
+      "title": "Solo Leveling",
+      "signal": "watched",
+      "daysAgo": 200
+    },
+    {
+      "key": "tv:86031",
+      "title": "Dr. STONE",
+      "signal": "watched",
+      "daysAgo": 350
+    },
+    {
+      "key": "tv:94664",
+      "title": "Mushoku Tensei: Jobless Reincarnation",
+      "signal": "watched",
+      "daysAgo": 250
+    },
+    {
+      "key": "tv:123249",
+      "title": "My Dress-Up Darling",
+      "signal": "watched",
+      "daysAgo": 180
+    },
+    {
+      "key": "tv:204832",
+      "title": "Mashle: Magic and Muscles",
+      "signal": "watched",
+      "daysAgo": 150
+    },
+    {
+      "key": "tv:61408",
+      "title": "Nagi no Asukara",
+      "signal": "watched",
+      "daysAgo": 600
+    }
+  ],
+  "expected": [
+    {
+      "key": "tv:67075",
+      "title": "Mob Psycho 100"
+    },
+    {
+      "key": "tv:75214",
+      "title": "Violet Evergarden"
+    },
+    {
+      "key": "tv:65249",
+      "title": "ERASED"
+    },
+    {
+      "key": "tv:60863",
+      "title": "Haikyu!!"
+    },
+    {
+      "key": "tv:72636",
+      "title": "Made in Abyss"
+    },
+    {
+      "key": "tv:245842",
+      "title": "Wistoria: Wand and Sword"
+    }
+  ],
+  "avoid": [
+    {
+      "key": "movie:159824",
+      "title": "Hôtel Transylvanie 2"
+    },
+    {
+      "key": "movie:24021",
+      "title": "Twilight, chapitre 3"
+    },
+    {
+      "key": "movie:537915",
+      "title": "After - Chapitre 1"
+    }
+  ],
+  "avoidUniverses": []
+}

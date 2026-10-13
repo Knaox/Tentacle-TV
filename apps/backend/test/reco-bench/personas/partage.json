@@ -1,0 +1,89 @@
+{
+  "id": "partage",
+  "label": "Compte partagé : adulte cinéphile + un peu d'animés",
+  "history": [
+    {
+      "key": "tv:1438",
+      "title": "The Wire",
+      "signal": "loved",
+      "daysAgo": 800
+    },
+    {
+      "key": "movie:496243",
+      "title": "Parasite",
+      "signal": "loved",
+      "daysAgo": 600
+    },
+    {
+      "key": "movie:1949",
+      "title": "Zodiac",
+      "signal": "loved",
+      "daysAgo": 500
+    },
+    {
+      "key": "movie:807",
+      "title": "Seven",
+      "signal": "watched",
+      "daysAgo": 700
+    },
+    {
+      "key": "movie:949",
+      "title": "Heat",
+      "signal": "watched",
+      "daysAgo": 650
+    },
+    {
+      "key": "tv:46648",
+      "title": "True Detective",
+      "signal": "watched",
+      "daysAgo": 400
+    },
+    {
+      "key": "tv:31911",
+      "title": "Fullmetal Alchemist: Brotherhood",
+      "signal": "watched",
+      "daysAgo": 300
+    },
+    {
+      "key": "tv:120089",
+      "title": "Spy x Family",
+      "signal": "watched",
+      "daysAgo": 200
+    }
+  ],
+  "expected": [
+    {
+      "key": "movie:1124",
+      "title": "Le Prestige"
+    },
+    {
+      "key": "movie:11423",
+      "title": "Memories of Murder"
+    },
+    {
+      "key": "tv:60622",
+      "title": "Fargo"
+    },
+    {
+      "key": "tv:1398",
+      "title": "Les Soprano"
+    },
+    {
+      "key": "tv:1104",
+      "title": "Mad Men"
+    }
+  ],
+  "avoid": [
+    {
+      "key": "movie:260514",
+      "title": "Cars 3"
+    },
+    {
+      "key": "movie:76492",
+      "title": "Hôtel Transylvanie"
+    }
+  ],
+  "avoidUniverses": [
+    "kidsAnimation"
+  ]
+}

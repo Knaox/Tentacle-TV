@@ -1,0 +1,245 @@
+{
+  "id": "famille",
+  "label": "Famille avec enfants",
+  "accounts": 3,
+  "description": "Parents et deux enfants : Pixar, Disney, DreamWorks, Ghibli, comédies familiales. Compte pour trois comptes du serveur (pouls, communauté).",
+  "history": [
+    {
+      "key": "movie:862",
+      "title": "Toy Story",
+      "signal": "loved",
+      "daysAgo": 300
+    },
+    {
+      "key": "movie:863",
+      "title": "Toy Story 2",
+      "signal": "watched",
+      "daysAgo": 290
+    },
+    {
+      "key": "movie:10193",
+      "title": "Toy Story 3",
+      "signal": "loved",
+      "daysAgo": 280
+    },
+    {
+      "key": "movie:301528",
+      "title": "Toy Story 4",
+      "signal": "watched",
+      "daysAgo": 270
+    },
+    {
+      "key": "movie:354912",
+      "title": "Coco",
+      "signal": "loved",
+      "daysAgo": 200
+    },
+    {
+      "key": "movie:14160",
+      "title": "Là-haut",
+      "signal": "watched",
+      "daysAgo": 400
+    },
+    {
+      "key": "movie:2062",
+      "title": "Ratatouille",
+      "signal": "watched",
+      "daysAgo": 420
+    },
+    {
+      "key": "movie:10681",
+      "title": "WALL·E",
+      "signal": "watched",
+      "daysAgo": 380
+    },
+    {
+      "key": "movie:585",
+      "title": "Monstres & Cie",
+      "signal": "loved",
+      "daysAgo": 350
+    },
+    {
+      "key": "movie:9806",
+      "title": "Les Indestructibles",
+      "signal": "watched",
+      "daysAgo": 330
+    },
+    {
+      "key": "movie:260513",
+      "title": "Les Indestructibles 2",
+      "signal": "watched",
+      "daysAgo": 320
+    },
+    {
+      "key": "movie:508442",
+      "title": "Soul",
+      "signal": "watched",
+      "daysAgo": 150
+    },
+    {
+      "key": "movie:976573",
+      "title": "Élémentaire",
+      "signal": "watched",
+      "daysAgo": 90
+    },
+    {
+      "key": "movie:277834",
+      "title": "Vaiana",
+      "signal": "loved",
+      "daysAgo": 250
+    },
+    {
+      "key": "movie:1241982",
+      "title": "Vaiana 2",
+      "signal": "watched",
+      "daysAgo": 60
+    },
+    {
+      "key": "movie:808",
+      "title": "Shrek",
+      "signal": "loved",
+      "daysAgo": 500
+    },
+    {
+      "key": "movie:809",
+      "title": "Shrek 2",
+      "signal": "watched",
+      "daysAgo": 490
+    },
+    {
+      "key": "movie:9502",
+      "title": "Kung Fu Panda",
+      "signal": "loved",
+      "daysAgo": 450
+    },
+    {
+      "key": "movie:49444",
+      "title": "Kung Fu Panda 2",
+      "signal": "watched",
+      "daysAgo": 440
+    },
+    {
+      "key": "movie:425",
+      "title": "L'Âge de glace",
+      "signal": "watched",
+      "daysAgo": 600
+    },
+    {
+      "key": "movie:20352",
+      "title": "Moi, moche et méchant",
+      "signal": "watched",
+      "daysAgo": 550
+    },
+    {
+      "key": "movie:1184918",
+      "title": "Le Robot sauvage",
+      "signal": "loved",
+      "daysAgo": 40
+    },
+    {
+      "key": "movie:4935",
+      "title": "Le Château ambulant",
+      "signal": "watched",
+      "daysAgo": 210
+    },
+    {
+      "key": "movie:128",
+      "title": "Princesse Mononoké",
+      "signal": "watched",
+      "daysAgo": 190
+    },
+    {
+      "key": "movie:920",
+      "title": "Cars",
+      "signal": "watched",
+      "daysAgo": 700
+    },
+    {
+      "key": "movie:76492",
+      "title": "Hôtel Transylvanie",
+      "signal": "watched",
+      "daysAgo": 520
+    },
+    {
+      "key": "movie:502356",
+      "title": "Super Mario Bros., le film",
+      "signal": "loved",
+      "daysAgo": 120
+    },
+    {
+      "key": "tv:2004",
+      "title": "Malcolm",
+      "signal": "watched",
+      "daysAgo": 230
+    }
+  ],
+  "expected": [
+    {
+      "key": "movie:1084242",
+      "title": "Zootopie 2"
+    },
+    {
+      "key": "movie:1226863",
+      "title": "Super Mario Galaxy, le film"
+    },
+    {
+      "key": "movie:950387",
+      "title": "Minecraft, le film"
+    },
+    {
+      "key": "movie:177572",
+      "title": "Les Nouveaux Héros"
+    },
+    {
+      "key": "movie:8392",
+      "title": "Mon voisin Totoro"
+    },
+    {
+      "key": "movie:129",
+      "title": "Le Voyage de Chihiro"
+    },
+    {
+      "key": "movie:1022789",
+      "title": "Vice-versa 2"
+    },
+    {
+      "key": "movie:16859",
+      "title": "Kiki la petite sorcière"
+    },
+    {
+      "key": "movie:260514",
+      "title": "Cars 3"
+    }
+  ],
+  "avoid": [
+    {
+      "key": "movie:82507",
+      "title": "Sinister"
+    },
+    {
+      "key": "movie:439079",
+      "title": "La Nonne"
+    },
+    {
+      "key": "movie:1359",
+      "title": "American Psycho"
+    },
+    {
+      "key": "movie:979",
+      "title": "Irréversible"
+    },
+    {
+      "key": "movie:641",
+      "title": "Requiem for a Dream"
+    },
+    {
+      "key": "tv:42671",
+      "title": "Elfen Lied"
+    },
+    {
+      "key": "movie:933260",
+      "title": "The Substance"
+    }
+  ],
+  "avoidUniverses": []
+}
