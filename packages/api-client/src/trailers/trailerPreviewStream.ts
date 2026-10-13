@@ -92,10 +92,16 @@ export function trailerPreviewResultTtl(result: TrailerPreviewStreamResult | und
 const REFUSALS: ReadonlySet<string> = new Set<TrailerPreviewRefusal>(["invalid_request", "no_trailer", "unavailable", "rate_limited"]);
 
 /** Le refus que dit le corps d'une réponse d'erreur (`{ error }`), s'il en est un du contrat. */
-function refusalOf(error: TentacleApiError): TrailerPreviewRefusal | null {
+/**
+ * Le refus que dit le corps d'une réponse d'erreur (`{ error }`), s'il en est un
+ * du contrat, et le délai qu'il porte (`retryAfterS`, additif : un serveur qui
+ * ne l'envoie pas laisse l'en-tête, puis le repli, décider).
+ */
+function refusalOf(error: TentacleApiError): { reason: TrailerPreviewRefusal; retryAfterS?: unknown } | null {
   try {
-    const body = JSON.parse(error.message) as { error?: unknown };
-    return typeof body.error === "string" && REFUSALS.has(body.error) ? (body.error as TrailerPreviewRefusal) : null;
+    const body = JSON.parse(error.message) as { error?: unknown; retryAfterS?: unknown };
+    if (typeof body.error !== "string" || !REFUSALS.has(body.error)) return null;
+    return { reason: body.error as TrailerPreviewRefusal, retryAfterS: body.retryAfterS };
   } catch {
     return null;
   }
@@ -129,8 +135,13 @@ export async function fetchTrailerPreviewStream(
   } catch (error) {
     if (signal?.aborted) throw error;
     if (error instanceof TentacleApiError) {
-      const reason = refusalOf(error) ?? "failed";
-      const retryAfterMs = reason === "rate_limited" ? previewRetryAfterMs(error.headers?.get("Retry-After")) : undefined;
+      const refusal = refusalOf(error);
+      const reason = refusal?.reason ?? "failed";
+      // Le délai d'un 429 : le corps d'abord (lisible de toute origine), puis l'en-tête.
+      const retryAfterMs = reason !== "rate_limited"
+        ? undefined
+        : previewRetryAfterMs(typeof refusal?.retryAfterS === "number" ? String(refusal.retryAfterS) : undefined)
+          ?? previewRetryAfterMs(error.headers?.get("Retry-After"));
       return retryAfterMs === undefined ? { status: "missing", reason } : { status: "missing", reason, retryAfterMs };
     }
     if (isAbort(error)) return { status: "missing", reason: "failed" };

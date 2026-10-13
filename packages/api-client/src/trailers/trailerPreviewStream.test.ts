@@ -66,6 +66,16 @@ describe("fetchTrailerPreviewStream", () => {
     await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "missing", reason: "rate_limited" });
   });
 
+  it("le délai du corps (`retryAfterS`) passe avant l'en-tête — il se lit de toute origine", async () => {
+    respond({ error: "rate_limited", retryAfterS: 4 }, 429, { "Retry-After": "2" });
+    await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "missing", reason: "rate_limited", retryAfterMs: 4_000 });
+    respond({ error: "rate_limited", retryAfterS: 30 }, 429);
+    await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "missing", reason: "rate_limited", retryAfterMs: 10_000 });
+    // Un corps sans délai lisible laisse l'en-tête décider.
+    respond({ error: "rate_limited", retryAfterS: "bientôt" }, 429, { "Retry-After": "3" });
+    await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "missing", reason: "rate_limited", retryAfterMs: 3_000 });
+  });
+
   it("une panne, une réponse illisible : rien à montrer non plus", async () => {
     respond("boom", 502);
     await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "missing", reason: "failed" });
