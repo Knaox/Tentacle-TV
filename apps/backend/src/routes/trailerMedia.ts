@@ -12,6 +12,7 @@ import { Readable } from "stream";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Response as UpstreamResponse } from "undici";
 import { requestSignal } from "./jellyfinProxy/clientAbort";
+import { cutoffReason } from "./jellyfinProxy/streamLog";
 import { verifyRelayToken } from "../services/trailers/relayToken";
 import {
   TOKEN_SLOT, fetchUpstream, masterTemplate, mediaTemplate, progressiveTarget, segmentTarget,
@@ -64,6 +65,26 @@ function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string)
   return reply.send(Readable.fromWeb(res.body as import("stream/web").ReadableStream));
 }
 
+/**
+ * Les octets vidéo ne se recompressent pas : googlevideo dit ses segments
+ * `application/octet-stream`, que la compression globale tient pour
+ * compressible — chaque segment partait en zstd pour un navigateur, du calcul
+ * pour rien sur de la vidéo déjà compressée.
+ */
+const VIDEO_BYTES = { compress: false } as const;
+
+/**
+ * Une lecture amont qui n'aboutit pas. Le lecteur parti (survol fini, saut,
+ * aperçu refermé) n'est pas une erreur : personne n'attend de réponse, comme
+ * au proxy de Jellyfin. Une panne amont se dit en 504 / 502, sans 500.
+ */
+function upstreamFailure(request: FastifyRequest, reply: FastifyReply, err: unknown) {
+  const cause = cutoffReason(err);
+  if (cause === "annule") return reply;
+  request.log.warn({ cause }, "[trailers] relais : lecture amont en échec");
+  return reply.status(cause === "delai-absolu" ? 504 : 502).send({ error: "upstream" });
+}
+
 /** Un premier segment lu d'avance par l'aperçu (`trailerSegments.ts`), servi de la mémoire. */
 function sendHeld(reply: FastifyReply, segment: HeldSegment) {
   reply.header("Content-Type", segment.contentType);
@@ -101,7 +122,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     return sendPlaylist(reply, await mediaTemplate(access.ytId, key), access.token);
   });
 
-  app.get<{ Params: Params }>("/hls/:ytId/s/:key/:name", async (request, reply) => {
+  app.get<{ Params: Params }>("/hls/:ytId/s/:key/:name", VIDEO_BYTES, async (request, reply) => {
     const access = authorize(request.params.ytId, request, reply);
     if (!access) return reply;
     const { key = "", name = "" } = request.params;
@@ -114,35 +135,43 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     if (segment) return sendHeld(reply, segment);
 
     const signal = requestSignal(request, reply, SEGMENT_TIMEOUT_MS);
-    // Une URL refusée (échéance, révocation) : une nouvelle extraction, une seule fois.
-    for (const fresh of [false, true]) {
-      const target = await segmentTarget(access.ytId, key, index, { fresh });
-      if (!target) break;
-      const { res, refused } = await fetchUpstream(target.url, target.headers, { signal });
-      if (refused && !fresh) {
-        await res.body?.cancel();
-        continue;
+    try {
+      // Une URL refusée (échéance, révocation) : une nouvelle extraction, une seule fois.
+      for (const fresh of [false, true]) {
+        const target = await segmentTarget(access.ytId, key, index, { fresh });
+        if (!target) break;
+        const { res, refused } = await fetchUpstream(target.url, target.headers, { signal });
+        if (refused && !fresh) {
+          await res.body?.cancel();
+          continue;
+        }
+        return relay(reply, res, index === "init" ? "video/mp4" : "video/mp2t");
       }
-      return relay(reply, res, index === "init" ? "video/mp4" : "video/mp2t");
+    } catch (err) {
+      return upstreamFailure(request, reply, err);
     }
     return reply.status(404).send({ error: "unavailable" });
   });
 
-  app.get<{ Params: Params }>("/file/:name", async (request, reply) => {
+  app.get<{ Params: Params }>("/file/:name", VIDEO_BYTES, async (request, reply) => {
     const access = authorize(request.params.name?.replace(/\.mp4$/, "") ?? "", request, reply);
     if (!access) return reply;
     const signal = requestSignal(request, reply, FILE_TIMEOUT_MS);
     // AVPlayer lit un MP4 par plages : chacune est relayée telle quelle.
     const range = typeof request.headers.range === "string" ? request.headers.range : undefined;
-    for (const fresh of [false, true]) {
-      const target = await progressiveTarget(access.ytId, { fresh });
-      if (!target) break;
-      const { res, refused } = await fetchUpstream(target.url, target.headers, { signal, range });
-      if (refused && !fresh) {
-        await res.body?.cancel();
-        continue;
+    try {
+      for (const fresh of [false, true]) {
+        const target = await progressiveTarget(access.ytId, { fresh });
+        if (!target) break;
+        const { res, refused } = await fetchUpstream(target.url, target.headers, { signal, range });
+        if (refused && !fresh) {
+          await res.body?.cancel();
+          continue;
+        }
+        return relay(reply, res, "video/mp4");
       }
-      return relay(reply, res, "video/mp4");
+    } catch (err) {
+      return upstreamFailure(request, reply, err);
     }
     return reply.status(404).send({ error: "unavailable" });
   });

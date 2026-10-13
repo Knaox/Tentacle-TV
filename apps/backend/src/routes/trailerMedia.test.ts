@@ -6,6 +6,7 @@
  * yt-dlp et googlevideo sont factices ; l'auth est réduite à « un jeton ».
  */
 
+import compress from "@fastify/compress";
 import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExtractionResult } from "../services/trailers/ytExtract";
@@ -57,8 +58,10 @@ function googlevideo(gen: number) {
   });
 }
 
-async function server() {
+async function server({ compressed = false } = {}) {
   const app = Fastify();
+  // Comme le serveur (index.ts) : la compression globale, dès 1 Ko.
+  if (compressed) await app.register(compress, { threshold: 1024 });
   await app.register(trailerRoutes, { prefix: "/api/trailers" });
   await app.register(trailerMediaRoutes, { prefix: "/api/trailers" });
   return app;
@@ -209,5 +212,36 @@ describe("flux relayés", () => {
     const segment = await app.inject({ url: `/api/trailers/hls/${ID}/s/95/0.ts?t=${token}` });
     expect(segment.statusCode).toBe(200);
     expect(extractTrailerSource).toHaveBeenCalledTimes(2);
+  });
+
+  it("ne recompressent jamais la vidéo, même dite `application/octet-stream` par googlevideo ; la liste, si", async () => {
+    extractTrailerSource.mockResolvedValue(hls(1));
+    const pages = googlevideo(1);
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url.endsWith("/sq/0.ts")
+      ? new Response(new Uint8Array(64 * 1024).fill(0x47), { headers: { "content-type": "application/octet-stream" } })
+      : pages(url))));
+    const app = await server({ compressed: true });
+    const token = new URL(await resolved(app), "http://x").searchParams.get("t");
+    const headers = { "accept-encoding": "gzip, deflate, br, zstd" };
+    const segment = await app.inject({ url: `/api/trailers/hls/${ID}/s/95/0.ts?t=${token}`, headers });
+    expect([segment.statusCode, segment.headers["content-encoding"], segment.rawPayload.length]).toEqual([200, undefined, 64 * 1024]);
+    const media = await app.inject({ url: `/api/trailers/hls/${ID}/p/95.m3u8?t=${token}`, headers });
+    expect(media.statusCode).toBe(200);
+  });
+
+  it("une panne amont se dit en 502, un délai en 504 — jamais en 500", async () => {
+    extractTrailerSource.mockResolvedValue(hls(1));
+    const pages = googlevideo(1);
+    let failure: Error = new TypeError("fetch failed");
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/sq/")) throw failure;
+      return pages(url);
+    }));
+    const app = await server();
+    const token = new URL(await resolved(app), "http://x").searchParams.get("t");
+    const url = `/api/trailers/hls/${ID}/s/95/0.ts?t=${token}`;
+    expect([(await app.inject({ url })).statusCode, (await app.inject({ url })).json()]).toEqual([502, { error: "upstream" }]);
+    failure = new DOMException("délai", "TimeoutError");
+    expect((await app.inject({ url })).statusCode).toBe(504);
   });
 });
