@@ -15,6 +15,8 @@ const h = vi.hoisted(() => ({
   loading: false,
   capable: true,
   cancel: vi.fn(),
+  cancelled: [] as string[],
+  cancels: new Map<string, () => void>(),
   retry: vi.fn(),
   enabled: [] as boolean[],
   pip: null as unknown,
@@ -29,11 +31,19 @@ vi.mock("@tentacle-tv/api-client", async () => {
   return {
     isTransientPreviewRefusal: rules.isTransientPreviewRefusal,
     previewRetryDelayMs: rules.previewRetryDelayMs,
-    useTrailerPreviewStream: (_subject: unknown, _lang: string, options: { enabled: boolean }) => {
+    useTrailerPreviewStream: (subject: { itemId?: string } | null, _lang: string, options: { enabled: boolean }) => {
       h.enabled.push(options.enabled);
+      // Une annulation par titre, d'identité stable (celle de la requête de CE titre).
+      const key = subject?.itemId ?? "none";
+      if (!h.cancels.has(key)) {
+        h.cancels.set(key, () => {
+          h.cancelled.push(key);
+          h.cancel();
+        });
+      }
       return {
         result: h.result, fresh: h.fresh, receivedAt: h.receivedAt, loading: h.loading,
-        capable: h.capable, cancel: h.cancel, retry: h.retry,
+        capable: h.capable, cancel: h.cancels.get(key)!, retry: h.retry,
       };
     },
   };
@@ -51,6 +61,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   Object.assign(h, { result: undefined, fresh: false, receivedAt: 0, loading: false, capable: true, enabled: [], pip: null, block: null });
   h.cancel.mockClear();
+  h.cancelled = [];
+  h.cancels.clear();
   h.retry.mockClear();
   forgetTrailerPreviewFailures();
 });
@@ -88,6 +100,15 @@ describe("useTrailerPreview — quand demander", () => {
     expect(handles.a.phase).toBe("idle");
     expect(h.cancel).toHaveBeenCalled();
     expect(h.enabled.at(-1)).toBe(false);
+  });
+
+  it("un autre titre sous le même survol, pendant la demande : celle de l'ancien est abandonnée", async () => {
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    expect(handles.a.phase).toBe("fetching");
+    await render("a", { subject: KID });
+    expect(h.cancelled).toContain("90d50b74d48412cfc9db9a256b1d0c64");
+    expect(handles.a.phase).toBe("intent");
   });
 
   it("un serveur sans la capacité : aucune demande, rien ne bouge", async () => {

@@ -110,6 +110,13 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
     previousPhase.current = state.phase;
     if (left) cancelStream();
   }, [state.phase, cancelStream]);
+  // Un autre titre sous le même survol : la demande de l'ANCIEN titre est abandonnée
+  // (`cancelStream` change avec le titre — c'est la fonction d'avant qu'il faut).
+  const phaseRef = useRef(state.phase);
+  phaseRef.current = state.phase;
+  useEffect(() => () => {
+    if (phaseRef.current === "fetching") cancelStream();
+  }, [cancelStream]);
 
   // Une vidéo qui a lâché ici n'est pas retentée de sitôt (erreur fatale, première image trop lente).
   useEffect(() => {
