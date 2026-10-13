@@ -59,6 +59,27 @@ describe("copie générique : types, valeurs, DDL (docs/sqlite/GENERIC-COPY.md)"
     expect(toSqliteValue(col("v", "longtext"), '{"1":[1,2]}')).toBe('{"1":[1,2]}');
   });
 
+  it("JSON natif de MySQL (rendu décodé par le pilote) : rangé en texte JSON, liable par SQLite", () => {
+    const seasons = col("seasons", "json");
+    expect(toSqliteValue(seasons, [1, 2, 3])).toBe("[1,2,3]");
+    expect(toSqliteValue(seasons, { "1": [1, 2] })).toBe('{"1":[1,2]}');
+    expect(toSqliteValue(seasons, 7)).toBe("7");
+    expect(toSqliteValue(seasons, true)).toBe("true");
+    // Le texte rendu tel quel (MariaDB, LONGTEXT) ne change pas ; NULL reste NULL.
+    expect(toSqliteValue(seasons, "[1,2]")).toBe("[1,2]");
+    expect(toSqliteValue(seasons, null)).toBeNull();
+    // Les octets restent des octets, colonne JSON ou BLOB.
+    const bytes = Buffer.from([0, 1, 2]);
+    expect(toSqliteValue(seasons, bytes)).toBe(bytes);
+    expect(toSqliteValue(col("b", "blob"), bytes)).toBe(bytes);
+    // C'est bien ce que node:sqlite refusait (« cannot be bound ») et accepte désormais.
+    const db = new DatabaseSync(":memory:");
+    db.exec("CREATE TABLE t (seasons TEXT)");
+    expect(() => db.prepare("INSERT INTO t VALUES (?)").run([1, 2] as never)).toThrow();
+    db.prepare("INSERT INTO t VALUES (?)").run(toSqliteValue(seasons, [1, 2]) as string);
+    expect(db.prepare("SELECT seasons FROM t").get()).toEqual({ seasons: "[1,2]" });
+  });
+
   it("défauts : littéraux recopiés, « maintenant » en ENTIER, le reste omis", () => {
     expect(defaultClause(col("s", "varchar", { defaultValue: "'pending'" }))).toBe("'pending'");
     expect(defaultClause(col("n", "int", { defaultValue: "20" }))).toBe("20");

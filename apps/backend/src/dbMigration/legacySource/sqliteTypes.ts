@@ -58,6 +58,12 @@ export function toSqliteValue(col: SourceColumn, value: unknown): unknown {
     // Une date « zéro » dans une colonne NOT NULL garde l'epoch : listée au rapport.
     return ms ?? (col.nullable ? null : 0);
   }
+  // Un JSON NATIF de MySQL (pas l'alias LONGTEXT de MariaDB) : le pilote le rend
+  // déjà décodé — objet, tableau, nombre ou booléen —, que node:sqlite ne sait
+  // pas lier. On range son texte JSON. Les octets (BLOB, BINARY) restent des octets.
+  if (col.dataType === "json" && typeof value !== "string" && !(value instanceof Uint8Array)) {
+    return JSON.stringify(value);
+  }
   if (typeof value === "bigint") {
     return value >= BigInt(Number.MIN_SAFE_INTEGER) && value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : value;
   }
