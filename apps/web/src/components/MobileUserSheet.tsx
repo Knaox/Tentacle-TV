@@ -2,7 +2,8 @@ import { useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@tentacle-tv/api-client";
+import { useActiveProfile } from "../auth/profileSession";
+import { useAccountLogout } from "../auth/useAccountLogout";
 import { AVATAR_RING_STYLE, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
 
 interface Props {
@@ -19,14 +20,15 @@ interface Props {
 export function MobileUserSheet({ onClose }: Props) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const logoutAccount = useAccountLogout();
+  const activeProfile = useActiveProfile();
   const { name, initial, isAdmin } = getUserInfo();
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = useCallback(() => {
     onClose();
-    logout.mutate(undefined, { onSuccess: () => navigate("/login") });
-  }, [logout, navigate, onClose]);
+    logoutAccount(() => navigate("/login"));
+  }, [logoutAccount, navigate, onClose]);
 
   const navigateTo = useCallback((path: string) => {
     onClose();
@@ -45,6 +47,7 @@ export function MobileUserSheet({ onClose }: Props) {
     navigate: navigateTo,
     handleLogout,
     extended: true, // inclut Crédits sur mobile
+    profileSession: activeProfile ? { guest: activeProfile.kind === "guest" } : null,
   });
   const regularItems = items.filter((item) => !item.danger);
   const dangerItems = items.filter((item) => item.danger);

@@ -27,14 +27,21 @@ describe("la porte de « Qui regarde ? »", () => {
     expect(afterFresh(state, { kind: "listing", listing: listing({ atLaunch: false }) })).toEqual({ phase: "app" });
   });
 
-  it("l'application ouverte ne se couvre que pour la sécurité, jamais pour la préférence", () => {
-    const state = initialGate("app", false, null);
+  it("profil déjà choisi dans cette exécution : seulement la sécurité, jamais la préférence", () => {
+    const state = initialGate("app", false, null, true);
     expect(afterFresh(state, { kind: "listing", listing: listing({ atLaunch: true }) })).toEqual({ phase: "app" });
     expect(afterFresh(state, { kind: "listing", listing: listing({ currentProfileId: "lea" }) })).toEqual({ phase: "picker" });
   });
 
+  it("ouverte sur la foi du miroir : la préférence changée ailleurs vaut si le serveur répond à temps", () => {
+    const state = initialGate("app", false, null, false);
+    expect(afterFresh(state, { kind: "listing", listing: listing({ atLaunch: true }) })).toEqual({ phase: "picker" });
+    expect(afterFresh(state, { kind: "listing", listing: listing({ atLaunch: true }) }, true)).toEqual({ phase: "app" });
+    expect(afterFresh(state, { kind: "listing", listing: listing({ currentProfileId: "lea" }) }, true)).toEqual({ phase: "picker" });
+  });
+
   it("une session de profil gardée que le serveur ne connaît plus prend fin", () => {
-    const state = initialGate("app", false, "lea");
+    const state = initialGate("app", false, "lea", true);
     expect(afterFresh(state, { kind: "listing", listing: listing({ currentProfileId: "owner" }) })).toEqual({ phase: "app", endProfile: true });
     expect(afterFresh(initialGate("check", false, "lea"), { kind: "listing", listing: listing({ atLaunch: false }) }))
       .toEqual({ phase: "check", endProfile: true });

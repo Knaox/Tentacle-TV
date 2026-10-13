@@ -14,9 +14,12 @@ import { launchOutcome, verifyOutcome, type LaunchVerdict } from "./launchDecisi
  */
 export type GatePhase = "app" | "picker" | "check" | "error";
 
-/** `launch` : l'ouverture, préférence comprise ; `verify` : l'application est
- *  déjà là, seule la sécurité compte (`verifyOutcome`). */
-export type GateMode = "launch" | "verify";
+/** `launch` : l'ouverture, préférence comprise ; `verify` : un profil est déjà
+ *  choisi dans cette exécution, seule la sécurité compte (`verifyOutcome`) ;
+ *  `late` : l'application s'est ouverte sur la foi du miroir — la préférence
+ *  changée ailleurs (un autre ordinateur) vaut encore si le serveur répond
+ *  dans l'attente bornée, sinon seulement la sécurité. */
+export type GateMode = "launch" | "verify" | "late";
 
 export interface GateState {
   phase: GatePhase;
@@ -42,11 +45,13 @@ export interface GateStep {
   logout?: true;
 }
 
-export function initialGate(verdict: LaunchVerdict, requested: boolean, heldProfileId: string | null): GateState {
-  return { phase: verdict, mode: verdict === "app" ? "verify" : "launch", requested, heldProfileId };
+export function initialGate(verdict: LaunchVerdict, requested: boolean, heldProfileId: string | null, passed = false): GateState {
+  const mode: GateMode = verdict !== "app" ? "launch" : passed ? "verify" : "late";
+  return { phase: verdict, mode, requested, heldProfileId };
 }
 
-export function afterFresh(state: GateState, answer: FreshAnswer): GateStep {
+/** `late` : la réponse arrive après l'attente bornée — la préférence attendra la prochaine ouverture. */
+export function afterFresh(state: GateState, answer: FreshAnswer, late = false): GateStep {
   switch (answer.kind) {
     case "accountLost":
       return { phase: "app", logout: true };
@@ -56,7 +61,8 @@ export function afterFresh(state: GateState, answer: FreshAnswer): GateStep {
     case "incapable":
       return { phase: "app" };
     case "listing": {
-      const outcome = state.mode === "verify"
+      const securityOnly = state.mode === "verify" || (state.mode === "late" && late);
+      const outcome = securityOnly
         ? verifyOutcome(answer.listing, state.heldProfileId)
         : launchOutcome(answer.listing, state.heldProfileId, state.requested);
       if (outcome === "ended") return { phase: state.phase === "app" ? "app" : "check", endProfile: true };

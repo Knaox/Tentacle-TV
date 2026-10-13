@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import type { FamilyProfileColor } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../../family/FamilyAvatar";
 
@@ -32,6 +32,16 @@ interface ProfileCurtainProps {
  */
 export const ProfileCurtain = memo(function ProfileCurtain({ profile, phase, label }: ProfileCurtainProps) {
   const visible = phase !== "leaving";
+  // La barre de défilement de la page passerait par-dessus le rideau : la page
+  // ne défile pas tant qu'il est là.
+  useEffect(() => {
+    const root = document.documentElement;
+    const previous = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = previous;
+    };
+  }, []);
   return (
     <div
       aria-hidden={phase === "leaving"}

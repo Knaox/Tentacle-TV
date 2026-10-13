@@ -48,6 +48,14 @@ interface BuildItemsOptions {
    * atteignables.
    */
   offline?: boolean;
+  /**
+   * Bureau : la session d'un PROFIL de la famille (`auth/profileSession.ts`).
+   * Elle regarde et n'administre rien : ni jumelage, ni contenu gardé sur la
+   * machine (le serveur les refuse à une session de profil), ni déconnexion du
+   * compte — on revient d'abord à son propre profil, comme sur une TV. Un
+   * INVITÉ n'a pas non plus l'Aide (ses tickets lui sont refusés).
+   */
+  profileSession?: { guest: boolean } | null;
 }
 
 export function getUserInfo(): UserInfo {
@@ -72,6 +80,14 @@ export function getUserInfo(): UserInfo {
  * l'application.
  */
 export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
+  const items = buildAllItems(opts);
+  const profile = opts.profileSession;
+  if (!profile) return items;
+  const refused = new Set(["admin", "pair", "onDevice", "goOffline", "logout", ...(profile.guest ? ["help"] : [])]);
+  return items.filter((item) => !refused.has(item.key));
+}
+
+function buildAllItems(opts: BuildItemsOptions): UserMenuItem[] {
   const { t, isAdmin, navigate, handleLogout, extended, goOffline, offline, onDevice } = opts;
   const items: UserMenuItem[] = [];
   if (!offline) {

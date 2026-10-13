@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { WatchTogetherPanel } from "./WatchTogetherPanel";
+import { useActiveProfile } from "../auth/profileSession";
 
 interface WatchTogetherButtonProps {
   dropdownPosition?: "below" | "right";
@@ -15,7 +16,13 @@ interface WatchTogetherButtonProps {
  * passe quelque chose » ne disait pas combien, et une invitation reçue alors
  * qu'on en avait déjà une ne changeait rien à l'écran.
  */
-export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogetherButtonProps) {
+export function WatchTogetherButton(props: WatchTogetherButtonProps) {
+  // Bureau, session d'un profil INVITÉ : le serveur lui refuse Watch Together.
+  const profile = useActiveProfile();
+  return profile?.kind === "guest" ? null : <WatchTogetherControl {...props} />;
+}
+
+function WatchTogetherControl({ dropdownPosition = "below" }: WatchTogetherButtonProps) {
   const { invites, isInGroup } = useWatchTogether();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

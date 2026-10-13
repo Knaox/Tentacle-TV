@@ -2,12 +2,11 @@ import { useCallback, useEffect, useRef, useState, type ReactElement } from "rea
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { TentacleApiError, appConfigQuery, notifyUserChange, useJellyfinClient } from "@tentacle-tv/api-client";
+import { TentacleApiError, appConfigQuery, useJellyfinClient } from "@tentacle-tv/api-client";
 import { resolveServerCapabilities } from "@tentacle-tv/shared";
 import { accountUserId, readActiveProfile } from "../../auth/profileSession";
 import { endProfileSession, readPickerRequest } from "../../auth/profileEnded";
-import { forgetProfileSession } from "../../auth/sessionSwap";
-import { setSessionExpired } from "../../auth/sessionState";
+import { dropAllSessions } from "../../auth/dropSessions";
 import { isDesktopApp } from "../../desktop/detect";
 import { getBackendBase } from "../../lib/backendBase";
 import { NoPersonalSession, loadPickerProfiles, pickerProfilesKey } from "../api/pickerGateway";
@@ -48,18 +47,12 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
     wasAuthed.current = authed;
   }, [authed]);
 
-  const logout = useCallback(() => {
-    client.setAccessToken(null);
-    forgetProfileSession(localStorage);
-    localStorage.removeItem("tentacle_token");
-    localStorage.removeItem("tentacle_user");
-    queryClient.clear();
-    setSessionExpired(true);
-    notifyUserChange();
-  }, [client, queryClient]);
+  const logout = useCallback(() => dropAllSessions(client, queryClient), [client, queryClient]);
 
+  const startedAt = useRef(Date.now());
   const apply = useCallback((answer: FreshAnswer) => {
-    const step = afterFresh(gateRef.current, answer);
+    const late = Date.now() - startedAt.current > LAUNCH_CHECK_BUDGET_MS;
+    const step = afterFresh(gateRef.current, answer, late);
     if (step.logout) logout();
     if (step.endProfile && endProfileSession("ended")) return;
     setGate((current) => ({ ...current, phase: step.phase }));
@@ -92,17 +85,18 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
 function initialState(authed: boolean): GateState {
   const requested = readPickerRequest() !== null;
   const heldProfileId = readActiveProfile()?.id ?? null;
+  const passed = launchPassed();
   const verdict = launchVerdict({
     desktop: isDesktopApp(),
     authed,
-    passed: launchPassed(),
+    passed,
     requested,
     server: getBackendBase(),
     accountId: accountUserId(),
     heldProfileId,
     mirror: readLaunchMirror(),
   });
-  return initialGate(verdict, requested, heldProfileId);
+  return initialGate(verdict, requested, heldProfileId, passed);
 }
 
 /** Le serveur, maintenant : sa capacité, puis la famille du compte (miroir mis à jour). */

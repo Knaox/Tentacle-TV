@@ -1,7 +1,9 @@
 import { ChangePasswordSection } from "../../components/preferences/ChangePasswordSection";
 import { MyDevicesSection } from "../../components/settings/MyDevicesSection";
 import { ChangeServerSection } from "../../components/settings/ChangeServerSection";
+import { Navigate } from "react-router-dom";
 import { isDesktopApp } from "../../desktop/bridge";
+import { useActiveProfile } from "../../auth/profileSession";
 
 /**
  * Sécurité — regroupe ce qui était dispersé sur quatre écrans.
@@ -17,6 +19,8 @@ import { isDesktopApp } from "../../desktop/bridge";
  * au backend. Les ajouter est un chantier serveur distinct.
  */
 export function SettingsSecurity() {
+  // Bureau, session d'un profil : rien de tout cela n'est à lui (le serveur le refuse).
+  if (useActiveProfile()) return <Navigate to="/settings/appearance" replace />;
   return (
     <div className="max-w-2xl">
       <ChangePasswordSection />

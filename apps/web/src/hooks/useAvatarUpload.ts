@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { cacheAvatarFrom, getCachedAvatar } from "../offline/avatarCache";
 import { useConnectivity } from "../offline/useConnectivity";
+import { useActiveProfile } from "../auth/profileSession";
 
 /**
  * Avatar Jellyfin de l'utilisateur courant : URL (cache-bustée après upload)
@@ -56,11 +57,15 @@ export function useAvatarUpload() {
   const queryClient = useQueryClient();
   const userId = useUserId();
   const connectivity = useConnectivity();
+  // Bureau, session d'un profil de la Famille : ni photo du compte à lire
+  // (`Users/Me` n'a pas cours pour un jeton d'appareil) ni à changer — le
+  // profil s'affiche par son rond (`FamilyAvatar`).
+  const profileSession = useActiveProfile() !== null;
   // `null` : le compte n'a pas de photo ; `undefined` : on ne sait pas encore.
   const { data: imageTag } = useQuery({
     queryKey: ["account-image-tag", userId],
     queryFn: () => client.fetch<{ PrimaryImageTag?: string }>("/Users/Me").then((user) => user.PrimaryImageTag ?? null),
-    enabled: !!userId && connectivity.state === "online",
+    enabled: !!userId && connectivity.state === "online" && !profileSession,
     placeholderData: sessionImageTag,
     staleTime: 10 * 60_000,
   });
@@ -75,7 +80,7 @@ export function useAvatarUpload() {
   }, []);
 
   const tagParam = imageTag ? `&tag=${encodeURIComponent(imageTag)}` : "";
-  const remoteUrl = userId && imageTag !== null
+  const remoteUrl = userId && imageTag !== null && !profileSession
     ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=160&quality=90${tagParam}${avatarVersion ? `&v=${avatarVersion}` : ""}`
     : null;
 

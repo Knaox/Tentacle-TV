@@ -42,7 +42,8 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
   const { t } = useTranslation(["profilePicker", "family"]);
   const [glowFrom] = profileColorStops(profile.color);
   const locked = profile.lockedLabel !== null;
-  const caption = locked ? profile.lockedLabel : profile.own ? t("profilePicker:you") : profile.guest ? t("family:kindGuest") : null;
+  // Pas de « Vous » : devant l'écran, ce n'est pas forcément le compte (comme sur la TV).
+  const caption = locked ? profile.lockedLabel : profile.guest ? t("family:kindGuest") : null;
   const label = profile.hasPin
     ? t("profilePicker:tileLabelPin", { name: profile.name })
     : t("profilePicker:tileLabel", { name: profile.name });
@@ -71,8 +72,8 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
           {/* Le halo : peint une fois, seule son opacité varie. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute -inset-5 rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
-            style={{ background: `radial-gradient(circle, ${glowFrom}66 0%, transparent 68%)` }}
+            className="pointer-events-none absolute -inset-7 rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+            style={{ background: `radial-gradient(circle, ${glowFrom}8c 0%, ${glowFrom}26 45%, transparent 70%)` }}
           />
           <span
             className={`relative block rounded-full ring-offset-4 ring-offset-surface-0 transition-[box-shadow] duration-150 group-focus-visible:ring-2 group-focus-visible:ring-line-focus ${locked ? "opacity-55" : ""}`}

@@ -8,6 +8,7 @@ import { useIsMobile } from "../../hooks/useIsMobile";
 import { useDownloadsVisibility } from "../../downloads/useDownloadState";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 import { useFamilyAvailability } from "../../family/useFamilyAvailability";
+import { useActiveProfile } from "../../auth/profileSession";
 
 /**
  * Coquille des réglages utilisateur.
@@ -50,6 +51,9 @@ export function SettingsLayout() {
   // La Famille : seulement si le serveur l'annonce (`features.family`) —
   // un serveur d'avant n'en montre rien, hors ligne non plus.
   const { available: familyAvailable } = useFamilyAvailability();
+  // Bureau, session d'un profil : mot de passe et appareils sont ceux du
+  // compte — le serveur les refuse à un profil, la section n'existe pas.
+  const profileSession = useActiveProfile() !== null;
 
   const sections = useMemo<SettingsShellSection[]>(
     () => [
@@ -62,7 +66,7 @@ export function SettingsLayout() {
       ...(familyAvailable
         ? [{ id: "family", label: tf("nav"), icon: <Users size={ICON} /> }]
         : []),
-      ...(offline
+      ...(offline || profileSession
         ? []
         : [{ id: "security", label: t("sectionSecurity"), icon: <ShieldCheck size={ICON} /> }]),
       { id: "playback", label: t("sectionPlayback"), icon: <Play size={ICON} /> },
@@ -73,7 +77,7 @@ export function SettingsLayout() {
       // ligne (le réglage vaut pour le retour en ligne).
       { id: "data", label: t("sectionData"), icon: <Gauge size={ICON} /> },
     ],
-    [t, tf, downloadsVisible, offline, familyAvailable],
+    [t, tf, downloadsVisible, offline, familyAvailable, profileSession],
   );
 
   const activeId = useMemo(() => {

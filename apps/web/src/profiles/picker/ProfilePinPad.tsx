@@ -1,4 +1,4 @@
-import { memo, useEffect, useId } from "react";
+import { memo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Delete } from "lucide-react";
 import { FAMILY_PIN_LENGTH } from "@tentacle-tv/shared";
@@ -27,13 +27,12 @@ const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
  * juste, faux (essais restants) ou bloqué. Le code ne vit que dans l'état du
  * pavé, jamais dans le stockage ni dans une adresse.
  *
- * Accessibilité : le titre nomme le groupe, la ligne d'état est une région
+ * Accessibilité : le groupe porte « Code PIN du profil … », la ligne d'état est une région
  * `polite` (« 2 chiffres sur 4 », le refus) ; chaque touche a son nom.
  * Un refus fait trembler les points (`animate-shake`, coupé par mouvement réduit).
  */
 export const ProfilePinPad = memo(function ProfilePinPad({ pad, onDigit, onErase, onBack, compact = false }: ProfilePinPadProps) {
   const { t } = useTranslation("profilePicker");
-  const titleId = useId();
   const busy = pad.phase === "checking" || pad.phase === "locked";
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export const ProfilePinPad = memo(function ProfilePinPad({ pad, onDigit, onErase
   const statusTone = pad.phase === "wrong" || pad.phase === "locked" ? "text-status-error-fg" : "text-content-tertiary";
 
   return (
-    <div role="group" aria-labelledby={titleId} className="flex flex-col items-center text-center">
+    <div role="group" aria-label={t("pin.title", { name: pad.profile.name })} className="flex flex-col items-center text-center">
       <FamilyAvatar
         userId={pad.profile.id}
         name={pad.profile.name}
@@ -67,8 +66,9 @@ export const ProfilePinPad = memo(function ProfilePinPad({ pad, onDigit, onErase
         imageTag={pad.profile.imageTag}
         size={compact ? 64 : 96}
       />
-      <h2 id={titleId} className={`${compact ? "mt-3 text-lg" : "mt-5 text-2xl"} font-bold tracking-tight text-content-primary`}>
-        {t("pin.title", { name: pad.profile.name })}
+      {/* Le nom seul, en titre : « Code PIN de Inès » ne s'écrit pas, le pavé dit le reste. */}
+      <h2 className={`${compact ? "mt-3 text-lg" : "mt-5 text-2xl"} max-w-full truncate font-bold tracking-tight text-content-primary`}>
+        {pad.profile.name}
       </h2>
       <p aria-live="polite" className={`mt-2 min-h-[1.25rem] text-sm ${statusTone}`}>{status}</p>
 

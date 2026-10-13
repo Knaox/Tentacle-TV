@@ -21,4 +21,15 @@ describe("le menu utilisateur", () => {
     stats?.action();
     expect(visited).toEqual(["/stats"]);
   });
+
+  it("une session de profil n'offre ni administration, ni jumelage, ni contenu gardé, ni déconnexion", () => {
+    const all = { ...base, isAdmin: true, onDevice: true, goOffline: () => undefined };
+    expect(buildUserMenuItems(all).map((i) => i.key)).toEqual(
+      expect.arrayContaining(["admin", "pair", "onDevice", "goOffline", "logout", "help"]),
+    );
+    const member = buildUserMenuItems({ ...all, profileSession: { guest: false } }).map((i) => i.key);
+    expect(member).toEqual(["stats", "settings", "about", "help"]);
+    const guest = buildUserMenuItems({ ...all, profileSession: { guest: true } }).map((i) => i.key);
+    expect(guest).toEqual(["stats", "settings", "about"]);
+  });
 });
