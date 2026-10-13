@@ -1,11 +1,17 @@
+import { useSyncExternalStore } from "react";
 import type { CurtainProfile } from "./ProfileCurtain";
 
 /**
- * L'ARRIVÉE dans un profil après le rechargement d'une bascule : le rideau
- * tombé avant le rechargement doit être déjà là au premier rendu, au même
- * nom. Passé par le stockage de SESSION de la fenêtre (il survit au
- * rechargement, pas à la fermeture de l'application), lu UNE fois puis
- * effacé : un rechargement manuel ne le rejoue pas.
+ * L'ARRIVÉE dans un profil : le rideau au nom du profil qui se lève sur
+ * l'application.
+ *
+ * - Après le rechargement d'une bascule, il doit être déjà là au premier
+ *   rendu : passé par le stockage de SESSION de la fenêtre (il survit au
+ *   rechargement, pas à la fermeture de l'application), lu UNE fois puis
+ *   effacé — un rechargement manuel ne le rejoue pas (`markArrival`).
+ * - Sans rechargement (SON profil choisi depuis « Qui regarde ? », la session
+ *   personnelle continue), il est annoncé en mémoire (`announceArrival`) : le
+ *   sélecteur s'efface derrière lui, l'application paraît quand il se lève.
  *
  * ⚠️ Clé traversée par une chaîne : jamais renommée.
  */
@@ -30,4 +36,29 @@ export function consumeArrival(): CurtainProfile | null {
   } catch {
     return null;
   }
+}
+
+/** Une arrivée annoncée sans rechargement, avec son numéro (deux annonces de suite : deux rideaux). */
+export interface LiveArrival {
+  profile: CurtainProfile;
+  serial: number;
+}
+
+let live: LiveArrival | null = null;
+let serial = 0;
+const listeners = new Set<() => void>();
+
+export function announceArrival(profile: CurtainProfile): void {
+  serial += 1;
+  live = { profile, serial };
+  for (const listener of listeners) listener();
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function useLiveArrival(): LiveArrival | null {
+  return useSyncExternalStore(subscribe, () => live, () => null);
 }

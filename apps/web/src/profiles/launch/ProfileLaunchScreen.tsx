@@ -7,12 +7,16 @@ import { accountUserId } from "../../auth/profileSession";
 import { loadPickerProfiles, pickerProfilesKey } from "../api/pickerGateway";
 import { usePickFlow } from "../pick/usePickFlow";
 import { WhoIsWatchingView } from "../picker/WhoIsWatchingView";
-import { commitPick } from "../switch/commitPick";
+import { announceArrival } from "../switch/arrival";
+import { commitPick, curtainOf } from "../switch/commitPick";
 import { ProfileCurtain, type CurtainProfile } from "../switch/ProfileCurtain";
 import { pickerModelOf } from "./pickerModel";
 
 /** « Ouverture de Léa… » ne paraît que si le serveur tarde au-delà (comme sur la TV). */
 const OPENING_HINT_DELAY_MS = 500;
+
+/** La chute du rideau (`ProfileCurtain`, 200 ms) : le sélecteur s'efface dessous, pas avant. */
+const CURTAIN_FALL_MS = 200;
 
 /** La page de la Famille, où « Gérer les profils » mène (session personnelle). */
 const FAMILY_SETTINGS_PATH = "/settings/family";
@@ -55,7 +59,12 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
 
   const onPicked = useCallback(async (picked: PickedProfileDto) => {
     const result = await commitPick(picked, { onCurtain: setCurtain, landing: landing.current });
-    if (result === "stay") onDone(landing.current);
+    if (result !== "stay") return;
+    // SON profil, sans rechargement : le rideau tombe sur le sélecteur, puis
+    // l'application paraît dessous quand il se lève (`ProfileArrival`).
+    announceArrival(curtainOf(picked.profile));
+    await new Promise((resolve) => setTimeout(resolve, CURTAIN_FALL_MS));
+    onDone(landing.current);
   }, [onDone]);
 
   const { refetch } = listing;

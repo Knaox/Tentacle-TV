@@ -1,44 +1,66 @@
 import { useEffect, useState } from "react";
-import { consumeArrival } from "./arrival";
-import { ProfileCurtain, type CurtainPhase } from "./ProfileCurtain";
+import { consumeArrival, useLiveArrival } from "./arrival";
+import { ProfileCurtain, type CurtainPhase, type CurtainProfile } from "./ProfileCurtain";
 
-/** Le rideau reste au moins ce temps : l'application a celui de poser ses premières pages dessous. */
-const HOLD_MS = 450;
+/** Après un rechargement, le rideau reste au moins ce temps : l'application pose ses premières pages dessous. */
+const HOLD_AFTER_RELOAD_MS = 450;
+/** Sans rechargement, l'application est déjà là : le rideau tombe (200 ms) et ne fait que passer. */
+const HOLD_LIVE_MS = 360;
 /** Au plus ce temps d'attente d'un moment calme du fil principal, après le minimum. */
 const IDLE_TIMEOUT_MS = 650;
 /** La levée du rideau (`ProfileCurtain`, 260 ms), et un peu de marge avant de le démonter. */
 const LEAVE_MS = 300;
 
+interface Showing {
+  profile: CurtainProfile;
+  hold: number;
+  /** Change à chaque arrivée : une nouvelle arrivée relance le rideau. */
+  serial: number;
+}
+
 /**
- * Le rideau d'ARRIVÉE, monté à la racine (`main.tsx`) hors des fournisseurs :
- * il ne lit que le stockage de session. Déjà là au premier rendu après le
- * rechargement d'une bascule, il se lève dès que la page a eu le temps de se
- * poser — jamais de vide entre le profil quitté et celui qui arrive.
+ * Le rideau d'ARRIVÉE, monté à la racine (`main.tsx`) hors des routes : déjà
+ * là au premier rendu après le rechargement d'une bascule, ou tombé sur une
+ * arrivée annoncée sans rechargement (son profil choisi depuis « Qui
+ * regarde ? »). Il se lève dès que la page a eu le temps de se poser — jamais
+ * de vide entre le profil quitté et celui qui arrive.
  */
 export function ProfileArrival() {
-  const [profile] = useState(consumeArrival);
-  const [phase, setPhase] = useState<CurtainPhase | null>(() => (profile ? "shown" : null));
+  const live = useLiveArrival();
+  const [showing, setShowing] = useState<Showing | null>(() => {
+    const profile = consumeArrival();
+    return profile ? { profile, hold: HOLD_AFTER_RELOAD_MS, serial: 0 } : null;
+  });
+  const [phase, setPhase] = useState<CurtainPhase>("shown");
+
+  // Une arrivée annoncée en direct remplace ce qui se montrait ; le rideau
+  // tombe sur le sélecteur (il n'était pas là avant), puis se lève.
+  useEffect(() => {
+    if (!live) return;
+    setShowing({ profile: live.profile, hold: HOLD_LIVE_MS, serial: live.serial });
+    setPhase("entering");
+  }, [live]);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!showing) return;
     let idle: number | null = null;
     const hold = window.setTimeout(() => {
       const leave = () => setPhase("leaving");
       if (typeof window.requestIdleCallback === "function") idle = window.requestIdleCallback(leave, { timeout: IDLE_TIMEOUT_MS });
       else leave();
-    }, HOLD_MS);
+    }, showing.hold);
     return () => {
       window.clearTimeout(hold);
       if (idle !== null) window.cancelIdleCallback?.(idle);
     };
-  }, [profile]);
+  }, [showing]);
 
   useEffect(() => {
     if (phase !== "leaving") return;
-    const done = window.setTimeout(() => setPhase(null), LEAVE_MS);
+    const done = window.setTimeout(() => setShowing(null), LEAVE_MS);
     return () => window.clearTimeout(done);
   }, [phase]);
 
-  if (!profile || phase === null) return null;
-  return <ProfileCurtain profile={profile} phase={phase} />;
+  if (!showing) return null;
+  return <ProfileCurtain key={showing.serial} profile={showing.profile} phase={phase} />;
 }
