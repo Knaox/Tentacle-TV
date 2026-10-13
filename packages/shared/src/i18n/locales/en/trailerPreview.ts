@@ -1,14 +1,16 @@
 /**
- * Trailer previews on card hover (web and desktop): the device setting and
- * the words of the preview card. Counterpart of `fr/trailerPreview.ts`.
+ * L'aperçu de bande-annonce au survol d'une carte, en anglais — le pendant de
+ * `fr/trailerPreview.ts` (mêmes clés).
  */
 export default {
-  // ── The setting (Settings › Appearance) ───────────────────────────────
-  settingTitle: "Trailer previews on hover",
+  // ── Le réglage (Réglages › Apparence) ──────────────────────────────────
+  settingSection: "Trailers",
+  settingTitle: "Previews on hover",
+  /** Le nom de l'interrupteur, pour les lecteurs d'écran (la ligne seule ne dit pas « bande-annonce »). */
+  settingAccessibleName: "Trailer previews on hover",
   settingDescription: "Rest the pointer on a poster and its trailer starts, with sound. This setting applies to this device only.",
-  settingSection: "Browsing",
 
-  // ── The preview card ──────────────────────────────────────────────────
+  // ── La mini-carte ──────────────────────────────────────────────────────
   previewLabel: "Trailer preview for {{title}}",
   previewLabelUntitled: "Trailer preview",
   mute: "Mute",

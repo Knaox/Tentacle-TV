@@ -7,9 +7,11 @@ import type { ThemeMode } from "@tentacle-tv/theme";
 import { useThemeMode } from "../../theme/useThemeMode";
 import { useLiquidGlass } from "../../theme/useLiquidGlass";
 import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
+import { TrailerPreviewSetting } from "../../components/settings/TrailerPreviewSetting";
 
 /**
- * Apparence — thème clair/sombre/auto et Liquid Glass.
+ * Apparence — thème clair/sombre/auto, Liquid Glass et les aperçus de
+ * bande-annonce au survol.
  *
  * Réglages PAR APPAREIL (localStorage), à ne pas confondre avec le thème de
  * marque de l'admin, lui global à l'instance. Les deux cohabitent : l'admin
@@ -70,6 +72,10 @@ export function SettingsAppearance() {
           }
         />
       </SettingsSection>
+
+      {/* Les aperçus de bande-annonce au survol des cartes : un comportement de
+          l'interface, réglé par appareil comme le thème et le verre. */}
+      <TrailerPreviewSetting />
     </div>
   );
 }

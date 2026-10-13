@@ -8,9 +8,11 @@
  */
 export default {
   // ── Le réglage (Réglages › Apparence) ──────────────────────────────────
-  settingTitle: "Aperçus de bande-annonce au survol",
+  settingSection: "Bandes-annonces",
+  settingTitle: "Aperçus au survol",
+  /** Le nom de l'interrupteur, pour les lecteurs d'écran (la ligne seule ne dit pas « bande-annonce »). */
+  settingAccessibleName: "Aperçus de bande-annonce au survol",
   settingDescription: "Laissez le pointeur sur une affiche\u00a0: sa bande-annonce se lance, avec le son. Réglage propre à cet appareil.",
-  settingSection: "Navigation",
 
   // ── La mini-carte ──────────────────────────────────────────────────────
   /** Le nom de la mini-carte, pour les lecteurs d'écran. */
