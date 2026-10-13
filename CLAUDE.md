@@ -798,7 +798,9 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
   du site (`SetupStepWithoutDoc` : `tmdb`) n'a que ses questions — jamais une adresse inventée.
 - **Interface de l'assistant** (`apps/web/src/components/setupWizard/`) : une question par écran, état pur
   `wizardState.ts` (on ne va, n'avance, ne revient que DANS le parcours), chargée à la demande par `pages/ServerSetup.tsx` — `App.tsx` est aussi compilé par
-  le client LG, qui ne doit pas la porter. Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
+  le client LG, qui ne la porte pas : cette porte y est substituée (écran « Indisponible ») et sa feuille ne
+  balaie pas `components/setupWizard/` (`EXCLUDED_WEB_DIRECTORIES` de `substitutionTable.ts`) ; un de ses
+  modules entré dans le graphe LG arrête le build (`excludedDirectoriesGuard`). Le mot de passe ne vit qu'en mémoire. L'écran du code n'est dans
   le parcours que si `codeRequired` ; la langue des métadonnées est sous le compte (plus d'écran à part) —
   pour un Jellyfin neuf seulement. Liste Jellyfin : `JellyfinList` (pile, neufs, déjà configurés).
   **Un seul cadre, PLEINE PAGE** (`WizardFrame`) : en-tête (les cinq grandes étapes de `wizardPhases.ts`, la

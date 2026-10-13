@@ -8,7 +8,8 @@ import { readFileSync } from "node:fs";
 import { substitutionModules } from "./substitutionModules";
 import { serveHarness } from "./serveHarness";
 import { inlineStyleGuard } from "./inlineStyleGuard";
-import { SUBSTITUTED_PACKAGES, SUBSTITUTED_FILES } from "./substitutionTable";
+import { excludedDirectoriesGuard } from "./excludedDirectoriesGuard";
+import { SUBSTITUTED_PACKAGES, SUBSTITUTED_FILES, EXCLUDED_WEB_DIRECTORIES } from "./substitutionTable";
 import { OPTIONS_LEGACY, BROWSER_BASELINE } from "./legacy";
 import { chrome53Compat } from "./postcss";
 
@@ -62,6 +63,8 @@ export default defineConfig({
 
   plugins: [
     substitutionModules(SUBSTITUTED_FILES),
+    // Ce que la feuille ne balaie pas (`tailwind.config.ts`) ne doit pas être compilé.
+    excludedDirectoriesGuard(EXCLUDED_WEB_DIRECTORIES),
     // Avant `react()` : le `transform` doit voir la source TSX, pas sa
     // traduction. Et après la substitution, pour ne juger que les modules
     // réellement embarqués.
