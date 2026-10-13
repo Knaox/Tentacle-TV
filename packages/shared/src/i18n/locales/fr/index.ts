@@ -51,6 +51,7 @@ import familyWeb from "./familyWeb";
 import familyTv from "./familyTv";
 import familyMobile from "./familyMobile";
 import metadataHint from "./metadataHint";
+import profilePicker from "./profilePicker";
 
 export default {
   common, auth, player, admin,
@@ -78,4 +79,5 @@ export default {
   familyTv,
   familyMobile,
   metadataHint,
+  profilePicker,
 };
