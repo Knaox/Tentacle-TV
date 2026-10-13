@@ -4,7 +4,7 @@ import {
   useIsFavoritePending, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem,
   useSendRecoFeedback,
 } from "@tentacle-tv/api-client";
-import type { RecoRowItem } from "@tentacle-tv/api-client";
+import type { RecoPageRow, RecoRowItem } from "@tentacle-tv/api-client";
 import { titleKey, topLabelInsetRight } from "@tentacle-tv/shared";
 import { CardFrame } from "../cards/CardFrame";
 import { CardImage } from "../cards/CardImage";
@@ -27,6 +27,8 @@ interface RecoCardProps {
   entranceDelay?: number | null;
   onHoverIndex?: (index: number | null) => void;
   onDismissed?: (itemKey: string) => void;
+  /** La rangée qui porte la carte : sa raison n'est pas répétée sous la carte. */
+  reasonRow?: Pick<RecoPageRow, "why" | "seedTitle">;
 }
 
 /**
@@ -52,6 +54,7 @@ export const RecoCard = memo(function RecoCard({
   entranceDelay,
   onHoverIndex,
   onDismissed,
+  reasonRow,
 }: RecoCardProps) {
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
@@ -206,7 +209,7 @@ export const RecoCard = memo(function RecoCard({
           </p>
           {/* Pourquoi ce titre est là — lisible sans survoler. */}
           <div className="mt-0.5">
-            <RecoReasonText reasons={item.reasons} />
+            <RecoReasonText item={item} row={reasonRow} />
           </div>
         </div>
       </div>

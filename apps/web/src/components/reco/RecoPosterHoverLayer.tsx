@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
+import { useMediaItem, useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
 import { CardHoverOverlay } from "../cards/CardHoverOverlay";
 import { ExternalHoverOverlay } from "../cards/external/ExternalHoverOverlay";
 import { useRecoPlayTarget } from "./useRecoPlayTarget";
@@ -50,6 +50,11 @@ function LibraryRecoHoverLayer({ item, visible, onDismiss, onOpenDetail }: RecoP
   const navigate = useNavigate();
   // Lecture (reprise, sinon l'épisode à suivre) — null hors bibliothèque.
   const target = useRecoPlayTarget(item.jellyfinItemId, item.mediaType);
+  // La fiche d'une SÉRIE, chargée au survol comme celle d'un film l'est par la
+  // lecture : « vu » se lit dans son `UserData`, et le geste du plateau la
+  // patche — sans elle, marquer une série vue ne changeait rien à la carte
+  // (2026-10-13). Le cache de la fiche, qu'ouvrir la fiche réutilise.
+  useMediaItem(item.mediaType === "tv" ? (item.jellyfinItemId ?? undefined) : undefined);
   // Le plateau bascule le visage des marqueurs : pour un film, la fiche que
   // la lecture vient de charger (son UserData dit s'il est déjà dans Ma
   // liste) ; pour une série, les Sets partagés répondent.

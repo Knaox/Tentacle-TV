@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { recoRowTitle } from "@tentacle-tv/api-client";
+import { recoRowTitleText } from "@tentacle-tv/api-client";
 import type { RecoPageRow } from "@tentacle-tv/api-client";
 import { RecoRow } from "./RecoRow";
 
@@ -21,15 +21,15 @@ interface RecoRowSlotProps {
  * n'a changé — un drapeau qui bascule ne re-rend pas treize rangées.
  */
 export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, headerTrailing }: RecoRowSlotProps) {
-  const { t } = useTranslation("reco");
+  const { t, i18n } = useTranslation("reco");
   // La rangée est servie ENTIÈRE : la bannière qui met quelques-uns de ses
   // titres en lumière ne lui retire rien.
   const items = row.items;
 
-  // Titre : la table partagée (accueil, éditeur, mobile et TV lisent la même).
-  const { key: titleKey, params } = recoRowTitle(row);
-  const title = t(titleKey, params);
+  // Titre : le thème de la rangée (`why`, il dit POURQUOI), sinon la table
+  // partagée (accueil, éditeur, mobile et TV lisent la même).
+  const title = recoRowTitleText(row, t, { locale: i18n.language });
 
   if (items.length === 0) return null;
-  return <RecoRow title={title} items={items} animDelay={animDelay} headerTrailing={headerTrailing} />;
+  return <RecoRow title={title} items={items} animDelay={animDelay} headerTrailing={headerTrailing} reasonRow={row} />;
 });

@@ -1,14 +1,13 @@
 import { Fragment, memo } from "react";
 import { useTranslation } from "react-i18next";
 import type { RecoPage } from "@tentacle-tv/api-client";
-import { RecoBillboardSlot } from "./hero/RecoBillboardSlot";
-import type { RecoHeroSelection } from "@tentacle-tv/api-client";
 import { LikedActorsPanel } from "./LikedActorsPanel";
 import { RecoFiltersMenu } from "./RecoFiltersMenu";
 import { RecoRefineTeaser } from "./RecoRefineTeaser";
 import { RecoRowSkeleton } from "./RecoRowSkeleton";
 import { RecoRowSlot } from "./RecoRowSlot";
 import { RecoStatusBanner } from "./RecoStatusBanner";
+import { RecoSpotlight } from "./spotlight/RecoSpotlight";
 
 /** Les rangées servies dans TOUS les états du moteur (contrat backend). */
 const GLOBAL_ROW_KEYS = new Set(["trending", "serverPulse", "bestOfLibrary"]);
@@ -19,7 +18,6 @@ interface RecoPageBodyProps {
   /** Données d'un AUTRE filtre encore affichées pendant l'échange : atténuées,
    *  jamais remplacées par du blanc. */
   stale: boolean;
-  hero: RecoHeroSelection;
   onOpenColdStart: () => void;
 }
 
@@ -34,7 +32,6 @@ export const RecoPageBody = memo(function RecoPageBody({
   page,
   filterKey,
   stale,
-  hero,
   onOpenColdStart,
 }: RecoPageBodyProps) {
   const { t } = useTranslation("reco");
@@ -49,18 +46,17 @@ export const RecoPageBody = memo(function RecoPageBody({
 
   return (
     <div className="min-h-screen pb-20">
-      {/* Le héros suit le filtre. Tant que la reco n'a rien à montrer
-          (générique, froid, en construction), un en-tête compact tient sa
-          place — jamais de carrousel « Sélectionné pour vous » nourri de
-          contenu générique. */}
-      <RecoBillboardSlot
-        hero={hero}
-        fallback={
-          <div className="row-gutter pb-2 pt-8">
-            <h1 className="text-2xl font-bold text-content-primary">{t("pageTitle")}</h1>
-          </div>
-        }
-      />
+      {/* LA une de ce soir (la tête de « Pour vous », ou le `featured` du
+          serveur), qui suit le filtre. Tant que la reco n'a rien de personnel
+          à montrer (générique, froid, en construction), un en-tête compact
+          tient sa place — jamais une une nourrie de contenu générique. */}
+      {page.rows.some((row) => row.key === "forYou") || page.featured ? (
+        <RecoSpotlight page={page} />
+      ) : (
+        <div className="row-gutter pb-2 pt-8">
+          <h1 className="text-2xl font-bold text-content-primary">{t("pageTitle")}</h1>
+        </div>
+      )}
 
       <RecoFiltersMenu />
 

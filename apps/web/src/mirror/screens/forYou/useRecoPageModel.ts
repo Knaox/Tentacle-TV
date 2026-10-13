@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { heroSelectionFromRows, useRecoPage, useRequestedTitles } from "@tentacle-tv/api-client";
+import { heroSelectionFromRows, useRecoPageVisit, useRequestedTitles } from "@tentacle-tv/api-client";
 import { useRecoFilter } from "../../../hooks/useRecoFilter";
 import { hasColdStartAck, markColdStartAck } from "../../../lib/coldStartAck";
 
@@ -28,7 +28,7 @@ export function nextColdStartPhase(
  */
 export function useRecoPageModel() {
   const { selected } = useRecoFilter();
-  const query = useRecoPage(selected);
+  const query = useRecoPageVisit(selected);
   const page = query.data;
   // Un titre demandé ailleurs (page de l'extension) sort des rangées au retour.
   useRequestedTitles();

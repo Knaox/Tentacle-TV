@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertCircle, SlidersVertical } from "lucide-react";
-import { recoRowTitle, type RecoPage } from "@tentacle-tv/api-client";
+import { recoRowTitleText, type RecoPage } from "@tentacle-tv/api-client";
 import { FadeIn } from "../../hero/FadeIn";
 import { SkeletonRow } from "../../hero/Skeletons";
 import { PillButton } from "./PillButton";
@@ -92,7 +92,7 @@ export function RecoPageRows({ page, filtered, stale, teaser, ...actions }: {
   /** Glissé après la deuxième rangée (ou la dernière) : l'entrée vers « Affiner ». */
   teaser?: ReactNode;
 } & RecoRowActions) {
-  const { t } = useTranslation("reco");
+  const { t, i18n } = useTranslation("reco");
   let body;
   if (page.generating && page.rows.length === 0) {
     body = [0, 1, 2].map((i) => (
@@ -105,10 +105,9 @@ export function RecoPageRows({ page, filtered, stale, teaser, ...actions }: {
   } else {
     const teaserAfter = Math.min(1, page.rows.length - 1);
     body = page.rows.map((row, i) => {
-      const { key, params } = recoRowTitle(row);
       return (
         <FadeIn key={row.key} delay={Math.min(i, 4) * 60}>
-          <RecoRow title={t(key, params)} items={row.items} showReasons {...actions} />
+          <RecoRow title={recoRowTitleText(row, t, { locale: i18n.language })} items={row.items} showReasons {...actions} />
           {i === teaserAfter && teaser}
         </FadeIn>
       );

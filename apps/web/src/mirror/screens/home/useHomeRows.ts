@@ -4,8 +4,9 @@ import {
   reconcileHomeRows,
   useHomeLayout,
   useLibraries,
-  useRecoPage,
+  useRecoPageVisit,
   visibleHomeRows,
+  useServerCapabilities,
   type HomeLayoutData,
   type HomeRowDescriptor,
 } from "@tentacle-tv/api-client";
@@ -34,18 +35,21 @@ export function useHomeRows(): {
 } {
   const { data: layout } = useHomeLayout();
   const { data: libraries } = useLibraries();
+  const serverCaps = useServerCapabilities();
+  const capabilities = serverCaps.known ? serverCaps.capabilities : undefined;
   const rows = useMemo(() => {
     const stored = layout?.rows ?? LEGACY_HOME_ROWS;
     const libs = (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name }));
     return visibleHomeRows(
       reconcileHomeRows(stored, libs, { anchorNewLibraries: layout?.stored === false, catalog: layout?.catalog }),
       layout?.catalog,
+      capabilities,
     ).filter((row) => row.enabled);
-  }, [layout, libraries]);
+  }, [layout, libraries, capabilities]);
 
   const { selected } = useRecoFilter();
   const wanted = selected.length > 0 && rows.some((row) => row.key.startsWith("reco:"));
-  const { data: page } = useRecoPage(selected, { enabled: wanted });
+  const { data: page } = useRecoPageVisit(selected, { enabled: wanted });
   const filterChipRowKey = useMemo(
     () => (wanted && page ? firstServedRecoRowKey(rows, page.rows.map((row) => row.key)) : null),
     [wanted, page, rows],

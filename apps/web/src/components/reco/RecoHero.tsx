@@ -85,7 +85,7 @@ export function RecoHero({ item }: RecoHeroProps) {
             {item.voteAverage != null && ` · ${item.voteAverage.toFixed(1)}/10`}
           </p>
           <div className="mt-3 text-base">
-            <RecoReasonText reasons={item.reasons} />
+            <RecoReasonText item={item} />
           </div>
           <div className="mt-5 flex flex-wrap items-center gap-2.5">
             {openable && (

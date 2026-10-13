@@ -1,4 +1,4 @@
-import { useRecoPage } from "@tentacle-tv/api-client";
+import { servedHomeRecoRow, useRecoPageVisit } from "@tentacle-tv/api-client";
 import { useRecoFilter } from "../../hooks/useRecoFilter";
 import { RecoRowSlot } from "../reco/RecoRowSlot";
 import { HomeRecoFilterChip } from "./HomeRecoFilterChip";
@@ -24,8 +24,9 @@ const FILTER_CHIP = <HomeRecoFilterChip />;
  */
 export function HomeRecoRow({ rowKey, animDelay, filterChip }: HomeRecoRowProps) {
   const { selected } = useRecoFilter();
-  const { data: page } = useRecoPage(selected);
-  const row = page?.rows.find((r) => r.key === rowKey);
+  const { data: page } = useRecoPageVisit(selected);
+  // Absente de la page servie (serveur ancien, filtre trop strict) : elle se tait.
+  const row = servedHomeRecoRow(page?.rows, rowKey);
   if (!row) return null;
   return (
     <RecoRowSlot

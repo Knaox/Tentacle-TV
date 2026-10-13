@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useHeldRecoItems } from "@tentacle-tv/api-client";
-import type { RecoRowItem } from "@tentacle-tv/api-client";
+import type { RecoPageRow, RecoRowItem } from "@tentacle-tv/api-client";
 import { RowHeader } from "../rows/RowHeader";
 import { RowScrollControls } from "../rows/RowScrollControls";
 import { useRowScroll } from "../rows/useRowScroll";
@@ -18,6 +18,8 @@ interface RecoRowProps {
   animDelay?: number;
   /** Après le titre, toujours visible (la puce du filtre sur l'accueil). */
   headerTrailing?: ReactNode;
+  /** La raison de la rangée (son thème, sa graine) : les cartes ne la répètent pas. */
+  reasonRow?: Pick<RecoPageRow, "why" | "seedTitle">;
 }
 
 /**
@@ -34,7 +36,7 @@ interface RecoRowProps {
  * parti — retirer une carte plus tôt ferait glisser sa voisine sous le
  * curseur. « Ne plus me proposer », lui, part tout de suite.
  */
-export function RecoRow({ title, items, animDelay = 0, headerTrailing }: RecoRowProps) {
+export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow }: RecoRowProps) {
   const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
   const rowRef = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -145,6 +147,7 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing }: RecoRow
                     width={cardWidth}
                     entranceDelay={entrance}
                     onHoverIndex={track.setHoveredIndex}
+                    reasonRow={reasonRow}
                   />
                 );
               })}

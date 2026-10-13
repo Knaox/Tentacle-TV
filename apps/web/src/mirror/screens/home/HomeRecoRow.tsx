@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { recoRowTitle, useRecoPage } from "@tentacle-tv/api-client";
+import { recoRowTitleText, useRecoPageVisit } from "@tentacle-tv/api-client";
 import { useRecoFilter } from "../../../hooks/useRecoFilter";
 import { FadeIn, homeRowFadeDelay } from "../../hero/FadeIn";
 import { RecoRow, type RecoRowActions } from "../forYou/RecoRow";
@@ -21,16 +21,15 @@ export function HomeRecoRow({ rowKey, index, filterChip, onSeeAll, ...actions }:
   filterChip: boolean;
   onSeeAll: () => void;
 } & RecoRowActions) {
-  const { t } = useTranslation("reco");
+  const { t, i18n } = useTranslation("reco");
   const { selected } = useRecoFilter();
-  const { data: page } = useRecoPage(selected);
+  const { data: page } = useRecoPageVisit(selected);
   const row = page?.rows.find((r) => r.key === rowKey);
   if (!row) return null;
-  const { key, params } = recoRowTitle(row);
   return (
     <FadeIn delay={homeRowFadeDelay(index)}>
       <RecoRow
-        title={t(key, params)}
+        title={recoRowTitleText(row, t, { locale: i18n.language })}
         items={row.items}
         accessory={filterChip ? FILTER_CHIP : undefined}
         onSeeAll={onSeeAll}

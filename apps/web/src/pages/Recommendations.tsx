@@ -1,11 +1,11 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
-import { useJellyfinClient, useRecoPage, useRequestedTitles } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useRecoPageVisit, useRequestedTitles } from "@tentacle-tv/api-client";
 import { ContentErrorState } from "../components/ContentErrorState";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
-import { heroSelectionFromRows } from "@tentacle-tv/api-client";
+import { RecoNewerPill } from "../components/reco/RecoNewerPill";
 import { RecoPageBody } from "../components/reco/RecoPageBody";
 import { RecoSectionSwitch } from "../components/reco/RecoSectionSwitch";
 import { RecoPageSkeleton } from "../components/reco/RecoPageSkeleton";
@@ -48,6 +48,11 @@ export function Recommendations() {
  * strictement par plateformes) ; la page choisit seulement quoi montrer
  * selon l'état du moteur. Elle n'est jamais vide : les rangées globales
  * tiennent la scène dans tous les états, et un bandeau dit ce qui se passe.
+ *
+ * La page lue est celle de la VISITE (`useRecoPageVisit`, règle 5 de
+ * docs/RECO-POUR-VOUS.md) : une page recalculée en fond ne remplace jamais
+ * celle qu'on parcourt — elle attend la visite suivante, ou le geste discret
+ * de la pastille « Nouvelles suggestions ».
  */
 function ForYouSection() {
   const { t } = useTranslation("reco");
@@ -55,18 +60,13 @@ function ForYouSection() {
   // au niveau de la session (RecoFilterBinding), l'accueil en dépend aussi.
   const { selected, filterKey } = useRecoFilter();
   const client = useJellyfinClient();
-  const { data: served, isPlaceholderData, isError, refetch } = useRecoPage(selected);
+  const { data: served, isPlaceholderData, isError, refetch, hasNewer, showNewer } = useRecoPageVisit(selected);
   // Un titre demandé dans la page de l'extension (ouverte d'une carte) sort
   // des rangées au retour : la liste se relit à chaque montage de la page.
   useRequestedTitles();
   // La page AFFICHÉE suit la page servie une fois ses premières affiches
   // décodées (budget borné) : un changement de filtre arrive habillé.
   const { page, settling } = useSettledRecoPage(served, client);
-  // Le héros SUIT le filtre — et la page affichée, jamais en avance sur elle.
-  // Tirage au hasard, une graine par visite : la bannière change à chaque
-  // passage, et tient le temps de la visite.
-  const heroSeed = useRef(Math.random());
-  const hero = useMemo(() => heroSelectionFromRows(page?.rows, heroSeed.current), [page?.rows]);
 
   // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
   // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch
@@ -122,10 +122,10 @@ function ForYouSection() {
           page={page}
           filterKey={filterKey}
           stale={isPlaceholderData || settling}
-          hero={hero}
           onOpenColdStart={() => setPhase("hold")}
         />
       )}
+      <RecoNewerPill visible={hasNewer && phase !== "hold"} onShow={showNewer} />
     </>
   );
 }

@@ -14,7 +14,8 @@ import {
   notifyUserChange,
   reconcileHomeRows,
   visibleHomeRows,
-  useRecoPage,
+  useRecoPageVisit,
+  useServerCapabilities,
   firstServedRecoRowKey,
 } from "@tentacle-tv/api-client";
 import { HeroBillboard } from "../components/hero/HeroBillboard";
@@ -77,6 +78,10 @@ export function Home() {
   // recommandé). Seules les rangées du catalogue serveur se rendent : une
   // rangée que ce serveur ne sait pas servir (pas de clé TMDB) reste stockée
   // mais ne s'affiche pas.
+  // Une rangée qu'un serveur ne sert que s'il la DÉCLARE (« Films pour vous ») :
+  // rien tant que la configuration n'a pas répondu, puis SA liste fait foi.
+  const serverCaps = useServerCapabilities();
+  const homeCapabilities = serverCaps.known ? serverCaps.capabilities : undefined;
   const rows = useMemo(
     () =>
       visibleHomeRows(
@@ -85,16 +90,17 @@ export function Home() {
           (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })),
           { anchorNewLibraries: layout?.stored === false, catalog: layout?.catalog }
         ),
-        layout?.catalog
+        layout?.catalog,
+        homeCapabilities
       ).filter((r) => r.enabled),
-    [layout?.rows, layout?.stored, layout?.catalog, libraries]
+    [layout?.rows, layout?.stored, layout?.catalog, libraries, homeCapabilities]
   );
 
   // La puce du filtre de plateformes : sur la première rangée reco, dans
   // l'ordre de l'accueil, RÉELLEMENT servie sous ce filtre — la page est la
   // même entrée de cache que les rangées et le héros, aucune requête en plus.
   const hasRecoRows = rows.some((r) => r.key.startsWith("reco:"));
-  const { data: recoPage } = useRecoPage(recoFilter, { enabled: heroMode === "reco" || hasRecoRows });
+  const { data: recoPage } = useRecoPageVisit(recoFilter, { enabled: heroMode === "reco" || hasRecoRows });
   const filterChipRowKey = useMemo(
     () =>
       recoFilter.length > 0 && recoPage

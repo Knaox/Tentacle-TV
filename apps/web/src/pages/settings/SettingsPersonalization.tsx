@@ -13,6 +13,7 @@ import {
   useSaveHomeLayoutPatch,
   useSaveRecoSettingsPatch,
   visibleHomeRows,
+  useServerCapabilities,
 } from "@tentacle-tv/api-client";
 import type { CardDensity, HeroMode, HomeLayoutData, HomeRowDescriptor, RecoSettingsData } from "@tentacle-tv/api-client";
 import { SettingsSection } from "@tentacle-tv/ui";
@@ -88,7 +89,13 @@ export function SettingsPersonalization() {
         : [],
     [layout, libs]
   );
-  const editorRows = useMemo(() => visibleHomeRows(rows, layout?.catalog), [rows, layout?.catalog]);
+  // « Films pour vous » n'est proposée que si le serveur la déclare (`reco.moviesRow`).
+  const serverCaps = useServerCapabilities();
+  const editorCapabilities = serverCaps.known ? serverCaps.capabilities : undefined;
+  const editorRows = useMemo(
+    () => visibleHomeRows(rows, layout?.catalog, editorCapabilities),
+    [rows, layout?.catalog, editorCapabilities],
+  );
 
   if (!layout || !settings) return null;
 

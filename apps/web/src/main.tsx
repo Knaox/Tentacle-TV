@@ -25,6 +25,7 @@ import {
   setWatchTogetherBackendUrl,
   setRequestTimeoutMs,
   configureSessionChannel,
+  acceptRecoPageThemes,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
@@ -131,6 +132,11 @@ if (_hasUser && !_pendingLang) {
 // Desktop : le catalogue local existe — un fetch qui pend doit échouer vite
 // (12 s) pour nourrir la bascule hors ligne. Web : 30 s historiques conservés.
 if (isDesktop) setRequestTimeoutMs(12_000);
+
+// Le web et le bureau (miroir compris) titrent une rangée à thème par son `why`
+// (`recoRowTitleText`) : ils demandent ces rangées au serveur (`?themes=1`).
+// Posé avant toute requête — la page en cache est toujours demandée ainsi.
+acceptRecoPageThemes();
 
 // Copie du stockage local dans la base SQLite de l'app, en vue de la migration
 // vers Electron. `localStorage` appartient au moteur web et est rangé par
