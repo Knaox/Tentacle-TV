@@ -6,8 +6,9 @@ import type { SetupWizardProps } from "../components/setupWizard/SetupWizard";
 /**
  * L'assistant d'installation du serveur (web et bureau). `App.tsx` le monte
  * tant que l'installation n'est pas faite ; son code — écrans, QR code — n'est
- * chargé qu'à ce moment-là : un serveur installé, et le client LG qui compile
- * `App.tsx`, n'en portent rien.
+ * chargé qu'à ce moment-là : un serveur installé n'en porte rien. Le client LG,
+ * qui compile aussi `App.tsx`, ne compile pas ce module : il y est substitué par
+ * l'écran « Indisponible » (`apps/tv-webos/config/substitutionTable.ts`).
  */
 const SetupWizard = lazy(() => import("../components/setupWizard/SetupWizard"));
 

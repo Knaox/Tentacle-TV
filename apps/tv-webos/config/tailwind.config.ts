@@ -2,6 +2,7 @@ import type { Config } from "tailwindcss";
 import { tentacleTailwindPreset } from "@tentacle-tv/theme/tailwind";
 import configWeb from "../../web/tailwind.config";
 import { presetTv } from "./presetTv";
+import { EXCLUDED_WEB_DIRECTORIES } from "./substitutionTable";
 
 /**
  * Configuration Tailwind de la cible téléviseur.
@@ -16,6 +17,12 @@ import { presetTv } from "./presetTv";
  * de code propre à la cible. En oublier un ne casse pas le build — il produit
  * une feuille amputée des classes concernées, ce qui se voit à l'écran et non
  * dans la console.
+ *
+ * Seule exception : les dossiers que le téléviseur ne compile pas du tout
+ * (`EXCLUDED_WEB_DIRECTORIES`, table de substitution). Leurs classes n'ont rien
+ * à faire dans la feuille, et la garde Chrome 53 n'a pas à les juger ; qu'un de
+ * leurs modules entre dans le graphe, et `excludedDirectoriesGuard` arrête le
+ * build plutôt que de laisser un écran sans ses classes.
  */
 export default {
   presets: [tentacleTailwindPreset, presetTv],
@@ -25,6 +32,8 @@ export default {
     "../web/index.html",
     "../web/src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
+    // Chemins absolus : ils ne dépendent pas du dossier d'où part le build.
+    ...EXCLUDED_WEB_DIRECTORIES.map((directory) => `!${directory}/**`),
   ],
   theme: configWeb.theme,
   // Les variables de départ des utilitaires (`--tw-translate-x`, `--tw-ring-*`,

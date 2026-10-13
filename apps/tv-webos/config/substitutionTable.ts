@@ -12,14 +12,16 @@ import { DETAIL_FILES } from "./substitutionTableDetail";
  * qui diffère entre le client web et le client téléviseur — c'est ce qui
  * permet à `apps/web` de ne contenir aucune condition de plateforme.
  *
- * Deux familles :
+ * Trois familles :
  *
  *   - les **paquets** (`framer-motion`, `hls.js`, `@tentacle-tv/plugins-api`),
  *     que `resolve.alias` saurait traiter ;
  *   - les **fichiers**, qu'il ne sait pas traiter. `resolve.alias` agit sur le
  *     spécificateur écrit dans l'import : il n'attrapera jamais le `./browser`
  *     relatif de `lib/deviceProfile/index.ts`. D'où la substitution par chemin
- *     résolu.
+ *     résolu ;
+ *   - les **dossiers** que le téléviseur ne compile pas du tout, et que sa
+ *     feuille ne balaie donc pas (`EXCLUDED_WEB_DIRECTORIES`).
  */
 
 /** Paquets npm remplacés — traités par `resolve.alias`. */
@@ -48,6 +50,13 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // Sort du graphe les écrans qui n'ont pas de sens sur un téléviseur. C'est
   // ce qui retire réellement leur code du bundle, sans toucher au routeur.
   [resolve(WEB, "lazyPages.ts")]: resolve(CLIENT, "pages/lazyPagesTv.tsx"),
+
+  // L'assistant d'installation du serveur se joue au clavier, de près. `App.tsx`
+  // importe sa porte pour le monter tant que le serveur n'est pas installé, et
+  // l'import paresseux qu'elle fait laissait TOUT l'assistant dans le bundle :
+  // un fragment que la dalle ne charge jamais. La porte mène ici à l'écran
+  // « Indisponible » ; ses écrans sortent aussi de la feuille (plus bas).
+  [resolve(WEB, "pages/ServerSetup.tsx")]: resolve(CLIENT, "pages/serverSetupTv.ts"),
 
   // Les écrans et le lecteur du miroir téléphone / iPad : l'aiguillage `ByFormFactor` est
   // dynamique, mais un téléviseur ne l'emprunte jamais (toujours « desktop »).
@@ -267,3 +276,17 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "dev/autoWatch.tsx")]: resolve(CLIENT, "shims/devHarness.ts"),
   [resolve(WEB, "dev/FrameMeter.tsx")]: resolve(CLIENT, "shims/frameMeter.ts"),
 };
+
+/**
+ * Dossiers d'`apps/web` que le téléviseur ne compile pas : sa feuille ne les
+ * balaie pas (`tailwind.config.ts`). Tailwind lit des FICHIERS, pas le graphe —
+ * sans cette liste, chaque classe d'un écran que la dalle n'affiche jamais
+ * entre dans sa feuille, et la garde Chrome 53 la juge. Un dossier n'y entre
+ * que si les substitutions ci-dessus ferment TOUTES ses portes : sinon ses
+ * classes manqueraient sur la dalle sans un mot, et `excludedDirectoriesGuard`
+ * arrête le build.
+ */
+export const EXCLUDED_WEB_DIRECTORIES: readonly string[] = [
+  // L'assistant d'installation : sa seule porte, `pages/ServerSetup.tsx`, mène à « Indisponible ».
+  resolve(WEB, "components/setupWizard"),
+];

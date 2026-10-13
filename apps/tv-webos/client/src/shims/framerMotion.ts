@@ -1,4 +1,5 @@
 import {
+  createContext,
   createElement,
   forwardRef,
   useEffect,
@@ -105,6 +106,22 @@ export function AnimatePresence(
 export function useIsPresent(): boolean {
   return true;
 }
+
+/** Ce que `pagePresence` (apps/web) pose dans le contexte : la forme de framer-motion, réduite à ce qu'il lit. */
+interface PresenceContextValue {
+  id: string;
+  isPresent: boolean;
+  register: (id: string | number) => () => void;
+  initial?: unknown;
+}
+
+/**
+ * Le contexte de présence que `RouteExit` relit puis redonne à sa page
+ * (`pagePresence`). Aucun `AnimatePresence` ci-dessus n'en fournit : la page
+ * lit `null`, comme hors de toute présence, et `RouteExit` le transmet tel
+ * quel — rien ne s'inscrit, rien n'attend une sortie qui n'est jamais jouée.
+ */
+export const PresenceContext = createContext<PresenceContextValue | null>(null);
 
 /**
  * Faux sur un téléviseur : le système n'expose pas de préférence de mouvement
