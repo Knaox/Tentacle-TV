@@ -57,12 +57,24 @@
   box-shadow: var(--elev-card-hover);
 }
 
+.card-preview-backdrop,
 .card-preview-video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* La vidéo rejoint l'image du titre en fondu quand elle part (`PreviewMedia`) ;
+ * elle s'efface d'un coup (la mini-carte est encore transparente à cet instant). */
+.card-preview-video {
+  transition: opacity 360ms var(--ease-out);
+}
+
+.card-preview-video.is-waiting {
+  opacity: 0;
+  transition: none;
 }
 
 /* Le voile, en BAS seulement : il porte le titre, les étoiles et le plateau ;

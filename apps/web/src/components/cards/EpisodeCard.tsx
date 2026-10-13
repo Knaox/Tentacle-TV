@@ -214,8 +214,9 @@ export const EpisodeCard = memo(function EpisodeCard({
         {overlayMounted && overlay(overlayVisible, "card")}
 
         {/* La mini-carte de la bande-annonce : le même survol, sur la vidéo ;
-            son clic lance la lecture, comme celui de la vignette. */}
-        <CardPreview controller={preview} title={seriesName ?? item.Name} logoItem={item}>
+            son clic lance la lecture, comme celui de la vignette. Elle grandit
+            sur l'image même de la vignette : aucune rupture au départ. */}
+        <CardPreview controller={preview} title={seriesName ?? item.Name} artItem={item} backdropUrl={imageUrl || null}>
           {(visible) => overlay(visible, "preview")}
         </CardPreview>
 

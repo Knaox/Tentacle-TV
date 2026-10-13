@@ -146,7 +146,7 @@ export function PosterTile({
         <CardPreview
           controller={preview}
           title={item.Type === "Episode" ? (item.SeriesName ?? item.Name) : item.Name}
-          logoItem={item}
+          artItem={item}
         >
           {(visible) => overlay(visible, "preview")}
         </CardPreview>

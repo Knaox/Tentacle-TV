@@ -1,9 +1,11 @@
 import type { CSSProperties, FocusEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { resolveLogoImage, type MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { useMountWhile } from "../../../hooks/useMountWhile";
 import { PreviewMuteButton, PreviewTitle } from "./PreviewChrome";
+import { PreviewMedia } from "./PreviewMedia";
+import { previewBackdropOf, previewLogoOf } from "./previewArt";
 import { PREVIEW_EXIT_MS, PREVIEW_MOTION_VARS } from "./previewMotion";
 import { previewFromTransform } from "./previewPlacement";
 import type { CardPreviewView } from "./usePreviewSession";
@@ -12,26 +14,30 @@ import "./cardPreview.css";
 interface PreviewFrameProps {
   view: CardPreviewView;
   title: string;
-  logoItem: MediaItem | null;
+  artItem: MediaItem | null;
+  backdropUrl: string | null;
   children: (visible: boolean) => ReactNode;
 }
 
 /**
- * Le dessin de la mini-carte : la vidéo plein cadre, le voile du bas, le
- * bouton du son en haut à droite, le titre en bas à gauche et le groupe du
- * survol de la carte en bas à droite.
+ * Le dessin de la mini-carte : l'image du titre puis la vidéo, plein cadre
+ * (`PreviewMedia`), le voile du bas, le bouton du son en haut à droite, le
+ * titre en bas à gauche et le groupe du survol de la carte en bas à droite.
  *
  * MONTÉE dès que le moteur précharge la vidéo, mais cachée — opacité nulle
  * (jamais `display: none` : une vidéo non rendue ne présente pas sa première
  * image), inerte, hors du flux ; VUE seulement quand le moteur la montre. Le
  * mouvement est décrit dans `cardPreview.css` et `previewMotion.ts`.
  */
-export function PreviewFrame({ view, title, logoItem, children }: PreviewFrameProps) {
+export function PreviewFrame({ view, title, artItem, backdropUrl, children }: PreviewFrameProps) {
   const { t } = useTranslation("trailerPreview");
   const client = useJellyfinClient();
-  // Le logo ANNONCÉ par la donnée, jamais demandé à l'aveugle (cf. `resolveLogoImage`).
-  const logo = logoItem ? resolveLogoImage(logoItem) : null;
+  // Logo et fond ANNONCÉS par la donnée, jamais demandés à l'aveugle.
+  const logo = artItem ? previewLogoOf(artItem) : null;
   const logoUrl = logo ? client.getImageUrl(logo.id, "Logo", { height: 120, quality: 90, tag: logo.tag }) : null;
+  const backdrop = artItem ? previewBackdropOf(artItem) : null;
+  const backdropSrc = backdropUrl
+    ?? (backdrop ? client.getImageUrl(backdrop.id, "Backdrop", { width: 780, quality: 80, tag: backdrop.tag }) : null);
   const { placement, shown, settled, engine, portalRef, focusInsideRef, close } = view;
   // Le survol de la mini-carte n'existe que vue — et le temps de sa sortie :
   // le préchargement caché ne s'abonne à rien.
@@ -71,7 +77,7 @@ export function PreviewFrame({ view, title, logoItem, children }: PreviewFramePr
       onBlur={onBlur}
     >
       <div className="card-preview-surface">
-        {engine.renderVideo({ hold: !settled, className: "card-preview-video" })}
+        <PreviewMedia engine={engine} shown={shown} settled={settled} backdropUrl={backdropSrc} />
         <div aria-hidden className="card-preview-veil" />
         <div className="card-preview-chrome absolute right-2.5 top-2.5">
           <PreviewMuteButton muted={engine.muted} onToggle={engine.toggleMute} />

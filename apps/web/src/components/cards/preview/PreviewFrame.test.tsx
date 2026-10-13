@@ -45,11 +45,13 @@ function view(over: { shown?: boolean; settled?: boolean; muted?: boolean } = {}
   };
 }
 
-const movie = { Id: "m1", Name: "Metropolis", Type: "Movie", ImageTags: { Logo: "logo-tag" } } as unknown as MediaItem;
+const movie = {
+  Id: "m1", Name: "Metropolis", Type: "Movie", ImageTags: { Logo: "logo-tag" }, BackdropImageTags: ["bd-tag"],
+} as unknown as MediaItem;
 
-function render(v: ReturnType<typeof view>, logoItem: MediaItem | null = null) {
+function render(v: ReturnType<typeof view>, artItem: MediaItem | null = null, backdropUrl: string | null = null) {
   return renderToStaticMarkup(
-    <PreviewFrame view={v} title="Metropolis" logoItem={logoItem}>
+    <PreviewFrame view={v} title="Metropolis" artItem={artItem} backdropUrl={backdropUrl}>
       {(visible) => <div data-group={visible}>survol</div>}
     </PreviewFrame>,
   );
@@ -95,6 +97,14 @@ describe("PreviewFrame — vue", () => {
   it("dit le geste du bouton du son, pas son état", () => {
     expect(render(view({ shown: true, muted: true }))).toContain('aria-label="unmute"');
     expect(render(view({ shown: true, muted: false }))).toContain('aria-label="mute"');
+  });
+
+  it("grandit sur le FOND du titre annoncé par Jellyfin, ou sur l'image que la carte donne", () => {
+    const withArt = render(view(), movie);
+    expect(withArt).toContain('src="/img/m1/Backdrop?tag=bd-tag"');
+    expect(withArt).toContain('class="card-preview-backdrop"');
+    expect(render(view(), movie, "https://x/still.jpg")).toContain('src="https://x/still.jpg"');
+    expect(render(view(), null)).not.toContain("card-preview-backdrop");
   });
 
   it("écrit le LOGO annoncé par Jellyfin, sinon le nom", () => {

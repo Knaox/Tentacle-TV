@@ -19,11 +19,17 @@ interface CardPreviewProps {
   /** Le nom du titre — lu par les lecteurs d'écran, écrit quand Jellyfin n'a pas de logo. */
   title: string;
   /**
-   * L'item Jellyfin dont le LOGO s'écrit sur la vidéo, quand la donnée en
-   * annonce un (`resolveLogoImage` : le sien, celui de la série d'un épisode).
-   * Absent hors bibliothèque : le nom.
+   * L'item Jellyfin du titre : son LOGO s'écrit sur la vidéo et son FOND 16:9
+   * se montre pendant l'agrandissement, quand la donnée les annonce (ceux de
+   * la série pour un épisode). Absent hors bibliothèque : le nom, la vidéo.
    */
-  logoItem?: MediaItem | null;
+  artItem?: MediaItem | null;
+  /**
+   * L'image 16:9 montrée pendant l'agrandissement, quand la carte en sait plus
+   * que la donnée : l'image même d'une vignette (continuité parfaite), le fond
+   * TMDB d'une recommandation. Prime sur le fond de `artItem`.
+   */
+  backdropUrl?: string | null;
   /**
    * Le survol de la carte, rendu tel quel dans la mini-carte : le MÊME
    * composant que sur la carte (`CardHoverOverlay`, `ExternalHoverOverlay`),
@@ -46,23 +52,23 @@ interface CardPreviewProps {
  * La SESSION (moteur, requête, mini-carte) n'existe que pendant le survol :
  * au repos, une carte ne porte qu'une ancre et un booléen.
  */
-export function CardPreview({ controller, title, logoItem = null, children }: CardPreviewProps) {
+export function CardPreview({ controller, title, artItem = null, backdropUrl = null, children }: CardPreviewProps) {
   const { session } = controller;
   const wanted = session.hovered && session.subject !== null && !session.disabled;
   const active = useMountWhile(wanted, SESSION_LINGER_MS);
   if (!active) return null;
   return (
-    <PreviewSession controller={controller} title={title} logoItem={logoItem}>
+    <PreviewSession controller={controller} title={title} artItem={artItem} backdropUrl={backdropUrl}>
       {children}
     </PreviewSession>
   );
 }
 
-function PreviewSession({ controller, title, logoItem, children }: Required<CardPreviewProps>) {
+function PreviewSession({ controller, title, artItem, backdropUrl, children }: Required<CardPreviewProps>) {
   const view = usePreviewSession(controller.session);
   if (!view || typeof document === "undefined") return null;
   return createPortal(
-    <PreviewFrame view={view} title={title} logoItem={logoItem}>
+    <PreviewFrame view={view} title={title} artItem={artItem} backdropUrl={backdropUrl}>
       {children}
     </PreviewFrame>,
     document.body,

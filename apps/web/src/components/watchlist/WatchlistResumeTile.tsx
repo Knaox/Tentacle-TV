@@ -129,7 +129,8 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
 
         {overlayMounted && overlay(overlayVisible, "card")}
 
-        <CardPreview controller={preview} title={item.SeriesName ?? item.Name} logoItem={item}>
+        {/* Elle grandit sur l'image même de la vignette : aucune rupture au départ. */}
+        <CardPreview controller={preview} title={item.SeriesName ?? item.Name} artItem={item} backdropUrl={imageUrl || null}>
           {(visible) => overlay(visible, "preview")}
         </CardPreview>
 

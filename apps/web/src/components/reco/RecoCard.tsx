@@ -16,7 +16,7 @@ import { RecoPosterHoverLayer } from "./RecoPosterHoverLayer";
 import { RecoOnDemandLabel } from "./RecoOnDemandLabel";
 import { RecoReasonText } from "./RecoReasonText";
 import { useRecoNavigation } from "../../lib/recoNavigation";
-import { recoPosterUrl } from "@tentacle-tv/api-client";
+import { recoBackdropUrl, recoPosterUrl } from "@tentacle-tv/api-client";
 import { CardPreview, useCardPreview } from "../cards/preview";
 import { useMountWhile } from "../../hooks/useMountWhile";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
@@ -217,8 +217,13 @@ export const RecoCard = memo(function RecoCard({
             />
           )}
 
-          {/* La mini-carte de la bande-annonce : le même survol, sur la vidéo. */}
-          <CardPreview controller={preview} title={item.title}>
+          {/* La mini-carte de la bande-annonce : le même survol, sur la vidéo ;
+              elle grandit sur le fond du titre (TMDB, sinon Jellyfin). */}
+          <CardPreview
+            controller={preview}
+            title={item.title}
+            backdropUrl={recoBackdropUrl(item, (id) => client.getImageUrl(id, "Backdrop", { width: 780, quality: 80 }), "w780")}
+          >
             {(visible) => (
               <RecoPosterHoverLayer
                 item={item}
