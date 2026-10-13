@@ -28,8 +28,11 @@
 //              --track=<piste> y inscrit la piste. Leur changelog n'est pas
 //              celui du bureau : passer --changelog=changelogs/mobile.md (ou
 //              tv.md), avec les limites Play.
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { loadNotes } from "./lib/changelog.mjs";
+import { MANIFEST_BLOCKS } from "./lib/published.mjs";
+import { isVersion } from "./lib/versions.mjs";
 
 const [, , version, ...rest] = process.argv;
 if (!version) {
@@ -51,15 +54,29 @@ if (only && !BLOCKS.includes(only)) {
   process.exit(1);
 }
 
-const notesFor = (format, channel) => {
-  const n = loadNotes({ changelog, channel, version, format });
+// Ce que chaque bloc annonçait AVANT ce patch — lu dans le commit (le job
+// « manifest » de desktop.yml a déjà pu écrire linux.version sur le disque),
+// sinon dans le fichier. Les notes reprennent les versions sautées depuis :
+// la fenêtre de mise à jour dit tout ce qui change pour qui était resté là.
+const previousManifest = (() => {
+  try { return JSON.parse(execFileSync("git", ["show", "HEAD:updates/store-versions.json"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })); }
+  catch { try { return JSON.parse(readFileSync("updates/store-versions.json", "utf8")); } catch { return {}; } }
+})();
+const previousVersion = (block) => {
+  const v = previousManifest[MANIFEST_BLOCKS[block]]?.version;
+  return isVersion(v) ? v : null;
+};
+
+const notesFor = (format, channel, block) => {
+  const since = block ? previousVersion(block) : null;
+  const n = loadNotes({ changelog, channel, version, since, format });
   if (!n || (!n.fr && !n.en)) return null;
   return { fr: n.fr ?? n.en ?? "", en: n.en ?? n.fr ?? "" };
 };
 
 /** Les notes d'un bloc, ou un echec NOMME. */
-const required = (label, format, channel) => {
-  const n = notesFor(format, channel);
+const required = (label, format, channel, block) => {
+  const n = notesFor(format, channel, block);
   if (!n) {
     console.error(`Bloc « ## [${version}] » introuvable (ou vide) dans ${changelog} — necessaire pour ${label}.`);
     process.exit(1);
@@ -79,23 +96,23 @@ const required = (label, format, channel) => {
 // devenait rouge toutes les trente minutes des qu'un bloc nu manquait, alors
 // qu'il n'avait besoin que du canal « mac ».
 const wants = (block) => only === null || only === block;
-const ascMac = wants("mac") ? required("macAppStore", "asc", "mac") : null;
+const ascMac = wants("mac") ? required("macAppStore", "asc", "mac", "mac") : null;
 // Le bloc linux, lui, prend les notes NEUTRES (même limite de 4000).
-const asc = wants("linux") ? required("linux.notes", "asc") : null;
+const asc = wants("linux") ? required("linux.notes", "asc", undefined, "linux") : null;
 // Canal « win », comme msstore-submit.mjs : un bloc « ## [win-X.Y.Z] » est la
 // version faite pour le Store (1500 caractères) ; le bloc nu, celle de macOS
 // et Linux, y était coupé à la puce.
-const msstore = wants("ms") ? required("microsoftStore", "msstore", "win") : null;
+const msstore = wants("ms") ? required("microsoftStore", "msstore", "win", "win") : null;
 // Les blocs Play n'alimentent que le site, qui n'en affiche que la version :
 // une version servie sans bloc de changelog (Android TV 1.2.1, antérieure à la
 // convention) s'inscrit quand même, SANS notes — mieux qu'un bloc qui ment.
-const playNotes = (label) => {
-  const notes = notesFor("play");
+const playNotes = (label, block) => {
+  const notes = notesFor("play", undefined, block);
   if (!notes) console.error(`Bloc « ## [${version}] » absent de ${changelog} — ${label} inscrit sans notes.`);
   return { notes };
 };
-const playMobile = wants("play-mobile") ? playNotes("playMobile") : null;
-const playTv = wants("play-tv") ? playNotes("playTv") : null;
+const playMobile = wants("play-mobile") ? playNotes("playMobile", "play-mobile") : null;
+const playTv = wants("play-tv") ? playNotes("playTv", "play-tv") : null;
 
 const path = "updates/store-versions.json";
 const json = JSON.parse(readFileSync(path, "utf8"));
@@ -117,7 +134,7 @@ if (asc) {
   json.linux = { ...(json.linux ?? {}), notes: asc };
   touched.push(`linux.notes (FR ${asc.fr.length}c / EN ${asc.en.length}c)`);
 }
-/** Un bloc Play : version, piste, et les notes de CETTE version — ou aucune. */
+/** Un bloc Play : version, piste, et les notes de cette version (et des sautées) — ou aucune. */
 const playBlock = (key, { notes }) => {
   const block = { ...(json[key] ?? {}), version, ...(track ? { track } : {}) };
   delete block.notes;

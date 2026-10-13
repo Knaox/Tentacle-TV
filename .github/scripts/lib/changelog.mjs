@@ -3,6 +3,7 @@
 // atv, win, play) avec sous-sections « ### FR » / « ### EN ». Repli sur le bloc
 // nu « ## [x.y.z] » pour les entrées historiques. Zéro dépendance npm.
 import fs from 'node:fs';
+import { changelogVersions, compareVersions, isVersion } from './versions.mjs';
 
 /** Limites de caractères par cible (texte brut). GitHub : aucune. */
 export const LIMITS = { asc: 4000, play: 500, msstore: 1500 };
@@ -126,16 +127,75 @@ export function truncateAtBullet(text, max) {
   return cut.slice(0, max - 1).trimEnd() + '…';
 }
 
-/** Lit le CHANGELOG et renvoie les notes prêtes pour une cible donnée. */
-export function loadNotes({ changelog = 'CHANGELOG.md', channel, version, format = 'github' }) {
+/**
+ * Les versions dont les notes partent avec `version` : elle-même, et celles du
+ * changelog que la boutique n'a JAMAIS servies — strictement au-dessus de
+ * `since` (la version qu'elle sert aujourd'hui). De la plus récente à la plus
+ * ancienne : la coupe à la limite du store garde donc toujours la livrée.
+ *
+ * POURQUOI. Les plateformes n'avancent pas au même pas : le bureau Windows
+ * peut être en 1.28.1 quand macOS sert encore la 1.25.3. Livrer macOS 1.28.1
+ * avec le seul bloc 1.28.1 taisait tout ce que 1.26 à 1.28.0 apportaient à
+ * ses utilisateurs. `since` inconnu (null) ou pas en dessous : la seule version.
+ */
+export function notesVersions(md, { version, since }) {
+  if (!isVersion(since) || !isVersion(version) || compareVersions(since, version) >= 0) return [version];
+  const skipped = changelogVersions(md).filter((v) =>
+    compareVersions(v, since) > 0 && compareVersions(v, version) < 0);
+  return [version, ...skipped];
+}
+
+/**
+ * La section de `version`, augmentée des versions sautées (`notesVersions`).
+ * Les textes FR et EN se suivent, du plus récent au plus ancien ; le markdown
+ * brut (`raw`, pour GitHub) regroupe tout le français puis tout l'anglais. Le
+ * bloc de `version` est EXIGÉ (null sans lui) ; un bloc sauté absent est passé.
+ * `start`/`end` restent ceux du bloc de `version` (findAscForbidden lit les
+ * autres par leurs propres bornes, via `sections`).
+ */
+export function extractCumulative(md, { channel, version, since }) {
+  const own = extractSection(md, { channel, version });
+  if (!own) return null;
+  const versions = notesVersions(md, { version, since });
+  const sections = [{ version, section: own }];
+  for (const v of versions.slice(1)) {
+    const section = extractSection(md, { channel, version: v });
+    if (section) sections.push({ version: v, section });
+  }
+  if (sections.length === 1) return { ...own, versions: [version], sections };
+  const join = (lang) => sections.map(({ section }) => section[lang]).filter((t) => t?.trim()).join('\n');
+  const fr = join('fr');
+  const en = join('en');
+  return {
+    raw: `### FR\n\n${fr}\n\n### EN\n\n${en}`,
+    fr, en,
+    start: own.start, end: own.end,
+    versions: sections.map((s) => s.version),
+    sections,
+  };
+}
+
+/**
+ * Lit le CHANGELOG et renvoie les notes prêtes pour une cible donnée.
+ * `since` : la version que la boutique sert déjà — les notes des versions
+ * qu'elle a sautées s'ajoutent (`extractCumulative`). Omis : la seule version.
+ */
+export function loadNotes({ changelog = 'CHANGELOG.md', channel, version, since = null, format = 'github' }) {
   const md = fs.readFileSync(changelog, 'utf8');
-  const section = extractSection(md, { channel, version });
+  const section = extractCumulative(md, { channel, version, since });
   if (!section) return null;
   if (format === 'github') return section;
   const limit = LIMITS[format];
-  return {
-    raw: section.raw,
-    fr: section.fr != null ? truncateAtBullet(toPlainText(section.fr), limit) : null,
-    en: section.en != null ? truncateAtBullet(toPlainText(section.en), limit) : null,
-  };
+  // Pour Apple, les caractères refusés sont retirés : le pré-vol ne contrôle
+  // que le bloc de la version livrée, pas ceux des versions sautées, et un seul
+  // « ✓ » ferait rejeter toutes les notes (puis la soumission).
+  const clean = format === 'asc'
+    ? (t) => ASC_FORBIDDEN.reduce((acc, f) => acc.split(f.char).join(''), t).replace(/[ \t]+$/gm, '')
+    : (t) => t;
+  const plain = (md) => (md != null ? truncateAtBullet(clean(toPlainText(md)), limit) : null);
+  return { raw: section.raw, versions: section.versions, fr: plain(section.fr), en: plain(section.en) };
 }
+
+/** « 1.28.1 », ou « 1.28.1 (+ 1.28.0, 1.27.0) » quand des versions sautées suivent. */
+export const describeNotesVersions = (versions) =>
+  versions.length > 1 ? `${versions[0]} (+ ${versions.slice(1).join(', ')})` : versions[0];

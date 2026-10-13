@@ -18,7 +18,7 @@
 // La coupe à la puce est voulue, mais elle est SILENCIEUSE — c'est elle qui a
 // fait naître les blocs « ## [win-X.Y.Z] » de changelogs/desktop.md. Autant la
 // voir arriver, et de combien.
-import { loadNotes, extractSection, findAscForbidden, toPlainText, LIMITS } from './lib/changelog.mjs';
+import { loadNotes, extractSection, findAscForbidden, toPlainText, truncateAtBullet, LIMITS } from './lib/changelog.mjs';
 import fs from 'node:fs';
 
 const args = process.argv.slice(2);
@@ -69,7 +69,12 @@ for (const spec of checks) {
   // L'annotation `file=…,line=…` pointe la ligne dans l'onglet du run ; la
   // ligne est aussi écrite en clair pour qui lit le journal brut.
   if (format === 'asc') {
-    const hits = findAscForbidden(md, section, { fr: notes.fr, en: notes.en });
+    // Le texte AVANT nettoyage : loadNotes retire ces caractères pour Apple,
+    // mais un bloc qui en porte se corrige à la source.
+    const hits = findAscForbidden(md, section, {
+      fr: truncateAtBullet(toPlainText(section.fr), LIMITS.asc),
+      en: truncateAtBullet(toPlainText(section.en), LIMITS.asc),
+    });
     for (const hit of hits) {
       const where = `ligne ${hit.line}${hit.lang ? ` (${hit.lang})` : ''}`;
       console.error(`::error file=${changelog},line=${hit.line}::${label} — ${where} : « ${hit.char} » (${hit.code}) ${hit.why}. Retire-le : les notes seraient rejetées et la version ne pourrait pas être soumise.`);

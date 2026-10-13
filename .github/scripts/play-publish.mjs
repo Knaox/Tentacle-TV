@@ -26,8 +26,9 @@
 // commite.
 import fs from 'node:fs';
 import { createPlayClient } from './lib/play-api.mjs';
-import { loadNotes } from './lib/changelog.mjs';
-import { promotableVersionCodes } from './lib/promote.mjs';
+import { describeNotesVersions, loadNotes } from './lib/changelog.mjs';
+import { promotableVersionCodes, releaseVersion } from './lib/promote.mjs';
+import { maxVersion } from './lib/versions.mjs';
 
 const args = process.argv.slice(2);
 const flag = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : null; };
@@ -54,10 +55,31 @@ if (!process.env.PLAY_SERVICE_ACCOUNT_JSON) {
   process.exit(1);
 }
 
-/** Notes fr-FR / en-US, seulement celles qui existent. */
-function releaseNotes() {
+/**
+ * La version que sert la PRODUCTION du même form factor (« tv:production »
+ * pour une piste « tv:… »), lue dans l'édition ouverte, ou null.
+ */
+function productionTrackOf(name) {
+  return name.startsWith('tv:') ? 'tv:production' : 'production';
+}
+async function servedInProduction(play, base, editId) {
+  try {
+    const prod = await play.call(`${base}/edits/${editId}/tracks/${encodeURIComponent(productionTrackOf(track))}`);
+    return maxVersion((prod.releases ?? [])
+      .filter((r) => ['completed', 'inProgress'].includes(r.status))
+      .map((r) => releaseVersion(r.name)));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Notes fr-FR / en-US, seulement celles qui existent. `since` : la version en
+ * production — les notes reprennent celles des versions qu'elle a sautées.
+ */
+function releaseNotes(since) {
   if (!changelog) return [];
-  const notes = loadNotes({ changelog, version, format: 'play' });
+  const notes = loadNotes({ changelog, version, since, format: 'play' });
   if (!notes) {
     console.error(`::error::aucun bloc « ## [${version}] » dans ${changelog}.`);
     process.exit(1);
@@ -67,6 +89,7 @@ function releaseNotes() {
   // décident de la même limite finissent par se contredire. C'est
   // check-changelog.mjs, au pré-vol, qui dit AVANT le build de combien la
   // coupe va mordre.
+  console.log(`[play] production : ${since ?? 'inconnue'} — notes de ${describeNotesVersions(notes.versions)}.`);
   return [['fr-FR', notes.fr], ['en-US', notes.en]]
     .filter(([, text]) => text?.trim())
     .map(([language, text]) => ({ language, text }));
@@ -116,7 +139,7 @@ async function publish(play) {
     }
     if (alsoTrack && !extraTrack) console.log(`[play] « ${alsoTrack} » sert déjà ce binaire : rien à y poser.`);
 
-    const notes = releaseNotes();
+    const notes = releaseNotes(changelog ? await servedInProduction(play, base, editId) : null);
     const release = {
       name: version,
       versionCodes,

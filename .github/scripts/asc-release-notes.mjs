@@ -11,9 +11,9 @@
 //   BUNDLE_ID, PLATFORM (MAC_OS|IOS|TV_OS), VERSION, BUILD, CHANGELOG (chemin).
 // Env optionnel : CHANNEL (mac|ios|atv|win|play) — bloc « ## [<canal>-<version>] »
 //   cherché en priorité (défaut dérivé de PLATFORM), repli « ## [<version>] ».
-import { loadNotes } from './lib/changelog.mjs';
+import { describeNotesVersions, loadNotes } from './lib/changelog.mjs';
 import {
-  createAscClient, findApp, ensureAppStoreVersion, findBuild,
+  createAscClient, findApp, ensureAppStoreVersion, findBuild, liveVersion,
   setAppStoreNotes, setBetaBuildNotes, localePairs, CHANNEL_BY_PLATFORM,
 } from './lib/asc-api.mjs';
 
@@ -26,14 +26,17 @@ const CHANNEL = process.env.CHANNEL || CHANNEL_BY_PLATFORM[PLATFORM] || null;
 const api = createAscClient({ keyId: ASC_KEY_ID, issuer: ASC_ISSUER, p8: ASC_KEY_P8 });
 
 const main = async () => {
-  const notes = loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, format: 'asc' });
+  const app = await findApp(api, BUNDLE_ID);
+  // La version EN VENTE : les notes reprennent aussi les versions qu'elle a
+  // sautées (lib/changelog.mjs → notesVersions). Illisible : la seule version.
+  const since = await liveVersion(api, app.id, PLATFORM).catch(() => null);
+  const notes = loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, since, format: 'asc' });
   if (!notes || (!notes.fr && !notes.en)) {
     console.log(`[notes] pas de section CHANGELOG pour ${CHANNEL}-${VERSION} (ni ${VERSION}) — ignoré.`);
     return;
   }
+  console.log(`[notes] en vente : ${since ?? 'inconnue'} — notes de ${describeNotesVersions(notes.versions)}.`);
   const pairs = localePairs(notes);
-
-  const app = await findApp(api, BUNDLE_ID);
 
   // ── « Nouveautés » : version App Store (créée si absente) ──
   const ver = await ensureAppStoreVersion(api, app.id, { version: VERSION, platform: PLATFORM });

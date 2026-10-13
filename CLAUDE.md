@@ -237,6 +237,18 @@ MS Store 1500, Play 500 **caractères Unicode**. Les blocs par canal
 `## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu pour ces cibles-là
 (bureau seulement). `CHANGELOG.md` racine = archive pure.
 
+**Notes CUMULÉES, sans retoucher un changelog** : une boutique en retard reçoit
+aussi les nouveautés des versions qu'elle n'a jamais servies — macOS 1.28.1
+face à un Mac App Store en 1.25.3 emporte les blocs 1.25.4 → 1.28.1, du plus
+récent au plus ancien (la coupe à la limite garde la version livrée en tête).
+La version servie vient d'App Store Connect (`liveVersion`, macOS/iOS/tvOS),
+de la piste de production lue dans l'édition Play, ou de
+`updates/store-versions.json` (Microsoft Store `NOTES_SINCE_BLOCK: win`, Linux
+`--since-block linux`, et la fenêtre de mise à jour de l'app). Règle :
+`lib/changelog.mjs` → `notesVersions` / `extractCumulative`, testée hors ligne.
+Seul le bloc de la version livrée est EXIGÉ (pré-vol) ; pour Apple, les
+caractères refusés d'un bloc sauté sont retirés, jamais envoyés.
+
 **Tentacle Server pour Windows n'a PAS de changelog à lui** (décision du
 2026-10-12) : ses « Nouveautés » sont LES MÊMES que celles du serveur, le bloc
 nu `## [S]` de `changelogs/server.md` — jamais de `## [win-S]` dans ce fichier,

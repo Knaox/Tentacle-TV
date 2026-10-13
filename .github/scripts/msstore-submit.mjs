@@ -15,14 +15,19 @@
 //   FLIGHT_ID — soumet au VOL de paquet de cet ID (groupe de testeurs) au lieu
 //   de la fiche publique : mêmes étapes sous `/flights/<id>`, sans notes (un
 //   vol n'a pas de fiche). Voir lib/msstore-submission.mjs.
+//   NOTES_SINCE_BLOCK — le bloc de updates/store-versions.json qui dit ce que
+//   la fiche sert déjà (« win » pour le bureau) : les notes reprennent alors
+//   les versions sautées (lib/changelog.mjs → notesVersions). Absent : la
+//   seule version (Tentacle Server pour Windows, qui suit chaque serveur).
 import fs from 'node:fs';
-import { loadNotes } from './lib/changelog.mjs';
+import { describeNotesVersions, loadNotes } from './lib/changelog.mjs';
+import { manifestVersion } from './lib/published.mjs';
 import { prepareSubmission, submissionTarget } from './lib/msstore-submission.mjs';
 
 const {
   PARTNER_TENANT_ID, PARTNER_CLIENT_ID, PARTNER_CLIENT_SECRET,
   STORE_ID, PACKAGE_ZIP, PACKAGE_FILE_NAME, VERSION,
-  CHANNEL = 'win', CHANGELOG = 'CHANGELOG.md', FLIGHT_ID = '',
+  CHANNEL = 'win', CHANGELOG = 'CHANGELOG.md', FLIGHT_ID = '', NOTES_SINCE_BLOCK = '',
 } = process.env;
 const TARGET = submissionTarget({ flightId: FLIGHT_ID.trim() });
 const TIMEOUT_MS = Number(process.env.SUBMIT_TIMEOUT_MINUTES ?? 30) * 60_000;
@@ -116,9 +121,11 @@ async function main() {
 
   // 4) Mutation minimale du clone (PUT remplace l'objet ENTIER → on renvoie le
   //    clone intégral, mutations comprises : trailers/pricing préservés).
+  const since = NOTES_SINCE_BLOCK ? manifestVersion(NOTES_SINCE_BLOCK) : null;
   const notes = TARGET.notes
-    ? loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, format: 'msstore' })
+    ? loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, since, format: 'msstore' })
     : null;
+  if (notes) console.log(`[msstore] fiche à ${since ?? '?'} — notes de ${describeNotesVersions(notes.versions)}.`);
   for (const line of prepareSubmission(sub, TARGET, { notes, packageFileName: PACKAGE_FILE_NAME })) {
     (line.level === 'warn' ? console.warn : console.log)(`[msstore] ${line.text}`);
   }

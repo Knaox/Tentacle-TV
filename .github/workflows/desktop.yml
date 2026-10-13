@@ -584,6 +584,8 @@ jobs:
           PACKAGE_FILE_NAME: TentacleTV.msix
           VERSION: ${{ needs.prepare.outputs.version }}
           CHANGELOG: changelogs/desktop.md
+          # Les notes reprennent les versions que la fiche n'a jamais servies.
+          NOTES_SINCE_BLOCK: win
         run: node .github/scripts/msstore-submit.mjs
 
   # ── Linux (.deb / .rpm / .pkg.tar.zst / AppImage) → Release desktop-vX.Y.Z ──
@@ -704,7 +706,7 @@ jobs:
           V="${{ needs.prepare.outputs.version }}"
           node .github/scripts/release-notes.mjs \
             --changelog changelogs/desktop.md --version "$V" \
-            --format github --out notes.md
+            --since-block linux --format github --out notes.md
           {
             echo "Application desktop **Tentacle TV** ${V} pour Linux."
             # Cette ligne était écrite EN DUR : une livraison Linux seule

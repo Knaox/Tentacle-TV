@@ -9,13 +9,17 @@
 //     --lang fr|en|both               (défaut : both pour --format github, sinon requis)
 //     --format asc|play|msstore|github (défaut : github)
 //     --out <fichier>                 (sinon stdout)
+//     --since-block <bloc>            (ex. linux : la version que ce bloc de
+//                                      updates/store-versions.json sert déjà ;
+//                                      les notes reprennent les versions sautées)
 //
 // Section introuvable → message sur stderr, AUCUN fichier créé, exit 0 (jamais
 // bloquant — les workflows testent `[ -s fichier ]`). `github` = markdown brut ;
 // autres formats = texte brut tronqué à la limite du store (asc 4000, play 500,
 // msstore 1500).
 import fs from 'node:fs';
-import { loadNotes } from './lib/changelog.mjs';
+import { describeNotesVersions, loadNotes } from './lib/changelog.mjs';
+import { manifestVersion } from './lib/published.mjs';
 
 const args = {};
 const argv = process.argv.slice(2);
@@ -48,7 +52,9 @@ if (lang === 'both' && format !== 'github') {
 
 let notes;
 try {
-  notes = loadNotes({ changelog, channel, version, format });
+  const since = args['since-block'] ? manifestVersion(args['since-block']) : null;
+  notes = loadNotes({ changelog, channel, version, since, format });
+  if (notes?.versions?.length > 1) console.error(`[release-notes] notes de ${describeNotesVersions(notes.versions)} (servi : ${since}).`);
 } catch (e) {
   console.error(`[release-notes] lecture ${changelog} impossible : ${e.message}`);
   process.exit(1);

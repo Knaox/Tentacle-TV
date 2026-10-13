@@ -16,7 +16,7 @@
 //   ATTACH_TIMEOUT_MINUTES (35), POLL_SECONDS (60), CHANGELOG (CHANGELOG.md).
 import { loadNotes } from './lib/changelog.mjs';
 import {
-  createAscClient, findApp, findBuild,
+  createAscClient, findApp, findBuild, liveVersion,
   setBetaBuildNotes, localePairs, CHANNEL_BY_PLATFORM,
 } from './lib/asc-api.mjs';
 
@@ -59,7 +59,9 @@ const main = async () => {
 
   // 2) « À tester » TestFlight, maintenant que le build est traité.
   try {
-    const notes = loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, format: 'asc' });
+    // Ce qui est à tester depuis la version EN VENTE, versions sautées comprises.
+    const since = await liveVersion(api, app.id, PLATFORM).catch(() => null);
+    const notes = loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, since, format: 'asc' });
     if (notes) await setBetaBuildNotes(api, build.id, localePairs(notes), (m) => console.log(`[await] ${m}`));
   } catch (e) { console.log(`[await] « À tester » échec (non bloquant): ${e.message}`); }
 };

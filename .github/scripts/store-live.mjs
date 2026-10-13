@@ -23,6 +23,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createAscClient, findApp, liveVersion } from './lib/asc-api.mjs';
 import { loadNotes } from './lib/changelog.mjs';
+import { manifestEntry } from './lib/published.mjs';
 import { describeTracks, fetchReleaseTracks, productionVersions } from './lib/play-reporting.mjs';
 import { fetchMsStoreNotes, fetchPlayWhatsNew, matchNotesVersion } from './lib/store-listings.mjs';
 import { changelogVersions, isVersion, maxVersion, minVersion } from './lib/versions.mjs';
@@ -47,10 +48,24 @@ const result = {
   android: null, androidtv: null, linux: null, server: null, webos: null,
 };
 
-/** La version d'un changelog dont les notes, mises en forme pour la boutique, sont `shown`. */
-function versionFromNotes(shown, changelog, { channel, format }) {
+/**
+ * La version d'un changelog dont les notes, mises en forme pour la boutique,
+ * sont `shown`. Les livraisons envoient des notes CUMULÉES depuis la version
+ * que le manifeste disait servie (`block`) : on reconnaît celles-là d'abord,
+ * puis les notes d'une seule version (livraisons d'avant, ou rien de sauté).
+ * Une version déjà inscrite se reconnaît aux notes que le manifeste a gardées.
+ */
+function versionFromNotes(shown, changelog, { channel, format, block }) {
   const versions = changelogVersions(readFileSync(changelog, 'utf8'));
-  return matchNotesVersion(shown, versions, (version) => loadNotes({ changelog, channel, version, format })?.en);
+  const entry = block ? manifestEntry(block) : null;
+  // Déjà inscrite : la boutique montre les notes que le manifeste a gardées.
+  const known = entry?.notes?.en ? matchNotesVersion(shown, [entry.version], () => entry.notes.en) : null;
+  if (known) return known;
+  const since = entry?.version ?? null;
+  const cumulative = since
+    ? matchNotesVersion(shown, versions, (version) => loadNotes({ changelog, channel, version, since, format })?.en)
+    : null;
+  return cumulative ?? matchNotesVersion(shown, versions, (version) => loadNotes({ changelog, channel, version, format })?.en);
 }
 
 async function apple() {
@@ -76,7 +91,7 @@ async function windows() {
     warn('Microsoft Store : notes publiques illisibles — Windows inconnu.');
     return;
   }
-  result.windows = versionFromNotes(shown, 'changelogs/desktop.md', { channel: 'win', format: 'msstore' });
+  result.windows = versionFromNotes(shown, 'changelogs/desktop.md', { channel: 'win', format: 'msstore', block: 'win' });
   if (result.windows) log(`Microsoft Store : ${result.windows} (notes publiques)`);
   else warn('Microsoft Store : les notes en ligne ne correspondent à aucun bloc de changelogs/desktop.md.');
 }
@@ -101,8 +116,8 @@ async function android() {
   const shown = await fetchPlayWhatsNew(PLAY_PACKAGE, log);
   let listed = null;
   if (shown) {
-    listed = versionFromNotes(shown, 'changelogs/mobile.md', { format: 'play' });
-    if (!listed && !versionFromNotes(shown, 'changelogs/tv.md', { format: 'play' })) {
+    listed = versionFromNotes(shown, 'changelogs/mobile.md', { format: 'play', block: 'play-mobile' });
+    if (!listed && !versionFromNotes(shown, 'changelogs/tv.md', { format: 'play', block: 'play-tv' })) {
       warn('Play : les notes de la fiche publique ne correspondent à aucun bloc de changelogs/mobile.md.');
     }
   }
