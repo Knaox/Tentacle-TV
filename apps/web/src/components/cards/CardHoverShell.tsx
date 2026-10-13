@@ -1,12 +1,20 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import type { CardOverlayVariant } from "@tentacle-tv/shared";
 
+/**
+ * Où le survol se pose : sur la CARTE (le cas de toujours), ou dans la
+ * mini-carte d'aperçu (`preview/CardPreview`), qui le reprend tel quel —
+ * mêmes étoiles, même plateau, même ordre — sur la bande-annonce.
+ */
+export type CardHoverSurface = "card" | "preview";
+
 interface CardHoverShellProps {
   variant: CardOverlayVariant;
   /** Cible du fondu : vrai pendant le survol, faux pendant le sursis de sortie. */
   visible: boolean;
   /** Le groupe du bas : étoiles, puis plateau. */
   children: ReactNode;
+  surface?: CardHoverSurface;
 }
 
 /**
@@ -20,6 +28,10 @@ interface CardHoverShellProps {
  *      le titre de l'épisode. Même groupe, même ordre — seule la place change
  *      avec le format.
  *
+ * Dans la mini-carte d'aperçu (`surface="preview"`), la coque ne rend que le
+ * GROUPE, rangé à droite comme sur une vignette : c'est la mini-carte qui pose
+ * son voile (le bas seulement, la vidéo reste lisible) et le titre à gauche.
+ *
  * RIEN au centre de l'image : un gros bouton de lecture y a vécu, au dégradé
  * de marque. Il répétait le clic de la carte et masquait l'affiche au moment
  * même où on la regardait. L'action primaire d'une carte — « Lire » sur une
@@ -31,21 +43,41 @@ interface CardHoverShellProps {
  * laissée à `opacity: 0`. Les fondus ne touchent que `opacity` et `transform`
  * (theme/cards.css). `.hover-reveal` sert aussi de poignée à la feuille de la
  * LG, et `data-card-overlay` aux feuilles qui voudraient une variante.
+ * Effacée (`visible` faux), elle sort du parcours du clavier (`inert`) : un
+ * plateau qu'on ne voit plus — le temps de son fondu, ou sous la mini-carte
+ * qui le reprend — ne se tabule pas.
  *
  * Les touches pressées sur un bouton du survol ne remontent pas : la carte
  * entière réagit à Entrée/Espace, et un bouton focalisé par le clic
  * déclencherait les deux.
  */
-export function CardHoverShell({ variant, visible, children }: CardHoverShellProps) {
+export function CardHoverShell({ variant, visible, children, surface = "card" }: CardHoverShellProps) {
   const reveal = { "--reveal-ms": "200ms" } as CSSProperties;
   const stopKeys = (e: KeyboardEvent) => e.stopPropagation();
   const corner = variant === "landscape";
+
+  if (surface === "preview") {
+    return (
+      <div
+        className="card-hover-rise flex min-w-0 max-w-full flex-col items-end gap-1.5"
+        data-shown={visible}
+        data-card-overlay={variant}
+        data-card-surface="preview"
+        inert={!visible}
+        onKeyDown={stopKeys}
+        style={{ ...reveal, pointerEvents: visible ? "auto" : "none" }}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div
       className="hover-reveal absolute inset-0 z-20"
       data-shown={visible}
       data-card-overlay={variant}
+      inert={!visible}
       onKeyDown={stopKeys}
       style={{ ...reveal, pointerEvents: visible ? "auto" : "none" }}
     >

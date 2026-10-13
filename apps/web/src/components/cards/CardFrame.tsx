@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 interface CardFrameProps {
   hovered: boolean;
@@ -12,6 +12,15 @@ interface CardFrameProps {
    * de son arrondi : il se soulève avec elle.
    */
   highlighted?: boolean;
+  /**
+   * La carte s'efface : la mini-carte d'aperçu (`preview/CardPreview`) a pris
+   * sa place, plus grande, au-dessus de la rangée. `opacity` seulement, et
+   * jamais un démontage : la boîte garde sa place dans la rangée (aucun
+   * reflow) et reste l'ancre où la mini-carte revient se poser en sortant.
+   */
+  concealed?: boolean;
+  /** Le visuel lui-même — l'ancre de la mini-carte d'aperçu. */
+  ref?: Ref<HTMLDivElement>;
   children: ReactNode;
 }
 
@@ -55,10 +64,13 @@ export function CardFrame({
   aspect,
   lift = { scale: 1.06, y: -8 },
   highlighted = false,
+  concealed,
+  ref,
   children,
 }: CardFrameProps) {
   return (
     <div
+      ref={ref}
       // Repère de la transition d'ouverture : c'est CETTE boîte — l'affiche
       // seule, sans le bloc titre qui la suit — que le calque fait voyager
       // jusqu'à la fiche. Capturer la racine de la carte embarquait le titre et
@@ -72,9 +84,14 @@ export function CardFrame({
       // de suite, sur une boîte qui se met à l'échelle en même temps — le
       // compositeur ne pouvait donc même pas réutiliser sa texture.
       data-hovered={hovered}
+      // Posé seulement par une carte qui a un aperçu : la feuille de l'aperçu
+      // y accroche son fondu croisé sous `prefers-reduced-motion`.
+      data-concealed={concealed}
       className="media-tile relative motion-reduce:!transform-none"
       style={{
         transform: hovered ? `scale(${lift.scale}) translateY(${lift.y}px)` : "scale(1)",
+        // La transition d'opacité est déjà celle de `.media-tile` (theme/cards.css).
+        opacity: concealed ? 0 : undefined,
       }}
     >
       {/* La boîte image. Elle ne porte plus aucun effet de bord : la classe

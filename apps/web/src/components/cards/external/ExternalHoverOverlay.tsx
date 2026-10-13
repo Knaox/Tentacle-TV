@@ -6,7 +6,7 @@ import {
   type ExternalCardActionEntry,
   type ExternalCardVariant,
 } from "@tentacle-tv/shared";
-import { CardHoverShell } from "../CardHoverShell";
+import { CardHoverShell, type CardHoverSurface } from "../CardHoverShell";
 import { CardTrayButton, CardTrayCapsule, TRAY_SIZE } from "../CardActionTray";
 import { CardTrayPrimaryButton } from "../CardTrayPrimaryButton";
 import { BookmarkGlyph, HeartGlyph } from "../cardGlyphs";
@@ -24,6 +24,8 @@ interface ExternalHoverOverlayProps {
   visible: boolean;
   /** Extra « Ne plus me proposer » d'une recommandation. */
   onDismiss?: () => void;
+  /** `preview` : le même survol, dans la mini-carte d'aperçu — rangé à droite, au gabarit des vignettes. */
+  surface?: CardHoverSurface;
 }
 
 /**
@@ -45,7 +47,7 @@ interface ExternalHoverOverlayProps {
  * notes, celles des titres mis de côté et aimés, et les mutations n'existent
  * que le temps du survol.
  */
-export function ExternalHoverOverlay({ variant, title, name, visible, onDismiss }: ExternalHoverOverlayProps) {
+export function ExternalHoverOverlay({ variant, title, name, visible, onDismiss, surface = "card" }: ExternalHoverOverlayProps) {
   const actions = useExternalTitleActions(title);
   const overlay = resolveExternalCardOverlay({
     variant, request: actions.state?.request ?? null, identified: true, likes: actions.likes,
@@ -53,20 +55,29 @@ export function ExternalHoverOverlay({ variant, title, name, visible, onDismiss 
   // « Ne plus me proposer » n'existe que si l'appelant sait le faire.
   const entries = externalCardActionEntries(overlay, { watchlist: actions.pending, favorite: actions.favorite })
     .filter((entry) => entry.kind !== "dismiss" || onDismiss);
+  const preview = surface === "preview";
+  const align = preview ? "flex justify-end" : "flex justify-center";
 
   return (
-    <CardHoverShell variant={variant} visible={visible}>
+    <CardHoverShell variant={variant} visible={visible} surface={surface}>
       {overlay.rate && (
-        <div className="flex justify-center">
+        <div className={align}>
           <HoverRatingStars identity={actions.ratingIdentity} />
         </div>
       )}
       {entries.length > 0 && (
         // Pas de bascules de bibliothèque : la capsule épouse son contenu, au centre.
-        <div className="flex justify-center">
+        <div className={align}>
           <CardTrayCapsule label={name}>
             {entries.map((entry) => (
-              <TrayEntry key={entry.kind} entry={entry} actions={actions} name={name} onDismiss={onDismiss} />
+              <TrayEntry
+                key={entry.kind}
+                entry={entry}
+                actions={actions}
+                name={name}
+                onDismiss={onDismiss}
+                size={preview ? "md" : "sm"}
+              />
             ))}
           </CardTrayCapsule>
         </div>
@@ -76,14 +87,15 @@ export function ExternalHoverOverlay({ variant, title, name, visible, onDismiss 
 }
 
 /** Un bouton de la capsule, selon l'action que le modèle y range. */
-function TrayEntry({ entry, actions, name, onDismiss }: {
+function TrayEntry({ entry, actions, name, onDismiss, size }: {
   entry: ExternalCardActionEntry;
   actions: ExternalTitleActions;
   name: string;
   onDismiss?: () => void;
+  size: keyof typeof TRAY_SIZE;
 }) {
   const { t } = useTranslation("cards");
-  const { box, icon } = TRAY_SIZE.sm;
+  const { box, icon } = TRAY_SIZE[size];
 
   if (entry.kind === "request") {
     return (

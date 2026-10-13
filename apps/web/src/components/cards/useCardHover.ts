@@ -1,4 +1,4 @@
-import { useCallback, useState, type FocusEvent, type RefObject } from "react";
+import { useCallback, useRef, useState, type FocusEvent, type RefObject } from "react";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 
 /**
@@ -11,10 +11,17 @@ import { useHoverGuard } from "../../hooks/useHoverGuard";
  *
  * `:focus-visible` seulement : un clic pose aussi le focus sur la carte, et
  * le survol resterait alors allumé après le départ de la souris.
+ *
+ * `companionRef` : l'élément qui prolonge la carte HORS de son arbre DOM — la
+ * mini-carte d'aperçu, rendue dans un portail (`components/cards/preview/`).
+ * React fait déjà remonter ses évènements de souris jusqu'à la carte ; le
+ * focus, lui, se juge sur le DOM (`relatedTarget`) : un focus qui passe de la
+ * carte à la mini-carte ne quitte donc pas la carte.
  */
 export function useCardHover(rootRef: RefObject<HTMLElement | null>) {
   const [pointer, setPointer] = useState(false);
   const [keyboard, setKeyboard] = useState(false);
+  const companionRef = useRef<HTMLDivElement | null>(null);
   // La rangée ou la grille défile sous un curseur immobile (cf. `useHoverGuard`).
   const unhover = useCallback(() => setPointer(false), []);
   useHoverGuard(rootRef, pointer, unhover);
@@ -23,10 +30,16 @@ export function useCardHover(rootRef: RefObject<HTMLElement | null>) {
     if (e.target.matches(":focus-visible")) setKeyboard(true);
   }, []);
   const onBlur = useCallback((e: FocusEvent<HTMLElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setKeyboard(false);
+    const next = e.relatedTarget as Node | null;
+    if (e.currentTarget.contains(next) || (next !== null && companionRef.current?.contains(next))) return;
+    setKeyboard(false);
   }, []);
   const onMouseEnter = useCallback(() => setPointer(true), []);
   const onMouseLeave = useCallback(() => setPointer(false), []);
 
-  return { hovered: pointer || keyboard, handlers: { onMouseEnter, onMouseLeave, onFocus, onBlur } };
+  return {
+    hovered: pointer || keyboard,
+    handlers: { onMouseEnter, onMouseLeave, onFocus, onBlur },
+    companionRef,
+  };
 }

@@ -8,7 +8,7 @@ import {
   type MediaItem,
 } from "@tentacle-tv/shared";
 import { CardActionTray } from "./CardActionTray";
-import { CardHoverShell } from "./CardHoverShell";
+import { CardHoverShell, type CardHoverSurface } from "./CardHoverShell";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { useSeriesGapOffer } from "../seasons/SeriesGapsScope";
 import { HoverRatingStars } from "../rating/HoverRatingStars";
@@ -50,6 +50,12 @@ interface CardHoverOverlayProps {
    * l'appelant fournit l'état et le geste ; ni note ni requête au serveur.
    */
   local?: CardToggleHandlers;
+  /**
+   * `preview` : le même survol, rendu dans la mini-carte d'aperçu — sans les
+   * puces qualité/langues (la vidéo n'a pas à porter ce que dit la fiche),
+   * le groupe rangé à droite au gabarit des vignettes.
+   */
+  surface?: CardHoverSurface;
 }
 
 /**
@@ -78,9 +84,12 @@ export function CardHoverOverlay({
   onOpenDetails,
   onDismiss,
   local,
+  surface = "card",
 }: CardHoverOverlayProps) {
   const { t } = useTranslation("cards");
   const landscape = variant === "landscape";
+  // Le groupe se range à droite sur une vignette, et dans la mini-carte.
+  const corner = landscape || surface === "preview";
   // Une carte qui n'a qu'un résumé (recherche, similaires) prend sa fiche
   // complète : tmdb pour les étoiles, état frais pour le plateau. Un titre
   // local ne demande rien au serveur.
@@ -122,18 +131,18 @@ export function CardHoverOverlay({
   // Pleine largeur sur une affiche seulement quand le plateau est complet :
   // une capsule d'un ou deux boutons (hors bibliothèque, titre local) épouse
   // son contenu, au centre — étirée, un bouton seul flotterait au bord.
-  const stretch = !landscape && overlay.toggles.length >= CARD_TOGGLE_ORDER.length;
+  const stretch = !corner && overlay.toggles.length >= CARD_TOGGLE_ORDER.length;
 
   return (
     <>
-      {metaItem && (
+      {metaItem && surface === "card" && (
         <div className="pointer-events-none absolute inset-0 z-30">
           <CardMetaOverlay item={metaItem} density={landscape ? "full" : "compact"} reveal="mount" shown={visible} />
         </div>
       )}
-      <CardHoverShell variant={variant} visible={visible}>
+      <CardHoverShell variant={variant} visible={visible} surface={surface}>
         {overlay.rate && (
-          <div className={landscape ? "flex justify-end" : "flex justify-center"}>
+          <div className={corner ? "flex justify-end" : "flex justify-center"}>
             {identity ? (
               <HoverRatingStars identity={identity} jellyfinItemId={jellyfinItemId} />
             ) : (
@@ -144,12 +153,12 @@ export function CardHoverOverlay({
           </div>
         )}
         {hasTray && (
-          <div className={landscape ? "flex justify-end" : stretch ? "" : "flex justify-center"}>
+          <div className={corner ? "flex justify-end" : stretch ? "" : "flex justify-center"}>
             <CardActionTray
               item={face}
               overlay={overlay}
               label={title}
-              size={landscape ? "md" : "sm"}
+              size={corner ? "md" : "sm"}
               stretch={stretch}
               onOpenDetails={onOpenDetails}
               onDismiss={onDismiss}
