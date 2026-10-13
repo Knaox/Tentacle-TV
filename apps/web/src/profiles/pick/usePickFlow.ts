@@ -100,6 +100,8 @@ export function usePickFlow({ profiles, deviceName, onPicked, onStale, onAccount
             ? t("pin.wrong", { count: refusal.attemptsLeft })
             : t("pin.locked", { time: timeOf(refusal.until) });
           setPin({ profile, entry, message });
+          // Un blocage tout juste posé : la liste le dira aussi (« Bloqué jusqu'à … »).
+          if (refusal.kind === "locked") onStale();
           break;
         }
         case "pinRequired":
