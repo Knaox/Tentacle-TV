@@ -15,13 +15,11 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { startYtDlpUpdates } from "../services/ytDlp";
 import { prepareTrailer, resolveTrailer } from "../services/trailers/trailerRelay";
-import { signRelayToken } from "../services/trailers/relayToken";
+import { relayedStream } from "../services/trailers/relayPaths";
 import { orderSubtitles } from "../services/trailers/trailerSubtitles";
 
 /** Même contrainte que parseYouTubeId (@tentacle-tv/shared) : 11 caractères. */
 const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
-
-const HLS_MIME = "application/vnd.apple.mpegurl";
 
 /** L'issue d'une lecture, telle que le téléviseur la rend (`reportTrailerOutcome`). */
 const OUTCOME = z.object({
@@ -68,18 +66,15 @@ export async function trailerRoutes(app: FastifyInstance) {
     // réponse voyage : AVPlayer les trouvera prêts, ou en route.
     void prepareTrailer(ytId).catch(() => undefined);
 
-    const token = signRelayToken(ytId);
-    const path = resolved.kind === "hls"
-      ? `/api/trailers/hls/${ytId}/master.m3u8?t=${token}`
-      : `/api/trailers/file/${ytId}.mp4?t=${token}`;
+    const { token, path, mimeType, qualities } = relayedStream(ytId, resolved);
     const { lang } = request.query as { lang?: string };
     const uiLang = typeof lang === "string" && /^[a-zA-Z]{2,3}(-[\w]{2,8})?$/.test(lang) ? lang : undefined;
     return {
       url: `${request.protocol}://${request.host}${path}`,
       path,
-      mimeType: resolved.kind === "hls" ? HLS_MIME : "video/mp4",
+      mimeType,
       expiresAt: resolved.validUntil,
-      qualities: resolved.heights.map((height) => ({ height, path: `/api/trailers/hls/${ytId}/master-${height}.m3u8?t=${token}` })),
+      qualities,
       subtitles: orderSubtitles(resolved.subtitles, uiLang).map((s) => ({
         lang: s.lang, label: s.label, auto: s.auto, path: `/api/trailers/subs/${ytId}/${s.key}.vtt?t=${token}`,
       })),

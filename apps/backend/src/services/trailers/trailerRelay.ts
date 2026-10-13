@@ -11,7 +11,7 @@
 
 import { Agent, fetch as undiciFetch } from "undici";
 import { parseMaster, renderMaster, rewriteMedia, startVariant, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
-import { extractTrailerSource } from "./ytExtract";
+import { extractTrailerSource, type ExtractionOptions } from "./ytExtract";
 import type { TrailerSource } from "./trailerSource";
 import type { SubtitleCandidate } from "./trailerSubtitles";
 
@@ -40,8 +40,11 @@ export interface Entry {
 const EXPIRY_MARGIN_MS = 10 * 60 * 1000;
 /** Une extraction toute fraîche n'est pas refaite pour un refus : googlevideo bride, il n'a pas tout révoqué. */
 const REFRESH_MIN_AGE_MS = 60 * 1000;
-/** Quelques dizaines de vidéos suffisent (une soirée de fiches) ; chacune pèse moins de 100 Ko. */
-const MAX_ENTRIES = 48;
+/**
+ * Quelques dizaines de vidéos suffisent à une soirée de fiches ; les aperçus
+ * au survol en résolvent bien davantage. Chacune pèse moins de 100 Ko.
+ */
+const MAX_ENTRIES = 96;
 /**
  * Une vidéo absente pour de bon n'est pas redemandée avant une heure ; un
  * raté passager, quinze secondes (le temps d'éviter une rafale). Un délai
@@ -69,9 +72,9 @@ function evict(): void {
   for (const [id] of oldest.slice(0, entries.size - MAX_ENTRIES)) entries.delete(id);
 }
 
-async function extract(ytId: string): Promise<Entry | null> {
+async function extract(ytId: string, options: ExtractionOptions): Promise<Entry | null> {
   const started = Date.now();
-  const result = await extractTrailerSource(ytId);
+  const result = await extractTrailerSource(ytId, options);
   if (!result.ok) {
     if (!result.timedOut) misses.set(ytId, Date.now() + (result.permanent ? PERMANENT_MISS_MS : TRANSIENT_MISS_MS));
     if (misses.size > 500) for (const [id, until] of misses) if (until <= Date.now()) misses.delete(id);
@@ -97,9 +100,11 @@ async function extract(ytId: string): Promise<Entry | null> {
 
 /**
  * La vidéo résolue — en mémoire, en cours d'extraction, ou extraite ici.
- * `fresh` force une nouvelle extraction (URL refusée en cours de route).
+ * `fresh` force une nouvelle extraction (URL refusée en cours de route) ;
+ * `priority` et `budgetMs` ne valent que pour une extraction qui commence ici
+ * (un aperçu au survol passe après les lectures, cf. `extractionSlots.ts`).
  */
-export function resolveEntry(ytId: string, { fresh = false } = {}): Promise<Entry | null> {
+export function resolveEntry(ytId: string, { fresh = false, ...extraction }: { fresh?: boolean } & ExtractionOptions = {}): Promise<Entry | null> {
   const known = entries.get(ytId);
   const recent = known && Date.now() - known.extractedAt < REFRESH_MIN_AGE_MS;
   if (known && (!fresh || recent) && known.validUntil > Date.now()) {
@@ -110,7 +115,7 @@ export function resolveEntry(ytId: string, { fresh = false } = {}): Promise<Entr
   if (pending) return pending;
   if (!fresh && (misses.get(ytId) ?? 0) > Date.now()) return Promise.resolve(null);
   if (fresh) entries.delete(ytId);
-  const task = extract(ytId).finally(() => inflight.delete(ytId));
+  const task = extract(ytId, extraction).finally(() => inflight.delete(ytId));
   inflight.set(ytId, task);
   return task;
 }
@@ -123,12 +128,26 @@ export interface ResolvedTrailer {
   subtitles: SubtitleCandidate[];
 }
 
-/** L'état d'une vidéo pour qui la lance : son genre, l'échéance de ses URL, ses qualités et ses pistes. */
-export async function resolveTrailer(ytId: string): Promise<ResolvedTrailer | null> {
-  const entry = await resolveEntry(ytId);
-  if (!entry) return null;
+function resolvedOf(entry: Entry): ResolvedTrailer {
   const heights = entry.source.kind === "hls" ? entry.source.heights : [];
   return { kind: entry.source.kind, validUntil: entry.validUntil, heights, subtitles: entry.subtitles };
+}
+
+/** L'état d'une vidéo pour qui la lance : son genre, l'échéance de ses URL, ses qualités et ses pistes. */
+export async function resolveTrailer(ytId: string, extraction: ExtractionOptions = {}): Promise<ResolvedTrailer | null> {
+  const entry = await resolveEntry(ytId, extraction);
+  return entry ? resolvedOf(entry) : null;
+}
+
+/**
+ * La vidéo si le relais la tient DÉJÀ prête (extraite, maître lu) — sans
+ * extraction ni lecture amont ; sinon `null`, et qui la veut la résout.
+ */
+export function peekTrailer(ytId: string): ResolvedTrailer | null {
+  const entry = entries.get(ytId);
+  if (!entry || entry.validUntil <= Date.now() || (entry.source.kind === "hls" && !entry.master)) return null;
+  entry.lastUsed = Date.now();
+  return resolvedOf(entry);
 }
 
 /** Lit une ressource amont ; `refused` pour une URL que googlevideo ne sert plus. */
@@ -251,16 +270,20 @@ export async function progressiveTarget(ytId: string, { fresh = false } = {}) {
 /**
  * Prépare une vidéo pour que son lancement soit immédiat : extraction, maître,
  * liste de la variante de départ et de son audio. Rien n'échoue bruyamment :
- * le lancement refera ce qui manque.
+ * le lancement refera ce qui manque. `true` : tout ce que le lecteur demandera
+ * d'abord est là, lu chez googlevideo (un MP4 l'a été dès l'extraction) —
+ * l'aperçu au survol ne propose rien d'autre.
  */
-export async function prepareTrailer(ytId: string): Promise<void> {
-  const entry = await resolveEntry(ytId);
-  if (!entry || entry.source.kind !== "hls") return;
+export async function prepareTrailer(ytId: string, extraction: ExtractionOptions = {}): Promise<boolean> {
+  const entry = await resolveEntry(ytId, extraction);
+  if (!entry) return false;
+  if (entry.source.kind !== "hls") return true;
   const master = await loadMaster(entry);
-  if (!master) return;
+  if (!master) return false;
   const start = startVariant(master.variants);
   const audio = master.audio.find((a) => a.group === start.audioGroup);
-  await Promise.all([loadMedia(entry, start.key), audio ? loadMedia(entry, audio.key) : null]);
+  const [video, sound] = await Promise.all([loadMedia(entry, start.key), audio ? loadMedia(entry, audio.key) : true]);
+  return !!video && !!sound;
 }
 
 /** Pour les tests : repartir d'un relais vide. */

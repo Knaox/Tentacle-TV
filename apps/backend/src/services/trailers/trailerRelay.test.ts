@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExtractionResult } from "./ytExtract";
-import { TOKEN_SLOT, isReadable, masterTemplate, mediaTemplate, prepareTrailer, resetTrailerRelay, resolveTrailer, segmentTarget } from "./trailerRelay";
+import {
+  TOKEN_SLOT, isReadable, masterTemplate, mediaTemplate, peekTrailer, prepareTrailer, resetTrailerRelay, resolveTrailer, segmentTarget,
+} from "./trailerRelay";
 
-const { extractTrailerSource } = vi.hoisted(() => ({ extractTrailerSource: vi.fn<(ytId: string) => Promise<ExtractionResult>>() }));
+const { extractTrailerSource } = vi.hoisted(() => ({ extractTrailerSource: vi.fn<(ytId: string, options?: unknown) => Promise<ExtractionResult>>() }));
 vi.mock("./ytExtract", () => ({ extractTrailerSource }));
 // Le relais lit googlevideo par le `fetch` du paquet undici : renvoyé ici vers le global, que chaque test remplace.
 vi.mock("undici", async (original) => ({ ...(await original<typeof import("undici")>()), fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args) }));
@@ -96,11 +98,33 @@ describe("listes relayées", () => {
     extractTrailerSource.mockResolvedValue(hls());
     const fetch = googlevideo();
     vi.stubGlobal("fetch", fetch);
-    await prepareTrailer("Way9Dexny3w");
+    expect(await prepareTrailer("Way9Dexny3w")).toBe(true);
     const asked = fetch.mock.calls.map(([url]) => String(url));
     expect(asked.some((u) => u.includes("/itag/232/"))).toBe(true);
     expect(asked.some((u) => u.includes("/itag/234/"))).toBe(true);
     expect(asked.some((u) => u.includes("/itag/270/"))).toBe(false);
+  });
+
+  it("dit si la vidéo se laisse lire : maître ou liste de départ refusés, c'est non", async () => {
+    extractTrailerSource.mockResolvedValue(hls());
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("gone", { status: 403 })));
+    expect(await prepareTrailer("Way9Dexny3w")).toBe(false);
+    resetTrailerRelay();
+    const pages = googlevideo();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url.includes("/itag/234/") ? new Response("gone", { status: 403 }) : pages(url))));
+    expect(await prepareTrailer("Way9Dexny3w")).toBe(false);
+  });
+
+  it("l'aperçu passe après les lectures : la priorité va jusqu'à l'extraction ; un relais qui tient la vidéo prête la rend sans rien lire", async () => {
+    extractTrailerSource.mockResolvedValue(hls());
+    vi.stubGlobal("fetch", googlevideo());
+    expect(peekTrailer("Way9Dexny3w")).toBeNull();
+    await resolveTrailer("Way9Dexny3w", { priority: "preview", budgetMs: 20_000 });
+    expect(extractTrailerSource).toHaveBeenCalledWith("Way9Dexny3w", { priority: "preview", budgetMs: 20_000 });
+    // Extraite mais maître pas encore lu : pas « prête ».
+    expect(peekTrailer("Way9Dexny3w")).toBeNull();
+    await prepareTrailer("Way9Dexny3w");
+    expect(peekTrailer("Way9Dexny3w")).toMatchObject({ kind: "hls", heights: [1080, 720] });
   });
 
   it("réextrait une fois quand googlevideo ne sert plus le maître", async () => {

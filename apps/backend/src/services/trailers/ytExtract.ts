@@ -13,6 +13,7 @@ import { execFile } from "child_process";
 import { ytDlpCommand } from "../ytDlp";
 import { ytDlpInvocation } from "../tools/toolPaths";
 import { workerExtract } from "./ytWorker";
+import { createExtractionSlots, type ExtractionPriority } from "./extractionSlots";
 import { clientPasses, isPermanentFailure, pickTrailerSource, type TrailerSource, type YtFormat } from "./trailerSource";
 import { collectSubtitleCandidates, type SubtitleCandidate, type YtCaptions } from "./trailerSubtitles";
 
@@ -40,21 +41,19 @@ const MIN_PASS_MS = 3_000;
 /**
  * Deux extractions à la fois au plus : chacune est un processus Python, et
  * une fiche ouverte en déclenche une (préparation). Un défilement rapide de
- * fiches ne doit pas lancer dix processus sur un petit serveur.
+ * fiches ne doit pas lancer dix processus sur un petit serveur. Les aperçus
+ * au survol n'en prennent qu'une, et passent après les lectures
+ * (`extractionSlots.ts`).
  */
 const MAX_CONCURRENT = 2;
-let running = 0;
-const queue: Array<() => void> = [];
+const MAX_PREVIEW_CONCURRENT = 1;
+const slots = createExtractionSlots(MAX_CONCURRENT, MAX_PREVIEW_CONCURRENT);
 
-async function withSlot<T>(task: () => Promise<T>): Promise<T> {
-  if (running >= MAX_CONCURRENT) await new Promise<void>((go) => queue.push(go));
-  running++;
-  try {
-    return await task();
-  } finally {
-    running--;
-    queue.shift()?.();
-  }
+export interface ExtractionOptions {
+  /** `play` (défaut) : quelqu'un lance ou prépare la bande-annonce ; `preview` : un survol de carte. */
+  priority?: ExtractionPriority;
+  /** Le temps de toutes les passes, compté dès que la place est prise (défaut : 40 s). */
+  budgetMs?: number;
 }
 
 interface PassOutcome {
@@ -125,9 +124,10 @@ export type ExtractionResult =
   | { ok: false; permanent: boolean; timedOut: boolean; reason: string };
 
 /** Extrait le meilleur flux de `ytId`, passe après passe ; la première qui rend un flux gagne. */
-export function extractTrailerSource(ytId: string): Promise<ExtractionResult> {
-  return withSlot(async () => {
-    const deadline = Date.now() + EXTRACTION_BUDGET_MS;
+export function extractTrailerSource(ytId: string, options: ExtractionOptions = {}): Promise<ExtractionResult> {
+  const { priority = "play", budgetMs = EXTRACTION_BUDGET_MS } = options;
+  return slots.run(priority, async () => {
+    const deadline = Date.now() + budgetMs;
     let reason = "aucune passe";
     for (const clients of clientPasses(process.env.TENTACLE_TRAILER_CLIENTS)) {
       const remaining = deadline - Date.now();
