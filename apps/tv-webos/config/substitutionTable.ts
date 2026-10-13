@@ -49,6 +49,13 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // ce qui retire réellement leur code du bundle, sans toucher au routeur.
   [resolve(WEB, "lazyPages.ts")]: resolve(CLIENT, "pages/lazyPagesTv.tsx"),
 
+  // L'assistant d'installation du serveur se joue au clavier, de près. `App.tsx`
+  // importe sa porte pour le monter tant que le serveur n'est pas installé, et
+  // l'import paresseux qu'elle fait laissait TOUT l'assistant dans le bundle :
+  // un fragment que la dalle ne charge jamais. La porte mène ici à l'écran
+  // « Indisponible ».
+  [resolve(WEB, "pages/ServerSetup.tsx")]: resolve(CLIENT, "pages/serverSetupTv.ts"),
+
   // Les écrans et le lecteur du miroir téléphone / iPad : l'aiguillage `ByFormFactor` est
   // dynamique, mais un téléviseur ne l'emprunte jamais (toujours « desktop »).
   // Sans cette ligne, leur CSS moderne arrêtait le build (Chrome 53).
