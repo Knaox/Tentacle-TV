@@ -5,7 +5,7 @@
  * mobile et les téléviseurs.
  *
  * ⚠️ Lu aussi par le MOBILE : jamais « téléchargement » ni « download » ici
- * (garde-fou : `metadataHintVocabulary.test.ts`). Espaces insécables ( )
+ * (garde-fou : `metadataHintVocabulary.test.ts`). Espaces insécables (U+00A0)
  * devant « ? », « : » et « ! ».
  */
 export default {
