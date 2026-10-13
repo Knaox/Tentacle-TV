@@ -7,6 +7,7 @@ import {
   trailerPreviewSubjectPath,
   type TrailerPreview,
   type TrailerPreviewRefusal,
+  type TrailerPreviewRefusalBody,
   type TrailerPreviewSubject,
 } from "@tentacle-tv/shared";
 import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
@@ -99,7 +100,8 @@ const REFUSALS: ReadonlySet<string> = new Set<TrailerPreviewRefusal>(["invalid_r
  */
 function refusalOf(error: TentacleApiError): { reason: TrailerPreviewRefusal; retryAfterS?: unknown } | null {
   try {
-    const body = JSON.parse(error.message) as { error?: unknown; retryAfterS?: unknown };
+    // Lecture défensive du corps de refus (`TrailerPreviewRefusalBody`) : rien n'y est garanti.
+    const body = JSON.parse(error.message) as { [K in keyof TrailerPreviewRefusalBody]?: unknown };
     if (typeof body.error !== "string" || !REFUSALS.has(body.error)) return null;
     return { reason: body.error as TrailerPreviewRefusal, retryAfterS: body.retryAfterS };
   } catch {
