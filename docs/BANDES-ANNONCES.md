@@ -297,7 +297,15 @@ plus sur le serveur.
 `tentacle://app` sur la route et sur tout le relais (maître, listes,
 segments, MP4 par plages), CORS ouvert comme restreint (`CORS_ORIGINS`) ;
 chaque URI réécrite porte le jeton. Éprouvé dans Chrome 155 sans tête, page
-d'une AUTRE origine que le serveur, hls.js 1.6.15 de `node_modules`.
+d'une AUTRE origine que le serveur, hls.js 1.6.15 de `node_modules`, puis
+dans le bureau (Electron) contre le banc : 1080p dès le premier fragment.
+
+**Deux défauts du relais corrigés en passant** : googlevideo dit ses segments
+`application/octet-stream`, que la compression globale tenait pour
+compressible — chaque segment partait en zstd vers un navigateur ; segments
+et MP4 relayés ne sont plus compressés. Et un lecteur qui part en cours de
+route (survol fini) n'est plus une erreur au journal : silence, comme au
+proxy de Jellyfin ; une vraie panne amont répond 502, un délai 504.
 
 **Mesuré** (banc du 2026-10-14 : Jellyfin 10.11 jetable, yt-dlp 2026.08.19 de
 Homebrew en ligne de commande, charge 6 à 23 sur 10 cœurs) :
