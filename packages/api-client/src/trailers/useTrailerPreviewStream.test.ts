@@ -99,6 +99,29 @@ describe("useTrailerPreviewStream", () => {
     expect(probe.fresh).toBe(true);
   });
 
+  it("une réponse périmée n'est pas fraîche, même désactivée ; activée, elle se renouvelle", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(PREVIEW)));
+    vi.stubGlobal("fetch", fetchMock);
+    serverDeclares(["trailers.preview"]);
+    // Une bande-annonce reçue il y a deux heures : son jeton a échu (au plus une heure de cache).
+    const old = { status: "found", preview: { ...PREVIEW, expiresAt: Date.now() + 3_600_000 } };
+    qc.setQueryData(["trailer-preview", `item:${SUBJECT.kind === "item" ? SUBJECT.itemId : ""}`, "fr"], old, { updatedAt: Date.now() - 2 * 3_600_000 });
+    await render(false);
+    expect(probe.result).toEqual(old);
+    expect(probe.fresh).toBe(false);
+    await render(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(probe.fresh).toBe(true);
+  });
+
+  it("un refus d'il y a deux minutes (« indisponible », une minute) n'est plus frais", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(PREVIEW))));
+    serverDeclares(["trailers.preview"]);
+    qc.setQueryData(["trailer-preview", `item:${SUBJECT.kind === "item" ? SUBJECT.itemId : ""}`, "fr"], { status: "missing", reason: "unavailable" }, { updatedAt: Date.now() - 120_000 });
+    await render(false);
+    expect(probe.fresh).toBe(false);
+  });
+
   it("l'abandon coupe la requête en vol", async () => {
     let aborted = false;
     vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {

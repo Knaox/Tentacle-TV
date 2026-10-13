@@ -60,5 +60,10 @@ export function useTrailerPreviewStream(
   const cancel = useCallback(() => {
     void queryClient.cancelQueries({ queryKey, exact: true });
   }, [queryClient, queryKey]);
-  return { result: query.data, fresh: query.data !== undefined && !query.isStale, capable, cancel };
+  // La fraîcheur se calcule ICI, depuis l'âge de la réponse : `isStale` de
+  // TanStack vaut toujours faux pour une requête DÉSACTIVÉE — or c'est
+  // désactivée qu'elle est lue, au rendu même où l'intention l'active.
+  const fresh = query.data !== undefined
+    && Date.now() < query.dataUpdatedAt + trailerPreviewResultTtl(query.data, query.dataUpdatedAt);
+  return { result: query.data, fresh, capable, cancel };
 }
