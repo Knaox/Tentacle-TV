@@ -1,5 +1,6 @@
 import type Hls from "hls.js";
-import type { HlsConfig } from "hls.js";
+import type { HlsConfig, LevelDetails } from "hls.js";
+import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
 import type { TrailerPreviewStream } from "./previewTypes";
 
 /**
@@ -60,7 +61,7 @@ const PREVIEW_LOAD_POLICY = {
 export function previewHlsConfig(): Partial<HlsConfig> {
   return {
     autoStartLoad: false,
-    startPosition: 0,
+    startPosition: TRAILER_PREVIEW_TIMING.startOffsetS,
     capLevelToPlayerSize: false,
     capLevelOnFPSDrop: false,
     enableWorker: true,
@@ -91,6 +92,18 @@ export function topLevel(levels: ReadonlyArray<{ height?: number; bitrate?: numb
     if (best < 0 || taller > 0 || (taller === 0 && (level.bitrate ?? 0) > (current?.bitrate ?? 0))) best = index;
   });
   return best;
+}
+
+/**
+ * Le départ décalé (`startOffsetS`) vaut-il pour cette liste ? Non pour une
+ * vidéo courte, ni quand le premier segment — le seul que le serveur lit
+ * d'avance — ne le contient pas avec une marge : la première image attendrait
+ * un segment de plus.
+ */
+export function keepsStartOffset(details: Pick<LevelDetails, "totalduration" | "fragments">): boolean {
+  const { startOffsetS, startOffsetMinDurationS } = TRAILER_PREVIEW_TIMING;
+  const first = details.fragments[0];
+  return details.totalduration >= startOffsetMinDurationS && first !== undefined && first.duration >= startOffsetS + 0.5;
 }
 
 export interface PreviewSourceHandlers {
@@ -177,7 +190,18 @@ export function attachPreviewSource(
       instance.on(HlsCtor.Events.MANIFEST_PARSED, (_event, data) => {
         const top = topLevel(data.levels);
         if (top >= 0) instance.startLevel = top;
-        instance.startLoad(0);
+        instance.startLoad(TRAILER_PREVIEW_TIMING.startOffsetS);
+      });
+      // La liste de départ dit la durée et le premier segment : départ à 0 si le
+      // décalage ne tient pas (cf. `keepsStartOffset`), avant le moindre ajout.
+      let startChecked = false;
+      instance.on(HlsCtor.Events.LEVEL_LOADED, (_event, data) => {
+        if (startChecked) return;
+        startChecked = true;
+        if (!keepsStartOffset(data.details)) {
+          instance.stopLoad();
+          instance.startLoad(0);
+        }
       });
       instance.on(HlsCtor.Events.ERROR, (_event, data) => {
         if (data.fatal) fail();

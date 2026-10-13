@@ -20,6 +20,17 @@ export const TRAILER_PREVIEW_TIMING = {
   intentMs: 350,
   /** Révélation au plus tôt, depuis le début du survol (« une seconde », cf. plus haut). */
   revealMs: 1_000,
+  /**
+   * Où l'aperçu commence (s) : pas à 0, presque toujours du noir ou le logo
+   * d'un distributeur — quelques secondes plus loin, comme Netflix qui part sur
+   * l'action. Reste dans le PREMIER segment, que le serveur lit d'avance (les
+   * segments du relais durent 5 à 5,8 s, mesurés) : la première image n'en est
+   * pas retardée (médiane 109 ms contre 124 ms au départ à 0, mesurée). Départ
+   * à 0 pour une vidéo courte, un premier segment plus court, ou un MP4.
+   */
+  startOffsetS: 4,
+  /** En dessous de cette durée (s), l'aperçu part du début. */
+  startOffsetMinDurationS: 30,
   /** La demande au serveur (choix ET vérification de la bande-annonce) : au-delà, pas d'aperçu. */
   fetchTimeoutMs: 15_000,
   /** Du flux trouvé à la première image : au-delà, la vidéo est jugée bloquée — échec, rien à l'écran. */
