@@ -7,6 +7,7 @@ import { PosterTile } from "./cards/PosterTile";
 import { useCardContextMenu } from "./cards/useCardContextMenu";
 import { prefetchDetailRoute } from "./cards/prefetchDetail";
 import { captureDetailOrigin } from "./detail/detailTransition";
+import { useCardPreview } from "./cards/preview";
 import { useHoverGuard } from "../hooks/useHoverGuard";
 
 interface Props {
@@ -39,6 +40,7 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
   // (cf. `useHoverGuard`).
   const unhover = useCallback(() => setHovered(false), []);
   useHoverGuard(rootRef, hovered, unhover);
+  const preview = useCardPreview({ source: { item }, hovered, shape: "poster", disabled: ctx.ctxMenu !== null });
 
   // Même résolution que les rangées : tag porté (URL adressée par contenu),
   // et « » quand la donnée prouve qu'il n'y a pas d'affiche (cf. `cardImage.ts`).
@@ -72,7 +74,7 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
       style={{ zIndex: hovered ? 2 : undefined }}
       {...ctx.contextHandlers}
     >
-      <PosterTile item={item} imageUrl={poster} hovered={hovered} />
+      <PosterTile item={item} imageUrl={poster} hovered={hovered} preview={preview} />
 
       <div className="mt-2.5 px-0.5">
         <p className="line-clamp-1 text-sm font-semibold tracking-tight text-content-primary">{item.Name}</p>

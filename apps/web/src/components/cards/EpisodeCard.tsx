@@ -17,6 +17,7 @@ import { resolveBannerImage } from "@tentacle-tv/shared";
 import { CardTrickplayImage } from "./CardTrickplayImage";
 import { EPISODE_VW, EPISODE_WIDTH, type CardSize } from "./cardSizes";
 import { cardWidthStyle } from "./cardWidthStyle";
+import { CardPreview, useCardPreview } from "./preview";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useMountWhile } from "../../hooks/useMountWhile";
 import { useResumeFrame } from "../../hooks/useResumeFrame";
@@ -72,13 +73,17 @@ export const EpisodeCard = memo(function EpisodeCard({
   // (cf. `useHoverGuard`).
   const unhover = useCallback(() => setHovered(false), []);
   useHoverGuard(rootRef, hovered, unhover);
+  // La bande-annonce de la SÉRIE au survol prolongé ; la mini-carte reprend le
+  // survol de la vignette, qui s'efface dessous.
+  const preview = useCardPreview({ source: { item }, hovered, shape: "landscape", disabled: ctx.ctxMenu !== null });
+  const overlayVisible = hovered && !preview.shown;
   /**
    * Le survol est MONTÉ à la demande, jamais laissé à `opacity: 0` : il
    * porte des abonnements au cache — vu/favori/liste, notes, file hors
    * ligne, droits — que chaque vignette de « Reprendre » garderait au repos.
    * 200 ms = la durée de ses fondus de sortie.
    */
-  const overlayMounted = useMountWhile(hovered, 200);
+  const overlayMounted = useMountWhile(overlayVisible, 200);
 
   const isEpisode = item.Type === "Episode";
   // La vignette EXACTE de la reprise, croppée dans sa planche trickplay —
@@ -119,6 +124,18 @@ export const EpisodeCard = memo(function EpisodeCard({
     captureDetailOrigin(rootRef.current?.querySelector<HTMLElement>("[data-card-visual]") ?? null, item.Id, imageUrl);
     navigate(`/media/${item.Id}`);
   };
+  const overlay = (visible: boolean, surface: "card" | "preview") => (
+    <CardHoverOverlay
+      variant="landscape"
+      surface={surface}
+      item={item}
+      title={isEpisode ? `${seriesName ?? ""} — ${item.Name}` : item.Name}
+      visible={visible}
+      play={{ resume: progress != null && progress > 0 && !watched, onPlay: handlePlay }}
+      meta={item}
+      onOpenDetails={openDetails}
+    />
+  );
 
   return (
     <div
@@ -152,6 +169,8 @@ export const EpisodeCard = memo(function EpisodeCard({
         // fait ~443 px, donc 8,9 px de débord par côté — il reste 3,1 px dans la
         // gouttière de 12 px. `1.045` n'en laisserait que 2 : c'est le plafond.
         lift={{ scale: 1.04, y: -7 }}
+        ref={preview.anchorRef}
+        concealed={preview.shown}
       >
         {resumeFrame ? (
           <CardTrickplayImage
@@ -192,17 +211,13 @@ export const EpisodeCard = memo(function EpisodeCard({
 
         {/* Le survol unique des cartes, variante paysage. Le clic sur la
             vignette lance la lecture : la fiche passe par le plateau. */}
-        {overlayMounted && (
-          <CardHoverOverlay
-            variant="landscape"
-            item={item}
-            title={isEpisode ? `${seriesName ?? ""} — ${item.Name}` : item.Name}
-            visible={hovered}
-            play={{ resume: progress != null && progress > 0 && !watched, onPlay: handlePlay }}
-            meta={item}
-            onOpenDetails={openDetails}
-          />
-        )}
+        {overlayMounted && overlay(overlayVisible, "card")}
+
+        {/* La mini-carte de la bande-annonce : le même survol, sur la vidéo ;
+            son clic lance la lecture, comme celui de la vignette. */}
+        <CardPreview controller={preview} title={seriesName ?? item.Name} logoItem={item}>
+          {(visible) => overlay(visible, "preview")}
+        </CardPreview>
 
         {/* La progression reste lisible au-dessus du voile : c'est au survol
             qu'on décide de reprendre (même règle que `PosterTile`). */}

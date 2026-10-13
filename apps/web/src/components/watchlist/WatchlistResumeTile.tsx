@@ -10,6 +10,7 @@ import { CardImage } from "../cards/CardImage";
 import { CardMarkerLayer } from "../cards/CardMarkerLayer";
 import { CardProgressBar } from "../cards/CardProgressBar";
 import { useCardHover } from "../cards/useCardHover";
+import { CardPreview, useCardPreview } from "../cards/preview";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { useMountWhile } from "../../hooks/useMountWhile";
 import { useRemainingLabel } from "./WatchProgressLine";
@@ -37,8 +38,18 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
   const client = useJellyfinClient();
   const rootRef = useRef<HTMLDivElement>(null);
   const hover = useCardHover(rootRef);
+  // La bande-annonce au survol prolongé : la mini-carte reprend le survol de la
+  // vignette (et le focus clavier y entre sans la quitter — `companionRef`).
+  const preview = useCardPreview({
+    source: { item },
+    hovered: hover.hovered,
+    shape: "landscape",
+    companionRef: hover.companionRef,
+    disabled: pending,
+  });
+  const overlayVisible = hover.hovered && !preview.shown;
   // Monté au survol seulement, jamais laissé à `opacity: 0` (règle GPU du dépôt).
-  const overlayMounted = useMountWhile(hover.hovered, 200);
+  const overlayMounted = useMountWhile(overlayVisible, 200);
   const remainingLabel = useRemainingLabel();
   const image = resolveBannerImage(item);
   const imageUrl = image
@@ -57,6 +68,18 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
     captureDetailOrigin(rootRef.current?.querySelector<HTMLElement>("[data-card-visual]") ?? null, item.Id, imageUrl);
     navigate(`/media/${item.Id}`);
   };
+  const overlay = (visible: boolean, surface: "card" | "preview") => (
+    <CardHoverOverlay
+      variant="landscape"
+      surface={surface}
+      item={item}
+      title={item.Name}
+      visible={visible}
+      play={{ resume: true, onPlay: play }}
+      meta={item}
+      onOpenDetails={openDetails}
+    />
+  );
 
   return (
     <div
@@ -78,7 +101,13 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
       }`}
       style={{ zIndex: hover.hovered ? 2 : undefined }}
     >
-      <CardFrame hovered={hover.hovered} aspect="aspect-video" lift={{ scale: 1.04, y: -7 }}>
+      <CardFrame
+        hovered={hover.hovered}
+        aspect="aspect-video"
+        lift={{ scale: 1.04, y: -7 }}
+        ref={preview.anchorRef}
+        concealed={preview.shown}
+      >
         <CardImage src={imageUrl} alt="" />
         {/* Voile constant dans les deux thèmes : le texte est posé sur l'image. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
@@ -98,17 +127,11 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
           {remaining && <span className="mt-0.5 block truncate text-xs text-white/75">{remaining}</span>}
         </div>
 
-        {overlayMounted && (
-          <CardHoverOverlay
-            variant="landscape"
-            item={item}
-            title={item.Name}
-            visible={hover.hovered}
-            play={{ resume: true, onPlay: play }}
-            meta={item}
-            onOpenDetails={openDetails}
-          />
-        )}
+        {overlayMounted && overlay(overlayVisible, "card")}
+
+        <CardPreview controller={preview} title={item.SeriesName ?? item.Name} logoItem={item}>
+          {(visible) => overlay(visible, "preview")}
+        </CardPreview>
 
         {pending && (
           <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-black/40">

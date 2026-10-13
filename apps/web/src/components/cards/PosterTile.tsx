@@ -8,6 +8,7 @@ import { CardProgressBar } from "./CardProgressBar";
 import { CardHoverOverlay } from "./CardHoverOverlay";
 import { useSeriesRatingMap } from "./SeriesRatingContext";
 import { playTargetPath } from "./playTarget";
+import { CardPreview, type CardPreviewController } from "./preview";
 import { useMountWhile } from "../../hooks/useMountWhile";
 
 interface PosterTileProps {
@@ -22,6 +23,11 @@ interface PosterTileProps {
    * la main (sélection multiple d'une collection).
    */
   showActions?: boolean;
+  /**
+   * L'aperçu de bande-annonce (`useCardPreview`), tenu par le parent qui tient
+   * le survol. Absent : la carte n'a pas d'aperçu.
+   */
+  preview?: CardPreviewController;
 }
 
 /**
@@ -45,13 +51,16 @@ export function PosterTile({
   hovered,
   addedCount = 0,
   showActions = true,
+  preview,
 }: PosterTileProps) {
   const navigate = useNavigate();
 
   const watched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
   const grouped = addedCount > 1;
-  const actionsVisible = showActions && hovered;
+  // La mini-carte d'aperçu montrée reprend le survol : la carte s'efface dessous.
+  const previewShown = preview?.shown === true;
+  const actionsVisible = showActions && hovered && !previewShown;
   /**
    * Le calque est MONTÉ au survol, jamais laissé à `opacity: 0` : son plateau
    * s'abonne aux Sets `watchlist-series-ids` / `favorite-series-ids` et ses
@@ -86,8 +95,25 @@ export function PosterTile({
     navigate(playTargetPath(item));
   };
 
+  const overlay = (visible: boolean, surface: "card" | "preview") => (
+    <CardHoverOverlay
+      variant="poster"
+      surface={surface}
+      item={item}
+      title={item.Name}
+      visible={visible}
+      play={{ resume, onPlay: handlePlay }}
+      meta={grouped ? null : item}
+    />
+  );
+
   return (
-    <CardFrame hovered={hovered} aspect="aspect-[2/3]">
+    <CardFrame
+      hovered={hovered}
+      aspect="aspect-[2/3]"
+      ref={preview?.anchorRef}
+      concealed={preview ? previewShown : undefined}
+    >
       <CardImage src={imageUrl} alt={item.Name} />
 
       {/* Compteur d'épisodes récemment ajoutés : posé sur un aplat de MARQUE
@@ -111,15 +137,19 @@ export function PosterTile({
 
       {/* Puces qualité/langues AU-DESSUS du voile, sauf sur un lot
           d'épisodes : la qualité d'un seul épisode ne dit rien du groupe. */}
-      {showActions && layerMounted && (
-        <CardHoverOverlay
-          variant="poster"
-          item={item}
-          title={item.Name}
-          visible={actionsVisible}
-          play={{ resume, onPlay: handlePlay }}
-          meta={grouped ? null : item}
-        />
+      {showActions && layerMounted && overlay(actionsVisible, "card")}
+
+      {/* La bande-annonce d'une affiche survolée : une mini-carte 16:9 qui
+          reprend le même survol (`components/cards/preview/`). Un épisode
+          montre celle de sa série, sous le nom de la série. */}
+      {preview && showActions && (
+        <CardPreview
+          controller={preview}
+          title={item.Type === "Episode" ? (item.SeriesName ?? item.Name) : item.Name}
+          logoItem={item}
+        >
+          {(visible) => overlay(visible, "preview")}
+        </CardPreview>
       )}
 
       {/* La progression reste visible sous le plateau : c'est au survol qu'on

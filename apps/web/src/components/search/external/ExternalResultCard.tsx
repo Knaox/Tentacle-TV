@@ -16,7 +16,7 @@
  * résultats comme une rangée d'affiches décident de la taille, pas elle.
  */
 
-import { memo, useCallback, useMemo, useRef, useState, type FocusEvent } from "react";
+import { memo, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIsFavoritePending, useIsWatchlistPending } from "@tentacle-tv/api-client";
 import { externalMarkerFace, titleMediaType, type ExternalSearchItem } from "@tentacle-tv/shared";
@@ -24,8 +24,9 @@ import { ExternalBadge, ExternalPoster } from "./ExternalVisuals";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { ExternalHoverOverlay } from "../../cards/external/ExternalHoverOverlay";
 import { externalTitleKey, useExternalTitleState, type ExternalTitle } from "../../cards/external/useTitleProvider";
+import { CardPreview, useCardPreview } from "../../cards/preview";
+import { useCardHover } from "../../cards/useCardHover";
 import { useMountWhile } from "../../../hooks/useMountWhile";
-import { useHoverGuard } from "../../../hooks/useHoverGuard";
 
 /** L'identité TMDB d'un résultat, quand l'extension l'a donnée. */
 function titleOf(item: ExternalSearchItem): ExternalTitle | null {
@@ -35,14 +36,22 @@ function titleOf(item: ExternalSearchItem): ExternalTitle | null {
 export const ExternalResultCard = memo(function ExternalResultCard({ item }: { item: ExternalSearchItem }) {
   const navigate = useNavigate();
   const rootRef = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const unhover = useCallback(() => setHovered(false), []);
-  // La grille défile sous un curseur immobile : la carte quittée ne garde pas son survol.
-  useHoverGuard(rootRef, hovered, unhover);
-  const active = hovered || focused;
+  // Le survol des cartes focalisables : la souris, ou le focus CLAVIER
+  // (`:focus-visible`) ; la grille qui défile sous un curseur immobile le
+  // coupe (`useHoverGuard`, dans `useCardHover`).
+  const hover = useCardHover(rootRef);
+  const active = hover.hovered;
   const title = useMemo(() => titleOf(item), [item]);
-  const overlayMounted = useMountWhile(active && title !== null, 200);
+  // La bande-annonce que TMDB connaît, au survol prolongé ; la mini-carte
+  // reprend le survol (et le focus clavier y entre sans quitter la carte).
+  const preview = useCardPreview({
+    source: { title },
+    hovered: active,
+    shape: "poster",
+    companionRef: hover.companionRef,
+  });
+  const overlayVisible = active && !preview.shown;
+  const overlayMounted = useMountWhile(overlayVisible && title !== null, 200);
   const state = useExternalTitleState(title);
   const pending = useIsWatchlistPending(externalTitleKey(title));
   const liked = useIsFavoritePending(externalTitleKey(title));
@@ -50,19 +59,9 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
   const badge = state?.badge ?? item.badge;
 
   const open = () => navigate(item.href);
-  const onBlur = (e: FocusEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
-  };
 
   return (
-    <div
-      ref={rootRef}
-      className="group/x relative"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={unhover}
-      onFocus={() => setFocused(true)}
-      onBlur={onBlur}
-    >
+    <div ref={rootRef} className="group/x relative" {...hover.handlers}>
       {/* div-bouton et non <button> : le voile porte étoiles et bascules, et un
           bouton dans un bouton est du HTML invalide. */}
       <div
@@ -77,27 +76,39 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
         aria-label={item.subtitle ? `${item.title} — ${item.subtitle}` : item.title}
         className="block w-full cursor-pointer rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
-        <div className="relative overflow-hidden rounded-md">
+        {/* Le visuel : l'ancre de la mini-carte, qui s'efface sous elle. */}
+        <div
+          ref={preview.anchorRef}
+          className="relative overflow-hidden rounded-md transition-opacity duration-200"
+          style={{ opacity: preview.shown ? 0 : undefined }}
+        >
           <ExternalPoster item={item} className="aspect-[2/3] w-full rounded-md" />
           {badge !== null && (
             <ExternalBadge
               badge={badge}
               onMedia
-              className={`absolute left-2 top-2 z-10 transition-opacity duration-150 ${active && title ? "opacity-0" : "opacity-100"}`}
+              className={`absolute left-2 top-2 z-10 transition-opacity duration-150 ${overlayVisible && title ? "opacity-0" : "opacity-100"}`}
             />
           )}
           {face && (
             <CardMarkerLayer
               item={face}
               communityRating={null}
-              hideRating={active}
-              hideStatus={active}
+              hideRating={overlayVisible}
+              hideStatus={overlayVisible}
               inWatchlist={pending}
               isFavorite={liked}
             />
           )}
           {overlayMounted && title && (
-            <ExternalHoverOverlay variant="poster" title={title} name={item.title} visible={active} />
+            <ExternalHoverOverlay variant="poster" title={title} name={item.title} visible={overlayVisible} />
+          )}
+          {title && (
+            <CardPreview controller={preview} title={item.title}>
+              {(visible) => (
+                <ExternalHoverOverlay variant="poster" surface="preview" title={title} name={item.title} visible={visible} />
+              )}
+            </CardPreview>
           )}
         </div>
         <p className="mt-2 truncate text-sm font-medium text-content-primary group-hover/x:text-[var(--brand-light)]">{item.title}</p>

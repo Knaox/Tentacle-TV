@@ -23,6 +23,7 @@ import { PosterTile } from "../cards/PosterTile";
 import { prefetchDetailRoute } from "../cards/prefetchDetail";
 import { useCardContextMenu } from "../cards/useCardContextMenu";
 import { useCardHover } from "../cards/useCardHover";
+import { useCardPreview } from "../cards/preview";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { useSeriesGapOffer } from "../seasons/SeriesGapsScope";
 
@@ -42,6 +43,15 @@ export function SearchResultCard({
   // (cf. `useCardHover`) — c'est ce qui rend le plateau accessible sans souris.
   const hover = useCardHover(rootRef);
   const ctx = useCardContextMenu();
+  // La mini-carte prolonge la carte hors de son arbre DOM : le focus clavier y
+  // entre sans quitter la carte (`companionRef`).
+  const preview = useCardPreview({
+    source: { item },
+    hovered: hover.hovered,
+    shape: "poster",
+    companionRef: hover.companionRef,
+    disabled: ctx.ctxMenu !== null,
+  });
   // Une série incomplète (recherche seulement) le dit sous son affiche, au
   // repos : le plateau du survol n'est pas le seul chemin vers « Demander ».
   const gap = useSeriesGapOffer(item.Id);
@@ -96,7 +106,7 @@ export function SearchResultCard({
         // soulève : sur ce bouton, il cernait aussi le titre et restait en place.
         className="group/focus block w-full cursor-pointer text-left outline-none"
       >
-        <PosterTile item={item} imageUrl={imageUrl} hovered={hover.hovered} />
+        <PosterTile item={item} imageUrl={imageUrl} hovered={hover.hovered} preview={preview} />
         <p className="mt-2.5 truncate px-0.5 text-sm font-semibold tracking-tight text-content-primary">{item.Name}</p>
         <p className="px-0.5 text-xs card-caption">
           {type}

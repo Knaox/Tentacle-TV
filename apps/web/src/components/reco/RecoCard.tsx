@@ -17,6 +17,7 @@ import { RecoOnDemandLabel } from "./RecoOnDemandLabel";
 import { RecoReasonText } from "./RecoReasonText";
 import { useRecoNavigation } from "../../lib/recoNavigation";
 import { recoPosterUrl } from "@tentacle-tv/api-client";
+import { CardPreview, useCardPreview } from "../cards/preview";
 import { useMountWhile } from "../../hooks/useMountWhile";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 
@@ -59,7 +60,6 @@ export const RecoCard = memo(function RecoCard({
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
   const [hovered, setHovered] = useState(false);
-  const overlayMounted = useMountWhile(hovered, 200);
   const rootRef = useRef<HTMLDivElement>(null);
   // La rangée défile sous un curseur immobile : la carte resterait « survolée »,
   // boutons cliquables compris, sur une affiche qui n'est plus sous la souris
@@ -71,11 +71,24 @@ export const RecoCard = memo(function RecoCard({
   useHoverGuard(rootRef, hovered, unhover);
   const { open, canOpen } = useRecoNavigation();
   const feedback = useSendRecoFeedback();
+  const openable = canOpen(item);
+  // La bande-annonce au survol prolongé : celle du titre de la bibliothèque,
+  // ou, hors bibliothèque, celle que TMDB connaît. Une carte qui ne s'ouvre
+  // pas ne s'agrandit pas.
+  const preview = useCardPreview({
+    source: item.jellyfinItemId
+      ? { item: { Id: item.jellyfinItemId, Type: item.mediaType === "tv" ? "Series" : "Movie" } }
+      : { title: { mediaType: item.mediaType, tmdbId: item.tmdbId } },
+    hovered,
+    shape: "poster",
+    disabled: !openable,
+  });
+  const overlayVisible = hovered && !preview.shown;
+  const overlayMounted = useMountWhile(overlayVisible, 200);
 
   const posterUrl = recoPosterUrl(item, (id) =>
     client.getImageUrl(id, "Primary", { height: 450, quality: 90 })
   );
-  const openable = canOpen(item);
 
   // Un titre en bibliothèque ouvre sa fiche : le rectangle de l'AFFICHE est
   // capturé ici, dernier instant où il existe — même trajet que PosterCard,
@@ -144,7 +157,12 @@ export const RecoCard = memo(function RecoCard({
         className={`group/focus block w-full text-left outline-none ${openable ? "cursor-pointer" : ""}`}
         aria-label={item.title}
       >
-        <CardFrame hovered={hovered && openable} aspect="aspect-[2/3]">
+        <CardFrame
+          hovered={hovered && openable}
+          aspect="aspect-[2/3]"
+          ref={preview.anchorRef}
+          concealed={preview.shown}
+        >
           {posterUrl ? (
             <CardImage src={posterUrl} alt={item.title} />
           ) : (
@@ -193,11 +211,24 @@ export const RecoCard = memo(function RecoCard({
           {overlayMounted && (
             <RecoPosterHoverLayer
               item={item}
-              visible={hovered}
+              visible={overlayVisible}
               onDismiss={handleDismiss}
               onOpenDetail={handleOpen}
             />
           )}
+
+          {/* La mini-carte de la bande-annonce : le même survol, sur la vidéo. */}
+          <CardPreview controller={preview} title={item.title}>
+            {(visible) => (
+              <RecoPosterHoverLayer
+                item={item}
+                visible={visible}
+                onDismiss={handleDismiss}
+                onOpenDetail={handleOpen}
+                surface="preview"
+              />
+            )}
+          </CardPreview>
         </CardFrame>
 
         {/* Bloc titre sous l'affiche — même gabarit que les rangées d'accueil. */}

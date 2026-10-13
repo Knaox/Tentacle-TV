@@ -12,6 +12,7 @@ import { prefetchDetailRoute } from "./prefetchDetail";
 import { resolvePosterImage, type PosterImageMode } from "@tentacle-tv/shared";
 import { POSTER_VW, POSTER_WIDTH, type CardSize } from "./cardSizes";
 import { cardWidthStyle } from "./cardWidthStyle";
+import { useCardPreview } from "./preview";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 
 interface PosterCardProps {
@@ -74,6 +75,8 @@ export const PosterCard = memo(function PosterCard({
   // souris (cf. `useHoverGuard`).
   const unhover = useCallback(() => setHovered(false), []);
   useHoverGuard(rootRef, hovered, unhover);
+  // La bande-annonce au survol prolongé ; jamais sous un menu contextuel ouvert.
+  const preview = useCardPreview({ source: { item }, hovered, shape: "poster", disabled: ctx.ctxMenu !== null });
 
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
@@ -134,7 +137,7 @@ export const PosterCard = memo(function PosterCard({
       onClick={handleClick}
       {...ctx.contextHandlers}
     >
-      <PosterTile item={item} imageUrl={imageUrl} hovered={hovered} addedCount={addedCount} />
+      <PosterTile item={item} imageUrl={imageUrl} hovered={hovered} addedCount={addedCount} preview={preview} />
 
       <div className="mt-2.5 px-0.5">
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">

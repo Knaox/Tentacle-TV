@@ -7,6 +7,7 @@ import { SelectionCheckbox } from "../SelectionCheckbox";
 import { PosterTile } from "../cards/PosterTile";
 import { useCardContextMenu } from "../cards/useCardContextMenu";
 import { captureDetailOrigin } from "../detail/detailTransition";
+import { useCardPreview } from "../cards/preview";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import type { SelectionMode } from "./selectionMode";
 
@@ -49,6 +50,13 @@ export const CollectionGridCard = memo(function CollectionGridCard({
 
   const isSelecting = selectionMode?.isSelecting ?? false;
   const isSelected = selectionMode?.isSelected(item.Id) ?? false;
+  // Pas d'aperçu pendant une sélection : le clic y appartient à la sélection.
+  const preview = useCardPreview({
+    source: { item },
+    hovered,
+    shape: "poster",
+    disabled: isSelecting || ctx.ctxMenu !== null,
+  });
   const image = resolvePosterImage(item, "auto");
   const poster = image
     ? client.getImageUrl(image.id, image.type, { height: 450, quality: 90, ...(image.tag ? { tag: image.tag } : {}) })
@@ -96,6 +104,7 @@ export const CollectionGridCard = memo(function CollectionGridCard({
         imageUrl={poster}
         hovered={hovered}
         showActions={!isSelecting}
+        preview={preview}
       />
 
       <div className="mt-2.5 px-0.5">

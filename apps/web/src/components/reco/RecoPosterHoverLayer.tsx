@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useMediaItem, useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
 import { CardHoverOverlay } from "../cards/CardHoverOverlay";
 import { ExternalHoverOverlay } from "../cards/external/ExternalHoverOverlay";
+import type { CardHoverSurface } from "../cards/CardHoverShell";
 import { useRecoPlayTarget } from "./useRecoPlayTarget";
 
 interface RecoPosterHoverLayerProps {
@@ -12,6 +13,8 @@ interface RecoPosterHoverLayerProps {
   onDismiss: () => void;
   /** Ouverture de la fiche AVEC sa transition — repli du bouton Lecture. */
   onOpenDetail: () => void;
+  /** `preview` : le même survol, dans la mini-carte d'aperçu de bande-annonce. */
+  surface?: CardHoverSurface;
 }
 
 /**
@@ -40,13 +43,14 @@ export function RecoPosterHoverLayer(props: RecoPosterHoverLayerProps) {
         name={item.title}
         visible={props.visible}
         onDismiss={props.onDismiss}
+        surface={props.surface}
       />
     );
   }
   return <LibraryRecoHoverLayer {...props} />;
 }
 
-function LibraryRecoHoverLayer({ item, visible, onDismiss, onOpenDetail }: RecoPosterHoverLayerProps) {
+function LibraryRecoHoverLayer({ item, visible, onDismiss, onOpenDetail, surface }: RecoPosterHoverLayerProps) {
   const navigate = useNavigate();
   // Lecture (reprise, sinon l'épisode à suivre) — null hors bibliothèque.
   const target = useRecoPlayTarget(item.jellyfinItemId, item.mediaType);
@@ -74,6 +78,7 @@ function LibraryRecoHoverLayer({ item, visible, onDismiss, onOpenDetail }: RecoP
       play={target ? { resume: target.kind === "resume", label: target.label, onPlay } : null}
       meta={target?.media ?? null}
       onDismiss={onDismiss}
+      surface={surface}
     />
   );
 }
