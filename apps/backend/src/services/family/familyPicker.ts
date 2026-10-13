@@ -17,7 +17,7 @@ import { withFamilyLock } from "./familyLock";
 import { familyUpdate } from "./familyNotify";
 import { checkProfilePin } from "./familyPins";
 import { closeProfileSessions, startProfileSession } from "./familyProfileSession";
-import { currentProfileOf, ensurePickerHost, findPickerHost, pickerHostHash, touchPickerHost } from "./familyPickerHosts";
+import { currentProfileOf, ensurePickerHost, findPickerHost, pickerHostLock, touchPickerHost } from "./familyPickerHosts";
 import { readPickerPreference, writePickerPreference } from "./familyPickerPreference";
 import { unavailableFor, visibleProfiles } from "./familyTv";
 import { syncGuestPolicy } from "./guestAccounts";
@@ -91,8 +91,9 @@ export async function listPickerProfiles(caller: PickerCaller, platform: FamilyP
 }
 
 export function pickProfile(caller: PickerCaller, body: PickProfileBody, now: number): Promise<PickedProfileDto> {
-  // Un choix à la fois par appareil : deux clics ne laissent jamais deux sessions.
-  return withFamilyLock(`picker:${pickerHostHash(caller.token)}`, () => pickNow(caller, body, now));
+  // Un geste à la fois par appareil : deux clics ne laissent jamais deux
+  // sessions, et un choix ne survit pas à la déconnexion qui le croise.
+  return withFamilyLock(pickerHostLock(caller.token), () => pickNow(caller, body, now));
 }
 
 async function pickNow(caller: PickerCaller, body: PickProfileBody, now: number): Promise<PickedProfileDto> {

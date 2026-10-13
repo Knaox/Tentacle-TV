@@ -66,6 +66,21 @@ describe("la déconnexion du compte sur le bureau", () => {
     expect((await door(app, laptop)).status).toBe(200);
   });
 
+  it("le jeton personnel déconnecté n'est plus cru, et un choix qui croise la déconnexion ne laisse rien", async () => {
+    const { zoe } = await seedFamily(app, tokens);
+    await pickerProfiles(app, tokens.damien); // la validation du jeton est en cache
+    const [picked] = await Promise.all([
+      app.inject({ method: "POST", url: "/api/family/picker/sessions", headers: { authorization: `Bearer ${tokens.damien}` }, payload: { platform: "desktop", profileId: zoe } }),
+      send("POST", "/api/auth/logout", tokens.damien),
+    ]);
+    expect((await door(app, tokens.damien)).status).toBe(401);
+    const orphans = h.state!.db.data.pairedDevice.filter(
+      (row) => row.parentId && !h.state!.db.data.pairedDevice.some((parent) => parent.id === row.parentId),
+    );
+    expect(orphans).toEqual([]);
+    if (picked.statusCode === 200 && picked.json().token) expect((await door(app, picked.json().token)).ended).toBe(true);
+  });
+
   it("la session de profil qui se déconnecte ne ferme qu'elle-même (« Changer de profil »)", async () => {
     const { zoe } = await seedFamily(app, tokens);
     const token = await pickSession(app, tokens.damien, zoe);
@@ -137,6 +152,17 @@ describe("le balayage et les listes d'appareils", () => {
     expect(await door(app, stale)).toMatchObject({ status: 401, ended: true });
     expect((await door(app, fresh)).status).toBe(200);
     expect(hosts().map((row) => row.jellyfinUserId)).toEqual([IDS.lea]);
+  });
+
+  it("coupe une session de profil dont l'appareil n'existe plus", async () => {
+    const { zoe } = await seedFamily(app, tokens);
+    const token = await pickSession(app, tokens.damien, zoe);
+    const host = hosts()[0];
+    h.state!.db.data.pairedDevice.splice(h.state!.db.data.pairedDevice.indexOf(host), 1);
+    expect((await door(app, token)).status).toBe(200);
+    await sweepFamily();
+    expect(await door(app, token)).toMatchObject({ status: 401, ended: true });
+    expect(reasons()).toEqual(["unpaired"]);
   });
 
   it("présenter la session personnelle repousse l'abandon", async () => {

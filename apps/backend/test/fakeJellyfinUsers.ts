@@ -80,6 +80,11 @@ export function fakeJellyfinUsersFetch(jf: FakeJellyfinUsers) {
       if (user) return json({ Id: user.Id, Name: user.Name, Policy: user.Policy });
       return devices(input, init);
     }
+    // La déconnexion d'une session personnelle : son jeton ne vaut plus rien.
+    if (method === "POST" && path === "/Sessions/Logout" && jf.personalTokens.has(token ?? "")) {
+      jf.personalTokens.delete(token ?? "");
+      return new Response(null, { status: 204 });
+    }
     if (!path.startsWith("/Users")) return devices(input, init);
     if (path === "/Users/AuthenticateWithQuickConnect") return devices(input, init);
     if (!admin) return new Response("", { status: 401 });

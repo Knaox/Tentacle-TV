@@ -20,7 +20,8 @@ import { sweepGuestAccounts } from "./guestAccountCleanup";
  * - un compte désactivé dans Jellyfin perd ses sessions de profil ;
  * - une session de profil qu'aucune TV ne devrait plus montrer (familles
  *   fusionnées par la migration v2, profil sorti de la famille de la TV
- *   pendant que le serveur dormait) est coupée, son « Rester » oublié ;
+ *   pendant que le serveur dormait) est coupée, son « Rester » oublié — et
+ *   celle dont l'appareil n'existe plus ;
  * - l'hôte de profils d'un bureau que sa session personnelle n'a plus
  *   présenté depuis trente jours part, ses sessions de profil avec
  *   (`familyPickerHosts.ts`).
@@ -72,11 +73,16 @@ async function endStaleProfileSessions(): Promise<void> {
     : [];
   const accountOf = new Map(parents.map((row) => [row.id, row.jellyfinUserId]));
   const stale: Array<{ id: string }> = [];
+  const orphans: Array<{ id: string }> = [];
   for (const session of sessions) {
     const account = accountOf.get(session.parentId ?? "");
-    if (account && !(await visibleOn(account)).has(fold(session.jellyfinUserId))) stale.push({ id: session.id });
+    // Son appareil n'existe plus (une course entre un choix et une
+    // déconnexion, un plantage) : une session sans appareil ne vit pas.
+    if (!account) orphans.push({ id: session.id });
+    else if (!(await visibleOn(account)).has(fold(session.jellyfinUserId))) stale.push({ id: session.id });
   }
   if (stale.length) console.log(`[family] ${await endSessions(stale, "family_changed")} session(s) de profil hors de la famille de leur TV coupée(s)`);
+  if (orphans.length) console.log(`[family] ${await endSessions(orphans, "unpaired")} session(s) de profil sans appareil coupée(s)`);
   const sticky = await prisma.pairedDevice.findMany({
     where: { parentId: null, stickyProfileId: { not: null } },
     select: { id: true, jellyfinUserId: true, stickyProfileId: true },

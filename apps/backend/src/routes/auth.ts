@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getJellyfinUrl } from "../services/configStore";
 import { getPrisma, hasPrisma } from "../services/db";
-import { requireAuth } from "../middleware/auth";
+import { forgetValidatedToken, requireAuth } from "../middleware/auth";
 import { hashToken, verifyDeviceToken, verifyImpersonationToken } from "../services/jwt";
 import { revokePairedDevice } from "../services/deviceRevocation";
 import { endPickerHost } from "../services/family/familyPickerHosts";
@@ -175,6 +175,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         } catch {
           // Non-blocking: Jellyfin might be unreachable
         }
+        // Plus cru sur parole : sans quoi le cache de validation l'accepterait
+        // encore cinq minutes (un hôte de profils pourrait renaître).
+        forgetValidatedToken(token);
       }
     }
 

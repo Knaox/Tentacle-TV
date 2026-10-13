@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { getPrisma } from "../db";
 import { revokePairedDevice } from "../deviceRevocation";
 import { FAMILY_PICKER_DEVICE_NAME_MAX, type FamilyPickerPlatform } from "../../family/familyPickerContract";
+import { withFamilyLock } from "./familyLock";
 import { isUniqueViolation } from "./familyStore";
 
 /**
@@ -119,14 +120,23 @@ export async function currentProfileOf(hostId: string): Promise<string | null> {
   return sessions[0]?.jellyfinUserId ?? null;
 }
 
+/** La file des gestes d'un hôte (choisir un profil, se déconnecter) : un à la
+ *  fois, sans quoi un choix pendant la déconnexion laisserait une session
+ *  orpheline. */
+export function pickerHostLock(personalToken: string): string {
+  return `picker:${pickerHostHash(personalToken)}`;
+}
+
 /** La déconnexion du compte sur cet appareil : son hôte et ses sessions de
  *  profil, avant la réponse. Faux : aucun hôte pour ce jeton. */
-export async function endPickerHost(personalToken: string): Promise<boolean> {
-  const host = await findPickerHost(personalToken);
-  if (!host) return false;
-  const revocation = await revokePairedDevice({ id: host.id }, "self", { profileEnd: "unpaired" });
-  console.log(`[family] Hôte de profils ${host.id} fermé : déconnexion du compte`);
-  return revocation !== null;
+export function endPickerHost(personalToken: string): Promise<boolean> {
+  return withFamilyLock(pickerHostLock(personalToken), async () => {
+    const host = await findPickerHost(personalToken);
+    if (!host) return false;
+    const revocation = await revokePairedDevice({ id: host.id }, "self", { profileEnd: "unpaired" });
+    console.log(`[family] Hôte de profils ${host.id} fermé : déconnexion du compte`);
+    return revocation !== null;
+  });
 }
 
 /** Cette session de profil vient-elle d'un hôte hors TV (un bureau) ? Base
