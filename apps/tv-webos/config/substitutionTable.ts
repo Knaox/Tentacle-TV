@@ -158,9 +158,9 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "hooks/useHoverMount.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
 
   // L'aperçu de bande-annonce au survol : un téléviseur ne survole pas, et son
-  // décodeur n'accueille pas hls.js. L'index du moteur et sa liaison de racine
-  // deviennent inertes — aucune requête, aucune vidéo, le moteur hors du bundle.
-  [resolve(WEB, "trailerPreview/index.ts")]: resolve(CLIENT, "shims/trailerPreview.ts"),
+  // décodeur n'accueille pas hls.js. La liaison de racine (`AppBindings`) est la
+  // seule porte du moteur dans la dalle : inerte ici, et son dossier est exclu
+  // plus bas.
   [resolve(WEB, "trailerPreview/TrailerPreviewBinding.tsx")]: resolve(CLIENT, "shims/trailerPreview.ts"),
 
   // Les deux calques d'élévation de `.media-tile` sont pilotés par l'ATTRIBUT
@@ -295,4 +295,9 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
 export const EXCLUDED_WEB_DIRECTORIES: readonly string[] = [
   // L'assistant d'installation : sa seule porte, `pages/ServerSetup.tsx`, mène à « Indisponible ».
   resolve(WEB, "components/setupWizard"),
+  // Le moteur de l'aperçu de bande-annonce au survol : sa liaison de racine est
+  // substituée, la mini-carte qui l'importe aussi, et son réglage vit dans une
+  // page que la dalle ne compile pas (Apparence → À propos). Qu'il entre un jour
+  // dans le graphe, et le build s'arrête : la dalle n'a pas d'aperçu au survol.
+  resolve(WEB, "trailerPreview"),
 ];
