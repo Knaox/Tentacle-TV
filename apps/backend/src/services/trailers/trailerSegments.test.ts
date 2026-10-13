@@ -77,11 +77,14 @@ describe("départ au plus haut, lu d'avance", () => {
     expect(heldSegment(ID, "270", 1)).toBeNull();
   });
 
-  it("sans effet sur une vidéo que le relais ne tient pas", async () => {
+  it("sans effet sur une vidéo que le relais ne tient pas — jamais d'extraction pour anticiper", async () => {
     const fetch = googlevideo();
     vi.stubGlobal("fetch", fetch);
     await warmStart(ID);
+    prefetchSegment(ID, "270", 0);
+    expect(await heldSegment(ID, "270", 0)).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
+    expect(extractTrailerSource).not.toHaveBeenCalled();
   });
 
   it("un lecteur qui arrive pendant la lecture d'avance la rejoint : un seul téléchargement", async () => {

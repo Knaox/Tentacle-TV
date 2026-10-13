@@ -11,7 +11,7 @@
 /*  au-delà, on n'anticipe pas — le relais lira à la demande.          */
 /* ------------------------------------------------------------------ */
 
-import { fetchUpstream, segmentTarget } from "./trailerRelay";
+import { fetchUpstream, heldEntry, segmentTarget } from "./trailerRelay";
 
 export interface HeldSegment {
   body: Buffer;
@@ -51,8 +51,13 @@ function keep(id: string, segment: HeldSegment): void {
   }
 }
 
-/** Lit un segment chez googlevideo, en entier — `null` s'il est refusé, trop gros ou trop lent. */
+/**
+ * Lit un segment chez googlevideo, en entier — `null` s'il est refusé, trop
+ * gros ou trop lent. Jamais d'extraction pour une lecture d'avance : une vidéo
+ * que le relais ne tient plus n'est pas anticipée.
+ */
 async function readSegment(ytId: string, key: string, index: SegmentIndex): Promise<HeldSegment | null> {
+  if (!heldEntry(ytId)) return null;
   const target = await segmentTarget(ytId, key, index);
   if (!target) return null;
   const { res } = await fetchUpstream(target.url, target.headers, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
