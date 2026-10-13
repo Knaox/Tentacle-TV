@@ -10,6 +10,21 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.27.1]
+### FR
+- **« Pour vous » refaite** : « À la une ce soir » met en avant le titre qui vous correspond le mieux, chaque titre dit pourquoi il vous est proposé, et de nouvelles rangées arrivent — « Films pour vous », les acteurs et les réalisateurs que vous aimez
+- **Des recommandations qui suivent VOTRE goût** : elles ne reprennent plus les goûts des autres comptes du serveur, chaque « Ne plus me proposer » apprend ce que vous évitez (une saga, un format, une époque), et les grands classiques que vous avez déjà vus ne reviennent plus
+- **Une page qui reste en place** : elle ne se régénère plus sous vos yeux, et un titre que vous venez de juger ne quitte la rangée qu'une fois la carte lâchée
+- **« Vu » sur une série entière** : une série se marque vue d'un seul geste
+- **Correctifs** : « Vos acteurs » ne propose plus de personnes issues de contenus pour adultes, et la migration d'une base MySQL vers SQLite aboutit
+
+### EN
+- **“For you” redesigned**: “Tonight's pick” highlights the title that suits you best, every title says why it is suggested, and new rows arrive — “Movies for you”, the actors and directors you love
+- **Recommendations that follow YOUR taste**: they no longer borrow the tastes of other accounts on the server, every “Not for me” teaches what you avoid (a saga, a format, an era), and the big classics you have already seen stop coming back
+- **A page that stays put**: it no longer regenerates before your eyes, and a title you just judged only leaves its row once you let go of the card
+- **“Watched” for a whole series**: mark an entire series as watched in one gesture
+- **Fixes**: “Your actors” no longer suggests people from adult content, and migrating a MySQL database to SQLite now completes
+
 ## [1.27.0]
 ### FR
 - **Tentacle Server pour Windows** : le serveur de cette version est aussi celui de la nouvelle application du Microsoft Store, qui l'installe sur un PC sans Docker

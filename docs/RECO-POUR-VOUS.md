@@ -1,7 +1,10 @@
 # « Pour vous » — ce qui en sort, quand, et ce qui fait le goût
 
 Les recommandations ne proposent que ce que l'utilisateur n'a **pas encore
-jugé**. Trois règles, sur toutes les plateformes, avec le serveur.
+jugé**, et la page qu'on lit ne bouge pas sous les yeux. Ces règles valent sur
+toutes les plateformes, avec le serveur.
+
+Le MOTEUR lui-même (sources, score, rangées, banc) : `docs/RECO-MOTEUR.md`.
 
 ## 1. Un titre jugé sort des recommandations
 
@@ -84,3 +87,46 @@ sur les statistiques.
   `REQUESTED_TITLES_KEY` ; au retour d'une page d'extension, la liste se relit.
   Le titre sort de la pile d'Affiner, et des rangées au lâcher (règle 2) :
   « demandé » vaut jugé pour `isRecoItemJudged`.
+
+## 5. Une page servie reste à l'écran tant qu'on y est
+
+Le serveur recalcule la page en fond — un refus (`pokePage("feedback")`), une
+note ou un cœur (`pokeProfile` → profil → `pokePage("profile")`), un pool
+régénéré (`pokePage("pool")`) — puis prévient par `reco:update`. Le cache la
+reçoit ; l'ÉCRAN, non. Avant cette règle, la page fraîche remplaçait celle
+qu'on lisait : les rangées « Parce que vous avez aimé… » changeaient de clé,
+se démontaient puis rentraient en fondu, et le héros se retirait au sort (le
+tirage dépendait de la PLACE des titres) : c'est ce qui se voyait en
+refusant un titre.
+
+`useRecoPageVisit` (api-client) dit ce que l'écran MONTRE ; `useRecoPage`
+reste ce que le serveur sert. Toute page qui montre des recommandations lit
+le premier : « Pour vous » et l'accueil, sur le web, le bureau, le miroir, le
+mobile, la TV et webOS. La règle, pure, vit dans `reco/recoPageVisit.ts` :
+
+- **Ce qui passe sous les yeux** : seulement le titre qui SORT — refusé (il
+  part tout de suite), jugé puis lâché (fondu, règle 2), noté, demandé. Toutes
+  ces sorties passent par `dropRecoItemEverywhere`, qui le signale
+  (`emitRecoDropped`) ; la page tenue l'écoute, même quand le cache tient déjà
+  une autre page. Une rangée vidée part avec son dernier titre.
+- **Les frontières** où une page recalculée entre (`servedPageVerdict`) :
+  - la visite suivante — un nouveau montage lit le cache du moment ;
+  - l'arrivée (`RECO_ARRIVAL_MS`, 2 s) : la page du cache s'affiche aussitôt,
+    la fraîche la remplace dans la foulée ;
+  - le retour après une longue absence (`RECO_LONG_ABSENCE_MS`, 30 min,
+    fenêtre cachée ou app en arrière-plan, lu par le `focusManager` de
+    TanStack) : il vaut une nouvelle arrivée ;
+  - un geste : changer de filtre, `refetch` (réessayer, tirer pour
+    rafraîchir), `showNewer` ;
+  - une page encore provisoire (rien que des rangées globales, ou rien) laisse
+    entrer la première page personnelle : c'est elle qu'on attendait
+    (démarrage à froid, construction).
+- **Le geste discret** : `hasNewer` dit qu'une page recalculée attend avec du
+  NOUVEAU (un titre ou une rangée que l'écran n'a pas — une page qui ne fait
+  que retirer ou réordonner n'invite à rien). Le web et le bureau le
+  proposent en tête de « Pour vous » ; ailleurs, la visite suivante suffit.
+- **Jamais de squelette qui revient** : le squelette n'existe que tant que la
+  visite n'a RIEN à montrer.
+- **Le héros ne se retire pas au sort** : le rang d'un titre dans le tirage
+  dépend de la graine de la visite et de SA clé (`selectHeroSlides`), pas de
+  sa place — un titre qui sort n'emporte que sa diapositive.
