@@ -8,7 +8,8 @@ import { stopCardClick } from "../cardEvents";
  * Le bouton du son de la mini-carte — un rond de 34 px en verre sans flou
  * (`.card-preview-mute`), en haut à droite, loin du plateau. Son libellé dit
  * le geste (« Activer le son »), pas l'état. Le clic ne remonte pas à la
- * carte : couper le son n'ouvre pas la fiche.
+ * carte : couper le son n'ouvre pas la fiche (les touches, elles, sont
+ * arrêtées par la mini-carte entière).
  */
 export const PreviewMuteButton = memo(function PreviewMuteButton({
   muted,
@@ -28,7 +29,6 @@ export const PreviewMuteButton = memo(function PreviewMuteButton({
         stopCardClick(e);
         onToggle();
       }}
-      onKeyDown={(e) => e.stopPropagation()}
       className="card-preview-mute"
     >
       {muted ? <VolumeX className="h-4 w-4" aria-hidden /> : <Volume2 className="h-4 w-4" aria-hidden />}
