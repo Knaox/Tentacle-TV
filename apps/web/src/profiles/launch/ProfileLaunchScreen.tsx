@@ -81,10 +81,15 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
   const { choose, back } = flow;
   const onManage = useCallback(() => {
     landing.current = FAMILY_SETTINGS_PATH;
-    if (own) choose(own.userId);
+    if (own) {
+      setLastChosen(own.userId);
+      choose(own.userId);
+    }
   }, [own, choose]);
+  const [lastChosen, setLastChosen] = useState<string | null>(null);
   const onPick = useCallback((profileId: string) => {
     landing.current = undefined;
+    setLastChosen(profileId);
     choose(profileId);
   }, [choose]);
   const onBack = useCallback(() => {
@@ -97,11 +102,12 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
       listing: listing.data ?? null,
       error: listing.isError && !listing.data ? t("loadFailed") : null,
       flow: { ...flow, notice: flow.notice ?? (ended ? t("session.ended") : null) },
+      lastChosen,
       openingLabel: slowOpening && flow.opening ? t("opening", { name: profiles.find((p) => p.userId === flow.opening)?.name ?? "" }) : null,
       language: i18n.language,
       t,
     }),
-    [listing.data, listing.isError, flow, ended, slowOpening, profiles, i18n.language, t],
+    [listing.data, listing.isError, flow, ended, lastChosen, slowOpening, profiles, i18n.language, t],
   );
 
   return (

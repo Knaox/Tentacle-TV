@@ -70,7 +70,7 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
               {model.entering?.label ?? model.notice ?? ""}
             </p>
             <div className="mt-8">
-              <ProfileRow profiles={model.profiles} enteringId={model.entering?.id ?? null} onPick={props.onPick} />
+              <ProfileRow profiles={model.profiles} enteringId={model.entering?.id ?? null} focusId={model.focusId} onPick={props.onPick} />
             </div>
             {model.canManage && (
               <button

@@ -46,5 +46,7 @@ export type WhoIsWatchingModel =
       notice: string | null;
       /** L'entrée dans un profil choisi : son identifiant, et « Ouverture de Léa… » si le serveur tarde. */
       entering: { id: string; label: string | null } | null;
+      /** Le profil qui reprend le focus (retour du pavé) ; absent : le premier. */
+      focusId?: string | null;
     }
   | { kind: "pin"; pad: PinPadModel };

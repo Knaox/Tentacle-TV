@@ -53,6 +53,12 @@ describe("« Qui regarde ? » — la rangée", () => {
     expect(html).not.toContain("manageProfiles");
   });
 
+  it("le pavé refermé, le focus revient au profil d'où l'on venait", () => {
+    const html = view({ kind: "picker", profiles: FAMILY, canManage: false, notice: null, entering: null, focusId: "zoe" });
+    const tabbable = html.match(/<button[^>]*tabindex="0"[^>]*>/)?.[0] ?? "";
+    expect(tabbable).toContain("zoe");
+  });
+
   it("pendant l'entrée dans un profil, plus rien ne se choisit ; le refus se dit", () => {
     const entering = view({ kind: "picker", profiles: FAMILY, canManage: true, notice: null, entering: { id: "zoe", label: "Ouverture" } });
     expect(entering.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(3);

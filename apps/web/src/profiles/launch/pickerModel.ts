@@ -38,6 +38,8 @@ export interface PickerModelInput {
   /** La liste n'a pas pu être lue, et aucune n'est connue. */
   error: string | null;
   flow: Pick<PickFlow, "pin" | "opening" | "notice">;
+  /** Le dernier profil choisi : il reprend le focus quand le pavé se referme. */
+  lastChosen?: string | null;
   /** « Ouverture de Léa… », quand le serveur tarde. */
   openingLabel: string | null;
   language: string;
@@ -62,5 +64,6 @@ export function pickerModelOf(input: PickerModelInput): WhoIsWatchingModel {
     canManage: listing.profiles.some((profile) => profile.personal),
     notice: flow.notice,
     entering: flow.opening ? { id: flow.opening, label: input.openingLabel } : null,
+    focusId: input.lastChosen ?? null,
   };
 }

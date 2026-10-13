@@ -8,6 +8,8 @@ interface ProfileRowProps {
   profiles: readonly PickerProfile[];
   /** L'entrée en cours dans ce profil ; null au repos. */
   enteringId: string | null;
+  /** Le profil qui reprend le focus à l'affichage (retour du pavé) ; le premier sinon. */
+  focusId?: string | null;
   onPick: (id: string) => void;
 }
 
@@ -21,17 +23,20 @@ interface ProfileRowProps {
  * au centre de la rangée (décalage MESURÉ au moment du choix), les autres
  * s'effacent.
  */
-export const ProfileRow = memo(function ProfileRow({ profiles, enteringId, onPick }: ProfileRowProps) {
+export const ProfileRow = memo(function ProfileRow({ profiles, enteringId, focusId = null, onPick }: ProfileRowProps) {
   const { t } = useTranslation("profilePicker");
   const listRef = useRef<HTMLUListElement>(null);
   const tiles = useRef<(HTMLButtonElement | null)[]>([]);
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(() => Math.max(0, profiles.findIndex((profile) => profile.id === focusId)));
   const [shiftX, setShiftX] = useState(0);
   const focusedIndex = Math.min(current, Math.max(0, profiles.length - 1));
 
-  // Le premier focus : le premier profil, sans attendre un Tab.
+  // Le premier focus, sans attendre un Tab : le profil d'où l'on revient (le
+  // pavé refermé), sinon le premier — le sien. Une fois, à l'affichage :
+  // ensuite, c'est l'utilisateur qui déplace le focus.
+  const firstFocus = useRef(focusedIndex);
   useLayoutEffect(() => {
-    tiles.current[0]?.focus({ preventScroll: true });
+    tiles.current[firstFocus.current]?.focus({ preventScroll: true });
   }, []);
 
   // Le décalage du choisi vers le centre de la rangée, mesuré une fois.
