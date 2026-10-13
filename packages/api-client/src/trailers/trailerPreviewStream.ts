@@ -23,11 +23,49 @@ export type TrailerPreviewStreamResult =
       status: "missing";
       /** Le refus du serveur ; `unreadable` : réponse illisible ; `failed` : panne, délai dépassé. */
       reason: TrailerPreviewRefusal | "unreadable" | "failed";
+      /** `rate_limited` : dans combien de temps redemander (`Retry-After`, borné) — absent s'il est illisible. */
+      retryAfterMs?: number;
     };
 
 /** La clé du cache : le sujet (un titre de la bibliothèque, ou TMDB) et la langue de l'interface. */
 export function trailerPreviewQueryKey(subject: TrailerPreviewSubject | null, lang: string) {
   return ["trailer-preview", subject ? trailerPreviewSubjectKey(subject) : null, lang] as const;
+}
+
+/**
+ * Un refus PASSAGER — le serveur décide déjà trop d'aperçus (429), ou il n'a pas
+ * répondu (panne, délai) : il ne vaut que le temps d'attendre, et si le survol
+ * tient, l'aperçu redemande à son échéance (`previewMachine.ts`).
+ */
+export function isTransientPreviewRefusal(result: TrailerPreviewStreamResult | undefined): boolean {
+  return result?.status === "missing" && (result.reason === "rate_limited" || result.reason === "failed");
+}
+
+/**
+ * Le délai d'un 429 : `Retry-After` en secondes, borné à [1 s, 10 s] ;
+ * `undefined` s'il manque — ou s'il est caché : un en-tête que le serveur
+ * n'expose pas n'est pas lisible d'une autre origine (le bureau, `tentacle://app`).
+ */
+export function previewRetryAfterMs(header: string | null | undefined): number | undefined {
+  const seconds = header == null || header.trim() === "" ? Number.NaN : Number(header);
+  if (!Number.isFinite(seconds)) return undefined;
+  const { rateLimitMinMs, rateLimitMaxMs } = TRAILER_PREVIEW_TIMING;
+  return Math.min(rateLimitMaxMs, Math.max(rateLimitMinMs, Math.round(seconds * 1000)));
+}
+
+/**
+ * Quand redemander, après le `retries`-ième refus passager du survol en cours :
+ * le délai du 429 s'il est connu ; sinon 2 s puis 4 s (le serveur rend ses
+ * jetons d'aperçu toutes les 5 s : deux essais trop rapprochés tomberaient
+ * encore sur un refus) ; 10 s après une panne.
+ */
+export function previewRetryDelayMs(result: TrailerPreviewStreamResult, retries: number): number {
+  const { rateLimitDefaultMs, rateLimitMaxMs, transientFailureMs } = TRAILER_PREVIEW_TIMING;
+  if (result.status !== "missing") return 0;
+  if (result.reason === "rate_limited") {
+    return result.retryAfterMs ?? Math.min(rateLimitMaxMs, rateLimitDefaultMs * 2 ** Math.max(0, retries));
+  }
+  return result.reason === "failed" ? transientFailureMs : trailerPreviewResultTtl(result, 0);
 }
 
 /** Combien de temps une réponse vaut, depuis son arrivée — au-delà, la prochaine intention redemande. */
@@ -42,6 +80,10 @@ export function trailerPreviewResultTtl(result: TrailerPreviewStreamResult | und
     case "no_trailer":
     case "invalid_request":
       return TRAILER_PREVIEW_NO_TRAILER_TTL_MS;
+    case "rate_limited":
+      return result.retryAfterMs ?? TRAILER_PREVIEW_TIMING.rateLimitDefaultMs;
+    case "failed":
+      return TRAILER_PREVIEW_TIMING.transientFailureMs;
     default:
       return TRAILER_PREVIEW_UNAVAILABLE_TTL_MS;
   }
@@ -86,7 +128,11 @@ export async function fetchTrailerPreviewStream(
     return isTrailerPreview(raw) ? { status: "found", preview: raw } : { status: "missing", reason: "unreadable" };
   } catch (error) {
     if (signal?.aborted) throw error;
-    if (error instanceof TentacleApiError) return { status: "missing", reason: refusalOf(error) ?? "failed" };
+    if (error instanceof TentacleApiError) {
+      const reason = refusalOf(error) ?? "failed";
+      const retryAfterMs = reason === "rate_limited" ? previewRetryAfterMs(error.headers?.get("Retry-After")) : undefined;
+      return retryAfterMs === undefined ? { status: "missing", reason } : { status: "missing", reason, retryAfterMs };
+    }
     if (isAbort(error)) return { status: "missing", reason: "failed" };
     // Réseau coupé, réponse non JSON : rien à montrer, la prochaine intention redemandera.
     return { status: "missing", reason: "failed" };

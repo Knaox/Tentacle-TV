@@ -122,6 +122,30 @@ describe("useTrailerPreviewStream", () => {
     expect(probe.fresh).toBe(false);
   });
 
+  it("un 429 se redemande sur demande : nouvelle réponse, nouvel instant", async () => {
+    let calls = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      calls++;
+      return calls === 1
+        ? new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers: { "Retry-After": "2" } })
+        : new Response(JSON.stringify(PREVIEW));
+    }));
+    serverDeclares(["trailers.preview"]);
+    await render(true);
+    // Même origine ici (pas de CORS) : l'en-tête se lit.
+    expect(probe.result).toEqual({ status: "missing", reason: "rate_limited", retryAfterMs: 2_000 });
+    const first = probe.receivedAt;
+    await act(async () => {
+      probe.retry();
+      await settle();
+    });
+    await act(settle);
+    expect(calls).toBe(2);
+    expect(probe.result).toEqual({ status: "found", preview: PREVIEW });
+    expect(probe.receivedAt).toBeGreaterThanOrEqual(first);
+    expect(probe.loading).toBe(false);
+  });
+
   it("l'abandon coupe la requête en vol", async () => {
     let aborted = false;
     vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {

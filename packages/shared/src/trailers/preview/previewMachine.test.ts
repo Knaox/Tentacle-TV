@@ -142,6 +142,72 @@ describe("aperçu au survol : rien ne s'anime sans bande-annonce lisible", () =>
   });
 });
 
+describe("aperçu au survol : un refus passager (429, panne) se redemande", () => {
+  it("le 429 attend l'échéance du serveur, puis une nouvelle demande part", () => {
+    let state = run([{ type: "hover", at: 0 }, { type: "wait", until: 400 }, { type: "streamRetry", at: 420, retryAt: 2_420 }]);
+    expect(state).toMatchObject({ phase: "fetching", retryAt: 2_420, retries: 1, attempt: 0 });
+    expect(trailerPreviewWantsStream(state)).toBe(true);
+    expect(nextTrailerPreviewDeadline(state)).toBe(2_420);
+    state = run([{ type: "wait", until: 2_419 }], state);
+    expect(state.attempt).toBe(0);
+    state = run([{ type: "wait", until: 2_420 }], state);
+    expect(state).toMatchObject({ phase: "fetching", retryAt: null, attempt: 1 });
+  });
+
+  it("la nouvelle demande aboutit : montrée dès la vidéo prête — jamais avant la seconde", () => {
+    // Échéance courte : la réponse et la première image arrivent avant la seconde.
+    const early = run([
+      { type: "hover", at: 0 },
+      { type: "wait", until: 360 },
+      { type: "streamRetry", at: 360, retryAt: 500 },
+      { type: "wait", until: 500 },
+      { type: "streamFound", at: 560 },
+      { type: "videoReady", at: 700 },
+    ]);
+    expect(early.phase).toBe("ready");
+    expect(run([{ type: "wait", until: T.revealMs }], early).phase).toBe("shown");
+    // Échéance longue : montrée dès la première image.
+    const late = run([
+      { type: "hover", at: 0 },
+      { type: "wait", until: 360 },
+      { type: "streamRetry", at: 360, retryAt: 2_360 },
+      { type: "wait", until: 2_360 },
+      { type: "streamFound", at: 2_400 },
+      { type: "videoReady", at: 2_700 },
+    ]);
+    expect(late.phase).toBe("shown");
+  });
+
+  it("deux nouvelles demandes au plus, puis rien à montrer", () => {
+    const state = run([
+      { type: "hover", at: 0 },
+      { type: "wait", until: 400 },
+      { type: "streamRetry", at: 400, retryAt: 2_400 },
+      { type: "wait", until: 2_400 },
+      { type: "streamRetry", at: 2_450, retryAt: 4_450 },
+      { type: "wait", until: 4_450 },
+      { type: "streamRetry", at: 4_500, retryAt: 6_500 },
+    ]);
+    expect(state).toMatchObject({ phase: "failed", failure: "missing", retries: 2, retryAt: null });
+  });
+
+  it("un refus en attente ne se recompte pas ; une échéance déjà passée redemande aussitôt", () => {
+    const waiting = run([{ type: "hover", at: 0 }, { type: "wait", until: 400 }, { type: "streamRetry", at: 400, retryAt: 2_400 }]);
+    expect(reduceTrailerPreview(waiting, { type: "streamRetry", at: 500, retryAt: 2_500 })).toEqual(waiting);
+    const due = run([{ type: "hover", at: 0 }, { type: "wait", until: 400 }, { type: "streamRetry", at: 400, retryAt: 100 }]);
+    expect(nextTrailerPreviewDeadline(due)).toBe(400);
+  });
+
+  it("le survol perdu pendant l'attente : plus rien d'attendu ; le cycle suivant repart de zéro", () => {
+    const waiting = run([{ type: "hover", at: 0 }, { type: "wait", until: 400 }, { type: "streamRetry", at: 400, retryAt: 2_400 }]);
+    const left = reduceTrailerPreview(waiting, { type: "unhover", at: 900 });
+    expect(left).toMatchObject({ phase: "idle", retryAt: null });
+    expect(nextTrailerPreviewDeadline(left)).toBeNull();
+    const again = reduceTrailerPreview(left, { type: "hover", at: 5_000 });
+    expect(again).toMatchObject({ phase: "intent", retries: 0, attempt: 0, retryAt: null });
+  });
+});
+
 describe("aperçu au survol : la sortie et le retour", () => {
   it("quitter avant la révélation coupe tout, sans fondu", () => {
     const state = run([
@@ -223,5 +289,6 @@ describe("aperçu au survol : blocages, arbitre, sujet", () => {
     for (const type of ["streamFound", "streamMissing", "videoReady", "videoFailed", "videoEnded", "preempted", "unhover", "unblock"] as const) {
       expect(reduceTrailerPreview(idle, { type, at: 1 })).toEqual(idle);
     }
+    expect(reduceTrailerPreview(idle, { type: "streamRetry", at: 1, retryAt: 10 })).toEqual(idle);
   });
 });

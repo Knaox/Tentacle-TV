@@ -10,6 +10,11 @@ import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "./previewTimi
  *                                     │ absent        │ erreur, 8 s       │ erreur      │ fin
  *                                     └→ failed ←─────┴───────────────────┘            └→ ended
  *
+ * Un refus PASSAGER (429, panne réseau) garde `fetching` : l'aperçu attend
+ * l'échéance que le serveur a dite (`retryAt`), puis redemande (`attempt`),
+ * deux fois au plus — un survol qui s'arrête sur une carte après en avoir
+ * balayé une rangée finit par avoir son aperçu.
+ *
  * Sortie du survol, blocage : retour à `idle` de partout. Une lecture MONTRÉE
  * ne disparaît pas d'un coup : la vidéo reste montée le temps du fondu de
  * sortie (`exitUntil`), et un retour du survol pendant ce fondu la reprend là
@@ -45,6 +50,12 @@ export interface TrailerPreviewState {
   /** Numéro du cycle (un par survol abouti à l'intention) : une vidéo neuve à chaque cycle. */
   readonly cycle: number;
   readonly failure: TrailerPreviewFailure | null;
+  /** Échéance d'une nouvelle demande après un refus passager (phase `fetching`). */
+  readonly retryAt: number | null;
+  /** Refus passagers déjà essuyés pendant ce cycle. */
+  readonly retries: number;
+  /** Numéro de la demande du cycle : il monte quand une nouvelle demande est due. */
+  readonly attempt: number;
 }
 
 export type TrailerPreviewEvent =
@@ -56,6 +67,8 @@ export type TrailerPreviewEvent =
   | { type: "tick"; at: number }
   | { type: "streamFound"; at: number }
   | { type: "streamMissing"; at: number }
+  /** Refus passager : redemander à `retryAt` si le survol tient (deux fois au plus). */
+  | { type: "streamRetry"; at: number; retryAt: number }
   | { type: "videoReady"; at: number }
   | { type: "videoFailed"; at: number }
   | { type: "videoEnded"; at: number }
@@ -74,6 +87,9 @@ export const INITIAL_TRAILER_PREVIEW_STATE: TrailerPreviewState = {
   resumable: false,
   cycle: 0,
   failure: null,
+  retryAt: null,
+  retries: 0,
+  attempt: 0,
 };
 
 /** Les phases d'un aperçu EN COURS — celles qu'un survol perdu ou un blocage interrompt. */
@@ -92,6 +108,9 @@ function begin(state: TrailerPreviewState, at: number): TrailerPreviewState {
     resumable: false,
     cycle: state.cycle + 1,
     failure: null,
+    retryAt: null,
+    retries: 0,
+    attempt: 0,
   };
 }
 
@@ -107,6 +126,7 @@ function leave(
     ...state,
     phase,
     readyBy: null,
+    retryAt: null,
     exitUntil: wasShown ? at + options.timing.exitMs : state.exitUntil,
     resumable: wasShown ? options.resumable === true : state.resumable && options.resumable === true,
     failure: options.failure ?? (phase === "failed" ? state.failure : null),
@@ -123,6 +143,9 @@ function elapse(state: TrailerPreviewState, at: number, timing: TrailerPreviewTi
   if (next.exitUntil !== null && at >= next.exitUntil) next = { ...next, exitUntil: null, resumable: false };
   if (next.phase === "intent" && next.since !== null && at >= next.since + timing.intentMs) {
     next = { ...next, phase: "fetching" };
+  }
+  if (next.phase === "fetching" && next.retryAt !== null && at >= next.retryAt) {
+    next = { ...next, retryAt: null, attempt: next.attempt + 1 };
   }
   if (next.phase === "buffering" && next.readyBy !== null && at >= next.readyBy) {
     next = leave(next, at, "failed", { failure: "video", timing });
@@ -181,6 +204,10 @@ export function reduceTrailerPreview(
         : state0;
     case "streamMissing":
       return state0.phase === "fetching" ? leave(state0, at, "failed", { failure: "missing", timing }) : state0;
+    case "streamRetry":
+      if (state0.phase !== "fetching" || state0.retryAt !== null) return state0;
+      if (state0.retries >= timing.maxRetries) return leave(state0, at, "failed", { failure: "missing", timing });
+      return { ...state0, retryAt: Math.max(at, event.retryAt), retries: state0.retries + 1 };
     case "videoReady":
       if (state0.phase !== "buffering") return state0;
       return { ...state0, phase: at >= revealAt(state0, timing) ? "shown" : "ready", readyBy: null };
@@ -194,7 +221,7 @@ export function reduceTrailerPreview(
       return ACTIVE.has(state0.phase) ? leave(state0, at, "ended", { timing }) : state0;
     case "restart": {
       // Rien ne se reprend d'un autre titre : la vidéo d'avant part sans fondu.
-      const dropped = { ...state0, phase: "idle" as const, readyBy: null, exitUntil: null, resumable: false, failure: null };
+      const dropped = { ...state0, phase: "idle" as const, readyBy: null, retryAt: null, exitUntil: null, resumable: false, failure: null };
       return dropped.hovered && !dropped.blocked ? begin(dropped, at) : dropped;
     }
   }
@@ -213,6 +240,7 @@ export function nextTrailerPreviewDeadline(
   const deadlines: number[] = [];
   if (state.exitUntil !== null) deadlines.push(state.exitUntil);
   if (state.phase === "intent" && state.since !== null) deadlines.push(state.since + timing.intentMs);
+  if (state.phase === "fetching" && state.retryAt !== null) deadlines.push(state.retryAt);
   if (state.phase === "buffering" && state.readyBy !== null) deadlines.push(state.readyBy);
   if (state.phase === "ready") deadlines.push(revealAt(state, timing));
   return deadlines.length ? Math.min(...deadlines) : null;

@@ -3,17 +3,19 @@
  * une horloge factice — la requête, le PiP et l'environnement simulés : quand
  * il demande, quand il montre, et qu'il ne fait RIEN quand il ne doit pas.
  */
-import { act, createElement } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TRAILER_PREVIEW_TIMING as T, type TrailerPreviewSubject } from "@tentacle-tv/shared";
-import type { TrailerPreviewHandle } from "./previewTypes";
+import { TRAILER_PREVIEW_TIMING as T } from "@tentacle-tv/shared";
+import { FOUND, KID, createPreviewRig } from "./previewTestRig";
 
 const h = vi.hoisted(() => ({
   result: undefined as unknown,
   fresh: false,
+  receivedAt: 0,
+  loading: false,
   capable: true,
   cancel: vi.fn(),
+  retry: vi.fn(),
   enabled: [] as boolean[],
   pip: null as unknown,
   block: null as string | null,
@@ -21,12 +23,21 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ i18n: { language: "fr-FR" } }) }));
-vi.mock("@tentacle-tv/api-client", () => ({
-  useTrailerPreviewStream: (_subject: unknown, _lang: string, options: { enabled: boolean }) => {
-    h.enabled.push(options.enabled);
-    return { result: h.result, fresh: h.fresh, capable: h.capable, cancel: h.cancel };
-  },
-}));
+vi.mock("@tentacle-tv/api-client", async () => {
+  // Les règles des refus passagers, vraies ; la requête, simulée.
+  const rules = await vi.importActual<typeof import("@tentacle-tv/api-client")>("@tentacle-tv/api-client");
+  return {
+    isTransientPreviewRefusal: rules.isTransientPreviewRefusal,
+    previewRetryDelayMs: rules.previewRetryDelayMs,
+    useTrailerPreviewStream: (_subject: unknown, _lang: string, options: { enabled: boolean }) => {
+      h.enabled.push(options.enabled);
+      return {
+        result: h.result, fresh: h.fresh, receivedAt: h.receivedAt, loading: h.loading,
+        capable: h.capable, cancel: h.cancel, retry: h.retry,
+      };
+    },
+  };
+});
 vi.mock("../pictureInPicture/pictureInPictureStore", () => ({ usePipSession: () => h.pip }));
 vi.mock("./previewEnvironment", () => ({ useTrailerPreviewBlock: () => h.block }));
 vi.mock("../lib/backendBase", () => ({ getBackendBase: () => "http://serveur:3001" }));
@@ -34,68 +45,18 @@ vi.mock("./previewSource", () => ({ loadPreviewHls: h.loadHls }));
 
 const { useTrailerPreview } = await import("./useTrailerPreview");
 const { forgetTrailerPreviewFailures } = await import("./previewFailures");
-
-const g = globalThis as Record<string, unknown>;
-g.IS_REACT_ACT_ENVIRONMENT = true;
-g.window ??= globalThis;
-const doc: Record<string, unknown> = { nodeType: 9, activeElement: null, addEventListener() {}, removeEventListener() {} };
-doc.defaultView = { document: doc, HTMLIFrameElement: class {} };
-const container = () => ({
-  nodeType: 1, tagName: "DIV", nodeName: "DIV", namespaceURI: "http://www.w3.org/1999/xhtml",
-  ownerDocument: doc, addEventListener() {}, removeEventListener() {},
-});
-
-const METROPOLIS: TrailerPreviewSubject = { kind: "item", itemId: "90d50b74d48412cfc9db9a256b1d0c64" };
-const KID: TrailerPreviewSubject = { kind: "item", itemId: "5ced6d65a7c6c207a2b1b872fd1d4e09" };
-const FOUND = {
-  status: "found",
-  preview: {
-    ytId: "FFUGtw7uzB4", path: "/api/trailers/hls/FFUGtw7uzB4/master.m3u8?t=abc", mimeType: "application/vnd.apple.mpegurl",
-    expiresAt: Date.now() + 3_600_000, heights: [720, 1080], qualities: [],
-  },
-};
-
-const handles: Record<string, TrailerPreviewHandle> = {};
-const roots = new Map<string, Root>();
-const props = new Map<string, { subject: TrailerPreviewSubject | null; hovered: boolean }>();
-
-function Rig({ name, subject, hovered }: { name: string; subject: TrailerPreviewSubject | null; hovered: boolean }) {
-  handles[name] = useTrailerPreview(subject, hovered);
-  return null;
-}
-
-async function render(name: string, next: Partial<{ subject: TrailerPreviewSubject | null; hovered: boolean }> = {}) {
-  const current = { subject: METROPOLIS, hovered: false, ...props.get(name), ...next };
-  props.set(name, current);
-  if (!roots.has(name)) roots.set(name, createRoot(container() as never));
-  await act(async () => roots.get(name)!.render(createElement(Rig, { name, ...current })));
-}
-
-/** Le temps passe (minuteries du crochet comprises). */
-async function wait(ms: number) {
-  await act(async () => {
-    vi.advanceTimersByTime(ms);
-  });
-}
-
-/** La requête répond : le crochet relit son état au rendu suivant. */
-async function serve(result: unknown, name = "a") {
-  h.result = result;
-  h.fresh = result !== undefined;
-  await render(name);
-}
+const { handles, render, wait, serve, cleanup } = createPreviewRig(useTrailerPreview, h);
 
 beforeEach(() => {
   vi.useFakeTimers();
-  Object.assign(h, { result: undefined, fresh: false, capable: true, enabled: [], pip: null, block: null });
+  Object.assign(h, { result: undefined, fresh: false, receivedAt: 0, loading: false, capable: true, enabled: [], pip: null, block: null });
   h.cancel.mockClear();
+  h.retry.mockClear();
   forgetTrailerPreviewFailures();
 });
 
 afterEach(async () => {
-  for (const root of roots.values()) await act(async () => root.unmount());
-  roots.clear();
-  props.clear();
+  await cleanup();
   vi.useRealTimers();
 });
 

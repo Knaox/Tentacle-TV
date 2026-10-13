@@ -26,11 +26,14 @@ function getAuthHeader(): Record<string, string> {
  */
 export class TentacleApiError extends Error {
   readonly status: number;
+  /** Les en-têtes de la réponse refusée (`Retry-After`…) ; `null` sans réponse. */
+  readonly headers: Headers | null;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, headers: Headers | null = null) {
     super(message);
     this.name = "TentacleApiError";
     this.status = status;
+    this.headers = headers;
   }
 }
 
@@ -49,7 +52,7 @@ export async function tentacleApiFetch<T>(apiPath: string, init?: RequestInit): 
   const res = await fetch(`${_backendRoot}${apiPath}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
-    throw new TentacleApiError(msg, res.status);
+    throw new TentacleApiError(msg, res.status, res.headers);
   }
   return res.json();
 }

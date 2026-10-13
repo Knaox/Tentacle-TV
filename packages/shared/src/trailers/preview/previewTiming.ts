@@ -36,6 +36,19 @@ export const TRAILER_PREVIEW_TIMING = {
   failureMemoryMs: 10 * 60_000,
   /** Garde du cache du flux : jamais au-delà, même si le serveur promet plus (jeton du relais). */
   streamCacheMaxMs: 60 * 60_000,
+  /**
+   * Un refus PASSAGER — 429 (le serveur décide déjà trop d'aperçus : une rangée
+   * balayée vient d'en lancer plusieurs) ou une panne réseau — ne vaut que le
+   * temps d'attendre : `Retry-After` du serveur (2 s s'il ne le dit pas, ou si
+   * le navigateur le cache — en-tête non exposé à une autre origine, le bureau),
+   * borné à 10 s ; 10 s pour une panne. Si le survol tient, l'aperçu redemande
+   * à l'échéance, deux fois au plus.
+   */
+  rateLimitDefaultMs: 2_000,
+  rateLimitMinMs: 1_000,
+  rateLimitMaxMs: 10_000,
+  transientFailureMs: 10_000,
+  maxRetries: 2,
 } as const;
 
 export type TrailerPreviewTiming = typeof TRAILER_PREVIEW_TIMING;

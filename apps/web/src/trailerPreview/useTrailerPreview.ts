@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useTrailerPreviewStream } from "@tentacle-tv/api-client";
+import { isTransientPreviewRefusal, previewRetryDelayMs, useTrailerPreviewStream } from "@tentacle-tv/api-client";
 import {
   TRAILER_PREVIEW_TIMING,
   trailerPreviewMounted,
@@ -64,22 +64,38 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
 
   // La réponse du serveur, quand l'intention l'attend — jamais une réponse périmée
   // (jeton du relais échu, refus d'il y a une heure) : la requête la renouvelle.
-  // Le flux est FIGÉ pour le cycle : une réponse qui vieillit pendant la lecture
-  // ne coupe rien.
-  const { result, fresh } = stream;
+  // Chaque réponse ne se lit qu'UNE fois par cycle (`consumed`, son instant) :
+  // après un refus passager, seule une réponse plus récente compte. Le flux est
+  // FIGÉ pour le cycle : une réponse qui vieillit pendant la lecture ne coupe rien.
+  const { result, fresh, receivedAt, loading } = stream;
   const [cycleStream, setCycleStream] = useState<{ cycle: number; stream: TrailerPreviewStream } | null>(null);
+  const consumed = useRef({ cycle: -1, at: 0 });
   useEffect(() => {
-    if (state.phase !== "fetching") return;
+    if (state.phase !== "fetching" || state.retryAt !== null || loading) return;
     const at = Date.now();
     if (trailerPreviewRecentlyFailed(subjectKey, at)) {
       dispatch({ type: "streamMissing", at });
-    } else if (fresh && result?.status === "found") {
+      return;
+    }
+    const seen = consumed.current.cycle === state.cycle ? consumed.current.at : 0;
+    if (!result || !fresh || receivedAt <= seen) return;
+    consumed.current = { cycle: state.cycle, at: receivedAt };
+    if (result.status === "found") {
       setCycleStream({ cycle: state.cycle, stream: previewStreamOf(result.preview) });
       dispatch({ type: "streamFound", at });
-    } else if (fresh && result?.status === "missing") {
+    } else if (isTransientPreviewRefusal(result)) {
+      // 429, panne : on redemande à l'échéance que le refus porte, si le survol tient.
+      dispatch({ type: "streamRetry", at, retryAt: receivedAt + previewRetryDelayMs(result, state.retries) });
+    } else {
       dispatch({ type: "streamMissing", at });
     }
-  }, [state.phase, state.cycle, result, fresh, subjectKey, dispatch]);
+  }, [state.phase, state.cycle, state.retryAt, state.retries, result, fresh, receivedAt, loading, subjectKey, dispatch]);
+
+  // L'échéance d'un refus passager est passée, le survol tient : nouvelle demande.
+  const retryStream = stream.retry;
+  useEffect(() => {
+    if (state.attempt > 0) retryStream();
+  }, [state.attempt, retryStream]);
 
   // Le lecteur se charge pendant que le serveur vérifie : la vidéo n'attendra pas hls.js.
   useEffect(() => {

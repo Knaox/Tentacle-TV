@@ -10,7 +10,10 @@ import {
   TRAILER_PREVIEW_UNAVAILABLE_TTL_MS,
   type TrailerPreview,
 } from "@tentacle-tv/shared";
-import { fetchTrailerPreviewStream, trailerPreviewQueryKey, trailerPreviewResultTtl } from "./trailerPreviewStream";
+import {
+  fetchTrailerPreviewStream, isTransientPreviewRefusal, previewRetryAfterMs, previewRetryDelayMs, trailerPreviewQueryKey,
+  trailerPreviewResultTtl,
+} from "./trailerPreviewStream";
 
 const ITEM = { kind: "item", itemId: "90d50b74d48412cfc9db9a256b1d0c64" } as const;
 
@@ -23,9 +26,9 @@ const PREVIEW: TrailerPreview = {
   qualities: [{ height: 1080, path: "/api/trailers/hls/FFUGtw7uzB4/master-1080.m3u8?t=abc" }],
 };
 
-function respond(body: unknown, status = 200) {
+function respond(body: unknown, status = 200, headers: Record<string, string> = {}) {
   const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
-    new Response(typeof body === "string" ? body : JSON.stringify(body), { status }));
+    new Response(typeof body === "string" ? body : JSON.stringify(body), { status, headers }));
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
@@ -49,10 +52,18 @@ describe("fetchTrailerPreviewStream", () => {
   });
 
   it("chaque refus du contrat est une réponse : rien à montrer", async () => {
-    for (const [status, error] of [[404, "no_trailer"], [404, "unavailable"], [429, "rate_limited"], [400, "invalid_request"]] as const) {
+    for (const [status, error] of [[404, "no_trailer"], [404, "unavailable"], [400, "invalid_request"]] as const) {
       respond({ error }, status);
       await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "missing", reason: error });
     }
+  });
+
+  it("un 429 dit quand redemander : `Retry-After` s'il est lisible", async () => {
+    respond({ error: "rate_limited" }, 429, { "Retry-After": "3" });
+    await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "missing", reason: "rate_limited", retryAfterMs: 3_000 });
+    // Caché (autre origine, en-tête non exposé) : le délai reste inconnu.
+    respond({ error: "rate_limited" }, 429);
+    await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "missing", reason: "rate_limited" });
   });
 
   it("une panne, une réponse illisible : rien à montrer non plus", async () => {
@@ -99,9 +110,37 @@ describe("trailerPreviewResultTtl", () => {
   it("un refus vaut ce que le serveur en dit : une heure sans bande-annonce, une minute sinon", () => {
     expect(trailerPreviewResultTtl({ status: "missing", reason: "no_trailer" }, 0)).toBe(TRAILER_PREVIEW_NO_TRAILER_TTL_MS);
     expect(trailerPreviewResultTtl({ status: "missing", reason: "unavailable" }, 0)).toBe(TRAILER_PREVIEW_UNAVAILABLE_TTL_MS);
-    expect(trailerPreviewResultTtl({ status: "missing", reason: "rate_limited" }, 0)).toBe(TRAILER_PREVIEW_UNAVAILABLE_TTL_MS);
-    expect(trailerPreviewResultTtl({ status: "missing", reason: "failed" }, 0)).toBe(TRAILER_PREVIEW_UNAVAILABLE_TTL_MS);
+    expect(trailerPreviewResultTtl({ status: "missing", reason: "unreadable" }, 0)).toBe(TRAILER_PREVIEW_UNAVAILABLE_TTL_MS);
     expect(trailerPreviewResultTtl(undefined, 0)).toBe(0);
+  });
+
+  it("un refus passager ne vaut que le temps d'attendre : le 429 son délai, la panne 10 s", () => {
+    expect(trailerPreviewResultTtl({ status: "missing", reason: "rate_limited", retryAfterMs: 3_000 }, 0)).toBe(3_000);
+    expect(trailerPreviewResultTtl({ status: "missing", reason: "rate_limited" }, 0)).toBe(TRAILER_PREVIEW_TIMING.rateLimitDefaultMs);
+    expect(trailerPreviewResultTtl({ status: "missing", reason: "failed" }, 0)).toBe(TRAILER_PREVIEW_TIMING.transientFailureMs);
+    expect(isTransientPreviewRefusal({ status: "missing", reason: "rate_limited" })).toBe(true);
+    expect(isTransientPreviewRefusal({ status: "missing", reason: "failed" })).toBe(true);
+    for (const reason of ["no_trailer", "unavailable", "invalid_request", "unreadable"] as const) {
+      expect(isTransientPreviewRefusal({ status: "missing", reason })).toBe(false);
+    }
+    expect(isTransientPreviewRefusal(undefined)).toBe(false);
+  });
+
+  it("le délai d'un 429 est borné : au moins 1 s, au plus 10 s, inconnu s'il est illisible", () => {
+    expect(previewRetryAfterMs("2")).toBe(2_000);
+    expect(previewRetryAfterMs("0")).toBe(1_000);
+    expect(previewRetryAfterMs("60")).toBe(10_000);
+    expect(previewRetryAfterMs("Wed, 21 Oct 2026 07:28:00 GMT")).toBeUndefined();
+    expect(previewRetryAfterMs(null)).toBeUndefined();
+    expect(previewRetryAfterMs("")).toBeUndefined();
+  });
+
+  it("quand redemander : le délai dit, sinon 2 s puis 4 s ; 10 s après une panne", () => {
+    expect(previewRetryDelayMs({ status: "missing", reason: "rate_limited", retryAfterMs: 3_000 }, 1)).toBe(3_000);
+    expect(previewRetryDelayMs({ status: "missing", reason: "rate_limited" }, 0)).toBe(2_000);
+    expect(previewRetryDelayMs({ status: "missing", reason: "rate_limited" }, 1)).toBe(4_000);
+    expect(previewRetryDelayMs({ status: "missing", reason: "rate_limited" }, 5)).toBe(10_000);
+    expect(previewRetryDelayMs({ status: "missing", reason: "failed" }, 0)).toBe(10_000);
   });
 
   it("la clé du cache : le titre et la langue", () => {

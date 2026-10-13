@@ -21,10 +21,16 @@ export interface TrailerPreviewStreamState {
    * l'appelant attend la nouvelle au lieu de lire l'ancienne.
    */
   fresh: boolean;
+  /** L'instant (ms) de la réponse : une nouvelle demande se reconnaît à un instant plus récent. */
+  receivedAt: number;
+  /** Une demande est en vol. */
+  loading: boolean;
   /** Le serveur déclare `trailers.preview` : sans elle, rien n'est jamais demandé. */
   capable: boolean;
   /** Abandonne la demande en cours (survol fini avant la réponse). */
   cancel: () => void;
+  /** Redemande maintenant (le survol tient après un refus passager). */
+  retry: () => void;
 }
 
 /**
@@ -60,10 +66,14 @@ export function useTrailerPreviewStream(
   const cancel = useCallback(() => {
     void queryClient.cancelQueries({ queryKey, exact: true });
   }, [queryClient, queryKey]);
+  const { refetch } = query;
+  const retry = useCallback(() => {
+    void refetch();
+  }, [refetch]);
   // La fraîcheur se calcule ICI, depuis l'âge de la réponse : `isStale` de
   // TanStack vaut toujours faux pour une requête DÉSACTIVÉE — or c'est
   // désactivée qu'elle est lue, au rendu même où l'intention l'active.
   const fresh = query.data !== undefined
     && Date.now() < query.dataUpdatedAt + trailerPreviewResultTtl(query.data, query.dataUpdatedAt);
-  return { result: query.data, fresh, capable, cancel };
+  return { result: query.data, fresh, receivedAt: query.dataUpdatedAt, loading: query.isFetching, capable, cancel, retry };
 }

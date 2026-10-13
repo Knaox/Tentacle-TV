@@ -46,5 +46,6 @@ export {
 } from "../trailers/useTrailerPreviewStream";
 export {
   fetchTrailerPreviewStream, trailerPreviewQueryKey, trailerPreviewResultTtl,
+  isTransientPreviewRefusal, previewRetryAfterMs, previewRetryDelayMs,
   type TrailerPreviewStreamResult,
 } from "../trailers/trailerPreviewStream";
