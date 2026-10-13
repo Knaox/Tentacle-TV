@@ -182,6 +182,8 @@ export * from "./family/familyRights";
 export * from "./family/familyLabels";
 export * from "./family/familyClient";
 export * from "./family/familyPickerClient";
+export * from "./family/familyProfileRefusal";
+export * from "./family/familyPinEntry";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";

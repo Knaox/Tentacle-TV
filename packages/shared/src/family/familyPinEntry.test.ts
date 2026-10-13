@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { profileRefusalOf, refusalReloadsProfiles } from "./profileRefusal";
+import { profileRefusalOf, refusalReloadsProfiles } from "./familyProfileRefusal";
 import {
   PIN_ENTRY_START,
   erasePinDigit,
@@ -10,7 +10,7 @@ import {
   pinRefused,
   pressPinDigit,
   type PinEntry,
-} from "./pinEntry";
+} from "./familyPinEntry";
 
 const NOW = Date.parse("2026-10-04T22:00:00Z");
 
