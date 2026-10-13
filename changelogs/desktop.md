@@ -13,6 +13,24 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.28.2]
+<!-- Bloc nu : les trois canaux partent de la 1.28.1. « Films pour vous » à l'accueil exige le serveur 1.27.1 (capacité reco.moviesRow) ; non proposée face à un serveur plus ancien. -->
+### FR
+- **« Pour vous » refaite** : la page s'ouvre sur « À la une ce soir », le titre qui vous correspond le mieux, avec la raison de ce choix, sa correspondance et de quoi le lancer tout de suite (lecture, bande-annonce, fiche, Ma liste) ; à côté, quatre autres idées pour qui hésite
+- **Chaque titre dit pourquoi** : « Du réalisateur de… », « Parce que vous avez aimé… », sous chaque carte, et dans le titre des rangées, dont celles consacrées à un réalisateur ou à un acteur
+- **« Films pour vous »** : une rangée rien que pour les films, en deuxième position, que vous pouvez aussi ajouter à l'accueil (serveur 1.27.1)
+- **La page ne bouge plus sous vos yeux** : refuser un titre ne fait partir que sa carte ; les nouvelles suggestions attendent votre prochaine visite, ou un clic sur « Nouvelles suggestions »
+- **Un titre marqué vu, aimé ou noté** quitte la page en douceur, une fois la souris partie de sa rangée
+- **« Vu » sur une série** la marque vue en entier, tous ses épisodes compris, et la carte l'affiche aussitôt
+
+### EN
+- **“For you” redesigned**: the page opens on “Tonight's pick”, the title that matches you best, with the reason for the pick, how well it matches and everything to start it right away (play, trailer, details, My list); next to it, four more ideas if you hesitate
+- **Every title says why**: “From the director of…”, “Because you liked…”, under each card and in row titles, including rows dedicated to a director or an actor
+- **“Movies for you”**: a row just for movies, in second place, which you can also add to your home page (server 1.27.1)
+- **The page no longer shifts under your eyes**: dismissing a title only removes its card; new suggestions wait for your next visit, or a click on “New picks”
+- **A title marked watched, liked or rated** leaves the page smoothly, once the mouse has left its row
+- **“Watched” on a series** marks the whole series, every episode included, and the card shows it right away
+
 ## [1.28.1]
 <!-- Bloc nu : correctifs mineurs, les trois canaux partent de la 1.28.0. « Réanalyser maintenant » exige le serveur 1.27.0 (capacité admin.libraryRescan) ; caché face à un serveur plus ancien. -->
 ### FR
