@@ -7,7 +7,9 @@ chiffres avant / après, et ce qui reste fragile.
 
 Seule l'Apple TV est concernée : elle n'a pas de WebView, le serveur doit lui
 fournir un flux qu'AVPlayer lit. Web, bureau, mobile, Android TV et LG
-embarquent le lecteur YouTube et ne passent pas par ce chemin.
+embarquent le lecteur YouTube et ne passent pas par ce chemin — sauf l'aperçu
+au survol des cartes (web et bureau, 2026-10-14), qui lit le relais : voir
+« Aperçu au survol ».
 
 ## Ce qui se passait
 
@@ -234,6 +236,90 @@ qualité recharge le flux à la même position (`startPosition` natif), la
 première image déjà acquise : pas de second chargement. Le chien de garde
 connaît la pause et le saut ; les tics qui disent encore l'ancienne position
 après un saut sont ignorés (5 s au plus).
+
+## Aperçu au survol (2026-10-14)
+
+Au survol d'une carte, le web et le bureau montrent un aperçu de la
+bande-annonce dans une mini-carte 16:9. Règle de Damien : AUCUNE transition
+s'il n'y a pas de bande-annonce lisible, rien non plus sur erreur — la vidéo
+est éprouvée AVANT d'être proposée. L'aperçu lit le RELAIS (pas l'iframe
+YouTube) : qualité maîtrisée, aucun habillage YouTube, un vrai essai côté
+serveur. Capacité `trailers.preview` (1.28.0).
+
+**Le contrat** : `packages/shared/src/trailers/trailerPreview.ts`, recopié
+octet pour octet dans `apps/backend/src/trailers/` (avec la liste,
+`trailerList.ts` : test miroir). Le client fait UN appel :
+
+- `GET /api/trailers/preview?itemId=…&lang=fr` — un titre de la
+  bibliothèque ; `?tmdbId=…&mediaType=movie|tv&lang=fr` — un titre hors
+  bibliothèque (carte TMDB, Vigie). `trailerPreviewPath()` écrit la
+  demande, `parseTrailerPreviewQuery()` la relit au serveur, mêmes règles.
+- 200 `{ ytId, path, mimeType, expiresAt, heights, qualities }` : `path` est
+  le maître relayé (« Auto » : 720p d'abord) ou, à défaut de HLS (vidéo
+  « pour enfants »), un MP4 ; `qualities` = un maître réduit par hauteur, la
+  meilleure en tête ; `expiresAt` borne le jeton et les URL amont.
+- Refus `{ error }`, tous « rien à montrer » : 404 `no_trailer` (aucune
+  bande-annonce, titre invisible pour ce compte, collection, personne…),
+  404 `unavailable` (aucune ne se lit), 429 `rate_limited` (avec
+  `Retry-After`), 400 `invalid_request`.
+
+**Le choix** (`services/trailers/preview/`) : un titre de la bibliothèque est
+lu AU NOM du compte (clé d'administration + `userId` : Jellyfin rend 404 pour
+ce qu'il ne voit pas) ; un épisode ou une saison valent leur série. Les
+candidates : `RemoteTrailers` de Jellyfin et vidéos TMDB (clé du serveur,
+`titleVideos.ts` ; Jellyseerr sans clé), fusionnées par `mergeTrailers` — la
+règle de la fiche : la langue d'abord (VF en français), une bande-annonce
+avant un teaser ; YouTube seulement, jamais featurette, coulisses ni extrait.
+TMDB ne rend que l'anglais sans paramètre (mesuré : aucune des cinq VF de
+Dune) : on demande `include_video_language=<langue>,en,null`, puis la langue
+originale si rien ne convient.
+
+**La vérification** : trois candidates au plus, dans l'ordre, jusqu'à la
+première qui s'extrait (yt-dlp, budget de 20 s, APRÈS les lectures : un
+aperçu n'occupe jamais plus d'une des deux places d'extraction,
+`extractionSlots.ts`) et dont le maître et les listes de départ se lisent
+chez googlevideo. En même temps, sans retarder la réponse, le départ d'un
+lecteur qui commence au plus haut — la liste de la variante la plus haute et
+celle de son audio, puis leur PREMIER segment — est lu d'avance
+(`trailerSegments.ts` : 32 Mo, cinq minutes, quatre lectures à la fois) ; le
+lecteur qui les demande les reçoit de la mémoire ou rejoint la lecture en
+cours.
+
+**La mémoire** : la décision par (titre, langue) — trouvée jusqu'à
+l'échéance des URL, aucune bande-annonce une heure, aucune lisible une
+minute ; demandes identiques partagées ; une vidéo que le relais a oubliée
+est reprise d'abord, sans relire TMDB. Le relais garde 96 vidéos (48 avant).
+**La protection** : un seau par compte (six décisions d'avance, une toutes
+les 5 s — une décision gardée ne coûte rien) et quatre décisions en cours au
+plus sur le serveur.
+
+**Lisible par hls.js depuis le bureau** : le CORS de Tentacle reflète
+`tentacle://app` sur la route et sur tout le relais (maître, listes,
+segments, MP4 par plages), CORS ouvert comme restreint (`CORS_ORIGINS`) ;
+chaque URI réécrite porte le jeton. Éprouvé dans Chrome 155 sans tête, page
+d'une AUTRE origine que le serveur, hls.js 1.6.15 de `node_modules`.
+
+**Mesuré** (banc du 2026-10-14 : Jellyfin 10.11 jetable, yt-dlp 2026.08.19 de
+Homebrew en ligne de commande, charge 6 à 23 sur 10 cœurs) :
+
+| | Délai de `/preview` | Première image après la réponse |
+|---|---|---|
+| À froid (3 films du banc, 3 titres TMDB) | 1,3 à 2,1 s | 0,12 à 0,23 s (départ au plus haut) |
+| À chaud (décision gardée) | 1 à 25 ms | 0,11 à 0,25 s (navigateur neuf) |
+| Deux candidates mortes avant la bonne (Cowboy Bebop) | 6,3 s | — |
+
+Hauteur obtenue : 1080p pour la plupart (Dune, Dune 2, Interstellar,
+Oppenheimer, Charade, La Nuit des morts-vivants), 720p pour Inception, 480p
+pour les films muets (Metropolis, Le Kid) — ce que YouTube sert, pas plus ;
+un MP4 360p quand YouTube ne sert pas de HLS (Sherlock Junior, Your Name).
+Le départ au plus haut : la meilleure hauteur dès la première image.
+
+**Surveiller** (`grep '\[trailers\] aperçu'`) :
+
+- `aperçu tmdb:movie:438631|fr : gHt8tCHbB2M (hls, 1080) en 1387 ms, essai 1/3`
+- `aperçu jf:<id>|fr : aucune bande-annonce` — ou `(TMDB sans réponse)` ;
+- `aperçu … : aucune lisible (3 candidate(s), … ms)` — yt-dlp les refuse ;
+- `aperçu … : … reprise` — une décision dont le relais avait oublié la vidéo.
 
 ## Ce qui reste fragile, et comment le surveiller
 
