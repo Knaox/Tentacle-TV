@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PickerProfileDto, PickerProfilesDto } from "@tentacle-tv/shared";
-import { afterBudget, afterFresh, initialGate } from "./gateMachine";
+import { afterFresh, initialGate } from "./gateMachine";
 
 function profile(userId: string, extra: Partial<PickerProfileDto> = {}): PickerProfileDto {
   return { userId, kind: "guest", name: userId, color: "violet", hasPin: false, imageTag: null, lockedUntil: null, createdBy: null, personal: false, ...extra };
@@ -62,9 +62,10 @@ describe("la porte de « Qui regarde ? »", () => {
     expect(afterFresh(initialGate("check", false, null), { kind: "accountLost" })).toEqual({ phase: "app", logout: true });
   });
 
-  it("l'attente bornée ouvre l'application, jamais quand le sélecteur est exigé", () => {
-    expect(afterBudget(initialGate("check", false, null))).toBe("app");
-    expect(afterBudget(initialGate("check", true, null))).toBe("check");
-    expect(afterBudget(initialGate("picker", false, null))).toBe("picker");
+  it("premier lancement sans miroir : la préférence vaut si le serveur répond à temps", () => {
+    const state = initialGate("app", false, null, false);
+    expect(afterFresh(state, { kind: "listing", listing: listing() })).toEqual({ phase: "picker" });
+    expect(afterFresh(state, { kind: "incapable" })).toEqual({ phase: "app" });
+    expect(afterFresh(state, { kind: "failed" })).toEqual({ phase: "app" });
   });
 });

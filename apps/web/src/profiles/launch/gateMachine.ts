@@ -8,7 +8,7 @@ import { launchOutcome, verifyOutcome, type LaunchVerdict } from "./launchDecisi
  *
  * - `app` : l'application (la porte s'efface) ;
  * - `picker` : le sélecteur plein écran, AVANT l'application ;
- * - `check` : on attend le serveur (premier lancement, fin d'un profil) ;
+ * - `check` : on attend le serveur (la session d'un profil a pris fin) ;
  * - `error` : le serveur ne répond pas alors que le sélecteur est EXIGÉ
  *   (fin d'un profil) — Réessayer, jamais le compte sans son code.
  */
@@ -69,9 +69,4 @@ export function afterFresh(state: GateState, answer: FreshAnswer, late = false):
       return { phase: outcome };
     }
   }
-}
-
-/** L'attente bornée d'une ouverture sans miroir est écoulée : l'application, sauf sélecteur EXIGÉ. */
-export function afterBudget(state: GateState): GatePhase {
-  return state.phase === "check" && !state.requested ? "app" : state.phase;
 }

@@ -76,10 +76,11 @@ describe("« Qui regarde ? » à l'ouverture du bureau — la décision immédia
     expect(launchVerdict({ ...BASE, heldProfileId: null, mirror })).toBe("picker");
   });
 
-  it("sans miroir, ou celui d'un autre compte ou d'un autre serveur : le serveur tranche", () => {
-    expect(launchVerdict({ ...BASE, mirror: null })).toBe("check");
-    expect(launchVerdict({ ...BASE, mirror: { ...MIRROR, accountId: "autre" } })).toBe("check");
-    expect(launchVerdict({ ...BASE, mirror: { ...MIRROR, server: "http://ailleurs" } })).toBe("check");
+  it("sans miroir, ou celui d'un autre compte ou d'un autre serveur : l'application, comme avant", () => {
+    // Aucun écran d'attente pour qui n'a pas de profils : la réponse du serveur tranchera.
+    expect(launchVerdict({ ...BASE, mirror: null })).toBe("app");
+    expect(launchVerdict({ ...BASE, mirror: { ...MIRROR, accountId: "autre" } })).toBe("app");
+    expect(launchVerdict({ ...BASE, mirror: { ...MIRROR, server: "http://ailleurs" } })).toBe("app");
   });
 
   it("une session de profil terminée redemande toujours au serveur, même profil déjà choisi", () => {

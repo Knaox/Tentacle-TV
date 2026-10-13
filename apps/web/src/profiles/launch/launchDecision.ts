@@ -11,7 +11,9 @@ import {
  *
  * - décider SANS ATTENDRE quand on le peut : la dernière réponse du serveur
  *   est gardée sur la machine (le MIROIR, par compte) et relue en fond — comme
- *   la rangée de la TV ; sans miroir, on demande (attente bornée) ;
+ *   la rangée de la TV ; sans miroir (premier lancement), l'application
+ *   s'ouvre comme avant et la réponse du serveur vaut si elle arrive dans
+ *   l'attente bornée — aucun écran d'attente pour qui n'a pas de profils ;
  * - un profil déjà choisi dans cette exécution n'est pas redemandé (une
  *   bascule recharge la page) — sauf ce qui touche à la SÉCURITÉ, revérifié à
  *   chaque ouverture : une session de profil que le serveur ne connaît plus,
@@ -26,7 +28,7 @@ export type LaunchVerdict =
   | "app"
   /** Le sélecteur, tout de suite, depuis le miroir (relu en fond). */
   | "picker"
-  /** Rien de sûr : demander au serveur avant de rien montrer. */
+  /** La session d'un profil a pris fin : rien avant la réponse du serveur. */
   | "check";
 
 /**
@@ -67,7 +69,7 @@ export function launchVerdict(input: LaunchInputs): LaunchVerdict {
   if (input.requested) return "check";
   if (input.passed) return "app";
   const mirror = input.mirror?.accountId === input.accountId && input.mirror.server === input.server ? input.mirror : null;
-  if (!mirror) return "check";
+  if (!mirror) return "app";
   if (!mirror.capable || !mirror.listing) return "app";
   return pickerLaunch(mirror.listing, held(input.heldProfileId)) === "picker" ? "picker" : "app";
 }
@@ -111,7 +113,8 @@ export function requestedPickerNeeded(profileCount: number, ownHasPin: boolean):
   return profileCount >= LAUNCH_MIN_PROFILES || ownHasPin;
 }
 
-/** L'attente bornée d'une ouverture sans miroir : au-delà, l'application s'ouvre (le miroir servira à la suivante). */
+/** L'attente bornée : une réponse plus tardive ne couvre plus l'application ouverte que pour la sécurité
+ *  (la préférence vaudra à l'ouverture suivante, d'après le miroir). */
 export const LAUNCH_CHECK_BUDGET_MS = 1500;
 
 function held(profileId: string | null): { profileId: string } | null {

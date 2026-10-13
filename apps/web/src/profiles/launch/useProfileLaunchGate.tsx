@@ -11,7 +11,7 @@ import { isDesktopApp } from "../../desktop/detect";
 import { getBackendBase } from "../../lib/backendBase";
 import { NoPersonalSession, loadPickerProfiles, pickerProfilesKey } from "../api/pickerGateway";
 import { WhoIsWatchingView } from "../picker/WhoIsWatchingView";
-import { afterBudget, afterFresh, initialGate, type FreshAnswer, type GateState } from "./gateMachine";
+import { afterFresh, initialGate, type FreshAnswer, type GateState } from "./gateMachine";
 import { LAUNCH_CHECK_BUDGET_MS, launchVerdict } from "./launchDecision";
 import { launchPassed, markLaunchPassed, readLaunchMirror, writeLaunchMirror } from "./launchState";
 import { ProfileLaunchScreen } from "./ProfileLaunchScreen";
@@ -24,7 +24,8 @@ import { LaunchSplash } from "./LaunchSplash";
  * profil qu'on ne choisira peut-être pas. `null` : l'application.
  *
  * Décision immédiate depuis le miroir (`launchDecision.ts`), puis la réponse
- * fraîche du serveur (`gateMachine.ts`) ; une connexion par mot de passe dans
+ * fraîche du serveur (`gateMachine.ts`) — seule la fin d'un profil fait
+ * attendre (`LaunchSplash`) ; une connexion par mot de passe dans
  * cette exécution vaut choix fait (session personnelle, sans sélecteur). Hors
  * du bureau : `null`, sans rien lire. Le client LG ne la compile pas
  * (substituée, `apps/tv-webos/config/substitutionTableSession.ts`).
@@ -62,13 +63,9 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
     void freshAnswer(queryClient).then(apply);
   }, [queryClient, apply]);
 
-  // La réponse fraîche, une fois, à l'ouverture — et l'attente bornée.
+  // La réponse fraîche, une fois, à l'ouverture (l'attente bornée se juge à son arrivée).
   useEffect(() => {
-    if (!eligible.current) return;
-    check();
-    if (gateRef.current.phase !== "check") return;
-    const budget = window.setTimeout(() => setGate((current) => ({ ...current, phase: afterBudget(current) })), LAUNCH_CHECK_BUDGET_MS);
-    return () => window.clearTimeout(budget);
+    if (eligible.current) check();
   }, [check]);
 
   const onDone = useCallback((landing?: string) => {
@@ -81,7 +78,7 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
     return <ProfileLaunchScreen initialListing={initialListing} ended={gate.requested} onDone={onDone} onAccountLost={logout} />;
   }
   if (gate.phase === "error") return <ErrorScreen onRetry={check} />;
-  return <LaunchSplash requested={gate.requested} />;
+  return <LaunchSplash />;
 }
 
 function initialState(authed: boolean): GateState {

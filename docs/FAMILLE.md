@@ -327,8 +327,10 @@ de « Qui regarde ? » (`family.guest_account`).
 - **L'ouverture** (`profiles/launch/`) : la porte d'`App.tsx`, avant tout le
   reste — rien n'est monté derrière le sélecteur. Décision immédiate depuis la
   dernière réponse du serveur gardée sur la machine (`tentacle_profile_launch`,
-  par serveur et par compte, sans secret), relue en fond ; sans elle, attente
-  bornée à 1,5 s. Un profil choisi dans l'exécution (stockage de session),
+  par serveur et par compte, sans secret), relue en fond ; sans elle (premier
+  lancement), l'application s'ouvre comme avant — aucun écran d'attente — et la
+  réponse du serveur vaut si elle arrive dans les 1,5 s. Seule la fin d'un
+  profil fait attendre le serveur. Un profil choisi dans l'exécution (stockage de session),
   une connexion par mot de passe : plus de sélecteur jusqu'à la fermeture,
   sauf la sécurité (`verifyOutcome`). Une préférence changée ailleurs vaut dès
   l'ouverture si le serveur répond dans l'attente bornée.
