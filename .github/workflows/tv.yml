@@ -115,6 +115,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Depuis une autre branche que main : build ou test, jamais le store ni un bump.
+      - uses: ./.github/actions/store-from-main
+        with:
+          channel: ${{ inputs.channel || 'store' }}
+          bump: ${{ inputs.version }}
+
       - uses: ./.github/actions/require-quality
         with:
           sha: ${{ github.sha }}

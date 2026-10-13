@@ -1,0 +1,58 @@
+name: Le cran store ne part que de main
+description: >-
+  Une livraison lancée depuis une autre branche que main (dev, le plus souvent)
+  va jusqu'au cran test, jamais au store, et ne bumpe aucune version.
+
+# POURQUOI. On lance volontiers un build ou un TestFlight depuis dev pour
+# éprouver un travail avant de le fusionner ; rien de ce qui n'est pas sur main
+# ne doit atteindre un store. Le bump est refusé aussi : `push-main` pose son
+# commit sur MAIN, par-dessus un arbre qui serait celui de dev.
+#
+# LES TAGS. Un tag `<plateforme>-vX.Y.Z` vaut le cran store : son commit doit
+# appartenir à main (c'est la CI qui les pose, sur le bump poussé sur main).
+#
+# APPELÉ (`workflow_call`) : `github.ref` est celui de l'appelant, qui a déjà
+# passé la même garde — la règle reste juste.
+#
+# Prérequis : un checkout avec l'historique (`fetch-depth: 0`).
+
+inputs:
+  channel:
+    description: "Le cran demandé (build, test, store, dev). Une poussée de tag vaut store."
+    required: true
+  bump:
+    description: Version demandée au déclenchement (vide = aucun bump).
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Cran store et bump depuis main seulement
+      shell: bash
+      env:
+        CHANNEL: ${{ inputs.channel }}
+        BUMP: ${{ inputs.bump }}
+      run: |
+        set -euo pipefail
+        case "$GITHUB_REF" in
+          refs/heads/main)
+            exit 0 ;;
+          refs/tags/*)
+            [ "$CHANNEL" = store ] || exit 0
+            git fetch --quiet origin main
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+              echo "::error::Le tag ${GITHUB_REF_NAME} ne pointe pas sur un commit de main : le cran store ne part que de main."
+              exit 1
+            fi
+            exit 0 ;;
+        esac
+        if [ "$CHANNEL" = store ]; then
+          echo "::error::Lancé depuis « ${GITHUB_REF_NAME} » : le cran store ne part que de main. Ici, build ou test seulement."
+          exit 1
+        fi
+        if [ -n "$BUMP" ]; then
+          echo "::error::Lancé depuis « ${GITHUB_REF_NAME} » : une version (${BUMP}) ne se bumpe que depuis main. Laisse « version » vide."
+          exit 1
+        fi
+        echo "Lancé depuis « ${GITHUB_REF_NAME} » : cran ${CHANNEL}, sans bump — d'accord."

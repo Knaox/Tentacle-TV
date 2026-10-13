@@ -155,6 +155,11 @@ jobs:
           fi
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
+      # Depuis une autre branche que main : build ou test, jamais le store ni un bump.
+      - uses: ./.github/actions/store-from-main
+        with:
+          channel: ${{ inputs.channel || 'store' }}
+
       - uses: ./.github/actions/require-quality
         with:
           sha: ${{ steps.sha.outputs.sha }}
