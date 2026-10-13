@@ -16,21 +16,23 @@ export const FONTS = path.join(APP_DIR, "assets/fonts");
 export const BRAND = path.join(REPO, "brand");
 
 const PROJECTS = process.env.VITRINE_PROJECTS ?? path.join(os.homedir(), "Desktop/Projet - local");
+// Les visuels des stores sont rangés ensemble, dans Tentacle/Stores (2026-10-13).
+const STORES_DIR = path.join(PROJECTS, "Tentacle/Stores");
 
-export const HOME = process.env.VITRINE_HOME ?? path.join(PROJECTS, "Tentacle-Vitrine");
+export const HOME = process.env.VITRINE_HOME ?? path.join(STORES_DIR, "Tentacle-Vitrine");
 export const SOURCES = path.join(HOME, "sources");
 export const SNAPSHOT = path.join(HOME, "snapshot");
 export const CAPTURES = path.join(HOME, "captures");
 export const SITE_OUT = path.join(HOME, "site");
 export const SHEETS = path.join(HOME, "planches");
 // La série App Store vit À CÔTÉ de l'actuelle, jamais par-dessus.
-export const APPSTORE_OUT = process.env.VITRINE_APPSTORE ?? path.join(PROJECTS, "Tentacle-AppStore/appletv/2026-10-refonte");
+export const APPSTORE_OUT = process.env.VITRINE_APPSTORE ?? path.join(STORES_DIR, "Tentacle-AppStore/appletv/2026-10-refonte");
 
 export const LANGS = ["fr", "en"];
 
 /** Les séries des autres stores, chacune dans un dossier DATÉ à côté de
  *  l'actuelle (jamais par-dessus). Microsoft n'avait pas de dossier. */
-const STORES_ROOT = process.env.VITRINE_STORES ?? path.join(PROJECTS, "Tentacle-AppStore");
+const STORES_ROOT = process.env.VITRINE_STORES ?? path.join(STORES_DIR, "Tentacle-AppStore");
 export const STORE_OUT = {
   iphone: path.join(STORES_ROOT, "IOS/2026-10"),
   ipad: path.join(STORES_ROOT, "Ipad/2026-10"),
