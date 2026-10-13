@@ -314,6 +314,39 @@ de « Qui regarde ? » (`family.guest_account`).
    revenir à « Qui regarde ? ».
 5. Se déconnecter du compte : `POST /api/auth/logout` au jeton personnel.
 
+### Le client du bureau (`apps/web/src/profiles/`, `apps/web/src/auth/`)
+
+- **Les sessions** (`auth/profileSession.ts`, `auth/sessionSwap.ts`) :
+  `tentacle_token` / `tentacle_user` portent la session ACTIVE, lue partout ;
+  pendant un profil, la session personnelle est mise de côté
+  (`tentacle_account_session`, identité Jellyfin adoptée comprise) et
+  `tentacle_profile_session` marque le profil (nom, couleur, rôle). Chaque
+  bascule recharge la page (`profiles/switch/commitPick.ts`) : PiP fermé,
+  Watch Together quitté, cache persisté effacé, rideau au nom du profil posé
+  avant le rechargement et levé après (`ProfileArrival`, monté par `main.tsx`).
+- **L'ouverture** (`profiles/launch/`) : la porte d'`App.tsx`, avant tout le
+  reste — rien n'est monté derrière le sélecteur. Décision immédiate depuis la
+  dernière réponse du serveur gardée sur la machine (`tentacle_profile_launch`,
+  par serveur et par compte, sans secret), relue en fond ; sans elle, attente
+  bornée à 1,5 s. Un profil choisi dans l'exécution (stockage de session),
+  une connexion par mot de passe : plus de sélecteur jusqu'à la fermeture,
+  sauf la sécurité (`verifyOutcome`). Une préférence changée ailleurs vaut dès
+  l'ouverture si le serveur répond dans l'attente bornée.
+- **La fin d'un profil** (`auth/profileEnded.ts`, `ProfileSessionBinding`,
+  garde de session, `session:revoked`) : retour à la session personnelle, puis
+  « Qui regarde ? » EXIGÉ au rechargement (la raison en stockage de session) —
+  jamais la déconnexion, jamais le compte sans son PIN ; ignorée pendant une
+  bascule voulue (« replaced »).
+- **Ce qu'une session de profil tait** : administration, jumelage, contenu
+  gardé et hors ligne, Sécurité, Famille (`useFamilyAvailability`), photo du
+  compte, déconnexion (revenir à son profil d'abord) ; un invité perd en plus
+  Watch Together et l'Aide.
+- **Réglage coupé** : l'application rouvre le dernier profil de l'ordinateur
+  (`pickerLaunch` › `resume`), le compte par défaut. Aucun raccourci clavier
+  global : le menu de l'avatar se parcourt aux flèches.
+- La TV LG ne compile rien de tout cela : sa porte est substituée et
+  `apps/web/src/profiles/` sort de sa feuille.
+
 ## Qui agit : toujours le porteur du jeton
 
 L'acteur se déduit du jeton, JAMAIS d'un identifiant du corps ou de la query
