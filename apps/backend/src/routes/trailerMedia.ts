@@ -17,6 +17,7 @@ import {
   TOKEN_SLOT, fetchUpstream, masterTemplate, mediaTemplate, progressiveTarget, segmentTarget,
 } from "../services/trailers/trailerRelay";
 import { subtitleVtt } from "../services/trailers/trailerSubtitleRelay";
+import { heldSegment, type HeldSegment } from "../services/trailers/trailerSegments";
 
 const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 const KEY_RE = /^[\w-]{1,16}$/;
@@ -63,6 +64,13 @@ function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string)
   return reply.send(Readable.fromWeb(res.body as import("stream/web").ReadableStream));
 }
 
+/** Un premier segment lu d'avance par l'aperçu (`trailerSegments.ts`), servi de la mémoire. */
+function sendHeld(reply: FastifyReply, segment: HeldSegment) {
+  reply.header("Content-Type", segment.contentType);
+  reply.header("Cache-Control", "private, max-age=3600");
+  return reply.send(segment.body);
+}
+
 export async function trailerMediaRoutes(app: FastifyInstance) {
   app.get<{ Params: Params }>("/hls/:ytId/:name", async (request, reply) => {
     const access = authorize(request.params.ytId, request, reply);
@@ -99,6 +107,11 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     const { key = "", name = "" } = request.params;
     const index = name === "init.mp4" ? "init" : Number(/^(\d+)\.ts$/.exec(name)?.[1] ?? NaN);
     if (!KEY_RE.test(key) || (index !== "init" && !Number.isInteger(index))) return reply.status(404).send({ error: "unknown" });
+
+    // Lu d'avance par l'aperçu : servi de la mémoire, ou à la fin de la lecture déjà en route.
+    const early = request.headers.range ? null : heldSegment(access.ytId, key, index);
+    const segment = early ? await early : null;
+    if (segment) return sendHeld(reply, segment);
 
     const signal = requestSignal(request, reply, SEGMENT_TIMEOUT_MS);
     // Une URL refusée (échéance, révocation) : une nouvelle extraction, une seule fois.

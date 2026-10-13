@@ -14,7 +14,8 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { startYtDlpUpdates } from "../services/ytDlp";
-import { prepareTrailer, resolveTrailer } from "../services/trailers/trailerRelay";
+import { resolveTrailer } from "../services/trailers/trailerRelay";
+import { prepareTrailer } from "../services/trailers/trailerPrepare";
 import { relayedStream } from "../services/trailers/relayPaths";
 import { orderSubtitles } from "../services/trailers/trailerSubtitles";
 

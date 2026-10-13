@@ -10,7 +10,7 @@
 /* ------------------------------------------------------------------ */
 
 import { Agent, fetch as undiciFetch } from "undici";
-import { parseMaster, renderMaster, rewriteMedia, startVariant, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
+import { parseMaster, renderMaster, rewriteMedia, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
 import { extractTrailerSource, type ExtractionOptions } from "./ytExtract";
 import type { TrailerSource } from "./trailerSource";
 import type { SubtitleCandidate } from "./trailerSubtitles";
@@ -128,7 +128,7 @@ export interface ResolvedTrailer {
   subtitles: SubtitleCandidate[];
 }
 
-function resolvedOf(entry: Entry): ResolvedTrailer {
+export function resolvedOf(entry: Entry): ResolvedTrailer {
   const heights = entry.source.kind === "hls" ? entry.source.heights : [];
   return { kind: entry.source.kind, validUntil: entry.validUntil, heights, subtitles: entry.subtitles };
 }
@@ -139,15 +139,9 @@ export async function resolveTrailer(ytId: string, extraction: ExtractionOptions
   return entry ? resolvedOf(entry) : null;
 }
 
-/**
- * La vidéo si le relais la tient DÉJÀ prête (extraite, maître lu) — sans
- * extraction ni lecture amont ; sinon `null`, et qui la veut la résout.
- */
-export function peekTrailer(ytId: string): ResolvedTrailer | null {
-  const entry = entries.get(ytId);
-  if (!entry || entry.validUntil <= Date.now() || (entry.source.kind === "hls" && !entry.master)) return null;
-  entry.lastUsed = Date.now();
-  return resolvedOf(entry);
+/** La vidéo telle que le relais la tient, sans extraction ni lecture amont (`trailerPrepare.ts`). */
+export function heldEntry(ytId: string): Entry | undefined {
+  return entries.get(ytId);
 }
 
 /** Lit une ressource amont ; `refused` pour une URL que googlevideo ne sert plus. */
@@ -186,7 +180,7 @@ function once<T>(entry: Entry, key: string, task: () => Promise<T | null>): Prom
   return run;
 }
 
-function loadMaster(entry: Entry): Promise<RelayMaster | null> {
+export function loadMaster(entry: Entry): Promise<RelayMaster | null> {
   if (entry.master) return Promise.resolve(entry.master);
   const source = entry.source;
   if (source.kind !== "hls") return Promise.resolve(null);
@@ -226,7 +220,7 @@ export async function masterTemplate(ytId: string, height?: number): Promise<str
   return null;
 }
 
-function loadMedia(entry: Entry, key: string): Promise<RelayMedia | null> {
+export function loadMedia(entry: Entry, key: string): Promise<RelayMedia | null> {
   const cached = entry.media.get(key);
   if (cached) return Promise.resolve(cached);
   return once(entry, `media:${key}`, async () => {
@@ -265,25 +259,6 @@ export async function segmentTarget(ytId: string, key: string, index: number | "
 export async function progressiveTarget(ytId: string, { fresh = false } = {}) {
   const entry = await resolveEntry(ytId, { fresh });
   return entry?.source.kind === "progressive" ? { url: entry.source.url, headers: entry.source.headers } : null;
-}
-
-/**
- * Prépare une vidéo pour que son lancement soit immédiat : extraction, maître,
- * liste de la variante de départ et de son audio. Rien n'échoue bruyamment :
- * le lancement refera ce qui manque. `true` : tout ce que le lecteur demandera
- * d'abord est là, lu chez googlevideo (un MP4 l'a été dès l'extraction) —
- * l'aperçu au survol ne propose rien d'autre.
- */
-export async function prepareTrailer(ytId: string, extraction: ExtractionOptions = {}): Promise<boolean> {
-  const entry = await resolveEntry(ytId, extraction);
-  if (!entry) return false;
-  if (entry.source.kind !== "hls") return true;
-  const master = await loadMaster(entry);
-  if (!master) return false;
-  const start = startVariant(master.variants);
-  const audio = master.audio.find((a) => a.group === start.audioGroup);
-  const [video, sound] = await Promise.all([loadMedia(entry, start.key), audio ? loadMedia(entry, audio.key) : true]);
-  return !!video && !!sound;
 }
 
 /** Pour les tests : repartir d'un relais vide. */

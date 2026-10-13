@@ -40,6 +40,7 @@ vi.mock("../middleware/auth", () => ({
 import { profileSessionScope } from "../services/family/profileSessionLimits";
 import { parseCorsOrigins, tentacleCorsDelegator } from "../services/tentacleCors";
 import { resetTrailerRelay } from "../services/trailers/trailerRelay";
+import { resetHeldSegments } from "../services/trailers/trailerSegments";
 import { resetPreviewDecisions } from "../services/trailers/preview/previewDecision";
 import { resetPreviewTitles } from "../services/trailers/preview/previewTitle";
 import { trailerMediaRoutes } from "./trailerMedia";
@@ -91,6 +92,7 @@ const get = (app: Awaited<ReturnType<typeof server>>, query: string, token = "al
 
 beforeEach(() => {
   resetTrailerRelay();
+  resetHeldSegments();
   resetPreviewDecisions();
   resetPreviewTitles();
   vi.unstubAllGlobals();
@@ -140,6 +142,21 @@ describe("GET /api/trailers/preview", () => {
     const master = await app.inject({ url: body.path });
     expect([master.statusCode, master.body.includes("p/232.m3u8?t=")]).toEqual([200, true]);
     expect(extractTrailerSource).toHaveBeenCalledWith(YT, { priority: "preview", budgetMs: 20_000 });
+  });
+
+  it("les premiers segments du départ au plus haut (1080p et son audio) sont lus d'avance, puis servis sans relire googlevideo", async () => {
+    const app = await server();
+    const { path } = (await get(app, `itemId=${MOVIE}&lang=fr`)).json() as { path: string };
+    const token = path.split("?t=")[1];
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const upstream = globalThis.fetch as ReturnType<typeof vi.fn>;
+    const segmentsRead = () => upstream.mock.calls.map(([url]) => String(url)).filter((url) => url.includes("/seg/"));
+    expect(segmentsRead()).toEqual([`${GV}/seg/270/0.ts`, `${GV}/seg/234/0.ts`]);
+    for (const key of ["270", "234"]) {
+      const res = await app.inject({ url: `/api/trailers/hls/${YT}/s/${key}/0.ts?t=${token}` });
+      expect([res.statusCode, res.headers["content-type"], res.rawPayload.length]).toEqual([200, "video/mp2t", 4]);
+    }
+    expect(segmentsRead()).toHaveLength(2);
   });
 
   it("un titre que le compte ne voit pas, une collection : 404 no_trailer ; Jellyfin muet : 404 unavailable", async () => {

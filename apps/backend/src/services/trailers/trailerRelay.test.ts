@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExtractionResult } from "./ytExtract";
-import {
-  TOKEN_SLOT, isReadable, masterTemplate, mediaTemplate, peekTrailer, prepareTrailer, resetTrailerRelay, resolveTrailer, segmentTarget,
-} from "./trailerRelay";
+import { TOKEN_SLOT, isReadable, masterTemplate, mediaTemplate, resetTrailerRelay, resolveTrailer, segmentTarget } from "./trailerRelay";
+import { peekTrailer, prepareTrailer } from "./trailerPrepare";
 
 const { extractTrailerSource } = vi.hoisted(() => ({ extractTrailerSource: vi.fn<(ytId: string, options?: unknown) => Promise<ExtractionResult>>() }));
 vi.mock("./ytExtract", () => ({ extractTrailerSource }));
@@ -126,6 +125,7 @@ describe("listes relayées", () => {
     await prepareTrailer("Way9Dexny3w");
     expect(peekTrailer("Way9Dexny3w")).toMatchObject({ kind: "hls", heights: [1080, 720] });
   });
+
 
   it("réextrait une fois quand googlevideo ne sert plus le maître", async () => {
     vi.useFakeTimers({ now: Date.now(), toFake: ["Date"] });

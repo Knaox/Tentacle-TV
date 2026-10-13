@@ -15,7 +15,8 @@
 import {
   TRAILER_PREVIEW_NO_TRAILER_TTL_MS, TRAILER_PREVIEW_UNAVAILABLE_TTL_MS,
 } from "../../../trailers/trailerPreview";
-import { peekTrailer, prepareTrailer, resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
+import { resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
+import { peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
 import type { ExtractionOptions } from "../ytExtract";
 import { fetchTitleVideos } from "../titleVideos";
 import { previewCandidates } from "./previewCandidates";
@@ -57,10 +58,22 @@ function refuse(key: string, error: Refusal): PreviewOutcome {
   return { kind: "refused", error };
 }
 
-/** La vidéo se laisse-t-elle lire : extraite, puis son maître et ses premières listes lus ? */
+/** Le départ du lecteur au plus haut — listes et premiers segments — lu d'avance, sans rien attendre. */
+function warm(ytId: string): void {
+  void warmStart(ytId).catch(() => undefined);
+}
+
+/**
+ * La vidéo se laisse-t-elle lire : extraite, puis son maître et ses premières
+ * listes lus ? Le départ au plus haut part EN MÊME TEMPS (même maître, lu une
+ * fois) et ne retarde pas la réponse : le lecteur trouvera ses premiers
+ * segments en mémoire, ou en route.
+ */
 async function playable(ytId: string): Promise<ResolvedTrailer | null> {
   const resolved = await resolveTrailer(ytId, PREVIEW_EXTRACTION);
-  return resolved && (await prepareTrailer(ytId, PREVIEW_EXTRACTION)) ? resolved : null;
+  if (!resolved) return null;
+  warm(ytId);
+  return (await prepareTrailer(ytId, PREVIEW_EXTRACTION)) ? resolved : null;
 }
 
 function found(key: string, ytId: string, resolved: ResolvedTrailer, started: number, how: string): PreviewOutcome {
@@ -104,7 +117,11 @@ export async function decidePreview(title: PreviewTitle, lang: string | undefine
   const known = decisions.get(key);
   if (known?.kind === "refused") return known;
   const ready = known?.kind === "found" ? peekTrailer(known.ytId) : null;
-  if (known?.kind === "found" && ready) return { kind: "found", ytId: known.ytId, resolved: ready };
+  if (known?.kind === "found" && ready) {
+    // Ses premiers segments, s'ils ne sont plus en mémoire, repartent pour ce lecteur-ci.
+    warm(known.ytId);
+    return { kind: "found", ytId: known.ytId, resolved: ready };
+  }
   const pending = inflight.get(key);
   if (pending) return pending;
   if (inflight.size >= MAX_PENDING_DECISIONS) return { kind: "limited", retryAfterS: BUSY_RETRY_S };

@@ -15,10 +15,12 @@ const { relay, fetchTitleVideos } = vi.hoisted(() => ({
     peekTrailer: vi.fn<(ytId: string) => ResolvedTrailer | null>(),
     resolveTrailer: vi.fn<(ytId: string, options?: unknown) => Promise<ResolvedTrailer | null>>(),
     prepareTrailer: vi.fn<(ytId: string, options?: unknown) => Promise<boolean>>(),
+    warmStart: vi.fn<(ytId: string) => Promise<void>>(),
   },
   fetchTitleVideos: vi.fn<(id: number, type: string, lang?: string) => Promise<TitleVideos>>(),
 }));
-vi.mock("../trailerRelay", () => relay);
+vi.mock("../trailerRelay", () => ({ resolveTrailer: relay.resolveTrailer }));
+vi.mock("../trailerPrepare", () => ({ peekTrailer: relay.peekTrailer, prepareTrailer: relay.prepareTrailer, warmStart: relay.warmStart }));
 vi.mock("../titleVideos", () => ({ fetchTitleVideos }));
 
 import { decidePreview, resetPreviewDecisions } from "./previewDecision";
@@ -45,6 +47,7 @@ beforeEach(() => {
   resetPreviewDecisions();
   for (const mock of [...Object.values(relay), fetchTitleVideos]) mock.mockReset();
   relay.peekTrailer.mockReturnValue(null);
+  relay.warmStart.mockResolvedValue(undefined);
   vi.spyOn(console, "log").mockImplementation(() => undefined);
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
 });
@@ -62,6 +65,8 @@ describe("essais successifs", () => {
     expect(relay.resolveTrailer.mock.calls.map(([id]) => id)).toEqual(["aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc"]);
     expect(relay.resolveTrailer).toHaveBeenCalledWith("aaaaaaaaaaa", { priority: "preview", budgetMs: 20_000 });
     expect(fetchTitleVideos).toHaveBeenCalledWith(1, "movie", "fr");
+    // Le départ au plus haut part dès qu'une vidéo s'extrait, en même temps que sa vérification.
+    expect(relay.warmStart.mock.calls).toEqual([["bbbbbbbbbbb"], ["ccccccccccc"]]);
   });
 
   it("trois échecs : « aucune lisible », la quatrième n'est jamais essayée", async () => {
@@ -81,6 +86,8 @@ describe("mémoire de la décision", () => {
     expect(await decidePreview(title(), "fr", "bob")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
     expect(fetchTitleVideos).toHaveBeenCalledTimes(1);
     expect(relay.resolveTrailer).toHaveBeenCalledTimes(1);
+    // Ses premiers segments repartent pour ce lecteur-ci (sans effet s'ils sont encore en mémoire).
+    expect(relay.warmStart).toHaveBeenLastCalledWith("aaaaaaaaaaa");
     // Passé l'échéance, la décision se reprend.
     vi.setSystemTime(NOW + 5 * HOUR + 1);
     await decidePreview(title(), "fr", "alice");
