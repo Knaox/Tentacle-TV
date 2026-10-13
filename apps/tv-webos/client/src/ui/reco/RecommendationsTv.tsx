@@ -1,7 +1,7 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  recoRowTitle, useMediaItem, useRecoPage, useRecoSettings, type RecoRowItem,
+  recoRowTitle, useMediaItem, useRecoPageVisit, useRecoSettings, type RecoRowItem,
 } from "@tentacle-tv/api-client";
 import { tvRecoHero, tvRecoNotice, tvRecoShelves, type TvRecoShelf } from "@tentacle-tv/tv-core";
 import { PageTransition } from "@/components/PageTransition";
@@ -30,7 +30,7 @@ export function RecommendationsTv() {
   const { t } = useTranslation("reco");
   const settings = useRecoSettings();
   const settingsReady = settings.isSuccess || settings.isError;
-  const { data: page, isError } = useRecoPage(settings.data?.providerFilter ?? EMPTY, { enabled: settingsReady });
+  const { data: page, isError } = useRecoPageVisit(settings.data?.providerFilter ?? EMPTY, { enabled: settingsReady });
 
   const hero = useMemo(() => tvRecoHero(page), [page]);
   const shelves = useMemo(() => tvRecoShelves(page, { hero }), [page, hero]);

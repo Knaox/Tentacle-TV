@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useRecoPage, useRecoSettings, type HomeRowDescriptor, type RecoRowItem } from "@tentacle-tv/api-client";
+import { useRecoPageVisit, useRecoSettings, type HomeRowDescriptor, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useItemsByIds } from "../items/useItemsByIds";
 
@@ -26,7 +26,7 @@ export function useHomeRecoSource(layout: readonly HomeRowDescriptor[]): HomeRec
   // Le filtre du compte d'abord : sans cette garde, la page « toutes
   // plateformes » partirait avant la page filtrée (cf. TVRecoRow).
   const settingsReady = settings.isSuccess || settings.isError;
-  const { data: page } = useRecoPage(settings.data?.providerFilter ?? EMPTY, { enabled: settingsReady && wanted.length > 0 });
+  const { data: page } = useRecoPageVisit(settings.data?.providerFilter ?? EMPTY, { enabled: settingsReady && wanted.length > 0 });
 
   const served = useMemo(() => {
     const rows = page?.rows ?? [];

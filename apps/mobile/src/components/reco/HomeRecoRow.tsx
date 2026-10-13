@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { recoRowTitle, useRecoPage, useRecoSettings } from "@tentacle-tv/api-client";
+import { recoRowTitle, useRecoPageVisit, useRecoSettings } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { FadeIn } from "@/components/ui";
 import { homeRowFadeDelay } from "@/components/home/homeRowFade";
@@ -35,7 +35,7 @@ export function HomeRecoRow({ rowKey, index, filterChip, canOpen, onItemPress, o
   // fois ~150 Ko). En erreur (vieux serveur) : page « toutes plateformes ».
   const settingsReady = settings.isSuccess || settings.isError;
   const providerFilter = settings.data?.providerFilter ?? EMPTY;
-  const { data: page } = useRecoPage(providerFilter, { enabled: settingsReady });
+  const { data: page } = useRecoPageVisit(providerFilter, { enabled: settingsReady });
   const row = page?.rows.find((r) => r.key === rowKey);
   if (!row) return null;
   const { key, params } = recoRowTitle(row);

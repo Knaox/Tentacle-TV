@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { reasonToText, recoRowTitle, useRecoPage, useRecoSettings, type RecoRowItem } from "@tentacle-tv/api-client";
+import { reasonToText, recoRowTitle, useRecoPageVisit, useRecoSettings, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { tvRecoHero, tvRecoNotice, tvRecoShelves, type TvRecoNotice } from "@tentacle-tv/tv-core";
 import type { ForYouShelfModel } from "../../redesign/screens/forYou/ForYouView";
@@ -40,7 +40,7 @@ export function useForYouModels(): ForYouModels {
   // Le filtre du compte d'abord : sans cette garde, la page « toutes
   // plateformes » partirait avant la page filtrée (cf. TVRecoRow).
   const settingsReady = settings.isSuccess || settings.isError;
-  const { data: page, isError, refetch } = useRecoPage(settings.data?.providerFilter ?? EMPTY, { enabled: settingsReady });
+  const { data: page, isError, refetch } = useRecoPageVisit(settings.data?.providerFilter ?? EMPTY, { enabled: settingsReady });
 
   const heroReco = useMemo(() => tvRecoHero(page), [page]);
   const rawShelves = useMemo(() => tvRecoShelves(page, { hero: heroReco }), [page, heroReco]);

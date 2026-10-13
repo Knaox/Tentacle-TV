@@ -1,5 +1,5 @@
 import { useMemo, useRef } from "react";
-import { useRecoPage, useRecoSettings, selectHeroSlides, type RecoRowItem } from "@tentacle-tv/api-client";
+import { useRecoPageVisit, useRecoSettings, selectHeroSlides, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useItemsByIdsState } from "../items/useItemsByIds";
 
@@ -23,7 +23,7 @@ export function useHomeRecoHero(enabled: boolean): HomeRecoHero {
   const settings = useRecoSettings();
   // Le filtre du compte d'abord (cf. `useHomeRecoSource`) : la page non filtrée ne part jamais avant.
   const settingsReady = settings.isSuccess || settings.isError;
-  const page = useRecoPage(settings.data?.providerFilter ?? EMPTY, { enabled: enabled && settingsReady });
+  const page = useRecoPageVisit(settings.data?.providerFilter ?? EMPTY, { enabled: enabled && settingsReady });
   const seed = useRef(Math.random());
   const drawn = useMemo(() => {
     const forYou = page.data?.rows.find((row) => row.key === "forYou")?.items ?? [];

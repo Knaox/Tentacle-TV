@@ -27,7 +27,7 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
  *
  * Contrat : tout arrive résolu. Alimenté plus tard par `useTVHomeRows`
  * (ordre des rangées), `useResumeItems` / `useFeaturedItems` (héros),
- * `useNextUp`, `useWatchlist`, `useLatestItems`, `useRecoPage` (cartes),
+ * `useNextUp`, `useWatchlist`, `useLatestItems`, `useRecoPageVisit` (cartes),
  * `useCardMarkers` (marqueurs) et `paletteFromBlurHash` (lumière).
  *
  * Le héros et chaque rangée sont des SECTIONS (`FocusSection`) : HAUT / BAS

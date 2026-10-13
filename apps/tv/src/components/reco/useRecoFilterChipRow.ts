@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { firstServedRecoRowKey, useRecoPage, useRecoSettings } from "@tentacle-tv/api-client";
+import { firstServedRecoRowKey, useRecoPageVisit, useRecoSettings } from "@tentacle-tv/api-client";
 import type { HomeRowDescriptor } from "@tentacle-tv/api-client";
 
 const EMPTY: number[] = [];
@@ -15,7 +15,7 @@ export function useRecoFilterChipRow(rows: readonly HomeRowDescriptor[]): string
   const filter = settings.data?.providerFilter ?? EMPTY;
   const settingsReady = settings.isSuccess || settings.isError;
   const wanted = filter.length > 0 && rows.some((row) => row.key.startsWith("reco:"));
-  const { data: page } = useRecoPage(filter, { enabled: settingsReady && wanted });
+  const { data: page } = useRecoPageVisit(filter, { enabled: settingsReady && wanted });
   return useMemo(
     () => (wanted && page ? firstServedRecoRowKey(rows, page.rows.map((row) => row.key)) : null),
     [wanted, page, rows],

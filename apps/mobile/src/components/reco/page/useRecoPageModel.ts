@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect } from "expo-router";
 import {
-  heroSelectionFromRows, invalidateRecoQueries, useRecoPage, useRecoSettings, useRequestedTitles, useTentacleConfig, useUserId,
+  heroSelectionFromRows, invalidateRecoQueries, useRecoPageVisit, useRecoSettings, useRequestedTitles, useTentacleConfig, useUserId,
 } from "@tentacle-tv/api-client";
 import { hasColdStartAck, markColdStartAck } from "@/reco/coldStartAck";
 
@@ -20,6 +20,10 @@ export type ColdStartPhase = "auto" | "hold" | "dismissed";
  * graine par montage, et le démarrage à froid COLLANT : une fois affiché
  * (« hold »), il ne cède l'écran qu'au bouton — jamais à un refetch —, et il
  * ne s'impose qu'une fois par compte et par appareil (accusé).
+ *
+ * La page est celle de la VISITE (`useRecoPageVisit`, règle 5 de
+ * docs/RECO-POUR-VOUS.md) : un `reco:update` ne la remplace pas sous les yeux,
+ * seul le titre refusé s'en va ; tirer pour rafraîchir affiche la page relue.
  */
 export function useRecoPageModel() {
   const qc = useQueryClient();
@@ -29,7 +33,7 @@ export function useRecoPageModel() {
   // En erreur (vieux serveur) : page « toutes plateformes ».
   const settingsReady = settings.isSuccess || settings.isError;
   const providerFilter = settings.data?.providerFilter ?? EMPTY;
-  const query = useRecoPage(providerFilter, { enabled: settingsReady });
+  const query = useRecoPageVisit(providerFilter, { enabled: settingsReady });
   const page = query.data;
 
   // Un titre demandé dans la page de l'extension (empilée par-dessus) sort

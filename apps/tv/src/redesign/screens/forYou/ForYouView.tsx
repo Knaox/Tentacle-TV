@@ -27,7 +27,7 @@ import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
  * prend la lumière de la carte focalisée.
  *
  * Contrat — tout arrive résolu :
- * - `hero` : `tvRecoHero(useRecoPage(useRecoSettings().providerFilter))`
+ * - `hero` : `tvRecoHero(useRecoPageVisit(useRecoSettings().providerFilter))`
  *   (tv-core), l'œuvre par `useMediaItem`, `kicker` = `reco:heroKicker`,
  *   `reason` = la première raison verbalisée (`reasonToText`) ;
  * - `shelves` : `tvRecoShelves(page, { hero })`, titres par `recoRowTitle`,
