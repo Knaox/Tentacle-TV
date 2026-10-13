@@ -1,6 +1,7 @@
 /**
  * La Famille — le CONTRAT (v2) entre le serveur et les clients : limites,
- * réponses et corps. La TV : `familyTvContract.ts` ; codes d'erreur, temps
+ * réponses et corps. La TV : `familyTvContract.ts` ; « Qui regarde ? » sur le
+ * bureau : `familyPickerContract.ts` ; codes d'erreur, temps
  * réel et notifications : `familyProtocol.ts` ; routes et appelants :
  * `familyRoutes.ts` ; règles pures : `familyRules.ts` et `familyRights.ts`.
  * Carnet complet : docs/FAMILLE.md.
@@ -9,7 +10,7 @@
  * backend ne dépend pas de `@tentacle-tv/shared`). On modifie ICI, on recopie
  * là-bas :
  *
- *   cp packages/shared/src/family/family{Contract,TvContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
  *
  * UNE famille par compte, PARTAGÉE par tous ses membres (v2). Trois rôles :
  * - le PROPRIÉTAIRE l'a créée : il invite, annule une invitation, retire un

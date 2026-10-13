@@ -23,6 +23,11 @@
  *   pour l'échange (`tvEnroll`).
  * - `admin` : un administrateur, en session personnelle.
  *
+ * Une session de profil du BUREAU (`familyPickerContract.ts`) n'est AUCUN de
+ * ces appelants : elle regarde, rien de la Famille ne lui répond (pas même
+ * `tvProfile`, `ownerTv` ni `memberTv`). « Qui regarde ? » s'y joue par la
+ * session personnelle de l'appareil (`picker*`).
+ *
  * L'acteur se déduit TOUJOURS du jeton, jamais d'un identifiant du corps ou
  * de la query. Aucune route ne prend d'identifiant de famille pour AGIR :
  * elles visent LA famille du porteur (il n'en a qu'une, propriétaire ou
@@ -171,6 +176,31 @@ export const FAMILY_ROUTES = {
     path: "/api/family/tv/manage/unlock",
     callers: ["tvProfile"],
     rateLimit: { max: 20, windowMs: MINUTE },
+  },
+  // « Qui regarde ? » hors des TV (le bureau, `familyPickerContract.ts`) : la
+  // SESSION PERSONNELLE de l'appareil seulement — jamais une session de profil,
+  // jamais « voir en tant que » ; aucun PIN dans une URL.
+  /** `?platform=` → `PickerProfilesDto`. La famille du compte, et le profil en
+   *  cours sur CET appareil. */
+  pickerProfiles: { method: "GET", path: "/api/family/picker/profiles", callers: ["personal"] },
+  /** `PickProfileBody` → `PickedProfileDto`. SON profil : la session personnelle
+   *  reprend, derrière SON PIN ; un autre : une session de profil (règles des TV)
+   *  qui ferme la précédente de cet appareil. */
+  pickProfile: {
+    method: "POST",
+    path: "/api/family/picker/sessions",
+    callers: ["personal"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
+  /** → `PickerPreferenceDto`. « Qui regarde ? » au lancement, par plateforme. */
+  pickerPreference: { method: "GET", path: "/api/family/picker/preference", callers: ["personal"] },
+  /** `SetPickerPreferenceBody` → `PickerPreferenceDto`. Une préférence du COMPTE :
+   *  elle vaut pour tous ses appareils de cette plateforme. */
+  setPickerPreference: {
+    method: "PUT",
+    path: "/api/family/picker/preference",
+    callers: ["personal"],
+    rateLimit: { max: 30, windowMs: MINUTE },
   },
   /** → `FamilySwitches`. */
   adminSwitches: { method: "GET", path: "/api/admin/family", callers: ["admin"] },

@@ -37,6 +37,15 @@ describe("table des routes", () => {
     expect(withLegacy).toEqual(["tvEnroll"]);
   });
 
+  it("« Qui regarde ? » du bureau : la session personnelle seule — jamais un profil, une TV ni « voir en tant que »", () => {
+    for (const name of ["pickerProfiles", "pickProfile", "pickerPreference", "setPickerPreference"] as const) {
+      expect(FAMILY_ROUTES[name].callers).toEqual(["personal"]);
+      expect(FAMILY_ROUTES[name].path).not.toContain(":");
+    }
+    expect(FAMILY_ROUTES.pickProfile.method).toBe("POST");
+    expect(FAMILY_ROUTES.pickProfile.rateLimit).toEqual({ max: 30, windowMs: 60_000 });
+  });
+
   it("remplit et encode les paramètres, refuse un paramètre manquant", () => {
     expect(familyPath("deleteGuest", { userId: "a/b" })).toBe("/api/family/guests/a%2Fb");
     expect(familyPath("overview")).toBe("/api/family");

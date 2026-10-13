@@ -9,6 +9,10 @@ export {
 export {
   enrollTvProfiles, fetchTvProfiles, openTvProfileSession, unlockTvManage, endTvToken, type TvFamilyCall,
 } from "../family/familyTvApi";
+// « Qui regarde ? » sur le bureau : toujours le jeton de la session PERSONNELLE.
+export {
+  fetchPickerProfiles, pickFamilyProfile, fetchPickerPreference, setPickerPreference, type PickerCall,
+} from "../family/familyPickerApi";
 export {
   FAMILY_KEY, FAMILY_OVERVIEW_KEY, familyCandidatesKey, useFamilyOverview, useFamilyCandidates,
   useCreateFamilyGuest, useDeleteFamilyGuest, useSetFamilyGuestPin, useSetOwnFamilyPin, useRemoveFamilyMember, useSetFamilyMemberRights, useSetFamilyGuestRights,

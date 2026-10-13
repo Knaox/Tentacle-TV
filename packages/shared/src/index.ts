@@ -174,12 +174,14 @@ export * from "./segmentPlugins/segmentPluginsContract";
 // lecture d'un refus par les clients.
 export * from "./family/familyContract";
 export * from "./family/familyTvContract";
+export * from "./family/familyPickerContract";
 export * from "./family/familyProtocol";
 export * from "./family/familyRoutes";
 export * from "./family/familyRules";
 export * from "./family/familyRights";
 export * from "./family/familyLabels";
 export * from "./family/familyClient";
+export * from "./family/familyPickerClient";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
