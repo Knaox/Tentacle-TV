@@ -71,6 +71,9 @@ export const SERVER_CAPABILITIES = {
   /** « Réanalyser maintenant » : une vraie analyse demandée à Jellyfin par la clé d'administration
    *  (`POST /api/admin/library/rescan` — un titre, ou toutes les bibliothèques). */
   "admin.libraryRescan": "1.27.0",
+  /** La rangée « Films pour vous » de la page reco (`?themes=1`, clé de rangée
+   *  `forYouMovies`), que l'accueil peut aussi épingler. */
+  "reco.moviesRow": "1.27.1",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

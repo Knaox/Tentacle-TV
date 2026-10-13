@@ -55,6 +55,8 @@ export default {
   v1_28_0_pipLaunch_body: "Lancez un film ou un épisode pendant l'incrustation : il s'y charge et s'y joue, et la page où vous êtes ne bouge pas. L'épisode suivant s'y enchaîne aussi.",
   v1_28_0_watched_title: "« Vu » se coche sous le curseur",
   v1_28_0_watched_body: "Sur l'accueil, « Vu » se coche dès le clic, et la carte reste à sa place tant que la souris est sur la rangée : elle ne s'en va qu'une fois le pointeur parti.",
+  v1_28_2_forYou_title: "« Pour vous », refaite",
+  v1_28_2_forYou_body: "La page s'ouvre sur « À la une ce soir » : le titre qui vous correspond le mieux, la raison de ce choix, et de quoi le lancer tout de suite. Chaque carte dit pourquoi elle est là, « Films pour vous » rassemble les films (et s'ajoute à l'accueil), et plus rien ne bouge sous vos yeux quand vous écartez un titre.",
 
   // 1.26.0
   v1_26_0_family_title: "La Famille",

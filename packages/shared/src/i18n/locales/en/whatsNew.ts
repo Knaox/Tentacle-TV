@@ -51,6 +51,8 @@ export default {
   v1_28_0_pipLaunch_body: "Start a movie or an episode during picture-in-picture: it loads and plays right there, and the page you're on doesn't move. The next episode plays there too.",
   v1_28_0_watched_title: "“Watched” checks under your cursor",
   v1_28_0_watched_body: "On Home, “Watched” checks the moment you click it, and the card stays put while your mouse is on the row: it only leaves once the pointer moves away.",
+  v1_28_2_forYou_title: "“For you”, redesigned",
+  v1_28_2_forYou_body: "The page opens on “Tonight's pick”: the title that matches you best, why it was picked, and everything to start it right away. Every card says why it's there, “Movies for you” gathers the movies (and can be added to your home page), and nothing shifts under your eyes anymore when you dismiss a title.",
 
   // 1.26.0
   v1_26_0_family_title: "Family",

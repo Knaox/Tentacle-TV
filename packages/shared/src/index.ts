@@ -284,3 +284,7 @@ export * from "./viewingStats/statsFormatter";
 export * from "./viewingStats/compat";
 export * from "./viewingStats/titleReasons";
 export * from "./viewingStats/publicStats";
+// La page « Pour vous » : le contrat de /api/reco/page (miroir backend), et ce
+// qu'il dit de chaque titre — sa raison STRUCTURÉE (que le client met en mots),
+// sa correspondance, le thème d'une rangée et le titre « à la une ».
+export * from "./reco/recoPageTypes";
