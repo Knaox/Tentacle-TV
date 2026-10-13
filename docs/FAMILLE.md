@@ -7,17 +7,17 @@ que le serveur garantit). Une règle, une source :
 
 | Quoi | Où |
 |------|----|
-| Limites, réponses, corps | `packages/shared/src/family/familyContract.ts` ; la TV : `familyTvContract.ts` |
+| Limites, réponses, corps | `packages/shared/src/family/familyContract.ts` ; la TV : `familyTvContract.ts` ; le bureau : `familyPickerContract.ts` |
 | Codes d'erreur, temps réel, notifications | `packages/shared/src/family/familyProtocol.ts` |
 | Routes et appelants permis | `packages/shared/src/family/familyRoutes.ts` (`FAMILY_ROUTES`) |
 | Règles pures (PIN, capacité, invitations, noms) | `packages/shared/src/family/familyRules.ts` |
 | Droits et candidats (v2) | `packages/shared/src/family/familyRights.ts` (`familyRightsOf`, `canManageGuest`, `familyCandidates`) |
 | Lecture d'un refus, clés i18n (clients seulement) | `packages/shared/src/family/familyLabels.ts`, espace i18n `family` |
-| Ce que les écrans montrent (places, gestes permis, affiche, couleurs) | `packages/shared/src/family/familyClient.ts` (clients seulement) |
+| Ce que les écrans montrent (places, gestes permis, affiche, couleurs) | `packages/shared/src/family/familyClient.ts` ; le bureau : `familyPickerClient.ts` (clients seulement) |
 | Miroirs du serveur (octet pour octet, `familyMirror.test.ts`) | `apps/backend/src/family/` |
 | Schémas d'entrée (zod) | `apps/backend/src/services/family/familySchemas.ts` |
-| Appels et crochets | api-client `family/familyApi.ts`, `family/familyTvApi.ts`, `hooks/useFamily.ts`, `hooks/useFamilyLive.ts` |
-| Tables | `schema.prisma` › `Family`, `FamilyMember`, `FamilyInvitation`, `ProfilePin`, `ProfilePinAttempt`, colonnes de `PairedDevice` ; `core-init.sql` (additif) |
+| Appels et crochets | api-client `family/familyApi.ts`, `family/familyTvApi.ts`, `family/familyPickerApi.ts` (bureau, jeton personnel explicite), `hooks/useFamily.ts`, `hooks/useFamilyLive.ts` |
+| Tables | `schema.prisma` › `Family`, `FamilyMember`, `FamilyInvitation`, `ProfilePin`, `ProfilePinAttempt`, colonnes de `PairedDevice` (`platform` : l'hôte d'un bureau, migration `0003`) ; `core-init.sql` (additif) |
 | Services du serveur | `apps/backend/src/services/family/` (un fichier par sujet, voir « Côté serveur ») |
 | Routes | `apps/backend/src/routes/family/` (posées d'après `FAMILY_ROUTES` par `familyRouting.ts`) |
 
@@ -209,6 +209,111 @@ PIN »).
    `unlockTvManage` (SON PIN s'il en a un), puis les routes `ownerTv` ou
    `memberTv` avec le jeton de session, selon `rights`.
 
+## Le bureau : « Qui regarde ? » et le changement rapide (serveur 1.28.0)
+
+Décisions du 14/10 (lot de nuit, à valider par Damien). Contrat :
+`familyPickerContract.ts` ; routes `picker*` de `FAMILY_ROUTES` ; capacité
+`family.desktopProfiles` — sans elle, le bureau ne montre rien de tout ceci.
+
+### Le principe
+
+Sur le bureau, la **session personnelle** (le jeton Jellyfin du compte, celle
+d'avant) reste la RACINE : elle seule liste les profils et en choisit un
+(`personal` ; jamais une session de profil, une TV ni « voir en tant que »).
+
+- **SON profil** : la session personnelle continue — droits complets,
+  administration comprise — APRÈS son PIN s'il en a un (`checkProfilePin` :
+  le compteur et les blocages des TV, partagés). Rien n'est frappé : la
+  réponse est `{ personal: true }` et la session de profil de l'appareil, s'il
+  y en avait une, est fermée (`closed`).
+- **Un AUTRE profil** de la famille du compte — la même liste que sur sa TV
+  (`visibleProfiles`), propriétaire, membres, invités — : une **session de
+  profil** aux règles des TV (PIN jugé par le serveur, `profileSessionLimits`,
+  invité sans Watch Together, tickets, partage ni extensions sauf « peut
+  demander »), une seule par appareil (la précédente `replaced`).
+- **Limite assumée (SEC-F-51)** : le PIN de SON profil est un rideau
+  d'interface sur un jeton que l'ordinateur détient déjà. Le serveur le juge
+  (compteur, blocage), mais aucune garde serveur n'en dépend : quelqu'un qui
+  lit le stockage de l'application sur l'ordinateur contourne ce rideau, comme
+  avant les profils. Le PIN d'un AUTRE profil, lui, est une vraie barrière :
+  sans lui, aucun jeton.
+
+### L'hôte de l'appareil
+
+Les sessions de profil d'un bureau sont les lignes ENFANTS d'un **hôte** :
+une ligne `paired_devices` sans parent, `platform = desktop`, au compte de la
+session personnelle, née au premier autre profil choisi
+(`familyPickerHosts.ts`). Son empreinte est DÉRIVÉE du jeton personnel
+(`sha256("tentacle:family-picker-host:" + jeton)`) : aucun jeton ne l'ouvre,
+seul le porteur de la session personnelle l'atteint, et rien du corps
+(`deviceName` compris) ne vise l'appareil d'un autre compte. Deux bureaux du
+même compte : deux hôtes, deux sessions.
+
+- Il tombe, ses sessions avec, à la **déconnexion du compte sur l'appareil**
+  (`POST /api/auth/logout` au jeton personnel), à la suppression du compte, à
+  l'époque de jumelage, et au balayage s'il n'a plus vu sa session
+  personnelle depuis **trente jours** (`PICKER_HOST_IDLE_MS` : session du
+  compte expirée, ordinateur disparu). Le bureau présente sa session
+  personnelle à chaque lancement (la liste) : l'abandon recule.
+- Les coupures de la Famille le traitent comme une TV du compte
+  (`familySessions.ts`) : un membre qui part y perd les autres profils, son
+  profil quitte les bureaux des autres ; invité supprimé, PIN changé,
+  interrupteurs, dissolution : comme sur les TV.
+- Il n'est pas un appareil jumelé : ni dans « mes appareils », ni dans la
+  liste de l'administration.
+
+### La session de profil du bureau regarde
+
+- **Aucune route de la Famille** ne lui répond — ni la vue d'ensemble, ni son
+  PIN, ni « Gérer les profils », ni les routes des TV (403
+  `family.personal_session_required`, `familyCaller.ts`) : la Famille se gère
+  depuis la session personnelle de chacun.
+- **Aucun jeton Jellyfin** ne lui est remis : `/api/config/streaming` répond
+  `enabled: false` (avec l'identité d'appareil à adopter). Sinon, un membre
+  ouvrant sans PIN le profil d'un administrateur repartirait avec un vrai
+  jeton administrateur. Tout passe par le proxy : clé prêtée, bornée à SON
+  compte (`userScope`, chemin et query) et aux écritures d'un appareil
+  (`deviceWrites`) ; une requête de catalogue SANS `userId` reçoit le sien
+  (`deviceUserScope.ts`, plateforme signée dans le jeton) — sans quoi Jellyfin
+  répondait pour la clé : toute la médiathèque, sans les droits du profil.
+- Comme sur une TV, le serveur frappe pour elle un jeton Jellyfin PROPRE
+  (Quick Connect), qu'il garde : reports de lecture, canal de session,
+  tableau de bord de Jellyfin (la lecture y paraît au nom du profil, sur le
+  nom de l'appareil). Sa coupure le supprime chez Jellyfin (`DELETE /Devices`).
+- Ses portes, toutes celles d'un jeton d'appareil : `Bearer` partout, proxy
+  (`api_key` des flux de mpv), socket (`family:profile-ended`, fermeture 4010),
+  `/api/auth/refresh` (401 `profileEnded` une fois finie), `POST
+  /api/pair/self/revoke` (la ferme). Refusés (`profileSessionLimits`) :
+  téléchargements, push, jumelage, compte, comptes externes, invitations.
+
+### « Qui regarde ? » au lancement
+
+Une préférence du **COMPTE**, par **plateforme** (`FAMILY_PICKER_PLATFORMS`,
+liste FERMÉE : `desktop`), **désactivée** par défaut : activée sur un
+ordinateur, elle vaut pour tous ceux du compte ; les autres appareils
+l'apprennent par `family:update`. Rangée dans `server_config`
+(`user_profile_picker_<compte>`, la liste des plateformes actives ; rien
+d'actif = aucune ligne). Sans objet sous deux profils (`pickerRequired`).
+Le compte de démonstration ne la règle pas, et n'ouvre que son propre profil ;
+un compte d'invité (mot de passe réinitialisé par un administrateur) n'a pas
+de « Qui regarde ? » (`family.guest_account`).
+
+### La séquence du bureau (pour le client)
+
+1. Capacité `family.desktopProfiles` absente : rien ne change.
+2. Au lancement, `GET /api/family/picker/profiles?platform=desktop` au jeton
+   PERSONNEL ; `pickerLaunch` (shared) dit quoi faire : « Qui regarde ? » (la
+   préférence, ou l'appareil sur un autre profil dont l'application n'a plus
+   le jeton — jamais le compte sans son PIN), reprendre la session de profil
+   gardée, ou la session personnelle.
+3. Choisir : `POST /api/family/picker/sessions` `{ platform, profileId, pin?,
+   deviceName? }` → `{ personal: true }` ou `{ personal: false, token }` ; le
+   jeton de profil devient celui de l'application, le jeton personnel reste
+   À PART (jamais présenté pendant une session de profil, sauf pour ces routes).
+4. `family:profile-ended` ou 401 `profileEnded` : oublier le jeton de profil,
+   revenir à « Qui regarde ? ».
+5. Se déconnecter du compte : `POST /api/auth/logout` au jeton personnel.
+
 ## Qui agit : toujours le porteur du jeton
 
 L'acteur se déduit du jeton, JAMAIS d'un identifiant du corps ou de la query
@@ -253,7 +358,9 @@ demander » : alors il les utilise à SON PROPRE NOM (voir ci-dessous) ; un
 MEMBRE garde ses extensions sous SON identité, ses demandes sont les siennes. Une seule liste de préfixes refusés
 (`services/family/profileSessionLimits.ts`), appliquée par `requireAuth` et
 `requireAdmin` — donc aussi aux routes des extensions : 403
-`family.personal_session_required` ou `family.guest_account`.
+`family.personal_session_required` ou `family.guest_account`. Une session de
+profil du BUREAU suit les mêmes limites et n'a, de plus, aucune route de la
+Famille (voir « Le bureau »).
 
 ### L'invité et les extensions (« peut demander »)
 
@@ -390,6 +497,9 @@ Le PIN de chacun protège aussi SA gestion des profils sur les TV.
 - **Administration** : les interrupteurs vivent dans Admin › Utilisateurs (un
   réglage, pas une alerte) ; les sessions en cours étiquettent l'invité
   (`FamilyGuestTag`).
+- **« Qui regarde ? » et le changement rapide de profil** : le bureau
+  seulement, face à un serveur qui déclare `family.desktopProfiles` — voir
+  « Le bureau ».
 - Éprouvé en HTTP sur une IP du réseau : rien n'y dépend de `crypto.subtle`,
   `crypto.randomUUID` ni du presse-papiers ; le cookie de session part sans
   `Secure` sur HTTP.
@@ -436,6 +546,8 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 | Son propre PIN (session personnelle ou session de profil) | `familyOwnPin.ts` |
 | Vue d'ensemble, candidats | `familyOverview.ts`, `familyCandidates.ts` |
 | Apple TV : échange ; profils et sessions | `familyTvEnroll.ts`, `familyTv.ts` |
+| Ouvrir, fermer la session de profil d'un appareil (TV, bureau) | `familyProfileSession.ts` |
+| Le bureau : « Qui regarde ? », son hôte, la préférence « au lancement » | `familyPicker.ts`, `familyPickerHosts.ts`, `familyPickerPreference.ts` |
 | Garde d'appelant des routes | `familyCaller.ts` |
 | Périmètre des sessions de profil | `profileSessionLimits.ts` |
 | Balayage (10 min) | `familySweep.ts` |
@@ -513,6 +625,13 @@ une invitation n'y paraît que par le début de son identifiant.
   `pluginRequests` (la capacité), `familyOwnPinTv` (son PIN depuis sa
   session de profil), `familyGuestCleanup` (un invité supprimé
   l'est vraiment : Jellyfin qui refuse ou se tait, plantage, création ratée).
+- Le bureau : `familyPicker` (liste, choix, PIN partagé avec les TV,
+  interrupteurs, deux bureaux), `familyPickerLifecycle` (déconnexion,
+  rafraîchissement, coupures de la Famille, balayage, listes d'appareils,
+  préférence), `configStreamingProfile` (aucun jeton Jellyfin), attaques
+  `famille-securite/familleBureau*.attack.test.ts` (SEC-F-46..53, proxy
+  compris). Banc réel (Jellyfin 10.11.11, 14/10) : parcours complet par
+  l'API — 48 vérifications, lecture d'un film par le proxy comprise.
 - Proxy : `apps/backend/test/jellyfinProxyDeviceWrites.test.ts` (vrai serveur
   amont).
 - Un VRAI Jellyfin jetable (10.11 et 12.1) : `test/jellyfin-compat/suites/
@@ -529,6 +648,9 @@ une invitation n'y paraît que par le début de son identifiant.
   titre).
   Absente : serveur d'avant — les clients ne montrent rien de la Famille ; pas
   de minServer imposé.
+- Le bureau : capacité `family.desktopProfiles` (`capabilities`, 1.28.0) ;
+  absente, le bureau garde sa seule session personnelle, sans « Qui
+  regarde ? » ni changement de profil.
 - Une TV d'avant les profils garde son jumelage ; les clients publiés ne
   voient aucun changement (champs ajoutés, jamais retirés).
 
@@ -543,7 +665,10 @@ depuis une TV qui n'est pas celle d'une personne de sa famille, obtenir un
 jeton pour un compte hors de sa famille, garder un accès après un retrait,
 gérer un invité qu'il n'a pas créé (membre), prêter à un invité plus de
 bibliothèques que son créateur n'en a, deviner un identifiant d'invitation,
-contourner un PIN, ni atteindre une fonction d'administration par un profil.
+contourner un PIN, ni atteindre une fonction d'administration par un profil —
+ni, sur un bureau, repartir avec un jeton Jellyfin d'un autre compte. Seule
+limite assumée : le PIN de SON propre profil sur un bureau, rideau
+d'interface sur une session que l'ordinateur détient déjà (« Le bureau »).
 La liste des comptes du serveur (cachés compris, décision de Damien) ne se
 rend qu'au propriétaire ou à un compte sans famille — jamais à un membre, un
 invité ni un jeton de TV non déverrouillé.
