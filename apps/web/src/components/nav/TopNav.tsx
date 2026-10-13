@@ -45,6 +45,8 @@ export function TopNav() {
   return (
     <header
       // La zone est transparente aux clics : seule la capsule en prend.
+      // `data-top-nav` : la mini-carte d'aperçu ne monte jamais sous la barre.
+      data-top-nav
       className="pointer-events-none fixed inset-x-0 z-40 h-[68px] px-3 md:px-4 lg:px-6"
       style={{ top: "var(--hote-bandeau)", paddingTop: "env(safe-area-inset-top, 0px)" }}
     >

@@ -1,0 +1,143 @@
+/* ── La mini-carte d'aperçu de bande-annonce ───────────────────────────────
+ *
+ * Importée par `CardPreview.tsx` seulement : la feuille n'existe que là où la
+ * mini-carte existe (jamais dans le client des téléviseurs LG, qui ne la
+ * compile pas). Les durées viennent de `previewMotion.ts`, posées en variables
+ * sur la mini-carte : une seule source pour la feuille et le crochet.
+ *
+ * Tout se joue sur le COMPOSITEUR (theme/cards.css, « Coût GPU » du dépôt) :
+ * `transform` et `opacity`, rien d'autre. L'ombre est posée une fois pour
+ * toutes et voyage avec la boîte — jamais une ombre animée. Aucun
+ * `backdrop-filter` : derrière la vidéo il n'y a rien à flouter, et devant
+ * elle, chaque image recopierait l'arrière-plan.
+ *
+ * PAS de `will-change` : la transition promeut la boîte le temps qu'elle
+ * dure, à l'échelle d'arrivée — un `will-change` posé au montage figerait la
+ * rastérisation à l'échelle de DÉPART (celle de la carte), et le titre
+ * resterait flou une fois la mini-carte posée. */
+
+.card-preview {
+  position: fixed;
+  /* L'échelle du dépôt : contenu 10-20, APERÇU 30, navigation et ses menus
+   * 40-50, transition d'ouverture de la fiche 60. La surface la plus
+   * éphémère passe sous tout ce qui s'ouvre par-dessus la page. */
+  z-index: 30;
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  transform: var(--preview-from);
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  cursor: pointer;
+  /* SORTIE (et état caché du préchargement) : elle se rend à sa carte, en
+   * accélération, plus vite qu'elle n'est venue. */
+  transition:
+    transform var(--preview-exit-ms) cubic-bezier(0.4, 0, 1, 1),
+    opacity var(--preview-exit-ms) cubic-bezier(0.4, 0, 1, 1);
+}
+
+.card-preview[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  /* ENTRÉE : l'opacité d'abord (le fondu croisé avec la carte, qui s'efface
+   * dessous), la taille ensuite, en décélération — elle arrive et se pose. */
+  transition:
+    transform var(--preview-enter-ms) var(--ease-out),
+    opacity var(--preview-enter-fade-ms) linear;
+}
+
+/* La boîte visible : arrondie, rognée, l'ombre de survol des cartes (deux
+ * couches, aucune bordure — cf. `--elev-card-hover`). */
+.card-preview-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #000;
+  box-shadow: var(--elev-card-hover);
+}
+
+.card-preview-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Le voile, en BAS seulement : il porte le titre, les étoiles et le plateau ;
+ * la vidéo reste nette au-dessus. Noir dans les deux schémas (posé sur média). */
+.card-preview-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    0deg,
+    rgba(var(--scrim-media-rgb), 0.9) 0%,
+    rgba(var(--scrim-media-rgb), 0.55) 26%,
+    rgba(var(--scrim-media-rgb), 0) 58%
+  );
+}
+
+/* Ce qui s'écrit sur la vidéo (titre, bouton du son) arrive quand la
+ * mini-carte est posée, et repart d'un coup avec elle. Le groupe du survol a
+ * sa propre montée (`.card-hover-rise`, theme/cards.css) : retardée ici. */
+.card-preview-chrome {
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+.card-preview[data-shown="true"] .card-preview-chrome {
+  opacity: 1;
+  transition: opacity 200ms var(--ease-out) var(--preview-content-delay-ms);
+}
+
+.card-preview[data-shown="true"] .card-hover-rise[data-shown="true"] {
+  transition-delay: var(--preview-content-delay-ms);
+}
+
+/* Le bouton du son : un rond de verre SANS flou (rien à flouter sur une
+ * vidéo qui bouge, et une passe de plus à chaque image) — un noir dense et un
+ * liseré suffisent à le détacher de n'importe quelle image. */
+.card-preview-mute {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(var(--scrim-media-rgb), 0.5);
+  color: #fff;
+  transition: transform 150ms var(--ease-out), background-color 150ms linear;
+}
+
+.card-preview-mute:hover {
+  background: rgba(var(--scrim-media-rgb), 0.7);
+  transform: scale(1.06);
+}
+
+.card-preview-mute:active {
+  transform: scale(0.95);
+}
+
+.card-preview-mute:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Animations RÉDUITES : un simple fondu, dans les deux sens, sans échelle ni
+ * déplacement. Plus spécifique que la politique globale (motion-reduce.css,
+ * `*` à 0,01 ms), qu'elle remplace ici seulement : sans fondu, la carte
+ * disparaîtrait et la mini-carte surgirait — un saut, pas un apaisement. */
+@media (prefers-reduced-motion: reduce) {
+  .card-preview,
+  .card-preview[data-shown="true"] {
+    transform: none !important;
+    transition: opacity var(--preview-reduced-ms) linear !important;
+  }
+
+  .media-tile[data-concealed] {
+    transition: opacity var(--preview-reduced-ms, 180ms) linear !important;
+  }
+}

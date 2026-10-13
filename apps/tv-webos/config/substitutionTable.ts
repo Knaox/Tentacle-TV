@@ -162,6 +162,9 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // seule porte du moteur dans la dalle : inerte ici, et son dossier est exclu
   // plus bas.
   [resolve(WEB, "trailerPreview/TrailerPreviewBinding.tsx")]: resolve(CLIENT, "shims/trailerPreview.ts"),
+  // Sa mini-carte, que les cartes du web n'atteignent que par cet index : le
+  // dossier entier sort du bundle et de la feuille (`EXCLUDED_WEB_DIRECTORIES`).
+  [resolve(WEB, "components/cards/preview/index.ts")]: resolve(CLIENT, "shims/cardPreview.ts"),
 
   // Les deux calques d'élévation de `.media-tile` sont pilotés par l'ATTRIBUT
   // `data-hovered`, hors de portée de toute passe CSS, et le lift est un
@@ -300,4 +303,6 @@ export const EXCLUDED_WEB_DIRECTORIES: readonly string[] = [
   // page que la dalle ne compile pas (Apparence → À propos). Qu'il entre un jour
   // dans le graphe, et le build s'arrête : la dalle n'a pas d'aperçu au survol.
   resolve(WEB, "trailerPreview"),
+  // La mini-carte d'aperçu de bande-annonce : sa seule porte, son `index.ts`, est inerte.
+  resolve(WEB, "components/cards/preview"),
 ];
