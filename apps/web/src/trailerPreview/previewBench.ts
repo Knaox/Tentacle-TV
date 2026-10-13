@@ -51,9 +51,11 @@ export function openPreviewBench(video: HTMLVideoElement): {
       record("manifest", { levels: data.levels.map((l) => `${l.height}p@${Math.round(l.bitrate / 1000)}k`) });
     });
     hls.on(Events.FRAG_LOADED, (_e, data) => {
-      record("frag", {
+      // Les fragments audio (piste séparée) ont aussi un `level` : celui de LEUR piste, pas une hauteur.
+      const video = data.frag.type === "main";
+      record(video ? "frag" : `frag-${data.frag.type}`, {
         level: data.frag.level,
-        height: hls.levels[data.frag.level]?.height,
+        height: video ? hls.levels[data.frag.level]?.height : undefined,
         kbps: Math.round(hls.bandwidthEstimate / 1000),
         ms: Math.round(data.frag.stats.loading.end - data.frag.stats.loading.start),
         kb: Math.round(data.frag.stats.loaded / 1024),
