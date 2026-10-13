@@ -6,6 +6,7 @@ import type { JellyfinUser } from "../middleware/auth";
 import { getLibraryIndexMemo } from "../services/reco/candidates/libraryMemo";
 import { spreadByGenre } from "../services/reco/globalRows";
 import { pokePage } from "../services/reco/pageJobs";
+import { SWIPE_POOL_REGEN_MIN_AGE_MS, pokeProfile } from "../services/reco/jobs";
 import { servePage } from "../services/reco/pageService";
 import { requestedTitleKeys } from "../services/reco/requestedTitles";
 
@@ -72,8 +73,11 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       update: { action: body.action },
     });
     // L'exclusion est déjà immédiate au service ; la reconstruction en fond
-    // recomble la place laissée dans les rangées.
+    // recomble la place laissée dans les rangées. Un refus APPREND : le profil
+    // se refait tout de suite (le titre devient une ancre négative, son univers
+    // compte contre lui) et le pool suit sous la garde courte d'Affiner.
     pokePage(user.userId, "feedback");
+    pokeProfile(user.userId, { poolMinAgeMs: SWIPE_POOL_REGEN_MIN_AGE_MS });
     return row;
   });
 
@@ -86,6 +90,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       where: { jellyfinUserId: user.userId, itemKey },
     });
     pokePage(user.userId, "feedback");
+    pokeProfile(user.userId, { poolMinAgeMs: SWIPE_POOL_REGEN_MIN_AGE_MS });
     return { ok: true };
   });
 

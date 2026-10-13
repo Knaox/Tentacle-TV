@@ -1,5 +1,6 @@
 import { getSeerrConfig } from "../seerConfig";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
+import type { LibraryIndex } from "./candidates/libraryIndex";
 import { SERVER_PULSE_ROW_KEY, buildServerPulseRow } from "./serverPulse";
 import { TRENDING_ROW_KEY, buildTrendingRow } from "./trendingRow";
 import type { BuiltRow, RecoRowItem } from "./rowBuilder";
@@ -63,17 +64,15 @@ export function spreadByGenre<T extends { Genres?: string[] }>(entries: T[], max
  */
 async function buildBestOfLibraryRow(userId: string, ctx: GlobalRowContext): Promise<BuiltRow> {
   const library = await getLibraryIndexMemo(userId);
+  return { key: BEST_OF_LIBRARY_ROW_KEY, items: bestOfLibraryItems(library, ctx.exclude), generatedAt: new Date().toISOString() };
+}
+
+/** Pur : les mieux notés non vus de la bibliothèque, répartis par genre (le banc l'appelle aussi). */
+export function bestOfLibraryItems(library: LibraryIndex, exclude: ReadonlySet<string>): RecoRowItem[] {
   const eligible = library.entries
-    .filter(
-      (e) =>
-        !e.played &&
-        !e.inProgress &&
-        !e.isFavorite &&
-        e.hasPrimaryImage &&
-        !ctx.exclude.has(e.key)
-    )
+    .filter((e) => !e.played && !e.inProgress && !e.isFavorite && e.hasPrimaryImage && !exclude.has(e.key))
     .sort((a, b) => (b.communityRating ?? 0) - (a.communityRating ?? 0));
-  const items: RecoRowItem[] = spreadByGenre(eligible, BEST_OF_LIBRARY_SIZE).map((e) => ({
+  return spreadByGenre(eligible, BEST_OF_LIBRARY_SIZE).map((e) => ({
     key: e.key,
     mediaType: e.mediaType,
     tmdbId: e.tmdbId,
@@ -90,7 +89,6 @@ async function buildBestOfLibraryRow(userId: string, ctx: GlobalRowContext): Pro
     reasons: [],
     providers: null,
   }));
-  return { key: BEST_OF_LIBRARY_ROW_KEY, items, generatedAt: new Date().toISOString() };
 }
 
 /** Une rangée globale, par clé — lecture seule, zéro réseau. */

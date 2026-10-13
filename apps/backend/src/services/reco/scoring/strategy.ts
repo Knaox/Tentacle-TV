@@ -26,6 +26,8 @@ export interface Candidate {
   seedSupport?: number;
   /** id TMDB de la personne aimée qui a produit ce candidat (« Avec X »). */
   personKey?: number | null;
+  /** Titre dans la langue du serveur (Jellyfin, liste TMDB localisée, catalogue de Vigie) : il prime à la fusion. */
+  titleLocalized?: boolean;
 }
 
 /** Le vecteur de goût d'un compte, parsé depuis TasteProfile.facets. */
@@ -60,9 +62,16 @@ export interface ScoreBreakdown {
   seedSupport?: number;
   /** Ressemblance aux titres refusés ou abandonnés (0..1, soustraite). */
   negative?: number;
+  /** Adéquation à la calibration du compte (notoriété, époque) 0..1. */
+  calibration?: number;
+  /** Aversion apprise pour l'univers du titre (0..1, soustraite). */
+  aversion?: number;
+  /** Écart sous la barre de qualité du compte (0..1, soustrait). */
+  qualityGap?: number;
   /** Les titres aimés qui portent le plus ce candidat — la raison affichée
    *  « Parce que vous avez aimé… ». */
-  topAnchors?: Array<{ key: string; title: string; contribution: number; liked?: boolean }>;
+  /** `similarity` : la parenté de CONTENU au titre aimé (0..1), sans son poids. */
+  topAnchors?: Array<{ key: string; title: string; contribution: number; similarity?: number; liked?: boolean; loved?: boolean }>;
 }
 
 /**

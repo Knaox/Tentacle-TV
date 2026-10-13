@@ -43,12 +43,16 @@ export interface ExplorationItem {
   relevance?: number;
   /** Ressemblance aux refus et abandons. */
   negative?: number;
+  /** Aversion apprise pour l'univers du titre : l'exploration n'y emmène pas. */
+  aversion?: number;
 }
 
 /** Plancher de qualité de l'exploration « voisine » (note bayésienne /10). */
 const ADJACENT_QUALITY_FLOOR = 0.62;
 /** Au-delà, le candidat ressemble trop à ce que le compte a refusé. */
 const ADJACENT_NEGATIVE_MAX = 0.3;
+/** Au-delà, le titre est d'un univers que le compte évite. */
+const ADJACENT_AVERSION_MAX = 0.3;
 /** Part de la nouveauté dans le tri — le reste est la proximité aux goûts. */
 const ADJACENT_NOVELTY_SHARE = 0.6;
 
@@ -83,7 +87,8 @@ export function pickExplorationKeys(items: ExplorationItem[], count: number): st
       (i) =>
         i.quality >= ADJACENT_QUALITY_FLOOR &&
         (i.relevance ?? 0) >= floor &&
-        (i.negative ?? 0) < ADJACENT_NEGATIVE_MAX
+        (i.negative ?? 0) < ADJACENT_NEGATIVE_MAX &&
+        (i.aversion ?? 0) < ADJACENT_AVERSION_MAX
     )
     .sort((a, b) => value(b) - value(a) || byKey(a, b))
     .slice(0, count)

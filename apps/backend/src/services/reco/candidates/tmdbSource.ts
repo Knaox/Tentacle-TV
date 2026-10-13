@@ -1,3 +1,5 @@
+import { EXPLICIT_FACET, UNIVERSE_FACET, isKidsAnimationCoarse } from "../universes";
+import { titleLanguage, titleLanguageParams } from "../titleLanguage";
 import { tmdbConfigured, tmdbFetch } from "../../tmdb/client";
 import type { TmdbFetchOptions } from "../../tmdb/client";
 
@@ -14,10 +16,16 @@ export interface SeedRef {
   tmdbId: number;
   title: string;
   strength: number;
+  /** Ses univers (« universe:anime »…) : ses vrais parents en sont aussi. */
+  universes?: string[];
+  /** Un film ou une série d'ANIMATION (animé compris) : ses parents aussi, jamais un dessin animé derrière un film en prises de vues réelles. */
+  animated?: boolean;
 }
 
 export interface TmdbListResult {
   id: number;
+  /** Pornographie selon TMDB. */
+  adult?: boolean;
   title?: string;
   name?: string;
   genre_ids?: number[];
@@ -51,6 +59,10 @@ function coarseFacets(raw: TmdbListResult): FacetEntry[] {
   if (isAnimeCoarse(raw.genre_ids ?? [], raw.original_language, raw.origin_country)) {
     out.push({ key: ANIME_UNIVERSE_KEY, mult: 1 });
   }
+  // L'animation familiale aussi : sans fiche, l'aversion du compte doit déjà la voir.
+  if (isKidsAnimationCoarse(raw.genre_ids ?? [])) out.push({ key: UNIVERSE_FACET.kidsAnimation, mult: 1 });
+  // Le X se reconnaît dès la liste (drapeau « adult » de TMDB).
+  if (raw.adult === true) out.push({ key: EXPLICIT_FACET, mult: 0 });
   return out;
 }
 
@@ -73,6 +85,8 @@ export function toCandidate(
     source,
     posterPath: raw.poster_path ?? null,
     backdropPath: raw.backdrop_path ?? null,
+    // Les listes du moteur sont demandées dans la langue du serveur (cf. titleLanguage).
+    titleLocalized: titleLanguage() != null,
   };
 }
 
@@ -100,7 +114,7 @@ export async function candidatesFromSeeds(seeds: SeedRef[]): Promise<Candidate[]
     for (const path of paths) {
       const factor = path.endsWith("/similar") ? SIMILAR_FACTOR : 1;
       try {
-        const page = await tmdbFetch<TmdbListPage>(path, { page: "1" }, BACKGROUND);
+        const page = await tmdbFetch<TmdbListPage>(path, { page: "1", ...titleLanguageParams() }, BACKGROUND);
         for (const [rank, raw] of (page.results ?? []).entries()) {
           // Sorti au minimum : /recommendations et /similar listent aussi l'annoncé.
           if (!isReleasedResult(raw)) continue;

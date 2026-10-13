@@ -3,7 +3,7 @@ import { tmdbConfigured } from "../tmdb/client";
 import { runCooccurrenceJob } from "./cooccurrence";
 import { cancelRecoFanout, kickRecoFanout } from "./fanout";
 import { generatePool, readPool } from "./generationJob";
-import { loadIdfFromDb, recomputeIdf } from "./idfStore";
+import { idfMissesFacetFamilies, loadIdfFromDb, recomputeIdf } from "./idfStore";
 import { rebuildProfile } from "./profileBuilder";
 import { runServerPulseJob } from "./serverPulse";
 import { startSyncWorkers, stopSyncWorkers } from "./syncWorkers";
@@ -71,7 +71,9 @@ export function startRecoJobs(): void {
     idfBootTimer = null;
     try {
       const loaded = await loadIdfFromDb();
-      if (loaded === 0) await runIdf();
+      // Table vide, ou d'avant une famille de facettes (univers, sagas) : recompter
+      // tout de suite plutôt que de laisser l'IDF par défaut fausser les scores un jour.
+      if (loaded === 0 || idfMissesFacetFamilies()) await runIdf();
     } catch (err) {
       console.error("[Reco] Chargement IDF impossible :", err);
     }

@@ -1,11 +1,7 @@
 import { getPrisma } from "../db";
 import { awaitRebuild } from "./profileBuilder";
-import { getTitleMeta } from "../tmdb/metaCache";
 import { idfLoadedAt, loadIdfFromDb } from "./idfStore";
-import { enrichTopEntries } from "./poolEnrichment";
-import { gatherCandidates } from "./poolSources";
-import { preparePoolTaste } from "./poolTaste";
-import type { Candidate, ScoreBreakdown, TasteVector } from "./scoring/strategy";
+import type { Candidate, ScoreBreakdown } from "./scoring/strategy";
 import { buildExclusions } from "./candidates/exclusions";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
 import type { SeedRef } from "./candidates/tmdbSource";
@@ -13,19 +9,14 @@ import { isPoolStale, readPoolStamp, writePool } from "./poolStore";
 import type { PoolStamp } from "./poolStore";
 import { AttemptGate } from "./attemptGate";
 import { emitPoolWritten } from "./recoEvents";
-import { applyCachedProviders } from "./poolProviders";
 import { enqueueFromPool } from "./metaCrawler";
-import { watchRegion } from "../tmdb/providerNormalize";
 import { getSeerrConfig } from "../seerConfig";
 import { effectiveIncludeVigie } from "./vigieSetting";
+import { computePool } from "./poolCompute";
 
 // Lecture/écriture/invalidation du pool : extraites dans poolStore, ré-exportées
 // ici pour ne pas casser les importeurs historiques.
 export { POOL_ROW_KEY, readPool } from "./poolStore";
-
-/** Budget dédié aux TITRES de graines muettes — séparé de l'enrichissement :
- *  une rangée « Parce que vous avez aimé » sans titre n'existe pas. */
-const SEED_META_BUDGET = 8;
 
 export interface PoolEntry {
   candidate: Candidate;
@@ -34,6 +25,8 @@ export interface PoolEntry {
    *  disponibilité inconnue (le crawler la comblera), [] = aucune offre. Des
    *  ids seuls : nom et logo se reconstituent à l'annuaire au service. */
   providers?: number[] | null;
+  /** Correspondance 0..100, monotone avec le rang dans le pool (95 en tête, 50 en queue). */
+  match?: number;
 }
 
 export interface PoolPayload {
@@ -48,6 +41,11 @@ export interface PoolPayload {
   /** Part d'animé du profil à la génération (0..1) — pilote le quota des
    *  rangées mixtes et la rangée dédiée ; additif, un vieux pool vaut 0. */
   animeShare?: number;
+  /** Aversion apprise par univers (0..1) — rangées globales et exploration la lisent ;
+   *  additif, un vieux pool n'en a pas. */
+  aversion?: Record<string, number>;
+  /** Personnes que le compte adore (rangées d'auteur, raisons « Avec … ») ; additif. */
+  lovedPeople?: Array<{ key: string; id: number; name: string; role: "actor" | "director" | "creator"; count: number }>;
   /** Personnes aimées au moment de la génération (rangées « Avec X »). */
   people?: Array<{ personId: number; name: string }>;
   /** Région des `providers` des entrées — différente de la région courante :
@@ -118,87 +116,16 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     }),
   ]);
 
-  let facets: Record<string, number> = {};
-  try {
-    facets = profileRow ? (JSON.parse(profileRow.facets) as Record<string, number>) : {};
-  } catch {
-    // Profil illisible : pool sur profil vide, le prochain rebuild réécrit.
-  }
-  const profile: TasteVector = { facets, signalCount: profileRow?.signalCount ?? 0 };
   const includeVigie = effectiveIncludeVigie(settingsRow?.includeVigie, getSeerrConfig() !== null);
-  const animeShare = profileRow?.animeShare ?? 0;
-
-  // Le classement, les graines et les voisins collaboratifs viennent des
-  // ancres du profil ; un profil d'avant les ancres garde l'ancienne mécanique.
-  const [exclusions, taste] = await Promise.all([
-    buildExclusions(userId, library),
-    preparePoolTaste(userId, profileRow, library),
-  ]);
-  const { seeds } = taste;
-
-  // Une graine hors bibliothèque absente du cache TMDB restait sans titre —
-  // et sa rangée « Parce que vous avez aimé » sautait en silence. Les plus
-  // fortes d'abord (les graines arrivent triées) ; passe rapide : pas de
-  // réseau, la relève complète titrera.
-  if (!quick) {
-    let seedMetaBudget = SEED_META_BUDGET;
-    for (const seed of seeds) {
-      if (seed.title || seedMetaBudget <= 0) continue;
-      seedMetaBudget--;
-      const meta = await getTitleMeta(seed.mediaType, seed.tmdbId, { priority: "background" });
-      if (meta) seed.title = meta.title;
-    }
-  }
-
-  const pool = await gatherCandidates({ quick, includeVigie, animeShare, likedPeople, profile, library, taste });
-
-  // Qualité : jamais de carte muette. Sans titre, ou sans image affichable
-  // (affiche TMDB ou Primary Jellyfin), un candidat sort avant le classement.
-  const isDisplayable = (c: Candidate): boolean => {
-    if (!c.title.trim()) return false;
-    if (c.posterPath) return true;
-    return !!c.jellyfinItemId && library.byKey.get(c.key)?.hasPrimaryImage === true;
-  };
-  const kept = pool.filter((c) => !exclusions.everywhere.has(c.key) && isDisplayable(c));
-
-  // Classement étalonné sur CE panier, enrichissement du haut (budget de
-  // fetchs pour les fiches absentes), re-classement final.
-  const { strategy } = taste;
-  strategy.calibrate?.(profile, kept);
-  let scored: PoolEntry[] = kept.map((candidate) => ({
-    candidate,
-    breakdown: strategy.score(profile, candidate),
-  }));
-  scored.sort(byTotalDesc);
-
-  // Enrichissement du haut du panier (cache gratuit + budget de fetchs) et
-  // re-score des entrées touchées — cf. poolEnrichment. Puis re-classement.
-  const labels = await enrichTopEntries(scored, library, { quick, includeVigie, profile, strategy });
-  scored.sort(byTotalDesc);
-  scored = scored.slice(0, 1000);
-
-  // Les plateformes que le cache connaît déjà, pour TOUT le pool (une lecture
-  // groupée) ; le reste attend le crawler. La région voyage avec le pool.
-  const providers = await applyCachedProviders(scored);
+  const exclusions = await buildExclusions(userId, library);
+  const { payload, providers } = await computePool({
+    userId, quick, profileRow, includeVigie, library, likedPeople, exclusions,
+  });
   if (!quick) {
     console.log(
-      `[Reco] Pool ${userId.slice(0, 8)}… : ${scored.length} entrées, plateformes connues ${providers.known}, inconnues ${providers.unknown}`
+      `[Reco] Pool ${userId.slice(0, 8)}… : ${payload.poolSize} entrées, plateformes connues ${providers.known}, inconnues ${providers.unknown}`
     );
   }
-
-  const payload: PoolPayload = {
-    generatedAt: new Date().toISOString(),
-    strategyId: strategy.id,
-    poolSize: scored.length,
-    includeVigie,
-    animeShare,
-    preliminary: quick,
-    people: likedPeople,
-    providersRegion: watchRegion(),
-    seeds,
-    entries: scored,
-    labels,
-  };
   await writePool(userId, payload);
   poolKickGate.release(userId);
   emitPoolWritten(userId);
@@ -207,11 +134,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   // la relève complète écrase dans la minute.
   if (!quick) void enqueueFromPool(userId, payload).catch(() => undefined);
 
-  return { poolSize: scored.length };
-}
-
-function byTotalDesc(a: PoolEntry, b: PoolEntry): number {
-  return b.breakdown.total - a.breakdown.total || (a.candidate.key < b.candidate.key ? -1 : 1);
+  return { poolSize: payload.poolSize };
 }
 
 function kickInBackground(userId: string, work: (userId: string) => Promise<unknown>, what: string): void {

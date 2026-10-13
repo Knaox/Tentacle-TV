@@ -1,5 +1,8 @@
 import type { TitleMeta } from "../tmdb/metaCache";
 import { DEFAULT_FACET_WEIGHTS, FACET_STOP_KEYWORDS, NETWORKS_MAX, STUDIOS_MAX } from "./facetWeights";
+import {
+  EXPLICIT_FACET, FORMAT_LONG_RUNNING, TMDB_GENRE_ANIMATION, TMDB_KEYWORD_ANIME, UNIVERSE_FACET, isExplicitMeta, isLongRunningMeta, universesOfMeta,
+} from "./universes";
 import type { FacetWeights } from "./facetWeights";
 
 /** Une facette d'un titre, avec son multiplicateur intrinsèque. */
@@ -27,10 +30,9 @@ export function decadeOf(year: number): number {
 // /discover ne se rencontraient sur rien — l'animé pesait dans le vide.
 
 export const ANIME_UNIVERSE_KEY = "universe:anime";
-/** Genre TMDB « Animation » (films et séries). */
-export const TMDB_GENRE_ANIMATION = 16;
-/** Mot-clé TMDB « anime » — le discriminant canonique. */
-export const TMDB_KEYWORD_ANIME = 210024;
+// Genre « Animation », mot-clé « anime », détection d'animé : dans universes.ts
+// (les univers appris compte par compte), réexportés ici pour les importeurs.
+export { TMDB_GENRE_ANIMATION, TMDB_KEYWORD_ANIME, isAnimeTmdb } from "./universes";
 /** Seuil UNIQUE de part d'univers (source /discover animé, quota des rangées
  *  mixtes, rangée dédiée). En dessous, tout est inerte — pas un appel TMDB. */
 export const ANIME_MIN_SHARE = 0.05;
@@ -45,7 +47,7 @@ export const ANIME_COMMON_FACETS: ReadonlySet<string> = new Set([
 ]);
 
 /** Animé au sens d'une LISTE TMDB (genre_ids + langue, sans mots-clés) :
- *  Animation ET (japonais OU produit au Japon). Rick et Morty : non. */
+ *  Animation ET (japonais OU produit au Japon). Une comédie animée américaine : non. */
 export function isAnimeCoarse(
   genreIds: readonly number[],
   originalLanguage?: string | null,
@@ -53,19 +55,6 @@ export function isAnimeCoarse(
 ): boolean {
   if (!genreIds.includes(TMDB_GENRE_ANIMATION)) return false;
   return originalLanguage === "ja" || (originCountry ?? []).includes("JP");
-}
-
-/** Animé au sens d'une FICHE TMDB : le mot-clé « anime » vaut aussi (une
- *  coproduction doublée en anglais reste un animé). */
-export function isAnimeTmdb(
-  meta: Pick<TitleMeta, "genres" | "keywords" | "originalLanguage" | "originCountry">
-): boolean {
-  if (!meta.genres.some((g) => g.id === TMDB_GENRE_ANIMATION)) return false;
-  return (
-    meta.originalLanguage === "ja" ||
-    meta.keywords.some((k) => k.id === TMDB_KEYWORD_ANIME) ||
-    meta.originCountry.includes("JP")
-  );
 }
 
 /** Animé au sens JELLYFIN : le genre « Anime » (posé par AniDB) ou un id
@@ -125,7 +114,15 @@ export function facetsFromTmdb(
   if (meta.mediaType === "movie" && meta.runtimeMinutes != null && meta.runtimeMinutes > 0) {
     out.push({ key: `runtime:${runtimeBucket(meta.runtimeMinutes)}`, mult: weights.runtime });
   }
-  if (isAnimeTmdb(meta)) out.push({ key: ANIME_UNIVERSE_KEY, mult: weights.universe });
+  // Les univers (animé, animation familiale, franchise) : ce que le compte regarde
+  // ou ne regarde jamais s'y apprend (aversion par l'exposition, cf. aversion.ts).
+  for (const u of universesOfMeta(meta)) out.push({ key: UNIVERSE_FACET[u], mult: weights.universe });
+  // Le X ne rapproche rien (multiplicateur nul) : il se lit seulement hors bibliothèque (cf. poolCompute).
+  if (isExplicitMeta(meta)) out.push({ key: EXPLICIT_FACET, mult: 0 });
+  // Le format ne rapproche rien (multiplicateur nul) : seuls les refus le lisent.
+  if (isLongRunningMeta(meta)) out.push({ key: FORMAT_LONG_RUNNING, mult: 0 });
+  // La saga TMDB : les suites d'un film aimé s'y retrouvent, celles d'un refus s'en éloignent.
+  if (meta.collection) out.push({ key: `collection:${meta.collection.id}`, mult: weights.collection });
   return out;
 }
 
@@ -177,5 +174,12 @@ export function facetsFromJellyfin(
     out.push({ key: `runtime:${runtimeBucket(minutes)}`, mult: weights.runtime });
   }
   if (isAnimeJellyfin(item)) out.push({ key: ANIME_UNIVERSE_KEY, mult: weights.universe });
+  else if (isKidsAnimationJellyfin(item)) out.push({ key: UNIVERSE_FACET.kidsAnimation, mult: weights.universe });
   return out;
+}
+
+/** Animation familiale au sens JELLYFIN : « Animation » ET « Famille » (ou « Kids »). */
+function isKidsAnimationJellyfin(item: JellyfinFacetSource): boolean {
+  const genres = new Set((item.Genres ?? []).map((g) => g.trim().toLowerCase()));
+  return genres.has("animation") && (genres.has("family") || genres.has("famille") || genres.has("kids"));
 }

@@ -11,7 +11,8 @@ vi.mock("../tmdb/providerDirectory", () => ({
   providerRefOf: (id: number) => ({ id, name: `P${id}`, logoPath: null }),
 }));
 
-import { buildPageSnapshot, filterPoolEntries } from "./pageBuilder";
+import { PAGE_ROW_MIN_ITEMS, buildPageSnapshot, filterPoolEntries } from "./pageBuilder";
+import { dedupeServedRows, isThemedRow } from "./pageRows";
 import type { PageBuildBase } from "./pageBuilder";
 
 const entry = (n: number, providers?: number[] | null): PoolEntry => ({
@@ -79,10 +80,11 @@ const baseOf = (p: PoolPayload | null, state: ServeContext["state"] = "ready"): 
   pool: p,
   poolStamp: p ? { generatedAt: new Date("2026-09-04T09:00:00.000Z"), expiresAt: new Date("2026-09-11T09:00:00.000Z") } : null,
   library: { byKey: new Map(), entries: [] },
+  vigieAvailable: false,
   globalRows: new Map<string, SnapshotRow>([
-    ["trending", { key: "trending", items: [item(900, [283]), item(901, null), item(902, [8])] }],
+    ["trending", { key: "trending", items: [900, 901, 902, 903, 904, 905, 906, 907].map((n) => item(n, n % 3 === 0 ? [283] : n % 3 === 1 ? null : [8])) }],
     ["serverPulse", { key: "serverPulse", items: [] }],
-    ["bestOfLibrary", { key: "bestOfLibrary", items: [item(950, null)] }],
+    ["bestOfLibrary", { key: "bestOfLibrary", items: [950, 951, 952, 953, 954, 955, 956].map((n) => item(n, null)) }],
   ]),
   regional: [],
   providerRefOf: (id) => ({ id, name: `P${id}`, logoPath: null }),
@@ -91,14 +93,13 @@ const baseOf = (p: PoolPayload | null, state: ServeContext["state"] = "ready"): 
   globalsGeneratedAt: "2026-09-04T06:00:00.000Z",
 });
 
-const ENTRIES = [
-  entry(1, [283]), entry(2, [283, 8]), entry(3, [283]), entry(4, [1968]), entry(5, [283]),
-  entry(6, [8]), entry(7, [8]), entry(8, null), entry(9), entry(10, []),
-];
+const PROVIDERS: Array<number[] | null | undefined> = [[283], [283, 8], [283], [1968], [283], [8], [8], null, undefined, []];
+// Quarante entrées : « Pour vous » en prend trente, « Disponible… » prend les SUIVANTES.
+const ENTRIES = Array.from({ length: 40 }, (_, i) => entry(i + 1, PROVIDERS[i % PROVIDERS.length]));
 
 describe("filterPoolEntries", () => {
   it("garde les entrées disponibles, exclut l'inconnu et le vide", () => {
-    expect(filterPoolEntries(ENTRIES, new Set([283, 1968])).map((e) => e.candidate.tmdbId)).toEqual([1, 2, 3, 4, 5]);
+    expect(filterPoolEntries(ENTRIES.slice(0, 10), new Set([283, 1968])).map((e) => e.candidate.tmdbId)).toEqual([1, 2, 3, 4, 5]);
   });
 });
 
@@ -111,9 +112,22 @@ describe("buildPageSnapshot", () => {
     expect(keys).toContain("trending");
     expect(keys).not.toContain("serverPulse");
     expect(keys.at(-1)).toBe("bestOfLibrary");
-    for (const row of snapshot.rows) {
-      expect(row.items.length).toBeGreaterThan(0);
-      for (const it of row.items) expect(it.providers).not.toBeUndefined();
+    // « Films pour vous » suit « Pour vous », sans en répéter un titre.
+    expect(keys[1]).toBe("forYouMovies");
+    const forYou = new Set(snapshot.rows[0].items.map((i) => i.key));
+    expect(snapshot.rows[1].items.some((i) => forYou.has(i.key))).toBe(false);
+    // Une rangée a six titres au moins, et un titre n'apparaît qu'une fois dans la page servie,
+    // sans thèmes (la page du snapshot) comme avec (les rangées suivantes perdent les films).
+    for (const served of [snapshot.rows.filter((r) => !isThemedRow(r.key)), dedupeServedRows(snapshot.rows, PAGE_ROW_MIN_ITEMS)]) {
+      const seen = new Set<string>();
+      for (const row of served) {
+        expect(row.items.length).toBeGreaterThanOrEqual(6);
+        for (const it of row.items) {
+          expect(it.providers).not.toBeUndefined();
+          expect(seen.has(it.key)).toBe(false);
+          seen.add(it.key);
+        }
+      }
     }
     expect(snapshot.filter).toBeNull();
     expect(snapshot.poolGeneratedAt).toBe("2026-09-04T09:00:00.000Z");
@@ -124,11 +138,11 @@ describe("buildPageSnapshot", () => {
   it("avec filtre : construit depuis le sous-ensemble disponible, strict, rangées minces écartées", async () => {
     const snapshot = await buildPageSnapshot(baseOf(pool(ENTRIES)), [283]);
     expect(snapshot.filter).toEqual({ providers: [283] });
-    expect(snapshot.rows.map((r) => r.key)).not.toContain("trending"); // 1 item sur 3 → mince
+    expect(snapshot.rows.map((r) => r.key)).not.toContain("trending"); // 3 items sur 8 → mince
     expect(snapshot.rows.map((r) => r.key)).not.toContain("bestOfLibrary"); // disponibilité inconnue
     const forYou = snapshot.rows.find((r) => r.key === "forYou");
     expect(forYou).toBeDefined();
-    expect(forYou!.items.length).toBeGreaterThanOrEqual(4);
+    expect(forYou!.items.length).toBeGreaterThanOrEqual(6);
     for (const row of snapshot.rows) {
       for (const it of row.items) {
         expect(it.providers?.some((p) => p.id === 283 || p.id === 1968)).toBe(true);
@@ -139,7 +153,7 @@ describe("buildPageSnapshot", () => {
   it("état froid : les rangées globales seules, non filtrées", async () => {
     const snapshot = await buildPageSnapshot(baseOf(null, "cold"), null);
     expect(snapshot.rows.map((r) => r.key)).toEqual(["trending", "bestOfLibrary"]);
-    expect(snapshot.rows[0].items).toHaveLength(3);
+    expect(snapshot.rows[0].items).toHaveLength(8);
     expect(snapshot.poolGeneratedAt).toBeNull();
   });
 });

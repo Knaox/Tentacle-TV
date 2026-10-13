@@ -1,3 +1,5 @@
+import { titleLanguageParams } from "../titleLanguage";
+
 /**
  * « Au minimum au cinéma » : un titre n'est recommandable que SORTI — un film
  * en salles, une série déjà diffusée. La date TMDB ou Vigie (release_date,
@@ -44,5 +46,7 @@ export function cappedReleaseParams(
   const field = mediaType === "movie" ? "primary_release_date.lte" : "first_air_date.lte";
   const today = todayStamp(now);
   const current = query[field];
-  return { ...query, [field]: current && current < today ? current : today };
+  // Jamais de contenu pour adultes, dit EXPLICITEMENT (le défaut de TMDB pourrait changer).
+  // Et dans la langue du serveur : les titres de la page ne mélangent plus l'anglais et le français.
+  return { ...query, ...titleLanguageParams(), include_adult: "false", [field]: current && current < today ? current : today };
 }

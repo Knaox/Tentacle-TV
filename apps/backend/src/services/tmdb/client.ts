@@ -60,6 +60,22 @@ export function tmdbLastInteractiveAt(): number {
   return lastInteractiveAt;
 }
 
+/**
+ * Le TRANSPORT des GET : par défaut, le réseau cadencé. Le banc de
+ * recommandation (test/reco-bench) le remplace par sa bande enregistrée —
+ * rejouer une génération sans réseau, octet pour octet. `network` est l'appel
+ * réel, que le transport peut faire (enregistrement) ou non (relecture). La
+ * clé d'API n'apparaît jamais dans `params` : elle est ajoutée au tout dernier
+ * moment, sur le réseau.
+ */
+export type TmdbTransport = <T>(path: string, params: Record<string, string>, network: () => Promise<T>) => Promise<T>;
+
+let transport: TmdbTransport | null = null;
+
+export function setTmdbTransport(next: TmdbTransport | null): void {
+  transport = next;
+}
+
 /** Vide les files et remet les horloges : isolation des tests, rien d'autre. */
 export function resetTmdbClientForTests(): void {
   lanes.interactive.length = 0;
@@ -69,6 +85,7 @@ export function resetTmdbClientForTests(): void {
   if (pumpTimer) clearTimeout(pumpTimer);
   pumpTimer = null;
   inFlight.clear();
+  transport = null;
 }
 
 /** Accorde UN créneau : interactive d'abord, puis le fond ; espacés de
@@ -145,9 +162,8 @@ export async function tmdbFetch<T>(
   const key = `${path}?${new URLSearchParams(params).toString()}`;
   const pending = inFlight.get(key);
   if (pending) return pending as Promise<T>;
-  const p = rawFetch<T>(path, params, opts.priority ?? "interactive").finally(() =>
-    inFlight.delete(key)
-  );
+  const network = () => rawFetch<T>(path, params, opts.priority ?? "interactive");
+  const p = (transport ? transport<T>(path, params, network) : network()).finally(() => inFlight.delete(key));
   inFlight.set(key, p);
   return p;
 }

@@ -21,6 +21,15 @@ export function idfLoadedAt(): number {
   return loadedAt;
 }
 
+/** Familles de facettes venues après le dernier comptage : leur IDF par défaut (3) est trop fort. */
+const NEWER_FACET_FAMILIES = ["universe:kids-animation", "universe:franchise", "collection:"];
+
+/** La table d'IDF ignore-t-elle une famille de facettes du moteur actuel ? Il faut recompter. */
+export function idfMissesFacetFamilies(): boolean {
+  if (idfMap.size === 0) return true;
+  return NEWER_FACET_FAMILIES.some((prefix) => ![...idfMap.keys()].some((key) => key.startsWith(prefix)));
+}
+
 export async function loadIdfFromDb(): Promise<number> {
   const prisma = getPrisma();
   const rows = await prisma.facetIdf.findMany({ select: { facetKey: true, idf: true } });

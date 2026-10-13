@@ -3,6 +3,7 @@ import { GLOBAL_CACHE_USER_ID } from "../globalCacheStore";
 import { isFamilyFilterKey } from "./providerFilter";
 import type { RecoState } from "./serveContext";
 import type { RecoRowItem } from "./rowItem";
+import type { RecoWhy } from "./recoPageTypes";
 import { SERVER_PULSE_ROW_KEY } from "./serverPulse";
 import { TRENDING_ROW_KEY } from "./trendingRow";
 
@@ -30,6 +31,8 @@ export interface SnapshotRow {
   key: string;
   seedTitle?: string;
   items: RecoRowItem[];
+  /** Le thème d'une rangée à thème (son titre s'en tire). */
+  why?: RecoWhy;
 }
 
 export interface PageSnapshot {
@@ -46,6 +49,8 @@ export interface PageSnapshot {
   globalsGeneratedAt: string | null;
   filter: { providers: number[] } | null;
   rows: SnapshotRow[];
+  /** Le titre « à la une » (clé et rangée) ; absent : rien à mettre en avant. */
+  featured?: { key: string; rowKey: string };
 }
 
 export function snapshotRowKey(filterKey: string): string {

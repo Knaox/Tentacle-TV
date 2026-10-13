@@ -13,6 +13,11 @@ export const POOL_MAX = 3000;
  *  des graines se CUMULE : six graines qui recommandent un titre en disent
  *  plus qu'une. */
 function backfill(winner: Candidate, loser: Candidate): void {
+  // Le titre dans la langue du serveur l'emporte sur l'anglais d'une fiche TMDB.
+  if (!winner.titleLocalized && loser.titleLocalized && loser.title.trim()) {
+    winner.title = loser.title;
+    winner.titleLocalized = true;
+  }
   if (loser.seedSupport) winner.seedSupport = (winner.seedSupport ?? 0) + loser.seedSupport;
   winner.seedKey = winner.seedKey ?? loser.seedKey;
   winner.personKey = winner.personKey ?? loser.personKey;

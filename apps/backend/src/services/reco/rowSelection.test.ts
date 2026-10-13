@@ -21,10 +21,11 @@ const entry = (key: string, score: number, facets: string[]): PoolEntry => ({
 const ANIME = ["universe:anime", "genre:16", "lang:ja"];
 
 describe("quota d'univers", () => {
-  it("rien sous le seuil, puis la part du profil entre deux et la moitié", () => {
+  // Plus de plancher (2026-10-13) : à 5 %, l'animé avait deux places d'office.
+  it("rien sous le seuil, puis la part du profil — sans plancher —, au plus la moitié", () => {
     expect(universeQuota(27, 0)).toBe(0);
     expect(universeQuota(27, 0.04)).toBe(0);
-    expect(universeQuota(27, 0.05)).toBe(2);
+    expect(universeQuota(27, 0.05)).toBe(1);
     expect(universeQuota(27, 0.1)).toBe(3);
     expect(universeQuota(27, 0.35)).toBe(9);
     expect(universeQuota(27, 0.9)).toBe(13);

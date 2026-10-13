@@ -53,20 +53,23 @@ describe("buildRow — plateformes des items", () => {
     const withAnchor = (key: string, score: number): PoolEntry => {
       const e = entry(key, score);
       e.candidate.seedKey = "movie:99";
+      // Un VRAI parent de la graine (cf. isRealKin) : elle porte son score, il plaît au compte.
       e.breakdown.topAnchors = [
         { key: "tv:5", title: "Ma liste seulement", contribution: 2, liked: false },
-        { key: "tv:6", title: "Dark", contribution: 1, liked: true },
+        { key: "tv:6", title: "Twin Peaks", contribution: 1, liked: true },
+        { key: "movie:99", title: "Alien", contribution: 0.5, liked: true },
       ];
+      e.breakdown.relevance = 0.6;
       return e;
     };
     const entries = Array.from({ length: 6 }, (_, i) => withAnchor(`movie:${i + 1}`, 0.9 - i * 0.01));
     const opts = { exclude: new Set<string>(), vigieAvailable: true, inLibraryOnly: false, lambda: 0.7, profile: { facets: {}, signalCount: 0 } };
     const forYou = buildRow(pool(entries), "inLibrary", opts);
-    expect(forYou?.items[0].reasons[0]).toEqual({ kind: "seed", seedTitle: "Dark" });
-    const seeded = { ...pool(entries), seeds: [{ mediaType: "movie" as const, tmdbId: 99, title: "Interstellar", strength: 1 }] };
+    expect(forYou?.items[0].reasons[0]).toEqual({ kind: "seed", seedTitle: "Twin Peaks" });
+    const seeded = { ...pool(entries), seeds: [{ mediaType: "movie" as const, tmdbId: 99, title: "Alien", strength: 1 }] };
     const because = buildRow(seeded, "becauseYouLiked:movie:99", opts);
     const seedReasons = because?.items[0].reasons.filter((r) => r.kind === "seed") ?? [];
-    expect(seedReasons).toEqual([{ kind: "seed", seedTitle: "Interstellar" }]);
+    expect(seedReasons).toEqual([{ kind: "seed", seedTitle: "Alien" }]);
   });
 
   it("sans annuaire : des références nues, jamais undefined", () => {
@@ -78,5 +81,21 @@ describe("buildRow — plateformes des items", () => {
       profile: { facets: {}, signalCount: 0 },
     });
     expect(row?.items[0].providers).toEqual([{ id: 8, name: "", logoPath: null }]);
+  });
+});
+
+describe("buildRow — Films pour vous", () => {
+  it("les meilleurs FILMS seulement ; trop peu de films : pas de rangée", () => {
+    const tv = (n: number) => {
+      const e = entry(`tv:${n}`, 0.95);
+      e.candidate.mediaType = "tv";
+      return e;
+    };
+    const opts = { exclude: new Set<string>(), vigieAvailable: true, inLibraryOnly: false, lambda: 0.7, profile: { facets: {}, signalCount: 0 } };
+    const movies = Array.from({ length: 8 }, (_, i) => entry(`movie:${i + 1}`, 0.9 - i * 0.01));
+    const row = buildRow(pool([tv(100), tv(101), ...movies]), "forYouMovies", opts);
+    expect(row?.items.length).toBe(8);
+    expect(row?.items.every((i) => i.key.startsWith("movie:"))).toBe(true);
+    expect(buildRow(pool([tv(100), ...movies.slice(0, 3)]), "forYouMovies", opts)).toBeNull();
   });
 });

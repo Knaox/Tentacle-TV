@@ -2,7 +2,8 @@ import { isPoolGenerating, poolStatus } from "./generationJob";
 import { computePageFlags } from "./pageFlags";
 import { buildSnapshotOnce, pokePage } from "./pageJobs";
 import type { PageRebuildReason } from "./pageJobs";
-import { applyServeExclusions, filterRowItems, snapshotStaleReason } from "./pageRows";
+import { applyServeExclusions, dedupeServedRows, filterRowItems, isThemedRow, snapshotStaleReason } from "./pageRows";
+import { PAGE_ROW_MIN_ITEMS } from "./pageBuilder";
 import type { StaleReason } from "./pageRows";
 import { readGlobalsStamp, readSnapshot, touchSnapshot } from "./pageSnapshot";
 import { isRebuilding } from "./profileBuilder";
@@ -10,6 +11,7 @@ import { filterKeyOf } from "./providerFilter";
 import type { RecoRowItem } from "./rowItem";
 import { serveContext } from "./serveContext";
 import type { RecoState } from "./serveContext";
+import type { RecoFeatured, RecoWhy } from "./recoPageTypes";
 
 /** Le contrat de GET /api/reco/page — la page entière, en une réponse. */
 export interface RecoPage {
@@ -26,7 +28,9 @@ export interface RecoPage {
   /** Le filtre appliqué (ids canonisés), null = toutes les plateformes. */
   filter: { providers: number[] } | null;
   /** Rangées AVEC leurs items — les vides sont omises. */
-  rows: Array<{ key: string; seedTitle?: string; items: RecoRowItem[] }>;
+  rows: Array<{ key: string; seedTitle?: string; items: RecoRowItem[]; why?: RecoWhy }>;
+  /** Le titre « à la une » (contrat recoPageTypes) ; absent : rien à mettre en avant. */
+  featured?: RecoFeatured;
 }
 
 function rebuildReasonOf(reason: StaleReason): PageRebuildReason {
@@ -39,7 +43,7 @@ function rebuildReasonOf(reason: StaleReason): PageRebuildReason {
  * (première visite, filtre jamais vu) se construit à la volée, une fois ;
  * un snapshot périmé est SERVI quand même et se reconstruit en fond.
  */
-export async function servePage(userId: string, providers: number[] | null): Promise<RecoPage> {
+export async function servePage(userId: string, providers: number[] | null, themes = false): Promise<RecoPage> {
   const filterKey = filterKeyOf(providers);
   const ctx = await serveContext(userId);
   const personalized = ctx.state === "warming" || ctx.state === "ready";
@@ -65,6 +69,12 @@ export async function servePage(userId: string, providers: number[] | null): Pro
   // snapshot peut dater, ce qu'il montre ne trahit jamais un réglage.
   let rows = applyServeExclusions(snapshot.rows, ctx.exclude);
   if (!ctx.includeVigie) rows = filterRowItems(rows, (item) => !!item.jellyfinItemId);
+  // Sans thèmes : la page du snapshot, déjà sans doublon. Avec : « Films pour vous »
+  // garde ses films, les rangées suivantes ne les répètent pas.
+  rows = themes ? dedupeServedRows(rows, PAGE_ROW_MIN_ITEMS) : rows.filter((row) => !isThemedRow(row.key));
+  // « À la une » : le titre tel que la page le sert ENCORE (exclusions du moment comprises).
+  const featuredRow = snapshot.featured ? rows.find((r) => r.key === snapshot.featured!.rowKey) : undefined;
+  const featuredItem = featuredRow?.items.find((i) => i.key === snapshot.featured!.key);
 
   const flags = computePageFlags({
     state: ctx.state,
@@ -87,5 +97,6 @@ export async function servePage(userId: string, providers: number[] | null): Pro
     personalized: ctx.personalized,
     filter: providers ? { providers } : null,
     rows,
+    ...(featuredItem ? { featured: { item: featuredItem, rowKey: featuredRow!.key } } : {}),
   };
 }

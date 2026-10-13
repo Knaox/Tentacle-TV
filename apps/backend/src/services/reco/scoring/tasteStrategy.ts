@@ -1,65 +1,23 @@
 import { bayesianRating, freshnessScore } from "./bayes";
+import {
+  ANIME_ERA_SPAN, ANIME_STRONG_KIN, BAR_SPAN, DEFAULT_TASTE_WEIGHTS, LOVED_FULL, TOP_ANCHORS, TOP_CONTRIBUTORS,
+  familiarityOf, lowEvidence, qualityOf, quantile, refusalShare, refusalTraitsOf, saturate,
+} from "./tasteTerms";
+import type { TasteWeights } from "./tasteTerms";
 import type { Candidate, ScoreBreakdown, ScoringStrategy, TasteVector } from "./strategy";
 import type { TasteIndex } from "./tasteIndex";
+import { aversionOf, formatAversionOf } from "../aversion";
+import type { FormatAversion, UniverseAversion } from "../aversion";
+import { calibrationFit } from "../calibration";
+import type { AccountCalibration } from "../calibration";
+import { REGISTER_MIN_LOVED, registerCount, smoothedRating } from "../lovedTaste";
+import type { LovedPerson } from "../lovedTaste";
+import { themeAversionOf } from "../themeAversion";
+import type { ThemeAversion } from "../themeAversion";
 
-/**
- * Pondération du classement à ancres. Chaque composante est d'abord ramenée
- * dans 0..1 par une saturation calibrée sur le panier du compte (cf.
- * calibrate) : les poids disent enfin ce qu'ils pèsent. L'ancienne formule
- * gardait la similarité dans 0,50..0,56 — la récence et la note TMDB, les
- * mêmes pour tous, décidaient seules du classement.
- */
-export interface TasteWeights {
-  /** Proximité aux titres aimés, un par un. */
-  relevance: number;
-  /** Soutien des graines (recommandations TMDB cumulées). */
-  seed: number;
-  /** Affinité au profil moyen (langue, époque, genres dominants). */
-  profile: number;
-  quality: number;
-  /** Récence, modulée par l'appétit du compte pour les nouveautés. */
-  freshness: number;
-  /** Ressemblance aux refus et abandons (soustraite). */
-  negative: number;
-  /** Notoriété (nombre de votes TMDB) : à goût égal, un titre reconnu est un
-   *  pari plus sûr qu'une curiosité à trente votes. */
-  familiarity: number;
-  /** Ancres retenues par candidat : ses plus proches voisins aimés. */
-  neighbors: number;
-  /** Exposant de la similarité : > 1, une correspondance franche l'emporte
-   *  sur dix correspondances vagues. */
-  sharpness: number;
-}
-
-/** Réglage retenu au banc (titres aimés cachés, 13 comptes) : trois fois plus
- *  de titres aimés retrouvés dans les 30 premiers que l'ancienne formule, et
- *  quatre titres communs sur 50 entre deux comptes au lieu de trente-quatre. */
-export const DEFAULT_TASTE_WEIGHTS: Readonly<TasteWeights> = {
-  relevance: 0.5,
-  seed: 0.2,
-  profile: 0.08,
-  quality: 0.25,
-  freshness: 0.2,
-  negative: 0.25,
-  familiarity: 0.25,
-  neighbors: 5,
-  sharpness: 1.5,
-};
-
-/** Votes TMDB au-delà desquels un titre est pleinement « reconnu ». */
-const FAMILIAR_VOTES = 20_000;
-
-/** Notoriété 0..1 : log du nombre de votes, plein à FAMILIAR_VOTES. */
-export function familiarityOf(voteCount: number | null): number {
-  const v = Math.max(0, voteCount ?? 0);
-  return Math.min(1, Math.log10(1 + v) / Math.log10(1 + FAMILIAR_VOTES));
-}
-
-/** Note bayésienne ramenée à 0..1 entre ces bornes : 5,5 = médiocre, 8,2 = excellent. */
-const QUALITY_LOW = 5.5;
-const QUALITY_HIGH = 8.2;
-const TOP_CONTRIBUTORS = 5;
-const TOP_ANCHORS = 3;
+// Les termes purs vivent dans tasteTerms ; ré-exportés pour les importeurs historiques.
+export { DEFAULT_TASTE_WEIGHTS, familiarityOf, lowEvidence, qualityOf, quantile } from "./tasteTerms";
+export type { TasteWeights } from "./tasteTerms";
 
 export interface TasteStrategyOptions {
   index: TasteIndex;
@@ -67,6 +25,14 @@ export interface TasteStrategyOptions {
   nowYear: number;
   /** Part des titres aimés sortis dans les trois dernières années (0..1). */
   recencyAffinity: number;
+  /** Ce que le compte regarde (votes, décennies) ; null = trop peu de titres. */
+  calibration?: AccountCalibration | null;
+  /** La note lissée sous laquelle un titre déçoit CE compte ; null = pas de barre. */
+  qualityBar?: number | null;
+  /** Facettes des personnes adorées → leurs titres adorés, par genre (leur registre). */
+  lovedPeople?: ReadonlyMap<string, Pick<LovedPerson, "key" | "count" | "genres">>;
+  /** La barre de l'univers animé (cf. animeFloor) ; absente = pas de barre. */
+  animeFloor?: { minVotes: number | null; minYear: number | null } | null;
   weights?: Partial<TasteWeights>;
 }
 
@@ -75,33 +41,25 @@ interface Raw {
   negative: number;
   profile: number;
   seed: number;
-  top: Array<{ anchor: number; contribution: number }>;
+  top: Array<{ anchor: number; contribution: number; similarity: number }>;
   contributors: Array<{ key: string; contribution: number }>;
 }
 
-/** Quantile d'une liste (non triée) ; 0 si vide. */
-export function quantile(values: number[], q: number): number {
-  if (values.length === 0) return 0;
-  const sorted = values.slice().sort((a, b) => a - b);
-  return sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
-}
-
-/** Saturation douce : 0 → 0, l'échelle → 0,63, deux échelles → 0,86. */
-function saturate(value: number, scale: number): number {
-  if (!(value > 0) || !(scale > 0)) return 0;
-  return 1 - Math.exp(-value / scale);
-}
-
-export function qualityOf(voteAverage: number | null, voteCount: number | null): number {
-  const wr = bayesianRating(voteAverage, voteCount);
-  return Math.min(1, Math.max(0, (wr - QUALITY_LOW) / (QUALITY_HIGH - QUALITY_LOW)));
-}
-
 export class TasteScoringStrategy implements ScoringStrategy {
-  readonly id = "taste-anchors-v2";
+  readonly id = "taste-anchors-v4";
   private readonly weights: TasteWeights;
   private scales = { positive: 0, negative: 0, profile: 0, seed: 0 };
   private readonly norms = new WeakMap<Record<string, number>, number>();
+  private aversion: UniverseAversion | undefined;
+  private themes: ThemeAversion | undefined;
+  private formats: FormatAversion | undefined;
+
+  /** L'aversion du compte, apprise sur le panier (part de chaque univers offerte), ses thèmes et ses formats. */
+  setAversion(aversion: UniverseAversion, themes?: ThemeAversion, formats?: FormatAversion): void {
+    this.aversion = aversion;
+    this.themes = themes;
+    this.formats = formats;
+  }
 
   constructor(private readonly opts: TasteStrategyOptions) {
     this.weights = { ...DEFAULT_TASTE_WEIGHTS, ...opts.weights };
@@ -146,15 +104,17 @@ export class TasteScoringStrategy implements ScoringStrategy {
   private raw(profile: TasteVector, candidate: Candidate): Raw {
     const { index, idfFor } = this.opts;
     const { neighbors, sharpness } = this.weights;
-    const pos: Array<{ anchor: number; contribution: number }> = [];
+    const pos: Array<{ anchor: number; contribution: number; similarity: number }> = [];
     const neg: number[] = [];
+    const traits = refusalTraitsOf(candidate.facets.map((f) => f.key));
     for (const [i, sim] of index.similarities(candidate.facets)) {
       const anchor = index.anchors[i];
       // Le titre lui-même (dans Ma liste, par exemple) ne se recommande pas.
       if (anchor.key === candidate.key || !(sim > 0)) continue;
       const strength = Math.pow(Math.min(1, sim), sharpness);
-      if (anchor.weight > 0) pos.push({ anchor: i, contribution: strength * anchor.weight });
-      else neg.push(strength * -anchor.weight);
+      if (anchor.weight > 0) pos.push({ anchor: i, contribution: strength * anchor.weight, similarity: Math.min(1, sim) });
+      // Un refus pèse par ce qui l'EXPLIQUE (format, époque, saga), pas par le seul genre.
+      else neg.push(strength * -anchor.weight * (anchor.traits ? refusalShare(anchor.traits, traits) : 1));
     }
     pos.sort((a, b) => b.contribution - a.contribution);
     neg.sort((a, b) => b - a);
@@ -184,6 +144,20 @@ export class TasteScoringStrategy implements ScoringStrategy {
     };
   }
 
+  /**
+   * L'écart d'un animé à la barre de l'univers (0..1) : moins de votes que les
+   * animés que le compte ADORE (pas encore validé par le public, sauf parenté
+   * forte), ou d'avant l'époque de ce qu'il en adore (cf. animeFloorOf).
+   */
+  private animeGap(candidate: Candidate, relevance: number): number {
+    const floor = this.opts.animeFloor;
+    if (!floor || !candidate.facets.some((f) => f.key === "universe:anime")) return 0;
+    const votes = relevance < ANIME_STRONG_KIN && floor.minVotes != null && (candidate.voteCount ?? 0) < floor.minVotes ? 1 : 0;
+    // L'époque : graduelle, pleine ANIME_ERA_SPAN ans avant ce qu'il adore — même un proche parent n'y échappe pas.
+    const era = floor.minYear != null && candidate.year != null ? Math.min(1, Math.max(0, (floor.minYear - candidate.year) / ANIME_ERA_SPAN)) : 0;
+    return Math.max(votes, era);
+  }
+
   score(profile: TasteVector, candidate: Candidate): ScoreBreakdown {
     const w = this.weights;
     const r = this.raw(profile, candidate);
@@ -193,14 +167,39 @@ export class TasteScoringStrategy implements ScoringStrategy {
     const seed = saturate(r.seed, this.scales.seed);
     const quality = qualityOf(candidate.voteAverage, candidate.voteCount);
     const freshness = freshnessScore(candidate.year, this.opts.nowYear);
+    const cal = this.opts.calibration;
+    const fit = cal ? calibrationFit(cal, candidate.voteCount, candidate.year) : familiarityOf(candidate.voteCount);
+    const keys = candidate.facets.map((f) => f.key);
+    const aversion = aversionOf(keys, this.aversion);
+    // Un FORMAT refusé (feuilletons-fleuves) : appris des refus seuls, cf. formatAversion.
+    const format = formatAversionOf(keys, this.formats);
+    // Un thème évité ne condamne qu'un titre que le public n'a pas encore validé
+    // (peu de votes) : l'isekai d'une saison, pas les classiques du genre.
+    const themeAversion = themeAversionOf(candidate.facets.map((f) => f.key), this.themes) * lowEvidence(candidate.voteCount);
+    const rating = smoothedRating(candidate.voteAverage, candidate.voteCount);
+    const bar = this.opts.qualityBar;
+    const belowBar = bar != null && rating != null ? Math.min(1, Math.max(0, (bar - rating) / BAR_SPAN)) : 0;
+    // Un animé sous la barre de SON univers (votes, époque) : cf. animeGap.
+    const animeGap = this.animeGap(candidate, relevance);
+    // Une personne adorée compte dans SON registre seulement (cf. registerCount).
+    let lovedCount = 0;
+    for (const f of candidate.facets) {
+      const person = this.opts.lovedPeople?.get(f.key);
+      if (person) lovedCount = Math.max(lovedCount, registerCount(person, keys));
+    }
+    const loved = lovedCount >= REGISTER_MIN_LOVED ? Math.min(1, lovedCount / LOVED_FULL) : 0;
     const total =
       w.relevance * relevance +
       w.seed * seed +
       w.profile * affinity +
       w.quality * quality +
       w.freshness * this.opts.recencyAffinity * freshness +
-      w.familiarity * familiarityOf(candidate.voteCount) -
-      w.negative * negative;
+      (cal ? w.calibration : w.familiarity) * fit -
+      w.negative * negative -
+      w.aversion * Math.max(aversion, format) -
+      w.themeAversion * themeAversion -
+      w.qualityBar * Math.max(belowBar, animeGap) +
+      w.lovedPeople * loved;
 
     r.contributors.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
     const { anchors } = this.opts.index;
@@ -215,11 +214,16 @@ export class TasteScoringStrategy implements ScoringStrategy {
       relevance,
       seedSupport: seed,
       negative,
+      calibration: fit,
+      aversion: Math.max(aversion, themeAversion, format),
+      qualityGap: Math.max(belowBar, animeGap),
       topAnchors: r.top.slice(0, TOP_ANCHORS).map((t) => ({
         key: anchors[t.anchor].key,
         title: anchors[t.anchor].title,
         contribution: t.contribution,
+        similarity: Math.round(t.similarity * 1000) / 1000,
         liked: anchors[t.anchor].liked !== false,
+        loved: anchors[t.anchor].loved === true,
       })),
     };
   }

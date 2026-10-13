@@ -19,8 +19,9 @@ export const ANCHOR_REWATCH = 0.35;
  *  (183 « lectures » d'un film vu une fois) — l'indice reste faible. */
 export const ANCHOR_REWATCH_UNVERIFIED = 0.1;
 export const ANCHOR_ABANDON = -0.6;
-/** « Ne plus me proposer » : le titre ne plaît pas, ses voisins non plus. */
-export const ANCHOR_DISMISSED = -0.35;
+/** « Ne plus me proposer » : le titre ne plaît pas, ses voisins non plus — le
+ *  même poids qu'un « pas intéressé » (à −0,35, il ne repoussait rien). */
+export const ANCHOR_DISMISSED = -0.6;
 export const ANCHOR_NOT_INTERESTED = -0.6;
 
 // ── Onglet « Affiner » (swipe) ──────────────────────────────────────────────

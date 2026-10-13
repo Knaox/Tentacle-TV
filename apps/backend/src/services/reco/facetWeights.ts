@@ -20,6 +20,8 @@ export interface FacetWeights {
   lang: number;
   runtime: number;
   universe: number;
+  /** Saga TMDB d'un film (belongs_to_collection) : aussi décisive qu'un réalisateur. */
+  collection: number;
 }
 
 export const DEFAULT_FACET_WEIGHTS: Readonly<FacetWeights> = {
@@ -37,6 +39,7 @@ export const DEFAULT_FACET_WEIGHTS: Readonly<FacetWeights> = {
   lang: 0.7,
   runtime: 0.3,
   universe: 1,
+  collection: 2,
 };
 
 /** Studios retenus par titre : les premiers de TMDB sont les producteurs
@@ -49,7 +52,7 @@ export const NETWORKS_MAX = 2;
 
 /**
  * Mots-clés TMDB qui décrivent la PRODUCTION, pas un goût : ils reliaient
- * Twilight 5 à Toy Story 3 (« suite ») et faisaient d'une scène après le
+ * deux sagas sans rapport (« suite ») et faisaient d'une scène après le
  * générique le premier trait d'un profil. Ids TMDB stables.
  */
 export const FACET_STOP_KEYWORDS: ReadonlySet<number> = new Set([

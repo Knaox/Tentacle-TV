@@ -7,26 +7,12 @@ import { bootstrapPool } from "../services/reco/generationJob";
 import { pokePage } from "../services/reco/pageJobs";
 import { invalidatePool } from "../services/reco/poolStore";
 import { tmdbConfigured, tmdbFetch } from "../services/tmdb/client";
+import { getCachedMetaMany } from "../services/tmdb/metaCache";
+import { parseAnchors } from "../services/reco/anchorStore";
+import { isAdultPerson, popularSuggestions, recurringActors, toSuggestion } from "../services/reco/peopleSuggestions";
+import type { RawPerson } from "../services/reco/peopleSuggestions";
 
-interface RawPerson {
-  id: number;
-  name?: string;
-  profile_path?: string | null;
-  known_for_department?: string;
-  known_for?: Array<{ title?: string; name?: string }>;
-}
-
-function toSuggestion(p: RawPerson) {
-  return {
-    personId: p.id,
-    name: p.name ?? "",
-    profilePath: p.profile_path ?? null,
-    knownFor: (p.known_for ?? [])
-      .map((k) => k.title ?? k.name ?? "")
-      .filter(Boolean)
-      .slice(0, 3),
-  };
-}
+const SUGGESTIONS_MAX = 12;
 
 const likeSchema = z.object({
   /** id TMDB — absent quand le like vient du casting Jellyfin (résolu ici). */
@@ -54,39 +40,36 @@ export const recoPeopleRoutes: FastifyPluginAsync = async (app) => {
       const page = await tmdbFetch<{ results?: RawPerson[] }>("/search/person", {
         query: query.trim(),
         page: "1",
+        include_adult: "false",
       });
-      return { results: (page.results ?? []).slice(0, 8).map(toSuggestion) };
+      return { results: (page.results ?? []).filter((p) => !isAdultPerson(p)).slice(0, 8).map(toSuggestion) };
     } catch {
       return { results: [] };
     }
   });
 
-  // ── GET /people/suggestions — des acteurs CONNUS pour amorcer la liste
-  //    (/person/popular TMDB), personnes déjà aimées et sans portrait exclues ──
+  // ── GET /people/suggestions — d'abord les acteurs qui reviennent dans ce que
+  //    le compte a regardé, puis les personnalités populaires de TMDB ; jamais
+  //    une personne ou une filmographie pour adultes, ni une personne déjà aimée ──
   app.get("/people/suggestions", async (request) => {
     const user = (request as any).user as JellyfinUser;
     if (!tmdbConfigured()) return { results: [] };
     const prisma = getPrisma();
-    const liked = await prisma.userLikedPerson.findMany({
-      where: { jellyfinUserId: user.userId },
-      select: { personId: true },
-    });
+    const [liked, profile] = await Promise.all([
+      prisma.userLikedPerson.findMany({ where: { jellyfinUserId: user.userId }, select: { personId: true } }),
+      prisma.tasteProfile.findUnique({ where: { jellyfinUserId: user.userId }, select: { anchors: true } }),
+    ]);
     const likedIds = new Set(liked.map((l) => l.personId));
+    const anchors = (parseAnchors(profile?.anchors) ?? []).filter((a) => a.tmdbId > 0);
+    const metas = await getCachedMetaMany(anchors.map((a) => ({ mediaType: a.mediaType, tmdbId: a.tmdbId })));
+    const own = recurringActors(anchors, (a) => metas.get(a.key), likedIds).slice(0, SUGGESTIONS_MAX);
+    if (own.length >= SUGGESTIONS_MAX) return { results: own };
     try {
       const page = await tmdbFetch<{ results?: RawPerson[] }>("/person/popular", { page: "1" });
-      return {
-        results: (page.results ?? [])
-          .filter(
-            (p) =>
-              !likedIds.has(p.id) &&
-              p.profile_path &&
-              (p.known_for_department ?? "Acting") === "Acting"
-          )
-          .slice(0, 12)
-          .map(toSuggestion),
-      };
+      const taken = new Set([...likedIds, ...own.map((p) => p.personId)]);
+      return { results: [...own, ...popularSuggestions(page.results ?? [], taken)].slice(0, SUGGESTIONS_MAX) };
     } catch {
-      return { results: [] };
+      return { results: own };
     }
   });
 
@@ -119,8 +102,9 @@ export const recoPeopleRoutes: FastifyPluginAsync = async (app) => {
         const page = await tmdbFetch<{ results?: RawPerson[] }>("/search/person", {
           query: name,
           page: "1",
+          include_adult: "false",
         });
-        const hit = page.results?.[0];
+        const hit = page.results?.find((p) => !isAdultPerson(p));
         if (!hit) return reply.status(404).send({ error: "person-not-found" });
         personId = hit.id;
         name = hit.name ?? name;

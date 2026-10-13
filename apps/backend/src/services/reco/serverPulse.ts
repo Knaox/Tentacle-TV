@@ -3,6 +3,8 @@ import { getItemsByIds } from "../jellyfinLibrary";
 import { getCachedMetaMany } from "../tmdb/metaCache";
 import { canonicalKey } from "./candidates/exclusions";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
+import type { LibraryIndex } from "./candidates/libraryIndex";
+import type { TitleMeta } from "../tmdb/metaCache";
 import { WATCH_MIN_SECONDS } from "./cooccurrence";
 import { GLOBAL_CACHE_USER_ID } from "./trendingRow";
 import { enqueueCrawl } from "./metaCrawler";
@@ -37,7 +39,7 @@ const ROW_SIZE = 24;
 const LIKE_WEIGHT = 0.7;
 const RATING_WEIGHT = 0.7;
 
-interface PulsePayload {
+export interface PulsePayload {
   computedAt: string;
   /** Volontairement nu (clé + score) : l'habillage se fait au service, par
    *  compte, sur bibliothèque et cache — jamais de titre figé ici. */
@@ -48,6 +50,30 @@ function addAccount(map: Map<string, Set<string>>, key: string, userId: string):
   const set = map.get(key);
   if (set) set.add(userId);
   else map.set(key, new Set([userId]));
+}
+
+/**
+ * Pur : le classement du pouls depuis les porteurs de chaque titre (comptes
+ * qui l'ont regardé, aimé, bien noté). Seuil de comptes distincts, gardés au
+ * plus PULSE_KEEP. Le banc de recommandation le rejoue sur ses personas.
+ */
+export function rankPulse(
+  watchers: ReadonlyMap<string, ReadonlySet<string>>,
+  likers: ReadonlyMap<string, ReadonlySet<string>>,
+  raters: ReadonlyMap<string, ReadonlySet<string>>
+): Array<{ key: string; score: number }> {
+  const keys = new Set([...watchers.keys(), ...likers.keys(), ...raters.keys()]);
+  const ranked: Array<{ key: string; score: number }> = [];
+  for (const key of keys) {
+    const w = watchers.get(key);
+    const l = likers.get(key);
+    const r = raters.get(key);
+    const distinct = new Set([...(w ?? []), ...(l ?? []), ...(r ?? [])]);
+    if (distinct.size < PULSE_MIN_ACCOUNTS) continue;
+    ranked.push({ key, score: (w?.size ?? 0) + LIKE_WEIGHT * (l?.size ?? 0) + RATING_WEIGHT * (r?.size ?? 0) });
+  }
+  ranked.sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));
+  return ranked.slice(0, PULSE_KEEP);
 }
 
 export async function runServerPulseJob(): Promise<{ titles: number }> {
@@ -117,21 +143,7 @@ export async function runServerPulseJob(): Promise<{ titles: number }> {
     addAccount(raters, canonicalKey(r.mediaType, r.tmdbId), r.jellyfinUserId);
   }
 
-  const keys = new Set([...watchers.keys(), ...likers.keys(), ...raters.keys()]);
-  const ranked: Array<{ key: string; score: number }> = [];
-  for (const key of keys) {
-    const w = watchers.get(key);
-    const l = likers.get(key);
-    const r = raters.get(key);
-    const distinct = new Set([...(w ?? []), ...(l ?? []), ...(r ?? [])]);
-    if (distinct.size < PULSE_MIN_ACCOUNTS) continue;
-    ranked.push({
-      key,
-      score: (w?.size ?? 0) + LIKE_WEIGHT * (l?.size ?? 0) + RATING_WEIGHT * (r?.size ?? 0),
-    });
-  }
-  ranked.sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));
-  const kept = ranked.slice(0, PULSE_KEEP);
+  const kept = rankPulse(watchers, likers, raters);
 
   const payload: PulsePayload = { computedAt: new Date().toISOString(), items: kept };
   await prisma.recommendationCache.upsert({
@@ -199,7 +211,16 @@ export async function buildServerPulseRow(
     if (Number.isFinite(tmdbId)) missing.push({ mediaType: t === "tv" ? "tv" : "movie", tmdbId });
   }
   const metaByKey = await getCachedMetaMany(missing);
+  return { key: SERVER_PULSE_ROW_KEY, items: pulseItemsFrom(payload, library, metaByKey, ctx), generatedAt };
+}
 
+/** Pur : la rangée du pouls pour UN compte, habillée par sa bibliothèque ou le cache. */
+export function pulseItemsFrom(
+  payload: PulsePayload,
+  library: LibraryIndex,
+  metaByKey: ReadonlyMap<string, TitleMeta>,
+  ctx: { exclude: ReadonlySet<string>; includeVigie: boolean }
+): RecoRowItem[] {
   const items: RecoRowItem[] = [];
   for (const { key, score } of payload.items) {
     if (items.length >= ROW_SIZE) break;
@@ -232,5 +253,5 @@ export async function buildServerPulseRow(
       providers: null,
     });
   }
-  return { key: SERVER_PULSE_ROW_KEY, items, generatedAt };
+  return items;
 }

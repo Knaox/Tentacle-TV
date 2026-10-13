@@ -13,6 +13,8 @@ export type { ProviderRef } from "./providerNormalize";
 export interface NamedRef {
   id: number;
   name: string;
+  /** Portrait TMDB d'une personne du casting (suggestions « Vos acteurs ») ; absent ailleurs. */
+  profilePath?: string | null;
 }
 
 /**
@@ -50,6 +52,12 @@ export interface TitleMeta {
   /** Voisins collaboratifs TMDB (ordre de la liste) — null ou absent = ligne
    *  d'avant la clé `recommendations`. */
   recommendations?: TitleNeighbor[] | null;
+  /** La saga TMDB d'un film (`belongs_to_collection`) ; null = aucune (ou une série). */
+  collection?: { id: number; name: string } | null;
+  /** Titre pour adultes selon TMDB. */
+  adult?: boolean;
+  /** Séries : épisodes diffusés — le FORMAT (feuilleton-fleuve). */
+  episodeCount?: number | null;
 }
 
 // Les métadonnées d'un titre ne changent quasiment jamais : 30 jours, avec un
@@ -64,7 +72,7 @@ interface RawTmdbTitle {
   genres?: Array<{ id: number; name: string }>;
   keywords?: { keywords?: Array<{ id: number; name: string }>; results?: Array<{ id: number; name: string }> };
   credits?: {
-    cast?: Array<{ id: number; name?: string; order?: number }>;
+    cast?: Array<{ id: number; name?: string; order?: number; profile_path?: string | null }>;
     crew?: Array<{ id: number; name?: string; job?: string }>;
   };
   created_by?: Array<{ id: number; name?: string }>;
@@ -77,6 +85,7 @@ interface RawTmdbTitle {
   production_countries?: Array<{ iso_3166_1?: string }>;
   runtime?: number;
   episode_run_time?: number[];
+  number_of_episodes?: number;
   popularity?: number;
   vote_average?: number;
   vote_count?: number;
@@ -86,6 +95,9 @@ interface RawTmdbTitle {
   "watch/providers"?: RawWatchProvidersBlock;
   /** Réduit aux ids avant stockage (cf. titleNeighbors). */
   recommendations?: RawRecommendations;
+  /** Film seulement : la saga dont il fait partie (déjà dans les fiches en cache). */
+  belongs_to_collection?: { id: number; name?: string } | null;
+  adult?: boolean;
 }
 
 /** `origin_country` (films ET séries), sinon les pays de production. */
@@ -125,7 +137,7 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     genres: raw.genres ?? [],
     keywords,
     directors: named(directors),
-    topCast: named(topCast),
+    topCast: named(topCast).map((p) => ({ ...p, profilePath: topCast.find((c) => c.id === p.id)?.profile_path ?? null })),
     studios: named(raw.production_companies ?? []),
     networks: named(raw.networks ?? []),
     year,
@@ -142,6 +154,12 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     // Région résolue à la LECTURE : changer de région ne demande aucun refetch.
     providers: normalizeProviders(raw["watch/providers"], watchRegion()),
     recommendations: neighborsOf(raw.recommendations, mediaType),
+    collection: raw.belongs_to_collection?.id
+      ? { id: raw.belongs_to_collection.id, name: raw.belongs_to_collection.name ?? "" }
+      : null,
+    adult: raw.adult === true,
+    // Rétroactif aussi : la fiche brute en cache porte déjà le champ.
+    episodeCount: raw.number_of_episodes ?? null,
   };
 }
 
@@ -260,16 +278,27 @@ export async function getTitleMeta(
 /** Parcourt tout le cache et rend les métadonnées normalisées (job IDF). */
 export async function getAllCachedMeta(): Promise<TitleMeta[]> {
   const prisma = getPrisma();
-  const rows = await prisma.tmdbMetaCache.findMany({
-    select: { mediaType: true, tmdbId: true, payload: true },
-  });
   const out: TitleMeta[] = [];
-  for (const row of rows) {
-    try {
-      out.push(normalize(row.mediaType as "movie" | "tv", JSON.parse(row.payload) as RawTmdbTitle));
-    } catch {
-      // Ligne illisible : on l'ignore, le prochain fetch la réécrira.
+  // Par pages : d'un bloc, 12 000 fiches brutes (~50 Ko chacune) dépassent la plus
+  // longue chaîne que le moteur de Prisma sait rendre à Node — le recalcul de l'IDF
+  // échouait (« Failed to convert rust String into napi string »).
+  for (let skip = 0; ; skip += ALL_META_PAGE) {
+    const rows = await prisma.tmdbMetaCache.findMany({
+      select: { mediaType: true, tmdbId: true, payload: true },
+      orderBy: [{ mediaType: "asc" }, { tmdbId: "asc" }],
+      skip,
+      take: ALL_META_PAGE,
+    });
+    for (const row of rows) {
+      try {
+        out.push(normalize(row.mediaType as "movie" | "tv", JSON.parse(row.payload) as RawTmdbTitle));
+      } catch {
+        // Ligne illisible : on l'ignore, le prochain fetch la réécrira.
+      }
     }
+    if (rows.length < ALL_META_PAGE) break;
   }
   return out;
 }
+
+const ALL_META_PAGE = 500;

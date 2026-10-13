@@ -45,6 +45,8 @@ const HOME_ROW_SPECS: readonly HomeRowSpec[] = [
   { key: "watched", servable: ALWAYS, enabledByDefault: ALWAYS },
   { key: "watchlist", servable: ALWAYS, enabledByDefault: ALWAYS },
   { key: "favorites", servable: ALWAYS, enabledByDefault: NEVER },
+  // « Films pour vous » (1.27.1, capacité `reco.moviesRow`) : 2ᵉ rangée de la page.
+  { key: "reco:forYouMovies", servable: WITH_TMDB, enabledByDefault: NEVER },
   { key: "reco:inLibrary", servable: WITH_TMDB, enabledByDefault: NEVER },
   { key: "reco:anime", servable: WITH_TMDB, enabledByDefault: NEVER },
   { key: "reco:discover", servable: (caps) => caps.tmdb && caps.vigie, enabledByDefault: NEVER },

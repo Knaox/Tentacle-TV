@@ -10,7 +10,7 @@ vi.mock("../configStore", () => ({
   getConfigValue: (key: string) => (key === "tmdb_api_key" ? "test-key" : undefined),
 }));
 
-import { resetTmdbClientForTests, tmdbFetch, tmdbLastInteractiveAt } from "./client";
+import { resetTmdbClientForTests, setTmdbTransport, tmdbFetch, tmdbLastInteractiveAt } from "./client";
 
 let calls: Array<{ path: string; at: number }> = [];
 let rateLimitOnce = false;
@@ -91,5 +91,33 @@ describe("client TMDB — lanes de priorité", () => {
     await vi.advanceTimersByTimeAsync(300);
     await int;
     expect(tmdbLastInteractiveAt()).toBeGreaterThan(0);
+  });
+});
+
+describe("client TMDB — transport remplaçable (banc de recommandation)", () => {
+  it("un transport qui relit sa bande ne touche jamais le réseau ; la clé n'est pas dans les paramètres", async () => {
+    const seen: Array<{ path: string; params: Record<string, string> }> = [];
+    setTmdbTransport(async <T>(path: string, params: Record<string, string>) => {
+      seen.push({ path, params });
+      return { replayed: path } as T;
+    });
+    const out = await tmdbFetch<{ replayed: string }>("/movie/603/recommendations", { page: "1" });
+    expect(out).toEqual({ replayed: "/movie/603/recommendations" });
+    expect(calls).toHaveLength(0);
+    expect(seen).toEqual([{ path: "/movie/603/recommendations", params: { page: "1" } }]);
+  });
+
+  it("un transport qui enregistre passe par le vrai appel, cadencé", async () => {
+    const taped: unknown[] = [];
+    setTmdbTransport(async <T>(_path: string, _params: Record<string, string>, network: () => Promise<T>) => {
+      const value = await network();
+      taped.push(value);
+      return value;
+    });
+    const pending = tmdbFetch("/trending/movie/week");
+    await vi.advanceTimersByTimeAsync(10);
+    await pending;
+    expect(calls.map((c) => c.path)).toEqual(["/trending/movie/week"]);
+    expect(taped).toEqual([{ ok: true }]);
   });
 });

@@ -1,5 +1,7 @@
 import type { PoolEntry } from "./generationJob";
 import type { ProviderRef } from "../tmdb/providerNormalize";
+import type { RecoWhy } from "./recoPageTypes";
+import { matchOf, whyOf } from "./recoWhy";
 
 /** Une raison lisible de la présence d'un titre (explicabilité ET debug). */
 export interface RecoReason {
@@ -32,12 +34,18 @@ export interface RecoRowItem {
    *  plus), [] = aucune offre incluse dans la région. Sous un filtre, le
    *  serveur exclut l'inconnu. */
   providers: ProviderRef[] | null;
+  /** Les raisons STRUCTURÉES (contrat recoPageTypes) ; absentes d'un vieux pool. */
+  why?: RecoWhy[];
+  /** Correspondance estimée 0..100 (cf. recoWhy.matchOf). */
+  match?: number;
 }
 
 export interface BuiltRow {
   key: string;
   items: RecoRowItem[];
   seedTitle?: string;
+  /** Le thème d'une rangée : son titre s'en tire (rangées à thème). */
+  why?: RecoWhy;
   generatedAt: string;
 }
 
@@ -53,11 +61,12 @@ function bareRef(id: number): ProviderRef {
 export function toItem(
   entry: PoolEntry,
   labels: Record<string, string>,
-  providerRefOf: (id: number) => ProviderRef = bareRef
+  providerRefOf: (id: number) => ProviderRef = bareRef,
+  lovedPeople?: Parameters<typeof whyOf>[3]
 ): RecoRowItem {
   const { candidate, breakdown } = entry;
   const reasons: RecoReason[] = [];
-  // Le titre aimé le plus proche d'abord : « Parce que vous avez aimé Dark »
+  // Le titre aimé le plus proche d'abord : « Parce que vous avez aimé {titre} »
   // dit plus qu'un genre — c'est lui qui a porté le candidat.
   const anchor = breakdown.topAnchors?.find((a) => a.liked !== false && a.title.trim());
   if (anchor) reasons.push({ kind: "seed", seedTitle: anchor.title });
@@ -80,5 +89,7 @@ export function toItem(
     voteAverage: candidate.voteAverage,
     reasons,
     providers: entry.providers ? entry.providers.map(providerRefOf) : null,
+    why: whyOf(entry, labels, false, lovedPeople),
+    ...(matchOf(entry) !== undefined ? { match: matchOf(entry) } : {}),
   };
 }

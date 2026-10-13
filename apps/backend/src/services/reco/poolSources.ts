@@ -2,8 +2,10 @@ import type { LibraryIndex } from "./candidates/libraryIndex";
 import { libraryCandidates } from "./candidates/librarySource";
 import { assemblePool } from "./candidates/pool";
 import { candidatesFromPeople } from "./candidates/peopleSource";
+import { candidatesFromCreators } from "./candidates/creatorSource";
 import { candidatesFromDiscover, candidatesFromSeeds } from "./candidates/tmdbSource";
 import { candidatesFromVigie } from "./candidates/vigieSource";
+import { candidatesFromVigieDiscover } from "./candidates/vigieDiscover";
 import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
 import { applyCachedMeta } from "./poolEnrichment";
 import { applyNeighborSupport, candidatesFromNeighbors } from "./poolTaste";
@@ -19,6 +21,8 @@ export interface GatherOptions {
   profile: TasteVector;
   library: LibraryIndex;
   taste: PoolTaste;
+  /** Ce que Vigie propose pour ce goût ; absent : la découverte de Jellyseerr (cf. vigieDiscover). */
+  vigieSource?: (profile: TasteVector) => Promise<Candidate[]>;
 }
 
 /**
@@ -26,6 +30,11 @@ export interface GatherOptions {
  * dédupliquées, rattachées à la bibliothèque, décrites par leurs facettes
  * COMPLÈTES (cache TMDB) et portant le soutien de leurs graines et ancres.
  */
+async function defaultVigieSource(profile: TasteVector): Promise<Candidate[]> {
+  const [discover, featured] = await Promise.all([candidatesFromVigieDiscover(profile).catch(() => []), candidatesFromVigie()]);
+  return [...discover, ...featured];
+}
+
 export async function gatherCandidates(opts: GatherOptions): Promise<Candidate[]> {
   const { quick, includeVigie, library, taste } = opts;
   // Sources — bibliothèque d'abord (elle porte jellyfinItemId), puis les
@@ -38,8 +47,8 @@ export async function gatherCandidates(opts: GatherOptions): Promise<Candidate[]
   // La source « personnes » tourne même en bibliothèque seule : comme les
   // graines, ses candidats peuvent se rattacher à la bibliothèque — le filtre
   // de service fait foi.
-  const [fromSeeds, fromAnime, fromPeople, fromDiscover, fromVigie] = quick
-    ? [[], [], [], [], []]
+  const [fromSeeds, fromAnime, fromPeople, fromDiscover, fromVigie, fromAuthors] = quick
+    ? [[], [], [], [], [], []]
     : await Promise.all([
         candidatesFromSeeds(taste.seeds),
         // Univers animé : gardé par includeVigie comme /discover (il ne produit
@@ -47,7 +56,10 @@ export async function gatherCandidates(opts: GatherOptions): Promise<Candidate[]
         includeVigie ? candidatesFromAnimeDiscover(opts.animeShare) : Promise.resolve([]),
         candidatesFromPeople(opts.likedPeople),
         includeVigie ? candidatesFromDiscover(opts.profile) : Promise.resolve([]),
-        includeVigie ? candidatesFromVigie() : Promise.resolve([]),
+        // Vigie : la découverte de Jellyseerr réglée par CE goût, puis ce qu'il met en avant.
+        includeVigie ? (opts.vigieSource ?? defaultVigieSource)(opts.profile) : Promise.resolve([]),
+        // Les auteurs de ce qu'il adore : comme les personnes, aussi en bibliothèque seule.
+        candidatesFromCreators(taste.lovedAuthors),
       ]);
 
   // Les voisins collaboratifs des ancres : cache seul, donc dès la passe rapide.
@@ -61,6 +73,7 @@ export async function gatherCandidates(opts: GatherOptions): Promise<Candidate[]
     fromNeighbors,
     fromAnime,
     fromPeople,
+    fromAuthors,
     fromVigie,
     fromDiscover,
   ]);

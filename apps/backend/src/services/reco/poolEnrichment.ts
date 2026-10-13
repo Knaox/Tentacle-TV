@@ -56,8 +56,11 @@ function harvestLabels(meta: TitleMeta, labels: Record<string, string>): void {
  * et seuls les 120 premiers d'un pré-classement… par récence étaient enrichis.
  */
 export async function applyCachedMeta(candidates: Candidate[]): Promise<void> {
+  // Une fiche PÉRIMÉE dit encore vrai (genres, mots-clés, casting) : sans elle, un
+  // candidat restait sur ses facettes grossières — et un contenu sensible passait.
   const metas = await getCachedMetaMany(
-    candidates.map((c) => ({ mediaType: c.mediaType, tmdbId: c.tmdbId }))
+    candidates.map((c) => ({ mediaType: c.mediaType, tmdbId: c.tmdbId })),
+    { includeExpired: true }
   );
   for (const c of candidates) {
     const meta = metas.get(metaKey(c.mediaType, c.tmdbId));

@@ -1,3 +1,4 @@
+import type { PoolPayload } from "./generationJob";
 import type { PageSnapshot, SnapshotRow } from "./pageSnapshot";
 import type { RecoRowItem } from "./rowItem";
 import { utcDayStamp } from "./seedRotation";
@@ -51,6 +52,61 @@ export function rankByPool<T extends { key: string }>(
   const rest = items.filter((i) => !scoreOf.has(i.key));
   known.sort((a, b) => scoreOf.get(b.key)! - scoreOf.get(a.key)!);
   return [...known, ...rest];
+}
+
+/** Proximité aux goûts exigée d'un titre d'une rangée GLOBALE (tendances, pouls, communauté). */
+export const GLOBAL_RELEVANCE_FLOOR = 0.25;
+/** Au-delà, l'univers du titre est un univers que le compte évite. */
+export const GLOBAL_AVERSION_MAX = 0.5;
+/** La correspondance d'un titre servi que le pool ne classe pas (la queue du pool). */
+export const GLOBAL_TAIL_MATCH = 50;
+
+/**
+ * Les rangées GLOBALES passent par le goût du compte : ce que la famille
+ * regarde (le pouls du serveur), ce qui est tendance, ce que les autres
+ * regardent aussi n'est montré qu'à qui cela ressemble — un titre que le pool
+ * du compte a classé assez proche de ses goûts, d'un univers qu'il n'évite pas,
+ * du mieux classé au moins bien. « Les mieux notés de la bibliothèque » garde
+ * son ordre (c'est son titre) sous la même porte. Un pool d'avant
+ * les ancres (sans proximité) garde l'ancienne règle : réordonner, sans écarter.
+ */
+export function gateGlobalRow<T extends { key: string; match?: number }>(rowKey: string, items: readonly T[], pool: PoolPayload | null): T[] {
+  if (!pool) return [...items];
+  const byKey = new Map(pool.entries.map((e) => [e.candidate.key, e]));
+  const anchored = pool.entries.some((e) => e.breakdown.relevance !== undefined);
+  const averse = (key: string) => (byKey.get(key)?.breakdown.aversion ?? 0) >= GLOBAL_AVERSION_MAX;
+  // Tout titre servi porte sa correspondance, ou aucun : hors du pool, c'est la queue.
+  const withMatch = (list: T[]): T[] =>
+    pool.entries.some((e) => e.match !== undefined) ? list.map((i) => ({ ...i, match: byKey.get(i.key)?.match ?? GLOBAL_TAIL_MATCH })) : list;
+  if (!anchored) return rankByPool(items, new Map(pool.entries.map((e) => [e.candidate.key, e.breakdown.total])));
+  const kept = items.filter((i) => (byKey.get(i.key)?.breakdown.relevance ?? 0) >= GLOBAL_RELEVANCE_FLOOR && !averse(i.key));
+  // « Les mieux notés » garde l'ordre des notes (c'est son titre), mais seulement
+  // ce qui ressemble au compte : sinon un spécial TV ou une série d'ados y passaient.
+  if (rowKey === "bestOfLibrary") return withMatch(kept);
+  return withMatch(kept.sort((a, b) => byKey.get(b.key)!.breakdown.total - byKey.get(a.key)!.breakdown.total));
+}
+
+/** Rangées que seul un client qui les sait titrer reçoit (`?themes=1`, RECO_PAGE_THEMES_PARAM). */
+export function isThemedRow(key: string): boolean {
+  return key === "forYouMovies" || key.startsWith("person:");
+}
+
+/**
+ * Pur : la page d'un client qui reçoit les rangées à thème — un titre n'y
+ * paraît qu'UNE fois, à sa première rangée (« Films pour vous », deuxième,
+ * garde ses films ; les rangées suivantes les perdent) ; une rangée devenue
+ * trop mince n'est plus servie. « Pour vous », la première, ne perd rien.
+ */
+export function dedupeServedRows<T extends { key: string; items: ReadonlyArray<{ key: string }> }>(rows: readonly T[], minItems: number): T[] {
+  const shown = new Set<string>();
+  const out: T[] = [];
+  for (const row of rows) {
+    const items = row.items.filter((item) => !shown.has(item.key));
+    if (out.length > 0 && items.length < minItems) continue;
+    for (const item of items) shown.add(item.key);
+    out.push(items.length === row.items.length ? row : { ...row, items });
+  }
+  return out;
 }
 
 /** Sous un filtre, une rangée trop mince n'est pas une rangée. */

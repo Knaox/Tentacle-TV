@@ -1,8 +1,10 @@
+import { refreshTitleLanguage, titleLanguageParams } from "./titleLanguage";
 import { getPrisma } from "../db";
 import { isReleasedResult } from "./candidates/released";
 import { tmdbConfigured, tmdbFetch } from "../tmdb/client";
 import { getSeerrConfig } from "../seerConfig";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
+import type { LibraryIndex } from "./candidates/libraryIndex";
 import { enqueueCrawl } from "./metaCrawler";
 import type { BuiltRow, RecoRowItem } from "./rowBuilder";
 
@@ -26,7 +28,7 @@ const TRENDING_MAX = 30;
 const VIGIE_PAGES = 2;
 const VIGIE_TIMEOUT_MS = 8_000;
 
-interface TrendingSlim {
+export interface TrendingSlim {
   key: string;
   mediaType: "movie" | "tv";
   tmdbId: number;
@@ -38,7 +40,7 @@ interface TrendingSlim {
   popularity: number | null;
 }
 
-interface TrendingPayload {
+export interface TrendingPayload {
   computedAt: string;
   origin: "tmdb" | "vigie";
   items: TrendingSlim[];
@@ -88,10 +90,11 @@ function fromTmdb(raw: TmdbTrendingResult, mediaType: "movie" | "tv"): TrendingS
   };
 }
 
-async function trendingFromTmdb(): Promise<TrendingSlim[]> {
+export async function trendingFromTmdb(): Promise<TrendingSlim[]> {
+  await refreshTitleLanguage().catch(() => null);
   const [movies, tv] = await Promise.all([
-    tmdbFetch<{ results?: TmdbTrendingResult[] }>("/trending/movie/week", {}, { priority: "background" }),
-    tmdbFetch<{ results?: TmdbTrendingResult[] }>("/trending/tv/week", {}, { priority: "background" }),
+    tmdbFetch<{ results?: TmdbTrendingResult[] }>("/trending/movie/week", titleLanguageParams(), { priority: "background" }),
+    tmdbFetch<{ results?: TmdbTrendingResult[] }>("/trending/tv/week", titleLanguageParams(), { priority: "background" }),
   ]);
   // Entrelacement film/série : la rangée mélange les deux mondes au lieu
   // d'empiler vingt films puis dix séries.
@@ -210,6 +213,15 @@ export async function buildTrendingRow(
     return { key: TRENDING_ROW_KEY, items: [], generatedAt: new Date().toISOString(), pending: true };
   }
   const library = await getLibraryIndexMemo(userId);
+  return { key: TRENDING_ROW_KEY, items: trendingItemsFrom(payload, library, ctx), generatedAt: payload.computedAt };
+}
+
+/** Pur : les titres de la sentinelle qu'un compte peut voir (le banc l'appelle aussi). */
+export function trendingItemsFrom(
+  payload: TrendingPayload,
+  library: LibraryIndex,
+  ctx: { exclude: ReadonlySet<string>; includeVigie: boolean }
+): RecoRowItem[] {
   const items: RecoRowItem[] = [];
   for (const [i, slim] of payload.items.entries()) {
     if (ctx.exclude.has(slim.key)) continue;
@@ -233,5 +245,5 @@ export async function buildTrendingRow(
       providers: null,
     });
   }
-  return { key: TRENDING_ROW_KEY, items, generatedAt: payload.computedAt };
+  return items;
 }

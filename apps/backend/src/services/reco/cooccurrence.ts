@@ -85,6 +85,36 @@ export async function runCooccurrenceJob(): Promise<CooccurrenceStats> {
     if (kept.length >= 2) userSets.push(new Set(kept));
   }
 
+  const { rows: kept, titles } = cooccurrencePairs(userSets);
+
+  await prisma.$transaction([
+    prisma.itemCooccurrence.deleteMany({}),
+    ...chunk(kept, 500).map((c) => prisma.itemCooccurrence.createMany({ data: c })),
+  ]);
+
+  return {
+    users: userSets.length,
+    optedOut: excluded.size,
+    titles,
+    pairsKept: kept.length / 2,
+  };
+}
+
+export interface CooccurrenceRow {
+  itemAKey: string;
+  itemBKey: string;
+  score: number;
+  userCount: number;
+  computedAt: Date;
+}
+
+/**
+ * Pur : les paires de cooccurrence d'un ensemble de visionnages (un Set de
+ * clés par compte). Jaccard sur les porteurs, seuil de vie privée, les DEUX
+ * sens écrits (la lecture se fait par itemAKey), meilleures d'abord. Le banc
+ * de recommandation le rejoue sur ses personas.
+ */
+export function cooccurrencePairs(userSets: ReadonlyArray<ReadonlySet<string>>, now = new Date()): { rows: CooccurrenceRow[]; titles: number } {
   // Comptage des paires (ordre canonique a < b) et des porteurs par titre.
   const pairCount = new Map<string, number>();
   const itemCount = new Map<string, number>();
@@ -98,32 +128,17 @@ export async function runCooccurrenceJob(): Promise<CooccurrenceStats> {
       }
     }
   }
-
-  const now = new Date();
-  const rows: Array<{ itemAKey: string; itemBKey: string; score: number; userCount: number; computedAt: Date }> = [];
+  const rows: CooccurrenceRow[] = [];
   for (const [pair, co] of pairCount) {
     if (co < PRIVACY_MIN_USERS) continue;
     const [a, b] = pair.split("|");
     const union = (itemCount.get(a) ?? co) + (itemCount.get(b) ?? co) - co;
     const score = union > 0 ? co / union : 0;
-    // Les DEUX sens sont écrits : la lecture se fait toujours par itemAKey.
     rows.push({ itemAKey: a, itemBKey: b, score, userCount: co, computedAt: now });
     rows.push({ itemAKey: b, itemBKey: a, score, userCount: co, computedAt: now });
   }
   rows.sort((x, y) => y.score - x.score);
-  const kept = rows.slice(0, PAIRS_MAX * 2);
-
-  await prisma.$transaction([
-    prisma.itemCooccurrence.deleteMany({}),
-    ...chunk(kept, 500).map((c) => prisma.itemCooccurrence.createMany({ data: c })),
-  ]);
-
-  return {
-    users: userSets.length,
-    optedOut: excluded.size,
-    titles: itemCount.size,
-    pairsKept: kept.length / 2,
-  };
+  return { rows: rows.slice(0, PAIRS_MAX * 2), titles: itemCount.size };
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { PageSnapshot, SnapshotRow } from "./pageSnapshot";
 import type { RecoRowItem } from "./rowItem";
-import { applyServeExclusions, dropThinRows, filterRowItems, rankByPool, snapshotStaleReason, utcDayKey } from "./pageRows";
+import {
+  applyServeExclusions, dedupeServedRows, dropThinRows, filterRowItems, isThemedRow, rankByPool, snapshotStaleReason, utcDayKey,
+} from "./pageRows";
 
 const item = (key: string): RecoRowItem => ({
   key,
@@ -88,5 +90,22 @@ describe("rangée globale ordonnée par le goût du compte", () => {
     const scores = new Map([["movie:3", 0.9], ["movie:1", 0.2]]);
     expect(rankByPool(items, scores).map((i) => i.key)).toEqual(["movie:3", "movie:1", "movie:2", "movie:4"]);
     expect(rankByPool(items, null).map((i) => i.key)).toEqual(["movie:1", "movie:2", "movie:3", "movie:4"]);
+  });
+});
+
+describe("page servie avec les rangées à thème", () => {
+  const row = (key: string, ids: number[]) => ({ key, items: ids.map((n) => ({ key: `movie:${n}` })) });
+
+  it("« Films pour vous » garde ses films ; les rangées suivantes les perdent, et sortent si trop minces", () => {
+    const rows = [row("forYou", [1, 2, 3, 4, 5, 6]), row("forYouMovies", [7, 8, 9, 10, 11, 12]), row("inLibrary", [7, 13, 14, 15, 16, 17, 18]), row("discover", [8, 9, 10, 19, 20, 21])];
+    const served = dedupeServedRows(rows, 6);
+    expect(served.map((r) => r.key)).toEqual(["forYou", "forYouMovies", "inLibrary"]);
+    expect(served[2].items.map((i) => i.key)).not.toContain("movie:7");
+  });
+
+  it("« Films pour vous » et les rangées de personnes sont à thème, pas les autres", () => {
+    expect(isThemedRow("forYouMovies")).toBe(true);
+    expect(isThemedRow("person:actor:30614")).toBe(true);
+    expect(isThemedRow("forYou")).toBe(false);
   });
 });

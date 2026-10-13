@@ -1,4 +1,6 @@
 import type { FacetEntry } from "../facets";
+import { refusalTraitsOf } from "./tasteTerms";
+import type { RefusalTraits } from "./tasteTerms";
 
 /** Vecteur TF-IDF d'un titre, normalisé (norme 1) — clé de facette → poids. */
 export function normalizedVector(
@@ -27,6 +29,10 @@ export interface IndexedAnchor {
   /** Vu, noté ou aimé — pas seulement dans Ma liste : seul un titre aimé
    *  peut signer « Parce que vous avez aimé… ». */
   liked?: boolean;
+  /** Adoré (cœur, j'aime, coup de cœur, note haute) — pas seulement regardé. */
+  loved?: boolean;
+  /** Ce qui explique un refus (format, décennie, saga) : posé par l'index, d'après ses facettes. */
+  traits?: RefusalTraits;
 }
 
 /**
@@ -48,7 +54,7 @@ export class TasteIndex {
     const vec = normalizedVector(facets, this.idfFor);
     if (vec.size === 0) return;
     const index = this.anchors.length;
-    this.anchors.push(anchor);
+    this.anchors.push({ ...anchor, traits: refusalTraitsOf(facets.map((f) => f.key)) });
     for (const [key, value] of vec) {
       let list = this.postings.get(key);
       if (!list) {

@@ -26,5 +26,6 @@ export function libraryCandidates(library: LibraryIndex): Candidate[] {
       popularity: null,
       source: "library" as const,
       jellyfinItemId: e.itemId,
+      titleLocalized: true,
     }));
 }

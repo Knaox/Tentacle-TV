@@ -14,6 +14,10 @@ import type { Candidate, ScoringStrategy } from "./scoring/strategy";
 import { TasteScoringStrategy } from "./scoring/tasteStrategy";
 import { pickSeeds } from "./seedPicker";
 import { buildTasteIndex, consumptionShares, recencyAffinity } from "./tasteModel";
+import { buildCalibration } from "./calibration";
+import { animeFloorOf, lovedAuthorsOf, lovedPeopleOf, qualityBarOf } from "./lovedTaste";
+import { isAnimated } from "./rowFilters";
+import type { LovedPerson } from "./lovedTaste";
 
 /**
  * Ce que la génération du pool tire du profil : la stratégie de classement,
@@ -26,6 +30,13 @@ export interface PoolTaste {
   seeds: SeedRef[];
   /** clé candidate → soutien cumulé des ancres qui la recommandent. */
   neighborSupport: Map<string, { support: number; anchorKey: string }>;
+  /** Les ancres et leurs facettes : l'aversion s'apprend dessus, une fois le panier connu. */
+  anchors: Anchor[];
+  facetsOf: (anchor: Anchor) => readonly { key: string }[] | null;
+  /** Les personnes que le compte adore (rangées d'auteur, raisons, source « personnes »). */
+  lovedPeople: LovedPerson[];
+  /** Les auteurs de ce qu'il adore, dès un titre : la source « créateurs ». */
+  lovedAuthors: Array<{ personId: number; name: string }>;
 }
 
 /** Ancres dont on suit les voisins collaboratifs (les plus fortes). */
@@ -52,6 +63,10 @@ export async function preparePoolTaste(
       strategy: new FacetScoringStrategy(idfFor),
       seeds: await deriveSeeds(userId, library),
       neighborSupport: new Map(),
+      anchors: [],
+      facetsOf: () => null,
+      lovedPeople: [],
+      lovedAuthors: [],
     };
   }
 
@@ -65,6 +80,13 @@ export async function preparePoolTaste(
   const nowYear = new Date().getFullYear();
   const shares = consumptionShares(anchors);
   const seeds = pickSeeds(anchors, facetsOf, { shares, now: Date.now() });
+  const anchorByKey = new Map(anchors.map((a) => [a.key, a]));
+  for (const seed of seeds) {
+    const a = anchorByKey.get(`${seed.mediaType}:${seed.tmdbId}`);
+    const keys = (a ? facetsOf(a) ?? [] : []).map((f) => f.key);
+    seed.universes = keys.filter((k) => k.startsWith("universe:"));
+    seed.animated = isAnimated(keys);
+  }
   const seedKeys = new Set(seeds.map((s) => `${s.mediaType}:${s.tmdbId}`));
 
   // Voisins collaboratifs des ancres fortes (hors graines : leurs listes
@@ -88,13 +110,26 @@ export async function preparePoolTaste(
   }
 
   const index = buildTasteIndex(anchors, facetsOf, idfFor);
+  const lovedPeople = lovedPeopleOf(anchors, metaOf);
   const strategy = new TasteScoringStrategy({
     index,
     idfFor,
     nowYear,
     recencyAffinity: recencyAffinity(anchors, (a) => metaOf(a)?.year ?? null, nowYear),
+    // Ce que le compte REGARDE, situé : notoriété et époque (cf. calibration).
+    calibration: buildCalibration(
+      anchors
+        .filter((a) => a.consumption && a.weight > 0)
+        .map((a) => ({ votes: metaOf(a)?.voteCount ?? null, year: metaOf(a)?.year ?? null, weight: a.weight }))
+    ),
+    qualityBar: qualityBarOf(anchors, metaOf),
+    animeFloor: animeFloorOf(anchors, metaOf, (a) => (facetsOf(a as StoredAnchor) ?? []).some((f) => f.key === "universe:anime")),
+    lovedPeople: new Map(lovedPeople.map((p) => [p.key, p])),
   });
-  return { strategy, seeds, neighborSupport };
+  return {
+    strategy, seeds, neighborSupport, anchors, facetsOf: (a: Anchor) => facetsOf(a as StoredAnchor), lovedPeople,
+    lovedAuthors: lovedAuthorsOf(anchors, metaOf),
+  };
 }
 
 /**

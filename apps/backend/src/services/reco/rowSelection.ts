@@ -38,15 +38,20 @@ export function explorationPicks(
   alreadyPicked: ReadonlySet<string>
 ): PoolEntry[] {
   const byKey = new Map(eligible.map((e) => [e.candidate.key, e]));
+  // Explorer, c'est aller ailleurs : pas la suite d'une saga que le compte ne suit
+  // pas (Hobbs & Shaw, Da Vinci Code chez qui n'a vu ni Fast & Furious ni Langdon).
+  const knownSagas = new Set(Object.keys(profile.facets).filter((k) => k.startsWith("collection:") && profile.facets[k] > 0));
+  const foreignSaga = (e: PoolEntry) => e.candidate.facets.some((f) => f.key.startsWith("collection:") && !knownSagas.has(f.key));
   const picked = pickExplorationKeys(
     eligible
-      .filter((e) => !alreadyPicked.has(e.candidate.key))
+      .filter((e) => !alreadyPicked.has(e.candidate.key) && !foreignSaga(e))
       .map((e) => ({
         key: e.candidate.key,
         novelty: noveltyOf(profile, e.candidate.facets.map((f) => f.key)),
         quality: e.breakdown.quality,
         relevance: e.breakdown.relevance,
         negative: e.breakdown.negative,
+        aversion: e.breakdown.aversion,
       })),
     count
   );
@@ -60,8 +65,9 @@ export function isAnimeEntry(entry: PoolEntry): boolean {
 
 /** Part d'univers plafonnée à la moitié des emplacements d'une rangée mixte. */
 const UNIVERSE_QUOTA_MAX_SHARE = 0.5;
-/** Plancher du quota dès le seuil franchi : un seul animé ressemble à un accident. */
-const UNIVERSE_QUOTA_MIN = 2;
+/** Plus de plancher : la part d'un univers dans une rangée est celle que le compte
+ *  lui donne (un plancher de deux imposait l'animé à qui en regarde 5 %). */
+const UNIVERSE_QUOTA_MIN = 0;
 
 /**
  * Emplacements réservés à l'univers dans une rangée mixte : 0 sous le seuil ;

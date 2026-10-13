@@ -8,8 +8,8 @@ import { getLibraryIndexMemo } from "./candidates/libraryMemo";
 import { buildCommunityRow } from "./communityRow";
 import { requestPoolRelief } from "./generationJob";
 import type { PoolEntry, PoolPayload } from "./generationJob";
-import { BEST_OF_LIBRARY_ROW_KEY, GLOBAL_ROW_KEYS, buildGlobalRow, fallbackRowList, weaveGlobalRows } from "./globalRows";
-import { dropThinRows, rankByPool } from "./pageRows";
+import { GLOBAL_ROW_KEYS, buildGlobalRow, fallbackRowList, weaveGlobalRows } from "./globalRows";
+import { dropThinRows, gateGlobalRow } from "./pageRows";
 import { SNAPSHOT_VERSION, readGlobalsStamp } from "./pageSnapshot";
 import type { PageSnapshot, SnapshotRow } from "./pageSnapshot";
 import { readPoolRow } from "./poolStore";
@@ -34,6 +34,8 @@ export interface PageBuildBase {
   pool: PoolPayload | null;
   poolStamp: PoolStamp | null;
   library: LibraryIndex;
+  /** Vigie servie : réglage effectif du compte ET plugin présent (le banc l'émule). */
+  vigieAvailable: boolean;
   /** trending / serverPulse / bestOfLibrary / community — plateformes posées. */
   globalRows: Map<string, SnapshotRow>;
   /** Les plateformes de la région (élargissement des familles par le nom). */
@@ -59,22 +61,22 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
   // premier contact) : vus, favoris et Ma liste sortent aussi de la page.
   for (const key of libraryExclusionKeys(library.entries)) ctx.exclude.add(key);
 
-  // Tendances et pouls du serveur : les mêmes titres pour tous, ordonnés
-  // selon le goût du compte (score de son pool) ; « les mieux notés » garde
-  // l'ordre des notes, c'est son titre.
-  const scoreOf = row ? new Map(row.pool.entries.map((e) => [e.candidate.key, e.breakdown.total])) : null;
+  // Tendances et pouls du serveur : la matière est la même pour tous, mais
+  // seul ce qui ressemble au compte passe (cf. gateGlobalRow) ; « les mieux
+  // notés » garde l'ordre des notes, c'est son titre.
   const globalRows = new Map<string, SnapshotRow>();
   for (const key of GLOBAL_ROW_KEYS) {
     const built = await buildGlobalRow(userId, key, ctx);
-    const items = key === BEST_OF_LIBRARY_ROW_KEY ? built.items : rankByPool(built.items, scoreOf);
+    const items = gateGlobalRow(key, built.items, row?.pool ?? null);
     await attachProviders(items);
     globalRows.set(key, { key, items });
     await yieldToLoop();
   }
   if (ctx.community) {
     const community = await buildCommunityRow(userId, library, ctx.exclude, !ctx.includeVigie, row?.pool ?? null);
-    await attachProviders(community.items);
-    globalRows.set("community", { key: "community", items: community.items });
+    const items = gateGlobalRow("community", community.items, row?.pool ?? null);
+    await attachProviders(items);
+    globalRows.set("community", { key: "community", items });
   }
 
   const directory = await getWatchProviderDirectory();
@@ -85,6 +87,10 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
     pool: row?.pool ?? null,
     poolStamp: row?.stamp ?? null,
     library,
+    // `ctx.includeVigie` est déjà le réglage EFFECTIF (faux sans Vigie, cf.
+    // vigieSetting) ; le second terme reste une ceinture si le plugin se coupe
+    // entre le contexte et la page.
+    vigieAvailable: ctx.includeVigie && getSeerrConfig() !== null,
     globalRows,
     regional: directory.providers,
     providerRefOf,
@@ -103,10 +109,7 @@ export async function buildPageSnapshot(base: PageBuildBase, filter: number[] | 
   const { ctx } = base;
   const wanted = filter ? expandFamilies(filter, base.regional) : null;
   const personalized = (ctx.state === "warming" || ctx.state === "ready") && base.pool !== null;
-  // `ctx.includeVigie` est déjà le réglage EFFECTIF (faux sans Vigie, cf.
-  // vigieSetting) ; le second terme reste une ceinture si le plugin se coupe
-  // entre le contexte et la page.
-  const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
+  const { vigieAvailable } = base;
   const inLibraryOnly = !ctx.includeVigie;
 
   let order: Array<{ key: string; seedTitle?: string }>;
@@ -129,19 +132,48 @@ export async function buildPageSnapshot(base: PageBuildBase, filter: number[] | 
     profile: ctx.profile,
     providerRefOf: base.providerRefOf,
   };
+  // Un titre n'apparaît qu'UNE fois dans la page : une rangée qui ne ferait que
+  // répéter prend les rangs suivants (« Disponible dans votre bibliothèque » sur un
+  // serveur sans Vigie), et une rangée trop mince n'est pas servie.
   const rows: SnapshotRow[] = [];
+  const shown = new Set<string>();
+  const themed: Array<{ at: number; key: string; seedTitle?: string }> = [];
   for (const { key, seedTitle } of order) {
+    // Une rangée À THÈME (« Avec {acteur} ») se construit en DERNIER, à sa place.
+    if (view && key.startsWith("person:")) {
+      themed.push({ at: rows.length, key, seedTitle });
+      continue;
+    }
+    // « Films pour vous » (à thème) suit « Pour vous » sans en répéter un titre, et
+    // n'en retire aucun aux rangées suivantes : sans thèmes, la page n'a pas de trou
+    // (avec, le service retire ses films des rangées suivantes, cf. dedupeServedRows).
+    if (view && key === "forYouMovies") {
+      const built = buildRow(view, key, { ...buildOpts, exclude: new Set([...buildOpts.exclude, ...shown]) });
+      if (built && built.items.length >= PAGE_ROW_MIN_ITEMS) rows.push({ key, items: built.items });
+      continue;
+    }
     let row: SnapshotRow | null = null;
     const global = base.globalRows.get(key);
     if (global) {
-      const items = wanted ? global.items.filter((i) => itemMatchesFilter(i.providers, wanted)) : global.items;
+      const items = (wanted ? global.items.filter((i) => itemMatchesFilter(i.providers, wanted)) : global.items).filter((i) => !shown.has(i.key));
       row = { key, items };
     } else if (view) {
-      const built = buildRow(view, key, buildOpts);
-      if (built) row = { key, seedTitle: seedTitle ?? built.seedTitle, items: built.items };
+      const built = buildRow(view, key, { ...buildOpts, exclude: new Set([...buildOpts.exclude, ...shown]) });
+      if (built) row = { key, seedTitle: seedTitle ?? built.seedTitle, items: built.items, ...(built.why ? { why: built.why } : {}) };
       await yieldToLoop();
     }
-    if (row && row.items.length > 0) rows.push(row);
+    if (!row || row.items.length < PAGE_ROW_MIN_ITEMS) continue;
+    rows.push(row);
+    for (const item of row.items) shown.add(item.key);
+  }
+  // Les rangées à thème ne reprennent AUCUN titre de la page : servies (`?themes=1`)
+  // ou non, la page n'a ni doublon ni trou. Chacune reprend sa place.
+  let inserted = 0;
+  for (const { at, key, seedTitle } of themed) {
+    const built = view ? buildRow(view, key, { ...buildOpts, exclude: new Set([...buildOpts.exclude, ...shown]) }) : null;
+    if (!built || built.items.length < PAGE_ROW_MIN_ITEMS) continue;
+    rows.splice(at + inserted++, 0, { key, seedTitle: seedTitle ?? built.seedTitle, items: built.items, ...(built.why ? { why: built.why } : {}) });
+    for (const item of built.items) shown.add(item.key);
   }
 
   return {
@@ -156,5 +188,19 @@ export async function buildPageSnapshot(base: PageBuildBase, filter: number[] | 
     globalsGeneratedAt: base.globalsGeneratedAt,
     filter: filter ? { providers: filter } : null,
     rows: wanted ? dropThinRows(rows, FILTERED_ROW_MIN_ITEMS) : rows,
+    ...featuredOf(rows),
   };
+}
+
+/** Une rangée de moins de titres n'est pas une rangée (une « Tendances » d'un seul titre). */
+export const PAGE_ROW_MIN_ITEMS = 6;
+
+/** Correspondance minimale d'un titre « à la une ». */
+const FEATURED_MIN_MATCH = 70;
+
+/** Le titre « à la une » : le premier de « Pour vous » qui a un visuel large et une correspondance franche. */
+function featuredOf(rows: readonly SnapshotRow[]): { featured?: { key: string; rowKey: string } } {
+  const forYou = rows.find((r) => r.key === "forYou");
+  const item = forYou?.items.find((i) => (i.backdropPath || i.jellyfinItemId) && (i.match ?? 0) >= FEATURED_MIN_MATCH && !i.exploration);
+  return item ? { featured: { key: item.key, rowKey: "forYou" } } : {};
 }

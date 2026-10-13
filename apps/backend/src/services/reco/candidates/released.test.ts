@@ -32,8 +32,8 @@ describe("isReleasedResult / releaseDateOf", () => {
 
 describe("cappedReleaseParams", () => {
   it("plafonne à aujourd'hui, garde une borne déjà plus tôt, par type de média", () => {
-    expect(cappedReleaseParams("movie", { sort_by: "x" }, NOW)).toEqual({ sort_by: "x", "primary_release_date.lte": "2026-09-04" });
-    expect(cappedReleaseParams("tv", {}, NOW)).toEqual({ "first_air_date.lte": "2026-09-04" });
+    expect(cappedReleaseParams("movie", { sort_by: "x" }, NOW)).toEqual({ sort_by: "x", include_adult: "false", "primary_release_date.lte": "2026-09-04" });
+    expect(cappedReleaseParams("tv", {}, NOW)).toEqual({ include_adult: "false", "first_air_date.lte": "2026-09-04" });
     expect(cappedReleaseParams("movie", { "primary_release_date.lte": "2029-12-31" }, NOW)["primary_release_date.lte"]).toBe("2026-09-04");
     expect(cappedReleaseParams("movie", { "primary_release_date.lte": "1999-12-31" }, NOW)["primary_release_date.lte"]).toBe("1999-12-31");
   });

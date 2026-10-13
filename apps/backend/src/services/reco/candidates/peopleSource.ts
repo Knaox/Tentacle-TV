@@ -1,3 +1,4 @@
+import { titleLanguageParams } from "../titleLanguage";
 import { tmdbConfigured, tmdbFetch } from "../../tmdb/client";
 import type { TmdbFetchOptions } from "../../tmdb/client";
 
@@ -57,7 +58,7 @@ export async function candidatesFromPeople(
     try {
       const credits = await tmdbFetch<CombinedCredits>(
         `/person/${person.personId}/combined_credits`,
-        {},
+        titleLanguageParams(),
         BACKGROUND
       );
       // Les crédits listent aussi les projets annoncés : sortis seulement.

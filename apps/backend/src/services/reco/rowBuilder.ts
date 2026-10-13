@@ -5,6 +5,9 @@ import { explorationPicks, isAnimeEntry, mmrPick, pickWithUniverseQuota } from "
 import { pickDaily } from "./seedRotation";
 import type { TasteVector } from "./scoring/strategy";
 import { REASONS_MAX, toItem } from "./rowItem";
+import {
+  BECAUSE_FRANCHISE_MAX, SEED_FRANCHISE_MAX, capPerCollection, hasEvidence, inPersonRegister, isFranchiseEntry, isRealKin, worthFilling,
+} from "./rowFilters";
 import type { BuiltRow, RecoReason } from "./rowItem";
 import type { ProviderRef } from "../tmdb/providerNormalize";
 
@@ -30,6 +33,7 @@ export interface RowBuildOptions {
 
 const ROW_SIZES: Record<string, number> = {
   forYou: 30,
+  forYouMovies: 20,
   inLibrary: 24,
   discover: 24,
   anime: 24,
@@ -54,7 +58,8 @@ export function availableRows(
     dayStamp?: string;
   }
 ): Array<{ key: string; seedTitle?: string }> {
-  const rows: Array<{ key: string; seedTitle?: string }> = [{ key: "forYou" }, { key: "inLibrary" }];
+  // « Films pour vous » juste après « Pour vous » : rangée À THÈME (servie avec `?themes=1`).
+  const rows: Array<{ key: string; seedTitle?: string }> = [{ key: "forYou" }, { key: "forYouMovies" }, { key: "inLibrary" }];
   // « Animés pour vous » : dès que l'univers pèse (part au seuil) et qu'il y a
   // de quoi remplir — avant « À découvrir », l'ancre des Tendances.
   if ((pool.animeShare ?? 0) >= ANIME_MIN_SHARE) {
@@ -76,11 +81,16 @@ export function availableRows(
     const seedKey = `${seed.mediaType}:${seed.tmdbId}`;
     // En bibliothèque seule, seuls les candidats rattachés comptent : une
     // rangée annoncée doit pouvoir se remplir.
-    const related = pool.entries.filter(
-      (e) => e.candidate.seedKey === seedKey && (!opts.inLibraryOnly || e.candidate.jellyfinItemId)
+    const related = capPerCollection(
+      pool.entries.filter((e) => isRealKin(e, { key: seedKey, universes: seed.universes, animated: seed.animated }) && (!opts.inLibraryOnly || e.candidate.jellyfinItemId))
     );
     if (related.length < BECAUSE_MIN_ITEMS) continue;
-    eligible.push({ key: seedKey, strength: seed.strength, seedTitle: seed.title });
+    // Une graine DISTINCTIVE (une série d'auteur) plutôt qu'un carrefour de franchise
+    // (un film de super-héros → les Gardiens de la Galaxie) : la part de franchise
+    // de ses voisins la fait passer derrière, au-delà de la moitié elle sort du tirage.
+    const franchise = related.filter(isFranchiseEntry).length / related.length;
+    if (franchise > SEED_FRANCHISE_MAX) continue;
+    eligible.push({ key: seedKey, strength: seed.strength * (1 - franchise), seedTitle: seed.title });
   }
   for (const pick of pickDaily(eligible, opts.userId, BECAUSE_ROWS_MAX, opts.dayStamp)) {
     rows.push({ key: `becauseYouLiked:${pick.key}`, seedTitle: pick.seedTitle });
@@ -102,8 +112,62 @@ export function availableRows(
     rows.push({ key: pick.key, seedTitle: pick.seedTitle });
   }
 
+  // Rangées À THÈME (servies aux clients qui savent les titrer, cf. pageService) :
+  // les auteurs qui pèsent le plus dans le goût, s'ils ont de quoi remplir.
+  for (const person of themedPeople(pool, opts.inLibraryOnly)) rows.push({ key: `person:${person.key}`, seedTitle: person.name });
+
   rows.push({ key: "community" }, { key: "exploration" });
   return rows;
+}
+
+const THEMED_PEOPLE_MAX = 3;
+/** Titres non vus d'une personne pour en faire une rangée. */
+const THEMED_PERSON_MIN_ITEMS = 4;
+
+/**
+ * Les personnes que le compte ADORE (acteur dans trois titres adorés,
+ * réalisateur ou créateur dans deux) et qui ont de quoi remplir une rangée ;
+ * à défaut (vieux pool), les auteurs qui pèsent le plus dans les scores.
+ */
+function themedPeople(pool: PoolPayload, inLibraryOnly: boolean): Array<{ key: string; name: string }> {
+  const entries = pool.entries.filter((e) => !inLibraryOnly || e.candidate.jellyfinItemId);
+  if (pool.lovedPeople?.length) {
+    return pool.lovedPeople
+      .filter((p) => entries.filter((e) => inPersonRegister(e, p.key, p)).length >= THEMED_PERSON_MIN_ITEMS)
+      .slice(0, THEMED_PEOPLE_MAX)
+      .map((p) => ({ key: p.key, name: p.name }));
+  }
+  const counts = new Map<string, number>();
+  for (const e of entries.slice(0, 300)) {
+    // L'auteur compte s'il PÈSE dans le score du titre (parmi ses premiers contributeurs).
+    for (const c of e.breakdown.topContributors) {
+      if (c.contribution > 0 && c.key.startsWith("director:") && pool.labels[c.key]) counts.set(c.key, (counts.get(c.key) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .filter(([, n]) => n >= THEMED_PERSON_MIN_ITEMS)
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
+    .slice(0, THEMED_PEOPLE_MAX)
+    .map(([key]) => ({ key, name: pool.labels[key] }));
+}
+
+/** Rangée d'une personne (« Avec {acteur} », « De {créateur} ») : son `why` en titre, rôle compris. */
+function buildPersonRow(pool: PoolPayload, rowKey: string, eligible: PoolEntry[], opts: RowBuildOptions): BuiltRow | null {
+  const facet = rowKey.slice("person:".length);
+  const loved = pool.lovedPeople?.find((p) => p.key === facet);
+  const name = loved?.name ?? pool.labels[facet];
+  if (!name) return null;
+  const related = capPerCollection(eligible.filter((e) => inPersonRegister(e, facet, loved)), opts.profile.facets);
+  if (related.length < THEMED_PERSON_MIN_ITEMS) return null;
+  const items = mmrPick(related, BECAUSE_SIZE, opts.lambda).map((e) => toItem(e, pool.labels, opts.providerRefOf, pool.lovedPeople));
+  const role = loved?.role ?? (facet.startsWith("actor:") ? "actor" : "director");
+  return {
+    key: rowKey,
+    seedTitle: name,
+    why: { kind: "person", person: { id: Number(facet.slice(facet.indexOf(":") + 1)), name }, role },
+    generatedAt: pool.generatedAt,
+    items,
+  };
 }
 
 /**
@@ -116,7 +180,8 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   const eligible = pool.entries.filter(
     (e) =>
       !opts.exclude.has(e.candidate.key) &&
-      (!opts.inLibraryOnly || e.candidate.jellyfinItemId)
+      (!opts.inLibraryOnly || e.candidate.jellyfinItemId) &&
+      hasEvidence(e)
   );
   // Part d'animé à la génération : quota des rangées mixtes, rangée dédiée.
   const share = pool.animeShare ?? 0;
@@ -126,10 +191,11 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     seedTitle,
     generatedAt: pool.generatedAt,
     items: items.map((e) => {
-      const item = toItem(e, pool.labels, opts.providerRefOf);
+      const item = toItem(e, pool.labels, opts.providerRefOf, pool.lovedPeople);
       if (exploration) {
         item.exploration = true;
         item.reasons = [exploReason, ...item.reasons].slice(0, REASONS_MAX);
+        item.why = [{ kind: "exploration" as const }, ...(item.why ?? [])].slice(0, 3);
       }
       return item;
     }),
@@ -138,32 +204,39 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   if (rowKey === "forYou") {
     const size = ROW_SIZES.forYou;
     const quota = Math.round(size * explorationQuota(opts.lambda * 100));
-    const main = pickWithUniverseQuota(eligible, size - quota, opts.lambda, share);
+    const main = pickWithUniverseQuota(capPerCollection(eligible, opts.profile.facets), size - quota, opts.lambda, share);
     const mainKeys = new Set(main.map((e) => e.candidate.key));
     const explo = explorationPicks(eligible, opts.profile, quota, mainKeys);
     const row = done(main);
     for (const e of explo) {
-      const item = toItem(e, pool.labels, opts.providerRefOf);
+      const item = toItem(e, pool.labels, opts.providerRefOf, pool.lovedPeople);
       item.exploration = true;
       item.reasons = [exploReason, ...item.reasons].slice(0, REASONS_MAX);
+      item.why = [{ kind: "exploration" as const }, ...(item.why ?? [])].slice(0, 3);
       row.items.push(item);
     }
     return row;
   }
 
+  if (rowKey === "forYouMovies") {
+    // Les meilleurs FILMS pour le compte, variés (une saga n'y entre que deux fois).
+    const movies = capPerCollection(eligible.filter((e) => e.candidate.mediaType === "movie" && worthFilling(e)), opts.profile.facets);
+    return movies.length < BECAUSE_MIN_ITEMS ? null : done(mmrPick(movies, ROW_SIZES.forYouMovies, opts.lambda));
+  }
+
   if (rowKey === "inLibrary") {
-    const inLibrary = eligible.filter((e) => e.candidate.jellyfinItemId);
+    const inLibrary = capPerCollection(eligible.filter((e) => e.candidate.jellyfinItemId && worthFilling(e)), opts.profile.facets);
     return done(pickWithUniverseQuota(inLibrary, ROW_SIZES.inLibrary, opts.lambda, share));
   }
 
   if (rowKey === "discover") {
     if (!opts.vigieAvailable) return null;
-    const outside = eligible.filter((e) => !e.candidate.jellyfinItemId);
+    const outside = capPerCollection(eligible.filter((e) => !e.candidate.jellyfinItemId && worthFilling(e)), opts.profile.facets);
     return done(pickWithUniverseQuota(outside, ROW_SIZES.discover, opts.lambda, share));
   }
 
   if (rowKey === "anime") {
-    const related = eligible.filter(isAnimeEntry);
+    const related = capPerCollection(eligible.filter((e) => isAnimeEntry(e) && worthFilling(e)), opts.profile.facets);
     if (share < ANIME_MIN_SHARE || related.length < ANIME_ROW_MIN_ITEMS) return null;
     const row = done(mmrPick(related, ROW_SIZES.anime, opts.lambda, ANIME_COMMON_FACETS));
     // « Vous regardez des animés » est le TITRE de la rangée : place aux
@@ -178,10 +251,15 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     const seedKey = rowKey.slice("becauseYouLiked:".length);
     const seed = pool.seeds.find((s) => `${s.mediaType}:${s.tmdbId}` === seedKey);
     if (!seed) return null;
-    const related = eligible.filter((e) => e.candidate.seedKey === seedKey);
+    // Ses VRAIS parents seulement (cf. isRealKin), deux titres d'une saga au plus.
+    const related = capPerCollection(eligible.filter((e) => isRealKin(e, { key: seedKey, universes: seed.universes, animated: seed.animated })), opts.profile.facets);
     if (related.length < BECAUSE_MIN_ITEMS) return null;
     const seedReason: RecoReason = { kind: "seed", seedTitle: seed.title };
-    const row = done(mmrPick(related, BECAUSE_SIZE, opts.lambda), seed.title);
+    // Pas de remplissage d'une même franchise : trois titres au plus.
+    let franchiseLeft = BECAUSE_FRANCHISE_MAX;
+    const varied = related.filter((e) => !isFranchiseEntry(e) || franchiseLeft-- > 0);
+    if (varied.length < BECAUSE_MIN_ITEMS) return null;
+    const row = done(mmrPick(varied, BECAUSE_SIZE, opts.lambda), seed.title);
     // La graine de la rangée remplace le titre aimé le plus proche : deux
     // « Parce que vous avez aimé » à la suite se contrediraient.
     for (const item of row.items) {
@@ -194,7 +272,7 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     const personId = Number(rowKey.slice("withActor:".length));
     if (!Number.isFinite(personId)) return null;
     const person = pool.people?.find((p) => p.personId === personId);
-    const related = eligible.filter((e) => e.candidate.personKey === personId);
+    const related = capPerCollection(eligible.filter((e) => e.candidate.personKey === personId), opts.profile.facets);
     if (related.length < BECAUSE_MIN_ITEMS) return null;
     const actorReason: RecoReason = { kind: "facet", key: `actor:${personId}`, label: person?.name };
     const row = done(mmrPick(related, BECAUSE_SIZE, opts.lambda), person?.name);
@@ -204,11 +282,13 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     return row;
   }
 
+  if (rowKey.startsWith("person:")) return buildPersonRow(pool, rowKey, eligible, opts);
+
   if (rowKey === "exploration") {
     // Hors de la tête du classement : ces titres-là, « Pour vous » et « Dans
     // votre bibliothèque » les montrent déjà.
     const head = new Set(eligible.slice(0, EXPLORATION_SKIP_TOP).map((e) => e.candidate.key));
-    return done(explorationPicks(eligible, opts.profile, ROW_SIZES.exploration, head), undefined, true);
+    return done(explorationPicks(capPerCollection(eligible, opts.profile.facets), opts.profile, ROW_SIZES.exploration, head), undefined, true);
   }
 
   return null;
