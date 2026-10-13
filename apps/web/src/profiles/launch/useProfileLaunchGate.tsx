@@ -77,7 +77,9 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   }, [navigate]);
 
   if (!authed || gate.phase === "app") return null;
-  if (gate.phase === "picker") return <ProfileLaunchScreen initialListing={initialListing} onDone={onDone} onAccountLost={logout} />;
+  if (gate.phase === "picker") {
+    return <ProfileLaunchScreen initialListing={initialListing} ended={gate.requested} onDone={onDone} onAccountLost={logout} />;
+  }
   if (gate.phase === "error") return <ErrorScreen onRetry={check} />;
   return <LaunchSplash requested={gate.requested} />;
 }

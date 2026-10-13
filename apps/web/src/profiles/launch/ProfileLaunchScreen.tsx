@@ -20,6 +20,8 @@ const FAMILY_SETTINGS_PATH = "/settings/family";
 interface ProfileLaunchScreenProps {
   /** La dernière liste connue (le miroir) : la rangée paraît avant toute attente. */
   initialListing: PickerProfilesDto | null;
+  /** On revient ici parce que la session d'un profil a pris fin : le dire. */
+  ended?: boolean;
   /** Le profil choisi est le compte, en session personnelle : l'application, sans rechargement. */
   onDone: (landing?: string) => void;
   /** La session personnelle a été refusée : déconnexion. */
@@ -34,7 +36,7 @@ interface ProfileLaunchScreenProps {
  * d'abord, derrière son code, puis Réglages › Famille). La vue est
  * `WhoIsWatchingView`.
  */
-export function ProfileLaunchScreen({ initialListing, onDone, onAccountLost }: ProfileLaunchScreenProps) {
+export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onAccountLost }: ProfileLaunchScreenProps) {
   const { t, i18n } = useTranslation("profilePicker");
   const client = useJellyfinClient();
   const accountId = accountUserId();
@@ -94,12 +96,12 @@ export function ProfileLaunchScreen({ initialListing, onDone, onAccountLost }: P
     () => pickerModelOf({
       listing: listing.data ?? null,
       error: listing.isError && !listing.data ? t("loadFailed") : null,
-      flow,
+      flow: { ...flow, notice: flow.notice ?? (ended ? t("session.ended") : null) },
       openingLabel: slowOpening && flow.opening ? t("opening", { name: profiles.find((p) => p.userId === flow.opening)?.name ?? "" }) : null,
       language: i18n.language,
       t,
     }),
-    [listing.data, listing.isError, flow, slowOpening, profiles, i18n.language, t],
+    [listing.data, listing.isError, flow, ended, slowOpening, profiles, i18n.language, t],
   );
 
   return (
