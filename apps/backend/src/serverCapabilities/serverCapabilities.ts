@@ -74,6 +74,10 @@ export const SERVER_CAPABILITIES = {
   /** La rangée « Films pour vous » de la page reco (`?themes=1`, clé de rangée
    *  `forYouMovies`), que l'accueil peut aussi épingler. */
   "reco.moviesRow": "1.27.1",
+  /** L'aperçu de bande-annonce au survol d'une carte : `GET /api/trailers/preview`
+   *  (un titre de la bibliothèque, ou un titre TMDB) rend une bande-annonce choisie,
+   *  VÉRIFIÉE et relayée par ce serveur — ou un refus, et rien ne s'anime. */
+  "trailers.preview": "1.28.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
