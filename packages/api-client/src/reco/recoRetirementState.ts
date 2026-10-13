@@ -13,6 +13,9 @@
  *   • les titres EN PARTANCE : jugés et lâchés, leur carte s'efface le temps
  *     d'un fondu avant le retrait — une carte reprise entre-temps reste.
  *
+ * S'y ajoute un signal : le titre qui QUITTE les pages en cache, quelle que
+ * soit la raison — la page d'une visite (useRecoPageVisit) l'écoute.
+ *
  * Une carte se désigne par la clé du titre (« movie:603 ») ou par son item
  * Jellyfin — la carte d'une télévision ne connaît que lui.
  */
@@ -22,9 +25,53 @@ const retired = new Set<string>();
 const dismissed = new Set<string>();
 const leaving = new Map<string, ReturnType<typeof setTimeout> | null>();
 const leavingListeners = new Set<() => void>();
+const droppedListeners = new Set<(key: string) => void>();
 
 function emitLeaving(): void {
   for (const listener of leavingListeners) listener();
+}
+
+/**
+ * Un titre QUITTE les pages en cache (refusé, jugé puis lâché, noté, demandé) :
+ * toutes ces sorties passent par `dropRecoItemEverywhere`, qui le dit ici. La
+ * page d'une visite (cf. useRecoPageVisit) en garde la liste : c'est le seul
+ * changement qu'elle laisse passer sous les yeux.
+ */
+export function emitRecoDropped(key: string): void {
+  for (const listener of droppedListeners) listener(key);
+}
+
+export function subscribeRecoDropped(listener: (key: string) => void): () => void {
+  droppedListeners.add(listener);
+  return () => {
+    droppedListeners.delete(listener);
+  };
+}
+
+/** Une page À L'ÉCRAN (forme minimale : ce module ne dépend d'aucun type). */
+export interface ShownRecoPage {
+  rows: ReadonlyArray<{ items: ReadonlyArray<{ key: string; jellyfinItemId: string | null }> }>;
+  featured?: { item: { key: string; jellyfinItemId: string | null } };
+}
+
+const shownPages = new Set<ShownRecoPage>();
+
+/**
+ * Les pages que les visites MONTRENT (useRecoPageVisit). Le lâcher d'une carte
+ * y cherche aussi son titre : le serveur l'écarte de la page qu'il ressert
+ * dès qu'il est jugé (vu, aimé, noté), le cache peut donc ne plus le contenir
+ * alors que l'écran le montre encore — sans elles, la carte jugée ne partait
+ * jamais (2026-10-13).
+ */
+export function registerShownRecoPage(page: ShownRecoPage): () => void {
+  shownPages.add(page);
+  return () => {
+    shownPages.delete(page);
+  };
+}
+
+export function shownRecoPages(): ReadonlySet<ShownRecoPage> {
+  return shownPages;
 }
 
 export function holdRecoCard(id: string): void {

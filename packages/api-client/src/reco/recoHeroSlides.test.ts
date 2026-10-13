@@ -46,6 +46,16 @@ describe("selectHeroSlides", () => {
     expect(selectHeroSlides([], 0.1)).toEqual([]);
   });
 
+  it("un titre qui quitte la rangée n'emporte que SA diapositive : les autres restent, dans le même ordre", () => {
+    const before = selectHeroSlides(ITEMS, 0.42).map((s) => s.key);
+    const gone = before[1];
+    const after = selectHeroSlides(ITEMS.filter((i) => i.key !== gone), 0.42).map((s) => s.key);
+    expect(after.slice(0, 4)).toEqual(before.filter((key) => key !== gone));
+    // Un titre hors du tirage peut partir : le carrousel ne bouge pas.
+    const outside = ITEMS.find((i) => ELIGIBLE.has(i.key) && !before.includes(i.key))!.key;
+    expect(selectHeroSlides(ITEMS.filter((i) => i.key !== outside), 0.42).map((s) => s.key)).toEqual(before);
+  });
+
   it("ne modifie pas la rangée : « Pour vous » reste entière", () => {
     const before = ITEMS.map((i) => i.key);
     selectHeroSlides(ITEMS, 0.9);

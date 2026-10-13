@@ -6,6 +6,7 @@
  */
 export const RECO_ROW_TITLE_KEYS: Readonly<Record<string, string>> = {
   forYou: "rowForYou",
+  forYouMovies: "rowForYouMovies",
   inLibrary: "rowInLibrary",
   discover: "rowDiscover",
   community: "rowCommunity",

@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   firstServedRecoRowKey,
   isHomeRowAvailable,
+  isHomeRowOffered,
   mergeHiddenHomeRows,
   moveRow,
   reconcileHomeRows,
+  servedHomeRecoRow,
   visibleHomeRows,
 } from "./homeRows";
 
@@ -98,3 +100,29 @@ describe("moveRow", () => {
     expect(moveRow(rows, 1, 1)).toBe(rows);
   });
 });
+
+describe("« Films pour vous » à l'accueil — gardée par la capacité du serveur", () => {
+  const rows = [
+    { key: "reco:forYou", enabled: true },
+    { key: "reco:forYouMovies", enabled: true },
+    { key: "watchlist", enabled: true },
+  ];
+
+  it("proposée et rendue seulement face à un serveur qui déclare `reco.moviesRow`", () => {
+    expect(isHomeRowOffered("reco:forYouMovies", new Set(["reco.moviesRow"]))).toBe(true);
+    expect(isHomeRowOffered("reco:forYouMovies", new Set())).toBe(false);
+    expect(isHomeRowOffered("reco:forYou", new Set())).toBe(true);
+    expect(visibleHomeRows(rows, undefined, new Set()).map((r) => r.key)).toEqual(["reco:forYou", "watchlist"]);
+    expect(visibleHomeRows(rows, undefined, new Set(["reco.moviesRow"])).map((r) => r.key)).toEqual(rows.map((r) => r.key));
+    // Sans capacités passées (appelant d'avant) : le catalogue seul décide, comme avant.
+    expect(visibleHomeRows(rows).map((r) => r.key)).toEqual(rows.map((r) => r.key));
+  });
+
+  it("une rangée épinglée que la page ne sert pas se tait (null), sans erreur", () => {
+    const served = [{ key: "forYou" }, { key: "forYouMovies" }];
+    expect(servedHomeRecoRow(served, "reco:forYouMovies")?.key).toBe("forYouMovies");
+    expect(servedHomeRecoRow([{ key: "forYou" }], "reco:forYouMovies")).toBeNull();
+    expect(servedHomeRecoRow(undefined, "reco:forYouMovies")).toBeNull();
+  });
+});
+

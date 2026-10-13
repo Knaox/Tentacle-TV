@@ -1,3 +1,4 @@
+import type { ServerCapability } from "@tentacle-tv/shared";
 import type { HomeRowDescriptor } from "../hooks/useHomeLayout";
 
 /**
@@ -92,14 +93,43 @@ export function isHomeRowAvailable(key: string, catalog?: readonly HomeRowDescri
   return !catalog || key.startsWith(LIBRARY_PREFIX) || catalog.some((row) => row.key === key);
 }
 
+/**
+ * Les rangées de l'accueil qu'un serveur ne sert que s'il DÉCLARE la capacité
+ * (CLAUDE.md, « Capacités du serveur ») : « Films pour vous » (`reco.moviesRow`,
+ * serveur 1.27.1). Face à un serveur qui ne la déclare pas, la rangée n'est ni
+ * proposée ni rendue — sans erreur, même épinglée.
+ */
+export const HOME_ROW_CAPABILITIES: Readonly<Record<string, ServerCapability>> = {
+  "reco:forYouMovies": "reco.moviesRow",
+};
+
+/** Pur : la rangée peut-elle être proposée (et rendue) face à ces capacités ? */
+export function isHomeRowOffered(key: string, capabilities?: ReadonlySet<ServerCapability>): boolean {
+  const required = HOME_ROW_CAPABILITIES[key];
+  return !required || !!capabilities?.has(required);
+}
+
 /** Les rangées à RENDRE (accueil) ou à PROPOSER (éditeur) : celles que le
- *  serveur sait servir. Identité sans catalogue. */
+ *  serveur sait servir — son catalogue, et ses capacités déclarées quand on les
+ *  passe. Identité sans catalogue ni capacités. */
 export function visibleHomeRows(
   rows: HomeRowDescriptor[],
-  catalog?: readonly HomeRowDescriptor[]
+  catalog?: readonly HomeRowDescriptor[],
+  capabilities?: ReadonlySet<ServerCapability>
 ): HomeRowDescriptor[] {
-  if (!catalog) return rows;
-  return rows.filter((row) => isHomeRowAvailable(row.key, catalog));
+  const byCatalog = catalog ? rows.filter((row) => isHomeRowAvailable(row.key, catalog)) : rows;
+  if (!capabilities) return byCatalog;
+  return byCatalog.filter((row) => isHomeRowOffered(row.key, capabilities));
+}
+
+/** Pur : la rangée servie qu'une rangée `reco:<clé>` de l'accueil affiche — `null`
+ *  quand la page ne la sert pas (serveur ancien, filtre trop strict) : elle se tait. */
+export function servedHomeRecoRow<T extends { key: string }>(
+  rows: readonly T[] | undefined,
+  layoutKey: string
+): T | null {
+  const key = layoutKey.startsWith("reco:") ? layoutKey.slice("reco:".length) : layoutKey;
+  return rows?.find((row) => row.key === key) ?? null;
 }
 
 /**

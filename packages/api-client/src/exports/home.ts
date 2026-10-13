@@ -23,6 +23,7 @@ export {
 // mobile et la TV (cf. utils/homeRows)
 export {
   reconcileHomeRows, visibleHomeRows, isHomeRowAvailable, mergeHiddenHomeRows, firstServedRecoRowKey, moveRow,
+  isHomeRowOffered, servedHomeRecoRow, HOME_ROW_CAPABILITIES,
   type LibraryRef, type ReconcileHomeRowsOptions,
 } from "../utils/homeRows";
 

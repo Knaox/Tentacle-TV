@@ -9,9 +9,18 @@ export type { RecoProviderRef } from "../hooks/recoTypes";
 // (cf. hooks/useRecoPage, hooks/useRecoLive)
 export {
   useRecoPage, prefetchRecoPage, removeRecoItem, dropRecoItemEverywhere, invalidateRecoQueries, normalizeProviderFilter,
+  acceptRecoPageThemes, recoPageQuery,
   recoFilterKey, getRecoPageKey, RECO_PAGE_KEY, ALL_PROVIDERS_KEY, type RecoPage, type RecoPageRow,
 } from "../hooks/useRecoPage";
 export { useRecoLive } from "../hooks/useRecoLive";
+// Ce que l'écran MONTRE : la page de la visite, tenue tant qu'on y est — une
+// page recalculée attend la frontière suivante (cf. reco/useRecoPageVisit,
+// docs/RECO-POUR-VOUS.md, règle 5)
+export { useRecoPageVisit, type RecoPageVisit } from "../reco/useRecoPageVisit";
+export {
+  servedPageVerdict, visibleRecoPage, hasNewRecoContent, isProvisionalRecoPage, recoPageFilterKey,
+  RECO_GLOBAL_ROW_KEYS, RECO_ARRIVAL_MS, RECO_LONG_ABSENCE_MS, type ServedPageVerdict,
+} from "../reco/recoPageVisit";
 
 // Un titre jugé (Ma liste, cœur, vu, note) sort des recommandations quand la
 // carte est LÂCHÉE — fin du survol de sa rangée, feuille refermée (cf.
@@ -49,5 +58,14 @@ export {
 // Reco partagés entre web, mobile et TV : raisons verbalisées, tirage des
 // diapositives héros, catalogue des familles de plateformes (cf. src/reco).
 export { reasonToText, type ReasonTranslate } from "../reco/recoReasonText";
+// Le contrat qui dit POURQUOI (shared, reco/recoPageTypes) mis en mots : la raison
+// d'un titre, le titre d'une rangée à thème, la correspondance, la une.
+export {
+  recoWhyText, recoItemReasonText, recoRowTitleText, recoMatchOf, recoWhysOf, sameRecoWhy, type RecoWhyTextOptions,
+} from "../reco/recoWhyText";
+export { recoSpotlightOf, RECO_SPOTLIGHT_ALTERNATIVES, type RecoSpotlight } from "../reco/recoSpotlight";
+export type {
+  RecoWhy, RecoWhyKind, RecoTitleRef, RecoPersonRef, RecoCreditRole, RecoThemeRef, RecoThemeTag, RecoFeatured,
+} from "../hooks/recoTypes";
 export { selectHeroSlides, heroSelectionFromRows, useRecoHeroSlides, type RecoHeroSelection } from "../reco/recoHeroSlides";
 export { buildPlatformCatalog, isFamilyActive, toggleFamily, activeFamilyCount, type PlatformCatalogEntry } from "../reco/platformCatalog";

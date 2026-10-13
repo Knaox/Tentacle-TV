@@ -1,32 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
-import { hasRetiredReco, isRecoRetired } from "../reco/recoRetirementState";
+import { emitRecoDropped, hasRetiredReco, isRecoRetired } from "../reco/recoRetirementState";
 import { getSocketStatus } from "../socket/tentacleSocket";
-import type { RecoRowItem, RecoState } from "./recoTypes";
+import { RECO_PAGE_THEMES_PARAM, type RecoPage, type RecoPageRow } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "./usePreferences";
 
-export interface RecoPageRow {
-  key: string;
-  seedTitle?: string;
-  items: RecoRowItem[];
-}
-
-/** Le contrat de GET /api/reco/page — la page entière, en une réponse. */
-export interface RecoPage {
-  state: RecoState;
-  signalCount: number;
-  generating: boolean;
-  refining: boolean;
-  exploring: boolean;
-  generatedAt: string | null;
-  poolGeneratedAt: string | null;
-  tmdbConfigured: boolean;
-  personalized: boolean;
-  /** Le filtre appliqué par le serveur (ids canonisés), null = tout. */
-  filter: { providers: number[] } | null;
-  /** Rangées AVEC leurs items, filtrées strictement, vides omises. */
-  rows: RecoPageRow[];
-}
+/** Le contrat de GET /api/reco/page — la page entière, en une réponse
+ *  (shared, reco/recoPageTypes : `featured`, `why` des rangées, en optionnel). */
+export type { RecoPage, RecoPageRow };
 
 /** Préfixe DÉDIÉ : c'est lui que le persister met sur disque — les autres
  *  clés reco (personnes, démarrage à froid) restent en mémoire. */
@@ -52,10 +33,32 @@ export function getRecoPageKey(ids: readonly number[] | null | undefined): reado
   return [RECO_PAGE_KEY, recoFilterKey(ids)] as const;
 }
 
+/**
+ * Ce client sait-il titrer une rangée à THÈME (`recoRowTitleText`, par son
+ * `why`) ? Il le dit au serveur (`?themes=1`, RECO_PAGE_THEMES_PARAM) ; sans
+ * lui, le serveur ne sert que les clés que `recoRowTitle` sait nommer — une
+ * rangée à thème s'y appellerait « Pour vous ». Posé UNE fois, au démarrage
+ * de l'application qui le sait (le web et le bureau, miroir compris), avant
+ * toute requête : la clé de cache de la page ne change pas — dans une
+ * application, toutes les pages en cache sont demandées de la même façon.
+ */
+let themedRows = false;
+export function acceptRecoPageThemes(): void {
+  themedRows = true;
+}
+
+/** La requête d'une page : le filtre de plateformes, et les rangées à thème si le client sait les titrer. */
+export function recoPageQuery(ids: readonly number[]): string {
+  const params: string[] = [];
+  const normalized = normalizeProviderFilter(ids);
+  if (normalized.length > 0) params.push(`providers=${normalized.join(",")}`);
+  if (themedRows) params.push(`${RECO_PAGE_THEMES_PARAM}=1`);
+  return params.length > 0 ? `?${params.join("&")}` : "";
+}
+
 /** Le fetcher partagé entre le hook et le préchargement. */
 export function buildRecoPageFetcher(ids: readonly number[]): () => Promise<RecoPage> {
-  const normalized = normalizeProviderFilter(ids);
-  const query = normalized.length > 0 ? `?providers=${normalized.join(",")}` : "";
+  const query = recoPageQuery(ids);
   return () => tentacleApiFetch<RecoPage>(`/api/reco/page${query}`);
 }
 
@@ -80,6 +83,7 @@ export const selectRecoPage = (page: RecoPage): RecoPage => ({
   exploring: !!page.exploring,
   filter: page.filter ?? null,
   rows: withoutRetired(page.rows ?? []).filter((row) => Array.isArray(row.items) && row.items.length > 0),
+  featured: page.featured?.item && !isRecoRetired(page.featured.item.key) ? page.featured : undefined,
 });
 
 /**
@@ -142,11 +146,18 @@ export function removeRecoItem(page: RecoPage | undefined, itemKey: string): Rec
     if (items.length !== row.items.length) changed = true;
     if (items.length > 0) rows.push(items.length === row.items.length ? row : { ...row, items });
   }
-  return changed ? { ...page, rows } : page;
+  const featuredGone = page.featured?.item.key === itemKey;
+  if (!changed && !featuredGone) return page;
+  const next = { ...page, rows };
+  if (featuredGone) delete next.featured;
+  return next;
 }
 
-/** Retrait OPTIMISTE (note posée, « ne plus me proposer ») de toutes les pages en cache. */
+/** Retrait OPTIMISTE (note posée, « ne plus me proposer ») de toutes les pages en cache.
+ *  Dit AUSSI aux pages à l'écran (`emitRecoDropped`) : une page tenue le temps de
+ *  la visite ne se relit plus dans le cache, mais ce titre-là doit la quitter. */
 export async function dropRecoItemEverywhere(qc: QueryClient, itemKey: string): Promise<void> {
+  emitRecoDropped(itemKey);
   await qc.cancelQueries({ queryKey: [RECO_PAGE_KEY] });
   qc.setQueriesData<RecoPage>({ queryKey: [RECO_PAGE_KEY] }, (old) => removeRecoItem(old, itemKey));
 }

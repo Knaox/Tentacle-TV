@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { RecoRowItem } from "./recoTypes";
 import {
   RECO_PAGE_FALLBACK_POLL_MS,
+  acceptRecoPageThemes,
+  recoPageQuery,
   normalizeProviderFilter,
   recoFilterKey,
   recoPagePollInterval,
@@ -36,6 +38,17 @@ const page = (rows: RecoPage["rows"]): RecoPage => ({
   personalized: true,
   filter: null,
   rows,
+});
+
+describe("recoPageQuery", () => {
+  it("le filtre seul, puis `themes=1` une fois que le client sait titrer une rangée à thème — même clé de cache", () => {
+    expect(recoPageQuery([415, 283])).toBe("?providers=283,415");
+    expect(recoPageQuery([])).toBe("");
+    acceptRecoPageThemes();
+    expect(recoPageQuery([415, 283])).toBe("?providers=283,415&themes=1");
+    expect(recoPageQuery([])).toBe("?themes=1");
+    expect(recoFilterKey([415, 283])).toBe("283,415");
+  });
 });
 
 describe("normalizeProviderFilter / recoFilterKey", () => {
