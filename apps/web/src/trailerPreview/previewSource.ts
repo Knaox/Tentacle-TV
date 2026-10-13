@@ -16,9 +16,19 @@ type HlsClass = typeof Hls;
 
 let hlsLoading: Promise<HlsClass> | null = null;
 
-/** Le module hls.js, chargé une fois (l'intention le précharge, cf. `preloadTrailerPreviewPlayer`). */
+/**
+ * Le module hls.js, chargé une fois — dès l'intention (`useTrailerPreview`),
+ * pendant que le serveur vérifie la bande-annonce. Un chargement raté (réseau
+ * du web) n'est pas retenu : le suivant réessaie.
+ */
 export function loadPreviewHls(): Promise<HlsClass> {
-  hlsLoading ??= import("hls.js").then((module) => module.default);
+  hlsLoading ??= import("hls.js").then(
+    (module) => module.default,
+    (error: unknown) => {
+      hlsLoading = null;
+      throw error;
+    },
+  );
   return hlsLoading;
 }
 

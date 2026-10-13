@@ -17,6 +17,7 @@ const h = vi.hoisted(() => ({
   enabled: [] as boolean[],
   pip: null as unknown,
   block: null as string | null,
+  loadHls: vi.fn(async () => undefined),
 }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ i18n: { language: "fr-FR" } }) }));
@@ -29,6 +30,7 @@ vi.mock("@tentacle-tv/api-client", () => ({
 vi.mock("../pictureInPicture/pictureInPictureStore", () => ({ usePipSession: () => h.pip }));
 vi.mock("./previewEnvironment", () => ({ useTrailerPreviewBlock: () => h.block }));
 vi.mock("../lib/backendBase", () => ({ getBackendBase: () => "http://serveur:3001" }));
+vi.mock("./previewSource", () => ({ loadPreviewHls: h.loadHls }));
 
 const { useTrailerPreview } = await import("./useTrailerPreview");
 const { forgetTrailerPreviewFailures } = await import("./previewFailures");
@@ -107,6 +109,15 @@ describe("useTrailerPreview — quand demander", () => {
     await render("a");
     expect(handles.a.phase).toBe("fetching");
     expect(h.enabled.at(-1)).toBe(true);
+  });
+
+  it("le lecteur se charge dès l'intention, pas avant", async () => {
+    h.loadHls.mockClear();
+    await render("a", { hovered: true });
+    await wait(T.intentMs - 50);
+    expect(h.loadHls).not.toHaveBeenCalled();
+    await wait(50);
+    expect(h.loadHls).toHaveBeenCalledTimes(1);
   });
 
   it("un survol qui cesse pendant la demande l'abandonne", async () => {

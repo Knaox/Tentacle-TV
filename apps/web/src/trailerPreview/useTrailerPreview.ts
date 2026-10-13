@@ -16,6 +16,7 @@ import { trailerPreviewArbiter } from "./previewArbiterInstance";
 import { useTrailerPreviewBlock } from "./previewEnvironment";
 import { rememberTrailerPreviewFailure, trailerPreviewRecentlyFailed } from "./previewFailures";
 import { useTrailerPreviewMuted } from "./previewSettings";
+import { loadPreviewHls } from "./previewSource";
 import { previewStreamOf } from "./previewStream";
 import type { TrailerPreviewHandle, TrailerPreviewStream } from "./previewTypes";
 import { usePreviewMachine } from "./usePreviewMachine";
@@ -79,6 +80,11 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
       dispatch({ type: "streamMissing", at });
     }
   }, [state.phase, state.cycle, result, fresh, subjectKey, dispatch]);
+
+  // Le lecteur se charge pendant que le serveur vérifie : la vidéo n'attendra pas hls.js.
+  useEffect(() => {
+    if (state.phase === "fetching") loadPreviewHls().catch(() => undefined);
+  }, [state.phase]);
 
   // Le survol a cessé avant la réponse (ou un autre aperçu a pris la place) : la demande est abandonnée.
   const previousPhase = useRef(state.phase);
