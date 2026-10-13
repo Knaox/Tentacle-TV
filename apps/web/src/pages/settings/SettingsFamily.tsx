@@ -12,6 +12,7 @@ import { FamilySection } from "../../family/page/FamilySection";
 import { IncomingInvitationsSection } from "../../family/page/IncomingInvitations";
 import { LeaveSection } from "../../family/page/LeaveSection";
 import { SECONDARY_BUTTON } from "../../family/page/familyUi";
+import { AskAtLaunchSection } from "../../profiles/settings/AskAtLaunchSection";
 
 /**
  * Réglages › Famille — le même écran au bureau (section de la coquille) et
@@ -68,6 +69,8 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
       ))}
       {personal && !family && <IncomingInvitationsSection incoming={overview.incoming} />}
       <FamilySection overview={overview} />
+      {/* Bureau : « Qui regarde ? » à l'ouverture, pour tous ses ordinateurs (famille de deux profils et plus). */}
+      {personal && family !== null && <AskAtLaunchSection />}
       {personal && (account.canJoin || family !== null) && <MyPinSection hasPin={account.hasPin} />}
       {personal && family?.role === "owner" && <DissolveSection />}
       {personal && family?.role === "member" && <LeaveSection familyId={family.id} ownerName={family.owner.name} />}
