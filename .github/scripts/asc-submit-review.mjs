@@ -18,7 +18,7 @@
 // BLOQUANT, contrairement aux scripts de notes : c'est la raison d'être du
 // cran « store ». Un échec silencieux laisserait croire que c'est publié.
 import {
-  createAscClient, findApp, ensureAppStoreVersion,
+  createAscClient, findApp, ensureAppStoreVersion, findLatestTestedBuild,
   EDITABLE_VERSION_STATES, SUBMITTED_VERSION_STATES, versionState,
 } from './lib/asc-api.mjs';
 
@@ -56,14 +56,23 @@ const main = async () => {
     process.exit(1);
   }
 
-  // Une version sans build rattaché n'atteindra jamais READY_FOR_REVIEW : au
-  // cran « promote », c'est le signe qu'aucun run de test n'est passé par là.
-  // Mieux vaut le dire tout de suite que d'attendre le délai d'expiration.
-  const attached = await api('GET', `/v1/appStoreVersions/${ver.id}/relationships/build`).catch(() => null);
-  if (!attached?.data?.id) {
-    console.error(`::error::la version ${VERSION} (${PLATFORM}) n'a AUCUN build rattaché — rien à soumettre.`);
-    console.error('Livre d\'abord au cran « test » (le build sera envoyé puis rattaché), ou relance au cran « store » sans « reprendre le binaire testé ».');
+  // 0) Le build soumis est le DERNIER build TestFlight traité de la version —
+  //    celui du run store s'il vient d'être construit, sinon le dernier testé
+  //    (« promote »). Le cran test n'ouvre jamais la version App Store : c'est
+  //    ici, et ici seulement, qu'un build y est rattaché.
+  const tested = await findLatestTestedBuild(api, app.id, { version: VERSION, platform: PLATFORM });
+  if (!tested) {
+    console.error(`::error::aucun build TestFlight traité pour ${VERSION} (${PLATFORM}) — rien à soumettre.`);
+    console.error('Livre d\'abord au cran « test », ou relance au cran « store » sans « reprendre le binaire testé ».');
     process.exit(1);
+  }
+  const attached = await api('GET', `/v1/appStoreVersions/${ver.id}/relationships/build`).catch(() => null);
+  if (attached?.data?.id === tested.id) {
+    console.log(`[review] build ${tested.attributes.version} déjà rattaché à ${VERSION}.`);
+  } else {
+    await api('PATCH', `/v1/appStoreVersions/${ver.id}/relationships/build`,
+      { data: { type: 'builds', id: tested.id } });
+    console.log(`[review] build TestFlight ${tested.attributes.version} rattaché à ${VERSION} (${PLATFORM}) ✓`);
   }
 
   // 1) Mise en vente automatique à l'approbation.

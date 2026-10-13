@@ -1,6 +1,7 @@
 // Le pré-contrôle de la reprise : ce qu'il y a VRAIMENT à reprendre au cran store.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { latestTestedBuild } from '../lib/asc-api.mjs';
 import { TV_VERSION_CODE_BASE } from '../lib/play-reporting.mjs';
 import {
   ascPromoteVerdict, playPromoteVerdict, promotableVersionCodes, releaseVersion,
@@ -8,16 +9,38 @@ import {
 
 const ascVersion = (appVersionState) => ({ id: 'v1', attributes: { appVersionState } });
 
-test('App Store : sans version ni build rattaché, la cible se construit', () => {
+const tested = (version) => ({ id: `b${version}`, attributes: { version: String(version), processingState: 'VALID' } });
+
+test('App Store : sans build TestFlight traité, la cible se construit', () => {
   assert.equal(ascPromoteVerdict(null, null).plan, 'build');
   // Le cas du 2026-09-29 : la version existait (les notes l'avaient créée), sans build.
   assert.equal(ascPromoteVerdict(ascVersion('PREPARE_FOR_SUBMISSION'), null).plan, 'build');
 });
 
-test('App Store : un build rattaché, ou une version déjà soumise, se reprend', () => {
-  assert.equal(ascPromoteVerdict(ascVersion('READY_FOR_REVIEW'), 'b42').plan, 'promote');
+test('App Store : un build TestFlight se reprend, même sans version App Store', () => {
+  // Le cran test n'ouvre plus de version : seul le train TestFlight existe.
+  assert.equal(ascPromoteVerdict(null, tested(1450000)).plan, 'promote');
+  assert.equal(ascPromoteVerdict(ascVersion('PREPARE_FOR_SUBMISSION'), tested(1450000)).plan, 'promote');
+});
+
+test('App Store : une version déjà soumise ou en vente se reprend (run rejoué)', () => {
   assert.equal(ascPromoteVerdict(ascVersion('WAITING_FOR_REVIEW'), null).plan, 'promote');
   assert.equal(ascPromoteVerdict({ id: 'v1', attributes: { appStoreState: 'READY_FOR_SALE' } }, null).plan, 'promote');
+});
+
+test('App Store : le build repris est le dernier TRAITÉ, jamais un expiré ni un en cours', () => {
+  const build = (version, processingState, expired = false) =>
+    ({ id: `b${version}`, attributes: { version: String(version), processingState, expired } });
+  const picked = latestTestedBuild([
+    build(1400000, 'VALID'),
+    build(1450000, 'VALID'),
+    build(1460000, 'PROCESSING'),
+    build(1470000, 'VALID', true),
+    build(1300000, 'VALID'),
+  ]);
+  assert.equal(picked.id, 'b1450000');
+  assert.equal(latestTestedBuild([build(1, 'INVALID')]), null);
+  assert.equal(latestTestedBuild(undefined), null);
 });
 
 test('Play : seule une piste de TEST qui sert la version, au bon form factor, se reprend', () => {

@@ -3,7 +3,7 @@
 //   version App Store si besoin puis écrit les notes fr-FR + en-US.
 // - « À tester » (betaBuildLocalizations.whatsNew — oui, même nom d'attribut que
 //   les Nouveautés App Store ; « whatsToTest » n'existe pas → 409) : best-effort sur le build s'il
-//   est déjà traité par Apple (sinon ignoré — asc-attach-build.mjs les re-pose après
+//   est déjà traité par Apple (sinon ignoré — asc-await-build.mjs les re-pose après
 //   traitement).
 // NON BLOQUANT : toute erreur est loggée mais n'échoue pas le job (exit 0).
 //
@@ -42,7 +42,7 @@ const main = async () => {
   // ── « À tester » TestFlight : best-effort si le build est déjà traité ──
   try {
     const build = await findBuild(api, app.id, { build: BUILD, platform: PLATFORM });
-    if (!build) { console.log(`[notes] build ${BUILD} pas encore traité par Apple — « À tester » posé par asc-attach-build après traitement.`); return; }
+    if (!build) { console.log(`[notes] build ${BUILD} pas encore traité par Apple — « À tester » posé par asc-await-build après traitement.`); return; }
     await setBetaBuildNotes(api, build.id, pairs, (m) => console.log(`[notes] ${m}`));
   } catch (e) { console.log(`[notes] « À tester » échec (non bloquant): ${e.message}`); }
 };

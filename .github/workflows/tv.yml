@@ -542,21 +542,8 @@ jobs:
             --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
           echo "uploaded=true" >> "$GITHUB_OUTPUT"
 
-      - name: Poser les notes (App Store / TestFlight tvOS)
-        if: needs.prepare.outputs.channel != 'build'
-        continue-on-error: true
-        env:
-          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
-          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
-          BUNDLE_ID: com.tentacle.mobile
-          PLATFORM: TV_OS
-          VERSION: ${{ needs.prepare.outputs.version }}
-          BUILD: ${{ needs.prepare.outputs.build }}
-          CHANGELOG: changelogs/tv.md
-        run: node .github/scripts/asc-release-notes.mjs
-
-  # Attend le traitement ASC puis rattache et distribue. Le job amont est
+  # Attend le traitement ASC puis distribue sur TestFlight — sans ouvrir de
+  # version App Store, que seul apple-tv-review (cran store) ouvre. Le job amont est
   # `continue-on-error`, donc son échec passerait pour un succès auprès de
   # `needs` : on teste explicitement `outcome`, sans quoi ce job sonderait
   # pendant 35 minutes un build qui n'a jamais été envoyé.
@@ -566,7 +553,7 @@ jobs:
       needs.prepare.outputs.appletv == 'build'
       && needs.prepare.outputs.channel != 'build'
       && needs['apple-tv'].outputs.uploaded == 'true'
-    name: Apple TV — rattacher et distribuer
+    name: Apple TV — distribuer sur TestFlight
     runs-on: ubuntu-latest
     timeout-minutes: 50
     continue-on-error: true
@@ -577,7 +564,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Attendre le traitement ASC + rattacher le build
+      - name: Attendre le traitement ASC + « À tester »
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -587,7 +574,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/tv.md
-        run: node .github/scripts/asc-attach-build.mjs
+        run: node .github/scripts/asc-await-build.mjs
       - name: Distribuer au groupe de test
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}

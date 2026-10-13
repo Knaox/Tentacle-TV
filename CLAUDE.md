@@ -96,6 +96,18 @@ paquet à chaque soumission. Une cible sans RIEN de testé pour cette version se
 construit : `prepare` le vérifie avant le moindre job (`promote-probe.mjs`), au
 lieu de laisser la reprise échouer pendant que Windows part seul au Store.
 
+**Apple : le cran test ne touche jamais la version App Store** — il envoie le
+build et le distribue sur TestFlight, rien d'autre (`asc-await-build.mjs`). Une
+version peut donc se tester pendant qu'une autre est en examen (ASC refuse d'en
+ouvrir une nouvelle tant que la précédente n'est pas traitée). C'est le job de
+soumission du cran store qui ouvre la version et y rattache le DERNIER build
+TestFlight traité de la version (`asc-submit-review.mjs`).
+
+**Hors de `main`, build ou test seulement** : un déclenchement depuis `dev` (ou
+toute autre branche) refuse le cran store et l'entrée `version` (le bump se
+pousse sur `main`) — action `store-from-main`, dans le `prepare` des six
+workflows ; un tag ne vaut le store que s'il pointe sur un commit de `main`.
+
 ### Les six workflows
 
 | Workflow | Cibles (`targets`) |

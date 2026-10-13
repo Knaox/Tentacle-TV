@@ -17,7 +17,7 @@
 // Une vérification IMPOSSIBLE (réseau, droits) garde la reprise demandée : le
 // job de reprise dira alors lui-même ce qui manque. Reconstruire sur une simple
 // panne enverrait un binaire non testé là où un binaire testé attendait.
-import { createAscClient, findApp } from './lib/asc-api.mjs';
+import { createAscClient, findApp, findLatestTestedBuild } from './lib/asc-api.mjs';
 import { fetchReleaseTracks } from './lib/play-reporting.mjs';
 import { ascPromoteVerdict, playPromoteVerdict } from './lib/promote.mjs';
 
@@ -31,10 +31,8 @@ async function probeAsc() {
   const vers = await api('GET',
     `/v1/apps/${app.id}/appStoreVersions?filter[versionString]=${VERSION}&filter[platform]=${PLATFORM}&limit=1`);
   const ver = vers.data?.[0] ?? null;
-  const attached = ver
-    ? await api('GET', `/v1/appStoreVersions/${ver.id}/relationships/build`).catch(() => null)
-    : null;
-  return ascPromoteVerdict(ver, attached?.data?.id ?? null);
+  const tested = await findLatestTestedBuild(api, app.id, { version: VERSION, platform: PLATFORM });
+  return ascPromoteVerdict(ver, tested);
 }
 
 async function probePlay() {

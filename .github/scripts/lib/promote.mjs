@@ -15,18 +15,20 @@ import { TV_VERSION_CODE_BASE } from './play-reporting.mjs';
 export const releaseVersion = (name) => String(name ?? '').match(/\b\d+\.\d+\.\d+\b/)?.[0] ?? null;
 
 /**
- * App Store Connect. `ver` : la version App Store (null si elle n'existe pas),
- * `buildId` : le build qui y est rattaché (null si aucun).
+ * App Store Connect. `ver` : la version App Store (null si elle n'existe pas —
+ * le cran test ne l'ouvre plus), `tested` : le dernier build TestFlight traité
+ * de cette version (null si aucun, cf. `latestTestedBuild`).
  *
- * Une version déjà soumise ou en vente se « reprend » : asc-submit-review.mjs
- * la reconnaît et ne fait rien — c'est le cas d'un run rejoué.
+ * C'est ce build que le cran store reprend : asc-submit-review.mjs le rattache
+ * à la version avant de la soumettre. Une version déjà soumise ou en vente se
+ * « reprend » aussi : asc-submit-review.mjs la reconnaît et ne fait rien —
+ * c'est le cas d'un run rejoué.
  */
-export function ascPromoteVerdict(ver, buildId) {
-  if (!ver) return { plan: 'build', reason: "aucune version App Store — aucun run de test n'est passé par là" };
+export function ascPromoteVerdict(ver, tested) {
   const state = versionState(ver);
   if (state && SUBMITTED_VERSION_STATES.has(state)) return { plan: 'promote', reason: `version déjà en « ${state} »` };
-  if (buildId) return { plan: 'promote', reason: `build rattaché (${buildId})` };
-  return { plan: 'build', reason: 'la version existe mais aucun build n’y est rattaché' };
+  if (tested) return { plan: 'promote', reason: `dernier build TestFlight ${tested.attributes?.version ?? tested.id}` };
+  return { plan: 'build', reason: "aucun build TestFlight traité pour cette version — aucun run de test n'est passé par là" };
 }
 
 /**

@@ -13,7 +13,7 @@
 #             Linux : Release publiée et manifeste patché. Aucun clic ensuite.
 #
 # `promote` (par défaut vrai, au cran store) reprend ce qui a déjà été testé :
-# macOS soumet le build DÉJÀ rattaché, Linux bascule sa pré-version en version
+# macOS soumet le DERNIER build TestFlight de la version, Linux bascule sa pré-version en version
 # publiée sans rien reconstruire. Windows fait exception — le Microsoft Store
 # exige le paquet à chaque soumission, donc il rebâtit toujours. Une cible qui
 # n'a RIEN à reprendre (aucun run de test pour cette version) se construit :
@@ -386,27 +386,13 @@ jobs:
           xcrun altool --upload-app -f *.pkg -t macos \
             --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
 
-      # Notes FR+EN depuis changelogs/desktop.md (canal « mac »). Non bloquant :
-      # le pré-vol a déjà garanti le bloc, et asc-attach-build les repose.
-      - name: Poser les notes (App Store / TestFlight)
-        if: needs.prepare.outputs.channel != 'build'
-        continue-on-error: true
-        env:
-          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
-          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
-          BUNDLE_ID: com.tentacle.mobile
-          PLATFORM: MAC_OS
-          VERSION: ${{ needs.prepare.outputs.version }}
-          BUILD: ${{ needs.prepare.outputs.build }}
-          CHANGELOG: changelogs/desktop.md
-        run: node .github/scripts/asc-release-notes.mjs
-
-  # 3) Attend le traitement ASC (~10-35 min), rattache le build et le distribue.
+  # 3) Attend le traitement ASC (~10-35 min) et distribue sur TestFlight. Aucune
+  #    version App Store n'est ouverte ici : une autre peut être en examen, et
+  #    ASC refuserait. Seul mac-review (cran store) l'ouvre et y rattache.
   mac-attach:
     needs: [prepare, mac-package]
     if: needs.prepare.outputs.macos == 'build' && needs.prepare.outputs.channel != 'build' && needs['mac-package'].result == 'success'
-    name: macOS — rattacher et distribuer
+    name: macOS — distribuer sur TestFlight
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -416,7 +402,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Attendre le traitement ASC + rattacher le build
+      - name: Attendre le traitement ASC + « À tester »
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -426,7 +412,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/desktop.md
-        run: node .github/scripts/asc-attach-build.mjs
+        run: node .github/scripts/asc-await-build.mjs
       - name: Distribuer au groupe de test
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}

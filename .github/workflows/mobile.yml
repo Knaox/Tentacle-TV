@@ -14,7 +14,7 @@
 # `promote` (par défaut vrai, au cran store seulement) REPREND LE BINAIRE DÉJÀ
 # TESTÉ au lieu d'en reconstruire un autre : le versionCode servi par la piste
 # fermée passe en production, et la version App Store part à l'examen avec le
-# build qui y est déjà rattaché. Décoché, tout est reconstruit. Une cible qui
+# DERNIER build TestFlight de la version. Décoché, tout est reconstruit. Une cible qui
 # n'a RIEN à reprendre (aucun run de test pour cette version) se construit
 # aussi : `prepare` le vérifie avant le moindre job (promote-probe.mjs).
 #
@@ -612,30 +612,14 @@ jobs:
           xcrun altool --upload-app -f "$RUNNER_TEMP"/ipa/*.ipa -t ios \
             --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
 
-      # Notes FR+EN depuis changelogs/mobile.md (bloc « ## [X.Y.Z] » nu, SANS canal).
-      # Non bloquant : le pré-vol a déjà garanti que le bloc existe, et
-      # asc-attach-build les repose de toute façon après traitement.
-      - name: Poser les notes (App Store / TestFlight iOS)
-        if: needs.prepare.outputs.channel != 'build'
-        continue-on-error: true
-        env:
-          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
-          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
-          BUNDLE_ID: com.tentacle.mobile
-          PLATFORM: IOS
-          VERSION: ${{ needs.prepare.outputs.version }}
-          BUILD: ${{ needs.prepare.outputs.build }}
-          CHANGELOG: changelogs/mobile.md
-        run: node .github/scripts/asc-release-notes.mjs
-
-  # Attend le traitement ASC (~10-35 min), rattache le build à la version App
-  # Store, puis le DISTRIBUE au groupe de test — sans quoi un build TestFlight
-  # reste visible mais n'atteint personne.
+  # Attend le traitement ASC (~10-35 min), puis DISTRIBUE le build au groupe de
+  # test — sans quoi un build TestFlight reste visible mais n'atteint personne.
+  # Aucune version App Store ici : une autre peut être en examen, et ASC
+  # refuserait. Seul ios-review (cran store) l'ouvre et y rattache le build.
   ios-attach:
     needs: [prepare, ios]
     if: needs.prepare.outputs.ios == 'build' && needs.prepare.outputs.channel != 'build' && needs.ios.result == 'success'
-    name: iOS — rattacher et distribuer
+    name: iOS — distribuer sur TestFlight
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -648,7 +632,7 @@ jobs:
       # Les blocs `env` sont recopiés d'une étape à l'autre : GitHub Actions ne
       # sait pas lire les ancres YAML (« &x » / « <<: *x »), le workflow serait
       # refusé au chargement.
-      - name: Attendre le traitement ASC + rattacher le build
+      - name: Attendre le traitement ASC + « À tester »
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -658,7 +642,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/mobile.md
-        run: node .github/scripts/asc-attach-build.mjs
+        run: node .github/scripts/asc-await-build.mjs
       - name: Distribuer au groupe de test
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}

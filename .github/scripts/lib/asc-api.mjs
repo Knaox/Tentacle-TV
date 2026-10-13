@@ -1,6 +1,6 @@
 // Client App Store Connect minimal : JWT ES256 signé maison, RE-MINTÉ toutes
 // les ~8 min (les tokens ASC expirent à 600 s — indispensable pour les scripts
-// qui pollent longtemps, ex. asc-attach-build). Zéro dépendance npm.
+// qui pollent longtemps, ex. asc-await-build). Zéro dépendance npm.
 import crypto from 'node:crypto';
 import { compareVersions, isVersion, maxVersion } from './versions.mjs';
 
@@ -79,13 +79,30 @@ export async function ensureAppStoreVersion(api, appId, { version, platform }, l
   }
 
   log(`[asc] création de la version App Store ${version} (${platform})`);
-  return (await api('POST', '/v1/appStoreVersions', {
-    data: {
-      type: 'appStoreVersions',
-      attributes: { platform, versionString: version },
-      relationships: { app: { data: { type: 'apps', id: appId } } },
-    },
-  })).data;
+  try {
+    return (await api('POST', '/v1/appStoreVersions', {
+      data: {
+        type: 'appStoreVersions',
+        attributes: { platform, versionString: version },
+        relationships: { app: { data: { type: 'apps', id: appId } } },
+      },
+    })).data;
+  } catch (e) {
+    // Le refus courant : une AUTRE version est encore à l'examen. ASC n'en
+    // ouvre pas de nouvelle tant qu'elle n'est pas traitée — on le dit.
+    const busy = / 409 /.test(e.message) ? await versionInReview(api, appId, platform).catch(() => null) : null;
+    if (!busy) throw e;
+    throw new Error(`la version ${busy.attributes?.versionString} (${platform}) est encore en « ${versionState(busy)} » : `
+      + `App Store Connect n'ouvrira la ${version} qu'une fois celle-ci traitée. Relance le cran store après sa décision.`);
+  }
+}
+
+/** États où une version attend encore Apple : tant qu'elle y est, aucune nouvelle ne s'ouvre. */
+const IN_REVIEW_VERSION_STATES = new Set(['WAITING_FOR_REVIEW', 'IN_REVIEW', 'WAITING_FOR_EXPORT_COMPLIANCE']);
+
+async function versionInReview(api, appId, platform) {
+  const r = await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=${platform}&limit=200`);
+  return (r.data ?? []).find((v) => IN_REVIEW_VERSION_STATES.has(versionState(v))) ?? null;
 }
 
 // ── Ce que trois scripts ASC refaisaient chacun de leur côté ────────────────
@@ -113,6 +130,33 @@ export async function findBuild(api, appId, { build, version, platform }) {
     `&filter[preReleaseVersion.platform]=${platform}` +
     `&sort=-uploadedDate&limit=1`);
   return r.data?.[0] ?? null;
+}
+
+/**
+ * Parmi des builds d'UNE version (même train TestFlight), le dernier testé :
+ * traité (`VALID`), pas expiré, au numéro de build le plus haut — les numéros
+ * sont des minutes depuis 2024, jamais réutilisés. Pur, testé hors ligne.
+ */
+export function latestTestedBuild(builds) {
+  const tested = (builds ?? []).filter((b) =>
+    b?.attributes?.processingState === 'VALID' && b.attributes.expired !== true
+    && Number.isFinite(Number(b.attributes.version)));
+  return tested.reduce((best, b) =>
+    (!best || Number(b.attributes.version) > Number(best.attributes.version) ? b : best), null);
+}
+
+/**
+ * Le dernier build TestFlight de `version` sur `platform`, ou null : celui que
+ * le cran store reprend. Le train TestFlight existe sans version App Store —
+ * c'est ce qui permet de tester une version pendant qu'une autre est en examen.
+ */
+export async function findLatestTestedBuild(api, appId, { version, platform }) {
+  const r = await api('GET',
+    `/v1/builds?filter[app]=${appId}` +
+    `&filter[preReleaseVersion.version]=${version}` +
+    `&filter[preReleaseVersion.platform]=${platform}` +
+    `&filter[processingState]=VALID&sort=-uploadedDate&limit=50`);
+  return latestTestedBuild(r.data);
 }
 
 /**

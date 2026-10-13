@@ -39,7 +39,7 @@ Sans jeton, la page affiche la commande `gh workflow run` équivalente.
 
 `promote` (le défaut au cran store) reprend **le binaire déjà testé** : le
 versionCode servi par la piste fermée passe en production, la version App Store
-part à l'examen avec le build qui y est rattaché, la pré-version Linux devient
+part à l'examen avec le DERNIER build TestFlight de la version, la pré-version Linux devient
 une version pleine. Rien n'est reconstruit, donc rien ne change entre ce qui a
 été testé et ce qui est publié. **Windows fait exception** — le Microsoft Store
 veut le paquet à chaque soumission.
