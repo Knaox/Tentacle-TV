@@ -22,6 +22,8 @@ export interface DeviceRow {
   legacyTokenHash: string | null;
   stickyProfileId: string | null;
   manageUntil: Date | null;
+  /** La Famille hors des TV : l'hôte de profils d'un bureau (`desktop`). */
+  platform: string | null;
 }
 
 export interface CleanupRow {
@@ -71,7 +73,7 @@ export function createPairingDb() {
       const row: DeviceRow = {
         id: `pd-${++state.serial}`, name: "TV", jellyfinUserId: "", username: "", jellyfinAccessToken: null,
         jellyfinDeviceId: null, lastSeen: new Date(), createdAt: new Date(), parentId: null, profileKind: null,
-        profilesSince: null, legacyTokenHash: null, stickyProfileId: null, manageUntil: null, ...args.data,
+        profilesSince: null, legacyTokenHash: null, stickyProfileId: null, manageUntil: null, platform: null, ...args.data,
       };
       state.devices.push(row);
       return { ...row };

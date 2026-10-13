@@ -24,7 +24,7 @@ const SPECS: Record<string, ModelSpec> = {
     defaults: () => ({
       id: id("pd"), name: "TV", jellyfinUserId: "", username: "", jellyfinAccessToken: null, jellyfinDeviceId: null,
       lastSeen: now(), createdAt: now(), parentId: null, profileKind: null, profilesSince: null, legacyTokenHash: null,
-      stickyProfileId: null, manageUntil: null,
+      stickyProfileId: null, manageUntil: null, platform: null,
     }),
   },
   pairedDeviceCleanup: {

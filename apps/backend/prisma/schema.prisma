@@ -327,6 +327,11 @@ model PairedDevice {
   stickyProfileId       String?
   /// Session du propriétaire : « Gérer les profils » ouvert jusqu'à (PIN).
   manageUntil           DateTime?
+  /// La Famille hors des TV (docs/FAMILLE.md, « Le bureau ») : `desktop` — un
+  /// HÔTE de profils, la ligne d'un appareil dont la SESSION PERSONNELLE ouvre
+  /// les sessions de profil (lignes enfants). Aucun jeton ne la désigne : son
+  /// empreinte est dérivée du jeton personnel. Nul : une TV ou un appareil jumelé.
+  platform              String?
 
   @@index([jellyfinUserId])
   @@index([tokenHash])
