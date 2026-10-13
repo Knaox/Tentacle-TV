@@ -13,6 +13,7 @@ import { getWatchProviderDirectory } from "../services/tmdb/providerDirectory";
 import { getSeasonEpisodes } from "../services/tmdb/seasonEpisodes";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { adminUserParam } from "../services/jellyfinLibrary";
+import { fetchSeerrVideos } from "../services/trailers/titleVideos";
 
 // Cache par plateforme : "movies-8" → Set<tmdbId>
 const discoverCache = new Map<string, Set<number>>();
@@ -220,40 +221,6 @@ export async function tmdbRoutes(app: FastifyInstance) {
   app.get("/trailers", async (request: FastifyRequest, _reply: FastifyReply) => {
     const { tmdbId, mediaType } = request.query as { tmdbId?: string; mediaType?: string };
     if (!tmdbId || (mediaType !== "movie" && mediaType !== "tv")) return { videos: [] };
-
-    const seerr = getSeerrConfig();
-    if (!seerr) return { videos: [] };
-
-    try {
-      const res = await fetch(`${seerr.url}/api/v1/${mediaType}/${tmdbId}`, {
-        headers: { "X-Api-Key": seerr.apiKey },
-        signal: AbortSignal.timeout(8_000),
-      });
-      if (!res.ok) return { videos: [] };
-      const data = (await res.json()) as {
-        relatedVideos?: Array<{
-          url?: string;
-          key?: string;
-          name?: string;
-          type?: string;
-          site?: string;
-          iso_639_1?: string;
-        }>;
-      };
-      const videos = (data.relatedVideos ?? [])
-        .filter((v) => (v.site ?? "YouTube").toLowerCase() === "youtube" && (v.key || v.url))
-        .map((v) => ({
-          key: v.key ?? "",
-          name: v.name,
-          type: v.type,
-          site: v.site ?? "YouTube",
-          lang: v.iso_639_1,
-          url: v.url || (v.key ? `https://www.youtube.com/watch?v=${v.key}` : ""),
-        }))
-        .filter((v) => v.url);
-      return { videos };
-    } catch {
-      return { videos: [] };
-    }
+    return { videos: (await fetchSeerrVideos(tmdbId, mediaType)) ?? [] };
   });
 }
