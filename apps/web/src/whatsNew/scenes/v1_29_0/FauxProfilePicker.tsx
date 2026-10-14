@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Lock, UserCog } from "lucide-react";
+import { Lock, UserCog, X } from "lucide-react";
 import { profileColorStops, type FamilyProfileColor } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../../../family/FamilyAvatar";
 import { Place, type Animated } from "../Place";
@@ -34,6 +34,8 @@ interface FauxProfilePickerProps extends Animated {
   profiles: readonly SceneProfile[];
   /** La tuile sous le pointeur : son rond s'élève, son halo s'allume. */
   hoveredId: string | null;
+  /** Ouvert par « Changer de profil » : « Annuler » en haut à gauche (absent à l'ouverture de l'app). */
+  cancel: boolean;
 }
 
 /**
@@ -42,10 +44,16 @@ interface FauxProfilePickerProps extends Animated {
  * titre, les ronds des profils — le cadenas d'un code PIN, « Invité » —, puis
  * « Gérer les profils ». Les vrais avatars de la Famille (`FamilyAvatar`).
  */
-export function FauxProfilePicker({ profiles, hoveredId, ...animated }: FauxProfilePickerProps) {
+export function FauxProfilePicker({ profiles, hoveredId, cancel, ...animated }: FauxProfilePickerProps) {
   const { t } = useTranslation(["profilePicker", "family"]);
   return (
     <Place x={0} y={0} w={640} h={360} {...animated}>
+      <Place x={18} y={16} visible={cancel}>
+        <span className="inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border border-line-subtle bg-fill-soft px-3 text-[11px] font-semibold text-content-primary">
+          <X size={12} aria-hidden />
+          {t("profilePicker:switcher.cancel")}
+        </span>
+      </Place>
       <p className="absolute inset-x-0 top-[50px] text-center text-[30px] font-extrabold tracking-tight text-content-primary">
         {t("profilePicker:whoIsWatching")}
       </p>
@@ -76,7 +84,12 @@ export function FauxProfilePicker({ profiles, hoveredId, ...animated }: FauxProf
           </div>
         );
       })}
-      <span className="absolute left-1/2 top-[262px] inline-flex h-[30px] -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[11px] font-semibold text-content-primary">
+      {/* « Ne plus proposer sur cet appareil » : la case discrète, décochée. */}
+      <span className="absolute left-1/2 top-[244px] inline-flex h-6 -translate-x-1/2 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-content-secondary">
+        <span aria-hidden className="h-[13px] w-[13px] rounded-[4px] border-2 border-line-strong" />
+        {t("profilePicker:stayOnDevice")}
+      </span>
+      <span className="absolute left-1/2 top-[284px] inline-flex h-[30px] -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[11px] font-semibold text-content-primary">
         <UserCog size={12} aria-hidden />
         {t("profilePicker:manageProfiles")}
       </span>

@@ -50,7 +50,9 @@ export function WhoIsWatchingScene({ active, reduced }: SceneProps) {
   return (
     <SceneStage cycle={cycle}>
       <Place x={0} y={0} w={640} h={360} className="bg-surface-0" visible={!home} style={{ backgroundImage: PICKER_BACKGROUND }} />
-      <FauxProfilePicker profiles={profiles} hoveredId={step === HOVER || step === PICK ? chosen.id : null} visible={picker} dy={picker ? 0 : 6} />
+      <FauxProfilePicker
+        profiles={profiles} hoveredId={step === HOVER || step === PICK ? chosen.id : null} cancel={step >= BACK} visible={picker} dy={picker ? 0 : 6}
+      />
       <FauxPinPad profile={chosen} typed={pad} reduced={reduced} visible={pad} dy={pad ? 0 : 6} />
       <Place x={0} y={0} w={640} h={360} visible={home}>
         <FauxNavBar

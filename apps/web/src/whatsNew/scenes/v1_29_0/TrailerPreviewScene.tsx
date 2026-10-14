@@ -51,7 +51,7 @@ export function TrailerPreviewScene({ active, reduced }: SceneProps) {
       </Place>
       {Array.from({ length: POSTER_COUNT }, (_, i) => {
         const hovered = i === HOVERED;
-        const shift = !open || hovered ? 0 : i < HOVERED ? -NEIGHBOR_SHIFT : NEIGHBOR_SHIFT;
+        const shift = !open || hovered || reduced ? 0 : i < HOVERED ? -NEIGHBOR_SHIFT : NEIGHBOR_SHIFT;
         return (
           <FauxCard
             key={i}

@@ -38,8 +38,12 @@ export const PREVIEW_RECT = {
 /** Le départ de l'agrandissement : la plus grande échelle UNIFORME qui tient dans l'affiche. */
 export const PREVIEW_FROM_SCALE = Math.min(POSTER.w / PREVIEW_W, POSTER.h / PREVIEW_H);
 
-/** Ce dont les voisines s'écartent : le débord de la mini-carte, plus un souffle. */
-export const NEIGHBOR_SHIFT = Math.round((PREVIEW_W - POSTER.w) / 2) + 4;
+/**
+ * Ce dont les voisines s'écartent : le débord de la mini-carte — l'écart avec
+ * chacune redevient celui de la rangée (`cards/preview/room`). Animations
+ * réduites : rien ne glisse, la mini-carte passe par-dessus.
+ */
+export const NEIGHBOR_SHIFT = Math.round((PREVIEW_W - POSTER.w) / 2);
 
 /** Les boutons ronds du bandeau : Lire, Ma liste, favori, vu. */
 export const ACTION = { x: 9, y: 9, size: 22, gap: 6 } as const;
