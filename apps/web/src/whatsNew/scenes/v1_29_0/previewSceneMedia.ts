@@ -12,8 +12,8 @@ export interface SceneTrailer {
   /** Les plans de la « bande-annonce » : les décors de sa fiche, sinon l'image du titre. */
   shots: string[];
   logoUrl: string | null;
-  /** Les faits du bandeau, dans son ordre : année, classification, durée — rien d'inconnu. */
-  facts: { year: string | null; rating: string | null; runtime: string | null };
+  /** Les faits du bandeau, dans son ordre : année, classification, note globale, durée — rien d'inconnu. */
+  facts: { year: string | null; rating: string | null; community: number | null; runtime: string | null };
   /** Les genres, trois au plus. */
   genres: string[];
 }
@@ -47,7 +47,12 @@ export function sceneTrailer(media: SceneMedia): SceneTrailer {
     still,
     shots,
     logoUrl: own?.logoUrl ?? null,
-    facts: { year: poster?.year ? String(poster.year) : null, rating: ratingOf(own?.officialRating), runtime },
+    facts: {
+      year: poster?.year ? String(poster.year) : null,
+      rating: ratingOf(own?.officialRating),
+      community: poster?.rating ?? null,
+      runtime,
+    },
     genres: own?.genres.slice(0, 3) ?? [],
   };
 }

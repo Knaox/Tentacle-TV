@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import { Info } from "lucide-react";
-import { BookmarkGlyph, HeartGlyph, PlayGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";
+import { formatCommunityRating } from "@tentacle-tv/shared";
+import { BookmarkGlyph, HeartGlyph, PlayGlyph, StarGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";
 import { StarRating } from "../../../components/rating/StarRating";
 import type { SceneTrailer } from "./previewSceneMedia";
 import { ACTION, PREVIEW_W } from "./previewSceneGeometry";
@@ -15,13 +16,23 @@ const Dot = () => <span aria-hidden className="mx-[3px] inline-block h-[3px] w-[
  * `previewPanel.css`, `previewActions.css`, réduits) : les actions — « Lire »
  * plein au dégradé de la marque et un cran plus grand, puis Ma liste, favori,
  * vu en ronds cerclés, « Plus d'infos » isolé au bout —, le titre (logo, sinon
- * nom) et ses étoiles, puis « année • classification • durée » et les genres.
+ * nom) et ses étoiles, puis « année • classification • ★ note • durée » — la
+ * note globale que la mini-carte recouvre sur l'affiche, étoile de marque — et
+ * les genres.
  */
 export function FauxPreviewBand({ trailer, listed }: { trailer: SceneTrailer; listed: boolean }) {
-  const { year, rating, runtime } = trailer.facts;
+  const { year, rating, community, runtime } = trailer.facts;
   const facts: ReactNode[] = [];
   if (year) facts.push(<span key="year" className="font-semibold text-white">{year}</span>);
   if (rating) facts.push(<span key="rating" className="rounded-[3px] border border-white/45 px-[3px] text-[7.5px] font-semibold leading-[10px] text-white">{rating}</span>);
+  if (community !== null) {
+    facts.push(
+      <span key="community" className="font-semibold text-white">
+        <StarGlyph className="mr-[2px] inline-block h-[8px] w-[8px] align-[-0.08em] text-[var(--brand-accent)]" />
+        {formatCommunityRating(community)}
+      </span>,
+    );
+  }
   if (runtime) facts.push(<span key="runtime">{runtime}</span>);
   return (
     <>

@@ -53,7 +53,8 @@ export function FauxTrailerPreview({ trailer, shot, settled, listed, transition,
               <img src={url} alt="" draggable={false} className="h-full w-full object-cover" />
             </Place>
           ))}
-          <div className="absolute inset-0" style={{ background: `linear-gradient(0deg, ${PANEL_TOP} 0%, rgba(21, 20, 29, 0.55) 9%, rgba(21, 20, 29, 0) 22%)` }} />
+          {/* La vidéo fond dans le verre sur son dernier sixième (`previewSurface.css`). */}
+          <div className="absolute inset-0" style={{ background: `linear-gradient(0deg, ${PANEL_TOP} 0%, rgba(21, 20, 29, 0.5) 7%, rgba(21, 20, 29, 0) 17%)` }} />
           <span className="absolute right-1.5 top-1.5 flex h-[17px] w-[17px] items-center justify-center rounded-full border border-white/55 bg-black/40 text-white">
             <Volume2 className="h-[9px] w-[9px]" strokeWidth={2} aria-hidden />
           </span>

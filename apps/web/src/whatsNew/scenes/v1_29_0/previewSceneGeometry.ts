@@ -50,7 +50,7 @@ export const NEIGHBOR_SHIFT = Math.round((PREVIEW_W - POSTER.w) / 2);
  * 288 px, réduit) : « Lire » plein, un cran plus grand, puis Ma liste, favori,
  * vu ; « Plus d'infos » au bout.
  */
-export const ACTION = { x: 8, y: 7, size: 17, primary: 20, gap: 4 } as const;
+export const ACTION = { x: 8, y: 6, size: 17, primary: 20, gap: 4 } as const;
 
 /** Le centre du bouton `index` du bandeau (0 = « Lire »), en px du canevas (la cible du pointeur). */
 export function actionCenter(index: number): { x: number; y: number } {
