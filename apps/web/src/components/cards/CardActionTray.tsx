@@ -8,6 +8,7 @@ import {
   type CardOverlay,
   type CardToggleHandlers,
   type CardToggleKind,
+  type CardTrayExtra,
   type MediaItem,
 } from "@tentacle-tv/shared";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
@@ -18,12 +19,12 @@ import { stopCardClick } from "./cardEvents";
 interface CardActionTrayProps {
   /** Le visage Jellyfin des bascules et du hors ligne — `null` hors bibliothèque. */
   item: MediaItem | null;
-  /** Ce que le survol offre (`resolveCardOverlay`) : bascules puis extras, dans l'ordre. */
-  overlay: Pick<CardOverlay, "toggles" | "extras">;
+  /** Ce que le survol offre (`resolveCardOverlay`) : bascules puis extras, dans l'ordre ; ce que fait le clic. */
+  overlay: Pick<CardOverlay, "toggles" | "extras" | "open">;
   /** Nom de la barre d'outils pour les lecteurs d'écran — le titre de la carte. */
   label: string;
-  /** `sm` pour les affiches étroites (≤ 140 px), `md` ailleurs. */
-  size?: "sm" | "md";
+  /** `sm` pour les affiches étroites (≤ 140 px), `md` ailleurs, `preview` dans la mini-carte d'aperçu. */
+  size?: keyof typeof TRAY_SIZE;
   /** Occupe toute la largeur (affiche) ou épouse son contenu (vignette 16:9). */
   stretch?: boolean;
   /** Extra `details` : ouvrir la fiche d'une carte dont le clic lance la lecture. */
@@ -58,6 +59,9 @@ interface CardActionTrayProps {
 export const TRAY_SIZE = {
   sm: { box: "w-7 min-w-[22px] aspect-square", icon: "h-3.5 w-3.5" },
   md: { box: "w-8 min-w-[22px] aspect-square", icon: "h-4 w-4" },
+  // La mini-carte d'aperçu : des ronds à l'échelle de la mini-carte, sans
+  // capsule — leur forme vit dans `preview/previewActions.css`.
+  preview: { box: "card-preview-btn", icon: "card-preview-icon" },
 } as const;
 
 /**
@@ -96,7 +100,7 @@ export function CardActionTray({
   const sizes = { box, icon };
 
   return (
-    <CardTrayCapsule label={label} stretch={stretch}>
+    <CardTrayCapsule label={label} stretch={stretch} bare={size === "preview"}>
       {play && (
         <CardTrayPrimaryButton box={box} icon={icon} tone="quiet" label={play.label} onPress={play.onPlay}>
           <PlayGlyph className={icon} />
@@ -120,9 +124,13 @@ export function CardActionTray({
           return item ? <CardDownloadAction key={extra} item={item} tone="tray" tray={sizes} /> : null;
         }
         const onPress = extra === "details" ? onOpenDetails : onDismiss;
-        if (!onPress) return null;
+        // « Plus d'infos » sans geste propre, sur une carte dont le clic OUVRE
+        // la fiche (la mini-carte d'aperçu d'une affiche) : le bouton laisse
+        // son clic remonter jusqu'à elle. Jamais là où le clic lit.
+        const passToCard = !onPress && extra === "details" && overlay.open === "details";
+        if (!onPress && !passToCard) return null;
         return (
-          <CardTrayButton key={extra} box={box} pressable={false} label={t(cardExtraLabelKey(extra))} onPress={onPress}>
+          <CardTrayButton key={extra} box={box} pressable={false} extra={extra} label={t(cardExtraLabelKey(extra))} onPress={onPress}>
             {extra === "details" ? <Info className={icon} aria-hidden /> : <EyeOff className={icon} aria-hidden />}
           </CardTrayButton>
         );
@@ -181,18 +189,31 @@ export function ToggleGlyph({ kind, className, filled }: { kind: CardToggleKind;
 /**
  * La capsule elle-même. Réutilisable par une carte qui n'a pas d'item à
  * basculer mais garde le même plateau — une carte Vigie, par exemple.
+ *
+ * `bare` : sans capsule (la mini-carte d'aperçu, où chaque bouton est un rond
+ * cerclé) — la barre d'outils reste, son nom et son arrêt des clics aussi.
+ * Seul un bouton qui rend son clic à la carte (`data-tray-pass`) le laisse
+ * passer.
  */
-export function CardTrayCapsule({ label, stretch = false, children }: { label: string; stretch?: boolean; children: ReactNode }) {
+export function CardTrayCapsule({ label, stretch = false, bare = false, children }: {
+  label: string;
+  stretch?: boolean;
+  bare?: boolean;
+  children: ReactNode;
+}) {
   // `max-w-full min-w-0` : la capsule ne dépasse jamais la carte, ce sont ses
   // boutons qui se resserrent (`TRAY_SIZE`).
+  const capsule = `flex min-w-0 max-w-full items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
+    stretch ? "w-full justify-between" : ""
+  }`;
   return (
     <div
       role="toolbar"
       aria-label={label}
-      onClick={stopCardClick}
-      className={`flex min-w-0 max-w-full items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
-        stretch ? "w-full justify-between" : ""
-      }`}
+      onClick={(e) => {
+        if (!(e.target instanceof Element && e.target.closest("[data-tray-pass]"))) stopCardClick(e);
+      }}
+      className={bare ? "card-preview-tray" : capsule}
     >
       {children}
     </div>
@@ -207,12 +228,15 @@ interface TrayButtonProps {
   accent?: boolean;
   /** Faux : une action, pas une bascule — pas d'`aria-pressed`. */
   pressable?: boolean;
+  /** L'extra que ce bouton porte (`data-tray-extra`) : la feuille de la mini-carte range « Plus d'infos » au bout. */
+  extra?: CardTrayExtra;
   label: string;
-  onPress: () => void;
+  /** Absent : le clic REMONTE à la carte, qui fait son geste (« Plus d'infos » d'une affiche). */
+  onPress?: () => void;
   children: ReactNode;
 }
 
-export function CardTrayButton({ box, active = false, accent = false, pressable, label, onPress, children }: TrayButtonProps) {
+export function CardTrayButton({ box, active = false, accent = false, pressable, extra, label, onPress, children }: TrayButtonProps) {
   const isToggle = pressable !== false;
   const tone = active
     ? accent
@@ -225,7 +249,10 @@ export function CardTrayButton({ box, active = false, accent = false, pressable,
       aria-label={label}
       aria-pressed={isToggle ? active : undefined}
       title={label}
+      data-tray-extra={extra}
+      data-tray-pass={onPress ? undefined : true}
       onClick={(e) => {
+        if (!onPress) return;
         stopCardClick(e);
         onPress();
       }}

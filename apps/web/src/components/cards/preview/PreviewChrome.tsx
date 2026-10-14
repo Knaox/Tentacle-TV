@@ -5,11 +5,11 @@ import { useBrokenImage } from "../../../hooks/useBrokenImage";
 import { stopCardClick } from "../cardEvents";
 
 /**
- * Le bouton du son de la mini-carte — un rond de 34 px en verre sans flou
- * (`.card-preview-mute`), en haut à droite, loin du plateau. Son libellé dit
- * le geste (« Activer le son »), pas l'état. Le clic ne remonte pas à la
- * carte : couper le son n'ouvre pas la fiche (les touches, elles, sont
- * arrêtées par la mini-carte entière).
+ * Le bouton du son de la mini-carte — un rond cerclé, sans flou, en haut à
+ * droite de la vidéo, loin des actions (`.card-preview-mute`, à l'échelle de
+ * la mini-carte). Son libellé dit le geste (« Activer le son »), pas l'état.
+ * Le clic ne remonte pas à la carte : couper le son n'ouvre pas la fiche (les
+ * touches, elles, sont arrêtées par la mini-carte entière).
  */
 export const PreviewMuteButton = memo(function PreviewMuteButton({
   muted,
@@ -31,37 +31,32 @@ export const PreviewMuteButton = memo(function PreviewMuteButton({
       }}
       className="card-preview-mute"
     >
-      {muted ? <VolumeX className="h-4 w-4" aria-hidden /> : <Volume2 className="h-4 w-4" aria-hidden />}
+      {muted ? <VolumeX aria-hidden strokeWidth={2} /> : <Volume2 aria-hidden strokeWidth={2} />}
     </button>
   );
 });
 
 /**
- * Le titre posé sur la vidéo, en bas à gauche : le LOGO du titre quand
- * Jellyfin en annonce un (le lettrage de l'affiche, comme sur la fiche), le
- * nom sinon — et le nom aussi quand le logo ne se charge pas. Ni l'un ni
- * l'autre ne se lit deux fois : la mini-carte porte déjà le nom du titre.
+ * Le titre du bandeau : le LOGO du titre quand Jellyfin en annonce un (le
+ * lettrage de l'affiche, comme sur la fiche), le nom sinon — et le nom aussi
+ * quand le logo ne se charge pas. Ni l'un ni l'autre ne se lit deux fois : la
+ * mini-carte porte déjà le nom du titre (`aria-label`).
+ *
+ * Le logo tient dans une hauteur (`--pv-logo-h`) et dans sa ligne : un
+ * lettrage très large se réduit, il ne repousse jamais les étoiles hors de la
+ * mini-carte.
  */
 export const PreviewTitle = memo(function PreviewTitle({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   const { broken, reportFailure } = useBrokenImage(logoUrl);
-  if (logoUrl && !broken) {
-    return (
-      <img
-        src={logoUrl}
-        alt=""
-        aria-hidden
-        draggable={false}
-        onError={reportFailure}
-        className="block h-auto max-h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_10px_var(--on-media-shadow)]"
-      />
-    );
-  }
   return (
-    <p
-      aria-hidden
-      className="line-clamp-2 text-[15px] font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_8px_var(--on-media-shadow)]"
-    >
-      {name}
-    </p>
+    <div className="card-preview-title card-preview-rise">
+      {logoUrl && !broken ? (
+        <img src={logoUrl} alt="" aria-hidden draggable={false} onError={reportFailure} className="card-preview-logo" />
+      ) : (
+        <p aria-hidden className="card-preview-name">
+          {name}
+        </p>
+      )}
+    </div>
   );
 });

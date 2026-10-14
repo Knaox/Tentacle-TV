@@ -1,0 +1,235 @@
+/* ── Le BANDEAU de la mini-carte : les actions, puis le titre, puis les infos ─
+ *
+ * Une seule rangée qui se replie (flex, `wrap`), dans l'ordre de LECTURE de
+ * l'œil — les actions d'abord (près du pointeur, qui est sur la vidéo), puis le
+ * titre et ses étoiles, puis deux lignes d'infos. Le DOM garde l'ordre du sens
+ * (titre, actions, étoiles, infos) : un lecteur d'écran nomme le titre avant
+ * ses gestes, et la tabulation suit l'œil (plateau, puis étoiles).
+ *
+ * Le groupe du survol (`CardHoverShell`, surface « preview ») est transparent à
+ * la mise en page (`display: contents`) : son plateau et ses étoiles prennent
+ * leur place dans cette rangée, le titre entre les deux. Les étoiles se posent
+ * à droite du titre ; quand elles n'y tiennent pas, elles passent DESSOUS
+ * (`space-between` sur une ligne seule : à gauche) plutôt que de tasser le
+ * titre. */
+
+.card-preview-panel {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  top: var(--preview-video-h);
+  container: preview-panel / size;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  /* Les mesures, à l'échelle de la mini-carte (288 → 560 px de large). */
+  --pv-pad-x: clamp(12px, 4.4cqi, 22px);
+  --pv-pad-top: clamp(11px, 3.6cqi, 19px);
+  --pv-btn: clamp(28px, 8.4cqi, 40px);
+  --pv-btn-primary: clamp(32px, 9.4cqi, 44px);
+  --pv-btn-gap: clamp(6px, 2.1cqi, 10px);
+  --pv-icon: clamp(14px, 4.1cqi, 19px);
+  --pv-star: clamp(14px, 4.2cqi, 20px);
+  --pv-logo-h: clamp(20px, 6.4cqi, 34px);
+  --pv-title: clamp(14px, 4.2cqi, 19px);
+  --pv-text: clamp(11.5px, 3.15cqi, 14px);
+  row-gap: clamp(3px, 1.2cqi, 6px);
+  padding: var(--pv-pad-top) var(--pv-pad-x) 0;
+  background:
+    radial-gradient(85% 120% at 0% 100%, rgba(var(--brand-rgb), 0.12) 0%, rgba(var(--brand-rgb), 0) 70%),
+    linear-gradient(180deg, var(--pv-panel-top) 0%, var(--pv-panel-bottom) 100%);
+  color: #fff;
+}
+
+/* Sans bandeau (une taille qui n'en laisserait pas) : les mêmes infos, sur un
+ * voile, au pied de la vidéo. */
+.card-preview-surface[data-layout="overlay"] .card-preview-panel {
+  top: auto;
+  container-type: inline-size;
+  padding-bottom: var(--pv-pad-top);
+  background: none;
+}
+
+.card-preview-group {
+  display: contents;
+}
+
+/* 1. Les actions — leur rangée garde sa hauteur, montées ou non. */
+.card-preview-panel [data-preview-slot="tray"] {
+  order: 1;
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  min-height: var(--pv-btn-primary);
+  margin-bottom: clamp(5px, 2.2cqi, 10px);
+}
+
+/* 2. Le titre (logo, sinon nom) et ses étoiles. */
+.card-preview-title {
+  order: 2;
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: var(--pv-logo-h);
+}
+
+.card-preview-panel [data-preview-slot="rating"] {
+  order: 3;
+  flex: none;
+  display: flex;
+  align-items: center;
+  /* L'écart minimal avec le titre quand ils partagent la ligne. */
+  margin-inline-start: clamp(10px, 3cqi, 16px);
+}
+
+/* 3. et 4. Les infos. */
+.card-preview-line {
+  order: 4;
+  flex: 0 0 100%;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--pv-text);
+  line-height: 1.38;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  font-variant-numeric: tabular-nums;
+}
+
+.card-preview-line + .card-preview-line {
+  order: 5;
+}
+
+.card-preview-line[data-line="first"] {
+  margin-top: clamp(2px, 1cqi, 5px);
+}
+
+/* Trop bas (une taille extrême) : la dernière ligne cède, rien ne se tasse. */
+@container preview-panel (max-height: 116px) {
+  .card-preview-line[data-line="last"] {
+    display: none;
+  }
+}
+
+/* ── Le titre ── */
+.card-preview-logo {
+  display: block;
+  max-height: var(--pv-logo-h);
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.card-preview-name {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--pv-title);
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  color: #fff;
+}
+
+/* ── Les infos : faits, épisode, genres, progression ── */
+.card-preview-facts,
+.card-preview-genres {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0 0.5em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.card-preview-genres {
+  color: rgba(255, 255, 255, 0.66);
+  font-weight: 450;
+}
+
+/* Le séparateur de la maison : un point de marque (celui de la bannière). */
+.card-preview-dot {
+  flex: none;
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 9999px;
+  background: rgba(var(--brand-rgb), 0.9);
+}
+
+.card-preview-year {
+  color: #fff;
+  font-weight: 600;
+}
+
+.card-preview-rating {
+  flex: none;
+  padding: 0.05em 0.42em;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 4px;
+  font-size: 0.8em;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* La qualité : sobre, monochrome — seul le 4K porte la marque (préférence
+ * ferme : ni drapeau, ni pastille colorée). */
+.card-preview-quality {
+  flex: none;
+  font-size: 0.8em;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.card-preview-quality[data-accent="true"] {
+  color: color-mix(in srgb, var(--brand) 55%, white);
+}
+
+.card-preview-episode {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.card-preview-episode b {
+  font-weight: 700;
+  color: #fff;
+  margin-inline-end: 0.45em;
+}
+
+.card-preview-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+
+.card-preview-progress-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: clamp(3px, 0.8cqi, 4px);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+/* Statique : la largeur de la part vue, peinte une fois — jamais animée. */
+.card-preview-progress-fill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--brand-accent));
+}
+
+.card-preview-progress-time {
+  flex: none;
+  color: rgba(255, 255, 255, 0.8);
+}

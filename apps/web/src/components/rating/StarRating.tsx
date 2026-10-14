@@ -7,7 +7,8 @@ interface StarRatingProps {
   value: number | null;
   onRate: (score: number) => void;
   onClear: () => void;
-  size?: "xs" | "sm" | "md";
+  /** `preview` : à l'échelle de la mini-carte d'aperçu (`--pv-star`, `cards/preview/previewActions.css`). */
+  size?: "xs" | "sm" | "md" | "preview";
   disabled?: boolean;
   /** « onMedia » : posé sur une affiche — contour blanc et ombre portée
    *  STATIQUES (les jetons de thème y sont illisibles, cf. capture du survol
@@ -15,7 +16,7 @@ interface StarRatingProps {
   tone?: "themed" | "onMedia";
 }
 
-const SIZE_CLASS = { xs: "h-3.5 w-3.5", sm: "h-4 w-4", md: "h-6 w-6" } as const;
+const SIZE_CLASS = { xs: "h-3.5 w-3.5", sm: "h-4 w-4", md: "h-6 w-6", preview: "card-preview-star" } as const;
 
 /**
  * Cinq étoiles, dix niveaux (demi-étoiles), note interne 1..10 — jamais 0.

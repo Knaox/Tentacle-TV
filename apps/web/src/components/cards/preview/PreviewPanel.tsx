@@ -1,28 +1,39 @@
 import type { ReactNode } from "react";
 import { PreviewTitle } from "./PreviewChrome";
+import { PreviewInfoLines } from "./PreviewInfoLines";
+import type { PreviewInfo } from "./previewInfo";
 
 interface PreviewPanelProps {
   title: string;
   logoUrl: string | null;
-  meta: string | null;
-  /** Le groupe du survol (étoiles, plateau), monté seulement la mini-carte vue. */
+  info: PreviewInfo;
+  /**
+   * Le groupe du survol (plateau, étoiles), monté seulement la mini-carte vue.
+   * Sa coque est transparente à la mise en page : plateau et étoiles prennent
+   * leur place dans la rangée du bandeau (`previewPanel.css`).
+   */
   group: ReactNode;
 }
 
 /**
- * Le BANDEAU sous la vidéo de la mini-carte d'une affiche — comme Netflix :
- * le titre (logo, sinon nom), la ligne « année · durée », puis le groupe du
- * survol de la carte (étoiles, plateau), au pied. Fond plein et sombre dans
- * les deux schémas (posé sur média) : il porte les mêmes boutons que la vidéo.
+ * Le BANDEAU sous la vidéo de la mini-carte — affiche comme vignette : les
+ * ACTIONS d'abord (« Lire » en tête, « Plus d'infos » au bout), puis le titre
+ * (logo, sinon nom) et ses étoiles, puis deux lignes d'infos — l'épisode et sa
+ * progression d'un titre commencé, sinon ses faits et ses genres.
+ *
+ * L'ordre du DOM est celui du sens (le titre, puis ses gestes, puis ses
+ * infos) ; l'ordre à l'écran, celui de l'œil — la feuille range. La
+ * tabulation, elle, suit l'écran : le plateau, puis les étoiles.
+ *
+ * Verre sombre dans les deux schémas (posé sur média) : il porte les mêmes
+ * boutons blancs que la vidéo.
  */
-export function PreviewPanel({ title, logoUrl, meta, group }: PreviewPanelProps) {
+export function PreviewPanel({ title, logoUrl, info, group }: PreviewPanelProps) {
   return (
     <div className="card-preview-panel">
-      <div className="card-preview-chrome min-w-0">
-        <PreviewTitle name={title} logoUrl={logoUrl} />
-        {meta && <p className="mt-1 truncate text-xs font-medium text-white/65">{meta}</p>}
-      </div>
-      <div className="card-preview-panel-group">{group}</div>
+      <PreviewTitle name={title} logoUrl={logoUrl} />
+      {group}
+      <PreviewInfoLines info={info} />
     </div>
   );
 }

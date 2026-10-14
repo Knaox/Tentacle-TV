@@ -29,8 +29,9 @@ interface CardHoverShellProps {
  *      avec le format.
  *
  * Dans la mini-carte d'aperçu (`surface="preview"`), la coque ne rend que le
- * GROUPE, rangé à droite comme sur une vignette : c'est la mini-carte qui pose
- * son voile (le bas seulement, la vidéo reste lisible) et le titre à gauche.
+ * GROUPE, et s'efface de la mise en page (`.card-preview-group`, `display:
+ * contents`) : son plateau et ses étoiles (`data-preview-slot`) prennent leur
+ * place dans la rangée du bandeau, autour du titre (`preview/PreviewPanel`).
  *
  * RIEN au centre de l'image : un gros bouton de lecture y a vécu, au dégradé
  * de marque. Il répétait le clic de la carte et masquait l'affiche au moment
@@ -57,15 +58,16 @@ export function CardHoverShell({ variant, visible, children, surface = "card" }:
   const corner = variant === "landscape";
 
   if (surface === "preview") {
+    // Sa montée est celle du bandeau (`preview/previewActions.css`), par place.
     return (
       <div
-        className="card-hover-rise flex min-w-0 max-w-full flex-col items-end gap-1.5"
+        className="card-preview-group"
         data-shown={visible}
         data-card-overlay={variant}
         data-card-surface="preview"
         inert={!visible}
         onKeyDown={stopKeys}
-        style={{ ...reveal, pointerEvents: visible ? "auto" : "none" }}
+        style={{ pointerEvents: visible ? "auto" : "none" }}
       >
         {children}
       </div>

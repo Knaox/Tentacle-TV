@@ -1,0 +1,129 @@
+/* ── Le DESSIN de la mini-carte : vidéo nue en haut, bandeau dessous ────────
+ *
+ * La boîte (place, entrée, sortie) vit dans `cardPreview.css` ; ici, ce qu'elle
+ * porte. Les PROPORTIONS sont celles d'une mini-carte de service de streaming
+ * (vidéo 16:9, puis les actions, puis les infos) ; l'IDENTITÉ est Tentacle :
+ * verre sombre teinté de nos jetons, dégradé violet → rose, Inter, nos glyphes.
+ *
+ * Tout s'ÉCHELONNE avec la mini-carte, de 288 à 560 px de large, sans un seul
+ * point de rupture : les mesures sont en unités de conteneur (`cqi`, 1 % de sa
+ * largeur), bornées. Le bandeau est lui-même un conteneur (sa hauteur) : trop
+ * bas, il retire sa dernière ligne avant de rien tasser.
+ *
+ * Coût (« Coût GPU » du dépôt) : rien n'est animé que `transform` et
+ * `opacity`, une fois, à l'entrée ; aucun `backdrop-filter` (rien à flouter sur
+ * une vidéo, et une passe de plus à chaque image) ; aucune ombre animée ;
+ * aucune animation infinie. Les dégradés du bandeau sont peints une fois.
+ *
+ * Posé sur MÉDIA : le bandeau et ses boutons restent sombres et blancs dans
+ * les deux schémas ; seule l'ombre portée suit le thème (sur une page claire,
+ * une ombre noire à 0,9 salirait). */
+
+.card-preview-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  container: preview / inline-size;
+  /* Le verre sombre du bandeau : la teinte de `--glass-tint` (20, 20, 26),
+   * rendue opaque — la mini-carte recouvre des affiches, rien ne doit percer. */
+  --pv-panel-top: rgb(21 20 29);
+  --pv-panel-bottom: rgb(12 12 18);
+  background: var(--pv-panel-bottom);
+  box-shadow:
+    0 30px 60px -22px rgba(0, 0, 0, 0.95),
+    0 0 22px rgba(255, 255, 255, 0.07);
+}
+
+:root[data-theme="light"] .card-preview-surface {
+  box-shadow:
+    0 26px 52px -18px rgba(11, 11, 16, 0.5),
+    0 8px 18px -8px rgba(11, 11, 16, 0.3);
+}
+
+/* La scène : la vidéo, en 16:9, en haut — toute la mini-carte quand il n'y a
+ * pas de bandeau (`data-layout="overlay"`). */
+.card-preview-stage {
+  position: absolute;
+  inset: 0;
+  /* Les mesures de ce qui s'y pose (le son), à l'échelle de la mini-carte. */
+  --pv-mute: clamp(28px, 8.2cqi, 38px);
+  --pv-edge: clamp(8px, 2.6cqi, 14px);
+}
+
+.card-preview-surface[data-layout="panel"] .card-preview-stage {
+  bottom: auto;
+  height: var(--preview-video-h);
+}
+
+.card-preview-backdrop,
+.card-preview-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* La vidéo rejoint l'image du titre en fondu quand elle part (`PreviewMedia`) ;
+ * elle s'efface d'un coup (la mini-carte est encore transparente à cet instant). */
+.card-preview-video {
+  transition: opacity 360ms var(--ease-out);
+}
+
+.card-preview-video.is-waiting {
+  opacity: 0;
+  transition: none;
+}
+
+/* Le raccord vidéo → bandeau : la vidéo FOND dans le verre sur son dernier
+ * cinquième, sans arête. Rien ne s'écrit sur elle. */
+.card-preview-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(0deg, var(--pv-panel-top) 0%, rgb(21 20 29 / 0.55) 9%, rgb(21 20 29 / 0) 22%);
+}
+
+/* Sans bandeau : un voile sombre en bas porte les infos sur la vidéo. */
+.card-preview-surface[data-layout="overlay"] .card-preview-veil {
+  background: linear-gradient(0deg, rgba(var(--scrim-media-rgb), 0.9) 0%, rgba(var(--scrim-media-rgb), 0.55) 34%, rgba(var(--scrim-media-rgb), 0) 70%);
+}
+
+/* ── Le son : un rond cerclé, en haut à droite, loin des actions ──────────
+ * Sans flou : un noir léger et un liseré suffisent sur n'importe quelle image. */
+.card-preview-mute {
+  position: absolute;
+  top: var(--pv-edge);
+  right: var(--pv-edge);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pv-mute);
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  background-color: rgba(var(--scrim-media-rgb), 0.38);
+  color: #fff;
+  transition: transform 150ms var(--ease-out);
+}
+
+.card-preview-mute svg {
+  width: 46%;
+  height: 46%;
+}
+
+.card-preview-mute:hover {
+  border-color: #fff;
+  background-color: rgba(var(--scrim-media-rgb), 0.58);
+  transform: scale(1.06);
+}
+
+.card-preview-mute:active {
+  transform: scale(0.95);
+}
+
+.card-preview-mute:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}

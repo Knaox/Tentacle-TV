@@ -56,6 +56,8 @@ export function CardTrayPrimaryButton({ box, icon, tone, label, onPress, busy = 
       aria-busy={busy || undefined}
       aria-disabled={busy || undefined}
       title={label}
+      // La mini-carte d'aperçu la peint pleine, au dégradé de son ton (`preview/previewActions.css`).
+      data-tray-primary={tone}
       onClick={(e) => {
         stopCardClick(e);
         if (!busy) onPress();

@@ -166,43 +166,53 @@ describe("PreviewFrame — le logo d'une carte de rangée", () => {
   });
 });
 
-describe("PreviewFrame — le bandeau d'une affiche", () => {
+describe("PreviewFrame — le bandeau", () => {
   const film = {
     Id: "f1", Name: "Charade", Type: "Movie", ProductionYear: 1963, RunTimeTicks: 113 * 60 * 10_000_000,
-    ImageTags: { Logo: "lg" }, BackdropImageTags: ["bd"],
+    OfficialRating: "FR-12", Genres: ["Comédie", "Mystère"], ImageTags: { Logo: "lg" }, BackdropImageTags: ["bd"],
   } as unknown as MediaItem;
 
-  it("pose la vidéo en haut et un bandeau plein dessous : titre, année · durée, survol", () => {
+  it("pose la vidéo en haut et le bandeau dessous : titre, survol, puis les infos", () => {
     const html = render(view({ shown: true, panel: true }), film);
     expect(html).toContain('data-layout="panel"');
     expect(html).toContain("--preview-video-h:194px");
     expect(html).toContain('class="card-preview-panel"');
-    expect(html).toContain("1963 · 1h 53min");
     expect(html).toContain('data-group="true"');
-    // Rien ne s'écrit sur la vidéo : le titre est dans le bandeau.
-    expect(html.indexOf('src="/img/f1/Logo')).toBeGreaterThan(html.indexOf('class="card-preview-panel"'));
+    expect(html).toContain('<span class="card-preview-year">1963</span>');
+    expect(html).toContain("1h 53min");
+    expect(html).toContain('aria-label="trailerPreview:ratingLabel">12</span>');
+    expect(html).toContain("<span>Comédie</span>");
+    // Rien ne s'écrit sur la vidéo : le titre est dans le bandeau, le DOM dit
+    // le titre avant ses gestes, puis les infos (la feuille range l'écran).
+    const panel = html.indexOf('class="card-preview-panel"');
+    const logo = html.indexOf('src="/img/f1/Logo');
+    const group = html.indexOf("data-group");
+    const facts = html.indexOf("card-preview-facts");
+    expect(panel).toBeLessThan(logo);
+    expect(logo).toBeLessThan(group);
+    expect(group).toBeLessThan(facts);
   });
 
-  it("prend la ligne que la carte donne quand elle n'a pas d'item (recommandation, hors bibliothèque)", () => {
-    expect(render(view({ shown: true, panel: true }), null, null, null, "2016")).toContain(">2016</p>");
+  it("prend l'année que la carte donne quand elle n'a pas d'item (recommandation, hors bibliothèque)", () => {
+    expect(render(view({ shown: true, panel: true }), null, null, null, "2016")).toContain('<span class="card-preview-year">2016</span>');
   });
 
-  it("une vignette 16:9 garde la vidéo seule, sans bandeau", () => {
+  it("sans place pour un bandeau, pose le même bandeau sur la vidéo", () => {
     const html = render(view({ shown: true }), film);
     expect(html).toContain('data-layout="overlay"');
-    expect(html).not.toContain("card-preview-panel");
+    expect(html).toContain('class="card-preview-panel"');
   });
 });
 
 describe("CardHoverShell — dans la mini-carte", () => {
-  it("ne rend que le groupe, rangé à droite, sans voile (la mini-carte pose le sien)", () => {
+  it("ne rend que le groupe, transparent à la mise en page, sans voile (la mini-carte pose le sien)", () => {
     const html = renderToStaticMarkup(
       <CardHoverShell variant="poster" visible surface="preview">
         <span>plateau</span>
       </CardHoverShell>,
     );
     expect(html).toContain('data-card-surface="preview"');
-    expect(html).toContain("items-end");
+    expect(html).toContain('class="card-preview-group"');
     expect(html).not.toContain("--card-hover-veil");
     expect(html).not.toContain("hover-reveal");
   });

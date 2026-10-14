@@ -1,20 +1,18 @@
+import { useMemo } from "react";
 import { useJellyfinClient, useMediaItem } from "@tentacle-tv/api-client";
-import { formatDuration, type MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { previewArtOf, previewNeedsDetail } from "./previewArt";
+import { previewInfoOf, type PreviewInfo } from "./previewInfo";
 
-/** « 1963 · 1 h 54 » : l'année, et la durée d'un film. Rien d'inconnu n'est écrit. */
-export function previewMetaOf(item: MediaItem | null): string | null {
-  if (!item) return null;
-  const parts = [
-    item.ProductionYear ? String(item.ProductionYear) : null,
-    item.Type === "Movie" ? formatDuration(item.RunTimeTicks) : null,
-  ].filter((part): part is string => !!part);
-  return parts.length ? parts.join(" · ") : null;
+/** L'année d'une ligne donnée par la carte (« 2016 ») — ce que disent les cartes sans item. */
+function yearOf(meta: string | null): number | null {
+  const match = meta ? /^\s*(\d{4})\b/.exec(meta) : null;
+  return match ? Number(match[1]) : null;
 }
 
 /**
- * Le logo et le fond que la mini-carte écrit sur la vidéo — ANNONCÉS par la
- * donnée, jamais demandés à l'aveugle.
+ * Le logo, le fond et les infos du bandeau — ANNONCÉS par la donnée, jamais
+ * demandés à l'aveugle.
  *
  * L'item d'une carte de rangée ou de grille n'annonce pas de logo (ses listes
  * ne demandent pas cette image) : on lit alors la FICHE du titre, sur la clé
@@ -23,19 +21,28 @@ export function previewMetaOf(item: MediaItem | null): string | null {
  * quand une bande-annonce va se montrer (la mini-carte n'est montée qu'à ce
  * moment) — et c'est la fiche que le clic sur la vidéo ouvre : elle s'ouvre
  * alors sans attendre. Tant qu'elle n'est pas là, le nom écrit, comme avant.
+ *
+ * Les infos du bandeau (`previewInfo.ts`) se lisent sur la carte, puis sur
+ * cette même fiche : genres, classification, qualité arrivent avec elle, sans
+ * rien demander de plus. `meta` : l'année que donne une carte sans item
+ * (recommandation, titre hors bibliothèque).
  */
 export function usePreviewArt(
   artItem: MediaItem | null,
   detailItemId: string | null,
   backdropOverride: string | null,
-): { logoUrl: string | null; backdropUrl: string | null; meta: string | null } {
+  meta: string | null = null,
+): { logoUrl: string | null; backdropUrl: string | null; info: PreviewInfo } {
   const client = useJellyfinClient();
   const id = artItem?.Id ?? detailItemId;
   const wanted = id !== null && previewNeedsDetail(artItem, backdropOverride === null);
-  const { data: detail } = useMediaItem(wanted ? id : undefined, { enabled: wanted });
-  const { logo, backdrop } = previewArtOf(artItem, wanted ? (detail ?? null) : null);
+  const { data } = useMediaItem(wanted ? id : undefined, { enabled: wanted });
+  const detail = wanted ? (data ?? null) : null;
+  const { logo, backdrop } = previewArtOf(artItem, detail);
+  const fallbackYear = yearOf(meta);
+  const info = useMemo(() => previewInfoOf(artItem, detail, fallbackYear), [artItem, detail, fallbackYear]);
   return {
-    meta: previewMetaOf(artItem) ?? previewMetaOf(wanted ? (detail ?? null) : null),
+    info,
     logoUrl: logo ? client.getImageUrl(logo.id, "Logo", { height: 120, quality: 90, tag: logo.tag }) : null,
     backdropUrl: backdropOverride
       ?? (backdrop ? client.getImageUrl(backdrop.id, "Backdrop", { width: 780, quality: 80, tag: backdrop.tag }) : null),

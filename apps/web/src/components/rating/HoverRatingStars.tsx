@@ -5,8 +5,8 @@ import { StarRating } from "./StarRating";
 interface HoverRatingStarsProps {
   identity: RatingIdentity;
   jellyfinItemId?: string | null;
-  /** `xs` sur les affiches étroites du survol. */
-  size?: "xs" | "sm";
+  /** `xs` sur les affiches étroites du survol, `preview` dans la mini-carte d'aperçu. */
+  size?: "xs" | "sm" | "preview";
 }
 
 /**

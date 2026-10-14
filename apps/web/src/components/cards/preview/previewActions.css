@@ -1,0 +1,158 @@
+/* ── Le PLATEAU dans la mini-carte : des ronds, plus une capsule ───────────
+ *
+ * Le MÊME plateau que sur la carte (`CardActionTray`, ordre et gestes du modèle
+ * partagé `cardOverlay.ts`, surface « preview ») ; seule sa forme change ici :
+ * la capsule disparaît (`look="bare"`), chaque bouton devient un rond cerclé
+ * de verre, l'action primaire un rond PLEIN au dégradé de marque — « Lire »
+ * dans le dégradé profond des boutons de lecture (`--cta-brand-gradient`, celui
+ * de la bannière et de la fiche), « Demander » dans le dégradé vif des cartes
+ * Vigie. « Plus d'infos » se range au bout de la rangée, à part.
+ *
+ * Les boutons gardent leurs classes de la carte (couleur du glyphe, état actif,
+ * anneau de focus) ; ces règles, plus spécifiques (`.card-preview` devant),
+ * n'en remplacent que la forme : taille, cercle, fond, ombre, mouvement. Six
+ * ronds tiennent dès 288 px, centres à 34 px au moins (WCAG 2.5.8 : 24). */
+
+.card-preview .card-preview-tray {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: var(--pv-btn-gap);
+}
+
+.card-preview .card-preview-btn {
+  flex: none;
+  width: var(--pv-btn);
+  min-width: 0;
+  aspect-ratio: 1;
+  border: 1.5px solid rgba(255, 255, 255, 0.42);
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+  transition: transform 150ms var(--ease-out);
+}
+
+.card-preview .card-preview-btn:hover {
+  border-color: #fff;
+  background-color: rgba(255, 255, 255, 0.14);
+  transform: scale(1.06);
+}
+
+.card-preview .card-preview-btn:active {
+  transform: scale(0.95);
+}
+
+.card-preview .card-preview-btn:focus-visible {
+  outline-offset: 2px;
+}
+
+/* Une bascule active (dans Ma liste, aimé, vu) : le glyphe plein le dit déjà ;
+ * le cercle se ferme un peu plus. */
+.card-preview .card-preview-btn[aria-pressed="true"] {
+  border-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+/* L'action primaire, en tête : pleine, sans liseré, un cran plus grande. */
+.card-preview .card-preview-btn[data-tray-primary] {
+  width: var(--pv-btn-primary);
+  border-color: transparent;
+  background-image: var(--cta-brand-gradient);
+  color: #fff;
+  box-shadow: 0 6px 16px -6px rgba(var(--brand-rgb), 0.7);
+}
+
+.card-preview .card-preview-btn[data-tray-primary="brand"] {
+  background-image: linear-gradient(135deg, var(--brand) 0%, var(--brand-accent) 100%);
+}
+
+.card-preview .card-preview-btn[data-tray-primary]:hover {
+  border-color: transparent;
+  background-color: transparent;
+  transform: scale(1.06);
+}
+
+/* Le triangle de lecture : optiquement recentré (son poids est à gauche). */
+.card-preview .card-preview-btn[data-tray-primary="quiet"] svg {
+  transform: translateX(6%);
+}
+
+/* « Plus d'infos » : au bout de la rangée, à part. */
+.card-preview .card-preview-btn[data-tray-extra="details"] {
+  margin-inline-start: auto;
+}
+
+.card-preview .card-preview-icon {
+  width: var(--pv-icon);
+  height: var(--pv-icon);
+}
+
+/* Les étoiles (`HoverRatingStars`, taille « preview »). */
+.card-preview .card-preview-star {
+  width: var(--pv-star);
+  height: var(--pv-star);
+}
+
+/* ── L'arrivée du contenu ───────────────────────────────────────────────────
+ * Le bandeau est là dès le départ (il fait partie de la boîte qui grandit) ;
+ * ce qu'il porte monte de 6 px en fondu QUAND la mini-carte est posée, en
+ * cascade de 35 ms : les actions, le titre et ses étoiles, puis les infos.
+ * Un seul passage, `transform` et `opacity` ; le groupe du survol, monté à la
+ * révélation, part de `@starting-style`. Il repart d'un coup avec la boîte. */
+.card-preview .card-preview-rise,
+.card-preview [data-preview-slot] {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 110ms linear,
+    transform 110ms linear;
+}
+
+.card-preview[data-shown="true"] :is(.card-preview-rise, [data-preview-slot]) {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 220ms var(--ease-out) calc(var(--preview-content-delay-ms) + var(--pv-rise, 0) * 35ms),
+    transform 280ms var(--ease-out) calc(var(--preview-content-delay-ms) + var(--pv-rise, 0) * 35ms);
+}
+
+@starting-style {
+  .card-preview[data-shown="true"] [data-preview-slot] {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.card-preview [data-preview-slot="rating"],
+.card-preview .card-preview-title {
+  --pv-rise: 1;
+}
+
+.card-preview .card-preview-line[data-line="first"] {
+  --pv-rise: 2;
+}
+
+.card-preview .card-preview-line[data-line="last"] {
+  --pv-rise: 3;
+}
+
+/* Le son ne monte pas : il paraît, avec les actions — et garde son survol. */
+.card-preview .card-preview-mute {
+  opacity: 0;
+  transition:
+    opacity 110ms linear,
+    transform 150ms var(--ease-out);
+}
+
+.card-preview[data-shown="true"] .card-preview-mute {
+  opacity: 1;
+  transition:
+    opacity 220ms var(--ease-out) var(--preview-content-delay-ms),
+    transform 150ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-preview :is(.card-preview-rise, [data-preview-slot]) {
+    transform: none !important;
+  }
+}

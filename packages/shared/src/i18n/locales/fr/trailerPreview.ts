@@ -20,4 +20,10 @@ export default {
   previewLabelUntitled: "Aperçu de la bande-annonce",
   mute: "Couper le son",
   unmute: "Activer le son",
+  /** La classification du bandeau, pour les lecteurs d'écran (le badge seul dit « 12 »). */
+  ratingLabel: "Classification\u00a0: {{rating}}",
+  /** La progression d'un titre commencé, sous l'heure : « 54 sur 58 min ». */
+  progressMinutes: "{{watched}} sur {{total}} min",
+  /** Au-delà de l'heure, les durées du reste de l'app : « 1h 12min sur 2h 33min ». */
+  progressTime: "{{watched}} sur {{total}}",
 };

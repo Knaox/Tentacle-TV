@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { EyeOff, Plus } from "lucide-react";
+import { EyeOff, Info, Plus } from "lucide-react";
 import {
   externalCardActionEntries,
   resolveExternalCardOverlay,
@@ -24,7 +24,7 @@ interface ExternalHoverOverlayProps {
   visible: boolean;
   /** Extra « Ne plus me proposer » d'une recommandation. */
   onDismiss?: () => void;
-  /** `preview` : le même survol, dans la mini-carte d'aperçu — rangé à droite, au gabarit des vignettes. */
+  /** `preview` : le même survol, dans la mini-carte d'aperçu — en ronds, « Plus d'infos » au bout (`externalCardOverlay.ts`). */
   surface?: CardHoverSurface;
 }
 
@@ -49,38 +49,39 @@ interface ExternalHoverOverlayProps {
  */
 export function ExternalHoverOverlay({ variant, title, name, visible, onDismiss, surface = "card" }: ExternalHoverOverlayProps) {
   const actions = useExternalTitleActions(title);
+  const preview = surface === "preview";
   const overlay = resolveExternalCardOverlay({
-    variant, request: actions.state?.request ?? null, identified: true, likes: actions.likes,
+    variant, request: actions.state?.request ?? null, identified: true, likes: actions.likes, surface,
   });
   // « Ne plus me proposer » n'existe que si l'appelant sait le faire.
   const entries = externalCardActionEntries(overlay, { watchlist: actions.pending, favorite: actions.favorite })
     .filter((entry) => entry.kind !== "dismiss" || onDismiss);
-  const preview = surface === "preview";
-  const align = preview ? "flex justify-end" : "flex justify-center";
+
+  const stars = overlay.rate ? <HoverRatingStars identity={actions.ratingIdentity} size={preview ? "preview" : "sm"} /> : null;
+  const tray = entries.length > 0
+    ? (
+      <CardTrayCapsule label={name} bare={preview}>
+        {entries.map((entry) => (
+          <TrayEntry key={entry.kind} entry={entry} actions={actions} name={name} onDismiss={onDismiss} size={preview ? "preview" : "sm"} />
+        ))}
+      </CardTrayCapsule>
+    )
+    : null;
 
   return (
     <CardHoverShell variant={variant} visible={visible} surface={surface}>
-      {overlay.rate && (
-        <div className={align}>
-          <HoverRatingStars identity={actions.ratingIdentity} />
-        </div>
-      )}
-      {entries.length > 0 && (
-        // Pas de bascules de bibliothèque : la capsule épouse son contenu, au centre.
-        <div className={align}>
-          <CardTrayCapsule label={name}>
-            {entries.map((entry) => (
-              <TrayEntry
-                key={entry.kind}
-                entry={entry}
-                actions={actions}
-                name={name}
-                onDismiss={onDismiss}
-                size={preview ? "md" : "sm"}
-              />
-            ))}
-          </CardTrayCapsule>
-        </div>
+      {preview ? (
+        // La mini-carte : le plateau d'abord, les étoiles ensuite (cf. `CardHoverOverlay`).
+        <>
+          <div data-preview-slot="tray">{tray}</div>
+          {stars && <div data-preview-slot="rating">{stars}</div>}
+        </>
+      ) : (
+        <>
+          {stars && <div className="flex justify-center">{stars}</div>}
+          {/* Pas de bascules de bibliothèque : la capsule épouse son contenu, au centre. */}
+          {tray && <div className="flex justify-center">{tray}</div>}
+        </>
       )}
     </CardHoverShell>
   );
@@ -130,6 +131,15 @@ function TrayEntry({ entry, actions, name, onDismiss, size }: {
     return (
       <CardTrayButton box={box} pressable={false} label={t(entry.labelKey ?? "")} onPress={onDismiss}>
         <EyeOff className={icon} aria-hidden />
+      </CardTrayButton>
+    );
+  }
+  if (entry.kind === "details") {
+    // La mini-carte : « Plus d'infos » rend son clic à la carte, qui ouvre la
+    // page du titre — le geste même du clic sur la vidéo.
+    return (
+      <CardTrayButton box={box} pressable={false} extra="details" label={t(entry.labelKey ?? "")}>
+        <Info className={icon} aria-hidden />
       </CardTrayButton>
     );
   }

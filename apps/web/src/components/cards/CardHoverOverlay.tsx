@@ -52,8 +52,9 @@ interface CardHoverOverlayProps {
   local?: CardToggleHandlers;
   /**
    * `preview` : le même survol, rendu dans la mini-carte d'aperçu — sans les
-   * puces qualité/langues (la vidéo n'a pas à porter ce que dit la fiche),
-   * le groupe rangé à droite au gabarit des vignettes.
+   * puces qualité/langues (son bandeau dit la qualité), le plateau en ronds
+   * puis les étoiles, et le modèle de cette surface (« Lire » et « Plus
+   * d'infos » sur toutes les variantes, cf. `cardOverlay.ts`).
    */
   surface?: CardHoverSurface;
 }
@@ -120,6 +121,7 @@ export function CardHoverOverlay({
     offline: supportsDownloads(),
     local: local !== undefined,
     request: gap !== null,
+    surface,
   });
   const trayPlay = overlay.playInTray && overlay.play && play
     ? { label: `${play.label ?? t(overlay.play.labelKey)} — ${title}`, onPlay: play.onPlay }
@@ -132,6 +134,31 @@ export function CardHoverOverlay({
   // une capsule d'un ou deux boutons (hors bibliothèque, titre local) épouse
   // son contenu, au centre — étirée, un bouton seul flotterait au bord.
   const stretch = !corner && overlay.toggles.length >= CARD_TOGGLE_ORDER.length;
+  const preview = surface === "preview";
+
+  const stars = overlay.rate
+    ? identity
+      ? <HoverRatingStars identity={identity} jellyfinItemId={jellyfinItemId} size={preview ? "preview" : "sm"} />
+      // La série se charge : la place des étoiles est gardée, le plateau ne
+      // saute pas quand elles arrivent.
+      : <div aria-hidden className={preview ? "card-preview-star" : "h-4"} />
+    : null;
+  const tray = hasTray
+    ? (
+      <CardActionTray
+        item={face}
+        overlay={overlay}
+        label={title}
+        size={preview ? "preview" : corner ? "md" : "sm"}
+        stretch={stretch}
+        onOpenDetails={onOpenDetails}
+        onDismiss={onDismiss}
+        localToggles={local}
+        play={trayPlay}
+        request={trayRequest}
+      />
+    )
+    : null;
 
   return (
     <>
@@ -141,32 +168,18 @@ export function CardHoverOverlay({
         </div>
       )}
       <CardHoverShell variant={variant} visible={visible} surface={surface}>
-        {overlay.rate && (
-          <div className={corner ? "flex justify-end" : "flex justify-center"}>
-            {identity ? (
-              <HoverRatingStars identity={identity} jellyfinItemId={jellyfinItemId} />
-            ) : (
-              // La série se charge : la place des étoiles est gardée, le
-              // plateau ne saute pas quand elles arrivent.
-              <div aria-hidden className="h-4" />
-            )}
-          </div>
-        )}
-        {hasTray && (
-          <div className={corner ? "flex justify-end" : stretch ? "" : "flex justify-center"}>
-            <CardActionTray
-              item={face}
-              overlay={overlay}
-              label={title}
-              size={corner ? "md" : "sm"}
-              stretch={stretch}
-              onOpenDetails={onOpenDetails}
-              onDismiss={onDismiss}
-              localToggles={local}
-              play={trayPlay}
-              request={trayRequest}
-            />
-          </div>
+        {preview ? (
+          // La mini-carte : le plateau d'abord, les étoiles ensuite — l'ordre
+          // de l'œil dans son bandeau, que la tabulation suit.
+          <>
+            <div data-preview-slot="tray">{tray}</div>
+            {stars && <div data-preview-slot="rating">{stars}</div>}
+          </>
+        ) : (
+          <>
+            {stars && <div className={corner ? "flex justify-end" : "flex justify-center"}>{stars}</div>}
+            {tray && <div className={corner ? "flex justify-end" : stretch ? "" : "flex justify-center"}>{tray}</div>}
+          </>
         )}
       </CardHoverShell>
     </>
