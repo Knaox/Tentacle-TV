@@ -131,8 +131,11 @@
     transform 150ms var(--ease-out);
 }
 
+/* Animations RÉDUITES : ni montée ni retard — le contenu paraît AVEC la boîte,
+ * dans son simple fondu (mesuré : sans cela, il surgissait à 160 ms). */
 @media (prefers-reduced-motion: reduce) {
-  .card-preview .card-preview-panel {
+  .card-preview :is(.card-preview-panel, .card-preview-mute) {
     transform: none !important;
+    transition-delay: 0s !important;
   }
 }
