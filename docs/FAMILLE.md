@@ -334,6 +334,15 @@ de « Qui regarde ? » (`family.guest_account`).
   une connexion par mot de passe : plus de sélecteur jusqu'à la fermeture,
   sauf la sécurité (`verifyOutcome`). Une préférence changée ailleurs vaut dès
   l'ouverture si le serveur répond dans l'attente bornée.
+- **« Ne plus proposer sur cet appareil »** (case de « Qui regarde ? », seulement
+  si le compte demande qui regarde ; règle `familyPickerStay.ts`, shared) : le
+  pendant du `stickyProfileId` de la TV, gardé sur l'ordinateur
+  (`tentacle_profile_launch_stay`, par serveur et par compte). Le profil retenu
+  s'ouvre seul, sans son code (donné au choix) ; bloqué, « Qui regarde ? » case
+  cochée ; parti ou code posé/retiré, oublié ; jamais un AUTRE profil que celui
+  en cours sur l'appareil (`pickerLaunch` garde sa règle). Le menu de l'avatar
+  l'oublie (comme « Changer de profil » sur la TV), une fin de profil et une
+  déconnexion aussi ; Réglages › Famille le dit, avec « Proposer à nouveau ».
 - **La fin d'un profil** (`auth/profileEnded.ts`, `ProfileSessionBinding`,
   garde de session, `session:revoked`) : retour à la session personnelle, puis
   « Qui regarde ? » EXIGÉ au rechargement (la raison en stockage de session) —
