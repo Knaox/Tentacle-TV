@@ -7,11 +7,18 @@
  *    et seulement ensuite les saisons suivantes — elles divulgâchent ;
  * 2. la VERSION d'une vidéo par rapport à la langue du serveur
  *    (`trailerVersionOf`) : dans cette langue, sous-titrée dans elle, ou non ;
- * 3. le RANG dans une même portée (`rankCatalogEntries`) : la bande-annonce
- *    locale de Jellyfin, AlloCiné VF puis VOSTFR (un serveur français
- *    seulement), les autres sources dans la langue du serveur, puis sous-
- *    titrées, puis la langue originale ou l'anglais, et AlloCiné VO en tout
- *    dernier recours. Une bande-annonce avant un teaser.
+ * 3. le RANG (`rankCatalogEntries`) : les saisons SUIVANTES restent en
+ *    dernier (elles divulgâchent) ; avant elles, d'abord tout ce qui est DANS
+ *    la langue du serveur (la locale, sa langue, sous-titrée dans elle) —
+ *    portée par portée —, puis seulement le reste (VO, inconnue). Une VO de
+ *    la saison en cours ne passe donc jamais devant la VF de la saison
+ *    d'avant (Rick et Morty S7 : la VF de S6, pas les promos anglaises de
+ *    S7) ; les saisons suivantes suivent la même règle entre elles. Dans une
+ *    même portée : la bande-annonce locale de Jellyfin,
+ *    AlloCiné VF puis VOSTFR (un serveur français seulement), les autres
+ *    sources dans la langue du serveur, puis sous-titrées, puis la langue
+ *    originale ou l'anglais, et AlloCiné VO en tout dernier recours. Une
+ *    bande-annonce avant un teaser.
  *
  * MIROIR : recopié octet pour octet dans `apps/backend/src/trailers/` (voir
  * `trailerCatalog.ts`). On le modifie ICI.
@@ -76,11 +83,15 @@ function tierOf(entry: TrailerEntry): number {
   return entry.version === "original" ? 5 : 6;
 }
 
+/** Les paliers de la langue du serveur (locale, sa langue, sous-titrée dans elle) : servis avant tout le reste. */
+const LAST_SERVER_LANGUAGE_TIER = 4;
+
 /**
- * La liste rendue au client : seulement les portées de la fiche, dans leur
- * ordre, puis le palier, la bande-annonce avant le teaser, et l'ordre des
- * sources à égalité (tri stable). Une même vidéo rendue par deux sources ne
- * compte qu'une fois, à sa meilleure place.
+ * La liste rendue au client : seulement les portées de la fiche ; les
+ * saisons suivantes en dernier ; avant elles (et entre elles), d'abord ce qui
+ * est dans la langue du serveur, portée par portée, puis le reste ; dans une portée, le palier, la bande-annonce avant le
+ * teaser, et l'ordre des sources à égalité (tri stable). Une même vidéo
+ * rendue par deux sources ne compte qu'une fois, à sa meilleure place.
  */
 export function rankCatalogEntries(
   entries: readonly TrailerEntry[],
@@ -88,12 +99,18 @@ export function rankCatalogEntries(
   limit = TRAILER_CATALOG_MAX_ENTRIES,
 ): TrailerEntry[] {
   const scopeRank = new Map(scopes.map((scope, index) => [trailerScopeKey(scope), index]));
+  // Une fiche de saison (ou d'épisode) : ce qui suit la série, ce sont les saisons suivantes.
+  const seriesAt = scopes[0]?.kind === "season" ? scopes.findIndex((scope) => scope.kind === "series") : -1;
+  const later = (scope: number) => (seriesAt >= 0 && scope > seriesAt ? 1 : 0);
+  const foreign = (tier: number) => (tier > LAST_SERVER_LANGUAGE_TIER ? 1 : 0);
   const ranked = entries
-    .map((entry, index) => ({ entry, index, scope: scopeRank.get(trailerScopeKey(entry.scope)) }))
-    .filter((row): row is { entry: TrailerEntry; index: number; scope: number } => row.scope !== undefined)
+    .map((entry, index) => ({ entry, index, tier: tierOf(entry), scope: scopeRank.get(trailerScopeKey(entry.scope)) }))
+    .filter((row): row is { entry: TrailerEntry; index: number; tier: number; scope: number } => row.scope !== undefined)
     .sort((a, b) =>
-      a.scope - b.scope
-      || tierOf(a.entry) - tierOf(b.entry)
+      later(a.scope) - later(b.scope)
+      || foreign(a.tier) - foreign(b.tier)
+      || a.scope - b.scope
+      || a.tier - b.tier
       || (a.entry.type === "trailer" ? 0 : 1) - (b.entry.type === "trailer" ? 0 : 1)
       || a.index - b.index);
   const seen = new Set<string>();

@@ -78,14 +78,14 @@ describe("catalogue › le rang", () => {
     ]);
   });
 
-  it("une bande-annonce avant un teaser, à palier égal ; la portée d'abord", () => {
+  it("une bande-annonce avant un teaser, à palier égal ; la langue du serveur avant la VO, d'une portée à l'autre", () => {
     const list = [
       entry(SERIES, "series-trailer", { version: "localized" }),
       entry(season(1), "s1-teaser", { version: "localized", type: "teaser" }),
       entry(season(1), "s1-trailer", { version: "original" }),
       entry(season(1), "s1-trailer-vf", { version: "localized" }),
     ];
-    expect(ids(rankCatalogEntries(list, [season(1), SERIES]))).toEqual(["s1-trailer-vf", "s1-teaser", "s1-trailer", "series-trailer"]);
+    expect(ids(rankCatalogEntries(list, [season(1), SERIES]))).toEqual(["s1-trailer-vf", "s1-teaser", "series-trailer", "s1-trailer"]);
   });
 
   it("une vidéo rendue par deux sources ne compte qu'une fois ; hors des portées, rien ; huit au plus", () => {
@@ -96,7 +96,24 @@ describe("catalogue › le rang", () => {
     expect(rankCatalogEntries(many, [SERIES])).toHaveLength(8);
   });
 
-  it("Rick et Morty, un épisode de S7 : la VF de S6 avant la VO de S8 et la promo de la série", () => {
+  it("Rick et Morty, un épisode de S7 : la VF de S6 passe devant les promos anglaises de S7 ; la VO ensuite, portée par portée", () => {
+    const list = [
+      entry(season(7), "s7-promo-en", { version: "original", type: "teaser" }),
+      entry(season(6), "s6-vf", { source: "allocine", version: "localized" }),
+      entry(season(6), "s6-en"),
+      entry(season(5), "s5-vost-tmdb", { version: "subtitled" }),
+      entry(season(5), "s5-vost", { source: "allocine", version: "subtitled" }),
+    ];
+    const scopes = catalogScopes({ kind: "season", season: 7, seasons: [1, 2, 3, 4, 5, 6, 7, 8, 9] });
+    expect(ids(rankCatalogEntries(list, scopes))).toEqual(["s6-vf", "s5-vost", "s5-vost-tmdb", "s7-promo-en", "s6-en"]);
+  });
+
+  it("serveur anglais : la VO anglaise de la saison en cours EST sa langue, elle passe en tête", () => {
+    const list = [entry(season(6), "s6-other", { version: "original" }), entry(season(7), "s7-en", { version: "localized", type: "teaser" })];
+    expect(ids(rankCatalogEntries(list, catalogScopes({ kind: "season", season: 7, seasons: [6, 7] })))).toEqual(["s7-en", "s6-other"]);
+  });
+
+  it("Rick et Morty, un épisode de S7 (sans vidéo de S7) : la VF de S6, les VO d'avant, puis les saisons suivantes", () => {
     const allocine = [
       entry(season(1), "s1-promo", { source: "allocine", version: "original" }),
       entry(season(6), "s6-vf", { source: "allocine", version: "localized" }),
@@ -107,7 +124,7 @@ describe("catalogue › le rang", () => {
     const scopes = catalogScopes({ kind: "season", season: 7, seasons: [1, 2, 3, 4, 5, 6, 7, 8, 9] });
     const ranked = rankCatalogEntries([...allocine, ...tmdb], scopes);
     expect(ranked[0].name).toBe("s6-vf");
-    expect(ids(ranked)).toEqual(["s6-vf", "s1-promo", "series-promos-en", "s8-vost", "s8-en", "s9-vostfr"]);
+    expect(ids(ranked)).toEqual(["s6-vf", "s1-promo", "series-promos-en", "s8-vost", "s9-vostfr", "s8-en"]);
   });
 
   it("Rick et Morty, un épisode de S9 : la VO STFR de S9 en tête", () => {

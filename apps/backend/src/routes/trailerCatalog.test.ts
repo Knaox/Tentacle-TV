@@ -153,8 +153,9 @@ describe("GET /api/trailers/catalog", () => {
     expect(body?.complete).toBe(true);
     expect(firstPlayback(body)).toEqual({ kind: "dailymotion", videoId: "x8e90ff" });
     expect(body?.entries[0]).toMatchObject({ scope: { kind: "season", season: 6 }, version: "localized", source: "allocine" });
-    // S6, S5, S4, S3, puis la série, puis S8 et S9 (elles divulgâchent) : huit au plus.
-    expect(body?.entries.map((e) => (e.scope.kind === "season" ? e.scope.season : e.scope.kind))).toEqual([6, 5, 5, 4, 4, 3, "series", 8]);
+    // La langue du serveur d'abord (VF de S6, VOST de S5 et S4), puis les VO (S5, S3, la série),
+    // et S8 en dernier (elle divulgâche) : huit au plus.
+    expect(body?.entries.map((e) => (e.scope.kind === "season" ? e.scope.season : e.scope.kind))).toEqual([6, 5, 4, 4, 5, 3, "series", 8]);
   });
 
   it("Rick et Morty, un épisode de S9 : la VO STFR de S9 en tête", async () => {
