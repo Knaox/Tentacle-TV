@@ -110,6 +110,37 @@ let latestRefresh = 0;
 let lastRefreshAt = Number.NEGATIVE_INFINITY;
 
 /**
+ * Les comptes dont JELLYFIN a confirmé le profil depuis le lancement : une
+ * relecture COMPLÈTE (`/Users/Me`) adoptée. Avant, le profil stocké peut dater
+ * d'une autre session — l'absence de photo qu'il dit n'est pas un constat
+ * (l'invitation aux avatars attend ce constat).
+ */
+const confirmedUsers = new Set<string>();
+const confirmationListeners = new Set<() => void>();
+
+/** Le profil de ce compte a-t-il été relu chez Jellyfin depuis le lancement ? */
+export function isStoredUserConfirmed(userId: string | null | undefined): boolean {
+  return !!userId && confirmedUsers.has(userId);
+}
+
+/** Abonnement aux confirmations (pour `useSyncExternalStore`). */
+export function subscribeUserConfirmation(listener: () => void): () => void {
+  confirmationListeners.add(listener);
+  return () => {
+    confirmationListeners.delete(listener);
+  };
+}
+
+/** Une réponse complète de Jellyfin pour le compte stocké : son profil est confirmé. */
+function confirmFresh(stored: StoredUser | null, fresh: unknown): void {
+  if (stored === null || !isUser(fresh) || fresh.Id !== stored.Id) return;
+  if (!isRecord(fresh.Policy) && !isRecord(fresh.Configuration)) return;
+  if (confirmedUsers.has(fresh.Id)) return;
+  confirmedUsers.add(fresh.Id);
+  for (const listener of confirmationListeners) listener();
+}
+
+/**
  * Relit le profil et l'adopte ; vrai si la photo a changé. Ne rejette
  * jamais : hors ligne ou sur un refus, le profil stocké reste tel quel.
  *
@@ -133,7 +164,11 @@ export async function refreshStoredUser(
   const ticket = ++latestRefresh;
   try {
     const fresh = await client.fetch("/Users/Me", undefined, { noAuthExpiry: true });
-    return ticket === latestRefresh && adoptFreshUser(storage, fresh);
+    if (ticket !== latestRefresh) return false;
+    const stored = parseStoredUser(storage.getItem(STORED_USER_KEY));
+    const photoChanged = adoptFreshUser(storage, fresh);
+    confirmFresh(stored, fresh);
+    return photoChanged;
   } catch {
     return false;
   }

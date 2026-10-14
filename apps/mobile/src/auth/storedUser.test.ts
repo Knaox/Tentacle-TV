@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   adoptFreshUser,
+  isStoredUserConfirmed,
   mergeFreshUser,
   parseStoredUser,
   profilePhotoUrl,
   refreshStoredUser,
   STORED_USER_KEY,
   subscribeStoredUser,
+  subscribeUserConfirmation,
   type StoredUser,
 } from "./storedUser";
 
@@ -172,6 +174,33 @@ describe("refreshStoredUser", () => {
     answerOld(dto({ PrimaryImageTag: "a1" }));
     await expect(old).resolves.toBe(false);
     expect(storage.stored()?.PrimaryImageTag).toBe("b2");
+  });
+});
+
+describe("confirmation du profil par Jellyfin", () => {
+  // Un identifiant par cas : la confirmation vaut pour tout le lancement.
+  it("un profil stocké n'est confirmé qu'une fois relu en entier chez Jellyfin", async () => {
+    const id = "c0ffee01";
+    const storage = memoryStorage(dto({ Id: id }));
+    const listener = vi.fn();
+    const unsubscribe = subscribeUserConfirmation(listener);
+    expect(isStoredUserConfirmed(id)).toBe(false);
+    await refreshStoredUser(storage, reader(async () => dto({ Id: id })));
+    expect(isStoredUserConfirmed(id)).toBe(true);
+    await refreshStoredUser(storage, reader(async () => dto({ Id: id })));
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+  });
+
+  it("ni une réponse partielle (jeton d'appareil), ni un échec, ni un autre compte ne confirment", async () => {
+    const id = "c0ffee02";
+    const storage = memoryStorage(dto({ Id: id }));
+    await refreshStoredUser(storage, reader(async () => ({ Id: id, Name: "Knaoxtest" })));
+    await refreshStoredUser(storage, reader(() => Promise.reject(new Error("hors ligne"))));
+    await refreshStoredUser(storage, reader(async () => dto({ Id: "c0ffee03" })));
+    expect(isStoredUserConfirmed(id)).toBe(false);
+    expect(isStoredUserConfirmed("c0ffee03")).toBe(false);
+    expect(isStoredUserConfirmed(null)).toBe(false);
   });
 });
 
