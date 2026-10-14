@@ -213,7 +213,7 @@ export function PlayerControls({
                   }
                 }}
                 className="hidden rounded-full p-2.5 hover:bg-white/10 sm:inline-flex sm:p-2"
-                aria-label={t("player:pip", "Picture in Picture")}
+                aria-label={t("player:pictureInPicture")}
               >
                 <PipIcon />
               </button>

@@ -126,6 +126,28 @@ export default {
   trailerNoteTitle: "Bon à savoir",
   trailerSubtitlesNote: "Votre choix est retenu pour les prochaines bandes-annonces de ce téléviseur.",
   trailerQualityNote: "Chaque bande-annonce démarre dans la meilleure qualité. « Auto » l'adapte à votre connexion.",
+  // Le lecteur complet des bandes-annonces (web, bureau) : la liste de la
+  // fiche, ce que dit chaque bande-annonce, le repli sur le lecteur officiel.
+  trailerPlayer: "Lecteur de bande-annonce",
+  trailerClose: "Fermer la bande-annonce",
+  trailerList: "Bandes-annonces",
+  trailerPrevious: "Bande-annonce précédente",
+  trailerNext: "Bande-annonce suivante",
+  trailerScopeSeason: "Saison {{season}}",
+  trailerScopeSeries: "Série",
+  trailerScopeMovie: "Film",
+  trailerVersion_vf: "VF",
+  trailerVersion_vostfr: "VOSTFR",
+  trailerVersion_vo: "VO",
+  trailerVersion_localized: "Version locale",
+  trailerVersion_subtitled: "Sous-titrée",
+  trailerVersion_original: "Version originale",
+  trailerOrigin_allocine: "AlloCiné",
+  trailerOrigin_youtube: "YouTube",
+  trailerOrigin_dailymotion: "Dailymotion",
+  openOnSource: "Ouvrir sur {{source}}",
+  trailerEmbedNotice: "Lecteur YouTube (des publicités peuvent apparaître)",
+  trailerFailed: "Cette bande-annonce ne peut pas être lue pour l'instant.",
   // Le genre d'un extra, sous sa tuile — et son titre quand Jellyfin ne lui a
   // donné que son genre (« Trailer 2 ») : cf. `extras/extraLabels.ts`.
   extraKindTrailer: "Bande-annonce",

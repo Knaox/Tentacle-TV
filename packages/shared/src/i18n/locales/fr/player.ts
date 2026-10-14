@@ -117,6 +117,16 @@ export default {
   // la rangee de transport du televiseur, elle, les lit sans repli.
   play: "Lecture",
   pause: "Pause",
+  // Les mots du son, du plein écran et de la barre (lecteur web, lecteur des
+  // bandes-annonces) : ils étaient appelés avec un défaut anglais, sans clé.
+  mute: "Couper le son",
+  unmute: "Rétablir le son",
+  volume: "Volume",
+  fullscreen: "Plein écran",
+  exitFullscreen: "Quitter le plein écran",
+  seekbar: "Position de lecture",
+  // L'image dans l'image du NAVIGATEUR — `pip`, plus bas, est celle du bureau.
+  pictureInPicture: "Image dans l'image",
   // Le bouton qui ENTRE en mode deplacement. `scrubConfirmHint` et
   // `scrubCancelHint` sont des indices affiches PENDANT ; celle-ci nomme
   // l'action, et n'a d'emploi que la ou se deplacer est un mode — la
