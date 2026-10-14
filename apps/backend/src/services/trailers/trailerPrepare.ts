@@ -8,6 +8,9 @@
 /* ------------------------------------------------------------------ */
 
 import { startVariant } from "./hlsPlaylists";
+
+/** Le plus petit départ d'un aperçu (densité 1, petite mini-carte) : jamais en dessous de 360p. */
+const MIN_START_HEIGHT = 360;
 import { heldEntry, loadMaster, loadMedia, resolveEntry, resolvedOf, type ResolvedTrailer } from "./trailerRelay";
 import { prefetchSegment } from "./trailerSegments";
 import type { ExtractionOptions } from "./ytExtract";
@@ -51,12 +54,15 @@ export function peekTrailer(ytId: string): ResolvedTrailer | null {
 /**
  * Prépare le DÉPART d'un aperçu au survol : le client part du plus petit
  * niveau qui couvre sa mini-carte (300 à 560 px de large) — 720p sur un écran
- * Retina, moins en densité 1 (`previewLevelCap.ts`, web). La variante de
- * départ des aperçus est donc la plus riche jusqu'à 720p (`startVariant`, le
- * départ de la TV aussi), avec l'audio de son groupe : leurs listes, puis
- * leur premier segment (et celui d'initialisation, s'il y en a un) sont lus
- * d'avance — jamais la 1080p, que le client ne demandera pas. Sans effet sur
- * une vidéo que le relais ne tient pas, ou sur un MP4.
+ * Retina, 360p en densité 1 ou sur une mini-carte de moins de 320 px
+ * (`previewLevelCap.ts`, web). Les deux départs sont lus d'avance : la
+ * variante la plus riche jusqu'à 720p (`startVariant`, le départ de la TV
+ * aussi) et la plus petite d'au moins 360p, chacune avec l'audio de son
+ * groupe — leurs listes, puis leur premier segment (et celui
+ * d'initialisation, s'il y en a un). Jamais la 1080p, qu'aucun client ne
+ * prend au départ : ~230 Ko de 360p de plus par décision, pour que le premier
+ * fragment — que la révélation sur l'image attend — sorte toujours de la
+ * mémoire. Sans effet sur une vidéo que le relais ne tient pas, ou sur un MP4.
  */
 export async function warmStart(ytId: string): Promise<void> {
   const entry = heldEntry(ytId);
@@ -64,10 +70,19 @@ export async function warmStart(ytId: string): Promise<void> {
   const master = await loadMaster(entry);
   const top = master && master.variants.length > 0 ? startVariant(master.variants) : null;
   if (!master || !top) return;
-  const audio = master.audio.find((a) => a.group === top.audioGroup);
-  await Promise.all([top.key, audio?.key].map(async (key) => {
-    const media = key ? await loadMedia(entry, key) : null;
-    if (!key || !media) return;
+  const small = master.variants
+    .filter((v) => v.height >= MIN_START_HEIGHT)
+    .reduce<typeof top | null>((best, v) => (!best || v.height < best.height || (v.height === best.height && v.bandwidth < best.bandwidth) ? v : best), null);
+  const starts = small && small.key !== top.key ? [top, small] : [top];
+  const keys = new Set<string>();
+  for (const variant of starts) {
+    keys.add(variant.key);
+    const audio = master.audio.find((a) => a.group === variant.audioGroup);
+    if (audio) keys.add(audio.key);
+  }
+  await Promise.all([...keys].map(async (key) => {
+    const media = await loadMedia(entry, key);
+    if (!media) return;
     if (media.init) prefetchSegment(ytId, key, "init");
     if (media.segments.length > 0) prefetchSegment(ytId, key, 0);
   }));

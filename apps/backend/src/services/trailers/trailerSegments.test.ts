@@ -64,17 +64,18 @@ afterEach(() => {
 });
 
 describe("départ de l'aperçu, lu d'avance", () => {
-  it("la variante 720p (jamais la 1080p) et l'audio de SON groupe : leurs listes, puis leur premier segment", async () => {
+  it("les deux départs — 720p et 360p, jamais la 1080p — et l'audio de LEUR groupe : leurs listes, puis leur premier segment", async () => {
     const fetch = googlevideo();
     vi.stubGlobal("fetch", fetch);
     await resolveTrailer(ID);
     await warmStart(ID);
     await settled();
     const asked = fetch.mock.calls.map(([url]) => String(url));
-    expect(asked.filter((u) => u.includes("/seg/"))).toEqual([`${GV}/seg/232/0.ts`, `${GV}/seg/234/0.ts`]);
-    expect(asked.some((u) => u.includes("/itag/233/") || u.includes("/itag/230/") || u.includes("/itag/270/"))).toBe(false);
-    expect(heldSegmentsState()).toEqual({ count: 2, bytes: 2000, reading: 0 });
+    expect(asked.filter((u) => u.includes("/seg/")).sort()).toEqual([`${GV}/seg/230/0.ts`, `${GV}/seg/232/0.ts`, `${GV}/seg/233/0.ts`, `${GV}/seg/234/0.ts`]);
+    expect(asked.some((u) => u.includes("/itag/270/"))).toBe(false);
+    expect(heldSegmentsState()).toEqual({ count: 4, bytes: 4000, reading: 0 });
     expect((await heldSegment(ID, "232", 0))?.body.length).toBe(1000);
+    expect((await heldSegment(ID, "230", 0))?.body.length).toBe(1000);
     expect(heldSegment(ID, "232", 1)).toBeNull();
   });
 
