@@ -2,8 +2,12 @@
  *
  * La boîte (place, entrée, sortie) vit dans `cardPreview.css` ; ici, ce qu'elle
  * porte. Les PROPORTIONS sont celles d'une mini-carte de service de streaming
- * (vidéo 16:9, puis les actions, puis les infos) ; l'IDENTITÉ est Tentacle :
- * verre sombre teinté de nos jetons, dégradé violet → rose, Inter, nos glyphes.
+ * (vidéo 16:9, puis les actions, puis les infos) ; la MATIÈRE, celle d'une app
+ * TV sur fond noir (demande de Damien, 14/10 : « plus premium, à la Apple ») :
+ * un graphite NEUTRE, sans teinte de marque, une lumière à peine posée en
+ * haut, un liseré et un contour d'un pixel. La marque n'y paraît qu'en touches
+ * minuscules : la barre de progression, l'étoile de la note, l'anneau de focus
+ * (et le 4K, préférence ferme des puces de qualité). Inter, nos glyphes.
  *
  * Tout s'ÉCHELONNE avec la mini-carte, de 288 à 560 px de large, sans un seul
  * point de rupture : les mesures sont en unités de conteneur (`cqi`, 1 % de sa
@@ -25,25 +29,46 @@
   overflow: hidden;
   border-radius: inherit;
   container: preview / inline-size;
-  /* Le verre sombre du bandeau : la teinte de `--glass-tint` (20, 20, 26),
-   * rendue opaque — la mini-carte recouvre des affiches, rien ne doit percer. */
-  --pv-panel-top: rgb(21 20 29);
-  --pv-panel-bottom: rgb(12 12 18);
+  /* Le graphite du bandeau, neutre, opaque — la mini-carte recouvre des
+   * affiches, rien ne doit percer. */
+  --pv-panel-top: #141416;
+  --pv-panel-bottom: #0e0e10;
+  /* La couleur VUE en haut du bandeau (le graphite sous sa lumière de 4 %) :
+   * celle où la vidéo fond, sans marche. */
+  --pv-panel-face: #1d1d1f;
   /* Le FOND du bandeau est celui de la boîte (la vidéo couvre le haut) : le
-   * bandeau ne porte que son contenu, qui arrive d'un seul calque. Un reflet de
-   * marque, en bas à gauche, loin de la vidéo — peint une fois. */
+   * bandeau ne porte que son contenu, qui arrive d'un seul calque. Une
+   * profondeur à peine perceptible — un blanc à 4 % qui s'éteint vers le bas.
+   * Peint une fois. */
   background:
-    radial-gradient(70% 55% at 0% 100%, rgba(var(--brand-rgb), 0.13) 0%, rgba(var(--brand-rgb), 0) 100%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.04) var(--preview-video-h, 0px), rgb(255 255 255 / 0) 100%),
     linear-gradient(180deg, var(--pv-panel-top) var(--preview-video-h, 0px), var(--pv-panel-bottom) 100%);
+  /* Une ombre portée large et douce, et un contour d'un pixel : sur une page
+   * noire, c'est le contour qui détache la mini-carte, pas une lueur. Fixes. */
   box-shadow:
-    0 30px 60px -22px rgba(0, 0, 0, 0.95),
-    0 0 22px rgba(255, 255, 255, 0.07);
+    0 32px 64px -24px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+/* Le liseré de lumière en haut et le contour intérieur, PAR-DESSUS la vidéo :
+ * le bord d'un verre. Statique — peint une fois, jamais animé. */
+.card-preview-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 0 0 1px rgb(255 255 255 / 0.04);
 }
 
 :root[data-theme="light"] .card-preview-surface {
   box-shadow:
-    0 26px 52px -18px rgba(11, 11, 16, 0.5),
-    0 8px 18px -8px rgba(11, 11, 16, 0.3);
+    0 26px 52px -18px rgba(11, 11, 16, 0.45),
+    0 8px 18px -8px rgba(11, 11, 16, 0.28),
+    0 0 0 1px rgba(11, 11, 16, 0.08);
 }
 
 /* La scène : la vidéo, en 16:9, en haut — toute la mini-carte quand il n'y a
@@ -87,13 +112,13 @@
   transition: none;
 }
 
-/* Le raccord vidéo → bandeau : la vidéo FOND dans le verre sur son dernier
+/* Le raccord vidéo → bandeau : la vidéo FOND dans le graphite sur son dernier
  * sixième, sans arête. Rien ne s'écrit sur elle. */
 .card-preview-veil {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(0deg, var(--pv-panel-top) 0%, rgb(21 20 29 / 0.5) 7%, rgb(21 20 29 / 0) 17%);
+  background: linear-gradient(0deg, var(--pv-panel-face) 0%, rgb(29 29 31 / 0.5) 7%, rgb(29 29 31 / 0) 17%);
 }
 
 /* Sans bandeau : un voile sombre en bas porte les infos sur la vidéo. */
@@ -101,20 +126,21 @@
   background: linear-gradient(0deg, rgba(var(--scrim-media-rgb), 0.9) 0%, rgba(var(--scrim-media-rgb), 0.55) 34%, rgba(var(--scrim-media-rgb), 0) 70%);
 }
 
-/* ── Le son : un rond cerclé, en haut à droite, loin des actions ──────────
- * Sans flou : un noir léger et un liseré suffisent sur n'importe quelle image. */
+/* ── Le son : un rond plein, graphite translucide, en haut à droite ────────
+ * Sans flou : un gris sombre à 60 % suffit sur n'importe quelle image. */
 .card-preview-mute {
   position: absolute;
   top: var(--pv-edge);
   right: var(--pv-edge);
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   width: var(--pv-mute);
   aspect-ratio: 1;
   border-radius: 9999px;
-  border: 1.5px solid rgba(255, 255, 255, 0.55);
-  background-color: rgba(var(--scrim-media-rgb), 0.38);
+  border: 0;
+  background-color: rgb(28 28 30 / 0.6);
   color: #fff;
   transition: transform 150ms var(--ease-out);
 }
@@ -125,16 +151,16 @@
 }
 
 .card-preview-mute:hover {
-  border-color: #fff;
-  background-color: rgba(var(--scrim-media-rgb), 0.58);
-  transform: scale(1.06);
+  background-color: rgb(44 44 48 / 0.78);
+  transform: scale(1.05);
 }
 
 .card-preview-mute:active {
   transform: scale(0.95);
 }
 
+/* L'anneau de focus : une des rares touches de marque de la mini-carte. */
 .card-preview-mute:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--brand-light);
   outline-offset: 2px;
 }

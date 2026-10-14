@@ -25,7 +25,7 @@ interface PreviewPanelProps {
  * infos) ; l'ordre à l'écran, celui de l'œil — la feuille range. La
  * tabulation, elle, suit l'écran : le plateau, puis les étoiles.
  *
- * Verre sombre dans les deux schémas (posé sur média) : il porte les mêmes
+ * Graphite neutre dans les deux schémas (posé sur média) : il porte les mêmes
  * boutons blancs que la vidéo.
  */
 export function PreviewPanel({ title, logoUrl, info, group }: PreviewPanelProps) {

@@ -47,7 +47,7 @@ function Line({ slot, children }: { slot: "first" | "last"; children: ReactNode 
   );
 }
 
-/** Le point de marque qui sépare les faits (celui de la bannière d'accueil). */
+/** Le point neutre qui sépare les faits et les genres. */
 const Dot = () => <span aria-hidden className="card-preview-dot" />;
 
 function FactsLine({ facts }: { facts: PreviewFacts }) {

@@ -1,12 +1,12 @@
-/* ── Le PLATEAU dans la mini-carte : des ronds, plus une capsule ───────────
+/* ── Le PLATEAU dans la mini-carte : des ronds pleins, plus une capsule ─────
  *
  * Le MÊME plateau que sur la carte (`CardActionTray`, ordre et gestes du modèle
  * partagé `cardOverlay.ts`, surface « preview ») ; seule sa forme change ici :
- * la capsule disparaît (`look="bare"`), chaque bouton devient un rond cerclé
- * de verre, l'action primaire un rond PLEIN au dégradé de marque — « Lire »
- * dans le dégradé profond des boutons de lecture (`--cta-brand-gradient`, celui
- * de la bannière et de la fiche), « Demander » dans le dégradé vif des cartes
- * Vigie. « Plus d'infos » se range au bout de la rangée, à part.
+ * la capsule disparaît (`look="bare"`), chaque bouton devient un rond PLEIN de
+ * gris translucide à pictogramme blanc — les boutons d'une app TV d'Apple —,
+ * « Lire » un rond BLANC à pictogramme noir ; « Demander » d'une carte Vigie
+ * garde le dégradé de la marque, sans lueur. « Plus d'infos » se range au bout
+ * de la rangée, à part.
  *
  * Les boutons gardent leurs classes de la carte (couleur du glyphe, état actif,
  * anneau de focus) ; ces règles, plus spécifiques (`.card-preview` devant),
@@ -26,50 +26,61 @@
   width: var(--pv-btn);
   min-width: 0;
   aspect-ratio: 1;
-  border: 1.5px solid rgba(255, 255, 255, 0.42);
-  background-color: rgba(255, 255, 255, 0.05);
+  border: 0;
+  background-color: rgb(255 255 255 / 0.13);
   box-shadow: none;
   transition: transform 150ms var(--ease-out);
 }
 
+/* Un pictogramme blanc franc ; une bascule ACTIVE garde la couleur de la carte
+ * (blanc, ou l'accent du cœur aimé). */
+.card-preview .card-preview-btn:not([aria-pressed="true"]) {
+  color: rgb(255 255 255 / 0.95);
+}
+
 .card-preview .card-preview-btn:hover {
-  border-color: #fff;
-  background-color: rgba(255, 255, 255, 0.14);
-  transform: scale(1.06);
+  background-color: rgb(255 255 255 / 0.2);
+  transform: scale(1.05);
 }
 
 .card-preview .card-preview-btn:active {
   transform: scale(0.95);
 }
 
+/* L'anneau de focus : une des rares touches de marque de la mini-carte. */
 .card-preview .card-preview-btn:focus-visible {
+  outline-color: var(--brand-light);
   outline-offset: 2px;
 }
 
-/* Une bascule active (dans Ma liste, aimé, vu) : le glyphe plein le dit déjà ;
- * le cercle se ferme un peu plus. */
+/* Une bascule active (dans Ma liste, aimé, vu) : le glyphe plein le dit ; le
+ * rond s'éclaire d'un cran. Le cœur aimé garde l'accent de la carte. */
 .card-preview .card-preview-btn[aria-pressed="true"] {
-  border-color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(255, 255, 255, 0.16);
+  background-color: rgb(255 255 255 / 0.22);
 }
 
-/* L'action primaire, en tête : pleine, sans liseré, un cran plus grande. */
+/* « Lire », en tête : un rond BLANC, pictogramme noir, un cran plus grand. */
 .card-preview .card-preview-btn[data-tray-primary] {
   width: var(--pv-btn-primary);
-  border-color: transparent;
-  background-image: var(--cta-brand-gradient);
-  color: #fff;
-  box-shadow: 0 6px 16px -6px rgba(var(--brand-rgb), 0.7);
-}
-
-.card-preview .card-preview-btn[data-tray-primary="brand"] {
-  background-image: linear-gradient(135deg, var(--brand) 0%, var(--brand-accent) 100%);
+  background-color: #fff;
+  background-image: none;
+  color: #0b0b0d;
 }
 
 .card-preview .card-preview-btn[data-tray-primary]:hover {
-  border-color: transparent;
-  background-color: transparent;
-  transform: scale(1.06);
+  background-color: rgb(255 255 255 / 0.86);
+  color: #0b0b0d;
+  transform: scale(1.05);
+}
+
+/* « Demander » (carte Vigie) : la primaire de la marque, au dégradé — sans lueur. */
+.card-preview .card-preview-btn[data-tray-primary="brand"] {
+  background-image: linear-gradient(135deg, var(--brand) 0%, var(--brand-accent) 100%);
+  color: #fff;
+}
+
+.card-preview .card-preview-btn[data-tray-primary="brand"]:hover {
+  color: #fff;
 }
 
 /* Le retour d'appui, même sous le pointeur (le survol est plus spécifique). */

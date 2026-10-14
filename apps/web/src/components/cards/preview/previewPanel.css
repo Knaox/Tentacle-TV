@@ -91,7 +91,7 @@
   font-size: var(--pv-text);
   line-height: 1.38;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgb(255 255 255 / 0.92);
   font-variant-numeric: tabular-nums;
 }
 
@@ -130,7 +130,7 @@
   line-height: 1.25;
   font-weight: 650;
   letter-spacing: -0.012em;
-  color: #fff;
+  color: rgb(255 255 255 / 0.92);
 }
 
 /* ── Les infos : faits, épisode, genres, progression ──
@@ -144,11 +144,11 @@
 }
 
 .card-preview-genres {
-  color: rgba(255, 255, 255, 0.66);
+  color: rgb(255 255 255 / 0.6);
   font-weight: 450;
 }
 
-/* Le séparateur de la maison : un point de marque (celui de la bannière). */
+/* Le séparateur : un point neutre, discret. */
 .card-preview-dot {
   display: inline-block;
   vertical-align: middle;
@@ -156,11 +156,11 @@
   height: 3.5px;
   margin: 0 0.55em;
   border-radius: 9999px;
-  background: rgba(var(--brand-rgb), 0.9);
+  background: rgb(255 255 255 / 0.32);
 }
 
 .card-preview-year {
-  color: #fff;
+  color: rgb(255 255 255 / 0.92);
   font-weight: 600;
 }
 
@@ -168,19 +168,19 @@
   display: inline-block;
   vertical-align: 0.06em;
   padding: 0.05em 0.42em;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  border: 1px solid rgb(255 255 255 / 0.32);
   border-radius: 4px;
   font-size: 0.8em;
   line-height: 1.35;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgb(255 255 255 / 0.8);
 }
 
 /* La note globale : l'étoile de marque de l'affiche (rose), le chiffre en blanc. */
 .card-preview-score {
   font-weight: 600;
-  color: #fff;
+  color: rgb(255 255 255 / 0.92);
 }
 
 .card-preview-score-star {
@@ -198,7 +198,7 @@
   font-size: 0.8em;
   font-weight: 650;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgb(255 255 255 / 0.6);
 }
 
 .card-preview-quality + .card-preview-quality {
@@ -213,12 +213,12 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: rgba(255, 255, 255, 0.86);
+  color: rgb(255 255 255 / 0.92);
 }
 
 .card-preview-episode b {
-  font-weight: 700;
-  color: #fff;
+  font-weight: 650;
+  color: rgb(255 255 255 / 0.92);
 }
 
 .card-preview-progress {
@@ -232,7 +232,7 @@
   flex: 1 1 auto;
   height: clamp(3px, 0.8cqi, 4px);
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgb(255 255 255 / 0.16);
   overflow: hidden;
 }
 
@@ -247,5 +247,5 @@
 
 .card-preview-progress-time {
   flex: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgb(255 255 255 / 0.6);
 }
