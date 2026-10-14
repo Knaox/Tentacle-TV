@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AccessibilityInfo, Alert, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { AVATAR_CHARACTERS, findAvatar } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui";
 import { showToast } from "@/notices/toastStore";
@@ -39,6 +40,7 @@ export function AvatarGallerySheet({ visible, mode, current, onClose }: AvatarGa
   const { isTablet } = useResponsive();
   const layout = useMemo(() => galleryLayout(Math.min(width, SHEET_MAX_WIDTH), isTablet), [width, isTablet]);
   const { upload, uploading } = useProfilePhotoUpload();
+  const { storage } = useTentacleConfig();
   const [designatedId, setDesignatedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,8 +58,8 @@ export function AvatarGallerySheet({ visible, mode, current, onClose }: AvatarGa
   }, [tProfile, onClose]);
 
   const apply = useCallback((id: string) => {
-    void upload(() => characterPhoto(id)).then(finish);
-  }, [upload, finish]);
+    void upload(() => characterPhoto(id, storage.getItem("tentacle_server_url") ?? "")).then(finish);
+  }, [upload, finish, storage]);
 
   // Un toucher sur le personnage déjà désigné : on le prend.
   const onTile = useCallback((id: string) => {
