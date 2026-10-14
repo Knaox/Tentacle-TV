@@ -1,7 +1,7 @@
 # La troupe des avatars
 
 Les photos de profil qu'on choisit dans la galerie (bureau et web, menu de l'avatar
-ou page Profil) : des PERSONNAGES, chacun avec son nom et son histoire de cinéphile
+ou page Profil ; mobile, la photo du profil) : des PERSONNAGES, chacun avec son nom et son histoire de cinéphile
 (`packages/shared/src/i18n/locales/*/avatars.ts`), rangés en trois collections
 (`packages/shared/src/avatars/avatarCatalog.ts` : ordre, couleur d'attente,
 tempérament au survol).
@@ -22,8 +22,11 @@ python3 brand/avatars/generate.py --preview /tmp/avatars  # PNG ronds + planche,
 
 Il faut numpy, Pillow (avec WebP) et `rsvg-convert` (`brew install librsvg`). Sorties :
 `apps/web/public/avatars/<id>.webp` (512 px, l'image envoyée à Jellyfin) et
-`apps/web/public/avatars/thumbs/<id>.webp` (192 px, la grille). Elles ne se retouchent
-jamais à la main.
+`apps/web/public/avatars/thumbs/<id>.webp` (192 px, la grille), recopiées à l'octet près
+pour l'app mobile dans `apps/mobile/assets/avatars/` avec le module de leurs `require`
+statiques, `apps/mobile/src/avatars/avatarAssets.generated.ts` (Metro n'embarque une
+image que nommée en toutes lettres). Rien de tout cela ne se retouche à la main ; un test
+du web et un du mobile vérifient que chaque personnage du catalogue a ses images.
 
 ## Dessiner un personnage
 
