@@ -15,6 +15,7 @@ export default {
   previewLabelUntitled: "Trailer preview",
   mute: "Mute",
   unmute: "Unmute",
+  volume: "Preview volume",
   ratingLabel: "Rated {{rating}}",
   progressMinutes: "{{watched}} of {{total}} min",
   progressTime: "{{watched}} of {{total}}",

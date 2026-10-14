@@ -2,7 +2,7 @@ import type { CSSProperties, FocusEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMountWhile } from "../../../hooks/useMountWhile";
-import { PreviewMuteButton } from "./PreviewChrome";
+import { PreviewSoundControl } from "./PreviewChrome";
 import { PreviewMedia } from "./PreviewMedia";
 import { PreviewPanel } from "./PreviewPanel";
 import { usePreviewArt } from "./usePreviewArt";
@@ -86,7 +86,7 @@ export function PreviewFrame({ view, title, artItem, detailItemId, backdropUrl, 
         <div className="card-preview-stage" style={{ "--pv-video-crop": engine.videoCrop } as CSSProperties}>
           <PreviewMedia engine={engine} shown={shown} settled={settled} backdropUrl={art.backdropUrl} />
           <div aria-hidden className="card-preview-veil" />
-          <PreviewMuteButton muted={engine.muted} onToggle={engine.toggleMute} />
+          <PreviewSoundControl muted={engine.muted} volume={engine.soundVolume} onToggle={engine.toggleMute} onVolume={engine.setVolume} />
         </div>
         <PreviewPanel title={title} logoUrl={art.logoUrl} info={art.info} group={group} height={placement.height - placement.videoHeight} />
       </div>

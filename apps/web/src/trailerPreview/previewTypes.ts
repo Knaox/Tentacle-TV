@@ -82,6 +82,10 @@ export interface TrailerPreviewHandle {
   muted: boolean;
   /** Coupe ou rend le son — retenu sur l'appareil pour les aperçus suivants. */
   toggleMute: () => void;
+  /** Le volume réglé (0 à 1), retenu sur l'appareil — celui du son quand il n'est pas coupé. */
+  soundVolume: number;
+  /** Règle le volume ; zéro coupe le son, une valeur au-dessus le rend. */
+  setVolume: (next: number) => void;
   onReady: (frame?: { crop: number }) => void;
   onError: () => void;
   onEnded: () => void;

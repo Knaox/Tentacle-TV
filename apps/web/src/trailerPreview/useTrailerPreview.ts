@@ -18,7 +18,7 @@ import { usePipSession } from "../pictureInPicture/pictureInPictureStore";
 import { trailerPreviewArbiter } from "./previewArbiterInstance";
 import { useTrailerPreviewBlock } from "./previewEnvironment";
 import { rememberTrailerPreviewFailure, trailerPreviewRecentlyFailed } from "./previewFailures";
-import { useTrailerPreviewMuted } from "./previewSettings";
+import { useTrailerPreviewMuted, useTrailerPreviewVolume } from "./previewSettings";
 import { loadPreviewHls } from "./previewSource";
 import { previewStreamOf } from "./previewStream";
 import type { TrailerPreviewHandle, TrailerPreviewStream } from "./previewTypes";
@@ -166,6 +166,17 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
       setRememberedMuted(true);
     }
   }, [muted, setRememberedMuted]);
+  // Le volume, réglé dans la mini-carte : le monter rend le son, le mettre à zéro le coupe.
+  const [rememberedVolume, setRememberedVolume] = useTrailerPreviewVolume();
+  const setVolume = useCallback((next: number) => {
+    if (next > 0) {
+      setRememberedVolume(next);
+      setSoundBlockedCycle(null);
+      setRememberedMuted(false);
+    } else {
+      setRememberedMuted(true);
+    }
+  }, [setRememberedVolume, setRememberedMuted]);
 
   const cycleRef = useRef(state.cycle);
   cycleRef.current = state.cycle;
@@ -187,7 +198,7 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
   const playing = trailerPreviewPlaying(state);
   const videoReady = trailerPreviewVideoReady(state);
   const videoCrop = frameCrop.cycle === state.cycle ? frameCrop.scale : 1;
-  const volume = visible ? TRAILER_PREVIEW_TIMING.volume : 0;
+  const volume = visible ? rememberedVolume : 0;
 
   const videoProps = useMemo(
     () => ({ stream: streamValue, muted, playing, volume, cycle: state.cycle, onReady, onFragment, onError, onEnded, onSoundBlocked }),
@@ -197,8 +208,9 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
   return useMemo(
     () => ({
       phase: state.phase, mount, visible, videoReady, videoCrop, reportStillReady, playing, stream: streamValue, muted, toggleMute,
+      soundVolume: rememberedVolume, setVolume,
       onReady, onError, onEnded, videoProps,
     }),
-    [state.phase, mount, visible, videoReady, videoCrop, reportStillReady, playing, streamValue, muted, toggleMute, onReady, onError, onEnded, videoProps],
+    [state.phase, mount, visible, videoReady, videoCrop, reportStillReady, playing, streamValue, muted, toggleMute, rememberedVolume, setVolume, onReady, onError, onEnded, videoProps],
   );
 }

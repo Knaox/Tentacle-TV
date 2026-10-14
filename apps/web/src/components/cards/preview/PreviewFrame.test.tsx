@@ -47,6 +47,8 @@ function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel
       pending: false,
       muted: over.muted ?? false,
       toggleMute: () => undefined,
+      soundVolume: 0.6,
+      setVolume: () => undefined,
       renderVideo: ({ hold, className }: { hold: boolean; className: string }) => {
         holds.push(hold);
         return <video className={className} data-hold={hold} />;

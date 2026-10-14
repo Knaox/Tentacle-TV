@@ -133,14 +133,14 @@
 }
 
 /* Le son ne monte pas : il paraît, avec les actions — et garde son survol. */
-.card-preview .card-preview-mute {
+.card-preview .card-preview-sound {
   opacity: 0;
   transition:
     opacity 110ms linear,
     transform 150ms var(--ease-out);
 }
 
-.card-preview[data-shown="true"] .card-preview-mute {
+.card-preview[data-shown="true"] .card-preview-sound {
   opacity: 1;
   transition:
     opacity 220ms var(--ease-out) var(--preview-content-delay-ms),
@@ -150,7 +150,7 @@
 /* Animations RÉDUITES : ni montée ni retard — le contenu paraît AVEC la boîte,
  * dans son simple fondu (mesuré : sans cela, il surgissait à 160 ms). */
 @media (prefers-reduced-motion: reduce) {
-  .card-preview :is(.card-preview-panel, .card-preview-mute) {
+  .card-preview :is(.card-preview-panel, .card-preview-sound) {
     transform: none !important;
     transition-delay: 0s !important;
   }

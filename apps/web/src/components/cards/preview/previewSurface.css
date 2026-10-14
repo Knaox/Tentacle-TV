@@ -159,6 +159,48 @@
   transform: scale(0.95);
 }
 
+/*
+ * Le son : le bouton et, à sa gauche, la réglette du volume, dépliée au survol
+ * ou au focus du groupe — opacité et échelle seulement (règles « Coût GPU »).
+ */
+.card-preview-sound {
+  position: absolute;
+  top: var(--pv-edge);
+  right: var(--pv-edge);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--pv-mute) * 0.25);
+}
+
+.card-preview-sound .card-preview-mute {
+  position: relative;
+  top: auto;
+  right: auto;
+}
+
+.card-preview-volume {
+  width: calc(var(--pv-mute) * 2.6);
+  height: calc(var(--pv-mute) * 0.5);
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--brand-light);
+  opacity: 0;
+  transform: scaleX(0.6);
+  transform-origin: right center;
+  pointer-events: none;
+  transition:
+    opacity 150ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+
+.card-preview-sound:hover .card-preview-volume,
+.card-preview-sound:focus-within .card-preview-volume {
+  opacity: 1;
+  transform: scaleX(1);
+  pointer-events: auto;
+}
+
 /* L'anneau de focus : une des rares touches de marque de la mini-carte. */
 .card-preview-mute:focus-visible {
   outline: 2px solid var(--brand-light);
