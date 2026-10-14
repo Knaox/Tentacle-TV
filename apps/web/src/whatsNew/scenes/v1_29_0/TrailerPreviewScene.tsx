@@ -31,9 +31,10 @@ const CURSOR_REST = { x: posterX(HOVERED) + 56, y: POSTERS_Y + 46 };
  * L'aperçu de bande-annonce au survol : une rangée de VRAIES affiches, le
  * pointeur qui s'y pose, puis la mini-carte qui grandit DEPUIS l'affiche —
  * l'image du titre d'abord, puis la vidéo et ses plans — pendant que les
- * voisines s'écartent ; dessous, le bandeau (Lire, Ma liste, favori, vu, puis
- * l'année et la durée), le son en haut à droite. Le titre survolé est celui du
- * bandeau de l'accueil : son logo et ses décors viennent de sa fiche.
+ * voisines s'écartent ; dessous, le bandeau qui monte d'un bloc (les actions,
+ * le titre et ses étoiles, l'année et la durée, les genres), le son en haut à
+ * droite. Le titre survolé est celui du bandeau de l'accueil : son logo, ses
+ * genres et ses décors viennent de sa fiche.
  */
 export function TrailerPreviewScene({ active, reduced }: SceneProps) {
   const { t } = useTranslation(["reco", "common"]);
@@ -78,6 +79,7 @@ export function TrailerPreviewScene({ active, reduced }: SceneProps) {
         y={PREVIEW_RECT.y}
         trailer={trailer}
         shot={shot}
+        settled={open}
         listed={step >= CLICK}
         visible={open}
         scale={open ? 1 : PREVIEW_FROM_SCALE}

@@ -27,6 +27,10 @@ export interface SceneDetail {
   progress: number | null;
   /** Décors de la galerie, en taille de vignette de scène. */
   gallery: string[];
+  /** Ses genres, tels que Jellyfin les nomme (le bandeau de la mini-carte en montre trois). */
+  genres: string[];
+  /** Sa classification, telle que Jellyfin la donne (« FR-12 », « PG-13 ») ; `null` sans. */
+  officialRating: string | null;
   people: ScenePerson[];
 }
 
@@ -67,6 +71,8 @@ export function toSceneDetail(client: JellyfinClient, item: MediaItem): SceneDet
     runtimeMinutes: item.RunTimeTicks ? Math.round(item.RunTimeTicks / TICKS_PER_MINUTE) : null,
     progress: played != null && played > 0 && played < 100 ? played / 100 : null,
     gallery,
+    genres: item.Genres ?? [],
+    officialRating: item.OfficialRating?.trim() || null,
     people,
   };
 }

@@ -3,7 +3,7 @@
  * logique (640 × 360). Les proportions suivent l'app : à une fenêtre de
  * bureau, la mini-carte fait près de deux fois la largeur d'une affiche
  * (~23 % de la fenêtre), vidéo 16:9 en haut et bandeau dessous (sa hauteur
- * suit la largeur, ~0,42 ×), centrée sur l'affiche qu'elle couvre — et les
+ * suit la largeur, ~0,45 ×), centrée sur l'affiche qu'elle couvre — et les
  * voisines s'écartent de ce qu'elle déborde. Recopiée de
  * `components/cards/preview/previewPlacement.ts`, sans l'importer : l'écran
  * des nouveautés est compilé par le client LG, qui ne compile pas ce dossier
@@ -25,7 +25,7 @@ export function posterX(index: number): number {
 /** La mini-carte : ~1,85 × l'affiche, vidéo 16:9 puis bandeau (actions, puis infos). */
 export const PREVIEW_W = Math.round(POSTER.w * 1.85);
 export const VIDEO_H = Math.round((PREVIEW_W * 9) / 16);
-export const BAND_H = Math.round(PREVIEW_W * 0.42);
+export const BAND_H = Math.round(PREVIEW_W * 0.45);
 /** Jamais moins haute que l'affiche à couvrir, plus 8 px de chaque côté (`PREVIEW_COVER_PX`). */
 export const PREVIEW_H = Math.max(VIDEO_H + BAND_H, POSTER.h + 16);
 
@@ -45,15 +45,19 @@ export const PREVIEW_FROM_SCALE = Math.min(POSTER.w / PREVIEW_W, POSTER.h / PREV
  */
 export const NEIGHBOR_SHIFT = Math.round((PREVIEW_W - POSTER.w) / 2);
 
-/** Les boutons ronds du bandeau : Lire, Ma liste, favori, vu. */
-export const ACTION = { x: 9, y: 9, size: 22, gap: 6 } as const;
+/**
+ * Les ronds du bandeau, à l'échelle de la mini-carte (`previewPanel.css` à
+ * 288 px, réduit) : « Lire » plein, un cran plus grand, puis Ma liste, favori,
+ * vu ; « Plus d'infos » au bout.
+ */
+export const ACTION = { x: 8, y: 7, size: 17, primary: 20, gap: 4 } as const;
 
-/** Le centre du bouton `index` du bandeau, en px du canevas (la cible du pointeur). */
+/** Le centre du bouton `index` du bandeau (0 = « Lire »), en px du canevas (la cible du pointeur). */
 export function actionCenter(index: number): { x: number; y: number } {
-  return {
-    x: PREVIEW_RECT.x + ACTION.x + index * (ACTION.size + ACTION.gap) + ACTION.size / 2,
-    y: PREVIEW_RECT.y + VIDEO_H + ACTION.y + ACTION.size / 2,
-  };
+  const left = index === 0
+    ? ACTION.x + ACTION.primary / 2
+    : ACTION.x + ACTION.primary + ACTION.gap + (index - 1) * (ACTION.size + ACTION.gap) + ACTION.size / 2;
+  return { x: PREVIEW_RECT.x + left, y: PREVIEW_RECT.y + VIDEO_H + ACTION.y + ACTION.primary / 2 };
 }
 
 /** La seconde rangée, sous la première : la mini-carte passe AU-DESSUS du reste de la page. */

@@ -12,9 +12,20 @@ export interface SceneTrailer {
   /** Les plans de la « bande-annonce » : les décors de sa fiche, sinon l'image du titre. */
   shots: string[];
   logoUrl: string | null;
-  /** « 2019 · 2h 12min », la ligne de la mini-carte ; `null` si rien n'est connu. */
-  meta: string | null;
-  rating: number | null;
+  /** Les faits du bandeau, dans son ordre : année, classification, durée — rien d'inconnu. */
+  facts: { year: string | null; rating: string | null; runtime: string | null };
+  /** Les genres, trois au plus. */
+  genres: string[];
+}
+
+/** « Not Rated », « Unrated » : une absence de classification (règle de `cards/preview/previewInfo.ts`). */
+const UNRATED = /^(?:nr|ur|unrated|not rated)$/i;
+/** Le préfixe de PAYS (« FR-12 » → « 12 »), jamais celui d'un système (« PG-13 », « TV-MA »). */
+const COUNTRY_PREFIX = /^(?!PG-|TV-|NC-)[A-Z]{2}-(?=\S)/;
+
+function ratingOf(raw: string | null | undefined): string | null {
+  const rating = raw?.trim().replace(COUNTRY_PREFIX, "") ?? "";
+  return rating && !UNRATED.test(rating) ? rating : null;
 }
 
 /**
@@ -30,15 +41,14 @@ export function sceneTrailer(media: SceneMedia): SceneTrailer {
   const still = poster?.backdropUrl ?? own?.gallery[0] ?? poster?.url ?? null;
   const shots = own && own.gallery.length > 0 ? own.gallery.slice(0, 2) : still ? [still] : [];
   const runtime = own?.type === "Movie" && own.runtimeMinutes ? formatDuration(own.runtimeMinutes * TICKS_PER_MINUTE) : null;
-  const parts = [poster?.year ? String(poster.year) : null, runtime].filter((part): part is string => !!part);
   return {
     poster,
     title: poster?.title ?? "",
     still,
     shots,
     logoUrl: own?.logoUrl ?? null,
-    meta: parts.length ? parts.join(" · ") : null,
-    rating: poster?.rating ?? null,
+    facts: { year: poster?.year ? String(poster.year) : null, rating: ratingOf(own?.officialRating), runtime },
+    genres: own?.genres.slice(0, 3) ?? [],
   };
 }
 

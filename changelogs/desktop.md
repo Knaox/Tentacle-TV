@@ -16,7 +16,7 @@ et Linux reçoivent l'ensemble.
 ## [1.29.0]
 <!-- Bloc nu : les trois canaux partent de la 1.28.2. Les aperçus de bande-annonce et « Qui regarde ? » exigent le serveur 1.29.0 (capacités trailers.preview et family.desktopProfiles) : face à un serveur plus ancien, l'app n'en montre rien, écran des nouveautés compris. -->
 ### FR
-- **Aperçus de bande-annonce** : laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Lire, Ma liste, favori, vu et la note restent à portée ; un clic coupe le son, et les aperçus s'éteignent dans Réglages › Apparence (serveur 1.29.0)
+- **Aperçus de bande-annonce** : laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Dessous : Lire, Ma liste, favori, vu, « Plus d'infos », la note, l'année et les genres ; un clic coupe le son, et les aperçus s'éteignent dans Réglages › Apparence (serveur 1.29.0)
 - **« Qui regarde ? » sur l'ordinateur** : chacun ouvre son profil, derrière son code PIN s'il en a un. À activer dans Réglages › Famille, pour tous vos ordinateurs ; « Ne plus proposer sur cet appareil » ouvre ensuite directement le profil choisi (serveur 1.29.0)
 - **Changer de profil, à tout moment** : dans le menu de votre avatar, « Changer de profil » ramène à « Qui regarde ? », que l'écran au lancement soit activé ou non
 - **Un profil ouvert sur l'ordinateur regarde** : il n'administre rien, comme sur la TV
@@ -25,7 +25,7 @@ et Linux reçoivent l'ensemble.
 - **« Vider le cache et réinitialiser »** dit ce qu'il efface vraiment : les réglages de l'appareil, les recherches récentes et le cache, jamais votre session
 
 ### EN
-- **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Play, My List, favorite, watched and your rating stay at hand; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.29.0)
+- **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.29.0)
 - **“Who's watching?” on your computer**: everyone opens their own profile, behind their PIN if they have one. Turn it on in Settings › Family, for all your computers; “Don't ask on this device” then opens the chosen profile directly (server 1.29.0)
 - **Switch profiles at any time**: in your avatar menu, “Switch profile” brings back “Who's watching?”, whether the launch screen is on or not
 - **A profile opened on a computer only watches**: it manages nothing, just like on TV
