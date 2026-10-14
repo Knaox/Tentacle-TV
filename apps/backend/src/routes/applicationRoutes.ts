@@ -44,6 +44,7 @@ import { trailerRoutes } from "./trailers";
 import { trailerMediaRoutes } from "./trailerMedia";
 import { trailerReadinessRoutes } from "./trailerReadiness";
 import { trailerPreviewRoutes } from "./trailerPreview";
+import { trailerCatalogRoutes } from "./trailerCatalog";
 import { startPreviewMemory } from "../services/trailers/preview/previewMemoryStore";
 import { startGuardState } from "../services/trailers/guardState";
 import { gifRoutes } from "./gifs";
@@ -98,6 +99,8 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   await app.register(trailerReadinessRoutes, { prefix: "/api/trailers" });
   // L'aperçu au survol d'une carte : une bande-annonce choisie, vérifiée, relayée.
   await app.register(trailerPreviewRoutes, { prefix: "/api/trailers" });
+  // Le catalogue d'un titre : toutes ses bandes-annonces, la saison et la langue du serveur d'abord.
+  await app.register(trailerCatalogRoutes, { prefix: "/api/trailers" });
   // Ses décisions et les sources du relais survivent à un redémarrage (aucune extraction à refaire).
   startPreviewMemory();
   // Les pauses et budgets des sources (YouTube, Dailymotion) aussi : un blocage ne se lève pas au redémarrage.
