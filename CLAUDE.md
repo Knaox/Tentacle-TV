@@ -840,7 +840,7 @@ médias pour Tentacle** : seul Jellyfin monte `MEDIA_PATH` ; `films`/`series` na
   on|off|default|status` (fichier `data/web-ui`, relu toutes les 5 s, qui l'emporte sur la variable) —
   `static/webUi.ts`. Coupée : 404 pour le client web ; restent `/api` (sockets compris), `/tv`, `/.well-known`,
   les logos publics, `/yt-embed.html` (relais YouTube des bandes-annonces du BUREAU : coupé en 1.25.0, page
-  blanche) et l'assistant TANT QUE l'installation n'est pas finie. Un fichier du web qu'une APPLICATION charge
+  blanche), `/avatars/*` (repli du mobile pour la troupe) et l'assistant TANT QUE l'installation n'est pas finie. Un fichier du web qu'une APPLICATION charge
   s'ajoute à cette liste. Le lien d'invitation (`/register?invite=…`) reçoit alors la page d'inscription
   AUTONOME du serveur (`static/invitePage.ts` : FR/EN, ES5, nonce, rien du client web) ; chaque refus de
   `POST /api/auth/register` y est dit par son `code` (`RegisterRefusalCode`). Aucun réglage dans

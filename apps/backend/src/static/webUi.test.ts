@@ -49,12 +49,12 @@ describe("la règle", () => {
     expect(resolveWebUi({ TENTACLE_WEB_UI: "on" }, "off")).toEqual({ enabled: false, source: "cli" });
   });
 
-  it("ce qui reste servi, coupée et installée : l'API, /tv, /.well-known, les logos publics, le relais des bandes-annonces", () => {
+  it("ce qui reste servi, coupée et installée : l'API, /tv, /.well-known, les logos publics, le relais des bandes-annonces, les avatars", () => {
     const off = { enabled: false, setupComplete: true };
-    for (const path of ["/", "/index.html", "/assets/app.js", "/settings", "/share/abc", "/setup", "/yt-embed.htmlx", "/yt-embed.html/"]) {
+    for (const path of ["/", "/index.html", "/assets/app.js", "/settings", "/share/abc", "/setup", "/yt-embed.htmlx", "/yt-embed.html/", "/avatars"]) {
       expect([path, webUiBlocks(path, off)]).toEqual([path, true]);
     }
-    for (const path of ["/api/config", "/api/ws", "/api", "/tv", "/tv/", "/tv/lecture/42", "/.well-known/tentacle-check/ab", "/tentacle-logo-pirate.svg", "/yt-embed.html"]) {
+    for (const path of ["/api/config", "/api/ws", "/api", "/tv", "/tv/", "/tv/lecture/42", "/.well-known/tentacle-check/ab", "/tentacle-logo-pirate.svg", "/yt-embed.html", "/avatars/huit.webp", "/avatars/thumbs/huit.webp"]) {
       expect([path, webUiBlocks(path, off)]).toEqual([path, false]);
     }
   });

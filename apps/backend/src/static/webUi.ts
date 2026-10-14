@@ -15,6 +15,8 @@ import { DATA_ROOT } from "../services/dataDir";
  *    bureau la charge dans son iframe (son origine `tentacle://app` ne donne
  *    aucun referrer, YouTube refuse l'embed direct). Coupée avec le web, la
  *    1.25.0 rendait une bande-annonce blanche sur le bureau ;
+ *  - `/avatars/*`, les images de la troupe des avatars : le mobile s'y rabat
+ *    quand il ne sait pas lire celle qu'il embarque ;
  *  - TOUT le client tant que l'installation n'est pas finie : l'assistant en
  *    est une page. Posée avant la fin, l'option ne ferme le web qu'après.
  *
@@ -80,7 +82,7 @@ export function resetWebUiCache(): void {
   cached = null;
 }
 
-const ALWAYS_SERVED = ["/api/", "/tv/", "/.well-known/", "/tentacle-logo"];
+const ALWAYS_SERVED = ["/api/", "/tv/", "/.well-known/", "/tentacle-logo", "/avatars/"];
 /** Chemins exacts, et non des préfixes : `/yt-embed.htmlx` tomberait sinon sur la page du web. */
 const ALWAYS_SERVED_FILES = ["/api", "/tv", "/yt-embed.html"];
 
