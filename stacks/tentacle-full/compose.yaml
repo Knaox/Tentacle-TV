@@ -103,6 +103,12 @@ services:
       # (until setup is done) keep working. Back on: set "on" and restart, or
       # run `tentacle web on` in this container (no restart needed).
       # TENTACLE_WEB_UI: "off"
+      # Web debug tools: uncomment to show the DEBUG button in the web interface
+      # served here (diagnostics panel, the "What's new" screen on demand). Web
+      # browsers only: the apps and the LG TV client never get it. Off by
+      # default on every image tag; for troubleshooting only — do not leave it
+      # on in production.
+      # TENTACLE_WEB_DEBUG: "on"
     ports:
       - "${TENTACLE_PORT:-3000}:3000"
     volumes:

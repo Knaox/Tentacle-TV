@@ -138,6 +138,7 @@ Variables du serveur, à poser dans `compose.yaml` (`environment:`) pour les cas
 | `TRUSTED_PROXIES` | mandataires de plus dont `X-Forwarded-For` est cru (IP ou CIDR, séparés par des virgules) — voir [remote-access.md](remote-access.md#mandataires-de-confiance) |
 | `REMOTE_CHECK_URL` | le service de test d'ouverture et la détection de l'adresse publique (`off` coupe les deux) |
 | `TENTACLE_WEB_UI` | `off` coupe l'interface web — voir plus bas |
+| `TENTACLE_WEB_DEBUG` | `on` montre les outils de débogage de l'interface web — coupé par défaut, voir plus bas |
 
 ## Base de données
 
@@ -168,6 +169,19 @@ Pour revenir en arrière : remettez `"on"` et redémarrez, ou tapez `tentacle we
 sans redémarrage. La commande l'emporte sur la variable ; `tentacle web default` suit de nouveau la variable,
 `tentacle web status` dit l'état et d'où il vient. Pas d'interrupteur dans l'administration : elle *est*
 l'interface web, la couper de là vous enfermerait dehors.
+
+## Outils de débogage du web
+
+Pour diagnostiquer l'interface web, posez `TENTACLE_WEB_DEBUG: "on"` dans `environment:` du service `tentacle`
+(la ligne y est déjà, en commentaire), puis redémarrez le conteneur. L'interface web servie par ce serveur montre
+alors un bouton **DEBUG** (aussi <kbd>F9</kbd>) : un panneau de diagnostic (requêtes sortantes, état de la
+lecture) et, par <kbd>N</kbd>, l'écran des *Nouveautés* à la demande. Dans un navigateur seulement : les
+applications de bureau, mobile et TV, et le client des TV LG sous `/tv`, ne l'ont jamais. Aucune route de plus
+sur le serveur, aucune clé ni aucun mot de passe affichés.
+
+Il est **coupé par défaut**, sur toutes les étiquettes de l'image (`latest`, les versions, `dev`). Tant qu'il est
+allumé, tout visiteur de l'interface web voit le bouton : recoupez-le (retirez la ligne, redémarrez) une fois le
+diagnostic fini — ne le laissez pas allumé en production.
 
 ## Podman
 

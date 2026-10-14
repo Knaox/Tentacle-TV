@@ -69,6 +69,11 @@ describe("les piles Docker livrées", () => {
         expect(compose).toContain('# TENTACLE_WEB_UI: "off"');
       });
 
+      it("propose le débogage du web en commentaire seulement : coupé tant que l'administrateur ne le pose pas", () => {
+        expect(compose).toContain('# TENTACLE_WEB_DEBUG: "on"');
+        expect(code(compose)).not.toContain("TENTACLE_WEB_DEBUG");
+      });
+
       it("fait tourner Tentacle sous PUID:PGID, jamais root", () => {
         expect(compose).toMatch(/PUID: \$\{PUID:-1000\}/);
       });

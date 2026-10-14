@@ -128,6 +128,7 @@ Server variables you may set in `compose.yaml` (`environment:`) for special case
 | `TRUSTED_PROXIES` | extra proxies whose `X-Forwarded-For` is trusted (comma-separated IPs/CIDRs) — see [remote-access.md](remote-access.md#trusted-proxies) |
 | `REMOTE_CHECK_URL` | remote access test service and public address detection (`off` to disable both) |
 | `TENTACLE_WEB_UI` | `off` turns the web interface off — see below |
+| `TENTACLE_WEB_DEBUG` | `on` shows the web interface's debug tools — off by default, see below |
 
 ## Database
 
@@ -156,6 +157,18 @@ Back on: set it to `"on"` and restart, or type `tentacle web on` in the containe
 without a restart. The command wins over the variable; `tentacle web default` follows the variable again,
 `tentacle web status` tells the state and where it comes from. There is no switch in the administration: it *is*
 the web interface, turning it off from there would lock you out.
+
+## Web debug tools
+
+To troubleshoot the web interface, set `TENTACLE_WEB_DEBUG: "on"` in the `tentacle` service's `environment:`
+(the line is already there, commented out), then restart the container. The web interface served by this server
+then shows a **DEBUG** button (also <kbd>F9</kbd>): a diagnostics panel (outgoing requests, playback state) and,
+with <kbd>N</kbd>, the *What's new* screen on demand. Only in a web browser: the desktop, mobile and TV apps and
+the LG TV client under `/tv` never get it. It adds no route to the server and shows no key or password.
+
+It is **off by default** on every image tag (`latest`, versions, `dev`). Every visitor of the web interface
+sees the button while it is on: turn it back off (remove the line, restart) once you are done — do not leave it
+on in production.
 
 ## Podman
 
