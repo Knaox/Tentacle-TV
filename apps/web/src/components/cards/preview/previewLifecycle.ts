@@ -82,6 +82,34 @@ export function engineHovered(input: {
 }
 
 /**
+ * Le silence global (`previewQuiet.ts`) n'interrompt pas un aperçu déjà
+ * demandé — une fin de bande-annonce sur la carte même, une autre qui prend la
+ * place : il empêche d'en COMMENCER un sans vrai mouvement. `engaged` est le
+ * survol que le moteur voyait déjà.
+ */
+export function engineEngaged(input: { wanted: boolean; engaged: boolean; quiet: boolean }): boolean {
+  return input.wanted && (input.engaged || !input.quiet);
+}
+
+/**
+ * Une mini-carte VUE qui s'efface sous un pointeur resté sur sa carte — fin ou
+ * échec de la bande-annonce — ferme la porte globale : la voisine qu'elle
+ * recouvrait ne lance pas la sienne sous un pointeur immobile. Pas quand une
+ * autre prend la place (un seul aperçu à la fois : celle-là doit se montrer),
+ * ni quand le survol a pris fin (le pointeur a bougé) ou qu'une fermeture
+ * l'a déjà fait (`dismissed` : Échap, clic ailleurs, défilement…).
+ */
+export function quietAfterHide(input: {
+  wasShown: boolean;
+  shown: boolean;
+  hovered: boolean;
+  dismissed: boolean;
+  othersWanting: boolean;
+}): boolean {
+  return input.wasShown && !input.shown && input.hovered && !input.dismissed && !input.othersWanting;
+}
+
+/**
  * Ce que la mini-carte rend : MONTÉE dès que le moteur a sa vidéo (cachée,
  * hors du flux), VUE seulement quand le moteur la montre ET qu'elle est placée
  * et révélée (son départ calculé). Jamais vue sans bande-annonce prête ni

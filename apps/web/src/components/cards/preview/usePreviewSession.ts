@@ -3,13 +3,16 @@ import { useReducedMotion } from "framer-motion";
 import { usePreviewEngine, type PreviewEngine } from "./engine";
 import {
   OPEN_GATE,
+  engineEngaged,
   engineHovered,
   gateAfterClose,
   gateAfterInputs,
   previewClosingFor,
   previewStage,
+  quietAfterHide,
   type PreviewCloseCause,
 } from "./previewLifecycle";
+import { otherPreviewWanting, previewQuiet, setPreviewWanting, usePreviewQuiet } from "./previewQuiet";
 import { placePreview, type PreviewPlacement, type PreviewShape } from "./previewPlacement";
 import { previewSettleMs } from "./previewMotion";
 import { usePreviewListeners } from "./usePreviewListeners";
@@ -64,10 +67,22 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
 
   const [gate, setGate] = useState(OPEN_GATE);
   const keyboardInCard = useKeyboardInCard(anchorRef, hovered);
-  const engine = usePreviewEngine(
-    subject,
-    engineHovered({ hovered, hasSubject: subject !== null, disabled, gate, keyboardInCard }),
-  );
+  // Le silence après une mini-carte fermée : un survol sans vrai mouvement ne
+  // commence pas d'aperçu ; un aperçu déjà demandé n'est pas interrompu.
+  const quiet = usePreviewQuiet();
+  const [engaged, setEngaged] = useState(false);
+  const nextEngaged = engineEngaged({
+    wanted: engineHovered({ hovered, hasSubject: subject !== null, disabled, gate, keyboardInCard }),
+    engaged,
+    quiet,
+  });
+  if (nextEngaged !== engaged) setEngaged(nextEngaged);
+  const engine = usePreviewEngine(subject, nextEngaged);
+  const holder = useRef({}).current;
+  useEffect(() => {
+    setPreviewWanting(holder, nextEngaged);
+    return () => setPreviewWanting(holder, false);
+  }, [holder, nextEngaged]);
   // La porte suit la carte et le moteur (ajustement au rendu, sans effet).
   const nextGate = gateAfterInputs(gate, { hovered, engineMounted: engine.mount });
   if (nextGate !== gate) setGate(nextGate);
@@ -122,6 +137,16 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   useLayoutEffect(() => {
     setShown(shown);
   }, [shown, setShown]);
+
+  // Effacée par le moteur sous un pointeur resté là (fin, échec) : silence
+  // global jusqu'au prochain vrai mouvement (`previewQuiet.ts`).
+  const wasShownRef = useRef(false);
+  useLayoutEffect(() => {
+    const wasShown = wasShownRef.current;
+    wasShownRef.current = shown;
+    const othersWanting = otherPreviewWanting(holder);
+    if (quietAfterHide({ wasShown, shown, hovered, dismissed: gate.dismissed, othersWanting })) previewQuiet.quiet();
+  }, [shown, hovered, gate.dismissed, holder]);
   useLayoutEffect(() => () => setShown(false), [setShown]);
 
   // Posée : la lecture part. Une fois partie, elle le reste jusqu'au démontage
@@ -138,6 +163,8 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   }, [mounted, shown, settled, reduced]);
 
   const close = useCallback((cause: PreviewCloseCause) => {
+    // Rien ne se rouvre sous un pointeur immobile — ni ici, ni chez la voisine.
+    previewQuiet.quiet();
     setGate((current) => gateAfterClose(current, previewClosingFor(cause)));
   }, []);
 
