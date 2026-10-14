@@ -147,15 +147,15 @@ describe("GET /api/trailers/preview", () => {
     expect(extractTrailerSource).toHaveBeenCalledWith(YT, { priority: "preview", budgetMs: 20_000 });
   });
 
-  it("les premiers segments du départ au plus haut (1080p et son audio) sont lus d'avance, puis servis sans relire googlevideo", async () => {
+  it("les premiers segments du départ de l'aperçu (720p et son audio) sont lus d'avance, puis servis sans relire googlevideo", async () => {
     const app = await server();
     const { path } = (await get(app, `itemId=${MOVIE}&lang=fr`)).json() as { path: string };
     const token = path.split("?t=")[1];
     await new Promise((resolve) => setTimeout(resolve, 20));
     const upstream = globalThis.fetch as ReturnType<typeof vi.fn>;
     const segmentsRead = () => upstream.mock.calls.map(([url]) => String(url)).filter((url) => url.includes("/seg/"));
-    expect(segmentsRead()).toEqual([`${GV}/seg/270/0.ts`, `${GV}/seg/234/0.ts`]);
-    for (const key of ["270", "234"]) {
+    expect(segmentsRead()).toEqual([`${GV}/seg/232/0.ts`, `${GV}/seg/234/0.ts`]);
+    for (const key of ["232", "234"]) {
       const res = await app.inject({ url: `/api/trailers/hls/${YT}/s/${key}/0.ts?t=${token}` });
       expect([res.statusCode, res.headers["content-type"], res.rawPayload.length]).toEqual([200, "video/mp2t", 4]);
     }

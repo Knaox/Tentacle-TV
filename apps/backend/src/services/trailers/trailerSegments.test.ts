@@ -1,6 +1,7 @@
 /**
- * Les premiers segments lus d'avance pour l'aperçu : le départ au plus haut
- * (la variante la plus haute et l'audio de son groupe), servi de la mémoire
+ * Les premiers segments lus d'avance pour l'aperçu : son départ (la variante
+ * la plus riche jusqu'à 720p — un aperçu part du niveau qui couvre sa
+ * mini-carte — et l'audio de son groupe), servi de la mémoire
  * ou en rejoignant la lecture en cours, dans une mémoire bornée. yt-dlp et
  * googlevideo sont factices.
  */
@@ -62,19 +63,19 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("départ au plus haut, lu d'avance", () => {
-  it("la variante la plus haute et l'audio de SON groupe : leurs listes, puis leur premier segment", async () => {
+describe("départ de l'aperçu, lu d'avance", () => {
+  it("la variante 720p (jamais la 1080p) et l'audio de SON groupe : leurs listes, puis leur premier segment", async () => {
     const fetch = googlevideo();
     vi.stubGlobal("fetch", fetch);
     await resolveTrailer(ID);
     await warmStart(ID);
     await settled();
     const asked = fetch.mock.calls.map(([url]) => String(url));
-    expect(asked.filter((u) => u.includes("/seg/"))).toEqual([`${GV}/seg/270/0.ts`, `${GV}/seg/234/0.ts`]);
-    expect(asked.some((u) => u.includes("/itag/233/") || u.includes("/itag/230/"))).toBe(false);
+    expect(asked.filter((u) => u.includes("/seg/"))).toEqual([`${GV}/seg/232/0.ts`, `${GV}/seg/234/0.ts`]);
+    expect(asked.some((u) => u.includes("/itag/233/") || u.includes("/itag/230/") || u.includes("/itag/270/"))).toBe(false);
     expect(heldSegmentsState()).toEqual({ count: 2, bytes: 2000, reading: 0 });
-    expect((await heldSegment(ID, "270", 0))?.body.length).toBe(1000);
-    expect(heldSegment(ID, "270", 1)).toBeNull();
+    expect((await heldSegment(ID, "232", 0))?.body.length).toBe(1000);
+    expect(heldSegment(ID, "232", 1)).toBeNull();
   });
 
   it("sans effet sur une vidéo que le relais ne tient pas — jamais d'extraction pour anticiper", async () => {

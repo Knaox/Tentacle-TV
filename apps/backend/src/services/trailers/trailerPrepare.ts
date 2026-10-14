@@ -43,18 +43,20 @@ export function peekTrailer(ytId: string): ResolvedTrailer | null {
 }
 
 /**
- * Prépare le DÉPART d'un lecteur qui commence au plus haut — le bureau force
- * le premier niveau au plus haut ; `qualities[0]` (le maître réduit à la
- * meilleure hauteur) commence au même : la variante la plus haute, la plus
- * riche, et l'audio de son groupe. Leurs listes, puis leur premier segment
- * (et celui d'initialisation, s'il y en a un) sont lus d'avance. Sans effet
- * sur une vidéo que le relais ne tient pas, ou sur un MP4.
+ * Prépare le DÉPART d'un aperçu au survol : le client part du plus petit
+ * niveau qui couvre sa mini-carte (300 à 560 px de large) — 720p sur un écran
+ * Retina, moins en densité 1 (`previewLevelCap.ts`, web). La variante de
+ * départ des aperçus est donc la plus riche jusqu'à 720p (`startVariant`, le
+ * départ de la TV aussi), avec l'audio de son groupe : leurs listes, puis
+ * leur premier segment (et celui d'initialisation, s'il y en a un) sont lus
+ * d'avance — jamais la 1080p, que le client ne demandera pas. Sans effet sur
+ * une vidéo que le relais ne tient pas, ou sur un MP4.
  */
 export async function warmStart(ytId: string): Promise<void> {
   const entry = heldEntry(ytId);
   if (!entry || entry.source.kind !== "hls") return;
   const master = await loadMaster(entry);
-  const top = master?.variants.reduce((best, v) => (v.height > best.height || (v.height === best.height && v.bandwidth > best.bandwidth) ? v : best));
+  const top = master && master.variants.length > 0 ? startVariant(master.variants) : null;
   if (!master || !top) return;
   const audio = master.audio.find((a) => a.group === top.audioGroup);
   await Promise.all([top.key, audio?.key].map(async (key) => {
