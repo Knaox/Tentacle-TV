@@ -44,14 +44,34 @@ export const PreviewMuteButton = memo(function PreviewMuteButton({
  *
  * Le logo tient dans une hauteur (`--pv-logo-h`) et dans sa ligne : un
  * lettrage très large se réduit, il ne repousse jamais les étoiles hors de la
- * mini-carte.
+ * mini-carte. Son image posée — ou cassée, le nom prenant sa place — se
+ * signale (`onSettled`) : le bandeau remesure son air (`usePanelAir`).
  */
-export const PreviewTitle = memo(function PreviewTitle({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+export const PreviewTitle = memo(function PreviewTitle({
+  name,
+  logoUrl,
+  onSettled,
+}: {
+  name: string;
+  logoUrl: string | null;
+  onSettled?: () => void;
+}) {
   const { broken, reportFailure } = useBrokenImage(logoUrl);
   return (
     <div className="card-preview-title">
       {logoUrl && !broken ? (
-        <img src={logoUrl} alt="" aria-hidden draggable={false} onError={reportFailure} className="card-preview-logo" />
+        <img
+          src={logoUrl}
+          alt=""
+          aria-hidden
+          draggable={false}
+          onLoad={onSettled}
+          onError={() => {
+            reportFailure();
+            onSettled?.();
+          }}
+          className="card-preview-logo"
+        />
       ) : (
         <p aria-hidden className="card-preview-name">
           {name}

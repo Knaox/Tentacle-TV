@@ -1,8 +1,8 @@
-import { useRef, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { PreviewTitle } from "./PreviewChrome";
 import { PreviewInfoLines } from "./PreviewInfoLines";
 import type { PreviewInfo } from "./previewInfo";
-import { PANEL_AIR_ABOVE, PANEL_AIR_BETWEEN, usePanelAir } from "./usePanelAir";
+import { PANEL_AIR_ABOVE, PANEL_AIR_BETWEEN, panelLayoutKey, usePanelAir } from "./usePanelAir";
 
 interface PreviewPanelProps {
   title: string;
@@ -33,11 +33,14 @@ interface PreviewPanelProps {
  */
 export function PreviewPanel({ title, logoUrl, info, group, height }: PreviewPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  // Relu quand ce qui s'écrit change (les infos, le logo, la taille), le
-  // bandeau complet seulement — groupe du survol monté.
+  // L'image du logo posée (ou cassée) : la largeur du titre a pu changer.
+  const [logoSettled, setLogoSettled] = useState<string | null>(null);
+  const onLogoSettled = useCallback(() => setLogoSettled(logoUrl), [logoUrl]);
+  // Relu quand ce qui s'écrit change (les infos, le logo, son arrivée, la
+  // taille), le bandeau complet seulement — groupe du survol monté.
   const air = usePanelAir(
     panelRef,
-    `${height}|${logoUrl ?? ""}|${info.genres.length}|${info.episode ? 1 : 0}|${info.progress ? 1 : 0}`,
+    panelLayoutKey({ height, logoUrl, logoSettled, info }),
     group !== null && group !== undefined && group !== false,
   );
   return (
@@ -49,7 +52,7 @@ export function PreviewPanel({ title, logoUrl, info, group, height }: PreviewPan
         "--pv-air-between": `${Math.round(air * PANEL_AIR_BETWEEN)}px`,
       } as CSSProperties}
     >
-      <PreviewTitle name={title} logoUrl={logoUrl} />
+      <PreviewTitle name={title} logoUrl={logoUrl} onSettled={onLogoSettled} />
       {group}
       <PreviewInfoLines info={info} />
     </div>

@@ -1,4 +1,5 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
+import type { PreviewInfo } from "./previewInfo";
 
 /**
  * L'AIR du bandeau. Sur une affiche, la mini-carte couvre la hauteur de
@@ -23,6 +24,23 @@ export const PANEL_AIR_BETWEEN = 0.3;
 /** Ce qui est déjà posé en air au-dessus du bas du contenu (il décale tout ce qui suit les actions). */
 export function panelAirApplied(air: number): number {
   return Math.round(air * PANEL_AIR_ABOVE) + Math.round(air * PANEL_AIR_BETWEEN);
+}
+
+/**
+ * La CLÉ de mesure du bandeau : ce qui, en changeant, peut changer la hauteur
+ * de son contenu — la taille, les lignes d'infos, le logo ET son arrivée. Un
+ * logo posé (ou cassé) APRÈS la mesure change la largeur du titre, et peut
+ * faire passer les étoiles dessous : `logoSettled` (l'adresse de l'image qui
+ * s'est chargée ou a échoué) change alors la clé — une remesure, une seule.
+ */
+export function panelLayoutKey({ height, logoUrl, logoSettled, info }: {
+  height: number;
+  logoUrl: string | null;
+  logoSettled: string | null;
+  info: Pick<PreviewInfo, "genres" | "episode" | "progress">;
+}): string {
+  const logo = logoUrl ? `${logoUrl}:${logoSettled === logoUrl ? "posé" : "en route"}` : "";
+  return [height, logo, info.genres.length, info.episode ? 1 : 0, info.progress ? 1 : 0].join("|");
 }
 
 /**
