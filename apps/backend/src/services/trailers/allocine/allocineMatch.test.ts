@@ -113,9 +113,8 @@ describe("AlloCiné › les vidéos d'un titre (réponses réelles)", () => {
       ],
     };
     const found = summary(bear, "the-bear");
-    expect(found.slice(0, 1)).toEqual(["s4 trailer vf x9jvtxs"]);
-    // La saison 5 n'a pas encore de date chez TMDB : dans le doute, rien.
-    expect(found.some((line) => line.startsWith("s5"))).toBe(false);
+    // La saison 5 n'a pas encore de date chez TMDB : la fenêtre de la série (dernière diffusion + 18 mois) la couvre.
+    expect(found.slice(0, 2)).toEqual(["s5 trailer vf xae4qvy", "s4 trailer vf x9jvtxs"]);
     expect(found.filter((line) => line.startsWith("s1"))).toEqual(["s1 trailer vo x8bcc4r", "s1 trailer vo x8b9vs7"]);
   });
 
@@ -134,16 +133,19 @@ describe("AlloCiné › les vidéos d'un titre (réponses réelles)", () => {
     expect(new Set(found).size).toBe(found.length);
   });
 
-  it("une durée hors de 15 s à 5 min, une saison sans date, un film qui porte une saison : rien", () => {
+  it("une durée hors de 15 s à 5 min, un film qui porte une saison : rien ; une saison sans date prend la fenêtre du titre", () => {
     const title: AllocineMatchTitle = { kind: "tv", names: ["X"], releaseDate: "2020-01-01", seasons: [{ season: 1, airDate: "2020-01-01" }] };
     const at = Date.parse("2020-01-01T00:00:00Z") / 1000;
     const videos: AllocineVideo[] = [
       { id: "short", title: "X - saison 1 Bande-annonce VF", createdTime: at, duration: 10 },
       { id: "long", title: "X - saison 1 Bande-annonce VF", createdTime: at, duration: 400 },
       { id: "nodate", title: "X - saison 2 Bande-annonce VF", createdTime: at, duration: 60 },
+      { id: "nodate-late", title: "X - saison 2 Bande-annonce VF", createdTime: at + 3 * 365 * 86_400, duration: 60 },
       { id: "ok", title: "X - saison 1 Bande-annonce VF", createdTime: at, duration: 60 },
     ];
-    expect(matchAllocineVideos(videos, title).map((m) => m.videoId)).toEqual(["ok"]);
+    expect(matchAllocineVideos(videos, title).map((m) => m.videoId)).toEqual(["nodate", "ok"]);
+    // Sans date du titre, seule la saison datée passe.
+    expect(matchAllocineVideos(videos, { ...title, releaseDate: null }).map((m) => m.videoId)).toEqual(["ok"]);
     expect(matchAllocineVideos(videos, { ...title, kind: "movie" })).toEqual([]);
   });
 });

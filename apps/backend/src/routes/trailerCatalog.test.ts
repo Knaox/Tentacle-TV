@@ -10,9 +10,10 @@ import { join } from "path";
 import Fastify from "fastify";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { jellyfinAdminFetch, tmdbFetch, config, rows } = vi.hoisted(() => ({
+const { jellyfinAdminFetch, tmdbFetch, config, rows, switches } = vi.hoisted(() => ({
   jellyfinAdminFetch: vi.fn(),
   tmdbFetch: vi.fn(),
+  switches: { tmdb: true, seerr: false },
   config: new Map<string, string>(),
   rows: new Map<string, { payload: unknown; generatedAt: Date; expiresAt: Date }>(),
 }));
@@ -33,9 +34,9 @@ vi.mock("../services/tmdb/client", () => {
       super(message);
     }
   }
-  return { TmdbError, tmdbFetch: (...args: unknown[]) => tmdbFetch(...args), tmdbConfigured: () => true };
+  return { TmdbError, tmdbFetch: (...args: unknown[]) => tmdbFetch(...args), tmdbConfigured: () => switches.tmdb };
 });
-vi.mock("../services/seerConfig", () => ({ getSeerrConfig: () => null }));
+vi.mock("../services/seerConfig", () => ({ getSeerrConfig: () => (switches.seerr ? { url: "http://seerr.test", apiKey: "k" } : null) }));
 vi.mock("../middleware/auth", () => ({
   requireAuth: async (request: { headers: Record<string, unknown>; user?: unknown }, reply: { status: (c: number) => { send: (b: unknown) => unknown } }) => {
     const token = String(request.headers.authorization ?? "").replace(/^Bearer /, "");
@@ -101,7 +102,14 @@ function tmdb(path: string) {
   throw new Error(`TMDB inattendu : ${path}`);
 }
 
-const dailymotion = vi.fn(async () => new Response(RICK_PAGE, { status: 200 }));
+/** Jellyseerr (Vigie) : le nom dans sa langue, l'original, les dates — sans date de saison, comme mesuré. */
+const SEERR_RICK = {
+  name: "Rick et Morty", originalName: "Rick and Morty", firstAirDate: "2013-12-02", lastAirDate: "2026-07-26", inProduction: true,
+  seasons: SEASONS.map((n) => ({ seasonNumber: n })),
+  relatedVideos: [{ key: "WNhH00OIPP0", site: "YouTube", type: "Trailer", name: "Season 1 Promos" }],
+};
+const dailymotion = vi.fn(async (url: string) =>
+  String(url).startsWith("http://seerr.test/api/v1/tv/60625") ? new Response(JSON.stringify(SEERR_RICK)) : new Response(RICK_PAGE, { status: 200 }));
 
 async function server() {
   const app = Fastify();
@@ -126,6 +134,8 @@ beforeEach(() => {
   resetDailymotionGuard();
   resetCatalogLimiter();
   setTitleLanguage("fr-FR");
+  switches.tmdb = true;
+  switches.seerr = false;
   jellyfinAdminFetch.mockReset().mockImplementation(async (path: string) => jellyfin(path));
   tmdbFetch.mockReset().mockImplementation(async (path: string) => tmdb(path));
   dailymotion.mockClear();
@@ -190,6 +200,17 @@ describe("GET /api/trailers/catalog", () => {
     const { body } = await catalog("tmdbId=60625&mediaType=tv&season=7");
     expect(firstPlayback(body)).toEqual({ kind: "dailymotion", videoId: "x8e90ff" });
     expect(jellyfinAdminFetch).not.toHaveBeenCalled();
+  });
+
+  it("sans clé TMDB : AlloCiné cherche avec les noms de Jellyfin (bibliothèque) ou de Jellyseerr (hors bibliothèque)", async () => {
+    switches.tmdb = false;
+    switches.seerr = true;
+    const library = await catalog(`itemId=${EP_S7}`);
+    expect(firstPlayback(library.body)).toEqual({ kind: "dailymotion", videoId: "x8e90ff" });
+    expect(tmdbFetch).not.toHaveBeenCalled();
+    const outside = await catalog("tmdbId=60625&mediaType=tv&season=7");
+    expect(firstPlayback(outside.body)).toEqual({ kind: "dailymotion", videoId: "x8e90ff" });
+    expect(outside.body?.entries.some((e) => e.source === "seerr")).toBe(true);
   });
 
   it("un titre que ce compte ne voit pas : une liste vide, complète ; une demande illisible : 400", async () => {

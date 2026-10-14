@@ -11,7 +11,7 @@
 /*  - sa date tombe autour de la sortie : un film ou la série, de      */
 /*    18 mois avant la sortie à 18 mois après (la dernière diffusion   */
 /*    pour une série) ; une saison, de 12 mois avant sa diffusion à    */
-/*    36 mois après ;                                                  */
+/*    36 mois après (sans date connue, la fenêtre du titre) ;          */
 /*  - elle dure de 15 s à 5 min.                                       */
 /*  Dans le doute, rien : un faux négatif laisse la place à TMDB, une  */
 /*  mauvaise bande-annonce ne se rattrape pas.                         */
@@ -79,16 +79,24 @@ function secondsOf(date: string | null | undefined): number | null {
   return Number.isFinite(ms) ? ms / 1000 : null;
 }
 
-/** La fenêtre de dates où la vidéo de cette portée peut avoir été publiée ; `null` : aucune date sûre, rien. */
+/** La fenêtre du titre entier : 18 mois avant sa sortie, 18 mois après (sa dernière diffusion pour une série). */
+function titleWindow(title: AllocineMatchTitle): [number, number] | null {
+  const release = secondsOf(title.releaseDate);
+  if (release === null) return null;
+  const end = title.kind === "tv" ? secondsOf(title.lastAirDate) ?? release : release;
+  return [release - 18 * MONTH_S, Math.max(release, end) + 18 * MONTH_S];
+}
+
+/**
+ * La fenêtre de dates où la vidéo de cette portée peut avoir été publiée ;
+ * `null` : aucune date sûre, rien. Une saison dont la date n'est pas connue
+ * (Jellyseerr ne la donne pas toujours, Jellyfin non plus) prend celle du
+ * titre entier : le nom exact reste exigé.
+ */
 function windowOf(title: AllocineMatchTitle, season: number | undefined): [number, number] | null {
-  if (season === undefined) {
-    const release = secondsOf(title.releaseDate);
-    if (release === null) return null;
-    const end = title.kind === "tv" ? secondsOf(title.lastAirDate) ?? release : release;
-    return [release - 18 * MONTH_S, Math.max(release, end) + 18 * MONTH_S];
-  }
+  if (season === undefined) return titleWindow(title);
   const aired = secondsOf(title.seasons?.find((s) => s.season === season)?.airDate);
-  return aired === null ? null : [aired - 12 * MONTH_S, aired + 36 * MONTH_S];
+  return aired === null ? titleWindow(title) : [aired - 12 * MONTH_S, aired + 36 * MONTH_S];
 }
 
 const VERSION_RANK: Record<AllocineVersion, number> = { vf: 0, vostfr: 1, vo: 2 };
