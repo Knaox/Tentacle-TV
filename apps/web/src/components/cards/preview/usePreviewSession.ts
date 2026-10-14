@@ -8,13 +8,16 @@ import {
   gateAfterClose,
   gateAfterInputs,
   previewClosingFor,
+  previewQuietsAfter,
   previewStage,
   quietAfterHide,
   type PreviewCloseCause,
 } from "./previewLifecycle";
 import { otherPreviewWanting, previewQuiet, setPreviewWanting, usePreviewQuiet } from "./previewQuiet";
 import { placePreview, type PreviewPlacement, type PreviewShape } from "./previewPlacement";
+import { inDocument } from "./previewFollow";
 import { usePreviewScrolling } from "./previewScrolling";
+import { navBottom, usePreviewFollow } from "./usePreviewFollow";
 import { previewSettleMs } from "./previewMotion";
 import { usePreviewListeners } from "./usePreviewListeners";
 import { useKeyboardInCard } from "./useKeyboardInCard";
@@ -34,19 +37,16 @@ export interface CardPreviewView {
   focusInsideRef: RefObject<boolean>;
 }
 
-/** Le bas de la barre de navigation fixe, 0 sans barre. */
-function navBottom(): number {
-  return document.querySelector("[data-top-nav]")?.getBoundingClientRect().bottom ?? 0;
-}
-
+/** La place, mesurée dans la fenêtre, posée dans le DOCUMENT : la mini-carte défile avec la page. */
 function measure(anchor: HTMLElement | null, shape: PreviewShape): PreviewPlacement | null {
   if (!anchor) return null;
   const rect = anchor.getBoundingClientRect();
-  return placePreview(
+  const placed = placePreview(
     { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
     shape,
     { width: window.innerWidth, height: window.innerHeight, safeTop: navBottom() },
   );
+  return placed && inDocument(placed, { x: window.scrollX, y: window.scrollY });
 }
 
 /** Même place ET même départ (au pixel) : la carte n'a pas bougé depuis le préchargement. */
@@ -172,11 +172,13 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
 
   const close = useCallback((cause: PreviewCloseCause) => {
     // Rien ne se rouvre sous un pointeur immobile — ni ici, ni chez la voisine.
-    previewQuiet.quiet();
+    if (previewQuietsAfter(cause)) previewQuiet.quiet();
     setGate((current) => gateAfterClose(current, previewClosingFor(cause)));
   }, []);
 
   usePreviewListeners({ shown, anchorRef, portalRef, focusInsideRef, close });
+  // Accrochée à sa carte pendant le défilement, jusqu'au démontage.
+  usePreviewFollow({ shown, mounted, placement, anchorRef, portalRef, close });
 
   return useMemo<CardPreviewView | null>(
     () => (mounted && placement ? { placement, shown, settled, engine, portalRef, close, focusInsideRef } : null),

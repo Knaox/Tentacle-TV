@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { openPreviewRoom } from "./previewRoom";
 
 /**
  * La pièce, côté DOM : ce qui est posé à l'ouverture, au retour, et ce qui
@@ -8,6 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 vi.mock("./previewRoom.css", () => ({}));
+// Le tempo seul : sans tirer tout le moteur d'aperçu dans le test.
+vi.mock("../engine", () => ({ PREVIEW_ENGINE_EXIT_MS: 240 }));
 
 interface Box { left: number; right: number; top: number; bottom: number }
 
@@ -69,14 +72,13 @@ function row() {
   return { room, cards, visuals };
 }
 
-let open: typeof import("./previewRoom").openPreviewRoom;
+const open = openPreviewRoom;
 
-beforeEach(async () => {
+beforeEach(() => {
   vi.useFakeTimers();
   vi.stubGlobal("HTMLElement", FakeElement);
   vi.stubGlobal("getComputedStyle", (node: FakeElement) => ({ translate: node.translate }));
   vi.stubGlobal("window", { innerWidth: 1440, scrollX: 0 });
-  ({ openPreviewRoom: open } = await import("./previewRoom"));
 });
 
 afterEach(() => {

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { withinHoverCompanion } from "./hoverCompanion";
 
 /**
  * Le survol ne survit pas au défilement sous un curseur immobile.
@@ -53,11 +54,15 @@ function pointerTarget(): Element | null {
  * `true` quand on ne sait pas où est le curseur (aucun mouvement depuis le
  * chargement — souris posée, navigation au clavier) : ne rien savoir n'autorise
  * à conclure à rien, et surtout pas à couper un survol.
+ *
+ * La mini-carte d'aperçu compte comme sa carte (`hoverCompanion`) : elle est
+ * accrochée à elle pendant le défilement, et le pointeur qui s'y pose n'a pas
+ * quitté la carte.
  */
 export function pointerStillOn(el: HTMLElement | null): boolean {
   const hit = pointerTarget();
   if (!el || !hit) return true;
-  return el.contains(hit);
+  return el.contains(hit) || withinHoverCompanion(el, hit);
 }
 
 /**

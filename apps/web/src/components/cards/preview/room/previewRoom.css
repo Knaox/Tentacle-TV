@@ -54,7 +54,10 @@
 /* Une rangée ne s'ACCROCHE plus tant que ses cartes sont décalées : Chromium
  * suit la carte accrochée quand elle glisse, et faisait défiler la rangée toute
  * seule — ce qui fermait l'aperçu (mesuré au banc, 14/10). La pièce rendue, les
- * cartes sont revenues à leur place : la rangée y est déjà accrochée. */
-[data-preview-room][data-room] {
+ * cartes sont revenues à leur place : la rangée y est déjà accrochée. Même
+ * chose pour la rangée que la molette MÈNE sous une mini-carte accrochée
+ * (`usePreviewFollow`) : une accroche ramènerait chaque pas en arrière. */
+[data-preview-room][data-room],
+[data-preview-room][data-preview-follow] {
   scroll-snap-type: none;
 }

@@ -74,7 +74,12 @@ export function CardPreview({
 }: CardPreviewProps) {
   const { session } = controller;
   const wanted = session.hovered && session.subject !== null && !session.disabled;
-  const active = useMountWhile(wanted, SESSION_LINGER_MS);
+  // Montée dans le rendu même du survol, gardée le temps de sa sortie : une
+  // session montée une commande plus tard lirait une porte refermée entre-temps
+  // par la voisine qui revient (`usePreviewRoom`), et le survol bien réel du
+  // pointeur n'ouvrirait plus rien.
+  const lingering = useMountWhile(wanted, SESSION_LINGER_MS);
+  const active = wanted || lingering;
   if (!active) return null;
   return (
     <PreviewSession

@@ -5,6 +5,7 @@ import {
   gateAfterClose,
   gateAfterInputs,
   previewClosingFor,
+  previewQuietsAfter,
   previewStage,
   previewTabMove,
   type PreviewGate,
@@ -46,10 +47,9 @@ describe("previewStage — montée cachée, puis vue", () => {
   });
 });
 
-describe("previewClosingFor — défilement net, le reste en douceur", () => {
-  it("ferme NET ce qui fait bouger la page sous la mini-carte fixée", () => {
-    expect(previewClosingFor("scroll")).toBe("dry");
-    expect(previewClosingFor("wheel")).toBe("dry");
+describe("previewClosingFor — sortie de place nette, le reste en douceur", () => {
+  it("ferme NET une mini-carte qui sortirait de sa place, ou une fenêtre redimensionnée", () => {
+    expect(previewClosingFor("out-of-view")).toBe("dry");
     expect(previewClosingFor("resize")).toBe("dry");
   });
 
@@ -58,11 +58,19 @@ describe("previewClosingFor — défilement net, le reste en douceur", () => {
     expect(previewClosingFor("pointer-outside")).toBe("soft");
     expect(previewClosingFor("window-blur")).toBe("soft");
   });
+
+  it("referme la porte globale après un refus, pas après une sortie de place pendant un défilement", () => {
+    expect(previewQuietsAfter("escape")).toBe(true);
+    expect(previewQuietsAfter("pointer-outside")).toBe(true);
+    expect(previewQuietsAfter("window-blur")).toBe(true);
+    expect(previewQuietsAfter("resize")).toBe(true);
+    expect(previewQuietsAfter("out-of-view")).toBe(false);
+  });
 });
 
 describe("la porte — fermée jusqu'à la fin du survol", () => {
-  it("un défilement ferme et coupe ; le moteur et la carte la rouvrent ensuite", () => {
-    let gate: PreviewGate = gateAfterClose(OPEN_GATE, previewClosingFor("scroll"));
+  it("une sortie de place ferme et coupe ; le moteur et la carte la rouvrent ensuite", () => {
+    let gate: PreviewGate = gateAfterClose(OPEN_GATE, previewClosingFor("out-of-view"));
     expect(gate).toEqual({ dismissed: true, cut: true });
     // Toujours survolée, vidéo encore montée (fondu du moteur) : rien ne revient.
     gate = gateAfterInputs(gate, { hovered: true, engineMounted: true });

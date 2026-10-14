@@ -3,15 +3,18 @@
  * quand elle se ferme, comment (en douceur, ou d'un coup), et où va le focus
  * au clavier. `useCardPreview` ne fait que brancher les évènements dessus.
  *
+ * Le DÉFILEMENT ne la ferme plus : elle est accrochée à sa carte et la suit
+ * (`usePreviewFollow`). Elle se ferme quand elle sortirait de sa place — sous
+ * la barre du haut, hors de la fenêtre, carte sortie de sa rangée — ou quand le
+ * pointeur ne survole plus ni la carte ni elle.
+ *
  * Deux façons de se fermer :
  *
  *   • EN DOUCEUR (`soft`) — Échap, clic ailleurs, fenêtre quittée : la
- *     mini-carte revient se poser sur sa carte (sortie animée). Le curseur
- *     est immobile, rien ne bouge sous elle.
- *   • D'UN COUP (`dry`) — défilement, molette, redimensionnement : la page
- *     bouge SOUS une mini-carte fixée à l'écran. Une sortie animée y resterait
- *     clouée pendant que sa carte s'en va (le « survol fantôme », payé par
- *     l'ancien panneau d'aperçu) : elle disparaît net.
+ *     mini-carte revient se poser sur sa carte (sortie animée).
+ *   • D'UN COUP (`dry`) — sortie de sa place, redimensionnement : une sortie
+ *     animée passerait sous la barre ou hors de la fenêtre, ou viserait une
+ *     carte qui a changé de place : elle disparaît net.
  *
  * Dans les deux cas, l'aperçu reste fermé jusqu'à la fin du survol de la
  * carte : on ne rouvre pas sous le nez de qui vient de le refuser.
@@ -21,8 +24,7 @@ export type PreviewClosing = "soft" | "dry";
 
 /** Ce qui peut fermer une mini-carte montrée. */
 export type PreviewCloseCause =
-  | "scroll"
-  | "wheel"
+  | "out-of-view"
   | "resize"
   | "escape"
   | "window-blur"
@@ -30,8 +32,7 @@ export type PreviewCloseCause =
 
 export function previewClosingFor(cause: PreviewCloseCause): PreviewClosing {
   switch (cause) {
-    case "scroll":
-    case "wheel":
+    case "out-of-view":
     case "resize":
       return "dry";
     case "escape":
@@ -39,6 +40,17 @@ export function previewClosingFor(cause: PreviewCloseCause): PreviewClosing {
     case "pointer-outside":
       return "soft";
   }
+}
+
+/**
+ * Une fermeture referme-t-elle aussi la porte globale (`previewQuiet`) ? Oui
+ * quand on a REFUSÉ l'aperçu ou quitté la page (Échap, clic ailleurs, fenêtre
+ * quittée, redimensionnée) : rien ne se rouvre sous un pointeur immobile. Pas
+ * pour une sortie de place pendant un défilement : la molette a déjà fermé la
+ * porte, et un défilement au clavier reprend à l'arrêt franc.
+ */
+export function previewQuietsAfter(cause: PreviewCloseCause): boolean {
+  return cause !== "out-of-view";
 }
 
 /** La porte de l'aperçu d'une carte. */

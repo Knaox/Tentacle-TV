@@ -17,7 +17,9 @@
  * resterait flou une fois la mini-carte posée. */
 
 .card-preview {
-  position: fixed;
+  /* Posée dans le DOCUMENT (portail sur <body>) : elle défile avec la page,
+   * accrochée à sa carte, sur le compositeur (`usePreviewFollow`). */
+  position: absolute;
   /* L'échelle du dépôt : contenu 10-20, APERÇU 30, navigation et ses menus
    * 40-50, transition d'ouverture de la fiche 60. La surface la plus
    * éphémère passe sous tout ce qui s'ouvre par-dessus la page. */

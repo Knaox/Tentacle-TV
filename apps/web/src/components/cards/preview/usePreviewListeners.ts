@@ -15,8 +15,8 @@ interface PreviewListenersInput {
  * seulement le temps où elle est vue (un écouteur par aperçu, jamais par
  * carte) :
  *
- *   • le défilement (en capture : une rangée défile dans son propre
- *     conteneur, et `scroll` ne remonte pas), le redimensionnement → net ;
+ *   • le redimensionnement → net. Le DÉFILEMENT ne ferme plus rien : la
+ *     mini-carte est accrochée à sa carte (`usePreviewFollow`) ;
  *   • Échap, un appui ailleurs (en capture, avant que la surface visée ne
  *     s'ouvre), la fenêtre quittée → en douceur ;
  *   • Tab : la mini-carte s'insère dans le parcours juste après sa carte
@@ -35,7 +35,6 @@ export function usePreviewListeners({ shown, anchorRef, portalRef, focusInsideRe
       }
       close(cause);
     };
-    const onScroll = () => leave("scroll");
     const onResize = () => leave("resize");
     const onWindowBlur = () => leave("window-blur");
     const onPointerDown = (e: PointerEvent) => {
@@ -54,13 +53,11 @@ export function usePreviewListeners({ shown, anchorRef, portalRef, focusInsideRe
       }
       if (handlePreviewTab(e, anchorRef.current, portalRef.current)) e.preventDefault();
     };
-    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
     window.addEventListener("resize", onResize);
     window.addEventListener("blur", onWindowBlur);
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("keydown", onKeyDown, true);
     return () => {
-      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("blur", onWindowBlur);
       document.removeEventListener("pointerdown", onPointerDown, true);
