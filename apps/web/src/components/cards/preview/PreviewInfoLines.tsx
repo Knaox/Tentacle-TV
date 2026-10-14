@@ -7,7 +7,7 @@ import { previewFactsEmpty, type PreviewFacts, type PreviewInfo, type PreviewPro
  * Les deux lignes d'infos du bandeau, sous le titre (`previewInfo.ts` décide
  * de ce qu'elles disent) :
  *
- *   • la PREMIÈRE : l'épisode d'une vignette (« S01E05 Chute libre »), sinon
+ *   • la PREMIÈRE : l'épisode d'une vignette (« S01E05 · Chute libre »), sinon
  *     les faits — année, classification, durée ou saisons, qualité ;
  *   • la DERNIÈRE : la progression d'un titre commencé (« 54 sur 58 min »),
  *     sinon les faits d'un épisode, sinon les genres.
@@ -88,7 +88,12 @@ function EpisodeLine({ episode }: { episode: NonNullable<PreviewInfo["episode"]>
   return (
     <p className="card-preview-episode">
       <b>{episode.code}</b>
-      {episode.title}
+      {episode.title && (
+        <>
+          <Dot />
+          {episode.title}
+        </>
+      )}
     </p>
   );
 }

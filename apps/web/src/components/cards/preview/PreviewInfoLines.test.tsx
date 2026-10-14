@@ -28,7 +28,7 @@ describe("PreviewInfoLines", () => {
       Id: "e", Name: "Chute libre", Type: "Episode", ParentIndexNumber: 1, IndexNumber: 1, RunTimeTicks: 58 * MINUTE,
       UserData: { PlaybackPositionTicks: 54 * MINUTE, PlayedPercentage: 93.1 },
     } as unknown as MediaItem);
-    expect(html).toContain("<b>S01E01</b>Chute libre");
+    expect(html).toContain('<b>S01E01</b><span aria-hidden="true" class="card-preview-dot"></span>Chute libre');
     expect(html).toContain('style="width:93.1%"');
     expect(html).toContain("progressMinutes(watched=54,total=58)");
     expect(html.indexOf('data-line="first"')).toBeLessThan(html.indexOf('data-line="last"'));

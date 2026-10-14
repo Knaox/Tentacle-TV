@@ -34,7 +34,8 @@
   --pv-star: clamp(14px, 4.2cqi, 20px);
   --pv-logo-h: clamp(22px, 7cqi, 38px);
   --pv-title: clamp(14px, 4.2cqi, 19px);
-  --pv-text: clamp(11.5px, 3.15cqi, 14px);
+  /* Jamais sous 12 px : le bandeau se lit d'un coup d'œil. */
+  --pv-text: clamp(12px, calc(1.25cqi + 7.5px), 14.5px);
   row-gap: clamp(3px, 1.2cqi, 6px);
   padding: var(--pv-pad-top) var(--pv-pad-x) 0;
   background:
@@ -207,7 +208,6 @@
 .card-preview-episode b {
   font-weight: 700;
   color: #fff;
-  margin-inline-end: 0.45em;
 }
 
 .card-preview-progress {
