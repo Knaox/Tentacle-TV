@@ -5,6 +5,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFocusFooter } from "../../cards/CardFocusFooter";
 import { cardIndexOf } from "../../cards/cardFocusKeys";
 import { MediaCard } from "../../cards/MediaCard";
+import { useCardMetrics } from "../../cards/cardSizeMode";
 import { FocusSection } from "../../focus/FocusSection";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useStagedRow } from "../../rows/rowStage";
@@ -30,13 +31,16 @@ import { CARD_FOCUS_SCALE } from "../../cards/cardFocus";
  * `saga:<i>`.
  */
 
-const { width: W } = TV_STAGE.card.poster;
-const H = Math.round(W * 1.5);
-const SHIFT = H * (CARD_FOCUS_SCALE - 1);
+/** Ce que la légende descend quand l'affiche (à la taille réglée) grandit au focus. */
+function captionShift(posterHeight: number): number {
+  return posterHeight * (CARD_FOCUS_SCALE - 1);
+}
 
 function Caption({ entry, focused, hold = false }: { entry: SagaEntryModel; focused: boolean; hold?: boolean }) {
   const p = useFocusProgress(focused);
-  const shift = useAnimatedStyle(() => ({ transform: [{ translateY: SHIFT * p.value }] }));
+  const { poster } = useCardMetrics();
+  const distance = captionShift(poster.height);
+  const shift = useAnimatedStyle(() => ({ transform: [{ translateY: distance * p.value }] }));
   const rank = entry.rank ?? null;
   const cue = entry.cue ?? null;
   return (
@@ -47,7 +51,7 @@ function Caption({ entry, focused, hold = false }: { entry: SagaEntryModel; focu
         {rank && cue ? " · " : ""}
         {cue ? <Text style={styles.cue}>{cue}</Text> : null}
       </Text>
-      <CardFocusFooter note={focused ? entry.card.focusNote : undefined} hold={hold} width={Math.round(W * 1.6)} />
+      <CardFocusFooter note={focused ? entry.card.focusNote : undefined} hold={hold} width={Math.round(poster.width * 1.6)} />
     </Animated.View>
   );
 }
@@ -83,8 +87,9 @@ const SagaEntry = memo(function SagaEntry({ entry, index, row, onItemFocusChange
   );
   const press = onOpen && !entry.current ? () => onOpen(entry) : undefined;
   const hold = onLongPress && entry.holdable !== false ? () => onLongPress(entry) : undefined;
+  const width = useCardMetrics().poster.width;
   return (
-    <View style={{ width: W }}>
+    <View style={{ width }}>
       <MediaCard
         card={entry.card}
         variant="poster"

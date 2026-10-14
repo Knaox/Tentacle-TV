@@ -1,7 +1,6 @@
 import { memo, useMemo, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
-import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient } from "../background/SoftGradient";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import type { RowPlace } from "../motion/useRowRecede";
@@ -17,6 +16,7 @@ import { CardQualityBadges } from "./CardQualityBadges";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused } from "./useCardFocused";
 import { CARD_FOCUS_SCALE } from "./cardFocus";
+import { useCardMetrics } from "./cardSizeMode";
 
 /**
  * La carte d'un titre — deux formats, un seul modèle :
@@ -48,7 +48,8 @@ import { CARD_FOCUS_SCALE } from "./cardFocus";
 export interface MediaCardProps {
   card: CardModel;
   variant: "landscape" | "poster";
-  /** Largeur ; la hauteur suit le format. */
+  /** Largeur ; la hauteur suit le format. Absente : celle de la taille des
+   *  cartes réglée (`useCardMetrics`). */
   width?: number;
   /** Sa place dans une rangée : elle recule quand une voisine a le focus. */
   place?: RowPlace;
@@ -65,8 +66,6 @@ export interface MediaCardProps {
   onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
 }
-
-const DEFAULT_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
 
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
  *  la légende descend d'autant, l'image ne la recouvre jamais. */
@@ -95,7 +94,7 @@ function LogoLayer({ uri, width, height, bottom }: { uri: string; width: number;
 export const MediaCard = memo(function MediaCard({
   card,
   variant,
-  width = DEFAULT_WIDTH[variant],
+  width: forcedWidth,
   place,
   dimmed,
   focusKey,
@@ -107,8 +106,10 @@ export const MediaCard = memo(function MediaCard({
   onFocusChange,
 }: MediaCardProps) {
   const landscape = variant === "landscape";
+  const frame = useCardMetrics()[variant];
+  const width = forcedWidth ?? frame.width;
   const height = Math.round(landscape ? (width * 9) / 16 : width * 1.5);
-  const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
+  const radius = frame.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
   // Un seul ressort pour le cadre et la légende (`CardFrame focusProgress`).

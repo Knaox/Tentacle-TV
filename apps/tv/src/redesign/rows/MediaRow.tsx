@@ -11,6 +11,7 @@ import { useForcedFocusKey } from "../focus/focusPreview";
 import { mountProfile } from "../render/mountProfile";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
+import { useCardMetrics } from "../cards/cardSizeMode";
 import { CullingTrack, NATIVE_RECEDE } from "./CullingTrack";
 import { useRowRewindPort } from "./rowRewindPort";
 import { useStagedRow } from "./rowStage";
@@ -32,9 +33,6 @@ import { useStagedRow } from "./rowStage";
  * rangée qui s'allonge, ou dont la liste change, ne redessine pas les cartes
  * qu'elle a déjà.
  */
-
-/** La largeur des cartes de chaque variante (celle de `MediaCard`). */
-const CARD_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
 
 /** Le vide sous les cartes d'une rangée (sa marge et le bas de sa piste) : rien ne s'y voit au repos. */
 export const MEDIA_ROW_TRAILING = TV_STAGE.row.spacing;
@@ -77,8 +75,11 @@ export const MediaRow = memo(function MediaRow({
   const forced = useForcedFocusKey();
   const track = useRef<ScrollView>(null);
   const rewind = useRowRewindPort();
+  // La largeur des cartes de la variante : celle de `MediaCard`, à la taille réglée.
+  const metrics = useCardMetrics();
+  const fittedWidth = cardWidth ?? (variant === "morph" ? metrics.landscape.width : metrics[variant].width);
   // Mode Lite : la tête ajustée à ce que la piste montre (`rowHeadCards`).
-  const head = mountProfile().fitRowHeads && variant !== "morph" ? rowHeadCards(1920 - inset, (cardWidth ?? CARD_WIDTH[variant]) + TV_STAGE.row.gap) : ROW_STAGING.headCards;
+  const head = mountProfile().fitRowHeads && variant !== "morph" ? rowHeadCards(1920 - inset, fittedWidth + TV_STAGE.row.gap) : ROW_STAGING.headCards;
   const { shown, demand, retire } = useStagedRow(stageRank, cards.length, head);
   // La carte qui a le focus dans la rangée, ou null : jamais retirée sous le focus.
   const focusedIndex = useRef<number | null>(null);

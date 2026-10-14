@@ -15,7 +15,7 @@ import { EmptyState } from "./EmptyState";
 import { FilterBar } from "./FilterBar";
 import { GridSkeleton } from "./GridSkeleton";
 import type { ActiveFilterModel, FilterPillModel, FilterSheetHandlers, FilterSheetModel, LibraryFilterKey } from "./libraryTypes";
-import { PosterGrid } from "./PosterGrid";
+import { PosterGrid, useGridColumns } from "./PosterGrid";
 import { RatingSheet } from "./RatingSheet";
 import { SortSheet } from "./SortSheet";
 import { YearSheet } from "./YearSheet";
@@ -67,7 +67,8 @@ export interface LibraryViewProps extends FilterSheetHandlers {
   palette: ArtworkPalette;
   /** La lumière de l'affiche focalisée (`ambientSource`) : la vue la suit, l'écran câblé ne se redessine pas. */
   ambient?: AmbientSource;
-  columns?: 5 | 6;
+  /** Colonnes de la grille ; absentes : celles de la taille des cartes réglée (`useCardMetrics`). */
+  columns?: number;
   /** Premier chargement : affiches fantômes, barre de filtres en place. */
   loading?: boolean;
   /** Page suivante en route : une rangée fantôme au bas de la grille. */
@@ -117,7 +118,8 @@ function PageTitle({ title, count }: { title: string; count?: string }) {
 }
 
 export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
-  const { nav, title, count, pills, activeFilters, labels, cards, columns = 6, loading, loadingMore, noResults, status, sheet } = props;
+  const { nav, title, count, pills, activeFilters, labels, cards, loading, loadingMore, noResults, status, sheet } = props;
+  const columns = useGridColumns(props.columns);
   const palette = useAmbientOf(props.ambient, props.palette);
   const { onPressPill, onRemoveFilter, onClearAll } = props;
   // L'en-tête, le vide et le pied ne changent pas avec la lumière : la carte

@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
+import { useCardMetrics } from "../../cards/cardSizeMode";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../color/artworkPalette";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { white } from "../../theme/tokens";
@@ -23,7 +24,6 @@ export interface ScreenSkeletonProps {
 
 const LEFT = TV_STAGE.contentLeft;
 const CONTENT_WIDTH = 1920 - LEFT - 56;
-const CARD = TV_STAGE.card.landscape;
 
 function Bone({ width, height, radius }: { width: DimensionValue; height: number; radius: number }) {
   return (
@@ -34,6 +34,8 @@ function Bone({ width, height, radius }: { width: DimensionValue; height: number
 }
 
 export const ScreenSkeleton = memo(function ScreenSkeleton({ nav, palette = NEUTRAL_PALETTE }: ScreenSkeletonProps) {
+  // La rangée fantôme à la taille des cartes réglée : rien ne saute à l'arrivée.
+  const card = useCardMetrics().landscape;
   return (
     <View style={styles.root} accessibilityRole="progressbar">
       <AmbientBackdrop palette={palette} intensity={0.6} />
@@ -45,7 +47,7 @@ export const ScreenSkeleton = memo(function ScreenSkeleton({ nav, palette = NEUT
         <Bone width={340} height={36} radius={12} />
         <View style={styles.row}>
           {[0, 1, 2, 3, 4].map((index) => (
-            <Bone key={index} width={CARD.width} height={CARD.height} radius={CARD.radius} />
+            <Bone key={index} width={card.width} height={card.height} radius={card.radius} />
           ))}
         </View>
       </Animated.View>
