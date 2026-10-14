@@ -340,7 +340,7 @@ le relais tient encore la source (aucune extraction ne suivra).
 l'échéance des URL (dix minutes pour une langue de repli), aucune bande-annonce une heure, aucune lisible dix
 minutes (elle a coûté jusqu'à trois extractions) ; demandes identiques
 partagées ; une vidéo que le relais a oubliée est reprise d'abord, sans
-relire TMDB. Le relais garde 96 vidéos COMPLÈTES ; au-delà, les plus
+relire TMDB. Le relais garde 160 vidéos COMPLÈTES ; au-delà, les plus
 anciennes perdent leurs listes mais gardent leur SOURCE jusqu'à son
 échéance (1 000 au plus, quelques Ko chacune, `relayEviction.ts`) : revenir
 sur un titre relit googlevideo, jamais YouTube. Décisions et sources
@@ -363,9 +363,9 @@ de lecture (`/resolve`), il la ré-extrait comme toujours ; avec un jeton
 d'aperçu, JAMAIS — 404, et le client redemande `/preview`, seule porte qui
 tienne les garde-fous (seau, plafond, place unique, disjoncteur, budget).
 De même pour une URL que googlevideo refuse en cours de route.
-**La protection** : un seau par compte (six décisions d'avance, une toutes
-les 5 s — une décision gardée ne coûte rien) et quatre décisions en cours au
-plus sur le serveur.
+**La protection** : un seau par compte (dix décisions d'avance, une toutes
+les 3 s — une décision gardée ou préparée ne coûte rien) et quatre décisions
+en cours au plus sur le serveur.
 
 **Ménager YouTube** (`youtubeGuard.ts`). Constaté le 2026-10-14 vers 2 h :
 après ≥ 146 extractions d'une nuit de bancs, YouTube a placé l'adresse de la
@@ -461,11 +461,11 @@ yt-dlp qui compte ses appels et un faux googlevideo local ; puis
 **Côté client : quand demander, quoi charger, quand montrer**
 (`packages/shared/src/trailers/preview/`, `apps/web/src/trailerPreview/`) :
 
-- **L'intention** : 250 ms de survol ET un pointeur immobile depuis 100 ms
+- **L'intention** : 200 ms de survol ET un pointeur immobile depuis 100 ms
   (moins de 6 px ; `intentStillMs`, `intentMovePx`) — chaque mouvement et
   chaque coup de molette repoussent la demande (`pointerMotion.ts`, écouté
   pendant l'intention seulement). Un arrêt franc dès l'entrée garde ses
-  250 ms ; le clavier aussi.
+  200 ms ; le clavier aussi.
 - **La qualité de la boîte** : départ ET plafond au plus petit niveau qui
   couvre ENTIÈREMENT la mini-carte en pixels de l'écran (`previewLevelCap.ts`)
   — 720p sur Retina dès 331 px (vu à l'œil : une 360p étirée de 3 % y est
@@ -480,7 +480,7 @@ yt-dlp qui compte ses appels et un faux googlevideo local ; puis
   son premier fragment VIDÉO reçu ici (le flux coule : `FRAG_LOADED` du
   niveau principal, ou des images en tampon en lecture native) et l'image du
   titre chargée et décodée dans la mini-carte (`reportStillReady`) : la
-  mini-carte se montre au rendez-vous (800 ms) sans attendre la première
+  mini-carte se montre au rendez-vous (600 ms) sans attendre la première
   image ; la vidéo la rejoint en fondu (`videoReady`), ou la mini-carte
   s'efface si elle ne vient pas (8 s). Un flux trouvé mais bloqué (en-têtes
   puis rien, segments refusés) ne fait rien grandir — recette de R, banc :
@@ -588,6 +588,78 @@ Quatre défauts relevés à l'essai (nés en dev, absents des notes de version) 
   (ou `YouTube limite les demandes de ce serveur — …`), puis `YouTube répond de
   nouveau — aperçus repris` à la première extraction réussie ;
 - `aperçus : 30 extractions dans l'heure — les suivantes attendent N min`.
+
+### Instantané : les titres à l'écran préparés d'avance (15/10)
+
+À l'essai, hors bibliothèque (Vigie, « À demander » de la recherche, saga),
+l'aperçu mettait 2 à 4 s : tout se décidait AU SURVOL, en série — TMDB
+(~0,3 s), PUIS la recherche AlloCiné chez Dailymotion (0,5 à 0,7 s par page,
+deux pages au plus), PUIS la vidéo (yt-dlp 0,9 à 1,4 s à chaud ; Dailymotion
+0,15 s de métadonnées et ses listes), PUIS la vérification (mesuré le 15/10
+depuis le poste). Et la bibliothèque restait « presque un tout petit peu
+lente » : révélation à 800 ms, puis 340 ms d'agrandissement sur une image
+figée avant le premier mouvement.
+
+- **Le serveur prépare les titres à l'écran** — `POST
+  /api/trailers/preview/warm` (contrat `trailerPreviewWarm.ts`, recopié ;
+  capacité `trailers.previewWarm`, 1.30.0). Le client dit ses titres
+  visibles (40 au plus) ; le serveur prépare en fond, deux à la fois, les
+  derniers vus d'abord (`preview/previewWarm.ts`) : le catalogue (TMDB par sa
+  file de FOND, AlloCiné à la cadence de PRÉPARATION de Dailymotion), puis la
+  PREMIÈRE vidéo du catalogue — résolue si c'est AlloCiné, préparée si c'est
+  une vidéo YouTube que le relais tient déjà. **Jamais d'extraction YouTube
+  en fond** (refusée d'office, `ExtractionOptions.background`) : une première
+  vidéo à extraire attend le survol (« différé », dix minutes de repos),
+  comme un catalogue dont une source n'a pas VRAIMENT répondu
+  (`buildCatalogDetailed` → `answered`) ou une première vidéo qui ne se lit
+  pas. La décision prise en fond est donc toujours celle que le survol aurait
+  prise (`previewSteps.ts`, gestes partagés). La réponse rend tout de suite
+  les aperçus DÉJÀ prêts — le corps même de `GET /preview` (`previewBody.ts`) ;
+  un titre de la bibliothèque n'est rendu qu'à un compte qui le voit, et ne
+  se décide jamais pour les autres depuis un compte qui ne le voit pas. Un
+  seau par compte : dix demandes, puis une toutes les deux secondes. La
+  demande garde l'ouvrier yt-dlp chaud pendant qu'on parcourt les titres.
+- **Les priorités** : un GET TMDB de fond rattrapé par quelqu'un qui attend
+  passe dans la file interactive (`tmdb/client.ts`, `promote`) ; la mémoire
+  du catalogue relance en interactif une lecture de fond qu'on attend (30 s
+  de patience en fond, 8 en interactif). Dailymotion a des seaux de
+  préparation à part (API : deux d'avance puis une toutes les 2 s ; flux :
+  deux puis une par seconde), sans la pause de 30 s qui suit un appel
+  attendu, et laisse aux appels attendus les 100 derniers du budget de
+  l'heure ; une recherche attendue ne rejoint jamais une recherche de
+  préparation (refusée faute de place, elle ne lui rendrait rien).
+- **Le client** (`apps/web/src/trailerPreview/previewWarm.ts`) : UN
+  observateur de visibilité pour toute l'app — les cartes inscrivent leur
+  visuel par `useCardPreview`, aucun état React de plus. La page posée
+  (450 ms), les titres visibles partent par lots de 40, les derniers apparus
+  d'abord ; un titre deux fois au plus en dix minutes (la seconde 5 s plus
+  tard, pour recevoir ce que le serveur a préparé entre-temps), jamais s'il a
+  déjà son aperçu en cache. Les aperçus prêts entrent dans le cache des
+  aperçus (`seedTrailerPreviews`, api-client) : le survol ne demande plus
+  rien, la vidéo part à l'intention. Branché par la liaison racine
+  (`usePreviewWarm`) si le serveur le déclare et que rien n'interdit les
+  aperçus ; hls.js s'y charge d'avance, au premier temps mort. Vigie a son
+  jumeau (`src/preview/warm.ts`, rangé dans `previewSource.seed`).
+- **Plus tôt, et en mouvement** : la demande part à 200 ms (pointeur
+  toujours arrêté depuis 100 ms), la mini-carte paraît à 600 ms, et la vidéo
+  JOUE dès qu'elle paraît — plus d'image figée le temps de l'agrandissement :
+  du survol au premier mouvement, ~0,6 s au lieu de ~1,15 s.
+- **Le reste** : le seau des aperçus par compte passe à dix d'avance puis un
+  toutes les 3 s (parcourir des titres neufs ne se heurte plus à « réessayez
+  dans 5 s ») ; 160 vidéos complètes au relais au lieu de 96 (les aperçus
+  préparés de quelques écrans) ; le titre lu au nom du compte, que chaque
+  survol relit, gardé dix minutes au lieu de deux.
+
+Ce qui reste lent : un titre dont la meilleure bande-annonce est sur YouTube
+et que le relais ne tient pas — l'extraction (~1 à 1,4 s) a lieu au survol,
+sous ses garde-fous. Pré-extraire les titres à l'écran ferait bloquer
+l'adresse de la maison (« Ménager YouTube ») : écarté.
+
+Surveiller : `aperçu tmdb:movie:603|fr|r5|dm : dm:x8e90ff (hls, 720) en 812 ms
+(catalogue 640, extraction 150, vérification 22), préparé en fond` — une
+décision prise en fond ; `…, préparé en fond (reprise)` — une décision
+gardée dont la vidéo AlloCiné a été relue (après un redémarrage, ou son
+échéance d'une heure).
 
 ## Ce qui reste fragile, et comment le surveiller
 
