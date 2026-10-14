@@ -1,9 +1,9 @@
 {
-  "desktop": "1.28.1",
+  "desktop": "1.28.2",
   "tv": "1.10.2",
   "webos": "1.0.0",
   "mobile": "1.11.0",
-  "server": "1.27.0",
+  "server": "1.27.1",
   "minServer": "1.23.0",
   "tvPairingEpoch": 1
 }
