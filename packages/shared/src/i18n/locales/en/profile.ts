@@ -31,7 +31,11 @@ export default {
   pairTV: "Pair TV",
   clearCache: "Clear cache and reset",
   clearCacheTitle: "Reset application",
+  // « Vider le cache », deux effets : le mobile vide TOUT et repart de l'adresse
+  // du serveur (`clearCacheMessage`) ; le web, le bureau et le miroir gardent la
+  // session et le serveur (`clearLocalCache`) : `clearCacheKeepsSessionMessage`.
   clearCacheMessage: "This will delete all local data. You will need to re-enter your server address and sign in again. Continue?",
+  clearCacheKeepsSessionMessage: "This device's settings (appearance, player…) will return to their defaults, recent searches and the local cache will be cleared, and messages you've already seen — What's New included — will show again. Your session and server address are kept. Continue?",
   clearCacheConfirm: "Reset",
   clearCacheCancel: "Cancel",
   changeServer: "Change server",

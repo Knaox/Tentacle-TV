@@ -38,7 +38,8 @@ export function AccountActions() {
 
   const handleClearCache = useCallback(() => {
     if (busy) return;
-    if (!confirm(t("clearCacheMessage"))) return;
+    // La session et le serveur restent (`clearLocalCache`) : la phrase du web, pas celle du mobile.
+    if (!confirm(t("clearCacheKeepsSessionMessage"))) return;
     setBusy("cache");
     try {
       qc.clear();

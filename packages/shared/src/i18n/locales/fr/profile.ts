@@ -31,7 +31,11 @@ export default {
   pairTV: "Jumeler TV",
   clearCache: "Vider le cache et réinitialiser",
   clearCacheTitle: "Réinitialiser l'application",
+  // « Vider le cache », deux effets : le mobile vide TOUT et repart de l'adresse
+  // du serveur (`clearCacheMessage`) ; le web, le bureau et le miroir gardent la
+  // session et le serveur (`clearLocalCache`) : `clearCacheKeepsSessionMessage`.
   clearCacheMessage: "Cette action supprimera toutes les données locales. Vous devrez re-saisir l'adresse de votre serveur et vous reconnecter. Continuer ?",
+  clearCacheKeepsSessionMessage: "Les réglages de cet appareil (apparence, lecteur…) reviendront à leurs valeurs par défaut, les recherches récentes et le cache local seront effacés, et les messages déjà vus — dont les nouveautés — reparaîtront. Votre session et l'adresse du serveur sont conservées. Continuer ?",
   clearCacheConfirm: "Réinitialiser",
   clearCacheCancel: "Annuler",
   changeServer: "Changer de serveur",

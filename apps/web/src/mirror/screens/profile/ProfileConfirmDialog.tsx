@@ -5,7 +5,8 @@ import type { ProfileActions } from "./useProfileActions";
 /** Titre, message et bouton de chaque confirmation (les `Alert.alert` de l'app). */
 const COPY = {
   changeServer: { title: "changeServerTitle", message: "changeServerMessage", confirm: "changeServerConfirm", cancel: "clearCacheCancel" },
-  clearCache: { title: "clearCacheTitle", message: "clearCacheMessage", confirm: "clearCacheConfirm", cancel: "clearCacheCancel" },
+  // Le web garde la session et le serveur (`clearLocalCache`) : pas la phrase de l'app, qui repart de zéro.
+  clearCache: { title: "clearCacheTitle", message: "clearCacheKeepsSessionMessage", confirm: "clearCacheConfirm", cancel: "clearCacheCancel" },
   deleteAccount: { title: "deleteAccountTitle", message: "deleteAccountMessage", confirm: "deleteAccountConfirm", cancel: "deleteAccountCancel" },
 } as const;
 
