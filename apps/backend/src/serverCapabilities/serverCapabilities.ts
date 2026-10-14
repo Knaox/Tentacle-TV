@@ -92,6 +92,10 @@ export const SERVER_CAPABILITIES = {
    *  `409 { fallback: "embed" }` quand YouTube bride ; et la carte « Bandes-annonces » de
    *  l'administration (`/api/admin/trailers`). */
   "trailers.catalog": "1.30.0",
+  /** La préparation des aperçus : `POST /api/trailers/preview/warm` — le client dit les titres à
+   *  l'écran, le serveur prépare leur aperçu en fond (jamais d'extraction YouTube) et rend ceux qui
+   *  sont prêts : leur survol n'a plus rien à demander. Sans elle, l'aperçu se décide au survol. */
+  "trailers.previewWarm": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
