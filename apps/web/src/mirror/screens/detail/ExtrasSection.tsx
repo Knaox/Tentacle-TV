@@ -2,86 +2,28 @@ import { memo, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
+import { useItemsExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
 import {
-  useItemExtras, useItemTrailer, useJellyfinClient, useRemoteTrailers, useSeasons, type ExtrasOwner,
-} from "@tentacle-tv/api-client";
-import {
-  buildExtraEntries, catalogEntriesByScope, catalogRowFor, catalogTiles, seasonHasExtras, seasonScopeKey, sortTrailersByLang,
-  type CatalogRow, type CatalogScopes, type MediaItem, type RelayedTrailerEntry, type RichTrailer,
+  buildExtraEntries, catalogTiles, sortTrailersByLang, type CatalogRow, type MediaItem, type RelayedTrailerEntry, type RichTrailer,
 } from "@tentacle-tv/shared";
-import { useWebTrailerPlatform } from "../../../components/detail/trailerPlatform";
+import { useFicheExtras } from "../../../components/detail/useFicheExtras";
 import { CatalogTrailerPlayer } from "../../../components/detail/CatalogTrailerPlayer";
+import { scopeName, withSeasonNames } from "../../../components/detail/extrasSeasonNames";
 
 const W = 168;
 const H = 95;
 
 /**
- * `MobileExtrasSection` de l'app : film → ses bandes-annonces, bonus et vidéos
- * distantes ; série → les siens puis une rangée par saison qui en a ; épisode
- * → les siens, puis ceux de SA saison, de la série et des autres saisons.
- * Avec le catalogue du serveur (lecteur complet), ses vidéos nourrissent les
- * rangées, portée par portée, comme sur le web (`catalogExtras`, shared).
- * Chaque rangée s'efface quand elle est vide. Tuiles, ordre et libellés : le
- * modèle partagé.
+ * `MobileExtrasSection` de l'app : UN carrousel (`useFicheExtras`) — film →
+ * ses extras ; série → les siens et ceux de toutes ses saisons ; épisode →
+ * ceux de SA saison s'il y en a, sinon tous les autres. Avec le catalogue du
+ * serveur (lecteur complet), ses vidéos, AlloCiné compris. Il s'efface sans
+ * extra. Tuiles, ordre et libellés : le modèle partagé.
  */
 export const ExtrasSection = memo(function ExtrasSection({ item, seriesItem }: { item: MediaItem; seriesItem?: MediaItem }) {
-  const { i18n } = useTranslation();
-  const platform = useWebTrailerPlatform();
-  const { entries, language } = useItemTrailer(item, i18n.language, platform);
-  const scopes = useMemo(
-    () => (platform.playable.includes("dailymotion") && entries.length > 0 ? catalogEntriesByScope(entries, language) : null),
-    [platform, entries, language],
-  );
-  const remote = useRemoteTrailers(scopes ? undefined : item, i18n.language);
-  if (item.Type === "Series") return <SeriesExtras item={item} remote={remote} scopes={scopes} />;
-  if (item.Type === "Episode") {
-    return (
-      <>
-        <ExtrasRow owner={item} remoteTrailers={scopes ? [] : remote} />
-        {seriesItem && <SeriesExtrasAuto item={seriesItem} scopes={scopes} currentSeason={item.ParentIndexNumber} />}
-      </>
-    );
-  }
-  return <ExtrasRow owner={item} remoteTrailers={remote} catalog={catalogRowFor(scopes, "movie")} />;
+  const { owners, remote, catalog, title, seasonNames } = useFicheExtras(item, seriesItem);
+  return <ExtrasRow owners={owners} remoteTrailers={remote} catalog={catalog} title={title} seasonNames={seasonNames} />;
 });
-
-function SeriesExtrasAuto({ item, scopes, currentSeason }: { item: MediaItem; scopes: CatalogScopes | null; currentSeason?: number | null }) {
-  const { i18n } = useTranslation();
-  const remote = useRemoteTrailers(scopes ? undefined : item, i18n.language);
-  return <SeriesExtras item={item} remote={remote} scopes={scopes} currentSeason={currentSeason} />;
-}
-
-function SeriesExtras({ item, remote, scopes, currentSeason }: {
-  item: MediaItem; remote: RichTrailer[]; scopes: CatalogScopes | null; currentSeason?: number | null;
-}) {
-  const { data: seasons } = useSeasons(item.Id);
-  // Seulement les saisons qui ont des extras (cf. `seasonHasExtras`) ou des vidéos au catalogue.
-  const shown = (seasons ?? []).filter((s) => {
-    const key = seasonScopeKey(s.IndexNumber);
-    return seasonHasExtras(s) || (key !== null && catalogRowFor(scopes, key) !== null);
-  });
-  // La saison de l'épisode ouvert passe en tête.
-  const current = currentSeason != null ? shown.find((s) => s.IndexNumber === currentSeason) : undefined;
-  const seasonRow = (s: MediaItem) => {
-    const key = seasonScopeKey(s.IndexNumber);
-    return (
-      <ExtrasRow
-        key={s.Id}
-        owner={s}
-        title={s.Name}
-        remoteTrailers={scopes ? [] : s.RemoteTrailers ?? []}
-        catalog={key ? catalogRowFor(scopes, key) : null}
-      />
-    );
-  };
-  return (
-    <>
-      {current && seasonRow(current)}
-      <ExtrasRow owner={item} remoteTrailers={scopes ? [] : remote} catalog={catalogRowFor(scopes, "series")} />
-      {shown.filter((s) => s !== current).map(seasonRow)}
-    </>
-  );
-}
 
 /**
  * `MobileExtrasRow` de l'app : vignettes 168 × 95 (rayon 8, filet
@@ -90,19 +32,24 @@ function SeriesExtras({ item, remote, scopes, currentSeason }: {
  * dans le lecteur complet, une vidéo YouTube d'avant dans un nouvel onglet
  * (le navigateur externe de l'app).
  */
-function ExtrasRow({ owner, remoteTrailers, title, catalog = null }: {
-  owner: ExtrasOwner; remoteTrailers: RichTrailer[]; title?: string; catalog?: CatalogRow | null;
+function ExtrasRow({ owners, remoteTrailers, title, catalog = null, seasonNames = null }: {
+  owners: readonly ExtrasOwner[]; remoteTrailers: RichTrailer[]; title?: string; catalog?: CatalogRow | null;
+  seasonNames?: ReadonlyMap<string, string> | null;
 }) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
   const client = useJellyfinClient();
-  const { local } = useItemExtras(owner);
+  const { local, ownerOf } = useItemsExtras(owners);
   const [playing, setPlaying] = useState<RelayedTrailerEntry | null>(null);
-  const entries = useMemo(
-    () => buildExtraEntries(t, local, catalog ? [] : sortTrailersByLang(remoteTrailers, i18n.language)),
-    [t, local, catalog, remoteTrailers, i18n.language],
+  const entries = withSeasonNames(
+    buildExtraEntries(t, local, catalog ? [] : sortTrailersByLang(remoteTrailers, i18n.language)),
+    ownerOf,
+    seasonNames,
   );
-  const tiles = useMemo(() => (catalog ? catalogTiles(t, catalog) : []), [t, catalog]);
+  const tiles = useMemo(
+    () => (catalog ? catalogTiles(t, catalog, seasonNames ? (scope) => scopeName(t, scope) : undefined) : []),
+    [t, catalog, seasonNames],
+  );
   if (entries.length === 0 && tiles.length === 0) return null;
 
   return (

@@ -1,25 +1,26 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useItemExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
+import { useItemsExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
 import { buildExtraEntries, catalogTiles, type CatalogRow, type ExtraEntry, type RelayedTrailerEntry } from "@tentacle-tv/shared";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
 import { RowHeader } from "../rows/RowHeader";
 import { TrailerViewer } from "./TrailerViewer";
 import { CatalogTrailerPlayer } from "./CatalogTrailerPlayer";
+import { scopeName, withSeasonNames } from "./extrasSeasonNames";
 import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
 import { sortTrailersByLang, type RichTrailer } from "./trailerLang";
 
 interface ExtrasRowProps {
   /**
-   * Le titre dont on liste les extras locaux (film, série, saison, épisode) :
-   * ses compteurs évitent de demander une liste vide. Absent : les
-   * bandes-annonces distantes seules — la page partagée, où un visiteur sans
-   * session ne peut rien lire du serveur.
+   * Les titres dont on réunit les extras locaux (une série et ses saisons, un
+   * épisode et sa saison…) : leurs compteurs évitent de demander une liste
+   * vide. Absent : les bandes-annonces distantes seules — la page partagée, où
+   * un visiteur sans session ne peut rien lire du serveur.
    */
-  owner?: ExtrasOwner;
+  owners?: readonly ExtrasOwner[];
   /** Trailers distants attachés à cet item/saison (déjà fusionnés ou bruts). */
   remoteTrailers: RichTrailer[];
   /** Libellé de groupe optionnel (nom de saison). */
@@ -30,6 +31,8 @@ interface ExtrasRowProps {
    * de la rangée enchaînée.
    */
   catalog?: CatalogRow | null;
+  /** Un carrousel qui réunit plusieurs saisons : chaque tuile dit la sienne (`useFicheExtras`). */
+  seasonNames?: ReadonlyMap<string, string> | null;
 }
 
 /**
@@ -38,11 +41,13 @@ interface ExtrasRowProps {
  * modèle partagé (`buildExtraEntries`) ; avec le catalogue, ses vidéos à la
  * place, AlloCiné compris (`catalogExtras.ts`, shared). Masquée si rien à montrer.
  */
-export function ExtrasRow({ owner, remoteTrailers, title, catalog = null }: ExtrasRowProps) {
+const NO_OWNERS: readonly ExtrasOwner[] = [];
+
+export function ExtrasRow({ owners = NO_OWNERS, remoteTrailers, title, catalog = null, seasonNames = null }: ExtrasRowProps) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
   const client = useJellyfinClient();
-  const { local } = useItemExtras(owner);
+  const { local, ownerOf } = useItemsExtras(owners);
   const [modalOpen, setModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
 
@@ -52,8 +57,11 @@ export function ExtrasRow({ owner, remoteTrailers, title, catalog = null }: Extr
     () => (catalog ? [] : sortTrailersByLang(remoteTrailers, i18n.language)),
     [catalog, remoteTrailers, i18n.language],
   );
-  const entries = useMemo(() => buildExtraEntries(t, local, remote), [t, local, remote]);
-  const tiles = useMemo(() => (catalog ? catalogTiles(t, catalog) : []), [t, catalog]);
+  const entries = withSeasonNames(buildExtraEntries(t, local, remote), ownerOf, seasonNames);
+  const tiles = useMemo(
+    () => (catalog ? catalogTiles(t, catalog, seasonNames ? (scope) => scopeName(t, scope) : undefined) : []),
+    [t, catalog, seasonNames],
+  );
   if (entries.length === 0 && tiles.length === 0) return null;
 
   const open = (entry: ExtraEntry) => {

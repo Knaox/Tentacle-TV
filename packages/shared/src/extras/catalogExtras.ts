@@ -62,11 +62,20 @@ export function dailymotionThumbUrl(videoId: string): string {
   return `https://www.dailymotion.com/thumbnail/video/${encodeURIComponent(videoId)}`;
 }
 
-/** Les tuiles d'une rangée du catalogue (`t` : clés de l'espace `common`, préfixées). */
-export function catalogTiles(t: (key: string) => string, row: CatalogRow): CatalogTile[] {
+/**
+ * Les tuiles d'une rangée du catalogue (`t` : clés de l'espace `common`,
+ * préfixées). `scopeLabel` : dans un carrousel qui réunit plusieurs portées
+ * (une série et ses saisons), le nom de la portée en tête (« Saison 6 »).
+ */
+export function catalogTiles(
+  t: (key: string) => string,
+  row: CatalogRow,
+  scopeLabel?: (scope: TrailerEntry["scope"]) => string | null,
+): CatalogTile[] {
   return row.entries.map((entry) => {
     const versionKey = trailerVersionLabelKey(entry.version, row.language);
     const parts = [
+      scopeLabel?.(entry.scope) ?? null,
       versionKey ? t(`common:trailerVersion_${versionKey}`) : null,
       entry.type === "teaser" ? t("common:extraKindTeaser") : null,
       t(`common:trailerOrigin_${trailerOriginLabel(entry)}`),

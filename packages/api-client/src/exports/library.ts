@@ -37,6 +37,7 @@ export { useLocalTrailers, useSpecialFeatures } from "../hooks/useTrailers";
 // Les extras d'une fiche, pour toutes les plateformes : locaux (bandes-annonces
 // puis bonus), distants (Jellyfin + TMDB, triés par langue), et le bouton.
 export { useItemExtras, type ExtrasOwner, type ItemExtras } from "../hooks/useItemExtras";
+export { useItemsExtras } from "../hooks/useItemsExtras";
 export { useRemoteTrailers, useRemoteTrailersState, type RemoteTrailersOwner } from "../hooks/useRemoteTrailers";
 export {
   useItemTrailer, TRAILER_PLATFORM_LEGACY, type ItemTrailer, type ItemTrailerOptions, type ItemTrailerOwner,
