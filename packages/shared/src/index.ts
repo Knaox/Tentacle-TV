@@ -296,4 +296,4 @@ export * from "./viewingStats/publicStats";
 // qu'il dit de chaque titre — sa raison STRUCTURÉE (que le client met en mots),
 // sa correspondance, le thème d'une rangée et le titre « à la une ».
 export * from "./reco/recoPageTypes";
-export * from "./avatars/avatarCatalog"; // la troupe des avatars (photos de profil)
+export * from "./avatars"; // la troupe des avatars (photos de profil) et leur invitation
