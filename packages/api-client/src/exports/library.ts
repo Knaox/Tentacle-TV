@@ -49,3 +49,8 @@ export {
   isTransientPreviewRefusal, previewRetryAfterMs, previewRetryDelayMs,
   type TrailerPreviewStreamResult,
 } from "../trailers/trailerPreviewStream";
+// Le lecteur complet des bandes-annonces (web, bureau) : le flux relayé, sa
+// préparation à l'intention et le compte rendu de la lecture.
+export {
+  fetchTrailerResolve, prepareTrailerPlayback, reportTrailerPlayback, type TrailerResolveResult,
+} from "../trailers/trailerPlayerApi";
