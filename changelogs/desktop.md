@@ -20,6 +20,7 @@ et Linux reçoivent l'ensemble.
 - **« Qui regarde ? » sur l'ordinateur** : chacun ouvre son profil, derrière son code PIN s'il en a un. À activer dans Réglages › Famille, pour tous vos ordinateurs ; « Ne plus proposer sur cet appareil » ouvre ensuite directement le profil choisi (serveur 1.29.0)
 - **Changer de profil, à tout moment** : dans le menu de votre avatar, « Changer de profil » ramène à « Qui regarde ? », que l'écran au lancement soit activé ou non
 - **Un profil ouvert sur l'ordinateur regarde** : il n'administre rien, comme sur la TV
+- **Photos de profil** : une galerie de 36 personnages illustrés, chacun avec son nom et son histoire, à choisir depuis le menu de l'avatar — l'import d'une photo personnelle reste là. Un compte sans photo se la voit proposer une fois, au premier lancement
 - **Dans une famille, votre avatar prend la couleur de votre profil**, partout dans l'application
 - **« Vider le cache et réinitialiser »** dit ce qu'il efface vraiment : les réglages de l'appareil, les recherches récentes et le cache, jamais votre session
 
@@ -28,6 +29,7 @@ et Linux reçoivent l'ensemble.
 - **“Who's watching?” on your computer**: everyone opens their own profile, behind their PIN if they have one. Turn it on in Settings › Family, for all your computers; “Don't ask on this device” then opens the chosen profile directly (server 1.29.0)
 - **Switch profiles at any time**: in your avatar menu, “Switch profile” brings back “Who's watching?”, whether the launch screen is on or not
 - **A profile opened on a computer only watches**: it manages nothing, just like on TV
+- **Profile pictures**: a gallery of 36 illustrated characters, each with a name and a story, to pick from the avatar menu — uploading your own photo is still there. Accounts without a picture are offered it once, on first launch
 - **In a family, your avatar takes your profile's color**, everywhere in the app
 - **“Clear cache and reset”** now says what it really clears: this device's settings, recent searches and the cache — never your session
 
