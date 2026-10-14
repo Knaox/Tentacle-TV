@@ -279,17 +279,32 @@ originale si rien ne convient.
 première qui s'extrait (yt-dlp, budget de 20 s, APRÈS les lectures : un
 aperçu n'occupe jamais plus d'une des deux places d'extraction,
 `extractionSlots.ts`) et dont le maître et les listes de départ se lisent
-chez googlevideo. En même temps, sans retarder la réponse, le départ d'un
-lecteur qui commence au plus haut — la liste de la variante la plus haute et
-celle de son audio, puis leur PREMIER segment — est lu d'avance
-(`trailerSegments.ts` : 32 Mo, cinq minutes, quatre lectures à la fois) ; le
-lecteur qui les demande les reçoit de la mémoire ou rejoint la lecture en
-cours.
+chez googlevideo. En même temps, sans retarder la réponse, le DÉPART de
+l'aperçu — la variante la plus riche jusqu'à 720p (celle que le client prend
+sur un écran Retina, cf. « Côté client ») et l'audio de son groupe : leurs
+listes, puis leur PREMIER segment — est lu d'avance (`trailerSegments.ts` :
+32 Mo, cinq minutes, quatre lectures à la fois) ; le lecteur qui les demande
+les reçoit de la mémoire ou rejoint la lecture en cours. Une décision à
+prendre démarre aussi l'ouvrier yt-dlp d'avance (`prewarmYtWorker`) : Python
+et yt-dlp se chargent pendant que TMDB répond.
 
 **La mémoire** : la décision par (titre, langue) — trouvée jusqu'à
-l'échéance des URL, aucune bande-annonce une heure, aucune lisible une
-minute ; demandes identiques partagées ; une vidéo que le relais a oubliée
-est reprise d'abord, sans relire TMDB. Le relais garde 96 vidéos (48 avant).
+l'échéance des URL, aucune bande-annonce une heure, aucune lisible dix
+minutes (elle a coûté jusqu'à trois extractions) ; demandes identiques
+partagées ; une vidéo que le relais a oubliée est reprise d'abord, sans
+relire TMDB. Le relais garde 96 vidéos COMPLÈTES ; au-delà, les plus
+anciennes perdent leurs listes mais gardent leur SOURCE jusqu'à son
+échéance (1 000 au plus, quelques Ko chacune, `relayEviction.ts`) : revenir
+sur un titre relit googlevideo, jamais YouTube. Décisions et sources
+survivent à un REDÉMARRAGE (`previewMemoryStore.ts` :
+`<données>/trailers/preview-memory.json` — le volume de données, ou
+`TENTACLE_DATA_DIR` —, 0600, écrit cinq secondes après un changement, repris
+au démarrage tant que ça vaut et réécrit sans l'échu ; fichier abîmé : départ
+à vide). Ce qui y reste : 1 000 décisions et 1 000 sources au plus (~2 Mo au
+pire, ~100 Ko pour une soirée de 50 titres), jamais plus vieux que
+l'échéance des URL (~6 h) ; des identifiants de titres et de vidéos et des
+URL googlevideo signées pour l'adresse du serveur — aucune donnée de compte. Une source gardée que googlevideo ne sert plus (adresse changée,
+révocation) donne UNE extraction neuve, dans les garde-fous de la décision.
 
 **Un jeton d'aperçu n'extrait jamais** (`relayToken.ts`). Les chemins que
 rend `/preview` portent un jeton de portée « aperçu » (`expiry.p.mac`, la
@@ -352,6 +367,91 @@ et MP4 relayés ne sont plus compressés. Et un lecteur qui part en cours de
 route (survol fini) n'est plus une erreur au journal : silence, comme au
 proxy de Jellyfin ; une vraie panne amont répond 502, un délai 504.
 
+**Anti-spam — exigence de Damien (14/10, midi)** : « plusieurs survols ne
+doivent jamais spammer YouTube ; repasser sur la même carte ne doit pas
+spammer l'API ». Ce qui le tient :
+
+- **Une demande par titre et par page.** La réponse de `/preview` (refus
+  compris) est gardée par le client autant que le serveur garde sa décision ;
+  une demande partie VA AU BOUT même si le pointeur part (le serveur la mène
+  à son terme de toute façon : l'abandonner, c'était la refaire au retour) ;
+  une nouvelle demande après un refus passager REJOINT celle qu'une autre
+  carte du même titre a en vol ; un titre dont la vidéo vient de lâcher
+  n'active même pas la requête (dix minutes).
+- **Une extraction par titre tant que sa décision vaut** : décisions
+  positives ET négatives gardées, partagées, survivant au redémarrage ;
+  jamais de ré-extraction parce qu'un client revient (cf. « La mémoire »).
+- **Un segment téléchargé une fois par titre et par page** : listes et
+  segments d'un jeton d'APERÇU partent en `private, max-age=…, immutable`
+  jusqu'à une minute avant l'échéance du jeton — un retour relit tout du
+  cache du navigateur sans même revalider (`trailerMedia.ts`). Les lectures
+  de la TV gardent leurs en-têtes.
+- **Aucune requête pendant un balayage ou un défilement** : l'intention
+  exige un pointeur ARRÊTÉ (cf. « Côté client ») ; un coup de molette ferme
+  la porte globale (`previewQuiet.ts`, agent V) jusqu'à un vrai mouvement.
+- Le budget horaire, le seau par compte et le disjoncteur restent des
+  filets : en navigation normale, on ne les atteint plus.
+
+Mesuré au banc (14/10 après-midi, backend réel du worktree avec un FAUX
+yt-dlp qui compte ses appels et un faux googlevideo local ; puis
+`antispam.mjs` de l'agent R, build de production, aperçus simulés) :
+
+| Geste | Avant | Après |
+|---|---|---|
+| 20 survols de la même carte | 2 demandes, 1 extraction | 1 demande, 1 extraction ; listes et segments du cache |
+| 20 survols COURTS (400 ms) | 2 à 3 demandes | 1 demande |
+| 3 cartes en alternance (7 tours) | 6 demandes, 3 extractions ; 61 Mo, 0 % de cache (R) | 3 demandes, 3 extractions ; 3,1 Mo, 85 % du cache |
+| Balayage LENT de 21 cartes (365 à 730 ms par carte) | 21 demandes, 5 à 10 extractions | 0 |
+| Balayage 80 / 150 / 220 ms par carte | 0 / 0 / 1 | 0 / 0 / 0 |
+| Molette avec pauses, pointeur immobile | 3 extractions | 0 (porte de V) |
+| Redémarrage du serveur, puis retour sur un titre décidé | 1 extraction | 0 (réponse en 290 ms) |
+
+**Côté client : quand demander, quoi charger, quand montrer**
+(`packages/shared/src/trailers/preview/`, `apps/web/src/trailerPreview/`) :
+
+- **L'intention** : 250 ms de survol ET un pointeur immobile depuis 100 ms
+  (moins de 6 px ; `intentStillMs`, `intentMovePx`) — chaque mouvement et
+  chaque coup de molette repoussent la demande (`pointerMotion.ts`, écouté
+  pendant l'intention seulement). Un arrêt franc dès l'entrée garde ses
+  250 ms ; le clavier aussi.
+- **La qualité de la boîte** : départ ET plafond au plus petit niveau qui
+  couvre ENTIÈREMENT la mini-carte en pixels de l'écran (`previewLevelCap.ts`)
+  — 720p sur Retina dès 331 px (vu à l'œil : une 360p étirée de 3 % y est
+  molle, la 1080p n'ajoute rien à la 720p), 360p en densité 1, jamais une
+  1080p dans 300 à 560 px. Le plafond suit la boîte, et la vidéo rognée de son
+  letterbox. La langue passe toujours avant la définition (le choix de la
+  bande-annonce n'y touche pas).
+- **Le préchargement** : avant la révélation, une seconde de tampon — le
+  premier segment, celui que le serveur a lu d'avance (hls.js en prenait
+  trente secondes : son tampon de 60 Mo) ; montrée, douze secondes.
+- **La révélation sur l'image** : la bande-annonce VÉRIFIÉE par le serveur
+  et l'image du titre chargée et décodée dans la mini-carte
+  (`reportStillReady`), la mini-carte se montre au rendez-vous (800 ms) sans
+  attendre la première image ; la vidéo la rejoint en fondu (`videoReady`),
+  ou la mini-carte s'efface si elle ne vient pas (8 s). Sans image : à la
+  première image, comme avant ; sans bande-annonce lisible : rien, jamais.
+- **Le letterbox incrusté** (`previewLetterbox.ts`) : à la première image,
+  UNE copie dans un canevas de 64 × 144 mesure les bandes noires au pixel près
+  (noir d'encodage pur, des deux côtés, contenu jusqu'aux bords) ; la vidéo
+  se rogne par une échelle posée en `transform` (`videoCrop`), bornée au
+  2,4:1, jamais sur des piliers, 1 dans le doute (scène sombre, logo sur fond
+  noir, fondu, canevas taché). Banc : spring 1,349 (cropdetect : 1,353), mha
+  et mhaladder 1, spring43 1,018 ; 3 à 6 ms une fois par aperçu.
+
+Délais au banc (aperçus SIMULÉS, serveur froid 1,5 à 2,3 s selon le titre —
+les chiffres de la nuit —, build de production, charge ~8) :
+
+| | Avant (f45bf593c) | Après |
+|---|---|---|
+| Froid, montrée (4 titres) | 2 083 à 2 762 ms | 1 865 à 2 580 ms (intention + serveur + ~60 ms) |
+| Chaud, montrée | 826 à 839 ms (1re image à 473–534) | 822 à 843 ms (1re image à 370–446) |
+| Déjà vu, montrée | 837 à 885 ms | 828 ms |
+| Lecture, rendu / GPU (% d'un cœur, mini-carte de 331 px) | 5,3 / 3,7 (1080p) | 2,4 / 3,5 (360p, densité 1) ; 2,6–3,1 / 3,5–3,7 (720p, Retina) |
+
+À froid, le client n'ajoute plus que ~60 ms au serveur : passer sous 1,5 s
+demande un serveur sous ~1,2 s (ouvrier chaud, TMDB, vérification) — à
+mesurer sur le réseau de la maison, pas sur un partage de connexion.
+
 **Mesuré** (banc du 2026-10-14 : Jellyfin 10.11 jetable, yt-dlp 2026.08.19 de
 Homebrew en ligne de commande, charge 6 à 23 sur 10 cœurs) :
 
@@ -369,7 +469,9 @@ Le départ au plus haut : la meilleure hauteur dès la première image.
 
 **Surveiller** (`grep '\[trailers\] aperçu'`) :
 
-- `aperçu tmdb:movie:438631|fr : gHt8tCHbB2M (hls, 1080) en 1387 ms, essai 1/3`
+- `aperçu tmdb:movie:438631|fr : gHt8tCHbB2M (hls, 1080) en 1387 ms (TMDB 177, extraction 1140, vérification 253), essai 1/3`
+  — où passe le temps d'une décision ;
+- `mémoire des aperçus reprise : 12 décision(s), 9 source(s)` — au démarrage ;
 - `aperçu jf:<id>|fr : aucune bande-annonce` — ou `(TMDB sans réponse)` ;
 - `aperçu … : aucune lisible (3 candidate(s), … ms)` — yt-dlp les refuse ;
 - `aperçu … : … reprise` — une décision dont le relais avait oublié la vidéo ;

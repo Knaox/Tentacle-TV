@@ -7,15 +7,18 @@
  * les témoignages d'utilisateurs convergent vers « environ une seconde » de
  * survol avant que la carte ne s'agrandisse et que l'aperçu ne parte. Essayée
  * en vrai (14/10), la seconde paraissait « légèrement trop longue » : le
- * rendez-vous est à 800 ms de survol, l'intention à 250 ms — toujours assez
- * pour qu'une souris qui traverse une rangée ne demande rien. Et seulement si
- * la vidéo a déjà sa première image — jamais un cadre noir, jamais un
- * chargement à l'écran.
+ * rendez-vous est à 800 ms de survol. Et seulement avec de quoi montrer : la
+ * première image de la vidéo, ou l'image du titre une fois la bande-annonce
+ * VÉRIFIÉE par le serveur — la vidéo la rejoint alors en fondu. Jamais un
+ * cadre noir, jamais un chargement à l'écran.
  *
  * Pour tenir ce rendez-vous, rien n'attend la seconde : la demande au serveur
- * part à l'INTENTION — un survol qui dure, pas une souris qui traverse une
- * rangée —, puis la vidéo se charge, cachée et en pause, jusqu'à sa première
- * image. Un passage plus court que l'intention ne coûte AUCUNE requête.
+ * part à l'INTENTION — 250 ms de survol ET un pointeur arrêté depuis 100 ms ;
+ * une souris qui balaie une rangée, même lentement, ou une page qui défile à
+ * la molette ne demandent RIEN — puis la vidéo se charge, cachée et en pause,
+ * jusqu'à sa première image. Mesuré au banc (14/10, aperçus simulés) : à
+ * chaud, montrée à ~830 ms (le plancher décide) ; à froid, intention +
+ * serveur + ~60 ms — le serveur seul décide du reste.
  */
 export const TRAILER_PREVIEW_TIMING = {
   /** Survol continu au-delà duquel la demande part (une souris qui traverse ne demande rien). */
