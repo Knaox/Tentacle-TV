@@ -1,15 +1,17 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { FONT_FAMILY, SHADOW_RN, useTheme, useThemedStyles, type AppTheme } from "../../theme";
-import { profilePhotoUrl, refreshStoredUser, type StoredUser } from "@/auth/storedUser";
+import { profilePhotoUrl, type StoredUser } from "@/auth/storedUser";
 import { useOfflineMode } from "@/offline/useOfflineMode";
-import { cachedAvatarUri, syncAvatarCache } from "@/offline/avatarCache";
+import { cachedAvatarUri } from "@/offline/avatarCache";
+import { pendingPhotoSnapshot, photoTagFor, subscribePendingPhoto } from "@/avatars/pendingPhoto";
+import { pickLibraryPhoto } from "@/avatars/photoSources";
+import { useProfilePhotoUpload } from "@/avatars/useProfilePhotoUpload";
 
 interface Props {
   /** Le profil stocké, réactif (`useStoredUser`). */
@@ -20,33 +22,30 @@ interface Props {
 /**
  * Avatar du profil — affiche la photo de profil Jellyfin (PrimaryImageTag)
  * et permet de la changer depuis l'appareil : photothèque → recadrage carré →
- * upload base64 vers `POST /Users/{id}/Images/Primary` (API Jellyfin), puis
- * relecture du profil, dont la nouvelle étiquette change l'URL (cache bust).
- * L'étiquette n'est plus figée au montage : toute relecture du profil
- * remplace la photo sous les yeux. Repli : initiale sur dégradé violet
- * (comportement historique).
+ * envoi (`useProfilePhotoUpload`), puis relecture du profil, dont la nouvelle
+ * étiquette change l'URL (cache bust). L'étiquette n'est plus figée au
+ * montage : toute relecture du profil remplace la photo sous les yeux. Repli :
+ * initiale sur dégradé violet (comportement historique).
  */
 export function ProfileAvatar({ user, initial }: Props) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
-  const [busy, setBusy] = useState(false);
+  const { upload, uploading: busy } = useProfilePhotoUpload();
   // L'URL en échec plutôt qu'un drapeau : une nouvelle étiquette donne une
   // nouvelle URL, qui retente d'elle-même.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   // Envoi réussi mais relecture sans nouvelle étiquette (réseau coupé entre
   // les deux) : une valeur locale force la nouvelle image tant que
-  // l'étiquette stockée reste l'ancienne.
-  const [pendingPhoto, setPendingPhoto] = useState<{ staleTag: string | null; nonce: string } | null>(null);
+  // l'étiquette stockée reste l'ancienne (`pendingPhoto`, d'où que parte l'envoi).
+  useSyncExternalStore(subscribePendingPhoto, pendingPhotoSnapshot, pendingPhotoSnapshot);
   const offline = useOfflineMode();
 
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
-  const jfBase = serverUrl ? `${serverUrl}/api/jellyfin` : "";
   const userId = user?.Id ?? null;
   const storedTag = user?.PrimaryImageTag ?? null;
-  const tag = pendingPhoto !== null && pendingPhoto.staleTag === storedTag ? pendingPhoto.nonce : storedTag;
+  const tag = photoTagFor(userId, storedTag);
   const photoUrl = userId ? profilePhotoUrl(serverUrl, userId, tag) : null;
   // Hors ligne — ou dès que Jellyfin ne répond pas — la copie locale prend le
   // relais : perdre son visage au premier tunnel donne l'impression d'être
@@ -57,47 +56,14 @@ export function ProfileAvatar({ user, initial }: Props) {
   const shownUri = fallback ? cachedUri : photoUrl;
 
   const pickAndUpload = async () => {
-    if (!user || !jfBase || busy || offline) return;
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
+    if (!user || !serverUrl || busy || offline) return;
+    const picked = await pickLibraryPhoto();
+    if (picked === "denied") {
       Alert.alert(t("photoErrorTitle"), t("photoPermissionMessage"));
       return;
     }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-      base64: true,
-    });
-    const asset = res.assets?.[0];
-    if (res.canceled || !asset?.base64) return;
-
-    setBusy(true);
-    try {
-      // L'API Jellyfin attend le corps ENCODÉ base64 avec le Content-Type image.
-      const upload = await fetch(`${jfBase}/Users/${user.Id}/Images/Primary`, {
-        method: "POST",
-        headers: {
-          Authorization: client.getAuthHeader(),
-          "Content-Type": asset.mimeType ?? "image/jpeg",
-        },
-        body: asset.base64,
-      });
-      if (!upload.ok) throw new Error(`${upload.status}`);
-
-      // Le nouveau PrimaryImageTag (sert d'URL de cache bust), écrit dans le
-      // profil stocké : cet écran et les suivants le reçoivent. Une relecture
-      // en échec ne fait pas de l'envoi réussi une erreur.
-      const photoChanged = await refreshStoredUser(storage, client);
-      if (!photoChanged) setPendingPhoto({ staleTag: storedTag, nonce: `${Date.now()}` });
-      const token = storage.getItem("tentacle_token");
-      if (token) syncAvatarCache(user.Id, serverUrl, token, storage);
-    } catch {
-      Alert.alert(t("photoErrorTitle"), t("photoErrorMessage"));
-    } finally {
-      setBusy(false);
-    }
+    if (picked === null) return;
+    if ((await upload(async () => picked)) === "failed") Alert.alert(t("photoErrorTitle"), t("photoErrorMessage"));
   };
 
   return (
