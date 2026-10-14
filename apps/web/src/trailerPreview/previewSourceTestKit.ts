@@ -50,6 +50,8 @@ export function fakeHlsClass(supported = true) {
     readonly handlers = new Map<string, Listener>();
     startLevelValue = -1;
     autoLevelCapping = -1;
+    nextAutoLevel = -1;
+    loadLevel = -1;
     levels: unknown[] = [];
     readonly calls: string[] = [];
     constructor(readonly config: unknown) {

@@ -86,6 +86,19 @@ export interface PreviewSourceSession {
 }
 
 /** La boîte de la vidéo en px CSS — sa taille de MISE EN PAGE, que l'échelle de l'animation ne change pas. */
+/**
+ * Le rognage du letterbox se mesure à la PREMIÈRE image : le niveau du premier
+ * segment est déjà choisi. Retenu par bande-annonce pour la page (le maître
+ * sans son jeton), il sert dès le départ au survol suivant du même titre.
+ */
+const crops = new Map<string, number>();
+const cropKey = (src: string) => src.split("?")[0];
+const rememberedCrop = (src: string) => crops.get(cropKey(src)) ?? 1;
+function rememberCrop(src: string, scale: number): void {
+  if (crops.size >= 200) crops.clear();
+  crops.set(cropKey(src), scale);
+}
+
 /** `crop` : l'échelle du rognage du letterbox — la source s'affiche d'autant plus grande. */
 function boxOf(video: HTMLVideoElement, crop = 1): BoxSize {
   return { width: video.clientWidth * crop, height: video.clientHeight * crop };
@@ -109,7 +122,8 @@ export function attachPreviewSource(
   let released = false;
   let ready = false;
   let unleashed = false;
-  let crop = 1;
+  // Le rognage déjà mesuré pour cette bande-annonce (un survol précédent) : le départ en tient compte.
+  let crop = rememberedCrop(stream.src);
   let hls: Hls | null = null;
   let resizeWatch: ResizeObserver | null = null;
   let frameRequest: number | null = null;
@@ -182,7 +196,7 @@ export function attachPreviewSource(
       if (unleashed) widenBuffer();
       instance.on(HlsCtor.Events.MANIFEST_PARSED, (_event, data) => {
         // Départ ET plafond : le plus petit niveau qui couvre la boîte (`previewLevelCap.ts`).
-        const cap = capLevelFor(data.levels, boxOf(video), pixelRatio());
+        const cap = capLevelFor(data.levels, boxOf(video, crop), pixelRatio());
         if (cap >= 0) instance.autoLevelCapping = cap;
         const start = cap >= 0 ? cap : topLevel(data.levels);
         if (start >= 0) instance.startLevel = start;
@@ -230,7 +244,12 @@ export function attachPreviewSource(
     },
     setCrop(scale) {
       crop = scale > 1 ? scale : 1;
-      if (hls && hls.levels.length > 0 && !released) hls.autoLevelCapping = capLevelFor(hls.levels, boxOf(video, crop), pixelRatio());
+      rememberCrop(stream.src, crop);
+      if (!hls || hls.levels.length === 0 || released) return;
+      const cap = capLevelFor(hls.levels, boxOf(video, crop), pixelRatio());
+      hls.autoLevelCapping = cap;
+      // Le premier segment est déjà là, plus petit : le SUIVANT part au bon niveau, sans attendre l'ABR.
+      if (cap > hls.loadLevel) hls.nextAutoLevel = cap;
     },
     release() {
       if (released) return;

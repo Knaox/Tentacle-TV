@@ -29,6 +29,28 @@ describe("attachPreviewSource — la boîte, le tampon, le flux qui coule", () =
     vi.unstubAllGlobals();
   });
 
+  it("un letterbox mesuré sur une petite mini-carte Retina : le segment SUIVANT part au niveau qui couvre la vidéo rognée ; le survol d'après, dès le premier", async () => {
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    const stream = { ...HLS, src: HLS.src.replace("FFUGtw7uzB4", "LCQeYk9uoYE") };
+    const sizes = [[256, 144], [640, 360], [1280, 720], [1920, 1080]].map(([width, height]) => ({ width, height, bitrate: height }));
+    const { HlsClass, instances } = fakeHlsClass();
+    const box = () => Object.assign(new FakeVideo(), { clientWidth: 300, clientHeight: 169 });
+    const first = attachPreviewSource(box() as never, stream, { onReady: vi.fn(), onError: vi.fn() }, async () => HlsClass);
+    await flush();
+    instances[0].fire(EVENTS.MANIFEST_PARSED, { levels: sizes });
+    // 600 × 338 px d'écran : la 360p couvre ; le rognage (×1,35) n'est pas encore connu.
+    expect([instances[0].startLevelValue, instances[0].autoLevelCapping]).toEqual([1, 1]);
+    Object.assign(instances[0], { levels: sizes, loadLevel: 1 });
+    first.setCrop(1.35);
+    expect([instances[0].autoLevelCapping, instances[0].nextAutoLevel]).toEqual([2, 2]);
+    first.release();
+    attachPreviewSource(box() as never, stream, { onReady: vi.fn(), onError: vi.fn() }, async () => HlsClass);
+    await flush();
+    instances[1].fire(EVENTS.MANIFEST_PARSED, { levels: sizes });
+    expect([instances[1].startLevelValue, instances[1].autoLevelCapping]).toEqual([2, 2]);
+    vi.unstubAllGlobals();
+  });
+
   it("le flux COULE au premier fragment vidéo (jamais un fragment audio), une fois ; en lecture native, aux premières images en tampon", async () => {
     const { HlsClass, instances } = fakeHlsClass();
     const onFragment = vi.fn();
