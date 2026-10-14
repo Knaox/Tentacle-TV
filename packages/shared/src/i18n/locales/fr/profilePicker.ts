@@ -12,7 +12,6 @@ export default {
   manageProfiles: "Gérer les profils",
   stayOnDevice: "Ne plus proposer sur cet appareil",
   stayOnDeviceHint: "Cet ordinateur ouvrira directement le profil choisi. Pour en changer : changez de profil depuis le menu de votre avatar.",
-  hasPin: "Protégé par un code PIN",
   lockedUntil: "Bloqué jusqu'à {{time}}",
   loadFailed: "Impossible de lire les profils de la famille.",
   retry: "Réessayer",
@@ -31,7 +30,6 @@ export default {
     digit: "Chiffre {{digit}}",
     keypad: "Pavé numérique",
     back: "Retour aux profils",
-    cancel: "Annuler",
   },
   refusal: {
     unavailable: "Ce profil n'est plus disponible.",
@@ -42,7 +40,6 @@ export default {
   },
   switcher: {
     title: "Changer de profil",
-    switching: "Changement de profil…",
     cancel: "Annuler",
   },
   session: {

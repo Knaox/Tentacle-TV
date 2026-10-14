@@ -10,18 +10,15 @@ interface ProfilePinPadProps {
   pad: PinPadModel;
   onDigit: (digit: string) => void;
   onErase: () => void;
-  /** Échap : retour aux profils (ou fermeture du dialogue). */
+  /** Échap : retour aux profils. */
   onBack: () => void;
-  /** Dans le dialogue du changement rapide : un avatar plus petit, et Échap
-   *  laissé au dialogue (`Modal` le prend déjà : il ne doit pas fermer deux fois). */
-  compact?: boolean;
 }
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 
 /**
- * Le pavé du code PIN — sur « Qui regarde ? » et dans le dialogue du
- * changement rapide. Quatre points, un pavé cliquable, et le CLAVIER : les
+ * Le pavé du code PIN de « Qui regarde ? » — à l'ouverture comme depuis
+ * « Changer de profil ». Quatre points, un pavé cliquable, et le CLAVIER : les
  * chiffres (rangée du haut comme pavé numérique), Retour arrière, Échap.
  * Rien n'est comparé ici : le quatrième chiffre part au serveur, qui seul dit
  * juste, faux (essais restants) ou bloqué. Le code ne vit que dans l'état du
@@ -31,7 +28,7 @@ const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
  * `polite` (« 2 chiffres sur 4 », le refus) ; chaque touche a son nom.
  * Un refus fait trembler les points (`animate-shake`, coupé par mouvement réduit).
  */
-export const ProfilePinPad = memo(function ProfilePinPad({ pad, onDigit, onErase, onBack, compact = false }: ProfilePinPadProps) {
+export const ProfilePinPad = memo(function ProfilePinPad({ pad, onDigit, onErase, onBack }: ProfilePinPadProps) {
   const { t } = useTranslation("profilePicker");
   const busy = pad.phase === "checking" || pad.phase === "locked";
 
@@ -39,18 +36,15 @@ export const ProfilePinPad = memo(function ProfilePinPad({ pad, onDigit, onErase
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       const key = pinKeyOf(event.key);
-      if (key === null || (key === "back" && compact)) return;
+      if (key === null) return;
       event.preventDefault();
-      if (key === "back") {
-        if (!compact) onBack();
-        return;
-      }
+      if (key === "back") onBack();
       else if (key === "erase") onErase();
       else onDigit(key);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [compact, onBack, onDigit, onErase]);
+  }, [onBack, onDigit, onErase]);
 
   const status =
     pad.message ??
@@ -64,10 +58,10 @@ export const ProfilePinPad = memo(function ProfilePinPad({ pad, onDigit, onErase
         name={pad.profile.name}
         color={pad.profile.color}
         imageTag={pad.profile.imageTag}
-        size={compact ? 64 : 96}
+        size={96}
       />
       {/* Le nom seul, en titre : « Code PIN de Inès » ne s'écrit pas, le pavé dit le reste. */}
-      <h2 className={`${compact ? "mt-3 text-lg" : "mt-5 text-2xl"} max-w-full truncate font-bold tracking-tight text-content-primary`}>
+      <h2 className="mt-5 max-w-full truncate text-2xl font-bold tracking-tight text-content-primary">
         {pad.profile.name}
       </h2>
       <p aria-live="polite" className={`mt-2 min-h-[1.25rem] text-sm ${statusTone}`}>{status}</p>

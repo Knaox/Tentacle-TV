@@ -15,8 +15,6 @@ export type CurtainPhase = "entering" | "shown" | "leaving";
 interface ProfileCurtainProps {
   profile: CurtainProfile;
   phase: CurtainPhase;
-  /** « Passage au profil de Léa… », sous le nom ; rien par défaut. */
-  label?: string | null;
 }
 
 /**
@@ -30,7 +28,7 @@ interface ProfileCurtainProps {
  * reste déplaçable. Mouvement réduit : `motion-reduce.css` réduit les durées à
  * rien, le rideau paraît et disparaît.
  */
-export const ProfileCurtain = memo(function ProfileCurtain({ profile, phase, label }: ProfileCurtainProps) {
+export const ProfileCurtain = memo(function ProfileCurtain({ profile, phase }: ProfileCurtainProps) {
   const visible = phase !== "leaving";
   // La barre de défilement de la page passerait par-dessus le rideau : la page
   // ne défile pas tant qu'il est là.
@@ -62,7 +60,6 @@ export const ProfileCurtain = memo(function ProfileCurtain({ profile, phase, lab
       <div className={`relative flex flex-col items-center ${phase === "entering" ? "animate-scale-in" : ""}`}>
         <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={112} />
         <p className="mt-5 text-2xl font-bold tracking-tight text-content-primary">{profile.name}</p>
-        <p className="mt-2 min-h-[1.25rem] text-sm text-content-tertiary">{label ?? ""}</p>
       </div>
     </div>
   );

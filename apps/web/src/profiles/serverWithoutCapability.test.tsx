@@ -4,7 +4,7 @@ import type { PickerProfileDto, PickerProfilesDto } from "@tentacle-tv/shared";
 
 /**
  * Un serveur sans `family.desktopProfiles` (≤ 1.27) : AUCUNE trace des
- * profils du bureau — ni changement rapide dans le menu de l'avatar, ni
+ * profils du bureau — ni « Changer de profil » dans le menu de l'avatar, ni
  * réglage dans Réglages › Famille — et aucune requête vers ses routes.
  * Le même banc, capacité déclarée et famille de trois profils, prouve que le
  * rendu n'est pas vide par accident. React Query est remplacé par un cache de
@@ -12,7 +12,7 @@ import type { PickerProfileDto, PickerProfilesDto } from "@tentacle-tv/shared";
  * une requête « partie » est une requête activée.
  */
 
-const state = vi.hoisted(() => ({ capable: false, desktop: true }));
+const state = vi.hoisted(() => ({ capable: false, desktop: true, offline: false, active: null as { id: string } | null }));
 const loadPickerProfiles = vi.hoisted(() => vi.fn());
 const queries = vi.hoisted(() => ({ cache: new Map<string, unknown>(), started: [] as string[] }));
 
@@ -41,7 +41,8 @@ vi.mock("@tentacle-tv/api-client", () => ({
   TentacleApiError: class extends Error {},
 }));
 vi.mock("../desktop/detect", () => ({ isDesktopApp: () => state.desktop }));
-vi.mock("../auth/profileSession", () => ({ accountUserId: () => "owner", useActiveProfile: () => null }));
+vi.mock("../auth/profileSession", () => ({ accountUserId: () => "owner", useActiveProfile: () => state.active }));
+vi.mock("../offline/useOfflineMode", () => ({ useOfflineMode: () => state.offline }));
 vi.mock("../watchTogether/WatchTogetherProvider", () => ({
   useWatchTogether: () => ({ isInGroup: false, actions: { leave: async () => undefined } }),
 }));
@@ -56,7 +57,7 @@ vi.mock("./api/pickerGateway", () => ({
   NoPersonalSession: class extends Error {},
 }));
 
-const { useProfileSwitcher } = await import("./switcher/useProfileSwitcher");
+const { useProfileMenuItems } = await import("./switcher/useProfileMenuItems");
 const { AskAtLaunchSection } = await import("./settings/AskAtLaunchSection");
 const { useAccountFaceColor } = await import("./face/useAccountFaceColor");
 
@@ -81,11 +82,12 @@ const LISTING: PickerProfilesDto = {
 };
 
 function Probe() {
-  const switcher = useProfileSwitcher(() => undefined);
+  const items = useProfileMenuItems(() => undefined);
   return (
     <div>
-      {switcher.section}
-      {switcher.overlays}
+      {items.map((item) => (
+        <button key={item.key} data-key={item.key}>{item.label}</button>
+      ))}
       <AskAtLaunchSection />
     </div>
   );
@@ -105,6 +107,8 @@ describe("les profils du bureau face au serveur", () => {
     queries.started.length = 0;
     state.capable = false;
     state.desktop = true;
+    state.offline = false;
+    state.active = null;
   });
 
   it("serveur sans la capacité : rien du tout, et aucune requête", () => {
@@ -120,18 +124,40 @@ describe("les profils du bureau face au serveur", () => {
     expect(queries.started).not.toContain(PICKER_KEY);
   });
 
-  it("capacité déclarée, famille de trois profils : le changement rapide et le réglage", () => {
+  it("capacité déclarée, famille de trois profils : « Changer de profil » (une entrée, aucun profil listé) et le réglage", () => {
     state.capable = true;
     const html = render();
     expect(queries.started).toContain(PICKER_KEY);
-    expect(html).toContain('role="menuitemradio"');
-    expect(html.match(/role="menuitemradio"/g)?.length).toBe(3);
-    expect(html.match(/aria-checked="true"/g)?.length).toBe(1);
-    // Le cadenas du seul profil protégé ; « Gérer les profils » en session personnelle.
-    expect(html.match(/lucide-lock/g)?.length).toBe(1);
-    expect(html).toContain("profilePicker:manageProfiles");
+    // Pas d'accès rapide : ni les profils, ni leurs cadenas dans le menu.
+    expect(html.match(/data-key="/g)?.length).toBe(2);
+    expect(html).toContain('data-key="switchProfile"');
+    expect(html).toContain("switcher.title");
+    expect(html).not.toContain("data-avatar");
+    expect(html).not.toContain("lucide-lock");
+    // « Gérer les profils » en session personnelle.
+    expect(html).toContain('data-key="manageProfiles"');
     expect(html).toContain("launchSetting.title");
     expect(html).toContain('role="switch"');
+  });
+
+  it("depuis la session d'un autre profil : « Changer de profil » reste là (revenir au sien), sans « Gérer les profils »", () => {
+    state.capable = true;
+    state.active = { id: "zoe" };
+    const html = render();
+    expect(html).toContain('data-key="switchProfile"');
+    expect(html).not.toContain('data-key="manageProfiles"');
+  });
+
+  it("préférence « au lancement » coupée : l'entrée est là quand même", () => {
+    state.capable = true;
+    expect(render({ ...LISTING, atLaunch: false })).toContain('data-key="switchProfile"');
+    expect(render({ ...LISTING, atLaunch: true })).toContain('data-key="switchProfile"');
+  });
+
+  it("hors ligne : pas d'entrée (changer de profil passe par le serveur)", () => {
+    state.capable = true;
+    state.offline = true;
+    expect(render()).not.toContain("data-key");
   });
 
   it("serveur sans la capacité : le rond du compte garde la marque, sans requête", () => {

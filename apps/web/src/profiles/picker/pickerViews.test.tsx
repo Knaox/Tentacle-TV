@@ -162,9 +162,9 @@ describe("« Qui regarde ? » ouvert par « Changer de profil » — Annuler", (
 });
 
 describe("« Qui regarde ? » — le pavé du code PIN", () => {
-  function pad(model: Partial<PinPadModel>, compact = false): string {
+  function pad(model: Partial<PinPadModel>): string {
     const base: PinPadModel = { profile: profile("zoe", { hasPin: true }), typed: 0, phase: "typing", message: null, ...model };
-    return renderToStaticMarkup(<ProfilePinPad pad={base} onDigit={noop} onErase={noop} onBack={noop} compact={compact} />);
+    return renderToStaticMarkup(<ProfilePinPad pad={base} onDigit={noop} onErase={noop} onBack={noop} />);
   }
 
   it("le nom en titre, le groupe nommé, dix chiffres et Effacer, chacun son nom", () => {

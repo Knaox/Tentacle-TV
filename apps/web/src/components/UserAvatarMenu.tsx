@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "./ui/Dropdown";
-import { avatarRingStyleFor, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
+import { avatarRingStyleFor, buildUserMenuItems, getUserInfo, type UserMenuItem } from "./userMenu/menuItems";
 import { useAvatarUpload } from "../hooks/useAvatarUpload";
 import { useToast } from "../contexts/ToastContext";
 import { isDesktopApp } from "../desktop/bridge";
@@ -13,7 +13,7 @@ import { useDownloadsVisibility } from "../downloads/useDownloadState";
 import { useActiveProfile } from "../auth/profileSession";
 import { useAccountLogout } from "../auth/useAccountLogout";
 import { FamilyAvatar } from "../family/FamilyAvatar";
-import { useProfileSwitcher } from "../profiles/switcher/useProfileSwitcher";
+import { useProfileMenuItems } from "../profiles/switcher/useProfileMenuItems";
 import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 import { ProfileMenuHeader } from "./userMenu/ProfileMenuHeader";
 import { useMenuKeyboard } from "./userMenu/useMenuKeyboard";
@@ -25,8 +25,10 @@ import { useMenuKeyboard } from "./userMenu/useMenuKeyboard";
  * change aussi dans les autres clients. Équivalent mobile : `MobileUserSheet`
  * (le changement de photo mobile vit sur la page Profil).
  *
- * Bureau, famille d'au moins deux profils : le CHANGEMENT RAPIDE de profil en
- * tête du menu (`useProfileSwitcher`). Pendant la session d'un profil, le
+ * Bureau, famille d'au moins deux profils : « Changer de profil » en tête du
+ * menu, qui ouvre « Qui regarde ? » plein écran — une entrée, jamais la liste
+ * des profils (`useProfileMenuItems`) ; « Gérer les profils » la suit en
+ * session personnelle. Pendant la session d'un profil, le
  * bouton et l'en-tête sont les siens (sa couleur, son nom), et le menu tait
  * ce que le serveur lui refuse (`buildUserMenuItems` › `profileSession`). En
  * session personnelle, le rond prend la couleur du profil du compte, celle de
@@ -51,7 +53,9 @@ export function UserAvatarMenu() {
   const ringStyle = avatarRingStyleFor(useAccountFaceColor());
 
   const close = useCallback(() => setOpen(false), []);
-  const switcher = useProfileSwitcher(close);
+  // L'écran « Qui regarde ? » refermé, le focus revient à l'avatar.
+  const avatarRef = useRef<HTMLButtonElement>(null);
+  const profileItems = useProfileMenuItems(close, avatarRef);
   const menuKeys = useMenuKeyboard(open);
 
   const handleLogout = useCallback(() => {
@@ -110,6 +114,7 @@ export function UserAvatarMenu() {
   return (
     <div className="relative">
       <button
+        ref={avatarRef}
         type="button"
         onClick={() => setOpen((p) => !p)}
         aria-label={t("preferences")}
@@ -136,7 +141,12 @@ export function UserAvatarMenu() {
             />
           )}
 
-          {switcher.section}
+          {/* Les profils : sous l'en-tête (qui l'on est), avant le reste du menu. */}
+          {profileItems.length > 0 && (
+            <div className="border-b border-line-subtle py-1.5">
+              {profileItems.map((item) => <MenuRow key={item.key} item={item} />)}
+            </div>
+          )}
 
           <div className="py-1.5">
             {items.map((item, idx) => {
@@ -145,26 +155,13 @@ export function UserAvatarMenu() {
               return (
                 <div key={item.key}>
                   {showDivider && <div className="my-1.5 border-t border-line-subtle" />}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={item.action}
-                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 focus-visible:bg-fill-subtle focus-visible:outline-none ${
-                      isLogout
-                        ? "text-[color:var(--status-error-fg)] hover:bg-[color:var(--status-error-bg)]"
-                        : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
-                    }`}
-                  >
-                    <span className="flex-shrink-0">{item.icon}</span>
-                    {item.label}
-                  </button>
+                  <MenuRow item={item} />
                 </div>
               );
             })}
           </div>
         </div>
       </Dropdown>
-      {switcher.overlays}
 
       <input
         ref={fileRef}
@@ -177,6 +174,26 @@ export function UserAvatarMenu() {
         }}
       />
     </div>
+  );
+}
+
+/** Une entrée du menu ; « Déconnexion » (`danger`) en rouge. */
+function MenuRow({ item }: { item: UserMenuItem }) {
+  const danger = item.danger === true;
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={item.action}
+      className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 focus-visible:bg-fill-subtle focus-visible:outline-none ${
+        danger
+          ? "text-[color:var(--status-error-fg)] hover:bg-[color:var(--status-error-bg)]"
+          : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
+      }`}
+    >
+      <span className="flex-shrink-0">{item.icon}</span>
+      {item.label}
+    </button>
   );
 }
 

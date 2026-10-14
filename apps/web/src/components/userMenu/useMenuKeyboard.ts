@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, type KeyboardEvent } from "react";
 
-const ITEM_SELECTOR = '[role="menuitem"]:not([disabled]), [role="menuitemradio"]:not([disabled])';
+const ITEM_SELECTOR = '[role="menuitem"]:not([disabled])';
 
 /**
  * Le clavier dans le menu de l'avatar : à l'ouverture le focus entre sur la
- * première entrée (le changement rapide de profil en tête, s'il est là), les
+ * première entrée (« Changer de profil » en tête, s'il est là), les
  * flèches Haut et Bas passent d'une entrée à l'autre en bouclant, Début et Fin
  * vont aux extrémités ; Échap ferme (`Dropdown`). Le menu reste aussi
  * parcourable à la tabulation.

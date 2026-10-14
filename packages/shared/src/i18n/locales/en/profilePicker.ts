@@ -9,7 +9,6 @@ export default {
   manageProfiles: "Manage profiles",
   stayOnDevice: "Don't ask on this device",
   stayOnDeviceHint: "This computer will open straight to the chosen profile. To change it, switch profiles from your avatar menu.",
-  hasPin: "Protected by a PIN",
   lockedUntil: "Locked until {{time}}",
   loadFailed: "The family's profiles couldn't be loaded.",
   retry: "Try again",
@@ -28,7 +27,6 @@ export default {
     digit: "Digit {{digit}}",
     keypad: "Keypad",
     back: "Back to profiles",
-    cancel: "Cancel",
   },
   refusal: {
     unavailable: "This profile is no longer available.",
@@ -39,7 +37,6 @@ export default {
   },
   switcher: {
     title: "Switch profile",
-    switching: "Switching profiles…",
     cancel: "Cancel",
   },
   session: {

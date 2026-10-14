@@ -8,6 +8,8 @@ import { NoticeHost } from "./notices/NoticeHost";
 import { useLeaderboardOpen, closeLeaderboard } from "./easterEggs/logoEggStore";
 import { useMirror } from "../mirror/useFormFactor";
 import { FamilyInvitationHost } from "../family/FamilyInvitationHost";
+import { WhoIsWatchingHost } from "../profiles/switcher/WhoIsWatchingHost";
+import { useSwitchScreenPhase } from "../profiles/switcher/switchScreenStore";
 import { AnimatedOutlet } from "./routeTransition/AnimatedOutlet";
 
 /** Chargée à la demande : le bureau ne télécharge rien du miroir. */
@@ -46,6 +48,8 @@ export function AppLayout() {
       {/* L'affiche d'invitation de la Famille (et son fil temps réel) : la
           coquille seulement — jamais par-dessus le lecteur ni une fiche immersive. */}
       <FamilyInvitationHost />
+      {/* Bureau : « Changer de profil » — « Qui regarde ? » posé sur la coquille. */}
+      <WhoIsWatchingHost />
     </>
   );
 }
@@ -55,9 +59,13 @@ function DesktopLayout() {
   const { pathname } = useLocation();
   const showSearch = !HIDE_SEARCH_ROUTES.some((r) => pathname.startsWith(r));
   const leaderboardOpen = useLeaderboardOpen();
+  // « Qui regarde ? » couvre tout : la coquille n'est plus peinte dessous (« ce
+  // qui n'est pas affiché ne consomme rien »), sa mise en page et son
+  // défilement restent tels quels pour le retour.
+  const covered = useSwitchScreenPhase() === "shown";
 
   return (
-    <div className="min-h-screen bg-surface-0">
+    <div className="min-h-screen bg-surface-0" style={covered ? { visibility: "hidden" } : undefined}>
       {/* Subtle brand ambient glow behind everything */}
       <div className="brand-ambient" aria-hidden />
 
