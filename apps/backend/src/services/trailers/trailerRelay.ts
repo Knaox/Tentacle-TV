@@ -33,13 +33,14 @@ const EXPIRY_MARGIN_MS = 10 * 60 * 1000;
 /** Une extraction toute fraîche n'est pas refaite pour un refus : googlevideo bride, il n'a pas tout révoqué. */
 const REFRESH_MIN_AGE_MS = 60 * 1000;
 /**
- * Quelques dizaines de vidéos COMPLÈTES (listes lues, moins de 100 Ko
- * chacune) suffisent à une soirée de fiches. Au-delà, les plus anciennes ne
- * gardent que leur source — quelques Ko —, jusqu'à son échéance : un aperçu
- * qui revient sur un titre ne coûte jamais une nouvelle extraction YouTube
- * tant que ses URL valent (`relayEviction.ts`).
+ * Les vidéos COMPLÈTES (listes lues, quelques dizaines de Ko, cent au plus)
+ * gardées : une soirée de fiches, et les aperçus que la préparation tient
+ * prêts pour les titres à l'écran — quelques écrans de cartes. Au-delà, les
+ * plus anciennes ne gardent que leur source — quelques Ko —, jusqu'à son
+ * échéance : un aperçu qui revient sur un titre ne coûte jamais une nouvelle
+ * extraction YouTube tant que ses URL valent (`relayEviction.ts`).
  */
-const MAX_ENTRIES = 96;
+const MAX_ENTRIES = 160;
 const MAX_SOURCES = 1_000;
 /**
  * Une vidéo absente pour de bon n'est pas redemandée avant une heure ; un

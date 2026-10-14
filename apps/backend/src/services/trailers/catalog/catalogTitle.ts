@@ -9,8 +9,9 @@
 /*  les identifiants TMDB, les `RemoteTrailers` de la série ou du film,*/
 /*  les bandes-annonces LOCALES (posées par l'administrateur) de la    */
 /*  série, du film et de chaque saison qui en a, et de quoi chercher   */
-/*  AlloCiné même sans clé TMDB (noms et dates de Jellyfin). Gardé     */
-/*  deux minutes par (compte, titre) ; deux demandes partagent tout.   */
+/*  AlloCiné même sans clé TMDB (noms et dates de Jellyfin). Gardé dix */
+/*  minutes par (compte, titre) — le survol d'un aperçu le relit à     */
+/*  chaque fois — ; deux demandes partagent tout.                      */
 /* ------------------------------------------------------------------ */
 
 import { jellyfinAdminFetch } from "../../jellyfinAdminFetch";
@@ -67,7 +68,7 @@ interface ItemDto {
 
 const FIELDS = "ProviderIds,RemoteTrailers,LocalTrailerCount,OriginalTitle";
 const TIMEOUT_MS = 5_000;
-const LOOKUP_TTL_MS = 2 * 60 * 1000;
+const LOOKUP_TTL_MS = 10 * 60 * 1000;
 const lookups = new TtlLru<CatalogTitleLookup>(1000);
 const inflight = new Map<string, Promise<CatalogTitleLookup>>();
 

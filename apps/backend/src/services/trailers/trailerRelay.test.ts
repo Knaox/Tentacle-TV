@@ -133,25 +133,25 @@ describe("listes relayées", () => {
   });
 
 
-  it("au-delà de 96 vidéos prêtes, la plus ancienne garde sa source : y revenir relit googlevideo, jamais YouTube", async () => {
+  it("au-delà de 160 vidéos prêtes, la plus ancienne garde sa source : y revenir relit googlevideo, jamais YouTube", async () => {
     extractTrailerSource.mockImplementation(async () => hls());
     const fetch = googlevideo();
     vi.stubGlobal("fetch", fetch);
-    const ids = Array.from({ length: 97 }, (_, i) => `vid${String(i).padStart(8, "0")}`);
+    const ids = Array.from({ length: 161 }, (_, i) => `vid${String(i).padStart(8, "0")}`);
     // Une milliseconde entre deux vidéos : la plus ancienne est sans ambiguïté la première.
     vi.useFakeTimers({ now: Date.now(), toFake: ["Date"] });
     for (const id of ids) {
       vi.setSystemTime(Date.now() + 1);
       expect(await prepareTrailer(id)).toBe(true);
     }
-    expect(extractTrailerSource).toHaveBeenCalledTimes(97);
+    expect(extractTrailerSource).toHaveBeenCalledTimes(161);
     // La plus ancienne a perdu ses listes (plus « prête »)…
     expect(peekTrailer(ids[0])).toBeNull();
     const mastersRead = () => fetch.mock.calls.filter(([url]) => String(url).endsWith("/index.m3u8")).length;
     const before = mastersRead();
     // … mais un aperçu qui y revient la reprend sans nouvelle extraction.
     expect(await prepareTrailer(ids[0])).toBe(true);
-    expect(extractTrailerSource).toHaveBeenCalledTimes(97);
+    expect(extractTrailerSource).toHaveBeenCalledTimes(161);
     expect(mastersRead()).toBe(before + 1);
     expect(peekTrailer(ids[0])).toMatchObject({ kind: "hls" });
     vi.useRealTimers();
