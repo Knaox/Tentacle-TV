@@ -5,6 +5,8 @@ import type { WhatsNewSelection } from "../whatsNew/selectFeatures";
 import { useWhatsNewGate } from "../whatsNew/useWhatsNewGate";
 import { useWhatsNewDevHook, whatsNewGateForced } from "../whatsNew/whatsNewDev";
 import { WhatsNewScreen } from "../whatsNew/WhatsNewScreen";
+import { isDesktopApp } from "../desktop/detect";
+import { AvatarInvite } from "../profiles/avatarGallery/AvatarInvite";
 import { UpdateModal } from "./UpdateModal";
 
 interface StartupOverlaysProps {
@@ -16,7 +18,9 @@ interface StartupOverlaysProps {
  * d'abord, la pop-up de mise à jour attend sa fermeture (`available` est un
  * état du hook, il persiste). Et l'inverse : une mise à jour en cours de
  * téléchargement ou d'installation n'est pas recouverte par des nouveautés.
- * Jamais sur /watch, jamais avant la session.
+ * Jamais sur /watch, jamais avant la session. En dernier, l'invitation unique
+ * à choisir un avatar (`AvatarInvite`) : seulement quand les deux autres se
+ * sont tus — aucune mise à jour en vue, plus de nouveautés à l'écran.
  */
 export function StartupOverlays({ authed }: StartupOverlaysProps) {
   const update = useAutoUpdate();
@@ -35,10 +39,12 @@ export function StartupOverlays({ authed }: StartupOverlaysProps) {
   const clearForced = useCallback(() => setForced(null), []);
 
   const open = forced !== null || gate.open;
+  const inviteBusy = !authed || pathname.startsWith("/watch") || open || update.phase !== "idle";
   return (
     <>
       <WhatsNewScreen open={open} selection={forced ?? gate.selection} onClose={forced ? clearForced : gate.close} />
       <UpdateModal update={update} suspended={open} />
+      {authed && <AvatarInvite desktop={desktopLike || isDesktopApp()} busy={inviteBusy} />}
     </>
   );
 }
