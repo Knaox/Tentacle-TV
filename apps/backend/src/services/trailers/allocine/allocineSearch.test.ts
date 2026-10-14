@@ -70,6 +70,21 @@ describe("AlloCiné › la recherche", () => {
     expect(a).toBe(b);
   });
 
+  it("un appel attendu ne rejoint jamais une recherche de préparation : il lance la sienne", async () => {
+    let answer!: (response: Response) => void;
+    fetchMock.mockImplementationOnce(() => new Promise<Response>((resolve) => (answer = resolve)));
+    fetchMock.mockResolvedValueOnce(ok(page("dune")));
+    const prepared = searchAllocineVideos("Dune", { priority: "prefetch" });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    // Une autre préparation rejoint celle qui court ; la demande attendue part de son côté.
+    void searchAllocineVideos("Dune", { priority: "prefetch" });
+    const waited = await searchAllocineVideos("Dune");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(waited?.videos.length).toBeGreaterThan(0);
+    answer(ok(page("dune")));
+    expect((await prepared)?.videos.length).toBe(waited?.videos.length);
+  });
+
   it("Dailymotion muet ou qui limite : rien à dire (null), rien en mémoire, et le disjoncteur s'ouvre sur un 429", async () => {
     fetchMock.mockRejectedValueOnce(new Error("réseau"));
     expect(await searchAllocineVideos("Dune")).toBeNull();

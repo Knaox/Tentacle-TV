@@ -22,7 +22,7 @@ import type { ExtractionOptions } from "./ytExtract";
  * d'abord est là, lu chez googlevideo (un MP4 l'a été dès l'extraction) —
  * l'aperçu au survol ne propose rien d'autre.
  */
-export async function prepareTrailer(ytId: string, extraction: ExtractionOptions = {}): Promise<boolean> {
+export async function prepareTrailer(ytId: string, extraction: ExtractionOptions & { heldOnly?: boolean } = {}): Promise<boolean> {
   const entry = await resolveEntry(ytId, extraction);
   if (!entry) return false;
   if (entry.source.kind !== "hls") return true;

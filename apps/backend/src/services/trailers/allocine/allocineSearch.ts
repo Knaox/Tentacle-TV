@@ -25,6 +25,8 @@ const MAX_PAGES = 2;
 const REQUEST_TIMEOUT_MS = 5_000;
 /** Une attente plus longue que ça, c'est le fond qui finira la recherche. */
 const MAX_WAIT_MS = 2_000;
+/** La préparation des aperçus : personne n'attend encore, sa place peut tarder un peu plus. */
+const MAX_PREFETCH_WAIT_MS = 4_000;
 const DAY_MS = 86_400_000;
 /** La ligne reste en base un peu au-delà de sa validité : échue, elle sert encore. */
 const KEEP_ROW_MS = 30 * DAY_MS;
@@ -65,10 +67,11 @@ function videosOf(page: ApiPage): AllocineVideo[] {
   return videos;
 }
 
-/** Une place chez Dailymotion : accordée, ou attendue un peu (un appel attendu), ou rien. */
+/** Une place chez Dailymotion : accordée, ou attendue un peu (un appel attendu, une préparation), ou rien. */
 async function slot(priority: DailymotionPriority): Promise<boolean> {
   let wait = takeDailymotionSlot("api", priority);
-  if (wait > 0 && wait <= MAX_WAIT_MS && priority === "interactive") {
+  const patience = priority === "interactive" ? MAX_WAIT_MS : priority === "prefetch" ? MAX_PREFETCH_WAIT_MS : 0;
+  if (wait > 0 && wait <= patience) {
     await sleep(wait);
     wait = takeDailymotionSlot("api", priority);
   }
@@ -108,12 +111,19 @@ async function finish(query: string, videos: AllocineVideo[], options: SearchOpt
   return result;
 }
 
+/**
+ * Deux demandes simultanées partagent la recherche — sauf qu'un appel ATTENDU
+ * ne rejoint jamais une recherche de fond ou de préparation : refusée faute de
+ * place, elle ne lui rendrait rien. Il lance la sienne.
+ */
 function shared(query: string, options: SearchOptions): Promise<AllocineSearch | null> {
   const key = allocineCacheKey(query);
-  const pending = inflight.get(key);
+  const waited = (options.priority ?? "interactive") === "interactive";
+  const pending = inflight.get(`${key}|i`) ?? (waited ? undefined : inflight.get(`${key}|b`));
   if (pending) return pending;
-  const task = search(query, options).finally(() => inflight.delete(key));
-  inflight.set(key, task);
+  const slotKey = `${key}|${waited ? "i" : "b"}`;
+  const task = search(query, options).finally(() => inflight.delete(slotKey));
+  inflight.set(slotKey, task);
   return task;
 }
 

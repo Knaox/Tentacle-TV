@@ -12,18 +12,30 @@
 /*    d'affilée → 30 min de pause, doublées jusqu'à 4 h, remises à zéro */
 /*    au premier succès ;                                              */
 /*  - le FOND cède la place : rien en arrière-plan dans les 30 s qui   */
-/*    suivent un appel attendu par quelqu'un.                          */
+/*    suivent un appel attendu par quelqu'un ;                         */
+/*  - la PRÉPARATION des aperçus (les titres à l'écran) a ses propres  */
+/*    seaux — elle ne prend jamais la place d'un survol — et laisse    */
+/*    aux appels attendus les 100 derniers du budget de l'heure.       */
 /* ------------------------------------------------------------------ */
 
 import { SlidingBudget, SourceBreaker, TokenBuckets, type GuardStatus } from "./sourceGuard";
 
 export type DailymotionCall = "api" | "stream";
-export type DailymotionPriority = "interactive" | "background";
+/**
+ * `interactive` : quelqu'un attend (un survol, une fiche) ; `prefetch` : la
+ * préparation des aperçus à l'écran — on attendra bientôt ; `background` : le
+ * rafraîchissement d'une mémoire échue.
+ */
+export type DailymotionPriority = "interactive" | "prefetch" | "background";
 
 export const DAILYMOTION_API_PER_HOUR = 300;
 const HOUR_MS = 60 * 60_000;
 const SERVER_ERRORS_TO_TRIP = 3;
 const BACKGROUND_PAUSE_MS = 30_000;
+/** La préparation laisse ce reste du budget de l'heure aux appels qu'on attend. */
+const PREFETCH_API_RESERVE = 100;
+/** Une préparation refusée faute de budget : rien avant ce délai. */
+const PREFETCH_REFUSED_MS = 60_000;
 
 export const dailymotionBreaker = new SourceBreaker({
   tripLine: (reason, min) =>
@@ -33,6 +45,8 @@ export const dailymotionBreaker = new SourceBreaker({
 export const dailymotionApiBudget = new SlidingBudget(DAILYMOTION_API_PER_HOUR, HOUR_MS);
 const apiPace = new TokenBuckets(5, 2_000);
 const streamPace = new TokenBuckets(2, 500);
+const prefetchApiPace = new TokenBuckets(2, 2_000);
+const prefetchStreamPace = new TokenBuckets(2, 1_000);
 let serverErrors = 0;
 let lastInteractiveAt = -Infinity;
 
@@ -45,14 +59,16 @@ export function takeDailymotionSlot(call: DailymotionCall, priority: Dailymotion
   const paused = dailymotionBreaker.remainingMs(now);
   if (paused > 0) return paused;
   if (priority === "background" && now - lastInteractiveAt < BACKGROUND_PAUSE_MS) return lastInteractiveAt + BACKGROUND_PAUSE_MS - now;
+  const prefetch = priority === "prefetch";
   if (call === "stream") {
-    const wait = streamPace.take("*", now);
+    const wait = (prefetch ? prefetchStreamPace : streamPace).take("*", now);
     if (wait === 0 && priority === "interactive") lastInteractiveAt = now;
     return wait;
   }
   const budgetWait = dailymotionApiBudget.refusal(now);
   if (budgetWait !== null) return budgetWait;
-  const wait = apiPace.take("*", now);
+  if (prefetch && dailymotionApiBudget.remaining(now) <= PREFETCH_API_RESERVE) return PREFETCH_REFUSED_MS;
+  const wait = (prefetch ? prefetchApiPace : apiPace).take("*", now);
   if (wait > 0) return wait;
   dailymotionApiBudget.count(now);
   if (priority === "interactive") lastInteractiveAt = now;
@@ -91,6 +107,8 @@ export function resetDailymotionGuard(): void {
   dailymotionApiBudget.reset();
   apiPace.reset();
   streamPace.reset();
+  prefetchApiPace.reset();
+  prefetchStreamPace.reset();
   serverErrors = 0;
   lastInteractiveAt = -Infinity;
 }

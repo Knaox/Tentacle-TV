@@ -35,6 +35,15 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
+describe("la préparation des aperçus", () => {
+  it("n'extrait jamais de YouTube : rien n'est demandé, rien n'est retenu contre la vidéo", async () => {
+    const result = await extractTrailerSource("Way9Dexny3w", { priority: "preview", background: true });
+    expect(result).toMatchObject({ ok: false, skipped: true, permanent: false });
+    expect(workerExtract).not.toHaveBeenCalled();
+    expect(previewRefusal()).toBeNull();
+  });
+});
+
 describe("YouTube bride l'adresse", () => {
   it("un aperçu bloqué n'essaie pas d'autre client, échoue « bloqué » et suspend les aperçus", async () => {
     workerExtract.mockResolvedValue(BOT);

@@ -57,6 +57,12 @@ export interface ExtractionOptions {
   budgetMs?: number;
   /** Aperçu : quelqu'un attend-il encore ? Non : il cède sa place dans la file (`extractionSlots.ts`). */
   wanted?: () => boolean;
+  /**
+   * La préparation des aperçus à l'écran : personne n'attend encore.
+   * Dailymotion la sert à sa cadence propre ; YouTube JAMAIS — une extraction
+   * n'a lieu qu'au survol, sous ses garde-fous.
+   */
+  background?: boolean;
 }
 
 interface PassOutcome {
@@ -145,6 +151,10 @@ export function prewarmExtraction(): void {
 /** Extrait le meilleur flux de `ytId`, passe après passe ; la première qui rend un flux gagne. */
 export function extractTrailerSource(ytId: string, options: ExtractionOptions = {}): Promise<ExtractionResult> {
   const { priority = "play", budgetMs = EXTRACTION_BUDGET_MS, wanted } = options;
+  // La préparation n'extrait jamais de YouTube : rien n'est demandé, rien n'est retenu contre la vidéo.
+  if (options.background) {
+    return Promise.resolve({ ok: false, permanent: false, timedOut: false, skipped: true, reason: "préparation : pas d'extraction YouTube" });
+  }
   return slots.run(priority, async () => {
     // Un aperçu ne contacte pas YouTube pendant une suspension, ni au-delà du budget de l'heure.
     if (priority === "preview") {

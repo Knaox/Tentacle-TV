@@ -48,6 +48,12 @@ export class SlidingBudget {
     this.starts.push(now);
   }
 
+  /** Les appels qui restent dans la fenêtre. */
+  remaining(now = Date.now()): number {
+    this.prune(now);
+    return Math.max(0, this.limit - this.starts.length);
+  }
+
   snapshot(now = Date.now()): number[] {
     this.prune(now);
     return [...this.starts];

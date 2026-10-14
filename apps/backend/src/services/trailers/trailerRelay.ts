@@ -56,11 +56,16 @@ const misses = new Map<string, number>();
 
 const evict = () => evictEntries(entries, Date.now(), { full: MAX_ENTRIES, total: MAX_SOURCES });
 
-/** La source d'une vidéo : yt-dlp pour YouTube, les métadonnées du lecteur pour Dailymotion. */
+/**
+ * La source d'une vidéo : yt-dlp pour YouTube, les métadonnées du lecteur pour
+ * Dailymotion — à sa cadence de préparation quand personne n'attend encore.
+ */
 function extractSource(key: string, options: ExtractionOptions): Promise<ExtractionResult> {
   const ref = parseVideoRef(key);
   if (!ref) return Promise.resolve({ ok: false, permanent: true, timedOut: false, reason: "référence inconnue" });
-  return ref.kind === "dailymotion" ? extractDailymotionSource(ref.id) : extractTrailerSource(ref.id, options);
+  return ref.kind === "dailymotion"
+    ? extractDailymotionSource(ref.id, options.background ? "prefetch" : "interactive")
+    : extractTrailerSource(ref.id, options);
 }
 
 async function extract(ref: string, options: ExtractionOptions): Promise<Entry | null> {
@@ -139,7 +144,10 @@ export function loadMedia(entry: Entry, key: string): Promise<RelayMedia | null>
  * (Dailymotion) fait lire son maître d'abord : il les donne, et un maître
  * illisible rend la vidéo indisponible au lieu d'un lecteur qui échoue.
  */
-export async function resolveTrailer(key: string, extraction: ExtractionOptions & { fresh?: boolean } = {}): Promise<ResolvedTrailer | null> {
+export async function resolveTrailer(
+  key: string,
+  extraction: ExtractionOptions & { fresh?: boolean; heldOnly?: boolean } = {},
+): Promise<ResolvedTrailer | null> {
   const entry = await resolveEntry(key, extraction);
   if (!entry) return null;
   if (entry.source.kind === "hls" && entry.source.heights.length === 0 && !(await loadMaster(entry))) return null;

@@ -85,6 +85,24 @@ describe("Dailymotion", () => {
     expect(takeDailymotionSlot("stream", "interactive", 0)).toBe(500);
   });
 
+  it("la préparation a ses seaux : elle ne prend jamais la place d'un appel attendu", () => {
+    for (let i = 0; i < 2; i++) expect(takeDailymotionSlot("api", "prefetch", 0)).toBe(0);
+    expect(takeDailymotionSlot("api", "prefetch", 0)).toBe(2000);
+    for (let i = 0; i < 5; i++) expect(takeDailymotionSlot("api", "interactive", 0)).toBe(0);
+    for (let i = 0; i < 2; i++) expect(takeDailymotionSlot("stream", "prefetch", 0)).toBe(0);
+    expect(takeDailymotionSlot("stream", "prefetch", 0)).toBe(1000);
+    expect(takeDailymotionSlot("stream", "interactive", 0)).toBe(0);
+    // Pas de pause après un appel attendu : la préparation précède le survol qui suit.
+    expect(takeDailymotionSlot("api", "prefetch", 2000)).toBe(0);
+  });
+
+  it("la préparation laisse les 100 derniers appels de l'heure à ceux qu'on attend", () => {
+    let now = 0;
+    for (let i = 0; i < DAILYMOTION_API_PER_HOUR - 100; i++, now += 2000) expect(takeDailymotionSlot("api", "interactive", now)).toBe(0);
+    expect(takeDailymotionSlot("api", "prefetch", now)).toBeGreaterThan(0);
+    expect(takeDailymotionSlot("api", "interactive", now)).toBe(0);
+  });
+
   it("le fond cède la place 30 s après un appel attendu", () => {
     expect(takeDailymotionSlot("api", "interactive", 0)).toBe(0);
     expect(takeDailymotionSlot("api", "background", 10_000)).toBe(20_000);
