@@ -1,4 +1,4 @@
-import type { CardMarkers, QualityBadge } from "@tentacle-tv/shared";
+import type { CardMarkers, QualityBadge, TrailerPreviewSubject } from "@tentacle-tv/shared";
 import type { ArtworkPalette } from "../color/artworkPalette";
 import type { ArrivalModel } from "../requests/arrivalTypes";
 
@@ -44,6 +44,10 @@ export interface CardModel {
   /** La qualité du titre — 4K, Dolby Vision, Dolby Atmos —, montrée au focus
    *  DANS l'image (`CardQualityBadges`). Absente : rien à montrer. */
   quality?: CardQuality;
+  /** De quoi la carte montrerait la bande-annonce quand son focus tient
+   *  (`trailerPreviewPort`) : le titre de la bibliothèque, ou son identité
+   *  TMDB hors bibliothèque. Absent : la carte ne grandit jamais. */
+  trailer?: TrailerPreviewSubject;
 }
 
 /**

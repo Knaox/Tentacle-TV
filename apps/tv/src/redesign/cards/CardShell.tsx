@@ -1,5 +1,6 @@
 import { memo, useCallback, type ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { FocusTarget } from "../focus/FocusTarget";
 
 /**
@@ -16,7 +17,22 @@ import { FocusTarget } from "../focus/FocusTarget";
  *
  * Ce que la carte dessine hors de la cible (légende, indication) lit son focus
  * chez l'appelant (`useCardFocused`), qui passe ici `onTargetFocusChange`.
+ *
+ * `expansion` : la carte peut devenir la GRANDE CARTE de l'aperçu (une
+ * rangée, `trailerPreviewPort`). La cellule ELLE-MÊME grandit — sa largeur,
+ * la place de l'image — et la rangée lui fait place : les voisines glissent,
+ * rien ne se pose sur elles (tvOS ne propose pas un focalisable recouvert), et
+ * la cible, qui couvre la cellule, reste la grande carte entière. Sa présence
+ * ne change jamais pour une carte donnée (une rangée en donne une à toutes
+ * ses cartes, une grille jamais) : l'arbre reste le même, le focus aussi.
  */
+
+/** La grande carte : sa taille, et l'avancée de la croissance (0 → 1). */
+export interface CardExpansion {
+  width: number;
+  height: number;
+  progress: SharedValue<number>;
+}
 
 export interface CardShellProps {
   focusKey?: string;
@@ -37,32 +53,20 @@ export interface CardShellProps {
   style?: StyleProp<ViewStyle>;
   /** La légende, dessinée SOUS la cible. */
   children?: ReactNode;
+  /** La carte peut grandir en grande carte d'aperçu (cf. plus haut). */
+  expansion?: CardExpansion;
 }
 
-export const CardShell = memo(function CardShell({
-  focusKey,
-  width,
-  frameHeight,
-  frame,
-  centerFrame = false,
-  front = false,
-  onPress,
-  onLongPress,
-  onTargetFocusChange,
-  accessibilityLabel,
-  style,
-  children,
-}: CardShellProps) {
+export const CardShell = memo(function CardShell(props: CardShellProps) {
+  const { focusKey, frameHeight, frame, centerFrame = false, onPress, onLongPress, onTargetFocusChange, accessibilityLabel, children } = props;
   const renderFrame = useCallback(
     () => (centerFrame ? <View style={styles.center}>{frame}</View> : frame),
     [centerFrame, frame],
   );
-  return (
-    // Jamais aplatie (`collapsable={false}`) : sur Android, `zIndex` posé au
-    // focus ferait créer la vue et re-parenter la cible — qui perdait le focus.
-    <View collapsable={false} style={[{ width }, front && styles.front, style]}>
+  const body = (
+    <>
       {/* La place de l'image : elle se dessine dans la cible, plus bas. */}
-      <View style={{ height: frameHeight }} />
+      {props.expansion ? <ExpandingSpacer frameHeight={frameHeight} expansion={props.expansion} /> : <View style={{ height: frameHeight }} />}
       {children}
       {/* En DERNIER : rien ne recouvre la cible. L'appui (OK enfoncé) qu'elle
           tient, l'image le lit (`usePressProgress`). */}
@@ -77,9 +81,36 @@ export const CardShell = memo(function CardShell({
       >
         {renderFrame}
       </FocusTarget>
+    </>
+  );
+  return props.expansion ? (
+    <ExpandingCell {...props} expansion={props.expansion}>{body}</ExpandingCell>
+  ) : (
+    // Jamais aplatie (`collapsable={false}`) : sur Android, `zIndex` posé au
+    // focus ferait créer la vue et re-parenter la cible — qui perdait le focus.
+    <View collapsable={false} style={[{ width: props.width }, props.front && styles.front, props.style]}>
+      {body}
     </View>
   );
 });
+
+/** La cellule qui grandit : sa largeur suit la croissance, sur le fil d'interface. */
+function ExpandingCell({ width, front, style, expansion, children }: CardShellProps & { expansion: CardExpansion; children: ReactNode }) {
+  const { progress, width: wide } = expansion;
+  const grow = useAnimatedStyle(() => ({ width: width + (wide - width) * progress.value }));
+  return (
+    <Animated.View collapsable={false} style={[{ width }, front && styles.front, style, grow]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** La place de l'image qui grandit avec la cellule : la légende descend d'autant. */
+function ExpandingSpacer({ frameHeight, expansion }: { frameHeight: number; expansion: CardExpansion }) {
+  const { progress, height: tall } = expansion;
+  const grow = useAnimatedStyle(() => ({ height: frameHeight + (tall - frameHeight) * progress.value }));
+  return <Animated.View style={[{ height: frameHeight }, grow]} />;
+}
 
 const styles = StyleSheet.create({
   front: { zIndex: 10 },

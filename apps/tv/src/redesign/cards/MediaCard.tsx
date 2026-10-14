@@ -13,9 +13,10 @@ import { CardFrame, cardGlowOf } from "./CardFrame";
 import { CardShell } from "./CardShell";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import { cardLogoBottom, LOGO_BOX } from "./cardMarkerGeometry";
+import { CardPreviewTile, useCardGrowth, type CardGrowth } from "./CardPreviewTile";
 import { CardQualityBadges } from "./CardQualityBadges";
 import type { CardModel } from "./cardTypes";
-import { useCardFocused } from "./useCardFocused";
+import { useCardFocused, type CardFocused } from "./useCardFocused";
 import { CARD_FOCUS_SCALE } from "./cardFocus";
 
 /**
@@ -43,6 +44,11 @@ import { CARD_FOCUS_SCALE } from "./cardFocus";
  * puis la cible qui couvre image ET légende et ne porte que l'image — rien
  * ne la recouvre, et seule l'image suit le pouce (la parallaxe d'Apple TV).
  * `onFocusChange` dit le focus de la carte (`useCardFocused`).
+ *
+ * `previewable` (une carte de RANGÉE, jamais d'une grille) : quand son focus
+ * tient, la carte peut devenir la grande carte de l'aperçu de sa
+ * bande-annonce (`CardPreviewTile`) ; `onPreviewExpand` prévient la rangée,
+ * qui la montre entière. Fixé pour la vie de la carte : l'arbre ne change pas.
  */
 
 export interface MediaCardProps {
@@ -64,6 +70,10 @@ export interface MediaCardProps {
   onPress?: () => void;
   onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
+  /** La carte peut devenir la grande carte de l'aperçu (une rangée). */
+  previewable?: boolean;
+  /** Elle vient de grandir : `tileWidth`, la largeur de la grande carte. */
+  onPreviewExpand?: (tileWidth: number) => void;
 }
 
 const DEFAULT_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
@@ -92,7 +102,24 @@ function LogoLayer({ uri, width, height, bottom }: { uri: string; width: number;
   );
 }
 
-export const MediaCard = memo(function MediaCard({
+export const MediaCard = memo(function MediaCard(props: MediaCardProps) {
+  const cardFocus = useCardFocused(props.focusKey, props.onFocusChange);
+  return props.previewable ? <PreviewableCard {...props} cardFocus={cardFocus} /> : <CardBody {...props} cardFocus={cardFocus} growth={null} />;
+});
+
+/** Une carte de rangée : sa grande carte d'aperçu, selon son focus. */
+function PreviewableCard(props: MediaCardProps & { cardFocus: CardFocused }) {
+  const { card, variant, width = DEFAULT_WIDTH[variant], cardFocus, onPreviewExpand } = props;
+  const size = useMemo(() => ({ width, height: cardHeight(variant, width) }), [variant, width]);
+  const growth = useCardGrowth(card, cardFocus.focused, size, onPreviewExpand);
+  return <CardBody {...props} growth={growth} />;
+}
+
+function cardHeight(variant: MediaCardProps["variant"], width: number): number {
+  return Math.round(variant === "landscape" ? (width * 9) / 16 : width * 1.5);
+}
+
+function CardBody({
   card,
   variant,
   width = DEFAULT_WIDTH[variant],
@@ -104,13 +131,14 @@ export const MediaCard = memo(function MediaCard({
   glowTone = card.absent ? "neutral" : "art",
   onPress,
   onLongPress,
-  onFocusChange,
-}: MediaCardProps) {
+  cardFocus,
+  growth,
+}: MediaCardProps & { cardFocus: CardFocused; growth: CardGrowth | null }) {
   const landscape = variant === "landscape";
-  const height = Math.round(landscape ? (width * 9) / 16 : width * 1.5);
+  const height = cardHeight(variant, width);
   const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
-  const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
+  const { focused, onTargetFocusChange } = cardFocus;
   // Un seul ressort pour le cadre et la légende (`CardFrame focusProgress`).
   const progress = useFocusProgress(focused);
   const glow = useMemo(() => cardGlowOf(card.palette, glowTone), [card.palette, glowTone]);
@@ -124,53 +152,57 @@ export const MediaCard = memo(function MediaCard({
       onLongPress={onLongPress}
       onTargetFocusChange={onTargetFocusChange}
       accessibilityLabel={card.title}
+      expansion={growth?.expansion}
       frame={
-        <CardFrame
-          width={width}
-          height={height}
-          radius={radius}
-          focused={focused}
-          place={place}
-          dimmed={dimmed}
-          origin={origin}
-          glow={glow}
-          focusProgress={progress}
-          focusLayer={
-            card.quality && !card.absent ? (
-              <CardQualityBadges
-                quality={card.quality}
-                focused={focused}
-                width={width}
-                markers={card.markers}
-                progress={card.progress}
-                compact={!landscape}
-                logo={landscape && card.logoUri !== undefined}
-              />
-            ) : undefined
-          }
-        >
-          {/* L'image est clée par son adresse : une carte RECYCLÉE (grille)
-              qui change de titre ne garde pas l'affiche précédente le temps
-              que la sienne arrive — une Image d'iOS la garderait. */}
-          {card.absent ? (
-            <AbsentArtwork key={uri} absent={card.absent} uri={uri} title={card.title} year={card.subtitle} width={width} height={height} focused={focused} />
-          ) : (
-            <>
-              {uri ? (
-                <Image key={uri} source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-              ) : (
-                <View style={styles.missing}>
-                  <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
-                </View>
-              )}
-              {landscape && card.logoUri ? (
-                <LogoLayer uri={card.logoUri} width={width} height={height} bottom={cardLogoBottom(card.markers, card.progress)} />
-              ) : null}
-              {card.badge ? <CardBadge label={card.badge} /> : null}
-              <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
-            </>
-          )}
-        </CardFrame>
+        <>
+          <CardFrame
+            width={width}
+            height={height}
+            radius={radius}
+            focused={focused}
+            place={place}
+            dimmed={dimmed}
+            origin={origin}
+            glow={glow}
+            focusProgress={progress}
+            focusLayer={
+              card.quality && !card.absent ? (
+                <CardQualityBadges
+                  quality={card.quality}
+                  focused={focused}
+                  width={width}
+                  markers={card.markers}
+                  progress={card.progress}
+                  compact={!landscape}
+                  logo={landscape && card.logoUri !== undefined}
+                />
+              ) : undefined
+            }
+          >
+            {/* L'image est clée par son adresse : une carte RECYCLÉE (grille)
+                qui change de titre ne garde pas l'affiche précédente le temps
+                que la sienne arrive — une Image d'iOS la garderait. */}
+            {card.absent ? (
+              <AbsentArtwork key={uri} absent={card.absent} uri={uri} title={card.title} year={card.subtitle} width={width} height={height} focused={focused} />
+            ) : (
+              <>
+                {uri ? (
+                  <Image key={uri} source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+                ) : (
+                  <View style={styles.missing}>
+                    <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
+                  </View>
+                )}
+                {landscape && card.logoUri ? (
+                  <LogoLayer uri={card.logoUri} width={width} height={height} bottom={cardLogoBottom(card.markers, card.progress)} />
+                ) : null}
+                {card.badge ? <CardBadge label={card.badge} /> : null}
+                <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
+              </>
+            )}
+          </CardFrame>
+          {growth ? <CardPreviewTile card={card} width={width} height={height} growth={growth} /> : null}
+        </>
       }
     >
       {hideCaption ? null : (
@@ -186,7 +218,7 @@ export const MediaCard = memo(function MediaCard({
       )}
     </CardShell>
   );
-});
+}
 
 const styles = StyleSheet.create({
   missing: { flex: 1, padding: 22, justifyContent: "flex-end", backgroundColor: colors.surface3 },
