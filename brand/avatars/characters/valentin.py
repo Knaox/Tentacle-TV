@@ -66,47 +66,57 @@ def draw():
     s.fill("pink", FULL)
     s.tint("red", rad(500, 480, 540, ((0, 0.0), (0.6, 0.0), (1, 0.6))), cell=12, angle=15)
     s.paper(heart(808, 214, 44, 14), heart(874, 322, 24, -12))
-    head = e(566, 262, 126, 98, -28)
-    snout = tube([(492, 300), (404, 348), (320, 396)], 82, 52)
-    lip = e(314, 400, 18, 34, -30)
-    body = p("M 498 324 C 468 388 408 428 394 508 C 378 608 420 702 520 750 L 612 744 "
-             "C 676 664 708 548 696 440 C 690 370 690 300 668 244 Z")
-    crest = "".join(spike(x, y, a, 44, 38) for x, y, a in
-                    [(604, 176, -70), (656, 206, -30), (690, 268, -10), (700, 340, 0), (702, 410, 5)])
-    coronet = spike(548, 178, -100, 54, 36) + spike(580, 176, -60, 46, 32)
-    FIN_D = "M 692 476 Q 806 470 818 566 Q 806 628 700 646 Z"
+    # Silhouette : tête penchée, nuque arquée, gorge creusée, ventre en avant — un S.
+    SIL = ("M 482 236 C 490 186 524 152 568 148 C 616 144 654 170 664 212 "
+           "C 670 244 662 270 672 304 C 700 392 708 494 690 584 C 676 654 640 712 600 752 "
+           "L 530 756 C 478 728 440 668 440 592 C 440 512 466 456 512 420 "
+           "C 534 404 544 382 536 360 C 526 340 504 332 486 332 Z")
+    snout = tube([(504, 292), (430, 318), (358, 350), (302, 376)], 94, 42)
+    fillet = (p("M 430 280 Q 480 262 494 196 L 530 300 Z")
+              + p("M 430 356 Q 494 352 540 392 L 530 300 Z"))
+    flare = e(292, 381, 17, 32, -24)
+    crest = "".join(spike(x, y, ang, 44, 36) for x, y, ang in
+                    [(668, 232, -20), (686, 330, -8), (704, 420, 0), (706, 500, 4)])
+    coronet = spike(544, 164, -108, 52, 34) + spike(578, 154, -82, 58, 34) + spike(612, 162, -56, 48, 32)
+    FIN_D = "M 688 540 Q 800 534 812 620 Q 800 676 676 690 Z"
     s.fill("orange", crest, coronet, p(FIN_D))
-    s.paper_stroke(9, clipped(p(FIN_D), p("M 700 506 L 830 506 M 700 552 L 840 566 M 700 598 L 830 624")))
-    s.fill("sun", body, head, snout, lip)
-    SH = (380, 240, 700, 760, 0.0, 0.85)
-    s.tint("orange", shade(body + head + snout + lip, *SH), cell=10, angle=45)
-    s.stroke("orange", 11, clipped(body, p("M 380 490 Q 450 512 530 494 M 374 560 Q 452 586 540 566 "
-                                           "M 384 630 Q 462 660 556 640 M 424 696 Q 494 722 584 704")))
-    # Mouchoir, pincé dans la boucle de la queue, qui flotte.
-    tissue = poly((462, 806), (432, 762), (396, 748), (378, 708), (334, 724), (302, 700), (282, 746), (302, 780),
-                  (272, 814), (302, 848), (348, 838), (382, 870), (424, 842), (462, 828))
-    s.paper(tissue)
-    s.tint("lav", shade(tissue, 300, 720, 460, 860, 0.0, 0.55), screen="t", cell=8, angle=30)
-    s.stroke("lav", 7, p("M 334 724 L 352 772 L 302 780"), p("M 352 772 L 400 790 L 396 748"),
-             p("M 348 838 L 372 806 L 420 812"))
-    s.over("aqua", c(330, 806, 13), c(402, 830, 9))
-    tail = tube([(572, 724), (592, 810), (546, 872), (466, 874), (420, 826), (440, 772), (494, 772), (504, 818),
-                 (472, 834)], 108, 22)
+    s.paper_stroke(9, clipped(p(FIN_D), p("M 690 568 L 830 566 M 690 612 L 840 624 M 690 656 L 830 680")))
+    body = p(SIL) + snout + fillet + flare
+    s.fill("sun", body)
+    SH = (420, 200, 700, 760, 0.0, 0.85)
+    s.tint("orange", shade(body, *SH), cell=10, angle=45)
+    # Joue (opercule) qui détache la tête du cou, anneaux du ventre.
+    s.stroke("orange", 11, p("M 540 352 Q 612 352 654 290"))
+    s.stroke("orange", 11, clipped(p(SIL), p("M 430 470 Q 520 492 620 466 M 430 540 Q 530 566 640 540 "
+                                             "M 434 610 Q 530 638 650 610 M 460 680 Q 540 704 640 680")))
+    # Mouchoir à liseré rouge, pincé dans la spirale de la queue.
+    HANKY_D = ("M 462 822 C 446 760 430 690 404 610 Q 380 640 344 626 Q 312 612 290 640 Q 262 664 222 652 "
+               "Q 244 690 238 724 Q 230 760 256 784 Q 278 808 268 852 Q 312 856 350 846 Q 404 832 462 822 Z")
+    hanky = p(HANKY_D)
+    s.paper(hanky)
+    s.tint("lav", shade(hanky, 300, 640, 460, 860, 0.0, 0.5), screen="t", cell=8, angle=30)
+    s.stroke("red", 10, clipped(hanky, '<g transform="translate(336 732) scale(0.8) translate(-336 -732)">'
+                                       f'<path d="{HANKY_D}"/></g>'))
+    s.stroke("lav", 8, p("M 448 800 Q 422 756 386 726"), p("M 446 812 Q 412 802 366 798"))
+    s.over("aqua", c(330, 716, 15), c(380, 784, 11))
+    tail = tube([(566, 740), (590, 818), (556, 882), (476, 894), (424, 852), (436, 790), (488, 780), (504, 826),
+                 (474, 844)], 100, 22)
     s.fill("sun", tail)
-    s.tint("orange", shade(tail, 420, 740, 600, 880, 0.2, 0.9), cell=10, angle=45)
-    # Œil embué, sourcil en accent circonflexe.
-    ex, ey, er = 572, 270, 56
-    w, pu, gl = eye(ex, ey, er, look=(-0.25, -0.3), pupil=0.58)
+    s.tint("orange", shade(tail, 420, 760, 600, 890, 0.2, 0.9), cell=10, angle=45)
+    # Œil embué, dans la tête ; sourcil en accent circonflexe.
+    ex, ey, er = 576, 246, 48
+    w, pu, gl = eye(ex, ey, er, look=(-0.3, -0.3), pupil=0.6)
     s.paper(w)
     s.fill("black", pu)
-    s.paper(gl, c(ex - 22, ey + 6, 10))
-    s.over("aqua", clipped(c(ex, ey, er), rect(ex - 90, ey + 16, 180, 90)))
-    lp = lid(ex, ey, er, -50, -14)
+    s.paper(gl, c(ex - 18, ey + 6, 9))
+    s.over("aqua", clipped(c(ex, ey, er), rect(ex - 80, ey + 14, 160, 80)))
+    lp = lid(ex, ey, er, -42, -12)
     s.fill("sun", lp)
     s.tint("orange", shade(lp, *SH), cell=10, angle=45)
-    s.stroke("black", 9, lid_line(ex, ey, er, -50, -14))
-    s.stroke("black", 14, p(f"M {ex - 56} {ey - 54} L {ex - 18} {ey - 90} L {ex + 42} {ey - 66}"))
-    s.stroke("aqua", 16, p(f"M {ex - 30} {ey + er - 6} Q {ex - 44} {ey + 84} {ex - 46} {ey + 104}"))
-    s.fill("aqua", drop(ex - 46, ey + 140, 30), drop(468, 468, 14))
-    s.tint("red", T(0.7, e(626, 336, 32, 20), e(330, 384, 22, 30)), screen="b", cell=8, angle=15)
+    s.stroke("black", 9, lid_line(ex, ey, er, -42, -12))
+    s.stroke("black", 12, p(f"M {ex - 48} {ey - 44} L {ex - 14} {ey - 78} L {ex + 40} {ey - 60}"))
+    s.stroke("aqua", 15, p(f"M {ex - 28} {ey + er - 6} Q {ex - 40} {ey + 76} {ex - 42} {ey + 96}"))
+    s.fill("aqua", drop(ex - 42, ey + 130, 28), drop(484, 468, 14))
+    s.tint("red", T(0.7, e(628, 300, 28, 18), e(312, 370, 22, 26)), screen="b", cell=8, angle=15)
+    s.fill("black", e(281, 386, 6, 14, -24))
     return s.layers()
