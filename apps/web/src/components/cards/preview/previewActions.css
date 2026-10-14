@@ -72,6 +72,11 @@
   transform: scale(1.06);
 }
 
+/* Le retour d'appui, même sous le pointeur (le survol est plus spécifique). */
+.card-preview .card-preview-btn[data-tray-primary]:active {
+  transform: scale(0.95);
+}
+
 /* Le triangle de lecture : optiquement recentré (son poids est à gauche). */
 .card-preview .card-preview-btn[data-tray-primary="quiet"] svg {
   transform: translateX(6%);
