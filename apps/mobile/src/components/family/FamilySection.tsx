@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useCancelFamilyInvitation, useUserId } from "@tentacle-tv/api-client";
+import { useCancelFamilyInvitation, useServerCapability, useUserId } from "@tentacle-tv/api-client";
 import {
   FAMILY_LIMITS,
   familyCounts,
@@ -21,6 +21,7 @@ import { useFamilyText } from "@/family/useFamilyText";
 import { showToast } from "@/notices/toastStore";
 import { ctaGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { FamilyProfileRow } from "./FamilyProfileRow";
+import { GuestPhotoGallery } from "./GuestPhotoGallery";
 import { GuestSheet } from "./GuestSheet";
 import { InviteSheet } from "./InviteSheet";
 import { PendingInvitationsSection } from "./PendingInvitationsSection";
@@ -58,6 +59,16 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
     [overview, me, guestRequests],
   );
   const panel = useProfilePanel(family?.profiles ?? NO_PROFILES, actionsOf);
+  // La photo d'un invité (serveur 1.29.0) : mêmes droits que son PIN. Sans la
+  // capacité, ni rond cliquable ni galerie — rien ne change.
+  const guestPhotos = useServerCapability("family.guestPhotos");
+  const [photoGuest, setPhotoGuest] = useState<FamilyProfileDto | null>(null);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const openGuestPhoto = useCallback((profile: FamilyProfileDto) => {
+    setPhotoGuest(profile);
+    setPhotoOpen(true);
+  }, []);
+  const closeGuestPhoto = useCallback(() => setPhotoOpen(false), []);
 
   const confirmCancel = useCallback((invitation: OutgoingInvitationDto) => {
     const name = invitation.inviteeName;
@@ -95,6 +106,7 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
               you={isOwnProfile(profile, me)}
               yours={family.role === "member" && profile.createdBy !== null && isOwnProfile({ userId: profile.createdBy }, me)}
               onOpen={hasPanel(actionsOf(profile)) ? panel.open : undefined}
+              onPhoto={guestPhotos && profile.kind === "guest" && actionsOf(profile).pin ? openGuestPhoto : undefined}
             />
           ))
         ) : (
@@ -141,6 +153,7 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
       {sheet === "invite" ? <InviteSheet onClose={() => setSheet(null)} /> : null}
       {sheet === "guest" ? <GuestSheet onClose={() => setSheet(null)} /> : null}
       {panel.element}
+      {photoGuest ? <GuestPhotoGallery guest={photoGuest} visible={photoOpen} onClose={closeGuestPhoto} /> : null}
     </>
   );
 }

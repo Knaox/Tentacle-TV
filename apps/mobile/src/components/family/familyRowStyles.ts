@@ -19,6 +19,11 @@ export const makeFamilyRowStyles = (t: AppTheme) =>
     chipGuest: { backgroundColor: t.colors.brand.soft },
     chipText: { fontFamily: FONT_FAMILY.semibold, fontSize: 11, color: t.colors.text.secondary },
     chipGuestText: { color: t.colors.brand.light },
+    // La pastille « changer la photo » posée sur le rond d'un invité (couleurs : celles de la marque, posées par la ligne).
+    photoBadge: {
+      position: "absolute", right: -3, bottom: -3, width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+      alignItems: "center", justifyContent: "center",
+    },
     iconBubble: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: t.colors.brand.soft },
     // Gestes de droite : un texte, cible de 44 pt, la couleur et le mot disent l'effet.
     action: { minHeight: 44, minWidth: 44, justifyContent: "center", paddingHorizontal: spacing.sm },

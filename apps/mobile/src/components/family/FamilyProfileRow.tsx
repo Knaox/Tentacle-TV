@@ -17,6 +17,8 @@ interface FamilyProfileRowProps {
   yours?: boolean;
   /** Le profil se gère d'ici : la ligne entière ouvre son panneau (chevron). */
   onOpen?: (profile: FamilyProfileDto) => void;
+  /** Habiller cet invité (galerie des avatars) ; absent : le serveur ne le sait pas, ou ce compte ne le peut pas. */
+  onPhoto?: (profile: FamilyProfileDto) => void;
 }
 
 const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest: "family:kindGuest" } as const;
@@ -25,18 +27,39 @@ const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest
  * Un profil de la famille : avatar à sa couleur, nom, rôle, ancienneté, code
  * PIN. Quand on peut le gérer, la ligne entière ouvre son panneau
  * (`FamilyProfileSheet`) — une cible pleine largeur plutôt qu'un petit mot.
+ * Un invité qu'on peut habiller (mêmes droits que son PIN) : son rond, marqué
+ * d'un appareil photo, ouvre la galerie des avatars pour lui ; au lecteur
+ * d'écran, le même geste est une action de la ligne.
  */
-export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, you, yours, onOpen }: FamilyProfileRowProps) {
-  const { t } = useTranslation(["familyWeb", "family", "familyMobile"]);
+export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, you, yours, onOpen, onPhoto }: FamilyProfileRowProps) {
+  const { t } = useTranslation(["familyWeb", "family", "familyMobile", "avatars"]);
   const theme = useTheme();
   const st = useThemedStyles(makeFamilyRowStyles);
   const { formatDate } = useFamilyText();
   const guest = profile.kind === "guest";
   const kind = t(KIND_KEY[profile.kind]);
 
+  const changePhoto = t("avatars:guest.change", { name: profile.name });
+  const avatar = <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />;
+
   const content = (
     <View style={[st.row, !last && st.bordered]}>
-      <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />
+      {onPhoto ? (
+        <Pressable
+          onPress={() => onPhoto(profile)}
+          hitSlop={4}
+          accessibilityRole="button"
+          accessibilityLabel={changePhoto}
+          style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
+        >
+          {avatar}
+          <View style={[st.photoBadge, { backgroundColor: theme.colors.brand.violet, borderColor: theme.colors.surface.s1 }]}>
+            <Feather name="camera" size={10} color={theme.colors.cta.brandFg} />
+          </View>
+        </Pressable>
+      ) : (
+        avatar
+      )}
       <View style={st.body}>
         <Text style={st.title} numberOfLines={1}>
           {profile.name}
@@ -73,6 +96,10 @@ export const FamilyProfileRow = memo(function FamilyProfileRow({ profile, last, 
       accessibilityRole="button"
       accessibilityLabel={`${profile.name}, ${kind}`}
       accessibilityHint={t("familyMobile:openProfileHint")}
+      accessibilityActions={onPhoto ? [{ name: "changePhoto", label: changePhoto }] : undefined}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === "changePhoto") onPhoto?.(profile);
+      }}
       style={({ pressed }) => (pressed ? st.pressed : undefined)}
     >
       {content}
