@@ -6,7 +6,10 @@
  * 23 % de la largeur de la fenêtre — un emplacement et demi d'une rangée qui
  * en compterait six —, bornée entre 300 et 560 px. Jamais moins de 1,2 × la
  * carte survolée : elle doit grandir VISIBLEMENT, même sur nos vignettes 16:9,
- * plus larges qu'un emplacement de six.
+ * plus larges qu'un emplacement de six. Une AFFICHE grandit depuis la largeur
+ * d'une vignette moyenne (`idealCardWidth`) : sans quoi, plus étroite, elle
+ * restait au plancher, et son aperçu sortait plus petit que celui d'une
+ * vignette (331 px contre 414 à 1 440 px de fenêtre).
  *
  * Un seul gabarit : la vidéo 16:9 EN HAUT, le BANDEAU plein dessous (actions,
  * titre, infos), dont la hauteur suit la largeur (`previewPanelHeight`). Une
@@ -23,6 +26,8 @@
  * réduite dans son rectangle ; une vignette voit la VIDÉO posée exactement
  * sur elle (même format), le bandeau dépassant dessous le temps du fondu.
  */
+
+import { EPISODE_VW, EPISODE_WIDTH, idealCardWidth } from "../cardSizes";
 
 export type PreviewShape = "poster" | "landscape";
 
@@ -98,9 +103,14 @@ export function previewPanelHeight(width: number): number {
 
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
-/** La largeur voulue, avant ce que la fenêtre accorde : la part d'écran, la croissance minimale, les bornes. */
-export function previewWidthFor(cardWidth: number, viewportWidth: number): number {
-  const wanted = Math.max(viewportWidth * PREVIEW_SCREEN_SHARE, cardWidth * PREVIEW_MIN_GROWTH);
+/**
+ * La largeur voulue, avant ce que la fenêtre accorde : la part d'écran, la
+ * croissance minimale, les bornes. Une affiche grandit depuis la largeur d'une
+ * vignette moyenne : son aperçu a la taille de celui d'une vignette.
+ */
+export function previewWidthFor(cardWidth: number, viewportWidth: number, shape: PreviewShape = "landscape"): number {
+  const base = shape === "poster" ? Math.max(cardWidth, idealCardWidth(EPISODE_WIDTH.md, EPISODE_VW, viewportWidth)) : cardWidth;
+  const wanted = Math.max(viewportWidth * PREVIEW_SCREEN_SHARE, base * PREVIEW_MIN_GROWTH);
   return clamp(wanted, PREVIEW_MIN_WIDTH, PREVIEW_MAX_WIDTH);
 }
 
@@ -127,7 +137,7 @@ export function placePreview(anchor: PreviewRect, shape: PreviewShape, viewport:
   // hauteur (vidéo + bandeau) : le 16:9 de la vidéo est intouchable, c'est la
   // taille qui cède. Le bandeau rétrécit avec la largeur : la largeur rendue
   // tient donc toujours dans la hauteur offerte.
-  const wanted = previewWidthFor(anchor.width, viewport.width);
+  const wanted = previewWidthFor(anchor.width, viewport.width, shape);
   const byHeight = (roomHeight - previewPanelHeight(wanted)) * PREVIEW_ASPECT;
   const width = Math.round(Math.max(1, Math.min(wanted, roomWidth, byHeight)));
   const videoHeight = Math.round(width / PREVIEW_ASPECT);

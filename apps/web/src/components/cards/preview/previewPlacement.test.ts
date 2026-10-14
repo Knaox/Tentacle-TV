@@ -59,6 +59,14 @@ describe("previewWidthFor — une taille par fenêtre", () => {
     expect(previewWidthFor(400, 1920)).toBeCloseTo(480, 1);
   });
 
+  it("une AFFICHE grandit depuis la largeur d'une vignette moyenne : son aperçu a la taille de celui d'une vignette", () => {
+    expect(previewWidthFor(200, 1440, "poster")).toBeCloseTo(414.7, 1);
+    expect(previewWidthFor(140, 1440, "poster")).toBeCloseTo(previewWidthFor(345.6, 1440), 5);
+    expect(previewWidthFor(200, 1920, "poster")).toBeCloseTo(480, 1);
+    expect(previewWidthFor(150, 1024, "poster")).toBeCloseTo(336, 1);
+    expect(previewWidthFor(200, 2560, "poster")).toBe(PREVIEW_MAX_WIDTH);
+  });
+
   it("tient entre le plancher et le plafond", () => {
     expect(previewWidthFor(187, 1280)).toBe(PREVIEW_MIN_WIDTH);
     expect(previewWidthFor(150, 1024)).toBe(PREVIEW_MIN_WIDTH);
@@ -90,7 +98,8 @@ describe("placePreview — taille", () => {
     const p = placePreview(card, "poster", VIEWPORT);
     expect(p).not.toBeNull();
     if (!p) return;
-    expect(p.width).toBe(331);
+    // Aussi large que l'aperçu d'une vignette moyenne (414 px à 1 440) : plus jamais au plancher.
+    expect(p.width).toBe(415);
     expect(p.top).toBeLessThanOrEqual(card.top - PREVIEW_COVER_PX + 1);
     expect(p.top + p.height).toBeGreaterThanOrEqual(card.top + card.height + PREVIEW_COVER_PX - 1);
     expect(p.left).toBeLessThan(card.left);
