@@ -14,6 +14,7 @@ import {
 } from "./previewLifecycle";
 import { otherPreviewWanting, previewQuiet, setPreviewWanting, usePreviewQuiet } from "./previewQuiet";
 import { placePreview, type PreviewPlacement, type PreviewShape } from "./previewPlacement";
+import { usePreviewScrolling } from "./previewScrolling";
 import { previewSettleMs } from "./previewMotion";
 import { usePreviewListeners } from "./usePreviewListeners";
 import { useKeyboardInCard } from "./useKeyboardInCard";
@@ -71,11 +72,16 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   // Le silence après une mini-carte fermée : un survol sans vrai mouvement ne
   // commence pas d'aperçu ; un aperçu déjà demandé n'est pas interrompu.
   const quiet = usePreviewQuiet();
+  // Pendant un défilement, aucune intention ; seule une mini-carte déjà ouverte reste.
+  const scrolling = usePreviewScrolling();
+  const [revealed, setRevealed] = useState(false);
   const [engaged, setEngaged] = useState(false);
   const nextEngaged = engineEngaged({
     wanted: engineHovered({ hovered, hasSubject: subject !== null, disabled, gate, keyboardInCard }),
     engaged,
     quiet,
+    scrolling,
+    open: revealed,
   });
   if (nextEngaged !== engaged) setEngaged(nextEngaged);
   const engine = usePreviewEngine(subject, nextEngaged);
@@ -89,7 +95,6 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   if (nextGate !== gate) setGate(nextGate);
 
   const [placement, setPlacement] = useState<PreviewPlacement | null>(null);
-  const [revealed, setRevealed] = useState(false);
   // Replacée pour CETTE révélation : on ne remesure pas deux fois (une carte
   // encore en mouvement ne doit pas faire boucler la mesure).
   const replacedRef = useRef(false);

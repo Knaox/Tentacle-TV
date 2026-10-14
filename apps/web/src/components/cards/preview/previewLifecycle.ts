@@ -86,9 +86,23 @@ export function engineHovered(input: {
  * demandé — une fin de bande-annonce sur la carte même, une autre qui prend la
  * place : il empêche d'en COMMENCER un sans vrai mouvement. `engaged` est le
  * survol que le moteur voyait déjà.
+ *
+ * Le DÉFILEMENT (`previewScrolling.ts`) est plus strict : pendant qu'il dure,
+ * aucune intention ne démarre et celle qui courait s'annule — délai, demande,
+ * vidéo préchargée cachée. Seule une mini-carte déjà OUVERTE (`open`) reste,
+ * accrochée à sa carte.
  */
-export function engineEngaged(input: { wanted: boolean; engaged: boolean; quiet: boolean }): boolean {
-  return input.wanted && (input.engaged || !input.quiet);
+export function engineEngaged(input: {
+  wanted: boolean;
+  engaged: boolean;
+  quiet: boolean;
+  scrolling: boolean;
+  open: boolean;
+}): boolean {
+  if (!input.wanted) return false;
+  if (input.open) return true;
+  if (input.scrolling) return false;
+  return input.engaged || !input.quiet;
 }
 
 /**

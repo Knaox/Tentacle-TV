@@ -66,17 +66,35 @@ describe("previewQuiet — la porte globale", () => {
 });
 
 describe("engineEngaged — le silence empêche de commencer, jamais d'interrompre", () => {
+  const still = { scrolling: false, open: false };
+
   it("un survol neuf attend le vrai mouvement", () => {
-    expect(engineEngaged({ wanted: true, engaged: false, quiet: true })).toBe(false);
-    expect(engineEngaged({ wanted: true, engaged: false, quiet: false })).toBe(true);
+    expect(engineEngaged({ ...still, wanted: true, engaged: false, quiet: true })).toBe(false);
+    expect(engineEngaged({ ...still, wanted: true, engaged: false, quiet: false })).toBe(true);
   });
 
   it("un aperçu déjà demandé continue (fin de bande-annonce sur sa carte, une autre qui arrive)", () => {
-    expect(engineEngaged({ wanted: true, engaged: true, quiet: true })).toBe(true);
+    expect(engineEngaged({ ...still, wanted: true, engaged: true, quiet: true })).toBe(true);
   });
 
   it("rien sans survol", () => {
-    expect(engineEngaged({ wanted: false, engaged: true, quiet: false })).toBe(false);
+    expect(engineEngaged({ ...still, wanted: false, engaged: true, quiet: false })).toBe(false);
+    expect(engineEngaged({ wanted: false, engaged: true, quiet: false, scrolling: false, open: true })).toBe(false);
+  });
+});
+
+describe("engineEngaged — pendant un défilement", () => {
+  it("aucune intention ne démarre, même porte ouverte", () => {
+    expect(engineEngaged({ wanted: true, engaged: false, quiet: false, scrolling: true, open: false })).toBe(false);
+  });
+
+  it("celle qui courait s'annule — délai, demande, vidéo préchargée cachée", () => {
+    expect(engineEngaged({ wanted: true, engaged: true, quiet: false, scrolling: true, open: false })).toBe(false);
+    expect(engineEngaged({ wanted: true, engaged: true, quiet: true, scrolling: true, open: false })).toBe(false);
+  });
+
+  it("une mini-carte déjà ouverte reste, accrochée à sa carte", () => {
+    expect(engineEngaged({ wanted: true, engaged: true, quiet: true, scrolling: true, open: true })).toBe(true);
   });
 });
 
