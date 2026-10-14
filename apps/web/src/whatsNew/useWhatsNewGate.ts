@@ -20,6 +20,13 @@ export interface WhatsNewGate {
   selection: WhatsNewSelection | null;
   /** Ferme ET marque la version vue — quel que soit le geste. */
   close: () => void;
+  /**
+   * La porte a tranché (écran montré ou non) — ou n'a rien à trancher (hors
+   * bureau). Ce qui doit passer APRÈS les nouveautés (l'invitation aux
+   * avatars) attend ce signal : « pas encore ouvert » ne veut pas dire « rien
+   * à montrer ».
+   */
+  decided: boolean;
 }
 
 /**
@@ -45,6 +52,7 @@ export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): 
   const [selection, setSelection] = useState<WhatsNewSelection | null>(null);
   const { capabilities, known } = useServerCapabilities();
   const decidedRef = useRef(false);
+  const [decided, setDecided] = useState(!eligible);
 
   useEffect(() => {
     if (!eligible) return;
@@ -61,6 +69,7 @@ export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): 
   useEffect(() => {
     if (!eligible || !enabled || version === null || !known || decidedRef.current) return;
     decidedRef.current = true;
+    setDecided(true);
     const seen = readSeenVersion();
     // Égale ou rétrogradée : rien à montrer, et rien à écrire. Absente : tout
     // le registre jusqu'à la version courante (mise à jour depuis avant l'écran).
@@ -79,5 +88,5 @@ export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): 
     setSelection(null);
   }, [version]);
 
-  return { open: selection !== null, selection, close };
+  return { open: selection !== null, selection, close, decided };
 }

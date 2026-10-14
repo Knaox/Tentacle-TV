@@ -6,6 +6,7 @@ const AvatarGalleryDialog = lazy(() => import("./AvatarGalleryDialog"));
 
 export interface AvatarGallery {
   openGallery: () => void;
+  isOpen: boolean;
   /** À rendre là où l'on ouvre la galerie : rien tant qu'elle n'a jamais été ouverte. */
   dialog: ReactNode;
 }
@@ -36,5 +37,5 @@ export function useAvatarGallery(mode: AvatarGalleryMode = "change", onClosed?: 
     </Suspense>
   ) : null;
 
-  return { openGallery, dialog };
+  return { openGallery, isOpen: open, dialog };
 }

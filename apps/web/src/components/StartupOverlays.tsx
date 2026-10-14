@@ -20,7 +20,9 @@ interface StartupOverlaysProps {
  * téléchargement ou d'installation n'est pas recouverte par des nouveautés.
  * Jamais sur /watch, jamais avant la session. En dernier, l'invitation unique
  * à choisir un avatar (`AvatarInvite`) : seulement quand les deux autres se
- * sont tus — aucune mise à jour en vue, plus de nouveautés à l'écran.
+ * sont tus — la porte des nouveautés a TRANCHÉ et rien n'est à l'écran, aucune
+ * mise à jour en vue — et, ouverte, elle suspend à son tour la pop-up de mise
+ * à jour.
  */
 export function StartupOverlays({ authed }: StartupOverlaysProps) {
   const update = useAutoUpdate();
@@ -39,12 +41,13 @@ export function StartupOverlays({ authed }: StartupOverlaysProps) {
   const clearForced = useCallback(() => setForced(null), []);
 
   const open = forced !== null || gate.open;
-  const inviteBusy = !authed || pathname.startsWith("/watch") || open || update.phase !== "idle";
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const inviteBusy = !authed || pathname.startsWith("/watch") || !gate.decided || open || update.phase !== "idle";
   return (
     <>
       <WhatsNewScreen open={open} selection={forced ?? gate.selection} onClose={forced ? clearForced : gate.close} />
-      <UpdateModal update={update} suspended={open} />
-      {authed && <AvatarInvite desktop={desktopLike || isDesktopApp()} busy={inviteBusy} />}
+      <UpdateModal update={update} suspended={open || inviteOpen} />
+      {authed && <AvatarInvite desktop={desktopLike || isDesktopApp()} busy={inviteBusy} onOpenChange={setInviteOpen} />}
     </>
   );
 }
