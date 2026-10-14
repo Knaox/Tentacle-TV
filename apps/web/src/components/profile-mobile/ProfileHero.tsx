@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { AVATAR_RING_STYLE } from "../userMenu/menuItems";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
 import { useToast } from "../../contexts/ToastContext";
+import { useActiveProfile, type ActiveProfile } from "../../auth/profileSession";
+import { FamilyAvatar } from "../../family/FamilyAvatar";
 
 interface Props {
   name: string;
@@ -14,6 +16,10 @@ interface Props {
  * En-tête de la page Profile : avatar XL (photo Jellyfin, fallback initiale) +
  * nom + badge admin. L'avatar est cliquable : la photo choisie est envoyée à
  * Jellyfin (elle change donc aussi dans les autres clients Jellyfin).
+ *
+ * Bureau, session d'un PROFIL de la famille (fenêtre étroite) : le rond et le
+ * nom du profil, sans « Changer la photo » — le serveur le refuse à un profil,
+ * comme le menu de l'avatar le tait déjà.
  */
 export function ProfileHero({ name, initial, isAdmin }: Props) {
   const { t } = useTranslation("profile");
@@ -22,11 +28,15 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
   const { avatarSrc, onAvatarError, avatarVersion, uploading, upload, userId } = useAvatarUpload();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const activeProfile = useActiveProfile();
+
   const handleFile = async (file: File) => {
     const ok = await upload(file);
     show(ok ? "success" : "error", t(ok ? "avatarUpdated" : "avatarUpdateFailed"));
     if (fileRef.current) fileRef.current.value = "";
   };
+
+  if (activeProfile) return <ProfileSessionHero profile={activeProfile} />;
 
   return (
     <header className="flex items-center gap-4 px-1 pb-6">
@@ -83,6 +93,22 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         ) : (
           <p className="mt-1 text-sm text-content-quaternary">{t("title")}</p>
         )}
+      </div>
+    </header>
+  );
+}
+
+/** L'en-tête pendant la session d'un profil : son rond, son nom, ce qu'il est — rien à changer. */
+function ProfileSessionHero({ profile }: { profile: ActiveProfile }) {
+  const { t } = useTranslation("profilePicker");
+  return (
+    <header className="flex items-center gap-4 px-1 pb-6">
+      <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={80} />
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-xl font-bold text-content-primary">{profile.name}</h1>
+        <p className="mt-1 text-sm text-content-quaternary">
+          {profile.kind === "guest" ? t("session.guestBadge") : t("session.memberBadge")}
+        </p>
       </div>
     </header>
   );
