@@ -53,14 +53,17 @@
   display: contents;
 }
 
-/* 1. Les actions — leur rangée garde sa hauteur, montées ou non. */
+/* 1. Les actions — leur rangée garde sa hauteur, montées ou non. L'excédent
+ * du bandeau (`usePanelAir`) s'y répartit : une part au-dessus (l'air entre la
+ * vidéo et les ronds), une part dessous (entre les actions et le titre). */
 .card-preview-panel [data-preview-slot="tray"] {
   order: 1;
   flex: 0 0 100%;
   display: flex;
   align-items: center;
   min-height: var(--pv-btn-primary);
-  margin-bottom: clamp(5px, 2.2cqi, 10px);
+  margin-top: var(--pv-air-above, 0px);
+  margin-bottom: calc(clamp(5px, 2.2cqi, 10px) + var(--pv-air-between, 0px));
 }
 
 /* 2. Le titre (logo, sinon nom) et ses étoiles. */

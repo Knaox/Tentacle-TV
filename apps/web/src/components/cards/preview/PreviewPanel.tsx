@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { useRef, type CSSProperties, type ReactNode } from "react";
 import { PreviewTitle } from "./PreviewChrome";
 import { PreviewInfoLines } from "./PreviewInfoLines";
 import type { PreviewInfo } from "./previewInfo";
+import { PANEL_AIR_ABOVE, PANEL_AIR_BETWEEN, usePanelAir } from "./usePanelAir";
 
 interface PreviewPanelProps {
   title: string;
@@ -13,6 +14,8 @@ interface PreviewPanelProps {
    * leur place dans la rangée du bandeau (`previewPanel.css`).
    */
   group: ReactNode;
+  /** La hauteur du bandeau (px) — l'excédent sur son contenu est réparti (`usePanelAir`). */
+  height: number;
 }
 
 /**
@@ -28,9 +31,24 @@ interface PreviewPanelProps {
  * Graphite neutre dans les deux schémas (posé sur média) : il porte les mêmes
  * boutons blancs que la vidéo.
  */
-export function PreviewPanel({ title, logoUrl, info, group }: PreviewPanelProps) {
+export function PreviewPanel({ title, logoUrl, info, group, height }: PreviewPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Relu quand ce qui s'écrit change (les infos, le logo, la taille), le
+  // bandeau complet seulement — groupe du survol monté.
+  const air = usePanelAir(
+    panelRef,
+    `${height}|${logoUrl ?? ""}|${info.genres.length}|${info.episode ? 1 : 0}|${info.progress ? 1 : 0}`,
+    group !== null && group !== undefined && group !== false,
+  );
   return (
-    <div className="card-preview-panel">
+    <div
+      ref={panelRef}
+      className="card-preview-panel"
+      style={{
+        "--pv-air-above": `${Math.round(air * PANEL_AIR_ABOVE)}px`,
+        "--pv-air-between": `${Math.round(air * PANEL_AIR_BETWEEN)}px`,
+      } as CSSProperties}
+    >
       <PreviewTitle name={title} logoUrl={logoUrl} />
       {group}
       <PreviewInfoLines info={info} />

@@ -88,7 +88,7 @@ export function PreviewFrame({ view, title, artItem, detailItemId, backdropUrl, 
           <div aria-hidden className="card-preview-veil" />
           <PreviewMuteButton muted={engine.muted} onToggle={engine.toggleMute} />
         </div>
-        <PreviewPanel title={title} logoUrl={art.logoUrl} info={art.info} group={group} />
+        <PreviewPanel title={title} logoUrl={art.logoUrl} info={art.info} group={group} height={placement.height - placement.videoHeight} />
       </div>
     </div>
   );
