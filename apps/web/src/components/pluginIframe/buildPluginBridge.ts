@@ -1,6 +1,9 @@
 // Scripts runtime de l'iframe plugin : shims, bridge postMessage vers le host,
 // interception fetch, puis bootstrap React (shared deps + registerPlugin).
 // Aucun token d'auth ne transite — les requêtes API passent par le bridge.
+import {
+  buildTrailerPreviewBridgeMethod, buildTrailerPreviewEnvListener, type PluginTrailerPreviewEnv,
+} from "./pluginTrailerPreview";
 
 /** Environnement hôte exposé aux plugins (iframe sandboxée = aucun accès à la
  * window parente ni aux marqueurs du shell). */
@@ -19,6 +22,9 @@ export interface PluginHostEnv {
    *  deep-link vers un contenu du plugin. Champ ADDITIF de l'API publique :
    *  absent chez les hôtes d'avant, les greffons doivent le traiter optionnel. */
   query?: string;
+  /** Les aperçus de bande-annonce sur cet appareil (`pluginTrailerPreview.ts`),
+   *  tenu à jour par le pont. ADDITIF : absent chez les hôtes d'avant. */
+  trailerPreview?: PluginTrailerPreviewEnv;
 }
 
 /**
@@ -94,7 +100,7 @@ export function buildPluginBridgeScript(params: { backendUrl: string; hostEnv: P
       // sandboxé.
       openTrailer: function(trailers, index) {
         parent.postMessage({ type: "OPEN_TRAILER", trailers: trailers, index: index || 0 }, "*");
-      },
+      },${buildTrailerPreviewBridgeMethod()}
     };
 
     // ── Fetch interceptor: route backend API calls through postMessage bridge ──
@@ -146,6 +152,8 @@ export function buildPluginBridgeScript(params: { backendUrl: string; hostEnv: P
           else pending.resolve({ __res: data.result, __status: data.status || 200 });
         }
       }
+
+${buildTrailerPreviewEnvListener()}
 
       if (data.type === "INJECT_BUNDLE" && !window.__bundleInjected) {
         window.__bundleInjected = true;

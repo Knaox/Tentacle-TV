@@ -9,6 +9,10 @@ import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
 import { PluginLoader, PluginLoadProblem, usePluginDeps } from "./pluginIframe/pluginLoad";
+import {
+  TRAILER_PREVIEW_MUTED_MESSAGE, applyPluginTrailerPreviewMuted, pluginTrailerPreviewEnv,
+  trailerPreviewEnvMessage, watchPluginTrailerPreviewEnv,
+} from "./pluginIframe/pluginTrailerPreview";
 
 interface PluginTrailer {
   Url: string;
@@ -87,6 +91,8 @@ export function PluginIframe({
 
       switch (data.type) {
         case "IFRAME_READY": {
+          // L'état des aperçus a pu changer depuis la fabrication du document.
+          iframe.contentWindow.postMessage(trailerPreviewEnvMessage(pluginTrailerPreviewEnv()), "*");
           if (bundleFetched.current) return;
           bundleFetched.current = true;
           try {
@@ -185,6 +191,10 @@ export function PluginIframe({
         }
 
 
+        case TRAILER_PREVIEW_MUTED_MESSAGE:
+          applyPluginTrailerPreviewMuted(data);
+          break;
+
         case "OVERLAY_OPEN":
           setHostChromeVeil(true);
           break;
@@ -205,6 +215,11 @@ export function PluginIframe({
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);
+
+  // Les aperçus de bande-annonce de l'extension suivent EN DIRECT ceux du cœur.
+  useEffect(() => watchPluginTrailerPreviewEnv((env) => {
+    iframeRef.current?.contentWindow?.postMessage(trailerPreviewEnvMessage(env), "*");
+  }), []);
 
   // Reset fetch state when bundle URL or plugin path changes (same plugin,
   // different page). La query en fait partie : elle recompose le srcDoc

@@ -5,6 +5,7 @@
 import { buildPluginTailwindConfigScript, buildPluginThemeStyle } from "./pluginIframe/buildPluginTheme";
 import { buildPluginBridgeScript, buildPluginBootstrapScript } from "./pluginIframe/buildPluginBridge";
 import type { PluginHostEnv } from "./pluginIframe/buildPluginBridge";
+import { pluginTrailerPreviewEnv } from "./pluginIframe/pluginTrailerPreview";
 import { isDesktopApp } from "../desktop/bridge";
 
 interface BuildPluginHtmlParams {
@@ -50,6 +51,8 @@ export function buildPluginHtml({
     prod: import.meta.env.PROD,
     backendUrl,
     query: pluginQuery,
+    // L'état au montage ; le pont le tient ensuite à jour (`TRAILER_PREVIEW_ENV`).
+    trailerPreview: pluginTrailerPreviewEnv(),
   };
 
   // Propage le schema de l'hote a l'iframe. Le markup des plugins (Seer) est
