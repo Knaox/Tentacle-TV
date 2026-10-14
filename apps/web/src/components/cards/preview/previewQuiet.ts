@@ -22,6 +22,13 @@ import { useSyncExternalStore } from "react";
  * immobile, et la carte qui s'arrête dessous ne lance ni son aperçu ni sa
  * requête au serveur sans un vrai mouvement — lire une page à la molette, avec
  * ses pauses, ne demande rien à YouTube.
+ *
+ * Les VOISINES qui reviennent (`usePreviewRoom`) glissent sous un pointeur qui
+ * vient souvent de bouger : on quitte la mini-carte pour une voisine, et c'est
+ * ce geste même qui la fait revenir. La porte est alors TENUE fermée le temps
+ * du retour (`hold`) : un mouvement pendant le glissement ne fait que la
+ * réancrer. Sans cela, la fin du geste la rouvrait, et la carte que le retour
+ * amenait sous le pointeur lançait son aperçu seule (banc, 14/10).
  */
 export const QUIET_SLOP_PX = 3;
 
@@ -35,11 +42,15 @@ export interface PreviewQuiet {
   onWheel: () => void;
   /** La dernière position connue du pointeur (coordonnées de fenêtre), `null` avant tout mouvement. */
   pointer: () => { x: number; y: number } | null;
+  /** Ferme la porte et la TIENT fermée `ms` : un mouvement pendant ce temps la réancre sans la rouvrir. */
+  hold: (ms: number) => void;
   subscribe: (listener: () => void) => () => void;
 }
 
-export function createPreviewQuiet(): PreviewQuiet {
+/** `now` : l'horloge, injectée par les tests. */
+export function createPreviewQuiet(now: () => number = () => performance.now()): PreviewQuiet {
   let closed = false;
+  let heldUntil = Number.NEGATIVE_INFINITY;
   let lastX = Number.NaN;
   let lastY = Number.NaN;
   let anchorX = Number.NaN;
@@ -64,9 +75,17 @@ export function createPreviewQuiet(): PreviewQuiet {
     isQuiet: () => closed,
     quiet,
     onWheel: quiet,
+    hold: (ms) => {
+      heldUntil = Math.max(heldUntil, now() + ms);
+      quiet();
+    },
     onPointerMove: (x, y) => {
       lastX = x;
       lastY = y;
+      if (now() < heldUntil) {
+        quiet();
+        return;
+      }
       // Position inconnue à la fermeture (aucun mouvement encore vu) : le
       // premier mouvement compte.
       if (closed && (!Number.isFinite(anchorX) || Math.hypot(x - anchorX, y - anchorY) > QUIET_SLOP_PX)) open();

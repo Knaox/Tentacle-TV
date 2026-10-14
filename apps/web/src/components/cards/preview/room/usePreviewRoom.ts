@@ -1,4 +1,5 @@
 import { useLayoutEffect, type RefObject } from "react";
+import { PREVIEW_EXIT_MS } from "../previewMotion";
 import { previewQuiet } from "../previewQuiet";
 import type { PreviewPlacement } from "../previewPlacement";
 import { openPreviewRoom } from "./previewRoom";
@@ -21,10 +22,11 @@ interface PreviewRoomInput {
  *
  * Le RETOUR fait glisser des cartes sous un pointeur peut-être immobile :
  * Chromium y fait survoler la carte qui arrive dessous par des évènements
- * synthétiques. Si le pointeur est dans la zone qui bouge, la porte globale se
- * ferme (`previewQuiet`) : aucune voisine ne lance son aperçu sans un vrai
- * mouvement — ni clignotement, ni ping-pong. Celle que le pointeur a VRAIMENT
- * rejointe, engagée avant, n'est pas interrompue.
+ * synthétiques. Si le pointeur est dans la zone qui bouge, la porte globale est
+ * tenue fermée le temps du retour (`previewQuiet.hold`) : aucune voisine ne
+ * lance son aperçu sans un vrai mouvement APRÈS — ni clignotement, ni
+ * ping-pong. Celle que le pointeur a VRAIMENT rejointe, engagée avant, n'est
+ * pas interrompue.
  *
  * Animations réduites : aucun glissement. Un saut de six cartes serait pire
  * qu'un glissement, et la mini-carte, en fondu, se lit très bien par-dessus.
@@ -39,8 +41,10 @@ export function usePreviewRoom({ shown, placement, anchorRef, reduced }: Preview
     const room = openPreviewRoom(anchor, { left, right: left + placement.width });
     if (!room) return;
     return () => {
+      // La porte est TENUE le temps du retour : la fin du geste qui a quitté la
+      // mini-carte ne la rouvre pas (`previewQuiet.hold`).
       const pointer = previewQuiet.pointer();
-      if (pointer && room.contains(pointer.x, pointer.y)) previewQuiet.quiet();
+      if (pointer && room.contains(pointer.x, pointer.y)) previewQuiet.hold(PREVIEW_EXIT_MS + 60);
       room.close();
     };
   }, [shown, reduced, placement, anchorRef]);

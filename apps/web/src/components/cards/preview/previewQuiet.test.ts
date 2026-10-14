@@ -22,6 +22,27 @@ describe("previewQuiet — la porte globale", () => {
     expect(gate.isQuiet()).toBe(false);
   });
 
+  it("TENUE fermée pendant le retour des voisines : un mouvement la réancre, le suivant (après) la rouvre", () => {
+    let clock = 1000;
+    const gate = createPreviewQuiet(() => clock);
+    gate.onPointerMove(400, 300);
+    gate.hold(280);
+    expect(gate.isQuiet()).toBe(true);
+    // La fin du geste qui a quitté la mini-carte : elle ne rouvre rien.
+    clock += 40;
+    gate.onPointerMove(460, 300);
+    clock += 40;
+    gate.onPointerMove(520, 300);
+    expect(gate.isQuiet()).toBe(true);
+    // Le retour fini, la carte arrivée sous le pointeur attend un VRAI mouvement…
+    clock += 300;
+    gate.onPointerMove(521, 300);
+    expect(gate.isQuiet()).toBe(true);
+    // … à plus de 3 px de la dernière position du geste.
+    gate.onPointerMove(530, 300);
+    expect(gate.isQuiet()).toBe(false);
+  });
+
   it("se rouvre à une touche — sauf Échap, qui l'a justement fermée", () => {
     const gate = createPreviewQuiet();
     gate.quiet();
