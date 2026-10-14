@@ -1,7 +1,8 @@
 /**
  * La source d'un aperçu sur son `<video>`, avec un faux hls.js : chargée en
- * pause jusqu'à la première image, départ au niveau le PLUS HAUT, toute erreur
- * fatale remontée, et rien qui consomme encore après la sortie.
+ * pause jusqu'à la première image, départ au niveau de la BOÎTE (le plus haut
+ * sans dimensions connues), toute erreur fatale remontée, et rien qui
+ * consomme encore après la sortie.
  */
 import { describe, expect, it, vi } from "vitest";
 import type Hls from "hls.js";
@@ -52,6 +53,7 @@ function fakeHlsClass(supported = true) {
     static isSupported = () => supported;
     readonly handlers = new Map<string, Listener>();
     startLevelValue = -1;
+    autoLevelCapping = -1;
     readonly calls: string[] = [];
     constructor(readonly config: unknown) {
       instances.push(this);
@@ -128,6 +130,22 @@ describe("attachPreviewSource — HLS par hls.js", () => {
     // Une seule fois : les listes suivantes (changement de niveau) ne redécident rien.
     short.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 20, fragments: segments(5.48) } });
     expect(short.calls.filter((c) => c === "stopLoad")).toHaveLength(1);
+  });
+
+  it("départ ET plafond au plus petit niveau qui couvre la boîte ; avant la révélation, le premier segment seulement", async () => {
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    const video = Object.assign(new FakeVideo(), { clientWidth: 560, clientHeight: 315 });
+    const { HlsClass, instances } = fakeHlsClass();
+    const session = attachPreviewSource(video as never, HLS, { onReady: vi.fn(), onError: vi.fn() }, async () => HlsClass);
+    await flush();
+    const hls = instances[0];
+    const sizes = [[256, 144], [640, 360], [1280, 720], [1920, 1080]].map(([width, height]) => ({ width, height, bitrate: height }));
+    hls.fire(EVENTS.MANIFEST_PARSED, { levels: sizes });
+    expect([hls.startLevelValue, hls.autoLevelCapping]).toEqual([2, 2]);
+    expect(hls.config).toMatchObject({ maxBufferLength: 1, maxMaxBufferLength: 1 });
+    session.unleash();
+    expect(hls.config).toMatchObject({ maxBufferLength: 12, maxMaxBufferLength: 15 });
+    vi.unstubAllGlobals();
   });
 
   it("le décalage ne vaut que dans le premier segment, avec une marge, et pour 30 s au moins", () => {

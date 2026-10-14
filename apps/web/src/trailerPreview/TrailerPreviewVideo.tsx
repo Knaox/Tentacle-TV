@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
-import { attachPreviewSource } from "./previewSource";
+import { attachPreviewSource, type PreviewSourceSession } from "./previewSource";
 import { rampVolume, startPreviewPlayback, watchPreviewStall } from "./previewPlayback";
 import { openPreviewBench } from "./previewBench";
 import type { TrailerPreviewVideoProps } from "./previewTypes";
@@ -22,6 +22,7 @@ import type { TrailerPreviewVideoProps } from "./previewTypes";
 export const TrailerPreviewVideo = memo(function TrailerPreviewVideo(props: TrailerPreviewVideoProps) {
   const { stream, muted, playing, volume, cycle, hold = false, className, style } = props;
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const sessionRef = useRef<PreviewSourceSession | null>(null);
   // Les rappels du rendu le plus récent, sans relancer les effets à chaque identité neuve.
   const latest = useRef(props);
   latest.current = props;
@@ -46,11 +47,19 @@ export const TrailerPreviewVideo = memo(function TrailerPreviewVideo(props: Trai
       },
       onHls: bench.onHls,
     });
+    sessionRef.current = session;
+    if (latest.current.playing) session.unleash();
     return () => {
       bench.close();
       session.release();
+      if (sessionRef.current === session) sessionRef.current = null;
     };
   }, [src, kind, mimeType, cycle]);
+
+  // Montrée : le tampon d'avance s'élargit (avant, seul le premier segment se charge).
+  useEffect(() => {
+    if (playing) sessionRef.current?.unleash();
+  }, [playing, cycle]);
 
   // La lecture : retenue sur la première image tant que la mini-carte s'agrandit (`hold`).
   const running = playing && !hold && src !== null;

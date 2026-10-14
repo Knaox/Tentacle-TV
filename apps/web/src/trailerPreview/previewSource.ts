@@ -1,6 +1,7 @@
 import type Hls from "hls.js";
 import type { HlsConfig, LevelDetails } from "hls.js";
 import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
+import { capLevelFor, type BoxSize } from "./previewLevelCap";
 import type { TrailerPreviewStream } from "./previewTypes";
 
 /**
@@ -51,12 +52,23 @@ const PREVIEW_LOAD_POLICY = {
 };
 
 /**
- * La configuration hls.js d'un aperçu — LA MEILLEURE QUALITÉ POSSIBLE :
- * aucun plafond à la taille de la mini-carte (`capLevelToPlayerSize: false`,
- * ni à la cadence), départ au niveau le plus haut (posé au manifeste, cf.
- * `topLevel`), l'ABR ne descend que si le débit mesuré l'impose. Un tampon
- * court : un aperçu peut s'arrêter à tout instant, rien ne sert d'en charger
- * une minute d'avance.
+ * Le tampon d'avance : AVANT la révélation, une seconde — le premier segment
+ * (celui que le serveur a lu d'avance), rien de plus : un survol qui s'arrête
+ * avant la révélation n'a pas téléchargé trente secondes de 1080p. Une fois
+ * montrée (`unleash`), douze secondes, quinze au plus (hls.js porte sinon le
+ * tampon à 60 Mo, soit trente secondes, quel que soit `maxBufferLength`).
+ */
+export const PREVIEW_PRELOAD_BUFFER_S = 1;
+export const PREVIEW_PLAY_BUFFER_S = 12;
+export const PREVIEW_PLAY_MAX_BUFFER_S = 15;
+
+/**
+ * La configuration hls.js d'un aperçu. La qualité est celle de la BOÎTE :
+ * départ et plafond au plus petit niveau qui couvre la mini-carte en pixels
+ * de l'écran (`previewLevelCap.ts`, posé au manifeste et suivi si la boîte
+ * change) — le plafond automatique de hls.js (`capLevelToPlayerSize`) lirait
+ * la boîte encore réduite de l'animation d'entrée. L'ABR ne descend sous ce
+ * plafond que si le débit mesuré l'impose. Un tampon court (cf. plus haut).
  */
 export function previewHlsConfig(): Partial<HlsConfig> {
   return {
@@ -68,8 +80,8 @@ export function previewHlsConfig(): Partial<HlsConfig> {
     lowLatencyMode: false,
     testBandwidth: false,
     abrEwmaDefaultEstimate: PREVIEW_START_BANDWIDTH_ESTIMATE,
-    maxBufferLength: 12,
-    maxMaxBufferLength: 30,
+    maxBufferLength: PREVIEW_PRELOAD_BUFFER_S,
+    maxMaxBufferLength: PREVIEW_PRELOAD_BUFFER_S,
     backBufferLength: 0,
     startFragPrefetch: true,
     // Pas de sous-titres dans un aperçu.
@@ -118,8 +130,17 @@ export interface PreviewSourceHandlers {
 export interface PreviewSourceSession {
   /** hls.js de la session, s'il y en a un (mesures du banc). */
   hls(): Hls | null;
+  /** L'aperçu se montre : le tampon d'avance passe du premier segment à douze secondes. */
+  unleash(): void;
   release(): void;
 }
+
+/** La boîte de la vidéo en px CSS — sa taille de MISE EN PAGE, que l'échelle de l'animation ne change pas. */
+function boxOf(video: HTMLVideoElement): BoxSize {
+  return { width: video.clientWidth, height: video.clientHeight };
+}
+
+const pixelRatio = () => (typeof window !== "undefined" && window.devicePixelRatio > 0 ? window.devicePixelRatio : 1);
 
 /** Après `loadeddata`, au plus ce délai si les images d'animation ne passent pas (page bridée). */
 const FRAME_PRESENTED_FALLBACK_MS = 100;
@@ -136,9 +157,17 @@ export function attachPreviewSource(
 ): PreviewSourceSession {
   let released = false;
   let ready = false;
+  let unleashed = false;
   let hls: Hls | null = null;
+  let resizeWatch: ResizeObserver | null = null;
   let frameRequest: number | null = null;
   let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const widenBuffer = () => {
+    if (!hls) return;
+    hls.config.maxBufferLength = PREVIEW_PLAY_BUFFER_S;
+    hls.config.maxMaxBufferLength = PREVIEW_PLAY_MAX_BUFFER_S;
+  };
 
   video.muted = true;
   video.preload = "auto";
@@ -187,10 +216,21 @@ export function attachPreviewSource(
       const instance = new HlsCtor(previewHlsConfig());
       hls = instance;
       handlers.onHls?.(instance);
+      if (unleashed) widenBuffer();
       instance.on(HlsCtor.Events.MANIFEST_PARSED, (_event, data) => {
-        const top = topLevel(data.levels);
-        if (top >= 0) instance.startLevel = top;
+        // Départ ET plafond : le plus petit niveau qui couvre la boîte (`previewLevelCap.ts`).
+        const cap = capLevelFor(data.levels, boxOf(video), pixelRatio());
+        if (cap >= 0) instance.autoLevelCapping = cap;
+        const start = cap >= 0 ? cap : topLevel(data.levels);
+        if (start >= 0) instance.startLevel = start;
         instance.startLoad(TRAILER_PREVIEW_TIMING.startOffsetS);
+        // La boîte change (fenêtre redimensionnée) : le plafond la suit.
+        if (cap >= 0 && typeof ResizeObserver === "function") {
+          resizeWatch = new ResizeObserver(() => {
+            if (!released) instance.autoLevelCapping = capLevelFor(instance.levels, boxOf(video), pixelRatio());
+          });
+          resizeWatch.observe(video);
+        }
       });
       // La liste de départ dit la durée et le premier segment : départ à 0 si le
       // décalage ne tient pas (cf. `keepsStartOffset`), avant le moindre ajout.
@@ -217,9 +257,14 @@ export function attachPreviewSource(
 
   return {
     hls: () => hls,
+    unleash() {
+      unleashed = true;
+      widenBuffer();
+    },
     release() {
       if (released) return;
       released = true;
+      resizeWatch?.disconnect();
       video.removeEventListener("loadeddata", onLoadedData);
       video.removeEventListener("error", fail);
       if (fallbackTimer !== null) clearTimeout(fallbackTimer);
