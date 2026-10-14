@@ -16,7 +16,7 @@ vi.mock("../ytExtract", () => ({ extractTrailerSource, prewarmExtraction: () => 
 
 import { heldSources, resetTrailerRelay, resolveTrailer, restoreSources, type HeldSource } from "../trailerRelay";
 import { resetPreviewDecisions, restoreDecisions, storedDecisions } from "./previewDecision";
-import { flushPreviewMemory, resetPreviewMemory, startPreviewMemory } from "./previewMemoryStore";
+import { flushPreviewMemory, resetPreviewMemory, savePendingPreviewMemory, startPreviewMemory } from "./previewMemoryStore";
 
 const NOW = Date.now();
 const SOURCE: HeldSource = {
@@ -72,6 +72,18 @@ describe("mémoire des aperçus", () => {
     await resolveTrailer("Way9Dexny3w");
     expect(() => readFileSync(file)).toThrow();
     vi.advanceTimersByTime(5_000);
+    expect(JSON.parse(readFileSync(file, "utf8")).sources.map((s: HeldSource) => s.ytId)).toEqual(["Way9Dexny3w"]);
+  });
+
+  it("à l'arrêt du serveur, l'écriture en attente part tout de suite — rien de la rafale ne se perd", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    extractTrailerSource.mockResolvedValue({ ok: true, clients: ["visionos"], subtitles: [], source: SOURCE.source });
+    startPreviewMemory(file);
+    // Rien en attente : rien à écrire.
+    savePendingPreviewMemory();
+    expect(() => readFileSync(file)).toThrow();
+    await resolveTrailer("Way9Dexny3w");
+    savePendingPreviewMemory();
     expect(JSON.parse(readFileSync(file, "utf8")).sources.map((s: HeldSource) => s.ytId)).toEqual(["Way9Dexny3w"]);
   });
 

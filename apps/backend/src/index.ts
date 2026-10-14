@@ -34,6 +34,7 @@ import { themeRoutes } from "./routes/theme";
 import { stopRecoJobs } from "./services/reco/jobs";
 import { stopSearchJobs } from "./services/search/jobs";
 import { stopWatchTime } from "./services/watchTime/collector";
+import { savePendingPreviewMemory } from "./services/trailers/preview/previewMemoryStore";
 import { startBackgroundServices } from "./services/backgroundServices";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { serverShutdown } from "./services/lifecycle/serverShutdown";
@@ -265,6 +266,8 @@ async function main() {
     stopBackgroundWork: async () => {
       stopRecoJobs();
       stopSearchJobs();
+      // Les décisions d'aperçu des dernières secondes : écrites avant de partir.
+      savePendingPreviewMemory();
       await stopWatchTime();
     },
     closeHttp: () => app.close(),

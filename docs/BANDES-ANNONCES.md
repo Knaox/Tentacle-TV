@@ -299,7 +299,8 @@ anciennes perdent leurs listes mais gardent leur SOURCE jusqu'à son
 sur un titre relit googlevideo, jamais YouTube. Décisions et sources
 survivent à un REDÉMARRAGE (`previewMemoryStore.ts` :
 `<données>/trailers/preview-memory.json` — le volume de données, ou
-`TENTACLE_DATA_DIR` —, 0600, écrit cinq secondes après un changement, repris
+`TENTACLE_DATA_DIR` —, 0600, écrit cinq secondes après un changement et à
+l'arrêt propre du serveur (rien de la dernière rafale ne se perd), repris
 au démarrage tant que ça vaut et réécrit sans l'échu ; fichier abîmé : départ
 à vide). Ce qui y reste : 1 000 décisions et 1 000 sources au plus (~2 Mo au
 pire, ~100 Ko pour une soirée de 50 titres), jamais plus vieux que

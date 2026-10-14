@@ -63,6 +63,8 @@ function validDecision(value: unknown): value is StoredDecision {
 
 let started = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
+/** Le fichier de la mémoire de CE processus (`startPreviewMemory`). */
+let activeFile: string | null = null;
 
 function save(file: string): void {
   const snapshot: Snapshot = { version: VERSION, savedAt: Date.now(), decisions: storedDecisions(), sources: heldSources() };
@@ -80,6 +82,7 @@ function save(file: string): void {
 export function startPreviewMemory(file = PREVIEW_MEMORY_FILE): void {
   if (started) return;
   started = true;
+  activeFile = file;
   let stale = false;
   try {
     const snapshot = JSON.parse(readFileSync(file, "utf8")) as Partial<Snapshot>;
@@ -108,6 +111,18 @@ export function startPreviewMemory(file = PREVIEW_MEMORY_FILE): void {
   if (stale) schedule();
 }
 
+/**
+ * L'arrêt du serveur (`serverShutdown`, tâches de fond) : l'écriture en
+ * attente — la rafale des cinq dernières secondes — part tout de suite. Une
+ * décision prise juste avant un redémarrage (mise à jour, serveur de
+ * développement relancé) ne se reprend pas chez YouTube. Rien en attente :
+ * rien à écrire.
+ */
+export function savePendingPreviewMemory(): void {
+  if (!timer || activeFile === null) return;
+  flushPreviewMemory(activeFile);
+}
+
 /** Pour les tests : tout écrire tout de suite, ou repartir d'un processus « neuf ». */
 export function flushPreviewMemory(file = PREVIEW_MEMORY_FILE): void {
   if (timer) clearTimeout(timer);
@@ -119,6 +134,7 @@ export function resetPreviewMemory(): void {
   if (timer) clearTimeout(timer);
   timer = null;
   started = false;
+  activeFile = null;
   onRelaySourcesChange(null);
   onPreviewDecisionsChange(null);
 }
