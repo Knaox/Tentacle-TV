@@ -67,17 +67,31 @@ function warm(ytId: string): void {
   void warmStart(ytId).catch(() => undefined);
 }
 
+/** Où passe le temps d'une décision (ms), pour le journal : de quoi savoir quoi accélérer. */
+interface Stages {
+  tmdb: number;
+  extract: number;
+  verify: number;
+}
+
+const newStages = (): Stages => ({ tmdb: 0, extract: 0, verify: 0 });
+
 /**
  * La vidéo se laisse-t-elle lire : extraite, puis son maître et ses premières
  * listes lus ? Le départ au plus haut part EN MÊME TEMPS (même maître, lu une
  * fois) et ne retarde pas la réponse : le lecteur trouvera ses premiers
  * segments en mémoire, ou en route.
  */
-async function playable(ytId: string): Promise<ResolvedTrailer | null> {
+async function playable(ytId: string, stages: Stages): Promise<ResolvedTrailer | null> {
+  let mark = Date.now();
   const resolved = await resolveTrailer(ytId, PREVIEW_EXTRACTION);
+  stages.extract += Date.now() - mark;
   if (!resolved) return null;
   warm(ytId);
-  return (await prepareTrailer(ytId, PREVIEW_EXTRACTION)) ? resolved : null;
+  mark = Date.now();
+  const readable = await prepareTrailer(ytId, PREVIEW_EXTRACTION);
+  stages.verify += Date.now() - mark;
+  return readable ? resolved : null;
 }
 
 /**
@@ -93,9 +107,10 @@ function guardStop(): PreviewOutcome | null {
   return { kind: "limited", retryAfterS: Math.max(1, Math.ceil(refusal.retryAfterMs / 1000)) };
 }
 
-function found(key: string, ytId: string, resolved: ResolvedTrailer, started: number, how: string): PreviewOutcome {
+function found(key: string, ytId: string, resolved: ResolvedTrailer, started: number, how: string, stages: Stages): PreviewOutcome {
   remember(key, { kind: "found", ytId }, resolved.validUntil - Date.now());
-  console.log(`[trailers] aperçu ${key} : ${ytId} (${resolved.kind}, ${resolved.heights[0] ?? "mp4"}) en ${Date.now() - started} ms, ${how}`);
+  const detail = `TMDB ${stages.tmdb}, extraction ${stages.extract}, vérification ${stages.verify}`;
+  console.log(`[trailers] aperçu ${key} : ${ytId} (${resolved.kind}, ${resolved.heights[0] ?? "mp4"}) en ${Date.now() - started} ms (${detail}), ${how}`);
   return { kind: "found", ytId, resolved };
 }
 
@@ -109,11 +124,14 @@ function found(key: string, ytId: string, resolved: ResolvedTrailer, started: nu
  */
 async function decide(key: string, title: PreviewTitle, lang: string | undefined, known?: string): Promise<PreviewOutcome> {
   const started = Date.now();
-  const again = known ? await playable(known) : null;
-  if (known && again) return found(key, known, again, started, "reprise");
+  const stages = newStages();
+  const again = known ? await playable(known, stages) : null;
+  if (known && again) return found(key, known, again, started, "reprise", stages);
   const stoppedEarly = known ? guardStop() : null;
   if (stoppedEarly) return stoppedEarly;
+  const tmdbStarted = Date.now();
   const tmdb = title.tmdb ? await fetchTitleVideos(title.tmdb.id, title.tmdb.mediaType, lang) : { videos: [], complete: true };
+  stages.tmdb = Date.now() - tmdbStarted;
   const candidates = previewCandidates(title.jellyfin, tmdb.videos, lang).slice(0, MAX_ATTEMPTS);
   if (candidates.length === 0) {
     // TMDB muet : une absence qui n'en est peut-être pas une — retenue comme « aucune lisible ».
@@ -122,8 +140,8 @@ async function decide(key: string, title: PreviewTitle, lang: string | undefined
   }
   for (const [index, ytId] of candidates.entries()) {
     if (index > 0 && Date.now() - started >= DECISION_BUDGET_MS) break;
-    const resolved = await playable(ytId);
-    if (resolved) return found(key, ytId, resolved, started, `essai ${index + 1}/${candidates.length}`);
+    const resolved = await playable(ytId, stages);
+    if (resolved) return found(key, ytId, resolved, started, `essai ${index + 1}/${candidates.length}`, stages);
     const stop = guardStop();
     if (stop) return stop;
   }
