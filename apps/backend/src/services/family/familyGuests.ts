@@ -1,6 +1,13 @@
 import { getPrisma } from "../db";
 import { loadPushLangs } from "../pushLang";
-import type { FamilyGuestRights, FamilyProfileColor, FamilyProfileDto, SetGuestRightsBody } from "../../family/familyContract";
+import type {
+  FamilyGuestRights,
+  FamilyProfileColor,
+  FamilyProfileDto,
+  GuestPhotoDto,
+  SetGuestPhotoBody,
+  SetGuestRightsBody,
+} from "../../family/familyContract";
 import { canManageGuest, familyRightsOf } from "../../family/familyRights";
 import { capacityError, guestQuotaBlock, normalizeGuestName } from "../../family/familyRules";
 import { getFamilySwitches, isReviewAccount, refuseReviewAccount, requireGuests } from "./familyConfig";
@@ -14,6 +21,8 @@ import { writePin } from "./familyPins";
 import { endProfileEverywhere } from "./familySessions";
 import { abandonGuestAccount, cleanupGuestAccount, retireGuestRow, settleCreatedGuest } from "./guestAccountCleanup";
 import { createGuestAccount } from "./guestAccounts";
+import { jellyfinAdminFetch } from "../jellyfinAdminFetch";
+import { invalidateJellyfinUsers } from "../watchTogether/usersCache";
 import {
   ensureOwnedFamily,
   familyCounts,
@@ -21,6 +30,7 @@ import {
   familyProfiles,
   findProfile,
   fold,
+  jellyfinUserMap,
   ownerRefusal,
   type FamilyRow,
   type MemberRow,
@@ -186,3 +196,27 @@ export async function setGuestPin(actor: Actor, guestUserId: string, pin: string
   return { hasPin: pin !== null };
 }
 
+/** La photo d'un invité, posée par le propriétaire ou par son créateur (mêmes
+ *  droits que son PIN) : relayée à Jellyfin avec la clé du serveur — le compte
+ *  de l'invité n'a pas de mot de passe. Ses TV et « Qui regarde ? » la montrent
+ *  dès la relecture des comptes ; ses sessions ne tombent pas. */
+export async function setGuestPhoto(actor: Actor, guestUserId: string, photo: SetGuestPhotoBody): Promise<GuestPhotoDto> {
+  const { row, family } = await manageableGuest(actor, guestUserId);
+  const sent = await jellyfinAdminFetch(`/Users/${encodeURIComponent(row.userId)}/Images/Primary`, {
+    method: "POST",
+    raw: { contentType: photo.type, data: photo.image },
+    expectEmpty: true,
+    timeoutMs: 15_000,
+  });
+  if (!sent.ok) {
+    console.log(`[family] Photo d'un invité refusée par Jellyfin (${sent.failure}${sent.status ? ` ${sent.status}` : ""})`);
+    throw sent.failure === "rejected" || sent.failure === "invalid"
+      ? new FamilyFailure("family.jellyfin_refused", "Jellyfin a refusé la photo")
+      : new FamilyFailure("family.jellyfin_unavailable", "Jellyfin ne répond pas");
+  }
+  invalidateJellyfinUsers();
+  const imageTag = (await jellyfinUserMap())?.get(fold(row.userId))?.imageTag ?? null;
+  await notifyFamily(family.id);
+  console.log(`[family] Photo d'un invité changée dans la famille ${family.id}`);
+  return { imageTag };
+}

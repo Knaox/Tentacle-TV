@@ -1,4 +1,4 @@
-import { FAMILY_CONTRACT_VERSION } from "../../family/familyContract";
+import { FAMILY_CONTRACT_VERSION, type FamilySwitches, type FamilyRights } from "../../family/familyContract";
 import type {
   FamilyPickerPlatform,
   PickProfileBody,
@@ -9,6 +9,7 @@ import type {
   SetPickerPreferenceBody,
 } from "../../family/familyPickerContract";
 import type { TvProfileDto } from "../../family/familyTvContract";
+import { canManageGuest, familyRightsOf } from "../../family/familyRights";
 import { isPickerRequired, sameUserId } from "../../family/familyRules";
 import { isReviewAccount } from "./familyConfig";
 import { FamilyFailure } from "./familyErrors";
@@ -45,7 +46,14 @@ export interface PickerCaller {
   token: string;
 }
 
-function toPickerProfile(profile: TvProfileDto, account: string): PickerProfileDto {
+/** Ce que le compte de la session personnelle peut dans SA famille (rôle lu sur sa ligne). */
+function accountRights(profiles: readonly TvProfileDto[], account: string, switches: FamilySwitches): FamilyRights {
+  const own = profiles.find((profile) => sameUserId(profile.userId, account));
+  const role = own?.kind === "owner" ? "owner" : own?.kind === "member" ? "member" : null;
+  return familyRightsOf(role, null, switches);
+}
+
+function toPickerProfile(profile: TvProfileDto, account: string, rights: FamilyRights): PickerProfileDto {
   return {
     userId: profile.userId,
     kind: profile.kind,
@@ -56,6 +64,8 @@ function toPickerProfile(profile: TvProfileDto, account: string): PickerProfileD
     lockedUntil: profile.lockedUntil,
     createdBy: profile.createdBy,
     personal: sameUserId(profile.userId, account),
+    // Les mêmes droits que son PIN : la photo d'un invité, l'appareil l'habille par la session personnelle.
+    photoEditable: profile.kind === "guest" && canManageGuest(rights, profile.createdBy, account),
   };
 }
 
@@ -72,6 +82,7 @@ export async function listPickerProfiles(caller: PickerCaller, platform: FamilyP
   ]);
   const own = profiles.find((profile) => sameUserId(profile.userId, caller.userId));
   const account = { userId: own?.userId ?? caller.userId, name: own?.name ?? caller.username };
+  const rights = accountRights(profiles, caller.userId, switches);
   let currentProfileId = account.userId;
   if (host) {
     const active = await currentProfileOf(host.id);
@@ -83,7 +94,7 @@ export async function listPickerProfiles(caller: PickerCaller, platform: FamilyP
     platform,
     switches,
     account,
-    profiles: profiles.map((profile) => toPickerProfile(profile, caller.userId)),
+    profiles: profiles.map((profile) => toPickerProfile(profile, caller.userId, rights)),
     currentProfileId,
     pickerRequired: isPickerRequired(profiles.length),
     atLaunch: preference.atLaunch[platform],
@@ -102,14 +113,14 @@ async function pickNow(caller: PickerCaller, body: PickProfileBody, now: number)
   if (!personal && (await isReviewAccount(caller.userId))) {
     throw new FamilyFailure("family.review_account", "Compte de démonstration : aucun autre profil");
   }
-  const { profiles } = await visibleProfiles(caller.userId, caller.username, now);
+  const { profiles, switches } = await visibleProfiles(caller.userId, caller.username, now);
   const profile = profiles.find((entry) => sameUserId(entry.userId, body.profileId));
   if (!profile) throw await unavailableFor(caller.userId, body.profileId);
   if (profile.lockedUntil) throw new FamilyFailure("family.pin_locked", "Profil bloqué : trop d'essais", { lockedUntil: profile.lockedUntil });
 
   const existing = await findPickerHost(caller.token);
   await checkProfilePin({ pairingId: existing?.id ?? null, userId: profile.userId, pin: body.pin, now });
-  const dto = toPickerProfile(profile, caller.userId);
+  const dto = toPickerProfile(profile, caller.userId, accountRights(profiles, caller.userId, switches));
 
   if (personal) {
     if (existing) {

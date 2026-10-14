@@ -20,6 +20,8 @@ export type JellyfinResult<T> =
 interface CallOptions {
   method?: "GET" | "POST" | "DELETE";
   body?: unknown;
+  /** Un corps envoyé TEL QUEL, avec son type (une image en base64, comme Jellyfin la reçoit). */
+  raw?: { contentType: string; data: string };
   timeoutMs?: number;
   /** La réponse n'a pas de corps à lire (204 des écritures de configuration). */
   expectEmpty?: boolean;
@@ -36,8 +38,10 @@ export async function jellyfinAdminFetch<T = unknown>(path: string, options: Cal
       headers: {
         ...jellyfinAuthHeaders(apiKey),
         ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(options.raw ? { "Content-Type": options.raw.contentType } : {}),
       },
       ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+      ...(options.raw ? { body: options.raw.data } : {}),
       signal: AbortSignal.timeout(options.timeoutMs ?? 5000),
     });
   } catch {

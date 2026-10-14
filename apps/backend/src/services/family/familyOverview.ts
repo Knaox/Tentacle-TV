@@ -90,7 +90,7 @@ export function profileDtos(family: FamilyRow, rows: MemberRow[], users: UserMap
         name: guest ? row.displayName : nameOf(users, row.userId, row.displayName),
         color: profileColor(row.color, row.userId),
         hasPin: pins.has(row.userId),
-        imageTag: guest ? null : imageOf(users, row.userId),
+        imageTag: imageOf(users, row.userId),
         since: row.createdAt.toISOString(),
         createdBy: creator?.createdBy ?? null,
         createdByName: creator ? users?.get(fold(creator.createdBy))?.name ?? creator.fallbackName : null,

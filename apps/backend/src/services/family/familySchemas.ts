@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FAMILY_PROFILE_COLORS } from "../../family/familyContract";
+import { FAMILY_GUEST_PHOTO_MAX_BASE64, FAMILY_GUEST_PHOTO_TYPES, FAMILY_PROFILE_COLORS } from "../../family/familyContract";
 import { FAMILY_PICKER_PLATFORMS } from "../../family/familyPickerContract";
 
 /**
@@ -27,6 +27,12 @@ export const setPinBodySchema = z.object({ pin: z.union([z.string().max(16), z.n
 
 /** Son PIN : le nouveau, et l'actuel s'il en a un. Un identifiant glissé dans
  *  le corps est ignoré — l'acteur vient du jeton. */
+/** La photo d'un invité : du base64 nu (sans préfixe `data:`), d'un format que Jellyfin lit. */
+export const setGuestPhotoBodySchema = z.object({
+  image: z.string().min(64).max(FAMILY_GUEST_PHOTO_MAX_BASE64).regex(/^[A-Za-z0-9+/]+={0,2}$/),
+  type: z.enum(FAMILY_GUEST_PHOTO_TYPES),
+});
+
 export const setOwnPinBodySchema = setPinBodySchema.extend({ currentPin: z.string().max(16).optional() });
 
 export const createGuestBodySchema = z.object({

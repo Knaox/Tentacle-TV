@@ -5,7 +5,9 @@
  * et les appareils (`fakeJellyfinDevices.ts`).
  *
  * Comme Jellyfin : `POST /Users/{id}/Policy` REMPLACE la politique ; un nom
- * déjà pris refuse la création (400) ; supprimer un compte emporte ses appareils.
+ * déjà pris refuse la création (400) ; supprimer un compte emporte ses appareils ;
+ * `POST /Users/{id}/Images/Primary` (base64, type image/*) pose sa photo et
+ * change son `PrimaryImageTag`.
  */
 
 import crypto from "crypto";
@@ -28,6 +30,10 @@ export interface FakeJellyfinUsers extends FakeJellyfin {
   refuseCreation: boolean;
   /** `DELETE /Users/{id}` refusé (panne simulée) : le compte reste. */
   refuseDeletion: boolean;
+  /** `POST /Users/{id}/Images/Primary` refusé (panne simulée). */
+  refuseImages: boolean;
+  /** Les photos reçues : compte → type et corps tels qu'envoyés. */
+  images: Map<string, { contentType: string; body: string }>;
 }
 
 export function defaultPolicy(over: Record<string, unknown> = {}): Record<string, unknown> {
@@ -50,7 +56,15 @@ export function defaultPolicy(over: Record<string, unknown> = {}): Record<string
 }
 
 export function createFakeJellyfinUsers(): FakeJellyfinUsers {
-  return { ...createFakeJellyfin(), users: new Map(), personalTokens: new Map(), refuseCreation: false, refuseDeletion: false };
+  return {
+    ...createFakeJellyfin(),
+    users: new Map(),
+    personalTokens: new Map(),
+    refuseCreation: false,
+    refuseDeletion: false,
+    refuseImages: false,
+    images: new Map(),
+  };
 }
 
 /** Ajoute un compte ; rend le jeton de sa session personnelle. */
@@ -104,6 +118,17 @@ export function fakeJellyfinUsersFetch(jf: FakeJellyfinUsers) {
       const user = jf.users.get(url.searchParams.get("userId") ?? "");
       if (!user) return new Response("", { status: 404 });
       user.password = (JSON.parse(String(init?.body ?? "{}")) as { NewPw?: string }).NewPw;
+      return new Response(null, { status: 204 });
+    }
+    const image = /^\/Users\/([^/]+)\/Images\/Primary$/.exec(path);
+    if (image && method === "POST") {
+      const owner = jf.users.get(image[1]);
+      if (!owner) return new Response("", { status: 404 });
+      if (jf.refuseImages) return new Response("", { status: 500 });
+      const body = String(init?.body ?? "");
+      const contentType = new Headers(init?.headers).get("content-type") ?? "";
+      jf.images.set(owner.Id, { contentType, body });
+      owner.PrimaryImageTag = crypto.createHash("sha1").update(body).digest("hex").slice(0, 16);
       return new Response(null, { status: 204 });
     }
     const match = /^\/Users\/([^/]+)(\/Policy)?$/.exec(path);

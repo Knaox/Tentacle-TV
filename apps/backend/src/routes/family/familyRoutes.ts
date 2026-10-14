@@ -3,7 +3,7 @@ import { buildOverview } from "../../services/family/familyOverview";
 import { listCandidates } from "../../services/family/familyCandidates";
 import { cancelInvitation, inviteMember } from "../../services/family/familyInvitations";
 import { acceptInvitation, declineInvitation, snoozeInvitation } from "../../services/family/familyInvitationAnswers";
-import { createGuest, deleteGuest, setGuestPin, setGuestRights } from "../../services/family/familyGuests";
+import { createGuest, deleteGuest, setGuestPhoto, setGuestPin, setGuestRights } from "../../services/family/familyGuests";
 import { setOwnPin } from "../../services/family/familyOwnPin";
 import { hashToken } from "../../services/jwt";
 import { dissolveFamily, leaveFamily, removeMember, setMemberRights } from "../../services/family/familyMembers";
@@ -14,12 +14,14 @@ import {
   familyIdSchema,
   invitationActionBodySchema,
   inviteBodySchema,
+  setGuestPhotoBodySchema,
   setGuestRightsBodySchema,
   setMemberRightsBodySchema,
   setOwnPinBodySchema,
   setPinBodySchema,
   userIdSchema,
 } from "../../services/family/familySchemas";
+import { FAMILY_GUEST_PHOTO_MAX_BASE64 } from "../../family/familyContract";
 import { actorOf, registerFamilyRoute } from "./familyRouting";
 
 /**
@@ -89,6 +91,19 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
     const { pin } = setPinBodySchema.parse(request.body);
     return setGuestPin(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), pin);
   });
+
+  // L'image voyage en base64 dans le corps : la limite de la route, pas les 50 Mo du serveur.
+  registerFamilyRoute(
+    app,
+    "setGuestPhoto",
+    async (request, actor) =>
+      setGuestPhoto(
+        actorOf(actor),
+        userIdSchema.parse(param(request.params, "userId")),
+        setGuestPhotoBodySchema.parse(request.body),
+      ),
+    { bodyLimit: FAMILY_GUEST_PHOTO_MAX_BASE64 + 4096 },
+  );
 
   registerFamilyRoute(app, "removeMember", async (request, actor) =>
     removeMember(actorOf(actor), userIdSchema.parse(param(request.params, "userId"))),

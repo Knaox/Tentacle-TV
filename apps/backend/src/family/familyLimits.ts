@@ -39,3 +39,9 @@ export const FAMILY_MANAGE_UNLOCK_MS = 10 * 60_000;
 export const FAMILY_GUEST_NAME_MAX = 20;
 /** Le sélecteur « Qui regarde ? » de la TV s'affiche dès deux profils. */
 export const FAMILY_PICKER_MIN_PROFILES = 2;
+/** La photo d'un invité : l'image envoyée en base64, au plus (~1 Mo ; un avatar
+ *  de 512 px en JPEG en fait le dixième). */
+export const FAMILY_GUEST_PHOTO_MAX_BASE64 = 1_500_000;
+/** Les formats que le serveur relaie à Jellyfin pour la photo d'un invité. */
+export const FAMILY_GUEST_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type FamilyGuestPhotoType = (typeof FAMILY_GUEST_PHOTO_TYPES)[number];

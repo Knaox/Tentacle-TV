@@ -82,6 +82,10 @@ export const SERVER_CAPABILITIES = {
    *  `/api/family/picker/*` (profils de la famille, session de profil d'un appareil
    *  ouverte par la session personnelle, préférence « au lancement » par plateforme). */
   "family.desktopProfiles": "1.29.0",
+  /** La photo d'un invité de la Famille, posée par son propriétaire ou son créateur
+   *  (`PUT /api/family/guests/:userId/photo`) : la galerie des avatars s'ouvre
+   *  pour lui — Réglages › Famille, et sa session de profil sur le bureau. */
+  "family.guestPhotos": "1.29.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

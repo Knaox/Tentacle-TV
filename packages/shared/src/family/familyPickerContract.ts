@@ -49,7 +49,7 @@ export interface PickerProfileDto {
   color: FamilyProfileColor;
   /** Un PIN protège ce profil : le choisir le demande. */
   hasPin: boolean;
-  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null pour un invité. */
+  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo (un invité a la sienne depuis la 1.29.0). */
   imageTag: string | null;
   /** Trop d'essais ratés (tous appareils confondus) : bloqué jusqu'à (ISO). */
   lockedUntil: string | null;
@@ -58,6 +58,11 @@ export interface PickerProfileDto {
   /** Le profil du COMPTE de la session personnelle : le choisir revient à elle
    *  (après son PIN), jamais une session de profil. Un seul par liste. */
   personal: boolean;
+  /** Un invité dont le compte de la session personnelle peut changer la photo
+   *  (`setGuestPhoto` : son propriétaire, ou le membre qui l'a créé) — pendant
+   *  sa session de profil, l'appareil l'habille par la session personnelle.
+   *  Absent d'un serveur d'avant la 1.29.0. */
+  photoEditable?: boolean;
 }
 
 /** `GET /api/family/picker/profiles?platform=desktop` — avec le jeton PERSONNEL. */

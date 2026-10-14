@@ -13,7 +13,17 @@ import { FamilyFailure, sendFamilyFailure } from "../../services/family/familyEr
 
 export type FamilyHandler = (request: FastifyRequest, actor: FamilyActor, now: number) => Promise<unknown>;
 
-export function registerFamilyRoute(app: FastifyInstance, name: FamilyRouteName, handler: FamilyHandler): void {
+export interface FamilyRouteOptions {
+  /** Corps le plus lourd accepté (octets) ; au-delà, 413 avant toute lecture. */
+  bodyLimit?: number;
+}
+
+export function registerFamilyRoute(
+  app: FastifyInstance,
+  name: FamilyRouteName,
+  handler: FamilyHandler,
+  options: FamilyRouteOptions = {},
+): void {
   const spec = FAMILY_ROUTES[name];
   const { rest } = splitFamilyPath(spec.path);
   const rateLimit = "rateLimit" in spec ? spec.rateLimit : undefined;
@@ -21,6 +31,7 @@ export function registerFamilyRoute(app: FastifyInstance, name: FamilyRouteName,
     method: spec.method,
     url: rest,
     preHandler: [familyGuard(spec)],
+    ...(options.bodyLimit && { bodyLimit: options.bodyLimit }),
     ...(rateLimit && { config: { rateLimit: { max: rateLimit.max, timeWindow: rateLimit.windowMs } } }),
     handler: async (request, reply) => {
       const actor = request.familyActor;

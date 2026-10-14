@@ -73,7 +73,8 @@ export async function visibleProfiles(
       name: guest ? entry.row?.displayName ?? "" : jellyfinName ?? entry.row?.displayName ?? accountName,
       color: profileColor(entry.row?.color ?? null, entry.userId),
       hasPin: pins.has(entry.userId),
-      imageTag: guest ? null : users?.get(fold(entry.userId))?.imageTag ?? null,
+      // Un invité a sa photo depuis la 1.29.0 (`setGuestPhoto`), sur son compte Jellyfin caché.
+      imageTag: users?.get(fold(entry.userId))?.imageTag ?? null,
       lockedUntil: until ? iso(until) : null,
       createdBy: guest ? entry.row?.createdBy ?? familyOwner : null,
       guestRights: guest ? { requestTitles: entry.row?.canRequestTitles === true } : null,

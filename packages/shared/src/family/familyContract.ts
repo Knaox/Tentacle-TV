@@ -33,6 +33,7 @@ export const FAMILY_CONTRACT_VERSION = 2;
 // Les limites (places, invitations, PIN, blocages) : `familyLimits.ts`, ré-exportées
 // ici — `import { FAMILY_… } from "./familyContract"` reste valable partout.
 export * from "./familyLimits";
+import type { FamilyGuestPhotoType } from "./familyLimits";
 
 /** Les couleurs d'un profil — des NOMS de jetons, chaque client les peint. */
 export const FAMILY_PROFILE_COLORS = ["violet", "pink", "blue", "teal", "green", "amber", "orange", "red"] as const;
@@ -120,7 +121,8 @@ export interface FamilyProfileDto {
   name: string;
   color: FamilyProfileColor;
   hasPin: boolean;
-  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null pour un invité. */
+  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo. Un invité a la
+   *  sienne depuis la 1.29.0 (`setGuestPhoto`) ; un serveur d'avant rend null. */
   imageTag: string | null;
   /** Arrivée dans la famille (ISO) ; null pour le propriétaire. */
   since: string | null;
@@ -259,6 +261,18 @@ export interface SetOwnPinBody extends SetPinBody {
    *  blocage : `family.pin_required`, `family.pin_invalid` (`attemptsLeft`),
    *  `family.pin_locked` (`lockedUntil`). Ignoré sans PIN posé. */
   currentPin?: string;
+}
+
+/** La photo d'un invité (`setGuestPhoto`) : l'image en base64 nu, comme
+ *  Jellyfin la reçoit — un personnage de la galerie ou une photo importée. */
+export interface SetGuestPhotoBody {
+  image: string;
+  type: FamilyGuestPhotoType;
+}
+
+/** → sa nouvelle étiquette (`PrimaryImageTag`) ; null si Jellyfin ne la dit pas encore. */
+export interface GuestPhotoDto {
+  imageTag: string | null;
 }
 
 export interface InviteBody {

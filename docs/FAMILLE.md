@@ -407,7 +407,7 @@ avant de clore l'invitation — la seconde de deux courses échoue
 
 ## Sessions personnelles, sessions de TV
 
-Accepter, refuser, « plus tard », quitter, le PIN d'un invité, dissoudre :
+Accepter, refuser, « plus tard », quitter, le PIN et la photo d'un invité, dissoudre :
 **session personnelle** seulement — le jeton Jellyfin du web, du bureau, du
 mobile. Jamais un jeton d'appareil (TV d'avant ou session de profil), jamais
 « voir en tant que » : `family.personal_session_required`. Son propre PIN
@@ -529,6 +529,32 @@ retirer un PIN coupe le profil sur les TV et ôte « Rester sur ce profil » —
 sauf, quand un profil change SON PIN depuis une TV, la session de cette TV et
 son « Rester », qui restent.
 Le PIN de chacun protège aussi SA gestion des profils sur les TV.
+
+## La photo d'un invité (serveur 1.29.0)
+
+Un invité est un compte Jellyfin caché, sans mot de passe : personne ne peut
+y changer sa photo comme on change la sienne. Le serveur la relaie donc
+(`PUT /api/family/guests/:userId/photo`, `SetGuestPhotoBody` → `GuestPhotoDto`),
+avec SA clé, aux mêmes droits que le PIN de l'invité : le propriétaire, ou le
+membre qui l'a créé (`canManageGuest` ; un autre membre : `family.not_owner`,
+hors de la famille : `family.not_found`). Session personnelle seulement.
+L'image voyage en base64 nu (JPEG, PNG ou WebP, `FAMILY_GUEST_PHOTO_MAX_BASE64`
+au plus ; au-delà de la limite de la route, 413 avant toute lecture) ; un
+refus de Jellyfin rend `family.jellyfin_refused` ou `family.jellyfin_unavailable`.
+Rien ne tombe : ni ses sessions, ni son « Rester ».
+
+Depuis, l'étiquette d'un invité n'est plus forcée à `null` : la vue de la
+famille, la TV et « Qui regarde ? » rendent la sienne (`imageTag`) ; un
+serveur d'avant rend toujours `null`. Capacité : `family.guestPhotos`.
+
+Les clients ouvrent la galerie des avatars (personnages ou photo importée) :
+- **Réglages › Famille** (web, bureau) : « Changer la photo » sur chaque invité
+  que le compte gère ;
+- **session de profil d'un invité sur le bureau** : « Changer la photo » dans
+  le menu de l'avatar, et l'invitation unique s'il n'en a pas — l'appareil
+  l'habille par SA session personnelle, si le serveur le dit
+  (`PickerProfileDto.photoEditable`) ;
+- l'Apple TV, Android TV et le mobile la MONTRENT (la TV LG n'a pas de profils).
 
 ## Temps réel, cloche, push
 

@@ -43,8 +43,8 @@ export function familyRightsOf(
   return { manageMembers: false, createGuests: false, manageGuests: "none" };
 }
 
-/** Supprimer cet invité et poser son PIN : le propriétaire, tout invité de sa
- *  famille ; un membre, ceux qu'il a créés (`createdBy`). */
+/** Supprimer cet invité, poser son PIN et sa photo : le propriétaire, tout
+ *  invité de sa famille ; un membre, ceux qu'il a créés (`createdBy`). */
 export function canManageGuest(rights: FamilyRights, createdBy: string | null, actorUserId: string): boolean {
   if (rights.manageGuests === "all") return true;
   return rights.manageGuests === "own" && createdBy !== null && fold(createdBy) === fold(actorUserId);

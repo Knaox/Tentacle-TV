@@ -25,6 +25,7 @@ export interface TvProfileDto {
   name: string;
   color: FamilyProfileColor;
   hasPin: boolean;
+  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo (un invité a la sienne depuis la 1.29.0). */
   imageTag: string | null;
   /** Trop d'essais ratés (toutes TV confondues) : bloqué jusqu'à (ISO). */
   lockedUntil: string | null;
