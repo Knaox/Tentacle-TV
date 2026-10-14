@@ -84,6 +84,19 @@ export function markLaunchPassed(): void {
  */
 export function noteFreshLogin(): void {
   markLaunchPassed();
+  forgetPastProfileSession();
+}
+
+/**
+ * La session vient de finir (plus de compte connecté) : rien de la session de
+ * profil ne lui survit — ni sa marque, ni la réserve qui garde le jeton
+ * personnel du compte —, quelle que soit la sortie qui l'a fermée.
+ */
+export function noteLoggedOut(): void {
+  forgetPastProfileSession();
+}
+
+function forgetPastProfileSession(): void {
   try {
     forgetProfileSession(localStorage);
   } catch {
