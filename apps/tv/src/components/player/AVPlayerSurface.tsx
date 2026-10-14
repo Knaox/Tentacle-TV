@@ -8,7 +8,7 @@ import Video, {
   SelectedTrackType,
 } from "react-native-video";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { AUDIO_TRANSIENT_ERROR, classifyAvPlayerError } from "@tentacle-tv/tv-core";
+import { AUDIO_TRANSIENT_ERROR, classifyAvPlayerError, PREFETCH_VOLUME } from "@tentacle-tv/tv-core";
 import { parseStart } from "../../utils/playerHelpers";
 import { nativePlayerHeaders } from "../../utils/nativePlayerHeaders";
 import { plog } from "../../utils/playerDiag";
@@ -46,6 +46,8 @@ export interface AVPlayerSurfaceProps {
   /** PrismCore : index AVPlayer (groupe legible) de la rendition OCR du sous-titre
    *  image sélectionné — prime sur tout le reste ; null = rien de natif. */
   prismTextTrackIndex?: number | null;
+  /** Avance d'AVPlayer sur une source DISTANTE, en secondes (tv-core `avPlayerForwardBufferSec`). */
+  forwardBufferSec?: number;
   onLoad?: (duration: number) => void;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onEnd?: () => void;
@@ -56,7 +58,7 @@ export interface AVPlayerSurfaceProps {
 
 export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>(
   function AVPlayerSurface(
-    { source, paused, muted = false, progressInterval = 1000, style, textTracks, subtitleIndex, isDirectPlay = true, prismTextTrackIndex = null, onLoad, onProgress, onEnd, onError, onTracks, onVideoSize },
+    { source, paused, muted = false, progressInterval = 1000, style, textTracks, subtitleIndex, isDirectPlay = true, prismTextTrackIndex = null, forwardBufferSec, onLoad, onProgress, onEnd, onError, onTracks, onVideoSize },
     ref,
   ) {
     const videoRef = useRef<VideoRef>(null);
@@ -239,13 +241,13 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         paused={paused}
         muted={muted}
         // Pré-buffer (iOS/tvOS) : attendre de quoi jouer sans caler avant de démarrer (« son avant vidéo »).
-        // Avance : 30 s sur une source DISTANTE — mesuré au simulateur (transcodage 720p) : une
-        // coupure de Jellyfin se traverse 34 s au lieu de 8, un encodage tué à la sortie a le
-        // temps de repartir, et la mémoire ne bouge pas (≤ 50 Mo jusqu'à 20 Mb/s). Le BOUCLAGE
-        // PrismCore garde 10 s : sur un remux 4K à 60-80 Mb/s, +20 s coûteraient 150 à 200 Mo,
-        // à mesurer sur l'Apple TV avant d'étendre.
+        // Avance en VOLUME (tv-core `prefetchVolume`) : sur une source DISTANTE, le budget mémoire
+        // converti par le débit du flux — un épisode léger entier, jamais moins de 30 s (mesuré au
+        // simulateur, transcodage 720p : une coupure de Jellyfin se traverse 34 s au lieu de 8, la
+        // mémoire ne bouge pas jusqu'à 20 Mb/s). Le BOUCLAGE PrismCore garde 10 s en mémoire : son
+        // avance est écrite sur le DISQUE par le producteur (`producerLeadSeconds`).
         automaticallyWaitsToMinimizeStalling={true}
-        preferredForwardBufferDuration={isLoopback ? 10 : 30}
+        preferredForwardBufferDuration={isLoopback ? PREFETCH_VOLUME.floorSec.loopback : (forwardBufferSec ?? PREFETCH_VOLUME.floorSec.remote)}
         // Anti-veille : défaut de la lib déjà true (RCTVideo) — gravé ici pour que la
         // politique soit lisible. AVPlayer ne bloque QUE la lecture active ; la pause
         // rend la main à la veille système (protection OLED), c'est l'arbitrage voulu.

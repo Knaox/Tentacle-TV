@@ -52,6 +52,8 @@ interface ExoPlayerProps {
   isDirectPlay?: boolean;
   /** Parité de signature tvOS (rendition OCR PrismCore) ; ignoré côté Android. */
   prismTextTrackIndex?: number | null;
+  /** Parité de signature tvOS (avance d'AVPlayer, préchargement en volume) ; ignoré côté Android. */
+  forwardBufferSec?: number;
   /** Cadence EXACTE du flux (Jellyfin `RealFrameRate`) : la vue native cale la
    *  fréquence d'affichage dessus — ExoPlayer, lui, la devine depuis des
    *  horodatages arrondis à la milliseconde et demande 24,39 ou 23,81. */

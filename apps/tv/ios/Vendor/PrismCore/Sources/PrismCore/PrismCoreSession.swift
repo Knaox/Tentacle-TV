@@ -132,6 +132,18 @@ public actor PrismCoreSession {
     /// a nonzero origin. Not AVPlayer.loadedTimeRanges. Poll for timeline UI.
     public nonisolated var residentRanges: [ResidentRange] { remuxer.residentSegments.ranges }
 
+    /// How far production may run past AVPlayer's newest fetch, in seconds of
+    /// content (Tentacle TV patch). The default is thirty; a host that
+    /// budgets prefetch in BYTES widens it to budget ÷ source bitrate, so the
+    /// read-ahead lives on disk rather than in AVPlayer's memory. Clamped to
+    /// the default floor; carried by every successor. Pair it with a
+    /// `segmentCacheBytes` comfortably above the lead's bytes.
+    public nonisolated func setProducerLead(seconds: Double) {
+        demand.setProducerLead(seconds: seconds)
+    }
+
+    public nonisolated var producerLeadSeconds: Double { demand.currentProducerLeadSeconds }
+
     /// A segment-granularity still, or nil when that interval is not resident.
     /// Never opens the source or asks the producer to seek. The requested time
     /// uses the same source axis as residentRanges.
@@ -249,6 +261,9 @@ public actor PrismCoreSession {
     let workDirectory: URL
     private let server: LoopbackHTTPServer
     private let remuxer: HLSRemuxer
+    /// The demand seam, kept so the host can widen the producer lead
+    /// (Tentacle TV patch — see `setProducerLead(seconds:)`).
+    private let demand: DemandCoordinator
     /// The producer's per-write broadcast: what `start()` sleeps on until
     /// the video variant is playable, and what the provider's pending serves
     /// sleep on until their file lands (replacing two 10 ms polls).
@@ -529,6 +544,7 @@ public actor PrismCoreSession {
         // never publish a plan, and the provider then behaves exactly like
         // the plain directory provider.
         let demand = DemandCoordinator()
+        self.demand = demand
         let landed = self.landed
         let remuxer = HLSRemuxer(
             sourceURL: url,
@@ -725,6 +741,7 @@ public actor PrismCoreSession {
         // Only after the successor exists: a throwing build leaves this session
         // clonable, so a host that hits a transient error can try again.
         hasSuccessor = true
+        successor.setProducerLead(seconds: producerLeadSeconds)
         try await replayExternalSubtitles(onto: successor)
         return successor
     }

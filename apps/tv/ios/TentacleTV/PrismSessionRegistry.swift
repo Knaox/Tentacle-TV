@@ -121,7 +121,17 @@ actor PrismSessionRegistry {
                 preferredAudioLanguage: config.preferredAudioLanguage
             )
         }
+        // Avant `start()` : le producteur part avec son avance, il ne la découvre
+        // pas en route. Un successeur (forme muxée) en hérite dans PrismCore.
+        if let lead = config.producerLeadSeconds { session.setProducerLead(seconds: lead) }
         return try await bringUp(session, gen: gen, onCheckpoint: onCheckpoint)
+    }
+
+    /// Les intervalles de la session `gen` déjà écrits sur le disque, en
+    /// secondes de la source — ce que la barre de préchargement montre au-delà
+    /// de la mémoire d'AVPlayer. `nil` : la session n'existe plus.
+    func residentRanges(gen: Int) -> [ResidentRange]? {
+        sessions[gen]?.residentRanges
     }
 
     /// Le producteur de la session `gen` vit-il encore ? AVPlayer ne le dira

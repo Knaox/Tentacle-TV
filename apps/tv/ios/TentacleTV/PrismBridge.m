@@ -15,6 +15,10 @@ RCT_EXTERN_METHOD(status:(nonnull NSNumber *)gen
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(resident:(nonnull NSNumber *)gen
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(fallbackMuxed:(nonnull NSNumber *)gen
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)

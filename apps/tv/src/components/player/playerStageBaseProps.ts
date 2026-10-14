@@ -79,6 +79,8 @@ export interface PlayerStageBaseProps {
   isDirectPlay: boolean;
   /** tvOS/PrismCore : rendition OCR du sous-titre image sélectionné (index AVPlayer). */
   prismTextTrackIndex?: number | null;
+  /** tvOS : avance d'AVPlayer sur une source distante, tirée du budget de préchargement (tv-core `prefetchVolume`). */
+  forwardBufferSec?: number;
   /** Android TV : cadence du flux, pour caler la fréquence d'affichage (ExoPlayer). */
   frameRate?: number;
   exoRef: React.Ref<MPVPlayerHandle>;
