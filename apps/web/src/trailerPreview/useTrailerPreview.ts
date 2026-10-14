@@ -29,9 +29,10 @@ import { usePreviewMachine } from "./usePreviewMachine";
  * clavier —, et rien ne l'a fermée. Le crochet rend ce que la mini-carte doit
  * faire (`mount`, `visible`, `videoProps`) ; il ne dessine rien.
  *
- *   - la demande part à l'INTENTION (`intentMs` de survol continu), jamais au
- *     montage ni au simple passage de la souris, et s'abandonne si le survol
- *     cesse avant la réponse ;
+ *   - la demande part à l'INTENTION (`intentMs` de survol continu, pointeur
+ *     arrêté), jamais au montage ni au simple passage de la souris ; partie,
+ *     elle va au bout même si le survol cesse — sa réponse, gardée, sert le
+ *     retour sur la carte (`useTrailerPreviewStream`) ;
  *   - la vidéo se charge cachée et en pause jusqu'à sa première image ;
  *   - la mini-carte se montre au plus tôt à `revealMs` (800 ms, cf.
  *     `previewTiming.ts`) et seulement si la vidéo est prête — ou si la

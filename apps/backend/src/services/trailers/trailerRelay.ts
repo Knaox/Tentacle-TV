@@ -253,7 +253,6 @@ export async function progressiveTarget(ytId: string, attempt: { fresh?: boolean
   return entry?.source.kind === "progressive" ? { url: entry.source.url, headers: entry.source.headers } : null;
 }
 
-/** Pour les tests : repartir d'un relais vide. */
 /** Ce qu'une vidéo résolue garde d'un redémarrage : sa SOURCE seule (`previewMemoryStore.ts`). */
 export interface HeldSource {
   ytId: string;
@@ -290,6 +289,7 @@ export function restoreSources(list: readonly HeldSource[], now = Date.now()): v
   evict();
 }
 
+/** Pour les tests : repartir d'un relais vide. */
 export function resetTrailerRelay(): void {
   entries.clear();
   inflight.clear();
