@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowUpRight, Film } from "lucide-react";
 import { useItemTrailer } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { WEB_TRAILER_PLATFORM } from "../../../components/detail/trailerPlatform";
 
 /**
  * `DetailTrailerButton` de l'app : la bande-annonce, sous « Lecture » — une
@@ -19,14 +20,14 @@ import type { MediaItem } from "@tentacle-tv/shared";
 export const TrailerPill = memo(function TrailerPill({ item, maxWidth }: { item: MediaItem; maxWidth: number }) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
-  const { target, visible } = useItemTrailer(item, i18n.language);
+  const { target, visible } = useItemTrailer(item, i18n.language, WEB_TRAILER_PLATFORM);
   if (!visible) return null;
   const external = target?.kind === "remote";
 
   const open = () => {
     if (!target) return;
     if (target.kind === "local") navigate(`/watch/${target.itemId}`);
-    else window.open(target.trailer.Url, "_blank", "noopener,noreferrer");
+    else if (target.kind === "remote") window.open(target.trailer.Url, "_blank", "noopener,noreferrer");
   };
 
   return (

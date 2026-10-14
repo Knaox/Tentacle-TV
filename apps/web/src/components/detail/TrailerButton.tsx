@@ -9,6 +9,7 @@ import { TrailerViewer, useFullTrailerPlayer } from "./TrailerViewer";
 import { useTrailerIntent } from "../trailerPlayer";
 import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
+import { WEB_TRAILER_PLATFORM } from "./trailerPlatform";
 
 /**
  * Bouton « Bande-annonce » sur la page détail (film ET série).
@@ -25,7 +26,7 @@ import { openExternal } from "../../lib/openExternal";
 export function TrailerButton({ item }: { item: MediaItem }) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
-  const { target, visible, remote } = useItemTrailer(item, i18n.language);
+  const { target, visible, remote } = useItemTrailer(item, i18n.language, WEB_TRAILER_PLATFORM);
   const [modalOpen, setModalOpen] = useState(false);
   const full = useFullTrailerPlayer();
   const remoteId = full && target?.kind === "remote" ? parseYouTubeId(target.trailer.Url) : null;
@@ -41,6 +42,7 @@ export function TrailerButton({ item }: { item: MediaItem }) {
       navigate(`/watch/${target.itemId}`);
       return;
     }
+    if (target.kind !== "remote") return;
     // macOS DMG : WKWebView strip le Referer pour les iframes sous frame racine
     // tauri:// → YouTube refuse l'embed (erreur 153). On ouvre dans le navigateur
     // système où le top-level est youtube.com (pas de problème de Referer).

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { useFicheTrailerHint } from "@tentacle-tv/api-client";
+import { TRAILER_PLATFORM_LEGACY, useFicheTrailerHint } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 /**
@@ -19,7 +19,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
  */
 export const TrailerHelpHint = memo(function TrailerHelpHint({ item }: { item: MediaItem }) {
   const { t, i18n } = useTranslation("trailerHelp");
-  const { phase } = useFicheTrailerHint(item, i18n.language);
+  const { phase } = useFicheTrailerHint(item, i18n.language, TRAILER_PLATFORM_LEGACY);
   if (phase !== "hint") return null;
 
   return (

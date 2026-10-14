@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   useCardRatingTarget,
   useCardToggles,
+  TRAILER_PLATFORM_LEGACY,
   useItemTrailer,
   useJellyfinClient,
   useMediaItem,
@@ -89,7 +90,7 @@ export function useDetailModel(itemId: string, gate: VigieGate | null, openSeaso
 
   const watchQuery = useSeriesWatchState(isSeries ? item?.Id : undefined);
   const watch = watchQuery.data;
-  const trailer = useItemTrailer(item, lang);
+  const trailer = useItemTrailer(item, lang, TRAILER_PLATFORM_LEGACY);
   // La bande-annonce se prépare côté serveur pendant qu'on lit la fiche — une
   // fois les listes arrivées : celle de TMDB peut faire passer la VF devant.
   useTrailerPreparation(trailer.settled && trailer.target?.kind === "remote" ? trailer.target.trailer.Url : undefined);

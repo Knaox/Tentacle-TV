@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { CircleHelp, X } from "lucide-react";
 import { useFicheTrailerHint } from "@tentacle-tv/api-client";
 import { trailerGuideHref, type MediaItem } from "@tentacle-tv/shared";
+import { WEB_TRAILER_PLATFORM } from "./trailerPlatform";
 
 const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]";
@@ -25,7 +26,7 @@ const FOCUS =
  */
 export const TrailerHelpHint = memo(function TrailerHelpHint({ item }: { item: MediaItem }) {
   const { t, i18n } = useTranslation("trailerHelp");
-  const { phase, hide, undo } = useFicheTrailerHint(item, i18n.language);
+  const { phase, hide, undo } = useFicheTrailerHint(item, i18n.language, WEB_TRAILER_PLATFORM);
   if (phase === "none") return null;
 
   return (

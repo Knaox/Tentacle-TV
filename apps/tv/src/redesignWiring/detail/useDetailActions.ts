@@ -82,7 +82,7 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         const target = trailer.target;
         if (!target) return;
         if (target.kind === "local") play(target.itemId);
-        else nav().navigate("Trailer", { url: target.trailer.Url, name: target.trailer.Name, itemId: item?.Id });
+        else if (target.kind === "remote") nav().navigate("Trailer", { url: target.trailer.Url, name: target.trailer.Name, itemId: item?.Id });
       },
       onToggleWatchlist: () => model().toggles.toggleList(),
       onToggleFavorite: () => model().toggles.toggleFavorite(),

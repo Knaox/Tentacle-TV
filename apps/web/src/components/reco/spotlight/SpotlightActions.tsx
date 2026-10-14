@@ -9,6 +9,7 @@ import { InfoIcon, PlayIcon } from "../../icons/HeroIcons";
 import { FilmIcon } from "../../media/MediaDetailIcons";
 import { CardQuickActions } from "../../cards/CardQuickActions";
 import { TrailerViewer } from "../../detail/TrailerViewer";
+import { WEB_TRAILER_PLATFORM } from "../../detail/trailerPlatform";
 import { shouldOpenYouTubeExternally } from "../../detail/youtube";
 import { PressableScale } from "../../ui/PressableScale";
 import { openExternal } from "../../../lib/openExternal";
@@ -83,13 +84,14 @@ export function SpotlightActions({ item, media, onOpenDetail, onDismiss }: Spotl
 function SpotlightTrailer({ media }: { media: MediaItem }) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
-  const { target, visible, remote } = useItemTrailer(media, i18n.language);
+  const { target, visible, remote } = useItemTrailer(media, i18n.language, WEB_TRAILER_PLATFORM);
   const [open, setOpen] = useState(false);
   if (!visible) return null;
 
   const play = () => {
     if (!target) return;
     if (target.kind === "local") return navigate(`/watch/${target.itemId}`);
+    if (target.kind !== "remote") return;
     if (shouldOpenYouTubeExternally()) return void openExternal(target.trailer.Url);
     setOpen(true);
   };

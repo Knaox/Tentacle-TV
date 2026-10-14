@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { ExtrasOwner } from "./useItemExtras";
-import { useItemTrailer } from "./useItemTrailer";
+import { useItemTrailer, type ItemTrailerOptions } from "./useItemTrailer";
 import type { RemoteTrailersOwner } from "./useRemoteTrailers";
 import { useTrailerHint } from "./useTrailerHint";
 
@@ -32,8 +32,12 @@ export type FicheTrailerHintOwner = ExtrasOwner & RemoteTrailersOwner & Pick<Med
  * qui suit le masquage (le temps d'un « Annuler »). Les téléviseurs, sans
  * geste, s'en tiennent à `phase === "hint"`.
  */
-export function useFicheTrailerHint(item: FicheTrailerHintOwner | undefined, lang: string | undefined): FicheTrailerHint {
-  const trailer = useItemTrailer(item, lang);
+export function useFicheTrailerHint(
+  item: FicheTrailerHintOwner | undefined,
+  lang: string | undefined,
+  platform: ItemTrailerOptions,
+): FicheTrailerHint {
+  const trailer = useItemTrailer(item, lang, platform);
   const { show, hide: hideForGood, undo: undoHide } = useTrailerHint({
     itemType: item?.Type,
     trailerVisible: trailer.visible,

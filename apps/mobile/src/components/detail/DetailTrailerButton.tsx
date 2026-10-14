@@ -4,7 +4,7 @@ import Animated from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useItemTrailer } from "@tentacle-tv/api-client";
+import { TRAILER_PLATFORM_LEGACY, useItemTrailer } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, spacing, useTheme } from "@/theme";
 
@@ -32,14 +32,14 @@ export const DetailTrailerButton = memo(function DetailTrailerButton({ item, bel
   const { t, i18n } = useTranslation("common");
   const router = useRouter();
   const { colors } = useTheme();
-  const { target, visible } = useItemTrailer(item, i18n.language);
+  const { target, visible } = useItemTrailer(item, i18n.language, TRAILER_PLATFORM_LEGACY);
   if (!visible) return null;
   const external = target?.kind === "remote";
 
   const open = () => {
     if (!target) return;
     if (target.kind === "local") router.push(`/watch/${target.itemId}`);
-    else Linking.openURL(target.trailer.Url).catch(() => {});
+    else if (target.kind === "remote") Linking.openURL(target.trailer.Url).catch(() => {});
   };
 
   return (

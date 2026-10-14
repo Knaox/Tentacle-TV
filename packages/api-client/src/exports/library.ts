@@ -38,7 +38,13 @@ export { useLocalTrailers, useSpecialFeatures } from "../hooks/useTrailers";
 // puis bonus), distants (Jellyfin + TMDB, triés par langue), et le bouton.
 export { useItemExtras, type ExtrasOwner, type ItemExtras } from "../hooks/useItemExtras";
 export { useRemoteTrailers, useRemoteTrailersState, type RemoteTrailersOwner } from "../hooks/useRemoteTrailers";
-export { useItemTrailer, type ItemTrailer } from "../hooks/useItemTrailer";
+export {
+  useItemTrailer, TRAILER_PLATFORM_LEGACY, type ItemTrailer, type ItemTrailerOptions, type ItemTrailerOwner,
+} from "../hooks/useItemTrailer";
+// Le catalogue des bandes-annonces d'un titre (`/api/trailers/catalog`, capacité `trailers.catalog`).
+export {
+  useTrailerCatalog, fetchTrailerCatalog, trailerCatalogQueryKey, type TrailerCatalogOwner, type TrailerCatalogState,
+} from "../trailers/useTrailerCatalog";
 // L'aperçu de bande-annonce au survol d'une carte : la bande-annonce choisie et
 // vérifiée par le serveur (`/api/trailers/preview`, capacité `trailers.preview`).
 export {
