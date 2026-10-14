@@ -127,6 +127,11 @@ export async function registerStaticClients(
       return reply.sendFile("index.html", tvPath);
     }
     if (!webPresent) return pageNotFound(reply);
+    // Interface web coupée : un fichier ABSENT d'un chemin toujours servi
+    // (`/avatars/…`, `/tentacle-logo…`, `/.well-known/…`) n'est pas une route
+    // du client — jamais sa page en repli.
+    const { enabled, setupComplete } = webUi();
+    if (!enabled && setupComplete) return pageNotFound(reply);
     // Une page de partage est publique, pas publiée : qui a le lien la voit,
     // aucun moteur de recherche ne l'indexe ni ne suit ses liens.
     if (path.startsWith("/share/")) reply.header("x-robots-tag", "noindex, nofollow");

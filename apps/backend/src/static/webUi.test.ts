@@ -94,6 +94,14 @@ describe("le câblage du service", () => {
     expect([neighbour.statusCode, neighbour.body]).toEqual([404, ""]);
   });
 
+  it("coupée et installée : un fichier ABSENT d'un chemin toujours servi répond 404 — jamais la page du web", async () => {
+    const app = await server({ enabled: false, setupComplete: true });
+    for (const url of ["/avatars/inconnu.webp", "/avatars/thumbs/inconnu.webp", "/tentacle-logo-inconnu.svg", "/.well-known/inconnu"]) {
+      const res = await app.inject({ method: "GET", url });
+      expect([url, res.statusCode, res.body]).toEqual([url, 404, ""]);
+    }
+  });
+
   it("coupée : un 404 au corps vide (la page du navigateur) ; une route d'API inconnue garde son JSON", async () => {
     const app = await server({ enabled: false, setupComplete: true });
     for (const url of ["/", "/settings"]) {
