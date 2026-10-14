@@ -447,6 +447,11 @@ ne s'y retouche à la main (`brand/avatars/README.md`, règles de dessin compris
   fois par sujet et par appareil (`tentacle_avatar_invite_seen`) : la galerie elle-même, APRÈS
   que la porte des nouveautés a tranché (`useWhatsNewGate` → `decided`), jamais par-dessus un
   autre recouvrement de démarrage ; ouverte, elle suspend la pop-up de mise à jour.
+- **Mobile** (`apps/mobile/src/avatars/`) : la même galerie en feuille (toucher désigne, toucher encore
+  choisit), images EMBARQUÉES (copiées par `generate.py`, module de `require` généré) avec repli sur
+  `/avatars/<id>.webp` du serveur ; envoi en WebP (accepté par Jellyfin 10.11). L'invitation attend le
+  registre des recouvrements du démarrage (`src/startup/` : chaque hôte y dit `pending`, `active` ou
+  `quiet`) ; sa clé est dans la liste des clés préchargées de `RNStorageAdapter`.
 
 ## Cartes — un seul survol, trois variantes
 
