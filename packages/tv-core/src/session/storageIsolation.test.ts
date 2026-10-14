@@ -31,6 +31,8 @@ const DEVICE_KEYS: Record<string, string> = {
   tentacle_rail_organize_hint: "les passages où « Maintenir OK : organiser » a paru — un apprentissage de l'appareil",
   tentacle_exo_tunneling: "le décodeur d'Android TV",
   tentacle_exo_match_frame_rate: "le décodeur d'Android TV",
+  tentacle_tv_trailer_previews: "les aperçus de bande-annonce au focus (réglage du téléviseur, comme le bureau)",
+  tentacle_tv_trailer_preview_sound: "le son de ces aperçus",
   tentacle_unpair_pending: "le marqueur des purges et révocations",
 };
 
