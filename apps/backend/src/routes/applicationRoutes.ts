@@ -45,6 +45,7 @@ import { trailerMediaRoutes } from "./trailerMedia";
 import { trailerReadinessRoutes } from "./trailerReadiness";
 import { trailerPreviewRoutes } from "./trailerPreview";
 import { startPreviewMemory } from "../services/trailers/preview/previewMemoryStore";
+import { startGuardState } from "../services/trailers/guardState";
 import { gifRoutes } from "./gifs";
 import { wsRoutes } from "./ws";
 import { watchTogetherRoutes } from "./watchTogether";
@@ -99,6 +100,8 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   await app.register(trailerPreviewRoutes, { prefix: "/api/trailers" });
   // Ses décisions et les sources du relais survivent à un redémarrage (aucune extraction à refaire).
   startPreviewMemory();
+  // Les pauses et budgets des sources (YouTube, Dailymotion) aussi : un blocage ne se lève pas au redémarrage.
+  startGuardState();
   await app.register(gifRoutes, { prefix: "/api/gifs" });
   await app.register(wsRoutes, { prefix: "/api/ws" });
   await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
