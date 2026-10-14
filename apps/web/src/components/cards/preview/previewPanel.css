@@ -38,9 +38,6 @@
   --pv-text: clamp(12px, calc(1.25cqi + 7.5px), 14.5px);
   row-gap: clamp(3px, 1.2cqi, 6px);
   padding: var(--pv-pad-top) var(--pv-pad-x) 0;
-  background:
-    radial-gradient(85% 120% at 0% 100%, rgba(var(--brand-rgb), 0.12) 0%, rgba(var(--brand-rgb), 0) 70%),
-    linear-gradient(180deg, var(--pv-panel-top) 0%, var(--pv-panel-bottom) 100%);
   color: #fff;
 }
 
@@ -50,7 +47,6 @@
   top: auto;
   container-type: inline-size;
   padding-bottom: var(--pv-pad-top);
-  background: none;
 }
 
 .card-preview-group {

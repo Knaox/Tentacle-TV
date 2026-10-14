@@ -49,7 +49,7 @@ export const PreviewMuteButton = memo(function PreviewMuteButton({
 export const PreviewTitle = memo(function PreviewTitle({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   const { broken, reportFailure } = useBrokenImage(logoUrl);
   return (
-    <div className="card-preview-title card-preview-rise">
+    <div className="card-preview-title">
       {logoUrl && !broken ? (
         <img src={logoUrl} alt="" aria-hidden draggable={false} onError={reportFailure} className="card-preview-logo" />
       ) : (

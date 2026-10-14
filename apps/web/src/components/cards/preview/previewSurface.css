@@ -29,7 +29,12 @@
    * rendue opaque — la mini-carte recouvre des affiches, rien ne doit percer. */
   --pv-panel-top: rgb(21 20 29);
   --pv-panel-bottom: rgb(12 12 18);
-  background: var(--pv-panel-bottom);
+  /* Le FOND du bandeau est celui de la boîte (la vidéo couvre le haut) : le
+   * bandeau ne porte que son contenu, qui arrive d'un seul calque. Un reflet de
+   * marque, en bas à gauche, loin de la vidéo — peint une fois. */
+  background:
+    radial-gradient(70% 55% at 0% 100%, rgba(var(--brand-rgb), 0.13) 0%, rgba(var(--brand-rgb), 0) 100%),
+    linear-gradient(180deg, var(--pv-panel-top) var(--preview-video-h, 0px), var(--pv-panel-bottom) 100%);
   box-shadow:
     0 30px 60px -22px rgba(0, 0, 0, 0.95),
     0 0 22px rgba(255, 255, 255, 0.07);

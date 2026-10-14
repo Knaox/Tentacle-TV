@@ -94,13 +94,13 @@
 }
 
 /* ── L'arrivée du contenu ───────────────────────────────────────────────────
- * Le bandeau est là dès le départ (il fait partie de la boîte qui grandit) ;
- * ce qu'il porte monte de 6 px en fondu QUAND la mini-carte est posée, en
- * cascade de 35 ms : les actions, le titre et ses étoiles, puis les infos.
- * Un seul passage, `transform` et `opacity` ; le groupe du survol, monté à la
- * révélation, part de `@starting-style`. Il repart d'un coup avec la boîte. */
-.card-preview .card-preview-rise,
-.card-preview [data-preview-slot] {
+ * Le fond du bandeau est là dès le départ (il fait partie de la boîte qui
+ * grandit) ; son contenu — actions, titre, étoiles, infos — monte de 6 px en
+ * fondu QUAND la mini-carte est presque posée, d'UN SEUL bloc : un calque,
+ * une peinture (mesuré : une cascade par élément peignait chaque ligne). Le
+ * groupe du survol se monte à la révélation, dans ce bloc encore transparent :
+ * rien ne saute à l'écran. Il repart d'un coup avec la boîte. */
+.card-preview .card-preview-panel {
   opacity: 0;
   transform: translateY(6px);
   transition:
@@ -108,32 +108,12 @@
     transform 110ms linear;
 }
 
-.card-preview[data-shown="true"] :is(.card-preview-rise, [data-preview-slot]) {
+.card-preview[data-shown="true"] .card-preview-panel {
   opacity: 1;
   transform: none;
   transition:
-    opacity 220ms var(--ease-out) calc(var(--preview-content-delay-ms) + var(--pv-rise, 0) * 35ms),
-    transform 280ms var(--ease-out) calc(var(--preview-content-delay-ms) + var(--pv-rise, 0) * 35ms);
-}
-
-@starting-style {
-  .card-preview[data-shown="true"] [data-preview-slot] {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
-.card-preview [data-preview-slot="rating"],
-.card-preview .card-preview-title {
-  --pv-rise: 1;
-}
-
-.card-preview .card-preview-line[data-line="first"] {
-  --pv-rise: 2;
-}
-
-.card-preview .card-preview-line[data-line="last"] {
-  --pv-rise: 3;
+    opacity 220ms var(--ease-out) var(--preview-content-delay-ms),
+    transform 280ms var(--ease-out) var(--preview-content-delay-ms);
 }
 
 /* Le son ne monte pas : il paraît, avec les actions — et garde son survol. */
@@ -152,7 +132,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card-preview :is(.card-preview-rise, [data-preview-slot]) {
+  .card-preview .card-preview-panel {
     transform: none !important;
   }
 }

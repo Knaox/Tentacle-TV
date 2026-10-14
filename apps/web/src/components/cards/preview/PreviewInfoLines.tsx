@@ -39,7 +39,7 @@ export const PreviewInfoLines = memo(function PreviewInfoLines({ info }: { info:
 
 function Line({ slot, children }: { slot: "first" | "last"; children: ReactNode }) {
   return (
-    <div className="card-preview-line card-preview-rise" data-line={slot}>
+    <div className="card-preview-line" data-line={slot}>
       {children}
     </div>
   );
