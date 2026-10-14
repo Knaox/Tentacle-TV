@@ -41,7 +41,7 @@ export function PreviewFrame({ view, title, artItem, detailItemId, backdropUrl, 
   const { t } = useTranslation("trailerPreview");
   const art = usePreviewArt(artItem, detailItemId, backdropUrl);
   const withPanel = view.placement.videoHeight < view.placement.height;
-  const { placement, shown, settled, engine, portalRef, focusInsideRef, close } = view;
+  const { placement, shown, settled, engine, portalRef, focusInsideRef } = view;
   // Le survol de la mini-carte n'existe que vue — et le temps de sa sortie :
   // le préchargement caché ne s'abonne à rien.
   const groupMounted = useMountWhile(shown, PREVIEW_EXIT_MS);
@@ -71,9 +71,6 @@ export function PreviewFrame({ view, title, artItem, detailItemId, backdropUrl, 
       aria-hidden={!shown}
       inert={!shown}
       style={style}
-      // La molette ne fait pas défiler une mini-carte : elle la ferme net, et
-      // le geste suivant revient à la rangée ou à la page.
-      onWheel={() => close("wheel")}
       // Les touches ne remontent pas à la carte (Entrée ouvrirait sa fiche).
       onKeyDown={(e) => e.stopPropagation()}
       onFocus={() => {

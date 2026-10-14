@@ -22,12 +22,19 @@ import { PREVIEW_ENGINE_EXIT_MS } from "./engine";
  *
  * Animations RÉDUITES : un simple fondu de 180 ms, sans échelle ni
  * déplacement, dans les deux sens.
+ *
+ * Les COURBES aussi sont ici : les voisines qui s'écartent glissent au même
+ * tempo que la mini-carte, et les lisent par import — jamais une copie.
  */
 export const PREVIEW_ENTER_MS = 340;
 export const PREVIEW_ENTER_FADE_MS = 140;
 export const PREVIEW_CONTENT_DELAY_MS = 160;
 export const PREVIEW_EXIT_MS = Math.min(220, PREVIEW_ENGINE_EXIT_MS - 20);
 export const PREVIEW_REDUCED_FADE_MS = 180;
+/** La courbe de l'ENTRÉE : décélération (`--ease-out` du thème) — elle arrive et se pose. */
+export const PREVIEW_ENTER_EASE = "var(--ease-out)";
+/** La courbe de la SORTIE : accélération (`easeIn` de `theme/motion.ts`) — elle part sans s'attarder. */
+export const PREVIEW_EXIT_EASE = "cubic-bezier(0.4, 0, 1, 1)";
 
 /** Le temps au bout duquel la mini-carte est posée : la lecture peut partir. */
 export function previewSettleMs(reduced: boolean): number {
@@ -41,4 +48,6 @@ export const PREVIEW_MOTION_VARS = {
   "--preview-content-delay-ms": `${PREVIEW_CONTENT_DELAY_MS}ms`,
   "--preview-exit-ms": `${PREVIEW_EXIT_MS}ms`,
   "--preview-reduced-ms": `${PREVIEW_REDUCED_FADE_MS}ms`,
+  "--preview-enter-ease": PREVIEW_ENTER_EASE,
+  "--preview-exit-ease": PREVIEW_EXIT_EASE,
 } as CSSProperties;
