@@ -214,6 +214,23 @@ describe("GET /api/trailers/catalog", () => {
     expect(outside.body?.entries.some((e) => e.source === "seerr")).toBe(true);
   });
 
+  it("jamais la bande-annonce d'un autre titre : Narcos Mexico glissée par TMDB dans la saison 4 (relevé réel)", async () => {
+    tmdbFetch.mockImplementation(async (path: string) => {
+      if (path === "/tv/60625/season/4/videos") {
+        return { results: [
+          { key: "QS8UhRCCpiQ", site: "YouTube", type: "Teaser", name: "Narcos Mexico: L' Agent Kiki Camarena | Bande-annonce VOSTFR | Netflix", iso_639_1: "fr" },
+          { key: "1lgxl1REYoI", site: "YouTube", type: "Teaser", name: "Rick and Morty [Saison 4] - Teaser [VF]", iso_639_1: "fr" },
+        ] };
+      }
+      return tmdb(path);
+    });
+    dailymotion.mockResolvedValueOnce(new Response(JSON.stringify({ list: [], has_more: false })));
+    const { body } = await catalog(`itemId=${SERIES}`);
+    const ids = body?.entries.map((e) => (e.playback.kind === "youtube" ? e.playback.ytId : "")) ?? [];
+    expect(ids).toContain("1lgxl1REYoI");
+    expect(ids).not.toContain("QS8UhRCCpiQ");
+  });
+
   it("un titre que ce compte ne voit pas : une liste vide, complète ; une demande illisible : 400", async () => {
     const { body } = await catalog("itemId=99999999999999999999999999999999");
     expect(body).toEqual({ entries: [], complete: true, language: "fr" });

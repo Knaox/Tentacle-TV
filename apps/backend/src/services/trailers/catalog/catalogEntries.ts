@@ -13,16 +13,23 @@ import { trailerVersionOf } from "../../../trailers/trailerCatalogRank";
 import type { AllocineMatch } from "../allocine/allocineMatch";
 import type { AllocineVersion } from "../allocine/allocineTitle";
 import type { LocalTrailer } from "./catalogTitle";
+import { namesAnotherTitle } from "./foreignTitleGuard";
 
-/** Les vidéos YouTube d'une source (TMDB, Jellyseerr, Jellyfin) pour une portée. */
+/**
+ * Les vidéos YouTube d'une source (TMDB, Jellyseerr, Jellyfin) pour une
+ * portée. `titleNames` (les noms du titre) écarte la vidéo d'un AUTRE titre
+ * glissée dans la liste (`foreignTitleGuard.ts`).
+ */
 export function youtubeEntries(
   videos: readonly TmdbVideo[],
   scope: TrailerScope,
   source: Extract<TrailerSource, "tmdb" | "seerr" | "jellyfin">,
   serverLang: string | null,
+  titleNames: readonly string[] = [],
 ): TrailerEntry[] {
   const entries: TrailerEntry[] = [];
   for (const video of videos) {
+    if (namesAnotherTitle(video.name, titleNames)) continue;
     const ytId = video.key && /^[\w-]{11}$/.test(video.key) ? video.key : parseYouTubeId(video.url);
     if (!ytId) continue;
     const kind = trailerKind({ Url: video.url, Name: video.name, type: video.type });
@@ -40,8 +47,13 @@ export function youtubeEntries(
 }
 
 /** Les `RemoteTrailers` de Jellyfin (sans type ni langue) : du film ou de la série. */
-export function jellyfinRemoteEntries(trailers: readonly JellyfinTrailer[], scope: TrailerScope, serverLang: string | null): TrailerEntry[] {
-  return youtubeEntries(trailers.map((t) => ({ key: "", url: t.Url, name: t.Name })), scope, "jellyfin", serverLang);
+export function jellyfinRemoteEntries(
+  trailers: readonly JellyfinTrailer[],
+  scope: TrailerScope,
+  serverLang: string | null,
+  titleNames: readonly string[] = [],
+): TrailerEntry[] {
+  return youtubeEntries(trailers.map((t) => ({ key: "", url: t.Url, name: t.Name })), scope, "jellyfin", serverLang, titleNames);
 }
 
 /** Les bandes-annonces locales : un fichier que l'administrateur a posé — toujours en tête de sa portée. */

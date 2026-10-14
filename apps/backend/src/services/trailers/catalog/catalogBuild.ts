@@ -121,25 +121,28 @@ export async function buildCatalog(request: TrailerCatalogRequest, userId: strin
     return allocineEntries(matchAllocineVideos(found.videos, allocineTitle(kind, info, library)));
   });
   const knownSeasons = titleInfo.then((info) => [...new Set([...(library?.seasons.map((s) => s.season) ?? []), ...(info?.seasons.map((s) => s.season) ?? [])])]);
+  // Les noms du titre : une vidéo qui en nomme un AUTRE est écartée (`foreignTitleGuard.ts`).
+  const namesOf = (info: TmdbTitle | null) => [...new Set([...(info?.names ?? []), ...(library?.names ?? [])])];
   const tmdbEntries = tmdbTitle.then(async (tmdb) => {
     if (!tmdb || !tmdbRef) return [];
-    const own = youtubeEntries(tmdb.videos, ownerScope, "tmdb", languageTag);
+    const names = namesOf(tmdb);
+    const own = youtubeEntries(tmdb.videos, ownerScope, "tmdb", languageTag, names);
     if (isMovie) return own;
     const wanted = seasonScopes(catalogScopes(targetOf(await knownSeasons))).slice(0, TMDB_SEASONS);
     const tvId = tmdbRef.id;
     const perSeason = await Promise.all(wanted.map(async (season) => {
       const videos = await fetchTmdbSeasonVideos(tvId, season, languageTag);
-      return videos ? youtubeEntries(videos, { kind: "season", season }, "tmdb", languageTag) : [];
+      return videos ? youtubeEntries(videos, { kind: "season", season }, "tmdb", languageTag, names) : [];
     }));
     return [...own, ...perSeason.flat()];
   });
-  const seerr = seerrTitle.then((title) => (title ? youtubeEntries(title.videos, ownerScope, "seerr", languageTag) : []));
+  const seerr = seerrTitle.then((title) => (title ? youtubeEntries(title.videos, ownerScope, "seerr", languageTag, namesOf(title)) : []));
 
   const sources: Array<Promise<TrailerEntry[]>> = [
     Promise.resolve(library ? localEntries(library.local, languageTag) : []),
     allocine,
     tmdbEntries,
-    Promise.resolve(library ? jellyfinRemoteEntries(library.remote, ownerScope, languageTag) : []),
+    titleInfo.then((info) => (library ? jellyfinRemoteEntries(library.remote, ownerScope, languageTag, namesOf(info)) : [])),
     seerr,
   ];
   const settled = await Promise.all(sources.map((source) => settleBy(source, deadline)));
