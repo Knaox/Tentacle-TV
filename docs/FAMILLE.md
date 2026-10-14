@@ -209,7 +209,7 @@ PIN »).
    `unlockTvManage` (SON PIN s'il en a un), puis les routes `ownerTv` ou
    `memberTv` avec le jeton de session, selon `rights`.
 
-## Le bureau : « Qui regarde ? » et le changement rapide (serveur 1.28.0)
+## Le bureau : « Qui regarde ? » et le changement rapide (serveur 1.29.0)
 
 Décisions du 14/10 (lot de nuit, à valider par Damien). Contrat :
 `familyPickerContract.ts` ; routes `picker*` de `FAMILY_ROUTES` ; capacité
@@ -692,7 +692,7 @@ une invitation n'y paraît que par le début de son identifiant.
   titre).
   Absente : serveur d'avant — les clients ne montrent rien de la Famille ; pas
   de minServer imposé.
-- Le bureau : capacité `family.desktopProfiles` (`capabilities`, 1.28.0) ;
+- Le bureau : capacité `family.desktopProfiles` (`capabilities`, 1.29.0) ;
   absente, le bureau garde sa seule session personnelle, sans « Qui
   regarde ? » ni changement de profil.
 - Une TV d'avant les profils garde son jumelage ; les clients publiés ne

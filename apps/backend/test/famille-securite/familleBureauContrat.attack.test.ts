@@ -67,8 +67,8 @@ describe("SEC-F-52 (contrat) : la plateforme de « Qui regarde ? » est une list
 // ── SEC-F-53 : capacité family.desktopProfiles ────────────────────────────────
 
 describe("SEC-F-53 (contrat) : la capacité porte la version qui livre le bureau", () => {
-  it("family.desktopProfiles arrive en 1.28.0 (un serveur d'avant n'a pas les routes)", () => {
-    expect(SERVER_CAPABILITIES["family.desktopProfiles"]).toBe("1.28.0");
+  it("family.desktopProfiles arrive en 1.29.0 (un serveur d'avant n'a pas les routes)", () => {
+    expect(SERVER_CAPABILITIES["family.desktopProfiles"]).toBe("1.29.0");
   });
 });
 

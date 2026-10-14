@@ -1,7 +1,7 @@
 import type { FamilyProfileColor, FamilyProfileKind, FamilySwitches } from "./familyContract";
 
 /**
- * « Qui regarde ? » hors des TV — le CONTRAT du BUREAU (serveur 1.28.0,
+ * « Qui regarde ? » hors des TV — le CONTRAT du BUREAU (serveur 1.29.0,
  * capacité `family.desktopProfiles`). Le reste du contrat :
  * `familyContract.ts` ; les TV : `familyTvContract.ts` ; carnet :
  * docs/FAMILLE.md, « Le bureau ».

@@ -244,7 +244,7 @@ bande-annonce dans une mini-carte 16:9. Règle de Damien : AUCUNE transition
 s'il n'y a pas de bande-annonce lisible, rien non plus sur erreur — la vidéo
 est éprouvée AVANT d'être proposée. L'aperçu lit le RELAIS (pas l'iframe
 YouTube) : qualité maîtrisée, aucun habillage YouTube, un vrai essai côté
-serveur. Capacité `trailers.preview` (1.28.0).
+serveur. Capacité `trailers.preview` (1.29.0).
 
 **Le contrat** : `packages/shared/src/trailers/trailerPreview.ts`, recopié
 octet pour octet dans `apps/backend/src/trailers/` (avec la liste,

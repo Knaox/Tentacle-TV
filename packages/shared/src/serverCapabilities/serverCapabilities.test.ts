@@ -28,14 +28,15 @@ describe("capacités du serveur", () => {
     expect(resolveServerCapabilities({ version: "1.25.0" }).has("trailers.player")).toBe(false);
     // Celles de l'app Windows (1.27.0) n'y sont pas encore en 1.26.0, ni
     // « Films pour vous » (1.27.1) en 1.27.0, ni l'aperçu au survol ni les profils
-    // du bureau (1.28.0) en 1.27.1.
+    // du bureau (1.29.0) en 1.27.1.
     const since = (versions: string[]) => SERVER_CAPABILITY_KEYS.filter((key) => !versions.includes(SERVER_CAPABILITIES[key]));
-    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(since(["1.27.0", "1.27.1", "1.28.0"]).length);
-    expect(resolveServerCapabilities({ version: "1.27.0" }).size).toBe(since(["1.27.1", "1.28.0"]).length);
-    expect(resolveServerCapabilities({ version: "1.27.1" }).size).toBe(since(["1.28.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(since(["1.27.0", "1.27.1", "1.29.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.27.0" }).size).toBe(since(["1.27.1", "1.29.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.27.1" }).size).toBe(since(["1.29.0"]).length);
     expect(resolveServerCapabilities({ version: "1.27.1" }).has("trailers.preview")).toBe(false);
     expect(resolveServerCapabilities({ version: "1.27.1" }).has("family.desktopProfiles")).toBe(false);
-    expect(resolveServerCapabilities({ version: "1.28.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
+    expect(resolveServerCapabilities({ version: "1.28.0" }).size).toBe(since(["1.29.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.29.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 
   it("pas de réponse, réponse illisible : aucune capacité, jamais d'erreur", () => {
@@ -50,7 +51,7 @@ describe("capacités du serveur", () => {
     const none = resolveServerCapabilities({ version: "1.23.0" });
     expect(missingServerCapabilities(none)).toEqual(SERVER_CAPABILITY_KEYS);
     // La plus récente des versions qui apportent ce qui manque.
-    expect(newestMissingSince(none)).toBe("1.28.0");
+    expect(newestMissingSince(none)).toBe("1.29.0");
     const all = resolveServerCapabilities({ capabilities: SERVER_CAPABILITY_KEYS });
     expect(missingServerCapabilities(all)).toEqual([]);
     expect(newestMissingSince(all)).toBeNull();

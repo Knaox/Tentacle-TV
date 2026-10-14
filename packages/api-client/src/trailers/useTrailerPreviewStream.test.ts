@@ -48,7 +48,7 @@ async function render(enabled: boolean) {
 }
 
 function serverDeclares(capabilities: string[]) {
-  qc.setQueryData(["app-config", ""], { version: "1.28.0", brandName: "Tentacle", features: { downloads: false, demo: false }, capabilities });
+  qc.setQueryData(["app-config", ""], { version: "1.29.0", brandName: "Tentacle", features: { downloads: false, demo: false }, capabilities });
 }
 
 beforeEach(() => {
