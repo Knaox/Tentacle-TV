@@ -10,6 +10,12 @@ export default {
   settingAccessibleName: "Trailer previews on hover",
   settingDescription: "Rest the pointer on a poster and its trailer starts, with sound. This setting applies to this device only.",
 
+  // ── Le réglage des téléviseurs (Réglages › Lecture, Apple TV et Android TV) ──
+  tvSettingTitle: "Previews on focus",
+  tvSettingDescription: "Stay on a card for a second: it grows and its trailer starts. This setting applies to this TV only.",
+  tvSoundTitle: "Preview sound",
+  tvSoundDescription: "When off, trailers play silently.",
+
   // ── La mini-carte ──────────────────────────────────────────────────────
   previewLabel: "Trailer preview for {{title}}",
   previewLabelUntitled: "Trailer preview",

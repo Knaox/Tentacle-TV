@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Platform } from "react-native";
-import { setPlaybackSettings, useOwnPlaybackSettings } from "@tentacle-tv/api-client";
+import { setPlaybackSettings, useOwnPlaybackSettings, useServerCapability } from "@tentacle-tv/api-client";
 import { detectPreset, presetSettings, uiLanguage, type PlaybackPreset } from "@tentacle-tv/shared";
 import { SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
 import type {
@@ -26,6 +26,12 @@ import {
 import { liquidGlassStore } from "../../lib/liquidGlass";
 import { useScrubCountdownSettings } from "../../lib/scrubCountdownSettings";
 import { TV_PLATFORM_LABEL } from "../../lib/platformLabel";
+import {
+  trailerPreviewSoundStore,
+  trailerPreviewsStore,
+  useTrailerPreviewSound,
+  useTrailerPreviewsEnabled,
+} from "../../lib/trailerPreviewSettings";
 
 // Source unique des versions : versions.json à la racine du monorepo (champ tv).
 const TV_VERSION: string = require("../../../../../versions.json").tv ?? "0.0.0";
@@ -50,6 +56,9 @@ export function useSettingsModel() {
   const scrub = useScrubCountdownSettings();
   const scrubSettings = scrub.settings;
   const updateScrub = scrub.update;
+  const previewCapable = useServerCapability("trailers.preview");
+  const previewsEnabled = useTrailerPreviewsEnabled();
+  const previewSound = useTrailerPreviewSound();
 
   const name = paired.name ?? "—";
   const account = useMemo<SettingsAccount>(
@@ -79,8 +88,10 @@ export function useSettingsModel() {
       scrubCountdown: Platform.OS === "ios"
         ? { outcome: scrubSettings.outcome, delaySeconds: scrubSettings.delaySeconds, delays: SCRUB_COUNTDOWN_DELAYS }
         : null,
+      // Les aperçus au focus : rien à régler face à un serveur qui n'en sert pas.
+      trailerPreviews: previewCapable ? { enabled: previewsEnabled, sound: previewSound } : null,
     }),
-    [preset, interfaceLanguage, libraryModels, tunneling, matchFrameRate, scrubSettings],
+    [preset, interfaceLanguage, libraryModels, tunneling, matchFrameRate, scrubSettings, previewCapable, previewsEnabled, previewSound],
   );
 
   const about = useMemo<SettingsAbout>(
@@ -130,6 +141,8 @@ export function useSettingsModel() {
     onToggleMatchFrameRate: exoMatchFrameRateStore.set,
     onSelectScrubOutcome: selectScrubOutcome,
     onSelectScrubDelay: selectScrubDelay,
+    onToggleTrailerPreviews: trailerPreviewsStore.set,
+    onToggleTrailerPreviewSound: trailerPreviewSoundStore.set,
     onToggleLiquidGlass: liquidGlassStore.set,
     onChoose: chooseValue,
     closeChoices,

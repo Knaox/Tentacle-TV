@@ -96,6 +96,8 @@ export function SettingsRedesign({ route }: Props) {
           onToggleMatchFrameRate={model.onToggleMatchFrameRate}
           onSelectScrubOutcome={model.onSelectScrubOutcome}
           onSelectScrubDelay={model.onSelectScrubDelay}
+          onToggleTrailerPreviews={model.onToggleTrailerPreviews}
+          onToggleTrailerPreviewSound={model.onToggleTrailerPreviewSound}
           appearance={PLATFORM_TRAITS.liquidGlass}
           onToggleLiquidGlass={PLATFORM_TRAITS.liquidGlass ? model.onToggleLiquidGlass : undefined}
           renderTier={lite.renderTier}

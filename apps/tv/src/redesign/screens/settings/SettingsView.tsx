@@ -110,6 +110,8 @@ export interface SettingsViewProps {
   onToggleMatchFrameRate?: (next: boolean) => void;
   onSelectScrubOutcome?: (outcome: "return" | "resume") => void;
   onSelectScrubDelay?: (seconds: number) => void;
+  onToggleTrailerPreviews?: (next: boolean) => void;
+  onToggleTrailerPreviewSound?: (next: boolean) => void;
   onToggleLiquidGlass?: (next: boolean) => void;
   /** Faux : l'onglet Apparence (le réglage Liquid Glass) n'existe pas sur
    *  cette plateforme (trait `liquidGlass`). Absent : il existe. */
@@ -207,6 +209,8 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onToggleMatchFrameRate={props.onToggleMatchFrameRate}
                   onSelectScrubOutcome={props.onSelectScrubOutcome}
                   onSelectScrubDelay={props.onSelectScrubDelay}
+                  onToggleTrailerPreviews={props.onToggleTrailerPreviews}
+                  onToggleTrailerPreviewSound={props.onToggleTrailerPreviewSound}
                 />
               ) : null}
               {tab === "appearance" && (appearance || renderTier) ? (

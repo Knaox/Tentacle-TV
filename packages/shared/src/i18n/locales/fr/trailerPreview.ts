@@ -14,6 +14,12 @@ export default {
   settingAccessibleName: "Aperçus de bande-annonce au survol",
   settingDescription: "Laissez le pointeur sur une affiche\u00a0: sa bande-annonce se lance, avec le son. Réglage propre à cet appareil.",
 
+  // ── Le réglage des téléviseurs (Réglages › Lecture, Apple TV et Android TV) ──
+  tvSettingTitle: "Aperçus au focus",
+  tvSettingDescription: "Restez une seconde sur une carte\u00a0: elle s'agrandit et sa bande-annonce se lance. Réglage propre à ce téléviseur.",
+  tvSoundTitle: "Son des aperçus",
+  tvSoundDescription: "Coupé, la bande-annonce se joue en silence.",
+
   // ── La mini-carte ──────────────────────────────────────────────────────
   /** Le nom de la mini-carte, pour les lecteurs d'écran. */
   previewLabel: "Aperçu de la bande-annonce de {{title}}",
