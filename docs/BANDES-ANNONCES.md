@@ -428,12 +428,17 @@ yt-dlp qui compte ses appels et un faux googlevideo local ; puis
 - **Le préchargement** : avant la révélation, une seconde de tampon — le
   premier segment, celui que le serveur a lu d'avance (hls.js en prenait
   trente secondes : son tampon de 60 Mo) ; montrée, douze secondes.
-- **La révélation sur l'image** : la bande-annonce VÉRIFIÉE par le serveur
-  et l'image du titre chargée et décodée dans la mini-carte
-  (`reportStillReady`), la mini-carte se montre au rendez-vous (800 ms) sans
-  attendre la première image ; la vidéo la rejoint en fondu (`videoReady`),
-  ou la mini-carte s'efface si elle ne vient pas (8 s). Sans image : à la
-  première image, comme avant ; sans bande-annonce lisible : rien, jamais.
+- **La révélation sur l'image** : la bande-annonce VÉRIFIÉE par le serveur,
+  son premier fragment VIDÉO reçu ici (le flux coule : `FRAG_LOADED` du
+  niveau principal, ou des images en tampon en lecture native) et l'image du
+  titre chargée et décodée dans la mini-carte (`reportStillReady`) : la
+  mini-carte se montre au rendez-vous (800 ms) sans attendre la première
+  image ; la vidéo la rejoint en fondu (`videoReady`), ou la mini-carte
+  s'efface si elle ne vient pas (8 s). Un flux trouvé mais bloqué (en-têtes
+  puis rien, segments refusés) ne fait rien grandir — recette de R, banc :
+  `_stall`, `_failseg=404|500` → jamais montrée, voisines immobiles ; réseau
+  lent → montrée à son premier fragment. Sans image : à la première image,
+  comme avant ; sans bande-annonce lisible : rien, jamais.
 - **Le letterbox incrusté** (`previewLetterbox.ts`) : à la première image,
   UNE copie dans un canevas de 64 × 144 mesure les bandes noires au pixel près
   (noir d'encodage pur, des deux côtés, contenu jusqu'aux bords) ; la vidéo
@@ -447,12 +452,14 @@ les chiffres de la nuit —, build de production, charge ~8) :
 
 | | Avant (f45bf593c) | Après |
 |---|---|---|
-| Froid, montrée (4 titres) | 2 083 à 2 762 ms | 1 865 à 2 580 ms (intention + serveur + ~60 ms) |
+| Froid, montrée (4 titres) | 2 083 à 2 762 ms | 1 972 à 2 591 ms (intention + serveur + 75 à 175 ms : le premier fragment) |
 | Chaud, montrée | 826 à 839 ms (1re image à 473–534) | 822 à 843 ms (1re image à 370–446) |
 | Déjà vu, montrée | 837 à 885 ms | 828 ms |
 | Lecture, rendu / GPU (% d'un cœur, mini-carte de 331 px) | 5,3 / 3,7 (1080p) | 2,4 / 3,5 (360p, densité 1) ; 2,6–3,1 / 3,5–3,7 (720p, Retina) |
 
-À froid, le client n'ajoute plus que ~60 ms au serveur : passer sous 1,5 s
+À froid, le client n'ajoute plus que 75 à 175 ms au serveur (le premier
+fragment vidéo ; ~60 ms si l'on n'attendait que l'image, mais un flux bloqué
+ferait alors grandir la mini-carte) : passer sous 1,5 s
 demande un serveur sous ~1,2 s (ouvrier chaud, TMDB, vérification) — à
 mesurer sur le réseau de la maison, pas sur un partage de connexion.
 

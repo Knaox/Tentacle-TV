@@ -9,8 +9,9 @@
  * en vrai (14/10), la seconde paraissait « légèrement trop longue » : le
  * rendez-vous est à 800 ms de survol. Et seulement avec de quoi montrer : la
  * première image de la vidéo, ou l'image du titre une fois la bande-annonce
- * VÉRIFIÉE par le serveur — la vidéo la rejoint alors en fondu. Jamais un
- * cadre noir, jamais un chargement à l'écran.
+ * VÉRIFIÉE par le serveur et son premier fragment vidéo reçu (le flux coule)
+ * — la vidéo la rejoint alors en fondu. Jamais un cadre noir, jamais un
+ * chargement à l'écran, jamais un flux bloqué qui ferait tout grandir.
  *
  * Pour tenir ce rendez-vous, rien n'attend la seconde : la demande au serveur
  * part à l'INTENTION — 250 ms de survol ET un pointeur arrêté depuis 100 ms ;
