@@ -10,18 +10,26 @@
 /*  (`trailerKind` : un « Clip » qui se dit bande-annonce en est une). */
 /* ------------------------------------------------------------------ */
 
-import { mergeTrailers, parseYouTubeId, trailerKind, type JellyfinTrailer, type TmdbVideo } from "../../../trailers/trailerList";
+import {
+  mergeTrailers, parseYouTubeId, trailerKind, trailerLangRank, type JellyfinTrailer, type TmdbVideo,
+} from "../../../trailers/trailerList";
 
-/** Les identifiants YouTube à essayer, le meilleur d'abord, sans doublon. */
-export function previewCandidates(jellyfin: readonly JellyfinTrailer[], tmdb: readonly TmdbVideo[], lang: string | undefined): string[] {
+export interface PreviewCandidate {
+  ytId: string;
+  /** 0 doublée dans la langue visée, 1 sous-titrée, 2 autre (`trailerLangRank`). */
+  langRank: number;
+}
+
+/** Les vidéos YouTube à essayer, la meilleure d'abord, sans doublon, avec leur rang de langue. */
+export function previewCandidates(jellyfin: readonly JellyfinTrailer[], tmdb: readonly TmdbVideo[], lang: string | undefined): PreviewCandidate[] {
   const seen = new Set<string>();
-  const candidates: string[] = [];
+  const candidates: PreviewCandidate[] = [];
   for (const trailer of mergeTrailers([...jellyfin], [...tmdb], lang)) {
     const ytId = parseYouTubeId(trailer.Url);
     if (!ytId || seen.has(ytId)) continue;
     if (trailerKind(trailer) === "other") continue;
     seen.add(ytId);
-    candidates.push(ytId);
+    candidates.push({ ytId, langRank: trailerLangRank(trailer, lang) });
   }
   return candidates;
 }

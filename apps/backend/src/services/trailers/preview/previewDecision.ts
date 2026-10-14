@@ -13,6 +13,9 @@
 /*  l'adresse, ou le budget de l'heure est épuisé (`youtubeGuard.ts`) :*/
 /*  plus aucune extraction d'aperçu — « aucune lisible » ou            */
 /*  « réessayez », tout de suite, sans rien retenir par titre.         */
+/*  Une langue moins bonne, trouvée après l'échec d'une meilleure (la  */
+/*  VO après une VF qui n'a pas répondu), n'est gardée que dix         */
+/*  minutes : le survol suivant redonne sa chance à la VF.             */
 /* ------------------------------------------------------------------ */
 
 import {
@@ -55,6 +58,13 @@ const PREVIEW_EXTRACTION: ExtractionOptions = { priority: "preview", budgetMs: 2
 const MAX_PENDING_DECISIONS = 4;
 const BUSY_RETRY_S = 2;
 const MAX_DECISIONS = 1_000;
+/** Une langue de repli (la VF a échoué, la VO a répondu) ne se garde pas des heures. */
+const FALLBACK_LANG_TTL_MS = 10 * 60 * 1000;
+/**
+ * La version des RÈGLES de choix, dans la clé : une décision prise avant
+ * (la VOST crue VF, gardée ~6 h et au redémarrage) ne se sert plus.
+ */
+const RULES_VERSION = "r2";
 
 const decisions = new TtlLru<Decision>(MAX_DECISIONS);
 const inflight = new Map<string, Promise<PreviewOutcome>>();
@@ -136,8 +146,10 @@ function guardStop(): PreviewOutcome | null {
   return { kind: "limited", retryAfterS: Math.max(1, Math.ceil(refusal.retryAfterMs / 1000)) };
 }
 
-function found(key: string, ytId: string, resolved: ResolvedTrailer, started: number, how: string, stages: Stages): PreviewOutcome {
-  remember(key, { kind: "found", ytId }, resolved.validUntil - Date.now());
+function found(
+  key: string, ytId: string, resolved: ResolvedTrailer, started: number, how: string, stages: Stages, maxTtlMs = Infinity,
+): PreviewOutcome {
+  remember(key, { kind: "found", ytId }, Math.min(resolved.validUntil - Date.now(), maxTtlMs));
   const detail = `TMDB ${stages.tmdb}, extraction ${stages.extract}, vérification ${stages.verify}`;
   console.log(`[trailers] aperçu ${key} : ${ytId} (${resolved.kind}, ${resolved.heights[0] ?? "mp4"}) en ${Date.now() - started} ms (${detail}), ${how}`);
   return { kind: "found", ytId, resolved };
@@ -167,12 +179,19 @@ async function decide(key: string, title: PreviewTitle, lang: string | undefined
     console.log(`[trailers] aperçu ${key} : aucune bande-annonce${tmdb.complete ? "" : " (TMDB sans réponse)"}`);
     return refuse(key, tmdb.complete ? "no_trailer" : "unavailable");
   }
-  for (const [index, ytId] of candidates.entries()) {
+  const bestLang = candidates[0].langRank;
+  for (const [index, { ytId, langRank }] of candidates.entries()) {
     if (index > 0 && Date.now() - started >= DECISION_BUDGET_MS) break;
     const resolved = await playable(ytId, stages);
-    if (resolved) return found(key, ytId, resolved, started, `essai ${index + 1}/${candidates.length}`, stages);
-    const stop = guardStop();
-    if (stop) return stop;
+    if (!resolved) {
+      const stop = guardStop();
+      if (stop) return stop;
+      continue;
+    }
+    // Une meilleure langue a échoué avant : ce repli ne dure que dix minutes.
+    const fallback = langRank > bestLang;
+    const how = `essai ${index + 1}/${candidates.length}${fallback ? ", langue de repli gardée 10 min" : ""}`;
+    return found(key, ytId, resolved, started, how, stages, fallback ? FALLBACK_LANG_TTL_MS : Infinity);
   }
   console.warn(`[trailers] aperçu ${key} : aucune lisible (${candidates.length} candidate(s), ${Date.now() - started} ms)`);
   return refuse(key, "unavailable");
@@ -185,7 +204,7 @@ async function decide(key: string, title: PreviewTitle, lang: string | undefined
  * reprend — comme une nouvelle, limite et plafond compris.
  */
 export async function decidePreview(title: PreviewTitle, lang: string | undefined, account: string): Promise<PreviewOutcome> {
-  const key = `${title.key}|${lang ?? "-"}`;
+  const key = `${title.key}|${lang ?? "-"}|${RULES_VERSION}`;
   const known = decisions.get(key);
   if (known?.kind === "refused") return known;
   const ready = known?.kind === "found" ? peekTrailer(known.ytId) : null;

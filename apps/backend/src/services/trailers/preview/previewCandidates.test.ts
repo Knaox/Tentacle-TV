@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { TmdbVideo } from "../../../trailers/trailerList";
-import { previewCandidates } from "./previewCandidates";
+import { previewCandidates as rankedCandidates } from "./previewCandidates";
+
+const previewCandidates = (...args: Parameters<typeof rankedCandidates>) => rankedCandidates(...args).map((c) => c.ytId);
 
 const yt = (id: string) => `https://www.youtube.com/watch?v=${id}`;
 const tmdb = (key: string, type: string, lang?: string, name = key): TmdbVideo => ({ key, name, type, site: "YouTube", lang, url: yt(key) });
@@ -37,6 +39,13 @@ describe("candidates d'un aperçu", () => {
       tmdb("voTrailer01", "Trailer", "fr", "Bande-annonce VO"),
     ];
     expect(previewCandidates([], videos, "fr")).toEqual(["vfClipBA001", "vfTeaser001", "vostTrail01", "voTrailer01"]);
+  });
+
+  it("chaque candidate porte son rang de langue : la VF 0, la VOST 1, le reste 2", () => {
+    const videos = [tmdb("vfTrailer01", "Trailer", "fr", "Bande-annonce VF"), tmdb("vostTrail01", "Trailer", "fr", "Bande-annonce VOST"), tmdb("enTrailer01", "Trailer", "en")];
+    expect(rankedCandidates([], videos, "fr")).toEqual([
+      { ytId: "vfTrailer01", langRank: 0 }, { ytId: "vostTrail01", langRank: 1 }, { ytId: "enTrailer01", langRank: 2 },
+    ]);
   });
 
   it("YouTube seulement, une vidéo une fois — TMDB et Jellyfin fusionnés par identifiant", () => {
