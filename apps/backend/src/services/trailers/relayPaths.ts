@@ -10,6 +10,7 @@
 
 import { RELAY_TOKEN_TTL_MS, signRelayToken, type RelayScope } from "./relayToken";
 import type { ResolvedTrailer } from "./trailerRelay";
+import { refPathSegment } from "./videoRef";
 
 export const HLS_MIME = "application/vnd.apple.mpegurl";
 export const MP4_MIME = "video/mp4";
@@ -26,14 +27,19 @@ export interface RelayedStream {
 }
 
 /** `scope` : `preview` pour l'aperçu — ses chemins ne font jamais ré-extraire (`relayToken.ts`). */
-export function relayedStream(ytId: string, resolved: ResolvedTrailer, now = Date.now(), scope: RelayScope = "play"): RelayedStream {
-  const token = signRelayToken(ytId, now, scope);
+/**
+ * `ref` : la clé de la vidéo (`videoRef.ts` — l'identifiant YouTube nu, ou
+ * `dm:<id>`), encodée dans les chemins.
+ */
+export function relayedStream(ref: string, resolved: ResolvedTrailer, now = Date.now(), scope: RelayScope = "play"): RelayedStream {
+  const token = signRelayToken(ref, now, scope);
   const hls = resolved.kind === "hls";
+  const segment = refPathSegment(ref);
   return {
     token,
-    path: hls ? `/api/trailers/hls/${ytId}/master.m3u8?t=${token}` : `/api/trailers/file/${ytId}.mp4?t=${token}`,
+    path: hls ? `/api/trailers/hls/${segment}/master.m3u8?t=${token}` : `/api/trailers/file/${segment}.mp4?t=${token}`,
     mimeType: hls ? HLS_MIME : MP4_MIME,
-    qualities: resolved.heights.map((height) => ({ height, path: `/api/trailers/hls/${ytId}/master-${height}.m3u8?t=${token}` })),
+    qualities: resolved.heights.map((height) => ({ height, path: `/api/trailers/hls/${segment}/master-${height}.m3u8?t=${token}` })),
     // Le jeton est signé à la seconde près, tronquée : une seconde de marge.
     expiresAt: Math.min(resolved.validUntil, now + RELAY_TOKEN_TTL_MS - 1000),
   };

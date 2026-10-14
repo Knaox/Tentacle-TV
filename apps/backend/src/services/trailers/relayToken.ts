@@ -3,10 +3,11 @@
 /*                                                                     */
 /*  AVPlayer ne pose pas d'en-tête `Authorization` sur les listes et   */
 /*  les segments qu'il demande : l'accès se porte dans l'URL. Le jeton */
-/*  lie UNE vidéo à une échéance, signée par un secret propre à ce     */
-/*  processus — seule une vidéo qu'un compte connecté a résolue se     */
-/*  laisse relayer, et le serveur ne devient pas un relais YouTube     */
-/*  ouvert à qui connaît l'adresse. Un redémarrage invalide les jetons */
+/*  lie UNE vidéo (sa clé, `videoRef.ts`) à une échéance, signée par   */
+/*  un secret propre à ce processus — seule une vidéo qu'un compte     */
+/*  connecté a résolue se laisse relayer, et le serveur ne devient pas */
+/*  un relais YouTube ni Dailymotion ouvert à qui connaît l'adresse.   */
+/*  Un redémarrage invalide les jetons                                 */
 /*  en cours : la bande-annonce en lecture s'arrête, la suivante se    */
 /*  résout de nouveau.                                                 */
 /*                                                                     */
@@ -27,20 +28,20 @@ export const RELAY_TOKEN_TTL_MS = 4 * 60 * 60 * 1000;
 export type RelayScope = "play" | "preview";
 
 /** La portée entre dans la signature : retirer la marque d'un jeton d'aperçu ne le change pas en jeton de lecture. */
-function mac(ytId: string, expiry: number, scope: RelayScope): string {
-  const subject = scope === "preview" ? `${ytId}:${expiry}:preview` : `${ytId}:${expiry}`;
+function mac(ref: string, expiry: number, scope: RelayScope): string {
+  const subject = scope === "preview" ? `${ref}:${expiry}:preview` : `${ref}:${expiry}`;
   return createHmac("sha256", SECRET).update(subject).digest("base64url");
 }
 
-/** Le jeton d'accès aux flux relayés de `ytId`, valable `RELAY_TOKEN_TTL_MS` — `expiry.mac`, ou `expiry.p.mac` pour un aperçu. */
-export function signRelayToken(ytId: string, now = Date.now(), scope: RelayScope = "play"): string {
+/** Le jeton d'accès aux flux relayés de `ref`, valable `RELAY_TOKEN_TTL_MS` — `expiry.mac`, ou `expiry.p.mac` pour un aperçu. */
+export function signRelayToken(ref: string, now = Date.now(), scope: RelayScope = "play"): string {
   const expiry = Math.floor((now + RELAY_TOKEN_TTL_MS) / 1000);
   const encoded = expiry.toString(36);
-  return scope === "preview" ? `${encoded}.p.${mac(ytId, expiry, scope)}` : `${encoded}.${mac(ytId, expiry, scope)}`;
+  return scope === "preview" ? `${encoded}.p.${mac(ref, expiry, scope)}` : `${encoded}.${mac(ref, expiry, scope)}`;
 }
 
-/** La portée du jeton s'il ouvre les flux de `ytId` à cet instant ; `null` sinon. */
-export function relayTokenScope(ytId: string, token: unknown, now = Date.now()): RelayScope | null {
+/** La portée du jeton s'il ouvre les flux de `ref` à cet instant ; `null` sinon. */
+export function relayTokenScope(ref: string, token: unknown, now = Date.now()): RelayScope | null {
   if (typeof token !== "string") return null;
   const parts = token.split(".");
   const [encoded, mark, signature] = parts.length === 3 ? parts : [parts[0], undefined, parts[1]];
@@ -48,7 +49,7 @@ export function relayTokenScope(ytId: string, token: unknown, now = Date.now()):
   const scope: RelayScope = mark === "p" ? "preview" : "play";
   const expiry = parseInt(encoded ?? "", 36);
   if (!signature || !Number.isFinite(expiry) || expiry * 1000 < now) return null;
-  const expected = Buffer.from(mac(ytId, expiry, scope));
+  const expected = Buffer.from(mac(ref, expiry, scope));
   const given = Buffer.from(signature);
   return given.length === expected.length && timingSafeEqual(given, expected) ? scope : null;
 }
@@ -59,7 +60,7 @@ export function relayTokenExpiry(token: string): number | null {
   return Number.isFinite(expiry) ? expiry * 1000 : null;
 }
 
-/** Le jeton ouvre-t-il les flux de `ytId` à cet instant, quelle que soit sa portée ? */
-export function verifyRelayToken(ytId: string, token: unknown, now = Date.now()): boolean {
-  return relayTokenScope(ytId, token, now) !== null;
+/** Le jeton ouvre-t-il les flux de `ref` à cet instant, quelle que soit sa portée ? */
+export function verifyRelayToken(ref: string, token: unknown, now = Date.now()): boolean {
+  return relayTokenScope(ref, token, now) !== null;
 }

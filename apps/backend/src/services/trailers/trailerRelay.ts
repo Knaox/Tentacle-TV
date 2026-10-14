@@ -1,6 +1,11 @@
 /* ------------------------------------------------------------------ */
 /*  Le relais des bandes-annonces : résolutions, listes, reprises      */
 /*                                                                     */
+/*  Chaque vidéo est rangée sous sa CLÉ (`videoRef.ts`) : l'identifiant*/
+/*  YouTube nu, ou `dm:<id>` pour Dailymotion (AlloCiné). Seule la     */
+/*  résolution diffère — yt-dlp ou les métadonnées de Dailymotion ;    */
+/*  listes, segments, jetons et reprises sont les mêmes.               */
+/*                                                                     */
 /*  Une vidéo résolue reste en mémoire jusqu'à l'échéance de ses URL   */
 /*  googlevideo (~6 h) : la relancer, ou la préparer à l'ouverture de  */
 /*  la fiche, ne coûte plus d'extraction. Deux demandes simultanées    */
@@ -9,36 +14,19 @@
 /*  extraction, transparente pour le téléviseur.                       */
 /* ------------------------------------------------------------------ */
 
-import { parseMaster, renderMaster, rewriteMedia, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
+import type { RelayMaster, RelayMedia } from "./hlsPlaylists";
 import { evictEntries } from "./relayEviction";
 import { fetchUpstream, isReadable } from "./relayUpstream";
-import { extractTrailerSource, type ExtractionOptions } from "./ytExtract";
+import { extractTrailerSource, type ExtractionOptions, type ExtractionResult } from "./ytExtract";
+import { extractDailymotionSource } from "./dailymotionSource";
 import type { RelayScope } from "./relayToken";
 import type { TrailerSource } from "./trailerSource";
+import { parseVideoRef } from "./videoRef";
 import type { SubtitleCandidate } from "./trailerSubtitles";
+import { fixedMaster, loadEntryMaster, loadEntryMedia, resolvedOf, TOKEN_SLOT, type Entry, type ResolvedTrailer } from "./relayEntry";
 
-export { fetchUpstream, isReadable };
-
-/** Le jeton est posé au moment de servir : les textes gardés n'en portent que la place. */
-export const TOKEN_SLOT = "{{t}}";
-
-export interface Entry {
-  source: TrailerSource;
-  /** Les pistes de sous-titres offertes (trailerSubtitles.ts), relayées par trailerSubtitleRelay.ts. */
-  subtitles: SubtitleCandidate[];
-  /** Les WebVTT déjà convertis, par clé de piste. */
-  subtitleTexts: Map<string, string>;
-  validUntil: number;
-  extractedAt: number;
-  lastUsed: number;
-  master?: RelayMaster;
-  masterText?: string;
-  /** Les maîtres réduits à une qualité (gabarits à jeton), par hauteur. */
-  fixedMasters: Map<number, string>;
-  media: Map<string, RelayMedia>;
-  /** Les lectures amont en vol : deux demandes de la même liste en partagent une. */
-  loading: Map<string, Promise<unknown>>;
-}
+export { fetchUpstream, isReadable, resolvedOf, TOKEN_SLOT };
+export type { Entry, ResolvedTrailer };
 
 /** Un trou de dix minutes avant l'échéance : une bande-annonce entamée doit pouvoir finir. */
 const EXPIRY_MARGIN_MS = 10 * 60 * 1000;
@@ -68,32 +56,39 @@ const misses = new Map<string, number>();
 
 const evict = () => evictEntries(entries, Date.now(), { full: MAX_ENTRIES, total: MAX_SOURCES });
 
-async function extract(ytId: string, options: ExtractionOptions): Promise<Entry | null> {
+/** La source d'une vidéo : yt-dlp pour YouTube, les métadonnées du lecteur pour Dailymotion. */
+function extractSource(key: string, options: ExtractionOptions): Promise<ExtractionResult> {
+  const ref = parseVideoRef(key);
+  if (!ref) return Promise.resolve({ ok: false, permanent: true, timedOut: false, reason: "référence inconnue" });
+  return ref.kind === "dailymotion" ? extractDailymotionSource(ref.id) : extractTrailerSource(ref.id, options);
+}
+
+async function extract(ref: string, options: ExtractionOptions): Promise<Entry | null> {
   const started = Date.now();
-  const result = await extractTrailerSource(ytId, options);
+  const result = await extractSource(ref, options);
   // Rien demandé à YouTube (aperçu suspendu, budget de l'heure) : rien à retenir contre la vidéo.
   if (!result.ok && result.skipped) return null;
   if (!result.ok) {
-    if (!result.timedOut) misses.set(ytId, Date.now() + (result.permanent ? PERMANENT_MISS_MS : TRANSIENT_MISS_MS));
+    if (!result.timedOut) misses.set(ref, Date.now() + (result.permanent ? PERMANENT_MISS_MS : TRANSIENT_MISS_MS));
     if (misses.size > 500) for (const [id, until] of misses) if (until <= Date.now()) misses.delete(id);
-    console.warn(`[trailers] ${ytId} : aucun flux (${result.reason})`);
+    console.warn(`[trailers] ${ref} : aucun flux (${result.reason})`);
     return null;
   }
   if (result.source.kind === "progressive" && !(await isReadable(result.source.url, result.source.headers))) {
-    misses.set(ytId, Date.now() + TRANSIENT_MISS_MS);
-    console.warn(`[trailers] ${ytId} : MP4 refusé par googlevideo au-delà de son début (via ${result.clients.join(",")})`);
+    misses.set(ref, Date.now() + TRANSIENT_MISS_MS);
+    console.warn(`[trailers] ${ref} : MP4 refusé par googlevideo au-delà de son début (via ${result.clients.join(",")})`);
     return null;
   }
-  misses.delete(ytId);
+  misses.delete(ref);
   const now = Date.now();
   const entry: Entry = {
     source: result.source, subtitles: result.subtitles, subtitleTexts: new Map(), fixedMasters: new Map(),
     validUntil: result.source.expiresAt - EXPIRY_MARGIN_MS, extractedAt: now, lastUsed: now, media: new Map(), loading: new Map(),
   };
-  entries.set(ytId, entry);
+  entries.set(ref, entry);
   evict();
   relayChanged();
-  console.log(`[trailers] ${ytId} : ${result.source.kind} via ${result.clients.join(",")} en ${Date.now() - started} ms`);
+  console.log(`[trailers] ${ref} : ${result.source.kind} via ${result.clients.join(",")} en ${Date.now() - started} ms`);
   return entry;
 }
 
@@ -105,10 +100,10 @@ async function extract(ytId: string, options: ExtractionOptions): Promise<Entry 
  * `heldOnly` : la vidéo que le relais TIENT, ou rien — jamais d'extraction.
  */
 export function resolveEntry(
-  ytId: string,
+  ref: string,
   { fresh = false, heldOnly = false, ...extraction }: { fresh?: boolean; heldOnly?: boolean } & ExtractionOptions = {},
 ): Promise<Entry | null> {
-  const known = entries.get(ytId);
+  const known = entries.get(ref);
   if (heldOnly) {
     if (!known || known.validUntil <= Date.now()) return Promise.resolve(null);
     known.lastUsed = Date.now();
@@ -119,72 +114,41 @@ export function resolveEntry(
     known.lastUsed = Date.now();
     return Promise.resolve(known);
   }
-  const pending = inflight.get(ytId);
+  const pending = inflight.get(ref);
   if (pending) return pending;
-  if (!fresh && (misses.get(ytId) ?? 0) > Date.now()) return Promise.resolve(null);
-  if (fresh) entries.delete(ytId);
-  const task = extract(ytId, extraction).finally(() => inflight.delete(ytId));
-  inflight.set(ytId, task);
+  if (!fresh && (misses.get(ref) ?? 0) > Date.now()) return Promise.resolve(null);
+  if (fresh) entries.delete(ref);
+  const task = extract(ref, extraction).finally(() => inflight.delete(ref));
+  inflight.set(ref, task);
   return task;
 }
 
-export interface ResolvedTrailer {
-  kind: TrailerSource["kind"];
-  validUntil: number;
-  /** Les qualités au choix (hauteurs H.264 du maître) ; vide pour un MP4. */
-  heights: number[];
-  subtitles: SubtitleCandidate[];
+/** Le maître d'une vidéo, lu une fois ; lu, elle pèse ses listes : le relais fait de la place. */
+export function loadMaster(entry: Entry): Promise<RelayMaster | null> {
+  return loadEntryMaster(entry, evict);
 }
 
-export function resolvedOf(entry: Entry): ResolvedTrailer {
-  const heights = entry.source.kind === "hls" ? entry.source.heights : [];
-  return { kind: entry.source.kind, validUntil: entry.validUntil, heights, subtitles: entry.subtitles };
+/** Une liste de segments, lue une fois ; le maître lu en chemin fait aussi de la place. */
+export function loadMedia(entry: Entry, key: string): Promise<RelayMedia | null> {
+  return loadEntryMedia(entry, key, evict);
 }
 
-/** L'état d'une vidéo pour qui la lance : son genre, l'échéance de ses URL, ses qualités et ses pistes. */
-export async function resolveTrailer(ytId: string, extraction: ExtractionOptions & { fresh?: boolean } = {}): Promise<ResolvedTrailer | null> {
-  const entry = await resolveEntry(ytId, extraction);
-  return entry ? resolvedOf(entry) : null;
+/**
+ * L'état d'une vidéo pour qui la lance : son genre, l'échéance de ses URL, ses
+ * qualités et ses pistes. Une source HLS qui ne dit pas ses hauteurs
+ * (Dailymotion) fait lire son maître d'abord : il les donne, et un maître
+ * illisible rend la vidéo indisponible au lieu d'un lecteur qui échoue.
+ */
+export async function resolveTrailer(key: string, extraction: ExtractionOptions & { fresh?: boolean } = {}): Promise<ResolvedTrailer | null> {
+  const entry = await resolveEntry(key, extraction);
+  if (!entry) return null;
+  if (entry.source.kind === "hls" && entry.source.heights.length === 0 && !(await loadMaster(entry))) return null;
+  return resolvedOf(entry);
 }
 
 /** La vidéo telle que le relais la tient, sans extraction ni lecture amont (`trailerPrepare.ts`). */
-export function heldEntry(ytId: string): Entry | undefined {
-  return entries.get(ytId);
-}
-
-/** Une lecture amont à la fois par ressource ; une erreur de réseau vaut « rien ». */
-function once<T>(entry: Entry, key: string, task: () => Promise<T | null>): Promise<T | null> {
-  const pending = entry.loading.get(key) as Promise<T | null> | undefined;
-  if (pending) return pending;
-  const run = task().catch(() => null).finally(() => entry.loading.delete(key));
-  entry.loading.set(key, run);
-  return run;
-}
-
-export function loadMaster(entry: Entry): Promise<RelayMaster | null> {
-  if (entry.master) return Promise.resolve(entry.master);
-  const source = entry.source;
-  if (source.kind !== "hls") return Promise.resolve(null);
-  return once(entry, "master", async () => {
-    const { res } = await fetchUpstream(source.masterUrl, source.headers);
-    if (!res.ok) return null;
-    const master = parseMaster(await res.text(), source.masterUrl);
-    if (!master) return null;
-    entry.master = master;
-    entry.masterText = renderMaster(master, (key) => `p/${key}.m3u8?t=${TOKEN_SLOT}`);
-    evict();
-    return master;
-  });
-}
-
-/** Le maître réduit à `height` (gabarit à jeton), gardé avec la vidéo. */
-function fixedMaster(entry: Entry, master: RelayMaster, height: number): string {
-  let text = entry.fixedMasters.get(height);
-  if (!text) {
-    text = renderMaster(master, (key) => `p/${key}.m3u8?t=${TOKEN_SLOT}`, height);
-    entry.fixedMasters.set(height, text);
-  }
-  return text;
+export function heldEntry(ref: string): Entry | undefined {
+  return entries.get(ref);
 }
 
 /**
@@ -201,9 +165,9 @@ export function relayAttempts(scope: RelayScope): Array<{ fresh: boolean; heldOn
  * Le maître relayé (gabarit à jeton), avec une reprise si l'URL amont est
  * morte. Avec `height`, le maître réduit à cette qualité.
  */
-export async function masterTemplate(ytId: string, height?: number, scope: RelayScope = "play"): Promise<string | null> {
+export async function masterTemplate(ref: string, height?: number, scope: RelayScope = "play"): Promise<string | null> {
   for (const attempt of relayAttempts(scope)) {
-    const entry = await resolveEntry(ytId, attempt);
+    const entry = await resolveEntry(ref, attempt);
     if (!entry) return null;
     const master = await loadMaster(entry);
     if (master) return height ? fixedMaster(entry, master, height) : entry.masterText ?? null;
@@ -212,25 +176,10 @@ export async function masterTemplate(ytId: string, height?: number, scope: Relay
   return null;
 }
 
-export function loadMedia(entry: Entry, key: string): Promise<RelayMedia | null> {
-  const cached = entry.media.get(key);
-  if (cached) return Promise.resolve(cached);
-  return once(entry, `media:${key}`, async () => {
-    const master = await loadMaster(entry);
-    const upstream = master?.variants.find((v) => v.key === key)?.upstream ?? master?.audio.find((a) => a.key === key)?.upstream;
-    if (!upstream || entry.source.kind !== "hls") return null;
-    const { res } = await fetchUpstream(upstream, entry.source.headers);
-    if (!res.ok) return null;
-    const media = rewriteMedia(await res.text(), upstream, (i) => `../s/${key}/${i}.ts?t=${TOKEN_SLOT}`, () => `../s/${key}/init.mp4?t=${TOKEN_SLOT}`);
-    if (media) entry.media.set(key, media);
-    return media;
-  });
-}
-
 /** Une liste de segments relayée (gabarit à jeton), avec une reprise si l'URL amont est morte. */
-export async function mediaTemplate(ytId: string, key: string, scope: RelayScope = "play"): Promise<string | null> {
+export async function mediaTemplate(ref: string, key: string, scope: RelayScope = "play"): Promise<string | null> {
   for (const attempt of relayAttempts(scope)) {
-    const entry = await resolveEntry(ytId, attempt);
+    const entry = await resolveEntry(ref, attempt);
     if (!entry) return null;
     const media = await loadMedia(entry, key);
     if (media) return media.text;
@@ -239,8 +188,8 @@ export async function mediaTemplate(ytId: string, key: string, scope: RelayScope
 }
 
 /** L'URL amont d'un segment (`index` ou `"init"`) et les en-têtes qui vont avec. */
-export async function segmentTarget(ytId: string, key: string, index: number | "init", attempt: { fresh?: boolean; heldOnly?: boolean } = {}) {
-  const entry = await resolveEntry(ytId, attempt);
+export async function segmentTarget(ref: string, key: string, index: number | "init", attempt: { fresh?: boolean; heldOnly?: boolean } = {}) {
+  const entry = await resolveEntry(ref, attempt);
   if (!entry) return null;
   const media = await loadMedia(entry, key);
   const url = index === "init" ? media?.init : media?.segments[index];
@@ -248,8 +197,8 @@ export async function segmentTarget(ytId: string, key: string, index: number | "
 }
 
 /** L'URL amont du MP4 progressif (repli des vidéos sans HLS). */
-export async function progressiveTarget(ytId: string, attempt: { fresh?: boolean; heldOnly?: boolean } = {}) {
-  const entry = await resolveEntry(ytId, attempt);
+export async function progressiveTarget(ref: string, attempt: { fresh?: boolean; heldOnly?: boolean } = {}) {
+  const entry = await resolveEntry(ref, attempt);
   return entry?.source.kind === "progressive" ? { url: entry.source.url, headers: entry.source.headers } : null;
 }
 
@@ -270,10 +219,14 @@ export function onRelaySourcesChange(listener: (() => void) | null): void {
   onChange = listener;
 }
 
-/** Les sources encore valables, pour la mémoire durable. */
+/**
+ * Les sources YouTube encore valables, pour la mémoire durable. Celles de
+ * Dailymotion n'y vont pas : relues en une requête, sans extraction, elles ne
+ * valent pas d'être gardées d'un redémarrage.
+ */
 export function heldSources(now = Date.now()): HeldSource[] {
   return [...entries]
-    .filter(([, e]) => e.validUntil > now)
+    .filter(([key, e]) => e.validUntil > now && parseVideoRef(key)?.kind === "youtube")
     .map(([ytId, e]) => ({ ytId, source: e.source, subtitles: e.subtitles, validUntil: e.validUntil, extractedAt: e.extractedAt }));
 }
 

@@ -8,6 +8,11 @@
 /*  elles, sont liées à celle de l'extraction. Résolution gardée en    */
 /*  mémoire jusqu'à l'échéance des URL, préparable dès l'ouverture de  */
 /*  la fiche. Aucune clé exposée, routes protégées par requireAuth.    */
+/*                                                                     */
+/*  Le même relais lit Dailymotion (`dmId`, les bandes-annonces        */
+/*  d'AlloCiné) : son flux SANS publicité, relayé de la même façon —   */
+/*  ses URL sont, elles aussi, liées à l'adresse qui les a obtenues.   */
+/*  Le web et le bureau y lisent leur lecteur complet.                 */
 /* ------------------------------------------------------------------ */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
@@ -18,21 +23,33 @@ import { resolveTrailer } from "../services/trailers/trailerRelay";
 import { prepareTrailer } from "../services/trailers/trailerPrepare";
 import { relayedStream } from "../services/trailers/relayPaths";
 import { orderSubtitles } from "../services/trailers/trailerSubtitles";
+import { isDailymotionId, isYouTubeId, refOfQuery, refPathSegment, type VideoRef } from "../services/trailers/videoRef";
+import { refreshTitleLanguage } from "../services/reco/titleLanguage";
 
-/** Même contrainte que parseYouTubeId (@tentacle-tv/shared) : 11 caractères. */
-const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
-
-/** L'issue d'une lecture, telle que le téléviseur la rend (`reportTrailerOutcome`). */
+/** L'issue d'une lecture, telle que le lecteur la rend (`reportTrailerOutcome`) : `ytId` OU `dmId`. */
 const OUTCOME = z.object({
-  ytId: z.string().regex(YT_ID_RE),
+  ytId: z.string().refine(isYouTubeId).optional(),
+  dmId: z.string().refine(isDailymotionId).optional(),
   ok: z.boolean(),
   ms: z.number().int().min(0).max(10 * 60_000),
   reason: z.string().max(200).optional(),
-});
+}).refine((o) => (o.ytId === undefined) !== (o.dmId === undefined));
 
-function ytIdOf(request: FastifyRequest): string | null {
-  const { ytId } = request.query as { ytId?: string };
-  return ytId && YT_ID_RE.test(ytId) ? ytId : null;
+function refOf(request: FastifyRequest): VideoRef | null {
+  return refOfQuery(request.query as { ytId?: unknown; dmId?: unknown });
+}
+
+const LANG_RE = /^[a-zA-Z]{2,3}(-[\w]{2,8})?$/;
+
+/**
+ * La langue des sous-titres en tête : celle que le client demande (la TV
+ * passe son interface), sinon celle du SERVEUR — la langue des métadonnées
+ * de Jellyfin, celle des titres hors bibliothèque (`titleLanguage.ts`).
+ */
+async function subtitleLanguage(request: FastifyRequest): Promise<string | undefined> {
+  const { lang } = request.query as { lang?: string };
+  if (typeof lang === "string" && LANG_RE.test(lang)) return lang;
+  return (await refreshTitleLanguage().catch(() => null)) ?? undefined;
 }
 
 export async function trailerRoutes(app: FastifyInstance) {
@@ -41,7 +58,7 @@ export async function trailerRoutes(app: FastifyInstance) {
   startYtDlpUpdates();
 
   /**
-   * GET /api/trailers/resolve?ytId=<11 chars>[&lang=fr]
+   * GET /api/trailers/resolve?ytId=<11 chars>|dmId=<id>[&lang=fr]
    * → 200 { url, path, mimeType, expiresAt, qualities, subtitles }  le flux
    *        RELAYÉ par ce serveur :
    *        `path` à poser derrière l'adresse que le client connaît (la TV) ;
@@ -51,52 +68,52 @@ export async function trailerRoutes(app: FastifyInstance) {
    *        (`path` seul vaut « Auto ») — vide pour un MP4 ;
    *        `subtitles` [{ lang, label, auto, path }] : les pistes de YouTube,
    *        relayées en WebVTT, la langue `lang` (l'interface) puis l'anglais
-   *        en tête. Additifs (capacité `trailers.player`) : un client d'avant
-   *        ne lit que `url` / `path`.
+   *        en tête — sans `lang`, la langue du serveur (métadonnées de
+   *        Jellyfin), rendue dans `language`. Additifs (capacité
+   *        `trailers.player`) : un client d'avant ne lit que `url` / `path`.
    * → 400 { error: "invalid ytId" }
    * → 404 { error: "unavailable" }  aucun flux lisible (retenu une minute,
    *        une heure si la vidéo est retirée ou privée)
    */
   app.get("/resolve", async (request: FastifyRequest, reply: FastifyReply) => {
-    const ytId = ytIdOf(request);
-    if (!ytId) return reply.status(400).send({ error: "invalid ytId" });
+    const ref = refOf(request);
+    if (!ref) return reply.status(400).send({ error: "invalid ytId" });
 
-    const resolved = await resolveTrailer(ytId);
+    const [resolved, language] = await Promise.all([resolveTrailer(ref.key), subtitleLanguage(request)]);
     if (!resolved) return reply.status(404).send({ error: "unavailable" });
     // Le maître et les premières listes partent chez googlevideo pendant que la
     // réponse voyage : AVPlayer les trouvera prêts, ou en route.
-    void prepareTrailer(ytId).catch(() => undefined);
+    void prepareTrailer(ref.key).catch(() => undefined);
 
-    const { token, path, mimeType, qualities } = relayedStream(ytId, resolved);
-    const { lang } = request.query as { lang?: string };
-    const uiLang = typeof lang === "string" && /^[a-zA-Z]{2,3}(-[\w]{2,8})?$/.test(lang) ? lang : undefined;
+    const { token, path, mimeType, qualities } = relayedStream(ref.key, resolved);
     return {
       url: `${request.protocol}://${request.host}${path}`,
       path,
       mimeType,
       expiresAt: resolved.validUntil,
       qualities,
-      subtitles: orderSubtitles(resolved.subtitles, uiLang).map((s) => ({
-        lang: s.lang, label: s.label, auto: s.auto, path: `/api/trailers/subs/${ytId}/${s.key}.vtt?t=${token}`,
+      subtitles: orderSubtitles(resolved.subtitles, language).map((s) => ({
+        lang: s.lang, label: s.label, auto: s.auto, path: `/api/trailers/subs/${refPathSegment(ref.key)}/${s.key}.vtt?t=${token}`,
       })),
+      ...(language ? { language } : {}),
     };
   });
 
   /**
-   * GET /api/trailers/prepare?ytId=<11 chars> → 202, tout de suite.
+   * GET /api/trailers/prepare?ytId=<11 chars>|dmId=<id> → 202, tout de suite.
    * La fiche qui propose une bande-annonce la fait préparer — extraction,
    * maître, premières listes — pendant qu'on la lit : le lancement n'attend
    * plus yt-dlp. Sans effet si elle est déjà prête ou en cours.
    */
   app.get("/prepare", async (request: FastifyRequest, reply: FastifyReply) => {
-    const ytId = ytIdOf(request);
-    if (!ytId) return reply.status(400).send({ error: "invalid ytId" });
-    void prepareTrailer(ytId).catch((err) => console.warn(`[trailers] préparation de ${ytId} :`, err?.message ?? err));
+    const ref = refOf(request);
+    if (!ref) return reply.status(400).send({ error: "invalid ytId" });
+    void prepareTrailer(ref.key).catch((err) => console.warn(`[trailers] préparation de ${ref.key} :`, err?.message ?? err));
     return reply.status(202).send({ status: "preparing" });
   });
 
   /**
-   * POST /api/trailers/report { ytId, ok, ms, reason? } → 204.
+   * POST /api/trailers/report { ytId | dmId, ok, ms, reason? } → 204.
    * Le téléviseur dit comment la lecture s'est passée : la première image et
    * son délai depuis l'ouverture de l'écran, ou l'échec et sa raison. Une
    * ligne de journal par lecture — c'est elle qui dira, en production, que
@@ -105,9 +122,10 @@ export async function trailerRoutes(app: FastifyInstance) {
   app.post("/report", async (request: FastifyRequest, reply: FastifyReply) => {
     const parsed = OUTCOME.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: "invalid report" });
-    const { ytId, ok, ms, reason } = parsed.data;
-    if (ok) console.log(`[trailers] ${ytId} : première image en ${ms} ms`);
-    else console.warn(`[trailers] ${ytId} : échec de lecture après ${ms} ms (${reason ?? "sans raison"})`);
+    const { ok, ms, reason } = parsed.data;
+    const video = parsed.data.ytId ?? `dm:${parsed.data.dmId}`;
+    if (ok) console.log(`[trailers] ${video} : première image en ${ms} ms`);
+    else console.warn(`[trailers] ${video} : échec de lecture après ${ms} ms (${reason ?? "sans raison"})`);
     return reply.status(204).send();
   });
 }

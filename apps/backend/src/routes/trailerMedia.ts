@@ -19,8 +19,8 @@ import {
 } from "../services/trailers/trailerRelay";
 import { subtitleVtt } from "../services/trailers/trailerSubtitleRelay";
 import { heldSegment, type HeldSegment } from "../services/trailers/trailerSegments";
+import { parseVideoRef } from "../services/trailers/videoRef";
 
-const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 const KEY_RE = /^[\w-]{1,16}$/;
 /** `master.m3u8` (« Auto »), ou `master-720.m3u8` : le maître réduit à une qualité. */
 const MASTER_RE = /^master(?:-(\d{3,4}))?\.m3u8$/;
@@ -34,20 +34,21 @@ const FILE_TIMEOUT_MS = 10 * 60_000;
 
 type Params = { ytId: string; name?: string; key?: string };
 
-/** La vidéo `ytId`, si le jeton de la requête l'ouvre ; sinon la réponse est déjà partie. */
 /**
- * La vidéo `ytId` et la portée du jeton qui l'ouvre ; sinon la réponse est
- * déjà partie. Un jeton d'APERÇU ne fait jamais ré-extraire : la vidéo que le
+ * La vidéo (sa clé : l'identifiant YouTube nu, ou `dm:<id>`, décodé par
+ * Fastify) et la portée du jeton qui l'ouvre ; sinon la réponse est déjà
+ * partie. Un jeton d'APERÇU ne fait jamais ré-extraire : la vidéo que le
  * relais a oubliée répond 404, et le client redemande `/preview` — gardé.
  */
-function authorize(ytId: string, request: FastifyRequest, reply: FastifyReply): { ytId: string; token: string; scope: RelayScope } | null {
+function authorize(param: string, request: FastifyRequest, reply: FastifyReply): { ytId: string; token: string; scope: RelayScope } | null {
   const { t } = request.query as { t?: string };
-  const scope = YT_ID_RE.test(ytId) ? relayTokenScope(ytId, t) : null;
-  if (!scope) {
+  const key = parseVideoRef(param)?.key;
+  const scope = key ? relayTokenScope(key, t) : null;
+  if (!key || !scope) {
     reply.status(403).send({ error: "forbidden" });
     return null;
   }
-  return { ytId, token: t as string, scope };
+  return { ytId: key, token: t as string, scope };
 }
 
 type Access = { token: string; scope: RelayScope };
