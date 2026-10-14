@@ -41,6 +41,8 @@ function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel
     engine: {
       mount: true,
       visible: over.shown ?? false,
+      videoReady: true,
+      reportStillReady: () => undefined,
       muted: over.muted ?? false,
       toggleMute: () => undefined,
       renderVideo: ({ hold, className }: { hold: boolean; className: string }) => {

@@ -6,6 +6,7 @@ import {
   trailerPreviewMounted,
   trailerPreviewPlaying,
   trailerPreviewSubjectKey,
+  trailerPreviewVideoReady,
   trailerPreviewVisible,
   trailerPreviewWantsStream,
   uiLanguage,
@@ -33,7 +34,10 @@ import { usePreviewMachine } from "./usePreviewMachine";
  *     cesse avant la réponse ;
  *   - la vidéo se charge cachée et en pause jusqu'à sa première image ;
  *   - la mini-carte se montre au plus tôt à `revealMs` (800 ms, cf.
- *     `previewTiming.ts`) et seulement si la vidéo est prête ;
+ *     `previewTiming.ts`) et seulement si la vidéo est prête — ou si la
+ *     mini-carte a l'image du titre (`reportStillReady`) : la bande-annonce
+ *     est VÉRIFIÉE par le serveur, la vidéo rejoint l'image à sa première
+ *     image (`videoReady`) ;
  *   - un refus du serveur, une erreur, un blocage : rien ne s'anime.
  *
  * Bloqué (aucune requête, rien à l'écran) : réglage coupé, serveur sans la
@@ -155,6 +159,7 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
   const cycleRef = useRef(state.cycle);
   cycleRef.current = state.cycle;
   const onReady = useCallback(() => dispatch({ type: "videoReady", at: Date.now() }), [dispatch]);
+  const reportStillReady = useCallback(() => dispatch({ type: "stillReady", at: Date.now() }), [dispatch]);
   const onError = useCallback(() => dispatch({ type: "videoFailed", at: Date.now() }), [dispatch]);
   const onEnded = useCallback(() => dispatch({ type: "videoEnded", at: Date.now() }), [dispatch]);
   const onSoundBlocked = useCallback(() => setSoundBlockedCycle(cycleRef.current), []);
@@ -163,6 +168,7 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
   const mount = trailerPreviewMounted(state) && streamValue !== null;
   const visible = trailerPreviewVisible(state) && streamValue !== null;
   const playing = trailerPreviewPlaying(state);
+  const videoReady = trailerPreviewVideoReady(state);
   const volume = visible ? TRAILER_PREVIEW_TIMING.volume : 0;
 
   const videoProps = useMemo(
@@ -172,8 +178,9 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
 
   return useMemo(
     () => ({
-      phase: state.phase, mount, visible, playing, stream: streamValue, muted, toggleMute, onReady, onError, onEnded, videoProps,
+      phase: state.phase, mount, visible, videoReady, reportStillReady, playing, stream: streamValue, muted, toggleMute,
+      onReady, onError, onEnded, videoProps,
     }),
-    [state.phase, mount, visible, playing, streamValue, muted, toggleMute, onReady, onError, onEnded, videoProps],
+    [state.phase, mount, visible, videoReady, reportStillReady, playing, streamValue, muted, toggleMute, onReady, onError, onEnded, videoProps],
   );
 }

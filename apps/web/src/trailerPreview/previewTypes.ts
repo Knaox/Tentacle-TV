@@ -47,8 +47,20 @@ export interface TrailerPreviewHandle {
   phase: TrailerPreviewPhase;
   /** La vidéo doit exister (chargée cachée, puis montrée, puis en fondu de sortie `TRAILER_PREVIEW_TIMING.exitMs`). */
   mount: boolean;
-  /** La mini-carte se montre : vidéo prête, seconde de survol écoulée, survol tenu, rien ne bloque. */
+  /**
+   * La mini-carte se montre : rendez-vous passé (800 ms), survol tenu, rien ne
+   * bloque, et la vidéo prête — OU l'image du titre signalée (`reportStillReady`) :
+   * la vidéo la rejoint alors à sa première image (`videoReady`).
+   */
   visible: boolean;
+  /** La première image de la vidéo est décodée : elle peut se montrer, en fondu sur l'image du titre. */
+  videoReady: boolean;
+  /**
+   * La mini-carte a l'image du titre chargée ET décodée (jamais une image
+   * cassée) : la révélation n'attend plus la vidéo. Stable, sans effet hors
+   * d'un aperçu dont le serveur a vérifié la bande-annonce.
+   */
+  reportStillReady: () => void;
   /** La vidéo joue (montrée ou en fondu de sortie). */
   playing: boolean;
   stream: TrailerPreviewStream | null;

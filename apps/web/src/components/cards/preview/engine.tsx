@@ -22,8 +22,20 @@ export type PreviewMediaType = "movie" | "tv";
 export interface PreviewEngine {
   /** La vidéo existe : chargée cachée, montrée, ou dans son fondu de sortie. */
   mount: boolean;
-  /** La mini-carte se montre : première image décodée, seconde de survol écoulée. */
+  /**
+   * La mini-carte se montre : rendez-vous passé, et la première image décodée
+   * — ou l'image du titre signalée par `reportStillReady` (la bande-annonce est
+   * vérifiée par le serveur ; la vidéo la rejoint à `videoReady`).
+   */
   visible: boolean;
+  /** La première image de la vidéo est décodée : la vidéo peut se montrer (en fondu sur l'image du titre). */
+  videoReady: boolean;
+  /**
+   * À appeler quand l'image du titre est chargée ET décodée (`img.decode()`),
+   * jamais pour une image cassée : la mini-carte peut alors se montrer sans
+   * attendre la vidéo. Stable ; sans effet hors d'un aperçu vérifié.
+   */
+  reportStillReady: () => void;
   muted: boolean;
   toggleMute: () => void;
   /** L'élément vidéo, plein cadre ; `hold` le garde sur sa première image. */
@@ -40,7 +52,7 @@ export { previewSubjectOfTitle };
 /** Le moteur pour une carte : `hovered` est le survol EFFECTIF (fermetures forcées déjà retirées). */
 export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolean): PreviewEngine {
   const handle = useTrailerPreview(subject, hovered);
-  const { videoProps, mount, visible, muted, toggleMute } = handle;
+  const { videoProps, mount, visible, videoReady, reportStillReady, muted, toggleMute } = handle;
   const renderVideo = useCallback(
     ({ hold, className }: { hold: boolean; className: string }) => (
       <TrailerPreviewVideo {...videoProps} hold={hold} className={className} />
@@ -48,7 +60,7 @@ export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolea
     [videoProps],
   );
   return useMemo(
-    () => ({ mount, visible, muted, toggleMute, renderVideo }),
-    [mount, visible, muted, toggleMute, renderVideo],
+    () => ({ mount, visible, videoReady, reportStillReady, muted, toggleMute, renderVideo }),
+    [mount, visible, videoReady, reportStillReady, muted, toggleMute, renderVideo],
   );
 }
