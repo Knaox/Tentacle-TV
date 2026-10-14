@@ -58,7 +58,15 @@ export function curtainOf(profile: Pick<PickerProfileDto, "userId" | "name" | "c
 }
 
 export function activeProfileOf(profile: PickerProfileDto): ActiveProfile {
-  return { id: profile.userId, name: profile.name, kind: profile.kind, color: profile.color, imageTag: profile.imageTag, hasPin: profile.hasPin };
+  return {
+    id: profile.userId,
+    name: profile.name,
+    kind: profile.kind,
+    color: profile.color,
+    imageTag: profile.imageTag,
+    hasPin: profile.hasPin,
+    photoEditable: profile.photoEditable === true,
+  };
 }
 
 export async function commitPick(picked: PickedProfileDto, context: CommitContext = {}): Promise<CommitResult> {

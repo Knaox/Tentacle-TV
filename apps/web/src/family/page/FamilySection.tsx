@@ -8,6 +8,7 @@ import {
   useRemoveFamilyMember,
   useSetFamilyGuestRights,
   useSetFamilyMemberRights,
+  useServerCapability,
   useUserId,
 } from "@tentacle-tv/api-client";
 import {
@@ -31,6 +32,7 @@ import { InviteDialog } from "./InviteDialog";
 import { PendingInvitations } from "./PendingInvitations";
 import { GuestPinDialog } from "./PinEditors";
 import { ProfileRow } from "./ProfileRow";
+import { useAvatarGallery } from "../../profiles/avatarGallery/useAvatarGallery";
 import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON } from "./familyUi";
 
 /** Les refus que la page dit déjà dans ses encarts (SettingsFamily), et ceux
@@ -58,6 +60,12 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const guestRequests = useFamilyAvailability().capability?.guestRequests;
   const capability = useMemo(() => ({ guestRequests }), [guestRequests]);
   const removeMember = useRemoveFamilyMember();
+  // La photo d'un invité : le serveur 1.29.0 l'habille, depuis une session personnelle.
+  const guestPhotos = useServerCapability("family.guestPhotos");
+  const { openGallery, dialog: galleryDialog } = useAvatarGallery();
+  const onGuestPhoto = useCallback((profile: FamilyProfileDto) => {
+    openGallery({ kind: "guest", userId: profile.userId, name: profile.name, imageTag: profile.imageTag, through: "session" });
+  }, [openGallery]);
   const deleteGuest = useDeleteFamilyGuest();
   const cancelInvite = useCancelFamilyInvitation();
   const setRights = useSetFamilyMemberRights();
@@ -143,6 +151,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
                 rightPending={setRights.isPending || setGuestRights.isPending}
                 onRemove={onRemove}
                 onGuestPin={setPinGuest}
+                onGuestPhoto={guestPhotos && personal ? onGuestPhoto : undefined}
                 onRightChange={onRightChange}
               />
             ))}
@@ -166,6 +175,8 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
       {family && owner && family.pendingInvitations.length > 0 && (
         <PendingInvitations invitations={family.pendingInvitations} canManage={personal} onCancel={onCancelInvite} />
       )}
+
+      {galleryDialog}
 
       <FamilyConfirm
         pending={confirming}

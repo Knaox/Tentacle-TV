@@ -17,6 +17,7 @@ import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 import { ProfileMenuHeader } from "./userMenu/ProfileMenuHeader";
 import { useMenuKeyboard } from "./userMenu/useMenuKeyboard";
 import { useAvatarGallery } from "../profiles/avatarGallery/useAvatarGallery";
+import { useGuestSessionPhoto } from "../profiles/avatarGallery/useGuestSessionPhoto";
 
 /**
  * Bouton avatar + dropdown menu pour le desktop (TopNav).
@@ -72,6 +73,13 @@ export function UserAvatarMenu() {
     close();
     openGallery();
   }, [close, openGallery]);
+  // Session d'un invité que l'appareil peut habiller : sa photo, par la session personnelle.
+  const guestTarget = useGuestSessionPhoto();
+  const changeGuestPhoto = useCallback(() => {
+    if (!guestTarget) return;
+    close();
+    openGallery(guestTarget);
+  }, [close, openGallery, guestTarget]);
 
   // Bascule manuelle hors ligne : desktop uniquement, et seulement quand tout
   // va bien (hors ligne, la pastille du TopNav porte déjà l'action inverse).
@@ -128,7 +136,7 @@ export function UserAvatarMenu() {
       <Dropdown open={open} onClose={close} placement="bottom-end" minWidth={240}>
         <div ref={menuKeys.panelRef} onKeyDown={menuKeys.onKeyDown}>
           {activeProfile ? (
-            <ProfileMenuHeader profile={activeProfile} />
+            <ProfileMenuHeader profile={activeProfile} onChangePhoto={guestTarget ? changeGuestPhoto : undefined} />
           ) : (
             <AccountHeader
               avatar={avatarContent}

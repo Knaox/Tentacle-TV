@@ -11,6 +11,11 @@ export default {
     title: "Choisissez votre personnage",
     subtitle: "{{count}} personnages, chacun son genre de film — ou votre propre photo. Elle vous suivra sur tous vos appareils.",
   },
+  guest: {
+    change: "Changer la photo de {{name}}",
+    title: "La photo de {{name}}",
+    subtitle: "Un personnage pour {{name}}, ou une photo importée. Elle s'affiche sur ses TV et dans « Qui regarde ? ».",
+  },
   collections: {
     abyss: "Les abysses",
     cineclub: "Le ciné-club",

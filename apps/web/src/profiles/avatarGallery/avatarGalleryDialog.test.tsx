@@ -13,10 +13,10 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string, values?: Record<string, unknown>) => (values ? `${key}:${JSON.stringify(values)}` : key) }),
 }));
 vi.mock("../../contexts/ToastContext", () => ({ useToast: () => ({ show: () => undefined }) }));
-vi.mock("../../hooks/useAvatarUpload", () => ({
-  useAvatarUpload: () => ({ avatarSrc: null, upload: async () => true, uploading: false }),
+vi.mock("./useAvatarTarget", () => ({
+  ACCOUNT_TARGET: { kind: "account" },
+  useAvatarTarget: () => ({ currentSrc: null, initial: "D", uploading: false, upload: async () => true }),
 }));
-vi.mock("../../components/userMenu/menuItems", () => ({ getUserInfo: () => ({ initial: "D" }) }));
 // Le portail de la modale n'a pas cours dans un rendu serveur : son contenu, en place.
 vi.mock("../../components/ui/Modal", () => ({ Modal: ({ children }: { children: ReactNode }) => <div role="dialog">{children}</div> }));
 

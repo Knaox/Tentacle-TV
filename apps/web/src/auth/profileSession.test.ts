@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { accountToken, accountUserId, profileMarkerIn, readActiveProfile } from "./profileSession";
+import { accountToken, accountUserId, profileMarkerIn, readActiveProfile, rememberActiveProfilePhoto } from "./profileSession";
 
 /**
  * La marque d'une session de profil du bureau ne vaut que pour la session
@@ -68,5 +68,25 @@ describe("la marque d'une session de profil", () => {
     // Le jeton personnel est celui de la session ACTIVE, jamais la vieille réserve.
     expect(accountToken()).toBe("jeton-perso-neuf");
     expect(accountUserId()).toBe("owner");
+  });
+});
+
+describe("la photo d'un invité posée pendant SA session (serveur 1.29.0)", () => {
+  it("la marque et le compte du profil la portent aussitôt ; la session reste la sienne", () => {
+    local.setItem("tentacle_token", "jeton-lea");
+    local.setItem("tentacle_user", LEA_USER);
+    local.setItem("tentacle_profile_session", LEA_MARKER);
+    local.setItem("tentacle_account_session", OLD_STASH);
+    rememberActiveProfilePhoto("tag-lanterne");
+    expect(readActiveProfile()).toMatchObject({ id: "lea", imageTag: "tag-lanterne" });
+    expect(JSON.parse(local.getItem("tentacle_user") ?? "{}")).toMatchObject({ Id: "lea", PrimaryImageTag: "tag-lanterne" });
+    expect(accountToken()).toBe("jeton-perso-ancien");
+  });
+
+  it("en session personnelle : rien à retenir, rien d'écrit", () => {
+    local.setItem("tentacle_user", OWNER_USER);
+    rememberActiveProfilePhoto("tag-lanterne");
+    expect(local.getItem("tentacle_profile_session")).toBeNull();
+    expect(JSON.parse(local.getItem("tentacle_user") ?? "{}").PrimaryImageTag).toBeUndefined();
   });
 });

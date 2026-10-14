@@ -6,6 +6,7 @@ import { useConnectivity } from "../../offline/useConnectivity";
 import { shouldInviteToAvatars } from "@tentacle-tv/shared";
 import { markSubjectInvited, readInvitedSubjects } from "./inviteRule";
 import { useAvatarGallery } from "./useAvatarGallery";
+import { useGuestSessionPhoto } from "./useGuestSessionPhoto";
 
 /** Le temps de laisser l'application s'installer (et un autre recouvrement se refermer). */
 const SETTLE_MS = 1200;
@@ -21,15 +22,22 @@ interface AvatarInviteProps {
 
 /**
  * L'invitation unique à choisir un personnage (règle partagée : `shared` ›
- * `avatarInvite`) : la galerie
+ * `avatarInvite`) — pour le compte, ou pendant la session d'un invité que
+ * l'appareil peut habiller, pour lui (`useGuestSessionPhoto`) : la galerie
  * elle-même, en mode « invite », un peu après que tout s'est calmé. Le compte
  * est noté invité dès l'ouverture — fermer, choisir ou importer, c'est pareil.
  */
 export function AvatarInvite({ desktop, busy, onOpenChange }: AvatarInviteProps) {
   const userId = useUserId();
-  const personalSession = useActiveProfile() === null;
+  const profile = useActiveProfile();
+  const guestTarget = useGuestSessionPhoto();
   const online = useConnectivity().state === "online";
-  const { hasPhoto } = useAvatarUpload();
+  const { hasPhoto: accountHasPhoto } = useAvatarUpload();
+  // Le sujet : le compte en session personnelle ; le profil sinon (un invité
+  // seulement, et si l'appareil peut l'habiller — un membre change la sienne
+  // depuis ses appareils).
+  const subjectId = profile ? profile.id : userId;
+  const hasPhoto = profile ? profile.imageTag !== null : accountHasPhoto;
   const [invited, setInvited] = useState(readInvitedSubjects);
   const { openGallery, isOpen, dialog } = useAvatarGallery("invite");
 
@@ -39,8 +47,8 @@ export function AvatarInvite({ desktop, busy, onOpenChange }: AvatarInviteProps)
 
   const due = shouldInviteToAvatars({
     eligible: desktop,
-    subjectId: userId,
-    canChangePhoto: personalSession,
+    subjectId,
+    canChangePhoto: profile ? guestTarget !== null : true,
     online,
     hasPhoto,
     busy,
@@ -48,13 +56,13 @@ export function AvatarInvite({ desktop, busy, onOpenChange }: AvatarInviteProps)
   });
 
   useEffect(() => {
-    if (!due || !userId) return;
+    if (!due || !subjectId) return;
     const timer = setTimeout(() => {
-      setInvited(markSubjectInvited(userId));
-      openGallery();
+      setInvited(markSubjectInvited(subjectId));
+      openGallery(guestTarget ?? undefined);
     }, SETTLE_MS);
     return () => clearTimeout(timer);
-  }, [due, userId, openGallery]);
+  }, [due, subjectId, guestTarget, openGallery]);
 
   return dialog;
 }

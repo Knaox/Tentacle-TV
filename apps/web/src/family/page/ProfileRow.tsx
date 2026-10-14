@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock } from "lucide-react";
+import { Camera, Lock } from "lucide-react";
 import { guestCanRequest, type FamilyProfileDto, type ProfileActions } from "@tentacle-tv/shared";
 import { FamilyAvatar } from "../FamilyAvatar";
 import { useFamilyText } from "../useFamilyText";
@@ -19,6 +19,8 @@ interface ProfileRowProps {
   rightPending: boolean;
   onRemove: (profile: FamilyProfileDto) => void;
   onGuestPin: (profile: FamilyProfileDto) => void;
+  /** Habiller un invité (galerie des avatars) ; absent : le serveur ne le sait pas, ou la session ne le peut pas. */
+  onGuestPhoto?: (profile: FamilyProfileDto) => void;
   onRightChange: (profile: FamilyProfileDto, next: boolean) => void;
 }
 
@@ -30,19 +32,39 @@ const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest
  * et les droits — « Peut créer des invités » d'un membre, « Peut demander des
  * films » d'un invité (ses demandes partent à son propre nom) — que le
  * propriétaire règle et que les autres LISENT. Les boutons ne paraissent que pour les
- * gestes permis à celui qui regarde : retirer un membre, supprimer un invité
- * ou poser son PIN (le propriétaire, ou le membre qui l'a créé).
+ * gestes permis à celui qui regarde : retirer un membre, supprimer un invité,
+ * poser son PIN ou changer sa photo — son rond s'ouvre alors sur la galerie
+ * des avatars (le propriétaire, ou le membre qui l'a créé).
  */
 export const ProfileRow = memo(function ProfileRow({
-  profile, last, isSelf, actions, showCreator, rightPending, onRemove, onGuestPin, onRightChange,
+  profile, last, isSelf, actions, showCreator, rightPending, onRemove, onGuestPin, onGuestPhoto, onRightChange,
 }: ProfileRowProps) {
-  const { t } = useTranslation(["familyWeb", "family"]);
+  const { t } = useTranslation(["familyWeb", "family", "avatars"]);
   const { formatDate } = useFamilyText();
   const isGuest = profile.kind === "guest";
+  // Mêmes droits que son PIN (`profileActions`, shared ; le serveur revérifie).
+  const dressable = isGuest && actions.pin && onGuestPhoto !== undefined;
+  const avatar = <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />;
 
   return (
     <li className={`flex flex-wrap items-start gap-3 px-4 py-3 ${last ? "" : "border-b border-line-subtle"}`}>
-      <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />
+      {dressable ? (
+        <button
+          type="button"
+          onClick={() => onGuestPhoto(profile)}
+          aria-label={t("avatars:guest.change", { name: profile.name })}
+          title={t("avatars:guest.change", { name: profile.name })}
+          className="group relative flex-shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        >
+          {avatar}
+          {/* Pastille posée sur la photo : reste à la couleur de la marque dans les deux thèmes. */}
+          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[var(--surface-1)] bg-[var(--brand)] text-cta-brand-fg transition-transform group-hover:scale-110">
+            <Camera size={10} aria-hidden="true" />
+          </span>
+        </button>
+      ) : (
+        avatar
+      )}
       <div className="min-w-0 flex-1">
         <p className="flex min-w-0 items-center gap-2">
           <span className="truncate text-sm font-semibold text-content-primary">{profile.name}</span>

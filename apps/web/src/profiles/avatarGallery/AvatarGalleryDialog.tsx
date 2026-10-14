@@ -4,8 +4,7 @@ import { AVATAR_CHARACTERS, AVATAR_COLLECTIONS, avatarsOf, findAvatar } from "@t
 import { Modal } from "../../components/ui/Modal";
 import { ModalHeader } from "../../components/ui/ModalHeader";
 import { useToast } from "../../contexts/ToastContext";
-import { useAvatarUpload } from "../../hooks/useAvatarUpload";
-import { getUserInfo } from "../../components/userMenu/menuItems";
+import { ACCOUNT_TARGET, useAvatarTarget, type AvatarTarget } from "./useAvatarTarget";
 import { AvatarTile } from "./AvatarTile";
 import { UploadTile } from "./UploadTile";
 import { AvatarStoryPanel } from "./AvatarStoryPanel";
@@ -20,6 +19,8 @@ export type AvatarGalleryMode = "change" | "invite";
 interface AvatarGalleryDialogProps {
   open: boolean;
   mode: AvatarGalleryMode;
+  /** À qui donner la photo : le compte (défaut), ou un invité de la Famille. */
+  target?: AvatarTarget;
   onClose: () => void;
 }
 
@@ -34,11 +35,11 @@ const FIRST_TILE = AVATAR_CHARACTERS[0]?.id ?? "upload";
  * grille (tabulation itinérante) ; le premier focus va au premier personnage,
  * jamais à la croix.
  */
-export default function AvatarGalleryDialog({ open, mode, onClose }: AvatarGalleryDialogProps) {
+export default function AvatarGalleryDialog({ open, mode, target = ACCOUNT_TARGET, onClose }: AvatarGalleryDialogProps) {
   const { t } = useTranslation("avatars");
   const { t: tProfile } = useTranslation("profile");
   const { show } = useToast();
-  const { avatarSrc, upload, uploading } = useAvatarUpload();
+  const { currentSrc, initial, upload, uploading } = useAvatarTarget(target);
   const titleId = useId();
   const gridRef = useRef<HTMLDivElement>(null);
   const [chosenId, setChosenId] = useState<string | null>(null);
@@ -105,12 +106,15 @@ export default function AvatarGalleryDialog({ open, mode, onClose }: AvatarGalle
   const shown = findAvatar(previewId ?? chosenId ?? "") ?? null;
   const chosenName = chosenId ? t(`characters.${chosenId}.name`) : null;
   const invite = mode === "invite";
+  // Un invité habillé depuis Réglages › Famille : sa photo, à son nom. Pendant
+  // SA session, c'est la sienne — les mots du compte.
+  const guestName = target.kind === "guest" && target.through === "session" ? target.name : null;
 
   return (
     <Modal open={open} onClose={onClose} maxWidth={880} labelledBy={titleId} initialFocus={initialFocus}>
       <ModalHeader
         titleId={titleId}
-        title={invite ? t("invite.title") : t("title")}
+        title={invite ? t("invite.title") : guestName ? t("guest.title", { name: guestName }) : t("title")}
         subtitle={
           invite ? (
             <span>
@@ -119,6 +123,8 @@ export default function AvatarGalleryDialog({ open, mode, onClose }: AvatarGalle
               </span>
               {t("invite.subtitle", { count: AVATAR_CHARACTERS.length })}
             </span>
+          ) : guestName ? (
+            t("guest.subtitle", { name: guestName })
           ) : (
             t("subtitle")
           )
@@ -155,7 +161,7 @@ export default function AvatarGalleryDialog({ open, mode, onClose }: AvatarGalle
         ))}
       </div>
       <div className="flex flex-col gap-4 border-t border-line-subtle px-6 py-4 sm:flex-row sm:items-center">
-        <AvatarStoryPanel character={shown} currentSrc={avatarSrc} initial={getUserInfo().initial} />
+        <AvatarStoryPanel character={shown} currentSrc={currentSrc} initial={initial} />
         <div className="flex flex-shrink-0 justify-end gap-2">
           <button
             type="button"

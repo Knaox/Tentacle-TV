@@ -37,6 +37,9 @@ export interface ActiveProfile {
   color: FamilyProfileColor;
   imageTag: string | null;
   hasPin: boolean;
+  /** Un invité que la session personnelle de l'appareil peut habiller (photo) ;
+   *  absent d'une marque d'avant la 1.29.0. */
+  photoEditable?: boolean;
 }
 
 /** La session personnelle mise de côté : son jeton, et son `tentacle_user` tel quel. */
@@ -153,6 +156,26 @@ function subscribe(listener: () => void): () => void {
 /** Le profil actif, réactif ; null en session personnelle (et partout hors du bureau). */
 export function useActiveProfile(): ActiveProfile | null {
   return useSyncExternalStore(subscribe, readActiveProfile, () => null);
+}
+
+/**
+ * La nouvelle photo du profil actif (un invité habillé pendant SA session) : la
+ * marque et le `tentacle_user` du profil la portent aussitôt, sans recharger.
+ */
+export function rememberActiveProfilePhoto(imageTag: string | null): void {
+  const profile = readActiveProfile();
+  if (!profile) return;
+  try {
+    localStorage.setItem(PROFILE_SESSION_KEY, JSON.stringify({ ...profile, imageTag }));
+    const user = JSON.parse(read("tentacle_user") ?? "null") as Record<string, unknown> | null;
+    if (user) {
+      const { PrimaryImageTag: _previous, ...rest } = user;
+      localStorage.setItem("tentacle_user", JSON.stringify(imageTag ? { ...rest, PrimaryImageTag: imageTag } : rest));
+    }
+  } catch {
+    // Stockage refusé : la photo reviendra au prochain choix du profil.
+  }
+  notifyProfileSessionChange();
 }
 
 /** Les clés de la session de profil : effacées avec elle (déconnexion, changement

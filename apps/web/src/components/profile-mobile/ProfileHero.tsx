@@ -3,6 +3,7 @@ import { avatarRingStyleFor } from "../userMenu/menuItems";
 import { useAccountFaceColor } from "../../profiles/face/useAccountFaceColor";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
 import { useAvatarGallery } from "../../profiles/avatarGallery/useAvatarGallery";
+import { useGuestSessionPhoto } from "../../profiles/avatarGallery/useGuestSessionPhoto";
 import { useActiveProfile, type ActiveProfile } from "../../auth/profileSession";
 import { FamilyAvatar } from "../../family/FamilyAvatar";
 
@@ -19,8 +20,9 @@ interface Props {
  * Jellyfin (la photo change donc aussi dans les autres clients Jellyfin).
  *
  * Bureau, session d'un PROFIL de la famille (fenêtre étroite) : le rond et le
- * nom du profil, sans « Changer la photo » — le serveur le refuse à un profil,
- * comme le menu de l'avatar le tait déjà.
+ * nom du profil — sans « Changer la photo », sauf pour un INVITÉ que la
+ * session personnelle de l'appareil habille (serveur 1.29.0), comme dans le
+ * menu de l'avatar.
  */
 export function ProfileHero({ name, initial, isAdmin }: Props) {
   const { t } = useTranslation("profile");
@@ -38,7 +40,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
     <header className="flex items-center gap-4 px-1 pb-6">
       <button
         type="button"
-        onClick={openGallery}
+        onClick={() => openGallery()}
         disabled={uploading || !userId}
         aria-label={t("changePhoto")}
         title={t("changePhoto")}
@@ -85,16 +87,37 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
   );
 }
 
-/** L'en-tête pendant la session d'un profil : son rond, son nom, ce qu'il est — rien à changer. */
+/** L'en-tête pendant la session d'un profil : son rond, son nom, ce qu'il est ;
+ *  un invité que l'appareil habille touche son rond pour changer sa photo. */
 function ProfileSessionHero({ profile }: { profile: ActiveProfile }) {
-  const { t } = useTranslation("profilePicker");
+  const { t } = useTranslation(["profilePicker", "profile"]);
+  const guestTarget = useGuestSessionPhoto();
+  const { openGallery, dialog: galleryDialog } = useAvatarGallery();
+  const avatar = <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={80} />;
   return (
     <header className="flex items-center gap-4 px-1 pb-6">
-      <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={80} />
+      {guestTarget ? (
+        <button
+          type="button"
+          onClick={() => openGallery(guestTarget)}
+          aria-label={t("profile:changePhoto")}
+          title={t("profile:changePhoto")}
+          className="group relative flex-shrink-0 rounded-full transition-transform duration-200 active:scale-95"
+        >
+          {avatar}
+          {/* Scrim superposé à la photo : reste noir/blanc dans les deux thèmes. */}
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <CameraIcon />
+          </span>
+        </button>
+      ) : (
+        avatar
+      )}
+      {galleryDialog}
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-xl font-bold text-content-primary">{profile.name}</h1>
         <p className="mt-1 text-sm text-content-quaternary">
-          {profile.kind === "guest" ? t("session.guestBadge") : t("session.memberBadge")}
+          {profile.kind === "guest" ? t("profilePicker:session.guestBadge") : t("profilePicker:session.memberBadge")}
         </p>
       </div>
     </header>

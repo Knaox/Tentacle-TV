@@ -4,6 +4,7 @@ import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { cacheAvatarFrom, getCachedAvatar } from "../offline/avatarCache";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useActiveProfile } from "../auth/profileSession";
+import { imageToJpegBase64 } from "../lib/imageToJpegBase64";
 
 /**
  * Avatar Jellyfin de l'utilisateur courant : URL (cache-bustée après upload)
@@ -31,18 +32,6 @@ import { useActiveProfile } from "../auth/profileSession";
 // régénèrent l'URL de leur <img> (cache-bust), où qu'ils soient montés.
 let avatarVersion = 0;
 const versionListeners = new Set<() => void>();
-
-/** Redimensionne l'image (≤ 512 px) et renvoie le base64 nu (format Jellyfin). */
-async function imageToJellyfinBase64(image: Blob): Promise<{ base64: string; mime: string }> {
-  const bitmap = await createImageBitmap(image);
-  const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-  return { base64: dataUrl.slice(dataUrl.indexOf(",") + 1), mime: "image/jpeg" };
-}
 
 /** L'étiquette de la photo dans la session (`tentacle_user`) ; `undefined` : inconnue. */
 function sessionImageTag(): string | null | undefined {
@@ -131,7 +120,7 @@ export function useAvatarUpload() {
     if (!userId) return false;
     setUploading(true);
     try {
-      const { base64, mime } = await imageToJellyfinBase64(image);
+      const { base64, mime } = await imageToJpegBase64(image);
       const token = client.getAccessToken();
       const res = await fetch(`${client.getBaseUrl()}/Users/${userId}/Images/Primary`, {
         method: "POST",

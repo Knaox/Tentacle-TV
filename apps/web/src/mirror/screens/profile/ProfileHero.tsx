@@ -34,7 +34,7 @@ export function ProfileHero({ name, initial, isAdmin, serverUrl }: {
     <header className="mb-5 flex items-center gap-4">
       <button
         type="button"
-        onClick={openGallery}
+        onClick={() => openGallery()}
         disabled={uploading || !userId}
         aria-label={t("changePhoto")}
         className="relative shrink-0 rounded-full active:opacity-85"

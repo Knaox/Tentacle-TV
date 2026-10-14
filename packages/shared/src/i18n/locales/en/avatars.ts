@@ -7,6 +7,11 @@ export default {
     title: "Pick your character",
     subtitle: "{{count}} characters, each with their own kind of film — or your own photo. It will follow you on all your devices.",
   },
+  guest: {
+    change: "Change {{name}}'s picture",
+    title: "{{name}}'s picture",
+    subtitle: "A character for {{name}}, or an uploaded photo. It shows on their TVs and in “Who's watching?”.",
+  },
   collections: {
     abyss: "The Deep",
     cineclub: "The Film Club",

@@ -11,6 +11,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 const state = vi.hoisted(() => ({
   profile: null as null | { id: string; name: string; kind: string; color: string; imageTag: null; hasPin: boolean },
   face: null as null | string,
+  guestTarget: null as null | { kind: "guest"; userId: string; name: string; imageTag: null; through: "personal" },
 }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -21,6 +22,7 @@ vi.mock("../../hooks/useAvatarUpload", () => ({
 vi.mock("../../auth/profileSession", () => ({ useActiveProfile: () => state.profile }));
 vi.mock("../../family/FamilyAvatar", () => ({ FamilyAvatar: ({ name }: { name: string }) => <span data-avatar={name} /> }));
 vi.mock("../../profiles/face/useAccountFaceColor", () => ({ useAccountFaceColor: () => state.face }));
+vi.mock("../../profiles/avatarGallery/useGuestSessionPhoto", () => ({ useGuestSessionPhoto: () => state.guestTarget }));
 
 const { ProfileHero } = await import("./ProfileHero");
 
@@ -28,6 +30,7 @@ describe("l'en-tête de la page Profil, fenêtre étroite", () => {
   beforeEach(() => {
     state.profile = null;
     state.face = null;
+    state.guestTarget = null;
   });
 
   it("en session personnelle : « Changer la photo », qui ouvre la galerie (rien de chargé avant)", () => {
@@ -54,6 +57,14 @@ describe("l'en-tête de la page Profil, fenêtre étroite", () => {
     expect(html).not.toContain("changePhoto");
     expect(html).not.toContain('type="file"');
     expect(html).toContain('data-avatar="Léa"');
+    expect(html).toContain("session.guestBadge");
+  });
+
+  it("pendant la session d'un invité que l'appareil habille (serveur 1.29.0) : son rond change sa photo", () => {
+    state.profile = { id: "lili", name: "Lili", kind: "guest", color: "pink", imageTag: null, hasPin: false };
+    state.guestTarget = { kind: "guest", userId: "lili", name: "Lili", imageTag: null, through: "personal" };
+    const html = renderToStaticMarkup(<ProfileHero name="Lili" initial="L" isAdmin={false} />);
+    expect(html).toContain('aria-label="profile:changePhoto"');
     expect(html).toContain("session.guestBadge");
   });
 
