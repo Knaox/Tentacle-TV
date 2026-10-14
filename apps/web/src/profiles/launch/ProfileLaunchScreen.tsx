@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { PickedProfileDto, PickerProfileDto, PickerProfilesDto } from "@tentacle-tv/shared";
+import { pickerStayChecked, type PickedProfileDto, type PickerProfileDto, type PickerProfilesDto } from "@tentacle-tv/shared";
 import { accountUserId } from "../../auth/profileSession";
 import { loadPickerProfiles, pickerProfilesKey } from "../api/pickerGateway";
 import { usePickFlow } from "../pick/usePickFlow";
@@ -11,6 +11,7 @@ import { announceArrival } from "../switch/arrival";
 import { commitPick, curtainOf } from "../switch/commitPick";
 import { ProfileCurtain, type CurtainProfile } from "../switch/ProfileCurtain";
 import { pickerModelOf } from "./pickerModel";
+import { readStayOnThisServer } from "./stayOnDevice";
 
 /** « Ouverture de Léa… » ne paraît que si le serveur tarde au-delà (comme sur la TV). */
 const OPENING_HINT_DELAY_MS = 500;
@@ -39,6 +40,11 @@ interface ProfileLaunchScreenProps {
  * se recharge au nom du profil) et « Gérer les profils » (son propre profil
  * d'abord, derrière son code, puis Réglages › Famille). La vue est
  * `WhoIsWatchingView`.
+ *
+ * « Ne plus proposer sur cet appareil » (si le compte demande qui regarde) :
+ * cochée à l'arrivée si l'ordinateur retient encore un profil de la famille,
+ * comme la TV ; le choix d'un profil la suit (retenu, ou plus rien) — sauf
+ * « Gérer les profils », qui n'y touche pas.
  */
 export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onAccountLost }: ProfileLaunchScreenProps) {
   const { t, i18n } = useTranslation("profilePicker");
@@ -56,12 +62,23 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
   const [curtain, setCurtain] = useState<CurtainProfile | null>(null);
   const [slowOpening, setSlowOpening] = useState(false);
   const landing = useRef<string | undefined>(undefined);
+  const [storedStay] = useState(() => readStayOnThisServer(accountId));
+  const [stayChoice, setStayChoice] = useState<boolean | null>(null);
+  const stay = stayChoice ?? (listing.data ? pickerStayChecked(listing.data, storedStay, Date.now()) : false);
+  const stayRef = useRef(stay);
+  stayRef.current = stay;
+  const onToggleStay = useCallback(() => setStayChoice(!stayRef.current), []);
+  const atLaunch = listing.data?.atLaunch === true;
+  const atLaunchRef = useRef(atLaunch);
+  atLaunchRef.current = atLaunch;
 
   const liftCurtain = useCallback(() => setCurtain(null), []);
   const onPicked = useCallback(async (picked: PickedProfileDto) => {
     // Une bascule qui échoue après la chute du rideau le relève : le refus se
     // dit sur le sélecteur (`usePickFlow`), jamais sous un rideau resté.
-    const result = await commitPick(picked, { onCurtain: setCurtain, onCurtainLifted: liftCurtain, landing: landing.current });
+    const managing = landing.current === FAMILY_SETTINGS_PATH;
+    const stayOnDevice = managing || !atLaunchRef.current ? undefined : stayRef.current;
+    const result = await commitPick(picked, { onCurtain: setCurtain, onCurtainLifted: liftCurtain, landing: landing.current, stayOnDevice });
     if (result !== "stay") return;
     // SON profil, sans rechargement : le rideau tombe sur le sélecteur, puis
     // l'application paraît dessous quand il se lève (`ProfileArrival`).
@@ -118,8 +135,9 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
       openingLabel: slowOpening && flow.opening ? t("opening", { name: profiles.find((p) => p.userId === flow.opening)?.name ?? "" }) : null,
       language: i18n.language,
       t,
+      stay,
     }),
-    [listing.data, listing.isError, flow, ended, lastChosen, slowOpening, profiles, i18n.language, t],
+    [listing.data, listing.isError, flow, ended, lastChosen, slowOpening, profiles, i18n.language, t, stay],
   );
 
   return (
@@ -132,6 +150,7 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
         onDigit={flow.digit}
         onErase={flow.erase}
         onBack={onBack}
+        onToggleStay={onToggleStay}
       />
       {curtain && <ProfileCurtain profile={curtain} phase="entering" />}
     </>

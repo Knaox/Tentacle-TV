@@ -7,6 +7,8 @@ export default {
   loading: "Loading profiles…",
   opening: "Opening {{name}}…",
   manageProfiles: "Manage profiles",
+  stayOnDevice: "Don't ask on this device",
+  stayOnDeviceHint: "This computer will open straight to the chosen profile. To change it, switch profiles from your avatar menu.",
   hasPin: "Protected by a PIN",
   lockedUntil: "Locked until {{time}}",
   loadFailed: "The family's profiles couldn't be loaded.",
@@ -52,5 +54,7 @@ export default {
     on: "On for all your computers",
     off: "Off",
     failed: "The setting couldn't be saved. Try again.",
+    stayHere: "On this computer, “Who's watching?” is no longer offered: {{name}}'s profile opens directly.",
+    stayHereReset: "Ask again",
   },
 } as const;

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, UserCog } from "lucide-react";
 import { ProfilePinPad } from "./ProfilePinPad";
 import { ProfileRow } from "./ProfileRow";
+import { StayOnDeviceToggle } from "./StayOnDeviceToggle";
 import type { WhoIsWatchingModel } from "./pickerTypes";
 
 export interface WhoIsWatchingViewProps {
@@ -14,6 +15,8 @@ export interface WhoIsWatchingViewProps {
   onErase: () => void;
   /** La flèche du pavé (et Échap) : retour aux profils. */
   onBack: () => void;
+  /** « Ne plus proposer sur cet appareil » : cocher, décocher. */
+  onToggleStay?: () => void;
 }
 
 /** Un bouton secondaire de l'écran. Pas de couleur animée (règle « Coût GPU » 3) :
@@ -77,12 +80,17 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
             <div className="mt-8">
               <ProfileRow profiles={model.profiles} enteringId={model.entering?.id ?? null} focusId={model.focusId} onPick={props.onPick} />
             </div>
+            {typeof model.stay === "boolean" && (
+              <div className="mt-10">
+                <StayOnDeviceToggle checked={model.stay} disabled={model.entering !== null} onToggle={props.onToggleStay ?? noop} />
+              </div>
+            )}
             {model.canManage && (
               <button
                 type="button"
                 onClick={props.onManage}
                 disabled={model.entering !== null}
-                className={`${SECONDARY} mt-12 transition-opacity duration-200 disabled:pointer-events-none disabled:opacity-0`}
+                className={`${SECONDARY} ${typeof model.stay === "boolean" ? "mt-4" : "mt-12"} transition-opacity duration-200 disabled:pointer-events-none disabled:opacity-0`}
               >
                 <UserCog size={16} aria-hidden />
                 {t("manageProfiles")}
@@ -97,6 +105,8 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
     </div>
   );
 });
+
+function noop(): void {}
 
 function Status({ text, busy }: { text: string; busy?: boolean }) {
   return (

@@ -10,6 +10,8 @@ export default {
   loading: "Chargement des profils…",
   opening: "Ouverture du profil {{name}}…",
   manageProfiles: "Gérer les profils",
+  stayOnDevice: "Ne plus proposer sur cet appareil",
+  stayOnDeviceHint: "Cet ordinateur ouvrira directement le profil choisi. Pour en changer : changez de profil depuis le menu de votre avatar.",
   hasPin: "Protégé par un code PIN",
   lockedUntil: "Bloqué jusqu'à {{time}}",
   loadFailed: "Impossible de lire les profils de la famille.",
@@ -55,5 +57,7 @@ export default {
     on: "Activé sur tous vos ordinateurs",
     off: "Désactivé",
     failed: "Le réglage n'a pas pu être enregistré. Réessayez.",
+    stayHere: "Sur cet ordinateur, « Qui regarde ? » n'est plus proposé : le profil {{name}} s'ouvre directement.",
+    stayHereReset: "Proposer à nouveau",
   },
 } as const;

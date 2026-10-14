@@ -1,4 +1,5 @@
 import type { PickerStay } from "@tentacle-tv/shared";
+import { getBackendBase } from "../../lib/backendBase";
 
 /**
  * « Ne plus proposer sur cet appareil » : le profil que CET ordinateur ouvre
@@ -29,9 +30,19 @@ export function readStayOnDevice(server: string, accountId: string | null): Pick
   }
 }
 
-export function writeStayOnDevice(server: string, accountId: string, stay: PickerStay): void {
+/** Le profil retenu pour le serveur de l'application ; null si rien (ou stockage illisible). */
+export function readStayOnThisServer(accountId: string | null): PickerStay | null {
   try {
-    const stored: StoredStay = { server, accountId, profileId: stay.profileId, hasPin: stay.hasPin };
+    return readStayOnDevice(getBackendBase(), accountId);
+  } catch {
+    return null;
+  }
+}
+
+/** Retenir ce profil pour le serveur de l'application et ce compte. */
+export function writeStayOnThisServer(accountId: string, stay: PickerStay): void {
+  try {
+    const stored: StoredStay = { server: getBackendBase(), accountId, profileId: stay.profileId, hasPin: stay.hasPin };
     localStorage.setItem(STAY_ON_DEVICE_KEY, JSON.stringify(stored));
   } catch {
     /* stockage plein ou bloqué : « Qui regarde ? » se reproposera, rien de plus */

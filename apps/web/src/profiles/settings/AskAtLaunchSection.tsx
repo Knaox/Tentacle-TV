@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MonitorPlay } from "lucide-react";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
-import type { PickerProfilesDto } from "@tentacle-tv/shared";
+import { pickerStayState, type PickerProfilesDto } from "@tentacle-tv/shared";
 import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
 import { useActiveProfile } from "../../auth/profileSession";
 import { getBackendBase } from "../../lib/backendBase";
 import { pickerProfilesKey, savePickerPreference } from "../api/pickerGateway";
 import { usePickerListing } from "../api/usePickerListing";
 import { writeLaunchMirror } from "../launch/launchState";
+import { forgetStayOnDevice, readStayOnThisServer } from "../launch/stayOnDevice";
 
 /**
  * Réglages › Famille, sur le BUREAU : « Demander qui regarde à l'ouverture ».
@@ -21,6 +22,9 @@ import { writeLaunchMirror } from "../launch/launchState";
  *
  * L'interrupteur répond tout de suite (écriture optimiste), le serveur
  * confirme ; un refus le remet en place et le dit.
+ *
+ * Si CET ordinateur ne propose plus « Qui regarde ? » (la case « Ne plus
+ * proposer sur cet appareil »), une ligne le dit, avec « Proposer à nouveau ».
  */
 export function AskAtLaunchSection() {
   const { t } = useTranslation("profilePicker");
@@ -28,6 +32,7 @@ export function AskAtLaunchSection() {
   const profileSession = useActiveProfile() !== null;
   const { listing, accountId } = usePickerListing();
   const [failed, setFailed] = useState(false);
+  const [stay, setStay] = useState(() => readStayOnThisServer(accountId));
   const key = pickerProfilesKey(accountId);
 
   const remember = useCallback((next: PickerProfilesDto) => {
@@ -55,6 +60,9 @@ export function AskAtLaunchSection() {
 
   const data = listing.data;
   if (profileSession || !data?.pickerRequired) return null;
+  const stayProfile = data.atLaunch && stay && pickerStayState(data, stay, Date.now()) !== "stale"
+    ? data.profiles.find((profile) => profile.userId === stay.profileId) ?? null
+    : null;
 
   return (
     <SettingsSection title={t("launchSetting.section")} caption={failed ? undefined : t("launchSetting.caption")}>
@@ -70,8 +78,23 @@ export function AskAtLaunchSection() {
             disabled={save.isPending}
           />
         }
-        last
+        last={!stayProfile}
       />
+      {stayProfile && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <p className="min-w-0 flex-1 text-xs leading-5 text-content-tertiary">{t("launchSetting.stayHere", { name: stayProfile.name })}</p>
+          <button
+            type="button"
+            onClick={() => {
+              forgetStayOnDevice();
+              setStay(null);
+            }}
+            className="inline-flex h-9 shrink-0 items-center rounded-full border border-line-subtle bg-fill-soft px-4 text-xs font-semibold text-content-primary hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          >
+            {t("launchSetting.stayHereReset")}
+          </button>
+        </div>
+      )}
       {failed && (
         <p role="alert" className="border-t border-line-subtle px-4 py-3 text-xs text-status-error-fg">
           {t("launchSetting.failed")}

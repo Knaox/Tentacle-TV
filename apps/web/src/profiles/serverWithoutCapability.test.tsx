@@ -148,6 +148,21 @@ describe("les profils du bureau face au serveur", () => {
     expect(renderToStaticMarkup(<FaceProbe />)).toBe("<i>orange</i>");
   });
 
+  it("cet ordinateur ne propose plus « Qui regarde ? » : le réglage le dit, avec « Proposer à nouveau »", () => {
+    state.capable = true;
+    const stored = JSON.stringify({ server: "", accountId: "owner", profileId: "zoe", hasPin: true });
+    vi.stubGlobal("localStorage", { getItem: (key: string) => (key === "tentacle_profile_launch_stay" ? stored : null) });
+    try {
+      const on = render({ ...LISTING, atLaunch: true });
+      expect(on).toContain("launchSetting.stayHere");
+      expect(on).toContain("launchSetting.stayHereReset");
+      // Préférence coupée : la case n'a rien à lever, rien n'est dit.
+      expect(render()).not.toContain("launchSetting.stayHere");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("capacité déclarée, famille d'un seul profil : rien à changer, rien à régler", () => {
     state.capable = true;
     expect(render({ ...LISTING, profiles: [LISTING.profiles[0]!], pickerRequired: false })).toBe("<div></div>");

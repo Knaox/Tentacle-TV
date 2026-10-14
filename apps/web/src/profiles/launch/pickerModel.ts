@@ -42,6 +42,8 @@ export interface PickerModelInput {
   lastChosen?: string | null;
   /** « Ouverture de Léa… », quand le serveur tarde. */
   openingLabel: string | null;
+  /** « Ne plus proposer sur cet appareil » : cochée ou non ; null, sans objet. */
+  stay?: boolean | null;
   language: string;
   t: Translate;
   now?: number;
@@ -65,5 +67,7 @@ export function pickerModelOf(input: PickerModelInput): WhoIsWatchingModel {
     notice: flow.notice,
     entering: flow.opening ? { id: flow.opening, label: input.openingLabel } : null,
     focusId: input.lastChosen ?? null,
+    // Sans objet si le compte ne demande pas qui regarde à l'ouverture : l'appareil n'a rien à retenir.
+    stay: listing.atLaunch ? input.stay ?? false : null,
   };
 }

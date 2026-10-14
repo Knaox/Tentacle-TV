@@ -82,6 +82,42 @@ describe("« Qui regarde ? » — la rangée", () => {
   });
 });
 
+describe("« Qui regarde ? » — « Ne plus proposer sur cet appareil »", () => {
+  const base = { kind: "picker" as const, profiles: FAMILY, canManage: true, notice: null, entering: null };
+
+  it("absente quand le compte ne demande pas qui regarde (stay null ou absent)", () => {
+    expect(view(base)).not.toContain("stayOnDevice");
+    expect(view({ ...base, stay: null })).not.toContain('type="checkbox"');
+  });
+
+  it("une vraie case à cocher, nommée par son libellé, entre la rangée et « Gérer les profils »", () => {
+    const html = view({ ...base, stay: false });
+    expect(html).toMatch(/<label[^>]*><input type="checkbox"/);
+    expect(html).toContain("stayOnDevice");
+    expect(html).not.toContain('checked=""');
+    // Décochée : la phrase n'est pas dite, mais sa place est réservée (rien ne saute).
+    expect(html).not.toContain("stayOnDeviceHint");
+    expect(html).toContain("min-h-[2.5rem]");
+    expect(html.indexOf("stayOnDevice")).toBeGreaterThan(html.indexOf("tileLabel"));
+    expect(html.indexOf("stayOnDevice")).toBeLessThan(html.indexOf("manageProfiles"));
+  });
+
+  it("cochée : la case se remplit, la phrase dit comment en revenir et décrit la case", () => {
+    const html = view({ ...base, stay: true });
+    expect(html).toContain('checked=""');
+    expect(html).toContain("stayOnDeviceHint");
+    const describedBy = html.match(/aria-describedby="([^"]+)"/)?.[1] ?? "";
+    expect(describedBy).not.toBe("");
+    expect(html).toContain(`id="${describedBy}"`);
+  });
+
+  it("pendant l'entrée dans un profil, elle ne se coche plus et s'efface", () => {
+    const html = view({ ...base, stay: true, entering: { id: "zoe", label: null } });
+    expect(html).toMatch(/<input type="checkbox"[^>]*disabled=""/);
+    expect(html).toContain("pointer-events-none opacity-0");
+  });
+});
+
 describe("« Qui regarde ? » — le retour du pavé", () => {
   it("« Retour aux profils » passe au-dessus de la colonne animée (sinon elle avale le clic)", () => {
     const html = view({ kind: "pin", pad: { profile: FAMILY[1]!, typed: 0, phase: "typing", message: null } });

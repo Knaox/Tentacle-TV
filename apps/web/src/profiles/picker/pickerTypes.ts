@@ -48,5 +48,8 @@ export type WhoIsWatchingModel =
       entering: { id: string; label: string | null } | null;
       /** Le profil qui reprend le focus (retour du pavé) ; absent : le premier. */
       focusId?: string | null;
+      /** « Ne plus proposer sur cet appareil » : cochée ou non ; null (ou absent)
+       *  quand la case est sans objet (le compte ne demande pas qui regarde). */
+      stay?: boolean | null;
     }
   | { kind: "pin"; pad: PinPadModel };

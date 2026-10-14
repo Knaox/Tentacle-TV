@@ -3,9 +3,8 @@ import { accountUserId, readActiveProfile, type ActiveProfile } from "../../auth
 import { cancelProfileSwitch, clearPickerRequest } from "../../auth/profileEnded";
 import { enterProfile, returnToAccount } from "../../auth/sessionSwap";
 import { endPipSession } from "../../pictureInPicture/pictureInPictureStore";
-import { getBackendBase } from "../../lib/backendBase";
 import { markLaunchPassed, noteCurrentProfile } from "../launch/launchState";
-import { forgetStayOnDevice, writeStayOnDevice } from "../launch/stayOnDevice";
+import { forgetStayOnDevice, writeStayOnThisServer } from "../launch/stayOnDevice";
 import { markArrival } from "./arrival";
 import type { CurtainProfile } from "./ProfileCurtain";
 
@@ -103,7 +102,7 @@ export async function commitPick(picked: PickedProfileDto, context: CommitContex
 
 function noteStay(profile: PickerProfileDto, accountId: string | null, stay: boolean | undefined): void {
   if (stay === undefined) return;
-  if (stay && accountId) writeStayOnDevice(getBackendBase(), accountId, pickerStayOf(profile));
+  if (stay && accountId) writeStayOnThisServer(accountId, pickerStayOf(profile));
   else forgetStayOnDevice();
 }
 

@@ -15,7 +15,7 @@ import { afterFresh, initialGate, type FreshAnswer, type GateState } from "./gat
 import { LAUNCH_CHECK_BUDGET_MS, launchVerdict } from "./launchDecision";
 import { launchPassed, noteFreshLogin, noteLoggedOut, readLaunchMirror, writeLaunchMirror } from "./launchState";
 import { ProfileLaunchScreen } from "./ProfileLaunchScreen";
-import { forgetStayOnDevice, readStayOnDevice } from "./stayOnDevice";
+import { forgetStayOnDevice, readStayOnDevice, readStayOnThisServer } from "./stayOnDevice";
 import { LaunchSplash } from "./LaunchSplash";
 
 /**
@@ -115,7 +115,7 @@ function initialState(authed: boolean): GateState {
 
 /** Le profil retenu par l'appareil a quitté la famille, ou son code a changé d'état : oublié. */
 function settleStay(listing: PickerProfilesDto): void {
-  const stay = readStayOnDevice(getBackendBase(), accountUserId());
+  const stay = readStayOnThisServer(accountUserId());
   if (stay && pickerStayState(listing, stay, Date.now()) === "stale") forgetStayOnDevice();
 }
 
