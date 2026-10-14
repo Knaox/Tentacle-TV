@@ -16,13 +16,12 @@
 
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
-import { relayedStream } from "../services/trailers/relayPaths";
 import { resolveCatalogTitle } from "../services/trailers/catalog/catalogTitle";
+import { previewBody } from "../services/trailers/preview/previewBody";
 import { decidePreview, type PreviewTarget } from "../services/trailers/preview/previewDecision";
 import { previewLanguage } from "../services/trailers/preview/previewLanguage";
-import { parseVideoRef } from "../services/trailers/videoRef";
 import {
-  type TrailerPreviewRequest, parseTrailerPreviewQuery, type TrailerPreview, type TrailerPreviewRefusal, type TrailerPreviewRefusalBody,
+  type TrailerPreviewRequest, parseTrailerPreviewQuery, type TrailerPreviewRefusal, type TrailerPreviewRefusalBody,
 } from "../trailers/trailerPreview";
 
 /**
@@ -31,7 +30,7 @@ import {
  * au nom du compte par le catalogue (ce qu'il ne voit pas : rien) ; un titre
  * TMDB s'en passe.
  */
-function previewTarget(request: TrailerPreviewRequest, lang: string | undefined): PreviewTarget {
+export function previewTarget(request: TrailerPreviewRequest, lang: string | undefined): PreviewTarget {
   const withLang = lang ? { lang } : {};
   if ("itemId" in request) return { key: `jf:${request.itemId}`, catalog: { itemId: request.itemId, ...withLang } };
   return { key: `tmdb:${request.mediaType}:${request.tmdbId}`, catalog: { tmdbId: request.tmdbId, mediaType: request.mediaType, ...withLang } };
@@ -68,21 +67,6 @@ export const trailerPreviewRoutes: FastifyPluginAsync = async (app) => {
       return refuse(reply, 429, "rate_limited", outcome.retryAfterS);
     }
     if (outcome.kind === "refused") return refuse(reply, 404, outcome.error);
-
-    // Un jeton d'aperçu : la vidéo que le relais oubliera ne se ré-extrait pas hors des garde-fous de cette route.
-    const stream = relayedStream(outcome.ref, outcome.resolved, Date.now(), "preview");
-    const video = parseVideoRef(outcome.ref);
-    const preview: TrailerPreview = {
-      // Une vidéo Dailymotion n'a pas d'identifiant YouTube : `source` la dit (le client l'a demandée, `dm=1`).
-      ytId: video?.kind === "youtube" ? video.id : "",
-      source: video?.kind === "dailymotion" ? { kind: "dailymotion", videoId: video.id } : { kind: "youtube", ytId: video?.id ?? outcome.ref },
-      ...(outcome.version ? { version: outcome.version } : {}),
-      path: stream.path,
-      mimeType: stream.mimeType,
-      expiresAt: stream.expiresAt,
-      heights: outcome.resolved.heights,
-      qualities: stream.qualities,
-    };
-    return preview;
+    return previewBody(outcome.ref, outcome.resolved, outcome.version);
   });
 };

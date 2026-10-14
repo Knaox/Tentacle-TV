@@ -163,6 +163,11 @@ export async function decidePreview(
   return awaitDecision(entry);
 }
 
+/** Un survol décide-t-il déjà `key` ? La préparation en fond ne le double pas. */
+export function decisionInFlight(key: string): boolean {
+  return inflight.has(key);
+}
+
 function awaitedDecisions(): number {
   let count = 0;
   for (const pending of inflight.values()) if (pending.waiters > 0) count++;
