@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "./ui/Dropdown";
-import { AVATAR_RING_STYLE, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
+import { avatarRingStyleFor, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
 import { useAvatarUpload } from "../hooks/useAvatarUpload";
 import { useToast } from "../contexts/ToastContext";
 import { isDesktopApp } from "../desktop/bridge";
@@ -14,6 +14,7 @@ import { useActiveProfile } from "../auth/profileSession";
 import { useAccountLogout } from "../auth/useAccountLogout";
 import { FamilyAvatar } from "../family/FamilyAvatar";
 import { useProfileSwitcher } from "../profiles/switcher/useProfileSwitcher";
+import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 import { ProfileMenuHeader } from "./userMenu/ProfileMenuHeader";
 import { useMenuKeyboard } from "./userMenu/useMenuKeyboard";
 
@@ -27,7 +28,9 @@ import { useMenuKeyboard } from "./userMenu/useMenuKeyboard";
  * Bureau, famille d'au moins deux profils : le CHANGEMENT RAPIDE de profil en
  * tête du menu (`useProfileSwitcher`). Pendant la session d'un profil, le
  * bouton et l'en-tête sont les siens (sa couleur, son nom), et le menu tait
- * ce que le serveur lui refuse (`buildUserMenuItems` › `profileSession`).
+ * ce que le serveur lui refuse (`buildUserMenuItems` › `profileSession`). En
+ * session personnelle, le rond prend la couleur du profil du compte, celle de
+ * « Qui regarde ? » (`useAccountFaceColor`) ; sans famille, la marque.
  * Flèches Haut et Bas d'une entrée à l'autre (`useMenuKeyboard`).
  */
 export function UserAvatarMenu() {
@@ -45,6 +48,7 @@ export function UserAvatarMenu() {
   const { visible: onDeviceVisible } = useDownloadsVisibility();
   const fileRef = useRef<HTMLInputElement>(null);
   const activeProfile = useActiveProfile();
+  const ringStyle = avatarRingStyleFor(useAccountFaceColor());
 
   const close = useCallback(() => setOpen(false), []);
   const switcher = useProfileSwitcher(close);
@@ -112,7 +116,7 @@ export function UserAvatarMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-cta-brand-fg transition-transform duration-200 hover:-translate-y-0.5"
-        style={AVATAR_RING_STYLE}
+        style={ringStyle}
       >
         {avatarContent}
       </button>
@@ -124,6 +128,7 @@ export function UserAvatarMenu() {
           ) : (
             <AccountHeader
               avatar={avatarContent}
+              ringStyle={ringStyle}
               name={name}
               caption={tProfile("changePhoto")}
               uploading={uploading}
@@ -177,6 +182,7 @@ export function UserAvatarMenu() {
 
 interface AccountHeaderProps {
   avatar: React.ReactNode;
+  ringStyle: CSSProperties;
   name: string;
   caption: string;
   uploading: boolean;
@@ -184,7 +190,7 @@ interface AccountHeaderProps {
 }
 
 /** En-tête du compte : avatar cliquable = changer la photo (Jellyfin). */
-function AccountHeader({ avatar, name, caption, uploading, onChangePhoto }: AccountHeaderProps) {
+function AccountHeader({ avatar, ringStyle, name, caption, uploading, onChangePhoto }: AccountHeaderProps) {
   return (
     <div className="flex items-center gap-3 border-b border-line-subtle px-4 py-3">
       <button
@@ -194,7 +200,7 @@ function AccountHeader({ avatar, name, caption, uploading, onChangePhoto }: Acco
         aria-label={caption}
         title={caption}
         className="group relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold text-cta-brand-fg"
-        style={AVATAR_RING_STYLE}
+        style={ringStyle}
       >
         {avatar}
         {/* Scrim posé sur la photo de profil (image ou fallback) : reste noir/blanc

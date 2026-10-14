@@ -15,6 +15,21 @@ import { loadPickerProfiles, pickerProfilesKey } from "./pickerGateway";
  * prochaine ouverture décide d'après ce que l'application vient de lire.
  */
 export function usePickerListing() {
+  const { listing, enabled, accountId } = usePickerListingQuery();
+  const { data } = listing;
+  useEffect(() => {
+    if (data && accountId) writeLaunchMirror({ server: getBackendBase(), accountId, capable: true, listing: data });
+  }, [data, accountId]);
+
+  return { listing, enabled, accountId };
+}
+
+/**
+ * La même famille, la même requête (même clé, même cache), sans toucher au
+ * miroir de l'ouverture : pour qui la LIT seulement — la couleur du rond du
+ * compte (`face/useAccountFaceColor.ts`).
+ */
+export function usePickerListingQuery() {
   const capable = useServerCapability("family.desktopProfiles");
   const { data: config } = useAppConfig();
   const accountId = accountUserId();
@@ -27,11 +42,5 @@ export function usePickerListing() {
     staleTime: 30_000,
     retry: false,
   });
-
-  const { data } = listing;
-  useEffect(() => {
-    if (data && accountId) writeLaunchMirror({ server: getBackendBase(), accountId, capable: true, listing: data });
-  }, [data, accountId]);
-
   return { listing, enabled, accountId };
 }

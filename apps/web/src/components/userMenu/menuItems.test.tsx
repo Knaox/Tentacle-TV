@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUserMenuItems } from "./menuItems";
+import { AVATAR_GRADIENT_BG, AVATAR_RING_STYLE, avatarBackgroundFor, avatarRingStyleFor, buildUserMenuItems } from "./menuItems";
 
 const base = { t: (k: string) => k, isAdmin: false, navigate: () => undefined, handleLogout: () => undefined };
 
@@ -31,5 +31,20 @@ describe("le menu utilisateur", () => {
     expect(member).toEqual(["stats", "settings", "about", "help"]);
     const guest = buildUserMenuItems({ ...all, profileSession: { guest: true } }).map((i) => i.key);
     expect(guest).toEqual(["stats", "settings", "about"]);
+  });
+});
+
+describe("le rond du compte", () => {
+  it("sans famille : le dégradé de marque et son halo, comme avant", () => {
+    expect(avatarRingStyleFor(null)).toBe(AVATAR_RING_STYLE);
+    expect(avatarBackgroundFor(null)).toBe(AVATAR_GRADIENT_BG);
+  });
+
+  it("dans une famille : le dégradé du profil (celui de « Qui regarde ? ») et un halo de sa teinte", () => {
+    expect(avatarRingStyleFor("orange")).toEqual({
+      background: "linear-gradient(135deg, #c2410c, #ea580c)",
+      boxShadow: "0 2px 12px #c2410c59",
+    });
+    expect(avatarBackgroundFor("orange")).toBe("linear-gradient(135deg, #c2410c, #ea580c)");
   });
 });

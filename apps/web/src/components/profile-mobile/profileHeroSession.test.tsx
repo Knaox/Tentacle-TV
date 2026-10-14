@@ -7,7 +7,10 @@ import { renderToStaticMarkup } from "react-dom/server";
  * rien à changer (le serveur le refuse) — son rond, son nom, ce qu'il est.
  */
 
-const state = vi.hoisted(() => ({ profile: null as null | { id: string; name: string; kind: string; color: string; imageTag: null; hasPin: boolean } }));
+const state = vi.hoisted(() => ({
+  profile: null as null | { id: string; name: string; kind: string; color: string; imageTag: null; hasPin: boolean },
+  face: null as null | string,
+}));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock("../../contexts/ToastContext", () => ({ useToast: () => ({ show: () => undefined }) }));
@@ -16,18 +19,32 @@ vi.mock("../../hooks/useAvatarUpload", () => ({
 }));
 vi.mock("../../auth/profileSession", () => ({ useActiveProfile: () => state.profile }));
 vi.mock("../../family/FamilyAvatar", () => ({ FamilyAvatar: ({ name }: { name: string }) => <span data-avatar={name} /> }));
+vi.mock("../../profiles/face/useAccountFaceColor", () => ({ useAccountFaceColor: () => state.face }));
 
 const { ProfileHero } = await import("./ProfileHero");
 
 describe("l'en-tête de la page Profil, fenêtre étroite", () => {
   beforeEach(() => {
     state.profile = null;
+    state.face = null;
   });
 
   it("en session personnelle : « Changer la photo », et le sélecteur de fichier", () => {
     const html = renderToStaticMarkup(<ProfileHero name="Damien" initial="D" isAdmin={false} />);
     expect(html).toContain('aria-label="changePhoto"');
     expect(html).toContain('type="file"');
+  });
+
+  it("en session personnelle dans une famille : le rond à la couleur de son profil", () => {
+    state.face = "orange";
+    const html = renderToStaticMarkup(<ProfileHero name="Banc" initial="B" isAdmin={false} />);
+    expect(html).toContain("#c2410c");
+    expect(html).not.toContain("var(--brand-dark)");
+  });
+
+  it("sans famille : le dégradé de marque, comme avant", () => {
+    const html = renderToStaticMarkup(<ProfileHero name="Damien" initial="D" isAdmin={false} />);
+    expect(html).toContain("var(--brand-dark)");
   });
 
   it("pendant la session d'un invité : ni photo à changer, ni fichier — son nom et « Profil invité »", () => {

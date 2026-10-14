@@ -4,7 +4,9 @@
  * des actions du menu utilisateur, l'état admin/Tauri, et l'avatar.
  */
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { profileColorStops, type FamilyProfileColor } from "@tentacle-tv/shared";
+import { profileGradient } from "../../family/profileColors";
 import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, LogoutIcon, OfflineIcon, OnDeviceIcon, PairIcon, SettingsIcon, StatsIcon } from "./icons";
 
 export interface UserInfo {
@@ -128,7 +130,7 @@ function buildAllItems(opts: BuildItemsOptions): UserMenuItem[] {
   return items;
 }
 
-/** CSS gradient utilisé pour l'avatar — réutilisé par TopNavMobile, MobileTabBar et MobileUserSheet. */
+/** Le dégradé de marque du rond du compte (hors famille) — repris par `avatarBackgroundFor`, `avatarRingStyleFor` et le miroir. */
 export const AVATAR_GRADIENT_BG = "linear-gradient(135deg, var(--brand-dark), var(--brand))";
 /**
  * Habillage de la photo de profil. PLUS de bordure : le liseré de 2 px rognait
@@ -141,3 +143,19 @@ export const AVATAR_RING_STYLE = {
   background: AVATAR_GRADIENT_BG,
   boxShadow: "0 2px 12px rgba(var(--brand-rgb), 0.35)",
 } as const;
+
+/**
+ * Le fond du rond du compte à la couleur de son PROFIL de la Famille (bureau,
+ * `profiles/face/useAccountFaceColor.ts`) — celle de « Qui regarde ? » ; null :
+ * le dégradé de marque, comme avant.
+ */
+export function avatarBackgroundFor(color: FamilyProfileColor | null): string {
+  return color ? profileGradient(color) : AVATAR_GRADIENT_BG;
+}
+
+/** L'habillage du rond (fond et halo) à la couleur du profil ; null : `AVATAR_RING_STYLE`. */
+export function avatarRingStyleFor(color: FamilyProfileColor | null): CSSProperties {
+  if (!color) return AVATAR_RING_STYLE;
+  // Le halo de la marque (0,35 d'opacité), dans la teinte sombre du profil : 0x59 ≈ 0,35.
+  return { background: avatarBackgroundFor(color), boxShadow: `0 2px 12px ${profileColorStops(color)[0]}59` };
+}

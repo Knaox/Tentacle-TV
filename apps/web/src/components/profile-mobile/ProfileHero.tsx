@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { AVATAR_RING_STYLE } from "../userMenu/menuItems";
+import { avatarRingStyleFor } from "../userMenu/menuItems";
+import { useAccountFaceColor } from "../../profiles/face/useAccountFaceColor";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
 import { useToast } from "../../contexts/ToastContext";
 import { useActiveProfile, type ActiveProfile } from "../../auth/profileSession";
@@ -29,6 +30,8 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const activeProfile = useActiveProfile();
+  // Bureau, famille : le rond à la couleur du profil du compte, comme sur « Qui regarde ? ».
+  const ringStyle = avatarRingStyleFor(useAccountFaceColor());
 
   const handleFile = async (file: File) => {
     const ok = await upload(file);
@@ -47,7 +50,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
         aria-label={t("changePhoto")}
         title={t("changePhoto")}
         className="group relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-bold text-cta-brand-fg transition-transform duration-200 active:scale-95"
-        style={AVATAR_RING_STYLE}
+        style={ringStyle}
       >
         {/* `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis
             sur l'initiale s'il n'y en a aucune (cf. `useAvatarUpload`). */}

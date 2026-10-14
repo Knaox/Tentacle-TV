@@ -6,7 +6,8 @@ import { useLibraries } from "@tentacle-tv/api-client";
 import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 import { PlusMenu } from "./PlusMenu";
 import { usePinnedNav, pluginNavKey } from "../hooks/usePinnedNav";
-import { AVATAR_GRADIENT_BG, getUserInfo } from "./userMenu/menuItems";
+import { avatarBackgroundFor, getUserInfo } from "./userMenu/menuItems";
+import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 
 interface Tab {
   path: string;
@@ -25,6 +26,8 @@ export function MobileTabBar() {
   const { data: libraries } = useLibraries();
   const [plusOpen, setPlusOpen] = useState(false);
   const { initial } = getUserInfo();
+  // Le mini-avatar à la couleur du profil (bureau, famille), comme le rond de la barre du haut.
+  const avatarBackground = avatarBackgroundFor(useAccountFaceColor());
 
   const tabs: Tab[] = useMemo(() => {
     const list: Tab[] = [
@@ -92,11 +95,11 @@ export function MobileTabBar() {
     // Profile at the end — mini-avatar avec initial pour identifier l'utilisateur
     list.push({
       path: "/profile", label: t("profile"),
-      icon: <ProfileTabIcon initial={initial} />,
+      icon: <ProfileTabIcon initial={initial} background={avatarBackground} />,
     });
 
     return list;
-  }, [t, i18n.language, activePluginsMeta, pinned, libraries, initial]);
+  }, [t, i18n.language, activePluginsMeta, pinned, libraries, initial, avatarBackground]);
 
   const isActive = (tab: Tab) => {
     if (tab.isPlus) return plusOpen;
@@ -161,11 +164,11 @@ function PlusTabIcon() {
   );
 }
 
-function ProfileTabIcon({ initial }: { initial: string }) {
+function ProfileTabIcon({ initial, background }: { initial: string; background: string }) {
   return (
     <span
       className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-cta-brand-fg"
-      style={{ background: AVATAR_GRADIENT_BG }}
+      style={{ background }}
       aria-hidden
     >
       {initial}

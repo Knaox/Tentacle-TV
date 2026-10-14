@@ -58,6 +58,12 @@ vi.mock("./api/pickerGateway", () => ({
 
 const { useProfileSwitcher } = await import("./switcher/useProfileSwitcher");
 const { AskAtLaunchSection } = await import("./settings/AskAtLaunchSection");
+const { useAccountFaceColor } = await import("./face/useAccountFaceColor");
+
+/** Le rond du compte : la couleur de son profil, ou « brand » (le dégradé de marque). */
+function FaceProbe() {
+  return <i>{useAccountFaceColor() ?? "brand"}</i>;
+}
 
 function profile(userId: string, extra: Partial<PickerProfileDto> = {}): PickerProfileDto {
   return { userId, kind: "guest", name: userId, color: "teal", hasPin: false, imageTag: null, lockedUntil: null, createdBy: null, personal: false, ...extra };
@@ -126,6 +132,20 @@ describe("les profils du bureau face au serveur", () => {
     expect(html).toContain("profilePicker:manageProfiles");
     expect(html).toContain("launchSetting.title");
     expect(html).toContain('role="switch"');
+  });
+
+  it("serveur sans la capacité : le rond du compte garde la marque, sans requête", () => {
+    queries.cache.clear();
+    queries.cache.set(PICKER_KEY, { ...LISTING, profiles: [profile("owner", { kind: "owner", color: "orange", personal: true }), ...LISTING.profiles.slice(1)] });
+    expect(renderToStaticMarkup(<FaceProbe />)).toBe("<i>brand</i>");
+    expect(queries.started).not.toContain(PICKER_KEY);
+  });
+
+  it("capacité déclarée, famille : le rond du compte à la couleur de son profil", () => {
+    state.capable = true;
+    queries.cache.clear();
+    queries.cache.set(PICKER_KEY, { ...LISTING, profiles: [profile("owner", { kind: "owner", color: "orange", personal: true }), ...LISTING.profiles.slice(1)] });
+    expect(renderToStaticMarkup(<FaceProbe />)).toBe("<i>orange</i>");
   });
 
   it("capacité déclarée, famille d'un seul profil : rien à changer, rien à régler", () => {

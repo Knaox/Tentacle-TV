@@ -7,7 +7,8 @@ import { NotificationBell } from "../NotificationBell";
 import { TentacleLogo } from "../ui/TentacleLogo";
 import { countLogoClick } from "../easterEggs/logoEggStore";
 import { MobileUserSheet } from "../MobileUserSheet";
-import { AVATAR_RING_STYLE, getUserInfo } from "../userMenu/menuItems";
+import { avatarRingStyleFor, getUserInfo } from "../userMenu/menuItems";
+import { useAccountFaceColor } from "../../profiles/face/useAccountFaceColor";
 import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 
@@ -35,6 +36,8 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
   // Même garde que `TopNav` : sans serveur, une séance partagée n'existe pas.
   const offline = useOfflineMode();
   const { initial } = getUserInfo();
+  // Bureau, famille : le rond à la couleur du profil, comme sur « Qui regarde ? ».
+  const ringStyle = avatarRingStyleFor(useAccountFaceColor());
 
   return (
     <>
@@ -72,7 +75,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
               aria-haspopup="menu"
               aria-expanded={sheetOpen}
               className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-cta-brand-fg transition-transform duration-200 active:scale-95"
-              style={AVATAR_RING_STYLE}
+              style={ringStyle}
             >
               {initial}
             </button>

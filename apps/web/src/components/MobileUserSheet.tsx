@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useActiveProfile } from "../auth/profileSession";
 import { useAccountLogout } from "../auth/useAccountLogout";
-import { AVATAR_RING_STYLE, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
+import { avatarRingStyleFor, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
+import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 
 interface Props {
   onClose: () => void;
@@ -23,6 +24,7 @@ export function MobileUserSheet({ onClose }: Props) {
   const logoutAccount = useAccountLogout();
   const activeProfile = useActiveProfile();
   const { name, initial, isAdmin } = getUserInfo();
+  const ringStyle = avatarRingStyleFor(useAccountFaceColor());
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = useCallback(() => {
@@ -90,7 +92,7 @@ export function MobileUserSheet({ onClose }: Props) {
         <div className="flex items-center gap-4 px-5 pb-4">
           <div
             className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full text-lg font-bold text-cta-brand-fg"
-            style={AVATAR_RING_STYLE}
+            style={ringStyle}
             aria-hidden
           >
             {initial}
