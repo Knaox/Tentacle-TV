@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
 import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
-import { resolveBridgeUrl } from "./pluginIframe/resolveBridgeUrl";
+import { answerPluginApiRequest, getAuthHeaders } from "./pluginIframe/pluginApiRelay";
 import { setHostChromeVeil } from "./pluginIframe/hostChromeVeil";
 import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
@@ -14,6 +14,7 @@ import {
   OPEN_TRAILER_CATALOG_MESSAGE, loadPluginTrailerQueue, parsePluginTrailerCatalogQuery, type PluginTrailerQueue,
 } from "./pluginIframe/pluginTrailerCatalog";
 import { sanitizeTrailers, type PluginTrailer } from "./pluginIframe/pluginTrailerList";
+import { MEDIA_REQUEST_MESSAGE, answerPluginMediaRequest, parsePluginMediaRequest } from "./pluginIframe/pluginMediaBridge";
 import { PluginLoader, PluginLoadProblem, usePluginDeps } from "./pluginIframe/pluginLoad";
 import {
   TRAILER_PREVIEW_MUTED_MESSAGE, TRAILER_PREVIEW_VOLUME_MESSAGE, applyPluginTrailerPreviewMuted, applyPluginTrailerPreviewVolume,
@@ -21,10 +22,6 @@ import {
   trailerPreviewEnvMessage, watchPluginTrailerPreviewEnv,
 } from "./pluginIframe/pluginTrailerPreview";
 
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem("tentacle_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 interface PluginIframeProps {
   pluginId: string;
@@ -110,53 +107,9 @@ export function PluginIframe({
           break;
         }
 
-        case "API_REQUEST": {
-          const { id, method, path, body } = data;
-          // Cette requête part avec les identifiants de l'utilisateur (Bearer
-          // + cookies) et son chemin vient du greffon. Une CONCATÉNATION n'est
-          // pas une résolution : `@pirate/x` accolé à la base donne une URL
-          // valide dont l'hôte est `pirate`. Voir `resolveBridgeUrl.ts`.
-          const target = resolveBridgeUrl(backendUrl || "", path, window.location.origin);
-          if (target === null) {
-            iframe.contentWindow?.postMessage(
-              { type: "API_RESPONSE", id, error: "chemin refuse" },
-              "*",
-            );
-            break;
-          }
-          try {
-            const headers: Record<string, string> = { ...getAuthHeaders() };
-            if (body) headers["Content-Type"] = "application/json";
-            const res = await fetch(target, {
-              method: method || "GET",
-              headers,
-              credentials: "include",
-              ...(body
-                ? {
-                    body:
-                      typeof body === "string" ? body : JSON.stringify(body),
-                  }
-                : {}),
-            });
-            const text = await res.text();
-            let result;
-            try {
-              result = JSON.parse(text);
-            } catch {
-              result = text;
-            }
-            iframe.contentWindow?.postMessage(
-              { type: "API_RESPONSE", id, result, status: res.status },
-              "*",
-            );
-          } catch (err) {
-            iframe.contentWindow?.postMessage(
-              { type: "API_RESPONSE", id, error: (err as Error).message },
-              "*",
-            );
-          }
+        case "API_REQUEST":
+          void answerPluginApiRequest(data, backendUrl || "", (message) => iframe.contentWindow?.postMessage(message, "*"));
           break;
-        }
 
         case "NAVIGATE":
           if (typeof data.path === "string") {
@@ -195,6 +148,13 @@ export function PluginIframe({
           break;
         }
 
+        // Les octets du relais (aperçus) : le cadre ne joint plus un serveur local.
+        case MEDIA_REQUEST_MESSAGE: {
+          const request = parsePluginMediaRequest(data);
+          if (request) void answerPluginMediaRequest(request, backendUrl || "", (message, transfer) => iframe.contentWindow?.postMessage(message, "*", transfer ?? []));
+          break;
+        }
+
         case TRAILER_PREVIEW_MUTED_MESSAGE:
           applyPluginTrailerPreviewMuted(data);
           break;
@@ -211,7 +171,12 @@ export function PluginIframe({
           setHostChromeVeil(false);
           break;
 
+        // L'extension tourne : l'état des aperçus lui est redit. Celui du document et de
+        // IFRAME_READY a pu changer sans qu'un relais n'arrive (page devenue visible pendant
+        // le chargement) — l'extension restait alors sur « aperçus coupés », sans retour.
         case "READY":
+          iframe.contentWindow.postMessage(trailerPreviewEnvMessage(pluginTrailerPreviewEnv()), "*");
+          break;
         case "PLUGIN_REGISTER":
           break;
       }
