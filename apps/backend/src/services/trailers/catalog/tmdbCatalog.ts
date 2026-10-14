@@ -64,12 +64,15 @@ interface AltTitle {
 }
 
 const TMDB_TIMEOUT_MS = 8_000;
+/** En fond (la préparation des aperçus), l'appel attend son tour derrière les autres : plus de patience. */
+const TMDB_BACKGROUND_TIMEOUT_MS = 30_000;
 /** Les pays dont les titres alternatifs comptent, par langue du serveur (AlloCiné cherche le nom français). */
 const ALT_COUNTRIES: Record<string, readonly string[]> = { fr: ["FR", "BE", "CH", "CA"] };
 
-function withTimeout<T>(promise: Promise<T>): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, priority: CatalogPriority): Promise<T> {
+  const timeoutMs = priority === "background" ? TMDB_BACKGROUND_TIMEOUT_MS : TMDB_TIMEOUT_MS;
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`délai de ${TMDB_TIMEOUT_MS} ms dépassé`)), TMDB_TIMEOUT_MS);
+    const timer = setTimeout(() => reject(new Error(`délai de ${timeoutMs} ms dépassé`)), timeoutMs);
     promise.then(
       (value) => {
         clearTimeout(timer);
@@ -121,7 +124,7 @@ async function readTitle(tmdbId: number, kind: CatalogMediaType, lang: string | 
       include_video_language: videoLanguages(lang),
     };
     if (lang) params.language = lang;
-    const dto = await withTimeout(tmdbFetch<TitleDto>(`/${kind}/${tmdbId}`, params, { priority }));
+    const dto = await withTimeout(tmdbFetch<TitleDto>(`/${kind}/${tmdbId}`, params, { priority }), priority);
     const title = tmdbTitleOf(kind, dto, lang);
     const videos = orderTmdbVideos(dto.videos?.results ?? []);
     const original = title.originalLanguage;
@@ -129,6 +132,7 @@ async function readTitle(tmdbId: number, kind: CatalogMediaType, lang: string | 
     // Rien dans la langue du serveur ni en anglais : celles de la langue originale, après.
     const more = await withTimeout(
       tmdbFetch<{ results?: TmdbVideoDto[] }>(`/${kind}/${tmdbId}/videos`, { include_video_language: original }, { priority }),
+      priority,
     ).catch(() => null);
     return { ...title, videos: [...videos, ...orderTmdbVideos(more?.results ?? [])] };
   } catch (err) {
@@ -144,6 +148,7 @@ async function readSeasonVideos(tvId: number, season: number, lang: string | nul
   try {
     const dto = await withTimeout(
       tmdbFetch<{ results?: TmdbVideoDto[] }>(`/tv/${tvId}/season/${season}/videos`, { include_video_language: videoLanguages(lang) }, { priority }),
+      priority,
     );
     return orderTmdbVideos(dto.results ?? []);
   } catch (err) {

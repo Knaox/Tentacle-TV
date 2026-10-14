@@ -22,15 +22,24 @@ export interface TmdbFetchOptions {
   priority?: TmdbPriority;
 }
 
-const lanes: Record<TmdbPriority, Array<() => void>> = { interactive: [], background: [] };
+/** Une place dans une file : son réveil, et la clé du GET qui l'attend (pour le promouvoir). */
+interface Ticket {
+  release: () => void;
+  key: string | null;
+}
+
+const lanes: Record<TmdbPriority, Ticket[]> = { interactive: [], background: [] };
 let lastCallAt = 0;
 let lastInteractiveAt = 0;
 let pumpTimer: NodeJS.Timeout | null = null;
 
 // Dédoublonnage des GET identiques en vol : deux fiches ouvertes sur le même
 // titre ne coûtent qu'un appel. La clé ignore la priorité — un appel de fond
-// en vol sert aussi l'interactif qui arrive.
+// en vol sert aussi l'interactif qui arrive, et PASSE alors dans la file
+// interactive (`promote`) : quelqu'un l'attend désormais à l'écran.
 const inFlight = new Map<string, Promise<unknown>>();
+/** Les GET de fond qu'un interactif a rejoints : leurs relances (429) restent interactives. */
+const promoted = new Set<string>();
 
 export class TmdbError extends Error {
   readonly status: number;
@@ -85,6 +94,7 @@ export function resetTmdbClientForTests(): void {
   if (pumpTimer) clearTimeout(pumpTimer);
   pumpTimer = null;
   inFlight.clear();
+  promoted.clear();
   transport = null;
 }
 
@@ -107,25 +117,42 @@ function pump(): void {
     }, wait);
     return;
   }
-  const release = lanes[lane].shift();
+  const ticket = lanes[lane].shift();
   lastCallAt = Date.now();
   if (lane === "interactive") lastInteractiveAt = lastCallAt;
-  release?.();
+  ticket?.release();
   // Le suivant attend son propre créneau : réarme tout de suite.
   pump();
 }
 
-function acquireSlot(priority: TmdbPriority): Promise<void> {
+function acquireSlot(priority: TmdbPriority, key: string | null = null): Promise<void> {
+  const lane = key !== null && promoted.has(key) ? "interactive" : priority;
   return new Promise<void>((resolve) => {
-    lanes[priority].push(resolve);
+    lanes[lane].push({ release: resolve, key });
     pump();
   });
+}
+
+/**
+ * Un GET de fond en vol, rejoint par un appel interactif : s'il attend encore
+ * son créneau, il passe dans la file interactive (à sa fin : l'ordre des
+ * interactifs ne change pas). Une préparation d'aperçus en fond ne retarde
+ * ainsi jamais le survol qui la rattrape.
+ */
+function promote(key: string): void {
+  promoted.add(key);
+  const index = lanes.background.findIndex((ticket) => ticket.key === key);
+  if (index < 0) return;
+  const [ticket] = lanes.background.splice(index, 1);
+  lanes.interactive.push(ticket);
+  pump();
 }
 
 async function rawFetch<T>(
   path: string,
   params: Record<string, string>,
-  priority: TmdbPriority
+  priority: TmdbPriority,
+  key: string | null = null
 ): Promise<T> {
   const apiKey = getTmdbApiKey();
   if (!apiKey) throw new TmdbError("TMDB non configuré", 0);
@@ -137,7 +164,7 @@ async function rawFetch<T>(
   const url = `${TMDB_BASE}${path}?${q.toString()}`;
 
   for (let attempt = 0; ; attempt++) {
-    await acquireSlot(priority);
+    await acquireSlot(priority, key);
     const res = await fetch(url);
     if (res.status === 429 && attempt < RETRY_MAX) {
       const retryAfter = Number(res.headers.get("retry-after")) || 1;
@@ -160,10 +187,17 @@ export async function tmdbFetch<T>(
   opts: TmdbFetchOptions = {}
 ): Promise<T> {
   const key = `${path}?${new URLSearchParams(params).toString()}`;
+  const priority = opts.priority ?? "interactive";
   const pending = inFlight.get(key);
-  if (pending) return pending as Promise<T>;
-  const network = () => rawFetch<T>(path, params, opts.priority ?? "interactive");
-  const p = (transport ? transport<T>(path, params, network) : network()).finally(() => inFlight.delete(key));
+  if (pending) {
+    if (priority === "interactive") promote(key);
+    return pending as Promise<T>;
+  }
+  const network = () => rawFetch<T>(path, params, priority, key);
+  const p = (transport ? transport<T>(path, params, network) : network()).finally(() => {
+    inFlight.delete(key);
+    promoted.delete(key);
+  });
   inFlight.set(key, p);
   return p;
 }

@@ -108,6 +108,22 @@ describe("TMDB du catalogue › une saison", () => {
     expect(rows.has("trailers:tmdb:tv:60625:s6:fr-FR")).toBe(true);
   });
 
+  it("une lecture de fond rejointe par un survol est redemandée en interactif (le client TMDB la fait passer devant)", async () => {
+    const answers: Array<(value: unknown) => void> = [];
+    tmdbFetch.mockImplementation(() => new Promise((resolve) => answers.push(resolve)));
+    const background = fetchTmdbSeasonVideos(60625, 5, "fr", "background");
+    await vi.waitFor(() => expect(tmdbFetch).toHaveBeenCalledTimes(1));
+    // Une autre demande de fond rejoint simplement celle qui court.
+    void fetchTmdbSeasonVideos(60625, 5, "fr", "background");
+    const waiting = fetchTmdbSeasonVideos(60625, 5, "fr");
+    await vi.waitFor(() => expect(tmdbFetch).toHaveBeenCalledTimes(2));
+    expect(tmdbFetch.mock.calls.map((call) => call[2])).toEqual([{ priority: "background" }, { priority: "interactive" }]);
+    const result = { results: [{ key: "s5aaaaaaaaa", site: "YouTube", type: "Trailer", iso_639_1: "fr" }] };
+    for (const answer of answers) answer(result);
+    expect((await waiting)?.map((v) => v.key)).toEqual(["s5aaaaaaaaa"]);
+    expect((await background)?.map((v) => v.key)).toEqual(["s5aaaaaaaaa"]);
+  });
+
   it("une valeur échue sert tout de suite, et se refait en fond", async () => {
     rows.set("trailers:tmdb:tv:60625:s3:fr", {
       payload: { value: [{ key: "oldoldoldol", url: "u" }], validUntil: Date.now() - 1 },

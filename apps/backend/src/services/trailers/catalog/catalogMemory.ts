@@ -7,6 +7,9 @@
 /*  comptes la lisent ; deux demandes simultanées partagent un appel ; */
 /*  une valeur échue sert encore pendant qu'elle se refait en fond. Un */
 /*  échec (`null`) ne s'écrit jamais : la demande suivante réessaie.   */
+/*  Un appel de FOND (la préparation des aperçus) rejoint par quelqu'un */
+/*  qui attend est relancé en interactif : ses appels réseau, partagés */
+/*  (`tmdbFetch`), passent devant sans être doublés.                   */
 /*  Rien que des listes de quelques Ko — jamais une vidéo.             */
 /* ------------------------------------------------------------------ */
 
@@ -23,16 +26,22 @@ const DAY_MS = 86_400_000;
 /** La ligne reste au-delà de sa validité : échue, elle sert encore. */
 const KEEP_ROW_MS = 30 * DAY_MS;
 
-const inflight = new Map<string, Promise<unknown>>();
+interface Pending {
+  task: Promise<unknown>;
+  priority: CatalogPriority;
+}
+
+const inflight = new Map<string, Pending>();
 
 function isStored(value: unknown): value is Stored<unknown> {
   return !!value && typeof value === "object" && "value" in value && typeof (value as Stored<unknown>).validUntil === "number";
 }
 
 function load<T>(key: string, fetcher: (priority: CatalogPriority) => Promise<T | null>, ttlMs: (value: T) => number, priority: CatalogPriority): Promise<T | null> {
-  const pending = inflight.get(key) as Promise<T | null> | undefined;
-  if (pending) return pending;
-  const task = fetcher(priority)
+  const pending = inflight.get(key);
+  // Un appel de fond rejoint par quelqu'un qui attend : relancé en interactif (cf. l'en-tête).
+  if (pending && (pending.priority === "interactive" || priority === "background")) return pending.task as Promise<T | null>;
+  const task: Promise<T | null> = fetcher(priority)
     .then(async (value) => {
       if (value !== null) {
         const stored: Stored<T> = { value, validUntil: Date.now() + ttlMs(value) };
@@ -41,8 +50,10 @@ function load<T>(key: string, fetcher: (priority: CatalogPriority) => Promise<T 
       return value;
     })
     .catch(() => null)
-    .finally(() => inflight.delete(key));
-  inflight.set(key, task);
+    .finally(() => {
+      if (inflight.get(key)?.task === task) inflight.delete(key);
+    });
+  inflight.set(key, { task, priority });
   return task;
 }
 

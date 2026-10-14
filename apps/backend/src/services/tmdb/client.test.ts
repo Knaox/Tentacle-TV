@@ -82,6 +82,20 @@ describe("client TMDB — lanes de priorité", () => {
     expect(calls[2].at - calls[0].at).toBeGreaterThanOrEqual(1_100);
   });
 
+  it("un GET de fond rejoint par un interactif passe dans la file interactive, sans second appel", async () => {
+    const all = Promise.all([
+      tmdbFetch("/bg1", {}, { priority: "background" }),
+      tmdbFetch("/bg2", {}, { priority: "background" }),
+      tmdbFetch("/bg3", {}, { priority: "background" }),
+    ]);
+    await vi.advanceTimersByTimeAsync(10);
+    // /bg3 attend derrière /bg2 : un survol le réclame — il passe devant.
+    const joined = tmdbFetch("/bg3");
+    await vi.advanceTimersByTimeAsync(2_000);
+    await Promise.all([all, joined]);
+    expect(calls.map((c) => c.path)).toEqual(["/bg1", "/bg3", "/bg2"]);
+  });
+
   it("seul un créneau interactif marque tmdbLastInteractiveAt", async () => {
     const bg = tmdbFetch("/bg", {}, { priority: "background" });
     await vi.advanceTimersByTimeAsync(10);
