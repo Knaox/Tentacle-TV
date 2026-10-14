@@ -45,7 +45,7 @@ export function PreviewFrame({ view, title, artItem, detailItemId, backdropUrl, 
   const { t } = useTranslation("trailerPreview");
   const art = usePreviewArt(artItem, detailItemId, backdropUrl, meta);
   const withPanel = view.placement.videoHeight < view.placement.height;
-  const { placement, shown, settled, engine, portalRef, focusInsideRef } = view;
+  const { placement, shown, engine, portalRef, focusInsideRef } = view;
   // Le survol de la mini-carte n'existe que vue — et le temps de sa sortie :
   // le préchargement caché ne s'abonne à rien.
   const groupMounted = useMountWhile(shown, PREVIEW_EXIT_MS);
@@ -84,7 +84,7 @@ export function PreviewFrame({ view, title, artItem, detailItemId, backdropUrl, 
     >
       <div className="card-preview-surface" data-layout={withPanel ? "panel" : "overlay"}>
         <div className="card-preview-stage" style={{ "--pv-video-crop": engine.videoCrop } as CSSProperties}>
-          <PreviewMedia engine={engine} shown={shown} settled={settled} backdropUrl={art.backdropUrl} />
+          <PreviewMedia engine={engine} shown={shown} backdropUrl={art.backdropUrl} />
           <div aria-hidden className="card-preview-veil" />
           <PreviewSoundControl muted={engine.muted} volume={engine.soundVolume} onToggle={engine.toggleMute} onVolume={engine.setVolume} />
         </div>

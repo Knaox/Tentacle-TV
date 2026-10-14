@@ -31,13 +31,12 @@ const { PreviewFrame } = await import("./PreviewFrame");
 const { CardHoverShell } = await import("../CardHoverShell");
 
 const holds: boolean[] = [];
-function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel?: boolean; crop?: number } = {}) {
+function view(over: { shown?: boolean; muted?: boolean; panel?: boolean; crop?: number } = {}) {
   return {
     placement: over.panel
       ? { left: 120, top: 300, width: 344, height: 350, videoHeight: 194, from: { x: -4, y: 2, scale: 0.6453 } }
       : { left: 120, top: 300, width: 360, height: 203, videoHeight: 203, from: { x: -4, y: 2, scale: 0.5556 } },
     shown: over.shown ?? false,
-    settled: over.settled ?? false,
     engine: {
       mount: true,
       visible: over.shown ?? false,
@@ -98,10 +97,10 @@ describe("PreviewFrame — préchargement caché", () => {
     expect(html).toContain("--preview-exit-ms:220ms");
   });
 
-  it("garde la vidéo sur sa première image tant que la mini-carte n'est pas posée", () => {
+  it("la vidéo reste sur sa première image cachée, et JOUE dès que la mini-carte paraît, agrandissement compris", () => {
     holds.length = 0;
-    render(view({ shown: true, settled: false }));
-    render(view({ shown: true, settled: true }));
+    render(view({ shown: false }));
+    render(view({ shown: true }));
     expect(holds).toEqual([true, false]);
   });
 });

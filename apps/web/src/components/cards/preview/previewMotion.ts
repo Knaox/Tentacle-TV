@@ -3,14 +3,13 @@ import { PREVIEW_ENGINE_EXIT_MS } from "./engine";
 
 /**
  * Le tempo de la mini-carte — UNE source, lue par la feuille (variables CSS
- * posées sur la mini-carte) et par le crochet (la lecture attend la fin de
- * l'agrandissement).
+ * posées sur la mini-carte) et par ce qui glisse avec elle.
  *
  * ENTRÉE, 340 ms en décélération (`--ease-out`) : la mini-carte part de la
  * carte, à son échelle et à sa place, et grandit vers la sienne. Son opacité
  * monte en 140 ms seulement — c'est le fondu croisé avec la carte, qui
- * s'efface dessous — : ce qu'on voit grandir, c'est déjà la vidéo, arrêtée
- * sur sa première image. Elle démarre une fois la mini-carte posée.
+ * s'efface dessous — : ce qu'on voit grandir, c'est déjà la vidéo, qui JOUE
+ * (`PreviewMedia` : rien n'attend la fin de l'agrandissement).
  *
  * Le groupe du survol (étoiles, plateau), le titre et le bouton du son
  * montent quand la mini-carte arrive (160 ms de retard) : rien ne s'écrit sur
@@ -35,11 +34,6 @@ export const PREVIEW_REDUCED_FADE_MS = 180;
 export const PREVIEW_ENTER_EASE = "var(--ease-out)";
 /** La courbe de la SORTIE : accélération (`easeIn` de `theme/motion.ts`) — elle part sans s'attarder. */
 export const PREVIEW_EXIT_EASE = "cubic-bezier(0.4, 0, 1, 1)";
-
-/** Le temps au bout duquel la mini-carte est posée : la lecture peut partir. */
-export function previewSettleMs(reduced: boolean): number {
-  return reduced ? PREVIEW_REDUCED_FADE_MS : PREVIEW_ENTER_MS;
-}
 
 /** Les variables que lit `cardPreview.css`. */
 export const PREVIEW_MOTION_VARS = {

@@ -4,41 +4,42 @@ import type { PreviewEngine } from "./engine";
 
 interface PreviewMediaProps {
   engine: PreviewEngine;
+  /** La mini-carte paraît : la vidéo JOUE dès cet instant, agrandissement compris. */
   shown: boolean;
-  /** Posée : l'agrandissement est fini, la vidéo joue. */
-  settled: boolean;
   /** L'image 16:9 du titre (son fond, ou l'image même d'une vignette). */
   backdropUrl: string | null;
 }
 
 /**
- * Le média de la mini-carte : l'IMAGE du titre pendant l'agrandissement, puis
- * la vidéo qui la rejoint en fondu quand elle a sa première image ET que la
- * mini-carte est posée (`videoReady`, `settled`).
+ * Le média de la mini-carte : la VIDÉO, qui joue dès que la mini-carte paraît
+ * — elle grandit en mouvement, rien ne fige sa première image le temps de
+ * l'agrandissement (attendre qu'elle soit posée, c'était 340 ms de plus avant
+ * le premier mouvement). Si elle n'a pas encore sa première image quand la
+ * mini-carte paraît, l'IMAGE du titre tient la place et la vidéo la rejoint
+ * en fondu dès sa première image (`videoReady`).
  *
- * Une bande-annonce s'ouvre presque toujours sur du noir ou un logo de
- * distributeur : grandir sur sa première image, c'était le plus souvent faire
- * grandir une boîte noire. L'image chargée et DÉCODÉE se signale au moteur
- * (`reportStillReady`) : la mini-carte peut alors se montrer sur elle sans
- * attendre la vidéo. Le choix se fait À LA RÉVÉLATION, et ne bouge plus : une
- * image arrivée trop tard (ou absente, ou cassée) laisse la vidéo seule —
- * jamais une vidéo déjà vue qui disparaîtrait sous une image.
+ * L'image chargée et DÉCODÉE se signale au moteur (`reportStillReady`) : la
+ * mini-carte peut alors se montrer sur elle sans attendre la vidéo (une
+ * bande-annonce vérifiée dont le flux coule déjà). Le choix se fait À LA
+ * RÉVÉLATION, et ne bouge plus : une image arrivée trop tard (ou absente, ou
+ * cassée), ou une vidéo déjà prête, laissent la vidéo seule — jamais une
+ * vidéo déjà vue qui disparaîtrait sous une image.
  *
  * La vidéo reste RENDUE pendant le préchargement et l'attente (opacité nulle,
  * jamais `display: none`) : elle doit présenter sa première image. Son
  * letterbox incrusté est rogné par une échelle que le moteur mesure une fois
  * (`videoCrop`, posée en variable sur la scène — `previewSurface.css`).
  */
-export function PreviewMedia({ engine, shown, settled, backdropUrl }: PreviewMediaProps) {
+export function PreviewMedia({ engine, shown, backdropUrl }: PreviewMediaProps) {
   const { broken, reportFailure } = useBrokenImage(backdropUrl);
   const [loaded, setLoaded] = useState(false);
   const [withImage, setWithImage] = useState<boolean | null>(null);
   const { reportStillReady, videoReady } = engine;
 
-  // Avant la peinture de la première image vue : jamais un éclair de vidéo.
+  // Avant la peinture de la première image vue : jamais un éclair de vidéo — ni d'image sous une vidéo prête.
   useLayoutEffect(() => {
-    if (shown && withImage === null) setWithImage(loaded && !broken);
-  }, [shown, withImage, loaded, broken]);
+    if (shown && withImage === null) setWithImage(loaded && !broken && !videoReady);
+  }, [shown, withImage, loaded, broken, videoReady]);
 
   const onLoad = (e: SyntheticEvent<HTMLImageElement>) => {
     setLoaded(true);
@@ -46,7 +47,7 @@ export function PreviewMedia({ engine, shown, settled, backdropUrl }: PreviewMed
     e.currentTarget.decode().then(reportStillReady, () => undefined);
   };
 
-  const waiting = withImage === true && !(videoReady && settled);
+  const waiting = withImage === true && !videoReady;
   return (
     <>
       {backdropUrl && !broken && (
@@ -61,7 +62,7 @@ export function PreviewMedia({ engine, shown, settled, backdropUrl }: PreviewMed
           className="card-preview-backdrop"
         />
       )}
-      {engine.renderVideo({ hold: !settled, className: waiting ? "card-preview-video is-waiting" : "card-preview-video" })}
+      {engine.renderVideo({ hold: !shown, className: waiting ? "card-preview-video is-waiting" : "card-preview-video" })}
     </>
   );
 }

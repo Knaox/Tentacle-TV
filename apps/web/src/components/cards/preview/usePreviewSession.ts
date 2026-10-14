@@ -18,7 +18,6 @@ import { placePreview, type PreviewPlacement, type PreviewShape } from "./previe
 import { inDocument } from "./previewFollow";
 import { usePreviewScrolling } from "./previewScrolling";
 import { navBottom, usePreviewFollow } from "./usePreviewFollow";
-import { previewSettleMs } from "./previewMotion";
 import { usePreviewListeners } from "./usePreviewListeners";
 import { useKeyboardInCard } from "./useKeyboardInCard";
 import { usePreviewRoom } from "./room/usePreviewRoom";
@@ -29,8 +28,6 @@ import type { CardPreviewSession } from "./useCardPreview";
 export interface CardPreviewView {
   placement: PreviewPlacement;
   shown: boolean;
-  /** Posée : l'agrandissement est fini, la vidéo peut jouer. */
-  settled: boolean;
   engine: PreviewEngine;
   portalRef: RefObject<HTMLDivElement | null>;
   close: (cause: PreviewCloseCause) => void;
@@ -166,19 +163,6 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   }, [shown, hovered, gate.dismissed, holder]);
   useLayoutEffect(() => () => setShown(false), [setShown]);
 
-  // Posée : la lecture part. Une fois partie, elle le reste jusqu'au démontage
-  // (le moteur fait décroître le son pendant la sortie).
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    if (!mounted) {
-      setSettled(false);
-      return;
-    }
-    if (!shown || settled) return;
-    const id = setTimeout(() => setSettled(true), previewSettleMs(reduced));
-    return () => clearTimeout(id);
-  }, [mounted, shown, settled, reduced]);
-
   const close = useCallback((cause: PreviewCloseCause) => {
     // Rien ne se rouvre sous un pointeur immobile — ni ici, ni chez la voisine.
     if (previewQuietsAfter(cause)) previewQuiet.quiet();
@@ -190,7 +174,7 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   usePreviewFollow({ shown, mounted, placement, anchorRef, portalRef, close });
 
   return useMemo<CardPreviewView | null>(
-    () => (mounted && placement ? { placement, shown, settled, engine, portalRef, close, focusInsideRef } : null),
-    [mounted, placement, shown, settled, engine, portalRef, close],
+    () => (mounted && placement ? { placement, shown, engine, portalRef, close, focusInsideRef } : null),
+    [mounted, placement, shown, engine, portalRef, close],
   );
 }
