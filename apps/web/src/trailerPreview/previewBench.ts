@@ -7,7 +7,8 @@ import type Hls from "hls.js";
  *
  * `window.__tentaclePreviewBench` garde la DERNIÈRE session : instants clés
  * (pose de la source, première image, lecture), niveau hls.js chargé à chaque
- * fragment (hauteur, débit estimé). Lu par CDP, jamais affiché.
+ * fragment (hauteur, débit estimé, position du fragment), position à l'arrêt
+ * (la reprise au retour sur la carte). Lu par CDP, jamais affiché.
  */
 interface PreviewBenchEntry {
   at: number;
@@ -59,10 +60,11 @@ export function openPreviewBench(video: HTMLVideoElement): {
         kbps: Math.round(hls.bandwidthEstimate / 1000),
         ms: Math.round(data.frag.stats.loading.end - data.frag.stats.loading.start),
         kb: Math.round(data.frag.stats.loaded / 1024),
+        start: Math.round(data.frag.start * 10) / 10,
       });
     });
     hls.on(Events.LEVEL_SWITCHED, (_e, data) => record("level", { height: hls.levels[data.level]?.height }));
     hls.on(Events.ERROR, (_e, data) => record("error", { fatal: data.fatal, details: data.details }));
   };
-  return { record, onHls, close: () => record("released") };
+  return { record, onHls, close: () => record("released", { position: Math.round(video.currentTime * 10) / 10 }) };
 }

@@ -3,6 +3,7 @@ import type { LevelDetails } from "hls.js";
 import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
 import { PREVIEW_PLAY_BUFFER_S, PREVIEW_PLAY_MAX_BUFFER_S, previewHlsConfig } from "./previewHlsConfig";
 import { capLevelFor, type BoxSize } from "./previewLevelCap";
+import { forgetPosition, previewStreamKey, rememberPosition, resumePositionFor } from "./previewPositions";
 import type { TrailerPreviewStream } from "./previewTypes";
 
 export { previewHlsConfig };
@@ -92,11 +93,10 @@ export interface PreviewSourceSession {
  * sans son jeton), il sert dès le départ au survol suivant du même titre.
  */
 const crops = new Map<string, number>();
-const cropKey = (src: string) => src.split("?")[0];
-const rememberedCrop = (src: string) => crops.get(cropKey(src)) ?? 1;
+const rememberedCrop = (src: string) => crops.get(previewStreamKey(src)) ?? 1;
 function rememberCrop(src: string, scale: number): void {
   if (crops.size >= 200) crops.clear();
-  crops.set(cropKey(src), scale);
+  crops.set(previewStreamKey(src), scale);
 }
 
 /** `crop` : l'échelle du rognage du letterbox — la source s'affiche d'autant plus grande. */
@@ -124,6 +124,8 @@ export function attachPreviewSource(
   let unleashed = false;
   // Le rognage déjà mesuré pour cette bande-annonce (un survol précédent) : le départ en tient compte.
   let crop = rememberedCrop(stream.src);
+  // Un retour sur la carte : la bande-annonce reprend où on l'avait quittée (`previewPositions.ts`).
+  const resumeAt = resumePositionFor(stream.src);
   let hls: Hls | null = null;
   let resizeWatch: ResizeObserver | null = null;
   let frameRequest: number | null = null;
@@ -171,9 +173,21 @@ export function attachPreviewSource(
   const onProgress = () => {
     if (video.buffered.length > 0) markFlowing();
   };
+  let playedOnce = false;
+  const onPlaying = () => {
+    playedOnce = true;
+  };
+  const onEnded = () => forgetPosition(stream.src);
+  // MP4 ou lecture native : la reprise se pose dès que la durée est connue.
+  const onLoadedMetadata = () => {
+    if (resumeAt !== null && !hls) video.currentTime = resumeAt;
+  };
   video.addEventListener("loadeddata", onLoadedData);
   video.addEventListener("progress", onProgress);
   video.addEventListener("error", fail);
+  video.addEventListener("ended", onEnded);
+  video.addEventListener("playing", onPlaying);
+  video.addEventListener("loadedmetadata", onLoadedMetadata);
 
   const playNatively = () => {
     video.src = stream.src;
@@ -200,7 +214,7 @@ export function attachPreviewSource(
         if (cap >= 0) instance.autoLevelCapping = cap;
         const start = cap >= 0 ? cap : topLevel(data.levels);
         if (start >= 0) instance.startLevel = start;
-        instance.startLoad(TRAILER_PREVIEW_TIMING.startOffsetS);
+        instance.startLoad(resumeAt ?? TRAILER_PREVIEW_TIMING.startOffsetS);
         // La boîte change (fenêtre redimensionnée) : le plafond la suit.
         if (cap >= 0 && typeof ResizeObserver === "function") {
           resizeWatch = new ResizeObserver(() => {
@@ -211,7 +225,8 @@ export function attachPreviewSource(
       });
       // La liste de départ dit la durée et le premier segment : départ à 0 si le
       // décalage ne tient pas (cf. `keepsStartOffset`), avant le moindre ajout.
-      let startChecked = false;
+      // Une reprise garde sa position.
+      let startChecked = resumeAt !== null;
       instance.on(HlsCtor.Events.LEVEL_LOADED, (_event, data) => {
         if (startChecked) return;
         startChecked = true;
@@ -254,10 +269,15 @@ export function attachPreviewSource(
     release() {
       if (released) return;
       released = true;
+      // Une bande-annonce montrée et quittée en route : sa position, pour le retour.
+      if (ready && playedOnce && !video.ended) rememberPosition(stream.src, video.currentTime, video.duration);
       resizeWatch?.disconnect();
       video.removeEventListener("loadeddata", onLoadedData);
       video.removeEventListener("progress", onProgress);
       video.removeEventListener("error", fail);
+      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("loadedmetadata", onLoadedMetadata);
       if (fallbackTimer !== null) clearTimeout(fallbackTimer);
       if (frameRequest !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(frameRequest);
       // Rien ne doit plus consommer : hls.js détruit, l'élément vidé de sa source.
