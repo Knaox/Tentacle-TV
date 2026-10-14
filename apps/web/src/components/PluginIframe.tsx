@@ -8,27 +8,17 @@ import { setHostChromeVeil } from "./pluginIframe/hostChromeVeil";
 import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
+import { useServerCapability } from "@tentacle-tv/api-client";
+import { TRAILER_PLAYER_AVAILABLE, TrailerPlayer } from "./trailerPlayer";
+import {
+  OPEN_TRAILER_CATALOG_MESSAGE, loadPluginTrailerQueue, parsePluginTrailerCatalogQuery, type PluginTrailerQueue,
+} from "./pluginIframe/pluginTrailerCatalog";
+import { sanitizeTrailers, type PluginTrailer } from "./pluginIframe/pluginTrailerList";
 import { PluginLoader, PluginLoadProblem, usePluginDeps } from "./pluginIframe/pluginLoad";
 import {
   TRAILER_PREVIEW_MUTED_MESSAGE, applyPluginTrailerPreviewMuted, pluginTrailerPreviewEnv,
   trailerPreviewEnvMessage, watchPluginTrailerPreviewEnv,
 } from "./pluginIframe/pluginTrailerPreview";
-
-interface PluginTrailer {
-  Url: string;
-  Name?: string;
-}
-
-/** Valide la liste de trailers reçue du plugin (postMessage non typé). */
-function sanitizeTrailers(input: unknown): PluginTrailer[] {
-  if (!Array.isArray(input)) return [];
-  return input
-    .filter((t): t is { Url: string; Name?: unknown } =>
-      !!t && typeof (t as { Url?: unknown }).Url === "string"
-      && /^https?:\/\//i.test((t as { Url: string }).Url))
-    .map((t) => ({ Url: t.Url, Name: typeof t.Name === "string" ? t.Name : undefined }))
-    .slice(0, 50);
-}
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("tentacle_token");
@@ -60,6 +50,9 @@ export function PluginIframe({
   // Trailers demandés par le plugin — joués dans le TrailerModal du HOST
   // (l'embed YouTube ne fonctionne pas dans l'iframe sandboxée du plugin).
   const [trailerState, setTrailerState] = useState<{ trailers: PluginTrailer[]; index: number } | null>(null);
+  // Le lecteur complet sur le catalogue d'un titre (`openTrailerFor`).
+  const [catalogPlayer, setCatalogPlayer] = useState<PluginTrailerQueue | null>(null);
+  const trailerCatalog = useServerCapability("trailers.catalog") && TRAILER_PLAYER_AVAILABLE;
 
   const lang = localStorage.getItem("tentacle_language") || "fr";
 
@@ -76,8 +69,9 @@ export function PluginIframe({
       pluginQuery: search,
       sharedDepsCode: deps.sharedDepsCode,
       tailwindCode: deps.tailwindCode,
+      trailerCatalog,
     });
-  }, [lang, pluginPath, search, deps]);
+  }, [lang, pluginPath, search, deps, trailerCatalog]);
 
   // Handle postMessage from iframe
   const handleMessage = useCallback(
@@ -190,6 +184,12 @@ export function PluginIframe({
           break;
         }
 
+        // Le lecteur complet de l'hôte, sur le catalogue du serveur pour ce titre.
+        case OPEN_TRAILER_CATALOG_MESSAGE: {
+          const query = parsePluginTrailerCatalogQuery(data);
+          if (query && trailerCatalog) void loadPluginTrailerQueue(query, lang).then((loaded) => loaded && setCatalogPlayer(loaded));
+          break;
+        }
 
         case TRAILER_PREVIEW_MUTED_MESSAGE:
           applyPluginTrailerPreviewMuted(data);
@@ -208,7 +208,7 @@ export function PluginIframe({
           break;
       }
     },
-    [bundleUrl, navigate, pluginId, failBundle],
+    [bundleUrl, navigate, pluginId, failBundle, trailerCatalog, lang],
   );
 
   useEffect(() => {
@@ -276,6 +276,14 @@ export function PluginIframe({
           onClose={() => setTrailerState(null)}
           trailers={trailerState.trailers}
           initialIndex={trailerState.index}
+        />
+      )}
+      {catalogPlayer && (
+        <TrailerPlayer
+          queue={catalogPlayer.queue}
+          startIndex={catalogPlayer.start}
+          language={catalogPlayer.language}
+          onClose={() => setCatalogPlayer(null)}
         />
       )}
     </>

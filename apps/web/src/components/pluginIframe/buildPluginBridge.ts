@@ -4,6 +4,7 @@
 import {
   buildTrailerPreviewBridgeMethod, buildTrailerPreviewEnvListener, type PluginTrailerPreviewEnv,
 } from "./pluginTrailerPreview";
+import { buildTrailerCatalogBridgeMethod } from "./pluginTrailerCatalog";
 
 /** Environnement hôte exposé aux plugins (iframe sandboxée = aucun accès à la
  * window parente ni aux marqueurs du shell). */
@@ -25,6 +26,10 @@ export interface PluginHostEnv {
   /** Les aperçus de bande-annonce sur cet appareil (`pluginTrailerPreview.ts`),
    *  tenu à jour par le pont. ADDITIF : absent chez les hôtes d'avant. */
   trailerPreview?: PluginTrailerPreviewEnv;
+  /** L'hôte ouvre son lecteur complet sur le catalogue d'un titre
+   *  (`__tentacle_bridge.openTrailerFor`, `pluginTrailerCatalog.ts`). ADDITIF :
+   *  absent ou faux, l'extension garde `openTrailer`. */
+  trailerCatalog?: boolean;
 }
 
 /**
@@ -100,7 +105,7 @@ export function buildPluginBridgeScript(params: { backendUrl: string; hostEnv: P
       // sandboxé.
       openTrailer: function(trailers, index) {
         parent.postMessage({ type: "OPEN_TRAILER", trailers: trailers, index: index || 0 }, "*");
-      },${buildTrailerPreviewBridgeMethod()}
+      },${buildTrailerPreviewBridgeMethod()},${buildTrailerCatalogBridgeMethod()}
     };
 
     // ── Fetch interceptor: route backend API calls through postMessage bridge ──

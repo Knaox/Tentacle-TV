@@ -17,6 +17,8 @@ interface BuildPluginHtmlParams {
   pluginQuery: string;
   sharedDepsCode: string;
   tailwindCode: string;
+  /** L'hôte ouvre le lecteur complet sur le catalogue (`openTrailerFor`) : lecteur présent ET `trailers.catalog`. */
+  trailerCatalog?: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export function buildPluginHtml({
   pluginQuery,
   sharedDepsCode,
   tailwindCode,
+  trailerCatalog = false,
 }: BuildPluginHtmlParams): string {
   // Escape </script> in inlined code to avoid breaking the HTML
   const safeDepsCode = sharedDepsCode.replace(/<\/script/gi, "<\\/script");
@@ -53,6 +56,8 @@ export function buildPluginHtml({
     query: pluginQuery,
     // L'état au montage ; le pont le tient ensuite à jour (`TRAILER_PREVIEW_ENV`).
     trailerPreview: pluginTrailerPreviewEnv(),
+    // Le lecteur complet de l'hôte sur le catalogue (`pluginTrailerCatalog.ts`).
+    trailerCatalog,
   };
 
   // Propage le schema de l'hote a l'iframe. Le markup des plugins (Seer) est
