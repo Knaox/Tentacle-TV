@@ -9,3 +9,4 @@ export * from "./trailerList";
 export * from "./trailerPreview";
 export * from "./trailerCatalog";
 export * from "./trailerCatalogRank";
+export * from "./player";

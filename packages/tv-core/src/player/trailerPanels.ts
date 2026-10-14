@@ -1,3 +1,4 @@
+import type { TrailerOption } from "@tentacle-tv/shared";
 import { sheetEntryKey } from "./playerFocus";
 
 /**
@@ -29,45 +30,14 @@ export const TRAILER_PANEL_PREFIX: Readonly<Record<TrailerPanel, string>> = {
 /** L'unique colonne d'un panneau de la bande-annonce. */
 export const TRAILER_PANEL_COLUMN = "list";
 
-/** « Désactivés » (sous-titres) et « Auto » (qualité) : la première option. */
-export const TRAILER_SUBTITLES_OFF = "off";
-export const TRAILER_QUALITY_AUTO = "auto";
-
-export interface TrailerOption {
-  /** La clé de l'option : `off`, l'identifiant d'une piste ; `auto`, une hauteur. */
-  key: string;
-  selected: boolean;
-}
-
-/** Une piste de sous-titres proposée par le serveur (la vue en tire le libellé). */
-export interface TrailerSubtitleChoice {
-  id: string;
-}
-
-/** « Désactivés », puis les pistes dans l'ordre du serveur ; `selectedId` nul : désactivés. */
-export function trailerSubtitleOptions(tracks: readonly TrailerSubtitleChoice[], selectedId: string | null): TrailerOption[] {
-  const known = tracks.some((t) => t.id === selectedId);
-  return [
-    { key: TRAILER_SUBTITLES_OFF, selected: !known },
-    ...tracks.map((t) => ({ key: t.id, selected: t.id === selectedId })),
-  ];
-}
-
-/** Les hauteurs distinctes et valides, de la plus haute à la plus basse. */
-export function trailerQualityHeights(heights: readonly number[]): number[] {
-  const valid = heights.filter((h) => Number.isFinite(h) && h > 0).map((h) => Math.round(h));
-  return [...new Set(valid)].sort((a, b) => b - a);
-}
-
-/** « Auto », puis les hauteurs décroissantes ; `selectedHeight` nul (ou inconnu) : auto. */
-export function trailerQualityOptions(heights: readonly number[], selectedHeight: number | null): TrailerOption[] {
-  const list = trailerQualityHeights(heights);
-  const known = selectedHeight !== null && list.includes(selectedHeight);
-  return [
-    { key: TRAILER_QUALITY_AUTO, selected: !known },
-    ...list.map((h) => ({ key: String(h), selected: known && h === selectedHeight })),
-  ];
-}
+/**
+ * Les options (« Désactivés », « Auto », pistes, hauteurs) sont communes à
+ * tous les lecteurs : `@tentacle-tv/shared` (`trailers/player/trailerChoices.ts`).
+ */
+export {
+  TRAILER_QUALITY_AUTO, TRAILER_SUBTITLES_OFF, trailerQualityHeights, trailerQualityOptions, trailerSubtitleOptions,
+} from "@tentacle-tv/shared";
+export type { TrailerOption, TrailerSubtitleChoice } from "@tentacle-tv/shared";
 
 /** Ce que le lecteur sait proposer : chaque bouton, présent ou absent. */
 export interface TrailerTools {
