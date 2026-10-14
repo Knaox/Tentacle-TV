@@ -1,6 +1,7 @@
 /**
  * La Famille — le CONTRAT (v2) entre le serveur et les clients : limites,
- * réponses et corps. La TV : `familyTvContract.ts` ; « Qui regarde ? » sur le
+ * réponses et corps. Les limites (bornes, délais) : `familyLimits.ts`,
+ * ré-exportées ici ; la TV : `familyTvContract.ts` ; « Qui regarde ? » sur le
  * bureau : `familyPickerContract.ts` ; codes d'erreur, temps
  * réel et notifications : `familyProtocol.ts` ; routes et appelants :
  * `familyRoutes.ts` ; règles pures : `familyRules.ts` et `familyRights.ts`.
@@ -10,7 +11,7 @@
  * backend ne dépend pas de `@tentacle-tv/shared`). On modifie ICI, on recopie
  * là-bas :
  *
- *   cp packages/shared/src/family/family{Contract,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,Limits,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
  *
  * UNE famille par compte, PARTAGÉE par tous ses membres (v2). Trois rôles :
  * - le PROPRIÉTAIRE l'a créée : il invite, annule une invitation, retire un
@@ -29,37 +30,9 @@
  *  2 : famille partagée, une famille par compte, droits des membres. */
 export const FAMILY_CONTRACT_VERSION = 2;
 
-/** Profils d'une famille, propriétaire compris (invitations en attente comptées). */
-export const FAMILY_MAX_PROFILES = 6;
-/** Invités d'une famille, au plus — tous créateurs confondus. */
-export const FAMILY_MAX_GUESTS = 3;
-/** Une invitation vaut sept jours. */
-export const FAMILY_INVITATION_TTL_MS = 7 * 24 * 3_600_000;
-/** Après un refus, le même propriétaire ne réinvite pas ce compte avant sept jours. */
-export const FAMILY_DECLINE_COOLDOWN_MS = 7 * 24 * 3_600_000;
-/** Invitations envoyées par un propriétaire sur 24 heures glissantes. */
-export const FAMILY_INVITES_PER_DAY = 10;
-/** Invitations en attente pour un même destinataire, toutes familles confondues
- *  (en accepter une clôt les autres : une famille par compte). */
-export const FAMILY_MAX_PENDING_PER_INVITEE = 10;
-/** Invités créés dans une famille sur 24 heures glissantes, tous créateurs
- *  confondus (chacun est un compte Jellyfin : pas de création en rafale). */
-export const FAMILY_GUESTS_PER_DAY = 6;
-/** « Plus tard » : l'affiche ne revient pas avant ce délai (la cloche la garde). */
-export const FAMILY_SNOOZE_MS = 24 * 3_600_000;
-/** Le code PIN : exactement quatre chiffres. */
-export const FAMILY_PIN_LENGTH = 4;
-/** Essais ratés avant blocage, par profil — toutes TV confondues. */
-export const FAMILY_PIN_MAX_FAILURES = 5;
-/** Durées des blocages successifs (le dernier se répète) ; une réussite remet à zéro. */
-export const FAMILY_PIN_LOCK_STEPS_MS = [15 * 60_000, 3_600_000, 4 * 3_600_000, 24 * 3_600_000] as const;
-/** « Gérer les profils » sur la TV : ouvert par le PIN de qui gère (le
- *  propriétaire ou un membre, chacun avec SES droits), pour dix minutes. */
-export const FAMILY_MANAGE_UNLOCK_MS = 10 * 60_000;
-/** Le nom d'un invité, une fois nettoyé. */
-export const FAMILY_GUEST_NAME_MAX = 20;
-/** Le sélecteur « Qui regarde ? » de la TV s'affiche dès deux profils. */
-export const FAMILY_PICKER_MIN_PROFILES = 2;
+// Les limites (places, invitations, PIN, blocages) : `familyLimits.ts`, ré-exportées
+// ici — `import { FAMILY_… } from "./familyContract"` reste valable partout.
+export * from "./familyLimits";
 
 /** Les couleurs d'un profil — des NOMS de jetons, chaque client les peint. */
 export const FAMILY_PROFILE_COLORS = ["violet", "pink", "blue", "teal", "green", "amber", "orange", "red"] as const;

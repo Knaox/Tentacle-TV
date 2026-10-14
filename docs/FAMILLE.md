@@ -7,7 +7,7 @@ que le serveur garantit). Une règle, une source :
 
 | Quoi | Où |
 |------|----|
-| Limites, réponses, corps | `packages/shared/src/family/familyContract.ts` ; la TV : `familyTvContract.ts` ; le bureau : `familyPickerContract.ts` |
+| Limites, réponses, corps | `packages/shared/src/family/familyContract.ts` (les limites : `familyLimits.ts`, ré-exportées) ; la TV : `familyTvContract.ts` ; le bureau : `familyPickerContract.ts` |
 | Codes d'erreur, temps réel, notifications | `packages/shared/src/family/familyProtocol.ts` |
 | Routes et appelants permis | `packages/shared/src/family/familyRoutes.ts` (`FAMILY_ROUTES`) |
 | Règles pures (PIN, capacité, invitations, noms) | `packages/shared/src/family/familyRules.ts` |

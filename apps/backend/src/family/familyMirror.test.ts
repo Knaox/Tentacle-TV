@@ -1,5 +1,5 @@
 /**
- * Le verrou des miroirs de la Famille : le contrat (et celui des TV), le
+ * Le verrou des miroirs de la Famille : le contrat (ses limites, celui des TV), le
  * protocole, la table des routes et les règles pures (droits compris) DOIVENT être l'octet pour octet ceux de
  * `packages/shared/src/family/` (le backend ne dépend pas de
  * `@tentacle-tv/shared` — tsc CommonJS, image Docker sans packages/). Un
@@ -7,7 +7,7 @@
  * croient permis, ou l'inverse. La source canonique est SHARED ; on modifie
  * là-bas, on recopie ici :
  *
- *   cp packages/shared/src/family/family{Contract,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,Limits,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
  */
 
 import { existsSync, readFileSync } from "fs";
@@ -26,6 +26,7 @@ function repoRoot(): string {
 
 const MIRRORS = [
   "familyContract.ts",
+  "familyLimits.ts",
   "familyTvContract.ts",
   "familyPickerContract.ts",
   "familyProtocol.ts",
