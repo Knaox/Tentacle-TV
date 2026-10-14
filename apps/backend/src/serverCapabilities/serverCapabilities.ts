@@ -86,6 +86,12 @@ export const SERVER_CAPABILITIES = {
    *  (`PUT /api/family/guests/:userId/photo`) : la galerie des avatars s'ouvre
    *  pour lui — Réglages › Famille, et sa session de profil sur le bureau. */
   "family.guestPhotos": "1.29.0",
+  /** Le catalogue des bandes-annonces d'un titre : `GET /api/trailers/catalog` rend la liste
+   *  ORDONNÉE par le serveur (la saison de l'épisode d'abord, la langue du serveur d'abord),
+   *  AlloCiné compris (serveur français), lue par le relais — Dailymotion aussi — avec le repli
+   *  `409 { fallback: "embed" }` quand YouTube bride ; et la carte « Bandes-annonces » de
+   *  l'administration (`/api/admin/trailers`). */
+  "trailers.catalog": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
