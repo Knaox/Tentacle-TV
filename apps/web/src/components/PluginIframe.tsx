@@ -3,27 +3,25 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
 import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
-import { resolveBridgeUrl } from "./pluginIframe/resolveBridgeUrl";
+import { answerPluginApiRequest, getAuthHeaders } from "./pluginIframe/pluginApiRelay";
 import { setHostChromeVeil } from "./pluginIframe/hostChromeVeil";
 import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
-import { useServerCapability } from "@tentacle-tv/api-client";
+import { useServerCapabilities } from "@tentacle-tv/api-client";
 import { TRAILER_PLAYER_AVAILABLE, TrailerPlayer } from "./trailerPlayer";
 import {
   OPEN_TRAILER_CATALOG_MESSAGE, loadPluginTrailerQueue, parsePluginTrailerCatalogQuery, type PluginTrailerQueue,
 } from "./pluginIframe/pluginTrailerCatalog";
 import { sanitizeTrailers, type PluginTrailer } from "./pluginIframe/pluginTrailerList";
+import { MEDIA_REQUEST_MESSAGE, answerPluginMediaRequest, parsePluginMediaRequest } from "./pluginIframe/pluginMediaBridge";
 import { PluginLoader, PluginLoadProblem, usePluginDeps } from "./pluginIframe/pluginLoad";
 import {
-  TRAILER_PREVIEW_MUTED_MESSAGE, applyPluginTrailerPreviewMuted, pluginTrailerPreviewEnv,
+  TRAILER_PREVIEW_MUTED_MESSAGE, TRAILER_PREVIEW_VOLUME_MESSAGE, applyPluginTrailerPreviewMuted, applyPluginTrailerPreviewVolume,
+  pluginTrailerPreviewEnv,
   trailerPreviewEnvMessage, watchPluginTrailerPreviewEnv,
 } from "./pluginIframe/pluginTrailerPreview";
 
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem("tentacle_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 interface PluginIframeProps {
   pluginId: string;
@@ -52,7 +50,10 @@ export function PluginIframe({
   const [trailerState, setTrailerState] = useState<{ trailers: PluginTrailer[]; index: number } | null>(null);
   // Le lecteur complet sur le catalogue d'un titre (`openTrailerFor`).
   const [catalogPlayer, setCatalogPlayer] = useState<PluginTrailerQueue | null>(null);
-  const trailerCatalog = useServerCapability("trailers.catalog") && TRAILER_PLAYER_AVAILABLE;
+  // Décidé UNE fois, la configuration du serveur connue : le document de l'iframe en dépend,
+  // et le refaire au passage de « inconnu » à « oui » rechargeait l'extension.
+  const server = useServerCapabilities();
+  const trailerCatalog = server.capabilities.has("trailers.catalog") && TRAILER_PLAYER_AVAILABLE;
 
   const lang = localStorage.getItem("tentacle_language") || "fr";
 
@@ -61,7 +62,7 @@ export function PluginIframe({
 
   // Build HTML for iframe srcDoc
   const htmlContent = useMemo(() => {
-    if (deps.status !== "ready" || !deps.sharedDepsCode || !deps.tailwindCode) return null;
+    if (deps.status !== "ready" || !deps.sharedDepsCode || !deps.tailwindCode || !server.settled) return null;
     return buildPluginHtml({
       backendUrl,
       lang,
@@ -71,7 +72,7 @@ export function PluginIframe({
       tailwindCode: deps.tailwindCode,
       trailerCatalog,
     });
-  }, [lang, pluginPath, search, deps, trailerCatalog]);
+  }, [lang, pluginPath, search, deps, trailerCatalog, server.settled]);
 
   // Handle postMessage from iframe
   const handleMessage = useCallback(
@@ -106,53 +107,9 @@ export function PluginIframe({
           break;
         }
 
-        case "API_REQUEST": {
-          const { id, method, path, body } = data;
-          // Cette requête part avec les identifiants de l'utilisateur (Bearer
-          // + cookies) et son chemin vient du greffon. Une CONCATÉNATION n'est
-          // pas une résolution : `@pirate/x` accolé à la base donne une URL
-          // valide dont l'hôte est `pirate`. Voir `resolveBridgeUrl.ts`.
-          const target = resolveBridgeUrl(backendUrl || "", path, window.location.origin);
-          if (target === null) {
-            iframe.contentWindow?.postMessage(
-              { type: "API_RESPONSE", id, error: "chemin refuse" },
-              "*",
-            );
-            break;
-          }
-          try {
-            const headers: Record<string, string> = { ...getAuthHeaders() };
-            if (body) headers["Content-Type"] = "application/json";
-            const res = await fetch(target, {
-              method: method || "GET",
-              headers,
-              credentials: "include",
-              ...(body
-                ? {
-                    body:
-                      typeof body === "string" ? body : JSON.stringify(body),
-                  }
-                : {}),
-            });
-            const text = await res.text();
-            let result;
-            try {
-              result = JSON.parse(text);
-            } catch {
-              result = text;
-            }
-            iframe.contentWindow?.postMessage(
-              { type: "API_RESPONSE", id, result, status: res.status },
-              "*",
-            );
-          } catch (err) {
-            iframe.contentWindow?.postMessage(
-              { type: "API_RESPONSE", id, error: (err as Error).message },
-              "*",
-            );
-          }
+        case "API_REQUEST":
+          void answerPluginApiRequest(data, backendUrl || "", (message) => iframe.contentWindow?.postMessage(message, "*"));
           break;
-        }
 
         case "NAVIGATE":
           if (typeof data.path === "string") {
@@ -191,8 +148,19 @@ export function PluginIframe({
           break;
         }
 
+        // Les octets du relais (aperçus) : le cadre ne joint plus un serveur local.
+        case MEDIA_REQUEST_MESSAGE: {
+          const request = parsePluginMediaRequest(data);
+          if (request) void answerPluginMediaRequest(request, backendUrl || "", (message, transfer) => iframe.contentWindow?.postMessage(message, "*", transfer ?? []));
+          break;
+        }
+
         case TRAILER_PREVIEW_MUTED_MESSAGE:
           applyPluginTrailerPreviewMuted(data);
+          break;
+
+        case TRAILER_PREVIEW_VOLUME_MESSAGE:
+          applyPluginTrailerPreviewVolume(data);
           break;
 
         case "OVERLAY_OPEN":
@@ -203,7 +171,12 @@ export function PluginIframe({
           setHostChromeVeil(false);
           break;
 
+        // L'extension tourne : l'état des aperçus lui est redit. Celui du document et de
+        // IFRAME_READY a pu changer sans qu'un relais n'arrive (page devenue visible pendant
+        // le chargement) — l'extension restait alors sur « aperçus coupés », sans retour.
         case "READY":
+          iframe.contentWindow.postMessage(trailerPreviewEnvMessage(pluginTrailerPreviewEnv()), "*");
+          break;
         case "PLUGIN_REGISTER":
           break;
       }
@@ -221,12 +194,12 @@ export function PluginIframe({
     iframeRef.current?.contentWindow?.postMessage(trailerPreviewEnvMessage(env), "*");
   }), []);
 
-  // Reset fetch state when bundle URL or plugin path changes (same plugin,
-  // different page). La query en fait partie : elle recompose le srcDoc
-  // (deep-link), donc l'iframe repart de zéro et le bundle doit être réinjecté.
+  // Un document NEUF (autre page, deep-link, langue…) repart de zéro : le bundle
+  // doit y être réinjecté. Suivre le document lui-même, pas la liste de ce qui
+  // le compose — un ingrédient oublié laissait l'extension vide.
   useEffect(() => {
     bundleFetched.current = false;
-  }, [bundleUrl, pluginPath, search]);
+  }, [bundleUrl, htmlContent]);
 
   /*
    * Le voile du chrome ne survit pas au cadre qui l'a demandé.

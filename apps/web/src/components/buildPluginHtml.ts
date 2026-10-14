@@ -58,6 +58,8 @@ export function buildPluginHtml({
     trailerPreview: pluginTrailerPreviewEnv(),
     // Le lecteur complet de l'hôte sur le catalogue (`pluginTrailerCatalog.ts`).
     trailerCatalog,
+    // Le cadre ne joint plus un serveur local : l'hôte lit la vidéo des aperçus (`pluginMediaBridge.ts`).
+    mediaBridge: true,
   };
 
   // Propage le schema de l'hote a l'iframe. Le markup des plugins (Seer) est

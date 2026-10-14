@@ -108,6 +108,21 @@ describe("catalogue › le rang", () => {
     expect(ids(rankCatalogEntries(list, scopes))).toEqual(["s6-vf", "s5-vost", "s5-vost-tmdb", "s7-promo-en", "s6-en"]);
   });
 
+  it("une SÉRIE : la série dans la langue du serveur, puis ses saisons de la 1re à la dernière, puis la série en VO, puis le reste", () => {
+    const list = [
+      entry(season(4), "s4-vo"),
+      entry(SERIES, "series-vo"),
+      entry(season(4), "s4-vost", { source: "allocine", version: "subtitled" }),
+      entry(season(2), "s2-vf", { version: "localized" }),
+      entry(SERIES, "series-vf", { version: "localized" }),
+    ];
+    const scopes = catalogScopes({ kind: "series", seasons: [1, 2, 3, 4] });
+    expect(ids(rankCatalogEntries(list, scopes))).toEqual(["series-vf", "s2-vf", "s4-vost", "series-vo", "s4-vo"]);
+    // Rick et Morty : la série n'a que « Season 1 Promos » en anglais — la VOST de S4 passe devant.
+    const rick = [entry(SERIES, "season-1-promos"), entry(season(4), "s4-vost", { source: "allocine", version: "subtitled" })];
+    expect(ids(rankCatalogEntries(rick, catalogScopes({ kind: "series", seasons: [1, 2, 3, 4] })))).toEqual(["s4-vost", "season-1-promos"]);
+  });
+
   it("serveur anglais : la VO anglaise de la saison en cours EST sa langue, elle passe en tête", () => {
     const list = [entry(season(6), "s6-other", { version: "original" }), entry(season(7), "s7-en", { version: "localized", type: "teaser" })];
     expect(ids(rankCatalogEntries(list, catalogScopes({ kind: "season", season: 7, seasons: [6, 7] })))).toEqual(["s7-en", "s6-other"]);

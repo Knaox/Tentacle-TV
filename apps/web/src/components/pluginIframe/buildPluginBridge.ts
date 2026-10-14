@@ -1,36 +1,12 @@
 // Scripts runtime de l'iframe plugin : shims, bridge postMessage vers le host,
 // interception fetch, puis bootstrap React (shared deps + registerPlugin).
 // Aucun token d'auth ne transite — les requêtes API passent par le bridge.
-import {
-  buildTrailerPreviewBridgeMethod, buildTrailerPreviewEnvListener, type PluginTrailerPreviewEnv,
-} from "./pluginTrailerPreview";
-import { buildTrailerCatalogBridgeMethod } from "./pluginTrailerCatalog";
+import { buildTrailerPreviewBridgeMethod, buildTrailerPreviewEnvListener } from "./pluginTrailerPreview";
+import type { PluginHostEnv } from "./pluginHostEnv";
 
-/** Environnement hôte exposé aux plugins (iframe sandboxée = aucun accès à la
- * window parente ni aux marqueurs du shell). */
-export interface PluginHostEnv {
-  /** Shell Tauri précisément. Conservé tel quel : les greffons déjà publiés
-   *  s'en servent, en changer le sens les casserait silencieusement. */
-  tauri: boolean;
-  /** Application de bureau, quel que soit le shell. À préférer à `tauri` pour
-   *  toute question du genre « ai-je une origine applicative sans referrer
-   *  HTTP, un catalogue local, des commandes natives ». */
-  desktop: boolean;
-  mac: boolean;
-  prod: boolean;
-  backendUrl: string;
-  /** Query string de la route hôte au montage (« ?media=movie:603 ») —
-   *  deep-link vers un contenu du plugin. Champ ADDITIF de l'API publique :
-   *  absent chez les hôtes d'avant, les greffons doivent le traiter optionnel. */
-  query?: string;
-  /** Les aperçus de bande-annonce sur cet appareil (`pluginTrailerPreview.ts`),
-   *  tenu à jour par le pont. ADDITIF : absent chez les hôtes d'avant. */
-  trailerPreview?: PluginTrailerPreviewEnv;
-  /** L'hôte ouvre son lecteur complet sur le catalogue d'un titre
-   *  (`__tentacle_bridge.openTrailerFor`, `pluginTrailerCatalog.ts`). ADDITIF :
-   *  absent ou faux, l'extension garde `openTrailer`. */
-  trailerCatalog?: boolean;
-}
+export type { PluginHostEnv } from "./pluginHostEnv";
+import { buildTrailerCatalogBridgeMethod } from "./pluginTrailerCatalog";
+import { buildMediaBridgeListener, buildMediaBridgeMethod, buildMediaBridgeState } from "./pluginMediaBridge";
 
 /**
  * Script (sans balises) : shim localStorage, error handler, bridge postMessage
@@ -65,7 +41,7 @@ export function buildPluginBridgeScript(params: { backendUrl: string; hostEnv: P
     window.__tentacle_env = ${JSON.stringify(hostEnv)};
 
     // ── PostMessage bridge ──
-    var _pendingRequests = {};
+    var _pendingRequests = {};${buildMediaBridgeState()}
     var _reqId = 0;
 
     window.__tentacle_bridge = {
@@ -105,7 +81,7 @@ export function buildPluginBridgeScript(params: { backendUrl: string; hostEnv: P
       // sandboxé.
       openTrailer: function(trailers, index) {
         parent.postMessage({ type: "OPEN_TRAILER", trailers: trailers, index: index || 0 }, "*");
-      },${buildTrailerPreviewBridgeMethod()},${buildTrailerCatalogBridgeMethod()}
+      },${buildTrailerPreviewBridgeMethod()},${buildTrailerCatalogBridgeMethod()},${buildMediaBridgeMethod()}
     };
 
     // ── Fetch interceptor: route backend API calls through postMessage bridge ──
@@ -159,6 +135,7 @@ export function buildPluginBridgeScript(params: { backendUrl: string; hostEnv: P
       }
 
 ${buildTrailerPreviewEnvListener()}
+${buildMediaBridgeListener()}
 
       if (data.type === "INJECT_BUNDLE" && !window.__bundleInjected) {
         window.__bundleInjected = true;

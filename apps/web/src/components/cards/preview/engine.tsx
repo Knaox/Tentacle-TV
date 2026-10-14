@@ -50,6 +50,10 @@ export interface PreviewEngine {
   pending: boolean;
   muted: boolean;
   toggleMute: () => void;
+  /** Le volume réglé (0 à 1), retenu sur l'appareil. */
+  soundVolume: number;
+  /** Règle le volume ; zéro coupe le son. */
+  setVolume: (next: number) => void;
   /** L'élément vidéo, plein cadre ; `hold` le garde sur sa première image. */
   renderVideo: (props: { hold: boolean; className: string }) => ReactNode;
 }
@@ -64,7 +68,7 @@ export { previewSubjectOfTitle };
 /** Le moteur pour une carte : `hovered` est le survol EFFECTIF (fermetures forcées déjà retirées). */
 export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolean): PreviewEngine {
   const handle = useTrailerPreview(subject, hovered);
-  const { videoProps, mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute, phase } = handle;
+  const { videoProps, mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute, soundVolume, setVolume, phase } = handle;
   const pending = phase === "intent" || phase === "fetching" || phase === "buffering" || phase === "ready";
   const renderVideo = useCallback(
     ({ hold, className }: { hold: boolean; className: string }) => (
@@ -73,7 +77,7 @@ export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolea
     [videoProps],
   );
   return useMemo(
-    () => ({ mount, visible, videoReady, videoCrop, reportStillReady, pending, muted, toggleMute, renderVideo }),
-    [mount, visible, videoReady, videoCrop, reportStillReady, pending, muted, toggleMute, renderVideo],
+    () => ({ mount, visible, videoReady, videoCrop, reportStillReady, pending, muted, toggleMute, soundVolume, setVolume, renderVideo }),
+    [mount, visible, videoReady, videoCrop, reportStillReady, pending, muted, toggleMute, soundVolume, setVolume, renderVideo],
   );
 }

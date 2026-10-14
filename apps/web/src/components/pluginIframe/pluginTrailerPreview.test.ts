@@ -14,10 +14,10 @@ vi.mock("../../trailerPreview/previewEnvironment", () => ({
   },
 }));
 
-import { trailerPreviewMutedFlag } from "../../trailerPreview/previewSettings";
+import { trailerPreviewMutedFlag, trailerPreviewVolumeLevel } from "../../trailerPreview/previewSettings";
 import { buildPluginBridgeScript, type PluginHostEnv } from "./buildPluginBridge";
 import {
-  TRAILER_PREVIEW_ENV_EVENT, applyPluginTrailerPreviewMuted, pluginTrailerPreviewEnv,
+  TRAILER_PREVIEW_ENV_EVENT, applyPluginTrailerPreviewMuted, applyPluginTrailerPreviewVolume, pluginTrailerPreviewEnv,
   trailerPreviewEnvMessage, watchPluginTrailerPreviewEnv,
 } from "./pluginTrailerPreview";
 
@@ -34,10 +34,10 @@ beforeEach(() => {
 
 describe("état des aperçus pour une extension", () => {
   it("permis sans blocage, refusé dès qu'un blocage existe ; le son suit le drapeau", () => {
-    expect(pluginTrailerPreviewEnv()).toEqual({ enabled: true, muted: false });
+    expect(pluginTrailerPreviewEnv()).toEqual({ enabled: true, muted: false, volume: 0.6 });
     h.block = "setting";
     trailerPreviewMutedFlag.set(true);
-    expect(pluginTrailerPreviewEnv()).toEqual({ enabled: false, muted: true });
+    expect(pluginTrailerPreviewEnv()).toEqual({ enabled: false, muted: true, volume: 0.6 });
   });
 
   it("pousse chaque changement EN DIRECT, jamais deux fois la même valeur, et se désabonne", () => {
@@ -47,11 +47,11 @@ describe("état des aperçus pour une extension", () => {
     setBlock("offline");
     setBlock("dataSaver");
     expect(push).toHaveBeenCalledTimes(1);
-    expect(push).toHaveBeenLastCalledWith({ enabled: false, muted: false });
+    expect(push).toHaveBeenLastCalledWith({ enabled: false, muted: false, volume: 0.6 });
     trailerPreviewMutedFlag.set(true);
-    expect(push).toHaveBeenLastCalledWith({ enabled: false, muted: true });
+    expect(push).toHaveBeenLastCalledWith({ enabled: false, muted: true, volume: 0.6 });
     setBlock(null);
-    expect(push).toHaveBeenLastCalledWith({ enabled: true, muted: true });
+    expect(push).toHaveBeenLastCalledWith({ enabled: true, muted: true, volume: 0.6 });
     expect(push).toHaveBeenCalledTimes(3);
     stop();
     expect(h.listeners.size).toBe(0);
@@ -95,7 +95,7 @@ function runBridge(hostEnv: PluginHostEnv) {
 describe("le pont, dans l'iframe", () => {
   const env: PluginHostEnv = {
     tauri: false, desktop: false, mac: false, prod: true, backendUrl: "",
-    trailerPreview: { enabled: true, muted: false },
+    trailerPreview: { enabled: true, muted: false, volume: 0.6 },
   };
 
   afterEach(() => vi.restoreAllMocks());
@@ -103,18 +103,30 @@ describe("le pont, dans l'iframe", () => {
   it("pose l'état au montage, puis le met à jour et le dit à chaque message du PARENT", () => {
     const { win, parent, send } = runBridge(env);
     const tentacleEnv = () => (win.__tentacle_env as PluginHostEnv).trailerPreview;
-    expect(tentacleEnv()).toEqual({ enabled: true, muted: false });
+    expect(tentacleEnv()).toEqual({ enabled: true, muted: false, volume: 0.6 });
     const heard = vi.fn();
     win.addEventListener(TRAILER_PREVIEW_ENV_EVENT, (e) => heard((e as CustomEvent).detail));
 
-    send(trailerPreviewEnvMessage({ enabled: false, muted: true }), parent);
-    expect(tentacleEnv()).toEqual({ enabled: false, muted: true });
-    expect(heard).toHaveBeenCalledWith({ enabled: false, muted: true });
+    send(trailerPreviewEnvMessage({ enabled: false, muted: true, volume: 0.6 }), parent);
+    expect(tentacleEnv()).toEqual({ enabled: false, muted: true, volume: 0.6 });
+    expect(heard).toHaveBeenCalledWith({ enabled: false, muted: true, volume: 0.6 });
 
     // Un autre émetteur (une iframe voisine, la page elle-même) n'y touche pas.
-    send(trailerPreviewEnvMessage({ enabled: true, muted: false }), {});
-    expect(tentacleEnv()).toEqual({ enabled: false, muted: true });
+    send(trailerPreviewEnvMessage({ enabled: true, muted: false, volume: 0.6 }), {});
+    expect(tentacleEnv()).toEqual({ enabled: false, muted: true, volume: 0.6 });
     expect(heard).toHaveBeenCalledTimes(1);
+  });
+
+  it("le volume d'une extension : un nombre de 0 à 1 ; zéro coupe le son, au-dessus il le rend", () => {
+    expect(applyPluginTrailerPreviewVolume({ volume: 0.3 })).toBe(true);
+    expect([trailerPreviewVolumeLevel.get(), trailerPreviewMutedFlag.get()]).toEqual([0.3, false]);
+    expect(applyPluginTrailerPreviewVolume({ volume: 0 })).toBe(true);
+    expect([trailerPreviewVolumeLevel.get(), trailerPreviewMutedFlag.get()]).toEqual([0.3, true]);
+    for (const bad of [null, {}, { volume: "0.5" }, { volume: 2 }, { volume: -1 }, { volume: Number.NaN }]) {
+      expect(applyPluginTrailerPreviewVolume(bad)).toBe(false);
+    }
+    trailerPreviewVolumeLevel.set(0.6);
+    trailerPreviewMutedFlag.set(false);
   });
 
   it("setTrailerPreviewMuted ne poste qu'un booléen", () => {
