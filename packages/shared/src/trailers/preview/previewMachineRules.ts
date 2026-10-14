@@ -17,3 +17,19 @@ export function intentAt(state: TrailerPreviewState, timing: TrailerPreviewTimin
   const since = state.since ?? 0;
   return Math.max(since + timing.intentMs, (state.stillSince ?? since) + timing.intentStillMs);
 }
+
+/** Montrée sur l'image du titre, la vidéo n'a pas encore sa première image : elle a jusqu'à `readyBy`. */
+export function awaitingVideo(state: TrailerPreviewState): boolean {
+  return (state.phase === "buffering" || state.phase === "shown") && !state.videoReady && state.readyBy !== null;
+}
+
+/**
+ * La mini-carte peut-elle se montrer à `at` ? Le rendez-vous passé
+ * (`revealMs`), et de quoi montrer : la première image de la vidéo, ou
+ * l'image du titre — le serveur a déjà VÉRIFIÉ la bande-annonce (`buffering`
+ * suit sa réponse), rien ne grandit sans elle.
+ */
+export function revealable(state: TrailerPreviewState, at: number, timing: TrailerPreviewTiming): boolean {
+  const phaseOk = state.phase === "ready" || (state.phase === "buffering" && state.stillReady);
+  return phaseOk && at >= revealAt(state, timing);
+}

@@ -24,8 +24,19 @@ export interface TrailerPreviewState {
   readonly since: number | null;
   /** Dernier mouvement du pointeur pendant l'intention : la demande attend qu'il s'arrête. */
   readonly stillSince: number | null;
-  /** Échéance de la première image (phase `buffering`). */
+  /**
+   * Échéance de la première image : en `buffering`, et en `shown` tant que la
+   * vidéo n'a pas rejoint l'image du titre (révélation sur l'image).
+   */
   readonly readyBy: number | null;
+  /** La première image de la vidéo est décodée (ce cycle). */
+  readonly videoReady: boolean;
+  /**
+   * L'image du titre (son fond 16:9) est chargée et décodée dans la
+   * mini-carte : elle peut se montrer AVANT la vidéo, qui la rejoint en fondu
+   * (ce cycle). Sans elle, la révélation attend la première image.
+   */
+  readonly stillReady: boolean;
   /** Fin du fondu de sortie d'une lecture montrée : la vidéo reste montée jusque-là. */
   readonly exitUntil: number | null;
   /** Le fondu en cours vient d'un simple départ du survol : un retour le reprend. */
@@ -55,6 +66,8 @@ export type TrailerPreviewEvent =
   /** Refus passager : redemander à `retryAt` si le survol tient (deux fois au plus). */
   | { type: "streamRetry"; at: number; retryAt: number }
   | { type: "videoReady"; at: number }
+  /** L'image du titre est prête dans la mini-carte : la révélation n'attend plus la vidéo. */
+  | { type: "stillReady"; at: number }
   | { type: "videoFailed"; at: number }
   | { type: "videoEnded"; at: number }
   /** Un autre aperçu a pris la place (un seul à la fois). */
@@ -69,6 +82,8 @@ export const INITIAL_TRAILER_PREVIEW_STATE: TrailerPreviewState = {
   since: null,
   stillSince: null,
   readyBy: null,
+  videoReady: false,
+  stillReady: false,
   exitUntil: null,
   resumable: false,
   cycle: 0,

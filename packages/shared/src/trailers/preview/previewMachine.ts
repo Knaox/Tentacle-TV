@@ -1,5 +1,5 @@
 import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "./previewTiming";
-import { ACTIVE, VIDEO, intentAt, revealAt } from "./previewMachineRules";
+import { ACTIVE, VIDEO, awaitingVideo, intentAt, revealAt, revealable } from "./previewMachineRules";
 import type { TrailerPreviewEvent, TrailerPreviewFailure, TrailerPreviewState } from "./previewMachineTypes";
 
 /**
@@ -11,6 +11,13 @@ import type { TrailerPreviewEvent, TrailerPreviewFailure, TrailerPreviewState } 
  *   idle ─survol→ intent ─250 ms→ fetching ─flux→ buffering ─1re image→ ready ─800 ms→ shown
  *                                     │ absent        │ erreur, 8 s       │ erreur      │ fin
  *                                     └→ failed ←─────┴───────────────────┘            └→ ended
+ *
+ * RÉVÉLATION SUR L'IMAGE : le flux trouvé, le serveur a VÉRIFIÉ que la
+ * bande-annonce se lit ; si la mini-carte a déjà l'image du titre
+ * (`stillReady`), elle se montre au rendez-vous (800 ms) sans attendre la
+ * première image — `buffering ─image du titre, 800 ms→ shown` — et la vidéo
+ * la rejoint en fondu (`videoReady`). Si elle ne vient pas avant `readyBy`
+ * (8 s après le flux), c'est un échec : la mini-carte s'efface.
  *
  * L'intention demande aussi un pointeur ARRÊTÉ (`intentStillMs`) : chaque
  * mouvement (`move`, au-delà du seuil de la carte) la repousse. Un balayage
@@ -39,6 +46,8 @@ function begin(state: TrailerPreviewState, at: number): TrailerPreviewState {
     since: at,
     stillSince: at,
     readyBy: null,
+    videoReady: false,
+    stillReady: false,
     exitUntil: null,
     resumable: false,
     cycle: state.cycle + 1,
@@ -78,10 +87,11 @@ function elapse(state: TrailerPreviewState, at: number, timing: TrailerPreviewTi
   if (next.phase === "fetching" && next.retryAt !== null && at >= next.retryAt) {
     next = { ...next, retryAt: null, attempt: next.attempt + 1 };
   }
-  if (next.phase === "buffering" && next.readyBy !== null && at >= next.readyBy) {
+  // La vidéo n'a jamais eu sa première image — cachée, ou montrée sur l'image du titre : échec, sortie.
+  if (awaitingVideo(next) && at >= (next.readyBy as number)) {
     next = leave(next, at, "failed", { failure: "video", timing });
   }
-  if (next.phase === "ready" && at >= revealAt(next, timing)) next = { ...next, phase: "shown" };
+  if (revealable(next, at, timing)) next = { ...next, phase: "shown" };
   return next;
 }
 
@@ -104,9 +114,11 @@ export function reduceTrailerPreview(
       if (state0.hovered) return state0;
       const hovered = { ...state0, hovered: true };
       if (hovered.blocked) return hovered;
-      // Retour pendant le fondu d'une lecture qu'on vient de quitter : elle reprend.
+      // Retour pendant le fondu d'une lecture qu'on vient de quitter : elle reprend
+      // (montrée sur l'image du titre, la vidéo a de nouveau jusqu'à `readyTimeoutMs`).
       if (hovered.exitUntil !== null && hovered.resumable) {
-        return { ...hovered, phase: "shown", exitUntil: null, resumable: false };
+        const readyBy = hovered.videoReady ? null : at + timing.readyTimeoutMs;
+        return { ...hovered, phase: "shown", exitUntil: null, resumable: false, readyBy };
       }
       return begin(hovered, at);
     }
@@ -141,9 +153,18 @@ export function reduceTrailerPreview(
       if (state0.phase !== "fetching" || state0.retryAt !== null) return state0;
       if (state0.retries >= timing.maxRetries) return leave(state0, at, "failed", { failure: "missing", timing });
       return { ...state0, retryAt: Math.max(at, event.retryAt), retries: state0.retries + 1 };
-    case "videoReady":
-      if (state0.phase !== "buffering") return state0;
-      return { ...state0, phase: at >= revealAt(state0, timing) ? "shown" : "ready", readyBy: null };
+    case "videoReady": {
+      // Retenue tant que la vidéo existe, fondu de sortie compris : un retour la trouvera prête.
+      if (!VIDEO.has(state0.phase) && state0.exitUntil === null) return state0;
+      const ready = { ...state0, videoReady: true, readyBy: null };
+      if (state0.phase !== "buffering") return ready;
+      return { ...ready, phase: at >= revealAt(state0, timing) ? "shown" : "ready" };
+    }
+    case "stillReady": {
+      if (!VIDEO.has(state0.phase) || state0.stillReady) return state0;
+      const still = { ...state0, stillReady: true };
+      return revealable(still, at, timing) ? { ...still, phase: "shown" } : still;
+    }
     case "videoFailed":
       return VIDEO.has(state0.phase) ? leave(state0, at, "failed", { failure: "video", timing }) : state0;
     case "videoEnded":
