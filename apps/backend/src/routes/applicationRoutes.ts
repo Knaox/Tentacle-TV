@@ -30,6 +30,7 @@ import { playbackSegmentRoutes } from "./playbackSegments";
 import { adminRoutes } from "./admin";
 import { adminDownloadRoutes } from "./adminDownloads";
 import { adminMetadataRoutes } from "./adminMetadata";
+import { adminTrailersRoutes } from "./adminTrailers";
 import { adminSegmentRoutes } from "./adminSegments";
 import { downloadRoutes } from "./downloads";
 import { pluginRoutes } from "./plugins";
@@ -80,6 +81,7 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   await app.register(adminDownloadRoutes, { prefix: "/api/admin/downloads" });
   // Fichier séparé d'admin.ts : lui frôle déjà le plafond de 300 lignes.
   await app.register(adminMetadataRoutes, { prefix: "/api/admin" });
+  await app.register(adminTrailersRoutes, { prefix: "/api/admin" });
   await app.register(adminSegmentRoutes, { prefix: "/api/admin" });
   await app.register(downloadRoutes, { prefix: "/api/downloads" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
