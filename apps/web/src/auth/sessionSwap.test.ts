@@ -69,6 +69,22 @@ describe("bascules de session du bureau", () => {
     expect(store.dump().tentacle_token).toBe("jeton-lea");
   });
 
+  it("une marque restée d'une session passée : c'est la session ACTIVE qui part en réserve", () => {
+    // Le profil de Léa quitté par une sortie qui ignorait ces clés, puis une
+    // connexion : la vieille réserve ne doit pas resservir au retour.
+    const store = memoryStore({ tentacle_token: "jeton-perso", tentacle_user: OWNER_USER });
+    enterProfile(store, LEA);
+    store.removeItem("tentacle_token");
+    store.removeItem("tentacle_user");
+    const freshUser = JSON.stringify({ Id: "owner", Name: "Damien", Policy: { IsAdministrator: true } });
+    store.setItem("tentacle_token", "jeton-perso-neuf");
+    store.setItem("tentacle_user", freshUser);
+    expect(enterProfile(store, ZOE)).toBe(true);
+    expect(JSON.parse(store.dump().tentacle_account_session!)).toMatchObject({ token: "jeton-perso-neuf", user: freshUser });
+    expect(returnToAccount(store)).toBe(true);
+    expect(store.dump().tentacle_token).toBe("jeton-perso-neuf");
+  });
+
   it("oublier la session de profil ne laisse aucun jeton personnel traîner", () => {
     const store = memoryStore({ tentacle_token: "jeton-perso", tentacle_user: OWNER_USER });
     enterProfile(store, LEA);

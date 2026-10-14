@@ -1,4 +1,6 @@
 import type { PickerProfilesDto } from "@tentacle-tv/shared";
+import { notifyProfileSessionChange } from "../../auth/profileSession";
+import { forgetProfileSession } from "../../auth/sessionSwap";
 import type { LaunchMirror } from "./launchDecision";
 
 /**
@@ -70,4 +72,22 @@ export function markLaunchPassed(): void {
   } catch {
     /* stockage de session indisponible : le sélecteur se reproposera au rechargement */
   }
+}
+
+/**
+ * Une connexion par mot de passe dans cette exécution : la session est la
+ * session PERSONNELLE (le profil est « choisi »), et ce qui restait d'une
+ * session de profil passée — sa marque, la réserve d'un compte, laissées par
+ * une sortie qui ignorait ces clés (déconnexion depuis l'écran hors ligne,
+ * changement de serveur) — est oublié : la réserve d'un autre compte ne
+ * survit jamais à une connexion.
+ */
+export function noteFreshLogin(): void {
+  markLaunchPassed();
+  try {
+    forgetProfileSession(localStorage);
+  } catch {
+    /* stockage indisponible : rien à oublier */
+  }
+  notifyProfileSessionChange();
 }

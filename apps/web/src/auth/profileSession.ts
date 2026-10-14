@@ -15,9 +15,12 @@ import type { FamilyProfileColor, FamilyProfileKind } from "@tentacle-tv/shared"
  * - `tentacle_profile_session` : la marque du profil actif (nom, couleur,
  *   rôle), qui dit à l'interface ce qu'elle doit taire.
  *
- * Chaque bascule recharge la page (`profileSwitch.ts`) : l'état lu ici ne
- * change jamais sous les yeux, hors des tests. Hors du bureau, rien n'écrit
- * ces clés : tout répond « session personnelle ».
+ * Chaque bascule recharge la page (`profiles/switch/commitPick.ts`) : l'état
+ * lu ici ne change jamais sous les yeux, hors des tests. Hors du bureau, rien
+ * n'écrit ces clés : tout répond « session personnelle ». La marque ne vaut
+ * que pour la session active de SON profil (`profileMarkerIn`) : un reste
+ * laissé par une sortie qui ignorait ces clés ne fait jamais d'un compte un
+ * profil.
  *
  * ⚠️ Ces clés sont traversées par une chaîne : jamais renommées.
  */
@@ -57,20 +60,60 @@ function isActiveProfile(value: unknown): value is ActiveProfile {
     && typeof candidate.kind === "string" && typeof candidate.color === "string";
 }
 
+/** Le compte (`Id`) d'un `tentacle_user` ; null s'il est absent ou illisible. */
+function userIdOf(raw: string | null): string | null {
+  try {
+    const id = raw ? (JSON.parse(raw) as { Id?: unknown }).Id : null;
+    return typeof id === "string" && id ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * La marque du profil (`tentacle_profile_session`) face à la session ACTIVE :
+ *
+ * - `none` : aucune marque — la session personnelle ;
+ * - `active` : la marque d'un profil, et la session active est la sienne ;
+ * - `stale` : la marque d'un profil, mais la session active est celle d'un
+ *   AUTRE compte — un reste qu'une sortie passée à côté de ces clés a laissé
+ *   (`useAuth().logout`, un changement de serveur, puis une connexion) :
+ *   personne ne s'en sert, et la prochaine entrée dans un profil la remplace ;
+ * - `unreadable` : une marque illisible.
+ */
+export type ProfileMarkerState = "none" | "active" | "stale" | "unreadable";
+
+export function profileMarkerIn(store: Pick<Storage, "getItem">): { state: ProfileMarkerState; profile: ActiveProfile | null } {
+  const raw = store.getItem(PROFILE_SESSION_KEY);
+  if (raw === null) return { state: "none", profile: null };
+  let parsed: unknown = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    /* illisible */
+  }
+  if (!isActiveProfile(parsed)) return { state: "unreadable", profile: null };
+  if (userIdOf(store.getItem("tentacle_user")) !== parsed.id) return { state: "stale", profile: null };
+  return { state: "active", profile: { ...parsed, imageTag: parsed.imageTag ?? null, hasPin: parsed.hasPin === true } };
+}
+
+const safeLocalStorage: Pick<Storage, "getItem"> = { getItem: read };
+
 let lastRaw: string | null | undefined;
+let lastUser: string | null | undefined;
 let lastProfile: ActiveProfile | null = null;
 
-/** Le profil actif, ou null : la session est la session personnelle. */
+/**
+ * Le profil actif, ou null : la session est la session personnelle. Une marque
+ * qui n'est pas celle de la session active (`stale`) ne compte pas.
+ */
 export function readActiveProfile(): ActiveProfile | null {
   const raw = read(PROFILE_SESSION_KEY);
-  if (raw === lastRaw) return lastProfile;
+  const user = read("tentacle_user");
+  if (raw === lastRaw && user === lastUser) return lastProfile;
   lastRaw = raw;
-  try {
-    const parsed: unknown = raw ? JSON.parse(raw) : null;
-    lastProfile = isActiveProfile(parsed) ? { ...parsed, imageTag: parsed.imageTag ?? null, hasPin: parsed.hasPin === true } : null;
-  } catch {
-    lastProfile = null;
-  }
+  lastUser = user;
+  lastProfile = profileMarkerIn(safeLocalStorage).profile;
   return lastProfile;
 }
 
@@ -92,13 +135,7 @@ export function accountToken(): string | null {
 
 /** Le compte de l'application (celui qui s'y est connecté), même pendant un profil. */
 export function accountUserId(): string | null {
-  const raw = readActiveProfile() ? readAccountSession()?.user ?? null : read("tentacle_user");
-  try {
-    const id = raw ? (JSON.parse(raw) as { Id?: unknown }).Id : null;
-    return typeof id === "string" ? id : null;
-  } catch {
-    return null;
-  }
+  return userIdOf(readActiveProfile() ? readAccountSession()?.user ?? null : read("tentacle_user"));
 }
 
 const listeners = new Set<() => void>();
@@ -118,5 +155,6 @@ export function useActiveProfile(): ActiveProfile | null {
   return useSyncExternalStore(subscribe, readActiveProfile, () => null);
 }
 
-/** Les clés de la session de profil, effacées avec la session (déconnexion, changement de serveur). */
+/** Les clés de la session de profil : effacées avec elle (déconnexion, changement
+ *  de serveur), GARDÉES avec la session active quand on vide le cache. */
 export const PROFILE_SESSION_STORAGE_KEYS: readonly string[] = [PROFILE_SESSION_KEY, ACCOUNT_SESSION_KEY];

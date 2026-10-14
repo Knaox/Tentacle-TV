@@ -1,6 +1,7 @@
 import {
   ACCOUNT_SESSION_KEY,
   PROFILE_SESSION_KEY,
+  profileMarkerIn,
   type AccountSession,
   type ActiveProfile,
 } from "./profileSession";
@@ -63,9 +64,14 @@ export function profileUserRecord(grant: ProfileGrant): string {
  * mise de côté (jeton, compte, identité adoptée) ; depuis un autre profil, la
  * réserve ne bouge pas — elle reste celle du compte. Faux si rien ne peut
  * être mis de côté (aucune session active) : l'appelant n'a rien à recharger.
+ *
+ * Une marque restée d'une session passée (`stale` : la session active est
+ * celle d'un autre compte) vaut la session personnelle : c'est la session
+ * ACTIVE qui part en réserve, jamais l'ancienne réserve qui traînait.
  */
 export function enterProfile(store: KeyValueStore, grant: ProfileGrant): boolean {
-  if (store.getItem(PROFILE_SESSION_KEY) === null) {
+  const marker = profileMarkerIn(store).state;
+  if (marker === "none" || marker === "stale") {
     const token = store.getItem(TOKEN_KEY);
     const user = store.getItem(USER_KEY);
     if (!token || !user) return false;

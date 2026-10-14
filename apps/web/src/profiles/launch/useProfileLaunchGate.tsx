@@ -13,7 +13,7 @@ import { NoPersonalSession, loadPickerProfiles, pickerProfilesKey } from "../api
 import { WhoIsWatchingView } from "../picker/WhoIsWatchingView";
 import { afterFresh, initialGate, type FreshAnswer, type GateState } from "./gateMachine";
 import { LAUNCH_CHECK_BUDGET_MS, launchVerdict } from "./launchDecision";
-import { launchPassed, markLaunchPassed, readLaunchMirror, writeLaunchMirror } from "./launchState";
+import { launchPassed, noteFreshLogin, readLaunchMirror, writeLaunchMirror } from "./launchState";
 import { ProfileLaunchScreen } from "./ProfileLaunchScreen";
 import { LaunchSplash } from "./LaunchSplash";
 
@@ -41,10 +41,13 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   const eligible = useRef(isDesktopApp() && authed);
 
   // Une connexion par mot de passe pendant cette exécution : la session
-  // personnelle, sans « Qui regarde ? » (contrat du serveur).
+  // personnelle, sans « Qui regarde ? » (contrat du serveur). Ce qui restait
+  // d'une session de profil (une sortie qui ignorait ces clés : déconnexion
+  // depuis l'écran hors ligne, changement de serveur…) est oublié — la réserve
+  // d'un AUTRE compte ne doit jamais survivre à une connexion.
   const wasAuthed = useRef(authed);
   useEffect(() => {
-    if (authed && !wasAuthed.current) markLaunchPassed();
+    if (authed && !wasAuthed.current) noteFreshLogin();
     wasAuthed.current = authed;
   }, [authed]);
 
