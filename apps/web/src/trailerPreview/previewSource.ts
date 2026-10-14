@@ -132,12 +132,15 @@ export interface PreviewSourceSession {
   hls(): Hls | null;
   /** L'aperçu se montre : le tampon d'avance passe du premier segment à douze secondes. */
   unleash(): void;
+  /** La vidéo est rognée de son letterbox (`videoCrop`) : le plafond suit la boîte agrandie d'autant. */
+  setCrop(scale: number): void;
   release(): void;
 }
 
 /** La boîte de la vidéo en px CSS — sa taille de MISE EN PAGE, que l'échelle de l'animation ne change pas. */
-function boxOf(video: HTMLVideoElement): BoxSize {
-  return { width: video.clientWidth, height: video.clientHeight };
+/** `crop` : l'échelle du rognage du letterbox — la source s'affiche d'autant plus grande. */
+function boxOf(video: HTMLVideoElement, crop = 1): BoxSize {
+  return { width: video.clientWidth * crop, height: video.clientHeight * crop };
 }
 
 const pixelRatio = () => (typeof window !== "undefined" && window.devicePixelRatio > 0 ? window.devicePixelRatio : 1);
@@ -158,6 +161,7 @@ export function attachPreviewSource(
   let released = false;
   let ready = false;
   let unleashed = false;
+  let crop = 1;
   let hls: Hls | null = null;
   let resizeWatch: ResizeObserver | null = null;
   let frameRequest: number | null = null;
@@ -227,7 +231,7 @@ export function attachPreviewSource(
         // La boîte change (fenêtre redimensionnée) : le plafond la suit.
         if (cap >= 0 && typeof ResizeObserver === "function") {
           resizeWatch = new ResizeObserver(() => {
-            if (!released) instance.autoLevelCapping = capLevelFor(instance.levels, boxOf(video), pixelRatio());
+            if (!released) instance.autoLevelCapping = capLevelFor(instance.levels, boxOf(video, crop), pixelRatio());
           });
           resizeWatch.observe(video);
         }
@@ -260,6 +264,10 @@ export function attachPreviewSource(
     unleash() {
       unleashed = true;
       widenBuffer();
+    },
+    setCrop(scale) {
+      crop = scale > 1 ? scale : 1;
+      if (hls && hls.levels.length > 0 && !released) hls.autoLevelCapping = capLevelFor(hls.levels, boxOf(video, crop), pixelRatio());
     },
     release() {
       if (released) return;

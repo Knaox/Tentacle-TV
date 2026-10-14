@@ -54,6 +54,7 @@ function fakeHlsClass(supported = true) {
     readonly handlers = new Map<string, Listener>();
     startLevelValue = -1;
     autoLevelCapping = -1;
+    levels: unknown[] = [];
     readonly calls: string[] = [];
     constructor(readonly config: unknown) {
       instances.push(this);
@@ -145,6 +146,10 @@ describe("attachPreviewSource — HLS par hls.js", () => {
     expect(hls.config).toMatchObject({ maxBufferLength: 1, maxMaxBufferLength: 1 });
     session.unleash();
     expect(hls.config).toMatchObject({ maxBufferLength: 12, maxMaxBufferLength: 15 });
+    // Rognée de son letterbox (×1,6), la vidéo s'affiche plus grande : le plafond monte d'un niveau.
+    hls.levels = sizes;
+    session.setCrop(1.6);
+    expect(hls.autoLevelCapping).toBe(3);
     vi.unstubAllGlobals();
   });
 
