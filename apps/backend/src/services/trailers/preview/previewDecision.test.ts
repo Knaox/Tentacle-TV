@@ -2,7 +2,7 @@
  * La décision d'un aperçu : les candidates essayées dans l'ordre (trois au
  * plus) jusqu'à la première LISIBLE, la mémoire de la décision (trouvée :
  * jusqu'à l'échéance des URL ; aucune bande-annonce : une heure ; aucune
- * lisible : une minute), le partage des demandes simultanées, le seau du
+ * lisible : dix minutes), le partage des demandes simultanées, le seau du
  * compte et le plafond du serveur. Le relais et TMDB sont factices.
  */
 
@@ -118,13 +118,13 @@ describe("mémoire de la décision", () => {
     expect(fetchTitleVideos).toHaveBeenCalledTimes(3);
   });
 
-  it("aucune lisible, ou TMDB muet : gardé une minute seulement", async () => {
+  it("aucune lisible, ou TMDB muet : gardé dix minutes", async () => {
     fetchTitleVideos.mockResolvedValue({ videos: [], complete: false });
     expect(await decidePreview(title(), "fr", "alice")).toEqual({ kind: "refused", error: "unavailable" });
-    vi.setSystemTime(NOW + 59_000);
+    vi.setSystemTime(NOW + 10 * 60_000 - 1_000);
     await decidePreview(title(), "fr", "alice");
     expect(fetchTitleVideos).toHaveBeenCalledTimes(1);
-    vi.setSystemTime(NOW + 61_000);
+    vi.setSystemTime(NOW + 10 * 60_000 + 1_000);
     await decidePreview(title(), "fr", "alice");
     expect(fetchTitleVideos).toHaveBeenCalledTimes(2);
   });

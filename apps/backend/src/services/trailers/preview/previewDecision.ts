@@ -7,7 +7,7 @@
 /*  chez googlevideo (`prepareTrailer`). Le client ne reçoit jamais    */
 /*  un flux qu'on n'a pas ouvert. La décision est gardée par (titre,   */
 /*  langue) : trouvée, jusqu'à l'échéance des URL ; aucune bande-      */
-/*  annonce, une heure ; aucune lisible, une minute. Deux demandes     */
+/*  annonce, une heure ; aucune lisible, dix minutes. Deux demandes    */
 /*  simultanées en partagent une ; une décision à prendre puise dans   */
 /*  le seau du compte et dans le plafond du serveur. YouTube bride     */
 /*  l'adresse, ou le budget de l'heure est épuisé (`youtubeGuard.ts`) :*/
@@ -116,7 +116,7 @@ async function decide(key: string, title: PreviewTitle, lang: string | undefined
   const tmdb = title.tmdb ? await fetchTitleVideos(title.tmdb.id, title.tmdb.mediaType, lang) : { videos: [], complete: true };
   const candidates = previewCandidates(title.jellyfin, tmdb.videos, lang).slice(0, MAX_ATTEMPTS);
   if (candidates.length === 0) {
-    // TMDB muet : une absence qui n'en est peut-être pas une — retenue une minute seulement.
+    // TMDB muet : une absence qui n'en est peut-être pas une — retenue comme « aucune lisible ».
     console.log(`[trailers] aperçu ${key} : aucune bande-annonce${tmdb.complete ? "" : " (TMDB sans réponse)"}`);
     return refuse(key, tmdb.complete ? "no_trailer" : "unavailable");
   }

@@ -114,10 +114,10 @@ describe("useTrailerPreviewStream", () => {
     expect(probe.fresh).toBe(true);
   });
 
-  it("un refus d'il y a deux minutes (« indisponible », une minute) n'est plus frais", async () => {
+  it("un refus d'il y a onze minutes (« indisponible », dix minutes) n'est plus frais", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(PREVIEW))));
     serverDeclares(["trailers.preview"]);
-    qc.setQueryData(["trailer-preview", `item:${SUBJECT.kind === "item" ? SUBJECT.itemId : ""}`, "fr"], { status: "missing", reason: "unavailable" }, { updatedAt: Date.now() - 120_000 });
+    qc.setQueryData(["trailer-preview", `item:${SUBJECT.kind === "item" ? SUBJECT.itemId : ""}`, "fr"], { status: "missing", reason: "unavailable" }, { updatedAt: Date.now() - 11 * 60_000 });
     await render(false);
     expect(probe.fresh).toBe(false);
   });

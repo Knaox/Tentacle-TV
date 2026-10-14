@@ -117,7 +117,7 @@ describe("trailerPreviewResultTtl", () => {
     expect(trailerPreviewResultTtl(expired, now)).toBe(0);
   });
 
-  it("un refus vaut ce que le serveur en dit : une heure sans bande-annonce, une minute sinon", () => {
+  it("un refus vaut ce que le serveur en dit : une heure sans bande-annonce, dix minutes sinon", () => {
     expect(trailerPreviewResultTtl({ status: "missing", reason: "no_trailer" }, 0)).toBe(TRAILER_PREVIEW_NO_TRAILER_TTL_MS);
     expect(trailerPreviewResultTtl({ status: "missing", reason: "unavailable" }, 0)).toBe(TRAILER_PREVIEW_UNAVAILABLE_TTL_MS);
     expect(trailerPreviewResultTtl({ status: "missing", reason: "unreadable" }, 0)).toBe(TRAILER_PREVIEW_UNAVAILABLE_TTL_MS);

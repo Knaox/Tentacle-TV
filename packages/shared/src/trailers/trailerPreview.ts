@@ -98,10 +98,14 @@ export interface TrailerPreviewRefusalBody {
 /**
  * Combien de temps un refus vaut — le serveur garde sa décision autant, un
  * client peut s'en souvenir autant sans redemander : aucune bande-annonce, une
- * heure ; aucune lisible, une minute (YouTube bride, une vidéo revient).
+ * heure ; aucune lisible, dix minutes. Une décision « aucune lisible » a coûté
+ * jusqu'à trois extractions YouTube : la reprendre chaque minute, c'était les
+ * recommencer à chaque survol du titre. Un blocage de YouTube n'en est pas
+ * une (le disjoncteur du serveur suspend tous les aperçus, rien n'est retenu
+ * par titre).
  */
 export const TRAILER_PREVIEW_NO_TRAILER_TTL_MS = 60 * 60 * 1000;
-export const TRAILER_PREVIEW_UNAVAILABLE_TTL_MS = 60 * 1000;
+export const TRAILER_PREVIEW_UNAVAILABLE_TTL_MS = 10 * 60 * 1000;
 
 const ITEM_ID_RE = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 const TMDB_ID_RE = /^[1-9]\d{0,9}$/;
