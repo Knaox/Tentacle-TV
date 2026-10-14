@@ -65,46 +65,105 @@ export function parseYouTubeId(url: string | undefined): string | null {
   return null;
 }
 
-/** Mots-clés indiquant une vraie version doublée (signal `Name`, repli sans code langue). */
-const LANG_KEYWORDS: Record<string, string[]> = {
-  fr: ["vf", "vff", "vfq", "version française", "version francaise", "français", "francais", "french", "truefrench"],
-  en: ["english", "(en)", "official trailer", "us trailer", "uk trailer"],
-};
+/**
+ * Ce qu'une vidéo est pour la langue visée : DOUBLÉE dans cette langue (une
+ * VF), ORIGINALE SOUS-TITRÉE dans cette langue (une VOSTFR), ou autre chose.
+ * « Français » = VF, puis VOSTFR, puis le reste.
+ */
+export type TrailerLangFit = "dubbed" | "subtitled" | "other";
 
-/** Un VOSTFR est une version ORIGINALE sous-titrée, PAS une VF. */
-const SUBBED_MARKERS = ["vost", "sous-titr", "subtitled", "vostfr"];
-
-function langMatches(tr: RichTrailer, code: string): boolean {
-  // Signal fiable : code langue ISO fourni par TMDB.
-  if (tr.lang) return tr.lang.slice(0, 2).toLowerCase() === code;
-  // Repli heuristique sur le libellé.
-  const n = (tr.Name ?? "").toLowerCase();
-  if (code === "fr" && SUBBED_MARKERS.some((m) => n.includes(m))) return false;
-  const kws = LANG_KEYWORDS[code];
-  return kws ? kws.some((k) => n.includes(k)) : false;
+/** Le libellé ramené à des mots : minuscules, sans accents, ponctuation → espaces (« V.O. » → « v o »). */
+function nameWords(name: string | undefined): string {
+  const plain = (name ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return ` ${plain.replace(/[^a-z0-9]+/g, " ").trim()} `;
 }
 
-/** Priorité de type : un vrai trailer avant un teaser, puis le reste. */
-function typeRank(type?: string): number {
-  const t = (type ?? "").toLowerCase();
-  if (t === "" || t === "trailer") return 0;
-  if (t === "teaser") return 1;
-  return 2;
+/** Sous-titres FRANÇAIS : VOST, VOSTFR, « VO STFR », « sous-titré »… (AlloCiné, TMDB). */
+const FRENCH_SUBTITLE_MARKS = / (vost|vostf|vostfr|vo st|vo stfr|v o st|v o st fr|v o stfr|stfr) |sous titr/;
+/** Sous-titres sans langue dite : ceux de la langue de la vidéo. */
+const SUBTITLE_MARKS = /subtitled|subbed/;
+/** Version ORIGINALE : ni doublée, ni sous-titrée dite. */
+const ORIGINAL_MARKS = / (vo|v o|version originale|original version) /;
+
+/** Mots-clés d'une vraie version doublée (repli, faute de code langue). */
+const LANG_KEYWORDS: Record<string, string[]> = {
+  fr: ["vf", "vff", "vfq", "vfi", "version francaise", "francais", "french", "truefrench"],
+  en: ["english", "official trailer", "us trailer", "uk trailer"],
+};
+
+/** Le libellé dit-il « sous-titré » (VOST, VOSTFR, VO STFR, subtitled…) ? */
+export function hasSubtitleMark(name: string | undefined): boolean {
+  const words = nameWords(name);
+  return FRENCH_SUBTITLE_MARKS.test(words) || SUBTITLE_MARKS.test(words);
 }
 
 /**
- * Trie les trailers pour faire remonter la langue de l'utilisateur (VF fiable via
- * code ISO si présent, sinon heuristique), puis les trailers avant les teasers.
- * Tri stable.
+ * La vidéo face à la langue `lang` (« fr », « fr-FR »). Le LIBELLÉ passe
+ * avant le code ISO : TMDB étiquette `fr` des VOST et des VO (« Bande-annonce
+ * VOST », « … VO »), le code n'est cru qu'à défaut de marque.
+ */
+export function trailerLangFit(tr: RichTrailer, lang: string | undefined): TrailerLangFit {
+  const code = (lang ?? "").slice(0, 2).toLowerCase();
+  if (!code) return "other";
+  const words = nameWords(tr.Name);
+  const tagged = tr.lang ? tr.lang.slice(0, 2).toLowerCase() : null;
+  if (FRENCH_SUBTITLE_MARKS.test(words)) return code === "fr" ? "subtitled" : "other";
+  if (SUBTITLE_MARKS.test(words)) return !tagged || tagged === code ? "subtitled" : "other";
+  if (ORIGINAL_MARKS.test(words)) return "other";
+  if (tagged) return tagged === code ? "dubbed" : "other";
+  const keywords = LANG_KEYWORDS[code] ?? [];
+  return keywords.some((k) => words.includes(` ${k} `)) ? "dubbed" : "other";
+}
+
+/** Le rang de langue d'une vidéo : 0 doublée, 1 sous-titrée, 2 autre. */
+export function trailerLangRank(tr: RichTrailer, lang: string | undefined): number {
+  const fit = trailerLangFit(tr, lang);
+  return fit === "dubbed" ? 0 : fit === "subtitled" ? 1 : 2;
+}
+
+/** Une vraie version doublée dans la langue `lang` (une VF pour « fr ») — jamais une VOST ni une VO. */
+export function langMatches(tr: RichTrailer, lang: string | undefined): boolean {
+  return trailerLangFit(tr, lang) === "dubbed";
+}
+
+/** Un bonus dit par son libellé : featurette, coulisses, extrait, entretien… */
+const EXTRA_NAME = / (featurette|behind the scenes|making of|coulisses|interview|entretien|bloopers|b roll|betisier|clip|extrait) /;
+const TRAILER_NAME = / (bande annonce|trailer) /;
+const TEASER_NAME = / teaser /;
+
+/**
+ * Ce qu'est la vidéo : bande-annonce, teaser ou autre chose. Le type TMDB
+ * fait foi, sauf un « Clip » ou une « Featurette » dont le libellé dit
+ * « bande-annonce » (TMDB type ainsi des VF) ; sans type (Jellyfin), le
+ * libellé seul, et une vidéo sans mot-clé vaut bande-annonce.
+ */
+export function trailerKind(tr: RichTrailer): "trailer" | "teaser" | "other" {
+  const type = (tr.type ?? "").toLowerCase();
+  if (type === "trailer") return "trailer";
+  if (type === "teaser") return "teaser";
+  const words = nameWords(tr.Name);
+  if (EXTRA_NAME.test(words)) return "other";
+  if (TEASER_NAME.test(words)) return "teaser";
+  if (TRAILER_NAME.test(words)) return "trailer";
+  return type ? "other" : "trailer";
+}
+
+/** Priorité de type : un vrai trailer avant un teaser, puis le reste. */
+function typeRank(tr: RichTrailer): number {
+  const kind = trailerKind(tr);
+  return kind === "trailer" ? 0 : kind === "teaser" ? 1 : 2;
+}
+
+/**
+ * Trie les trailers : la langue visée doublée (la VF), puis sous-titrée (la
+ * VOSTFR), puis le reste (`trailerLangRank`) ; à langue égale, une bande-
+ * annonce avant un teaser. Tri stable.
  */
 export function sortTrailersByLang<T extends RichTrailer>(trailers: T[], lang: string | undefined): T[] {
-  const code = (lang ?? "").slice(0, 2);
   if (trailers.length < 2) return trailers;
   return [...trailers].sort((a, b) => {
-    const la = langMatches(a, code) ? 0 : 1;
-    const lb = langMatches(b, code) ? 0 : 1;
-    if (la !== lb) return la - lb;
-    return typeRank(a.type) - typeRank(b.type);
+    const byLang = trailerLangRank(a, lang) - trailerLangRank(b, lang);
+    return byLang !== 0 ? byLang : typeRank(a) - typeRank(b);
   });
 }
 

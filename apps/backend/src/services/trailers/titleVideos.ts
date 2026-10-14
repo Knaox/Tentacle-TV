@@ -12,7 +12,7 @@
 
 import { TmdbError, tmdbConfigured, tmdbFetch } from "../tmdb/client";
 import { getSeerrConfig } from "../seerConfig";
-import type { TmdbVideo } from "../../trailers/trailerList";
+import { hasSubtitleMark, type TmdbVideo } from "../../trailers/trailerList";
 
 export type TitleMediaType = "movie" | "tv";
 
@@ -42,8 +42,6 @@ interface TmdbTitleDto {
 /** Le client TMDB n'a pas de délai à lui : au-delà, la décision se passe de TMDB. */
 const TMDB_TIMEOUT_MS = 8_000;
 const SEERR_TIMEOUT_MS = 8_000;
-/** Une version originale sous-titrée n'est pas une VF, même étiquetée `fr` par TMDB. */
-const SUBBED = /\b(vost|vostfr|sous-titr|subtitled)/i;
 
 const youtubeUrl = (key: string) => `https://www.youtube.com/watch?v=${key}`;
 const isTrailerType = (type: string | undefined) => /^(trailer|teaser)$/i.test(type ?? "");
@@ -71,7 +69,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
  */
 export function orderTmdbVideos(results: readonly TmdbVideoDto[]): TmdbVideo[] {
   const usable = results.filter((v) => (v.site ?? "").toLowerCase() === "youtube" && !!v.key);
-  const score = (v: TmdbVideoDto) => [SUBBED.test(v.name ?? "") ? 1 : 0, v.official === false ? 1 : 0, -(v.size ?? 0)];
+  const score = (v: TmdbVideoDto) => [hasSubtitleMark(v.name) ? 1 : 0, v.official === false ? 1 : 0, -(v.size ?? 0)];
   const sorted = [...usable].sort((a, b) => {
     const [x, y] = [score(a), score(b)];
     for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i];

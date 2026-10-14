@@ -29,6 +29,16 @@ describe("candidates d'un aperçu", () => {
     expect(previewCandidates(jellyfin, videos, "fr")).toEqual(["jfTrailer01"]);
   });
 
+  it("une VOST étiquetée `fr` passe après une VF, même teaser ; un Clip qui se dit bande-annonce reste candidat", () => {
+    const videos = [
+      tmdb("vostTrail01", "Trailer", "fr", "Bande-annonce VOST"),
+      tmdb("vfTeaser001", "Teaser", "fr", "Teaser VF"),
+      tmdb("vfClipBA001", "Clip", "fr", "Bande-annonce VF (2)"),
+      tmdb("voTrailer01", "Trailer", "fr", "Bande-annonce VO"),
+    ];
+    expect(previewCandidates([], videos, "fr")).toEqual(["vfClipBA001", "vfTeaser001", "vostTrail01", "voTrailer01"]);
+  });
+
   it("YouTube seulement, une vidéo une fois — TMDB et Jellyfin fusionnés par identifiant", () => {
     const jellyfin = [
       { Url: "https://vimeo.com/12345", Name: "Trailer" },
