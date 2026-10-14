@@ -1,11 +1,10 @@
 import type { CSSProperties, FocusEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMountWhile } from "../../../hooks/useMountWhile";
 import { PreviewMuteButton, PreviewTitle } from "./PreviewChrome";
 import { PreviewMedia } from "./PreviewMedia";
-import { previewBackdropOf, previewLogoOf } from "./previewArt";
+import { usePreviewArt } from "./usePreviewArt";
 import { PREVIEW_EXIT_MS, PREVIEW_MOTION_VARS } from "./previewMotion";
 import { previewFromTransform } from "./previewPlacement";
 import type { CardPreviewView } from "./usePreviewSession";
@@ -15,6 +14,8 @@ interface PreviewFrameProps {
   view: CardPreviewView;
   title: string;
   artItem: MediaItem | null;
+  /** La fiche à lire quand la carte n'a pas d'item (une recommandation de la bibliothèque). */
+  detailItemId: string | null;
   backdropUrl: string | null;
   children: (visible: boolean) => ReactNode;
 }
@@ -29,15 +30,9 @@ interface PreviewFrameProps {
  * image), inerte, hors du flux ; VUE seulement quand le moteur la montre. Le
  * mouvement est décrit dans `cardPreview.css` et `previewMotion.ts`.
  */
-export function PreviewFrame({ view, title, artItem, backdropUrl, children }: PreviewFrameProps) {
+export function PreviewFrame({ view, title, artItem, detailItemId, backdropUrl, children }: PreviewFrameProps) {
   const { t } = useTranslation("trailerPreview");
-  const client = useJellyfinClient();
-  // Logo et fond ANNONCÉS par la donnée, jamais demandés à l'aveugle.
-  const logo = artItem ? previewLogoOf(artItem) : null;
-  const logoUrl = logo ? client.getImageUrl(logo.id, "Logo", { height: 120, quality: 90, tag: logo.tag }) : null;
-  const backdrop = artItem ? previewBackdropOf(artItem) : null;
-  const backdropSrc = backdropUrl
-    ?? (backdrop ? client.getImageUrl(backdrop.id, "Backdrop", { width: 780, quality: 80, tag: backdrop.tag }) : null);
+  const { logoUrl, backdropUrl: backdropSrc } = usePreviewArt(artItem, detailItemId, backdropUrl);
   const { placement, shown, settled, engine, portalRef, focusInsideRef, close } = view;
   // Le survol de la mini-carte n'existe que vue — et le temps de sa sortie :
   // le préchargement caché ne s'abonne à rien.

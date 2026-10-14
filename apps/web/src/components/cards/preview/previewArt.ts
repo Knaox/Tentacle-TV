@@ -27,3 +27,26 @@ export function previewBackdropOf(item: MediaItem): PreviewImageRef | null {
 export function previewLogoOf(item: MediaItem): PreviewImageRef | null {
   return resolveLogoImage(item);
 }
+
+/**
+ * Faut-il lire la FICHE du titre (`["item", id]`) ? Les rangées et les grilles
+ * ne demandent pas l'image Logo (`EnableImageTypes=Primary,Backdrop,Thumb`) :
+ * leur item ne l'annonce jamais, et son absence n'y prouve rien. La fiche,
+ * elle, annonce tout — le logo du titre, celui de la série pour un épisode.
+ * Sans item de carte (une recommandation), on ne sait rien : la fiche aussi.
+ */
+export function previewNeedsDetail(card: MediaItem | null, needBackdrop: boolean): boolean {
+  if (!card) return true;
+  return previewLogoOf(card) === null || (needBackdrop && previewBackdropOf(card) === null);
+}
+
+/** Logo et fond : ceux que la carte annonce d'abord, sinon ceux de sa fiche. */
+export function previewArtOf(
+  card: MediaItem | null,
+  detail: MediaItem | null,
+): { logo: PreviewImageRef | null; backdrop: PreviewImageRef | null } {
+  return {
+    logo: (card && previewLogoOf(card)) ?? (detail && previewLogoOf(detail)) ?? null,
+    backdrop: (card && previewBackdropOf(card)) ?? (detail && previewBackdropOf(detail)) ?? null,
+  };
+}

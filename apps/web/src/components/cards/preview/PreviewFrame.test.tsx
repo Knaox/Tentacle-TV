@@ -14,10 +14,17 @@ vi.mock("react-i18next", () => ({
     t: (key: string, options?: { title?: string }) => (options?.title ? `${key}(${options.title})` : key),
   }),
 }));
+// Les fiches `["item", id]` du banc, et les demandes qu'on en fait.
+const details = new Map<string, MediaItem>();
+const detailRequests: Array<{ id: string | undefined; enabled: boolean | undefined }> = [];
 vi.mock("@tentacle-tv/api-client", () => ({
   useJellyfinClient: () => ({
     getImageUrl: (id: string, type: string, options: { tag?: string }) => `/img/${id}/${type}?tag=${options.tag ?? ""}`,
   }),
+  useMediaItem: (id: string | undefined, options?: { enabled?: boolean }) => {
+    detailRequests.push({ id, enabled: options?.enabled });
+    return { data: id && options?.enabled !== false ? details.get(id) : undefined };
+  },
 }));
 
 const { PreviewFrame } = await import("./PreviewFrame");
@@ -49,9 +56,14 @@ const movie = {
   Id: "m1", Name: "Metropolis", Type: "Movie", ImageTags: { Logo: "logo-tag" }, BackdropImageTags: ["bd-tag"],
 } as unknown as MediaItem;
 
-function render(v: ReturnType<typeof view>, artItem: MediaItem | null = null, backdropUrl: string | null = null) {
+function render(
+  v: ReturnType<typeof view>,
+  artItem: MediaItem | null = null,
+  backdropUrl: string | null = null,
+  detailItemId: string | null = null,
+) {
   return renderToStaticMarkup(
-    <PreviewFrame view={v} title="Metropolis" artItem={artItem} backdropUrl={backdropUrl}>
+    <PreviewFrame view={v} title="Metropolis" artItem={artItem} detailItemId={detailItemId} backdropUrl={backdropUrl}>
       {(visible) => <div data-group={visible}>survol</div>}
     </PreviewFrame>,
   );
@@ -112,6 +124,42 @@ describe("PreviewFrame — vue", () => {
     const plain = render(view({ shown: true }), null);
     expect(plain).not.toContain("<img");
     expect(plain).toContain(">Metropolis</p>");
+  });
+});
+
+describe("PreviewFrame — le logo d'une carte de rangée", () => {
+  // Une rangée ne demande pas l'image Logo : son item n'en annonce aucun.
+  const rowMovie = { Id: "c1", Name: "Charade", Type: "Movie", BackdropImageTags: ["bd"] } as unknown as MediaItem;
+  const rowEpisode = {
+    Id: "e1", Name: "Chute libre", Type: "Episode", SeriesId: "s1", ParentBackdropItemId: "s1", ParentBackdropImageTags: ["pb"],
+  } as unknown as MediaItem;
+
+  it("lit le logo dans la FICHE du titre quand la carte ne l'annonce pas", () => {
+    details.set("c1", { ...rowMovie, ImageTags: { Logo: "logo-c" } } as unknown as MediaItem);
+    expect(render(view({ shown: true }), rowMovie)).toContain('src="/img/c1/Logo?tag=logo-c"');
+  });
+
+  it("écrit le nom tant que la fiche n'est pas là", () => {
+    details.delete("c1");
+    const html = render(view({ shown: true }), rowMovie);
+    expect(html).not.toContain("/Logo");
+    expect(html).toContain(">Metropolis</p>");
+  });
+
+  it("prend le logo de la SÉRIE dans la fiche d'un épisode", () => {
+    details.set("e1", { ...rowEpisode, ParentLogoItemId: "s1", ParentLogoImageTag: "logo-s" } as unknown as MediaItem);
+    expect(render(view({ shown: true }), rowEpisode, "https://x/still.jpg")).toContain('src="/img/s1/Logo?tag=logo-s"');
+  });
+
+  it("lit la fiche d'une recommandation de la bibliothèque, qui n'a pas d'item", () => {
+    details.set("r1", { Id: "r1", Name: "Metropolis", Type: "Movie", ImageTags: { Logo: "logo-r" } } as unknown as MediaItem);
+    expect(render(view({ shown: true }), null, null, "r1")).toContain('src="/img/r1/Logo?tag=logo-r"');
+  });
+
+  it("ne demande aucune fiche quand la carte annonce déjà logo et fond", () => {
+    detailRequests.length = 0;
+    render(view({ shown: true }), movie);
+    expect(detailRequests.every((request) => request.enabled === false)).toBe(true);
   });
 });
 

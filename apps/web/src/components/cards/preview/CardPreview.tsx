@@ -25,6 +25,11 @@ interface CardPreviewProps {
    */
   artItem?: MediaItem | null;
   /**
+   * La fiche Jellyfin à lire pour le logo quand la carte n'a pas d'item (une
+   * recommandation de la bibliothèque) ; avec `artItem`, c'est son `Id`.
+   */
+  detailItemId?: string | null;
+  /**
    * L'image 16:9 montrée pendant l'agrandissement, quand la carte en sait plus
    * que la donnée : l'image même d'une vignette (continuité parfaite), le fond
    * TMDB d'une recommandation. Prime sur le fond de `artItem`.
@@ -52,23 +57,30 @@ interface CardPreviewProps {
  * La SESSION (moteur, requête, mini-carte) n'existe que pendant le survol :
  * au repos, une carte ne porte qu'une ancre et un booléen.
  */
-export function CardPreview({ controller, title, artItem = null, backdropUrl = null, children }: CardPreviewProps) {
+export function CardPreview({
+  controller,
+  title,
+  artItem = null,
+  detailItemId = null,
+  backdropUrl = null,
+  children,
+}: CardPreviewProps) {
   const { session } = controller;
   const wanted = session.hovered && session.subject !== null && !session.disabled;
   const active = useMountWhile(wanted, SESSION_LINGER_MS);
   if (!active) return null;
   return (
-    <PreviewSession controller={controller} title={title} artItem={artItem} backdropUrl={backdropUrl}>
+    <PreviewSession controller={controller} title={title} artItem={artItem} detailItemId={detailItemId} backdropUrl={backdropUrl}>
       {children}
     </PreviewSession>
   );
 }
 
-function PreviewSession({ controller, title, artItem, backdropUrl, children }: Required<CardPreviewProps>) {
+function PreviewSession({ controller, title, artItem, detailItemId, backdropUrl, children }: Required<CardPreviewProps>) {
   const view = usePreviewSession(controller.session);
   if (!view || typeof document === "undefined") return null;
   return createPortal(
-    <PreviewFrame view={view} title={title} artItem={artItem} backdropUrl={backdropUrl}>
+    <PreviewFrame view={view} title={title} artItem={artItem} detailItemId={detailItemId} backdropUrl={backdropUrl}>
       {children}
     </PreviewFrame>,
     document.body,

@@ -222,6 +222,7 @@ export const RecoCard = memo(function RecoCard({
           <CardPreview
             controller={preview}
             title={item.title}
+            detailItemId={item.jellyfinItemId}
             backdropUrl={recoBackdropUrl(item, (id) => client.getImageUrl(id, "Backdrop", { width: 780, quality: 80 }), "w780")}
           >
             {(visible) => (
