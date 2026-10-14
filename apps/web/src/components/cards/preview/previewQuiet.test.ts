@@ -31,6 +31,18 @@ describe("previewQuiet — la porte globale", () => {
     expect(gate.isQuiet()).toBe(false);
   });
 
+  it("un coup de molette la ferme : la carte qui s'arrête sous le pointeur immobile n'ouvre rien, un vrai mouvement rouvre", () => {
+    const gate = createPreviewQuiet();
+    gate.onPointerMove(400, 300);
+    gate.onWheel();
+    expect(gate.isQuiet()).toBe(true);
+    // Le survol synthétique d'après défilement garde la position : toujours fermée.
+    gate.onPointerMove(400, 300);
+    expect(gate.isQuiet()).toBe(true);
+    gate.onPointerMove(410, 300);
+    expect(gate.isQuiet()).toBe(false);
+  });
+
   it("sans position connue, le premier mouvement suffit", () => {
     const gate = createPreviewQuiet();
     gate.quiet();

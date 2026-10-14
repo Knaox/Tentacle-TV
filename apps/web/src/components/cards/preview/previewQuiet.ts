@@ -17,6 +17,11 @@ import { useSyncExternalStore } from "react";
  * position où la porte s'est fermée — un mouvement synthétique de Chromium
  * garde la même position. Une touche autre qu'Échap est aussi un geste : au
  * clavier, Tab vers la carte suivante doit pouvoir montrer son aperçu.
+ *
+ * Un coup de MOLETTE ferme aussi la porte : la page défile sous un pointeur
+ * immobile, et la carte qui s'arrête dessous ne lance ni son aperçu ni sa
+ * requête au serveur sans un vrai mouvement — lire une page à la molette, avec
+ * ses pauses, ne demande rien à YouTube.
  */
 export const QUIET_SLOP_PX = 3;
 
@@ -26,6 +31,8 @@ export interface PreviewQuiet {
   quiet: () => void;
   onPointerMove: (x: number, y: number) => void;
   onKeyDown: (key: string) => void;
+  /** La page défile à la molette : la porte se ferme, comme après une mini-carte refermée. */
+  onWheel: () => void;
   subscribe: (listener: () => void) => () => void;
 }
 
@@ -44,15 +51,17 @@ export function createPreviewQuiet(): PreviewQuiet {
     closed = false;
     notify();
   };
+  const quiet = () => {
+    anchorX = lastX;
+    anchorY = lastY;
+    if (closed) return;
+    closed = true;
+    notify();
+  };
   return {
     isQuiet: () => closed,
-    quiet: () => {
-      anchorX = lastX;
-      anchorY = lastY;
-      if (closed) return;
-      closed = true;
-      notify();
-    },
+    quiet,
+    onWheel: quiet,
     onPointerMove: (x, y) => {
       lastX = x;
       lastY = y;
@@ -79,6 +88,7 @@ if (typeof window !== "undefined") {
     capture: true,
   });
   window.addEventListener("keydown", (e) => previewQuiet.onKeyDown(e.key), { capture: true });
+  window.addEventListener("wheel", () => previewQuiet.onWheel(), { passive: true, capture: true });
 }
 
 /** La porte globale est-elle fermée ? Un abonnement par session d'aperçu (carte survolée). */
