@@ -11,6 +11,7 @@
 
 import { Agent, fetch as undiciFetch } from "undici";
 import { parseMaster, renderMaster, rewriteMedia, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
+import { evictEntries } from "./relayEviction";
 import { extractTrailerSource, type ExtractionOptions } from "./ytExtract";
 import type { RelayScope } from "./relayToken";
 import type { TrailerSource } from "./trailerSource";
@@ -42,10 +43,14 @@ const EXPIRY_MARGIN_MS = 10 * 60 * 1000;
 /** Une extraction toute fraîche n'est pas refaite pour un refus : googlevideo bride, il n'a pas tout révoqué. */
 const REFRESH_MIN_AGE_MS = 60 * 1000;
 /**
- * Quelques dizaines de vidéos suffisent à une soirée de fiches ; les aperçus
- * au survol en résolvent bien davantage. Chacune pèse moins de 100 Ko.
+ * Quelques dizaines de vidéos COMPLÈTES (listes lues, moins de 100 Ko
+ * chacune) suffisent à une soirée de fiches. Au-delà, les plus anciennes ne
+ * gardent que leur source — quelques Ko —, jusqu'à son échéance : un aperçu
+ * qui revient sur un titre ne coûte jamais une nouvelle extraction YouTube
+ * tant que ses URL valent (`relayEviction.ts`).
  */
 const MAX_ENTRIES = 96;
+const MAX_SOURCES = 1_000;
 /**
  * Une vidéo absente pour de bon n'est pas redemandée avant une heure ; un
  * raté passager, quinze secondes (le temps d'éviter une rafale). Un délai
@@ -67,11 +72,7 @@ const misses = new Map<string, number>();
  */
 const upstreamDispatcher = new Agent({ keepAliveTimeout: 30_000, connections: 16, headersTimeout: 15_000 });
 
-function evict(): void {
-  if (entries.size <= MAX_ENTRIES) return;
-  const oldest = [...entries.entries()].sort((a, b) => a[1].lastUsed - b[1].lastUsed);
-  for (const [id] of oldest.slice(0, entries.size - MAX_ENTRIES)) entries.delete(id);
-}
+const evict = () => evictEntries(entries, Date.now(), { full: MAX_ENTRIES, total: MAX_SOURCES });
 
 async function extract(ytId: string, options: ExtractionOptions): Promise<Entry | null> {
   const started = Date.now();
@@ -203,6 +204,7 @@ export function loadMaster(entry: Entry): Promise<RelayMaster | null> {
     if (!master) return null;
     entry.master = master;
     entry.masterText = renderMaster(master, (key) => `p/${key}.m3u8?t=${TOKEN_SLOT}`);
+    evict();
     return master;
   });
 }
