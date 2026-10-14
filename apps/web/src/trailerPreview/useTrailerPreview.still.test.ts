@@ -80,6 +80,19 @@ describe("useTrailerPreview — révélation sur l'image du titre", () => {
     expect(handles.a).toMatchObject({ phase: "failed", visible: false });
   });
 
+  it("le rognage du letterbox arrive AVEC la première image ; un nouveau survol repart sans", async () => {
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    await serve(FOUND);
+    expect(handles.a.videoCrop).toBe(1);
+    await act(async () => handles.a.onReady({ crop: 1.35 }));
+    expect(handles.a).toMatchObject({ videoReady: true, videoCrop: 1.35 });
+    await render("a", { hovered: false });
+    await wait(T.exitMs + 1);
+    await render("a", { hovered: true });
+    expect(handles.a).toMatchObject({ phase: "intent", videoReady: false, videoCrop: 1 });
+  });
+
   it("une image signalée sans bande-annonce vérifiée ne montre rien", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs);

@@ -3,6 +3,7 @@ import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
 import { attachPreviewSource, type PreviewSourceSession } from "./previewSource";
 import { rampVolume, startPreviewPlayback, watchPreviewStall } from "./previewPlayback";
 import { openPreviewBench } from "./previewBench";
+import { measureVideoCrop } from "./previewFrameCrop";
 import type { TrailerPreviewVideoProps } from "./previewTypes";
 
 /**
@@ -38,8 +39,11 @@ export const TrailerPreviewVideo = memo(function TrailerPreviewVideo(props: Trai
     bench.record("attach", { kind: current.kind });
     const session = attachPreviewSource(video, current, {
       onReady: () => {
-        bench.record("ready");
-        latest.current.onReady();
+        // Le letterbox incrusté, mesuré UNE fois sur cette première image.
+        const started = performance.now();
+        const crop = measureVideoCrop(video);
+        bench.record("ready", { crop, cropMs: Math.round((performance.now() - started) * 100) / 100 });
+        latest.current.onReady({ crop });
       },
       onError: () => {
         bench.record("failed");

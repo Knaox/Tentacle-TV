@@ -158,7 +158,12 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
 
   const cycleRef = useRef(state.cycle);
   cycleRef.current = state.cycle;
-  const onReady = useCallback(() => dispatch({ type: "videoReady", at: Date.now() }), [dispatch]);
+  // Le rognage du letterbox, mesuré sur la première image : fixé AVEC elle (même rendu), par cycle.
+  const [frameCrop, setFrameCrop] = useState({ cycle: -1, scale: 1 });
+  const onReady = useCallback((frame?: { crop: number }) => {
+    setFrameCrop({ cycle: cycleRef.current, scale: frame?.crop ?? 1 });
+    dispatch({ type: "videoReady", at: Date.now() });
+  }, [dispatch]);
   const reportStillReady = useCallback(() => dispatch({ type: "stillReady", at: Date.now() }), [dispatch]);
   const onError = useCallback(() => dispatch({ type: "videoFailed", at: Date.now() }), [dispatch]);
   const onEnded = useCallback(() => dispatch({ type: "videoEnded", at: Date.now() }), [dispatch]);
@@ -169,6 +174,7 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
   const visible = trailerPreviewVisible(state) && streamValue !== null;
   const playing = trailerPreviewPlaying(state);
   const videoReady = trailerPreviewVideoReady(state);
+  const videoCrop = frameCrop.cycle === state.cycle ? frameCrop.scale : 1;
   const volume = visible ? TRAILER_PREVIEW_TIMING.volume : 0;
 
   const videoProps = useMemo(
@@ -178,9 +184,9 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
 
   return useMemo(
     () => ({
-      phase: state.phase, mount, visible, videoReady, reportStillReady, playing, stream: streamValue, muted, toggleMute,
+      phase: state.phase, mount, visible, videoReady, videoCrop, reportStillReady, playing, stream: streamValue, muted, toggleMute,
       onReady, onError, onEnded, videoProps,
     }),
-    [state.phase, mount, visible, videoReady, reportStillReady, playing, streamValue, muted, toggleMute, onReady, onError, onEnded, videoProps],
+    [state.phase, mount, visible, videoReady, videoCrop, reportStillReady, playing, streamValue, muted, toggleMute, onReady, onError, onEnded, videoProps],
   );
 }

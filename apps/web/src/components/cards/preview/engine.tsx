@@ -31,6 +31,12 @@ export interface PreviewEngine {
   /** La première image de la vidéo est décodée : la vidéo peut se montrer (en fondu sur l'image du titre). */
   videoReady: boolean;
   /**
+   * L'échelle (≥ 1) qui rogne le letterbox incrusté de la vidéo, à poser en
+   * `transform: scale()` sur la VIDÉO seule. 1 jusqu'à la première image (fixée
+   * avec `videoReady`), et 1 dans le doute.
+   */
+  videoCrop: number;
+  /**
    * À appeler quand l'image du titre est chargée ET décodée (`img.decode()`),
    * jamais pour une image cassée : la mini-carte peut alors se montrer sans
    * attendre la vidéo. Stable ; sans effet hors d'un aperçu vérifié.
@@ -52,7 +58,7 @@ export { previewSubjectOfTitle };
 /** Le moteur pour une carte : `hovered` est le survol EFFECTIF (fermetures forcées déjà retirées). */
 export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolean): PreviewEngine {
   const handle = useTrailerPreview(subject, hovered);
-  const { videoProps, mount, visible, videoReady, reportStillReady, muted, toggleMute } = handle;
+  const { videoProps, mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute } = handle;
   const renderVideo = useCallback(
     ({ hold, className }: { hold: boolean; className: string }) => (
       <TrailerPreviewVideo {...videoProps} hold={hold} className={className} />
@@ -60,7 +66,7 @@ export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolea
     [videoProps],
   );
   return useMemo(
-    () => ({ mount, visible, videoReady, reportStillReady, muted, toggleMute, renderVideo }),
-    [mount, visible, videoReady, reportStillReady, muted, toggleMute, renderVideo],
+    () => ({ mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute, renderVideo }),
+    [mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute, renderVideo],
   );
 }

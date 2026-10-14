@@ -42,6 +42,7 @@ function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel
       mount: true,
       visible: over.shown ?? false,
       videoReady: true,
+      videoCrop: 1,
       reportStillReady: () => undefined,
       muted: over.muted ?? false,
       toggleMute: () => undefined,

@@ -25,8 +25,11 @@ export interface TrailerPreviewVideoProps {
   volume: number;
   /** Le cycle d'aperçu : un nouveau cycle recharge une vidéo neuve. */
   cycle: number;
-  /** La première image est décodée (vidéo chargée, cachée, en pause). */
-  onReady: () => void;
+  /**
+   * La première image est décodée (vidéo chargée, cachée, en pause), avec
+   * l'échelle qui rogne son letterbox incrusté (`previewLetterbox.ts`, 1 = rien).
+   */
+  onReady: (frame?: { crop: number }) => void;
   /** Échec fatal (réseau, média, blocage) : l'aperçu n'est pas montré, ou s'efface. */
   onError: () => void;
   /** La bande-annonce est finie. */
@@ -56,6 +59,11 @@ export interface TrailerPreviewHandle {
   /** La première image de la vidéo est décodée : elle peut se montrer, en fondu sur l'image du titre. */
   videoReady: boolean;
   /**
+   * L'échelle (≥ 1) qui rogne le letterbox incrusté de la vidéo — à poser en
+   * `transform` sur la vidéo seule. 1 jusqu'à la première image, et dans le doute.
+   */
+  videoCrop: number;
+  /**
    * La mini-carte a l'image du titre chargée ET décodée (jamais une image
    * cassée) : la révélation n'attend plus la vidéo. Stable, sans effet hors
    * d'un aperçu dont le serveur a vérifié la bande-annonce.
@@ -67,7 +75,7 @@ export interface TrailerPreviewHandle {
   muted: boolean;
   /** Coupe ou rend le son — retenu sur l'appareil pour les aperçus suivants. */
   toggleMute: () => void;
-  onReady: () => void;
+  onReady: (frame?: { crop: number }) => void;
   onError: () => void;
   onEnded: () => void;
   /** Tout ce que `<TrailerPreviewVideo>` attend, à étaler tel quel (identité stable entre deux changements). */
