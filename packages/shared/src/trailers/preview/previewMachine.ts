@@ -1,4 +1,6 @@
 import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "./previewTiming";
+import { ACTIVE, VIDEO, intentAt, revealAt } from "./previewMachineRules";
+import type { TrailerPreviewEvent, TrailerPreviewFailure, TrailerPreviewState } from "./previewMachineTypes";
 
 /**
  * La machine de l'aperçu de bande-annonce au survol — un réducteur PUR : le
@@ -26,85 +28,8 @@ import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "./previewTimi
  * mini-carte ne coupe rien.
  */
 
-export type TrailerPreviewPhase =
-  | "idle"
-  | "intent"
-  | "fetching"
-  | "buffering"
-  | "ready"
-  | "shown"
-  | "ended"
-  | "failed";
-
-/** Pourquoi un aperçu n'a pas abouti : pas de bande-annonce lisible, ou la vidéo a lâché. */
-export type TrailerPreviewFailure = "missing" | "video";
-
-export interface TrailerPreviewState {
-  readonly phase: TrailerPreviewPhase;
-  readonly hovered: boolean;
-  readonly blocked: boolean;
-  /** Début du survol qui a ouvert le cycle en cours : l'intention et la révélation en partent. */
-  readonly since: number | null;
-  /** Dernier mouvement du pointeur pendant l'intention : la demande attend qu'il s'arrête. */
-  readonly stillSince: number | null;
-  /** Échéance de la première image (phase `buffering`). */
-  readonly readyBy: number | null;
-  /** Fin du fondu de sortie d'une lecture montrée : la vidéo reste montée jusque-là. */
-  readonly exitUntil: number | null;
-  /** Le fondu en cours vient d'un simple départ du survol : un retour le reprend. */
-  readonly resumable: boolean;
-  /** Numéro du cycle (un par survol abouti à l'intention) : une vidéo neuve à chaque cycle. */
-  readonly cycle: number;
-  readonly failure: TrailerPreviewFailure | null;
-  /** Échéance d'une nouvelle demande après un refus passager (phase `fetching`). */
-  readonly retryAt: number | null;
-  /** Refus passagers déjà essuyés pendant ce cycle. */
-  readonly retries: number;
-  /** Numéro de la demande du cycle : il monte quand une nouvelle demande est due. */
-  readonly attempt: number;
-}
-
-export type TrailerPreviewEvent =
-  | { type: "hover"; at: number }
-  | { type: "unhover"; at: number }
-  /** Le pointeur a bougé sur la carte (au-delà du seuil), ou la molette a tourné : l'intention repart de là. */
-  | { type: "move"; at: number }
-  | { type: "block"; at: number }
-  | { type: "unblock"; at: number }
-  /** Une échéance est peut-être passée (minuterie du crochet). */
-  | { type: "tick"; at: number }
-  | { type: "streamFound"; at: number }
-  | { type: "streamMissing"; at: number }
-  /** Refus passager : redemander à `retryAt` si le survol tient (deux fois au plus). */
-  | { type: "streamRetry"; at: number; retryAt: number }
-  | { type: "videoReady"; at: number }
-  | { type: "videoFailed"; at: number }
-  | { type: "videoEnded"; at: number }
-  /** Un autre aperçu a pris la place (un seul à la fois). */
-  | { type: "preempted"; at: number }
-  /** La carte montre un AUTRE titre sous le même survol : le cycle en cours est abandonné. */
-  | { type: "restart"; at: number };
-
-export const INITIAL_TRAILER_PREVIEW_STATE: TrailerPreviewState = {
-  phase: "idle",
-  hovered: false,
-  blocked: false,
-  since: null,
-  stillSince: null,
-  readyBy: null,
-  exitUntil: null,
-  resumable: false,
-  cycle: 0,
-  failure: null,
-  retryAt: null,
-  retries: 0,
-  attempt: 0,
-};
-
-/** Les phases d'un aperçu EN COURS — celles qu'un survol perdu ou un blocage interrompt. */
-const ACTIVE: ReadonlySet<TrailerPreviewPhase> = new Set(["intent", "fetching", "buffering", "ready", "shown"]);
-/** Les phases où la vidéo existe (cachée puis montrée). */
-const VIDEO: ReadonlySet<TrailerPreviewPhase> = new Set(["buffering", "ready", "shown"]);
+export * from "./previewMachineTypes";
+export * from "./previewMachineSelectors";
 
 /** Un nouveau cycle : l'intention court depuis `at`. Un fondu qui ne se reprend pas est coupé net. */
 function begin(state: TrailerPreviewState, at: number): TrailerPreviewState {
@@ -141,16 +66,6 @@ function leave(
     resumable: wasShown ? options.resumable === true : state.resumable && options.resumable === true,
     failure: options.failure ?? (phase === "failed" ? state.failure : null),
   };
-}
-
-function revealAt(state: TrailerPreviewState, timing: TrailerPreviewTiming): number {
-  return (state.since ?? 0) + timing.revealMs;
-}
-
-/** La demande part quand le survol a duré `intentMs` ET que le pointeur est arrêté depuis `intentStillMs`. */
-function intentAt(state: TrailerPreviewState, timing: TrailerPreviewTiming): number {
-  const since = state.since ?? 0;
-  return Math.max(since + timing.intentMs, (state.stillSince ?? since) + timing.intentStillMs);
 }
 
 /** Fait passer toutes les échéances atteintes à `at` (une minuterie en retard en saute plusieurs). */
@@ -248,41 +163,4 @@ export function reduceTrailerPreview(
 /** Le réducteur du produit (temps de `TRAILER_PREVIEW_TIMING`), pour `useReducer`. */
 export function trailerPreviewReducer(state: TrailerPreviewState, event: TrailerPreviewEvent): TrailerPreviewState {
   return reduceTrailerPreview(state, event);
-}
-
-/** La prochaine échéance (ms) à surveiller, `null` s'il n'y a rien à attendre. */
-export function nextTrailerPreviewDeadline(
-  state: TrailerPreviewState,
-  timing: TrailerPreviewTiming = TRAILER_PREVIEW_TIMING,
-): number | null {
-  const deadlines: number[] = [];
-  if (state.exitUntil !== null) deadlines.push(state.exitUntil);
-  if (state.phase === "intent" && state.since !== null) deadlines.push(intentAt(state, timing));
-  if (state.phase === "fetching" && state.retryAt !== null) deadlines.push(state.retryAt);
-  if (state.phase === "buffering" && state.readyBy !== null) deadlines.push(state.readyBy);
-  if (state.phase === "ready") deadlines.push(revealAt(state, timing));
-  return deadlines.length ? Math.min(...deadlines) : null;
-}
-
-/** La vidéo doit exister (chargée cachée, montrée, ou en fondu de sortie). */
-export function trailerPreviewMounted(state: TrailerPreviewState): boolean {
-  return VIDEO.has(state.phase) || state.exitUntil !== null;
-}
-
-/** La mini-carte se montre : première image là, seconde écoulée, survol tenu, rien ne bloque. */
-export function trailerPreviewVisible(state: TrailerPreviewState): boolean {
-  return state.phase === "shown";
-}
-
-/** La vidéo joue : montrée, ou dans son fondu de sortie (le son y décroît). */
-export function trailerPreviewPlaying(state: TrailerPreviewState): boolean {
-  return state.phase === "shown" || state.exitUntil !== null;
-}
-
-/**
- * Le flux est demandé (ou gardé), et l'aperçu occupe la place unique (cf.
- * `previewArbiter.ts`) : de l'intention passée jusqu'à la fin de la lecture.
- */
-export function trailerPreviewWantsStream(state: TrailerPreviewState): boolean {
-  return state.phase === "fetching" || VIDEO.has(state.phase);
 }
