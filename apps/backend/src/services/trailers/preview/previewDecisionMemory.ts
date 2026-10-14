@@ -11,12 +11,13 @@
 import {
   TRAILER_PREVIEW_NO_TRAILER_TTL_MS, TRAILER_PREVIEW_UNAVAILABLE_TTL_MS,
 } from "../../../trailers/trailerPreview";
+import type { TrailerVersion } from "../../../trailers/trailerCatalog";
 import { TtlLru } from "./ttlLru";
 
 export type Refusal = "no_trailer" | "unavailable";
 
 /** `ref` : la clé du relais — l'identifiant YouTube nu, ou `dm:<id>` (`videoRef.ts`). */
-export type Decision = { kind: "found"; ref: string } | { kind: "refused"; error: Refusal };
+export type Decision = { kind: "found"; ref: string; version?: TrailerVersion } | { kind: "refused"; error: Refusal };
 
 /** Une décision telle que la mémoire durable la garde (`previewMemoryStore.ts`). */
 export interface StoredDecision {

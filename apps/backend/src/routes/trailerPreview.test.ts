@@ -138,6 +138,8 @@ describe("GET /api/trailers/preview", () => {
     expect(body).toEqual({
       ytId: YT,
       source: { kind: "youtube", ytId: YT },
+      // La version du catalogue : une VOSTFR garde ses sous-titres incrustés (jamais rognée).
+      version: "localized",
       // Un jeton d'APERÇU (`.p.`) : la vidéo oubliée par le relais ne se ré-extrait pas hors de cette route.
       path: expect.stringMatching(new RegExp(`^/api/trailers/hls/${YT}/master\\.m3u8\\?t=[0-9a-z]+\\.p\\.[\\w-]+$`)),
       mimeType: "application/vnd.apple.mpegurl",

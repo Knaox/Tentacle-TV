@@ -76,6 +76,7 @@ export const trailerPreviewRoutes: FastifyPluginAsync = async (app) => {
       // Une vidéo Dailymotion n'a pas d'identifiant YouTube : `source` la dit (le client l'a demandée, `dm=1`).
       ytId: video?.kind === "youtube" ? video.id : "",
       source: video?.kind === "dailymotion" ? { kind: "dailymotion", videoId: video.id } : { kind: "youtube", ytId: video?.id ?? outcome.ref },
+      ...(outcome.version ? { version: outcome.version } : {}),
       path: stream.path,
       mimeType: stream.mimeType,
       expiresAt: stream.expiresAt,

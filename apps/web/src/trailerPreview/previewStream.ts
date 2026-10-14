@@ -22,5 +22,6 @@ export function previewStreamOf(preview: TrailerPreview): TrailerPreviewStream {
     mimeType: preview.mimeType,
     kind: hls ? "hls" : "mp4",
     heights: hls ? [...preview.heights].sort((a, b) => b - a) : [],
+    burnedSubtitles: preview.version === "subtitled",
   };
 }

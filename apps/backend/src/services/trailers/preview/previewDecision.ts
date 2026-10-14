@@ -4,7 +4,8 @@
 /*  Les candidates du CATALOGUE du titre (`previewCandidates.ts` : la  */
 /*  saison d'un épisode d'abord, la langue du serveur d'abord, AlloCiné*/
 /*  compris pour un client qui lit Dailymotion), essayées dans l'ordre */
-/*  — trois au plus — jusqu'à la première qui se laisse LIRE : extraite*/
+/*  — trois par portée, cinq en tout : la saison, puis les autres —    */
+/*  jusqu'à la première qui se laisse LIRE : extraite                  */
 /*  (yt-dlp, ou les métadonnées de Dailymotion), puis son maître et ses*/
 /*  premières listes lus (`prepareTrailer`). Le client ne reçoit jamais*/
 /*  un flux qu'on n'a pas ouvert. La mémoire : `previewDecisionMemory`.*/
@@ -28,7 +29,8 @@ import { resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
 import { holdsSource, peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
 import { prewarmExtraction, type ExtractionOptions } from "../ytExtract";
 import { previewRefusal } from "../youtubeGuard";
-import { previewCandidates, type PreviewCandidate } from "./previewCandidates";
+import { attemptsOf, MAX_ATTEMPTS, previewCandidates, type PreviewCandidate } from "./previewCandidates";
+import type { TrailerVersion } from "../../../trailers/trailerCatalog";
 import { clearDecisions, knownDecision, remember, rememberRefusal, type Refusal } from "./previewDecisionMemory";
 import { PreviewRateLimiter } from "./previewRateLimit";
 
@@ -43,13 +45,12 @@ export interface PreviewTarget {
 }
 
 export type PreviewOutcome =
-  | { kind: "found"; ref: string; resolved: ResolvedTrailer }
+  | { kind: "found"; ref: string; resolved: ResolvedTrailer; version?: TrailerVersion }
   | { kind: "refused"; error: Refusal }
   /** Trop de demandes (le compte), trop de décisions en cours (le serveur), ou pas encore décidé : rien n'est retenu. */
   | { kind: "limited"; retryAfterS: number };
 
-/** Au-delà de trois essais, le survol est passé depuis longtemps. */
-export const MAX_ATTEMPTS = 3;
+export { MAX_ATTEMPTS };
 /** Plus de nouvel essai passé ce temps : la décision dit « aucune lisible ». */
 const DECISION_BUDGET_MS = 25_000;
 /** Une extraction d'aperçu passe après les lectures et ne s'éternise pas. */
@@ -61,8 +62,8 @@ const BUSY_RETRY_S = 2;
 const CATALOG_PENDING_RETRY_S = 3;
 /** Une langue de repli (la VF a échoué, la VO a répondu) ne se garde pas des heures. */
 const FALLBACK_LANG_TTL_MS = 10 * 60 * 1000;
-/** La version des RÈGLES de choix, dans la clé : une décision d'avant (liste propre, VOST crue VF) ne sert plus. */
-const RULES_VERSION = "r3";
+/** La version des RÈGLES de choix, dans la clé : une décision d'avant (rang du catalogue d'avant, VOST crue VF) ne sert plus. */
+const RULES_VERSION = "r4";
 /** Au-delà, la réponse dit « réessayez » ; la décision, elle, continue (sous les 15 s du client). */
 const RESPONSE_BUDGET_MS = 12_000;
 const STILL_DECIDING_RETRY_S = 1;
@@ -130,11 +131,14 @@ function guardStop(): PreviewOutcome | null {
   return { kind: "limited", retryAfterS: Math.max(1, Math.ceil(refusal.retryAfterMs / 1000)) };
 }
 
-function found(key: string, ref: string, resolved: ResolvedTrailer, started: number, how: string, stages: Stages, maxTtlMs = Infinity): PreviewOutcome {
-  remember(key, { kind: "found", ref }, Math.min(resolved.validUntil - Date.now(), maxTtlMs));
+function found(
+  key: string, ref: string, resolved: ResolvedTrailer, started: number, how: string, stages: Stages,
+  { maxTtlMs = Infinity, version }: { maxTtlMs?: number; version?: TrailerVersion } = {},
+): PreviewOutcome {
+  remember(key, version ? { kind: "found", ref, version } : { kind: "found", ref }, Math.min(resolved.validUntil - Date.now(), maxTtlMs));
   const detail = `catalogue ${stages.catalog}, extraction ${stages.extract}, vérification ${stages.verify}`;
   console.log(`[trailers] aperçu ${key} : ${ref} (${resolved.kind}, ${resolved.heights[0] ?? "mp4"}) en ${Date.now() - started} ms (${detail}), ${how}`);
-  return { kind: "found", ref, resolved };
+  return version ? { kind: "found", ref, resolved, version } : { kind: "found", ref, resolved };
 }
 
 /**
@@ -143,12 +147,14 @@ function found(key: string, ref: string, resolved: ResolvedTrailer, started: num
  * échec YouTube, le garde-fou : une vérification anti-robot n'est JAMAIS une
  * candidate morte — on s'arrête, sans rien retenir du titre.
  */
-async function decide(key: string, target: PreviewTarget, account: string, dailymotion: boolean, known?: string): Promise<PreviewOutcome> {
+async function decide(
+  key: string, target: PreviewTarget, account: string, dailymotion: boolean, known?: { ref: string; version?: TrailerVersion },
+): Promise<PreviewOutcome> {
   const started = Date.now();
   const stages = newStages();
   const extraction: ExtractionOptions = { ...PREVIEW_EXTRACTION, wanted: wantedBy(key) };
-  const again = known ? await playable(known, stages, extraction) : null;
-  if (known && again) return found(key, known, again, started, "reprise", stages);
+  const again = known ? await playable(known.ref, stages, extraction) : null;
+  if (known && again) return found(key, known.ref, again, started, "reprise", stages, { version: known.version });
   // La reprise ne se lit plus, et YouTube bride l'adresse : rien à essayer pour un client YouTube seul.
   const stoppedEarly = known && !dailymotion ? guardStop() : null;
   if (stoppedEarly) return stoppedEarly;
@@ -164,9 +170,9 @@ async function decide(key: string, target: PreviewTarget, account: string, daily
   const stop = guardStop();
   if (stop) candidates = candidates.filter((candidate) => !candidate.youtube);
   if (candidates.length === 0 && stop) return stop;
-  candidates = candidates.slice(0, MAX_ATTEMPTS);
+  candidates = attemptsOf(candidates);
   const bestLang = candidates[0].langRank;
-  for (const [index, { ref, youtube, langRank }] of candidates.entries()) {
+  for (const [index, { ref, youtube, langRank, version }] of candidates.entries()) {
     if (index > 0 && Date.now() - started >= DECISION_BUDGET_MS) break;
     const resolved = await playable(ref, stages, extraction);
     if (!resolved) {
@@ -177,7 +183,7 @@ async function decide(key: string, target: PreviewTarget, account: string, daily
     // Une meilleure langue a échoué avant : ce repli ne dure que dix minutes.
     const fallback = langRank > bestLang;
     const how = `essai ${index + 1}/${candidates.length}${fallback ? ", langue de repli gardée 10 min" : ""}`;
-    return found(key, ref, resolved, started, how, stages, fallback ? FALLBACK_LANG_TTL_MS : Infinity);
+    return found(key, ref, resolved, started, how, stages, { maxTtlMs: fallback ? FALLBACK_LANG_TTL_MS : Infinity, version });
   }
   console.warn(`[trailers] aperçu ${key} : aucune lisible (${candidates.length} candidate(s), ${Date.now() - started} ms)`);
   return refuse(key, "unavailable");
@@ -199,7 +205,7 @@ export async function decidePreview(
   if (known?.kind === "found" && ready) {
     // Ses premiers segments, s'ils ne sont plus en mémoire, repartent pour ce lecteur-ci.
     warm(known.ref);
-    return { kind: "found", ref: known.ref, resolved: ready };
+    return known.version ? { kind: "found", ref: known.ref, resolved: ready, version: known.version } : { kind: "found", ref: known.ref, resolved: ready };
   }
   const pending = inflight.get(key);
   if (pending) return awaitDecision(pending);
@@ -214,7 +220,7 @@ export async function decidePreview(
   if (!verdict.ok) return { kind: "limited", retryAfterS: verdict.retryAfterS };
   // Une extraction va sans doute suivre : l'ouvrier yt-dlp se charge pendant que le catalogue répond.
   if (!heldReprise && !previewRefusal()) prewarmExtraction();
-  const task = decide(key, target, account, dailymotion, known?.kind === "found" ? known.ref : undefined)
+  const task = decide(key, target, account, dailymotion, known?.kind === "found" ? known : undefined)
     .catch((err: unknown) => {
       console.warn(`[trailers] aperçu ${key} : décision interrompue (${err instanceof Error ? err.message : String(err)})`);
       return refuse(key, "unavailable");

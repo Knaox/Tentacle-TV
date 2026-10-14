@@ -9,6 +9,11 @@ export interface TrailerPreviewStream {
   kind: "hls" | "mp4";
   /** Les hauteurs H.264 du maître, de la plus haute à la plus basse ; vide pour un MP4. */
   heights: readonly number[];
+  /**
+   * Une VOSTFR : ses sous-titres sont INCRUSTÉS, souvent dans la bande noire
+   * du bas — jamais rognée (`previewLetterbox.ts`), sinon ils disparaissent.
+   */
+  burnedSubtitles?: boolean;
 }
 
 /**

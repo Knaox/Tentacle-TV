@@ -76,6 +76,12 @@ export interface TrailerPreview {
   /** La vidéo retenue, par sa source (additif). */
   source?: TrailerPreviewSource;
   /**
+   * Sa version face à la langue du serveur (additif, celle du catalogue) :
+   * `subtitled` (une VOSTFR) porte des sous-titres INCRUSTÉS, souvent dans la
+   * bande noire du bas — le client ne la rogne jamais.
+   */
+  version?: "localized" | "subtitled" | "original" | "unknown";
+  /**
    * Le flux relayé par CE serveur, jeton compris, à poser derrière son
    * adresse : un maître HLS (`mimeType` HLS — hls.js, AVPlayer) qui part de la
    * 720p puis s'adapte jusqu'en 1080p ; à défaut de HLS (vidéo « pour

@@ -39,9 +39,10 @@ export const TrailerPreviewVideo = memo(function TrailerPreviewVideo(props: Trai
     bench.record("attach", { kind: current.kind });
     const session = attachPreviewSource(video, current, {
       onReady: () => {
-        // Le letterbox incrusté, mesuré UNE fois sur cette première image.
+        // Le letterbox incrusté, mesuré UNE fois sur cette première image — jamais pour une
+        // VOSTFR : ses sous-titres incrustés vivent dans la bande noire du bas.
         const started = performance.now();
-        const crop = measureVideoCrop(video);
+        const crop = current.burnedSubtitles ? 1 : measureVideoCrop(video);
         bench.record("ready", { crop, cropMs: Math.round((performance.now() - started) * 100) / 100 });
         // Rognée, la vidéo s'affiche plus grande : le plafond de qualité suit (jamais un niveau agrandi).
         if (crop > 1) sessionRef.current?.setCrop(crop);

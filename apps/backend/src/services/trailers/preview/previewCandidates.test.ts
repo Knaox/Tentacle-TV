@@ -13,9 +13,9 @@ const LOCAL = entry({ kind: "jellyfin", itemId: "0123456789abcdef0123456789abcde
 describe("candidates d'un aperçu (le catalogue)", () => {
   it("l'ordre du catalogue, avec le rang de langue de chacune ; AlloCiné pour un client qui lit Dailymotion", () => {
     expect(previewCandidates([LOCAL, ALLOCINE, VOST, VO], { dailymotion: true })).toEqual([
-      { ref: "dm:x8abcde", youtube: false, langRank: 0 },
-      { ref: "vostTrail01", youtube: true, langRank: 1 },
-      { ref: "voTrailer01", youtube: true, langRank: 2 },
+      { ref: "dm:x8abcde", youtube: false, langRank: 0, version: "localized", scope: "s6" },
+      { ref: "vostTrail01", youtube: true, langRank: 1, version: "subtitled", scope: "s6" },
+      { ref: "voTrailer01", youtube: true, langRank: 2, version: "original", scope: "s6" },
     ]);
   });
 

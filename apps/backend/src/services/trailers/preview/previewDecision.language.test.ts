@@ -84,7 +84,7 @@ describe("aperçu › la langue", () => {
     relayKnows(["vfTrailer01"]);
     await decidePreview(title, "fr", "alice");
     await decidePreview(title, "fr", "alice", { dailymotion: true });
-    expect(storedDecisions().map((d) => d.key).sort()).toEqual(["tmdb:movie:1|fr|r3", "tmdb:movie:1|fr|r3|dm"]);
+    expect(storedDecisions().map((d) => d.key).sort()).toEqual(["tmdb:movie:1|fr|r4", "tmdb:movie:1|fr|r4|dm"]);
   });
 
   it("une vidéo AlloCiné (Dailymotion) : seulement pour un client qui sait la lire", async () => {

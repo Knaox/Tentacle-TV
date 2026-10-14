@@ -68,11 +68,26 @@ afterEach(() => {
 });
 
 describe("essais successifs", () => {
+  it("la saison ne se lit pas : la portée suivante a son tour (trois par portée, cinq en tout)", async () => {
+    const entry = (ytId: string, scope: TrailerEntry["scope"]): TrailerEntry => ({
+      scope, playback: { kind: "youtube", ytId }, name: ytId, version: "localized", type: "trailer", source: "tmdb",
+    });
+    const s7 = { kind: "season", season: 7 } as const;
+    buildCatalog.mockResolvedValue({
+      entries: [entry("s7aaaaaaaaa", s7), entry("s7bbbbbbbbb", s7), entry("s7ccccccccc", s7), entry("s7ddddddddd", s7), entry("s6aaaaaaaaa", { kind: "season", season: 6 })],
+      complete: true,
+      language: "fr",
+    });
+    relayKnows(["s7ddddddddd", "s6aaaaaaaaa"]);
+    expect(await decidePreview(title(), "fr", "alice")).toMatchObject({ kind: "found", ref: "s6aaaaaaaaa" });
+    expect(relay.resolveTrailer.mock.calls.map(([id]) => id)).toEqual(["s7aaaaaaaaa", "s7bbbbbbbbb", "s7ccccccccc", "s6aaaaaaaaa"]);
+  });
+
   it("essaie dans l'ordre jusqu'à la première lisible, trois au plus, en aperçu (après les lectures)", async () => {
     buildCatalog.mockResolvedValue(trailers("aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc", "ddddddddddd"));
     relayKnows(["bbbbbbbbbbb", "ccccccccccc", "ddddddddddd"], ["ccccccccccc", "ddddddddddd"]);
     const outcome = await decidePreview(title(), "fr", "alice");
-    expect(outcome).toEqual({ kind: "found", ref: "ccccccccccc", resolved: hls() });
+    expect(outcome).toEqual({ kind: "found", ref: "ccccccccccc", resolved: hls(), version: "localized" });
     expect(relay.resolveTrailer.mock.calls.map(([id]) => id)).toEqual(["aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc"]);
     expect(relay.resolveTrailer).toHaveBeenCalledWith("aaaaaaaaaaa", expect.objectContaining({ priority: "preview", budgetMs: 20_000 }));
     expect(buildCatalog).toHaveBeenCalledWith({ tmdbId: 1, mediaType: "movie" }, "alice");
