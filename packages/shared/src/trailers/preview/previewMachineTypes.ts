@@ -32,6 +32,12 @@ export interface TrailerPreviewState {
   /** La première image de la vidéo est décodée (ce cycle). */
   readonly videoReady: boolean;
   /**
+   * Le premier fragment VIDÉO est arrivé (ce cycle) : le flux coule, la
+   * première image suit de près. Un flux bloqué avant (en-têtes puis plus
+   * rien, segments refusés) n'en a jamais : il ne révèle rien.
+   */
+  readonly videoFragment: boolean;
+  /**
    * L'image du titre (son fond 16:9) est chargée et décodée dans la
    * mini-carte : elle peut se montrer AVANT la vidéo, qui la rejoint en fondu
    * (ce cycle). Sans elle, la révélation attend la première image.
@@ -66,8 +72,10 @@ export type TrailerPreviewEvent =
   /** Refus passager : redemander à `retryAt` si le survol tient (deux fois au plus). */
   | { type: "streamRetry"; at: number; retryAt: number }
   | { type: "videoReady"; at: number }
-  /** L'image du titre est prête dans la mini-carte : la révélation n'attend plus la vidéo. */
+  /** L'image du titre est prête dans la mini-carte : la révélation n'attend plus la première image. */
   | { type: "stillReady"; at: number }
+  /** Le premier fragment vidéo est reçu : le flux coule (condition de la révélation sur l'image). */
+  | { type: "videoFragment"; at: number }
   | { type: "videoFailed"; at: number }
   | { type: "videoEnded"; at: number }
   /** Un autre aperçu a pris la place (un seul à la fois). */
@@ -83,6 +91,7 @@ export const INITIAL_TRAILER_PREVIEW_STATE: TrailerPreviewState = {
   stillSince: null,
   readyBy: null,
   videoReady: false,
+  videoFragment: false,
   stillReady: false,
   exitUntil: null,
   resumable: false,

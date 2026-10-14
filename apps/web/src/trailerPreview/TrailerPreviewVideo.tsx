@@ -47,6 +47,10 @@ export const TrailerPreviewVideo = memo(function TrailerPreviewVideo(props: Trai
         if (crop > 1) sessionRef.current?.setCrop(crop);
         latest.current.onReady({ crop });
       },
+      onFragment: () => {
+        bench.record("fragment");
+        latest.current.onFragment();
+      },
       onError: () => {
         bench.record("failed");
         latest.current.onError();

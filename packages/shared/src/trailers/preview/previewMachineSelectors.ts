@@ -14,7 +14,9 @@ export function nextTrailerPreviewDeadline(
   if (state.phase === "intent" && state.since !== null) deadlines.push(intentAt(state, timing));
   if (state.phase === "fetching" && state.retryAt !== null) deadlines.push(state.retryAt);
   if (awaitingVideo(state)) deadlines.push(state.readyBy as number);
-  if (state.phase === "ready" || (state.phase === "buffering" && state.stillReady)) deadlines.push(revealAt(state, timing));
+  if (state.phase === "ready" || (state.phase === "buffering" && state.stillReady && state.videoFragment)) {
+    deadlines.push(revealAt(state, timing));
+  }
   return deadlines.length ? Math.min(...deadlines) : null;
 }
 

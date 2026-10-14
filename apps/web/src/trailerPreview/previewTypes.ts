@@ -30,6 +30,8 @@ export interface TrailerPreviewVideoProps {
    * l'échelle qui rogne son letterbox incrusté (`previewLetterbox.ts`, 1 = rien).
    */
   onReady: (frame?: { crop: number }) => void;
+  /** Le premier fragment vidéo est reçu : le flux coule (la révélation sur l'image du titre l'attend). */
+  onFragment: () => void;
   /** Échec fatal (réseau, média, blocage) : l'aperçu n'est pas montré, ou s'efface. */
   onError: () => void;
   /** La bande-annonce est finie. */

@@ -166,6 +166,7 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
     dispatch({ type: "videoReady", at: Date.now() });
   }, [dispatch]);
   const reportStillReady = useCallback(() => dispatch({ type: "stillReady", at: Date.now() }), [dispatch]);
+  const onFragment = useCallback(() => dispatch({ type: "videoFragment", at: Date.now() }), [dispatch]);
   const onError = useCallback(() => dispatch({ type: "videoFailed", at: Date.now() }), [dispatch]);
   const onEnded = useCallback(() => dispatch({ type: "videoEnded", at: Date.now() }), [dispatch]);
   const onSoundBlocked = useCallback(() => setSoundBlockedCycle(cycleRef.current), []);
@@ -179,8 +180,8 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
   const volume = visible ? TRAILER_PREVIEW_TIMING.volume : 0;
 
   const videoProps = useMemo(
-    () => ({ stream: streamValue, muted, playing, volume, cycle: state.cycle, onReady, onError, onEnded, onSoundBlocked }),
-    [streamValue, muted, playing, volume, state.cycle, onReady, onError, onEnded, onSoundBlocked],
+    () => ({ stream: streamValue, muted, playing, volume, cycle: state.cycle, onReady, onFragment, onError, onEnded, onSoundBlocked }),
+    [streamValue, muted, playing, volume, state.cycle, onReady, onFragment, onError, onEnded, onSoundBlocked],
   );
 
   return useMemo(

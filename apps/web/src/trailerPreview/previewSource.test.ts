@@ -5,97 +5,8 @@
  * consomme encore après la sortie.
  */
 import { describe, expect, it, vi } from "vitest";
-import type Hls from "hls.js";
 import { attachPreviewSource, keepsStartOffset, previewHlsConfig, topLevel } from "./previewSource";
-import type { TrailerPreviewStream } from "./previewTypes";
-
-type Listener = (...args: unknown[]) => void;
-
-class FakeVideo {
-  muted = false;
-  preload = "";
-  playsInline = false;
-  src = "";
-  paused = true;
-  readonly listeners = new Map<string, Set<Listener>>();
-  readonly calls: string[] = [];
-  constructor(private readonly native: string = "") {}
-  canPlayType(type: string) {
-    return type === "video/mp4" || type === this.native ? "maybe" : "";
-  }
-  addEventListener(type: string, listener: Listener) {
-    if (!this.listeners.has(type)) this.listeners.set(type, new Set());
-    this.listeners.get(type)!.add(listener);
-  }
-  removeEventListener(type: string, listener: Listener) {
-    this.listeners.get(type)?.delete(listener);
-  }
-  emit(type: string) {
-    for (const listener of this.listeners.get(type) ?? []) listener();
-  }
-  pause() {
-    this.calls.push("pause");
-  }
-  removeAttribute(name: string) {
-    this.calls.push(`removeAttribute:${name}`);
-  }
-  load() {
-    this.calls.push("load");
-  }
-}
-
-const EVENTS = { MANIFEST_PARSED: "manifestParsed", LEVEL_LOADED: "levelLoaded", ERROR: "hlsError" } as const;
-
-function fakeHlsClass(supported = true) {
-  const instances: FakeHls[] = [];
-  class FakeHls {
-    static Events = EVENTS;
-    static isSupported = () => supported;
-    readonly handlers = new Map<string, Listener>();
-    startLevelValue = -1;
-    autoLevelCapping = -1;
-    levels: unknown[] = [];
-    readonly calls: string[] = [];
-    constructor(readonly config: unknown) {
-      instances.push(this);
-    }
-    set startLevel(level: number) {
-      this.startLevelValue = level;
-    }
-    on(event: string, handler: Listener) {
-      this.handlers.set(event, handler);
-    }
-    loadSource(src: string) {
-      this.calls.push(`loadSource:${src}`);
-    }
-    attachMedia() {
-      this.calls.push("attachMedia");
-    }
-    startLoad(position: number) {
-      this.calls.push(`startLoad:${position}`);
-    }
-    stopLoad() {
-      this.calls.push("stopLoad");
-    }
-    destroy() {
-      this.calls.push("destroy");
-    }
-    fire(event: string, data: unknown) {
-      this.handlers.get(event)?.(event, data);
-    }
-  }
-  return { HlsClass: FakeHls as unknown as typeof Hls, instances };
-}
-
-const HLS: TrailerPreviewStream = {
-  src: "http://serveur:3001/api/trailers/hls/FFUGtw7uzB4/master.m3u8?t=abc",
-  mimeType: "application/vnd.apple.mpegurl",
-  kind: "hls",
-  heights: [1080, 720],
-};
-const MP4: TrailerPreviewStream = { src: "http://serveur:3001/api/trailers/file/abcdefghijk.mp4?t=abc", mimeType: "video/mp4", kind: "mp4", heights: [] };
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+import { EVENTS, FakeVideo, HLS, MP4, fakeHlsClass, flush } from "./previewSourceTestKit";
 
 describe("attachPreviewSource — HLS par hls.js", () => {
   it("pose le maître, part du niveau le plus haut, en muet et sans lecture", async () => {
@@ -131,26 +42,6 @@ describe("attachPreviewSource — HLS par hls.js", () => {
     // Une seule fois : les listes suivantes (changement de niveau) ne redécident rien.
     short.fire(EVENTS.LEVEL_LOADED, { details: { totalduration: 20, fragments: segments(5.48) } });
     expect(short.calls.filter((c) => c === "stopLoad")).toHaveLength(1);
-  });
-
-  it("départ ET plafond au plus petit niveau qui couvre la boîte ; avant la révélation, le premier segment seulement", async () => {
-    vi.stubGlobal("window", { devicePixelRatio: 2 });
-    const video = Object.assign(new FakeVideo(), { clientWidth: 560, clientHeight: 315 });
-    const { HlsClass, instances } = fakeHlsClass();
-    const session = attachPreviewSource(video as never, HLS, { onReady: vi.fn(), onError: vi.fn() }, async () => HlsClass);
-    await flush();
-    const hls = instances[0];
-    const sizes = [[256, 144], [640, 360], [1280, 720], [1920, 1080]].map(([width, height]) => ({ width, height, bitrate: height }));
-    hls.fire(EVENTS.MANIFEST_PARSED, { levels: sizes });
-    expect([hls.startLevelValue, hls.autoLevelCapping]).toEqual([2, 2]);
-    expect(hls.config).toMatchObject({ maxBufferLength: 1, maxMaxBufferLength: 1 });
-    session.unleash();
-    expect(hls.config).toMatchObject({ maxBufferLength: 12, maxMaxBufferLength: 15 });
-    // Rognée de son letterbox (×1,6), la vidéo s'affiche plus grande : le plafond monte d'un niveau.
-    hls.levels = sizes;
-    session.setCrop(1.6);
-    expect(hls.autoLevelCapping).toBe(3);
-    vi.unstubAllGlobals();
   });
 
   it("le décalage ne vaut que dans le premier segment, avec une marge, et pour 30 s au moins", () => {

@@ -26,10 +26,12 @@ export function awaitingVideo(state: TrailerPreviewState): boolean {
 /**
  * La mini-carte peut-elle se montrer à `at` ? Le rendez-vous passé
  * (`revealMs`), et de quoi montrer : la première image de la vidéo, ou
- * l'image du titre — le serveur a déjà VÉRIFIÉ la bande-annonce (`buffering`
- * suit sa réponse), rien ne grandit sans elle.
+ * l'image du titre — à condition que la bande-annonce soit LISIBLE pour de
+ * bon : le serveur l'a vérifiée (`buffering` suit sa réponse) ET son premier
+ * fragment vidéo est arrivé ici. Un flux bloqué avant sa première image ne
+ * fait rien grandir.
  */
 export function revealable(state: TrailerPreviewState, at: number, timing: TrailerPreviewTiming): boolean {
-  const phaseOk = state.phase === "ready" || (state.phase === "buffering" && state.stillReady);
-  return phaseOk && at >= revealAt(state, timing);
+  const onStill = state.phase === "buffering" && state.stillReady && state.videoFragment;
+  return (state.phase === "ready" || onStill) && at >= revealAt(state, timing);
 }

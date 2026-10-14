@@ -45,11 +45,12 @@ afterEach(async () => {
 });
 
 describe("useTrailerPreview — révélation sur l'image du titre", () => {
-  it("image signalée : montrée à 800 ms pile, la vidéo pas encore prête ; elle la rejoint ensuite", async () => {
+  it("flux qui coule et image signalée : montrée à 800 ms pile, la vidéo pas encore prête ; elle la rejoint ensuite", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs);
     await serve(FOUND);
     expect(handles.a).toMatchObject({ phase: "buffering", mount: true, visible: false, videoReady: false });
+    await act(async () => handles.a.videoProps.onFragment());
     await act(async () => handles.a.reportStillReady());
     await wait(T.revealMs - T.intentMs - 1);
     expect(handles.a.visible).toBe(false);
@@ -69,10 +70,22 @@ describe("useTrailerPreview — révélation sur l'image du titre", () => {
     expect(handles.a).toMatchObject({ visible: true, videoReady: true });
   });
 
-  it("montrée sur l'image, la vidéo lâche : la mini-carte s'efface", async () => {
+  it("image signalée mais flux BLOQUÉ avant son premier fragment : rien ne grandit", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs);
     await serve(FOUND);
+    await act(async () => handles.a.reportStillReady());
+    await wait(3_000);
+    expect(handles.a).toMatchObject({ phase: "buffering", visible: false });
+    await wait(T.readyTimeoutMs);
+    expect(handles.a).toMatchObject({ phase: "failed", visible: false, mount: false });
+  });
+
+  it("montrée sur l'image, la vidéo cale ensuite : la mini-carte s'efface", async () => {
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    await serve(FOUND);
+    await act(async () => handles.a.videoProps.onFragment());
     await act(async () => handles.a.reportStillReady());
     await wait(T.revealMs);
     expect(handles.a.visible).toBe(true);

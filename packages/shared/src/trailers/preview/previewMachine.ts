@@ -13,11 +13,13 @@ import type { TrailerPreviewEvent, TrailerPreviewFailure, TrailerPreviewState } 
  *                                     └→ failed ←─────┴───────────────────┘            └→ ended
  *
  * RÉVÉLATION SUR L'IMAGE : le flux trouvé, le serveur a VÉRIFIÉ que la
- * bande-annonce se lit ; si la mini-carte a déjà l'image du titre
+ * bande-annonce se lit ; quand son premier fragment vidéo est arrivé ici
+ * (`videoFragment` : le flux coule) et que la mini-carte a l'image du titre
  * (`stillReady`), elle se montre au rendez-vous (800 ms) sans attendre la
- * première image — `buffering ─image du titre, 800 ms→ shown` — et la vidéo
- * la rejoint en fondu (`videoReady`). Si elle ne vient pas avant `readyBy`
- * (8 s après le flux), c'est un échec : la mini-carte s'efface.
+ * première image — `buffering ─fragment + image du titre, 800 ms→ shown` —
+ * et la vidéo la rejoint en fondu (`videoReady`). Un flux bloqué avant son
+ * premier fragment ne révèle rien. Si la première image ne vient pas avant
+ * `readyBy` (8 s après le flux), c'est un échec : la mini-carte s'efface.
  *
  * L'intention demande aussi un pointeur ARRÊTÉ (`intentStillMs`) : chaque
  * mouvement (`move`, au-delà du seuil de la carte) la repousse. Un balayage
@@ -47,6 +49,7 @@ function begin(state: TrailerPreviewState, at: number): TrailerPreviewState {
     stillSince: at,
     readyBy: null,
     videoReady: false,
+    videoFragment: false,
     stillReady: false,
     exitUntil: null,
     resumable: false,
@@ -164,6 +167,11 @@ export function reduceTrailerPreview(
       if (!VIDEO.has(state0.phase) || state0.stillReady) return state0;
       const still = { ...state0, stillReady: true };
       return revealable(still, at, timing) ? { ...still, phase: "shown" } : still;
+    }
+    case "videoFragment": {
+      if (!VIDEO.has(state0.phase) || state0.videoFragment) return state0;
+      const flowing = { ...state0, videoFragment: true };
+      return revealable(flowing, at, timing) ? { ...flowing, phase: "shown" } : flowing;
     }
     case "videoFailed":
       return VIDEO.has(state0.phase) ? leave(state0, at, "failed", { failure: "video", timing }) : state0;
