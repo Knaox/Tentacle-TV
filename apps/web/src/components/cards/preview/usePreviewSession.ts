@@ -22,6 +22,7 @@ import { previewSettleMs } from "./previewMotion";
 import { usePreviewListeners } from "./usePreviewListeners";
 import { useKeyboardInCard } from "./useKeyboardInCard";
 import { usePreviewRoom } from "./room/usePreviewRoom";
+import { roomOffset } from "./room/previewRoom";
 import type { CardPreviewSession } from "./useCardPreview";
 
 /** Ce que la mini-carte rend — `null` tant que rien n'est monté. */
@@ -37,14 +38,21 @@ export interface CardPreviewView {
   focusInsideRef: RefObject<boolean>;
 }
 
-/** La place, mesurée dans la fenêtre, posée dans le DOCUMENT : la mini-carte défile avec la page. */
+/**
+ * La place, mesurée dans la fenêtre, posée dans le DOCUMENT : la mini-carte
+ * défile avec la page. Une carte encore écartée par la pièce de la carte
+ * d'avant (`room/previewRoom.ts`) a sa place dans la rangée, moins cet écart :
+ * la mini-carte s'y pose, et part de là où on la voit.
+ */
 function measure(anchor: HTMLElement | null, shape: PreviewShape): PreviewPlacement | null {
   if (!anchor) return null;
   const rect = anchor.getBoundingClientRect();
+  const seen = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
   const placed = placePreview(
-    { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+    { ...seen, left: rect.left - roomOffset(anchor) },
     shape,
     { width: window.innerWidth, height: window.innerHeight, safeTop: navBottom() },
+    seen,
   );
   return placed && inDocument(placed, { x: window.scrollX, y: window.scrollY });
 }
@@ -143,8 +151,9 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   useLayoutEffect(() => {
     setShown(shown);
   }, [shown, setShown]);
-  // Ses voisines s'écartent dans cette même image, et reviennent avec sa sortie.
-  usePreviewRoom({ shown, placement, anchorRef, reduced });
+  // Ses voisines s'écartent dans cette même image, et reviennent avec sa sortie ;
+  // tant que son aperçu est en route, elle réclame la pièce de la carte d'avant.
+  usePreviewRoom({ shown, placement, anchorRef, reduced, claiming: nextEngaged && engine.pending && !shown });
 
   // Effacée par le moteur sous un pointeur resté là (fin, échec) : silence
   // global jusqu'au prochain vrai mouvement (`previewQuiet.ts`).

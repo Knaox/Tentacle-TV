@@ -203,6 +203,18 @@ describe("placePreview — départ de l'animation", () => {
     expect(p.height * p.from.scale).toBeLessThan(card.height);
   });
 
+  it("une voisine encore écartée : posée sur SA place, partie de là où on la voit", () => {
+    const place = poster(600);
+    const seen = { ...place, left: place.left + 61 };
+    const p = placePreview(place, "poster", VIEWPORT, seen);
+    const q = placePreview(place, "poster", VIEWPORT);
+    expect(p).not.toBeNull();
+    if (!p || !q) return;
+    expect({ left: p.left, top: p.top, width: p.width, height: p.height }).toEqual({ left: q.left, top: q.top, width: q.width, height: q.height });
+    expect(p.from.x - q.from.x).toBeCloseTo(61, 0);
+    expect(p.from.scale).toBe(q.from.scale);
+  });
+
   it("ne rétrécit jamais en entrant, même quand la carte est plus grande que la place", () => {
     const p = placePreview(landscape(0, 0, 1400), "landscape", { width: 600, height: 400 });
     expect(p?.from.scale).toBe(1);

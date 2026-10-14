@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { openPreviewRoom } from "./previewRoom";
+import { ROOM_CLAIM_MS, ROOM_LINGER_MAX_MS, claimPreviewRoom, openPreviewRoom, roomOffset } from "./previewRoom";
 
 /**
  * La pièce, côté DOM : ce qui est posé à l'ouverture, au retour, et ce qui
@@ -172,5 +172,82 @@ describe("openPreviewRoom — une grille de plusieurs lignes", () => {
     expect(cells.map((cell) => cell.getAttribute("data-room-side"))).toEqual([
       "before", null, "after", "after", null, null, null, null,
     ]);
+  });
+});
+
+describe("le passage d'une carte à sa voisine — la pièce attend, puis change de main", () => {
+  const span = (i: number) => ({ left: 48 + i * 212 - 66, right: 248 + i * 212 + 66 });
+  /** Les états successifs de la pièce : jamais « closing » entre deux aperçus voisins. */
+  function track(room: FakeElement) {
+    const seen: Array<string | null> = [];
+    const set = room.setAttribute.bind(room);
+    room.setAttribute = (name: string, value: string) => {
+      if (name === "data-room") seen.push(value);
+      set(name, value);
+    };
+    return seen;
+  }
+
+  it("réclamée par la voisine survolée, elle attend son aperçu et passe DIRECTEMENT à son écartement", () => {
+    const { room, cards, visuals } = row();
+    const seen = track(room);
+    const a = open(visuals[3] as unknown as HTMLElement, span(3));
+    const release = claimPreviewRoom(visuals[4] as unknown as HTMLElement);
+    expect(release).not.toBeNull();
+    a?.linger();
+    vi.advanceTimersByTime(ROOM_CLAIM_MS + 100);
+    expect(room.getAttribute("data-room")).toBe("open");
+    open(visuals[4] as unknown as HTMLElement, span(4));
+    release?.();
+    vi.advanceTimersByTime(ROOM_LINGER_MAX_MS + 400);
+    expect(seen).toEqual(["open", "open"]);
+    expect(cards[4].hasAttribute("data-room-anchor")).toBe(true);
+    expect(cards[3].hasAttribute("data-room-anchor")).toBe(false);
+  });
+
+  it("sans réclamation, elle revient après un court instant", () => {
+    const { room, visuals } = row();
+    open(visuals[3] as unknown as HTMLElement, span(3))?.linger();
+    vi.advanceTimersByTime(ROOM_CLAIM_MS - 20);
+    expect(room.getAttribute("data-room")).toBe("open");
+    vi.advanceTimersByTime(40);
+    expect(room.getAttribute("data-room")).toBe("closing");
+  });
+
+  it("la voisine sans bande-annonce lâche : retour aussitôt, rien ne reste écarté", () => {
+    const { room, visuals } = row();
+    const a = open(visuals[3] as unknown as HTMLElement, span(3));
+    const release = claimPreviewRoom(visuals[4] as unknown as HTMLElement);
+    a?.linger();
+    release?.();
+    expect(room.getAttribute("data-room")).toBe("closing");
+    vi.advanceTimersByTime(400);
+    expect(room.attrs.has("data-room")).toBe(false);
+  });
+
+  it("passé le délai maximal, retour normal même réclamée (demande froide)", () => {
+    const { room, visuals } = row();
+    const a = open(visuals[3] as unknown as HTMLElement, span(3));
+    claimPreviewRoom(visuals[4] as unknown as HTMLElement);
+    a?.linger();
+    vi.advanceTimersByTime(ROOM_LINGER_MAX_MS - 100);
+    expect(room.getAttribute("data-room")).toBe("open");
+    vi.advanceTimersByTime(200);
+    expect(room.getAttribute("data-room")).toBe("closing");
+  });
+
+  it("une pièce qui revient ne se réclame plus, et la carte ne réclame jamais sa propre pièce", () => {
+    const { visuals } = row();
+    const a = open(visuals[3] as unknown as HTMLElement, span(3));
+    expect(claimPreviewRoom(visuals[3] as unknown as HTMLElement)).toBeNull();
+    a?.close();
+    expect(claimPreviewRoom(visuals[4] as unknown as HTMLElement)).toBeNull();
+  });
+
+  it("lit l'écart en cours d'une voisine (sa place dans la rangée en est déduite)", () => {
+    const { cards, visuals } = row();
+    expect(roomOffset(visuals[4] as unknown as HTMLElement)).toBe(0);
+    cards[4].translate = "61px";
+    expect(roomOffset(visuals[4] as unknown as HTMLElement)).toBe(61);
   });
 });

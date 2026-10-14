@@ -42,6 +42,12 @@ export interface PreviewEngine {
    * attendre la vidéo. Stable ; sans effet hors d'un aperçu vérifié.
    */
   reportStillReady: () => void;
+  /**
+   * Un aperçu est EN ROUTE — intention, demande, chargement, prêt à se montrer
+   * — et la mini-carte n'est pas encore là. Faux au repos, montrée, et dès que
+   * le serveur dit qu'il n'y a rien (pas de bande-annonce, échec).
+   */
+  pending: boolean;
   muted: boolean;
   toggleMute: () => void;
   /** L'élément vidéo, plein cadre ; `hold` le garde sur sa première image. */
@@ -58,7 +64,8 @@ export { previewSubjectOfTitle };
 /** Le moteur pour une carte : `hovered` est le survol EFFECTIF (fermetures forcées déjà retirées). */
 export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolean): PreviewEngine {
   const handle = useTrailerPreview(subject, hovered);
-  const { videoProps, mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute } = handle;
+  const { videoProps, mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute, phase } = handle;
+  const pending = phase === "intent" || phase === "fetching" || phase === "buffering" || phase === "ready";
   const renderVideo = useCallback(
     ({ hold, className }: { hold: boolean; className: string }) => (
       <TrailerPreviewVideo {...videoProps} hold={hold} className={className} />
@@ -66,7 +73,7 @@ export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolea
     [videoProps],
   );
   return useMemo(
-    () => ({ mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute, renderVideo }),
-    [mount, visible, videoReady, videoCrop, reportStillReady, muted, toggleMute, renderVideo],
+    () => ({ mount, visible, videoReady, videoCrop, reportStillReady, pending, muted, toggleMute, renderVideo }),
+    [mount, visible, videoReady, videoCrop, reportStillReady, pending, muted, toggleMute, renderVideo],
   );
 }

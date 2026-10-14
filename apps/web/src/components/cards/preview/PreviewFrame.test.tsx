@@ -44,6 +44,7 @@ function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel
       videoReady: true,
       videoCrop: over.crop ?? 1,
       reportStillReady: () => undefined,
+      pending: false,
       muted: over.muted ?? false,
       toggleMute: () => undefined,
       renderVideo: ({ hold, className }: { hold: boolean; className: string }) => {

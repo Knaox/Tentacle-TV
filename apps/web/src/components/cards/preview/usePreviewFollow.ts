@@ -3,6 +3,7 @@ import { setHoverCompanion } from "../../../hooks/hoverCompanion";
 import { followOutOfPlace, horizontalWheelDelta } from "./previewFollow";
 import type { PreviewCloseCause } from "./previewLifecycle";
 import type { PreviewPlacement } from "./previewPlacement";
+import { roomOffset } from "./room/roomDom";
 
 interface PreviewFollowInput {
   /** Vue : l'accroche commence à la révélation. */
@@ -45,7 +46,10 @@ export function navBottom(): number {
 function followContext(anchor: HTMLElement, placement: PreviewPlacement): FollowContext {
   const room = anchor.closest<HTMLElement>("[data-preview-room]");
   const scroller = room && room.scrollWidth > room.clientWidth + 1 ? room : null;
-  const card = anchor.getBoundingClientRect();
+  // Sa place dans la rangée : une carte encore écartée par la pièce d'avant y revient.
+  const rect = anchor.getBoundingClientRect();
+  const offset = roomOffset(anchor);
+  const card = { left: rect.left - offset, right: rect.right - offset };
   const box = scroller?.getBoundingClientRect();
   return {
     placement,

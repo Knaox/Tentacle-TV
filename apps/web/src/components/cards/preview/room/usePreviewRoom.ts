@@ -1,8 +1,7 @@
 import { useLayoutEffect, type RefObject } from "react";
-import { PREVIEW_EXIT_MS } from "../previewMotion";
 import { previewQuiet } from "../previewQuiet";
 import type { PreviewPlacement } from "../previewPlacement";
-import { openPreviewRoom } from "./previewRoom";
+import { claimPreviewRoom, openPreviewRoom } from "./previewRoom";
 
 interface PreviewRoomInput {
   /** La mini-carte est VUE — jamais pendant son préchargement caché. */
@@ -13,6 +12,11 @@ interface PreviewRoomInput {
   anchorRef: RefObject<HTMLElement | null>;
   /** Animations réduites : rien ne glisse, la mini-carte apparaît par-dessus. */
   reduced: boolean;
+  /**
+   * L'aperçu de CETTE carte est en route (survol engagé, mini-carte pas encore
+   * vue) : elle réclame la pièce ouverte de la carte d'avant, qui l'attend.
+   */
+  claiming: boolean;
 }
 
 /**
@@ -20,18 +24,18 @@ interface PreviewRoomInput {
  * elle part — dans la même image que sa propre entrée et sa propre sortie
  * (effet de mise en page, comme `setShown`).
  *
- * Le RETOUR fait glisser des cartes sous un pointeur peut-être immobile :
- * Chromium y fait survoler la carte qui arrive dessous par des évènements
- * synthétiques. Si le pointeur est dans la zone qui bouge, la porte globale est
- * tenue fermée le temps du retour (`previewQuiet.hold`) : aucune voisine ne
- * lance son aperçu sans un vrai mouvement APRÈS — ni clignotement, ni
- * ping-pong. Celle que le pointeur a VRAIMENT rejointe, engagée avant, n'est
- * pas interrompue.
+ * Partie vers une VOISINE de la même pièce (pointeur dans la pièce, hors de sa
+ * carte), la mini-carte laisse la pièce ATTENDRE : la voisine la réclame tant
+ * que son aperçu est en route, et la pièce passe directement de l'écartement
+ * de l'une à celui de l'autre — jamais un retour puis un nouvel écart
+ * (`previewRoom.ts`). Le retour, quand il vient, tient la porte des aperçus
+ * fermée le temps du glissement : la carte qu'il amène sous un pointeur
+ * immobile ne lance rien.
  *
  * Animations réduites : aucun glissement. Un saut de six cartes serait pire
  * qu'un glissement, et la mini-carte, en fondu, se lit très bien par-dessus.
  */
-export function usePreviewRoom({ shown, placement, anchorRef, reduced }: PreviewRoomInput): void {
+export function usePreviewRoom({ shown, placement, anchorRef, reduced, claiming }: PreviewRoomInput): void {
   useLayoutEffect(() => {
     const anchor = anchorRef.current;
     if (!shown || reduced || !placement || !anchor) return;
@@ -41,11 +45,20 @@ export function usePreviewRoom({ shown, placement, anchorRef, reduced }: Preview
     const room = openPreviewRoom(anchor, { left, right: left + placement.width });
     if (!room) return;
     return () => {
-      // La porte est TENUE le temps du retour : la fin du geste qui a quitté la
-      // mini-carte ne la rouvre pas (`previewQuiet.hold`).
       const pointer = previewQuiet.pointer();
-      if (pointer && room.contains(pointer.x, pointer.y)) previewQuiet.hold(PREVIEW_EXIT_MS + 60);
-      room.close();
+      const toNeighbor = !!pointer && room.contains(pointer.x, pointer.y) && !room.onAnchor(pointer.x, pointer.y);
+      if (toNeighbor) room.linger();
+      else room.close();
     };
   }, [shown, reduced, placement, anchorRef]);
+
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    if (!claiming || reduced || !anchor) return;
+    const release = claimPreviewRoom(anchor);
+    // Lâchée APRÈS la commande : si c'est l'ouverture de notre propre
+    // mini-carte qui met fin à la réclamation, la pièce a déjà changé de main
+    // et le lâcher ne la fait pas revenir.
+    return release ? () => queueMicrotask(release) : undefined;
+  }, [claiming, reduced, anchorRef]);
 }

@@ -108,8 +108,12 @@ export function previewWidthFor(cardWidth: number, viewportWidth: number): numbe
  * La place de la mini-carte pour une carte (`anchor`, en coordonnées de
  * fenêtre — son visuel, tel que le survol l'a soulevé). `null` quand il n'y a
  * rien à ancrer (carte sans largeur, fenêtre plus petite que les marges).
+ *
+ * `start` : là où la carte est VUE quand ce n'est pas sa place — une voisine
+ * encore écartée par la pièce de la carte d'avant. La mini-carte se pose sur
+ * sa place (`anchor`) et part de là où on la voit (`start`).
  */
-export function placePreview(anchor: PreviewRect, shape: PreviewShape, viewport: PreviewViewport): PreviewPlacement | null {
+export function placePreview(anchor: PreviewRect, shape: PreviewShape, viewport: PreviewViewport, start: PreviewRect = anchor): PreviewPlacement | null {
   if (!(anchor.width > 0) || !(anchor.height > 0)) return null;
   const minLeft = PREVIEW_MARGIN;
   const maxRight = viewport.width - PREVIEW_MARGIN;
@@ -142,7 +146,7 @@ export function placePreview(anchor: PreviewRect, shape: PreviewShape, viewport:
   const left = Math.round(clamp(centerX - width / 2, minLeft, maxRight - width));
   const top = Math.round(clamp(centerY - height / 2, minTop, maxBottom - height));
 
-  return { left, top, width, height, videoHeight, from: departure(anchor, shape, { left, top, width, height, videoHeight }) };
+  return { left, top, width, height, videoHeight, from: departure(start, shape, { left, top, width, height, videoHeight }) };
 }
 
 /**
