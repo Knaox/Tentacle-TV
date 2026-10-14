@@ -3,10 +3,13 @@
 /*                                                                     */
 /*  Le client attend une intention (un survol qui dure), mais le       */
 /*  serveur se protège : un survol rapide d'une rangée ne doit pas     */
-/*  lancer trente extractions. Un seau par compte — quelques aperçus   */
-/*  d'avance, puis un toutes les quelques secondes. Seules les         */
-/*  décisions À PRENDRE y puisent : un aperçu déjà décidé (mémoire du  */
-/*  serveur) ou en cours de décision ne coûte rien.                    */
+/*  lancer trente extractions. Un seau par compte — dix aperçus        */
+/*  d'avance, puis un toutes les trois secondes (parcourir des titres  */
+/*  neufs hors bibliothèque ne doit pas se heurter à « réessayez » ;   */
+/*  le budget de l'heure de YouTube reste le vrai garde-fou). Seules   */
+/*  les décisions À PRENDRE y puisent : un aperçu déjà décidé (mémoire */
+/*  du serveur, préparation des titres à l'écran) ou en cours de       */
+/*  décision ne coûte rien.                                            */
 /* ------------------------------------------------------------------ */
 
 export type RateVerdict = { ok: true } | { ok: false; retryAfterS: number };
@@ -20,8 +23,8 @@ export class PreviewRateLimiter {
    * @param maxAccounts au-delà, les seaux les plus anciens sont oubliés (pleins).
    */
   constructor(
-    private readonly capacity = 6,
-    private readonly refillMs = 5_000,
+    private readonly capacity = 10,
+    private readonly refillMs = 3_000,
     private readonly maxAccounts = 1_000,
   ) {}
 

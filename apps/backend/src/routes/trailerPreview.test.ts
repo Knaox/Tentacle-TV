@@ -242,9 +242,9 @@ describe("GET /api/trailers/preview", () => {
   it("trop d'aperçus à décider d'affilée : 429 rate_limited — le délai dans Retry-After (lisible depuis le bureau) ET dans le corps", async () => {
     const app = await server("https://tentacle.example.com");
     const origin = { origin: "tentacle://app" };
-    for (let n = 1; n <= 6; n++) expect((await get(app, `tmdbId=${n}&mediaType=movie`, "alice", origin)).statusCode).toBe(404);
-    const res = await get(app, "tmdbId=7&mediaType=movie", "alice", origin);
-    expect([res.statusCode, res.json(), res.headers["retry-after"]]).toEqual([429, { error: "rate_limited", retryAfterS: 5 }, "5"]);
+    for (let n = 1; n <= 10; n++) expect((await get(app, `tmdbId=${n}&mediaType=movie`, "alice", origin)).statusCode).toBe(404);
+    const res = await get(app, "tmdbId=11&mediaType=movie", "alice", origin);
+    expect([res.statusCode, res.json(), res.headers["retry-after"]]).toEqual([429, { error: "rate_limited", retryAfterS: 3 }, "3"]);
     expect(res.headers["access-control-allow-origin"]).toBe("tentacle://app");
     expect(String(res.headers["access-control-expose-headers"])).toContain("Retry-After");
   });

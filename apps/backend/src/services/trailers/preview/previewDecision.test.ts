@@ -205,12 +205,12 @@ describe("demandes simultanées, seau et plafond", () => {
     expect(relay.resolveTrailer).toHaveBeenCalledTimes(1);
   });
 
-  it("le seau du compte : six décisions d'affilée, la septième attend ; une décision gardée ne coûte rien", async () => {
+  it("le seau du compte : dix décisions d'affilée, la onzième attend ; une décision gardée ne coûte rien", async () => {
     buildCatalog.mockResolvedValue({ entries: [], complete: true, language: "fr" });
-    for (let n = 1; n <= 6; n++) expect((await decidePreview(title(n), "fr", "alice")).kind).toBe("refused");
-    expect(await decidePreview(title(7), "fr", "alice")).toEqual({ kind: "limited", retryAfterS: 5 });
+    for (let n = 1; n <= 10; n++) expect((await decidePreview(title(n), "fr", "alice")).kind).toBe("refused");
+    expect(await decidePreview(title(11), "fr", "alice")).toEqual({ kind: "limited", retryAfterS: 3 });
     expect((await decidePreview(title(1), "fr", "alice")).kind).toBe("refused");
-    expect((await decidePreview(title(7), "fr", "bob")).kind).toBe("refused");
+    expect((await decidePreview(title(11), "fr", "bob")).kind).toBe("refused");
   });
 
   it("le plafond du serveur : au-delà de quatre décisions en cours, « réessayez » — la même demande se joint", async () => {
