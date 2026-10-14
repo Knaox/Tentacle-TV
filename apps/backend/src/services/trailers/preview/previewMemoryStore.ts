@@ -13,6 +13,13 @@
 /*  d'une autre version : on repart de rien, sans erreur. Les jetons   */
 /*  du relais, eux, ne survivent pas (secret du processus) : un client */
 /*  redemande `/preview`, qui répond sans extraire.                    */
+/*                                                                     */
+/*  Ce qui reste sur le disque : 1 000 décisions et 1 000 sources au   */
+/*  plus (~3 Mo dans le pire cas, ~100 Ko pour une soirée de survols) ; */
+/*  rien de plus vieux que l'échéance des URL (~6 h) — le fichier est  */
+/*  réécrit sans l'échu au démarrage et à chaque changement. Aucune     */
+/*  donnée de compte : des identifiants de titres et de vidéos, des URL */
+/*  googlevideo signées pour l'adresse de ce serveur.                   */
 /* ------------------------------------------------------------------ */
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
@@ -73,6 +80,7 @@ function save(file: string): void {
 export function startPreviewMemory(file = PREVIEW_MEMORY_FILE): void {
   if (started) return;
   started = true;
+  let stale = false;
   try {
     const snapshot = JSON.parse(readFileSync(file, "utf8")) as Partial<Snapshot>;
     if (snapshot.version === VERSION) {
@@ -82,6 +90,7 @@ export function startPreviewMemory(file = PREVIEW_MEMORY_FILE): void {
       restoreDecisions(decisions);
       console.log(`[trailers] mémoire des aperçus reprise : ${decisions.length} décision(s), ${sources.length} source(s)`);
     }
+    stale = true;
   } catch {
     // Absente (premier démarrage) ou illisible : on repart de rien.
   }
@@ -95,6 +104,8 @@ export function startPreviewMemory(file = PREVIEW_MEMORY_FILE): void {
   };
   onRelaySourcesChange(schedule);
   onPreviewDecisionsChange(schedule);
+  // Le fichier lu au démarrage garde ses lignes échues : il est réécrit sans elles.
+  if (stale) schedule();
 }
 
 /** Pour les tests : tout écrire tout de suite, ou repartir d'un processus « neuf ». */

@@ -87,6 +87,20 @@ describe("mémoire des aperçus", () => {
     expect(storedDecisions().map((d) => d.key)).toEqual([NONE.key]);
   });
 
+  it("au démarrage, le fichier est réécrit sans ses lignes échues", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    startPreviewMemory(file);
+    flushPreviewMemory(file);
+    const snapshot = JSON.parse(readFileSync(file, "utf8"));
+    snapshot.sources = [{ ...SOURCE, validUntil: NOW - 1 }, SOURCE];
+    snapshot.decisions = [{ ...FOUND, until: NOW - 1 }, NONE];
+    writeFileSync(file, JSON.stringify(snapshot));
+    restart();
+    vi.advanceTimersByTime(5_000);
+    const rewritten = JSON.parse(readFileSync(file, "utf8"));
+    expect([rewritten.sources.length, rewritten.decisions.length]).toEqual([1, 1]);
+  });
+
   it("un fichier abîmé, ou d'une autre version : on repart de rien, sans erreur", () => {
     startPreviewMemory(file);
     flushPreviewMemory(file);
