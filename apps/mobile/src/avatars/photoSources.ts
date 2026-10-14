@@ -10,14 +10,14 @@ export type { PhotoPayload } from "./photoChain";
  * La photothèque, recadrage carré : la photo choisie, `null` si l'on renonce,
  * `"denied"` sans la permission (l'appelant dit où l'accorder).
  */
-export async function pickLibraryPhoto(): Promise<PhotoPayload | null | "denied"> {
+export async function pickLibraryPhoto(quality = 0.85): Promise<PhotoPayload | null | "denied"> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) return "denied";
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: "images",
     allowsEditing: true,
     aspect: [1, 1],
-    quality: 0.85,
+    quality,
     base64: true,
   });
   const asset = result.assets?.[0];

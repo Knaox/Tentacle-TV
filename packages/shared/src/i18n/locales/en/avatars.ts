@@ -34,6 +34,7 @@ export default {
     tileHint: "Introduces them at the bottom of the gallery.",
     chosenHint: "Tap again to choose them.",
     uploadHint: "From your photos",
+    guestPhotoTooLarge: "This photo is too large for a guest. Crop it tighter, or pick a character.",
   },
   characters: {
     lanterne: { name: "Lantern", story: "Only watches horror after midnight. Brings her own light." },

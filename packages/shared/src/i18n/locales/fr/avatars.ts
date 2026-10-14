@@ -39,6 +39,7 @@ export default {
     tileHint: "Le présente au pied de la galerie.",
     chosenHint: "Touchez encore pour le choisir.",
     uploadHint: "Depuis vos photos",
+    guestPhotoTooLarge: "Cette photo est trop lourde pour un invité. Recadrez-la plus serré, ou choisissez un personnage.",
   },
   characters: {
     lanterne: { name: "Lanterne", story: "Ne regarde de l'horreur qu'après minuit. Elle apporte sa propre lumière." },
