@@ -40,6 +40,7 @@ export default {
   switcher: {
     title: "Switch profile",
     switching: "Switching profiles…",
+    cancel: "Cancel",
   },
   session: {
     guestBadge: "Guest profile",

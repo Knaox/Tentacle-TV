@@ -43,6 +43,7 @@ export default {
   switcher: {
     title: "Changer de profil",
     switching: "Changement de profil…",
+    cancel: "Annuler",
   },
   session: {
     guestBadge: "Profil invité",

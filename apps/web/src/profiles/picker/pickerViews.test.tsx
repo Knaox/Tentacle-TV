@@ -27,9 +27,9 @@ function profile(id: string, patch: Partial<PickerProfile> = {}): PickerProfile 
   return { id, name: id, color: "teal", imageTag: null, hasPin: false, guest: false, own: false, lockedLabel: null, ...patch };
 }
 
-function view(model: WhoIsWatchingModel): string {
+function view(model: WhoIsWatchingModel, onCancel?: () => void): string {
   return renderToStaticMarkup(
-    <WhoIsWatchingView model={model} onPick={noop} onManage={noop} onRetry={noop} onDigit={noop} onErase={noop} onBack={noop} />,
+    <WhoIsWatchingView model={model} onPick={noop} onManage={noop} onRetry={noop} onDigit={noop} onErase={noop} onBack={noop} onCancel={onCancel} />,
   );
 }
 
@@ -126,6 +126,38 @@ describe("« Qui regarde ? » — le retour du pavé", () => {
     expect(back).toContain("absolute");
     expect(back).toContain("z-10");
     expect(html.indexOf("pin.back")).toBeLessThan(html.indexOf("<main"));
+  });
+});
+
+describe("« Qui regarde ? » ouvert par « Changer de profil » — Annuler", () => {
+  const row = { kind: "picker" as const, profiles: FAMILY, canManage: true, notice: null, entering: null };
+
+  it("à l'ouverture de l'application, nulle part où revenir : pas d'« Annuler »", () => {
+    expect(view(row)).not.toContain("switcher.cancel");
+  });
+
+  it("« Annuler » en haut à gauche, au-dessus de la colonne animée, avant la rangée", () => {
+    const html = view(row, noop);
+    const corner = html.match(/<div class="([^"]*)"><button[^>]*>.*?switcher\.cancel/)?.[1] ?? "";
+    expect(corner).toContain("absolute");
+    expect(corner).toContain("z-10");
+    expect(html.indexOf("switcher.cancel")).toBeLessThan(html.indexOf("<main"));
+  });
+
+  it("aussi pendant l'attente et après un échec de lecture", () => {
+    expect(view({ kind: "loading" }, noop)).toContain("switcher.cancel");
+    expect(view({ kind: "error", message: "Le serveur ne répond pas." }, noop)).toContain("switcher.cancel");
+  });
+
+  it("le pavé garde sa flèche « Retour aux profils » : Annuler n'y est pas", () => {
+    const html = view({ kind: "pin", pad: { profile: FAMILY[1]!, typed: 0, phase: "typing", message: null } }, noop);
+    expect(html).toContain("pin.back");
+    expect(html).not.toContain("switcher.cancel");
+  });
+
+  it("pendant l'entrée dans un profil, plus rien ne s'annule : le bouton se tait et s'efface", () => {
+    const html = view({ ...row, entering: { id: "zoe", label: null } }, noop);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*class="[^"]*disabled:opacity-0[^"]*"[^>]*>.*?switcher\.cancel/);
   });
 });
 

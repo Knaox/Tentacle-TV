@@ -1,6 +1,6 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, UserCog } from "lucide-react";
+import { ArrowLeft, UserCog, X } from "lucide-react";
 import { ProfilePinPad } from "./ProfilePinPad";
 import { ProfileRow } from "./ProfileRow";
 import { StayOnDeviceToggle } from "./StayOnDeviceToggle";
@@ -17,6 +17,9 @@ export interface WhoIsWatchingViewProps {
   onBack: () => void;
   /** « Ne plus proposer sur cet appareil » : cocher, décocher. */
   onToggleStay?: () => void;
+  /** Ouvert par « Changer de profil » : « Annuler » (et Échap) referme l'écran sans
+   *  rien changer. Absent à l'ouverture de l'application : il n'y a nulle part où revenir. */
+  onCancel?: () => void;
 }
 
 /** Un bouton secondaire de l'écran. Pas de couleur animée (règle « Coût GPU » 3) :
@@ -30,6 +33,11 @@ const SECONDARY =
  * choisira peut-être pas). Quatre visages, que l'intégration choisit :
  * `loading`, `error`, `picker` (la rangée, « Gérer les profils » dessous),
  * `pin` (le pavé du profil choisi, sa flèche de retour en haut à gauche).
+ *
+ * Ouvert par « Changer de profil » (`onCancel`), l'écran est le même, posé sur
+ * l'application : « Annuler » prend la place de la flèche — même coin, même
+ * bouton — sur tous les visages sauf le pavé, dont la flèche ramène d'abord
+ * aux profils. Échap fait de même : le pavé, puis l'écran.
  *
  * Coût GPU : le fond est FIXE — deux dégradés radiaux peints une fois, comme
  * l'écran de connexion ; seules les tuiles bougent, et seulement au survol, au
@@ -58,6 +66,11 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
             <ArrowLeft size={16} aria-hidden />
             {t("pin.back")}
           </button>
+        </div>
+      )}
+      {model.kind !== "pin" && props.onCancel && (
+        <div className="absolute left-4 top-4 z-10 sm:left-6 sm:top-6">
+          <CancelButton onCancel={props.onCancel} disabled={model.kind === "picker" && model.entering !== null} />
         </div>
       )}
       <main key={model.kind} className="flex flex-1 flex-col items-center justify-center px-6 py-16 animate-fade-slide-up">
@@ -107,6 +120,35 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
 });
 
 function noop(): void {}
+
+/**
+ * « Annuler » : refermer l'écran sans rien changer — au clic comme à Échap.
+ * Pendant l'entrée dans un profil, plus rien ne s'annule (la bascule est partie).
+ */
+function CancelButton({ onCancel, disabled }: { onCancel: () => void; disabled: boolean }) {
+  const { t } = useTranslation("profilePicker");
+  useEffect(() => {
+    if (disabled) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [disabled, onCancel]);
+  return (
+    <button
+      type="button"
+      onClick={onCancel}
+      disabled={disabled}
+      className={`${SECONDARY} transition-opacity duration-200 disabled:pointer-events-none disabled:opacity-0`}
+    >
+      <X size={16} aria-hidden />
+      {t("switcher.cancel")}
+    </button>
+  );
+}
 
 function Status({ text, busy }: { text: string; busy?: boolean }) {
   return (
