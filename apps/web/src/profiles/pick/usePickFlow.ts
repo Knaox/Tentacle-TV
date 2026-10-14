@@ -21,10 +21,10 @@ import { beginProfileSwitch, cancelProfileSwitch } from "../../auth/profileEnded
 import { pickProfile } from "../api/pickerGateway";
 
 /**
- * Choisir un profil de la famille — sur « Qui regarde ? » comme dans le menu
- * de l'avatar : le pavé du code PIN si le profil en a un (ou s'il est bloqué),
- * l'ouverture par le serveur, et ce qu'on dit d'un refus. Rien n'est comparé
- * ici : le quatrième chiffre part au serveur (règle du pavé : shared
+ * Choisir un profil de la famille sur « Qui regarde ? », à l'ouverture comme
+ * depuis « Changer de profil » : le pavé du code PIN si le profil en a un (ou
+ * s'il est bloqué), l'ouverture par le serveur, et ce qu'on dit d'un refus.
+ * Rien n'est comparé ici : le quatrième chiffre part au serveur (règle du pavé : shared
  * `familyPinEntry.ts` ; lecture des refus : `familyProfileRefusal.ts`).
  */
 

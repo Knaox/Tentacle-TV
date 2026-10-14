@@ -9,8 +9,8 @@ import { markArrival } from "./arrival";
 import type { CurtainProfile } from "./ProfileCurtain";
 
 /**
- * Ce qui suit la réponse du serveur quand on CHOISIT un profil — à
- * l'ouverture comme dans le menu de l'avatar :
+ * Ce qui suit la réponse du serveur quand on CHOISIT un profil sur « Qui
+ * regarde ? » — à l'ouverture comme depuis « Changer de profil » :
  *
  * - son propre profil, depuis la session personnelle : on continue, sans
  *   rechargement (`stay`) ;

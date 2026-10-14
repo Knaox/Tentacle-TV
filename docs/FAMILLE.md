@@ -209,7 +209,7 @@ PIN »).
    `unlockTvManage` (SON PIN s'il en a un), puis les routes `ownerTv` ou
    `memberTv` avec le jeton de session, selon `rights`.
 
-## Le bureau : « Qui regarde ? » et le changement rapide (serveur 1.29.0)
+## Le bureau : « Qui regarde ? » et « Changer de profil » (serveur 1.29.0)
 
 Décisions du 14/10 (lot de nuit, à valider par Damien). Contrat :
 `familyPickerContract.ts` ; routes `picker*` de `FAMILY_ROUTES` ; capacité
@@ -340,9 +340,30 @@ de « Qui regarde ? » (`family.guest_account`).
   (`tentacle_profile_launch_stay`, par serveur et par compte). Le profil retenu
   s'ouvre seul, sans son code (donné au choix) ; bloqué, « Qui regarde ? » case
   cochée ; parti ou code posé/retiré, oublié ; jamais un AUTRE profil que celui
-  en cours sur l'appareil (`pickerLaunch` garde sa règle). Le menu de l'avatar
-  l'oublie (comme « Changer de profil » sur la TV), une fin de profil et une
-  déconnexion aussi ; Réglages › Famille le dit, avec « Proposer à nouveau ».
+  en cours sur l'appareil (`pickerLaunch` garde sa règle). Depuis « Changer de
+  profil », la case arrive DÉCOCHÉE et un changement de profil l'oublie, sauf
+  case recochée (comme « Changer de profil » sur la TV) ; une fin de profil et
+  une déconnexion l'oublient aussi ; Réglages › Famille le dit, avec « Proposer
+  à nouveau ».
+- **« Changer de profil »** (décision du 14/10 : pas d'accès rapide, la liste
+  des profils a quitté le menu) : UNE entrée en tête du menu de l'avatar — et
+  de sa feuille en fenêtre étroite —, suivie de « Gérer les profils » en
+  session personnelle (`profiles/switcher/useProfileMenuItems.tsx`). Là dès
+  deux profils, préférence « au lancement » activée ou non, depuis la session
+  personnelle comme depuis celle d'un autre profil (pour revenir au sien,
+  derrière son code) ; absente hors ligne. Elle ouvre le MÊME « Qui
+  regarde ? » qu'à l'ouverture (`ProfileLaunchScreen`, mode `switching` ;
+  règles : `switchPlan.ts`), posé SUR l'application
+  (`WhoIsWatchingHost`, monté par `AppLayout`) : rien n'est démonté dessous
+  (PiP, Watch Together, défilement), la coquille n'est plus peinte tant
+  qu'il la couvre. « Annuler » (en haut à gauche, la place de la flèche du
+  pavé) et Échap la rendent telle quelle, le focus revenu à l'avatar ; le
+  focus arrive sur le profil en cours, et ce profil-là choisi referme
+  l'écran sans code ni serveur ; « Gérer les profils » y mène tout droit à la
+  Famille depuis la session personnelle (son code d'abord sinon). Une
+  bascule quitte Watch Together, ferme le PiP et recharge, comme à
+  l'ouverture. À l'ouverture de l'application, ni « Annuler » ni Échap :
+  il n'y a nulle part où revenir.
 - **La fin d'un profil** (`auth/profileEnded.ts`, `ProfileSessionBinding`,
   garde de session, `session:revoked`) : retour à la session personnelle, puis
   « Qui regarde ? » EXIGÉ au rechargement (la raison en stockage de session) —
@@ -354,7 +375,8 @@ de « Qui regarde ? » (`family.guest_account`).
   Watch Together et l'Aide.
 - **Réglage coupé** : l'application rouvre le dernier profil de l'ordinateur
   (`pickerLaunch` › `resume`), le compte par défaut. Aucun raccourci clavier
-  global : le menu de l'avatar se parcourt aux flèches.
+  global : le menu de l'avatar se parcourt aux flèches, « Changer de profil »
+  en tête.
 - La TV LG ne compile rien de tout cela : sa porte est substituée et
   `apps/web/src/profiles/` sort de sa feuille.
 
@@ -541,9 +563,9 @@ Le PIN de chacun protège aussi SA gestion des profils sur les TV.
 - **Administration** : les interrupteurs vivent dans Admin › Utilisateurs (un
   réglage, pas une alerte) ; les sessions en cours étiquettent l'invité
   (`FamilyGuestTag`).
-- **« Qui regarde ? » et le changement rapide de profil** : le bureau
-  seulement, face à un serveur qui déclare `family.desktopProfiles` — voir
-  « Le bureau ».
+- **« Qui regarde ? » et « Changer de profil »** : le bureau seulement,
+  face à un serveur qui déclare `family.desktopProfiles` — voir « Le
+  bureau ».
 - Éprouvé en HTTP sur une IP du réseau : rien n'y dépend de `crypto.subtle`,
   `crypto.randomUUID` ni du presse-papiers ; le cookie de session part sans
   `Secure` sur HTTP.
@@ -694,7 +716,7 @@ une invitation n'y paraît que par le début de son identifiant.
   de minServer imposé.
 - Le bureau : capacité `family.desktopProfiles` (`capabilities`, 1.29.0) ;
   absente, le bureau garde sa seule session personnelle, sans « Qui
-  regarde ? » ni changement de profil.
+  regarde ? » ni « Changer de profil ».
 - Une TV d'avant les profils garde son jumelage ; les clients publiés ne
   voient aucun changement (champs ajoutés, jamais retirés).
 

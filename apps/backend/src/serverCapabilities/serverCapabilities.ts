@@ -78,7 +78,7 @@ export const SERVER_CAPABILITIES = {
    *  (un titre de la bibliothèque, ou un titre TMDB) rend une bande-annonce choisie,
    *  VÉRIFIÉE et relayée par ce serveur — ou un refus, et rien ne s'anime. */
   "trailers.preview": "1.29.0",
-  /** « Qui regarde ? » sur le BUREAU et le changement rapide de profil : les routes
+  /** « Qui regarde ? » sur le BUREAU et « Changer de profil » : les routes
    *  `/api/family/picker/*` (profils de la famille, session de profil d'un appareil
    *  ouverte par la session personnelle, préférence « au lancement » par plateforme). */
   "family.desktopProfiles": "1.29.0",
