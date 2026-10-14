@@ -4,7 +4,9 @@ import { useTranslation } from "react-i18next";
 import { useItemTrailer } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FilmIcon } from "../media/MediaDetailIcons";
-import { TrailerModal } from "./TrailerModal";
+import { parseYouTubeId } from "@tentacle-tv/shared";
+import { TrailerViewer, useFullTrailerPlayer } from "./TrailerViewer";
+import { useTrailerIntent } from "../trailerPlayer";
 import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
 
@@ -13,7 +15,9 @@ import { openExternal } from "../../lib/openExternal";
  *
  * Même règle sur toutes les plateformes (`useItemTrailer`) — local d'abord :
  *  - trailer local présent → lecture directe dans le player Tentacle (/watch/{id}) ;
- *  - sinon trailer distant (YouTube) → modale d'embed.
+ *  - sinon trailer distant (YouTube) → le lecteur complet, sans publicité
+ *    (`TrailerViewer` ; la modale d'embed face à un serveur d'avant). Le
+ *    survol du bouton fait préparer la vidéo (`useTrailerIntent`).
  * Masqué si aucun trailer (local ni distant) : pas de bouton mort. Posé dès que
  * la fiche ANNONCE une bande-annonce locale (`LocalTrailerCount`), sans attendre
  * sa liste : la rangée d'actions ne bouge pas une fraction de seconde après.
@@ -23,6 +27,9 @@ export function TrailerButton({ item }: { item: MediaItem }) {
   const navigate = useNavigate();
   const { target, visible, remote } = useItemTrailer(item, i18n.language);
   const [modalOpen, setModalOpen] = useState(false);
+  const full = useFullTrailerPlayer();
+  const remoteId = full && target?.kind === "remote" ? parseYouTubeId(target.trailer.Url) : null;
+  const intent = useTrailerIntent(remoteId ? { kind: "youtube", ytId: remoteId } : null);
 
   if (!visible) return null;
 
@@ -49,6 +56,7 @@ export function TrailerButton({ item }: { item: MediaItem }) {
       <button
         type="button"
         onClick={handleClick}
+        {...intent}
         aria-label={t("common:watchTrailer")}
         // Posé sur la scène : `on-media`, sans flou (le voile dessous est déjà
         // sombre, un `backdrop-filter` n'y changerait rien de visible).
@@ -57,7 +65,7 @@ export function TrailerButton({ item }: { item: MediaItem }) {
         <FilmIcon /> {t("common:trailer")}
       </button>
       {remote.length > 0 && (
-        <TrailerModal open={modalOpen} onClose={() => setModalOpen(false)} trailers={remote} />
+        <TrailerViewer open={modalOpen} onClose={() => setModalOpen(false)} trailers={remote} />
       )}
     </>
   );

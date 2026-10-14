@@ -165,6 +165,10 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // Sa mini-carte, que les cartes du web n'atteignent que par cet index : le
   // dossier entier sort du bundle et de la feuille (`EXCLUDED_WEB_DIRECTORIES`).
   [resolve(WEB, "components/cards/preview/index.ts")]: resolve(CLIENT, "shims/cardPreview.ts"),
+  // Le lecteur complet des bandes-annonces : hls.js (faux sur la dalle) et LG en
+  // pause. Sa seule porte est inerte, son dossier est exclu ; le bouton garde
+  // la modale du lecteur officiel.
+  [resolve(WEB, "components/trailerPlayer/index.ts")]: resolve(CLIENT, "shims/trailerPlayer.ts"),
 
   // Les deux calques d'élévation de `.media-tile` sont pilotés par l'ATTRIBUT
   // `data-hovered`, hors de portée de toute passe CSS, et le lift est un

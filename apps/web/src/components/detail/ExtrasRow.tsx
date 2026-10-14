@@ -6,7 +6,7 @@ import { buildExtraEntries, type ExtraEntry } from "@tentacle-tv/shared";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
 import { RowHeader } from "../rows/RowHeader";
-import { TrailerModal } from "./TrailerModal";
+import { TrailerViewer } from "./TrailerViewer";
 import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
 import { sortTrailersByLang, type RichTrailer } from "./trailerLang";
@@ -27,7 +27,7 @@ interface ExtrasRowProps {
 
 /**
  * Rangée « Extras » : bandes-annonces LOCALES et bonus (lus dans le lecteur via
- * /watch), puis trailers DISTANTS (modale YouTube) — l'ordre et les libellés du
+ * /watch), puis trailers DISTANTS (lecteur complet, sinon modale YouTube) — l'ordre et les libellés du
  * modèle partagé (`buildExtraEntries`). Masquée si rien à montrer.
  */
 export function ExtrasRow({ owner, remoteTrailers, title }: ExtrasRowProps) {
@@ -80,7 +80,7 @@ export function ExtrasRow({ owner, remoteTrailers, title }: ExtrasRowProps) {
         ))}
       </HorizontalScrollRow>
       {remote.length > 0 && (
-        <TrailerModal
+        <TrailerViewer
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           trailers={remote}

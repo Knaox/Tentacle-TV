@@ -8,7 +8,7 @@ import { HERO_INFO_CLASS, HERO_PLAY_CLASS, HERO_PLAY_STYLE } from "../../hero/He
 import { InfoIcon, PlayIcon } from "../../icons/HeroIcons";
 import { FilmIcon } from "../../media/MediaDetailIcons";
 import { CardQuickActions } from "../../cards/CardQuickActions";
-import { TrailerModal } from "../../detail/TrailerModal";
+import { TrailerViewer } from "../../detail/TrailerViewer";
 import { shouldOpenYouTubeExternally } from "../../detail/youtube";
 import { PressableScale } from "../../ui/PressableScale";
 import { openExternal } from "../../../lib/openExternal";
@@ -79,7 +79,7 @@ export function SpotlightActions({ item, media, onOpenDetail, onDismiss }: Spotl
   );
 }
 
-/** La bande-annonce : locale d'abord (le lecteur), sinon YouTube (modale) — rien sans bande-annonce. */
+/** La bande-annonce : locale d'abord (le lecteur), sinon YouTube (lecteur complet, sinon modale) — rien sans bande-annonce. */
 function SpotlightTrailer({ media }: { media: MediaItem }) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
@@ -100,7 +100,7 @@ function SpotlightTrailer({ media }: { media: MediaItem }) {
         <FilmIcon />
         {t("trailer")}
       </PressableScale>
-      {remote.length > 0 && <TrailerModal open={open} onClose={() => setOpen(false)} trailers={remote} />}
+      {remote.length > 0 && <TrailerViewer open={open} onClose={() => setOpen(false)} trailers={remote} />}
     </>
   );
 }

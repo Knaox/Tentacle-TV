@@ -27,6 +27,8 @@ export const EXCLUDED_WEB_DIRECTORIES: readonly string[] = [
   resolve(WEB, "trailerPreview"),
   // La mini-carte d'aperçu de bande-annonce : sa seule porte, son `index.ts`, est inerte.
   resolve(WEB, "components/cards/preview"),
+  // Le lecteur complet des bandes-annonces : sa seule porte, son `index.ts`, est inerte.
+  resolve(WEB, "components/trailerPlayer"),
   // Les profils de la Famille du BUREAU (« Qui regarde ? », « Changer de
   // profil », le réglage) : la porte d'`App.tsx` est substituée
   // (`substitutionTableSession.ts`), les autres vivent dans des écrans que la
