@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { i18n, initI18n } from "@tentacle-tv/shared";
+import { i18n, initI18n, isServerCapability, resolveServerCapabilities } from "@tentacle-tv/shared";
 import { isNewerVersion } from "../../lib/updateCheckers";
+import { forServer, selectWhatsNewFeatures } from "../selectFeatures";
 import { WHATS_NEW_RELEASES } from "./index";
 
 // La source unique des versions, lue telle quelle : le garde-fou porte sur le
@@ -43,5 +44,23 @@ describe("registre de l'écran de nouveautés", () => {
         }
       }
     }
+  });
+
+  it("une capacité exigée est une clé connue du contrat", () => {
+    for (const release of WHATS_NEW_RELEASES) {
+      for (const feature of release.features) {
+        if (feature.capability !== undefined) expect(isServerCapability(feature.capability), feature.id).toBe(true);
+      }
+    }
+  });
+
+  it("1.29.0 : l'aperçu et les profils exigent leur capacité — face à un serveur qui ne déclare rien, rien à montrer", () => {
+    const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.29.0");
+    expect(release?.features.map((f) => f.capability)).toEqual(["trailers.preview", "family.desktopProfiles"]);
+    const mute = resolveServerCapabilities({ version: "1.23.0" });
+    expect(selectWhatsNewFeatures("1.29.0", "1.28.2", forServer(WHATS_NEW_RELEASES, mute)).features).toEqual([]);
+    const capable = resolveServerCapabilities({ capabilities: ["trailers.preview", "family.desktopProfiles"] });
+    const shown = selectWhatsNewFeatures("1.29.0", "1.28.2", forServer(WHATS_NEW_RELEASES, capable)).features;
+    expect(shown.map((f) => f.id)).toEqual(["trailerPreview", "profiles"]);
   });
 });

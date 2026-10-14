@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Bookmark, ChevronDown, Film, House, LayoutGrid, Sparkles, Tv, type LucideIcon } from "lucide-react";
 import { TentacleLogo } from "../../../components/ui/TentacleLogo";
@@ -67,7 +68,16 @@ function FauxTab({ icon: Icon, label, active, open = false, more = false }: {
   );
 }
 
-export function FauxNavBar({ active, pinned, moreOpen }: { active: FauxTabKey; pinned: boolean; moreOpen: boolean }) {
+/** Le rond du compte, en haut à droite de la capsule (px du canevas) — l'ancre du menu de l'avatar. */
+export const AVATAR_SLOT = { x: CAPSULE.x + CAPSULE.w - 10 - 26, y: CAPSULE.y + 10, size: 26 } as const;
+
+export function FauxNavBar({ active, pinned, moreOpen, avatar }: {
+  active: FauxTabKey;
+  pinned: boolean;
+  moreOpen: boolean;
+  /** Le rond du compte : celui d'un profil (`FamilyAvatar`), sinon le dégradé de la marque. */
+  avatar?: ReactNode;
+}) {
   const { t } = useTranslation();
   const labels: Record<FauxTabKey, string> = {
     home: t("nav:home"),
@@ -107,7 +117,11 @@ export function FauxNavBar({ active, pinned, moreOpen }: { active: FauxTabKey; p
           <path d="M20 20l-4.2-4.2" strokeLinecap="round" />
         </svg>
       </span>
-      <span className="absolute right-[10px] top-[10px] h-[26px] w-[26px] rounded-full ring-1 ring-line-subtle" style={{ background: CARD_TONES[0] }} />
+      {avatar ? (
+        <span className="absolute right-[10px] top-[10px] flex h-[26px] w-[26px] overflow-hidden rounded-full ring-1 ring-line-subtle">{avatar}</span>
+      ) : (
+        <span className="absolute right-[10px] top-[10px] h-[26px] w-[26px] rounded-full ring-1 ring-line-subtle" style={{ background: CARD_TONES[0] }} />
+      )}
     </Place>
   );
 }

@@ -48,6 +48,12 @@ export default {
   sceneFamilyMember: "Ana",
   sceneFamilyGuest: "Léa",
 
+  // 1.29.0
+  v1_29_0_trailerPreview_title: "La bande-annonce, au survol",
+  v1_29_0_trailerPreview_body: "Laissez le pointeur sur une affiche : sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Lire, Ma liste, favori et vu restent à portée, un clic coupe le son, et Réglages › Apparence › « Aperçus au survol » les éteint.",
+  v1_29_0_profiles_title: "« Qui regarde ? » sur l'ordinateur",
+  v1_29_0_profiles_body: "Chacun ouvre son profil, derrière son code PIN s'il en a un, et « Changer de profil », dans le menu de votre avatar, ramène aux profils à tout moment. Pour que l'app s'ouvre sur cet écran, activez « Demander qui regarde à l'ouverture » dans Réglages › Famille.",
+
   // 1.28.0
   v1_28_0_pip_title: "La lecture en incrustation",
   v1_28_0_pip_body: "Le bouton à côté du plein écran, ou la touche I, réduit la vidéo dans un coin : vous continuez à parcourir Tentacle. Survolez-la pour la piloter, tirez un coin ou tournez la molette pour la redimensionner, détachez-la pour la garder au-dessus de tout. Sur macOS (puces Apple), Windows et Linux (KDE).",

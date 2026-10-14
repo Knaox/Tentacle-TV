@@ -44,6 +44,12 @@ export default {
   sceneFamilyMember: "Ana",
   sceneFamilyGuest: "Lea",
 
+  // 1.29.0
+  v1_29_0_trailerPreview_title: "Trailers on hover",
+  v1_29_0_trailerPreview_body: "Rest the pointer on a poster: its trailer starts in a mini card, with sound, and the cards next to it make room. Play, My List, favorite and watched stay at hand, one click mutes it, and Settings › Appearance › “Previews on hover” turns previews off.",
+  v1_29_0_profiles_title: "“Who's watching?” on your computer",
+  v1_29_0_profiles_body: "Everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, in your avatar menu, brings you back to the profiles at any time. To have the app open on this screen, turn on “Ask who's watching at startup” in Settings › Family.",
+
   // 1.28.0
   v1_28_0_pip_title: "Picture-in-picture",
   v1_28_0_pip_body: "The button next to fullscreen, or the I key, shrinks the video into a corner while you keep browsing Tentacle. Hover it to control playback, pull a corner or turn the mouse wheel to resize it, and undock it to keep it on top of everything. On macOS (Apple silicon), Windows and Linux (KDE).",
