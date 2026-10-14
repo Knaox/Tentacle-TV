@@ -10,7 +10,8 @@ import type { HoldSource } from "./cardHold";
  * - Une affiche : la fiche — celle de l'item d'une recommandation, d'un volet
  *   de saga présent, d'un titre similaire ou de la collection.
  * - Un titre HORS de la bibliothèque (rangée « À demander », volet de saga
- *   absent qui se demande) ou une série à compléter : la demande (Vigie).
+ *   absent qui se demande, recommandation absente) ou une série à compléter :
+ *   la demande (Vigie).
  * - Un volet de saga absent qu'on ne peut pas demander : l'avis « pas dans
  *   la bibliothèque » — rien ne s'ouvre.
  *
@@ -32,8 +33,10 @@ const PLAY_ROWS: ReadonlySet<string> = new Set(["resume", "nextUp", "watched"]);
 export function cardPressOf(source: PressSource): CardPress {
   switch (source.surface) {
     case "homeRow":
+      if (source.absent) return "request";
       return PLAY_ROWS.has(source.row) ? "play" : "detail";
     case "forYou":
+      return source.absent ? "request" : "detail";
     case "grid":
       return "detail";
     case "search":

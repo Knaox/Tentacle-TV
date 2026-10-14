@@ -15,6 +15,7 @@ import {
   recoPageExplorationFirst,
   recoPageFiltered,
   recoShelvesOf,
+  recoShelvesWithAbsentOf,
   type RecoPageModel,
 } from "../data/forYouModels";
 import { navOf } from "../data/screenModels";
@@ -28,7 +29,7 @@ import type { BenchScene } from "./types";
  * « exploration » en tête — sont des copies de cette page, dites « exemple ».
  */
 
-type Variant = "default" | "filter" | "discovery" | "disabled" | "cold" | "preparing" | "empty" | "loading" | "error";
+type Variant = "default" | "absent" | "filter" | "discovery" | "disabled" | "cold" | "preparing" | "empty" | "loading" | "error";
 
 /** Netflix et Disney+ : deux familles bien présentes dans la page réelle. */
 const EXAMPLE_FILTER = [8, 337];
@@ -67,7 +68,8 @@ function modelOf(data: BenchData, variant: Variant, lang: string): Omit<ForYouVi
   }
   const page = pageOf(data, variant);
   const heroItem = tvRecoHero(page ?? undefined);
-  const shelves = tvRecoShelves(page ?? undefined, { hero: heroItem });
+  const external = variant === "absent";
+  const shelves = tvRecoShelves(page ?? undefined, { hero: heroItem, external });
   const notice = tvRecoNotice(page ?? undefined, shelves);
   const hero = heroItem ? recoHeroOf(data, heroItem) : null;
   if (notice === "preparing") {
@@ -79,7 +81,7 @@ function modelOf(data: BenchData, variant: Variant, lang: string): Omit<ForYouVi
   return {
     ...base,
     hero,
-    shelves: recoShelvesOf(data, shelves),
+    shelves: external ? recoShelvesWithAbsentOf(data, shelves) : recoShelvesOf(data, shelves),
     notice: notice === "disabled" ? { kind: "disabled", text: t("reco:tvDisabledHint") } : notice === "cold" ? { kind: "cold", text: t("reco:tvColdHint") } : null,
     filter: variant === "filter" ? recoFilterOf(EXAMPLE_FILTER) : null,
   };
@@ -121,6 +123,7 @@ const scene = (id: string, label: string, variant: Variant, focusKeys: string[] 
 
 export const FOR_YOU_SCENES: BenchScene[] = [
   scene("defaut", "Héros et étagères (page réelle)", "default", ["hero:primary", "hero:list", "forYou:0", "forYou:3", "inLibrary:1"]),
+  scene("a-demander", "Titres hors bibliothèque, à demander (garde Vigie ouverte)", "absent", ["forYou:0", "forYou:1", "forYou:2"]),
   scene("filtre", "Filtre de plateformes (exemple)", "filter", ["filter:remove", "forYou:0"]),
   scene("decouverte", "Découverte en tête (exemple)", "discovery", ["exploration:0", "exploration:2"]),
   scene("desactive", "Recommandations désactivées (exemple)", "disabled", ["hero:primary", "trending:0"]),

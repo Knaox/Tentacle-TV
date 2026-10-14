@@ -16,11 +16,14 @@ import {
   type RecoRowItem,
 } from "@tentacle-tv/api-client";
 import { missingSeriesRatingIds, type MediaItem } from "@tentacle-tv/shared";
-import { cardPressOf, holdPanelOf, type CardPress, type HoldPanel, type HomeRowKind as RowKind } from "@tentacle-tv/tv-core";
+import { cardPressOf, holdPanelOf, tvRecoServedCards, type CardPress, type HoldPanel, type HomeRowKind as RowKind } from "@tentacle-tv/tv-core";
 import type { HomeRowModel } from "../../redesign/screens/home/HomeView";
 import { useTVHomeRows } from "../../components/home/useTVHomeRows";
 import { useCardLists } from "../cards/cardModels";
 import { episodeRowSubtitle, itemSubtitle, latestCardLines, latestSubtitle, resumeSubtitle, yearOf } from "./homeSubtitles";
+import type { AbsentTitle } from "../vigie/absentTitle";
+import { useRecoAbsent } from "../vigie/useRecoAbsent";
+import type { VigieGate } from "../vigie/useVigieGate";
 import { useHomeRecoSource } from "./useHomeRecoSource";
 
 /**
@@ -37,21 +40,31 @@ import { useHomeRecoSource } from "./useHomeRecoSource";
  * Chaque carte garde l'item qu'elle montre (`targetOf`) : l'appui, l'appui
  * long et la lumière du fond en partent. Ce que font OK et l'appui maintenu
  * est la règle de tv-core (`cards/cardPress`, `cards/cardHold`), selon la
- * rangée.
+ * rangée. Garde Vigie ouverte, une rangée reco garde ses titres HORS
+ * bibliothèque, grisés, à leur place (`useRecoAbsent`) : OK les demande.
  */
 
-export interface HomeCardTarget {
-  item: MediaItem;
+interface HomeCardGestures {
   /** La recommandation derrière la carte (rangées `reco:`). */
   reco?: RecoRowItem;
-  /** Ce que fait OK : lire (vignettes 16:9), sinon la fiche (d'une reco : celle de son item). */
+  /** Ce que fait OK : lire (vignettes 16:9), la fiche (d'une reco : celle de son item), ou la demande d'un absent. */
   press: CardPress;
   /** Le panneau qu'ouvre l'appui maintenu ; `null` : pas d'appui maintenu. */
   panel: HoldPanel | null;
 }
 
+/** Un item de la bibliothèque, ou un titre recommandé à demander. */
+export type HomeCardTarget =
+  | (HomeCardGestures & { item: MediaItem; absent?: undefined })
+  | (HomeCardGestures & { item?: undefined; absent: AbsentTitle; reco: RecoRowItem });
+
 /** OK et l'appui maintenu sur une carte de cette rangée. */
 const gesturesOf = (row: RowKind) => ({ press: cardPressOf({ surface: "homeRow", row }), panel: holdPanelOf({ surface: "homeRow", row }) });
+/** Un titre recommandé HORS bibliothèque : OK le demande, l'appui maintenu ouvre son panneau. */
+const absentGestures = {
+  press: cardPressOf({ surface: "homeRow", row: "reco", absent: true }),
+  panel: holdPanelOf({ surface: "homeRow", row: "reco", absent: true }),
+};
 
 export interface HomeRowsModel {
   rows: HomeRowModel[];
@@ -60,7 +73,7 @@ export interface HomeRowsModel {
   resume: MediaItem[] | undefined;
 }
 
-export function useHomeRowModels(): HomeRowsModel {
+export function useHomeRowModels(gate: VigieGate | null): HomeRowsModel {
   const { t } = useTranslation();
   const client = useJellyfinClient();
   const userId = useUserId();
@@ -91,7 +104,9 @@ export function useHomeRowModels(): HomeRowsModel {
   const latestData = latest.map((query) => query.data as MediaItem[] | undefined);
   const latestStamp = latest.map((query) => query.dataUpdatedAt).join("|");
 
-  const recoRows = useHomeRecoSource(layout);
+  const recoRows = useHomeRecoSource(layout, gate !== null);
+  const absentRecos = useMemo(() => recoRows.flatMap((row) => row.recos.filter((reco) => reco.jellyfinItemId === null)), [recoRows]);
+  const absent = useRecoAbsent(gate, absentRecos);
 
   // Les notes que les tuiles de lot (« +3 épisodes ») n'ont pas, en une requête.
   const missing = useMemo(
@@ -104,7 +119,7 @@ export function useHomeRowModels(): HomeRowsModel {
 
   return useMemo(() => {
     const targets = new Map<string, Map<string, HomeCardTarget>>();
-    const register = (rowKey: string, items: readonly MediaItem[], target: Omit<HomeCardTarget, "item">) =>
+    const register = (rowKey: string, items: readonly MediaItem[], target: HomeCardGestures) =>
       targets.set(rowKey, new Map(items.map((item) => [item.Id, { ...target, item }])));
     const rows: HomeRowModel[] = [];
 
@@ -143,15 +158,27 @@ export function useHomeRowModels(): HomeRowsModel {
         const title = recoRowTitle(source.row);
         const byItem = new Map(source.entries.map((entry) => [entry.item.Id, entry.reco]));
         const items = source.entries.map((entry) => entry.item);
-        const cards = lists(key, items, { variant: "poster", subtitle: yearOf }, (item, card) =>
+        const libraryCards = lists(key, items, { variant: "poster", subtitle: yearOf }, (item, card) =>
           byItem.get(item.Id)?.exploration ? { ...card, badge: t("reco:explorationBadge") } : card,
         );
+        const rowTargets = new Map<string, HomeCardTarget>(
+          source.entries.map((entry) => [entry.item.Id, { item: entry.item, reco: entry.reco, ...gesturesOf("reco") }]),
+        );
+        // L'ordre servi : les cartes de la bibliothèque et les titres à demander, mêlés à leur place.
+        const libraryById = new Map(libraryCards.map((card) => [card.id, card]));
+        const cards = tvRecoServedCards(source.recos, (id) => libraryById.get(id), (reco) => {
+          const card = absent?.cardOf(reco);
+          const wanted = card ? absent?.titleOf(card.id) : undefined;
+          if (!card || !wanted) return undefined;
+          rowTargets.set(card.id, { item: undefined, absent: wanted, reco, ...absentGestures });
+          return card;
+        });
         rows.push({ key, title: t(`reco:${title.key}`, title.params), variant: "poster", cards });
-        targets.set(key, new Map(source.entries.map((entry) => [entry.item.Id, { item: entry.item, reco: entry.reco, ...gesturesOf("reco") }])));
+        targets.set(key, rowTargets);
       }
     }
     const targetOf = (rowKey: string, cardId: string) => targets.get(rowKey)?.get(cardId);
     return { rows: rows.filter((row) => row.cards.length > 0), targetOf, resume };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `latestStamp` résume `latestData`
-  }, [layout, resume, nextUp, watched, watchlist, favorites, libraryRows, latestStamp, recoRows, lists, t]);
+  }, [layout, resume, nextUp, watched, watchlist, favorites, libraryRows, latestStamp, recoRows, absent, lists, t]);
 }

@@ -12,6 +12,11 @@ describe("cardPressOf — ce que fait OK sur une carte", () => {
     expect(cardPressOf({ surface: "grid" })).toBe("detail");
   });
 
+  it("une recommandation HORS bibliothèque se demande, à l'accueil comme dans « Pour vous »", () => {
+    expect(cardPressOf({ surface: "forYou", absent: true })).toBe("request");
+    expect(cardPressOf({ surface: "homeRow", row: "reco", absent: true })).toBe("request");
+  });
+
   it("la recherche : l'épisode se lit, le titre ouvre sa fiche, l'absent et la série à compléter se demandent", () => {
     expect(cardPressOf({ surface: "search", card: "episode" })).toBe("play");
     expect(cardPressOf({ surface: "search", card: "title" })).toBe("detail");

@@ -4,8 +4,9 @@ import type { CardOverlayVariant, MediaItem } from "@tentacle-tv/shared";
 /**
  * Ce que vise l'appui long : une carte Jellyfin — affiche 2:3 ou vignette
  * 16:9, la variante du modèle partagé (`cardOverlay.ts`) —, ou une
- * recommandation. Le téléviseur ne montre que les recommandations EN
- * bibliothèque, mais la feuille ne le suppose pas.
+ * recommandation de la bibliothèque. Une recommandation ABSENTE ouvre le
+ * panneau d'un titre absent (`redesignWiring/vigie/`), jamais celui-ci —
+ * mais la feuille ne le suppose pas.
  */
 export type CardSheetTarget =
   | { kind: "media"; item: MediaItem; variant: "poster" | "landscape" }
