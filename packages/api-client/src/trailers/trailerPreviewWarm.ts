@@ -7,7 +7,9 @@ import {
   type TrailerPreviewWarmSubject,
 } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "../hooks/usePreferences";
-import { trailerPreviewQueryKey, trailerPreviewResultTtl, type TrailerPreviewStreamResult } from "./trailerPreviewStream";
+import {
+  isTransientPreviewRefusal, trailerPreviewQueryKey, trailerPreviewResultTtl, type TrailerPreviewStreamResult,
+} from "./trailerPreviewStream";
 
 /**
  * La PRÉPARATION des aperçus (`POST /api/trailers/preview/warm`, capacité
@@ -49,6 +51,19 @@ export function trailerPreviewCached(queryClient: QueryClient, subject: TrailerP
   const state = queryClient.getQueryState<TrailerPreviewStreamResult>(trailerPreviewQueryKey(subject, lang));
   if (state?.data?.status !== "found") return false;
   return state.dataUpdatedAt + trailerPreviewResultTtl(state.data, state.dataUpdatedAt) - now > STILL_GOOD_MS;
+}
+
+/**
+ * Rien à préparer pour ce sujet : son aperçu est en cache et vaut encore un
+ * moment, ou le serveur a déjà dit qu'il n'y en a pas (un refus qui n'est pas
+ * passager, tant qu'il vaut).
+ */
+export function trailerPreviewSettled(queryClient: QueryClient, subject: TrailerPreviewSubject, lang: string, now = Date.now()): boolean {
+  if (trailerPreviewCached(queryClient, subject, lang, now)) return true;
+  const state = queryClient.getQueryState<TrailerPreviewStreamResult>(trailerPreviewQueryKey(subject, lang));
+  const data = state?.data;
+  if (!state || data?.status !== "missing" || isTransientPreviewRefusal(data)) return false;
+  return now < state.dataUpdatedAt + trailerPreviewResultTtl(data, state.dataUpdatedAt);
 }
 
 /** Range les aperçus prêts de la réponse dans le cache des aperçus (sans écraser un aperçu qui vaut encore). */

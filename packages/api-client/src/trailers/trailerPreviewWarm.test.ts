@@ -8,7 +8,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TrailerPreview } from "@tentacle-tv/shared";
 import { trailerPreviewQueryKey } from "./trailerPreviewStream";
-import { fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewCached } from "./trailerPreviewWarm";
+import { fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewCached, trailerPreviewSettled } from "./trailerPreviewWarm";
 
 const ITEM = { kind: "item", itemId: "90d50b74d48412cfc9db9a256b1d0c64" } as const;
 const TMDB = { kind: "tmdb", tmdbId: 603, mediaType: "movie" } as const;
@@ -67,5 +67,16 @@ describe("préparation des aperçus › le cache", () => {
     const later = NOW + 3_600_000 - 2 * 60_000;
     seedTrailerPreviews(client, { ready: [{ subject: { tmdbId: 603, mediaType: "movie" }, preview: { ...preview("/new"), expiresAt: later + 3_600_000 } }], queued: 0 }, "fr", later);
     expect(client.getQueryData<{ preview: TrailerPreview }>(key)?.preview.path).toBe("/new");
+  });
+
+  it("rien à préparer : un aperçu en cache, ou un « pas de bande-annonce » qui vaut encore — jamais un refus passager", () => {
+    const client = new QueryClient();
+    client.setQueryData(trailerPreviewQueryKey(ITEM, "fr"), { status: "missing", reason: "no_trailer" }, { updatedAt: NOW });
+    client.setQueryData(trailerPreviewQueryKey(TMDB, "fr"), { status: "missing", reason: "rate_limited", retryAfterMs: 2_000 }, { updatedAt: NOW });
+    expect(trailerPreviewSettled(client, ITEM, "fr", NOW + 1_000)).toBe(true);
+    expect(trailerPreviewSettled(client, ITEM, "fr", NOW + 2 * 3_600_000)).toBe(false);
+    expect(trailerPreviewSettled(client, TMDB, "fr", NOW + 1_000)).toBe(false);
+    seedTrailerPreviews(client, { ready: [{ subject: { tmdbId: 603, mediaType: "movie" }, preview: preview("/a") }], queued: 0 }, "fr", NOW);
+    expect(trailerPreviewSettled(client, TMDB, "fr", NOW + 1_000)).toBe(true);
   });
 });

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewCached, useServerCapability } from "@tentacle-tv/api-client";
+import { fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewSettled, useServerCapability } from "@tentacle-tv/api-client";
 import { uiLanguage } from "@tentacle-tv/shared";
 import { usePipSession } from "../pictureInPicture/pictureInPictureStore";
 import { useTrailerPreviewBlock } from "./previewEnvironment";
@@ -50,7 +50,7 @@ export function usePreviewWarm(): void {
         if (response) seedTrailerPreviews(queryClient, response, lang);
         return response !== null;
       },
-      isReady: (subject) => trailerPreviewCached(queryClient, subject, lang),
+      isReady: (subject) => trailerPreviewSettled(queryClient, subject, lang),
     });
     const cancelPreload = whenIdle(() => void loadPreviewHls().catch(() => undefined), HLS_PRELOAD_DELAY_MS);
     return () => {

@@ -59,7 +59,7 @@ export {
 } from "../trailers/trailerPreviewStream";
 // Sa préparation : les titres à l'écran (`/api/trailers/preview/warm`, capacité `trailers.previewWarm`).
 export {
-  fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewCached, trailerPreviewWarmSubject,
+  fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewCached, trailerPreviewSettled, trailerPreviewWarmSubject,
 } from "../trailers/trailerPreviewWarm";
 // Le lecteur complet des bandes-annonces (web, bureau) : le flux relayé, sa
 // préparation à l'intention et le compte rendu de la lecture.
