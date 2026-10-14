@@ -58,7 +58,7 @@ export interface TrailerPreviewHandle {
   /** La vidéo doit exister (chargée cachée, puis montrée, puis en fondu de sortie `TRAILER_PREVIEW_TIMING.exitMs`). */
   mount: boolean;
   /**
-   * La mini-carte se montre : rendez-vous passé (800 ms), survol tenu, rien ne
+   * La mini-carte se montre : rendez-vous passé (600 ms), survol tenu, rien ne
    * bloque, et la vidéo prête — OU l'image du titre signalée (`reportStillReady`) :
    * la vidéo la rejoint alors à sa première image (`videoReady`).
    */

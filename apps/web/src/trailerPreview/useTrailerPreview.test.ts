@@ -67,7 +67,7 @@ afterEach(async () => {
 });
 
 describe("useTrailerPreview — quand demander", () => {
-  it("rien avant l'intention ; la demande part au bout de l'intention (250 ms) de survol", async () => {
+  it("rien avant l'intention ; la demande part au bout de l'intention (200 ms) de survol", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs - 50);
     expect(h.enabled.some(Boolean)).toBe(false);
@@ -143,7 +143,7 @@ describe("useTrailerPreview — quand demander", () => {
 });
 
 describe("useTrailerPreview — quand montrer", () => {
-  it("chargée cachée, montrée à la seconde, avec le son qui monte", async () => {
+  it("chargée cachée, montrée au rendez-vous, avec le son qui monte", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs);
     await serve(FOUND);

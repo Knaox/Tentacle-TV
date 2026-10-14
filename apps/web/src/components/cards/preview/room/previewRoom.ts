@@ -32,7 +32,7 @@ const CLEAR_AFTER_MS = PREVIEW_EXIT_MS + 60;
 export const ROOM_CLAIM_MS = 200;
 /**
  * Ce que la pièce attend au plus l'aperçu de la voisine : un aperçu « chaud »
- * se montre à 800 ms ; au-delà (demande froide), retour normal.
+ * se montre à 600 ms ; au-delà (demande froide), retour normal.
  */
 export const ROOM_LINGER_MAX_MS = 1200;
 

@@ -3,7 +3,7 @@
  * serveur décide déjà trop d'aperçus, une rangée balayée vient d'en lancer
  * plusieurs — ou une panne ne coûte pas l'aperçu de la carte où l'on s'arrête :
  * il redemande à l'échéance, deux fois au plus, et la mini-carte ne se montre
- * toujours qu'à la seconde, vidéo prête.
+ * toujours qu'au rendez-vous, vidéo prête.
  */
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

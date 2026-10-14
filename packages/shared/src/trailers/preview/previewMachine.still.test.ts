@@ -41,7 +41,7 @@ const found = (at: number): Step[] => [{ type: "hover", at: 0 }, { type: "wait",
 const flowing = (at: number, afterMs = 100): Step[] => [...found(at), { type: "videoFragment", at: at + afterMs }];
 
 describe("aperçu au survol : révélation sur l'image du titre", () => {
-  it("flux qui coule et image prêts avant le rendez-vous : montrée à 800 ms PILE, la vidéo pas encore là", () => {
+  it("flux qui coule et image prêts avant le rendez-vous : montrée au rendez-vous PILE, la vidéo pas encore là", () => {
     const steps = [...flowing(400), { type: "stillReady", at: 550 } as Step];
     expect(trailerPreviewVisible(run([...steps, { type: "wait", until: T.revealMs - 1 }]))).toBe(false);
     const state = run([...steps, { type: "wait", until: T.revealMs }]);

@@ -1,7 +1,7 @@
 /**
  * La révélation SUR L'IMAGE du titre, par le crochet (horloge factice,
  * requête simulée) : la bande-annonce vérifiée par le serveur et l'image
- * signalée par la mini-carte, la mini-carte se montre à 800 ms pile sans
+ * signalée par la mini-carte, la mini-carte se montre au rendez-vous pile sans
  * attendre la vidéo ; la vidéo la rejoint à sa première image. Sans image :
  * comme avant. La vidéo qui lâche après : sortie.
  */
@@ -46,7 +46,7 @@ afterEach(async () => {
 });
 
 describe("useTrailerPreview — révélation sur l'image du titre", () => {
-  it("flux qui coule et image signalée : montrée à 800 ms pile, la vidéo pas encore prête ; elle la rejoint ensuite", async () => {
+  it("flux qui coule et image signalée : montrée au rendez-vous pile, la vidéo pas encore prête ; elle la rejoint ensuite", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs);
     await serve(FOUND);

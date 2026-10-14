@@ -8,15 +8,15 @@ import type { TrailerPreviewEvent, TrailerPreviewFailure, TrailerPreviewState } 
  * doit arriver plus tard se lit dans `nextTrailerPreviewDeadline`. Le crochet
  * du web n'arme qu'UNE minuterie, sur cette échéance, et rend `tick`.
  *
- *   idle ─survol→ intent ─250 ms→ fetching ─flux→ buffering ─1re image→ ready ─800 ms→ shown
+ *   idle ─survol→ intent ─200 ms→ fetching ─flux→ buffering ─1re image→ ready ─600 ms→ shown
  *                                     │ absent        │ erreur, 8 s       │ erreur      │ fin
  *                                     └→ failed ←─────┴───────────────────┘            └→ ended
  *
  * RÉVÉLATION SUR L'IMAGE : le flux trouvé, le serveur a VÉRIFIÉ que la
  * bande-annonce se lit ; quand son premier fragment vidéo est arrivé ici
  * (`videoFragment` : le flux coule) et que la mini-carte a l'image du titre
- * (`stillReady`), elle se montre au rendez-vous (800 ms) sans attendre la
- * première image — `buffering ─fragment + image du titre, 800 ms→ shown` —
+ * (`stillReady`), elle se montre au rendez-vous (600 ms) sans attendre la
+ * première image — `buffering ─fragment + image du titre, 600 ms→ shown` —
  * et la vidéo la rejoint en fondu (`videoReady`). Un flux bloqué avant son
  * premier fragment ne révèle rien. Si la première image ne vient pas avant
  * `readyBy` (8 s après le flux), c'est un échec : la mini-carte s'efface.

@@ -59,13 +59,13 @@ describe("aperçu au survol : le chemin heureux", () => {
     expect(trailerPreviewWantsStream(state)).toBe(true);
   });
 
-  it("chargée cachée, prête, puis montrée à la seconde — jamais avant", () => {
-    let state = run([{ type: "hover", at: 0 }, { type: "wait", until: 400 }, { type: "streamFound", at: 400 }]);
+  it("chargée cachée, prête, puis montrée au rendez-vous — jamais avant", () => {
+    let state = run([{ type: "hover", at: 0 }, { type: "wait", until: 300 }, { type: "streamFound", at: 300 }]);
     expect(state.phase).toBe("buffering");
     expect(trailerPreviewMounted(state)).toBe(true);
     expect(trailerPreviewVisible(state)).toBe(false);
 
-    state = reduceTrailerPreview(state, { type: "videoReady", at: 600 });
+    state = reduceTrailerPreview(state, { type: "videoReady", at: T.revealMs - 100 });
     expect(state.phase).toBe("ready");
     expect(trailerPreviewVisible(state)).toBe(false);
     expect(nextTrailerPreviewDeadline(state)).toBe(T.revealMs);
@@ -78,7 +78,7 @@ describe("aperçu au survol : le chemin heureux", () => {
     expect(trailerPreviewPlaying(state)).toBe(true);
   });
 
-  it("une première image venue après la seconde se montre aussitôt", () => {
+  it("une première image venue après le rendez-vous se montre aussitôt", () => {
     const state = run([
       { type: "hover", at: 0 },
       { type: "wait", until: 400 },
@@ -154,15 +154,15 @@ describe("aperçu au survol : un refus passager (429, panne) se redemande", () =
     expect(state).toMatchObject({ phase: "fetching", retryAt: null, attempt: 1 });
   });
 
-  it("la nouvelle demande aboutit : montrée dès la vidéo prête — jamais avant la seconde", () => {
-    // Échéance courte : la réponse et la première image arrivent avant la seconde.
+  it("la nouvelle demande aboutit : montrée dès la vidéo prête — jamais avant le rendez-vous", () => {
+    // Échéance courte : la réponse et la première image arrivent avant le rendez-vous.
     const early = run([
       { type: "hover", at: 0 },
-      { type: "wait", until: 360 },
-      { type: "streamRetry", at: 360, retryAt: 500 },
-      { type: "wait", until: 500 },
-      { type: "streamFound", at: 560 },
-      { type: "videoReady", at: 700 },
+      { type: "wait", until: 300 },
+      { type: "streamRetry", at: 300, retryAt: 400 },
+      { type: "wait", until: 400 },
+      { type: "streamFound", at: 450 },
+      { type: "videoReady", at: T.revealMs - 50 },
     ]);
     expect(early.phase).toBe("ready");
     expect(run([{ type: "wait", until: T.revealMs }], early).phase).toBe("shown");
