@@ -1,7 +1,8 @@
 import { useEffect } from "react";
+import type { ServerCapability } from "@tentacle-tv/shared";
 import { updateDebugEnabled } from "../lib/updateSimulation";
 import { WHATS_NEW_RELEASES, findRelease } from "./releases";
-import { forAudience, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
+import { forAudience, forServer, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
 import { getUserInfo } from "../components/userMenu/menuItems";
 
 /**
@@ -18,11 +19,17 @@ export function whatsNewGateForced(): boolean {
   }
 }
 
-/** La sélection d'une release précise (À propos, crochet avec version) : rien si elle est vide ou inconnue. */
-export function selectionForRelease(version: string): WhatsNewSelection | null {
+/**
+ * La sélection d'une release précise (À propos, crochet avec version) : rien si
+ * elle est vide ou inconnue. `capabilities` : celles du serveur — « À propos »
+ * les passe, et ce que le serveur ne sait pas faire n'est pas rejoué ; le
+ * crochet de développement s'en passe, pour revoir chaque scène.
+ */
+export function selectionForRelease(version: string, capabilities?: ReadonlySet<ServerCapability>): WhatsNewSelection | null {
   const found = findRelease(version);
   // « À propos » rejoue pour CE compte : sans les nouveautés d'administrateur, s'il ne l'est pas.
-  const release = found ? forAudience([found], getUserInfo().isAdmin)[0] : undefined;
+  const forAccount = found ? forAudience([found], getUserInfo().isAdmin) : [];
+  const release = (capabilities ? forServer(forAccount, capabilities) : forAccount)[0];
   if (!release || release.features.length === 0) return null;
   return {
     features: release.features.map((feature) => ({ ...feature, version: release.version })),

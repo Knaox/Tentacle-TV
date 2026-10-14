@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useServerCapabilities } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { isDesktopApp } from "../desktop/bridge";
 import { useDesktopVersion } from "../hooks/useDesktopVersion";
@@ -29,9 +30,12 @@ export function About() {
   // courante a quelque chose à montrer. Rouvre sans toucher au drapeau. En
   // porte forcée (préviz navigateur), la page affiche la version web : la
   // release à rejouer est celle de la constante desktop.
+  // Rien de ce que le serveur ne sait pas faire n'y est rejoué (`capability`).
   const [whatsNew, setWhatsNew] = useState<WhatsNewSelection | null>(null);
+  const { capabilities } = useServerCapabilities();
   const replayVersion = isDesktopApp() ? versionLabel : __APP_VERSION_DESKTOP__;
-  const canReplayWhatsNew = (isDesktopApp() || whatsNewGateForced()) && selectionForRelease(replayVersion) !== null;
+  const canReplayWhatsNew =
+    (isDesktopApp() || whatsNewGateForced()) && selectionForRelease(replayVersion, capabilities) !== null;
 
   return (
     <PageTransition>
@@ -89,7 +93,7 @@ export function About() {
         {canReplayWhatsNew && (
           <button
             type="button"
-            onClick={() => setWhatsNew(selectionForRelease(replayVersion))}
+            onClick={() => setWhatsNew(selectionForRelease(replayVersion, capabilities))}
             className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:underline"
             style={{ color: "var(--brand-light)" }}
           >

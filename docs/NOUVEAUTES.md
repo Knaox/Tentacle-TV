@@ -54,6 +54,10 @@ apps/web/src/components/StartupOverlays.tsx           l'orchestration avec la po
    `audience: "admin"` réserve une nouveauté aux administrateurs (`forAudience`, appliqué
    par la porte et par « À propos ») : elle parlerait aux autres d'un écran qu'ils n'ont
    pas. Toujours sans `route` — le lien profond reste interdit, même pour eux.
+   `capability` (une clé de `serverCapabilities.ts`) réserve une nouveauté aux serveurs qui
+   DÉCLARENT la fonction (`forServer`, appliqué par la porte et par « À propos ») : face à un
+   serveur plus ancien, l'app n'en montre rien, l'écran n'en parle pas. Toute nouveauté qui
+   dépend du serveur la porte (1.29.0 : `trailers.preview`, `family.desktopProfiles`).
 4. **Les textes** dans `locales/{fr,en}/whatsNew.ts` : `vX_Y_Z_<id>_title` (40 caractères
    max) et `vX_Y_Z_<id>_body` (une à deux phrases), écrits pour l'écran, pas copiés du
    changelog. Clés plates, sans point. `titleKey`/`bodyKey` portent la clé NUE, l'écran préfixe.
@@ -141,16 +145,18 @@ export function MaScene({ active, reduced }: SceneProps) {
   jour depuis une version d'avant l'écran » (1.20.x → 1.21.0, ou données effacées) : on montre
   tout le registre jusqu'à la version courante, plafonné à douze, puis on note.
 - Puis, quand les conditions sont réunies — session ouverte, disclaimer accepté, pas sur
-  `/watch`, pop-up de mise à jour au repos —, UNE décision : version courante plus récente que
-  la vue ET des nouveautés dans `]vue, courante]` → l'écran, toutes les nouveautés depuis la
-  version vue, plus récentes d'abord, douze au plus. Intervalle vide → on note la version
+  `/watch`, pop-up de mise à jour au repos, configuration du serveur REÇUE (ses capacités :
+  jamais décidé hors ligne, ce qui tairait pour de bon les nouveautés à `capability`) —, UNE
+  décision : version courante plus récente que la vue ET des nouveautés dans `]vue, courante]`
+  → l'écran, toutes les nouveautés depuis la version vue, plus récentes d'abord, douze au plus. Intervalle vide → on note la version
   courante tout de suite. Égale ou rétrogradée → rien, et rien d'écrit.
 - **Fermer = marquer vu**, quel que soit le geste : croix, Esc, scrim, « Terminé », lien profond.
 - **Un seul recouvrement de démarrage.** `StartupOverlays` rend l'écran puis la pop-up avec
   `suspended` : `available` est un état du hook, la pop-up paraît à la fermeture de l'écran.
   L'inverse aussi : pendant un téléchargement ou une installation, l'écran attend.
 - **« Revoir les nouveautés »** (À propos, desktop) et les crochets rouvrent la release
-  courante sans toucher au drapeau `tentacle_whats_new_seen`.
+  courante sans toucher au drapeau `tentacle_whats_new_seen`. « À propos » filtre comme la
+  porte (public, capacités) ; les crochets de développement montrent tout, pour revoir chaque scène.
 
 ## Crochets de développement
 

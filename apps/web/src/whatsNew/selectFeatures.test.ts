@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { forAudience, selectWhatsNewFeatures } from "./selectFeatures";
+import { resolveServerCapabilities } from "@tentacle-tv/shared";
+import { forAudience, forServer, selectWhatsNewFeatures } from "./selectFeatures";
 import type { WhatsNewFeature, WhatsNewRelease } from "./types";
 
 const Scene = () => null;
@@ -59,5 +60,31 @@ describe("nouveautés réservées aux administrateurs", () => {
     expect(forAudience(mixed, false)[0]?.features.map((f) => f.id)).toEqual(["remote"]);
     const onlyAdmin: WhatsNewRelease[] = [{ version: "1.22.0", features: [adminOnly] }];
     expect(selectWhatsNewFeatures("1.22.0", "1.21.4", forAudience(onlyAdmin, false)).features).toEqual([]);
+  });
+});
+
+describe("nouveautés qui exigent une capacité du serveur", () => {
+  const preview: WhatsNewFeature = { ...feature("preview"), capability: "trailers.preview" };
+  const profiles: WhatsNewFeature = { ...feature("profiles"), capability: "family.desktopProfiles" };
+  const plain = feature("plain");
+  const registry: WhatsNewRelease[] = [{ version: "1.29.0", features: [preview, profiles, plain] }];
+
+  it("un serveur qui ne déclare rien (≤ 1.23) : elles sont absentes, sans erreur", () => {
+    const none = resolveServerCapabilities({ version: "1.23.0" });
+    expect(forServer(registry, none)[0]?.features.map((f) => f.id)).toEqual(["plain"]);
+    const onlyServer: WhatsNewRelease[] = [{ version: "1.29.0", features: [preview, profiles] }];
+    expect(selectWhatsNewFeatures("1.29.0", "1.28.2", forServer(onlyServer, none)).features).toEqual([]);
+  });
+
+  it("un serveur d'avant ces fonctions (1.27.1, qui déclare sa liste) : absentes aussi", () => {
+    const older = resolveServerCapabilities({ version: "1.27.1", capabilities: ["reco.moviesRow", "trailers.player"] });
+    expect(forServer(registry, older)[0]?.features.map((f) => f.id)).toEqual(["plain"]);
+  });
+
+  it("un serveur qui déclare une capacité montre sa nouveauté, et elle seule", () => {
+    const some = resolveServerCapabilities({ version: "1.29.0", capabilities: ["trailers.preview"] });
+    expect(forServer(registry, some)[0]?.features.map((f) => f.id)).toEqual(["preview", "plain"]);
+    const all = resolveServerCapabilities({ version: "1.29.0", capabilities: ["trailers.preview", "family.desktopProfiles"] });
+    expect(forServer(registry, all)[0]?.features.map((f) => f.id)).toEqual(["preview", "profiles", "plain"]);
   });
 });

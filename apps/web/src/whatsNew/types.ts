@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { ServerCapability } from "@tentacle-tv/shared";
 
 export type WhatsNewKind = "new" | "improved" | "fixed";
 
@@ -25,6 +26,13 @@ export interface WhatsNewFeature {
   route?: string;
   /** Réservée à un public : `admin` n'est montrée qu'aux administrateurs (cf. `forAudience`). */
   audience?: "admin";
+  /**
+   * La capacité du serveur sans laquelle la fonction n'existe pas dans l'app
+   * (`serverCapabilities.ts`, shared) : face à un serveur qui ne la déclare
+   * pas, la nouveauté n'est pas montrée (cf. `forServer`) — elle parlerait
+   * d'une fonction que l'app cache.
+   */
+  capability?: ServerCapability;
 }
 
 export interface WhatsNewRelease {

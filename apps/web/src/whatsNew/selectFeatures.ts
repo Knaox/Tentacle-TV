@@ -1,3 +1,4 @@
+import type { ServerCapability } from "@tentacle-tv/shared";
 import { isNewerVersion } from "../lib/updateCheckers";
 import type { WhatsNewRelease, WhatsNewSelectedFeature } from "./types";
 
@@ -59,5 +60,22 @@ export function forAudience(releases: readonly WhatsNewRelease[], isAdmin: boole
   return releases.map((release) => ({
     ...release,
     features: release.features.filter((feature) => feature.audience !== "admin"),
+  }));
+}
+
+/**
+ * Le registre tel que CE serveur permet de le voir : une nouveauté qui exige
+ * une capacité (`capability`) que le serveur ne déclare pas disparaît — l'app
+ * n'en montre rien, l'écran n'en parle pas. Une release ainsi vidée reste dans
+ * la liste, vide, comme pour `forAudience`. Un serveur qui ne déclare rien
+ * (≤ 1.23) ne vaut aucune capacité récente : ces nouveautés-là sont absentes.
+ */
+export function forServer(
+  releases: readonly WhatsNewRelease[],
+  capabilities: ReadonlySet<ServerCapability>,
+): WhatsNewRelease[] {
+  return releases.map((release) => ({
+    ...release,
+    features: release.features.filter((feature) => feature.capability === undefined || capabilities.has(feature.capability)),
   }));
 }

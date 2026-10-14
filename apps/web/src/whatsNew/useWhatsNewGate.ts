@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useServerCapabilities } from "@tentacle-tv/api-client";
 import { isDesktopApp } from "../desktop/detect";
 import { resolveDesktopVersion } from "../hooks/useDesktopVersion";
 import { isNewerVersion } from "../lib/updateCheckers";
 import { WHATS_NEW_RELEASES } from "./releases";
-import { forAudience, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
+import { forAudience, forServer, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { readSeenVersion, writeSeenVersion } from "./whatsNewStorage";
 
@@ -32,11 +33,17 @@ export interface WhatsNewGate {
  * connexion au serveur (cf. freshInstall.ts) — mais « mis à jour depuis une
  * version d'avant l'écran » : on montre tout le registre jusqu'à la version
  * courante. Fermer écrit la version courante, quel que soit le geste.
+ *
+ * La décision attend que le serveur ait RÉPONDU (`known`) : une nouveauté qui
+ * exige une capacité (`capability`) n'est montrée que s'il la déclare
+ * (`forServer`). Jamais décidé sur une configuration absente (hors ligne) :
+ * elle tairait ces nouveautés pour de bon, la version étant ensuite notée vue.
  */
 export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): WhatsNewGate {
   const eligible = desktopLike || isDesktopApp();
   const [version, setVersion] = useState<string | null>(null);
   const [selection, setSelection] = useState<WhatsNewSelection | null>(null);
+  const { capabilities, known } = useServerCapabilities();
   const decidedRef = useRef(false);
 
   useEffect(() => {
@@ -52,19 +59,20 @@ export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): 
   }, [eligible]);
 
   useEffect(() => {
-    if (!eligible || !enabled || version === null || decidedRef.current) return;
+    if (!eligible || !enabled || version === null || !known || decidedRef.current) return;
     decidedRef.current = true;
     const seen = readSeenVersion();
     // Égale ou rétrogradée : rien à montrer, et rien à écrire. Absente : tout
     // le registre jusqu'à la version courante (mise à jour depuis avant l'écran).
     if (seen !== null && !isNewerVersion(version, seen)) return;
-    const next = selectWhatsNewFeatures(version, seen, forAudience(WHATS_NEW_RELEASES, getUserInfo().isAdmin));
+    const visible = forServer(forAudience(WHATS_NEW_RELEASES, getUserInfo().isAdmin), capabilities);
+    const next = selectWhatsNewFeatures(version, seen, visible);
     if (next.features.length === 0) {
       writeSeenVersion(version);
       return;
     }
     setSelection(next);
-  }, [eligible, enabled, version]);
+  }, [eligible, enabled, version, known, capabilities]);
 
   const close = useCallback(() => {
     if (version) writeSeenVersion(version);
