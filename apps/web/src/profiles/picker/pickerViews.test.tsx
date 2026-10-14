@@ -82,6 +82,17 @@ describe("« Qui regarde ? » — la rangée", () => {
   });
 });
 
+describe("« Qui regarde ? » — le retour du pavé", () => {
+  it("« Retour aux profils » passe au-dessus de la colonne animée (sinon elle avale le clic)", () => {
+    const html = view({ kind: "pin", pad: { profile: FAMILY[1]!, typed: 0, phase: "typing", message: null } });
+    // Le conteneur positionné du bouton porte un z-index ; <main> vient après et s'anime.
+    const back = html.match(/<div class="([^"]*)"><button[^>]*>.*?pin\.back/)?.[1] ?? "";
+    expect(back).toContain("absolute");
+    expect(back).toContain("z-10");
+    expect(html.indexOf("pin.back")).toBeLessThan(html.indexOf("<main"));
+  });
+});
+
 describe("« Qui regarde ? » — le pavé du code PIN", () => {
   function pad(model: Partial<PinPadModel>, compact = false): string {
     const base: PinPadModel = { profile: profile("zoe", { hasPin: true }), typed: 0, phase: "typing", message: null, ...model };

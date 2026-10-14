@@ -44,8 +44,11 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
             "radial-gradient(55% 50% at 50% 100%, rgba(var(--brand-accent-rgb), 0.12) 0%, transparent 70%)",
         }}
       />
+      {/* Au-dessus de <main> : son animation d'entrée lui laisse un `transform`,
+          donc un contexte d'empilement peint APRÈS ce bouton — sans `z-10`, la
+          colonne pleine largeur le recouvrait et le clic n'y arrivait jamais. */}
       {model.kind === "pin" && (
-        <div className="absolute left-4 top-4 sm:left-6 sm:top-6">
+        <div className="absolute left-4 top-4 z-10 sm:left-6 sm:top-6">
           <button type="button" onClick={props.onBack} className={SECONDARY}>
             <ArrowLeft size={16} aria-hidden />
             {t("pin.back")}
