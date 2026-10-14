@@ -4,11 +4,18 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { isDesktopApp } from "../../desktop/bridge";
+import { useActiveProfile } from "../../auth/profileSession";
+import { clearLocalCache } from "../../lib/clearLocalCache";
 import { LogoutIcon } from "../userMenu/icons";
 
 /**
  * Section "Compte" sur MobileProfile : changer de serveur (Tauri uniquement),
  * vider le cache, déconnexion (danger). Confirme avant chaque action.
+ *
+ * Bureau, session d'un PROFIL (fenêtre étroite) : ni déconnexion du compte ni
+ * changement de serveur — comme le menu de l'avatar, on revient d'abord à son
+ * propre profil ; vider le cache garde la session du profil ET la réserve du
+ * compte (`clearLocalCache`).
  */
 export function AccountActions() {
   const { t } = useTranslation("profile");
@@ -17,6 +24,7 @@ export function AccountActions() {
   const { logout } = useAuth();
   const qc = useQueryClient();
   const [busy, setBusy] = useState<"logout" | "cache" | "server" | null>(null);
+  const profileSession = useActiveProfile() !== null;
 
   const handleLogout = useCallback(() => {
     if (busy) return;
@@ -34,11 +42,7 @@ export function AccountActions() {
     setBusy("cache");
     try {
       qc.clear();
-      const keep = new Set(["tentacle_server_url", "tentacle_token", "tentacle_user", "i18nextLng"]);
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && !keep.has(k)) localStorage.removeItem(k);
-      }
+      clearLocalCache(localStorage);
       window.location.reload();
     } catch {
       setBusy(null);
@@ -61,7 +65,7 @@ export function AccountActions() {
       aria-label={t("title")}
     >
       <ul className="divide-y divide-line-subtle">
-        {isDesktopApp() && (
+        {isDesktopApp() && !profileSession && (
           <li>
             <button
               type="button"
@@ -89,19 +93,21 @@ export function AccountActions() {
             <span className="flex-1">{t("clearCache")}</span>
           </button>
         </li>
-        <li>
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={busy !== null}
-            className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] font-medium text-[color:var(--status-error-fg)] transition-colors active:bg-[color:var(--status-error-bg)] disabled:opacity-50"
-          >
-            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[color:var(--status-error-bg)]">
-              <LogoutIcon />
-            </span>
-            <span className="flex-1">{tNav("logout")}</span>
-          </button>
-        </li>
+        {!profileSession && (
+          <li>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={busy !== null}
+              className="flex w-full items-center gap-4 px-4 py-3.5 text-left text-[15px] font-medium text-[color:var(--status-error-fg)] transition-colors active:bg-[color:var(--status-error-bg)] disabled:opacity-50"
+            >
+              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[color:var(--status-error-bg)]">
+                <LogoutIcon />
+              </span>
+              <span className="flex-1">{tNav("logout")}</span>
+            </button>
+          </li>
+        )}
       </ul>
     </section>
   );

@@ -5,12 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@tentacle-tv/api-client";
 import { BACKEND, creds, hdrs } from "../../../pages/adminUtils";
 import { useToast } from "../../../contexts/ToastContext";
+import { clearLocalCache } from "../../../lib/clearLocalCache";
 
 /** La confirmation en attente : une seule à la fois. */
 export type ProfileConfirm = "changeServer" | "clearCache" | "deleteAccount" | null;
 
-/** Ce que « Vider le cache » garde : la session et la langue (`AccountActions` du web). */
-const KEEP_ON_CLEAR = new Set(["tentacle_server_url", "tentacle_token", "tentacle_user", "i18nextLng"]);
 
 /**
  * `useProfileActions` de l'app : les quatre actions de compte (déconnexion,
@@ -50,10 +49,8 @@ export function useProfileActions(isAdmin: boolean) {
     if (kind === "clearCache") {
       setConfirm(null);
       qc.clear();
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && !KEEP_ON_CLEAR.has(key)) localStorage.removeItem(key);
-      }
+      // Ce que « Vider le cache » garde : la session et la langue (la règle de `AccountActions` du web).
+      clearLocalCache(localStorage);
       window.location.reload();
       return;
     }

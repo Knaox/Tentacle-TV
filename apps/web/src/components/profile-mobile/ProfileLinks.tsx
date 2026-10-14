@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, PairIcon, SettingsIcon, StatsIcon } from "../userMenu/icons";
+import { profileSessionRefusals } from "../userMenu/menuItems";
+import { useActiveProfile } from "../../auth/profileSession";
 
 interface Props {
   isAdmin: boolean;
@@ -17,10 +19,14 @@ interface LinkDef {
  * Liste de liens "réguliers" du Profile mobile (Mes statistiques, Préférences,
  * Admin, Jumelage, About, Aide, Crédits). Style row avec chevron, séparateurs
  * internes. La page n'est atteinte qu'en ligne (`/profile` est `onlineOnly`).
+ * Bureau, session d'un profil : la règle du menu de l'avatar
+ * (`profileSessionRefusals`) — ni jumelage, ni Aide pour un invité.
  */
 export function ProfileLinks({ isAdmin }: Props) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
+  const active = useActiveProfile();
+  const refused = active ? profileSessionRefusals({ guest: active.kind === "guest" }) : null;
 
   const links: LinkDef[] = [
     { key: "stats", label: t("stats"), icon: <StatsIcon />, path: "/stats" },
@@ -40,7 +46,7 @@ export function ProfileLinks({ isAdmin }: Props) {
       aria-label={t("profile")}
     >
       <ul className="divide-y divide-line-subtle">
-        {links.map((link) => (
+        {links.filter((link) => !refused?.has(link.key)).map((link) => (
           <li key={link.key}>
             <button
               type="button"

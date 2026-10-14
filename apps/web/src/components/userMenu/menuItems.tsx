@@ -83,8 +83,17 @@ export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
   const items = buildAllItems(opts);
   const profile = opts.profileSession;
   if (!profile) return items;
-  const refused = new Set(["admin", "pair", "onDevice", "goOffline", "logout", ...(profile.guest ? ["help"] : [])]);
+  const refused = profileSessionRefusals(profile);
   return items.filter((item) => !refused.has(item.key));
+}
+
+/**
+ * Les entrées qu'une session de PROFIL tait (voir `profileSession` plus haut) —
+ * la règle du menu de l'avatar, de la feuille mobile et de la page Profil
+ * d'une fenêtre étroite (`ProfileLinks`), par leurs clés.
+ */
+export function profileSessionRefusals(profile: { guest: boolean }): ReadonlySet<string> {
+  return new Set(["admin", "pair", "onDevice", "goOffline", "logout", ...(profile.guest ? ["help"] : [])]);
 }
 
 function buildAllItems(opts: BuildItemsOptions): UserMenuItem[] {
