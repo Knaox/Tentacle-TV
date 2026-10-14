@@ -115,6 +115,18 @@ describe("mémoire de la décision", () => {
     expect(relay.resolveTrailer).toHaveBeenCalledTimes(2);
   });
 
+  it("le relais tient encore la SOURCE (listes relâchées, redémarrage) : reprise sans démarrer l'ouvrier yt-dlp", async () => {
+    fetchTitleVideos.mockResolvedValue(trailers("aaaaaaaaaaa"));
+    relayKnows(["aaaaaaaaaaa"]);
+    await decidePreview(title(), "fr", "alice");
+    prewarmExtraction.mockClear();
+    // La source est tenue, mais plus « prête » (maître non lu) : aucune extraction ne suivra.
+    relay.holdsSource.mockReturnValue(true);
+    expect(await decidePreview(title(), "fr", "alice")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
+    expect(prewarmExtraction).not.toHaveBeenCalled();
+    expect(fetchTitleVideos).toHaveBeenCalledTimes(1);
+  });
+
   it("une source GARDÉE (redémarrage, révocation) qui ne se lit plus : une extraction neuve, une seule", async () => {
     fetchTitleVideos.mockResolvedValue(trailers("aaaaaaaaaaa"));
     relay.holdsSource.mockReturnValue(true);
@@ -225,6 +237,24 @@ describe("YouTube bride l'adresse (garde-fou réel, relais simulé)", () => {
     await decidePreview(title(), "fr", "alice");
     tripYouTubeBreaker("bot");
     relay.peekTrailer.mockReturnValue(hls());
+    expect(await decidePreview(title(), "fr", "bob")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
+  });
+
+  it("une décision dont le relais tient la SOURCE (redémarrage) se reprend pendant une suspension — sans TMDB ni extraction", async () => {
+    fetchTitleVideos.mockResolvedValue(trailers("aaaaaaaaaaa"));
+    relayKnows(["aaaaaaaaaaa"]);
+    await decidePreview(title(), "fr", "alice");
+    tripYouTubeBreaker("bot");
+    relay.holdsSource.mockReturnValue(true);
+    expect(await decidePreview(title(), "fr", "bob")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
+    expect(fetchTitleVideos).toHaveBeenCalledTimes(1);
+    // Elle ne se lit plus : l'extraction neuve est refusée par la suspension — « aucune lisible », rien de retenu.
+    relay.prepareTrailer.mockResolvedValue(false);
+    relay.resolveTrailer.mockImplementation(async (_id, options) => ((options as { fresh?: boolean }).fresh ? null : hls()));
+    expect(await decidePreview(title(), "fr", "bob")).toEqual({ kind: "refused", error: "unavailable" });
+    expect(fetchTitleVideos).toHaveBeenCalledTimes(1);
+    resetYouTubeGuard();
+    relayKnows(["aaaaaaaaaaa"]);
     expect(await decidePreview(title(), "fr", "bob")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
   });
 });

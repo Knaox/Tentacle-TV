@@ -196,14 +196,18 @@ export async function decidePreview(title: PreviewTitle, lang: string | undefine
   }
   const pending = inflight.get(key);
   if (pending) return pending;
-  // YouTube bride l'adresse, ou le budget de l'heure est épuisé : réponse immédiate, sans TMDB ni extraction.
-  const stop = guardStop();
+  // Une reprise dont le relais tient encore la SOURCE (listes relâchées, redémarrage) :
+  // ses listes se relisent chez googlevideo, rien n'est demandé à YouTube ni à TMDB.
+  const heldReprise = known?.kind === "found" && holdsSource(known.ytId);
+  // YouTube bride l'adresse, ou le budget de l'heure est épuisé : réponse immédiate, sans TMDB ni
+  // extraction — sauf pour une telle reprise (si elle ne se lit plus, `decide` s'arrête au garde-fou).
+  const stop = heldReprise ? null : guardStop();
   if (stop) return stop;
   if (inflight.size >= MAX_PENDING_DECISIONS) return { kind: "limited", retryAfterS: BUSY_RETRY_S };
   const verdict = limiter.take(account);
   if (!verdict.ok) return { kind: "limited", retryAfterS: verdict.retryAfterS };
   // Une extraction va sans doute suivre : l'ouvrier yt-dlp se charge pendant que TMDB répond.
-  prewarmExtraction();
+  if (!heldReprise) prewarmExtraction();
   const task = decide(key, title, lang, known?.kind === "found" ? known.ytId : undefined)
     .catch((err: unknown) => {
       console.warn(`[trailers] aperçu ${key} : décision interrompue (${err instanceof Error ? err.message : String(err)})`);
