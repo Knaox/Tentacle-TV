@@ -346,9 +346,10 @@ de « Qui regarde ? » (`family.guest_account`).
   une déconnexion l'oublient aussi ; Réglages › Famille le dit, avec « Proposer
   à nouveau ».
 - **« Changer de profil »** (décision du 14/10 : pas d'accès rapide, la liste
-  des profils a quitté le menu) : UNE entrée en tête du menu de l'avatar — et
-  de sa feuille en fenêtre étroite —, suivie de « Gérer les profils » en
-  session personnelle (`profiles/switcher/useProfileMenuItems.tsx`). Là dès
+  des profils a quitté le menu) : UNE entrée en tête du menu de l'avatar — et,
+  en fenêtre étroite, de sa feuille et de la page Profil (la barre du haut y
+  passe sous la bande de la fenêtre macOS) —, suivie de « Gérer les profils »
+  en session personnelle (`profiles/switcher/useProfileMenuItems.tsx`). Là dès
   deux profils, préférence « au lancement » activée ou non, depuis la session
   personnelle comme depuis celle d'un autre profil (pour revenir au sien,
   derrière son code) ; absente hors ligne. Elle ouvre le MÊME « Qui

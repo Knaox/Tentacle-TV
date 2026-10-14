@@ -8,7 +8,10 @@ import { renderToStaticMarkup } from "react-dom/server";
  * jumelage, ni Aide pour un invité. En session personnelle, rien ne change.
  */
 
-const state = vi.hoisted(() => ({ profile: null as null | { id: string; kind: string } }));
+const state = vi.hoisted(() => ({
+  profile: null as null | { id: string; kind: string },
+  switchItems: [] as { key: string; label: string; icon: null; action: () => void }[],
+}));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => () => undefined }));
@@ -19,6 +22,8 @@ vi.mock("../../auth/profileSession", () => ({
   useActiveProfile: () => state.profile,
   PROFILE_SESSION_STORAGE_KEYS: ["tentacle_profile_session", "tentacle_account_session"],
 }));
+
+vi.mock("../../profiles/switcher/useProfileMenuItems", () => ({ useProfileMenuItems: () => state.switchItems }));
 
 const { AccountActions } = await import("./AccountActions");
 const { ProfileLinks } = await import("./ProfileLinks");
@@ -35,6 +40,16 @@ function page(): string {
 describe("la page Profil d'une fenêtre étroite", () => {
   beforeEach(() => {
     state.profile = null;
+    state.switchItems = [];
+  });
+
+  it("bureau, famille : « Changer de profil » en tête, dans son propre bloc ; sinon rien de plus", () => {
+    expect(page()).not.toContain("switcher.title");
+    state.switchItems = [{ key: "switchProfile", label: "switcher.title", icon: null, action: () => undefined }];
+    const html = page();
+    expect(html).toContain("switcher.title");
+    expect(html.indexOf("switcher.title")).toBeLessThan(html.indexOf("stats"));
+    expect(html.indexOf("switcher.title")).toBeLessThan(html.indexOf("<section"));
   });
 
   it("en session personnelle : jumelage, aide, changement de serveur et déconnexion", () => {
