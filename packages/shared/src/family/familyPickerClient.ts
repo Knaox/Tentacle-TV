@@ -1,4 +1,5 @@
 import type { PickedProfileDto, PickerProfileDto, PickerProfilesDto } from "./familyPickerContract";
+import { stayOverridesPicker, type PickerStay } from "./familyPickerStay";
 
 /**
  * « Qui regarde ? » sur le BUREAU, côté client — ce que l'écran décide de
@@ -40,15 +41,22 @@ export function isPickerProfileLocked(profile: Pick<PickerProfileDto, "lockedUnt
  * - `personal` : la session du compte, comme avant.
  *
  * `held` : le profil de la session de profil que l'application a gardée (son
- * jeton), ou null.
+ * jeton), ou null. `stay` : le profil que CET appareil ne propose plus de
+ * choisir (« Ne plus proposer sur cet appareil », `familyPickerStay.ts`) — il
+ * lève la préférence pour lui seul, puis la règle ci-dessous s'applique
+ * entière : jamais une session dont l'application n'a pas le jeton.
  */
 export type PickerLaunch = "picker" | "resume" | "personal";
 
 export function pickerLaunch(
-  listing: Pick<PickerProfilesDto, "atLaunch" | "pickerRequired" | "currentProfileId" | "account">,
+  listing: Pick<PickerProfilesDto, "atLaunch" | "pickerRequired" | "currentProfileId" | "account"> & Partial<Pick<PickerProfilesDto, "profiles">>,
   held: { profileId: string } | null,
+  stay: PickerStay | null = null,
+  now: number = Date.now(),
 ): PickerLaunch {
-  if (showPickerAtLaunch(listing)) return "picker";
+  if (showPickerAtLaunch(listing) && !stayOverridesPicker({ profiles: listing.profiles ?? [], currentProfileId: listing.currentProfileId }, stay, now)) {
+    return "picker";
+  }
   const inProfile = listing.currentProfileId !== listing.account.userId;
   if (!inProfile) return "personal";
   return held?.profileId === listing.currentProfileId ? "resume" : "picker";
