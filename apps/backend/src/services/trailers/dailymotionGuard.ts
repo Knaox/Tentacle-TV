@@ -14,8 +14,10 @@
 /*  - le FOND cède la place : rien en arrière-plan dans les 30 s qui   */
 /*    suivent un appel attendu par quelqu'un ;                         */
 /*  - la PRÉPARATION des aperçus (les titres à l'écran) a ses propres  */
-/*    seaux — elle ne prend jamais la place d'un survol — et laisse    */
-/*    aux appels attendus les 100 derniers du budget de l'heure.       */
+/*    seaux — elle ne prend jamais la place d'un survol : l'API à une  */
+/*    par seconde (trois d'avance), les flux à deux par seconde — et   */
+/*    laisse aux appels attendus les 100 derniers du budget de l'heure */
+/*    (sa cadence ne dépense rien de plus : elle finit plus tôt).      */
 /* ------------------------------------------------------------------ */
 
 import { SlidingBudget, SourceBreaker, TokenBuckets, type GuardStatus } from "./sourceGuard";
@@ -45,8 +47,8 @@ export const dailymotionBreaker = new SourceBreaker({
 export const dailymotionApiBudget = new SlidingBudget(DAILYMOTION_API_PER_HOUR, HOUR_MS);
 const apiPace = new TokenBuckets(5, 2_000);
 const streamPace = new TokenBuckets(2, 500);
-const prefetchApiPace = new TokenBuckets(2, 2_000);
-const prefetchStreamPace = new TokenBuckets(2, 1_000);
+const prefetchApiPace = new TokenBuckets(3, 1_000);
+const prefetchStreamPace = new TokenBuckets(3, 500);
 let serverErrors = 0;
 let lastInteractiveAt = -Infinity;
 

@@ -3,7 +3,7 @@
 /*                                                                     */
 /*  Le client dit les titres que ses cartes montrent                   */
 /*  (`POST /api/trailers/preview/warm`) ; leur aperçu se prépare EN    */
-/*  FOND, deux à la fois, les derniers vus d'abord : le catalogue      */
+/*  FOND, trois à la fois, les derniers vus d'abord : le catalogue     */
 /*  (TMDB par sa file de fond, AlloCiné à la cadence de préparation de */
 /*  Dailymotion), puis la PREMIÈRE vidéo du catalogue — résolue si     */
 /*  c'est une bande-annonce AlloCiné, préparée si c'est une vidéo      */
@@ -45,8 +45,12 @@ export interface WarmJob {
  */
 export type WarmOutcome = "decided" | "known" | "deferred" | "unanswered" | "hidden";
 
-/** Deux préparations à la fois : du réseau (TMDB, Dailymotion), jamais un processus de plus. */
-const CONCURRENCY = 2;
+/**
+ * Trois préparations à la fois : du réseau (TMDB, Dailymotion) que leurs
+ * cadences bornent, jamais un processus de plus — un écran de titres neufs se
+ * prépare en une demi-minute environ, ses premiers en deux ou trois secondes.
+ */
+const CONCURRENCY = 3;
 /** Les titres en attente, au plus : au-delà, les plus anciens vus sont oubliés. */
 const MAX_QUEUE = 200;
 /** Le catalogue en fond a le temps : ses sources attendent leur tour, personne n'attend la réponse. */

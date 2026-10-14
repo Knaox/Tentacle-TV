@@ -603,7 +603,7 @@ figée avant le premier mouvement.
 - **Le serveur prépare les titres à l'écran** — `POST
   /api/trailers/preview/warm` (contrat `trailerPreviewWarm.ts`, recopié ;
   capacité `trailers.previewWarm`, 1.30.0). Le client dit ses titres
-  visibles (40 au plus) ; le serveur prépare en fond, deux à la fois, les
+  visibles (40 au plus) ; le serveur prépare en fond, trois à la fois, les
   derniers vus d'abord (`preview/previewWarm.ts`) : le catalogue (TMDB par sa
   file de FOND, AlloCiné à la cadence de PRÉPARATION de Dailymotion), puis la
   PREMIÈRE vidéo du catalogue — résolue si c'est AlloCiné, préparée si c'est
@@ -623,11 +623,15 @@ figée avant le premier mouvement.
   passe dans la file interactive (`tmdb/client.ts`, `promote`) ; la mémoire
   du catalogue relance en interactif une lecture de fond qu'on attend (30 s
   de patience en fond, 8 en interactif). Dailymotion a des seaux de
-  préparation à part (API : deux d'avance puis une toutes les 2 s ; flux :
-  deux puis une par seconde), sans la pause de 30 s qui suit un appel
+  préparation à part (API : trois d'avance puis une par seconde ; flux :
+  trois puis deux par seconde), sans la pause de 30 s qui suit un appel
   attendu, et laisse aux appels attendus les 100 derniers du budget de
-  l'heure ; une recherche attendue ne rejoint jamais une recherche de
-  préparation (refusée faute de place, elle ne lui rendrait rien).
+  l'heure — sa cadence ne dépense rien de plus, elle finit plus tôt : un
+  écran de titres neufs se prépare en une demi-minute environ, ses premiers
+  en deux ou trois secondes ; une recherche attendue ne rejoint jamais une
+  recherche de préparation (refusée faute de place, elle ne lui rendrait
+  rien). Dailymotion ne publie aucune limite de lecture : le budget de
+  l'heure (300) reste la nôtre.
 - **Le client** (`apps/web/src/trailerPreview/previewWarm.ts`) : UN
   observateur de visibilité pour toute l'app — les cartes inscrivent leur
   visuel par `useCardPreview`, aucun état React de plus. La page posée
@@ -649,6 +653,12 @@ figée avant le premier mouvement.
   dans 5 s ») ; 160 vidéos complètes au relais au lieu de 96 (les aperçus
   préparés de quelques écrans) ; le titre lu au nom du compte, que chaque
   survol relit, gardé dix minutes au lieu de deux.
+
+Mesuré le 15/10 (banc réseau : le VRAI Dailymotion, TMDB simulé à 250 ms par
+appel, serveur français) : préparés en fond en 1,1 à 2,4 s (catalogue 0,8 à
+2,1 s — la recherche AlloCiné surtout —, résolution Dailymotion 0,2 à 0,3 s,
+vérification 9 à 36 ms), puis **le survol répond en 0 à 1 ms** ; le même
+survol à froid, sans préparation : 2,4 s. Aucune extraction YouTube.
 
 Ce qui reste lent : un titre dont la meilleure bande-annonce est sur YouTube
 et que le relais ne tient pas — l'extraction (~1 à 1,4 s) a lieu au survol,

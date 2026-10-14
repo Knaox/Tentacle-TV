@@ -86,14 +86,14 @@ describe("Dailymotion", () => {
   });
 
   it("la préparation a ses seaux : elle ne prend jamais la place d'un appel attendu", () => {
-    for (let i = 0; i < 2; i++) expect(takeDailymotionSlot("api", "prefetch", 0)).toBe(0);
-    expect(takeDailymotionSlot("api", "prefetch", 0)).toBe(2000);
+    for (let i = 0; i < 3; i++) expect(takeDailymotionSlot("api", "prefetch", 0)).toBe(0);
+    expect(takeDailymotionSlot("api", "prefetch", 0)).toBe(1000);
     for (let i = 0; i < 5; i++) expect(takeDailymotionSlot("api", "interactive", 0)).toBe(0);
-    for (let i = 0; i < 2; i++) expect(takeDailymotionSlot("stream", "prefetch", 0)).toBe(0);
-    expect(takeDailymotionSlot("stream", "prefetch", 0)).toBe(1000);
+    for (let i = 0; i < 3; i++) expect(takeDailymotionSlot("stream", "prefetch", 0)).toBe(0);
+    expect(takeDailymotionSlot("stream", "prefetch", 0)).toBe(500);
     expect(takeDailymotionSlot("stream", "interactive", 0)).toBe(0);
     // Pas de pause après un appel attendu : la préparation précède le survol qui suit.
-    expect(takeDailymotionSlot("api", "prefetch", 2000)).toBe(0);
+    expect(takeDailymotionSlot("api", "prefetch", 1000)).toBe(0);
   });
 
   it("la préparation laisse les 100 derniers appels de l'heure à ceux qu'on attend", () => {
