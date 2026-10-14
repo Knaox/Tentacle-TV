@@ -82,12 +82,12 @@
 }
 
 /* Le raccord vidéo → bandeau : la vidéo FOND dans le verre sur son dernier
- * cinquième, sans arête. Rien ne s'écrit sur elle. */
+ * sixième, sans arête. Rien ne s'écrit sur elle. */
 .card-preview-veil {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(0deg, var(--pv-panel-top) 0%, rgb(21 20 29 / 0.55) 9%, rgb(21 20 29 / 0) 22%);
+  background: linear-gradient(0deg, var(--pv-panel-top) 0%, rgb(21 20 29 / 0.5) 7%, rgb(21 20 29 / 0) 17%);
 }
 
 /* Sans bandeau : un voile sombre en bas porte les infos sur la vidéo. */
