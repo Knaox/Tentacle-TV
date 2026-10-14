@@ -28,56 +28,9 @@ import { ensureInstallId } from "./services/jellyfinIdentity";
 
 import { setupWizardRoutes } from "./setup/setupWizardRoutes";
 import { bootSetup } from "./setup/setupRuntime";
-import { authRoutes } from "./routes/auth";
-import { inviteRoutes } from "./routes/invites";
+import { registerApplicationRoutes } from "./routes/applicationRoutes";
 import { healthRoutes } from "./routes/health";
-import { configRoutes } from "./routes/config";
-import { demoRoutes } from "./routes/demo";
-import { preferenceRoutes } from "./routes/preferences";
-import { updateRoutes } from "./routes/update";
-import { ticketRoutes } from "./routes/tickets";
-import { notificationRoutes } from "./routes/notifications";
-import { pushRoutes } from "./routes/push";
-import { jellyfinProxyRoutes } from "./routes/jellyfinProxy";
-import { jellyfinTrickplayRoutes } from "./routes/jellyfinTrickplay";
-import { playbackSegmentRoutes } from "./routes/playbackSegments";
-import { adminRoutes } from "./routes/admin";
-import { adminDownloadRoutes } from "./routes/adminDownloads";
-import { adminMetadataRoutes } from "./routes/adminMetadata";
-import { adminSegmentRoutes } from "./routes/adminSegments";
-import { downloadRoutes } from "./routes/downloads";
-import { pluginRoutes } from "./routes/plugins";
-import { pairRoutes } from "./routes/pair";
-import { familyRoutes } from "./routes/family/familyRoutes";
-import { adminFamilyRoutes, familyTvRoutes } from "./routes/family/familyTvRoutes";
-import { familyPickerRoutes } from "./routes/family/familyPickerRoutes";
-import { shareRoutes } from "./routes/share";
-import { tmdbRoutes } from "./routes/tmdb";
-import { heroArtworkRoutes } from "./routes/heroArtwork";
-import { trailerRoutes } from "./routes/trailers";
-import { trailerMediaRoutes } from "./routes/trailerMedia";
-import { trailerReadinessRoutes } from "./routes/trailerReadiness";
-import { trailerPreviewRoutes } from "./routes/trailerPreview";
-import { gifRoutes } from "./routes/gifs";
 import { themeRoutes } from "./routes/theme";
-import { wsRoutes } from "./routes/ws";
-import { watchTogetherRoutes } from "./routes/watchTogether";
-import { watchTogetherInviteRoutes } from "./routes/watchTogetherInvites";
-import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
-import { watchTogetherAffinityRoutes } from "./routes/watchTogetherAffinity";
-import { leaderboardRoutes } from "./routes/leaderboard";
-import { viewingStatsRoutes } from "./routes/viewingStats";
-import { ratingRoutes } from "./routes/ratings";
-import { likeRoutes } from "./routes/likes";
-import { swipeRoutes } from "./routes/swipe";
-import { watchlistRoutes } from "./routes/watchlist";
-import { recoRoutes } from "./routes/reco";
-import { recoPeopleRoutes } from "./routes/recoPeople";
-import { searchRoutes } from "./routes/search";
-import { sagaRoutes } from "./routes/sagas";
-import { recoPageRoutes } from "./routes/recoPage";
-import { recoRowRoutes } from "./routes/recoRows";
-import { externalAccountRoutes } from "./routes/externalAccounts";
 import { stopRecoJobs } from "./services/reco/jobs";
 import { stopSearchJobs } from "./services/search/jobs";
 import { stopWatchTime } from "./services/watchTime/collector";
@@ -239,66 +192,9 @@ async function main() {
   });
 
   // ── Application routes (active only after setup) ──
-  await app.register(authRoutes, { prefix: "/api/auth" });
-  await app.register(inviteRoutes, { prefix: "/api/invites" });
-  await app.register(preferenceRoutes, { prefix: "/api/preferences" });
-  await app.register(updateRoutes, { prefix: "/api/update" });
-  await app.register(ticketRoutes, { prefix: "/api/tickets" });
-  await app.register(notificationRoutes, { prefix: "/api/notifications" });
-  await app.register(pushRoutes, { prefix: "/api/push" });
-  await app.register(adminRoutes, { prefix: "/api/admin" });
-  await app.register(adminDownloadRoutes, { prefix: "/api/admin/downloads" });
-  // Fichier séparé d'admin.ts : lui frôle déjà le plafond de 300 lignes.
-  await app.register(adminMetadataRoutes, { prefix: "/api/admin" });
-  await app.register(adminSegmentRoutes, { prefix: "/api/admin" });
-  await app.register(downloadRoutes, { prefix: "/api/downloads" });
-  await app.register(pluginRoutes, { prefix: "/api/plugins" });
-  await app.register(pairRoutes, { prefix: "/api/pair" });
-  // La Famille (docs/FAMILLE.md) : routes et appelants tirés du contrat.
-  await app.register(familyRoutes, { prefix: "/api/family" });
-  await app.register(familyTvRoutes, { prefix: "/api/family" });
-  await app.register(familyPickerRoutes, { prefix: "/api/family" });
-  await app.register(adminFamilyRoutes, { prefix: "/api/admin" });
-  await app.register(shareRoutes, { prefix: "/api/share" });
-  await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
-  await app.register(heroArtworkRoutes, { prefix: "/api/hero" });
-  await app.register(trailerRoutes, { prefix: "/api/trailers" });
-  // Les flux relayés des bandes-annonces : jeton dans l'URL, AVPlayer n'envoie pas d'en-tête.
-  await app.register(trailerMediaRoutes, { prefix: "/api/trailers" });
-  // Le diagnostic des bandes-annonces, résumé pour tout compte connecté.
-  await app.register(trailerReadinessRoutes, { prefix: "/api/trailers" });
-  // L'aperçu au survol d'une carte : une bande-annonce choisie, vérifiée, relayée.
-  await app.register(trailerPreviewRoutes, { prefix: "/api/trailers" });
-  await app.register(gifRoutes, { prefix: "/api/gifs" });
-  await app.register(wsRoutes, { prefix: "/api/ws" });
-  await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
-  await app.register(watchTogetherInviteRoutes, { prefix: "/api/watch-together" });
-  await app.register(watchTogetherUsersRoutes, { prefix: "/api/watch-together" });
-  await app.register(watchTogetherAffinityRoutes, { prefix: "/api/watch-together" });
-  await app.register(leaderboardRoutes, { prefix: "/api/leaderboard" });
-  await app.register(viewingStatsRoutes, { prefix: "/api/stats" });
-  await app.register(ratingRoutes, { prefix: "/api/ratings" });
-  await app.register(likeRoutes, { prefix: "/api/likes" });
-  await app.register(swipeRoutes, { prefix: "/api/swipe" });
-  await app.register(watchlistRoutes, { prefix: "/api/watchlist" });
-  await app.register(recoRoutes, { prefix: "/api/reco" });
-  await app.register(recoRowRoutes, { prefix: "/api/reco" });
-  await app.register(recoPeopleRoutes, { prefix: "/api/reco" });
-  await app.register(recoPageRoutes, { prefix: "/api/reco" });
-  await app.register(searchRoutes, { prefix: "/api/search" });
-  await app.register(sagaRoutes, { prefix: "/api/sagas" });
-  await app.register(externalAccountRoutes, { prefix: "/api/external" });
-  await app.register(configRoutes, { prefix: "/api" });
-  await app.register(demoRoutes, { prefix: "/api" });
-  // Segments de lecture : le résolveur unique (préfixe hors /api/jellyfin —
-  // aucun rapport d'ordre avec le proxy générique).
-  await app.register(playbackSegmentRoutes, { prefix: "/api/playback" });
-
-  // ── Jellyfin trickplay tiles (specific route — must register BEFORE the wildcard proxy) ──
-  await app.register(jellyfinTrickplayRoutes, { prefix: "/api/jellyfin" });
-
-  // ── Jellyfin proxy (all Jellyfin API calls go through here) ──
-  await app.register(jellyfinProxyRoutes, { prefix: "/api/jellyfin" });
+  // Jusqu'au proxy de Jellyfin, en dernier : l'ordre est celui de
+  // `routes/applicationRoutes.ts`.
+  await registerApplicationRoutes(app);
 
   await registerStaticClients(app);
   const webUi = resolveWebUi(process.env, readOverrideFile());

@@ -217,7 +217,8 @@ describe("GET /api/trailers/preview", () => {
   });
 
   it("est enregistrée par le serveur sous /api/trailers", () => {
-    const index = readFileSync(join(__dirname, "../index.ts"), "utf8");
-    expect(index).toMatch(/app\.register\(trailerPreviewRoutes, \{ prefix: "\/api\/trailers" \}\)/);
+    // Les routes de l'application sont posées par `applicationRoutes.ts` (appelé par index.ts).
+    const routes = readFileSync(join(__dirname, "applicationRoutes.ts"), "utf8");
+    expect(routes).toMatch(/app\.register\(trailerPreviewRoutes, \{ prefix: "\/api\/trailers" \}\)/);
   });
 });
