@@ -23,7 +23,7 @@ vi.mock("../middleware/auth", () => ({
 }));
 
 import { trailerRoutes } from "./trailers";
-import { playlistCacheControl, trailerMediaRoutes } from "./trailerMedia";
+import { mediaCacheControl, playlistCacheControl, trailerMediaRoutes } from "./trailerMedia";
 import { resetTrailerRelay } from "../services/trailers/trailerRelay";
 import { signRelayToken } from "../services/trailers/relayToken";
 
@@ -256,20 +256,23 @@ describe("flux relayés", () => {
     expect(extractTrailerSource).toHaveBeenCalledTimes(1);
   });
 
-  it("les listes d'un APERÇU restent dans le cache du navigateur (privé, jusqu'à l'échéance du jeton) ; celles d'une lecture, jamais", async () => {
+  it("un APERÇU reste dans le cache du navigateur — listes et segments, immuables jusqu'à l'échéance du jeton ; une lecture ne garde pas ses listes", async () => {
     extractTrailerSource.mockResolvedValue(hls(1));
     vi.stubGlobal("fetch", googlevideo(1));
     const app = await server();
-    const play = new URL(await resolved(app), "http://x").searchParams.get("t");
+    const play = new URL(await resolved(app), "http://x").searchParams.get("t") as string;
     const preview = signRelayToken(ID, Date.now(), "preview");
     for (const name of ["master.m3u8", "master-1080.m3u8", "p/95.m3u8"]) {
-      expect((await app.inject({ url: `/api/trailers/hls/${ID}/${name}?t=${preview}` })).headers["cache-control"]).toBe("private, max-age=3600");
+      expect((await app.inject({ url: `/api/trailers/hls/${ID}/${name}?t=${preview}` })).headers["cache-control"]).toBe("private, max-age=3600, immutable");
       expect((await app.inject({ url: `/api/trailers/hls/${ID}/${name}?t=${play}` })).headers["cache-control"]).toBe("private, no-store");
     }
+    expect((await app.inject({ url: `/api/trailers/hls/${ID}/s/95/0.ts?t=${preview}` })).headers["cache-control"]).toBe("private, max-age=3600, immutable");
+    expect((await app.inject({ url: `/api/trailers/hls/${ID}/s/95/0.ts?t=${play}` })).headers["cache-control"]).toBe("private, max-age=3600");
     // Près de son échéance, un jeton d'aperçu ne se garde plus qu'une minute avant elle — puis plus du tout.
-    expect(playlistCacheControl("preview", 1_000_000 + 10 * 60_000, 1_000_000)).toBe("private, max-age=540");
-    expect(playlistCacheControl("preview", 1_000_000 + 30_000, 1_000_000)).toBe("private, no-store");
-    expect(playlistCacheControl("play", 1_000_000 + 10 * 60_000, 1_000_000)).toBe("private, no-store");
+    const expiry = (parseInt(preview.split(".")[0], 36)) * 1000;
+    const access = { token: preview, scope: "preview" as const };
+    expect(playlistCacheControl(access, expiry - 10 * 60_000)).toBe("private, max-age=540, immutable");
+    expect(mediaCacheControl(access, expiry - 30_000)).toBe("private, no-store");
   });
 
   it("une panne amont se dit en 502, un délai en 504 — jamais en 500", async () => {

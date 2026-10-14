@@ -50,30 +50,49 @@ function authorize(ytId: string, request: FastifyRequest, reply: FastifyReply): 
   return { ytId, token: t as string, scope };
 }
 
+type Access = { token: string; scope: RelayScope };
+
+/** Le temps (s) qu'un navigateur garde ce que sert un jeton d'aperçu : jusqu'à une minute avant son échéance, une heure au plus. */
+function previewKeepS(token: string, now: number): number {
+  const expiry = relayTokenExpiry(token);
+  return expiry === null ? 0 : Math.min(3600, Math.floor((expiry - now) / 1000) - 60);
+}
+
 /**
  * Le cache d'une liste relayée. Ses URI portent le jeton : jamais dans un
  * cache intermédiaire (`private`). Pour un APERÇU, le navigateur la garde
- * jusqu'à une minute avant l'échéance du jeton (une heure au plus) : un
- * survol qui revient sur la carte relit maître et listes de son cache, comme
- * les segments, sans rien redemander. Elle ne change jamais sous ce jeton
- * (un jeton d'aperçu ne fait jamais ré-extraire). Une lecture (TV) ne garde
- * rien : une nouvelle extraction peut changer ses variantes.
+ * jusqu'à une minute avant l'échéance du jeton (une heure au plus) — et
+ * `immutable` : elle ne change jamais sous ce jeton (un jeton d'aperçu ne
+ * fait jamais ré-extraire), un retour sur la carte ne la revalide même pas.
+ * Une lecture (TV) ne garde rien : une nouvelle extraction peut changer ses
+ * variantes.
  */
-export function playlistCacheControl(scope: RelayScope, tokenExpiryMs: number | null, now = Date.now()): string {
-  if (scope !== "preview" || tokenExpiryMs === null) return "private, no-store";
-  const seconds = Math.min(3600, Math.floor((tokenExpiryMs - now) / 1000) - 60);
-  return seconds > 0 ? `private, max-age=${seconds}` : "private, no-store";
+export function playlistCacheControl(access: Access, now = Date.now()): string {
+  if (access.scope !== "preview") return "private, no-store";
+  const seconds = previewKeepS(access.token, now);
+  return seconds > 0 ? `private, max-age=${seconds}, immutable` : "private, no-store";
 }
 
-function sendPlaylist(reply: FastifyReply, template: string | null, access: { token: string; scope: RelayScope }) {
+/**
+ * Le cache d'un segment (ou du MP4) relayé : une heure, comme toujours ; pour
+ * un APERÇU, `immutable` jusqu'à l'échéance de son jeton — chaque segment se
+ * télécharge une fois par titre et par page, les survols suivants le relisent.
+ */
+export function mediaCacheControl(access: Access, now = Date.now()): string {
+  if (access.scope !== "preview") return "private, max-age=3600";
+  const seconds = previewKeepS(access.token, now);
+  return seconds > 0 ? `private, max-age=${seconds}, immutable` : "private, no-store";
+}
+
+function sendPlaylist(reply: FastifyReply, template: string | null, access: Access) {
   if (template === null) return reply.status(404).send({ error: "unavailable" });
-  reply.header("Cache-Control", playlistCacheControl(access.scope, relayTokenExpiry(access.token)));
+  reply.header("Cache-Control", playlistCacheControl(access));
   reply.type(HLS_MIME);
   return reply.send(template.split(TOKEN_SLOT).join(access.token));
 }
 
 /** Relaie une réponse amont (statut, type, longueur, plage) vers AVPlayer. */
-function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string) {
+function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string, access: Access) {
   if (!res.body) return reply.status(502).send({ error: "upstream" });
   reply.status(res.status);
   reply.header("Content-Type", res.headers.get("content-type") ?? fallbackType);
@@ -81,7 +100,7 @@ function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string)
     const value = res.headers.get(name);
     if (value) reply.header(name, value);
   }
-  reply.header("Cache-Control", "private, max-age=3600");
+  reply.header("Cache-Control", mediaCacheControl(access));
   return reply.send(Readable.fromWeb(res.body as import("stream/web").ReadableStream));
 }
 
@@ -106,9 +125,9 @@ function upstreamFailure(request: FastifyRequest, reply: FastifyReply, err: unkn
 }
 
 /** Un premier segment lu d'avance par l'aperçu (`trailerSegments.ts`), servi de la mémoire. */
-function sendHeld(reply: FastifyReply, segment: HeldSegment) {
+function sendHeld(reply: FastifyReply, segment: HeldSegment, access: Access) {
   reply.header("Content-Type", segment.contentType);
-  reply.header("Cache-Control", "private, max-age=3600");
+  reply.header("Cache-Control", mediaCacheControl(access));
   return reply.send(segment.body);
 }
 
@@ -152,7 +171,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     // Lu d'avance par l'aperçu : servi de la mémoire, ou à la fin de la lecture déjà en route.
     const early = request.headers.range ? null : heldSegment(access.ytId, key, index);
     const segment = early ? await early : null;
-    if (segment) return sendHeld(reply, segment);
+    if (segment) return sendHeld(reply, segment, access);
 
     const signal = requestSignal(request, reply, SEGMENT_TIMEOUT_MS);
     try {
@@ -165,7 +184,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
           await res.body?.cancel();
           continue;
         }
-        return relay(reply, res, index === "init" ? "video/mp4" : "video/mp2t");
+        return relay(reply, res, index === "init" ? "video/mp4" : "video/mp2t", access);
       }
     } catch (err) {
       return upstreamFailure(request, reply, err);
@@ -188,7 +207,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
           await res.body?.cancel();
           continue;
         }
-        return relay(reply, res, "video/mp4");
+        return relay(reply, res, "video/mp4", access);
       }
     } catch (err) {
       return upstreamFailure(request, reply, err);
