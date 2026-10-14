@@ -1,6 +1,6 @@
-import { useRef, useState, type RefObject } from "react";
-import type { MediaItem } from "@tentacle-tv/shared";
-import { previewSubjectOfItem, previewSubjectOfTitle, type PreviewMediaType, type PreviewSubject } from "./engine";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { trailerPreviewSubjectKey, type MediaItem } from "@tentacle-tv/shared";
+import { previewSubjectOfItem, previewSubjectOfTitle, trackPreviewWarm, type PreviewMediaType, type PreviewSubject } from "./engine";
 import type { PreviewShape } from "./previewPlacement";
 
 /** De quoi une carte montrerait la bande-annonce : un titre de la bibliothèque, ou un titre TMDB. */
@@ -56,16 +56,31 @@ function subjectOf(source: CardPreviewSource): PreviewSubject | null {
  * La carte garde son survol : elle passe `hovered`, lit `shown` pour
  * s'effacer sous la mini-carte, et rend `<CardPreview controller={…}>` DANS
  * son arbre — React y fait remonter souris, clics et focus jusqu'à elle.
+ *
+ * Son visuel est inscrit auprès de la préparation des aperçus
+ * (`trackPreviewWarm`, un seul observateur pour toute l'app) : à l'écran, son
+ * titre se prépare chez le serveur avant tout survol.
  */
 export function useCardPreview({ source, hovered, shape, companionRef, disabled = false }: CardPreviewOptions): CardPreviewController {
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const ownPortalRef = useRef<HTMLDivElement | null>(null);
   const [shown, setShown] = useState(false);
+  const subject = subjectOf(source);
+  const subjectKey = subject ? trailerPreviewSubjectKey(subject) : null;
+  // Le sujet n'a d'identité que par sa clé : une carte qui le reconstruit à chaque rendu ne réinscrit rien.
+  const subjectRef = useRef(subject);
+  subjectRef.current = subject;
+  useEffect(() => {
+    const element = anchorRef.current;
+    const current = subjectRef.current;
+    if (!element || !current || subjectKey === null) return;
+    return trackPreviewWarm(element, current);
+  }, [subjectKey]);
   return {
     shown,
     anchorRef,
     session: {
-      subject: subjectOf(source),
+      subject,
       hovered,
       shape,
       disabled,

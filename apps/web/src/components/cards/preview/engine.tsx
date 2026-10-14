@@ -4,6 +4,7 @@ import {
   TrailerPreviewVideo,
   previewSubjectOf,
   previewSubjectOfTitle,
+  trackPreviewWarm,
   useTrailerPreview,
   type TrailerPreviewSubject,
 } from "../../../trailerPreview";
@@ -64,6 +65,8 @@ export const PREVIEW_ENGINE_EXIT_MS = TRAILER_PREVIEW_TIMING.exitMs;
 /** Le sujet d'une carte de la bibliothèque (un épisode, une saison valent leur série). */
 export const previewSubjectOfItem = previewSubjectOf;
 export { previewSubjectOfTitle };
+/** Le visuel d'une carte à l'écran : le serveur prépare l'aperçu de son titre (`previewWarm.ts`). */
+export { trackPreviewWarm };
 
 /** Le moteur pour une carte : `hovered` est le survol EFFECTIF (fermetures forcées déjà retirées). */
 export function usePreviewEngine(subject: PreviewSubject | null, hovered: boolean): PreviewEngine {
