@@ -32,7 +32,7 @@ import { usePreviewMachine } from "./usePreviewMachine";
  *     montage ni au simple passage de la souris, et s'abandonne si le survol
  *     cesse avant la réponse ;
  *   - la vidéo se charge cachée et en pause jusqu'à sa première image ;
- *   - la mini-carte se montre au plus tôt à `revealMs` (« une seconde », cf.
+ *   - la mini-carte se montre au plus tôt à `revealMs` (800 ms, cf.
  *     `previewTiming.ts`) et seulement si la vidéo est prête ;
  *   - un refus du serveur, une erreur, un blocage : rien ne s'anime.
  *

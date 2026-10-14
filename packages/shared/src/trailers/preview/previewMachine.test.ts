@@ -212,10 +212,11 @@ describe("aperçu au survol : la sortie et le retour", () => {
   it("quitter avant la révélation coupe tout, sans fondu", () => {
     const state = run([
       { type: "hover", at: 0 },
-      { type: "wait", until: 400 },
-      { type: "streamFound", at: 400 },
-      { type: "videoReady", at: 600 },
-      { type: "unhover", at: 800 },
+      { type: "wait", until: T.intentMs + 50 },
+      { type: "streamFound", at: T.intentMs + 50 },
+      { type: "videoReady", at: T.intentMs + 100 },
+      // Avant la révélation : jamais montrée, donc rien à effacer en fondu.
+      { type: "unhover", at: T.revealMs - 50 },
     ]);
     expect(state.phase).toBe("idle");
     expect(trailerPreviewMounted(state)).toBe(false);

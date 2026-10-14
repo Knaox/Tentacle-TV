@@ -5,8 +5,10 @@
  *
  * Le rendez-vous de Netflix : Netflix ne publie pas son délai. Les relevés et
  * les témoignages d'utilisateurs convergent vers « environ une seconde » de
- * survol avant que la carte ne s'agrandisse et que l'aperçu ne parte. C'est le
- * rendez-vous retenu ici : JAMAIS avant une seconde de survol, et seulement si
+ * survol avant que la carte ne s'agrandisse et que l'aperçu ne parte. Essayée
+ * en vrai (14/10), la seconde paraissait « légèrement trop longue » : le
+ * rendez-vous est à 800 ms de survol, l'intention à 250 ms — toujours assez
+ * pour qu'une souris qui traverse une rangée ne demande rien. Et seulement si
  * la vidéo a déjà sa première image — jamais un cadre noir, jamais un
  * chargement à l'écran.
  *
@@ -17,9 +19,9 @@
  */
 export const TRAILER_PREVIEW_TIMING = {
   /** Survol continu au-delà duquel la demande part (une souris qui traverse ne demande rien). */
-  intentMs: 350,
-  /** Révélation au plus tôt, depuis le début du survol (« une seconde », cf. plus haut). */
-  revealMs: 1_000,
+  intentMs: 250,
+  /** Révélation au plus tôt, depuis le début du survol (800 ms, cf. plus haut). */
+  revealMs: 800,
   /**
    * Où l'aperçu commence (s) : pas à 0, presque toujours du noir ou le logo
    * d'un distributeur — quelques secondes plus loin, comme Netflix qui part sur

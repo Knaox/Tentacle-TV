@@ -82,7 +82,7 @@ describe("useTrailerPreview — un refus passager se redemande", () => {
     await serve(FOUND);
     expect(handles.a).toMatchObject({ phase: "buffering", mount: true, visible: false });
     await act(async () => handles.a.onReady());
-    // Plus d'une seconde depuis le début du survol : montrée dès la première image.
+    // Plus que le délai de révélation depuis le début du survol : montrée dès la première image.
     expect(handles.a).toMatchObject({ phase: "shown", visible: true });
   });
 

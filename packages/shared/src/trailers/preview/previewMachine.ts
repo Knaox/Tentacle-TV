@@ -6,7 +6,7 @@ import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "./previewTimi
  * doit arriver plus tard se lit dans `nextTrailerPreviewDeadline`. Le crochet
  * du web n'arme qu'UNE minuterie, sur cette échéance, et rend `tick`.
  *
- *   idle ─survol→ intent ─350 ms→ fetching ─flux→ buffering ─1re image→ ready ─1 s→ shown
+ *   idle ─survol→ intent ─250 ms→ fetching ─flux→ buffering ─1re image→ ready ─800 ms→ shown
  *                                     │ absent        │ erreur, 8 s       │ erreur      │ fin
  *                                     └→ failed ←─────┴───────────────────┘            └→ ended
  *

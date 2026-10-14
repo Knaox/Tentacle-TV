@@ -80,7 +80,7 @@ afterEach(async () => {
 });
 
 describe("useTrailerPreview — quand demander", () => {
-  it("rien avant l'intention ; la demande part au bout de 350 ms de survol", async () => {
+  it("rien avant l'intention ; la demande part au bout de l'intention (250 ms) de survol", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs - 50);
     expect(h.enabled.some(Boolean)).toBe(false);
