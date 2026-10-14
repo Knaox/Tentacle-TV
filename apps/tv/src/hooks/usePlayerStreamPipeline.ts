@@ -14,6 +14,7 @@ import { useTVStreamUrl } from "./useTVStreamUrl";
 import { useTVTrackResolution } from "./useTVTrackResolution";
 import { useTVMpvTracks } from "./useTVMpvTracks";
 import { useTVSeekControl } from "./useTVSeekControl";
+import { useSourcePrefetch, useTVPrefetch } from "./useTVPrefetch";
 import { useStreamRestart } from "./useStreamRestart";
 import type { PlayerMediaState } from "./usePlayerMediaState";
 import { prismBitmapRenditionIndex } from "../utils/prismSubtitleMatch";
@@ -130,6 +131,9 @@ export function usePlayerStreamPipeline(args: {
   // fiche — deux pour le même appareil sur un AV1, qui calait. Une fiche en
   // échec relâche la garde : le flux tente sa chance, comme avant.
   const itemFailed = useMediaItem(itemId).isError;
+  const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+  // Préchargement en VOLUME (tv-core `prefetchVolume`) : la session PrismCore le reçoit à son ouverture.
+  const sourcePrefetch = useSourcePrefetch(mediaSource, jellyfinDuration);
   const stream = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
@@ -137,6 +141,7 @@ export function usePlayerStreamPipeline(args: {
     maxBitrate: effectiveMaxBitrate, maxHeight: effectiveMaxHeight,
     isDirectPlay: requestedDirectPlay,
     reloadNonce, ready: (!!item || itemFailed) && !cap.pending, // l'épisode suivant attend sa mesure
+    prismPrefetch: sourcePrefetch.prismPrefetch,
   });
   const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed, restart } = stream;
   // Android : un flux servi pour ce que l'appareil ne lit pas (`useDeviceConversion`) ; tvOS : absents.
@@ -196,10 +201,14 @@ export function usePlayerStreamPipeline(args: {
   const playSessionIdRef = useRef<string | undefined>(undefined);
   playSessionIdRef.current = playSessionId;
 
-  const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
   // Ce que le flux demande au réseau : le palier d'un transcodage, sinon le
   // débit du fichier (la reprise n'accuse le réseau que mesuré en dessous).
   const streamBitrate = (isDirectPlay || isPrismCore ? mediaSource?.Bitrate : effectiveMaxBitrate) ?? null;
+  // L'avance d'AVPlayer et la barre de préchargement (mémoire, ou disque de PrismCore).
+  const prefetch = useTVPrefetch({
+    source: sourcePrefetch, durationSec: jellyfinDuration, streamBitrate, isDirectPlay, isPrismCore: !!isPrismCore,
+    prismGen: prism?.gen ?? 0, position: s.displayTime, playable: s.bufferedTime,
+  });
   // Cadence du flux (Android TV : bascule de fréquence d'affichage dans la vue native).
   const frameRate = useMemo(() => videoFrameRate(streams), [streams]);
 
@@ -275,7 +284,7 @@ export function usePlayerStreamPipeline(args: {
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
     startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed, onMasterRejected,
-    streamBitrate,
+    streamBitrate, prefetch,
     restartStream,
     reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,
     mpvTracks, handleSeek,
