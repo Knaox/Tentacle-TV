@@ -19,7 +19,7 @@ import {
   TRAILER_PREVIEW_NO_TRAILER_TTL_MS, TRAILER_PREVIEW_UNAVAILABLE_TTL_MS,
 } from "../../../trailers/trailerPreview";
 import { resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
-import { peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
+import { holdsSource, peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
 import { prewarmExtraction, type ExtractionOptions } from "../ytExtract";
 import { fetchTitleVideos } from "../titleVideos";
 import { previewRefusal } from "../youtubeGuard";
@@ -36,7 +36,14 @@ export type PreviewOutcome =
   /** Trop de demandes (le compte) ou trop de décisions en cours (le serveur) : rien n'est retenu. */
   | { kind: "limited"; retryAfterS: number };
 
-type Decision = { kind: "found"; ytId: string } | { kind: "refused"; error: Refusal };
+export type Decision = { kind: "found"; ytId: string } | { kind: "refused"; error: Refusal };
+
+/** Une décision telle que la mémoire durable la garde (`previewMemoryStore.ts`). */
+export interface StoredDecision {
+  key: string;
+  decision: Decision;
+  until: number;
+}
 
 /** Au-delà de trois essais, le survol est passé depuis longtemps. */
 export const MAX_ATTEMPTS = 3;
@@ -53,8 +60,26 @@ const decisions = new TtlLru<Decision>(MAX_DECISIONS);
 const inflight = new Map<string, Promise<PreviewOutcome>>();
 const limiter = new PreviewRateLimiter();
 
+let onChange: (() => void) | null = null;
+
 function remember(key: string, decision: Decision, ttlMs: number): void {
   decisions.set(key, decision, ttlMs);
+  onChange?.();
+}
+
+/** Prévient `listener` à chaque décision prise (la mémoire durable s'écrit alors). */
+export function onPreviewDecisionsChange(listener: (() => void) | null): void {
+  onChange = listener;
+}
+
+/** Les décisions encore valables, pour la mémoire durable. */
+export function storedDecisions(now = Date.now()): StoredDecision[] {
+  return decisions.dump(now).map(({ key, value, until }) => ({ key, decision: value, until }));
+}
+
+/** Reprend les décisions d'avant un redémarrage, chacune jusqu'à son échéance. */
+export function restoreDecisions(list: readonly StoredDecision[], now = Date.now()): void {
+  for (const { key, decision, until } of list) if (until > now) decisions.set(key, decision, until - now, now);
 }
 
 function refuse(key: string, error: Refusal): PreviewOutcome {
@@ -82,16 +107,20 @@ const newStages = (): Stages => ({ tmdb: 0, extract: 0, verify: 0 });
  * fois) et ne retarde pas la réponse : le lecteur trouvera ses premiers
  * segments en mémoire, ou en route.
  */
-async function playable(ytId: string, stages: Stages): Promise<ResolvedTrailer | null> {
+async function playable(ytId: string, stages: Stages, fresh = false): Promise<ResolvedTrailer | null> {
+  const held = !fresh && holdsSource(ytId);
   let mark = Date.now();
-  const resolved = await resolveTrailer(ytId, PREVIEW_EXTRACTION);
+  const resolved = await resolveTrailer(ytId, fresh ? { ...PREVIEW_EXTRACTION, fresh } : PREVIEW_EXTRACTION);
   stages.extract += Date.now() - mark;
   if (!resolved) return null;
   warm(ytId);
   mark = Date.now();
   const readable = await prepareTrailer(ytId, PREVIEW_EXTRACTION);
   stages.verify += Date.now() - mark;
-  return readable ? resolved : null;
+  if (readable) return resolved;
+  // Une source GARDÉE (d'avant un redémarrage, ou révoquée par googlevideo) qui
+  // ne se lit plus : une extraction neuve, une seule — dans les garde-fous de la décision.
+  return held ? playable(ytId, stages, true) : null;
 }
 
 /**

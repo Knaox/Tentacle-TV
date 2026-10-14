@@ -9,13 +9,15 @@
 /*  extraction, transparente pour le téléviseur.                       */
 /* ------------------------------------------------------------------ */
 
-import { Agent, fetch as undiciFetch } from "undici";
 import { parseMaster, renderMaster, rewriteMedia, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
 import { evictEntries } from "./relayEviction";
+import { fetchUpstream, isReadable } from "./relayUpstream";
 import { extractTrailerSource, type ExtractionOptions } from "./ytExtract";
 import type { RelayScope } from "./relayToken";
 import type { TrailerSource } from "./trailerSource";
 import type { SubtitleCandidate } from "./trailerSubtitles";
+
+export { fetchUpstream, isReadable };
 
 /** Le jeton est posé au moment de servir : les textes gardés n'en portent que la place. */
 export const TOKEN_SLOT = "{{t}}";
@@ -64,14 +66,6 @@ const entries = new Map<string, Entry>();
 const inflight = new Map<string, Promise<Entry | null>>();
 const misses = new Map<string, number>();
 
-/**
- * Connexions maintenues vers googlevideo : un segment ne repaie pas TCP + TLS
- * à chaque fois. Le `fetch` du paquet `undici`, pas le global : le `fetch` de
- * Node embarque sa propre version d'undici et refuse un `Agent` du paquet
- * (« fetch failed ») — même choix que le proxy Jellyfin.
- */
-const upstreamDispatcher = new Agent({ keepAliveTimeout: 30_000, connections: 16, headersTimeout: 15_000 });
-
 const evict = () => evictEntries(entries, Date.now(), { full: MAX_ENTRIES, total: MAX_SOURCES });
 
 async function extract(ytId: string, options: ExtractionOptions): Promise<Entry | null> {
@@ -98,6 +92,7 @@ async function extract(ytId: string, options: ExtractionOptions): Promise<Entry 
   };
   entries.set(ytId, entry);
   evict();
+  relayChanged();
   console.log(`[trailers] ${ytId} : ${result.source.kind} via ${result.clients.join(",")} en ${Date.now() - started} ms`);
   return entry;
 }
@@ -147,7 +142,7 @@ export function resolvedOf(entry: Entry): ResolvedTrailer {
 }
 
 /** L'état d'une vidéo pour qui la lance : son genre, l'échéance de ses URL, ses qualités et ses pistes. */
-export async function resolveTrailer(ytId: string, extraction: ExtractionOptions = {}): Promise<ResolvedTrailer | null> {
+export async function resolveTrailer(ytId: string, extraction: ExtractionOptions & { fresh?: boolean } = {}): Promise<ResolvedTrailer | null> {
   const entry = await resolveEntry(ytId, extraction);
   return entry ? resolvedOf(entry) : null;
 }
@@ -155,33 +150,6 @@ export async function resolveTrailer(ytId: string, extraction: ExtractionOptions
 /** La vidéo telle que le relais la tient, sans extraction ni lecture amont (`trailerPrepare.ts`). */
 export function heldEntry(ytId: string): Entry | undefined {
   return entries.get(ytId);
-}
-
-/** Lit une ressource amont ; `refused` pour une URL que googlevideo ne sert plus. */
-export async function fetchUpstream(url: string, headers: Record<string, string>, init: { signal?: AbortSignal; range?: string } = {}) {
-  const res = await undiciFetch(url, {
-    headers: { ...headers, ...(init.range ? { Range: init.range } : {}) },
-    signal: init.signal ?? AbortSignal.timeout(15_000),
-    dispatcher: upstreamDispatcher,
-  });
-  return { res, refused: res.status === 403 || res.status === 404 || res.status === 410 };
-}
-
-/**
- * Le MP4 progressif se laisse-t-il lire jusqu'au bout ? Le format 18 d'un
- * client sans jeton PO (`android_vr`) ne sert que son premier mégaoctet
- * (mesuré le 2026-10-01) : on demande ce que demande AVPlayer après ses deux
- * premiers octets — le fichier entier, par une plage ouverte —, et l'on n'en
- * lit que les en-têtes.
- */
-export async function isReadable(url: string, headers: Record<string, string> = {}): Promise<boolean> {
-  try {
-    const { res } = await fetchUpstream(url, headers, { range: "bytes=0-", signal: AbortSignal.timeout(5_000) });
-    await res.body?.cancel();
-    return res.ok;
-  } catch {
-    return false;
-  }
 }
 
 /** Une lecture amont à la fois par ressource ; une erreur de réseau vaut « rien ». */
@@ -286,6 +254,42 @@ export async function progressiveTarget(ytId: string, attempt: { fresh?: boolean
 }
 
 /** Pour les tests : repartir d'un relais vide. */
+/** Ce qu'une vidéo résolue garde d'un redémarrage : sa SOURCE seule (`previewMemoryStore.ts`). */
+export interface HeldSource {
+  ytId: string;
+  source: TrailerSource;
+  subtitles: SubtitleCandidate[];
+  validUntil: number;
+  extractedAt: number;
+}
+
+let onChange: (() => void) | null = null;
+const relayChanged = () => onChange?.();
+
+/** Prévient `listener` à chaque nouvelle extraction (la mémoire durable s'écrit alors). */
+export function onRelaySourcesChange(listener: (() => void) | null): void {
+  onChange = listener;
+}
+
+/** Les sources encore valables, pour la mémoire durable. */
+export function heldSources(now = Date.now()): HeldSource[] {
+  return [...entries]
+    .filter(([, e]) => e.validUntil > now)
+    .map(([ytId, e]) => ({ ytId, source: e.source, subtitles: e.subtitles, validUntil: e.validUntil, extractedAt: e.extractedAt }));
+}
+
+/** Reprend des sources d'avant un redémarrage : listes à relire chez googlevideo, AUCUNE extraction. */
+export function restoreSources(list: readonly HeldSource[], now = Date.now()): void {
+  for (const held of list) {
+    if (held.validUntil <= now || entries.has(held.ytId)) continue;
+    entries.set(held.ytId, {
+      source: held.source, subtitles: held.subtitles, subtitleTexts: new Map(), fixedMasters: new Map(),
+      validUntil: held.validUntil, extractedAt: held.extractedAt, lastUsed: held.extractedAt, media: new Map(), loading: new Map(),
+    });
+  }
+  evict();
+}
+
 export function resetTrailerRelay(): void {
   entries.clear();
   inflight.clear();

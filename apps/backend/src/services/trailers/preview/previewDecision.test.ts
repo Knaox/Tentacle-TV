@@ -13,6 +13,7 @@ import type { TitleVideos } from "../titleVideos";
 const { relay, fetchTitleVideos, prewarmExtraction } = vi.hoisted(() => ({
   prewarmExtraction: vi.fn(),
   relay: {
+    holdsSource: vi.fn<(ytId: string) => boolean>(),
     peekTrailer: vi.fn<(ytId: string) => ResolvedTrailer | null>(),
     resolveTrailer: vi.fn<(ytId: string, options?: unknown) => Promise<ResolvedTrailer | null>>(),
     prepareTrailer: vi.fn<(ytId: string, options?: unknown) => Promise<boolean>>(),
@@ -21,7 +22,9 @@ const { relay, fetchTitleVideos, prewarmExtraction } = vi.hoisted(() => ({
   fetchTitleVideos: vi.fn<(id: number, type: string, lang?: string) => Promise<TitleVideos>>(),
 }));
 vi.mock("../trailerRelay", () => ({ resolveTrailer: relay.resolveTrailer }));
-vi.mock("../trailerPrepare", () => ({ peekTrailer: relay.peekTrailer, prepareTrailer: relay.prepareTrailer, warmStart: relay.warmStart }));
+vi.mock("../trailerPrepare", () => ({
+  holdsSource: relay.holdsSource, peekTrailer: relay.peekTrailer, prepareTrailer: relay.prepareTrailer, warmStart: relay.warmStart,
+}));
 vi.mock("../titleVideos", () => ({ fetchTitleVideos }));
 vi.mock("../ytExtract", () => ({ prewarmExtraction }));
 
@@ -51,6 +54,7 @@ beforeEach(() => {
   resetYouTubeGuard();
   for (const mock of [...Object.values(relay), fetchTitleVideos]) mock.mockReset();
   relay.peekTrailer.mockReturnValue(null);
+  relay.holdsSource.mockReturnValue(false);
   relay.warmStart.mockResolvedValue(undefined);
   vi.spyOn(console, "log").mockImplementation(() => undefined);
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
@@ -109,6 +113,18 @@ describe("mémoire de la décision", () => {
     expect(await decidePreview(title(), "fr", "alice")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
     expect(fetchTitleVideos).toHaveBeenCalledTimes(1);
     expect(relay.resolveTrailer).toHaveBeenCalledTimes(2);
+  });
+
+  it("une source GARDÉE (redémarrage, révocation) qui ne se lit plus : une extraction neuve, une seule", async () => {
+    fetchTitleVideos.mockResolvedValue(trailers("aaaaaaaaaaa"));
+    relay.holdsSource.mockReturnValue(true);
+    relay.resolveTrailer.mockResolvedValue(hls());
+    relay.prepareTrailer.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    expect(await decidePreview(title(), "fr", "alice")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
+    expect(relay.resolveTrailer.mock.calls).toEqual([
+      ["aaaaaaaaaaa", { priority: "preview", budgetMs: 20_000 }],
+      ["aaaaaaaaaaa", { priority: "preview", budgetMs: 20_000, fresh: true }],
+    ]);
   });
 
   it("aucune bande-annonce : gardé une heure ; une par langue", async () => {

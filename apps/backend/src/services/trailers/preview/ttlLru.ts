@@ -28,6 +28,11 @@ export class TtlLru<V> {
     }
   }
 
+  /** Les entrées encore valables, la plus anciennement servie d'abord, avec leur échéance. */
+  dump(now = Date.now()): Array<{ key: string; value: V; until: number }> {
+    return [...this.entries].filter(([, e]) => e.until > now).map(([key, e]) => ({ key, value: e.value, until: e.until }));
+  }
+
   delete(key: string): void {
     this.entries.delete(key);
   }

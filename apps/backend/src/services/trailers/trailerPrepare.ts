@@ -31,6 +31,12 @@ export async function prepareTrailer(ytId: string, extraction: ExtractionOptions
   return !!video && !!sound;
 }
 
+/** Le relais tient-il la SOURCE de cette vidéo (extraite, URL encore valables), prête ou non ? */
+export function holdsSource(ytId: string): boolean {
+  const entry = heldEntry(ytId);
+  return !!entry && entry.validUntil > Date.now();
+}
+
 /**
  * La vidéo si le relais la tient DÉJÀ prête (extraite, maître lu) — sans
  * extraction ni lecture amont ; sinon `null`, et qui la veut la résout.
