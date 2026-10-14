@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SCROLL_SETTLE_MS, createPreviewScrolling } from "./previewScrolling";
+import { GESTURE_WINDOW_MS, SCROLL_SETTLE_MS, createPreviewScrolling } from "./previewScrolling";
 
 /**
  * Le défilement en cours : vrai dès le premier évènement, faux un temps franc
@@ -26,7 +26,7 @@ describe("previewScrolling — le défilement en cours", () => {
   it("démarre au premier évènement et s'arrête un temps franc après le dernier", () => {
     const scroll = createPreviewScrolling(now);
     expect(scroll.isScrolling()).toBe(false);
-    scroll.onScroll();
+    scroll.onGesture("wheel");
     expect(scroll.isScrolling()).toBe(true);
     // Un geste continu : un évènement par image pendant 600 ms.
     for (let t = 0; t < 600; t += 16) {
@@ -46,6 +46,7 @@ describe("previewScrolling — le défilement en cours", () => {
     const stop = scroll.subscribe(() => {
       calls += 1;
     });
+    scroll.onGesture("key");
     for (let i = 0; i < 30; i++) {
       scroll.onScroll();
       advance(16);
@@ -59,10 +60,27 @@ describe("previewScrolling — le défilement en cours", () => {
 
   it("une pause plus longue que le temps franc fait deux défilements", () => {
     const scroll = createPreviewScrolling(now);
-    scroll.onScroll();
+    scroll.onGesture("wheel");
     advance(SCROLL_SETTLE_MS + 50);
     expect(scroll.isScrolling()).toBe(false);
     scroll.onScroll();
     expect(scroll.isScrolling()).toBe(true);
+  });
+
+  it("ne compte pas les défilements que la page fait d'elle-même (ancrage, accroche, scrollIntoView)", () => {
+    const scroll = createPreviewScrolling(now);
+    scroll.onScroll();
+    expect(scroll.isScrolling()).toBe(false);
+    // Une touche, puis le défilement doux qu'elle provoque : il compte.
+    scroll.onGesture("key");
+    expect(scroll.isScrolling()).toBe(false);
+    advance(30);
+    scroll.onScroll();
+    expect(scroll.isScrolling()).toBe(true);
+    // Bien après le geste, la rangée qui se raccroche toute seule ne compte plus.
+    advance(GESTURE_WINDOW_MS + SCROLL_SETTLE_MS + 50);
+    expect(scroll.isScrolling()).toBe(false);
+    scroll.onScroll();
+    expect(scroll.isScrolling()).toBe(false);
   });
 });

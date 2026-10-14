@@ -14,15 +14,31 @@ import { useSyncExternalStore } from "react";
  * cesse que si la carte quitte le pointeur, et une grande vignette met du
  * temps à le quitter.
  *
+ * Seul compte le défilement d'un GESTE : la molette (pavé tactile compris),
+ * une touche qui fait défiler. Les défilements que la page fait d'elle-même —
+ * l'ancrage du navigateur quand une image arrive, `scrollIntoView`, la rangée
+ * qui se raccroche après un aperçu — ne bloquent rien : le dernier repoussait
+ * l'aperçu suivant de 300 ms (relevé au banc, 14/10).
+ *
  * La reprise : après la molette ou le pavé tactile, la porte globale exige en
  * plus un vrai mouvement (`previewQuiet`) ; après un défilement au clavier,
  * l'arrêt franc suffit, et les règles d'intention repartent de zéro.
  */
 export const SCROLL_SETTLE_MS = 180;
+/**
+ * Un défilement compte s'il suit un geste de moins d'une seconde : le
+ * défilement doux d'un cran de molette, ou d'une touche, dure ~300 ms ; l'élan
+ * du pavé tactile arrive, lui, en évènements de molette.
+ */
+export const GESTURE_WINDOW_MS = 1000;
+/** Les touches qui font défiler la page (ou une rangée, aux flèches). */
+const SCROLL_KEYS = new Set(["PageUp", "PageDown", " ", "Spacebar", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"]);
 
 export interface PreviewScrolling {
   isScrolling: () => boolean;
-  /** Un évènement de défilement (ou de molette) vient d'arriver. */
+  /** Un geste qui fait défiler : la molette (qui défile aussitôt), une touche. */
+  onGesture: (kind: "wheel" | "key") => void;
+  /** Un évènement de défilement : ne compte que dans la foulée d'un geste. */
   onScroll: () => void;
   subscribe: (listener: () => void) => () => void;
 }
@@ -31,6 +47,7 @@ export interface PreviewScrolling {
 export function createPreviewScrolling(now: () => number = () => performance.now()): PreviewScrolling {
   let scrolling = false;
   let last = 0;
+  let gesture = Number.NEGATIVE_INFINITY;
   let timer: ReturnType<typeof setTimeout> | null = null;
   const listeners = new Set<() => void>();
   const notify = () => {
@@ -48,14 +65,21 @@ export function createPreviewScrolling(now: () => number = () => performance.now
     scrolling = false;
     notify();
   };
+  const mark = () => {
+    last = now();
+    if (timer === null) timer = setTimeout(settle, SCROLL_SETTLE_MS);
+    if (scrolling) return;
+    scrolling = true;
+    notify();
+  };
   return {
     isScrolling: () => scrolling,
+    onGesture: (kind) => {
+      gesture = now();
+      if (kind === "wheel") mark();
+    },
     onScroll: () => {
-      last = now();
-      if (timer === null) timer = setTimeout(settle, SCROLL_SETTLE_MS);
-      if (scrolling) return;
-      scrolling = true;
-      notify();
+      if (now() - gesture <= GESTURE_WINDOW_MS) mark();
     },
     subscribe: (listener) => {
       listeners.add(listener);
@@ -79,7 +103,14 @@ if (typeof window !== "undefined") {
     },
     { capture: true, passive: true },
   );
-  window.addEventListener("wheel", () => previewScrolling.onScroll(), { capture: true, passive: true });
+  window.addEventListener("wheel", () => previewScrolling.onGesture("wheel"), { capture: true, passive: true });
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (SCROLL_KEYS.has(e.key)) previewScrolling.onGesture("key");
+    },
+    { capture: true, passive: true },
+  );
 }
 
 /** Un défilement est-il en cours ? Un abonnement par session d'aperçu (carte survolée). */
