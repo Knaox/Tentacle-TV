@@ -31,7 +31,7 @@ const { PreviewFrame } = await import("./PreviewFrame");
 const { CardHoverShell } = await import("../CardHoverShell");
 
 const holds: boolean[] = [];
-function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel?: boolean } = {}) {
+function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel?: boolean; crop?: number } = {}) {
   return {
     placement: over.panel
       ? { left: 120, top: 300, width: 344, height: 350, videoHeight: 194, from: { x: -4, y: 2, scale: 0.6453 } }
@@ -42,7 +42,7 @@ function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel
       mount: true,
       visible: over.shown ?? false,
       videoReady: true,
-      videoCrop: 1,
+      videoCrop: over.crop ?? 1,
       reportStillReady: () => undefined,
       muted: over.muted ?? false,
       toggleMute: () => undefined,
@@ -110,6 +110,11 @@ describe("PreviewFrame — vue", () => {
     expect(html).toContain('data-group="true"');
     expect(html).toContain('aria-label="previewLabel(Metropolis)"');
     expect(html).not.toContain('aria-hidden="true" inert');
+  });
+
+  it("rogne le letterbox incrusté par l'échelle que mesure le moteur, sur la scène de la vidéo", () => {
+    expect(render(view({ shown: true, crop: 1.349 }))).toContain('class="card-preview-stage" style="--pv-video-crop:1.349"');
+    expect(render(view({ shown: true }))).toContain('class="card-preview-stage" style="--pv-video-crop:1"');
   });
 
   it("dit le geste du bouton du son, pas son état", () => {

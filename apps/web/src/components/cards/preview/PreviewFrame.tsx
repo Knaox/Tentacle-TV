@@ -83,7 +83,7 @@ export function PreviewFrame({ view, title, artItem, detailItemId, backdropUrl, 
       onBlur={onBlur}
     >
       <div className="card-preview-surface" data-layout={withPanel ? "panel" : "overlay"}>
-        <div className="card-preview-stage">
+        <div className="card-preview-stage" style={{ "--pv-video-crop": engine.videoCrop } as CSSProperties}>
           <PreviewMedia engine={engine} shown={shown} settled={settled} backdropUrl={art.backdropUrl} />
           <div aria-hidden className="card-preview-veil" />
           <PreviewMuteButton muted={engine.muted} onToggle={engine.toggleMute} />

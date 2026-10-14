@@ -51,6 +51,8 @@
 .card-preview-stage {
   position: absolute;
   inset: 0;
+  /* Rogne la vidéo agrandie par `--pv-video-crop` (son letterbox incrusté). */
+  overflow: hidden;
   /* Les mesures de ce qui s'y pose (le son), à l'échelle de la mini-carte. */
   --pv-mute: clamp(28px, 8.2cqi, 38px);
   --pv-edge: clamp(8px, 2.6cqi, 14px);
@@ -71,8 +73,12 @@
 }
 
 /* La vidéo rejoint l'image du titre en fondu quand elle part (`PreviewMedia`) ;
- * elle s'efface d'un coup (la mini-carte est encore transparente à cet instant). */
+ * elle s'efface d'un coup (la mini-carte est encore transparente à cet instant).
+ * Son letterbox INCRUSTÉ (une bande-annonce 2,39:1 dans un 16:9) est rogné par
+ * l'échelle que le moteur mesure sur sa première image (`videoCrop`, 1 = rien) :
+ * posée pendant qu'elle est encore cachée, statique — le compositeur seul. */
 .card-preview-video {
+  transform: scale(var(--pv-video-crop, 1));
   transition: opacity 360ms var(--ease-out);
 }
 
