@@ -8,9 +8,10 @@ import type { RichTrailer } from "../components/detail/trailerLang";
  * complète TMDB (Jellyseerr), dédupliqués et triés selon la langue d'interface.
  * Films + séries (les épisodes n'ont pas de tmdbId propre → Jellyfin seul).
  * La logique vit dans l'api-client (`useRemoteTrailers`), commune à toutes
- * les plateformes ; ici, la langue de l'interface web.
+ * les plateformes ; ici, la langue de l'interface web. Sans titre : rien
+ * n'est demandé (le catalogue du serveur le remplace).
  */
-export function useItemRemoteTrailers(item: MediaItem): RichTrailer[] {
+export function useItemRemoteTrailers(item: MediaItem | undefined): RichTrailer[] {
   const { i18n } = useTranslation();
   return useRemoteTrailers(item, i18n.language);
 }

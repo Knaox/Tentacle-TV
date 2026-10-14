@@ -7,3 +7,4 @@
 export * from "./extraLabels";
 export * from "./extraEntries";
 export * from "./trailerTarget";
+export * from "./catalogExtras";

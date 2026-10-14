@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
-import { buildExtraEntries, type ExtraEntry } from "@tentacle-tv/shared";
+import { buildExtraEntries, catalogTiles, type CatalogRow, type ExtraEntry, type RelayedTrailerEntry } from "@tentacle-tv/shared";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
 import { RowHeader } from "../rows/RowHeader";
 import { TrailerViewer } from "./TrailerViewer";
+import { CatalogTrailerPlayer } from "./CatalogTrailerPlayer";
 import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
 import { sortTrailersByLang, type RichTrailer } from "./trailerLang";
@@ -23,14 +24,21 @@ interface ExtrasRowProps {
   remoteTrailers: RichTrailer[];
   /** Libellé de groupe optionnel (nom de saison). */
   title?: string;
+  /**
+   * Les vidéos de CETTE portée au catalogue du serveur (lecteur complet) :
+   * elles remplacent `remoteTrailers`, et se lisent sans publicité, la suite
+   * de la rangée enchaînée.
+   */
+  catalog?: CatalogRow | null;
 }
 
 /**
  * Rangée « Extras » : bandes-annonces LOCALES et bonus (lus dans le lecteur via
  * /watch), puis trailers DISTANTS (lecteur complet, sinon modale YouTube) — l'ordre et les libellés du
- * modèle partagé (`buildExtraEntries`). Masquée si rien à montrer.
+ * modèle partagé (`buildExtraEntries`) ; avec le catalogue, ses vidéos à la
+ * place, AlloCiné compris (`catalogExtras.ts`, shared). Masquée si rien à montrer.
  */
-export function ExtrasRow({ owner, remoteTrailers, title }: ExtrasRowProps) {
+export function ExtrasRow({ owner, remoteTrailers, title, catalog = null }: ExtrasRowProps) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
   const client = useJellyfinClient();
@@ -38,9 +46,15 @@ export function ExtrasRow({ owner, remoteTrailers, title }: ExtrasRowProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
 
-  const remote = useMemo(() => sortTrailersByLang(remoteTrailers, i18n.language), [remoteTrailers, i18n.language]);
+  const [playing, setPlaying] = useState<RelayedTrailerEntry | null>(null);
+
+  const remote = useMemo(
+    () => (catalog ? [] : sortTrailersByLang(remoteTrailers, i18n.language)),
+    [catalog, remoteTrailers, i18n.language],
+  );
   const entries = useMemo(() => buildExtraEntries(t, local, remote), [t, local, remote]);
-  if (entries.length === 0) return null;
+  const tiles = useMemo(() => (catalog ? catalogTiles(t, catalog) : []), [t, catalog]);
+  if (entries.length === 0 && tiles.length === 0) return null;
 
   const open = (entry: ExtraEntry) => {
     if (entry.source === "local") {
@@ -78,6 +92,16 @@ export function ExtrasRow({ owner, remoteTrailers, title }: ExtrasRowProps) {
             onClick={() => open(entry)}
           />
         ))}
+        {tiles.map((tile) => (
+          <ExtraTile
+            key={tile.key}
+            label={tile.title}
+            sublabel={tile.subtitle}
+            thumb={tile.thumbUrl}
+            youtubeId={tile.youtubeId ?? undefined}
+            onClick={() => setPlaying(tile.entry)}
+          />
+        ))}
       </HorizontalScrollRow>
       {remote.length > 0 && (
         <TrailerViewer
@@ -86,6 +110,9 @@ export function ExtrasRow({ owner, remoteTrailers, title }: ExtrasRowProps) {
           trailers={remote}
           initialIndex={startIndex}
         />
+      )}
+      {playing && catalog && (
+        <CatalogTrailerPlayer entries={catalog.entries} start={playing} language={catalog.language} onClose={() => setPlaying(null)} />
       )}
     </section>
   );
