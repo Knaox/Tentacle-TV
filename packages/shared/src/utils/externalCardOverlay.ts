@@ -1,4 +1,4 @@
-import { cardExtraLabelKey, type CardOverlayVariant, type CardTrayExtra } from "./cardOverlay";
+import { cardExtraLabelKey, type CardOverlaySurface, type CardOverlayVariant, type CardTrayExtra } from "./cardOverlay";
 import type { TitleMediaType, TitleRequestOffer } from "../search/pluginTitles";
 import type { MediaItem } from "../types/media";
 
@@ -43,6 +43,13 @@ export interface ExternalCardOverlayInput {
    * cœur — jamais un geste qui échouerait. Absent : vrai.
    */
   likes?: boolean;
+  /**
+   * `preview` : la mini-carte d'aperçu de bande-annonce — comme pour un titre
+   * de la bibliothèque (`resolveCardOverlay`), « Plus d'infos » s'y ajoute, en
+   * dernier : sous la vidéo, rien ne dit que son clic ouvre la page du titre.
+   * « Demander » reste en tête, seule action en couleur.
+   */
+  surface?: CardOverlaySurface;
 }
 
 export interface ExternalCardOverlay {
@@ -62,8 +69,12 @@ export interface ExternalCardOverlay {
 
 const NO_EXTRAS: readonly CardTrayExtra[] = [];
 const DISMISS: readonly CardTrayExtra[] = ["dismiss"];
+const DETAILS: readonly CardTrayExtra[] = ["details"];
+const DISMISS_DETAILS: readonly CardTrayExtra[] = ["dismiss", "details"];
 
 export function resolveExternalCardOverlay(input: ExternalCardOverlayInput): ExternalCardOverlay {
+  const reco = input.variant === "reco";
+  const preview = input.surface === "preview";
   return {
     variant: input.variant,
     request: input.request,
@@ -71,7 +82,7 @@ export function resolveExternalCardOverlay(input: ExternalCardOverlayInput): Ext
     rate: input.identified,
     watchlist: input.identified,
     favorite: input.identified && input.likes !== false,
-    extras: input.variant === "reco" ? DISMISS : NO_EXTRAS,
+    extras: preview ? (reco ? DISMISS_DETAILS : DETAILS) : reco ? DISMISS : NO_EXTRAS,
   };
 }
 

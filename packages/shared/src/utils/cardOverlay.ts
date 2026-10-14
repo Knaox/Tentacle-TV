@@ -32,9 +32,20 @@ import { CARD_STATUS_ORDER, type CardStatusKind } from "./cardMarkers";
  *
  * Ce module ne décide que de CE QUI est offert, dans quel ordre, et sous quel
  * libellé. La forme appartient à chaque plateforme.
+ *
+ * UNE exception de SURFACE, la mini-carte d'aperçu de bande-annonce du web et
+ * du bureau (`surface: "preview"`) : la carte s'y efface sous une vidéo, et
+ * rien ne dit plus ce que fait le clic sur la vidéo — la fiche sur une
+ * affiche, la lecture sur une vignette. Elle offre donc les deux gestes à
+ * toutes les variantes : « Lire » en tête dès que le titre se lit, « Plus
+ * d'infos » toujours, en dernier. Même ordre, mêmes libellés ; la surface
+ * « card » (et toute plateforme qui ne la nomme pas) ne change pas.
  */
 
 export type CardOverlayVariant = "poster" | "landscape" | "reco";
+
+/** Où le survol se rend : sur la carte (partout), ou dans la mini-carte d'aperçu (web, bureau). */
+export type CardOverlaySurface = "card" | "preview";
 
 /** Une bascule du survol — exactement un état de la pastille du repos. */
 export type CardToggleKind = CardStatusKind;
@@ -83,6 +94,12 @@ export interface CardOverlayInput {
    * la note aussi (moteur de notes), et le titre est déjà sur l'appareil.
    */
   local?: boolean;
+  /**
+   * `preview` : la mini-carte d'aperçu de bande-annonce (cf. l'en-tête) —
+   * « Lire » en tête sur toutes les variantes, « Plus d'infos » toujours, en
+   * dernier. Absent : la carte.
+   */
+  surface?: CardOverlaySurface;
 }
 
 export interface CardOverlay {
@@ -135,18 +152,22 @@ export function resolveCardOverlay(input: CardOverlayInput): CardOverlay {
 
   // Compléter le titre : une carte de la bibliothèque, servie par le serveur.
   const request = inLibrary && !local && input.request === true;
+  // La mini-carte : le clic sur sa vidéo ne se devine pas (cf. l'en-tête).
+  const preview = input.surface === "preview";
   const extras: CardTrayExtra[] = [];
   // Cinq boutons au plus sur une affiche (espacement de WCAG 2.5.8, cf.
   // `CardTrayExtra`) : « Demander » prend la place du hors ligne, qui reste à
-  // la fiche — comme sur une recommandation.
+  // la fiche — comme sur une recommandation. La mini-carte, large d'au moins
+  // 288 px, en tient six : « Plus d'infos » s'y ajoute, en dernier.
   if (inLibrary && !local && input.offline === true && variant !== "reco" && !request) extras.push("offline");
-  if (open === "play") extras.push("details");
+  if (open === "play" && !preview) extras.push("details");
   if (variant === "reco") extras.push("dismiss");
+  if (preview) extras.push("details");
 
   return {
     variant,
     play: playable ? { labelKey: input.resume === true ? "resume" : "play" } : null,
-    playInTray: playable && open !== "play",
+    playInTray: playable && (open !== "play" || preview),
     open,
     request,
     rate: input.rateable && !local,
