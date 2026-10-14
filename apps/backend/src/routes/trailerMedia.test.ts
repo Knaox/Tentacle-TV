@@ -23,7 +23,7 @@ vi.mock("../middleware/auth", () => ({
 }));
 
 import { trailerRoutes } from "./trailers";
-import { trailerMediaRoutes } from "./trailerMedia";
+import { playlistCacheControl, trailerMediaRoutes } from "./trailerMedia";
 import { resetTrailerRelay } from "../services/trailers/trailerRelay";
 import { signRelayToken } from "../services/trailers/relayToken";
 
@@ -254,6 +254,22 @@ describe("flux relayés", () => {
     vi.stubGlobal("fetch", googlevideo(2));
     expect((await app.inject({ url: `/api/trailers/hls/${ID}/s/95/0.ts?t=${preview}` })).statusCode).toBe(404);
     expect(extractTrailerSource).toHaveBeenCalledTimes(1);
+  });
+
+  it("les listes d'un APERÇU restent dans le cache du navigateur (privé, jusqu'à l'échéance du jeton) ; celles d'une lecture, jamais", async () => {
+    extractTrailerSource.mockResolvedValue(hls(1));
+    vi.stubGlobal("fetch", googlevideo(1));
+    const app = await server();
+    const play = new URL(await resolved(app), "http://x").searchParams.get("t");
+    const preview = signRelayToken(ID, Date.now(), "preview");
+    for (const name of ["master.m3u8", "master-1080.m3u8", "p/95.m3u8"]) {
+      expect((await app.inject({ url: `/api/trailers/hls/${ID}/${name}?t=${preview}` })).headers["cache-control"]).toBe("private, max-age=3600");
+      expect((await app.inject({ url: `/api/trailers/hls/${ID}/${name}?t=${play}` })).headers["cache-control"]).toBe("private, no-store");
+    }
+    // Près de son échéance, un jeton d'aperçu ne se garde plus qu'une minute avant elle — puis plus du tout.
+    expect(playlistCacheControl("preview", 1_000_000 + 10 * 60_000, 1_000_000)).toBe("private, max-age=540");
+    expect(playlistCacheControl("preview", 1_000_000 + 30_000, 1_000_000)).toBe("private, no-store");
+    expect(playlistCacheControl("play", 1_000_000 + 10 * 60_000, 1_000_000)).toBe("private, no-store");
   });
 
   it("une panne amont se dit en 502, un délai en 504 — jamais en 500", async () => {

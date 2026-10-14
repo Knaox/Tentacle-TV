@@ -53,6 +53,12 @@ export function relayTokenScope(ytId: string, token: unknown, now = Date.now()):
   return given.length === expected.length && timingSafeEqual(given, expected) ? scope : null;
 }
 
+/** L'échéance (ms) qu'un jeton porte — lue sans le vérifier : `relayTokenScope` d'abord. */
+export function relayTokenExpiry(token: string): number | null {
+  const expiry = parseInt(token.split(".")[0] ?? "", 36);
+  return Number.isFinite(expiry) ? expiry * 1000 : null;
+}
+
 /** Le jeton ouvre-t-il les flux de `ytId` à cet instant, quelle que soit sa portée ? */
 export function verifyRelayToken(ytId: string, token: unknown, now = Date.now()): boolean {
   return relayTokenScope(ytId, token, now) !== null;

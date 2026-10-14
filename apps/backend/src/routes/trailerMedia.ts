@@ -13,7 +13,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Response as UpstreamResponse } from "undici";
 import { requestSignal } from "./jellyfinProxy/clientAbort";
 import { cutoffReason } from "./jellyfinProxy/streamLog";
-import { relayTokenScope, type RelayScope } from "../services/trailers/relayToken";
+import { relayTokenExpiry, relayTokenScope, type RelayScope } from "../services/trailers/relayToken";
 import {
   TOKEN_SLOT, fetchUpstream, masterTemplate, mediaTemplate, progressiveTarget, relayAttempts, segmentTarget,
 } from "../services/trailers/trailerRelay";
@@ -50,12 +50,26 @@ function authorize(ytId: string, request: FastifyRequest, reply: FastifyReply): 
   return { ytId, token: t as string, scope };
 }
 
-function sendPlaylist(reply: FastifyReply, template: string | null, token: string) {
+/**
+ * Le cache d'une liste relayée. Ses URI portent le jeton : jamais dans un
+ * cache intermédiaire (`private`). Pour un APERÇU, le navigateur la garde
+ * jusqu'à une minute avant l'échéance du jeton (une heure au plus) : un
+ * survol qui revient sur la carte relit maître et listes de son cache, comme
+ * les segments, sans rien redemander. Elle ne change jamais sous ce jeton
+ * (un jeton d'aperçu ne fait jamais ré-extraire). Une lecture (TV) ne garde
+ * rien : une nouvelle extraction peut changer ses variantes.
+ */
+export function playlistCacheControl(scope: RelayScope, tokenExpiryMs: number | null, now = Date.now()): string {
+  if (scope !== "preview" || tokenExpiryMs === null) return "private, no-store";
+  const seconds = Math.min(3600, Math.floor((tokenExpiryMs - now) / 1000) - 60);
+  return seconds > 0 ? `private, max-age=${seconds}` : "private, no-store";
+}
+
+function sendPlaylist(reply: FastifyReply, template: string | null, access: { token: string; scope: RelayScope }) {
   if (template === null) return reply.status(404).send({ error: "unavailable" });
-  // Les URI portent le jeton : rien à garder en cache intermédiaire.
-  reply.header("Cache-Control", "private, no-store");
+  reply.header("Cache-Control", playlistCacheControl(access.scope, relayTokenExpiry(access.token)));
   reply.type(HLS_MIME);
-  return reply.send(template.split(TOKEN_SLOT).join(token));
+  return reply.send(template.split(TOKEN_SLOT).join(access.token));
 }
 
 /** Relaie une réponse amont (statut, type, longueur, plage) vers AVPlayer. */
@@ -105,7 +119,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     const match = MASTER_RE.exec(request.params.name ?? "");
     if (!match) return reply.status(404).send({ error: "unknown" });
     const height = match[1] ? Number(match[1]) : undefined;
-    return sendPlaylist(reply, await masterTemplate(access.ytId, height, access.scope), access.token);
+    return sendPlaylist(reply, await masterTemplate(access.ytId, height, access.scope), access);
   });
 
   app.get<{ Params: Params }>("/subs/:ytId/:name", async (request, reply) => {
@@ -125,7 +139,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     if (!access) return reply;
     const key = request.params.name?.replace(/\.m3u8$/, "") ?? "";
     if (!KEY_RE.test(key)) return reply.status(404).send({ error: "unknown" });
-    return sendPlaylist(reply, await mediaTemplate(access.ytId, key, access.scope), access.token);
+    return sendPlaylist(reply, await mediaTemplate(access.ytId, key, access.scope), access);
   });
 
   app.get<{ Params: Params }>("/hls/:ytId/s/:key/:name", VIDEO_BYTES, async (request, reply) => {
