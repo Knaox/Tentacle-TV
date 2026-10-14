@@ -46,6 +46,29 @@ describe("tvRecoShelves", () => {
     expect(tvRecoShelves(page([{ key: "forYou", items }]))[0].items).toHaveLength(24);
   });
 
+  it("garde ouverte (`external`) : les titres hors bibliothèque restent à leur place", () => {
+    const shelves = tvRecoShelves(page([{ key: "forYou", items: [lib("a"), outside("x"), lib("b"), outside("y")] }]), { external: true });
+    expect(shelves[0].items.map((i) => i.key)).toEqual(["movie:a", "movie:x", "movie:b", "movie:y"]);
+  });
+
+  it("garde ouverte : un titre hors bibliothèque ne revient pas non plus d'une rangée à l'autre", () => {
+    const shelves = tvRecoShelves(page([
+      { key: "forYou", items: [outside("x"), lib("a"), lib("b")] },
+      { key: "discover", items: [outside("x"), outside("y"), outside("z"), outside("w")] },
+    ]), { external: true });
+    expect(shelves.map((s) => s.items.map((i) => i.key))).toEqual([
+      ["movie:x", "movie:a", "movie:b"],
+      ["movie:y", "movie:z", "movie:w"],
+    ]);
+  });
+
+  it("garde ouverte : le héros reste un titre de la bibliothèque, et ne revient pas dans les étagères", () => {
+    const p = page([{ key: "forYou", items: [outside("x"), lib("a"), lib("b"), outside("y")] }]);
+    const hero = tvRecoHero(p);
+    expect(hero?.jellyfinItemId).toBe("a");
+    expect(tvRecoShelves(p, { hero, external: true })[0].items.map((i) => i.key)).toEqual(["movie:x", "movie:b", "movie:y"]);
+  });
+
   it("garde le titre de la graine", () => {
     const shelves = tvRecoShelves(page([
       { key: "becauseYouLiked:movie:603", seedTitle: "Matrix", items: [lib("a"), lib("b"), lib("c")] },

@@ -5,7 +5,8 @@
  * maintenu ouvre le grand panneau — dans la forme de la carte (affiche 2:3 ou
  * vignette 16:9 : la note d'une vignette d'épisode est la sienne, celle d'une
  * affiche est celle de la série), celui d'une recommandation, ou celui d'un
- * titre ABSENT de la bibliothèque (garde Vigie ouverte). `null` : la carte ne
+ * titre ABSENT de la bibliothèque (garde Vigie ouverte) — recommandé, il garde
+ * « Ne plus me proposer ». `null` : la carte ne
  * s'ouvre pas par l'appui maintenu — et ne le dit pas (pas d'indication).
  *
  * « Noter » de la fiche ouvre le même panneau réduit à la note, sur l'item de
@@ -16,7 +17,8 @@
 export type HoldPanel =
   | { kind: "media"; variant: "poster" | "landscape" }
   | { kind: "reco" }
-  | { kind: "absent" };
+  /** `dismiss` : un titre absent RECOMMANDÉ — « Ne plus me proposer » suit la demande. */
+  | { kind: "absent"; dismiss?: boolean };
 
 /** Une rangée de l'accueil, par sa nature. */
 export type HomeRowKind = "resume" | "nextUp" | "watched" | "watchlist" | "favorites" | "library" | "reco";
@@ -29,10 +31,12 @@ export type SearchCardKind = "episode" | "title" | "librarySeries" | "absentTitl
 
 /** D'où vient la carte tenue. */
 export type HoldSource =
-  | { surface: "homeRow"; row: HomeRowKind }
+  /** `absent` : un titre recommandé HORS bibliothèque (rangée reco, garde Vigie ouverte). */
+  | { surface: "homeRow"; row: HomeRowKind; absent?: boolean }
   /** Les boutons du héros de l'accueil : le titre affiché, dans la forme de sa source. */
   | { surface: "hero"; fromResume: boolean }
-  | { surface: "forYou" }
+  /** `absent` : un titre recommandé HORS bibliothèque (garde Vigie ouverte). */
+  | { surface: "forYou"; absent?: boolean }
   /** `librarySeries` : une série de la bibliothèque à compléter, rangée « À demander ». */
   | { surface: "search"; card: SearchCardKind }
   /** `requestable` : un volet absent se demande (garde Vigie ouverte, titre connu). */
@@ -44,6 +48,7 @@ const POSTER: HoldPanel = { kind: "media", variant: "poster" };
 const LANDSCAPE: HoldPanel = { kind: "media", variant: "landscape" };
 const RECO: HoldPanel = { kind: "reco" };
 const ABSENT: HoldPanel = { kind: "absent" };
+const ABSENT_RECO: HoldPanel = { kind: "absent", dismiss: true };
 
 /** Les rangées d'épisodes sont des vignettes : « Reprendre », « Prochains épisodes », « Déjà vu ». */
 const LANDSCAPE_ROWS: ReadonlySet<HomeRowKind> = new Set(["resume", "nextUp", "watched"]);
@@ -51,12 +56,12 @@ const LANDSCAPE_ROWS: ReadonlySet<HomeRowKind> = new Set(["resume", "nextUp", "w
 export function holdPanelOf(source: HoldSource): HoldPanel | null {
   switch (source.surface) {
     case "homeRow":
-      if (source.row === "reco") return RECO;
+      if (source.row === "reco") return source.absent ? ABSENT_RECO : RECO;
       return LANDSCAPE_ROWS.has(source.row) ? LANDSCAPE : POSTER;
     case "hero":
       return source.fromResume ? LANDSCAPE : POSTER;
     case "forYou":
-      return RECO;
+      return source.absent ? ABSENT_RECO : RECO;
     case "search":
       if (source.card === "episode") return LANDSCAPE;
       if (source.card === "absentTitle") return ABSENT;

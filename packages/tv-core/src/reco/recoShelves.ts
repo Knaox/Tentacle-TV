@@ -1,12 +1,16 @@
 /**
  * La page de recommandations d'un téléviseur : des étagères de la
- * bibliothèque, jamais de catalogue extérieur.
+ * bibliothèque, et — quand la TV sait les demander — des titres hors
+ * bibliothèque.
  *
  * Le moteur sert des rangées mêlées — des titres du serveur, et d'autres
  * qu'il faudrait demander (ce que proposent le web et le mobile, par une
- * extension). Devant une télévision, une carte qu'on ne peut pas lire est une
- * impasse au bout d'un appui : les étagères ne gardent que ce qui a un
- * `jellyfinItemId`. Un même titre ne revient pas d'une rangée à l'autre — à
+ * extension). Sans demande possible (garde Vigie fermée, webOS), une carte
+ * qu'on ne peut pas lire est une impasse au bout d'un appui : les étagères ne
+ * gardent que ce qui a un `jellyfinItemId`. Garde ouverte (`external`), le
+ * titre absent reste à sa place, grisé, et OK le demande. Le héros, lui, reste
+ * toujours un titre de la bibliothèque : il se lit. Un même titre ne revient
+ * pas d'une rangée à l'autre — à
  * trois mètres, la même affiche trois fois par page, c'est du bruit — et la
  * rangée qu'il vide ainsi disparaît.
  *
@@ -49,6 +53,9 @@ const HERO_ROWS = ["forYou", "inLibrary", "bestOfLibrary"];
 const inLibrary = <T extends TvRecoItemLike>(item: T): item is T & { jellyfinItemId: string } =>
   item.jellyfinItemId !== null;
 
+/** L'identité d'un titre sur la page : son item s'il est là, sa clé sinon. */
+const identityOf = (item: TvRecoItemLike): string => item.jellyfinItemId ?? `key:${item.key}`;
+
 /**
  * Le titre mis en tête de page : le mieux classé de « Pour vous » qui soit
  * dans la bibliothèque, à défaut celui des rangées de la bibliothèque. Stable
@@ -69,23 +76,26 @@ export function tvRecoHero<T extends TvRecoItemLike>(page: TvRecoPageLike<T> | u
 }
 
 /**
- * Les étagères, dans l'ordre servi : bibliothèque seule, sans doublon (le
- * héros compris), bornées à `TV_RECO_SHELF_MAX`. Une rangée tombée sous
+ * Les étagères, dans l'ordre servi : bibliothèque seule — plus les titres
+ * hors bibliothèque si `external` (la TV sait les demander) —, sans doublon
+ * (le héros compris), bornées à `TV_RECO_SHELF_MAX`. Une rangée tombée sous
  * `TV_RECO_SHELF_MIN` disparaît — sauf s'il ne reste qu'elle.
  */
 export function tvRecoShelves<T extends TvRecoItemLike>(
   page: TvRecoPageLike<T> | undefined,
-  { hero = null, max = TV_RECO_SHELF_MAX }: { hero?: T | null; max?: number } = {},
+  { hero = null, max = TV_RECO_SHELF_MAX, external = false }: { hero?: T | null; max?: number; external?: boolean } = {},
 ): TvRecoShelf<T>[] {
   if (!page) return [];
   const seen = new Set<string>();
-  if (hero?.jellyfinItemId) seen.add(hero.jellyfinItemId);
+  if (hero) seen.add(identityOf(hero));
   const shelves: TvRecoShelf<T>[] = [];
   for (const row of page.rows) {
     const items: T[] = [];
     for (const item of row.items) {
-      if (!inLibrary(item) || seen.has(item.jellyfinItemId)) continue;
-      seen.add(item.jellyfinItemId);
+      if (!external && !inLibrary(item)) continue;
+      const identity = identityOf(item);
+      if (seen.has(identity)) continue;
+      seen.add(identity);
       items.push(item);
       if (items.length >= max) break;
     }
