@@ -286,7 +286,8 @@ listes, puis leur PREMIER segment — est lu d'avance (`trailerSegments.ts` :
 32 Mo, cinq minutes, quatre lectures à la fois) ; le lecteur qui les demande
 les reçoit de la mémoire ou rejoint la lecture en cours. Une décision à
 prendre démarre aussi l'ouvrier yt-dlp d'avance (`prewarmYtWorker`) : Python
-et yt-dlp se chargent pendant que TMDB répond.
+et yt-dlp se chargent pendant que TMDB répond — jamais pour une reprise dont
+le relais tient encore la source (aucune extraction ne suivra).
 
 **La mémoire** : la décision par (titre, langue) — trouvée jusqu'à
 l'échéance des URL, aucune bande-annonce une heure, aucune lisible dix
@@ -332,7 +333,8 @@ de toute la maison. Deux garde-fous, pour les aperçus seulement :
   rechute jusqu'à 4 h, remises à zéro par la première extraction réussie (une
   lecture de la TV suffit). Pendant ce temps, `/preview` répond tout de suite
   `unavailable`, sans TMDB ni extraction, sans rien retenir par titre ; une
-  bande-annonce déjà décidée que le relais tient encore se sert toujours. Un
+  bande-annonce déjà décidée que le relais tient encore — prête, ou sa seule
+  SOURCE (après un redémarrage, listes relâchées) — se sert toujours. Un
   aperçu bloqué n'essaie ni l'autre client ni la candidate suivante : un
   blocage n'est JAMAIS une candidate morte.
 - **Le budget.** 30 extractions d'aperçu par heure glissante pour tout le
@@ -384,8 +386,10 @@ spammer l'API ». Ce qui le tient :
 - **Un segment téléchargé une fois par titre et par page** : listes et
   segments d'un jeton d'APERÇU partent en `private, max-age=…, immutable`
   jusqu'à une minute avant l'échéance du jeton — un retour relit tout du
-  cache du navigateur sans même revalider (`trailerMedia.ts`). Les lectures
-  de la TV gardent leurs en-têtes.
+  cache du navigateur sans même revalider (`trailerMedia.ts`). Une réponse
+  RÉUSSIE seulement : un refus passager de googlevideo (503, 429) part en
+  `no-store`, la reprise de hls.js le redemande. Les lectures de la TV
+  gardent leurs en-têtes.
 - **Aucune requête pendant un balayage ou un défilement** : l'intention
   exige un pointeur ARRÊTÉ (cf. « Côté client ») ; un coup de molette ferme
   la porte globale (`previewQuiet.ts`, agent V) jusqu'à un vrai mouvement.
