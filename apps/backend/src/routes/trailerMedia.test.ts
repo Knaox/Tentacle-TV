@@ -275,6 +275,23 @@ describe("flux relayés", () => {
     expect(mediaCacheControl(access, expiry - 30_000)).toBe("private, no-store");
   });
 
+  it("un refus PASSAGER de googlevideo (503, 429) est relayé tel quel, jamais gardé par le navigateur : la reprise de hls.js le redemande", async () => {
+    extractTrailerSource.mockResolvedValue(hls(1));
+    const pages = googlevideo(1);
+    let status = 503;
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url.includes("/sq/") ? new Response("busy", { status }) : pages(url))));
+    const app = await server();
+    const preview = signRelayToken(ID, Date.now(), "preview");
+    const play = new URL(await resolved(app), "http://x").searchParams.get("t") as string;
+    for (const token of [preview, play]) {
+      const res = await app.inject({ url: `/api/trailers/hls/${ID}/s/95/0.ts?t=${token}` });
+      expect([res.statusCode, res.headers["cache-control"]]).toEqual([503, "private, no-store"]);
+    }
+    status = 429;
+    const res = await app.inject({ url: `/api/trailers/hls/${ID}/s/95/0.ts?t=${preview}` });
+    expect([res.statusCode, res.headers["cache-control"]]).toEqual([429, "private, no-store"]);
+  });
+
   it("une panne amont se dit en 502, un délai en 504 — jamais en 500", async () => {
     extractTrailerSource.mockResolvedValue(hls(1));
     const pages = googlevideo(1);

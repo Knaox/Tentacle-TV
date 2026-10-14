@@ -91,7 +91,12 @@ function sendPlaylist(reply: FastifyReply, template: string | null, access: Acce
   return reply.send(template.split(TOKEN_SLOT).join(access.token));
 }
 
-/** Relaie une réponse amont (statut, type, longueur, plage) vers AVPlayer. */
+/**
+ * Relaie une réponse amont (statut, type, longueur, plage) vers AVPlayer. Un
+ * refus PASSAGER de googlevideo (503, 429…) passe tel quel mais n'est jamais
+ * gardé : immuable dans le cache du navigateur, il aurait été resservi à la
+ * reprise du lecteur au lieu d'être redemandé.
+ */
 function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string, access: Access) {
   if (!res.body) return reply.status(502).send({ error: "upstream" });
   reply.status(res.status);
@@ -100,7 +105,7 @@ function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string,
     const value = res.headers.get(name);
     if (value) reply.header(name, value);
   }
-  reply.header("Cache-Control", mediaCacheControl(access));
+  reply.header("Cache-Control", res.ok ? mediaCacheControl(access) : "private, no-store");
   return reply.send(Readable.fromWeb(res.body as import("stream/web").ReadableStream));
 }
 
