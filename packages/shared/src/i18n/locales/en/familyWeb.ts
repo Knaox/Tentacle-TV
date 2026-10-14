@@ -56,6 +56,8 @@ export default {
     on: "PIN enabled",
     off: "No PIN",
     hint: "Asked when your profile is opened on a TV. Without a PIN, the profile opens right away.",
+    /** The server knows "Who's watching?" on desktop (`family.desktopProfiles`). */
+    hintDesktop: "Asked when your profile is opened on a TV, and on a computer in “Who's watching?” — including to switch back to your own profile. Without a PIN, the profile opens right away.",
     set: "Set a PIN",
     change: "Change",
     remove: "Remove",

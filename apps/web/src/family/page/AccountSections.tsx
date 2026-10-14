@@ -2,7 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Lock, LockOpen } from "lucide-react";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
-import { useDissolveFamily } from "@tentacle-tv/api-client";
+import { useDissolveFamily, useServerCapability } from "@tentacle-tv/api-client";
 import { Modal } from "../../components/ui/Modal";
 import { useToast } from "../../contexts/ToastContext";
 import { useFamilyText } from "../useFamilyText";
@@ -13,10 +13,13 @@ import { SECONDARY_BUTTON, SMALL_BUTTON } from "./familyUi";
  *  de mes familles (et « Gérer les profils » sur celles de la mienne). */
 export function MyPinSection({ hasPin }: { hasPin: boolean }) {
   const { t } = useTranslation("familyWeb");
+  // « Qui regarde ? » sur le bureau : le code protège aussi son profil sur un
+  // ordinateur — à dire seulement si le serveur le sait faire.
+  const desktopProfiles = useServerCapability("family.desktopProfiles");
   const [open, setOpen] = useState(false);
   return (
     <>
-      <SettingsSection title={t("myPin.title")} caption={t("myPin.hint")}>
+      <SettingsSection title={t("myPin.title")} caption={desktopProfiles ? t("myPin.hintDesktop") : t("myPin.hint")}>
         <SettingsRow
           icon={hasPin ? <Lock size={17} /> : <LockOpen size={17} />}
           label={hasPin ? t("myPin.on") : t("myPin.off")}
