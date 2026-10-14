@@ -23,32 +23,22 @@
 /*  le plafond du serveur.                                             */
 /* ------------------------------------------------------------------ */
 
-import type { TrailerCatalogRequest } from "../../../trailers/trailerCatalog";
+import type { TrailerVersion } from "../../../trailers/trailerCatalog";
 import { buildCatalog } from "../catalog/catalogBuild";
-import { resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
-import { holdsSource, peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
+import { holdsSource, peekTrailer } from "../trailerPrepare";
 import { prewarmExtraction, type ExtractionOptions } from "../ytExtract";
 import { previewRefusal } from "../youtubeGuard";
 import { attemptsOf, MAX_ATTEMPTS, previewCandidates, type PreviewCandidate } from "./previewCandidates";
-import type { TrailerVersion } from "../../../trailers/trailerCatalog";
-import { clearDecisions, knownDecision, remember, rememberRefusal, type Refusal } from "./previewDecisionMemory";
+import { clearDecisions, knownDecision, rememberRefusal, type Refusal } from "./previewDecisionMemory";
 import { PreviewRateLimiter } from "./previewRateLimit";
+import {
+  decisionKey, found, guardStop, newStages, playable, warmPlayerStart, type PreviewOutcome, type PreviewTarget,
+} from "./previewSteps";
 
 export {
   onPreviewDecisionsChange, restoreDecisions, storedDecisions, type Decision, type StoredDecision,
 } from "./previewDecisionMemory";
-
-/** Ce qu'un aperçu demande : sa clé de décision (`jf:<id>`, `tmdb:movie:<id>`) et la demande de catalogue. */
-export interface PreviewTarget {
-  key: string;
-  catalog: TrailerCatalogRequest;
-}
-
-export type PreviewOutcome =
-  | { kind: "found"; ref: string; resolved: ResolvedTrailer; version?: TrailerVersion }
-  | { kind: "refused"; error: Refusal }
-  /** Trop de demandes (le compte), trop de décisions en cours (le serveur), ou pas encore décidé : rien n'est retenu. */
-  | { kind: "limited"; retryAfterS: number };
+export type { PreviewOutcome, PreviewTarget };
 
 export { MAX_ATTEMPTS };
 /** Plus de nouvel essai passé ce temps : la décision dit « aucune lisible ». */
@@ -61,9 +51,7 @@ const BUSY_RETRY_S = 2;
 /** Le catalogue n'avait encore rien (une source finit en fond) : redemander bientôt, sans rien retenir. */
 const CATALOG_PENDING_RETRY_S = 3;
 /** Une langue de repli (la VF a échoué, la VO a répondu) ne se garde pas des heures. */
-const FALLBACK_LANG_TTL_MS = 10 * 60 * 1000;
-/** La version des RÈGLES de choix, dans la clé : une décision d'avant (rang du catalogue d'avant, vidéo d'un autre titre) ne sert plus. */
-const RULES_VERSION = "r5";
+export const FALLBACK_LANG_TTL_MS = 10 * 60 * 1000;
 /** Au-delà, la réponse dit « réessayez » ; la décision, elle, continue (sous les 15 s du client). */
 const RESPONSE_BUDGET_MS = 12_000;
 const STILL_DECIDING_RETRY_S = 1;
@@ -83,62 +71,6 @@ const wantedBy = (key: string) => () => (inflight.get(key)?.waiters ?? 0) > 0;
 function refuse(key: string, error: Refusal): PreviewOutcome {
   rememberRefusal(key, error);
   return { kind: "refused", error };
-}
-
-/** Le départ du lecteur au plus haut — listes et premiers segments — lu d'avance, sans rien attendre. */
-function warm(ref: string): void {
-  void warmStart(ref).catch(() => undefined);
-}
-
-/** Où passe le temps d'une décision (ms), pour le journal : de quoi savoir quoi accélérer. */
-interface Stages {
-  catalog: number;
-  extract: number;
-  verify: number;
-}
-
-const newStages = (): Stages => ({ catalog: 0, extract: 0, verify: 0 });
-
-/**
- * La vidéo se laisse-t-elle lire : extraite, puis son maître et ses premières
- * listes lus ? Le départ au plus haut part EN MÊME TEMPS (même maître, lu une
- * fois) et ne retarde pas la réponse.
- */
-async function playable(ref: string, stages: Stages, options: ExtractionOptions, fresh = false): Promise<ResolvedTrailer | null> {
-  const held = !fresh && holdsSource(ref);
-  let mark = Date.now();
-  const resolved = await resolveTrailer(ref, fresh ? { ...options, fresh } : options);
-  stages.extract += Date.now() - mark;
-  if (!resolved) return null;
-  warm(ref);
-  mark = Date.now();
-  const readable = await prepareTrailer(ref, options);
-  stages.verify += Date.now() - mark;
-  if (readable) return resolved;
-  // Une source GARDÉE (d'avant un redémarrage, ou révoquée) qui ne se lit plus : une extraction neuve, une seule.
-  return held ? playable(ref, stages, options, true) : null;
-}
-
-/**
- * Le garde-fou YouTube interdit-il d'extraire pour un aperçu ? Suspendu :
- * « aucune lisible », sans rien retenir par titre ; budget de l'heure
- * épuisé : « réessayez » dans le délai honnête.
- */
-function guardStop(): PreviewOutcome | null {
-  const refusal = previewRefusal();
-  if (!refusal) return null;
-  if (refusal.kind === "blocked") return { kind: "refused", error: "unavailable" };
-  return { kind: "limited", retryAfterS: Math.max(1, Math.ceil(refusal.retryAfterMs / 1000)) };
-}
-
-function found(
-  key: string, ref: string, resolved: ResolvedTrailer, started: number, how: string, stages: Stages,
-  { maxTtlMs = Infinity, version }: { maxTtlMs?: number; version?: TrailerVersion } = {},
-): PreviewOutcome {
-  remember(key, version ? { kind: "found", ref, version } : { kind: "found", ref }, Math.min(resolved.validUntil - Date.now(), maxTtlMs));
-  const detail = `catalogue ${stages.catalog}, extraction ${stages.extract}, vérification ${stages.verify}`;
-  console.log(`[trailers] aperçu ${key} : ${ref} (${resolved.kind}, ${resolved.heights[0] ?? "mp4"}) en ${Date.now() - started} ms (${detail}), ${how}`);
-  return version ? { kind: "found", ref, resolved, version } : { kind: "found", ref, resolved };
 }
 
 /**
@@ -198,13 +130,13 @@ export async function decidePreview(
   target: PreviewTarget, lang: string | undefined, account: string, options: { dailymotion?: boolean } = {},
 ): Promise<PreviewOutcome> {
   const dailymotion = options.dailymotion === true;
-  const key = `${target.key}|${lang ?? "-"}|${RULES_VERSION}${dailymotion ? "|dm" : ""}`;
+  const key = decisionKey(target, lang, dailymotion);
   const known = knownDecision(key);
   if (known?.kind === "refused") return known;
   const ready = known?.kind === "found" ? peekTrailer(known.ref) : null;
   if (known?.kind === "found" && ready) {
     // Ses premiers segments, s'ils ne sont plus en mémoire, repartent pour ce lecteur-ci.
-    warm(known.ref);
+    warmPlayerStart(known.ref);
     return known.version ? { kind: "found", ref: known.ref, resolved: ready, version: known.version } : { kind: "found", ref: known.ref, resolved: ready };
   }
   const pending = inflight.get(key);
