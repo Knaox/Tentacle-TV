@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { CircleHelp, X } from "lucide-react";
 import { useFicheTrailerHint } from "@tentacle-tv/api-client";
 import { trailerGuideHref, type MediaItem } from "@tentacle-tv/shared";
-import { WEB_TRAILER_PLATFORM } from "../../../components/detail/trailerPlatform";
+import { useWebTrailerPlatform } from "../../../components/detail/trailerPlatform";
 
 /**
  * « Vous ne voyez pas les bandes-annonces ? » au téléphone (miroir), à la
@@ -15,7 +15,7 @@ import { WEB_TRAILER_PLATFORM } from "../../../components/detail/trailerPlatform
  */
 export const TrailerHintMirror = memo(function TrailerHintMirror({ item }: { item: MediaItem }) {
   const { t, i18n } = useTranslation("trailerHelp");
-  const { phase, hide, undo } = useFicheTrailerHint(item, i18n.language, WEB_TRAILER_PLATFORM);
+  const { phase, hide, undo } = useFicheTrailerHint(item, i18n.language, useWebTrailerPlatform());
   if (phase === "none") return null;
 
   return (

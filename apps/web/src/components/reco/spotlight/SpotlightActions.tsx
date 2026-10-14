@@ -9,7 +9,8 @@ import { InfoIcon, PlayIcon } from "../../icons/HeroIcons";
 import { FilmIcon } from "../../media/MediaDetailIcons";
 import { CardQuickActions } from "../../cards/CardQuickActions";
 import { TrailerViewer } from "../../detail/TrailerViewer";
-import { WEB_TRAILER_PLATFORM } from "../../detail/trailerPlatform";
+import { useWebTrailerPlatform } from "../../detail/trailerPlatform";
+import { CatalogTrailerPlayer } from "../../detail/CatalogTrailerPlayer";
 import { shouldOpenYouTubeExternally } from "../../detail/youtube";
 import { PressableScale } from "../../ui/PressableScale";
 import { openExternal } from "../../../lib/openExternal";
@@ -80,18 +81,19 @@ export function SpotlightActions({ item, media, onOpenDetail, onDismiss }: Spotl
   );
 }
 
-/** La bande-annonce : locale d'abord (le lecteur), sinon YouTube (lecteur complet, sinon modale) — rien sans bande-annonce. */
+/** La bande-annonce : la première du catalogue (lecteur complet), sinon locale puis YouTube (modale) — rien sans bande-annonce. */
 function SpotlightTrailer({ media }: { media: MediaItem }) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
-  const { target, visible, remote } = useItemTrailer(media, i18n.language, WEB_TRAILER_PLATFORM);
+  const { target, visible, remote, entries, language } = useItemTrailer(media, i18n.language, useWebTrailerPlatform());
   const [open, setOpen] = useState(false);
+  const [playerOpen, setPlayerOpen] = useState(false);
   if (!visible) return null;
 
   const play = () => {
     if (!target) return;
     if (target.kind === "local") return navigate(`/watch/${target.itemId}`);
-    if (target.kind !== "remote") return;
+    if (target.kind === "relay") return setPlayerOpen(true);
     if (shouldOpenYouTubeExternally()) return void openExternal(target.trailer.Url);
     setOpen(true);
   };
@@ -103,6 +105,9 @@ function SpotlightTrailer({ media }: { media: MediaItem }) {
         {t("trailer")}
       </PressableScale>
       {remote.length > 0 && <TrailerViewer open={open} onClose={() => setOpen(false)} trailers={remote} />}
+      {playerOpen && target?.kind === "relay" && (
+        <CatalogTrailerPlayer entries={entries} start={target.entry} language={language} onClose={() => setPlayerOpen(false)} />
+      )}
     </>
   );
 }

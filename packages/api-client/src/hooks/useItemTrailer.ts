@@ -17,6 +17,8 @@ export interface ItemTrailer {
   remote: RichTrailer[];
   /** Tout le catalogue, dans l'ordre du serveur (vide sans la capacité `trailers.catalog`). */
   entries: TrailerEntry[];
+  /** La langue du serveur qui a décidé des versions du catalogue (VF / VOSTFR / VO) ; `null` sans lui. */
+  language: string | null;
   /**
    * Les listes ont répondu (ou ne sont pas demandées) : l'absence de
    * bande-annonce est alors un fait, pas une attente.
@@ -67,15 +69,16 @@ export function useItemTrailer(item: ItemTrailerOwner | undefined, lang: string 
   const { playable } = options;
 
   const entries = (useCatalog && catalogState.catalog?.entries) || NO_ENTRIES;
+  const language = (useCatalog && catalogState.catalog?.language) || null;
   const settled = useCatalog ? catalogState.settled && localSettled : known && localSettled && legacy.settled;
   return useMemo(() => {
     if (useCatalog) {
       // Une locale annoncée, pas encore au catalogue (réponse en route) : elle d'abord, comme avant.
       const target = catalogTrailerTarget(entries, playable)
         ?? (playable.includes("local") ? resolveTrailerTarget(local, []) : null);
-      return { target, visible: hasTrailer(target, item), remote: catalogRemoteTrailers(entries), entries, settled };
+      return { target, visible: hasTrailer(target, item), remote: catalogRemoteTrailers(entries), entries, language, settled };
     }
     const target = resolveTrailerTarget(playable.includes("local") ? local : [], legacy.trailers);
-    return { target, visible: hasTrailer(target, item), remote: legacy.trailers, entries: NO_ENTRIES, settled };
-  }, [useCatalog, entries, playable, local, legacy.trailers, item, settled]);
+    return { target, visible: hasTrailer(target, item), remote: legacy.trailers, entries: NO_ENTRIES, language: null, settled };
+  }, [useCatalog, entries, language, playable, local, legacy.trailers, item, settled]);
 }
