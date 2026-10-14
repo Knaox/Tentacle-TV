@@ -29,6 +29,7 @@ const NAMESPACES = [
   "familyMobile",
   "metadataHint",
   "profilePicker",
+  "avatars",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {
