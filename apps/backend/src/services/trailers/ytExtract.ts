@@ -12,7 +12,7 @@
 import { execFile } from "child_process";
 import { ytDlpCommand } from "../ytDlp";
 import { ytDlpInvocation } from "../tools/toolPaths";
-import { workerExtract } from "./ytWorker";
+import { prewarmYtWorker, workerExtract } from "./ytWorker";
 import { createExtractionSlots, type ExtractionPriority } from "./extractionSlots";
 import { clientPasses, isPermanentFailure, pickTrailerSource, youTubeBlock, type TrailerSource, type YtFormat } from "./trailerSource";
 import { countPreviewExtraction, previewRefusal, recordYouTubeSuccess, tripYouTubeBreaker } from "./youtubeGuard";
@@ -133,6 +133,11 @@ export type ExtractionResult =
 /** La ligne qui dit le blocage, pour le journal (avertissements compris). */
 function blockLine(stderr: string): string | undefined {
   return stderr.split("\n").find((line) => /^(ERROR|WARNING)\b/.test(line) && youTubeBlock(line) !== null)?.slice(0, 200);
+}
+
+/** Une extraction va sans doute suivre : l'ouvrier yt-dlp démarre d'avance (`prewarmYtWorker`). */
+export function prewarmExtraction(): void {
+  prewarmYtWorker(ytDlpCommand());
 }
 
 /** Extrait le meilleur flux de `ytId`, passe après passe ; la première qui rend un flux gagne. */

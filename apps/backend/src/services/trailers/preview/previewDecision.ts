@@ -20,7 +20,7 @@ import {
 } from "../../../trailers/trailerPreview";
 import { resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
 import { peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
-import type { ExtractionOptions } from "../ytExtract";
+import { prewarmExtraction, type ExtractionOptions } from "../ytExtract";
 import { fetchTitleVideos } from "../titleVideos";
 import { previewRefusal } from "../youtubeGuard";
 import { previewCandidates } from "./previewCandidates";
@@ -173,6 +173,8 @@ export async function decidePreview(title: PreviewTitle, lang: string | undefine
   if (inflight.size >= MAX_PENDING_DECISIONS) return { kind: "limited", retryAfterS: BUSY_RETRY_S };
   const verdict = limiter.take(account);
   if (!verdict.ok) return { kind: "limited", retryAfterS: verdict.retryAfterS };
+  // Une extraction va sans doute suivre : l'ouvrier yt-dlp se charge pendant que TMDB répond.
+  prewarmExtraction();
   const task = decide(key, title, lang, known?.kind === "found" ? known.ytId : undefined)
     .catch((err: unknown) => {
       console.warn(`[trailers] aperçu ${key} : décision interrompue (${err instanceof Error ? err.message : String(err)})`);

@@ -7,9 +7,9 @@ import { execFileSync } from "child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { isZipapp } from "../tools/toolPaths";
-import { stopYtWorker, workerExtract } from "./ytWorker";
+import { prewarmYtWorker, stopYtWorker, workerExtract } from "./ytWorker";
 
 const hasPython = (() => {
   try {
@@ -89,6 +89,17 @@ describe.skipIf(!hasPython)("ouvrier yt-dlp", () => {
     expect(ok.status === "done" && ok.outcome.formats).toHaveLength(1);
     expect(gone.status === "done" && gone.outcome.formats).toEqual([]);
     expect(gone.status === "done" && gone.outcome.stderr).toContain("has been removed");
+  });
+
+  it("préchauffé, l'ouvrier sert l'extraction qui suit sans redémarrer ; sans zipapp, le préchauffage ne lance rien", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    prewarmYtWorker(script);
+    prewarmYtWorker(zipapp);
+    prewarmYtWorker(zipapp);
+    const result = await workerExtract(zipapp, request("Way9Dexny3w"), 15_000);
+    expect(result.status === "done" && result.outcome.formats).toHaveLength(1);
+    expect(log.mock.calls.filter(([line]) => String(line).includes("ouvrier yt-dlp test prêt"))).toHaveLength(1);
+    log.mockRestore();
   });
 
   it("cède à la ligne de commande sans zipapp ; une extraction qui s'éternise échoue, sans rejouer", async () => {

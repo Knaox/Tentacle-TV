@@ -10,7 +10,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResolvedTrailer } from "../trailerRelay";
 import type { TitleVideos } from "../titleVideos";
 
-const { relay, fetchTitleVideos } = vi.hoisted(() => ({
+const { relay, fetchTitleVideos, prewarmExtraction } = vi.hoisted(() => ({
+  prewarmExtraction: vi.fn(),
   relay: {
     peekTrailer: vi.fn<(ytId: string) => ResolvedTrailer | null>(),
     resolveTrailer: vi.fn<(ytId: string, options?: unknown) => Promise<ResolvedTrailer | null>>(),
@@ -22,6 +23,7 @@ const { relay, fetchTitleVideos } = vi.hoisted(() => ({
 vi.mock("../trailerRelay", () => ({ resolveTrailer: relay.resolveTrailer }));
 vi.mock("../trailerPrepare", () => ({ peekTrailer: relay.peekTrailer, prepareTrailer: relay.prepareTrailer, warmStart: relay.warmStart }));
 vi.mock("../titleVideos", () => ({ fetchTitleVideos }));
+vi.mock("../ytExtract", () => ({ prewarmExtraction }));
 
 import { countPreviewExtraction, resetYouTubeGuard, tripYouTubeBreaker } from "../youtubeGuard";
 import { decidePreview, resetPreviewDecisions } from "./previewDecision";
@@ -83,11 +85,15 @@ describe("mémoire de la décision", () => {
   it("trouvée : servie telle quelle tant que le relais la tient, jusqu'à l'échéance des URL", async () => {
     fetchTitleVideos.mockResolvedValue(trailers("aaaaaaaaaaa"));
     relayKnows(["aaaaaaaaaaa"]);
+    prewarmExtraction.mockClear();
     await decidePreview(title(), "fr", "alice");
+    // Une décision à prendre : l'ouvrier yt-dlp démarre d'avance ; une décision gardée, non.
+    expect(prewarmExtraction).toHaveBeenCalledTimes(1);
     relay.peekTrailer.mockReturnValue(hls());
     expect(await decidePreview(title(), "fr", "bob")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
     expect(fetchTitleVideos).toHaveBeenCalledTimes(1);
     expect(relay.resolveTrailer).toHaveBeenCalledTimes(1);
+    expect(prewarmExtraction).toHaveBeenCalledTimes(1);
     // Ses premiers segments repartent pour ce lecteur-ci (sans effet s'ils sont encore en mémoire).
     expect(relay.warmStart).toHaveBeenLastCalledWith("aaaaaaaaaaa");
     // Passé l'échéance, la décision se reprend.

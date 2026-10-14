@@ -76,6 +76,13 @@ function stop(worker: Live): void {
   worker.proc.kill();
 }
 
+/** Sans travail, l'ouvrier s'éteint dans `IDLE_MS` ; un nouveau travail ou un préchauffage repousse l'échéance. */
+function armIdle(worker: Live): void {
+  if (worker.idle) clearTimeout(worker.idle);
+  worker.idle = setTimeout(() => stop(worker), IDLE_MS);
+  worker.idle.unref();
+}
+
 function start(zipapp: string, signature: string, python: string): Live {
   // Le Node de ce serveur sert de moteur JavaScript aux défis de YouTube (cf. ytExtract.ts).
   const proc = spawn(python, ["-u", "-c", WORKER_SCRIPT, zipapp, process.execPath], { stdio: ["pipe", "pipe", "pipe"] });
@@ -167,11 +174,25 @@ export async function workerExtract(
     });
     worker.proc.stdin.write(`${JSON.stringify({ id, ...request })}\n`);
   });
-  if (live === worker && worker.pending.size === 0) {
-    worker.idle = setTimeout(() => stop(worker), IDLE_MS);
-    worker.idle.unref();
-  }
+  if (live === worker && worker.pending.size === 0) armIdle(worker);
   return outcome ? { status: "done", outcome } : { status: "failed", reason: `ouvrier sans réponse en ${timeoutMs / 1000} s` };
+}
+
+/**
+ * Démarre l'ouvrier D'AVANCE : une extraction va sans doute suivre (une
+ * demande d'aperçu arrive). Python et yt-dlp se chargent pendant que la
+ * décision lit Jellyfin et TMDB — sur un NAS, une à deux secondes de moins à
+ * froid. Sans effet s'il tourne déjà (son échéance de repos repart), s'il ne
+ * peut pas servir (pas de zipapp) ou après un démarrage raté récent.
+ */
+export function prewarmYtWorker(command: string, python = pythonCommand()): void {
+  if (Date.now() < failedUntil) return;
+  const file = resolveCommand(command);
+  if (!file || !isZipapp(file)) return;
+  const signature = `${file}:${statSync(file).mtimeMs}`;
+  if (live && live.signature !== signature) stop(live);
+  const worker = live ?? (live = start(file, signature, python));
+  if (worker.pending.size === 0) armIdle(worker);
 }
 
 /** Pour les tests et l'arrêt du serveur : éteindre l'ouvrier, oublier un échec. */

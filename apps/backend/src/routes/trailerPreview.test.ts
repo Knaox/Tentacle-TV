@@ -19,7 +19,7 @@ const { extractTrailerSource, fetchTitleVideos, jellyfinAdminFetch } = vi.hoiste
   fetchTitleVideos: vi.fn<(id: number, type: string, lang?: string) => Promise<TitleVideos>>(),
   jellyfinAdminFetch: vi.fn(),
 }));
-vi.mock("../services/trailers/ytExtract", () => ({ extractTrailerSource }));
+vi.mock("../services/trailers/ytExtract", () => ({ extractTrailerSource, prewarmExtraction: () => undefined }));
 vi.mock("../services/trailers/titleVideos", () => ({ fetchTitleVideos }));
 vi.mock("../services/jellyfinAdminFetch", () => ({ jellyfinAdminFetch }));
 vi.mock("../services/configStore", () => ({ getPublicUrl: () => null, getConfigValue: () => undefined }));
