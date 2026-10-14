@@ -172,12 +172,54 @@ images dans les deux cas (jeton PO, sans rapport avec le moteur). Le maître
 
 ## Les autres plateformes
 
-Web, bureau, mobile et LG lisent le lecteur YouTube embarqué : rien ne
-change pour eux, leurs tests restent verts. Android TV lit désormais le
-relais, comme l'Apple TV (même `TrailerWebView`, ExoPlayer). Le relais leur est
-ouvert s'il le faut un jour — par exemple pour lire dans l'app, sur le
-bureau macOS, ce que la WebView y refuse (Referer retiré, erreur 153) et
-qu'on ouvre aujourd'hui dans le navigateur.
+Mobile et LG lisent le lecteur YouTube embarqué. Android TV lit le relais,
+comme l'Apple TV (même `TrailerWebView`, ExoPlayer). Le web et le bureau ont
+leur lecteur COMPLET depuis le 14 oct. (section suivante).
+
+## Le lecteur complet du web et du bureau (2026-10-14)
+
+`apps/web/src/components/trailerPlayer/` : toute la fenêtre, sans publicité,
+chaque vidéo par le relais — jamais stockée. Ouvert par « Bande-annonce », la
+rangée des extras et le héros de la reco (`detail/TrailerViewer.tsx`), face à
+un serveur qui déclare `trailers.player` ; sinon la modale d'avant.
+
+- **Relais Dailymotion** (AlloCiné). La clé du relais devient une référence
+  (`videoRef.ts`) : l'identifiant YouTube nu — inchangé pour l'aperçu, sa
+  mémoire et les téléviseurs — ou `dm:<id>` (`%3A` dans les chemins).
+  `dailymotionSource.ts` lit `/player/metadata/video/<id>` et prend
+  `qualities.auto`, jamais `advertising.ad_url` (le même flux, publicités
+  insérées). Mesuré le 14 oct. : maître H.264 + AAC en MPEG-TS, segments de
+  3 s aux URI relatives `../../../frag(1)/…` (résolues depuis l'adresse
+  finale, `relayEntry.ts`), URL signées pour l'adresse qui les obtient,
+  qualités lues dans le maître, résolution en ~200 ms. Échéance non
+  documentée : une heure.
+- **Repli sur le lecteur officiel.** `/resolve` d'une vidéo YouTube que le
+  relais ne tient pas passe par le garde des lectures (`takeYouTubePlayback` :
+  budget du serveur, seau du compte, pause et sa lecture-sonde) ; refusée,
+  `409 { fallback: "embed", reason }`. Le lecteur ouvre alors l'iframe de
+  YouTube pour CETTE bande-annonce, avec la ligne « des publicités peuvent
+  apparaître ». Une lecture qui échoue (indisponible, rien en 15 s) passe à la
+  suivante ; au bout de la file, le lecteur officiel (YouTube) ou la fermeture
+  (Dailymotion n'a pas de repli sans publicité) — `trailerFailureStep`, shared.
+  `/prepare` ne part jamais pendant une pause et compte comme une lecture.
+- **Règles partagées** (`packages/shared/src/trailers/player/`, tv-core les
+  réexporte) : la réponse de `resolve` (dont `language`, la langue du serveur,
+  qui range les sous-titres quand le client n'en demande pas), les choix,
+  la mémoire des sous-titres, la file. Sous-titres au départ : le choix retenu
+  du compte, sinon la piste POSÉE dans la langue du serveur, sauf pour une
+  bande-annonce déjà dans cette langue — jamais la reconnaissance vocale.
+- **Bureau** : le plein écran passe par l'IPC de la fenêtre
+  (`player_fullscreen_enter`, `toggle_fullscreen`, `player_fullscreen_leave`) —
+  la coquille refuse `requestFullscreen` ; macOS défait le plein écran posé
+  pendant la bande-annonce. Écran gardé allumé pendant la lecture.
+- **LG** : la porte du dossier (`index.ts`) est remplacée par un shim et le
+  dossier exclu — faux hls.js, LG en pause : la dalle garde la modale.
+- **Vérifié au banc** (14 oct., serveur de test, navigateur) : YouTube en
+  1080p (première image en 117 ms, vidéo tenue), Dailymotion en 720p, ←/→,
+  J/L, M, ↑/↓ (volume mémorisé), Espace/K, Maj+N/Maj+P, qualité (1080 → 720
+  sans recharger), C (sous-titres posés, mémorisés par compte), 409 → lecteur
+  officiel, Échap qui ferme sans quitter la fiche. Reste à éprouver sur le
+  bureau réel : le plein écran par l'IPC (KWin d'abord), l'image dans l'image.
 
 ## Le lecteur simplifié : qualités et sous-titres (2026-10-11)
 
