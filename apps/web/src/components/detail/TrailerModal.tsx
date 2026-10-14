@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "../ui/Modal";
 import { ModalHeader } from "../ui/ModalHeader";
 import { ExternalLinkIcon } from "../media/MediaDetailIcons";
-import { parseYouTubeId, youtubeEmbedSrc } from "./youtube";
+import { parseYouTubeId } from "./youtube";
+import { TrailerEmbedFallback } from "./TrailerEmbedFallback";
 import { externalLinkHandler } from "../../lib/openExternal";
 
 interface RemoteTrailer {
@@ -50,20 +51,7 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
         {/* Canevas vidéo (iframe/placeholder) : fond noir constant dans les
             deux thèmes, comme un lecteur vidéo (cf. règle « posé sur média »). */}
         {ytId ? (
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
-            <iframe
-              key={current.Url}
-              src={youtubeEmbedSrc(ytId)}
-              title={title}
-              className="absolute inset-0 h-full w-full"
-              // YouTube refuse l'embed sans Referer (erreur 153). En prod le header
-              // Referrer-Policy: no-referrer (Helmet) le supprime → on force l'envoi
-              // de l'origine pour CETTE iframe (l'attribut prime sur la politique doc).
-              referrerPolicy="strict-origin-when-cross-origin"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
-          </div>
+          <TrailerEmbedFallback key={current.Url} ytId={ytId} title={title} className="aspect-video w-full rounded-lg" />
         ) : (
           <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-black/60 px-6 text-center text-sm text-white/60">
             {t("common:trailerUnavailable")}
