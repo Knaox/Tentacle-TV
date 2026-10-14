@@ -49,7 +49,11 @@ export function useProfileSwitcher(onMenuClose: () => void): ProfileSwitcher {
 
   const leaveGroup = useCallback(() => actions.leave(), [actions]);
   const onPicked = useCallback(async (picked: PickedProfileDto) => {
-    const result = await commitPick(picked, { onCurtain: setCurtain, leaveGroup: isInGroup ? leaveGroup : undefined });
+    const result = await commitPick(picked, {
+      onCurtain: setCurtain,
+      onCurtainLifted: () => setCurtain(null),
+      leaveGroup: isInGroup ? leaveGroup : undefined,
+    });
     if (result === "stay") setCurtain(null);
   }, [isInGroup, leaveGroup]);
 

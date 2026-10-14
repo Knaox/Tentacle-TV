@@ -103,6 +103,24 @@ describe("choisir un profil", () => {
     expect(assigned).toEqual(["/settings/family"]);
   });
 
+  it("une bascule qui échoue après la chute du rideau le relève, et ne recharge rien", async () => {
+    // Plus aucune session à mettre de côté : l'entrée dans le profil échoue.
+    local.removeItem("tentacle_token");
+    const events: string[] = [];
+    vi.useFakeTimers();
+    const pending = commitPick(LEA, {
+      onCurtain: () => events.push("rideau"),
+      onCurtainLifted: () => events.push("levé"),
+    });
+    const outcome = expect(pending).rejects.toThrow("swap failed");
+    await vi.runAllTimersAsync();
+    await outcome;
+    expect(events).toEqual(["rideau", "levé"]);
+    expect(assigned).toEqual([]);
+    expect(session.getItem("tentacle_profile_arrival")).toBeNull();
+    expect(local.getItem("tentacle_profile_session")).toBeNull();
+  });
+
   it("Watch Together qui ne répond pas ne retient pas la bascule", async () => {
     const never = () => new Promise<void>(() => undefined);
     expect(await commit(LEA, { leaveGroup: never })).toBe("reload");

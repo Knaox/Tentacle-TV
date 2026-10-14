@@ -57,15 +57,18 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
   const [slowOpening, setSlowOpening] = useState(false);
   const landing = useRef<string | undefined>(undefined);
 
+  const liftCurtain = useCallback(() => setCurtain(null), []);
   const onPicked = useCallback(async (picked: PickedProfileDto) => {
-    const result = await commitPick(picked, { onCurtain: setCurtain, landing: landing.current });
+    // Une bascule qui échoue après la chute du rideau le relève : le refus se
+    // dit sur le sélecteur (`usePickFlow`), jamais sous un rideau resté.
+    const result = await commitPick(picked, { onCurtain: setCurtain, onCurtainLifted: liftCurtain, landing: landing.current });
     if (result !== "stay") return;
     // SON profil, sans rechargement : le rideau tombe sur le sélecteur, puis
     // l'application paraît dessous quand il se lève (`ProfileArrival`).
     announceArrival(curtainOf(picked.profile));
     await new Promise((resolve) => setTimeout(resolve, CURTAIN_FALL_MS));
     onDone(landing.current);
-  }, [onDone]);
+  }, [onDone, liftCurtain]);
 
   const { refetch } = listing;
   const flow = usePickFlow({
@@ -88,6 +91,7 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
   // de la Famille. Un autre choix, ou le retour du pavé, oublie la destination.
   const own = profiles.find((profile) => profile.personal) ?? null;
   const { choose, back } = flow;
+  const [lastChosen, setLastChosen] = useState<string | null>(null);
   const onManage = useCallback(() => {
     landing.current = FAMILY_SETTINGS_PATH;
     if (own) {
@@ -95,7 +99,6 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
       choose(own.userId);
     }
   }, [own, choose]);
-  const [lastChosen, setLastChosen] = useState<string | null>(null);
   const onPick = useCallback((profileId: string) => {
     landing.current = undefined;
     setLastChosen(profileId);

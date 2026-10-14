@@ -36,6 +36,9 @@ export interface CommitContext {
   leaveGroup?: () => Promise<void>;
   /** Le rideau tombe, au nom du profil choisi (avant le rechargement). */
   onCurtain?: (profile: CurtainProfile) => void;
+  /** La bascule a échoué après la chute du rideau (stockage illisible) : il se
+   *  relève, et le refus se dit dessous — jamais un rideau qui reste. */
+  onCurtainLifted?: () => void;
   /** La page à ouvrir après le rechargement ; l'accueil par défaut. */
   landing?: string;
 }
@@ -68,10 +71,10 @@ export async function commitPick(picked: PickedProfileDto, context: CommitContex
   endPipSession();
   await Promise.all([leaveQuietly(context.leaveGroup), wait(SETTLE_MS)]);
 
-  const swapped = picked.personal
-    ? returnToAccount(localStorage)
-    : enterProfile(localStorage, { token: picked.token, user: picked.user, profile: activeProfileOf(picked.profile) });
-  if (!swapped) throw new Error("profile session swap failed");
+  if (!swapSession(picked)) {
+    context.onCurtainLifted?.();
+    throw new Error("profile session swap failed");
+  }
 
   markLaunchPassed();
   clearPickerRequest();
@@ -84,6 +87,17 @@ export async function commitPick(picked: PickedProfileDto, context: CommitContex
   }
   window.location.assign(context.landing ?? "/");
   return "reload";
+}
+
+/** Les jetons échangés dans le stockage ; faux s'il n'a pas pu l'être (illisible, plein, bloqué). */
+function swapSession(picked: PickedProfileDto): boolean {
+  try {
+    return picked.personal
+      ? returnToAccount(localStorage)
+      : enterProfile(localStorage, { token: picked.token, user: picked.user, profile: activeProfileOf(picked.profile) });
+  } catch {
+    return false;
+  }
 }
 
 async function leaveQuietly(leave: (() => Promise<void>) | undefined): Promise<void> {
