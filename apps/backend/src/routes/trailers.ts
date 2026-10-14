@@ -20,7 +20,9 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { startYtDlpUpdates } from "../services/ytDlp";
 import { resolveTrailer } from "../services/trailers/trailerRelay";
-import { prepareTrailer } from "../services/trailers/trailerPrepare";
+import { holdsSource, prepareTrailer } from "../services/trailers/trailerPrepare";
+import { takeYouTubePlayback, youtubeBreakerOpen } from "../services/trailers/youtubeGuard";
+import type { JellyfinUser } from "../middleware/auth";
 import { relayedStream } from "../services/trailers/relayPaths";
 import { orderSubtitles } from "../services/trailers/trailerSubtitles";
 import { isDailymotionId, isYouTubeId, refOfQuery, refPathSegment, type VideoRef } from "../services/trailers/videoRef";
@@ -40,6 +42,23 @@ function refOf(request: FastifyRequest): VideoRef | null {
 }
 
 const LANG_RE = /^[a-zA-Z]{2,3}(-[\w]{2,8})?$/;
+
+/** Le compte de la requête (`requireAuth`), pour le seau de lectures YouTube. */
+function accountOf(request: FastifyRequest): string {
+  return (request as FastifyRequest & { user?: JellyfinUser }).user?.userId ?? "anonyme";
+}
+
+/**
+ * Une vidéo YouTube que le relais ne tient pas encore coûte une extraction :
+ * elle passe par le garde des LECTURES (`takeYouTubePlayback` — budget du
+ * serveur, seau du compte, disjoncteur et sa lecture-sonde). Refusée, le
+ * client ouvre le lecteur officiel (`409 { fallback: "embed" }`). Dailymotion
+ * et une vidéo déjà tenue ne demandent rien.
+ */
+function playbackRefusal(ref: VideoRef, request: FastifyRequest) {
+  if (ref.kind !== "youtube" || holdsSource(ref.key)) return null;
+  return takeYouTubePlayback(accountOf(request));
+}
 
 /**
  * La langue des sous-titres en tête : celle que le client demande (la TV
@@ -72,12 +91,20 @@ export async function trailerRoutes(app: FastifyInstance) {
    *        Jellyfin), rendue dans `language`. Additifs (capacité
    *        `trailers.player`) : un client d'avant ne lit que `url` / `path`.
    * → 400 { error: "invalid ytId" }
+   * → 409 { fallback: "embed", reason }  YouTube ne peut pas être extrait
+   *        maintenant (pause du disjoncteur, budget de l'heure, seau du
+   *        compte) : le lecteur officiel, en repli (capacité `trailers.catalog`)
    * → 404 { error: "unavailable" }  aucun flux lisible (retenu une minute,
    *        une heure si la vidéo est retirée ou privée)
    */
   app.get("/resolve", async (request: FastifyRequest, reply: FastifyReply) => {
     const ref = refOf(request);
     if (!ref) return reply.status(400).send({ error: "invalid ytId" });
+    const refusal = playbackRefusal(ref, request);
+    if (refusal) {
+      console.warn(`[trailers] ${ref.key} : lecteur officiel en repli (${refusal.kind})`);
+      return reply.status(409).send({ fallback: "embed", reason: refusal.kind });
+    }
 
     const [resolved, language] = await Promise.all([resolveTrailer(ref.key), subtitleLanguage(request)]);
     if (!resolved) return reply.status(404).send({ error: "unavailable" });
@@ -108,6 +135,10 @@ export async function trailerRoutes(app: FastifyInstance) {
   app.get("/prepare", async (request: FastifyRequest, reply: FastifyReply) => {
     const ref = refOf(request);
     if (!ref) return reply.status(400).send({ error: "invalid ytId" });
+    // Jamais pendant une pause de YouTube, et une préparation compte comme la lecture qu'elle annonce.
+    if (ref.kind === "youtube" && !holdsSource(ref.key) && (youtubeBreakerOpen() || takeYouTubePlayback(accountOf(request)))) {
+      return reply.status(202).send({ status: "skipped" });
+    }
     void prepareTrailer(ref.key).catch((err) => console.warn(`[trailers] préparation de ${ref.key} :`, err?.message ?? err));
     return reply.status(202).send({ status: "preparing" });
   });

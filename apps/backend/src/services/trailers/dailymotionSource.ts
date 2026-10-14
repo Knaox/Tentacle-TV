@@ -12,8 +12,11 @@
 /*  serveur les relaie, comme celles de googlevideo. Les métadonnées   */
 /*  n'ont pas de CORS (un navigateur ne peut pas les lire) ; le maître */
 /*  en a. Échéance des URL non documentée : une heure, prudemment.     */
+/*  Chaque lecture des métadonnées passe par le garde de Dailymotion   */
+/*  (`dailymotionGuard.ts` : cadence, disjoncteur).                    */
 /* ------------------------------------------------------------------ */
 
+import { recordDailymotionResponse, takeDailymotionSlot } from "./dailymotionGuard";
 import { fetchUpstream } from "./relayUpstream";
 import type { TrailerSource } from "./trailerSource";
 import type { ExtractionResult } from "./ytExtract";
@@ -64,16 +67,40 @@ export function pickDailymotionSource(metadata: unknown, now = Date.now()): Extr
   return { ok: true, source, subtitles: [], clients: ["dailymotion"] };
 }
 
+/** Au-delà, la cadence ne vaut pas qu'on attende : le relais dit « indisponible », la suivante se joue. */
+const MAX_PACE_WAIT_MS = 1_000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Une place auprès de Dailymotion : tout de suite, ou après une attente courte
+ * (deux résolutions par seconde) ; `false` : disjoncteur ouvert ou cadence
+ * trop chargée — rien n'est demandé à Dailymotion.
+ */
+async function takeSlot(): Promise<boolean> {
+  const wait = takeDailymotionSlot("stream", "interactive");
+  if (wait === 0) return true;
+  if (wait > MAX_PACE_WAIT_MS) return false;
+  await sleep(wait);
+  return takeDailymotionSlot("stream", "interactive") === 0;
+}
+
 /** Lit les métadonnées de `id` et en tire le flux sans publicité. Jamais d'exception. */
 export async function extractDailymotionSource(id: string): Promise<ExtractionResult> {
+  // Rien demandé à Dailymotion : ni un échec de la vidéo, ni à retenir contre elle (`skipped`).
+  if (!(await takeSlot())) return { ok: false, permanent: false, timedOut: false, skipped: true, reason: "Dailymotion en pause" };
   try {
     const { res } = await fetchUpstream(`${METADATA_URL}${encodeURIComponent(id)}`, {}, { signal: AbortSignal.timeout(METADATA_TIMEOUT_MS) });
+    recordDailymotionResponse(res.status);
     if (res.status === 429) {
       await res.body?.cancel();
       return { ok: false, permanent: false, timedOut: false, blocked: true, reason: "dailymotion 429" };
     }
     const body: unknown = await res.json().catch(() => null);
-    return pickDailymotionSource(body);
+    const result = pickDailymotionSource(body);
+    // Dailymotion dit parfois son refus dans le corps d'un 200 : le garde l'apprend aussi.
+    if (!result.ok && result.blocked) recordDailymotionResponse(429);
+    return result;
   } catch (err) {
     const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
     return { ok: false, permanent: false, timedOut, reason: `dailymotion : ${err instanceof Error ? err.message : String(err)}` };
