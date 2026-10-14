@@ -71,7 +71,7 @@ describe("essais successifs", () => {
     const outcome = await decidePreview(title(), "fr", "alice");
     expect(outcome).toEqual({ kind: "found", ytId: "ccccccccccc", resolved: hls() });
     expect(relay.resolveTrailer.mock.calls.map(([id]) => id)).toEqual(["aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc"]);
-    expect(relay.resolveTrailer).toHaveBeenCalledWith("aaaaaaaaaaa", { priority: "preview", budgetMs: 20_000 });
+    expect(relay.resolveTrailer).toHaveBeenCalledWith("aaaaaaaaaaa", expect.objectContaining({ priority: "preview", budgetMs: 20_000 }));
     expect(fetchTitleVideos).toHaveBeenCalledWith(1, "movie", "fr");
     // Le départ au plus haut part dès qu'une vidéo s'extrait, en même temps que sa vérification.
     expect(relay.warmStart.mock.calls).toEqual([["bbbbbbbbbbb"], ["ccccccccccc"]]);
@@ -134,8 +134,8 @@ describe("mémoire de la décision", () => {
     relay.prepareTrailer.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
     expect(await decidePreview(title(), "fr", "alice")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
     expect(relay.resolveTrailer.mock.calls).toEqual([
-      ["aaaaaaaaaaa", { priority: "preview", budgetMs: 20_000 }],
-      ["aaaaaaaaaaa", { priority: "preview", budgetMs: 20_000, fresh: true }],
+      ["aaaaaaaaaaa", expect.objectContaining({ priority: "preview", budgetMs: 20_000 })],
+      ["aaaaaaaaaaa", expect.objectContaining({ priority: "preview", budgetMs: 20_000, fresh: true })],
     ]);
   });
 

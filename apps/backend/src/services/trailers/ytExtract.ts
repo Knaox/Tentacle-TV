@@ -55,6 +55,8 @@ export interface ExtractionOptions {
   priority?: ExtractionPriority;
   /** Le temps de toutes les passes, compté dès que la place est prise (défaut : 40 s). */
   budgetMs?: number;
+  /** Aperçu : quelqu'un attend-il encore ? Non : il cède sa place dans la file (`extractionSlots.ts`). */
+  wanted?: () => boolean;
 }
 
 interface PassOutcome {
@@ -142,7 +144,7 @@ export function prewarmExtraction(): void {
 
 /** Extrait le meilleur flux de `ytId`, passe après passe ; la première qui rend un flux gagne. */
 export function extractTrailerSource(ytId: string, options: ExtractionOptions = {}): Promise<ExtractionResult> {
-  const { priority = "play", budgetMs = EXTRACTION_BUDGET_MS } = options;
+  const { priority = "play", budgetMs = EXTRACTION_BUDGET_MS, wanted } = options;
   return slots.run(priority, async () => {
     // Un aperçu ne contacte pas YouTube pendant une suspension, ni au-delà du budget de l'heure.
     if (priority === "preview") {
@@ -180,5 +182,5 @@ export function extractTrailerSource(ytId: string, options: ExtractionOptions = 
       if (outcome && isPermanentFailure(outcome.stderr)) return { ok: false, permanent: true, timedOut: false, reason };
     }
     return { ok: false, permanent: false, timedOut: false, reason, blocked };
-  });
+  }, wanted);
 }

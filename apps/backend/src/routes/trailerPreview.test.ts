@@ -144,7 +144,7 @@ describe("GET /api/trailers/preview", () => {
     expect(asked).toEqual(expect.arrayContaining([MASTER, `${GV}/itag/232/v.m3u8`, `${GV}/itag/234/a.m3u8`]));
     const master = await app.inject({ url: body.path });
     expect([master.statusCode, master.body.includes("p/232.m3u8?t=")]).toEqual([200, true]);
-    expect(extractTrailerSource).toHaveBeenCalledWith(YT, { priority: "preview", budgetMs: 20_000 });
+    expect(extractTrailerSource).toHaveBeenCalledWith(YT, expect.objectContaining({ priority: "preview", budgetMs: 20_000 }));
   });
 
   it("les premiers segments du départ de l'aperçu (720p et son audio) sont lus d'avance, puis servis sans relire googlevideo", async () => {

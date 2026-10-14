@@ -16,6 +16,11 @@
 /*  Une langue moins bonne, trouvée après l'échec d'une meilleure (la  */
 /*  VO après une VF qui n'a pas répondu), n'est gardée que dix         */
 /*  minutes : le survol suivant redonne sa chance à la VF.             */
+/*  Personne n'attend plus de douze secondes, sous le délai du client  */
+/*  (15 s) : passé ce temps, « réessayez dans une seconde » — et la    */
+/*  décision continue, que la demande suivante rejoint. Une décision   */
+/*  que plus personne n'attend cède sa place d'extraction et ne compte */
+/*  plus dans le plafond du serveur.                                   */
 /* ------------------------------------------------------------------ */
 
 import {
@@ -54,6 +59,8 @@ export const MAX_ATTEMPTS = 3;
 const DECISION_BUDGET_MS = 25_000;
 /** Une extraction d'aperçu passe après les lectures et ne s'éternise pas. */
 const PREVIEW_EXTRACTION: ExtractionOptions = { priority: "preview", budgetMs: 20_000 };
+/** Quelqu'un attend-il encore la décision `key` ? Sinon, ses extractions cèdent la place. */
+const wantedBy = (key: string) => () => (inflight.get(key)?.waiters ?? 0) > 0;
 /** Décisions à prendre en même temps sur tout le serveur ; au-delà, « réessayez ». */
 const MAX_PENDING_DECISIONS = 4;
 const BUSY_RETRY_S = 2;
@@ -66,8 +73,18 @@ const FALLBACK_LANG_TTL_MS = 10 * 60 * 1000;
  */
 const RULES_VERSION = "r2";
 
+/** Au-delà, la réponse dit « réessayez » ; la décision, elle, continue (sous les 15 s du client). */
+const RESPONSE_BUDGET_MS = 12_000;
+const STILL_DECIDING_RETRY_S = 1;
+
+interface Pending {
+  task: Promise<PreviewOutcome>;
+  /** Les demandes qui attendent encore cette décision. */
+  waiters: number;
+}
+
 const decisions = new TtlLru<Decision>(MAX_DECISIONS);
-const inflight = new Map<string, Promise<PreviewOutcome>>();
+const inflight = new Map<string, Pending>();
 const limiter = new PreviewRateLimiter();
 
 let onChange: (() => void) | null = null;
@@ -117,20 +134,20 @@ const newStages = (): Stages => ({ tmdb: 0, extract: 0, verify: 0 });
  * fois) et ne retarde pas la réponse : le lecteur trouvera ses premiers
  * segments en mémoire, ou en route.
  */
-async function playable(ytId: string, stages: Stages, fresh = false): Promise<ResolvedTrailer | null> {
+async function playable(ytId: string, stages: Stages, options: ExtractionOptions, fresh = false): Promise<ResolvedTrailer | null> {
   const held = !fresh && holdsSource(ytId);
   let mark = Date.now();
-  const resolved = await resolveTrailer(ytId, fresh ? { ...PREVIEW_EXTRACTION, fresh } : PREVIEW_EXTRACTION);
+  const resolved = await resolveTrailer(ytId, fresh ? { ...options, fresh } : options);
   stages.extract += Date.now() - mark;
   if (!resolved) return null;
   warm(ytId);
   mark = Date.now();
-  const readable = await prepareTrailer(ytId, PREVIEW_EXTRACTION);
+  const readable = await prepareTrailer(ytId, options);
   stages.verify += Date.now() - mark;
   if (readable) return resolved;
   // Une source GARDÉE (d'avant un redémarrage, ou révoquée par googlevideo) qui
   // ne se lit plus : une extraction neuve, une seule — dans les garde-fous de la décision.
-  return held ? playable(ytId, stages, true) : null;
+  return held ? playable(ytId, stages, options, true) : null;
 }
 
 /**
@@ -166,7 +183,8 @@ function found(
 async function decide(key: string, title: PreviewTitle, lang: string | undefined, known?: string): Promise<PreviewOutcome> {
   const started = Date.now();
   const stages = newStages();
-  const again = known ? await playable(known, stages) : null;
+  const extraction: ExtractionOptions = { ...PREVIEW_EXTRACTION, wanted: wantedBy(key) };
+  const again = known ? await playable(known, stages, extraction) : null;
   if (known && again) return found(key, known, again, started, "reprise", stages);
   const stoppedEarly = known ? guardStop() : null;
   if (stoppedEarly) return stoppedEarly;
@@ -182,7 +200,7 @@ async function decide(key: string, title: PreviewTitle, lang: string | undefined
   const bestLang = candidates[0].langRank;
   for (const [index, { ytId, langRank }] of candidates.entries()) {
     if (index > 0 && Date.now() - started >= DECISION_BUDGET_MS) break;
-    const resolved = await playable(ytId, stages);
+    const resolved = await playable(ytId, stages, extraction);
     if (!resolved) {
       const stop = guardStop();
       if (stop) return stop;
@@ -214,7 +232,7 @@ export async function decidePreview(title: PreviewTitle, lang: string | undefine
     return { kind: "found", ytId: known.ytId, resolved: ready };
   }
   const pending = inflight.get(key);
-  if (pending) return pending;
+  if (pending) return awaitDecision(pending);
   // Une reprise dont le relais tient encore la SOURCE (listes relâchées, redémarrage) :
   // ses listes se relisent chez googlevideo, rien n'est demandé à YouTube ni à TMDB.
   const heldReprise = known?.kind === "found" && holdsSource(known.ytId);
@@ -222,7 +240,8 @@ export async function decidePreview(title: PreviewTitle, lang: string | undefine
   // extraction — sauf pour une telle reprise (si elle ne se lit plus, `decide` s'arrête au garde-fou).
   const stop = heldReprise ? null : guardStop();
   if (stop) return stop;
-  if (inflight.size >= MAX_PENDING_DECISIONS) return { kind: "limited", retryAfterS: BUSY_RETRY_S };
+  // Le plafond ne compte que les décisions qu'on attend : une rangée déjà quittée ne bloque pas la carte survolée.
+  if (awaitedDecisions() >= MAX_PENDING_DECISIONS) return { kind: "limited", retryAfterS: BUSY_RETRY_S };
   const verdict = limiter.take(account);
   if (!verdict.ok) return { kind: "limited", retryAfterS: verdict.retryAfterS };
   // Une extraction va sans doute suivre : l'ouvrier yt-dlp se charge pendant que TMDB répond.
@@ -233,8 +252,34 @@ export async function decidePreview(title: PreviewTitle, lang: string | undefine
       return refuse(key, "unavailable");
     })
     .finally(() => inflight.delete(key));
-  inflight.set(key, task);
-  return task;
+  const entry: Pending = { task, waiters: 0 };
+  inflight.set(key, entry);
+  return awaitDecision(entry);
+}
+
+function awaitedDecisions(): number {
+  let count = 0;
+  for (const pending of inflight.values()) if (pending.waiters > 0) count++;
+  return count;
+}
+
+/**
+ * Attend la décision, douze secondes au plus : au-delà, « réessayez dans une
+ * seconde » — la décision continue, la demande suivante la rejoint (sans
+ * puiser dans le seau) ou trouve sa réponse gardée.
+ */
+async function awaitDecision(pending: Pending): Promise<PreviewOutcome> {
+  pending.waiters++;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<PreviewOutcome>((resolve) => {
+    timer = setTimeout(() => resolve({ kind: "limited", retryAfterS: STILL_DECIDING_RETRY_S }), RESPONSE_BUDGET_MS);
+  });
+  try {
+    return await Promise.race([pending.task, late]);
+  } finally {
+    clearTimeout(timer);
+    pending.waiters--;
+  }
 }
 
 /** Pour les tests : repartir sans décision, sans seau. */

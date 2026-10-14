@@ -9,13 +9,20 @@
 /*  devant un APERÇU (le survol d'une carte) qui attend, et les        */
 /*  aperçus n'occupent jamais toutes les places : un survol de rangée  */
 /*  ne retarde pas la bande-annonce que quelqu'un vient de lancer.     */
+/*  Entre aperçus, le plus RÉCENT d'abord : la carte sous le pointeur   */
+/*  ne fait pas la queue derrière celles déjà quittées. Un aperçu que   */
+/*  plus personne n'attend (`wanted`) passe après ceux qu'on attend.    */
 /* ------------------------------------------------------------------ */
 
 export type ExtractionPriority = "play" | "preview";
 
 export interface ExtractionSlots {
-  /** Lance `task` dès qu'une place le permet ; la place est rendue à sa fin, quelle qu'elle soit. */
-  run<T>(priority: ExtractionPriority, task: () => Promise<T>): Promise<T>;
+  /**
+   * Lance `task` dès qu'une place le permet ; la place est rendue à sa fin,
+   * quelle qu'elle soit. `wanted` (aperçus) : quelqu'un attend-il encore ce
+   * résultat ? Non : il cède sa place dans la file à ceux qu'on attend.
+   */
+  run<T>(priority: ExtractionPriority, task: () => Promise<T>, wanted?: () => boolean): Promise<T>;
   /** L'occupation, pour les tests et le journal. */
   state(): { running: number; previews: number; waiting: Record<ExtractionPriority, number> };
 }
@@ -25,7 +32,7 @@ const ORDER: readonly ExtractionPriority[] = ["play", "preview"];
 export function createExtractionSlots(max: number, maxPreviews: number): ExtractionSlots {
   let running = 0;
   let previews = 0;
-  const waiting: Record<ExtractionPriority, Array<() => void>> = { play: [], preview: [] };
+  const waiting: Record<ExtractionPriority, Array<{ go: () => void; wanted?: () => boolean }>> = { play: [], preview: [] };
 
   const fits = (priority: ExtractionPriority) => running < max && (priority === "play" || previews < maxPreviews);
   const take = (priority: ExtractionPriority) => {
@@ -38,6 +45,17 @@ export function createExtractionSlots(max: number, maxPreviews: number): Extract
   };
 
   /**
+   * Le prochain à servir : une lecture dans l'ordre d'arrivée ; un aperçu, le
+   * plus récent qu'on attend encore, sinon le plus récent tout court.
+   */
+  function nextIndex(priority: ExtractionPriority): number {
+    const queue = waiting[priority];
+    if (priority === "play") return 0;
+    for (let i = queue.length - 1; i >= 0; i--) if (queue[i].wanted?.() !== false) return i;
+    return queue.length - 1;
+  }
+
+  /**
    * Une place s'est libérée : les lectures qui attendent d'abord, puis un
    * aperçu s'il peut la prendre. La place est prise ICI, avant le réveil :
    * une demande arrivée entre-temps ne la vole pas.
@@ -46,15 +64,16 @@ export function createExtractionSlots(max: number, maxPreviews: number): Extract
     for (const priority of ORDER) {
       while (waiting[priority].length > 0 && fits(priority)) {
         take(priority);
-        waiting[priority].shift()?.();
+        const [next] = waiting[priority].splice(nextIndex(priority), 1);
+        next.go();
       }
     }
   }
 
-  async function run<T>(priority: ExtractionPriority, task: () => Promise<T>): Promise<T> {
-    const ahead = priority === "play" ? waiting.play.length : waiting.play.length + waiting.preview.length;
-    if (ahead === 0 && fits(priority)) take(priority);
-    else await new Promise<void>((go) => waiting[priority].push(go));
+  async function run<T>(priority: ExtractionPriority, task: () => Promise<T>, wanted?: () => boolean): Promise<T> {
+    // Une lecture qui attend passe toujours devant ; entre aperçus, le dernier venu d'abord (`nextIndex`).
+    if (waiting.play.length === 0 && fits(priority)) take(priority);
+    else await new Promise<void>((go) => waiting[priority].push({ go, wanted }));
     try {
       return await task();
     } finally {

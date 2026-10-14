@@ -6,11 +6,11 @@ function harness(max = 2, maxPreviews = 1) {
   const slots = createExtractionSlots(max, maxPreviews);
   const started: string[] = [];
   const finish = new Map<string, () => void>();
-  const launch = (name: string, priority: ExtractionPriority) =>
+  const launch = (name: string, priority: ExtractionPriority, wanted?: () => boolean) =>
     slots.run(priority, () => {
       started.push(name);
       return new Promise<string>((resolve) => finish.set(name, () => resolve(name)));
-    });
+    }, wanted);
   const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
   return { slots, started, finish, launch, settle };
 }
@@ -58,6 +58,38 @@ describe("places d'extraction", () => {
     finish.get("tv2")!();
     await settle();
     expect(started).toEqual(["tv1", "tv2", "tv3", "p1"]);
+  });
+
+  it("entre aperçus, le plus RÉCENT d'abord : la carte sous le pointeur ne fait pas la queue", async () => {
+    const { started, finish, launch, settle } = harness();
+    void launch("p1", "preview");
+    void launch("p2", "preview");
+    void launch("p3", "preview");
+    void launch("p4", "preview");
+    await settle();
+    finish.get("p1")!();
+    await settle();
+    expect(started).toEqual(["p1", "p4"]);
+    finish.get("p4")!();
+    await settle();
+    expect(started).toEqual(["p1", "p4", "p3"]);
+  });
+
+  it("un aperçu que plus personne n'attend cède sa place à ceux qu'on attend", async () => {
+    const { started, finish, launch, settle } = harness();
+    let p3Wanted = true;
+    void launch("p1", "preview");
+    void launch("p2", "preview", () => true);
+    void launch("p3", "preview", () => p3Wanted);
+    await settle();
+    p3Wanted = false;
+    finish.get("p1")!();
+    await settle();
+    expect(started).toEqual(["p1", "p2"]);
+    // Plus personne d'autre : il passe quand même, sa réponse servira le retour sur la carte.
+    finish.get("p2")!();
+    await settle();
+    expect(started).toEqual(["p1", "p2", "p3"]);
   });
 
   it("une tâche en échec rend sa place", async () => {
