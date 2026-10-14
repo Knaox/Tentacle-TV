@@ -52,6 +52,13 @@ export function TrailerPlayer({ queue, startIndex = 0, language = null, onClose 
     if (!item) onClose();
   }, [item, onClose]);
 
+  // La page dessous ne défile pas tant que le lecteur la couvre (comme une modale).
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, []);
+
   const goTo = useCallback((next: number | null) => {
     if (next === null) onClose();
     else setIndex(next);

@@ -84,7 +84,9 @@ export function TrailerStage(props: TrailerStageProps) {
   const video = useTrailerVideoState(videoRef, streamKey);
   const { volume, handleVolumeChange, handleToggleMute } = usePlayerVolume({ videoRef, elementKey: streamKey ?? undefined });
   const { skipFlash, skipBy } = useSkipFlash(video.seekRelative);
-  const { showControls, scheduleHide } = useControlsAutoHide(video.playing);
+  // Un panneau ouvert garde les commandes : elles ne s'effacent qu'en lecture, panneaux fermés.
+  const [panelOpen, setPanelOpen] = useState(false);
+  const { showControls, scheduleHide } = useControlsAutoHide(video.playing && !panelOpen);
 
   const pip = typeof document !== "undefined" && document.pictureInPictureEnabled
     ? () => {
@@ -130,7 +132,7 @@ export function TrailerStage(props: TrailerStageProps) {
           onTogglePlay={video.togglePlay} onSeek={video.seek} onSkip={skipBy}
           onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute} onToggleFullscreen={props.onToggleFullscreen}
           onPip={pip} onNeighbor={props.onNeighbor} onPick={props.onPick}
-          onSubtitle={subtitles.choose} onQuality={setQuality} onClose={props.onClose}
+          onSubtitle={subtitles.choose} onQuality={setQuality} onPanelOpenChange={setPanelOpen} onClose={props.onClose}
         />
       </div>
     </div>

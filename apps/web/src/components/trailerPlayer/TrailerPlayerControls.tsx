@@ -7,7 +7,7 @@
  * détachés et suivent le thème.
  */
 
-import { memo, useState, type ReactNode } from "react";
+import { memo, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import type { TrailerQueueItem, TrailerStream } from "@tentacle-tv/shared";
@@ -49,6 +49,8 @@ export interface TrailerPlayerControlsProps {
   onPick: (index: number) => void;
   onSubtitle: (lang: string | null) => void;
   onQuality: (height: number | null) => void;
+  /** Un panneau (liste, réglages) s'ouvre ou se ferme : les commandes restent tant qu'il est ouvert. */
+  onPanelOpenChange?: (open: boolean) => void;
   onClose: () => void;
 }
 
@@ -62,6 +64,11 @@ export const TrailerPlayerControls = memo(function TrailerPlayerControls(props: 
   const { item, labels, queue, index, stream, playing, currentTime, duration, buffered, volume, fullscreen } = props;
   const hasSettings = !!stream && (stream.subtitles.length > 0 || stream.qualities.length >= 2);
   const toggle = (next: Exclude<Panel, null>) => setPanel((current) => (current === next ? null : next));
+  const { onPanelOpenChange } = props;
+  useEffect(() => {
+    onPanelOpenChange?.(panel !== null);
+    return () => onPanelOpenChange?.(false);
+  }, [panel, onPanelOpenChange]);
 
   return (
     <div className="absolute inset-0 flex flex-col">
