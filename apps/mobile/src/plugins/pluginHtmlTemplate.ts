@@ -28,6 +28,8 @@ interface BuildPluginHtmlParams {
   pluginPath: string;
   /** Query string de la route demandée — deep-link (cf. pluginBootstrapScript). */
   pluginQuery?: string;
+  /** Le serveur déclare `trailers.catalog` (cf. pluginBootstrapScript). */
+  trailerCatalog?: boolean;
   /** Thème mobile actif : la palette WebView COMPLÈTE en est dérivée. */
   appTheme: AppTheme;
   /**
@@ -55,6 +57,7 @@ export function buildPluginHtml({
   sharedDepsCode,
   pluginPath,
   pluginQuery,
+  trailerCatalog = false,
   appTheme,
   chromeBottom = 0,
 }: BuildPluginHtmlParams): string {
@@ -206,7 +209,7 @@ export function buildPluginHtml({
   <!-- Shared deps inlinées (WKWebView bloque les requêtes HTTP depuis origin null) -->
   <script>${safeDepsCode}<\/script>
 
-  <script>${buildPluginBootstrapScript({ backendUrl, lang, pluginPath, pluginQuery, escapedBundle })}<\/script>
+  <script>${buildPluginBootstrapScript({ backendUrl, lang, pluginPath, pluginQuery, trailerCatalog, escapedBundle })}<\/script>
 </body>
 </html>`;
 }

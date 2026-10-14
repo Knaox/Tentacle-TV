@@ -1,6 +1,7 @@
 import type { Router } from "expo-router";
 import { Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { parseTrailerRoute, trailerRouteHref } from "../trailers/trailerRoute";
 
 type PerfTimings = {
   sharedDeps: number;
@@ -22,12 +23,31 @@ type WebToNativeMessage =
   /** Une surface modale de la page s'ouvre ou se ferme (cf. pluginHostBridgeScript). */
   | { type: "OVERLAY"; open: boolean }
   /** Un lien à ouvrir hors de l'application. */
-  | { type: "OPEN_EXTERNAL"; url: string };
+  | { type: "OPEN_EXTERNAL"; url: string }
+  /** L'écran des bandes-annonces sur le catalogue d'un titre TMDB (`openTrailerFor`, API publique). */
+  | { type: "OPEN_TRAILER_CATALOG"; tmdbId?: unknown; mediaType?: unknown; season?: unknown; start?: unknown }
+  /** Le son des aperçus coupé dans l'extension : sans effet ici (aucun aperçu au survol sur le mobile). */
+  | { type: "TRAILER_PREVIEW_MUTED"; muted?: unknown };
 
 /** Seuls les liens web sortent : ni `javascript:`, ni schéma d'application. */
 function openExternalUrl(url: unknown): void {
   if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return;
   Linking.openURL(url).catch(() => { /* aucun navigateur : rien à faire */ });
+}
+
+const asParam = (value: unknown): string | undefined =>
+  typeof value === "number" || typeof value === "string" ? String(value) : undefined;
+
+/**
+ * `openTrailerFor` d'une extension → l'écran des bandes-annonces sur le
+ * catalogue du titre ; un message invalide est ignoré (la page n'est pas une
+ * source de confiance : seule une demande TMDB lisible ouvre l'écran).
+ */
+export function trailerCatalogHref(msg: { tmdbId?: unknown; mediaType?: unknown; season?: unknown; start?: unknown }): string | null {
+  const route = parseTrailerRoute({
+    tmdbId: asParam(msg.tmdbId), mediaType: asParam(msg.mediaType), season: asParam(msg.season), start: asParam(msg.start),
+  });
+  return route?.target.kind === "tmdb" ? trailerRouteHref(route) : null;
 }
 
 /**
@@ -101,6 +121,13 @@ export function createBridgeHandler(
           break;
         case "OPEN_EXTERNAL":
           openExternalUrl(msg.url);
+          break;
+        case "OPEN_TRAILER_CATALOG": {
+          const href = trailerCatalogHref(msg);
+          if (href) router.push(href as never);
+          break;
+        }
+        case "TRAILER_PREVIEW_MUTED":
           break;
       }
     } catch {

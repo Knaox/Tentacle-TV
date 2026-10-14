@@ -2,7 +2,7 @@ import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { View, Text } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { useServerCapability, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
@@ -105,6 +105,8 @@ export function PluginWebView({
   const token = storage.getItem("tentacle_token") ?? "";
   const userRaw = storage.getItem("tentacle_user") ?? "";
   const lang = i18n.language ?? "fr";
+  // `openTrailerFor` ouvre l'écran des bandes-annonces de l'app : le serveur sert le catalogue.
+  const trailerCatalog = useServerCapability("trailers.catalog");
 
   const [webViewReady, setWebViewReady] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
@@ -132,10 +134,11 @@ export function PluginWebView({
       bundleCode,
       sharedDepsCode,
       pluginPath: path,
+      trailerCatalog,
       appTheme: theme,
       chromeBottom: chromeRef.current,
     });
-  }, [plugin, path, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme]);
+  }, [plugin, path, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme, trailerCatalog]);
 
   /* La hauteur suit l'appareil : l'inset bas d'un iPhone n'est pas le même en
    * portrait et en paysage. On la RÉINJECTE plutôt que de la mettre dans les

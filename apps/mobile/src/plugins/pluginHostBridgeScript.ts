@@ -7,7 +7,14 @@
  *     de filtres…). Le natif efface sa barre d'onglets et voile son en-tête,
  *     comme le web voile son chrome : la barre ne flotte plus par-dessus le pied
  *     d'une feuille, et rien derrière le panneau ne reste cliquable ;
- *   - `openExternal(url)` : ouvre un lien (http/https) hors de l'application.
+ *   - `openExternal(url)` : ouvre un lien (http/https) hors de l'application ;
+ *   - `openTrailerFor(query)` : l'écran des bandes-annonces de l'app sur le
+ *     CATALOGUE d'un titre TMDB (`OPEN_TRAILER_CATALOG`, mêmes champs que
+ *     l'hôte web : `tmdbId`, `mediaType`, `season`, `title`, `start`) — offert
+ *     quand `__tentacle_env.trailerCatalog` le dit ;
+ *   - `setTrailerPreviewMuted(muted)` : accepté pour l'API commune, sans effet
+ *     (le mobile ne montre pas d'aperçu au survol, `trailerPreview.enabled` est
+ *     faux).
  *
  * Et, dans l'autre sens, `window.__tentacleCloseOverlay()` : le natif demande
  * à la page de fermer sa surface du DESSUS (toucher sur le voile, retour
@@ -28,6 +35,16 @@ export function buildHostBridgeScript(): string {
           setOverlay: function (open) { post({ type: "OVERLAY", open: open === true }); },
           openExternal: function (url) { post({ type: "OPEN_EXTERNAL", url: String(url || "") }); }
         };
+      }
+      var bridge = window.__tentacle_bridge;
+      if (!bridge.openTrailerFor) {
+        bridge.openTrailerFor = function (query) {
+          var q = query || {};
+          post({ type: "OPEN_TRAILER_CATALOG", tmdbId: q.tmdbId, mediaType: q.mediaType, season: q.season, title: q.title, start: q.start });
+        };
+      }
+      if (!bridge.setTrailerPreviewMuted) {
+        bridge.setTrailerPreviewMuted = function (muted) { post({ type: "TRAILER_PREVIEW_MUTED", muted: muted === true }); };
       }
       window.__tentacleCloseOverlay = function () {
         var target = document.activeElement || document.body || document;

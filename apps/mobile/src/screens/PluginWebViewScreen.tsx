@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
-import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { useServerCapability, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "../hooks/useActivePlugins";
 import { ExtensionProblem } from "@/components/problems/ExtensionProblem";
@@ -48,6 +48,8 @@ export function PluginWebViewScreen() {
   const token = storage.getItem("tentacle_token") ?? "";
   const userRaw = storage.getItem("tentacle_user") ?? "";
   const lang = i18n.language ?? "fr";
+  // `openTrailerFor` ouvre l'écran des bandes-annonces de l'app : le serveur sert le catalogue.
+  const trailerCatalog = useServerCapability("trailers.catalog");
 
   // Le chemin demandé s'il est une route mobile du plugin, sinon la première.
   const pluginPath = useMemo(() => {
@@ -69,12 +71,13 @@ export function PluginWebViewScreen() {
       sharedDepsCode,
       pluginPath,
       pluginQuery,
+      trailerCatalog,
       appTheme: theme,
       // Pas de barre d'onglets ici : la page n'a que l'indicateur d'accueil à
       // écarter (sinon le pied de ses feuilles se posait dessus).
       chromeBottom: insets.bottom,
     });
-  }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, pluginQuery, theme, insets.bottom]);
+  }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, pluginQuery, theme, insets.bottom, trailerCatalog]);
 
   // Le processus de rendu repris (iOS en arrière-plan, Android) : la page
   // renaît à son retour à l'écran au lieu de rester noire (cf. webViewRevival).
