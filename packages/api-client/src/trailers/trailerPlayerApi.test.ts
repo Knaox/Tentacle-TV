@@ -6,7 +6,8 @@ const yt = { kind: "youtube" as const, ytId: "Way9Dexny3w" };
 const dm = { kind: "dailymotion" as const, videoId: "x8e90ff" };
 
 function respond(status: number, body: unknown) {
-  const fetchMock = vi.fn(async () => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } }));
+  const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } }));
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
@@ -33,7 +34,7 @@ describe("le flux du lecteur complet", () => {
   });
 
   it("rend compte sans jamais échouer, même sur un 204", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
     expect(() => reportTrailerPlayback(dm, { ok: true, ms: 420 })).not.toThrow();
     await Promise.resolve();
