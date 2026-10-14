@@ -39,7 +39,7 @@ export function UploadTile({ tabbable, disabled, onFile }: UploadTileProps) {
             <ImagePlus size={28} strokeWidth={1.75} aria-hidden />
           </span>
         </span>
-        <span className="max-w-full truncate text-xs font-medium text-content-tertiary">{t("upload")}</span>
+        <span className="line-clamp-2 max-w-full text-center text-xs font-medium leading-tight text-content-tertiary">{t("upload")}</span>
       </button>
       <input
         ref={inputRef}
