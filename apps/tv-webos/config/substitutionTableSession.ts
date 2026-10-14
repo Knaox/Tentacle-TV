@@ -19,8 +19,14 @@ export const SESSION_FILES: Record<string, string> = {
   [resolve(WEB, "components/OfflineBanner.tsx")]: resolve(CLIENT, "ui/screens/OfflineBannerTv.tsx"),
 
   // « Qui regarde ? » à l'ouverture du BUREAU : la LG n'a pas de profils de la
-  // Famille, sa porte ne rend jamais rien. C'est la seule porte du dossier
-  // `profiles/` d'`apps/web` dans le graphe du téléviseur — il quitte donc
-  // aussi la feuille (`EXCLUDED_WEB_DIRECTORIES`).
+  // Famille, sa porte ne rend jamais rien. Avec l'invitation aux avatars (plus
+  // bas), ce sont les seules portes du dossier `profiles/` d'`apps/web` dans le
+  // graphe du téléviseur — il quitte donc aussi la feuille
+  // (`EXCLUDED_WEB_DIRECTORIES`).
   [resolve(WEB, "profiles/launch/useProfileLaunchGate.tsx")]: resolve(CLIENT, "shims/noProfileLaunchGate.ts"),
+
+  // L'invitation unique à choisir un avatar, montée par les recouvrements de
+  // démarrage (`StartupOverlays`) : la LG ne change pas la photo du compte. Sa
+  // galerie vit dans `profiles/`, que la feuille ne balaie pas.
+  [resolve(WEB, "profiles/avatarGallery/AvatarInvite.tsx")]: resolve(CLIENT, "shims/noAvatarInvite.ts"),
 };
