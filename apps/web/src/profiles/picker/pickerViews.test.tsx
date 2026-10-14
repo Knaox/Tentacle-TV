@@ -109,7 +109,9 @@ describe("« Qui regarde ? » — le pavé du code PIN", () => {
   });
 
   it("les points pleins suivent les chiffres tapés ; Effacer s'éteint sans rien à effacer", () => {
-    expect(pad({ typed: 3 }).match(/bg-content-primary/g)?.length).toBe(3);
+    // Le point plein est posé sur chaque point vide ; seuls les tapés sont opaques.
+    expect(pad({ typed: 3 }).match(/bg-content-primary[^"]*opacity-100/g)?.length).toBe(3);
+    expect(pad({ typed: 3 }).match(/bg-content-primary[^"]*opacity-0/g)?.length).toBe(1);
     expect(pad({ typed: 3 })).toContain("pin.progress{&quot;count&quot;:3}");
     expect(pad({ typed: 0 })).toMatch(/aria-label="pin.erase"[^>]*disabled=""|disabled=""[^>]*aria-label="pin.erase"/);
   });

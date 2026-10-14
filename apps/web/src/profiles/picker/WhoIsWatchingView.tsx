@@ -16,8 +16,10 @@ export interface WhoIsWatchingViewProps {
   onBack: () => void;
 }
 
+/** Un bouton secondaire de l'écran. Pas de couleur animée (règle « Coût GPU » 3) :
+ *  le survol change le fond d'un coup. */
 const SECONDARY =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary transition-colors duration-150 hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 /**
  * « Qui regarde ? » sur le bureau — plein écran, AVANT l'application : rien

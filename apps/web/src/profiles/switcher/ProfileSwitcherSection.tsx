@@ -17,7 +17,7 @@ interface ProfileSwitcherSectionProps {
 }
 
 const ROW =
-  "flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors duration-150 focus-visible:bg-fill-subtle focus-visible:outline-none disabled:cursor-default";
+  "flex w-full items-center gap-3 px-4 py-2 text-left text-sm focus-visible:bg-fill-subtle focus-visible:outline-none disabled:cursor-default";
 
 /**
  * Le CHANGEMENT RAPIDE de profil, en tête du menu de l'avatar (barre du haut

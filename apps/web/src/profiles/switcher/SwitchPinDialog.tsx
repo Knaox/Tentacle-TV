@@ -33,7 +33,7 @@ export const SwitchPinDialog = memo(function SwitchPinDialog({ pad, onDigit, onE
             type="button"
             onClick={close}
             disabled={checking}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary transition-colors hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-45"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-45"
           >
             {t("pin.cancel")}
           </button>

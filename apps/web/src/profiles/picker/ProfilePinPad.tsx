@@ -78,12 +78,12 @@ export const ProfilePinPad = memo(function ProfilePinPad({ pad, onDigit, onErase
         className={`mt-5 flex gap-4 ${pad.phase === "wrong" ? "animate-shake" : ""}`}
       >
         {Array.from({ length: FAMILY_PIN_LENGTH }, (_, index) => (
-          <span
-            key={index}
-            className={`h-3.5 w-3.5 rounded-full border transition-colors duration-150 ${
-              index < pad.typed ? "border-transparent bg-content-primary" : "border-line-strong bg-transparent"
-            }`}
-          />
+          // Le point vide, et le plein posé dessus en fondu d'opacité : rien ne se repeint.
+          <span key={index} className="relative h-3.5 w-3.5 rounded-full border border-line-strong">
+            <span
+              className={`absolute -inset-px rounded-full bg-content-primary transition-opacity duration-150 ${index < pad.typed ? "opacity-100" : "opacity-0"}`}
+            />
+          </span>
         ))}
       </div>
 
@@ -114,7 +114,7 @@ function PadKey({ label, disabled, onPress, children }: { label: string; disable
       onClick={onPress}
       // Le clic ne vole pas le focus : le clavier continue de taper au même endroit.
       onMouseDown={(event) => event.preventDefault()}
-      className="flex h-14 w-14 items-center justify-center rounded-full border border-line-subtle bg-fill-soft text-xl font-semibold text-content-primary transition-[background-color,transform] duration-150 hover:bg-fill-medium active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-14 w-14 items-center justify-center rounded-full border border-line-subtle bg-fill-soft text-xl font-semibold text-content-primary transition-transform duration-150 hover:bg-fill-medium active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>
