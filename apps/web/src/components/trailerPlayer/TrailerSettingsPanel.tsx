@@ -42,7 +42,7 @@ export const TrailerSettingsPanel = memo(function TrailerSettingsPanel({ stream,
         <span className="text-sm font-semibold text-content-primary">{t("player:settings")}</span>
         <button onClick={onClose} className="text-content-quaternary hover:text-content-primary" aria-label={t("player:close")}>&times;</button>
       </div>
-      <div className="max-h-[60vh] overflow-y-auto scrollbar-thin">
+      <div className="max-h-[min(60vh,22rem)] overflow-y-auto scrollbar-thin">
         {subtitleOptions.length > 0 && (
           <Section title={t("common:trailerSubtitles")}>
             {subtitleOptions.map((option) => {

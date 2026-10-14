@@ -33,7 +33,7 @@ export const TrailerListPanel = memo(function TrailerListPanel({ queue, index, l
         <span className="text-sm font-semibold text-content-primary">{t("common:trailerList")}</span>
         <button onClick={onClose} className="text-content-quaternary hover:text-content-primary" aria-label={t("player:close")}>&times;</button>
       </div>
-      <ol className="max-h-[60vh] space-y-0.5 overflow-y-auto scrollbar-thin">
+      <ol className="max-h-[min(60vh,22rem)] space-y-0.5 overflow-y-auto scrollbar-thin">
         {queue.map((item, i) => {
           const labels = trailerItemLabels(item, language, t);
           const active = i === index;
