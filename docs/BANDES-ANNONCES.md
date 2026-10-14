@@ -178,7 +178,9 @@ leur lecteur COMPLET depuis le 14 oct. (section suivante).
 
 ## Le lecteur complet du web et du bureau (2026-10-14)
 
-`apps/web/src/components/trailerPlayer/` : toute la fenêtre, sans publicité,
+`apps/web/src/components/trailerPlayer/` : un PETIT lecteur posé sur la page
+(carte 16:9, plein écran sur demande — choix de Damien : lancer et refermer
+vite), sans publicité,
 chaque vidéo par le relais — jamais stockée. Ouvert par « Bande-annonce », la
 rangée des extras et le héros de la reco (`detail/TrailerViewer.tsx`), face à
 un serveur qui déclare `trailers.player` ; sinon la modale d'avant.
