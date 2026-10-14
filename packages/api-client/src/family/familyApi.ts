@@ -10,7 +10,9 @@ import {
   type FamilyMembershipDto,
   type FamilyOverviewDto,
   type FamilyProfileDto,
+  type GuestPhotoDto,
   type IncomingInvitationDto,
+  type SetGuestPhotoBody,
   type OutgoingInvitationDto,
 } from "@tentacle-tv/shared";
 import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
@@ -58,6 +60,12 @@ export function deleteFamilyGuest(userId: string): Promise<{ deleted: true }> {
 
 export function setFamilyGuestPin(input: { userId: string; pin: string | null }): Promise<{ hasPin: boolean }> {
   return send(familyPath("setGuestPin", { userId: input.userId }), "PUT", { pin: input.pin });
+}
+
+/** La photo d'un invité (serveur 1.29.0, capacité `family.guestPhotos`) : son
+ *  propriétaire ou le membre qui l'a créé — mêmes droits que son PIN. */
+export function setFamilyGuestPhoto(input: { userId: string; photo: SetGuestPhotoBody }): Promise<GuestPhotoDto> {
+  return send(familyPath("setGuestPhoto", { userId: input.userId }), "PUT", input.photo);
 }
 
 /** Son propre PIN : `currentPin` est EXIGÉ pour changer ou retirer un PIN

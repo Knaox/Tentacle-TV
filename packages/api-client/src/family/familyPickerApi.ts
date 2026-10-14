@@ -1,6 +1,8 @@
 import {
   familyPath,
   type FamilyPickerPlatform,
+  type GuestPhotoDto,
+  type SetGuestPhotoBody,
   type PickProfileBody,
   type PickedProfileDto,
   type PickerPreferenceDto,
@@ -66,4 +68,10 @@ export function fetchPickerPreference(call: PickerCall): Promise<PickerPreferenc
 
 export function setPickerPreference(call: PickerCall, body: SetPickerPreferenceBody): Promise<PickerPreferenceDto> {
   return pickerCall(call, familyPath("setPickerPreference"), "PUT", body);
+}
+
+/** La photo d'un invité pendant SA session de profil sur le bureau : l'appareil
+ *  l'habille par sa session PERSONNELLE (`PickerProfileDto.photoEditable`). */
+export function setPickerGuestPhoto(call: PickerCall, userId: string, photo: SetGuestPhotoBody): Promise<GuestPhotoDto> {
+  return pickerCall(call, familyPath("setGuestPhoto", { userId }), "PUT", photo);
 }

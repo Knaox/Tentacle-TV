@@ -3,7 +3,7 @@
 // l'Apple TV, les crochets et le temps réel. Contrat : @tentacle-tv/shared › family/.
 export {
   familyErrorFromApi, fetchFamilyOverview, fetchFamilyCandidates, createFamilyGuest, deleteFamilyGuest,
-  setFamilyGuestPin, setOwnFamilyPin, removeFamilyMember, setFamilyMemberRights, setFamilyGuestRights, sendFamilyInvitation, cancelFamilyInvitation,
+  setFamilyGuestPin, setFamilyGuestPhoto, setOwnFamilyPin, removeFamilyMember, setFamilyMemberRights, setFamilyGuestRights, sendFamilyInvitation, cancelFamilyInvitation,
   acceptFamilyInvitation, declineFamilyInvitation, snoozeFamilyInvitation, leaveFamily, dissolveFamily,
 } from "../family/familyApi";
 export {
@@ -11,11 +11,11 @@ export {
 } from "../family/familyTvApi";
 // « Qui regarde ? » sur le bureau : toujours le jeton de la session PERSONNELLE.
 export {
-  fetchPickerProfiles, pickFamilyProfile, fetchPickerPreference, setPickerPreference, type PickerCall,
+  fetchPickerProfiles, pickFamilyProfile, fetchPickerPreference, setPickerPreference, setPickerGuestPhoto, type PickerCall,
 } from "../family/familyPickerApi";
 export {
   FAMILY_KEY, FAMILY_OVERVIEW_KEY, familyCandidatesKey, useFamilyOverview, useFamilyCandidates,
-  useCreateFamilyGuest, useDeleteFamilyGuest, useSetFamilyGuestPin, useSetOwnFamilyPin, useRemoveFamilyMember, useSetFamilyMemberRights, useSetFamilyGuestRights,
+  useCreateFamilyGuest, useDeleteFamilyGuest, useSetFamilyGuestPin, useSetFamilyGuestPhoto, useSetOwnFamilyPin, useRemoveFamilyMember, useSetFamilyMemberRights, useSetFamilyGuestRights,
   useSendFamilyInvitation, useCancelFamilyInvitation, useAcceptFamilyInvitation, useDeclineFamilyInvitation,
   useSnoozeFamilyInvitation, useLeaveFamily, useDissolveFamily,
 } from "../hooks/useFamily";

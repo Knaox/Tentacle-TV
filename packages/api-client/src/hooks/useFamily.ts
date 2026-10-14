@@ -12,6 +12,7 @@ import {
   removeFamilyMember,
   sendFamilyInvitation,
   setFamilyGuestPin,
+  setFamilyGuestPhoto,
   setFamilyGuestRights,
   setFamilyMemberRights,
   setOwnFamilyPin,
@@ -81,6 +82,10 @@ export function useDeleteFamilyGuest() {
 
 export function useSetFamilyGuestPin() {
   return useFamilyMutation(setFamilyGuestPin);
+}
+
+export function useSetFamilyGuestPhoto() {
+  return useFamilyMutation(setFamilyGuestPhoto);
 }
 
 export function useSetOwnFamilyPin() {
