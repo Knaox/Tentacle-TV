@@ -17,6 +17,7 @@ import { placePreview, type PreviewPlacement, type PreviewShape } from "./previe
 import { previewSettleMs } from "./previewMotion";
 import { usePreviewListeners } from "./usePreviewListeners";
 import { useKeyboardInCard } from "./useKeyboardInCard";
+import { usePreviewRoom } from "./room/usePreviewRoom";
 import type { CardPreviewSession } from "./useCardPreview";
 
 /** Ce que la mini-carte rend — `null` tant que rien n'est monté. */
@@ -137,6 +138,8 @@ export function usePreviewSession({ subject, hovered, shape, disabled, anchorRef
   useLayoutEffect(() => {
     setShown(shown);
   }, [shown, setShown]);
+  // Ses voisines s'écartent dans cette même image, et reviennent avec sa sortie.
+  usePreviewRoom({ shown, placement, anchorRef, reduced });
 
   // Effacée par le moteur sous un pointeur resté là (fin, échec) : silence
   // global jusqu'au prochain vrai mouvement (`previewQuiet.ts`).

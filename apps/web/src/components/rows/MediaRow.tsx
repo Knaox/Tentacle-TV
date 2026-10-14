@@ -204,6 +204,9 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
         <div
           ref={scrollRef}
           onScroll={handleScroll}
+          // La pièce de la mini-carte d'aperçu : ses voisines s'y écartent
+          // (`cards/preview/room`) ; les cales, elles, ne bougent jamais.
+          data-preview-room="row"
           className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
           {visible && (
@@ -214,7 +217,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
                   `scrollLeft` ne saute pas.
                   PAS de `snap-start` : un vide n'est pas un point d'accroche. */}
               {range.padStart > 0 && (
-                <div aria-hidden style={{ width: range.padStart, flexShrink: 0 }} />
+                <div aria-hidden data-room-skip style={{ width: range.padStart, flexShrink: 0 }} />
               )}
 
               {/* Clé du TITRE, jamais de sa place : Jellyfin peut renvoyer le
@@ -247,7 +250,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
               })}
 
               {range.padEnd > 0 && (
-                <div aria-hidden style={{ width: range.padEnd, flexShrink: 0 }} />
+                <div aria-hidden data-room-skip style={{ width: range.padEnd, flexShrink: 0 }} />
               )}
             </>
           )}

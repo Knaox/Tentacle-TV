@@ -1,0 +1,60 @@
+/* ── La place que les voisines font à la mini-carte d'aperçu ──────────────
+ *
+ * Importée par `previewRoom.ts` seulement : jamais compilée par le client des
+ * téléviseurs LG, qui ne monte pas la mini-carte. Les conteneurs portent
+ * `data-preview-room` (inerte sans cette feuille) ; tout le reste est posé et
+ * retiré par `previewRoom.ts` le temps d'un aperçu VU.
+ *
+ * `translate` et rien d'autre : la propriété individuelle se compose avec le
+ * `transform` des cartes (le soulèvement du survol, la cascade d'entrée d'une
+ * rangée) sans l'écraser, et s'anime sur le compositeur — aucune mise en
+ * page, aucune peinture des cartes, aucun défilement. PAS de `will-change` :
+ * la transition promeut ce qui glisse le temps qu'elle dure.
+ *
+ * Le tempo est celui de la mini-carte (`previewMotion.ts`, variables posées
+ * sur la pièce) : elles s'écartent pendant qu'elle grandit, en décélération,
+ * et reviennent pendant qu'elle se rend à sa carte, en accélération.
+ * Animations RÉDUITES : rien ne glisse, la pièce ne s'ouvre pas
+ * (`usePreviewRoom`) — la mini-carte apparaît en fondu, par-dessus. */
+
+/* Ceux qu'on voit glisser : la zone visible, et un de chaque côté. Les autres
+ * sautent à leur place, hors de la vue. */
+[data-preview-room][data-room="open"] > [data-room-glide] {
+  transition: translate var(--room-enter-ms) var(--room-enter-ease);
+}
+
+[data-preview-room][data-room="closing"] > [data-room-glide] {
+  transition: translate var(--room-exit-ms) var(--room-exit-ease);
+}
+
+/* Rangée, ou grille d'une seule ligne : l'ordre du document dit le côté. Une
+ * carte montée pendant l'aperçu (la fenêtre de la rangée glisse) le suit. */
+[data-preview-room="row"][data-room="open"] > :not([data-room-skip]) {
+  translate: calc(-1 * var(--room-left)) 0;
+}
+
+[data-preview-room="row"][data-room="open"] > [data-room-anchor] {
+  translate: none;
+}
+
+[data-preview-room="row"][data-room="open"] > [data-room-anchor] ~ :not([data-room-skip]) {
+  translate: var(--room-right) 0;
+}
+
+/* Grille de plusieurs lignes : le côté est posé, élément par élément, sur la
+ * seule ligne de la carte. */
+[data-preview-room="grid"][data-room="open"] > [data-room-side="before"] {
+  translate: calc(-1 * var(--room-left)) 0;
+}
+
+[data-preview-room="grid"][data-room="open"] > [data-room-side="after"] {
+  translate: var(--room-right) 0;
+}
+
+/* Une rangée ne s'ACCROCHE plus tant que ses cartes sont décalées : Chromium
+ * suit la carte accrochée quand elle glisse, et faisait défiler la rangée toute
+ * seule — ce qui fermait l'aperçu (mesuré au banc, 14/10). La pièce rendue, les
+ * cartes sont revenues à leur place : la rangée y est déjà accrochée. */
+[data-preview-room][data-room] {
+  scroll-snap-type: none;
+}

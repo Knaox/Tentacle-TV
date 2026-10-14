@@ -48,7 +48,8 @@ export const WatchlistResumeShelf = memo(function WatchlistResumeShelf({
         </h2>
         <span className="text-xs text-content-tertiary">{t("resumeHint")}</span>
       </div>
-      <ul className="scrollbar-hide -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-4 pt-3 md:-mx-8 md:scroll-px-8 md:px-8">
+      {/* La pièce de la mini-carte d'aperçu : ses voisines s'y écartent. */}
+      <ul data-preview-room="row" className="scrollbar-hide -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-4 pt-3 md:-mx-8 md:scroll-px-8 md:px-8">
         {items.map((item) => (
           <li key={item.Id} className="snap-start">
             <WatchlistResumeTile item={item} onPlay={onPlay} pending={pendingPlayId === item.Id} />

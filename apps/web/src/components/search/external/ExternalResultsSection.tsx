@@ -58,7 +58,9 @@ export const ExternalResultsSection = memo(function ExternalResultsSection({ res
           </button>
         )}
       </div>
-      <ul className="grid gap-x-4 gap-y-6" style={GRID}>
+      {/* Une pièce de plusieurs lignes : seule la ligne de la carte
+          s'écarte devant sa mini-carte d'aperçu. */}
+      <ul data-preview-room="grid" className="grid gap-x-4 gap-y-6" style={GRID}>
         {items.map((item) => (
           <li key={item.id}>
             <ExternalResultCard item={item} />

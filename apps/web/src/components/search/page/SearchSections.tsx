@@ -50,7 +50,9 @@ export const PosterGrid = memo(function PosterGrid({ items, onOpen }: {
   onOpen: (item: SearchMediaItem) => void;
 }) {
   return (
-    <ul className="grid gap-x-4 gap-y-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
+    // Une pièce de plusieurs lignes : seule la ligne de la carte s'écarte
+    // devant sa mini-carte d'aperçu (`cards/preview/room`).
+    <ul data-preview-room="grid" className="grid gap-x-4 gap-y-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
       {items.map((item, index) => (
         <SearchResultCard key={item.Id} item={item} index={index} onSelect={() => onOpen(item)} />
       ))}

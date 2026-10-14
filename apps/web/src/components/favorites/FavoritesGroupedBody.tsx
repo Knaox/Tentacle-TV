@@ -121,6 +121,8 @@ export function FavoritesGroupedBody({ groups, selectionMode, headerKey }: Favor
                 />
               ) : (
                 <div
+                  // Une ligne = une pièce de la mini-carte d'aperçu (`cards/preview/room`).
+                  data-preview-room="row"
                   className="grid"
                   style={{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)`, gap: GAP }}
                 >

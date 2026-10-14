@@ -110,6 +110,8 @@ export function CollectionGridBody({ items, selectionMode, headerKey }: Collecti
               }}
             >
               <div
+                // Une ligne = une pièce de la mini-carte d'aperçu (`cards/preview/room`).
+                data-preview-room="row"
                 className="grid"
                 /* Même mécanisme que `LibraryGrid` : `colonnesTv.ts` publie la largeur
          et sonde le moteur, `grille-tv.css` pose l'écart.

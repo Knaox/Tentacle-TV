@@ -33,6 +33,8 @@ export interface PreviewQuiet {
   onKeyDown: (key: string) => void;
   /** La page défile à la molette : la porte se ferme, comme après une mini-carte refermée. */
   onWheel: () => void;
+  /** La dernière position connue du pointeur (coordonnées de fenêtre), `null` avant tout mouvement. */
+  pointer: () => { x: number; y: number } | null;
   subscribe: (listener: () => void) => () => void;
 }
 
@@ -72,6 +74,7 @@ export function createPreviewQuiet(): PreviewQuiet {
     onKeyDown: (key) => {
       if (key !== "Escape") open();
     },
+    pointer: () => (Number.isFinite(lastX) && Number.isFinite(lastY) ? { x: lastX, y: lastY } : null),
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);

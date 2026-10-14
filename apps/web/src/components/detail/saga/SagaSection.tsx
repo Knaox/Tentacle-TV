@@ -90,6 +90,8 @@ function SagaRow({ view }: { view: SagaView }) {
         <div
           ref={scrollRef}
           onScroll={onScroll}
+          // La pièce de la mini-carte d'aperçu (`cards/preview/room`).
+          data-preview-room="row"
           className="row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
           {view.entries.map((entry, index) => (

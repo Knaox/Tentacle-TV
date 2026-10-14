@@ -259,6 +259,7 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
                       <LibraryLoadingMore className="h-40" />
                     ) : (
                       <div
+                        data-preview-room="row" // une ligne = une pièce de l'aperçu (cards/preview/room)
                         className="grid"
                         /* La cible téléviseur substitue `useItemsPerRow`
                            (`ui/grille/colonnesTv.ts`) : il publie la largeur de

@@ -129,12 +129,15 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
         <div
           ref={scrollRef}
           onScroll={handleScroll}
+          // La pièce de la mini-carte d'aperçu : ses voisines s'y écartent
+          // (`cards/preview/room`) ; les cales, elles, ne bougent jamais.
+          data-preview-room="row"
           className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
           {visible && (
             <>
               {range.padStart > 0 && (
-                <div aria-hidden style={{ width: range.padStart, flexShrink: 0 }} />
+                <div aria-hidden data-room-skip style={{ width: range.padStart, flexShrink: 0 }} />
               )}
               {cards.slice(range.start, range.end + 1).map((item, offset) => {
                 const i = range.start + offset;
@@ -152,7 +155,7 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
                 );
               })}
               {range.padEnd > 0 && (
-                <div aria-hidden style={{ width: range.padEnd, flexShrink: 0 }} />
+                <div aria-hidden data-room-skip style={{ width: range.padEnd, flexShrink: 0 }} />
               )}
             </>
           )}
