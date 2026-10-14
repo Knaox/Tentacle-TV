@@ -11,6 +11,10 @@
 /*  en fond, pour la fois suivante (chaque source a sa mémoire         */
 /*  partagée). Hors bibliothèque (`tmdbId`) : ni locale, ni Jellyfin.  */
 /*  Rien n'est jamais écrit ailleurs que dans ces mémoires.            */
+/*  En FOND (la préparation des aperçus à l'écran) : TMDB par sa file  */
+/*  de fond, Dailymotion à sa cadence de préparation — et l'on dit si  */
+/*  chaque source a VRAIMENT répondu (`answered`) : une décision prise */
+/*  sans l'une d'elles ne serait pas celle du survol.                  */
 /* ------------------------------------------------------------------ */
 
 import { refreshTitleLanguage, titleLanguage } from "../../reco/titleLanguage";
@@ -25,6 +29,17 @@ import { allocineEntries, jellyfinRemoteEntries, localEntries, youtubeEntries } 
 import { resolveCatalogTitle, type CatalogLibraryTitle } from "./catalogTitle";
 import { fetchSeerrTitle } from "./seerrTitle";
 import { fetchTmdbSeasonVideos, fetchTmdbTitle, type TmdbTitle } from "./tmdbCatalog";
+
+export interface CatalogBuildOptions {
+  /** `background` : la préparation des aperçus — personne n'attend encore. */
+  priority?: "interactive" | "background";
+}
+
+/** Le catalogue, et si chaque source a vraiment répondu (TMDB, ses saisons, AlloCiné) — pas seulement à temps. */
+export interface DetailedCatalog {
+  response: TrailerCatalogResponse;
+  answered: boolean;
+}
 
 /** Personne n'attend plus que ça : le reste arrive à la demande suivante. */
 export const CATALOG_BUDGET_MS = 3_000;
@@ -80,22 +95,37 @@ const seasonScopes = (scopes: readonly TrailerScope[]) =>
  * pour ce compte : une liste vide, complète. Jellyfin muet : vide, à redemander.
  */
 export async function buildCatalog(request: TrailerCatalogRequest, userId: string, budgetMs = CATALOG_BUDGET_MS): Promise<TrailerCatalogResponse> {
+  return (await buildCatalogDetailed(request, userId, budgetMs)).response;
+}
+
+/** `buildCatalog`, avec ce que la préparation des aperçus doit savoir (`answered`). */
+export async function buildCatalogDetailed(
+  request: TrailerCatalogRequest, userId: string, budgetMs = CATALOG_BUDGET_MS, options: CatalogBuildOptions = {},
+): Promise<DetailedCatalog> {
   const deadline = Date.now() + budgetMs;
+  const background = options.priority === "background";
+  const tmdbPriority = background ? "background" : "interactive";
   const languageTag = await serverLanguageTag(request.lang);
   const language = primary(languageTag);
+  // Une source qui ne répond pas (TMDB muet, Dailymotion en pause ou refusé) : le catalogue n'est pas « répondu ».
+  let answered = true;
+  const heard = <T>(value: T | null): T | null => {
+    if (value === null) answered = false;
+    return value;
+  };
 
   let library: CatalogLibraryTitle | null = null;
   let tmdbRef: { id: number; mediaType: "movie" | "tv" } | null = null;
   let requestedSeason: number | undefined;
   if ("itemId" in request) {
     const lookup = await resolveCatalogTitle(request.itemId, userId);
-    if (lookup.kind !== "title") return { entries: [], complete: lookup.kind === "none", language };
+    if (lookup.kind !== "title") return { response: { entries: [], complete: lookup.kind === "none", language }, answered: lookup.kind === "none" };
     library = lookup.title;
     tmdbRef = library.tmdb;
     requestedSeason = library.season;
   } else {
     const id = previewTmdbIdOf(request.tmdbId);
-    if (id === null) return { entries: [], complete: true, language };
+    if (id === null) return { response: { entries: [], complete: true, language }, answered: true };
     tmdbRef = { id, mediaType: request.mediaType };
     requestedSeason = request.season;
   }
@@ -107,7 +137,7 @@ export async function buildCatalog(request: TrailerCatalogRequest, userId: strin
 
   // Toutes les sources partent ensemble. Jellyseerr (qui relaie TMDB) seulement sans TMDB, ou TMDB muet.
   const ref = tmdbRef;
-  const tmdbTitle = ref && tmdbConfigured() ? fetchTmdbTitle(ref.id, ref.mediaType, languageTag) : Promise.resolve(null);
+  const tmdbTitle = ref && tmdbConfigured() ? fetchTmdbTitle(ref.id, ref.mediaType, languageTag, tmdbPriority).then(heard) : Promise.resolve(null);
   const seerrTitle = tmdbTitle.then((tmdb) => (tmdb || !ref ? null : fetchSeerrTitle(ref.id, ref.mediaType)));
   // Les noms, dates et saisons du titre : TMDB, sinon Jellyseerr.
   const titleInfo = tmdbTitle.then((tmdb) => tmdb ?? seerrTitle);
@@ -116,7 +146,8 @@ export async function buildCatalog(request: TrailerCatalogRequest, userId: strin
     : Promise.resolve(null);
   const allocine = allocineQuery.then(async (query) => {
     if (!query) return [];
-    const [info, found] = await Promise.all([titleInfo, searchAllocineVideos(query, { ongoing: library?.ongoing ?? false })]);
+    const search = searchAllocineVideos(query, { ongoing: library?.ongoing ?? false, priority: background ? "prefetch" : "interactive" });
+    const [info, found] = await Promise.all([titleInfo, search.then(heard)]);
     if (!found) return [];
     return allocineEntries(matchAllocineVideos(found.videos, allocineTitle(kind, info, library)));
   });
@@ -131,7 +162,7 @@ export async function buildCatalog(request: TrailerCatalogRequest, userId: strin
     const wanted = seasonScopes(catalogScopes(targetOf(await knownSeasons))).slice(0, TMDB_SEASONS);
     const tvId = tmdbRef.id;
     const perSeason = await Promise.all(wanted.map(async (season) => {
-      const videos = await fetchTmdbSeasonVideos(tvId, season, languageTag);
+      const videos = heard(await fetchTmdbSeasonVideos(tvId, season, languageTag, tmdbPriority));
       return videos ? youtubeEntries(videos, { kind: "season", season }, "tmdb", languageTag, names) : [];
     }));
     return [...own, ...perSeason.flat()];
@@ -149,9 +180,9 @@ export async function buildCatalog(request: TrailerCatalogRequest, userId: strin
   const seasonsSettled = await settleBy(knownSeasons, deadline);
   const entries = settled.flatMap((s) => (s.done && s.value ? s.value : []));
   const seasons = seasonsSettled.done && seasonsSettled.value ? seasonsSettled.value : library?.seasons.map((s) => s.season) ?? [];
+  const complete = settled.every((s) => s.done) && seasonsSettled.done;
   return {
-    entries: rankCatalogEntries(entries, catalogScopes(targetOf(seasons))),
-    complete: settled.every((s) => s.done) && seasonsSettled.done,
-    language,
+    response: { entries: rankCatalogEntries(entries, catalogScopes(targetOf(seasons))), complete, language },
+    answered: complete && answered,
   };
 }
