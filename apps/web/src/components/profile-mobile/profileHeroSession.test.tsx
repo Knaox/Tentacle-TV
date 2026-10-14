@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 /**
  * L'en-tête de la page Profil d'une fenêtre ÉTROITE du bureau : en session
- * personnelle, la photo du compte se change ; pendant la session d'un profil,
+ * personnelle, la photo du compte se change (la galerie des avatars, qui porte
+ * aussi l'import d'une photo) ; pendant la session d'un profil,
  * rien à changer (le serveur le refuse) — son rond, son nom, ce qu'il est.
  */
 
@@ -29,10 +30,10 @@ describe("l'en-tête de la page Profil, fenêtre étroite", () => {
     state.face = null;
   });
 
-  it("en session personnelle : « Changer la photo », et le sélecteur de fichier", () => {
+  it("en session personnelle : « Changer la photo », qui ouvre la galerie (rien de chargé avant)", () => {
     const html = renderToStaticMarkup(<ProfileHero name="Damien" initial="D" isAdmin={false} />);
     expect(html).toContain('aria-label="changePhoto"');
-    expect(html).toContain('type="file"');
+    expect(html).not.toContain('role="dialog"');
   });
 
   it("en session personnelle dans une famille : le rond à la couleur de son profil", () => {

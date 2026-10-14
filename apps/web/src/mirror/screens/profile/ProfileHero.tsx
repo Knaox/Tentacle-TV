@@ -1,8 +1,7 @@
-import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera } from "lucide-react";
 import { useAvatarUpload } from "../../../hooks/useAvatarUpload";
-import { useToast } from "../../../contexts/ToastContext";
+import { useAvatarGallery } from "../../../profiles/avatarGallery/useAvatarGallery";
 import { AVATAR_GRADIENT_BG } from "../../../components/userMenu/menuItems";
 
 /** Le serveur tel qu'on le reconnaît : son hôte, sans schéma ni chemin. */
@@ -16,8 +15,9 @@ const SIZE = 76;
  * `ProfileHero` + `ProfileAvatar` de l'app : photo 76 (repli : initiale 32 sur
  * dégradé de marque), pastille caméra 24 en bas à droite ; nom 22
  * extra-gras, hôte du serveur 13 tertiaire, badge « Administrateur ». Écart
- * 16, 20 sous l'en-tête. L'envoi de la photo est celui du web
- * (`useAvatarUpload` : Jellyfin, copie locale, repli en chaîne).
+ * 16, 20 sous l'en-tête. Toucher la photo ouvre la galerie des avatars du web
+ * (`useAvatarGallery` : un personnage ou une photo importée, envoyés par
+ * `useAvatarUpload` — Jellyfin, copie locale, repli en chaîne).
  */
 export function ProfileHero({ name, initial, isAdmin, serverUrl }: {
   name: string;
@@ -26,22 +26,15 @@ export function ProfileHero({ name, initial, isAdmin, serverUrl }: {
   serverUrl: string;
 }) {
   const { t } = useTranslation("profile");
-  const { show } = useToast();
-  const { avatarSrc, onAvatarError, avatarVersion, uploading, upload, userId } = useAvatarUpload();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const { avatarSrc, onAvatarError, avatarVersion, uploading, userId } = useAvatarUpload();
+  const { openGallery, dialog: galleryDialog } = useAvatarGallery();
   const host = serverHost(serverUrl);
-
-  const handleFile = async (file: File) => {
-    const ok = await upload(file);
-    show(ok ? "success" : "error", t(ok ? "avatarUpdated" : "avatarUpdateFailed"));
-    if (fileRef.current) fileRef.current.value = "";
-  };
 
   return (
     <header className="mb-5 flex items-center gap-4">
       <button
         type="button"
-        onClick={() => fileRef.current?.click()}
+        onClick={openGallery}
         disabled={uploading || !userId}
         aria-label={t("changePhoto")}
         className="relative shrink-0 rounded-full active:opacity-85"
@@ -73,16 +66,7 @@ export function ProfileHero({ name, initial, isAdmin, serverUrl }: {
           </span>
         )}
       </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void handleFile(file);
-        }}
-      />
+      {galleryDialog}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h1 className="truncate text-[22px] font-extrabold tracking-[-0.4px] text-content-primary">{name}</h1>
         {host ? <p className="truncate text-[13px] text-content-tertiary">{host}</p> : null}

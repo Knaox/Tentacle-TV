@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { Dropdown } from "./ui/Dropdown";
 import { avatarRingStyleFor, buildUserMenuItems, getUserInfo, type UserMenuItem } from "./userMenu/menuItems";
 import { useAvatarUpload } from "../hooks/useAvatarUpload";
-import { useToast } from "../contexts/ToastContext";
 import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
 import { setManualOffline } from "../offline/connectivityStore";
@@ -17,11 +16,13 @@ import { useProfileMenuItems } from "../profiles/switcher/useProfileMenuItems";
 import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 import { ProfileMenuHeader } from "./userMenu/ProfileMenuHeader";
 import { useMenuKeyboard } from "./userMenu/useMenuKeyboard";
+import { useAvatarGallery } from "../profiles/avatarGallery/useAvatarGallery";
 
 /**
  * Bouton avatar + dropdown menu pour le desktop (TopNav).
  * L'en-tête du menu affiche la photo de profil Jellyfin (fallback initiale) ;
- * cliquer dessus permet d'en choisir une nouvelle — envoyée à Jellyfin, elle
+ * cliquer dessus ouvre la galerie des avatars (`useAvatarGallery`) — un
+ * personnage de la troupe ou une photo importée, envoyés à Jellyfin : la photo
  * change aussi dans les autres clients. Équivalent mobile : `MobileUserSheet`
  * (le changement de photo mobile vit sur la page Profil).
  *
@@ -40,15 +41,13 @@ export function UserAvatarMenu() {
   const navigate = useNavigate();
   const { t } = useTranslation("nav");
   const { t: tProfile } = useTranslation("profile");
-  const { show } = useToast();
   const logoutAccount = useAccountLogout();
   const { name, initial, isAdmin } = getUserInfo();
   const connectivity = useConnectivity();
   const offline = useOfflineMode();
-  const { avatarSrc, onAvatarError, avatarVersion, uploading, upload } = useAvatarUpload();
+  const { avatarSrc, onAvatarError, avatarVersion, uploading } = useAvatarUpload();
   // Le catalogue local : visible dès qu'il y a un droit ou du contenu.
   const { visible: onDeviceVisible } = useDownloadsVisibility();
-  const fileRef = useRef<HTMLInputElement>(null);
   const activeProfile = useActiveProfile();
   const ringStyle = avatarRingStyleFor(useAccountFaceColor());
 
@@ -68,11 +67,11 @@ export function UserAvatarMenu() {
     navigate(path);
   }, [close, navigate]);
 
-  const handleFile = useCallback(async (file: File) => {
-    const ok = await upload(file);
-    show(ok ? "success" : "error", tProfile(ok ? "avatarUpdated" : "avatarUpdateFailed"));
-    if (fileRef.current) fileRef.current.value = "";
-  }, [upload, show, tProfile]);
+  const { openGallery, dialog: galleryDialog } = useAvatarGallery();
+  const changePhoto = useCallback(() => {
+    close();
+    openGallery();
+  }, [close, openGallery]);
 
   // Bascule manuelle hors ligne : desktop uniquement, et seulement quand tout
   // va bien (hors ligne, la pastille du TopNav porte déjà l'action inverse).
@@ -137,7 +136,7 @@ export function UserAvatarMenu() {
               name={name}
               caption={tProfile("changePhoto")}
               uploading={uploading}
-              onChangePhoto={() => fileRef.current?.click()}
+              onChangePhoto={changePhoto}
             />
           )}
 
@@ -163,16 +162,7 @@ export function UserAvatarMenu() {
         </div>
       </Dropdown>
 
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
+      {galleryDialog}
     </div>
   );
 }
@@ -206,7 +196,7 @@ interface AccountHeaderProps {
   onChangePhoto: () => void;
 }
 
-/** En-tête du compte : avatar cliquable = changer la photo (Jellyfin). */
+/** En-tête du compte : avatar cliquable = la galerie des photos de profil. */
 function AccountHeader({ avatar, ringStyle, name, caption, uploading, onChangePhoto }: AccountHeaderProps) {
   return (
     <div className="flex items-center gap-3 border-b border-line-subtle px-4 py-3">

@@ -23,9 +23,10 @@ export default {
   noPhoto: "Pas encore de photo",
   pickHint: "Survolez un personnage pour faire sa connaissance.",
   choose: "Choisir {{name}}",
+  chooseIdle: "Choisir",
   applying: "Un instant…",
   cancel: "Annuler",
-  later: "Plus tard",
+  notNow: "Pas maintenant",
   close: "Fermer",
   characters: {
     lanterne: { name: "Lanterne", story: "Ne regarde de l'horreur qu'après minuit. Elle apporte sa propre lumière." },

@@ -1,0 +1,76 @@
+/*
+ * La galerie des avatars. Chaque personnage bouge selon son TEMPÉRAMENT, et
+ * seulement au survol ou au focus clavier : rien ne tourne au repos, et seul
+ * `transform` est animé (pas de peinture par image).
+ */
+
+.avatar-tile__art {
+  transition: transform var(--duration-base) var(--ease-out);
+  will-change: auto;
+}
+
+.avatar-tile:hover .avatar-tile__art,
+.avatar-tile:focus-visible .avatar-tile__art {
+  transform: translateY(-4px) scale(1.04);
+  animation: var(--avatar-motion) var(--avatar-motion-duration, 1.8s) var(--ease-in-out) infinite;
+}
+
+.avatar-tile[data-temperament="float"] { --avatar-motion: avatar-float; --avatar-motion-duration: 2.4s; }
+.avatar-tile[data-temperament="wiggle"] { --avatar-motion: avatar-wiggle; --avatar-motion-duration: 0.9s; }
+.avatar-tile[data-temperament="shiver"] { --avatar-motion: avatar-shiver; --avatar-motion-duration: 0.36s; }
+.avatar-tile[data-temperament="bounce"] { --avatar-motion: avatar-bounce; --avatar-motion-duration: 0.8s; }
+.avatar-tile[data-temperament="sway"] { --avatar-motion: avatar-sway; --avatar-motion-duration: 2s; }
+.avatar-tile[data-temperament="doze"] { --avatar-motion: avatar-doze; --avatar-motion-duration: 3.2s; }
+
+@keyframes avatar-float {
+  0%, 100% { transform: translateY(-4px) scale(1.04); }
+  50% { transform: translateY(-10px) scale(1.04); }
+}
+
+@keyframes avatar-wiggle {
+  0%, 100% { transform: translateY(-4px) scale(1.04) rotate(0deg); }
+  25% { transform: translateY(-4px) scale(1.04) rotate(-7deg); }
+  75% { transform: translateY(-4px) scale(1.04) rotate(7deg); }
+}
+
+@keyframes avatar-shiver {
+  0%, 100% { transform: translate(0, -4px) scale(1.06); }
+  25% { transform: translate(-1.5px, -5px) scale(1.06); }
+  50% { transform: translate(1.5px, -4px) scale(1.06); }
+  75% { transform: translate(-1px, -3px) scale(1.06); }
+}
+
+@keyframes avatar-bounce {
+  0%, 100% { transform: translateY(-4px) scale(1.04, 1.04); }
+  35% { transform: translateY(-14px) scale(1.02, 1.07); }
+  60% { transform: translateY(-2px) scale(1.08, 1.0); }
+}
+
+@keyframes avatar-sway {
+  0%, 100% { transform: translateY(-4px) scale(1.04) rotate(-4deg); }
+  50% { transform: translateY(-4px) scale(1.04) rotate(4deg); }
+}
+
+@keyframes avatar-doze {
+  0%, 100% { transform: translateY(-4px) scale(1.04) rotate(0deg); }
+  45%, 70% { transform: translateY(-2px) scale(1.04) rotate(9deg); }
+}
+
+/* L'anneau du choisi et celui du focus : des calques en fondu d'opacité. */
+.avatar-tile__ring {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.avatar-tile[aria-pressed="true"] .avatar-tile__ring--chosen,
+.avatar-tile:focus-visible .avatar-tile__ring--focus {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-tile:hover .avatar-tile__art,
+  .avatar-tile:focus-visible .avatar-tile__art {
+    animation: none;
+    transform: none;
+  }
+}

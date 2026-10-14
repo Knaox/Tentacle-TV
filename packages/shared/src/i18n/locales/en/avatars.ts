@@ -19,9 +19,10 @@ export default {
   noPhoto: "No picture yet",
   pickHint: "Hover over a character to get to know them.",
   choose: "Choose {{name}}",
+  chooseIdle: "Choose",
   applying: "One moment…",
   cancel: "Cancel",
-  later: "Later",
+  notNow: "Not now",
   close: "Close",
   characters: {
     lanterne: { name: "Lantern", story: "Only watches horror after midnight. Brings her own light." },

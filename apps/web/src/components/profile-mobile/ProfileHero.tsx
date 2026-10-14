@@ -1,9 +1,8 @@
-import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { avatarRingStyleFor } from "../userMenu/menuItems";
 import { useAccountFaceColor } from "../../profiles/face/useAccountFaceColor";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
-import { useToast } from "../../contexts/ToastContext";
+import { useAvatarGallery } from "../../profiles/avatarGallery/useAvatarGallery";
 import { useActiveProfile, type ActiveProfile } from "../../auth/profileSession";
 import { FamilyAvatar } from "../../family/FamilyAvatar";
 
@@ -15,8 +14,9 @@ interface Props {
 
 /**
  * En-tête de la page Profile : avatar XL (photo Jellyfin, fallback initiale) +
- * nom + badge admin. L'avatar est cliquable : la photo choisie est envoyée à
- * Jellyfin (elle change donc aussi dans les autres clients Jellyfin).
+ * nom + badge admin. L'avatar est cliquable : il ouvre la galerie des avatars
+ * (`useAvatarGallery`) — un personnage ou une photo importée, envoyés à
+ * Jellyfin (la photo change donc aussi dans les autres clients Jellyfin).
  *
  * Bureau, session d'un PROFIL de la famille (fenêtre étroite) : le rond et le
  * nom du profil, sans « Changer la photo » — le serveur le refuse à un profil,
@@ -25,19 +25,12 @@ interface Props {
 export function ProfileHero({ name, initial, isAdmin }: Props) {
   const { t } = useTranslation("profile");
   const { t: tNav } = useTranslation("nav");
-  const { show } = useToast();
-  const { avatarSrc, onAvatarError, avatarVersion, uploading, upload, userId } = useAvatarUpload();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const { avatarSrc, onAvatarError, avatarVersion, uploading, userId } = useAvatarUpload();
+  const { openGallery, dialog: galleryDialog } = useAvatarGallery();
 
   const activeProfile = useActiveProfile();
   // Bureau, famille : le rond à la couleur du profil du compte, comme sur « Qui regarde ? ».
   const ringStyle = avatarRingStyleFor(useAccountFaceColor());
-
-  const handleFile = async (file: File) => {
-    const ok = await upload(file);
-    show(ok ? "success" : "error", t(ok ? "avatarUpdated" : "avatarUpdateFailed"));
-    if (fileRef.current) fileRef.current.value = "";
-  };
 
   if (activeProfile) return <ProfileSessionHero profile={activeProfile} />;
 
@@ -45,7 +38,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
     <header className="flex items-center gap-4 px-1 pb-6">
       <button
         type="button"
-        onClick={() => fileRef.current?.click()}
+        onClick={openGallery}
         disabled={uploading || !userId}
         aria-label={t("changePhoto")}
         title={t("changePhoto")}
@@ -75,16 +68,7 @@ export function ProfileHero({ name, initial, isAdmin }: Props) {
           )}
         </span>
       </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
+      {galleryDialog}
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-xl font-bold text-content-primary">
           {name || t("defaultUsername")}
