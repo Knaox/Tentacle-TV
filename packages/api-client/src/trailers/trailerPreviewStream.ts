@@ -118,7 +118,8 @@ function refusalOf(error: TentacleApiError): { reason: TrailerPreviewRefusal; re
 }
 
 function isAbort(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
+  // React Native (les téléviseurs) n'a pas toujours `DOMException` : le nom suffit.
+  return error instanceof Error && error.name === "AbortError";
 }
 
 /**
