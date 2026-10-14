@@ -22,6 +22,8 @@ interface MPVPlayerProps {
   isDirectPlay?: boolean;
   /** PrismCore : rendition OCR du sous-titre image sélectionné (cf. AVPlayerSurface). */
   prismTextTrackIndex?: number | null;
+  /** Avance d'AVPlayer sur une source distante (cf. AVPlayerSurface). */
+  forwardBufferSec?: number;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
   /** Android seulement (tv-core `startGate`) : l'AVPlayer n'annonce rien, la prop est écartée. */

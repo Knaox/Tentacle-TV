@@ -25,6 +25,8 @@ interface ExoPlayerProps {
   isDirectPlay?: boolean;
   /** PrismCore : rendition OCR du sous-titre image sélectionné (cf. AVPlayerSurface). */
   prismTextTrackIndex?: number | null;
+  /** Avance d'AVPlayer sur une source distante (cf. AVPlayerSurface). */
+  forwardBufferSec?: number;
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;

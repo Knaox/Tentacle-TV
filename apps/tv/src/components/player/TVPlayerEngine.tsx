@@ -4,7 +4,7 @@ import type { PlayerStageBaseProps } from "./playerStageBaseProps";
 export type TVPlayerEngineProps = Pick<
   PlayerStageBaseProps,
   | "streamUrl" | "paused" | "playerPaused" | "hasStarted" | "reloadFrameSec" | "useExoPlayer" | "exoRef" | "mpvRef"
-  | "playerStyle" | "textTracks" | "subtitleIndex" | "isDirectPlay" | "prismTextTrackIndex" | "frameRate"
+  | "playerStyle" | "textTracks" | "subtitleIndex" | "isDirectPlay" | "prismTextTrackIndex" | "forwardBufferSec" | "frameRate"
   | "onLoad" | "onFirstFrame" | "onProgress" | "onEnd" | "onError" | "onTracks" | "onVideoSize"
 >;
 
@@ -22,7 +22,7 @@ export function TVPlayerEngine(props: TVPlayerEngineProps) {
       // la session sortante. Le vrai blocage du son vient du « hold » (playerPaused) côté PlayerScreen.
       muted={props.reloadFrameSec != null && props.hasStarted}
       textTracks={props.textTracks} subtitleIndex={props.subtitleIndex} isDirectPlay={props.isDirectPlay}
-      prismTextTrackIndex={props.prismTextTrackIndex}
+      prismTextTrackIndex={props.prismTextTrackIndex} forwardBufferSec={props.forwardBufferSec}
       frameRate={props.frameRate}
       onLoad={props.onLoad} onFirstFrame={props.onFirstFrame} onProgress={props.onProgress} onEnd={props.onEnd}
       onError={props.onError} onTracks={props.onTracks} onVideoSize={props.onVideoSize}
