@@ -4,8 +4,9 @@
  * inchangée : cumul du badge sur appuis rapides dans le même sens.
  */
 
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, type MutableRefObject } from "react";
 import type { SkipFlash } from "../components/SkipBadge";
+import { useSkipFlash } from "./useSkipFlash";
 
 interface Options {
   seekRelative: (delta: number) => void;
@@ -27,22 +28,7 @@ export function useDesktopPlayerShortcuts({
   seekRelative, togglePause, goBack, toggleFullscreen, fullscreenRef,
   hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, enabled = true, onReduce,
 }: Options): { skipFlash: SkipFlash | null; skipBy: (delta: number) => void } {
-  const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
-  const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const skipAccumRef = useRef(0);
-  useEffect(() => () => clearTimeout(skipFlashTimer.current), []);
-
-  const skipBy = useCallback((delta: number) => {
-    seekRelative(delta);
-    // Appuis rapides dans le MÊME sens → cumul de l'affichage (+30 → +60 → +90),
-    // façon TV/Netflix. mpv coalesce déjà les seeks relatifs, on ne cumule donc
-    // que le badge. Reset au changement de sens ou après 1,5 s d'inactivité.
-    const sameDir = skipAccumRef.current !== 0 && Math.sign(delta) === Math.sign(skipAccumRef.current);
-    skipAccumRef.current = sameDir ? skipAccumRef.current + delta : delta;
-    setSkipFlash({ delta: skipAccumRef.current, id: Date.now() });
-    clearTimeout(skipFlashTimer.current);
-    skipFlashTimer.current = setTimeout(() => { skipAccumRef.current = 0; setSkipFlash(null); }, 1500);
-  }, [seekRelative]);
+  const { skipFlash, skipBy } = useSkipFlash(seekRelative);
 
   useEffect(() => {
     if (!enabled) return;
