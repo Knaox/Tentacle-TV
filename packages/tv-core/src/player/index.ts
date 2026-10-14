@@ -44,3 +44,4 @@ export * from "./trailerPanels";
 export * from "./trailerStream";
 export * from "./trailerSubtitleMemory";
 export * from "./trailerRequest";
+export * from "./prefetchVolume";
