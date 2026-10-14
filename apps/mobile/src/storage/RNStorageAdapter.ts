@@ -39,6 +39,10 @@ const STORAGE_KEYS = [
   "tentacle_sub_scale", "tentacle_sub_pos", "tentacle_match_frame_rate",
   // Ma liste en grille ou en liste — préférence d'appareil, même clé que le web.
   "tentacle_watchlist_view",
+  // Les comptes déjà invités à choisir un avatar sur cet appareil
+  // (`AVATAR_INVITE_SEEN_KEY`, même clé que le web) : absente d'ici,
+  // l'invitation unique reviendrait à chaque lancement.
+  "tentacle_avatar_invite_seen",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

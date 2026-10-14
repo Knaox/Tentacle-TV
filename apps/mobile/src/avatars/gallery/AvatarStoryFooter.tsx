@@ -30,7 +30,9 @@ interface AvatarStoryFooterProps {
  * Le pied de la galerie, fixe sous la grille : on y fait connaissance — le
  * personnage désigné s'y présente (portrait, nom, histoire), sinon la photo
  * actuelle et ce qu'il faut faire. Puis « Annuler » (« Pas maintenant » pour
- * l'invitation) et UNE action principale, « Choisir {{name}} ».
+ * l'invitation) et UNE action principale, « Choisir {{name}} ». Le lecteur
+ * d'écran reçoit l'histoire par l'annonce de la galerie, pas par une région
+ * vivante (Android la dirait deux fois).
  */
 export const AvatarStoryFooter = memo(function AvatarStoryFooter({
   character,
@@ -47,7 +49,7 @@ export const AvatarStoryFooter = memo(function AvatarStoryFooter({
 
   return (
     <View style={st.footer}>
-      <View style={st.story} accessibilityLiveRegion="polite">
+      <View style={st.story}>
         <View style={[st.portrait, character ? { backgroundColor: character.tone } : null]}>
           {character ? (
             <Image key={character.id} source={AVATAR_THUMBS[character.id]} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />

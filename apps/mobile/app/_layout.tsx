@@ -18,6 +18,7 @@ import { DatabaseMigrationHost } from "@/databaseMigration/DatabaseMigrationHost
 import { NoticeHost } from "@/notices/NoticeHost";
 import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
 import { FamilyInvitationHost } from "@/family/FamilyInvitationHost";
+import { AvatarInviteHost } from "@/avatars/invite/AvatarInviteHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
@@ -191,6 +192,9 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
           lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
       {serverUrl && !showLoading ? <FamilyInvitationHost /> : null}
+      {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage
+          (l'affiche de la Famille d'abord), jamais sur le lecteur. */}
+      {serverUrl && !showLoading ? <AvatarInviteHost /> : null}
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
       <SessionMessageHost />
       {/* La migration de la base du serveur : au-dessus de tout, jamais un « hors ligne ». */}
