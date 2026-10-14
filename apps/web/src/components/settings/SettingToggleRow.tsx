@@ -5,6 +5,8 @@ interface SettingToggleRowProps {
   hint?: string;
   active: boolean;
   onChange: (active: boolean) => void;
+  /** Grisé : le réglage existe mais ne s'applique pas ici (son explication dit pourquoi). */
+  disabled?: boolean;
 }
 
 /**
@@ -13,9 +15,9 @@ interface SettingToggleRowProps {
  * La forme était recopiée dans chaque bascule des Préférences ; elle vit ici
  * pour que les réglages de lecture — qui en alignent six — restent lisibles.
  */
-export function SettingToggleRow({ title, hint, active, onChange }: SettingToggleRowProps) {
+export function SettingToggleRow({ title, hint, active, onChange, disabled }: SettingToggleRowProps) {
   return (
-    <div className="flex items-start justify-between gap-4">
+    <div className={`flex items-start justify-between gap-4${disabled ? " opacity-60" : ""}`}>
       {/* min-w-0 : sans lui, un hint long refuse de rétrécir (min-width:auto)
           et pousse l'interrupteur hors de la carte. */}
       <div className="min-w-0 flex-1">
@@ -24,7 +26,7 @@ export function SettingToggleRow({ title, hint, active, onChange }: SettingToggl
           <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{hint}</p>
         )}
       </div>
-      <ToggleSwitch checked={active} onChange={onChange} label={title} />
+      <ToggleSwitch checked={active} onChange={onChange} label={title} disabled={disabled} />
     </div>
   );
 }

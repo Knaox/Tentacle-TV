@@ -8,9 +8,11 @@ import { MetadataSkeleton } from "../components/admin/metadata/MetadataSkeleton"
 import { TmdbKeyCard } from "../components/admin/metadata/TmdbKeyCard";
 import { RecoFanoutStatus } from "../components/admin/metadata/RecoFanoutStatus";
 import { RegionCard } from "../components/admin/metadata/RegionCard";
+import { TrailersCard } from "../components/admin/metadata/TrailersCard";
 
 /**
- * Onglet « Métadonnées » : clé TMDB, région des plateformes.
+ * Onglet « Métadonnées » : clé TMDB, région des plateformes, bandes-annonces
+ * (AlloCiné, état des sources — un serveur qui déclare `trailers.catalog`).
  * Lecture PARTAGÉE avec le bandeau « clé TMDB manquante » (même requête,
  * `live` ici) : squelette pendant la première lecture, erreur avec
  * « Réessayer » si elle échoue — plus de page blanche.
@@ -38,6 +40,7 @@ export function AdminMetadata() {
             saved={status.data.watchRegion || "FR"}
             tmdbConfigured={status.data.tmdb.configured}
           />
+          <TrailersCard />
         </div>
       ) : status.isError ? (
         <AdminNotice

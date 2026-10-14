@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 
 type StatusResult = { data?: unknown; isError: boolean; isFetching: boolean; refetch: () => void; dataUpdatedAt?: number };
 const status = vi.hoisted(() => ({ current: null as unknown as StatusResult }));
+const trailers = vi.hoisted(() => ({ capable: false, data: undefined as unknown }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: "fr" } }),
@@ -25,6 +26,9 @@ vi.mock("@tentacle-tv/api-client", () => ({
   useAdminMetadataRegions: () => ({ data: [{ code: "FR", providers: 102 }, { code: "BE", providers: 61 }] }),
   useAdminRegionProviders: () => ({ data: undefined, isPlaceholderData: false }),
   adminMetadataErrorCode: () => "failed",
+  useServerCapability: () => trailers.capable,
+  useAdminTrailers: () => ({ data: trailers.data, isError: false }),
+  useUpdateAdminTrailers: () => ({ mutate: () => undefined, isPending: false, isError: false }),
 }));
 vi.mock("../components/PageTransition", () => ({
   PageTransition: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -46,6 +50,8 @@ const render = () => renderToStaticMarkup(<AdminMetadata />);
 
 beforeEach(() => {
   status.current = { data: undefined, isError: false, isFetching: true, refetch: () => undefined };
+  trailers.capable = false;
+  trailers.data = undefined;
 });
 
 describe("la page Admin → Métadonnées", () => {
@@ -102,5 +108,43 @@ describe("la page Admin → Métadonnées", () => {
     expect(html).toContain('aria-valuenow="3"');
     expect(html).toContain('aria-valuemax="12"');
     expect(html).toContain("scaleX(0.25)");
+  });
+
+  describe("la carte « Bandes-annonces »", () => {
+    const read = () => {
+      status.current = { data: { tmdb: { configured: true, source: "db", last4: "a1b2" }, watchRegion: "FR" }, isError: false, isFetching: false, refetch: () => undefined };
+      return render();
+    };
+    const sources = { youtube: { state: "normal" }, dailymotion: { state: "normal" } };
+
+    it("absente face à un serveur qui ne déclare pas trailers.catalog", () => {
+      trailers.data = { allocine: true, allocineAvailable: true, language: "fr", sources };
+      expect(read()).not.toContain("trailersTitle");
+    });
+
+    it("serveur français : AlloCiné coché, actif, et les sources normales", () => {
+      trailers.capable = true;
+      trailers.data = { allocine: true, allocineAvailable: true, language: "fr", sources };
+      const html = read();
+      expect(html).toContain("trailersTitle");
+      expect(html).toContain("trailersAllocineHint");
+      expect(html).toMatch(/role="switch" aria-checked="true" aria-label="trailersAllocine"(?![^>]*disabled)/);
+      expect(html).toContain("trailersSourceNormal");
+    });
+
+    it("serveur anglais : la case grisée, et pourquoi", () => {
+      trailers.capable = true;
+      trailers.data = {
+        allocine: true, allocineAvailable: false, language: "en",
+        sources: { youtube: { state: "paused", until: Date.now() + 60_000, reason: "bot" }, dailymotion: { state: "normal" } },
+      };
+      const html = read();
+      expect(html).toContain("trailersAllocineUnavailable");
+      expect(html).not.toContain("trailersAllocineHint");
+      expect(html).toMatch(/role="switch" aria-checked="false" aria-label="trailersAllocine" disabled/);
+      expect(html).toContain("trailersSourcePaused");
+      expect(html).toContain("trailersReason_bot");
+      expect(html).toContain("trailersPausedHint");
+    });
   });
 });

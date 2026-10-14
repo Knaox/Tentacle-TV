@@ -44,6 +44,7 @@ export const TENTACLE_ADMIN_PAGES = {
   overview: "/admin",
   plugins: "/admin/plugins",
   services: "/admin/services",
+  metadata: "/admin/metadata",
 } as const;
 
 export type TentacleAdminPage = keyof typeof TENTACLE_ADMIN_PAGES;
@@ -104,7 +105,11 @@ export const TRAILER_GUIDE_STEPS: readonly TrailerGuideStep[] = [
     paragraphKeys: ["stepJellyseerrBody"],
     exampleKey: null,
     optional: true,
-    links: [{ kind: "admin", page: "plugins", labelKey: "linkAdminPlugins" }],
+    links: [
+      { kind: "admin", page: "plugins", labelKey: "linkAdminPlugins" },
+      // La clé TMDB de Tentacle et AlloCiné (serveur français) : les versions françaises, saison par saison.
+      { kind: "admin", page: "metadata", labelKey: "linkAdminMetadata" },
+    ],
   },
   {
     id: "update",

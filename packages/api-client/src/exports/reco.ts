@@ -43,6 +43,11 @@ export {
   type AdminMetadataStatus, type AdminRecoFanout, type AdminMetadataUpdate, type AdminMetadataErrorCode,
   type AdminProviderRegion, type TmdbKeyTestResult,
 } from "../hooks/useAdminMetadata";
+// La carte « Bandes-annonces » de Métadonnées : AlloCiné et l'état des sources (capacité `trailers.catalog`)
+export {
+  useAdminTrailers, useUpdateAdminTrailers, ADMIN_TRAILERS_KEY,
+  type AdminTrailersStatus, type AdminTrailerSourceStatus, type AdminTrailerSourceReason,
+} from "../hooks/useAdminTrailers";
 
 // Personnes aimées — rangées « Avec {acteur} » (cf. hooks/useLikedPeople)
 export {

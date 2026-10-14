@@ -84,6 +84,7 @@ export default {
   linkAdminOverview: "Overview",
   linkAdminPlugins: "Tentacle extensions",
   linkAdminServices: "Services",
+  linkAdminMetadata: "Tentacle metadata",
   // Le contrôle « Bandes-annonces » de la vue d'ensemble de l'administration.
   adminGuideLink: "Read the guide",
   linkOpensOutside: "opens outside the app",

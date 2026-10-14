@@ -89,4 +89,23 @@ export default {
   regionPreviewMore_other: "et {{count}} autres",
   regionRevert: "Rétablir",
   regionSavedToast: "Région enregistrée : {{country}}. Les plateformes se mettent à jour en arrière-plan.",
+  // Bandes-annonces (capacité trailers.catalog)
+  trailersTitle: "Bandes-annonces",
+  trailersDescription:
+    "D'où viennent les bandes-annonces des fiches. Ce serveur les lit lui-même : sans publicité, et sans rien stocker.",
+  trailersAllocine: "AlloCiné (VF et VOSTFR)",
+  trailersAllocineHint:
+    "Les bandes-annonces françaises d'AlloCiné passent avant celles de TMDB, saison par saison.",
+  trailersAllocineUnavailable:
+    "Indisponible : AlloCiné ne propose que des versions françaises, et ce serveur est en {{language}}. La langue se règle dans les métadonnées de Jellyfin.",
+  trailersAllocineUnknownLanguage:
+    "Indisponible tant que la langue de ce serveur n'est pas connue. Elle se règle dans les métadonnées de Jellyfin.",
+  trailersSources: "État des sources",
+  trailersSourceNormal: "Normal",
+  trailersSourcePaused: "En pause jusqu'à {{time}}",
+  trailersReason_bot: "vérification anti-robot",
+  trailersReason_limit: "trop de demandes",
+  trailersReason_errors: "erreurs répétées",
+  trailersPausedHint: "En pause, YouTube passe par son lecteur officiel, et AlloCiné laisse la place à TMDB.",
+  trailersLoadError: "Impossible de lire l'état des bandes-annonces.",
 } as const;

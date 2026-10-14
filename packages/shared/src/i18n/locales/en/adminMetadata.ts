@@ -89,4 +89,23 @@ export default {
   regionPreviewMore_other: "and {{count}} more",
   regionRevert: "Revert",
   regionSavedToast: "Region saved: {{country}}. Platforms update in the background.",
+  // Trailers (trailers.catalog capability)
+  trailersTitle: "Trailers",
+  trailersDescription:
+    "Where the trailers on title pages come from. This server plays them itself: no ads, and nothing stored.",
+  trailersAllocine: "AlloCiné (French dub and French subtitles)",
+  trailersAllocineHint:
+    "AlloCiné's French trailers come before TMDB's, season by season.",
+  trailersAllocineUnavailable:
+    "Unavailable: AlloCiné only offers French versions, and this server is in {{language}}. The language is set in Jellyfin's metadata settings.",
+  trailersAllocineUnknownLanguage:
+    "Unavailable until this server's language is known. It is set in Jellyfin's metadata settings.",
+  trailersSources: "Sources",
+  trailersSourceNormal: "Normal",
+  trailersSourcePaused: "Paused until {{time}}",
+  trailersReason_bot: "bot check",
+  trailersReason_limit: "too many requests",
+  trailersReason_errors: "repeated errors",
+  trailersPausedHint: "While paused, YouTube uses its official player, and AlloCiné gives way to TMDB.",
+  trailersLoadError: "Couldn't read the trailers status.",
 } as const;
