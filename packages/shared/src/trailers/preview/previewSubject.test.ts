@@ -12,18 +12,18 @@ const SERIES = "3aaf1d2f2002de846ae4fd70d27aff80";
 
 const item = (over: Partial<MediaItem>): MediaItem => ({ Id: MOVIE, Name: "x", Type: "Movie", ...over }) as MediaItem;
 
-/** De quoi une carte montre la bande-annonce : le titre, sa série, ou rien. */
+/** De quoi une carte montre la bande-annonce : le titre lui-même, ou rien. */
 describe("le sujet d'un aperçu", () => {
   it("un film, une série : eux-mêmes", () => {
     expect(trailerPreviewSubjectOfItem(item({}))).toEqual({ kind: "item", itemId: MOVIE });
     expect(trailerPreviewSubjectOfItem(item({ Id: SERIES, Type: "Series" }))).toEqual({ kind: "item", itemId: SERIES });
   });
 
-  it("un épisode, une saison : leur série", () => {
-    expect(trailerPreviewSubjectOfItem(item({ Id: "e1", Type: "Episode", SeriesId: SERIES }))).toEqual({ kind: "item", itemId: SERIES });
-    expect(trailerPreviewSubjectOfItem(item({ Id: "s1", Type: "Season", SeriesId: SERIES }))).toEqual({ kind: "item", itemId: SERIES });
-    expect(trailerPreviewSubjectOfItem(item({ Id: "s1", Type: "Season", ParentId: SERIES }))).toEqual({ kind: "item", itemId: SERIES });
-    expect(trailerPreviewSubjectOfItem(item({ Id: "e1", Type: "Episode" }))).toBeNull();
+  it("un épisode, une saison : eux-mêmes (le serveur suit leur saison)", () => {
+    // Un épisode, une saison : PAR EUX-MÊMES — leur saison d'abord, comme le bouton et les extras de leur fiche.
+    expect(trailerPreviewSubjectOfItem(item({ Id: "e1", Type: "Episode", SeriesId: SERIES }))).toEqual({ kind: "item", itemId: "e1" });
+    expect(trailerPreviewSubjectOfItem(item({ Id: "s1", Type: "Season", SeriesId: SERIES }))).toEqual({ kind: "item", itemId: "s1" });
+    expect(trailerPreviewSubjectOfItem(item({ Id: "e1", Type: "Episode" }))).toEqual({ kind: "item", itemId: "e1" });
   });
 
   it("une collection, de la musique, rien : pas d'aperçu", () => {

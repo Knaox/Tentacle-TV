@@ -10,8 +10,10 @@ import { trailerPreviewPath, type TrailerPreviewMediaType } from "../trailerPrev
  *   - `tmdb` : un titre hors bibliothèque (cartes de Vigie, recherche,
  *     filmographie, saga), connu par son identité TMDB.
  *
- * Un épisode ou une saison n'a pas de bande-annonce à lui : c'est celle de sa
- * SÉRIE qui se montre. Une collection, un album ou une piste : rien.
+ * Un épisode ou une saison se demande PAR LUI-MÊME : le serveur suit son
+ * catalogue (sa saison d'abord, puis le repli), comme le bouton et les extras
+ * de sa fiche — un serveur d'avant le ramène de lui-même à sa série. Une
+ * collection, un album ou une piste : rien.
  */
 export type TrailerPreviewSubject =
   | { kind: "item"; itemId: string }
@@ -22,7 +24,7 @@ const EXTERNAL_FACE_ID = /^ext:(movie|tv):(\d+)$/;
 
 /**
  * Le sujet de l'aperçu d'une carte de la bibliothèque — `null` quand la carte
- * n'en a pas (collection, musique, épisode sans série connue). Le visage d'un
+ * n'en a pas (collection, musique). Le visage d'un
  * titre hors bibliothèque (`ext:movie:603`) vaut son identité TMDB.
  */
 export function trailerPreviewSubjectOfItem(
@@ -36,13 +38,9 @@ export function trailerPreviewSubjectOfItem(
   switch (item.Type) {
     case "Movie":
     case "Series":
-      return { kind: "item", itemId: item.Id };
+    case "Season":
     case "Episode":
-      return item.SeriesId ? { kind: "item", itemId: item.SeriesId } : null;
-    case "Season": {
-      const seriesId = item.SeriesId ?? item.ParentId;
-      return seriesId ? { kind: "item", itemId: seriesId } : null;
-    }
+      return { kind: "item", itemId: item.Id };
     default:
       return null;
   }

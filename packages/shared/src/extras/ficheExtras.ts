@@ -43,7 +43,10 @@ function seasonMayOwn(season: FicheSeason): boolean {
  * - film : ses extras ;
  * - série : les siens et ceux de TOUTES ses saisons, réunis ;
  * - épisode : ceux de SA saison s'il y en a, sinon tous les autres (la série,
- *   les autres saisons).
+ *   les saisons). Avec le catalogue, « s'il y en a » veut dire : sa saison a
+ *   la MEILLEURE vidéo (la première du catalogue, dans la langue du serveur).
+ *   Sinon le carrousel suit tout le catalogue. Ainsi sa première vidéo est
+ *   TOUJOURS celle du bouton « Bande-annonce » et de l'aperçu au survol.
  * `entries` : le catalogue de la fiche (vide sans lui), `language` : celle du serveur.
  */
 export function ficheExtrasPlan<S extends FicheSeason>(input: {
@@ -64,10 +67,15 @@ export function ficheExtrasPlan<S extends FicheSeason>(input: {
   }
   if (input.type !== "Episode") return { seasons: [], withSeries: false, seasonOnly: null, catalog: row(relayed) };
   const current = input.seasonNumber != null ? input.seasons.find((season) => season.IndexNumber === input.seasonNumber) : undefined;
-  if (current && seasonOwns(current, relayed)) {
-    const key = `s${current.IndexNumber}`;
+  const key = current ? `s${current.IndexNumber}` : null;
+  // Avec le catalogue : la saison seule si la PREMIÈRE vidéo est à elle ; sans lui, ses extras comptés.
+  const seasonFirst = relayed.length > 0
+    ? key !== null && trailerScopeKey(relayed[0].scope) === key
+    : !!current && seasonOwns(current, []);
+  if (current && seasonFirst) {
     return { seasons: [current], withSeries: false, seasonOnly: current, catalog: row(relayed.filter((entry) => trailerScopeKey(entry.scope) === key)) };
   }
-  const others = input.seasons.filter((season) => season !== current && seasonMayOwn(season));
-  return { seasons: others, withSeries: true, seasonOnly: null, catalog: row(relayed) };
+  // Tous les autres : la série, et toutes les saisons qui en ont (la sienne comprise, ses bonus locaux aussi).
+  const all = input.seasons.filter((season) => seasonMayOwn(season) || (season === current && seasonOwns(season, relayed)));
+  return { seasons: all, withSeries: true, seasonOnly: null, catalog: row(relayed) };
 }
