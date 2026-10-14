@@ -96,11 +96,11 @@ export function useForYouModels(gate: VigieGate | null): ForYouModels {
           const card = libraryById.get(reco.jellyfinItemId);
           return card ? [card] : [];
         }
-        const title = absent ? absent.cardOf(reco, reasonOf(reco)) : null;
-        const absentTarget = title ? absent?.titleOf(title.id) : undefined;
-        if (!title || !absentTarget) return [];
-        shelfTargets.set(title.id, { reco, absent: absentTarget });
-        return [title];
+        const card = absent?.cardOf(reco, reasonOf(reco));
+        const wanted = card ? absent?.titleOf(card.id) : undefined;
+        if (!card || !wanted) return [];
+        shelfTargets.set(card.id, { reco, absent: wanted });
+        return [card];
       });
       return { key: shelf.key, title: t(title.key, title.params), cards };
     });
