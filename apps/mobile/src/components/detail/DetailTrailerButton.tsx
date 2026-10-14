@@ -4,8 +4,10 @@ import Animated from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { TRAILER_PLATFORM_LEGACY, useItemTrailer } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { useItemTrailer } from "@tentacle-tv/api-client";
+import { parseYouTubeId, trailerPlaybackKey, type MediaItem } from "@tentacle-tv/shared";
+import { MOBILE_TRAILER_PLATFORM } from "@/trailers/trailerPlatform";
+import { trailerRouteHref, type TrailerRouteItemType } from "@/trailers/trailerRoute";
 import { FONT_FAMILY, RADIUS, spacing, useTheme } from "@/theme";
 
 interface Props {
@@ -22,24 +24,34 @@ interface Props {
  * en couleur par fiche, et le libellé entier plutôt qu'un cinquième rond où
  * « Bande-annonce » ne tiendrait pas sur un téléphone de 375.
  *
- * Même règle que toutes les plateformes (`useItemTrailer`) : la bande-annonce
- * LOCALE dans le lecteur de l'app ; sinon la distante, confiée au système —
- * l'app YouTube si elle est là, le navigateur sinon, jamais une page web
- * embarquée ; et pas de bouton quand il n'y en a aucune. La flèche dit qu'on
- * quitte l'app.
+ * Même règle que toutes les plateformes (`useItemTrailer`, catalogue du
+ * serveur) : la bande-annonce LOCALE dans le lecteur de l'app ; sinon la
+ * première vidéo en ligne, lue DANS l'app par l'écran `/trailer` — sans
+ * publicité, la suivante du catalogue à la fin. Un épisode et une saison ont
+ * la leur (leur saison, sinon une autre, sinon la série). Pas de bouton quand
+ * il n'y en a aucune.
  */
 export const DetailTrailerButton = memo(function DetailTrailerButton({ item, belowPlay, animStyle }: Props) {
   const { t, i18n } = useTranslation("common");
   const router = useRouter();
   const { colors } = useTheme();
-  const { target, visible } = useItemTrailer(item, i18n.language, TRAILER_PLATFORM_LEGACY);
+  const { target, visible } = useItemTrailer(item, i18n.language, MOBILE_TRAILER_PLATFORM);
   if (!visible) return null;
-  const external = target?.kind === "remote";
 
   const open = () => {
     if (!target) return;
-    if (target.kind === "local") router.push(`/watch/${target.itemId}`);
-    else if (target.kind === "remote") Linking.openURL(target.trailer.Url).catch(() => {});
+    if (target.kind === "local") {
+      router.push(`/watch/${target.itemId}`);
+    } else if (target.kind === "relay") {
+      // Le catalogue de la fiche, à partir de cette bande-annonce (la même requête, déjà en cache).
+      const itemType = item.Type as TrailerRouteItemType;
+      router.push(trailerRouteHref({ target: { kind: "item", itemId: item.Id, itemType }, start: trailerPlaybackKey(target.entry.playback) }) as never);
+    } else {
+      // Un serveur d'avant le catalogue : sa vidéo YouTube, par le relais.
+      const ytId = parseYouTubeId(target.trailer.Url);
+      if (ytId) router.push(trailerRouteHref({ target: { kind: "youtube", ytId, name: target.trailer.Name } }) as never);
+      else Linking.openURL(target.trailer.Url).catch(() => {});
+    }
   };
 
   return (
@@ -48,7 +60,6 @@ export const DetailTrailerButton = memo(function DetailTrailerButton({ item, bel
         onPress={open}
         accessibilityRole="button"
         accessibilityLabel={t("watchTrailer")}
-        accessibilityHint={external ? t("trailerOpensYoutube") : undefined}
         style={({ pressed }) => [
           st.pill,
           { backgroundColor: colors.fill.subtle, borderColor: colors.border.subtle },
@@ -57,7 +68,6 @@ export const DetailTrailerButton = memo(function DetailTrailerButton({ item, bel
       >
         <Feather name="film" size={18} color={colors.text.primary} />
         <Text numberOfLines={1} style={[st.label, { color: colors.text.primary }]}>{t("trailer")}</Text>
-        {external && <Feather name="arrow-up-right" size={16} color={colors.text.secondary} />}
       </Pressable>
     </Animated.View>
   );

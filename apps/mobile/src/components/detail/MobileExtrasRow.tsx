@@ -5,47 +5,85 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useItemExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
-import { buildExtraEntries, sortTrailersByLang, type ExtraEntry, type RichTrailer } from "@tentacle-tv/shared";
+import {
+  buildExtraEntries, catalogTiles, parseYouTubeId, sortTrailersByLang, type CatalogRow, type CatalogTile, type ExtraEntry, type RichTrailer,
+} from "@tentacle-tv/shared";
+import { trailerRouteHref, type TrailerRouteItemType } from "@/trailers/trailerRoute";
 import { spacing, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
 
 const W = 168;
 const H = 95;
 
+/** La fiche dont l'écran des bandes-annonces rejoue le catalogue. */
+export interface ExtrasCatalogOwner {
+  itemId: string;
+  itemType: string;
+}
+
+/** Une tuile de la rangée : un extra du modèle partagé, ou une vidéo du catalogue. */
+type RowTile = { kind: "extra"; entry: ExtraEntry } | { kind: "catalog"; tile: CatalogTile };
+
 /**
  * Rangée d'extras (mobile) : bandes-annonces locales et bonus (lus dans le
- * player), puis vidéos distantes YouTube (confiées au système : l'app YouTube
- * ou le navigateur) — ordre et libellés du modèle partagé
- * (`buildExtraEntries`). Se masque d'elle-même si aucun extra. Titre optionnel
+ * player), puis les vidéos en ligne — celles du CATALOGUE de cette portée
+ * quand le serveur le sert (`catalog`, AlloCiné compris), sinon les vidéos
+ * YouTube d'avant —, toutes lues dans l'app par l'écran des bandes-annonces,
+ * sans publicité. Ordre et libellés du modèle partagé (`buildExtraEntries`,
+ * `catalogTiles`). Se masque d'elle-même si aucun extra. Titre optionnel
  * (nom de saison).
  */
 export function MobileExtrasRow({
   owner,
   remoteTrailers,
   title,
+  catalog = null,
+  fiche,
 }: {
   owner: ExtrasOwner;
   remoteTrailers: RichTrailer[];
   title?: string;
+  catalog?: CatalogRow | null;
+  fiche?: ExtrasCatalogOwner;
 }) {
   const { t, i18n } = useTranslation("common");
   const router = useRouter();
   const client = useJellyfinClient();
   const { colors } = useTheme();
   const { local } = useItemExtras(owner);
-  const entries = useMemo(
-    () => buildExtraEntries(t, local, sortTrailersByLang(remoteTrailers, i18n.language)),
-    [t, local, remoteTrailers, i18n.language],
-  );
+  const tiles = useMemo<RowTile[]>(() => [
+    ...buildExtraEntries(t, local, catalog ? [] : sortTrailersByLang(remoteTrailers, i18n.language))
+      .map((entry): RowTile => ({ kind: "extra", entry })),
+    ...(catalog && fiche ? catalogTiles(t, catalog).map((tile): RowTile => ({ kind: "catalog", tile })) : []),
+  ], [t, local, catalog, fiche, remoteTrailers, i18n.language]);
 
-  if (entries.length === 0) return null;
+  if (tiles.length === 0) return null;
 
-  const open = (entry: ExtraEntry) => {
-    if (entry.source === "local") router.push(`/watch/${entry.itemId}`);
+  const open = (row: RowTile) => {
+    if (row.kind === "catalog") {
+      if (!fiche) return;
+      const target = { kind: "item" as const, itemId: fiche.itemId, itemType: fiche.itemType as TrailerRouteItemType };
+      router.push(trailerRouteHref({ target, start: row.tile.key }) as never);
+      return;
+    }
+    const { entry } = row;
+    if (entry.source === "local") {
+      router.push(`/watch/${entry.itemId}`);
+      return;
+    }
+    // Une vidéo YouTube d'avant le catalogue : dans l'app, par le relais du serveur.
+    const ytId = parseYouTubeId(entry.trailer.Url);
+    if (ytId) router.push(trailerRouteHref({ target: { kind: "youtube", ytId, name: entry.title } }) as never);
     else Linking.openURL(entry.trailer.Url).catch(() => {});
   };
-  const thumbOf = (entry: ExtraEntry) => entry.source === "local"
-    ? client.getImageUrl(entry.itemId, "Primary", { width: 360, quality: 75 })
-    : entry.thumbUrl;
+  const keyOf = (row: RowTile) => (row.kind === "extra" ? row.entry.key : row.tile.key);
+  const textOf = (row: RowTile) => (row.kind === "extra"
+    ? { title: row.entry.title, subtitle: row.entry.subtitle }
+    : { title: row.tile.title, subtitle: row.tile.subtitle });
+  const thumbOf = (row: RowTile) => {
+    if (row.kind === "catalog") return row.tile.thumbUrl;
+    const { entry } = row;
+    return entry.source === "local" ? client.getImageUrl(entry.itemId, "Primary", { width: 360, quality: 75 }) : entry.thumbUrl;
+  };
 
   return (
     <View style={{ marginTop: spacing.xl }}>
@@ -62,15 +100,16 @@ export function MobileExtrasRow({
       </Text>
       <FlatList
         horizontal
-        data={entries}
-        keyExtractor={(entry) => entry.key}
+        data={tiles}
+        keyExtractor={keyOf}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, gap: 12 }}
-        renderItem={({ item: entry }) => {
-          const thumb = thumbOf(entry);
+        renderItem={({ item: row }) => {
+          const thumb = thumbOf(row);
+          const entry = textOf(row);
           return (
             <Pressable
-              onPress={() => open(entry)}
+              onPress={() => open(row)}
               accessibilityRole="button"
               accessibilityLabel={entry.subtitle ? `${entry.title}, ${entry.subtitle}` : entry.title}
               style={({ pressed }) => [{ width: W }, pressed && { opacity: 0.8 }]}
