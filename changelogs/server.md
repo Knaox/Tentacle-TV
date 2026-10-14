@@ -18,7 +18,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Des aperçus plus légers** : la vidéo part à la taille de la mini-carte (720p au plus) et chaque morceau ne se télécharge qu'une fois
 - **« Qui regarde ? » dans l'application de bureau 1.29.0** : chacun ouvre son profil, derrière son code PIN s'il en a un, et « Changer de profil », dans le menu de l'avatar, y ramène à tout moment. L'écran au lancement s'active dans Réglages › Famille. Un profil ouvert sur un ordinateur regarde : il n'administre rien
 - **Bandes-annonces relayées** : le serveur ne compresse plus une seconde fois la vidéo qu'il relaie — moins de calcul pour rien — et son journal ne compte plus comme une erreur un lecteur qui s'en va
-- **Photos de profil** (client web) : la galerie des 36 personnages, depuis le menu de l'avatar ou la page Profil
+- **Photos de profil** : 36 personnages à choisir dans le client web, et une photo pour chaque invité de la Famille
 - **Interface web** : « Vider le cache et réinitialiser » dit ce qu'il efface vraiment — les réglages de l'appareil, les recherches récentes et le cache, jamais la session
 
 ### EN
@@ -27,7 +27,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Lighter previews**: the video starts at the mini card's size (720p at most) and each chunk downloads only once
 - **“Who's watching?” in desktop app 1.29.0**: everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, in the avatar menu, brings it back at any time. The launch screen is turned on in Settings › Family. A profile opened on a computer only watches: it manages nothing
 - **Relayed trailers**: the server no longer compresses the video it relays a second time — less work for nothing — and its log no longer counts a player that leaves as an error
-- **Profile pictures** (web client): the gallery of 36 characters, from the avatar menu or the Profile page
+- **Profile pictures**: 36 characters to pick from in the web client, and a picture for every Family guest
 - **Web interface**: “Clear cache and reset” now says what it really clears — this device's settings, recent searches and the cache, never the session
 
 ## [1.27.1]
