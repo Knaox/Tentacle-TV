@@ -3,6 +3,8 @@ import { acquireSocket, subscribeSocket, useJellyfinClient, useStreamingConfig }
 import type { WsServerMessage } from "@tentacle-tv/shared";
 import { endProfileSession } from "./profileEnded";
 import { useActiveProfile } from "./profileSession";
+import { useConnectivity } from "../offline/useConnectivity";
+import { setManualOffline } from "../offline/connectivityStore";
 
 /**
  * Ce que la SESSION D'UN PROFIL du bureau écoute pendant toute sa vie, sur
@@ -14,7 +16,8 @@ import { useActiveProfile } from "./profileSession";
  *   voulue (« replaced ») est ignorée là-bas ;
  * - l'identité Jellyfin du profil : `/api/config/streaming` la donne (le
  *   canal de session la présente pour lui), comme à une TV jumelée ; la
- *   session personnelle retrouvera la sienne au retour (`sessionSwap.ts`).
+ *   session personnelle retrouvera la sienne au retour (`sessionSwap.ts`) ;
+ * - jamais de hors ligne manuel : rien n'est gardé sur la machine pour lui.
  *
  * En session personnelle, et partout hors du bureau : rien.
  */
@@ -39,6 +42,13 @@ function ProfileSessionWatch() {
       release();
     };
   }, [token]);
+
+  // Le hors ligne MANUEL n'existe pas pour un profil (rien n'est gardé pour
+  // lui) : un choix laissé par la session personnelle ne l'y enferme pas.
+  const { manual } = useConnectivity();
+  useEffect(() => {
+    if (manual) setManualOffline(false);
+  }, [manual]);
 
   const deviceId = data?.deviceId;
   useEffect(() => {

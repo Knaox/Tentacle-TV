@@ -46,6 +46,7 @@ export default {
     guestBadge: "Profil invité",
     memberBadge: "Profil de la famille",
     ended: "La session de ce profil a pris fin.",
+    offlineMessage: "La bibliothèque de ce profil reviendra d'elle-même dès que la connexion sera rétablie.",
   },
   launchSetting: {
     section: "Sur vos ordinateurs",

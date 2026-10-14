@@ -14,6 +14,7 @@ import { useDownloadCapabilities } from "./useDownloadCapabilities";
 import { LOCAL_QUERY } from "@tentacle-tv/offline-core/react";
 
 import { DISK_INFO_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DOWNLOADS_LIST_QUERY_KEY } from "./queryKeys";
+import { useActiveProfile } from "../auth/profileSession";
 
 export { DISK_INFO_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DOWNLOADS_LIST_QUERY_KEY };
 
@@ -92,7 +93,11 @@ export function useDownloadsVisibility(): DownloadsVisibility {
   const { capabilities } = useDownloadCapabilities();
   const list = useDownloadsList();
   const hasContent = list.length > 0;
-  if (!supportsDownloads()) {
+  // Bureau, session d'un PROFIL : le contenu gardé et le hors ligne sont ceux
+  // du compte, connecté ou non — le serveur refuse les téléchargements à un
+  // profil, l'interface n'en montre aucune trace.
+  const profileSession = useActiveProfile() !== null;
+  if (!supportsDownloads() || profileSession) {
     return { visible: false, canDownload: false, canLight: false, hasContent: false };
   }
   return {

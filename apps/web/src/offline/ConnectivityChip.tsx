@@ -14,6 +14,7 @@ import { connectivityCaseOf, connectivityCopy } from "@tentacle-tv/shared";
 import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
 import { probeNow, setManualOffline } from "./connectivityStore";
+import { useActiveProfile } from "../auth/profileSession";
 
 export function ConnectivityChip() {
   const { t } = useTranslation("downloads");
@@ -22,6 +23,7 @@ export function ConnectivityChip() {
   const offlineCause = connectivityCopy(connectivityCaseOf(snap.reason) ?? "server");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const profileSession = useActiveProfile() !== null;
 
   // Échap ferme le popover.
   useEffect(() => {
@@ -122,16 +124,20 @@ export function ConnectivityChip() {
                 >
                   {t("offlineRetry")}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    setManualOffline(true);
-                  }}
-                  className="inline-flex items-center justify-center rounded-md bg-cta-ghost-bg px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
-                >
-                  {t("offlineStayOffline")}
-                </button>
+                {/* La session d'un PROFIL n'a pas de hors ligne à elle (rien n'est
+                    gardé pour lui) : y rester ne mènerait à rien. */}
+                {!profileSession && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      setManualOffline(true);
+                    }}
+                    className="inline-flex items-center justify-center rounded-md bg-cta-ghost-bg px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+                  >
+                    {t("offlineStayOffline")}
+                  </button>
+                )}
               </>
             )}
           </div>

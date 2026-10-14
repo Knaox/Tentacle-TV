@@ -20,16 +20,20 @@ import { NoticeCard } from "../components/notices/NoticeCard";
 import { useMessageCountdown } from "../components/session/useMessageCountdown";
 import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "./useConnectivity";
+import { useActiveProfile } from "../auth/profileSession";
 
 export function OfflineSwitchBanner() {
   const { state, reason } = useConnectivity();
   const notice = useConnectivityNotice(state === "offline-auto", reason);
   const { pathname } = useLocation();
+  // La session d'un PROFIL n'a rien sur l'appareil : la cause, sans la ligne
+  // « ce qui est sur cet appareil reste lisible ».
+  const profileSession = useActiveProfile() !== null;
   if (!isDesktopApp() || !notice || pathname.startsWith("/watch/")) return null;
-  return <SwitchCard key={notice.occasion} notice={notice} />;
+  return <SwitchCard key={notice.occasion} notice={notice} deviceContent={!profileSession} />;
 }
 
-const SwitchCard = memo(function SwitchCard({ notice }: { notice: ConnectivityNotice }) {
+const SwitchCard = memo(function SwitchCard({ notice, deviceContent }: { notice: ConnectivityNotice; deviceContent: boolean }) {
   const { t } = useTranslation("errors");
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -47,7 +51,7 @@ const SwitchCard = memo(function SwitchCard({ notice }: { notice: ConnectivityNo
           severity="info"
           icon={notice.kind === "device" ? "wifiOff" : "server"}
           title={t(notice.titleKey)}
-          lines={[t(notice.hintKey), t(CONNECTIVITY_OFFLINE_MODE_KEY)]}
+          lines={deviceContent ? [t(notice.hintKey), t(CONNECTIVITY_OFFLINE_MODE_KEY)] : [t(notice.hintKey)]}
           onClose={notice.done}
           countdown={countdown}
           durationMs={notice.durationMs}

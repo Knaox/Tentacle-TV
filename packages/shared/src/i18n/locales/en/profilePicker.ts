@@ -43,6 +43,7 @@ export default {
     guestBadge: "Guest profile",
     memberBadge: "Family profile",
     ended: "This profile's session has ended.",
+    offlineMessage: "This profile's library will come back on its own as soon as the connection is restored.",
   },
   launchSetting: {
     section: "On your computers",

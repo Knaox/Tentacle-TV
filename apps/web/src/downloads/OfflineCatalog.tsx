@@ -15,10 +15,13 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router-dom";
 import { WifiOff } from "lucide-react";
 import { PageTransition } from "../components/PageTransition";
 import { CARD_HEIGHT, FRAME_GUTTER } from "../components/hero/HeroBillboard";
 import { useOfflineMode } from "../offline/useOfflineMode";
+import { ProfileOfflineScreen } from "../offline/ProfileOfflineScreen";
+import { useActiveProfile } from "../auth/profileSession";
 import { DownloadsEmptyState } from "./DownloadsEmptyState";
 import { OfflineDeviceSummary } from "./OfflineDeviceSummary";
 import { OfflineBillboard } from "./home/OfflineBillboard";
@@ -28,6 +31,16 @@ import { useEntriesWithBackdrop } from "./home/useEntriesWithBackdrop";
 import { ALL_LIBRARIES, useOfflineHome, type OfflineHomeFilter } from "./home/useOfflineHome";
 
 export function OfflineCatalog() {
+  const profileSession = useActiveProfile() !== null;
+  const offline = useOfflineMode();
+  if (!profileSession) return <DeviceCatalog />;
+  // Bureau, session d'un PROFIL : rien n'est gardé sur la machine pour lui (le
+  // serveur lui refuse les téléchargements) — le disque n'est même pas lu. En
+  // ligne, « Sur cet appareil » n'existe pas pour lui ; hors ligne, l'attente.
+  return offline ? <ProfileOfflineScreen /> : <Navigate to="/" replace />;
+}
+
+function DeviceCatalog() {
   const { t } = useTranslation(["downloads", "common"]);
   const offline = useOfflineMode();
   const [search, setSearch] = useState("");

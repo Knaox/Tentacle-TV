@@ -11,7 +11,8 @@
  * notifications, profil.
  *
  * Hors ligne (bureau), la navigation serveur s'efface : restent le catalogue
- * local, l'état de la connexion et le profil.
+ * local, l'état de la connexion et le profil — pour la session d'un profil de
+ * la famille, l'état de la connexion et le profil seulement.
  *
  * Zone de 68 px, comme avant : les pages gardent leur marge haute, et celles
  * qui remontent leur bannière dessous (`-mt-[68px]`) continuent de le faire.
@@ -30,9 +31,15 @@ import { DataSaverChip } from "../../offline/DataSaverChip";
 import { DownloadsNavButton } from "../../downloads/DownloadsNavButton";
 import { OfflineNavLinks } from "../../offline/OfflineNavLinks";
 import { useOfflineMode } from "../../offline/useOfflineMode";
+import { useActiveProfile } from "../../auth/profileSession";
 
 export function TopNav() {
   const offline = useOfflineMode();
+  // Hors ligne, la session d'un PROFIL n'a ni catalogue local ni transferts
+  // (rien n'est gardé pour lui) : aucun onglet, et pas de séparateur qui ne
+  // sépare rien.
+  const profileSession = useActiveProfile() !== null;
+  const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs />;
 
   // L'assise : nulle en haut de page (le verre seul, par-dessus la bannière),
   // puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la couche de
@@ -62,8 +69,12 @@ export function TopNav() {
 
         <div className="relative flex min-w-0 flex-1 items-center gap-1">
           <NavBrand />
-          <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-line-subtle" />
-          {offline ? <OfflineNavLinks /> : <NavTabs />}
+          {tabs && (
+            <>
+              <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-line-subtle" />
+              {tabs}
+            </>
+          )}
         </div>
 
         <div className="relative flex shrink-0 items-center gap-1.5 pl-2">
