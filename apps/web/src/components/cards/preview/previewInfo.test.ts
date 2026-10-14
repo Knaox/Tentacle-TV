@@ -39,14 +39,14 @@ describe("previewProgressOf", () => {
 
 describe("previewInfoOf", () => {
   it("un film : année, classification, durée, qualité, genres — lus sur la carte, puis la fiche", () => {
-    const card = item({ Id: "m", ProductionYear: 1927, RunTimeTicks: 153 * MINUTE });
+    const card = item({ Id: "m", ProductionYear: 1927, RunTimeTicks: 153 * MINUTE, CommunityRating: 8.123 });
     const detail = item({
       Id: "m", OfficialRating: "FR-TP", Genres: ["Drame", "Science-Fiction", "Muet", "Classique"],
       MediaStreams: [{ Type: "Video", Width: 3840, Height: 2160, VideoRangeType: "DOVI" }] as MediaItem["MediaStreams"],
     });
     const info = previewInfoOf(card, detail);
     expect(info.episode).toBeNull();
-    expect(info.facts).toMatchObject({ year: 1927, rating: "TP", runtime: "2h 33min", seasons: null });
+    expect(info.facts).toMatchObject({ year: 1927, rating: "TP", community: 8.123, runtime: "2h 33min", seasons: null });
     expect(info.facts.quality.map((badge) => badge.short)).toEqual(["4K", "VISION"]);
     expect(info.genres).toEqual(["Drame", "Science-Fiction", "Muet"]);
     expect(info.progress).toBeNull();

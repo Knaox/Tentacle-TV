@@ -177,6 +177,21 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* La note globale : l'étoile de marque de l'affiche (rose), le chiffre en blanc. */
+.card-preview-score {
+  font-weight: 600;
+  color: #fff;
+}
+
+.card-preview-score-star {
+  display: inline-block;
+  vertical-align: -0.08em;
+  width: 0.92em;
+  height: 0.92em;
+  margin-inline-end: 0.28em;
+  color: var(--brand-accent);
+}
+
 /* La qualité : sobre, monochrome — seul le 4K porte la marque (préférence
  * ferme : ni drapeau, ni pastille colorée). */
 .card-preview-quality {

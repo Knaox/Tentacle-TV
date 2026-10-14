@@ -15,8 +15,8 @@ import {
  * Trois lignes au plus sous le titre, toujours dans le même ordre :
  *
  *   1. un ÉPISODE (carte d'un épisode : Reprendre, Prochains épisodes) : son
- *      code et son titre — sinon les FAITS : année, classification, durée (ou
- *      saisons), qualité ;
+ *      code et son titre — sinon les FAITS : année, classification, note
+ *      globale, durée (ou saisons), qualité — l'ordre de la bannière ;
  *   2. un titre COMMENCÉ : la progression et le temps vu sur la durée — sinon
  *      les faits d'un épisode, ou les GENRES (trois au plus).
  */
@@ -33,6 +33,11 @@ export interface PreviewFacts {
   year: number | null;
   /** La classification, sans le préfixe du pays (« FR-12 » → « 12 ») ; rien pour un « NR ». */
   rating: string | null;
+  /**
+   * La note GLOBALE /10 — celle que l'affiche porte au repos et que la
+   * mini-carte recouvre : elle passe dans le bandeau.
+   */
+  community: number | null;
   /** La durée d'un film ou d'un épisode (« 2h 33min »). */
   runtime: string | null;
   /** Le nombre de saisons d'une série. */
@@ -105,6 +110,7 @@ export function previewInfoOf(card: MediaItem | null, detail: MediaItem | null, 
     facts: {
       year: first(card, fiche, (item) => item.ProductionYear) ?? fallbackYear,
       rating: first(card, fiche, (item) => previewRatingOf(item.OfficialRating)),
+      community: first(card, fiche, (item) => (item.CommunityRating && item.CommunityRating > 0 ? item.CommunityRating : null)),
       runtime: isSeries ? null : first(card, fiche, (item) => formatDuration(item.RunTimeTicks)),
       seasons: isSeries ? first(card, fiche, (item) => (item.ChildCount && item.ChildCount > 0 ? item.ChildCount : null)) : null,
       quality: first(card, fiche, (item) => qualityBadgesOf(item) ?? null) ?? NO_QUALITY,
@@ -116,6 +122,6 @@ export function previewInfoOf(card: MediaItem | null, detail: MediaItem | null, 
 
 /** Le bandeau dit-il quelque chose de la ligne des faits ? */
 export function previewFactsEmpty(facts: PreviewFacts): boolean {
-  return facts.year === null && facts.rating === null && facts.runtime === null && facts.seasons === null
-    && facts.quality.length === 0;
+  return facts.year === null && facts.rating === null && facts.community === null && facts.runtime === null
+    && facts.seasons === null && facts.quality.length === 0;
 }

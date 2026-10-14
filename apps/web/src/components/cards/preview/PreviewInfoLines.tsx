@@ -1,6 +1,7 @@
 import { Fragment, memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { formatDuration, TICKS_PER_MINUTE } from "@tentacle-tv/shared";
+import { formatCommunityRating, formatDuration, TICKS_PER_MINUTE } from "@tentacle-tv/shared";
+import { StarGlyph } from "../cardGlyphs";
 import { previewFactsEmpty, type PreviewFacts, type PreviewInfo, type PreviewProgress } from "./previewInfo";
 
 /**
@@ -8,7 +9,8 @@ import { previewFactsEmpty, type PreviewFacts, type PreviewInfo, type PreviewPro
  * de ce qu'elles disent) :
  *
  *   • la PREMIÈRE : l'épisode d'une vignette (« S01E05 · Chute libre »), sinon
- *     les faits — année, classification, durée ou saisons, qualité ;
+ *     les faits — année, classification, note globale, durée ou saisons,
+ *     qualité ;
  *   • la DERNIÈRE : la progression d'un titre commencé (« 54 sur 58 min »),
  *     sinon les faits d'un épisode, sinon les genres.
  *
@@ -49,13 +51,23 @@ function Line({ slot, children }: { slot: "first" | "last"; children: ReactNode 
 const Dot = () => <span aria-hidden className="card-preview-dot" />;
 
 function FactsLine({ facts }: { facts: PreviewFacts }) {
-  const { t } = useTranslation(["trailerPreview", "common"]);
+  const { t } = useTranslation(["trailerPreview", "common", "cards"]);
   const parts: ReactNode[] = [];
   if (facts.year !== null) parts.push(<span key="year" className="card-preview-year">{facts.year}</span>);
   if (facts.rating) {
     parts.push(
       <span key="rating" className="card-preview-rating" aria-label={t("trailerPreview:ratingLabel", { rating: facts.rating })}>
         {facts.rating}
+      </span>,
+    );
+  }
+  if (facts.community !== null) {
+    const score = formatCommunityRating(facts.community);
+    parts.push(
+      // L'étoile de MARQUE de la note globale, celle de l'affiche — jamais dorée.
+      <span key="community" className="card-preview-score" aria-label={t("cards:communityRating", { score })}>
+        <StarGlyph className="card-preview-score-star" />
+        {score}
       </span>,
     );
   }

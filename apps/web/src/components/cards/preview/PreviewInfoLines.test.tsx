@@ -66,6 +66,12 @@ describe("PreviewInfoLines", () => {
     expect(html).toContain(">ATMOS</span>");
   });
 
+  it("la note globale de l'affiche passe dans le bandeau, après la classification", () => {
+    const html = render({ Id: "m", Name: "x", Type: "Movie", ProductionYear: 1963, OfficialRating: "FR-12", CommunityRating: 7.68 } as unknown as MediaItem);
+    expect(html).toContain('aria-label="cards:communityRating(score=7.7)"');
+    expect(html.indexOf("card-preview-rating")).toBeLessThan(html.indexOf("card-preview-score"));
+  });
+
   it("hors bibliothèque, l'année que donne la carte ; rien du tout sans elle", () => {
     expect(render(null, null, 2016)).toContain('<span class="card-preview-year">2016</span>');
     expect(render(null)).toBe("");
