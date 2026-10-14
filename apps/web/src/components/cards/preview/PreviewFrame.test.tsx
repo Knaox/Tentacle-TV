@@ -31,9 +31,11 @@ const { PreviewFrame } = await import("./PreviewFrame");
 const { CardHoverShell } = await import("../CardHoverShell");
 
 const holds: boolean[] = [];
-function view(over: { shown?: boolean; settled?: boolean; muted?: boolean } = {}) {
+function view(over: { shown?: boolean; settled?: boolean; muted?: boolean; panel?: boolean } = {}) {
   return {
-    placement: { left: 120, top: 300, width: 360, height: 203, from: { x: -4, y: 2, scale: 0.5556 } },
+    placement: over.panel
+      ? { left: 120, top: 300, width: 344, height: 350, videoHeight: 194, from: { x: -4, y: 2, scale: 0.6453 } }
+      : { left: 120, top: 300, width: 360, height: 203, videoHeight: 203, from: { x: -4, y: 2, scale: 0.5556 } },
     shown: over.shown ?? false,
     settled: over.settled ?? false,
     engine: {
@@ -61,9 +63,10 @@ function render(
   artItem: MediaItem | null = null,
   backdropUrl: string | null = null,
   detailItemId: string | null = null,
+  meta: string | null = null,
 ) {
   return renderToStaticMarkup(
-    <PreviewFrame view={v} title="Metropolis" artItem={artItem} detailItemId={detailItemId} backdropUrl={backdropUrl}>
+    <PreviewFrame view={v} title="Metropolis" artItem={artItem} detailItemId={detailItemId} backdropUrl={backdropUrl} meta={meta}>
       {(visible) => <div data-group={visible}>survol</div>}
     </PreviewFrame>,
   );
@@ -160,6 +163,34 @@ describe("PreviewFrame — le logo d'une carte de rangée", () => {
     detailRequests.length = 0;
     render(view({ shown: true }), movie);
     expect(detailRequests.every((request) => request.enabled === false)).toBe(true);
+  });
+});
+
+describe("PreviewFrame — le bandeau d'une affiche", () => {
+  const film = {
+    Id: "f1", Name: "Charade", Type: "Movie", ProductionYear: 1963, RunTimeTicks: 113 * 60 * 10_000_000,
+    ImageTags: { Logo: "lg" }, BackdropImageTags: ["bd"],
+  } as unknown as MediaItem;
+
+  it("pose la vidéo en haut et un bandeau plein dessous : titre, année · durée, survol", () => {
+    const html = render(view({ shown: true, panel: true }), film);
+    expect(html).toContain('data-layout="panel"');
+    expect(html).toContain("--preview-video-h:194px");
+    expect(html).toContain('class="card-preview-panel"');
+    expect(html).toContain("1963 · 1h 53min");
+    expect(html).toContain('data-group="true"');
+    // Rien ne s'écrit sur la vidéo : le titre est dans le bandeau.
+    expect(html.indexOf('src="/img/f1/Logo')).toBeGreaterThan(html.indexOf('class="card-preview-panel"'));
+  });
+
+  it("prend la ligne que la carte donne quand elle n'a pas d'item (recommandation, hors bibliothèque)", () => {
+    expect(render(view({ shown: true, panel: true }), null, null, null, "2016")).toContain(">2016</p>");
+  });
+
+  it("une vignette 16:9 garde la vidéo seule, sans bandeau", () => {
+    const html = render(view({ shown: true }), film);
+    expect(html).toContain('data-layout="overlay"');
+    expect(html).not.toContain("card-preview-panel");
   });
 });
 

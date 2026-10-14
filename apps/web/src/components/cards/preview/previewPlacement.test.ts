@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  PREVIEW_COVER_PX,
   PREVIEW_MARGIN,
+  PREVIEW_PANEL_MIN,
   PREVIEW_MAX_WIDTH,
   PREVIEW_MIN_WIDTH,
   placePreview,
@@ -26,10 +28,27 @@ function inside(p: PreviewPlacement, viewport: { width: number; height: number; 
 }
 
 describe("placePreview — taille", () => {
-  it("donne à une affiche 2:3 un 16:9 de 1,8 fois sa largeur", () => {
+  it("donne à une affiche 2:3 une vidéo 16:9 de 1,75 fois sa largeur, et un bandeau dessous", () => {
     const p = placePreview(poster(600), "poster", VIEWPORT);
-    expect(p?.width).toBe(360);
-    expect(p?.height).toBe(203);
+    expect(p?.width).toBe(350);
+    expect(p?.videoHeight).toBe(197);
+    expect((p?.height ?? 0) - (p?.videoHeight ?? 0)).toBeGreaterThanOrEqual(PREVIEW_PANEL_MIN);
+  });
+
+  it("COUVRE l'affiche : plus haute qu'elle, sans trou ni voisine qui dépasse en haut ou en bas", () => {
+    const card = poster(600);
+    const p = placePreview(card, "poster", VIEWPORT);
+    expect(p).not.toBeNull();
+    if (!p) return;
+    expect(p.top).toBeLessThanOrEqual(card.top - PREVIEW_COVER_PX + 1);
+    expect(p.top + p.height).toBeGreaterThanOrEqual(card.top + card.height + PREVIEW_COVER_PX - 1);
+    expect(p.left).toBeLessThan(card.left);
+    expect(p.left + p.width).toBeGreaterThan(card.left + card.width);
+  });
+
+  it("une vignette 16:9 reste une vidéo seule, sans bandeau", () => {
+    const p = placePreview(landscape(600), "landscape", VIEWPORT);
+    expect(p?.videoHeight).toBe(p?.height);
   });
 
   it("donne à une vignette 16:9 un 16:9 de 1,35 fois sa largeur", () => {
@@ -47,7 +66,7 @@ describe("placePreview — taille", () => {
     const narrow = { width: 300, height: 900 };
     const p = placePreview(poster(40, 300, 200), "poster", narrow);
     expect(p?.width).toBe(300 - 2 * PREVIEW_MARGIN);
-    expect(Math.abs((p?.width ?? 0) / (p?.height ?? 1) - 16 / 9)).toBeLessThan(0.02);
+    expect(Math.abs((p?.width ?? 0) / (p?.videoHeight ?? 1) - 16 / 9)).toBeLessThan(0.02);
     if (p) inside(p, narrow);
   });
 

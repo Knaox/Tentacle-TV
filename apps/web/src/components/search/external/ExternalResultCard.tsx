@@ -104,7 +104,7 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
             <ExternalHoverOverlay variant="poster" title={title} name={item.title} visible={overlayVisible} />
           )}
           {title && (
-            <CardPreview controller={preview} title={item.title}>
+            <CardPreview controller={preview} title={item.title} meta={item.year ? String(item.year) : null}>
               {(visible) => (
                 <ExternalHoverOverlay variant="poster" surface="preview" title={title} name={item.title} visible={visible} />
               )}

@@ -91,6 +91,55 @@
   );
 }
 
+/* La scène : la vidéo (et ce qui s'y pose). Toute la mini-carte pour une
+ * vignette ; le haut, en 16:9, pour une affiche — le bandeau suit dessous. */
+.card-preview-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.card-preview-surface[data-layout="panel"] .card-preview-stage {
+  bottom: auto;
+  height: var(--preview-video-h);
+}
+
+/* Sur une affiche, le voile ne fait plus que fondre le bas de la vidéo dans le
+ * bandeau : rien ne s'écrit sur l'image. */
+.card-preview-surface[data-layout="panel"] .card-preview-veil {
+  background: linear-gradient(0deg, var(--preview-panel-bg) 0%, rgba(20, 20, 25, 0) 34%);
+}
+
+/* Le bandeau d'une affiche : plein, sombre dans les deux schémas (posé sur
+ * média — il porte les mêmes boutons blancs que la vidéo). Il occupe tout ce
+ * qui reste sous la vidéo : la mini-carte couvre l'affiche, le groupe du
+ * survol se pose au pied. */
+.card-preview-surface {
+  --preview-panel-bg: rgb(20, 20, 25);
+}
+
+.card-preview-panel {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  top: var(--preview-video-h);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px 12px;
+  background: var(--preview-panel-bg);
+}
+
+/* Le groupe du survol (étoiles, plateau) sur UNE ligne dans le bandeau :
+ * étoiles à gauche, plateau à droite ; trop étroit, il passe sur deux. */
+.card-preview-panel-group [data-card-surface="preview"] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 /* Ce qui s'écrit sur la vidéo (titre, bouton du son) arrive quand la
  * mini-carte est posée, et repart d'un coup avec elle. Le groupe du survol a
  * sa propre montée (`.card-hover-rise`, theme/cards.css) : retardée ici. */

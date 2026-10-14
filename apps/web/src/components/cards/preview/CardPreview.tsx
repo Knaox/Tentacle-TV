@@ -36,6 +36,12 @@ interface CardPreviewProps {
    */
   backdropUrl?: string | null;
   /**
+   * La ligne discrète du bandeau d'une affiche (« 1963 · 1 h 54 »), quand la
+   * carte n'a pas d'item Jellyfin (recommandation, titre hors bibliothèque) ;
+   * sinon elle se lit sur `artItem` ou sa fiche.
+   */
+  meta?: string | null;
+  /**
    * Le survol de la carte, rendu tel quel dans la mini-carte : le MÊME
    * composant que sur la carte (`CardHoverOverlay`, `ExternalHoverOverlay`),
    * avec `surface="preview"`. `visible` suit la mini-carte.
@@ -63,6 +69,7 @@ export function CardPreview({
   artItem = null,
   detailItemId = null,
   backdropUrl = null,
+  meta = null,
   children,
 }: CardPreviewProps) {
   const { session } = controller;
@@ -70,17 +77,24 @@ export function CardPreview({
   const active = useMountWhile(wanted, SESSION_LINGER_MS);
   if (!active) return null;
   return (
-    <PreviewSession controller={controller} title={title} artItem={artItem} detailItemId={detailItemId} backdropUrl={backdropUrl}>
+    <PreviewSession
+      controller={controller}
+      title={title}
+      artItem={artItem}
+      detailItemId={detailItemId}
+      backdropUrl={backdropUrl}
+      meta={meta}
+    >
       {children}
     </PreviewSession>
   );
 }
 
-function PreviewSession({ controller, title, artItem, detailItemId, backdropUrl, children }: Required<CardPreviewProps>) {
+function PreviewSession({ controller, title, artItem, detailItemId, backdropUrl, meta, children }: Required<CardPreviewProps>) {
   const view = usePreviewSession(controller.session);
   if (!view || typeof document === "undefined") return null;
   return createPortal(
-    <PreviewFrame view={view} title={title} artItem={artItem} detailItemId={detailItemId} backdropUrl={backdropUrl}>
+    <PreviewFrame view={view} title={title} artItem={artItem} detailItemId={detailItemId} backdropUrl={backdropUrl} meta={meta}>
       {children}
     </PreviewFrame>,
     document.body,
