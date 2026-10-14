@@ -1,9 +1,11 @@
-import type { PickedProfileDto, PickerProfileDto } from "@tentacle-tv/shared";
-import { readActiveProfile, type ActiveProfile } from "../../auth/profileSession";
+import { pickerStayOf, type PickedProfileDto, type PickerProfileDto } from "@tentacle-tv/shared";
+import { accountUserId, readActiveProfile, type ActiveProfile } from "../../auth/profileSession";
 import { cancelProfileSwitch, clearPickerRequest } from "../../auth/profileEnded";
 import { enterProfile, returnToAccount } from "../../auth/sessionSwap";
 import { endPipSession } from "../../pictureInPicture/pictureInPictureStore";
+import { getBackendBase } from "../../lib/backendBase";
 import { markLaunchPassed, noteCurrentProfile } from "../launch/launchState";
+import { forgetStayOnDevice, writeStayOnDevice } from "../launch/stayOnDevice";
 import { markArrival } from "./arrival";
 import type { CurtainProfile } from "./ProfileCurtain";
 
@@ -41,6 +43,13 @@ export interface CommitContext {
   onCurtainLifted?: () => void;
   /** La page à ouvrir après le rechargement ; l'accueil par défaut. */
   landing?: string;
+  /**
+   * « Ne plus proposer sur cet appareil » : vrai, l'ordinateur retient le
+   * profil choisi ; faux, il n'en retient plus aucun (un changement de profil,
+   * une case décochée) ; absent, rien ne change (« Gérer les profils »).
+   * Écrit seulement une fois la bascule faite.
+   */
+  stayOnDevice?: boolean;
 }
 
 export type CommitResult = "stay" | "reload";
@@ -55,6 +64,7 @@ export function activeProfileOf(profile: PickerProfileDto): ActiveProfile {
 
 export async function commitPick(picked: PickedProfileDto, context: CommitContext = {}): Promise<CommitResult> {
   const held = readActiveProfile();
+  const accountId = accountUserId();
   if (picked.personal && !held) {
     // Aucune bascule n'a lieu : la page ne se recharge pas, et le drapeau posé
     // par `beginProfileSwitch` resterait levé jusqu'à la fermeture — la garde
@@ -64,6 +74,7 @@ export async function commitPick(picked: PickedProfileDto, context: CommitContex
     markLaunchPassed();
     clearPickerRequest();
     noteCurrentProfile(picked.profile.userId);
+    noteStay(picked.profile, accountId, context.stayOnDevice);
     return "stay";
   }
   const curtain = curtainOf(picked.profile);
@@ -79,6 +90,7 @@ export async function commitPick(picked: PickedProfileDto, context: CommitContex
   markLaunchPassed();
   clearPickerRequest();
   noteCurrentProfile(picked.profile.userId);
+  noteStay(picked.profile, accountId, context.stayOnDevice);
   markArrival(curtain);
   try {
     localStorage.removeItem(QUERY_CACHE_KEY);
@@ -87,6 +99,12 @@ export async function commitPick(picked: PickedProfileDto, context: CommitContex
   }
   window.location.assign(context.landing ?? "/");
   return "reload";
+}
+
+function noteStay(profile: PickerProfileDto, accountId: string | null, stay: boolean | undefined): void {
+  if (stay === undefined) return;
+  if (stay && accountId) writeStayOnDevice(getBackendBase(), accountId, pickerStayOf(profile));
+  else forgetStayOnDevice();
 }
 
 /** Les jetons échangés dans le stockage ; faux s'il n'a pas pu l'être (illisible, plein, bloqué). */

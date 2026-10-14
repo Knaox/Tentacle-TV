@@ -165,3 +165,29 @@ describe("la fin d'une session de profil", () => {
     expect(session.getItem("tentacle_profile_picker_request")).toBeNull();
   });
 });
+
+describe("« Ne plus proposer sur cet appareil » — ce que la bascule retient", () => {
+  const stayOf = () => JSON.parse(local.getItem("tentacle_profile_launch_stay") ?? "null");
+
+  it("case cochée : l'ordinateur retient le profil choisi, et l'état de son code", async () => {
+    await commit({ ...LEA, profile: profile("lea", { hasPin: true }) }, { stayOnDevice: true });
+    expect(stayOf()).toMatchObject({ accountId: "owner", profileId: "lea", hasPin: true });
+  });
+
+  it("son propre profil, case cochée, sans rechargement : retenu aussi", async () => {
+    await commit(OWNER, { stayOnDevice: true });
+    expect(stayOf()).toMatchObject({ accountId: "owner", profileId: "owner", hasPin: false });
+  });
+
+  it("case décochée, ou changement de profil depuis le menu : plus rien de retenu", async () => {
+    await commit(OWNER, { stayOnDevice: true });
+    await commit(LEA, { stayOnDevice: false });
+    expect(stayOf()).toBeNull();
+  });
+
+  it("« Gérer les profils » (rien de demandé) : le choix d'avant reste", async () => {
+    await commit(LEA, { stayOnDevice: true });
+    await commit(OWNER, {});
+    expect(stayOf()).toMatchObject({ profileId: "lea" });
+  });
+});

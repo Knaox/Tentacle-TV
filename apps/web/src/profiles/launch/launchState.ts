@@ -2,6 +2,7 @@ import type { PickerProfilesDto } from "@tentacle-tv/shared";
 import { notifyProfileSessionChange } from "../../auth/profileSession";
 import { forgetProfileSession } from "../../auth/sessionSwap";
 import type { LaunchMirror } from "./launchDecision";
+import { forgetStayOnDevice } from "./stayOnDevice";
 
 /**
  * Ce que « Qui regarde ? » garde entre deux ouvertures (le MIROIR, stockage
@@ -90,13 +91,15 @@ export function noteFreshLogin(): void {
 /**
  * La session vient de finir (plus de compte connecté) : rien de la session de
  * profil ne lui survit — ni sa marque, ni la réserve qui garde le jeton
- * personnel du compte —, quelle que soit la sortie qui l'a fermée.
+ * personnel du compte, ni « Ne plus proposer sur cet appareil » (comme une TV
+ * déjumelée) —, quelle que soit la sortie qui l'a fermée.
  */
 export function noteLoggedOut(): void {
   forgetPastProfileSession();
 }
 
 function forgetPastProfileSession(): void {
+  forgetStayOnDevice();
   try {
     forgetProfileSession(localStorage);
   } catch {

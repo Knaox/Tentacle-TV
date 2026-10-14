@@ -2,6 +2,7 @@ import {
   personalPickerProfile,
   pickerLaunch,
   type PickerProfilesDto,
+  type PickerStay,
 } from "@tentacle-tv/shared";
 
 /**
@@ -20,7 +21,10 @@ import {
  *   ou un profil que le serveur dit en cours sans que l'application en ait le
  *   jeton (revenir au compte sans son PIN serait un contournement) ;
  * - une session de profil terminée ramène au sélecteur QUEL QUE SOIT le
- *   réglage (`requested`), sauf compte seul et sans code.
+ *   réglage (`requested`), sauf compte seul et sans code ;
+ * - « Ne plus proposer sur cet appareil » (`stay`, gardé sur la machine) lève
+ *   la préférence pour le profil retenu, à l'ouverture seulement — jamais la
+ *   sécurité, jamais le sélecteur exigé.
  */
 
 export type LaunchVerdict =
@@ -62,6 +66,9 @@ export interface LaunchInputs {
   heldProfileId: string | null;
   /** La dernière réponse du serveur gardée sur la machine, ou null. */
   mirror: LaunchMirror | null;
+  /** Le profil que cet appareil ne propose plus de choisir, ou null. */
+  stay: PickerStay | null;
+  now: number;
 }
 
 export function launchVerdict(input: LaunchInputs): LaunchVerdict {
@@ -71,7 +78,7 @@ export function launchVerdict(input: LaunchInputs): LaunchVerdict {
   const mirror = input.mirror?.accountId === input.accountId && input.mirror.server === input.server ? input.mirror : null;
   if (!mirror) return "app";
   if (!mirror.capable || !mirror.listing) return "app";
-  return pickerLaunch(mirror.listing, held(input.heldProfileId)) === "picker" ? "picker" : "app";
+  return pickerLaunch(mirror.listing, held(input.heldProfileId), input.stay, input.now) === "picker" ? "picker" : "app";
 }
 
 /** Ce que la réponse FRAÎCHE du serveur fait faire. `ended` : la session de profil gardée est morte. */
@@ -81,12 +88,18 @@ export type LaunchOutcome = "picker" | "app" | "ended";
  * À l'ouverture (sélecteur montré depuis le miroir, ou attente) : la règle
  * entière, préférence comprise.
  */
-export function launchOutcome(listing: PickerProfilesDto, heldProfileId: string | null, requested: boolean): LaunchOutcome {
+export function launchOutcome(
+  listing: PickerProfilesDto,
+  heldProfileId: string | null,
+  requested: boolean,
+  stay: PickerStay | null = null,
+  now: number = Date.now(),
+): LaunchOutcome {
   if (requested) {
     const own = personalPickerProfile(listing);
     return requestedPickerNeeded(listing.profiles.length, own?.hasPin === true) ? "picker" : "app";
   }
-  const verdict = pickerLaunch(listing, held(heldProfileId));
+  const verdict = pickerLaunch(listing, held(heldProfileId), stay, now);
   if (verdict === "picker") return "picker";
   return verdict === "personal" && heldProfileId !== null ? "ended" : "app";
 }

@@ -53,6 +53,9 @@ export function useProfileSwitcher(onMenuClose: () => void): ProfileSwitcher {
       onCurtain: setCurtain,
       onCurtainLifted: () => setCurtain(null),
       leaveGroup: isInGroup ? leaveGroup : undefined,
+      // Comme « Changer de profil » sur la TV : le choix « Ne plus proposer sur
+      // cet appareil » valait pour UN profil, jamais pour le suivant.
+      stayOnDevice: false,
     });
     if (result === "stay") setCurtain(null);
   }, [isInGroup, leaveGroup]);

@@ -1,4 +1,4 @@
-import type { PickerProfilesDto } from "@tentacle-tv/shared";
+import type { PickerProfilesDto, PickerStay } from "@tentacle-tv/shared";
 import { launchOutcome, verifyOutcome, type LaunchVerdict } from "./launchDecision";
 
 /**
@@ -26,6 +26,8 @@ export interface GateState {
   mode: GateMode;
   requested: boolean;
   heldProfileId: string | null;
+  /** « Ne plus proposer sur cet appareil » : le profil retenu, ou null. */
+  stay: PickerStay | null;
 }
 
 export type FreshAnswer =
@@ -45,13 +47,19 @@ export interface GateStep {
   logout?: true;
 }
 
-export function initialGate(verdict: LaunchVerdict, requested: boolean, heldProfileId: string | null, passed = false): GateState {
+export function initialGate(
+  verdict: LaunchVerdict,
+  requested: boolean,
+  heldProfileId: string | null,
+  passed = false,
+  stay: PickerStay | null = null,
+): GateState {
   const mode: GateMode = verdict !== "app" ? "launch" : passed ? "verify" : "late";
-  return { phase: verdict, mode, requested, heldProfileId };
+  return { phase: verdict, mode, requested, heldProfileId, stay };
 }
 
 /** `late` : la réponse arrive après l'attente bornée — la préférence attendra la prochaine ouverture. */
-export function afterFresh(state: GateState, answer: FreshAnswer, late = false): GateStep {
+export function afterFresh(state: GateState, answer: FreshAnswer, late = false, now = Date.now()): GateStep {
   switch (answer.kind) {
     case "accountLost":
       return { phase: "app", logout: true };
@@ -64,7 +72,7 @@ export function afterFresh(state: GateState, answer: FreshAnswer, late = false):
       const securityOnly = state.mode === "verify" || (state.mode === "late" && late);
       const outcome = securityOnly
         ? verifyOutcome(answer.listing, state.heldProfileId)
-        : launchOutcome(answer.listing, state.heldProfileId, state.requested);
+        : launchOutcome(answer.listing, state.heldProfileId, state.requested, state.stay, now);
       if (outcome === "ended") return { phase: state.phase === "app" ? "app" : "check", endProfile: true };
       return { phase: outcome };
     }

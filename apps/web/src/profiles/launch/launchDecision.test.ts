@@ -49,6 +49,8 @@ const BASE: LaunchInputs = {
   accountId: "owner",
   heldProfileId: null,
   mirror: MIRROR,
+  stay: null,
+  now: Date.parse("2026-10-14T12:00:00Z"),
 };
 
 describe("« Qui regarde ? » à l'ouverture du bureau — la décision immédiate", () => {
@@ -85,6 +87,20 @@ describe("« Qui regarde ? » à l'ouverture du bureau — la décision immédia
 
   it("une session de profil terminée redemande toujours au serveur, même profil déjà choisi", () => {
     expect(launchVerdict({ ...BASE, requested: true, passed: true })).toBe("check");
+    expect(launchVerdict({ ...BASE, requested: true, stay: { profileId: "owner", hasPin: false } })).toBe("check");
+  });
+
+  it("« Ne plus proposer sur cet appareil » : le profil retenu, en cours, s'ouvre sans le sélecteur", () => {
+    expect(launchVerdict({ ...BASE, stay: { profileId: "owner", hasPin: false } })).toBe("app");
+    const mirror = { ...MIRROR, listing: listing({ currentProfileId: "lea" }) };
+    expect(launchVerdict({ ...BASE, heldProfileId: "lea", mirror, stay: { profileId: "lea", hasPin: false } })).toBe("app");
+  });
+
+  it("« Ne plus proposer sur cet appareil » ne contourne jamais le code du compte", () => {
+    // Le compte retenu, l'appareil sur Léa (jeton gardé ou perdu) : le sélecteur.
+    const mirror = { ...MIRROR, listing: listing({ currentProfileId: "lea" }) };
+    expect(launchVerdict({ ...BASE, heldProfileId: "lea", mirror, stay: { profileId: "owner", hasPin: false } })).toBe("picker");
+    expect(launchVerdict({ ...BASE, heldProfileId: null, mirror, stay: { profileId: "lea", hasPin: false } })).toBe("picker");
   });
 });
 
@@ -93,6 +109,16 @@ describe("« Qui regarde ? » — la réponse fraîche du serveur", () => {
     expect(launchOutcome(listing(), null, false)).toBe("picker");
     expect(launchOutcome(listing({ atLaunch: false }), null, false)).toBe("app");
     expect(launchOutcome(listing({ atLaunch: false, currentProfileId: "lea" }), "lea", false)).toBe("app");
+  });
+
+  it("à l'ouverture : le profil retenu par l'appareil lève la préférence, pour lui seul", () => {
+    expect(launchOutcome(listing(), null, false, { profileId: "owner", hasPin: false })).toBe("app");
+    expect(launchOutcome(listing({ currentProfileId: "lea" }), "lea", false, { profileId: "lea", hasPin: false })).toBe("app");
+    // Code posé ou retiré depuis le choix, ou profil retenu qui n'est pas celui en cours : le sélecteur.
+    expect(launchOutcome(listing(), null, false, { profileId: "owner", hasPin: true })).toBe("picker");
+    expect(launchOutcome(listing({ currentProfileId: "zoe" }), "zoe", false, { profileId: "zoe", hasPin: false })).toBe("picker");
+    // Après la fin d'un profil, le sélecteur exigé ne cède jamais.
+    expect(launchOutcome(listing(), null, true, { profileId: "owner", hasPin: false })).toBe("picker");
   });
 
   it("à l'ouverture : la session de profil gardée que le serveur ne connaît plus est terminée", () => {

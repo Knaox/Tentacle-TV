@@ -47,6 +47,16 @@ describe("la porte de « Qui regarde ? »", () => {
       .toEqual({ phase: "check", endProfile: true });
   });
 
+  it("« Ne plus proposer sur cet appareil » : ouverte sur le profil retenu, le serveur ne la recouvre pas", () => {
+    const state = initialGate("app", false, null, false, { profileId: "owner", hasPin: false });
+    expect(afterFresh(state, { kind: "listing", listing: listing() })).toEqual({ phase: "app" });
+    // Le profil retenu a reçu un code entre-temps : le choix ne vaut plus, le sélecteur.
+    const pinned = listing({ profiles: [profile("owner", { kind: "owner", personal: true, hasPin: true }), profile("lea")] });
+    expect(afterFresh(state, { kind: "listing", listing: pinned })).toEqual({ phase: "picker" });
+    // L'appareil est sur Léa, le compte retenu : jamais le compte sans son code.
+    expect(afterFresh(state, { kind: "listing", listing: listing({ currentProfileId: "lea" }) })).toEqual({ phase: "picker" });
+  });
+
   it("sans réponse : l'application, sauf sélecteur exigé — alors Réessayer", () => {
     expect(afterFresh(initialGate("check", false, null), { kind: "failed" })).toEqual({ phase: "app" });
     expect(afterFresh(initialGate("picker", false, null), { kind: "failed" })).toEqual({ phase: "picker" });
