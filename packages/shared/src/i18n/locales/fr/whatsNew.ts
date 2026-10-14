@@ -53,6 +53,8 @@ export default {
   v1_29_0_trailerPreview_body: "Laissez le pointeur sur une affiche : sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Dessous, Lire, Ma liste, favori, vu et « Plus d'infos », la note et l'essentiel du titre ; un clic coupe le son, et Réglages › Apparence › « Aperçus au survol » les éteint.",
   v1_29_0_profiles_title: "« Qui regarde ? » sur l'ordinateur",
   v1_29_0_profiles_body: "Chacun ouvre son profil, derrière son code PIN s'il en a un, et « Changer de profil », dans le menu de votre avatar, ramène aux profils à tout moment. Pour que l'app s'ouvre sur cet écran, activez « Demander qui regarde à l'ouverture » dans Réglages › Famille.",
+  v1_29_0_avatars_title: "Une photo de profil qui a du caractère",
+  v1_29_0_avatars_body: "Cliquez sur votre avatar, puis sur votre photo : 36 personnages vous attendent, chacun avec son nom, son histoire et son genre de film. Choisissez-en un, ou importez votre propre photo — elle vous suit sur tous vos appareils.",
 
   // 1.28.0
   v1_28_0_pip_title: "La lecture en incrustation",

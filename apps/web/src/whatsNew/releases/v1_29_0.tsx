@@ -1,16 +1,18 @@
 import type { WhatsNewRelease } from "../types";
-import { TrailerPreviewScene, WhoIsWatchingScene } from "../scenes/v1_29_0";
+import { AvatarsScene, TrailerPreviewScene, WhoIsWatchingScene } from "../scenes/v1_29_0";
 
 /**
- * 1.29.0 — la bande-annonce au survol, et « Qui regarde ? » sur l'ordinateur.
+ * 1.29.0 — la bande-annonce au survol, « Qui regarde ? » sur l'ordinateur, et
+ * la galerie des photos de profil.
  *
- * Deux scènes : la mini-carte qui grandit depuis l'affiche (la vidéo, ses
- * plans, le bandeau d'actions, le son), puis le choix d'un profil — son code
- * PIN —, et « Changer de profil » dans le menu de l'avatar, qui y ramène.
- * Les deux fonctions dépendent du serveur 1.29.0 : face à un serveur qui ne
- * les déclare pas, l'app n'en montre rien, et l'écran non plus (`capability`).
- * Le reste du bloc (YouTube ménagé, le relais allégé, « Vider le cache ») se
- * dit dans le changelog.
+ * Trois scènes : la mini-carte qui grandit depuis l'affiche (la vidéo, ses
+ * plans, le bandeau, le son) ; le choix d'un profil — son code PIN —, et
+ * « Changer de profil » dans le menu de l'avatar, qui y ramène ; la photo de
+ * l'en-tête du menu, qui ouvre la troupe, et un personnage choisi. Les deux
+ * premières fonctions dépendent du serveur 1.29.0 : face à un serveur qui ne
+ * les déclare pas, l'app n'en montre rien, et l'écran non plus (`capability`) ;
+ * la galerie, elle, ne demande rien au serveur. Le reste du bloc (YouTube
+ * ménagé, des aperçus plus légers, « Vider le cache ») se dit dans le changelog.
  *
  * Les textes vivent dans l'espace i18n `whatsNew` (v1_29_0_<id>_title / _body).
  */
@@ -34,6 +36,14 @@ export const RELEASE_1_29_0: WhatsNewRelease = {
       Scene: WhoIsWatchingScene,
       route: "/settings/family",
       capability: "family.desktopProfiles",
+    },
+    {
+      // Pas de lien profond : la galerie s'ouvre depuis l'en-tête du menu de l'avatar, sans page à elle.
+      id: "avatars",
+      kind: "new",
+      titleKey: "v1_29_0_avatars_title",
+      bodyKey: "v1_29_0_avatars_body",
+      Scene: AvatarsScene,
     },
   ],
 };

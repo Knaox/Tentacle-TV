@@ -49,6 +49,8 @@ export default {
   v1_29_0_trailerPreview_body: "Rest the pointer on a poster: its trailer starts in a mini card, with sound, and the cards next to it make room. Below it: Play, My List, favorite, watched and “More info”, your rating and the title's essentials; one click mutes it, and Settings › Appearance › “Previews on hover” turns previews off.",
   v1_29_0_profiles_title: "“Who's watching?” on your computer",
   v1_29_0_profiles_body: "Everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, in your avatar menu, brings you back to the profiles at any time. To have the app open on this screen, turn on “Ask who's watching at startup” in Settings › Family.",
+  v1_29_0_avatars_title: "A profile picture with character",
+  v1_29_0_avatars_body: "Click your avatar, then your photo: 36 characters are waiting, each with a name, a story and a favourite kind of film. Pick one, or upload your own photo — it follows you on all your devices.",
 
   // 1.28.0
   v1_28_0_pip_title: "Picture-in-picture",
