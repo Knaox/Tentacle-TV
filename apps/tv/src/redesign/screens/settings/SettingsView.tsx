@@ -19,7 +19,7 @@ import { LicensesPanel } from "./LicensesPanel";
 import { NavigationPanel } from "./NavigationPanel";
 import { PlaybackPanel } from "./PlaybackPanel";
 import { SettingsTabs, TAB_WIDTH, type SettingsTabItem } from "./SettingsTabs";
-import type { OwnPinMode } from "@tentacle-tv/tv-core";
+import type { CardSize, OwnPinMode } from "@tentacle-tv/tv-core";
 import type {
   AccountAction,
   ChoiceListModel,
@@ -58,6 +58,8 @@ import type {
  *   `useSetLibraryPreference` (trio complet) ; Retour la remet à `null` ;
  * - Liquid Glass : lu sur `LiquidGlassProvider` (clé `tentacle_liquid_glass`),
  *   `onToggleLiquidGlass` écrit la clé ;
+ * - taille des cartes : lue sur `CardSizeProvider` (clé `tentacle_tv_card_size`),
+ *   `onSelectCardSize` écrit la clé — l'onglet Apparence existe donc partout ;
  * - `renderTier` (Android TV) : le mode Lite (`platform/renderTier`),
  *   `onSelectLiteMode` l'écrit et recharge l'interface ; absent, rien ;
  * - `navigation` (Apple TV) : les entrées organisables de la barre de gauche
@@ -68,6 +70,7 @@ import type {
  * `settings:logout`, `settings:switchProfile`, `settings:manageProfiles`, `settings:preset:<mode>`, `settings:lang:<fr|en>`,
  * `settings:lib:<i>:<réglage|reset>`, `settings:tunneling`,
  * `settings:matchFrameRate`, `settings:liquidGlass`, `settings:lite:<auto|on|off>`,
+ * `settings:cardSize:<small|normal|large>`,
  * `settings:nav:<i>[:visibility]`, `settings:nav:showAll|resetOrder`,
  * `settings:choice:<i>` (liste de choix), `settings:license:<i>` (onglet Licences),
  * `settings:licenseBlock:<i>` (lecteur d'un document). Groupes : `settings:tabs` (la
@@ -113,12 +116,14 @@ export interface SettingsViewProps {
   onToggleTrailerPreviews?: (next: boolean) => void;
   onToggleTrailerPreviewSound?: (next: boolean) => void;
   onToggleLiquidGlass?: (next: boolean) => void;
-  /** Faux : l'onglet Apparence (le réglage Liquid Glass) n'existe pas sur
-   *  cette plateforme (trait `liquidGlass`). Absent : il existe. */
+  /** Faux : le réglage Liquid Glass n'existe pas sur cette plateforme (trait
+   *  `liquidGlass`). Absent : il existe. L'onglet Apparence, lui, existe
+   *  toujours (la taille des cartes). */
   appearance?: boolean;
-  /** Le mode Lite (Android TV) : il fait exister l'onglet Apparence à lui seul. */
+  /** Le mode Lite (Android TV). */
   renderTier?: SettingsRenderTier | null;
   onSelectLiteMode?: (mode: SettingsRenderTier["mode"]) => void;
+  onSelectCardSize?: (size: CardSize) => void;
   onMoveNavEntry?: (key: string) => void;
   onToggleNavEntry?: (key: string) => void;
   onShowAllNav?: () => void;
@@ -148,7 +153,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
   const tabs = useMemo<SettingsTabItem[]>(() => [
     { key: "account", label: t("preferences:sectionAccount"), caption: account.name, icon: "user" },
     { key: "playback", label: t("preferences:sectionPlayback"), caption: t(`preferences:${PRESET_LABEL_KEYS[playback.preset]}`), icon: "playCircle" },
-    ...(appearance || renderTier ? [{
+    {
       key: "appearance" as const,
       label: t("preferences:sectionAppearance"),
       // Le verre en cours, nommé : « Liquid Glass » ou « Verre classique » ;
@@ -157,7 +162,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
         ? t(liquid ? "preferences:liquidGlassTitle" : "preferences:glassClassic")
         : t(renderTier?.tier === "lite" ? "preferences:liteTierLite" : "preferences:liteTierNormal"),
       icon: "sparkles" as const,
-    }] : []),
+    },
     ...(navigation ? [{
       key: "navigation" as const,
       label: t("preferences:sectionNavigation"),
@@ -213,7 +218,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onToggleTrailerPreviewSound={props.onToggleTrailerPreviewSound}
                 />
               ) : null}
-              {tab === "appearance" && (appearance || renderTier) ? (
+              {tab === "appearance" ? (
                 <AppearancePanel
                   width={PANEL_INNER}
                   previewImageUri={props.glassPreviewUri}
@@ -221,6 +226,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   liquidGlass={appearance}
                   renderTier={renderTier}
                   onSelectLiteMode={props.onSelectLiteMode}
+                  onSelectCardSize={props.onSelectCardSize}
                 />
               ) : null}
               {tab === "navigation" && navigation ? (

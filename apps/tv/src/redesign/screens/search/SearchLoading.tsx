@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { useCardMetrics } from "../../cards/cardSizeMode";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { colors, fonts, white } from "../../theme/tokens";
 import { TOP_HIT_HEIGHT } from "./SearchTopHit";
@@ -12,7 +13,7 @@ import { RESULTS_CLIP, RESULTS_WIDTH } from "./searchViewModel";
  * clignote (aucune boucle) ; « Recherche… » dit ce qui se passe.
  */
 export const SearchLoading = memo(function SearchLoading({ label }: { label: string }) {
-  const poster = TV_STAGE.card.poster;
+  const poster = useCardMetrics().poster;
   return (
     <View style={styles.page}>
       <Text style={styles.label}>{label}</Text>

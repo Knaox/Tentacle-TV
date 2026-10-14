@@ -404,4 +404,13 @@ export default {
   liteReasonUnknown: "capacités non lues — rendu complet.",
   liteTierLite: "Mode Lite",
   liteTierNormal: "Rendu complet",
+  // Taille des cartes (Apple TV, Android TV) : un réglage de l'appareil.
+  cardSizeTitle: "Taille des cartes",
+  cardSizeCaption: "Plus ou moins de titres par rangée, sur tous les écrans. Le changement s'applique aussitôt.",
+  cardSizeSmall: "Petite",
+  cardSizeNormal: "Normale",
+  cardSizeLarge: "Grande",
+  cardSizeSmallHint: "Un peu plus petites : plus de titres à l'écran, une colonne de plus dans les bibliothèques.",
+  cardSizeNormalHint: "La taille d'origine.",
+  cardSizeLargeHint: "Grandes, comme sur Netflix : moins de titres à l'écran, des images mieux mises en valeur.",
 } as const;

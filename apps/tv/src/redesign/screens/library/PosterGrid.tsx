@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, gridLineReveal } from "@tentacle-tv/tv-core";
+import { useCardMetrics } from "../../cards/cardSizeMode";
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
@@ -36,7 +37,8 @@ import { mountProfile } from "../../render/mountProfile";
 
 export interface PosterGridProps {
   cards: CardModel[];
-  columns?: 5 | 6;
+  /** Absentes : celles de la taille des cartes réglée (`useGridColumns`). */
+  columns?: number;
   header?: ReactElement | null;
   /** Rendu à la place des cellules quand `cards` est vide (squelette, vide). */
   empty?: ReactElement | null;
@@ -56,6 +58,14 @@ export const GRID_GAP = 36;
  *  légende de l'affiche focalisée, qui descend de la moitié de son
  *  agrandissement (~15) — sans quoi la rangée suivante mord la ligne. */
 export const GRID_ROW_GAP = 52;
+
+/** Les colonnes d'une grille : celles qu'on lui impose, sinon celles de la
+ *  taille des cartes réglée (Petite 7, Normale 6, Grande 5 — tv-core
+ *  `cardMetricsOf`). La largeur d'une affiche suit (`posterWidth`). */
+export function useGridColumns(columns?: number): number {
+  const metrics = useCardMetrics();
+  return columns ?? metrics.gridColumns;
+}
 
 /** La largeur d'une affiche pour `columns` colonnes. */
 export function posterWidth(columns: number): number {
@@ -134,7 +144,7 @@ const GridLine = memo(function GridLine({ line, index, ...cell }: { line: Line; 
 
 export const PosterGrid = memo(function PosterGrid({
   cards,
-  columns = 6,
+  columns: forcedColumns,
   header,
   empty,
   footer,
@@ -144,6 +154,7 @@ export const PosterGrid = memo(function PosterGrid({
   onFocusCard,
   onEndReached,
 }: PosterGridProps) {
+  const columns = useGridColumns(forcedColumns);
   const width = posterWidth(columns);
   const lines = useLines(cards, columns);
   const list = useRef<FlashList<Line>>(null);

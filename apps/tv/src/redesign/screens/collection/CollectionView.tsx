@@ -10,7 +10,7 @@ import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { text } from "../../theme/tokens";
 import { EmptyState } from "../library/EmptyState";
 import { GridSkeleton } from "../library/GridSkeleton";
-import { PosterGrid } from "../library/PosterGrid";
+import { PosterGrid, useGridColumns } from "../library/PosterGrid";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 
 /**
@@ -50,7 +50,8 @@ export interface CollectionViewProps {
   palette: ArtworkPalette;
   /** La lumière de l'affiche focalisée (`ambientSource`) : la vue la suit, l'écran câblé ne se redessine pas. */
   ambient?: AmbientSource;
-  columns?: 5 | 6;
+  /** Colonnes de la grille ; absentes : celles de la taille des cartes réglée (`useCardMetrics`). */
+  columns?: number;
   loading?: boolean;
   /** La collection est vide : pictogramme, titre, indice, action. */
   empty?: CollectionEmptyModel | null;
@@ -82,7 +83,7 @@ export const CollectionView = memo(function CollectionView({
   cards,
   palette: fallback,
   ambient,
-  columns = 6,
+  columns: forcedColumns,
   loading,
   empty,
   status,
@@ -92,6 +93,7 @@ export const CollectionView = memo(function CollectionView({
   onFocusCard,
 }: CollectionViewProps) {
   const palette = useAmbientOf(ambient, fallback);
+  const columns = useGridColumns(forcedColumns);
   const header = <Header kicker={kicker} title={title} count={loading || empty ? undefined : count} />;
   const placeholder = loading ? (
     <GridSkeleton columns={columns} rows={2} />

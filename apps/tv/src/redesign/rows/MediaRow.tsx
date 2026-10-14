@@ -11,6 +11,7 @@ import { useForcedFocusKey } from "../focus/focusPreview";
 import { mountProfile } from "../render/mountProfile";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
+import { useCardMetrics } from "../cards/cardSizeMode";
 import { CullingTrack, NATIVE_RECEDE } from "./CullingTrack";
 import { useRowRewindPort } from "./rowRewindPort";
 import { useStagedRow } from "./rowStage";
@@ -38,9 +39,6 @@ import { useStagedRow } from "./rowStage";
  * `trailerPreviewScrollTarget`). Une carte qui se redresse (`morph`) ne
  * grandit pas.
  */
-
-/** La largeur des cartes de chaque variante (celle de `MediaCard`). */
-const CARD_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
 
 /** La largeur de la scène : ce que la piste montre. */
 const SCREEN_WIDTH = 1920;
@@ -90,7 +88,9 @@ export const MediaRow = memo(function MediaRow({
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollX.current = event.nativeEvent.contentOffset.x;
   }, []);
-  const width = cardWidth ?? (variant === "morph" ? CARD_WIDTH.landscape : CARD_WIDTH[variant]);
+  // La largeur des cartes de la variante : celle de `MediaCard`, à la taille réglée.
+  const metrics = useCardMetrics();
+  const width = cardWidth ?? (variant === "morph" ? metrics.landscape.width : metrics[variant].width);
   const onPreviewExpand = useCallback(
     (index: number, tileWidth: number) => {
       const target = trailerPreviewScrollTarget({
@@ -109,7 +109,7 @@ export const MediaRow = memo(function MediaRow({
   );
   const rewind = useRowRewindPort();
   // Mode Lite : la tête ajustée à ce que la piste montre (`rowHeadCards`).
-  const head = mountProfile().fitRowHeads && variant !== "morph" ? rowHeadCards(1920 - inset, (cardWidth ?? CARD_WIDTH[variant]) + TV_STAGE.row.gap) : ROW_STAGING.headCards;
+  const head = mountProfile().fitRowHeads && variant !== "morph" ? rowHeadCards(1920 - inset, width + TV_STAGE.row.gap) : ROW_STAGING.headCards;
   const { shown, demand, retire } = useStagedRow(stageRank, cards.length, head);
   // La carte qui a le focus dans la rangée, ou null : jamais retirée sous le focus.
   const focusedIndex = useRef<number | null>(null);

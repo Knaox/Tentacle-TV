@@ -401,4 +401,13 @@ export default {
   liteReasonUnknown: "capabilities could not be read — full rendering.",
   liteTierLite: "Lite mode",
   liteTierNormal: "Full rendering",
+  // Card size (Apple TV, Android TV): a device setting.
+  cardSizeTitle: "Card size",
+  cardSizeCaption: "More or fewer titles per row, on every screen. The change applies right away.",
+  cardSizeSmall: "Small",
+  cardSizeNormal: "Normal",
+  cardSizeLarge: "Large",
+  cardSizeSmallHint: "A little smaller: more titles on screen, one more column in libraries.",
+  cardSizeNormalHint: "The original size.",
+  cardSizeLargeHint: "Large, like on Netflix: fewer titles on screen, artwork shown off better.",
 } as const;

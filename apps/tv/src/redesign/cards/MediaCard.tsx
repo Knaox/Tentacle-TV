@@ -1,7 +1,6 @@
 import { memo, useMemo, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
-import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient } from "../background/SoftGradient";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import type { RowPlace } from "../motion/useRowRecede";
@@ -18,6 +17,7 @@ import { CardQualityBadges } from "./CardQualityBadges";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused, type CardFocused } from "./useCardFocused";
 import { CARD_FOCUS_SCALE } from "./cardFocus";
+import { useCardMetrics } from "./cardSizeMode";
 
 /**
  * La carte d'un titre — deux formats, un seul modèle :
@@ -54,7 +54,8 @@ import { CARD_FOCUS_SCALE } from "./cardFocus";
 export interface MediaCardProps {
   card: CardModel;
   variant: "landscape" | "poster";
-  /** Largeur ; la hauteur suit le format. */
+  /** Largeur ; la hauteur suit le format. Absente : celle de la taille des
+   *  cartes réglée (`useCardMetrics`). */
   width?: number;
   /** Sa place dans une rangée : elle recule quand une voisine a le focus. */
   place?: RowPlace;
@@ -75,8 +76,6 @@ export interface MediaCardProps {
   /** Elle vient de grandir : `tileWidth`, la largeur de la grande carte. */
   onPreviewExpand?: (tileWidth: number) => void;
 }
-
-const DEFAULT_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
 
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
  *  la légende descend d'autant, l'image ne la recouvre jamais. */
@@ -109,7 +108,10 @@ export const MediaCard = memo(function MediaCard(props: MediaCardProps) {
 
 /** Une carte de rangée : sa grande carte d'aperçu, selon son focus. */
 function PreviewableCard(props: MediaCardProps & { cardFocus: CardFocused }) {
-  const { card, variant, width = DEFAULT_WIDTH[variant], cardFocus, onPreviewExpand } = props;
+  const { card, variant, cardFocus, onPreviewExpand } = props;
+  // La largeur réglée (`useCardMetrics`) : la grande carte part de la carte telle qu'elle est dessinée.
+  const metrics = useCardMetrics();
+  const width = props.width ?? metrics[variant].width;
   const size = useMemo(() => ({ width, height: cardHeight(variant, width) }), [variant, width]);
   const growth = useCardGrowth(card, cardFocus.focused, size, onPreviewExpand);
   return <CardBody {...props} growth={growth} />;
@@ -122,7 +124,7 @@ function cardHeight(variant: MediaCardProps["variant"], width: number): number {
 function CardBody({
   card,
   variant,
-  width = DEFAULT_WIDTH[variant],
+  width: forcedWidth,
   place,
   dimmed,
   focusKey,
@@ -135,8 +137,10 @@ function CardBody({
   growth,
 }: MediaCardProps & { cardFocus: CardFocused; growth: CardGrowth | null }) {
   const landscape = variant === "landscape";
+  const frame = useCardMetrics()[variant];
+  const width = forcedWidth ?? frame.width;
   const height = cardHeight(variant, width);
-  const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
+  const radius = frame.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = cardFocus;
   // Un seul ressort pour le cadre et la légende (`CardFrame focusProgress`).
