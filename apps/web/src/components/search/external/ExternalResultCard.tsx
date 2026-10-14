@@ -76,9 +76,11 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
         aria-label={item.subtitle ? `${item.title} — ${item.subtitle}` : item.title}
         className="block w-full cursor-pointer rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
-        {/* Le visuel : l'ancre de la mini-carte, qui s'efface sous elle. */}
+        {/* Le visuel : l'ancre de la mini-carte, qui s'efface sous elle — sa
+            légende avec lui (`data-concealed`, cf. previewRoom.css). */}
         <div
           ref={preview.anchorRef}
+          data-concealed={preview.shown}
           className="relative overflow-hidden rounded-md transition-opacity duration-200"
           style={{ opacity: preview.shown ? 0 : undefined }}
         >

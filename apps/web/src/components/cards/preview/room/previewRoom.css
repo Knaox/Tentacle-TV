@@ -65,18 +65,20 @@
 /* La LÉGENDE de la carte (titre, année) s'efface avec elle sous la
  * mini-carte : son titre est déjà dans le bandeau, et sous une affiche — moins
  * haute que la mini-carte n'est longue — il dépassait, en double, sous le
- * bandeau. Même tempo que l'affiche (`.media-tile`, theme/cards.css) ; la
- * place de la légende ne bouge pas (opacité seule). */
-.media-tile[data-concealed] ~ * {
+ * bandeau. Le visuel qui s'efface porte `data-concealed` (`CardFrame`, la
+ * carte hors bibliothèque) ; ce qui le suit est sa légende. Même tempo que
+ * l'affiche (`.media-tile`, theme/cards.css) ; la place de la légende ne bouge
+ * pas (opacité seule). */
+[data-concealed] ~ * {
   transition: opacity var(--duration-base) var(--ease-out);
 }
 
-.media-tile[data-concealed="true"] ~ * {
+[data-concealed="true"] ~ * {
   opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .media-tile[data-concealed] ~ * {
+  [data-concealed] ~ * {
     transition: opacity var(--preview-reduced-ms, 180ms) linear !important;
   }
 }
