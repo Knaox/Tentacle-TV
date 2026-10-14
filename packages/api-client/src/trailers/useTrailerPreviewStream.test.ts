@@ -164,50 +164,61 @@ describe("useTrailerPreviewStream", () => {
     expect(probe.result).toEqual({ status: "found", preview: PREVIEW });
   });
 
-  it("l'abandon d'une carte ne coupe pas la requête qu'une autre carte du même titre attend", async () => {
-    let aborted = false;
-    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
-      init?.signal?.addEventListener("abort", () => {
-        aborted = true;
-        reject(new DOMException("aborted", "AbortError"));
-      });
-    })));
+  it("vingt survols du même titre : UNE requête, la réponse gardée sert les dix-neuf autres", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(PREVIEW)));
+    vi.stubGlobal("fetch", fetchMock);
     serverDeclares(["trailers.preview"]);
-    let other: TrailerPreviewStreamState | null = null;
-    function Other() {
-      other = useTrailerPreviewStream(SUBJECT, "fr", { enabled: true });
-      return null;
+    for (let hover = 0; hover < 20; hover++) {
+      await render(true);
+      await render(false);
     }
-    root ??= createRoot(container as never);
-    await act(async () => {
-      root!.render(createElement(QueryClientProvider, { client: qc }, createElement(Rig, { enabled: true }), createElement(Other)));
-      await settle();
-    });
-    expect(other).not.toBeNull();
-    await act(async () => {
-      probe.cancel();
-      await settle();
-    });
-    expect(aborted).toBe(false);
-    expect(probe.loading).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(probe.result).toEqual({ status: "found", preview: PREVIEW });
   });
 
-  it("l'abandon coupe la requête en vol", async () => {
-    let aborted = false;
-    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
-      init?.signal?.addEventListener("abort", () => {
-        aborted = true;
-        reject(new DOMException("aborted", "AbortError"));
-      });
-    })));
+  it("une demande partie va au bout même si la carte se démonte : le survol suivant lit sa réponse, sans redemander", async () => {
+    let answer: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+      answer = resolve;
+    }));
+    vi.stubGlobal("fetch", fetchMock);
     serverDeclares(["trailers.preview"]);
     await render(true);
-    expect(probe.result).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // La carte quitte l'écran (fin du survol, session démontée) pendant que le serveur décide.
+    await act(async () => root!.unmount());
+    root = null;
     await act(async () => {
-      probe.cancel();
+      answer(new Response(JSON.stringify(PREVIEW)));
       await settle();
     });
-    expect(aborted).toBe(true);
-    expect(probe.result).toBeUndefined();
+    await render(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(probe.result).toEqual({ status: "found", preview: PREVIEW });
+  });
+
+  it("une nouvelle demande (après un refus passager) rejoint celle qu'une autre carte du même titre a en vol", async () => {
+    let calls = 0;
+    vi.stubGlobal("fetch", vi.fn(() => {
+      calls++;
+      return calls === 1
+        ? Promise.resolve(new Response(JSON.stringify({ error: "rate_limited", retryAfterS: 1 }), { status: 429 }))
+        : new Promise<Response>(() => undefined);
+    }));
+    serverDeclares(["trailers.preview"]);
+    await render(true);
+    expect(probe.result).toMatchObject({ status: "missing", reason: "rate_limited" });
+    // Première nouvelle demande : elle part, et reste en vol.
+    await act(async () => {
+      probe.retry();
+      await settle();
+    });
+    expect(calls).toBe(2);
+    // Une seconde, pendant qu'elle est en vol (une autre carte du même titre) : rejointe, pas doublée.
+    await act(async () => {
+      probe.retry();
+      await settle();
+    });
+    expect(calls).toBe(2);
   });
 });

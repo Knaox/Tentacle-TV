@@ -54,8 +54,11 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
   const environmentBlock = useTrailerPreviewBlock();
   const pipSession = usePipSession();
   // La capacité vient de la requête elle-même : un serveur d'avant n'est jamais interrogé.
+  // Un titre dont la vidéo vient de lâcher ici n'est pas redemandé (`previewFailures.ts`) :
+  // la requête ne s'active même pas, le temps que la machine le constate.
   const [wantsStream, setWantsStream] = useState(false);
-  const stream = useTrailerPreviewStream(stableSubject, lang, { enabled: wantsStream });
+  const enabled = wantsStream && !trailerPreviewRecentlyFailed(subjectKey);
+  const stream = useTrailerPreviewStream(stableSubject, lang, { enabled });
   const blocked = environmentBlock !== null || pipSession !== null || !stream.capable || subjectKey === null;
 
   const [state, dispatch] = usePreviewMachine(hovered, blocked, subjectKey);
@@ -102,21 +105,9 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
     if (state.phase === "fetching") loadPreviewHls().catch(() => undefined);
   }, [state.phase]);
 
-  // Le survol a cessé avant la réponse (ou un autre aperçu a pris la place) : la demande est abandonnée.
-  const previousPhase = useRef(state.phase);
-  const cancelStream = stream.cancel;
-  useEffect(() => {
-    const left = previousPhase.current === "fetching" && state.phase !== "fetching" && state.phase !== "buffering";
-    previousPhase.current = state.phase;
-    if (left) cancelStream();
-  }, [state.phase, cancelStream]);
-  // Un autre titre sous le même survol : la demande de l'ANCIEN titre est abandonnée
-  // (`cancelStream` change avec le titre — c'est la fonction d'avant qu'il faut).
-  const phaseRef = useRef(state.phase);
-  phaseRef.current = state.phase;
-  useEffect(() => () => {
-    if (phaseRef.current === "fetching") cancelStream();
-  }, [cancelStream]);
+  // Le survol cesse avant la réponse : la demande n'est PAS abandonnée. Le
+  // serveur la mène à son terme de toute façon, et sa réponse, gardée, sert le
+  // retour sur la carte sans rien redemander (`useTrailerPreviewStream`).
 
   // Une vidéo qui a lâché ici (erreur fatale, première image trop lente) : la
   // réponse qui la désignait n'est plus crue — la prochaine intention redemande

@@ -27,9 +27,7 @@ export interface TrailerPreviewStreamState {
   loading: boolean;
   /** Le serveur déclare `trailers.preview` : sans elle, rien n'est jamais demandé. */
   capable: boolean;
-  /** Abandonne la demande en cours (survol fini avant la réponse). */
-  cancel: () => void;
-  /** Redemande maintenant (le survol tient après un refus passager). */
+  /** Redemande maintenant (le survol tient après un refus passager) — jamais une seconde demande en vol. */
   retry: () => void;
   /**
    * Oublie la réponse gardée : la vidéo qu'elle désignait a lâché (un jeton du
@@ -49,6 +47,14 @@ export interface TrailerPreviewStreamState {
  * (404, 429…) est une réponse, gardée autant que le serveur garde sa décision,
  * jamais relancée ; une bande-annonce trouvée l'est jusqu'à l'échéance de son
  * jeton.
+ *
+ * Une demande partie VA AU BOUT, même si le survol cesse avant la réponse :
+ * le serveur la mène de toute façon à son terme (décision, extraction), et sa
+ * réponse, gardée, sert le survol suivant sans rien redemander. L'abandonner,
+ * c'était la jeter et la refaire au retour sur la carte. Rien ne lit donc le
+ * signal d'abandon de TanStack (qui couperait la requête au démontage de la
+ * dernière carte qui l'attend) ; seul le délai propre de la demande
+ * (`fetchTimeoutMs`) l'arrête.
  */
 export function useTrailerPreviewStream(
   subject: TrailerPreviewSubject | null,
@@ -60,7 +66,7 @@ export function useTrailerPreviewStream(
   const queryKey = useMemo(() => trailerPreviewQueryKey(subject, lang), [subject, lang]);
   const query = useQuery({
     queryKey,
-    queryFn: ({ signal }) => fetchTrailerPreviewStream(subject as TrailerPreviewSubject, lang, signal),
+    queryFn: () => fetchTrailerPreviewStream(subject as TrailerPreviewSubject, lang),
     enabled: capable && options.enabled && subject !== null,
     staleTime: (q) => trailerPreviewResultTtl(q.state.data, q.state.dataUpdatedAt),
     gcTime: TRAILER_PREVIEW_GC_MS,
@@ -69,18 +75,11 @@ export function useTrailerPreviewStream(
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-  const cancel = useCallback(() => {
-    // La requête est PARTAGÉE par les cartes du même titre : une autre carte
-    // qui l'attend encore (un survol à la souris pendant qu'un focus clavier
-    // tient la première, qu'elle évince) la garde — l'abandonner la laisserait
-    // sans réponse, en attente, jusqu'à la fin de son survol.
-    const query = queryClient.getQueryCache().find({ queryKey, exact: true });
-    if (query && query.getObserversCount() > 1) return;
-    void queryClient.cancelQueries({ queryKey, exact: true });
-  }, [queryClient, queryKey]);
   const { refetch } = query;
+  // Une demande déjà en vol pour ce titre (une autre carte du même titre) est
+  // REJOINTE, jamais doublée : `cancelRefetch` la couperait pour en refaire une.
   const retry = useCallback(() => {
-    void refetch();
+    void refetch({ cancelRefetch: false });
   }, [refetch]);
   const forget = useCallback(() => {
     queryClient.removeQueries({ queryKey, exact: true });
@@ -90,5 +89,5 @@ export function useTrailerPreviewStream(
   // désactivée qu'elle est lue, au rendu même où l'intention l'active.
   const fresh = query.data !== undefined
     && Date.now() < query.dataUpdatedAt + trailerPreviewResultTtl(query.data, query.dataUpdatedAt);
-  return { result: query.data, fresh, receivedAt: query.dataUpdatedAt, loading: query.isFetching, capable, cancel, retry, forget };
+  return { result: query.data, fresh, receivedAt: query.dataUpdatedAt, loading: query.isFetching, capable, retry, forget };
 }

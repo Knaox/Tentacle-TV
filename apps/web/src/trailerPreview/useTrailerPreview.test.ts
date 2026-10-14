@@ -14,9 +14,6 @@ const h = vi.hoisted(() => ({
   receivedAt: 0,
   loading: false,
   capable: true,
-  cancel: vi.fn(),
-  cancelled: [] as string[],
-  cancels: new Map<string, () => void>(),
   retry: vi.fn(),
   forget: vi.fn(),
   enabled: [] as boolean[],
@@ -32,19 +29,11 @@ vi.mock("@tentacle-tv/api-client", async () => {
   return {
     isTransientPreviewRefusal: rules.isTransientPreviewRefusal,
     previewRetryDelayMs: rules.previewRetryDelayMs,
-    useTrailerPreviewStream: (subject: { itemId?: string } | null, _lang: string, options: { enabled: boolean }) => {
+    useTrailerPreviewStream: (_subject: unknown, _lang: string, options: { enabled: boolean }) => {
       h.enabled.push(options.enabled);
-      // Une annulation par titre, d'identité stable (celle de la requête de CE titre).
-      const key = subject?.itemId ?? "none";
-      if (!h.cancels.has(key)) {
-        h.cancels.set(key, () => {
-          h.cancelled.push(key);
-          h.cancel();
-        });
-      }
       return {
         result: h.result, fresh: h.fresh, receivedAt: h.receivedAt, loading: h.loading,
-        capable: h.capable, cancel: h.cancels.get(key)!, retry: h.retry, forget: h.forget,
+        capable: h.capable, retry: h.retry, forget: h.forget,
       };
     },
   };
@@ -61,9 +50,6 @@ const { handles, render, wait, serve, cleanup } = createPreviewRig(useTrailerPre
 beforeEach(() => {
   vi.useFakeTimers();
   Object.assign(h, { result: undefined, fresh: false, receivedAt: 0, loading: false, capable: true, enabled: [], pip: null, block: null });
-  h.cancel.mockClear();
-  h.cancelled = [];
-  h.cancels.clear();
   h.retry.mockClear();
   // Oublier la réponse gardée : la requête simulée n'a plus rien à rendre.
   h.forget.mockReset();
@@ -100,21 +86,26 @@ describe("useTrailerPreview — quand demander", () => {
     expect(h.loadHls).toHaveBeenCalledTimes(1);
   });
 
-  it("un survol qui cesse pendant la demande l'abandonne", async () => {
+  it("un survol qui cesse pendant la demande ne l'abandonne pas : la réponse arrivée entre-temps sert le retour, sans nouvelle demande", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs);
     await render("a", { hovered: false });
     expect(handles.a.phase).toBe("idle");
-    expect(h.cancel).toHaveBeenCalled();
     expect(h.enabled.at(-1)).toBe(false);
+    // Le serveur répond après le départ du pointeur : la réponse est gardée.
+    await serve(FOUND);
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    await render("a");
+    expect(handles.a.phase).toBe("buffering");
+    expect(h.retry).not.toHaveBeenCalled();
   });
 
-  it("un autre titre sous le même survol, pendant la demande : celle de l'ancien est abandonnée", async () => {
+  it("un autre titre sous le même survol, pendant la demande : le cycle repart pour le nouveau titre", async () => {
     await render("a", { hovered: true });
     await wait(T.intentMs);
     expect(handles.a.phase).toBe("fetching");
     await render("a", { subject: KID });
-    expect(h.cancelled).toContain("90d50b74d48412cfc9db9a256b1d0c64");
     expect(handles.a.phase).toBe("intent");
   });
 
@@ -209,10 +200,13 @@ describe("useTrailerPreview — quand montrer", () => {
     // La réponse qui la désignait est oubliée : passé la mémoire d'échec, on redemandera.
     expect(h.forget).toHaveBeenCalledTimes(1);
     await render("a", { hovered: false });
+    h.enabled = [];
     await render("a", { hovered: true });
     await wait(T.intentMs);
     await render("a");
     expect(handles.a.phase).toBe("failed");
+    // La requête ne s'est même pas activée : rien n'est parti vers le serveur.
+    expect(h.enabled.some(Boolean)).toBe(false);
   });
 
   it("une réponse GARDÉE d'un survol précédent qui lâche (jeton mort au redémarrage du serveur) : le survol suivant redemande au serveur", async () => {

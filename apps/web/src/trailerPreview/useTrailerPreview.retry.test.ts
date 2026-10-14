@@ -16,7 +16,6 @@ const h = vi.hoisted(() => ({
   receivedAt: 0,
   loading: false,
   retry: vi.fn(),
-  cancel: vi.fn(),
   forget: vi.fn(),
 }));
 
@@ -27,7 +26,7 @@ vi.mock("@tentacle-tv/api-client", async () => {
     isTransientPreviewRefusal: rules.isTransientPreviewRefusal,
     previewRetryDelayMs: rules.previewRetryDelayMs,
     useTrailerPreviewStream: () => ({
-      result: h.result, fresh: h.fresh, receivedAt: h.receivedAt, loading: h.loading, capable: true, cancel: h.cancel, retry: h.retry,
+      result: h.result, fresh: h.fresh, receivedAt: h.receivedAt, loading: h.loading, capable: true, retry: h.retry,
       forget: h.forget,
     }),
   };
