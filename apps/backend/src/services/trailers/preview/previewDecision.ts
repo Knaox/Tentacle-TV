@@ -1,57 +1,52 @@
 /* ------------------------------------------------------------------ */
 /*  La décision d'un aperçu : quelle bande-annonce, vérifiée, ou rien   */
 /*                                                                     */
-/*  Les candidates du titre (`previewCandidates.ts`), essayées dans    */
-/*  l'ordre — trois au plus — jusqu'à la première qui se laisse LIRE : */
-/*  extraite (yt-dlp), puis son maître et ses premières listes lus     */
-/*  chez googlevideo (`prepareTrailer`). Le client ne reçoit jamais    */
-/*  un flux qu'on n'a pas ouvert. La décision est gardée par (titre,   */
-/*  langue) : trouvée, jusqu'à l'échéance des URL ; aucune bande-      */
-/*  annonce, une heure ; aucune lisible, dix minutes. Deux demandes    */
-/*  simultanées en partagent une ; une décision à prendre puise dans   */
-/*  le seau du compte et dans le plafond du serveur. YouTube bride     */
-/*  l'adresse, ou le budget de l'heure est épuisé (`youtubeGuard.ts`) :*/
-/*  plus aucune extraction d'aperçu — « aucune lisible » ou            */
-/*  « réessayez », tout de suite, sans rien retenir par titre.         */
-/*  Une langue moins bonne, trouvée après l'échec d'une meilleure (la  */
-/*  VO après une VF qui n'a pas répondu), n'est gardée que dix         */
-/*  minutes : le survol suivant redonne sa chance à la VF.             */
-/*  Personne n'attend plus de douze secondes, sous le délai du client  */
-/*  (15 s) : passé ce temps, « réessayez dans une seconde » — et la    */
-/*  décision continue, que la demande suivante rejoint. Une décision   */
-/*  que plus personne n'attend cède sa place d'extraction et ne compte */
-/*  plus dans le plafond du serveur.                                   */
+/*  Les candidates du CATALOGUE du titre (`previewCandidates.ts` : la  */
+/*  saison d'un épisode d'abord, la langue du serveur d'abord, AlloCiné*/
+/*  compris pour un client qui lit Dailymotion), essayées dans l'ordre */
+/*  — trois au plus — jusqu'à la première qui se laisse LIRE : extraite*/
+/*  (yt-dlp, ou les métadonnées de Dailymotion), puis son maître et ses*/
+/*  premières listes lus (`prepareTrailer`). Le client ne reçoit jamais*/
+/*  un flux qu'on n'a pas ouvert. La mémoire : `previewDecisionMemory`.*/
+/*  Deux demandes simultanées en partagent une ; une décision à prendre*/
+/*  puise dans le seau du compte et dans le plafond du serveur. YouTube*/
+/*  bride l'adresse, ou le budget de l'heure est épuisé                */
+/*  (`youtubeGuard.ts`) : plus aucune extraction YouTube d'aperçu — une*/
+/*  vidéo Dailymotion reste permise ; sans elle, « aucune lisible » ou */
+/*  « réessayez », sans rien retenir par titre. Une langue moins bonne,*/
+/*  trouvée après l'échec d'une meilleure, n'est gardée que dix        */
+/*  minutes. Personne n'attend plus de douze secondes, sous le délai du*/
+/*  client (15 s) : « réessayez dans une seconde », et la décision     */
+/*  continue, que la demande suivante rejoint ; une décision que plus  */
+/*  personne n'attend cède sa place d'extraction et ne compte plus dans*/
+/*  le plafond du serveur.                                             */
 /* ------------------------------------------------------------------ */
 
-import {
-  TRAILER_PREVIEW_NO_TRAILER_TTL_MS, TRAILER_PREVIEW_UNAVAILABLE_TTL_MS,
-} from "../../../trailers/trailerPreview";
+import type { TrailerCatalogRequest } from "../../../trailers/trailerCatalog";
+import { buildCatalog } from "../catalog/catalogBuild";
 import { resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
 import { holdsSource, peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
 import { prewarmExtraction, type ExtractionOptions } from "../ytExtract";
-import { fetchTitleVideos } from "../titleVideos";
 import { previewRefusal } from "../youtubeGuard";
-import { previewCandidates } from "./previewCandidates";
+import { previewCandidates, type PreviewCandidate } from "./previewCandidates";
+import { clearDecisions, knownDecision, remember, rememberRefusal, type Refusal } from "./previewDecisionMemory";
 import { PreviewRateLimiter } from "./previewRateLimit";
-import type { PreviewTitle } from "./previewTitle";
-import { TtlLru } from "./ttlLru";
 
-type Refusal = "no_trailer" | "unavailable";
+export {
+  onPreviewDecisionsChange, restoreDecisions, storedDecisions, type Decision, type StoredDecision,
+} from "./previewDecisionMemory";
+
+/** Ce qu'un aperçu demande : sa clé de décision (`jf:<id>`, `tmdb:movie:<id>`) et la demande de catalogue. */
+export interface PreviewTarget {
+  key: string;
+  catalog: TrailerCatalogRequest;
+}
 
 export type PreviewOutcome =
-  | { kind: "found"; ytId: string; resolved: ResolvedTrailer }
+  | { kind: "found"; ref: string; resolved: ResolvedTrailer }
   | { kind: "refused"; error: Refusal }
-  /** Trop de demandes (le compte) ou trop de décisions en cours (le serveur) : rien n'est retenu. */
+  /** Trop de demandes (le compte), trop de décisions en cours (le serveur), ou pas encore décidé : rien n'est retenu. */
   | { kind: "limited"; retryAfterS: number };
-
-export type Decision = { kind: "found"; ytId: string } | { kind: "refused"; error: Refusal };
-
-/** Une décision telle que la mémoire durable la garde (`previewMemoryStore.ts`). */
-export interface StoredDecision {
-  key: string;
-  decision: Decision;
-  until: number;
-}
 
 /** Au-delà de trois essais, le survol est passé depuis longtemps. */
 export const MAX_ATTEMPTS = 3;
@@ -59,20 +54,15 @@ export const MAX_ATTEMPTS = 3;
 const DECISION_BUDGET_MS = 25_000;
 /** Une extraction d'aperçu passe après les lectures et ne s'éternise pas. */
 const PREVIEW_EXTRACTION: ExtractionOptions = { priority: "preview", budgetMs: 20_000 };
-/** Quelqu'un attend-il encore la décision `key` ? Sinon, ses extractions cèdent la place. */
-const wantedBy = (key: string) => () => (inflight.get(key)?.waiters ?? 0) > 0;
 /** Décisions à prendre en même temps sur tout le serveur ; au-delà, « réessayez ». */
 const MAX_PENDING_DECISIONS = 4;
 const BUSY_RETRY_S = 2;
-const MAX_DECISIONS = 1_000;
+/** Le catalogue n'avait encore rien (une source finit en fond) : redemander bientôt, sans rien retenir. */
+const CATALOG_PENDING_RETRY_S = 3;
 /** Une langue de repli (la VF a échoué, la VO a répondu) ne se garde pas des heures. */
 const FALLBACK_LANG_TTL_MS = 10 * 60 * 1000;
-/**
- * La version des RÈGLES de choix, dans la clé : une décision prise avant
- * (la VOST crue VF, gardée ~6 h et au redémarrage) ne se sert plus.
- */
-const RULES_VERSION = "r2";
-
+/** La version des RÈGLES de choix, dans la clé : une décision d'avant (liste propre, VOST crue VF) ne sert plus. */
+const RULES_VERSION = "r3";
 /** Au-delà, la réponse dit « réessayez » ; la décision, elle, continue (sous les 15 s du client). */
 const RESPONSE_BUDGET_MS = 12_000;
 const STILL_DECIDING_RETRY_S = 1;
@@ -83,78 +73,55 @@ interface Pending {
   waiters: number;
 }
 
-const decisions = new TtlLru<Decision>(MAX_DECISIONS);
 const inflight = new Map<string, Pending>();
 const limiter = new PreviewRateLimiter();
 
-let onChange: (() => void) | null = null;
-
-function remember(key: string, decision: Decision, ttlMs: number): void {
-  decisions.set(key, decision, ttlMs);
-  onChange?.();
-}
-
-/** Prévient `listener` à chaque décision prise (la mémoire durable s'écrit alors). */
-export function onPreviewDecisionsChange(listener: (() => void) | null): void {
-  onChange = listener;
-}
-
-/** Les décisions encore valables, pour la mémoire durable. */
-export function storedDecisions(now = Date.now()): StoredDecision[] {
-  return decisions.dump(now).map(({ key, value, until }) => ({ key, decision: value, until }));
-}
-
-/** Reprend les décisions d'avant un redémarrage, chacune jusqu'à son échéance. */
-export function restoreDecisions(list: readonly StoredDecision[], now = Date.now()): void {
-  for (const { key, decision, until } of list) if (until > now) decisions.set(key, decision, until - now, now);
-}
+/** Quelqu'un attend-il encore la décision `key` ? Sinon, ses extractions cèdent la place. */
+const wantedBy = (key: string) => () => (inflight.get(key)?.waiters ?? 0) > 0;
 
 function refuse(key: string, error: Refusal): PreviewOutcome {
-  remember(key, { kind: "refused", error }, error === "no_trailer" ? TRAILER_PREVIEW_NO_TRAILER_TTL_MS : TRAILER_PREVIEW_UNAVAILABLE_TTL_MS);
+  rememberRefusal(key, error);
   return { kind: "refused", error };
 }
 
 /** Le départ du lecteur au plus haut — listes et premiers segments — lu d'avance, sans rien attendre. */
-function warm(ytId: string): void {
-  void warmStart(ytId).catch(() => undefined);
+function warm(ref: string): void {
+  void warmStart(ref).catch(() => undefined);
 }
 
 /** Où passe le temps d'une décision (ms), pour le journal : de quoi savoir quoi accélérer. */
 interface Stages {
-  tmdb: number;
+  catalog: number;
   extract: number;
   verify: number;
 }
 
-const newStages = (): Stages => ({ tmdb: 0, extract: 0, verify: 0 });
+const newStages = (): Stages => ({ catalog: 0, extract: 0, verify: 0 });
 
 /**
  * La vidéo se laisse-t-elle lire : extraite, puis son maître et ses premières
  * listes lus ? Le départ au plus haut part EN MÊME TEMPS (même maître, lu une
- * fois) et ne retarde pas la réponse : le lecteur trouvera ses premiers
- * segments en mémoire, ou en route.
+ * fois) et ne retarde pas la réponse.
  */
-async function playable(ytId: string, stages: Stages, options: ExtractionOptions, fresh = false): Promise<ResolvedTrailer | null> {
-  const held = !fresh && holdsSource(ytId);
+async function playable(ref: string, stages: Stages, options: ExtractionOptions, fresh = false): Promise<ResolvedTrailer | null> {
+  const held = !fresh && holdsSource(ref);
   let mark = Date.now();
-  const resolved = await resolveTrailer(ytId, fresh ? { ...options, fresh } : options);
+  const resolved = await resolveTrailer(ref, fresh ? { ...options, fresh } : options);
   stages.extract += Date.now() - mark;
   if (!resolved) return null;
-  warm(ytId);
+  warm(ref);
   mark = Date.now();
-  const readable = await prepareTrailer(ytId, options);
+  const readable = await prepareTrailer(ref, options);
   stages.verify += Date.now() - mark;
   if (readable) return resolved;
-  // Une source GARDÉE (d'avant un redémarrage, ou révoquée par googlevideo) qui
-  // ne se lit plus : une extraction neuve, une seule — dans les garde-fous de la décision.
-  return held ? playable(ytId, stages, options, true) : null;
+  // Une source GARDÉE (d'avant un redémarrage, ou révoquée) qui ne se lit plus : une extraction neuve, une seule.
+  return held ? playable(ref, stages, options, true) : null;
 }
 
 /**
- * Le garde-fou YouTube (`youtubeGuard.ts`) interdit-il d'extraire pour un
- * aperçu ? Suspendu : « aucune lisible », sans rien retenir par titre — le
- * disjoncteur EST la mémoire, et sa fermeture rend les aperçus aussitôt ;
- * budget de l'heure épuisé : « réessayez » dans le délai honnête.
+ * Le garde-fou YouTube interdit-il d'extraire pour un aperçu ? Suspendu :
+ * « aucune lisible », sans rien retenir par titre ; budget de l'heure
+ * épuisé : « réessayez » dans le délai honnête.
  */
 function guardStop(): PreviewOutcome | null {
   const refusal = previewRefusal();
@@ -163,90 +130,91 @@ function guardStop(): PreviewOutcome | null {
   return { kind: "limited", retryAfterS: Math.max(1, Math.ceil(refusal.retryAfterMs / 1000)) };
 }
 
-function found(
-  key: string, ytId: string, resolved: ResolvedTrailer, started: number, how: string, stages: Stages, maxTtlMs = Infinity,
-): PreviewOutcome {
-  remember(key, { kind: "found", ytId }, Math.min(resolved.validUntil - Date.now(), maxTtlMs));
-  const detail = `TMDB ${stages.tmdb}, extraction ${stages.extract}, vérification ${stages.verify}`;
-  console.log(`[trailers] aperçu ${key} : ${ytId} (${resolved.kind}, ${resolved.heights[0] ?? "mp4"}) en ${Date.now() - started} ms (${detail}), ${how}`);
-  return { kind: "found", ytId, resolved };
+function found(key: string, ref: string, resolved: ResolvedTrailer, started: number, how: string, stages: Stages, maxTtlMs = Infinity): PreviewOutcome {
+  remember(key, { kind: "found", ref }, Math.min(resolved.validUntil - Date.now(), maxTtlMs));
+  const detail = `catalogue ${stages.catalog}, extraction ${stages.extract}, vérification ${stages.verify}`;
+  console.log(`[trailers] aperçu ${key} : ${ref} (${resolved.kind}, ${resolved.heights[0] ?? "mp4"}) en ${Date.now() - started} ms (${detail}), ${how}`);
+  return { kind: "found", ref, resolved };
 }
 
 /**
  * Prend la décision. `known` : la vidéo d'une décision encore valable que le
- * relais a oubliée — essayée d'abord, sans relire TMDB. Après chaque échec,
- * le garde-fou : une vérification anti-robot (ou une limite) n'est JAMAIS une
- * candidate morte — on n'essaie pas la suivante, on ne retient rien du titre.
- * Une candidate que le relais tient déjà se sert même pendant un blocage :
- * seule une extraction est refusée (`ytExtract.ts`).
+ * relais a oubliée — essayée d'abord, sans relire le catalogue. Après chaque
+ * échec YouTube, le garde-fou : une vérification anti-robot n'est JAMAIS une
+ * candidate morte — on s'arrête, sans rien retenir du titre.
  */
-async function decide(key: string, title: PreviewTitle, lang: string | undefined, known?: string): Promise<PreviewOutcome> {
+async function decide(key: string, target: PreviewTarget, account: string, dailymotion: boolean, known?: string): Promise<PreviewOutcome> {
   const started = Date.now();
   const stages = newStages();
   const extraction: ExtractionOptions = { ...PREVIEW_EXTRACTION, wanted: wantedBy(key) };
   const again = known ? await playable(known, stages, extraction) : null;
   if (known && again) return found(key, known, again, started, "reprise", stages);
-  const stoppedEarly = known ? guardStop() : null;
+  // La reprise ne se lit plus, et YouTube bride l'adresse : rien à essayer pour un client YouTube seul.
+  const stoppedEarly = known && !dailymotion ? guardStop() : null;
   if (stoppedEarly) return stoppedEarly;
-  const tmdbStarted = Date.now();
-  const tmdb = title.tmdb ? await fetchTitleVideos(title.tmdb.id, title.tmdb.mediaType, lang) : { videos: [], complete: true };
-  stages.tmdb = Date.now() - tmdbStarted;
-  const candidates = previewCandidates(title.jellyfin, tmdb.videos, lang).slice(0, MAX_ATTEMPTS);
+  const catalog = await buildCatalog(target.catalog, account);
+  stages.catalog = Date.now() - started;
+  let candidates: PreviewCandidate[] = previewCandidates(catalog.entries, { dailymotion });
   if (candidates.length === 0) {
-    // TMDB muet : une absence qui n'en est peut-être pas une — retenue comme « aucune lisible ».
-    console.log(`[trailers] aperçu ${key} : aucune bande-annonce${tmdb.complete ? "" : " (TMDB sans réponse)"}`);
-    return refuse(key, tmdb.complete ? "no_trailer" : "unavailable");
+    console.log(`[trailers] aperçu ${key} : aucune bande-annonce${catalog.complete ? "" : " (catalogue incomplet)"}`);
+    // Une source finit encore en fond : la réponse viendra à la demande suivante.
+    return catalog.complete ? refuse(key, "no_trailer") : { kind: "limited", retryAfterS: CATALOG_PENDING_RETRY_S };
   }
+  // YouTube bride l'adresse : seules les vidéos Dailymotion restent à essayer.
+  const stop = guardStop();
+  if (stop) candidates = candidates.filter((candidate) => !candidate.youtube);
+  if (candidates.length === 0 && stop) return stop;
+  candidates = candidates.slice(0, MAX_ATTEMPTS);
   const bestLang = candidates[0].langRank;
-  for (const [index, { ytId, langRank }] of candidates.entries()) {
+  for (const [index, { ref, youtube, langRank }] of candidates.entries()) {
     if (index > 0 && Date.now() - started >= DECISION_BUDGET_MS) break;
-    const resolved = await playable(ytId, stages, extraction);
+    const resolved = await playable(ref, stages, extraction);
     if (!resolved) {
-      const stop = guardStop();
-      if (stop) return stop;
+      const blocked = youtube ? guardStop() : null;
+      if (blocked) return blocked;
       continue;
     }
     // Une meilleure langue a échoué avant : ce repli ne dure que dix minutes.
     const fallback = langRank > bestLang;
     const how = `essai ${index + 1}/${candidates.length}${fallback ? ", langue de repli gardée 10 min" : ""}`;
-    return found(key, ytId, resolved, started, how, stages, fallback ? FALLBACK_LANG_TTL_MS : Infinity);
+    return found(key, ref, resolved, started, how, stages, fallback ? FALLBACK_LANG_TTL_MS : Infinity);
   }
   console.warn(`[trailers] aperçu ${key} : aucune lisible (${candidates.length} candidate(s), ${Date.now() - started} ms)`);
   return refuse(key, "unavailable");
 }
 
 /**
- * L'aperçu du titre pour `account` dans la langue `lang` : la décision
- * gardée, partagée ou prise ici. Une bande-annonce trouvée se sert telle
- * quelle tant que le relais la tient prête ; s'il l'a oubliée, la décision se
- * reprend — comme une nouvelle, limite et plafond compris.
+ * L'aperçu de `target` pour `account` dans la langue `lang` : la décision
+ * gardée, partagée ou prise ici. `dailymotion` : le client sait lire un aperçu
+ * Dailymotion (`dm=1`) — sa décision est à part de celle d'un client d'avant.
  */
-export async function decidePreview(title: PreviewTitle, lang: string | undefined, account: string): Promise<PreviewOutcome> {
-  const key = `${title.key}|${lang ?? "-"}|${RULES_VERSION}`;
-  const known = decisions.get(key);
+export async function decidePreview(
+  target: PreviewTarget, lang: string | undefined, account: string, options: { dailymotion?: boolean } = {},
+): Promise<PreviewOutcome> {
+  const dailymotion = options.dailymotion === true;
+  const key = `${target.key}|${lang ?? "-"}|${RULES_VERSION}${dailymotion ? "|dm" : ""}`;
+  const known = knownDecision(key);
   if (known?.kind === "refused") return known;
-  const ready = known?.kind === "found" ? peekTrailer(known.ytId) : null;
+  const ready = known?.kind === "found" ? peekTrailer(known.ref) : null;
   if (known?.kind === "found" && ready) {
     // Ses premiers segments, s'ils ne sont plus en mémoire, repartent pour ce lecteur-ci.
-    warm(known.ytId);
-    return { kind: "found", ytId: known.ytId, resolved: ready };
+    warm(known.ref);
+    return { kind: "found", ref: known.ref, resolved: ready };
   }
   const pending = inflight.get(key);
   if (pending) return awaitDecision(pending);
-  // Une reprise dont le relais tient encore la SOURCE (listes relâchées, redémarrage) :
-  // ses listes se relisent chez googlevideo, rien n'est demandé à YouTube ni à TMDB.
-  const heldReprise = known?.kind === "found" && holdsSource(known.ytId);
-  // YouTube bride l'adresse, ou le budget de l'heure est épuisé : réponse immédiate, sans TMDB ni
-  // extraction — sauf pour une telle reprise (si elle ne se lit plus, `decide` s'arrête au garde-fou).
-  const stop = heldReprise ? null : guardStop();
+  // Une reprise dont le relais tient encore la SOURCE : ses listes se relisent, rien n'est demandé à YouTube.
+  const heldReprise = known?.kind === "found" && holdsSource(known.ref);
+  // YouTube bride l'adresse, et ce client ne lit que YouTube : réponse immédiate, sans catalogue ni seau.
+  const stop = heldReprise || dailymotion ? null : guardStop();
   if (stop) return stop;
   // Le plafond ne compte que les décisions qu'on attend : une rangée déjà quittée ne bloque pas la carte survolée.
   if (awaitedDecisions() >= MAX_PENDING_DECISIONS) return { kind: "limited", retryAfterS: BUSY_RETRY_S };
   const verdict = limiter.take(account);
   if (!verdict.ok) return { kind: "limited", retryAfterS: verdict.retryAfterS };
-  // Une extraction va sans doute suivre : l'ouvrier yt-dlp se charge pendant que TMDB répond.
-  if (!heldReprise) prewarmExtraction();
-  const task = decide(key, title, lang, known?.kind === "found" ? known.ytId : undefined)
+  // Une extraction va sans doute suivre : l'ouvrier yt-dlp se charge pendant que le catalogue répond.
+  if (!heldReprise && !previewRefusal()) prewarmExtraction();
+  const task = decide(key, target, account, dailymotion, known?.kind === "found" ? known.ref : undefined)
     .catch((err: unknown) => {
       console.warn(`[trailers] aperçu ${key} : décision interrompue (${err instanceof Error ? err.message : String(err)})`);
       return refuse(key, "unavailable");
@@ -284,7 +252,7 @@ async function awaitDecision(pending: Pending): Promise<PreviewOutcome> {
 
 /** Pour les tests : repartir sans décision, sans seau. */
 export function resetPreviewDecisions(): void {
-  decisions.clear();
+  clearDecisions();
   inflight.clear();
   limiter.clear();
 }

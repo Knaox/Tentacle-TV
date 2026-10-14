@@ -8,25 +8,25 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResolvedTrailer } from "../trailerRelay";
-import type { TitleVideos } from "../titleVideos";
+import type { TrailerCatalogResponse } from "../../../trailers/trailerCatalog";
 
-const { resolveTrailer, fetchTitleVideos } = vi.hoisted(() => ({
+const { resolveTrailer, buildCatalog } = vi.hoisted(() => ({
   resolveTrailer: vi.fn<(ytId: string, options?: { wanted?: () => boolean }) => Promise<ResolvedTrailer | null>>(),
-  fetchTitleVideos: vi.fn<(id: number, type: string, lang?: string) => Promise<TitleVideos>>(),
+  buildCatalog: vi.fn<(request: unknown, account: string) => Promise<TrailerCatalogResponse>>(),
 }));
 vi.mock("../trailerRelay", () => ({ resolveTrailer }));
 vi.mock("../trailerPrepare", () => ({
   holdsSource: () => false, peekTrailer: () => null, prepareTrailer: async () => true, warmStart: async () => undefined,
 }));
-vi.mock("../titleVideos", () => ({ fetchTitleVideos }));
+vi.mock("../catalog/catalogBuild", () => ({ buildCatalog }));
 vi.mock("../ytExtract", () => ({ prewarmExtraction: () => undefined }));
 
 import { resetYouTubeGuard } from "../youtubeGuard";
 import { decidePreview, resetPreviewDecisions } from "./previewDecision";
-import type { PreviewTitle } from "./previewTitle";
+import type { PreviewTarget } from "./previewDecision";
 
 const NOW = new Date("2026-10-14T20:00:00Z").getTime();
-const title = (n: number): PreviewTitle => ({ key: `tmdb:movie:${n}`, jellyfin: [], tmdb: { id: n, mediaType: "movie" } });
+const title = (n: number): PreviewTarget => ({ key: `tmdb:movie:${n}`, catalog: { tmdbId: n, mediaType: "movie" } });
 const videoOf = (n: number) => `vid${String(n).padStart(8, "0")}`;
 const hls: ResolvedTrailer = { kind: "hls", validUntil: NOW + 5 * 3600_000, heights: [1080], subtitles: [] };
 
@@ -47,11 +47,15 @@ beforeEach(() => {
   resetPreviewDecisions();
   resetYouTubeGuard();
   resolveTrailer.mockReset();
-  fetchTitleVideos.mockReset();
-  fetchTitleVideos.mockImplementation(async (id) => ({
-    videos: [{ key: videoOf(id), type: "Trailer", site: "YouTube", lang: "fr", url: `https://www.youtube.com/watch?v=${videoOf(id)}` }],
-    complete: true,
-  }));
+  buildCatalog.mockReset();
+  buildCatalog.mockImplementation(async (request) => {
+    const id = Number((request as { tmdbId: number }).tmdbId);
+    return {
+      entries: [{ scope: { kind: "movie" }, playback: { kind: "youtube", ytId: videoOf(id) }, name: "x", version: "localized", type: "trailer", source: "tmdb" }],
+      complete: true,
+      language: "fr",
+    };
+  });
   vi.spyOn(console, "log").mockImplementation(() => undefined);
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
 });
@@ -73,10 +77,10 @@ describe("aperçu › douze secondes au plus", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(wanted.get("vid00000001")?.()).toBe(true);
     finish.get("vid00000001")?.();
-    expect(await again).toMatchObject({ kind: "found", ytId: "vid00000001" });
+    expect(await again).toMatchObject({ kind: "found", ref: "vid00000001" });
     // Une seule extraction, une seule lecture de TMDB.
     expect(resolveTrailer).toHaveBeenCalledTimes(1);
-    expect(fetchTitleVideos).toHaveBeenCalledTimes(1);
+    expect(buildCatalog).toHaveBeenCalledTimes(1);
   });
 
   it("le plafond ne compte que les décisions qu'on attend encore", async () => {

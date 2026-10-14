@@ -70,10 +70,16 @@ export function trailerPreviewSubjectKey(subject: TrailerPreviewSubject): string
 /**
  * Le chemin de la demande pour ce sujet et la langue de l'interface — `null`
  * pour un sujet que le contrat refuse d'avance (identifiant illisible) : rien
- * à demander, aucune requête.
+ * à demander, aucune requête. `dailymotion` : le client lit aussi un aperçu
+ * Dailymotion (AlloCiné).
  */
-export function trailerPreviewSubjectPath(subject: TrailerPreviewSubject, lang: string | undefined): string | null {
+export function trailerPreviewSubjectPath(
+  subject: TrailerPreviewSubject,
+  lang: string | undefined,
+  options: { dailymotion?: boolean } = {},
+): string | null {
+  const extra = options.dailymotion ? { dailymotion: true } : {};
   return subject.kind === "item"
-    ? trailerPreviewPath({ itemId: subject.itemId, lang })
-    : trailerPreviewPath({ tmdbId: subject.tmdbId, mediaType: subject.mediaType, lang });
+    ? trailerPreviewPath({ itemId: subject.itemId, lang, ...extra })
+    : trailerPreviewPath({ tmdbId: subject.tmdbId, mediaType: subject.mediaType, lang, ...extra });
 }

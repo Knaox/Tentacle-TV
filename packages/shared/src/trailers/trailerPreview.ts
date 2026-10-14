@@ -3,10 +3,11 @@
  * `GET /api/trailers/preview`, que le serveur déclare par la capacité
  * `trailers.preview`.
  *
- * Le client fait UN appel ; le serveur choisit la bande-annonce (Jellyfin et
- * TMDB, la langue demandée d'abord — la VF en français —, une vraie
- * bande-annonce avant un teaser, jamais une featurette), la VÉRIFIE
- * (extraction, maître et premières listes lus chez YouTube) et rend un flux
+ * Le client fait UN appel ; le serveur choisit la bande-annonce (dans
+ * l'ordre de son CATALOGUE quand il en a un : la saison de l'épisode, la
+ * langue du serveur d'abord — sinon Jellyfin et TMDB, une vraie bande-annonce
+ * avant un teaser, jamais une featurette), la VÉRIFIE (extraction, maître et
+ * premières listes lus chez la source) et rend un flux
  * RELAYÉ par lui (`/api/trailers/hls/…`, `/api/trailers/file/…`) : aucune
  * URL YouTube, aucune erreur à découvrir en cours de lecture. Tout refus veut
  * dire « rien à montrer » : aucune transition, aucun message.
@@ -26,7 +27,7 @@ export const TRAILER_PREVIEW_ROUTE = "/api/trailers/preview";
 
 export type TrailerPreviewMediaType = "movie" | "tv";
 
-/** Un titre de la bibliothèque : film ou série — un épisode ou une saison valent leur SÉRIE. */
+/** Un titre de la bibliothèque : film, série, saison ou épisode (ceux-ci : leur saison, sinon la série). */
 export interface TrailerPreviewItemTarget {
   itemId: string;
 }
@@ -42,7 +43,18 @@ export interface TrailerPreviewTmdbTarget {
  * les bandes-annonces — la VF d'abord en français. Sans langue, l'ordre des
  * types seul (bande-annonce, puis teaser).
  */
-export type TrailerPreviewRequest = (TrailerPreviewItemTarget | TrailerPreviewTmdbTarget) & { lang?: string };
+export type TrailerPreviewRequest = (TrailerPreviewItemTarget | TrailerPreviewTmdbTarget) & {
+  lang?: string;
+  /**
+   * Le client sait lire un aperçu Dailymotion (AlloCiné) : une réponse sans
+   * `ytId`, avec `source` (`dm=1`). Additif : un client d'avant, qui exige un
+   * `ytId`, n'en reçoit jamais.
+   */
+  dailymotion?: boolean;
+};
+
+/** La vidéo retenue, par sa source (additif : un serveur d'avant ne rend que `ytId`). */
+export type TrailerPreviewSource = { kind: "youtube"; ytId: string } | { kind: "dailymotion"; videoId: string };
 
 export const TRAILER_PREVIEW_HLS_MIME = "application/vnd.apple.mpegurl";
 export const TRAILER_PREVIEW_MP4_MIME = "video/mp4";
@@ -56,8 +68,13 @@ export interface TrailerPreviewQuality {
 
 /** 200 — une bande-annonce vérifiée, prête à lire. */
 export interface TrailerPreview {
-  /** La vidéo YouTube retenue (11 caractères) — une clé, jamais une adresse à ouvrir. */
+  /**
+   * La vidéo YouTube retenue (11 caractères) — une clé, jamais une adresse à
+   * ouvrir ; vide pour une vidéo Dailymotion (`source`).
+   */
   ytId: string;
+  /** La vidéo retenue, par sa source (additif). */
+  source?: TrailerPreviewSource;
   /**
    * Le flux relayé par CE serveur, jeton compris, à poser derrière son
    * adresse : un maître HLS (`mimeType` HLS — hls.js, AVPlayer) qui part de la
@@ -111,6 +128,7 @@ const ITEM_ID_RE = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 const TMDB_ID_RE = /^[1-9]\d{0,9}$/;
 const LANG_RE = /^([a-zA-Z]{2,3})(?:[-_][a-zA-Z0-9]{1,8})*$/;
 const YT_ID_RE = /^[\w-]{11}$/;
+const DM_ID_RE = /^[a-zA-Z0-9]{5,12}$/;
 
 /** L'identifiant Jellyfin d'un titre, sous sa forme courte (32 hexadécimaux, minuscules) ; `null` s'il est illisible. */
 export function previewItemIdOf(value: unknown): string | null {
@@ -148,7 +166,11 @@ export function parseTrailerPreviewQuery(query: Readonly<Record<string, unknown>
   const rawItem = single(query.itemId);
   const rawTmdb = single(query.tmdbId);
   const lang = previewLangOf(single(query.lang));
-  const withLang = <T extends object>(target: T) => (lang ? { ...target, lang } : target);
+  const dailymotion = single(query.dm) === "1";
+  const withLang = <T extends object>(target: T) => {
+    const withLanguage = lang ? { ...target, lang } : target;
+    return dailymotion ? { ...withLanguage, dailymotion } : withLanguage;
+  };
   if (rawItem !== undefined && rawItem !== "") {
     if (rawTmdb !== undefined || query.mediaType !== undefined) return null;
     const itemId = previewItemIdOf(rawItem);
@@ -177,6 +199,7 @@ export function trailerPreviewPath(request: TrailerPreviewRequest): string | nul
     params.push(`tmdbId=${tmdbId}`, `mediaType=${mediaType}`);
   }
   if (lang) params.push(`lang=${encodeURIComponent(lang)}`);
+  if (request.dailymotion) params.push("dm=1");
   return `${TRAILER_PREVIEW_ROUTE}?${params.join("&")}`;
 }
 
@@ -184,7 +207,9 @@ export function trailerPreviewPath(request: TrailerPreviewRequest): string | nul
 export function isTrailerPreview(value: unknown): value is TrailerPreview {
   if (!value || typeof value !== "object") return false;
   const preview = value as Partial<TrailerPreview>;
-  return typeof preview.ytId === "string" && YT_ID_RE.test(preview.ytId)
+  const source = preview.source as Partial<{ kind: string; videoId: unknown }> | undefined;
+  const dailymotion = preview.ytId === "" && source?.kind === "dailymotion" && typeof source.videoId === "string" && DM_ID_RE.test(source.videoId);
+  return typeof preview.ytId === "string" && (YT_ID_RE.test(preview.ytId) || dailymotion)
     && typeof preview.path === "string" && preview.path.startsWith("/api/trailers/")
     && (preview.mimeType === TRAILER_PREVIEW_HLS_MIME || preview.mimeType === TRAILER_PREVIEW_MP4_MIME)
     && typeof preview.expiresAt === "number" && Number.isFinite(preview.expiresAt)

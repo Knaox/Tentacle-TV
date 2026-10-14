@@ -39,16 +39,16 @@ afterEach(() => {
 });
 
 describe("fetchTrailerPreviewStream", () => {
-  it("une bande-annonce vérifiée : trouvée, demandée par le chemin du contrat", async () => {
+  it("une bande-annonce vérifiée : trouvée, demandée par le chemin du contrat (Dailymotion lisible : dm=1)", async () => {
     const fetchMock = respond(PREVIEW);
     await expect(fetchTrailerPreviewStream(ITEM, "fr")).resolves.toEqual({ status: "found", preview: PREVIEW });
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/trailers/preview?itemId=90d50b74d48412cfc9db9a256b1d0c64&lang=fr");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/trailers/preview?itemId=90d50b74d48412cfc9db9a256b1d0c64&lang=fr&dm=1");
   });
 
   it("un titre TMDB se demande par son identité", async () => {
     const fetchMock = respond(PREVIEW);
     await fetchTrailerPreviewStream({ kind: "tmdb", tmdbId: 603, mediaType: "movie" }, "en");
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/trailers/preview?tmdbId=603&mediaType=movie&lang=en");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/trailers/preview?tmdbId=603&mediaType=movie&lang=en&dm=1");
   });
 
   it("chaque refus du contrat est une réponse : rien à montrer", async () => {

@@ -132,7 +132,8 @@ export async function fetchTrailerPreviewStream(
   signal?: AbortSignal,
   timeoutMs: number = TRAILER_PREVIEW_TIMING.fetchTimeoutMs,
 ): Promise<TrailerPreviewStreamResult> {
-  const path = trailerPreviewSubjectPath(subject, lang);
+  // Le moteur du web lit tout flux relayé : un aperçu AlloCiné (Dailymotion) compris.
+  const path = trailerPreviewSubjectPath(subject, lang, { dailymotion: true });
   if (!path) return { status: "missing", reason: "invalid_request" };
 
   const controller = new AbortController();

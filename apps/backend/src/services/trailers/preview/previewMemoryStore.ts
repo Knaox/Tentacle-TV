@@ -26,7 +26,8 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { DATA_ROOT } from "../../dataDir";
 import { heldSources, onRelaySourcesChange, restoreSources, type HeldSource } from "../trailerRelay";
-import { onPreviewDecisionsChange, restoreDecisions, storedDecisions, type StoredDecision } from "./previewDecision";
+import { onPreviewDecisionsChange, restoreDecisions, storedDecisions, type StoredDecision } from "./previewDecisionMemory";
+import { parseVideoRef } from "../videoRef";
 
 export const PREVIEW_MEMORY_FILE = resolve(DATA_ROOT, "trailers", "preview-memory.json");
 const VERSION = 1;
@@ -57,7 +58,7 @@ function validDecision(value: unknown): value is StoredDecision {
   const stored = value as Partial<StoredDecision> | null;
   const decision = stored?.decision as Record<string, unknown> | undefined;
   if (!stored || typeof stored.key !== "string" || typeof stored.until !== "number" || !decision) return false;
-  return (decision.kind === "found" && YT_ID.test(String(decision.ytId)))
+  return (decision.kind === "found" && parseVideoRef(decision.ref) !== null)
     || (decision.kind === "refused" && (decision.error === "no_trailer" || decision.error === "unavailable"));
 }
 

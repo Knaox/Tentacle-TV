@@ -26,7 +26,7 @@ const SOURCE: HeldSource = {
   validUntil: NOW + 5 * 3600_000,
   extractedAt: NOW - 60_000,
 };
-const FOUND = { key: "jf:9308c1b5ece4cbf0b59e051a6f680d6b|fr", decision: { kind: "found" as const, ytId: "Way9Dexny3w" }, until: NOW + 5 * 3600_000 };
+const FOUND = { key: "jf:9308c1b5ece4cbf0b59e051a6f680d6b|fr", decision: { kind: "found" as const, ref: "Way9Dexny3w" }, until: NOW + 5 * 3600_000 };
 const NONE = { key: "jf:7742d8ba75b19323faf1a2be0af2a1b8|fr", decision: { kind: "refused" as const, error: "no_trailer" as const }, until: NOW + 3600_000 };
 
 let file = "";
@@ -92,7 +92,7 @@ describe("mémoire des aperçus", () => {
     flushPreviewMemory(file);
     const snapshot = JSON.parse(readFileSync(file, "utf8"));
     snapshot.sources = [{ ...SOURCE, validUntil: NOW - 1 }, { ...SOURCE, ytId: "pas un id" }, { ...SOURCE, ytId: "abcdefghijk" }];
-    snapshot.decisions = [{ ...FOUND, until: NOW - 1 }, { key: "x", decision: { kind: "found", ytId: "?" }, until: NOW + 1_000 }, NONE];
+    snapshot.decisions = [{ ...FOUND, until: NOW - 1 }, { key: "x", decision: { kind: "found", ref: "?" }, until: NOW + 1_000 }, NONE];
     writeFileSync(file, JSON.stringify(snapshot));
     restart();
     expect(heldSources().map((s) => s.ytId)).toEqual(["abcdefghijk"]);

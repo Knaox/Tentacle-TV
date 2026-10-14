@@ -2,7 +2,7 @@
  * `GET /api/trailers/preview` de bout en bout, sans réseau : un compte
  * connecté (une session de profil aussi), une demande lisible, un titre que
  * ce compte voit ; la réponse est un flux RELAYÉ que le jeton ouvre, lisible
- * depuis l'origine du bureau (`tentacle://app`). Jellyfin, TMDB, yt-dlp et
+ * depuis l'origine du bureau (`tentacle://app`). Le catalogue, yt-dlp et
  * googlevideo sont factices ; l'auth est réduite à « un jeton ».
  */
 
@@ -12,15 +12,23 @@ import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExtractionResult } from "../services/trailers/ytExtract";
-import type { TitleVideos } from "../services/trailers/titleVideos";
+import type { TrailerCatalogResponse } from "../trailers/trailerCatalog";
 
-const { extractTrailerSource, fetchTitleVideos, jellyfinAdminFetch } = vi.hoisted(() => ({
+const { extractTrailerSource, buildCatalog, tmdbCatalog, jellyfinAdminFetch } = vi.hoisted(() => ({
   extractTrailerSource: vi.fn<(ytId: string, options?: unknown) => Promise<ExtractionResult>>(),
-  fetchTitleVideos: vi.fn<(id: number, type: string, lang?: string) => Promise<TitleVideos>>(),
+  buildCatalog: vi.fn<(request: Record<string, unknown>, account: string) => Promise<TrailerCatalogResponse>>(),
+  tmdbCatalog: vi.fn<(tmdbId: number) => TrailerCatalogResponse>(),
   jellyfinAdminFetch: vi.fn(),
 }));
 vi.mock("../services/trailers/ytExtract", () => ({ extractTrailerSource, prewarmExtraction: () => undefined }));
-vi.mock("../services/trailers/titleVideos", () => ({ fetchTitleVideos }));
+vi.mock("../services/trailers/catalog/catalogBuild", () => ({ buildCatalog }));
+// Ce que chaque compte voit : le film pour tous sauf « intrus » ; une collection n'a rien ; Jellyfin muet : « error ».
+vi.mock("../services/trailers/catalog/catalogTitle", () => ({
+  resolveCatalogTitle: async (itemId: string, userId: string) => {
+    if (userId.startsWith("muet")) return { kind: "error" };
+    return itemId === "0123456789abcdef0123456789abcdef" && !userId.startsWith("intrus") ? { kind: "title", title: {} } : { kind: "none" };
+  },
+}));
 vi.mock("../services/jellyfinAdminFetch", () => ({ jellyfinAdminFetch }));
 vi.mock("../services/configStore", () => ({ getPublicUrl: () => null, getConfigValue: () => undefined }));
 // Le périmètre réel des sessions de profil, pour un INVITÉ de la Famille.
@@ -43,7 +51,6 @@ import { resetTrailerRelay } from "../services/trailers/trailerRelay";
 import { resetHeldSegments } from "../services/trailers/trailerSegments";
 import { countPreviewExtraction, resetYouTubeGuard, tripYouTubeBreaker } from "../services/trailers/youtubeGuard";
 import { resetPreviewDecisions } from "../services/trailers/preview/previewDecision";
-import { resetPreviewTitles } from "../services/trailers/preview/previewTitle";
 import { trailerMediaRoutes } from "./trailerMedia";
 import { trailerPreviewRoutes } from "./trailerPreview";
 
@@ -70,14 +77,17 @@ function googlevideo() {
   });
 }
 
-function jellyfin(path: string) {
-  const [, id, user] = /^\/Items\/(\w+)\?userId=(\w+)/.exec(path) ?? [];
-  // « intrus » ne voit pas le film : Jellyfin rend 404 pour lui.
-  if (id === MOVIE && !user.startsWith("intrus")) {
-    return { ok: true, data: { Id: MOVIE, Type: "Movie", ProviderIds: { Tmdb: "438631" }, RemoteTrailers: [{ Url: `https://www.youtube.com/watch?v=${YT}` }] } };
-  }
-  if (id === BOXSET) return { ok: true, data: { Id: BOXSET, Type: "BoxSet" } };
-  return { ok: false, failure: "invalid", status: 404 };
+const youtube = (ytId: string): TrailerCatalogResponse => ({
+  entries: [{ scope: { kind: "movie" }, playback: { kind: "youtube", ytId }, name: "Bande-annonce VF", version: "localized", type: "trailer", source: "tmdb" }],
+  complete: true,
+  language: "fr",
+});
+const EMPTY: TrailerCatalogResponse = { entries: [], complete: true, language: "fr" };
+
+/** Le catalogue factice : le film pour qui le voit (« intrus » non), rien pour une collection ; TMDB selon `tmdbCatalog`. */
+async function catalog(request: Record<string, unknown>, account: string): Promise<TrailerCatalogResponse> {
+  if ("itemId" in request) return request.itemId === MOVIE && !account.startsWith("intrus") ? youtube(YT) : EMPTY;
+  return tmdbCatalog(Number(request.tmdbId));
 }
 
 async function server(corsOrigins = "") {
@@ -96,14 +106,14 @@ beforeEach(() => {
   resetHeldSegments();
   resetYouTubeGuard();
   resetPreviewDecisions();
-  resetPreviewTitles();
   vi.unstubAllGlobals();
   extractTrailerSource.mockReset().mockResolvedValue({
     ok: true, clients: ["visionos"], subtitles: [],
     source: { kind: "hls", masterUrl: MASTER, headers: {}, expiresAt: FUTURE * 1000, heights: [1080, 720] },
   });
-  fetchTitleVideos.mockReset().mockResolvedValue({ videos: [], complete: true });
-  jellyfinAdminFetch.mockReset().mockImplementation(async (path: string) => jellyfin(path));
+  tmdbCatalog.mockReset().mockReturnValue(EMPTY);
+  buildCatalog.mockReset().mockImplementation(catalog);
+  jellyfinAdminFetch.mockReset();
   vi.stubGlobal("fetch", googlevideo());
   vi.spyOn(console, "log").mockImplementation(() => undefined);
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
@@ -127,6 +137,7 @@ describe("GET /api/trailers/preview", () => {
     const body = res.json();
     expect(body).toEqual({
       ytId: YT,
+      source: { kind: "youtube", ytId: YT },
       // Un jeton d'APERÇU (`.p.`) : la vidéo oubliée par le relais ne se ré-extrait pas hors de cette route.
       path: expect.stringMatching(new RegExp(`^/api/trailers/hls/${YT}/master\\.m3u8\\?t=[0-9a-z]+\\.p\\.[\\w-]+$`)),
       mimeType: "application/vnd.apple.mpegurl",
@@ -166,17 +177,37 @@ describe("GET /api/trailers/preview", () => {
     const app = await server();
     expect((await get(app, `itemId=${MOVIE}`, "intrus")).json()).toEqual({ error: "no_trailer" });
     expect((await get(app, `itemId=${BOXSET}`)).json()).toEqual({ error: "no_trailer" });
-    jellyfinAdminFetch.mockResolvedValueOnce({ ok: false, failure: "unreachable" });
-    const res = await get(app, `itemId=${MOVIE}`, "bob");
-    expect([res.statusCode, res.json()]).toEqual([404, { error: "unavailable" }]);
+    expect((await get(app, `itemId=${MOVIE}`, "muet")).json()).toEqual({ error: "unavailable" });
+    // Ce qu'un compte ne voit pas ne décide rien pour les autres.
+    expect(buildCatalog).not.toHaveBeenCalled();
     expect(extractTrailerSource).not.toHaveBeenCalled();
+  });
+
+  it("le catalogue, au nom du compte, pour CE titre ; encore vide (une source finit en fond) : 429, dans 3 s", async () => {
+    buildCatalog.mockResolvedValueOnce({ entries: [], complete: false, language: "fr" });
+    const app = await server();
+    const res = await get(app, `itemId=${MOVIE}`, "bob");
+    expect([res.statusCode, res.json()]).toEqual([429, { error: "rate_limited", retryAfterS: 3 }]);
+    expect(buildCatalog).toHaveBeenCalledWith({ itemId: MOVIE }, "bob".padEnd(32, "0"));
+  });
+
+  it("une vidéo AlloCiné (Dailymotion) n'est servie qu'au client qui la demande (dm=1)", async () => {
+    tmdbCatalog.mockReturnValue({
+      entries: [{ scope: { kind: "movie" }, playback: { kind: "dailymotion", videoId: "x8abcde" }, name: "VF", version: "localized", type: "trailer", source: "allocine" }],
+      complete: true,
+      language: "fr",
+    });
+    const app = await server();
+    // Un client d'avant (sans dm=1) : rien de ce qu'il ne sait pas lire.
+    expect((await get(app, "tmdbId=603&mediaType=movie&lang=fr")).json()).toEqual({ error: "no_trailer" });
+    expect(buildCatalog).toHaveBeenCalledTimes(1);
   });
 
   it("un titre TMDB hors bibliothèque ; aucune bande-annonce : 404 no_trailer ; aucune lisible : 404 unavailable", async () => {
     const app = await server();
     expect((await get(app, "tmdbId=693134&mediaType=movie&lang=fr")).json()).toEqual({ error: "no_trailer" });
-    expect(fetchTitleVideos).toHaveBeenCalledWith(693134, "movie", "fr");
-    fetchTitleVideos.mockResolvedValue({ videos: [{ key: YT, type: "Trailer", url: `https://www.youtube.com/watch?v=${YT}` }], complete: true });
+    expect(buildCatalog).toHaveBeenCalledWith({ tmdbId: 693134, mediaType: "movie", lang: "fr" }, "alice".padEnd(32, "0"));
+    tmdbCatalog.mockReturnValue(youtube(YT));
     expect((await get(app, "tmdbId=157336&mediaType=movie&lang=fr")).json()).toMatchObject({ ytId: YT });
     extractTrailerSource.mockResolvedValue({ ok: false, permanent: true, timedOut: false, reason: "Private video" });
     resetTrailerRelay();

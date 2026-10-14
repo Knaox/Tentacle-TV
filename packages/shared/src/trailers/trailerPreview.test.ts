@@ -35,6 +35,7 @@ describe("aperçu de bande-annonce › la lecture de la requête (serveur)", () 
       { itemId: ITEM, lang: "fr" },
       { tmdbId: 693134, mediaType: "movie" as const, lang: "fr" },
       { tmdbId: 1396, mediaType: "tv" as const },
+      { itemId: ITEM, lang: "fr", dailymotion: true },
     ]) {
       const path = trailerPreviewPath(request)!;
       const query = Object.fromEntries(new URLSearchParams(path.split("?")[1]));
@@ -73,5 +74,12 @@ describe("aperçu de bande-annonce › la réponse", () => {
     expect(isTrailerPreview({ error: "no_trailer" })).toBe(false);
     expect(isTrailerPreview({ error: "rate_limited", retryAfterS: 5 })).toBe(false);
     expect(isTrailerPreview(null)).toBe(false);
+  });
+
+  it("un aperçu Dailymotion : sans ytId, avec sa source — jamais un ytId vide sans elle", () => {
+    const dailymotion = { ...preview, ytId: "", source: { kind: "dailymotion", videoId: "x8abcde" }, path: "/api/trailers/hls/dm~x8abcde/master.m3u8?t=x.y" };
+    expect(isTrailerPreview(dailymotion)).toBe(true);
+    expect(isTrailerPreview({ ...dailymotion, source: undefined })).toBe(false);
+    expect(isTrailerPreview({ ...dailymotion, source: { kind: "dailymotion", videoId: "../x" } })).toBe(false);
   });
 });
