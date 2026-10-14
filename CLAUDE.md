@@ -437,10 +437,16 @@ ne s'y retouche à la main (`brand/avatars/README.md`, règles de dessin compris
 - Catalogue (ordre, collection, couleur d'attente, tempérament au survol) :
   `packages/shared/src/avatars/avatarCatalog.ts` ; noms et histoires : espace i18n `avatars`.
   Les identifiants nomment des fichiers et des clés : ils ne se renomment jamais.
-- **Invitation unique** (bureau, compte SANS photo, session personnelle, en ligne, une fois par
-  compte et par appareil — `tentacle_avatar_invite_seen`) : la galerie elle-même, APRÈS que la
-  porte des nouveautés a tranché (`useWhatsNewGate` → `decided`), jamais par-dessus un autre
-  recouvrement de démarrage ; ouverte, elle suspend la pop-up de mise à jour.
+- **Les invités de la Famille** (serveur 1.29.0, capacité `family.guestPhotos`) : le SERVEUR pose
+  leur photo (`setGuestPhoto`, mêmes droits que leur PIN), depuis Réglages › Famille, ou pendant
+  la session de profil de l'invité sur le bureau, par la session PERSONNELLE de l'appareil
+  (`PickerProfileDto.photoEditable`). La galerie vise une cible (`useAvatarTarget` : compte ou
+  invité). Un membre change la sienne depuis ses appareils, jamais depuis un profil.
+- **Invitation unique** (règle partagée `shared` › `avatarInvite`) : un SUJET sans photo — le
+  compte en session personnelle, ou l'invité habillable de la session de profil —, en ligne, une
+  fois par sujet et par appareil (`tentacle_avatar_invite_seen`) : la galerie elle-même, APRÈS
+  que la porte des nouveautés a tranché (`useWhatsNewGate` → `decided`), jamais par-dessus un
+  autre recouvrement de démarrage ; ouverte, elle suspend la pop-up de mise à jour.
 
 ## Cartes — un seul survol, trois variantes
 
