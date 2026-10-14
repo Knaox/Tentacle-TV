@@ -140,3 +140,9 @@ Deux réglages à ne pas défaire :
 valeur, et la mascotte deviendrait une tache. Le mono creuse ses détails au
 masque et détache chaque tentacule d'un liseré — sans quoi les cinq bras
 fusionnent en une masse informe.
+
+## Les avatars : `avatars/`
+
+La galerie des photos de profil — une troupe de personnages dessinés ici et
+imprimés en risographie par un script — a sa propre source et son propre
+générateur : `avatars/README.md`, `python3 brand/avatars/generate.py`.
