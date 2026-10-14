@@ -164,6 +164,34 @@ describe("useTrailerPreviewStream", () => {
     expect(probe.result).toEqual({ status: "found", preview: PREVIEW });
   });
 
+  it("l'abandon d'une carte ne coupe pas la requête qu'une autre carte du même titre attend", async () => {
+    let aborted = false;
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => {
+        aborted = true;
+        reject(new DOMException("aborted", "AbortError"));
+      });
+    })));
+    serverDeclares(["trailers.preview"]);
+    let other: TrailerPreviewStreamState | null = null;
+    function Other() {
+      other = useTrailerPreviewStream(SUBJECT, "fr", { enabled: true });
+      return null;
+    }
+    root ??= createRoot(container as never);
+    await act(async () => {
+      root!.render(createElement(QueryClientProvider, { client: qc }, createElement(Rig, { enabled: true }), createElement(Other)));
+      await settle();
+    });
+    expect(other).not.toBeNull();
+    await act(async () => {
+      probe.cancel();
+      await settle();
+    });
+    expect(aborted).toBe(false);
+    expect(probe.loading).toBe(true);
+  });
+
   it("l'abandon coupe la requête en vol", async () => {
     let aborted = false;
     vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {

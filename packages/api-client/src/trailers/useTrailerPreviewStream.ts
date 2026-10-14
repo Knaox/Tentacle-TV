@@ -70,6 +70,12 @@ export function useTrailerPreviewStream(
     refetchOnReconnect: false,
   });
   const cancel = useCallback(() => {
+    // La requête est PARTAGÉE par les cartes du même titre : une autre carte
+    // qui l'attend encore (un survol à la souris pendant qu'un focus clavier
+    // tient la première, qu'elle évince) la garde — l'abandonner la laisserait
+    // sans réponse, en attente, jusqu'à la fin de son survol.
+    const query = queryClient.getQueryCache().find({ queryKey, exact: true });
+    if (query && query.getObserversCount() > 1) return;
     void queryClient.cancelQueries({ queryKey, exact: true });
   }, [queryClient, queryKey]);
   const { refetch } = query;
