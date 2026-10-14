@@ -121,3 +121,22 @@ export function tvRecoNotice<T extends TvRecoItemLike>(
   if (page.state === "cold") return "cold";
   return null;
 }
+
+/**
+ * Les cartes d'une étagère dans l'ORDRE SERVI : celle de la bibliothèque à la
+ * place de son titre, celle d'un titre à demander à la sienne. Un titre sans
+ * carte (item pas encore lu, état de la demande pas encore su) est sauté : il
+ * paraît à sa place dès qu'il en a une.
+ */
+export function tvRecoServedCards<T extends TvRecoItemLike, C>(
+  items: readonly T[],
+  libraryCardOf: (jellyfinItemId: string) => C | undefined,
+  absentCardOf: (item: T) => C | undefined,
+): C[] {
+  const cards: C[] = [];
+  for (const item of items) {
+    const card = item.jellyfinItemId !== null ? libraryCardOf(item.jellyfinItemId) : absentCardOf(item);
+    if (card !== undefined) cards.push(card);
+  }
+  return cards;
+}

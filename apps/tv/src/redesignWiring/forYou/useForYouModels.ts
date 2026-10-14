@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { reasonToText, recoRowTitle, useRecoPageVisit, useRecoSettings, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { tvRecoHero, tvRecoNotice, tvRecoShelves, type TvRecoNotice } from "@tentacle-tv/tv-core";
+import { tvRecoHero, tvRecoNotice, tvRecoServedCards, tvRecoShelves, type TvRecoNotice } from "@tentacle-tv/tv-core";
 import type { ForYouShelfModel } from "../../redesign/screens/forYou/ForYouView";
 import { useCardLists } from "../cards/cardModels";
 import { yearOf } from "../home/homeSubtitles";
@@ -91,16 +91,12 @@ export function useForYouModels(gate: VigieGate | null): ForYouModels {
       });
       // L'ordre servi : les cartes de la bibliothèque et les titres à demander, mêlés à leur place.
       const libraryById = new Map(libraryCards.map((card) => [card.id, card]));
-      const cards = shelf.items.flatMap((reco) => {
-        if (reco.jellyfinItemId) {
-          const card = libraryById.get(reco.jellyfinItemId);
-          return card ? [card] : [];
-        }
+      const cards = tvRecoServedCards(shelf.items, (id) => libraryById.get(id), (reco) => {
         const card = absent?.cardOf(reco, reasonOf(reco));
         const wanted = card ? absent?.titleOf(card.id) : undefined;
-        if (!card || !wanted) return [];
+        if (!card || !wanted) return undefined;
         shelfTargets.set(card.id, { reco, absent: wanted });
-        return [card];
+        return card;
       });
       return { key: shelf.key, title: t(title.key, title.params), cards };
     });

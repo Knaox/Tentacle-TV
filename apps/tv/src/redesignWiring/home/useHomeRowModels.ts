@@ -16,7 +16,7 @@ import {
   type RecoRowItem,
 } from "@tentacle-tv/api-client";
 import { missingSeriesRatingIds, type MediaItem } from "@tentacle-tv/shared";
-import { cardPressOf, holdPanelOf, type CardPress, type HoldPanel, type HomeRowKind as RowKind } from "@tentacle-tv/tv-core";
+import { cardPressOf, holdPanelOf, tvRecoServedCards, type CardPress, type HoldPanel, type HomeRowKind as RowKind } from "@tentacle-tv/tv-core";
 import type { HomeRowModel } from "../../redesign/screens/home/HomeView";
 import { useTVHomeRows } from "../../components/home/useTVHomeRows";
 import { useCardLists } from "../cards/cardModels";
@@ -166,16 +166,12 @@ export function useHomeRowModels(gate: VigieGate | null): HomeRowsModel {
         );
         // L'ordre servi : les cartes de la bibliothèque et les titres à demander, mêlés à leur place.
         const libraryById = new Map(libraryCards.map((card) => [card.id, card]));
-        const cards = source.recos.flatMap((reco) => {
-          if (reco.jellyfinItemId) {
-            const card = libraryById.get(reco.jellyfinItemId);
-            return card ? [card] : [];
-          }
+        const cards = tvRecoServedCards(source.recos, (id) => libraryById.get(id), (reco) => {
           const card = absent?.cardOf(reco);
           const wanted = card ? absent?.titleOf(card.id) : undefined;
-          if (!card || !wanted) return [];
+          if (!card || !wanted) return undefined;
           rowTargets.set(card.id, { item: undefined, absent: wanted, reco, ...absentGestures });
-          return [card];
+          return card;
         });
         rows.push({ key, title: t(`reco:${title.key}`, title.params), variant: "poster", cards });
         targets.set(key, rowTargets);
