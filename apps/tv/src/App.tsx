@@ -45,6 +45,7 @@ import { TVSessionMessageHost } from "./components/TVSessionMessageHost";
 import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
 import { QualityBadgeHost } from "./redesignWiring/cards/QualityBadgeHost";
+import { TrailerPreviewHost } from "./redesignWiring/trailerPreview/TrailerPreviewHost";
 import { ThemeProvider, useTheme } from "./theme";
 
 // Instance unique, définie dans son module pour que le magasin d'épinglage du
@@ -202,6 +203,8 @@ function AppContent() {
       <TVColdStartLanding storage={storage} />
       {/* La qualité des titres, lue au focus des cartes de la refonte : une source pour toute l'app. */}
       <QualityBadgeHost>
+      {/* L'aperçu de bande-annonce au focus des cartes de rangée : une session à la fois pour toute l'app. */}
+      <TrailerPreviewHost>
         {/* Le rail vit dans chaque écran refondu (`NavRail`, prop `nav`). */}
         <NavigationContainer
           ref={navigationRef}
@@ -218,6 +221,7 @@ function AppContent() {
           <PairingExpiredBanner />
           <TVSessionMessageHost />
         </NavigationContainer>
+      </TrailerPreviewHost>
       </QualityBadgeHost>
     </>
   );

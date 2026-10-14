@@ -12,7 +12,7 @@ import {
   userScoreFromRatings,
   type UserRatingEntry,
 } from "@tentacle-tv/api-client";
-import { cardRatingFor, missingSeriesRatingIds, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
+import { cardRatingFor, missingSeriesRatingIds, resolveCardMarkers, trailerPreviewSubjectOfItem, type MediaItem } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { landscapeOf, paletteOfItem, POSTER_FALLBACK_LANDSCAPE_WIDTH, posterUriOf, progressOf } from "./cardArtwork";
 import { cardQualityOf } from "./cardQuality";
@@ -110,6 +110,8 @@ export function useCardModelFactory(): CardModelFactory {
         badge: options.badge?.(item),
         palette: paletteOfItem(item),
         quality: cardQualityOf(item),
+        // L'aperçu au focus (rangées seulement : la carte décide si elle grandit).
+        trailer: trailerPreviewSubjectOfItem(item) ?? undefined,
       };
     },
     [client, context],
