@@ -9,3 +9,4 @@ export * from "./extraEntries";
 export * from "./trailerTarget";
 export * from "./catalogExtras";
 export * from "./ficheExtras";
+export * from "./extrasSeasonNames";

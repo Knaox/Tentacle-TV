@@ -2,13 +2,12 @@ import { memo, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
-import { useItemsExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
+import { useFicheExtras, useItemsExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
 import {
-  buildExtraEntries, catalogTiles, sortTrailersByLang, type CatalogRow, type MediaItem, type RelayedTrailerEntry, type RichTrailer,
+  buildExtraEntries, catalogTiles, scopeName, sortTrailersByLang, withSeasonNames, type CatalogRow, type MediaItem, type RelayedTrailerEntry, type RichTrailer,
 } from "@tentacle-tv/shared";
-import { useFicheExtras } from "../../../components/detail/useFicheExtras";
+import { useWebTrailerPlatform } from "../../../components/detail/trailerPlatform";
 import { CatalogTrailerPlayer } from "../../../components/detail/CatalogTrailerPlayer";
-import { scopeName, withSeasonNames } from "../../../components/detail/extrasSeasonNames";
 
 const W = 168;
 const H = 95;
@@ -21,7 +20,8 @@ const H = 95;
  * extra. Tuiles, ordre et libellés : le modèle partagé.
  */
 export const ExtrasSection = memo(function ExtrasSection({ item, seriesItem }: { item: MediaItem; seriesItem?: MediaItem }) {
-  const { owners, remote, catalog, title, seasonNames } = useFicheExtras(item, seriesItem);
+  const { i18n } = useTranslation();
+  const { owners, remote, catalog, title, seasonNames } = useFicheExtras(item, seriesItem, i18n.language, useWebTrailerPlatform());
   return <ExtrasRow owners={owners} remoteTrailers={remote} catalog={catalog} title={title} seasonNames={seasonNames} />;
 });
 

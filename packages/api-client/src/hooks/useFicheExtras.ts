@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { useItemTrailer, useRemoteTrailers, useSeasons, type ExtrasOwner } from "@tentacle-tv/api-client";
 import { ficheExtrasPlan, type CatalogRow, type MediaItem, type RichTrailer } from "@tentacle-tv/shared";
-import { useWebTrailerPlatform } from "./trailerPlatform";
+import type { ExtrasOwner } from "./useItemExtras";
+import { useItemTrailer, type ItemTrailerOptions } from "./useItemTrailer";
+import { useRemoteTrailers } from "./useRemoteTrailers";
+import { useSeasons } from "./useSeasons";
 
 export interface FicheExtras {
   /** Les titres dont les extras LOCAUX entrent dans le carrousel. */
@@ -23,17 +24,22 @@ export interface FicheExtras {
 /**
  * Le carrousel « Extras » d'une fiche — UN seul (`ficheExtrasPlan`, shared) :
  * film, série (avec toutes ses saisons), épisode (sa saison, sinon le reste).
- * Web, bureau et miroir.
+ * Web, bureau, miroir et mobile : chaque plateforme passe sa langue et ce
+ * qu'elle sait lire (`ItemTrailerOptions`) ; le catalogue ne nourrit le
+ * carrousel que là où le lecteur complet le lit (Dailymotion compris).
  */
-export function useFicheExtras(item: MediaItem, seriesItem?: MediaItem): FicheExtras {
-  const { i18n } = useTranslation();
-  const platform = useWebTrailerPlatform();
-  const { entries, language } = useItemTrailer(item, i18n.language, platform);
+export function useFicheExtras(
+  item: MediaItem,
+  seriesItem: MediaItem | undefined,
+  lang: string | undefined,
+  platform: ItemTrailerOptions,
+): FicheExtras {
+  const { entries, language } = useItemTrailer(item, lang, platform);
   const catalog = platform.playable.includes("dailymotion") && entries.length > 0;
   const series = item.Type === "Series" ? item : item.Type === "Episode" ? seriesItem : undefined;
   const { data: seasons } = useSeasons(series?.Id);
   // Sans catalogue : les vidéos d'avant du titre porteur (la série d'un épisode).
-  const legacy = useRemoteTrailers(catalog ? undefined : series ?? item, i18n.language);
+  const legacy = useRemoteTrailers(catalog ? undefined : series ?? item, lang);
   return useMemo(() => {
     const plan = ficheExtrasPlan({
       type: item.Type, seasonNumber: item.ParentIndexNumber, seasons: seasons ?? [], entries, language, catalog,

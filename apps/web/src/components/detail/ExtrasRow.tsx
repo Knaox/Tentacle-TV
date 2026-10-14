@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemsExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
-import { buildExtraEntries, catalogTiles, type CatalogRow, type ExtraEntry, type RelayedTrailerEntry } from "@tentacle-tv/shared";
+import {
+  buildExtraEntries, catalogTiles, scopeName, withSeasonNames, type CatalogRow, type ExtraEntry, type RelayedTrailerEntry,
+} from "@tentacle-tv/shared";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
 import { RowHeader } from "../rows/RowHeader";
 import { TrailerViewer } from "./TrailerViewer";
 import { CatalogTrailerPlayer } from "./CatalogTrailerPlayer";
-import { scopeName, withSeasonNames } from "./extrasSeasonNames";
 import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
 import { sortTrailersByLang, type RichTrailer } from "./trailerLang";
