@@ -1,7 +1,16 @@
 import { useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCardToggles, useJellyfinClient, useMediaItem, useRecoLive, useSeriesWatchState, useTentacleConfig } from "@tentacle-tv/api-client";
+import {
+  useCardToggles,
+  useJellyfinClient,
+  useMediaItem,
+  useRecoCardHold,
+  useRecoLive,
+  useSendRecoFeedback,
+  useSeriesWatchState,
+  useTentacleConfig,
+} from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { cardPressOf, forYouEntryKey, holdPanelOf } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
@@ -15,6 +24,8 @@ import { useRecoFilter } from "../reco/useRecoFilter";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useAmbientPalette } from "../screen/useAmbientPalette";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
+import type { AbsentTitle } from "../vigie/absentTitle";
+import { useTitleRequests } from "../vigie/useTitleRequests";
 import { useForYouModels } from "./useForYouModels";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Recommendations">;
@@ -28,6 +39,12 @@ type Props = NativeStackScreenProps<RootStackParamList, "Recommendations">;
  *
  * OK ouvre la fiche, l'appui long la feuille d'actions (variante reco) — le
  * titre jugé quitte « Pour vous » à sa fermeture (`useTVCardActions`).
+ *
+ * Garde Vigie ouverte, un titre HORS bibliothèque se demande à OK (un film
+ * d'un geste, une série par la feuille de ses saisons — `useTitleRequests`),
+ * et l'appui maintenu ouvre son panneau, avec « Ne plus me proposer ». Sa
+ * carte est tenue tant qu'une de ses feuilles est ouverte : demandé, il
+ * quitte « Pour vous » à leur fermeture, jamais dessous.
  */
 export function ForYouRedesign({ navigation }: Props) {
   const { t } = useTranslation();
@@ -35,7 +52,10 @@ export function ForYouRedesign({ navigation }: Props) {
   const client = useJellyfinClient();
   useRecoLive({ token: storage.getItem("tentacle_token") });
 
-  const models = useForYouModels();
+  const requests = useTitleRequests();
+  const models = useForYouModels(requests?.gate ?? null);
+  useRecoCardHold(requests?.heldKey ?? null);
+  const { mutate: sendFeedback } = useSendRecoFeedback();
   const { filter, removeFilter } = useRecoFilter();
   const heroId = models.heroReco?.jellyfinItemId ?? undefined;
   const { data: heroData, isError: heroFailed } = useMediaItem(heroId);
@@ -119,22 +139,34 @@ export function ForYouRedesign({ navigation }: Props) {
   }, []);
 
   const { targetOf } = models;
+  const openRequest = requests?.open;
+  const holdRequest = requests?.hold;
   const onPressCard = useCallback(
     (shelfKey: string, card: CardModel) => {
       const target = targetOf(shelfKey, card.id);
-      // OK sur une carte de « Pour vous » : la fiche de son item (tv-core `cards/cardPress`).
-      if (target && cardPressOf({ surface: "forYou" }) === "detail") detail(target.item.Id);
+      if (!target) return;
+      // OK : la fiche de son item, ou la demande d'un titre absent (tv-core `cards/cardPress`).
+      const press = cardPressOf({ surface: "forYou", absent: target.absent !== undefined });
+      if (press === "detail" && target.item) detail(target.item.Id);
+      else if (press === "request" && target.absent) openRequest?.(target.absent);
     },
-    [targetOf, detail],
+    [targetOf, detail, openRequest],
+  );
+  const dismiss = useCallback(
+    (title: AbsentTitle) => sendFeedback({ itemKey: title.key, action: "dismissed" }),
+    [sendFeedback],
   );
   const { openReco } = cardActions;
   const onLongPressCard = useCallback(
     (shelfKey: string, card: CardModel) => {
       const target = targetOf(shelfKey, card.id);
-      // Toute carte de « Pour vous » ouvre le panneau d'une reco (tv-core `cards/cardHold`).
-      if (target && holdPanelOf({ surface: "forYou" })?.kind === "reco") openReco(target.reco);
+      if (!target) return;
+      // Le panneau d'une reco, ou celui d'un titre absent qui garde le refus (tv-core `cards/cardHold`).
+      const panel = holdPanelOf({ surface: "forYou", absent: target.absent !== undefined });
+      if (panel?.kind === "reco") openReco(target.reco);
+      else if (panel?.kind === "absent" && target.absent) holdRequest?.(target.absent, panel.dismiss ? { onDismiss: dismiss } : undefined);
     },
-    [targetOf, openReco],
+    [targetOf, openReco, holdRequest, dismiss],
   );
 
   // La lumière quand aucune carte n'impose la sienne (`ambient`, que le fond suit seul).
@@ -160,6 +192,7 @@ export function ForYouRedesign({ navigation }: Props) {
         onFocusCard={onFocusCard}
       />
       {cardActions.sheet}
+      {requests?.overlay}
     </RedesignScreen>
   );
 }

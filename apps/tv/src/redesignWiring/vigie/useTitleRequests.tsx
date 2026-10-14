@@ -10,7 +10,7 @@ import {
   useRequestTitle,
   useRequestTitleSeasons,
 } from "@tentacle-tv/api-client";
-import { parseTitleKey, withMyTitle, type MyTitle, type TitleRequestOutcome, type TitleState } from "@tentacle-tv/shared";
+import { parseTitleKey, withMyTitle, type MyTitle, type TitleKey, type TitleRequestOutcome, type TitleState } from "@tentacle-tv/shared";
 import { MODAL_GAP_MS, TV_TITLE_ORIGIN, absentPressAfterState, absentPressFirst } from "@tentacle-tv/tv-core";
 import { showNotice } from "../overlays/transientNotice";
 import { AbsentSheetRedesign } from "./AbsentSheetRedesign";
@@ -38,7 +38,10 @@ import { useVigieGate, type VigieGate } from "./useVigieGate";
  *   l'extension sait les dire (`titles.seasons`) ;
  * - rien à demander → l'état que dit l'extension et la même invite, sinon
  *   « pas disponible ».
- * L'appui maintenu ouvre le grand panneau du titre (`AbsentSheetRedesign`).
+ * L'appui maintenu ouvre le grand panneau du titre (`AbsentSheetRedesign`) ;
+ * pour une recommandation (`onDismiss`), il garde « Ne plus me proposer ».
+ * `heldKey` dit le titre dont une feuille est ouverte (panneau ou saisons) :
+ * l'écran des recommandations tient sa carte tant qu'elle l'est.
  * Les feuilles se rendent DANS l'écran (`overlay`) : le focus revient à la
  * carte quand elles se ferment.
  *
@@ -58,12 +61,19 @@ export interface SeasonsTarget {
 export interface TitleRequests {
   gate: VigieGate;
   open: (title: AbsentTitle) => void;
-  hold: (title: AbsentTitle) => void;
+  hold: (title: AbsentTitle, options?: HoldOptions) => void;
   /** La feuille des saisons, sans détour — une série de la bibliothèque à compléter. */
   openSeasons: (title: AbsentTitle, target?: SeasonsTarget) => void;
   /** Ces saisons-là, demandées d'un geste, sans feuille (le « + » d'un onglet grisé). */
   requestSeasons: (title: AbsentTitle, seasons: number[]) => void;
   overlay: ReactElement | null;
+  /** Le titre dont une feuille est ouverte — le panneau ou ses saisons. */
+  heldKey: TitleKey | null;
+}
+
+export interface HoldOptions {
+  /** Une recommandation : « Ne plus me proposer », dans le panneau. */
+  onDismiss?: (title: AbsentTitle) => void;
 }
 
 const fetcher = (url: string) => tentacleApiFetch(url);
@@ -79,7 +89,7 @@ export function useTitleRequests(): TitleRequests | null {
   const { mutateAsync: requestTitleSeasons } = useRequestTitleSeasons(provider, lang, gate?.origin ?? null);
   const arrivals = useArrivals();
   const [seasonsOf, setSeasonsOf] = useState<{ title: AbsentTitle; target?: SeasonsTarget } | null>(null);
-  const [held, setHeld] = useState<AbsentTitle | null>(null);
+  const [held, setHeld] = useState<{ title: AbsentTitle; options?: HoldOptions } | null>(null);
   const busy = useRef(new Set<string>());
 
   // Les gestes lisent l'état du moment sans changer d'identité.
@@ -164,7 +174,7 @@ export function useTitleRequests(): TitleRequests | null {
   const openSeasons = useCallback((title: AbsentTitle, target?: SeasonsTarget) => {
     if (latest.current.gate?.provider.seasonsPath) setSeasonsOf({ title, target });
   }, []);
-  const hold = useCallback((title: AbsentTitle) => setHeld(title), []);
+  const hold = useCallback((title: AbsentTitle, options?: HoldOptions) => setHeld({ title, options }), []);
   const closeSeasons = useCallback(() => setSeasonsOf(null), []);
   const closeHeld = useCallback(() => setHeld(null), []);
 
@@ -188,10 +198,13 @@ export function useTitleRequests(): TitleRequests | null {
           onClose={closeSeasons}
         />
       ) : null}
-      {held ? <AbsentSheetRedesign gate={gate} title={held} onRequest={requestFromSheet} onClose={closeHeld} /> : null}
+      {held ? (
+        <AbsentSheetRedesign gate={gate} title={held.title} onRequest={requestFromSheet} onDismiss={held.options?.onDismiss} onClose={closeHeld} />
+      ) : null}
     </>
   ) : null;
 
   // Les gestes sont stables : les rangées mémoïsées ne se redessinent pas pour eux.
-  return gate ? { gate, open: openTitle, hold, openSeasons, requestSeasons: requestSeasonsNow, overlay } : null;
+  const heldKey = held?.title.key ?? seasonsOf?.title.key ?? null;
+  return gate ? { gate, open: openTitle, hold, openSeasons, requestSeasons: requestSeasonsNow, overlay, heldKey } : null;
 }
