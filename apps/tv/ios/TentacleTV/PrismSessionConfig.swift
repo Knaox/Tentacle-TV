@@ -18,6 +18,11 @@ struct PrismSessionConfig: Sendable {
     /// démarre dans la bonne langue au lieu de commuter après coup.
     let preferredAudioLanguage: String?
     let segmentCacheBytes: Int?
+    /// Avance du producteur sur la dernière requête d'AVPlayer, en secondes de
+    /// contenu : le budget de préchargement (octets) divisé par le débit de la
+    /// source, calculé côté JS (tv-core `prismPrefetch`). Absente : les 30 s
+    /// de PrismCore.
+    let producerLeadSeconds: Double?
 
     init?(_ dict: NSDictionary) {
         guard let raw = dict["url"] as? String, let url = URL(string: raw) else { return nil }
@@ -36,6 +41,11 @@ struct PrismSessionConfig: Sendable {
             self.segmentCacheBytes = bytes.intValue
         } else {
             self.segmentCacheBytes = nil
+        }
+        if let lead = dict["producerLeadSeconds"] as? NSNumber, lead.doubleValue.isFinite, lead.doubleValue > 0 {
+            self.producerLeadSeconds = lead.doubleValue
+        } else {
+            self.producerLeadSeconds = nil
         }
     }
 }

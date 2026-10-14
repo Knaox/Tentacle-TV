@@ -1253,10 +1253,17 @@ final class HLSRemuxer: @unchecked Sendable {
             // Indexes with an outstanding demand serve are off limits — the
             // fetch that re-anchored production here is still waiting for its
             // file, and production has usually run several segments past it
-            // by the time this records (issue #43). In the sequential shape
-            // everything from the playhead on is off limits too.
+            // by the time this records (issue #43). Everything from the
+            // playhead on is off limits too: in the sequential shape because
+            // an evicted EVENT segment is gone for good, and — Tentacle TV
+            // patch — in planned mode as well, since the host may widen the
+            // producer lead (`setProducerLead`) to a byte budget sized on the
+            // source's AVERAGE bitrate: a denser stretch can overrun the
+            // retention budget, and "farthest from the producer" would then
+            // evict exactly what AVPlayer fetches next. Over budget with
+            // nothing evictable, retention simply waits for the playhead.
             var protected = demand?.demandProtectedIndexes ?? []
-            if plannedPlan == nil, let playhead = demand?.playheadIndex, playhead <= index {
+            if let playhead = demand?.playheadIndex, playhead <= index {
                 for ahead in playhead...index { protected.insert(ahead) }
             }
             let victims = retention!.record(
