@@ -40,6 +40,26 @@ export function previewNeedsDetail(card: MediaItem | null, needBackdrop: boolean
   return previewLogoOf(card) === null || (needBackdrop && previewBackdropOf(card) === null);
 }
 
+/** La largeur demandée pour l'image du titre : la mini-carte la plus large (560 px) à DPR 1,4. */
+export const PREVIEW_STILL_WIDTH = 780;
+
+/**
+ * L'URL EXACTE de l'image que la mini-carte montre pendant son agrandissement,
+ * sans lire la fiche : l'image que la carte donne, sinon le fond qu'elle
+ * annonce ; `null` si elle n'annonce rien (la fiche le dira peut-être). Pure :
+ * un préchargement peut la demander avant que la mini-carte n'existe.
+ */
+export function previewStillUrlOf(
+  getImageUrl: (id: string, type: "Backdrop", options: { width: number; quality: number; tag: string }) => string,
+  card: MediaItem | null,
+  backdropOverride: string | null,
+  detail: MediaItem | null = null,
+): string | null {
+  if (backdropOverride) return backdropOverride;
+  const backdrop = (card && previewBackdropOf(card)) ?? (detail && previewBackdropOf(detail)) ?? null;
+  return backdrop ? getImageUrl(backdrop.id, "Backdrop", { width: PREVIEW_STILL_WIDTH, quality: 80, tag: backdrop.tag }) : null;
+}
+
 /** Logo et fond : ceux que la carte annonce d'abord, sinon ceux de sa fiche. */
 export function previewArtOf(
   card: MediaItem | null,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { previewArtOf, previewBackdropOf, previewNeedsDetail } from "./previewArt";
+import { previewArtOf, previewBackdropOf, previewNeedsDetail, previewStillUrlOf } from "./previewArt";
 
 /** L'image qui grandit avec la mini-carte : le fond du titre, jamais demandé à l'aveugle. */
 const item = (over: Partial<MediaItem>) => ({ Id: "x", Name: "x", Type: "Movie", ...over }) as MediaItem;
@@ -46,5 +46,20 @@ describe("previewNeedsDetail / previewArtOf — la fiche quand la carte se tait"
     expect(previewArtOf(row, detail)).toEqual({ logo: { id: "c", tag: "lg2" }, backdrop: { id: "c", tag: "bd" } });
     expect(previewArtOf(withLogo, detail).logo).toEqual({ id: "c", tag: "lg" });
     expect(previewArtOf(row, null)).toEqual({ logo: null, backdrop: { id: "c", tag: "bd" } });
+  });
+});
+
+describe("previewStillUrlOf — l'image du titre, sans fiche", () => {
+  const url = (id: string, type: string, options: { width: number; tag: string }) => `/img/${id}/${type}?w=${options.width}&tag=${options.tag}`;
+
+  it("l'image que la carte donne d'abord, puis le fond qu'elle annonce, puis celui de la fiche", () => {
+    expect(previewStillUrlOf(url, item({ Id: "m", BackdropImageTags: ["t"] }), "https://x/still.jpg")).toBe("https://x/still.jpg");
+    expect(previewStillUrlOf(url, item({ Id: "m", BackdropImageTags: ["t"] }), null)).toBe("/img/m/Backdrop?w=780&tag=t");
+    expect(previewStillUrlOf(url, item({ Id: "m" }), null, item({ Id: "m", BackdropImageTags: ["d"] }))).toBe("/img/m/Backdrop?w=780&tag=d");
+  });
+
+  it("rien quand rien n'est annoncé : jamais une image demandée à l'aveugle", () => {
+    expect(previewStillUrlOf(url, item({ Id: "m" }), null)).toBeNull();
+    expect(previewStillUrlOf(url, null, null)).toBeNull();
   });
 });

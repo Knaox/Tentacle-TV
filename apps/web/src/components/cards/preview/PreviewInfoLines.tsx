@@ -63,7 +63,7 @@ function FactsLine({ facts }: { facts: PreviewFacts }) {
   if (facts.seasons !== null) parts.push(<span key="seasons">{t("common:seasonsCount", { count: facts.seasons })}</span>);
   if (facts.quality.length > 0) {
     parts.push(
-      <span key="quality" className="flex items-center gap-[0.55em]">
+      <span key="quality">
         {facts.quality.map((badge) => (
           <span key={badge.kind} className="card-preview-quality" data-accent={badge.accent} aria-label={badge.label} title={badge.label}>
             {badge.short}

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useJellyfinClient, useMediaItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { previewArtOf, previewNeedsDetail } from "./previewArt";
+import { previewArtOf, previewNeedsDetail, previewStillUrlOf } from "./previewArt";
 import { previewInfoOf, type PreviewInfo } from "./previewInfo";
 
 /** L'année d'une ligne donnée par la carte (« 2016 ») — ce que disent les cartes sans item. */
@@ -38,13 +38,12 @@ export function usePreviewArt(
   const wanted = id !== null && previewNeedsDetail(artItem, backdropOverride === null);
   const { data } = useMediaItem(wanted ? id : undefined, { enabled: wanted });
   const detail = wanted ? (data ?? null) : null;
-  const { logo, backdrop } = previewArtOf(artItem, detail);
+  const { logo } = previewArtOf(artItem, detail);
   const fallbackYear = yearOf(meta);
   const info = useMemo(() => previewInfoOf(artItem, detail, fallbackYear), [artItem, detail, fallbackYear]);
   return {
     info,
     logoUrl: logo ? client.getImageUrl(logo.id, "Logo", { height: 120, quality: 90, tag: logo.tag }) : null,
-    backdropUrl: backdropOverride
-      ?? (backdrop ? client.getImageUrl(backdrop.id, "Backdrop", { width: 780, quality: 80, tag: backdrop.tag }) : null),
+    backdropUrl: previewStillUrlOf((id, type, options) => client.getImageUrl(id, type, options), artItem, backdropOverride, detail),
   };
 }

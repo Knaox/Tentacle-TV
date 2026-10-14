@@ -32,7 +32,7 @@
   --pv-btn-gap: clamp(6px, 2.1cqi, 10px);
   --pv-icon: clamp(14px, 4.1cqi, 19px);
   --pv-star: clamp(14px, 4.2cqi, 20px);
-  --pv-logo-h: clamp(20px, 6.4cqi, 34px);
+  --pv-logo-h: clamp(22px, 7cqi, 38px);
   --pv-title: clamp(14px, 4.2cqi, 19px);
   --pv-text: clamp(11.5px, 3.15cqi, 14px);
   row-gap: clamp(3px, 1.2cqi, 6px);
@@ -136,15 +136,14 @@
   color: #fff;
 }
 
-/* ── Les infos : faits, épisode, genres, progression ── */
+/* ── Les infos : faits, épisode, genres, progression ──
+ * En ligne (pas en flex) : une ligne trop longue finit sur des points de
+ * suspension, jamais sur un mot coupé net. */
 .card-preview-facts,
 .card-preview-genres {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 0 0.5em;
   overflow: hidden;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .card-preview-genres {
@@ -154,9 +153,11 @@
 
 /* Le séparateur de la maison : un point de marque (celui de la bannière). */
 .card-preview-dot {
-  flex: none;
+  display: inline-block;
+  vertical-align: middle;
   width: 3.5px;
   height: 3.5px;
+  margin: 0 0.55em;
   border-radius: 9999px;
   background: rgba(var(--brand-rgb), 0.9);
 }
@@ -167,7 +168,8 @@
 }
 
 .card-preview-rating {
-  flex: none;
+  display: inline-block;
+  vertical-align: 0.06em;
   padding: 0.05em 0.42em;
   border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 4px;
@@ -181,11 +183,14 @@
 /* La qualité : sobre, monochrome — seul le 4K porte la marque (préférence
  * ferme : ni drapeau, ni pastille colorée). */
 .card-preview-quality {
-  flex: none;
   font-size: 0.8em;
   font-weight: 650;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.72);
+}
+
+.card-preview-quality + .card-preview-quality {
+  margin-inline-start: 0.6em;
 }
 
 .card-preview-quality[data-accent="true"] {
