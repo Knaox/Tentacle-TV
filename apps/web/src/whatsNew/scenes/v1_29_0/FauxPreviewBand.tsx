@@ -7,15 +7,16 @@ import type { SceneTrailer } from "./previewSceneMedia";
 import { ACTION, PREVIEW_W } from "./previewSceneGeometry";
 
 const noop = () => {};
-const ROUND = "absolute flex items-center justify-center rounded-full border-[1.5px] text-white";
-/** Le point de marque qui sépare les faits et les genres (`card-preview-dot`). */
-const Dot = () => <span aria-hidden className="mx-[3px] inline-block h-[3px] w-[3px] rounded-full bg-[var(--brand-light)] align-middle" />;
+/** Les ronds PLEINS de gris translucide (blanc 13 %), pictogramme blanc — aucun liseré. */
+const ROUND = "absolute flex items-center justify-center rounded-full text-white/95";
+/** Le point NEUTRE qui sépare les faits et les genres (`card-preview-dot`, blanc 32 %). */
+const Dot = () => <span aria-hidden className="mx-[3px] inline-block h-[3px] w-[3px] rounded-full bg-white/[0.32] align-middle" />;
 
 /**
  * Le CONTENU du bandeau de la mini-carte, en faux (`PreviewPanel`,
  * `previewPanel.css`, `previewActions.css`, réduits) : les actions — « Lire »
- * plein au dégradé de la marque et un cran plus grand, puis Ma liste, favori,
- * vu en ronds cerclés, « Plus d'infos » isolé au bout —, le titre (logo, sinon
+ * rond BLANC à triangle noir et un cran plus grand, puis Ma liste, favori, vu
+ * en ronds pleins gris translucides, « Plus d'infos » isolé au bout —, le titre (logo, sinon
  * nom) et ses étoiles, puis « année • classification • ★ note • durée » — la
  * note globale que la mini-carte recouvre sur l'affiche, étoile de marque — et
  * les genres.
@@ -23,11 +24,11 @@ const Dot = () => <span aria-hidden className="mx-[3px] inline-block h-[3px] w-[
 export function FauxPreviewBand({ trailer, listed }: { trailer: SceneTrailer; listed: boolean }) {
   const { year, rating, community, runtime } = trailer.facts;
   const facts: ReactNode[] = [];
-  if (year) facts.push(<span key="year" className="font-semibold text-white">{year}</span>);
-  if (rating) facts.push(<span key="rating" className="rounded-[3px] border border-white/45 px-[3px] text-[7.5px] font-semibold leading-[10px] text-white">{rating}</span>);
+  if (year) facts.push(<span key="year" className="font-semibold">{year}</span>);
+  if (rating) facts.push(<span key="rating" className="rounded-[3px] border border-white/[0.32] px-[3px] text-[7.5px] font-semibold leading-[10px] text-white/80">{rating}</span>);
   if (community !== null) {
     facts.push(
-      <span key="community" className="font-semibold text-white">
+      <span key="community" className="font-semibold">
         <StarGlyph className="mr-[2px] inline-block h-[8px] w-[8px] align-[-0.08em] text-[var(--brand-accent)]" />
         {formatCommunityRating(community)}
       </span>,
@@ -41,12 +42,12 @@ export function FauxPreviewBand({ trailer, listed }: { trailer: SceneTrailer; li
         {trailer.logoUrl ? (
           <img src={trailer.logoUrl} alt="" draggable={false} className="block max-h-[15px] w-auto max-w-[58%] object-contain object-left" />
         ) : (
-          <p className="max-w-[58%] truncate text-[10px] font-semibold text-white">{trailer.title}</p>
+          <p className="max-w-[58%] truncate text-[10px] font-semibold text-white/[0.92]">{trailer.title}</p>
         )}
         <StarRating value={null} onRate={noop} onClear={noop} size="xs" tone="onMedia" />
       </div>
       {facts.length > 0 && (
-        <p className="absolute truncate text-[8.5px] font-medium leading-[12px] text-white/85" style={{ left: ACTION.x, right: ACTION.x, top: 50 }}>
+        <p className="absolute truncate text-[8.5px] font-medium leading-[12px] text-white/[0.92]" style={{ left: ACTION.x, right: ACTION.x, top: 50 }}>
           {facts.map((part, index) => (
             <Fragment key={index}>
               {index > 0 && <Dot />}
@@ -56,7 +57,7 @@ export function FauxPreviewBand({ trailer, listed }: { trailer: SceneTrailer; li
         </p>
       )}
       {trailer.genres.length > 0 && (
-        <p className="absolute truncate text-[8.5px] font-medium leading-[12px] text-white/65" style={{ left: ACTION.x, right: ACTION.x, top: 62 }}>
+        <p className="absolute truncate text-[8.5px] font-medium leading-[12px] text-white/60" style={{ left: ACTION.x, right: ACTION.x, top: 62 }}>
           {trailer.genres.map((genre, index) => (
             <Fragment key={genre}>
               {index > 0 && <Dot />}
@@ -76,17 +77,17 @@ function Actions({ listed }: { listed: boolean }) {
     width: ACTION.size,
     height: ACTION.size,
   });
-  const quiet = `${ROUND} border-white/40 bg-white/5`;
+  const quiet = `${ROUND} bg-white/[0.13]`;
   return (
     <>
       <span
-        className="absolute flex items-center justify-center rounded-full text-white shadow-[0_5px_12px_-5px_rgba(var(--brand-rgb),0.7)]"
-        style={{ left: ACTION.x, top: ACTION.y, width: ACTION.primary, height: ACTION.primary, backgroundImage: "var(--cta-brand-gradient)" }}
+        className="absolute flex items-center justify-center rounded-full bg-white text-[#0b0b0d]"
+        style={{ left: ACTION.x, top: ACTION.y, width: ACTION.primary, height: ACTION.primary }}
       >
         <PlayGlyph className="h-[10px] w-[10px] translate-x-[6%]" />
       </span>
-      {/* Une bascule active : le glyphe plein, le cercle un peu plus fermé. */}
-      <span className={listed ? `${ROUND} border-white/80 bg-white/15` : quiet} style={at(1)}>
+      {/* Une bascule active : le glyphe plein, le rond un peu plus clair. */}
+      <span className={listed ? `${ROUND} bg-white/[0.22]` : quiet} style={at(1)}>
         <BookmarkGlyph className="h-[9px] w-[9px]" filled={listed} />
       </span>
       <span className={quiet} style={at(2)}>
