@@ -39,7 +39,7 @@ export function DebugButton({ onOpen }: { onOpen: () => void }) {
       }}
       style={{ left: position.x, top: position.y }}
       className="fixed z-[9999] cursor-move rounded-md bg-black/80 px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider text-emerald-400 ring-1 ring-emerald-400/40 transition hover:bg-black"
-      title="Diagnostic du lecteur (F9) — développement uniquement. Glisser pour déplacer."
+      title="Diagnostic (F9). Glisser pour déplacer."
     >
       DEBUG
     </button>

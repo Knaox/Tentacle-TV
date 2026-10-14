@@ -1,17 +1,18 @@
 import { useEffect } from "react";
 import type { ServerCapability } from "@tentacle-tv/shared";
-import { updateDebugEnabled } from "../lib/updateSimulation";
+import { isWebDebugEnabled } from "../lib/webDebug";
 import { WHATS_NEW_RELEASES, findRelease } from "./releases";
 import { forAudience, forServer, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
 import { getUserInfo } from "../components/userMenu/menuItems";
 
 /**
  * `?whatsnewgate=1` : dans la préviz navigateur, où `isDesktopApp()` est faux,
- * la porte et le bouton « Revoir » se comportent comme sur desktop. Builds de
- * développement seulement — ailleurs la garde tue le code.
+ * la porte et le bouton « Revoir » se comportent comme sur desktop. Derrière la
+ * porte du débogage du web seulement (`lib/webDebug.ts` : développement, build
+ * instrumenté, ou `TENTACLE_WEB_DEBUG` posé sur le serveur) — jamais sinon.
  */
 export function whatsNewGateForced(): boolean {
-  if (!updateDebugEnabled()) return false;
+  if (!isWebDebugEnabled()) return false;
   try {
     return new URLSearchParams(window.location.search).get("whatsnewgate") === "1";
   } catch {
@@ -42,12 +43,13 @@ export function selectionForRelease(version: string, capabilities?: ReadonlySet<
 /**
  * `window.__tentacleShowWhatsNew(version?)` — la touche N du panneau F9, et la
  * console. Sans argument : TOUT le registre, sans plafond, pour revoir chaque
- * scène. La fermeture n'écrit jamais le drapeau. Même garde que la pop-up de
- * démonstration : elle couvre Vite ET la coquille Electron de développement.
+ * scène. La fermeture n'écrit jamais le drapeau. Derrière la porte du débogage
+ * du web : Vite, la coquille Electron de développement, et un serveur dont
+ * l'administrateur a posé `TENTACLE_WEB_DEBUG`.
  */
 export function useWhatsNewDevHook(show: (selection: WhatsNewSelection) => void): void {
   useEffect(() => {
-    if (!updateDebugEnabled()) return;
+    if (!isWebDebugEnabled()) return;
     const w = window as unknown as { __tentacleShowWhatsNew?: (version?: string) => void };
     w.__tentacleShowWhatsNew = (version) => {
       const selection = version

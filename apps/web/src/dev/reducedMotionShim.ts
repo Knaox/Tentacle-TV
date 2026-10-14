@@ -1,4 +1,4 @@
-import { updateDebugEnabled } from "../lib/updateSimulation";
+import { isWebDebugEnabled } from "../lib/webDebug";
 
 function wantsReducedMotion(): boolean {
   try {
@@ -15,10 +15,10 @@ function wantsReducedMotion(): boolean {
  * Sert à prouver le mode réduit dans la préviz, que l'outil de capture ne
  * sait pas émuler. Ne couvre que la voie JavaScript : les
  * `@media (prefers-reduced-motion)` de la feuille lisent le vrai réglage.
- * Builds de développement seulement — la garde tue le code ailleurs.
+ * Seulement derrière la porte du débogage du web (`lib/webDebug.ts`).
  */
 export function installReducedMotionShim(): void {
-  if (!updateDebugEnabled() || !wantsReducedMotion() || typeof window.matchMedia !== "function") return;
+  if (!isWebDebugEnabled() || !wantsReducedMotion() || typeof window.matchMedia !== "function") return;
 
   const original = window.matchMedia.bind(window);
   window.matchMedia = (query: string): MediaQueryList => {

@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, type ComponentType } from "react";
 import * as React from "react";
 import * as ReactJSXRuntime from "react/jsx-runtime";
 import { createRoot } from "react-dom/client";
@@ -41,14 +41,12 @@ import { createAppHistory } from "./lib/detailChain";
 import { retryUnlessRateLimited } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
-import { installNetworkProbe } from "./dev/networkProbe";
-import { installReducedMotionShim } from "./dev/reducedMotionShim";
 import { installQueryPersistence } from "./lib/queryPersistence";
 import { cleanupObsoleteStorage } from "./lib/storageCleanup";
 import { bootRoutePreload } from "./lib/bootRoutePreload";
 import { installStaleBuildReload } from "./lib/staleBuildReload";
 import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
-import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
+import { isWebDebugEnabled } from "./lib/webDebug";
 import { HostTitleBar } from "./desktop/HostTitleBar";
 import { AppErrorBoundary } from "./components/problems/AppErrorBoundary";
 import { DatabaseMigrationGate } from "./databaseMigration/DatabaseMigrationGate";
@@ -60,15 +58,21 @@ import "./index.css";
   React, ReactJSXRuntime, ReactRouterDOM, TanStackQuery, ReactI18next, PluginsAPI, i18n,
 };
 
-// Journal des requêtes sortantes, pour le panneau de diagnostic. Posé ICI, tout
-// en haut : il doit envelopper `fetch` AVANT le premier appel, sans quoi les
-// requêtes du démarrage — celles qui décident de ce qu'on voit — lui échappent.
-// `__PLAYER_DEBUG__` est faux dans tout build livré : le module disparaît alors
-// du bundle, et `window.fetch` n'est jamais touché.
-if (import.meta.env.DEV || __PLAYER_DEBUG__) installNetworkProbe();
-// `?reducedmotion=1` : prouver le mode mouvement réduit dans la préviz (voir
-// dev/reducedMotionShim.ts). Même garde, même sort dans les builds livrés.
-if (import.meta.env.DEV || __PLAYER_DEBUG__) installReducedMotionShim();
+// Le débogage du web (panneau DEBUG, journal réseau, `?reducedmotion=1`) :
+// UN morceau chargé à la demande, derrière une seule porte — développement,
+// build instrumenté, ou `TENTACLE_WEB_DEBUG` posé par l'administrateur du
+// serveur (lib/webDebug.ts). Lancé ICI, tout en haut, pour que le journal
+// enveloppe `fetch` au plus tôt ; le rendu l'attend. Porte fermée : rien n'est
+// téléchargé, `window.fetch` n'est jamais touché.
+let WebDebugPanel: ComponentType | null = null;
+const webDebugReady: Promise<void> = isWebDebugEnabled()
+  ? import("./dev/webDebugBoot")
+      .then((module) => {
+        module.bootWebDebug();
+        WebDebugPanel = module.WebDebugPanel;
+      })
+      .catch(() => {})
+  : Promise.resolve();
 
 // Initialize i18n before rendering (local cache first for instant display)
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
@@ -243,19 +247,16 @@ installAnimationAudit();
 // `__cls()` en console — développement uniquement : les décalages de mise en page.
 if (import.meta.env.DEV) installLayoutShiftProbe();
 
-// Diagnostic du lecteur — DÉVELOPPEMENT UNIQUEMENT. Monté à la racine et non
-// dans le lecteur : le panneau est en position fixe et lit l'état de mpv par
-// le singleton de l'adaptateur, il n'a besoin d'aucun contexte.
-// `__PLAYER_DEBUG__` est faux dans tout build livré — la branche et son import
-// disparaissent alors du bundle.
 // L'historique de `BrowserRouter`, avec la chaîne de fiches : une fiche
 // ouverte depuis une fiche remplace l'entrée au lieu de s'empiler (cf.
 // `lib/detailChain.ts`). Un seul par document, comme celui qu'il remplace.
 const appHistory = createAppHistory();
 
-const playerDebug = (import.meta.env.DEV || __PLAYER_DEBUG__) ? <PlayerDebugPanel /> : null;
-
 function renderApp() {
+  // Diagnostic (porte du débogage du web) : monté à la racine et non dans le
+  // lecteur — le panneau est en position fixe et lit l'état de mpv par le
+  // singleton de l'adaptateur, il n'a besoin d'aucun contexte.
+  const playerDebug = WebDebugPanel ? <WebDebugPanel /> : null;
   createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {/* Le cadre de fenêtre, là où la page doit le dessiner elle-même. Monté à la
@@ -289,4 +290,5 @@ function renderApp() {
 
 // Route de démarrage : son chunk d'abord (au plus 300 ms), pour rendre la
 // page d'un coup depuis le cache hydraté — sans spinner à l'arrivée.
-void bootRoutePreload(window.location.pathname).then(renderApp);
+// Le débogage, s'il est permis, est posé avant ce premier rendu.
+void Promise.all([bootRoutePreload(window.location.pathname), webDebugReady]).then(renderApp);
