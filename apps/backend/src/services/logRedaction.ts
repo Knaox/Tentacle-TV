@@ -2,9 +2,11 @@
  * Ce que les journaux ne doivent jamais contenir. Les segments HLS réécrits
  * portent le jeton de session dans l'URL (`?api_key=…`), et le sérialiseur
  * journalise chaque URL : sans ce masque, chaque lecture écrivait des jetons
- * valides dans les journaux du serveur.
+ * valides dans les journaux du serveur. Même chose pour le relais des
+ * bandes-annonces (`?t=…`, `relayToken.ts`) : chaque liste et chaque segment
+ * d'un aperçu au survol portent son jeton.
  */
-const SENSITIVE_QUERY = /([?&](?:api_key|apikey|x-emby-token|token|access_token|accesstoken|pw|password|secret)=)[^&#]*/gi;
+const SENSITIVE_QUERY = /([?&](?:api_key|apikey|x-emby-token|token|access_token|accesstoken|pw|password|secret|t)=)[^&#]*/gi;
 
 export function redactUrl(url: string): string {
   return url.replace(SENSITIVE_QUERY, "$1[redacted]");

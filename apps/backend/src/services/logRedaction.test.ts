@@ -12,6 +12,14 @@ describe("journaux sans secret", () => {
     expect(redactUrl("/api/setup/status")).toBe("/api/setup/status");
   });
 
+  it("masque le jeton du relais des bandes-annonces (`?t=`), lecture comme aperçu — et rien d'autre", () => {
+    expect(redactUrl("/api/trailers/hls/Way9Dexny3w/s/95/0.ts?t=tmwgp9.p.SIGNATURE")).toBe(
+      "/api/trailers/hls/Way9Dexny3w/s/95/0.ts?t=[redacted]",
+    );
+    expect(redactUrl("/api/trailers/file/Way9Dexny3w.mp4?t=tmwgp9.SIGNATURE")).toBe("/api/trailers/file/Way9Dexny3w.mp4?t=[redacted]");
+    expect(redactUrl("/x?type=Movie&tag=abc&t=s")).toBe("/x?type=Movie&tag=abc&t=[redacted]");
+  });
+
   it("masque les champs secrets, où qu'un appel de journal les mette", () => {
     const lines: string[] = [];
     const log = pino({ redact: { paths: LOG_REDACT_PATHS, censor: "[redacted]" } }, new Writable({ write: (c, _e, done) => void (lines.push(String(c)), done()) }));
