@@ -422,6 +422,26 @@ marque de héros. La mascotte n'y paraît qu'en ILLUSTRATION d'un état
 l'identité, c'est l'icône en couches, le Top Shelf et le violet → rose en
 touches. Détail : `docs/TV-REFONTE.md`, « Le logo dans l'app : aucun ».
 
+## Avatars — une troupe dessinée, envoyée comme photo Jellyfin
+
+La galerie des photos de profil (web, bureau, fenêtre étroite : `profiles/avatarGallery/`,
+ouverte par « Changer la photo ») propose 36 PERSONNAGES, chacun avec son nom et son histoire,
+et garde « Importer une photo » en tête. **Aucune image n'est générée par une IA** : chaque
+personnage est dessiné dans `brand/avatars/characters/<id>.py` et imprimé en risographie par
+`brand/avatars/generate.py` (rendu déterministe), qui écrit `apps/web/public/avatars/` — rien
+ne s'y retouche à la main (`brand/avatars/README.md`, règles de dessin comprises).
+
+- **Choisir un personnage = envoyer son image comme photo Jellyfin du compte**
+  (`useAvatarUpload`), exactement comme une photo importée : elle suit le compte sur la TV, le
+  mobile et tout client Jellyfin. **Aucune capacité serveur.**
+- Catalogue (ordre, collection, couleur d'attente, tempérament au survol) :
+  `packages/shared/src/avatars/avatarCatalog.ts` ; noms et histoires : espace i18n `avatars`.
+  Les identifiants nomment des fichiers et des clés : ils ne se renomment jamais.
+- **Invitation unique** (bureau, compte SANS photo, session personnelle, en ligne, une fois par
+  compte et par appareil — `tentacle_avatar_invite_seen`) : la galerie elle-même, APRÈS que la
+  porte des nouveautés a tranché (`useWhatsNewGate` → `decided`), jamais par-dessus un autre
+  recouvrement de démarrage ; ouverte, elle suspend la pop-up de mise à jour.
+
 ## Cartes — un seul survol, trois variantes
 
 Toute carte d'un titre de la bibliothèque, sur toutes les plateformes, rend le
