@@ -31,6 +31,12 @@ export interface TrailerPreviewStreamState {
   cancel: () => void;
   /** Redemande maintenant (le survol tient après un refus passager). */
   retry: () => void;
+  /**
+   * Oublie la réponse gardée : la vidéo qu'elle désignait a lâché (un jeton du
+   * relais mort avec un redémarrage du serveur, une vidéo que le relais a
+   * oubliée…) — la prochaine activation redemande au serveur.
+   */
+  forget: () => void;
 }
 
 /**
@@ -70,10 +76,13 @@ export function useTrailerPreviewStream(
   const retry = useCallback(() => {
     void refetch();
   }, [refetch]);
+  const forget = useCallback(() => {
+    queryClient.removeQueries({ queryKey, exact: true });
+  }, [queryClient, queryKey]);
   // La fraîcheur se calcule ICI, depuis l'âge de la réponse : `isStale` de
   // TanStack vaut toujours faux pour une requête DÉSACTIVÉE — or c'est
   // désactivée qu'elle est lue, au rendu même où l'intention l'active.
   const fresh = query.data !== undefined
     && Date.now() < query.dataUpdatedAt + trailerPreviewResultTtl(query.data, query.dataUpdatedAt);
-  return { result: query.data, fresh, receivedAt: query.dataUpdatedAt, loading: query.isFetching, capable, cancel, retry };
+  return { result: query.data, fresh, receivedAt: query.dataUpdatedAt, loading: query.isFetching, capable, cancel, retry, forget };
 }

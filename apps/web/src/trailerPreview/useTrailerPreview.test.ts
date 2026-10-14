@@ -18,6 +18,7 @@ const h = vi.hoisted(() => ({
   cancelled: [] as string[],
   cancels: new Map<string, () => void>(),
   retry: vi.fn(),
+  forget: vi.fn(),
   enabled: [] as boolean[],
   pip: null as unknown,
   block: null as string | null,
@@ -43,7 +44,7 @@ vi.mock("@tentacle-tv/api-client", async () => {
       }
       return {
         result: h.result, fresh: h.fresh, receivedAt: h.receivedAt, loading: h.loading,
-        capable: h.capable, cancel: h.cancels.get(key)!, retry: h.retry,
+        capable: h.capable, cancel: h.cancels.get(key)!, retry: h.retry, forget: h.forget,
       };
     },
   };
@@ -64,6 +65,12 @@ beforeEach(() => {
   h.cancelled = [];
   h.cancels.clear();
   h.retry.mockClear();
+  // Oublier la réponse gardée : la requête simulée n'a plus rien à rendre.
+  h.forget.mockReset();
+  h.forget.mockImplementation(() => {
+    h.result = undefined;
+    h.fresh = false;
+  });
   forgetTrailerPreviewFailures();
 });
 
@@ -199,11 +206,51 @@ describe("useTrailerPreview — quand montrer", () => {
     await serve(FOUND);
     await act(async () => handles.a.onError());
     expect(handles.a).toMatchObject({ phase: "failed", mount: false, visible: false });
+    // La réponse qui la désignait est oubliée : passé la mémoire d'échec, on redemandera.
+    expect(h.forget).toHaveBeenCalledTimes(1);
     await render("a", { hovered: false });
     await render("a", { hovered: true });
     await wait(T.intentMs);
     await render("a");
     expect(handles.a.phase).toBe("failed");
+  });
+
+  it("une réponse GARDÉE d'un survol précédent qui lâche (jeton mort au redémarrage du serveur) : le survol suivant redemande au serveur", async () => {
+    // La bande-annonce reçue il y a une minute, encore fraîche pour la requête.
+    h.result = FOUND;
+    h.fresh = true;
+    h.receivedAt = Date.now() - 60_000;
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    await render("a");
+    expect(handles.a.phase).toBe("buffering");
+    await act(async () => handles.a.onError());
+    expect(handles.a.phase).toBe("failed");
+    expect(h.forget).toHaveBeenCalledTimes(1);
+    await render("a", { hovered: false });
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    await render("a");
+    // Pas de mémoire d'échec : la demande attend la réponse neuve du serveur.
+    expect(handles.a.phase).toBe("fetching");
+    expect(h.enabled.at(-1)).toBe(true);
+    await serve(FOUND);
+    expect(handles.a.phase).toBe("buffering");
+  });
+
+  it("l'échec se range sous le titre qui l'a vécu, pas sous celui qui le remplace sous le même survol", async () => {
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    await serve(FOUND);
+    await act(async () => handles.a.onError());
+    expect(handles.a.phase).toBe("failed");
+    // La carte montre un autre titre sous le même survol : son aperçu n'est pas condamné.
+    await render("a", { subject: KID });
+    await wait(T.intentMs);
+    await render("a");
+    expect(handles.a.phase).toBe("fetching");
+    await serve(FOUND);
+    expect(handles.a.phase).toBe("buffering");
   });
 });
 

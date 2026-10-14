@@ -146,6 +146,24 @@ describe("useTrailerPreviewStream", () => {
     expect(probe.loading).toBe(false);
   });
 
+  it("une réponse oubliée (sa vidéo a lâché) : la prochaine activation redemande au serveur", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(PREVIEW)));
+    vi.stubGlobal("fetch", fetchMock);
+    serverDeclares(["trailers.preview"]);
+    await render(true);
+    expect(probe.result).toEqual({ status: "found", preview: PREVIEW });
+    await render(false);
+    await act(async () => {
+      probe.forget();
+      await settle();
+    });
+    await render(false);
+    expect(probe.result).toBeUndefined();
+    await render(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(probe.result).toEqual({ status: "found", preview: PREVIEW });
+  });
+
   it("l'abandon coupe la requête en vol", async () => {
     let aborted = false;
     vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {

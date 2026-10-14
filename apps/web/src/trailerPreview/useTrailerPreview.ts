@@ -118,10 +118,27 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
     if (phaseRef.current === "fetching") cancelStream();
   }, [cancelStream]);
 
-  // Une vidéo qui a lâché ici n'est pas retentée de sitôt (erreur fatale, première image trop lente).
+  // Une vidéo qui a lâché ici (erreur fatale, première image trop lente) : la
+  // réponse qui la désignait n'est plus crue — la prochaine intention redemande
+  // au serveur. Lue FRAÎCHE pour ce survol, la vidéo n'est pas retentée de
+  // sitôt ; GARDÉE d'un survol précédent, c'est la réponse qui est suspecte (un
+  // jeton du relais mort avec un redémarrage du serveur) : pas de mémoire
+  // d'échec, le survol suivant aura la réponse neuve.
+  // Le titre de CHAQUE cycle est relevé à son début : l'échec se range sous le
+  // titre qui l'a vécu, jamais sous celui qui le remplace au même rendu.
+  const cycleTitle = useRef({ cycle: -1, key: null as string | null, forget: stream.forget });
+  if (cycleTitle.current.cycle !== state.cycle) cycleTitle.current = { cycle: state.cycle, key: subjectKey, forget: stream.forget };
+  const handledFailure = useRef(-1);
+  const { since } = state;
   useEffect(() => {
-    if (state.phase === "failed" && state.failure === "video" && subjectKey) rememberTrailerPreviewFailure(subjectKey);
-  }, [state.phase, state.failure, subjectKey]);
+    if (state.phase !== "failed" || state.failure !== "video" || handledFailure.current === state.cycle) return;
+    const title = cycleTitle.current;
+    if (title.cycle !== state.cycle || title.key === null) return;
+    handledFailure.current = state.cycle;
+    title.forget();
+    const reused = consumed.current.cycle === state.cycle && since !== null && consumed.current.at < since;
+    if (!reused) rememberTrailerPreviewFailure(title.key);
+  }, [state.phase, state.failure, state.cycle, since]);
 
   // Un seul aperçu à la fois : la place se prend à la demande, se rend à la fin.
   const holder = useRef({}).current;

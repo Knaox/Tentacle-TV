@@ -17,6 +17,7 @@ const h = vi.hoisted(() => ({
   loading: false,
   retry: vi.fn(),
   cancel: vi.fn(),
+  forget: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ i18n: { language: "fr" } }) }));
@@ -27,6 +28,7 @@ vi.mock("@tentacle-tv/api-client", async () => {
     previewRetryDelayMs: rules.previewRetryDelayMs,
     useTrailerPreviewStream: () => ({
       result: h.result, fresh: h.fresh, receivedAt: h.receivedAt, loading: h.loading, capable: true, cancel: h.cancel, retry: h.retry,
+      forget: h.forget,
     }),
   };
 });
