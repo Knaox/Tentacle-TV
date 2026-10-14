@@ -589,6 +589,50 @@ Quatre défauts relevés à l'essai (nés en dev, absents des notes de version) 
   nouveau — aperçus repris` à la première extraction réussie ;
 - `aperçus : 30 extractions dans l'heure — les suivantes attendent N min`.
 
+## Aperçu au focus — Apple TV et Android TV (2026-10-14)
+
+Le même aperçu que le bureau, sur les téléviseurs, avec la carte qui devient
+GRANDE (façon Netflix) pendant qu'il se joue. Même contrat, même capacité
+(`trailers.preview`), même machine (`reduceTrailerPreview`, shared) : seul le
+déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
+
+- **Le rythme** (tv-core `cards/trailerPreviewTv.ts`, `TV_TRAILER_PREVIEW_TIMING`) :
+  la demande part après 1 s de focus tenu (pas de second délai d'immobilité :
+  la télécommande ne tremble pas), la carte grandit au plus tôt à 1,8 s ET
+  seulement avec la première image, se replie en 220 ms. Volume 0,7.
+- **La grande carte** (`redesign/cards/CardPreviewTile.tsx`) : 16:9, au moins
+  42 % de l'écran (tv-core `trailerPreviewTileSize`), jamais plus large que la
+  zone de contenu. Elle grandit DANS la cellule de la carte : la rangée lui
+  fait place (`CardShell` `expansion`), les voisines glissent, la rangée défile
+  pour la montrer entière (`trailerPreviewScrollTarget`). Jamais un calque
+  par-dessus les voisines : tvOS ne focaliserait plus une carte recouverte.
+  Image du titre d'abord, la vidéo dessus, le logo (ou le titre) en bas sur un
+  voile.
+- **Le port** : la vue ne sait rien de la vidéo (`redesign/cards/trailerPreviewPort.tsx`) ;
+  l'intégration (`redesignWiring/trailerPreview/`) fournit le crochet. Seule la
+  carte FOCALISÉE monte une session (`PreviewSession` : la requête, la
+  machine, la vidéo) — une rangée de vingt cartes n'en paie qu'une.
+- **La vidéo** (`PreviewVideo`, react-native-video) : chargée cachée et en
+  pause, lue au relais du serveur (HLS, départ à 4 s, ou MP4). AVPlayer sur
+  Apple TV ; ExoPlayer en `TextureView` sur Android TV (seule à suivre
+  l'opacité) — la surface vient de l'adaptateur
+  (`platform/tvos/player/previewVideoSurface{,.android}.ts`). Faute d'avis de
+  première image 1,5 s après le chargement, le chargement vaut prêt.
+- **Mémoire de l'appareil** (tv-core `createTrailerPreviewMemory`) : une vidéo
+  qui lâche n'est pas redemandée de sitôt ; la position est gardée 10 min (le
+  retour sur la carte reprend où l'on en était). Un seul aperçu à la fois
+  (l'arbitre partagé), rien en arrière-plan.
+- **Réglages** (Réglages › Lecture, seulement face à `trailers.preview`) :
+  « Aperçus au focus » et « Son des aperçus », réglages du TÉLÉVISEUR
+  (`tentacle_tv_trailer_previews`, `tentacle_tv_trailer_preview_sound`), allumés.
+- **TanStack Query v4 à l'exécution sur la TV** : `staleTime` en fonction et
+  `gcTime` n'y existent pas — la requête d'aperçu passe un `staleTime`
+  numérique et `cacheTime` (`useTrailerPreviewStream`).
+- **Pas encore** : les cartes qui se redressent (`MorphCard`), les grilles, les
+  cartes absentes (hors bibliothèque) ; une rangée en bas d'écran grandit vers
+  le bas sans défilement vertical. Rien d'éprouvé sur un appareil depuis ce
+  chantier (aucun simulateur dans l'environnement) : à vérifier au banc.
+
 ## Ce qui reste fragile, et comment le surveiller
 
 - **YouTube change.** `visionos` peut un jour exiger un jeton PO, comme

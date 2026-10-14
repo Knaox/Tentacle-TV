@@ -647,6 +647,12 @@ quelques semaines (« plantent 2 fois sur 3 », 2026-10-02). La fiche prépare l
 bande-annonce (`/prepare`) ; chaque lecture rend compte au serveur (`/report`,
 `docker logs … | grep '\[trailers\]'`). Mesures, banc et fragilités :
 `docs/BANDES-ANNONCES.md`.
+**Aperçu au focus (Apple TV, Android TV)** : la carte de rangée focalisée 1 s
+demande l'aperçu (`trailers.preview`, la machine partagée du bureau) et GRANDIT
+dans sa cellule à la première image — jamais un calque par-dessus les voisines.
+Rythme et tailles : tv-core `cards/trailerPreviewTv.ts`, `trailerPreviewTile.ts` ;
+vue : port `redesign/cards/trailerPreviewPort.tsx` ; intégration :
+`redesignWiring/trailerPreview/` (une session, la carte focalisée seulement).
 
 ## Famille — un contrat, et le serveur décide de tout
 
