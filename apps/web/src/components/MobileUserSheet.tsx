@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useActiveProfile } from "../auth/profileSession";
 import { useAccountLogout } from "../auth/useAccountLogout";
-import { avatarRingStyleFor, buildUserMenuItems, getUserInfo } from "./userMenu/menuItems";
+import { avatarRingStyleFor, buildUserMenuItems, getUserInfo, type UserMenuItem } from "./userMenu/menuItems";
 import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
+import { useProfileMenuItems } from "../profiles/switcher/useProfileMenuItems";
 
 interface Props {
   onClose: () => void;
@@ -15,6 +16,8 @@ interface Props {
  * Bottom sheet mobile pour les actions utilisateur (préférences, admin,
  * jumelage, à propos, aide, crédits, déconnexion). Pendant mobile du
  * `UserAvatarMenu` desktop ; partage la même liste d'items via `menuItems.tsx`.
+ * Bureau en fenêtre étroite, famille : « Changer de profil » en tête, comme
+ * dans le menu de l'avatar (`useProfileMenuItems`).
  *
  * Animations alignées sur `PlusMenu` pour la cohérence visuelle.
  */
@@ -26,6 +29,7 @@ export function MobileUserSheet({ onClose }: Props) {
   const { name, initial, isAdmin } = getUserInfo();
   const ringStyle = avatarRingStyleFor(useAccountFaceColor());
   const overlayRef = useRef<HTMLDivElement>(null);
+  const profileItems = useProfileMenuItems(onClose);
 
   const handleLogout = useCallback(() => {
     onClose();
@@ -113,21 +117,19 @@ export function MobileUserSheet({ onClose }: Props) {
 
         <div className="mx-5 mb-2 h-px bg-fill-soft" aria-hidden />
 
+        {/* Les profils (bureau, famille) : « Changer de profil », puis « Gérer les profils ». */}
+        {profileItems.length > 0 && (
+          <>
+            <div className="pb-2">
+              {profileItems.map((item) => <SheetRow key={item.key} item={item} />)}
+            </div>
+            <div className="mx-5 mb-2 h-px bg-fill-soft" aria-hidden />
+          </>
+        )}
+
         {/* Items réguliers */}
         <div className="pb-2">
-          {regularItems.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              role="menuitem"
-              onClick={item.action}
-              className="flex w-full items-center gap-4 px-5 py-3 text-left text-[15px] text-content-secondary transition-colors duration-150 active:bg-fill-subtle"
-            >
-              <span className="flex-shrink-0 text-content-tertiary">{item.icon}</span>
-              <span className="flex-1">{item.label}</span>
-              <span className="flex-shrink-0 text-content-quaternary" aria-hidden>›</span>
-            </button>
-          ))}
+          {regularItems.map((item) => <SheetRow key={item.key} item={item} />)}
         </div>
 
         {/* Séparateur avant logout */}
@@ -151,5 +153,21 @@ export function MobileUserSheet({ onClose }: Props) {
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** Une entrée de la feuille : pictogramme, libellé, chevron. */
+function SheetRow({ item }: { item: UserMenuItem }) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={item.action}
+      className="flex w-full items-center gap-4 px-5 py-3 text-left text-[15px] text-content-secondary transition-colors duration-150 active:bg-fill-subtle"
+    >
+      <span className="flex-shrink-0 text-content-tertiary">{item.icon}</span>
+      <span className="flex-1">{item.label}</span>
+      <span className="flex-shrink-0 text-content-quaternary" aria-hidden>›</span>
+    </button>
   );
 }
