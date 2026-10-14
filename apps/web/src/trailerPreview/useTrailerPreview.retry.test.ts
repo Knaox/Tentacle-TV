@@ -25,6 +25,7 @@ vi.mock("@tentacle-tv/api-client", async () => {
   return {
     isTransientPreviewRefusal: rules.isTransientPreviewRefusal,
     previewRetryDelayMs: rules.previewRetryDelayMs,
+    trailerPreviewResultTtl: rules.trailerPreviewResultTtl,
     useTrailerPreviewStream: () => ({
       result: h.result, fresh: h.fresh, receivedAt: h.receivedAt, loading: h.loading, capable: true, retry: h.retry,
       forget: h.forget,
@@ -151,6 +152,26 @@ describe("useTrailerPreview — un refus passager se redemande", () => {
     expect(handles.a.phase).toBe("fetching");
     expect(h.retry).not.toHaveBeenCalled();
     await wait(3_000 - 500 - T.intentMs);
+    expect(h.retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("notre propre délai expiré n'est pas une panne : on redemande aussitôt (la demande rejoint la décision)", async () => {
+    await hoverUntilAnswer({ status: "missing", reason: "timeout" });
+    await wait(T.timeoutRetryMs - 1);
+    expect(h.retry).not.toHaveBeenCalled();
+    await wait(1);
+    expect(h.retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("une réponse déjà échue à son arrivée : nouvelle demande, au lieu d'attendre sans fin", async () => {
+    await render("a", { hovered: true });
+    await wait(T.intentMs);
+    h.result = { ...FOUND, preview: { ...FOUND.preview, expiresAt: Date.now() + 30_000 } };
+    h.fresh = false;
+    h.receivedAt = Date.now();
+    await render("a");
+    expect(handles.a.phase).toBe("fetching");
+    await wait(T.timeoutRetryMs);
     expect(h.retry).toHaveBeenCalledTimes(1);
   });
 });

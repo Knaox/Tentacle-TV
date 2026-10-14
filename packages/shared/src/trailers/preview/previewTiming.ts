@@ -75,6 +75,12 @@ export const TRAILER_PREVIEW_TIMING = {
   rateLimitMinMs: 1_000,
   rateLimitMaxMs: 10_000,
   transientFailureMs: 10_000,
+  /**
+   * Le délai PROPRE de la demande (`fetchTimeoutMs`) a expiré : ce n'est pas
+   * une panne — le serveur décide encore, et une demande refaite REJOINT sa
+   * décision sans rien coûter. Si le survol tient, on redemande aussitôt.
+   */
+  timeoutRetryMs: 1_500,
   maxRetries: 2,
 } as const;
 

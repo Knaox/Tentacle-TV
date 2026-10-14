@@ -29,6 +29,7 @@ vi.mock("@tentacle-tv/api-client", async () => {
   return {
     isTransientPreviewRefusal: rules.isTransientPreviewRefusal,
     previewRetryDelayMs: rules.previewRetryDelayMs,
+    trailerPreviewResultTtl: rules.trailerPreviewResultTtl,
     useTrailerPreviewStream: (_subject: unknown, _lang: string, options: { enabled: boolean }) => {
       h.enabled.push(options.enabled);
       return {

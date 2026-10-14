@@ -19,9 +19,13 @@ import { useSyncExternalStore } from "react";
  * clavier, Tab vers la carte suivante doit pouvoir montrer son aperçu.
  *
  * Un coup de MOLETTE ferme aussi la porte : la page défile sous un pointeur
- * immobile, et la carte qui s'arrête dessous ne lance ni son aperçu ni sa
- * requête au serveur sans un vrai mouvement — lire une page à la molette, avec
- * ses pauses, ne demande rien à YouTube.
+ * immobile, et la carte qui passe dessous ne lance ni son aperçu ni sa requête
+ * au serveur. Mais la carte où la page S'ARRÊTE, sous un pointeur qu'on y
+ * TIENT immobile `QUIET_WHEEL_STILL_MS`, est un choix : la porte se rouvre
+ * d'elle-même — un seul survol suffit, sans le petit mouvement qu'il fallait
+ * pour « réveiller » la carte. Seule la molette se rouvre ainsi : après une
+ * mini-carte refermée (Échap, fin, clic ailleurs), la voisine découverte
+ * attend toujours un vrai mouvement.
  *
  * Les VOISINES qui reviennent (`usePreviewRoom`) glissent sous un pointeur qui
  * vient souvent de bouger : on quitte la mini-carte pour une voisine, et c'est
@@ -31,6 +35,10 @@ import { useSyncExternalStore } from "react";
  * amenait sous le pointeur lançait son aperçu seule (banc, 14/10).
  */
 export const QUIET_SLOP_PX = 3;
+/** Le pointeur tenu immobile ce temps après le dernier coup de molette : la porte se rouvre. */
+export const QUIET_WHEEL_STILL_MS = 1_200;
+/** Une fermeture si proche d'un coup de molette vient de lui (la mini-carte quittée en défilant). */
+const WHEEL_CAUSED_MS = 300;
 
 export interface PreviewQuiet {
   isQuiet: () => boolean;
@@ -47,9 +55,23 @@ export interface PreviewQuiet {
   subscribe: (listener: () => void) => () => void;
 }
 
-/** `now` : l'horloge, injectée par les tests. */
-export function createPreviewQuiet(now: () => number = () => performance.now()): PreviewQuiet {
+type Schedule = (task: () => void, ms: number) => () => void;
+
+const defaultSchedule: Schedule = (task, ms) => {
+  const timer = setTimeout(task, ms);
+  return () => clearTimeout(timer);
+};
+
+/** `now`, `schedule` : l'horloge et la minuterie, injectées par les tests. */
+export function createPreviewQuiet(now: () => number = () => performance.now(), schedule: Schedule = defaultSchedule): PreviewQuiet {
   let closed = false;
+  /** La réouverture d'après la molette, tant que rien d'autre n'a fermé la porte. */
+  let cancelWheelReopen: (() => void) | null = null;
+  let lastWheelAt = Number.NEGATIVE_INFINITY;
+  const dropWheelReopen = () => {
+    cancelWheelReopen?.();
+    cancelWheelReopen = null;
+  };
   let heldUntil = Number.NEGATIVE_INFINITY;
   let lastX = Number.NaN;
   let lastY = Number.NaN;
@@ -60,11 +82,14 @@ export function createPreviewQuiet(now: () => number = () => performance.now()):
     for (const listener of listeners) listener();
   };
   const open = () => {
+    dropWheelReopen();
     if (!closed) return;
     closed = false;
     notify();
   };
   const quiet = () => {
+    // La mini-carte que le défilement vient de refermer ne change rien : la molette décide.
+    if (now() - lastWheelAt > WHEEL_CAUSED_MS) dropWheelReopen();
     anchorX = lastX;
     anchorY = lastY;
     if (closed) return;
@@ -74,7 +99,16 @@ export function createPreviewQuiet(now: () => number = () => performance.now()):
   return {
     isQuiet: () => closed,
     quiet,
-    onWheel: quiet,
+    onWheel: () => {
+      lastWheelAt = now();
+      dropWheelReopen();
+      quiet();
+      // La page s'arrête, le pointeur reste : la carte dessous est choisie.
+      cancelWheelReopen = schedule(() => {
+        cancelWheelReopen = null;
+        if (now() >= heldUntil) open();
+      }, QUIET_WHEEL_STILL_MS);
+    },
     hold: (ms) => {
       heldUntil = Math.max(heldUntil, now() + ms);
       quiet();

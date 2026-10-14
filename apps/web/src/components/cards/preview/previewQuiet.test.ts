@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { QUIET_SLOP_PX, createPreviewQuiet } from "./previewQuiet";
+import { QUIET_SLOP_PX, QUIET_WHEEL_STILL_MS, createPreviewQuiet } from "./previewQuiet";
+
+/** Une minuterie à la main : les tâches attendent qu'on avance l'horloge. */
+function manualClock() {
+  let clock = 1000;
+  let tasks: Array<{ at: number; run: () => void }> = [];
+  return {
+    now: () => clock,
+    schedule: (run: () => void, ms: number) => {
+      const task = { at: clock + ms, run };
+      tasks.push(task);
+      return () => {
+        tasks = tasks.filter((t) => t !== task);
+      };
+    },
+    advance(ms: number) {
+      clock += ms;
+      const due = tasks.filter((t) => t.at <= clock);
+      tasks = tasks.filter((t) => t.at > clock);
+      due.forEach((t) => t.run());
+    },
+  };
+}
 import { engineEngaged, quietAfterHide } from "./previewLifecycle";
 
 /**
@@ -62,6 +84,34 @@ describe("previewQuiet — la porte globale", () => {
     expect(gate.isQuiet()).toBe(true);
     gate.onPointerMove(410, 300);
     expect(gate.isQuiet()).toBe(false);
+  });
+
+  it("la page s'arrête, le pointeur tenu immobile : la carte dessous est choisie, la porte se rouvre seule", () => {
+    const time = manualClock();
+    const gate = createPreviewQuiet(time.now, time.schedule);
+    gate.onPointerMove(400, 300);
+    gate.onWheel();
+    time.advance(400);
+    // Chaque coup de molette repart de zéro : une page qu'on lit en défilant ne demande rien.
+    gate.onWheel();
+    // La mini-carte que ce défilement referme ne change rien.
+    time.advance(50);
+    gate.quiet();
+    time.advance(QUIET_WHEEL_STILL_MS - 51);
+    expect(gate.isQuiet()).toBe(true);
+    time.advance(1);
+    expect(gate.isQuiet()).toBe(false);
+  });
+
+  it("après une mini-carte refermée (Échap, fin), la voisine attend toujours un vrai mouvement", () => {
+    const time = manualClock();
+    const gate = createPreviewQuiet(time.now, time.schedule);
+    gate.onPointerMove(400, 300);
+    gate.onWheel();
+    time.advance(500);
+    gate.quiet();
+    time.advance(QUIET_WHEEL_STILL_MS);
+    expect(gate.isQuiet()).toBe(true);
   });
 
   it("sans position connue, le premier mouvement suffit", () => {

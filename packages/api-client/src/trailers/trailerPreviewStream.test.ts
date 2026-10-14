@@ -93,7 +93,7 @@ describe("fetchTrailerPreviewStream", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("l'abandon (survol fini) remonte ; le délai propre vaut « rien à montrer »", async () => {
+  it("l'abandon (survol fini) remonte ; le délai propre n'est pas une panne : « le serveur décide encore »", async () => {
     const hanging = vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
       init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
     }));
@@ -102,7 +102,7 @@ describe("fetchTrailerPreviewStream", () => {
     const abandoned = fetchTrailerPreviewStream(ITEM, "fr", controller.signal);
     controller.abort();
     await expect(abandoned).rejects.toMatchObject({ name: "AbortError" });
-    await expect(fetchTrailerPreviewStream(ITEM, "fr", undefined, 5)).resolves.toEqual({ status: "missing", reason: "failed" });
+    await expect(fetchTrailerPreviewStream(ITEM, "fr", undefined, 5)).resolves.toEqual({ status: "missing", reason: "timeout" });
   });
 });
 
@@ -130,6 +130,8 @@ describe("trailerPreviewResultTtl", () => {
     expect(trailerPreviewResultTtl({ status: "missing", reason: "failed" }, 0)).toBe(TRAILER_PREVIEW_TIMING.transientFailureMs);
     expect(isTransientPreviewRefusal({ status: "missing", reason: "rate_limited" })).toBe(true);
     expect(isTransientPreviewRefusal({ status: "missing", reason: "failed" })).toBe(true);
+    expect(isTransientPreviewRefusal({ status: "missing", reason: "timeout" })).toBe(true);
+    expect(trailerPreviewResultTtl({ status: "missing", reason: "timeout" }, 0)).toBe(TRAILER_PREVIEW_TIMING.timeoutRetryMs);
     for (const reason of ["no_trailer", "unavailable", "invalid_request", "unreadable"] as const) {
       expect(isTransientPreviewRefusal({ status: "missing", reason })).toBe(false);
     }
@@ -151,6 +153,8 @@ describe("trailerPreviewResultTtl", () => {
     expect(previewRetryDelayMs({ status: "missing", reason: "rate_limited" }, 1)).toBe(4_000);
     expect(previewRetryDelayMs({ status: "missing", reason: "rate_limited" }, 5)).toBe(10_000);
     expect(previewRetryDelayMs({ status: "missing", reason: "failed" }, 0)).toBe(10_000);
+    // Notre délai expiré : on redemande aussitôt, la demande rejoint la décision en cours.
+    expect(previewRetryDelayMs({ status: "missing", reason: "timeout" }, 0)).toBe(1_500);
   });
 
   it("la clé du cache : le titre et la langue", () => {

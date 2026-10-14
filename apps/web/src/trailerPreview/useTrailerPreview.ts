@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { isTransientPreviewRefusal, previewRetryDelayMs, useTrailerPreviewStream } from "@tentacle-tv/api-client";
+import {
+  isTransientPreviewRefusal, previewRetryDelayMs, trailerPreviewResultTtl, useTrailerPreviewStream,
+} from "@tentacle-tv/api-client";
 import {
   TRAILER_PREVIEW_TIMING,
   trailerPreviewMounted,
@@ -86,7 +88,15 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
       return;
     }
     const seen = consumed.current.cycle === state.cycle ? consumed.current.at : 0;
-    if (!result || !fresh || receivedAt <= seen) return;
+    if (!result || receivedAt <= seen) return;
+    if (!fresh) {
+      // Arrivée pendant ce survol mais déjà échue (jeton du relais au bout) : on redemande, au lieu
+      // de l'ignorer et d'attendre sans fin. Une réponse d'avant, périmée depuis, se renouvelle seule.
+      if (receivedAt < (state.since ?? 0) || trailerPreviewResultTtl(result, receivedAt) > 0) return;
+      consumed.current = { cycle: state.cycle, at: receivedAt };
+      dispatch({ type: "streamRetry", at, retryAt: at + TRAILER_PREVIEW_TIMING.timeoutRetryMs });
+      return;
+    }
     consumed.current = { cycle: state.cycle, at: receivedAt };
     if (result.status === "found") {
       setCycleStream({ cycle: state.cycle, stream: previewStreamOf(result.preview) });
@@ -97,7 +107,7 @@ export function useTrailerPreview(subject: TrailerPreviewSubject | null, hovered
     } else {
       dispatch({ type: "streamMissing", at });
     }
-  }, [state.phase, state.cycle, state.retryAt, state.retries, result, fresh, receivedAt, loading, subjectKey, dispatch]);
+  }, [state.phase, state.cycle, state.since, state.retryAt, state.retries, result, fresh, receivedAt, loading, subjectKey, dispatch]);
 
   // L'échéance d'un refus passager est passée, le survol tient : nouvelle demande.
   const retryStream = stream.retry;
