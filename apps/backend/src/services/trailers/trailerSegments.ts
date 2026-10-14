@@ -11,7 +11,7 @@
 /*  au-delà, on n'anticipe pas — le relais lira à la demande.          */
 /* ------------------------------------------------------------------ */
 
-import { fetchUpstream, heldEntry, segmentTarget } from "./trailerRelay";
+import { fetchUpstream, segmentTarget } from "./trailerRelay";
 
 export interface HeldSegment {
   body: Buffer;
@@ -57,8 +57,7 @@ function keep(id: string, segment: HeldSegment): void {
  * que le relais ne tient plus n'est pas anticipée.
  */
 async function readSegment(ytId: string, key: string, index: SegmentIndex): Promise<HeldSegment | null> {
-  if (!heldEntry(ytId)) return null;
-  const target = await segmentTarget(ytId, key, index);
+  const target = await segmentTarget(ytId, key, index, { heldOnly: true });
   if (!target) return null;
   const { res } = await fetchUpstream(target.url, target.headers, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok || !res.body || Number(res.headers.get("content-length") ?? 0) > MAX_SEGMENT_BYTES) {

@@ -290,6 +290,15 @@ cours.
 l'échéance des URL, aucune bande-annonce une heure, aucune lisible une
 minute ; demandes identiques partagées ; une vidéo que le relais a oubliée
 est reprise d'abord, sans relire TMDB. Le relais garde 96 vidéos (48 avant).
+
+**Un jeton d'aperçu n'extrait jamais** (`relayToken.ts`). Les chemins que
+rend `/preview` portent un jeton de portée « aperçu » (`expiry.p.mac`, la
+portée signée avec la vidéo). Le relais, partagé avec la TV, peut avoir
+oublié la vidéo (96 au plus) quand hls.js demande son maître : avec un jeton
+de lecture (`/resolve`), il la ré-extrait comme toujours ; avec un jeton
+d'aperçu, JAMAIS — 404, et le client redemande `/preview`, seule porte qui
+tienne les garde-fous (seau, plafond, place unique, disjoncteur, budget).
+De même pour une URL que googlevideo refuse en cours de route.
 **La protection** : un seau par compte (six décisions d'avance, une toutes
 les 5 s — une décision gardée ne coûte rien) et quatre décisions en cours au
 plus sur le serveur.

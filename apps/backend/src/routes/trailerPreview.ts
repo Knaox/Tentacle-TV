@@ -47,7 +47,8 @@ export const trailerPreviewRoutes: FastifyPluginAsync = async (app) => {
     }
     if (outcome.kind === "refused") return refuse(reply, 404, outcome.error);
 
-    const stream = relayedStream(outcome.ytId, outcome.resolved);
+    // Un jeton d'aperçu : la vidéo que le relais oubliera ne se ré-extrait pas hors des garde-fous de cette route.
+    const stream = relayedStream(outcome.ytId, outcome.resolved, Date.now(), "preview");
     const preview: TrailerPreview = {
       ytId: outcome.ytId,
       path: stream.path,

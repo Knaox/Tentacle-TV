@@ -8,7 +8,7 @@
 /*  googlevideo : elles sont liées à l'adresse IP de l'extraction.     */
 /* ------------------------------------------------------------------ */
 
-import { RELAY_TOKEN_TTL_MS, signRelayToken } from "./relayToken";
+import { RELAY_TOKEN_TTL_MS, signRelayToken, type RelayScope } from "./relayToken";
 import type { ResolvedTrailer } from "./trailerRelay";
 
 export const HLS_MIME = "application/vnd.apple.mpegurl";
@@ -25,8 +25,9 @@ export interface RelayedStream {
   expiresAt: number;
 }
 
-export function relayedStream(ytId: string, resolved: ResolvedTrailer, now = Date.now()): RelayedStream {
-  const token = signRelayToken(ytId, now);
+/** `scope` : `preview` pour l'aperçu — ses chemins ne font jamais ré-extraire (`relayToken.ts`). */
+export function relayedStream(ytId: string, resolved: ResolvedTrailer, now = Date.now(), scope: RelayScope = "play"): RelayedStream {
+  const token = signRelayToken(ytId, now, scope);
   const hls = resolved.kind === "hls";
   return {
     token,

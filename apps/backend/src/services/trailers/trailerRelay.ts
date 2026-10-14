@@ -12,6 +12,7 @@
 import { Agent, fetch as undiciFetch } from "undici";
 import { parseMaster, renderMaster, rewriteMedia, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
 import { extractTrailerSource, type ExtractionOptions } from "./ytExtract";
+import type { RelayScope } from "./relayToken";
 import type { TrailerSource } from "./trailerSource";
 import type { SubtitleCandidate } from "./trailerSubtitles";
 
@@ -105,9 +106,18 @@ async function extract(ytId: string, options: ExtractionOptions): Promise<Entry 
  * `fresh` force une nouvelle extraction (URL refusée en cours de route) ;
  * `priority` et `budgetMs` ne valent que pour une extraction qui commence ici
  * (un aperçu au survol passe après les lectures, cf. `extractionSlots.ts`).
+ * `heldOnly` : la vidéo que le relais TIENT, ou rien — jamais d'extraction.
  */
-export function resolveEntry(ytId: string, { fresh = false, ...extraction }: { fresh?: boolean } & ExtractionOptions = {}): Promise<Entry | null> {
+export function resolveEntry(
+  ytId: string,
+  { fresh = false, heldOnly = false, ...extraction }: { fresh?: boolean; heldOnly?: boolean } & ExtractionOptions = {},
+): Promise<Entry | null> {
   const known = entries.get(ytId);
+  if (heldOnly) {
+    if (!known || known.validUntil <= Date.now()) return Promise.resolve(null);
+    known.lastUsed = Date.now();
+    return Promise.resolve(known);
+  }
   const recent = known && Date.now() - known.extractedAt < REFRESH_MIN_AGE_MS;
   if (known && (!fresh || recent) && known.validUntil > Date.now()) {
     known.lastUsed = Date.now();
@@ -208,12 +218,22 @@ function fixedMaster(entry: Entry, master: RelayMaster, height: number): string 
 }
 
 /**
+ * Les essais d'une lecture amont pour un jeton de cette portée : une lecture
+ * (`/resolve`) en a deux — le second après une nouvelle extraction, si
+ * googlevideo refuse l'URL ; un aperçu, un seul, sur la vidéo que le relais
+ * tient (`relayToken.ts`) : l'oubliée se redemande à `/preview`, gardé.
+ */
+export function relayAttempts(scope: RelayScope): Array<{ fresh: boolean; heldOnly: boolean }> {
+  return scope === "preview" ? [{ fresh: false, heldOnly: true }] : [{ fresh: false, heldOnly: false }, { fresh: true, heldOnly: false }];
+}
+
+/**
  * Le maître relayé (gabarit à jeton), avec une reprise si l'URL amont est
  * morte. Avec `height`, le maître réduit à cette qualité.
  */
-export async function masterTemplate(ytId: string, height?: number): Promise<string | null> {
-  for (const fresh of [false, true]) {
-    const entry = await resolveEntry(ytId, { fresh });
+export async function masterTemplate(ytId: string, height?: number, scope: RelayScope = "play"): Promise<string | null> {
+  for (const attempt of relayAttempts(scope)) {
+    const entry = await resolveEntry(ytId, attempt);
     if (!entry) return null;
     const master = await loadMaster(entry);
     if (master) return height ? fixedMaster(entry, master, height) : entry.masterText ?? null;
@@ -238,9 +258,9 @@ export function loadMedia(entry: Entry, key: string): Promise<RelayMedia | null>
 }
 
 /** Une liste de segments relayée (gabarit à jeton), avec une reprise si l'URL amont est morte. */
-export async function mediaTemplate(ytId: string, key: string): Promise<string | null> {
-  for (const fresh of [false, true]) {
-    const entry = await resolveEntry(ytId, { fresh });
+export async function mediaTemplate(ytId: string, key: string, scope: RelayScope = "play"): Promise<string | null> {
+  for (const attempt of relayAttempts(scope)) {
+    const entry = await resolveEntry(ytId, attempt);
     if (!entry) return null;
     const media = await loadMedia(entry, key);
     if (media) return media.text;
@@ -249,8 +269,8 @@ export async function mediaTemplate(ytId: string, key: string): Promise<string |
 }
 
 /** L'URL amont d'un segment (`index` ou `"init"`) et les en-têtes qui vont avec. */
-export async function segmentTarget(ytId: string, key: string, index: number | "init", { fresh = false } = {}) {
-  const entry = await resolveEntry(ytId, { fresh });
+export async function segmentTarget(ytId: string, key: string, index: number | "init", attempt: { fresh?: boolean; heldOnly?: boolean } = {}) {
+  const entry = await resolveEntry(ytId, attempt);
   if (!entry) return null;
   const media = await loadMedia(entry, key);
   const url = index === "init" ? media?.init : media?.segments[index];
@@ -258,8 +278,8 @@ export async function segmentTarget(ytId: string, key: string, index: number | "
 }
 
 /** L'URL amont du MP4 progressif (repli des vidéos sans HLS). */
-export async function progressiveTarget(ytId: string, { fresh = false } = {}) {
-  const entry = await resolveEntry(ytId, { fresh });
+export async function progressiveTarget(ytId: string, attempt: { fresh?: boolean; heldOnly?: boolean } = {}) {
+  const entry = await resolveEntry(ytId, attempt);
   return entry?.source.kind === "progressive" ? { url: entry.source.url, headers: entry.source.headers } : null;
 }
 

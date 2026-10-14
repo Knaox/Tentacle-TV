@@ -9,7 +9,8 @@
 /*  extraction, comme pour le flux.                                    */
 /* ------------------------------------------------------------------ */
 
-import { fetchUpstream, resolveEntry, type Entry } from "./trailerRelay";
+import { fetchUpstream, relayAttempts, resolveEntry, type Entry } from "./trailerRelay";
+import type { RelayScope } from "./relayToken";
 import { toWebVtt } from "./timedText";
 
 /** Une piste de bande-annonce pèse quelques dizaines de Ko : au-delà, ce n'en est pas une. */
@@ -44,9 +45,9 @@ function loadOnce(entry: Entry, key: string): Promise<Load> {
 }
 
 /** Le WebVTT de la piste `key` de `ytId`, ou `null` (piste inconnue, illisible, vidéo perdue). */
-export async function subtitleVtt(ytId: string, key: string): Promise<string | null> {
-  for (const fresh of [false, true]) {
-    const entry = await resolveEntry(ytId, { fresh });
+export async function subtitleVtt(ytId: string, key: string, scope: RelayScope = "play"): Promise<string | null> {
+  for (const attempt of relayAttempts(scope)) {
+    const entry = await resolveEntry(ytId, attempt);
     if (!entry) return null;
     const cached = entry.subtitleTexts.get(key);
     if (cached) return cached;

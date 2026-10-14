@@ -25,6 +25,7 @@ vi.mock("../middleware/auth", () => ({
 import { trailerRoutes } from "./trailers";
 import { trailerMediaRoutes } from "./trailerMedia";
 import { resetTrailerRelay } from "../services/trailers/trailerRelay";
+import { signRelayToken } from "../services/trailers/relayToken";
 
 const ID = "Way9Dexny3w";
 const FUTURE = Math.floor(Date.now() / 1000) + 6 * 3600;
@@ -227,6 +228,32 @@ describe("flux relayés", () => {
     expect([segment.statusCode, segment.headers["content-encoding"], segment.rawPayload.length]).toEqual([200, undefined, 64 * 1024]);
     const media = await app.inject({ url: `/api/trailers/hls/${ID}/p/95.m3u8?t=${token}`, headers });
     expect(media.statusCode).toBe(200);
+  });
+
+  it("un jeton d'APERÇU ne fait jamais ré-extraire : vidéo oubliée → 404, URL refusée → 404 ; un jeton de lecture, si", async () => {
+    extractTrailerSource.mockResolvedValue(hls(1));
+    vi.stubGlobal("fetch", googlevideo(1));
+    const app = await server();
+    const preview = signRelayToken(ID, Date.now(), "preview");
+    // Le relais ne tient pas la vidéo (évincée, serveur relancé) : rien n'est extrait pour un aperçu.
+    for (const url of [
+      `/api/trailers/hls/${ID}/master.m3u8`, `/api/trailers/hls/${ID}/master-1080.m3u8`, `/api/trailers/hls/${ID}/p/95.m3u8`,
+      `/api/trailers/hls/${ID}/s/95/0.ts`, `/api/trailers/file/${ID}.mp4`, `/api/trailers/subs/${ID}/m-en.vtt`,
+    ]) {
+      const res = await app.inject({ url: `${url}?t=${preview}` });
+      expect([url, res.statusCode]).toEqual([url, 404]);
+    }
+    expect(extractTrailerSource).not.toHaveBeenCalled();
+    // Le même oubli avec un jeton de lecture : une extraction, comme toujours.
+    const play = signRelayToken(ID, Date.now());
+    expect((await app.inject({ url: `/api/trailers/hls/${ID}/master.m3u8?t=${play}` })).statusCode).toBe(200);
+    expect(extractTrailerSource).toHaveBeenCalledTimes(1);
+    // Tenue par le relais, la vidéo s'ouvre avec le jeton d'aperçu ; une URL que googlevideo refuse ne fait pas ré-extraire.
+    expect((await app.inject({ url: `/api/trailers/hls/${ID}/master.m3u8?t=${preview}` })).statusCode).toBe(200);
+    await app.inject({ url: `/api/trailers/hls/${ID}/p/95.m3u8?t=${preview}` });
+    vi.stubGlobal("fetch", googlevideo(2));
+    expect((await app.inject({ url: `/api/trailers/hls/${ID}/s/95/0.ts?t=${preview}` })).statusCode).toBe(404);
+    expect(extractTrailerSource).toHaveBeenCalledTimes(1);
   });
 
   it("une panne amont se dit en 502, un délai en 504 — jamais en 500", async () => {

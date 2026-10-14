@@ -13,9 +13,9 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Response as UpstreamResponse } from "undici";
 import { requestSignal } from "./jellyfinProxy/clientAbort";
 import { cutoffReason } from "./jellyfinProxy/streamLog";
-import { verifyRelayToken } from "../services/trailers/relayToken";
+import { relayTokenScope, type RelayScope } from "../services/trailers/relayToken";
 import {
-  TOKEN_SLOT, fetchUpstream, masterTemplate, mediaTemplate, progressiveTarget, segmentTarget,
+  TOKEN_SLOT, fetchUpstream, masterTemplate, mediaTemplate, progressiveTarget, relayAttempts, segmentTarget,
 } from "../services/trailers/trailerRelay";
 import { subtitleVtt } from "../services/trailers/trailerSubtitleRelay";
 import { heldSegment, type HeldSegment } from "../services/trailers/trailerSegments";
@@ -35,13 +35,19 @@ const FILE_TIMEOUT_MS = 10 * 60_000;
 type Params = { ytId: string; name?: string; key?: string };
 
 /** La vidéo `ytId`, si le jeton de la requête l'ouvre ; sinon la réponse est déjà partie. */
-function authorize(ytId: string, request: FastifyRequest, reply: FastifyReply): { ytId: string; token: string } | null {
+/**
+ * La vidéo `ytId` et la portée du jeton qui l'ouvre ; sinon la réponse est
+ * déjà partie. Un jeton d'APERÇU ne fait jamais ré-extraire : la vidéo que le
+ * relais a oubliée répond 404, et le client redemande `/preview` — gardé.
+ */
+function authorize(ytId: string, request: FastifyRequest, reply: FastifyReply): { ytId: string; token: string; scope: RelayScope } | null {
   const { t } = request.query as { t?: string };
-  if (!YT_ID_RE.test(ytId) || !verifyRelayToken(ytId, t)) {
+  const scope = YT_ID_RE.test(ytId) ? relayTokenScope(ytId, t) : null;
+  if (!scope) {
     reply.status(403).send({ error: "forbidden" });
     return null;
   }
-  return { ytId, token: t as string };
+  return { ytId, token: t as string, scope };
 }
 
 function sendPlaylist(reply: FastifyReply, template: string | null, token: string) {
@@ -99,7 +105,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     const match = MASTER_RE.exec(request.params.name ?? "");
     if (!match) return reply.status(404).send({ error: "unknown" });
     const height = match[1] ? Number(match[1]) : undefined;
-    return sendPlaylist(reply, await masterTemplate(access.ytId, height), access.token);
+    return sendPlaylist(reply, await masterTemplate(access.ytId, height, access.scope), access.token);
   });
 
   app.get<{ Params: Params }>("/subs/:ytId/:name", async (request, reply) => {
@@ -107,7 +113,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     if (!access) return reply;
     const key = SUBTITLE_RE.exec(request.params.name ?? "")?.[1];
     if (!key) return reply.status(404).send({ error: "unknown" });
-    const vtt = await subtitleVtt(access.ytId, key);
+    const vtt = await subtitleVtt(access.ytId, key, access.scope);
     if (vtt === null) return reply.status(404).send({ error: "unavailable" });
     reply.header("Cache-Control", "private, max-age=3600");
     reply.type("text/vtt; charset=utf-8");
@@ -119,7 +125,7 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     if (!access) return reply;
     const key = request.params.name?.replace(/\.m3u8$/, "") ?? "";
     if (!KEY_RE.test(key)) return reply.status(404).send({ error: "unknown" });
-    return sendPlaylist(reply, await mediaTemplate(access.ytId, key), access.token);
+    return sendPlaylist(reply, await mediaTemplate(access.ytId, key, access.scope), access.token);
   });
 
   app.get<{ Params: Params }>("/hls/:ytId/s/:key/:name", VIDEO_BYTES, async (request, reply) => {
@@ -136,12 +142,12 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
 
     const signal = requestSignal(request, reply, SEGMENT_TIMEOUT_MS);
     try {
-      // Une URL refusée (échéance, révocation) : une nouvelle extraction, une seule fois.
-      for (const fresh of [false, true]) {
-        const target = await segmentTarget(access.ytId, key, index, { fresh });
+      // Une URL refusée (échéance, révocation) : une nouvelle extraction, une seule fois — jamais pour un aperçu.
+      for (const attempt of relayAttempts(access.scope)) {
+        const target = await segmentTarget(access.ytId, key, index, attempt);
         if (!target) break;
         const { res, refused } = await fetchUpstream(target.url, target.headers, { signal });
-        if (refused && !fresh) {
+        if (refused && !attempt.fresh) {
           await res.body?.cancel();
           continue;
         }
@@ -160,11 +166,11 @@ export async function trailerMediaRoutes(app: FastifyInstance) {
     // AVPlayer lit un MP4 par plages : chacune est relayée telle quelle.
     const range = typeof request.headers.range === "string" ? request.headers.range : undefined;
     try {
-      for (const fresh of [false, true]) {
-        const target = await progressiveTarget(access.ytId, { fresh });
+      for (const attempt of relayAttempts(access.scope)) {
+        const target = await progressiveTarget(access.ytId, attempt);
         if (!target) break;
         const { res, refused } = await fetchUpstream(target.url, target.headers, { signal, range });
-        if (refused && !fresh) {
+        if (refused && !attempt.fresh) {
           await res.body?.cancel();
           continue;
         }

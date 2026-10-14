@@ -127,7 +127,8 @@ describe("GET /api/trailers/preview", () => {
     const body = res.json();
     expect(body).toEqual({
       ytId: YT,
-      path: expect.stringMatching(new RegExp(`^/api/trailers/hls/${YT}/master\\.m3u8\\?t=[\\w.-]+$`)),
+      // Un jeton d'APERÇU (`.p.`) : la vidéo oubliée par le relais ne se ré-extrait pas hors de cette route.
+      path: expect.stringMatching(new RegExp(`^/api/trailers/hls/${YT}/master\\.m3u8\\?t=[0-9a-z]+\\.p\\.[\\w-]+$`)),
       mimeType: "application/vnd.apple.mpegurl",
       expiresAt: expect.any(Number),
       heights: [1080, 720],
