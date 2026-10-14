@@ -9,7 +9,9 @@ import { useActiveProfile } from "../auth/profileSession";
  * Avatar Jellyfin de l'utilisateur courant : URL (cache-bustée après upload)
  * + envoi d'une nouvelle photo (POST Users/{id}/Images/Primary en base64 —
  * l'avatar change donc aussi dans les autres clients Jellyfin).
- * Partagé par ProfileHero (page Profil) et UserAvatarMenu (dropdown desktop).
+ * Partagé par la galerie des avatars (`profiles/avatarGallery/`), que
+ * ProfileHero (page Profil) et UserAvatarMenu (dropdown desktop) ouvrent : un
+ * personnage choisi y est envoyé exactement comme une photo importée.
  *
  * Une COPIE LOCALE est entretenue sur desktop (`avatarCache`, fichier dans
  * `app_data_dir`). Sans elle, l'`<img>` pointait vers Jellyfin et échouait dès
@@ -31,8 +33,8 @@ let avatarVersion = 0;
 const versionListeners = new Set<() => void>();
 
 /** Redimensionne l'image (≤ 512 px) et renvoie le base64 nu (format Jellyfin). */
-async function fileToJellyfinBase64(file: File): Promise<{ base64: string; mime: string }> {
-  const bitmap = await createImageBitmap(file);
+async function imageToJellyfinBase64(image: Blob): Promise<{ base64: string; mime: string }> {
+  const bitmap = await createImageBitmap(image);
   const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -62,7 +64,7 @@ export function useAvatarUpload() {
   // profil s'affiche par son rond (`FamilyAvatar`).
   const profileSession = useActiveProfile() !== null;
   // `null` : le compte n'a pas de photo ; `undefined` : on ne sait pas encore.
-  const { data: imageTag } = useQuery({
+  const { data: imageTag, isPlaceholderData } = useQuery({
     queryKey: ["account-image-tag", userId],
     queryFn: () => client.fetch<{ PrimaryImageTag?: string }>("/Users/Me").then((user) => user.PrimaryImageTag ?? null),
     enabled: !!userId && connectivity.state === "online" && !profileSession,
@@ -124,12 +126,12 @@ export function useAvatarUpload() {
     if (avatarSrc) setDead((prev) => new Set(prev).add(avatarSrc));
   }, [avatarSrc]);
 
-  /** Envoie la photo à Jellyfin. Renvoie true si l'upload a réussi. */
-  const upload = useCallback(async (file: File): Promise<boolean> => {
+  /** Envoie l'image (photo importée ou personnage de la galerie) à Jellyfin. Renvoie true si l'upload a réussi. */
+  const upload = useCallback(async (image: Blob): Promise<boolean> => {
     if (!userId) return false;
     setUploading(true);
     try {
-      const { base64, mime } = await fileToJellyfinBase64(file);
+      const { base64, mime } = await imageToJellyfinBase64(image);
       const token = client.getAccessToken();
       const res = await fetch(`${client.getBaseUrl()}/Users/${userId}/Images/Primary`, {
         method: "POST",
@@ -153,5 +155,10 @@ export function useAvatarUpload() {
     }
   }, [client, queryClient, userId]);
 
-  return { avatarUrl, avatarSrc, onAvatarError, avatarVersion, uploading, upload, userId };
+  // Le compte a-t-il une photo, D'APRÈS JELLYFIN ? `undefined` tant qu'il n'a
+  // pas répondu (hors ligne, première lecture, étiquette encore tirée de la
+  // session) : l'invitation de la galerie attend de le savoir.
+  const hasPhoto = imageTag === undefined || isPlaceholderData ? undefined : imageTag !== null;
+
+  return { avatarUrl, avatarSrc, onAvatarError, avatarVersion, uploading, upload, userId, hasPhoto };
 }

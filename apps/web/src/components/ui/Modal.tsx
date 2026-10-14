@@ -19,6 +19,12 @@ interface ModalProps {
   describedBy?: string;
   /** Forward className to the inner panel. */
   className?: string;
+  /**
+   * Où poser le focus à l'ouverture, à la place du premier élément
+   * focalisable — qui est souvent la croix de l'en-tête, jamais un bon
+   * premier focus quand le panneau a mieux à offrir.
+   */
+  initialFocus?: () => HTMLElement | null | undefined;
 }
 
 const PANEL_VARIANTS = {
@@ -77,6 +83,7 @@ export function Modal({
   labelledBy,
   describedBy,
   className,
+  initialFocus,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -129,6 +136,11 @@ export function Modal({
     return () => { document.body.style.overflow = prev; };
   }, [open, lockScroll]);
 
+  // Le choix du premier focus, relu au moment de le poser (le contenu peut
+  // n'être monté qu'après l'ouverture).
+  const initialFocusRef = useRef(initialFocus);
+  initialFocusRef.current = initialFocus;
+
   // Focus trap — store last focused, autofocus panel, restore on close
   useEffect(() => {
     if (!open) return;
@@ -136,7 +148,7 @@ export function Modal({
     const focusFirst = () => {
       const panel = panelRef.current;
       if (!panel) return;
-      (focusableIn(panel)[0] ?? panel).focus();
+      (initialFocusRef.current?.() ?? focusableIn(panel)[0] ?? panel).focus();
     };
     const id = setTimeout(focusFirst, 50);
     return () => {
