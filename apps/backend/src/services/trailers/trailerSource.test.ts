@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CLIENT_PASSES, clientPasses, isPermanentFailure, parseExpiry, pickTrailerSource, type YtFormat } from "./trailerSource";
+import {
+  DEFAULT_CLIENT_PASSES, clientPasses, isPermanentFailure, parseExpiry, pickTrailerSource, youTubeBlock, type YtFormat,
+} from "./trailerSource";
 
 const NOW = 1_790_000_000_000;
 const MASTER = "https://manifest.googlevideo.test/api/manifest/hls_variant/expire/1790970374/ip/203.0.113.7/file/index.m3u8";
@@ -87,5 +89,41 @@ describe("isPermanentFailure", () => {
     expect(isPermanentFailure("ERROR: [youtube] x: Video unavailable. This content isn't available, try again later.")).toBe(false);
     expect(isPermanentFailure("ERROR: [youtube] x: Sign in to confirm you're not a bot.")).toBe(false);
     expect(isPermanentFailure("ERROR: unable to download webpage: timed out")).toBe(false);
+  });
+
+  it("ne lit que les ERREURS : un avertissement n'en fait pas une vidéo retirée", () => {
+    expect(isPermanentFailure("WARNING: [youtube] x: Private video. Sign in if you've been granted access")).toBe(false);
+  });
+});
+
+/**
+ * Sorties de yt-dlp SIMULÉES (formes relevées dans son code et ses tickets) :
+ * avec `--ignore-no-formats-error`, la raison de YouTube arrive en
+ * AVERTISSEMENT quand aucun format ne vient.
+ */
+describe("youTubeBlock", () => {
+  it("la vérification anti-robot, en erreur comme en avertissement, apostrophe droite ou courbe", () => {
+    expect(youTubeBlock("ERROR: [youtube] dQw4w9WgXcQ: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication.")).toBe("bot");
+    expect(youTubeBlock("WARNING: [youtube] dQw4w9WgXcQ: Sign in to confirm you're not a bot. This helps protect our community. Learn more")).toBe("bot");
+    expect(youTubeBlock("WARNING: [youtube] x: Sign in to confirm you’re not a bot. YouTube is requiring a captcha challenge before playback")).toBe("bot");
+  });
+
+  it("la limite de débit : 429, session bridée, « try again later », trafic inhabituel", () => {
+    expect(youTubeBlock("ERROR: [youtube] x: Unable to download API page: HTTP Error 429: Too Many Requests")).toBe("limit");
+    expect(youTubeBlock("WARNING: [youtube] The current session has been rate-limited by YouTube for up to an hour. It is recommended to use `-t sleep`")).toBe("limit");
+    expect(youTubeBlock("WARNING: [youtube] x: Video unavailable. This content isn't available, try again later.")).toBe("limit");
+    expect(youTubeBlock("ERROR: [youtube] x: Our systems have detected unusual traffic from your computer network")).toBe("limit");
+  });
+
+  it("jamais une vidéo qui manque, un âge à confirmer, ni ce qui n'est pas une ligne de yt-dlp", () => {
+    for (const stderr of [
+      "ERROR: [youtube] x: Video unavailable. This video has been removed by the uploader",
+      "WARNING: [youtube] x: Private video. Sign in if you've been granted access to this video",
+      "ERROR: [youtube] x: Sign in to confirm your age. This video may be inappropriate for some users.",
+      "ERROR: [youtube] x: Requested format is not available",
+      "WARNING: [youtube] Some web client https formats have been skipped as they are missing a url",
+      "",
+      "Command failed: yt-dlp … not a bot",
+    ]) expect(youTubeBlock(stderr)).toBeNull();
   });
 });

@@ -14,7 +14,8 @@ import { ytDlpCommand } from "../ytDlp";
 import { ytDlpInvocation } from "../tools/toolPaths";
 import { workerExtract } from "./ytWorker";
 import { createExtractionSlots, type ExtractionPriority } from "./extractionSlots";
-import { clientPasses, isPermanentFailure, pickTrailerSource, type TrailerSource, type YtFormat } from "./trailerSource";
+import { clientPasses, isPermanentFailure, pickTrailerSource, youTubeBlock, type TrailerSource, type YtFormat } from "./trailerSource";
+import { countPreviewExtraction, previewRefusal, recordYouTubeSuccess, tripYouTubeBreaker } from "./youtubeGuard";
 import { collectSubtitleCandidates, type SubtitleCandidate, type YtCaptions } from "./trailerSubtitles";
 
 /**
@@ -85,9 +86,10 @@ function runCli(ytId: string, clients: string[], timeoutMs: number): Promise<Pas
     "--extractor-args", `youtube:player_client=${clients.join(",")}`,
     "-j",
     // Le JSON même sans format jouable : le choix et le diagnostic sont les nôtres.
+    // Ses avertissements restent : c'est là que yt-dlp dit la vérification
+    // anti-robot de YouTube quand aucun format ne vient (`youTubeBlock`).
     "--ignore-no-formats-error",
     "--no-playlist",
-    "--no-warnings",
     "--socket-timeout", "10",
     watchUrl(ytId),
   ];
@@ -119,30 +121,59 @@ function safeCandidates(captions: YtCaptions | undefined): SubtitleCandidate[] {
   }
 }
 
+/**
+ * `blocked` : YouTube bride l'adresse du serveur (`youtubeGuard.ts`) — pas la
+ * vidéo. `skipped` : rien n'a été demandé à YouTube (aperçu suspendu, budget
+ * de l'heure épuisé) — ni un échec de la vidéo, ni à retenir contre elle.
+ */
 export type ExtractionResult =
   | { ok: true; source: TrailerSource; subtitles: SubtitleCandidate[]; clients: string[] }
-  | { ok: false; permanent: boolean; timedOut: boolean; reason: string };
+  | { ok: false; permanent: boolean; timedOut: boolean; reason: string; blocked?: boolean; skipped?: boolean };
+
+/** La ligne qui dit le blocage, pour le journal (avertissements compris). */
+function blockLine(stderr: string): string | undefined {
+  return stderr.split("\n").find((line) => /^(ERROR|WARNING)\b/.test(line) && youTubeBlock(line) !== null)?.slice(0, 200);
+}
 
 /** Extrait le meilleur flux de `ytId`, passe après passe ; la première qui rend un flux gagne. */
 export function extractTrailerSource(ytId: string, options: ExtractionOptions = {}): Promise<ExtractionResult> {
   const { priority = "play", budgetMs = EXTRACTION_BUDGET_MS } = options;
   return slots.run(priority, async () => {
+    // Un aperçu ne contacte pas YouTube pendant une suspension, ni au-delà du budget de l'heure.
+    if (priority === "preview") {
+      const refusal = previewRefusal();
+      if (refusal) return { ok: false, permanent: false, timedOut: false, skipped: true, reason: refusal.kind === "blocked" ? "aperçus suspendus" : "budget de l'heure épuisé" };
+      countPreviewExtraction();
+    }
     const deadline = Date.now() + budgetMs;
     let reason = "aucune passe";
+    let blocked = false;
     for (const clients of clientPasses(process.env.TENTACLE_TRAILER_CLIENTS)) {
       const remaining = deadline - Date.now();
       if (remaining < MIN_PASS_MS) break;
       const outcome = await runPass(ytId, clients, remaining);
       const source = outcome && pickTrailerSource(outcome.formats);
-      // Une piste illisible ne coûte jamais la bande-annonce : sans sous-titres, simplement.
-      if (source) return { ok: true, source, subtitles: safeCandidates(outcome.captions), clients };
+      if (source) {
+        recordYouTubeSuccess();
+        // Une piste illisible ne coûte jamais la bande-annonce : sans sous-titres, simplement.
+        return { ok: true, source, subtitles: safeCandidates(outcome.captions), clients };
+      }
       const lastError = outcome?.stderr.split("\n").filter((l) => l.startsWith("ERROR")).pop();
       reason = lastError ?? `${clients.join(",")} : ${outcome ? `${outcome.formats.length} formats, aucun lisible` : "sortie illisible"}`;
+      const block = outcome ? youTubeBlock(outcome.stderr) : null;
+      if (outcome && block) {
+        blocked = true;
+        reason = blockLine(outcome.stderr) ?? reason;
+        tripYouTubeBreaker(block);
+        // Un aperçu n'insiste pas : un autre client échouerait pareil, et chaque essai aggrave le cas.
+        // Une lecture poursuit ses passes, comme avant.
+        if (priority === "preview") return { ok: false, permanent: false, timedOut: false, blocked, reason };
+      }
       // Le temps est épuisé : une autre passe ne ferait pas mieux.
-      if (outcome?.timedOut) return { ok: false, permanent: false, timedOut: true, reason };
+      if (outcome?.timedOut) return { ok: false, permanent: false, timedOut: true, reason, blocked };
       // Une vidéo retirée ou privée l'est pour tous les clients : inutile d'insister.
       if (outcome && isPermanentFailure(outcome.stderr)) return { ok: false, permanent: true, timedOut: false, reason };
     }
-    return { ok: false, permanent: false, timedOut: false, reason };
+    return { ok: false, permanent: false, timedOut: false, reason, blocked };
   });
 }

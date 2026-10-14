@@ -75,6 +75,8 @@ function evict(): void {
 async function extract(ytId: string, options: ExtractionOptions): Promise<Entry | null> {
   const started = Date.now();
   const result = await extractTrailerSource(ytId, options);
+  // Rien demandé à YouTube (aperçu suspendu, budget de l'heure) : rien à retenir contre la vidéo.
+  if (!result.ok && result.skipped) return null;
   if (!result.ok) {
     if (!result.timedOut) misses.set(ytId, Date.now() + (result.permanent ? PERMANENT_MISS_MS : TRANSIENT_MISS_MS));
     if (misses.size > 500) for (const [id, until] of misses) if (until <= Date.now()) misses.delete(id);

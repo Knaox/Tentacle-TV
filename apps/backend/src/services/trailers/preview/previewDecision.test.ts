@@ -23,6 +23,7 @@ vi.mock("../trailerRelay", () => ({ resolveTrailer: relay.resolveTrailer }));
 vi.mock("../trailerPrepare", () => ({ peekTrailer: relay.peekTrailer, prepareTrailer: relay.prepareTrailer, warmStart: relay.warmStart }));
 vi.mock("../titleVideos", () => ({ fetchTitleVideos }));
 
+import { countPreviewExtraction, resetYouTubeGuard, tripYouTubeBreaker } from "../youtubeGuard";
 import { decidePreview, resetPreviewDecisions } from "./previewDecision";
 import type { PreviewTitle } from "./previewTitle";
 
@@ -45,6 +46,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOW);
   resetPreviewDecisions();
+  resetYouTubeGuard();
   for (const mock of [...Object.values(relay), fetchTitleVideos]) mock.mockReset();
   relay.peekTrailer.mockReturnValue(null);
   relay.warmStart.mockResolvedValue(undefined);
@@ -160,5 +162,47 @@ describe("demandes simultanées, seau et plafond", () => {
     for (const open of gates) open({ videos: [], complete: true });
     expect((await Promise.all([...pending, joined])).map((o) => o.kind)).toEqual(["refused", "refused", "refused", "refused", "refused"]);
     expect(fetchTitleVideos).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe("YouTube bride l'adresse (garde-fou réel, relais simulé)", () => {
+  it("suspendu : « aucune lisible » tout de suite, sans TMDB ni seau — et rien de retenu par titre", async () => {
+    fetchTitleVideos.mockResolvedValue(trailers("aaaaaaaaaaa"));
+    relayKnows(["aaaaaaaaaaa"]);
+    tripYouTubeBreaker("bot");
+    for (let n = 0; n < 10; n++) expect(await decidePreview(title(), "fr", "alice")).toEqual({ kind: "refused", error: "unavailable" });
+    expect(fetchTitleVideos).not.toHaveBeenCalled();
+    expect(relay.resolveTrailer).not.toHaveBeenCalled();
+    // La suspension levée, la décision se prend aussitôt : le refus n'était pas retenu pour le titre.
+    resetYouTubeGuard();
+    expect(await decidePreview(title(), "fr", "alice")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
+  });
+
+  it("une candidate tombée sur la vérification n'est pas une candidate morte : on n'essaie pas la suivante", async () => {
+    fetchTitleVideos.mockResolvedValue(trailers("aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc"));
+    relay.resolveTrailer.mockImplementation(async () => {
+      tripYouTubeBreaker("bot");
+      return null;
+    });
+    expect(await decidePreview(title(), "fr", "alice")).toEqual({ kind: "refused", error: "unavailable" });
+    expect(relay.resolveTrailer).toHaveBeenCalledTimes(1);
+    resetYouTubeGuard();
+    relayKnows(["aaaaaaaaaaa"]);
+    expect(await decidePreview(title(), "fr", "alice")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
+  });
+
+  it("budget de l'heure épuisé : « réessayez » dans le délai honnête, sans TMDB", async () => {
+    for (let i = 0; i < 30; i++) countPreviewExtraction(NOW - 20 * 60_000);
+    expect(await decidePreview(title(), "fr", "alice")).toEqual({ kind: "limited", retryAfterS: 40 * 60 });
+    expect(fetchTitleVideos).not.toHaveBeenCalled();
+  });
+
+  it("une bande-annonce déjà décidée, que le relais tient encore, se sert pendant une suspension", async () => {
+    fetchTitleVideos.mockResolvedValue(trailers("aaaaaaaaaaa"));
+    relayKnows(["aaaaaaaaaaa"]);
+    await decidePreview(title(), "fr", "alice");
+    tripYouTubeBreaker("bot");
+    relay.peekTrailer.mockReturnValue(hls());
+    expect(await decidePreview(title(), "fr", "bob")).toMatchObject({ kind: "found", ytId: "aaaaaaaaaaa" });
   });
 });

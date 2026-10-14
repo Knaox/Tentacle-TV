@@ -294,6 +294,41 @@ est reprise d'abord, sans relire TMDB. Le relais garde 96 vidéos (48 avant).
 les 5 s — une décision gardée ne coûte rien) et quatre décisions en cours au
 plus sur le serveur.
 
+**Ménager YouTube** (`youtubeGuard.ts`). Constaté le 2026-10-14 vers 2 h :
+après ≥ 146 extractions d'une nuit de bancs, YouTube a placé l'adresse de la
+maison sous vérification anti-robot — plus AUCUNE extraction ne passait, pour
+aucun client de yt-dlp, Apple TV comprise. L'aperçu multiplie les extractions
+(une à trois par titre froid) : il pourrait faire bloquer les bandes-annonces
+de toute la maison. Deux garde-fous, pour les aperçus seulement :
+
+- **Le disjoncteur.** Une extraction (aperçu OU lecture) qui rencontre la
+  vérification anti-robot ou une limite de YouTube (`youTubeBlock` : « not a
+  bot », captcha, HTTP 429, « rate-limited », « try again later », « unusual
+  traffic ») suspend TOUTES les extractions d'aperçu 30 min, doublées à chaque
+  rechute jusqu'à 4 h, remises à zéro par la première extraction réussie (une
+  lecture de la TV suffit). Pendant ce temps, `/preview` répond tout de suite
+  `unavailable`, sans TMDB ni extraction, sans rien retenir par titre ; une
+  bande-annonce déjà décidée que le relais tient encore se sert toujours. Un
+  aperçu bloqué n'essaie ni l'autre client ni la candidate suivante : un
+  blocage n'est JAMAIS une candidate morte.
+- **Le budget.** 30 extractions d'aperçu par heure glissante pour tout le
+  serveur, comptées en EXTRACTIONS (pas en décisions) ; au-delà, 429
+  `rate_limited` avec le délai honnête jusqu'à la prochaine place. Une
+  famille qui parcourt sa bibliothèque survole rarement plus de nouveaux
+  titres en une heure (chaque décision est gardée des heures), et c'est un
+  dixième de ce que yt-dlp documente pour une session invitée (~300 vidéos
+  par heure) : les lectures gardent la marge.
+- **Les lectures** (`/resolve`, `/prepare`) ne changent pas : priorité,
+  passes, mémoire des échecs. Elles ne sont pas espacées pendant un blocage :
+  ce sont des gestes explicites, rares au regard des aperçus, et la première
+  qui réussit est la meilleure sonde — elle rend aussitôt les aperçus.
+- **Le reconnaître** : avec `--ignore-no-formats-error`, yt-dlp ne rend pas
+  la raison de YouTube en erreur mais en AVERTISSEMENT — et les avertissements
+  étaient jetés (`--no-warnings`, l'ouvrier les taisait) : un blocage ne se
+  voyait que comme « 0 formats ». La ligne de commande et l'ouvrier gardent
+  désormais leurs avertissements ; une vidéo retirée ou privée se lit toujours
+  sur les seules erreurs.
+
 **Lisible par hls.js depuis le bureau** : le CORS de Tentacle reflète
 `tentacle://app` sur la route et sur tout le relais (maître, listes,
 segments, MP4 par plages), CORS ouvert comme restreint (`CORS_ORIGINS`) ;
@@ -328,7 +363,11 @@ Le départ au plus haut : la meilleure hauteur dès la première image.
 - `aperçu tmdb:movie:438631|fr : gHt8tCHbB2M (hls, 1080) en 1387 ms, essai 1/3`
 - `aperçu jf:<id>|fr : aucune bande-annonce` — ou `(TMDB sans réponse)` ;
 - `aperçu … : aucune lisible (3 candidate(s), … ms)` — yt-dlp les refuse ;
-- `aperçu … : … reprise` — une décision dont le relais avait oublié la vidéo.
+- `aperçu … : … reprise` — une décision dont le relais avait oublié la vidéo ;
+- `YouTube demande une vérification anti-robot — aperçus suspendus 30 min`
+  (ou `YouTube limite les demandes de ce serveur — …`), puis `YouTube répond de
+  nouveau — aperçus repris` à la première extraction réussie ;
+- `aperçus : 30 extractions dans l'heure — les suivantes attendent N min`.
 
 ## Ce qui reste fragile, et comment le surveiller
 
@@ -345,9 +384,13 @@ Le départ au plus haut : la meilleure hauteur dès la première image.
   sans rien changer ici. Suivre la nightly en production serait un autre
   choix de mise à jour automatique — non fait.
 - **Le bridage de l'adresse par YouTube** (« Sign in to confirm you're not a
-  bot », « try again later ») : passager, jamais retenu longtemps. La
-  préparation dès la fiche multiplie un peu les extractions ; le cache de six
-  heures et le partage des extractions les contiennent.
+  bot », « try again later ») : passager, jamais retenu longtemps — mais réel :
+  le 2026-10-14, une nuit de bancs (≥ 146 extractions) a suffi à faire
+  vérifier l'adresse de la maison. Les aperçus se suspendent d'eux-mêmes
+  (« Aperçu au survol », « Ménager YouTube ») ; une lecture de la TV reste
+  tentée, et sa réussite les rend. La préparation dès la fiche multiplie un
+  peu les extractions ; le cache de six heures et le partage des extractions
+  les contiennent.
 - **Un serveur saturé** : le budget de 40 s borne l'attente ; un délai épuisé
   n'empêche pas de réessayer aussitôt.
 

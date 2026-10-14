@@ -123,8 +123,28 @@ export function clientPasses(env: string | undefined): string[][] {
  * le pays — ne se redemande pas avant longtemps ; une erreur de réseau ou un
  * délai, si : la suivante a toutes les chances de passer. « Try again later »
  * est la façon dont YouTube dit qu'il bride l'adresse : passager, lui aussi.
+ * Lu sur les lignes ERROR seules — celles que yt-dlp rendait avant qu'on
+ * garde aussi ses avertissements (cf. `youTubeBlock`).
  */
 export function isPermanentFailure(stderr: string): boolean {
-  if (/try again later|not a bot/i.test(stderr)) return false;
-  return /Video unavailable|Private video|has been removed|not available in your country|has been terminated|members-only|Join this channel/i.test(stderr);
+  const errors = stderr.split("\n").filter((line) => line.startsWith("ERROR")).join("\n");
+  if (/try again later|not a bot/i.test(errors)) return false;
+  return /Video unavailable|Private video|has been removed|not available in your country|has been terminated|members-only|Join this channel/i.test(errors);
+}
+
+/**
+ * YouTube bride l'ADRESSE de ce serveur, pas une vidéo : toutes échoueraient
+ * pareil. `bot` : la vérification anti-robot (« Sign in to confirm you’re not
+ * a bot », apostrophe droite ou courbe ; un défi captcha) ; `limit` : la
+ * limite de débit (HTTP 429, « rate-limited », « This content isn't
+ * available, try again later », « unusual traffic »). Lu sur les lignes
+ * ERROR ET WARNING : avec `--ignore-no-formats-error`, yt-dlp rend la raison
+ * de YouTube en AVERTISSEMENT — sans eux, un blocage ne se voyait que comme
+ * « 0 formats ». Jamais l'âge à confirmer, ni une vidéo privée.
+ */
+export function youTubeBlock(stderr: string): "bot" | "limit" | null {
+  const lines = stderr.split("\n").filter((line) => /^(ERROR|WARNING)\b/.test(line)).join("\n");
+  if (/not a (bot|robot)|captcha/i.test(lines)) return "bot";
+  if (/HTTP Error 429|Too Many Requests|rate[- ]?limited|try again later|unusual traffic/i.test(lines)) return "limit";
+  return null;
 }

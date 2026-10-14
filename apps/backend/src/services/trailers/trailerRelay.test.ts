@@ -62,6 +62,12 @@ describe("résolution", () => {
     expect(extractTrailerSource).toHaveBeenCalledTimes(1);
   });
 
+  it("ne retient rien d'une extraction qui n'a pas eu lieu (aperçus suspendus, budget épuisé)", async () => {
+    extractTrailerSource.mockResolvedValueOnce({ ok: false, permanent: false, timedOut: false, skipped: true, reason: "aperçus suspendus" }).mockResolvedValueOnce(hls());
+    expect(await resolveTrailer("Way9Dexny3w", { priority: "preview" })).toBeNull();
+    expect((await resolveTrailer("Way9Dexny3w"))?.kind).toBe("hls");
+  });
+
   it("ne retient pas un délai épuisé : le geste suivant réessaie", async () => {
     extractTrailerSource.mockResolvedValueOnce({ ok: false, permanent: false, timedOut: true, reason: "sans réponse" }).mockResolvedValueOnce(hls());
     expect(await resolveTrailer("Way9Dexny3w")).toBeNull();

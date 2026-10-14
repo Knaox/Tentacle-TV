@@ -9,7 +9,10 @@
 /*  langue) : trouvée, jusqu'à l'échéance des URL ; aucune bande-      */
 /*  annonce, une heure ; aucune lisible, une minute. Deux demandes     */
 /*  simultanées en partagent une ; une décision à prendre puise dans   */
-/*  le seau du compte et dans le plafond du serveur.                   */
+/*  le seau du compte et dans le plafond du serveur. YouTube bride     */
+/*  l'adresse, ou le budget de l'heure est épuisé (`youtubeGuard.ts`) :*/
+/*  plus aucune extraction d'aperçu — « aucune lisible » ou            */
+/*  « réessayez », tout de suite, sans rien retenir par titre.         */
 /* ------------------------------------------------------------------ */
 
 import {
@@ -19,6 +22,7 @@ import { resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
 import { peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
 import type { ExtractionOptions } from "../ytExtract";
 import { fetchTitleVideos } from "../titleVideos";
+import { previewRefusal } from "../youtubeGuard";
 import { previewCandidates } from "./previewCandidates";
 import { PreviewRateLimiter } from "./previewRateLimit";
 import type { PreviewTitle } from "./previewTitle";
@@ -76,6 +80,19 @@ async function playable(ytId: string): Promise<ResolvedTrailer | null> {
   return (await prepareTrailer(ytId, PREVIEW_EXTRACTION)) ? resolved : null;
 }
 
+/**
+ * Le garde-fou YouTube (`youtubeGuard.ts`) interdit-il d'extraire pour un
+ * aperçu ? Suspendu : « aucune lisible », sans rien retenir par titre — le
+ * disjoncteur EST la mémoire, et sa fermeture rend les aperçus aussitôt ;
+ * budget de l'heure épuisé : « réessayez » dans le délai honnête.
+ */
+function guardStop(): PreviewOutcome | null {
+  const refusal = previewRefusal();
+  if (!refusal) return null;
+  if (refusal.kind === "blocked") return { kind: "refused", error: "unavailable" };
+  return { kind: "limited", retryAfterS: Math.max(1, Math.ceil(refusal.retryAfterMs / 1000)) };
+}
+
 function found(key: string, ytId: string, resolved: ResolvedTrailer, started: number, how: string): PreviewOutcome {
   remember(key, { kind: "found", ytId }, resolved.validUntil - Date.now());
   console.log(`[trailers] aperçu ${key} : ${ytId} (${resolved.kind}, ${resolved.heights[0] ?? "mp4"}) en ${Date.now() - started} ms, ${how}`);
@@ -84,12 +101,18 @@ function found(key: string, ytId: string, resolved: ResolvedTrailer, started: nu
 
 /**
  * Prend la décision. `known` : la vidéo d'une décision encore valable que le
- * relais a oubliée — essayée d'abord, sans relire TMDB.
+ * relais a oubliée — essayée d'abord, sans relire TMDB. Après chaque échec,
+ * le garde-fou : une vérification anti-robot (ou une limite) n'est JAMAIS une
+ * candidate morte — on n'essaie pas la suivante, on ne retient rien du titre.
+ * Une candidate que le relais tient déjà se sert même pendant un blocage :
+ * seule une extraction est refusée (`ytExtract.ts`).
  */
 async function decide(key: string, title: PreviewTitle, lang: string | undefined, known?: string): Promise<PreviewOutcome> {
   const started = Date.now();
   const again = known ? await playable(known) : null;
   if (known && again) return found(key, known, again, started, "reprise");
+  const stoppedEarly = known ? guardStop() : null;
+  if (stoppedEarly) return stoppedEarly;
   const tmdb = title.tmdb ? await fetchTitleVideos(title.tmdb.id, title.tmdb.mediaType, lang) : { videos: [], complete: true };
   const candidates = previewCandidates(title.jellyfin, tmdb.videos, lang).slice(0, MAX_ATTEMPTS);
   if (candidates.length === 0) {
@@ -101,6 +124,8 @@ async function decide(key: string, title: PreviewTitle, lang: string | undefined
     if (index > 0 && Date.now() - started >= DECISION_BUDGET_MS) break;
     const resolved = await playable(ytId);
     if (resolved) return found(key, ytId, resolved, started, `essai ${index + 1}/${candidates.length}`);
+    const stop = guardStop();
+    if (stop) return stop;
   }
   console.warn(`[trailers] aperçu ${key} : aucune lisible (${candidates.length} candidate(s), ${Date.now() - started} ms)`);
   return refuse(key, "unavailable");
@@ -124,6 +149,9 @@ export async function decidePreview(title: PreviewTitle, lang: string | undefine
   }
   const pending = inflight.get(key);
   if (pending) return pending;
+  // YouTube bride l'adresse, ou le budget de l'heure est épuisé : réponse immédiate, sans TMDB ni extraction.
+  const stop = guardStop();
+  if (stop) return stop;
   if (inflight.size >= MAX_PENDING_DECISIONS) return { kind: "limited", retryAfterS: BUSY_RETRY_S };
   const verdict = limiter.take(account);
   if (!verdict.ok) return { kind: "limited", retryAfterS: verdict.retryAfterS };

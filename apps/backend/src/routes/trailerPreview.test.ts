@@ -41,6 +41,7 @@ import { profileSessionScope } from "../services/family/profileSessionLimits";
 import { parseCorsOrigins, tentacleCorsDelegator } from "../services/tentacleCors";
 import { resetTrailerRelay } from "../services/trailers/trailerRelay";
 import { resetHeldSegments } from "../services/trailers/trailerSegments";
+import { countPreviewExtraction, resetYouTubeGuard, tripYouTubeBreaker } from "../services/trailers/youtubeGuard";
 import { resetPreviewDecisions } from "../services/trailers/preview/previewDecision";
 import { resetPreviewTitles } from "../services/trailers/preview/previewTitle";
 import { trailerMediaRoutes } from "./trailerMedia";
@@ -93,6 +94,7 @@ const get = (app: Awaited<ReturnType<typeof server>>, query: string, token = "al
 beforeEach(() => {
   resetTrailerRelay();
   resetHeldSegments();
+  resetYouTubeGuard();
   resetPreviewDecisions();
   resetPreviewTitles();
   vi.unstubAllGlobals();
@@ -179,6 +181,19 @@ describe("GET /api/trailers/preview", () => {
     resetTrailerRelay();
     const res = await get(app, "tmdbId=438631&mediaType=movie&lang=fr");
     expect([res.statusCode, res.json()]).toEqual([404, { error: "unavailable" }]);
+  });
+
+  it("YouTube bride l'adresse : 404 unavailable tout de suite, sans extraction ; budget de l'heure épuisé : 429 et son délai", async () => {
+    const app = await server();
+    tripYouTubeBreaker("bot");
+    const blocked = await get(app, `itemId=${MOVIE}&lang=fr`);
+    expect([blocked.statusCode, blocked.json()]).toEqual([404, { error: "unavailable" }]);
+    expect(extractTrailerSource).not.toHaveBeenCalled();
+    resetYouTubeGuard();
+    for (let i = 0; i < 30; i++) countPreviewExtraction();
+    const limited = await get(app, `itemId=${MOVIE}&lang=fr`);
+    expect([limited.statusCode, limited.headers["retry-after"], limited.json()]).toEqual([429, "3600", { error: "rate_limited", retryAfterS: 3600 }]);
+    expect(extractTrailerSource).not.toHaveBeenCalled();
   });
 
   it("une session de profil (TV, invité de la Famille) y a droit : c'est regarder", async () => {

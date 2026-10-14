@@ -11,7 +11,9 @@
 /*  Entrée  : {"id", "url", "clients": [...], "ejs": bool}             */
 /*  Sortie  : {"ready": true, "version"} au démarrage, puis            */
 /*            {"id", "formats": [...], "subtitles", "automatic_captions",*/
-/*            "stderr"} par extraction — les seuls champs dont le      */
+/*            "stderr"} par extraction — `stderr` porte les erreurs et   */
+/*            les avertissements (« WARNING: … » : la vérification       */
+/*            anti-robot de YouTube y passe) — les seuls champs dont le */
 /*            choix du flux et des pistes a besoin (trailerSubtitles : */
 /*            les sous-titres automatiques réduits à la reconnaissance */
 /*            vocale d'origine, au lieu de ~150 traductions).          */
@@ -38,7 +40,9 @@ class Errors:
     def debug(self, msg):
         pass
     info = debug
-    warning = debug
+    def warning(self, msg):
+        if len(self.lines) < 20:
+            self.lines.append("WARNING: " + str(msg)[:500])
     def error(self, msg):
         self.lines.append(msg)
 
