@@ -307,17 +307,18 @@ octet pour octet dans `apps/backend/src/trailers/` (avec la liste,
   corps, `retryAfterS`), 400 `invalid_request`.
 
 **Le choix** (`services/trailers/preview/`) : un titre de la bibliothèque est
-lu AU NOM du compte (clé d'administration + `userId` : Jellyfin rend 404 pour
-ce qu'il ne voit pas) ; un épisode ou une saison valent leur série. Les
-candidates : `RemoteTrailers` de Jellyfin et vidéos TMDB (clé du serveur,
-`titleVideos.ts` ; Jellyseerr sans clé), fusionnées par `mergeTrailers` — la
-règle de la fiche : la langue d'abord (doublée, puis sous-titrée, puis le
-reste), une bande-annonce avant un teaser ; YouTube seulement, jamais
-featurette, coulisses ni extrait. La langue est celle du SERVEUR (cf. « Langue,
-taille, reprise, survol unique » plus bas).
-TMDB ne rend que l'anglais sans paramètre (mesuré : aucune des cinq VF de
-Dune) : on demande `include_video_language=<langue>,en,null`, puis la langue
-originale si rien ne convient.
+lu AU NOM du compte (`catalog/catalogTitle.ts` : ce qu'il ne voit pas ne
+décide rien pour les autres). Les candidates sont celles du CATALOGUE du titre
+(`/api/trailers/catalog`, `previewCandidates.ts`), dans son ordre : un épisode
+ou une saison prennent LEUR saison (puis les précédentes, la série), la langue
+du SERVEUR d'abord (localisée, sous-titrée, le reste) — le bouton « Bande-
+annonce » et l'aperçu montrent ainsi la même vidéo. Les vidéos en ligne
+seulement : YouTube, et Dailymotion (AlloCiné) pour un client qui l'annonce
+(`dm=1` ; la réponse porte alors `source` et un `ytId` vide — un client
+d'avant n'en reçoit jamais). Une vidéo Dailymotion passe par le relais, sans
+extraction YouTube, et reste permise quand YouTube bride l'adresse. Un
+catalogue encore vide (une source finit en fond) : 429 « réessayez dans 3 s »,
+rien de retenu.
 
 **La vérification** : trois candidates au plus, dans l'ordre, jusqu'à la
 première qui s'extrait (yt-dlp, budget de 20 s, APRÈS les lectures : un
