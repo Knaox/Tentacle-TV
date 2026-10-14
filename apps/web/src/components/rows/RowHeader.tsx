@@ -15,6 +15,11 @@ interface RowHeaderProps {
  * Titre de rangée. Le rail de marque à sa gauche est la signature qui relie
  * les rangées, la bannière et l'en-tête de bibliothèque : il s'étire au survol
  * de la rangée, ce qui indique la zone active sans rien déplacer.
+ *
+ * Il s'étire par `scale-y`, jamais par sa hauteur : de 20 à 28 px, il
+ * dépassait la ligne du titre et grandissait l'en-tête de 2 px — toutes les
+ * cartes de la rangée descendaient de 2 px au survol (recette du 14/10), et
+ * la page se remettait en page à chaque image des 300 ms de la transition.
  */
 export function RowHeader({ title, href, trailing }: RowHeaderProps) {
   const { t } = useTranslation("common");
@@ -26,7 +31,7 @@ export function RowHeader({ title, href, trailing }: RowHeaderProps) {
     <div className="row-gutter mb-1 flex items-center gap-2.5">
       <span
         aria-hidden
-        className="h-5 w-[3px] flex-shrink-0 rounded-full transition-all duration-300 group-hover/row:h-7 motion-reduce:transition-none"
+        className="h-5 w-[3px] flex-shrink-0 rounded-full transition-transform duration-300 group-hover/row:scale-y-[1.4] motion-reduce:transition-none"
         style={{ background: "linear-gradient(180deg, var(--brand), var(--brand-accent))" }}
       />
 
