@@ -1,5 +1,5 @@
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
@@ -10,8 +10,7 @@ import { profilePhotoUrl, type StoredUser } from "@/auth/storedUser";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { cachedAvatarUri } from "@/offline/avatarCache";
 import { pendingPhotoSnapshot, photoTagFor, subscribePendingPhoto } from "@/avatars/pendingPhoto";
-import { pickLibraryPhoto } from "@/avatars/photoSources";
-import { useProfilePhotoUpload } from "@/avatars/useProfilePhotoUpload";
+import { AvatarGallerySheet } from "@/avatars/gallery/AvatarGallerySheet";
 
 interface Props {
   /** Le profil stocké, réactif (`useStoredUser`). */
@@ -20,19 +19,21 @@ interface Props {
 }
 
 /**
- * Avatar du profil — affiche la photo de profil Jellyfin (PrimaryImageTag)
- * et permet de la changer depuis l'appareil : photothèque → recadrage carré →
- * envoi (`useProfilePhotoUpload`), puis relecture du profil, dont la nouvelle
- * étiquette change l'URL (cache bust). L'étiquette n'est plus figée au
- * montage : toute relecture du profil remplace la photo sous les yeux. Repli :
- * initiale sur dégradé violet (comportement historique).
+ * Avatar du profil — affiche la photo de profil Jellyfin (PrimaryImageTag).
+ * Le toucher ouvre la galerie des photos de profil (`avatars/gallery/`) :
+ * « Importer une photo » (photothèque, recadrage carré) ou un personnage de la
+ * troupe, envoyés par le même chemin (`useProfilePhotoUpload`), puis relecture
+ * du profil, dont la nouvelle étiquette change l'URL (cache bust).
+ * L'étiquette n'est plus figée au montage : toute relecture du profil
+ * remplace la photo sous les yeux. Repli : initiale sur dégradé violet
+ * (comportement historique).
  */
 export function ProfileAvatar({ user, initial }: Props) {
   const { t } = useTranslation("profile");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const { storage } = useTentacleConfig();
-  const { upload, uploading: busy } = useProfilePhotoUpload();
+  const [galleryOpen, setGalleryOpen] = useState(false);
   // L'URL en échec plutôt qu'un drapeau : une nouvelle étiquette donne une
   // nouvelle URL, qui retente d'elle-même.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -55,59 +56,47 @@ export function ProfileAvatar({ user, initial }: Props) {
   const cachedUri = useMemo(() => (userId && fallback ? cachedAvatarUri(userId) : null), [userId, fallback]);
   const shownUri = fallback ? cachedUri : photoUrl;
 
-  const pickAndUpload = async () => {
-    if (!user || !serverUrl || busy || offline) return;
-    const picked = await pickLibraryPhoto();
-    if (picked === "denied") {
-      Alert.alert(t("photoErrorTitle"), t("photoPermissionMessage"));
-      return;
-    }
-    if (picked === null) return;
-    if ((await upload(async () => picked)) === "failed") Alert.alert(t("photoErrorTitle"), t("photoErrorMessage"));
-  };
+  const current = useMemo(() => ({ uri: shownUri, initial }), [shownUri, initial]);
+  const closeGallery = useCallback(() => setGalleryOpen(false), []);
 
   return (
-    <Pressable
-      onPress={pickAndUpload}
-      disabled={busy || offline}
-      accessibilityRole="button"
-      accessibilityLabel={t("changePhoto")}
-      style={({ pressed }) => [pressed && { opacity: 0.85 }]}
-    >
-      {shownUri ? (
-        <Image
-          source={{ uri: shownUri }}
-          style={st.photo}
-          contentFit="cover"
-          transition={200}
-          // La copie locale se remplace sous le même nom : expo-image ne doit
-          // pas en garder une version (cf. OfflineLocalImage).
-          cachePolicy={fallback ? "none" : "disk"}
-          onError={() => {
-            if (!fallback) setFailedUrl(photoUrl);
-          }}
-        />
-      ) : (
-        <LinearGradient
-          colors={[theme.colors.brand.dark, theme.colors.brand.violet, theme.colors.brand.light]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={st.avatar}
-        >
-          <Text style={st.avatarTxt}>{initial}</Text>
-        </LinearGradient>
-      )}
-
-      {/* Affordance : petit badge caméra (la photo se change au tap) */}
-      <View style={st.cameraBadge}>
-        <Feather name="camera" size={11} color={theme.colors.cta.brandFg} />
-      </View>
-
-      {busy && (
-        <View style={st.busyOverlay}>
-          <ActivityIndicator color={theme.colors.cta.brandFg} size="small" />
+    <>
+      <Pressable
+        onPress={() => setGalleryOpen(true)}
+        disabled={!user || !serverUrl || offline}
+        accessibilityRole="button"
+        accessibilityLabel={t("changePhoto")}
+        style={({ pressed }) => [pressed && { opacity: 0.85 }]}
+      >
+        {shownUri ? (
+          <Image
+            source={{ uri: shownUri }}
+            style={st.photo}
+            contentFit="cover"
+            transition={200}
+            // La copie locale se remplace sous le même nom : expo-image ne doit
+            // pas en garder une version (cf. OfflineLocalImage).
+            cachePolicy={fallback ? "none" : "disk"}
+            onError={() => {
+              if (!fallback) setFailedUrl(photoUrl);
+            }}
+          />
+        ) : (
+          <LinearGradient
+            colors={[theme.colors.brand.dark, theme.colors.brand.violet, theme.colors.brand.light]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={st.avatar}
+          >
+            <Text style={st.avatarTxt}>{initial}</Text>
+          </LinearGradient>
+        )}
+        {/* Affordance : petit badge caméra (la photo se change au tap) */}
+        <View style={st.cameraBadge}>
+          <Feather name="camera" size={11} color={theme.colors.cta.brandFg} />
         </View>
-      )}
-    </Pressable>
+      </Pressable>
+      <AvatarGallerySheet visible={galleryOpen} mode="change" current={current} onClose={closeGallery} />
+    </>
   );
 }
 
@@ -129,12 +118,6 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     width: 24, height: 24, borderRadius: 12,
     backgroundColor: t.colors.brand.violet,
     borderWidth: 2, borderColor: t.colors.surface.s0,
-    alignItems: "center" as const, justifyContent: "center" as const,
-  },
-  busyOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: SIZE / 2,
-    backgroundColor: t.colors.overlay.scrimSoft,
     alignItems: "center" as const, justifyContent: "center" as const,
   },
 });

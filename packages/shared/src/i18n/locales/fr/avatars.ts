@@ -33,6 +33,13 @@ export default {
   cancel: "Annuler",
   notNow: "Pas maintenant",
   close: "Fermer",
+  /** Le mobile n'a pas de survol : toucher un personnage le désigne, le toucher encore le prend. */
+  mobile: {
+    pickHint: "Touchez un personnage pour faire sa connaissance.",
+    tileHint: "Le présente au pied de la galerie.",
+    chosenHint: "Touchez encore pour le choisir.",
+    uploadHint: "Depuis vos photos",
+  },
   characters: {
     lanterne: { name: "Lanterne", story: "Ne regarde de l'horreur qu'après minuit. Elle apporte sa propre lumière." },
     huit: { name: "Huit", story: "Huit bras, et pas un de libre : la télécommande, le soda, le pop-corn…" },

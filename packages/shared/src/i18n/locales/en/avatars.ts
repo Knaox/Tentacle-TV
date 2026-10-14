@@ -29,6 +29,12 @@ export default {
   cancel: "Cancel",
   notNow: "Not now",
   close: "Close",
+  mobile: {
+    pickHint: "Tap a character to get to know them.",
+    tileHint: "Introduces them at the bottom of the gallery.",
+    chosenHint: "Tap again to choose them.",
+    uploadHint: "From your photos",
+  },
   characters: {
     lanterne: { name: "Lantern", story: "Only watches horror after midnight. Brings her own light." },
     huit: { name: "Eight", story: "Eight arms, not one of them free: the remote, the soda, the popcorn…" },
