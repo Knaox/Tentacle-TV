@@ -20,6 +20,16 @@
 export const TRAILER_PREVIEW_TIMING = {
   /** Survol continu au-delà duquel la demande part (une souris qui traverse ne demande rien). */
   intentMs: 250,
+  /**
+   * Et le pointeur doit s'être ARRÊTÉ sur la carte depuis ce temps : un
+   * mouvement de plus de `intentMovePx`, ou un coup de molette, repousse la
+   * demande d'autant. Une souris qui balaie une rangée, même lentement, ne
+   * s'arrête nulle part : AUCUNE requête, quel que soit le temps passé sur
+   * chaque carte. Le clavier ne bouge pas : son intention est `intentMs`.
+   */
+  intentStillMs: 100,
+  /** Le mouvement (px CSS) en deçà duquel le pointeur est tenu pour arrêté (le tremblement d'un pavé tactile). */
+  intentMovePx: 6,
   /** Révélation au plus tôt, depuis le début du survol (800 ms, cf. plus haut). */
   revealMs: 800,
   /**

@@ -6,11 +6,13 @@ import {
   type TrailerPreviewEvent,
   type TrailerPreviewState,
 } from "@tentacle-tv/shared";
+import { subscribePointerMotion } from "./pointerMotion";
 
 /**
  * La machine de l'aperçu (`previewMachine.ts`, shared) branchée sur React :
- * ses entrées (survol, blocage, sujet qui change) deviennent des évènements
- * datés, et ses échéances UNE minuterie — celle de la prochaine.
+ * ses entrées (survol, blocage, sujet qui change, pointeur qui bouge pendant
+ * l'intention) deviennent des évènements datés, et ses échéances UNE
+ * minuterie — celle de la prochaine.
  *
  * L'ordre des effets compte : le blocage passe avant le survol, pour qu'un
  * survol présent dès le montage d'une carte bloquée ne démarre rien.
@@ -37,6 +39,13 @@ export function usePreviewMachine(
     lastKey.current = subjectKey;
     dispatch({ type: "restart", at: Date.now() });
   }, [subjectKey]);
+
+  // Pendant l'intention seulement : le pointeur qui bouge repousse la demande (`pointerMotion.ts`).
+  const awaitingIntent = state.phase === "intent";
+  useEffect(() => {
+    if (!awaitingIntent) return;
+    return subscribePointerMotion(() => dispatch({ type: "move", at: Date.now() }));
+  }, [awaitingIntent]);
 
   const deadline = nextTrailerPreviewDeadline(state);
   useEffect(() => {

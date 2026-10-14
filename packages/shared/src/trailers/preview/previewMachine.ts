@@ -10,6 +10,10 @@ import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "./previewTimi
  *                                     │ absent        │ erreur, 8 s       │ erreur      │ fin
  *                                     └→ failed ←─────┴───────────────────┘            └→ ended
  *
+ * L'intention demande aussi un pointeur ARRÊTÉ (`intentStillMs`) : chaque
+ * mouvement (`move`, au-delà du seuil de la carte) la repousse. Un balayage
+ * de rangée ne demande donc rien au serveur, même lent.
+ *
  * Un refus PASSAGER (429, panne réseau) garde `fetching` : l'aperçu attend
  * l'échéance que le serveur a dite (`retryAt`), puis redemande (`attempt`),
  * deux fois au plus — un survol qui s'arrête sur une carte après en avoir
@@ -41,6 +45,8 @@ export interface TrailerPreviewState {
   readonly blocked: boolean;
   /** Début du survol qui a ouvert le cycle en cours : l'intention et la révélation en partent. */
   readonly since: number | null;
+  /** Dernier mouvement du pointeur pendant l'intention : la demande attend qu'il s'arrête. */
+  readonly stillSince: number | null;
   /** Échéance de la première image (phase `buffering`). */
   readonly readyBy: number | null;
   /** Fin du fondu de sortie d'une lecture montrée : la vidéo reste montée jusque-là. */
@@ -61,6 +67,8 @@ export interface TrailerPreviewState {
 export type TrailerPreviewEvent =
   | { type: "hover"; at: number }
   | { type: "unhover"; at: number }
+  /** Le pointeur a bougé sur la carte (au-delà du seuil), ou la molette a tourné : l'intention repart de là. */
+  | { type: "move"; at: number }
   | { type: "block"; at: number }
   | { type: "unblock"; at: number }
   /** Une échéance est peut-être passée (minuterie du crochet). */
@@ -82,6 +90,7 @@ export const INITIAL_TRAILER_PREVIEW_STATE: TrailerPreviewState = {
   hovered: false,
   blocked: false,
   since: null,
+  stillSince: null,
   readyBy: null,
   exitUntil: null,
   resumable: false,
@@ -103,6 +112,7 @@ function begin(state: TrailerPreviewState, at: number): TrailerPreviewState {
     ...state,
     phase: "intent",
     since: at,
+    stillSince: at,
     readyBy: null,
     exitUntil: null,
     resumable: false,
@@ -137,11 +147,17 @@ function revealAt(state: TrailerPreviewState, timing: TrailerPreviewTiming): num
   return (state.since ?? 0) + timing.revealMs;
 }
 
+/** La demande part quand le survol a duré `intentMs` ET que le pointeur est arrêté depuis `intentStillMs`. */
+function intentAt(state: TrailerPreviewState, timing: TrailerPreviewTiming): number {
+  const since = state.since ?? 0;
+  return Math.max(since + timing.intentMs, (state.stillSince ?? since) + timing.intentStillMs);
+}
+
 /** Fait passer toutes les échéances atteintes à `at` (une minuterie en retard en saute plusieurs). */
 function elapse(state: TrailerPreviewState, at: number, timing: TrailerPreviewTiming): TrailerPreviewState {
   let next = state;
   if (next.exitUntil !== null && at >= next.exitUntil) next = { ...next, exitUntil: null, resumable: false };
-  if (next.phase === "intent" && next.since !== null && at >= next.since + timing.intentMs) {
+  if (next.phase === "intent" && next.since !== null && at >= intentAt(next, timing)) {
     next = { ...next, phase: "fetching" };
   }
   if (next.phase === "fetching" && next.retryAt !== null && at >= next.retryAt) {
@@ -186,6 +202,8 @@ export function reduceTrailerPreview(
         ? leave(unhovered, at, "idle", { resumable: true, timing })
         : unhovered;
     }
+    case "move":
+      return state0.phase === "intent" ? { ...state0, stillSince: Math.max(state0.stillSince ?? at, at) } : state0;
     case "block": {
       if (state0.blocked) return state0;
       const blocked = { ...state0, blocked: true };
@@ -239,7 +257,7 @@ export function nextTrailerPreviewDeadline(
 ): number | null {
   const deadlines: number[] = [];
   if (state.exitUntil !== null) deadlines.push(state.exitUntil);
-  if (state.phase === "intent" && state.since !== null) deadlines.push(state.since + timing.intentMs);
+  if (state.phase === "intent" && state.since !== null) deadlines.push(intentAt(state, timing));
   if (state.phase === "fetching" && state.retryAt !== null) deadlines.push(state.retryAt);
   if (state.phase === "buffering" && state.readyBy !== null) deadlines.push(state.readyBy);
   if (state.phase === "ready") deadlines.push(revealAt(state, timing));
