@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { retireLegacyChannels } from "./notificationChannels";
+import { holdStartupOverlay } from "@/startup/startupOverlays";
 
 // Côté client Expo : permissions, obtention de l'ExpoPushToken, handler
 // d'affichage au premier plan, et écoute des taps. Aucune logique métier ici.
@@ -19,6 +20,19 @@ export function configureNotificationHandler(): void {
 }
 
 /**
+ * La demande au système, déclarée comme recouvrement de démarrage le temps de
+ * sa réponse : rien d'autre ne s'ouvre pendant que sa fenêtre est à l'écran.
+ */
+async function requestPermission(): Promise<Notifications.NotificationPermissionsStatus> {
+  const release = holdStartupOverlay("permission");
+  try {
+    return await Notifications.requestPermissionsAsync();
+  } finally {
+    release();
+  }
+}
+
+/**
  * Demande la permission (si besoin) et renvoie l'ExpoPushToken.
  * Renvoie null si : simulateur, permission refusée, ou projectId manquant.
  */
@@ -33,7 +47,7 @@ export async function registerForPushToken(): Promise<string | null> {
   let status = existing;
   if (existing !== "granted") {
     // iOS ne redemande pas si déjà « denied » — l'écran de réglages gère ce cas.
-    status = (await Notifications.requestPermissionsAsync()).status;
+    status = (await requestPermission()).status;
   }
   if (status !== "granted") return null;
 
@@ -70,7 +84,7 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   const { status } = await Notifications.getPermissionsAsync();
   if (status === "granted") return true;
   // iOS : si déjà refusé, requestPermissionsAsync renvoie « denied » sans dialog.
-  const { status: next } = await Notifications.requestPermissionsAsync();
+  const { status: next } = await requestPermission();
   return next === "granted";
 }
 

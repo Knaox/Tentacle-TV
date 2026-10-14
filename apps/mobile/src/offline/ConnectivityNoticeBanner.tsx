@@ -9,6 +9,7 @@ import { SHEET_MAX_WIDTH, spacing } from "@/theme";
 import { useScreenReaderEnabled } from "@/hooks/useScreenReaderEnabled";
 import { Banner } from "@/notices/NoticeHost";
 import { useConnectivity } from "./useConnectivity";
+import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 
 /**
  * Le passage hors ligne, DIT — jamais un voile : l'application est déjà sur
@@ -27,6 +28,7 @@ export const ConnectivityNoticeBanner = memo(function ConnectivityNoticeBanner()
   const notice = useConnectivityNotice(state === "offline-auto", reason);
   const screenReader = useScreenReaderEnabled();
   const [root] = useSegments();
+  useReportStartupOverlay("connectivity", notice ? "active" : "quiet");
   // Sur le lecteur, il attend la sortie : le lecteur a ses propres messages.
   if (!notice || root === "watch") return null;
   return (

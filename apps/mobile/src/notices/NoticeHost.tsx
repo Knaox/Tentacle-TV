@@ -18,6 +18,8 @@ import { haptic } from "@/utils/haptics";
 import { NoticeCard, type NoticeCardAction, type NoticeCardSeverity, type NoticeIcon } from "./NoticeCard";
 import { dismissToast, toastAppearance, useToasts } from "./toastStore";
 import { useSwipeDismiss } from "./useSwipeDismiss";
+import { useNoticesSettled } from "./useNoticesSettled";
+import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 
 /** Une fois masqué pour de bon : la phrase qui le dit, et « Annuler ». */
 interface Confirmation {
@@ -47,6 +49,11 @@ export function NoticeHost() {
   const { mutate } = useSetHintDismissed();
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const toasts = useToasts();
+  // Ce qui vient après le démarrage (l'invitation aux avatars) attend que
+  // l'avertissement ait tranché et se soit tu.
+  const settled = useNoticesSettled(isAdmin);
+  const showing = confirmation !== null || notice !== null || toasts.length > 0;
+  useReportStartupOverlay("notices", showing ? "active" : settled ? "quiet" : "pending");
 
   const open = useCallback((path: string) => {
     if (serverUrl) void Linking.openURL(`${serverUrl}${path}`).catch(() => undefined);

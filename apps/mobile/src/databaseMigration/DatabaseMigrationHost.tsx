@@ -4,6 +4,7 @@ import { FullWindowOverlay } from "react-native-screens";
 import { useDatabaseMigrationGate } from "@tentacle-tv/api-client";
 import { probeNow } from "@/offline/connectivityStore";
 import { DatabaseMigrationScreen } from "./DatabaseMigrationScreen";
+import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 
 /**
  * La SEULE porte de l'écran d'attente de la migration de la base sur le
@@ -17,6 +18,7 @@ import { DatabaseMigrationScreen } from "./DatabaseMigrationScreen";
  */
 export function DatabaseMigrationHost({ serverUrl }: { serverUrl: string | null }) {
   const view = useDatabaseMigrationGate({ backendUrl: serverUrl, onResume: resume });
+  useReportStartupOverlay("migration", view ? "active" : "quiet");
   if (!view) return null;
   return <AboveEverything><DatabaseMigrationScreen view={view} /></AboveEverything>;
 }

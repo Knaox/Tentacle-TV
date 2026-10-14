@@ -12,6 +12,7 @@ import { whenNoModal } from "@/components/ui/modalGate";
 import { clearFamilyPosterRequest, useFamilyPosterRequest } from "./familyPosterStore";
 import { FamilyInvitationPoster } from "./FamilyInvitationPoster";
 import { useFamilyAvailability } from "./useFamilyAvailability";
+import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 
 /**
  * L'hôte de l'AFFICHE d'invitation — monté une fois, à la racine, jamais
@@ -30,7 +31,7 @@ import { useFamilyAvailability } from "./useFamilyAvailability";
  * carte, réglage) se soit retirée (`whenNoModal`).
  */
 export function FamilyInvitationHost() {
-  const { available } = useFamilyAvailability();
+  const { available, settled } = useFamilyAvailability();
   const { storage } = useTentacleConfig();
   useFamilyLive({ token: storage.getItem("tentacle_token"), enabled: available });
 
@@ -51,6 +52,10 @@ export function FamilyInvitationHost() {
     () => (incoming ? pickPosterInvitation(incoming, { now: Date.now(), dismissed, requestedId }) : null),
     [incoming, dismissed, requestedId],
   );
+  // L'affiche passe avant l'invitation aux avatars : celle-ci attend que la
+  // Famille soit lue et que l'affiche se soit tue.
+  const overviewPending = available && overview.data === undefined && !overview.isError;
+  useReportStartupOverlay("family", invitation ? "active" : !settled || overviewPending ? "pending" : "quiet");
 
   // La demande d'une invitation précise : la Famille se relit d'abord (elle a
   // pu être répondue ailleurs). Introuvable une fois relue → sa page (sans

@@ -9,6 +9,7 @@ import { SHEET_MAX_WIDTH, spacing } from "@/theme";
 import { MessageBanner } from "./MessageBanner";
 import { useMessageCountdown } from "./useMessageCountdown";
 import { haptic } from "@/utils/haptics";
+import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 
 /**
  * Les messages que l'administrateur envoie à cet appareil — depuis le tableau
@@ -56,6 +57,8 @@ export function SessionMessageHost() {
     haptic("notice");
     AccessibilityInfo.announceForAccessibility([t("messageFrom"), message.header, message.text].filter(Boolean).join(". "));
   }), [t]);
+
+  useReportStartupOverlay("messages", messages.length > 0 ? "active" : "quiet");
 
   if (messages.length === 0) return null;
 
