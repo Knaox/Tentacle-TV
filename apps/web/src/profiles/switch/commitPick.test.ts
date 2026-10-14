@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PickedProfileDto, PickerProfileDto } from "@tentacle-tv/shared";
-import { endProfileSession, beginProfileSwitch, cancelProfileSwitch } from "../../auth/profileEnded";
+import { endProfileSession, beginProfileSwitch, cancelProfileSwitch, isProfileSwitching } from "../../auth/profileEnded";
 import { commitPick } from "./commitPick";
 import { getPipSession, startPipSession, watchLocation } from "../../pictureInPicture/pictureInPictureStore";
 
@@ -64,6 +64,17 @@ describe("choisir un profil", () => {
     expect(assigned).toEqual([]);
     expect(session.getItem("tentacle_profile_launch_passed")).toBe("1");
     expect(local.getItem("tentacle_token")).toBe("jeton-perso");
+  });
+
+  it("son propre profil, depuis sa session : aucune bascule n'a eu lieu, une vraie fin de session redevient une fin", async () => {
+    // Le choix a été annoncé comme une bascule (`usePickFlow` appelle
+    // `beginProfileSwitch` avant de demander au serveur) ; sans rechargement,
+    // rien ne doit rester « en bascule » : la session personnelle qui expire
+    // ensuite doit être purgée par la garde de session, pas ignorée.
+    beginProfileSwitch();
+    expect(await commit(OWNER)).toBe("stay");
+    expect(isProfileSwitching()).toBe(false);
+    expect(endProfileSession("ended")).toBe(false);
   });
 
   it("un autre profil : son jeton devient celui de l'application, le reste repart de zéro", async () => {

@@ -1,6 +1,6 @@
 import type { PickedProfileDto, PickerProfileDto } from "@tentacle-tv/shared";
 import { readActiveProfile, type ActiveProfile } from "../../auth/profileSession";
-import { clearPickerRequest } from "../../auth/profileEnded";
+import { cancelProfileSwitch, clearPickerRequest } from "../../auth/profileEnded";
 import { enterProfile, returnToAccount } from "../../auth/sessionSwap";
 import { endPipSession } from "../../pictureInPicture/pictureInPictureStore";
 import { markLaunchPassed, noteCurrentProfile } from "../launch/launchState";
@@ -53,6 +53,11 @@ export function activeProfileOf(profile: PickerProfileDto): ActiveProfile {
 export async function commitPick(picked: PickedProfileDto, context: CommitContext = {}): Promise<CommitResult> {
   const held = readActiveProfile();
   if (picked.personal && !held) {
+    // Aucune bascule n'a lieu : la page ne se recharge pas, et le drapeau posé
+    // par `beginProfileSwitch` resterait levé jusqu'à la fermeture — la garde
+    // de session tiendrait alors toute fin de la session personnelle pour
+    // « la nôtre », et ne la purgerait jamais.
+    cancelProfileSwitch();
     markLaunchPassed();
     clearPickerRequest();
     noteCurrentProfile(picked.profile.userId);
