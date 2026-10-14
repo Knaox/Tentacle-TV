@@ -269,8 +269,10 @@ lu AU NOM du compte (clé d'administration + `userId` : Jellyfin rend 404 pour
 ce qu'il ne voit pas) ; un épisode ou une saison valent leur série. Les
 candidates : `RemoteTrailers` de Jellyfin et vidéos TMDB (clé du serveur,
 `titleVideos.ts` ; Jellyseerr sans clé), fusionnées par `mergeTrailers` — la
-règle de la fiche : la langue d'abord (VF en français), une bande-annonce
-avant un teaser ; YouTube seulement, jamais featurette, coulisses ni extrait.
+règle de la fiche : la langue d'abord (doublée, puis sous-titrée, puis le
+reste), une bande-annonce avant un teaser ; YouTube seulement, jamais
+featurette, coulisses ni extrait. La langue est celle du SERVEUR (cf. « Langue,
+taille, reprise, survol unique » plus bas).
 TMDB ne rend que l'anglais sans paramètre (mesuré : aucune des cinq VF de
 Dune) : on demande `include_video_language=<langue>,en,null`, puis la langue
 originale si rien ne convient.
@@ -289,8 +291,8 @@ prendre démarre aussi l'ouvrier yt-dlp d'avance (`prewarmYtWorker`) : Python
 et yt-dlp se chargent pendant que TMDB répond — jamais pour une reprise dont
 le relais tient encore la source (aucune extraction ne suivra).
 
-**La mémoire** : la décision par (titre, langue) — trouvée jusqu'à
-l'échéance des URL, aucune bande-annonce une heure, aucune lisible dix
+**La mémoire** : la décision par (titre, langue, version des règles) — trouvée jusqu'à
+l'échéance des URL (dix minutes pour une langue de repli), aucune bande-annonce une heure, aucune lisible dix
 minutes (elle a coûté jusqu'à trois extractions) ; demandes identiques
 partagées ; une vidéo que le relais a oubliée est reprise d'abord, sans
 relire TMDB. Le relais garde 96 vidéos COMPLÈTES ; au-delà, les plus
@@ -479,10 +481,60 @@ pour les films muets (Metropolis, Le Kid) — ce que YouTube sert, pas plus ;
 un MP4 360p quand YouTube ne sert pas de HLS (Sherlock Junior, Your Name).
 Le départ au plus haut : la meilleure hauteur dès la première image.
 
+### Langue, taille, reprise, survol unique (14/10, soir)
+
+Quatre défauts relevés à l'essai (nés en dev, absents des notes de version) :
+
+- **La VO au lieu de la VF.** Le LIBELLÉ passe avant le code langue de TMDB,
+  qui étiquette `fr` des VOST et des VO : « VOST », « VOSTFR », « VO STFR »,
+  « VO », « V.O. », « version originale » (limites de mot) ; rang doublée →
+  sous-titrée → autre (`trailerLangFit` / `trailerLangRank`, shared
+  `trailerList.ts`, recopié). La langue qui classe est celle du SERVEUR — la
+  langue des métadonnées de Jellyfin (`previewLanguage.ts`, via
+  `reco/titleLanguage.ts`) : serveur en français, la VF d'abord ; en anglais,
+  la VO anglaise ; celle du client à défaut. Une langue moins bonne trouvée
+  après l'échec d'une meilleure (VF muette, VO lisible) n'est gardée que DIX
+  MINUTES : le survol suivant réessaie la VF (un raté permanent reste retenu
+  une heure par le relais, sans extraction). La clé de décision porte la
+  version des règles (`|r2`) : les VOST crues VF, gardées sur le disque, ne
+  servent plus. Un « Clip » ou une « Featurette » que son libellé dit
+  bande-annonce reste candidat (`trailerKind`).
+- **L'aperçu d'une affiche plus petit que celui d'une vignette** (331 px
+  contre 414 à 1 440 de fenêtre : l'affiche restait au plancher). Sa
+  croissance part désormais de la largeur d'une vignette moyenne
+  (`idealCardWidth`, `previewPlacement.ts`) ; Vigie, qui n'a que des
+  affiches, de même (`placement.ts`).
+- **La reprise depuis zéro.** Quitter une carte puis y revenir reprend la
+  bande-annonce où on l'avait laissée (`previewPositions.ts` ; Vigie
+  `positions.ts`) : position retenue par VIDÉO (le chemin du flux sans jeton,
+  jamais le titre), dix minutes, effacée à la fin ou à deux secondes de la
+  fin ; hls.js repart par `startLoad(position)` sans retomber à 0, un MP4 s'y
+  place à `loadedmetadata`. Le coût est nul : listes et segments sont dans le
+  cache du navigateur.
+- **Survoler deux fois.**
+  - Serveur : les extractions d'aperçu se servent la plus RÉCENTE d'abord
+    (`extractionSlots.ts`) — la carte sous le pointeur ne fait plus la queue
+    derrière celles déjà quittées —, et une décision que plus personne
+    n'attend cède sa place. Une demande `/preview` attend DOUZE secondes au
+    plus (sous les 15 s du client) : au-delà, 429 « réessayez dans une
+    seconde », et la décision CONTINUE ; la demande suivante la rejoint, sans
+    puiser dans le seau. Le plafond de quatre décisions ne compte que celles
+    qu'on attend : une rangée balayée ne bloque plus la carte survolée.
+  - Client : le délai propre de la demande (15 s) n'est plus une panne
+    (`timeout`, redemandé 1,5 s plus tard au lieu de 10 s) ; une réponse
+    arrivée déjà échue se redemande au lieu d'être ignorée ; après un
+    défilement à la molette, la carte où la page s'arrête, sous un pointeur
+    TENU immobile 1,2 s, lance son aperçu sans le petit mouvement qu'il
+    fallait (`previewQuiet.ts`). Après une mini-carte refermée (Échap, fin),
+    la voisine attend toujours un vrai mouvement. Vigie : délai de 15 s par
+    une course (le pont de l'hôte ignore `signal`), même redemande.
+
 **Surveiller** (`grep '\[trailers\] aperçu'`) :
 
-- `aperçu tmdb:movie:438631|fr : gHt8tCHbB2M (hls, 1080) en 1387 ms (TMDB 177, extraction 1140, vérification 253), essai 1/3`
-  — où passe le temps d'une décision ;
+- `aperçu tmdb:movie:438631|fr|r2 : gHt8tCHbB2M (hls, 1080) en 1387 ms (TMDB 177, extraction 1140, vérification 253), essai 1/3`
+  — où passe le temps d'une décision ; `…, essai 2/3, langue de repli gardée
+  10 min` : la meilleure langue a échoué (la ligne `aucun flux (…)` juste
+  avant dit pourquoi) ;
 - `mémoire des aperçus reprise : 12 décision(s), 9 source(s)` — au démarrage ;
 - `aperçu jf:<id>|fr : aucune bande-annonce` — ou `(TMDB sans réponse)` ;
 - `aperçu … : aucune lisible (3 candidate(s), … ms)` — yt-dlp les refuse ;
