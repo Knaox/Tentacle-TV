@@ -122,7 +122,7 @@ export function trailerLangRank(tr: RichTrailer, lang: string | undefined): numb
 }
 
 /** Une vraie version doublée dans la langue `lang` (une VF pour « fr ») — jamais une VOST ni une VO. */
-export function langMatches(tr: RichTrailer, lang: string | undefined): boolean {
+export function trailerLangMatches(tr: RichTrailer, lang: string | undefined): boolean {
   return trailerLangFit(tr, lang) === "dubbed";
 }
 

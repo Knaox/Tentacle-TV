@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  hasSubtitleMark, langMatches, mergeTrailers, parseYouTubeId, sortTrailersByLang, trailerKind, trailerLangFit,
+  hasSubtitleMark, trailerLangMatches, mergeTrailers, parseYouTubeId, sortTrailersByLang, trailerKind, trailerLangFit,
   type RichTrailer,
 } from "./trailerList";
 
@@ -11,13 +11,13 @@ describe("bandes-annonces › la langue d'une vidéo", () => {
     expect(trailerLangFit(video("Dune : Bande-annonce officielle", "fr"), "fr")).toBe("dubbed");
     expect(trailerLangFit(video("Dune - Bande-annonce VF"), "fr-FR")).toBe("dubbed");
     expect(trailerLangFit(video("Dune — Version française"), "fr")).toBe("dubbed");
-    expect(langMatches(video("Dune - Bande-annonce VF"), "fr")).toBe(true);
+    expect(trailerLangMatches(video("Dune - Bande-annonce VF"), "fr")).toBe(true);
   });
 
   it("le libellé passe avant le code : une VOST étiquetée `fr` est sous-titrée, jamais une VF", () => {
     for (const name of ["Bande-annonce VOST", "Bande-annonce VOSTFR", "Rick et Morty - saison 9 Bande-annonce VO STFR", "Trailer (V.O. ST-FR)", "Bande-annonce sous-titrée"]) {
       expect(trailerLangFit(video(name, "fr"), "fr")).toBe("subtitled");
-      expect(langMatches(video(name, "fr"), "fr")).toBe(false);
+      expect(trailerLangMatches(video(name, "fr"), "fr")).toBe(false);
     }
   });
 
