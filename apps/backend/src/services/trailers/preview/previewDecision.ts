@@ -62,8 +62,8 @@ const BUSY_RETRY_S = 2;
 const CATALOG_PENDING_RETRY_S = 3;
 /** Une langue de repli (la VF a échoué, la VO a répondu) ne se garde pas des heures. */
 const FALLBACK_LANG_TTL_MS = 10 * 60 * 1000;
-/** La version des RÈGLES de choix, dans la clé : une décision d'avant (rang du catalogue d'avant, VOST crue VF) ne sert plus. */
-const RULES_VERSION = "r4";
+/** La version des RÈGLES de choix, dans la clé : une décision d'avant (rang du catalogue d'avant, vidéo d'un autre titre) ne sert plus. */
+const RULES_VERSION = "r5";
 /** Au-delà, la réponse dit « réessayez » ; la décision, elle, continue (sous les 15 s du client). */
 const RESPONSE_BUDGET_MS = 12_000;
 const STILL_DECIDING_RETRY_S = 1;
