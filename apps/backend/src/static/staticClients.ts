@@ -10,6 +10,7 @@ import {
 import { isSetupComplete } from "../services/configStore";
 import { isWebUiEnabled, webUiBlocks } from "./webUi";
 import { INVITE_PAGE_PATH, sendInvitePage } from "./invitePage";
+import { createWebIndexSender, isWebIndexPath, resolveWebDebug } from "./webDebug";
 
 /**
  * Service des clients construits : le client web à la racine, le client
@@ -45,6 +46,8 @@ export interface StaticClientRoots {
   tvSourcePath?: string;
   /** L'interface web ouverte, et l'installation finie (`webUi.ts`) — remplaçables par les tests. */
   webUi?: () => { enabled: boolean; setupComplete: boolean };
+  /** Le débogage du client web (`TENTACLE_WEB_DEBUG`, `webDebug.ts`) — remplaçable par les tests. */
+  webDebug?: boolean;
 }
 
 export async function registerStaticClients(
@@ -56,6 +59,10 @@ export async function registerStaticClients(
   // ce qui le fait porter à la fois sur les fichiers statiques et sur le repli
   // monopage plus bas.
   const webUi = roots.webUi ?? (() => ({ enabled: isWebUiEnabled(), setupComplete: isSetupComplete() }));
+  // La page du web MARQUÉE, si l'administrateur a allumé le débogage du web —
+  // posée plus bas, une fois le client web trouvé. Sinon `null` : la page part
+  // telle quelle, comme toujours.
+  let sendWebIndex: ((reply: FastifyReply) => FastifyReply) | null = null;
   app.addHook("onRequest", async (request, reply) => {
     const path = request.url.split("?")[0];
     // L'interface web coupée (`TENTACLE_WEB_UI=off`) : 404, sauf l'API, /tv, /.well-known et l'assistant.
@@ -63,6 +70,9 @@ export async function registerStaticClients(
     if (webUiBlocks(path, webUi())) {
       if (path === INVITE_PAGE_PATH && request.method === "GET") return sendInvitePage(request, reply);
       return pageNotFound(reply);
+    }
+    if (sendWebIndex && (request.method === "GET" || request.method === "HEAD") && isWebIndexPath(path)) {
+      return sendWebIndex(reply);
     }
     if (!isTvClientPath(path)) return;
     if (tvClientOpenToAll()) return;
@@ -76,6 +86,7 @@ export async function registerStaticClients(
   const webPresent = existsSync(webPath);
   if (webPresent) {
     await app.register(fastifyStatic, { root: webPath, prefix: "/" });
+    if (roots.webDebug ?? resolveWebDebug(process.env)) sendWebIndex = createWebIndexSender(webPath);
   }
 
   // Avant le premier build de la cible téléviseur, on sert `client/public` :
@@ -135,6 +146,6 @@ export async function registerStaticClients(
     // Une page de partage est publique, pas publiée : qui a le lien la voit,
     // aucun moteur de recherche ne l'indexe ni ne suit ses liens.
     if (path.startsWith("/share/")) reply.header("x-robots-tag", "noindex, nofollow");
-    return reply.sendFile("index.html");
+    return sendWebIndex ? sendWebIndex(reply) : reply.sendFile("index.html");
   });
 }
