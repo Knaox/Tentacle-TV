@@ -6,8 +6,8 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useItemsExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
 import {
-  buildExtraEntries, catalogTiles, parseYouTubeId, sortTrailersByLang,
-  type CatalogRow, type CatalogTile, type ExtraEntry, type RichTrailer, type TrailerScope,
+  buildExtraEntries, catalogTiles, parseYouTubeId, scopeName, sortTrailersByLang, withSeasonNames,
+  type CatalogRow, type CatalogTile, type ExtraEntry, type RichTrailer,
 } from "@tentacle-tv/shared";
 import { spacing, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
 import { trailerRouteHref, type TrailerRouteItemType } from "@/trailers/trailerRoute";
@@ -33,7 +33,7 @@ interface Props {
   catalog: CatalogRow | null;
   /** Le nom de la saison quand le carrousel ne montre qu'elle. */
   title?: string;
-  /** Plusieurs saisons réunies : chaque tuile dit la sienne (`useMobileFicheExtras`). */
+  /** Plusieurs saisons réunies : chaque tuile dit la sienne (`useFicheExtras`). */
   seasonNames: ReadonlyMap<string, string> | null;
   fiche: ExtrasCatalogOwner;
 }
@@ -56,16 +56,9 @@ export function MobileExtrasCarousel({ owners, remote, catalog, title, seasonNam
   const { local, ownerOf } = useItemsExtras(owners);
 
   const tiles = useMemo<RowTile[]>(() => {
-    const scopeLabel = seasonNames
-      ? (scope: TrailerScope) => (scope.kind === "season" ? t("trailerScopeSeason", { season: scope.season }) : null)
-      : undefined;
-    const extras = buildExtraEntries(t, local, catalog ? [] : sortTrailersByLang(remote, i18n.language)).map((entry): RowTile => {
-      const owner = entry.source === "local" ? ownerOf.get(entry.itemId) : undefined;
-      const name = owner ? seasonNames?.get(owner) : undefined;
-      if (!name) return { kind: "extra", entry };
-      return { kind: "extra", entry: { ...entry, subtitle: entry.subtitle ? `${name} · ${entry.subtitle}` : name } };
-    });
-    return [...extras, ...(catalog ? catalogTiles(t, catalog, scopeLabel).map((tile): RowTile => ({ kind: "catalog", tile })) : [])];
+    const entries = withSeasonNames(buildExtraEntries(t, local, catalog ? [] : sortTrailersByLang(remote, i18n.language)), ownerOf, seasonNames);
+    const videos = catalog ? catalogTiles(t, catalog, seasonNames ? (scope) => scopeName(t, scope) : undefined) : [];
+    return [...entries.map((entry): RowTile => ({ kind: "extra", entry })), ...videos.map((tile): RowTile => ({ kind: "catalog", tile }))];
   }, [t, local, ownerOf, catalog, remote, seasonNames, i18n.language]);
 
   if (tiles.length === 0) return null;

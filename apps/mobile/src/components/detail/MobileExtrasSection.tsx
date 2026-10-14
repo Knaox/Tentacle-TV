@@ -1,6 +1,8 @@
+import { useTranslation } from "react-i18next";
+import { useFicheExtras } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { MOBILE_TRAILER_PLATFORM } from "@/trailers/trailerPlatform";
 import { MobileExtrasCarousel } from "./MobileExtrasCarousel";
-import { useMobileFicheExtras } from "./useMobileFicheExtras";
 
 /**
  * Section « Extras » (mobile) : UN carrousel par fiche, jamais des rangées
@@ -14,6 +16,7 @@ import { useMobileFicheExtras } from "./useMobileFicheExtras";
  * fiche. Sans lui, les vidéos YouTube d'avant. Rien à montrer : rien.
  */
 export function MobileExtrasSection({ item, seriesItem }: { item: MediaItem; seriesItem?: MediaItem }) {
-  const extras = useMobileFicheExtras(item, seriesItem);
+  const { i18n } = useTranslation();
+  const extras = useFicheExtras(item, seriesItem, i18n.language, MOBILE_TRAILER_PLATFORM);
   return <MobileExtrasCarousel {...extras} fiche={{ itemId: item.Id, itemType: item.Type }} />;
 }
