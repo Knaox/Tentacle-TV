@@ -8,6 +8,7 @@ import {
   type TvProfilesDto,
 } from "@tentacle-tv/shared";
 import { TV_PAIRING_TOKEN_KEY, TV_PROFILE_KEY } from "./tvProfileKeys";
+import { tvProfileRoleOf } from "./profileRoleName";
 import type { SessionStorage } from "./unpairJournal";
 
 /**
@@ -54,6 +55,11 @@ export interface TvProfileRecord {
   /** Un invité : ses droits à l'ouverture (« peut demander », v2) ; la garde
    *  de Vigie préfère la liste relue (`profileMayRequest`). Absent : aucun. */
   guestRights?: FamilyGuestRights | null;
+  /** Un membre nommé parent, à l'ouverture (1.30.0) ; Réglages préfère la liste
+   *  relue (`openProfileState`). Absent d'un enregistrement d'avant : non. */
+  parent?: boolean;
+  /** Il gérerait avec un code PIN (`TvProfileDto.manageNeedsPin`, 1.30.0). Absent : non. */
+  manageNeedsPin?: boolean;
 }
 
 const KINDS: readonly FamilyProfileKind[] = ["owner", "member", "guest"];
@@ -95,6 +101,8 @@ export function profileRecordOf(profile: TvProfileDto, listing: ProfilesListingR
     familyOwnerName: familyOwner?.name ?? paired.name,
     manages: profileManages(profile, listing),
     guestRights: profile.guestRights ?? null,
+    parent: tvProfileRoleOf(profile) === "parent",
+    manageNeedsPin: profile.manageNeedsPin === true,
   };
 }
 
@@ -123,7 +131,9 @@ function isRecord(value: unknown): value is TvProfileRecord {
     && typeof r.canManage === "boolean"
     && (r.familyOwnerName === undefined || typeof r.familyOwnerName === "string")
     && (r.manages === undefined || typeof r.manages === "boolean")
-    && (r.guestRights === undefined || r.guestRights === null || typeof (r.guestRights as { requestTitles?: unknown }).requestTitles === "boolean");
+    && (r.guestRights === undefined || r.guestRights === null || typeof (r.guestRights as { requestTitles?: unknown }).requestTitles === "boolean")
+    && (r.parent === undefined || typeof r.parent === "boolean")
+    && (r.manageNeedsPin === undefined || typeof r.manageNeedsPin === "boolean");
 }
 
 /** Le profil retenu ; illisible ou incomplet : aucun (la session ne se reprend pas). */

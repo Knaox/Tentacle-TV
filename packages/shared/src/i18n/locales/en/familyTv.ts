@@ -32,6 +32,7 @@ export default {
   ownPin: {
     title: "PIN code",
     caption: "Asked to open your profile on TVs.",
+    manageHint: "Set a PIN code to manage the family from the TV. It will also be asked to open your profile.",
     on: "On",
     off: "No code",
     create: "Create a PIN",
@@ -50,6 +51,7 @@ export default {
     kicker: "Profile",
     owner: "Family owner",
     memberOf: "Member · {{owner}}'s family",
+    parentOf: "Parent · {{owner}}'s family",
     profilesTitle: "Profiles on this TV",
     switchProfile: "Switch profile",
     switchCaption: "Each profile has its own playback, lists and settings.",

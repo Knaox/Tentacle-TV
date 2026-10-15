@@ -82,6 +82,7 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
       {profile ? (
         <ProfileSection
           canManage={profile.canManage}
+          manageNeedsPin={profile.manageNeedsPin}
           pin={profile.pin}
           onSwitchProfile={props.onSwitchProfile}
           onManageProfiles={props.onManageProfiles}
