@@ -3,23 +3,23 @@
   "domain": "ecrans",
   "suite": "reglages",
   "reference": {
-    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
-    "label": "référence 562ae44a5"
+    "sha": "fe11490ffb1ada4d8e032ea632fc9f45439f0e67",
+    "label": "référence fe11490ff"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "0d02ee212ee3b5bf",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — banc UI",
+    "name": "nav-T6b",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:45:59.342Z",
+  "recordedAt": "2026-10-15T13:06:27.217Z",
   "scenarios": {
     "reglages-onglets": {
       "hash": "1f952d09cb16",
-      "durationMs": 50887,
+      "durationMs": 42872,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -373,7 +373,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Settings",
           "params": null,
           "stack": [
@@ -388,7 +390,7 @@
     },
     "reglages-double-appui": {
       "hash": "564d8ce9e8e2",
-      "durationMs": 33807,
+      "durationMs": 32789,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -591,7 +593,7 @@
     },
     "reglages-liste-de-choix": {
       "hash": "dbcdcc94382c",
-      "durationMs": 38091,
+      "durationMs": 38758,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:playback",
@@ -775,15 +777,15 @@
       ]
     },
     "reglages-navigation-deplacer": {
-      "hash": "fbcd8f3e8baa",
-      "durationMs": 46008,
+      "hash": "32b96bcf1bb2",
+      "durationMs": 47436,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:navigation",
         "label": "Navigation",
         "frame": [
           176,
-          506,
+          620,
           340,
           100
         ],
@@ -808,7 +810,7 @@
           "label": "Navigation",
           "frame": [
             176,
-            506,
+            620,
             340,
             100
           ],

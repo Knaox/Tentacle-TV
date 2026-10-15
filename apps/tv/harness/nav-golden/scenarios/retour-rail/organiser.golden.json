@@ -3,23 +3,23 @@
   "domain": "retour-rail",
   "suite": "organiser",
   "reference": {
-    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
-    "label": "référence 562ae44a5"
+    "sha": "fe11490ffb1ada4d8e032ea632fc9f45439f0e67",
+    "label": "référence fe11490ff"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "0d02ee212ee3b5bf",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — banc UI",
+    "name": "nav-T6b",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T20:03:57.023Z",
+  "recordedAt": "2026-10-15T13:17:54.199Z",
   "scenarios": {
     "menu-entree-retour": {
       "hash": "59eaa18d4ac1",
-      "durationMs": 22326,
+      "durationMs": 22871,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -61,7 +61,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -231,7 +233,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -249,7 +253,7 @@
     },
     "monter-x2-puis-retour": {
       "hash": "98f78143207d",
-      "durationMs": 24058,
+      "durationMs": 24739,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -291,7 +295,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -435,7 +441,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -460,7 +468,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -488,7 +498,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -506,7 +518,7 @@
     },
     "monter-puis-double-retour": {
       "hash": "3f405ab37c59",
-      "durationMs": 21148,
+      "durationMs": 21747,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -548,7 +560,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -664,7 +678,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -682,7 +698,7 @@
     },
     "masquer-puis-tout-afficher": {
       "hash": "be66f4e3223e",
-      "durationMs": 23758,
+      "durationMs": 24783,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -724,7 +740,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -811,7 +829,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -842,7 +862,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -867,7 +889,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -888,7 +912,7 @@
     },
     "tout-afficher-du-menu": {
       "hash": "797d4c6a4be9",
-      "durationMs": 26651,
+      "durationMs": 27438,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -930,7 +954,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1017,7 +1043,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1105,7 +1133,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1126,7 +1156,7 @@
     },
     "deplacer-puis-poser": {
       "hash": "e2ef2a92c14e",
-      "durationMs": 23358,
+      "durationMs": 25023,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1168,7 +1198,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1222,7 +1254,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1250,7 +1284,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1275,7 +1311,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1303,7 +1341,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1331,7 +1371,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1349,7 +1391,7 @@
     },
     "deplacer-puis-annuler": {
       "hash": "51bb6191c676",
-      "durationMs": 22498,
+      "durationMs": 24191,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1391,7 +1433,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1445,7 +1489,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1470,7 +1516,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1495,7 +1543,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1523,7 +1573,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1541,7 +1593,7 @@
     },
     "deplacer-puis-sortir": {
       "hash": "9ce169e37e2f",
-      "durationMs": 21463,
+      "durationMs": 26753,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1583,7 +1635,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1637,7 +1691,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1662,7 +1718,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1710,7 +1768,7 @@
     },
     "deplacer-butee-en-tete": {
       "hash": "771dd68a283a",
-      "durationMs": 22673,
+      "durationMs": 24662,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1752,7 +1810,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1806,7 +1866,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1837,7 +1899,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1862,7 +1926,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1890,7 +1956,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1908,7 +1976,7 @@
     },
     "appui-long-accueil": {
       "hash": "2b6eea423e90",
-      "durationMs": 18685,
+      "durationMs": 21850,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1954,7 +2022,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1979,7 +2049,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -1997,7 +2069,7 @@
     },
     "appui-long-rechercher": {
       "hash": "8d53c414068e",
-      "durationMs": 17935,
+      "durationMs": 21761,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2044,7 +2116,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -2069,7 +2143,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -2087,7 +2163,7 @@
     },
     "appui-long-profil": {
       "hash": "a70ae37bcecb",
-      "durationMs": 18493,
+      "durationMs": 22929,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2130,7 +2206,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -2155,7 +2233,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -2173,7 +2253,7 @@
     },
     "menu-vers-reglages-navigation": {
       "hash": "3e1b62d065b6",
-      "durationMs": 20697,
+      "durationMs": 22053,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -2215,7 +2295,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -2299,7 +2381,7 @@
           "label": "Navigation",
           "frame": [
             176,
-            506,
+            620,
             340,
             100
           ],
@@ -2322,14 +2404,14 @@
     },
     "reglages-navigation-deplacer": {
       "hash": "7a408fbd606d",
-      "durationMs": 28723,
+      "durationMs": 30127,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:navigation",
         "label": "Navigation",
         "frame": [
           176,
-          506,
+          620,
           340,
           100
         ],
