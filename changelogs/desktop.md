@@ -23,6 +23,8 @@ et Linux reçoivent l'ensemble.
 - **Photos de profil** : une galerie de 36 personnages illustrés, chacun avec son nom et son histoire, à choisir depuis le menu de l'avatar — l'import d'une photo personnelle reste là. Un compte sans photo se la voit proposer une fois, au premier lancement. Les invités de la Famille ont aussi la leur, depuis Réglages › Famille ou leur profil
 - **Dans une famille, votre avatar prend la couleur de votre profil**, partout dans l'application
 - **« Vider le cache et réinitialiser »** dit ce qu'il efface vraiment : les réglages de l'appareil, les recherches récentes et le cache, jamais votre session
+- **Une cloche refaite** : les notifications groupées par jour, leur état d'un coup d'œil, « Tout marquer lu », et un clic qui mène à l'endroit exact — la fiche d'un titre qui vient d'arriver, par exemple (serveur 1.30.0)
+- **Plus rien de coupé dans une petite fenêtre** : menus, notifications, filtres et clic droit restent dans la fenêtre, se retournent près d'un bord et défilent quand elle est basse
 
 ### EN
 - **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.29.0)
@@ -32,6 +34,8 @@ et Linux reçoivent l'ensemble.
 - **Profile pictures**: a gallery of 36 illustrated characters, each with a name and a story, to pick from the avatar menu — uploading your own photo is still there. Accounts without a picture are offered it once, on first launch. Family guests get one too, from Settings › Family or their own profile
 - **In a family, your avatar takes your profile's color**, everywhere in the app
 - **“Clear cache and reset”** now says what it really clears: this device's settings, recent searches and the cache — never your session
+- **A redesigned bell**: notifications grouped by day, their state at a glance, “Mark all as read”, and a click that takes you to the exact place — the page of a title that just arrived, for instance (server 1.30.0)
+- **Nothing cut off in a small window anymore**: menus, notifications, filters and the right-click menu stay inside the window, flip near an edge and scroll when it is short
 
 ## [1.28.2]
 <!-- Bloc nu : les trois canaux partent de la 1.28.1. « Films pour vous » à l'accueil exige le serveur 1.27.1 (capacité reco.moviesRow) ; non proposée face à un serveur plus ancien. -->

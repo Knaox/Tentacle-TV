@@ -1,18 +1,21 @@
 import type { WhatsNewRelease } from "../types";
-import { AvatarsScene, TrailerPreviewScene, WhoIsWatchingScene } from "../scenes/v1_29_0";
+import { AvatarsScene, NotificationsScene, TrailerPreviewScene, WhoIsWatchingScene } from "../scenes/v1_29_0";
 
 /**
- * 1.30.0 — la bande-annonce au survol, « Qui regarde ? » sur l'ordinateur, et
- * la galerie des photos de profil.
+ * 1.30.0 — la bande-annonce au survol, « Qui regarde ? » sur l'ordinateur, la
+ * galerie des photos de profil, et la cloche refaite.
  *
- * Trois scènes : la mini-carte qui grandit depuis l'affiche (la vidéo, ses
+ * Quatre scènes : la mini-carte qui grandit depuis l'affiche (la vidéo, ses
  * plans, le bandeau, le son) ; le choix d'un profil — son code PIN —, et
  * « Changer de profil » dans le menu de l'avatar, qui y ramène ; la photo de
- * l'en-tête du menu, qui ouvre la troupe, et un personnage choisi. Les deux
- * premières fonctions dépendent du serveur 1.30.0 : face à un serveur qui ne
- * les déclare pas, l'app n'en montre rien, et l'écran non plus (`capability`) ;
- * la galerie, elle, ne demande rien au serveur. Le reste du bloc (YouTube
- * ménagé, des aperçus plus légers, « Vider le cache ») se dit dans le changelog.
+ * l'en-tête du menu, qui ouvre la troupe, et un personnage choisi ; la cloche,
+ * ses notifications par jour et leur état, et le clic qui ouvre la fiche du
+ * titre arrivé. Trois fonctions dépendent du serveur 1.30.0 : face à un
+ * serveur qui ne les déclare pas, l'app n'en montre rien — ou, pour la cloche,
+ * ni état ni destination exacte —, et l'écran non plus (`capability`) ; la
+ * galerie, elle, ne demande rien au serveur. Le reste du bloc (YouTube ménagé,
+ * des aperçus plus légers, « Vider le cache », plus rien de coupé dans une
+ * petite fenêtre) se dit dans le changelog.
  *
  * Les textes vivent dans l'espace i18n `whatsNew` (v1_29_0_<id>_title / _body).
  */
@@ -44,6 +47,17 @@ export const RELEASE_1_29_0: WhatsNewRelease = {
       titleKey: "v1_29_0_avatars_title",
       bodyKey: "v1_29_0_avatars_body",
       Scene: AvatarsScene,
+    },
+    {
+      // Pas de lien profond : la cloche est dans la barre, sur toutes les pages.
+      // La cible et l'état viennent du serveur 1.30.0 : sans eux, la cloche ouvre
+      // la route du type, comme avant — l'écran ne vanterait pas ce qu'elle ne fait pas.
+      id: "notifications",
+      kind: "improved",
+      titleKey: "v1_29_0_notifications_title",
+      bodyKey: "v1_29_0_notifications_body",
+      Scene: NotificationsScene,
+      capability: "notifications.targets",
     },
   ],
 };

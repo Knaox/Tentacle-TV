@@ -20,6 +20,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Bandes-annonces relayées** : le serveur ne compresse plus une seconde fois la vidéo qu'il relaie — moins de calcul pour rien — et son journal ne compte plus comme une erreur un lecteur qui s'en va
 - **Photos de profil** : 36 personnages à choisir dans le client web, et une photo pour chaque invité de la Famille
 - **Interface web** : « Vider le cache et réinitialiser » dit ce qu'il efface vraiment — les réglages de l'appareil, les recherches récentes et le cache, jamais la session
+- **Des notifications qui mènent au bon endroit** : un clic ouvre la fiche du titre ou la page exacte d'une extension, et chacune dit l'état de ce dont elle parle
 - **Analyse audio retirée** : la détection des passages par l'écoute disparaît de l'administration et de l'installation. Intro Skipper, SkipMe.db et TheIntroDB restent, et l'analyse automatique d'Intro Skipper reste coupée, sans rien à faire de votre côté
 
 ### EN
@@ -30,6 +31,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Relayed trailers**: the server no longer compresses the video it relays a second time — less work for nothing — and its log no longer counts a player that leaves as an error
 - **Profile pictures**: 36 characters to pick from in the web client, and a picture for every Family guest
 - **Web interface**: “Clear cache and reset” now says what it really clears — this device's settings, recent searches and the cache, never the session
+- **Notifications that take you to the right place**: a click opens the title's page or the exact page of an extension, and each one shows the state of what it is about
 - **Audio analysis removed**: listening-based segment detection is gone from the admin and the setup. Intro Skipper, SkipMe.db and TheIntroDB stay, and Intro Skipper's automatic analysis stays off — nothing to do on your side
 
 ## [1.27.1]

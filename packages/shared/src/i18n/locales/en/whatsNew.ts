@@ -51,6 +51,12 @@ export default {
   v1_29_0_profiles_body: "Everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, in your avatar menu, brings you back to the profiles at any time. To have the app open on this screen, turn on “Ask who's watching at startup” in Settings › Family.",
   v1_29_0_avatars_title: "A profile picture with character",
   v1_29_0_avatars_body: "Click your avatar, then your photo: 36 characters are waiting, each with a name, a story and a favourite kind of film. Pick one, or upload your own photo — it follows you on all your devices. Family guests get one too.",
+  v1_29_0_notifications_title: "Notifications that take you to the right place",
+  v1_29_0_notifications_body: "The bell sorts your notifications by day and shows at a glance where each request stands: available, on its way, declined. One click takes you to the exact place — the page of a title that just arrived, or the page the notification comes from — and marks it read.",
+  sceneNotifArrived: "“{{title}}” is out",
+  sceneNotifOnTheWay: "“{{title}}” is on its way",
+  sceneNotifDeclined: "Your request for “{{title}}” was declined",
+  sceneNotifFallbackTitle: "Charade",
 
   // 1.28.0
   v1_28_0_pip_title: "Picture-in-picture",
