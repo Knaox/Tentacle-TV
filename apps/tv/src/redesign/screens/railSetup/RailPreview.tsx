@@ -2,7 +2,6 @@ import { memo, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { RAIL_HOME_KEY } from "@tentacle-tv/tv-core";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
 import { EASE, MOTION_ENABLED } from "../../motion/motion";
@@ -11,8 +10,9 @@ import type { RailPreviewEntry } from "./railSetupTypes";
 
 /**
  * L'APERÇU de la barre, à la place exacte où elle vivra — la capsule des pages
- * telle qu'elle s'ouvre : Rechercher, le filet, Accueil (la page courante, au
- * verre allumé), puis ce qui sera affiché, dans l'ordre. Il suit la liste en
+ * telle qu'elle s'ouvre : Rechercher, le filet, Accueil, puis ce qui sera
+ * affiché, dans l'ordre. Aucune page n'y est « courante » : seule la
+ * bibliothèque visée s'y allume. Il suit la liste en
  * direct : une bibliothèque épinglée y entre en fondu, celle qu'on survole s'y
  * éclaire, celle qu'on déplace y porte le liseré de la marque.
  *
@@ -67,7 +67,6 @@ export const RailPreview = memo(function RailPreview({ caption, entries, focused
               <PreviewItem
                 key={entry.key}
                 entry={entry}
-                active={entry.key === RAIL_HOME_KEY}
                 lit={entry.key === focusedKey && movingKey === null}
                 moving={entry.key === movingKey}
               />
@@ -79,11 +78,10 @@ export const RailPreview = memo(function RailPreview({ caption, entries, focused
   );
 });
 
-function PreviewItem({ entry, active, lit, moving }: { entry: RailPreviewEntry; active?: boolean; lit?: boolean; moving?: boolean }) {
-  const color = active || lit || moving ? colors.text : colors.textSecondary;
+function PreviewItem({ entry, lit, moving }: { entry: RailPreviewEntry; lit?: boolean; moving?: boolean }) {
+  const color = lit || moving ? colors.text : colors.textSecondary;
   return (
     <Animated.View entering={MOTION_ENABLED ? FadeIn.duration(220) : undefined} style={styles.item}>
-      {active ? <View style={[StyleSheet.absoluteFill, styles.active]} /> : null}
       {lit ? <View style={[StyleSheet.absoluteFill, styles.lit]} /> : null}
       {moving ? <View style={[StyleSheet.absoluteFill, styles.moving]} /> : null}
       <Icon name={moving ? "moveVertical" : entry.icon} size={N.icon} color={color} strokeWidth={2.2} />
@@ -110,8 +108,7 @@ const styles = StyleSheet.create({
     gap: 18,
     paddingHorizontal: (N.itemHeight - N.icon) / 2,
   },
-  active: { borderRadius: N.itemRadius, backgroundColor: white(0.14) },
-  lit: { borderRadius: N.itemRadius, backgroundColor: white(0.08) },
+  lit: { borderRadius: N.itemRadius, backgroundColor: white(0.14) },
   moving: { borderRadius: N.itemRadius, borderWidth: 2, borderColor: colors.accent, backgroundColor: white(0.08) },
   label: { ...fonts.semibold, fontSize: 26, flex: 1 },
 });

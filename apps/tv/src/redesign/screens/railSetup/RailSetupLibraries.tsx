@@ -81,7 +81,8 @@ const styles = StyleSheet.create({
   kicker: { ...text.kicker, marginBottom: 16 },
   title: { ...text.title, marginBottom: 18 },
   subtitle: { ...text.body, color: colors.textSecondary, maxWidth: 1080, marginBottom: 36 },
-  listBox: { flex: 1 },
+  // Haute comme ses lignes, bornée par la page : le pied la suit, et elle défile quand elle déborde.
+  listBox: { flexShrink: 1 },
   // Une marge où la ligne focalisée grandit sans être coupée par le bord du défilement.
   list: { gap: 12, paddingVertical: 10, paddingHorizontal: 12 },
   actions: { flexDirection: "row", gap: 24, alignItems: "center", paddingTop: 28, paddingHorizontal: 12 },

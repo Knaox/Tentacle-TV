@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkOn: { backgroundColor: colors.accent, borderWidth: 3, borderColor: colors.bgBottom },
-  checkOff: { backgroundColor: "rgba(0, 0, 0, 0.45)", borderWidth: 3, borderColor: white(0.55) },
+  checkOff: { backgroundColor: white(0.16), borderWidth: 3, borderColor: white(0.8) },
   name: { ...text.heading, marginTop: 26, width: APPLY_TILE_WIDTH, textAlign: "center" },
   caption: { ...fonts.medium, fontSize: 24, lineHeight: 30, marginTop: 6, color: colors.textTertiary, textAlign: "center" },
 });
