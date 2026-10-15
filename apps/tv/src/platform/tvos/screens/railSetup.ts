@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   RAIL_SETUP_ACTIONS_ENTRY,
   RAIL_SETUP_ACTIONS_GROUP,
+  RAIL_SETUP_APPLY_ACTIONS_GROUP,
   isRailSetupActionKey,
+  isRailSetupApplyActionKey,
+  railSetupApplyActionsEntry,
   railSetupGuardedKeys,
   railSetupLockedKeys,
   railSetupMoveKey,
@@ -21,14 +24,28 @@ import type { FocusStore } from "../focus/focusStore";
  * déplacement et la case rendue après une annulation.
  */
 
-/** Les liaisons naissent avec l'écran, avant son premier rendu. */
-export function useRailSetupGroups(store: FocusStore): void {
+/**
+ * Les liaisons naissent avec l'écran, avant son premier rendu. `applyEnabled` :
+ * « Appliquer » est permis (un profil coché) — relu par le guide du pied de
+ * l'étape du propriétaire à chaque visée.
+ */
+export function useRailSetupGroups(store: FocusStore, applyEnabled: boolean): void {
+  const enabled = useRef(applyEnabled);
+  enabled.current = applyEnabled;
   useState(() => {
     // La page paraît sous l'OK qui l'a ouverte : seul un OK commencé sur une de ses cibles y vaut.
     for (const key of railSetupGuardedKeys()) store.bind(key, { phantomPressGuard: true });
     // BAS depuis la liste : « Continuer », jamais le plus proche du centre de la ligne (« Passer »).
     store.bind(RAIL_SETUP_ACTIONS_GROUP, {
       container: createEntryGuide(store, { owns: isRailSetupActionKey, fallback: () => RAIL_SETUP_ACTIONS_ENTRY, remember: false }),
+    });
+    // L'étape du propriétaire : BAS depuis les profils, « Appliquer » dès qu'il est permis.
+    store.bind(RAIL_SETUP_APPLY_ACTIONS_GROUP, {
+      container: createEntryGuide(store, {
+        owns: isRailSetupApplyActionKey,
+        fallback: () => railSetupApplyActionsEntry(enabled.current),
+        remember: false,
+      }),
     });
   });
 }

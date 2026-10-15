@@ -6,6 +6,7 @@ import {
   railSetupApplyDue,
   railSetupApplyEntryKey,
   railSetupBackAction,
+  railSetupApplyEnabled,
   railSetupEntryKey,
   toggleRailSetupTarget,
   type RailSetupStep,
@@ -52,7 +53,7 @@ export function RailSetupRedesign({ navigation, route }: Props) {
   const [step, setStep] = useState<RailSetupStep>(origin === "settings" ? "apply" : "libraries");
   const [selected, setSelected] = useState<string[]>([]);
   const store = useFocusStore();
-  useRailSetupGroups(store);
+  useRailSetupGroups(store, railSetupApplyEnabled(selected));
   const editor = useRailSetupEditor(store, gate.layout);
 
   // Une seule sortie : la page part une fois, quel que soit le geste.

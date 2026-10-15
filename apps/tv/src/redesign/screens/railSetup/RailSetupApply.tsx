@@ -11,6 +11,7 @@ import {
   railSetupApplyTileKey,
 } from "@tentacle-tv/tv-core";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusSection } from "../../focus/FocusSection";
 import { colors, text } from "../../theme/tokens";
 import { ApplyProfileTile } from "./ApplyProfileTile";
@@ -50,7 +51,7 @@ export const RailSetupApply = memo(function RailSetupApply({ model, onToggleTarg
           />
         ))}
       </FocusSection>
-      <FocusSection focusKey={RAIL_SETUP_APPLY_ACTIONS_GROUP} style={styles.actions}>
+      <FocusGroup focusKey={RAIL_SETUP_APPLY_ACTIONS_GROUP} style={styles.actions}>
         <View style={enabled ? null : styles.dimmed}>
           <PillButton variant="primary" label={confirm} icon="check" focusKey={RAIL_SETUP_APPLY_CONFIRM_KEY} disabled={!enabled} onPress={onApply} />
         </View>
@@ -60,7 +61,7 @@ export const RailSetupApply = memo(function RailSetupApply({ model, onToggleTarg
           disabled={model.busy}
           onPress={onDecline}
         />
-      </FocusSection>
+      </FocusGroup>
     </View>
   );
 });

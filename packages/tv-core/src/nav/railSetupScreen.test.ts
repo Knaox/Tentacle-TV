@@ -21,6 +21,8 @@ import {
   railSetupApplyEnabled,
   railSetupApplyEntryKey,
   railSetupApplyTileKey,
+  isRailSetupApplyActionKey,
+  railSetupApplyActionsEntry,
   railSetupGuardedKeys,
   toggleRailSetupTarget,
 } from "./railSetupApply";
@@ -102,6 +104,13 @@ describe("l'étape du propriétaire", () => {
     expect(toggleRailSetupTarget(two, "u3", order)).toEqual(["u1"]);
     expect(railSetupApplyEnabled([])).toBe(false);
     expect(railSetupApplyEnabled(["u1"])).toBe(true);
+  });
+
+  it("BAS depuis les profils : « Appliquer » s'il est permis, sinon « Non merci »", () => {
+    expect(railSetupApplyActionsEntry(true)).toBe("railSetup:applyConfirm");
+    expect(railSetupApplyActionsEntry(false)).toBe(RAIL_SETUP_APPLY_DECLINE_KEY);
+    expect(isRailSetupApplyActionKey(RAIL_SETUP_APPLY_DECLINE_KEY)).toBe(true);
+    expect(isRailSetupApplyActionKey(railSetupApplyTileKey(0))).toBe(false);
   });
 
   it("le focus d'entrée est le premier profil", () => {

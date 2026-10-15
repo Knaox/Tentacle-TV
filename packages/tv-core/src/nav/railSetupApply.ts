@@ -51,6 +51,20 @@ export function railSetupApplyEnabled(selected: readonly string[]): boolean {
   return selected.length > 0;
 }
 
+/** Une cible du pied de l'étape (« Appliquer », « Non merci » / « Annuler »). */
+export function isRailSetupApplyActionKey(focusKey: string): boolean {
+  return focusKey === RAIL_SETUP_APPLY_CONFIRM_KEY || focusKey === RAIL_SETUP_APPLY_DECLINE_KEY;
+}
+
+/**
+ * BAS depuis les profils entre par « Appliquer » dès qu'il est permis (un
+ * profil coché), sinon par « Non merci » : laissé à la géométrie, BAS depuis
+ * la tuile de droite visait « Non merci » (relevé au banc nav-golden).
+ */
+export function railSetupApplyActionsEntry(applyEnabled: boolean): string {
+  return applyEnabled ? RAIL_SETUP_APPLY_CONFIRM_KEY : RAIL_SETUP_APPLY_DECLINE_KEY;
+}
+
 /** Le focus d'entrée de l'étape : le premier profil. */
 export function railSetupApplyEntryKey(targetCount: number): string {
   return targetCount > 0 ? railSetupApplyTileKey(0) : RAIL_SETUP_APPLY_DECLINE_KEY;
