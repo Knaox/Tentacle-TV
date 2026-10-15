@@ -138,3 +138,18 @@ export const FAMILY_PARENTAL_PATHS = {
   options: "/api/family/parental/options",
   guest: (userId: string) => `/api/family/guests/${encodeURIComponent(userId)}/parental`,
 } as const;
+
+/** Les restrictions du CRÉATEUR d'un invité : son contrôle parental ne va jamais au-delà. */
+export interface ParentalCeiling {
+  maxParentalRating: number | null;
+  maxParentalSubRating: number | null;
+  blockUnratedItems: string[];
+  blockedTags: string[];
+  allowedTags: string[];
+}
+
+/** Les champs additifs d'un invité dans le DTO de la Famille (provisoires, § 4). */
+export interface FamilyGuestParentalFields {
+  parental?: GuestParentalControls | null;
+  parentalCeiling?: ParentalCeiling | null;
+}

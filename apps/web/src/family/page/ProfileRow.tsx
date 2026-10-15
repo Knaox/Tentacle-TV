@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, Lock } from "lucide-react";
+import { Camera, Lock, ShieldCheck } from "lucide-react";
 import { guestCanRequest, type FamilyProfileDto, type ProfileActions } from "@tentacle-tv/shared";
+import { guestParentalOf, hasGuestParental } from "../../components/parental/guestParental";
 import { FamilyAvatar } from "../FamilyAvatar";
 import { useFamilyText } from "../useFamilyText";
 import { RightToggle } from "./RightToggle";
@@ -21,6 +22,8 @@ interface ProfileRowProps {
   onGuestPin: (profile: FamilyProfileDto) => void;
   /** Habiller un invité (galerie des avatars) ; absent : le serveur ne le sait pas, ou la session ne le peut pas. */
   onGuestPhoto?: (profile: FamilyProfileDto) => void;
+  /** Régler le contrôle parental d'un invité ; absent : le serveur ne le sait pas, ou la session ne le peut pas. */
+  onGuestParental?: (profile: FamilyProfileDto) => void;
   onRightChange: (profile: FamilyProfileDto, next: boolean) => void;
 }
 
@@ -34,16 +37,19 @@ const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest
  * propriétaire règle et que les autres LISENT. Les boutons ne paraissent que pour les
  * gestes permis à celui qui regarde : retirer un membre, supprimer un invité,
  * poser son PIN ou changer sa photo — son rond s'ouvre alors sur la galerie
- * des avatars (le propriétaire, ou le membre qui l'a créé).
+ * des avatars (le propriétaire, ou le membre qui l'a créé) —, et régler son
+ * contrôle parental, avec les mêmes droits que son PIN.
  */
 export const ProfileRow = memo(function ProfileRow({
-  profile, last, isSelf, actions, showCreator, rightPending, onRemove, onGuestPin, onGuestPhoto, onRightChange,
+  profile, last, isSelf, actions, showCreator, rightPending, onRemove, onGuestPin, onGuestPhoto, onGuestParental, onRightChange,
 }: ProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family", "avatars"]);
   const { formatDate } = useFamilyText();
   const isGuest = profile.kind === "guest";
   // Mêmes droits que son PIN (`profileActions`, shared ; le serveur revérifie).
   const dressable = isGuest && actions.pin && onGuestPhoto !== undefined;
+  const parentalEditable = isGuest && actions.pin && onGuestParental !== undefined;
+  const parentalOn = isGuest && hasGuestParental(guestParentalOf(profile));
   const avatar = <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />;
 
   return (
@@ -88,6 +94,12 @@ export const ProfileRow = memo(function ProfileRow({
               {t("familyWeb:owned.pinOn")}
             </span>
           )}
+          {parentalOn && (
+            <span className="inline-flex items-center gap-1">
+              <ShieldCheck size={11} aria-hidden="true" />
+              {t("familyWeb:parental.on")}
+            </span>
+          )}
         </p>
         {profile.kind === "member" && (
           <RightToggle
@@ -111,7 +123,14 @@ export const ProfileRow = memo(function ProfileRow({
         )}
       </div>
       {(actions.pin || actions.remove) && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {parentalEditable && (
+            <button type="button" onClick={() => onGuestParental(profile)} className={SMALL_BUTTON}
+              aria-label={`${t("familyWeb:parental.open")} — ${profile.name}`}>
+              <ShieldCheck size={13} aria-hidden="true" />
+              {t("familyWeb:parental.open")}
+            </button>
+          )}
           {actions.pin && (
             <button type="button" onClick={() => onGuestPin(profile)} className={SMALL_BUTTON}
               aria-label={`${t("familyWeb:owned.setPin")} — ${profile.name}`}>
