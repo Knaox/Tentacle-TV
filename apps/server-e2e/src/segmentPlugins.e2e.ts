@@ -13,8 +13,8 @@ import { HOST_ADDRESS } from "./benchHost";
  * Skipper, TheIntroDB et SkipMe.db (dépôts, installation, redémarrage par
  * l'API de Jellyfin, réglages) — sur le Jellyfin NEUF d'une pile complète
  * (12) comme sur un Jellyfin EXISTANT (10.11). Puis l'action de
- * l'administration, la migration d'un serveur d'avant (analyse coupée une
- * fois), et le choix de l'administrateur respecté ensuite.
+ * l'administration, et la montée d'un serveur d'avant le retrait de l'analyse
+ * audio : ses réglages effacés, l'écoute d'Intro Skipper coupée une fois.
  */
 const USER = "Knaoxtest";
 const PASSWORD = randomBytes(12).toString("base64url");
@@ -69,11 +69,11 @@ describe("pile complète, Jellyfin 12 neuf", () => {
     expect((await peek.config(GUID.theIntroDb)).EnableOnDemandFetch).toBe(true);
   });
 
-  it("fin de l'assistant ; l'analyse audio de Tentacle est coupée d'office", async () => {
+  it("fin de l'assistant ; l'ancienne route de l'analyse audio répond « coupée, sans outil »", async () => {
     const done = await client.call("/complete", { method: "POST", body: { username: USER, password: PASSWORD } });
     expect(done.status).toBe(200);
     session = (done.body as { AccessToken: string }).AccessToken;
-    expect((await admin(stack.url(""), session, "/audio-analysis")).body).toMatchObject({ enabled: false });
+    expect((await admin(stack.url(""), session, "/audio-analysis")).body).toMatchObject({ enabled: false, tool: null });
     const setup = (await admin(stack.url(""), session, "/jellyfin/setup")).body as { checks: Array<{ id: string; state: string }> };
     expect(setup.checks.find((check) => check.id === "segmentsProvider")?.state).toBe("done");
   });
@@ -87,30 +87,34 @@ describe("pile complète, Jellyfin 12 neuf", () => {
     expect((await peek.config(GUID.introSkipper)).AutoDetectIntros).toBe(false);
   });
 
-  it("migration d'un serveur d'avant : analyse audio et écoute d'Intro Skipper coupées une fois", async () => {
-    // Un serveur d'avant : aucune marque, la clé de l'analyse absente (« oui »), Intro Skipper à l'écoute.
-    await stack.sql("DELETE FROM server_config WHERE `key` IN ('audio_analysis_enabled','audio_analysis_default_off_applied','introskipper_audio_off_applied')");
+  it("montée d'un serveur d'avant le retrait : réglages audio effacés, écoute d'Intro Skipper coupée une fois", async () => {
+    // Un serveur d'avant : l'analyse audio allumée, Intro Skipper rallumé après sa première coupure.
+    await stack.sql("DELETE FROM server_config WHERE `key` = 'introskipper_auto_off_final_applied'");
+    await stack.sql(
+      "INSERT OR REPLACE INTO server_config (`key`, `value`) VALUES ('audio_analysis_enabled', 'true'), " +
+        "('audio_analysis_default_off_applied', '2026-10-06T00:00:00.000Z'), ('introskipper_audio_off_applied', '2026-10-06T00:00:00.000Z')",
+    );
     await peek.setConfig(GUID.introSkipper, { AutoDetectIntros: true });
     await peek.setTriggers(DETECT_TASK, [{ Type: "DailyTrigger", TimeOfDayTicks: 0 }]);
     await stack.compose("restart", "tentacle");
     await stack.waitHealthy();
     // Le guet passe une minute après le démarrage.
-    await waitFor("Intro Skipper coupée par la migration", async () => (await peek.config(GUID.introSkipper)).AutoDetectIntros === false, 180_000, 5_000);
+    await waitFor("Intro Skipper coupée au retrait", async () => (await peek.config(GUID.introSkipper)).AutoDetectIntros === false, 180_000, 5_000);
     expect((await peek.task(DETECT_TASK))?.Triggers).toEqual([]);
-    const rows = await stack.sql("SELECT `key`, `value` FROM server_config WHERE `key` IN ('audio_analysis_enabled','audio_analysis_default_off_applied','introskipper_audio_off_applied') ORDER BY `key`");
-    expect(rows).toMatch(/audio_analysis_default_off_applied\t\S+/);
-    expect(rows).toMatch(/audio_analysis_enabled\tfalse/);
-    expect(rows).toMatch(/introskipper_audio_off_applied\t\S+/);
+    const rows = await stack.sql(
+      "SELECT `key` FROM server_config WHERE `key` IN ('audio_analysis_enabled','audio_analysis_default_off_applied'," +
+        "'introskipper_audio_off_applied','introskipper_auto_off_final_applied') ORDER BY `key`",
+    );
+    expect(rows.trim()).toBe("introskipper_auto_off_final_applied");
   });
 
-  it("ensuite, le choix de l'administrateur est respecté au redémarrage", async () => {
+  it("ensuite, plus rien à allumer chez Tentacle, et le guet ne revient plus sur Jellyfin", async () => {
+    expect((await admin(stack.url(""), session, "/audio-analysis", { method: "PUT", body: { enabled: true } })).status).toBe(404);
     await peek.setConfig(GUID.introSkipper, { AutoDetectIntros: true });
-    expect((await admin(stack.url(""), session, "/audio-analysis", { method: "PUT", body: { enabled: true } })).status).toBe(200);
     await stack.compose("restart", "tentacle");
     await stack.waitHealthy();
     await sleep(80_000);
     expect((await peek.config(GUID.introSkipper)).AutoDetectIntros).toBe(true);
-    expect((await admin(stack.url(""), session, "/audio-analysis")).body).toMatchObject({ enabled: true });
   });
 });
 

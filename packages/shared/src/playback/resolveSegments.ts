@@ -14,13 +14,12 @@
  *      seulement) — et rien d'autre : aucun repli statistique ;
  *   5. les chapitres AFFINENT la fin d'un Outro, pour ne pas manger la scène
  *      post-générique (`segmentChapters.ts`) ;
- *   6. l'AUDIO des voisins de saison comble ce qui manque ENCORE — opening,
- *      ending (`audioVerdict.ts`). Il s'applique AVANT les gardes : une intro
- *      entendue passé la moitié du média tombe sous la même garde que celle
- *      d'un greffon ;
- *   7. EN DERNIER, l'analyse de FIN DE MÉDIA (`tailVerdict.ts`) — vignettes et
- *      audio de la fin du fichier — redessine les génériques autour des scènes
- *      mi- et post-génériques qu'elle a trouvées, fournisseurs compris.
+ *   6. EN DERNIER, l'analyse de FIN DE MÉDIA (`tailVerdict.ts`) — les
+ *      vignettes de la fin du fichier — redessine les génériques autour des
+ *      scènes mi- et post-génériques qu'elle a trouvées, fournisseurs compris.
+ *
+ * L'audio des voisins de saison (opening, ending entendus d'un épisode à
+ * l'autre) n'est plus une source : l'analyse audio de Tentacle est retirée.
  *
  * L'API native rend une UNION : plusieurs greffons écrivent leurs segments
  * côte à côte, et le même passage y figure deux fois à une seconde près
@@ -53,7 +52,6 @@ import {
 } from "./segmentChapters";
 import { applyClaimGuards } from "./claimGuards";
 import { applyTailVerdict, type TailVerdict } from "./tailVerdict";
-import { applyAudioVerdict, type AudioVerdict } from "./audioVerdict";
 import {
   collectDict,
   collectTimestamps,
@@ -91,11 +89,6 @@ export interface SegmentSources {
    * fait que dessiner les génériques autour.
    */
   tail?: TailVerdict | null;
-  /**
-   * Ce que l'audio des voisins de saison a reconnu — opening, ending — quand
-   * l'analyse a eu lieu. Déjà jugé côté serveur (`services/audioAnalysis.ts`).
-   */
-  audio?: AudioVerdict | null;
 }
 
 // ---------- Collecte par source ----------
@@ -265,15 +258,11 @@ export function resolvePlaybackSegments(
     (new Map() as BoundsByType);
   fillFromChapters(bounds, sources.chapters, runtime);
   refineOutroWithChapters(bounds, sources.chapters, runtime);
-  // L'audio des voisins comble ce qui manque ENCORE, et il passe AVANT les
-  // gardes : un opening rejoué sous le générique de fin donne une intro à 80 %
-  // du fichier, qui doit tomber comme celle d'un greffon.
-  applyAudioVerdict(bounds, sources.audio ?? null, runtime);
   // Les gardes de vraisemblance écartent les réclamations absurdes (intro en
   // fin de fichier, et l'outro qui la chevauche) quelle que soit leur source.
   applyClaimGuards(bounds, runtime);
-  // EN DERNIER : l'analyse de fin de média a vu la vidéo et entendu la bande
-  // son, là où les fournisseurs n'ont vu qu'un début de générique. Elle
+  // EN DERNIER : l'analyse de fin de média a vu la vidéo, là où les
+  // fournisseurs n'ont vu qu'un début de générique. Elle
   // redessine les génériques autour des scènes qu'elle a trouvées — et se tait
   // quand elle n'en a trouvé aucune (voir `tailVerdict.ts`).
   applyTailVerdict(bounds, sources.tail ?? null, runtime);

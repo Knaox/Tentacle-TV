@@ -22,7 +22,7 @@ import { holdOrphanedInstallation, orphanedLegacyInstallation } from "./dbMigrat
 import { startMigrationMaintenance } from "./dbMigration/maintenance/startMigrationMaintenance";
 import { databaseStorage } from "./services/database/storageMount";
 import { applyPairingEpoch } from "./services/pairingEpoch";
-import { applyAudioAnalysisDefault } from "./services/audioAnalysisDefault";
+import { retireAudioAnalysis } from "./services/audioAnalysisRetirement";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
 
@@ -231,8 +231,8 @@ async function main() {
       // Rejumelage général des téléviseurs quand `versions.json` le demande.
       // Après `detectAppState`, qui a chargé `server_config` en mémoire.
       await applyPairingEpoch();
-      // L'analyse audio des passages, coupée une fois sur les serveurs d'avant.
-      await applyAudioAnalysisDefault();
+      // L'analyse audio retirée : ses réglages d'avant effacés, une fois.
+      await retireAudioAnalysis();
     } else {
       console.warn("[db] Base indisponible : seuls l'assistant et /api/health répondent");
     }

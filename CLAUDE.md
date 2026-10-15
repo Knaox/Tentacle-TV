@@ -924,13 +924,26 @@ un moteur : l'assistant (`/api/setup/jellyfin/segments`, première ligne de
 l'admin (`/api/admin/jellyfin/segment-plugins`, session personnelle). Une
 recommandation du tableau de bord (`segmentPlugins`, masquable) si l'un manque.
 
-- **L'analyse AUDIO est coupée par défaut**, partout : l'interrupteur de
-  Tentacle (`audio_analysis_enabled`, clé absente = « non ») et l'analyse
-  AUTOMATIQUE d'Intro Skipper — Chromaprint n'a pas d'interrupteur à lui
-  (`BaseItemAnalyzerTask.cs`) : `AutoDetectIntros=false` et la tâche
-  `IntroSkipperDetectSegmentsTask` sans déclencheur. Les serveurs d'avant sont
-  coupés UNE fois (marques `audio_analysis_default_off_applied`,
-  `introskipper_audio_off_applied`) ; ensuite, le choix de l'administrateur.
+- **L'analyse AUDIO est RETIRÉE** (2026-10-15, « inutile, et elle perturbe ») :
+  Tentacle n'écoute plus rien — ni voisins de saison, ni fin de média, ni
+  ffmpeg ou fpcalc dans l'image —, et il n'y a plus d'interrupteur. Son
+  analyse de fin de média ne lit que les VIGNETTES trickplay
+  (`services/tailAnalysis/`). Un serveur d'avant perd ses clés
+  (`audio_analysis_enabled`, `audio_analysis_default_off_applied`) une fois au
+  démarrage, journal clair s'il l'avait allumée (`audioAnalysisRetirement.ts`) ;
+  la table `media_audio_analysis` part par la migration 0004. La source
+  `"audio"` d'un segment reste dans le contrat (verdicts et instantanés
+  d'avant) ; `GET /api/admin/audio-analysis` reste FIGÉ (« coupée, sans
+  outil ») pour les bureaux livrés, `PUT` n'existe plus. Aucune capacité :
+  il n'y en a jamais eu pour elle.
+- **L'analyse AUTOMATIQUE d'Intro Skipper reste coupée** — Chromaprint n'a pas
+  d'interrupteur à lui (`BaseItemAnalyzerTask.cs`) : `AutoDetectIntros=false`
+  et la tâche `IntroSkipperDetectSegmentsTask` sans déclencheur, à chaque
+  installation ou réparation. Au retrait, une coupure UNE fois de plus, même
+  là où elle avait été rallumée (marque `introskipper_auto_off_final_applied`,
+  l'ancienne `introskipper_audio_off_applied` effacée), journal clair si elle
+  tournait. Tentacle n'offre aucun moyen de la rallumer ; il ne se bat pas
+  contre le panneau du greffon dans Jellyfin.
 - **Seule exception à « jamais de redémarrage de Jellyfin »** : ce geste, par
   `POST /System/Restart` (redémarrage DANS le processus, mesuré sous Docker),
   jamais pendant une lecture sauf « Redémarrer maintenant » ; « revenu » = `Id`

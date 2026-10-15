@@ -4,9 +4,9 @@
  * Source de vérité unique du contrat v1 (`PlaybackSegmentsResponse`) : les
  * clients ne recalculent rien, le snapshot hors ligne du bureau persiste cette
  * réponse telle quelle. Les sources sont Jellyfin (API Media Segments, greffon
- * intro-skipper, chapitres) et les deux analyses de Tentacle, qui ne lisent que
- * ce que Jellyfin sert : la fin de média (vignettes et audio de la fin du
- * fichier) et l'audio des voisins de saison. Aucune API tierce.
+ * intro-skipper, chapitres) et l'analyse de fin de média de Tentacle, qui ne
+ * lit que les vignettes trickplay que Jellyfin sert. Aucune API tierce, et
+ * aucune écoute : l'analyse audio est retirée.
  *
  * Jellyfin injoignable → 200 avec `segments: []` : un lecteur privé de
  * segments doit lire quand même, jamais échouer.
@@ -25,13 +25,6 @@ import {
   tailAnalysisPending,
 } from "../services/tailAnalysis/tailAnalysis";
 import { readTailVerdict } from "../services/tailAnalysis/tailStore";
-import {
-  audioAnalysisPending,
-  audioNeeds,
-  enqueueAudioAnalysis,
-  needsAudioAnalysis,
-  readStoredAudioVerdict,
-} from "../services/audioAnalysis";
 
 const ParamsSchema = z.object({
   itemId: z.string().min(1).max(64).regex(/^[A-Za-z0-9-]+$/),
@@ -45,15 +38,12 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
 
     const bundle = await getSegmentSourceBundle(itemId);
     const resolvedAt = new Date().toISOString();
-    // Les verdicts déjà rendus sur ce média : la fin de média, l'audio des voisins.
-    const [tail, audio] = await Promise.all([
-      readTailVerdict(itemId, bundle.runtimeMs),
-      readStoredAudioVerdict(itemId, bundle.runtimeMs),
-    ]);
+    // Le verdict déjà rendu sur ce média par l'analyse de fin de média.
+    const tail = await readTailVerdict(itemId, bundle.runtimeMs);
     const response = resolvePlaybackSegments(
       itemId,
       bundle.runtimeMs,
-      { ...bundle.sources, tail: tail ?? null, audio: audio?.verdict ?? null },
+      { ...bundle.sources, tail: tail ?? null },
       resolvedAt,
       bundle.libraryId,
     );
@@ -73,26 +63,6 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
           mediaSourceId: bundle.defaultMediaSourceId,
           trickplay: bundle.trickplay,
           providerSpans: providerSpans(itemId, bundle),
-          isEpisode: bundle.episode !== null,
-          jellyfinUrl: url.replace(/\/$/, ""),
-          apiKey,
-        });
-      }
-    }
-    // L'audio des voisins de saison, pour un épisode qu'aucun fournisseur n'a
-    // entièrement décrit — file à un slot, jamais attendue (voir le service).
-    if (bundle.episode !== null && needsAudioAnalysis(response, bundle, audio)) {
-      const url = getJellyfinUrl();
-      const apiKey = getJellyfinApiKey();
-      if (url && apiKey) {
-        enqueueAudioAnalysis({
-          itemId,
-          runtimeMs: bundle.runtimeMs,
-          mediaSourceId: bundle.defaultMediaSourceId,
-          episode: bundle.episode,
-          need: audioNeeds(response),
-          pluginInstalled: bundle.sources.pluginDict != null,
-          previousNeighbourKey: audio?.verdict.neighbourKey ?? null,
           jellyfinUrl: url.replace(/\/$/, ""),
           apiKey,
         });
@@ -100,7 +70,7 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
     }
     // Le lecteur n'attend pas : il redemandera le contrat, et le générique
     // n'arrive qu'à la fin du média.
-    if (tailAnalysisPending(itemId) || audioAnalysisPending(itemId)) response.analysisPending = true;
+    if (tailAnalysisPending(itemId)) response.analysisPending = true;
 
     // Court : aligné sur le TTL du cache serveur — un segment fraîchement
     // détecté par un scan est visible en ~1 min sans marteler le backend.

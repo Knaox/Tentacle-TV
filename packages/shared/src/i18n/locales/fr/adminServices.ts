@@ -42,10 +42,6 @@ export default {
   publicUrlPairingBlocked: "Jumelage TV : réseau local seulement",
   directOn: "Activée",
   directOff: "Désactivée",
-  audioOn: "Active",
-  audioOff: "Désactivée",
-  audioNoTool: "Indisponible",
-  summaryAudio: "Analyse audio",
 
   // Jellyfin.
   jellyfinTitle: "Jellyfin",
@@ -151,35 +147,13 @@ export default {
     "Les greffons Jellyfin restent la source première des passages : en installer un enrichit tous les appareils d'un coup. L'analyse embarquée de Tentacle vient après eux — elle comble ce qu'ils ne disent pas, et corrige un générique de fin qui avale une scène.",
   segmentsPlugins: "Greffons Jellyfin",
   opensNewTab: "(s'ouvre dans un nouvel onglet)",
-  plugin_introSkipper: "Détection par empreinte audio — générique de début et de fin.",
-  plugin_chapterSegments: "Convertit les chapitres nommés en passages, sans analyse.",
-  plugin_introDb: "Base communautaire de repères, sans analyse locale.",
-  plugin_skipmeDb: "Base partagée de repères, en complément d'Intro Skipper.",
   segmentsLearnMore: "Comment ça marche",
   segmentsScanHelp:
     "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte. « Installer / réparer » ajoute leurs dépôts, les installe, redémarre Jellyfin s'il le faut (jamais pendant qu'on regarde, sauf si vous le demandez) et les règle. Un dépôt hors ligne n'empêche rien : le geste se refait plus tard.",
   // Serveur sans « Installer / réparer » (d'avant 1.24.0) : la phrase sans le geste.
   segmentsStackHelp: "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte.",
   segmentsFrameNote:
-    "À la première lecture de chaque film et de chaque épisode, Tentacle lit sa fin : les vignettes de la barre de progression montrent où défile le générique, l'audio sépare la musique des dialogues. Il en tire le début du générique et les scènes qui le suivent, mi-génériques comme post-génériques — même quand un greffon en avait déjà posé un. Il faut que la tâche « Générer des images Trickplay » de Jellyfin soit passée sur le média ; seul ce qui est trouvé est enregistré.",
-  audioTitle: "Analyse audio",
-  audioNote:
-    "Coupée par défaut. Allumée, Tentacle écoute la fin de chaque film et de chaque épisode pour y distinguer les scènes du générique ; et pour un épisode sans passages connus, le début et la fin de ses voisins de saison : ce qui se répète est l'opening ou l'ending. Une fois par média, à la première lecture ; des extraits audio transcodés par Jellyfin, un à la fois, jamais pendant qu'un autre spectateur transcode une vidéo. Rien n'est enregistré quand l'analyse ne trouve rien.",
-  audioTool: "Outil d'empreinte sur ce serveur : {{tool}}.",
-  audioUnavailable:
-    "Aucun outil d'empreinte sur ce serveur (fpcalc, ou ffmpeg avec chromaprint) : la comparaison des épisodes voisins est inactive. L'image Docker officielle l'embarque.",
-  audioUnavailable_windowsApp:
-    "Aucun outil d'empreinte sur ce serveur (fpcalc, ou ffmpeg avec chromaprint) : la comparaison des épisodes voisins est inactive. Tentacle Server pour Windows n'en embarque pas.",
-  audioSince: "Depuis le démarrage du serveur",
-  audioJobs: "Analyses",
-  audioWindows: "Extraits transcodés",
-  audioData: "Données lues",
-  audioTime: "Temps de transcodage",
-  audioVerdicts: "Passages trouvés",
-  audioSilent: "Sans verdict",
-  audioDeferred: "Reportées (serveur occupé)",
-  audioEnabled: "Analyse audio activée.",
-  audioDisabled: "Analyse audio désactivée.",
+    "À la première lecture de chaque film et de chaque épisode, Tentacle lit sa fin : les vignettes de la barre de progression montrent où défile le générique. Il en tire le début du générique et les scènes qui suivent le défilement — même quand un greffon en avait déjà posé un. Il faut que la tâche « Générer des images Trickplay » de Jellyfin soit passée sur le média ; seul ce qui est trouvé est enregistré.",
 
   // Zone de danger.
   dangerTitle: "Zone de danger",

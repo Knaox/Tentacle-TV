@@ -41,10 +41,6 @@ export default {
   publicUrlPairingBlocked: "TV pairing: local network only",
   directOn: "On",
   directOff: "Off",
-  audioOn: "On",
-  audioOff: "Off",
-  audioNoTool: "Unavailable",
-  summaryAudio: "Audio analysis",
 
   // Jellyfin.
   jellyfinTitle: "Jellyfin",
@@ -150,35 +146,13 @@ export default {
     "Jellyfin plugins remain the primary source for skip segments: installing one enriches every device at once. Tentacle's built-in analysis comes after them — it fills in what they don't say, and corrects end credits that swallow a scene.",
   segmentsPlugins: "Jellyfin plugins",
   opensNewTab: "(opens in a new tab)",
-  plugin_introSkipper: "Audio fingerprint detection — intro and credits.",
-  plugin_chapterSegments: "Turns named chapters into segments, no analysis.",
-  plugin_introDb: "Community timestamp database, no local analysis.",
-  plugin_skipmeDb: "Shared timestamp database, complementing Intro Skipper.",
   segmentsLearnMore: "How it works",
   segmentsScanHelp:
     "They stack: each reports what it knows, the most precise wins. “Install / repair” adds their repositories, installs them, restarts Jellyfin when needed (never while someone is watching, unless you ask) and sets them up. An offline repository blocks nothing: just run it again later.",
   // Server without "Install / repair" (before 1.24.0): the sentence without the action.
   segmentsStackHelp: "They stack: each reports what it knows, the most precise wins.",
   segmentsFrameNote:
-    "On the first play of every movie and episode, Tentacle reads its ending: the progress bar thumbnails show where the credits roll, the audio tells music from dialogue. From them it finds where the credits start and the scenes that follow, mid-credits and post-credits alike — even when a plugin had already set credits. Jellyfin's \"Generate Trickplay Images\" task must have run on the media; only what is found gets saved.",
-  audioTitle: "Audio analysis",
-  audioNote:
-    "Off by default. When on, Tentacle listens to the end of every movie and episode to tell its scenes apart from the credits; and for an episode with no known segments, to the start and end of its season neighbours: what repeats is the opening or the ending. Once per media, on first play; audio clips transcoded by Jellyfin, one at a time, never while another viewer is transcoding video. Nothing is saved when the analysis finds nothing.",
-  audioTool: "Fingerprint tool on this server: {{tool}}.",
-  audioUnavailable:
-    "No fingerprint tool on this server (fpcalc, or ffmpeg with chromaprint): comparing season neighbours is inactive. The official Docker image ships it.",
-  audioUnavailable_windowsApp:
-    "No fingerprint tool on this server (fpcalc, or ffmpeg with chromaprint): comparing season neighbours is inactive. Tentacle Server for Windows does not ship one.",
-  audioSince: "Since the server started",
-  audioJobs: "Analyses",
-  audioWindows: "Clips transcoded",
-  audioData: "Data read",
-  audioTime: "Transcoding time",
-  audioVerdicts: "Segments found",
-  audioSilent: "No verdict",
-  audioDeferred: "Postponed (server busy)",
-  audioEnabled: "Audio analysis enabled.",
-  audioDisabled: "Audio analysis disabled.",
+    "On the first play of every movie and episode, Tentacle reads its ending: the progress bar thumbnails show where the credits roll. From them it finds where the credits start and the scenes that follow the crawl — even when a plugin had already set credits. Jellyfin's \"Generate Trickplay Images\" task must have run on the media; only what is found gets saved.",
 
   // Danger zone.
   dangerTitle: "Danger zone",
