@@ -95,7 +95,7 @@ export default {
     joinedBody: "Your profile now shows up in “Who's watching?” on their TVs and computers. Without a PIN, anyone in front of the screen can open it.",
     title: "Set your PIN",
     body: "Your profile has no PIN: on the family's TVs and computers, anyone can open it from “Who's watching?”.",
-    why: "Four digits protect your history, your resume points, My List and your ratings. Only you enter it, and you can change or remove it at any time in Settings › Family.",
+    why: "Four digits protect your history, your resume points, My List and your ratings. They also let you manage the family from your profile, on a TV or a computer, with the rights the owner gives you. Only you enter it, and you can change or remove it at any time in Settings › Family.",
     set: "Set a PIN",
     later: "Set up later",
   },
