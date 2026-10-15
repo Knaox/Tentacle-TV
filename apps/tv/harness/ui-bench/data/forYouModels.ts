@@ -1,10 +1,10 @@
 import { reasonToText, recoRowTitle, type RecoRowItem } from "@tentacle-tv/api-client";
-import { familyOfProviderId, i18n } from "@tentacle-tv/shared";
+import { familyOfProviderId, i18n, titleKey } from "@tentacle-tv/shared";
 import { tvRecoServedCards, type TvRecoPageLike, type TvRecoShelf } from "@tentacle-tv/tv-core";
 import type { HeroModel } from "../../../src/redesign/hero/HeroBanner";
 import type { ForYouFilterModel, ForYouShelfModel } from "../../../src/redesign/screens/forYou/ForYouView";
 import { remoteHint } from "../../../src/platform/input";
-import { absentCard, tmdbPosterUri } from "../../../src/redesignWiring/cards/absentCards";
+import { absentCard, absentTrailerOf, tmdbPosterUri } from "../../../src/redesignWiring/cards/absentCards";
 import { absentOf } from "../../../src/redesignWiring/vigie/absentStates";
 import { recoAbsentCardId } from "../../../src/redesignWiring/vigie/useRecoAbsent";
 import { t as tAbsent } from "./absentModels";
@@ -97,7 +97,7 @@ export function recoShelvesOf(data: BenchData, shelves: TvRecoShelf<RecoRowItem>
 
 /**
  * Les étagères garde Vigie OUVERTE (`tvRecoShelves(…, { external: true })`) :
- * les titres hors bibliothèque, grisés, à leur place — l'ordre servi de
+ * les titres hors bibliothèque, en couleurs, à leur place — l'ordre servi de
  * `tvRecoServedCards`, la carte de `absentCard`, le badge de `absentOf`, comme
  * le câblage (`useRecoAbsent`). Rien n'est demandé : un titre sur deux dit
  * « OK : demander », les autres leur raison (exemple d'état de l'extension).
@@ -116,7 +116,8 @@ export function recoShelvesWithAbsentOf(data: BenchData, shelves: TvRecoShelf<Re
           title: reco.title,
           year: reco.year,
           posterUri: tmdbPosterUri(reco.posterPath),
-          absent: absentOf(tAbsent, undefined, null),
+          absent: { ...absentOf(tAbsent, undefined, null), inColor: true },
+          trailer: absentTrailerOf(titleKey(reco.mediaType, reco.tmdbId)),
         }),
         focusNote: hint,
       };

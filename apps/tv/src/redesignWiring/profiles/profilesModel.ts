@@ -33,14 +33,15 @@ export function formatUnlockTime(iso: string, language: string, now: number): st
   return `${at.toLocaleDateString(language, { weekday: "long" })} ${time}`;
 }
 
-/** `stickyProfileId` : le profil retenu de cette TV — il s'ouvre sans PIN (`planProfilePick`), donc sans cadenas. */
+/** `opensWithoutPin` : les profils que l'écran ouvre sans PIN — le profil retenu de cette TV (`planProfilePick`),
+ *  celui qu'on vient de quitter par « Changer de profil » (`resumesHeldSession`) —, donc sans cadenas. */
 export function tileModelOf(
   profile: TvProfileDto,
   serverUrl: string | null,
   now: number,
   language: string,
   t: TFunction,
-  stickyProfileId: string | null = null,
+  opensWithoutPin: readonly (string | null)[] = [],
 ): ProfileTileModel {
   const locked = isProfileLocked(profile, now) && profile.lockedUntil;
   return {
@@ -48,7 +49,7 @@ export function tileModelOf(
     name: profile.name,
     color: profile.color,
     avatarUri: profileAvatarUri(serverUrl, profile.userId, profile.imageTag),
-    hasPin: pickerShowsPinLock(profile, [stickyProfileId]),
+    hasPin: pickerShowsPinLock(profile, opensWithoutPin),
     guest: profile.kind === "guest",
     lockedLabel: locked ? t("familyTv:lockedUntil", { time: formatUnlockTime(locked, language, now) }) : null,
   };

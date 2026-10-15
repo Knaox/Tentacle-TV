@@ -13,11 +13,11 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
-## [1.29.0]
-<!-- Bloc nu : les trois canaux partent de la 1.28.2. Les aperçus de bande-annonce et « Qui regarde ? » exigent le serveur 1.29.0 (capacités trailers.preview et family.desktopProfiles) : face à un serveur plus ancien, l'app n'en montre rien, écran des nouveautés compris. -->
+## [1.30.0]
+<!-- Bloc nu : les trois canaux partent de la 1.28.2. Les aperçus de bande-annonce et « Qui regarde ? » exigent le serveur 1.30.0 (capacités trailers.preview et family.desktopProfiles) : face à un serveur plus ancien, l'app n'en montre rien, écran des nouveautés compris. -->
 ### FR
-- **Aperçus de bande-annonce** : laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Dessous : Lire, Ma liste, favori, vu, « Plus d'infos », la note, l'année et les genres ; un clic coupe le son, et les aperçus s'éteignent dans Réglages › Apparence (serveur 1.29.0)
-- **« Qui regarde ? » sur l'ordinateur** : chacun ouvre son profil, derrière son code PIN s'il en a un. À activer dans Réglages › Famille, pour tous vos ordinateurs ; « Ne plus proposer sur cet appareil » ouvre ensuite directement le profil choisi (serveur 1.29.0)
+- **Aperçus de bande-annonce** : laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Dessous : Lire, Ma liste, favori, vu, « Plus d'infos », la note, l'année et les genres ; un clic coupe le son, et les aperçus s'éteignent dans Réglages › Apparence (serveur 1.30.0)
+- **« Qui regarde ? » sur l'ordinateur** : chacun ouvre son profil, derrière son code PIN s'il en a un. À activer dans Réglages › Famille, pour tous vos ordinateurs ; « Ne plus proposer sur cet appareil » ouvre ensuite directement le profil choisi (serveur 1.30.0)
 - **Un menu de l'avatar plus simple** : « Changer de profil » en tête, qui ramène à « Qui regarde ? », puis vous, cet appareil, et l'aide en pied
 - **Un profil ouvert sur l'ordinateur regarde** : il n'administre rien, comme sur la TV
 - **Photos de profil** : une galerie de 36 personnages illustrés, chacun avec son nom et son histoire, à choisir depuis le menu de l'avatar — l'import d'une photo personnelle reste là. Un compte sans photo se la voit proposer une fois, au premier lancement. Les invités de la Famille ont aussi la leur, depuis Réglages › Famille ou leur profil
@@ -25,8 +25,8 @@ et Linux reçoivent l'ensemble.
 - **« Vider le cache et réinitialiser »** dit ce qu'il efface vraiment : les réglages de l'appareil, les recherches récentes et le cache, jamais votre session
 
 ### EN
-- **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.29.0)
-- **“Who's watching?” on your computer**: everyone opens their own profile, behind their PIN if they have one. Turn it on in Settings › Family, for all your computers; “Don't ask on this device” then opens the chosen profile directly (server 1.29.0)
+- **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.30.0)
+- **“Who's watching?” on your computer**: everyone opens their own profile, behind their PIN if they have one. Turn it on in Settings › Family, for all your computers; “Don't ask on this device” then opens the chosen profile directly (server 1.30.0)
 - **A simpler avatar menu**: “Switch profile” at the top, which brings back “Who's watching?”, then you, this device, and help at the bottom
 - **A profile opened on a computer only watches**: it manages nothing, just like on TV
 - **Profile pictures**: a gallery of 36 illustrated characters, each with a name and a story, to pick from the avatar menu — uploading your own photo is still there. Accounts without a picture are offered it once, on first launch. Family guests get one too, from Settings › Family or their own profile

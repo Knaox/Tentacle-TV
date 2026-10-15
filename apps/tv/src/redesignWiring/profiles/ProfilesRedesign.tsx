@@ -3,13 +3,13 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { findProfile, manageEntryProfile, pickerEntryIndex, profilesBackAction, profilesEntryKey } from "@tentacle-tv/tv-core";
+import { findProfile, manageEntryProfile, pickerEntryIndex, profilesBackAction, profilesEntryKey, resumesHeldSession } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { useProfilesFocus, useProfilesGroups } from "../../platform/tvos/screens/profiles";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ProfilesView, type ProfilesViewModel } from "../../redesign/screens/profiles/ProfilesView";
-import { lastLeftProfileId } from "../../auth/profileSession";
+import { heldProfileSession, lastLeftProfileId } from "../../auth/profileSession";
 import { useBackLayer } from "../back/BackScope";
 import { pinMessageOf, refusalMessage, tileModelOf } from "./profilesModel";
 import { useProfilesFlow } from "./useProfilesFlow";
@@ -53,7 +53,10 @@ export function ProfilesRedesign({ navigation, route }: Props) {
         secondary: { label: unpairArmed ? t("pairing:tvUnpairConfirm") : t("pairing:tvUnpairDevice"), armed: unpairArmed },
       };
     }
-    const profiles = (listing?.profiles ?? []).map((profile) => tileModelOf(profile, serverUrl, now, i18n.language, t, listing?.stickyProfileId ?? null));
+    // Sans cadenas : le profil retenu, et celui qu'on vient de quitter (il se reprend sans PIN).
+    const resumable = (listing?.profiles ?? []).find((profile) => resumesHeldSession(heldProfileSession(), profile, remember, now));
+    const opensWithoutPin = [listing?.stickyProfileId ?? null, resumable?.userId ?? null];
+    const profiles = (listing?.profiles ?? []).map((profile) => tileModelOf(profile, serverUrl, now, i18n.language, t, opensWithoutPin));
     const pinned = phase.kind === "pin" && listing ? findProfile(listing, phase.profileId) : null;
     const tile = pinned ? profiles.find((candidate) => candidate.id === pinned.userId) : undefined;
     if (phase.kind === "pin" && tile) {

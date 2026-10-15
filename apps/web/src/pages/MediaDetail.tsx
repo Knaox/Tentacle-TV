@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useSeriesWatchState, useTmdbSeasonEpisodes } from "@tentacle-tv/api-client";
 import { DETAIL_SEASON_PARAM, detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { PageTransition } from "../components/PageTransition";
@@ -14,6 +14,7 @@ import { MetadataHint } from "../components/detail/MetadataHint";
 import { DetailActions } from "../components/detail/DetailActions";
 import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailOpenOverlay";
+import { PreviewLaunchOverlay } from "../components/detail/PreviewLaunchOverlay";
 import { DetailPlaceholder } from "../components/detail/DetailPlaceholder";
 import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../components/detail/detailTransition";
 import { DetailTitle } from "../components/detail/DetailTitle";
@@ -26,6 +27,9 @@ import { textCascadeDelayed } from "../theme/motion";
 // copies, restées à 24 px de course quand la référence est passée à 10. La
 // révélation du texte doit être la même d'une page à l'autre, sinon l'écart se
 // remarque précisément là où l'on navigue le plus.
+
+/** La fiche sous un calque d'ouverture pas encore opaque : présente, mesurable, invisible. */
+const HIDDEN_UNDER_OVERLAY = { visibility: "hidden" } as const;
 
 export function MediaDetail() {
   const { itemId } = useParams<{ itemId: string }>();
@@ -74,6 +78,19 @@ export function MediaDetail() {
    * et l'entrée ne doit surtout pas se déclencher à ce moment-là.
    */
   const skipEntrance = useRef(skipsEntrance(origin));
+  /**
+   * Le calque d'ouverture est OPAQUE (son fond a fini de monter). Avant, la
+   * fiche, rendue d'emblée dans son état final, se voyait à travers ce fond
+   * encore transparent — un éclair de la page d'arrivée avant le vol, d'autant
+   * plus long que la page quittée s'efface vite. Cachée jusque-là (sans rien
+   * changer à sa mise en page : le vol vise ses mesures), elle est ensuite
+   * dessous, invisible, jusqu'à l'effacement du calque.
+   */
+  const [overlayCovered, setOverlayCovered] = useState(false);
+  const handleOverlayCovered = useCallback(() => setOverlayCovered(true), []);
+  // Animations réduites : aucun calque ne se joue, la fiche se montre tout de suite.
+  const reducedMotion = useReducedMotion() === true;
+  const pageStyle = origin !== null && !overlayCovered && !reducedMotion ? HIDDEN_UNDER_OVERLAY : undefined;
 
   // Relue à CHAQUE changement d'item, et pas seulement au montage. React Router
   // réutilise ce composant d'une fiche à l'autre — un initialiseur `useState` ne
@@ -85,6 +102,7 @@ export function MediaDetail() {
     setOrigin(next);
     setTarget(null);
     setViewerIndex(null);
+    setOverlayCovered(false);
     // Le composant étant réutilisé d'une fiche à l'autre, le régime d'entrée
     // doit suivre l'item courant : la fiche suivante peut très bien s'ouvrir
     // sans transition (lien direct) après une qui en avait une.
@@ -120,12 +138,25 @@ export function MediaDetail() {
   const backdropUrl = overlayBackdropId
     ? client.getImageUrl(overlayBackdropId, "Backdrop", { width: 1920, quality: 85 })
     : null;
-  const openOverlay = (
+  // Depuis une mini-carte d'aperçu, c'est sa vidéo qui grandit jusqu'à la
+  // scène (`PreviewLaunchOverlay`) ; depuis une carte, son visuel qui vole
+  // jusqu'à l'affiche. Une clé par ouverture : la suivante repart de zéro.
+  const openOverlay = origin?.launch ? (
+    <PreviewLaunchOverlay
+      key={origin.stamp}
+      launch={origin.launch}
+      backdropUrl={backdropUrl}
+      settled={!!item}
+      onCovered={handleOverlayCovered}
+      onDone={handleOverlayDone}
+    />
+  ) : (
     <DetailOpenOverlay
       origin={origin}
       backdropUrl={backdropUrl}
       target={target}
       settled={!!item}
+      onCovered={handleOverlayCovered}
       onDone={handleOverlayDone}
     />
   );
@@ -134,7 +165,9 @@ export function MediaDetail() {
     return (
       <>
         {/* L'attente, ou l'échec : une requête en erreur ne tourne plus à vide. */}
-        <DetailPlaceholder failed={isError && !item} error={error} retrying={isFetching} onRetry={() => void refetch()} />
+        <div style={pageStyle}>
+          <DetailPlaceholder failed={isError && !item} error={error} retrying={isFetching} onRetry={() => void refetch()} />
+        </div>
         {/* Le calque d'ouverture couvre l'écran pendant le chargement : sans
             lui ici, un aller-retour spinner → fiche crevait l'animation. */}
         {openOverlay}
@@ -165,7 +198,7 @@ export function MediaDetail() {
         page de 12 px et l'échelonne à 99,5 % SOUS le calque, mouvement que
         personne ne voit et qui n'a plus qu'à finir au mauvais moment. */}
     <PageTransition skip={skipEntrance.current}>
-      <div className="min-h-screen bg-surface-0">
+      <div className="min-h-screen bg-surface-0" style={pageStyle}>
         <DetailStage backdropUrl={backdropUrl} item={item} instant={skipEntrance.current} onOpenImages={openImages}>
           <motion.div
             className="flex items-end gap-8 px-5 pb-10 pt-28 md:px-12 md:pb-14 xl:gap-12 xl:px-16"

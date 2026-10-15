@@ -13,7 +13,7 @@ import {
   HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
-import { resumeUnpair } from "@tentacle-tv/tv-core";
+import { releaseHeldRevocations, resumeUnpair } from "@tentacle-tv/tv-core";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
 import { rehydrateStores } from "./lib/stores";
 import { useCardSizeSetting } from "./lib/cardSize";
@@ -247,6 +247,8 @@ export function App() {
       // Apple TV (Famille) : la session d'un profil qui ne se reprend pas au
       // lancement est quittée avant que rien ne la lise — « Qui regarde ? ».
       leaveProfileAtBoot(storage);
+      // Une session gardée par « Changer de profil » ne survit pas à l'app : sa révocation part.
+      releaseHeldRevocations(storage, Date.now());
       // Sans session, le cache persisté n'est à personne : ni en mémoire, ni
       // sur le disque.
       await cacheHydrated;

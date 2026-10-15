@@ -1,5 +1,5 @@
 /**
- * La géométrie de la scène de l'aperçu au survol (1.29.0), en px du canevas
+ * La géométrie de la scène de l'aperçu au survol (1.30.0), en px du canevas
  * logique (640 × 360). Les proportions suivent l'app : à une fenêtre de
  * bureau, la mini-carte fait près de deux fois la largeur d'une affiche
  * (~23 % de la fenêtre), vidéo 16:9 en haut et bandeau dessous (sa hauteur

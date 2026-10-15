@@ -28,7 +28,7 @@ describe("capacités du serveur", () => {
     expect(resolveServerCapabilities({ version: "1.25.0" }).has("trailers.player")).toBe(false);
     // Celles de l'app Windows (1.27.0) n'y sont pas encore en 1.26.0, ni
     // « Films pour vous » (1.27.1) en 1.27.0, ni l'aperçu au survol ni les profils
-    // du bureau (1.29.0) en 1.27.1, ni le catalogue des bandes-annonces (1.30.0) en 1.29.0.
+    // du bureau (1.30.0) en 1.27.1, ni le catalogue des bandes-annonces (1.30.0) en 1.29.0.
     const since = (versions: string[]) => SERVER_CAPABILITY_KEYS.filter((key) => !versions.includes(SERVER_CAPABILITIES[key]));
     expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(since(["1.27.0", "1.27.1", "1.29.0", "1.30.0"]).length);
     expect(resolveServerCapabilities({ version: "1.27.0" }).size).toBe(since(["1.27.1", "1.29.0", "1.30.0"]).length);
