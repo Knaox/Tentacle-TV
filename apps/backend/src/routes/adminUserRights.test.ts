@@ -149,6 +149,24 @@ describe("les droits d'un compte (admin)", () => {
     }
   });
 
+  it("un administrateur ne se pose pas un programme d'accès qui l'exclut maintenant ; un autre compte, si", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 15, 10, 0)); // un jeudi, 10 h, heure locale du serveur
+    try {
+      const own = (accessSchedules: unknown) =>
+        app().then((server) => server.inject({ method: "PATCH", url: `/api/admin/users/${ADMIN}/rights`, payload: { accessSchedules } }));
+      const weekend = [{ dayOfWeek: "Weekend", startHour: 8, endHour: 20 }];
+      expect((await own(weekend)).json()).toEqual({ error: "self_lockout" });
+      expect(state.posts).toEqual([]);
+      expect((await own([{ dayOfWeek: "Weekday", startHour: 8, endHour: 20 }])).statusCode).toBe(200);
+      expect((await own([])).statusCode).toBe(200);
+      const other = await (await app()).inject({ method: "PATCH", url: `/api/admin/users/${ALICE}/rights`, payload: { accessSchedules: weekend } });
+      expect(other.statusCode).toBe(200);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("le dernier administrateur actif garde l'administration ; avec un autre, elle se retire", async () => {
     state.actor = ALICE;
     try {

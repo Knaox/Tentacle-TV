@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { RatingSelect, UnratedTypesField } from "../../../parental/RatingFields";
 import { ScheduleListField } from "../../../parental/ScheduleListField";
 import { TagListField } from "../../../parental/TagListField";
@@ -11,7 +12,8 @@ import type { GroupProps } from "./GroupBodies";
  * d'accès. Chaque geste s'écrit aussitôt ; c'est Jellyfin qui l'applique, et
  * le serveur en filtre aussi les titres hors bibliothèque.
  */
-export function ParentalBody({ rights, options, writer }: GroupProps) {
+export function ParentalBody({ rights, options, writer, isSelf }: GroupProps) {
+  const { t } = useTranslation("userRights");
   const ratingPending = writer.isPending("maxParentalRating") || writer.isPending("maxParentalSubRating");
   return (
     <>
@@ -59,6 +61,7 @@ export function ParentalBody({ rights, options, writer }: GroupProps) {
           value={rights.accessSchedules}
           disabled={writer.isPending("accessSchedules")}
           onChange={(next) => writer.write({ accessSchedules: next })}
+          notice={isSelf ? t("parental.scheduleSelfNotice") : undefined}
         />
         <RightError text={writer.errorFor("accessSchedules")} />
       </div>

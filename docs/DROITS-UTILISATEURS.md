@@ -450,6 +450,14 @@ les chemins sont branchés, la correspondance des certifications arrivera sans y
   `capabilitiesFromPolicy`), suppression, partage public.
 - **Watch Together** (`syncPlayAccess`) : jamais « SyncPlay » ; trois choix en boutons radio, chacun
   avec sa phrase (`ChoiceRight.tsx`). L'application est celle de S2.
+- **`self_lockout` s'étend aux plages horaires** (demande du coordinateur : S1 applique les plages
+  à TOUS les comptes, administrateurs compris, même connectés) : un administrateur qui se règle
+  lui-même ne se pose pas un programme d'accès qui l'exclut À L'INSTANT (heure locale du serveur).
+  Règle pure et partagée `selfLockoutKeys` / `schedulesAllowAt` (`userRightsPatch.ts`, miroir ; la
+  règle de Jellyfin, bornes incluses), rejouée par le serveur avant toute lecture ; un programme qui
+  le couvre maintenant passe (il se coupera plus tard : c'est son choix). La fiche, sur son propre
+  compte, l'avertit sous l'aide (« Ces plages s'appliquent aussi à vous… ») et dit ce refus en clair
+  (`refusal.self_lockout_schedule`).
 - **Emplacement des droits de la Famille** : `UserRightsPanel.tsx`, dans la liste des rubriques,
   juste après « Gestion » (commentaire « Emplacement des droits de la FAMILLE ») — une ligne.
 

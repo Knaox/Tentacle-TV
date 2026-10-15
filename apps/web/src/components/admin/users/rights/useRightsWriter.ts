@@ -38,7 +38,7 @@ export function useRightsWriter(userId: string): RightsWriter {
       () => show("success", t("saved")),
       (reason: unknown) => {
         const refusal = userRightsRefusalOf(reason);
-        const text = t(refusalKey(refusal?.error ?? null));
+        const text = t(refusalKey(refusal?.error ?? null, fields));
         // `invalid_value` nomme les champs refusés : l'erreur va sous eux.
         setError({ fields: refusal?.fields?.length ? refusal.fields : fields, text });
         show("error", text);

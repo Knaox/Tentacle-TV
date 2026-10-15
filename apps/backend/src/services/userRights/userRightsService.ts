@@ -2,7 +2,7 @@ import { jellyfinAdminFetch, type JellyfinResult } from "../jellyfinAdminFetch";
 import { isFamilyGuest } from "../family/familyGuestMarkers";
 import { invalidateJellyfinUsers } from "../watchTogether/usersCache";
 import { USER_RIGHTS_FIELDS, type UserRightsDto, type UserRightsKey, type UserRightsPatch } from "../../userRights/userRightsContract";
-import { normalizeJellyfinId, parseUserRightsPatch, patchAgainstOptions } from "../../userRights/userRightsPatch";
+import { normalizeJellyfinId, parseUserRightsPatch, patchAgainstOptions, selfLockoutKeys } from "../../userRights/userRightsPatch";
 import { applyRightsPatch, rightsFromPolicy, unappliedKeys, type JellyfinPolicy } from "./policyMapping";
 import { notePolicyWritten } from "./policyWritten";
 import { UserRightsFailure } from "./userRightsFailure";
@@ -15,8 +15,9 @@ import { getUserRightsOptions } from "./userRightsOptions";
  * rendre l'état réel. Aucune copie gardée.
  *
  * Refus : un invité de la Famille ne se règle pas ici (`family_guest`) ; un
- * administrateur ne se retire ni l'administration ni l'accès (`self_lockout`) ; le
- * dernier administrateur actif ne perd ni l'un ni l'autre (`last_admin`).
+ * administrateur ne se retire ni l'administration ni l'accès, ni ne se pose un
+ * programme d'accès qui l'exclut à l'instant (`self_lockout`, `selfLockoutKeys`) ;
+ * le dernier administrateur actif ne perd ni l'un ni l'autre (`last_admin`).
  */
 
 interface JellyfinUserDto {
@@ -98,11 +99,12 @@ export async function updateUserRights(actor: { userId: string; username: string
     if (refused.length > 0) throw new UserRightsFailure("invalid_value", refused);
   }
 
+  // Sur soi : la règle partagée, à l'heure du serveur (celle où les plages s'appliquent).
+  const self = normalizeJellyfinId(actor.userId) === userId;
+  if (self && selfLockoutKeys(patch, new Date()).length > 0) throw new UserRightsFailure("self_lockout");
+
   const user = await fetchUser(userId);
-  if (dropsAdmin(user.Policy, patch)) {
-    if (normalizeJellyfinId(actor.userId) === userId) throw new UserRightsFailure("self_lockout");
-    if ((await otherActiveAdmins(userId)) === 0) throw new UserRightsFailure("last_admin");
-  }
+  if (dropsAdmin(user.Policy, patch) && (await otherActiveAdmins(userId)) === 0) throw new UserRightsFailure("last_admin");
 
   const written = await jellyfinAdminFetch(`/Users/${userId}/Policy`, {
     method: "POST",

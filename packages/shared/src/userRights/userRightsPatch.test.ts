@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { USER_RIGHTS_FIELDS, USER_RIGHTS_KEYS, type UserRightsOptions } from "./userRightsContract";
-import { normalizeJellyfinId, parseUserRightsPatch, patchAgainstOptions } from "./userRightsPatch";
+import { normalizeJellyfinId, parseUserRightsPatch, patchAgainstOptions, schedulesAllowAt, selfLockoutKeys } from "./userRightsPatch";
 import { USER_RIGHTS_ROUTES, userRightsPath } from "./userRightsRoutes";
 
 const LIB = "f137a2dd21bbc1b99aa5c0f6bf02a805";
@@ -135,5 +135,26 @@ describe("les droits retirés de la fiche (revue du 2026-10-15)", () => {
       "enableLyricManagement", "enableLiveTvAccess", "enableLiveTvManagement", "enableRemoteControlOfOtherUsers", "enableSharedDeviceControl"]) {
       expect(parseUserRightsPatch({ [key]: true })).toEqual({ ok: false, fields: [] });
     }
+  });
+});
+
+describe("les plages à l'instant, et ce qu'un administrateur ne se fait pas", () => {
+  const thursday10 = new Date(2026, 9, 15, 10, 0);
+  const saturday20 = new Date(2026, 9, 17, 20, 0);
+
+  it("suit la règle de Jellyfin : aucune plage = permis, jours couverts, bornes incluses", () => {
+    expect(schedulesAllowAt([], thursday10)).toBe(true);
+    expect(schedulesAllowAt([{ dayOfWeek: "Weekday", startHour: 8, endHour: 10 }], thursday10)).toBe(true);
+    expect(schedulesAllowAt([{ dayOfWeek: "Weekend", startHour: 8, endHour: 22 }], thursday10)).toBe(false);
+    expect(schedulesAllowAt([{ dayOfWeek: "Weekend", startHour: 8, endHour: 20 }], saturday20)).toBe(true);
+    expect(schedulesAllowAt([{ dayOfWeek: "Thursday", startHour: 10.5, endHour: 12 }], thursday10)).toBe(false);
+    expect(schedulesAllowAt([{ dayOfWeek: "Everyday", startHour: 0, endHour: 24 }], saturday20)).toBe(true);
+  });
+
+  it("nomme ce qui couperait l'administrateur qui se règle lui-même", () => {
+    expect(selfLockoutKeys({ isAdministrator: false, isDisabled: true }, thursday10)).toEqual(["isAdministrator", "isDisabled"]);
+    expect(selfLockoutKeys({ accessSchedules: [{ dayOfWeek: "Weekend", startHour: 8, endHour: 20 }] }, thursday10)).toEqual(["accessSchedules"]);
+    expect(selfLockoutKeys({ accessSchedules: [] }, thursday10)).toEqual([]);
+    expect(selfLockoutKeys({ isAdministrator: true, isDisabled: false, blockedTags: ["x"] }, thursday10)).toEqual([]);
   });
 });

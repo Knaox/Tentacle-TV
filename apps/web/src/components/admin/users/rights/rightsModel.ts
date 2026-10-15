@@ -99,7 +99,11 @@ export function needsConfirmation(field: UserRightsKey, next: unknown): boolean 
   return (field === "isAdministrator" || field === "isDisabled") && next === true;
 }
 
-/** La clé du refus, dans l'espace `adminUserRights` ; un refus inconnu dit seulement l'échec. */
-export function refusalKey(code: UserRightsRefusal | null): string {
+/**
+ * La clé du refus, dans l'espace `userRights` ; un refus inconnu dit seulement
+ * l'échec. Un `self_lockout` provoqué par le programme d'accès a sa phrase.
+ */
+export function refusalKey(code: UserRightsRefusal | null, fields: readonly UserRightsKey[] = []): string {
+  if (code === "self_lockout" && fields.includes("accessSchedules")) return "refusal.self_lockout_schedule";
   return code ? `refusal.${code}` : "refusal.unknown";
 }

@@ -37,6 +37,8 @@ export default {
     schedules_one: "{{count}} access window",
     schedules_other: "{{count}} access windows",
     scheduleNever: "No time window allowed",
+    // L'administrateur qui règle ses PROPRES plages : Tentacle les applique aussi aux administrateurs.
+    scheduleSelfNotice: "These windows apply to you too. Outside of them, you won't have access to Tentacle.",
     noParental: "No restrictions",
     noPlayback: "Playback not allowed",
     noVideoTranscode: "No video conversion",
@@ -153,7 +155,8 @@ export default {
     unknown_user: "This account no longer exists in Jellyfin.",
     family_guest: "This is a Family guest: they follow their creator's rights and are managed from the Family.",
     last_admin: "This is the last administrator: give the role to another account first.",
-    self_lockout: "You can't remove your own administrator role or disable your own account.",
+    self_lockout: "You can't remove your own administration, disable your own account, or lock yourself out with an access schedule.",
+    self_lockout_schedule: "This schedule would lock you out of Tentacle right now: keep a window that covers the current time.",
     invalid_value: "Jellyfin doesn't accept this value. The actual state has been read again.",
     jellyfin_unreachable: "Jellyfin didn't answer: nothing changed.",
     jellyfin_refused: "Jellyfin refused the change: nothing changed.",

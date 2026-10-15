@@ -129,3 +129,41 @@ export function patchAgainstOptions(patch: UserRightsPatch, options: UserRightsO
   }
   return refused;
 }
+
+const WEEK: readonly AccessScheduleDto["dayOfWeek"][] = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function scheduleDays(day: AccessScheduleDto["dayOfWeek"]): readonly AccessScheduleDto["dayOfWeek"][] {
+  if (day === "Everyday") return WEEK;
+  if (day === "Weekday") return WEEK.slice(1, 6);
+  if (day === "Weekend") return [WEEK[0], WEEK[6]];
+  return [day];
+}
+
+/**
+ * Des plages horaires permettent-elles l'instant `now` (heure LOCALE de qui
+ * l'évalue : le serveur Tentacle) ? La règle de Jellyfin 10.11.11
+ * (`IsParentalScheduleAllowed`) : aucune plage = permis ; sinon un jour couvert
+ * (`Everyday`, `Weekday` lundi → vendredi, `Weekend` samedi et dimanche, ou le
+ * jour nommé) dont `startHour ≤ h ≤ endHour`, bornes incluses.
+ */
+export function schedulesAllowAt(schedules: readonly AccessScheduleDto[], now: Date): boolean {
+  if (schedules.length === 0) return true;
+  const day = WEEK[now.getDay()];
+  const hour = now.getHours() + now.getMinutes() / 60;
+  return schedules.some((entry) => scheduleDays(entry.dayOfWeek).includes(day) && hour >= entry.startHour && hour <= entry.endHour);
+}
+
+/**
+ * Ce qu'un administrateur ne se fait pas à LUI-MÊME (`self_lockout`) : se retirer
+ * l'administration, se désactiver, ou se poser un programme d'accès qui l'exclut
+ * à l'instant — Tentacle applique les plages à tous les comptes, administrateurs
+ * compris, même déjà connectés : il se couperait. Rend les clés en cause (vide :
+ * rien à refuser). Le serveur la rejoue toujours, à SON heure.
+ */
+export function selfLockoutKeys(patch: UserRightsPatch, now: Date): UserRightsKey[] {
+  const keys: UserRightsKey[] = [];
+  if (patch.isAdministrator === false) keys.push("isAdministrator");
+  if (patch.isDisabled === true) keys.push("isDisabled");
+  if (patch.accessSchedules !== undefined && !schedulesAllowAt(patch.accessSchedules, now)) keys.push("accessSchedules");
+  return keys;
+}

@@ -38,6 +38,8 @@ export default {
     schedules_one: "{{count}} plage d'accès",
     schedules_other: "{{count}} plages d'accès",
     scheduleNever: "Aucune plage permise",
+    // L'administrateur qui règle ses PROPRES plages : Tentacle les applique aussi aux administrateurs.
+    scheduleSelfNotice: "Ces plages s'appliquent aussi à vous. Hors de ces plages, vous n'aurez plus accès à Tentacle.",
     noParental: "Aucune restriction",
     noPlayback: "Lecture interdite",
     noVideoTranscode: "Sans conversion vidéo",
@@ -155,7 +157,8 @@ export default {
     unknown_user: "Ce compte n'existe plus dans Jellyfin.",
     family_guest: "C'est un invité de la Famille : il suit les droits de son créateur et se règle depuis la Famille.",
     last_admin: "C'est le dernier administrateur : donnez d'abord l'administration à un autre compte.",
-    self_lockout: "Vous ne pouvez pas vous retirer l'administration ni désactiver votre propre compte.",
+    self_lockout: "Vous ne pouvez pas vous retirer l'administration, désactiver votre propre compte, ni vous exclure par un programme d'accès.",
+    self_lockout_schedule: "Ce programme vous exclurait de Tentacle dès maintenant : gardez une plage qui couvre l'heure actuelle.",
     invalid_value: "Jellyfin n'accepte pas cette valeur. L'état réel a été relu.",
     jellyfin_unreachable: "Jellyfin n'a pas répondu : rien n'a changé.",
     jellyfin_refused: "Jellyfin a refusé le changement : rien n'a changé.",

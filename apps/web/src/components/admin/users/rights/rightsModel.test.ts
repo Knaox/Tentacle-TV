@@ -69,6 +69,8 @@ describe("les garde-fous de la fiche", () => {
   it("chaque refus a ses mots, un refus inconnu aussi", () => {
     expect(refusalKey("last_admin")).toBe("refusal.last_admin");
     expect(refusalKey(null)).toBe("refusal.unknown");
+    expect(refusalKey("self_lockout", ["isDisabled"])).toBe("refusal.self_lockout");
+    expect(refusalKey("self_lockout", ["accessSchedules"])).toBe("refusal.self_lockout_schedule");
   });
 });
 

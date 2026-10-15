@@ -1,6 +1,6 @@
 import { memo, useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Clock, Plus, X } from "lucide-react";
+import { ChevronDown, Clock, Plus, TriangleAlert, X } from "lucide-react";
 import type { AccessScheduleDay, AccessScheduleDto } from "@tentacle-tv/shared";
 import { CHIP_REMOVE, FIELD_HINT, FIELD_LABEL, SELECT, SMALL_BUTTON } from "./fieldStyles";
 import {
@@ -18,6 +18,8 @@ interface ScheduleListFieldProps {
   value: readonly AccessScheduleDto[];
   disabled?: boolean;
   onChange: (next: AccessScheduleDto[]) => void;
+  /** Un avertissement sous l'aide (l'administrateur qui règle ses PROPRES plages) ; absent : rien. */
+  notice?: string;
 }
 
 const DEFAULT_DRAFT: AccessScheduleDto = { dayOfWeek: "Everyday", startHour: 8, endHour: 21 };
@@ -29,7 +31,7 @@ const DEFAULT_DRAFT: AccessScheduleDto = { dayOfWeek: "Everyday", startHour: 8, 
  * de Jellyfin) pour en ajouter une. Sans plage, l'accès est permis à toute
  * heure — la phrase le dit.
  */
-export const ScheduleListField = memo(function ScheduleListField({ value, disabled, onChange }: ScheduleListFieldProps) {
+export const ScheduleListField = memo(function ScheduleListField({ value, disabled, onChange, notice }: ScheduleListFieldProps) {
   const { t } = useTranslation("userRights");
   const titleId = useId();
   const errorId = useId();
@@ -43,6 +45,12 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
     <fieldset aria-labelledby={titleId}>
       <legend id={titleId} className={FIELD_LABEL}>{t("fields.accessSchedules.label")}</legend>
       <span className={FIELD_HINT}>{t("fields.accessSchedules.hint")}</span>
+      {notice && (
+        <p role="note" className="mt-2 flex items-start gap-2 rounded-lg border border-status-warning bg-status-warning-bg px-3 py-2 text-xs leading-relaxed text-status-warning-fg">
+          <TriangleAlert aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {notice}
+        </p>
+      )}
       {never ? (
         <p className="mt-2 flex items-center gap-2.5 rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2 text-sm text-content-primary">
           <Clock aria-hidden className="h-3.5 w-3.5 shrink-0 text-content-tertiary" />
