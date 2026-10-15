@@ -55,6 +55,7 @@ import metadataHint from "./metadataHint";
 import profilePicker from "./profilePicker";
 import avatars from "./avatars";
 import userRights from "./userRights";
+import libraryDelete from "./libraryDelete";
 
 export default {
   common, auth, player, admin,
@@ -86,4 +87,5 @@ export default {
   profilePicker,
   avatars,
   userRights,
+  libraryDelete,
 };
