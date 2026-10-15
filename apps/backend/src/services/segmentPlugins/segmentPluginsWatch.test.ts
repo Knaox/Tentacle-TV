@@ -1,6 +1,7 @@
 /**
- * Le guet des greffons de passages : la migration « Intro Skipper sans
- * écoute », une fois et une seule, et les réglages remis à plus tard.
+ * Le guet des greffons de passages : la coupure « Intro Skipper sans écoute »
+ * du retrait de l'analyse audio, une fois et une seule, et les réglages remis
+ * à plus tard.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,7 +19,7 @@ vi.mock("../configStore", () => ({
 }));
 vi.mock("../db", () => ({ hasPrisma: () => true }));
 
-import { CONFIG_PENDING_KEY, INTRO_SKIPPER_MIGRATION_KEY } from "./catalog";
+import { CONFIG_PENDING_KEY, INTRO_SKIPPER_MIGRATION_KEY, LEGACY_INTRO_SKIPPER_MIGRATION_KEY } from "./catalog";
 import { segmentPluginsTick } from "./segmentPluginsWatch";
 
 const IS = "c83d86bba1e04c35a113e2101cf4ee6b";
@@ -29,16 +30,42 @@ beforeEach(() => {
   state.config.clear();
 });
 
-describe("migration côté Jellyfin", () => {
-  it("coupe une fois l'analyse automatique d'une Intro Skipper déjà installée", async () => {
+describe("coupure côté Jellyfin", () => {
+  it("coupe une fois l'analyse automatique d'une Intro Skipper déjà installée, et le dit", async () => {
     state.jf.preinstall("introSkipper");
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     expect(await segmentPluginsTick()).toBe(true);
     expect(state.jf.configs.get(IS)?.AutoDetectIntros).toBe(false);
     expect(detectTriggers()).toEqual([]);
     expect(state.config.has(INTRO_SKIPPER_MIGRATION_KEY)).toBe(true);
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("coupée, l'analyse audio est retirée"));
+    log.mockRestore();
   });
 
-  it("respecte ensuite l'administrateur qui la rallume", async () => {
+  it("un serveur coupé une première fois puis rallumé : recoupé au retrait, l'ancienne marque effacée", async () => {
+    state.config.set(LEGACY_INTRO_SKIPPER_MIGRATION_KEY, "2026-10-06T00:00:00.000Z");
+    state.jf.preinstall("introSkipper");
+    state.jf.configs.set(IS, { ...state.jf.configs.get(IS), AutoDetectIntros: true });
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    expect(await segmentPluginsTick()).toBe(true);
+    expect(state.jf.configs.get(IS)?.AutoDetectIntros).toBe(false);
+    expect(state.config.has(INTRO_SKIPPER_MIGRATION_KEY)).toBe(true);
+    expect(state.config.has(LEGACY_INTRO_SKIPPER_MIGRATION_KEY)).toBe(false);
+    vi.restoreAllMocks();
+  });
+
+  it("déjà coupée : la marque est posée sans rien dire", async () => {
+    state.jf.preinstall("introSkipper");
+    await segmentPluginsTick();
+    state.config.delete(INTRO_SKIPPER_MIGRATION_KEY);
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    expect(await segmentPluginsTick()).toBe(true);
+    expect(state.config.has(INTRO_SKIPPER_MIGRATION_KEY)).toBe(true);
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it("la marque posée, le guet ne revient plus sur Jellyfin", async () => {
     state.jf.preinstall("introSkipper");
     await segmentPluginsTick();
     state.jf.configs.set(IS, { ...state.jf.configs.get(IS), AutoDetectIntros: true });
