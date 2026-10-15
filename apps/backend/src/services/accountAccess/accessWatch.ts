@@ -16,7 +16,7 @@
 import { getContentPolicy, invalidateContentPolicy, onContentPolicyInvalidated } from "../contentPolicy";
 import { jellyfinAdminFetch } from "../jellyfinAdminFetch";
 import { closeUserSockets, connectedUserIds, onPresenceChange, sendToUser } from "../wsManager";
-import { leaveWatchTogetherNow } from "../watchTogether/gateway";
+import { ejectFromRoom } from "../watchTogether/accessWatch";
 import { accessPolicyOf } from "./accountAccessState";
 import { keepPlaybackPositions } from "./keepPositions";
 import { registerLoginLockoutRepair } from "./loginLockout";
@@ -46,7 +46,8 @@ async function announce(userId: string, access: AccountAccessState): Promise<voi
   console.log(`[account-access] ${userId} → ${access.state}`);
   sendToUser(userId, { type: "account:access", ...access });
   if (access.state === "allowed") return;
-  leaveWatchTogetherNow(userId);
+  // Hors de Watch Together, sans la grâce d'une déconnexion (la sortie de S2, § 9.2).
+  await ejectFromRoom(userId, "access_revoked").catch(() => false);
   // La position d'abord : le rapport d'arrêt du compte sera refusé par Jellyfin.
   await keepPlaybackPositions(userId).catch(() => 0);
   closeUserSockets(userId, ACCOUNT_ACCESS_CLOSE_CODE, "Account access");

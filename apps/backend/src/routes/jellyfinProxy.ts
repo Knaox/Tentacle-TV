@@ -86,10 +86,10 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // est bornée au compte, dont Jellyfin applique alors les droits (cf. deviceUserScope).
     const lentKeyUser = device?.status === "paired" ? device.payload.userId : await impersonatedUserId(incomingToken);
     if (lentKeyUser) targetUrl = buildTargetUrl(jellyfinUrl, route.path, scopedToDeviceUser(route.path, route.query, lentKeyUser));
-    // Désactivé ou hors de ses plages, la TV d'un compte ne lit rien (cf. accountAccessState).
+    // Désactivé ou hors plage, la TV d'un compte ne lit rien (cf. accountAccessState) ; puis la
+    // lecture : titre visible, lecture et conversions permises, plafond distant (cf. playbackGate).
     const blocked = device?.status === "paired" ? await deviceAccessRefusal(device.payload.userId) : null;
     if (blocked) return reply.status(403).send(blocked);
-    // La lecture : titre visible, lecture et conversions permises, plafond distant (cf. playbackGate).
     const gate = await gatePlayback({ path: wildcardPath, query: route.query, token: incomingToken, lentKeyUser, clientIp: getRealClientIp(request) });
     if (gate.kind === "hidden") return reply.status(404).send({ error: "Not found" });
     if (gate.kind === "refused") return reply.status(403).send({ code: gate.code, error: "Forbidden" });
@@ -157,8 +157,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         }
       }
     }
-    // Connexion du bureau : essais avant blocage tenus par Tentacle ; un refus de Jellyfin, redit en mots.
-    const login = await proxiedLogin(wildcardPath, request.body);
+    const login = await proxiedLogin(wildcardPath, request.body); // bureau : essais avant blocage, refus en mots
     const start = performance.now();
     try {
       const response = await undiciFetch(targetUrl, fetchInit);

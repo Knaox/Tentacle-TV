@@ -38,7 +38,12 @@ vi.mock("../wsManager", () => ({
   sendToUser: (userId: string, msg: Record<string, unknown>) => state.sent.push({ userId, msg }),
   closeUserSockets: (userId: string, code: number) => state.closed.push({ userId, code }),
 }));
-vi.mock("../watchTogether/gateway", () => ({ leaveWatchTogetherNow: (userId: string) => state.left.push(userId) }));
+vi.mock("../watchTogether/accessWatch", () => ({
+  ejectFromRoom: async (userId: string, reason: string) => {
+    state.left.push(`${userId}:${reason}`);
+    return true;
+  },
+}));
 vi.mock("./keepPositions", () => ({ keepPlaybackPositions: async () => 0 }));
 vi.mock("./loginLockout", () => ({ registerLoginLockoutRepair: () => undefined }));
 
@@ -91,7 +96,7 @@ describe("annonce de l'accès du compte", () => {
         msg: { type: "account:access", state: "outsideSchedule", schedules: EVENINGS, nextOpening: new Date(2026, 9, 16, 8, 0).getTime() },
       },
     ]);
-    expect(state.left).toEqual([KID]);
+    expect(state.left).toEqual([`${KID}:access_revoked`]);
     expect(state.closed).toEqual([{ userId: KID, code: 4012 }]);
   });
 
