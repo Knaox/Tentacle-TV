@@ -1,0 +1,104 @@
+{
+  "domain": "preconfig",
+  "reference": "b47a32c78",
+  "scenarios": [
+    {
+      "id": "preconfig-profil-proprietaire",
+      "title": "« Qui regarde ? » → le propriétaire → la page → « Continuer » → l'étape du propriétaire → « Appliquer » à l'invitée → l'accueil",
+      "start": {
+        "session": "paired",
+        "fixtures": [
+          "base/famille-deux-profils"
+        ],
+        "storage": {
+          "tentacle_tv_pairing": "banc-jumelage",
+          "tentacle_tv_rail_profiles": "{}"
+        },
+        "keys": [
+          "wait:4"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "route": "Profiles",
+            "focus": "profiles:tile:0"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "RailSetup",
+            "stack": [
+              "RailSetup"
+            ],
+            "focus": "railSetup:row:0"
+          },
+          "why": "le profil ouvert : sa page avant l'accueil"
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "railSetup:continue"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "route": "RailSetup",
+            "focus": "railSetup:applyTile:0"
+          },
+          "why": "le propriétaire, une invitée sur cette TV : l'étape « Appliquer aussi à d'autres profils ? »"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "railSetup:applyDecline"
+          },
+          "why": "« Appliquer » reste hors d'atteinte tant qu'aucun profil n'est coché"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "railSetup:applyTile:0"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "railSetup:applyTile:0"
+          },
+          "why": "Léa cochée"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "railSetup:applyConfirm"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ],
+            "storage": {
+              "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"],\"setupDone\":true}}"
+            }
+          },
+          "why": "la barre du propriétaire, copiée chez l'invitée, sa page marquée faite"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "format": 1,
+  "domain": "preconfig",
+  "suite": "profils",
+  "reference": {
+    "sha": "b47a32c78078236a48aa055892a9515f222c60d5",
+    "label": "référence b47a32c78"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "0d02ee212ee3b5bf",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-preconfig",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-15T14:40:58.928Z",
+  "scenarios": {
+    "preconfig-profil-proprietaire": {
+      "hash": "039515d18522",
+      "durationMs": 34645,
+      "start": {
+        "app": "foreground",
+        "focus": "profiles:tile:0",
+        "label": "Knaoxtest",
+        "frame": [
+          692,
+          379,
+          248,
+          313
+        ],
+        "groups": [
+          "profiles:tiles"
+        ],
+        "route": "Profiles",
+        "params": {
+          "intent": "launch"
+        },
+        "stack": [
+          "Profiles"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "profiles:tile:0",
+          "label": "Knaoxtest",
+          "frame": [
+            692,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "launch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:0",
+          "label": "Animés, Dans la barre",
+          "frame": [
+            556,
+            338,
+            960,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/family/tv/sessions"
+          ]
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "railSetup:continue",
+          "label": "Continuer",
+          "frame": [
+            556,
+            652,
+            237,
+            68
+          ],
+          "groups": [
+            "railSetup:actions"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:applyTile:0",
+          "label": "Léa, Pas coché",
+          "frame": [
+            845,
+            431,
+            230,
+            276
+          ],
+          "groups": [
+            "railSetup:applyTiles"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "railSetup:applyDecline",
+          "label": "Non merci",
+          "frame": [
+            991,
+            771,
+            202,
+            68
+          ],
+          "groups": [
+            "railSetup:applyActions"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "railSetup:applyTile:0",
+          "label": "Léa, Pas coché",
+          "frame": [
+            845,
+            431,
+            230,
+            276
+          ],
+          "groups": [
+            "railSetup:applyTiles"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:applyTile:0",
+          "label": "Léa, Coché",
+          "frame": [
+            845,
+            431,
+            230,
+            276
+          ],
+          "groups": [
+            "railSetup:applyTiles"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "railSetup:applyConfirm",
+          "label": "Appliquer à 1 profil",
+          "frame": [
+            671,
+            771,
+            348,
+            68
+          ],
+          "groups": [
+            "railSetup:applyActions"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"],\"setupDone\":true}}"
+          }
+        }
+      ]
+    }
+  }
+}

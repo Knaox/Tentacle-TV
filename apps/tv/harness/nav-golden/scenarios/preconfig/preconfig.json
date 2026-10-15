@@ -1,0 +1,210 @@
+{
+  "domain": "preconfig",
+  "reference": "ccefbb855",
+  "scenarios": [
+    {
+      "id": "preconfig-demarrage",
+      "title": "Installation qui ne l'a jamais faite : le démarrage s'ouvre SUR la page (jamais l'accueil d'abord) ; Retour vaut « Passer »",
+      "start": {
+        "session": "paired",
+        "storage": {
+          "tentacle_tv_rail_profiles": "{}"
+        },
+        "keys": [
+          "wait:3"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "route": "RailSetup",
+            "stack": [
+              "RailSetup"
+            ],
+            "focus": "railSetup:row:0",
+            "panel": "closed"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "railSetup:row:0:move"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ],
+            "storage": {
+              "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"setupDone\":true}}"
+            }
+          },
+          "why": "Retour = « Passer » : la disposition d'avant, la page marquée faite"
+        }
+      ]
+    },
+    {
+      "id": "preconfig-jumelage",
+      "title": "Jumelage par identifiants → la page → retirer Animés, la descendre d'un cran → « Continuer » → l'accueil",
+      "start": {
+        "session": "none",
+        "fixtures": [
+          "preconfig/jumelage-ok"
+        ],
+        "storage": {
+          "tentacle_tv_rail_profiles": "{}"
+        },
+        "keys": [
+          "wait:5"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "pairing:showCode",
+            "route": "PairCode"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pairing:manual"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:url"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:http://{backend}\n",
+          "settleMs": 4000,
+          "expect": {
+            "focus": "pairing:username"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:banc\n",
+          "settleMs": 2000,
+          "expect": {
+            "focus": "pairing:username"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:password"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:banc",
+          "settleMs": 1500
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:password"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:signIn"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 5000,
+          "timeoutMs": 20000,
+          "expect": {
+            "route": "RailSetup",
+            "stack": [
+              "RailSetup"
+            ],
+            "focus": "railSetup:row:0"
+          },
+          "why": "jumelée : la page avant l'accueil, entrée sur la première bibliothèque"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "railSetup:row:0"
+          },
+          "why": "OK retire Animés de la barre"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "railSetup:row:0:move"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "railSetup:row:0:move"
+          },
+          "why": "« Déplacer » soulève Animés"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "railSetup:row:1:move"
+          },
+          "why": "Animés passe sous Films, le focus la suit"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "railSetup:row:1:move"
+          },
+          "why": "OK la pose"
+        },
+        {
+          "do": [
+            "left",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "railSetup:continue"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ],
+            "storage": {
+              "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true}}"
+            }
+          },
+          "why": "enregistrée : Animés masquée, rangée après Films et Séries ; pas de famille, pas d'étape du propriétaire"
+        }
+      ]
+    }
+  ]
+}

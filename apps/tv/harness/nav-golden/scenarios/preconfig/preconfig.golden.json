@@ -1,0 +1,600 @@
+{
+  "format": 1,
+  "domain": "preconfig",
+  "suite": "preconfig",
+  "reference": {
+    "sha": "ccefbb855d25c48d348c38e15589b64a0449758f",
+    "label": "référence ccefbb855"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "0d02ee212ee3b5bf",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-preconfig",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-15T14:39:23.569Z",
+  "scenarios": {
+    "preconfig-demarrage": {
+      "hash": "b8ac2467186c",
+      "durationMs": 21707,
+      "start": {
+        "app": "foreground",
+        "focus": "railSetup:row:0",
+        "label": "Animés, Dans la barre",
+        "frame": [
+          556,
+          338,
+          960,
+          84
+        ],
+        "groups": [
+          "railSetup:list"
+        ],
+        "route": "RailSetup",
+        "params": {
+          "origin": "session"
+        },
+        "stack": [
+          "RailSetup"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "railSetup:row:0",
+          "label": "Animés, Dans la barre",
+          "frame": [
+            556,
+            338,
+            960,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "railSetup:row:0:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            338,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"setupDone\":true}}"
+          }
+        }
+      ]
+    },
+    "preconfig-jumelage": {
+      "hash": "99f52b5072d8",
+      "durationMs": 64621,
+      "start": {
+        "app": "foreground",
+        "focus": "pairing:showCode",
+        "label": "Afficher le code de jumelage",
+        "frame": [
+          495,
+          673,
+          473,
+          68
+        ],
+        "groups": [],
+        "route": "PairCode",
+        "params": null,
+        "stack": [
+          "PairCode"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            990,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pairing:url",
+          "label": "Adresse du serveur",
+          "frame": [
+            410,
+            512,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:http://{backend}\n",
+          "app": "foreground",
+          "focus": "pairing:username",
+          "label": "Nom d'utilisateur",
+          "frame": [
+            410,
+            436,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:banc\n",
+          "app": "foreground",
+          "focus": "pairing:username",
+          "label": "Nom d'utilisateur",
+          "frame": [
+            410,
+            436,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:password",
+          "label": "Mot de passe",
+          "frame": [
+            410,
+            609,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:banc",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pairing:password",
+          "label": "Mot de passe",
+          "frame": [
+            410,
+            609,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:signIn",
+          "label": "Se connecter",
+          "frame": [
+            615,
+            757,
+            279,
+            68
+          ],
+          "groups": [
+            "pairing:actions"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:0",
+          "label": "Animés, Dans la barre",
+          "frame": [
+            556,
+            338,
+            960,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/auth/login",
+            "POST /api/pair/tv-token",
+            "POST /api/auth/logout"
+          ]
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:0",
+          "label": "Animés, Pas dans la barre",
+          "frame": [
+            556,
+            338,
+            960,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "railSetup:row:0:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            338,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:0:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            338,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "railSetup:row:1:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            434,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:1:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            434,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "left",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "railSetup:continue",
+          "label": "Continuer",
+          "frame": [
+            556,
+            652,
+            237,
+            68
+          ],
+          "groups": [
+            "railSetup:actions"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true}}"
+          }
+        }
+      ]
+    }
+  }
+}
