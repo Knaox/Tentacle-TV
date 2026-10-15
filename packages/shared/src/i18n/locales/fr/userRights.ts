@@ -33,10 +33,10 @@ export default {
     unrated_other: "{{count}} types non classés bloqués",
     blockedTags_one: "{{count}} étiquette bloquée",
     blockedTags_other: "{{count}} étiquettes bloquées",
-    allowedTags_one: "{{count}} étiquette permise",
-    allowedTags_other: "{{count}} étiquettes permises",
-    schedules_one: "{{count}} plage horaire",
-    schedules_other: "{{count}} plages horaires",
+    allowedTags_one: "{{count}} étiquette autorisée",
+    allowedTags_other: "{{count}} étiquettes autorisées",
+    schedules_one: "{{count}} plage d'accès",
+    schedules_other: "{{count}} plages d'accès",
     scheduleNever: "Aucune plage permise",
     noParental: "Aucune restriction",
     noPlayback: "Lecture interdite",
@@ -59,7 +59,7 @@ export default {
     isDisabled: { label: "Compte désactivé", hint: "Plus aucune connexion, sur aucun appareil, jusqu'à réactivation." },
     enableRemoteAccess: { label: "Accès à distance", hint: "Coupé, le compte ne se connecte que depuis le réseau de la maison." },
     maxActiveSessions: { label: "Sessions simultanées", hint: "Combien d'appareils peuvent être connectés à la fois. 0 : sans limite." },
-    loginAttemptsBeforeLockout: { label: "Essais avant blocage", hint: "Mots de passe faux tolérés avant que le compte soit désactivé. 0 : la valeur de Jellyfin (3, et 5 pour un administrateur) ; -1 : jamais bloqué." },
+    loginAttemptsBeforeLockout: { label: "Essais avant blocage", hint: "Mots de passe faux tolérés avant que le compte soit bloqué. 0 : la valeur de Jellyfin (3 essais) ; -1 : jamais bloqué." },
     enableAllFolders: { label: "Toutes les bibliothèques", hint: "Y compris celles qui seront créées plus tard." },
     enabledFolders: { label: "Bibliothèques permises", hint: "Le compte ne voit rien des autres, nulle part dans Tentacle." },
     // Le contrôle parental reprend les mots de l'onglet « Contrôle parental » de Jellyfin 10.11.
@@ -122,7 +122,7 @@ export default {
     // Les jours de Jellyfin ; « Jours de la semaine » et « Week-ends » disent entre parenthèses ce qu'ils couvrent.
     days: {
       Sunday: "Dimanche", Monday: "Lundi", Tuesday: "Mardi", Wednesday: "Mercredi", Thursday: "Jeudi", Friday: "Vendredi",
-      Saturday: "Samedi", Everyday: "Tous les jours", Weekday: "Jours de la semaine (lundi → vendredi)", Weekend: "Week-ends (samedi, dimanche)",
+      Saturday: "Samedi", Everyday: "Tous les jours", Weekday: "Jours de la semaine (lun. → ven.)", Weekend: "Week-ends (sam., dim.)",
     },
   },
 

@@ -108,7 +108,7 @@ export function sharePageHtml({ lang, view, path, nonce }: { lang: SharePageLang
 <title>${e(title)}</title>
 <style nonce="${nonce}">${CSS}</style></head>
 <body>
-<div class="top"><img class="brand" src="/tentacle-logo-pirate.svg" alt="Tentacle" width="40" height="40">
+<div class="top"><img class="brand" src="/tentacle-logo-pirate.svg" alt="" width="40" height="40">
 <a class="lang" href="${e(`${path}?lang=${other}`)}" hreflang="${other}" lang="${other}">${e(t.otherLang)}</a></div>
 <main>${body}</main>
 <p class="foot">${e(t.getApp)} <a href="https://tentacletv.app" target="_blank" rel="noopener noreferrer">${e(t.getAppLink)}</a></p>

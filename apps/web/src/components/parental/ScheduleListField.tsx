@@ -57,7 +57,7 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
               <li key={`${schedule.dayOfWeek}-${schedule.startHour}-${schedule.endHour}`}
                 className="flex items-center gap-2.5 rounded-lg border border-line-subtle bg-fill-subtle py-1 pl-3 pr-1 text-sm">
                 <Clock aria-hidden className="h-3.5 w-3.5 shrink-0 text-content-tertiary" />
-                <span className="min-w-0 flex-1 truncate text-content-primary">{dayName(schedule.dayOfWeek)}</span>
+                <span className="min-w-0 flex-1 text-content-primary">{dayName(schedule.dayOfWeek)}</span>
                 <span className="tabular-nums text-content-secondary">{t("parental.scheduleRange", { from, to })}</span>
                 <button
                   type="button"

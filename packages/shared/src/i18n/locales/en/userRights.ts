@@ -34,8 +34,8 @@ export default {
     blockedTags_other: "{{count}} blocked tags",
     allowedTags_one: "{{count}} allowed tag",
     allowedTags_other: "{{count}} allowed tags",
-    schedules_one: "{{count}} time window",
-    schedules_other: "{{count}} time windows",
+    schedules_one: "{{count}} access window",
+    schedules_other: "{{count}} access windows",
     scheduleNever: "No time window allowed",
     noParental: "No restrictions",
     noPlayback: "Playback not allowed",
@@ -58,7 +58,7 @@ export default {
     isDisabled: { label: "Account disabled", hint: "No sign-in at all, on any device, until it's enabled again." },
     enableRemoteAccess: { label: "Remote access", hint: "Off, the account can only sign in from the home network." },
     maxActiveSessions: { label: "Simultaneous sessions", hint: "How many devices can be signed in at once. 0: no limit." },
-    loginAttemptsBeforeLockout: { label: "Attempts before lockout", hint: "Wrong passwords allowed before the account is disabled. 0: Jellyfin's default (3, and 5 for an administrator); -1: never locked." },
+    loginAttemptsBeforeLockout: { label: "Attempts before lockout", hint: "Wrong passwords allowed before the account is locked. 0: Jellyfin's default (3 attempts); -1: never locked." },
     enableAllFolders: { label: "All libraries", hint: "Including the ones created later." },
     enabledFolders: { label: "Allowed libraries", hint: "The account sees nothing of the others, anywhere in Tentacle." },
     // Parental control uses the words of Jellyfin 10.11's "Parental Control" tab.
@@ -120,7 +120,7 @@ export default {
     scheduleRange: "{{from}} - {{to}}",
     days: {
       Sunday: "Sunday", Monday: "Monday", Tuesday: "Tuesday", Wednesday: "Wednesday", Thursday: "Thursday", Friday: "Friday",
-      Saturday: "Saturday", Everyday: "Every day", Weekday: "Weekdays (Monday → Friday)", Weekend: "Weekends (Saturday, Sunday)",
+      Saturday: "Saturday", Everyday: "Every day", Weekday: "Weekdays (Mon → Fri)", Weekend: "Weekends (Sat, Sun)",
     },
   },
 
