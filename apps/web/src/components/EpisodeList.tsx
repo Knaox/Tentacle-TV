@@ -23,6 +23,7 @@ import type { EpisodeRowRating } from "./EpisodeRow";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
 import { useDownloadsVisibility } from "../downloads/useDownloadState";
 import { RevealCell, RevealScope } from "./grid/RevealCell";
+import { SeasonDeleteAction } from "./libraryDelete/SeasonDeleteAction";
 
 /** Hauteur d'une ligne d'épisode, réservée avant son premier passage. */
 const EPISODE_ROW_HEIGHT = 100;
@@ -168,6 +169,8 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, openS
           {/* Téléchargement de la saison (desktop, droit requis — sinon absent).
               Il lit les sources (tailles, pistes) : il paraît quand elles sont là. */}
           <SeasonDownloadAction episodes={browser.withSources ?? []} />
+          {/* Supprimer la saison (droit Jellyfin requis — sinon absent), à l'écart, au bout. */}
+          <SeasonDeleteAction seasonId={selectedSeasonId} seasonName={seasons?.find((s) => s.Id === selectedSeasonId)?.Name} />
         </div>
       ) : null}
 

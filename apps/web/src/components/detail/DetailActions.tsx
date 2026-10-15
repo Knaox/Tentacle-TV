@@ -8,6 +8,7 @@ import { TrailerHelpHint } from "./TrailerHelpHint";
 import { DetailRating } from "../rating/DetailRating";
 import { DetailVersionPicker } from "./DetailVersionPicker";
 import { fadeUp } from "../../theme/motion";
+import { ItemMoreMenu } from "../libraryDelete/ItemMoreMenu";
 
 /**
  * La rangée d'actions de la scène, par ordre d'importance : Lecture (seule en
@@ -16,7 +17,8 @@ import { fadeUp } from "../../theme/motion";
  * Dessous, le choix de la version quand le titre en a plusieurs. En bout de
  * rangée, le rappel « Vous ne voyez pas les bandes-annonces ? » quand il n'y
  * en a aucune sur un serveur mal réglé : en ligne, il ne pousse rien — ni
- * « Lecture », ni la capsule.
+ * « Lecture », ni la capsule. Avant lui, « ⋯ » et ses gestes rares
+ * (supprimer de la bibliothèque) — absent sans droit.
  */
 export function DetailActions({ item, collectionCount }: { item: MediaItem; collectionCount?: number }) {
   const [version, setVersion] = useState<string | null>(null);
@@ -28,6 +30,7 @@ export function DetailActions({ item, collectionCount }: { item: MediaItem; coll
         <DetailActionCapsule item={item} />
         {/* Note explicite — s'efface d'elle-même sans tmdbId (titre non notable). */}
         <DetailRating item={item} tone="media" />
+        <ItemMoreMenu item={item} />
         <TrailerHelpHint item={item} />
       </div>
       <DetailVersionPicker item={item} value={version} onChange={setVersion} />

@@ -57,6 +57,7 @@ export default {
   failed_other: "{{count}} titres n'ont pas pu être supprimés : le serveur n'a pas répondu.",
   skipped_one: "{{count}} titre n'a pas été traité : la suppression a été arrêtée.",
   skipped_other: "{{count}} titres n'ont pas été traités : la suppression a été arrêtée.",
+  deletedOne: "« {{name}} » a été supprimé de la bibliothèque.",
   retry: "Réessayer ces titres",
   close: "Fermer",
 

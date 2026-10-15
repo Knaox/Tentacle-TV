@@ -57,6 +57,7 @@ export default {
   failed_other: "{{count}} titles couldn't be deleted: the server didn't respond.",
   skipped_one: "{{count}} title wasn't processed: the deletion was stopped.",
   skipped_other: "{{count}} titles weren't processed: the deletion was stopped.",
+  deletedOne: "“{{name}}” was deleted from the library.",
   retry: "Retry these titles",
   close: "Close",
 
