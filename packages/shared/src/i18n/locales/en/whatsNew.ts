@@ -55,6 +55,8 @@ export default {
   v1_29_0_stillWatching_body: "After 1 h 30 of playback without a single gesture, a card asks you in the corner of the player, without hiding the controls. Nobody answers? Playback pauses right where you left it, and “Resume” is waiting. The delay and the time to answer are set in Settings › Playback, for all your devices.",
   v1_29_0_avatars_title: "A profile picture with character",
   v1_29_0_avatars_body: "Click your avatar, then your photo: 36 characters are waiting, each with a name, a story and a favourite kind of film. Pick one, or upload your own photo — it follows you on all your devices. Family guests get one too.",
+  v1_29_0_heroSource_title: "Choose what the big banner shows",
+  v1_29_0_heroSource_body: "In Settings › Personalization, the home screen's main banner has its own settings, and each source says what it shows. Two new ones: “For you — Movies” and “For you — Shows”, the titles best recommended for you, from the top pick down. Card size and row order now sit together under “Home rows”.",
   v1_29_0_notifications_title: "Notifications that take you to the right place",
   v1_29_0_notifications_body: "The bell sorts your notifications by day and shows at a glance where each request stands: available, on its way, declined. One click takes you to the exact place — the page of a title that just arrived, or the page the notification comes from — and marks it read.",
   v1_29_0_guestParental_title: "Parental controls for every guest",

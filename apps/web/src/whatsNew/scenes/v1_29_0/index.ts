@@ -14,3 +14,4 @@ export { AvatarsScene } from "./AvatarsScene";
 export { NotificationsScene } from "./NotificationsScene";
 export { GuestParentalScene } from "./GuestParentalScene";
 export { UserRightsScene } from "./UserRightsScene";
+export { HeroSourceScene } from "./HeroSourceScene";

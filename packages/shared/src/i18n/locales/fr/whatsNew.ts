@@ -59,6 +59,8 @@ export default {
   v1_29_0_stillWatching_body: "Après 1 h 30 de lecture sans le moindre geste, une carte vous le demande dans le coin du lecteur, sans cacher les contrôles. Personne ne répond ? La lecture se met en pause, là où vous l'avez laissée, et « Reprendre » vous attend. Le délai et le temps pour répondre se règlent dans Réglages › Lecture, pour tous vos appareils.",
   v1_29_0_avatars_title: "Une photo de profil qui a du caractère",
   v1_29_0_avatars_body: "Cliquez sur votre avatar, puis sur votre photo : 36 personnages vous attendent, chacun avec son nom, son histoire et son genre de film. Choisissez-en un, ou importez votre propre photo — elle vous suit sur tous vos appareils. Les invités de la Famille ont aussi la leur.",
+  v1_29_0_heroSource_title: "Choisissez ce que montre le grand bandeau",
+  v1_29_0_heroSource_body: "Dans Réglages › Personnalisation, le bandeau principal de l'accueil a ses propres réglages, et chaque source dit ce qu'elle montre. Deux nouvelles : « Pour vous — Films » et « Pour vous — Séries », les titres les mieux recommandés pour vous, du meilleur au suivant. La taille des cartes et l'ordre des rangées se retrouvent ensemble, sous « Rangées de l'accueil ».",
   v1_29_0_notifications_title: "Des notifications qui mènent au bon endroit",
   v1_29_0_notifications_body: "La cloche range vos notifications par jour et dit d'un coup d'œil où en est chaque demande : disponible, en route, refusée. Un clic vous emmène à l'endroit exact — la fiche d'un titre qui vient d'arriver, ou la page d'où vient la notification — et la marque lue.",
   v1_29_0_guestParental_title: "Un contrôle parental pour chaque invité",

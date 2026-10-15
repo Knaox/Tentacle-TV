@@ -54,24 +54,24 @@ describe("registre de l'écran de nouveautés", () => {
     }
   });
 
-  it("1.30.0 : l'aperçu, les profils, le code PIN, le contrôle parental, « Vous regardez encore ? », la cloche et les droits exigent leur capacité, la galerie aucune — face à un serveur muet, la galerie seule", () => {
+  it("1.30.0 : l'aperçu, les profils, le code PIN, le contrôle parental, « Vous regardez encore ? », le bandeau, la cloche et les droits exigent leur capacité, la galerie aucune — face à un serveur muet, la galerie seule", () => {
     const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.30.0");
     expect(release?.features.map((f) => f.capability)).toEqual([
       "trailers.preview", "family.desktopProfiles", "family.desktopProfiles", "family.parentalControls", "playback.stillWatching", undefined,
-      "notifications.targets", "admin.userRights",
+      "home.heroRecoKinds", "notifications.targets", "admin.userRights",
     ]);
     const mute = resolveServerCapabilities({ version: "1.23.0" });
     const alone = selectWhatsNewFeatures("1.30.0", "1.28.2", forServer(WHATS_NEW_RELEASES, mute)).features;
     expect(alone.map((f) => f.id)).toEqual(["avatars"]);
     const capable = resolveServerCapabilities({
       capabilities: [
-        "trailers.preview", "family.desktopProfiles", "family.parentalControls", "playback.stillWatching", "notifications.targets",
-        "admin.userRights",
+        "trailers.preview", "family.desktopProfiles", "family.parentalControls", "playback.stillWatching", "home.heroRecoKinds",
+        "notifications.targets", "admin.userRights",
       ],
     });
     const shown = selectWhatsNewFeatures("1.30.0", "1.28.2", forServer(WHATS_NEW_RELEASES, capable)).features;
     expect(shown.map((f) => f.id)).toEqual([
-      "trailerPreview", "profiles", "familyPin", "guestParental", "stillWatching", "avatars", "notifications", "userRights",
+      "trailerPreview", "profiles", "familyPin", "guestParental", "stillWatching", "avatars", "heroSource", "notifications", "userRights",
     ]);
     // Les droits des comptes ne parlent qu'aux administrateurs.
     const member = selectWhatsNewFeatures("1.30.0", "1.28.2", forAudience(forServer(WHATS_NEW_RELEASES, capable), false)).features;
@@ -80,5 +80,7 @@ describe("registre de l'écran de nouveautés", () => {
     const noProfiles = resolveServerCapabilities({ capabilities: ["trailers.preview", "playback.stillWatching"] });
     const partial = selectWhatsNewFeatures("1.30.0", "1.28.2", forServer(WHATS_NEW_RELEASES, noProfiles)).features;
     expect(partial.map((f) => f.id)).toEqual(["trailerPreview", "stillWatching", "avatars"]);
+    // Sans les sources par genre, la fiche du bandeau se tait : Personnalisation ne les propose pas.
+    expect(partial.map((f) => f.id)).not.toContain("heroSource");
   });
 });

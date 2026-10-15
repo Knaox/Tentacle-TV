@@ -1,22 +1,25 @@
 import type { WhatsNewRelease } from "../types";
 import {
-  AvatarsScene, FamilyPinScene, GuestParentalScene, NotificationsScene, StillWatchingScene, TrailerPreviewScene, UserRightsScene,
-  WhoIsWatchingScene,
+  AvatarsScene, FamilyPinScene, GuestParentalScene, HeroSourceScene, NotificationsScene, StillWatchingScene, TrailerPreviewScene,
+  UserRightsScene, WhoIsWatchingScene,
 } from "../scenes/v1_29_0";
 
 /**
  * 1.30.0 — la bande-annonce au survol, « Qui regarde ? » sur l'ordinateur, le
  * code PIN conseillé, le contrôle parental des invités, « Vous regardez
- * encore ? », la galerie des photos de profil, la cloche refaite, et tous les
- * droits d'un compte dans l'administration.
+ * encore ? », la galerie des photos de profil, la source du bandeau principal
+ * (« Pour vous — Films / Séries », Personnalisation réorganisée), la cloche
+ * refaite, et tous les droits d'un compte dans l'administration.
  *
- * Huit scènes : la mini-carte qui grandit depuis l'affiche (la vidéo, ses
+ * Neuf scènes : la mini-carte qui grandit depuis l'affiche (la vidéo, ses
  * plans, le bandeau, le son) ; le choix d'un profil — son code PIN —, et
  * « Changer de profil » dans le menu de l'avatar, qui y ramène ; « Action
  * recommandée », puis le code posé ; le contrôle parental d'une invitée posé
  * depuis la Famille, jamais au-delà des droits de son créateur ; l'encart du lecteur, son décompte, puis
  * la pause ; la photo de l'en-tête du menu, qui ouvre la troupe, et un
- * personnage choisi ; la cloche, ses notifications par jour et leur état, et le
+ * personnage choisi ; le bandeau principal de Personnalisation, chaque source
+ * dite par ce qu'elle montre, « Pour vous — Films » puis « — Séries » cochés
+ * (`home.heroRecoKinds` : sans elle, ces sources n'existent pas) ; la cloche, ses notifications par jour et leur état, et le
  * clic qui ouvre la fiche du titre arrivé ; la fiche d'un compte qui s'ouvre
  * sur « Contrôle parental », la note posée et le résumé qui suit (aux seuls
  * administrateurs, `audience`). Les fonctions qui dépendent du
@@ -85,6 +88,18 @@ export const RELEASE_1_29_0: WhatsNewRelease = {
       titleKey: "v1_29_0_avatars_title",
       bodyKey: "v1_29_0_avatars_body",
       Scene: AvatarsScene,
+    },
+    {
+      // Les sources « Pour vous — Films / Séries » n'existent que face à un serveur
+      // qui les déclare : sans elles, la fiche se tairait sur une Personnalisation
+      // qui ne les propose pas.
+      id: "heroSource",
+      kind: "improved",
+      titleKey: "v1_29_0_heroSource_title",
+      bodyKey: "v1_29_0_heroSource_body",
+      Scene: HeroSourceScene,
+      route: "/settings/personalization",
+      capability: "home.heroRecoKinds",
     },
     {
       // Pas de lien profond : la cloche est dans la barre, sur toutes les pages.
