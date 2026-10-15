@@ -12,8 +12,11 @@
  */
 
 import { hashToken } from "../jwt";
-import { accountAccessFor } from "./accountAccessState";
-import type { AccountAccessBlocked } from "../../accountAccess/accountAccessContract";
+import { contentPolicyFromJellyfin, invalidateContentPolicy } from "../contentPolicy";
+import { jellyfinAdminFetch } from "../jellyfinAdminFetch";
+import { accessPolicyOf, accountAccessFor } from "./accountAccessState";
+import { accountAccessOf } from "../../accountAccess/accountAccessRule";
+import type { AccountAccessBlocked, AccountAccessState } from "../../accountAccess/accountAccessContract";
 
 export interface TokenOwner {
   userId: string;
@@ -62,7 +65,10 @@ export async function blockedJellyfinToken(
   if (status !== 401 && status !== 403) return null;
   const owner = tokenOwner(token);
   if (owner) {
-    const access = await accountAccessFor(owner.userId);
+    let access = await accountAccessFor(owner.userId);
+    // Jellyfin vient de refuser : la politique gardée (30 s) peut dater d'avant la
+    // désactivation, qui révoque les jetons sur-le-champ — elle est relue.
+    if (access.state === "allowed") access = await freshAccess(owner.userId);
     return access.state === "allowed" ? null : { access, owner };
   }
   if (status === 403 && options.identityCheck) {
@@ -71,6 +77,23 @@ export async function blockedJellyfinToken(
   return null;
 }
 
+/** Une relecture par compte toutes les 5 s au plus : une rafale de refus n'en fait qu'une. */
+const FRESH_MS = 5_000;
+const fresh = new Map<string, { at: number; access: AccountAccessState }>();
+
+async function freshAccess(userId: string): Promise<AccountAccessState> {
+  const memo = fresh.get(userId);
+  if (memo && Date.now() - memo.at < FRESH_MS) return memo.access;
+  const user = await jellyfinAdminFetch<{ Policy?: Record<string, unknown> }>(`/Users/${encodeURIComponent(userId)}`);
+  const policy = user.ok && user.data?.Policy ? contentPolicyFromJellyfin(userId, user.data.Policy) : null;
+  const access: AccountAccessState = policy ? accountAccessOf(accessPolicyOf(policy), Date.now()) : { state: "allowed" };
+  fresh.set(userId, { at: Date.now(), access });
+  // Bloqué : les portes et l'annonce doivent le voir aussi, sans attendre la fin du cache.
+  if (access.state !== "allowed") invalidateContentPolicy(userId);
+  return access;
+}
+
 export function resetTokenOwnersForTests(): void {
   owners.clear();
+  fresh.clear();
 }

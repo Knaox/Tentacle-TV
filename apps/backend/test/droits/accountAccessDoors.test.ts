@@ -22,6 +22,8 @@ const state = vi.hoisted(() => ({
   /** Ce que le reste de Jellyfin répond au jeton natif de l'enfant (défaut : 200). */
   items: 200,
   hits: 0,
+  /** La politique gardée en cache date d'avant la désactivation. */
+  staleCache: false,
 }));
 const JWT_HEAD = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
 const TV_CHILD = `${JWT_HEAD}.tv-enfant.sig`;
@@ -33,9 +35,16 @@ vi.mock("../../src/services/configStore", () => ({ getJellyfinUrl: () => state.u
 vi.mock("../../src/services/contentPolicy", () => ({
   getContentPolicy: async (userId: string) => ({
     readable: true,
-    isDisabled: state.disabled.has(userId),
+    isDisabled: state.disabled.has(userId) && !state.staleCache,
     accessSchedules: state.outside.has(userId) ? NEVER : [],
   }),
+  // La relecture à frais neufs : ce que Jellyfin dit vraiment.
+  contentPolicyFromJellyfin: (_userId: string, policy: Record<string, unknown>) => ({
+    readable: true,
+    isDisabled: policy.IsDisabled === true,
+    accessSchedules: [],
+  }),
+  invalidateContentPolicy: () => undefined,
 }));
 vi.mock("../../src/services/jwt", () => ({
   hashToken: (value: string) => `h:${value}`,
@@ -77,7 +86,8 @@ beforeAll(async () => {
     const token = tokenOf(req);
     const status = req.url === "/Users/Me" ? (state.me.get(token) ?? 200) : token === "cle-admin" ? 200 : state.items;
     res.writeHead(status, { "content-type": "application/json" });
-    res.end(status === 200 ? JSON.stringify(req.url === "/Users/Me" ? { Id: "enfant", Name: "Enfant", Policy: { IsAdministrator: false } } : { Items: [] }) : "");
+    const fresh = req.url === "/Users/enfant" ? { Id: "enfant", Policy: { IsDisabled: state.disabled.has("enfant") } } : { Items: [] };
+    res.end(status === 200 ? JSON.stringify(req.url === "/Users/Me" ? { Id: "enfant", Name: "Enfant", Policy: { IsAdministrator: false } } : fresh) : "");
   });
   await new Promise<void>((resolve) => jellyfin.listen(0, "127.0.0.1", resolve));
   state.url = `http://127.0.0.1:${(jellyfin.address() as AddressInfo).port}`;
@@ -100,6 +110,7 @@ beforeEach(() => {
   state.me.clear();
   state.items = 200;
   state.hits = 0;
+  state.staleCache = false;
   clearAll();
   resetPairedDeviceStatusForTests();
   resetTokenOwnersForTests();
@@ -168,6 +179,16 @@ describe("jeton Jellyfin refusé par Jellyfin", () => {
     state.me.set("natif-4", 401);
     state.items = 401;
     const proxied = await call("/api/jellyfin/Items?Recursive=true", "natif-4");
+    expect([proxied.statusCode, proxied.json()]).toEqual([403, { error: "account_access", state: "disabled" }]);
+  });
+
+  it("désactivé à l'instant (politique encore en cache « permis ») : le refus de Jellyfin la fait relire — 403, jamais 401", async () => {
+    expect((await call("/api/protected", "natif-8")).statusCode).toBe(200);
+    state.disabled.add("enfant");
+    state.staleCache = true;
+    state.me.set("natif-8", 401);
+    state.items = 401;
+    const proxied = await call("/api/jellyfin/Items?Recursive=true", "natif-8");
     expect([proxied.statusCode, proxied.json()]).toEqual([403, { error: "account_access", state: "disabled" }]);
   });
 
