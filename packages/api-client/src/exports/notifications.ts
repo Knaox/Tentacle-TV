@@ -1,8 +1,14 @@
 // Notifications
 export {
   useNotifications, useUnreadCount, useMarkAllRead, useMarkRead, useDeleteNotification, useDeleteNotifications,
-  useDeleteAllNotifications, setNotificationsBackendUrl, type AppNotification,
+  useDeleteAllNotifications, setNotificationsBackendUrl, backendFetch, notificationsBackendRoot, type AppNotification,
 } from "../hooks/useNotifications";
+export { useNotificationOpener, lookupLibraryTitle } from "../hooks/useNotificationOpener";
+export {
+  resolveNotificationDestination, immediateTargetRoute, notificationHasDestination, extensionRoute, itemRoute,
+  type LibraryTitleLookup, type NotificationPlatform,
+} from "../utils/notificationDestination";
+export { groupNotificationsByDay, type NotificationDayGroup } from "../utils/notificationGroups";
 
 // Notification route resolution
 export { resolveNotificationRoute, FAMILY_ROUTE, type NotifPluginMeta } from "../utils/notificationRoute";
