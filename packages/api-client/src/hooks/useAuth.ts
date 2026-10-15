@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { AuthResponse, LoginRequest } from "@tentacle-tv/shared";
+import { accountConnectRefusalOf, type AuthResponse, type LoginRequest } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { notifyUserChange } from "./useUserId";
 import { useTentacleConfig } from "../context";
@@ -46,7 +46,9 @@ export function useAuth() {
           });
           if (!res.ok) {
             const err = await res.json().catch(() => ({ message: "Login failed" }));
-            throw new Error(err.message || "Login failed");
+            // Désactivé, bloqué, hors plage, trop de sessions : la raison voyage avec l'erreur.
+            const refusal = accountConnectRefusalOf(err);
+            throw Object.assign(new Error(err.message || "Login failed"), refusal ? { refusal } : {});
           }
           const data = await res.json();
           // L'autre moitié de l'alignement. Le backend a haché la graine avant

@@ -1,4 +1,4 @@
-import { problemFromError, rawFromError } from "@tentacle-tv/shared";
+import { accountConnectRefusalOf, problemFromError, rawFromError } from "@tentacle-tv/shared";
 
 /**
  * Le message d'un échec de connexion, partagé par `pages/Login.tsx` et
@@ -13,12 +13,16 @@ import { problemFromError, rawFromError } from "@tentacle-tv/shared";
  * phrase du serveur qui n'a rien de technique (« Compte désactivé ») est
  * gardée telle quelle (`text`) : elle en dit plus que toute traduction.
  */
-export type LoginErrorMessage = { key: string } | { keys: string[] } | { text: string };
+export type LoginErrorMessage = { key: string; options?: Record<string, unknown> } | { keys: string[] } | { text: string };
 
 const TECHNICAL = /fetch|network|api error|http|\b\d{3}\b|time ?out|abort|load failed|json|unexpected token/i;
 const BAD_CREDENTIALS = /\b40[01]\b|identifiants invalides|invalid credentials/i;
 
 export function loginErrorMessage(error: unknown): LoginErrorMessage {
+  // Une connexion refusée par le serveur (désactivé, bloqué, hors plage, trop de
+  // sessions — docs/DROITS-UTILISATEURS.md § 9.1) : la raison, en mots.
+  const refusal = accountConnectRefusalOf((error as { refusal?: unknown } | null)?.refusal);
+  if (refusal) return { key: `accountAccess:refusals.${refusal.code}`, options: { count: refusal.maxSessions ?? 1 } };
   const raw = rawFromError(error, "relayed");
   if (raw.status === 401 || raw.status === 400 || BAD_CREDENTIALS.test(raw.message ?? "")) return { key: "invalidCredentials" };
   if (raw.status === 429 || /\b429\b|too many/i.test(raw.message ?? "")) return { key: "errors:loginRateLimited" };
@@ -29,7 +33,7 @@ export function loginErrorMessage(error: unknown): LoginErrorMessage {
 }
 
 /** Le message, traduit. */
-export function loginErrorText(message: LoginErrorMessage, t: (key: string) => string): string {
-  if ("key" in message) return t(message.key);
+export function loginErrorText(message: LoginErrorMessage, t: (key: string, options?: Record<string, unknown>) => string): string {
+  if ("key" in message) return t(message.key, message.options);
   return "text" in message ? message.text : message.keys.map((key) => t(key)).join(" ");
 }

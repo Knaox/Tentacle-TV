@@ -10,7 +10,7 @@ import { useServerCapability } from "../hooks/useServerCapabilities";
 import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
 import { resumeSocketSession, subscribeSocket } from "../socket/tentacleSocket";
 import { createAccountAccessGate, type AccountAccessFetch } from "./accountAccessGate";
-import { readAccountAccess, reportAccountAccessMessage, subscribeAccountAccess } from "./accountAccessSignal";
+import { readAccountAccess, reportAccountAccess, reportAccountAccessMessage, subscribeAccountAccess } from "./accountAccessSignal";
 
 /**
  * La porte React de l'accès du compte (docs/DROITS-UTILISATEURS.md § 9.1) :
@@ -51,6 +51,8 @@ export function useAccountAccess(options: AccountAccessOptions): AccountAccessBl
   onReopenedRef.current = options.onReopened;
 
   useEffect(() => {
+    // Plus de session (déconnexion) : l'état bloqué n'appartient pas à la suivante.
+    if (!enabled) reportAccountAccess({ state: "allowed" });
     if (!enabled || !supported) return;
     const gate = createAccountAccessGate({
       fetchAccess: fetchAccountAccess,

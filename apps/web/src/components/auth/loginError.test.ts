@@ -18,6 +18,15 @@ describe("loginErrorMessage", () => {
     expect("keys" in relayed && relayed.keys[0]).toBe("errors:reasonJellyfinUnreachable");
   });
 
+  it("une connexion refusée par le serveur se dit par sa raison (désactivé, hors plage, trop de sessions)", () => {
+    const refused = (refusal: Record<string, unknown>) => Object.assign(new Error("m"), { status: 403, refusal });
+    expect(loginErrorMessage(refused({ message: "m", code: "account_max_sessions", maxSessions: 2 }))).toEqual({
+      key: "accountAccess:refusals.account_max_sessions",
+      options: { count: 2 },
+    });
+    expect(loginErrorMessage(refused({ message: "m", code: "account_locked_out" }))).toMatchObject({ key: "accountAccess:refusals.account_locked_out" });
+  });
+
   it("garde une phrase du serveur qui n'a rien de technique, sinon l'échec générique", () => {
     expect(loginErrorMessage(new Error("Compte désactivé"))).toEqual({ text: "Compte désactivé" });
     expect(loginErrorMessage(undefined)).toEqual({ key: "loginFailed" });

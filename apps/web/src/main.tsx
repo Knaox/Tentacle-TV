@@ -50,6 +50,7 @@ import { isWebDebugEnabled } from "./lib/webDebug";
 import { HostTitleBar } from "./desktop/HostTitleBar";
 import { AppErrorBoundary } from "./components/problems/AppErrorBoundary";
 import { DatabaseMigrationGate } from "./databaseMigration/DatabaseMigrationGate";
+import { AccountAccessGate } from "./accountAccess/AccountAccessGate";
 import { ProfileArrival } from "./profiles/switch/ProfileArrival";
 import "./index.css";
 
@@ -273,9 +274,12 @@ function renderApp() {
             <ProfileArrival />
             <PluginProvider backendUrl={backendUrl}>
               <HistoryRouter history={appHistory}>
-                <AppErrorBoundary>
-                  <App />
-                </AppErrorBoundary>
+                {/* Compte désactivé ou hors plage : sa page REMPLACE l'application. */}
+                <AccountAccessGate>
+                  <AppErrorBoundary>
+                    <App />
+                  </AppErrorBoundary>
+                </AccountAccessGate>
                 {/* La migration de la base du serveur : au-dessus de tout, hors de l'application. */}
                 <DatabaseMigrationGate backendUrl={backendUrl} />
               </HistoryRouter>
