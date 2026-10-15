@@ -13,6 +13,8 @@ import { LibraryExternalResults } from "./library/LibraryExternalResults";
 import { LibraryGridSkeleton, LibraryLoadingMore } from "./library/LibraryGridStates";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { useSearchInput } from "../hooks/useSearchInput";
+import { GAP, POSTER_ASPECT, TEXT_HEIGHT } from "./library/gridMetrics";
+import { useLibraryDeletionMode } from "./libraryDelete/useLibraryDeletionMode";
 
 interface LibraryGridProps {
   libraryId: string;
@@ -21,30 +23,6 @@ interface LibraryGridProps {
   collectionType?: string;
 }
 
-const POSTER_ASPECT = 2 / 3;
-/**
- * Hauteur du bloc de légende, en pixels — une PREMIÈRE approximation, plus une
- * vérité.
- *
- * Elle a longtemps été la seule chose que le virtualiseur connaissait de la
- * hauteur d'une rangée, et elle est calée sur la typographie du navigateur.
- * Toute typographie plus grande la dément : un plancher de taille de police —
- * ce que pose la cible téléviseur, où l'on lit à trois mètres —, un zoom, une
- * préférence système, ou simplement un titre qui passe sur deux lignes dans une
- * autre langue.
- *
- * Mesuré sur la dalle avant correctif : légende de 80 px contre 52 annoncés,
- * donc un pas de rangée de 342 px pour des cartes de 353. Les rangées étant
- * positionnées en absolu, elles ne se contentaient pas de se serrer : elles se
- * RECOUVRAIENT de onze pixels, les affiches d'une ligne mordant sur le titre de
- * la précédente. C'est le « manque d'espacement » signalé.
- *
- * Le virtualiseur mesure désormais les rangées qu'il a montées
- * (`measureElement`), et cette constante ne sert plus qu'à réserver la place
- * avant la première mesure.
- */
-const TEXT_HEIGHT = 52;
-const GAP = 16;
 
 export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryGridProps) {
   const {
@@ -64,15 +42,8 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
   const { data: genres } = useGenres(libraryId);
 
   const yearsParam = useMemo(() => yearsBetween(filters.yearFrom, filters.yearTo), [filters.yearFrom, filters.yearTo]);
-
-  const {
-    data,
-    isLoading,
-    isFetching,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-  } = useLibraryCatalog(libraryId, {
+  // Partagés avec le relevé des titres supprimables : « tout sélectionner » suit exactement la grille.
+  const catalogFilters = {
     searchTerm: search,
     sortBy: filters.sortBy,
     sortOrder: filters.sortOrder,
@@ -84,7 +55,16 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
     isFavorite: filters.isFavorite || undefined,
     ...languageFilter.catalog,
     limit: filters.platformIds.length > 0 ? 500 : 50,
-  });
+  };
+
+  const {
+    data,
+    isLoading,
+    isFetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useLibraryCatalog(libraryId, catalogFilters);
 
   const allItems = useMemo(
     () => data?.pages.flatMap((p) => p.Items) ?? [],
@@ -95,6 +75,10 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
   const { filteredItems: platformFiltered } = usePlatformFilter(allItems, filters.platformIds);
   const items = filters.platformIds.length > 0 ? platformFiltered : allItems;
   const totalCount = filters.platformIds.length > 0 ? items.length : (data?.pages[0]?.TotalRecordCount ?? 0);
+  // Supprimer des titres : le mode sélection, s'il est permis dans CETTE bibliothèque.
+  const displayedIds = useMemo(() => items.map((item) => item.Id), [items]);
+  const deletion = useLibraryDeletionMode(libraryId, catalogFilters, displayedIds, filters.platformIds.length > 0);
+  const { selection } = deletion;
 
   const gridRef = useRef<HTMLDivElement>(null);
   const { itemsPerRow, containerWidth } = useItemsPerRow(gridRef);
@@ -196,11 +180,12 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
           languages={languageFilter.languages}
           onAudioLangChange={setAudioLang}
           onSubtitleLangChange={setSubtitleLang}
+          actions={deletion.button}
         />
       </div>
 
-      {/* Grid */}
-      <div className="px-4 md:px-8" ref={gridRef}>
+      {/* Grid — la barre du mode sélection, fixée en bas, ne cache pas la dernière rangée. */}
+      <div className={`px-4 md:px-8 ${selection.active ? "pb-28" : ""}`} ref={gridRef}>
         {isLoading ? (
           <LibraryGridSkeleton columns={itemsPerRow} gap={GAP} />
         ) : items.length === 0 ? (
@@ -278,6 +263,8 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
                             key={item.Id}
                             item={item}
                             onNavigate={handleNavigate}
+                            selectMark={selection.active ? selection.markOf(item.Id) : undefined}
+                            onSelect={selection.toggle}
                           />
                         ))}
                       </div>
@@ -293,7 +280,8 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
       </div>
 
       {/* Ce que la bibliothèque n'a pas — seulement quand on cherche. */}
-      <LibraryExternalResults search={search} collectionType={collectionType} items={items} show={!isLoading && !hasNextPage} />
+      <LibraryExternalResults search={search} collectionType={collectionType} items={items} show={!isLoading && !hasNextPage && !selection.active} />
+      {deletion.overlays}
     </div>
   );
 }

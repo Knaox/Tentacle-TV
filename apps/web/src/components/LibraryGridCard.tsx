@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, memo } from "react";
+import { useCallback, useRef, useState, memo, type KeyboardEvent, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
@@ -9,10 +9,16 @@ import { prefetchDetailRoute } from "./cards/prefetchDetail";
 import { captureDetailOrigin } from "./detail/detailTransition";
 import { useCardPreview } from "./cards/preview";
 import { useHoverGuard } from "../hooks/useHoverGuard";
+import { SelectedRing, SelectionMark } from "./libraryDelete/SelectionMark";
+import type { SelectMark } from "./libraryDelete/useDeletionSelection";
 
 interface Props {
   item: MediaItem;
   onNavigate: (id: string) => void;
+  /** Mode sélection (supprimer des titres) : le repère de CETTE carte. Absent : hors mode. */
+  selectMark?: SelectMark;
+  /** Coche ou décoche ; `range` : Maj + clic. */
+  onSelect?: (id: string, range: boolean) => void;
 }
 
 /**
@@ -29,8 +35,11 @@ interface Props {
  * que les spécificités de grille : largeur fluide et navigation déléguée au
  * parent.
  */
-export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate }: Props) {
-  const { t } = useTranslation("common");
+export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate, selectMark, onSelect }: Props) {
+  const { t } = useTranslation(["common", "libraryDelete"]);
+  // Mode sélection : le clic coche, le survol et ses actions se taisent, pas de menu contextuel.
+  const selecting = selectMark !== undefined;
+  const locked = selectMark === "locked" || selectMark === "pending";
   const client = useJellyfinClient();
   const [hovered, setHovered] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -40,7 +49,7 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
   // (cf. `useHoverGuard`).
   const unhover = useCallback(() => setHovered(false), []);
   useHoverGuard(rootRef, hovered, unhover);
-  const preview = useCardPreview({ source: { item }, hovered, shape: "poster", disabled: ctx.ctxMenu !== null });
+  const preview = useCardPreview({ source: { item }, hovered, shape: "poster", disabled: selecting || ctx.ctxMenu !== null });
 
   // Même résolution que les rangées : tag porté (URL adressée par contenu),
   // et « » quand la donnée prouve qu'il n'y a pas d'affiche (cf. `cardImage.ts`).
@@ -52,7 +61,26 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
   return (
     <div
       ref={rootRef}
-      onClick={() => {
+      {...(selecting ? {
+        role: "checkbox",
+        "aria-checked": selectMark === "selected",
+        "aria-disabled": locked,
+        "aria-label": t("libraryDelete:checkTitle", { name: item.Name }),
+        title: selectMark === "locked" ? t("libraryDelete:notDeletable") : undefined,
+        tabIndex: 0,
+        // Maj + clic ne surligne pas le texte de la grille.
+        onMouseDown: (e: MouseEvent) => { if (e.shiftKey) e.preventDefault(); },
+        onKeyDown: (e: KeyboardEvent) => {
+          if (e.key !== " " && e.key !== "Enter") return;
+          e.preventDefault();
+          if (!locked) onSelect?.(item.Id, e.shiftKey);
+        },
+      } : {})}
+      onClick={(e) => {
+        if (selecting) {
+          if (!locked) onSelect?.(item.Id, e.shiftKey);
+          return;
+        }
         if (ctx.ctxMenu) return;
         // L'AFFICHE seule, pas la racine : celle-ci embarque le bloc titre, et
         // le visuel partait donc recadré (cf. `captureDetailOrigin`).
@@ -68,13 +96,17 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
         prefetchDetailRoute();
       }}
       onMouseLeave={() => setHovered(false)}
-      className="group/card row-dim-card relative cursor-pointer"
+      className={`group/card row-dim-card relative outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] rounded-[var(--radius-lg)] ${
+        selecting && locked ? "cursor-not-allowed opacity-40" : "cursor-pointer"
+      }`}
       // Au-dessus des voisines pendant le survol, sinon l'ombre d'élévation est
       // recouverte par la cellule suivante (cf. `PosterCard`).
       style={{ zIndex: hovered ? 2 : undefined }}
-      {...ctx.contextHandlers}
+      {...(selecting ? {} : ctx.contextHandlers)}
     >
-      <PosterTile item={item} imageUrl={poster} hovered={hovered} preview={preview} />
+      <PosterTile item={item} imageUrl={poster} hovered={hovered && !(selecting && locked)} showActions={!selecting} preview={preview} />
+      {selectMark && <SelectionMark mark={selectMark} />}
+      {selectMark === "selected" && <SelectedRing />}
 
       <div className="mt-2.5 px-0.5">
         <p className="line-clamp-1 text-sm font-semibold tracking-tight text-content-primary">{item.Name}</p>
@@ -84,7 +116,7 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
         </div>
       </div>
 
-      {ctx.ctxMenu && (
+      {!selecting && ctx.ctxMenu && (
         <MediaContextMenu
           item={item}
           x={ctx.ctxMenu.x}
