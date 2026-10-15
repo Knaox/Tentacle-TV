@@ -40,7 +40,7 @@ export function negotiatedRefusal(
     return allConversions ? null : "conversion_not_allowed";
   }
   const [path, query = ""] = transcodingPath.replace(/^\/+/, "").split("?");
-  const params = Object.fromEntries(new URLSearchParams(query));
+  const params = queryParams(query);
   return playbackRefusal(rights, streamConversions(path, params, source));
 }
 
@@ -59,7 +59,7 @@ export function builtUrlRefusal(
   const [base, query = ""] = url.split("?");
   const at = base.search(/\/(videos|audio)\//i);
   if (at < 0) return null;
-  const params = Object.fromEntries(new URLSearchParams(query));
+  const params = queryParams(query);
   const conversions = streamConversions(base.slice(at + 1), params, source ?? null);
   const refusal = playbackRefusal(rights, conversions);
   if (refusal) return refusal;
@@ -76,4 +76,17 @@ export function builtUrlRefusal(
 export function upfrontRefusal(rights: PlaybackRights, source: MediaSource | null | undefined): PlaybackRefusal | null {
   if (!rights.mediaPlayback) return "playback_not_allowed";
   return !rights.videoTranscoding && exceedsBitrateCap(source, rights) ? "conversion_not_allowed" : null;
+}
+
+/**
+ * La query d'une URL en objet, sans itérer `URLSearchParams` : certains paquets (offline-core)
+ * compilent shared sans `DOM.Iterable`. Une clé répétée garde sa DERNIÈRE valeur, comme
+ * `Object.fromEntries`.
+ */
+function queryParams(query: string): Record<string, string> {
+  const params: Record<string, string> = {};
+  new URLSearchParams(query).forEach((value, key) => {
+    params[key] = value;
+  });
+  return params;
 }
