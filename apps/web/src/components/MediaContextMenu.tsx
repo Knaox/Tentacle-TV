@@ -1,9 +1,9 @@
-import { useEffect, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useCardFace, useCardToggles } from "@tentacle-tv/api-client";
 import { cardActionEntries, resolveCardOverlay, type CardToggleKind, type MediaItem } from "@tentacle-tv/shared";
 import { ToggleGlyph } from "./cards/CardActionTray";
+import { FloatingLayer } from "./floating/FloatingLayer";
 
 interface Props {
   item: MediaItem;
@@ -22,54 +22,30 @@ interface Props {
  */
 export function MediaContextMenu({ item, x, y, onClose }: Props) {
   const { t } = useTranslation("common");
-  const menuRef = useRef<HTMLDivElement>(null);
+  // Le point du clic : la règle commune y pose le menu, retourné ou décalé
+  // près d'un bord (il mesurait une hauteur supposée de 200 px).
+  const anchor = useMemo(() => ({ x, y }), [x, y]);
 
-  const handleClickOutside = useCallback(
-    (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
-    },
-    [onClose]
-  );
-
+  // Un défilement emporte la carte : le menu se ferme (Échap et clic dehors : le calque).
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKey);
     window.addEventListener("scroll", onClose, true);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKey);
-      window.removeEventListener("scroll", onClose, true);
-    };
-  }, [handleClickOutside, onClose]);
+    return () => window.removeEventListener("scroll", onClose, true);
+  }, [onClose]);
 
-  // Clamp position to viewport
-  const clampedX = Math.min(x, window.innerWidth - 260);
-  const clampedY = Math.min(y, window.innerHeight - 200);
-
-  return createPortal(
-    <div
-      ref={menuRef}
+  return (
+    <FloatingLayer
+      open
+      anchor={anchor}
+      onDismiss={onClose}
+      side="bottom"
+      align="start"
+      gap={2}
       role="menu"
-      aria-label={t("common:moreInfo")}
-      className="fixed z-50 min-w-[240px] overflow-hidden rounded-xl border border-line-subtle bg-surface-dropdown py-1 shadow-2xl backdrop-blur-lg"
-      style={{
-        left: clampedX,
-        top: clampedY,
-        animation: "ctxMenuIn 150ms ease forwards",
-      }}
+      ariaLabel={t("common:moreInfo")}
+      className="min-w-[240px] overflow-y-auto overscroll-contain rounded-xl border border-line-subtle bg-surface-dropdown py-1 shadow-2xl backdrop-blur-lg"
     >
-      <style>{`
-        @keyframes ctxMenuIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
       <MenuToggles item={item} onDone={onClose} />
-    </div>,
-    document.body
+    </FloatingLayer>
   );
 }
 

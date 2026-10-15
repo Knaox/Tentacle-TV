@@ -29,8 +29,10 @@ describe("LicensesSection", () => {
 
   it("web : les composants du serveur qui le sert, et leurs textes", () => {
     const html = renderToStaticMarkup(<LicensesSection platform="web" version="1.24.0" />);
-    expect(html).toContain("Chromaprint (fpcalc program)");
+    expect(html).toContain("yt-dlp (zipapp)");
     expect(html).toContain("The Unlicense");
+    // L'analyse audio retirée, l'image n'embarque plus fpcalc.
+    expect(html).not.toContain("Chromaprint");
     expect(html).toContain("server-v1.24.0");
     expect(html).not.toContain("Electron");
   });

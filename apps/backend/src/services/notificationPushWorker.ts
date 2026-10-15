@@ -7,6 +7,7 @@ import { isTicketNotifType } from "./ticketNotifTypes";
 import { ticketPushText } from "./ticketPushText";
 import { loadPushLangs } from "./pushLang";
 import { departurePushBody, parseSeerDeparture } from "./seerDeparturePush";
+import { pushTapData } from "../notifications/notificationDto";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -112,7 +113,7 @@ export async function deliverPendingNotifications(): Promise<void> {
         const text = ticketPushText(n, langByUser.get(n.jellyfinUserId) ?? "fr");
         const res = await sendToUser(n.jellyfinUserId, {
           ...text,
-          data: { type: n.type, refId: n.refId ?? undefined },
+          data: pushTapData(n),
         });
         console.log(
           `[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] ticket ${n.type} (sent:${res.sent}, invalid:${res.invalid})`,
@@ -132,7 +133,7 @@ export async function deliverPendingNotifications(): Promise<void> {
           const res = await sendToUser(n.jellyfinUserId, {
             title: n.title,
             body: departurePushBody(departing, langByUser.get(n.jellyfinUserId) ?? "fr"),
-            data: { type: n.type, refId: n.refId ?? undefined },
+            data: pushTapData(n),
           });
           console.log(`[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] départ « ${departing} » (sent:${res.sent}, invalid:${res.invalid})`);
         }
@@ -152,7 +153,7 @@ export async function deliverPendingNotifications(): Promise<void> {
       const res = await sendToUser(n.jellyfinUserId, {
         title: n.title,
         body: en ? englishAvailabilityBody(plan.seasons) : plan.body,
-        data: { type: n.type, refId: n.refId ?? undefined },
+        data: pushTapData(n),
       });
       console.log(
         `[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} » (sent:${res.sent}, invalid:${res.invalid})`,

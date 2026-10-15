@@ -46,6 +46,21 @@ export default {
   updateCurrentVersion: "Version actuelle",
   updateNewVersion: "Nouvelle version",
   updateErrorTitle: "La mise à jour n'a pas abouti",
+  // Le panneau : groupes par jour, état vide, état de ce dont parle la
+  // notification (pastille). Lu aussi par le mobile : jamais « téléchargement ».
+  groupToday: "Aujourd'hui",
+  groupEarlier: "Plus tôt",
+  emptyTitle: "Vous êtes à jour",
+  emptyHint: "Les arrivées, vos demandes et les réponses du support s'afficheront ici.",
+  unreadCount_one: "{{count}} non lue",
+  unreadCount_other: "{{count}} non lues",
+  stateAvailable: "Disponible",
+  stateProgress: "En route",
+  statePending: "En attente",
+  stateBlocked: "Bloquée",
+  stateDeclined: "Refusée",
+  stateFailed: "Échec",
+  opening: "Ouverture…",
   // Suppression
   delete: "Supprimer",
   swipeHint: "Glissez vers la gauche pour supprimer",

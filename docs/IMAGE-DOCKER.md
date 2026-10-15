@@ -5,6 +5,12 @@ beaucoup trop lourde. » Ce document dit ce qui pesait (mesuré au registre), ce
 qui a changé, les variantes essayées avec leurs chiffres, et les pièges payés
 en route. Le `Dockerfile` garde, en commentaires, le pourquoi de chaque étape.
 
+> **2026-10-15 — ffmpeg et fpcalc retirés.** Ils ne servaient qu'à l'analyse
+> audio des passages, retirée (CLAUDE.md, « Détection des passages ») :
+> l'étape `media-tools` n'existe plus, l'image n'embarque ni l'un ni l'autre.
+> Les mesures ci-dessous datent d'avant et les comptent encore (environ
+> 4,3 Mo décompressés) ; les pièges de leur compilation restent pour mémoire.
+
 ## Ce qui pesait
 
 Relevé du registre (`ghcr.io/knaox/tentacle-tv:latest` = v1.23.0, amd64,
@@ -49,7 +55,7 @@ en root, sans healthcheck, et `node:20` n'est plus maintenu depuis avril 2026.
   serveur (≥ 22 exigé par yt-dlp). Résultats identiques, mesurés : voir
   `BANDES-ANNONCES.md`.
 - **ffmpeg et fpcalc compilés pour le seul usage du serveur** (étape
-  `media-tools`) : Jellyfin rend les extraits audio en MP3
+  `media-tools`, retirée le 2026-10-15 avec l'analyse audio) : Jellyfin rend les extraits audio en MP3
   (`audioWindows.ts`), le serveur n'a qu'à décoder du MP3. ffmpeg 8.1.2
   statique réduit au MP3 → PCM (1,6 Mo), chromaprint 1.6.0 lié dessus avec
   la même FFT (fftw3) que le paquet d'Alpine (2,7 Mo). Empreintes `fpcalc

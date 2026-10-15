@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Square, type LucideIcon } from "lucide-react";
 import { ActionPill, type PillStatus } from "./ActionPill";
+import { FloatingLayer } from "../../floating/FloatingLayer";
 
 /**
  * Une action destructive en deux temps : le bouton ouvre une BULLE ancrée à
@@ -10,13 +11,12 @@ import { ActionPill, type PillStatus } from "./ActionPill";
  * Une bulle plutôt que la rangée qui se transformait sur place : la carte
  * reste sous les yeux pendant qu'on confirme, et plus rien ne se décale sous
  * le pointeur. Elle s'ouvre au-dessus du bouton, ou dessous s'il n'y a pas la
- * place. Échap et un clic dehors la ferment.
+ * place — la règle commune (`FloatingLayer`), qui la garde aussi dans la
+ * fenêtre en largeur. Échap et un clic dehors la ferment.
  *
  * Fond OPAQUE, celui du panneau « Plus » : à 0,95 d'alpha, le texte de la
  * carte transparaissait sous la question.
  */
-
-const ROOM_ABOVE_PX = 190;
 
 export function ConfirmButton({
   label,
@@ -44,7 +44,6 @@ export function ConfirmButton({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [above, setAbove] = useState(true);
   const wrapRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
@@ -56,6 +55,7 @@ export function ConfirmButton({
     if (refocus) triggerRef.current?.focus();
   }, []);
 
+  // Échap rend en plus le focus au bouton (le calque ferme au clic dehors).
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -63,15 +63,8 @@ export function ConfirmButton({
       event.stopPropagation();
       close(true);
     };
-    const onDown = (event: MouseEvent) => {
-      if (!wrapRef.current?.contains(event.target as Node)) close(false);
-    };
     window.addEventListener("keydown", onKey);
-    window.addEventListener("mousedown", onDown);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("mousedown", onDown);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [open, close]);
 
   const toggle = () => {
@@ -79,8 +72,6 @@ export function ConfirmButton({
       close(false);
       return;
     }
-    const rect = triggerRef.current?.getBoundingClientRect();
-    setAbove(rect === undefined || rect.top > ROOM_ABOVE_PX);
     setOpen(true);
   };
 
@@ -98,34 +89,34 @@ export function ConfirmButton({
         aria-controls={open ? panelId : undefined}
         onClick={toggle}
       />
-      {open && (
-        <div
-          id={panelId}
-          role="alertdialog"
-          aria-labelledby={titleId}
-          aria-describedby={bodyId}
-          className={`absolute right-0 z-30 w-[min(18rem,calc(100vw-2rem))] animate-scale-in rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)] ${
-            above ? "bottom-full mb-2 origin-bottom-right" : "top-full mt-2 origin-top-right"
-          }`}
-        >
-          <p id={titleId} className="text-sm font-semibold text-content-primary">{title}</p>
-          <p id={bodyId} className="mt-1 text-[13px] leading-relaxed text-content-tertiary">{body}</p>
-          <div className="mt-4 flex justify-end gap-2">
-            {/* Le refus a le focus : un réflexe d'Entrée n'arrête rien. */}
-            <ActionPill autoFocus size="sm" label={cancelLabel} onClick={() => close(true)} />
-            <ActionPill
-              size="sm"
-              tone="dangerSolid"
-              icon={icon}
-              label={confirmLabel}
-              onClick={() => {
-                close(true);
-                onConfirm();
-              }}
-            />
-          </div>
+      <FloatingLayer
+        open={open}
+        anchor={triggerRef}
+        onDismiss={() => close(false)}
+        side="top"
+        align="end"
+        role="alertdialog"
+        labelledBy={titleId}
+        attrs={{ id: panelId, "aria-describedby": bodyId }}
+        className="w-[18rem] overflow-y-auto rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
+      >
+        <p id={titleId} className="text-sm font-semibold text-content-primary">{title}</p>
+        <p id={bodyId} className="mt-1 text-[13px] leading-relaxed text-content-tertiary">{body}</p>
+        <div className="mt-4 flex justify-end gap-2">
+          {/* Le refus a le focus : un réflexe d'Entrée n'arrête rien. */}
+          <ActionPill autoFocus size="sm" label={cancelLabel} onClick={() => close(true)} />
+          <ActionPill
+            size="sm"
+            tone="dangerSolid"
+            icon={icon}
+            label={confirmLabel}
+            onClick={() => {
+              close(true);
+              onConfirm();
+            }}
+          />
         </div>
-      )}
+      </FloatingLayer>
     </div>
   );
 }

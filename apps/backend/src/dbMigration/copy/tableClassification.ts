@@ -14,6 +14,7 @@
 export const RETIRED_CORE_TABLES = new Set([
   "anime_id_map", // 1.17 : AniList retiré
   "media_audio_fingerprint", // 2026-09 : empreintes gardées en mémoire
+  "media_audio_analysis", // 2026-10 : analyse audio retirée
   "media_requests", // avant Vigie
   "shared_watchlists", // avant les liens de partage
   "shared_watchlist_items",

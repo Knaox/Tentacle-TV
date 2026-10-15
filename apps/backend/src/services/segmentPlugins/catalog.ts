@@ -91,5 +91,11 @@ export function sameRepositoryUrl(a: unknown, b: string): boolean {
 /** Dans `server_config` : des greffons posés attendent d'être réglés (redémarrage remis à plus tard). */
 export const CONFIG_PENDING_KEY = "segment_plugins_config_pending";
 
-/** Dans `server_config` : la migration « Intro Skipper sans écoute » a été faite, une fois pour toutes. */
-export const INTRO_SKIPPER_MIGRATION_KEY = "introskipper_audio_off_applied";
+/**
+ * Dans `server_config` : la coupure « Intro Skipper sans écoute » du retrait de
+ * l'analyse audio a été faite, une fois pour toutes.
+ */
+export const INTRO_SKIPPER_MIGRATION_KEY = "introskipper_auto_off_final_applied";
+
+/** La marque de la première coupure (2026-10-06), effacée quand la nouvelle est posée. */
+export const LEGACY_INTRO_SKIPPER_MIGRATION_KEY = "introskipper_audio_off_applied";

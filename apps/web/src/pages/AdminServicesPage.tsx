@@ -16,7 +16,6 @@ import { AddressesMovedSection } from "../components/admin/services/AddressesMov
 import { SegmentDetectionSection } from "../components/admin/services/SegmentDetectionSection";
 import { DangerZoneSection } from "../components/admin/services/DangerZoneSection";
 import {
-  useAudioAnalysis,
   useDirectStreamingConfig,
   usePublicUrlConfig,
   useRecheck,
@@ -51,7 +50,7 @@ function ServicesContent() {
   const { recheck, pending } = useRecheck();
   // Les sections ont leur hauteur finale quand leurs lectures ont abouti —
   // réussies ou non : c'est alors qu'une ancre peut viser juste.
-  const ready = [useServicesStatus(), usePublicUrlConfig(), useDirectStreamingConfig(), useAudioAnalysis(), useJellyfinSetup()]
+  const ready = [useServicesStatus(), usePublicUrlConfig(), useDirectStreamingConfig(), useJellyfinSetup()]
     .every((query) => !query.isPending);
   useHashTarget(ready);
 

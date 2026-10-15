@@ -82,6 +82,12 @@ export * from "./help/dismissibleHints";
 // Les capacités du serveur : la liste fermée de ce qu'un serveur sait faire,
 // déclarée par `/api/config` (miroir backend) — un client ne montre rien d'autre.
 export * from "./serverCapabilities/serverCapabilities";
+// Les droits d'un compte (sa UserPolicy Jellyfin) : contrat, routes et validation
+// du correctif de l'administration (miroir backend, docs/DROITS-UTILISATEURS.md).
+export * from "./userRights/userRightsContract";
+export * from "./userRights/userRightsRoutes";
+export * from "./userRights/userRightsPatch";
+export * from "./notifications/notificationTarget";
 export * from "./help/trailerHint";
 // Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
 // fiches — et « Réanalyser maintenant » (contrat de /api/admin/library/rescan,
@@ -238,7 +244,6 @@ export * from "./playback/resolveSegments";
 export * from "./playback/segmentPlugins";
 export * from "./playback/claimGuards";
 export * from "./playback/tailVerdict";
-export * from "./playback/audioVerdict";
 // L'étiquette HEVC qu'AVFoundation lit telle quelle (`hvc1`, `dvh1`) : une
 // règle pour l'Apple TV, le lecteur système de l'iPhone et de l'iPad, et Safari.
 export * from "./playback/hevcTag";

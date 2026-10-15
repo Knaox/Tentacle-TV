@@ -18,10 +18,10 @@
  */
 
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
-import { Reorder, motion, useReducedMotion } from "framer-motion";
+import { Reorder, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { RotateCcw } from "lucide-react";
-import { easeOut } from "../../theme/motion";
+import { FloatingLayer } from "../floating/FloatingLayer";
 import { PinnedRow, ShelfRow } from "./NavBarEditorRow";
 import type { NavBarEditor, NavEntry } from "./useNavDestinations";
 
@@ -38,7 +38,6 @@ function SectionTitle({ children }: { children: string }) {
 
 export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarEditorPanelProps) {
   const { t } = useTranslation("nav");
-  const reduced = useReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const pinned = entries.filter((e) => e.pinned);
@@ -68,33 +67,27 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
     panelRef.current?.focus();
   }, []);
 
+  // Échap : fermer ET rendre le focus au bouton « Plus » (le calque ferme seul
+  // au clic dehors ; le clic sur le bouton reste à son basculement).
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    const onDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (panelRef.current?.contains(target) || trigger.current?.contains(target)) return;
-      onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") trigger.current?.focus(); };
     window.addEventListener("keydown", onKey);
-    window.addEventListener("mousedown", onDown);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("mousedown", onDown);
-    };
-  }, [close, onClose, trigger]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [trigger]);
 
   return (
-    <motion.div
-      ref={panelRef}
+    <FloatingLayer
+      open
+      anchor={trigger}
+      onDismiss={onClose}
+      side="bottom"
+      align="start"
+      gap={14}
+      panelRef={panelRef}
       role="dialog"
-      aria-labelledby={titleId}
+      labelledBy={titleId}
       tabIndex={-1}
-      className="absolute left-0 top-[calc(100%+14px)] z-50 flex max-h-[calc(100vh-120px)] w-[min(460px,calc(100vw-32px))] flex-col rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] shadow-[var(--shadow-dropdown)] outline-none"
-      initial={reduced ? false : { opacity: 0, y: -6, scale: 0.985 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.18, ease: easeOut }}
+      className="flex w-[460px] flex-col overflow-hidden rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] shadow-[var(--shadow-dropdown)] outline-none"
     >
       <header className="border-b border-line-subtle px-5 pb-3 pt-4">
         <h2 id={titleId} className="text-base font-semibold text-content-primary">{t("customizeBar")}</h2>
@@ -154,6 +147,6 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
           {t("done")}
         </button>
       </footer>
-    </motion.div>
+    </FloatingLayer>
   );
 }

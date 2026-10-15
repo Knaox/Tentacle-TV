@@ -79,6 +79,11 @@ model Notification {
   title           String
   body            String?
   refId           String?   // ticket or request ID
+  /// Où mène la notification (JSON du contrat `notifications/notificationTarget.ts`) ;
+  /// null = la route tirée du type, comme avant. Posée par l'émetteur (cœur ou extension).
+  target          String?
+  /// L'état de ce dont elle parle (`NOTIFICATION_STATES`) ; null = pas de pastille.
+  state           String?
   read            Boolean   @default(false)
   createdAt       DateTime  @default(now())
   pushedAt        DateTime? // horodatage de livraison push (null = pas encore poussée)
@@ -613,22 +618,6 @@ model MediaFrameAnalysis {
   createdAt DateTime @default(now())
 
   @@map("media_frame_analysis")
-}
-
-/// Ce que l'AUDIO des voisins de saison a dit d'un épisode — opening, ending
-/// (services/audioAnalysis.ts). Même forme et même règle que la fin de média :
-/// une ligne par épisode, et seulement quand un opening ou un ending a été
-/// trouvé — le « rien » refroidit en mémoire, les lignes vides d'avant sont
-/// purgées au démarrage.
-model MediaAudioAnalysis {
-  itemId    String   @id
-  /// Version des règles du verdict (`AUDIO_ANALYSIS_VERSION`).
-  version   Int
-  runtimeMs Int
-  verdict   String?
-  createdAt DateTime @default(now())
-
-  @@map("media_audio_analysis")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

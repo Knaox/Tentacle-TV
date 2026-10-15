@@ -55,7 +55,7 @@ export function TrackSelector({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 w-80 rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-4"
+      className="absolute bottom-20 right-6 z-50 w-80 max-w-[calc(100vw-3rem)] rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-4"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-3 flex items-center justify-between">
