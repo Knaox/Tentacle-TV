@@ -1,33 +1,38 @@
 import { useId, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ShieldCheck } from "lucide-react";
-import { useFamilyParentalOptions, useSetFamilyGuestParental } from "@tentacle-tv/api-client";
-import type { FamilyProfileDto, GuestParentalControls } from "@tentacle-tv/shared";
+import { useFamilyParentalOptions, useSetFamilyGuestParental, useSetFamilyMemberParental } from "@tentacle-tv/api-client";
+import { GUEST_PARENTAL_NONE, type FamilyProfileDto, type GuestParentalControls } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
 import { Modal } from "../../components/ui/Modal";
 import { RatingSelect, UnratedTypesField } from "../../components/parental/RatingFields";
 import { ScheduleListField } from "../../components/parental/ScheduleListField";
 import { TagListField } from "../../components/parental/TagListField";
-import { effectiveParentalSummary, guestCeilingOf, guestParentalOf, sameGuestParental } from "../../components/parental/guestParental";
+import { effectiveParentalSummary, guestCeilingOf, guestParentalOf, hasGuestParental, sameGuestParental } from "../../components/parental/guestParental";
 import { currentRating, ratingChoices, ratingLabel } from "../../components/parental/parentalModel";
 import { useFamilyText } from "../useFamilyText";
-import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON } from "./familyUi";
+import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON, SMALL_DANGER_BUTTON } from "./familyUi";
 
 interface GuestParentalDialogProps {
+  /** Le profil réglé : un invité, ou (1.30.0) un membre mineur. */
   guest: FamilyProfileDto;
   /** Le créateur de l'invité, nommé dans l'avertissement « jamais au-delà ». */
   creatorName: string;
+  /** Un MEMBRE mineur : le plafond est sa politique de base (l'administrateur), et le contrôle se retire. */
+  member?: boolean;
   onClose: () => void;
 }
 
 /**
  * Le contrôle parental d'un invité — note maximale, types bloqués sans note,
- * étiquettes bloquées, plages horaires —, réglé par le propriétaire ou par le
- * membre qui l'a créé. On compose, puis « Enregistrer » envoie tout d'un
- * coup : c'est le serveur qui l'écrit dans la politique Jellyfin de l'invité,
- * jamais plus large que celle de son créateur (l'intersection des deux).
+ * étiquettes bloquées, plages horaires —, réglé par le propriétaire, un parent
+ * ou le membre qui l'a créé ; et, de même, celui d'un membre mineur (le
+ * propriétaire ou un parent). On compose, puis « Enregistrer » envoie tout d'un
+ * coup : c'est le serveur qui l'écrit dans la politique Jellyfin du profil,
+ * jamais plus large que son plafond (son créateur, ou pour un membre la
+ * politique de l'administrateur) ; retiré, la politique d'un membre est rendue.
  */
-export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParentalDialogProps) {
+export function GuestParentalDialog({ guest, creatorName, member = false, onClose }: GuestParentalDialogProps) {
   const { t } = useTranslation(["familyWeb", "userRights"]);
   const { errorText } = useFamilyText();
   const toast = useToast();
@@ -35,7 +40,9 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
   const introId = useId();
   const ratingId = useId();
   const options = useFamilyParentalOptions();
-  const save = useSetFamilyGuestParental();
+  const saveGuest = useSetFamilyGuestParental();
+  const saveMember = useSetFamilyMemberParental();
+  const save = member ? saveMember : saveGuest;
   const initial = useMemo(() => guestParentalOf(guest), [guest]);
   const ceiling = guestCeilingOf(guest);
   const [draft, setDraft] = useState<GuestParentalControls>(initial);
@@ -62,17 +69,25 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
   const pending = save.isPending;
   const unchanged = sameGuestParental(draft, initial);
   const close = pending ? () => undefined : onClose;
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (unchanged) return onClose();
-    save.mutate({ userId: guest.userId, parental: draft }, {
+  const send = (parental: GuestParentalControls, done: string) =>
+    save.mutate({ userId: guest.userId, parental }, {
       onSuccess: () => {
-        toast.show("success", t("familyWeb:parental.saved"));
+        toast.show("success", done);
         onClose();
       },
       onError: (error) => toast.show("error", errorText(error)),
     });
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (unchanged) return onClose();
+    send(draft, t("familyWeb:parental.saved"));
   };
+  // Un membre : retirer rend sa politique de base, telle que l'administrateur l'a réglée.
+  const removable = member && hasGuestParental(initial);
+  const ceilingText = member
+    ? [t("familyWeb:parental.memberCeiling", { name: guest.name }), ceilingRating && t("familyWeb:parental.memberCeilingRating", { rating: ceilingRating })]
+    : [t("familyWeb:parental.ceiling", { name: guest.name, creator: creatorName }),
+      ceilingRating && t("familyWeb:parental.ceilingRating", { creator: creatorName, rating: ceilingRating })];
 
   return (
     <Modal
@@ -102,8 +117,7 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
 
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
           <p className="rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2.5 text-xs leading-relaxed text-content-secondary">
-            {t("familyWeb:parental.ceiling", { name: guest.name, creator: creatorName })}
-            {ceilingRating && <> {t("familyWeb:parental.ceilingRating", { creator: creatorName, rating: ceilingRating })}</>}
+            {ceilingText.filter(Boolean).join(" ")}
           </p>
           {options.isError && <p role="alert" className="text-sm text-status-error-fg">{t("familyWeb:parental.optionsError")}</p>}
           <RatingSelect
@@ -137,7 +151,13 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
               {effective}
             </p>
           )}
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {removable && (
+              <button type="button" onClick={() => send({ ...GUEST_PARENTAL_NONE }, t("familyWeb:parental.removed", { name: guest.name }))}
+                disabled={pending} className={`${SMALL_DANGER_BUTTON} mr-auto`}>
+                {t("familyWeb:parental.remove")}
+              </button>
+            )}
             <button type="button" onClick={onClose} disabled={pending} className={SECONDARY_BUTTON}>
               {t("familyWeb:parental.cancel")}
             </button>

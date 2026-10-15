@@ -8,6 +8,8 @@ export default {
   kindOwner: "Owner",
   kindMember: "Member",
   kindGuest: "Guest",
+  /** 1.30.0: a member the owner made a parent. */
+  kindParent: "Parent",
   guestOf: "Guest · {{owner}}'s family",
   /** v2: a guest, and who created it. */
   addedBy: "Added by {{name}}",

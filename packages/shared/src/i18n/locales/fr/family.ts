@@ -8,6 +8,8 @@ export default {
   kindOwner: "Propriétaire",
   kindMember: "Membre",
   kindGuest: "Invité",
+  /** 1.30.0 : un membre que le propriétaire a nommé parent. */
+  kindParent: "Parent",
   /** Les sessions en cours : un invité y est étiqueté, jamais listé ailleurs. */
   guestOf: "Invité · famille de {{owner}}",
   /** v2 : un invité, et qui l'a créé. */

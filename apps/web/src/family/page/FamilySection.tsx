@@ -8,6 +8,7 @@ import {
   useRemoveFamilyMember,
   useSetFamilyGuestRights,
   useSetFamilyMemberRights,
+  useSetFamilyMemberRole,
   useServerCapability,
   useUserId,
 } from "@tentacle-tv/api-client";
@@ -17,6 +18,7 @@ import {
   familyCounts,
   isOwnProfile,
   profileActions,
+  profileRoleActions,
   sameUserId,
   type FamilyErrorCode,
   type FamilyOverviewDto,
@@ -70,6 +72,12 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   // Le contrôle parental d'un invité : serveur 1.30.0, session personnelle.
   const parentalControls = useServerCapability("family.parentalControls");
   const [parentalGuest, setParentalGuest] = useState<FamilyProfileDto | null>(null);
+  // Parents et membres mineurs : serveur 1.30.0, session personnelle.
+  const roles = useServerCapability("family.roles");
+  const memberParental = useServerCapability("family.memberParental");
+  const [parentalMember, setParentalMember] = useState<FamilyProfileDto | null>(null);
+  const setRole = useSetFamilyMemberRole();
+  const { mutate: mutateRole } = setRole;
   const deleteGuest = useDeleteFamilyGuest();
   const cancelInvite = useCancelFamilyInvitation();
   const setRights = useSetFamilyMemberRights();
@@ -97,6 +105,12 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
       else mutateRights({ userId: profile.userId, rights: { createGuests: next } }, done);
     },
     [mutateRights, mutateGuestRights, toast, t, fail],
+  );
+
+  const onRoleChange = useCallback(
+    (profile: FamilyProfileDto, parent: boolean) =>
+      mutateRole({ userId: profile.userId, parent }, { onSuccess: () => toast.show("success", t("familyWeb:roles.saved")), onError: fail }),
+    [mutateRole, toast, t, fail],
   );
 
   const confirm = () => {
@@ -133,6 +147,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const caption = family && (
     <>
       {!owner && <>{t("familyWeb:shared.memberNotice", { owner: family.owner.name })} </>}
+      {family.parent && <>{t("familyWeb:roles.youParent")} </>}
       {t("familyWeb:owned.capacity", { count: counts.profiles, max: FAMILY_LIMITS.profiles })}
       {" · "}
       {t("familyWeb:owned.guests", { count: counts.guests, max: FAMILY_LIMITS.guests })}
@@ -151,13 +166,16 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
                 last={index === family.profiles.length - 1 && !buttons}
                 isSelf={isOwnProfile(profile, viewerId)}
                 actions={profileActions(overview, profile, viewerId, capability)}
+                roleActions={profileRoleActions(overview, profile, viewerId)}
                 showCreator={!!profile.createdBy && !sameUserId(profile.createdBy, family.owner.userId)}
-                rightPending={setRights.isPending || setGuestRights.isPending}
+                rightPending={setRights.isPending || setGuestRights.isPending || setRole.isPending}
                 onRemove={onRemove}
                 onGuestPin={setPinGuest}
                 onGuestPhoto={guestPhotos && personal ? onGuestPhoto : undefined}
                 onGuestParental={parentalControls && personal ? setParentalGuest : undefined}
                 onRightChange={onRightChange}
+                onRoleChange={roles && personal ? onRoleChange : undefined}
+                onMemberParental={memberParental && personal ? setParentalMember : undefined}
               />
             ))}
             {buttons && <li className="px-4 py-3">{buttons}</li>}
@@ -198,6 +216,9 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
           creatorName={parentalGuest.createdByName ?? family.owner.name}
           onClose={() => setParentalGuest(null)}
         />
+      )}
+      {parentalMember && family && (
+        <GuestParentalDialog guest={parentalMember} creatorName={family.owner.name} member onClose={() => setParentalMember(null)} />
       )}
     </>
   );

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { FamilyProfileDto, ProfileActions } from "@tentacle-tv/shared";
+import { GUEST_PARENTAL_NONE, type FamilyProfileDto, type ProfileActions, type ProfileRoleActions } from "@tentacle-tv/shared";
 
 /**
  * Les vues de la Famille rendues à plat, comme les autres bancs de
@@ -33,13 +33,18 @@ function profile(kind: FamilyProfileDto["kind"], patch: Partial<FamilyProfileDto
 
 const NONE: ProfileActions = { pin: false, remove: false, right: null };
 
-function row(p: FamilyProfileDto, actions: ProfileActions = NONE, opts: { isSelf?: boolean; showCreator?: boolean } = {}): string {
+function row(
+  p: FamilyProfileDto,
+  actions: ProfileActions = NONE,
+  opts: { isSelf?: boolean; showCreator?: boolean; roleActions?: ProfileRoleActions; roles?: boolean } = {},
+): string {
   const noop = () => {};
   return renderToStaticMarkup(
     <ul>
       <ProfileRow
         profile={p} last isSelf={opts.isSelf ?? false} actions={actions} showCreator={opts.showCreator ?? false}
-        rightPending={false} onRemove={noop} onGuestPin={noop} onRightChange={noop}
+        rightPending={false} onRemove={noop} onGuestPin={noop} onRightChange={noop} roleActions={opts.roleActions}
+        onRoleChange={opts.roles ? noop : undefined} onMemberParental={opts.roles ? noop : undefined}
       />
     </ul>,
   );
@@ -109,5 +114,37 @@ describe("ProfileRow — la famille partagée", () => {
     const self = row(profile("member"), NONE, { isSelf: true });
     expect(self).toContain("familyWeb:owned.you");
     expect(self).not.toContain("<button");
+  });
+});
+
+describe("ProfileRow — parents et membres mineurs (1.30.0)", () => {
+  const OWNER_VIEW: ProfileRoleActions = { role: true, roleBlockedByParental: false, memberParental: true };
+
+  it("un parent porte son rôle, lisible de tous ; « peut créer des invités » ne s'affiche plus pour lui", () => {
+    const html = row(profile("member", { parent: true, rights: { createGuests: true } }));
+    expect(html).toContain("family:kindParent");
+    expect(html).not.toContain("family:kindMember");
+    expect(html).not.toContain("family:rights.createGuests");
+  });
+
+  it("le propriétaire nomme un parent d'un interrupteur, et règle le contrôle parental d'un membre", () => {
+    const html = row(profile("member", { parental: GUEST_PARENTAL_NONE }), NONE, { roleActions: OWNER_VIEW, roles: true });
+    expect(html).toContain("familyWeb:roles.parent");
+    expect(html).toContain("familyWeb:roles.parentHint");
+    expect(html).toContain("familyWeb:parental.open");
+  });
+
+  it("un membre restreint : l'interrupteur de parent se grise et dit pourquoi ; le badge se montre", () => {
+    const restricted = profile("member", { parental: { ...GUEST_PARENTAL_NONE, maxParentalRating: 6 } });
+    const html = row(restricted, NONE, { roleActions: { ...OWNER_VIEW, roleBlockedByParental: true }, roles: true });
+    expect(html).toContain("familyWeb:roles.parentBlocked");
+    expect(html).toContain("disabled");
+    expect(html).toContain("familyWeb:parental.on");
+  });
+
+  it("face à un serveur qui ne sait pas (aucun rappel), rien ne s'offre", () => {
+    const html = row(profile("member", { parental: GUEST_PARENTAL_NONE }), NONE, { roleActions: OWNER_VIEW });
+    expect(html).not.toContain("familyWeb:roles.parent");
+    expect(html).not.toContain("<button");
   });
 });

@@ -1,0 +1,36 @@
+import type { AccountFamilyRightsDto, FamilyCreationRightValue } from "@tentacle-tv/shared";
+
+/**
+ * Ce que dit le panneau « Famille » d'un compte — règles pures, sans React. Le
+ * serveur a déjà tout décidé (`allowed`) ; on ne fait que choisir les mots.
+ */
+
+export type CreationRightKey = "createFamily" | "createGuests";
+
+/** Pourquoi la valeur en vigueur est ce qu'elle est, au-delà du réglage : clé i18n `familyWeb:accountRights.*`, ou null. */
+export function creationNote(dto: AccountFamilyRightsDto, key: CreationRightKey): "adminAlways" | "switchedOff" | null {
+  if (dto.isAdministrator === true && dto.allowed[key]) return "adminAlways";
+  const wouldAllow = dto.rights[key] === "allow" || (dto.rights[key] === "inherit" && dto.defaults[key]);
+  return !dto.allowed[key] && (wouldAllow || dto.isAdministrator === true) ? "switchedOff" : null;
+}
+
+/** La place du compte dans une famille : clé i18n `familyWeb:accountRights.*` et son propriétaire, ou null. */
+export function familyPlace(dto: AccountFamilyRightsDto): { key: "owner" | "member" | "parent" | "guest"; owner: string } | null {
+  if (!dto.family) return null;
+  const key = dto.family.role === "member" && dto.family.parent ? "parent" : dto.family.role;
+  return { key, owner: dto.family.ownerName };
+}
+
+/** Le défaut à rappeler dans le choix « Par défaut (…) ». */
+export function inheritValue(dto: AccountFamilyRightsDto, key: CreationRightKey): boolean {
+  return dto.defaults[key];
+}
+
+/** Un invité ne se règle pas : le panneau le dit, sans choix. */
+export function isEditable(dto: AccountFamilyRightsDto): boolean {
+  return dto.family?.role !== "guest";
+}
+
+export const CREATION_RIGHT_KEYS: readonly CreationRightKey[] = ["createFamily", "createGuests"];
+
+export type { FamilyCreationRightValue };

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { FamilyOverviewDto, FamilyProfileDto } from "@tentacle-tv/shared";
+import { GUEST_PARENTAL_NONE, type FamilyOverviewDto, type FamilyProfileDto } from "@tentacle-tv/shared";
 
 /**
  * L'entrée « Contrôle parental » d'un invité dans la Famille : seulement face
@@ -8,19 +8,21 @@ import type { FamilyOverviewDto, FamilyProfileDto } from "@tentacle-tv/shared";
  * pour qui gère cet invité (le propriétaire : tous ; un membre : les siens).
  * Un serveur qui ne déclare rien : aucune trace, aucune erreur.
  */
-const h = vi.hoisted(() => ({ parental: false, viewer: "owner-id" }));
+const h = vi.hoisted(() => ({ parental: false, memberParental: false, viewer: "owner-id" }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: "fr" } }) }));
 vi.mock("@tentacle-tv/api-client", () => {
   const mutation = () => ({ mutate: () => undefined, isPending: false });
   return {
-    useServerCapability: (key: string) => (key === "family.parentalControls" ? h.parental : false),
+    useServerCapability: (key: string) =>
+      key === "family.parentalControls" ? h.parental : key === "family.memberParental" || key === "family.roles" ? h.memberParental : false,
     useUserId: () => h.viewer,
     useCancelFamilyInvitation: mutation,
     useDeleteFamilyGuest: mutation,
     useRemoveFamilyMember: mutation,
     useSetFamilyGuestRights: mutation,
     useSetFamilyMemberRights: mutation,
+    useSetFamilyMemberRole: mutation,
   };
 });
 vi.mock("@tentacle-tv/ui", () => ({ SettingsSection: ({ children }: { children: unknown }) => <section>{children as never}</section> }));
@@ -41,6 +43,8 @@ function profile(kind: FamilyProfileDto["kind"], userId: string, createdBy: stri
   return {
     userId, kind, name: userId, color: "teal", hasPin: false, imageTag: null, since: null,
     createdBy, createdByName: createdBy, rights: kind === "member" ? { createGuests: true } : null, guestRights: null,
+    // Un serveur 1.30.0 rend l'état d'un membre restreignable au propriétaire (et aux parents) seulement.
+    ...(kind === "member" && { parental: GUEST_PARENTAL_NONE, parentalCeiling: null }),
   };
 }
 
@@ -54,8 +58,8 @@ function overview(role: "owner" | "member", personal = true): FamilyOverviewDto 
       profiles: [profile("owner", "owner-id"), profile("member", "member-id"), profile("guest", "guest-owner", "owner-id"), profile("guest", "guest-member", "member-id")],
       pendingInvitations: [],
       rights: role === "owner"
-        ? { manageMembers: true, createGuests: true, manageGuests: "all" }
-        : { manageMembers: false, createGuests: true, manageGuests: "own" },
+        ? { manageMembers: true, createGuests: true, manageGuests: "all", manageRoles: true, manageMinors: true }
+        : { manageMembers: false, createGuests: true, manageGuests: "own", manageRoles: false, manageMinors: false },
       createdAt: "2026-10-01T00:00:00Z",
       since: null,
     },
@@ -70,6 +74,7 @@ const entries = (html: string) => [...html.matchAll(/aria-label="familyWeb:paren
 
 beforeEach(() => {
   h.parental = false;
+  h.memberParental = false;
   h.viewer = "owner-id";
 });
 
@@ -92,5 +97,26 @@ describe("« Contrôle parental » d'un invité", () => {
   it("hors session personnelle (une TV), rien", () => {
     h.parental = true;
     expect(entries(renderToStaticMarkup(<FamilySection overview={overview("owner", false)} />))).toEqual([]);
+  });
+});
+
+describe("« Contrôle parental » d'un membre mineur (1.30.0)", () => {
+  it("serveur qui ne déclare pas `family.memberParental` : aucune entrée sur un membre", () => {
+    h.parental = true;
+    expect(entries(renderToStaticMarkup(<FamilySection overview={overview("owner")} />))).not.toContain("member-id");
+  });
+
+  it("le propriétaire règle le membre ; un simple membre, jamais", () => {
+    h.memberParental = true;
+    expect(entries(renderToStaticMarkup(<FamilySection overview={overview("owner")} />))).toEqual(["member-id"]);
+    h.viewer = "member-id";
+    expect(entries(renderToStaticMarkup(<FamilySection overview={overview("member")} />))).toEqual([]);
+  });
+
+  it("le rôle de parent : un interrupteur pour le propriétaire seulement", () => {
+    h.memberParental = true;
+    expect(renderToStaticMarkup(<FamilySection overview={overview("owner")} />)).toContain("familyWeb:roles.parentHint");
+    h.viewer = "member-id";
+    expect(renderToStaticMarkup(<FamilySection overview={overview("member")} />)).not.toContain("familyWeb:roles.parentHint");
   });
 });

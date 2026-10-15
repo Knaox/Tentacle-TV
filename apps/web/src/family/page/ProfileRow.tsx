@@ -1,7 +1,14 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, Lock, ShieldCheck } from "lucide-react";
-import { guestCanRequest, type FamilyProfileDto, type ProfileActions } from "@tentacle-tv/shared";
+import { Camera, Lock, ShieldCheck, UserCog } from "lucide-react";
+import {
+  guestCanRequest,
+  hasParentalControl,
+  isFamilyParent,
+  type FamilyProfileDto,
+  type ProfileActions,
+  type ProfileRoleActions,
+} from "@tentacle-tv/shared";
 import { guestParentalOf, hasGuestParental } from "../../components/parental/guestParental";
 import { FamilyAvatar } from "../FamilyAvatar";
 import { useFamilyText } from "../useFamilyText";
@@ -15,6 +22,8 @@ interface ProfileRowProps {
   isSelf: boolean;
   /** Ce que celui qui regarde peut faire sur ce profil (`profileActions`, shared). */
   actions: ProfileActions;
+  /** Le rôle de parent et le contrôle parental d'un membre (`profileRoleActions`, shared ; 1.30.0). Absent : aucun. */
+  roleActions?: ProfileRoleActions;
   /** Dire qui a créé cet invité : faux quand c'est le propriétaire (il va de soi). */
   showCreator: boolean;
   rightPending: boolean;
@@ -25,9 +34,14 @@ interface ProfileRowProps {
   /** Régler le contrôle parental d'un invité ; absent : le serveur ne le sait pas, ou la session ne le peut pas. */
   onGuestParental?: (profile: FamilyProfileDto) => void;
   onRightChange: (profile: FamilyProfileDto, next: boolean) => void;
+  /** Nommer ce membre parent, ou le lui retirer ; absent : le serveur ne le sait pas. */
+  onRoleChange?: (profile: FamilyProfileDto, parent: boolean) => void;
+  /** Régler le contrôle parental d'un membre mineur ; absent : le serveur ne le sait pas. */
+  onMemberParental?: (profile: FamilyProfileDto) => void;
 }
 
 const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest: "family:kindGuest" } as const;
+const NO_ROLE_ACTIONS: ProfileRoleActions = { role: false, roleBlockedByParental: false, memberParental: false };
 
 /**
  * Un profil de LA famille, la même pour le propriétaire et pour ses membres :
@@ -38,10 +52,13 @@ const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest
  * gestes permis à celui qui regarde : retirer un membre, supprimer un invité,
  * poser son PIN ou changer sa photo — son rond s'ouvre alors sur la galerie
  * des avatars (le propriétaire, ou le membre qui l'a créé) —, et régler son
- * contrôle parental, avec les mêmes droits que son PIN.
+ * contrôle parental, avec les mêmes droits que son PIN. 1.30.0 : un membre
+ * PARENT porte son rôle ; le propriétaire le nomme d'un interrupteur, et le
+ * propriétaire ou un parent règle le contrôle parental d'un membre mineur.
  */
 export const ProfileRow = memo(function ProfileRow({
-  profile, last, isSelf, actions, showCreator, rightPending, onRemove, onGuestPin, onGuestPhoto, onGuestParental, onRightChange,
+  profile, last, isSelf, actions, roleActions = NO_ROLE_ACTIONS, showCreator, rightPending, onRemove, onGuestPin, onGuestPhoto, onGuestParental, onRightChange,
+  onRoleChange, onMemberParental,
 }: ProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family", "avatars"]);
   const { formatDate } = useFamilyText();
@@ -49,7 +66,9 @@ export const ProfileRow = memo(function ProfileRow({
   // Mêmes droits que son PIN (`profileActions`, shared ; le serveur revérifie).
   const dressable = isGuest && actions.pin && onGuestPhoto !== undefined;
   const parentalEditable = isGuest && actions.pin && onGuestParental !== undefined;
-  const parentalOn = isGuest && hasGuestParental(guestParentalOf(profile));
+  const parent = isFamilyParent(profile);
+  const memberParental = roleActions.memberParental && onMemberParental !== undefined;
+  const parentalOn = isGuest ? hasGuestParental(guestParentalOf(profile)) : hasParentalControl(profile);
   const avatar = <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />;
 
   return (
@@ -82,7 +101,14 @@ export const ProfileRow = memo(function ProfileRow({
               isGuest ? "bg-[rgba(var(--brand-rgb),0.14)] text-[var(--brand-light)]" : "bg-fill-soft text-content-secondary"
             }`}
           >
-            {t(KIND_KEY[profile.kind])}
+            {parent ? (
+              <span className="inline-flex items-center gap-1">
+                <UserCog size={11} aria-hidden="true" />
+                {t("family:kindParent")}
+              </span>
+            ) : (
+              t(KIND_KEY[profile.kind])
+            )}
           </span>
           {profile.since && <span>{t("familyWeb:owned.since", { date: formatDate(profile.since) })}</span>}
           {isGuest && showCreator && profile.createdByName && (
@@ -101,7 +127,17 @@ export const ProfileRow = memo(function ProfileRow({
             </span>
           )}
         </p>
-        {profile.kind === "member" && (
+        {profile.kind === "member" && roleActions.role && onRoleChange && (
+          <RightToggle
+            label={t("familyWeb:roles.parent")}
+            hint={roleActions.roleBlockedByParental ? t("familyWeb:roles.parentBlocked") : t("familyWeb:roles.parentHint")}
+            checked={parent}
+            editable
+            pending={rightPending || roleActions.roleBlockedByParental}
+            onChange={(next) => onRoleChange(profile, next)}
+          />
+        )}
+        {profile.kind === "member" && !parent && (
           <RightToggle
             label={t("family:rights.createGuests")}
             hint={t("family:rights.createGuestsHint")}
@@ -122,8 +158,15 @@ export const ProfileRow = memo(function ProfileRow({
           />
         )}
       </div>
-      {(actions.pin || actions.remove) && (
+      {(actions.pin || actions.remove || memberParental) && (
         <div className="flex flex-wrap gap-2">
+          {memberParental && (
+            <button type="button" onClick={() => onMemberParental(profile)} className={SMALL_BUTTON}
+              aria-label={`${t("familyWeb:parental.open")} — ${profile.name}`}>
+              <ShieldCheck size={13} aria-hidden="true" />
+              {t("familyWeb:parental.open")}
+            </button>
+          )}
           {parentalEditable && (
             <button type="button" onClick={() => onGuestParental(profile)} className={SMALL_BUTTON}
               aria-label={`${t("familyWeb:parental.open")} — ${profile.name}`}>

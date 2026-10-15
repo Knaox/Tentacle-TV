@@ -1,6 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { useFamilySwitches, useSetFamilySwitches } from "@tentacle-tv/api-client";
-import type { FamilySwitches } from "@tentacle-tv/shared";
+import {
+  useFamilyCreationDefaults,
+  useFamilySwitches,
+  useServerCapability,
+  useSetFamilyCreationDefaults,
+  useSetFamilySwitches,
+} from "@tentacle-tv/api-client";
+import type { FamilyCreationDefaults, FamilySwitches } from "@tentacle-tv/shared";
 import { useFamilyAvailability } from "../../../family/useFamilyAvailability";
 import { SettingToggleRow } from "../../settings/SettingToggleRow";
 import { AdminSection } from "../kit";
@@ -14,16 +20,26 @@ import { AdminSection } from "../kit";
  * ce qui réduit (quitter, retirer, supprimer un invité, dissoudre) reste
  * possible. L'état affiché est celui que le serveur RÉPOND, jamais celui
  * qu'on a cliqué. Serveur d'avant la Famille : la section n'existe pas.
+ *
+ * 1.30.0 (`family.creationRights`) : les DÉFAUTS des droits de création —
+ * « Par défaut, un compte peut créer une famille / des profils invités »,
+ * coupés tant que l'administration ne les a pas allumés. Ils valent pour
+ * chaque compte réglé sur « Par défaut » ; les interrupteurs au-dessus restent
+ * maîtres.
  */
 export function FamilySwitchesSection() {
   const { t } = useTranslation("familyWeb");
   const { available } = useFamilyAvailability();
   const switches = useFamilySwitches({ enabled: available });
   const save = useSetFamilySwitches();
+  const creationRights = useServerCapability("family.creationRights");
+  const defaults = useFamilyCreationDefaults({ enabled: available && creationRights });
+  const saveDefaults = useSetFamilyCreationDefaults();
 
   if (!available) return null;
   const current = switches.data;
   const set = (patch: Partial<FamilySwitches>) => save.mutate(patch);
+  const setDefault = (patch: Partial<FamilyCreationDefaults>) => saveDefaults.mutate(patch);
 
   return (
     <AdminSection title={t("admin.title")} description={t("admin.description")}>
@@ -41,7 +57,23 @@ export function FamilySwitchesSection() {
             active={current.guests}
             onChange={(guests) => set({ guests })}
           />
-          {save.isError && <p role="alert" className="text-sm text-status-error-fg">{t("admin.saveError")}</p>}
+          {creationRights && defaults.data && (
+            <>
+              <SettingToggleRow
+                title={t("admin.createFamilyDefault")}
+                hint={t("admin.createFamilyDefaultHint")}
+                active={defaults.data.createFamily}
+                onChange={(createFamily) => setDefault({ createFamily })}
+              />
+              <SettingToggleRow
+                title={t("admin.createGuestsDefault")}
+                hint={t("admin.createGuestsDefaultHint")}
+                active={defaults.data.createGuests}
+                onChange={(createGuests) => setDefault({ createGuests })}
+              />
+            </>
+          )}
+          {(save.isError || saveDefaults.isError) && <p role="alert" className="text-sm text-status-error-fg">{t("admin.saveError")}</p>}
         </div>
       ) : switches.isError ? (
         <p className="text-sm text-status-error-fg">{t("admin.loadError")}</p>
