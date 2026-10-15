@@ -91,8 +91,8 @@ export const FAMILY_ROUTES = {
    *  qu'il a créés (`family.not_owner` sinon). Son compte Jellyfin est
    *  supprimé (sa lecture est perdue). */
   deleteGuest: { method: "DELETE", path: "/api/family/guests/:userId", callers: ["personal", "ownerTv", "memberTv"] },
-  /** `SetGuestRightsBody` → `FamilyGuestRights`. Le propriétaire SEUL règle les
-   *  droits d'un invité (v2) — « peut demander » : l'invité utilise les
+  /** `SetGuestRightsBody` → `FamilyGuestRights`. Le propriétaire (et, 1.30.0, un parent) règle les
+   *  droits d'un invité — « peut demander » : l'invité utilise les
    *  extensions à SON PROPRE NOM, personne n'agit pour un autre. */
   setGuestRights: {
     method: "PUT",
@@ -108,10 +108,8 @@ export const FAMILY_ROUTES = {
     callers: ["personal"],
     rateLimit: { max: 10, windowMs: MINUTE },
   },
-  /** `SetGuestPhotoBody` → `GuestPhotoDto`. La photo d'un invité (1.30.0) :
-   *  mêmes droits que son PIN — le propriétaire, ou le membre qui l'a créé. Le
-   *  serveur la relaie à Jellyfin avec sa clé (le compte de l'invité n'a pas de
-   *  mot de passe) ; ses TV et « Qui regarde ? » la montrent. */
+  /** `SetGuestPhotoBody` → `GuestPhotoDto`. La photo d'un invité (1.30.0) : mêmes droits que son
+   *  PIN. Relayée à Jellyfin avec la clé du serveur (l'invité n'a pas de mot de passe). */
   setGuestPhoto: {
     method: "PUT",
     path: "/api/family/guests/:userId/photo",
@@ -140,6 +138,23 @@ export const FAMILY_ROUTES = {
     method: "PUT",
     path: "/api/family/members/:userId/rights",
     callers: ["personal", "ownerTv"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
+  /** `SetMemberRoleBody` → `MemberRoleDto` (1.30.0, `family.roles`). Le propriétaire SEUL nomme un
+   *  membre parent ou le lui retire ; jamais un membre sous contrôle parental (`member_parental_refused`). */
+  setMemberRole: {
+    method: "PUT",
+    path: "/api/family/members/:userId/role",
+    callers: ["personal"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
+  /** `SetMemberParentalBody` → `GuestParentalDto` (1.30.0, `family.memberParental`). Le contrôle parental
+   *  d'un MEMBRE mineur, par le propriétaire ou un parent — jamais sur le propriétaire, un parent ni un
+   *  administrateur Jellyfin. Écrit dans SA politique (base ∩ voulu) ; aucun réglage = retiré, base rendue. */
+  setMemberParental: {
+    method: "PUT",
+    path: "/api/family/members/:userId/parental",
+    callers: ["personal"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
   /** `?q=` → `FamilyCandidateDto[]`. v2 : TOUS les comptes du serveur, cachés
@@ -242,6 +257,25 @@ export const FAMILY_ROUTES = {
     path: "/api/admin/family/picker",
     callers: ["admin"],
     rateLimit: { max: 30, windowMs: MINUTE },
+  },
+  // Les droits de création (1.30.0, `family.creationRights`) : un administrateur en session personnelle.
+  /** → `FamilyCreationDefaults`. Le défaut pour un compte `inherit` (NON pour les deux). */
+  adminCreationDefaults: { method: "GET", path: "/api/admin/family/creation", callers: ["admin"] },
+  /** `SetFamilyCreationDefaultsBody` → `FamilyCreationDefaults`. Rien de ce qui existe ne tombe. */
+  adminSetCreationDefaults: {
+    method: "PUT",
+    path: "/api/admin/family/creation",
+    callers: ["admin"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
+  /** → `AccountFamilyRightsDto` : les droits de création d'un compte et sa place dans une famille. */
+  adminAccountRights: { method: "GET", path: "/api/admin/family/accounts/:userId", callers: ["admin"] },
+  /** `SetAccountFamilyRightsBody` → `AccountFamilyRightsDto`. Jamais un invité (`family.guest_account`). */
+  adminSetAccountRights: {
+    method: "PUT",
+    path: "/api/admin/family/accounts/:userId",
+    callers: ["admin"],
+    rateLimit: { max: 60, windowMs: MINUTE },
   },
 } as const satisfies Record<string, FamilyRouteSpec>;
 

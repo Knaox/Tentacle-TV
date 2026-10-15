@@ -20,7 +20,13 @@
  *  invitation, ou le compte qui accepte, en a déjà une) ;
  *  `family.guest_right_required` (un membre sans le droit de créer des
  *  invités) ; `family.owner_must_dissolve` (le propriétaire ne quitte pas sa
- *  famille : il la dissout). */
+ *  famille : il la dissout).
+ *
+ *  1.30.0 : `family.create_family_denied` / `family.create_guests_denied`
+ *  (l'administration ne permet pas à ce compte de fonder une famille / de
+ *  créer des profils invités — `familyRoles.ts`) ; `family.member_parental_refused`
+ *  (un contrôle parental sur le propriétaire, un parent ou un administrateur
+ *  Jellyfin ; ou nommer parent un membre qui en a un). */
 export const FAMILY_ERROR_STATUS = {
   "family.invalid_input": 400,
   "family.pin_format": 400,
@@ -35,6 +41,8 @@ export const FAMILY_ERROR_STATUS = {
   "family.review_account": 403,
   "family.guest_right_required": 403,
   "family.owner_must_dissolve": 403,
+  "family.create_family_denied": 403,
+  "family.create_guests_denied": 403,
   "family.pin_required": 403,
   "family.pin_invalid": 403,
   "family.not_found": 404,
@@ -45,6 +53,7 @@ export const FAMILY_ERROR_STATUS = {
   "family.invite_pending": 409,
   "family.invite_closed": 409,
   "family.enroll_required": 409,
+  "family.member_parental_refused": 409,
   "family.profile_unavailable": 403,
   "family.invite_expired": 410,
   "family.pin_locked": 423,

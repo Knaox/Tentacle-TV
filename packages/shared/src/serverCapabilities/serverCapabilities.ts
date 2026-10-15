@@ -129,6 +129,17 @@ export const SERVER_CAPABILITIES = {
    *  peut partager ; sans le droit, la création est refusée et ses liens existants ne
    *  servent plus rien. Sans la clé, les boutons « Partager » restent comme avant. */
   "share.publicRight": "1.30.0",
+  // ── Lot « droits 2 », S4 : la Famille — parents, membres mineurs, droits de création ──
+  /** Le rôle de PARENT (`PUT /api/family/members/:userId/role`, `FamilyProfileDto.parent`) : le
+   *  propriétaire le donne à un membre, qui gère alors les enfants (invités, membres mineurs). */
+  "family.roles": "1.30.0",
+  /** Le contrôle parental d'un MEMBRE mineur (`PUT /api/family/members/:userId/parental`), écrit
+   *  dans sa politique Jellyfin (base ∩ voulu), base rendue à l'identique au retrait. */
+  "family.memberParental": "1.30.0",
+  /** Les droits de créer une famille et des invités, par compte (`/api/admin/family/accounts/:userId`)
+   *  et leur défaut (`/api/admin/family/creation`) ; `FamilyAccountDto.creation` ; refus
+   *  `family.create_family_denied` / `family.create_guests_denied`. */
+  "family.creationRights": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

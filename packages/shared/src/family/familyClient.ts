@@ -64,8 +64,11 @@ export interface OwnerActions {
 /**
  * Ce que CE compte peut ajouter maintenant (v2) : le propriétaire invite et
  * crée des invités ; un membre crée des invités si le propriétaire le lui
- * permet, n'invite jamais ; un compte sans famille crée la sienne en invitant
- * ou en ajoutant un invité. Vaut aussi pour la gestion des profils de la TV.
+ * permet (un parent, d'office), n'invite jamais ; un compte sans famille crée
+ * la sienne en invitant ou en ajoutant un invité. 1.30.0 : l'administration
+ * dit en plus si ce compte peut fonder une famille et créer des invités
+ * (`account.creation` ; absent, serveur d'avant : rien ne s'y garde). Vaut
+ * aussi pour la gestion des profils de la TV.
  */
 export function familyActions(overview: FamilyOverviewDto): OwnerActions {
   const { account, switches, family } = overview;
@@ -78,15 +81,18 @@ export function familyActions(overview: FamilyOverviewDto): OwnerActions {
         : null;
   const counts = familyCounts(family);
   const tally = { members: counts.members, guests: counts.guests, pendingInvitations: counts.pending };
+  const creation = account.creation;
+  const founding: FamilyErrorCode | null = !family && creation?.createFamily === false ? "family.create_family_denied" : null;
   return {
-    invite: base ?? (family?.role === "member" ? "family.not_owner" : capacityError("member", tally)),
+    invite: base ?? (family?.role === "member" ? "family.not_owner" : founding ?? capacityError("member", tally)),
     addGuest:
       base ??
       (!switches.guests
         ? "family.guests_disabled"
-        : family?.role === "member" && !family.rights.createGuests
-          ? "family.guest_right_required"
-          : capacityError("guest", tally)),
+        : creation?.createGuests === false
+          ? "family.create_guests_denied"
+          : (founding ??
+            (family?.role === "member" && !family.rights.createGuests ? "family.guest_right_required" : capacityError("guest", tally)))),
   };
 }
 
@@ -182,11 +188,12 @@ export interface ProfileActionsCapability {
   guestRequests?: boolean;
 }
 
-/** « Peut demander des films » se règle par le propriétaire, la Famille et les
- *  invités allumés, sur un serveur qui annonce le droit (`guestRequests`). */
+/** « Peut demander des films » se règle par le propriétaire (ou un parent), la Famille
+ *  et les invités allumés, sur un serveur qui annonce le droit (`guestRequests`). */
 function guestRightOf(overview: FamilyOverviewDto, capability: ProfileActionsCapability): FamilyProfileRight | null {
   const { switches, family } = overview;
-  if (!family?.rights.manageMembers || capability.guestRequests !== true) return null;
+  const regulates = family?.rights.manageMembers === true || family?.rights.manageMinors === true;
+  if (!regulates || capability.guestRequests !== true) return null;
   return switches.families && switches.guests ? "requestTitles" : null;
 }
 

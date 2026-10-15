@@ -5,11 +5,13 @@ const ON = { families: true, guests: true };
 
 describe("familyRightsOf", () => {
   it("le propriétaire gère les membres et TOUS les invités", () => {
-    expect(familyRightsOf("owner", null, ON)).toEqual({ manageMembers: true, createGuests: true, manageGuests: "all" });
+    expect(familyRightsOf("owner", null, ON)).toEqual({ manageMembers: true, createGuests: true, manageGuests: "all", manageRoles: true, manageMinors: true });
   });
 
   it("un membre ne gère que SES invités, et n'en crée que si le propriétaire le lui permet", () => {
-    expect(familyRightsOf("member", { createGuests: false }, ON)).toEqual({ manageMembers: false, createGuests: false, manageGuests: "own" });
+    expect(familyRightsOf("member", { createGuests: false }, ON)).toEqual({
+      manageMembers: false, createGuests: false, manageGuests: "own", manageRoles: false, manageMinors: false,
+    });
     expect(familyRightsOf("member", { createGuests: true }, ON).createGuests).toBe(true);
     expect(familyRightsOf("member", null, ON).createGuests).toBe(false);
   });
@@ -19,12 +21,43 @@ describe("familyRightsOf", () => {
       manageMembers: true,
       createGuests: false,
       manageGuests: "all",
+      manageRoles: true,
+      manageMinors: true,
     });
     expect(familyRightsOf("member", { createGuests: true }, { families: false, guests: true }).createGuests).toBe(false);
   });
 
   it("sans rôle : rien", () => {
-    expect(familyRightsOf(null, null, ON)).toEqual({ manageMembers: false, createGuests: false, manageGuests: "none" });
+    expect(familyRightsOf(null, null, ON)).toEqual({
+      manageMembers: false, createGuests: false, manageGuests: "none", manageRoles: false, manageMinors: false,
+    });
+  });
+});
+
+describe("familyRightsOf — parents et droits de création (1.30.0)", () => {
+  it("un parent gère TOUS les invités et les membres mineurs, sans gérer les membres ni les rôles", () => {
+    expect(familyRightsOf("member", { createGuests: false }, ON, { parent: true })).toEqual({
+      manageMembers: false, createGuests: true, manageGuests: "all", manageRoles: false, manageMinors: true,
+    });
+  });
+
+  it("le droit de compte que donne l'administration garde la création, pour tous", () => {
+    const denied = { creation: { createFamily: true, createGuests: false } };
+    expect(familyRightsOf("owner", null, ON, denied).createGuests).toBe(false);
+    expect(familyRightsOf("member", { createGuests: true }, ON, { ...denied, parent: true }).createGuests).toBe(false);
+    expect(familyRightsOf("member", { createGuests: true }, ON, denied).createGuests).toBe(false);
+  });
+
+  it("un membre permis par le propriétaire ET par l'administration crée ; les interrupteurs restent maîtres", () => {
+    const allowed = { creation: { createFamily: false, createGuests: true } };
+    expect(familyRightsOf("member", { createGuests: true }, ON, allowed).createGuests).toBe(true);
+    expect(familyRightsOf("member", { createGuests: false }, ON, allowed).createGuests).toBe(false);
+    expect(familyRightsOf("owner", null, { families: true, guests: false }, allowed).createGuests).toBe(false);
+  });
+
+  it("un parent gère les invités d'un autre membre", () => {
+    const parent = familyRightsOf("member", null, ON, { parent: true });
+    expect(canManageGuest(parent, "lea", "hugo")).toBe(true);
   });
 });
 

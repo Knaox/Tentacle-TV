@@ -1,6 +1,7 @@
 import type {
   FamilyCandidateDto,
   FamilyCandidateStatus,
+  FamilyCreationAllowed,
   FamilyMemberRights,
   FamilyRights,
   FamilyRole,
@@ -23,28 +24,44 @@ function fold(id: string): string {
 
 // ── Droits ──────────────────────────────────────────────────────────────────
 
+/** Ce que la vue d'ensemble ajoute au rôle (1.30.0) ; absent : comme avant. */
+export interface FamilyRightsContext {
+  /** Ce membre est PARENT (`family.roles`). */
+  parent?: boolean;
+  /** Ce que l'administration permet à ce compte de créer (`family.creationRights`) ; absent : tout. */
+  creation?: FamilyCreationAllowed;
+}
+
 /**
  * Ce que peut un compte dans sa famille. Le propriétaire gère les membres et
- * tous les invités ; un membre, les invités qu'il a créés — et en crée s'il en
- * a le droit. Créer exige la Famille et les invités allumés ; gérer ce qui
- * existe, non (on peut toujours retirer, supprimer, dissoudre). Sans rôle :
- * rien.
+ * tous les invités ; un PARENT, tous les invités et les membres mineurs ; un
+ * membre, les invités qu'il a créés — et en crée s'il en a le droit (un parent
+ * l'a d'office). Créer exige la Famille et les invités allumés, et le droit de
+ * compte que donne l'administration ; gérer ce qui existe, non (on peut
+ * toujours retirer, supprimer, dissoudre). Sans rôle : rien.
  */
 export function familyRightsOf(
   role: FamilyRole | null,
   memberRights: FamilyMemberRights | null,
   switches: FamilySwitches,
+  context: FamilyRightsContext = {},
 ): FamilyRights {
-  const creation = switches.families && switches.guests;
-  if (role === "owner") return { manageMembers: true, createGuests: creation, manageGuests: "all" };
-  if (role === "member") {
-    return { manageMembers: false, createGuests: creation && memberRights?.createGuests === true, manageGuests: "own" };
+  const creation = switches.families && switches.guests && context.creation?.createGuests !== false;
+  if (role === "owner") {
+    return { manageMembers: true, createGuests: creation, manageGuests: "all", manageRoles: true, manageMinors: true };
   }
-  return { manageMembers: false, createGuests: false, manageGuests: "none" };
+  if (role === "member" && context.parent === true) {
+    return { manageMembers: false, createGuests: creation, manageGuests: "all", manageRoles: false, manageMinors: true };
+  }
+  if (role === "member") {
+    const createGuests = creation && memberRights?.createGuests === true;
+    return { manageMembers: false, createGuests, manageGuests: "own", manageRoles: false, manageMinors: false };
+  }
+  return { manageMembers: false, createGuests: false, manageGuests: "none", manageRoles: false, manageMinors: false };
 }
 
-/** Supprimer cet invité, poser son PIN et sa photo : le propriétaire, tout
- *  invité de sa famille ; un membre, ceux qu'il a créés (`createdBy`). */
+/** Supprimer cet invité, poser son PIN et sa photo : le propriétaire (et un
+ *  parent), tout invité de sa famille ; un membre, ceux qu'il a créés (`createdBy`). */
 export function canManageGuest(rights: FamilyRights, createdBy: string | null, actorUserId: string): boolean {
   if (rights.manageGuests === "all") return true;
   return rights.manageGuests === "own" && createdBy !== null && fold(createdBy) === fold(actorUserId);

@@ -23,13 +23,13 @@ const ON = { families: true, guests: true };
 // ── SEC-F-37/38 : ce que chaque rôle peut ────────────────────────────────────
 describe("SEC-F-37/38 : les droits se déduisent du rôle, jamais d'un client", () => {
   it("le propriétaire gère les membres et TOUS les invités ; il crée si la Famille et les invités sont allumés", () => {
-    expect(familyRightsOf("owner", null, ON)).toEqual({ manageMembers: true, createGuests: true, manageGuests: "all" });
+    expect(familyRightsOf("owner", null, ON)).toEqual({ manageMembers: true, createGuests: true, manageGuests: "all", manageRoles: true, manageMinors: true });
     expect(familyRightsOf("owner", null, { families: true, guests: false }).createGuests).toBe(false);
   });
 
   it("un membre ne gère jamais les membres, ne gère QUE ses invités, et ne crée QUE si le propriétaire lui en a donné le droit", () => {
     const withRight = familyRightsOf("member", { createGuests: true }, ON);
-    expect(withRight).toEqual({ manageMembers: false, createGuests: true, manageGuests: "own" });
+    expect(withRight).toEqual({ manageMembers: false, createGuests: true, manageGuests: "own", manageRoles: false, manageMinors: false });
     // Droit par défaut = coupé.
     expect(familyRightsOf("member", FAMILY_DEFAULT_MEMBER_RIGHTS, ON).createGuests).toBe(false);
     expect(familyRightsOf("member", null, ON).createGuests).toBe(false);
@@ -38,7 +38,7 @@ describe("SEC-F-37/38 : les droits se déduisent du rôle, jamais d'un client", 
   });
 
   it("sans rôle (hors de la famille) : aucun droit", () => {
-    expect(familyRightsOf(null, null, ON)).toEqual({ manageMembers: false, createGuests: false, manageGuests: "none" });
+    expect(familyRightsOf(null, null, ON)).toEqual({ manageMembers: false, createGuests: false, manageGuests: "none", manageRoles: false, manageMinors: false });
     expect(familyRightsOf(null, { createGuests: true }, ON).createGuests).toBe(false);
   });
 });

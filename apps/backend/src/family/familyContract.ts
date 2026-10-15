@@ -11,14 +11,16 @@
  * backend ne dépend pas de `@tentacle-tv/shared`). On modifie ICI, on recopie
  * là-bas :
  *
- *   cp packages/shared/src/family/family{Contract,Limits,Parental,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
  *
  * UNE famille par compte, PARTAGÉE par tous ses membres (v2). Trois rôles :
  * - le PROPRIÉTAIRE l'a créée : il invite, annule une invitation, retire un
  *   membre, règle les droits des membres et dissout — il ne la quitte pas ;
  * - le MEMBRE, un compte existant qui a accepté une invitation : il voit toute
  *   la famille, ses TV la montrent, il crée des invités si le propriétaire le
- *   lui permet, et ne gère que ceux-là ;
+ *   lui permet, et ne gère que ceux-là — un membre que le propriétaire a nommé
+ *   PARENT (1.30.0, `familyRoles.ts`) gère en plus les enfants : tous les
+ *   invités et le contrôle parental des membres mineurs ;
  * - l'INVITÉ, un vrai compte Jellyfin créé par le serveur, caché, au mot de
  *   passe jeté : seules les TV de la famille l'ouvrent.
  * Un compte n'appartient qu'à UNE famille, propriétaire OU membre : la base
@@ -30,12 +32,15 @@
  *  2 : famille partagée, une famille par compte, droits des membres. */
 export const FAMILY_CONTRACT_VERSION = 2;
 
-// Les limites (`familyLimits.ts`) et le contrôle parental des invités (`familyParental.ts`),
+// Les limites (`familyLimits.ts`), le contrôle parental des invités (`familyParental.ts`), les
+// rôles et droits de création (`familyRoles.ts`) et les corps des requêtes (`familyBodies.ts`),
 // ré-exportés ici — `import { FAMILY_… } from "./familyContract"` reste valable partout.
 export * from "./familyLimits";
 export * from "./familyParental";
-import type { FamilyGuestPhotoType } from "./familyLimits";
+export * from "./familyRoles";
+export * from "./familyBodies";
 import type { GuestParentalCeiling, GuestParentalControls } from "./familyParental";
+import type { FamilyCreationAllowed } from "./familyRoles";
 
 /** Les couleurs d'un profil — des NOMS de jetons, chaque client les peint. */
 export const FAMILY_PROFILE_COLORS = ["violet", "pink", "blue", "teal", "green", "amber", "orange", "red"] as const;
@@ -112,6 +117,11 @@ export interface FamilyRights {
    *  membre : les invités qu'il a créés, même si on lui a retiré le droit d'en
    *  créer), `none`. Règle : `canManageGuest`. */
   manageGuests: "all" | "own" | "none";
+  /** 1.30.0 (`family.roles`) : nommer ou retirer un parent — le propriétaire seul. Absent : non. */
+  manageRoles?: boolean;
+  /** 1.30.0 (`family.memberParental`) : le contrôle parental des membres mineurs — le
+   *  propriétaire et les parents. Absent : non. */
+  manageMinors?: boolean;
 }
 
 /** Un profil de la famille, tel que le web, le bureau, le mobile et la
@@ -136,8 +146,13 @@ export interface FamilyProfileDto {
   rights: FamilyMemberRights | null;
   /** Un invité : ce que le propriétaire lui permet ; null sinon (absent : aucun droit). */
   guestRights?: FamilyGuestRights | null;
+  /** Un membre (1.30.0, `family.roles`) : le propriétaire l'a nommé PARENT. Absent : non. */
+  parent?: boolean;
   /** Un invité (1.30.0), rendu SEULEMENT à qui peut le régler (absent sinon) : le
-   *  contrôle parental VOULU, puis le plafond de son créateur (null : Jellyfin muet). */
+   *  contrôle parental VOULU, puis le plafond de son créateur (null : Jellyfin muet).
+   *  Un MEMBRE qui peut être restreint (`family.memberParental`), rendu au propriétaire
+   *  et aux parents seulement : le contrôle voulu (`GUEST_PARENTAL_NONE` : aucun), et
+   *  pour plafond SA politique de base, celle que règle l'administrateur. */
   parental?: GuestParentalControls | null;
   parentalCeiling?: GuestParentalCeiling | null;
 }
@@ -158,6 +173,8 @@ export interface FamilyDto {
   id: string;
   /** Le rôle de CE compte. */
   role: FamilyRole;
+  /** 1.30.0 (`family.roles`) : CE compte, membre, est parent. Absent : non. */
+  parent?: boolean;
   owner: { userId: string; name: string };
   profiles: FamilyProfileDto[];
   /** Les invitations en attente : rendues au propriétaire seulement (vide pour un membre). */
@@ -213,6 +230,9 @@ export interface FamilyAccountDto {
   /** La session de la requête peut faire les gestes PERSONNELS (accepter,
    *  refuser, quitter, son PIN, dissoudre) : web, bureau, mobile seulement. */
   personalSession: boolean;
+  /** 1.30.0 (`family.creationRights`) : ce que l'administration permet à CE compte de
+   *  créer, interrupteurs compris. Absent : serveur d'avant, rien ne s'y garde. */
+  creation?: FamilyCreationAllowed;
 }
 
 /** `GET /api/family` — l'état de la Famille pour ce compte. */
@@ -242,60 +262,4 @@ export interface FamilyCandidateDto {
   name: string;
   imageTag: string | null;
   status: FamilyCandidateStatus;
-}
-
-// ── Corps des requêtes ──────────────────────────────────────────────────────
-
-export interface CreateGuestBody {
-  name: string;
-  color: FamilyProfileColor;
-}
-
-/** `null` retire le PIN. Poser, changer ou retirer un PIN coupe le profil sur les TV. */
-export interface SetPinBody {
-  pin: string | null;
-}
-
-/** Son PIN, par soi-même (`setOwnPin`) : depuis une session personnelle, ou
- *  depuis SA session de profil sur une TV — l'acteur est toujours la session,
- *  jamais un identifiant du corps. */
-export interface SetOwnPinBody extends SetPinBody {
-  /** Le PIN actuel : EXIGÉ dès que le compte en a un, sur toute session.
-   *  Vérifié comme à l'ouverture d'un profil — même compteur par profil, même
-   *  blocage : `family.pin_required`, `family.pin_invalid` (`attemptsLeft`),
-   *  `family.pin_locked` (`lockedUntil`). Ignoré sans PIN posé. */
-  currentPin?: string;
-}
-
-/** La photo d'un invité (`setGuestPhoto`) : l'image en base64 nu, comme
- *  Jellyfin la reçoit — un personnage de la galerie ou une photo importée. */
-export interface SetGuestPhotoBody {
-  image: string;
-  type: FamilyGuestPhotoType;
-}
-
-/** → sa nouvelle étiquette (`PrimaryImageTag`) ; null si Jellyfin ne la dit pas encore. */
-export interface GuestPhotoDto {
-  imageTag: string | null;
-}
-
-export interface InviteBody {
-  userId: string;
-}
-
-/** Le propriétaire règle les droits d'un membre : seuls les champs présents changent. */
-export type SetMemberRightsBody = Partial<FamilyMemberRights>;
-
-/** Le propriétaire règle les droits d'un invité : seuls les champs présents changent. */
-export type SetGuestRightsBody = Partial<FamilyGuestRights>;
-
-/** La dissolution exige ce mot, en toutes lettres. */
-export interface DissolveBody {
-  confirm: "dissolve";
-}
-
-/** Un geste sur une invitation : son identifiant voyage dans le CORPS, jamais
- *  dans l'URL (le serveur journalise ses URL). */
-export interface InvitationActionBody {
-  id: string;
 }

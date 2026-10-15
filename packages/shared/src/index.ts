@@ -191,6 +191,7 @@ export * from "./family/familyRules";
 export * from "./family/familyRights";
 export * from "./family/familyLabels";
 export * from "./family/familyClient";
+export * from "./family/familyRolesClient";
 export * from "./family/familyPickerClient";
 export * from "./family/familyPickerStay";
 export * from "./family/familyPickerDevice";
