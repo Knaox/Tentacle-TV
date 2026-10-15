@@ -105,8 +105,14 @@ export function stillWatchingNeedsPause(session: StillWatchingSession, playing: 
   return now - session.pausedAt < STILL_WATCHING_PAUSE_GRACE_MS;
 }
 
-/** Le temps qui reste avant la pause, pendant la question ; 0 sinon. */
+/**
+ * Le temps qui reste avant la pause, pendant la question ; 0 sinon. Jamais
+ * plus que le décompte : une horloge lue AVANT la question (le premier rendu
+ * de l'encart garde celle de son dernier battement) ne l'allonge pas — la
+ * barre, armée une fois sur ce temps, se viderait bien après la pause.
+ */
 export function stillWatchingRemainingMs(session: StillWatchingSession, now: number, settings: StillWatchingSettings): number {
   if (session.phase !== "asking" || session.askedAt === null) return 0;
-  return Math.max(0, settings.countdownMs - (now - session.askedAt));
+  const elapsed = Math.max(0, now - session.askedAt);
+  return Math.max(0, settings.countdownMs - elapsed);
 }

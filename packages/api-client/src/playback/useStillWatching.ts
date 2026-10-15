@@ -123,6 +123,20 @@ const subscribeSession = (callback: () => void) => {
 };
 const readPhase = () => session.phase;
 
+interface TickSources {
+  playing: boolean;
+  settings: StillWatchingSettings;
+  pause: () => void;
+}
+
+/** Un battement du minuteur : la session avance, et la pause qu'elle demande est appliquée. */
+function runTick({ playing, settings, pause }: TickSources): void {
+  const now = Date.now();
+  // « Essayer », dans les Réglages : la question avancée, une fois (`stillWatchingTrialStore.ts`).
+  setSession(tickWithStillWatchingTrial(session, { now, playing, settings }));
+  if (stillWatchingNeedsPause(session, playing, now)) pause();
+}
+
 /** Pour les bancs et les tests : repartir d'une session vierge. */
 export function resetStillWatchingSession(): void {
   lastUnmountAt = null;
@@ -178,17 +192,19 @@ export function useStillWatching(options: UseStillWatchingOptions): StillWatchin
       setSession(initialStillWatchingSession());
       return;
     }
-    const timer = setInterval(() => {
-      const now = Date.now();
-      const { playing: isPlaying, settings: current, pause } = latest.current;
-      // « Essayer », dans les Réglages : la question avancée, une fois (`stillWatchingTrialStore.ts`).
-      setSession(tickWithStillWatchingTrial(session, { now, playing: isPlaying, settings: current }));
-      if (stillWatchingNeedsPause(session, isPlaying, now)) pause();
-    }, TICK_MS);
+    const timer = setInterval(() => runTick(latest.current), TICK_MS);
     return () => clearInterval(timer);
   }, [active]);
 
   const phase = useSyncExternalStore(subscribeSession, readPhase, readPhase);
+
+  // L'échéance de la question tombe ENTRE deux battements : un battement de plus, posé
+  // dessus, met la pause à l'instant où la barre se vide — pas jusqu'à une seconde après.
+  useEffect(() => {
+    if (!active || phase !== "asking") return;
+    const timer = setTimeout(() => runTick(latest.current), stillWatchingRemainingMs(session, Date.now(), latest.current.settings));
+    return () => clearTimeout(timer);
+  }, [active, phase]);
 
   // Le décompte affiché : une horloge qui ne bat que pendant la question.
   const [clock, setClock] = useState(() => Date.now());

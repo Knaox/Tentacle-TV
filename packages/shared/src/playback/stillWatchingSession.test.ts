@@ -33,6 +33,15 @@ describe("« Vous regardez encore ? » — le minuteur", () => {
     expect(stillWatchingNeedsPause(session, true, 14_500)).toBe(true);
   });
 
+  it("le temps restant ne dépasse jamais le décompte, même lu sur une horloge d'avant la question", () => {
+    const asking = run(initialStillWatchingSession(), 0, 10_000);
+    expect(asking.askedAt).toBe(10_000);
+    // L'horloge de l'encart, figée au montage du lecteur : la barre s'armerait sur 14 s au lieu de 4.
+    expect(stillWatchingRemainingMs(asking, 0, settings)).toBe(settings.countdownMs);
+    expect(stillWatchingRemainingMs(asking, 10_000, settings)).toBe(settings.countdownMs);
+    expect(stillWatchingRemainingMs(asking, 15_000, settings)).toBe(0);
+  });
+
   it("ne compte pas une pause ni un sommeil de l'appareil", () => {
     let session = run(initialStillWatchingSession(), 0, 5_000);
     session = run(session, 6_000, 60_000, false);
