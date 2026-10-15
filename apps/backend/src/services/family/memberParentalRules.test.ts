@@ -53,6 +53,13 @@ describe("rebaseMemberParental", () => {
     expect(memberParentalTarget(next, WANTED).maxParentalRating).toBe(6);
   });
 
+  it("la note relevée seule : la sous-note de la famille n'entre pas dans la base", () => {
+    const withSub = memberParentalTarget(BASE, { ...WANTED, maxParentalSubRating: 2 });
+    expect(withSub.maxParentalSubRating).toBe(2);
+    const next = rebaseMemberParental(BASE, withSub, { ...withSub, maxParentalRating: 17 });
+    expect([next.maxParentalRating, next.maxParentalSubRating]).toEqual([17, null]);
+  });
+
   it("une étiquette ajoutée par l'administrateur entre dans la base ; celle de la famille, jamais", () => {
     const next = rebaseMemberParental(BASE, written, { ...written, blockedTags: ["horreur", "guerre", "zombies"] });
     expect(next.blockedTags).toEqual(["horreur", "zombies"]);

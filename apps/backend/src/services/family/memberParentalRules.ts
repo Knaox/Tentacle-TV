@@ -60,10 +60,10 @@ function adminPart<T extends string>(current: readonly T[], previous: readonly T
  */
 export function rebaseMemberParental(base: GuestParentalCeiling, previous: GuestParentalCeiling, current: GuestParentalCeiling): GuestParentalCeiling {
   const next: GuestParentalCeiling = { ...base };
-  if (current.maxParentalRating !== previous.maxParentalRating || current.maxParentalSubRating !== previous.maxParentalSubRating) {
-    next.maxParentalRating = current.maxParentalRating;
-    next.maxParentalSubRating = current.maxParentalSubRating;
-  }
+  // Note et sous-note chacune pour soi : relever la note seule ne fait pas entrer la sous-note
+  // de la famille dans la base (prouvé sur Jellyfin 10.11 : « Approved » porte une sous-note).
+  if (current.maxParentalRating !== previous.maxParentalRating) next.maxParentalRating = current.maxParentalRating;
+  if (current.maxParentalSubRating !== previous.maxParentalSubRating) next.maxParentalSubRating = current.maxParentalSubRating;
   if (!sameSet(current.blockUnratedItems, previous.blockUnratedItems)) {
     next.blockUnratedItems = adminPart(current.blockUnratedItems, previous.blockUnratedItems, base.blockUnratedItems, (value) => value);
   }
