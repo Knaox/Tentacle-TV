@@ -85,6 +85,13 @@ describe("titleScore — le pays de métadonnées, puis les États-Unis", () => 
     expect(titleScore(movie({ GB: ["15"] }), FR)).toBeNull();
   });
 
+  it("un pays présent sans classification lisible arrête la recherche (comme Jellyfin : « FR-NR » = non classé)", () => {
+    // Planet Earth II et 31 Minutes, relevés chez TMDB au banc du contrôle parental.
+    expect(titleScore({ mediaType: "tv", adult: false, byCountry: { FR: ["NR"], US: ["TV-G"], DE: ["0"] }, keywords: [] }, FR)).toBeNull();
+    expect(titleScore({ mediaType: "tv", adult: false, byCountry: { US: ["NR"], BR: ["L"], MX: ["AA"] }, keywords: [] }, FR)).toBeNull();
+    expect(titleScore(movie({ FR: ["Inconnue"], US: ["G"] }), FR)).toBeNull();
+  });
+
   it("une SÉRIE sans l'un ni l'autre prend la plus stricte des autres", () => {
     const series: TitleCertifications = { mediaType: "tv", adult: false, byCountry: { GB: ["12"], DE: ["16"] }, keywords: [] };
     expect(titleScore(series, FR)).toEqual({ score: 16, subScore: null });

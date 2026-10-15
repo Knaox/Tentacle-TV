@@ -38,16 +38,20 @@ function strictestOf(country: string, certifications: readonly string[], context
  * une SÉRIE sans l'un ni l'autre prend la plus stricte des autres (Jellyfin
  * prendrait la première : la plus stricte n'est jamais plus large). Dans un pays,
  * plusieurs sorties : la plus stricte.
+ *
+ * Un pays PRÉSENT mais sans aucune classification lisible (« NR », « Unrated »,
+ * une chaîne inconnue) arrête la recherche : Jellyfin prend la classification de
+ * ce pays dès qu'elle existe (« FR-NR » = non classé) et ne passe jamais au suivant.
+ * Repli qui laissait passer, au banc du contrôle parental, Planet Earth II
+ * (FR « NR », US « TV-G ») et 31 Minutes (US « NR ») à un compte « 6 ans ».
  */
 export function titleScore(title: TitleCertifications, context: RatingContext): RatingScore | null {
   const countries = Object.keys(title.byCountry);
   const find = (code: string | null) => (code ? countries.find((country) => country.toUpperCase() === code.toUpperCase()) : undefined);
   const own = find(context.metadataCountry);
-  const ownScore = own ? strictestOf(own, title.byCountry[own], context) : null;
-  if (ownScore) return ownScore;
+  if (own) return strictestOf(own, title.byCountry[own], context);
   const us = find("US");
-  const usScore = us ? strictestOf(us, title.byCountry[us], context) : null;
-  if (usScore) return usScore;
+  if (us) return strictestOf(us, title.byCountry[us], context);
   if (title.mediaType !== "tv") return null;
   let result: RatingScore | null = null;
   for (const country of countries) result = stricter(result, strictestOf(country, title.byCountry[country], context));
