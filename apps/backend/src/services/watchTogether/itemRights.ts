@@ -19,6 +19,7 @@
  */
 
 import { isItemVisibleTo } from "../itemAccess/itemVisibility";
+import { createRoomQueue } from "./roomQueue";
 import type { Room } from "./roomTypes";
 
 /** Les membres du salon qui ne voient PAS ce titre (Jellyfin muet : aucun ne le voit). */
@@ -33,32 +34,9 @@ export async function seesRoomItem(room: Room, userId: string): Promise<boolean>
   return room.itemId ? isItemVisibleTo(userId, room.itemId) : true;
 }
 
-interface Queue {
-  tail: Promise<void>;
-  pending: number;
-}
-
-const queues = new WeakMap<Room, Queue>();
-
 /**
  * Exécute `task` dans l'ordre d'arrivée des messages du salon : tout de suite
  * si rien n'attend, sinon derrière ce qui attend. `async` : la tâche ouvre une
  * attente que les messages suivants respecteront.
  */
-export function inRoomOrder(room: Room, task: () => void | Promise<void>, async = false): void {
-  const queue = queues.get(room);
-  if (!queue && !async) {
-    task();
-    return;
-  }
-  const current = queue ?? { tail: Promise.resolve(), pending: 0 };
-  queues.set(room, current);
-  current.pending += 1;
-  current.tail = current.tail
-    .then(task)
-    .catch(() => {})
-    .finally(() => {
-      current.pending -= 1;
-      if (current.pending === 0 && queues.get(room) === current) queues.delete(room);
-    });
-}
+export const inRoomOrder = createRoomQueue();
