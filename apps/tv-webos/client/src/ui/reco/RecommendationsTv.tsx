@@ -42,7 +42,8 @@ export function RecommendationsTv() {
   // millisecondes plus tard, n'avait plus le focus d'entrée.
   const shelvesReady = !hero || heroItem !== undefined || heroFailed;
 
-  const noticeText = notice === "disabled" ? t("tvDisabledHint")
+  const noticeText = notice === "tmdbOff" ? `${t("tmdbOffText")} ${t("tmdbOffDeviceHint")}`
+    : notice === "disabled" ? t("tvDisabledHint")
     : notice === "cold" ? t("tvColdHint")
     : notice === "preparing" ? t("generatingHint")
     : page && shelves.length === 0 && !hero ? t("tvEmpty")

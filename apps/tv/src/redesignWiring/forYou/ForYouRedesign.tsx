@@ -96,13 +96,19 @@ export function ForYouRedesign({ navigation }: Props) {
     }
     if (models.loading || heroPending) return { kind: "loading", title: t("common:loading") };
     if (models.notice === "preparing") return { kind: "loading", title: t("reco:tvPreparingTitle"), message: t("reco:generatingHint") };
+    // Sans clé TMDB, « vos premiers visionnages nourriront cette page » serait faux.
+    if (models.empty && models.notice === "tmdbOff") {
+      return { kind: "empty", title: t("reco:tvTmdbOffTitle"), message: `${t("reco:tmdbOffText")} ${t("reco:tmdbOffDeviceHint")}` };
+    }
     if (models.empty) return { kind: "empty", title: t("reco:tvEmptyTitle"), message: t("reco:tvEmpty") };
     return null;
   }, [models.isError, models.loading, heroPending, models.notice, models.empty, models.refetch, t]);
 
   const notice = useMemo(
     () =>
-      models.notice === "disabled"
+      models.notice === "tmdbOff"
+        ? { kind: "disabled" as const, text: `${t("reco:tmdbOffText")} ${t("reco:tmdbOffDeviceHint")}` }
+        : models.notice === "disabled"
         ? { kind: "disabled" as const, text: t("reco:tvDisabledHint") }
         : models.notice === "cold"
           ? { kind: "cold" as const, text: t("reco:tvColdHint") }

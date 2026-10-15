@@ -31,6 +31,10 @@ export interface TvRecoRowLike<T extends TvRecoItemLike> {
 
 export interface TvRecoPageLike<T extends TvRecoItemLike> {
   state: "disabled" | "cold" | "warming" | "ready";
+  /** `false` : aucune clé TMDB sur le serveur — la reco n'est pas activée
+   *  (cause d'un « disabled » qui n'est pas le réglage du compte). Absent : un
+   *  serveur qui n'en dit rien, comme avant. */
+  tmdbConfigured?: boolean;
   generating: boolean;
   refining: boolean;
   rows: readonly TvRecoRowLike<T>[];
@@ -106,14 +110,16 @@ export function tvRecoShelves<T extends TvRecoItemLike>(
   return kept.length > 0 ? kept : shelves;
 }
 
-/** Ce que la page dit d'elle-même, au-dessus des étagères. */
-export type TvRecoNotice = "disabled" | "cold" | "preparing" | null;
+/** Ce que la page dit d'elle-même, au-dessus des étagères. `tmdbOff` : pas de
+ *  clé TMDB sur le serveur — ni le compte ni la TV n'y peuvent rien. */
+export type TvRecoNotice = "tmdbOff" | "disabled" | "cold" | "preparing" | null;
 
 export function tvRecoNotice<T extends TvRecoItemLike>(
   page: TvRecoPageLike<T> | undefined,
   shelves: readonly TvRecoShelf<T>[],
 ): TvRecoNotice {
   if (!page) return null;
+  if (page.tmdbConfigured === false) return "tmdbOff";
   if (page.state === "disabled") return "disabled";
   // Rien encore à montrer mais le moteur y travaille : on le dit plutôt
   // qu'une page vide.

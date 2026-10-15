@@ -92,6 +92,10 @@ describe("tvRecoNotice", () => {
   it("dit la préparation plutôt qu'une page vide", () => {
     expect(tvRecoNotice(page([], { generating: true }), [])).toBe("preparing");
     expect(tvRecoNotice(page([], { state: "disabled" }), [])).toBe("disabled");
+    // Pas de clé TMDB : la cause est le serveur, pas le compte — même si les
+    // rangées globales (bibliothèque) sont servies.
+    expect(tvRecoNotice(page([], { state: "disabled", tmdbConfigured: false }), [])).toBe("tmdbOff");
+    expect(tvRecoNotice(page([], { state: "disabled", tmdbConfigured: true }), [])).toBe("disabled");
     const p = page([{ key: "forYou", items: [lib("a"), lib("b"), lib("c")] }], { state: "cold" });
     expect(tvRecoNotice(p, tvRecoShelves(p))).toBe("cold");
     expect(tvRecoNotice(page([{ key: "forYou", items: [lib("a")] }]), [])).toBeNull();
