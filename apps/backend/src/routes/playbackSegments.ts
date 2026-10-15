@@ -42,7 +42,7 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
     const viewer = (request as FastifyRequest & { user?: JellyfinUser }).user?.userId ?? "";
     if (!(await isItemVisibleTo(viewer, itemId))) {
       reply.header("cache-control", "no-store");
-      return resolvePlaybackSegments(itemId, 0, { tail: null, audio: null }, new Date().toISOString(), null);
+      return resolvePlaybackSegments(itemId, 0, { tail: null }, new Date().toISOString(), null);
     }
 
     const bundle = await getSegmentSourceBundle(itemId);

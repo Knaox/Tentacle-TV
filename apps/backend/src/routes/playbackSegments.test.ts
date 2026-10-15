@@ -201,7 +201,6 @@ describe("GET /api/playback/segments/:itemId", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ version: 1, runtimeMs: 0, segments: [] });
     expect(tailMocks.startTailAnalysis).not.toHaveBeenCalled();
-    expect(audioMocks.enqueueAudioAnalysis).not.toHaveBeenCalled();
   });
 
   it("Jellyfin muet : 200 et une réponse vide — le lecteur doit lire quand même", async () => {
