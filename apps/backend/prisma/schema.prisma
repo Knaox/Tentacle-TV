@@ -79,6 +79,11 @@ model Notification {
   title           String
   body            String?
   refId           String?   // ticket or request ID
+  /// Où mène la notification (JSON du contrat `notifications/notificationTarget.ts`) ;
+  /// null = la route tirée du type, comme avant. Posée par l'émetteur (cœur ou extension).
+  target          String?
+  /// L'état de ce dont elle parle (`NOTIFICATION_STATES`) ; null = pas de pastille.
+  state           String?
   read            Boolean   @default(false)
   createdAt       DateTime  @default(now())
   pushedAt        DateTime? // horodatage de livraison push (null = pas encore poussée)

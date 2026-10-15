@@ -5,6 +5,7 @@ import { existsSync, readFileSync, readdirSync } from "fs";
 import { getInstalled, DATA_DIR } from "./pluginManager";
 import { serverModuleCandidates } from "./pluginServerModule";
 import { storageRefusal } from "./pluginStorage/gate";
+import { NOTIFICATION_EXTRA_FIELDS } from "../notifications/notificationTarget";
 
 /** Diagnostic info collected during loading (exposed via /api/health) */
 export const pluginBackendDiag: {
@@ -52,6 +53,13 @@ export interface PluginBackendContext {
    * refuse (fermé à l'échec).
    */
   contentPolicy?: import("./contentPolicy").ContentPolicyBridge;
+  /**
+   * Les colonnes ADDITIVES de `notifications` que ce cœur connaît (1.30.0 :
+   * « target », « state » — contrat `notifications/notificationTarget.ts`).
+   * Une extension n'écrit une colonne par `getPrisma()` que si elle est
+   * listée : un cœur d'avant refuserait le champ inconnu.
+   */
+  notificationFields: readonly string[];
 }
 
 export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
@@ -152,6 +160,7 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
         requireAdmin,
         storage: createHostPluginStorage(plugin.pluginId),
         contentPolicy: contentPolicyBridge(),
+        notificationFields: NOTIFICATION_EXTRA_FIELDS,
         recommendations: {
           // Jamais une panne pour l'extension : la demande est faite, le masquage est un plus.
           titleRequested: async (userId, title) => {

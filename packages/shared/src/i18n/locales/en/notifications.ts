@@ -42,6 +42,21 @@ export default {
   updateNewVersion: "New version",
   updateErrorTitle: "The update did not complete",
   // Deletion
+  // The panel: day groups, empty state, the state of what the notification
+  // is about (badge). Also read by mobile: never the word "download".
+  groupToday: "Today",
+  groupEarlier: "Earlier",
+  emptyTitle: "You're all caught up",
+  emptyHint: "New arrivals, your requests and support replies will show up here.",
+  unreadCount_one: "{{count}} unread",
+  unreadCount_other: "{{count}} unread",
+  stateAvailable: "Available",
+  stateProgress: "On its way",
+  statePending: "Pending",
+  stateBlocked: "Blocked",
+  stateDeclined: "Declined",
+  stateFailed: "Failed",
+  opening: "Opening…",
   delete: "Delete",
   swipeHint: "Swipe left to delete",
   deleteAll: "Delete all",

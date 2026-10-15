@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check, Trash2 } from "lucide-react";
 import { formatNotifTitle, notifBodyText, type AppNotification } from "@tentacle-tv/api-client";
 import { useLongPress } from "../ui/useLongPress";
+import { NotifStateBadge } from "../../components/notifications/notifVisuals";
 
 function formatAgo(dateStr: string, t: (k: string, o?: Record<string, unknown>) => string): string {
   const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60_000);
@@ -65,7 +66,10 @@ export const MirrorNotifRow = memo(function MirrorNotifRow({ notif, selectionMod
             {formatNotifTitle(notif, t)}
           </span>
           {body && <span className="mt-1 line-clamp-2 block text-[13px] leading-[18px] text-content-tertiary">{body}</span>}
-          <span className="mt-1.5 block text-xs text-content-quaternary">{formatAgo(notif.createdAt, t)}</span>
+          <span className="mt-1.5 flex flex-wrap items-center gap-2">
+            <NotifStateBadge state={notif.state} label={(key) => t(key)} />
+            <span className="text-xs text-content-quaternary">{formatAgo(notif.createdAt, t)}</span>
+          </span>
         </span>
       </button>
       {!selectionMode && (

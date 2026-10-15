@@ -87,6 +87,7 @@ export * from "./serverCapabilities/serverCapabilities";
 export * from "./userRights/userRightsContract";
 export * from "./userRights/userRightsRoutes";
 export * from "./userRights/userRightsPatch";
+export * from "./notifications/notificationTarget";
 export * from "./help/trailerHint";
 // Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
 // fiches — et « Réanalyser maintenant » (contrat de /api/admin/library/rescan,
