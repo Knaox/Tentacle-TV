@@ -123,6 +123,12 @@ export const SERVER_CAPABILITIES = {
    *  dit où le compte peut supprimer, `POST /api/library/deletion` supprime par le jeton DU
    *  COMPTE, titre par titre (Jellyfin juge chacun), et fait tomber les caches du serveur. */
   "library.delete": "1.30.0",
+  // ── Lot « droits 2 » (2026-10-15), fiche des droits et partage public ──
+  /** Le droit « Partage public » de Jellyfin (`EnablePublicSharing`) gouverne les liens de
+   *  Ma liste et des favoris : `GET /api/share/access` dit au compte s'il peut partager ;
+   *  sans le droit, la création est refusée et ses liens existants ne servent plus rien.
+   *  Sans la clé, les boutons « Partager » restent comme avant. */
+  "share.publicRight": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

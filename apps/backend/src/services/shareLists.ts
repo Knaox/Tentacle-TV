@@ -2,6 +2,8 @@ import { getPrisma } from "./db";
 import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
 import { getCachedMeta } from "./tmdb/metaCache";
 import { jellyfinAuthHeaders } from "./jellyfinAuth";
+import { filterExternalTitles } from "./contentPolicy";
+import { getUserWatchlist } from "./jellyfin";
 
 /**
  * La liste « titres likés » partageable : les FAVORIS Jellyfin (IsFavorite)
@@ -9,6 +11,10 @@ import { jellyfinAuthHeaders } from "./jellyfinAuth";
  * habillés par le cache de métadonnées TMDB — jamais d'appel réseau ici).
  * Même doctrine Live que la watchlist partagée : rien n'est copié, la liste
  * est relue à chaque ouverture avec la clé admin.
+ *
+ * Au nom du PROPRIÉTAIRE, dans SES restrictions : Jellyfin filtre ses favoris
+ * (`userId`), et ses likes hors bibliothèque passent `filterExternalTitles` —
+ * un lien ne montre jamais ce que son propriétaire ne verrait pas.
  */
 
 export interface SharedListEntry {
@@ -63,12 +69,16 @@ export async function getLikedListItems(ownerUserId: string): Promise<SharedList
   }
 
   const prisma = getPrisma();
-  const likes = await prisma.userLike.findMany({
+  const rows = await prisma.userLike.findMany({
     where: { jellyfinUserId: ownerUserId },
     orderBy: { createdAt: "desc" },
   });
+  const likes = await filterExternalTitles(
+    ownerUserId,
+    rows.map((like) => ({ ...like, mediaType: like.mediaType === "movie" ? ("movie" as const) : ("tv" as const) })),
+  );
   for (const like of likes) {
-    const mediaType = like.mediaType === "movie" ? "movie" : "tv";
+    const mediaType = like.mediaType;
     const meta = await getCachedMeta(mediaType, like.tmdbId);
     // Sans métadonnées cachées, la carte serait muette (ni titre ni affiche) :
     // on la saute — le titre reviendra quand le cache l'aura vue passer.
@@ -84,4 +94,22 @@ export async function getLikedListItems(ownerUserId: string): Promise<SharedList
   }
 
   return out;
+}
+
+/** « Ma liste » partagée : les titres que Jellyfin rend au nom du propriétaire, réduits à ce qu'un visiteur voit. */
+export async function getWatchlistItems(ownerUserId: string): Promise<SharedListEntry[]> {
+  const data = await getUserWatchlist(ownerUserId);
+  return (data.Items ?? []).map((i) => ({
+    Id: i.Id,
+    Name: i.Name,
+    Type: i.Type,
+    ProductionYear: i.ProductionYear,
+    ImageTags: i.ImageTags,
+    InLibrary: true,
+  }));
+}
+
+/** Les titres d'une liste partagée, selon son genre (la route publique et la page autonome). */
+export function sharedListEntries(kind: "watchlist" | "likes", ownerUserId: string): Promise<SharedListEntry[]> {
+  return kind === "likes" ? getLikedListItems(ownerUserId) : getWatchlistItems(ownerUserId);
 }

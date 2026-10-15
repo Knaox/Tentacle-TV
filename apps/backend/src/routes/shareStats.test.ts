@@ -81,7 +81,13 @@ vi.mock("../services/jellyfin", () => ({
   },
 }));
 
-vi.mock("../services/shareLists", () => ({ getLikedListItems: async () => [] }));
+vi.mock("../services/shareLists", () => ({
+  sharedListEntries: async (kind: string) =>
+    kind === "likes" ? [] : [{ Id: "w1", Name: "Alien", Type: "Movie", ProductionYear: 1979, ImageTags: { Primary: "t" }, InLibrary: true }],
+}));
+
+// Le droit « Partage public » : accordé ici, sa garde a ses propres tests (sharePublicRight.test.ts).
+vi.mock("../services/share/publicSharingRight", () => ({ mayShareInPublic: async () => true }));
 
 function ownerStats(period: ViewingStats["period"], timeZone: string): ViewingStats {
   const grid = new Array<number>(168).fill(0);

@@ -4,9 +4,10 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
-import { getUserWatchlist, getItemDetail } from "../services/jellyfin";
-import { getLikedListItems } from "../services/shareLists";
+import { getItemDetail } from "../services/jellyfin";
+import { sharedListEntries } from "../services/shareLists";
 import { generateShareToken, normalizeShareToken } from "../services/shareToken";
+import { mayShareInPublic } from "../services/share/publicSharingRight";
 import { registerStatsOwnerRoutes, replySharedStats, sharedStatsShowsTitle } from "./shareStats";
 
 /**
@@ -27,6 +28,16 @@ const publicQuery = z.object({ lang: z.enum(["fr", "en"]).catch("fr") });
 const LINK_HEAD = { kind: true, ownerUserId: true, ownerUsername: true } as const;
 
 /**
+ * Le droit « Partage public » (`EnablePublicSharing`, Jellyfin) gouverne les
+ * listes : sans lui, pas de lien créé (`public_sharing_denied`), et les liens
+ * existants répondent « indisponible » (`share_unavailable`) jusqu'à ce que le
+ * propriétaire le retrouve — le lien n'est pas détruit.
+ */
+const LIST_KINDS: ReadonlySet<string> = new Set(["watchlist", "likes"]);
+const DENIED = { error: "public_sharing_denied", message: "Partage public non autorisé" } as const;
+const UNAVAILABLE = { error: "share_unavailable", message: "Lien indisponible" } as const;
+
+/**
  * Liens de partage de listes — watchlist (« Ma liste ») et titres likés
  * (favoris + likes hors bibliothèque). MÊME mécanisme, paramétré par `kind` :
  * un lien actif par (propriétaire, liste), résolution Live à l'ouverture via
@@ -34,8 +45,9 @@ const LINK_HEAD = { kind: true, ownerUserId: true, ownerUsername: true } as cons
  */
 function registerOwnerRoutes(app: FastifyInstance, kind: "watchlist" | "likes", base: string): void {
   // ── POST — crée (ou récupère) le lien du user courant ──
-  app.post(`${base}/`, { preHandler: [requireAuth] }, async (request) => {
+  app.post(`${base}/`, { preHandler: [requireAuth] }, async (request, reply) => {
     const user = (request as any).user as JellyfinUser;
+    if (!(await mayShareInPublic(user.userId))) return reply.status(403).send(DENIED);
     const prisma = getPrisma();
     const link = await prisma.shareLink.upsert({
       where: { ownerUserId_kind: { ownerUserId: user.userId, kind } },
@@ -72,6 +84,12 @@ function registerOwnerRoutes(app: FastifyInstance, kind: "watchlist" | "likes", 
 }
 
 export const shareRoutes: FastifyPluginAsync = async (app) => {
+  // ── GET /access — ce compte peut-il partager ses listes ? (capacité `share.publicRight`) ──
+  app.get("/access", { preHandler: [requireAuth] }, async (request) => {
+    const user = (request as { user?: JellyfinUser }).user as JellyfinUser;
+    return { publicSharing: await mayShareInPublic(user.userId) };
+  });
+
   registerOwnerRoutes(app, "watchlist", "");
   // Routes STATIQUES /likes/* et /stats/* déclarées avant les paramétriques /:token.
   registerOwnerRoutes(app, "likes", "/likes");
@@ -86,25 +104,15 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });
+    if (LIST_KINDS.has(link.kind) && !(await mayShareInPublic(link.ownerUserId))) return reply.status(403).send(UNAVAILABLE);
     if (link.kind === "stats") {
       return replySharedStats(reply, { token, ...link }, publicQuery.parse(request.query ?? {}).lang);
     }
 
     try {
-      if (link.kind === "likes") {
-        const items = await getLikedListItems(link.ownerUserId);
-        return { ownerUsername: link.ownerUsername, kind: "likes", items };
-      }
-      const data = await getUserWatchlist(link.ownerUserId);
-      const items = (data.Items ?? []).map((i) => ({
-        Id: i.Id,
-        Name: i.Name,
-        Type: i.Type,
-        ProductionYear: i.ProductionYear,
-        ImageTags: i.ImageTags,
-        InLibrary: true,
-      }));
-      return { ownerUsername: link.ownerUsername, kind: "watchlist", items };
+      const kind = link.kind === "likes" ? "likes" : "watchlist";
+      const items = await sharedListEntries(kind, link.ownerUserId);
+      return { ownerUsername: link.ownerUsername, kind, items };
     } catch {
       return reply.status(502).send({ message: "Liste indisponible" });
     }
@@ -120,6 +128,7 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });
+    if (LIST_KINDS.has(link.kind) && !(await mayShareInPublic(link.ownerUserId))) return reply.status(403).send(UNAVAILABLE);
 
     try {
       // Contrôle d'appartenance selon le kind — toujours là pour empêcher
@@ -127,9 +136,7 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
       const inList =
         link.kind === "stats"
           ? await sharedStatsShowsTitle({ token, ownerUserId: link.ownerUserId }, itemId)
-          : link.kind === "likes"
-            ? (await getLikedListItems(link.ownerUserId)).some((i) => i.Id === itemId)
-            : ((await getUserWatchlist(link.ownerUserId)).Items ?? []).some((i) => i.Id === itemId);
+          : (await sharedListEntries(link.kind === "likes" ? "likes" : "watchlist", link.ownerUserId)).some((i) => i.Id === itemId);
       if (!inList) return reply.status(404).send({ message: "Média introuvable" });
       // Vue anonyme : l'historique de visionnage du propriétaire (UserData —
       // dates, compteurs, position de lecture) ne regarde pas les visiteurs.
