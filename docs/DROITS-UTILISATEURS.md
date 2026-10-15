@@ -616,134 +616,6 @@ Lot « droits 2 », chantier S4 (2026-10-15). Contrat : `packages/shared/src/fam
   droit qui tente de fonder une famille (403) ; guet : changement direct dans Jellyfin repris en
   ~100 s.
 
-## 9.5 Contrôle parental de bout en bout (lot « droits 2 », chantier S5)
-
-Prouvé contre une bibliothèque RÉELLE, et rejouable : `pnpm --filter @tentacle-tv/backend
-bench:parental` (`apps/backend/test/parental-bench/README.md`, jamais lancé par `pnpm test`).
-Jellyfin 10.11.11 jetable, médiathèque factice aux classifications françaises de sa table (`U`,
-`6+`, `10`, `12`, `16`, `18`, `X`, et AUCUNE), une étiquette bloquée, de vrais identifiants TMDB,
-quatre bibliothèques dont deux refusées ; le vrai backend du dépôt, Vigie installée devant un faux
-Jellyseerr aux identifiants TMDB réels, un passé d'avant la restriction (vus, en cours, favoris,
-séances mesurées, avis). **La référence est Jellyfin** : ce que son API montre au compte par SON
-jeton ; chaque réponse de Tentacle est lue en entier (ids, noms), et chaque titre extérieur passe un
-oracle TMDB indépendant du cœur (FR, sinon US ; ≤ 6 ans ; jamais `adult` ni sans classification).
-
-### 9.5.1 Ce que Jellyfin ne borne pas aux bibliothèques (mesuré, complète le § 7.1)
-
-Jellyfin n'applique les bibliothèques permises qu'aux requêtes qui ne nomment ni parent, ni ids, ni
-série (`AddUserToQuery`). Avec une bibliothèque refusée au compte :
-
-| Requête | Jeton du compte | Clé prêtée + `userId` (TV, profil, « voir en tant que ») |
-|---|---|---|
-| `Items?Ids=…` | **servie** | **servie** |
-| `Items/Latest?ParentId=<refusée>` | **servie** | **servie** |
-| `Items?ParentId=<refusée>` | 401 | **servie** |
-| `Shows/{série refusée}/Episodes`, `Shows/NextUp?SeriesId=` | **servie** | **servie** |
-| `Items/{id}`, `PlaybackInfo`, `Similar`, `Ancestors` | 404 | 404 |
-| `Items/{id}/Images/*` | 404 | 200 — et 200 SANS jeton : public, hors de portée |
-
-Note, étiquettes et non classés sont, eux, appliqués partout (un épisode classé « 16 » d'une
-série « U » est caché seul).
-
-### 9.5.2 Fuites fermées (un commit chacune, avec son test)
-
-1. **Proxy — listes nommées** (`jellyfinProxy/libraryListGuard.ts`) : pour un compte aux
-   bibliothèques bornées (ou à la politique illisible), un parent, une série ou une saison
-   invisibles rendent une liste VIDE ; une liste d'`Ids` ne garde que les titres visibles
-   (`isItemVisibleTo`). Un compte libre ne coûte rien de plus que sa politique en cache.
-2. **Pont des extensions** (`contentPolicy/extensionBridge.ts`) : Vigie montrait à un compte
-   « 6 ans » des titres de la bibliothèque que Jellyfin lui cache (Coraline classé « 10 », Le
-   Voyage de Chihiro étiqueté, Big Buck Bunny non classé, les bibliothèques refusées) comme titres
-   « à demander », fiche et demande comprises — le pont ne jugeait que la classification TMDB. Il
-   suit désormais la règle de « Pour vous » (`recoRights`) : caché par la bibliothèque = jamais ;
-   une version vue = Jellyfin a jugé ; sinon TMDB. **`isRestricted` du pont dit si le filtre PEUT
-   retirer quelque chose** : politique restreinte OU bibliothèques bornées (`limitsLibraries`) —
-   un compte privé d'une bibliothèque ne s'en voit plus proposer les titres par Vigie.
-3. **Aperçus préparés d'avance** (`POST /api/trailers/preview/warm`) : un sujet TMDB n'était pas
-   jugé — la décision partagée prise pour un compte libre revenait à un compte restreint. Tout
-   sujet passe désormais les questions de `GET /preview` avant d'être rendu ou préparé.
-4. **Versos d'Affiner** : le cache de 24 h était lu avant les droits ; ils passent avant lui.
-5. **Statistiques** (`viewingStats/statsRights.ts`) : séances mesurées et goût (gardés par
-   Tentacle) d'un titre devenu caché revenaient, nom compris ; retirés pour un compte restreint ou
-   aux bibliothèques bornées (un titre SUPPRIMÉ depuis garde sa place : `libraryRights.hidesItem`).
-   La politique du compte entre dans la clé du cache des statistiques.
-6. **Notifications** (`notifications/notificationRights.ts`) : un avis écrit avant une restriction
-   (« Fight Club est arrivé ») restait lisible ; à la lecture, un avis qui mène à un titre caché
-   n'est plus rendu ni compté parmi les non lus.
-7. **« NR » du pays de métadonnées** (`externalTitleRule.titleScore`) — DÉCIDÉ par le coordinateur
-   (2026-10-15), règle du § 5.2 mise à jour : un pays présent sans classification lisible arrête la
-   recherche, comme le fournisseur TMDB de Jellyfin (« FR-NR » = non classé) ; les États-Unis
-   seulement si le pays de métadonnées est absent ; une série ne prend la plus stricte des autres
-   que sans l'un ni l'autre. Planet Earth II (FR « NR », US « TV-G ») et 31 Minutes (US « NR »)
-   passaient à un compte « 6 ans ».
-
-### 9.5.3 Parcours éprouvés (banc, 2026-10-15)
-
-Comptes : `enfant6` (≤ 6 ans, non classés bloqués, étiquette bloquée, deux bibliothèques
-refusées), `filmsseuls` (bibliothèque Films seule, AUCUN contrôle parental), un invité de la
-Famille (≤ 6 ans) ouvert sur une Apple TV, `libre` en témoin. Portes : session personnelle (web,
-bureau), TV jumelée par le vrai flux d'appareil, « voir en tant que », session de profil d'invité.
-
-- **Proxy** : bibliothèque complète ÉGALE à la référence ; vues, derniers ajouts (par bibliothèque,
-  regroupés), reprise, à suivre, favoris, vus, recherche (`Search/Hints`, `searchTerm`), listes
-  par parent, par série, par ids ; accès DIRECTS par id (fiche, PlaybackInfo, flux, manifeste,
-  vignettes, semblables) → 404.
-- **Cœur** : Pour vous (page, rangées, démarrage à froid, personnes, réservoir), Affiner (pile,
-  versos), recherche et épisodes, sagas TMDB, héros, résolutions et bandes-annonces TMDB,
-  catalogue et aperçus (sans extraction YouTube), segments, téléchargements, statistiques,
-  notifications, Ma liste / j'aime, classement, Watch Together (invitations ; affinité hors salon).
-- **Vigie** : découverte (films, séries, tendances, pages pleines), recherche (hub, barre du cœur,
-  saga), semblables, saga, filmographie, fiche et saisons (403), pastilles `titles.state`, saisons
-  manquantes, « Mes demandes », titres attendus, avancement, calendrier ; demander un titre interdit
-  → refusé, rien n'arrive chez Jellyseerr.
-- **Fraîcheur** : restriction levée puis remise par la fiche des droits — les demandes faites
-  entre-temps (Pulp Fiction, Game of Thrones ; témoin : « Mes demandes » les montrait) et le verso
-  disparaissent AUSSITÔT.
-- Relevé du 2026-10-15 : **3 377 vérifications, aucune fuite** (avant les corrections : 174 échecs).
-
-**Client web (et bureau : même build)**, navigateur intégré, `enfant6`, un détecteur dans la page
-(noms et ids interdits, texte et HTML) : accueil (héros « Le Monde de Nemo », Continuer, Derniers
-ajouts), Pour vous (démarrage à froid : Bluey, Nemo, Le Roi lion, Peppa Pig, Toy Story), Affiner,
-favoris (Le Roi lion seul — Saw, Pat' Patrouille, Sintel écartés), Ma liste, statistiques (Toy
-Story et Bluey seuls), Films et Séries (Bluey, Peppa Pig), « Réservée » par URL directe (404),
-recherche (« toy », « prince », « patrouille », « pulp » ; « ratatouille » proposé par Vigie), fiche
-de Toy Story, fiche et lecture d'un titre interdit par URL (« plus dans la bibliothèque »),
-notifications (le seul avis permis, 1 non lu), hub Vigie (catalogue : 10 films, tous permis) —
-rien.
-
-**Apple TV** (simulateur neuf de la place nav-golden 5, app du cache partagé, natif
-`0d02ee212ee3b5bf`, détecteur `__navGolden.observe({ texts })` sur la liste interdite du compte) :
-- `enfant6` par le VRAI flux de jumelage d'appareil (code, confirmation, jeton) : préconfiguration
-  de la barre (Films et Séries seulement), accueil (héros et « Là où vous en étiez » : Nemo seul),
-  Pour vous (dont « Spider-Man : Brand New Day », classé « TP » en France : permis, comme Jellyfin
-  le jugerait), Ma liste, favoris, recherche, Films, Séries, « Réservée » forcée (« Cette
-  bibliothèque est vide »), fiche de Toy Story, de Bluey, fiches interdites forcées (erreur
-  générique, sans nom ni affiche) — rien.
-- **Invité « Petit »** (Famille de `libre`, ≤ 6 ans) : TV jumelée au compte `libre`, « Qui
-  regarde ? », session de PROFIL : barre à quatre bibliothèques (celles de son créateur), accueil,
-  Pour vous, favoris, Ma liste, bibliothèques, fiche interdite forcée — rien ; Le Petit Prince et
-  Pat' Patrouille (tous publics, bibliothèques de son créateur) lui restent ouverts, à raison.
-- Remarque d'interface, hors de ce chantier : sur la TV, une fiche interdite ouverte par son id dit
-  « Impossible de charger le contenu… interruption passagère » (le web : « plus dans la
-  bibliothèque »).
-
-### 9.5.4 Acceptés, hors de portée, signalés
-
-- Images d'un titre interdit : publiques chez Jellyfin (200 sans jeton) — le proxy n'y change rien.
-- `GET /api/preferences/home-layout` rend l'id du héros fixe même caché : c'est le choix du compte
-  lui-même (le héros passe en « reprise »).
-- `Persons` et `Items/Filters` de Jellyfin listent acteurs, étiquettes et classifications de toute
-  la bibliothèque (aucun titre) ; Jellyfin fait de même à son propre client.
-- Cache du proxy (`Latest` 30 s, `Resume` 15 s, `NextUp` 30 s, `Views` 5 min) non vidé à une
-  écriture de politique : dans la fraîcheur du contrat ; une liste d'un parent refusé est vidée par
-  la garde AVANT le cache.
-- Porte DIRECTE de Jellyfin (port publié) : sert un fichier à qui connaît son id — d'où les règles
-  ci-dessus (aucun id d'un titre interdit rendu).
-- **Signalé (chantier Watch Together, non éprouvé ici)** : l'affinité diffuse `state.proposals[]`
-  (id et titre) à tous les membres du salon sans filtre par destinataire
-  (`watchTogether/affinity/affinityBroadcast.ts`) — à sonder avec un salon mêlant un compte libre
-  et un compte restreint.
-
 ## 9.7 Suppression de titres
 
 > Lot « droits 2 » (2026-10-15), web et bureau seulement — ni mobile, ni TV, ni webOS, ni la
@@ -1165,3 +1037,130 @@ une NOUVELLE connexion est refusée en mots clairs.
 
 - Un changement de plages fait par l'administrateur pendant la fermeture n'atteint un client
   qu'à sa relecture (au plus cinq minutes) : son socket est fermé.
+## 9.5 Contrôle parental de bout en bout (lot « droits 2 », chantier S5)
+
+Prouvé contre une bibliothèque RÉELLE, et rejouable : `pnpm --filter @tentacle-tv/backend
+bench:parental` (`apps/backend/test/parental-bench/README.md`, jamais lancé par `pnpm test`).
+Jellyfin 10.11.11 jetable, médiathèque factice aux classifications françaises de sa table (`U`,
+`6+`, `10`, `12`, `16`, `18`, `X`, et AUCUNE), une étiquette bloquée, de vrais identifiants TMDB,
+quatre bibliothèques dont deux refusées ; le vrai backend du dépôt, Vigie installée devant un faux
+Jellyseerr aux identifiants TMDB réels, un passé d'avant la restriction (vus, en cours, favoris,
+séances mesurées, avis). **La référence est Jellyfin** : ce que son API montre au compte par SON
+jeton ; chaque réponse de Tentacle est lue en entier (ids, noms), et chaque titre extérieur passe un
+oracle TMDB indépendant du cœur (FR, sinon US ; ≤ 6 ans ; jamais `adult` ni sans classification).
+
+### 9.5.1 Ce que Jellyfin ne borne pas aux bibliothèques (mesuré, complète le § 7.1)
+
+Jellyfin n'applique les bibliothèques permises qu'aux requêtes qui ne nomment ni parent, ni ids, ni
+série (`AddUserToQuery`). Avec une bibliothèque refusée au compte :
+
+| Requête | Jeton du compte | Clé prêtée + `userId` (TV, profil, « voir en tant que ») |
+|---|---|---|
+| `Items?Ids=…` | **servie** | **servie** |
+| `Items/Latest?ParentId=<refusée>` | **servie** | **servie** |
+| `Items?ParentId=<refusée>` | 401 | **servie** |
+| `Shows/{série refusée}/Episodes`, `Shows/NextUp?SeriesId=` | **servie** | **servie** |
+| `Items/{id}`, `PlaybackInfo`, `Similar`, `Ancestors` | 404 | 404 |
+| `Items/{id}/Images/*` | 404 | 200 — et 200 SANS jeton : public, hors de portée |
+
+Note, étiquettes et non classés sont, eux, appliqués partout (un épisode classé « 16 » d'une
+série « U » est caché seul).
+
+### 9.5.2 Fuites fermées (un commit chacune, avec son test)
+
+1. **Proxy — listes nommées** (`jellyfinProxy/libraryListGuard.ts`) : pour un compte aux
+   bibliothèques bornées (ou à la politique illisible), un parent, une série ou une saison
+   invisibles rendent une liste VIDE ; une liste d'`Ids` ne garde que les titres visibles
+   (`isItemVisibleTo`). Un compte libre ne coûte rien de plus que sa politique en cache.
+2. **Pont des extensions** (`contentPolicy/extensionBridge.ts`) : Vigie montrait à un compte
+   « 6 ans » des titres de la bibliothèque que Jellyfin lui cache (Coraline classé « 10 », Le
+   Voyage de Chihiro étiqueté, Big Buck Bunny non classé, les bibliothèques refusées) comme titres
+   « à demander », fiche et demande comprises — le pont ne jugeait que la classification TMDB. Il
+   suit désormais la règle de « Pour vous » (`recoRights`) : caché par la bibliothèque = jamais ;
+   une version vue = Jellyfin a jugé ; sinon TMDB. **`isRestricted` du pont dit si le filtre PEUT
+   retirer quelque chose** : politique restreinte OU bibliothèques bornées (`limitsLibraries`) —
+   un compte privé d'une bibliothèque ne s'en voit plus proposer les titres par Vigie.
+3. **Aperçus préparés d'avance** (`POST /api/trailers/preview/warm`) : un sujet TMDB n'était pas
+   jugé — la décision partagée prise pour un compte libre revenait à un compte restreint. Tout
+   sujet passe désormais les questions de `GET /preview` avant d'être rendu ou préparé.
+4. **Versos d'Affiner** : le cache de 24 h était lu avant les droits ; ils passent avant lui.
+5. **Statistiques** (`viewingStats/statsRights.ts`) : séances mesurées et goût (gardés par
+   Tentacle) d'un titre devenu caché revenaient, nom compris ; retirés pour un compte restreint ou
+   aux bibliothèques bornées (un titre SUPPRIMÉ depuis garde sa place : `libraryRights.hidesItem`).
+   La politique du compte entre dans la clé du cache des statistiques.
+6. **Notifications** (`notifications/notificationRights.ts`) : un avis écrit avant une restriction
+   (« Fight Club est arrivé ») restait lisible ; à la lecture, un avis qui mène à un titre caché
+   n'est plus rendu ni compté parmi les non lus.
+7. **« NR » du pays de métadonnées** (`externalTitleRule.titleScore`) — DÉCIDÉ par le coordinateur
+   (2026-10-15), règle du § 5.2 mise à jour : un pays présent sans classification lisible arrête la
+   recherche, comme le fournisseur TMDB de Jellyfin (« FR-NR » = non classé) ; les États-Unis
+   seulement si le pays de métadonnées est absent ; une série ne prend la plus stricte des autres
+   que sans l'un ni l'autre. Planet Earth II (FR « NR », US « TV-G ») et 31 Minutes (US « NR »)
+   passaient à un compte « 6 ans ».
+
+### 9.5.3 Parcours éprouvés (banc, 2026-10-15)
+
+Comptes : `enfant6` (≤ 6 ans, non classés bloqués, étiquette bloquée, deux bibliothèques
+refusées), `filmsseuls` (bibliothèque Films seule, AUCUN contrôle parental), un invité de la
+Famille (≤ 6 ans) ouvert sur une Apple TV, `libre` en témoin. Portes : session personnelle (web,
+bureau), TV jumelée par le vrai flux d'appareil, « voir en tant que », session de profil d'invité.
+
+- **Proxy** : bibliothèque complète ÉGALE à la référence ; vues, derniers ajouts (par bibliothèque,
+  regroupés), reprise, à suivre, favoris, vus, recherche (`Search/Hints`, `searchTerm`), listes
+  par parent, par série, par ids ; accès DIRECTS par id (fiche, PlaybackInfo, flux, manifeste,
+  vignettes, semblables) → 404.
+- **Cœur** : Pour vous (page, rangées, démarrage à froid, personnes, réservoir), Affiner (pile,
+  versos), recherche et épisodes, sagas TMDB, héros, résolutions et bandes-annonces TMDB,
+  catalogue et aperçus (sans extraction YouTube), segments, téléchargements, statistiques,
+  notifications, Ma liste / j'aime, classement, Watch Together (invitations ; affinité hors salon).
+- **Vigie** : découverte (films, séries, tendances, pages pleines), recherche (hub, barre du cœur,
+  saga), semblables, saga, filmographie, fiche et saisons (403), pastilles `titles.state`, saisons
+  manquantes, « Mes demandes », titres attendus, avancement, calendrier ; demander un titre interdit
+  → refusé, rien n'arrive chez Jellyseerr.
+- **Fraîcheur** : restriction levée puis remise par la fiche des droits — les demandes faites
+  entre-temps (Pulp Fiction, Game of Thrones ; témoin : « Mes demandes » les montrait) et le verso
+  disparaissent AUSSITÔT.
+- Relevé du 2026-10-15 : **3 377 vérifications, aucune fuite** (avant les corrections : 174 échecs).
+
+**Client web (et bureau : même build)**, navigateur intégré, `enfant6`, un détecteur dans la page
+(noms et ids interdits, texte et HTML) : accueil (héros « Le Monde de Nemo », Continuer, Derniers
+ajouts), Pour vous (démarrage à froid : Bluey, Nemo, Le Roi lion, Peppa Pig, Toy Story), Affiner,
+favoris (Le Roi lion seul — Saw, Pat' Patrouille, Sintel écartés), Ma liste, statistiques (Toy
+Story et Bluey seuls), Films et Séries (Bluey, Peppa Pig), « Réservée » par URL directe (404),
+recherche (« toy », « prince », « patrouille », « pulp » ; « ratatouille » proposé par Vigie), fiche
+de Toy Story, fiche et lecture d'un titre interdit par URL (« plus dans la bibliothèque »),
+notifications (le seul avis permis, 1 non lu), hub Vigie (catalogue : 10 films, tous permis) —
+rien.
+
+**Apple TV** (simulateur neuf de la place nav-golden 5, app du cache partagé, natif
+`0d02ee212ee3b5bf`, détecteur `__navGolden.observe({ texts })` sur la liste interdite du compte) :
+- `enfant6` par le VRAI flux de jumelage d'appareil (code, confirmation, jeton) : préconfiguration
+  de la barre (Films et Séries seulement), accueil (héros et « Là où vous en étiez » : Nemo seul),
+  Pour vous (dont « Spider-Man : Brand New Day », classé « TP » en France : permis, comme Jellyfin
+  le jugerait), Ma liste, favoris, recherche, Films, Séries, « Réservée » forcée (« Cette
+  bibliothèque est vide »), fiche de Toy Story, de Bluey, fiches interdites forcées (erreur
+  générique, sans nom ni affiche) — rien.
+- **Invité « Petit »** (Famille de `libre`, ≤ 6 ans) : TV jumelée au compte `libre`, « Qui
+  regarde ? », session de PROFIL : barre à quatre bibliothèques (celles de son créateur), accueil,
+  Pour vous, favoris, Ma liste, bibliothèques, fiche interdite forcée — rien ; Le Petit Prince et
+  Pat' Patrouille (tous publics, bibliothèques de son créateur) lui restent ouverts, à raison.
+- Remarque d'interface, hors de ce chantier : sur la TV, une fiche interdite ouverte par son id dit
+  « Impossible de charger le contenu… interruption passagère » (le web : « plus dans la
+  bibliothèque »).
+
+### 9.5.4 Acceptés, hors de portée, signalés
+
+- Images d'un titre interdit : publiques chez Jellyfin (200 sans jeton) — le proxy n'y change rien.
+- `GET /api/preferences/home-layout` rend l'id du héros fixe même caché : c'est le choix du compte
+  lui-même (le héros passe en « reprise »).
+- `Persons` et `Items/Filters` de Jellyfin listent acteurs, étiquettes et classifications de toute
+  la bibliothèque (aucun titre) ; Jellyfin fait de même à son propre client.
+- Cache du proxy (`Latest` 30 s, `Resume` 15 s, `NextUp` 30 s, `Views` 5 min) non vidé à une
+  écriture de politique : dans la fraîcheur du contrat ; une liste d'un parent refusé est vidée par
+  la garde AVANT le cache.
+- Porte DIRECTE de Jellyfin (port publié) : sert un fichier à qui connaît son id — d'où les règles
+  ci-dessus (aucun id d'un titre interdit rendu).
+- **Signalé (chantier Watch Together, non éprouvé ici)** : l'affinité diffuse `state.proposals[]`
+  (id et titre) à tous les membres du salon sans filtre par destinataire
+  (`watchTogether/affinity/affinityBroadcast.ts`) — à sonder avec un salon mêlant un compte libre
+  et un compte restreint.
