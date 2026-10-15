@@ -7,6 +7,7 @@ import { removeMemberAndSync } from "../services/watchTogether/sync";
 import { broadcastRoom, notifyDissolved, roomToDto } from "../services/watchTogether/broadcast";
 import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { getUserBasic } from "../services/watchTogether/usersCache";
+import { isItemVisibleTo } from "../services/itemAccess/itemVisibility";
 
 /**
  * Watch Together — cycle de vie du groupe (REST).
@@ -23,9 +24,11 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     const body = z.object({ itemId: z.string().min(1).optional() })
       .parse(request.body ?? {});
     const profile = await getUserBasic(user.userId);
+    // Le titre de contexte passera dans les invitations : seulement s'il est visible à l'hôte.
+    const contextItemId = body.itemId && (await isItemVisibleTo(user.userId, body.itemId)) ? body.itemId : null;
     const room = createRoom(
       { userId: user.userId, username: user.username, hasAvatar: profile?.hasAvatar ?? false },
-      body.itemId ?? null,
+      contextItemId,
     );
     if (!room) {
       return reply.status(409).send({ code: "already_in_group", message: "Vous êtes déjà dans un groupe" });
