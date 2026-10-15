@@ -31,11 +31,11 @@ import { HINTS_GAP, NavHints } from "./NavHints";
 import type { NavHint } from "./NavLegend";
 import { NavList } from "./NavList";
 import { NavSwitcherItem } from "./NavSwitcherItem";
-import type { StackProfile } from "./ProfileStack";
+import type { StackProfile } from "./ProfileSwitcherGlyph";
 import { NavTextMeasure } from "./NavTextMeasure";
 
 export type { NavHint } from "./NavLegend";
-export type { StackProfile } from "./ProfileStack";
+export type { StackProfile } from "./ProfileSwitcherGlyph";
 export type { NavRailGeometry } from "./navGeometry";
 
 /**
@@ -48,9 +48,9 @@ export type { NavRailGeometry } from "./navGeometry";
  *   avec beaucoup de bibliothèques, jamais plus haut que le rail d'avant, et
  *   sa liste défile en suivant le focus (`NavList`), avec un fondu du côté où
  *   il y a plus et un indicateur de position ;
- * - le bloc du PROFIL, ancré en bas : le compte et ses réglages (l'engrenage) ; au-dessus,
- *   « Changer de profil » sur une Apple TV passée aux profils (`switcher`,
- *   l'empilement des profils de la famille) et, plus haut, l'élément des
+ * - le bloc du PROFIL, ancré en bas : le compte et ses réglages (l'engrenage) ;
+ *   au-dessus, « Changer de profil » sur une Apple TV passée aux profils
+ *   (`switcher` : la photo du profil connecté et « +N ») et, plus haut, l'élément des
  *   demandes en cours quand il existe (`accessory`). Jamais caché ni poussé
  *   hors de l'écran : c'est le bloc des pages qui cède.
  *
@@ -92,11 +92,16 @@ export interface NavAccount {
   icon: IconName;
 }
 
-/** « Changer de profil » (Famille) : juste au-dessus du profil, l'empilement des profils de la famille. */
+/**
+ * « Changer de profil » (Famille) : juste au-dessus des réglages, la photo du
+ * profil connecté et « +N », les autres profils de la TV (tv-core
+ * `railSwitcherSummary`).
+ */
 export interface NavSwitcher {
   key: string;
   label: string;
-  profiles: StackProfile[];
+  current: StackProfile | null;
+  badge: string | null;
 }
 
 /**
