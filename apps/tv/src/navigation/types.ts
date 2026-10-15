@@ -10,6 +10,8 @@ export type RootStackParamList = {
   ManageProfiles: { origin: "profiles" | "settings" };
   /** SON code PIN (Réglages › Compte) : créer, changer, retirer. */
   ProfilePin: { mode: "create" | "change" | "remove" };
+  /** La galerie des avatars (Réglages › Compte, « Changer la photo ») : la photo du sujet de la session. */
+  AvatarGallery: undefined;
   /** La préconfiguration de la barre : `session` — avant l'accueil (jumelage,
    *  profil ouvert, démarrage) ; `settings` — l'étape du propriétaire seule,
    *  depuis Réglages › Navigation. */

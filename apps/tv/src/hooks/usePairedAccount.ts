@@ -1,4 +1,5 @@
 import { useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { useOwnPhotoVersion } from "../lib/ownPhotoVersion";
 
 /** Le nom du compte jumelé, lu dans `tentacle_user` (ou null). */
 export function readPairedName(raw: string | null): string | null {
@@ -16,14 +17,17 @@ export function readPairedName(raw: string | null): string | null {
  * Le compte jumelé tel que les réglages le montrent, sur les deux
  * téléviseurs : son nom, l'adresse de son portrait (Jellyfin, par le proxy du
  * serveur — il peut ne pas exister) et le serveur Tentacle. `portraitSize` :
- * le diamètre affiché, en points (l'image est demandée au double).
+ * le diamètre affiché, en points (l'image est demandée au double). Une photo
+ * choisie sur cette TV (galerie des avatars) change l'adresse du portrait
+ * (`lib/ownPhotoVersion`) : le cache d'images ne rend plus l'ancien.
  */
 export function usePairedAccount(portraitSize = 132) {
   const { storage } = useTentacleConfig();
   const client = useJellyfinClient();
   const userId = useUserId();
+  const version = useOwnPhotoVersion(userId);
   const portraitUrl = userId
-    ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${portraitSize * 2}&quality=90`
+    ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${portraitSize * 2}&quality=90${version > 0 ? `&v=${version}` : ""}`
     : null;
   return {
     name: readPairedName(storage.getItem("tentacle_user")),

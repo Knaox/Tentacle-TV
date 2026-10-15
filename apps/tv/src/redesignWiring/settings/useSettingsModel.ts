@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Platform } from "react-native";
-import { setPlaybackSettings, useOwnPlaybackSettings, useServerCapability, useStillWatchingSettings } from "@tentacle-tv/api-client";
+import { setPlaybackSettings, useOwnPlaybackSettings, useServerCapability, useStillWatchingSettings, useUserId } from "@tentacle-tv/api-client";
 import { detectPreset, presetSettings, uiLanguage, type PlaybackPreset } from "@tentacle-tv/shared";
 import { SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
 import type {
@@ -17,6 +17,7 @@ import { useInterfaceLanguage } from "../../hooks/useInterfaceLanguage";
 import { useLibraryTrackPrefs } from "../../hooks/useLibraryTrackPrefs";
 import { usePairedAccount } from "../../hooks/usePairedAccount";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
+import { useOwnPhotoState } from "../avatars/ownPhoto";
 import {
   exoMatchFrameRateStore,
   exoTunnelingStore,
@@ -63,10 +64,16 @@ export function useSettingsModel() {
   const stillWatching = useStillWatchingSettings();
   const stillWatchingSettings = stillWatching.available ? stillWatching.settings : null;
 
+  // La galerie des avatars : rien face à un serveur qui ne déclare pas `avatars.devicePhoto`.
+  const photoCapable = useServerCapability("avatars.devicePhoto");
+  const userId = useUserId();
+  const ownPhoto = useOwnPhotoState(photoCapable ? userId : null);
+  const photo = photoCapable ? (ownPhoto === false ? "choose" : "change") : null;
+
   const name = paired.name ?? "—";
   const account = useMemo<SettingsAccount>(
-    () => ({ name, avatarUri: portrait, serverUrl: paired.serverUrl, deviceLabel: TV_PLATFORM_LABEL }),
-    [name, portrait, paired.serverUrl],
+    () => ({ name, avatarUri: portrait, serverUrl: paired.serverUrl, deviceLabel: TV_PLATFORM_LABEL, photo }),
+    [name, portrait, paired.serverUrl, photo],
   );
 
   const libraryModels = useMemo<LibraryPrefModel[]>(

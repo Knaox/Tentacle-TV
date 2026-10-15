@@ -9,7 +9,8 @@ import {
   type AvatarGalleryTarget,
   type AvatarPhotoPayload,
 } from "@tentacle-tv/tv-core";
-import { bumpOwnPhotoVersion, ownPhotoQueryKey } from "./ownPhoto";
+import { bumpOwnPhotoVersion } from "../../lib/ownPhotoVersion";
+import { ownPhotoQueryKey } from "./ownPhoto";
 
 /** Le plus long qu'on attende l'image et son envoi : au-delà, l'échec se dit. */
 const SEND_TIMEOUT_MS = 20_000;

@@ -35,6 +35,7 @@ const WatchlistScreen = React.lazy(() => import("../screens/WatchlistScreen").th
 const FavoritesScreen = React.lazy(() => import("../screens/FavoritesScreen").then(m => ({ default: m.FavoritesScreen })));
 const ManageProfilesScreen = React.lazy(() => import("../screens/ManageProfilesScreen").then(m => ({ default: m.ManageProfilesScreen })));
 const ProfilePinScreen = React.lazy(() => import("../screens/ProfilePinScreen").then(m => ({ default: m.ProfilePinScreen })));
+const AvatarsScreen = React.lazy(() => import("../screens/AvatarsScreen").then(m => ({ default: m.AvatarsScreen })));
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -122,6 +123,8 @@ export function AppNavigator() {
       <Stack.Screen name="Profiles" component={ProfilesScreen} initialParams={{ intent: "launch" }} options={{ animation: "none" }} />
       <Stack.Screen name="ManageProfiles" component={ManageProfilesScreen} />
       <Stack.Screen name="ProfilePin" component={ProfilePinScreen} />
+      {/* La galerie des avatars (Réglages › Compte) : sa photo dans la troupe. */}
+      <Stack.Screen name="AvatarGallery" component={AvatarsScreen} />
       {/* La préconfiguration de la barre : avant l'accueil, une fois par profil et par appareil. */}
       <Stack.Screen name="RailSetup" component={RailSetupScreen} initialParams={{ origin: "session" }} />
       {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon

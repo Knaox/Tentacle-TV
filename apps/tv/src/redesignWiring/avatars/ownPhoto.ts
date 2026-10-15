@@ -1,20 +1,13 @@
-import { useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { accountPhotoPath } from "@tentacle-tv/tv-core";
 
 /**
  * La photo du SUJET de la session (profil ouvert, ou compte jumelé) :
- *
- * - en a-t-il une ? Une sonde `HEAD` de son portrait par le proxy (200 : oui,
- *   404 : non ; autre chose : on ne sait pas) — la même réponse pour une TV
- *   passée aux profils ou non, sans lire la Famille. La galerie la relit
- *   après un choix ;
- * - la VERSION de son portrait pour cette session de l'app : le portrait du
- *   compte s'adresse sans étiquette (`usePairedAccount`), et le cache
- *   d'images de React Native rendrait l'ancien jusqu'au redémarrage. Un choix
- *   fait la change : l'adresse change, le portrait se relit. Le proxy sert ce
- *   portrait en `no-store` : au lancement suivant, il est neuf de lui-même.
+ * en a-t-il une ? Une sonde `HEAD` de son portrait par le proxy (200 : oui,
+ * 404 : non ; autre chose : on ne sait pas) — la même réponse pour une TV
+ * passée aux profils ou non, sans lire la Famille. La galerie la relit après
+ * un choix (et fait changer la version du portrait, `lib/ownPhotoVersion`).
  */
 
 const OWN_PHOTO_KEY = "own-photo";
@@ -41,23 +34,4 @@ export function useOwnPhotoState(userId: string | null): OwnPhotoState | null {
     retry: 1,
   });
   return userId !== null && data !== undefined ? data : null;
-}
-
-const versions = new Map<string, number>();
-const listeners = new Set<() => void>();
-
-/** La photo de `userId` vient de changer sur cette TV. */
-export function bumpOwnPhotoVersion(userId: string): void {
-  versions.set(userId.toLowerCase(), (versions.get(userId.toLowerCase()) ?? 0) + 1);
-  for (const listener of listeners) listener();
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-/** La version du portrait de `userId` pour cette session de l'app (0 : jamais changé ici). */
-export function useOwnPhotoVersion(userId: string | null): number {
-  return useSyncExternalStore(subscribe, () => (userId ? versions.get(userId.toLowerCase()) ?? 0 : 0));
 }

@@ -1,7 +1,8 @@
 import { memo, useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
+import { SETTINGS_AVATAR_KEY, confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
+import { PillButton } from "../../controls/PillButton";
 import { Icon } from "../../icons/Icon";
 import { colors, text, white } from "../../theme/tokens";
 import { ConfirmPill } from "./ConfirmPill";
@@ -26,6 +27,9 @@ import { useRemoteHints } from "../../remote/remoteHints";
  * déjumelages complets (`unpairDevice`) — le changement de serveur oublie en
  * plus l'adresse.
  *
+ * Sous le nom, « Changer la photo » (« Choisir une photo » sans photo) ouvre
+ * la galerie des avatars — face à un serveur qui le permet (`account.photo`).
+ *
  * Apple TV passée aux profils (Famille, `account.profile`) : le profil ouvert
  * et son rôle, puis EN TÊTE « Changer de profil » et « Gérer les profils »
  * (`ProfileSection`) ; « Changer de serveur » s'efface — il passe par un
@@ -41,11 +45,13 @@ export interface AccountPanelProps {
   onManageProfiles?: () => void;
   /** SON code PIN : créer, changer, retirer. */
   onOwnPin?: (mode: OwnPinMode) => void;
+  /** La galerie des avatars : « Changer la photo » / « Choisir une photo » (`account.photo`). */
+  onChangePhoto?: () => void;
 }
 
 export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps) {
   const { account, initialArmed = null, onChangeServer, onLogout } = props;
-  const { t } = useTranslation(["pairing", "nav", "common", "preferences", "familyTv"]);
+  const { t } = useTranslation(["pairing", "nav", "common", "preferences", "familyTv", "avatars"]);
   const hints = useRemoteHints();
   const profile = account.profile ?? null;
   const [armed, setArmed] = useState<AccountAction | null>(initialArmed);
@@ -75,6 +81,17 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
           <Text style={text.kicker}>{profile ? t("familyTv:settings.kicker") : t("pairing:tvCompteJumele")}</Text>
           <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
           {profile ? <Text style={settingsText.hint}>{profile.role}</Text> : null}
+          {account.photo && props.onChangePhoto ? (
+            <View style={styles.photo}>
+              <PillButton
+                label={t(account.photo === "change" ? "avatars:tv.change" : "avatars:tv.choose")}
+                icon="user"
+                size="md"
+                focusKey={SETTINGS_AVATAR_KEY}
+                onPress={props.onChangePhoto}
+              />
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -135,6 +152,7 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
 const styles = StyleSheet.create({
   profile: { flexDirection: "row", alignItems: "center", gap: 40 },
   identity: { flex: 1, gap: 10 },
+  photo: { flexDirection: "row", marginTop: 8 },
   name: { ...text.title, fontSize: 64, lineHeight: 72 },
   infos: {
     marginTop: 44,
