@@ -25,15 +25,12 @@ export const usePublicUrlConfig = () =>
 export const useDirectStreamingConfig = () =>
   useQuery({ queryKey: SERVICES_KEYS.directStreaming, queryFn: servicesApi.directStreaming, staleTime: 0 });
 
-export const useAudioAnalysis = () =>
-  useQuery({ queryKey: SERVICES_KEYS.audioAnalysis, queryFn: servicesApi.audioAnalysis, staleTime: 0 });
-
 /** Même entrée et mêmes réglages que le bandeau d'alerte de la clé. */
 export const useKeyHealth = () =>
   useQuery({ queryKey: SERVICES_KEYS.jellyfinKey, queryFn: () => servicesApi.keyHealth(), staleTime: 5 * 60_000, retry: false });
 
 /**
- * « Revérifier » : Jellyfin et la base sondés à nouveau, les compteurs relus,
+ * « Revérifier » : Jellyfin et la base sondés à nouveau,
  * et le verdict de la clé refait par le serveur — il le garde cinq minutes.
  */
 export function useRecheck() {
@@ -48,7 +45,6 @@ export function useRecheck() {
           () => undefined,
         ),
         queryClient.refetchQueries({ queryKey: SERVICES_KEYS.status }),
-        queryClient.refetchQueries({ queryKey: SERVICES_KEYS.audioAnalysis }),
       ]);
     } finally {
       setPending(false);

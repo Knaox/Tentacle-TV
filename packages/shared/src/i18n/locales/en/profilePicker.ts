@@ -14,6 +14,8 @@ export default {
   retry: "Try again",
   tileLabel: "Open {{name}}'s profile",
   tileLabelPin: "Open {{name}}'s profile, protected by a PIN",
+  tileLabelCurrent: "Continue as {{name}}",
+  current: "Current profile",
   pin: {
     title: "{{name}}'s PIN",
     prompt: "Enter this profile's PIN.",

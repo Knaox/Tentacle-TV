@@ -5,6 +5,13 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
+## [Unreleased]
+### FR
+- **« Qui regarde ? »** : le profil retenu sur ce téléviseur ne montre plus de cadenas, puisqu'il s'ouvre sans code PIN
+
+### EN
+- **“Who's watching?”**: the profile remembered on this TV no longer shows a lock, since it opens without a PIN
+
 ## [1.10.2]
 <!-- Bloc nu : Android TV (Google Play, 500 caractères). Depuis la 1.10.1 : le lecteur de bande-annonce simplifié, l'écran de la migration de la base. -->
 ### FR

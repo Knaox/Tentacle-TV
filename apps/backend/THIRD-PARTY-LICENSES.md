@@ -15,8 +15,6 @@ inventory: `docs/LICENCES.md`).
 
 | Program | Version | License | Source |
 |---|---|---|---|
-| ffmpeg | 8.1.2 (MP3 → PCM only) | LGPL-2.1-or-later (built without `--enable-gpl`) | https://ffmpeg.org — recipe: `Dockerfile`, stage `media-tools` |
-| fpcalc (Chromaprint) | 1.6.0 | **GPL-2.0-or-later** — statically linked with FFTW3 (GPL-2.0-or-later) | https://github.com/acoustid/chromaprint — https://www.fftw.org — recipe: `Dockerfile` |
 | yt-dlp (zipapp) | 2026.08.19 | Unlicense (bundles meriyah, ISC, and astring, MIT) | https://github.com/yt-dlp/yt-dlp |
 | Python | 3.14 (Alpine package) | PSF-2.0 | https://www.python.org |
 | Node.js | 24 (base image) | MIT (with V8, ICU, libuv, OpenSSL under their own licenses) | https://github.com/nodejs/node |
@@ -31,7 +29,10 @@ shipped, is published with every release as the GitHub pre-release
 before that mechanism existed (up to `server-v1.23.0`, whose ffmpeg was
 Alpine's GPL build with x264 / x265), the source is available on request from
 the maintainer through GitHub issues, for at least three years after the image
-was published.
+was published. Images published before the removal of audio analysis also
+shipped ffmpeg 8.1.2 (LGPL-2.1-or-later) and fpcalc (Chromaprint 1.6.0,
+GPL-2.0-or-later, statically linked with FFTW3); their source stays in their
+`sources-server-vX.Y.Z` pre-releases.
 
 ## Node.js packages
 

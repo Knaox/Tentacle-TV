@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { View, Text, Pressable, FlatList, Alert } from "react-native";
+import { View, Text, Pressable, SectionList, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
@@ -7,7 +7,8 @@ import type { AppNotification } from "@tentacle-tv/api-client";
 import {
   formatNotifTitle,
   notifBodyText,
-  resolveNotificationRoute,
+  groupNotificationsByDay,
+  resolveNotificationDestination,
   useNotificationsLive,
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
@@ -24,6 +25,7 @@ import { ProblemState } from "@/components/problems/ProblemState";
 import { usePageProblem } from "@/components/problems/usePageProblem";
 import { toNotifPluginMeta, useActivePlugins } from "@/hooks/useActivePlugins";
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
+import { libraryTitleLookup } from "@/services/notificationDestination";
 import { openFamilyNotification } from "@/family/familyPosterStore";
 import { BottomSheet } from "./ui";
 import { SwipeableNotifRow } from "./notifications/SwipeableNotifRow";
@@ -76,6 +78,13 @@ export function NotificationBell() {
   useNotificationsLive({ token: storage.getItem("tentacle_token") });
 
   const pluginNavMeta = useMemo(() => toNotifPluginMeta(plugins ?? []), [plugins]);
+  const serverUrl = storage.getItem("tentacle_server_url") ?? "";
+  const token = storage.getItem("tentacle_token") ?? "";
+  const lookup = useMemo(() => libraryTitleLookup(serverUrl, token), [serverUrl, token]);
+  const sections = useMemo(
+    () => groupNotificationsByDay(notifications ?? []).map(({ group, items }) => ({ key: group, data: items })),
+    [notifications],
+  );
 
   const count = unread?.count ?? 0;
 
@@ -103,10 +112,13 @@ export function NotificationBell() {
     if (!n.read) markOne.mutate(n.id);
     // « X vous invite… » ouvre l'affiche de l'invitation, une fois la feuille retirée.
     if (openFamilyNotification(router, n)) return;
-    const route = resolveNotificationRoute(n, "mobile", pluginNavMeta);
-    // Une destination d'onglet (section d'extension…) se rejoint sans empiler.
-    if (route) openNotificationRoute(router, route);
-  }, [markOne, router, pluginNavMeta, exitSelection]);
+    // La destination EXACTE : la cible posée par l'émetteur (fiche, page
+    // d'extension avec ses paramètres), sinon la route de son type.
+    void resolveNotificationDestination(n, "mobile", pluginNavMeta, lookup).then((route) => {
+      // Une destination d'onglet se rejoint sans empiler.
+      if (route) openNotificationRoute(router, route);
+    });
+  }, [markOne, router, pluginNavMeta, exitSelection, lookup]);
 
   const handleDeleteAll = useCallback(() => {
     Alert.alert(t("deleteAll"), t("confirmDeleteAll"), [
@@ -143,16 +155,23 @@ export function NotificationBell() {
           onCancel={exitSelection}
         />
 
-        <FlatList
-          data={notifications ?? []}
+        <SectionList
+          sections={sections}
           keyExtractor={(n) => n.id}
+          stickySectionHeadersEnabled={false}
+          renderSectionHeader={({ section }) => (
+            <Text style={{ fontSize: 12, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", color: colors.text.quaternary, marginBottom: 8, marginTop: 4 }}>
+              {t(section.key === "today" ? "groupToday" : "groupEarlier")}
+            </Text>
+          )}
           contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, paddingTop: 12 }}
           ListEmptyComponent={failure.model ? (
             <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={isRefetching ? "retry" : null} />
           ) : (
             <View style={{ alignItems: "center", marginTop: 48 }}>
               <Feather name="bell-off" size={40} color={colors.text.quaternary} />
-              <Text style={{ ...typography.body, color: colors.text.tertiary, textAlign: "center", marginTop: 16 }}>{t("noNotifications")}</Text>
+              <Text style={{ ...typography.body, color: colors.text.primary, fontWeight: "700", textAlign: "center", marginTop: 16 }}>{t("emptyTitle")}</Text>
+              <Text style={{ ...typography.caption, color: colors.text.tertiary, textAlign: "center", marginTop: 6, paddingHorizontal: 32 }}>{t("emptyHint")}</Text>
             </View>
           )}
           renderItem={({ item: n }) => (

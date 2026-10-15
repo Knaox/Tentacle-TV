@@ -5,8 +5,7 @@
  *
  * Le serveur lit la fin de chaque film et de chaque épisode à sa première
  * lecture (`services/tailAnalysis/`) : les vignettes trickplay disent où défile
- * le texte du générique, l'audio dit où l'on parle et où l'on joue de la
- * musique. Il en tire le DÉBUT du générique et les SCÈNES qui le suivent —
+ * le texte du générique. Il en tire le DÉBUT du générique et les SCÈNES qui le suivent —
  * mi-génériques comme post-génériques. Le verdict arrive ici déjà jugé.
  *
  * # Ce qu'il en fait
@@ -54,7 +53,10 @@ export interface TailVerdict {
   scenes: TailScene[];
   /** Le défilement vu à l'image, [début, fin) ; `null` sans texte qui défile. */
   crawl: [number, number] | null;
-  /** L'audio a été écouté (sinon, seules les preuves d'image ont compté). */
+  /**
+   * L'audio a été écouté. Plus jamais depuis le retrait de l'analyse audio :
+   * seuls des verdicts rangés avant le disent encore, et ils restent valables.
+   */
   audio: boolean;
   /**
    * L'aperçu du prochain épisode qui clôt le fichier, [début, fin) — jamais une

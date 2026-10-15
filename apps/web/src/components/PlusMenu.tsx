@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
+import { placeFloating } from "./floating/floatingPlacement";
 import { usePinnedNav, pluginNavKey } from "../hooks/usePinnedNav";
 
 interface Props {
@@ -53,41 +54,27 @@ export function PlusMenu({ onClose, isMobile, anchorRect, placement = "sidebar" 
   const PANEL_MAX_HEIGHT = 480;
   const margin = 12;
 
-  let panelLeft: number;
-  let panelTop: number;
-  let originX: string; // for scale-in animation
-  let originY: string;
-
-  if (placement === "dropdown" && anchorRect) {
-    // Align right edge of panel to right edge of anchor (so it stays inside viewport)
-    const preferredLeft = anchorRect.left;
-    const rightOverflow = preferredLeft + PANEL_WIDTH > window.innerWidth - margin;
-    panelLeft = rightOverflow
-      ? Math.max(margin, anchorRect.right - PANEL_WIDTH)
-      : preferredLeft;
-    panelTop = Math.min(
-      anchorRect.bottom + 8,
-      window.innerHeight - PANEL_MAX_HEIGHT - margin
-    );
-    originX = rightOverflow ? "right" : "left";
-    originY = "top";
-  } else {
-    const top = anchorRect ? anchorRect.top : 200;
-    panelLeft = 72;
-    panelTop = Math.min(top, window.innerHeight - 420);
-    originX = "left";
-    originY = "top";
-  }
+  // La règle commune des panneaux flottants : jamais hors de la fenêtre
+  // (le haut pouvait devenir négatif dans une fenêtre basse).
+  const anchor = anchorRect ?? { top: 200, bottom: 200, left: 64, right: 64 };
+  const place = placeFloating({
+    anchor,
+    size: { width: PANEL_WIDTH, height: PANEL_MAX_HEIGHT },
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+    side: placement === "dropdown" && anchorRect ? "bottom" : "right",
+    align: "start",
+    margin,
+  });
 
   return createPortal(
     <div ref={overlayRef} className="fixed inset-0 z-50">
       <div
         className="absolute overflow-hidden rounded-2xl border border-line-subtle shadow-2xl"
         style={{
-          left: panelLeft,
-          top: panelTop,
-          width: PANEL_WIDTH,
-          maxHeight: PANEL_MAX_HEIGHT,
+          left: place.left,
+          top: place.top,
+          width: Math.min(PANEL_WIDTH, place.maxWidth),
+          maxHeight: Math.min(PANEL_MAX_HEIGHT, place.maxHeight),
           overflowY: "auto",
           // Fond du panneau : littéral hors table (ni bg-white/* ni bg-black/*),
           // implémentation ad hoc antérieure au primitive Dropdown (déjà sur
@@ -95,7 +82,7 @@ export function PlusMenu({ onClose, isMobile, anchorRect, placement = "sidebar" 
           background: "var(--surface-dropdown)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
-          transformOrigin: `${originX} ${originY}`,
+          transformOrigin: place.transformOrigin,
           animation: "plusMenuIn 180ms cubic-bezier(0.16,1,0.3,1) forwards",
         }}
       >

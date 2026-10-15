@@ -4,13 +4,15 @@ import { useRootNavigationState, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   NOTIFICATION_LIVE_KEYS,
-  resolveNotificationRoute,
+  resolveNotificationDestination,
   useRegisterPushDevice,
 } from "@tentacle-tv/api-client";
+import { parseNotificationTarget } from "@tentacle-tv/shared";
 import type { NotifPluginMeta, StorageAdapter } from "@tentacle-tv/api-client";
 import { activePluginsQueryOptions, toNotifPluginMeta } from "@/hooks/useActivePlugins";
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import { openFamilyNotification } from "@/family/familyPosterStore";
+import { libraryTitleLookup } from "@/services/notificationDestination";
 import {
   configureNotificationHandler,
   registerForPushToken,
@@ -81,8 +83,12 @@ export function PushRegistrationSync({
       // Une invitation de la Famille : le push ne fait qu'OUVRIR l'affiche, qui
       // relit l'invitation au serveur avec la session de l'utilisateur.
       if (openFamilyNotification(router, { type, refId: data?.refId ?? null })) return;
+      // La cible de l'émetteur (fiche, page d'extension, titre cherché au tap).
+      const target = parseNotificationTarget(data?.target);
+      const needsPlugins = type === "request_status" || target?.kind === "extension"
+        || (target?.kind === "title" && target.fallback?.kind === "extension");
       let meta: NotifPluginMeta[] = [];
-      if (type === "request_status" && serverUrl && token) {
+      if (needsPlugins && serverUrl && token) {
         try {
           const plugins = await Promise.race([
             queryClient.ensureQueryData(activePluginsQueryOptions(serverUrl, token)),
@@ -95,7 +101,12 @@ export function PushRegistrationSync({
           // Repli : l'accueil.
         }
       }
-      const route = resolveNotificationRoute({ type, refId: data?.refId ?? null }, "mobile", meta);
+      const route = await resolveNotificationDestination(
+        { type, refId: data?.refId ?? null, target },
+        "mobile",
+        meta,
+        libraryTitleLookup(serverUrl ?? "", token ?? ""),
+      );
       openNotificationRoute(router, route);
     },
     [queryClient, router, serverUrl, token],

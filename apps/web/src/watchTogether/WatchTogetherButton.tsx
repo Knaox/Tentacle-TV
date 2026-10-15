@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { WatchTogetherPanel } from "./WatchTogetherPanel";
 import { useActiveProfile } from "../auth/profileSession";
+import { FloatingLayer } from "../components/floating/FloatingLayer";
 
 interface WatchTogetherButtonProps {
   dropdownPosition?: "below" | "right";
@@ -25,21 +26,12 @@ export function WatchTogetherButton(props: WatchTogetherButtonProps) {
 function WatchTogetherControl({ dropdownPosition = "below" }: WatchTogetherButtonProps) {
   const { invites, isInGroup } = useWatchTogether();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Close on click outside (la modale de salle vit hors du dropdown).
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setOpen((p) => !p)}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-fill-subtle text-content-secondary transition-all duration-200 hover:bg-fill-soft hover:text-content-primary"
         aria-label="Watch Together"
@@ -62,25 +54,25 @@ function WatchTogetherControl({ dropdownPosition = "below" }: WatchTogetherButto
         ) : null}
       </button>
 
-      {open && (
-        <div
-          className={`absolute z-50 animate-scale-in overflow-hidden rounded-xl ${
-            dropdownPosition === "right"
-              ? "bottom-0 left-full ml-2 w-96 origin-bottom-left"
-              : "right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 origin-top-right"
-          }`}
-          style={{
-            // Panneau flottant sur le fond de page : suit le schema. Le
-            // rgba(15,15,25) fige restait sombre en theme clair.
-            background: "var(--surface-dropdown)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid var(--border-subtle)",
-            boxShadow: "var(--shadow-dropdown)",
-          }}
-        >
-          <WatchTogetherPanel onClose={() => setOpen(false)} />
-        </div>
-      )}
+      {/* Le calque commun : jamais coupé par la fenêtre (la modale de salle vit hors du panneau). */}
+      <FloatingLayer
+        open={open}
+        anchor={buttonRef}
+        onDismiss={() => setOpen(false)}
+        side={dropdownPosition === "right" ? "right" : "bottom"}
+        align="end"
+        className="w-96 overflow-y-auto overscroll-contain rounded-xl"
+        style={{
+          // Panneau flottant sur le fond de page : suit le schema. Le
+          // rgba(15,15,25) fige restait sombre en theme clair.
+          background: "var(--surface-dropdown)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-dropdown)",
+        }}
+      >
+        <WatchTogetherPanel onClose={() => setOpen(false)} />
+      </FloatingLayer>
     </div>
   );
 }

@@ -17,6 +17,8 @@ export default {
   retry: "Réessayer",
   tileLabel: "Ouvrir le profil {{name}}",
   tileLabelPin: "Ouvrir le profil {{name}}, protégé par un code PIN",
+  tileLabelCurrent: "Continuer avec le profil {{name}}",
+  current: "Profil actuel",
   pin: {
     title: "Code PIN du profil {{name}}",
     prompt: "Saisissez le code PIN de ce profil.",

@@ -53,7 +53,7 @@ export function ProfilesRedesign({ navigation, route }: Props) {
         secondary: { label: unpairArmed ? t("pairing:tvUnpairConfirm") : t("pairing:tvUnpairDevice"), armed: unpairArmed },
       };
     }
-    const profiles = (listing?.profiles ?? []).map((profile) => tileModelOf(profile, serverUrl, now, i18n.language, t));
+    const profiles = (listing?.profiles ?? []).map((profile) => tileModelOf(profile, serverUrl, now, i18n.language, t, listing?.stickyProfileId ?? null));
     const pinned = phase.kind === "pin" && listing ? findProfile(listing, phase.profileId) : null;
     const tile = pinned ? profiles.find((candidate) => candidate.id === pinned.userId) : undefined;
     if (phase.kind === "pin" && tile) {

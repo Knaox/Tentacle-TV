@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
  * bureau peut très bien interroger.
  */
 
-const { readServices, readAudioAnalysis, readPublicUrl, AdminApiError } = await import("./servicesModel");
+const { readServices, readPublicUrl, AdminApiError } = await import("./servicesModel");
 const summary = await import("./serviceSummary");
 
 /** Intl sépare nombre et unité par une espace insécable (fine en français) : on compare le texte. */
@@ -85,11 +85,6 @@ describe("les autres tuiles", () => {
     expect(summary.summarizePublicUrl(readPublicUrl({ publicUrl: "", envFallback: "https://tv.example.com/" }))).toMatchObject({ tone: "success", detail: "tv.example.com" });
     expect(summary.summarizePublicUrl(readPublicUrl({}))).toEqual({ tone: "warning", label: "publicUrlMissing", detailKey: "publicUrlPairingBlocked" });
   });
-
-  it("analyse audio : sans outil, elle est indisponible quel que soit l'interrupteur", () => {
-    expect(summary.summarizeAudio(readAudioAnalysis({ enabled: true, tool: null })).label).toBe("audioNoTool");
-    expect(summary.summarizeAudio(readAudioAnalysis({ enabled: true, tool: "fpcalc" }))).toEqual({ tone: "success", label: "audioOn", detail: "fpcalc" });
-  });
 });
 
 describe("ce qu'un serveur plus ancien ne dit pas", () => {
@@ -100,10 +95,6 @@ describe("ce qu'un serveur plus ancien ne dit pas", () => {
     expect(status.database.sizeBytes).toBeNull();
     expect(status.database.pendingRestart).toBe(false);
     expect(status.database.fields?.host).toBe("db");
-  });
-
-  it("compteurs d'analyse audio sans « deferred »", () => {
-    expect(readAudioAnalysis({ counters: { jobs: 2 } }).counters).toMatchObject({ jobs: 2, bytes: 0, deferred: null });
   });
 
   it("un échec sans code garde le message du serveur", () => {
@@ -144,17 +135,5 @@ describe("les petites règles", () => {
     expect(plain(summary.formatBytes(14_500_000, "fr"))).toBe("14,5 Mo");
     expect(plain(summary.formatBytes(14_500_000, "en"))).toBe("14.5 MB");
     expect(plain(summary.formatBytes(1_200_000_000, "fr"))).toBe("1,2 Go");
-  });
-
-  it("les durées, en deux unités au plus", () => {
-    expect(plain(summary.formatDuration(16.4, "fr"))).toBe("16 s");
-    expect(plain(summary.formatDuration(125, "fr"))).toBe("2 min 5 s");
-    expect(plain(summary.formatDuration(3780, "fr"))).toBe("1 h 3 min");
-    expect(plain(summary.formatDuration(7200, "en"))).toBe("2 hr");
-  });
-
-  it("les mégaoctets, dans l'unité de la langue", () => {
-    expect(plain(summary.formatMegabytes(14_500_000, "fr"))).toBe("14,5 Mo");
-    expect(plain(summary.formatMegabytes(14_500_000, "en"))).toBe("14.5 MB");
   });
 });

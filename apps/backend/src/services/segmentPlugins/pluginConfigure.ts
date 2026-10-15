@@ -9,11 +9,13 @@ import type { SegmentPluginKey } from "./segmentPluginsContract";
  *
  * Intro Skipper : son écoute (Chromaprint) n'a PAS d'interrupteur à elle — la
  * chaîne d'analyseurs l'ajoute d'office (`BaseItemAnalyzerTask.cs`, branches
- * 10.11 et 12.0). Couper l'analyse audio, c'est donc couper son analyse
- * AUTOMATIQUE : `AutoDetectIntros` (à l'ajout d'un média) et la tâche de
- * détection nocturne, privée de déclencheurs. Le greffon reste : ses passages
- * déjà trouvés, son bouton dans les clients Jellyfin, et l'analyse à la main
- * depuis son panneau, si l'administrateur la veut.
+ * 10.11 et 12.0). Tentacle n'analyse plus l'audio et ne laisse pas Intro
+ * Skipper le faire : son analyse AUTOMATIQUE est coupée — `AutoDetectIntros`
+ * (à l'ajout d'un média) et la tâche de détection nocturne, privée de
+ * déclencheurs — à chaque installation ou réparation, et une fois au retrait
+ * de l'analyse audio (`segmentPluginsWatch.ts`). Tentacle n'offre aucun
+ * interrupteur pour la rallumer. Le greffon reste : ses passages déjà
+ * trouvés, son bouton dans les clients Jellyfin.
  *
  * TheIntroDB et SkipMe.db : les sources en ligne, actives — tous les types de
  * passages, la lecture au besoin (TheIntroDB), la synchronisation (SkipMe.db).
@@ -25,20 +27,23 @@ import type { SegmentPluginKey } from "./segmentPluginsContract";
 const isRecord = (value: unknown): value is Loose => typeof value === "object" && value !== null && !Array.isArray(value);
 const spec = (key: SegmentPluginKey): SegmentPluginSpec => SEGMENT_PLUGIN_SPECS.find((candidate) => candidate.key === key)!;
 
-/** Les champs voulus, posés s'ils diffèrent ; vrai si la configuration relue les porte. */
-async function patchConfiguration(guid: string, wanted: Record<string, unknown>): Promise<boolean> {
+/** Ce qu'un réglage a donné : déjà en place, posé à l'instant, ou pas posé. */
+type PatchOutcome = "held" | "patched" | "failed";
+
+/** Les champs voulus, posés s'ils diffèrent, puis relus. */
+async function patchConfiguration(guid: string, wanted: Record<string, unknown>): Promise<PatchOutcome> {
   const path = `/Plugins/${guid}/Configuration`;
   const current = await jellyfinAdminFetch(path);
-  if (!current.ok || !isRecord(current.data)) return false;
+  if (!current.ok || !isRecord(current.data)) return "failed";
   const config = current.data;
   const holds = (data: Loose) => Object.entries(wanted).every(([key, value]) => !(key in data) || data[key] === value);
-  if (holds(config)) return true;
+  if (holds(config)) return "held";
   // Un champ que cette version du greffon ne connaît pas n'est pas ajouté.
   const patch = Object.fromEntries(Object.entries(wanted).filter(([key]) => key in config));
   const res = await jellyfinAdminFetch(path, { method: "POST", body: { ...config, ...patch }, expectEmpty: true });
-  if (!res.ok) return false;
+  if (!res.ok) return "failed";
   const after = await jellyfinAdminFetch(path);
-  return after.ok && isRecord(after.data) && holds(after.data);
+  return after.ok && isRecord(after.data) && holds(after.data) ? "patched" : "failed";
 }
 
 async function readTasks(): Promise<Loose[] | null> {
@@ -57,24 +62,33 @@ const triggersOf = (task: Loose | undefined): unknown[] => (Array.isArray(task?.
 /** La nuit, une heure du matin : l'horaire que SkipMe.db se donne lui-même. */
 const SKIPME_DAILY_TRIGGER = { Type: "DailyTrigger", TimeOfDayTicks: 36_000_000_000 };
 
-/** L'analyse automatique d'Intro Skipper, écoute comprise, coupée. */
-export async function introSkipperAudioOff(): Promise<boolean> {
+/**
+ * L'analyse automatique d'Intro Skipper, écoute comprise, coupée. `done` : elle
+ * l'est ; `changed` : elle tournait encore, au moins en partie.
+ */
+export async function introSkipperAutoOff(): Promise<{ done: boolean; changed: boolean }> {
   const configured = await patchConfiguration(spec("introSkipper").guid, { AutoDetectIntros: false });
   const tasks = await readTasks();
-  const detect = tasks?.find((task) => task.Key === PLUGIN_TASK_KEYS.introSkipperDetect);
-  if (!tasks) return false;
-  const quiet = !detect || triggersOf(detect).length === 0 || (await setTriggers(detect, []));
-  return configured && quiet;
+  if (!tasks) return { done: false, changed: configured === "patched" };
+  const detect = tasks.find((task) => task.Key === PLUGIN_TASK_KEYS.introSkipperDetect);
+  const scheduled = detect !== undefined && triggersOf(detect).length > 0;
+  const quiet = detect === undefined || !scheduled || (await setTriggers(detect, []));
+  return { done: configured !== "failed" && quiet, changed: configured === "patched" || (scheduled && quiet) };
+}
+
+async function introSkipperOff(): Promise<boolean> {
+  return (await introSkipperAutoOff()).done;
 }
 
 async function theIntroDbOnline(): Promise<boolean> {
-  return patchConfiguration(spec("theIntroDb").guid, {
+  const outcome = await patchConfiguration(spec("theIntroDb").guid, {
     EnableIntro: true,
     EnableRecap: true,
     EnableCredits: true,
     EnablePreview: true,
     EnableOnDemandFetch: true,
   });
+  return outcome !== "failed";
 }
 
 async function skipMeOnline(): Promise<boolean> {
@@ -87,7 +101,7 @@ async function skipMeOnline(): Promise<boolean> {
 }
 
 const CONFIGURE: Record<SegmentPluginKey, () => Promise<boolean>> = {
-  introSkipper: introSkipperAudioOff,
+  introSkipper: introSkipperOff,
   theIntroDb: theIntroDbOnline,
   skipMeDb: skipMeOnline,
 };

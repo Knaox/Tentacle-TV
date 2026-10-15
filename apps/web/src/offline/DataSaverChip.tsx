@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FloatingLayer } from "../components/floating/FloatingLayer";
 import { useConnectivity } from "./useConnectivity";
 import { useDataSaverActive, useDataSaverSetting } from "./useDataSaver";
 
@@ -24,26 +25,6 @@ export function DataSaverChip() {
   const { setting, setSetting } = useDataSaverSetting();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setOpen(false);
-      }
-    };
-    const onClick = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    const id = setTimeout(() => document.addEventListener("mousedown", onClick), 0);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      clearTimeout(id);
-      document.removeEventListener("mousedown", onClick);
-    };
-  }, [open]);
 
   const offline = state === "offline-auto" || state === "offline-manual";
   useEffect(() => {
@@ -65,48 +46,50 @@ export function DataSaverChip() {
         <span className="hidden sm:inline">{t("saverChip")}</span>
       </button>
 
-      {open && (
-        <div
-          role="dialog"
-          aria-label={t("saverPopoverTitle")}
-          className="absolute right-0 top-full z-50 mt-2 w-72 origin-top-right animate-scale-in overflow-hidden"
-          style={{
-            background: "var(--surface-dropdown)",
-            border: "1px solid var(--border-subtle)",
-            borderRadius: "var(--radius-lg)",
-            boxShadow: "var(--shadow-dropdown)",
-            backdropFilter: "blur(var(--blur-dropdown))",
-            WebkitBackdropFilter: "blur(var(--blur-dropdown))",
-          }}
-        >
-          <div className="border-b border-line-subtle px-4 py-3">
-            <p className="text-sm font-semibold text-content-primary">{t("saverPopoverTitle")}</p>
-            <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
-              {setting === "on" ? t("saverForcedReason") : t("saverAutoReason")}
-            </p>
+      {/* Le calque commun : posé dans la fenêtre, jamais coupé (`FloatingLayer`). */}
+      <FloatingLayer
+        open={open}
+        anchor={wrapRef}
+        onDismiss={() => setOpen(false)}
+        role="dialog"
+        ariaLabel={t("saverPopoverTitle")}
+        className="w-72 overflow-y-auto overscroll-contain"
+        style={{
+          background: "var(--surface-dropdown)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow-dropdown)",
+          backdropFilter: "blur(var(--blur-dropdown))",
+          WebkitBackdropFilter: "blur(var(--blur-dropdown))",
+        }}
+      >
+        <div className="border-b border-line-subtle px-4 py-3">
+          <p className="text-sm font-semibold text-content-primary">{t("saverPopoverTitle")}</p>
+          <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
+            {setting === "on" ? t("saverForcedReason") : t("saverAutoReason")}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-content-quaternary">
+            {t("saverEffects")}
+          </p>
+          {setting === "auto" && (
             <p className="mt-1 text-xs leading-relaxed text-content-quaternary">
-              {t("saverEffects")}
+              {t("saverAutoHint")}
             </p>
-            {setting === "auto" && (
-              <p className="mt-1 text-xs leading-relaxed text-content-quaternary">
-                {t("saverAutoHint")}
-              </p>
-            )}
-          </div>
-          <div className="px-4 py-3">
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                setSetting("off");
-              }}
-              className="inline-flex w-full items-center justify-center rounded-md bg-cta-ghost-bg px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
-            >
-              {t("saverDisable")}
-            </button>
-          </div>
+          )}
         </div>
-      )}
+        <div className="px-4 py-3">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              setSetting("off");
+            }}
+            className="inline-flex w-full items-center justify-center rounded-md bg-cta-ghost-bg px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+          >
+            {t("saverDisable")}
+          </button>
+        </div>
+      </FloatingLayer>
     </div>
   );
 }

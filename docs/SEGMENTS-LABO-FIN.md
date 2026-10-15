@@ -1,5 +1,15 @@
 # La fin d'un média, à l'image et au son — relevés du labo (27.09.2026)
 
+> **Le son est retiré le 2026-10-15** avec l'analyse audio de Tentacle. La
+> lecture ne garde que les VIGNETTES : défilement, marqueurs des fournisseurs,
+> scènes d'image après le défilement, logos de fin. Ce que seul le son
+> décidait — scènes parlées (mi-génériques, prises en sandwich, sorties du
+> noir), générique illustré, aperçu du prochain épisode, marqueur tombé dans
+> le film, texte clair tranché par la parole — est supprimé (`tailAudio`,
+> `audioFeatures`, `speechModel`, `tailIllustrated`, `tailPreview`), et la
+> lecture d'une frise sans son est restée identique (banc différentiel de
+> 40 000 frises). Les mesures ci-dessous restent pour mémoire.
+
 Ce document fixe ce que le labo du 27 septembre a MESURÉ sur la fin de
 102 médias réels — 77 films, 25 épisodes —, ce qui en a été retenu dans le code
 (`apps/backend/src/services/tailAnalysis/`, `playback/tailVerdict.ts`), les

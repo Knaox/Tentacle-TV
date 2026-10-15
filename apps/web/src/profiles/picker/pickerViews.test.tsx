@@ -24,7 +24,8 @@ const TRAP = "<b>Léa</b><img src=x onerror=alert(1)>";
 const noop = () => {};
 
 function profile(id: string, patch: Partial<PickerProfile> = {}): PickerProfile {
-  return { id, name: id, color: "teal", imageTag: null, hasPin: false, guest: false, own: false, lockedLabel: null, ...patch };
+  // Le cadenas fermé suit le code PIN, sauf mention contraire (le profil en cours).
+  return { id, name: id, color: "teal", imageTag: null, hasPin: false, pinLock: patch.hasPin ?? false, current: false, guest: false, own: false, lockedLabel: null, ...patch };
 }
 
 function view(model: WhoIsWatchingModel, onCancel?: () => void): string {
@@ -44,6 +45,23 @@ describe("« Qui regarde ? » — la rangée", () => {
     expect(html).toContain("family:kindGuest");
     expect(html.match(/lucide-lock/g)?.length).toBe(2);
     expect(html).toContain("manageProfiles");
+  });
+
+  it("le profil en cours (« Changer de profil ») : ni cadenas fermé ni « bloqué », « Profil actuel » et son anneau", () => {
+    const current = profile("zoe", { hasPin: true, pinLock: false, current: true });
+    const html = view({ kind: "picker", profiles: [FAMILY[0]!, current, FAMILY[2]!], canManage: true, notice: null, entering: null });
+    // Seule Léa, qui demandera vraiment son code, garde le cadenas fermé.
+    expect(html.match(/lucide-lock/g)?.length).toBe(1);
+    expect(html).toContain('aria-label="profilePicker:tileLabelCurrent{&quot;name&quot;:&quot;zoe&quot;}, profilePicker:current"');
+    expect(html).not.toContain("profilePicker:tileLabelPin{&quot;name&quot;:&quot;zoe&quot;}");
+    expect(html.match(/ring-content-primary/g)?.length).toBe(1);
+  });
+
+  it("un profil sans code : ni cadenas ni anneau", () => {
+    const html = view({ kind: "picker", profiles: [FAMILY[0]!, profile("max")], canManage: true, notice: null, entering: null });
+    expect(html).not.toContain("lucide-lock");
+    expect(html).not.toContain("ring-content-primary");
+    expect(html).not.toContain("profilePicker:current");
   });
 
   it("tabulation itinérante : un seul profil dans l'ordre de tabulation, le premier", () => {

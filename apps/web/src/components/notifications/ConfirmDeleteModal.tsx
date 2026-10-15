@@ -16,7 +16,8 @@ export function ConfirmDeleteModal({
 }: ConfirmDeleteModalProps) {
   return (
     <Modal open={open} onClose={onCancel} maxWidth={400} labelledBy="confirm-delete-title">
-      <div className="p-6">
+      {/* Ouverte depuis le panneau des notifications : un clic ici ne le referme pas. */}
+      <div className="p-6" data-floating-keep>
         <h3 id="confirm-delete-title" className="text-base font-semibold text-content-primary">
           {title}
         </h3>

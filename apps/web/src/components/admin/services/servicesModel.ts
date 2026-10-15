@@ -94,28 +94,10 @@ export interface DirectStreamingTest {
   cors: JellyfinCorsReport | null;
 }
 
-export interface AudioCounters {
-  jobs: number;
-  windows: number;
-  bytes: number;
-  seconds: number;
-  verdicts: number;
-  silent: number;
-  /** `null` : serveur d'avant ce compteur. */
-  deferred: number | null;
-}
-
-export interface AudioAnalysisStatus {
-  enabled: boolean;
-  tool: string | null;
-  counters: AudioCounters;
-}
-
 export const SERVICES_KEYS = {
   status: ["admin", "services", "status"],
   publicUrl: ["admin", "services", "public-url"],
   directStreaming: ["admin", "services", "direct-streaming"],
-  audioAnalysis: ["admin", "services", "audio-analysis"],
   /** Partagée avec l'avertissement des clients (`useAdminKeyHealth`), et son lecteur avec : un enregistrement réussi y efface l'alerte. */
   jellyfinKey: ADMIN_KEY_HEALTH_KEY,
 } as const;
@@ -218,22 +200,4 @@ function readCors(raw: unknown): JellyfinCorsReport | null {
 export function readDirectStreamingTest(raw: unknown): DirectStreamingTest {
   const r = asRecord(raw);
   return { public: readProbe(r.public), private: readProbe(r.private), cors: readCors(r.cors) };
-}
-
-export function readAudioAnalysis(raw: unknown): AudioAnalysisStatus {
-  const r = asRecord(raw);
-  const c = asRecord(r.counters);
-  return {
-    enabled: r.enabled === true,
-    tool: text(r.tool) || null,
-    counters: {
-      jobs: count(c.jobs),
-      windows: count(c.windows),
-      bytes: count(c.bytes),
-      seconds: count(c.seconds),
-      verdicts: count(c.verdicts),
-      silent: count(c.silent),
-      deferred: typeof c.deferred === "number" ? c.deferred : null,
-    },
-  };
 }

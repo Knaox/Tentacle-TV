@@ -1,7 +1,8 @@
 /**
  * Définitions partagées entre UserAvatarMenu (dropdown desktop) et
- * MobileUserSheet (bottom sheet mobile). Source unique de vérité pour la liste
- * des actions du menu utilisateur, l'état admin/Tauri, et l'avatar.
+ * MobileUserSheet (bottom sheet mobile). Source unique de vérité pour les
+ * entrées du menu utilisateur, leurs FAMILLES (`buildUserMenuGroups`), l'état
+ * admin et l'avatar.
  */
 
 import type { CSSProperties, ReactNode } from "react";
@@ -75,18 +76,56 @@ export function getUserInfo(): UserInfo {
 }
 
 /**
- * Ordre canonique : Mes statistiques → Préférences → Admin (si admin) →
- * Jumeler → À propos → Aide → Crédits (mobile uniquement) → Sur cet appareil →
- * Passer hors ligne → séparateur → Déconnexion. Les statistiques ouvrent la
- * liste : c'est la seule entrée qui parle de l'utilisateur plutôt que de
- * l'application.
+ * Les familles du menu, dans l'ordre où elles s'affichent. Chacune est
+ * séparée de la suivante par un filet ; une famille vide n'est pas rendue.
+ *
+ * - `account` — MOI : mes statistiques, mes paramètres, l'administration
+ *   (un rôle du compte, à côté de ses réglages) ;
+ * - `device` — CET APPAREIL : ce qu'il garde, le passage hors ligne, le
+ *   jumelage d'une TV ;
+ * - `support` — l'aide, à propos (et les crédits sur la feuille) : le
+ *   secondaire, en pied de menu ;
+ * - `session` — la déconnexion, seule, à part et en dernier.
+ *
+ * Le menu s'ouvrait sur dix entrées à plat (revue du 15/10) : des familles
+ * courtes, séparées, se lisent d'un coup d'œil (Apple HIG : regrouper ce qui
+ * va ensemble ; NN/g : un menu court ; la déconnexion à part, en dernier).
  */
+export type UserMenuGroupKey = "account" | "device" | "support" | "session";
+
+export interface UserMenuGroup {
+  key: UserMenuGroupKey;
+  items: UserMenuItem[];
+}
+
+export const USER_MENU_GROUP_ORDER: readonly UserMenuGroupKey[] = ["account", "device", "support", "session"];
+
+/**
+ * Les familles du menu (voir plus haut), sans les familles vides. La session
+ * d'un PROFIL tait ce que le serveur lui refuse (`profileSessionRefusals`).
+ */
+export function buildUserMenuGroups(opts: BuildItemsOptions): UserMenuGroup[] {
+  const refused = opts.profileSession ? profileSessionRefusals(opts.profileSession) : null;
+  const all = buildAllGroups(opts);
+  return USER_MENU_GROUP_ORDER
+    .map((key) => ({ key, items: all[key].filter((item) => !refused?.has(item.key)) }))
+    .filter((group) => group.items.length > 0);
+}
+
+/** Les entrées du menu à plat, dans l'ordre des familles. */
 export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
-  const items = buildAllItems(opts);
-  const profile = opts.profileSession;
-  if (!profile) return items;
-  const refused = profileSessionRefusals(profile);
-  return items.filter((item) => !refused.has(item.key));
+  return buildUserMenuGroups(opts).flatMap((group) => group.items);
+}
+
+/**
+ * Les entrées de profils que le MENU garde : « Changer de profil » seul, sous
+ * l'en-tête d'identité. « Gérer les profils » n'y est plus — il est sur
+ * l'écran « Qui regarde ? » que « Changer de profil » ouvre (le modèle de
+ * Netflix), et dans Paramètres › Famille ; la page Profil d'une fenêtre
+ * étroite (`ProfileLinks`) le garde, elle.
+ */
+export function menuProfileItems(items: readonly UserMenuItem[]): UserMenuItem[] {
+  return items.filter((item) => item.key === "switchProfile");
 }
 
 /**
@@ -98,36 +137,30 @@ export function profileSessionRefusals(profile: { guest: boolean }): ReadonlySet
   return new Set(["admin", "pair", "onDevice", "goOffline", "logout", ...(profile.guest ? ["help"] : [])]);
 }
 
-function buildAllItems(opts: BuildItemsOptions): UserMenuItem[] {
+function buildAllGroups(opts: BuildItemsOptions): Record<UserMenuGroupKey, UserMenuItem[]> {
   const { t, isAdmin, navigate, handleLogout, extended, goOffline, offline, onDevice } = opts;
-  const items: UserMenuItem[] = [];
-  if (!offline) {
-    items.push({ key: "stats", label: t("stats"), icon: <StatsIcon />, action: () => navigate("/stats") });
-  }
-  items.push({ key: "settings", label: t("preferences"), icon: <SettingsIcon />, action: () => navigate("/settings") });
-  if (isAdmin && !offline) {
-    items.push({ key: "admin", label: t("admin"), icon: <AdminIcon />, action: () => navigate("/admin") });
-  }
-  if (!offline) {
-    items.push({ key: "pair", label: t("pairDevice"), icon: <PairIcon />, action: () => navigate("/pair-device") });
-  }
-  items.push({ key: "about", label: t("about"), icon: <InfoIcon />, action: () => navigate("/about") });
-  if (!offline) {
-    items.push({ key: "help", label: t("help"), icon: <HelpIcon />, action: () => navigate("/support") });
-  }
-  if (extended) {
-    items.push({ key: "credits", label: t("credits"), icon: <CreditsIcon />, action: () => navigate("/credits") });
-  }
-  // Hors ligne, la barre porte déjà les deux destinations (`OfflineNavLinks`) :
-  // l'entrée n'a de sens qu'EN LIGNE, où rien d'autre n'y mène.
-  if (onDevice && !offline) {
-    items.push({ key: "onDevice", label: t("onDevice"), icon: <OnDeviceIcon />, action: () => navigate("/on-device") });
-  }
-  if (goOffline) {
-    items.push({ key: "goOffline", label: t("goOffline"), icon: <OfflineIcon />, action: goOffline });
-  }
-  items.push({ key: "logout", label: t("logout"), icon: <LogoutIcon />, action: handleLogout, danger: true });
-  return items;
+  const account: UserMenuItem[] = [];
+  const device: UserMenuItem[] = [];
+  const support: UserMenuItem[] = [];
+  // Les statistiques ouvrent le menu : la seule entrée qui parle de l'utilisateur plutôt que de l'application.
+  if (!offline) account.push({ key: "stats", label: t("stats"), icon: <StatsIcon />, action: () => navigate("/stats") });
+  account.push({ key: "settings", label: t("preferences"), icon: <SettingsIcon />, action: () => navigate("/settings") });
+  if (isAdmin && !offline) account.push({ key: "admin", label: t("admin"), icon: <AdminIcon />, action: () => navigate("/admin") });
+
+  // Hors ligne, la barre porte déjà les destinations locales (`OfflineNavLinks`) :
+  // « Sur cet appareil » n'a de sens qu'EN LIGNE, où rien d'autre n'y mène.
+  if (onDevice && !offline) device.push({ key: "onDevice", label: t("onDevice"), icon: <OnDeviceIcon />, action: () => navigate("/on-device") });
+  if (goOffline) device.push({ key: "goOffline", label: t("goOffline"), icon: <OfflineIcon />, action: goOffline });
+  if (!offline) device.push({ key: "pair", label: t("pairDevice"), icon: <PairIcon />, action: () => navigate("/pair-device") });
+
+  if (!offline) support.push({ key: "help", label: t("help"), icon: <HelpIcon />, action: () => navigate("/support") });
+  support.push({ key: "about", label: t("about"), icon: <InfoIcon />, action: () => navigate("/about") });
+  if (extended) support.push({ key: "credits", label: t("credits"), icon: <CreditsIcon />, action: () => navigate("/credits") });
+
+  const session: UserMenuItem[] = [
+    { key: "logout", label: t("logout"), icon: <LogoutIcon />, action: handleLogout, danger: true },
+  ];
+  return { account, device, support, session };
 }
 
 /** Le dégradé de marque du rond du compte (hors famille) — repris par `avatarBackgroundFor`, `avatarRingStyleFor` et le miroir. */

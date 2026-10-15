@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { FamilyNotificationType } from "@tentacle-tv/shared";
+import type { FamilyNotificationType, NotificationState, NotificationTarget } from "@tentacle-tv/shared";
 
 let _backendBase = "/api/notifications";
 
@@ -14,7 +14,21 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function notifFetch<T>(path: string, init?: RequestInit): Promise<T> {
+/** La racine du serveur Tentacle (vide sur le web : même origine). */
+export function notificationsBackendRoot(): string {
+  return _backendBase.replace(/\/api\/notifications$/, "");
+}
+
+/** Un appel au serveur Tentacle avec la même authentification que la cloche. */
+export function backendFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  return rawFetch<T>(`${notificationsBackendRoot()}${path}`, init);
+}
+
+function notifFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  return rawFetch<T>(`${_backendBase}${path}`, init);
+}
+
+async function rawFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...getAuthHeader(),
     ...(init?.headers as Record<string, string>),
@@ -24,7 +38,7 @@ async function notifFetch<T>(path: string, init?: RequestInit): Promise<T> {
   // Use credentials: "include" (cookies) only on web (no Bearer token in localStorage).
   // Desktop/mobile send the token via Authorization header — cookies don't work cross-origin.
   const hasToken = !!localStorage.getItem("tentacle_token");
-  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
+  const res = await fetch(url, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
@@ -50,6 +64,10 @@ export interface AppNotification {
   title: string;
   body: string | null;
   refId: string | null;
+  /** Où mène la notification (contrat shared `notificationTarget`) ; absente d'un serveur d'avant 1.30.0. */
+  target?: NotificationTarget | null;
+  /** L'état de ce dont elle parle — une pastille ; absent = aucune. */
+  state?: NotificationState | null;
   read: boolean;
   createdAt: string;
 }
@@ -80,13 +98,14 @@ export function useUnreadCount() {
   });
 }
 
+// Lire se voit tout de suite (le point disparaît au clic) ; le serveur suit.
 export function useMarkAllRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => notifFetch<{ success: boolean }>("/read-all", { method: "POST" }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-    },
+    onMutate: async () => markReadLocally(qc, () => true),
+    onError: (_err, _vars, ctx) => { if (ctx) rollback(qc, ctx); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
   });
 }
 
@@ -94,9 +113,9 @@ export function useMarkRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => notifFetch<{ success: boolean }>(`/${id}/read`, { method: "POST" }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-    },
+    onMutate: async (id) => markReadLocally(qc, (n) => n.id === id),
+    onError: (_err, _id, ctx) => { if (ctx) rollback(qc, ctx); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
   });
 }
 
@@ -115,6 +134,29 @@ function snapshotNotifs(qc: ReturnType<typeof useQueryClient>): NotifSnapshot {
   }
   const unread = qc.getQueryData<{ count: number }>(["notifications", "unread-count"]);
   return { lists, unread };
+}
+
+async function markReadLocally(
+  qc: ReturnType<typeof useQueryClient>,
+  match: (n: AppNotification) => boolean,
+): Promise<NotifSnapshot> {
+  await qc.cancelQueries({ queryKey: ["notifications"] });
+  const snap = snapshotNotifs(qc);
+  let newlyRead = 0;
+  for (const [key, data] of snap.lists) {
+    if (!data) continue;
+    qc.setQueryData(key, data.map((n) => {
+      if (n.read || !match(n)) return n;
+      newlyRead++;
+      return { ...n, read: true };
+    }));
+  }
+  if (newlyRead > 0 && snap.unread) {
+    // Une même notification figure dans plusieurs listes (limites) : on compte par identifiant.
+    const ids = new Set(snap.lists.flatMap(([, d]) => (d ?? []).filter((n) => !n.read && match(n)).map((n) => n.id)));
+    qc.setQueryData(["notifications", "unread-count"], { count: Math.max(0, snap.unread.count - ids.size) });
+  }
+  return snap;
 }
 
 function rollback(qc: ReturnType<typeof useQueryClient>, snap: NotifSnapshot): void {
