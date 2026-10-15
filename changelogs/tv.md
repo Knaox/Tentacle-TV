@@ -12,6 +12,7 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **Aperçu de bande-annonce au focus** : rapide, à la taille des cartes choisie, jamais hors de l'écran — titres hors bibliothèque compris
 - **Recommandations en couleurs** ; un titre hors bibliothèque reprend ses couleurs au focus
 - **Réglages › Accueil** : choisissez ce que montre le bandeau principal — reprises, hasard, Pour vous, un titre choisi, ou les films ou séries les mieux recommandés (serveur 1.30.0)
+- **Recherche** : depuis le meilleur résultat, la flèche du bas mène à la première carte de la rangée suivante, et non plus au milieu
 
 ### EN
 - **“Who's watching?”**: the profile remembered on this TV no longer shows a lock, since it opens without a PIN
@@ -19,6 +20,7 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **Trailer preview on focus**: quick, sized to your card size, never off-screen — titles outside the library included
 - **Recommendations in color**; a title outside the library regains its colors on focus
 - **Settings › Home**: choose what the main banner shows — resume, random, For you, one chosen title, or your best-recommended movies or shows (server 1.30.0)
+- **Search**: from the top result, pressing down now goes to the first card of the next row instead of the middle
 
 ## [1.10.2]
 <!-- Bloc nu : Android TV (Google Play, 500 caractères). Depuis la 1.10.1 : le lecteur de bande-annonce simplifié, l'écran de la migration de la base. -->
