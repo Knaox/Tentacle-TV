@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Bell, BellOff } from "lucide-react";
 import {
-  resolveNotificationRoute,
+  groupNotificationsByDay,
   useDeleteAllNotifications,
   useDeleteNotification,
   useDeleteNotifications,
@@ -11,12 +11,13 @@ import {
   useMarkAllRead,
   useMarkRead,
   useNotifications,
+  useNotificationOpener,
   useNotificationsLive,
   useUnreadCount,
   type AppNotification,
 } from "@tentacle-tv/api-client";
 import { openFamilyNotification } from "../../family/familyPosterStore";
-import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { useNotificationPlugins } from "../../components/notifications/useNotificationPlugins";
 import { BottomSheet } from "../ui/BottomSheet";
 import { NotifSheetHeader } from "./NotifSheetHeader";
 import { MirrorNotifRow } from "./MirrorNotifRow";
@@ -43,17 +44,7 @@ export function MirrorNotificationBell() {
   const client = useJellyfinClient();
   useNotificationsLive({ token: client.getAccessToken() || localStorage.getItem("tentacle_token") });
 
-  const plugins = useActivePluginsMeta();
-  const pluginNavMeta = useMemo(
-    () =>
-      plugins
-        .filter((p) => p.configEnabled)
-        .map((p) => ({
-          pluginId: p.pluginId,
-          navItems: (p.navItems || []).filter((n: Record<string, unknown>) => !n.admin) as Array<{ path: string; platforms: string[] }>,
-        })),
-    [plugins],
-  );
+  const plugins = useNotificationPlugins();
 
   const count = unread?.count ?? 0;
 
@@ -74,19 +65,21 @@ export function MirrorNotificationBell() {
     exitSelection();
   }, [exitSelection]);
 
+  // La destination exacte (cible de l'émetteur, sinon la route du type) : la
+  // même règle que la cloche du bureau et que le mobile.
+  const openTarget = useNotificationOpener({ platform: "web", plugins, navigate, onLeave: close });
   const onPress = useCallback(
     (n: AppNotification) => {
-      if (!n.read) markOne.mutate(n.id);
       // « X vous invite… » : l'affiche de l'invitation, pas une page.
-      if (openFamilyNotification(n)) return close();
-      const route = resolveNotificationRoute(n, "web", pluginNavMeta);
-      if (route) {
-        close();
-        navigate(route);
+      if (openFamilyNotification(n)) {
+        if (!n.read) markOne.mutate(n.id);
+        return close();
       }
+      openTarget(n);
     },
-    [markOne, pluginNavMeta, close, navigate],
+    [markOne, close, openTarget],
   );
+  const groups = useMemo(() => groupNotificationsByDay(notifications ?? []), [notifications]);
 
   const onDeleteAll = useCallback(() => {
     if (window.confirm(t("confirmDeleteAll"))) deleteAll.mutate();
@@ -121,25 +114,33 @@ export function MirrorNotificationBell() {
           onCancel={exitSelection}
         />
         <div className="px-4 pt-3">
-          {(notifications ?? []).length === 0 ? (
-            <div className="mt-12 flex flex-col items-center gap-4 text-center">
-              <BellOff size={40} className="text-content-quaternary" aria-hidden />
-              <p className="text-[15px] text-content-tertiary">{t("noNotifications")}</p>
+          {groups.length === 0 ? (
+            <div className="mt-12 flex flex-col items-center gap-2 px-6 text-center">
+              <BellOff size={40} className="mb-2 text-content-quaternary" aria-hidden />
+              <p className="text-[15px] font-semibold text-content-primary">{t("emptyTitle")}</p>
+              <p className="text-[13px] leading-[18px] text-content-tertiary">{t("emptyHint")}</p>
             </div>
           ) : (
-            (notifications ?? []).map((n) => (
-              <MirrorNotifRow
-                key={n.id}
-                notif={n}
-                selectionMode={selectionMode}
-                isSelected={selected.has(n.id)}
-                onPress={() => (selectionMode ? toggle(n.id) : onPress(n))}
-                onLongPress={() => {
-                  setSelectionMode(true);
-                  toggle(n.id);
-                }}
-                onDelete={() => deleteOne.mutate(n.id)}
-              />
+            groups.map(({ group, items }) => (
+              <Fragment key={group}>
+                <p className="mb-2 mt-1 text-xs font-semibold uppercase tracking-wider text-content-quaternary">
+                  {t(group === "today" ? "groupToday" : "groupEarlier")}
+                </p>
+                {items.map((n) => (
+                  <MirrorNotifRow
+                    key={n.id}
+                    notif={n}
+                    selectionMode={selectionMode}
+                    isSelected={selected.has(n.id)}
+                    onPress={() => (selectionMode ? toggle(n.id) : onPress(n))}
+                    onLongPress={() => {
+                      setSelectionMode(true);
+                      toggle(n.id);
+                    }}
+                    onDelete={() => deleteOne.mutate(n.id)}
+                  />
+                ))}
+              </Fragment>
             ))
           )}
         </div>
