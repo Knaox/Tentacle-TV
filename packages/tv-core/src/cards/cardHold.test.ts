@@ -22,6 +22,11 @@ describe("l'appui maintenu d'une carte", () => {
     expect(holdPanelOf({ surface: "forYou" })).toEqual({ kind: "reco" });
   });
 
+  it("une recommandation HORS bibliothèque : le panneau d'un titre absent, qui garde « Ne plus me proposer »", () => {
+    expect(holdPanelOf({ surface: "homeRow", row: "reco", absent: true })).toEqual({ kind: "absent", dismiss: true });
+    expect(holdPanelOf({ surface: "forYou", absent: true })).toEqual({ kind: "absent", dismiss: true });
+  });
+
   it("sur un bouton du héros, ouvre le panneau dans la forme de sa source", () => {
     expect(holdPanelOf({ surface: "hero", fromResume: true })).toEqual(landscape);
     expect(holdPanelOf({ surface: "hero", fromResume: false })).toEqual(poster);

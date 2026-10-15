@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
-import { useFeaturedItems, useJellyfinOutage, useLibraries, useResumeItems } from "@tentacle-tv/api-client";
+import { useFeaturedItems, useJellyfinOutage, useLibraries, useRecoCardHold, useResumeItems, useSendRecoFeedback } from "@tentacle-tv/api-client";
 import { connectivityCaseOf, connectivityCopy, latestAdditionsSeasonId, type MediaItem } from "@tentacle-tv/shared";
 import { homeEntryKey, homeLoading } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
@@ -20,6 +20,8 @@ import { useRecoFilter } from "../reco/useRecoFilter";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { usePerfReady } from "../../platform/perf";
 import { RedesignScreen } from "../screen/RedesignScreen";
+import type { AbsentTitle } from "../vigie/absentTitle";
+import { useTitleRequests } from "../vigie/useTitleRequests";
 import { useAmbientPalette } from "../screen/useAmbientPalette";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { useHomeHero } from "./useHomeHero";
@@ -37,7 +39,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
  *
  * OK : lecture sur une vignette 16:9 (Reprendre, Prochains épisodes, Déjà
  * vu), fiche ailleurs. Appui long : la feuille d'actions, dans la variante de
- * la carte.
+ * la carte. Un titre recommandé HORS bibliothèque (garde Vigie ouverte) se
+ * demande à OK ; son panneau garde « Ne plus me proposer », et sa carte est
+ * tenue tant qu'une de ses feuilles est ouverte (comme dans « Pour vous »).
  */
 export function HomeRedesign({ navigation, route }: Props) {
   const { t } = useTranslation();
@@ -49,7 +53,10 @@ export function HomeRedesign({ navigation, route }: Props) {
   const librariesQuery = useLibraries();
   // La même lecture que la rangée « Reprendre » (cache commun) : une source du héros.
   const resumeQuery = useResumeItems();
-  const home = useHomeRowModels();
+  const requests = useTitleRequests();
+  const home = useHomeRowModels(requests?.gate ?? null);
+  useRecoCardHold(requests?.heldKey ?? null);
+  const { mutate: sendFeedback } = useSendRecoFeedback();
   const { rows: layout } = useTVHomeRows();
   const filterRowKey = useRecoFilterChipRow(layout);
   const { filter, removeFilter } = useRecoFilter();
@@ -71,7 +78,8 @@ export function HomeRedesign({ navigation, route }: Props) {
   // Le héros dans le champ, et aucun panneau par-dessus : sa rotation se
   // suspend quand il en sort, ou qu'un grand panneau s'ouvre devant lui.
   const [heroInView, setHeroInView] = useState(true);
-  const hero = useHomeHero(focus, { play, detail, sheet }, heroInView && cardActions.sheet === null);
+  const requestOpen = (requests?.heldKey ?? null) !== null;
+  const hero = useHomeHero(focus, { play, detail, sheet }, heroInView && cardActions.sheet === null && !requestOpen);
 
   // L'état de l'écran d'abord : il décide de l'entrée du focus. L'accueil se
   // montre D'UN BLOC (tv-core `homeLoading`) : les sources du héros et les
@@ -129,25 +137,39 @@ export function HomeRedesign({ navigation, route }: Props) {
   }, [failed, failCause, loading, empty, quiet, t, retry, reconnect]);
 
   const { targetOf } = home;
+  const openRequest = requests?.open;
+  const holdRequest = requests?.hold;
   const onPressCard = useCallback(
     (rowKey: string, card: CardModel) => {
       const target = targetOf(rowKey, card.id);
       if (!target) return;
+      if (target.absent) {
+        if (target.press === "request") openRequest?.(target.absent);
+        return;
+      }
       if (target.press === "play") play(target.item);
       else detail(target.item);
     },
-    [targetOf, play, detail],
+    [targetOf, play, detail, openRequest],
+  );
+  const dismiss = useCallback(
+    (title: AbsentTitle) => sendFeedback({ itemKey: title.key, action: "dismissed" }),
+    [sendFeedback],
   );
   const onLongPressCard = useCallback(
     (rowKey: string, card: CardModel) => {
       const target = targetOf(rowKey, card.id);
       if (!target?.panel) return;
       const { panel } = target;
+      if (target.absent) {
+        if (panel.kind === "absent") holdRequest?.(target.absent, panel.dismiss ? { onDismiss: dismiss } : undefined);
+        return;
+      }
       if (panel.kind === "media" && panel.variant === "landscape") openLandscape(target.item);
       else if (panel.kind === "reco" && target.reco) openReco(target.reco);
       else openPoster(target.item);
     },
-    [targetOf, openLandscape, openPoster, openReco],
+    [targetOf, openLandscape, openPoster, openReco, holdRequest, dismiss],
   );
 
   // La lumière quand aucune carte n'impose la sienne (`ambient`, que le fond suit seul).
@@ -176,6 +198,7 @@ export function HomeRedesign({ navigation, route }: Props) {
         onHeroVisibleChange={setHeroInView}
       />
       {cardActions.sheet}
+      {requests?.overlay}
     </RedesignScreen>
   );
 }

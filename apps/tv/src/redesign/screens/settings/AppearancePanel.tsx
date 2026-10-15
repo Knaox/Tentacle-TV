@@ -1,7 +1,10 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import type { CardSize } from "@tentacle-tv/tv-core";
+import { useCardMetrics } from "../../cards/cardSizeMode";
 import { useLiquidGlassEnabled } from "../../glass/liquidGlassMode";
+import { CardSizeSection } from "./CardSizeSection";
 import { GlassPreview } from "./GlassPreview";
 import { LiteModeSection } from "./LiteModeSection";
 import { SectionTitle } from "./settingsParts";
@@ -9,7 +12,9 @@ import { ToggleRow } from "./ToggleRow";
 import type { SettingsRenderTier } from "./settingsTypes";
 
 /**
- * L'onglet Apparence : l'interrupteur Liquid Glass, dans le même sens que le
+ * L'onglet Apparence : la taille des cartes (Apple TV et Android TV —
+ * `CardSizeSection`, la valeur lue sur `CardSizeProvider`), puis
+ * l'interrupteur Liquid Glass, dans le même sens que le
  * bureau et le mobile — activé par défaut ; coupé, les surfaces passent au
  * verre ENRICHI (plus dense, liseré, reflet), jamais à une surface opaque.
  *
@@ -22,7 +27,7 @@ import type { SettingsRenderTier } from "./settingsTypes";
  * Lite : rien n'y change.
  */
 
-export const AppearancePanel = memo(function AppearancePanel({ width, previewImageUri, onToggleLiquidGlass, liquidGlass = true, renderTier, onSelectLiteMode }: {
+export const AppearancePanel = memo(function AppearancePanel({ width, previewImageUri, onToggleLiquidGlass, liquidGlass = true, renderTier, onSelectLiteMode, onSelectCardSize }: {
   /** Largeur utile du panneau (l'aperçu s'y partage en deux). */
   width: number;
   previewImageUri?: string;
@@ -32,11 +37,15 @@ export const AppearancePanel = memo(function AppearancePanel({ width, previewIma
   /** Le mode Lite (Android TV) ; absent : la section n'existe pas. */
   renderTier?: SettingsRenderTier | null;
   onSelectLiteMode?: (mode: SettingsRenderTier["mode"]) => void;
+  /** Écrit la taille des cartes de l'appareil (la valeur affichée est celle du fournisseur). */
+  onSelectCardSize?: (size: CardSize) => void;
 }) {
   const { t } = useTranslation("preferences");
   const liquid = useLiquidGlassEnabled();
+  const cardSize = useCardMetrics().size;
   return (
     <View style={styles.root}>
+      <CardSizeSection size={cardSize} onSelect={onSelectCardSize} />
       {renderTier ? <LiteModeSection model={renderTier} onSelectMode={onSelectLiteMode} /> : null}
       {liquidGlass ? <View>
         <SectionTitle title={t("effects")} />

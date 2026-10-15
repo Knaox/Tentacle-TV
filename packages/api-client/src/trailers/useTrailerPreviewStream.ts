@@ -11,6 +11,8 @@ import {
 
 /** Une réponse gardée au plus une heure après le dernier survol qui l'a lue (un refus vaut une heure). */
 const TRAILER_PREVIEW_GC_MS = 60 * 60_000;
+/** La même garde pour TanStack Query v4 (les téléviseurs), qui ne lit pas `gcTime`. */
+const V4_CACHE_TIME: object = { cacheTime: TRAILER_PREVIEW_GC_MS };
 
 export interface TrailerPreviewStreamState {
   /** La réponse, refus compris ; `undefined` tant qu'aucune n'est venue. */
@@ -55,6 +57,12 @@ export interface TrailerPreviewStreamState {
  * signal d'abandon de TanStack (qui couperait la requête au démontage de la
  * dernière carte qui l'attend) ; seul le délai propre de la demande
  * (`fetchTimeoutMs`) l'arrête.
+ *
+ * ⚠️ Les téléviseurs (`apps/tv`) résolvent TanStack Query v4 au runtime, typés
+ * v5 : la fraîcheur est un NOMBRE (v4 ne sait pas appeler un `staleTime`
+ * fonction — il l'ajoutait à une date, et toute réponse était périmée), lu
+ * sur la réponse gardée, et la garde de l'entrée se dit aux deux (`gcTime`
+ * v5, `cacheTime` v4).
  */
 export function useTrailerPreviewStream(
   subject: TrailerPreviewSubject | null,
@@ -64,12 +72,17 @@ export function useTrailerPreviewStream(
   const capable = useServerCapability("trailers.preview");
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => trailerPreviewQueryKey(subject, lang), [subject, lang]);
+  // La fraîcheur de la réponse gardée, en durée depuis son arrivée — ce que
+  // `staleTime` mesure lui aussi depuis `dataUpdatedAt`.
+  const cached = queryClient.getQueryState<TrailerPreviewStreamResult>(queryKey);
+  const staleTime = trailerPreviewResultTtl(cached?.data, cached?.dataUpdatedAt ?? 0);
   const query = useQuery({
     queryKey,
     queryFn: () => fetchTrailerPreviewStream(subject as TrailerPreviewSubject, lang),
     enabled: capable && options.enabled && subject !== null,
-    staleTime: (q) => trailerPreviewResultTtl(q.state.data, q.state.dataUpdatedAt),
+    staleTime,
     gcTime: TRAILER_PREVIEW_GC_MS,
+    ...V4_CACHE_TIME,
     // Un refus est une réponse ; une panne se retente à la PROCHAINE intention, pas en boucle.
     retry: false,
     refetchOnWindowFocus: false,

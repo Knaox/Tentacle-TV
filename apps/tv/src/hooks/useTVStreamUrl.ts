@@ -31,6 +31,8 @@ export function useTVStreamUrl(args: {
   mediaSourceId?: string;
   /** Parité de signature tvOS (gate PrismCore par conteneur) ; ignoré côté Android. */
   container?: string;
+  /** Parité de signature tvOS (préchargement en volume de PrismCore) ; ignoré côté Android. */
+  prismPrefetch?: unknown;
   streams: JfStream[];
   audioIndex: number;
   /** Piste sous-titres à INCRUSTER en transcode (PGS/burn-in). -1 = aucune. */

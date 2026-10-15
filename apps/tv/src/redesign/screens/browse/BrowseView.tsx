@@ -10,7 +10,7 @@ import { FocusGroup } from "../../focus/FocusGroup";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { EmptyState } from "../library/EmptyState";
 import { GridSkeleton } from "../library/GridSkeleton";
-import { PosterGrid } from "../library/PosterGrid";
+import { PosterGrid, useGridColumns } from "../library/PosterGrid";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { BrowseHeader, type BrowseKind } from "./BrowseHeader";
 
@@ -47,7 +47,8 @@ export interface BrowseViewProps {
   palette: ArtworkPalette;
   /** La lumière de l'affiche focalisée (`ambientSource`) : la vue la suit, l'écran câblé ne se redessine pas. */
   ambient?: AmbientSource;
-  columns?: 5 | 6;
+  /** Colonnes de la grille ; absentes : celles de la taille des cartes réglée (`useCardMetrics`). */
+  columns?: number;
   loading?: boolean;
   /** Rien de cette personne, ce genre, ce studio dans la bibliothèque — la
    *  croix Retour reste la sortie, le vide n'en ajoute pas une deuxième. */
@@ -62,7 +63,8 @@ export interface BrowseViewProps {
 }
 
 export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
-  const { nav, cards, columns = 6, loading, empty, status } = props;
+  const { nav, cards, loading, empty, status } = props;
+  const columns = useGridColumns(props.columns);
   const palette = useAmbientOf(props.ambient, props.palette);
   const header = (
     <BrowseHeader

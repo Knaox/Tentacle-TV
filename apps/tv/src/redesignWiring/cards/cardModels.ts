@@ -12,10 +12,11 @@ import {
   userScoreFromRatings,
   type UserRatingEntry,
 } from "@tentacle-tv/api-client";
-import { cardRatingFor, missingSeriesRatingIds, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
+import { cardRatingFor, missingSeriesRatingIds, resolveCardMarkers, trailerPreviewSubjectOfItem, type MediaItem } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { landscapeOf, paletteOfItem, POSTER_FALLBACK_LANDSCAPE_WIDTH, posterUriOf, progressOf } from "./cardArtwork";
 import { cardQualityOf } from "./cardQuality";
+import { useCardArtwork } from "./useCardArtwork";
 import { sameCard } from "./sameCard";
 
 /**
@@ -85,19 +86,21 @@ export function cardTitleOf(item: MediaItem): string {
 export function useCardModelFactory(): CardModelFactory {
   const client = useJellyfinClient();
   const context = useMarkerContext();
+  // Les images à la taille des cartes réglée : un changement refait les cartes.
+  const artwork = useCardArtwork();
   return useCallback<CardModelFactory>(
     (item, options, seriesRatings) => {
       const scope = options.scope ?? (options.variant === "landscape" ? "item" : "series");
       const seriesId = seriesStateId(item);
       // Une affiche n'affiche la vignette qu'à défaut d'affiche, rognée dans son cadre 2:3.
-      const landscape = options.variant === "poster" ? landscapeOf(client, item, POSTER_FALLBACK_LANDSCAPE_WIDTH) : landscapeOf(client, item);
+      const landscape = options.variant === "poster" ? landscapeOf(client, item, POSTER_FALLBACK_LANDSCAPE_WIDTH) : landscapeOf(client, item, artwork.landscapeWidth);
       return {
         id: item.Id,
         title: cardTitleOf(item),
         subtitle: options.subtitle?.(item),
         landscapeUri: landscape.uri,
         logoUri: landscape.logoUri,
-        posterUri: posterUriOf(client, item),
+        posterUri: posterUriOf(client, item, artwork.posterHeight),
         markers: resolveCardMarkers({
           item,
           communityRating: cardRatingFor(item, scope, seriesRatings).rating,
@@ -110,9 +113,11 @@ export function useCardModelFactory(): CardModelFactory {
         badge: options.badge?.(item),
         palette: paletteOfItem(item),
         quality: cardQualityOf(item),
+        // L'aperçu au focus (rangées seulement : la carte décide si elle grandit).
+        trailer: trailerPreviewSubjectOfItem(item) ?? undefined,
       };
     },
-    [client, context],
+    [client, context, artwork],
   );
 }
 

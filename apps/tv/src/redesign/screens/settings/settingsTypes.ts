@@ -77,6 +77,15 @@ export interface SettingsPlayback {
   /** Apple TV seulement : le réglage « Avance rapide ». Absent ailleurs — la
    *  section ne s'affiche pas. */
   scrubCountdown?: SettingsScrubCountdown | null;
+  /** Les aperçus de bande-annonce au focus des cartes. Absent : le serveur ne
+   *  sait pas en servir (capacité `trailers.preview`) — la section ne s'affiche pas. */
+  trailerPreviews?: SettingsTrailerPreviews | null;
+}
+
+/** Les aperçus de bande-annonce au focus : réglages de CE téléviseur. */
+export interface SettingsTrailerPreviews {
+  enabled: boolean;
+  sound: boolean;
 }
 
 export interface SettingsChoice {

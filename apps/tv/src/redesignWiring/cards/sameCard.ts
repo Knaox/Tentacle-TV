@@ -1,4 +1,4 @@
-import type { CardMarkers } from "@tentacle-tv/shared";
+import { trailerPreviewSubjectKey, type CardMarkers, type TrailerPreviewSubject } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { sameQuality } from "./cardQuality";
 
@@ -19,6 +19,11 @@ function sameMarkers(a: CardMarkers, b: CardMarkers): boolean {
   );
 }
 
+function sameTrailer(a: TrailerPreviewSubject | undefined, b: TrailerPreviewSubject | undefined): boolean {
+  if (!a || !b) return a === b;
+  return trailerPreviewSubjectKey(a) === trailerPreviewSubjectKey(b);
+}
+
 export function sameCard(a: CardModel, b: CardModel): boolean {
   return (
     a.id === b.id &&
@@ -33,6 +38,7 @@ export function sameCard(a: CardModel, b: CardModel): boolean {
     a.focusNote === b.focusNote &&
     a.palette === b.palette &&
     sameQuality(a.quality, b.quality) &&
+    sameTrailer(a.trailer, b.trailer) &&
     sameMarkers(a.markers, b.markers)
   );
 }

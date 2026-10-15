@@ -55,6 +55,8 @@ interface MPVPlayerProps {
   isDirectPlay?: boolean;
   /** Parité de signature tvOS (rendition OCR PrismCore) ; ignoré côté Android. */
   prismTextTrackIndex?: number | null;
+  /** Parité de signature tvOS (avance d'AVPlayer, préchargement en volume) ; ignoré côté Android. */
+  forwardBufferSec?: number;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
   /** Android : première image posée sur la surface, son prêt (tv-core `startGate`). */

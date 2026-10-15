@@ -21,6 +21,7 @@ import { useOwnPinReturn } from "./useOwnPinReturn";
 import { useProfileActions } from "./useProfileActions";
 import { useRenderTierSetting } from "./useRenderTierSetting";
 import { useSettingsModel } from "./useSettingsModel";
+import { cardSizeStore } from "../../lib/cardSize";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
@@ -96,10 +97,13 @@ export function SettingsRedesign({ route }: Props) {
           onToggleMatchFrameRate={model.onToggleMatchFrameRate}
           onSelectScrubOutcome={model.onSelectScrubOutcome}
           onSelectScrubDelay={model.onSelectScrubDelay}
+          onToggleTrailerPreviews={model.onToggleTrailerPreviews}
+          onToggleTrailerPreviewSound={model.onToggleTrailerPreviewSound}
           appearance={PLATFORM_TRAITS.liquidGlass}
           onToggleLiquidGlass={PLATFORM_TRAITS.liquidGlass ? model.onToggleLiquidGlass : undefined}
           renderTier={lite.renderTier}
           onSelectLiteMode={lite.onSelectLiteMode}
+          onSelectCardSize={cardSizeStore.set}
           onMoveNavEntry={nav.onMoveNavEntry}
           onToggleNavEntry={nav.onToggleNavEntry}
           onShowAllNav={nav.onShowAllNav}

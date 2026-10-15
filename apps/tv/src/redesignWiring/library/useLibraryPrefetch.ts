@@ -6,6 +6,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { LIBRARY_PREFETCH_DWELL_MS, LIBRARY_PREFETCH_POSTERS, libraryPrefetchTarget } from "@tentacle-tv/tv-core";
 import { rememberedFilters } from "../../hooks/libraryCatalogParams";
 import { posterUriOf } from "../cards/cardArtwork";
+import { useCardArtwork } from "../cards/useCardArtwork";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { gridCatalogParams } from "./gridCatalogParams";
 
@@ -30,6 +31,8 @@ export function useLibraryPrefetch(focus: FocusStore): void {
   const queryClient = useQueryClient();
   const client = useJellyfinClient();
   const userId = useUserId();
+  // Les affiches à la taille que la grille demandera : le préchargement la sert.
+  const { posterHeight } = useCardArtwork();
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const prefetch = async (libraryId: string) => {
@@ -37,7 +40,7 @@ export function useLibraryPrefetch(focus: FocusStore): void {
       await prefetchLibraryCatalog(queryClient, client, userId, libraryId, params);
       const data = queryClient.getQueryData<CatalogPages>(getLibraryCatalogKey(libraryId, params));
       for (const item of data?.pages?.[0]?.Items?.slice(0, LIBRARY_PREFETCH_POSTERS) ?? []) {
-        const uri = posterUriOf(client, item);
+        const uri = posterUriOf(client, item, posterHeight);
         if (uri) void Image.prefetch(uri).catch(() => undefined);
       }
     };
@@ -56,5 +59,5 @@ export function useLibraryPrefetch(focus: FocusStore): void {
       unsubscribe();
       if (timer) clearTimeout(timer);
     };
-  }, [focus, queryClient, client, userId]);
+  }, [focus, queryClient, client, userId, posterHeight]);
 }

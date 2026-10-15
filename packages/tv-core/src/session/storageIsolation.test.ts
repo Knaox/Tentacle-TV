@@ -27,10 +27,13 @@ const DEVICE_KEYS: Record<string, string> = {
   tentacle_language: "la langue de l'interface (le compte la resynchronise)",
   tentacle_device_id: "la graine de l'identité d'appareil",
   tentacle_liquid_glass: "le verre de l'interface",
+  tentacle_tv_card_size: "la taille des cartes (un réglage de l'écran du salon)",
   tentacle_webos_rail: "la disposition du rail (partagée avec la LG)",
   tentacle_rail_organize_hint: "les passages où « Maintenir OK : organiser » a paru — un apprentissage de l'appareil",
   tentacle_exo_tunneling: "le décodeur d'Android TV",
   tentacle_exo_match_frame_rate: "le décodeur d'Android TV",
+  tentacle_tv_trailer_previews: "les aperçus de bande-annonce au focus (réglage du téléviseur, comme le bureau)",
+  tentacle_tv_trailer_preview_sound: "le son de ces aperçus",
   tentacle_unpair_pending: "le marqueur des purges et révocations",
 };
 

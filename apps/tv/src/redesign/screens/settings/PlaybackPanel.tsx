@@ -7,6 +7,7 @@ import { LibraryPrefCard } from "./LibraryPrefCard";
 import { ScrubCountdownSection } from "./ScrubCountdownSection";
 import { SectionTitle, settingsText } from "./settingsParts";
 import { ToggleRow } from "./ToggleRow";
+import { TrailerPreviewSection } from "./TrailerPreviewSection";
 import type { InterfaceLanguage, LibrarySettingKey, SettingsPlayback, SettingsScrubCountdown } from "./settingsTypes";
 
 /**
@@ -16,7 +17,9 @@ import type { InterfaceLanguage, LibrarySettingKey, SettingsPlayback, SettingsSc
  *    il ne se choisit pas ;
  * 2. Apple TV seulement : l'avance rapide — ce que fait son décompte, et
  *    quand (`ScrubCountdownSection`, réglage du profil) ;
- * 3. Android TV seulement : le décodeur de CE téléviseur (tunnel, fréquence) ;
+ * 3. les aperçus de bande-annonce au focus des cartes, si le serveur en sert
+ *    (`TrailerPreviewSection`, réglages du téléviseur) ;
+ * 3 bis. Android TV seulement : le décodeur de CE téléviseur (tunnel, fréquence) ;
  * 4. la langue de l'interface ;
  * 5. les pistes par défaut de chaque bibliothèque.
  * Branchement : `useOwnPlaybackSettings` + `detectPreset` / `setPlaybackSettings`
@@ -35,6 +38,8 @@ export interface PlaybackPanelProps {
   onToggleMatchFrameRate?: (next: boolean) => void;
   onSelectScrubOutcome?: (outcome: SettingsScrubCountdown["outcome"]) => void;
   onSelectScrubDelay?: (seconds: number) => void;
+  onToggleTrailerPreviews?: (next: boolean) => void;
+  onToggleTrailerPreviewSound?: (next: boolean) => void;
 }
 
 const LANGUAGES: Array<{ code: InterfaceLanguage; label: string }> = [
@@ -52,6 +57,8 @@ export const PlaybackPanel = memo(function PlaybackPanel({
   onToggleMatchFrameRate,
   onSelectScrubOutcome,
   onSelectScrubDelay,
+  onToggleTrailerPreviews,
+  onToggleTrailerPreviewSound,
 }: PlaybackPanelProps) {
   const { t } = useTranslation("preferences");
   const { preset, device } = playback;
@@ -83,6 +90,14 @@ export const PlaybackPanel = memo(function PlaybackPanel({
           model={playback.scrubCountdown}
           onSelectOutcome={onSelectScrubOutcome}
           onSelectDelay={onSelectScrubDelay}
+        />
+      ) : null}
+
+      {playback.trailerPreviews ? (
+        <TrailerPreviewSection
+          model={playback.trailerPreviews}
+          onToggleEnabled={onToggleTrailerPreviews}
+          onToggleSound={onToggleTrailerPreviewSound}
         />
       ) : null}
 

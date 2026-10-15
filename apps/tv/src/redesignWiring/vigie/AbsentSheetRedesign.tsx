@@ -31,6 +31,10 @@ import type { VigieGate } from "./useVigieGate";
  * focus après coup ; un filet le présente quand même (tv-core
  * `absentSheetEntry`). Menu ou la croix ferment ; « Demander » referme et
  * fait le geste d'OK (`onRequest`).
+ *
+ * Un titre RECOMMANDÉ (`onDismiss`) garde « Ne plus me proposer » après la
+ * demande, comme le panneau d'une recommandation de la bibliothèque : il
+ * referme, puis le refus part (le titre quitte les recommandations).
  */
 
 const fetcher = (url: string) => tentacleApiFetch(url);
@@ -39,10 +43,12 @@ interface Props {
   gate: VigieGate;
   title: AbsentTitle;
   onRequest: (title: AbsentTitle) => void;
+  /** Une recommandation : « Ne plus me proposer ». */
+  onDismiss?: (title: AbsentTitle) => void;
   onClose: () => void;
 }
 
-export function AbsentSheetRedesign({ gate, title, onRequest, onClose }: Props) {
+export function AbsentSheetRedesign({ gate, title, onRequest, onDismiss, onClose }: Props) {
   const { t } = useTranslation();
   const { provider, lang } = gate;
   const { titles: mine, updatedAt } = useMyTitles(provider, lang);
@@ -71,9 +77,13 @@ export function AbsentSheetRedesign({ gate, title, onRequest, onClose }: Props) 
   }, [t, own, state, title, updatedAt, appActive, arrived]);
 
   const offer = own || arrived ? null : state?.request ?? null;
+  const dismissable = onDismiss !== undefined;
   const actions = useMemo<SheetActionModel[]>(
-    () => (offer ? [{ kind: "request", label: offer.label }] : []),
-    [offer],
+    () => [
+      ...(offer ? [{ kind: "request" as const, label: offer.label }] : []),
+      ...(dismissable ? [{ kind: "dismiss" as const, label: t("cards:dismiss") }] : []),
+    ],
+    [offer, dismissable, t],
   );
 
   // Fermer, c'est d'abord jouer la sortie ; `onClose` ne part qu'à sa fin.
@@ -88,10 +98,11 @@ export function AbsentSheetRedesign({ gate, title, onRequest, onClose }: Props) 
     after.current?.();
   }, [onClose]);
   const onAction = useCallback((kind: SheetActionKind) => {
-    if (kind !== "request") return;
-    after.current = () => onRequest(title);
+    if (kind === "request") after.current = () => onRequest(title);
+    else if (kind === "dismiss" && onDismiss) after.current = () => onDismiss(title);
+    else return;
     setClosing(true);
-  }, [onRequest, title]);
+  }, [onRequest, onDismiss, title]);
 
   const focus = useFocusStore();
   const [waited, setWaited] = useState(false);

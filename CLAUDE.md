@@ -469,7 +469,8 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   `landscape` (16:9, le clic lance la lecture), `reco`. Un titre lu sur le
   disque passe `local: true` ; un titre hors bibliothèque (Vigie) a son
   pendant, `externalCardOverlay.ts`. Sur Apple TV, un titre ABSENT (saga d'un
-  film, rangée « À demander » de la recherche) est une carte grisée
+  film, rangée « À demander » de la recherche, recommandation hors
+  bibliothèque de « Pour vous » et des rangées reco de l'accueil) est une carte grisée
   (`card.absent`, `AbsentArtwork`) ; sa demande ne passe que par
   `redesignWiring/vigie/`, derrière la garde `useVigieGate` — sans elle,
   « pas disponible », et aucune trace de demande.
@@ -554,7 +555,10 @@ un Vigie trop ancien les laisse sans « + », sans la moindre erreur — vérifi
 la version déployée (`data/plugins/installed.json`) avant de conclure au bug.
 **Exception assumée, Apple TV :** les demandes en cours (routes `titles.access`
 et `titles.mine` du contrat), « Demander » un titre absent — collection d'un
-film, rangée « À demander » de la recherche, feuille des saisons
+film, rangée « À demander » de la recherche, recommandations hors
+bibliothèque (`useRecoAbsent` : à leur place dans l'ordre servi,
+`tvRecoShelves(…, { external })`, panneau avec « Ne plus me proposer »,
+carte tenue tant qu'une feuille est ouverte), feuille des saisons
 (`titles.state`, `titles.request`, `titles.seasons`) — et les saisons
 MANQUANTES d'une série de la bibliothèque — en tête de la rangée « À
 demander » de la recherche, en onglets grisés au bout de la bande des
@@ -647,6 +651,12 @@ quelques semaines (« plantent 2 fois sur 3 », 2026-10-02). La fiche prépare l
 bande-annonce (`/prepare`) ; chaque lecture rend compte au serveur (`/report`,
 `docker logs … | grep '\[trailers\]'`). Mesures, banc et fragilités :
 `docs/BANDES-ANNONCES.md`.
+**Aperçu au focus (Apple TV, Android TV)** : la carte de rangée focalisée 1 s
+demande l'aperçu (`trailers.preview`, la machine partagée du bureau) et GRANDIT
+dans sa cellule à la première image — jamais un calque par-dessus les voisines.
+Rythme et tailles : tv-core `cards/trailerPreviewTv.ts`, `trailerPreviewTile.ts` ;
+vue : port `redesign/cards/trailerPreviewPort.tsx` ; intégration :
+`redesignWiring/trailerPreview/` (une session, la carte focalisée seulement).
 
 ## Famille — un contrat, et le serveur décide de tout
 

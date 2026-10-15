@@ -68,7 +68,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const s = usePlayerMediaState();
   const p = usePlayerStreamPipeline({ itemId, item, ancestors, refs: { exoRef, mpvRef }, s });
   const {
-    paused, setPaused, displayTime, setDisplayTime, bufferedTime, setBufferedTime,
+    paused, setPaused, displayTime, setDisplayTime, setBufferedTime,
     displayTimeRef, bufferedTimeRef, lastDisplayUpdate, positionRef, controlsCurrentTimeRef,
     pausedStateRef, endedRef, handleEndRef,
     videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, lastProgressTime,
@@ -261,9 +261,9 @@ export function PlayerScreen({ route, navigation }: Props) {
     countdownTotals: playback.countdownTotals, qualityPresets: quality.qualityPresets,
     // Android : le moteur reste en pause jusqu'à sa première image (tv-core `startGate`).
     paused, playerPaused: paused || reloadHold || startHeld(hasStarted), isLoading, hasStarted,
-    videoError, displayTime, bufferedTime, displayDuration, showSettings,
+    videoError, displayTime, bufferedTime: p.prefetch.bufferedTime, displayDuration, showSettings,
     autoPlayActive, hasPreviousEpisode: !!previousEpisode,
-    useExoPlayer: p.useExoPlayer, isDirectPlay, prismTextTrackIndex: p.prismTextTrackIndex, frameRate: p.frameRate, exoRef, mpvRef,
+    useExoPlayer: p.useExoPlayer, isDirectPlay, prismTextTrackIndex: p.prismTextTrackIndex, forwardBufferSec: p.prefetch.forwardBufferSec, frameRate: p.frameRate, exoRef, mpvRef,
     backgroundRef, playerStyle, audioTracksList, subtitleTracksList, audioIndex: p.audioIndex, subtitleIndex: p.subtitleIndex,
     qualityKey: quality.qualityKey, sourceQuality: p.sourceQuality, autoCapActive: p.autoCapActive, autoCapReason: p.autoCapReason,
     deviceNotice: p.deviceNotice,

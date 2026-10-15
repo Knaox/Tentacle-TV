@@ -1,8 +1,13 @@
 import { reasonToText, recoRowTitle, type RecoRowItem } from "@tentacle-tv/api-client";
 import { familyOfProviderId, i18n } from "@tentacle-tv/shared";
-import type { TvRecoPageLike, TvRecoShelf } from "@tentacle-tv/tv-core";
+import { tvRecoServedCards, type TvRecoPageLike, type TvRecoShelf } from "@tentacle-tv/tv-core";
 import type { HeroModel } from "../../../src/redesign/hero/HeroBanner";
 import type { ForYouFilterModel, ForYouShelfModel } from "../../../src/redesign/screens/forYou/ForYouView";
+import { remoteHint } from "../../../src/platform/input";
+import { absentCard, tmdbPosterUri } from "../../../src/redesignWiring/cards/absentCards";
+import { absentOf } from "../../../src/redesignWiring/vigie/absentStates";
+import { recoAbsentCardId } from "../../../src/redesignWiring/vigie/useRecoAbsent";
+import { t as tAbsent } from "./absentModels";
 import type { BenchData } from "./benchData";
 import { cardOf, yearOf } from "./models";
 import { heroOf } from "./screenModels";
@@ -87,6 +92,36 @@ export function recoShelvesOf(data: BenchData, shelves: TvRecoShelf<RecoRowItem>
         }];
       }),
     };
+  });
+}
+
+/**
+ * Les étagères garde Vigie OUVERTE (`tvRecoShelves(…, { external: true })`) :
+ * les titres hors bibliothèque, grisés, à leur place — l'ordre servi de
+ * `tvRecoServedCards`, la carte de `absentCard`, le badge de `absentOf`, comme
+ * le câblage (`useRecoAbsent`). Rien n'est demandé : un titre sur deux dit
+ * « OK : demander », les autres leur raison (exemple d'état de l'extension).
+ */
+export function recoShelvesWithAbsentOf(data: BenchData, shelves: TvRecoShelf<RecoRowItem>[]): ForYouShelfModel[] {
+  const library = recoShelvesOf(data, shelves);
+  return shelves.map((shelf, index) => {
+    const byId = new Map(library[index].cards.map((card) => [card.id, card]));
+    let absentCount = 0;
+    const cards = tvRecoServedCards(shelf.items, (id) => byId.get(id), (reco) => {
+      const offers = absentCount++ % 2 === 0;
+      const hint = offers ? tAbsent(remoteHint(reco.mediaType === "tv" ? "absentSeasons" : "absentRequest")) : reasonOf(reco);
+      return {
+        ...absentCard({
+          id: recoAbsentCardId(reco),
+          title: reco.title,
+          year: reco.year,
+          posterUri: tmdbPosterUri(reco.posterPath),
+          absent: absentOf(tAbsent, undefined, null),
+        }),
+        focusNote: hint,
+      };
+    });
+    return { ...library[index], cards };
   });
 }
 

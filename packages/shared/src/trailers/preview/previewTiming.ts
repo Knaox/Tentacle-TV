@@ -89,4 +89,8 @@ export const TRAILER_PREVIEW_TIMING = {
   maxRetries: 2,
 } as const;
 
-export type TrailerPreviewTiming = typeof TRAILER_PREVIEW_TIMING;
+/**
+ * La forme des temps, élargie aux nombres : les téléviseurs en posent
+ * d'autres sur la même machine (tv-core `TV_TRAILER_PREVIEW_TIMING`).
+ */
+export type TrailerPreviewTiming = { readonly [K in keyof typeof TRAILER_PREVIEW_TIMING]: number };

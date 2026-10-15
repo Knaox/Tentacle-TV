@@ -81,9 +81,31 @@ final class DemandCoordinator: @unchecked Sendable {
     /// because segments vary — a 2 s head, keyframe-stretched entries — and
     /// the buffer AVPlayer cares about is time.
     static let producerLeadSeconds = 30.0
+    /// The lead in force for THIS session: `producerLeadSeconds` unless the
+    /// host widened it (`setProducerLead`). Tentacle TV patch: the host sizes
+    /// it from a byte budget over the source's bitrate, so a small episode is
+    /// produced to disk whole and a heavy remux gets as far as the budget
+    /// allows. Never below the default — the reasoning above still holds for
+    /// the floor, and retention is sized by the host to stay above it.
+    private var leadCapSeconds = DemandCoordinator.producerLeadSeconds
     /// The sequential shape has no plan to read durations from; its
     /// `segmentSeconds` stands in (set by the producer).
     var nominalSegmentSeconds = 6.0
+
+    /// Widen (or restore) how far production may run ahead of the last
+    /// demanded segment. Clamped to the default floor. Wakes a parked
+    /// producer: a wider lead lets it resume at once.
+    func setProducerLead(seconds: Double) {
+        lock.withLock {
+            leadCapSeconds = seconds.isFinite ? Swift.max(Self.producerLeadSeconds, seconds) : Self.producerLeadSeconds
+            lock.broadcast()
+        }
+    }
+
+    /// The lead in force — read by a host that clones the session.
+    var currentProducerLeadSeconds: Double {
+        lock.withLock { leadCapSeconds }
+    }
 
     // MARK: - Producer side
 
@@ -180,7 +202,7 @@ final class DemandCoordinator: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         while requestedAnchor == nil, !isCancelled(), lastDemandedIndex >= 0,
-              leadSeconds(from: lastDemandedIndex, to: producing) > Self.producerLeadSeconds {
+              leadSeconds(from: lastDemandedIndex, to: producing) > leadCapSeconds {
             lock.wait(until: Date(timeIntervalSinceNow: Self.parkBackstopSeconds))
         }
     }

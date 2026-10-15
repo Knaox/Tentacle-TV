@@ -5,7 +5,7 @@ import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { plog } from "../utils/playerDiag";
 import {
   fallbackMuxedPrismCore, preferredAudioLanguageOf, prismEligible, prismHeaders, startPrismCore, stopPrismCore,
-  type PrismStart,
+  type PrismPrefetch, type PrismStart,
 } from "../utils/prismCoreStart";
 import { resolveServerStream } from "../utils/tvosServerStream";
 import { resolveRestartAt, withoutRestartMark, withRestartMark, type RestartAt, type RestartOutcome } from "./streamRestart";
@@ -35,7 +35,6 @@ interface StreamResult {
    *  « Réessayer » au lieu de tourner pour toujours. */
   failed?: boolean;
 }
-
 const fragmentAt = (sec: number) => (sec > 1 ? `#tnt-start=${Math.floor(sec)}` : "");
 /** Une session remplacée par une relance s'arrête après ce délai : AVPlayer a
  *  alors quitté son item (un arrêt immédiat ferait échouer l'item sortant). */
@@ -62,6 +61,7 @@ export function useTVStreamUrl(args: {
   /** La fiche complète est là (ou a échoué) : rien ne se résout avant — voir
    *  `usePlayerStreamPipeline`. */
   ready: boolean;
+  prismPrefetch?: PrismPrefetch; // préchargement en volume (tv-core `prismPrefetch`)
 }) {
   const {
     itemId, mediaSourceId, container, streams, audioIndex, subtitleIndex, startTicks,
@@ -171,6 +171,7 @@ export function useTVStreamUrl(args: {
         rawUrl: client.getStreamUrl(itemId, { directPlay: true, mediaSourceId }),
         headers: prismHeaders(client),
         preferredAudioLanguage: preferredAudioLanguageOf(streams, effAudio),
+        prefetch: args.prismPrefetch, // lu à l'ouverture, ne déclenche rien
         isCancelled: () => fetchIdRef.current !== a.fetchId,
       });
       if (fetchIdRef.current !== a.fetchId) return null;

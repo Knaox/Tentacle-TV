@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tvRecoHero, tvRecoNotice, tvRecoShelves, type TvRecoPageLike } from "./recoShelves";
+import { tvRecoHero, tvRecoNotice, tvRecoServedCards, tvRecoShelves, type TvRecoPageLike } from "./recoShelves";
 
 type Item = { key: string; jellyfinItemId: string | null };
 
@@ -46,6 +46,29 @@ describe("tvRecoShelves", () => {
     expect(tvRecoShelves(page([{ key: "forYou", items }]))[0].items).toHaveLength(24);
   });
 
+  it("garde ouverte (`external`) : les titres hors bibliothèque restent à leur place", () => {
+    const shelves = tvRecoShelves(page([{ key: "forYou", items: [lib("a"), outside("x"), lib("b"), outside("y")] }]), { external: true });
+    expect(shelves[0].items.map((i) => i.key)).toEqual(["movie:a", "movie:x", "movie:b", "movie:y"]);
+  });
+
+  it("garde ouverte : un titre hors bibliothèque ne revient pas non plus d'une rangée à l'autre", () => {
+    const shelves = tvRecoShelves(page([
+      { key: "forYou", items: [outside("x"), lib("a"), lib("b")] },
+      { key: "discover", items: [outside("x"), outside("y"), outside("z"), outside("w")] },
+    ]), { external: true });
+    expect(shelves.map((s) => s.items.map((i) => i.key))).toEqual([
+      ["movie:x", "movie:a", "movie:b"],
+      ["movie:y", "movie:z", "movie:w"],
+    ]);
+  });
+
+  it("garde ouverte : le héros reste un titre de la bibliothèque, et ne revient pas dans les étagères", () => {
+    const p = page([{ key: "forYou", items: [outside("x"), lib("a"), lib("b"), outside("y")] }]);
+    const hero = tvRecoHero(p);
+    expect(hero?.jellyfinItemId).toBe("a");
+    expect(tvRecoShelves(p, { hero, external: true })[0].items.map((i) => i.key)).toEqual(["movie:x", "movie:b", "movie:y"]);
+  });
+
   it("garde le titre de la graine", () => {
     const shelves = tvRecoShelves(page([
       { key: "becauseYouLiked:movie:603", seedTitle: "Matrix", items: [lib("a"), lib("b"), lib("c")] },
@@ -72,5 +95,17 @@ describe("tvRecoNotice", () => {
     const p = page([{ key: "forYou", items: [lib("a"), lib("b"), lib("c")] }], { state: "cold" });
     expect(tvRecoNotice(p, tvRecoShelves(p))).toBe("cold");
     expect(tvRecoNotice(page([{ key: "forYou", items: [lib("a")] }]), [])).toBeNull();
+  });
+});
+
+describe("tvRecoServedCards", () => {
+  it("mêle les cartes de la bibliothèque et celles des titres à demander, dans l'ordre servi", () => {
+    const cards = tvRecoServedCards([lib("a"), outside("x"), lib("b")], (id) => `lib:${id}`, (item) => `absent:${item.key}`);
+    expect(cards).toEqual(["lib:a", "absent:movie:x", "lib:b"]);
+  });
+
+  it("saute un titre sans carte : item pas encore lu, état pas encore su", () => {
+    const cards = tvRecoServedCards([lib("a"), outside("x"), lib("b")], (id) => (id === "a" ? "lib:a" : undefined), () => undefined);
+    expect(cards).toEqual(["lib:a"]);
   });
 });

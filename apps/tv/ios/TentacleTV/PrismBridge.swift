@@ -2,7 +2,7 @@ import Foundation
 import PrismCore
 
 /// Module RN `PrismBridge` (ancienne architecture : `RCT_EXTERN_MODULE` dans
-/// PrismBridge.m). Quatre méthodes — `start`, `stop`, `status`, `fallbackMuxed` — et un
+/// PrismBridge.m). Cinq méthodes — `start`, `stop`, `status`, `resident`, `fallbackMuxed` — et un
 /// évènement `prismCheckpoint` qui raconte l'ouverture au fil de l'eau à
 /// l'écran de chargement. PrismCore n'est PAS un lecteur : il rend une URL de
 /// playlist, AVPlayer (react-native-video) et toute l'UI restent les nôtres.
@@ -20,7 +20,7 @@ final class PrismBridge: RCTEventEmitter, @unchecked Sendable {
     override func startObserving() { hasListeners = true }
     override func stopObserving() { hasListeners = false }
 
-    /// Ouvre une session : `{url, headers, preferredAudioLanguage, segmentCacheBytes}`
+    /// Ouvre une session : `{url, headers, preferredAudioLanguage, segmentCacheBytes, producerLeadSeconds}`
     /// → `{url, gen, planOrigin, audioTracks, subtitleRenditions, durationSec,
     /// displaySwitch, displaySettle, panelIsHDR}`. Le rejet porte un code lisible
     /// (`PrismErrorCode`) : le JS journalise et retombe sur PlaybackInfo.
@@ -66,6 +66,19 @@ final class PrismBridge: RCTEventEmitter, @unchecked Sendable {
             if let code = health.code { out["code"] = code }
             if let message = health.message { out["message"] = message }
             resolve(out)
+        }
+    }
+
+    /// Ce que la session `gen` a déjà écrit sur le disque → `[{start, end}]`,
+    /// en secondes, fusionné et trié (vide si la session n'existe plus). Lu
+    /// par la barre de préchargement pendant la lecture.
+    @objc func resident(_ gen: NSNumber,
+                        resolver resolve: @escaping RCTPromiseResolveBlock,
+                        rejecter reject: @escaping RCTPromiseRejectBlock) {
+        let value = gen.intValue
+        Task.detached {
+            let ranges = await PrismSessionRegistry.shared.residentRanges(gen: value) ?? []
+            resolve(ranges.map { ["start": $0.startSeconds, "end": $0.endSeconds] })
         }
     }
 

@@ -20,9 +20,11 @@ import type { MediaItem } from "../types/media";
  *
  * Seule l'ENTRÉE change d'une plateforme à l'autre : le calque monté au
  * survol (web, bureau), la feuille de l'appui long (mobile, miroir). Seule
- * l'Apple TV montre des titres hors bibliothèque parmi les téléviseurs — la
- * saga d'un film et la recherche, grisés —, et seulement la demande, quand le
- * serveur déclare l'extension (`apps/tv/src/redesignWiring/vigie/`).
+ * l'Apple TV (et l'Android TV, même app) montre des titres hors bibliothèque
+ * parmi les téléviseurs — la saga d'un film, la recherche et les
+ * recommandations, grisés —, et seulement la demande (plus « Ne plus me
+ * proposer » pour une recommandation), quand le serveur déclare l'extension
+ * (`apps/tv/src/redesignWiring/vigie/`).
  *
  * Ce module ne décide que de CE QUI est offert, dans quel ordre, et sous quel
  * libellé. Ce que « demander » veut dire appartient à l'extension (son offre

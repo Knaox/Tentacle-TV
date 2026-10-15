@@ -16,7 +16,9 @@ import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { resumeUnpair } from "@tentacle-tv/tv-core";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
 import { rehydrateStores } from "./lib/stores";
+import { useCardSizeSetting } from "./lib/cardSize";
 import { useLiquidGlass } from "./lib/liquidGlass";
+import { CardSizeProvider } from "./redesign/cards/cardSizeMode";
 import { LiquidGlassProvider } from "./redesign/glass/liquidGlassMode";
 import { RemoteHintsProvider } from "./redesign/remote/remoteHints";
 import { REMOTE_BINDINGS } from "./platform/input";
@@ -45,6 +47,7 @@ import { TVSessionMessageHost } from "./components/TVSessionMessageHost";
 import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
 import { QualityBadgeHost } from "./redesignWiring/cards/QualityBadgeHost";
+import { TrailerPreviewHost } from "./redesignWiring/trailerPreview/TrailerPreviewHost";
 import { ThemeProvider, useTheme } from "./theme";
 
 // Instance unique, définie dans son module pour que le magasin d'épinglage du
@@ -202,6 +205,8 @@ function AppContent() {
       <TVColdStartLanding storage={storage} />
       {/* La qualité des titres, lue au focus des cartes de la refonte : une source pour toute l'app. */}
       <QualityBadgeHost>
+      {/* L'aperçu de bande-annonce au focus des cartes de rangée : une session à la fois pour toute l'app. */}
+      <TrailerPreviewHost>
         {/* Le rail vit dans chaque écran refondu (`NavRail`, prop `nav`). */}
         <NavigationContainer
           ref={navigationRef}
@@ -218,6 +223,7 @@ function AppContent() {
           <PairingExpiredBanner />
           <TVSessionMessageHost />
         </NavigationContainer>
+      </TrailerPreviewHost>
       </QualityBadgeHost>
     </>
   );
@@ -227,6 +233,8 @@ export function App() {
   // Le verre de la refonte suit le réglage de l'appareil (onglet Apparence) :
   // un seul fournisseur, au-dessus de tout, frontière d'erreur comprise.
   const liquidGlass = useLiquidGlass();
+  // De même la taille des cartes (onglet Apparence) : toutes changent aussitôt.
+  const cardSize = useCardSizeSetting();
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<JellyfinClient | null>(null);
 
@@ -276,19 +284,21 @@ export function App() {
 
   return (
     <LiquidGlassProvider enabled={PLATFORM_TRAITS.liquidGlass && liquidGlass}>
-      <RemoteHintsProvider hints={REMOTE_BINDINGS.hints}>
-        <ErrorBoundary>
-          <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-              <TentacleConfigContext.Provider value={{ storage, uuid }}>
-                <JellyfinClientContext.Provider value={client}>
-                  <AppContent />
-                </JellyfinClientContext.Provider>
-              </TentacleConfigContext.Provider>
-            </ThemeProvider>
-          </QueryClientProvider>
-        </ErrorBoundary>
-      </RemoteHintsProvider>
+      <CardSizeProvider size={cardSize}>
+        <RemoteHintsProvider hints={REMOTE_BINDINGS.hints}>
+          <ErrorBoundary>
+            <QueryClientProvider client={queryClient}>
+              <ThemeProvider>
+                <TentacleConfigContext.Provider value={{ storage, uuid }}>
+                  <JellyfinClientContext.Provider value={client}>
+                    <AppContent />
+                  </JellyfinClientContext.Provider>
+                </TentacleConfigContext.Provider>
+              </ThemeProvider>
+            </QueryClientProvider>
+          </ErrorBoundary>
+        </RemoteHintsProvider>
+      </CardSizeProvider>
     </LiquidGlassProvider>
   );
 }

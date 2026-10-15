@@ -1,5 +1,8 @@
 import { NativeModules } from "react-native";
 import { hevcTagUnreadable, type MediaStream as JfStream } from "@tentacle-tv/shared";
+import type { LoadedRange, PrismPrefetch } from "@tentacle-tv/tv-core";
+
+export type { PrismPrefetch };
 import { nativePlayerHeaders } from "./nativePlayerHeaders";
 import { plog } from "./playerDiag";
 
@@ -47,9 +50,13 @@ interface PrismBridgeModule {
     headers?: Record<string, string>;
     preferredAudioLanguage?: string;
     segmentCacheBytes?: number;
+    /** Avance du producteur (s de contenu) — tv-core `prismPrefetch`. */
+    producerLeadSeconds?: number;
   }) => Promise<PrismStart>;
   stop?: (gen: number) => void;
   status?: (gen: number) => Promise<PrismStatus>;
+  /** Intervalles déjà écrits sur le disque (s), fusionnés et triés. */
+  resident?: (gen: number) => Promise<LoadedRange[]>;
   fallbackMuxed?: (gen: number) => Promise<PrismStart>;
 }
 
@@ -119,6 +126,8 @@ export async function startPrismCore(a: {
   rawUrl: string;
   headers?: Record<string, string>;
   preferredAudioLanguage?: string;
+  /** Le préchargement en volume : avance du producteur et budget disque. */
+  prefetch?: PrismPrefetch;
   /** Le fetch parent a été supplanté (fetchId) : abandonner sans consommer le résultat. */
   isCancelled: () => boolean;
 }): Promise<PrismStart | null> {
@@ -126,11 +135,15 @@ export async function startPrismCore(a: {
   try {
     const res = await PrismBridge.start({
       url: a.rawUrl, headers: a.headers, preferredAudioLanguage: a.preferredAudioLanguage,
+      segmentCacheBytes: a.prefetch?.segmentCacheBytes, producerLeadSeconds: a.prefetch?.producerLeadSec,
     });
     if (a.isCancelled()) { stopPrismCore(res.gen); return null; }
     plog("prism", `session gen=${res.gen} plan=${res.planOrigin} durée=${res.durationSec?.toFixed(0) ?? "?"}s`
       + ` audio=${JSON.stringify(res.audioTracks)} subs=${res.subtitleRenditions.length}`
       + ` affichage=${res.displaySwitch ?? "-"} hdr=${res.panelIsHDR ?? "?"}${res.displaySettle ? ` settle=« ${res.displaySettle} »` : ""}`);
+    if (a.prefetch) {
+      plog("prefetch", `PrismCore : avance ${a.prefetch.producerLeadSec}s, disque ${Math.round(a.prefetch.segmentCacheBytes / 1048576)} Mio`);
+    }
     return res;
   } catch (e) {
     const err = e as { code?: string; message?: string };
@@ -152,6 +165,17 @@ export async function prismStatus(gen: number): Promise<PrismStatus | null> {
     return await PrismBridge.status(gen);
   } catch {
     return null;
+  }
+}
+
+/** Ce que la session `gen` a déjà écrit sur le disque — la barre de
+ *  préchargement. Vide hors tvOS, session finie, ou pont muet. */
+export async function prismResident(gen: number): Promise<LoadedRange[]> {
+  if (!PrismBridge?.resident || gen <= 0) return [];
+  try {
+    return await PrismBridge.resident(gen);
+  } catch {
+    return [];
   }
 }
 

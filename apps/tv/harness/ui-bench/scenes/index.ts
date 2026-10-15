@@ -4,6 +4,7 @@ import { BACK_SCENES } from "./backScenes";
 import { BENCH_SCENES } from "./benchScenes";
 import { BRICK_SCENES } from "./brickScenes";
 import { BROWSE_SCENES } from "./browseScenes";
+import { CARD_SIZE_SCENES } from "./cardSizeScenes";
 import { COLLECTION_SCENES } from "./collectionScenes";
 import { DETAIL_SCENES } from "./detailScenes";
 import { FOR_YOU_SCENES } from "./forYouScenes";
@@ -55,6 +56,8 @@ export const SCENES: BenchScene[] = [
   ...BROWSE_SCENES,
   ...FOR_YOU_SCENES,
   ...SETTINGS_SCENES,
+  // La taille des cartes, écran par écran : Petite, Normale, Grande.
+  ...CARD_SIZE_SCENES,
   ...PLAYER_SCENES,
   ...PLAYER_QUALITY_SCENES,
   ...PLAYHEAD_SCENES,

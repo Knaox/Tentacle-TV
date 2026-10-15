@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
-import { TV_STAGE } from "@tentacle-tv/theme";
 import { white } from "../../theme/tokens";
-import { GRID_GAP, GRID_ROW_GAP, posterWidth } from "./PosterGrid";
+import { useCardMetrics } from "../../cards/cardSizeMode";
+import { GRID_GAP, GRID_ROW_GAP, posterWidth, useGridColumns } from "./PosterGrid";
 
 /**
  * Le chargement d'une grille : des affiches fantômes à la géométrie EXACTE
@@ -11,8 +11,10 @@ import { GRID_GAP, GRID_ROW_GAP, posterWidth } from "./PosterGrid";
  * infinie coûte à chaque image pour ne rien dire de plus.
  */
 
-export const GridSkeleton = memo(function GridSkeleton({ columns = 6, rows = 2 }: { columns?: 5 | 6; rows?: number }) {
+export const GridSkeleton = memo(function GridSkeleton({ columns: forcedColumns, rows = 2 }: { columns?: number; rows?: number }) {
+  const columns = useGridColumns(forcedColumns);
   const width = posterWidth(columns);
+  const radius = useCardMetrics().poster.radius;
   const height = Math.round(width * 1.5);
   return (
     <View style={styles.grid}>
@@ -20,7 +22,7 @@ export const GridSkeleton = memo(function GridSkeleton({ columns = 6, rows = 2 }
         <View key={row} style={styles.row}>
           {Array.from({ length: columns }, (__, col) => (
             <View key={col} style={{ width }}>
-              <View style={[styles.poster, { height }]} />
+              <View style={[styles.poster, { height, borderRadius: radius }]} />
               <View style={[styles.line, { width: width * (0.55 + ((row + col) % 3) * 0.12) }]} />
               <View style={[styles.line, styles.lineShort]} />
             </View>
@@ -35,7 +37,6 @@ const styles = StyleSheet.create({
   grid: { gap: GRID_ROW_GAP },
   row: { flexDirection: "row", gap: GRID_GAP },
   poster: {
-    borderRadius: TV_STAGE.card.poster.radius,
     backgroundColor: white(0.07),
     borderWidth: 1,
     borderColor: white(0.06),

@@ -55,11 +55,12 @@ export function paletteOfItem(item: MediaItem | null | undefined, series?: Media
   return NEUTRAL_PALETTE;
 }
 
-/** L'affiche 2:3 — pour un épisode, celle de sa série (`resolvePosterImage`). */
-export function posterUriOf(client: ImageClient, item: MediaItem): string | undefined {
+/** L'affiche 2:3 — pour un épisode, celle de sa série (`resolvePosterImage`).
+ *  `height` : celle des cartes (profil de rendu, à la taille réglée — `useCardArtwork`). */
+export function posterUriOf(client: ImageClient, item: MediaItem, height: number = POSTER_HEIGHT): string | undefined {
   const image = resolvePosterImage(item, "series");
   if (!image) return undefined;
-  return client.getImageUrl(image.id, image.type, { height: POSTER_HEIGHT, quality: 85, ...(image.tag ? { tag: image.tag } : {}) });
+  return client.getImageUrl(image.id, image.type, { height, quality: 85, ...(image.tag ? { tag: image.tag } : {}) });
 }
 
 /**
@@ -68,7 +69,8 @@ export function posterUriOf(client: ImageClient, item: MediaItem): string | unde
  * série : la vignette (Thumb, qui porte déjà le titre), sinon le fond — et
  * alors le logo, s'il est connu (une réponse qui n'a pas demandé les logos
  * ne l'annonce pas : on n'en demande pas un à l'aveugle). `width` : celle
- * des cartes (profil de rendu), sauf pour le repli d'une affiche.
+ * des cartes (profil de rendu, à la taille réglée — `useCardArtwork`), sauf
+ * pour le repli d'une affiche.
  */
 export function landscapeOf(client: ImageClient, item: MediaItem, width: number = LANDSCAPE_WIDTH): { uri?: string; logoUri?: string } {
   const at = (id: string, type: "Primary" | "Backdrop" | "Thumb", tag?: string) =>
