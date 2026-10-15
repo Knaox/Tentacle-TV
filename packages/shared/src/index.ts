@@ -90,6 +90,7 @@ export * from "./userRights/userRightsPatch";
 // Supprimer des titres de la bibliothèque : routes, lots, droits lus dans la
 // politique Jellyfin du compte (miroir backend, docs/DROITS-UTILISATEURS.md § 9.7).
 export * from "./libraryDelete/libraryDeleteContract";
+export * from "./libraryDelete/deletionSelection";
 export * from "./notifications/notificationTarget";
 export * from "./help/trailerHint";
 // Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
