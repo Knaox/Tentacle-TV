@@ -38,7 +38,7 @@ export const WINDOWS_APP_HELP = {
   // Docker Desktop perd l'adresse des visiteurs : l'app Windows n'a pas ce défaut.
   remoteAccessHelp: { choose_p2: "variant", ports_p4: "hidden" },
   adminPlugins: { restartStuckBody: "variant", restartConfirmBody: "variant" },
-  adminServices: { jellyfinUrlHint: "variant", audioUnavailable: "variant" },
+  adminServices: { jellyfinUrlHint: "variant" },
   trailerHelp: { stepUpdateAppleTv: "variant" },
 } as const satisfies Readonly<Record<string, Readonly<Record<string, PackagedHelpTreatment>>>>;
 

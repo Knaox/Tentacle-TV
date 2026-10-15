@@ -49,7 +49,10 @@ describe("une sortie qui ignorait les clés du profil", () => {
     // `useAuth().logout` (écran hors ligne) n'efface que le jeton et le compte actifs.
     local.setItem("tentacle_profile_session", JSON.stringify({ id: "bob", name: "Bob", kind: "member", color: "teal" }));
     local.setItem("tentacle_account_session", JSON.stringify({ token: "jeton-alice", user: "{\"Id\":\"alice\"}" }));
+    // Le choix de cet ordinateur pour « Qui regarde ? » part aussi (comme une TV déjumelée).
+    local.setItem("tentacle_profile_launch_ask", JSON.stringify({ server: "", accountId: "alice" }));
     noteLoggedOut();
+    expect(local.getItem("tentacle_profile_launch_ask")).toBeNull();
     expect(local.getItem("tentacle_profile_session")).toBeNull();
     expect(local.getItem("tentacle_account_session")).toBeNull();
     expect(launchPassed()).toBe(false);

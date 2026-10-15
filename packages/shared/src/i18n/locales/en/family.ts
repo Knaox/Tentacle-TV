@@ -80,4 +80,16 @@ export default {
     jellyfin_refused: "Jellyfin refused the operation.",
     jellyfin_unavailable: "Jellyfin isn't responding: try again in a moment.",
   },
+  /** The SUGGESTED PIN: right after accepting an invitation (`afterJoin`),
+   *  then as a "Recommended action" while the profile has none (`familyPin` hint). */
+  pinSuggest: {
+    eyebrow: "Recommended action",
+    joinedTitle: "Welcome to {{owner}}'s family",
+    joinedBody: "Your profile now shows up in “Who's watching?” on their TVs and computers. Without a PIN, anyone in front of the screen can open it.",
+    title: "Set your PIN",
+    body: "Your profile has no PIN: on the family's TVs and computers, anyone can open it from “Who's watching?”.",
+    why: "Four digits protect your history, your resume points, My List and your ratings. Only you enter it, and you can change or remove it at any time in Settings › Family.",
+    set: "Set a PIN",
+    later: "Set up later",
+  },
 } as const;

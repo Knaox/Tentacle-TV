@@ -21,5 +21,12 @@ export {
 } from "../hooks/useFamily";
 export { useFamilyLive, type UseFamilyLiveOptions } from "../hooks/useFamilyLive";
 // L'administration : les interrupteurs « Familles » et « Profils invités ».
-export { fetchFamilySwitches, setFamilySwitches } from "../family/familyAdminApi";
-export { FAMILY_SWITCHES_KEY, useFamilySwitches, useSetFamilySwitches } from "../hooks/useFamilyAdmin";
+export { fetchFamilyLaunchPolicy, fetchFamilySwitches, setFamilyLaunchPolicy, setFamilySwitches } from "../family/familyAdminApi";
+export {
+  FAMILY_LAUNCH_POLICY_KEY,
+  FAMILY_SWITCHES_KEY,
+  useFamilyLaunchPolicy,
+  useFamilySwitches,
+  useSetFamilyLaunchPolicy,
+  useSetFamilySwitches,
+} from "../hooks/useFamilyAdmin";

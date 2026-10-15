@@ -21,9 +21,13 @@ import type { FamilyProfileColor, FamilyProfileKind, FamilySwitches } from "./fa
  *   retrait. Elle ne reçoit jamais de jeton Jellyfin : tout passe par Tentacle.
  * - La déconnexion du compte sur cet appareil coupe ses sessions de profil.
  *
- * « Qui regarde ? » au lancement est une préférence du COMPTE, par PLATEFORME
- * (liste FERMÉE), DÉSACTIVÉE par défaut : activée sur un ordinateur, elle vaut
- * pour tous les ordinateurs de ce compte. Sans objet sous deux profils.
+ * « Qui regarde ? » à l'ouverture se décide par APPAREIL (cet ordinateur :
+ * « Ne plus proposer à la prochaine ouverture », gardé sur la machine), dans le
+ * cadre que l'ADMINISTRATION règle plateforme par plateforme (1.30.0, capacité
+ * `family.pickerPolicy`) : coupé pour tous (`off`), ou au choix de chaque
+ * appareil, activé par défaut (`defaultOn`) chez qui n'a jamais choisi. Sans
+ * objet sous deux profils. L'ancienne préférence du COMPTE
+ * (`PickerPreferenceDto`) n'est plus lue que par les bureaux d'avant.
  */
 
 /** Les plateformes où « Qui regarde ? » existe hors des TV — liste FERMÉE :
@@ -34,6 +38,47 @@ export type FamilyPickerPlatform = (typeof FAMILY_PICKER_PLATFORMS)[number];
 
 export function isPickerPlatform(value: unknown): value is FamilyPickerPlatform {
   return typeof value === "string" && (FAMILY_PICKER_PLATFORMS as readonly string[]).includes(value);
+}
+
+/** Les plateformes que l'administration règle — liste FERMÉE : `desktop` (le
+ *  bureau) et `tv` (Apple TV, Android TV). Les routes `/picker/*` restent
+ *  celles du bureau (`FAMILY_PICKER_PLATFORMS`). */
+export const FAMILY_LAUNCH_PLATFORMS = ["desktop", "tv"] as const;
+export type FamilyLaunchPlatform = (typeof FAMILY_LAUNCH_PLATFORMS)[number];
+
+/** `off` : coupé pour tous (jamais « Qui regarde ? » à l'ouverture sur cette
+ *  plateforme) ; `choice` : chaque appareil en décide. */
+export type FamilyLaunchMode = "off" | "choice";
+
+/** Le bureau : `defaultOn`, ce que fait un ordinateur qui n'a jamais choisi. */
+export interface FamilyDesktopLaunchPolicy {
+  mode: FamilyLaunchMode;
+  defaultOn: boolean;
+}
+
+/** Les TV : `off`, elles ouvrent directement le profil du compte qui les a
+ *  jumelées, sans PIN ; `choice`, le comportement de toujours (« Qui regarde ? »,
+ *  et « Ne plus proposer à l'ouverture », propre à chaque TV). */
+export interface FamilyTvLaunchPolicy {
+  mode: FamilyLaunchMode;
+}
+
+/** `GET` et `PUT /api/admin/family/picker` — la politique de l'administration. */
+export interface FamilyLaunchPolicy {
+  desktop: FamilyDesktopLaunchPolicy;
+  tv: FamilyTvLaunchPolicy;
+}
+
+/** Sans réglage de l'administration : permis partout, le bureau activé par défaut. */
+export const DEFAULT_FAMILY_LAUNCH_POLICY: Readonly<FamilyLaunchPolicy> = {
+  desktop: { mode: "choice", defaultOn: true },
+  tv: { mode: "choice" },
+};
+
+/** Le corps du `PUT` : seulement ce qui change. */
+export interface SetFamilyLaunchPolicyBody {
+  desktop?: Partial<FamilyDesktopLaunchPolicy>;
+  tv?: Partial<FamilyTvLaunchPolicy>;
 }
 
 /** Le nom d'appareil qu'un client peut donner (tableau de bord de Jellyfin). */
@@ -81,8 +126,13 @@ export interface PickerProfilesDto {
   currentProfileId: string;
   /** Vrai dès deux profils : sinon « Qui regarde ? » est sans objet. */
   pickerRequired: boolean;
-  /** La préférence du compte pour cette plateforme : « Qui regarde ? » au lancement. */
+  /** Pour un bureau d'avant la 1.30.0 (qui y lisait la préférence du compte) :
+   *  ce que fait un ordinateur qui n'a jamais choisi — permis ET activé par
+   *  défaut. Un bureau à jour décide d'après `launchPolicy` et l'appareil. */
   atLaunch: boolean;
+  /** Le cadre de l'administration pour le bureau (`family.pickerPolicy`).
+   *  Absent (serveur d'avant) : permis, activé par défaut. */
+  launchPolicy?: FamilyDesktopLaunchPolicy;
 }
 
 /** `POST /api/family/picker/sessions` — avec le jeton PERSONNEL. */
@@ -108,7 +158,8 @@ export type PickedProfileDto =
 
 /** `GET` et `PUT /api/family/picker/preference` — avec le jeton PERSONNEL. */
 export interface PickerPreferenceDto {
-  /** Par plateforme : « Qui regarde ? » au lancement (désactivé par défaut). */
+  /** Par plateforme : l'ancienne préférence du COMPTE — plus lue par un bureau
+   *  à jour (il décide par appareil : voir l'en-tête). */
   atLaunch: Record<FamilyPickerPlatform, boolean>;
 }
 

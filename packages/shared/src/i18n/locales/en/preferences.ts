@@ -410,4 +410,15 @@ export default {
   cardSizeSmallHint: "A little smaller: more titles on screen, one more column in libraries.",
   cardSizeNormalHint: "The original size.",
   cardSizeLargeHint: "Large, like on Netflix: fewer titles on screen, artwork shown off better.",
+  // "Are you still watching?" — an ACCOUNT setting, the same on every device.
+  stillWatchingTitle: "Ask if you're still watching",
+  stillWatchingHint: "After a long while without touching anything, playback asks, then pauses if nobody answers. Set here, it applies to all your devices.",
+  stillWatchingAfter: "Ask after",
+  stillWatchingCountdown: "Time to answer",
+  stillWatchingHours_one: "{{count}} hour",
+  stillWatchingHours_other: "{{count}} hours",
+  stillWatchingHourHalf: "1 h 30",
+  stillWatchingSeconds_one: "{{count}} second",
+  stillWatchingSeconds_other: "{{count}} seconds",
+  stillWatchingMinute: "1 minute",
 } as const;

@@ -18,6 +18,8 @@ interface AvatarInviteProps {
   busy: boolean;
   /** L'invitation ouverte ou refermée : les autres recouvrements attendent qu'elle se taise. */
   onOpenChange: (open: boolean) => void;
+  /** L'invitation va paraître (son délai court) ou est ouverte : le recouvrement suivant attend. */
+  onPendingChange?: (pending: boolean) => void;
 }
 
 /**
@@ -27,7 +29,7 @@ interface AvatarInviteProps {
  * elle-même, en mode « invite », un peu après que tout s'est calmé. Le compte
  * est noté invité dès l'ouverture — fermer, choisir ou importer, c'est pareil.
  */
-export function AvatarInvite({ desktop, busy, onOpenChange }: AvatarInviteProps) {
+export function AvatarInvite({ desktop, busy, onOpenChange, onPendingChange }: AvatarInviteProps) {
   const userId = useUserId();
   const profile = useActiveProfile();
   const guestTarget = useGuestSessionPhoto();
@@ -54,6 +56,11 @@ export function AvatarInvite({ desktop, busy, onOpenChange }: AvatarInviteProps)
     busy,
     invited,
   });
+
+  const pending = (due && !!subjectId) || isOpen;
+  useEffect(() => {
+    onPendingChange?.(pending);
+  }, [pending, onPendingChange]);
 
   useEffect(() => {
     if (!due || !subjectId) return;

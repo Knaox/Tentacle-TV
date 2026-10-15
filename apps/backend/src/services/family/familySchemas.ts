@@ -79,3 +79,11 @@ export const adminSwitchesBodySchema = z.object({
   families: z.boolean().optional(),
   guests: z.boolean().optional(),
 });
+
+const launchModeSchema = z.enum(["off", "choice"]);
+
+/** La politique de l'administration : seulement ce qui change (le bureau a un défaut, les TV non). */
+export const adminLaunchPolicyBodySchema = z.object({
+  desktop: z.object({ mode: launchModeSchema.optional(), defaultOn: z.boolean().optional() }).optional(),
+  tv: z.object({ mode: launchModeSchema.optional() }).optional(),
+});

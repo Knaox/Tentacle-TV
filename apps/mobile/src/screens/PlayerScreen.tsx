@@ -13,6 +13,7 @@ import { usePlaybackStarted } from "../hooks/usePlaybackStarted";
 import { usePlayerLoadingWatchdog } from "../hooks/usePlayerLoadingWatchdog";
 import { usePlayerTracks } from "../hooks/usePlayerTracks";
 import { usePlayerRemote } from "../session/usePlayerRemote";
+import { useMobileStillWatching } from "../player/stillWatching/useMobileStillWatching";
 import { useEngineSettings } from "../player/engine/engineSettings";
 import { usePlayerEngine } from "../player/engine/usePlayerEngine";
 import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
@@ -199,6 +200,8 @@ export function PlayerScreen({ itemId, version }: Props) {
   }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, pb.changeQuality, handleSelectAudio, handleSelectSubtitle, handleSeek, onAirPlayRoute, leavePlayer]));
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
+  // « Vous regardez encore ? » — tout toucher sur le lecteur est une présence.
+  const stillWatching = useMobileStillWatching({ paused, buffering: isBuffering, started, setPaused });
 
   // Le message — quoi, pourquoi, quoi faire —, une fois l'échec diagnostiqué.
   if (failure.problem) {
@@ -242,17 +245,15 @@ export function PlayerScreen({ itemId, version }: Props) {
       reloadToken={String(pb.retryNonce)}
       subtitleScale={engineSettings.subtitleScale}
       subtitlePosition={engineSettings.subtitlePosition}
-      onLoad={handleLoad}
-      onProgress={handleProgress}
-      onEnd={handleEnd}
-      onError={handleError}
+      onLoad={handleLoad} onProgress={handleProgress}
+      onEnd={handleEnd} onError={handleError}
       onBuffering={setIsBuffering}
       onExternalPlaybackChange={onExternalPlaybackChange}
-      onPausedChange={setPaused}
+      onPausedChange={stillWatching.onPausedChange}
       onAirPlayRoute={onAirPlayRoute}
       onPipChange={onPipChange}
       onSeek={seek.seekTo} onSkip={seek.seekBy}
-      onToggleOverlay={toggleOverlay}
+      onToggleOverlay={toggleOverlay} onActivity={stillWatching.reportActivity}
       onSwipeDown={leavePlayer}
     >
       <MobilePlayerOverlay
@@ -268,16 +269,14 @@ export function PlayerScreen({ itemId, version }: Props) {
         qualityKey={pb.qualityKey}
         qualityPresets={pb.qualityPresets}
         autoQualityActive={pb.autoModeArmed} qualityDrop={qualityDrop}
-        playback={playback}
-        nextEpisode={pb.episodeNav.nextEpisode}
-        previousEpisode={pb.episodeNav.previousEpisode}
+        playback={playback} stillWatching={stillWatching}
+        nextEpisode={pb.episodeNav.nextEpisode} previousEpisode={pb.episodeNav.previousEpisode}
         item={pb.item}
         mediaSourceId={pb.mediaSourceId}
         onPlayPause={() => setPaused((p) => !p)}
         onSeek={seek.seekTo} onSkip={seek.seekBy}
         onBack={leavePlayer}
-        onSelectAudio={handleSelectAudio}
-        onSelectSubtitle={handleSelectSubtitle}
+        onSelectAudio={handleSelectAudio} onSelectSubtitle={handleSelectSubtitle}
         onSelectQuality={pb.changeQuality}
         onNextEpisode={handleNextEpisode}
         onPreviousEpisode={handlePrevEpisode}

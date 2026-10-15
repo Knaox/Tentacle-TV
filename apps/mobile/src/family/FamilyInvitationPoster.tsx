@@ -19,6 +19,8 @@ interface FamilyInvitationPosterProps {
   onLater: (id: string) => void;
   /** Répondue (acceptée ou refusée) : l'affiche se retire. */
   onDone: (id: string) => void;
+  /** Acceptée : l'hôte propose ensuite le code PIN (« Bienvenue dans la famille de … »). */
+  onAccepted?: (owner: string) => void;
 }
 
 const POSTER_MAX_WIDTH = 440;
@@ -33,7 +35,7 @@ const POSTER_MAX_WIDTH = 440;
  * L'identifiant de l'invitation voyage dans le corps des requêtes, jamais
  * dans une URL (api-client › `familyApi.ts`).
  */
-export function FamilyInvitationPoster({ invitation, onLater, onDone }: FamilyInvitationPosterProps) {
+export function FamilyInvitationPoster({ invitation, onLater, onDone, onAccepted }: FamilyInvitationPosterProps) {
   const { t } = useTranslation(["family", "familyWeb", "familyMobile"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -60,6 +62,7 @@ export function FamilyInvitationPoster({ invitation, onLater, onDone }: FamilyIn
         haptic("success");
         showToast({ title: t("familyWeb:poster.accepted", { owner }), tone: "success" });
         onDone(invitation.id);
+        onAccepted?.(owner);
       },
       // Déjà dans une famille : la phrase qui dit quoi faire (la quitter d'abord).
       onError: (failure) =>

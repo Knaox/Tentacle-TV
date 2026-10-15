@@ -26,7 +26,7 @@ export type WsServerMessage =
   | { type: "reco:update" }
   /** Un autre appareil du compte a enregistré ses préférences (doublon du
    *  membre de packages/shared, les deux vivent côte à côte). */
-  | { type: "preferences:update"; scope: "home-layout" | "reco-settings" | "hints" }
+  | { type: "preferences:update"; scope: "home-layout" | "reco-settings" | "hints" | "still-watching" }
   /** La Famille : relire (`family:update`), ou la fin d'une session de profil
    *  de TV (`family:profile-ended`, puis fermeture 4010). */
   | FamilyWsMessage

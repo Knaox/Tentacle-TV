@@ -931,7 +931,7 @@ recommandation du tableau de bord (`segmentPlugins`, masquable) si l'un manque.
   (`services/tailAnalysis/`). Un serveur d'avant perd ses clés
   (`audio_analysis_enabled`, `audio_analysis_default_off_applied`) une fois au
   démarrage, journal clair s'il l'avait allumée (`audioAnalysisRetirement.ts`) ;
-  la table `media_audio_analysis` part par la migration 0004. La source
+  la table `media_audio_analysis` part par la migration 0005. La source
   `"audio"` d'un segment reste dans le contrat (verdicts et instantanés
   d'avant) ; `GET /api/admin/audio-analysis` reste FIGÉ (« coupée, sans
   outil ») pour les bureaux livrés, `PUT` n'existe plus. Aucune capacité :

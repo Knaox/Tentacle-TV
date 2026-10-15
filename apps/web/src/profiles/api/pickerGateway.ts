@@ -5,9 +5,10 @@ import {
   setPickerPreference,
   type PickerCall,
 } from "@tentacle-tv/api-client";
-import type { PickedProfileDto, PickerPreferenceDto, PickerProfilesDto } from "@tentacle-tv/shared";
-import { accountToken } from "../../auth/profileSession";
+import { withDeviceChoice, type PickedProfileDto, type PickerPreferenceDto, type PickerProfilesDto } from "@tentacle-tv/shared";
+import { accountToken, accountUserId } from "../../auth/profileSession";
 import { getBackendBase } from "../../lib/backendBase";
+import { readDeviceChoiceOnThisServer } from "../launch/stayOnDevice";
 
 /**
  * Les appels de « Qui regarde ? » du bureau, portés par le jeton de la
@@ -38,8 +39,11 @@ function personalCall(signal?: AbortSignal): PickerCall {
   return { serverUrl: getBackendBase(), personalToken: token, signal };
 }
 
-export function loadPickerProfiles(signal?: AbortSignal): Promise<PickerProfilesDto> {
-  return fetchPickerProfiles(personalCall(signal), PICKER_PLATFORM);
+/** La famille de « Qui regarde ? » ; `atLaunch` y devient la règle de CET ordinateur
+ *  (shared `familyPickerDevice.ts` : le cadre du serveur, puis le choix de l'appareil). */
+export async function loadPickerProfiles(signal?: AbortSignal): Promise<PickerProfilesDto> {
+  const listing = await fetchPickerProfiles(personalCall(signal), PICKER_PLATFORM);
+  return withDeviceChoice(listing, readDeviceChoiceOnThisServer(accountUserId()));
 }
 
 export function pickProfile(profileId: string, pin: string | undefined, deviceName: string): Promise<PickedProfileDto> {

@@ -226,4 +226,16 @@ export default {
   deviceNotice: {
     av1Converted: "This device can't play AV1: the server converts it",
   },
+  // "Are you still watching?": the bottom-right card, after a long stretch of
+  // playback without a gesture (account setting, `stillWatchingSettings.ts`).
+  stillWatching: {
+    title: "Are you still watching?",
+    countdown_one: "Playback pauses in {{count}} second.",
+    countdown_other: "Playback pauses in {{count}} seconds.",
+    continue: "Continue",
+    pause: "Pause",
+    pausedTitle: "Playback paused",
+    pausedBody: "Nobody answered: playback is waiting for you, right where you left it.",
+    resume: "Resume",
+  },
 } as const;
