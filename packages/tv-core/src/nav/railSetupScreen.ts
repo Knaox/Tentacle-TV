@@ -15,7 +15,9 @@ import { libraryIdOf } from "./railKeys";
  *   la pose, Retour annule. Le focus reste dans la colonne des pastilles :
  *   chaque pastille porte la bibliothèque de sa case (`railSetupArrangeReading`).
  * - Rien n'est enregistré avant « Continuer » ; « Passer » et Retour gardent la
- *   disposition d'avant.
+ *   disposition d'avant. La disposition enregistrée, la porte (montrer, passer,
+ *   attendre — bornée) et la diffusion aux autres profils sont la règle du
+ *   socle (`railSetup.ts`, `railProfileStore.ts`).
  */
 
 export const RAIL_SETUP_ROW_PREFIX = "railSetup:row:";
@@ -55,42 +57,6 @@ export function railSetupLockedKeys(rowCount: number): string[] {
   return [...rows, RAIL_SETUP_CONTINUE_KEY, RAIL_SETUP_SKIP_KEY];
 }
 
-/**
- * L'ordre COMPLET à enregistrer : chaque case qu'occupait une bibliothèque de
- * la page reçoit, dans l'ordre choisi, la bibliothèque suivante — Pour vous,
- * Ma liste et Favoris ne bougent pas, ni une bibliothèque que la page ne
- * montre pas (hors des droits du profil aujourd'hui : elle garde sa case). Une
- * bibliothèque que l'ordre complet ne connaissait pas (créée depuis) se range
- * à la suite.
- */
-export function railSetupFullOrder(fullOrder: readonly string[], libraryOrder: readonly string[]): string[] {
-  const queue = libraryOrder.filter((key, index) => libraryOrder.indexOf(key) === index);
-  const placed = new Set(queue);
-  const result: string[] = [];
-  for (const key of fullOrder) {
-    if (!placed.has(key)) result.push(key);
-    else {
-      const next = queue.shift();
-      if (next !== undefined) result.push(next);
-    }
-  }
-  return [...result, ...queue];
-}
-
-/**
- * Les masquées à enregistrer : celles d'avant qui ne sont pas des
- * bibliothèques (Pour vous, Ma liste, Favoris gardent leur état), plus chaque
- * bibliothèque de la page qui n'est pas épinglée.
- */
-export function railSetupHidden(
-  currentHidden: readonly string[],
-  libraryKeys: readonly string[],
-  isPinned: (key: string) => boolean,
-): string[] {
-  const kept = currentHidden.filter((key) => libraryIdOf(key) === null);
-  return [...kept, ...libraryKeys.filter((key) => !isPinned(key))];
-}
-
 /** Le focus d'entrée : la première bibliothèque — jamais une croix ni « Passer ». */
 export function railSetupEntryKey(rowCount: number): string {
   return rowCount > 0 ? railSetupRowKey(0) : RAIL_SETUP_CONTINUE_KEY;
@@ -116,28 +82,4 @@ export function railSetupBackAction(step: RailSetupStep, moving: boolean): RailS
  */
 export function routeAfterSession(setupPending: boolean): "RailSetup" | "Home" {
   return setupPending ? "RailSetup" : "Home";
-}
-
-/** Ce que dit le socle pour le profil actif (`show` : à partir de deux bibliothèques). */
-export type RailSetupGateStatus = "show" | "skip" | "wait";
-
-/**
- * L'attente bornée de l'arrivée : hors ligne ou serveur lent, la page ne
- * retient pas l'accueil — elle y file sans rien marquer, et reviendra.
- */
-export const RAIL_SETUP_WAIT_MAX_MS = 5_000;
-
-export type RailSetupArrival = "wait" | "show" | "home";
-
-/**
- * L'arrivée sur la page : le socle dit `wait` tant qu'il ne sait pas (rien
- * ne paraît, l'accueil non plus), `show`, ou `skip` (l'accueil). Une page
- * montrée le RESTE jusqu'au choix du profil : une relecture des
- * bibliothèques ne la retire pas sous la télécommande.
- */
-export function railSetupArrival(previous: RailSetupArrival, gate: RailSetupGateStatus, waitedMs: number): RailSetupArrival {
-  if (previous !== "wait") return previous;
-  if (gate === "show") return "show";
-  if (gate === "skip" || waitedMs >= RAIL_SETUP_WAIT_MAX_MS) return "home";
-  return "wait";
 }

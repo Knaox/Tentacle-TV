@@ -4,13 +4,9 @@ import { arrangeOnFocus, rowsSelectWhileArranging, startArrange } from "./arrang
 import {
   RAIL_SETUP_CONTINUE_KEY,
   RAIL_SETUP_SKIP_KEY,
-  RAIL_SETUP_WAIT_MAX_MS,
   railSetupArrangeReading,
-  railSetupArrival,
   railSetupBackAction,
   railSetupEntryKey,
-  railSetupFullOrder,
-  railSetupHidden,
   railSetupLibraryKeys,
   railSetupLockedKeys,
   railSetupMoveKey,
@@ -65,35 +61,6 @@ describe("railSetupLockedKeys — pendant un déplacement", () => {
   });
 });
 
-describe("railSetupFullOrder — l'ordre complet à enregistrer", () => {
-  it("les bibliothèques prennent les cases des bibliothèques ; Pour vous, Ma liste, Favoris restent", () => {
-    expect(railSetupFullOrder(FULL, ["Library_c", "Library_a", "Library_b"])).toEqual([
-      "Recommendations", "Library_c", "Watchlist", "Library_a", "Favorites", "Library_b",
-    ]);
-  });
-
-  it("une bibliothèque inconnue de l'ordre complet se range à la suite ; un doublon ne compte qu'une fois", () => {
-    expect(railSetupFullOrder(["Recommendations", "Library_a"], ["Library_new", "Library_a", "Library_a"])).toEqual([
-      "Recommendations", "Library_new", "Library_a",
-    ]);
-  });
-
-  it("une bibliothèque que la page ne montre pas garde sa case", () => {
-    expect(railSetupFullOrder(FULL, ["Library_c", "Library_b"])).toEqual([
-      "Recommendations", "Library_a", "Watchlist", "Library_c", "Favorites", "Library_b",
-    ]);
-  });
-});
-
-describe("railSetupHidden — les masquées à enregistrer", () => {
-  it("garde l'état des entrées fixes, remplace celui des bibliothèques", () => {
-    const pinned = new Set(["Library_b"]);
-    expect(railSetupHidden(["Favorites", "Library_b"], ["Library_a", "Library_b"], (key) => pinned.has(key))).toEqual([
-      "Favorites", "Library_a",
-    ]);
-  });
-});
-
 describe("railSetupEntryKey — le focus d'entrée", () => {
   it("la première bibliothèque, jamais « Passer »", () => {
     expect(railSetupEntryKey(3)).toBe(railSetupRowKey(0));
@@ -109,25 +76,10 @@ describe("railSetupBackAction — Retour", () => {
   });
 });
 
-describe("routeAfterSession et railSetupArrival — la page passe avant l'accueil", () => {
+describe("routeAfterSession — la page passe avant l'accueil", () => {
   it("la page si elle est due, sinon l'accueil", () => {
     expect(routeAfterSession(true)).toBe("RailSetup");
     expect(routeAfterSession(false)).toBe("Home");
-  });
-
-  it("attend le socle, puis montre ou file à l'accueil", () => {
-    expect(railSetupArrival("wait", "wait", 100)).toBe("wait");
-    expect(railSetupArrival("wait", "show", 100)).toBe("show");
-    expect(railSetupArrival("wait", "skip", 100)).toBe("home");
-  });
-
-  it("hors ligne ou serveur lent : l'attente est bornée", () => {
-    expect(railSetupArrival("wait", "wait", RAIL_SETUP_WAIT_MAX_MS)).toBe("home");
-  });
-
-  it("une page montrée le reste jusqu'au choix du profil", () => {
-    expect(railSetupArrival("show", "wait", 0)).toBe("show");
-    expect(railSetupArrival("show", "skip", 0)).toBe("show");
   });
 });
 
