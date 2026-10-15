@@ -25,7 +25,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Jellyfin restarting?** Playback continues (server 1.24.0)
 - **Sharper reduced quality** (HEVC), original audio kept
 - Family in green, unpaired TV removed at once
-- **Offline** right away, no blocking screen: a message says why
+- **Offline** right away: a message says why
 - Older server: nothing breaks, new features wait
 - "Where you left off" for in-progress titles
 - The keyboard no longer covers text fields
