@@ -30,12 +30,12 @@ export function useOsdPin(paused: boolean, overlayVisible: boolean): { pinned: b
  */
 export function usePlayerBackLayers(
   p: PlayerRedesignStageProps,
-  osd: { shown: boolean; unpin: () => void; stillWatchingAsking: boolean },
+  osd: { shown: boolean; unpin: () => void; stillWatchingAsking?: boolean },
 ): void {
   const { back } = p;
   const specs = playerBackLayers({
     transient: !!back?.transient, showSettings: p.showSettings, showEpisodes: !!p.showEpisodes, osdShown: osd.shown,
-    stillWatchingAsking: osd.stillWatchingAsking,
+    stillWatchingAsking: osd.stillWatchingAsking === true,
   });
   useBackLayers(specs, {
     routeTransient: () => void back?.routeBack(),

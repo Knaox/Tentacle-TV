@@ -33,6 +33,7 @@ import { SEARCH_SCENES } from "./searchScenes";
 import { SETTINGS_SCENES } from "./settingsScenes";
 import { SHEET_SCENES } from "./sheetScenes";
 import { SHEET_WIRED_SCENES } from "./sheetWiredScenes";
+import { STILL_WATCHING_SCENES } from "./stillWatchingScenes";
 import { TRAILER_SCENES } from "./trailerScenes";
 import { VITRINE_SCENES } from "./vitrineScenes";
 import type { BenchScene } from "./types";
@@ -75,6 +76,8 @@ export const SCENES: BenchScene[] = [
   ...OVERLAY_SCENES,
   ...BACK_SCENES,
   ...PLAYER_WIRED_SCENES,
+  // « Vous regardez encore ? » : la question, la pause, et le décompte vivant en focus natif.
+  ...STILL_WATCHING_SCENES,
   ...PLAYER_LIVE_SCENES,
   ...BRICK_SCENES,
   // Les badges de qualité au focus des cartes (4K, Dolby Vision, Dolby Atmos).
