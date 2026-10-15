@@ -21,6 +21,7 @@ import { accessPolicyOf } from "./accountAccessState";
 import { keepPlaybackPositions } from "./keepPositions";
 import { accountAccessOf, nextScheduleChange, sameAccountAccess } from "../../accountAccess/accountAccessRule";
 import { ACCOUNT_ACCESS_CLOSE_CODE, type AccountAccessState } from "../../accountAccess/accountAccessContract";
+import type { AccessScheduleDto } from "../../userRights/userRightsContract";
 
 const WATCH_EVERY_MS = 60_000;
 /** Le minuteur part un peu APRÈS le bord : la règle doit déjà voir l'autre côté. */
@@ -58,6 +59,8 @@ export async function evaluateAccountAccess(userId: string, now = Date.now()): P
   const edge = policy.readable ? nextScheduleChange(policy.accessSchedules, now) : null;
   const previous = watched.get(userId);
   watched.set(userId, { access, edge });
+  // La référence du guet : ce que CETTE évaluation a vu, pas le prochain relevé de /Users.
+  if (policy.readable) fingerprints.set(keyOf(userId), accessFingerprint(policy.isDisabled === true, policy.accessSchedules ?? []));
   if (previous && !sameAccountAccess(previous.access, access)) await announce(userId, access);
   armEdgeTimer();
 }
@@ -86,11 +89,14 @@ function forget(userId: string): void {
   armEdgeTimer();
 }
 
-function accessFingerprint(policy: Record<string, unknown> | undefined): string {
-  const schedules = Array.isArray(policy?.AccessSchedules)
-    ? (policy.AccessSchedules as Record<string, unknown>[]).map((entry) => [entry.DayOfWeek, entry.StartHour, entry.EndHour])
-    : [];
-  return JSON.stringify([policy?.IsDisabled === true, schedules]);
+function accessFingerprint(isDisabled: boolean, schedules: readonly AccessScheduleDto[]): string {
+  return JSON.stringify([isDisabled, schedules.map((entry) => [entry.dayOfWeek, entry.startHour, entry.endHour])]);
+}
+
+function rawFingerprint(policy: Record<string, unknown> | undefined): string {
+  const raw = Array.isArray(policy?.AccessSchedules) ? (policy.AccessSchedules as Record<string, unknown>[]) : [];
+  const schedules = raw.map((entry) => ({ dayOfWeek: entry.DayOfWeek, startHour: entry.StartHour, endHour: entry.EndHour }));
+  return accessFingerprint(policy?.IsDisabled === true, schedules as AccessScheduleDto[]);
 }
 
 /** Le guet de Jellyfin : un changement fait dans son tableau de bord fait relire la politique. */
@@ -101,12 +107,10 @@ export async function watchJellyfinPolicies(): Promise<void> {
   const connected = new Set([...watched.keys()].map(keyOf));
   for (const user of result.data) {
     if (typeof user.Id !== "string" || !connected.has(keyOf(user.Id))) continue;
-    const key = keyOf(user.Id);
-    const next = accessFingerprint(user.Policy);
-    const previous = fingerprints.get(key);
-    fingerprints.set(key, next);
-    // La politique de contenu tombe : les portes la relisent, et l'écouteur ci-dessous annonce.
-    if (previous !== undefined && previous !== next) invalidateContentPolicy(user.Id);
+    const seen = fingerprints.get(keyOf(user.Id));
+    // Autre chose que ce que la dernière évaluation a vu : la politique de contenu tombe,
+    // les portes la relisent, et l'écouteur ci-dessous réévalue et annonce.
+    if (seen !== undefined && seen !== rawFingerprint(user.Policy)) invalidateContentPolicy(user.Id);
   }
 }
 

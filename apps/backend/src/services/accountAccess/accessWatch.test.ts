@@ -69,6 +69,14 @@ afterEach(() => {
 });
 
 describe("annonce de l'accès du compte", () => {
+  it("le guet compare à ce que l'évaluation a vu : un changement juste après la connexion n'est pas manqué", async () => {
+    await connect(KID);
+    state.users = [{ Id: KID, Policy: { IsDisabled: false, AccessSchedules: [{ DayOfWeek: "Everyday", StartHour: 8, EndHour: 10 }] } }];
+    state.policies.set(KID, { accessSchedules: EVENINGS });
+    await watchJellyfinPolicies();
+    expect(state.invalidated).toEqual([KID]);
+  });
+
   it("la plage se ferme : annonce au bord, sortie de Watch Together, sockets fermées (4012)", async () => {
     state.policies.set(KID, { accessSchedules: EVENINGS });
     await connect(KID);
@@ -109,6 +117,7 @@ describe("annonce de l'accès du compte", () => {
 
   it("le guet de Jellyfin : un compte désactivé dans son tableau de bord fait relire la politique", async () => {
     await connect(KID);
+    // Rien n'a changé depuis l'évaluation : rien ne tombe.
     state.users = [{ Id: KID, Policy: { IsDisabled: false, AccessSchedules: [] } }];
     await watchJellyfinPolicies();
     expect(state.invalidated).toEqual([]);
