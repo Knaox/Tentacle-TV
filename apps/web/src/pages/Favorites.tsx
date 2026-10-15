@@ -14,6 +14,7 @@ import { CollectionToolbarPanel } from "../components/collection/CollectionToolb
 import { CollectionSkeleton } from "../components/collection/CollectionStates";
 import { useFavoritesGroupMode } from "../components/favorites/useFavoritesGroupMode";
 import { SelectionToolbar } from "../components/SelectionToolbar";
+import { CollectionRemovalDialog, useRemovalConfirm } from "../components/collection/CollectionRemovalConfirm";
 import { PageTransition } from "../components/PageTransition";
 import { ShareMyListButton } from "../components/share/ShareMyListButton";
 import { QueryProblem } from "../components/problems/PageProblem";
@@ -54,6 +55,7 @@ export function Favorites() {
   const handleDelete = () => {
     batchRemove.mutate([...sel.selected], { onSettled: () => sel.exitSelectionMode() });
   };
+  const removal = useRemovalConfirm(handleDelete);
 
   const resetAll = () => {
     filters.setInput("");
@@ -143,10 +145,12 @@ export function Favorites() {
           count={sel.count}
           onSelectAll={() => sel.selectAll(filteredIdsRef.current)}
           onCancel={sel.exitSelectionMode}
-          onDelete={handleDelete}
+          onDelete={removal.request}
           isDeleting={batchRemove.isPending}
+          removal
         />
       )}
+      <CollectionRemovalDialog kind="favorites" count={sel.count} confirmation={removal} />
     </PageTransition>
   );
 }

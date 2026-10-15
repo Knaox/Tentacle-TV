@@ -9,6 +9,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { SkeletonCard, SubtleBackground } from "@/components/ui";
 import { SelectionBar } from "@/components/SelectionBar";
+import { useCollectionRemovalConfirm } from "@/components/collection/useCollectionRemovalConfirm";
 import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
 import { posterSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { CatalogEmpty } from "@/components/catalog/CatalogGridStates";
@@ -89,6 +90,8 @@ export function WatchlistScreen() {
     await batchRemove.mutateAsync(ids);
     selection.clear();
   }, [selection, batchRemove]);
+  const confirmRemoval = useCollectionRemovalConfirm("watchlist");
+  const requestDelete = useCallback(() => confirmRemoval(selection.count, () => void handleDelete()), [confirmRemoval, selection.count, handleDelete]);
   // « Tout sélectionner » porte sur ce qui est montré : filtres ET étape.
   const handleSelectAll = useCallback(() => {
     if (selection.count === data.length) selection.selectAll([]);
@@ -237,7 +240,7 @@ export function WatchlistScreen() {
 
         <FloatingBackButton top={top} onPress={() => backOrHome(router)} />
         {selection.active && (
-          <SelectionBar count={selection.count} totalCount={data.length} onSelectAll={handleSelectAll} onDelete={handleDelete} onCancel={selection.clear} />
+          <SelectionBar count={selection.count} totalCount={data.length} onSelectAll={handleSelectAll} onDelete={requestDelete} onCancel={selection.clear} />
         )}
         {removed && <UndoBar item={removed} onClose={clearRemoved} />}
       </View>

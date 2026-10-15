@@ -25,6 +25,7 @@ import { CollectionHero } from "../collection/CollectionHero";
 import { CollectionNarrowEmpty, ListSkeleton } from "../collection/CollectionStates";
 import { SelectableGridCard } from "../collection/SelectableGridCard";
 import { SelectionBar } from "../collection/SelectionBar";
+import { CollectionRemovalDialog, useRemovalConfirm } from "../../../components/collection/CollectionRemovalConfirm";
 import { ShareMyListButton } from "../collection/ShareMyListButton";
 import { useCollectionFilters } from "../collection/useCollectionFilters";
 import { ResumeRail } from "./ResumeRail";
@@ -83,6 +84,7 @@ export function MirrorWatchlistScreen() {
     await batchRemove.mutateAsync(ids);
     selection.exitSelectionMode();
   };
+  const removal = useRemovalConfirm(() => void handleDelete());
   // « Tout sélectionner » porte sur ce qui est montré : filtres ET étape.
   const handleSelectAll = () => {
     if (selection.count === data.length) selection.selectAll([]);
@@ -199,11 +201,12 @@ export function MirrorWatchlistScreen() {
           count={selection.count}
           totalCount={data.length}
           onSelectAll={handleSelectAll}
-          onDelete={() => void handleDelete()}
+          onDelete={removal.request}
           onCancel={selection.exitSelectionMode}
           busy={batchRemove.isPending}
         />
       )}
+      <CollectionRemovalDialog kind="watchlist" count={selection.count} confirmation={removal} />
       {undo.removed && <UndoBar item={undo.removed} onClose={undo.clear} />}
     </div>
   );

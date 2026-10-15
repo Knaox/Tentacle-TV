@@ -14,6 +14,7 @@ import { CollectionControls, QuickChip } from "../collection/CollectionControls"
 import { CollectionHero } from "../collection/CollectionHero";
 import { ShareMyListButton } from "../collection/ShareMyListButton";
 import { SelectionBar } from "../collection/SelectionBar";
+import { CollectionRemovalDialog, useRemovalConfirm } from "../../../components/collection/CollectionRemovalConfirm";
 import { useCollectionFilters } from "../collection/useCollectionFilters";
 import { FavoritesEmptyState } from "./FavoritesEmptyState";
 import { FavoritesGrid } from "./FavoritesGrid";
@@ -60,6 +61,7 @@ export function MirrorFavorites() {
     await batchRemove.mutateAsync(ids);
     selection.exitSelectionMode();
   };
+  const removal = useRemovalConfirm(() => void handleDelete());
   // « Tout sélectionner » porte sur ce qui est FILTRÉ : c'est ce que l'écran montre.
   const handleSelectAll = () => {
     if (selection.count === data.length) selection.selectAll([]);
@@ -142,11 +144,12 @@ export function MirrorFavorites() {
           count={selection.count}
           totalCount={count}
           onSelectAll={handleSelectAll}
-          onDelete={() => void handleDelete()}
+          onDelete={removal.request}
           onCancel={selection.exitSelectionMode}
           busy={batchRemove.isPending}
         />
       )}
+      <CollectionRemovalDialog kind="favorites" count={selection.count} confirmation={removal} />
     </div>
   );
 }

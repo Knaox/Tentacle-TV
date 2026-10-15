@@ -7,6 +7,7 @@ import { CollectionHero } from "../components/collection/CollectionHero";
 import { CollectionGridBody } from "../components/collection/CollectionGridBody";
 import { LibraryGridEmpty } from "../components/library/LibraryGridEmpty";
 import { SelectionToolbar } from "../components/SelectionToolbar";
+import { CollectionRemovalDialog, useRemovalConfirm } from "../components/collection/CollectionRemovalConfirm";
 import { PageTransition } from "../components/PageTransition";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { useWatchlistPage } from "../components/watchlist/useWatchlistPage";
@@ -51,6 +52,7 @@ export function Watchlist() {
   const handleDelete = () => {
     batchRemove.mutate([...sel.selected], { onSettled: () => sel.exitSelectionMode() });
   };
+  const removal = useRemovalConfirm(handleDelete);
 
   const summaryLine = useSummaryLine(page.summary);
 
@@ -139,10 +141,12 @@ export function Watchlist() {
           count={sel.count}
           onSelectAll={() => sel.selectAll(visible.map((i) => i.Id))}
           onCancel={sel.exitSelectionMode}
-          onDelete={handleDelete}
+          onDelete={removal.request}
           isDeleting={batchRemove.isPending}
+          removal
         />
       )}
+      <CollectionRemovalDialog kind="watchlist" count={sel.count} confirmation={removal} />
       {undo.removed && <WatchlistUndoToast item={undo.removed} onClose={undo.clear} />}
     </PageTransition>
   );

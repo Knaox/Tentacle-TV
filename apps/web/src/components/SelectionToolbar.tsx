@@ -7,9 +7,11 @@ interface SelectionToolbarProps {
   onCancel: () => void;
   onDelete: () => void;
   isDeleting: boolean;
+  /** Un RETRAIT (d'une liste), pas une suppression : « Retirer (N) ». */
+  removal?: boolean;
 }
 
-export function SelectionToolbar({ count, onSelectAll, onCancel, onDelete, isDeleting }: SelectionToolbarProps) {
+export function SelectionToolbar({ count, onSelectAll, onCancel, onDelete, isDeleting, removal = false }: SelectionToolbarProps) {
   return createPortal(
     <div
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
@@ -22,7 +24,7 @@ export function SelectionToolbar({ count, onSelectAll, onCancel, onDelete, isDel
         <div className="flex items-center gap-2">
           <SelectAllButton onClick={onSelectAll} />
           <CancelButton onClick={onCancel} />
-          <DeleteButton count={count} onClick={onDelete} disabled={count === 0 || isDeleting} isDeleting={isDeleting} />
+          <DeleteButton count={count} onClick={onDelete} disabled={count === 0 || isDeleting} isDeleting={isDeleting} removal={removal} />
         </div>
       </div>
       <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
@@ -60,7 +62,7 @@ function CancelButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function DeleteButton({ count, onClick, disabled, isDeleting }: { count: number; onClick: () => void; disabled: boolean; isDeleting: boolean }) {
+function DeleteButton({ count, onClick, disabled, isDeleting, removal }: { count: number; onClick: () => void; disabled: boolean; isDeleting: boolean; removal: boolean }) {
   const { t } = useTranslation("common");
   return (
     <button
@@ -68,7 +70,7 @@ function DeleteButton({ count, onClick, disabled, isDeleting }: { count: number;
       disabled={disabled}
       className="rounded-lg bg-danger-surface px-4 py-1.5 text-sm font-medium text-status-error-fg ring-1 ring-danger-border transition-all hover:bg-danger-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
     >
-      {isDeleting ? t("common:loading") : t("common:deleteCount", { count })}
+      {isDeleting ? t("common:loading") : t(removal ? "common:removeCount" : "common:deleteCount", { count })}
     </button>
   );
 }

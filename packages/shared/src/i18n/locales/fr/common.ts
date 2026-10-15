@@ -282,6 +282,12 @@ export default {
   selectedCount: "{{count}} sélectionné(s)",
   deleteCount: "Supprimer ({{count}})",
   removeCount: "Retirer ({{count}})",
+  // Confirmation d'un retrait EN LOT (sélection multiple) de Ma liste ou des favoris.
+  removeFromWatchlistTitle_one: "Retirer ce titre de Ma liste ?",
+  removeFromWatchlistTitle_other: "Retirer {{count}} titres de Ma liste ?",
+  removeFromFavoritesTitle_one: "Retirer ce titre des favoris ?",
+  removeFromFavoritesTitle_other: "Retirer {{count}} titres des favoris ?",
+  removeFromCollectionBody: "Rien n'est supprimé de la bibliothèque : seule la liste change.",
   toWatch: "À regarder",
   markWatched: "Marquer comme vu",
   markUnwatched: "Marquer comme non vu",
