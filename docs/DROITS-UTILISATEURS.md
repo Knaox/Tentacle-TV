@@ -978,10 +978,21 @@ rien.
   la garde AVANT le cache.
 - Porte DIRECTE de Jellyfin (port publié) : sert un fichier à qui connaît son id — d'où les règles
   ci-dessus (aucun id d'un titre interdit rendu).
-- **Signalé (chantier Watch Together, non éprouvé ici)** : l'affinité diffuse `state.proposals[]`
-  (id et titre) à tous les membres du salon sans filtre par destinataire
-  (`watchTogether/affinity/affinityBroadcast.ts`) — à sonder avec un salon mêlant un compte libre
-  et un compte restreint.
+- ✅ **Fermé (`1dd5dab91`)** : l'affinité diffusait `state.proposals[]` (id et titre) à tout le salon.
+  Banc (`probesAffinity.ts`) : `enfant6`, entré après les matchs de `libre` et `filmsseuls`, recevait
+  « Coraline » (10) par `GET /affinity`, `POST /affinity/join` et trois `wt:affinity`, et le lancement
+  passait ; désormais rien, « Le Roi lion » lui parvient (témoin), lancer « Saw » → 409.
+  **Décidé : commun à la salle, pas par destinataire** (`affinity/affinityRights.ts`) — une proposition
+  ne part que si TOUS les membres voient son titre (`isItemVisibleTo`, fermé à l'échec), dans l'état
+  (REST et socket), `matchKeys` et `match`. Un match est UNE proposition (la première réponse vaut pour
+  tous, la première en attente est à l'écran de chaque participant : des listes par destinataire le
+  feraient diverger), et « Regarder ensemble » mène au lecteur du groupe, que `wt:setItem` refuse dès
+  qu'un membre ne voit pas le titre (§ 7.2). D'où : `matched` faux pour l'auteur du vote ; lancer →
+  `answered`, la salle reçoit l'état qui ne le propose plus ; la proposition reste dans la séance et
+  revient, à la diffusion suivante, au départ du membre ou à sa politique rouverte.
+- **Signalé (non corrigé)** : la PILE d'un membre n'est pas rejugée quand sa politique se resserre en
+  cours de séance (`allowed` figé au lancement ou à son entrée). Banc : « Le Roi lion » (6+) encore
+  servi par `GET /affinity/cards` 31 s après la note maximale d'`enfant6` passée de 6 à 0.
 
 ## 9.6 Démarrage et « Vous regardez encore ? »
 
