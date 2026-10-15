@@ -2,11 +2,12 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { ROW_STAGING, rowHeadCards } from "@tentacle-tv/tv-core";
+import { ROW_STAGING, rowHeadCards, trailerPreviewWarmWindow } from "@tentacle-tv/tv-core";
 import { cardIndexOf } from "../cards/cardFocusKeys";
 import { MediaCard } from "../cards/MediaCard";
 import { MORPH_OVERFLOW, MorphCard } from "../cards/MorphCard";
 import type { CardModel } from "../cards/cardTypes";
+import { useCardPreviewWarm } from "../cards/trailerPreviewPort";
 import { useForcedFocusKey } from "../focus/focusPreview";
 import { mountProfile } from "../render/mountProfile";
 import { useRowFocus } from "../motion/useRowRecede";
@@ -109,6 +110,10 @@ export const MediaRow = memo(function MediaRow({
       }),
     [rewind, rowKey, retire, head],
   );
+  // Les titres autour du focus : leur aperçu se prépare au serveur (`useCardPreviewWarm`).
+  const warm = useCardPreviewWarm();
+  const latestCards = useRef(cards);
+  latestCards.current = cards;
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
   // La piste joue le recul (Android TV) — sauf au banc, dont le focus figé passe par la valeur partagée.
   const nativeRecede = NATIVE_RECEDE && forced === null;
@@ -124,9 +129,14 @@ export const MediaRow = memo(function MediaRow({
       // quitte la première carte — la rangée défile ; descendre de rangée en
       // rangée ne monte aucune queue.
       if (mountProfile().rowTails === "eager" || index > 0) demand();
+      if (warm && variant !== "morph") {
+        const [start, end] = trailerPreviewWarmWindow(index, latestCards.current.length);
+        const subjects = latestCards.current.slice(start, end).flatMap((neighbour) => (neighbour.trailer ? [neighbour.trailer] : []));
+        if (subjects.length > 0) warm(subjects);
+      }
       onFocusCard?.(card);
     },
-    [onFocusCard, onItemFocusChange, demand],
+    [onFocusCard, onItemFocusChange, demand, warm, variant],
   );
 
   // Rien tant que l'échelonnement ne lui a rien libéré : jamais une piste
