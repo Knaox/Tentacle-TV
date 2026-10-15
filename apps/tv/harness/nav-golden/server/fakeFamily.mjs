@@ -1,8 +1,10 @@
 // La FAMILLE du faux backend (jeux `base/famille-*`) : ce que la TV lit pour
 // passer aux profils (docs/FAMILLE.md, « La séquence de l'Apple TV ») — la
 // capacité annoncée (`/api/config`), l'échange, « Qui regarde ? », l'ouverture
-// d'une session et sa révocation. Les jetons sont ceux du banc (« banc ») : le
-// faux backend ne vérifie rien. Les écrans de gestion ne sont pas servis.
+// d'une session et sa révocation, et SON code PIN posé depuis le profil (l'étape
+// « Code PIN conseillé », Réglages › Compte). Les jetons sont ceux du banc
+// (« banc ») : le faux backend ne vérifie rien. Les écrans de gestion ne sont
+// pas servis.
 
 const RIGHTS = { manageMembers: true, createGuests: true, manageGuests: "all" };
 
@@ -30,5 +32,7 @@ export function serveFamily(data, profiles) {
     if (!opened) return json(res, 404, { code: "family.profile_unavailable" });
     return json(res, 200, { token: "banc", user: { id: opened.userId, name: opened.name }, profile: opened, remembered: body.remember === true });
   });
+  // Son code PIN (`setOwnPin`) : accepté tel quel — la liste, elle, ne change pas.
+  data.route("PUT", /^\/api\/family\/pin$/, (req, res, { json, body }) => json(res, 200, { hasPin: body.pin !== null }));
   data.route("POST", /^\/api\/pair\/self\/revoke$/, (req, res, { json }) => json(res, 200, { ok: true }));
 }
