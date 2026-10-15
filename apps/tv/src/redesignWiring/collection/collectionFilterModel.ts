@@ -17,7 +17,7 @@ import { SORT_ORDER_LABELS } from "../library/libraryFilterModel";
  * l'ordre lui-même, celui de `filterCollection` (api-client).
  *
  * Le tri par date est celui de l'ARRIVÉE DANS LA BIBLIOTHÈQUE : il porte son
- * propre nom (« Arrivés récemment »), jamais « Derniers ajouts », qui se lirait
+ * propre nom (« Derniers arrivés »), jamais « Derniers ajouts », qui se lirait
  * ici comme les derniers ajouts à la liste — une date qui n'existe pas.
  */
 

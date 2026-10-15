@@ -29,6 +29,6 @@ export default {
   sortCriterion: "Criterion",
   contentType: "Type",
   sortArrival: "Library arrival",
-  sortArrivalDesc: "Recently arrived",
-  sortArrivalAsc: "First arrived",
+  sortArrivalDesc: "Newest arrivals",
+  sortArrivalAsc: "Oldest arrivals",
 } as const;

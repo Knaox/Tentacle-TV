@@ -38,6 +38,6 @@ export default {
   // bibliothèque (aucune date d'ajout à la liste n'existe).
   contentType: "Type",
   sortArrival: "Arrivée en bibliothèque",
-  sortArrivalDesc: "Arrivés récemment",
-  sortArrivalAsc: "Arrivés en premier",
+  sortArrivalDesc: "Derniers arrivés",
+  sortArrivalAsc: "Premiers arrivés",
 } as const;
