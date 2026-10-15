@@ -363,11 +363,13 @@ Le compte de démonstration n'ouvre que son propre profil ; un compte d'invité
   Réglages › Famille (« Sur cet ordinateur ») en est l'interrupteur : rallumé,
   il efface le profil retenu ; éteint, il retient le profil en cours.
 - **« Changer de profil »** (décision du 14/10 : pas d'accès rapide, la liste
-  des profils a quitté le menu) : UNE entrée en tête du menu de l'avatar — et,
-  en fenêtre étroite, de sa feuille et de la page Profil (la barre du haut y
-  passe sous la bande de la fenêtre macOS) —, suivie de « Gérer les profils »
-  en session personnelle (`profiles/switcher/useProfileMenuItems.tsx`). Là dès
-  deux profils, « Qui regarde ? » à l'ouverture activé ou non, depuis la session
+  des profils a quitté le menu) : UNE entrée sous l'en-tête d'identité du menu
+  de l'avatar — et, en fenêtre étroite, de sa feuille et de la page Profil (la
+  barre du haut y passe sous la bande de la fenêtre macOS). « Gérer les
+  profils » (session personnelle, `profiles/switcher/useProfileMenuItems.tsx`)
+  ne reste que sur la page Profil : le menu et la feuille le laissent à « Qui
+  regarde ? » et à Réglages › Famille (`menuProfileItems`, revue du 15/10). Là dès
+  deux profils, « Qui regarde ? » à l'ouverture proposé ou non, depuis la session
   personnelle comme depuis celle d'un autre profil (pour revenir au sien,
   derrière son code) ; absente hors ligne. Elle ouvre le MÊME « Qui
   regarde ? » qu'à l'ouverture (`ProfileLaunchScreen`, mode `switching` ;

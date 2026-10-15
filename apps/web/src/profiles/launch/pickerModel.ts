@@ -1,4 +1,4 @@
-import { isPickerProfileLocked, launchAllowed, type PickerProfileDto, type PickerProfilesDto } from "@tentacle-tv/shared";
+import { isPickerProfileLocked, launchAllowed, pickerShowsPinLock, sameUserId, type PickerProfileDto, type PickerProfilesDto } from "@tentacle-tv/shared";
 import type { PickFlow } from "../pick/usePickFlow";
 import type { PickerProfile, WhoIsWatchingModel } from "../picker/pickerTypes";
 
@@ -16,8 +16,15 @@ export function orderedProfiles(profiles: readonly PickerProfileDto[]): PickerPr
   return [...own, ...profiles.filter((profile) => !profile.personal)];
 }
 
-export function pickerProfileOf(profile: PickerProfileDto, now: number, language: string, t: Translate): PickerProfile {
-  const locked = isPickerProfileLocked(profile, now);
+/**
+ * `currentId` : le profil en cours, quand « Qui regarde ? » vient de
+ * « Changer de profil » (null à l'ouverture de l'application). Le choisir
+ * referme l'écran sans code ni serveur (`switcher/switchPlan.ts`) : ni cadenas
+ * fermé, ni « bloqué jusqu'à » — il dit « Profil actuel ».
+ */
+export function pickerProfileOf(profile: PickerProfileDto, now: number, language: string, t: Translate, currentId: string | null = null): PickerProfile {
+  const current = currentId !== null && sameUserId(profile.userId, currentId);
+  const locked = !current && isPickerProfileLocked(profile, now);
   const time = locked && profile.lockedUntil
     ? new Date(profile.lockedUntil).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" })
     : null;
@@ -27,6 +34,8 @@ export function pickerProfileOf(profile: PickerProfileDto, now: number, language
     color: profile.color,
     imageTag: profile.imageTag,
     hasPin: profile.hasPin,
+    pinLock: pickerShowsPinLock(profile, [currentId]),
+    current,
     guest: profile.kind === "guest",
     own: profile.personal,
     lockedLabel: time ? t("lockedUntil", { time }) : null,
@@ -38,6 +47,8 @@ export interface PickerModelInput {
   /** La liste n'a pas pu être lue, et aucune n'est connue. */
   error: string | null;
   flow: Pick<PickFlow, "pin" | "opening" | "notice">;
+  /** Le profil en cours, depuis « Changer de profil » : il s'ouvre sans code. */
+  currentId?: string | null;
   /** Le dernier profil choisi : il reprend le focus quand le pavé se referme. */
   lastChosen?: string | null;
   /** « Ouverture de Léa… », quand le serveur tarde. */
@@ -62,7 +73,7 @@ export function pickerModelOf(input: PickerModelInput): WhoIsWatchingModel {
   if (!listing) return input.error ? { kind: "error", message: input.error } : { kind: "loading" };
   return {
     kind: "picker",
-    profiles: orderedProfiles(listing.profiles).map((profile) => pickerProfileOf(profile, now, language, t)),
+    profiles: orderedProfiles(listing.profiles).map((profile) => pickerProfileOf(profile, now, language, t, input.currentId ?? null)),
     canManage: listing.profiles.some((profile) => profile.personal),
     notice: flow.notice,
     entering: flow.opening ? { id: flow.opening, label: input.openingLabel } : null,

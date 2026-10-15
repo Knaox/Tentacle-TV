@@ -1,5 +1,6 @@
 import type { PickedProfileDto, PickerProfileDto, PickerProfilesDto } from "./familyPickerContract";
 import { stayOverridesPicker, type PickerStay } from "./familyPickerStay";
+import { sameUserId } from "./familyRules";
 
 /**
  * « Qui regarde ? » sur le BUREAU, côté client — ce que l'écran décide de
@@ -66,4 +67,20 @@ export function pickerLaunch(
 /** Le jeton d'une session de profil choisie ; null : le compte lui-même. */
 export function pickedSessionToken(picked: PickedProfileDto): string | null {
   return picked.personal ? null : picked.token;
+}
+
+/**
+ * Le cadenas FERMÉ d'une tuile de « Qui regarde ? » : seulement si la choisir
+ * demandera VRAIMENT le code. `opensWithoutPin` : les profils que cet écran
+ * ouvre sans le pavé — le profil en cours quand on vient de « Changer de
+ * profil » (on y est déjà : l'écran se referme), ou le profil retenu d'une TV
+ * (le serveur l'en dispense). Un null y est ignoré. AFFICHAGE seul : le serveur
+ * reste maître du PIN, et redemande le code à toute ouverture qu'il exige.
+ */
+export function pickerShowsPinLock(
+  profile: { userId: string; hasPin: boolean },
+  opensWithoutPin: readonly (string | null | undefined)[],
+): boolean {
+  if (!profile.hasPin) return false;
+  return !opensWithoutPin.some((id) => typeof id === "string" && sameUserId(id, profile.userId));
 }

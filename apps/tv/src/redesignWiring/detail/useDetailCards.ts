@@ -12,7 +12,7 @@ import {
 import { holdPanelOf } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import type { SagaModel } from "../../redesign/screens/detail/detailTypes";
-import { absentCard, tmdbPosterUri } from "../cards/absentCards";
+import { absentCard, absentTrailerOf, tmdbPosterUri } from "../cards/absentCards";
 import { useCardModelFactory, useCardModels, type CardModelOptions } from "../cards/cardModels";
 import type { AbsentTitle } from "../vigie/absentTitle";
 import { useSagaAbsent } from "../vigie/useSagaAbsent";
@@ -33,6 +33,8 @@ import type { VigieGate } from "../vigie/useVigieGate";
 
 const yearOf = (item: MediaItem) => (item.ProductionYear ? String(item.ProductionYear) : undefined);
 const POSTER: CardModelOptions = { variant: "poster", subtitle: yearOf };
+/** La bande-annonce d'un volet absent de la saga, par sa clé TMDB. */
+const sagaTrailer = (title: AbsentTitle | undefined) => (title ? absentTrailerOf(title.key) : undefined);
 const NO_EXTERNAL: ReadonlyArray<{ pluginId: string; items: readonly ExternalSearchItem[] }> = [];
 
 /** Les volets de la saga selon TMDB, sous la forme d'une source hors bibliothèque. */
@@ -98,7 +100,7 @@ export function useDetailCards(item: MediaItem | undefined, series: MediaItem | 
         }
         const { title, year, imageUrl } = entry.item;
         const face = absent.faceOf(entry);
-        const card = { ...absentCard({ id: entry.key, title, year, posterUri: imageUrl ?? undefined, absent: face.absent }), focusNote: face.focusNote };
+        const card = { ...absentCard({ id: entry.key, title, year, posterUri: imageUrl ?? undefined, absent: face.absent, trailer: sagaTrailer(absent.titleOf(entry.key)) }), focusNote: face.focusNote };
         // Sans appui maintenu (garde fermée), aucune indication « Maintenir OK » (règle de T6).
         const holdable = holdPanelOf({ surface: "detail", card: "sagaAbsent", requestable: face.holdable }) !== null;
         return { key: entry.key, card, rank, cue, holdable };

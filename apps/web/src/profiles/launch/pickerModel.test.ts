@@ -37,6 +37,30 @@ describe("ce que « Qui regarde ? » montre", () => {
     expect(pickerProfileOf(FAMILY[1]!, NOW, "fr", t)).toMatchObject({ own: true, hasPin: true, guest: false });
   });
 
+  it("le cadenas fermé : sur un profil qui demandera son code, jamais sur le profil en cours ni sans code", () => {
+    const other = pickerProfileOf(profile("lea", { hasPin: true }), NOW, "fr", t, "zoe");
+    expect(other).toMatchObject({ pinLock: true, current: false });
+    // Le profil en cours, déjà déverrouillé : s'y rendre referme l'écran sans code.
+    const current = pickerProfileOf(FAMILY[1]!, NOW, "fr", t, "zoe");
+    expect(current).toMatchObject({ hasPin: true, pinLock: false, current: true });
+    expect(pickerProfileOf(profile("lea"), NOW, "fr", t, "zoe")).toMatchObject({ pinLock: false, current: false });
+    // À l'ouverture de l'application, aucun profil n'est « en cours » : SON code est demandé.
+    expect(pickerProfileOf(FAMILY[1]!, NOW, "fr", t)).toMatchObject({ pinLock: true, current: false });
+  });
+
+  it("le profil en cours ne se dit pas « bloqué » : on y est déjà", () => {
+    const blocked = profile("zoe", { personal: true, hasPin: true, lockedUntil: "2026-10-14T22:15:00Z" });
+    expect(pickerProfileOf(blocked, NOW, "fr", t, "zoe").lockedLabel).toBeNull();
+    expect(pickerProfileOf(blocked, NOW, "fr", t).lockedLabel).toContain("lockedUntil");
+  });
+
+  it("depuis « Changer de profil », le modèle passe le profil en cours à la rangée", () => {
+    const flow = { pin: null, opening: null, notice: null };
+    const model = pickerModelOf({ listing: listing(FAMILY), error: null, flow, openingLabel: null, language: "fr", t, now: NOW, currentId: "zoe" });
+    if (model.kind !== "picker") throw new Error(model.kind);
+    expect(model.profiles.find((p) => p.id === "zoe")).toMatchObject({ current: true, pinLock: false });
+  });
+
   it("chargement, puis l'erreur si rien n'est connu", () => {
     const flow = { pin: null, opening: null, notice: null };
     expect(pickerModelOf({ listing: null, error: null, flow, openingLabel: null, language: "fr", t, now: NOW })).toEqual({ kind: "loading" });

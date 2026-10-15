@@ -185,6 +185,8 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
       listing: listing.data ?? null,
       error: listing.isError && !listing.data ? t("loadFailed") : null,
       flow: { ...flow, notice: flow.notice ?? (ended ? t("session.ended") : null) },
+      // Depuis « Changer de profil », le profil en cours s'ouvre sans code : pas de cadenas fermé.
+      currentId: activeId,
       // Le focus revient au dernier profil choisi ; depuis « Changer de profil », il part du profil en cours.
       lastChosen: lastChosen ?? activeId,
       openingLabel: slowOpening && flow.opening ? t("opening", { name: profiles.find((p) => p.userId === flow.opening)?.name ?? "" }) : null,

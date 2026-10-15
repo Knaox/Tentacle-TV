@@ -94,6 +94,8 @@ export function useSearchGaps(
         year: gap.title.year,
         posterUri: gap.title.imageUrl ?? undefined,
         absent: gap.mine ? absentFromMine(t, gap.mine) : { label: t("requests:missingSeasons", { count: gap.count }), tone: "neutral" },
+        // La série est dans la bibliothèque : sa bande-annonce à elle.
+        trailer: { kind: "item", itemId: gap.seriesId },
       }),
       focusNote: gap.count > 0 ? t(remoteHint("absentSeasons")) : undefined,
     })),

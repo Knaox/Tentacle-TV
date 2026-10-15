@@ -15,6 +15,12 @@ export interface PickerProfile {
   /** La photo Jellyfin ; null : l'initiale sur la couleur du profil. */
   imageTag: string | null;
   hasPin: boolean;
+  /** Le cadenas FERMÉ : le choisir demandera vraiment son code. Faux sur un
+   *  profil sans code, et sur le profil en cours (`current`), qui s'ouvre sans. */
+  pinLock: boolean;
+  /** Le profil en cours sur cet appareil, quand on vient de « Changer de
+   *  profil » : le choisir y reste (« Profil actuel », anneau). */
+  current: boolean;
   guest: boolean;
   /** Le profil du compte de cette application : « Vous ». */
   own: boolean;

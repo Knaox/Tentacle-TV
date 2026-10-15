@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef, type CSSProperties } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "./ui/Dropdown";
-import { avatarRingStyleFor, buildUserMenuItems, getUserInfo, type UserMenuItem } from "./userMenu/menuItems";
+import { avatarRingStyleFor, buildUserMenuGroups, getUserInfo, menuProfileItems } from "./userMenu/menuItems";
 import { useAvatarUpload } from "../hooks/useAvatarUpload";
 import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
@@ -15,6 +15,8 @@ import { FamilyAvatar } from "../family/FamilyAvatar";
 import { useProfileMenuItems } from "../profiles/switcher/useProfileMenuItems";
 import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 import { ProfileMenuHeader } from "./userMenu/ProfileMenuHeader";
+import { AccountHeader } from "./userMenu/AccountHeader";
+import { MenuRow, UserMenuGroups } from "./userMenu/UserMenuGroups";
 import { useMenuKeyboard } from "./userMenu/useMenuKeyboard";
 import { useAvatarGallery } from "../profiles/avatarGallery/useAvatarGallery";
 import { useGuestSessionPhoto } from "../profiles/avatarGallery/useGuestSessionPhoto";
@@ -27,10 +29,13 @@ import { useGuestSessionPhoto } from "../profiles/avatarGallery/useGuestSessionP
  * change aussi dans les autres clients. Équivalent mobile : `MobileUserSheet`
  * (le changement de photo mobile vit sur la page Profil).
  *
- * Bureau, famille d'au moins deux profils : « Changer de profil » en tête du
- * menu, qui ouvre « Qui regarde ? » plein écran — une entrée, jamais la liste
- * des profils (`useProfileMenuItems`) ; « Gérer les profils » la suit en
- * session personnelle. Pendant la session d'un profil, le
+ * Le menu, de haut en bas : le bloc d'IDENTITÉ (photo, nom ; bureau, famille
+ * d'au moins deux profils : « Changer de profil » juste dessous, qui ouvre
+ * « Qui regarde ? » plein écran — une entrée, jamais la liste des profils,
+ * `useProfileMenuItems` ; « Gérer les profils » est sur cet écran et dans
+ * Paramètres › Famille, plus dans le menu), puis les familles courtes de
+ * `buildUserMenuGroups` (`UserMenuGroups`) : moi, cet appareil, et un pied
+ * « Aide · À propos » — « Déconnexion ». Pendant la session d'un profil, le
  * bouton et l'en-tête sont les siens (sa couleur, son nom), et le menu tait
  * ce que le serveur lui refuse (`buildUserMenuItems` › `profileSession`). En
  * session personnelle, le rond prend la couleur du profil du compte, celle de
@@ -55,7 +60,7 @@ export function UserAvatarMenu() {
   const close = useCallback(() => setOpen(false), []);
   // L'écran « Qui regarde ? » refermé, le focus revient à l'avatar.
   const avatarRef = useRef<HTMLButtonElement>(null);
-  const profileItems = useProfileMenuItems(close, avatarRef);
+  const profileItems = menuProfileItems(useProfileMenuItems(close, avatarRef));
   const menuKeys = useMenuKeyboard(open);
 
   const handleLogout = useCallback(() => {
@@ -91,7 +96,7 @@ export function UserAvatarMenu() {
         }
       : undefined;
 
-  const items = buildUserMenuItems({
+  const groups = buildUserMenuGroups({
     t,
     isAdmin,
     navigate: navigateTo,
@@ -133,114 +138,30 @@ export function UserAvatarMenu() {
         {avatarContent}
       </button>
 
-      <Dropdown open={open} onClose={close} placement="bottom-end" minWidth={240}>
+      <Dropdown open={open} onClose={close} placement="bottom-end" minWidth={260}>
         <div ref={menuKeys.panelRef} onKeyDown={menuKeys.onKeyDown}>
-          {activeProfile ? (
-            <ProfileMenuHeader profile={activeProfile} onChangePhoto={guestTarget ? changeGuestPhoto : undefined} />
-          ) : (
-            <AccountHeader
-              avatar={avatarContent}
-              ringStyle={ringStyle}
-              name={name}
-              caption={tProfile("changePhoto")}
-              uploading={uploading}
-              onChangePhoto={changePhoto}
-            />
-          )}
-
-          {/* Les profils : sous l'en-tête (qui l'on est), avant le reste du menu. */}
-          {profileItems.length > 0 && (
-            <div className="border-b border-line-subtle py-1.5">
-              {profileItems.map((item) => <MenuRow key={item.key} item={item} />)}
-            </div>
-          )}
-
-          <div className="py-1.5">
-            {items.map((item, idx) => {
-              const isLogout = item.danger === true;
-              const showDivider = isLogout && idx > 0 && !items[idx - 1].danger;
-              return (
-                <div key={item.key}>
-                  {showDivider && <div className="my-1.5 border-t border-line-subtle" />}
-                  <MenuRow item={item} />
-                </div>
-              );
-            })}
+          {/* Le bloc d'identité : qui l'on est, et « Changer de profil » juste dessous. */}
+          <div className={`border-b border-line-subtle ${profileItems.length > 0 ? "pb-1.5" : ""}`}>
+            {activeProfile ? (
+              <ProfileMenuHeader profile={activeProfile} onChangePhoto={guestTarget ? changeGuestPhoto : undefined} />
+            ) : (
+              <AccountHeader
+                avatar={avatarContent}
+                ringStyle={ringStyle}
+                name={name}
+                caption={tProfile("changePhoto")}
+                uploading={uploading}
+                onChangePhoto={changePhoto}
+              />
+            )}
+            {profileItems.map((item) => <MenuRow key={item.key} item={item} />)}
           </div>
+
+          <UserMenuGroups groups={groups} />
         </div>
       </Dropdown>
 
       {galleryDialog}
     </div>
-  );
-}
-
-/** Une entrée du menu ; « Déconnexion » (`danger`) en rouge. */
-function MenuRow({ item }: { item: UserMenuItem }) {
-  const danger = item.danger === true;
-  return (
-    <button
-      type="button"
-      role="menuitem"
-      onClick={item.action}
-      className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 focus-visible:bg-fill-subtle focus-visible:outline-none ${
-        danger
-          ? "text-[color:var(--status-error-fg)] hover:bg-[color:var(--status-error-bg)]"
-          : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
-      }`}
-    >
-      <span className="flex-shrink-0">{item.icon}</span>
-      {item.label}
-    </button>
-  );
-}
-
-interface AccountHeaderProps {
-  avatar: React.ReactNode;
-  ringStyle: CSSProperties;
-  name: string;
-  caption: string;
-  uploading: boolean;
-  onChangePhoto: () => void;
-}
-
-/** En-tête du compte : avatar cliquable = la galerie des photos de profil. */
-function AccountHeader({ avatar, ringStyle, name, caption, uploading, onChangePhoto }: AccountHeaderProps) {
-  return (
-    <div className="flex items-center gap-3 border-b border-line-subtle px-4 py-3">
-      <button
-        type="button"
-        onClick={onChangePhoto}
-        disabled={uploading}
-        aria-label={caption}
-        title={caption}
-        className="group relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold text-cta-brand-fg"
-        style={ringStyle}
-      >
-        {avatar}
-        {/* Scrim posé sur la photo de profil (image ou fallback) : reste noir/blanc
-            dans les deux thèmes, cf. règle "posé sur une image". */}
-        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-          {uploading ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-          ) : (
-            <CameraIcon />
-          )}
-        </span>
-      </button>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-content-primary">{name || "—"}</p>
-        <p className="text-xs text-content-quaternary">{caption}</p>
-      </div>
-    </div>
-  );
-}
-
-function CameraIcon() {
-  return (
-    <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
   );
 }

@@ -12,7 +12,7 @@ import { CardFrame, cardGlowOf } from "./CardFrame";
 import { CardShell } from "./CardShell";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import { cardLogoBottom, LOGO_BOX } from "./cardMarkerGeometry";
-import { CardPreviewTile, useCardGrowth, type CardGrowth } from "./CardPreviewTile";
+import { CardPreviewTile, UnderPreviewTile, useCardGrowth, type CardGrowth } from "./CardPreviewTile";
 import { CardQualityBadges } from "./CardQualityBadges";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused, type CardFocused } from "./useCardFocused";
@@ -48,7 +48,8 @@ import { useCardMetrics } from "./cardSizeMode";
  * `previewable` (une carte de RANGÉE, jamais d'une grille) : quand son focus
  * tient, la carte peut devenir la grande carte de l'aperçu de sa
  * bande-annonce (`CardPreviewTile`) ; `onPreviewExpand` prévient la rangée,
- * qui la montre entière. Fixé pour la vie de la carte : l'arbre ne change pas.
+ * qui lui réserve sa place et la montre entière, `onPreviewCollapse` quand
+ * elle se replie. Fixé pour la vie de la carte : l'arbre ne change pas.
  */
 
 export interface MediaCardProps {
@@ -73,8 +74,10 @@ export interface MediaCardProps {
   onFocusChange?: (focused: boolean) => void;
   /** La carte peut devenir la grande carte de l'aperçu (une rangée). */
   previewable?: boolean;
-  /** Elle vient de grandir : `tileWidth`, la largeur de la grande carte. */
-  onPreviewExpand?: (tileWidth: number) => void;
+  /** Elle va grandir : la taille de la grande carte. */
+  onPreviewExpand?: (tileWidth: number, tileHeight: number) => void;
+  /** Elle se replie. */
+  onPreviewCollapse?: () => void;
 }
 
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
@@ -108,13 +111,18 @@ export const MediaCard = memo(function MediaCard(props: MediaCardProps) {
 
 /** Une carte de rangée : sa grande carte d'aperçu, selon son focus. */
 function PreviewableCard(props: MediaCardProps & { cardFocus: CardFocused }) {
-  const { card, variant, cardFocus, onPreviewExpand } = props;
+  const { card, variant, cardFocus, onPreviewExpand, onPreviewCollapse } = props;
   // La largeur réglée (`useCardMetrics`) : la grande carte part de la carte telle qu'elle est dessinée.
   const metrics = useCardMetrics();
   const width = props.width ?? metrics[variant].width;
   const size = useMemo(() => ({ width, height: cardHeight(variant, width) }), [variant, width]);
-  const growth = useCardGrowth(card, cardFocus.focused, size, onPreviewExpand);
+  const growth = useCardGrowth(card, cardFocus.focused, size, onPreviewExpand, onPreviewCollapse);
   return <CardBody {...props} growth={growth} />;
+}
+
+/** Le cadre de la carte — effacé sous sa grande carte quand elle en a une. */
+function FrameUnder({ growth, children }: { growth: CardGrowth | null; children: ReactNode }) {
+  return growth ? <UnderPreviewTile growth={growth}>{children}</UnderPreviewTile> : <>{children}</>;
 }
 
 function cardHeight(variant: MediaCardProps["variant"], width: number): number {
@@ -159,52 +167,54 @@ function CardBody({
       expansion={growth?.expansion}
       frame={
         <>
-          <CardFrame
-            width={width}
-            height={height}
-            radius={radius}
-            focused={focused}
-            place={place}
-            dimmed={dimmed}
-            origin={origin}
-            glow={glow}
-            focusProgress={progress}
-            focusLayer={
-              card.quality && !card.absent ? (
-                <CardQualityBadges
-                  quality={card.quality}
-                  focused={focused}
-                  width={width}
-                  markers={card.markers}
-                  progress={card.progress}
-                  compact={!landscape}
-                  logo={landscape && card.logoUri !== undefined}
-                />
-              ) : undefined
-            }
-          >
-            {/* L'image est clée par son adresse : une carte RECYCLÉE (grille)
-                qui change de titre ne garde pas l'affiche précédente le temps
-                que la sienne arrive — une Image d'iOS la garderait. */}
-            {card.absent ? (
-              <AbsentArtwork key={uri} absent={card.absent} uri={uri} title={card.title} year={card.subtitle} width={width} height={height} focused={focused} />
-            ) : (
-              <>
-                {uri ? (
-                  <Image key={uri} source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-                ) : (
-                  <View style={styles.missing}>
-                    <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
-                  </View>
-                )}
-                {landscape && card.logoUri ? (
-                  <LogoLayer uri={card.logoUri} width={width} height={height} bottom={cardLogoBottom(card.markers, card.progress)} />
-                ) : null}
-                {card.badge ? <CardBadge label={card.badge} /> : null}
-                <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
-              </>
-            )}
-          </CardFrame>
+          <FrameUnder growth={growth}>
+            <CardFrame
+              width={width}
+              height={height}
+              radius={radius}
+              focused={focused}
+              place={place}
+              dimmed={dimmed}
+              origin={origin}
+              glow={glow}
+              focusProgress={progress}
+              focusLayer={
+                card.quality && !card.absent ? (
+                  <CardQualityBadges
+                    quality={card.quality}
+                    focused={focused}
+                    width={width}
+                    markers={card.markers}
+                    progress={card.progress}
+                    compact={!landscape}
+                    logo={landscape && card.logoUri !== undefined}
+                  />
+                ) : undefined
+              }
+            >
+              {/* L'image est clée par son adresse : une carte RECYCLÉE (grille)
+                  qui change de titre ne garde pas l'affiche précédente le temps
+                  que la sienne arrive — une Image d'iOS la garderait. */}
+              {card.absent ? (
+                <AbsentArtwork key={uri} absent={card.absent} uri={uri} title={card.title} year={card.subtitle} width={width} height={height} focused={focused} />
+              ) : (
+                <>
+                  {uri ? (
+                    <Image key={uri} source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+                  ) : (
+                    <View style={styles.missing}>
+                      <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
+                    </View>
+                  )}
+                  {landscape && card.logoUri ? (
+                    <LogoLayer uri={card.logoUri} width={width} height={height} bottom={cardLogoBottom(card.markers, card.progress)} />
+                  ) : null}
+                  {card.badge ? <CardBadge label={card.badge} /> : null}
+                  <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
+                </>
+              )}
+            </CardFrame>
+          </FrameUnder>
           {growth ? <CardPreviewTile card={card} width={width} height={height} growth={growth} /> : null}
         </>
       }
