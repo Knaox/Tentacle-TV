@@ -49,6 +49,7 @@ import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
 import { QualityBadgeHost } from "./redesignWiring/cards/QualityBadgeHost";
 import { TrailerPreviewHost } from "./redesignWiring/trailerPreview/TrailerPreviewHost";
+import { RowHeadTrialProvider } from "./redesignWiring/rows/RowHeadTrialProvider";
 import { ThemeProvider, useTheme } from "./theme";
 
 // Instance unique, définie dans son module pour que le magasin d'épinglage du
@@ -210,6 +211,7 @@ function AppContent() {
       <QualityBadgeHost>
       {/* L'aperçu de bande-annonce au focus des cartes de rangée : une session à la fois pour toute l'app. */}
       <TrailerPreviewHost>
+      <RowHeadTrialProvider>
         {/* Le rail vit dans chaque écran refondu (`NavRail`, prop `nav`). */}
         <NavigationContainer
           ref={navigationRef}
@@ -227,6 +229,7 @@ function AppContent() {
           <PairingExpiredBanner />
           <TVSessionMessageHost />
         </NavigationContainer>
+      </RowHeadTrialProvider>
       </TrailerPreviewHost>
       </QualityBadgeHost>
     </>

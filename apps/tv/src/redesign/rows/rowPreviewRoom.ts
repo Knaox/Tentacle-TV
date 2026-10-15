@@ -1,22 +1,32 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { LayoutChangeEvent, ScrollView, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { REVEAL_NEAREST_MARGIN, trailerPreviewReserve, trailerPreviewRevealOffset, trailerPreviewScrollTarget } from "@tentacle-tv/tv-core";
+import {
+  INITIAL_ROW_HEAD,
+  REVEAL_NEAREST_MARGIN,
+  nextRowHeadDeadline,
+  reduceRowHead,
+  trailerPreviewRevealOffset,
+  type RowHeadEvent,
+} from "@tentacle-tv/tv-core";
 import { usePreviewReveal } from "./previewRevealPort";
+import { useRowHeadOptions } from "./rowHeadMode";
 
 /**
  * La PLACE d'une grande carte d'aperçu dans sa rangée (`CardPreviewTile`) :
  *
- * - en largeur, la rangée défile pour la montrer entière (tv-core
- *   `trailerPreviewScrollTarget`) — et, vers la fin de la rangée, RÉSERVE
- *   d'abord ce dont la carte va s'élargir (un retrait à droite de la piste) :
- *   la piste bornait sinon le défilement à son contenu d'avant, et la grande
- *   carte de la dernière carte débordait à moitié de l'écran. Le défilement
- *   part une fois la place posée (`onContentSizeChange`) ;
- * - au repli, une rangée défilée dans cette réserve revient au bout de son
- *   contenu, puis la réserve s'en va ;
+ * - en largeur, la carte dont l'aperçu démarre passe EN TÊTE : la rangée
+ *   défile pour qu'elle prenne la place de la première (tv-core
+ *   `trailerPreviewRowHead.ts`, qui décide de tout — où, quand, la place au
+ *   bout, le départ du focus). Rien ne bouge avant l'aperçu. Vers la fin de la
+ *   rangée, la piste RÉSERVE d'abord la place qu'il faut (un retrait à droite)
+ *   et ne défile qu'une fois cette place posée (`onContentSizeChange`) : elle
+ *   bornerait sinon le défilement à son contenu d'avant ;
  * - en hauteur, la page défile si la grande carte dépasse en bas
  *   (`previewRevealPort`, tv-core `trailerPreviewRevealOffset`).
+ *
+ * L'adaptateur n'a ni seuil ni durée : il date les évènements, applique ce que
+ * la règle rend et la réveille à l'échéance qu'elle donne.
  */
 
 /** La largeur et la hauteur de la scène. */
@@ -26,8 +36,6 @@ const SCREEN_HEIGHT = 1080;
 const TRACK_PADDING_TOP = 12;
 /** Ce que la légende tient sous la grande carte (titre, sous-titre, indication). */
 const CAPTION_ROOM = 96;
-/** La réserve s'en va après le repli (le ressort de retour, `exitMs` compris). */
-const RESERVE_RELEASE_MS = 500;
 
 export interface RowPreviewRoomInput {
   track: RefObject<ScrollView | null>;
@@ -41,44 +49,67 @@ export interface RowPreviewRoomInput {
 
 export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount }: RowPreviewRoomInput) {
   const reveal = usePreviewReveal();
+  const options = useRowHeadOptions();
   const [reserve, setReserve] = useState(0);
-  const reserved = useRef(0);
-  reserved.current = reserve;
-  const count = useRef(cardCount);
-  count.current = cardCount;
+  const latest = useRef({ cardWidth, inset, cardCount, options });
+  latest.current = { cardWidth, inset, cardCount, options };
+  const head = useRef(INITIAL_ROW_HEAD);
   const pending = useRef<number | null>(null);
-  const release = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wake = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowRef = useRef<View>(null);
   const trackTop = useRef(0);
-  useEffect(() => () => {
-    if (release.current) clearTimeout(release.current);
-  }, []);
 
   const scrollTo = useCallback((x: number) => track.current?.scrollTo({ x, y: 0, animated: true }), [track]);
 
+  const dispatch = useRef<(event: RowHeadEvent) => void>(() => undefined);
+  dispatch.current = (event) => {
+    const geometry = latest.current;
+    const before = head.current.trailing;
+    const step = reduceRowHead(head.current, event, {
+      cardCount: geometry.cardCount,
+      cardWidth: geometry.cardWidth,
+      gap: TV_STAGE.row.gap,
+      inset: geometry.inset,
+      viewportWidth: SCREEN_WIDTH,
+      rightMargin: TV_STAGE.safe.x,
+      ...geometry.options,
+      scrollX: scrollX.current ?? 0,
+    });
+    head.current = step.state;
+    if (step.state.trailing !== before) setReserve(step.state.trailing);
+    if (step.scrollTo !== null) {
+      // La place grandit : le défilement attend qu'elle soit posée.
+      if (step.state.trailing > before) pending.current = step.scrollTo;
+      else {
+        pending.current = null;
+        scrollTo(step.scrollTo);
+      }
+    }
+    if (wake.current) clearTimeout(wake.current);
+    wake.current = null;
+    const deadline = nextRowHeadDeadline(step.state);
+    if (deadline !== null) {
+      wake.current = setTimeout(() => dispatch.current({ type: "tick", at: Date.now() }), Math.max(0, deadline - Date.now()));
+    }
+  };
+  useEffect(() => () => {
+    if (wake.current) clearTimeout(wake.current);
+  }, []);
+
+  /** Le focus d'une carte de la rangée. */
+  const onCardFocus = useCallback((index: number, focused: boolean) => {
+    dispatch.current({ type: focused ? "focus" : "blur", index, at: Date.now() });
+  }, []);
+
+  /** La rangée est remise au début, sans animation (`rowRewind`) : la place posée s'en va. */
+  const onRewind = useCallback(() => {
+    pending.current = null;
+    dispatch.current({ type: "reset" });
+  }, []);
+
   const onPreviewExpand = useCallback(
     (index: number, tileWidth: number, tileHeight: number) => {
-      if (release.current) clearTimeout(release.current);
-      release.current = null;
-      const target = trailerPreviewScrollTarget({
-        index,
-        cardCount: count.current,
-        cardWidth,
-        gap: TV_STAGE.row.gap,
-        inset,
-        scrollX: scrollX.current ?? 0,
-        tileWidth,
-        viewportWidth: SCREEN_WIDTH,
-        rightMargin: TV_STAGE.safe.x,
-      });
-      const room = trailerPreviewReserve({ tileWidth, cardWidth });
-      if (target !== null) {
-        if (reserved.current >= room) scrollTo(target);
-        else {
-          pending.current = target;
-          setReserve(room);
-        }
-      }
+      dispatch.current({ type: "expand", index, tileWidth, at: Date.now() });
       if (!reveal) return;
       rowRef.current?.measureInWindow((_x, top) => {
         const offset = trailerPreviewRevealOffset({
@@ -91,20 +122,8 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
         if (offset !== null) reveal.scrollBy(offset);
       });
     },
-    [cardWidth, inset, scrollX, scrollTo, reveal],
+    [reveal],
   );
-
-  const onPreviewCollapse = useCallback(() => {
-    if (reserved.current === 0) return;
-    const cards = count.current * cardWidth + Math.max(0, count.current - 1) * TV_STAGE.row.gap;
-    const end = Math.max(0, inset + cards + TV_STAGE.safe.x - SCREEN_WIDTH);
-    if ((scrollX.current ?? 0) > end + 1) scrollTo(end);
-    if (release.current) clearTimeout(release.current);
-    release.current = setTimeout(() => {
-      release.current = null;
-      setReserve(0);
-    }, RESERVE_RELEASE_MS);
-  }, [cardWidth, inset, scrollX, scrollTo]);
 
   const onContentSizeChange = useCallback(() => {
     const target = pending.current;
@@ -117,5 +136,5 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
     trackTop.current = event.nativeEvent.layout.y;
   }, []);
 
-  return { reserve, rowRef, onPreviewExpand, onPreviewCollapse, onContentSizeChange, onTrackLayout };
+  return { reserve, rowRef, onCardFocus, onRewind, onPreviewExpand, onContentSizeChange, onTrackLayout };
 }
