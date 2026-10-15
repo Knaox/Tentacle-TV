@@ -73,4 +73,8 @@ export default {
   libraryTitles_one: "{{count}} titre",
   libraryTitles_other: "{{count}} titres",
   stats: "Mes statistiques",
+  // Les familles du menu du compte (bureau, web) : noms lus par les lecteurs d'écran, jamais affichés.
+  menuGroupAccount: "Mon compte",
+  menuGroupDevice: "Cet appareil",
+  menuGroupSupport: "Aide et informations",
 } as const;
