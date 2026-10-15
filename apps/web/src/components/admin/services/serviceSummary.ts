@@ -1,7 +1,6 @@
 import type { AdminKeyState } from "../../../lib/adminKeyHealth";
 import {
   AdminApiError,
-  type AudioAnalysisStatus,
   type DatabaseService,
   type DirectStreamingConfig,
   type JellyfinService,
@@ -73,13 +72,6 @@ export function summarizeDirectStreaming(config: DirectStreamingConfig): Summary
     : { tone: "neutral", label: "directOff" };
 }
 
-export function summarizeAudio(audio: AudioAnalysisStatus): Summary {
-  if (audio.tool === null) return { tone: "neutral", label: "audioNoTool" };
-  return audio.enabled
-    ? { tone: "success", label: "audioOn", detail: audio.tool }
-    : { tone: "neutral", label: "audioOff" };
-}
-
 /** Le nom du moteur, tel qu'on l'écrit : « sqlite » → « SQLite » ; un moteur inconnu, tel quel. */
 export function databaseEngineName(engine: string): string {
   return engine.toLowerCase() === "sqlite" ? "SQLite" : engine;
@@ -131,11 +123,6 @@ export function matchesConfirmation(input: string, expected: string): boolean {
   return fold(expected) !== "" && fold(input) === fold(expected);
 }
 
-/** Des octets en mégaoctets, dans l'unité de la langue (« 14,5 Mo », « 14.5 MB »). */
-export function formatMegabytes(bytes: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { style: "unit", unit: "megabyte", maximumFractionDigits: 1 }).format(bytes / 1e6);
-}
-
 const BYTE_UNITS = [["gigabyte", 1e9], ["megabyte", 1e6], ["kilobyte", 1e3]] as const;
 
 /** Une taille dans l'unité qui lui va, à la mode de la langue : « 512 octets », « 48,3 ko », « 14,5 Mo », « 1,2 Go ». */
@@ -145,21 +132,6 @@ export function formatBytes(bytes: number, locale: string): string {
   // Sous le kilo, le mot entier : l'abréviation anglaise du singulier (« 512 byte ») se lit mal.
   if (!unit) return new Intl.NumberFormat(locale, { style: "unit", unit: "byte", unitDisplay: "long" }).format(size);
   return new Intl.NumberFormat(locale, { style: "unit", unit: unit[0], maximumFractionDigits: 1 }).format(size / unit[1]);
-}
-
-/** Une durée en secondes, au plus deux unités : « 16 s », « 2 min 5 s », « 1 h 3 min ». */
-export function formatDuration(totalSeconds: number, locale: string): string {
-  const seconds = Math.max(0, Math.round(totalSeconds));
-  const unit = (value: number, name: "hour" | "minute" | "second") =>
-    new Intl.NumberFormat(locale, { style: "unit", unit: name, unitDisplay: "short" }).format(value);
-  if (seconds < 60) return unit(seconds, "second");
-  if (seconds < 3600) {
-    const rest = seconds % 60;
-    return rest ? `${unit(Math.floor(seconds / 60), "minute")} ${unit(rest, "second")}` : unit(seconds / 60, "minute");
-  }
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const hours = unit(Math.floor(seconds / 3600), "hour");
-  return minutes ? `${hours} ${unit(minutes, "minute")}` : hours;
 }
 
 /** La clé i18n (et ses valeurs) qui explique un échec — ou le message brut du serveur. */
