@@ -2,10 +2,10 @@
 
 Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 `.github/workflows/tv.yml` : Play Console (max 500 caractères), App Store
-Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
-en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
+Connect tvOS (max 4000), Release GitHub (illimité). Les nouveautés vont
+directement dans le bloc de la prochaine version (`## [1.11.0]`).
 
-## [Unreleased]
+## [1.11.0]
 ### FR
 - **« Qui regarde ? »** : le profil retenu sur ce téléviseur ne montre plus de cadenas, puisqu'il s'ouvre sans code PIN
 - **Changer de profil puis revenir au sien** : plus de code PIN redemandé

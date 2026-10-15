@@ -10,13 +10,13 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
-## [1.29.0]
-<!-- Aperçus et « Qui regarde ? » : capacités trailers.preview et family.desktopProfiles (1.29.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
+## [1.30.0]
+<!-- Aperçus et « Qui regarde ? » : capacités trailers.preview et family.desktopProfiles (1.30.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR
-- **Aperçus de bande-annonce au survol** : sur le web et dans l'application de bureau 1.29.0, laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son. Le serveur la choisit dans votre langue, la vérifie et la diffuse lui-même ; sans bande-annonce lisible, rien ne s'affiche
+- **Aperçus de bande-annonce au survol** : sur le web et dans l'application de bureau 1.30.0, laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son. Le serveur la choisit dans votre langue, la vérifie et la diffuse lui-même ; sans bande-annonce lisible, rien ne s'affiche
 - **Les aperçus ménagent YouTube** : balayer une rangée ne demande rien, un titre déjà vu ne coûte plus d'extraction, et ils se suspendent d'eux-mêmes si YouTube demande une vérification — les bandes-annonces des téléviseurs passent toujours avant
 - **Des aperçus plus légers** : la vidéo part à la taille de la mini-carte (720p au plus) et chaque morceau ne se télécharge qu'une fois
-- **« Qui regarde ? » dans l'application de bureau 1.29.0** : chacun ouvre son profil, derrière son code PIN s'il en a un, et « Changer de profil », en tête d'un menu de l'avatar simplifié, y ramène à tout moment. L'écran au lancement s'active dans Réglages › Famille. Un profil ouvert sur un ordinateur regarde : il n'administre rien
+- **« Qui regarde ? » dans l'application de bureau 1.30.0** : chacun ouvre son profil, derrière son code PIN s'il en a un, et « Changer de profil », en tête d'un menu de l'avatar simplifié, y ramène à tout moment. L'écran au lancement s'active dans Réglages › Famille. Un profil ouvert sur un ordinateur regarde : il n'administre rien
 - **Bandes-annonces relayées** : le serveur ne compresse plus une seconde fois la vidéo qu'il relaie — moins de calcul pour rien — et son journal ne compte plus comme une erreur un lecteur qui s'en va
 - **Photos de profil** : 36 personnages à choisir dans le client web, et une photo pour chaque invité de la Famille
 - **Interface web** : « Vider le cache et réinitialiser » dit ce qu'il efface vraiment — les réglages de l'appareil, les recherches récentes et le cache, jamais la session

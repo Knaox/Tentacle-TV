@@ -54,14 +54,14 @@ describe("registre de l'écran de nouveautés", () => {
     }
   });
 
-  it("1.29.0 : l'aperçu et les profils exigent leur capacité, la galerie aucune — face à un serveur muet, la galerie seule", () => {
-    const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.29.0");
+  it("1.30.0 : l'aperçu et les profils exigent leur capacité, la galerie aucune — face à un serveur muet, la galerie seule", () => {
+    const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.30.0");
     expect(release?.features.map((f) => f.capability)).toEqual(["trailers.preview", "family.desktopProfiles", undefined]);
     const mute = resolveServerCapabilities({ version: "1.23.0" });
-    const alone = selectWhatsNewFeatures("1.29.0", "1.28.2", forServer(WHATS_NEW_RELEASES, mute)).features;
+    const alone = selectWhatsNewFeatures("1.30.0", "1.28.2", forServer(WHATS_NEW_RELEASES, mute)).features;
     expect(alone.map((f) => f.id)).toEqual(["avatars"]);
     const capable = resolveServerCapabilities({ capabilities: ["trailers.preview", "family.desktopProfiles"] });
-    const shown = selectWhatsNewFeatures("1.29.0", "1.28.2", forServer(WHATS_NEW_RELEASES, capable)).features;
+    const shown = selectWhatsNewFeatures("1.30.0", "1.28.2", forServer(WHATS_NEW_RELEASES, capable)).features;
     expect(shown.map((f) => f.id)).toEqual(["trailerPreview", "profiles", "avatars"]);
   });
 });

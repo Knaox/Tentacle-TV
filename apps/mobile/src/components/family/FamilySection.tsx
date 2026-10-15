@@ -59,7 +59,7 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
     [overview, me, guestRequests],
   );
   const panel = useProfilePanel(family?.profiles ?? NO_PROFILES, actionsOf);
-  // La photo d'un invité (serveur 1.29.0) : mêmes droits que son PIN. Sans la
+  // La photo d'un invité (serveur 1.30.0) : mêmes droits que son PIN. Sans la
   // capacité, ni rond cliquable ni galerie — rien ne change.
   const guestPhotos = useServerCapability("family.guestPhotos");
   const [photoGuest, setPhotoGuest] = useState<FamilyProfileDto | null>(null);

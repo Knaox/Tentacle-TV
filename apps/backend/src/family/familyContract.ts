@@ -122,7 +122,7 @@ export interface FamilyProfileDto {
   color: FamilyProfileColor;
   hasPin: boolean;
   /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo. Un invité a la
-   *  sienne depuis la 1.29.0 (`setGuestPhoto`) ; un serveur d'avant rend null. */
+   *  sienne depuis la 1.30.0 (`setGuestPhoto`) ; un serveur d'avant rend null. */
   imageTag: string | null;
   /** Arrivée dans la famille (ISO) ; null pour le propriétaire. */
   since: string | null;
