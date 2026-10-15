@@ -40,6 +40,11 @@ function refusal(code: Exclude<AccountConnectRefusal, "account_max_sessions">): 
   return { message: MESSAGES[code], code };
 }
 
+/** Le refus d'un compte que Tentacle vient de bloquer après trop d'essais (`loginLockout`). */
+export function lockedOutRefusal(): AccountConnectRefusalBody {
+  return refusal("account_locked_out");
+}
+
 /** « Ce compte est déjà connecté sur N appareils » — le maximum fixé par l'administrateur. */
 export function maxSessionsRefusal(maxSessions: number): AccountConnectRefusalBody {
   const devices = maxSessions > 1 ? `${maxSessions} appareils` : "1 appareil";

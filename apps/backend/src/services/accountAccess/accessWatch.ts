@@ -19,6 +19,7 @@ import { closeUserSockets, connectedUserIds, onPresenceChange, sendToUser } from
 import { leaveWatchTogetherNow } from "../watchTogether/gateway";
 import { accessPolicyOf } from "./accountAccessState";
 import { keepPlaybackPositions } from "./keepPositions";
+import { registerLoginLockoutRepair } from "./loginLockout";
 import { accountAccessOf, nextScheduleChange, sameAccountAccess } from "../../accountAccess/accountAccessRule";
 import { ACCOUNT_ACCESS_CLOSE_CODE, type AccountAccessState } from "../../accountAccess/accountAccessContract";
 import type { AccessScheduleDto } from "../../userRights/userRightsContract";
@@ -120,6 +121,8 @@ let registered = false;
 export function registerAccountAccessWatch(): void {
   if (registered) return;
   registered = true;
+  // La fiche des droits qui réactive un compte : son compteur d'essais repart de 0.
+  registerLoginLockoutRepair();
   onPresenceChange((userId, online) => {
     if (online) void evaluateAccountAccess(userId).catch(() => undefined);
     else forget(userId);

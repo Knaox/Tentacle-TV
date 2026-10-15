@@ -40,6 +40,7 @@ vi.mock("../wsManager", () => ({
 }));
 vi.mock("../watchTogether/gateway", () => ({ leaveWatchTogetherNow: (userId: string) => state.left.push(userId) }));
 vi.mock("./keepPositions", () => ({ keepPlaybackPositions: async () => 0 }));
+vi.mock("./loginLockout", () => ({ registerLoginLockoutRepair: () => undefined }));
 
 import { registerAccountAccessWatch, resetAccountAccessWatchForTests, watchJellyfinPolicies } from "./accessWatch";
 

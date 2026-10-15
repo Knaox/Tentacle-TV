@@ -22,7 +22,7 @@ import { deviceRefusal } from "./jellyfinProxy/deviceGuard";
 import { scopedToDeviceUser } from "./jellyfinProxy/deviceUserScope";
 import { gatePlayback } from "./jellyfinProxy/playbackGate";
 import { getRealClientIp } from "../services/networkUtils";
-import { deviceAccessRefusal, proxiedRefusal } from "./jellyfinProxy/accountAccessRefusal";
+import { deviceAccessRefusal, proxiedLogin, proxiedRefusal } from "./jellyfinProxy/accountAccessRefusal";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
 import { impersonatedUserId, resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
@@ -157,12 +157,12 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         }
       }
     }
-
+    // Connexion du bureau : essais avant blocage tenus par Tentacle ; un refus de Jellyfin, redit en mots.
+    const login = await proxiedLogin(wildcardPath, request.body);
     const start = performance.now();
     try {
       const response = await undiciFetch(targetUrl, fetchInit);
-      // Refusé par Jellyfin parce que le compte est bloqué : le refus de Tentacle, en mots.
-      const refused = device?.status === "paired" ? null : await proxiedRefusal({ token: incomingToken, path: wildcardPath, body: request.body }, response);
+      const refused = device?.status === "paired" ? null : await proxiedRefusal(incomingToken, login, response);
       if (refused) return reply.status(403).send(refused);
       reply.status(response.status);
 

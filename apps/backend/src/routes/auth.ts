@@ -13,7 +13,8 @@ import { authRefreshRoutes } from "./authRefresh";
 import { clearSessionCookie, setSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
-import { loginRefusal } from "../services/accountAccess/connectRefusal";
+import { lockedOutRefusal, loginRefusal } from "../services/accountAccess/connectRefusal";
+import { afterPasswordLogin, beforePasswordLogin } from "../services/accountAccess/loginLockout";
 import { rememberTokenOwner } from "../services/accountAccess/tokenOwners";
 import { ACCOUNT_CONNECT_REFUSAL_STATUS } from "../accountAccess/accountAccessContract";
 
@@ -71,6 +72,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
         client: body.client,
       });
+      // Un compte actif au compteur d'essais resté plein repart de 0 (cf. loginLockout).
+      await beforePasswordLogin(body.username).catch(() => undefined);
       const res = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
         method: "POST",
         headers: {
@@ -84,11 +87,15 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         // 403 de Jellyfin : désactivé, bloqué, hors plage, trop de sessions — dit en mots (cf. connectRefusal).
         const refused = res.status === 403 ? await loginRefusal(body.username) : null;
         if (refused) return reply.status(ACCOUNT_CONNECT_REFUSAL_STATUS).send(refused);
+        // Mot de passe faux : Tentacle bloque à la limite, ce que Jellyfin 10.11 ne fait pas.
+        const outcome = res.status === 401 ? await afterPasswordLogin(body.username, false).catch(() => null) : null;
+        if (outcome === "lockedOut") return reply.status(ACCOUNT_CONNECT_REFUSAL_STATUS).send(lockedOutRefusal());
         const status = res.status === 401 ? 401 : 400;
         return reply.status(status).send({ message: "Identifiants invalides" });
       }
 
       const data = await res.json();
+      void afterPasswordLogin(body.username, true).catch(() => undefined);
       if (data?.User?.Id) {
         rememberTokenOwner(data.AccessToken, { userId: data.User.Id, username: data.User.Name, isAdmin: data.User.Policy?.IsAdministrator === true });
       }
