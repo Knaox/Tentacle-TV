@@ -34,7 +34,7 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **« Qui regarde ? »** : le profil retenu sur ce téléviseur ne montre plus de cadenas, puisqu'il s'ouvre sans code PIN
 - **Changer de profil puis revenir au sien** : plus de code PIN redemandé
 - **Aperçu de bande-annonce au focus** : rapide, à la taille des cartes choisie, jamais hors de l'écran — titres hors bibliothèque compris
-- **« Vous regardez encore ? »** : après un long moment de lecture sans toucher la télécommande, la question paraît en bas à droite, « Continuer » déjà sélectionné ; sans réponse, la lecture se met en pause. Réglable pour tout le compte depuis le téléphone ou l'ordinateur (serveur 1.30.0)
+- **« Vous regardez encore ? »** : après un long moment de lecture sans toucher la télécommande, la question paraît en bas à droite, « Continuer » déjà sélectionné ; sans réponse, la lecture se met en pause. Réglable pour tout le compte dans Réglages › Lecture, comme sur le téléphone ou l'ordinateur (serveur 1.30.0)
 - **Recommandations en couleurs** ; un titre hors bibliothèque reprend ses couleurs au focus
 - **Réglages › Accueil** : choisissez ce que montre le bandeau principal — reprises, hasard, Pour vous, un titre choisi, ou les films ou séries les mieux recommandés (serveur 1.30.0)
 - **Recherche** : depuis le meilleur résultat, la flèche du bas mène à la première carte de la rangée suivante, et non plus au milieu
@@ -45,7 +45,7 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **“Who's watching?”**: the profile remembered on this TV no longer shows a lock, since it opens without a PIN
 - **Switch profile, then back to yours**: no PIN asked again
 - **Trailer preview on focus**: quick, sized to your card size, never off-screen — titles outside the library included
-- **“Are you still watching?”**: after a long stretch of playback without touching the remote, the question shows up at the bottom right, “Continue” already selected; with no answer, playback pauses. Adjustable for the whole account from your phone or computer (server 1.30.0)
+- **“Are you still watching?”**: after a long stretch of playback without touching the remote, the question shows up at the bottom right, “Continue” already selected; with no answer, playback pauses. Adjustable for the whole account in Settings › Playback, as on your phone or computer (server 1.30.0)
 - **Recommendations in color**; a title outside the library regains its colors on focus
 - **Settings › Home**: choose what the main banner shows — resume, random, For you, one chosen title, or your best-recommended movies or shows (server 1.30.0)
 - **Search**: from the top result, pressing down now goes to the first card of the next row instead of the middle
