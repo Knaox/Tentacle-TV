@@ -8,12 +8,18 @@ export type RootStackParamList = {
    *  vient ; depuis « Qui regarde ? », Retour y ramène (la session du
    *  propriétaire, ouverte pour gérer, se referme). */
   ManageProfiles: { origin: "profiles" | "settings" };
-  /** SON code PIN (Réglages › Compte) : créer, changer, retirer. */
-  ProfilePin: { mode: "create" | "change" | "remove" };
+  /** SON code PIN (Réglages › Compte) : créer, changer, retirer. `origin` :
+   *  `startup` — ouvert par l'étape « Code PIN conseillé » du premier passage ;
+   *  le code enregistré, la fenêtre suivante du démarrage vient d'elle-même. */
+  ProfilePin: { mode: "create" | "change" | "remove"; origin?: "settings" | "startup" };
+  /** Le code PIN conseillé du premier passage dans un profil — avant la barre. */
+  PinSetup: { origin: "session" } | undefined;
   /** La préconfiguration de la barre : `session` — avant l'accueil (jumelage,
    *  profil ouvert, démarrage) ; `settings` — l'étape du propriétaire seule,
    *  depuis Réglages › Navigation. */
   RailSetup: { origin: "session" | "settings" } | undefined;
+  /** La photo du profil du premier passage — après la barre. */
+  PhotoSetup: { origin: "session" } | undefined;
   /** `entrance` : l'arrivée depuis « Qui regarde ? » — l'accueil fond par-dessus. */
   Home: { entrance?: boolean } | undefined;
   /** « Pour vous » : recommandations de la bibliothèque seule. */

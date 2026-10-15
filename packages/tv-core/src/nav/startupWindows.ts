@@ -7,13 +7,20 @@
  * elle est DUE (lecture synchrone de l'adaptateur), le registre dit laquelle
  * montrer maintenant, et la suivante quand elle se ferme.
  *
- * Une nouvelle fenêtre (les nouveautés, l'invitation aux avatars…) prend SA
- * place dans `STARTUP_WINDOWS` et sa route dans `STARTUP_WINDOW_ROUTES` —
- * jamais une condition câblée dans un écran.
+ * Le PREMIER PASSAGE dans un profil, dans cet ordre (décision du 16/10) :
+ * 1. `pinSetup` — le code PIN conseillé (`session/pinSetup`) ;
+ * 2. `railSetup` — les bibliothèques de la barre (`nav/railSetup`) ;
+ * 3. `photoSetup` — la photo du profil, s'il n'en a pas (galerie d'avatars).
+ * Chacune une fois par profil et par appareil, chacune avec son « Plus tard ».
+ *
+ * Une nouvelle fenêtre (les nouveautés…) prend SA place dans
+ * `STARTUP_WINDOWS` et sa route dans `STARTUP_WINDOW_ROUTES` — jamais une
+ * condition câblée dans un écran. Une à la fois : aucune ne paraît
+ * par-dessus une autre.
  */
 
-/** L'ordre : la préconfiguration de la barre d'abord (avant les nouveautés). */
-export const STARTUP_WINDOWS = ["railSetup"] as const;
+/** L'ordre : le code PIN, la barre, la photo. */
+export const STARTUP_WINDOWS = ["pinSetup", "railSetup", "photoSetup"] as const;
 
 export type StartupWindow = (typeof STARTUP_WINDOWS)[number];
 
@@ -21,7 +28,11 @@ export type StartupWindow = (typeof STARTUP_WINDOWS)[number];
 export type StartupDue = Readonly<Partial<Record<StartupWindow, boolean>>>;
 
 /** La route de chaque fenêtre. */
-export const STARTUP_WINDOW_ROUTES = { railSetup: "RailSetup" } as const satisfies Record<StartupWindow, string>;
+export const STARTUP_WINDOW_ROUTES = {
+  pinSetup: "PinSetup",
+  railSetup: "RailSetup",
+  photoSetup: "PhotoSetup",
+} as const satisfies Record<StartupWindow, string>;
 
 export type StartupRoute = (typeof STARTUP_WINDOW_ROUTES)[StartupWindow] | "Home";
 

@@ -1,5 +1,7 @@
 import { nextStartupWindow, startupRouteOf, type StartupDue, type StartupRoute, type StartupWindow } from "@tentacle-tv/tv-core";
+import { pinSetupPending } from "../auth/pinSetupStep";
 import { railSetupPending } from "../components/nav/railPinning";
+import { photoSetupPending } from "../redesignWiring/photoSetup/photoSetupStep";
 import type { RootStackParamList } from "./types";
 
 /**
@@ -12,7 +14,7 @@ import type { RootStackParamList } from "./types";
  * lecture, jamais une condition dans un écran.
  */
 export function startupDue(): StartupDue {
-  return { railSetup: railSetupPending() };
+  return { pinSetup: pinSetupPending(), railSetup: railSetupPending(), photoSetup: photoSetupPending() };
 }
 
 /** La route qui suit une session ouverte (`closed` absent) ou la fermeture d'une fenêtre. */
@@ -20,9 +22,12 @@ export function startupRouteAfter(closed: StartupWindow | null = null): StartupR
   return startupRouteOf(nextStartupWindow(startupDue(), closed));
 }
 
+/** Les routes des fenêtres : elles s'ouvrent pour la session (`origin`). */
+type StartupWindowRoute = Exclude<StartupRoute, "Home">;
+
 type StartupStackRoute =
   | { name: "Home"; params: RootStackParamList["Home"] }
-  | { name: "RailSetup"; params: RootStackParamList["RailSetup"] };
+  | { name: StartupWindowRoute; params: { origin: "session" } };
 
 /** La page seule à poser : l'accueil fond par-dessus (`entrance`), une fenêtre s'ouvre pour la session. */
 export function startupStackRoute(route: StartupRoute): StartupStackRoute {

@@ -6,9 +6,11 @@ import {
   pinSetupEligible,
   pinSetupEntry,
   pinSetupReason,
+  pinSetupSubjectOf,
   readPinSetupOffered,
   type PinSetupSubject,
 } from "./pinSetup";
+import type { TvProfileRecord } from "./tvProfileSession";
 import type { SessionStorage } from "./unpairJournal";
 
 function memory(initial: Record<string, string> = {}): SessionStorage & { data: Record<string, string> } {
@@ -101,5 +103,23 @@ describe("à l'arrivée sur l'étape", () => {
     expect(pinSetupEntry({ pending: true, online: false })).toBe("skip");
     expect(pinSetupEntry({ pending: true, online: true })).toBe("show");
     expect(pinSetupEntry({ pending: false, online: true })).toBe("skip");
+  });
+});
+
+describe("le profil retenu de la TV", () => {
+  const RECORD: TvProfileRecord = {
+    profileId: "damien", name: "Damien", kind: "owner", color: "violet", imageTag: null, hasPin: false, launch: "picked",
+    ownerId: "damien", ownerName: "Damien", canManage: false, manages: false, manageNeedsPin: true,
+  };
+
+  it("un profil ouvert d'un serveur 1.30.0, sans code : l'étape et sa raison", () => {
+    expect(pinSetupEligible(pinSetupSubjectOf(RECORD))).toBe(true);
+    expect(pinSetupReason(pinSetupSubjectOf(RECORD))).toBe("protectAndManage");
+  });
+
+  it("un enregistrement d'avant (ni `manages` ni `manageNeedsPin`) : le propriétaire si la TV le laissait gérer", () => {
+    const { manages: _m, manageNeedsPin: _n, ...before } = RECORD;
+    expect(pinSetupEligible(pinSetupSubjectOf({ ...before, canManage: true }))).toBe(true);
+    expect(pinSetupEligible(pinSetupSubjectOf(before))).toBe(false);
   });
 });

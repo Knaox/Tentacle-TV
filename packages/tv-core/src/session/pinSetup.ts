@@ -1,5 +1,5 @@
 import type { FamilyProfileKind } from "@tentacle-tv/shared";
-import type { ProfileLaunch } from "./tvProfileSession";
+import { recordManages, type ProfileLaunch, type TvProfileRecord } from "./tvProfileSession";
 import type { SessionStorage } from "./unpairJournal";
 
 /**
@@ -40,6 +40,11 @@ export interface PinSetupSubject {
   manages: boolean;
   /** Il gérerait avec un code (`TvProfileDto.manageNeedsPin`, serveur 1.30.0). */
   manageNeedsPin?: boolean;
+}
+
+/** Ce que l'étape lit du profil retenu de la TV. */
+export function pinSetupSubjectOf(record: TvProfileRecord): PinSetupSubject {
+  return { kind: record.kind, hasPin: record.hasPin, launch: record.launch, manages: recordManages(record), manageNeedsPin: record.manageNeedsPin };
 }
 
 /** Le profil est-il de ceux à qui l'on conseille un code ? */
