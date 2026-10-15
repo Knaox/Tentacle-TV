@@ -44,6 +44,14 @@ export interface PluginBackendContext {
    * est sur MariaDB et garde `getPrisma()`.
    */
   storage: import("./pluginStorage/types").PluginStorage;
+  /**
+   * Le contrôle du contenu par compte (docs/DROITS-UTILISATEURS.md § 5) : la
+   * politique Jellyfin du compte décide des titres EXTÉRIEURS (TMDB) qu'il peut
+   * voir ou demander. Venu en 1.30.0 : une extension le teste avant de l'appeler
+   * (absent : le contrôle parental n'existait pas). Une exception ⇒ l'extension
+   * refuse (fermé à l'échec).
+   */
+  contentPolicy?: import("./contentPolicy").ContentPolicyBridge;
 }
 
 export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
@@ -135,6 +143,7 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
       const { requireAuth, requireAdmin } = await import("../middleware/auth");
       const { hideRequestedTitle } = await import("./reco/requestedTitles");
       const { createHostPluginStorage } = await import("./pluginStorage/hostStorage");
+      const { contentPolicyBridge } = await import("./contentPolicy");
 
       const ctx: PluginBackendContext = {
         pluginId: plugin.pluginId,
@@ -142,6 +151,7 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
         requireAuth,
         requireAdmin,
         storage: createHostPluginStorage(plugin.pluginId),
+        contentPolicy: contentPolicyBridge(),
         recommendations: {
           // Jamais une panne pour l'extension : la demande est faite, le masquage est un plus.
           titleRequested: async (userId, title) => {

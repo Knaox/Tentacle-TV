@@ -11,7 +11,7 @@
  * backend ne dépend pas de `@tentacle-tv/shared`). On modifie ICI, on recopie
  * là-bas :
  *
- *   cp packages/shared/src/family/family{Contract,Limits,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,Limits,Parental,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
  *
  * UNE famille par compte, PARTAGÉE par tous ses membres (v2). Trois rôles :
  * - le PROPRIÉTAIRE l'a créée : il invite, annule une invitation, retire un
@@ -30,10 +30,12 @@
  *  2 : famille partagée, une famille par compte, droits des membres. */
 export const FAMILY_CONTRACT_VERSION = 2;
 
-// Les limites (places, invitations, PIN, blocages) : `familyLimits.ts`, ré-exportées
-// ici — `import { FAMILY_… } from "./familyContract"` reste valable partout.
+// Les limites (`familyLimits.ts`) et le contrôle parental des invités (`familyParental.ts`),
+// ré-exportés ici — `import { FAMILY_… } from "./familyContract"` reste valable partout.
 export * from "./familyLimits";
+export * from "./familyParental";
 import type { FamilyGuestPhotoType } from "./familyLimits";
+import type { GuestParentalDto } from "./familyParental";
 
 /** Les couleurs d'un profil — des NOMS de jetons, chaque client les peint. */
 export const FAMILY_PROFILE_COLORS = ["violet", "pink", "blue", "teal", "green", "amber", "orange", "red"] as const;
@@ -135,6 +137,8 @@ export interface FamilyProfileDto {
   /** Un invité : ce que le propriétaire lui permet ; null sinon. Toujours rendu
    *  par un serveur v2 ; absent : aucun droit. */
   guestRights?: FamilyGuestRights | null;
+  /** Un invité : son contrôle parental (1.30.0) ; null sinon, absent : serveur d'avant. */
+  parental?: GuestParentalDto | null;
 }
 
 export interface OutgoingInvitationDto {
@@ -164,8 +168,7 @@ export interface FamilyDto {
   since: string | null;
 }
 
-/** @deprecated v1 — lire `FamilyOverviewDto.family` (rôle `owner`). Retiré
- *  quand les clients l'auront quitté. */
+/** @deprecated v1 — lire `FamilyOverviewDto.family` (rôle `owner`), retiré ensuite. */
 export interface OwnedFamilyDto {
   id: string;
   profiles: FamilyProfileDto[];

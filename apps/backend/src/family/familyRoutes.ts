@@ -118,6 +118,15 @@ export const FAMILY_ROUTES = {
     callers: ["personal"],
     rateLimit: { max: 20, windowMs: MINUTE },
   },
+  /** `SetGuestParentalBody` → `GuestParentalDto`. Le contrôle parental d'un invité
+   *  (1.30.0) : le propriétaire pour tout invité, le membre pour ceux qu'il a créés.
+   *  L'invité reçoit l'intersection avec les restrictions de son créateur. */
+  setGuestParental: {
+    method: "PUT",
+    path: "/api/family/guests/:userId/parental",
+    callers: ["personal"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
   /** → `{ removed: true }`. Le membre sort ; son compte Jellyfin n'est jamais touché. */
   removeMember: { method: "DELETE", path: "/api/family/members/:userId", callers: ["personal", "ownerTv"] },
   /** `SetMemberRightsBody` → `FamilyMemberRights`. Le propriétaire règle les
