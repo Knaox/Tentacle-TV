@@ -14,10 +14,9 @@ import type { WtAffinityMatchDto, WtAffinityStateDto } from "../protocol";
  * du membre qui ne la voit pas, ou sa politique rouverte, la rend à la
  * diffusion suivante.
  *
- * La pile ne pose pas la question : elle est l'intersection des bibliothèques
- * de la salle au lancement, et un membre arrivé après ne reçoit que ce qu'il
- * peut lire. Ce sont les MATCHS qui débordent — faits avant son arrivée, ou
- * avant que sa politique ne change.
+ * Les cartes, elles, ne vont qu'à celui qui swipe, rejugées pour LUI à chaque
+ * lot (`affinityCards.ts`). Ce sont les MATCHS qui débordent sur la salle —
+ * faits avant l'arrivée d'un membre, ou avant que sa politique ne change.
  *
  * Jellyfin tranche titre par titre (`isItemVisibleTo` : 30 s, fermé à
  * l'échec) : une politique illisible ne laisse passer aucune proposition.

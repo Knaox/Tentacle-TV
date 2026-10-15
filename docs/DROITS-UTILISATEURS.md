@@ -978,7 +978,7 @@ rien.
   la garde AVANT le cache.
 - Porte DIRECTE de Jellyfin (port publié) : sert un fichier à qui connaît son id — d'où les règles
   ci-dessus (aucun id d'un titre interdit rendu).
-- ✅ **Fermé (`1dd5dab91`)** : l'affinité diffusait `state.proposals[]` (id et titre) à tout le salon.
+- ✅ **Fermé (`6167e8b5e`)** : l'affinité diffusait `state.proposals[]` (id et titre) à tout le salon.
   Banc (`probesAffinity.ts`) : `enfant6`, entré après les matchs de `libre` et `filmsseuls`, recevait
   « Coraline » (10) par `GET /affinity`, `POST /affinity/join` et trois `wt:affinity`, et le lancement
   passait ; désormais rien, « Le Roi lion » lui parvient (témoin), lancer « Saw » → 409.
@@ -990,9 +990,12 @@ rien.
   qu'un membre ne voit pas le titre (§ 7.2). D'où : `matched` faux pour l'auteur du vote ; lancer →
   `answered`, la salle reçoit l'état qui ne le propose plus ; la proposition reste dans la séance et
   revient, à la diffusion suivante, au départ du membre ou à sa politique rouverte.
-- **Signalé (non corrigé)** : la PILE d'un membre n'est pas rejugée quand sa politique se resserre en
-  cours de séance (`allowed` figé au lancement ou à son entrée). Banc : « Le Roi lion » (6+) encore
-  servi par `GET /affinity/cards` 31 s après la note maximale d'`enfant6` passée de 6 à 0.
+- ✅ **Fermé (`757eae14e`)** : la PILE d'un membre n'était jugée qu'au lancement ou à son entrée — « Le
+  Roi lion » (6+) restait servi à `enfant6` passé à « U ». Chaque lot repose la question
+  (`affinity/affinityCards.ts`, `isItemVisibleTo`) pour un compte restreint ou aux bibliothèques
+  bornées (illisible compris) ; un compte libre ne coûte que sa politique en cache. Une carte cachée
+  reste écartée tant qu'il swipe (`hidden`), rouvrir sa pile repart de zéro. Banc : retirée aussitôt
+  après la fiche des droits, en 31 s après un changement fait dans Jellyfin.
 
 ## 9.6 Démarrage et « Vous regardez encore ? »
 
