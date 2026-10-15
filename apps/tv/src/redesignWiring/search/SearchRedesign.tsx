@@ -13,7 +13,7 @@ import {
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
 import { useStableHandler } from "../../hooks/useStableHandler";
 import type { RootStackParamList } from "../../navigation/types";
-import { useSearchDictation, useSearchGroups, useSearchKeyboard } from "../../platform/searchInput";
+import { useSearchDictation, useSearchGroups, useSearchKeyboard, useSearchTopExit } from "../../platform/searchInput";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { SearchView } from "../../redesign/screens/search/SearchView";
 import type { SearchFacetModel, SearchPersonModel } from "../../redesign/screens/search/searchViewModel";
@@ -97,6 +97,13 @@ export function SearchRedesign() {
   }, [remember, browse]);
 
   const content = results.content;
+  // BAS depuis le meilleur résultat : la rangée suivante entre par son début
+  // (tv-core `searchTopExit`) ; chaque rangée, son modèle pour version.
+  const rows = useMemo(
+    () => (content.kind === "results" ? content.sections.map((section) => ({ key: section.key, version: section })) : []),
+    [content],
+  );
+  useSearchTopExit(focus, rows);
   const top = content.kind === "results" ? content.sections.find((section) => section.key === "top") : undefined;
   // Les gestes des résultats lisent la DERNIÈRE réponse mais gardent leur
   // identité (`useStableHandler`) : une frappe ne redessine pas les cartes.

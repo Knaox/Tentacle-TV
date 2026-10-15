@@ -171,6 +171,15 @@ partagés avec Android TV, NON modifiés : `components/search/useSearchSubmit.ts
   `series`, `collections`, `episodes`, `absent`), `people:<i>`, `facets:<i>`.
   Au repos et sans résultat : `section:recent` (`recent:<i>`) et
   `section:genre` (`genre:<i>`).
+- **RE-3 bis** BAS depuis `top` (la bannière du meilleur résultat, large
+  comme la colonne) : la rangée suivante entre par son DÉBUT — la carte où on
+  l'a laissée si la rangée n'a pas changé depuis (les rangées de la recherche
+  ne reviennent jamais au début d'elles-mêmes : c'est celle qui se voit),
+  sinon `<rangée>:0`. La règle commune visait le centre de la bannière, donc
+  une carte du milieu. Une entrée déclarée (`tvEntry`) posée SEULEMENT tant
+  que `top` a le focus (tv-core `search/searchTopExit`, `useSearchTopExit`) :
+  HAUT depuis une rangée plus basse reste au plus proche ; HAUT depuis la
+  rangée sous la bannière rend `top`.
 
 ### Le clavier système et la dictée
 
@@ -719,7 +728,7 @@ compter une attente dont la durée vient de tv-core. Le câblage
 |---|---|---|
 | FI-1, FI-4 à FI-8 | `focus/detailFocus` (`detailEntryKey`, `detailEntryAfterPlayLost`, `detailSeasonEntryKey`, `detailEpisodeAnchorKey`, `detailAnchorIndex`, `DETAIL_ROWS`, `DETAIL_ROW_EDGES`) ; l'entrée « première visite » de T3 (`focus/sectionEntry`) | `screens/detail.ts` (`useDetailFocus`) |
 | FI-10 | `nav/screenTargets` (`detailPlayPress`) ; OK sur une carte : `cards/cardPress` (T3) ; l'appui maintenu : `cards/cardHold` (T6) ; la suite de fiches : `nav/detailChain` (T4) | `useDetailActions` |
-| RE-1 à RE-8, RE-11 | `search/searchFocus` (clés, entrée, première touche après Menu, premier résultat, meilleur résultat, recherches récentes), `search/searchSubmitFlow` (`searchSubmitStep`), `search/searchShelfReturn` (`shelfReturnStep`, `SEARCH_BAR_CLAIMS_MS`) | `screens/search.ts` (`useSearchGroups`, `useSearchKeyboard`) |
+| RE-1 à RE-8, RE-11 | `search/searchFocus` (clés, entrée, première touche après Menu, premier résultat, meilleur résultat, recherches récentes), `search/searchTopExit` (RE-3 bis), `search/searchSubmitFlow` (`searchSubmitStep`), `search/searchShelfReturn` (`shelfReturnStep`, `SEARCH_BAR_CLAIMS_MS`) | `screens/search.ts` (`useSearchGroups`, `useSearchKeyboard`, `useSearchTopExit`) |
 | RE-10 | `cards/cardPress`, `cards/cardHold` | `SearchRedesign` |
 | PA-1 à PA-3, GR-1 à GR-4, CO-1 | `focus/gridFocus` | `screens/browse.ts` ; la vue `PosterGrid` lit `gridLineReveal`, `GRID_END_REACHED_SCREENS` |
 | GR-5 | `cards/cardPress`, `cards/cardHold` | `usePosterGrid` |

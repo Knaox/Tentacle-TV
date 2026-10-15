@@ -18,9 +18,12 @@ import type { SearchDictation } from "../../shared/screens/searchDictation";
  *   (`useSpeechRecognition`, le module natif `VoiceRecognition`) — tvOS
  *   refuse le micro aux apps, Android le permet : la phrase reconnue remplace
  *   la saisie, comme une suggestion choisie.
+ *
+ * BAS depuis le meilleur résultat (`useSearchTopExit`) : le même applicateur,
+ * l'entrée `tvEntry` que la section native d'Android honore aussi.
  */
 
-export { useSearchGroups, useSearchKeyboard } from "../../tvos/screens/search";
+export { useSearchGroups, useSearchKeyboard, useSearchTopExit } from "../../tvos/screens/search";
 
 export type { SearchDictation };
 

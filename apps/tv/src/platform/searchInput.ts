@@ -5,7 +5,7 @@ import type { SearchDictation } from "./shared/screens/searchDictation";
  * l'Apple TV (clavier système et sa dictée), `searchInput.android.ts` son
  * jumeau aux MÊMES noms (clavier système + micro de l'app).
  */
-export { useSearchGroups, useSearchKeyboard } from "./tvos/screens/search";
+export { useSearchGroups, useSearchKeyboard, useSearchTopExit } from "./tvos/screens/search";
 
 const SYSTEM: SearchDictation = { dictation: "system" };
 

@@ -9,7 +9,10 @@ import {
   SEARCH_SUBMIT_IDLE,
   SHELF_RETURN_IDLE,
   searchSubmitStep,
+  createSearchRowMemory,
+  searchTopExit,
   shelfReturnStep,
+  type SearchRowVersion,
   type SearchSubmitAnswer,
   type SearchSubmitEvent,
   type ShelfReturnEvent,
@@ -19,6 +22,7 @@ import { claimTvFocus } from "../../../hooks/useTvFocusClaim";
 import type { RootStackParamList } from "../../../navigation/types";
 import { AutoFocusGuide } from "../focus/focusGuides";
 import type { FocusStore } from "../focus/focusStore";
+import { applySectionEntry } from "../focus/sectionEntry";
 import { useRemoteIntents } from "../input";
 import { KEYBOARD_CLOSED_CLAIM } from "./keyboardClosed";
 
@@ -34,7 +38,9 @@ import { KEYBOARD_CLOSED_CLAIM } from "./keyboardClosed";
  *   focus sur le premier résultat, la première touche après Menu ; « une
  *   touche pressée » = une flèche ou OK, lus par l'entrée unique (T1) ;
  * - rendre la barre au retour d'une étagère (`shelfReturnStep`, à la fin de
- *   la transition) et quand « Rechercher » est rechoisi dans la navigation.
+ *   la transition) et quand « Rechercher » est rechoisi dans la navigation ;
+ * - poser l'entrée de la rangée sous le meilleur résultat tant qu'il a le
+ *   focus (`searchTopExit`) : BAS y entre par son début, pas au milieu.
  */
 
 /** Les deux colonnes, liées dès le premier rendu, avant que la vue ne monte ses groupes. */
@@ -171,4 +177,40 @@ export function useSearchKeyboard(
     markBrowsing,
     input: { ref: inputRef, onSubmitEditing: submit.onSubmit, onEndEditing: submit.onKeyboardClosed },
   };
+}
+
+/**
+ * BAS depuis le meilleur résultat : la rangée suivante entre par son début —
+ * la carte où on l'a laissée, sinon la première (tv-core `searchTopExit`).
+ * L'entrée (`tvEntry`, `sectionEntry.ts`) n'est posée QUE pendant que la
+ * bannière a le focus, et retirée dès qu'il la quitte : la section native la
+ * lit au moment du geste. Rien n'est rendu : posée sur les nœuds, à chaque
+ * focus et à chaque montage. `rows` : les rangées montrées, dans l'ordre, et
+ * leur modèle (une rangée dont le modèle change oublie sa carte retenue).
+ */
+export function useSearchTopExit(focus: FocusStore, rows: readonly SearchRowVersion[]): void {
+  const [memory] = useState(createSearchRowMemory);
+  const rowKeys = useRef<readonly string[]>([]);
+  const posed = useRef<string | null>(null);
+  const apply = useCallback(() => {
+    const exit = searchTopExit({
+      rowKeys: rowKeys.current,
+      focusedKey: focus.focusedKey(),
+      last: memory.last,
+      isMounted: (key) => focus.node(key) !== null,
+    });
+    if (posed.current !== null && posed.current !== exit?.section) applySectionEntry(focus, posed.current, null);
+    if (exit) applySectionEntry(focus, exit.section, exit.entry);
+    posed.current = exit?.section ?? null;
+  }, [focus, memory]);
+  useEffect(() => {
+    memory.sync(rows);
+    rowKeys.current = rows.map((row) => row.key);
+    apply();
+  }, [rows, memory, apply]);
+  useEffect(() => focus.subscribe((key, focused) => {
+    if (focused) memory.visit(key);
+    apply();
+  }), [focus, memory, apply]);
+  useEffect(() => focus.subscribeNodes(apply), [focus, apply]);
 }
