@@ -9,7 +9,7 @@ B=/chemin/vers/un/dossier-d-etat            # hors du dépôt
 bash apps/backend/test/droits/banc/jellyfin.sh "$B"            # Jellyfin 10.11 jetable :18121
 cd apps/backend
 node "$(node -p 'require.resolve("tsx/cli")')" test/droits/banc/seed.cts "$PWD" "$B/data" "$B"
-# backend du banc sur :3131 (env : PORT, TENTACLE_DATA_DIR=$B/data, DATABASE_URL vide)
+# backend du banc sur un port libre, ici :3141 (env : PORT, TENTACLE_DATA_DIR=$B/data, DATABASE_URL vide)
 node test/droits/banc/mint.cjs "$PWD" "$B/data" "$(cat "$B/jf/enfant-id")" > "$B/tokens.json"
 BANC_URL=http://127.0.0.1:3141 node test/droits/banc/probe.mjs "$B"   # « AUCUNE FUITE », sinon chaque fuite nommée
 ```
