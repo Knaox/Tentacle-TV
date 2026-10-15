@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FamilyProfileDto } from "@tentacle-tv/shared";
-import { EMPTY_GUEST_PARENTAL, guestCeilingOf, guestParentalOf, hasGuestParental, sameGuestParental } from "./guestParental";
+import { EMPTY_GUEST_PARENTAL, effectiveParentalSummary, guestCeilingOf, guestParentalOf, hasGuestParental, sameGuestParental } from "./guestParental";
 
 /** Le contrôle parental d'un invité, lu dans son profil de la Famille. */
 
@@ -25,5 +25,25 @@ describe("le contrôle parental d'un invité", () => {
   it("compare deux réglages pour savoir s'il y a quelque chose à enregistrer", () => {
     expect(sameGuestParental(EMPTY_GUEST_PARENTAL, { ...EMPTY_GUEST_PARENTAL })).toBe(true);
     expect(sameGuestParental(EMPTY_GUEST_PARENTAL, { ...EMPTY_GUEST_PARENTAL, blockUnratedItems: ["Movie"] })).toBe(false);
+  });
+});
+
+describe("ce qui sera en vigueur pour l'invité", () => {
+  const ceiling = {
+    maxParentalRating: 16, maxParentalSubRating: null, blockUnratedItems: [], blockedTags: [], allowedTags: [],
+    accessSchedules: [{ dayOfWeek: "Weekday" as const, startHour: 0, endHour: 24 }],
+  };
+  const name = (score: number) => (score === 16 ? "16" : null);
+
+  it("la note la plus basse l'emporte, et des plages sans recoupement donnent « Jamais »", () => {
+    const wanted = { ...EMPTY_GUEST_PARENTAL, maxParentalRating: 18, accessSchedules: [{ dayOfWeek: "Weekend" as const, startHour: 9, endHour: 20 }] };
+    expect(effectiveParentalSummary(ceiling, wanted, name)).toEqual([
+      { key: "summary.ratingMax", values: { rating: "16" } },
+      { key: "summary.scheduleNever" },
+    ]);
+  });
+
+  it("sans rien de voulu, le plafond du créateur s'applique tel quel", () => {
+    expect(effectiveParentalSummary(ceiling, EMPTY_GUEST_PARENTAL, name).map((part) => part.key)).toEqual(["summary.ratingMax", "summary.schedules"]);
   });
 });

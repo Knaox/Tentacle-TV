@@ -8,7 +8,7 @@ import { Modal } from "../../components/ui/Modal";
 import { RatingSelect, UnratedTypesField } from "../../components/parental/RatingFields";
 import { ScheduleListField } from "../../components/parental/ScheduleListField";
 import { TagListField } from "../../components/parental/TagListField";
-import { guestCeilingOf, guestParentalOf, sameGuestParental } from "../../components/parental/guestParental";
+import { effectiveParentalSummary, guestCeilingOf, guestParentalOf, sameGuestParental } from "../../components/parental/guestParental";
 import { currentRating, ratingChoices, ratingLabel } from "../../components/parental/parentalModel";
 import { useFamilyText } from "../useFamilyText";
 import { BRAND_BUTTON, BRAND_BUTTON_STYLE, SECONDARY_BUTTON } from "./familyUi";
@@ -47,6 +47,17 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
     const choice = currentRating(ratingChoices(ratings), ceiling.maxParentalRating, ceiling.maxParentalSubRating);
     return choice && choice.names.length ? ratingLabel(choice, 2) : String(ceiling.maxParentalRating);
   }, [ceiling, ratings]);
+
+  // Ce qui sera en vigueur, recalculé à chaque geste : la règle du serveur, rejouée.
+  const effective = useMemo(() => {
+    if (!ceiling) return null;
+    const choices = ratingChoices(ratings);
+    const nameOf = (score: number, subScore: number | null) => {
+      const choice = currentRating(choices, score, subScore);
+      return choice && choice.names.length ? ratingLabel(choice, 2) : null;
+    };
+    return effectiveParentalSummary(ceiling, draft, nameOf).map((part) => t(`userRights:${part.key}`, part.values)).join(" · ");
+  }, [ceiling, draft, ratings, t]);
 
   const pending = save.isPending;
   const unchanged = sameGuestParental(draft, initial);
@@ -119,13 +130,21 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
           <ScheduleListField value={draft.accessSchedules} disabled={pending} onChange={(accessSchedules) => set({ accessSchedules })} />
         </div>
 
-        <footer className="flex justify-end gap-2 border-t border-line-subtle p-4">
-          <button type="button" onClick={onClose} disabled={pending} className={SECONDARY_BUTTON}>
-            {t("familyWeb:parental.cancel")}
-          </button>
-          <button type="submit" disabled={pending || unchanged} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
-            {t("familyWeb:parental.save")}
-          </button>
+        <footer className="space-y-3 border-t border-line-subtle p-4">
+          {effective && (
+            <p aria-live="polite" className="text-xs leading-relaxed text-content-secondary">
+              <span className="font-semibold text-content-primary">{t("familyWeb:parental.effective", { name: guest.name })}</span>{" "}
+              {effective}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} disabled={pending} className={SECONDARY_BUTTON}>
+              {t("familyWeb:parental.cancel")}
+            </button>
+            <button type="submit" disabled={pending || unchanged} className={BRAND_BUTTON} style={BRAND_BUTTON_STYLE}>
+              {t("familyWeb:parental.save")}
+            </button>
+          </div>
         </footer>
       </form>
     </Modal>

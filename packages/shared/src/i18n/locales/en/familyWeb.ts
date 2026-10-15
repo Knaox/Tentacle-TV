@@ -159,6 +159,7 @@ export default {
     intro: "What {{name}} can watch, and when. The server enforces it everywhere: lists, search, recommendations, playback.",
     ceiling: "{{name}} never goes beyond the rights of {{creator}}, who created this profile: if {{creator}} has a stricter limit, that one applies.",
     ceilingRating: "{{creator}}'s limit: {{rating}}.",
+    effective: "In effect for {{name}}:",
     save: "Save",
     cancel: "Cancel",
     saved: "Parental controls saved.",

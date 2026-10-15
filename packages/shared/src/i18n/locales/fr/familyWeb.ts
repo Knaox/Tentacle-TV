@@ -160,6 +160,7 @@ export default {
     intro: "Ce que {{name}} peut voir et quand. Le serveur l'applique partout : listes, recherche, recommandations, lecture.",
     ceiling: "{{name}} ne dépasse jamais les droits de {{creator}}, son créateur : si {{creator}} a une limite plus stricte, c'est elle qui s'applique.",
     ceilingRating: "Limite de {{creator}} : {{rating}}.",
+    effective: "En vigueur pour {{name}} :",
     save: "Enregistrer",
     cancel: "Annuler",
     saved: "Contrôle parental enregistré.",
