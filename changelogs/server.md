@@ -25,6 +25,9 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Droits et contrôle parental** : tous les droits Jellyfin d'un compte se règlent dans l'administration, et chaque invité de la Famille a son contrôle parental, jamais au-delà de son créateur
 - **Analyse audio retirée** : la détection des passages par l'écoute disparaît de l'administration et de l'installation. Intro Skipper, SkipMe.db et TheIntroDB restent, et l'analyse automatique d'Intro Skipper reste coupée, sans rien à faire de votre côté
 - **Le contrôle parental de Jellyfin tient partout** : un titre interdit à un compte (note, étiquettes, bibliothèques, plages horaires) ne lui parvient par aucun chemin — recherche, recommandations, notifications, Watch Together, téléviseurs, lecture ; les titres hors bibliothèque suivent leur classification
+- **« Pour vous » mieux ordonné** : chaque rangée s'ouvre sur le titre le plus recommandé, et l'ordre suit le pourcentage affiché
+- **Le bandeau principal peut montrer vos meilleures recommandations**, en films ou en séries
+- **Sans clé TMDB, les recommandations sont désactivées** : « Pour vous » le dit simplement, et mène l'administrateur droit au champ de la clé
 
 ### EN
 - **Trailer previews on hover**: on the web and in desktop app 1.30.0, rest the pointer on a poster and its trailer starts in a mini card, with sound. The server picks it in your language, checks it and streams it itself; with no playable trailer, nothing shows
@@ -39,6 +42,9 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Rights and parental controls**: all of an account's Jellyfin rights are set from the admin, and every Family guest gets parental controls, never beyond their creator
 - **Audio analysis removed**: listening-based segment detection is gone from the admin and the setup. Intro Skipper, SkipMe.db and TheIntroDB stay, and Intro Skipper's automatic analysis stays off — nothing to do on your side
 - **Jellyfin's parental controls hold everywhere**: a title an account may not see (rating, tags, libraries, access hours) reaches it by no path — search, recommendations, notifications, Watch Together, TVs, playback; titles outside the library follow their rating
+- **Better-ordered “For you”**: every row opens with the most recommended title, and the order follows the match shown
+- **The main banner can show your best recommendations**, movies or shows
+- **Without a TMDB key, recommendations are off**: “For you” says so plainly, and takes the administrator straight to the key field
 
 ## [1.27.1]
 ### FR
