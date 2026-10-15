@@ -5,3 +5,4 @@
  */
 export * from "./avatarGallery";
 export * from "./avatarOffer";
+export * from "./avatarPhoto";

@@ -50,6 +50,8 @@ export const REMOTE_HINT_IDS = [
   "pressAgainToConfirm",
   /** Jumelage, identifiant et mot de passe : avec quoi les saisir (la télécommande, et le téléphone de la plateforme). */
   "loginTyping",
+  /** La galerie des avatars : OK prend le personnage focalisé comme photo. */
+  "avatarChoose",
 ] as const;
 
 export type RemoteHintId = (typeof REMOTE_HINT_IDS)[number];
@@ -80,4 +82,5 @@ export const BASE_REMOTE_HINTS: RemoteHints = {
   unpairAgain: "pairing:tvUnpairHint",
   pressAgainToConfirm: "preferences:tvPressAgainToConfirm",
   loginTyping: "pairing:tvLoginHint",
+  avatarChoose: "avatars:tv.chooseHint",
 };
