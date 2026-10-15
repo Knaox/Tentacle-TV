@@ -2,10 +2,11 @@
  * Le départ depuis la mini-carte, lu dans le DOM (simulé ici : le banc de
  * tests n'a pas de navigateur). Ce qui compte : une carte SANS mini-carte vue
  * garde l'ouverture ordinaire ; avec elle, c'est l'image de la mini-carte qui
- * part, et la mini-carte s'efface et se tait.
+ * part, la mini-carte se tait — et ne s'efface que quand le calque pose
+ * l'image qui la remplace.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { capturePreviewLaunch } from "./previewLaunch";
+import { capturePreviewLaunch, hidePreviewSource } from "./previewLaunch";
 
 interface FakeStage {
   video: { readyState: number; videoWidth: number; videoHeight: number; muted: boolean; classList: { contains: () => boolean } } | null;
@@ -40,7 +41,10 @@ describe("capturePreviewLaunch", () => {
   it("une mini-carte qui montre l'image du titre : cette image part, à sa place", () => {
     const { preview, rect } = fakeDom({ video: null, still: { complete: true, naturalWidth: 1280, currentSrc: "still.webp", src: "x" } });
     const launch = capturePreviewLaunch(concealed);
-    expect(launch).toEqual({ rect, frame: null, stillUrl: "still.webp" });
+    expect(launch).toEqual({ rect, frame: null, stillUrl: "still.webp", source: preview });
+    // Encore visible : rien ne la remplace tant que le calque n'est pas posé.
+    expect(preview.dataset.launched).toBeUndefined();
+    hidePreviewSource(launch!);
     expect(preview.dataset.launched).toBe("true");
   });
 

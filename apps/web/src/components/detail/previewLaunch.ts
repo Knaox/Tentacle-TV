@@ -13,8 +13,10 @@ import type { LaunchBox } from "./previewLaunchGeometry";
  *
  * Ici, ce qu'on regardait part : l'image VUE dans la mini-carte (la vidéo à
  * l'instant du clic, copiée une fois dans un canevas ; sinon l'image du titre
- * qu'elle montrait), à sa place exacte. La mini-carte s'efface aussitôt sous
- * elle (`data-launched`, `cardPreview.css`) et se tait.
+ * qu'elle montrait), à sa place exacte. La mini-carte se tait au clic, et
+ * s'efface sous cette image quand le calque la pose (`hidePreviewSource`) —
+ * pas avant : la fiche peut mettre quelques images à se monter, et la
+ * mini-carte effacée trop tôt laissait un trou.
  *
  * Lu dans le DOM, sans rien importer de la mini-carte : le client des
  * téléviseurs LG compile ce module, pas la mini-carte.
@@ -26,6 +28,13 @@ export interface PreviewLaunch {
   frame: HTMLCanvasElement | null;
   /** L'image du titre que montrait la mini-carte, à défaut de vidéo. */
   stillUrl: string | null;
+  /** La mini-carte elle-même, à effacer quand l'image qui la remplace est posée. */
+  source: HTMLElement;
+}
+
+/** L'image qui la remplace est posée : la mini-carte s'efface dessous (`cardPreview.css`), sans revenir à sa carte. */
+export function hidePreviewSource(launch: PreviewLaunch): void {
+  launch.source.dataset.launched = "true";
 }
 
 /** La plus grande largeur copiée : assez pour un plein écran en fondu, une seule copie. */
@@ -88,8 +97,7 @@ export function capturePreviewLaunch(visual: HTMLElement | null): PreviewLaunch 
   const still = stage.querySelector<HTMLImageElement>(".card-preview-backdrop");
   const stillUrl = still && still.complete && still.naturalWidth > 0 ? still.currentSrc || still.src : null;
   if (!frame && !stillUrl) return null;
-  preview.dataset.launched = "true";
-  // Le son part avec l'image : la vidéo vit encore le temps de la sortie de la page.
+  // Le son part au clic : la vidéo vit encore le temps de la sortie de la page.
   if (video) video.muted = true;
-  return { rect, frame, stillUrl };
+  return { rect, frame, stillUrl, source: preview };
 }

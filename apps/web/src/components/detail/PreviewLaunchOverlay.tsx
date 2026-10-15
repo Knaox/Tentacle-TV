@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DETAIL_STAGE_BOX, DETAIL_STAGE_FOCUS, DETAIL_STAGE_LAYERS } from "./detailStageGeometry";
 import { DetailStageFallback } from "./DetailArtworkFallback";
 import { launchFromTransform, stageCoverRect, type LaunchBox } from "./previewLaunchGeometry";
-import type { PreviewLaunch } from "./previewLaunch";
+import { hidePreviewSource, type PreviewLaunch } from "./previewLaunch";
 import { useDecodedImage } from "./useDecodedImage";
 
 interface PreviewLaunchOverlayProps {
@@ -13,6 +13,8 @@ interface PreviewLaunchOverlayProps {
   backdropUrl: string | null;
   /** La fiche est rendue (requête revenue) : le calque peut la découvrir. */
   settled: boolean;
+  /** Le fond est opaque : la fiche peut se montrer dessous (`MediaDetail`). */
+  onCovered: () => void;
   onDone: () => void;
 }
 
@@ -62,7 +64,7 @@ function FrameCanvas({ canvas }: { canvas: HTMLCanvasElement }) {
  * Animations réduites : rien ne vole, la fiche apparaît (comme l'ouverture
  * depuis une carte).
  */
-export function PreviewLaunchOverlay({ launch, backdropUrl, settled, onDone }: PreviewLaunchOverlayProps) {
+export function PreviewLaunchOverlay({ launch, backdropUrl, settled, onCovered, onDone }: PreviewLaunchOverlayProps) {
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(true);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -72,11 +74,13 @@ export function PreviewLaunchOverlay({ launch, backdropUrl, settled, onDone }: P
   const [gaveUp, setGaveUp] = useState(false);
   const backdrop = useDecodedImage(reduced ? null : backdropUrl);
 
-  // Mesurée avant la première peinture : l'image part de la mini-carte dès la première image.
+  // Mesurée avant la première peinture : l'image part de la mini-carte dès la
+  // première image, et la mini-carte s'efface sous elle dans cette même image.
   useLayoutEffect(() => {
+    hidePreviewSource(launch);
     const r = stageRef.current?.getBoundingClientRect();
     if (r && r.width > 0 && r.height > 0) setStage({ top: r.top, left: r.left, width: r.width, height: r.height });
-  }, []);
+  }, [launch]);
 
   useEffect(() => {
     if (reduced) onDone();
@@ -84,12 +88,14 @@ export function PreviewLaunchOverlay({ launch, backdropUrl, settled, onDone }: P
 
   useEffect(() => {
     const landingTimer = setTimeout(() => setLanding(true), FLIGHT_S * LANDING_AT * 1000);
+    const coveredTimer = setTimeout(onCovered, BASE_S * 1000);
     const holdTimer = setTimeout(() => setPlaying(false), MAX_HOLD_MS);
     return () => {
       clearTimeout(landingTimer);
+      clearTimeout(coveredTimer);
       clearTimeout(holdTimer);
     };
-  }, []);
+  }, [onCovered]);
 
   useEffect(() => {
     if (!landing || !settled || backdrop !== "pending") return;
