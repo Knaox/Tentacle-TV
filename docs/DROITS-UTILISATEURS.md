@@ -244,6 +244,20 @@ de champs — jamais une valeur.
 - Le pont nettoie ce qu'il reçoit : une entrée mal formée (type inconnu, `tmdbId` non entier
   positif) est écartée, jamais laissée passer.
 
+### 5.1 bis Plages horaires et invalidation (demande du filtrage)
+
+- **`scheduleAllows(policy, now)`** (exportée par `services/contentPolicy`) : la règle pure qui
+  décide À L'INSTANT — `ContentPolicy` ne porte que les plages brutes, jamais un « dans la
+  plage » calculé à la lecture (le cache de 30 s le rendrait faux). Relue sur Jellyfin 10.11.11
+  (`UserEntityExtensions.IsParentalScheduleAllowed`) : aucune plage = permis ; sinon l'heure
+  LOCALE h, en heures décimales, d'un jour couvert (`Everyday`, `Weekday` lundi → vendredi,
+  `Weekend` samedi et dimanche, ou le jour nommé) vérifie **`StartHour ≤ h ≤ EndHour`, bornes
+  INCLUSES des deux côtés** (pas `h < EndHour`). Heure locale du serveur Tentacle.
+- **`onContentPolicyInvalidated(listener: (userId: string | null) => void): () => void`** :
+  appelé de façon SYNCHRONE par `invalidateContentPolicy` (identifiant normalisé, sans tirets)
+  et par `clearContentPolicyCache` (`null` = tous les comptes) ; la valeur rendue désabonne ; un
+  écouteur qui lève est journalisé (`[content-policy]`) et n'empêche pas les autres.
+
 ### 5.2 Certification TMDB → échelle de Jellyfin (étape D)
 
 Relu sur la source de Jellyfin v10.11.11 (`LocalizationManager.GetRatingScore`,

@@ -16,8 +16,10 @@ export {
   invalidateContentPolicy,
   isPolicyRestricted,
   isRestricted,
+  onContentPolicyInvalidated,
   type ContentPolicy,
 } from "./contentPolicy";
+export { scheduleAllows } from "./externalTitleRule";
 export {
   EXTERNAL_FETCH_BUDGET,
   allowsExternalTitle,

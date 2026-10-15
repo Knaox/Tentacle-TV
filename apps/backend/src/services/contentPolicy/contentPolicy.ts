@@ -145,17 +145,46 @@ function pruneExpired(): void {
   for (const [key, entry] of cache) if (now >= entry.expiresAt) cache.delete(key);
 }
 
+type InvalidationListener = (userId: string | null) => void;
+const invalidationListeners = new Set<InvalidationListener>();
+
+/**
+ * Être prévenu qu'une politique de contenu n'est plus sûre : `userId` (normalisé,
+ * sans tirets) pour un compte, `null` pour tous. Appelé de façon SYNCHRONE par
+ * l'invalidation ; ce qui en dépend (caches de listes filtrées) s'y vide. La valeur
+ * rendue désabonne.
+ */
+export function onContentPolicyInvalidated(listener: InvalidationListener): () => void {
+  invalidationListeners.add(listener);
+  return () => {
+    invalidationListeners.delete(listener);
+  };
+}
+
+function notifyInvalidated(userId: string | null): void {
+  for (const listener of [...invalidationListeners]) {
+    try {
+      listener(userId);
+    } catch (error) {
+      // Un écouteur fautif n'empêche pas les autres de vider leurs caches.
+      console.log(`[content-policy] un écouteur d'invalidation a échoué : ${(error as Error)?.message ?? error}`);
+    }
+  }
+}
+
 /** À appeler après TOUTE écriture de politique faite par Tentacle. */
 export function invalidateContentPolicy(userId: string): void {
   const key = normalizeJellyfinId(userId);
   cache.delete(key);
   inflight.delete(key);
+  notifyInvalidated(key);
 }
 
-/** Vide le cache (tests). */
+/** Vide le cache de TOUS les comptes (tests, changement de Jellyfin) ; les écouteurs reçoivent `null`. */
 export function clearContentPolicyCache(): void {
   cache.clear();
   inflight.clear();
+  notifyInvalidated(null);
 }
 
 /** Le compte est-il restreint ? Illisible : oui. */

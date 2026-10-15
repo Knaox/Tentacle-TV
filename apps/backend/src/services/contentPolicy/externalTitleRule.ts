@@ -72,9 +72,12 @@ export function tagsAllowed(keywords: readonly string[], policy: Pick<ContentPol
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
 /**
- * Les plages horaires (`User.IsParentalScheduleAllowed`) : aucune = à toute heure ;
- * sinon l'heure LOCALE (du serveur Tentacle — celle de Jellyfin n'est pas lisible)
- * doit tomber dans l'une. Hors plage : rien d'extérieur.
+ * Les plages horaires, À L'INSTANT `now` — jamais gardées en cache avec la politique.
+ * Calquée sur Jellyfin 10.11.11 (`UserEntityExtensions.IsParentalScheduleAllowed`) :
+ * aucune plage = permis ; sinon l'heure LOCALE h (heures décimales) d'un jour couvert
+ * (`Everyday`, `Weekday` lundi→vendredi, `Weekend` samedi et dimanche, ou le jour
+ * nommé) vérifie `StartHour ≤ h ≤ EndHour`, bornes INCLUSES des deux côtés. L'heure
+ * locale est celle du serveur Tentacle — celle de Jellyfin n'est pas lisible.
  */
 export function scheduleAllows(policy: Pick<ContentPolicy, "accessSchedules">, now: Date): boolean {
   if (policy.accessSchedules.length === 0) return true;
