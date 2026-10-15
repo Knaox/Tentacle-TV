@@ -1,0 +1,109 @@
+{
+  "domain": "ecrans",
+  "reference": "0324eaf2c",
+  "defaults": {
+    "settleMs": 0
+  },
+  "scenarios": [
+    {
+      "id": "recherche-banniere-bas",
+      "title": "BAS depuis le meilleur résultat : la PREMIÈRE carte de la rangée suivante, pas celle du milieu ; HAUT rend la bannière",
+      "rules": [
+        "RE-3",
+        "RE-3 bis"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/recherche"
+        ],
+        "route": {
+          "name": "Search"
+        },
+        "keys": [
+          "wait:5"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "key:A"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "search:field"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "why": "le clavier plein écran de tvOS"
+        },
+        {
+          "do": "type:american\n",
+          "settleMs": 3500,
+          "expect": {
+            "focus": "top"
+          },
+          "why": "le meilleur résultat, puis la rangée des films, puis les séries"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "movies:0"
+          },
+          "why": "la bannière, large comme la colonne, entre par le début de la rangée"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "top"
+          },
+          "why": "HAUT depuis la rangée sous la bannière : la bannière"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "movies:0"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "movies:1"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "movies:2"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "top"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "movies:2"
+          },
+          "why": "la rangée déjà parcourue, restée où on l'a laissée : sa carte"
+        },
+        {
+          "do": "down",
+          "why": "la rangée des séries, au plus proche (relevé)"
+        },
+        {
+          "do": "up",
+          "why": "HAUT depuis les séries : la règle commune, au plus proche, pas l'entrée de la bannière (relevé)"
+        }
+      ]
+    }
+  ]
+}
