@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MediaSource } from "../types/media";
 import { FULL_PLAYBACK_RIGHTS, type PlaybackRights } from "./playbackRights";
-import { builtUrlRefusal, negotiatedRefusal, rightsBitrate } from "./rightsVerdict";
+import { builtUrlRefusal, negotiatedRefusal, rightsBitrate, upfrontRefusal } from "./rightsVerdict";
 
 const rights = (patch: Partial<PlaybackRights>): PlaybackRights => ({ ...FULL_PLAYBACK_RIGHTS, ...patch });
 /** Les fichiers du banc : MPEG-2 en MKV, AC3 5.1 en MKV, H.264 à 8 Mb/s. */
@@ -57,5 +57,14 @@ describe("builtUrlRefusal — l'URL que mpv fabrique", () => {
     const tier = `${base}/Videos/abc/master.m3u8?VideoCodec=hevc,h264&AudioCodec=aac&AllowVideoStreamCopy=false&VideoBitrate=1800000`;
     expect(builtUrlRefusal(rights({ videoTranscoding: false }), tier, heavy)).toBe("conversion_not_allowed");
     expect(builtUrlRefusal(FULL_PLAYBACK_RIGHTS, tier, heavy)).toBeNull();
+  });
+});
+
+describe("upfrontRefusal — ce que la fiche suffit à trancher", () => {
+  it("la lecture interdite, ou le plafond sans droit de réencoder", () => {
+    expect(upfrontRefusal(rights({ mediaPlayback: false }), mpeg2)).toBe("playback_not_allowed");
+    expect(upfrontRefusal(rights({ maxBitrate: 2_000_000, videoTranscoding: false }), heavy)).toBe("conversion_not_allowed");
+    expect(upfrontRefusal(rights({ maxBitrate: 2_000_000 }), heavy)).toBeNull();
+    expect(upfrontRefusal(rights({ videoTranscoding: false }), heavy)).toBeNull();
   });
 });

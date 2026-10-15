@@ -66,3 +66,14 @@ export function builtUrlRefusal(
   const asIs = !conversions?.container;
   return asIs && !rights.videoTranscoding && exceedsBitrateCap(source, rights) ? "conversion_not_allowed" : null;
 }
+
+/**
+ * Le refus connu AVANT toute requête, d'après la fiche seule : la lecture
+ * interdite, ou un fichier au-dessus du plafond de ce client sans le droit de
+ * le réencoder (aucun palier possible, cf. `rightsCapTier`). Le reste se juge
+ * sur l'URL (`builtUrlRefusal`) ou la proposition de Jellyfin (`negotiatedRefusal`).
+ */
+export function upfrontRefusal(rights: PlaybackRights, source: MediaSource | null | undefined): PlaybackRefusal | null {
+  if (!rights.mediaPlayback) return "playback_not_allowed";
+  return !rights.videoTranscoding && exceedsBitrateCap(source, rights) ? "conversion_not_allowed" : null;
+}
