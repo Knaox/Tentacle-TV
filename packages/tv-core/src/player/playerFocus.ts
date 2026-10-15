@@ -63,7 +63,9 @@ export function preferredFocusOf(
     case "loading:back": return !s.failed;
     case "loading:retry": return s.failed;
     case "upnext:play":
-    case "end:play": return true;
+    case "end:play":
+    case "stillwatching:continue":
+    case "stillwatching:resume": return true;
     default: return key === s.sheetEntryKey ? true : undefined;
   }
 }
@@ -72,7 +74,8 @@ export function preferredFocusOf(
  * Les entrées RÉCLAMÉES à leur apparition (`hasTVPreferredFocus` seul n'est
  * honoré qu'au montage) : l'écran d'ouverture (la croix, sa seule action ;
  * « Réessayer » s'il a échoué), la carte « À suivre », l'affiche de fin, la
- * feuille (son option retenue).
+ * feuille (son option retenue), « Vous regardez encore ? » (`stillWatchingTv`
+ * : « Continuer », puis « Reprendre »).
  */
 export function playerFocusClaims(s: {
   loading: boolean;
@@ -80,12 +83,15 @@ export function playerFocusClaims(s: {
   upNextShown: boolean;
   endShown: boolean;
   sheetEntryKey: string | null;
+  stillWatchingEntry?: string | null;
 }): Array<{ key: string | null; active: boolean }> {
+  const stillWatching = s.stillWatchingEntry ?? null;
   return [
     { key: s.failed ? "loading:retry" : "loading:back", active: s.loading },
     { key: "upnext:play", active: s.upNextShown },
     { key: "end:play", active: s.endShown },
     { key: s.sheetEntryKey, active: s.sheetEntryKey !== null },
+    { key: stillWatching, active: stillWatching !== null },
   ];
 }
 

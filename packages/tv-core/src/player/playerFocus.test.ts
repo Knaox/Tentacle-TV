@@ -34,7 +34,7 @@ describe("les entrées et les croix", () => {
     const claims = playerFocusClaims({ loading: true, failed: false, upNextShown: false, endShown: true, sheetEntryKey: "tracks:audio:2" });
     expect(claims).toEqual([
       { key: "loading:back", active: true }, { key: "upnext:play", active: false },
-      { key: "end:play", active: true }, { key: "tracks:audio:2", active: true },
+      { key: "end:play", active: true }, { key: "tracks:audio:2", active: true }, { key: null, active: false },
     ]);
     expect(playerFocusClaims({ loading: true, failed: true, upNextShown: false, endShown: false, sheetEntryKey: null })[0]).toEqual({ key: "loading:retry", active: true });
   });

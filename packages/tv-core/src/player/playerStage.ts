@@ -23,6 +23,8 @@ export interface PlayerChromeState {
   troubleCovers: boolean;
   skipShown: boolean;
   upNextShown: boolean;
+  /** « Vous regardez encore ? » est à l'écran : il prend le coin, l'habillage se tait. */
+  stillWatchingShown?: boolean;
 }
 
 export interface PlayerChromeVisibility {
@@ -42,8 +44,9 @@ export interface PlayerChromeVisibility {
  * défilement, fin, message-outil activé).
  */
 export function playerChromeVisibility(s: PlayerChromeState): PlayerChromeVisibility {
-  const osdVisible = (s.overlayVisible && !s.autoPlayActive) || (s.pinned && !s.scrubbing);
-  const covered = !s.playing || s.scrubbing || s.panelShown || s.endScreenShown || s.troubleCovers;
+  const stillWatching = s.stillWatchingShown === true;
+  const osdVisible = !stillWatching && ((s.overlayVisible && !s.autoPlayActive) || (s.pinned && !s.scrubbing));
+  const covered = !s.playing || s.scrubbing || s.panelShown || s.endScreenShown || s.troubleCovers || stillWatching;
   return {
     osdVisible,
     covered,
@@ -65,6 +68,8 @@ export interface PlayerBackgroundState {
   troubleCovers: boolean;
   /** Le genre de surimpression de l'arbitre (`skip`, `nextButton`, …). */
   overlayKind: string;
+  /** « Vous regardez encore ? » tient la télécommande, comme un panneau. */
+  stillWatchingShown?: boolean;
 }
 
 export interface PlayerBackgroundFocus {
@@ -83,7 +88,7 @@ export interface PlayerBackgroundFocus {
  */
 export function playerBackgroundFocus(s: PlayerBackgroundState): PlayerBackgroundFocus {
   const overlayShown = s.overlayVisible || (s.pinned && !s.scrubbing);
-  const panelOpen = s.showSettings || s.autoPlayActive || s.showEpisodes || s.troubleCovers;
+  const panelOpen = s.showSettings || s.autoPlayActive || s.showEpisodes || s.troubleCovers || s.stillWatchingShown === true;
   const focusable = !s.loading && !overlayShown && !panelOpen;
   const skipActive = s.overlayKind === "skip" || s.overlayKind === "nextButton";
   return { panelOpen, focusable, claims: focusable && !skipActive };

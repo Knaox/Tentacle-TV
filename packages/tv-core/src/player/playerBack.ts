@@ -112,16 +112,17 @@ export function createPlayerBack(host: PlayerBackHost, timers: PlayerTimers): {
 }
 
 /** Les gestes des couches du Retour du lecteur. */
-export type PlayerBackAction = "routeTransient" | "closeSettings" | "closeEpisodes" | "hideOverlay" | "leave";
+export type PlayerBackAction = "routeTransient" | "keepWatching" | "closeSettings" | "closeEpisodes" | "hideOverlay" | "leave";
 
 /**
  * Les COUCHES du Retour du lecteur (Apple TV), dans l'ordre d'inscription
  * (`nav/backResolve` : menu > surimpression > page, la dernière activée
  * d'abord à rang égal) :
  *
- * - menu : un état passager (`playerBackHolding`), la feuille des pistes et
- *   des réglages, le panneau des épisodes — Retour ferme le menu, la lecture
- *   continue ;
+ * - menu : un état passager (`playerBackHolding`), « Vous regardez encore ? »
+ *   pendant la question (Retour y répond « Continuer », `stillWatchingTv`), la
+ *   feuille des pistes et des réglages, le panneau des épisodes — Retour ferme
+ *   le menu, la lecture continue ;
  * - surimpression : l'habillage À L'ÉCRAN se masque (en pause : désépinglé),
  *   la lecture continue ;
  * - page : rien d'affiché — Retour quitte la lecture, comme la croix.
@@ -131,9 +132,12 @@ export function playerBackLayers(state: {
   showSettings: boolean;
   showEpisodes: boolean;
   osdShown: boolean;
+  /** « Vous regardez encore ? » pose sa question. */
+  stillWatchingAsking?: boolean;
 }): BackLayerSpec<PlayerBackAction>[] {
   return [
     { id: "transient", kind: "menu", active: state.transient, action: "routeTransient" },
+    { id: "stillWatching", kind: "menu", active: state.stillWatchingAsking === true, action: "keepWatching" },
     { id: "settings", kind: "menu", active: state.showSettings, action: "closeSettings" },
     { id: "episodes", kind: "menu", active: state.showEpisodes, action: "closeEpisodes" },
     { id: "overlay", kind: "overlay", active: state.osdShown, action: "hideOverlay" },
