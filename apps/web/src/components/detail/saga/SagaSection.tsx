@@ -1,13 +1,12 @@
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
 import { sagaSummary, sagaTitle, type MediaItem, type SagaView } from "@tentacle-tv/shared";
 import { RowHeader } from "../../rows/RowHeader";
 import { RowScrollControls } from "../../rows/RowScrollControls";
 import { useRowCardWidth } from "../../rows/useRowCardWidth";
 import { useRowScroll } from "../../rows/useRowScroll";
+import { useRowEntrance } from "../../rows/useRowEntrance";
 import { useHoverMount } from "../../../hooks/useHoverMount";
-import { fadeIn } from "../../../theme/motion";
 import { SagaColumn } from "./SagaColumn";
 import { useDetailSaga } from "./useDetailSaga";
 
@@ -41,6 +40,9 @@ function SagaRow({ view }: { view: SagaView }) {
   // Les zones de défilement portent un `backdrop-filter` : montées au survol
   // seulement, comme dans `MediaRow`.
   const controls = useHoverMount(200);
+  // La même entrée que les autres rangées (`rowEntrance`) ; les volets sont
+  // montés dès la lecture de la saga.
+  const holdEntrance = useRowEntrance(scrollRef, true);
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "ArrowRight") { e.preventDefault(); scrollByAmount("right"); }
     if (e.key === "ArrowLeft") { e.preventDefault(); scrollByAmount("left"); }
@@ -61,17 +63,14 @@ function SagaRow({ view }: { view: SagaView }) {
   const title = sagaTitle(t, view);
 
   return (
-    <motion.section
+    <section
+      ref={holdEntrance}
       className="group/row relative"
       aria-label={title}
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onMouseEnter={controls.onMouseEnter}
       onMouseLeave={controls.onMouseLeave}
-      variants={fadeIn}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-50px" }}
     >
       <RowHeader
         title={title}
@@ -99,6 +98,6 @@ function SagaRow({ view }: { view: SagaView }) {
           ))}
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 }

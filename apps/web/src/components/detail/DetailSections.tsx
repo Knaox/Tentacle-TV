@@ -52,9 +52,11 @@ export function DetailSections({
       {/* Collection (BoxSet) : contenu navigable — un BoxSet n'a ni lecture
           ni saisons, sa fiche restait vide. */}
       {item.Type === "BoxSet" && collectionItems && collectionItems.length > 0 && (
-        <Reveal id={DETAIL_COLLECTION_ANCHOR}>
+        // Une rangée joue sa propre entrée (`rowEntrance`) : pas de fondu en
+        // plus. Marge de défilement : l'ancre ne se colle pas au bord haut.
+        <div id={DETAIL_COLLECTION_ANCHOR} className="scroll-mt-8">
           <MediaRow title={t("common:collectionContent", { defaultValue: "Contenu de la collection" })} items={collectionItems} />
-        </Reveal>
+        </div>
       )}
 
       {/* Épisode : la série parente prête ses extras en repli. */}
@@ -94,16 +96,10 @@ export function DetailSections({
       {item.Type === "Movie" && <SagaSection item={item} />}
 
       {/* Les collections de la bibliothèque qui le contiennent (Jellyfin 12+). */}
-      {item.Type !== "BoxSet" && (
-        <Reveal>
-          <IncludedInRow itemId={item.Id} />
-        </Reveal>
-      )}
+      {item.Type !== "BoxSet" && <IncludedInRow itemId={item.Id} />}
 
       {similar && similar.length > 0 && (
-        <Reveal>
-          <MediaRow title={t("common:similarTitles")} items={similar} />
-        </Reveal>
+        <MediaRow title={t("common:similarTitles")} items={similar} />
       )}
 
       <LicenseAttribution item={item} />
@@ -111,13 +107,10 @@ export function DetailSections({
   );
 }
 
-function Reveal({ children, as = "div", id }: { children: ReactNode; as?: "div" | "section"; id?: string }) {
+function Reveal({ children, as = "div" }: { children: ReactNode; as?: "div" | "section" }) {
   const Tag = as === "section" ? motion.section : motion.div;
   return (
     <Tag
-      id={id}
-      // Marge de défilement : l'ancre ne se colle pas au bord haut de la fenêtre.
-      className={id ? "scroll-mt-8" : undefined}
       variants={fadeIn}
       initial="hidden"
       whileInView="show"
