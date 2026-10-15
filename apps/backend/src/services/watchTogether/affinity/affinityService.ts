@@ -6,6 +6,7 @@ import { catalogDeck, catalogKindCounts, loadGroupCatalog, readableKeys } from "
 import {
   closedAffinities, dropClosedAffinity, getAffinity, getClosedAffinity, keepClosedAffinity, nextSessionId, setAffinity,
 } from "./affinityRegistry";
+import { keysSeenByAll } from "./affinityRights";
 import {
   closeSession, createSession, joinSession, leaveSession, nextCards, recordVote, reopenSession, settleProposal, undoVote,
 } from "./affinitySession";
@@ -49,9 +50,16 @@ function scopeOf(userId: string, options: { sessionId?: number; participant?: bo
   return done({ room, session });
 }
 
-export function currentAffinity(userId: string): WtAffinityStateDto | null {
+export async function currentAffinity(userId: string): Promise<WtAffinityStateDto | null> {
   const room = getRoomOf(userId);
   return room ? affinityStateOf(room) : null;
+}
+
+/** L'état rendu à l'auteur d'un geste — jugé comme la diffusion ; la séance a
+ *  pu se refermer pendant ce temps. */
+async function stateAfter(room: Room): Promise<AffinityResult<WtAffinityStateDto>> {
+  const state = await affinityStateOf(room);
+  return state ? done(state) : fail(404, "no_session");
 }
 
 /** Combien de titres de chaque type tout le groupe peut lire, et les types
@@ -77,7 +85,7 @@ export async function startAffinity(userId: string, kind: WtAffinityKind): Promi
   let room = getRoomOf(userId);
   if (!room) return fail(404, "not_in_group");
   if (room.members.size < 2) return fail(409, "need_two_members");
-  if (getAffinity(room)?.kind === kind) return done(affinityStateOf(room)!);
+  if (getAffinity(room)?.kind === kind) return stateAfter(room);
 
   const now = Date.now();
   let session = getClosedAffinity(room, kind);
@@ -93,7 +101,7 @@ export async function startAffinity(userId: string, kind: WtAffinityKind): Promi
     if (!room) return fail(404, "not_in_group");
     if (room.members.size < 2) return fail(409, "need_two_members");
     // Lancée entre-temps par un autre : on la rejoint.
-    if (getAffinity(room)?.kind === kind) return done(affinityStateOf(room)!);
+    if (getAffinity(room)?.kind === kind) return stateAfter(room);
     const deck = catalogDeck(catalog, kind, `${room.groupId}:${sessionId}`);
     if (deck.length === 0) return fail(409, "empty_catalog");
     session = createSession({ sessionId, kind, startedBy: userId, deck, now, audience });
@@ -109,7 +117,7 @@ export async function startAffinity(userId: string, kind: WtAffinityKind): Promi
   if (session.audience.has(userId)) joinSession(session, userId, null, now);
   setAffinity(room, session);
   broadcastAffinity(room, previous ? "switch" : "start", userId);
-  return done(affinityStateOf(room)!);
+  return stateAfter(room);
 }
 
 /** Rejoint la séance (idempotent) et rend les premières cartes. */
@@ -126,8 +134,10 @@ export async function joinAffinity(
     if (getAffinity(room) !== session) return fail(409, "stale_session");
     if (joinSession(session, userId, allowed, Date.now())) broadcastAffinity(room, "join", userId);
   }
+  const state = await stateAfter(room);
+  if (!state.ok) return state;
   return done({
-    state: affinityStateOf(room)!,
+    state: state.value,
     sessionId: session.sessionId,
     cards: nextCards(session, userId, limit, new Set()),
   });
@@ -179,13 +189,15 @@ export function affinityCards(
   return done(nextCards(scope.value.session, userId, limit, new Set(exclude)));
 }
 
-/** Un verdict sur une carte ; rend s'il vient de faire un match, et l'état. */
-export function voteAffinity(
+/** Un verdict sur une carte ; rend s'il vient de faire un match, et l'état. Un
+ *  match dont toute la salle ne voit pas le titre n'est proposé à personne,
+ *  pas même à l'auteur du vote (`affinityRights.ts`). */
+export async function voteAffinity(
   userId: string,
   sessionId: number,
   key: string,
   verdict: WtAffinityVerdict,
-): AffinityResult<{ matched: boolean; state: WtAffinityStateDto }> {
+): Promise<AffinityResult<{ matched: boolean; state: WtAffinityStateDto }>> {
   const scope = scopeOf(userId, { sessionId, participant: true });
   if (!scope.ok) return scope;
   const { room, session } = scope.value;
@@ -193,7 +205,9 @@ export function voteAffinity(
   const { matched, unmatched } = recordVote(session, userId, key, verdict, Date.now());
   const cause = matched ? "match" : unmatched ? "unmatch" : "vote";
   broadcastAffinity(room, cause, userId, { matchKeys: matched ? [key] : [], match: unmatched });
-  return done({ matched, state: affinityStateOf(room)! });
+  const state = await stateAfter(room);
+  if (!state.ok) return state;
+  return done({ matched: matched && state.value.proposals.some((m) => m.key === key), state: state.value });
 }
 
 export function undoAffinityVote(userId: string, sessionId: number, key: string): AffinityResult<null> {
@@ -209,24 +223,35 @@ export function undoAffinityVote(userId: string, sessionId: number, key: string)
  * « Continuer à swiper » : le match en attente est écarté, chez tous — la
  * pile reprend chez tous. Idempotent : déjà tranché, l'état revient tel quel.
  */
-export function dismissAffinityMatch(userId: string, key: string): AffinityResult<WtAffinityStateDto> {
+export async function dismissAffinityMatch(userId: string, key: string): Promise<AffinityResult<WtAffinityStateDto>> {
   const scope = scopeOf(userId, { participant: true });
   if (!scope.ok) return scope;
   const { room, session } = scope.value;
   const match = settleProposal(session, key);
   if (match) broadcastAffinity(room, "dismiss", userId, { match });
-  return done(affinityStateOf(room)!);
+  return stateAfter(room);
 }
 
 /**
  * « Regarder ensemble » : le match part en lecture et la séance se referme
  * chez tous — ceux qui swipaient suivront le lancement. Refusé (`answered`)
- * si le match n'attend plus : quelqu'un a répondu avant.
+ * si le match n'attend plus : quelqu'un a répondu avant. Refusé aussi si un
+ * membre de la salle ne voit pas le titre — le lecteur du groupe le refuserait
+ * (`stale_item`) ; la salle reçoit alors l'état, qui ne le propose plus.
  */
-export function launchAffinity(userId: string, key: string): AffinityResult<null> {
+export async function launchAffinity(userId: string, key: string): Promise<AffinityResult<null>> {
   const scope = scopeOf(userId, { participant: true });
   if (!scope.ok) return scope;
   const { room, session } = scope.value;
+  const pending = session.proposals.find((m) => m.key === key);
+  if (!pending) return fail(409, "answered");
+  if (!(await keysSeenByAll([...room.members.keys()], [pending])).has(key)) {
+    // Un membre arrivé depuis, ou une politique changée : l'écran du lanceur le montrait encore.
+    if (getAffinity(room) === session) broadcastAffinity(room, "unmatch", userId);
+    return fail(409, "answered");
+  }
+  // Pendant le jugement, un autre a pu répondre, ou la séance se refermer.
+  if (getAffinity(room) !== session) return fail(409, "answered");
   const match = settleProposal(session, key);
   if (!match) return fail(409, "answered");
   closeOpenSession(room, session);

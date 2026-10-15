@@ -48,7 +48,7 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
   /** GET /affinity — la séance de la salle (reprise au montage), ou null. */
-  app.get("/affinity", async (request) => ({ state: currentAffinity(user(request).userId) }));
+  app.get("/affinity", async (request) => ({ state: await currentAffinity(user(request).userId) }));
 
   /** GET /affinity/kinds — titres de chaque type que tout le groupe peut lire, et le type
    *  qu'un lancement reprendrait (`resume`). */
@@ -85,7 +85,7 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
   /** POST /affinity/votes — un verdict sur une carte ; rend `matched` et l'état. */
   app.post("/affinity/votes", async (request, res) => {
     const body = z.object({ sessionId, key: titleKey, verdict }).parse(request.body);
-    return reply(res, voteAffinity(user(request).userId, body.sessionId, body.key, body.verdict));
+    return reply(res, await voteAffinity(user(request).userId, body.sessionId, body.key, body.verdict));
   });
 
   /** DELETE /affinity/votes/:key?sessionId= — annule mon geste. */
@@ -99,14 +99,14 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
   /** POST /affinity/dismiss — « Continuer à swiper » : le match est écarté chez tous. */
   app.post("/affinity/dismiss", async (request, res) => {
     const body = z.object({ key: titleKey }).parse(request.body);
-    const result = dismissAffinityMatch(user(request).userId, body.key);
+    const result = await dismissAffinityMatch(user(request).userId, body.key);
     return result.ok ? { state: result.value } : reply(res, result);
   });
 
   /** POST /affinity/launch — un match part en lecture pour le groupe ; la séance se referme. */
   app.post("/affinity/launch", async (request, res) => {
     const body = z.object({ key: titleKey }).parse(request.body);
-    const result = launchAffinity(user(request).userId, body.key);
+    const result = await launchAffinity(user(request).userId, body.key);
     return result.ok ? { ok: true } : reply(res, result);
   });
 };

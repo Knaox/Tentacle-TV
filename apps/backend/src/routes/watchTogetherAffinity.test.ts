@@ -26,6 +26,8 @@ vi.mock("../services/jwt", () => ({
   verifyDeviceToken: async () => null,
   hashToken: (value: string) => value,
 }));
+// Tous les titres sont visibles à tous ici : les droits ont leur test (affinityRights.test.ts).
+vi.mock("../services/itemAccess/itemVisibility", () => ({ isItemVisibleTo: async () => true }));
 vi.mock("../services/wsManager", () => ({
   sendToUser: (to: string, msg: Sent) => sent.push({ to, msg }),
   isUserOnline: () => true,
@@ -107,6 +109,9 @@ function roomOf(ids: Who[]) {
   return room;
 }
 
+/** Une diffusion qui juge des propositions attend Jellyfin : on la laisse partir. */
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+
 /** Les destinataires du dernier message de cette cause. */
 const lastOf = (cause: string) => sent.filter((s) => s.msg.cause === cause);
 
@@ -133,12 +138,14 @@ describe("/api/watch-together/affinity — le mode partagé", () => {
     sent.length = 0;
     const matched = (await vote("b", sid, "movie:2", "like")).json();
     expect(matched).toMatchObject({ matched: true, state: { proposals: [{ key: "movie:2", likedBy: ["a", "b"] }] } });
+    await flush();
     expect(lastOf("match").map((s) => [s.to, s.msg.matchKeys])).toEqual([["a", ["movie:2"]], ["b", ["movie:2"]]]);
 
     // « Continuer à swiper » par « b » : écarté chez les deux, la pile reprend.
     sent.length = 0;
     const dismissed = (await call("b", "POST", "/dismiss", { key: "movie:2" })).json();
     expect(dismissed.state.proposals).toEqual([]);
+    await flush();
     expect(lastOf("dismiss").map((s) => [s.to, s.msg.match?.key])).toEqual([["a", "movie:2"], ["b", "movie:2"]]);
     // Deux réponses croisées : la seconde ne trouve plus rien, sans erreur.
     expect((await call("a", "POST", "/dismiss", { key: "movie:2" })).statusCode).toBe(200);
@@ -148,6 +155,7 @@ describe("/api/watch-together/affinity — le mode partagé", () => {
     await vote("b", sid, "movie:3", "like");
     sent.length = 0;
     expect((await call("a", "POST", "/launch", { key: "movie:3" })).json()).toEqual({ ok: true });
+    await flush();
     expect(lastOf("launch").map((s) => [s.to, s.msg.state, s.msg.match?.key])).toEqual([
       ["a", null, "movie:3"], ["b", null, "movie:3"],
     ]);
@@ -188,6 +196,7 @@ describe("/api/watch-together/affinity — le mode partagé", () => {
     sent.length = 0;
     // « c » était le seul à manquer : son départ fait le match des restants.
     await call("c", "POST", "/leave");
+    await flush();
     const quit = lastOf("quit").find((s) => s.to === "a")!.msg;
     expect(quit).toMatchObject({ matchKeys: ["movie:1"], state: { participants: [{ userId: "a" }, { userId: "b" }] } });
     sent.length = 0;
