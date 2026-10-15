@@ -6,19 +6,15 @@ import { useAmbientOf, type AmbientSource } from "../../background/ambientSource
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
-import { FadingModal } from "../../motion/FadingModal";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { text } from "../../theme/tokens";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
-import { ChoiceSheet } from "./ChoiceSheet";
 import { EmptyState } from "./EmptyState";
 import { FilterBar } from "./FilterBar";
+import { FilterSheetLayer } from "./FilterSheetLayer";
 import { GridSkeleton } from "./GridSkeleton";
 import type { ActiveFilterModel, FilterPillModel, FilterSheetHandlers, FilterSheetModel, LibraryFilterKey } from "./libraryTypes";
 import { PosterGrid, useGridColumns } from "./PosterGrid";
-import { RatingSheet } from "./RatingSheet";
-import { SortSheet } from "./SortSheet";
-import { YearSheet } from "./YearSheet";
 
 /**
  * Une bibliothèque : son nom en grand et son nombre de titres, la barre de
@@ -93,20 +89,6 @@ export interface LibraryViewProps extends FilterSheetHandlers {
 }
 
 const NO_CARDS: CardModel[] = [];
-const noop = () => {};
-
-function Sheet({ sheet, ...handlers }: { sheet: FilterSheetModel } & FilterSheetHandlers) {
-  switch (sheet.kind) {
-    case "choice":
-      return <ChoiceSheet sheet={sheet} {...handlers} />;
-    case "sort":
-      return <SortSheet sheet={sheet} {...handlers} />;
-    case "years":
-      return <YearSheet sheet={sheet} {...handlers} />;
-    case "rating":
-      return <RatingSheet sheet={sheet} {...handlers} />;
-  }
-}
 
 function PageTitle({ title, count }: { title: string; count?: string }) {
   return (
@@ -189,20 +171,16 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
         />
       )}
       <NavRail {...nav} />
-      {/* La liste entre avec son voile et son panneau, et s'efface d'un seul
-          fondu avant que la Modal ne se retire (`FadingModal`). */}
-      <FadingModal value={sheet ?? null} onRequestClose={props.onSheetClose ?? props.onSheetApply ?? noop} onExited={props.onSheetExited}>
-        {(shown, leaving) => (
-          <Sheet
-            sheet={shown}
-            onSheetOption={leaving ? undefined : props.onSheetOption}
-            onSheetClear={leaving ? undefined : props.onSheetClear}
-            onSheetApply={leaving ? undefined : props.onSheetApply}
-            onYearStep={leaving ? undefined : props.onYearStep}
-            onRatingSelect={leaving ? undefined : props.onRatingSelect}
-          />
-        )}
-      </FadingModal>
+      <FilterSheetLayer
+        sheet={sheet}
+        onSheetClose={props.onSheetClose}
+        onSheetExited={props.onSheetExited}
+        onSheetOption={props.onSheetOption}
+        onSheetClear={props.onSheetClear}
+        onSheetApply={props.onSheetApply}
+        onYearStep={props.onYearStep}
+        onRatingSelect={props.onRatingSelect}
+      />
     </View>
   );
 });

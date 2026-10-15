@@ -60,8 +60,12 @@ export function useFilterBarFocus(focus: FocusStore) {
   const afterRemove = useCallback((activeIds: readonly string[], removedId: string) => {
     focus.claim(filterFocusAfterRemove(activeIds, removedId));
   }, [focus]);
-  /** À lire AVANT d'effacer : d'où vient le geste. */
-  const clearAllTarget = useCallback(() => filterFocusAfterClearAll(focus.focusedKey()), [focus]);
+  /** À lire AVANT d'effacer : d'où vient le geste. La règle de l'écran
+   *  (tv-core) ; par défaut, celle de la bibliothèque. */
+  const clearAllTarget = useCallback(
+    (rule: (focusedKey: string | null) => string = filterFocusAfterClearAll) => rule(focus.focusedKey()),
+    [focus],
+  );
   const claim = useCallback((key: string) => {
     focus.claim(key);
   }, [focus]);
