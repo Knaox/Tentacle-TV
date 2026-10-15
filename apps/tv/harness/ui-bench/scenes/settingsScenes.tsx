@@ -5,7 +5,7 @@ import { LiquidGlassProvider } from "../../../src/redesign/glass/liquidGlassMode
 import { SettingsView, type SettingsViewProps } from "../../../src/redesign/screens/settings/SettingsView";
 import { SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
 import type { BenchData } from "../data/benchData";
-import { choiceListOf, playbackOf, settingsImages, settingsPropsOf } from "../data/settingsModels";
+import { choiceListOf, homeOf, playbackOf, settingsImages, settingsPropsOf } from "../data/settingsModels";
 import type { BenchScene } from "./types";
 
 /**
@@ -27,6 +27,9 @@ type Variant =
   | "android"
   | "appearance"
   | "glassOff"
+  | "home"
+  | "homeFixed"
+  | "homeOldServer"
   | "about";
 
 /** Le défilement qui amène les préférences de bibliothèque à l'écran. */
@@ -61,6 +64,12 @@ function propsFor(data: BenchData, variant: Variant, language: string): Settings
     case "appearance":
     case "glassOff":
       return { ...base, tab: "appearance" };
+    case "home":
+      return { ...base, tab: "home", home: homeOf(data, "recoMovies") };
+    case "homeFixed":
+      return { ...base, tab: "home", home: homeOf(data, "fixed") };
+    case "homeOldServer":
+      return { ...base, tab: "home", home: homeOf(data, "reco", { kinds: false }) };
     case "about":
       return { ...base, tab: "about" };
     default:
@@ -100,5 +109,8 @@ export const SETTINGS_SCENES: BenchScene[] = [
   scene("lecture-android", "Lecture — Android TV", "android", ["settings:tunneling", "settings:matchFrameRate"]),
   scene("apparence", "Apparence — Liquid Glass", "appearance", ["settings:tab:appearance", "settings:liquidGlass"]),
   scene("apparence-verre-coupe", "Apparence — Liquid Glass coupé", "glassOff", ["settings:liquidGlass", "settings:tab:appearance"]),
+  scene("personnalisation", "Personnalisation — Pour vous, Films", "home", ["settings:tab:home", "settings:hero:recoMovies", "settings:hero:recoSeries"]),
+  scene("personnalisation-titre", "Personnalisation — un titre choisi", "homeFixed", ["settings:hero:fixed", "settings:hero:changeFixed"]),
+  scene("personnalisation-serveur-ancien", "Personnalisation — serveur sans Films/Séries", "homeOldServer", ["settings:hero:reco"]),
   scene("a-propos", "À propos", "about", ["settings:tab:about"]),
 ];

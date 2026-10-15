@@ -1,4 +1,7 @@
-import { i18n, uiLanguage, type SubtitleMode } from "@tentacle-tv/shared";
+import {
+  HERO_RECO_KINDS_CAPABILITY, heroModesOffered, i18n, uiLanguage,
+  type HeroMode, type ServerCapability, type SubtitleMode,
+} from "@tentacle-tv/shared";
 import { SCRUB_COUNTDOWN_DEFAULTS, SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
 import type {
   ChoiceListModel,
@@ -7,6 +10,7 @@ import type {
   SettingsAbout,
   SettingsAccount,
   SettingsChoice,
+  SettingsHome,
   SettingsPlayback,
 } from "../../../src/redesign/screens/settings/settingsTypes";
 import type { SettingsViewProps } from "../../../src/redesign/screens/settings/SettingsView";
@@ -149,6 +153,7 @@ export function settingsPropsOf(data: BenchData, overrides: Partial<SettingsView
     playback: playbackOf(data),
     about: aboutOf(data),
     navigation: benchNavigationSettings(data),
+    home: homeOf(data, "reco"),
     glassPreviewUri: glassPreviewOf(data),
     palette: heroPaletteOf(data),
     ...overrides,
@@ -159,3 +164,18 @@ export function settingsPropsOf(data: BenchData, overrides: Partial<SettingsView
 export function settingsImages(data: BenchData): string[] {
   return [accountOf(data).avatarUri, glassPreviewOf(data)].filter((uri): uri is string => !!uri);
 }
+
+/**
+ * L'onglet « Personnalisation » : le bandeau principal, face à un serveur qui
+ * déclare les sources par genre (`home.heroRecoKinds`) ou non. Le titre fixe
+ * est le premier favori de l'instantané.
+ */
+export function homeOf(data: BenchData, current: HeroMode, options: { kinds?: boolean } = {}): SettingsHome {
+  const capabilities = new Set<ServerCapability>(options.kinds === false ? [] : [HERO_RECO_KINDS_CAPABILITY]);
+  return {
+    modes: heroModesOffered(capabilities, current),
+    current,
+    fixedTitle: current === "fixed" ? (data.list("favorites", 1)[0]?.Name ?? null) : undefined,
+  };
+}
+

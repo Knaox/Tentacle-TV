@@ -1,5 +1,5 @@
 import type { OwnPinMode } from "@tentacle-tv/tv-core";
-import type { FamilyProfileColor, PlaybackPreset } from "@tentacle-tv/shared";
+import type { FamilyProfileColor, HeroMode, PlaybackPreset } from "@tentacle-tv/shared";
 import type { IconName } from "../../icons/Icon";
 
 /**
@@ -8,7 +8,7 @@ import type { IconName } from "../../icons/Icon";
  * tout ce qui dépend du compte, du serveur ou de l'appareil arrive résolu.
  */
 
-export type SettingsTab = "account" | "playback" | "appearance" | "navigation" | "about" | "licenses";
+export type SettingsTab = "account" | "playback" | "home" | "appearance" | "navigation" | "about" | "licenses";
 
 export type InterfaceLanguage = "fr" | "en";
 
@@ -161,3 +161,22 @@ export interface SettingsRenderTier {
   /** Une propriété de débogage impose le niveau (`debug.tentacle.lite`). */
   forced: boolean;
 }
+
+/**
+ * L'onglet « Personnalisation » : le bandeau principal de l'accueil, réglage
+ * du COMPTE (`/api/preferences/home-layout`) — tous ses appareils suivent.
+ * Les sources arrivent déjà réduites à ce que le serveur sait servir (shared
+ * `heroModesOffered`) ; les libellés sont traduits par la vue (shared
+ * `heroModeLabelKey` / `heroModeHintKey`).
+ */
+export interface SettingsHome {
+  /** Les sources proposées, dans l'ordre affiché. */
+  modes: readonly HeroMode[];
+  /** La source retenue. */
+  current: HeroMode;
+  /** « Un titre choisi » : le nom du titre à l'affiche ; absent tant qu'il n'est pas lu. */
+  fixedTitle?: string | null;
+  /** « Un titre choisi » demandé sans aucun favori : la section le dit. */
+  noFavorites?: boolean;
+}
+

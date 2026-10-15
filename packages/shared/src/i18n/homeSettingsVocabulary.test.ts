@@ -16,8 +16,8 @@ describe("vocabulaire de la personnalisation de l'accueil", () => {
     for (const value of Object.values(fr)) expect(value).not.toMatch(/ [:;?!]/);
   });
 
-  it("le titre choisi et la source en vigueur se disent par leur variable", () => {
+  it("le titre choisi se dit par sa variable", () => {
     expect(fr.heroFixedCurrent).toContain("{{title}}");
-    expect(en.heroCurrent).toContain("{{source}}");
+    expect(en.heroFixedCurrent).toContain("{{title}}");
   });
 });

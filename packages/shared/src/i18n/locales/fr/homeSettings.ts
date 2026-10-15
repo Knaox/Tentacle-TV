@@ -30,14 +30,12 @@ export default {
   heroFixedNoFavorites: "Ajoutez d'abord un titre à vos favoris pour l'afficher ici.",
   /** Ce qui se passe quand la source n'a rien à montrer. */
   heroFallbackNote: "Sans recommandation à montrer, le bandeau affiche vos reprises.",
-  /** La légende de l'onglet des téléviseurs : la source en vigueur. */
-  heroCurrent: "Bandeau : {{source}}",
 
   // ── Les groupes de l'écran ──────────────────────────────────────────────
   rowsTitle: "Rangées de l'accueil",
   rowsCaption: "Les rangées sous le bandeau, dans l'ordre où elles s'affichent. Masquer une rangée ne la supprime pas.",
   densityTitle: "Taille des cartes",
   densityCaption: "La taille des affiches dans les rangées de l'accueil.",
-  /** L'onglet des téléviseurs. */
-  tabTitle: "Personnalisation",
+  /** L'onglet des téléviseurs (340 px : un mot court ; sa légende dit la source en vigueur). */
+  tabTitle: "Accueil",
 };

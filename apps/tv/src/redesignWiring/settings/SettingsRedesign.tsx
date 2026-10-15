@@ -15,6 +15,7 @@ import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { ChoiceModal } from "./ChoiceModal";
 import { LicenseReaderModal } from "./LicenseReaderModal";
+import { useHomeSettings } from "./useHomeSettings";
 import { useLicensesSettings } from "./useLicensesSettings";
 import { useNavigationSettings } from "./useNavigationSettings";
 import { useOwnPinReturn } from "./useOwnPinReturn";
@@ -33,7 +34,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
  * L'onglet est un état de l'ÉCRAN : l'arrivée focalise l'onglet affiché
  * (`tab` de la route : « Réglages de la navigation », depuis le menu d'une
  * entrée du rail), et Retour ne remonte pas les onglets parcourus — il annule
- * d'abord un déplacement en cours dans l'onglet Navigation. La liste de choix s'ouvre dans
+ * d'abord un déplacement en cours dans l'onglet Navigation. La liste de choix (un réglage de
+ * bibliothèque, ou les favoris du bandeau de l'onglet Personnalisation) s'ouvre dans
  * une `Modal` (`ChoiceModal`), pas dans la vue. Le fond et l'aperçu du verre
  * prennent l'œuvre en cours de lecture, quand il y en a une. Le focus est
  * décidé par tv-core (`focus/settingsFocus.ts`, `nav/arrange.ts`) et posé par
@@ -51,6 +53,8 @@ export function SettingsRedesign({ route }: Props) {
   const lite = useRenderTierSetting();
   // L'onglet « Licences » et son lecteur, communs aux deux téléviseurs.
   const legal = useLicensesSettings(model.about.version);
+  // « Personnalisation » : le bandeau principal de l'accueil (réglage du compte).
+  const home = useHomeSettings(tab === "home");
   // Au retour du pavé de son code PIN, le focus rejoint la section « Code PIN ».
   const onReturn = useOwnPinReturn(profiles.pinOpened);
   const screen = useRedesignScreen({ railKey: "Settings", entryKey: settingsEntryKey(tab), focus, onReturn });
@@ -78,6 +82,9 @@ export function SettingsRedesign({ route }: Props) {
           playback={model.playback}
           about={model.about}
           navigation={nav.navigation}
+          home={home.home}
+          onSelectHeroMode={home.onSelectHeroMode}
+          onChangeFixedTitle={home.onChangeFixedTitle}
           licenses={legal.licenses}
           onOpenLicense={legal.openLicense}
           choiceList={null}
@@ -110,7 +117,13 @@ export function SettingsRedesign({ route }: Props) {
           onResetNavOrder={nav.onResetNavOrder}
         />
       </TabDestinationProvider>
-      <ChoiceModal list={model.choiceList} focus={screen.focus} onChoose={model.onChoose} onClose={model.closeChoices} />
+      {/* Une seule liste de choix : celle d'un réglage de bibliothèque, ou les favoris du bandeau. */}
+      <ChoiceModal
+        list={model.choiceList ?? home.choiceList}
+        focus={screen.focus}
+        onChoose={model.choiceList ? model.onChoose : home.onChoose}
+        onClose={model.choiceList ? model.closeChoices : home.closeChoices}
+      />
       <LicenseReaderModal reader={legal.reader} focus={screen.focus} onClose={legal.closeReader} />
     </RedesignScreen>
   );

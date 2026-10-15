@@ -24,12 +24,11 @@ export default {
   heroFixedPickContext: "From your favorites",
   heroFixedNoFavorites: "Add a title to your favorites first to show it here.",
   heroFallbackNote: "With no recommendation to show, the banner shows what you can resume.",
-  heroCurrent: "Banner: {{source}}",
 
   // ── Screen groups ───────────────────────────────────────────────────────
   rowsTitle: "Home rows",
   rowsCaption: "The rows below the banner, in the order they appear. Hiding a row does not delete it.",
   densityTitle: "Card size",
   densityCaption: "The size of the posters in the home rows.",
-  tabTitle: "Personalization",
+  tabTitle: "Home",
 };

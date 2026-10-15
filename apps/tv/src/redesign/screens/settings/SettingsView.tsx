@@ -1,7 +1,7 @@
 import { memo, useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { PRESET_LABEL_KEYS, type PlaybackPreset } from "@tentacle-tv/shared";
+import { PRESET_LABEL_KEYS, heroModeLabelKey, type HeroMode, type PlaybackPreset } from "@tentacle-tv/shared";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../color/artworkPalette";
@@ -14,6 +14,7 @@ import { text } from "../../theme/tokens";
 import { AboutPanel } from "./AboutPanel";
 import { AccountPanel } from "./AccountPanel";
 import { AppearancePanel } from "./AppearancePanel";
+import { HomePanel } from "./HomePanel";
 import { ChoiceSheet } from "./ChoiceSheet";
 import { LicensesPanel } from "./LicensesPanel";
 import { NavigationPanel } from "./NavigationPanel";
@@ -27,6 +28,7 @@ import type {
   LibrarySettingKey,
   SettingsAbout,
   SettingsAccount,
+  SettingsHome,
   SettingsLicenses,
   SettingsNavigation,
   SettingsPlayback,
@@ -36,7 +38,8 @@ import type {
 
 /**
  * Les réglages : la navigation (Réglages actif), le titre, les onglets en
- * colonne — Compte · Lecture · Apparence · Navigation · À propos — et à droite
+ * colonne — Compte · Lecture · Accueil · Apparence · Navigation ·
+ * À propos — et à droite
  * un grand panneau de verre. La liste de choix d'un réglage s'ouvre
  * par-dessus tout.
  *
@@ -62,6 +65,9 @@ import type {
  *   `onSelectCardSize` écrit la clé — l'onglet Apparence existe donc partout ;
  * - `renderTier` (Android TV) : le mode Lite (`platform/renderTier`),
  *   `onSelectLiteMode` l'écrit et recharge l'interface ; absent, rien ;
+ * - `home` : le bandeau principal de l'accueil, réglage du compte
+ *   (`useHomeSettings` : `useHomeLayout`, capacités du serveur, favoris) ;
+ *   `onSelectHeroMode` / `onChangeFixedTitle` ; absent, l'onglet ne paraît pas ;
  * - `navigation` (Apple TV) : les entrées organisables de la barre de gauche
  *   (`NavigationPanel`) ; absent, l'onglet ne paraît pas ;
  * - `about` : `versions.json` (`tv`), serveur, compte, appareil, année.
@@ -69,7 +75,7 @@ import type {
  * Clés de focus : `settings:tab:<onglet>`, `settings:changeServer`,
  * `settings:logout`, `settings:switchProfile`, `settings:manageProfiles`, `settings:preset:<mode>`, `settings:lang:<fr|en>`,
  * `settings:lib:<i>:<réglage|reset>`, `settings:tunneling`,
- * `settings:matchFrameRate`, `settings:liquidGlass`, `settings:lite:<auto|on|off>`,
+ * `settings:matchFrameRate`, `settings:hero:<source|changeFixed>`, `settings:liquidGlass`, `settings:lite:<auto|on|off>`,
  * `settings:cardSize:<small|normal|large>`,
  * `settings:nav:<i>[:visibility]`, `settings:nav:showAll|resetOrder`,
  * `settings:choice:<i>` (liste de choix), `settings:license:<i>` (onglet Licences),
@@ -86,6 +92,8 @@ export interface SettingsViewProps {
   playback: SettingsPlayback;
   about: SettingsAbout;
   navigation?: SettingsNavigation | null;
+  /** L'onglet « Personnalisation » ; absent, l'onglet ne paraît pas. */
+  home?: SettingsHome | null;
   /** L'onglet « Licences » ; absent, l'onglet ne paraît pas. */
   licenses?: SettingsLicenses | null;
   choiceList?: ChoiceListModel | null;
@@ -116,6 +124,8 @@ export interface SettingsViewProps {
   onToggleTrailerPreviews?: (next: boolean) => void;
   onToggleTrailerPreviewSound?: (next: boolean) => void;
   onToggleLiquidGlass?: (next: boolean) => void;
+  onSelectHeroMode?: (mode: HeroMode) => void;
+  onChangeFixedTitle?: () => void;
   /** Faux : le réglage Liquid Glass n'existe pas sur cette plateforme (trait
    *  `liquidGlass`). Absent : il existe. L'onglet Apparence, lui, existe
    *  toujours (la taille des cartes). */
@@ -144,8 +154,8 @@ const PANEL_RADIUS = TV_STAGE.hero.radius;
 const PANEL_INNER = PANEL_WIDTH - PANEL_PAD_X * 2;
 
 export const SettingsView = memo(function SettingsView(props: SettingsViewProps) {
-  const { nav, tab, account, playback, about, navigation, licenses, choiceList, palette = NEUTRAL_PALETTE, appearance = true, renderTier } = props;
-  const { t } = useTranslation(["preferences", "nav", "about"]);
+  const { nav, tab, account, playback, about, navigation, home, licenses, choiceList, palette = NEUTRAL_PALETTE, appearance = true, renderTier } = props;
+  const { t } = useTranslation(["preferences", "nav", "about", "homeSettings"]);
   const liquid = useLiquidGlassEnabled();
   const navTotal = navigation?.entries.length ?? 0;
   const navShown = navigation?.entries.filter((entry) => !entry.hidden).length ?? 0;
@@ -153,6 +163,13 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
   const tabs = useMemo<SettingsTabItem[]>(() => [
     { key: "account", label: t("preferences:sectionAccount"), caption: account.name, icon: "user" },
     { key: "playback", label: t("preferences:sectionPlayback"), caption: t(`preferences:${PRESET_LABEL_KEYS[playback.preset]}`), icon: "playCircle" },
+    // « Accueil », et ce qu'il règle en ce moment : la source du bandeau (« Pour vous — Films »).
+    ...(home ? [{
+      key: "home" as const,
+      label: t("homeSettings:tabTitle"),
+      caption: t(heroModeLabelKey(home.current)),
+      icon: "home" as const,
+    }] : []),
     {
       key: "appearance" as const,
       label: t("preferences:sectionAppearance"),
@@ -172,7 +189,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
     }] : []),
     { key: "about", label: t("nav:about"), caption: t("about:version", { version: about.version }), icon: "info" },
     ...(licenses ? [{ key: "licenses" as const, label: t("about:licensesTitle"), caption: "GNU AGPL v3", icon: "list" as const }] : []),
-  ], [t, account.name, playback.preset, appearance, renderTier, liquid, navigation, navShown, navTotal, about.version, licenses]);
+  ], [t, account.name, playback.preset, home, appearance, renderTier, liquid, navigation, navShown, navTotal, about.version, licenses]);
 
   return (
     <View style={styles.root}>
@@ -217,6 +234,9 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onToggleTrailerPreviews={props.onToggleTrailerPreviews}
                   onToggleTrailerPreviewSound={props.onToggleTrailerPreviewSound}
                 />
+              ) : null}
+              {tab === "home" && home ? (
+                <HomePanel home={home} onSelectHeroMode={props.onSelectHeroMode} onChangeFixedTitle={props.onChangeFixedTitle} />
               ) : null}
               {tab === "appearance" ? (
                 <AppearancePanel
