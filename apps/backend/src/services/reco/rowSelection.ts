@@ -7,7 +7,8 @@ import type { TasteVector } from "./scoring/strategy";
 /** Le MMR travaille sur le haut du pool — au-delà, c'est du bruit coûteux. */
 export const MMR_INPUT_MAX = 150;
 
-/** Sélection MMR sur le haut des entrées (ordre = ordre d'affichage). `ignoreKeys`
+/** Sélection MMR sur le haut des entrées (ordre d'insertion ; l'affichage suit
+ *  `inDisplayOrder`). `ignoreKeys`
  *  retire des facettes du jaccard — la diversité au sein d'un univers. */
 export function mmrPick(
   entries: PoolEntry[],
@@ -28,6 +29,22 @@ export function mmrPick(
     ignoreKeys
   );
   return picked.map((key) => byKey.get(key)!).filter(Boolean);
+}
+
+/**
+ * L'ordre d'AFFICHAGE d'une rangée : la correspondance (`match`) décroissante.
+ * La sélection (MMR, quota d'univers, exploration) choisit QUELS titres entrent ;
+ * elle ne décide plus de leur place — son ordre d'insertion mettait en tête le
+ * meilleur `total`, qui peut s'annoncer à 63 % (proximité aux goûts faible,
+ * correspondance plafonnée) devant des titres à 84 %. Tri STABLE : à
+ * correspondance égale, l'ordre de la sélection (sa diversité) départage. Un
+ * pool d'avant la correspondance (aucun `match`) garde l'ordre de la sélection.
+ */
+export function inDisplayOrder<T extends { match?: number }>(entries: readonly T[]): T[] {
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => (b.entry.match ?? -1) - (a.entry.match ?? -1) || a.index - b.index)
+    .map(({ entry }) => entry);
 }
 
 /** Les entrées d'exploration : qualité au plancher, nouveauté d'abord. */

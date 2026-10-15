@@ -83,7 +83,10 @@ export function gateGlobalRow<T extends { key: string; match?: number }>(rowKey:
   // « Les mieux notés » garde l'ordre des notes (c'est son titre), mais seulement
   // ce qui ressemble au compte : sinon un spécial TV ou une série d'ados y passaient.
   if (rowKey === "bestOfLibrary") return withMatch(kept);
-  return withMatch(kept.sort((a, b) => byKey.get(b.key)!.breakdown.total - byKey.get(a.key)!.breakdown.total));
+  // Du mieux classé au moins bien : la correspondance affichée d'abord (l'ordre
+  // visible la suit, cf. rowSelection.inDisplayOrder), le score départage.
+  const rank = (key: string) => byKey.get(key)!;
+  return withMatch(kept.sort((a, b) => (rank(b.key).match ?? -1) - (rank(a.key).match ?? -1) || rank(b.key).breakdown.total - rank(a.key).breakdown.total));
 }
 
 /** Rangées que seul un client qui les sait titrer reçoit (`?themes=1`, RECO_PAGE_THEMES_PARAM). */

@@ -124,7 +124,19 @@ poids disent ce qu'ils pèsent.
 Le rang dans le pool du compte (95 en tête, 50 en queue), **plafonné par la
 proximité aux goûts** : `min(rang, 60 + 35 × min(1, proximité / 0,5))`. Un
 titre classé haut par sa seule notoriété (une procédurale du catalogue) ne
-s'annonce plus à 88 %. « À la une » exige 70 et un visuel large.
+s'annonce plus à 88 %. « À la une » exige 70 et un visuel large
+(`poolMatch.ts`).
+
+**L'ordre visible suit la correspondance affichée.** Le plafond rend la
+correspondance non monotone avec le rang : un titre classé premier par sa
+qualité, sa calibration ou ses graines, mais loin des goûts, s'annonce à 63 %.
+La sélection d'une rangée (MMR, quota d'animés, exploration) choisit donc
+QUELS titres entrent ; leur PLACE, c'est la correspondance décroissante
+(`rowSelection.inDisplayOrder`, tri stable : à égalité, l'ordre de la sélection
+départage). La tête d'une rangée est son titre le mieux annoncé, sur toutes
+les plateformes — les clients gardent l'ordre servi. Les rangées globales
+font de même (`gateGlobalRow`), sauf « Les mieux notés de la bibliothèque »,
+rangée par ses notes. Invariant tenu par `rowOrder.test.ts`.
 
 ## 6. Les rangées
 
@@ -186,7 +198,9 @@ pnpm bench:reco find <texte>                               # où est un titre (r
 - Le pouls du serveur et la communauté se calculent sur la POPULATION des
   personas, jamais sur de vrais comptes.
 - Mesures (`bench/benchMetrics.ts`) : intrus du top 20 et de la page, part des
-  attendus présents, divergence de popularité, nouveauté, diversité.
+  attendus présents, divergence de popularité, nouveauté, diversité, et l'ORDRE
+  de « Pour vous » / « Films pour vous » (`orderCheck` : tête = meilleure
+  correspondance, inversions, pire écart en points).
 - Le jour est figé (`BENCH_DAY`) : deux passages se comparent.
 
 Un réglage ne se garde que si le banc le confirme sur TOUS les personas : un

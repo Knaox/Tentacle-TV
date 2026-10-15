@@ -1,7 +1,7 @@
 import type { PoolEntry, PoolPayload } from "./generationJob";
 import { explorationQuota } from "./exploration";
 import { ANIME_COMMON_FACETS, ANIME_MIN_SHARE, ANIME_UNIVERSE_KEY } from "./facets";
-import { explorationPicks, isAnimeEntry, mmrPick, pickWithUniverseQuota } from "./rowSelection";
+import { explorationPicks, inDisplayOrder, isAnimeEntry, mmrPick, pickWithUniverseQuota } from "./rowSelection";
 import { pickDaily } from "./seedRotation";
 import type { TasteVector } from "./scoring/strategy";
 import { REASONS_MAX, toItem } from "./rowItem";
@@ -159,7 +159,7 @@ function buildPersonRow(pool: PoolPayload, rowKey: string, eligible: PoolEntry[]
   if (!name) return null;
   const related = capPerCollection(eligible.filter((e) => inPersonRegister(e, facet, loved)), opts.profile.facets);
   if (related.length < THEMED_PERSON_MIN_ITEMS) return null;
-  const items = mmrPick(related, BECAUSE_SIZE, opts.lambda).map((e) => toItem(e, pool.labels, opts.providerRefOf, pool.lovedPeople));
+  const items = inDisplayOrder(mmrPick(related, BECAUSE_SIZE, opts.lambda)).map((e) => toItem(e, pool.labels, opts.providerRefOf, pool.lovedPeople));
   const role = loved?.role ?? (facet.startsWith("actor:") ? "actor" : "director");
   return {
     key: rowKey,
@@ -186,13 +186,15 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   // Part d'animé à la génération : quota des rangées mixtes, rangée dédiée.
   const share = pool.animeShare ?? 0;
   const exploReason: RecoReason = { kind: "exploration" };
-  const done = (items: PoolEntry[], seedTitle?: string, exploration = false): BuiltRow => ({
+  // Les titres retenus, dans l'ordre de leur correspondance (cf. inDisplayOrder) ;
+  // `exploration` : toute la rangée, ou les seules clés données, en « pas de côté ».
+  const done = (items: PoolEntry[], seedTitle?: string, exploration: boolean | ReadonlySet<string> = false): BuiltRow => ({
     key: rowKey,
     seedTitle,
     generatedAt: pool.generatedAt,
-    items: items.map((e) => {
+    items: inDisplayOrder(items).map((e) => {
       const item = toItem(e, pool.labels, opts.providerRefOf, pool.lovedPeople);
-      if (exploration) {
+      if (exploration === true || (exploration !== false && exploration.has(e.candidate.key))) {
         item.exploration = true;
         item.reasons = [exploReason, ...item.reasons].slice(0, REASONS_MAX);
         item.why = [{ kind: "exploration" as const }, ...(item.why ?? [])].slice(0, 3);
@@ -207,15 +209,8 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     const main = pickWithUniverseQuota(capPerCollection(eligible, opts.profile.facets), size - quota, opts.lambda, share);
     const mainKeys = new Set(main.map((e) => e.candidate.key));
     const explo = explorationPicks(eligible, opts.profile, quota, mainKeys);
-    const row = done(main);
-    for (const e of explo) {
-      const item = toItem(e, pool.labels, opts.providerRefOf, pool.lovedPeople);
-      item.exploration = true;
-      item.reasons = [exploReason, ...item.reasons].slice(0, REASONS_MAX);
-      item.why = [{ kind: "exploration" as const }, ...(item.why ?? [])].slice(0, 3);
-      row.items.push(item);
-    }
-    return row;
+    // Le pas de côté prend la place de sa correspondance, comme les autres.
+    return done([...main, ...explo], undefined, new Set(explo.map((e) => e.candidate.key)));
   }
 
   if (rowKey === "forYouMovies") {
