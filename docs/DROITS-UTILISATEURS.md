@@ -980,13 +980,37 @@ une NOUVELLE connexion est refusée en mots clairs.
   profil). La page de connexion dit le refus en mots.
 - Apple TV / Android TV : tv-core `decideAccountAccessScreen` (la page remplace les écrans,
   ne cède PAS au lecteur — l'écran de lecture se ferme —, focus d'entrée sur l'action,
-  Retour jamais pris) ; `AccountAccessRedesign` l'applique. « Changer de profil » (session
-  de profil) ou « Se déconnecter du serveur » (déjumelage, double appui).
+  Retour jamais pris) ; `AccountAccessRedesign` l'applique. Les actions suivent la session :
+  « Changer de profil » d'une session de profil, puis « Se déconnecter du serveur »
+  (déjumelage, double appui) pour le compte qui a jumelé la TV ; la session « solo » du compte
+  (ouverte d'office, sans famille) et une TV d'avant les profils : le déjumelage seul —
+  « Qui regarde ? » n'y rendrait que ce même profil bloqué (vu au simulateur).
+- « Jumeler votre TV » (web) et la connexion disent un refus par sa raison
+  (`accountAccess:refusals.*`), jamais « erreur du relais » ni « identifiants invalides ».
 - Mobile : rien (hors périmètre) ; il reçoit des 403 au lieu des 401 d'avant.
 
-### 9.1.5 Restes
+### 9.1.5 Prouvé (Jellyfin 10.11.11 jetable, serveur jetable, web et simulateur tvOS cloné)
+
+- Web : plage qui se ferme pendant une lecture → page au bord (minuteur), lecteur quitté,
+  position gardée (« Reprendre » à 30 %) ; réouverture → page levée seule, socket rouvert,
+  aucune reconnexion. Désactivé pendant la session → page en 13 s (guet) ; « Se
+  déconnecter » ; reconnexion refusée « Ce compte a été désactivé… ». `MaxActiveSessions = 1` :
+  2e connexion et jumelage refusés en mots.
+- Apple TV : même plage pendant une lecture → page, lecteur fermé, position gardée (4:57),
+  page levée à la réouverture ; désactivé → page, levée ≤ 5 min après la réactivation, sans
+  rejumelage ; « Se déconnecter du serveur » → écran de jumelage.
+- Essais : à travers Tentacle, le compteur avance d'exactement 1 par essai (ni masqué ni
+  doublé) ; Jellyfin 10.11 ne bloque pas et une réussite ne remet pas le compteur à 0.
+
+### 9.1.6 Restes
 
 - Essais avant blocage sur Jellyfin 10.11 : en attente de l'arbitrage du coordinateur
   (appliquer le blocage par Tentacle, ou le laisser à Jellyfin 12).
 - La page d'un compte DÉSACTIVÉ sur le web dure tant que la session vit ; réactivé, son
   jeton (révoqué par Jellyfin) mène à la connexion.
+- « Bloqué après trop d'essais » se lit sur le compteur de Jellyfin (`InvalidLoginAttemptCount
+  ≥ LoginAttemptsBeforeLockout`) : en 10.11, un compteur jamais remis à 0 fait dire « bloqué »
+  à un compte désactivé par l'administrateur. Fiable une fois le blocage tenu (Jellyfin 12,
+  ou Tentacle s'il l'applique).
+- Un changement de plages fait par l'administrateur pendant la fermeture n'atteint un client
+  qu'à sa relecture (au plus cinq minutes) : son socket est fermé.
