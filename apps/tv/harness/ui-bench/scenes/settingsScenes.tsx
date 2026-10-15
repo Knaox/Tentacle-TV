@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { uiLanguage } from "@tentacle-tv/shared";
+import { DEFAULT_STILL_WATCHING_SETTINGS, uiLanguage } from "@tentacle-tv/shared";
 import { LiquidGlassProvider } from "../../../src/redesign/glass/liquidGlassMode";
 import { SettingsView, type SettingsViewProps } from "../../../src/redesign/screens/settings/SettingsView";
 import { SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
@@ -22,6 +22,9 @@ type Variant =
   | "custom"
   | "fastForward"
   | "fastForwardResume"
+  | "stillWatching"
+  | "stillWatchingCustom"
+  | "stillWatchingOff"
   | "libraries"
   | "choices"
   | "android"
@@ -36,6 +39,8 @@ type Variant =
 const LIBRARIES_SCROLL = 1060;
 /** Celui qui amène la section « Avance rapide » à l'écran. */
 const FAST_FORWARD_SCROLL = 300;
+/** Celui qui amène la section « Vous regardez encore ? » à l'écran. */
+const STILL_WATCHING_SCROLL = 700;
 
 function propsFor(data: BenchData, variant: Variant, language: string): SettingsViewProps {
   const base = settingsPropsOf(data);
@@ -54,6 +59,18 @@ function propsFor(data: BenchData, variant: Variant, language: string): Settings
       return {
         ...base, tab: "playback", panelScrollY: FAST_FORWARD_SCROLL,
         playback: playback({ scrubCountdown: { outcome: "resume", delaySeconds: 10, delays: SCRUB_COUNTDOWN_DELAYS } }),
+      };
+    case "stillWatching":
+      return { ...base, tab: "playback", panelScrollY: STILL_WATCHING_SCROLL, playback: playback({ stillWatching: DEFAULT_STILL_WATCHING_SETTINGS }) };
+    case "stillWatchingCustom":
+      return {
+        ...base, tab: "playback", panelScrollY: STILL_WATCHING_SCROLL,
+        playback: playback({ stillWatching: { enabled: true, afterMs: 10_800_000, countdownMs: 60_000 } }),
+      };
+    case "stillWatchingOff":
+      return {
+        ...base, tab: "playback", panelScrollY: STILL_WATCHING_SCROLL,
+        playback: playback({ stillWatching: { ...DEFAULT_STILL_WATCHING_SETTINGS, enabled: false } }),
       };
     case "libraries":
       return { ...base, tab: "playback", playback: playback(), panelScrollY: LIBRARIES_SCROLL };
@@ -104,6 +121,9 @@ export const SETTINGS_SCENES: BenchScene[] = [
   scene("lecture-personnalise", "Lecture — mode personnalisé", "custom", ["settings:preset:custom", "settings:preset:manual"]),
   scene("lecture-avance-rapide", "Lecture — avance rapide (défaut : revenir, 5 s)", "fastForward", ["settings:scrubOutcome:return", "settings:scrubOutcome:resume", "settings:scrubDelay:15"]),
   scene("lecture-avance-rapide-reprendre", "Lecture — avance rapide : reprendre, 10 s", "fastForwardResume", ["settings:scrubOutcome:resume", "settings:scrubDelay:10"]),
+  scene("lecture-regardez-encore", "Lecture — « Vous regardez encore ? » (défaut : 1 h 30, 10 s)", "stillWatching", ["settings:stillWatching", "settings:stillWatchingAfter:5400000", "settings:stillWatchingCountdown:10000"]),
+  scene("lecture-regardez-encore-regle", "Lecture — « Vous regardez encore ? » : 3 h, 1 minute", "stillWatchingCustom", ["settings:stillWatchingAfter:10800000", "settings:stillWatchingCountdown:60000"]),
+  scene("lecture-regardez-encore-coupe", "Lecture — « Vous regardez encore ? » coupé", "stillWatchingOff", ["settings:stillWatching"]),
   scene("lecture-bibliotheques", "Lecture — bibliothèques", "libraries", ["settings:lib:0:audio", "settings:lib:0:reset", "settings:lib:1:subtitles"]),
   scene("liste-de-choix", "Liste de choix ouverte", "choices", ["settings:choice:6", "settings:choice:0"], 1300),
   scene("lecture-android", "Lecture — Android TV", "android", ["settings:tunneling", "settings:matchFrameRate"]),
