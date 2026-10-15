@@ -13,6 +13,9 @@ import { authRefreshRoutes } from "./authRefresh";
 import { clearSessionCookie, setSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
+import { loginRefusal } from "../services/accountAccess/connectRefusal";
+import { rememberTokenOwner } from "../services/accountAccess/tokenOwners";
+import { ACCOUNT_CONNECT_REFUSAL_STATUS } from "../accountAccess/accountAccessContract";
 
 /** Session : ouverture, sortie d'impersonation, fermeture. Le cycle de vie du
  *  compte vit dans `authAccount.ts`, la revalidation dans `authRefresh.ts` et le
@@ -78,11 +81,17 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (!res.ok) {
+        // 403 de Jellyfin : désactivé, bloqué, hors plage, trop de sessions — dit en mots (cf. connectRefusal).
+        const refused = res.status === 403 ? await loginRefusal(body.username) : null;
+        if (refused) return reply.status(ACCOUNT_CONNECT_REFUSAL_STATUS).send(refused);
         const status = res.status === 401 ? 401 : 400;
         return reply.status(status).send({ message: "Identifiants invalides" });
       }
 
       const data = await res.json();
+      if (data?.User?.Id) {
+        rememberTokenOwner(data.AccessToken, { userId: data.User.Id, username: data.User.Name, isAdmin: data.User.Policy?.IsAdministrator === true });
+      }
 
       // Set httpOnly cookie for web clients (XSS-proof token storage)
       setSessionCookie(reply, data.AccessToken);

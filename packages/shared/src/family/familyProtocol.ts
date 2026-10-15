@@ -55,6 +55,8 @@ export const FAMILY_ERROR_STATUS = {
   "family.enroll_required": 409,
   "family.member_parental_refused": 409,
   "family.profile_unavailable": 403,
+  /** Le compte du profil a déjà `MaxActiveSessions` sessions chez Jellyfin (docs/DROITS-UTILISATEURS.md § 9.1). */
+  "family.max_sessions": 403,
   "family.invite_expired": 410,
   "family.pin_locked": 423,
   "family.invite_cooldown": 429,

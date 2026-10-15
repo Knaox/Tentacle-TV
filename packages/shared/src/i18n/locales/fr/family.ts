@@ -79,6 +79,7 @@ export default {
     invite_expired: "Cette invitation a expiré.",
     enroll_required: "Cette TV doit d'abord passer aux profils.",
     profile_unavailable: "Ce profil n'est plus disponible sur cette TV.",
+    max_sessions: "Ce profil est déjà connecté sur le nombre maximal d'appareils autorisé par l'administrateur.",
     pin_locked: "Trop d'essais : réessayez plus tard.",
     invite_cooldown: "Ce compte a refusé votre invitation récemment : réessayez plus tard.",
     invite_quota: "Trop d'invitations pour le moment : réessayez plus tard.",

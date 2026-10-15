@@ -9,6 +9,7 @@ import { CODE_TTL_MS, claimSchema, freshPairingCode, generateSchema } from "./pa
 import { devicePairingRoutes } from "./pairing/deviceFlow";
 import { pairedDevicesRoutes } from "./pairing/devices";
 import { recordPendingDevice } from "../services/pendingDevicePairing";
+import { connectRefusal } from "../services/accountAccess/connectRefusal";
 
 /**
  * Le jumelage des téléviseurs. Trois façons de naître — code généré par le
@@ -32,6 +33,9 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const user = (request as unknown as { user: JellyfinUser }).user;
       const body = generateSchema.parse(request.body ?? {});
+      // Sessions simultanées : la règle de Jellyfin, appliquée à ce jumelage (cf. connectRefusal).
+      const refused = await connectRefusal(user.userId);
+      if (refused) return reply.status(403).send(refused);
       const code = await freshPairingCode();
       if (!code) {
         return reply
@@ -120,6 +124,9 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(400).send({ message: "Code invalide" });
       }
 
+      // Sessions simultanées : la règle de Jellyfin, appliquée à ce jumelage (cf. connectRefusal).
+      const refused = await connectRefusal(record.jellyfinUserId!);
+      if (refused) return reply.status(403).send(refused);
       const name = body.deviceName || record.deviceName || "TV";
       await prisma.pairedDevice.create({
         data: {
@@ -159,8 +166,11 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
       preHandler: [requireAuth],
       config: { rateLimit: { max: 5, timeWindow: "1 hour" } },
     },
-    async (request) => {
+    async (request, reply) => {
       const user = (request as unknown as { user: JellyfinUser }).user;
+      // Sessions simultanées : la règle de Jellyfin, appliquée à ce jumelage (cf. connectRefusal).
+      const refused = await connectRefusal(user.userId);
+      if (refused) return reply.status(403).send(refused);
       const deviceId = crypto.randomUUID();
 
       const token = await signDeviceToken({

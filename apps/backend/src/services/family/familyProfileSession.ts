@@ -2,6 +2,8 @@ import { getPrisma } from "../db";
 import { provisionOwnJellyfinToken } from "../deviceJellyfinToken";
 import { revokePairedDevice } from "../deviceRevocation";
 import { hashToken, signProfileSessionToken } from "../jwt";
+import { connectRefusal } from "../accountAccess/connectRefusal";
+import { FamilyFailure } from "./familyErrors";
 import type { FamilyProfileKind } from "../../family/familyContract";
 import type { FamilyProfileEndReason } from "../../family/familyProtocol";
 
@@ -34,6 +36,9 @@ export async function startProfileSession(
   profile: { userId: string; name: string; kind: FamilyProfileKind },
 ): Promise<string> {
   await closeProfileSessions(parent.id, "replaced");
+  // Sessions simultanées : la règle de Jellyfin, appliquée à cette ouverture (cf. connectRefusal).
+  const refused = await connectRefusal(profile.userId, { sessionsOnly: true });
+  if (refused) throw new FamilyFailure("family.max_sessions", refused.message);
   const token = await signProfileSessionToken({
     userId: profile.userId,
     username: profile.name,

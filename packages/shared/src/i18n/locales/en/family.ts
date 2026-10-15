@@ -78,6 +78,7 @@ export default {
     invite_expired: "This invitation has expired.",
     enroll_required: "This TV must switch to profiles first.",
     profile_unavailable: "This profile is no longer available on this TV.",
+    max_sessions: "This profile is already signed in on the maximum number of devices allowed by the administrator.",
     pin_locked: "Too many attempts: try again later.",
     invite_cooldown: "This account recently declined your invitation: try again later.",
     invite_quota: "Too many invitations for now: try again later.",

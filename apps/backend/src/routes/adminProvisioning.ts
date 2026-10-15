@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { connectRefusal } from "../services/accountAccess/connectRefusal";
 import { z } from "zod";
 import crypto from "crypto";
 import { getPrisma } from "../services/db";
@@ -121,6 +122,9 @@ export const adminProvisioningRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(400).send({ message: "L'URL publique du serveur doit être configurée" });
       }
 
+      // Sessions simultanées : la règle de Jellyfin, appliquée au code de connexion (cf. connectRefusal).
+      const refused = await connectRefusal(account.jellyfinUserId);
+      if (refused) return reply.status(403).send(refused);
       // Révoque l'éventuel appareil précédent (rotation du JWT)
       if (row.token) {
         await revokePairedDevice({ tokenHash: hashToken(row.token) }, "provisioning").catch(() => null);

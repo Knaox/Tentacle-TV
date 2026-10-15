@@ -5,6 +5,7 @@ import { requireAuth } from "../../middleware/auth";
 import type { JellyfinUser } from "../../middleware/auth";
 import { signDeviceToken, hashToken } from "../../services/jwt";
 import { provisionOwnJellyfinToken } from "../../services/deviceJellyfinToken";
+import { connectRefusal } from "../../services/accountAccess/connectRefusal";
 import { CODE_TTL_MS, claimSchema, freshPairingCode, generateSchema } from "./codes";
 
 /**
@@ -101,6 +102,9 @@ export const devicePairingRoutes: FastifyPluginAsync = async (app) => {
       if (!record || record.status !== "device_pending" || record.expiresAt < new Date()) {
         return reply.status(404).send({ message: "Code invalide ou expiré" });
       }
+      // Sessions simultanées : la règle de Jellyfin, appliquée à ce jumelage (cf. connectRefusal).
+      const refused = await connectRefusal(user.userId);
+      if (refused) return reply.status(403).send(refused);
 
       const token = await signDeviceToken({
         userId: user.userId,
