@@ -14,6 +14,7 @@ import { ExternalOracle } from "./externalOracle";
 import type { FakeSeerr } from "./fakeSeerr";
 import type { JellyfinBench } from "./jellyfinBench";
 import { itemIdsOf, probe, Recorder, type JudgeContext } from "./judge";
+import { probeAffinity } from "./probesAffinity";
 import { probeCore } from "./probesCore";
 import { probeRestrictionChange } from "./probesFreshness";
 import { probeLibrary } from "./probesLibrary";
@@ -53,6 +54,10 @@ export async function runChecks(input: CheckInput): Promise<number> {
       await probeVigie(ctx, door, seerr);
     }
   }
+  // Watch Together : le compte restreint entre dans un salon après les matchs de l'affinité.
+  rec.section(`${jf.restricted.name} — Watch Together : affinité d'un salon mixte`);
+  await probeAffinity(ctx, restrictedDoors[0], jf);
+
   // Une restriction posée par Tentacle vaut sur-le-champ (Vigie compris).
   rec.section(`${jf.restricted.name} — fraîcheur : restriction levée puis remise par la fiche des droits`);
   await probeRestrictionChange(ctx, restrictedDoors[0], adminPersonal, tentacle.vigie);

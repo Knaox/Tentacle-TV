@@ -46,7 +46,9 @@ chaque fuite nommée (code 1) ; le relevé complet va dans `$PARENTAL_RUN/report
   vignettes, semblables) — `probesLibrary.ts` ; Pour vous (pages, rangées, coldstart, personnes),
   Affiner (pile, versos), recherche et épisodes, sagas, héros, résolutions TMDB, bandes-annonces et
   aperçus (sans extraction YouTube), segments, téléchargements, statistiques, notifications —
-  `probesCore.ts` ; Vigie (découverte, tendances, recherche, semblables, saga, filmographie, fiche,
+  `probesCore.ts` ; l'affinité de Watch Together dans un salon mixte (le compte restreint entre
+  après les matchs de deux comptes libres : état, socket, cartes, lancement) — `probesAffinity.ts` ;
+  Vigie (découverte, tendances, recherche, semblables, saga, filmographie, fiche,
   saisons, pastilles, saisons manquantes, demandes) — `probesVigie.ts`.
 
 ## Variables
