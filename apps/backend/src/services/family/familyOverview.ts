@@ -14,6 +14,7 @@ import {
 import { familyRightsOf } from "../../family/familyRights";
 import { getFamilySwitches, isReviewAccount } from "./familyConfig";
 import { profilesWithPin } from "./familyPins";
+import { withParentalState } from "./familyGuestParental";
 import {
   familyOf,
   familyProfiles,
@@ -156,7 +157,9 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
   const [review, guest] = await Promise.all([isReviewAccount(caller.userId), guestRowOf(caller.userId)]);
 
   const mine = await familyOf(caller.userId);
-  const family = mine ? await familyView(mine.family, mine.role, mine.role === "member" ? mine.self : null, users, now) : null;
+  const view = mine ? await familyView(mine.family, mine.role, mine.role === "member" ? mine.self : null, users, now) : null;
+  // Le contrôle parental des invités : en session personnelle, à qui peut le régler seulement.
+  const family = view && caller.personal ? await withParentalState(view, caller.userId) : view;
   const owned: FamilyOverviewDto["owned"] =
     mine?.role === "owner" && family
       ? { id: family.id, profiles: family.profiles, pendingInvitations: family.pendingInvitations, createdAt: family.createdAt }

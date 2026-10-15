@@ -22,7 +22,7 @@ import { currentProfileOf, ensurePickerHost, findPickerHost, pickerHostLock, tou
 import { desktopAtLaunchByDefault, getFamilyLaunchPolicy } from "./familyLaunchPolicy";
 import { readPickerPreference, writePickerPreference } from "./familyPickerPreference";
 import { unavailableFor, visibleProfiles } from "./familyTv";
-import { syncGuestPolicy } from "./guestAccounts";
+import { syncGuestPolicy } from "./guestPolicySync";
 
 /**
  * « Qui regarde ? » sur le BUREAU (docs/FAMILLE.md, « Le bureau ») — joué

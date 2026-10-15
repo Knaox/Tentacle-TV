@@ -67,7 +67,7 @@ function rightRequired(): FamilyFailure {
 
 /** L'invité visé, s'il est dans la famille du porteur et à sa main : 404 hors
  *  de sa famille, 403 sur un invité qu'il n'a pas créé (membre). */
-async function manageableGuest(actor: Actor, guestUserId: string): Promise<{ row: MemberRow; family: FamilyRow }> {
+export async function manageableGuest(actor: Actor, guestUserId: string): Promise<{ row: MemberRow; family: FamilyRow }> {
   await refuseReviewAccount(actor.userId);
   const mine = await familyOf(actor.userId);
   const row = mine ? await findProfile(mine.family.id, guestUserId) : null;

@@ -128,6 +128,15 @@ describe("la décision", () => {
     expect(scheduleAllows(weekend, new Date(2026, 9, 17, 20, 15))).toBe(true); // samedi 20 h 15
     expect(scheduleAllows(weekend, new Date(2026, 9, 17, 21, 0))).toBe(false);
     expect(scheduleAllows(weekend, noon)).toBe(false); // mercredi
+    // Bornes INCLUSES des deux côtés, comme Jellyfin (h ≥ début et h ≤ fin).
+    const morning = { accessSchedules: [{ dayOfWeek: "Wednesday" as const, startHour: 8, endHour: 12 }] };
+    expect(scheduleAllows(morning, new Date(2026, 9, 14, 8, 0))).toBe(true);
+    expect(scheduleAllows(morning, new Date(2026, 9, 14, 12, 0))).toBe(true);
+    expect(scheduleAllows(morning, new Date(2026, 9, 14, 12, 1))).toBe(false);
+    expect(scheduleAllows(morning, new Date(2026, 9, 14, 7, 59))).toBe(false);
+    // Weekday : lundi → vendredi ; la plage « jamais » ne s'ouvre à aucune heure.
+    expect(scheduleAllows({ accessSchedules: [{ dayOfWeek: "Weekday", startHour: 0, endHour: 24 }] }, noon)).toBe(true);
+    expect(scheduleAllows({ accessSchedules: [{ dayOfWeek: "Sunday", startHour: 24, endHour: 24 }] }, new Date(2026, 9, 18, 23, 59))).toBe(false);
   });
 
   it("une politique illisible ne laisse rien passer", () => {

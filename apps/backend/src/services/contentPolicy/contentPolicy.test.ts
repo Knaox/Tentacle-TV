@@ -24,6 +24,7 @@ import {
   getContentPolicy,
   invalidateContentPolicy,
   isRestricted,
+  onContentPolicyInvalidated,
 } from "./index";
 
 const USER = "8f0c2f4a9e7b4d1c8a3b2c1d0e9f8a7b";
@@ -92,6 +93,35 @@ describe("getContentPolicy", () => {
     invalidateContentPolicy(USER);
     expect(await isRestricted(USER)).toBe(false);
     expect(state.calls).toBe(2);
+  });
+});
+
+describe("onContentPolicyInvalidated", () => {
+  it("prévient, de façon synchrone, pour un compte (normalisé) puis pour tous ; se désabonne", () => {
+    const seen: (string | null)[] = [];
+    const stop = onContentPolicyInvalidated((userId) => seen.push(userId));
+    invalidateContentPolicy("8F0C2F4A-9E7B-4D1C-8A3B-2C1D0E9F8A7B");
+    expect(seen).toEqual([USER]);
+    clearContentPolicyCache();
+    expect(seen).toEqual([USER, null]);
+    stop();
+    invalidateContentPolicy(USER);
+    expect(seen).toHaveLength(2);
+  });
+
+  it("un écouteur qui lève est journalisé et n'empêche pas les autres", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const seen: (string | null)[] = [];
+    const stopA = onContentPolicyInvalidated(() => {
+      throw new Error("boum");
+    });
+    const stopB = onContentPolicyInvalidated((userId) => seen.push(userId));
+    invalidateContentPolicy(USER);
+    expect(seen).toEqual([USER]);
+    expect(log.mock.calls.some((call) => String(call[0]).includes("[content-policy]"))).toBe(true);
+    stopA();
+    stopB();
+    log.mockRestore();
   });
 });
 
