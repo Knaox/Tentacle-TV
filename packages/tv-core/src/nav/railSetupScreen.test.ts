@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { arrangeOnFocus, rowsSelectWhileArranging, startArrange } from "./arrange";
 import {
+  RAIL_SETUP_ACTIONS_ENTRY,
   RAIL_SETUP_CONTINUE_KEY,
   RAIL_SETUP_SKIP_KEY,
   railSetupArrangeReading,
   railSetupBackAction,
+  isRailSetupActionKey,
   railSetupEntryKey,
   railSetupLibraryKeys,
   railSetupLockedKeys,
@@ -66,6 +68,14 @@ describe("railSetupEntryKey — le focus d'entrée", () => {
   it("la première bibliothèque, jamais « Passer »", () => {
     expect(railSetupEntryKey(3)).toBe(railSetupRowKey(0));
     expect(railSetupEntryKey(0)).toBe(RAIL_SETUP_CONTINUE_KEY);
+  });
+});
+
+describe("le pied — « Continuer » d'abord", () => {
+  it("BAS depuis la liste entre par l'action principale, jamais par « Passer »", () => {
+    expect(RAIL_SETUP_ACTIONS_ENTRY).toBe(RAIL_SETUP_CONTINUE_KEY);
+    expect(isRailSetupActionKey(RAIL_SETUP_SKIP_KEY)).toBe(true);
+    expect(isRailSetupActionKey(railSetupMoveKey(0))).toBe(false);
   });
 });
 

@@ -57,6 +57,18 @@ export function railSetupLockedKeys(rowCount: number): string[] {
   return [...rows, RAIL_SETUP_CONTINUE_KEY, RAIL_SETUP_SKIP_KEY];
 }
 
+/**
+ * Le pied s'entre TOUJOURS par « Continuer », l'action principale : laissé à
+ * la géométrie, BAS depuis une ligne visait « Passer », plus proche de son
+ * centre (relevé au banc nav-golden).
+ */
+export const RAIL_SETUP_ACTIONS_ENTRY = RAIL_SETUP_CONTINUE_KEY;
+
+/** Une cible du pied (« Continuer », « Passer »). */
+export function isRailSetupActionKey(focusKey: string): boolean {
+  return focusKey === RAIL_SETUP_CONTINUE_KEY || focusKey === RAIL_SETUP_SKIP_KEY;
+}
+
 /** Le focus d'entrée : la première bibliothèque — jamais une croix ni « Passer ». */
 export function railSetupEntryKey(rowCount: number): string {
   return rowCount > 0 ? railSetupRowKey(0) : RAIL_SETUP_CONTINUE_KEY;
