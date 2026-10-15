@@ -25,4 +25,16 @@ export default {
   ratingLabel: "Rated {{rating}}",
   progressMinutes: "{{watched}} of {{total}} min",
   progressTime: "{{watched}} of {{total}}",
+
+  // TRIAL (TV): the previewed card moves to the head of its row.
+  tvRowHeadEndLabel: "At the end of a row (trial)",
+  tvRowHeadEndStop: "Stop",
+  tvRowHeadEndOverscroll: "Overscroll",
+  tvRowHeadEndStopHint: "The row stops at its end: the last cards preview against the right edge.",
+  tvRowHeadEndOverscrollHint: "The row scrolls past its end: the preview always leads, with empty space to its right.",
+  tvRowHeadReleaseLabel: "When focus leaves the row (trial)",
+  tvRowHeadReleaseStay: "It stays",
+  tvRowHeadReleaseReturn: "It returns",
+  tvRowHeadReleaseStayHint: "The row stays where the preview left it.",
+  tvRowHeadReleaseReturnHint: "The row goes back to where it was before the previews.",
 };

@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import type { RowHeadOptions } from "@tentacle-tv/tv-core";
+import { RowHeadTrialRows } from "./RowHeadTrialRows";
 import { SectionTitle } from "./settingsParts";
 import { ToggleRow } from "./ToggleRow";
 import type { SettingsTrailerPreviews } from "./settingsTypes";
@@ -8,16 +10,19 @@ import type { SettingsTrailerPreviews } from "./settingsTypes";
 /**
  * Les aperçus de bande-annonce au focus des cartes (Réglages › Lecture) : les
  * allumer, et leur son — réglages de CE téléviseur. Absente quand le serveur
- * ne sait pas servir d'aperçu (capacité `trailers.preview`).
+ * ne sait pas servir d'aperçu (capacité `trailers.preview`). Allumés, l'essai
+ * « la carte en aperçu passe en tête » suit (`RowHeadTrialRows`).
  */
 export const TrailerPreviewSection = memo(function TrailerPreviewSection({
   model,
   onToggleEnabled,
   onToggleSound,
+  onChangeRowHead,
 }: {
   model: SettingsTrailerPreviews;
   onToggleEnabled?: (next: boolean) => void;
   onToggleSound?: (next: boolean) => void;
+  onChangeRowHead?: (patch: Partial<RowHeadOptions>) => void;
 }) {
   const { t } = useTranslation(["trailerPreview", "preferences"]);
   return (
@@ -47,6 +52,7 @@ export const TrailerPreviewSection = memo(function TrailerPreviewSection({
           />
         ) : null}
       </View>
+      {model.enabled && model.rowHead ? <RowHeadTrialRows model={model.rowHead} onChange={onChangeRowHead} /> : null}
     </View>
   );
 });

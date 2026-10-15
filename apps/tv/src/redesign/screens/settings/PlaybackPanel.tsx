@@ -11,6 +11,7 @@ import { SectionTitle, settingsText } from "./settingsParts";
 import { StillWatchingSection } from "./StillWatchingSection";
 import { ToggleRow } from "./ToggleRow";
 import { TrailerPreviewSection } from "./TrailerPreviewSection";
+import type { RowHeadOptions } from "@tentacle-tv/tv-core";
 import type { InterfaceLanguage, LibrarySettingKey, SettingsPlayback, SettingsScrubCountdown } from "./settingsTypes";
 
 /**
@@ -44,6 +45,7 @@ export interface PlaybackPanelProps {
   onChangeStillWatching?: (patch: Partial<StillWatchingSettings>) => void;
   onToggleTrailerPreviews?: (next: boolean) => void;
   onToggleTrailerPreviewSound?: (next: boolean) => void;
+  onChangeRowHead?: (patch: Partial<RowHeadOptions>) => void;
 }
 
 const LANGUAGES: Array<{ code: InterfaceLanguage; label: string }> = [
@@ -64,6 +66,7 @@ export const PlaybackPanel = memo(function PlaybackPanel({
   onChangeStillWatching,
   onToggleTrailerPreviews,
   onToggleTrailerPreviewSound,
+  onChangeRowHead,
 }: PlaybackPanelProps) {
   const { t } = useTranslation("preferences");
   const { preset, device } = playback;
@@ -107,6 +110,7 @@ export const PlaybackPanel = memo(function PlaybackPanel({
           model={playback.trailerPreviews}
           onToggleEnabled={onToggleTrailerPreviews}
           onToggleSound={onToggleTrailerPreviewSound}
+          onChangeRowHead={onChangeRowHead}
         />
       ) : null}
 
