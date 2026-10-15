@@ -84,7 +84,7 @@ export interface CollectionViewProps extends FilterSheetLayerProps {
 
 function Header({ kicker, title, count }: { kicker?: string; title: string; count?: string }) {
   return (
-    <View style={styles.header}>
+    <View style={styles.titleBlock}>
       {kicker ? <Text style={text.kicker} numberOfLines={1}>{kicker}</Text> : null}
       <View style={styles.titleRow}>
         <Text style={text.title} numberOfLines={1}>{title}</Text>
@@ -184,7 +184,8 @@ export const CollectionView = memo(function CollectionView(props: CollectionView
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
-  header: { gap: 10, marginBottom: 44 },
+  titleBlock: { gap: 10 },
+  header: { marginBottom: 44 },
   // Avec la barre : le titre, puis les pastilles (l'écart de la bibliothèque).
   headerWithBar: { gap: 30, marginBottom: 44 },
   titleRow: { flexDirection: "row", alignItems: "baseline", gap: 22 },
