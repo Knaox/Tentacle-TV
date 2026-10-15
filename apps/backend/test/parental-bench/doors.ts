@@ -101,11 +101,14 @@ export interface GuestDoor extends Door {
  */
 export async function guestProfileDoor(
   base: string,
-  ownerPersonal: string,
+  owner: { id: string; personal: string },
   adminPersonal: string,
   parental: { maxParentalRating: number; blockUnratedItems: string[]; blockedTags: string[] },
 ): Promise<GuestDoor> {
   await call(base, adminPersonal, "PUT", "/api/admin/family", { families: true, guests: true });
+  // Depuis 1.30.0 (droits de création de la Famille), l'administration permet au compte d'en créer.
+  await call(base, adminPersonal, "PUT", `/api/admin/family/accounts/${owner.id}`, { createFamily: "allow", createGuests: "allow" });
+  const ownerPersonal = owner.personal;
   const family = await call(base, ownerPersonal, "GET", "/api/family");
   let guestId = findGuest(family.json, "Petit");
   if (!guestId) {

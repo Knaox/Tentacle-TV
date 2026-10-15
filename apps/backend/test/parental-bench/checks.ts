@@ -79,7 +79,7 @@ export async function runChecks(input: CheckInput): Promise<number> {
   }
 
   // Un invité de la Famille de `libre`, contrôle parental « 6 ans », ouvert sur une Apple TV.
-  const guest = await guestProfileDoor(tentacle.url, await personalToken(tentacle.url, jf.free.name), adminPersonal, {
+  const guest = await guestProfileDoor(tentacle.url, { id: jf.free.id, personal: await personalToken(tentacle.url, jf.free.name) }, adminPersonal, {
     maxParentalRating: RESTRICTED_MAX_RATING,
     blockUnratedItems: ["Movie", "Trailer", "Series", "Music", "Book", "LiveTvChannel", "LiveTvProgram", "ChannelContent", "Other"],
     blockedTags: [BLOCKED_TAG],
