@@ -358,8 +358,9 @@ les chemins sont branchés, la correspondance des certifications arrivera sans y
 - ✅ Titres extérieurs (certification, `adult`) → `filterExternalTitles` à la même porte
   (`reco/recoRights.ts`, une question par liste), `pool/debug` aussi ; un extérieur dont le compte
   voit une version dans la bibliothèque passe (Jellyfin a jugé).
-- ✅ Fraîcheur : `userAccess` relevé sur-le-champ quand l'empreinte de la politique change
-  (`itemAccess/policyWatch.ts`, relue toutes les 30 s) — même pour un changement fait dans Jellyfin.
+- ✅ Fraîcheur : écriture faite par Tentacle → `onContentPolicyInvalidated` (socle) fait tomber sur-le-champ
+  relevé `userAccess`, verdicts de visibilité, index et page des recos ; changement fait dans Jellyfin →
+  l'empreinte de la politique, relue toutes les 30 s (`itemAccess/policyWatch.ts`).
 - ✅ `reco/people/*` : « connu pour » d'une personne TMDB vidé pour un compte restreint.
 
 **Affiner (`routes/swipe.ts`, `services/swipe/**`)**

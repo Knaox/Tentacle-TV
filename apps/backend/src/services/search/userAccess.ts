@@ -137,6 +137,17 @@ export function markAllUserAccessStale(): void {
   }
 }
 
+/** Sa politique vient de changer : le relevé n'est plus servi, le prochain est refait sur-le-champ.
+ *  Sans compte : tous. */
+export function forgetUserAccess(userId?: string): void {
+  for (const id of userId === undefined ? [...memo.keys()] : [userId]) {
+    memo.delete(id);
+    const timer = timers.get(id);
+    if (timer) clearTimeout(timer);
+    timers.delete(id);
+  }
+}
+
 /** Retire les comptes que personne n'a lus depuis un jour. */
 export function sweepUserAccess(now = Date.now()): number {
   let removed = 0;

@@ -8,16 +8,16 @@
  * jusqu'au relevé suivant. La politique de contenu, elle, est relue toutes les
  * 30 s (socle, `getContentPolicy`) : son EMPREINTE comparée à la précédente dit
  * qu'elle a changé, et ce qui en dépend tombe aussitôt.
+ *
+ * Une écriture faite PAR TENTACLE n'attend même pas : le socle prévient
+ * (`onContentPolicyInvalidated`, identifiant normalisé ou `null` = tous) et
+ * tout ce qui dépend des droits du compte tombe sur-le-champ.
  */
 
-// TODO(lot-droits, socle) : quand `onContentPolicyInvalidated(listener: (userId: string | null)
-// => void): () => void` sera exportée par services/contentPolicy, s'y abonner ICI, au chargement :
-// pour un compte (ou `null` = tous), `invalidateItemVisibility(userId ?? undefined)`, faire tomber
-// l'empreinte (`seen.delete`, ou `seen.clear()`) et `epochs` +1, puis `refreshUserAccess(userId)`
-// (ou `markAllUserAccessStale()`). Une écriture faite par Tentacle se verrait alors tout de suite,
-// sans attendre la relecture de 30 s ; la comparaison d'empreintes reste pour les changements
-// faits dans Jellyfin.
-import { getContentPolicy, type ContentPolicy } from "../contentPolicy";
+import { getContentPolicy, onContentPolicyInvalidated, type ContentPolicy } from "../contentPolicy";
+import { refreshLibraryMemo } from "../reco/candidates/libraryMemo";
+import { pokePage } from "../reco/pageJobs";
+import { forgetUserAccess } from "../search/userAccess";
 import { invalidateItemVisibility } from "./itemVisibility";
 
 const seen = new Map<string, string>();
@@ -57,6 +57,24 @@ export async function policyChanged(userId: string): Promise<boolean> {
 export function policyEpoch(userId: string): number {
   return epochs.get(keyOf(userId)) ?? 0;
 }
+
+/** Ce que vide une politique invalidée par Tentacle — pour un compte, ou pour tous. */
+export function dropPolicyDependents(userId: string | null): void {
+  if (userId === null) {
+    invalidateItemVisibility();
+    forgetUserAccess();
+    for (const key of seen.keys()) epochs.set(key, (epochs.get(key) ?? 0) + 1);
+    return;
+  }
+  const key = keyOf(userId);
+  invalidateItemVisibility(key);
+  epochs.set(key, (epochs.get(key) ?? 0) + 1);
+  forgetUserAccess(key);
+  refreshLibraryMemo(key);
+  pokePage(key, "settings");
+}
+
+onContentPolicyInvalidated(dropPolicyDependents);
 
 export function resetPolicyWatchForTests(): void {
   seen.clear();
