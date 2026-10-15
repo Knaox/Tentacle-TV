@@ -12,6 +12,7 @@ import {
   parseSeerAvailability,
   resolveSeerContent,
 } from "./seerAvailabilityGuard";
+import { findLibraryItemByTmdb } from "./jellyfinTmdbLookup";
 
 // Planificateur de push des annonces de dispo Seer — RÈGLE PRODUIT (Damien,
 // juillet 2026) : une saison se notifie QUAND ELLE ARRIVE, indépendamment des
@@ -55,6 +56,31 @@ export function englishAvailabilityBody(seasons: number[]): string {
 }
 
 /**
+ * Le titre arrivé est-il caché au DEMANDEUR par ses droits Jellyfin (note
+ * maximale, étiquettes, bibliothèques) ? Cherché au nom du compte : absent
+ * pour lui alors qu'il est arrivé = caché. `unknown` : Jellyfin muet.
+ */
+async function requesterSees(userId: string, resolved: RegistryClaim | null): Promise<"yes" | "no" | "unknown"> {
+  if (!resolved || (resolved.mediaType !== "movie" && resolved.mediaType !== "tv")) return "yes";
+  const lookup = await findLibraryItemByTmdb(resolved.tmdbId, resolved.mediaType, userId);
+  return lookup.kind === "found" ? "yes" : lookup.kind === "missing" ? "no" : "unknown";
+}
+
+/** Le plan final : jamais un push d'un titre que le demandeur ne voit pas —
+ *  ni maintenant (skip, la cloche est l'affaire de l'extension), ni sans savoir (defer). */
+async function guardedByRights(
+  userId: string,
+  resolved: RegistryClaim | null,
+  plan: PushPlan,
+): Promise<PushPlan> {
+  if (plan.action !== "push") return plan;
+  const sees = await requesterSees(userId, resolved);
+  if (sees === "yes") return plan;
+  if (sees === "unknown") return { action: "defer", body: plan.body, keys: [], complete: false, seasons: [] };
+  return { ...plan, action: "skip", complete: true };
+}
+
+/**
  * Décision complète pour une notification Seer. null si la notif n'est pas une
  * annonce de disponibilité (l'appelant garde son chemin générique).
  */
@@ -65,6 +91,16 @@ export async function planSeerAvailabilityPush(
   const avail = parseSeerAvailability(n);
   if (!avail) return null;
   const resolved = await resolveSeerContent(n, userClaims);
+  const plan = await planFor(n, avail, resolved, userClaims);
+  return guardedByRights(n.jellyfinUserId, resolved, plan);
+}
+
+async function planFor(
+  n: { jellyfinUserId: string; type: string; title: string; body: string | null; refId: string | null },
+  avail: NonNullable<ReturnType<typeof parseSeerAvailability>>,
+  resolved: RegistryClaim | null,
+  userClaims: RegistryClaim[],
+): Promise<PushPlan> {
   const exact = exactPushKey(n);
   const original = n.body ?? "";
 

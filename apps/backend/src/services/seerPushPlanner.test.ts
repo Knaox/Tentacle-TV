@@ -10,6 +10,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const announced = new Set<string>();
 let presence: "present" | "absent" | "unknown" = "present";
 let seasonsInJellyfin = new Set<number>();
+/** Ce que la bibliothèque dit AU NOM DU DEMANDEUR (ses droits appliqués). */
+let requesterLookup: "found" | "missing" | "error" = "found";
 
 vi.mock("./announcedRegistry", async () => {
   const actual = await vi.importActual<typeof import("./announcedRegistry")>("./announcedRegistry");
@@ -33,6 +35,11 @@ vi.mock("./seerAvailabilityGuard", async () => {
   };
 });
 
+vi.mock("./jellyfinTmdbLookup", () => ({
+  findLibraryItemByTmdb: async (_tmdbId: number, _type: string, forUserId?: string) =>
+    forUserId === "alice" ? (requesterLookup === "found" ? { kind: "found", id: "x" } : { kind: requesterLookup }) : { kind: "error" },
+}));
+
 import { englishAvailabilityBody, planSeerAvailabilityPush } from "./seerPushPlanner";
 
 const notif = (title: string, body: string) => ({ jellyfinUserId: "alice", type: "request_status", title, body, refId: "r1" });
@@ -41,6 +48,7 @@ beforeEach(() => {
   announced.clear();
   presence = "present";
   seasonsInJellyfin = new Set();
+  requesterLookup = "found";
 });
 
 describe("planificateur des disponibilités", () => {
@@ -52,6 +60,18 @@ describe("planificateur des disponibilités", () => {
     presence = "absent";
     const plan = await planSeerAvailabilityPush(notif("Dune", "« Dune » est sorti sur Tentacle TV"), []);
     expect(plan?.action).toBe("defer");
+  });
+
+  it("arrivé, mais caché au demandeur par ses droits : jamais poussé", async () => {
+    requesterLookup = "missing";
+    expect((await planSeerAvailabilityPush(notif("Dune", "« Dune » est sorti sur Tentacle TV"), []))?.action).toBe("skip");
+    seasonsInJellyfin = new Set([1]);
+    expect((await planSeerAvailabilityPush(notif("The Bear", "Saison 1 est sortie sur Tentacle TV"), []))?.action).toBe("skip");
+  });
+
+  it("droits du demandeur illisibles (Jellyfin muet) : report, jamais un push à l'aveugle", async () => {
+    requesterLookup = "error";
+    expect((await planSeerAvailabilityPush(notif("Dune", "« Dune » est sorti sur Tentacle TV"), []))?.action).toBe("defer");
   });
 
   it("film déjà annoncé par la bibliothèque : rien", async () => {
