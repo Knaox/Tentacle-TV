@@ -231,4 +231,16 @@ export default {
   deviceNotice: {
     av1Converted: "Cet appareil ne lit pas l'AV1 : le serveur convertit",
   },
+  // « Vous regardez encore ? » : l'encart en bas à droite, après un long moment
+  // de lecture sans geste (réglage du compte, `stillWatchingSettings.ts`).
+  stillWatching: {
+    title: "Vous regardez encore ?",
+    countdown_one: "La lecture se met en pause dans {{count}} seconde.",
+    countdown_other: "La lecture se met en pause dans {{count}} secondes.",
+    continue: "Continuer",
+    pause: "Mettre en pause",
+    pausedTitle: "Lecture en pause",
+    pausedBody: "Personne n'a répondu : la lecture vous attend, là où vous l'avez laissée.",
+    resume: "Reprendre",
+  },
 } as const;

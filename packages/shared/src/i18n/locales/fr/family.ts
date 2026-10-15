@@ -81,4 +81,16 @@ export default {
     jellyfin_refused: "Jellyfin a refusé l'opération.",
     jellyfin_unavailable: "Jellyfin ne répond pas : réessayez dans un instant.",
   },
+  /** Le code PIN SUGGÉRÉ : juste après avoir accepté une invitation (`afterJoin`),
+   *  puis en « Action recommandée » tant que le profil n'en a pas (rappel `familyPin`). */
+  pinSuggest: {
+    eyebrow: "Action recommandée",
+    joinedTitle: "Bienvenue dans la famille de {{owner}}",
+    joinedBody: "Votre profil apparaît désormais dans « Qui regarde ? » sur ses téléviseurs et ses ordinateurs. Sans code PIN, n'importe qui devant l'écran peut l'ouvrir.",
+    title: "Posez votre code PIN",
+    body: "Votre profil n'a pas de code PIN : sur les téléviseurs et les ordinateurs de la famille, n'importe qui peut l'ouvrir depuis « Qui regarde ? ».",
+    why: "Quatre chiffres protègent votre historique, vos reprises, Ma liste et vos notes. Il n'appartient qu'à vous, et vous pouvez le changer ou le retirer à tout moment dans Réglages › Famille.",
+    set: "Poser un code PIN",
+    later: "Configurer plus tard",
+  },
 } as const;
