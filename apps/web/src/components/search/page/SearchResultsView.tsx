@@ -12,6 +12,9 @@ import { EpisodeList, FacetChips, PeopleStrip, PosterGrid, Section } from "./Sea
 import type { SearchTab } from "./searchParams";
 import { ExternalSections } from "../external/ExternalSections";
 import { EXTERNAL_SEARCH_LIMIT, type ExternalSearchState } from "../external/useExternalSearch";
+import { useSearchDeletionMode } from "./searchDeletion";
+
+const NO_ITEMS: readonly SearchMediaItem[] = [];
 
 interface SearchResultsViewProps {
   response: SearchResponse;
@@ -37,9 +40,14 @@ function withTop(response: SearchResponse, list: SearchResponse["movies"], type:
 export const SearchResultsView = memo(function SearchResultsView(props: SearchResultsViewProps) {
   const { response, episodes, external, tab, terms, onTab, onOpenPath, onOpenItem, onOpenPerson, onOpenFacet, onRetry } = props;
   const { t } = useTranslation("search");
-  const movies = withTop(response, response.movies, "Movie");
-  const series = withTop(response, response.series, "Series");
+  const movies = useMemo(() => withTop(response, response.movies, "Movie"), [response]);
+  const series = useMemo(() => withTop(response, response.series, "Series"), [response]);
   const collections = withTop(response, response.collections, "BoxSet");
+  // Supprimer des titres : sur les onglets d'un seul type, où la grille montre tous les résultats.
+  const deletion = useSearchDeletionMode(
+    tab === "movies" ? movies : tab === "series" ? series : tab === "episodes" ? episodes : NO_ITEMS,
+    tab === "movies" ? response.totals.movies : tab === "series" ? response.totals.series : undefined,
+  );
   const people = [...(response.top?.kind === "person" ? [response.top.hit] : []), ...response.people];
   const nothing = response.top === null && movies.length + series.length + collections.length + people.length + episodes.length === 0;
   // Ce que la bibliothèque a déjà : les plugins ne le proposent pas une seconde fois.
@@ -83,16 +91,24 @@ export const SearchResultsView = memo(function SearchResultsView(props: SearchRe
 
   if (tab !== "all") {
     return (
-      <div className="px-4 pt-6 md:px-12">
-        {notice}
-        {tab === "movies" && <div className="mt-4"><PosterGrid items={movies} onOpen={onOpenItem} /></div>}
-        {tab === "series" && <div className="mt-4"><PosterGrid items={series} onOpen={onOpenItem} /></div>}
-        {(tab === "movies" || tab === "series") && (
+      <div className={`px-4 pt-6 md:px-12 ${deletion.selection.active ? "pb-16" : ""}`}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          {notice}
+          {deletion.button}
+        </div>
+        {deletion.scope(
+          <>
+            {tab === "movies" && <div className="mt-4"><PosterGrid items={movies} onOpen={onOpenItem} /></div>}
+            {tab === "series" && <div className="mt-4"><PosterGrid items={series} onOpen={onOpenItem} /></div>}
+            {tab === "episodes" && <div className="mt-4"><EpisodeList episodes={episodes} terms={terms} onOpen={onOpenItem} /></div>}
+          </>,
+        )}
+        {(tab === "movies" || tab === "series") && !deletion.selection.active && (
           <ExternalSections external={external} library={owned} kind={tab === "movies" ? "movie" : "series"} reserve={EXTERNAL_SEARCH_LIMIT} />
         )}
         {tab === "collections" && <div className="mt-4"><PosterGrid items={collections} onOpen={onOpenItem} /></div>}
         {tab === "people" && <div className="mt-4"><PeopleStrip people={people} terms={terms} onOpen={onOpenPerson} /></div>}
-        {tab === "episodes" && <div className="mt-4"><EpisodeList episodes={episodes} terms={terms} onOpen={onOpenItem} /></div>}
+        {deletion.overlays}
       </div>
     );
   }

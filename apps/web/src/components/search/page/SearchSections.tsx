@@ -7,17 +7,15 @@
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  formatEpisodeCode,
   personMeta,
   type SearchFacetHit,
   type SearchMediaItem,
   type SearchPersonHit,
 } from "@tentacle-tv/shared";
 import { SearchResultCard } from "../SearchResultCard";
-import { CardProgressBar } from "../../cards/CardProgressBar";
-import { CardStatusMarkers } from "../../cards/CardStatusMarkers";
+import { SearchEpisodeRow } from "./SearchEpisodeRow";
 import { HighlightedText } from "../HighlightedText";
-import { PersonAvatar, PosterThumb } from "../SearchThumbs";
+import { PersonAvatar } from "../SearchThumbs";
 import { displayFacet } from "../omnibox/OmniboxChips";
 
 export function Section({ title, count, onSeeAll, children }: {
@@ -89,8 +87,6 @@ export const PeopleStrip = memo(function PeopleStrip({ people, terms, onOpen }: 
   );
 });
 
-const WATCHED_ONLY = ["watched"] as const;
-
 export const EpisodeList = memo(function EpisodeList({ episodes, terms, onOpen }: {
   episodes: readonly SearchMediaItem[];
   terms: readonly string[];
@@ -98,34 +94,7 @@ export const EpisodeList = memo(function EpisodeList({ episodes, terms, onOpen }
 }) {
   return (
     <ul className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
-      {episodes.map((item) => (
-        <li key={item.Id}>
-          <button
-            type="button"
-            onClick={() => onOpen(item)}
-            className="flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-          >
-            <PosterThumb item={item} height={180} className="aspect-video w-32 rounded-lg">
-              {/* Les marques de toutes les cartes : la pastille « vu », sinon la
-                  barre de progression commune. */}
-              {item.UserData?.Played ? (
-                <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1 top-1" />
-              ) : (
-                <CardProgressBar percent={item.UserData?.PlayedPercentage} />
-              )}
-            </PosterThumb>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-content-primary">
-                <HighlightedText text={item.Name} terms={terms} />
-              </span>
-              <span className="mt-0.5 block truncate text-xs text-content-tertiary">
-                {item.SeriesName}
-                {item.ParentIndexNumber !== undefined && item.IndexNumber !== undefined && ` · ${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber)}`}
-              </span>
-            </span>
-          </button>
-        </li>
-      ))}
+      {episodes.map((item) => <SearchEpisodeRow key={item.Id} item={item} terms={terms} onOpen={onOpen} />)}
     </ul>
   );
 });

@@ -26,6 +26,8 @@ import { useCardHover } from "../cards/useCardHover";
 import { useCardPreview } from "../cards/preview";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { useSeriesGapOffer } from "../seasons/SeriesGapsScope";
+import { SelectedRing, SelectionMark } from "../libraryDelete/SelectionMark";
+import { useSearchSelection } from "./page/searchDeletion";
 
 export function SearchResultCard({
   item,
@@ -43,6 +45,10 @@ export function SearchResultCard({
   // (cf. `useCardHover`) — c'est ce qui rend le plateau accessible sans souris.
   const hover = useCardHover(rootRef);
   const ctx = useCardContextMenu();
+  // Mode sélection (supprimer des titres) : le clic coche, le survol et ses actions se taisent.
+  const selection = useSearchSelection(item.Id);
+  const selecting = selection !== undefined;
+  const locked = selection?.mark === "locked" || selection?.mark === "pending";
   // La mini-carte prolonge la carte hors de son arbre DOM : le focus clavier y
   // entre sans quitter la carte (`companionRef`).
   const preview = useCardPreview({
@@ -50,7 +56,7 @@ export function SearchResultCard({
     hovered: hover.hovered,
     shape: "poster",
     companionRef: hover.companionRef,
-    disabled: ctx.ctxMenu !== null,
+    disabled: selecting || ctx.ctxMenu !== null,
   });
   // Une série incomplète (recherche seulement) le dit sous son affiche, au
   // repos : le plateau du survol n'est pas le seul chemin vers « Demander ».
@@ -64,7 +70,11 @@ export function SearchResultCard({
     item.Type === "Series" ? t("common:series") :
     item.Type;
 
-  const open = () => {
+  const open = (range = false) => {
+    if (selection) {
+      if (!locked) selection.toggle(item.Id, range);
+      return;
+    }
     if (ctx.ctxMenu) return;
     // L'AFFICHE seule : la racine embarque les deux lignes de texte, et le
     // visuel partirait recadré pendant toute la transition d'ouverture.
@@ -76,6 +86,7 @@ export function SearchResultCard({
     <li
       ref={rootRef}
       className="group/card relative"
+      title={selection?.mark === "locked" ? t("libraryDelete:notDeletable") : undefined}
       style={{
         animation: "fadeSlideUp 0.4s ease both",
         animationDelay: `${Math.min(index * 30, 300)}ms`,
@@ -88,25 +99,30 @@ export function SearchResultCard({
         hover.handlers.onMouseEnter();
         prefetchDetailRoute();
       }}
-      {...ctx.contextHandlers}
+      {...(selecting ? {} : ctx.contextHandlers)}
     >
       {/* div-bouton et non <button> : le survol porte ses propres boutons, et un
           bouton dans un bouton est du HTML invalide. */}
       <div
-        role="button"
+        role={selecting ? "checkbox" : "button"}
         tabIndex={0}
-        aria-label={item.Name}
-        onClick={open}
+        aria-label={selecting ? t("libraryDelete:checkTitle", { name: item.Name }) : item.Name}
+        aria-checked={selecting ? selection.mark === "selected" : undefined}
+        aria-disabled={selecting ? locked : undefined}
+        onClick={(e) => open(e.shiftKey)}
+        onMouseDown={(e) => { if (selecting && e.shiftKey) e.preventDefault(); }}
         onKeyDown={(e) => {
           if (e.key !== "Enter" && e.key !== " ") return;
           e.preventDefault();
-          open();
+          open(e.shiftKey);
         }}
         // L'anneau de focus est dessiné par l'affiche (`CardFrame`), qui se
         // soulève : sur ce bouton, il cernait aussi le titre et restait en place.
-        className="group/focus block w-full cursor-pointer text-left outline-none"
+        // L'atténuation d'un titre refusé se pose ICI : l'entrée de la carte
+        // (`fadeSlideUp … both`) impose son opacité à la racine.
+        className={`group/focus block w-full text-left outline-none ${selecting && locked ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
       >
-        <PosterTile item={item} imageUrl={imageUrl} hovered={hover.hovered} preview={preview} />
+        <PosterTile item={item} imageUrl={imageUrl} hovered={hover.hovered && !(selecting && locked)} showActions={!selecting} preview={preview} />
         <p className="mt-2.5 truncate px-0.5 text-sm font-semibold tracking-tight text-content-primary">{item.Name}</p>
         <p className="px-0.5 text-xs card-caption">
           {type}
@@ -120,7 +136,10 @@ export function SearchResultCard({
         )}
       </div>
 
-      {ctx.ctxMenu && (
+      {selection && <SelectionMark mark={selection.mark} />}
+      {selection?.mark === "selected" && <SelectedRing />}
+
+      {!selecting && ctx.ctxMenu && (
         <MediaContextMenu
           item={item}
           x={ctx.ctxMenu.x}
