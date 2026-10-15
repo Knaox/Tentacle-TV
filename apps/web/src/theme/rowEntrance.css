@@ -1,0 +1,23 @@
+/* ── Retenue d'une rangée avant son entrée ─────────────────────────────────
+ *
+ * Posée par `useRowEntrance` dès le montage de la section, retirée au moment
+ * où l'entrée se joue (cf. components/rows/rowEntrance.ts). Le titre — premier
+ * enfant de la section — et les cartes de la piste attendent invisibles : la
+ * PLACE reste prise, seule l'opacité change. Aucune transition ici : ce sont
+ * des animations d'éléments qui jouent l'entrée, et elles ne laissent rien
+ * derrière elles.
+ *
+ * Les cales (`aria-hidden`) ne peignent rien : inutile de les viser. */
+[data-row-entrance="held"] > :first-child,
+[data-row-entrance="held"] [data-preview-room="row"] > :not([aria-hidden]) {
+  opacity: 0;
+}
+
+/* Mouvement réduit : jamais de retenue, même si l'attribut était posé avant
+ * que la préférence ne change. */
+@media (prefers-reduced-motion: reduce) {
+  [data-row-entrance="held"] > :first-child,
+  [data-row-entrance="held"] [data-preview-room="row"] > :not([aria-hidden]) {
+    opacity: 1;
+  }
+}
