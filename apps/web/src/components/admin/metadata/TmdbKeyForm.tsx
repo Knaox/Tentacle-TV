@@ -85,6 +85,8 @@ export function TmdbKeyForm({ replacing, onSaved, onCancel }: TmdbKeyFormProps) 
             data-1p-ignore
             data-lpignore="true"
             autoFocus={replacing}
+            // Le champ qu'ouvre l'ancre `#tmdb` (`useHashTarget`).
+            data-hash-focus
             // La clé en chasse fixe (0/O, 1/l), pas le texte indicatif.
             className={`${cls.inp} pr-12 ${value ? "font-mono" : ""}`}
           />

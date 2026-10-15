@@ -34,6 +34,8 @@ vi.mock("../components/PageTransition", () => ({
   PageTransition: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("../components/ui/ConfirmDialog", () => ({ ConfirmDialog: () => null }));
+// L'ancre `#tmdb` lit le routeur, qui embarque sa propre copie de React : inerte ici.
+vi.mock("../components/admin/services/useHashTarget", () => ({ useHashTarget: () => undefined }));
 vi.mock("framer-motion", () => ({
   motion: { div: ({ children }: { children: ReactNode }) => <div>{children}</div> },
   useReducedMotion: () => false,

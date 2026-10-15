@@ -51,7 +51,8 @@ export function noticeContent(notice: ClientNotice): NoticeContent {
         titleKey: "notices:tmdbKeyTitle",
         textKeys: ["notices:tmdbKeyText"],
         actionKey: "notices:tmdbKeyAdd",
-        actionPath: "/admin/metadata",
+        // La carte TMDB et son champ (ancre lue par la page Métadonnées du web).
+        actionPath: "/admin/metadata#tmdb",
         dismissKey: "notices:dismissForGood",
         dismissedKey: "notices:tmdbKeyDismissed",
       };

@@ -9,6 +9,7 @@ import { TmdbKeyCard } from "../components/admin/metadata/TmdbKeyCard";
 import { RecoFanoutStatus } from "../components/admin/metadata/RecoFanoutStatus";
 import { RegionCard } from "../components/admin/metadata/RegionCard";
 import { TrailersCard } from "../components/admin/metadata/TrailersCard";
+import { useHashTarget } from "../components/admin/services/useHashTarget";
 
 /**
  * Onglet « Métadonnées » : clé TMDB, région des plateformes, bandes-annonces
@@ -23,6 +24,8 @@ export function AdminMetadata() {
   const { t } = useTranslation("adminMetadata");
   const { isAdmin } = getUserInfo();
   const status = useAdminMetadataStatus({ enabled: isAdmin, live: true });
+  // `#tmdb` mène à la carte de la clé et à son champ, une fois les cartes posées.
+  useHashTarget(status.data !== undefined);
 
   return (
     <AdminPage title={t("title")} description={t("description")}>

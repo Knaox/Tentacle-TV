@@ -1,4 +1,5 @@
 import type { BlockingId, RecommendationId } from "@tentacle-tv/shared";
+import { ADMIN_TMDB_KEY_PATH } from "../../../lib/adminTargets";
 
 /**
  * Ce que chaque entrée de la vue d'ensemble dit et propose, en logique pure :
@@ -28,7 +29,7 @@ export const ENTRY_ACTION: Record<EntryId, EntryAction> = {
   databaseSourceChanged: { kind: "link", to: "/admin/services#database", label: "entry_databaseSourceChanged_action" },
   databaseNeverMigrated: { kind: "link", to: "/admin/services#database", label: "entry_databaseNeverMigrated_action" },
   publicUrl: { kind: "link", to: "/admin/services#publicurl", label: "configure" },
-  tmdbKey: { kind: "link", to: "/admin/metadata", label: "configure" },
+  tmdbKey: { kind: "link", to: ADMIN_TMDB_KEY_PATH, label: "configure" },
   jellyfin: { kind: "toggle", label: "entry_jellyfin_action", hideLabel: "entry_jellyfin_hideAction" },
   segmentPlugins: { kind: "link", to: "/admin/services#segments", label: "entry_segmentPlugins_action" },
   directPlay: { kind: "link", to: "/admin/services#directstreaming", label: "configure" },
