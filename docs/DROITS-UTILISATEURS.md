@@ -957,7 +957,7 @@ une NOUVELLE connexion est refusée en mots clairs.
   plage le plus proche, l'invalidation faite par Tentacle, et un guet d'UNE lecture de
   `/Users` par minute (Jellyfin n'annonce aucun changement de politique), comparé à ce que
   la dernière évaluation a vu. Bloqué : `account:access`, sortie de Watch Together sans
-  grâce, **position de lecture écrite par la clé d'administration** (le rapport d'arrêt du
+  grâce (`ejectFromRoom` de § 9.2, raison `access_revoked`), **position de lecture écrite par la clé d'administration** (le rapport d'arrêt du
   compte serait refusé — « Reprendre » restait vide), puis sockets fermées (4012).
   Un changement fait dans Jellyfin se voit en 30 s (cache) à 90 s au plus.
 - **Essais avant blocage, tenus par Tentacle** (`loginLockout.ts`, décision du coordinateur) :
@@ -1030,7 +1030,6 @@ une NOUVELLE connexion est refusée en mots clairs.
 - « Bloqué après trop d'essais » se lit sur le compteur de Jellyfin (`InvalidLoginAttemptCount
   ≥ LoginAttemptsBeforeLockout`) : un compteur laissé plein par une connexion directe à
   Jellyfin 10.11 peut faire dire « bloqué » à un compte désactivé à la main.
-- Watch Together : la sortie d'un compte bloqué passera par `ejectFromRoom` de S2 (raison
-  `access_revoked`) quand sa branche sera fusionnée ; d'ici là, `leaveWatchTogetherNow`.
+
 - Un changement de plages fait par l'administrateur pendant la fermeture n'atteint un client
   qu'à sa relecture (au plus cinq minutes) : son socket est fermé.
