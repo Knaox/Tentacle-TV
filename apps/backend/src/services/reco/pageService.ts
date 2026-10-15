@@ -71,7 +71,7 @@ export async function servePage(userId: string, providers: number[] | null, them
   let rows = applyServeExclusions(snapshot.rows, ctx.exclude);
   if (!ctx.includeVigie) rows = filterRowItems(rows, (item) => !!item.jellyfinItemId);
   // Les droits du compte, au service aussi (cf. recoRights) : « À la une » en découle.
-  rows = filterRowItems(rows, await rightsFilterFor(userId));
+  rows = filterRowItems(rows, await rightsFilterFor(userId, rows.flatMap((row) => row.items)));
   // Sans thèmes : la page du snapshot, déjà sans doublon. Avec : « Films pour vous »
   // garde ses films, les rangées suivantes ne les répètent pas.
   rows = themes ? dedupeServedRows(rows, PAGE_ROW_MIN_ITEMS) : rows.filter((row) => !isThemedRow(row.key));

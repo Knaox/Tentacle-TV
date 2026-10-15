@@ -88,7 +88,7 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const pool = await readPool(user.userId);
     if (!pool) return { exists: false };
-    const allowed = await rightsFilterFor(user.userId);
+    const allowed = await rightsFilterFor(user.userId, pool.entries.map((e) => e.candidate));
     return {
       exists: true,
       generatedAt: pool.generatedAt,

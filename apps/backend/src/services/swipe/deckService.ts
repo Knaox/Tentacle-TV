@@ -64,7 +64,7 @@ export async function buildDeck(userId: string, req: DeckRequest): Promise<DeckR
     : { taste: [] as SwipeCard[], deep: [] as SwipeCard[] };
   // Les droits du compte AVANT le mélange (cf. reco/recoRights) : la pile garde sa
   // taille, et un titre que ses droits lui cachent ne revient jamais par TMDB.
-  const allowed = await rightsFilterFor(userId);
+  const allowed = await rightsFilterFor(userId, [...split.taste, ...split.deep, ...trending, ...classics]);
   const taste = split.taste.filter(allowed);
   const deep = split.deep.filter(allowed);
 

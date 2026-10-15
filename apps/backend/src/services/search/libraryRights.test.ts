@@ -12,6 +12,14 @@ const h = vi.hoisted(() => ({
 }));
 vi.mock("./catalog", () => ({ currentEngine: () => h.engine }));
 vi.mock("./userAccess", () => ({ getUserAccess: async () => h.access }));
+// La politique de contenu (socle) : le film 13 est refusé ; on note ce qu'on lui demande.
+const policyAsked: string[][] = [];
+vi.mock("../contentPolicy", () => ({
+  filterExternalTitles: async (_userId: string, titles: Array<{ mediaType: string; tmdbId: number }>) => {
+    policyAsked.push(titles.map((t) => `${t.mediaType}:${t.tmdbId}`));
+    return titles.filter((t) => t.tmdbId !== 13);
+  },
+}));
 
 import { libraryRightsFor } from "./libraryRights";
 import { allowedByRights } from "../reco/recoRights";
@@ -19,6 +27,7 @@ import { allowedByRights } from "../reco/recoRights";
 const item = (id: string, type: string, tmdbId: string | null) => [id, { id, type, tmdbId }] as const;
 
 beforeEach(() => {
+  policyAsked.length = 0;
   h.engine = {
     items: new Map([
       item("aaaa", "Movie", "603"),
@@ -71,5 +80,24 @@ describe("allowedByRights (une ligne de recommandation)", () => {
   it("droits illisibles : la bibliothèque (calculée au nom du compte) reste, l'extérieur part", () => {
     expect(allowedByRights(null, { mediaType: "movie", tmdbId: 603, jellyfinItemId: "aaaa" })).toBe(true);
     expect(allowedByRights(null, { mediaType: "movie", tmdbId: 12, jellyfinItemId: null })).toBe(false);
+  });
+});
+
+describe("rightsFilterFor (bibliothèque, puis politique de contenu des extérieurs)", () => {
+  it("un extérieur passe la politique du compte ; un extérieur caché dans la bibliothèque n'y est même pas soumis", async () => {
+    const { rightsFilterFor } = await import("../reco/recoRights");
+    const allowed = await rightsFilterFor("enfant", [
+      { mediaType: "movie", tmdbId: 603, jellyfinItemId: "aaaa" },
+      { mediaType: "movie", tmdbId: 680, jellyfinItemId: null },
+      { mediaType: "movie", tmdbId: 12, jellyfinItemId: null },
+      { mediaType: "movie", tmdbId: 13, jellyfinItemId: null },
+      { mediaType: "movie", tmdbId: 13, jellyfinItemId: null },
+    ]);
+    expect(policyAsked).toEqual([["movie:12", "movie:13"]]);
+    expect(allowed({ mediaType: "movie", tmdbId: 603, jellyfinItemId: "aaaa" })).toBe(true);
+    expect(allowed({ mediaType: "movie", tmdbId: 680, jellyfinItemId: null })).toBe(false);
+    expect(allowed({ mediaType: "movie", tmdbId: 12, jellyfinItemId: null })).toBe(true);
+    // 13 : la politique du compte le refuse (certification au-dessus de sa note).
+    expect(allowed({ mediaType: "movie", tmdbId: 13, jellyfinItemId: null })).toBe(false);
   });
 });

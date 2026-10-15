@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import type { SagaInfo, SagaMember, SagaResponse } from "../saga/sagaTypes";
-import { libraryRightsFor } from "../services/search/libraryRights";
+import { filterByRights } from "../services/reco/recoRights";
 import { sagaMembersFor } from "../services/search/sagaMembers";
 import { getSagaCollection } from "../services/tmdb/sagaCollection";
 
@@ -25,16 +25,15 @@ import { getSagaCollection } from "../services/tmdb/sagaCollection";
 /**
  * Les volets selon TMDB, tels que CE compte peut les voir (docs/DROITS-UTILISATEURS.md
  * § 5) : un volet de la bibliothèque que ses droits lui cachent n'est ni montré, ni
- * « à demander » ; droits illisibles : seuls ses volets visibles restent.
+ * « à demander » ; un volet absent passe la politique de contenu du compte
+ * (certification) ; droits illisibles : seuls ses volets visibles restent.
  */
 async function withinRights(userId: string, saga: SagaInfo | null, members: SagaMember[]): Promise<SagaInfo | null> {
   if (!saga) return saga;
   const visible = new Set(members.map((member) => member.tmdbId));
-  const rights = await libraryRightsFor(userId);
-  const parts = saga.parts.filter(
-    (part) => visible.has(part.tmdbId) || (rights !== null && !rights.hidesTitle("movie", part.tmdbId)),
-  );
-  return { ...saga, parts };
+  const absent = saga.parts.filter((part) => !visible.has(part.tmdbId)).map((part) => ({ ...part, mediaType: "movie" as const }));
+  const allowed = new Set((await filterByRights(userId, absent)).map((part) => part.tmdbId));
+  return { ...saga, parts: saga.parts.filter((part) => visible.has(part.tmdbId) || allowed.has(part.tmdbId)) };
 }
 
 const PARAMS = z.object({ collectionId: z.coerce.number().int().min(1).max(2_147_483_647) });
