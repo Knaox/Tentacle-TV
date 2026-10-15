@@ -216,6 +216,12 @@ function onGraceExpired(userId: string): void {
   }
 }
 
+/** Un compte BLOQUÉ (désactivé, hors plage) sort du salon sur-le-champ, sans la
+ *  grâce d'une déconnexion (docs/DROITS-UTILISATEURS.md § 9.1). */
+export function leaveWatchTogetherNow(userId: string): void {
+  onGraceExpired(userId);
+}
+
 /** Le socket d'un membre vient de se fermer (routes/ws.ts). Si c'était celui
  *  de son lecteur en séance, la salle ne l'attend plus. */
 export function handleSocketClosed(userId: string, socket: WebSocket): void {

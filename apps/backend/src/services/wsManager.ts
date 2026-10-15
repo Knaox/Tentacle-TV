@@ -6,6 +6,7 @@ import {
   type FamilyProfileEndReason,
   type FamilyWsMessage,
 } from "../family/familyProtocol";
+import type { AccountAccessWsMessage } from "../accountAccess/accountAccessContract";
 
 /** Carousel identifiers for home:update events. */
 export type CarouselId = string;
@@ -30,6 +31,8 @@ export type WsServerMessage =
   /** La Famille : relire (`family:update`), ou la fin d'une session de profil
    *  de TV (`family:profile-ended`, puis fermeture 4010). */
   | FamilyWsMessage
+  /** L'accès du compte vient de changer (désactivé, hors plage, rouvert) — § 9.1. */
+  | AccountAccessWsMessage
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */
@@ -191,6 +194,18 @@ export function closeDeviceSockets(tokenHash: string, code: number, reason: stri
   const dset = deviceSockets.get(tokenHash);
   if (!dset) return;
   for (const ws of dset) if (ws.readyState === 1 /* OPEN */) ws.close(code, reason);
+}
+
+/** Toutes les sockets d'un COMPTE fermées (compte bloqué, après l'annonce `account:access`). */
+export function closeUserSockets(userId: string, code: number, reason: string): void {
+  const set = connections.get(userId);
+  if (!set) return;
+  for (const ws of [...set]) if (ws.readyState === 1 /* OPEN */) ws.close(code, reason);
+}
+
+/** Les comptes qui ont au moins une socket ouverte. */
+export function connectedUserIds(): string[] {
+  return [...connections.keys()];
 }
 
 // ── Broadcasting ──
