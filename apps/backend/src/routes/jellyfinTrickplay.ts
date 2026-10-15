@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { accountAccessRefusal } from "../services/accountAccess/accountAccessState";
 import { Readable } from "stream";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
@@ -52,6 +53,9 @@ export const jellyfinTrickplayRoutes: FastifyPluginAsync = async (app) => {
     const device = await pairedDeviceStatus(incomingToken);
     if (device.status === "revoked") return reply.status(401).send(revokedReplyFor(device.payload));
     if (device.status === "unreachable") return reply.status(503).send({ message: "Base de données indisponible" });
+    // Désactivé ou hors plage : rien, même la vignette (cf. accountAccessState).
+    const blocked = device.status === "paired" ? await accountAccessRefusal(device.payload.userId) : null;
+    if (blocked) return reply.status(403).send(blocked);
     // Une vignette montre le titre : elle ne part que vers un compte qui le voit
     // (cf. streamAccess) — Jellyfin la servirait à tout jeton.
     if (await itemRefused(params.itemId, incomingToken, device.status === "paired" ? device.payload.userId : null)) {

@@ -14,6 +14,7 @@
  * blanche.
  */
 
+import { accountAccessRoutes } from "./accountAccess";
 import type { FastifyInstance } from "fastify";
 import { authRoutes } from "./auth";
 import { inviteRoutes } from "./invites";
@@ -74,6 +75,7 @@ import { externalAccountRoutes } from "./externalAccounts";
 /** Enregistre, dans l'ordre, toutes les routes de l'application, puis le proxy de Jellyfin. */
 export async function registerApplicationRoutes(app: FastifyInstance): Promise<void> {
   await app.register(authRoutes, { prefix: "/api/auth" });
+  await app.register(accountAccessRoutes, { prefix: "/api/account" });
   await app.register(inviteRoutes, { prefix: "/api/invites" });
   await app.register(preferenceRoutes, { prefix: "/api/preferences" });
   await app.register(updateRoutes, { prefix: "/api/update" });

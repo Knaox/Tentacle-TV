@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getJellyfinUrl } from "../services/configStore";
 import { getPrisma, hasPrisma } from "../services/db";
-import { forgetValidatedToken, requireAuth } from "../middleware/auth";
+import { forgetValidatedToken, requireSessionAnyAccess } from "../middleware/auth";
 import { hashToken, verifyDeviceToken, verifyImpersonationToken } from "../services/jwt";
 import { revokePairedDevice } from "../services/deviceRevocation";
 import { endPickerHost } from "../services/family/familyPickerHosts";
@@ -132,7 +132,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** POST /api/auth/logout — Invalidate Jellyfin session + clear cookie. */
-  app.post("/logout", { preHandler: [requireAuth] }, async (request, reply) => {
+  // Ouverte à un compte bloqué (désactivé, hors plage) : il doit pouvoir partir.
+  app.post("/logout", { preHandler: [requireSessionAnyAccess] }, async (request, reply) => {
     const jellyfinUrl = getJellyfinUrl();
     const authHeader = request.headers.authorization;
     const token = authHeader?.slice(7)

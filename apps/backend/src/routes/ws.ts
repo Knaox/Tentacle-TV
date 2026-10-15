@@ -14,6 +14,7 @@ import {
 import { isSessionMessageType } from "../services/deviceSessions/protocolParse";
 import { FAMILY_PROFILE_ENDED_CLOSE_CODE } from "../family/familyProtocol";
 import { canUseWatchTogether } from "../services/family/profileSessionLimits";
+import { blockedSocketAccess, refuseBlockedSocket } from "../services/accountAccess/socketAccess";
 
 const AUTH_TIMEOUT_MS = 15_000;
 /** Ping protocolaire toutes les 10 s ; deux pongs manqués = socket mort,
@@ -112,8 +113,14 @@ async function authenticateAndBind(
   const tokenHash = hashToken(token);
   // Révoqué pendant la validation : la révocation a poussé AVANT que cette
   // socket ne soit connue — elle ne l'aurait jamais fermée.
-  const revoked = result.ok ? isDeviceRevoked(tokenHash) : result.revoked === true;
-  const profileEnded = result.ok ? result.user.session === "tvProfile" : result.profileEnded === true;
+  const revoked = result.ok ? isDeviceRevoked(tokenHash) : "revoked" in result && result.revoked === true;
+  const profileEnded = result.ok ? result.user.session === "tvProfile" : "profileEnded" in result && result.profileEnded === true;
+  // Désactivé ou hors plage : refusé avec l'état, sans reconnexion en boucle (cf. socketAccess).
+  const blocked = revoked ? null : await blockedSocketAccess(result);
+  if (blocked) {
+    refuseBlockedSocket(ws, blocked);
+    return null;
+  }
   if (!result.ok || revoked) {
     if (revoked && profileEnded) {
       // Une session de profil (Famille) terminée : la TV revient à « Qui

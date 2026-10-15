@@ -4,7 +4,9 @@ import { verifyImpersonationToken } from "../services/jwt";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders } from "../services/jellyfinAuth";
 import { pairedDeviceStatus, PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../services/pairedDeviceStatus";
 import { profileSessionScope } from "../services/family/profileSessionLimits";
-import { OUTSIDE_SCHEDULE_REPLY, outsideAccessSchedule } from "../services/itemAccess/accessSchedule";
+import { accountAccessReply, sessionAccessRefusal } from "../services/accountAccess/accountAccessState";
+import { blockedJellyfinToken, forgetTokenOwner, rememberTokenOwner } from "../services/accountAccess/tokenOwners";
+import type { AccountAccessBlocked } from "../accountAccess/accountAccessContract";
 
 /**
  * D'où vient la session d'une requête — la Famille en tire ses droits
@@ -24,12 +26,15 @@ export interface JellyfinUser {
   pairingId?: string;
 }
 
-type ValidationResult =
+export type ValidationResult =
   | { ok: true; user: JellyfinUser }
   /** `revoked` : un jeton d'appareil dont le jumelage n'existe plus — le seul
    *  refus qui autorise un client à se déjumeler ; `profileEnded` : c'était une
    *  session de profil, la TV revient à « Qui regarde ? » sans se déjumeler. */
-  | { ok: false; reason: "invalid" | "unreachable"; revoked?: true; profileEnded?: true };
+  | { ok: false; reason: "invalid" | "unreachable"; revoked?: true; profileEnded?: true }
+  /** Un jeton Jellyfin que Jellyfin refuse parce que son COMPTE est bloqué
+   *  (désactivé, hors plage) : 403 `account_access`, jamais 401 — `user` s'il est connu. */
+  | { ok: false; reason: "blocked"; access: AccountAccessBlocked; user?: JellyfinUser };
 
 // Token validation cache (TTL 5 min) to avoid hammering Jellyfin on every request
 const tokenCache = new Map<string, { user: JellyfinUser; expiresAt: number }>();
@@ -68,6 +73,9 @@ async function validateJellyfinToken(token: string): Promise<ValidationResult> {
       // redémarrage Jellyfin ne doit pas déconnecter les clients → unreachable
       // (503 côté requireAuth, session conservée) avec repli cache stale.
       if (res.status === 401 || res.status === 403) {
+        // Un compte bloqué n'est pas un jeton invalide : le client ne se déconnecte pas.
+        const blocked = await blockedJellyfinToken(token, res.status, { identityCheck: true });
+        if (blocked) return { ok: false, reason: "blocked", access: blocked.access, user: blocked.owner ? { ...blocked.owner, session: "personal" } : undefined };
         return { ok: false, reason: "invalid" };
       }
       const stale = tokenCache.get(token);
@@ -81,6 +89,7 @@ async function validateJellyfinToken(token: string): Promise<ValidationResult> {
       isAdmin: data.Policy?.IsAdministrator === true,
     };
     cacheUser(token, user);
+    rememberTokenOwner(token, user);
     return { ok: true, user };
   } catch {
     // Network error / timeout — try stale cache before giving up
@@ -128,11 +137,13 @@ export async function validateToken(token: string): Promise<ValidationResult> {
  *  cache de validation, ni son repli quand Jellyfin ne répond pas. */
 export function forgetValidatedToken(token: string): void {
   tokenCache.delete(token);
+  forgetTokenOwner(token);
 }
 
 /** Le refus d'une porte : 503 sans verdict, 401 sinon — avec `revoked` quand
  *  le jumelage n'existe plus. */
 function rejection(result: Extract<ValidationResult, { ok: false }>) {
+  if (result.reason === "blocked") return { status: 403, body: accountAccessReply(result.access) };
   if (result.reason === "unreachable") return { status: 503, body: { message: "Jellyfin unreachable" } };
   if (result.profileEnded) return { status: 401, body: PROFILE_ENDED_REPLY };
   return { status: 401, body: result.revoked ? REVOKED_REPLY : { message: "Invalid token" } };
@@ -184,11 +195,10 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
   const user = await profileScoped(request, reply, result.user);
   if (!user) return reply;
-  // Hors de ses plages horaires, un compte ne regarde rien — même ce que
-  // Tentacle lui sert avec la clé d'administration (cf. accessSchedule).
-  if (!user.isAdmin && user.session !== "impersonation" && (await outsideAccessSchedule(user.userId))) {
-    return reply.status(403).send(OUTSIDE_SCHEDULE_REPLY);
-  }
+  // Désactivé ou hors de ses plages, un compte ne se sert plus de Tentacle —
+  // même de ce qu'il lui sert avec la clé d'administration (cf. accountAccessState).
+  const refusal = await sessionAccessRefusal(user);
+  if (refusal) return reply.status(403).send(refusal);
 
   (request as any).user = user;
 }
@@ -210,6 +220,8 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
   }
   const user = await profileScoped(request, reply, result.user);
   if (!user) return reply;
+  const refusal = await sessionAccessRefusal(user);
+  if (refusal) return reply.status(403).send(refusal);
 
   (request as any).user = user;
 }
@@ -232,5 +244,29 @@ export async function requirePersonalAdmin(request: FastifyRequest, reply: Fasti
   if (!result.user.isAdmin || result.user.session !== "personal") {
     return reply.status(403).send({ message: "Forbidden" });
   }
+  const refusal = await sessionAccessRefusal(result.user);
+  if (refusal) return reply.status(403).send(refusal);
   (request as FastifyRequest & { user?: JellyfinUser }).user = result.user;
+}
+
+/**
+ * Les SEULES portes ouvertes à un compte bloqué (§ 9.1) : l'état de son accès,
+ * la déconnexion, le déjumelage. Pose `request.user` quand le compte est connu,
+ * et `request.accountAccessBlocked` quand Jellyfin a déjà refusé son jeton.
+ */
+export async function requireSessionAnyAccess(request: FastifyRequest, reply: FastifyReply) {
+  const token = getTokenFromRequest(request);
+  if (!token) return reply.status(401).send({ message: "Unauthorized" });
+  const result = await validateToken(token);
+  const target = request as FastifyRequest & { user?: JellyfinUser; accountAccessBlocked?: AccountAccessBlocked };
+  if (result.ok) {
+    target.user = result.user;
+    return;
+  }
+  if (result.reason !== "blocked") {
+    const { status, body } = rejection(result);
+    return reply.status(status).send(body);
+  }
+  target.user = result.user;
+  target.accountAccessBlocked = result.access;
 }

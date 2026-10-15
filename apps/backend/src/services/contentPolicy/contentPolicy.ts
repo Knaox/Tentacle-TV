@@ -34,6 +34,13 @@ export interface ContentPolicy {
   enabledFolders: string[];
   blockedMediaFolders: string[];
   accessSchedules: AccessScheduleDto[];
+  /** L'ACCÈS du compte (§ 9.1) — `IsDisabled` ; illisible : faux (une panne ne bloque personne). */
+  isDisabled: boolean;
+  /** `MaxActiveSessions` : 0 = sans limite. */
+  maxActiveSessions: number;
+  /** `InvalidLoginAttemptCount` et `LoginAttemptsBeforeLockout` (-1 = jamais). */
+  invalidLoginAttemptCount: number;
+  loginAttemptsBeforeLockout: number;
 }
 
 const TTL_MS = 30_000;
@@ -59,6 +66,10 @@ export function closedContentPolicy(userId: string): ContentPolicy {
     enabledFolders: [],
     blockedMediaFolders: [],
     accessSchedules: [],
+    isDisabled: false,
+    maxActiveSessions: 0,
+    invalidLoginAttemptCount: 0,
+    loginAttemptsBeforeLockout: -1,
   };
 }
 
@@ -99,6 +110,10 @@ export function contentPolicyFromJellyfin(userId: string, policy: Record<string,
     enabledFolders: strings(policy.EnabledFolders).map(normalizeJellyfinId),
     blockedMediaFolders: strings(policy.BlockedMediaFolders).map(normalizeJellyfinId),
     accessSchedules: schedules(policy.AccessSchedules),
+    isDisabled: policy.IsDisabled === true,
+    maxActiveSessions: integerOrNull(policy.MaxActiveSessions) ?? 0,
+    invalidLoginAttemptCount: integerOrNull(policy.InvalidLoginAttemptCount) ?? 0,
+    loginAttemptsBeforeLockout: integerOrNull(policy.LoginAttemptsBeforeLockout) ?? -1,
   };
   return { ...result, restricted: isPolicyRestricted(result) };
 }

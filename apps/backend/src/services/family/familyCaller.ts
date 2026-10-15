@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { getTokenFromRequest, validateToken } from "../../middleware/auth";
+import { accountAccessReply, sessionAccessRefusal } from "../accountAccess/accountAccessState";
 import { getPrisma } from "../db";
 import { hashToken, verifyDeviceToken, verifyTvPairingToken } from "../jwt";
 import { PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../pairedDeviceStatus";
@@ -85,11 +86,15 @@ export function familyGuard(spec: FamilyRouteSpec) {
 
     const result = await validateToken(token);
     if (!result.ok) {
+      if (result.reason === "blocked") return reply.status(403).send(accountAccessReply(result.access));
       if (result.reason === "unreachable") return reply.status(503).send({ message: "Jellyfin unreachable" });
       if (result.profileEnded) return reply.status(401).send(PROFILE_ENDED_REPLY);
       return reply.status(401).send(result.revoked ? REVOKED_REPLY : { message: "Invalid token" });
     }
     const { userId, username, isAdmin, session } = result.user;
+    // Désactivé ou hors plage : aucune route de la Famille (le sélecteur des TV, lui, reste ouvert).
+    const refusal = await sessionAccessRefusal(result.user);
+    if (refusal) return reply.status(403).send(refusal);
     const actor = (as: FamilyActor["as"]): void => {
       request.familyActor = { userId, username, isAdmin, as, token };
     };

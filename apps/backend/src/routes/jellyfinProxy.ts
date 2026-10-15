@@ -22,7 +22,7 @@ import { deviceRefusal } from "./jellyfinProxy/deviceGuard";
 import { scopedToDeviceUser } from "./jellyfinProxy/deviceUserScope";
 import { gatePlayback } from "./jellyfinProxy/playbackGate";
 import { getRealClientIp } from "../services/networkUtils";
-import { OUTSIDE_SCHEDULE_REPLY, outsideAccessSchedule } from "../services/itemAccess/accessSchedule";
+import { deviceAccessRefusal, personalTokenRefusal } from "./jellyfinProxy/accountAccessRefusal";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
 import { impersonatedUserId, resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
@@ -86,10 +86,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // est bornée au compte, dont Jellyfin applique alors les droits (cf. deviceUserScope).
     const lentKeyUser = device?.status === "paired" ? device.payload.userId : await impersonatedUserId(incomingToken);
     if (lentKeyUser) targetUrl = buildTargetUrl(jellyfinUrl, route.path, scopedToDeviceUser(route.path, route.query, lentKeyUser));
-    // Hors de ses plages horaires, la TV d'un compte ne lit rien (cf. accessSchedule).
-    if (device?.status === "paired" && !device.payload.isAdmin && (await outsideAccessSchedule(device.payload.userId))) {
-      return reply.status(403).send(OUTSIDE_SCHEDULE_REPLY);
-    }
+    // Désactivé ou hors de ses plages, la TV d'un compte ne lit rien (cf. accountAccessState).
+    const blocked = device?.status === "paired" ? await deviceAccessRefusal(device.payload.userId) : null;
+    if (blocked) return reply.status(403).send(blocked);
     // La lecture : titre visible, lecture et conversions permises, plafond distant (cf. playbackGate).
     const gate = await gatePlayback({ path: wildcardPath, query: route.query, token: incomingToken, lentKeyUser, clientIp: getRealClientIp(request) });
     if (gate.kind === "hidden") return reply.status(404).send({ error: "Not found" });
@@ -162,6 +161,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const start = performance.now();
     try {
       const response = await undiciFetch(targetUrl, fetchInit);
+      // Un jeton Jellyfin refusé parce que son compte est bloqué : le refus de Tentacle.
+      const refused = device?.status === "paired" ? null : await personalTokenRefusal(incomingToken, response);
+      if (refused) return reply.status(403).send(refused);
       reply.status(response.status);
 
       const traceCtx = {
@@ -178,8 +180,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         void clearDeviceTokenIfInvalid(incomingToken);
       }
 
-      // Media streams: forward content-length/encoding so the browser can
-      // support Range requests, progress bars, and correct buffering.
+      // Media streams: forward content-length/encoding (Range requests, progress bars, buffering).
       const isMediaResponse = isProgressiveStream || /\/(hls1|Audio)\//.test(wildcardPath);
       // Images : cache navigateur explicite (cf. imageCacheControl), jamais sur
       // une 404 d'affiche. Posé après la boucle pour écraser Jellyfin, dont la

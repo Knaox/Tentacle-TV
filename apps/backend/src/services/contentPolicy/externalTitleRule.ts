@@ -1,3 +1,4 @@
+import { isWithinSchedules } from "../../accountAccess/accountAccessRule";
 import type { ContentPolicy } from "./contentPolicy";
 import { RATING_ADULT, scoreCertification, stricter, type LiveRatingEntry, type RatingScore } from "./ratingTables";
 
@@ -69,31 +70,14 @@ export function tagsAllowed(keywords: readonly string[], policy: Pick<ContentPol
   return true;
 }
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
-
 /**
  * Les plages horaires, À L'INSTANT `now` — jamais gardées en cache avec la politique.
- * Calquée sur Jellyfin 10.11.11 (`UserEntityExtensions.IsParentalScheduleAllowed`) :
- * aucune plage = permis ; sinon l'heure LOCALE h (heures décimales) d'un jour couvert
- * (`Everyday`, `Weekday` lundi→vendredi, `Weekend` samedi et dimanche, ou le jour
- * nommé) vérifie `StartHour ≤ h ≤ EndHour`, bornes INCLUSES des deux côtés. L'heure
- * locale est celle du serveur Tentacle — celle de Jellyfin n'est pas lisible.
+ * UNE seule règle, celle de l'accès du compte (`accountAccessRule.isWithinSchedules`,
+ * § 9.1) : Jellyfin 10.11.11 (`IsParentalScheduleAllowed`), heure LOCALE du serveur
+ * Tentacle en heures décimales secondes comprises, bornes INCLUSES.
  */
 export function scheduleAllows(policy: Pick<ContentPolicy, "accessSchedules">, now: Date): boolean {
-  if (policy.accessSchedules.length === 0) return true;
-  const day = DAYS[now.getDay()];
-  const hour = now.getHours() + now.getMinutes() / 60;
-  return policy.accessSchedules.some((entry) => {
-    const days =
-      entry.dayOfWeek === "Everyday"
-        ? DAYS
-        : entry.dayOfWeek === "Weekday"
-          ? DAYS.slice(1, 6)
-          : entry.dayOfWeek === "Weekend"
-            ? [DAYS[0], DAYS[6]]
-            : [entry.dayOfWeek];
-    return (days as readonly string[]).includes(day) && hour >= entry.startHour && hour <= entry.endHour;
-  });
+  return isWithinSchedules(policy.accessSchedules, now.getTime());
 }
 
 /**

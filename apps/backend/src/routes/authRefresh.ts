@@ -4,6 +4,8 @@ import { verifyImpersonationToken } from "../services/jwt";
 import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceStatus";
 import { setSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
+import { accountAccessReply } from "../services/accountAccess/accountAccessState";
+import { blockedJellyfinToken } from "../services/accountAccess/tokenOwners";
 
 /**
  * POST /api/auth/refresh — revalide le token et refait glisser le cookie.
@@ -76,6 +78,9 @@ export const authRefreshRoutes: FastifyPluginAsync = async (app) => {
         // Seul un refus explicite invalide le token. Un 5xx (Jellyfin en
         // redémarrage/maintenance) ne doit JAMAIS déconnecter les clients.
         if (res.status === 401 || res.status === 403) {
+          // Un compte bloqué (désactivé, hors plage) garde sa session : 403, jamais 401.
+          const blocked = await blockedJellyfinToken(token, res.status, { identityCheck: true });
+          if (blocked) return reply.status(403).send(accountAccessReply(blocked.access));
           return reply.status(401).send({ message: "Token invalide" });
         }
         return reply.status(503).send({ message: "Jellyfin indisponible" });
