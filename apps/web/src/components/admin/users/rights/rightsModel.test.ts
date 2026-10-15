@@ -33,6 +33,11 @@ describe("le résumé d'une rubrique", () => {
       .toEqual([{ key: "summary.bitrate", values: { mbps: 4.5 } }]);
   });
 
+  it("dit Watch Together interdit, ou réduit à rejoindre un salon", () => {
+    expect(keys(groupSummary("playback", { ...PLAIN_RIGHTS, syncPlayAccess: "None" }, context))).toEqual(["summary.noSyncPlay"]);
+    expect(keys(groupSummary("playback", { ...PLAIN_RIGHTS, syncPlayAccess: "JoinGroups" }, context))).toEqual(["summary.syncPlayJoinOnly"]);
+  });
+
   it("résume hors ligne et gestion", () => {
     expect(keys(groupSummary("offline", PLAIN_RIGHTS, context))).toEqual(["summary.download"]);
     expect(groupSummary("management", PLAIN_RIGHTS, context)).toEqual([{ key: "summary.managementCount", values: { count: 1 } }]);

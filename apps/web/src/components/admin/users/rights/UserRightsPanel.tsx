@@ -85,6 +85,8 @@ export function UserRightsPanel({ userId, name, isSelf }: UserRightsPanelProps) 
                 </RightsGroup>
               );
             })}
+            {/* Emplacement des droits de la FAMILLE (une rubrique de plus, après « Gestion ») :
+                ils ne sont pas un champ de la politique Jellyfin, leur composant se monte ici. */}
           </div>
         </>
       )}

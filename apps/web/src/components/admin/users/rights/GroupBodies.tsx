@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { SYNC_PLAY_ACCESS, type UserRights, type UserRightsOptions } from "@tentacle-tv/shared";
 import { bitsFromMbps, mbpsFromBits, toggleInList } from "../../../parental/parentalModel";
-import { CheckList, NumberRight, SelectRight, ToggleRight } from "./RightRows";
+import { ChoiceRight } from "./ChoiceRight";
+import { CheckList, NumberRight, ToggleRight } from "./RightRows";
 import { MANAGEMENT_FLAGS, lockedForSelf } from "./rightsModel";
 import type { RightsWriter } from "./useRightsWriter";
 
@@ -47,10 +48,15 @@ export function PlaybackBody({ rights, writer }: GroupProps) {
         fromRight={mbpsFromBits}
         writer={writer}
       />
-      <SelectRight
+      {/* SyncPlay de Jellyfin, que Tentacle montre sous le nom de Watch Together. */}
+      <ChoiceRight
         field="syncPlayAccess"
         value={rights.syncPlayAccess}
-        choices={SYNC_PLAY_ACCESS.map((value) => ({ value, label: t(`values.syncPlay.${value}`) }))}
+        choices={SYNC_PLAY_ACCESS.map((value) => ({
+          value,
+          label: t(`values.syncPlay.${value}`),
+          detail: t(`values.syncPlayDetail.${value}`),
+        }))}
         writer={writer}
       />
     </>
@@ -77,7 +83,7 @@ export function OfflineBody({ rights, writer }: GroupProps) {
   );
 }
 
-/** La gestion : supprimer, ranger, sous-titrer, la télévision en direct, le partage. */
+/** La gestion : supprimer des titres, partager ses listes par un lien public. */
 export function ManagementBody({ rights, options, writer }: GroupProps) {
   const { t } = useTranslation("userRights");
   const libraries = options?.libraries ?? [];

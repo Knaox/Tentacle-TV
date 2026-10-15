@@ -69,6 +69,7 @@ export function groupSummary(group: UserRightsGroup, rights: UserRights, context
         parts.push({ key: "summary.bitrate", values: { mbps: Math.round(rights.remoteClientBitrateLimit / 100_000) / 10 } });
       }
       if (rights.syncPlayAccess === "None") parts.push({ key: "summary.noSyncPlay" });
+      else if (rights.syncPlayAccess === "JoinGroups") parts.push({ key: "summary.syncPlayJoinOnly" });
       return parts.length ? parts : [{ key: "summary.playbackFull" }];
     }
     case "offline":

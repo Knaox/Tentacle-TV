@@ -1,9 +1,8 @@
 import { memo, useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
 import { USER_RIGHTS_FIELDS, type UserRightsFieldSpec, type UserRightsKey } from "@tentacle-tv/shared";
 import { ToggleSwitch } from "../../../settings/ToggleSwitch";
-import { CHECKBOX, FIELD_HINT, FIELD_LABEL, INPUT, SELECT, SMALL_BUTTON } from "../../../parental/fieldStyles";
+import { CHECKBOX, FIELD_HINT, FIELD_LABEL, INPUT, SMALL_BUTTON } from "../../../parental/fieldStyles";
 import type { RightsWriter } from "./useRightsWriter";
 
 /** Le refus du serveur sous le réglage qui l'a provoqué (annoncé aux lecteurs d'écran). */
@@ -129,32 +128,6 @@ export const NumberRight = memo(function NumberRight({
     </div>
   );
 });
-
-interface SelectRightProps<T extends string> {
-  field: UserRightsKey;
-  value: T;
-  choices: readonly { value: T; label: string }[];
-  writer: RightsWriter;
-}
-
-export function SelectRight<T extends string>({ field, value, choices, writer }: SelectRightProps<T>) {
-  const { t } = useTranslation("userRights");
-  const id = useId();
-  return (
-    <div>
-      <label htmlFor={id} className={FIELD_LABEL}>{t(`fields.${field}.label`)}</label>
-      <span className={FIELD_HINT}>{t(`fields.${field}.hint`)}</span>
-      <span className="relative mt-2 block">
-        <select id={id} value={value} disabled={writer.isPending(field)} className={SELECT}
-          onChange={(event) => writer.write({ [field]: event.target.value })}>
-          {choices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
-        </select>
-        <ChevronDown aria-hidden className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary" />
-      </span>
-      <RightError text={writer.errorFor(field)} />
-    </div>
-  );
-}
 
 interface CheckListProps {
   title: string;
