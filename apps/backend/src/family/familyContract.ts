@@ -35,7 +35,7 @@ export const FAMILY_CONTRACT_VERSION = 2;
 export * from "./familyLimits";
 export * from "./familyParental";
 import type { FamilyGuestPhotoType } from "./familyLimits";
-import type { GuestParentalDto } from "./familyParental";
+import type { GuestParentalCeiling, GuestParentalControls } from "./familyParental";
 
 /** Les couleurs d'un profil — des NOMS de jetons, chaque client les peint. */
 export const FAMILY_PROFILE_COLORS = ["violet", "pink", "blue", "teal", "green", "amber", "orange", "red"] as const;
@@ -123,8 +123,7 @@ export interface FamilyProfileDto {
   name: string;
   color: FamilyProfileColor;
   hasPin: boolean;
-  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo. Un invité a la
-   *  sienne depuis la 1.29.0 (`setGuestPhoto`) ; un serveur d'avant rend null. */
+  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo (un invité : depuis la 1.29.0). */
   imageTag: string | null;
   /** Arrivée dans la famille (ISO) ; null pour le propriétaire. */
   since: string | null;
@@ -134,11 +133,12 @@ export interface FamilyProfileDto {
   createdByName: string | null;
   /** Un membre : ce que le propriétaire lui permet ; null pour le propriétaire et les invités. */
   rights: FamilyMemberRights | null;
-  /** Un invité : ce que le propriétaire lui permet ; null sinon. Toujours rendu
-   *  par un serveur v2 ; absent : aucun droit. */
+  /** Un invité : ce que le propriétaire lui permet ; null sinon (absent : aucun droit). */
   guestRights?: FamilyGuestRights | null;
-  /** Un invité : son contrôle parental (1.30.0) ; null sinon, absent : serveur d'avant. */
-  parental?: GuestParentalDto | null;
+  /** Un invité (1.30.0), rendu SEULEMENT à qui peut le régler (absent sinon) : le
+   *  contrôle parental VOULU, puis le plafond de son créateur (null : Jellyfin muet). */
+  parental?: GuestParentalControls | null;
+  parentalCeiling?: GuestParentalCeiling | null;
 }
 
 export interface OutgoingInvitationDto {

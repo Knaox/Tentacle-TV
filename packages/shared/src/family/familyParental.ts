@@ -16,7 +16,7 @@
  * (commande de recopie : l'en-tête de `familyContract.ts`).
  */
 
-import type { AccessScheduleDto, UnratedItemType } from "../userRights/userRightsContract";
+import type { AccessScheduleDto, UnratedItemType, UserRightsOptions } from "../userRights/userRightsContract";
 
 /** Ce que la famille règle pour UN invité — les mots et les formes de `UserRights`. */
 export interface GuestParentalControls {
@@ -39,14 +39,30 @@ export const GUEST_PARENTAL_NONE: Readonly<GuestParentalControls> = {
   accessSchedules: [],
 };
 
-/** `FamilyProfileDto.parental` d'un invité (champ additif ; absent : serveur d'avant). */
+/**
+ * Le PLAFOND : les restrictions du créateur, lues dans sa politique Jellyfin.
+ * L'invité ne va jamais au-delà ; ses étiquettes PERMISES s'imposent aussi à lui.
+ */
+export interface GuestParentalCeiling extends GuestParentalControls {
+  allowedTags: string[];
+}
+
+/**
+ * `FamilyProfileDto.parental` / `parentalCeiling` (champs additifs, 1.30.0) : rendus
+ * SEULEMENT à qui peut régler cet invité (le propriétaire, ou le membre qui l'a
+ * créé) ; ABSENTS pour tout autre appelant, et sur un serveur d'avant.
+ * `PUT /api/family/guests/:userId/parental` rend la même paire.
+ */
 export interface GuestParentalDto {
   /** Ce que la famille veut pour cet invité. */
-  controls: GuestParentalControls;
-  /** Ce que son créateur impose déjà (le plancher, lu dans Jellyfin) ; null si Jellyfin
-   *  ne répond pas. Les étiquettes PERMISES du créateur s'imposent aussi à l'invité. */
-  inherited: (GuestParentalControls & { allowedTags: string[] }) | null;
+  parental: GuestParentalControls;
+  /** Le plafond de son créateur ; null si Jellyfin ne répond pas. */
+  parentalCeiling: GuestParentalCeiling | null;
 }
 
 /** `PUT /api/family/guests/:userId/parental` : le contrôle ENTIER (remplacement). */
 export type SetGuestParentalBody = GuestParentalControls;
+
+/** `GET /api/family/parental/options` : le sous-ensemble de `UserRightsOptions` qui
+ *  sert au contrôle parental, mêmes formes, même lecture côté serveur. */
+export type FamilyParentalOptionsDto = Pick<UserRightsOptions, "parentalRatings" | "unratedItemTypes" | "knownTags">;

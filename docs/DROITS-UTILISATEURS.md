@@ -123,15 +123,32 @@ de champs — jamais une valeur.
   Le contrôle parental voulu pour l'invité est gardé par Tentacle (c'est un réglage de la
   Famille, pas un droit Jellyfin) ; la politique EFFECTIVE, elle, vit dans Jellyfin.
 
-### 4.1 Précisions du socle (étape A)
+### 4.1 Précisions (étape A, décisions du coordinateur)
 
 - Contrat dans `packages/shared/src/family/familyParental.ts` (miroir, ré-exporté par
-  `familyContract.ts`). `FamilyProfileDto.parental?: GuestParentalDto | null` :
-  `{ controls, inherited }` — `controls` = ce que la famille veut ; `inherited` = ce que le
-  créateur impose déjà, lu dans Jellyfin (avec ses `allowedTags`), `null` si Jellyfin est muet.
+  `familyContract.ts`).
+- **État lu avec l'invité** : deux champs ADDITIFS de `FamilyProfileDto` —
+  `parental?: GuestParentalControls | null` (la valeur VOULUE) et
+  `parentalCeiling?: GuestParentalCeiling | null` (les restrictions du créateur, le plafond :
+  `maxParentalRating`, `maxParentalSubRating`, `blockUnratedItems`, `blockedTags`,
+  `allowedTags`, `accessSchedules` ; null si Jellyfin est muet). Remplis SEULEMENT pour un
+  appelant qui peut régler cet invité (le propriétaire, ou le membre qui l'a créé) ; ABSENTS
+  pour tout autre appelant.
 - `setGuestParental` : `PUT`, corps = le contrôle ENTIER (remplacement), réponse
-  `GuestParentalDto`, 30 par minute. Refus : codes existants de la Famille
-  (`family.invalid_input`, `family.not_owner`, `family.jellyfin_*`) — aucun code nouveau.
+  `GuestParentalDto` = `{ parental, parentalCeiling }`, 30 par minute.
+- `parentalOptions` : `GET /api/family/parental/options`, appelant `personal`, réservée à qui
+  peut régler au moins un invité (`family.not_owner` sinon) → `FamilyParentalOptionsDto` =
+  `{ parentalRatings, unratedItemTypes, knownTags }`, le sous-ensemble de `UserRightsOptions`,
+  mêmes formes ; UNE fonction de lecture sert les deux routes.
+- Refus : codes existants de la Famille (`family.invalid_input`, `family.not_owner`,
+  `family.jellyfin_*`) — aucun code nouveau.
+- **Formes des valeurs, communes au contrat admin et à la Famille** (conformes à Jellyfin
+  10.11) : `maxParentalRating` = score Jellyfin, `number | null` ; `maxParentalSubRating` =
+  `number | null` ; `blockUnratedItems` = noms de l'enum `UnratedItem` ; `accessSchedules` =
+  `{ dayOfWeek, startHour, endHour }[]` en camelCase, `dayOfWeek` ∈ `Sunday`…`Saturday` |
+  `Everyday` | `Weekday` | `Weekend`, heures DÉCIMALES (`double` chez Jellyfin : 20.5 = 20 h 30),
+  `0 ≤ startHour < endHour ≤ 24` ; `syncPlayAccess` ∈ `CreateAndJoinGroups` | `JoinGroups` |
+  `None` ; `remoteClientBitrateLimit` en bits/s, 0 = illimité.
 
 ## 5. Le filtrage du contenu — `apps/backend/src/services/contentPolicy/`
 
