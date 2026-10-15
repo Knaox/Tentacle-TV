@@ -18,6 +18,7 @@ import { jellyfinAdminFetch } from "../jellyfinAdminFetch";
 import { closeUserSockets, connectedUserIds, onPresenceChange, sendToUser } from "../wsManager";
 import { leaveWatchTogetherNow } from "../watchTogether/gateway";
 import { accessPolicyOf } from "./accountAccessState";
+import { keepPlaybackPositions } from "./keepPositions";
 import { accountAccessOf, nextScheduleChange, sameAccountAccess } from "../../accountAccess/accountAccessRule";
 import { ACCOUNT_ACCESS_CLOSE_CODE, type AccountAccessState } from "../../accountAccess/accountAccessContract";
 
@@ -39,11 +40,13 @@ let watchTimer: ReturnType<typeof setInterval> | null = null;
 
 const keyOf = (userId: string) => userId.replace(/-/g, "").toLowerCase();
 
-function announce(userId: string, access: AccountAccessState): void {
+async function announce(userId: string, access: AccountAccessState): Promise<void> {
   console.log(`[account-access] ${userId} → ${access.state}`);
   sendToUser(userId, { type: "account:access", ...access });
   if (access.state === "allowed") return;
   leaveWatchTogetherNow(userId);
+  // La position d'abord : le rapport d'arrêt du compte sera refusé par Jellyfin.
+  await keepPlaybackPositions(userId).catch(() => 0);
   closeUserSockets(userId, ACCOUNT_ACCESS_CLOSE_CODE, "Account access");
 }
 
@@ -55,7 +58,7 @@ export async function evaluateAccountAccess(userId: string, now = Date.now()): P
   const edge = policy.readable ? nextScheduleChange(policy.accessSchedules, now) : null;
   const previous = watched.get(userId);
   watched.set(userId, { access, edge });
-  if (previous && !sameAccountAccess(previous.access, access)) announce(userId, access);
+  if (previous && !sameAccountAccess(previous.access, access)) await announce(userId, access);
   armEdgeTimer();
 }
 

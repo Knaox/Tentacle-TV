@@ -39,6 +39,7 @@ vi.mock("../wsManager", () => ({
   closeUserSockets: (userId: string, code: number) => state.closed.push({ userId, code }),
 }));
 vi.mock("../watchTogether/gateway", () => ({ leaveWatchTogetherNow: (userId: string) => state.left.push(userId) }));
+vi.mock("./keepPositions", () => ({ keepPlaybackPositions: async () => 0 }));
 
 import { registerAccountAccessWatch, resetAccountAccessWatchForTests, watchJellyfinPolicies } from "./accessWatch";
 
