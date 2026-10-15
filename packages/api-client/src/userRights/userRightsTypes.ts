@@ -140,11 +140,7 @@ export const FAMILY_PARENTAL_PATHS = {
 } as const;
 
 /** Les restrictions du CRÉATEUR d'un invité : son contrôle parental ne va jamais au-delà. */
-export interface ParentalCeiling {
-  maxParentalRating: number | null;
-  maxParentalSubRating: number | null;
-  blockUnratedItems: string[];
-  blockedTags: string[];
+export interface ParentalCeiling extends GuestParentalControls {
   allowedTags: string[];
 }
 
