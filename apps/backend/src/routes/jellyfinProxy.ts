@@ -20,7 +20,8 @@ import { readsInFull, replyFromCache, sendBuffered } from "./jellyfinProxy/buffe
 import { readIncomingAuth } from "./jellyfinProxy/incomingAuth";
 import { deviceRefusal } from "./jellyfinProxy/deviceGuard";
 import { scopedToDeviceUser } from "./jellyfinProxy/deviceUserScope";
-import { streamRefused } from "./jellyfinProxy/streamAccess";
+import { gatePlayback } from "./jellyfinProxy/playbackGate";
+import { getRealClientIp } from "../services/networkUtils";
 import { OUTSIDE_SCHEDULE_REPLY, outsideAccessSchedule } from "../services/itemAccess/accessSchedule";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
 import { impersonatedUserId, resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
@@ -81,19 +82,19 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(403).send({ error: "Forbidden" });
       }
     }
-    // Clé prêtée (appareil, « voir en tant que ») : une requête de catalogue
-    // sans `userId` est bornée au compte, dont Jellyfin applique alors les
-    // droits (cf. deviceUserScope) ; un flux, au titre que ce compte voit (cf. streamAccess).
+    // Clé prêtée (appareil, « voir en tant que ») : une requête de catalogue sans `userId`
+    // est bornée au compte, dont Jellyfin applique alors les droits (cf. deviceUserScope).
     const lentKeyUser = device?.status === "paired" ? device.payload.userId : await impersonatedUserId(incomingToken);
     if (lentKeyUser) targetUrl = buildTargetUrl(jellyfinUrl, route.path, scopedToDeviceUser(route.path, route.query, lentKeyUser));
     // Hors de ses plages horaires, la TV d'un compte ne lit rien (cf. accessSchedule).
     if (device?.status === "paired" && !device.payload.isAdmin && (await outsideAccessSchedule(device.payload.userId))) {
       return reply.status(403).send(OUTSIDE_SCHEDULE_REPLY);
     }
-    if (await streamRefused(wildcardPath, incomingToken, lentKeyUser)) {
-      request.log.info({ path: wildcardPath }, "flux refuse : titre hors des droits du compte");
-      return reply.status(404).send({ error: "Not found" });
-    }
+    // La lecture : titre visible, lecture et conversions permises, plafond distant (cf. playbackGate).
+    const gate = await gatePlayback({ path: wildcardPath, query: route.query, token: incomingToken, lentKeyUser, clientIp: getRealClientIp(request) });
+    if (gate.kind === "hidden") return reply.status(404).send({ error: "Not found" });
+    if (gate.kind === "refused") return reply.status(403).send({ code: gate.code, error: "Forbidden" });
+    if (gate.query) targetUrl = buildTargetUrl(jellyfinUrl, route.path, lentKeyUser ? scopedToDeviceUser(route.path, gate.query, lentKeyUser) : gate.query);
 
     const { apiKey: apiKeyOverride, rewrite, usedDeviceToken } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
 

@@ -40,6 +40,7 @@ import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { serverShutdown } from "./services/lifecycle/serverShutdown";
 import { announceProgress, announceReady, beginServerLifecycle, failStartup, startupFailureOf } from "./serverHost/serverLifecycle";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
+import { watchPlaybackPolicyWrites } from "./services/playbackRights";
 import { registerBodyParsers } from "./services/bodyParsers";
 import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
 
@@ -247,6 +248,8 @@ async function main() {
   // Watch Together : présence (grâce de déconnexion, délivrance des invites).
   // Inconditionnel — le WS /api/ws est exempté du guard de setup.
   registerWatchTogetherGateway();
+  // Droits de lecture : relus aussitôt qu'une politique est écrite par Tentacle.
+  watchPlaybackPolicyWrites();
 
   // Start background workers only when fully configured
   if (state === "running") {
