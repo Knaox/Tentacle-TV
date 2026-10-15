@@ -153,6 +153,18 @@ export default {
     generic: "L'opération n'a pas abouti. Réessayez.",
     retryAt: "Nouvel essai possible le {{date}}.",
   },
+  parental: {
+    open: "Contrôle parental",
+    on: "Contrôle parental",
+    title: "Contrôle parental de {{name}}",
+    intro: "Ce que {{name}} peut voir et quand. Le serveur l'applique partout : listes, recherche, recommandations, lecture.",
+    ceiling: "{{name}} ne dépasse jamais les droits de {{creator}}, son créateur : si {{creator}} a une limite plus stricte, c'est elle qui s'applique.",
+    ceilingRating: "Limite de {{creator}} : {{rating}}.",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    saved: "Contrôle parental enregistré.",
+    optionsError: "L'échelle des notes n'a pas pu être lue : réessayez plus tard.",
+  },
   admin: {
     title: "Familles",
     description: "Ce que les comptes peuvent faire de la Famille sur ce serveur.",

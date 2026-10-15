@@ -22,3 +22,4 @@ export * from "./exports/titles"; // Titres hors bibliothèque
 export * from "./exports/stats"; // Statistiques de visionnage
 export * from "./exports/help"; // Aide : diagnostic des bandes-annonces
 export * from "./exports/family"; // La Famille : appels, Apple TV, crochets, temps réel
+export * from "./exports/userRights"; // Droits des comptes et contrôle parental des invités
