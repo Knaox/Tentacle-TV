@@ -102,6 +102,27 @@ de champs — jamais une valeur.
   409, `invalid_value` 400, `jellyfin_unreachable` 503, `jellyfin_refused` 502.
 - Le correctif `update` est borné à 60 par minute et par adresse.
 
+### 3.5 Les routes d'admin (étape B)
+
+- `routes/adminUserRights.ts` (sous `adminRoutes`, puis `requirePersonalAdmin`), service
+  `services/userRights/userRightsService.ts`, correspondance pure `policyMapping.ts`.
+- Lecture d'une politique absente ou illisible champ par champ : la valeur la plus FERMÉE
+  (`isDisabled` absent = désactivé, un droit absent = refusé).
+- Écriture : correctif validé (`parseUserRightsPatch`, puis `patchAgainstOptions` s'il nomme des
+  bibliothèques, des canaux ou des notes), politique RELUE juste avant, seuls les champs du
+  correctif remplacés (les autres, `AuthenticationProviderId`, `PasswordResetProviderId` et tout
+  champ inconnu d'une version future compris, repartent tels quels), `POST /Users/{id}/Policy`,
+  relecture, état RÉEL rendu. Les plages horaires repartent dans la forme de Jellyfin
+  (`DayOfWeek`, `StartHour`, `EndHour`, `UserId`), sans `Id`.
+- **`last_admin` couvre aussi la DÉSACTIVATION** du dernier administrateur actif (au plus sûr :
+  le contrat ne nommait que le retrait de l'administration) ; `self_lockout` : un administrateur
+  ne se retire ni l'administration ni l'accès (`isDisabled`). Jellyfin refuse aussi de son côté.
+- Après toute écriture (même refusée par Jellyfin) : `notePolicyWritten` — politique de contenu
+  oubliée, et invités du compte recalculés (§ 4). Base de la Famille muette : refus
+  (`jellyfin_unreachable`), jamais un réglage à l'aveugle d'un invité possible.
+- Journal : `[user-rights] <admin> → <compte> : <clés>` ; les clés que Jellyfin n'a pas retenues
+  y sont nommées. Jamais une valeur.
+
 ## 4. Contrôle parental de la Famille
 
 - **Qui** : le PROPRIÉTAIRE règle le contrôle parental de tout invité de la famille ; un
@@ -150,6 +171,37 @@ de champs — jamais une valeur.
   `0 ≤ startHour < endHour ≤ 24` ; `syncPlayAccess` ∈ `CreateAndJoinGroups` | `JoinGroups` |
   `None` ; `remoteClientBitrateLimit` en bits/s, 0 = illimité.
 
+### 4.2 Le contrôle parental côté serveur (étape C)
+
+- **Le voulu** est gardé dans `family_members.parentalControls` (JSON, migration
+  `0006_family_guest_parental`) ; absent = aucun ; ILLISIBLE = le plus fermé (note 0, tous les
+  types non classés bloqués), jamais « aucun ».
+- **La règle** est pure et partagée (`effectiveGuestParental`, `familyParental.ts`, miroir) : la
+  note la plus basse (à score égal, la sous-note la plus basse ; absente = sans limite), types
+  non classés et étiquettes bloquées réunis, étiquettes permises du créateur imposées, plages
+  recoupées jour par jour. **Deux jeux de plages qui ne se recoupent pas donnent « JAMAIS »**,
+  pas une liste vide (qui voudrait dire « à toute heure » chez Jellyfin) : la plage sentinelle
+  `{ Sunday, 24, 24 }` (`GUEST_SCHEDULE_NEVER`) — Jellyfin teste `début ≤ h ≤ fin` avec h < 24.
+  Prouvé sur Jellyfin 10.11 : acceptée, et la connexion du compte est refusée.
+- **L'écriture** (`guestAccounts.guestPolicy`) : la politique de l'invité, les bibliothèques et
+  restrictions du créateur, nos interdits, PUIS le contrôle effectif. Les plages repartent au nom
+  de l'invité (`UserId`), sans `Id` — avant, celles du créateur étaient recopiées telles quelles.
+  Une écriture n'a lieu que si la politique change (plages comparées sans `Id`/`UserId`).
+- **`setGuestParental`** : `manageableGuest` (propriétaire : tout invité ; membre : les siens ;
+  sinon `family.not_owner`, hors famille `family.not_found`), corps EXACT (les cinq champs),
+  note vérifiée contre la table de Jellyfin. Le voulu est gardé D'ABORD, puis la politique est
+  écrite et RELUE (refus si Jellyfin ne l'a pas retenue) : si Jellyfin se tait, le guet la pose
+  à son retour.
+- **L'invité suit son créateur** : (1) toute écriture de politique faite par Tentacle
+  (`notePolicyWritten` → `resyncGuestsOfCreator`) ; (2) chaque ouverture d'un profil d'invité
+  (TV, bureau : `guestPolicySync.syncGuestPolicy`) ; (3) un guet toutes les DEUX minutes, UNE
+  lecture de `/Users` pour tous les invités, une écriture seulement si quelque chose a changé.
+  Un créateur introuvable : rien n'est relâché.
+- **`parentalOptions`** : le propriétaire d'une famille (même sans invité encore), ou un membre
+  qui a créé au moins un invité ; sinon `family.not_owner`.
+- **L'état lu avec l'invité** : `withParentalState` (`GET /api/family`, session personnelle
+  seulement), une lecture de `/Users` pour tous les plafonds.
+
 ## 5. Le filtrage du contenu — `apps/backend/src/services/contentPolicy/`
 
 - `getContentPolicy(userId)` → la politique de contenu du compte (note maximale, types non
@@ -191,6 +243,20 @@ de champs — jamais une valeur.
   (§ 5.2) depuis l'étape D.
 - Le pont nettoie ce qu'il reçoit : une entrée mal formée (type inconnu, `tmdbId` non entier
   positif) est écartée, jamais laissée passer.
+
+### 5.1 bis Plages horaires et invalidation (demande du filtrage)
+
+- **`scheduleAllows(policy, now)`** (exportée par `services/contentPolicy`) : la règle pure qui
+  décide À L'INSTANT — `ContentPolicy` ne porte que les plages brutes, jamais un « dans la
+  plage » calculé à la lecture (le cache de 30 s le rendrait faux). Relue sur Jellyfin 10.11.11
+  (`UserEntityExtensions.IsParentalScheduleAllowed`) : aucune plage = permis ; sinon l'heure
+  LOCALE h, en heures décimales, d'un jour couvert (`Everyday`, `Weekday` lundi → vendredi,
+  `Weekend` samedi et dimanche, ou le jour nommé) vérifie **`StartHour ≤ h ≤ EndHour`, bornes
+  INCLUSES des deux côtés** (pas `h < EndHour`). Heure locale du serveur Tentacle.
+- **`onContentPolicyInvalidated(listener: (userId: string | null) => void): () => void`** :
+  appelé de façon SYNCHRONE par `invalidateContentPolicy` (identifiant normalisé, sans tirets)
+  et par `clearContentPolicyCache` (`null` = tous les comptes) ; la valeur rendue désabonne ; un
+  écouteur qui lève est journalisé (`[content-policy]`) et n'empêche pas les autres.
 
 ### 5.2 Certification TMDB → échelle de Jellyfin (étape D)
 

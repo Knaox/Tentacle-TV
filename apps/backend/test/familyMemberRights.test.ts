@@ -61,7 +61,12 @@ describe("la famille v2, vue par chacun", () => {
     expect(owner).toMatchObject({ role: "owner", since: null, rights: { manageMembers: true, createGuests: true, manageGuests: "all" } });
     expect(member).toMatchObject({ role: "member", rights: { manageMembers: false, createGuests: false, manageGuests: "own" } });
     expect(member.since).toBeTruthy();
-    expect(member.profiles).toEqual(owner.profiles);
+    // Même famille ; seul le propriétaire, qui peut le régler, lit le contrôle parental de l'invité (1.30.0).
+    const withoutParental = (profiles: Record<string, unknown>[]) =>
+      profiles.map(({ parental: _parental, parentalCeiling: _ceiling, ...rest }) => rest);
+    expect(member.profiles).toEqual(withoutParental(owner.profiles));
+    expect(owner.profiles[2]).toHaveProperty("parental");
+    expect(member.profiles[2]).not.toHaveProperty("parental");
     expect(member.owner).toEqual({ userId: IDS.damien, name: "Damien" });
     expect(owner.profiles.map((p: { kind: string }) => p.kind)).toEqual(["owner", "member", "guest"]);
     expect(owner.profiles[1].rights).toEqual({ createGuests: false });
