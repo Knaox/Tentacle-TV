@@ -51,7 +51,11 @@ export async function streamRefused(
   knownUserId: string | null,
 ): Promise<boolean> {
   const itemId = streamItemId(path);
-  if (!itemId) return false;
+  return itemId ? itemRefused(itemId, token, knownUserId) : false;
+}
+
+/** Le même verdict pour un titre déjà nommé (vignettes de trickplay…). */
+export async function itemRefused(itemId: string, token: string | undefined, knownUserId: string | null): Promise<boolean> {
   let userId = knownUserId;
   if (!userId && token) {
     const validation = await validateToken(token);

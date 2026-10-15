@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceStatus";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders, tokenFromQuery } from "../services/jellyfinAuth";
+import { itemRefused } from "./jellyfinProxy/streamAccess";
 
 const ParamsSchema = z.object({
   itemId: z.string().min(1).max(64).regex(/^[A-Za-z0-9-]+$/),
@@ -19,7 +20,8 @@ const QuerySchema = z.object({
   ApiKey: z.string().min(1).optional(),
 });
 
-const TRICKPLAY_CACHE_CONTROL = "public, max-age=31536000, immutable";
+// `private` : la tuile dépend des droits du compte, aucun cache partagé ne la garde.
+const TRICKPLAY_CACHE_CONTROL = "private, max-age=31536000, immutable";
 const FETCH_TIMEOUT_MS = 30_000;
 
 /**
@@ -50,6 +52,11 @@ export const jellyfinTrickplayRoutes: FastifyPluginAsync = async (app) => {
     const device = await pairedDeviceStatus(incomingToken);
     if (device.status === "revoked") return reply.status(401).send(revokedReplyFor(device.payload));
     if (device.status === "unreachable") return reply.status(503).send({ message: "Base de données indisponible" });
+    // Une vignette montre le titre : elle ne part que vers un compte qui le voit
+    // (cf. streamAccess) — Jellyfin la servirait à tout jeton.
+    if (await itemRefused(params.itemId, incomingToken, device.status === "paired" ? device.payload.userId : null)) {
+      return reply.status(404).send({ message: "Trickplay tile not found" });
+    }
     const adminKey = getJellyfinApiKey();
     const jellyfinToken = device.status === "paired" && adminKey ? adminKey : incomingToken;
 

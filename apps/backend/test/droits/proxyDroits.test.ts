@@ -53,6 +53,7 @@ vi.mock("../../src/services/db", () => ({
 vi.mock("../../src/services/wsManager", () => ({ broadcastToUser: () => {} }));
 
 import { jellyfinProxyRoutes } from "../../src/routes/jellyfinProxy";
+import { jellyfinTrickplayRoutes } from "../../src/routes/jellyfinTrickplay";
 import { resetPairedDeviceStatusForTests } from "../../src/services/pairedDeviceStatus";
 import { clearAll } from "../../src/services/jellyfinCache";
 import { invalidateItemVisibility } from "../../src/services/itemAccess/itemVisibility";
@@ -87,6 +88,7 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => jellyfin.listen(0, "127.0.0.1", resolve));
   state.url = `http://127.0.0.1:${(jellyfin.address() as AddressInfo).port}`;
   app = Fastify();
+  await app.register(jellyfinTrickplayRoutes, { prefix: "/api/jellyfin" });
   await app.register(jellyfinProxyRoutes, { prefix: "/api/jellyfin" });
 });
 
@@ -154,6 +156,16 @@ describe("un flux ne part que vers un compte qui voit son titre", () => {
       expect(sentFor(`Items/${ALLOWED}`)).toHaveLength(1);
     });
   }
+
+  it("vignettes de trickplay : titre interdit → 404 ; permis → servies, jamais en cache partagé", async () => {
+    for (const token of [TV_CHILD, NATIVE_CHILD]) {
+      expect((await proxy(`items/${FORBIDDEN}/trickplay/320/0.jpg`, token)).statusCode).toBe(404);
+      const allowed = await proxy(`items/${ALLOWED}/trickplay/320/0.jpg`, token);
+      expect(allowed.statusCode).toBe(200);
+      expect(allowed.headers["cache-control"]).toMatch(/^private/);
+    }
+    expect(state.hits.filter((hit) => hit.url.includes(`/Videos/${FORBIDDEN}/Trickplay`))).toEqual([]);
+  });
 
   it("l'arrêt du transcodage n'est pas un flux : jamais de question de visibilité", async () => {
     await app.inject({ method: "DELETE", url: "/api/jellyfin/Videos/ActiveEncodings?deviceId=d", headers: { "x-emby-token": TV_CHILD } });
