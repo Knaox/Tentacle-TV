@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Bell } from "lucide-react";
 import {
   useNotifications,
   useUnreadCount,
@@ -10,27 +11,34 @@ import {
   useDeleteNotifications,
   useDeleteAllNotifications,
   useNotificationsLive,
+  useNotificationOpener,
   useJellyfinClient,
-  resolveNotificationRoute,
+  notificationHasDestination,
 } from "@tentacle-tv/api-client";
 import type { AppNotification } from "@tentacle-tv/api-client";
-import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { useMultiSelect } from "../hooks/useMultiSelect";
-import { NotifRow } from "./notifications/NotifRow";
 import { openFamilyNotification } from "../family/familyPosterStore";
 import { ConfirmDeleteModal } from "./notifications/ConfirmDeleteModal";
+import { NotificationPanel } from "./notifications/NotificationPanel";
+import { useNotificationPlugins } from "./notifications/useNotificationPlugins";
+import { FloatingLayer } from "./floating/FloatingLayer";
 
-interface NotificationBellProps {
-  dropdownPosition?: "below" | "right";
-}
+/** Au-delà, la pastille dit « 9+ » : un nombre précis n'apprend plus rien. */
+const BADGE_MAX = 9;
 
-export function NotificationBell({ dropdownPosition = "below" }: NotificationBellProps) {
+/**
+ * La cloche de la barre (web, bureau). Le panneau est posé par le calque
+ * commun : jamais coupé par le bord de la fenêtre, il défile dedans quand
+ * elle est basse. Un clic sur une notification mène à sa destination EXACTE
+ * (la cible posée par l'émetteur, sinon la route de son type) et la marque lue.
+ */
+export function NotificationBell() {
   const { t } = useTranslation("notifications");
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const { data: unread } = useUnreadCount();
   const { data: notifications } = useNotifications();
@@ -40,6 +48,7 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
   const deleteBatchMut = useDeleteNotifications();
   const deleteAllMut = useDeleteAllNotifications();
   const sel = useMultiSelect();
+  const plugins = useNotificationPlugins();
 
   // La cloche vit sur toutes les pages : elle s'abonne elle-même au socket
   // (même jeton que l'accueil ; null = cookie sur le web) pour se rafraîchir
@@ -47,51 +56,29 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
   const client = useJellyfinClient();
   useNotificationsLive({ token: client.getAccessToken() || localStorage.getItem("tentacle_token") });
 
-  const activePluginsMeta = useActivePluginsMeta();
-  const pluginNavMeta = useMemo(
-    () =>
-      activePluginsMeta
-        .filter((p) => p.configEnabled)
-        .map((p) => ({
-          pluginId: p.pluginId,
-          navItems: (p.navItems || []).filter((n: Record<string, unknown>) => !n.admin) as Array<{ path: string; platforms: string[] }>,
-        })),
-    [activePluginsMeta],
-  );
-
   const count = unread?.count ?? 0;
 
-  // Close on click outside
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        sel.exitSelectionMode();
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, sel]);
+  const close = useCallback(() => {
+    setOpen(false);
+    sel.exitSelectionMode();
+  }, [sel]);
 
-  const handleNotifClick = useCallback(
+  const openTarget = useNotificationOpener({ platform: "web", plugins, navigate, onLeave: close });
+
+  const handleOpen = useCallback(
     (n: AppNotification) => {
-      if (!n.read) markOneMut.mutate(n.id);
       // « X vous invite… » : l'affiche de l'invitation, pas une page.
       if (openFamilyNotification(n)) {
-        setOpen(false);
-        sel.exitSelectionMode();
+        if (!n.read) markOneMut.mutate(n.id);
+        close();
         return;
       }
-      const route = resolveNotificationRoute(n, "web", pluginNavMeta);
-      if (route) {
-        setOpen(false);
-        sel.exitSelectionMode();
-        navigate(route);
-      }
+      openTarget(n);
     },
-    [markOneMut, navigate, pluginNavMeta, sel],
+    [close, markOneMut, openTarget],
   );
+
+  const hasRoute = useCallback((n: AppNotification) => notificationHasDestination(n, "web", plugins), [plugins]);
 
   const handleDeleteOne = useCallback(
     (id: string) => {
@@ -113,104 +100,63 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
     deleteAllMut.mutate(undefined, { onSuccess: () => setConfirmDeleteAll(false) });
   }, [deleteAllMut]);
 
+  const badge = count > BADGE_MAX ? `${BADGE_MAX}+` : String(count);
+
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
-        onClick={() => setOpen((p) => !p)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-content-quaternary transition-all duration-200 hover:bg-fill-soft hover:text-content-secondary"
-        style={{ background: "var(--fill-subtle)" }}
+        ref={buttonRef}
+        type="button"
+        onClick={() => (open ? close() : setOpen(true))}
+        aria-label={count > 0 ? `${t("notifications:title")} — ${t("notifications:unreadCount", { count })}` : t("notifications:title")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-content-quaternary transition-colors duration-200 hover:bg-fill-soft hover:text-content-secondary"
+        style={{ background: open ? "var(--fill-soft)" : "var(--fill-subtle)" }}
       >
-        <BellIcon />
+        <Bell className="h-5 w-5" strokeWidth={2} />
         {count > 0 && (
-          <div
-            className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full animate-pulse-glow"
-            style={{ background: "var(--brand)", boxShadow: "0 0 6px rgba(var(--brand-rgb), 0.6)" }}
-          />
+          <span
+            aria-hidden
+            className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-cta-brand-fg"
+            style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))", boxShadow: "0 2px 6px rgba(var(--brand-rgb), 0.45)" }}
+          >
+            {badge}
+          </span>
         )}
       </button>
 
-      {open && (
-        <div
-          className={`absolute z-50 animate-scale-in overflow-hidden rounded-xl ${
-            dropdownPosition === "right"
-              ? "bottom-0 left-full ml-2 w-96 origin-bottom-left"
-              : "right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 origin-top-right"
-          }`}
-          style={{
-            // Fond du panneau : littéral hors table (implémentation ad hoc,
-            // non basée sur var(--surface-dropdown)) — non migré, cf. rapport.
-            background: "var(--surface-dropdown)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid var(--border-subtle)",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
-            <span className="text-sm font-semibold text-content-primary">
-              {sel.isSelecting ? t("notifications:selected", { count: sel.count }) : t("notifications:title")}
-            </span>
-            <div className="flex items-center gap-1">
-              {sel.isSelecting ? (
-                <>
-                  <button onClick={() => sel.selectAll((notifications ?? []).map((n) => n.id))} title={t("notifications:select")} className="flex h-7 w-7 items-center justify-center rounded-lg text-content-quaternary hover:bg-fill-soft hover:text-content-secondary">
-                    <SelectAllIcon />
-                  </button>
-                  <button onClick={handleDeleteSelected} disabled={sel.count === 0} title={t("notifications:deleteSelected")} className="flex h-7 w-7 items-center justify-center rounded-lg text-status-error-fg hover:bg-danger-surface disabled:opacity-30">
-                    <TrashIcon />
-                  </button>
-                  <button onClick={() => sel.exitSelectionMode()} className="rounded-lg px-2 py-1 text-xs text-content-tertiary hover:bg-fill-soft">
-                    {t("notifications:cancel")}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {count > 0 && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); markAllMut.mutate(); }}
-                      className="rounded-lg px-2 py-1 text-xs text-[var(--brand)] hover:bg-fill-soft hover:text-[var(--brand-light)]"
-                    >
-                      {t("notifications:markAllRead")}
-                    </button>
-                  )}
-                  {notifications && notifications.length > 0 && (
-                    <>
-                      <button onClick={() => sel.enterSelectionMode()} title={t("notifications:select")} className="flex h-7 w-7 items-center justify-center rounded-lg text-content-quaternary hover:bg-fill-soft hover:text-content-tertiary">
-                        <SelectIcon />
-                      </button>
-                      <button onClick={() => setConfirmDeleteAll(true)} title={t("notifications:deleteAll")} className="flex h-7 w-7 items-center justify-center rounded-lg text-status-error-fg hover:bg-danger-surface">
-                        <TrashIcon />
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* List */}
-          <div className="max-h-80 overflow-y-auto">
-            {!notifications || notifications.length === 0 ? (
-              <p className="py-8 text-center text-sm text-content-quaternary">{t("notifications:noNotifications")}</p>
-            ) : (
-              notifications.map((n) => (
-                <NotifRow
-                  key={n.id}
-                  notif={n}
-                  onClick={() => handleNotifClick(n)}
-                  onDelete={() => handleDeleteOne(n.id)}
-                  selectionMode={sel.isSelecting}
-                  isSelected={sel.isSelected(n.id)}
-                  onToggleSelect={() => sel.toggle(n.id)}
-                  isDeleting={deletingIds.has(n.id)}
-                  hasRoute={resolveNotificationRoute(n, "web", pluginNavMeta) !== null}
-                  t={t}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      <FloatingLayer
+        open={open}
+        anchor={buttonRef}
+        onDismiss={close}
+        side="bottom"
+        align="end"
+        role="dialog"
+        ariaLabel={t("notifications:title")}
+        className="flex w-[24rem] flex-col overflow-hidden rounded-2xl"
+        style={{
+          background: "var(--surface-dropdown)",
+          backdropFilter: "blur(var(--blur-dropdown))",
+          WebkitBackdropFilter: "blur(var(--blur-dropdown))",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-dropdown)",
+        }}
+      >
+        <NotificationPanel
+          notifications={notifications}
+          unread={count}
+          sel={sel}
+          deletingIds={deletingIds}
+          hasRoute={hasRoute}
+          onOpen={handleOpen}
+          onDelete={handleDeleteOne}
+          onMarkAllRead={() => markAllMut.mutate()}
+          onDeleteSelected={handleDeleteSelected}
+          onAskDeleteAll={() => setConfirmDeleteAll(true)}
+          t={t}
+        />
+      </FloatingLayer>
 
       <ConfirmDeleteModal
         open={confirmDeleteAll}
@@ -223,37 +169,5 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
         isPending={deleteAllMut.isPending}
       />
     </div>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-    </svg>
-  );
-}
-
-function SelectIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-    </svg>
-  );
-}
-
-function SelectAllIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-    </svg>
   );
 }

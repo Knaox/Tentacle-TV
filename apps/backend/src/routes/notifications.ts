@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { broadcastToUser } from "../services/wsManager";
+import { toNotificationDto } from "../notifications/notificationDto";
 
 export const notificationRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
@@ -20,7 +21,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
       take: limit,
     });
 
-    return notifications;
+    return notifications.map(toNotificationDto);
   });
 
   // GET /api/notifications/unread-count

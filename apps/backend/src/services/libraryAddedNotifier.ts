@@ -128,7 +128,10 @@ async function attachSeriesTmdb(items: LibItem[]): Promise<void> {
 async function deliver(plan: RecipientPlan, items: LibItem[], requested: boolean, now: number): Promise<void> {
   if (items.length === 0) return;
   const text = requested ? composeRequested(items, plan.lang) : composeItems(items, plan.lang);
-  const res = await sendToUser(plan.userId, { ...text, data: { type: "library_added", refId: pushTarget(items) } });
+  // La cible (contrat des notifications) : la fiche quand l'envoi ne porte qu'un titre.
+  const itemId = pushTarget(items);
+  const target = itemId ? { kind: "item", itemId } : undefined;
+  const res = await sendToUser(plan.userId, { ...text, data: { type: "library_added", refId: itemId, ...(target ? { target } : {}) } });
   await recordAnnounced(plan.userId, [...items.flatMap(libraryIdentityKeys), ...items.flatMap(librarySeriesKeys)]);
   await refreshAnnounced(plan.userId, items.flatMap(librarySeasonKeys), now);
   console.log(

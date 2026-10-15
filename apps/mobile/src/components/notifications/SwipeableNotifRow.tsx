@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import type { AppNotification } from "@tentacle-tv/api-client";
 import { FONT_FAMILY, typography, useTheme, withAlpha } from "@/theme";
 import { haptic } from "@/utils/haptics";
+import { NotifStateBadgeMobile } from "./NotifStateBadgeMobile";
 
 
 interface SwipeableNotifRowProps {
@@ -143,9 +144,10 @@ export function SwipeableNotifRow({
                 {formattedBody}
               </Text>
             )}
-            <Text style={{ fontSize: 12, color: colors.text.quaternary, marginTop: 6 }}>
-              {formattedAgo}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
+              <NotifStateBadgeMobile state={notif.state} />
+              <Text style={{ fontSize: 12, color: colors.text.quaternary }}>{formattedAgo}</Text>
+            </View>
           </View>
         </Pressable>
       </Animated.View>

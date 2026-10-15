@@ -66,6 +66,8 @@ export async function registerForPushToken(): Promise<string | null> {
 export interface PushTapData {
   type?: string;
   refId?: string;
+  /** La cible posée par l'émetteur (contrat shared `notificationTarget`) — lue, jamais crue. */
+  target?: unknown;
 }
 
 /** True si l'appareil a déjà accordé la permission de notifications. */

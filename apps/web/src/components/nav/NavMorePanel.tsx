@@ -18,11 +18,10 @@
 
 import { memo, useCallback, useEffect, useRef, type RefObject } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { MonitorSmartphone, Pin, Settings2 } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { easeOut } from "../../theme/motion";
+import { FloatingLayer } from "../floating/FloatingLayer";
 import { isActivePath, type NavBarEditor, type NavLibrary, type NavListEntry } from "./useNavDestinations";
 
 interface NavMorePanelProps {
@@ -143,42 +142,32 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
 export function NavMorePanel({ libraries, lists, extensions, editor, trigger, onClose, onCustomize }: NavMorePanelProps) {
   const { t } = useTranslation("nav");
   const { pathname } = useLocation();
-  const reduced = useReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
   const togglePin = useCallback(
     (entry: { key: string; pinned: boolean }) => (entry.pinned ? editor.unpin(entry.key) : editor.pin(entry.key)),
     [editor],
   );
 
+  // Échap rend le focus au bouton « Plus » (le calque ferme ; le clic sur le
+  // bouton lui-même est laissé à son propre basculement).
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      onClose();
-      trigger.current?.focus();
-    };
-    // Un clic sur le bouton lui-même est laissé à son propre basculement.
-    const onDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (panelRef.current?.contains(target) || trigger.current?.contains(target)) return;
-      onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") trigger.current?.focus(); };
     window.addEventListener("keydown", onKey);
-    window.addEventListener("mousedown", onDown);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("mousedown", onDown);
-    };
-  }, [onClose, trigger]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [trigger]);
 
   return (
-    <motion.div
-      ref={panelRef}
+    <FloatingLayer
+      open
+      anchor={trigger}
+      onDismiss={onClose}
+      side="bottom"
+      align="start"
+      gap={14}
+      panelRef={panelRef}
       role="dialog"
-      aria-label={t("more")}
-      className="absolute left-0 top-[calc(100%+14px)] z-50 w-[min(620px,calc(100vw-32px))] rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
-      initial={reduced ? false : { opacity: 0, y: -6, scale: 0.985 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.18, ease: easeOut }}
+      ariaLabel={t("more")}
+      className="w-[620px] overflow-y-auto overscroll-contain rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
     >
       {libraries.length > 0 && (
         <section>
@@ -220,6 +209,6 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
           {t("customizeBar")}
         </button>
       </div>
-    </motion.div>
+    </FloatingLayer>
   );
 }

@@ -82,6 +82,7 @@ export * from "./help/dismissibleHints";
 // Les capacités du serveur : la liste fermée de ce qu'un serveur sait faire,
 // déclarée par `/api/config` (miroir backend) — un client ne montre rien d'autre.
 export * from "./serverCapabilities/serverCapabilities";
+export * from "./notifications/notificationTarget";
 export * from "./help/trailerHint";
 // Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
 // fiches — et « Réanalyser maintenant » (contrat de /api/admin/library/rescan,
