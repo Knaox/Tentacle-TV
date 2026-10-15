@@ -85,6 +85,24 @@ for (const [who, token] of [["jeton Jellyfin", NATIVE], ["TV jumelée", tokens.d
   const okItem = await call(token, "GET", `/api/jellyfin/Users/${U}/Items/${ALLOWED}`);
   note(okItem.status === 200, `témoin : fiche de « Tout Public » → ${okItem.status}`);
 }
+// ── Titres EXTÉRIEURS par la certification TMDB (BANC_TMDB=1 : le banc a une clé TMDB) ──
+// Toy Story (862, G) passe ; Pulp Fiction (680, R) ne laisse ni verso, ni bande-annonce, ni aperçu.
+if (process.env.BANC_TMDB === "1") {
+  console.log("\n— titres extérieurs (certification TMDB)");
+  const facts = async (token, id) => {
+    const verso = JSON.parse((await call(token, "GET", `/api/swipe/details/movie/${id}?lang=fr`)).text).title;
+    const entries = JSON.parse((await call(token, "GET", `/api/trailers/catalog?tmdbId=${id}&mediaType=movie`)).text).entries ?? [];
+    const preview = (await call(token, "GET", `/api/trailers/preview?tmdbId=${id}&mediaType=movie&lang=fr`)).status;
+    return { verso, entries: entries.length, preview };
+  };
+  for (const [who, token] of [["jeton Jellyfin", NATIVE], ["TV jumelée", tokens.device]]) {
+    const g = await facts(token, 862);
+    note(g.verso !== null, `${who} Toy Story (G) → verso « ${g.verso} »`);
+    const r = await facts(token, 680);
+    note(r.verso === null && r.entries === 0 && r.preview === 404, `${who} Pulp Fiction (R) → verso ${r.verso}, ${r.entries} bande(s)-annonce(s), aperçu ${r.preview}`);
+  }
+}
+
 // ── Plages horaires : hors plage, plus rien (la politique est relue en 30 s au plus). ──
 const JF = "http://127.0.0.1:18121";
 const setSchedules = async (schedules) => {
