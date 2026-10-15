@@ -60,3 +60,5 @@ export {
   useQualityDropNotice, qualityDropDismissal,
   type QualityDropNoticeView, type QualityDropNoticeInput, type QualityDropNoticeResult,
 } from "../notices/useQualityDropNotice";
+// Les droits de lecture du compte pour cet appareil (`/api/playback/rights`, capacité `playback.rights`).
+export { usePlaybackRights, parsePlaybackRights, PLAYBACK_RIGHTS_KEY, type PlaybackRightsState } from "../rights/usePlaybackRights";

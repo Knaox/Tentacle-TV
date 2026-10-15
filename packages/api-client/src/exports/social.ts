@@ -14,3 +14,5 @@ export {
 export {
   useMyStatsShare, useSaveStatsShare, useRevokeStatsShare, statsShareFailure, STATS_SHARE_KEY, type StatsShareFailure,
 } from "../hooks/useStatsShare";
+// L'accès du compte à Watch Together (SyncPlayAccess, capacité `watchTogether.access`).
+export { useWatchTogetherAccess, WT_ACCESS_KEY, type WatchTogetherAccessState } from "../rights/useWatchTogetherAccess";
