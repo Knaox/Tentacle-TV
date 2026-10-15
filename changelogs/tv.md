@@ -6,6 +6,25 @@ Connect tvOS (max 4000), Release GitHub (illimité). Les nouveautés vont
 directement dans le bloc de la prochaine version (`## [1.11.0]`).
 
 ## [1.11.0]
+<!-- Bloc nu : Android TV (Google Play, 500 caractères). Depuis la 1.10.2. Le texte complet est dans [atv-1.11.0]. -->
+### FR
+- **Réglages › Accueil** : choisissez le bandeau principal, dont vos meilleures recommandations (serveur 1.30.0)
+- **Ma liste et Favoris** se trient et se filtrent par type
+- **Aperçu de bande-annonce au focus**, rapide, à la taille des cartes
+- **Recommandations en couleurs**
+- Recherche : la flèche du bas mène à la première carte
+- Profils : plus de code PIN redemandé pour revenir au sien
+
+### EN
+- **Settings › Home**: choose the main banner, including your best recommendations (server 1.30.0)
+- **My List and Favorites** can be sorted and filtered by type
+- **Trailer preview on focus**, quick, sized to your cards
+- **Recommendations in color**
+- Search: pressing down goes to the first card
+- Profiles: no PIN asked again to go back to yours
+
+## [atv-1.11.0]
+<!-- Bloc Apple TV (App Store Connect, 4000 caractères) : depuis la 1.10.2. -->
 ### FR
 - **« Qui regarde ? »** : le profil retenu sur ce téléviseur ne montre plus de cadenas, puisqu'il s'ouvre sans code PIN
 - **Changer de profil puis revenir au sien** : plus de code PIN redemandé
