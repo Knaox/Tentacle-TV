@@ -149,8 +149,11 @@ export function PreviewLaunchOverlay({ launch, backdropUrl, settled, onCovered, 
                 data-preview-launch
                 className="absolute overflow-hidden"
                 style={{ left: cover.left, top: cover.top, width: cover.width, height: cover.height, transformOrigin: "0 0" }}
-                initial={{ x: from.x, y: from.y, scale: from.scale }}
-                animate={{ x: 0, y: 0, scale: 1 }}
+                // `transform` ENTIER, jamais x / y / scale : framer ne confie au
+                // compositeur (WAAPI) que celui-là — le vol ne saccade pas pendant que
+                // la fiche se monte dessous, sur le fil principal.
+                initial={{ transform: `translate3d(${from.x}px, ${from.y}px, 0) scale(${from.scale})` }}
+                animate={{ transform: "translate3d(0px, 0px, 0) scale(1)" }}
                 transition={{ duration: FLIGHT_S, ease: SETTLE }}
               >
                 {launch.frame ? (
