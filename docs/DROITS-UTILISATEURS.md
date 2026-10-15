@@ -272,6 +272,10 @@ Relu sur la source de Jellyfin v10.11.11 (`LocalizationManager.GetRatingScore`,
   États-Unis ; une SÉRIE sans l'un ni l'autre prend la plus stricte des autres pays (Jellyfin
   prendrait la première listée : la plus stricte n'est jamais plus large). Un FILM sans l'un ni
   l'autre n'a pas de score. Plusieurs sorties dans un pays (`release_dates`) : la plus stricte.
+  **Un pays PRÉSENT** (au moins une classification non vide) **sans aucune classification lisible**
+  (« NR », chaîne inconnue) **vaut « non classé », sans repli** : les États-Unis ne comptent que si le
+  pays de métadonnées est ABSENT, les autres pays d'une série que si ni l'un ni l'autre n'est présent
+  (décision du coordinateur, 2026-10-15 — § 9.5.2).
 - **La chaîne** (`ratingTables.scoreCertification`) : (1) la table VIVANTE de Jellyfin si le pays
   est son pays de métadonnées ; (2) la table de ce pays écrite par Tentacle (28 pays, d'après les
   systèmes officiels, sur la même échelle — US, FR, GB, DE reprennent les valeurs de Jellyfin) ;
@@ -666,10 +670,12 @@ série « U » est caché seul).
 6. **Notifications** (`notifications/notificationRights.ts`) : un avis écrit avant une restriction
    (« Fight Club est arrivé ») restait lisible ; à la lecture, un avis qui mène à un titre caché
    n'est plus rendu ni compté parmi les non lus.
-7. **« NR » du pays de métadonnées** (`externalTitleRule.titleScore`) — PROPOSÉ au coordinateur,
-   commit à part : un pays présent sans classification lisible arrête la recherche, comme le
-   fournisseur TMDB de Jellyfin (« FR-NR » = non classé). Planet Earth II (FR « NR », US « TV-G »)
-   et 31 Minutes (US « NR ») passaient à un compte « 6 ans ».
+7. **« NR » du pays de métadonnées** (`externalTitleRule.titleScore`) — DÉCIDÉ par le coordinateur
+   (2026-10-15), règle du § 5.2 mise à jour : un pays présent sans classification lisible arrête la
+   recherche, comme le fournisseur TMDB de Jellyfin (« FR-NR » = non classé) ; les États-Unis
+   seulement si le pays de métadonnées est absent ; une série ne prend la plus stricte des autres
+   que sans l'un ni l'autre. Planet Earth II (FR « NR », US « TV-G ») et 31 Minutes (US « NR »)
+   passaient à un compte « 6 ans ».
 
 ### 9.5.3 Parcours éprouvés (banc, 2026-10-15)
 
