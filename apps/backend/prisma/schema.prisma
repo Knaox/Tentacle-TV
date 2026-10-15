@@ -379,6 +379,9 @@ model FamilyMember {
   canCreateGuests Boolean  @default(false)
   /// Invité (v2) : « peut demander » — les extensions, à son propre nom. Coupé par défaut.
   canRequestTitles Boolean @default(false)
+  /// Invité (1.30.0) : son contrôle parental VOULU (JSON `GuestParentalControls`) ; null = aucun.
+  /// La politique EFFECTIVE (recoupée avec son créateur) vit dans Jellyfin.
+  parentalControls String?
   createdAt    DateTime @default(now())
 
   @@unique([familyId, userId])

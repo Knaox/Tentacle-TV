@@ -5,6 +5,7 @@ import { cancelInvitation, inviteMember } from "../../services/family/familyInvi
 import { acceptInvitation, declineInvitation, snoozeInvitation } from "../../services/family/familyInvitationAnswers";
 import { createGuest, deleteGuest, setGuestPhoto, setGuestPin, setGuestRights } from "../../services/family/familyGuests";
 import { setOwnPin } from "../../services/family/familyOwnPin";
+import { parentalOptions, setGuestParental } from "../../services/family/familyGuestParental";
 import { hashToken } from "../../services/jwt";
 import { dissolveFamily, leaveFamily, removeMember, setMemberRights } from "../../services/family/familyMembers";
 import {
@@ -104,6 +105,13 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
       ),
     { bodyLimit: FAMILY_GUEST_PHOTO_MAX_BASE64 + 4096 },
   );
+
+  // Le contrôle parental d'un invité (1.30.0) : le corps est validé par le service (cinq champs exacts).
+  registerFamilyRoute(app, "setGuestParental", async (request, actor) =>
+    setGuestParental(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), request.body),
+  );
+
+  registerFamilyRoute(app, "parentalOptions", async (_request, actor) => parentalOptions(actorOf(actor)));
 
   registerFamilyRoute(app, "removeMember", async (request, actor) =>
     removeMember(actorOf(actor), userIdSchema.parse(param(request.params, "userId"))),

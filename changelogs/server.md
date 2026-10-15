@@ -24,6 +24,9 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Des notifications qui mènent au bon endroit** : un clic ouvre la fiche du titre ou la page exacte d'une extension, et chacune dit l'état de ce dont elle parle
 - **Droits et contrôle parental** : tous les droits Jellyfin d'un compte se règlent dans l'administration, et chaque invité de la Famille a son contrôle parental, jamais au-delà de son créateur
 - **Analyse audio retirée** : la détection des passages par l'écoute disparaît de l'administration et de l'installation. Intro Skipper, SkipMe.db et TheIntroDB restent, et l'analyse automatique d'Intro Skipper reste coupée, sans rien à faire de votre côté
+- **Droits des comptes** : l'administration règle chaque droit d'un compte — bibliothèques, contrôle parental, horaires, lecture, hors ligne, gestion — directement dans Jellyfin, qui reste la seule référence. Le dernier administrateur ne peut pas perdre son accès
+- **Contrôle parental de la Famille** : le propriétaire, ou le membre qui l'a créé, fixe la note maximale, les étiquettes bloquées et les horaires d'un invité, jamais plus larges que ceux de son créateur, qu'il suit quand ils changent
+- **Titres hors bibliothèque filtrés** : un compte restreint ne voit plus de recommandation au-dessus de sa note, et un titre sans classification lui reste caché
 
 ### EN
 - **Trailer previews on hover**: on the web and in desktop app 1.30.0, rest the pointer on a poster and its trailer starts in a mini card, with sound. The server picks it in your language, checks it and streams it itself; with no playable trailer, nothing shows
@@ -37,6 +40,9 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Notifications that take you to the right place**: a click opens the title's page or the exact page of an extension, and each one shows the state of what it is about
 - **Rights and parental controls**: all of an account's Jellyfin rights are set from the admin, and every Family guest gets parental controls, never beyond their creator
 - **Audio analysis removed**: listening-based segment detection is gone from the admin and the setup. Intro Skipper, SkipMe.db and TheIntroDB stay, and Intro Skipper's automatic analysis stays off — nothing to do on your side
+- **Account rights**: administration sets each right of an account — libraries, parental control, schedules, playback, offline, management — directly in Jellyfin, which stays the only reference. The last administrator cannot lose their access
+- **Family parental control**: the owner, or the member who created them, sets a guest's maximum rating, blocked tags and hours, never wider than their creator's, which they follow when those change
+- **Titles outside the library filtered**: a restricted account no longer sees recommendations above its rating, and an unrated title stays hidden from it
 
 ## [1.27.1]
 ### FR

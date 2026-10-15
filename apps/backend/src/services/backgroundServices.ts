@@ -2,6 +2,7 @@ import { startRecoJobs } from "./reco/jobs";
 import { startSearchJobs } from "./search/jobs";
 import { startPairingCleanup } from "./pairingCleanup";
 import { startFamilySweep } from "./family/familySweep";
+import { startGuestPolicyWatch } from "./family/guestPolicySync";
 import { startJellyfinPoller } from "./jellyfinPoller";
 import { startJellyfinWs } from "./jellyfinWs";
 import { startNotificationPushWorker } from "./notificationPushWorker";
@@ -30,6 +31,8 @@ export function startBackgroundServices(): void {
   started = true;
   startPairingCleanup();
   startFamilySweep();
+  // Le contrôle parental des invités suit leur créateur, même réglé dans Jellyfin.
+  startGuestPolicyWatch();
   startJellyfinPoller();
   startJellyfinWs();
   startNotificationPushWorker();
