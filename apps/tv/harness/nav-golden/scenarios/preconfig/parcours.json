@@ -1,0 +1,491 @@
+{
+  "domain": "preconfig",
+  "reference": "PENDING",
+  "scenarios": [
+    {
+      "id": "preconfig-parcours-famille",
+      "title": "Bout à bout : jumelage → « Qui regarde ? » → le propriétaire règle sa barre et l'applique à Tom → rail conforme ; Léa (deux bibliothèques) a SA page ; Tom arrive directement à l'accueil, barre copiée",
+      "start": {
+        "session": "none",
+        "fixtures": [
+          "preconfig/famille-trois-profils",
+          "preconfig/invitee-deux-bibliotheques",
+          "preconfig/jumelage-ok"
+        ],
+        "storage": {
+          "tentacle_tv_rail_profiles": "{}"
+        },
+        "keys": [
+          "wait:5"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "pairing:showCode",
+            "route": "PairCode"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pairing:manual"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:url"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:http://{backend}\n",
+          "settleMs": 4000,
+          "expect": {
+            "focus": "pairing:username"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:banc\n",
+          "settleMs": 2000,
+          "expect": {
+            "focus": "pairing:username"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:password"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:banc",
+          "settleMs": 1500
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:password"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:signIn"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 6000,
+          "timeoutMs": 25000,
+          "expect": {
+            "route": "Profiles",
+            "focus": "profiles:tile:0"
+          },
+          "why": "jumelée sur un serveur à Famille de trois profils : « Qui regarde ? »"
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "RailSetup",
+            "stack": [
+              "RailSetup"
+            ],
+            "focus": "railSetup:row:0",
+            "text": "La barre de Knaoxtest"
+          },
+          "why": "le propriétaire : sa page avant l'accueil"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "railSetup:row:0"
+          },
+          "why": "Animés retirée"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "railSetup:row:0:move"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "railSetup:row:0:move"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "railSetup:row:1:move"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "railSetup:row:1:move"
+          },
+          "why": "Animés posée sous Films"
+        },
+        {
+          "do": [
+            "left",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "railSetup:continue"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "route": "RailSetup",
+            "focus": "railSetup:applyTile:0",
+            "text": [
+              "Léa",
+              "Tom"
+            ]
+          },
+          "why": "l'étape du propriétaire : les deux autres profils"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "railSetup:applyTile:1"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "railSetup:applyTile:1"
+          },
+          "why": "Tom coché"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "railSetup:applyConfirm"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ],
+            "storage": {
+              "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-tom\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true}}"
+            }
+          },
+          "why": "enregistrée chez le propriétaire, copiée chez Tom"
+        },
+        {
+          "do": "left",
+          "settleMs": 800,
+          "expect": {
+            "focus": "nav:Home"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          },
+          "why": "rail conforme : Pour vous, Ma liste, Favoris, puis Films (Animés retirée)"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Library_d565273fd114d77bdf349a2896867069"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:RailShowAll"
+          },
+          "why": "Animés masquée : « Tout afficher »"
+        },
+        {
+          "do": "right",
+          "settleMs": 800
+        },
+        {
+          "do": "left",
+          "settleMs": 800,
+          "expect": {
+            "focus": "nav:Home"
+          },
+          "why": "le rail s'ouvre sur l'entrée active"
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "left"
+          ],
+          "expect": {
+            "focus": "nav:Settings"
+          },
+          "why": "GAUCHE armé : le profil"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "nav:SwitchProfile"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "Profiles"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "profiles:tile:1"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "RailSetup",
+            "focus": "railSetup:row:0",
+            "text": [
+              "La barre de Léa",
+              "Films",
+              "Séries"
+            ]
+          },
+          "why": "Léa : SA page, ses bibliothèques seulement"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "railSetup:row:1"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "railSetup:continue"
+          },
+          "why": "deux lignes seulement : Animés n'est pas dans ses droits"
+        },
+        {
+          "do": "menu",
+          "settleMs": 2500,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ]
+          },
+          "why": "Retour = « Passer »"
+        },
+        {
+          "do": "left",
+          "settleMs": 800,
+          "expect": {
+            "focus": "nav:Home"
+          },
+          "why": "le rail s'ouvre sur l'entrée active"
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "left"
+          ],
+          "expect": {
+            "focus": "nav:Settings"
+          },
+          "why": "GAUCHE armé : le profil"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "nav:SwitchProfile"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "Profiles"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "profiles:tile:2"
+          },
+          "why": "« Qui regarde ? » entre sur Léa, qu'on vient de quitter"
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ],
+            "storage": {
+              "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-tom\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}"
+            }
+          },
+          "why": "Tom : directement l'accueil, la barre du propriétaire"
+        },
+        {
+          "do": "left",
+          "settleMs": 800,
+          "expect": {
+            "focus": "nav:Home"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          },
+          "why": "la barre copiée : Animés absente"
+        }
+      ]
+    },
+    {
+      "id": "preconfig-relance",
+      "title": "Relance de l'app après le parcours : plus de page, ni pour Léa ni pour le propriétaire",
+      "start": {
+        "session": "paired",
+        "fixtures": [
+          "preconfig/famille-trois-profils",
+          "preconfig/invitee-deux-bibliotheques"
+        ],
+        "storage": {
+          "tentacle_tv_pairing": "banc-jumelage",
+          "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-tom\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}"
+        },
+        "keys": [
+          "wait:4"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "route": "Profiles",
+            "focus": "profiles:tile:0"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "profiles:tile:1"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ]
+          },
+          "why": "Léa : déjà faite, l'accueil"
+        },
+        {
+          "do": "left",
+          "settleMs": 800,
+          "expect": {
+            "focus": "nav:Home"
+          },
+          "why": "le rail s'ouvre sur l'entrée active"
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "left"
+          ],
+          "expect": {
+            "focus": "nav:Settings"
+          },
+          "why": "GAUCHE armé : le profil"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "nav:SwitchProfile"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "Profiles"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "profiles:tile:0"
+          },
+          "why": "« Qui regarde ? » entre sur Léa, qu'on vient de quitter"
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "timeoutMs": 15000,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ]
+          },
+          "why": "le propriétaire : l'accueil, sans page"
+        }
+      ]
+    }
+  ]
+}
