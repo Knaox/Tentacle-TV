@@ -421,4 +421,10 @@ export default {
   stillWatchingSeconds_one: "{{count}} second",
   stillWatchingSeconds_other: "{{count}} seconds",
   stillWatchingMinute: "1 minute",
+  // "Try it": see the question without hours of playback (a trial, armed once).
+  stillWatchingTrialTitle: "See the question now",
+  stillWatchingTrialHint: "On your next playback, the question shows up after 20 seconds without any input instead of hours. Everything else is the real thing: the countdown, then the pause.",
+  stillWatchingTrialArmed: "Trial ready. Start playing and don't touch anything: the question will show up in 20 seconds. Without playback, the trial cancels itself after 10 minutes.",
+  stillWatchingTrialStart: "Try it",
+  stillWatchingTrialCancel: "Cancel trial",
 } as const;

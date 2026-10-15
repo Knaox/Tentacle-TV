@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { SettingsSection } from "@tentacle-tv/ui";
-import { useStillWatchingSettings } from "@tentacle-tv/api-client";
+import { useStillWatchingSettings, useStillWatchingTrial } from "@tentacle-tv/api-client";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingToggleRow } from "./SettingToggleRow";
+import { StillWatchingTrialRow } from "./StillWatchingTrialRow";
 import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "./stillWatchingChoices";
 
 /**
@@ -13,11 +14,13 @@ import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "./stil
  * Seulement face à un serveur qui déclare `playback.stillWatching` : un client
  * à jour face à un serveur plus ancien n'en montre rien. Les deux durées ne
  * paraissent que lorsque la question est activée — régler le délai d'une
- * fonction éteinte n'a pas de sens.
+ * fonction éteinte n'a pas de sens. « Voir la question maintenant » aussi :
+ * éteindre la question renonce à l'essai armé.
  */
 export function StillWatchingSetting() {
   const { t } = useTranslation(["preferences", "player"]);
   const { available, settings, set } = useStillWatchingSettings();
+  const trial = useStillWatchingTrial();
   if (!available) return null;
 
   return (
@@ -27,7 +30,10 @@ export function StillWatchingSetting() {
           title={t("preferences:stillWatchingTitle")}
           hint={t("preferences:stillWatchingHint")}
           active={settings.enabled}
-          onChange={(enabled) => set({ enabled })}
+          onChange={(enabled) => {
+            if (!enabled) trial.cancel();
+            set({ enabled });
+          }}
         />
 
         {settings.enabled && (
@@ -52,6 +58,7 @@ export function StillWatchingSetting() {
                 className="mt-3"
               />
             </div>
+            <StillWatchingTrialRow trial={trial} />
           </div>
         )}
       </div>

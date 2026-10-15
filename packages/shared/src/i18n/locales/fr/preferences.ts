@@ -424,4 +424,10 @@ export default {
   stillWatchingSeconds_one: "{{count}} seconde",
   stillWatchingSeconds_other: "{{count}} secondes",
   stillWatchingMinute: "1 minute",
+  // « Essayer » : voir la question sans attendre des heures de lecture (un essai, armé une fois).
+  stillWatchingTrialTitle: "Voir la question maintenant",
+  stillWatchingTrialHint: "À la prochaine lecture, la question paraît après 20 secondes sans le moindre geste, au lieu d'attendre des heures. Le reste est le vrai comportement : le décompte, puis la pause.",
+  stillWatchingTrialArmed: "Essai prêt. Lancez une lecture et ne touchez plus à rien : la question paraîtra dans 20 secondes. Sans lecture, l'essai s'annule seul au bout de 10 minutes.",
+  stillWatchingTrialStart: "Essayer",
+  stillWatchingTrialCancel: "Annuler l'essai",
 } as const;
