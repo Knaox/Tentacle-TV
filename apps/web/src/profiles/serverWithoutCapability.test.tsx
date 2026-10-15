@@ -174,19 +174,28 @@ describe("les profils du bureau face au serveur", () => {
     expect(renderToStaticMarkup(<FaceProbe />)).toBe("<i>orange</i>");
   });
 
-  it("cet ordinateur ne propose plus « Qui regarde ? » : le réglage le dit, avec « Proposer à nouveau »", () => {
+  it("cet ordinateur ne propose plus « Qui regarde ? » : le réglage le dit, interrupteur éteint", () => {
     state.capable = true;
     const stored = JSON.stringify({ server: "", accountId: "owner", profileId: "zoe", hasPin: true });
     vi.stubGlobal("localStorage", { getItem: (key: string) => (key === "tentacle_profile_launch_stay" ? stored : null) });
     try {
-      const on = render({ ...LISTING, atLaunch: true });
-      expect(on).toContain("launchSetting.stayHere");
-      expect(on).toContain("launchSetting.stayHereReset");
-      // Préférence coupée : la case n'a rien à lever, rien n'est dit.
-      expect(render()).not.toContain("launchSetting.stayHere");
+      const off = render({ ...LISTING, atLaunch: true });
+      expect(off).toContain("launchSetting.stayHere");
+      expect(off).toMatch(/role="switch"[^>]*aria-checked="false"|aria-checked="false"[^>]*role="switch"/);
     } finally {
       vi.unstubAllGlobals();
     }
+    // Rien de retenu, jamais choisi : activé par défaut.
+    const on = render();
+    expect(on).not.toContain("launchSetting.stayHere");
+    expect(on).toContain("launchSetting.on");
+  });
+
+  it("coupé par l'administration : la ligne le dit, sans interrupteur", () => {
+    state.capable = true;
+    const html = render({ ...LISTING, launchPolicy: { mode: "off", defaultOn: true } });
+    expect(html).toContain("launchSetting.adminOff");
+    expect(html).not.toContain('role="switch"');
   });
 
   it("capacité déclarée, famille d'un seul profil : rien à changer, rien à régler", () => {

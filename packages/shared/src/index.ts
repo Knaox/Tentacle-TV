@@ -183,6 +183,7 @@ export * from "./family/familyLabels";
 export * from "./family/familyClient";
 export * from "./family/familyPickerClient";
 export * from "./family/familyPickerStay";
+export * from "./family/familyPickerDevice";
 export * from "./family/familyProfileRefusal";
 export * from "./family/familyPinEntry";
 export * from "./family/familyPinReminder";

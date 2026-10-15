@@ -19,6 +19,7 @@ import { familyUpdate } from "./familyNotify";
 import { checkProfilePin } from "./familyPins";
 import { closeProfileSessions, startProfileSession } from "./familyProfileSession";
 import { currentProfileOf, ensurePickerHost, findPickerHost, pickerHostLock, touchPickerHost } from "./familyPickerHosts";
+import { desktopAtLaunchByDefault, getFamilyLaunchPolicy } from "./familyLaunchPolicy";
 import { readPickerPreference, writePickerPreference } from "./familyPickerPreference";
 import { unavailableFor, visibleProfiles } from "./familyTv";
 import { syncGuestPolicy } from "./guestAccounts";
@@ -75,11 +76,11 @@ async function refuseGuest(userId: string): Promise<void> {
 
 export async function listPickerProfiles(caller: PickerCaller, platform: FamilyPickerPlatform, now: number): Promise<PickerProfilesDto> {
   await refuseGuest(caller.userId);
-  const [{ switches, profiles }, host, preference] = await Promise.all([
+  const [{ switches, profiles }, host] = await Promise.all([
     visibleProfiles(caller.userId, caller.username, now),
     findPickerHost(caller.token),
-    readPickerPreference(caller.userId),
   ]);
+  const policy = getFamilyLaunchPolicy();
   const own = profiles.find((profile) => sameUserId(profile.userId, caller.userId));
   const account = { userId: own?.userId ?? caller.userId, name: own?.name ?? caller.username };
   const rights = accountRights(profiles, caller.userId, switches);
@@ -97,7 +98,9 @@ export async function listPickerProfiles(caller: PickerCaller, platform: FamilyP
     profiles: profiles.map((profile) => toPickerProfile(profile, caller.userId, rights)),
     currentProfileId,
     pickerRequired: isPickerRequired(profiles.length),
-    atLaunch: preference.atLaunch[platform],
+    // Le bureau décide par APPAREIL dans ce cadre ; `atLaunch` sert les bureaux d'avant (ordinateur « jamais choisi »).
+    atLaunch: desktopAtLaunchByDefault(policy),
+    launchPolicy: policy.desktop,
   };
 }
 

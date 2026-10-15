@@ -91,8 +91,9 @@ export const SERVER_CAPABILITIES = {
    *  à jour face à un serveur d'avant ne met jamais une lecture en pause de lui-même. */
   "playback.stillWatching": "1.29.0",
   /** « Qui regarde ? » à l'ouverture réglé par l'administration, plateforme par plateforme
-   *  (`GET/PUT /api/admin/family/picker` : coupé pour tous, ou laissé au choix des comptes avec
-   *  un défaut) ; la préférence d'un compte gagne la plateforme `tv`. */
+   *  (`GET/PUT /api/admin/family/picker` : coupé pour tous, ou laissé au choix de chaque
+   *  appareil — le bureau avec un défaut) ; `launchPolicy` dans « Qui regarde ? » du bureau,
+   *  `askAtLaunch` dans celui des TV. */
   "family.pickerPolicy": "1.29.0",
   /** Le catalogue des bandes-annonces d'un titre : `GET /api/trailers/catalog` rend la liste
    *  ORDONNÉE par le serveur (la saison de l'épisode d'abord, la langue du serveur d'abord),

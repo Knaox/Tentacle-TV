@@ -1,8 +1,8 @@
-import type { PickerProfilesDto } from "@tentacle-tv/shared";
+import { withDeviceChoice, type PickerProfilesDto } from "@tentacle-tv/shared";
 import { notifyProfileSessionChange } from "../../auth/profileSession";
 import { forgetProfileSession } from "../../auth/sessionSwap";
 import type { LaunchMirror } from "./launchDecision";
-import { forgetStayOnDevice } from "./stayOnDevice";
+import { forgetDeviceLaunchChoice, readDeviceChoice } from "./stayOnDevice";
 
 /**
  * Ce que « Qui regarde ? » garde entre deux ouvertures (le MIROIR, stockage
@@ -28,7 +28,8 @@ export function readLaunchMirror(): LaunchMirror | null {
   try {
     const parsed = JSON.parse(localStorage.getItem(LAUNCH_MIRROR_KEY) ?? "null") as Partial<LaunchMirror> | null;
     if (!parsed || typeof parsed.server !== "string" || typeof parsed.accountId !== "string") return null;
-    const listing = isListing(parsed.listing) ? parsed.listing : null;
+    // `atLaunch` : la règle de CET ordinateur, relue à chaque fois (son choix a pu changer depuis).
+    const listing = isListing(parsed.listing) ? withDeviceChoice(parsed.listing, readDeviceChoice(parsed.server, parsed.accountId)) : null;
     return { server: parsed.server, accountId: parsed.accountId, capable: parsed.capable === true && listing !== null, listing };
   } catch {
     return null;
@@ -91,15 +92,15 @@ export function noteFreshLogin(): void {
 /**
  * La session vient de finir (plus de compte connecté) : rien de la session de
  * profil ne lui survit — ni sa marque, ni la réserve qui garde le jeton
- * personnel du compte, ni « Ne plus proposer sur cet appareil » (comme une TV
- * déjumelée) —, quelle que soit la sortie qui l'a fermée.
+ * personnel du compte, ni le choix de cet ordinateur pour « Qui regarde ? »
+ * (comme une TV déjumelée) —, quelle que soit la sortie qui l'a fermée.
  */
 export function noteLoggedOut(): void {
   forgetPastProfileSession();
 }
 
 function forgetPastProfileSession(): void {
-  forgetStayOnDevice();
+  forgetDeviceLaunchChoice();
   try {
     forgetProfileSession(localStorage);
   } catch {

@@ -286,24 +286,41 @@ même compte : deux hôtes, deux sessions.
   /api/pair/self/revoke` (la ferme). Refusés (`profileSessionLimits`) :
   téléchargements, push, jumelage, compte, comptes externes, invitations.
 
-### « Qui regarde ? » au lancement
+### « Qui regarde ? » au lancement (serveur 1.29.0, `family.pickerPolicy`)
 
-Une préférence du **COMPTE**, par **plateforme** (`FAMILY_PICKER_PLATFORMS`,
-liste FERMÉE : `desktop`), **désactivée** par défaut : activée sur un
-ordinateur, elle vaut pour tous ceux du compte ; les autres appareils
-l'apprennent par `family:update`. Rangée dans `server_config`
-(`user_profile_picker_<compte>`, la liste des plateformes actives ; rien
-d'actif = aucune ligne). Sans objet sous deux profils (`pickerRequired`).
-Le compte de démonstration ne la règle pas, et n'ouvre que son propre profil ;
-un compte d'invité (mot de passe réinitialisé par un administrateur) n'a pas
-de « Qui regarde ? » (`family.guest_account`).
+**Par APPAREIL**, dans le cadre de l'**administration**. Chaque ordinateur
+garde SON choix, sur la machine (shared `familyPickerDevice.ts`) : jamais
+choisi, « proposer » (`tentacle_profile_launch_ask`) ou « ne plus proposer » —
+un profil retenu (`tentacle_profile_launch_stay`) ; l'un efface l'autre, par
+serveur et par compte ; une déconnexion les oublie. Un autre ordinateur du
+compte garde le sien. L'administration (`family_launch_policy` dans
+`server_config`, `GET`/`PUT /api/admin/family/picker`) règle :
+- **Ordinateurs** : « Permis » (`off` : jamais, pour personne, et la case
+  disparaît) et « Activé par défaut » (`defaultOn`, VRAI par défaut) pour un
+  ordinateur qui n'a jamais choisi. `PickerProfilesDto.launchPolicy` le donne
+  au bureau ; `atLaunch` n'est plus que le défaut, pour les bureaux d'avant.
+- **Téléviseurs** : « Permis » seulement. Coupé (`TvProfilesDto.askAtLaunch`
+  faux), chaque TV ouvre au lancement le profil du compte qui l'a jumelée,
+  SANS PIN (tv-core `soloProfile`, variante `solo` : apps/tv ne change pas) ;
+  le serveur l'en dispense — lui seul, et seulement quand aucun PIN n'est
+  envoyé (« Changer de profil » le demande, et il se vérifie). Permis : le
+  comportement de toujours (« Ne plus proposer à l'ouverture », propre à
+  chaque TV).
+
+L'ancienne préférence du COMPTE (`user_profile_picker_<compte>`, routes
+`pickerPreference`) reste lue et écrite pour les bureaux d'avant ; plus rien
+ne décide d'après elle. Sans objet sous deux profils (`pickerRequired`).
+Le compte de démonstration n'ouvre que son propre profil ; un compte d'invité
+(mot de passe réinitialisé par un administrateur) n'a pas de « Qui regarde ? »
+(`family.guest_account`).
 
 ### La séquence du bureau (pour le client)
 
 1. Capacité `family.desktopProfiles` absente : rien ne change.
 2. Au lancement, `GET /api/family/picker/profiles?platform=desktop` au jeton
-   PERSONNEL ; `pickerLaunch` (shared) dit quoi faire : « Qui regarde ? » (la
-   préférence, ou l'appareil sur un autre profil dont l'application n'a plus
+   PERSONNEL ; `withDeviceChoice` y pose la règle de l'appareil, puis
+   `pickerLaunch` (shared) dit quoi faire : « Qui regarde ? » (cette règle, ou
+   l'appareil sur un autre profil dont l'application n'a plus
    le jeton — jamais le compte sans son PIN), reprendre la session de profil
    gardée, ou la session personnelle.
 3. Choisir : `POST /api/family/picker/sessions` `{ platform, profileId, pin?,
@@ -334,23 +351,23 @@ de « Qui regarde ? » (`family.guest_account`).
   une connexion par mot de passe : plus de sélecteur jusqu'à la fermeture,
   sauf la sécurité (`verifyOutcome`). Une préférence changée ailleurs vaut dès
   l'ouverture si le serveur répond dans l'attente bornée.
-- **« Ne plus proposer sur cet appareil »** (case de « Qui regarde ? », seulement
-  si le compte demande qui regarde ; règle `familyPickerStay.ts`, shared) : le
-  pendant du `stickyProfileId` de la TV, gardé sur l'ordinateur
-  (`tentacle_profile_launch_stay`, par serveur et par compte). Le profil retenu
-  s'ouvre seul, sans son code (donné au choix) ; bloqué, « Qui regarde ? » case
-  cochée ; parti ou code posé/retiré, oublié ; jamais un AUTRE profil que celui
-  en cours sur l'appareil (`pickerLaunch` garde sa règle). Depuis « Changer de
-  profil », la case arrive DÉCOCHÉE et un changement de profil l'oublie, sauf
-  case recochée (comme « Changer de profil » sur la TV) ; une fin de profil et
-  une déconnexion l'oublient aussi ; Réglages › Famille le dit, avec « Proposer
-  à nouveau ».
+- **« Ne plus proposer à la prochaine ouverture »** (case de « Qui regarde ? »,
+  à l'ouverture COMME depuis « Changer de profil », tant que l'administration
+  le permet ; règles `familyPickerStay.ts` et `familyPickerDevice.ts`, shared) :
+  le pendant du `stickyProfileId` de la TV, gardé sur l'ordinateur. Elle arrive
+  cochée si cet ordinateur ne propose déjà plus, sinon décochée ; choisir un
+  profil case cochée le retient, case décochée fait proposer de nouveau. Le
+  profil retenu s'ouvre seul, sans son code (donné au choix) ; bloqué, « Qui
+  regarde ? » case cochée ; parti ou code posé/retiré, oublié ; jamais un AUTRE
+  profil que celui en cours sur l'appareil (`pickerLaunch` garde sa règle).
+  Réglages › Famille (« Sur cet ordinateur ») en est l'interrupteur : rallumé,
+  il efface le profil retenu ; éteint, il retient le profil en cours.
 - **« Changer de profil »** (décision du 14/10 : pas d'accès rapide, la liste
   des profils a quitté le menu) : UNE entrée en tête du menu de l'avatar — et,
   en fenêtre étroite, de sa feuille et de la page Profil (la barre du haut y
   passe sous la bande de la fenêtre macOS) —, suivie de « Gérer les profils »
   en session personnelle (`profiles/switcher/useProfileMenuItems.tsx`). Là dès
-  deux profils, préférence « au lancement » activée ou non, depuis la session
+  deux profils, « Qui regarde ? » à l'ouverture activé ou non, depuis la session
   personnelle comme depuis celle d'un autre profil (pour revenir au sien,
   derrière son code) ; absente hors ligne. Elle ouvre le MÊME « Qui
   regarde ? » qu'à l'ouverture (`ProfileLaunchScreen`, mode `switching` ;
@@ -619,6 +636,10 @@ rallumer ne ressuscite aucune session. La session du compte de chaque TV
 reste. Retirer, quitter,
 supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 
+« Qui regarde ? » à l'ouverture, plateforme par plateforme (même page, section
+voisine, `FamilyLaunchPolicySection`) : voir « Qui regarde ? » au lancement
+(bureau) — aucune session n'est fermée, la règle vaut au prochain lancement.
+
 ## Côté serveur
 
 | Sujet | Fichier (`apps/backend/src/services/family/`) |
@@ -640,7 +661,7 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 | Vue d'ensemble, candidats | `familyOverview.ts`, `familyCandidates.ts` |
 | Apple TV : échange ; profils et sessions | `familyTvEnroll.ts`, `familyTv.ts` |
 | Ouvrir, fermer la session de profil d'un appareil (TV, bureau) | `familyProfileSession.ts` |
-| Le bureau : « Qui regarde ? », son hôte, la préférence « au lancement » | `familyPicker.ts`, `familyPickerHosts.ts`, `familyPickerPreference.ts` |
+| Le bureau : « Qui regarde ? », son hôte, « au lancement » (politique, ancienne préférence) | `familyPicker.ts`, `familyPickerHosts.ts`, `familyLaunchPolicy.ts`, `familyPickerPreference.ts` |
 | Garde d'appelant des routes | `familyCaller.ts` |
 | Périmètre des sessions de profil | `profileSessionLimits.ts` |
 | Balayage (10 min) | `familySweep.ts` |

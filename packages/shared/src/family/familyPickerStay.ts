@@ -1,14 +1,13 @@
 import type { PickerProfileDto, PickerProfilesDto } from "./familyPickerContract";
 
 /**
- * « Ne plus proposer sur cet appareil » — la case de « Qui regarde ? » sur le
- * BUREAU, jumelle de « Ne plus proposer à l'ouverture » de l'Apple TV (tv-core
- * `session/profileLaunch.ts`). Le réglage du COMPTE (« Demander qui regarde à
- * l'ouverture ») reste la règle par défaut ; la case n'y fait qu'une
- * exception, sur CET ordinateur, pour UN profil — comme le `stickyProfileId`
- * d'une TV. Elle est gardée sur la machine, jamais sur le serveur (aucun
- * secret : un identifiant et un drapeau). Module pur, horloge injectée :
- * `familyPickerStay.test.ts`.
+ * « Ne plus proposer à la prochaine ouverture » — la case de « Qui regarde ? »
+ * sur le BUREAU, jumelle de « Ne plus proposer à l'ouverture » de l'Apple TV
+ * (tv-core `session/profileLaunch.ts`) : CET ordinateur ne propose plus, et
+ * ouvre UN profil — comme le `stickyProfileId` d'une TV. C'est l'un des trois
+ * choix de l'appareil (`familyPickerDevice.ts`). Elle est gardée sur la
+ * machine, jamais sur le serveur (aucun secret : un identifiant et un
+ * drapeau). Module pur, horloge injectée : `familyPickerStay.test.ts`.
  *
  * Les règles de la TV, reprises :
  * - le profil retenu s'ouvre SEUL à l'ouverture, sans son code (il a été

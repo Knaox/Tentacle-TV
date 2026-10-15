@@ -6,6 +6,7 @@ import { isPickerRequired, sameUserId } from "../../family/familyRules";
 import { getFamilySwitches, isReviewAccount } from "./familyConfig";
 import { FamilyFailure, iso } from "./familyErrors";
 import { withFamilyLock } from "./familyLock";
+import { getFamilyLaunchPolicy, tvAsksAtLaunch } from "./familyLaunchPolicy";
 import { checkProfilePin, lockedProfiles, profilesWithPin } from "./familyPins";
 import { startProfileSession } from "./familyProfileSession";
 import { familyOf, familyProfiles, fold, jellyfinUserMap, memberKind, profileColor, type MemberRow } from "./familyStore";
@@ -18,7 +19,9 @@ import { syncGuestPolicy } from "./guestAccounts";
  * soit le propriétaire ou un membre — et n'ouvre jamais le profil d'une autre
  * famille (SEC-F-08/09). Le PIN se vérifie ICI, compté par profil toutes TV
  * confondues ; « Rester sur ce profil » l'épargne au profil choisi, jamais
- * pendant un blocage. Une seule session de profil par TV.
+ * pendant un blocage. « Qui regarde ? » coupé à l'ouverture des TV par
+ * l'administration (`askAtLaunch`) l'épargne au profil du compte de la TV, et
+ * à lui seul, quand aucun PIN n'est envoyé. Une seule session de profil par TV.
  */
 
 interface TvEntry {
@@ -102,6 +105,7 @@ export async function listTvProfiles(pairing: PairingRow, now: number): Promise<
     stickyProfileId: sticky?.userId ?? null,
     pickerRequired: isPickerRequired(profiles.length),
     canManage: profiles.some((profile) => profile.manage !== null),
+    askAtLaunch: tvAsksAtLaunch(getFamilyLaunchPolicy()),
   };
 }
 
@@ -134,7 +138,11 @@ export async function openTvSession(pairing: PairingRow, body: OpenTvSessionBody
       throw new FamilyFailure("family.pin_locked", "Profil bloqué : trop d'essais", { lockedUntil: profile.lockedUntil });
     }
     const remembered = listing.stickyProfileId !== null && sameUserId(listing.stickyProfileId, profile.userId);
-    if (!remembered) await checkProfilePin({ pairingId: pairing.id, userId: profile.userId, pin: body.pin, now });
+    // « Qui regarde ? » coupé à l'ouverture : la TV ouvre d'office le profil de SON compte, sans PIN — lui
+    // seul. Un PIN ENVOYÉ (« Changer de profil » le demande toujours) se vérifie, compté comme ailleurs.
+    const opensAtLaunch =
+      listing.askAtLaunch === false && sameUserId(profile.userId, pairing.jellyfinUserId) && body.pin === undefined;
+    if (!remembered && !opensAtLaunch) await checkProfilePin({ pairingId: pairing.id, userId: profile.userId, pin: body.pin, now });
     // L'invité suit la politique de SON créateur, quelle que soit la TV qui l'ouvre.
     if (profile.kind === "guest") void syncGuestPolicy(profile.userId, profile.createdBy ?? pairing.jellyfinUserId);
 

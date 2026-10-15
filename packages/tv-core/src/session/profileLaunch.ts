@@ -11,8 +11,10 @@ import { pairedAccountOf, profileManages, type ProfileLaunch } from "./tvProfile
  * - `launch` (démarrage) : le profil retenu par « Ne plus proposer à
  *   l'ouverture » s'ouvre seul, sans PIN ; sinon le compte de la TV s'il est
  *   dans AUCUNE famille et sans PIN (`soloProfile`) — il n'y a personne
- *   d'autre à choisir ; sinon « Qui regarde ? », même pour un profil seul
- *   protégé par un code.
+ *   d'autre à choisir —, ou si l'administration a coupé « Qui regarde ? » à
+ *   l'ouverture des TV (`askAtLaunch` faux — le serveur l'ouvre alors sans
+ *   PIN) ; sinon « Qui regarde ? », même pour un profil seul protégé par un
+ *   code.
  * - `switch` (« Changer de profil ») : toujours « Qui regarde ? » — c'est là
  *   que vit « Gérer les profils » ; la case y arrive décochée.
  */
@@ -24,15 +26,20 @@ export type LaunchPlan =
   | { kind: "open"; profileId: string; remember: false; launch: "solo" }
   | { kind: "picker" };
 
-type ListingForSolo = Pick<TvProfilesDto, "profiles" | "owner"> & Partial<Pick<TvProfilesDto, "pairedBy">>;
+type ListingForSolo = Pick<TvProfilesDto, "profiles" | "owner"> & Partial<Pick<TvProfilesDto, "pairedBy" | "askAtLaunch">>;
 
 /**
- * Le compte de la TV quand il n'est dans AUCUNE famille (le serveur ne rend
- * alors que lui — ou une famille réduite à lui, les invités coupés) et sans
- * PIN : il n'y a personne à choisir ni de code à demander, la TV entre
- * directement. Sinon null.
+ * Le profil que la TV ouvre DIRECTEMENT au lancement, sans « Qui regarde ? »
+ * (variante `solo`) — le compte de la TV :
+ * - quand l'administration a coupé « Qui regarde ? » à l'ouverture des TV
+ *   (`askAtLaunch` faux) : le serveur l'ouvre sans PIN ;
+ * - sinon quand il n'est dans AUCUNE famille (le serveur ne rend alors que lui
+ *   — ou une famille réduite à lui, les invités coupés) et sans PIN : il n'y a
+ *   personne à choisir ni de code à demander.
+ * Sinon null. « Changer de profil » montre toujours « Qui regarde ? ».
  */
 export function soloProfile(listing: ListingForSolo): TvProfileDto | null {
+  if (listing.askAtLaunch === false) return findProfile(listing, pairedAccountOf(listing).userId);
   if (listing.profiles.length !== 1) return null;
   const only = listing.profiles[0];
   if (only.hasPin || !sameUserId(only.userId, pairedAccountOf(listing).userId)) return null;
@@ -42,7 +49,8 @@ export function soloProfile(listing: ListingForSolo): TvProfileDto | null {
 /**
  * Une session `solo` reprise au démarrage l'est-elle toujours ? La famille a
  * pu naître pendant que l'app dormait (un invité créé, une invitation
- * acceptée), ou un PIN se poser : la TV repasse alors par « Qui regarde ? ».
+ * acceptée), un PIN se poser, ou « Qui regarde ? » à l'ouverture se rallumer :
+ * la TV repasse alors par « Qui regarde ? ».
  */
 export function soloStillHolds(listing: ListingForSolo, profileId: string): boolean {
   const solo = soloProfile(listing);
@@ -68,7 +76,8 @@ export function planProfileLaunch(listing: TvProfilesDto, intent: ProfileIntent,
     return { kind: "open", profileId: sticky.userId, remember: true, launch: "sticky" };
   }
   const solo = soloProfile(listing);
-  if (solo) return { kind: "open", profileId: solo.userId, remember: false, launch: "solo" };
+  // Un profil bloqué ne s'ouvre pas à l'aveugle (seul `askAtLaunch` faux en ouvre un protégé par un code).
+  if (solo && !isProfileLocked(solo, now)) return { kind: "open", profileId: solo.userId, remember: false, launch: "solo" };
   return { kind: "picker" };
 }
 

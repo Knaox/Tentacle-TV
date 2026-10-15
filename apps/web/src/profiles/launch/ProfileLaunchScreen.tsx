@@ -2,7 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { pickerStayChecked, pickerStayOf, type PickedProfileDto, type PickerProfileDto, type PickerProfilesDto } from "@tentacle-tv/shared";
+import {
+  launchAllowed,
+  pickerStayInitial,
+  pickerStayOf,
+  type PickedProfileDto,
+  type PickerProfileDto,
+  type PickerProfilesDto,
+} from "@tentacle-tv/shared";
 import { accountUserId } from "../../auth/profileSession";
 import { loadPickerProfiles, pickerProfilesKey } from "../api/pickerGateway";
 import { usePickFlow } from "../pick/usePickFlow";
@@ -12,7 +19,7 @@ import { commitPick, curtainOf } from "../switch/commitPick";
 import { ProfileCurtain, type CurtainProfile } from "../switch/ProfileCurtain";
 import { commitStay, switchActiveId, switchPick } from "../switcher/switchPlan";
 import { pickerModelOf } from "./pickerModel";
-import { readStayOnThisServer, writeStayOnThisServer } from "./stayOnDevice";
+import { askOnThisServer, readDeviceChoiceOnThisServer, readStayOnThisServer, writeStayOnThisServer } from "./stayOnDevice";
 
 /** « Ouverture de Léa… » ne paraît que si le serveur tarde au-delà (comme sur la TV). */
 const OPENING_HINT_DELAY_MS = 500;
@@ -57,15 +64,18 @@ interface ProfileLaunchScreenProps {
  * les profils » (son propre profil d'abord, derrière son code, puis Réglages ›
  * Famille). La vue est `WhoIsWatchingView`.
  *
- * « Ne plus proposer sur cet appareil » (si le compte demande qui regarde) :
- * cochée à l'arrivée si l'ordinateur retient encore un profil de la famille,
- * comme la TV ; le choix d'un profil la suit (retenu, ou plus rien) — sauf
- * « Gérer les profils », qui n'y touche pas.
+ * « Ne plus proposer à la prochaine ouverture » (tant que l'administration le
+ * permet), à l'ouverture comme depuis « Changer de profil » : cochée à
+ * l'arrivée si CET ordinateur ne propose déjà plus (shared
+ * `pickerStayInitial`) ; le choix d'un profil la suit — cochée, il est
+ * retenu ; décochée, l'ordinateur propose de nouveau — sauf « Gérer les
+ * profils », qui n'y touche pas.
  *
  * Depuis « Changer de profil » (`switching`) : « Annuler » et Échap referment
- * l'écran sans rien changer ; le focus arrive sur le profil en cours, la case
- * décochée ; ce profil-là choisi referme l'écran, sans code ; « Gérer les
- * profils » mène tout droit à la Famille depuis la session personnelle.
+ * l'écran sans rien changer ; le focus arrive sur le profil en cours ; ce
+ * profil-là choisi referme l'écran, sans code (la case vaut quand même) ;
+ * « Gérer les profils » mène tout droit à la Famille depuis la session
+ * personnelle.
  */
 export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onAccountLost, switching }: ProfileLaunchScreenProps) {
   const { t, i18n } = useTranslation("profilePicker");
@@ -83,16 +93,16 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
   const [curtain, setCurtain] = useState<CurtainProfile | null>(null);
   const [slowOpening, setSlowOpening] = useState(false);
   const landing = useRef<string | undefined>(undefined);
-  const [storedStay] = useState(() => readStayOnThisServer(accountId));
-  // Depuis « Changer de profil », la case arrive décochée : le choix vaut pour un profil, jamais pour le suivant.
-  const [stayChoice, setStayChoice] = useState<boolean | null>(switching ? false : null);
-  const stay = stayChoice ?? (listing.data ? pickerStayChecked(listing.data, storedStay, Date.now()) : false);
+  // Le choix de CET ordinateur à l'arrivée : la case en part (cochée s'il ne propose déjà plus).
+  const [device] = useState(() => ({ stay: readStayOnThisServer(accountId), choice: readDeviceChoiceOnThisServer(accountId) }));
+  const [stayChoice, setStayChoice] = useState<boolean | null>(null);
+  const stay = stayChoice ?? (listing.data ? pickerStayInitial(listing.data, device.choice, device.stay, Date.now()) : false);
   const stayRef = useRef(stay);
   stayRef.current = stay;
   const onToggleStay = useCallback(() => setStayChoice(!stayRef.current), []);
-  const atLaunch = listing.data?.atLaunch === true;
-  const atLaunchRef = useRef(atLaunch);
-  atLaunchRef.current = atLaunch;
+  const allowed = listing.data ? launchAllowed(listing.data) : false;
+  const allowedRef = useRef(allowed);
+  allowedRef.current = allowed;
   const mode = switching ? "switch" : "launch";
   const leaveGroup = switching?.leaveGroup;
 
@@ -100,7 +110,7 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
   const onPicked = useCallback(async (picked: PickedProfileDto) => {
     // Une bascule qui échoue après la chute du rideau le relève : le refus se
     // dit sur le sélecteur (`usePickFlow`), jamais sous un rideau resté.
-    const stayOnDevice = commitStay(mode, landing.current === FAMILY_SETTINGS_PATH, atLaunchRef.current, stayRef.current);
+    const stayOnDevice = commitStay(landing.current === FAMILY_SETTINGS_PATH, allowedRef.current, stayRef.current);
     const result = await commitPick(picked, { onCurtain: setCurtain, onCurtainLifted: liftCurtain, landing: landing.current, stayOnDevice, leaveGroup });
     if (result !== "stay") return;
     // L'application est déjà là, dessous : elle reprend sans rideau.
@@ -154,10 +164,11 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
   const onCancel = switching?.onCancel;
   const onPick = useCallback((profileId: string) => {
     landing.current = undefined;
-    const plan = switchPick(profileId, activeId, atLaunchRef.current, stayRef.current);
+    const plan = switchPick(profileId, activeId, allowedRef.current, stayRef.current);
     if (onCancel && plan.kind === "close") {
       const current = profiles.find((profile) => profile.userId === profileId);
-      if (plan.keepHere && current && accountId) writeStayOnThisServer(accountId, pickerStayOf(current));
+      if (plan.stay === true && current && accountId) writeStayOnThisServer(accountId, pickerStayOf(current));
+      else if (plan.stay === false && accountId) askOnThisServer(accountId);
       onCancel();
       return;
     }

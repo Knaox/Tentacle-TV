@@ -9,8 +9,9 @@ import { stayOverridesPicker, type PickerStay } from "./familyPickerStay";
  * besoin. Module pur : `familyPickerClient.test.ts`.
  */
 
-/** « Qui regarde ? » au lancement : la préférence du compte pour cette
- *  plateforme, et au moins deux profils — sinon il est sans objet. */
+/** « Qui regarde ? » au lancement : la règle de CET appareil (`atLaunch`, tel
+ *  que `withDeviceChoice` le pose), et au moins deux profils — sinon il est
+ *  sans objet. */
 export function showPickerAtLaunch(listing: Pick<PickerProfilesDto, "atLaunch" | "pickerRequired">): boolean {
   return listing.atLaunch && listing.pickerRequired;
 }

@@ -1,4 +1,4 @@
-import { isPickerProfileLocked, type PickerProfileDto, type PickerProfilesDto } from "@tentacle-tv/shared";
+import { isPickerProfileLocked, launchAllowed, type PickerProfileDto, type PickerProfilesDto } from "@tentacle-tv/shared";
 import type { PickFlow } from "../pick/usePickFlow";
 import type { PickerProfile, WhoIsWatchingModel } from "../picker/pickerTypes";
 
@@ -42,7 +42,7 @@ export interface PickerModelInput {
   lastChosen?: string | null;
   /** « Ouverture de Léa… », quand le serveur tarde. */
   openingLabel: string | null;
-  /** « Ne plus proposer sur cet appareil » : cochée ou non ; null, sans objet. */
+  /** « Ne plus proposer à la prochaine ouverture » : cochée ou non. */
   stay?: boolean | null;
   language: string;
   t: Translate;
@@ -67,7 +67,7 @@ export function pickerModelOf(input: PickerModelInput): WhoIsWatchingModel {
     notice: flow.notice,
     entering: flow.opening ? { id: flow.opening, label: input.openingLabel } : null,
     focusId: input.lastChosen ?? null,
-    // Sans objet si le compte ne demande pas qui regarde à l'ouverture : l'appareil n'a rien à retenir.
-    stay: listing.atLaunch ? input.stay ?? false : null,
+    // Sans objet si l'administration a coupé « Qui regarde ? » à l'ouverture des ordinateurs.
+    stay: launchAllowed(listing) ? input.stay ?? false : null,
   };
 }

@@ -1,4 +1,4 @@
-import type { PickerStay } from "@tentacle-tv/shared";
+import type { PickerDeviceChoice, PickerStay } from "@tentacle-tv/shared";
 import { getBackendBase } from "../../lib/backendBase";
 
 /**
@@ -7,11 +7,17 @@ import { getBackendBase } from "../../lib/backendBase";
  * Stockage LOCAL, par serveur ET par compte — un autre compte, un autre
  * serveur sur la même machine n'en héritent jamais. Aucun secret : un
  * identifiant de profil et un drapeau. Lecture et écriture protégées : un
- * stockage illisible vaut « rien de retenu » (la préférence du compte).
+ * stockage illisible vaut « jamais choisi » (le défaut de l'administration).
  *
- * ⚠️ Clé traversée par une chaîne : jamais renommée.
+ * Avec lui, le CHOIX de cet ordinateur (shared `familyPickerDevice.ts`) :
+ * `stay` (ce profil retenu), `ask` (il propose « Qui regarde ? » — la marque
+ * `tentacle_profile_launch_ask`), ou `unset` (jamais choisi). L'un efface
+ * l'autre.
+ *
+ * ⚠️ Clés traversées par une chaîne : jamais renommées.
  */
 export const STAY_ON_DEVICE_KEY = "tentacle_profile_launch_stay";
+export const ASK_ON_DEVICE_KEY = "tentacle_profile_launch_ask";
 
 interface StoredStay extends PickerStay {
   server: string;
@@ -39,11 +45,12 @@ export function readStayOnThisServer(accountId: string | null): PickerStay | nul
   }
 }
 
-/** Retenir ce profil pour le serveur de l'application et ce compte. */
+/** Retenir ce profil pour le serveur de l'application et ce compte (« ne plus proposer »). */
 export function writeStayOnThisServer(accountId: string, stay: PickerStay): void {
   try {
     const stored: StoredStay = { server: getBackendBase(), accountId, profileId: stay.profileId, hasPin: stay.hasPin };
     localStorage.setItem(STAY_ON_DEVICE_KEY, JSON.stringify(stored));
+    localStorage.removeItem(ASK_ON_DEVICE_KEY);
   } catch {
     /* stockage plein ou bloqué : « Qui regarde ? » se reproposera, rien de plus */
   }
@@ -52,6 +59,50 @@ export function writeStayOnThisServer(accountId: string, stay: PickerStay): void
 export function forgetStayOnDevice(): void {
   try {
     localStorage.removeItem(STAY_ON_DEVICE_KEY);
+  } catch {
+    /* rien à oublier */
+  }
+}
+
+/** Cet ordinateur propose « Qui regarde ? » à l'ouverture (le profil retenu est oublié). */
+export function askOnThisServer(accountId: string): void {
+  try {
+    localStorage.removeItem(STAY_ON_DEVICE_KEY);
+    localStorage.setItem(ASK_ON_DEVICE_KEY, JSON.stringify({ server: getBackendBase(), accountId }));
+  } catch {
+    /* stockage bloqué : le défaut de l'administration vaudra */
+  }
+}
+
+function readAsk(server: string, accountId: string): boolean {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ASK_ON_DEVICE_KEY) ?? "null") as { server?: unknown; accountId?: unknown } | null;
+    return !!parsed && parsed.server === server && parsed.accountId === accountId;
+  } catch {
+    return false;
+  }
+}
+
+/** Le choix de cet ordinateur pour ce serveur et ce compte. */
+export function readDeviceChoice(server: string, accountId: string | null): PickerDeviceChoice {
+  if (!accountId) return "unset";
+  if (readStayOnDevice(server, accountId)) return "stay";
+  return readAsk(server, accountId) ? "ask" : "unset";
+}
+
+export function readDeviceChoiceOnThisServer(accountId: string | null): PickerDeviceChoice {
+  try {
+    return readDeviceChoice(getBackendBase(), accountId);
+  } catch {
+    return "unset";
+  }
+}
+
+/** Plus rien de choisi sur cet ordinateur (une déconnexion : comme une TV déjumelée). */
+export function forgetDeviceLaunchChoice(): void {
+  forgetStayOnDevice();
+  try {
+    localStorage.removeItem(ASK_ON_DEVICE_KEY);
   } catch {
     /* rien à oublier */
   }
