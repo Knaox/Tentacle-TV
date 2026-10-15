@@ -56,6 +56,7 @@ import profilePicker from "./profilePicker";
 import avatars from "./avatars";
 import userRights from "./userRights";
 import libraryDelete from "./libraryDelete";
+import accountAccess from "./accountAccess";
 
 export default {
   common, auth, player, admin,
@@ -88,4 +89,5 @@ export default {
   avatars,
   userRights,
   libraryDelete,
+  accountAccess,
 };

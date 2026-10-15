@@ -33,6 +33,7 @@ const NAMESPACES = [
   "avatars",
   "userRights",
   "libraryDelete",
+  "accountAccess",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {

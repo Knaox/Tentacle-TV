@@ -93,6 +93,7 @@ export * from "./libraryDelete/libraryDeleteContract";
 export * from "./libraryDelete/deletionSelection";
 export * from "./accountAccess/accountAccessContract";
 export * from "./accountAccess/accountAccessRule";
+export * from "./accountAccess/accountAccessView";
 export * from "./notifications/notificationTarget";
 export * from "./help/trailerHint";
 // Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
