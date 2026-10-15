@@ -803,3 +803,56 @@ Vérifié sur Jellyfin jetable : `GET /api/downloads/capabilities` rend `downloa
 `/api/downloads/original/:id` 404 pour un compte sans le droit ; les quatre entrées « garder hors ligne »
 du bureau (carte, fiche, saison, épisode) lisent `canDownload` et disparaissent (un titre déjà gardé reste
 lisible). Le web n'a pas de hors ligne. Rien de changé.
+## 9.6 Démarrage et « Vous regardez encore ? »
+
+### L'ordre des fenêtres du démarrage (web et bureau)
+
+Une seule règle, pure : `apps/web/src/startup/startupOrder.ts` (tests à côté). Chaque
+porte PUBLIE son état dans un magasin de module (`startupStore.ts` : `undecided`,
+`pending`, `open`, `done`) et n'ouvre qu'à son tour. Rien ne s'empile ; celle qui attend
+paraît après, aucune ne se perd.
+
+1. **`profile`** — « Qui regarde ? » et son PIN. Trois sources : l'attente bornée de
+   l'ouverture du bureau (`useProfileLaunchGate`, mode `late` : jusqu'à 1,5 s, la réponse
+   du serveur peut encore imposer le sélecteur, qui démonterait l'application) ;
+   « Changer de profil » ouvert (`WhoIsWatchingHost`) ; le rideau du profil choisi
+   (`ProfileArrival`, et `announceArrival` dès le choix), jusqu'à sa levée.
+2. **`familyPin`** — « Action recommandée : posez votre code PIN » (`FamilyPinStartup`).
+   Tranché quand la Famille et les rappels ont répondu, ou qu'il n'y en aura pas
+   (Famille absente, hors ligne, session d'un profil, lecture en échec).
+3. **`familyInvitation`** — l'affiche d'une invitation dans une famille, puis
+   « Bienvenue » (`FamilyInvitationHost`). Ajoutée à la liste : elle s'empilait aussi.
+   Reçue en direct pendant qu'une autre fenêtre est ouverte, elle attend sa fermeture.
+4. **`whatsNew`** — « Nouveautés pour cette version ». La porte ne tranche qu'à son tour
+   (sa décision est définitive) ; un serveur injoignable ne retient pas la suite.
+5. **`update`** — la pop-up de mise à jour. **Décision : après les nouveautés, avant
+   l'avatar.** Elle parle de la version SUIVANTE : on lit d'abord ce qu'apporte celle
+   qu'on vient d'ouvrir ; l'installer redémarre l'application, et l'invitation aux
+   avatars, pas encore parue, attend le lancement suivant sans être perdue. En cours
+   (téléchargement, installation), elle reste à l'écran quoi qu'il arrive. Plus jamais
+   sur le lecteur.
+6. **`avatarInvite`** — l'invitation unique à choisir un avatar.
+
+Une fenêtre paraît quand tout ce qui la précède est `done` et que rien de ce qui la suit
+n'est `open`. Rien hors session ni sur `/watch`. L'accès suspendu (page bloquante à la
+racine) passe avant tout : il n'a pas de rang. Diagnostic : `window.__tentacleStartup()`
+(porte du débogage du web) rend l'état de chaque fenêtre et celle qui tient le démarrage.
+
+Le dossier `startup/` est hors de `profiles/` exprès : le client LG compile
+`StartupOverlays` mais pas `profiles/` (`EXCLUDED_WEB_DIRECTORIES`) ; ses deux portes
+restent substituées, la cale de l'invitation aux avatars suit sa nouvelle signature.
+
+Apple TV : ni nouveautés, ni PIN conseillé, ni invitation aux avatars ; l'écran de
+préconfiguration est une route après « Qui regarde ? » — aucun conflit.
+
+### « Vous regardez encore ? » — l'essai
+
+Réglages › Lecture, sous les deux durées : **« Voir la question maintenant » → Essayer**.
+L'essai remet le compteur de lecture à zéro et vaut pour la prochaine lecture : la
+question paraît après **20 s de lecture sans geste**, au lieu de l'heure et demie réglée.
+Le reste est le VRAI comportement : même encart, décompte du réglage, pause à
+l'expiration, « Reprendre ». Consommé quand la question est posée ; éteint seul au bout
+de 10 minutes sans lecture ; jamais stocké (un redémarrage l'oublie) ; il ne rallume pas
+une question coupée, et couper la question y renonce. Règle : `shared/playback/
+stillWatchingTrial.ts` ; magasin et battement : `api-client/playback/
+stillWatchingTrialStore.ts` (`tickWithStillWatchingTrial`). Le miroir a la même ligne.
