@@ -78,7 +78,7 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
   /** GET /affinity/cards — la suite de ma pile. */
   app.get("/affinity/cards", async (request, res) => {
     const q = cardsQuery.parse(request.query);
-    const result = affinityCards(user(request).userId, q.sessionId, q.limit, q.exclude);
+    const result = await affinityCards(user(request).userId, q.sessionId, q.limit, q.exclude);
     return result.ok ? { sessionId: q.sessionId, cards: result.value } : reply(res, result);
   });
 

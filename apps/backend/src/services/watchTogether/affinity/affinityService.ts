@@ -2,13 +2,14 @@ import type { WtAffinityKind, WtAffinityStateDto, WtAffinityVerdict } from "../p
 import { getRoomOf } from "../roomRegistry";
 import type { RemovalResult, Room } from "../roomTypes";
 import { affinityStateOf, broadcastAffinity } from "./affinityBroadcast";
+import { judgedCards } from "./affinityCards";
 import { catalogDeck, catalogKindCounts, loadGroupCatalog, readableKeys } from "./affinityCatalog";
 import {
   closedAffinities, dropClosedAffinity, getAffinity, getClosedAffinity, keepClosedAffinity, nextSessionId, setAffinity,
 } from "./affinityRegistry";
 import { keysSeenByAll } from "./affinityRights";
 import {
-  closeSession, createSession, joinSession, leaveSession, nextCards, recordVote, reopenSession, settleProposal, undoVote,
+  closeSession, createSession, joinSession, leaveSession, recordVote, reopenSession, settleProposal, undoVote,
 } from "./affinitySession";
 import type { AffinityCard, AffinitySession } from "./affinityTypes";
 
@@ -139,7 +140,7 @@ export async function joinAffinity(
   return done({
     state: state.value,
     sessionId: session.sessionId,
-    cards: nextCards(session, userId, limit, new Set()),
+    cards: await judgedCards(session, userId, limit, new Set()),
   });
 }
 
@@ -178,15 +179,16 @@ function closeOpenSession(room: Room, session: AffinitySession): void {
   keepClosedAffinity(room, session);
 }
 
-export function affinityCards(
+/** La suite de la pile d'un participant, rejugée selon sa politique (`affinityCards.ts`). */
+export async function affinityCards(
   userId: string,
   sessionId: number,
   limit: number,
   exclude: readonly string[],
-): AffinityResult<AffinityCard[]> {
+): Promise<AffinityResult<AffinityCard[]>> {
   const scope = scopeOf(userId, { sessionId, participant: true });
   if (!scope.ok) return scope;
-  return done(nextCards(scope.value.session, userId, limit, new Set(exclude)));
+  return done(await judgedCards(scope.value.session, userId, limit, new Set(exclude)));
 }
 
 /** Un verdict sur une carte ; rend s'il vient de faire un match, et l'état. Un

@@ -20,6 +20,13 @@ export interface AffinityParticipant {
    * bibliothèques de la salle. Un membre arrivé après ne voit que la sienne.
    */
   allowed: ReadonlySet<string> | null;
+  /**
+   * Les titres que Jellyfin lui a dits CACHÉS pendant qu'il swipe — sa
+   * politique a pu se resserrer depuis le lancement (`affinityCards.ts`) : ni
+   * resservis, ni redemandés. Vide à chaque entrée dans la pile : une
+   * politique rouverte rend ses titres.
+   */
+  hidden: Set<string>;
 }
 
 /** Un match — ses champs d'affichage sont recopiés : la proposition se montre

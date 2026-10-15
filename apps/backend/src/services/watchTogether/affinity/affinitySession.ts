@@ -77,7 +77,7 @@ export function joinSession(
   now: number,
 ): boolean {
   if (session.participants.has(userId)) return false;
-  session.participants.set(userId, { userId, joinedAt: now, allowed });
+  session.participants.set(userId, { userId, joinedAt: now, allowed, hidden: new Set() });
   ballotOf(session, userId);
   return true;
 }
@@ -191,8 +191,8 @@ export function promotedFor(session: AffinitySession, userId: string): string[] 
 /**
  * Les prochaines cartes de `userId` : d'abord ce que d'autres ont aimé, puis
  * la pile dans l'ordre commun. Jamais ce qu'il a déjà jugé, jamais un match
- * (en attente ou tranché), jamais ce qu'il ne peut pas lire, jamais ce que
- * son client tient déjà (`exclude`).
+ * (en attente ou tranché), jamais ce qu'il ne peut pas lire ni ce que
+ * Jellyfin lui a dit caché, jamais ce que son client tient déjà (`exclude`).
  */
 export function nextCards(
   session: AffinitySession,
@@ -208,7 +208,7 @@ export function nextCards(
   const taken = new Set(exclude);
   const push = (key: string) => {
     if (out.length >= limit || taken.has(key) || mine?.has(key) || session.settled.has(key) || pending.has(key)) return;
-    if (me.allowed && !me.allowed.has(key)) return;
+    if ((me.allowed && !me.allowed.has(key)) || me.hidden.has(key)) return;
     const card = cardOf(session, key);
     if (!card) return;
     taken.add(key);
