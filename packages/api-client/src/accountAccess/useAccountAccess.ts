@@ -3,14 +3,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   ACCOUNT_ACCESS_ROUTE,
   isBlockedAccountAccess,
-  type AccountAccessBlocked,
   type AccountAccessState,
 } from "@tentacle-tv/shared";
 import { useServerCapability } from "../hooks/useServerCapabilities";
 import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
 import { resumeSocketSession, subscribeSocket } from "../socket/tentacleSocket";
 import { createAccountAccessGate, type AccountAccessFetch } from "./accountAccessGate";
-import { readAccountAccess, reportAccountAccess, reportAccountAccessMessage, subscribeAccountAccess } from "./accountAccessSignal";
+import {
+  readAccountAccess,
+  reportAccountAccess,
+  reportAccountAccessMessage,
+  subscribeAccountAccess,
+  type AccountAccessPage,
+} from "./accountAccessSignal";
 
 /**
  * La porte React de l'accès du compte (docs/DROITS-UTILISATEURS.md § 9.1) :
@@ -25,7 +30,9 @@ import { readAccountAccess, reportAccountAccess, reportAccountAccessMessage, sub
  * un serveur qui ne la déclare pas ne bloque rien, et rien ne s'affiche.
  *
  * Revenu : toutes les requêtes invalidées, la socket rouverte avec le même
- * jeton, puis `onReopened` de la plateforme. Le compte n'est jamais déconnecté.
+ * jeton, puis `onReopened` de la plateforme. Le compte n'est jamais déconnecté —
+ * sauf par Jellyfin, qui révoque les jetons d'un compte désactivé : la page
+ * rend alors `reconnect`, et la plateforme propose « Se reconnecter ».
  */
 export interface AccountAccessOptions {
   /** Une session existe (connectée, jumelée) : sans elle, rien à lire. */
@@ -43,7 +50,7 @@ export const fetchAccountAccess: AccountAccessFetch = async () => {
   }
 };
 
-export function useAccountAccess(options: AccountAccessOptions): AccountAccessBlocked | null {
+export function useAccountAccess(options: AccountAccessOptions): AccountAccessPage | null {
   const { enabled } = options;
   const supported = useServerCapability("account.access");
   const queryClient = useQueryClient();

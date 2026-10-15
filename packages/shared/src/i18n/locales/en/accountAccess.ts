@@ -16,6 +16,10 @@ export default {
     title: "Tentacle isn't available to this account right now",
     body: "The server administrator has set the hours when this account can use Tentacle.",
   },
+  reconnect: {
+    title: "This account has been enabled again",
+    body: "Its session on this device ended when it was disabled. Sign in again to continue.",
+  },
   schedulesTitle: "Allowed hours",
   days: {
     Everyday: "Every day",
@@ -39,8 +43,9 @@ export default {
     unknown: "Tentacle will reopen for this account during the hours set by the administrator.",
   },
   footer: "This page will go away on its own as soon as access is restored.",
-  footerDisabled: "Once the account is enabled again, you may need to sign in again.",
+  footerDisabled: "Jellyfin closed this account's sessions: once the account is enabled again, this page will offer to sign you back in.",
   actions: {
+    reconnect: "Sign in again",
     signOut: "Sign out",
     changeServer: "Change server",
     switchProfile: "Switch profile",

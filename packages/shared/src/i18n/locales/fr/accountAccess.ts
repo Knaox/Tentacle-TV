@@ -16,6 +16,10 @@ export default {
     title: "Tentacle n'est pas disponible pour ce compte en ce moment",
     body: "L'administrateur du serveur a fixé les heures où ce compte peut utiliser Tentacle.",
   },
+  reconnect: {
+    title: "Ce compte a été réactivé",
+    body: "Sa session sur cet appareil a pris fin quand il a été désactivé. Reconnectez-vous pour continuer.",
+  },
   schedulesTitle: "Heures autorisées",
   days: {
     Everyday: "Tous les jours",
@@ -39,8 +43,9 @@ export default {
     unknown: "Tentacle rouvrira pour ce compte aux heures fixées par l'administrateur.",
   },
   footer: "Cette page disparaîtra d'elle-même dès que l'accès sera rétabli.",
-  footerDisabled: "Une fois le compte réactivé, il faudra peut-être vous reconnecter.",
+  footerDisabled: "Jellyfin a fermé les sessions de ce compte : une fois le compte réactivé, cette page vous proposera de vous reconnecter.",
   actions: {
+    reconnect: "Se reconnecter",
     signOut: "Se déconnecter",
     changeServer: "Changer de serveur",
     switchProfile: "Changer de profil",

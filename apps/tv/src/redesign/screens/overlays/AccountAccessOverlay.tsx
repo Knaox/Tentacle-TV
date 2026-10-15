@@ -106,7 +106,8 @@ export const AccountAccessOverlay = memo(function AccountAccessOverlay({ view, a
             ),
           )}
         </View>
-        <Text style={styles.footer}>{t(view.variant === "outsideSchedule" ? "accountAccess:footer" : "accountAccess:footerDisabled")}</Text>
+        {/* Le jeton d'une TV survit à la désactivation : la page se lève seule, quel que soit le cas. */}
+        <Text style={styles.footer}>{t("accountAccess:footer")}</Text>
       </FocusGroup>
     </Animated.View>
   );

@@ -16,13 +16,21 @@ import {
  * (`useAccountAccess`) le lit et bascule TOUT DE SUITE.
  */
 
-let current: AccountAccessBlocked | null = null;
+/**
+ * La page à montrer : un état bloqué, ou `reconnect` — la session de CET appareil
+ * n'existe plus (Jellyfin révoque les jetons d'un compte qu'on désactive) : le
+ * compte, réactivé, doit se reconnecter, jamais rester à moitié connecté.
+ */
+export type AccountAccessReconnect = { state: "reconnect" };
+export type AccountAccessPage = AccountAccessBlocked | AccountAccessReconnect;
+
+let current: AccountAccessPage | null = null;
 const listeners = new Set<() => void>();
 
 const notify = (): void => listeners.forEach((listener) => listener());
 
 /** Un état d'accès lu (route, annonce) : bloqué, il s'affiche ; permis, la page se lève. */
-export function reportAccountAccess(state: AccountAccessState): void {
+export function reportAccountAccess(state: AccountAccessState | AccountAccessReconnect): void {
   const next = state.state === "allowed" ? null : state;
   if (JSON.stringify(next) === JSON.stringify(current)) return;
   current = next;
@@ -90,7 +98,7 @@ export function reportAccountAccessMessage(message: { type?: unknown; reason?: u
   return false;
 }
 
-export function readAccountAccess(): AccountAccessBlocked | null {
+export function readAccountAccess(): AccountAccessPage | null {
   return current;
 }
 

@@ -102,13 +102,22 @@ describe("la porte : relue à la réouverture, jamais un relevé rapide", () => 
     expect(reopened).toBe(0);
   });
 
-  it("la session n'existe plus (401) : la page se lève, la plateforme mène à la connexion", async () => {
+  it("la session n'existe plus (401, jeton révoqué à la désactivation) : « Se reconnecter », plus aucune relecture", async () => {
     open();
     reportAccountAccess({ state: "disabled" });
     answers = ["signedOut"];
     await gate!.checkNow();
+    expect(readAccountAccess()).toEqual({ state: "reconnect" });
+    expect(reopened).toBe(0);
+    await vi.advanceTimersByTimeAsync(3 * ACCESS_RECHECK_MAX_MS);
+    expect(fetches).toBe(1);
+  });
+
+  it("sans page, un 401 ne montre rien (la plateforme gère sa session)", async () => {
+    open();
+    answers = ["signedOut"];
+    await gate!.checkNow();
     expect(readAccountAccess()).toBeNull();
-    expect(reopened).toBe(1);
   });
 
   it("permis : aucune relecture", async () => {

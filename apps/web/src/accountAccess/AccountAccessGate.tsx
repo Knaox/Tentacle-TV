@@ -24,5 +24,5 @@ export function AccountAccessGate({ children }: { children: ReactNode }) {
     if (pathname.startsWith("/watch")) navigate("/", { replace: true });
   }, [blocked, pathname, navigate]);
 
-  return blocked ? <AccountAccessPage blocked={blocked} /> : <>{children}</>;
+  return blocked ? <AccountAccessPage page={blocked} /> : <>{children}</>;
 }

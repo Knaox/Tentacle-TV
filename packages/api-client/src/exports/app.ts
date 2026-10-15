@@ -26,6 +26,7 @@ export { useDatabaseMigrationGate, type DatabaseMigrationGateOptions } from "../
 export {
   reportAccountAccess, reportAccountAccessBody, reportAccountAccessResponse, reportAccountAccessMessage,
   inspectForbidden, readAccountAccess, subscribeAccountAccess,
+  type AccountAccessPage, type AccountAccessReconnect,
 } from "../accountAccess/accountAccessSignal";
 export {
   createAccountAccessGate, accountAccessRecheckDelay, ACCESS_RECHECK_MAX_MS, ACCESS_OPENING_MARGIN_MS,

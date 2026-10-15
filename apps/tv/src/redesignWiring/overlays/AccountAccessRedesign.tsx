@@ -47,7 +47,10 @@ export interface AccountAccessScreenState {
 
 export function useAccountAccessScreen(options: { enabled: boolean; playbackShown: boolean }): AccountAccessScreenState {
   const { storage } = useTentacleConfig();
-  const blocked = useAccountAccess({ enabled: options.enabled });
+  const page = useAccountAccess({ enabled: options.enabled });
+  // `reconnect` (session morte) ne concerne pas une TV : son jeton Tentacle survit à la
+  // désactivation ; un jumelage révoqué, lui, passe par le déjumelage de toujours.
+  const blocked = page && page.state !== "reconnect" ? page : null;
   const profileSession = tvSessionMode(storage) === "profile";
   const record = profileSession ? readProfileRecord(storage) : null;
   const decision = decideAccountAccessScreen({

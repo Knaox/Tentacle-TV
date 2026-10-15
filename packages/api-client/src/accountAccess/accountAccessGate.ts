@@ -54,7 +54,8 @@ export function createAccountAccessGate(deps: AccountAccessGateDeps): AccountAcc
   const schedule = (): void => {
     stop();
     const blocked = readAccountAccess();
-    if (!blocked || disposed) return;
+    // `reconnect` : plus rien à relire, c'est à l'utilisateur de se reconnecter.
+    if (!blocked || blocked.state === "reconnect" || disposed) return;
     timer = setTimer(() => {
       timer = null;
       void checkNow();
@@ -62,6 +63,7 @@ export function createAccountAccessGate(deps: AccountAccessGateDeps): AccountAcc
   };
 
   const onChange = (): void => {
+    if (readAccountAccess()?.state === "reconnect") return stop();
     if (readAccountAccess()) {
       wasBlocked = true;
       schedule();
@@ -77,9 +79,10 @@ export function createAccountAccessGate(deps: AccountAccessGateDeps): AccountAcc
     if (disposed) return;
     const result = await deps.fetchAccess().catch(() => null);
     if (disposed) return;
-    // Plus de session : la page se lève, la plateforme mène à la connexion.
-    if (result === "signedOut") reportAccountAccess({ state: "allowed" });
-    else if (result) reportAccountAccess(result);
+    // Plus de session pendant la page (jeton révoqué à la désactivation) : « Se reconnecter ».
+    if (result === "signedOut") {
+      if (readAccountAccess()) reportAccountAccess({ state: "reconnect" });
+    } else if (result) reportAccountAccess(result);
     // Rien de neuf (même état, ou pas de réponse) : la relecture suivante.
     if (readAccountAccess()) schedule();
   }
