@@ -655,8 +655,13 @@ supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 **Droits de création** (1.30.0, `family.creationRights`) : par compte, « créer
 une famille » et « créer des profils invités », chacun Par défaut / Permis /
 Refusé (`GET`/`PUT /api/admin/family/accounts/:userId`, rubrique « Famille »
-de la fiche d'un compte) ; les deux DÉFAUTS sont sur NON, réglés à côté des
-interrupteurs (`GET`/`PUT /api/admin/family/creation`). Les interrupteurs
+de la fiche d'un compte) ; les deux DÉFAUTS sont sur NON
+(`GET`/`PUT /api/admin/family/creation`). L'administration ne montre plus
+l'interrupteur et le défaut séparément (quatre bascules qui semblaient dire
+deux fois la même chose) : une rangée par fonction, trois positions —
+Coupées (interrupteur coupé), Comptes permis (défaut NON), Tous les comptes
+(défaut OUI) ; règle `apps/web/src/components/admin/users/familyAccess/
+familyAccessModel.ts`. Les interrupteurs
 restent maîtres, un administrateur Jellyfin peut toujours, et seules les
 NOUVELLES créations se gardent (`family.create_family_denied`,
 `family.create_guests_denied`) : une famille et des invités déjà là restent.
