@@ -14,6 +14,7 @@ import { MetadataHint } from "../components/detail/MetadataHint";
 import { DetailActions } from "../components/detail/DetailActions";
 import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailOpenOverlay";
+import { PreviewLaunchOverlay } from "../components/detail/PreviewLaunchOverlay";
 import { DetailPlaceholder } from "../components/detail/DetailPlaceholder";
 import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../components/detail/detailTransition";
 import { DetailTitle } from "../components/detail/DetailTitle";
@@ -120,7 +121,18 @@ export function MediaDetail() {
   const backdropUrl = overlayBackdropId
     ? client.getImageUrl(overlayBackdropId, "Backdrop", { width: 1920, quality: 85 })
     : null;
-  const openOverlay = (
+  // Depuis une mini-carte d'aperçu, c'est sa vidéo qui grandit jusqu'à la
+  // scène (`PreviewLaunchOverlay`) ; depuis une carte, son visuel qui vole
+  // jusqu'à l'affiche. Une clé par ouverture : la suivante repart de zéro.
+  const openOverlay = origin?.launch ? (
+    <PreviewLaunchOverlay
+      key={origin.stamp}
+      launch={origin.launch}
+      backdropUrl={backdropUrl}
+      settled={!!item}
+      onDone={handleOverlayDone}
+    />
+  ) : (
     <DetailOpenOverlay
       origin={origin}
       backdropUrl={backdropUrl}

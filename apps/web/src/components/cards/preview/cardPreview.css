@@ -48,6 +48,15 @@
     opacity var(--preview-enter-fade-ms) linear;
 }
 
+/* PARTIE vers la fiche (`previewLaunch.ts`) : l'image de sa vidéo s'envole
+ * dans le calque d'ouverture, posé par-dessus à sa place exacte ; la
+ * mini-carte s'efface dessous, sans revenir à sa carte. */
+.card-preview[data-launched] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 140ms linear !important;
+}
+
 /* Le DESSIN de ce qu'elle porte — la vidéo, le bandeau, le plateau, le son —
  * vit dans `previewSurface.css`, `previewPanel.css` et `previewActions.css`. */
 
