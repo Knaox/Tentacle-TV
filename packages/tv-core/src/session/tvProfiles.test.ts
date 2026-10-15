@@ -140,6 +140,29 @@ describe("le profil à ouvrir", () => {
     expect(soloProfile(listing([OWNER]))?.userId).toBe("damien");
   });
 
+  it("« Qui regarde ? » coupé par l'administration : le compte de la TV s'ouvre d'office, PIN compris (le serveur l'en dispense)", () => {
+    const family = (patch: Partial<TvProfilesDto> = {}) =>
+      listing([{ ...OWNER, hasPin: true }, LEA, NINA], { askAtLaunch: false, ...patch });
+    expect(planProfileLaunch(family(), "launch", NOW)).toEqual({ kind: "open", profileId: "damien", remember: false, launch: "solo" });
+    // Sur la TV d'un membre : SON profil, pas celui du propriétaire en tête.
+    const nina = { userId: "nina", name: "nina" };
+    expect(planProfileLaunch(family({ pairedBy: nina, owner: nina }), "launch", NOW)).toMatchObject({ profileId: "nina", launch: "solo" });
+    // Le profil retenu de la TV passe devant ; « Changer de profil » montre toujours « Qui regarde ? ».
+    expect(planProfileLaunch(family({ stickyProfileId: "lea" }), "launch", NOW)).toMatchObject({ profileId: "lea", launch: "sticky" });
+    expect(planProfileLaunch(family(), "switch", NOW)).toEqual({ kind: "picker" });
+    // Bloqué : « Qui regarde ? », jamais un refus à l'aveugle.
+    const locked = listing([{ ...OWNER, hasPin: true, lockedUntil: "2026-10-04T22:15:00Z" }, LEA], { askAtLaunch: false });
+    expect(planProfileLaunch(locked, "launch", NOW)).toEqual({ kind: "picker" });
+    // Choisi depuis « Changer de profil » : son code est demandé (et vérifié), il se reprendra au lancement.
+    expect(planProfilePick({ ...OWNER, hasPin: true }, family(), false, NOW)).toEqual({ kind: "pin", remember: false, launch: "solo" });
+    expect(planProfilePick(LEA, family(), false, NOW)).toEqual({ kind: "open", remember: false, launch: "picked" });
+    // Reprise d'une session `solo` : tient tant que c'est coupé ; permis de nouveau, retour à « Qui regarde ? ».
+    expect(soloStillHolds(family(), "damien")).toBe(true);
+    expect(soloStillHolds(family({ askAtLaunch: true }), "damien")).toBe(false);
+    // Activé (ou absent : serveur d'avant) : le comportement d'avant.
+    expect(planProfileLaunch(listing([OWNER, LEA], { askAtLaunch: true }), "launch", NOW)).toEqual({ kind: "picker" });
+  });
+
   it("le compte seul choisi dans « Qui regarde ? » se reprendra au lancement", () => {
     expect(planProfilePick(OWNER, listing([OWNER]), false, NOW)).toEqual({ kind: "open", remember: false, launch: "solo" });
     expect(planProfilePick(OWNER, listing([OWNER]), true, NOW)).toEqual({ kind: "open", remember: true, launch: "sticky" });

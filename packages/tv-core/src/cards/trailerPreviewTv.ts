@@ -9,20 +9,24 @@ import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "@tentacle-tv/
  * Les temps sont ceux du salon, pas ceux de la souris : une télécommande
  * avance d'un pas toutes les 300 à 600 ms quand on parcourt une rangée, et
  * répète un pas toutes les ~100 ms quand on la tient. La demande au serveur
- * ne part donc qu'après UNE SECONDE de focus tenu — un pas de plus la
- * repousse —, et la carte grandit au plus tôt à 1,8 s, comme Netflix au
- * salon : le temps de lire le titre, pas celui de traverser. Le reste
- * (vérification par le serveur, aucune révélation sans première image,
+ * ne part donc qu'après 450 ms de focus tenu — un parcours régulier (un pas
+ * toutes les 400 ms) ne demande rien, un pas de plus la repousse —, et la
+ * carte grandit au plus tôt à 900 ms. D'abord une seconde et 1,8 s, « comme
+ * Netflix au salon » : trop lent à l'essai (15/10, « ça doit se lancer
+ * vraiment rapidement, comme sur le bureau »). Le serveur a préparé d'avance
+ * l'aperçu des cartes autour du focus (`/api/trailers/preview/warm`) : la
+ * réponse est presque toujours immédiate, la vidéo part à l'intention. Le
+ * reste (vérification par le serveur, aucune révélation sans première image,
  * fondu de sortie, refus passagers) ne change pas.
  */
 export const TV_TRAILER_PREVIEW_TIMING: TrailerPreviewTiming = {
   ...TRAILER_PREVIEW_TIMING,
   /** Focus tenu avant la demande : un parcours de rangée ne demande rien. */
-  intentMs: 1_000,
+  intentMs: 450,
   /** Pas de pointeur : l'intention ne dépend que du focus tenu. */
   intentStillMs: 0,
   /** La carte grandit au plus tôt à ce moment, depuis l'arrivée du focus. */
-  revealMs: 1_800,
+  revealMs: 900,
   /** La carte se replie un peu plus vite qu'elle n'a grandi (le mouvement d'Apple TV). */
   exitMs: 220,
   /** Le son du salon : la bande-annonce s'entend, sans couvrir la pièce. */

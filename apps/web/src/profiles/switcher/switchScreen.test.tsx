@@ -5,14 +5,19 @@ import type { PickerProfileDto, PickerProfilesDto, PickerStay } from "@tentacle-
 /**
  * « Qui regarde ? » ouvert par « Changer de profil » plutôt qu'à l'ouverture :
  * le MÊME contrôleur, rendu à plat. Ce qui change se voit dans le balisage —
- * « Annuler » (absent à l'ouverture), la case « Ne plus proposer » décochée
- * même si l'ordinateur retient un profil, le focus sur le profil en cours.
+ * « Annuler » (absent à l'ouverture), la case « Ne plus proposer » présente
+ * dans les deux cas, cochée si l'ordinateur ne propose déjà plus, le focus sur
+ * le profil en cours.
  * Les gestes eux-mêmes sont jugés par `switchPlan.test.ts`. React Query, la
  * bascule et le stockage sont remplacés (l'api-client tirerait une seconde
  * copie de React).
  */
 
-const state = vi.hoisted(() => ({ listing: null as PickerProfilesDto | null, stay: null as PickerStay | null }));
+const state = vi.hoisted(() => ({
+  listing: null as PickerProfilesDto | null,
+  stay: null as PickerStay | null,
+  choice: "unset" as "unset" | "ask" | "stay",
+}));
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({ data: state.listing ?? undefined, isError: false, refetch: async () => undefined }),
@@ -39,7 +44,9 @@ vi.mock("../switch/commitPick", () => ({ commitPick: vi.fn(), curtainOf: vi.fn()
 vi.mock("../switch/arrival", () => ({ announceArrival: vi.fn() }));
 vi.mock("../launch/stayOnDevice", () => ({
   readStayOnThisServer: () => state.stay,
+  readDeviceChoiceOnThisServer: () => state.choice,
   writeStayOnThisServer: vi.fn(),
+  askOnThisServer: vi.fn(),
 }));
 
 const { ProfileLaunchScreen } = await import("../launch/ProfileLaunchScreen");
@@ -80,8 +87,9 @@ function tabbableTile(html: string): string {
 describe("« Qui regarde ? » depuis « Changer de profil »", () => {
   beforeEach(() => {
     state.listing = LISTING;
-    // L'ordinateur retient Zoé (« Ne plus proposer sur cet appareil »).
+    // L'ordinateur retient Zoé (« Ne plus proposer à la prochaine ouverture »).
     state.stay = { profileId: "zoe", hasPin: true };
+    state.choice = "stay";
   });
 
   it("à l'ouverture de l'application : ni « Annuler », la case cochée d'après l'ordinateur, le focus sur son profil", () => {
@@ -91,11 +99,10 @@ describe("« Qui regarde ? » depuis « Changer de profil »", () => {
     expect(tabbableTile(html)).toContain("owner");
   });
 
-  it("depuis la session d'un profil : « Annuler », la case décochée, le focus sur le profil en cours", () => {
+  it("depuis la session d'un profil : « Annuler », la case cochée (l'ordinateur ne propose plus), le focus sur le profil en cours", () => {
     const html = render({ activeProfileId: "zoe" });
     expect(html).toContain("switcher.cancel");
-    expect(html).toContain('type="checkbox"');
-    expect(html).not.toContain('checked=""');
+    expect(html).toMatch(/<input type="checkbox"[^>]*checked=""/);
     expect(tabbableTile(html)).toContain("zoe");
     // « Gérer les profils » reste là : son profil d'abord, derrière son code.
     expect(html).toContain("manageProfiles");
@@ -105,8 +112,16 @@ describe("« Qui regarde ? » depuis « Changer de profil »", () => {
     expect(tabbableTile(render({ activeProfileId: null }))).toContain("owner");
   });
 
-  it("préférence coupée : pas de case, « Annuler » toujours là", () => {
-    state.listing = { ...LISTING, atLaunch: false };
+  it("cet ordinateur propose « Qui regarde ? » : la case est là, décochée", () => {
+    state.stay = null;
+    state.choice = "ask";
+    const html = render({ activeProfileId: null });
+    expect(html).toContain('type="checkbox"');
+    expect(html).not.toContain('checked=""');
+  });
+
+  it("coupé par l'administration : pas de case, « Annuler » toujours là", () => {
+    state.listing = { ...LISTING, atLaunch: false, launchPolicy: { mode: "off", defaultOn: true } };
     const html = render({ activeProfileId: null });
     expect(html).not.toContain('type="checkbox"');
     expect(html).toContain("switcher.cancel");

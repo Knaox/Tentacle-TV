@@ -10,7 +10,7 @@ import {
   type ExternalSearchResult,
 } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
-import { absentCard, tvPosterUri } from "../cards/absentCards";
+import { absentCard, absentTrailerOf, tvPosterUri } from "../cards/absentCards";
 import { absentTitle, type AbsentTitle } from "./absentTitle";
 import { useAbsentStates } from "./useAbsentStates";
 import { useActivePlugins } from "./useActivePlugins";
@@ -77,7 +77,7 @@ export function useSearchAbsent(
   const cards = useMemo<CardModel[]>(() => {
     if (!states) return [];
     return found.map(({ item, title }: { item: ExternalSearchItem; title: AbsentTitle }) => ({
-      ...absentCard({ id: cardIdOf(title), title: title.title, year: title.year, posterUri: tvPosterUri(title.imageUrl), absent: states.absentOf(title.key, item.badge) }),
+      ...absentCard({ id: cardIdOf(title), title: title.title, year: title.year, posterUri: tvPosterUri(title.imageUrl), absent: states.absentOf(title.key, item.badge), trailer: absentTrailerOf(title.key) }),
       focusNote: states.hintOf(title.key),
     }));
   }, [found, states]);

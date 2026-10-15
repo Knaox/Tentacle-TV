@@ -5,6 +5,7 @@ import {
   reportStartupOverlay,
   resetStartupOverlays,
   startupOverlaysQuiet,
+  startupOverlaysQuietBefore,
   subscribeStartupOverlays,
 } from "./startupOverlays";
 
@@ -45,5 +46,28 @@ describe("les recouvrements du démarrage", () => {
     reportStartupOverlay("connectivity", "quiet");
     expect(listener).toHaveBeenCalledTimes(1);
     unsubscribe();
+  });
+
+  it("les tardifs passent dans l'ordre : avatars, puis code PIN — chacun n'attend que ceux d'avant", () => {
+    reportStartupOverlay("family", "active");
+    expect(startupOverlaysQuietBefore("avatars")).toBe(false);
+    expect(startupOverlaysQuietBefore("familyPin")).toBe(false);
+    reportStartupOverlay("family", "quiet");
+
+    reportStartupOverlay("avatars", "active");
+    reportStartupOverlay("familyPin", "pending");
+    // L'invitation aux avatars n'attend ni elle-même ni le code PIN.
+    expect(startupOverlaysQuietBefore("avatars")).toBe(true);
+    expect(startupOverlaysQuietBefore("familyPin")).toBe(false);
+    expect(startupOverlaysQuiet()).toBe(false);
+
+    reportStartupOverlay("avatars", "quiet");
+    expect(startupOverlaysQuietBefore("familyPin")).toBe(true);
+  });
+
+  it("un recouvrement ordinaire n'attend jamais les tardifs", () => {
+    reportStartupOverlay("familyPin", "active");
+    reportStartupOverlay("avatars", "active");
+    expect(startupOverlaysQuietBefore("notices")).toBe(true);
   });
 });

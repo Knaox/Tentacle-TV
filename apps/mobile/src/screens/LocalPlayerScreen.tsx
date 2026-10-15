@@ -14,6 +14,7 @@ import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
+import { useMobileStillWatching } from "../player/stillWatching/useMobileStillWatching";
 import { LocalPlaybackBadge } from "../components/player/LocalPlaybackBadge";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
 import { PlaybackProblemView } from "../components/problems/PlaybackProblemView";
@@ -160,6 +161,8 @@ export function LocalPlayerScreen({ itemId, localSource }: Props) {
   }), [eng.engine, pb.audioIndex, pb.subtitleIndex, pb.changeAudio, pb.changeSubtitle, handleSeek, leavePlayer]));
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
+  // « Vous regardez encore ? » — hors ligne aussi : le réglage a sa copie sur l'appareil.
+  const stillWatching = useMobileStillWatching({ paused, buffering: isBuffering, started: videoReady, setPaused });
 
   // Le message : réessayer sur l'appareil, ou regarder en ligne (le serveur
   // convertit ce que l'appareil ne lit pas) — la route est contournée.
@@ -213,8 +216,9 @@ export function LocalPlayerScreen({ itemId, localSource }: Props) {
       onError={handleError}
       onBuffering={setIsBuffering}
       onExternalPlaybackChange={onExternalPlaybackChange}
+      onPausedChange={stillWatching.onPausedChange}
       onSeek={handleSeek}
-      onToggleOverlay={toggleOverlay}
+      onToggleOverlay={toggleOverlay} onActivity={stillWatching.reportActivity}
       onSwipeDown={leavePlayer}
     >
       <MobilePlayerOverlay
@@ -230,7 +234,7 @@ export function LocalPlayerScreen({ itemId, localSource }: Props) {
         // Un fichier local n'a ni palier ni plafond : la section Qualité est absente.
         qualityKey="original"
         qualityPresets={[]}
-        playback={playback}
+        playback={playback} stillWatching={stillWatching}
         nextEpisode={pb.episodeNav.nextEpisode}
         previousEpisode={pb.episodeNav.previousEpisode}
         item={pb.item}

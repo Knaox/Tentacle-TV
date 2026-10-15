@@ -6,12 +6,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MediaItem, QualityDrop } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
 import { type QualityKey, type QualityPreset } from "../hooks/usePlayerPlayback";
-import type { PlaybackOverlayResult } from "@tentacle-tv/api-client";
+import type { PlaybackOverlayResult, StillWatchingController } from "@tentacle-tv/api-client";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
 import { CenterControls } from "./player/CenterControls";
 import { SkipIndicator } from "./player/SkipIndicator";
 import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
 import { PlaybackOverlayMobile } from "./player/PlaybackOverlayMobile";
+import { StillWatchingCardMobile } from "./player/StillWatchingCardMobile";
 import { PlayerEpisodePicker } from "./player/PlayerEpisodePicker";
 import type { LocalTrickplay } from "../hooks/offline/useLocalTrickplay";
 import type { NextEpisodeArtwork } from "../hooks/offline/useNextEpisodeArtwork";
@@ -43,6 +44,8 @@ interface Props {
   qualityPresets: readonly QualityPreset[];
   /** L'arbitre partagé : ce qu'il faut afficher, et de quoi y répondre. */
   playback: PlaybackOverlayResult;
+  /** « Vous regardez encore ? » : l'encart prend la place de la pilule et de la carte de coin. */
+  stillWatching?: StillWatchingController;
   nextEpisode?: MediaItem | null;
   previousEpisode?: MediaItem | null;
   /** Current item — passed to the seekbar so it can fetch trickplay tiles. */
@@ -76,7 +79,7 @@ interface Props {
 export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive, qualityDrop,
-  playback, nextEpisode, previousEpisode,
+  playback, stillWatching, nextEpisode, previousEpisode,
   item, mediaSourceId, localTrickplay, nextArtwork, localSession = false,
   onPlayPause, onSeek, onSkip, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
@@ -129,7 +132,8 @@ export function MobilePlayerOverlay({
   // L'habillage peut disparaître (auto-masquage à 4 s) sans emporter la
   // surcouche de lecture : le bouton de saut et la carte « à suivre » ne
   // dépendent plus de l'OSD, comme sur le bureau et le web.
-  const hasOverlay = playback.overlay.kind !== "none";
+  const asking = stillWatching !== undefined && stillWatching.phase !== "none";
+  const hasOverlay = playback.overlay.kind !== "none" || asking;
 
   if (!visible && !hasOverlay) return null;
 
@@ -228,23 +232,19 @@ export function MobilePlayerOverlay({
       )}
 
       {/* La surcouche de lecture — pilule de saut ou carte « à suivre ». Hors
-          du bloc `visible` : elle ne suit pas l'auto-masquage de l'habillage. */}
-      <PlaybackOverlayMobile
-        overlay={playback.overlay}
-        countdownTotals={playback.countdownTotals}
-        nextEpisode={nextEpisode}
-        currentItem={item}
-        controlsVisible={visible}
-        nextArtwork={nextArtwork}
-        ratingEnabled={!localSession}
-        artworkLocalOnly={localSession}
-        onSkip={playback.skipNow}
-        onDismiss={playback.dismissOverlay}
-        onPlayNow={playback.playNow}
-        onRatingEngage={playback.cancelNextCountdown}
-        bottom={Math.max(110, insets.bottom + 86)}
-        right={Math.max(20, insets.right + 16)}
-      />
+          du bloc `visible` : elle ne suit pas l'auto-masquage de l'habillage.
+          « Vous regardez encore ? » les remplace ; l'affiche de fin reste. */}
+      {(!asking || (playback.overlay.kind === "nextCard" && playback.overlay.final)) && (
+        <PlaybackOverlayMobile
+          overlay={playback.overlay} countdownTotals={playback.countdownTotals}
+          nextEpisode={nextEpisode} currentItem={item} controlsVisible={visible}
+          nextArtwork={nextArtwork} ratingEnabled={!localSession} artworkLocalOnly={localSession}
+          onSkip={playback.skipNow} onDismiss={playback.dismissOverlay}
+          onPlayNow={playback.playNow} onRatingEngage={playback.cancelNextCountdown}
+          bottom={Math.max(110, insets.bottom + 86)} right={Math.max(20, insets.right + 16)}
+        />
+      )}
+      {asking && <StillWatchingCardMobile controller={stillWatching} controlsVisible={visible} />}
 
       {/* Pop-ups Réglages + Sous-titres (extraits pour rester sous 300 lignes). */}
       <PlayerSettingsMenus

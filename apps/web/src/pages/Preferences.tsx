@@ -13,6 +13,7 @@ import { HdrAutoToggle } from "../components/settings/HdrAutoToggle";
 import { LinuxSessionSelect } from "../components/settings/LinuxSessionSelect";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { PlaybackSettingsSection } from "../components/settings/PlaybackSettingsSection";
+import { StillWatchingSetting } from "../components/settings/StillWatchingSetting";
 
 const LANGUAGE_CODES = [
   "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -231,6 +232,9 @@ export function Preferences() {
             qu'on ne revient sur les sauts, et ce qui se consulte souvent doit
             être le premier sous la main. */}
         <PlaybackSettingsSection />
+
+        {/* « Vous regardez encore ? » — compte, seulement si le serveur le sait faire. */}
+        <StillWatchingSetting />
 
         {/* Qui décode la vidéo — bureau uniquement, réglage d'APPAREIL : c'est
             son pilote graphique qui décide, pas le compte. */}

@@ -9,6 +9,7 @@ import {
 import { pickPosterInvitation } from "@tentacle-tv/shared";
 import { clearFamilyPosterRequest, useFamilyPosterRequest } from "./familyPosterStore";
 import { FamilyInvitationPoster } from "./FamilyInvitationPoster";
+import { FamilyPinJoined } from "./pinSuggest/FamilyPinJoined";
 import { useFamilyAvailability } from "./useFamilyAvailability";
 
 /** La page de la Famille, où mène une invitation qui n'attend plus de réponse. */
@@ -28,6 +29,9 @@ export const FAMILY_SETTINGS_PATH = "/settings/family";
  *
  * Le serveur ne rend d'invitations qu'aux sessions PERSONNELLES : en
  * « Voir en tant que », la liste est vide et rien ne paraît.
+ *
+ * Acceptée, l'affiche laisse la place à « Bienvenue dans la famille de … »
+ * (`FamilyPinJoined`) si le profil n'a pas de code PIN.
  */
 export function FamilyInvitationHost() {
   const { available } = useFamilyAvailability();
@@ -40,6 +44,8 @@ export function FamilyInvitationHost() {
   const navigate = useNavigate();
   const snooze = useSnoozeFamilyInvitation();
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set());
+  const [joinedOwner, setJoinedOwner] = useState<string | null>(null);
+  const closeJoined = useCallback(() => setJoinedOwner(null), []);
 
   const incoming = overview.data?.incoming;
   const invitation = useMemo(
@@ -81,6 +87,16 @@ export function FamilyInvitationHost() {
     [dismiss, snooze],
   );
 
-  if (!available || !invitation) return null;
-  return <FamilyInvitationPoster key={invitation.id} invitation={invitation} onLater={later} onDone={dismiss} />;
+  if (!available) return null;
+  if (joinedOwner !== null) return <FamilyPinJoined owner={joinedOwner} onClose={closeJoined} />;
+  if (!invitation) return null;
+  return (
+    <FamilyInvitationPoster
+      key={invitation.id}
+      invitation={invitation}
+      onLater={later}
+      onDone={dismiss}
+      onAccepted={setJoinedOwner}
+    />
+  );
 }

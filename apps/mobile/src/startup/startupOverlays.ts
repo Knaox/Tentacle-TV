@@ -11,6 +11,12 @@
  * Un hôte démonté se tait. Les MODALES, elles, se déclarent au portier
  * (`components/ui/modalGate`) : ce registre ne les double pas.
  *
+ * Deux recouvrements passent APRÈS tous les autres, dans un ordre fixe
+ * (`LATE_STARTUP_OVERLAYS`) : l'invitation aux avatars, puis « Action
+ * recommandée : posez votre code PIN ». Chacun attend ceux d'avant
+ * (`startupOverlaysQuietBefore`), jamais ceux d'après — sinon ils
+ * s'attendraient l'un l'autre.
+ *
  * Module PUR (ni React Native ni Expo) : testé sous vitest.
  */
 
@@ -26,7 +32,14 @@ export type StartupOverlayKey =
   /** Le message du passage hors ligne. */
   | "connectivity"
   /** Une demande de permission du système (notifications). */
-  | "permission";
+  | "permission"
+  /** L'invitation unique aux avatars — tardive : après tous les ordinaires. */
+  | "avatars"
+  /** « Action recommandée : posez votre code PIN » — tardive : après l'invitation aux avatars. */
+  | "familyPin";
+
+/** Les recouvrements tardifs, dans leur ordre de passage. */
+export const LATE_STARTUP_OVERLAYS: readonly StartupOverlayKey[] = ["avatars", "familyPin"];
 
 export type StartupOverlayState = "pending" | "active" | "quiet";
 
@@ -73,6 +86,22 @@ export function busyStartupOverlays(): StartupOverlayKey[] {
 /** Tous ont tranché et se sont tus. */
 export function startupOverlaysQuiet(): boolean {
   return reported.size === 0 && holds.size === 0;
+}
+
+/**
+ * `other` passe-t-il avant `key` ? Un recouvrement ordinaire n'attend que les
+ * ordinaires ; un tardif attend les ordinaires et les tardifs qui le précèdent.
+ */
+function comesBefore(other: StartupOverlayKey, key: StartupOverlayKey): boolean {
+  if (other === key) return false;
+  const otherRank = LATE_STARTUP_OVERLAYS.indexOf(other);
+  const keyRank = LATE_STARTUP_OVERLAYS.indexOf(key);
+  return keyRank < 0 ? otherRank < 0 : otherRank < keyRank;
+}
+
+/** Tous ceux qui passent avant `key` ont tranché et se sont tus. */
+export function startupOverlaysQuietBefore(key: StartupOverlayKey): boolean {
+  return busyStartupOverlays().every((other) => !comesBefore(other, key));
 }
 
 export function subscribeStartupOverlays(listener: () => void): () => void {

@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { MediaPreferencesSection } from "@/components/profile";
-import { PlaybackSettingsSection, VideoEngineSection } from "@/components/settings";
+import { PlaybackSettingsSection, StillWatchingSettingsSection, VideoEngineSection } from "@/components/settings";
 import { isPlayerSettingShown, type PlayerSettingsContext } from "@/player/engine/playerSettingsPlatforms";
 import { isMpvAvailable } from "../../../modules/mpv-player";
 import { SettingsScaffold } from "./SettingsScaffold";
@@ -34,6 +34,8 @@ export function PlaybackPane() {
   return (
     <>
       {isPlayerSettingShown("playbackMode", ctx) && <PlaybackSettingsSection />}
+      {/* Réglage du compte, rendu seulement face à un serveur qui le déclare. */}
+      <StillWatchingSettingsSection />
       {isPlayerSettingShown("mediaLanguages", ctx) && <MediaPreferencesSection />}
       <VideoEngineSection ctx={ctx} />
     </>

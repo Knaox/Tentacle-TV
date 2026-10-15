@@ -61,7 +61,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const guestRequests = useFamilyAvailability().capability?.guestRequests;
   const capability = useMemo(() => ({ guestRequests }), [guestRequests]);
   const removeMember = useRemoveFamilyMember();
-  // La photo d'un invité : le serveur 1.29.0 l'habille, depuis une session personnelle.
+  // La photo d'un invité : le serveur 1.30.0 l'habille, depuis une session personnelle.
   const guestPhotos = useServerCapability("family.guestPhotos");
   const { openGallery, dialog: galleryDialog } = useAvatarGallery();
   const onGuestPhoto = useCallback((profile: FamilyProfileDto) => {

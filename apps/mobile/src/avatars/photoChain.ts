@@ -1,7 +1,7 @@
 /**
  * D'où vient l'image d'un personnage : d'abord celle EMBARQUÉE dans l'app,
  * sinon celle que sert le serveur Tentacle (`/avatars/<id>.webp`, servie même
- * interface web coupée depuis la 1.29.0). Un serveur plus ancien peut ne pas
+ * interface web coupée depuis la 1.30.0). Un serveur plus ancien peut ne pas
  * l'avoir : l'échec reste alors celui d'aujourd'hui. La lecture embarquée est
  * le point fragile (Android en release, cf. `photoSources`) ; le serveur la
  * rattrape.

@@ -49,7 +49,7 @@ const listing = async (token: string) => (await pickerProfiles(app, token)).json
 const hosts = () => h.state!.db.data.pairedDevice.filter((row) => row.platform === "desktop");
 
 describe("la liste du bureau", () => {
-  it("un compte sans famille : lui seul, son profil, rien à choisir, préférence coupée", async () => {
+  it("un compte sans famille : lui seul, son profil, rien à choisir, « au lancement » par défaut", async () => {
     const res = await pickerProfiles(app, tokens.damien);
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({
@@ -58,7 +58,8 @@ describe("la liste du bureau", () => {
       account: { userId: IDS.damien, name: "Damien" },
       currentProfileId: IDS.damien,
       pickerRequired: false,
-      atLaunch: false,
+      atLaunch: true,
+      launchPolicy: { mode: "choice", defaultOn: true },
     });
     expect(res.json().profiles).toEqual([
       expect.objectContaining({ userId: IDS.damien, kind: "owner", personal: true, hasPin: false, lockedUntil: null }),

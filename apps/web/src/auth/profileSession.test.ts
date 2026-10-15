@@ -71,7 +71,7 @@ describe("la marque d'une session de profil", () => {
   });
 });
 
-describe("la photo d'un invité posée pendant SA session (serveur 1.29.0)", () => {
+describe("la photo d'un invité posée pendant SA session (serveur 1.30.0)", () => {
   it("la marque et le compte du profil la portent aussitôt ; la session reste la sienne", () => {
     local.setItem("tentacle_token", "jeton-lea");
     local.setItem("tentacle_user", LEA_USER);

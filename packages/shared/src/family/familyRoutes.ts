@@ -108,7 +108,7 @@ export const FAMILY_ROUTES = {
     callers: ["personal"],
     rateLimit: { max: 10, windowMs: MINUTE },
   },
-  /** `SetGuestPhotoBody` → `GuestPhotoDto`. La photo d'un invité (1.29.0) :
+  /** `SetGuestPhotoBody` → `GuestPhotoDto`. La photo d'un invité (1.30.0) :
    *  mêmes droits que son PIN — le propriétaire, ou le membre qui l'a créé. Le
    *  serveur la relaie à Jellyfin avec sa clé (le compte de l'invité n'a pas de
    *  mot de passe) ; ses TV et « Qui regarde ? » la montrent. */
@@ -230,6 +230,19 @@ export const FAMILY_ROUTES = {
   adminSwitches: { method: "GET", path: "/api/admin/family", callers: ["admin"] },
   /** `Partial<FamilySwitches>` → `FamilySwitches`. Couper coupe les sessions de profil concernées. */
   adminSetSwitches: { method: "PUT", path: "/api/admin/family", callers: ["admin"] },
+  /** → `FamilyLaunchPolicy`. « Qui regarde ? » à l'ouverture, plateforme par
+   *  plateforme (1.30.0, `family.pickerPolicy`). */
+  adminLaunchPolicy: { method: "GET", path: "/api/admin/family/picker", callers: ["admin"] },
+  /** `SetFamilyLaunchPolicyBody` → `FamilyLaunchPolicy`. `off` : coupé pour tous
+   *  (les choix des appareils reviennent si on le rouvre) ; `choice` : au choix
+   *  de chaque appareil — le bureau `defaultOn` chez qui n'a jamais choisi.
+   *  Aucune session n'est fermée : la règle vaut au PROCHAIN lancement. */
+  adminSetLaunchPolicy: {
+    method: "PUT",
+    path: "/api/admin/family/picker",
+    callers: ["admin"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
 } as const satisfies Record<string, FamilyRouteSpec>;
 
 export type FamilyRouteName = keyof typeof FAMILY_ROUTES;

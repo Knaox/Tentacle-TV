@@ -12,6 +12,7 @@ import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
+import { PreviewRevealProvider, usePagePreviewReveal } from "../../rows/previewRevealPort";
 import { RowStageProvider } from "../../rows/rowStage";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
@@ -106,12 +107,15 @@ export const ForYouView = memo(function ForYouView({
 }: ForYouViewProps) {
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const rewind = useRowRewindPort();
+  // La grande carte d'aperçu qui grandit vers le bas : la page la montre entière.
+  const { reveal, track: trackPreviewScroll } = usePagePreviewReveal(scrollRef);
   const onScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, layoutMeasurement } = event.nativeEvent;
+      trackPreviewScroll(contentOffset.y);
       rewind?.scroll(contentOffset.y, layoutMeasurement.height);
     },
-    [rewind],
+    [rewind, trackPreviewScroll],
   );
   return (
     <View style={styles.root}>
@@ -120,46 +124,48 @@ export const ForYouView = memo(function ForYouView({
         <StatusPanel {...status} />
       ) : (
         <RowStageProvider>
-          <ScrollView
-            ref={scrollRef}
-            style={styles.fill}
-            contentContainerStyle={styles.scroll}
-            showsVerticalScrollIndicator={false}
-            onLayout={onViewportLayout}
-            onScroll={rewind ? onScroll : undefined}
-            scrollEventThrottle={32}
-          >
-            {hero ? (
-              <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
-                <HeroBanner
-                  hero={hero}
-                  width={HERO_WIDTH}
-                  onPrimary={onHeroPrimary}
-                  onSecondary={onHeroSecondary}
-                  onToggleList={onHeroToggleList}
+          <PreviewRevealProvider reveal={reveal}>
+            <ScrollView
+              ref={scrollRef}
+              style={styles.fill}
+              contentContainerStyle={styles.scroll}
+              showsVerticalScrollIndicator={false}
+              onLayout={onViewportLayout}
+              onScroll={onScroll}
+              scrollEventThrottle={32}
+            >
+              {hero ? (
+                <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
+                  <HeroBanner
+                    hero={hero}
+                    width={HERO_WIDTH}
+                    onPrimary={onHeroPrimary}
+                    onSecondary={onHeroSecondary}
+                    onToggleList={onHeroToggleList}
+                  />
+                </FocusSection>
+              ) : null}
+              {notice ? (
+                <View style={hero ? styles.noticeAfterHero : styles.noticeAlone}>
+                  <ForYouNotice notice={notice} width={HERO_WIDTH} />
+                </View>
+              ) : null}
+              {shelves.map((shelf, index) => (
+                <Shelf
+                  key={shelf.key}
+                  shelf={shelf}
+                  rank={index}
+                  first={index === 0 ? (hero || notice ? "afterHead" : "alone") : undefined}
+                  filterLabel={index === 0 && filter ? filter.label : undefined}
+                  onRemoveFilter={onRemoveFilter}
+                  onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
+                  onPressCard={onPressCard}
+                  onLongPressCard={onLongPressCard}
+                  onFocusCard={onFocusCard}
                 />
-              </FocusSection>
-            ) : null}
-            {notice ? (
-              <View style={hero ? styles.noticeAfterHero : styles.noticeAlone}>
-                <ForYouNotice notice={notice} width={HERO_WIDTH} />
-              </View>
-            ) : null}
-            {shelves.map((shelf, index) => (
-              <Shelf
-                key={shelf.key}
-                shelf={shelf}
-                rank={index}
-                first={index === 0 ? (hero || notice ? "afterHead" : "alone") : undefined}
-                filterLabel={index === 0 && filter ? filter.label : undefined}
-                onRemoveFilter={onRemoveFilter}
-                onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
-                onPressCard={onPressCard}
-                onLongPressCard={onLongPressCard}
-                onFocusCard={onFocusCard}
-              />
-            ))}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          </PreviewRevealProvider>
         </RowStageProvider>
       )}
       <NavRail {...nav} />

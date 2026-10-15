@@ -7,7 +7,7 @@ import { useAccountHasPhoto } from "@/auth/useAccountHasPhoto";
 import { useStoredUser } from "@/auth/useStoredUser";
 import { whenNoModal } from "@/components/ui/modalGate";
 import { useConnectivity } from "@/offline/useConnectivity";
-import { useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
+import { useReportStartupOverlay, useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
 import { AvatarGallerySheet } from "../gallery/AvatarGallerySheet";
 import { inviteBusy, markSubjectInvited, readInvitedSubjects } from "./inviteGate";
 
@@ -42,7 +42,8 @@ export function AvatarInviteHost() {
   const { storage } = useTentacleConfig();
   const online = useConnectivity().state === "online";
   const hasPhoto = useAccountHasPhoto();
-  const overlaysQuiet = useStartupOverlaysQuiet();
+  // Elle attend les recouvrements d'avant elle, jamais le code PIN, qui la suit.
+  const overlaysQuiet = useStartupOverlaysQuiet("avatars");
   const pathname = usePathname();
   const [rootSegment] = useSegments();
   const appActive = useAppActive();
@@ -60,6 +61,16 @@ export function AvatarInviteHost() {
     busy,
     invited,
   });
+
+  // Ce qu'elle dit au registre, pour le code PIN qui passe après elle : active
+  // si elle va paraître (dès que le reste se tait) ou est ouverte, « pas
+  // tranché » tant que la photo du compte n'est pas connue.
+  const awaited = shouldInviteToAvatars({
+    eligible: true, subjectId: userId, canChangePhoto: !!storage.getItem("tentacle_token"),
+    online, hasPhoto, busy: false, invited,
+  });
+  const undecided = online && !!userId && hasPhoto === undefined && !invited.includes(userId);
+  useReportStartupOverlay("avatars", open || awaited ? "active" : undecided ? "pending" : "quiet");
 
   useEffect(() => {
     if (!due || !userId) return;
