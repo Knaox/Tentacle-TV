@@ -22,6 +22,7 @@ vi.mock("../../src/services/configStore", () => ({ getJellyfinUrl: () => state.u
 // Les plages du compte : celles de l'enfant ne couvrent jamais « maintenant » quand il est hors plage.
 vi.mock("../../src/services/contentPolicy", () => ({
   getContentPolicy: async (userId: string) => ({
+    readable: true,
     accessSchedules: state.outside.has(userId) ? [{ dayOfWeek: "Everyday", startHour: 0, endHour: -1 }] : [],
   }),
 }));

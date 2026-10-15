@@ -10,6 +10,13 @@
  * qu'elle a changé, et ce qui en dépend tombe aussitôt.
  */
 
+// TODO(lot-droits, socle) : quand `onContentPolicyInvalidated(listener: (userId: string | null)
+// => void): () => void` sera exportée par services/contentPolicy, s'y abonner ICI, au chargement :
+// pour un compte (ou `null` = tous), `invalidateItemVisibility(userId ?? undefined)`, faire tomber
+// l'empreinte (`seen.delete`, ou `seen.clear()`) et `epochs` +1, puis `refreshUserAccess(userId)`
+// (ou `markAllUserAccessStale()`). Une écriture faite par Tentacle se verrait alors tout de suite,
+// sans attendre la relecture de 30 s ; la comparaison d'empreintes reste pour les changements
+// faits dans Jellyfin.
 import { getContentPolicy, type ContentPolicy } from "../contentPolicy";
 import { invalidateItemVisibility } from "./itemVisibility";
 
