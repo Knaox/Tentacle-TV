@@ -150,6 +150,11 @@ export const SERVER_CAPABILITIES = {
    *  l'adresse réelle), et leur garde dans le proxy (403 `playback_not_allowed`,
    *  `conversion_not_allowed`). Sans elle, les lecteurs font comme avant. */
   "playback.rights": "1.30.0",
+  // ── Lot « droits 2 » — S1, accès du compte ──
+  /** L'accès du compte (`IsDisabled`, `AccessSchedules` de Jellyfin) : `GET /api/account/access`,
+   *  refus 403 `{ error: "account_access", … }` à toutes les portes, annonce `account:access` sur
+   *  le socket. Les clients montrent la page « compte désactivé / hors plage ». */
+  "account.access": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
