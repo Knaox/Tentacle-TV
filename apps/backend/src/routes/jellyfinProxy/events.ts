@@ -1,6 +1,7 @@
 import { patchLibraryMemo, type LibraryEntryPatch } from "../../services/reco/candidates/libraryMemo";
 import { broadcastToUser } from "../../services/wsManager";
 import { invalidateAccountState } from "../../services/jellyfinCache";
+import { invalidateJellyfinUsers } from "../../services/watchTogether/usersCache";
 
 /** Extract userId from proxy paths like Users/{userId}/FavoriteItems/... */
 function extractUserIdFromPath(path: string): string | null {
@@ -42,6 +43,17 @@ export function changesAccountState(path: string, method: string | undefined): b
     || /^Users\/[^/]+\/Items\/[^/]+\/(Rating|UserData)$/i.test(path);
 }
 
+/**
+ * Une écriture qui change la PHOTO d'un compte (web, bureau, mobile, TV) : la
+ * liste des comptes que le serveur garde 30 s porte son `imageTag`, que
+ * « Qui regarde ? » et la Famille relisent — sans quoi la photo choisie ne
+ * paraît qu'une demi-minute plus tard.
+ */
+export function changesAccountPhoto(path: string, method: string | undefined): boolean {
+  if (method !== "POST" && method !== "DELETE") return false;
+  return /^Users\/[^/]+\/Images\/Primary(\/\d+)?$/i.test(path);
+}
+
 /** Emit WS events based on successful Jellyfin proxy mutations. */
 export function emitProxyEvents(wildcardPath: string, request: unknown): void {
   // L'index de la reco apprend le geste TOUT DE SUITE : un titre mis en
@@ -53,6 +65,7 @@ export function emitProxyEvents(wildcardPath: string, request: unknown): void {
   // Les rangées que le proxy garde en cache portent cet état : elles tombent
   // AVANT la réponse, la relecture du client voit le geste (cf. jellyfinCache).
   if (changesAccountState(wildcardPath, req.method)) invalidateAccountState();
+  if (changesAccountPhoto(wildcardPath, req.method)) invalidateJellyfinUsers();
 
   // FavoriteItems → watchlist changed
   if (/FavoriteItems/.test(wildcardPath)) {
