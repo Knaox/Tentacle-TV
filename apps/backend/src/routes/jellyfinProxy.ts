@@ -98,7 +98,6 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // Bibliothèques refusées : un parent caché rend une liste vide, une liste d'ids est filtrée (cf. libraryListGuard).
     const listGuard = await libraryListGuard(request.method, route.path, route.query, incomingToken, lentKeyUser);
     if (listGuard.empty !== null) return reply.type("application/json; charset=utf-8").header("cache-control", "no-store").send(listGuard.empty);
-
     const { apiKey: apiKeyOverride, rewrite, usedDeviceToken } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
 
     // Report de lecture d'un device sans token Jellyfin : réécrit en écriture des données du
