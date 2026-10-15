@@ -4,6 +4,7 @@ import { useStillWatchingSettings, useStillWatchingTrial } from "@tentacle-tv/ap
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingToggleRow } from "./SettingToggleRow";
 import { StillWatchingTrialRow } from "./StillWatchingTrialRow";
+import { isWebDebugEnabled } from "../../lib/webDebug";
 import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "./stillWatchingChoices";
 
 /**
@@ -15,7 +16,9 @@ import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "./stil
  * à jour face à un serveur plus ancien n'en montre rien. Les deux durées ne
  * paraissent que lorsque la question est activée — régler le délai d'une
  * fonction éteinte n'a pas de sens. « Voir la question maintenant » aussi :
- * éteindre la question renonce à l'essai armé.
+ * éteindre la question renonce à l'essai armé. Cet essai est un outil de
+ * DÉBOGAGE : derrière la porte du web seulement (`lib/webDebug.ts` — serveur
+ * en `TENTACLE_WEB_DEBUG=on`, Vite, build instrumenté), invisible sinon.
  */
 export function StillWatchingSetting() {
   const { t } = useTranslation(["preferences", "player"]);
@@ -58,7 +61,7 @@ export function StillWatchingSetting() {
                 className="mt-3"
               />
             </div>
-            <StillWatchingTrialRow trial={trial} />
+            {isWebDebugEnabled() && <StillWatchingTrialRow trial={trial} />}
           </div>
         )}
       </div>

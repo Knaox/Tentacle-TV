@@ -3,6 +3,7 @@ import { Hourglass, Play, Timer, TimerReset, X } from "lucide-react";
 import { useStillWatchingSettings, useStillWatchingTrial } from "@tentacle-tv/api-client";
 import { ToggleSwitch } from "../../../../components/settings/ToggleSwitch";
 import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "../../../../components/settings/stillWatchingChoices";
+import { isWebDebugEnabled } from "../../../../lib/webDebug";
 import { SettingsChoiceRow } from "../ui/SettingsChoiceRow";
 import { SettingsRow } from "../ui/SettingsRow";
 import { SettingsSection } from "../ui/SettingsSection";
@@ -12,7 +13,8 @@ import { SettingsSection } from "../ui/SettingsSection";
  * réglage du COMPTE que les Réglages du web (`StillWatchingSetting`), dans les
  * lignes de l'app : l'interrupteur, puis les deux durées en segmentés compacts
  * tant que la question est activée, et « Voir la question maintenant » — une
- * ligne d'action, l'idiome de l'app (`StillWatchingTrialRow` côté bureau).
+ * ligne d'action, l'idiome de l'app (`StillWatchingTrialRow` côté bureau),
+ * derrière la porte du débogage du web seulement (`lib/webDebug.ts`).
  * Rien face à un serveur qui ne déclare pas `playback.stillWatching`.
  */
 export function StillWatchingSection() {
@@ -20,6 +22,7 @@ export function StillWatchingSection() {
   const { available, settings, set } = useStillWatchingSettings();
   const trial = useStillWatchingTrial();
   if (!available) return null;
+  const trialShown = isWebDebugEnabled();
   const trialText = trial.armed ? t("preferences:stillWatchingTrialArmed") : t("preferences:stillWatchingTrialHint");
 
   return (
@@ -54,18 +57,23 @@ export function StillWatchingSection() {
             options={stillWatchingCountdownChoices(t)}
             value={String(settings.countdownMs)}
             onChange={(value) => set({ countdownMs: Number(value) })}
+            last={!trialShown}
           />
-          <SettingsRow
-            icon={trial.armed ? X : Play}
-            label={trial.armed ? t("preferences:stillWatchingTrialCancel") : t("preferences:stillWatchingTrialTitle")}
-            description={trialText}
-            accent={!trial.armed}
-            onPress={trial.armed ? trial.cancel : trial.arm}
-            ariaLabel={`${trial.armed ? t("preferences:stillWatchingTrialCancel") : t("preferences:stillWatchingTrialTitle")}. ${trialText}`}
-            last
-          />
-          {/* L'état armé, annoncé : la ligne est un bouton, son libellé ne se relit pas seul. */}
-          <span role="status" className="sr-only">{trial.armed ? t("preferences:stillWatchingTrialArmed") : ""}</span>
+          {trialShown && (
+            <>
+              <SettingsRow
+                icon={trial.armed ? X : Play}
+                label={trial.armed ? t("preferences:stillWatchingTrialCancel") : t("preferences:stillWatchingTrialTitle")}
+                description={trialText}
+                accent={!trial.armed}
+                onPress={trial.armed ? trial.cancel : trial.arm}
+                ariaLabel={`${trial.armed ? t("preferences:stillWatchingTrialCancel") : t("preferences:stillWatchingTrialTitle")}. ${trialText}`}
+                last
+              />
+              {/* L'état armé, annoncé : la ligne est un bouton, son libellé ne se relit pas seul. */}
+              <span role="status" className="sr-only">{trial.armed ? t("preferences:stillWatchingTrialArmed") : ""}</span>
+            </>
+          )}
         </>
       )}
     </SettingsSection>
