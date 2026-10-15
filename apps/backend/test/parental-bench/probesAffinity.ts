@@ -8,8 +8,13 @@
  * ni ce que son socket reçoit (`wt:affinity`), ni ses cartes ne nomment le titre
  * interdit ; le titre permis, lui, lui parvient (témoin). Lancer le match
  * interdit est refusé : la salle ne pourrait pas le regarder ensemble.
+ *
+ * Puis la PILE d'un compte restreint présent au lancement, quand sa politique
+ * se resserre en cours de séance (fiche des droits de Tentacle) : ses cartes
+ * suivantes ne portent plus ce que Jellyfin lui cache désormais.
  */
 
+import { MOVIES, RESTRICTED_MAX_RATING } from "./catalog";
 import { call, personalToken, type Door } from "./doors";
 import type { JellyfinBench } from "./jellyfinBench";
 import { probe, type JudgeContext } from "./judge";
@@ -116,5 +121,40 @@ export async function probeAffinity(ctx: JudgeContext, restricted: Door, jf: Jel
   } finally {
     socket?.close();
     for (const token of everyone) await call(base, token, "POST", `${WT}/group/leave`);
+  }
+}
+
+/** Les films du banc classés « 6+ » : permis au compte restreint (≤ 6 ans), cachés dès « U » seul. */
+const SIX_PLUS = new Set(MOVIES.filter((m) => m.library === "films" && m.rating === "6+").map((m) => m.title));
+
+export async function probeAffinityPolicyChange(ctx: JudgeContext, restricted: Door, jf: JellyfinBench, adminPersonal: string): Promise<void> {
+  const { base, rec } = ctx;
+  const host = await personalToken(base, jf.free.name);
+  const rights = `/api/admin/users/${jf.restricted.id}/rights`;
+  for (const token of [host, restricted.token]) await call(base, token, "POST", `${WT}/group/leave`);
+  let tightened = false;
+  try {
+    await call(base, host, "POST", `${WT}/group`, {});
+    rec.note(await invite(base, host, { id: jf.restricted.id, token: restricted.token }), `${jf.restricted.name} entre dans le salon avant le lancement`);
+    const started = await call(base, host, "POST", `${WT}/affinity`, { kind: "movie" });
+    if (!rec.note(started.status === 200, `affinité lancée par ${jf.free.name} (${started.status})`)) return;
+    const joined = (await call(base, restricted.token, "POST", `${WT}/affinity/join`, { limit: 30 })).json as
+      { sessionId: number; cards: Card[] } | null;
+    const titles = (joined?.cards ?? []).map((c) => c.title);
+    if (!rec.note(titles.some((t) => SIX_PLUS.has(t)), `sa pile au lancement porte un film « 6+ » (${titles.join(", ")})`)) return;
+
+    // Sa note maximale passe à « U » : la fiche des droits invalide aussitôt ce qui en dépend.
+    const changed = await call(base, adminPersonal, "PATCH", rights, { maxParentalRating: 0 });
+    tightened = rec.note(changed.status === 200, `note maximale de ${jf.restricted.name} resserrée à 0 par la fiche des droits → ${changed.status}`);
+    const after = await probe(ctx, restricted, "GET", `${WT}/affinity/cards?sessionId=${joined!.sessionId}&limit=30`, { status: [200] });
+    const now = ((after.json as { cards?: Card[] } | null)?.cards ?? []).map((c) => c.title);
+    rec.note(!now.some((t) => SIX_PLUS.has(t)), `${restricted.label} · cartes suivantes : plus aucun film « 6+ » (${now.join(", ")})`);
+    rec.note(now.length > 0, `${restricted.label} · cartes suivantes : les films « U » restent (témoin)`);
+  } finally {
+    if (tightened) {
+      const restored = await call(base, adminPersonal, "PATCH", rights, { maxParentalRating: RESTRICTED_MAX_RATING });
+      rec.note(restored.status === 200, `note maximale remise à ${RESTRICTED_MAX_RATING} → ${restored.status}`);
+    }
+    for (const token of [host, restricted.token]) await call(base, token, "POST", `${WT}/group/leave`);
   }
 }
