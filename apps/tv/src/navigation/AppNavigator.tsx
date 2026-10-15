@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { routeAfterSession, tvSessionMode, type SessionStorage } from "@tentacle-tv/tv-core";
+import { tvSessionMode, type SessionStorage, type StartupRoute } from "@tentacle-tv/tv-core";
 import { TV_MOTION } from "@tentacle-tv/theme";
 import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
@@ -14,7 +14,7 @@ import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { ProfilesScreen } from "../screens/ProfilesScreen";
 import { RailSetupScreen } from "../screens/RailSetupScreen";
-import { railSetupPending } from "../components/nav/railPinning";
+import { startupRouteAfter } from "./startupWindows";
 import { effectOff } from "../redesign/render/measuredEffects";
 import { RENDER } from "../redesign/render/renderProfile";
 
@@ -72,15 +72,15 @@ export function preloadCoreScreens() {
  * actif → toujours le jumelage (sa langue se choisit sur son accueil ; plus
  * de conditions d'utilisation à accepter, sur aucun des deux téléviseurs).
  * Apple TV passée aux profils (Famille), aucun profil ouvert : « Qui regarde ? ».
- * Une session dont la préconfiguration de la barre reste à faire sur cet
- * appareil (une installation d'avant, un profil retenu) : la page d'abord,
- * jamais l'accueil qui clignote avant elle (`railSetupPending`, lecture
- * synchrone du socle).
+ * Une session dont une fenêtre du démarrage reste due sur cet appareil (la
+ * préconfiguration de la barre pour une installation d'avant, un profil
+ * retenu) : la fenêtre d'abord, jamais l'accueil qui clignote avant elle
+ * (`startupRouteAfter`, le registre ordonné, lu synchrone).
  * Lue aussi par le retour après un changement du mode Lite (`App.tsx`).
  */
-export function initialRouteOf(storage: SessionStorage): "Profiles" | "Home" | "PairCode" | "RailSetup" {
+export function initialRouteOf(storage: SessionStorage): "Profiles" | "PairCode" | StartupRoute {
   if (tvSessionMode(storage) === "choosing") return "Profiles";
-  return storage.getItem("tentacle_token") ? routeAfterSession(railSetupPending()) : "PairCode";
+  return storage.getItem("tentacle_token") ? startupRouteAfter() : "PairCode";
 }
 
 export function AppNavigator() {

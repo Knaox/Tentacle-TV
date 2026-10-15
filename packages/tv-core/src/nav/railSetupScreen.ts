@@ -86,12 +86,3 @@ export function railSetupBackAction(step: RailSetupStep, moving: boolean): RailS
   if (moving) return "cancelMove";
   return step === "apply" ? "decline" : "skip";
 }
-
-/**
- * La route qui suit une session ouverte (jumelage réussi, profil ouvert,
- * démarrage) : la page quand elle est encore due sur cet appareil pour ce
- * profil, sinon l'accueil.
- */
-export function routeAfterSession(setupPending: boolean): "RailSetup" | "Home" {
-  return setupPending ? "RailSetup" : "Home";
-}

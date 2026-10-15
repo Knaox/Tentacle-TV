@@ -31,3 +31,4 @@ export * from "./screenBack";
 export * from "./profilesBack";
 export * from "./railSetupScreen";
 export * from "./railSetupApply";
+export * from "./startupWindows";

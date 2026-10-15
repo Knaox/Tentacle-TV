@@ -3,16 +3,14 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import {
-  findProfile, manageEntryProfile, pickerEntryIndex, profilesBackAction, profilesEntryKey, resumesHeldSession, routeAfterSession,
-} from "@tentacle-tv/tv-core";
+import { findProfile, manageEntryProfile, pickerEntryIndex, profilesBackAction, profilesEntryKey, resumesHeldSession } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { useProfilesFocus, useProfilesGroups } from "../../platform/tvos/screens/profiles";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ProfilesView, type ProfilesViewModel } from "../../redesign/screens/profiles/ProfilesView";
 import { heldProfileSession, lastLeftProfileId } from "../../auth/profileSession";
-import { railSetupPending } from "../../components/nav/railPinning";
+import { startupRouteAfter, startupStackRoute } from "../../navigation/startupWindows";
 import { useBackLayer } from "../back/BackScope";
 import { pinMessageOf, refusalMessage, tileModelOf } from "./profilesModel";
 import { useProfilesFlow } from "./useProfilesFlow";
@@ -35,11 +33,8 @@ export function ProfilesRedesign({ navigation, route }: Props) {
   const go = useMemo(
     () => ({
       // L'accueil fond par-dessus « Qui regarde ? » (`entrance`, AppNavigator) : il charge pendant le fondu.
-      // La préconfiguration de la barre passe avant, quand elle est due pour ce profil sur cette TV.
-      home: () => {
-        if (routeAfterSession(railSetupPending()) === "RailSetup") navigation.reset({ index: 0, routes: [{ name: "RailSetup", params: { origin: "session" } }] });
-        else navigation.reset({ index: 0, routes: [{ name: "Home", params: { entrance: true } }] });
-      },
+      // Les fenêtres du démarrage passent avant (la préconfiguration de la barre), quand elles sont dues.
+      home: () => navigation.reset({ index: 0, routes: [startupStackRoute(startupRouteAfter())] }),
       manage: () => navigation.reset({ index: 0, routes: [{ name: "ManageProfiles", params: { origin: "profiles" } }] }),
     }),
     [navigation],

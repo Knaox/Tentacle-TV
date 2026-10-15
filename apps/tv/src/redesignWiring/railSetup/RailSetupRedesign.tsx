@@ -15,6 +15,7 @@ import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { useRailSetupEntry, useRailSetupGroups } from "../../platform/tvos/screens/railSetup";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { RailSetupView, type RailSetupModel } from "../../redesign/screens/railSetup/RailSetupView";
+import { startupRouteAfter, startupStackRoute } from "../../navigation/startupWindows";
 import { useBackLayer } from "../back/BackScope";
 import { useTvFamilyListing } from "../profiles/useTvFamilyListing";
 import { useRailSetupEditor } from "./useRailSetupEditor";
@@ -26,7 +27,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "RailSetup">;
 /**
  * La PRÉCONFIGURATION de la barre (Apple TV et Android TV) : une route posée
  * AVANT l'accueil — après le jumelage, à l'ouverture d'un profil, au
- * démarrage quand elle n'a jamais été faite (`routeAfterSession`, tv-core).
+ * démarrage quand elle n'a jamais été faite : la PREMIÈRE fenêtre du registre
+ * ordonné du démarrage (tv-core `nav/startupWindows`, `navigation/startupWindows`) ;
+ * fermée, elle cède à la suivante, sinon à l'accueil.
  *
  * - La porte du socle (`useRailSetupGate`) décide : `wait`, rien ne paraît
  *   (ni la page, ni l'accueil — l'attente est bornée par le socle, hors ligne
@@ -58,7 +61,7 @@ export function RailSetupRedesign({ navigation, route }: Props) {
     if (left.current) return;
     left.current = true;
     if (origin === "settings") navigation.goBack();
-    else navigation.reset({ index: 0, routes: [{ name: "Home", params: { entrance: true } }] });
+    else navigation.reset({ index: 0, routes: [startupStackRoute(startupRouteAfter("railSetup"))] });
   }, [navigation, origin]);
 
   // La porte dit « pas maintenant » (déjà faite, moins de deux bibliothèques, hors ligne) : l'accueil.

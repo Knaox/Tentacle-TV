@@ -13,7 +13,6 @@ import {
   railSetupLockedKeys,
   railSetupMoveKey,
   railSetupRowKey,
-  routeAfterSession,
 } from "./railSetupScreen";
 import {
   RAIL_SETUP_APPLY_DECLINE_KEY,
@@ -84,13 +83,6 @@ describe("railSetupBackAction — Retour", () => {
     expect(railSetupBackAction("libraries", true)).toBe("cancelMove");
     expect(railSetupBackAction("libraries", false)).toBe("skip");
     expect(railSetupBackAction("apply", false)).toBe("decline");
-  });
-});
-
-describe("routeAfterSession — la page passe avant l'accueil", () => {
-  it("la page si elle est due, sinon l'accueil", () => {
-    expect(routeAfterSession(true)).toBe("RailSetup");
-    expect(routeAfterSession(false)).toBe("Home");
   });
 });
 
