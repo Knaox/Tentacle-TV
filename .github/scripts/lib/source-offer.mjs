@@ -67,9 +67,8 @@ export const SOURCES = {
     C('zhongfly/mpv-winbuild 198a40e (variante LGPL de la recette)', 'MIT', COMMIT('zhongfly/mpv-winbuild', '198a40e88b6e5d2ddbfb6b5561b67445aa523413')),
   ],
   server: [
-    C('FFmpeg 8.1.2 (programme ffmpeg)', 'LGPL-2.1-or-later', FFMPEG('8.1.2')),
-    C('Chromaprint 1.6.0 (programme fpcalc)', 'LGPL-2.1-or-later', GH('acoustid/chromaprint', 'v1.6.0')),
-    C('FFTW 3.3.10 (lié à fpcalc)', 'GPL-2.0-or-later', 'https://www.fftw.org/fftw-3.3.10.tar.gz'),
+    // Plus de ffmpeg ni de fpcalc (analyse audio retirée) : les images d'avant
+    // gardent leur archive `sources-server-v…` déjà publiée.
     C('BusyBox 1.37.0', 'GPL-2.0-only', 'https://busybox.net/downloads/busybox-1.37.0.tar.bz2'),
     C('BusyBox — recette Alpine 3.24', 'GPL-2.0-only', APORTS('busybox')),
     C('apk-tools 3.0.8', 'GPL-2.0-only', GH('alpinelinux/apk-tools', 'v3.0.8')),

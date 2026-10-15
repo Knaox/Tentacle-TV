@@ -92,8 +92,8 @@ modifiée : c'est le « relier » de la LGPL, désormais dit dans l'app.
 | Composant | Licence | État |
 |---|---|---|
 | Dépendances npm de production (137 paquets dans l'image) | MIT, ISC, BlueOak, BSD-3, Apache-2.0 | ✅ aucune GPL/LGPL/AGPL/inconnue ; 🛠 l'élagage effaçait les `LICENSE.md` de 13 paquets |
-| `ffmpeg` 8.1.2 (programme) | LGPL-2.1+ | ✅ |
-| `fpcalc` (Chromaprint 1.6.0) lié **statiquement à FFTW3** | **GPL-2.0+** (et non LGPL comme le disait le Dockerfile) | ✅ programme séparé, aucun lien avec Tentacle ; ⚠️ offre de sources |
+| `ffmpeg` 8.1.2 (programme) — **retiré le 2026-10-15** avec l'analyse audio | LGPL-2.1+ | ✅ ; les images d'avant gardent leur archive `sources-server-v…` |
+| `fpcalc` (Chromaprint 1.6.0) lié **statiquement à FFTW3** — **retiré le 2026-10-15** avec l'analyse audio | **GPL-2.0+** (et non LGPL comme le disait le Dockerfile) | ✅ programme séparé, aucun lien avec Tentacle ; offre de sources des images d'avant déjà publiée |
 | yt-dlp 2026.08.19 (zipapp, pas PyInstaller), Python 3.14 | Unlicense / PSF-2.0 | ✅ |
 | Alpine (busybox, apk-tools… **GPL-2.0-only**), Node.js | GPL / MIT | ✅ programmes séparés ; ⚠️ LICENSE de Node absent, offre de sources |
 | **Image v1.23.0 déjà publiée** : ffmpeg d'Alpine `--enable-gpl --enable-version3` + x264/x265 | GPL-3.0+ | ⚠️ offre de sources à couvrir pour les images déjà distribuées |
@@ -125,7 +125,7 @@ vers Google, RGPD) — servir les woff2 locaux.
 |---|---|---|
 | GPL-2.0-**only** lié au code de Tentacle | **aucun** trouvé | — |
 | GPL-2.0-only dans l'image, non lié | busybox, apk-tools, alpine-baselayout, scanelf | ✅ programmes séparés |
-| GPL-2.0-or-later / GPL-3.0 liés | mpv (Linux, Android), FFmpeg Android, décodeur Jellyfin, FFTW (fpcalc) | ✅ AGPL-3 §13 / GPL-3 §13 permettent la combinaison |
+| GPL-2.0-or-later / GPL-3.0 liés | mpv (Linux, Android), FFmpeg Android, décodeur Jellyfin (FFTW de fpcalc : images d'avant le 2026-10-15) | ✅ AGPL-3 §13 / GPL-3 §13 permettent la combinaison |
 | Multi-licences dont une GPL-2.0 | mbedTLS (Apache-2.0 OR GPL-2.0+), FreeType (FTL OR GPL-2.0+), GMP/Nettle (LGPL-3 OR GPL-2+), uchardet, graphite2, node-forge | ✅ on choisit l'option permissive / LGPL |
 | LGPL-2.1 / LGPL-3 | FFmpeg, mpv (LGPL), libplacebo, GnuTLS, PrismCore… | ✅ compatibles |
 | Apache-2.0 | Media3, MoltenVK, OpenSSL 3, Prisma, hls.js, folly | ✅ compatible GPL-3/AGPL-3 (pas GPL-2 : sans objet ici) |
