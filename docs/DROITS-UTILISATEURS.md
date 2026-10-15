@@ -430,3 +430,95 @@ les chemins sont branchés, la correspondance des certifications arrivera sans y
 - Aucun bump, aucun changelog, aucun `versions.json` : le coordinateur s'en charge.
 - 300 lignes au plus par fichier, code en anglais, commentaires en français, un commit
   par étape, jamais de push ni de tag.
+
+## 9.7 Suppression de titres
+
+> Lot « droits 2 » (2026-10-15), web et bureau seulement — ni mobile, ni TV, ni webOS, ni la
+> fenêtre étroite (miroir). Capacité `library.delete` (serveur 1.30.0).
+
+### 9.7.1 Ce que Jellyfin fait (mesuré sur 10.11.11, Jellyfin jetable ; source de 12 relue)
+
+- **Les droits** : `EnableContentDeletion` (partout) et `EnableContentDeletionFromFolders` (des
+  bibliothèques, identifiants des `CollectionFolder` = ceux des vues `/Users/{id}/Views`). Un
+  administrateur suit la même règle : son droit, pas son rôle.
+- **`CanDelete`** (`Fields=CanDelete`) est calculé pour le compte du jeton, ou pour le `userId`
+  avec la clé d'API : vrai partout avec le premier droit, dans SES bibliothèques avec le second,
+  faux sinon. Celui d'une bibliothèque elle-même est toujours faux (inutilisable).
+- **`DELETE /Items/{id}`** par le jeton du compte : 204 (fichier ET dossier supprimés du disque —
+  film, épisode, saison, série entière), 401 « Unauthorized access » (refusé, rien ne bouge), 404
+  (déjà absent), 400 (identifiant nul). **Avec la clé d'API, aucun contrôle** : tout part.
+- **`DELETE /Items?ids=a,b,c` est inutilisable** : il s'arrête au PREMIER refus (401) sans dire
+  lequel — les titres d'avant supprimés, ceux d'après jamais tentés. Même code sur `master` (12).
+
+### 9.7.2 Le serveur — `routes/libraryDeletion.ts`, `services/libraryDelete/`
+
+Contrat : `packages/shared/src/libraryDelete/libraryDeleteContract.ts`, miroir backend
+(`libraryDeleteMirror.test.ts`).
+
+| Geste | Route | Réponse |
+|-------|-------|---------|
+| Où supprimer | `GET /api/library/deletion/rights` | `{ everywhere, libraryIds }` — relu par `/Users/Me` avec le jeton du compte ; « nulle part » pour toute session non personnelle, une politique illisible, un compte désactivé |
+| Supprimer | `POST /api/library/deletion` `{ ids }` (1 à 20) | `{ results: [{ id, outcome }] }`, `outcome` ∈ `deleted` · `gone` · `forbidden` · `failed`, un par titre, dans l'ordre reçu |
+
+- **Session PERSONNELLE seulement** (`403 { error: "not_personal" }` sinon) : son jeton EST le
+  jeton Jellyfin du compte, par lequel Jellyfin juge chaque titre. Une TV jumelée, une session de
+  profil (TV ou bureau), « voir en tant que » n'ont pas de jeton Jellyfin à elles. Le proxy refuse
+  déjà tout `DELETE` d'un jeton d'appareil (`deviceWrites.ts`, inchangé ; test du lot ajouté).
+- **Un `DELETE /Items/{id}` par titre**, deux à la fois, 60 s chacun au plus (une série emporte
+  ses épisodes). Corps invalide (identifiant illisible, clé de trop, lot vide ou > 20) : refusé
+  ENTIER, rien n'est tenté. 120 appels par minute et par adresse.
+- **Après** (`afterDeletion.ts`) : les titres quittent le relevé de chaque compte
+  (`dropItemsFromUserAccess` : recherche, recos, saga n'en montrent plus rien sans attendre la
+  reconstruction de six heures), les verdicts de visibilité tombent, le catalogue se relève, et
+  `broadcastAll` (rangées Derniers ajouts, Reprendre, Prochains, Ma liste, favoris, vus) vide les
+  réponses gardées par le proxy et fait relire leurs rangées aux applications connectées.
+- **Journal** `[library-delete] <compte> (<8 car.>…) : N demandés — x supprimés, y déjà absents,
+  z refusés par Jellyfin, w en échec` — jamais un titre ni un chemin.
+- **Pourquoi une route serveur, donc une capacité** : un appel direct à Jellyfin par le proxy
+  aurait jugé de même, mais sans journal, sans vider les caches du serveur (la recherche aurait
+  rendu le titre supprimé jusqu'au relevé suivant) et en exposant au client le 401 de Jellyfin,
+  que `fetchWithRetry` lit comme une session expirée.
+
+### 9.7.3 Les clients (web, bureau)
+
+- **Porte** : `useLibraryDeletionRights` (derrière `library.delete`), puis `CanDelete` relevé par
+  le client avec le jeton du compte (`useLibraryDeletableIndex`, `useDeletableEntries`, champs
+  minimaux, ni image ni données de visionnage). Rien n'est montré sans les deux.
+- **Fiche** (film, série, épisode) : « ⋯ » après la note, « Supprimer de la bibliothèque ». Une
+  saison n'a pas de fiche : « Supprimer la saison » au bout de sa barre (liste des épisodes).
+  Réussie, la suppression le dit d'un toast et la fiche ramène en arrière (à l'accueil sans
+  historique) ; un refus ou un échec garde le bilan.
+- **Grilles des bibliothèques** : « Sélectionner » dans le panneau, si le compte peut supprimer
+  dans CETTE bibliothèque. **Recherche** : onglets Films, Séries, Épisodes, si le compte peut
+  supprimer quelque part. Jamais sur le plateau des cartes ni dans leur menu contextuel.
+- **Le mode sélection** : case dans le coin haut-gauche de l'affiche (jamais au centre ; le coin
+  haut-droit garde la pastille) ; titre refusé atténué avec un cadenas, non cochable ; le clic
+  coche, Maj + clic coche une plage, Espace/Entrée au clavier ; le survol, l'aperçu, le plateau et
+  le menu contextuel se taisent ; Échap quitte (un dialogue ouvert se ferme d'abord).
+- **« Tout sélectionner »** couvre la bibliothèque filtrée ENTIÈRE — mêmes filtres, même tri
+  (`catalogFilterParams`, partagé avec la grille), relevée par pages de 500 — avec son nombre,
+  jamais la seule page chargée. Exceptions dites dans la barre : un filtre de plateforme (appliqué
+  par le client aux titres chargés) → les titres affichés ; la recherche plafonne à 60 résultats
+  par type → « Seuls les 60 premiers résultats sont proposés sur N ».
+- **Confirmation** : combien, les cinq premiers titres puis « et N autres », « Les fichiers seront
+  aussi supprimés du disque du serveur. C'est irréversible. », et ce qu'emporte une série ou une
+  saison ; « Annuler » a le premier focus. **Progression** par lots de 20 (`aria-live`, Échap et
+  le fond inopérants), « Arrêter » entre deux lots ; un lot perdu est retenté une fois, puis ses
+  titres comptent en échec et la suite continue. **Bilan** : supprimés, déjà absents, puis
+  NOMMÉMENT les refusés, les échecs et les titres non traités, avec « Réessayer ces titres ».
+- **Caches** (`forgetDeletedItems`) : à chaque lot, les titres partis — et, pour une série ou une
+  saison, ses épisodes (`SeriesId`, `SeasonId`) — quittent toutes les données en cache (pages des
+  grilles et leur compte, rangées, Ma liste, Continuer, recherche et son meilleur résultat,
+  saisons, épisodes) ; à la fin, tout se relit. La fiche d'un titre parti est seulement marquée
+  périmée tant qu'elle est montée, puis oubliée.
+
+### 9.7.4 Hors périmètre, à suivre
+
+- Mobile, TV, webOS, fenêtre étroite (miroir) : aucune entrée. Le client LG lit seulement les
+  droits (« nulle part » : jeton d'appareil).
+- **« Voir en tant que »** : le proxy lui prête la clé d'API, et sa liste blanche laisse passer
+  `DELETE Items/{id}` — un appel FORGÉ sous ce jeton supprimerait sans contrôle de Jellyfin.
+  Antérieur à ce lot, réservé à un administrateur ; aucune interface de Tentacle ne l'emprunte
+  (la route du lot le refuse). À fermer dans le proxy.
+- Banc : Jellyfin 10.11 jetable, trois comptes (administrateur ; un compte qui ne supprime que
+  dans UNE bibliothèque ; un compte sans droit), médias générés ; preuves dans le rapport du lot.
