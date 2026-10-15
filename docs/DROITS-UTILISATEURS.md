@@ -431,6 +431,82 @@ les chemins sont branchés, la correspondance des certifications arrivera sans y
 - 300 lignes au plus par fichier, code en anglais, commentaires en français, un commit
   par étape, jamais de push ni de tag.
 
+## 9.3 Fiche des droits et partage public (lot « droits 2 », S3)
+
+### La fiche ne nomme que ce qui agit dans Tentacle
+
+- **Retirés du contrat `USER_RIGHTS_FIELDS`** (et de la fiche, miroir recopié) : `isHidden`,
+  `enableAllChannels`, `enabledChannels`, `enableCollectionManagement`, `enableSubtitleManagement`,
+  `enableLyricManagement`, `enableLiveTvAccess`, `enableLiveTvManagement`,
+  `enableRemoteControlOfOtherUsers`, `enableSharedDeviceControl`. Propres à Jellyfin ou sans geste
+  chez nous : Tentacle n'affiche aucune chaîne Jellyfin (`UserRightsOptions.channels` et la lecture de
+  `/Channels` partent aussi), et **aucun geste de Tentacle ne pilote un appareil partagé** (la seule
+  télécommande est celle du tableau de bord, par la clé d'administration) — « Appareils partagés »
+  est donc retiré, pas branché. La réécriture garde ces champs tels que Jellyfin les tient (testé) ;
+  le § 3.1 est à lire sans eux. Un correctif qui en nomme un est refusé comme une clé inconnue.
+- **Gardés, expliqués en une phrase juste** : désactivé, accès à distance, sessions simultanées,
+  essais avant blocage (0 = 3 essais, mesuré par S1), administrateur, bibliothèques, les six de la
+  lecture, hors ligne (« version légère » exige aussi conversion vidéo ou changement de conteneur,
+  `capabilitiesFromPolicy`), suppression, partage public.
+- **Watch Together** (`syncPlayAccess`) : jamais « SyncPlay » ; trois choix en boutons radio, chacun
+  avec sa phrase (`ChoiceRight.tsx`). L'application est celle de S2.
+- **Emplacement des droits de la Famille** : `UserRightsPanel.tsx`, dans la liste des rubriques,
+  juste après « Gestion » (commentaire « Emplacement des droits de la FAMILLE ») — une ligne.
+
+### Le contrôle parental, comme Jellyfin le montre
+
+Relevé sur l'onglet « Contrôle parental » d'un Jellyfin 10.11.11 jetable, en français :
+
+- Ordre : classification maximale, types non classés bloqués, étiquettes autorisées, étiquettes
+  bloquées, programme d'accès — avec les libellés et aides de Jellyfin (coquille « comportants »
+  corrigée).
+- **Classification** : la table de `/Localization/ParentalRatings` (« Unrated » exclu), un niveau
+  par couple (score, sous-score), tous ses noms réunis par « / » (« 0+/Public Averti/Tous Publics/TP/U »).
+  Jellyfin n'a PAS de liste de sous-classification à part : la sous-note se choisit avec le niveau
+  (table US : « TV-14 » ≠ « TV-14-D/TV-14-L/… »). Choisir un niveau écrit son score et sa sous-note
+  (`null` s'il n'en a pas), comme Jellyfin.
+- **Types non classés** : les sept de Jellyfin, dans son ordre et ses mots — Livres (`Book`),
+  Chaînes (`ChannelContent`), TV en direct (`LiveTvChannel`), Films, Musique (Jellyfin laisse
+  « Music » non traduit), Bandes-annonces, Séries ; `LiveTvProgram` et `Other` ne paraissent que
+  s'ils sont posés (par l'API), décochables.
+- **Programme d'accès** : jours dans l'ordre de Jellyfin (dimanche → samedi, Tous les jours, Jours
+  de la semaine, Week-ends — précisés « (lun. → ven.) », « (sam., dim.) »), heures à la demi-heure
+  écrites « 8:00 », la fin de journée 24 écrite « 0:00 » comme Jellyfin, ligne « 8:00 - 20:30 ».
+- Le dialogue des invités de la Famille emploie les mêmes champs : il en hérite.
+- **Prouvé dans les deux sens** (Jellyfin jetable `jf-fiche`, Tentacle jetable) : la fiche écrit 12,
+  Livres + Séries, « famille » autorisée, « horreur » bloquée, Jours de la semaine 8:00 - 20:30 →
+  relus tels quels dans le tableau de bord ; le tableau de bord écrit 16, Films + Séries,
+  Week-ends 10:00 - 0:00 → relus tels quels dans la fiche. Watch Together « Rejoindre seulement »
+  écrit par la fiche → « Autoriser l'utilisateur à rejoindre un groupe » dans Jellyfin.
+
+### Le partage public (`enablePublicSharing`) — capacité `share.publicRight` (1.30.0)
+
+- **Jellyfin 10.11 ne montre pas ce droit** dans son tableau de bord (relevé) : la fiche de Tentacle
+  est le seul endroit où il se règle ; un compte neuf l'a (défaut de Jellyfin `true`).
+- **Serveur** (`routes/share.ts`, `services/share/publicSharingRight.ts`) : le droit est relu dans
+  la politique du compte par la clé d'administration, gardé 30 s, oublié à toute écriture de
+  politique faite par Tentacle (`onContentPolicyInvalidated`), FERMÉ à l'échec (5 s). Sans lui :
+  `POST /api/share/` et `/api/share/likes/` → 403 `public_sharing_denied` ; un lien de Ma liste ou
+  des favoris existant → 403 `share_unavailable` (liste ET fiche d'un titre), sans rien de la liste ;
+  le lien n'est pas détruit et revient avec le droit. `GET /api/share/access` → `{ publicSharing }`.
+  Les liens de STATISTIQUES ne sont pas gouvernés (Damien n'a nommé que les deux listes ; à trancher).
+- **Au nom du propriétaire, dans ses restrictions** : Jellyfin filtre ses favoris et Ma liste
+  (`userId`) ; ses likes hors bibliothèque passent `filterExternalTitles(propriétaire, …)`.
+- **Page autonome** (`static/sharePage*.ts`) : interface web coupée, `/share/<jeton>` (et la fiche
+  `/share/<jeton>/<titre>`) reçoit la liste écrite par le serveur — FR/EN, AUCUN script, style sous
+  nonce, `default-src 'none'`, affiches `/api/jellyfin/Items/<id>/Images/Primary` (sans jeton ni
+  adresse de Jellyfin) ou TMDB à l'adresse exacte ; jamais en cache ni indexée ; « Lien
+  introuvable » (404), « Lien indisponible » (403), panne (502). Interface web allumée : la page du
+  client web, inchangée. Branchée dans `staticClients.ts` comme la page d'invitation.
+- **Web / bureau** : `usePublicSharingAllowed` (api-client) — serveur qui déclare la capacité : le
+  droit lu ; serveur d'avant : comme avant (boutons montrés). « Partager ma liste » et « Partager mes
+  titres likés » (page large et fenêtre étroite) n'existent qu'avec le droit ; copier et révoquer
+  restent dans la fenêtre de partage. La page publique dit « Partage indisponible ». Mobile et TV
+  non touchés : le serveur refuse, c'est tout.
+- **Prouvé** (Tentacle jetable, interface web coupée par `tentacle web off`) : lien créé, page
+  autonome ouverte sans session ; droit coupé dans la fiche → API et page « indisponible », boutons
+  disparus, création refusée ; droit rendu par l'API de Jellyfin → liste revenue ; révocation → 404.
+
 ## 9.7 Suppression de titres
 
 > Lot « droits 2 » (2026-10-15), web et bureau seulement — ni mobile, ni TV, ni webOS, ni la
