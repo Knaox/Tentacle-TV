@@ -4,9 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFamilyCandidates, useFamilyLive, useFamilyOverview, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { FAMILY_PROFILE_COLORS, type FamilyProfileDto } from "@tentacle-tv/shared";
+import { FAMILY_PROFILE_COLORS } from "@tentacle-tv/shared";
 import {
-  offerGuestPhotoAtCreation,
   INVITE_SEARCH_KEY,
   MANAGE_BACK_KEY,
   STATUS_PRIMARY_KEY,
@@ -27,7 +26,6 @@ import { useGuestColorsEntry, useManageFocus, useManageGroups } from "../../plat
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { KeyboardEntryProvider } from "../../redesign/screens/pairing/keyboardOpener";
 import { ManageProfilesView } from "../../redesign/screens/profiles/ManageProfilesView";
-import { useGuestPhotoCapable } from "../avatars/useGuestPhotoCapable";
 import { useBackLayer } from "../back/BackScope";
 import { buildManageModel } from "./manageScreenModel";
 import { SHOWN_CANDIDATES, candidateViews, freeColor, manageListModel } from "./manageModel";
@@ -148,13 +146,6 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
     else exit();
   };
   useBackLayer("page", true, back);
-  // L'invité créé n'a que la photo par défaut : la galerie s'ouvre pour lui (tv-core `offerGuestPhotoAtCreation`).
-  const guestPhotoCapable = useGuestPhotoCapable();
-  const offerGuestPhoto = (created: FamilyProfileDto | null) => {
-    if (created && offerGuestPhotoAtCreation(created, guestPhotoCapable)) {
-      navigation.navigate("AvatarGallery", { guest: { userId: created.userId, name: created.name } });
-    }
-  };
 
   return (
     <View style={styles.fill}>
@@ -177,7 +168,7 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
             }}
             onGuestName={actions.setGuestName}
             onGuestColor={actions.setGuestColor}
-            onGuestSubmit={() => void actions.submitGuest().then(offerGuestPhoto)}
+            onGuestSubmit={() => void actions.submitGuest()}
             onQuery={actions.setQuery}
             onSearch={actions.searchNow}
             onInviteCandidate={(id) => {

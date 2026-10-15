@@ -10,7 +10,7 @@ import {
   useSetFamilyMemberRights,
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
-import { FAMILY_PROFILE_COLORS, normalizeGuestName, type FamilyProfileColor, type FamilyProfileDto } from "@tentacle-tv/shared";
+import { FAMILY_PROFILE_COLORS, normalizeGuestName, type FamilyProfileColor } from "@tentacle-tv/shared";
 import { confirmBlur, confirmPress, scrubCountdownKey, type ManageRowModel, type ManageView, type ProfileRefusal } from "@tentacle-tv/tv-core";
 import type { ManageNotice } from "../../redesign/screens/profiles/ManageProfilesView";
 import { refusalOfError } from "../../auth/profileOpening";
@@ -133,23 +133,22 @@ export function useManageActions({ onLocked, onRemoved }: { onLocked: () => void
       setGuestError(null);
     },
     setGuestColor,
-    /** L'invité créé (pour lui proposer une photo), ou null. */
-    submitGuest: async (): Promise<FamilyProfileDto | null> => {
+    submitGuest: async (): Promise<boolean> => {
       const name = normalizeGuestName(guestName);
       if (!name) {
         setGuestError(t("familyTv:guest.nameMissing"));
-        return null;
+        return false;
       }
-      if (creating) return null;
+      if (creating) return false;
       setCreating(true);
       try {
-        const created = await createGuest.mutateAsync({ name, color: guestColor });
+        await createGuest.mutateAsync({ name, color: guestColor });
         setNotice({ text: t("familyTv:guest.created", { name }), tone: "success" });
         setView("list");
-        return created;
+        return true;
       } catch (error) {
         setGuestError(refusalMessage(refused(error), t));
-        return null;
+        return false;
       } finally {
         setCreating(false);
       }
