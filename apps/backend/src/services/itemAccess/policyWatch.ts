@@ -1,0 +1,46 @@
+/**
+ * Un changement de politique Jellyfin se voit en 30 s au plus — qu'il vienne
+ * de Tentacle ou du tableau de bord de Jellyfin (docs/DROITS-UTILISATEURS.md § 1).
+ *
+ * Les relevés « ce que voit un compte » (`search/userAccess.ts` : 10 min,
+ * servis puis rafraîchis en fond) ignoraient la politique : un titre que
+ * l'administrateur vient d'interdire restait dans les recherches et les recos
+ * jusqu'au relevé suivant. La politique de contenu, elle, est relue toutes les
+ * 30 s (socle, `getContentPolicy`) : son EMPREINTE comparée à la précédente dit
+ * qu'elle a changé, et ce qui en dépend tombe aussitôt.
+ */
+
+import { getContentPolicy, type ContentPolicy } from "../contentPolicy";
+import { invalidateItemVisibility } from "./itemVisibility";
+
+const seen = new Map<string, string>();
+
+/** Ce qui décide de ce que voit le compte — pas les plages horaires, jugées à part. */
+function fingerprint(policy: ContentPolicy): string {
+  return JSON.stringify([
+    policy.maxParentalRating, policy.maxParentalSubRating, policy.blockUnratedItems, policy.blockedTags,
+    policy.allowedTags, policy.enableAllFolders, policy.enabledFolders, policy.blockedMediaFolders,
+  ]);
+}
+
+/**
+ * Vrai si la politique du compte a changé depuis la dernière fois qu'on l'a
+ * regardée (la première fois : non, rien à comparer ; illisible : non, on ne
+ * jette pas un relevé sur une panne). Les verdicts « titre visible » du compte
+ * tombent alors avec elle.
+ */
+export async function policyChanged(userId: string): Promise<boolean> {
+  const policy = await getContentPolicy(userId);
+  if (!policy.readable) return false;
+  const key = userId.replace(/-/g, "").toLowerCase();
+  const next = fingerprint(policy);
+  const previous = seen.get(key);
+  seen.set(key, next);
+  if (previous === undefined || previous === next) return false;
+  invalidateItemVisibility(userId);
+  return true;
+}
+
+export function resetPolicyWatchForTests(): void {
+  seen.clear();
+}
