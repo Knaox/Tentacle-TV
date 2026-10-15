@@ -114,6 +114,8 @@ export interface EngineSurfaceProps {
   /** Un écart depuis la cible en cours (double toucher) : des appuis rapides font un seul saut. */
   onSkip?: (delta: number) => void;
   onToggleOverlay: () => void;
+  /** Un toucher, n'importe où sur le lecteur — une présence (« Vous regardez encore ? »). */
+  onActivity?: () => void;
   onSwipeDown: () => void;
   /** L'habillage (contrôles, cartes de fin) et les badges, par-dessus. */
   children?: ReactNode;

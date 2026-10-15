@@ -179,10 +179,14 @@ describe("« Ne plus proposer sur cet appareil » — ce que la bascule retient"
     expect(stayOf()).toMatchObject({ accountId: "owner", profileId: "owner", hasPin: false });
   });
 
-  it("case décochée, ou changement de profil depuis le menu : plus rien de retenu", async () => {
+  it("case décochée : plus rien de retenu, et l'ordinateur propose de nouveau « Qui regarde ? »", async () => {
     await commit(OWNER, { stayOnDevice: true });
     await commit(LEA, { stayOnDevice: false });
     expect(stayOf()).toBeNull();
+    expect(JSON.parse(local.getItem("tentacle_profile_launch_ask") ?? "null")).toMatchObject({ accountId: "owner" });
+    // Recochée : le profil retenu efface la marque.
+    await commit(LEA, { stayOnDevice: true });
+    expect(local.getItem("tentacle_profile_launch_ask")).toBeNull();
   });
 
   it("« Gérer les profils » (rien de demandé) : le choix d'avant reste", async () => {

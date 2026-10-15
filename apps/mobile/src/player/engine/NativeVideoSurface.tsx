@@ -19,7 +19,7 @@ export function NativeVideoSurface({
   engineRef, streamUrl, headers, startPositionMs, isDirectPlay, textTracks, title, artist,
   paused, audioTrackSelectedIndex, videoReady, currentTime, subtitleVttUrl, isAirPlaying, showLoading,
   overlayVisible, onLoad, onProgress, onEnd, onError, onBuffering, onExternalPlaybackChange,
-  onSeek, onSkip, onToggleOverlay, onSwipeDown, children,
+  onSeek, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
 }: EngineSurfaceProps) {
   const videoRef = useRef<VideoRef>(null);
   useImperativeHandle(engineRef, () => ({
@@ -54,7 +54,7 @@ export function NativeVideoSurface({
   }), [streamUrl, headersKey, startPositionMs, isDirectPlay, textTracksKey, title, artist]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
+    <View style={{ flex: 1, backgroundColor: PLAYER.bg }} onTouchStart={onActivity}>
       <Video
         ref={videoRef}
         source={source}

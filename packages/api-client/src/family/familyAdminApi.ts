@@ -1,4 +1,4 @@
-import { familyPath, type FamilySwitches } from "@tentacle-tv/shared";
+import { familyPath, type FamilyLaunchPolicy, type FamilySwitches, type SetFamilyLaunchPolicyBody } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 
 /**
@@ -13,4 +13,14 @@ export function fetchFamilySwitches(): Promise<FamilySwitches> {
 
 export function setFamilySwitches(patch: Partial<FamilySwitches>): Promise<FamilySwitches> {
   return tentacleApiFetch<FamilySwitches>(familyPath("adminSetSwitches"), { method: "PUT", body: JSON.stringify(patch) });
+}
+
+/** « Qui regarde ? » à l'ouverture, plateforme par plateforme (serveur `family.pickerPolicy`). */
+export function fetchFamilyLaunchPolicy(): Promise<FamilyLaunchPolicy> {
+  return tentacleApiFetch<FamilyLaunchPolicy>(familyPath("adminLaunchPolicy"));
+}
+
+/** Seulement ce qui change ; la réponse est la politique entière, telle que gardée. */
+export function setFamilyLaunchPolicy(patch: SetFamilyLaunchPolicyBody): Promise<FamilyLaunchPolicy> {
+  return tentacleApiFetch<FamilyLaunchPolicy>(familyPath("adminSetLaunchPolicy"), { method: "PUT", body: JSON.stringify(patch) });
 }

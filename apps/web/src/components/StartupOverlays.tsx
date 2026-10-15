@@ -7,6 +7,7 @@ import { useWhatsNewDevHook, whatsNewGateForced } from "../whatsNew/whatsNewDev"
 import { WhatsNewScreen } from "../whatsNew/WhatsNewScreen";
 import { isDesktopApp } from "../desktop/detect";
 import { AvatarInvite } from "../profiles/avatarGallery/AvatarInvite";
+import { FamilyPinStartup } from "../family/pinSuggest/FamilyPinStartup";
 import { UpdateModal } from "./UpdateModal";
 
 interface StartupOverlaysProps {
@@ -22,7 +23,10 @@ interface StartupOverlaysProps {
  * à choisir un avatar (`AvatarInvite`) : seulement quand les deux autres se
  * sont tus — la porte des nouveautés a TRANCHÉ et rien n'est à l'écran, aucune
  * mise à jour en vue — et, ouverte, elle suspend à son tour la pop-up de mise
- * à jour.
+ * à jour. Tout à la fin, « Action recommandée : posez votre code PIN »
+ * (`FamilyPinStartup`) : après l'invitation aux avatars — qu'elle ait paru ou
+ * renoncé —, jamais par-dessus un autre recouvrement ; ouverte, elle suspend
+ * elle aussi la mise à jour et l'invitation.
  */
 export function StartupOverlays({ authed }: StartupOverlaysProps) {
   const update = useAutoUpdate();
@@ -42,12 +46,22 @@ export function StartupOverlays({ authed }: StartupOverlaysProps) {
 
   const open = forced !== null || gate.open;
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [invitePending, setInvitePending] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
   const inviteBusy = !authed || pathname.startsWith("/watch") || !gate.decided || open || update.phase !== "idle";
   return (
     <>
       <WhatsNewScreen open={open} selection={forced ?? gate.selection} onClose={forced ? clearForced : gate.close} />
-      <UpdateModal update={update} suspended={open || inviteOpen} />
-      {authed && <AvatarInvite desktop={desktopLike || isDesktopApp()} busy={inviteBusy} onOpenChange={setInviteOpen} />}
+      <UpdateModal update={update} suspended={open || inviteOpen || pinOpen} />
+      {authed && (
+        <AvatarInvite
+          desktop={desktopLike || isDesktopApp()}
+          busy={inviteBusy || pinOpen}
+          onOpenChange={setInviteOpen}
+          onPendingChange={setInvitePending}
+        />
+      )}
+      {authed && <FamilyPinStartup busy={inviteBusy || invitePending} onOpenChange={setPinOpen} />}
     </>
   );
 }

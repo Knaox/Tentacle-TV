@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePairedDevices } from "@tentacle-tv/api-client";
 import { AdminPage } from "../components/admin/kit";
+import { FamilyLaunchPolicySection } from "../components/admin/users/FamilyLaunchPolicySection";
 import { FamilySwitchesSection } from "../components/admin/users/FamilySwitchesSection";
 import { UserSheet } from "../components/admin/users/UserSheet";
 import { UsersGrid } from "../components/admin/users/UsersGrid";
@@ -108,6 +109,8 @@ export function AdminUsers() {
       />
       {/* Qui peut former une famille : un réglage du serveur, sous la liste des comptes. */}
       <FamilySwitchesSection />
+      {/* « Qui regarde ? » à l'ouverture, plateforme par plateforme (serveur `family.pickerPolicy`). */}
+      <FamilyLaunchPolicySection />
       <UserSheet
         user={openUser}
         isSelf={sameUserId(openUser?.id, selfId)}

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { FamilySwitches } from "@tentacle-tv/shared";
-import { fetchFamilySwitches, setFamilySwitches } from "../family/familyAdminApi";
+import type { FamilyLaunchPolicy, FamilySwitches, SetFamilyLaunchPolicyBody } from "@tentacle-tv/shared";
+import { fetchFamilyLaunchPolicy, fetchFamilySwitches, setFamilyLaunchPolicy, setFamilySwitches } from "../family/familyAdminApi";
 import { FAMILY_KEY } from "./useFamily";
 
 /** Les interrupteurs de la Famille (administration). Sous `["family"]` : un
@@ -23,6 +23,32 @@ export function useSetFamilySwitches() {
   return useMutation({
     mutationFn: (patch: Partial<FamilySwitches>) => setFamilySwitches(patch),
     onSuccess: (switches) => qc.setQueryData(FAMILY_SWITCHES_KEY, switches),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: [...FAMILY_KEY] });
+      void qc.invalidateQueries({ queryKey: ["app-config"] });
+    },
+  });
+}
+
+/** « Qui regarde ? » à l'ouverture réglé par l'administration (serveur `family.pickerPolicy`). */
+export const FAMILY_LAUNCH_POLICY_KEY = ["family", "admin-launch-policy"] as const;
+
+export function useFamilyLaunchPolicy(options: { enabled?: boolean } = {}) {
+  return useQuery<FamilyLaunchPolicy>({
+    queryKey: FAMILY_LAUNCH_POLICY_KEY,
+    queryFn: fetchFamilyLaunchPolicy,
+    enabled: options.enabled ?? true,
+    staleTime: 30_000,
+  });
+}
+
+/** Pose une règle : la réponse du serveur fait foi, puis la Famille (préférences
+ *  comprises) et la configuration se relisent. */
+export function useSetFamilyLaunchPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: SetFamilyLaunchPolicyBody) => setFamilyLaunchPolicy(patch),
+    onSuccess: (policy) => qc.setQueryData(FAMILY_LAUNCH_POLICY_KEY, policy),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: [...FAMILY_KEY] });
       void qc.invalidateQueries({ queryKey: ["app-config"] });

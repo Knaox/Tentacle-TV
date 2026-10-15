@@ -1,105 +1,91 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { MonitorPlay } from "lucide-react";
 import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
-import { pickerStayState, type PickerProfilesDto } from "@tentacle-tv/shared";
+import {
+  deviceProposes,
+  launchAllowed,
+  pickerStayOf,
+  pickerStayState,
+  withDeviceChoice,
+  type PickerDeviceChoice,
+  type PickerProfilesDto,
+} from "@tentacle-tv/shared";
 import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
 import { useActiveProfile } from "../../auth/profileSession";
 import { getBackendBase } from "../../lib/backendBase";
-import { pickerProfilesKey, savePickerPreference } from "../api/pickerGateway";
+import { pickerProfilesKey } from "../api/pickerGateway";
 import { usePickerListing } from "../api/usePickerListing";
 import { writeLaunchMirror } from "../launch/launchState";
-import { forgetStayOnDevice, readStayOnThisServer } from "../launch/stayOnDevice";
+import { askOnThisServer, readDeviceChoiceOnThisServer, readStayOnThisServer, writeStayOnThisServer } from "../launch/stayOnDevice";
 
 /**
- * Réglages › Famille, sur le BUREAU : « Demander qui regarde à l'ouverture ».
- * Une préférence du COMPTE, par plateforme, lue et écrite par le serveur :
- * activée ici, elle vaut pour tous les ordinateurs du compte. Désactivée par
- * défaut. Absente hors du bureau, face à un serveur sans la capacité
- * `family.desktopProfiles`, sans famille d'au moins deux profils, et pendant
- * la session d'un profil (la page de la Famille n'y existe pas).
+ * Réglages › Famille, sur le BUREAU : « Demander qui regarde à l'ouverture »
+ * — le réglage de CET ORDINATEUR (gardé sur la machine, shared
+ * `familyPickerDevice.ts`), jumeau de la case « Ne plus proposer à la
+ * prochaine ouverture » de « Qui regarde ? » : cocher la case l'éteint, le
+ * rallumer efface le profil retenu, l'éteindre retient le profil en cours.
+ * Un autre ordinateur du compte garde le sien. Coupé par l'administration :
+ * la ligne le dit, sans interrupteur.
  *
- * L'interrupteur répond tout de suite (écriture optimiste), le serveur
- * confirme ; un refus le remet en place et le dit.
- *
- * Si CET ordinateur ne propose plus « Qui regarde ? » (la case « Ne plus
- * proposer sur cet appareil »), une ligne le dit, avec « Proposer à nouveau ».
+ * Absente hors du bureau, face à un serveur sans `family.desktopProfiles`,
+ * sans famille d'au moins deux profils, et pendant la session d'un profil (la
+ * page de la Famille n'y existe pas).
  */
 export function AskAtLaunchSection() {
   const { t } = useTranslation("profilePicker");
   const queryClient = useQueryClient();
   const profileSession = useActiveProfile() !== null;
   const { listing, accountId } = usePickerListing();
-  const [failed, setFailed] = useState(false);
+  const [choice, setChoice] = useState<PickerDeviceChoice>(() => readDeviceChoiceOnThisServer(accountId));
   const [stay, setStay] = useState(() => readStayOnThisServer(accountId));
   const key = pickerProfilesKey(accountId);
 
-  const remember = useCallback((next: PickerProfilesDto) => {
-    queryClient.setQueryData(key, next);
-    if (accountId) writeLaunchMirror({ server: getBackendBase(), accountId, capable: true, listing: next });
+  const apply = useCallback((next: PickerDeviceChoice, current: PickerProfilesDto) => {
+    setChoice(next);
+    setStay(readStayOnThisServer(accountId));
+    const updated = withDeviceChoice(current, next);
+    queryClient.setQueryData(key, updated);
+    if (accountId) writeLaunchMirror({ server: getBackendBase(), accountId, capable: true, listing: updated });
   }, [queryClient, key, accountId]);
 
-  const save = useMutation({
-    mutationFn: (atLaunch: boolean) => savePickerPreference(atLaunch),
-    onMutate: (atLaunch) => {
-      setFailed(false);
-      const previous = queryClient.getQueryData<PickerProfilesDto>(key);
-      if (previous) remember({ ...previous, atLaunch });
-      return { previous };
-    },
-    onSuccess: (preference) => {
-      const current = queryClient.getQueryData<PickerProfilesDto>(key);
-      if (current) remember({ ...current, atLaunch: preference.atLaunch.desktop === true });
-    },
-    onError: (_error, _atLaunch, context) => {
-      if (context?.previous) remember(context.previous);
-      setFailed(true);
-    },
-  });
-
   const data = listing.data;
-  if (profileSession || !data?.pickerRequired) return null;
-  const stayProfile = data.atLaunch && stay && pickerStayState(data, stay, Date.now()) !== "stale"
+  if (profileSession || !data?.pickerRequired || !accountId) return null;
+  const allowed = launchAllowed(data);
+  const proposes = deviceProposes(data, choice);
+  const stayProfile = choice === "stay" && stay && pickerStayState(data, stay, Date.now()) !== "stale"
     ? data.profiles.find((profile) => profile.userId === stay.profileId) ?? null
     : null;
+  const toggle = (on: boolean) => {
+    if (on) {
+      askOnThisServer(accountId);
+      apply("ask", data);
+      return;
+    }
+    // Éteint : l'ordinateur retient le profil en cours (session personnelle ou session de profil).
+    const current = data.profiles.find((profile) => profile.userId === data.currentProfileId);
+    if (!current) return;
+    writeStayOnThisServer(accountId, pickerStayOf(current));
+    apply("stay", data);
+  };
+  const description = !allowed
+    ? t("launchSetting.adminOff")
+    : proposes
+      ? t("launchSetting.on")
+      : stayProfile
+        ? t("launchSetting.stayHere", { name: stayProfile.name })
+        : t("launchSetting.off");
 
   return (
-    <SettingsSection title={t("launchSetting.section")} caption={failed ? undefined : t("launchSetting.caption")}>
+    <SettingsSection title={t("launchSetting.title")} caption={t("launchSetting.caption")}>
       <SettingsRow
         icon={<MonitorPlay size={17} />}
-        label={t("launchSetting.title")}
-        description={data.atLaunch ? t("launchSetting.on") : t("launchSetting.off")}
-        trailing={
-          <ToggleSwitch
-            checked={data.atLaunch}
-            onChange={(next) => save.mutate(next)}
-            label={t("launchSetting.title")}
-            disabled={save.isPending}
-          />
-        }
-        last={!stayProfile}
+        label={t("launchSetting.section")}
+        description={description}
+        trailing={allowed ? <ToggleSwitch checked={proposes} onChange={toggle} label={t("launchSetting.title")} /> : undefined}
+        last
       />
-      {stayProfile && (
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <p className="min-w-0 flex-1 text-xs leading-5 text-content-tertiary">{t("launchSetting.stayHere", { name: stayProfile.name })}</p>
-          <button
-            type="button"
-            onClick={() => {
-              forgetStayOnDevice();
-              setStay(null);
-            }}
-            className="inline-flex h-9 shrink-0 items-center rounded-full border border-line-subtle bg-fill-soft px-4 text-xs font-semibold text-content-primary hover:bg-fill-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-          >
-            {t("launchSetting.stayHereReset")}
-          </button>
-        </div>
-      )}
-      {failed && (
-        <p role="alert" className="border-t border-line-subtle px-4 py-3 text-xs text-status-error-fg">
-          {t("launchSetting.failed")}
-        </p>
-      )}
     </SettingsSection>
   );
 }

@@ -187,15 +187,16 @@ describe("le balayage et les listes d'appareils", () => {
 });
 
 describe("la préférence « Qui regarde ? » au lancement", () => {
-  it("désactivée par défaut ; celle du COMPTE, pour tous ses bureaux ; prévient ses appareils", async () => {
+  it("l'ancienne préférence du COMPTE se lit et s'écrit encore (bureaux d'avant), sans plus rien décider", async () => {
     await seedFamily(app, tokens);
     expect((await send("GET", "/api/family/picker/preference", tokens.damien)).json()).toEqual({ atLaunch: { desktop: false } });
     const set = await send("PUT", "/api/family/picker/preference", tokens.damien, { platform: "desktop", atLaunch: true });
     expect(set.json()).toEqual({ atLaunch: { desktop: true } });
+    // « Qui regarde ? » rend le cadre de l'administration, le même pour tous les comptes.
     expect((await pickerProfiles(app, tokens.damien)).json().atLaunch).toBe(true);
     h.state!.jf.personalTokens.set(`${tokens.damien}-portable`, IDS.damien);
     expect((await pickerProfiles(app, `${tokens.damien}-portable`)).json().atLaunch).toBe(true);
-    expect((await pickerProfiles(app, tokens.lea)).json().atLaunch).toBe(false);
+    expect((await pickerProfiles(app, tokens.lea)).json().atLaunch).toBe(true);
     expect(h.state!.socket).toContainEqual({ userId: IDS.damien, msg: { type: "family:update", scope: "family" } });
     await send("PUT", "/api/family/picker/preference", tokens.damien, { platform: "desktop", atLaunch: false });
     expect(h.state!.db.data.serverConfig.filter((row) => String(row.key).startsWith("user_profile_picker_"))).toEqual([]);

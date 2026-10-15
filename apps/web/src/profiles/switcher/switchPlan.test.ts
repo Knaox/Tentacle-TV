@@ -18,16 +18,15 @@ describe("« Changer de profil » : le profil en cours", () => {
 
 describe("« Changer de profil » : choisir un profil", () => {
   it("le profil en cours referme l'écran sans code ni serveur, quelle que soit la graphie de son identifiant", () => {
-    expect(switchPick("owner", "owner", false, false)).toEqual({ kind: "close", keepHere: false });
-    expect(switchPick("A1B2-C3", "a1b2c3", false, false)).toEqual({ kind: "close", keepHere: false });
+    expect(switchPick("owner", "owner", false, false)).toEqual({ kind: "close", stay: undefined });
+    expect(switchPick("A1B2-C3", "a1b2c3", false, false)).toEqual({ kind: "close", stay: undefined });
   });
 
-  it("le profil en cours, case cochée (le compte demande qui regarde) : l'ordinateur le retient", () => {
-    expect(switchPick("zoe", "zoe", true, true)).toEqual({ kind: "close", keepHere: true });
-    // Case décochée : rien ne change — le profil retenu, s'il y en a un, est déjà celui-là.
-    expect(switchPick("zoe", "zoe", true, false)).toEqual({ kind: "close", keepHere: false });
-    // Préférence coupée : la case n'est pas montrée, rien n'est retenu.
-    expect(switchPick("zoe", "zoe", false, true)).toEqual({ kind: "close", keepHere: false });
+  it("le profil en cours : la case vaut (cochée, retenu ; décochée, proposer de nouveau)", () => {
+    expect(switchPick("zoe", "zoe", true, true)).toEqual({ kind: "close", stay: true });
+    expect(switchPick("zoe", "zoe", true, false)).toEqual({ kind: "close", stay: false });
+    // Coupé par l'administration : pas de case, rien n'est retenu.
+    expect(switchPick("zoe", "zoe", false, true)).toEqual({ kind: "close", stay: undefined });
   });
 
   it("un autre profil s'ouvre par le serveur (son code d'abord) ; profil en cours inconnu : tout s'ouvre", () => {
@@ -36,22 +35,15 @@ describe("« Changer de profil » : choisir un profil", () => {
   });
 });
 
-describe("« Ne plus proposer sur cet appareil » à la bascule", () => {
+describe("« Ne plus proposer à la prochaine ouverture » au choix d'un profil", () => {
   it("« Gérer les profils » n'y touche jamais", () => {
-    expect(commitStay("launch", true, true, true)).toBeUndefined();
-    expect(commitStay("switch", true, true, false)).toBeUndefined();
+    expect(commitStay(true, true, true)).toBeUndefined();
+    expect(commitStay(true, true, false)).toBeUndefined();
   });
 
-  it("à l'ouverture : la case, si le compte demande qui regarde ; sinon rien ne change", () => {
-    expect(commitStay("launch", false, true, true)).toBe(true);
-    expect(commitStay("launch", false, true, false)).toBe(false);
-    expect(commitStay("launch", false, false, false)).toBeUndefined();
-  });
-
-  it("depuis le menu : un changement de profil oublie le profil retenu, sauf case cochée", () => {
-    expect(commitStay("switch", false, true, true)).toBe(true);
-    expect(commitStay("switch", false, true, false)).toBe(false);
-    // Préférence coupée (aucune case) : oublié, comme l'a toujours fait le menu de l'avatar.
-    expect(commitStay("switch", false, false, true)).toBe(false);
+  it("à l'ouverture comme depuis le menu : la case, tant que l'administration le permet", () => {
+    expect(commitStay(false, true, true)).toBe(true);
+    expect(commitStay(false, true, false)).toBe(false);
+    expect(commitStay(false, false, true)).toBeUndefined();
   });
 });

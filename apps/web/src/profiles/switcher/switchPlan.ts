@@ -6,15 +6,15 @@ import { sameUserId, type PickerProfileDto } from "@tentacle-tv/shared";
  * lancée. Module pur (`switchPlan.test.ts`), calqué sur l'intention `switch`
  * de la TV (tv-core `session/profileLaunch.ts`) :
  *
- * - la case « Ne plus proposer sur cet appareil » arrive DÉCOCHÉE : le choix
- *   vaut pour un profil, jamais pour le suivant (sinon le profil retenu pour
- *   un enfant le serait aussi pour le compte choisi ensuite) ;
+ * - la case « Ne plus proposer à la prochaine ouverture » est là comme à
+ *   l'ouverture (tant que l'administration le permet), cochée si cet
+ *   ordinateur ne propose déjà plus (shared `pickerStayInitial`) ;
  * - le focus se pose sur le profil en cours, celui qu'on quitterait ;
  * - le profil EN COURS choisi ne rouvre rien — ni code, ni serveur : on y
- *   est déjà, l'écran se referme ; seule la case cochée y change quelque
- *   chose (l'ordinateur retient désormais ce profil) ;
+ *   est déjà, l'écran se referme ; la case vaut quand même (cochée, il est
+ *   retenu ; décochée, l'ordinateur propose de nouveau) ;
  * - un autre profil : la case dit si l'ordinateur le retiendra ; décochée, il
- *   n'en retient plus aucun (le profil retenu est toujours celui en cours) ;
+ *   n'en retient plus aucun et propose de nouveau « Qui regarde ? » ;
  * - Annuler et Échap ne changent rien du tout.
  */
 
@@ -25,29 +25,25 @@ export function switchActiveId(profiles: readonly PickerProfileDto[], activeProf
 }
 
 export type SwitchPick =
-  /** Le profil en cours : l'écran se referme ; `keepHere` : l'ordinateur le retient désormais. */
-  | { kind: "close"; keepHere: boolean }
+  /** Le profil en cours : l'écran se referme ; `stay` : la case (`commitStay`). */
+  | { kind: "close"; stay: boolean | undefined }
   /** Un autre profil : le serveur l'ouvre (son code d'abord s'il en a un). */
   | { kind: "open" };
 
-export function switchPick(profileId: string, activeId: string | null, atLaunch: boolean, checked: boolean): SwitchPick {
-  if (activeId !== null && sameUserId(profileId, activeId)) return { kind: "close", keepHere: atLaunch && checked };
+/** `allowed` : l'administration permet « Qui regarde ? » à l'ouverture des ordinateurs (la case existe). */
+export function switchPick(profileId: string, activeId: string | null, allowed: boolean, checked: boolean): SwitchPick {
+  if (activeId !== null && sameUserId(profileId, activeId)) return { kind: "close", stay: commitStay(false, allowed, checked) };
   return { kind: "open" };
 }
 
 /**
- * « Ne plus proposer sur cet appareil » au moment de la bascule (`commitPick`) :
- * vrai, l'ordinateur retient le profil choisi ; faux, il n'en retient plus
- * aucun ; absent, rien ne change.
- *
- * - « Gérer les profils » n'y touche jamais ;
- * - à l'ouverture, la case vaut si le compte demande qui regarde, sinon rien
- *   ne change ;
- * - depuis « Changer de profil », un changement de profil oublie le profil
- *   retenu, sauf case cochée (le menu de l'avatar l'a toujours fait).
+ * « Ne plus proposer à la prochaine ouverture » au moment du choix — à
+ * l'ouverture comme depuis « Changer de profil » : vrai, l'ordinateur retient
+ * le profil choisi ; faux, il propose de nouveau « Qui regarde ? » ; absent,
+ * rien ne change — « Gérer les profils » n'y touche jamais, et sans la case
+ * (coupé par l'administration) il n'y a rien à retenir.
  */
-export function commitStay(mode: "launch" | "switch", managing: boolean, atLaunch: boolean, checked: boolean): boolean | undefined {
-  if (managing) return undefined;
-  if (mode === "switch") return atLaunch && checked;
-  return atLaunch ? checked : undefined;
+export function commitStay(managing: boolean, allowed: boolean, checked: boolean): boolean | undefined {
+  if (managing || !allowed) return undefined;
+  return checked;
 }
